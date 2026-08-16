@@ -219,7 +219,10 @@ if (ALLOWED_ORIGIN) {
 }
 app.use(express.json());
 app.use('/uploads', express.static(UPLOADS_DIR));
+app.use('/vendor/spark', express.static(path.join(__dirname, '..', 'node_modules', '@sparkjsdev', 'spark', 'dist')));
+app.use('/vendor/three', express.static(path.join(__dirname, '..', 'node_modules', 'three')));
 app.use(express.static(path.join(__dirname, '..', 'client')));
+
 
 // --- Healthcheck Endpoint ---
 app.get('/health', (req, res) => {
@@ -736,10 +739,14 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Fallback Route
+// Fallback Route for SPA Client
 app.get('*', (req, res) => {
+  if (req.path.startsWith('/uploads/') || req.path.startsWith('/api/') || req.path.startsWith('/vendor/')) {
+    return res.status(404).json({ error: 'Not Found' });
+  }
   res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
 });
+
 
 server.listen(PORT, () => {
   console.log(`=======================================================`);

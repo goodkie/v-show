@@ -85,6 +85,7 @@ const BoothEngine = {
     if (isVerifiedPrecision && !forcePhotoPreview && window.PrecisionSplatViewer) {
       const precisionViewer = new PrecisionSplatViewer({
         scene,
+        renderer: options.renderer || null,
         qualityPreset: options.qualityPreset || 'AUTO',
         onProgress: options.onProgress,
         onError: options.onError,
@@ -94,6 +95,7 @@ const BoothEngine = {
           if (options.onFallback) options.onFallback(reason);
         }
       });
+
 
       const loaded = await precisionViewer.load(booth.spatialModel, booth.spatialModel.transform);
       if (loaded) {

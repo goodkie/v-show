@@ -109,6 +109,7 @@ async function loadBoothData(boothId) {
 
     // Build Hybrid 3D Scene (Spark Precision Splat or Photo Preview Fallback)
     raycastSurfaces = await BoothEngine.buildBooth(viewerEngine.scene, currentBooth, {
+      renderer: viewerEngine.renderer,
       qualityPreset: 'AUTO',
       onProgress: (percent, msg) => {
         if (loadingSubtitle) loadingSubtitle.textContent = `[${percent}%] ${msg}`;
@@ -118,6 +119,7 @@ async function loadBoothData(boothId) {
         updateStatusBadge('photo_preview');
       }
     });
+
 
     renderHotspots(hotspots);
     if (loadingOverlay) {

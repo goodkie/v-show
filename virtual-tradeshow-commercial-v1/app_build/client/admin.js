@@ -358,9 +358,11 @@ function initAlignmentViewer() {
   if (!alignSplatViewer) {
     alignSplatViewer = new PrecisionSplatViewer({
       scene: alignEngine.scene,
+      renderer: alignEngine.renderer,
       qualityPreset: 'MEDIUM'
     });
   }
+
 
   alignSplatViewer.load(spatialModel, transform);
 }
