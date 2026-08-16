@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Create Your Virtual Booth — vivPR V-Show Free Pilot Application</title>
+  <meta name="description" content="Apply for the vivPR V-Show free virtual trade show booth pilot. Transform your trade show exhibit into an interactive online showroom.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background: #090d16;
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .app-nav {
+      padding: 16px 32px;
+      background: #0f172a;
+      border-bottom: 1px solid #1e293b;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .form-container {
+      max-width: 600px;
+      margin: 40px auto 80px;
+      padding: 32px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #cbd5e1;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 10px 14px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    .btn-submit {
+      width: 100%;
+      background: #2563eb;
+      color: #fff;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-submit:hover {
+      background: #1d4ed8;
+    }
+    .consent-box {
+      font-size: 12px;
+      color: #94a3b8;
+      margin: 20px 0;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="app-nav">
+    <a href="/" style="color: #fff; text-decoration: none; font-weight: 700;">vivPR V-Show</a>
+    <a href="/" style="color: #94a3b8; text-decoration: none; font-size: 14px;">← Back to Home</a>
+  </nav>
+
+  <main class="form-container">
+    <h1 style="font-size: 24px; margin: 0 0 8px; color: #fff;">Create Your Virtual Booth</h1>
+    <p style="color: #94a3b8; font-size: 14px; margin: 0 0 24px;">Apply for the free pilot program. No credit card required.</p>
+
+    <form id="start-free-form">
+      <!-- Step 1: Company -->
+      <h3 style="font-size: 15px; color: #60a5fa; border-bottom: 1px solid #334155; padding-bottom: 6px; margin-bottom: 16px;">1. Company Information</h3>
+      <div class="form-group">
+        <label for="companyName">Company Name *</label>
+        <input type="text" id="companyName" required placeholder="e.g. Acme Industrial Robotics">
+      </div>
+      <div class="form-group">
+        <label for="workEmail">Work Email *</label>
+        <input type="email" id="workEmail" required placeholder="you@company.com">
+      </div>
+      <div class="form-group">
+        <label for="website">Company Website</label>
+        <input type="url" id="website" placeholder="https://company.com">
+      </div>
+      <div class="form-group">
+        <label for="industry">Industry</label>
+        <input type="text" id="industry" placeholder="e.g. Industrial Automation / Hardware">
+      </div>
+
+      <!-- Step 2: Event Details -->
+      <h3 style="font-size: 15px; color: #60a5fa; border-bottom: 1px solid #334155; padding-bottom: 6px; margin: 24px 0 16px;">2. Trade Show Event</h3>
+      <div class="form-group">
+        <label for="eventName">Event Name *</label>
+        <input type="text" id="eventName" required placeholder="e.g. Global Automation Expo 2026">
+      </div>
+      <div class="form-group">
+        <label for="boothNumber">Booth Number</label>
+        <input type="text" id="boothNumber" placeholder="e.g. Hall A, Booth #A-102">
+      </div>
+      <div class="form-group">
+        <label for="eventDate">Event Date</label>
+        <input type="date" id="eventDate">
+      </div>
+
+      <!-- Step 3: Photo Readiness -->
+      <h3 style="font-size: 15px; color: #60a5fa; border-bottom: 1px solid #334155; padding-bottom: 6px; margin: 24px 0 16px;">3. Booth Photos</h3>
+      <div class="form-group">
+        <label for="photoReadiness">Do you already have booth photos?</label>
+        <select id="photoReadiness">
+          <option value="60_plus">Yes — 60+ multi-angle photos</option>
+          <option value="fewer_60">Yes — fewer than 60 photos</option>
+          <option value="not_yet" selected>Not yet / Upcoming event</option>
+        </select>
+      </div>
+
+      <!-- Step 4: Product Count -->
+      <div class="form-group">
+        <label for="approxProductCount">Approximate product count to showcase</label>
+        <select id="approxProductCount">
+          <option value="1-5" selected>1–5 Products (Free Tier)</option>
+          <option value="6-25">6–25 Products (PRO Tier)</option>
+          <option value="26-100">26–100 Products (Business Tier)</option>
+          <option value="100+">100+ Enterprise Catalog</option>
+        </select>
+      </div>
+
+      <!-- Step 5: Primary Goal -->
+      <div class="form-group">
+        <label for="primaryGoal">Primary Commercial Goal</label>
+        <select id="primaryGoal">
+          <option value="Generate leads" selected>Generate qualified buyer leads</option>
+          <option value="Collect RFQs">Collect formal RFQs / Quotation requests</option>
+          <option value="Sample requests">Distribute product evaluation samples</option>
+          <option value="Schedule meetings">Schedule 1:1 consultations</option>
+          <option value="Show products">Extend post-event product visibility</option>
+        </select>
+      </div>
+
+      <!-- Consent & Privacy -->
+      <div class="consent-box">
+        <label style="display: flex; gap: 8px; align-items: flex-start; cursor: pointer;">
+          <input type="checkbox" id="privacyConsent" required style="width: auto; margin-top: 3px;">
+          <span>I acknowledge that I have read and agree to the <a href="/privacy.html" target="_blank" style="color: #60a5fa;">vivPR Privacy Policy</a>. *</span>
+        </label>
+        <label style="display: flex; gap: 8px; align-items: flex-start; cursor: pointer; margin-top: 10px;">
+          <input type="checkbox" id="marketingConsent" style="width: auto; margin-top: 3px;">
+          <span>(Optional) Send me product updates and trade show digital marketing guides.</span>
+        </label>
+      </div>
+
+      <div id="form-feedback" style="display:none; padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 13px;"></div>
+
+      <button type="submit" class="btn-submit" id="submit-btn">Start Free Pilot →</button>
+    </form>
+  </main>
+
+  <script>
+    document.getElementById('start-free-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const feedback = document.getElementById('form-feedback');
+      const submitBtn = document.getElementById('submit-btn');
+
+      const payload = {
+        companyName: document.getElementById('companyName').value,
+        workEmail: document.getElementById('workEmail').value,
+        website: document.getElementById('website').value,
+        industry: document.getElementById('industry').value,
+        eventName: document.getElementById('eventName').value,
+        boothNumber: document.getElementById('boothNumber').value,
+        eventDate: document.getElementById('eventDate').value,
+        photoReadiness: document.getElementById('photoReadiness').value,
+        approxProductCount: document.getElementById('approxProductCount').value,
+        primaryGoal: document.getElementById('primaryGoal').value,
+        marketingConsent: document.getElementById('marketingConsent').checked,
+        environment: 'REAL'
+      };
+
+      try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting Application...';
+
+        const res = await fetch('/api/public/acquisition-leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          feedback.style.display = 'block';
+          feedback.style.background = '#064e3b';
+          feedback.style.color = '#34d399';
+          feedback.textContent = '🎉 Thank you! Your application has been submitted. Our Commercial Operations team will contact you shortly to activate your pilot.';
+          document.getElementById('start-free-form').reset();
+        } else {
+          feedback.style.display = 'block';
+          feedback.style.background = '#7f1d1d';
+          feedback.style.color = '#f87171';
+          feedback.textContent = data.error || 'Failed to submit application.';
+        }
+      } catch (err) {
+        feedback.style.display = 'block';
+        feedback.style.background = '#7f1d1d';
+        feedback.style.color = '#f87171';
+        feedback.textContent = 'Network error. Please try again or email info@vivpr.pro.';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Start Free Pilot →';
+      }
+    });
+  </script>
+</body>
+</html>

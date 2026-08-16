@@ -96,6 +96,16 @@
         </div>
 
         <div class="gc-nav-group">
+          <div class="gc-nav-label">COMMERCIAL & SALES</div>
+          <button class="gc-nav-item" data-tab="pipeline" onclick="window.gcApp.setTab('pipeline')">
+            <span class="gc-icon">🎯</span> Sales Pipeline
+          </button>
+          <button class="gc-nav-item" data-tab="acquisition" onclick="window.gcApp.setTab('acquisition')">
+            <span class="gc-icon">📈</span> Acquisition & Funnel
+          </button>
+        </div>
+
+        <div class="gc-nav-group">
           <div class="gc-nav-label">OPERATIONS & 3D</div>
           <button class="gc-nav-item" data-tab="reconstructions" onclick="window.gcApp.setTab('reconstructions')">
             <span class="gc-icon">🧊</span> 3DGS Reconstruction
@@ -114,6 +124,7 @@
           </button>
         </div>
       </nav>
+
 
 
       <!-- Tab Contents -->
@@ -581,12 +592,93 @@
                 </div>
               </div>
             </div>
+        </section>
+
+        <!-- 10. SALES PIPELINE TAB (Phase 10.7R) -->
+        <section id="tab-pipeline" class="gc-tab-pane">
+          <div class="gc-panel" style="margin-bottom: 24px;">
+            <div class="gc-panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <h3>🎯 First Customer Sales Pipeline & Lead CRM</h3>
+                <p class="gc-panel-sub">Qualify commercial leads from the public Start Free application and convert to Pre-Activation.</p>
+              </div>
+              <button class="gc-btn-primary" onclick="window.gcApp.loadSalesPipeline()">↻ Refresh Leads</button>
+            </div>
+
+            <!-- Leads Table -->
+            <div class="gc-table-container">
+              <table class="gc-table">
+                <thead>
+                  <tr>
+                    <th>Company / Email</th>
+                    <th>Event / Booth</th>
+                    <th>Products / Photos</th>
+                    <th>Stage</th>
+                    <th>Next Action</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="pipeline-leads-tbody">
+                  <!-- Dynamically rendered lead rows -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 
+        <!-- 11. ACQUISITION & FUNNEL TAB (Phase 10.7R) -->
+        <section id="tab-acquisition" class="gc-tab-pane">
+          <div class="gc-panel" style="margin-bottom: 24px;">
+            <div class="gc-panel-header">
+              <h3>📈 Commercial Acquisition Funnel & Conversion Intelligence</h3>
+              <p class="gc-panel-sub">Track top-of-funnel discovery to customer activation. Zero real MRR contamination enforced.</p>
+            </div>
 
+            <!-- Funnel KPI Cards -->
+            <div class="gc-kpi-grid" style="margin-bottom: 24px;">
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Landing Visitors</div>
+                <div class="gc-kpi-value" id="acq-landing-visitors">0</div>
+                <div class="gc-kpi-sub">Public / traffic</div>
+              </div>
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Applications Completed</div>
+                <div class="gc-kpi-value" id="acq-apps-completed">0</div>
+                <div class="gc-kpi-sub" id="acq-conv-app">0% conversion</div>
+              </div>
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Qualified Leads</div>
+                <div class="gc-kpi-value" id="acq-qualified-leads">0</div>
+                <div class="gc-kpi-sub">Commercial prospects</div>
+              </div>
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Pre-Activated Pilot</div>
+                <div class="gc-kpi-value" id="acq-preactivated">0 / 1</div>
+                <div class="gc-kpi-sub">Max 1 quota enforced</div>
+              </div>
+            </div>
+
+            <!-- Revenue Safety Invariant Verification -->
+            <div style="background:#0f172a; border:1px solid #10b981; border-radius:8px; padding:16px; margin-bottom:24px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:700; color:#34d399;">🔒 Revenue Isolation Guard:</span>
+                <span class="gc-badge gc-badge-verified">REAL Paid: 0 | REAL MRR: $0.00 | Cash Charged: $0.00</span>
+              </div>
+              <p style="font-size:12px; color:#94a3b8; margin:6px 0 0 0;">
+                Test subscriptions, demo interest, and pre-activations are strictly isolated from real commercial revenue.
+              </p>
+            </div>
+
+            <!-- First Customer Playbook Checklist -->
+            <h4 style="margin: 16px 0 8px 0; color: #38bdf8;">📋 First Customer Acquisition Playbook (16-Step Lifecycle)</h4>
+            <div id="playbook-checklist" style="background:#0f172a; border:1px solid #334155; border-radius:8px; padding:16px;">
+              <!-- Dynamically rendered 16 steps -->
+            </div>
+          </div>
+        </section>
 
         <!-- 9. SETTINGS & EXPORT TAB -->
+
         <section id="tab-settings" class="gc-tab-pane">
           <div class="gc-dashboard-row">
             <div class="gc-panel gc-panel-flex1">

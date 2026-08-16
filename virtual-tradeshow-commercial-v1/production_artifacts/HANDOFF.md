@@ -599,6 +599,45 @@ Establish complete legal, pricing, and commercial governance before first live c
 - **Tax Review**: **`REVIEW_REQUIRED (5-Question CPA Module Active)`**
 - **Stripe Mode**: **`TEST`** ($0.00 cash charged, Live Billing OFF)
 
+---
+
+### [2026-08-16 17:51] — Session 26: Phase 10.7R — Customer Acquisition & Activation Funnel Complete
+
+#### 1. DATE / TIME
+- **Date**: 2026-08-16
+- **Time**: 17:51:00 UTC-4 (21:51:00 UTC)
+
+#### 2. TASK & ACCOMPLISHMENTS
+1. **Public Commercial Landing Page**: Upgraded `/` (`index.html`) with professional SaaS hero ("Turn Your Real Trade Show Booth Into an Interactive Virtual Showroom"), Pilot Pricing ($0, $299, $799), value proposition grid, and SEO/OpenGraph tags.
+2. **Interactive 3D Demo**: Created `/demo.html` showcasing synthetic Gaussian Splatting booth with mobile gestures and conversion CTAs.
+3. **Free Pilot Application**: Created `/start.html` with 5-step structured lead submission and explicit Privacy Policy acknowledgement.
+4. **Sales Pipeline & Lead CRM**: Added dedicated Sales Pipeline tab to Grand Control (`/grand-control.html`) with 10 stages (`NEW` to `LOST`), lead notes, and single-click pre-activation conversion.
+5. **Value Milestone Engine**: Implemented 10 server-side value milestones (`booth_published`, `first_buyer_view`, `first_lead`, `first_rfq`) with deduplication.
+6. **Customer Activation Score & PRO Upgrade Readiness**: Built algorithmic scoring (0–100) and contextual upgrade triggers without deceptive urgency.
+7. **Playbook & Acquisition Analytics**: Built 16-step First Customer Playbook and conversion funnel dashboard in Grand Control with zero real MRR contamination ($0.00).
+8. **Booth Capture Guide**: Created `/capture-guide.html` with 60–100 photo perimeter orbit instructions.
+9. **Exhaustive Automated Verification**:
+   - Master Acquisition Suite (`test_phase10_7r_acquisition_activation.js`): `121 / 121 PASS (100%)`
+   - Phase 10.7 Pre-Activation Suite: `97 / 97 PASS (100%)`
+   - Phase 10.6B Pre-Live Commercial Suite: `64 / 64 PASS (100%)`
+   - Landscape & English Suite: `53 / 53 PASS (100%)`
+   - Password Policy Suite: `57 / 57 PASS (100%)`
+   - Non-Destructive Restore Drill: `100% Data Integrity PASS`
+   - Hangul Character Scan: `0 matches`
+10. **Zero Real Charge Policy**: `STRIPE_MODE=test`, `stripeLiveBillingEnabled=false`, `billingKillSwitch=true`, actual cash charged: `$0.00`.
+
+#### 3. PHASE 10.7R FINAL DETERMINATION
+- **Overall Determination**: **`FIRST_REAL_CUSTOMER_ACQUISITION_READY`** / **`NO-GO FOR LIVE BILLING`**
+- **System Status**: **`PHASE_10_7R_ENGINEERING_COMPLETE`**
+- **Business Identity**: **`COMPLETE` (`vivPR`, NJ, USA)**
+- **Pricing**: **`APPROVED_FOR_PILOT (pilot-2026.1: Free $0 / Pro $299 / Business $799)`**
+- **Acquisition & Funnel**: **`READY (Landing / Demo / Start App / CRM / Playbook)`**
+- **First Real Customer System**: **`WAITING (Acquisition Pipeline Active)`**
+- **Legal Review**: **`PENDING (Structured Review Module Active)`**
+- **Tax Review**: **`REVIEW_REQUIRED (5-Question CPA Module Active)`**
+- **Stripe Mode**: **`TEST`** ($0.00 cash charged, Live Billing OFF)
+
+
 
 
 

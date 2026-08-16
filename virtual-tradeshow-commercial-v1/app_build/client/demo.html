@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>vivPR V-Show — Interactive 3D Demo Booth</title>
+  <meta name="description" content="Experience the interactive 3D virtual trade show booth demo powered by Gaussian Splatting technology.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="precision-viewer.js"></script>
+  <script src="booth-engine.js"></script>
+  <style>
+    :root {
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+    }
+    html, body {
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+      background: #090d16;
+      font-family: 'Inter', sans-serif;
+    }
+    .demo-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      position: relative;
+    }
+    .demo-nav {
+      position: absolute;
+      top: var(--safe-top);
+      left: var(--safe-left);
+      right: var(--safe-right);
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .demo-badge {
+      background: #f59e0b;
+      color: #000;
+      font-weight: 700;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
+    .demo-cta {
+      background: #2563eb;
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .viewport-3d {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    .demo-hud-footer {
+      position: absolute;
+      bottom: calc(16px + var(--safe-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid #334155;
+      border-radius: 20px;
+      padding: 8px 18px;
+      font-size: 13px;
+      color: #94a3b8;
+      display: flex;
+      gap: 16px;
+      backdrop-filter: blur(8px);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="demo-container">
+    <header class="demo-nav">
+      <div style="display: flex; align-items: center;">
+        <a href="/" style="color: #fff; text-decoration: none; font-weight: 700; font-size: 16px;">vivPR V-Show</a>
+        <span class="demo-badge">INTERACTIVE DEMO (SYNTHETIC)</span>
+      </div>
+      <div>
+        <a href="/start.html" class="demo-cta">Create Your Booth →</a>
+      </div>
+    </header>
+
+    <!-- 3D Canvas -->
+    <div id="viewport" class="viewport-3d"></div>
+
+    <div class="demo-hud-footer">
+      <span>🖱️ Drag to Orbit</span>
+      <span>🔍 Pinch / Scroll to Zoom</span>
+      <span>🏷️ Click Hotspots to Inspect</span>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const container = document.getElementById('viewport');
+      if (!container) return;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x090d16);
+
+      const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 1.6, 3.5);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxPolarAngle = Math.PI / 2 + 0.1;
+
+      // Lights
+      const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+      scene.add(ambient);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+      dirLight.position.set(5, 10, 7);
+      scene.add(dirLight);
+
+      // Simple 3D Booth Demo Geometry
+      const floorGeo = new THREE.PlaneGeometry(10, 10);
+      const floorMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      scene.add(floor);
+
+      // Backwall
+      const wallGeo = new THREE.BoxGeometry(6, 3, 0.2);
+      const wallMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
+      const wall = new THREE.Mesh(wallGeo, wallMat);
+      wall.position.set(0, 1.5, -2.5);
+      scene.add(wall);
+
+      // Product Display Counter
+      const counterGeo = new THREE.BoxGeometry(2, 0.9, 0.8);
+      const counterMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6 });
+      const counter = new THREE.Mesh(counterGeo, counterMat);
+      counter.position.set(0, 0.45, -0.5);
+      scene.add(counter);
+
+      // Hotspot Marker
+      const hotGeo = new THREE.SphereGeometry(0.1, 16, 16);
+      const hotMat = new THREE.MeshBasicMaterial({ color: 0x10b981 });
+      const hotspot = new THREE.Mesh(hotGeo, hotMat);
+      hotspot.position.set(0, 1.1, -0.5);
+      scene.add(hotspot);
+
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        hotspot.position.y = 1.1 + Math.sin(Date.now() * 0.003) * 0.04;
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    });
+  </script>
+</body>
+</html>

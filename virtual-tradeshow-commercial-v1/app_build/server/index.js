@@ -1966,6 +1966,120 @@ app.get('/api/platform/first-customer/launch-board', requireAuth, requirePlatfor
   }
 });
 
+// --- Phase 10.7R Acquisition Lead & Funnel Endpoints ---
+app.post('/api/public/acquisition-leads', async (req, res) => {
+  try {
+    const lead = await db.createAcquisitionLead(req.body);
+    res.status(201).json({
+      success: true,
+      message: 'Application received. vivPR Commercial Operations will be in touch shortly.',
+      lead: { id: lead.id, companyName: lead.companyName, stage: lead.stage }
+    });
+  } catch (err) {
+    const status = err.status || 400;
+    res.status(status).json({ error: err.message, code: err.code || 'LEAD_SUBMISSION_FAILED' });
+  }
+});
+
+app.get('/api/platform/acquisition/leads', requireAuth, requirePlatformOwner, (req, res) => {
+  try {
+    const leads = db.getAcquisitionLeads(req.query.environment);
+    res.json({ leads });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/platform/acquisition/leads/:id/stage', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const lead = await db.updateAcquisitionLeadStage(req.params.id, req.body, req.user.userId);
+    res.json({ success: true, lead });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/platform/acquisition/leads/:id/convert', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const plan = req.body.plan || 'free';
+    const result = await db.convertLeadToCustomer(req.params.id, plan, req.user.userId);
+    res.status(201).json({
+      success: true,
+      message: 'Lead converted to Real Customer Pre-Activation successfully.',
+      ...result
+    });
+  } catch (err) {
+    const status = err.status || 400;
+    res.status(status).json({ error: err.message, code: err.code || 'CONVERSION_FAILED' });
+  }
+});
+
+app.get('/api/platform/acquisition/analytics', requireAuth, requirePlatformOwner, (req, res) => {
+  try {
+    const analytics = db.getAcquisitionAnalytics();
+    res.json(analytics);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Phase 10.7R Value Milestones & Customer Success Endpoints ---
+app.post('/api/customer/milestones', requireAuth, async (req, res) => {
+  try {
+    const entry = await db.recordValueMilestone({
+      organizationId: req.user.organizationId,
+      boothId: req.body.boothId,
+      milestoneType: req.body.milestoneType,
+      metadata: req.body.metadata
+    });
+    res.status(201).json({ success: true, milestone: entry });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/customer/milestones/:organizationId', requireAuth, (req, res) => {
+  try {
+    if (req.user.role !== 'platform_owner' && req.user.organizationId !== req.params.organizationId) {
+      return res.status(403).json({ error: 'Access denied to organization milestones.' });
+    }
+    const milestones = db.getValueMilestones(req.params.organizationId);
+    res.json({ milestones });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/customer/activation-status/:organizationId', requireAuth, (req, res) => {
+  try {
+    if (req.user.role !== 'platform_owner' && req.user.organizationId !== req.params.organizationId) {
+      return res.status(403).json({ error: 'Access denied to activation status.' });
+    }
+    const orgId = req.params.organizationId;
+    const score = db.calculateCustomerActivationScore(orgId);
+    const upgradeReadiness = db.calculateProUpgradeReadiness(orgId);
+    res.json({ organizationId: orgId, activationScore: score, upgradeReadiness });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/customer/feedback', requireAuth, async (req, res) => {
+  try {
+    const entry = await db.recordCustomerFeedback({
+      organizationId: req.user.organizationId,
+      userId: req.user.userId,
+      rating: req.body.rating,
+      improvements: req.body.improvements,
+      futureEventInterest: req.body.futureEventInterest
+    });
+    res.status(201).json({ success: true, feedback: entry });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+
 
 
 // --- 10. WebSocket Realtime Signaling & Showhost Presence ---

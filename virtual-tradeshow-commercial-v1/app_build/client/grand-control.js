@@ -120,6 +120,12 @@ class GrandControlApp {
       case 'subscriptions':
         this.loadSubscriptions();
         break;
+      case 'pipeline':
+        this.loadSalesPipeline();
+        break;
+      case 'acquisition':
+        this.loadAcquisitionAnalytics();
+        break;
       case 'visitors':
         this.loadVisitors();
         break;
@@ -140,6 +146,7 @@ class GrandControlApp {
         break;
     }
   }
+
 
 
   // --- 1. Overview ---
@@ -1036,7 +1043,157 @@ class GrandControlApp {
     }
   }
 
+  // --- Phase 10.7R Sales Pipeline & Acquisition Funnel ---
+  async loadSalesPipeline() {
+    try {
+      const res = await fetch('/api/platform/acquisition/leads', {
+        headers: { 'Authorization': `Bearer ${this.token}` }
+      });
+      const data = await res.json();
+      const tbody = document.getElementById('pipeline-leads-tbody');
+      if (!tbody) return;
+
+      if (!data.leads || data.leads.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="gc-text-muted" style="text-align:center; padding:24px;">No acquisition leads submitted yet.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.leads.map(l => `
+        <tr>
+          <td>
+            <strong>${escapeHtml(l.companyName)}</strong><br>
+            <small class="gc-text-muted">${escapeHtml(l.workEmail)}</small>
+          </td>
+          <td>
+            ${escapeHtml(l.eventName || 'N/A')}<br>
+            <small class="gc-text-muted">Booth: ${escapeHtml(l.boothNumber || 'N/A')}</small>
+          </td>
+          <td>
+            ${escapeHtml(l.approxProductCount)} Prods<br>
+            <small class="gc-text-muted">Photos: ${escapeHtml(l.photoReadiness)}</small>
+          </td>
+          <td>
+            <select class="gc-select-sm" onchange="window.gcApp.updateLeadStage('${l.id}', this.value)" style="background:#1e293b; color:#fff; border:1px solid #334155; padding:4px 8px; border-radius:4px;">
+              ${['NEW', 'CONTACTED', 'QUALIFIED', 'DEMO_SCHEDULED', 'DEMO_COMPLETED', 'PILOT_OFFERED', 'PRE_ACTIVATION', 'ACTIVATED', 'NOT_NOW', 'LOST'].map(s => `
+                <option value="${s}" ${l.stage === s ? 'selected' : ''}>${s}</option>
+              `).join('')}
+            </select>
+          </td>
+          <td class="gc-text-muted" style="font-size:12px;">
+            ${escapeHtml(l.nextAction || 'Follow-up pending')}
+          </td>
+          <td>
+            ${l.stage !== 'PRE_ACTIVATION' && l.stage !== 'ACTIVATED' ? `
+              <button class="gc-btn-sm gc-btn-primary" onclick="window.gcApp.convertLeadToPreActivation('${l.id}')">Convert to Pilot</button>
+            ` : `<span class="gc-badge gc-badge-verified">Converted</span>`}
+          </td>
+        </tr>
+      `).join('');
+    } catch (e) {
+      console.error('Failed to load sales pipeline:', e);
+    }
+  }
+
+  async updateLeadStage(leadId, stage) {
+    try {
+      const res = await fetch(`/api/platform/acquisition/leads/${leadId}/stage`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.token}`
+        },
+        body: JSON.stringify({ stage })
+      });
+      if (res.ok) {
+        this.loadSalesPipeline();
+      }
+    } catch (e) {
+      console.error('Failed to update lead stage:', e);
+    }
+  }
+
+  async convertLeadToPreActivation(leadId) {
+    if (!confirm('Convert this qualified lead to Real Customer Pre-Activation? (Quota: 1 Customer)')) return;
+
+    try {
+      const res = await fetch(`/api/platform/acquisition/leads/${leadId}/convert`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.token}`
+        },
+        body: JSON.stringify({ plan: 'pro' })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(`❌ Conversion Failed: ${data.error}`);
+        return;
+      }
+
+      alert(`🎉 Customer Pre-Activated Successfully!\n\nCompany: ${data.organization.name}\nAdmin: ${data.user.email}\nTemporary Password: ${data.tempPasswordForDisplay}`);
+      this.loadSalesPipeline();
+      this.loadOverview();
+      this.loadOrganizations();
+      this.loadReadiness();
+    } catch (e) {
+      alert('Error converting lead to customer');
+    }
+  }
+
+  async loadAcquisitionAnalytics() {
+    try {
+      const res = await fetch('/api/platform/acquisition/analytics', {
+        headers: { 'Authorization': `Bearer ${this.token}` }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+
+      document.getElementById('acq-landing-visitors').textContent = data.landingVisitors;
+      document.getElementById('acq-apps-completed').textContent = data.applicationsCompleted;
+      document.getElementById('acq-conv-app').textContent = `${data.conversionRates?.applicationToQualified || '0%'} to qualified`;
+      document.getElementById('acq-qualified-leads').textContent = data.qualifiedLeads;
+      document.getElementById('acq-preactivated').textContent = `${data.preActivatedCustomers} / 1`;
+
+      const playbook = document.getElementById('playbook-checklist');
+      if (playbook) {
+        const steps = [
+          { name: '1. Public Landing Page Traffic', done: data.landingVisitors > 0 },
+          { name: '2. Demo Booth Exploration', done: data.demoVisitors > 0 },
+          { name: '3. Start Free Application Submitted', done: data.applicationsCompleted > 0 },
+          { name: '4. Commercial Lead Qualified', done: data.qualifiedLeads > 0 },
+          { name: '5. Real Customer Pre-Activation Created', done: data.preActivatedCustomers > 0 },
+          { name: '6. Onboarding Credentials Delivered', done: data.preActivatedCustomers > 0 },
+          { name: '7. Booth Setup & Products Configured', done: false },
+          { name: '8. 60–100 Booth Photos Uploaded', done: false },
+          { name: '9. Pre-flight Capture QA Approved', done: false },
+          { name: '10. GPU 3DGS Reconstruction Executed', done: false },
+          { name: '11. Customer Reviews 3D Booth', done: false },
+          { name: '12. Virtual Booth Published to Lobby', done: false },
+          { name: '13. First Buyer Lead / RFQ Engagement', done: false },
+          { name: '14. Value Milestone Recorded', done: false },
+          { name: '15. Contextual PRO Recommendation', done: false },
+          { name: '16. Stripe Test Checkout Rehearsal Completed', done: false }
+        ];
+
+        playbook.innerHTML = `
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; font-size:13px;">
+            ${steps.map(s => `
+              <div style="display:flex; align-items:center; gap:8px; color: ${s.done ? '#34d399' : '#94a3b8'};">
+                <span>${s.done ? '✅' : '⏳'}</span>
+                <span>${escapeHtml(s.name)}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+    } catch (e) {
+      console.error('Failed to load acquisition analytics:', e);
+    }
+  }
+
 }
+
 
 function escapeHtml(str) {
   if (!str) return '';

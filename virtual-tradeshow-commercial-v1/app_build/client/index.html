@@ -2,432 +2,408 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Virtual Trade Show — 3D Commercial Booth Viewer</title>
-  <meta name="description" content="Commercial 3D Virtual Trade Show Booth Experience with Realtime B2B Engagement.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>vivPR V-Show — Turn Your Real Trade Show Booth Into an Interactive Virtual Showroom</title>
+  <meta name="description" content="Transform physical booth photography into high-fidelity 3D virtual showrooms. Keep your trade show presence active 24/7 with interactive product hotspots, RFQ capture, and buyer engagement analytics.">
+  <meta property="og:title" content="vivPR V-Show — 3D Virtual Trade Show Platform">
+  <meta property="og:description" content="Turn your physical booth into an interactive virtual showroom. Capture leads, showcase products, and close RFQs year-round.">
+  <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <!-- Three.js & OrbitControls -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-  <!-- Spark & Precision Splat Viewer Adapter -->
-  <script src="precision-viewer.js"></script>
-  <!-- Shared Booth 3D Engine -->
-  <script src="booth-engine.js"></script>
   <style>
-    /* Mobile Landscape 3D Player Styles */
-    :root {
-      --safe-top: env(safe-area-inset-top, 0px);
-      --safe-right: env(safe-area-inset-right, 0px);
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --safe-left: env(safe-area-inset-left, 0px);
-    }
-    html, body {
-      height: 100vh;
-      height: 100dvh;
-      overflow: hidden;
+    body {
+      background: #090d16;
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
       margin: 0;
       padding: 0;
-      background: #090d16;
-      touch-action: none;
+      line-height: 1.6;
     }
-    .app-container {
+    .landing-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 32px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #1e293b;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand-logo {
+      font-weight: 800;
+      font-size: 20px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .brand-badge {
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      color: #fff;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+    .nav-link {
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-link:hover {
+      color: #fff;
+    }
+    .btn-nav-cta {
+      background: #2563eb;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .btn-nav-cta:hover {
+      background: #1d4ed8;
+    }
+    .hero-section {
+      padding: 80px 24px 60px;
+      max-width: 1100px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 20px;
+      font-size: 13px;
+      color: #38bdf8;
+      margin-bottom: 24px;
+      font-weight: 500;
+    }
+    .hero-title {
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.15;
+      margin: 0 0 20px;
+      color: #ffffff;
+    }
+    .hero-subtitle {
+      font-size: 19px;
+      color: #94a3b8;
+      max-width: 760px;
+      margin: 0 auto 36px;
+      font-weight: 400;
+    }
+    .hero-cta-group {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 48px;
+      flex-wrap: wrap;
+    }
+    .btn-hero-primary {
+      background: #2563eb;
+      color: #fff;
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+    }
+    .btn-hero-primary:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+    .btn-hero-secondary {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-hero-secondary:hover {
+      background: #334155;
+      color: #fff;
+    }
+    .hero-preview-box {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      margin-bottom: 80px;
+    }
+    .hero-preview-inner {
+      background: #1e293b;
+      border-radius: 8px;
+      padding: 40px 20px;
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      height: 100dvh;
-      position: relative;
-      padding-top: var(--safe-top);
-      padding-bottom: var(--safe-bottom);
-      padding-left: var(--safe-left);
-      padding-right: var(--safe-right);
-    }
-    .viewport-3d {
-      flex: 1;
-      width: 100%;
-      height: 100%;
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 1;
-    }
-    /* Portrait Suggestion Banner */
-    .orientation-banner {
-      position: fixed;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(17, 24, 39, 0.95);
-      border: 1px solid #3b82f6;
-      color: #93c5fd;
-      padding: 10px 16px;
-      border-radius: 9999px;
-      font-size: 13px;
-      font-weight: 500;
-      z-index: 50;
-      display: none;
-      align-items: center;
-      gap: 10px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-      backdrop-filter: blur(8px);
-    }
-    .orientation-banner button {
-      background: rgba(255,255,255,0.15);
-      border: none;
-      color: #fff;
-      padding: 3px 8px;
-      border-radius: 12px;
-      font-size: 11px;
-      cursor: pointer;
-    }
-    /* Touch optimization */
-    .hotspot-marker {
-      min-width: 44px;
-      min-height: 44px;
-      display: flex;
       align-items: center;
       justify-content: center;
-      touch-action: manipulation;
+      min-height: 280px;
+      border: 1px dashed #475569;
     }
-    .btn {
-      min-height: 40px;
-      touch-action: manipulation;
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      max-width: 1100px;
+      margin: 0 auto 80px;
+      padding: 0 24px;
+    }
+    .feature-card {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 10px;
+      padding: 28px;
+      text-align: left;
+    }
+    .feature-icon {
+      font-size: 28px;
+      margin-bottom: 16px;
+      display: inline-block;
+    }
+    .feature-card h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      color: #f1f5f9;
+    }
+    .feature-card p {
+      margin: 0;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+    .pricing-preview {
+      background: #0f172a;
+      border-top: 1px solid #1e293b;
+      border-bottom: 1px solid #1e293b;
+      padding: 80px 24px;
+      text-align: center;
+    }
+    .pricing-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      max-width: 1000px;
+      margin: 40px auto 0;
+    }
+    .pricing-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 32px 24px;
+      text-align: left;
+      position: relative;
+    }
+    .pricing-card.featured {
+      border-color: #3b82f6;
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+    }
+    .landing-footer {
+      padding: 48px 32px;
+      background: #090d16;
+      border-top: 1px solid #1e293b;
+      font-size: 13px;
+      color: #64748b;
+      text-align: center;
+    }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 16px;
+    }
+    .footer-links a {
+      color: #94a3b8;
+      text-decoration: none;
+    }
+    .footer-links a:hover {
+      color: #fff;
     }
   </style>
 </head>
 <body>
-  <!-- Orientation Suggestion Banner (Mobile Portrait) -->
-  <div id="orientation-suggestion-banner" class="orientation-banner">
-    <span>🔄 For the best 3D experience, rotate your device to landscape.</span>
-    <button id="btn-dismiss-orientation">✕</button>
-  </div>
 
-  <!-- Online Trial Notice Banner -->
-  <div class="trial-banner">
-    <span>🌐 <strong>COMMERCIAL BETA</strong> — Multi-Tenant 3D Virtual Trade Show Experience.</span>
-  </div>
+  <!-- Navigation -->
+  <nav class="landing-nav">
+    <a href="/" class="brand-logo">
+      <span>vivPR V-Show</span>
+      <span class="brand-badge">PILOT</span>
+    </a>
+    <div class="nav-links">
+      <a href="/demo.html" class="nav-link">Interactive Demo</a>
+      <a href="/pricing.html" class="nav-link">Pilot Pricing</a>
+      <a href="/capture-guide.html" class="nav-link">Capture Guide</a>
+      <a href="/lobby.html" class="nav-link">Exhibition Lobby</a>
+      <a href="/start.html" class="btn-nav-cta">Start Free</a>
+    </div>
+  </nav>
 
-  <div class="app-container">
-    <!-- Top Navigation -->
-    <header class="top-nav">
-      <div class="brand-section">
-        <div class="brand-logo">V</div>
-        <div>
-          <div class="brand-title" id="nav-booth-name">Virtual Trade Show V1</div>
-          <div id="reconstruction-badge-container">
-            <span class="badge badge-preview" id="badge-recon-status">Photo Preview</span>
-          </div>
-        </div>
-      </div>
-      <div class="nav-actions">
-        <button class="btn btn-secondary btn-sm" id="btn-open-catalog">Products</button>
-        <button class="btn btn-primary btn-sm" id="btn-exchange-card">Exchange Card</button>
-        <button class="btn btn-accent btn-sm" id="btn-live-showhost">1:1 Consultation</button>
-        <a href="lobby.html" class="btn btn-secondary btn-sm">Lobby</a>
-        <a href="admin.html" class="btn btn-secondary btn-sm">Exhibitor Admin</a>
-      </div>
-    </header>
+  <!-- Hero Section -->
+  <header class="hero-section">
+    <div class="hero-pill">
+      <span>✨ Pilot 2026.1 Release</span> • <span>Photo-Based 3D Reconstruction</span>
+    </div>
+    <h1 class="hero-title">
+      Your Trade Show Booth Should Keep Working<br>After the Show Ends.
+    </h1>
+    <p class="hero-subtitle">
+      Transform booth photography into an interactive virtual showroom where global buyers can explore products, request quotes, order samples, and connect with your commercial team 24/7.
+    </p>
 
-    <!-- 3D Viewport -->
-    <div id="viewport-3d" class="viewport-3d"></div>
-
-    <!-- Loading / Progress Overlay -->
-    <div id="viewer-loading-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(11,15,23,0.85); backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 35; transition: opacity 0.3s ease;">
-      <div style="font-size: 32px; animation: spin 1.2s linear infinite; margin-bottom: 16px;">🌐</div>
-      <h3 id="loading-title" style="margin-bottom: 6px;">Loading Virtual 3D Booth...</h3>
-      <p id="loading-subtitle" style="font-size: 13px; color: var(--text-muted);">Initializing Spark Gaussian Splatting and Photo Preview layers...</p>
+    <div class="hero-cta-group">
+      <a href="/start.html" class="btn-hero-primary">Start Free Pilot</a>
+      <a href="/demo.html" class="btn-hero-secondary">View 3D Demo →</a>
+      <a href="mailto:info@vivpr.pro" class="btn-hero-secondary">Talk to vivPR</a>
     </div>
 
-    <!-- Hotspot Marker Overlay Layer -->
-    <div id="hotspots-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:25;"></div>
-
-    <!-- HUD Overlay -->
-    <div class="viewer-hud">
-      <div class="hud-panel">
-        <div class="booth-info">
-          <h2 id="hud-booth-title">Loading...</h2>
-          <p id="hud-booth-desc">Preparing virtual booth space...</p>
-        </div>
-        <div class="hud-controls-hint">
-          <span>🖱️ 1-Finger Orbit / Drag</span>
-          <span>🔍 2-Finger Pinch / Scroll Zoom</span>
-          <span>📍 Tap Hotspot: Product Details</span>
-        </div>
-      </div>
-
-      <div class="hud-actions">
-        <button class="btn btn-secondary" id="btn-reset-view">Reset View</button>
-        <button class="btn btn-secondary" id="btn-book-appointment">Book Meeting</button>
+    <!-- Hero Interactive Preview Banner -->
+    <div class="hero-preview-box">
+      <div class="hero-preview-inner">
+        <div style="font-size: 36px; margin-bottom: 12px;">🏢 ➔ 🧊</div>
+        <h3 style="margin: 0 0 8px; color: #fff;">Interactive 3D Gaussian Splatting Technology</h3>
+        <p style="margin: 0 0 20px; color: #94a3b8; max-width: 500px; font-size: 14px;">
+          High-fidelity neural radiance spatial reconstruction with mobile landscape rotation and real-time buyer engagement tools.
+        </p>
+        <a href="/demo.html" class="btn-hero-primary" style="padding: 10px 20px; font-size: 14px;">Launch Demo Booth</a>
       </div>
     </div>
-  </div>
+  </header>
 
-  <!-- Modal 1: Product Detail Modal -->
-  <div id="modal-product" class="modal-backdrop">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div>
-          <h3 id="modal-prod-title">Product Name</h3>
-          <p id="modal-prod-sku" style="font-size: 13px; color: var(--text-dim);">SKU-0000</p>
-        </div>
-        <button class="modal-close" data-close-modal>&times;</button>
+  <!-- Value Propositions Grid -->
+  <section class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📸</div>
+      <h3>Photo-Based 3D Reconstruction</h3>
+      <p>Capture 60–100 multi-angle photos of your physical exhibit. Our pipeline reconstructs an interactive navigable virtual showroom.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🏷️</div>
+      <h3>Interactive Product Hotspots</h3>
+      <p>Place clickable 3D markers directly on displayed machinery, hardware, or consumer goods with rich specs, pricing, and video links.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">💼</div>
+      <h3>High-Intent Lead & RFQ Capture</h3>
+      <p>Empower qualified B2B buyers to request customized formal quotations, order evaluation samples, and book 1:1 meetings.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">📱</div>
+      <h3>Mobile Landscape 3D Player</h3>
+      <p>Full-bleed 100dvh immersive experience with safe-area insets, intuitive single-finger orbit, and pinch-to-zoom navigation.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🔗</div>
+      <h3>Shareable Permanent URL</h3>
+      <p>Include your virtual booth in post-show email campaigns, digital catalogs, and social media to extend show ROI indefinitely.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3>Buyer Engagement Analytics</h3>
+      <p>Track visitor traffic, hotspot click-throughs, RFQ conversion funnels, and showhost consultation requests with full tenant isolation.</p>
+    </div>
+  </section>
+
+  <!-- Pricing Preview Section -->
+  <section class="pricing-preview">
+    <h2 style="font-size: 32px; margin: 0 0 12px; color: #fff;">Simple, Transparent Pilot Pricing</h2>
+    <p style="color: #94a3b8; margin: 0 auto; max-width: 600px; font-size: 15px;">
+      Version <code>pilot-2026.1</code> approved for early commercial exhibitors. No long-term lock-in.
+    </p>
+
+    <div class="pricing-cards">
+      <div class="pricing-card">
+        <h3 style="margin: 0 0 8px; color: #94a3b8; font-size: 16px;">FREE</h3>
+        <div style="font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 16px;">$0 <span style="font-size: 14px; font-weight: 400; color: #64748b;">/month</span></div>
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 20px;">Basic virtual showroom setup for individual exhibitors.</p>
+        <ul style="padding-left: 20px; color: #cbd5e1; font-size: 13px; margin-bottom: 24px; line-height: 1.8;">
+          <li>1 Virtual Booth (Photo Preview)</li>
+          <li>Up to 5 Products & 3 Hotspots</li>
+          <li>Buyer Lead Capture</li>
+          <li>Shareable Public URL</li>
+        </ul>
+        <a href="/start.html" class="btn-hero-secondary" style="display: block; text-align: center; font-size: 14px;">Get Started Free</a>
       </div>
-      <img id="modal-prod-image" class="product-hero-img" src="" alt="Product Media">
-      <p id="modal-prod-desc">Product description will appear here.</p>
-      
-      <div class="product-meta-grid">
-        <div>
-          <div class="meta-item-title">Minimum Order (MOQ)</div>
-          <div class="meta-item-val" id="modal-prod-moq">1 Unit</div>
-        </div>
-        <div>
-          <div class="meta-item-title">Wholesale Price</div>
-          <div class="meta-item-val" id="modal-prod-price">Contact for Price</div>
-        </div>
-        <div>
-          <div class="meta-item-title">Sample Availability</div>
-          <div class="meta-item-val" id="modal-prod-sample">Available</div>
-        </div>
+
+      <div class="pricing-card featured">
+        <div style="position: absolute; top: -12px; right: 20px; background: #2563eb; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;">RECOMMENDED</div>
+        <h3 style="margin: 0 0 8px; color: #60a5fa; font-size: 16px;">PRO PILOT</h3>
+        <div style="font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 16px;">$299 <span style="font-size: 14px; font-weight: 400; color: #64748b;">/month</span></div>
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 20px;">Complete 3D spatial experience with precision neural rendering.</p>
+        <ul style="padding-left: 20px; color: #cbd5e1; font-size: 13px; margin-bottom: 24px; line-height: 1.8;">
+          <li><strong>1 Spark 3DGS Reconstruction</strong></li>
+          <li>Up to 25 Products & 15 Hotspots</li>
+          <li>RFQ & Sample Requests</li>
+          <li>Full Analytics CSV Export</li>
+          <li>Live Showhost 1:1 Signaling</li>
+        </ul>
+        <a href="/start.html" class="btn-hero-primary" style="display: block; text-align: center; font-size: 14px;">Start PRO Pilot</a>
       </div>
 
-      <h4 style="margin-top: 16px; margin-bottom: 8px;">Specifications</h4>
-      <table class="spec-table" id="modal-prod-specs">
-        <tbody>
-          <!-- Specs dynamic injection -->
-        </tbody>
-      </table>
-
-      <div style="display: flex; gap: 12px; margin-top: 24px;">
-        <button class="btn btn-primary" id="btn-action-rfq" style="flex:1;">Request Quote (RFQ)</button>
-        <button class="btn btn-secondary" id="btn-action-sample" style="flex:1;">Request Sample</button>
+      <div class="pricing-card">
+        <h3 style="margin: 0 0 8px; color: #a78bfa; font-size: 16px;">BUSINESS</h3>
+        <div style="font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 16px;">$799 <span style="font-size: 14px; font-weight: 400; color: #64748b;">/month</span></div>
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 20px;">For multi-product brands and enterprise pavilion exhibitors.</p>
+        <ul style="padding-left: 20px; color: #cbd5e1; font-size: 13px; margin-bottom: 24px; line-height: 1.8;">
+          <li><strong>3 Spark 3DGS Reconstructions</strong></li>
+          <li>Up to 100 Products & 50 Hotspots</li>
+          <li>Dedicated Account Manager</li>
+          <li>Priority GPU Reconstruction</li>
+          <li>Custom Domain Integration</li>
+        </ul>
+        <a href="/start.html" class="btn-hero-secondary" style="display: block; text-align: center; font-size: 14px;">Contact Sales</a>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Modal 2: Product Catalog List Modal -->
-  <div id="modal-catalog" class="modal-backdrop">
-    <div class="modal-card" style="max-width: 800px;">
-      <div class="modal-header">
-        <h3>Product Catalog</h3>
-        <button class="modal-close" data-close-modal>&times;</button>
-      </div>
-      <div id="catalog-list-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 16px;">
-        <!-- Catalog cards -->
-      </div>
+  <!-- Footer -->
+  <footer class="landing-footer">
+    <div class="footer-links">
+      <a href="/demo.html">Interactive Demo</a>
+      <a href="/start.html">Start Free</a>
+      <a href="/pricing.html">Pilot Pricing</a>
+      <a href="/capture-guide.html">Capture Guide</a>
+      <a href="/lobby.html">Exhibition Lobby</a>
+      <a href="/terms.html">Terms of Service</a>
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="/refund-policy.html">Refund Policy</a>
     </div>
-  </div>
-
-  <!-- Modal 3: Digital Business Card (Lead) Modal -->
-  <div id="modal-lead" class="modal-backdrop">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>Digital Business Card Exchange</h3>
-        <button class="modal-close" data-close-modal>&times;</button>
-      </div>
-      <p style="margin-bottom: 16px; font-size: 13px;">Share your contact information with the exhibitor to receive full catalogs, technical documentation, and partnership updates.</p>
-      <form id="form-lead">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Company Name *</label>
-            <input type="text" class="form-input" id="lead-company" required placeholder="e.g. Apex Global Solutions">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Full Name *</label>
-            <input type="text" class="form-input" id="lead-name" required placeholder="e.g. Jane Doe">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Work Email *</label>
-            <input type="email" class="form-input" id="lead-email" required placeholder="jane.doe@company.com">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Phone Number</label>
-            <input type="tel" class="form-input" id="lead-phone" placeholder="+1 (555) 019-2834">
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Job Title</label>
-          <input type="text" class="form-input" id="lead-job" placeholder="e.g. VP of Procurement">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Inquiry & Business Notes</label>
-          <textarea class="form-textarea" id="lead-notes" rows="3" placeholder="Tell us about your sourcing needs or partnership inquiries..."></textarea>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">Exchange Business Card</button>
-      </form>
+    <div>
+      © 2026 vivPR (1633 Center Ave, Fort Lee, NJ 07024, United States). Governing Law: State of New Jersey, United States.<br>
+      Inquiries: <a href="mailto:info@vivpr.pro" style="color:#94a3b8;">info@vivpr.pro</a> | Stripe Statement Descriptor: <code>VIVPR V-SHOW</code>
     </div>
-  </div>
-
-  <!-- Modal 4: Request for Quotation (RFQ) Modal -->
-  <div id="modal-rfq" class="modal-backdrop">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>Submit Request for Quotation (RFQ)</h3>
-        <button class="modal-close" data-close-modal>&times;</button>
-      </div>
-      <form id="form-rfq">
-        <input type="hidden" id="rfq-product-id">
-        <div class="form-group">
-          <label class="form-label">Target Product</label>
-          <input type="text" class="form-input" id="rfq-product-name" readonly style="background: rgba(255,255,255,0.05);">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Buyer Name *</label>
-            <input type="text" class="form-input" id="rfq-name" required placeholder="Jane Doe">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Company Name *</label>
-            <input type="text" class="form-input" id="rfq-company" required placeholder="Apex Global Solutions">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Work Email *</label>
-            <input type="email" class="form-input" id="rfq-email" required placeholder="jane.doe@company.com">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Target Quantity *</label>
-            <input type="number" class="form-input" id="rfq-quantity" min="1" required placeholder="100">
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Target Unit Price (USD, Optional)</label>
-          <input type="number" class="form-input" id="rfq-target-price" placeholder="Target wholesale unit price">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Detailed Requirements & Incoterms</label>
-          <textarea class="form-textarea" id="rfq-notes" rows="3" placeholder="Specify certifications, lead time, FOB/CIF terms..."></textarea>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">Submit RFQ to Exhibitor</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal 5: Sample Request Modal -->
-  <div id="modal-sample" class="modal-backdrop">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>Request Product Sample</h3>
-        <button class="modal-close" data-close-modal>&times;</button>
-      </div>
-      <form id="form-sample">
-        <input type="hidden" id="sample-product-id">
-        <div class="form-group">
-          <label class="form-label">Sample Product</label>
-          <input type="text" class="form-input" id="sample-product-name" readonly style="background: rgba(255,255,255,0.05);">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Recipient Name *</label>
-            <input type="text" class="form-input" id="sample-name" required placeholder="Jane Doe">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Company Name *</label>
-            <input type="text" class="form-input" id="sample-company" required placeholder="Apex Global Solutions">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Work Email *</label>
-            <input type="email" class="form-input" id="sample-email" required placeholder="jane.doe@company.com">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Sample Quantity *</label>
-            <input type="number" class="form-input" id="sample-qty" min="1" max="5" value="1" required>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Shipping Address *</label>
-          <textarea class="form-textarea" id="sample-address" rows="2" required placeholder="Full international shipping address, postal code, and contact number"></textarea>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">Submit Sample Application</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal 6: Book Appointment Modal -->
-  <div id="modal-appointment" class="modal-backdrop">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>Schedule 1:1 Business Meeting</h3>
-        <button class="modal-close" data-close-modal>&times;</button>
-      </div>
-      <form id="form-appointment">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Your Name *</label>
-            <input type="text" class="form-input" id="apt-name" required placeholder="Jane Doe">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Company Name *</label>
-            <input type="text" class="form-input" id="apt-company" required placeholder="Apex Global Solutions">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Email Address *</label>
-            <input type="email" class="form-input" id="apt-email" required placeholder="jane.doe@company.com">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Preferred Date & Time *</label>
-            <input type="datetime-local" class="form-input" id="apt-time" required>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Meeting Agenda</label>
-          <textarea class="form-textarea" id="apt-notes" rows="3" placeholder="Describe the topics and requirements for this consultation..."></textarea>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">Confirm Meeting Request</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal 7: Live Showhost & WebRTC Video Consultation -->
-  <div id="modal-showhost" class="modal-backdrop">
-    <div class="modal-card" style="max-width: 720px;">
-      <div class="modal-header">
-        <div>
-          <h3>1:1 Live Video Consultation</h3>
-          <span id="webrtc-room-tag" class="badge badge-preview" style="margin-top: 4px;">Room: booth-room-demo</span>
-        </div>
-        <button class="modal-close" data-close-modal>&times;</button>
-      </div>
-      
-      <!-- Video Stream Grid -->
-      <div class="video-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; background: var(--bg-surface-elevated); padding: 12px; border-radius: var(--radius-md);">
-        <div class="video-box" style="position: relative; height: 240px; background: #000; border-radius: var(--radius-sm); overflow: hidden; display: flex; align-items: center; justify-content: center;">
-          <video id="local-video" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
-          <div class="video-label" style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.6); padding: 2px 8px; border-radius: 4px; font-size: 11px;">You (Buyer)</div>
-        </div>
-        <div class="video-box" style="position: relative; height: 240px; background: #000; border-radius: var(--radius-sm); overflow: hidden; display: flex; align-items: center; justify-content: center;">
-          <video id="remote-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
-          <div id="remote-video-placeholder" style="color: var(--text-dim); font-size: 13px; text-align: center;">
-            <div style="font-size: 28px; margin-bottom: 4px;">👤</div>
-            Exhibitor Staff Video Stream
-          </div>
-          <div class="video-label" style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.6); padding: 2px 8px; border-radius: 4px; font-size: 11px;">Exhibitor</div>
-        </div>
-      </div>
-
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
-        <span id="webrtc-status-text" style="font-size: 12px; color: var(--text-muted);">Status: Ready for 1:1 P2P Video Call</span>
-        <div style="display: flex; gap: 8px;">
-          <button class="btn btn-primary btn-sm" id="btn-start-call">Connect Camera / Mic</button>
-          <button class="btn btn-danger btn-sm" id="btn-end-call" style="display: none;">End Call</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast Notification Container -->
-  <div id="toast-container" class="toast-container"></div>
-
-  <!-- Viewer Logic Script -->
-  <script src="viewer.js"></script>
+  </footer>
 
 </body>
 </html>

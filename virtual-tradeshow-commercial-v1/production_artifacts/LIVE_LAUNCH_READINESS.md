@@ -4,18 +4,20 @@
 ---
 
 ## 1. 개요 및 최종 판정 (Executive Status)
-- **전체 판정 (Overall Determination)**: **`FIRST_REAL_CUSTOMER_PRE_ACTIVATION_READY`** / **`NO-GO FOR LIVE BILLING`**
-- **시스템 상태 (System Status)**: **`PHASE_10_7_PRE_ACTIVATION_COMPLETE`**
+- **전체 판정 (Overall Determination)**: **`FIRST_REAL_CUSTOMER_ACQUISITION_READY`** / **`NO-GO FOR LIVE BILLING`**
+- **시스템 상태 (System Status)**: **`PHASE_10_7R_ENGINEERING_COMPLETE`**
 - **Business Identity**: **`COMPLETE (vivPR, Fort Lee, NJ)`**
 - **Stripe Mode**: **`TEST`** (`stripeMode: test`) — 실제 현금 결제 $0.00 유지.
 - **Stripe Live Mode**: **`OFF (Disabled)`** — 최고 운영자 승인 전 활성화 불가.
 - **상용 요금제 승인 상태 (Pricing Status)**: **`APPROVED_FOR_PILOT (v2026.1: Free $0, Pro $299/mo, Business $799/mo)`**
-- **1호 실고객 온보딩 마법사**: **`READY (5-Step Wizard in Grand Control)`**
+- **상용 랜딩 및 리드 획득 시스템**: **`READY (Public SaaS Landing / Interactive Demo / Start Free App)`**
+- **영업 파이프라인 및 CRM**: **`READY (10-Stage Pipeline in Grand Control)`**
 - **1호 실고객 할당량 제한**: **`ENFORCED (Max 1 Real Pilot Customer, HTTP 409 Guard)`**
 - **법률 검토 상태 (Legal Review)**: **`PENDING (Structured Review Module Active)`**
 - **세무 검토 상태 (Tax Review)**: **`REVIEW_REQUIRED (5-Question CPA Nexus Review Module Active)`**
 - **영문화 상태 (UI Localization)**: **`100% ENGLISH-ONLY COMPLETE` (0 Hangul characters in client UI)**
 - **모바일 뷰어 상태 (Mobile 3D Player)**: **`MOBILE_LANDSCAPE_3D_PLAYER_READY` (Safe-Area Insets, Gesture Navigation, Visibility Throttling)**
+
 
 
 ---
