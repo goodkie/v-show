@@ -571,7 +571,7 @@ class JSONDatabase {
     return (this.read().users || []).find(u => u.email.toLowerCase() === email.toLowerCase()) || null;
   }
 
-  async createUser({ organizationId, email, name, role, password }) {
+  async createUser({ organizationId, email, name, role, password, mustChangePassword = true }) {
     return this.mutate((db) => {
       const existing = (db.users || []).find(u => u.email.toLowerCase() === email.toLowerCase());
       if (existing) throw new Error('A user with this email address already exists.');
@@ -585,12 +585,13 @@ class JSONDatabase {
         role: role || 'exhibitor_admin',
         hash,
         salt,
+        mustChangePassword: Boolean(mustChangePassword),
         status: 'active',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
       db.users.push(user);
-      return { id: user.id, organizationId: user.organizationId, email: user.email, name: user.name, role: user.role };
+      return { id: user.id, organizationId: user.organizationId, email: user.email, name: user.name, role: user.role, mustChangePassword: user.mustChangePassword };
     });
   }
 
@@ -601,10 +602,12 @@ class JSONDatabase {
       const { hash, salt } = hashPassword(newPassword);
       user.hash = hash;
       user.salt = salt;
+      user.mustChangePassword = false;
       user.updatedAt = new Date().toISOString();
       return true;
     });
   }
+
 
   // --- Events API ---
   getEvents(publishedOnly = false) {

@@ -32,19 +32,44 @@
       <form id="form-login" style="text-align: left;">
         <div class="form-group">
           <label class="form-label">이메일 계정</label>
-          <input type="text" id="login-user" class="form-input" value="apex@vshow.com" placeholder="apex@vshow.com" required>
+          <input type="email" id="login-user" class="form-input" placeholder="exhibitor@company.com" required>
         </div>
         <div class="form-group">
           <label class="form-label">비밀번호</label>
-          <input type="password" id="login-pass" class="form-input" value="admin123" required>
+          <input type="password" id="login-pass" class="form-input" placeholder="••••••••" required>
         </div>
-        <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 16px;">
-          * 베타 테스트 참가사: <code>apex@vshow.com</code> 또는 <code>bio@vshow.com</code> (PW: <code>admin123</code>)
-        </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%;">로그인</button>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">로그인</button>
       </form>
     </div>
   </div>
+
+  <!-- Force Password Change Modal (First Login) -->
+  <div id="force-pwd-modal" class="modal-backdrop">
+    <div class="modal-card" style="max-width: 420px; text-align: center;">
+      <div style="font-size: 32px; margin-bottom: 12px;">🔐</div>
+      <h2 style="margin-bottom: 8px;">새 비밀번호 설정</h2>
+      <p style="font-size: 13px; margin-bottom: 20px; color: var(--text-muted);">
+        보안을 위해 초기 발급된 임시 비밀번호를 변경해야 대시보드를 이용하실 수 있습니다.
+      </p>
+      
+      <form id="form-force-pwd" style="text-align: left;">
+        <div class="form-group">
+          <label class="form-label">현재 임시 비밀번호</label>
+          <input type="password" id="force-pwd-current" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">새 비밀번호 (6자 이상)</label>
+          <input type="password" id="force-pwd-new" class="form-input" minlength="6" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">새 비밀번호 확인</label>
+          <input type="password" id="force-pwd-confirm" class="form-input" minlength="6" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">비밀번호 변경 및 시작</button>
+      </form>
+    </div>
+  </div>
+
 
   <!-- Top Admin Navbar -->
   <header class="admin-nav">

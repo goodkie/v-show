@@ -42,6 +42,7 @@ const upload = multer({
 
 // In-Memory Active Session Store (Token -> { userId, organizationId, email, name, role, createdAt })
 const activeSessions = new Map();
+const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 function generateSessionToken(user) {
   const token = crypto.randomBytes(32).toString('hex');
@@ -51,12 +52,13 @@ function generateSessionToken(user) {
     email: user.email,
     name: user.name,
     role: user.role,
+    mustChangePassword: Boolean(user.mustChangePassword),
     createdAt: Date.now()
   });
   return token;
 }
 
-// Authentication Middleware
+// Authentication Middleware with 24h TTL Check
 function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -69,6 +71,12 @@ function requireAuth(req, res, next) {
     return res.status(401).json({ error: 'Unauthorized: Session expired or invalid.' });
   }
 
+  // Enforce 24-hour expiration
+  if (Date.now() - session.createdAt > SESSION_TTL_MS) {
+    activeSessions.delete(token);
+    return res.status(401).json({ error: 'Unauthorized: Session expired. Please log in again.' });
+  }
+
   req.user = session;
   next();
 }
@@ -77,10 +85,14 @@ function optionalAuth(req) {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
-    return activeSessions.get(token) || null;
+    const session = activeSessions.get(token);
+    if (session && (Date.now() - session.createdAt <= SESSION_TTL_MS)) {
+      return session;
+    }
   }
   return null;
 }
+
 
 // Organizer Role Check Middleware
 function requireOrganizer(req, res, next) {
@@ -211,7 +223,7 @@ app.get('/health', (req, res) => {
 });
 
 // --- 2. Authentication APIs ---
-app.post('/api/auth/login', createRateLimiter(20, 60000), (req, res) => {
+app.post('/api/auth/login', createRateLimiter(10, 60000), (req, res) => {
   const { email, username, password } = req.body;
   const targetEmail = email || username;
 
@@ -228,7 +240,13 @@ app.post('/api/auth/login', createRateLimiter(20, 60000), (req, res) => {
       db.logAudit(user.id, user.organizationId, 'auth.login', 'user', user.id, { email: user.email });
       return res.json({
         token,
-        user: { id: user.id, email: user.email, name: user.name, role: user.role },
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          mustChangePassword: Boolean(user.mustChangePassword)
+        },
         organization: org
       });
     }
@@ -241,19 +259,27 @@ app.post('/api/auth/login', createRateLimiter(20, 60000), (req, res) => {
       organizationId: 'org-organizer-01',
       email: 'organizer@vshow.com',
       name: 'Global Expo Operations',
-      role: 'organizer_admin'
+      role: 'organizer_admin',
+      mustChangePassword: false
     };
     const token = generateSessionToken(orgUser);
     const org = db.getOrganizationById(orgUser.organizationId);
     return res.json({
       token,
-      user: { id: orgUser.id, email: orgUser.email, name: orgUser.name, role: orgUser.role },
+      user: {
+        id: orgUser.id,
+        email: orgUser.email,
+        name: orgUser.name,
+        role: orgUser.role,
+        mustChangePassword: Boolean(orgUser.mustChangePassword)
+      },
       organization: org
     });
   }
 
   return res.status(401).json({ error: 'Invalid email or password.' });
 });
+
 
 app.get('/api/auth/me', requireAuth, (req, res) => {
   const user = db.getUserById(req.user.userId) || req.user;
@@ -363,6 +389,73 @@ app.post('/api/events/:id/exhibitors', requireAuth, requireOrganizer, async (req
     res.status(400).json({ error: err.message });
   }
 });
+
+// Organizer Dedicated Exhibitor Onboarding & Account Provisioning Endpoint
+app.post('/api/events/:id/invite-exhibitor', requireAuth, requireOrganizer, async (req, res) => {
+  try {
+    const { companyName, adminEmail, adminName, category, boothNumber, tempPassword } = req.body;
+    if (!companyName || !adminEmail) {
+      return res.status(400).json({ error: 'Company name and admin email are required.' });
+    }
+
+    const initialPassword = tempPassword || `BetaPass${Math.floor(1000 + Math.random() * 9000)}!`;
+
+    // 1. Create Exhibitor Organization
+    const org = await db.createOrganization({
+      type: 'exhibitor',
+      name: companyName,
+      category: category || 'Industrial Automation'
+    });
+
+    // 2. Create Exhibitor Admin User with mustChangePassword = true
+    const user = await db.createUser({
+      organizationId: org.id,
+      email: adminEmail.toLowerCase().trim(),
+      name: adminName || `${companyName} Admin`,
+      role: 'exhibitor_admin',
+      password: initialPassword,
+      mustChangePassword: true
+    });
+
+    // 3. Create Default Booth
+    const booth = await db.createBooth({
+      organizationId: org.id,
+      eventId: req.params.id,
+      exhibitorId: user.id,
+      name: companyName,
+      description: `${companyName} virtual showcase.`,
+      status: 'draft',
+      photos: []
+    });
+
+    // 4. Register to Event
+    const eventExhibitor = await db.addEventExhibitor({
+      eventId: req.params.id,
+      exhibitorOrganizationId: org.id,
+      boothId: booth.id,
+      category: category || 'General',
+      boothNumber: boothNumber || `B-${Math.floor(100 + Math.random() * 900)}`
+    });
+
+    db.logAudit(req.user.userId, req.user.organizationId, 'organizer.invite_exhibitor', 'organization', org.id, {
+      adminEmail: user.email,
+      boothId: booth.id
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Exhibitor organization, admin account, and booth created successfully.',
+      organization: org,
+      user: { id: user.id, email: user.email, name: user.name, role: user.role, mustChangePassword: true },
+      tempPassword: initialPassword,
+      booth,
+      eventExhibitor
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 
 // --- 4. Organizations API ---
 app.get('/api/organizations', requireAuth, (req, res) => {

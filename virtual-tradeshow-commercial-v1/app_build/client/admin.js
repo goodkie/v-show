@@ -40,24 +40,34 @@ async function authFetch(url, options = {}) {
 }
 
 // 1. Authentication Handlers
+const forcePwdModal = document.getElementById('force-pwd-modal');
+const formForcePwd = document.getElementById('form-force-pwd');
+
 formLogin.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const username = document.getElementById('login-user').value;
+  const email = document.getElementById('login-user').value.trim();
   const password = document.getElementById('login-pass').value;
 
   try {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ email, password })
     });
     const data = await res.json();
     if (res.ok && data.token) {
       authToken = data.token;
       localStorage.setItem('vts_admin_token', authToken);
       loginModal.classList.remove('active');
-      showToast('로그인 성공');
-      initAdmin();
+
+      if (data.user && data.user.mustChangePassword) {
+        if (forcePwdModal) forcePwdModal.classList.add('active');
+        document.getElementById('force-pwd-current').value = password;
+        showToast('초기 비밀번호를 변경해 주세요.');
+      } else {
+        showToast('로그인 성공');
+        initAdmin();
+      }
     } else {
       showToast(data.error || '로그인 실패');
     }
@@ -66,12 +76,53 @@ formLogin.addEventListener('submit', async (e) => {
   }
 });
 
-btnLogout.addEventListener('click', () => {
+if (formForcePwd) {
+  formForcePwd.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const currentPassword = document.getElementById('force-pwd-current').value;
+    const newPassword = document.getElementById('force-pwd-new').value;
+    const confirmPassword = document.getElementById('force-pwd-confirm').value;
+
+    if (newPassword !== confirmPassword) {
+      alert('새 비밀번호가 일치하지 않습니다.');
+      return;
+    }
+
+    try {
+      const res = await authFetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+      if (res.ok) {
+        alert('비밀번호가 성공적으로 변경되었습니다.');
+        if (forcePwdModal) forcePwdModal.classList.remove('active');
+        initAdmin();
+      } else {
+        const d = await res.json();
+        alert(d.error || '비밀번호 변경 실패');
+      }
+    } catch (err) {
+      alert('비밀번호 변경 중 오류가 발생했습니다.');
+    }
+  });
+}
+
+btnLogout.addEventListener('click', async () => {
+  try {
+    if (authToken) {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+    }
+  } catch (e) {}
   authToken = null;
   localStorage.removeItem('vts_admin_token');
   loginModal.classList.add('active');
   showToast('로그아웃 되었습니다.');
 });
+
 
 // 2. Tab Navigation
 tabButtons.forEach(btn => {

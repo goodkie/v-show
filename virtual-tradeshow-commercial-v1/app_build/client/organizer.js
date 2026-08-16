@@ -59,13 +59,69 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const modalInvite = document.getElementById('modal-invite-exhibitor');
+  const btnAddExhibitor = document.getElementById('btn-add-exhibitor');
+  const btnCancelInvite = document.getElementById('btn-cancel-invite');
+  const formInvite = document.getElementById('form-invite-exhibitor');
+
+  if (btnAddExhibitor) {
+    btnAddExhibitor.addEventListener('click', () => {
+      if (modalInvite) modalInvite.style.display = 'flex';
+    });
+  }
+
+  if (btnCancelInvite) {
+    btnCancelInvite.addEventListener('click', () => {
+      if (modalInvite) modalInvite.style.display = 'none';
+    });
+  }
+
+  if (formInvite) {
+    formInvite.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const companyName = document.getElementById('invite-company-name').value;
+      const adminEmail = document.getElementById('invite-admin-email').value;
+      const category = document.getElementById('invite-category').value;
+      const boothNumber = document.getElementById('invite-booth-num').value;
+      const tempPassword = document.getElementById('invite-temp-pwd').value;
+
+      try {
+        const res = await authFetch('/api/events/event-global-tech-2026/invite-exhibitor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ companyName, adminEmail, category, boothNumber, tempPassword })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`🎉 참가사 계정이 성공적으로 발급되었습니다!\n\n이메일: ${data.user.email}\n임시 비밀번호: ${data.tempPassword}\n\n* 첫 로그인 시 비밀번호 변경이 강제됩니다.`);
+          if (modalInvite) modalInvite.style.display = 'none';
+          formInvite.reset();
+          await loadDashboard();
+        } else {
+          alert(`계정 발급 실패: ${data.error || '오류가 발생했습니다.'}`);
+        }
+      } catch (err) {
+        alert('참가사 계정 발급 중 통신 오류가 발생했습니다.');
+      }
+    });
+  }
+
   if (btnLogout) {
-    btnLogout.addEventListener('click', () => {
+    btnLogout.addEventListener('click', async () => {
+      try {
+        if (authToken) {
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          });
+        }
+      } catch (e) {}
       authToken = null;
       localStorage.removeItem('vt_organizer_token');
       if (loginModal) loginModal.style.display = 'flex';
     });
   }
+
 
   async function loadDashboard() {
     if (!authToken) {
