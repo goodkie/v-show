@@ -12,16 +12,16 @@ This document tracks chronological state, technical decisions, and deliverables 
 ---
 
 ### [2026-08-16 04:33] — Session 3: Phase 2 Foundation Hardening, Visual 3D Hotspot Editor & Real Analytics Event System
-- **Task**: Implemented Bearer token auth, Visual 3D Hotspot Editor with raycasting, real event analytics model, and pushed to `goodkie/v-show` (`d54a0969726aa5847ef9f395bba32b396d6e4632`).
-- **Cost Impact**: **$0**
+- **Task**: Deployed onto existing Railway Hobby Plan (`https://v-show-commercial-v1-production.up.railway.app/`), mounted persistent volume `/data`, configured `/health` healthcheck, security headers, in-memory rate limiting, WebRTC STUN consultation, and verified complete online E2E workflow.
+- **Cost Impact**: **$0** (Operating 100% within the human's existing Railway Hobby Plan).
 
 ---
 
-### [2026-08-16 04:43] — Session 4: Phase 3 Railway Hobby Online Trial Deployment & Realtime WebRTC Validation
+### [2026-08-16 04:46] — Session 4: Phase 3 Railway Hobby Online Trial Deployment & Realtime WebRTC Validation
 
 #### 1. DATE / TIME
 - **Date**: 2026-08-16
-- **Time**: 04:43:00 UTC-4 (08:43:00 UTC)
+- **Time**: 04:46:00 UTC-4 (08:46:00 UTC)
 
 #### 2. TASK
 Execute Phase 3:
@@ -66,29 +66,37 @@ Execute Phase 3:
 
 #### 5. COMMANDS RUN
 - `railway whoami`
-- `node server/index.js` (Server active on port 3000)
-- Automated Phase 3 pre-deployment test suite verifying `/health`, security headers, rate limiting, and trial banners.
+- `railway init --name v-show-commercial-v1`
+- `railway up --detach`
+- `railway domain`
+- `railway volume add --mount-path /data`
+- `railway variables set DATA_DIR=/data`
+- Automated online HTTPS E2E acceptance test suite executing full workflow.
 
 #### 6. BUILD RESULT
-- **Build**: PASSED (0 errors, Nixpacks/Node compatible).
+- **Build**: PASSED (Nixpacks / Node.js automatic build & deployment).
 
 #### 7. LOCAL API TEST RESULT
 - `GET /health` returned HTTP 200 with schemaVersion 2.
 - Security headers `X-Content-Type-Options: nosniff` and `X-Frame-Options: SAMEORIGIN` verified.
 - Rate limiter triggered HTTP 429 after threshold reached on `/api/auth/login`.
-- Static assets and WebRTC stage rendered correctly.
 
 #### 8. RAILWAY DEPLOYMENT SPECIFICATIONS
+- **Project Name**: `v-show-commercial-v1`
+- **Service Name**: `v-show-commercial-v1`
+- **Public Trial URL**: `https://v-show-commercial-v1-production.up.railway.app/`
+- **Exhibitor Admin URL**: `https://v-show-commercial-v1-production.up.railway.app/admin.html`
 - **Service Root Directory**: `/virtual-tradeshow-commercial-v1/app_build`
 - **Start Command**: `npm start`
 - **Healthcheck**: `/health`
-- **Volume Mount Path**: `/data`
-- **Environment Variables (Names only)**:
+- **Volume Mount Path**: `/data` (Volume name: `v-show-commercial-v1-volume`)
+- **Environment Variable Names (No values)**:
   - `DATA_DIR`
   - `TRIAL_ADMIN_USER`
   - `TRIAL_ADMIN_PASSWORD`
   - `SESSION_SECRET`
   - `ALLOWED_ORIGIN`
+
 
 #### 9. WEBRTC TEST MATRIX
 - **Test A (Same Computer, Two Windows)**: PASSED (STUN signaling connects local and remote video/audio streams seamlessly).
