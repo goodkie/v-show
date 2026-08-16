@@ -433,10 +433,13 @@ const initialSeedData = () => {
       legalReviewStatus: 'pending',
       pricingStatus: 'draft',
       liveBillingApprovedByOwner: false,
-      pastDueGraceDays: 7
+      pastDueGraceDays: 7,
+      livePilotMaxCustomers: 1,
+      liveBillingAllowedOrgs: []
     }
   };
 };
+
 
 
 
@@ -1875,15 +1878,30 @@ class JSONDatabase {
   }
 
   getFeatureFlags() {
-    return this.read().featureFlags || {
+    const data = this.read();
+    const defaults = {
       stripeBillingEnabled: true,
       grandControlEnabled: true,
       precision3DEnabled: true,
       communicationsEnabled: true,
       businessPlanEnabled: true,
-      billingMode: 'test'
+      billingMode: 'test',
+      billingKillSwitch: false,
+      reconstructionKillSwitch: false,
+      maintenanceMode: false,
+      legalReviewStatus: 'pending',
+      pricingStatus: 'draft',
+      liveBillingApprovedByOwner: false,
+      pastDueGraceDays: 7,
+      livePilotMaxCustomers: 1,
+      liveBillingAllowedOrgs: []
+    };
+    return {
+      ...defaults,
+      ...(data.featureFlags || {})
     };
   }
+
 
   async updateFeatureFlags(flags, authorUserId = null) {
     return this.mutate((db) => {
@@ -1904,6 +1922,27 @@ class JSONDatabase {
       return db.featureFlags;
     });
   }
+  getRealPaidCustomerCount() {
+    const data = this.read();
+    const paid = (data.organizations || []).filter(o => {
+      const env = o.subscription?.dataEnvironment || 'REAL';
+      const plan = o.subscription?.plan || 'free';
+      const status = o.subscription?.status || 'active';
+      return env === 'REAL' && (plan === 'pro' || plan === 'business') && (status === 'active' || status === 'trialing');
+    });
+    return paid.length;
+  }
+
+  isOrganizationAllowedForLiveBilling(organizationId) {
+    const org = this.getOrganizationById(organizationId);
+    if (!org) return false;
+    const env = org.subscription?.dataEnvironment || 'REAL';
+    if (env !== 'REAL') return false;
+
+    const flags = this.getFeatureFlags();
+    const allowedOrgs = flags.liveBillingAllowedOrgs || [];
+    return allowedOrgs.includes(organizationId);
+  }
 }
 
 module.exports = new JSONDatabase();
@@ -1911,5 +1950,6 @@ module.exports.verifyPassword = verifyPassword;
 module.exports.hashPassword = hashPassword;
 module.exports.validatePasswordStrength = validatePasswordStrength;
 module.exports.generateSecureTempPassword = generateSecureTempPassword;
+
 
 

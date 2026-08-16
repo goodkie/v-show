@@ -1285,11 +1285,62 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
       });
     }
 
-    if (STRIPE_MODE === 'live' && (!flags.stripeLiveBillingEnabled || !flags.liveBillingApprovedByOwner)) {
-      return res.status(403).json({
-        error: 'STRIPE_LIVE_MODE_NOT_APPROVED',
-        message: 'Stripe Live Mode 결제 활성화를 위한 최고 운영자의 최종 승인이 필요합니다.'
-      });
+    const org = db.getOrganizationById(req.user.organizationId);
+    if (!org) return res.status(404).json({ error: 'Organization not found.' });
+
+    // --- Phase 10.5 Fail-Closed Live Pilot Guardrails ---
+    if (STRIPE_MODE === 'live') {
+      // 1. Data Environment must be REAL
+      const env = org.subscription?.dataEnvironment || 'REAL';
+      if (env !== 'REAL') {
+        return res.status(403).json({
+          error: 'LIVE_BILLING_NOT_ALLOWED_FOR_ENVIRONMENT',
+          message: 'TEST 및 SYNTHETIC_TEST 환경에서는 Live Checkout을 진행할 수 없습니다.'
+        });
+      }
+
+      // 2. Allowlist Check
+      const allowedOrgs = flags.liveBillingAllowedOrgs || [];
+      if (!allowedOrgs.includes(org.id)) {
+        return res.status(403).json({
+          error: 'LIVE_BILLING_NOT_ALLOWED_FOR_ORG',
+          message: '초대 전용 1차 라이브 파일럿에 등록된 승인 고객사만 결제를 진행할 수 있습니다.'
+        });
+      }
+
+      // 3. Customer Count Cap Check
+      const paidCount = db.getRealPaidCustomerCount();
+      const maxLimit = flags.livePilotMaxCustomers || 1;
+      if (paidCount >= maxLimit) {
+        return res.status(403).json({
+          error: 'LIVE_PILOT_CUSTOMER_LIMIT_REACHED',
+          message: '초대 전용 1차 라이브 파일럿 정원(1개사)이 마감되었습니다.'
+        });
+      }
+
+      // 4. Pricing Status Check
+      if (flags.pricingStatus !== 'approved_for_pilot' && flags.pricingStatus !== 'approved') {
+        return res.status(403).json({
+          error: 'PILOT_PRICING_NOT_APPROVED',
+          message: '파일럿 상용 요금제에 대한 최고 운영자의 최종 승인이 필요합니다.'
+        });
+      }
+
+      // 5. Legal Review Check
+      if (flags.legalReviewStatus !== 'approved') {
+        return res.status(403).json({
+          error: 'LEGAL_REVIEW_NOT_APPROVED',
+          message: '이용약관 및 정책 문서에 대한 법률 검토 승인이 필요합니다.'
+        });
+      }
+
+      // 6. Owner Live Authorization Check
+      if (!flags.stripeLiveBillingEnabled || !flags.liveBillingApprovedByOwner) {
+        return res.status(403).json({
+          error: 'STRIPE_LIVE_MODE_NOT_APPROVED',
+          message: 'Stripe Live Mode 결제 활성화를 위한 최고 운영자의 최종 승인이 필요합니다.'
+        });
+      }
     }
 
     const { requestedPlan } = req.body; // 'pro' | 'business'
@@ -1297,7 +1348,6 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
       return res.status(400).json({ error: 'Invalid plan. Must be "pro" or "business".' });
     }
 
-    const org = db.getOrganizationById(req.user.organizationId);
     if (!org) return res.status(404).json({ error: 'Organization not found.' });
 
 
