@@ -480,7 +480,48 @@
               </div>
             </div>
 
+            <div class="gc-table-container" style="margin-bottom: 24px;">
+              <h4 style="margin: 16px 0 8px 0; color: #60a5fa;">⚖️ Commercial Policy & Legal Governance Status</h4>
+              <div class="gc-kpi-grid" style="margin-bottom: 16px;">
+                <div class="gc-kpi-card">
+                  <div class="gc-kpi-label">Policy Versions</div>
+                  <div class="gc-kpi-value" style="font-size: 14px;" id="gov-policy-versions">v2026.1-draft</div>
+                  <div class="gc-kpi-sub">Terms, Privacy & Refund</div>
+                </div>
+                <div class="gc-kpi-card">
+                  <div class="gc-kpi-label">Pricing Classification</div>
+                  <div class="gc-kpi-value" style="font-size: 14px;" id="gov-pricing-class">PILOT PRICING</div>
+                  <div class="gc-kpi-sub">Pro $299 / Biz $799 (Monthly)</div>
+                </div>
+                <div class="gc-kpi-card">
+                  <div class="gc-kpi-label">Business Identity</div>
+                  <div class="gc-kpi-value" style="font-size: 14px;" id="gov-business-identity">INCOMPLETE</div>
+                  <div class="gc-kpi-sub">Legal entity & address placeholders</div>
+                </div>
+                <div class="gc-kpi-card">
+                  <div class="gc-kpi-label">Tax / Nexus Review</div>
+                  <div class="gc-kpi-value" style="font-size: 14px;" id="gov-tax-readiness">REVIEW_REQUIRED</div>
+                  <div class="gc-kpi-sub">Stripe Tax disabled</div>
+                </div>
+              </div>
+
+              <h4 style="margin: 16px 0 8px 0; color: #f87171;">🚫 Launch Blocker Status (Deterministic Gate)</h4>
+              <table class="gc-table">
+                <thead>
+                  <tr>
+                    <th>Gate Item</th>
+                    <th>Current State</th>
+                    <th>Required Operational Action</th>
+                  </tr>
+                </thead>
+                <tbody id="blockers-table-body">
+                  <!-- Dynamic Deterministic Blocker Rows -->
+                </tbody>
+              </table>
+            </div>
+
             <div class="gc-table-container">
+              <h4 style="margin: 16px 0 8px 0; color: #34d399;">📋 Comprehensive Technical & Operational Audit</h4>
               <table class="gc-table">
                 <thead>
                   <tr>
@@ -497,6 +538,7 @@
             </div>
           </div>
         </section>
+
 
         <!-- 9. SETTINGS & EXPORT TAB -->
         <section id="tab-settings" class="gc-tab-pane">

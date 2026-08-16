@@ -668,10 +668,48 @@
     </div>
   </div>
 
+  <!-- Checkout Consent Modal (Phase 10.6 Governance) -->
+  <div id="checkout-consent-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 id="consent-modal-title">💎 구독 플랜 업그레이드 확인</h3>
+        <button class="modal-close-btn" onclick="document.getElementById('checkout-consent-modal').style.display='none'">✕</button>
+      </div>
+      <div style="padding: 16px 0;">
+        <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; padding: 14px; border-radius: 8px; margin-bottom: 20px;">
+          <div style="font-size: 15px; font-weight: 700; color: #60a5fa;" id="consent-plan-headline">PRO 플랜 ($299 / 월)</div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">정밀 3D Gaussian Splatting 부스 재구성 및 확장 바이어 분석 기능이 활성화됩니다.</p>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; cursor: pointer;">
+            <input type="checkbox" id="chk-consent-terms" style="margin-top: 3px;">
+            <span style="font-size: 13px; line-height: 1.5;">
+              <strong>[필수]</strong> <a href="terms.html" target="_blank" style="color: var(--accent);">서비스 이용약관</a> 및 <a href="privacy.html" target="_blank" style="color: var(--accent);">개인정보 처리방침</a>, <a href="refund-policy.html" target="_blank" style="color: var(--accent);">환불정책</a>의 모든 내용을 확인하였으며 이에 동의합니다.
+            </span>
+          </label>
+
+          <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
+            <input type="checkbox" id="chk-consent-recurring" style="margin-top: 3px;">
+            <span style="font-size: 13px; line-height: 1.5;">
+              <strong>[필수]</strong> 본 상품은 매월 지정된 결제일에 자동 청구되는 <strong>월간 정기 구독(Monthly Recurring)</strong> 상품이며, 언제든지 Stripe 고객 포털에서 즉시 취소할 수 있음을 이해하고 동의합니다.
+            </span>
+          </label>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button class="btn btn-secondary" onclick="document.getElementById('checkout-consent-modal').style.display='none'">취소</button>
+          <button class="btn btn-primary" id="btn-proceed-checkout" onclick="window.adminApp.proceedWithConsentCheckout()">동의 및 결제 진행</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Admin Logic Script -->
   <script src="admin.js"></script>
+
 </body>
 </html>

@@ -406,10 +406,38 @@ Prepare invite-only controlled live pilot for exactly 1 paying customer:
 - **Billing Kill Switch**: **`PASS`**
 - **Live Configuration Guard**: **`PASS`**
 - **REAL / TEST Isolation**: **`PASS`**
-- **Legal Review Status**: **`PENDING`**
-- **Pricing Status**: **`DRAFT (Provisional)`**
 - **Real Customer Details**: **`NOT PROVIDED`**
 - **Actual Cash Charged**: **`$0.00`**
+
+---
+
+### [2026-08-16 16:37] — Session 20: Phase 10.6 — Commercial Policy, Pricing & Live Billing Gate Complete
+
+#### 1. DATE / TIME
+- **Date**: 2026-08-16
+- **Time**: 16:37:00 UTC-4 (20:37:00 UTC)
+
+#### 2. TASK
+Establish complete legal, pricing, and commercial governance before first live customer checkout:
+1. **Public Transparent Pricing Page**: Built `client/pricing.html` with zero dark patterns, clear 3DGS eligibility, and honest Free/Pro/Business comparisons.
+2. **Policy Hardening & Versioning**: Upgraded `terms.html`, `privacy.html`, and `refund-policy.html` to version `2026.1-draft`, with 3DGS computational disclaimer, customer IP ownership retention, Stripe payment reference separation, and business identity placeholders.
+3. **Explicit Checkout Consent Flow**: Added mandatory pre-checkout checkboxes in `admin.html` and immutable consent version logging in `db.billingEvents`.
+4. **Grand Control Commercial Governance**: Built live policy version tracking, business identity status, tax readiness assessment, and a 10-item deterministic launch blocker gate.
+5. **Zero Real Charge Policy**: Retained `STRIPE_MODE=test`, `stripeLiveBillingEnabled=false`, and $0.00 cash cost.
+
+#### 3. COMMERCIAL GOVERNANCE STATUS
+- **Overall Status**: **`COMMERCIAL_POLICY_READY_FOR_HUMAN_APPROVAL`**
+- **Stripe Mode**: **`TEST`** (`stripeMode: test`, $0.00 cash cost)
+- **Stripe Live Mode**: **`OFF`**
+- **Pricing Status**: **`DRAFT (Pilot: Free $0 / Pro $299 / Business $799)`**
+- **Terms Version**: **`2026.1-draft`**
+- **Privacy Version**: **`2026.1-draft`**
+- **Refund Policy Version**: **`2026.1-draft`**
+- **Legal Review Status**: **`PENDING (Drafts ready for attorney review)`**
+- **Deterministic Blockers**: **`6 / 10 READY (4 Blocked pending human decisions)`**
+- **Dark Pattern Audit**: **`100% PASS`**
+- **Actual Cash Charged**: **`$0.00`**
+
 
 
 

@@ -755,7 +755,9 @@ class GrandControlApp {
 
       const badge = document.getElementById('readiness-overall-badge');
       if (badge) {
-        badge.textContent = data.overallStatus === 'LIVE_READY' ? '🎉 LIVE LAUNCH READY' : '⚠️ PRE-PRODUCTION HARDENED';
+        badge.textContent = data.overallStatus === 'LIVE_READY'
+          ? '🎉 LIVE LAUNCH READY'
+          : `⚠️ COMMERCIAL GOVERNANCE (${data.commercialGovernance?.readinessScore || '7/10'} READY)`;
         badge.className = data.overallStatus === 'LIVE_READY' ? 'gc-badge gc-badge-active' : 'gc-badge gc-badge-warning';
       }
 
@@ -763,6 +765,44 @@ class GrandControlApp {
       document.getElementById('readiness-pricing-status').textContent = data.pricingStatus.toUpperCase();
       document.getElementById('readiness-legal-status').textContent = data.legalReviewStatus.toUpperCase();
       document.getElementById('readiness-owner-auth').textContent = data.liveBillingApprovedByOwner ? 'APPROVED' : 'BLOCKED (Pending Owner Action)';
+
+      // Commercial Governance KPIs
+      const gov = data.commercialGovernance;
+      if (gov) {
+        const polEl = document.getElementById('gov-policy-versions');
+        if (polEl) polEl.textContent = gov.policyVersions?.termsVersion || 'v2026.1-draft';
+
+        const prEl = document.getElementById('gov-pricing-class');
+        if (prEl) prEl.textContent = `${gov.pricingGovernance?.classification || 'PILOT'} ($299/$799)`;
+
+        const idEl = document.getElementById('gov-business-identity');
+        if (idEl) {
+          idEl.textContent = gov.businessIdentity?.isComplete ? 'READY' : 'INCOMPLETE';
+          idEl.style.color = gov.businessIdentity?.isComplete ? '#34d399' : '#f87171';
+        }
+
+        const taxEl = document.getElementById('gov-tax-readiness');
+        if (taxEl) {
+          taxEl.textContent = gov.taxReadiness?.status.toUpperCase() || 'REVIEW_REQUIRED';
+          taxEl.style.color = gov.taxReadiness?.status === 'ready' ? '#34d399' : '#fbbf24';
+        }
+
+        // Blockers Table
+        const blockTbody = document.getElementById('blockers-table-body');
+        if (blockTbody && gov.blockers) {
+          blockTbody.innerHTML = gov.blockers.map(b => `
+            <tr>
+              <td><strong>${escapeHtml(b.name)}</strong></td>
+              <td>
+                <span class="gc-status-pill ${b.state === 'READY' ? 'gc-dot-online' : (b.state === 'OFF' ? 'gc-text-muted' : 'gc-dot-warning')}">
+                  ${escapeHtml(b.state)}
+                </span>
+              </td>
+              <td class="gc-text-muted">${escapeHtml(b.detail)}</td>
+            </tr>
+          `).join('');
+        }
+      }
 
       const tbody = document.getElementById('readiness-table-body');
       if (tbody && data.checklist) {
@@ -783,6 +823,7 @@ class GrandControlApp {
       console.error(e);
     }
   }
+
 
   // --- 9. Settings & Export ---
   async loadSettings() {

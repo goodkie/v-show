@@ -981,20 +981,56 @@ async function loadBillingInfo() {
   }
 }
 
-async function startUpgradeCheckout(requestedPlan) {
-  if (!token) return;
+let pendingCheckoutPlan = null;
+
+function startUpgradeCheckout(requestedPlan) {
+  pendingCheckoutPlan = requestedPlan;
+  const modal = document.getElementById('checkout-consent-modal');
+  if (!modal) return;
+
+  const headline = document.getElementById('consent-plan-headline');
+  if (headline) {
+    headline.textContent = requestedPlan === 'pro'
+      ? 'PRO 플랜 ($299 / 월)'
+      : 'BUSINESS 플랜 ($799 / 월)';
+  }
+
+  // Ensure checkboxes are UNCHECKED initially (no pre-checked dark patterns)
+  document.getElementById('chk-consent-terms').checked = false;
+  document.getElementById('chk-consent-recurring').checked = false;
+
+  modal.style.display = 'flex';
+}
+
+async function proceedWithConsentCheckout() {
+  if (!token || !pendingCheckoutPlan) return;
+
+  const consentTerms = document.getElementById('chk-consent-terms').checked;
+  const consentRecurring = document.getElementById('chk-consent-recurring').checked;
+
+  if (!consentTerms || !consentRecurring) {
+    alert('이용약관 및 월간 정기 구독 조건에 모두 동의하셔야 결제를 진행할 수 있습니다.');
+    return;
+  }
+
+  document.getElementById('checkout-consent-modal').style.display = 'none';
+
   try {
-    showToast(`${requestedPlan.toUpperCase()} 플랜 구독 세션을 준비 중입니다...`);
+    showToast(`${pendingCheckoutPlan.toUpperCase()} 플랜 결제 세션을 생성 중입니다...`);
     const res = await fetch('/api/billing/create-checkout-session', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ requestedPlan })
+      body: JSON.stringify({
+        requestedPlan: pendingCheckoutPlan,
+        consentTerms: true,
+        consentRecurring: true
+      })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to create checkout session.');
+    if (!res.ok) throw new Error(data.message || data.error || 'Failed to create checkout session.');
 
     if (data.checkoutUrl) {
       window.location.href = data.checkoutUrl;
@@ -1006,6 +1042,7 @@ async function startUpgradeCheckout(requestedPlan) {
     alert(err.message);
   }
 }
+
 
 async function openCustomerPortal() {
   if (!token) return;
@@ -1104,11 +1141,13 @@ function escapeHtml(str) {
 
 window.adminApp = {
   startUpgradeCheckout,
+  proceedWithConsentCheckout,
   openCustomerPortal,
   loadBillingInfo,
   loadInboxMessages,
   openContactOwnerModal
 };
+
 
 window.addEventListener('DOMContentLoaded', () => {
   initAdmin();

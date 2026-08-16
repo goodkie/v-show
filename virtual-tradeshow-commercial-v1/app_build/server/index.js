@@ -415,6 +415,11 @@ app.get('/api/public/plans', (req, res) => {
   res.json(db.getPublicPlanConfig());
 });
 
+app.get('/api/public/governance', (req, res) => {
+  res.json(db.getCommercialGovernance());
+});
+
+
 
 
 // --- 2. Authentication APIs ---
@@ -1343,12 +1348,51 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
       }
     }
 
-    const { requestedPlan } = req.body; // 'pro' | 'business'
+    const { requestedPlan, consentTerms, consentRecurring } = req.body; // 'pro' | 'business'
     if (!requestedPlan || (requestedPlan !== 'pro' && requestedPlan !== 'business')) {
       return res.status(400).json({ error: 'Invalid plan. Must be "pro" or "business".' });
     }
 
+    // --- Phase 10.6 Explicit Checkout Consent Verification ---
+    if (!consentTerms || !consentRecurring) {
+      return res.status(400).json({
+        error: 'CHECKOUT_CONSENT_REQUIRED',
+        message: '이용약관, 개인정보처리방침 및 월간 정기 구독 조건에 대한 명시적 동의가 필요합니다.'
+      });
+    }
+
+    const gov = db.getCommercialGovernance();
+    const planLimits = db.getPlanLimits(requestedPlan);
+
+    // Record Immutable Consent Audit Event
+    const consentRecord = {
+      id: `consent-${uuidv4().substring(0, 8)}`,
+      organizationId: org.id,
+      userId: req.user.id,
+      plan: requestedPlan,
+      amountUsd: planLimits.monthlyPriceUsd,
+      currency: 'USD',
+      interval: 'monthly',
+      termsVersion: gov.policyVersions.termsVersion,
+      privacyVersion: gov.policyVersions.privacyVersion,
+      refundPolicyVersion: gov.policyVersions.refundPolicyVersion,
+      acceptedAt: new Date().toISOString()
+    };
+
+    await db.mutate((d) => {
+      d.billingEvents = d.billingEvents || [];
+      d.billingEvents.push({
+        id: `bill-${uuidv4().substring(0, 8)}`,
+        organizationId: org.id,
+        eventType: 'checkout_consent_recorded',
+        plan: requestedPlan,
+        details: consentRecord,
+        timestamp: new Date().toISOString()
+      });
+    });
+
     if (!org) return res.status(404).json({ error: 'Organization not found.' });
+
 
 
     // In Test Mode / Stripe Configured

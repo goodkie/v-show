@@ -3,92 +3,129 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>이용약관 (Terms of Service) - Virtual Trade Show</title>
-  <link rel="stylesheet" href="style.css">
+  <title>이용약관 (Terms of Service) | Virtual Trade Show Commercial V1</title>
   <style>
-    .legal-container {
-      max-width: 860px;
-      margin: 40px auto;
-      padding: 32px;
-      background: var(--bg-card, #ffffff);
-      border: 1px solid var(--border-color, #e2e8f0);
-      border-radius: 12px;
+    :root {
+      --bg: #090d16;
+      --card-bg: #111827;
+      --border: #1f2937;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --accent: #3b82f6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       line-height: 1.7;
-      color: var(--text-main, #0f172a);
+      padding: 40px 20px;
+    }
+    .legal-container {
+      max-width: 880px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 36px 32px;
     }
     .legal-banner {
-      background: #fef3c7;
+      background: rgba(245, 158, 11, 0.15);
       border: 1px solid #f59e0b;
-      color: #92400e;
-      padding: 16px;
+      color: #fbbf24;
+      padding: 14px 18px;
       border-radius: 8px;
       font-weight: bold;
+      margin-bottom: 28px;
+      text-align: center;
+      font-size: 14px;
+    }
+    .policy-meta {
+      font-size: 13px;
+      color: var(--text-muted);
       margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    h1 { font-size: 26px; margin-bottom: 12px; }
+    h2 { font-size: 18px; margin: 24px 0 10px 0; color: #60a5fa; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px; }
+    p, ul { font-size: 14px; color: #d1d5db; margin-bottom: 12px; }
+    ul { padding-left: 24px; }
+    li { margin-bottom: 6px; }
+    .footer-note {
+      margin-top: 36px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text-muted);
       text-align: center;
     }
-    .legal-section { margin-bottom: 24px; }
-    .legal-section h2 { font-size: 18px; margin-bottom: 10px; color: var(--primary, #0284c7); }
-    .legal-section p, .legal-section ul { font-size: 14px; color: var(--text-muted, #475569); }
-    .legal-section ul { padding-left: 20px; }
+    a { color: var(--accent); text-decoration: none; }
   </style>
 </head>
-<body style="background: var(--bg-body, #f8fafc);">
+<body>
+
   <div class="legal-container">
     <div class="legal-banner">
-      ⚠️ DRAFT — REQUIRES LEGAL REVIEW (법률 전문가의 최종 검토가 필요한 초안 문서입니다)
+      ⚠️ DRAFT — REQUIRES LEGAL REVIEW (본 문서는 법률 전문가의 검토가 필요한 상용 초안 문서입니다)
     </div>
 
     <h1>서비스 이용약관 (Terms of Service)</h1>
-    <p style="font-size: 13px; color: #64748b; margin-bottom: 24px;">최종 개정일: 2026년 8월 16일 (버전 1.0 Draft)</p>
-
-    <div class="legal-section">
-      <h2>1. 서비스 설명</h2>
-      <p>Virtual Trade Show Commercial V1 (이하 "회사" 또는 "플랫폼")은 전시 주최사(Organizer), 참가사(Exhibitor), 바이어(Buyer)를 연결하는 가상 3D 무역 전시회 SaaS 플랫폼입니다. 본 서비스는 실제 부스 촬영 데이터를 기반으로 한 정밀 3D Gaussian Splatting 가상 부스 생성, 제품 카탈로그 전시, 디지털 명함(Lead) 접수, 견적 요청(RFQ) 및 1:1 상담 예약 기능을 제공합니다.</p>
+    <div class="policy-meta">
+      <span><strong>정책 버전:</strong> 2026.1-draft</span>
+      <span><strong>상태:</strong> 초안 (Draft)</span>
+      <span><strong>시행일:</strong> [TO BE COMPLETED BEFORE LIVE BILLING]</span>
     </div>
 
-    <div class="legal-section">
-      <h2>2. 계정 및 책임</h2>
-      <p>회원은 정확한 정보를 제공하여 계정을 생성해야 하며, 계정 비밀번호 및 세션 토큰의 보안 유지에 대한 전적인 책임이 있습니다. 회사는 허가되지 않은 계정 접근으로 인한 손해에 대해 책임을 지지 않습니다.</p>
-    </div>
+    <h2>1. 서비스의 목적 및 범위 (Service Description)</h2>
+    <p>Virtual Trade Show Commercial V1(이하 "플랫폼" 또는 "회사")은 전시 주최사(Organizer), 참가사(Exhibitor), 바이어(Buyer)를 연결하는 글로벌 가상 전시회 SaaS 플랫폼입니다. 본 플랫폼은 참가사의 실제 부스 촬영 사진을 컴퓨터 그래픽 알고리즘으로 연산하여 3D 공간을 구성하고, 제품 카탈로그 전시, 바이어 명함 접수(Lead), 견적 요청(RFQ), 1:1 화상 상담(WebRTC) 기능을 제공합니다.</p>
 
-    <div class="legal-section">
-      <h2>3. 가상 부스 컨텐츠 및 업로드 제한</h2>
-      <p>참가사는 업로드하는 사진, 영상, 제품 제원, 로고 등의 지식재산권에 대해 합법적인 권리를 보유해야 합니다. 다음 각 호의 컨텐츠 업로드는 엄격히 금지됩니다:</p>
-      <ul>
-        <li>타인의 지식재산권, 상표권, 영업비밀을 침해하는 컨텐츠</li>
-        <li>음란물, 불법 무기, 유해 화학물질 등 법령에 위반되는 컨텐츠</li>
-        <li>악성 스크립트, 바이러스, 손상된 파일이 포함된 업로드</li>
-      </ul>
-    </div>
+    <h2>2. 계정 등록 및 자격 요건 (Account & Eligibility)</h2>
+    <p>참가사는 합법적으로 등록된 사업자 또는 공인 단체여야 하며, 등록 시 정확하고 최신의 정보를 제공해야 합니다. 계정의 비밀번호 및 인증 토큰의 기밀 유지 책임은 전적으로 회원에게 있으며, 비인가 접근으로 인한 결과에 대해 회사는 면책됩니다.</p>
 
-    <div class="legal-section">
-      <h2>4. 3D 재구성(Gaussian Splatting) 품질 및 한계</h2>
-      <p>플랫폼이 제공하는 3D 가우스 스플래팅 재구성은 참가사가 제출한 촬영 사진의 조도, 해상도, 각도에 따라 결과물 품질이 달라질 수 있습니다. 회사는 현실 부스와 100% 완전 무결한 일치를 보증하지 않으며, 품질 기준 미달 시 사진 보완을 요청할 수 있습니다.</p>
-    </div>
+    <h2>3. 고객 콘텐츠의 소유권 및 라이선스 (Customer Content & IP)</h2>
+    <p>참가사가 플랫폼에 업로드하는 부스 사진, 회사 로고, 제품 제원, 텍스트 및 홍보 자료(이하 "고객 콘텐츠")의 지식재산권은 참가사에게 존속됩니다. 참가사는 본 약관을 통해 회사에 플랫폼 서비스를 호스팅, 변환(3D 연산 포함), 렌더링 및 대외 전시할 수 있는 비독점적이고 전 세계적인 라이선스를 부여합니다. 회사는 참가사의 명시적 동의 없이 콘텐츠를 AI 모델의 일반 훈련 데이터로 사용하지 않습니다.</p>
 
-    <div class="legal-section">
-      <h2>5. 요금제, 구독 및 결제</h2>
-      <p>플랫폼은 Free, Pro, Business 플랜을 제공합니다. 유료 구독 요금은 Stripe를 통해 안전하게 결제되며, 매월 자동 갱신됩니다. 구독 취소 시 해당 청구 주기의 마지막 날까지 서비스가 유지되며, 이후 Free 플랜으로 안전하게 전환됩니다.</p>
-    </div>
+    <h2>4. 3D 가우스 스플래팅 재구성 한계 고지 (3D Reconstruction Disclosures)</h2>
+    <p>플랫폼이 제공하는 3D Gaussian Splatting(3DGS) 가상 부스는 참가사가 제출한 2D 다각도 사진을 컴퓨터 알고리즘(SfM 및 신경망 렌더링)으로 연산하여 생성한 결과물입니다.</p>
+    <ul>
+      <li>3D 재구성 품질은 사진의 수량(권장 60~80장), 조명 조건, 모션 블러 여부, 투명/반사 재질의 유무에 따라 물리적 실제 부스와 시각적/기하학적 차이가 발생할 수 있습니다.</li>
+      <li>회사는 가상 부스가 물리적 공간과 "100% 동일한 완벽한 복제본"임을 보증하지 않으며, 참가사는 사전 검토(Admin Preview)를 통해 게시 여부를 결정해야 합니다.</li>
+    </ul>
 
-    <div class="legal-section">
-      <h2>6. 계약 해지 및 서비스 중단</h2>
-      <p>회원은 언제든지 Stripe 고객 포털을 통해 구독을 해지할 수 있습니다. 회사는 회원이 본 약관을 위반한 경우 사전 통지 후 계정을 일시정지하거나 해지할 수 있습니다.</p>
-    </div>
+    <h2>5. 구독 요금제 및 정기 결제 (Subscription & Billing)</h2>
+    <p>플랫폼의 유료 플랜(PRO $299/월, BUSINESS $799/월 등)은 Stripe 보안 결제 게이트웨이를 통해 월 단위로 자동 갱신되는 정기 구독 상품입니다. 참가사는 어드민 콘솔의 Customer Portal을 통해 언제든지 차기 결제를 취소할 수 있으며, 취소 시 해당 결제 주기가 끝날 때까지 서비스가 유지된 후 Free 플랜으로 안전하게 다운그레이드됩니다.</p>
 
-    <div class="legal-section">
-      <h2>7. 면책 및 책임 제한</h2>
-      <p>회사는 천재지변, 인터넷 인프라 장애, 제3자 서비스(클라우드 호스팅, GPU 제공업체)의 중단으로 인한 손해에 대해 법률이 허용하는 최대 한도 내에서 책임을 면합니다.</p>
-    </div>
+    <h2>6. 환불 및 취소 규정 (Refund & Cancellation)</h2>
+    <p>구독 취소 및 환불은 당사의 별도 <a href="refund-policy.html">환불정책(Refund Policy)</a>에 따릅니다. 이미 클라우드 GPU 연산 자원이 소비된 3DGS 재구성 작업은 환불 대상에서 제외될 수 있으며, 시스템 오류나 중복 결제의 경우 즉시 전액 환불 조치됩니다.</p>
 
-    <div class="legal-section">
-      <h2>8. 문의처</h2>
-      <p>이용약관에 관한 문의 사항은 플랫폼 운영팀(support@vshow.com)으로 연락 주시기 바랍니다.</p>
-    </div>
+    <h2>7. 금지 행위 및 계정 정지 (Prohibited Conduct)</h2>
+    <p>회원은 다음 행위를 하여서는 안 되며, 위반 시 사전 통보 없이 부스 비공개 또는 계정이 영구 정지될 수 있습니다:</p>
+    <ul>
+      <li>타인의 상표권, 저작권, 영업비밀을 무단 도용하거나 침해하는 행위</li>
+      <li>악성 코드, 스크립트 인젝션, 시스템 리버스 엔지니어링 시도</li>
+      <li>허위 바이어 명함 생성 또는 스팸성 견적 발송 행위</li>
+    </ul>
 
-    <div style="text-align: center; margin-top: 32px;">
-      <a href="lobby.html" class="btn btn-secondary">로비로 돌아가기</a>
+    <h2>8. 면책 조항 및 책임 제한 (Warranty Disclaimer & Liability)</h2>
+    <p>본 서비스는 "있는 그대로(AS-IS)" 제공되며, 천재지변, 클라우드 호스팅 인프라 장애, 참가사의 네트워크 환경으로 인한 일시적 중단에 대해 법률이 허용하는 최대 범위 내에서 회사의 책임이 제한됩니다.</p>
+
+    <h2>9. 사업자 신원 및 준거법 (Business Identity & Governing Law)</h2>
+    <ul>
+      <li><strong>상호명:</strong> [TO BE COMPLETED BEFORE LIVE BILLING]</li>
+      <li><strong>사업장 주소:</strong> [TO BE COMPLETED BEFORE LIVE BILLING]</li>
+      <li><strong>고객지원 이메일:</strong> [TO BE COMPLETED BEFORE LIVE BILLING]</li>
+      <li><strong>준거법:</strong> [TO BE COMPLETED BEFORE LIVE BILLING]</li>
+    </ul>
+
+    <div class="footer-note">
+      <a href="lobby.html">로비로 이동</a> • <a href="pricing.html">요금제 안내</a> • <a href="privacy.html">개인정보처리방침</a> • <a href="refund-policy.html">환불정책</a>
     </div>
   </div>
+
 </body>
 </html>
