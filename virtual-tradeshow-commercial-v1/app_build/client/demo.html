@@ -1,191 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>vivPR V-Show — Interactive 3D Demo Booth</title>
-  <meta name="description" content="Experience the interactive 3D virtual trade show booth demo powered by Gaussian Splatting technology.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="precision-viewer.js"></script>
-  <script src="booth-engine.js"></script>
-  <style>
-    :root {
-      --safe-top: env(safe-area-inset-top, 0px);
-      --safe-right: env(safe-area-inset-right, 0px);
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --safe-left: env(safe-area-inset-left, 0px);
-    }
-    html, body {
-      height: 100vh;
-      height: 100dvh;
-      overflow: hidden;
-      margin: 0;
-      padding: 0;
-      background: #090d16;
-      font-family: 'Inter', sans-serif;
-    }
-    .demo-container {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      height: 100dvh;
-      position: relative;
-    }
-    .demo-nav {
-      position: absolute;
-      top: var(--safe-top);
-      left: var(--safe-left);
-      right: var(--safe-right);
-      z-index: 100;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 20px;
-      background: rgba(15, 23, 42, 0.8);
-      backdrop-filter: blur(8px);
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
-    .demo-badge {
-      background: #f59e0b;
-      color: #000;
-      font-weight: 700;
-      font-size: 11px;
-      padding: 3px 8px;
-      border-radius: 4px;
-      margin-left: 8px;
-    }
-    .demo-cta {
-      background: #2563eb;
-      color: #fff;
-      padding: 6px 14px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      text-decoration: none;
-    }
-    .viewport-3d {
-      width: 100%;
-      height: 100%;
-      position: absolute;
-      top: 0;
-      left: 0;
-    }
-    .demo-hud-footer {
-      position: absolute;
-      bottom: calc(16px + var(--safe-bottom));
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 50;
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid #334155;
-      border-radius: 20px;
-      padding: 8px 18px;
-      font-size: 13px;
-      color: #94a3b8;
-      display: flex;
-      gap: 16px;
-      backdrop-filter: blur(8px);
-    }
-  </style>
-</head>
-<body>
-
-  <div class="demo-container">
-    <header class="demo-nav">
-      <div style="display: flex; align-items: center;">
-        <a href="/" style="color: #fff; text-decoration: none; font-weight: 700; font-size: 16px;">vivPR V-Show</a>
-        <span class="demo-badge">INTERACTIVE DEMO (SYNTHETIC)</span>
-      </div>
-      <div>
-        <a href="/start.html" class="demo-cta">Create Your Booth →</a>
-      </div>
-    </header>
-
-    <!-- 3D Canvas -->
-    <div id="viewport" class="viewport-3d"></div>
-
-    <div class="demo-hud-footer">
-      <span>🖱️ Drag to Orbit</span>
-      <span>🔍 Pinch / Scroll to Zoom</span>
-      <span>🏷️ Click Hotspots to Inspect</span>
-    </div>
-  </div>
-
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const container = document.getElementById('viewport');
-      if (!container) return;
-
-      const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x090d16);
-
-      const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.set(0, 1.6, 3.5);
-
-      const renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      container.appendChild(renderer.domElement);
-
-      const controls = new THREE.OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.05;
-      controls.maxPolarAngle = Math.PI / 2 + 0.1;
-
-      // Lights
-      const ambient = new THREE.AmbientLight(0xffffff, 0.8);
-      scene.add(ambient);
-      const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-      dirLight.position.set(5, 10, 7);
-      scene.add(dirLight);
-
-      // Simple 3D Booth Demo Geometry
-      const floorGeo = new THREE.PlaneGeometry(10, 10);
-      const floorMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
-      const floor = new THREE.Mesh(floorGeo, floorMat);
-      floor.rotation.x = -Math.PI / 2;
-      scene.add(floor);
-
-      // Backwall
-      const wallGeo = new THREE.BoxGeometry(6, 3, 0.2);
-      const wallMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
-      const wall = new THREE.Mesh(wallGeo, wallMat);
-      wall.position.set(0, 1.5, -2.5);
-      scene.add(wall);
-
-      // Product Display Counter
-      const counterGeo = new THREE.BoxGeometry(2, 0.9, 0.8);
-      const counterMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6 });
-      const counter = new THREE.Mesh(counterGeo, counterMat);
-      counter.position.set(0, 0.45, -0.5);
-      scene.add(counter);
-
-      // Hotspot Marker
-      const hotGeo = new THREE.SphereGeometry(0.1, 16, 16);
-      const hotMat = new THREE.MeshBasicMaterial({ color: 0x10b981 });
-      const hotspot = new THREE.Mesh(hotGeo, hotMat);
-      hotspot.position.set(0, 1.1, -0.5);
-      scene.add(hotspot);
-
-      function animate() {
-        requestAnimationFrame(animate);
-        controls.update();
-        hotspot.position.y = 1.1 + Math.sin(Date.now() * 0.003) * 0.04;
-        renderer.render(scene, camera);
-      }
-      animate();
-
-      window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      });
-    });
-  </script>
-</body>
-</html>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>vivPR V-Show — Industrial Virtual Booth Demo</title>
+<meta name="description" content="Immersive virtual trade show demo with interactive 3D products, catalog, consultation tickets and virtual services.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<style>
+:root{--teal:#008f8c;--teal2:#00b8ad;--ink:#07151a;--panel:rgba(5,22,27,.9);--line:rgba(255,255,255,.15);--safe:env(safe-area-inset-bottom,0px)}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071116;color:#fff;font-family:Inter,Arial,sans-serif}button{font:inherit}.app{position:relative;width:100%;height:100dvh}.stage{position:absolute;inset:0}.top{position:absolute;z-index:20;top:0;left:0;right:0;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(2,12,15,.92),rgba(2,12,15,.3),transparent)}.brand{display:flex;gap:10px;align-items:center}.logo{font-size:24px;font-weight:800;font-style:italic;color:#35d3c7}.pill{font-size:10px;letter-spacing:.08em;border:1px solid var(--line);border-radius:20px;padding:5px 9px;background:rgba(0,0,0,.3)}.top-actions{display:flex;gap:7px}.btn{border:1px solid var(--line);background:rgba(4,23,27,.82);color:#fff;padding:9px 12px;border-radius:9px;cursor:pointer}.btn.primary{background:var(--teal);border-color:var(--teal)}.rail{position:absolute;z-index:20;left:14px;top:82px;display:flex;flex-direction:column;gap:7px}.rail .btn{width:46px;height:46px;padding:0;font-size:20px}.hud{position:absolute;z-index:10;bottom:calc(14px + var(--safe));left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;background:rgba(3,18,22,.82);border:1px solid var(--line);border-radius:22px;padding:7px 10px;backdrop-filter:blur(12px)}.hud button{border:0;background:transparent;color:#d9f8f5;padding:7px 10px;cursor:pointer}.drawer{position:absolute;z-index:30;right:0;top:0;height:100%;width:min(430px,94vw);background:var(--panel);border-left:1px solid var(--line);backdrop-filter:blur(18px);transform:translateX(105%);transition:.25s;padding:72px 18px 20px;overflow:auto}.drawer.open{transform:none}.drawer h2{margin:0 0 5px}.drawer p{color:#a9c1c5;line-height:1.5}.close{position:absolute;right:14px;top:15px}.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}.card{border:1px solid var(--line);border-radius:13px;padding:12px;background:rgba(255,255,255,.05);cursor:pointer}.card:hover{border-color:#39d9cd}.card b{display:block;margin-bottom:5px}.card small{color:#9fb9bc}.product-hero{height:240px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:radial-gradient(circle,#174b4b,#06191d);margin:12px 0}.field{display:block;width:100%;margin:8px 0;padding:11px;border-radius:8px;border:1px solid var(--line);background:#071b20;color:white}.ticket{padding:12px;border-radius:10px;background:rgba(0,143,140,.12);border:1px solid rgba(53,211,199,.35);margin:10px 0}.notice{position:absolute;z-index:15;left:74px;bottom:76px;max-width:310px;background:rgba(3,18,22,.85);border:1px solid var(--line);padding:11px 13px;border-radius:12px;color:#c4d8da;font-size:12px}.hotlabel{position:absolute;pointer-events:none;background:#fff;color:#082124;padding:5px 8px;border-radius:12px;font-size:11px;font-weight:700;display:none}.disclaimer{font-size:10px;color:#79979a;margin-top:15px}@media(max-width:700px){.top{padding:9px}.top .pill{display:none}.top-actions .btn:not(.primary){display:none}.rail{left:8px;top:65px}.rail .btn{width:42px;height:42px}.notice{display:none}.hud{width:calc(100% - 16px);justify-content:space-around;bottom:calc(7px + var(--safe));font-size:11px}.hud button{padding:7px 4px}.drawer{width:100%}.cards{grid-template-columns:1fr 1fr}}@media(orientation:portrait) and (max-width:700px){.rotate:after{content:'Rotate to landscape for the best 3D experience';position:absolute;z-index:40;left:50%;top:62px;transform:translateX(-50%);background:#063238;border:1px solid #1db9b0;padding:8px 12px;border-radius:20px;font-size:11px;white-space:nowrap}}
+</style>
+</head><body><div class="app rotate">
+<div id="stage" class="stage"></div><div id="hotlabel" class="hotlabel"></div>
+<header class="top"><div class="brand"><span class="logo">AQUAFLOW</span><span class="pill">INDUSTRIAL WATER SOLUTIONS · DEMO BOOTH</span></div><div class="top-actions"><button class="btn" onclick="openPanel('catalog')">Catalog</button><button class="btn" onclick="openPanel('ticket')">Consultation Ticket</button><button class="btn primary" onclick="openPanel('live')">Talk to an Expert</button></div></header>
+<nav class="rail"><button class="btn" title="Products" onclick="openPanel('products')">◈</button><button class="btn" title="Catalog" onclick="openPanel('catalog')">▤</button><button class="btn" title="Videos" onclick="openPanel('media')">▶</button><button class="btn" title="Services" onclick="openPanel('services')">✦</button><button class="btn" title="Contact" onclick="openPanel('ticket')">✉</button></nav>
+<div class="notice"><b>Interactive 3D Booth</b><br>Explore the booth, select glowing product markers, rotate products in 3D, collect literature, and request a live consultation.</div>
+<div class="hud"><button onclick="resetCamera()">⌂ Home</button><button onclick="focusZone('products')">◉ Products</button><button onclick="focusZone('meeting')">◎ Meeting Area</button><button onclick="toggleAuto()">↻ Auto Tour</button><button onclick="openPanel('bag')">▣ My Briefcase <span id="bagCount">0</span></button></div>
+<aside id="drawer" class="drawer"><button class="btn close" onclick="closePanel()">✕</button><div id="panel"></div></aside>
+</div>
+<script>
+const PRODUCTS=[
+{id:'VX-90',name:'VX-90 Vertical Inline Pump',type:'High-Efficiency Pump',flow:'180 m³/h',head:'52 m',eff:'IE5-ready',desc:'Compact vertical inline system for commercial building circulation.'},
+{id:'SC-40',name:'SC-40 Smart Circulator',type:'Smart Pump',flow:'42 m³/h',head:'18 m',eff:'Adaptive',desc:'Connected circulator with demand-based speed control and energy telemetry.'},
+{id:'BS-120',name:'BS-120 Booster System',type:'Pressure Booster',flow:'260 m³/h',head:'70 m',eff:'Variable speed',desc:'Multi-pump pressure boosting concept for high-rise water supply.'},
+{id:'DR-65',name:'DR-65 Drainage Pump',type:'Submersible',flow:'95 m³/h',head:'31 m',eff:'Rugged duty',desc:'Submersible drainage concept for infrastructure and industrial applications.'}
+];
+let scene,camera,renderer,controls,auto=false,raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2(),hotspots=[],bag=[];
+const teal=0x009c96, dark=0x0b2428, white=0xf4f7f5;
+function init(){const host=document.getElementById('stage');scene=new THREE.Scene();scene.background=new THREE.Color(0x071116);scene.fog=new THREE.Fog(0x071116,15,32);camera=new THREE.PerspectiveCamera(52,innerWidth/innerHeight,.1,100);camera.position.set(8,4.4,10);renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;host.appendChild(renderer.domElement);controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.target.set(0,1.5,0);controls.minDistance=3;controls.maxDistance=18;controls.maxPolarAngle=Math.PI/2.05;
+scene.add(new THREE.HemisphereLight(0xffffff,0x16363a,1.25));let sun=new THREE.DirectionalLight(0xffffff,1.1);sun.position.set(4,10,6);sun.castShadow=true;scene.add(sun);buildBooth();renderer.domElement.addEventListener('pointerdown',pick);addEventListener('resize',resize);animate()}
+function mat(c,metal=.05,rough=.45){return new THREE.MeshStandardMaterial({color:c,metalness:metal,roughness:rough})}
+function box(w,h,d,c,x,y,z){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;scene.add(m);return m}
+function buildBooth(){box(12,.12,8,0xe8eeec,0,0,0);box(11,3.7,.18,white,0,1.85,-3.4);box(.18,3.7,5.5,white,-5.4,1.85,-.7);box(4.8,.2,1.4,white,0,4.2,-2.6);box(4.5,.08,1.15,teal,0,4.08,-2.5);box(4.8,.75,.85,white,-1.2,.4,.4);box(4.25,.58,.9,teal,-1.2,.45,.39);box(2.2,1.05,.75,white,3.3,.53,-1.8);box(2.05,.82,.8,teal,3.3,.56,-1.78);
+// illuminated architectural ribbons
+box(10,.08,.18,teal,0,3.45,-3.25);box(.15,2.7,.15,teal,-4.9,2.0,-3.2);
+// screen
+box(3.1,1.75,.08,0x123f45,-3.0,2.15,-3.25);box(2.9,1.55,.06,0x2f7f88,-3.0,2.15,-3.18);
+// product plinths + procedural pump models
+PRODUCTS.forEach((p,i)=>{let x=-3.8+i*2.35,z=-1.35;box(1.2,.18,1.05,white,x,.12,z);let g=new THREE.Group();let body=new THREE.Mesh(new THREE.CylinderGeometry(.28,.34,.8,24),mat(teal,.25,.3));body.position.y=.72;g.add(body);let motor=new THREE.Mesh(new THREE.BoxGeometry(.55,.55,.48),mat(dark,.35,.3));motor.position.y=1.25;g.add(motor);let pipe=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,.85,20),mat(0x1a3437,.5,.25));pipe.rotation.z=Math.PI/2;pipe.position.y=.45;g.add(pipe);g.position.set(x,.18,z);g.userData.product=p;scene.add(g);let ring=new THREE.Mesh(new THREE.TorusGeometry(.48,.035,10,32),new THREE.MeshBasicMaterial({color:0x35d3c7}));ring.rotation.x=Math.PI/2;ring.position.set(x,1.65,z);ring.userData.product=p;scene.add(ring);hotspots.push(ring)});
+// meeting zone
+for(let a=0;a<4;a++){let ang=a*Math.PI/2;box(.55,.5,.55,white,3.5+Math.cos(ang)*1.2,.25,1.6+Math.sin(ang)*1.2)}let table=new THREE.Mesh(new THREE.CylinderGeometry(1,1,.08,32),mat(white));table.position.set(3.5,.75,1.6);scene.add(table);
+// signage using canvas textures
+sign('AQUAFLOW',0,2.65,-3.28,3.4,.8);sign('Smart solutions for a better future',2.9,2.3,-3.27,3,.55);}
+function sign(text,x,y,z,w,h){let c=document.createElement('canvas');c.width=1024;c.height=220;let q=c.getContext('2d');q.clearRect(0,0,c.width,c.height);q.fillStyle='#007f7b';q.font='700 72px Arial';q.textAlign='center';q.fillText(text,512,130);let t=new THREE.CanvasTexture(c),m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:t,transparent:true}));m.position.set(x,y,z);scene.add(m)}
+function pick(e){let r=renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(mouse,camera);let hits=raycaster.intersectObjects(scene.children,true);let hit=hits.find(h=>{let o=h.object;while(o){if(o.userData&&o.userData.product)return true;o=o.parent}return false});if(hit){let o=hit.object;while(o&&!o.userData.product)o=o.parent;if(o)showProduct(o.userData.product)}}
+function showProduct(p){openPanel('product',p)}
+function openPanel(type,data){let el=document.getElementById('panel'),d=document.getElementById('drawer');d.classList.add('open');if(type==='products')el.innerHTML=`<h2>3D Product Gallery</h2><p>Select a product to inspect specifications and open its interactive 3D model.</p><div class="cards">${PRODUCTS.map(p=>`<div class="card" onclick="showProduct(PRODUCTS.find(x=>x.id==='${p.id}'))"><b>${p.name}</b><small>${p.type}</small></div>`).join('')}</div>`;
+if(type==='product'){let p=data;el.innerHTML=`<h2>${p.name}</h2><p>${p.desc}</p><div id="product3d" class="product-hero"></div><div class="cards"><div class="card"><small>Flow</small><b>${p.flow}</b></div><div class="card"><small>Head</small><b>${p.head}</b></div><div class="card"><small>Efficiency</small><b>${p.eff}</b></div><div class="card"><small>Model</small><b>${p.id}</b></div></div><button class="btn primary" style="width:100%;margin-top:12px" onclick="addBag('${p.id}')">Add Spec Sheet to Briefcase</button><button class="btn" style="width:100%;margin-top:8px" onclick="openPanel('ticket')">Request Product Consultation</button>`;setTimeout(productViewer,30)}
+if(type==='catalog')el.innerHTML=`<h2>Digital Catalog Center</h2><p>Collect product literature without carrying printed brochures.</p><div class="cards"><div class="card" onclick="addBag('CATALOG')"><b>Complete Pump Solutions</b><small>Product catalog · Demo PDF item</small></div><div class="card" onclick="addBag('SUSTAINABILITY')"><b>Sustainability Overview</b><small>ESG & efficiency brief</small></div><div class="card" onclick="addBag('SMART')"><b>Smart Water Solutions</b><small>Connected systems guide</small></div><div class="card" onclick="addBag('APPLICATIONS')"><b>Application Guide</b><small>HVAC · Water · Industry · Drainage</small></div></div>`;
+if(type==='ticket')el.innerHTML=`<h2>Consultation Ticket</h2><p>Create a demo consultation request for a booth specialist.</p><input class="field" placeholder="Name"><input class="field" placeholder="Work email"><select class="field"><option>Product consultation</option><option>RFQ / pricing</option><option>Engineering discussion</option><option>Distributor inquiry</option></select><textarea class="field" rows="4" placeholder="What would you like to discuss?"></textarea><button class="btn primary" style="width:100%" onclick="fakeTicket()">Create Demo Ticket</button><div id="ticketResult"></div>`;
+if(type==='live')el.innerHTML=`<h2>Virtual Expert Desk</h2><p>Choose how you want to connect with the exhibitor.</p><div class="cards"><div class="card"><b>Live Video</b><small>WebRTC 1:1 booth consultation</small></div><div class="card"><b>Schedule Meeting</b><small>Reserve a future time slot</small></div><div class="card"><b>Ask an Engineer</b><small>Technical Q&A ticket</small></div><div class="card"><b>Request RFQ</b><small>Commercial quotation workflow</small></div></div><div class="ticket"><b>Demo host status: Available</b><br><small>This demo does not contact a real company representative.</small></div>`;
+if(type==='services')el.innerHTML=`<h2>Virtual Booth Services</h2><div class="cards"><div class="card"><b>Smart Match</b><small>Find products by application</small></div><div class="card"><b>Virtual Briefcase</b><small>Save brochures and specs</small></div><div class="card"><b>RFQ Center</b><small>Request quotations</small></div><div class="card"><b>Sample Request</b><small>Request evaluation units</small></div><div class="card"><b>Expert Tickets</b><small>Technical consultation queue</small></div><div class="card"><b>Meeting Scheduler</b><small>Book video consultations</small></div><div class="card"><b>Guided Tour</b><small>Automated booth walkthrough</small></div><div class="card"><b>Product Compare</b><small>Compare specifications</small></div></div>`;
+if(type==='media')el.innerHTML=`<h2>Media Wall</h2><p>On-demand booth content for visitors in any time zone.</p><div class="ticket"><b>▶ Company Overview</b><br><small>2:10 · Demo media placeholder</small></div><div class="ticket"><b>▶ Smart Pump Technology</b><br><small>3:45 · Demo media placeholder</small></div><div class="ticket"><b>▶ Sustainability & Efficiency</b><br><small>2:55 · Demo media placeholder</small></div>`;
+if(type==='bag')el.innerHTML=`<h2>My Virtual Briefcase</h2><p>${bag.length?bag.map(x=>`<div class="ticket">✓ ${x}</div>`).join(''):'No resources saved yet. Add catalogs or product spec sheets as you explore.'}</p><button class="btn primary" style="width:100%">Email My Demo Briefcase</button>`;el.innerHTML+=`<div class="disclaimer">Independent synthetic demonstration by vivPR. The booth design is based on a user-supplied industrial trade-show reference image. AQUAFLOW and all product names/specifications shown here are fictional demo content.</div>`}
+function closePanel(){document.getElementById('drawer').classList.remove('open')}
+function addBag(x){if(!bag.includes(x))bag.push(x);document.getElementById('bagCount').textContent=bag.length;openPanel('bag')}
+function fakeTicket(){document.getElementById('ticketResult').innerHTML='<div class="ticket"><b>Demo ticket created</b><br>Reference: DEMO-'+Math.random().toString(36).slice(2,8).toUpperCase()+'<br><small>No message was sent externally.</small></div>'}
+function productViewer(){let host=document.getElementById('product3d');if(!host)return;let s=new THREE.Scene(),c=new THREE.PerspectiveCamera(45,host.clientWidth/host.clientHeight,.1,20),r=new THREE.WebGLRenderer({antialias:true,alpha:true});r.setSize(host.clientWidth,host.clientHeight);r.setPixelRatio(Math.min(devicePixelRatio,2));host.appendChild(r.domElement);s.add(new THREE.HemisphereLight(0xffffff,0x12383a,2));let g=new THREE.Group(),b=new THREE.Mesh(new THREE.CylinderGeometry(.7,.8,1.7,32),mat(teal,.3,.25));g.add(b);let m=new THREE.Mesh(new THREE.BoxGeometry(1.25,1.05,1.05),mat(dark,.4,.2));m.position.y=1.25;g.add(m);let p=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,2.2,24),mat(0x18383b,.5,.2));p.rotation.z=Math.PI/2;p.position.y=-.5;g.add(p);s.add(g);c.position.set(3,2.2,4);c.lookAt(0,.4,0);let ctl=new THREE.OrbitControls(c,r.domElement);ctl.enableDamping=true;(function loop(){if(!host.isConnected)return;requestAnimationFrame(loop);ctl.update();g.rotation.y+=.003;r.render(s,c)})()}
+function resetCamera(){camera.position.set(8,4.4,10);controls.target.set(0,1.5,0)}function focusZone(z){if(z==='products'){camera.position.set(5,2.7,5);controls.target.set(0,1,-1.3)}else{camera.position.set(7,3,5);controls.target.set(3.5,.8,1.6)}}function toggleAuto(){auto=!auto}function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}function animate(){requestAnimationFrame(animate);if(auto){let t=Date.now()*.00018;camera.position.x=Math.sin(t)*10;camera.position.z=Math.cos(t)*10;camera.lookAt(0,1.2,0)}controls.update();hotspots.forEach((h,i)=>h.rotation.z+=.008+i*.001);renderer.render(scene,camera)}init();
+</script></body></html>
