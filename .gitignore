@@ -1,0 +1,15 @@
+# Phase 6 & Intermediate Reconstruction Work (Never commit to Git)
+phase6_bundle_for_antigravity/
+phase6_bundle_for_antigravity.zip
+v-show-reconstruction-work/
+*.ply
+*.spz
+*.splat
+*.ksplat
+node_modules/
+app_build/node_modules/
+*.log
+.DS_Store
+__pycache__/
+*.pyc
+

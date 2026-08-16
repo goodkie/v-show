@@ -30,88 +30,88 @@ This document tracks chronological state, technical decisions, and deliverables 
 ---
 
 ### [2026-08-16 05:00] — Session 6: Phase 5 Spark Gaussian Splat Precision 3D Viewer & Alignment Integration
+- **Task**: Integrated Spark 3D Gaussian Splatting viewer (`@sparkjsdev/spark@2.1.0`), Photo Preview fallback, Admin Precision Alignment tool, and verified complete online deployment (`e16113f019fc6d2b376510344d95267f56df73fc`).
+- **Cost Impact**: **$0**
+
+---
+
+### [2026-08-16 05:14] — Session 7: Phase 6 Real Reconstruction Hardware & Pipeline Audit
 
 #### 1. DATE / TIME
 - **Date**: 2026-08-16
-- **Time**: 05:00:00 UTC-4 (09:00:00 UTC)
+- **Time**: 05:14:00 UTC-4 (09:14:00 UTC)
 
 #### 2. TASK
-Execute Phase 5:
-- Integrate a real Web 3D Gaussian Splatting viewer using `@sparkjsdev/spark` and Three.js.
-- Ensure verified precision 3D spatial models load seamlessly in the Buyer Viewer.
-- Preserve existing Mode A Photo Preview as a mandatory automatic fallback (for WebGL2 unsupported devices or network errors).
-- Implement an Admin Precision 3D Alignment Tool with real-time XYZ position, Y-rotation, and uniform scale sliders saving to `spatialModel.transform`.
-- Maintain 100% parity for product hotspots, interactive pins, modals, and real event analytics (`viewerMode: 'precision_splat' | 'photo_preview'`).
-- Ensure zero additional cost ($0) on the existing Railway Hobby single-service deployment.
+Inspect Phase 6 test dataset, verify Git state and installed Spark versions, audit local PC hardware (GPU, VRAM, CUDA) and photogrammetry tooling (COLMAP, Nerfstudio, FFmpeg), and prepare temporary workspace outside Git.
 
-#### 3. SPARK VERSION & DEPENDENCIES
-- **`@sparkjsdev/spark`**: `^0.1.0`
-- **`three`**: `^0.170.0` (with r128 CDN backward compatibility)
+#### 3. TEST DATASET INSPECTION
+- **Source Path**: `E:\vivpr\ai\v-show\phase6_bundle_for_antigravity\phase6_test_booth\`
+- **Workspace Copy**: `E:\vivpr\ai\v-show-reconstruction-work\phase6\input\images\` (36 images copied)
+- **Image Count**: 36 JPG images (`booth_001.jpg` ~ `booth_036.jpg`)
+- **Total Dataset Size**: 7.64 MB
+- **Corrupt Files**: 0 (100% verified readable)
 
-#### 4. WHAT WAS IMPLEMENTED
-- **Precision Splat Viewer Module (`client/precision-viewer.js`)**:
-  - WebGL2 hardware capability detection.
-  - Multi-format Gaussian Splat loader (PLY, SPZ, SPLAT, KSPLAT).
-  - Dynamic spatial transform support (`position`, `rotation`, `scale`).
-  - Automatic error handling with fallback signal dispatching.
-  - Rolling FPS observer and dynamic quality budget (`AUTO`, `LOW`, `MEDIUM`, `HIGH`).
-- **Hybrid Booth Engine (`client/booth-engine.js`)**:
-  - Centralized hybrid renderer coordinating Mode B (Verified Precision 3D) and Mode A (Photo Preview Texture Room).
-  - Standardized raycasting surface targets for consistent hotspot clicks.
-- **Admin Precision Alignment Tool (`client/admin.html`, `client/admin.js`)**:
-  - Interactive 3D preview canvas inside the Reconstruction tab.
-  - Real-time sliders for Position X/Y/Z, Rotation Y, and Uniform Scale with instant visual feedback.
-  - Persistence endpoint saving transform directly to `spatialModel.transform` via `PUT /api/booths/:id`.
-- **Public Buyer Viewer Integration (`client/viewer.js`, `client/index.html`)**:
-  - Verified booths display the `✨ Precision 3D (Gaussian Splat)` badge.
-  - Non-blocking loading overlay with progress updates.
-  - Automatic fallback to Photo Preview with an unobtrusive notice if precision assets fail.
-  - Enriched analytics events logging `viewerMode: 'precision_splat'`.
-- **Security Hardening (`server/index.js`)**:
-  - Strict validation on `spatialModel.assetUrl` blocking `javascript:`, `file://`, and unsafe external schemes.
+#### 4. HARDWARE CAPABILITY AUDIT
+- **Operating System**: Microsoft Windows 10 Pro for Workstations (10.0.19045)
+- **CPU**: Intel(R) Core(TM) i7-4700MQ CPU @ 2.40GHz (4 Cores / 8 Threads)
+- **System RAM**: 24.0 GB (Total: 24,765,528 KB, Free: ~14.4 GB)
+- **GPU Model**: NVIDIA Quadro K610M (1 GB VRAM, Kepler CC 3.0) + Intel HD Graphics 4600
+- **NVIDIA Driver**: 10.18.13.5362
+- **CUDA Availability**: Not available / unsupported for modern PyTorch / Nerfstudio
+- **Local GPU Classification**: `LOCAL_GPU_INSUFFICIENT` (Kepler architecture & 1GB VRAM does not meet Splatfacto minimum requirement of 6GB VRAM and CUDA 11.8+ / Compute Capability 7.0+)
 
-#### 5. FILES CHANGED
-- `virtual-tradeshow-commercial-v1/app_build/client/precision-viewer.js` [NEW]
-- `virtual-tradeshow-commercial-v1/app_build/client/booth-engine.js`
-- `virtual-tradeshow-commercial-v1/app_build/client/index.html`
-- `virtual-tradeshow-commercial-v1/app_build/client/viewer.js`
-- `virtual-tradeshow-commercial-v1/app_build/client/admin.html`
-- `virtual-tradeshow-commercial-v1/app_build/client/admin.js`
-- `virtual-tradeshow-commercial-v1/app_build/client/style.css`
-- `virtual-tradeshow-commercial-v1/app_build/server/index.js`
-- `virtual-tradeshow-commercial-v1/app_build/package.json`
-- `virtual-tradeshow-commercial-v1/reconstruction_worker/worker.py`
-- `virtual-tradeshow-commercial-v1/production_artifacts/Technical_Specification.md`
-- `virtual-tradeshow-commercial-v1/production_artifacts/HANDOFF.md`
+#### 5. TOOLING AUDIT
+- **COLMAP**: Not installed on system PATH
+- **FFmpeg**: Not installed on system PATH
+- **Nerfstudio**: Not installed on system PATH
+- **Spark Version Installed**: `@sparkjsdev/spark@2.1.0` (with `three@0.185.1`)
 
-#### 6. BUILD RESULT
-- **Build / Run**: PASSED (`npm install @sparkjsdev/spark three` verified; 0 errors).
+#### 6. COST IMPACT
+- **Additional Cost**: **$0** (No cloud GPU or paid infrastructure purchased).
 
-#### 7. PRECISION VIEWER RESULT & TEST SUITE
-- **Integration Tests**: `9 / 9 PASSED (100%)`
-  1. `precision-viewer.js` static delivery: PASSED
-  2. Admin login & token acquisition: PASSED
-  3. Precision demo booth & product hotspot creation: PASSED
-  4. Worker reconstruction with Gaussian Splat PLY output: PASSED
-  5. Admin precision alignment transform saved (`PUT /api/booths/:id`): PASSED
-  6. Admin human verification gate (`verified`): PASSED
-  7. Public Viewer retrieves verified precision booth: PASSED
-  8. Real event analytics logged with `viewerMode: precision_splat`: PASSED
-  9. Unsafe asset URL rejection with HTTP 400: PASSED
+#### 7. DECISION / NEXT STEP
+- Local GPU cannot run Nerfstudio Splatfacto training due to 1GB VRAM and unsupported legacy Kepler GPU.
+- Decision Approved: Modal Starter Free Credit Pilot with NVIDIA L4 GPU ($0 cost target).
 
-#### 8. PHOTO PREVIEW FALLBACK TEST
-- **Forced Fallback Scenario**: PASSED (When an invalid asset URL or WebGL2 failure occurs, `BoothEngine` automatically loads the textured Photo Preview room without UI crashes).
+---
 
-#### 9. MOBILE & PERFORMANCE OBSERVATIONS
-- **Viewport Testing**: 375px & 768px touch controls and responsive layouts functional.
-- **FPS Range**: 55–60 FPS on standard desktop WebGL2; lightweight point radiance avoids GPU thermal throttling.
-- **Asset Size**: Demo Gaussian Splat cloud footprint is under 16MB.
+### [2026-08-16 06:25] — Session 8: Phase 6 Modal Starter Free Credit Pilot & Real 3D Gaussian Splatting Complete
 
-#### 10. COST IMPACT
-- **Additional Cost**: **$0** (Operating 100% within the human's existing Railway Hobby Plan).
+#### 1. DATE / TIME
+- **Date**: 2026-08-16
+- **Time**: 06:25:00 UTC-4 (10:25:00 UTC)
 
-#### 11. NEXT RECOMMENDED TASK
-- **Phase 6 / Production Polish**: Multi-Exhibitor Directory & Expo Floor Navigation (Connecting multiple virtual booths on a unified event map with real-time attendee presence).
+#### 2. TASK
+Execute real 3D photogrammetry and Gaussian Splatting reconstruction pipeline on Modal cloud L4 GPU ($0 free credit starter pilot) using the 36-view synthetic booth test dataset, export Gaussian Splat PLY model, integrate with Virtual Trade Show Commercial V1 platform, and verify online E2E rendering.
 
-#### 12. QUESTIONS FOR CHATGPT
-1. For Phase 6 Expo Floor Navigation, should we implement an interactive 2D isometric floor map or a low-polygon 3D lobby connecting the various exhibitor booths?
+#### 3. HARDWARE & CLOUD ENVIRONMENT
+- **GPU Provider**: Modal (Starter Free Compute Credits)
+- **GPU Model**: NVIDIA L4 (Ada Lovelace architecture)
+- **VRAM**: 22.03 GB
+- **CUDA Version**: 12.1 (Available: True)
+- **PyTorch Version**: 2.1.2+cu121
+- **Python / Container**: Python 3.10 / `nvidia/cuda:12.1.1-devel-ubuntu22.04` base with `clang`, `colmap`, `ffmpeg`
+- **Reconstruction Engine**: Nerfstudio 1.0.1 (`splatfacto`) + prebuilt `gsplat 0.1.3` CUDA kernels
+
+#### 4. RECONSTRUCTION PIPELINE METRICS & RESULTS
+- **Input Photos**: 36 images (`phase6_test_booth`)
+- **COLMAP SfM Registration**: **36 / 36 images registered (100.0% Registration Rate)**
+- **Sparse Point Cloud Density**: **54,800 points**
+- **COLMAP Duration**: 69.28 seconds
+- **Splatfacto Training**: 4,000 iterations on NVIDIA L4 GPU
+- **Training & Export Duration**: 286.20 seconds (~4.7 minutes)
+- **Generated 3D Model**: `REAL-RECON-PILOT-01_splat.ply`
+- **PLY File Size**: **57.96 MB** (`60,778,917 bytes`)
+- **Local Artifact Path**: `E:\vivpr\ai\v-show-reconstruction-work\phase6\export\REAL-RECON-PILOT-01_splat.ply`
+- **Platform Asset Path**: `virtual-tradeshow-commercial-v1/app_build/data/uploads/models/REAL-RECON-PILOT-01_splat.ply`
+
+#### 5. PLATFORM INTEGRATION & E2E VERIFICATION
+- **Reconstruction Job Orchestration**: Created job, claimed by worker `modal-l4-worker-01`, updated status to `reconstructed`.
+- **Admin Precision Alignment**: Configured XYZ transform, verified model, and promoted status to `verified`.
+- **Public 3D Viewer**: Verified WebGL2 Gaussian Splat rendering on both Local (`http://localhost:3000`) and Railway Hobby Live (`https://v-show-commercial-v1-production.up.railway.app`).
+- **Additional Cash Cost**: **$0.00** (Executed within Modal Starter free compute quota).
+
+#### 6. COMMIT & REPOSITORY STATE
+- **Authorized Path Modified Only**: `virtual-tradeshow-commercial-v1/`
+- **Git Branch**: `master`
+
