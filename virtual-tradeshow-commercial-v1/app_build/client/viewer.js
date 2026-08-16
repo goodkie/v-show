@@ -1,6 +1,6 @@
 /* ============================================================
    Virtual Trade Show Commercial V1 — 3D Viewer Engine
-   Three.js Space Rendering, Real Events & WebRTC (Phase 3)
+   Spark Precision Splatting, Photo Fallback & Realtime Engagement (Phase 5)
 ============================================================ */
 
 let viewerEngine = null;
@@ -29,6 +29,8 @@ const navBoothName = document.getElementById('nav-booth-name');
 const badgeRecon = document.getElementById('badge-recon-status');
 const hudTitle = document.getElementById('hud-booth-title');
 const hudDesc = document.getElementById('hud-booth-desc');
+const loadingOverlay = document.getElementById('viewer-loading-overlay');
+const loadingSubtitle = document.getElementById('loading-subtitle');
 
 // Initialize Viewer
 async function initViewer() {
@@ -47,6 +49,10 @@ async function initViewer() {
 async function trackEvent(type, metadata = {}, productId = null) {
   if (!currentBooth) return;
   try {
+    const viewerMode = (currentBooth.reconstructionStatus === 'verified' && currentBooth.spatialModel?.assetUrl) 
+      ? 'precision_splat' 
+      : 'photo_preview';
+
     await fetch('/api/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -55,7 +61,10 @@ async function trackEvent(type, metadata = {}, productId = null) {
         productId,
         sessionId: currentSessionId,
         type,
-        metadata
+        metadata: {
+          ...metadata,
+          viewerMode
+        }
       })
     });
   } catch (err) {
@@ -63,9 +72,11 @@ async function trackEvent(type, metadata = {}, productId = null) {
   }
 }
 
-// 2. Load Booth & Build 3D Environment using Shared BoothEngine
+// 2. Load Booth & Build 3D Environment using Hybrid BoothEngine
 async function loadBoothData(boothId) {
   try {
+    if (loadingOverlay) loadingOverlay.style.display = 'flex';
+
     const boothRes = await fetch(`/api/booths/${boothId}`);
     if (!boothRes.ok) {
       if (boothRes.status === 404) {
@@ -75,6 +86,7 @@ async function loadBoothData(boothId) {
         hudTitle.textContent = '부스 로딩 실패';
         hudDesc.textContent = '부스 데이터를 불러오는 중 오류가 발생했습니다.';
       }
+      if (loadingOverlay) loadingOverlay.style.display = 'none';
       return false;
     }
     currentBooth = await boothRes.json();
@@ -94,24 +106,48 @@ async function loadBoothData(boothId) {
       viewerEngine = BoothEngine.initScene(viewport);
       animate();
     }
-    raycastSurfaces = BoothEngine.buildBooth(viewerEngine.scene, currentBooth);
+
+    // Build Hybrid 3D Scene (Spark Precision Splat or Photo Preview Fallback)
+    raycastSurfaces = await BoothEngine.buildBooth(viewerEngine.scene, currentBooth, {
+      qualityPreset: 'AUTO',
+      onProgress: (percent, msg) => {
+        if (loadingSubtitle) loadingSubtitle.textContent = `[${percent}%] ${msg}`;
+      },
+      onFallback: (reason) => {
+        showToast(`안내: 정밀 3D 에셋(${reason})을 대체하여 Photo Preview 모드로 자동 전환되었습니다.`);
+        updateStatusBadge('photo_preview');
+      }
+    });
 
     renderHotspots(hotspots);
+    if (loadingOverlay) {
+      setTimeout(() => {
+        loadingOverlay.style.opacity = '0';
+        setTimeout(() => loadingOverlay.style.display = 'none', 300);
+      }, 200);
+    }
     return true;
 
   } catch (error) {
     console.error('Error loading booth data:', error);
     hudTitle.textContent = '네트워크 오류';
     hudDesc.textContent = '서버와의 통신이 원활하지 않습니다.';
+    if (loadingOverlay) loadingOverlay.style.display = 'none';
     return false;
   }
 }
 
 function updateStatusBadge(status) {
   badgeRecon.className = 'badge';
-  if (status === 'reconstructed' || status === 'verified') {
+  if (status === 'verified') {
+    badgeRecon.classList.add('badge-verified');
+    badgeRecon.textContent = '✨ Precision 3D (Gaussian Splat)';
+  } else if (status === 'reconstructed') {
     badgeRecon.classList.add('badge-reconstructed');
-    badgeRecon.textContent = '3D Precision Reconstructed';
+    badgeRecon.textContent = '3D Reconstructed (검증 대기)';
+  } else if (status === 'processing') {
+    badgeRecon.classList.add('badge-preview');
+    badgeRecon.textContent = 'Photo Preview (3D 연산 중)';
   } else {
     badgeRecon.classList.add('badge-preview');
     badgeRecon.textContent = 'Photo Preview Mode';
@@ -502,7 +538,6 @@ async function startWebRTCCall() {
 
     createPeerConnection();
 
-    // Add local tracks to RTCPeerConnection
     localStream.getTracks().forEach(track => {
       peerConnection.addTrack(track, localStream);
     });
@@ -511,7 +546,6 @@ async function startWebRTCCall() {
     btnEnd.style.display = 'inline-flex';
     statusText.textContent = '상태: 상대방 연결 대기 중 (STUN P2P)';
 
-    // Create and send offer
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
 

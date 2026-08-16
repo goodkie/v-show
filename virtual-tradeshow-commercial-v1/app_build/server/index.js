@@ -269,6 +269,12 @@ app.post('/api/booths', requireAuth, async (req, res) => {
 
 app.put('/api/booths/:id', requireAuth, async (req, res) => {
   try {
+    if (req.body.spatialModel && req.body.spatialModel.assetUrl) {
+      const url = req.body.spatialModel.assetUrl;
+      if (!url.startsWith('/') && !url.startsWith('https://') && !url.startsWith('http://localhost')) {
+        return res.status(400).json({ error: 'Invalid or unsafe asset URL. Only HTTPS or relative paths permitted.' });
+      }
+    }
     const updated = await db.updateBooth(req.params.id, req.body);
     if (!updated) return res.status(404).json({ error: 'Booth not found' });
     res.json(updated);

@@ -1,91 +1,121 @@
-/**
- * Virtual Trade Show Commercial V1 — Shared Booth 3D Engine
- * Standardized coordinate system and raycasting surfaces for both Admin & Buyer Viewer.
- */
+/* ============================================================
+   Virtual Trade Show Commercial V1 — Shared 3D Booth Engine
+   Standardized Three.js Coordinates & Hybrid Precision Splat Adapter (Phase 5)
+============================================================ */
 
-window.BoothEngine = (function() {
-  const textureLoader = new THREE.TextureLoader();
-
-  /**
-   * Initializes a Three.js scene, camera, renderer, and OrbitControls
-   */
-  function initScene(container, options = {}) {
+const BoothEngine = {
+  // 1. Standard Scene Initialization
+  initScene(container) {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0b0f17);
     scene.fog = new THREE.FogExp2(0x0b0f17, 0.035);
 
-    const aspect = container.clientWidth / container.clientHeight;
-    const camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(
+      45,
+      container.clientWidth / container.clientHeight,
+      0.1,
+      100
+    );
     camera.position.set(0, 2.2, 7.5);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+
+    container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.maxPolarAngle = Math.PI / 2 + 0.05;
-    controls.minDistance = 2;
-    controls.maxDistance = 15;
+    controls.maxPolarAngle = Math.PI / 2 + 0.05; // Slightly below horizon
+    controls.minDistance = 2.0;
+    controls.maxDistance = 14.0;
     controls.target.set(0, 1.2, -1);
 
-    // Standard Booth Studio Lighting
+    // Standard Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
     scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0xe0f2fe, 1.2);
-    dirLight.position.set(5, 12, 8);
-    dirLight.castShadow = true;
-    scene.add(dirLight);
+    const mainLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    mainLight.position.set(5, 8, 5);
+    mainLight.castShadow = true;
+    mainLight.shadow.mapSize.width = 1024;
+    mainLight.shadow.mapSize.height = 1024;
+    scene.add(mainLight);
 
-    const accentLight = new THREE.PointLight(0x06b6d4, 2.5, 15);
-    accentLight.position.set(0, 4, -2);
-    scene.add(accentLight);
+    const blueAccentLight = new THREE.PointLight(0x06b6d4, 1.5, 15);
+    blueAccentLight.position.set(-3, 3, -2);
+    scene.add(blueAccentLight);
 
-    const resizeHandler = () => {
-      if (!camera || !renderer || !container) return;
+    const warmAccentLight = new THREE.PointLight(0xf59e0b, 1.2, 15);
+    warmAccentLight.position.set(3, 2, -2);
+    scene.add(warmAccentLight);
+
+    window.addEventListener('resize', () => {
+      if (!container.clientWidth || !container.clientHeight) return;
       camera.aspect = container.clientWidth / container.clientHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(container.clientWidth, container.clientHeight);
-    };
-    window.addEventListener('resize', resizeHandler);
-
-    return {
-      scene,
-      camera,
-      renderer,
-      controls,
-      container,
-      dispose: () => {
-        window.removeEventListener('resize', resizeHandler);
-        renderer.dispose();
-      }
-    };
-  }
-
-  /**
-   * Constructs the standardized 3D Booth Environment & returns clickable raycast surfaces
-   */
-  function buildBooth(scene, booth) {
-    // Clean existing booth meshes
-    const toRemove = [];
-    scene.traverse(child => {
-      if (child.isMesh && child.userData && child.userData.boothMesh) {
-        toRemove.push(child);
-      }
     });
-    toRemove.forEach(m => scene.remove(m));
 
-    const raycastSurfaces = [];
+    return { scene, camera, renderer, controls };
+  },
 
-    // 1. Floor
-    const floorGeo = new THREE.PlaneGeometry(24, 24);
+  // 2. Hybrid Booth Construction (Precision Splat vs Photo Preview)
+  async buildBooth(scene, booth, options = {}) {
+    // Clear existing booth meshes
+    const existingPhotoRoom = scene.getObjectByName('PhotoPreviewRoom');
+    if (existingPhotoRoom) scene.remove(existingPhotoRoom);
+
+    const existingPrecisionRoom = scene.getObjectByName('PrecisionSplatBooth');
+    if (existingPrecisionRoom) scene.remove(existingPrecisionRoom);
+
+    const isVerifiedPrecision = booth.reconstructionStatus === 'verified' && 
+                                booth.spatialModel && 
+                                booth.spatialModel.assetUrl;
+
+    const forcePhotoPreview = options.forcePhotoPreview || false;
+
+    // Branch A: Verified Precision Gaussian Splat Mode
+    if (isVerifiedPrecision && !forcePhotoPreview && window.PrecisionSplatViewer) {
+      const precisionViewer = new PrecisionSplatViewer({
+        scene,
+        qualityPreset: options.qualityPreset || 'AUTO',
+        onProgress: options.onProgress,
+        onError: options.onError,
+        onFallback: (reason) => {
+          console.warn(`[BoothEngine] Precision load fallback triggered (${reason}). Rendering Photo Preview.`);
+          BoothEngine.buildPhotoPreviewBooth(scene, booth);
+          if (options.onFallback) options.onFallback(reason);
+        }
+      });
+
+      const loaded = await precisionViewer.load(booth.spatialModel, booth.spatialModel.transform);
+      if (loaded) {
+        return BoothEngine.getRaycastSurfaces(scene);
+      }
+    }
+
+    // Branch B: Standard Photo Preview Mode (Default & Safe Fallback)
+    return BoothEngine.buildPhotoPreviewBooth(scene, booth);
+  },
+
+  buildPhotoPreviewBooth(scene, booth) {
+    const boothGroup = new THREE.Group();
+    boothGroup.name = 'PhotoPreviewRoom';
+
+    const textureLoader = new THREE.TextureLoader();
+    const photos = booth.photos || [];
+
+    // Floor Platform
+    const floorGeo = new THREE.PlaneGeometry(12, 12);
     const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x111827,
+      color: 0x0f172a,
       roughness: 0.2,
       metalness: 0.5
     });
@@ -93,144 +123,130 @@ window.BoothEngine = (function() {
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = -0.5;
     floor.receiveShadow = true;
-    floor.userData = { boothMesh: true, surfaceName: 'floor' };
-    scene.add(floor);
-    raycastSurfaces.push(floor);
+    floor.name = 'BoothFloor';
+    boothGroup.add(floor);
 
-    // 2. Booth Platform
-    const platformGeo = new THREE.CylinderGeometry(6.5, 6.8, 0.2, 32);
-    const platformMat = new THREE.MeshStandardMaterial({
+    // Carpet / Inner Stand
+    const carpetGeo = new THREE.PlaneGeometry(9, 7);
+    const carpetMat = new THREE.MeshStandardMaterial({
       color: 0x1e293b,
-      roughness: 0.4,
-      metalness: 0.3
+      roughness: 0.8
     });
-    const platform = new THREE.Mesh(platformGeo, platformMat);
-    platform.position.set(0, -0.4, -1);
-    platform.receiveShadow = true;
-    platform.userData = { boothMesh: true, surfaceName: 'platform' };
-    scene.add(platform);
-    raycastSurfaces.push(platform);
+    const carpet = new THREE.Mesh(carpetGeo, carpetMat);
+    carpet.rotation.x = -Math.PI / 2;
+    carpet.position.set(0, -0.48, -1);
+    carpet.receiveShadow = true;
+    carpet.name = 'BoothCarpet';
+    boothGroup.add(carpet);
 
-    // 3. Grid Helper
-    const grid = new THREE.GridHelper(24, 24, 0x0284c7, 0x1e293b);
-    grid.position.y = -0.49;
-    grid.userData = { boothMesh: true };
-    scene.add(grid);
-
-    // 4. Backwall Main Display Panel (Mode A: Photo Preview)
-    const backwallGeo = new THREE.BoxGeometry(10, 4.5, 0.2);
+    // Backwall with Photo Texture
+    const backwallGeo = new THREE.PlaneGeometry(11, 4.2);
     let backwallMat;
-    if (booth.photos && booth.photos.length > 0) {
-      const mainPhotoTex = textureLoader.load(booth.photos[0]);
-      backwallMat = [
-        new THREE.MeshStandardMaterial({ color: 0x1e293b }),
-        new THREE.MeshStandardMaterial({ color: 0x1e293b }),
-        new THREE.MeshStandardMaterial({ color: 0x1e293b }),
-        new THREE.MeshStandardMaterial({ color: 0x1e293b }),
-        new THREE.MeshStandardMaterial({ map: mainPhotoTex, roughness: 0.5 }), // Front display
-        new THREE.MeshStandardMaterial({ color: 0x0f172a })
-      ];
+    if (photos.length > 0) {
+      const tex = textureLoader.load(photos[0]);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      backwallMat = new THREE.MeshStandardMaterial({
+        map: tex,
+        roughness: 0.4
+      });
     } else {
-      backwallMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
+      backwallMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
     }
     const backwall = new THREE.Mesh(backwallGeo, backwallMat);
-    backwall.position.set(0, 1.85, -5.5);
-    backwall.castShadow = true;
+    backwall.position.set(0, 1.6, -5.5);
     backwall.receiveShadow = true;
-    backwall.userData = { boothMesh: true, surfaceName: 'backwall' };
-    scene.add(backwall);
-    raycastSurfaces.push(backwall);
-
-    // 5. Left & Right Wing Panels
-    const wingGeo = new THREE.BoxGeometry(4.5, 3.8, 0.15);
+    backwall.name = 'BoothBackwall';
+    boothGroup.add(backwall);
 
     // Left Wing
-    let leftMat;
-    if (booth.photos && booth.photos.length > 1) {
-      leftMat = new THREE.MeshStandardMaterial({ map: textureLoader.load(booth.photos[1]), roughness: 0.5 });
+    const leftWallGeo = new THREE.PlaneGeometry(9, 4.2);
+    let leftWallMat;
+    if (photos.length > 1) {
+      const tex2 = textureLoader.load(photos[1]);
+      leftWallMat = new THREE.MeshStandardMaterial({ map: tex2, roughness: 0.4 });
     } else {
-      leftMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
+      leftWallMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
     }
-    const leftWing = new THREE.Mesh(wingGeo, leftMat);
-    leftWing.position.set(-5.2, 1.5, -3.2);
-    leftWing.rotation.y = Math.PI / 4;
-    leftWing.userData = { boothMesh: true, surfaceName: 'leftWing' };
-    scene.add(leftWing);
-    raycastSurfaces.push(leftWing);
+    const leftWall = new THREE.Mesh(leftWallGeo, leftWallMat);
+    leftWall.rotation.y = Math.PI / 2;
+    leftWall.position.set(-5.5, 1.6, -1);
+    leftWall.name = 'BoothLeftWall';
+    boothGroup.add(leftWall);
 
     // Right Wing
-    let rightMat;
-    if (booth.photos && booth.photos.length > 2) {
-      rightMat = new THREE.MeshStandardMaterial({ map: textureLoader.load(booth.photos[2]), roughness: 0.5 });
+    const rightWallGeo = new THREE.PlaneGeometry(9, 4.2);
+    let rightWallMat;
+    if (photos.length > 2) {
+      const tex3 = textureLoader.load(photos[2]);
+      rightWallMat = new THREE.MeshStandardMaterial({ map: tex3, roughness: 0.4 });
     } else {
-      rightMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
+      rightWallMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
     }
-    const rightWing = new THREE.Mesh(wingGeo, rightMat);
-    rightWing.position.set(5.2, 1.5, -3.2);
-    rightWing.rotation.y = -Math.PI / 4;
-    rightWing.userData = { boothMesh: true, surfaceName: 'rightWing' };
-    scene.add(rightWing);
-    raycastSurfaces.push(rightWing);
+    const rightWall = new THREE.Mesh(rightWallGeo, rightWallMat);
+    rightWall.rotation.y = -Math.PI / 2;
+    rightWall.position.set(5.5, 1.6, -1);
+    rightWall.name = 'BoothRightWall';
+    boothGroup.add(rightWall);
 
-    // 6. Product Pedestals
-    const p1 = createPedestalMesh(-2.8, -0.4, -3.5, 0.8, 0.9, 'pedestalLeft');
-    const p2 = createPedestalMesh(2.6, -0.4, -3.2, 0.8, 0.9, 'pedestalRight');
-    const p3 = createPedestalMesh(0.0, -0.4, -1.8, 1.2, 0.7, 'pedestalCenter');
-    
-    scene.add(p1); raycastSurfaces.push(p1);
-    scene.add(p2); raycastSurfaces.push(p2);
-    scene.add(p3); raycastSurfaces.push(p3);
+    // Product Pedestals
+    const pedestalPositions = [
+      { x: -2.8, y: 0.1, z: -3.5 },
+      { x: 2.6, y: -0.05, z: -3.2 },
+      { x: 0.1, y: 0.4, z: -4.8 }
+    ];
 
-    return raycastSurfaces;
-  }
-
-  function createPedestalMesh(x, y, z, radius, height, name) {
-    const geo = new THREE.CylinderGeometry(radius, radius * 1.1, height, 24);
-    const mat = new THREE.MeshStandardMaterial({
-      color: 0x334155,
-      roughness: 0.3,
-      metalness: 0.7
+    pedestalPositions.forEach((pos, idx) => {
+      const pedGeo = new THREE.CylinderGeometry(0.7, 0.8, 0.9, 32);
+      const pedMat = new THREE.MeshStandardMaterial({
+        color: 0x0f766e,
+        roughness: 0.3,
+        metalness: 0.4
+      });
+      const ped = new THREE.Mesh(pedGeo, pedMat);
+      ped.position.set(pos.x, pos.y, pos.z);
+      ped.receiveShadow = true;
+      ped.name = `BoothPedestal_${idx}`;
+      boothGroup.add(ped);
     });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(x, y + height / 2, z);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    mesh.userData = { boothMesh: true, surfaceName: name };
-    return mesh;
-  }
 
-  /**
-   * Raycast from mouse/touch coordinate against valid booth surfaces
-   */
-  function raycastBooth(event, camera, surfaces, container) {
+    scene.add(boothGroup);
+    return BoothEngine.getRaycastSurfaces(scene);
+  },
+
+  // 3. Extract Interactive Raycasting Surfaces
+  getRaycastSurfaces(scene) {
+    const surfaces = [];
+    scene.traverse(child => {
+      if (child.isMesh && child.visible) {
+        surfaces.push(child);
+      }
+    });
+    return surfaces;
+  },
+
+  // 4. Raycast surface point from pointer click
+  raycastBooth(event, container, camera, surfaces) {
     const rect = container.getBoundingClientRect();
-    const clientX = event.clientX || (event.touches && event.touches[0] ? event.touches[0].clientX : null);
-    const clientY = event.clientY || (event.touches && event.touches[0] ? event.touches[0].clientY : null);
-
-    if (clientX === null || clientY === null) return null;
-
-    const mouse = new THREE.Vector2();
-    mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    const mouse = new THREE.Vector2(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1
+    );
 
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(surfaces, true);
 
-    const intersects = raycaster.intersectObjects(surfaces, false);
     if (intersects.length > 0) {
       const hit = intersects[0];
       return {
-        point: hit.point,
-        normal: hit.face ? hit.face.normal : null,
-        surface: hit.object.userData.surfaceName || 'surface'
+        x: Number(hit.point.x.toFixed(3)),
+        y: Number(hit.point.y.toFixed(3)),
+        z: Number(hit.point.z.toFixed(3))
       };
     }
     return null;
   }
+};
 
-  return {
-    initScene,
-    buildBooth,
-    raycastBooth
-  };
-})();
+window.BoothEngine = BoothEngine;

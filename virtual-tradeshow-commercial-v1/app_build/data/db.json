@@ -134,6 +134,42 @@
       },
       "createdAt": "2026-08-16T08:53:14.461Z",
       "updatedAt": "2026-08-16T08:53:14.574Z"
+    },
+    {
+      "id": "booth-b0b6a842",
+      "exhibitorId": "user-admin-1",
+      "name": "Spark Gaussian Robotics Pavilion 2026",
+      "description": "",
+      "themeColor": "#0284c7",
+      "status": "published",
+      "reconstructionStatus": "verified",
+      "reconstructionJobId": "recon-job-c6eac7df",
+      "photos": [
+        "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158",
+        "https://images.unsplash.com/photo-1581092335397-9583fe92d232",
+        "https://images.unsplash.com/photo-1581092160607-ee22621dd758",
+        "https://images.unsplash.com/photo-1518770660439-4636190af475"
+      ],
+      "spatialModel": {
+        "type": "gaussian_splat",
+        "assetUrl": "/uploads/models/booth-b0b6a842_splat.ply",
+        "format": "ply",
+        "transform": {
+          "position": [
+            0.35,
+            0,
+            -0.2
+          ],
+          "rotation": [
+            0,
+            20,
+            0
+          ],
+          "scale": 1.1
+        }
+      },
+      "createdAt": "2026-08-16T08:59:55.714Z",
+      "updatedAt": "2026-08-16T08:59:55.885Z"
     }
   ],
   "products": [
@@ -262,6 +298,23 @@
       "sampleAvailable": true,
       "createdAt": "2026-08-16T08:33:00.581Z",
       "updatedAt": "2026-08-16T08:33:00.581Z"
+    },
+    {
+      "id": "prod-ca961d45",
+      "boothId": "booth-b0b6a842",
+      "name": "Spark-AI Vision Sensor Pro",
+      "sku": "SPK-VIS-01",
+      "category": "General",
+      "moq": 1,
+      "price": 4500,
+      "contactForPrice": false,
+      "currency": "USD",
+      "description": "",
+      "images": [],
+      "specifications": {},
+      "sampleAvailable": false,
+      "createdAt": "2026-08-16T08:59:55.744Z",
+      "updatedAt": "2026-08-16T08:59:55.744Z"
     }
   ],
   "hotspots": [
@@ -334,6 +387,20 @@
       "type": "product",
       "createdAt": "2026-08-16T08:33:00.605Z",
       "updatedAt": "2026-08-16T08:33:00.627Z"
+    },
+    {
+      "id": "hs-0619de2d",
+      "boothId": "booth-b0b6a842",
+      "productId": "prod-ca961d45",
+      "position": {
+        "x": 1.2,
+        "y": 0.5,
+        "z": -2.8
+      },
+      "label": "Spark Sensor Pin",
+      "type": "product",
+      "createdAt": "2026-08-16T08:59:55.768Z",
+      "updatedAt": "2026-08-16T08:59:55.768Z"
     }
   ],
   "leads": [
@@ -471,6 +538,17 @@
         "requestedTime": "2026-09-01T14:00"
       },
       "createdAt": "2026-08-16T08:33:00.747Z"
+    },
+    {
+      "id": "evt-8f446db2",
+      "boothId": "booth-b0b6a842",
+      "productId": "prod-ca961d45",
+      "sessionId": null,
+      "type": "hotspot_click",
+      "metadata": {
+        "viewerMode": "precision_splat"
+      },
+      "createdAt": "2026-08-16T08:59:55.910Z"
     }
   ],
   "reconstructionJobs": [
@@ -536,6 +614,52 @@
         "registeredImages": 4,
         "totalImages": 4,
         "sparsePoints": 112000,
+        "warnings": []
+      },
+      "error": null
+    },
+    {
+      "id": "recon-job-c6eac7df",
+      "boothId": "booth-b0b6a842",
+      "status": "verified",
+      "engine": "colmap_nerfstudio_splatfacto",
+      "qualityPreset": "standard",
+      "sourcePhotoCount": 4,
+      "photos": [
+        "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158",
+        "https://images.unsplash.com/photo-1581092335397-9583fe92d232",
+        "https://images.unsplash.com/photo-1581092160607-ee22621dd758",
+        "https://images.unsplash.com/photo-1518770660439-4636190af475"
+      ],
+      "progress": 100,
+      "currentStage": "completed",
+      "createdAt": "2026-08-16T08:59:55.790Z",
+      "startedAt": "2026-08-16T08:59:55.811Z",
+      "completedAt": "2026-08-16T08:59:55.833Z",
+      "workerId": "spark-test-worker",
+      "output": {
+        "type": "gaussian_splat",
+        "url": "/uploads/models/booth-b0b6a842_splat.ply",
+        "format": "ply",
+        "sizeBytes": 15600000,
+        "transform": {
+          "position": [
+            0.2,
+            -0.1,
+            0
+          ],
+          "rotation": [
+            0,
+            15,
+            0
+          ],
+          "scale": 1.05
+        }
+      },
+      "diagnostics": {
+        "registeredImages": 4,
+        "totalImages": 4,
+        "sparsePoints": 125000,
         "warnings": []
       },
       "error": null

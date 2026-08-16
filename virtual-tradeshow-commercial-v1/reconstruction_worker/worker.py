@@ -106,7 +106,12 @@ def run_dry_run_pipeline(job):
         "type": "gaussian_splat",
         "url": f"/uploads/models/{booth_id}_splat.ply",
         "format": "ply",
-        "sizeBytes": 14850000
+        "sizeBytes": 14850000,
+        "transform": {
+            "position": [0, 0, 0],
+            "rotation": [0, 0, 0],
+            "scale": 1.0
+        }
     }
 
     diagnostics = {

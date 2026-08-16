@@ -1,6 +1,6 @@
 /* ============================================================
    Virtual Trade Show Commercial V1 — Exhibitor Admin Console
-   Visual 3D Editor, Precision Reconstruction & Analytics (Phase 4)
+   Precision Splat Alignment, 3D Hotspot Editor & Analytics (Phase 5)
 ============================================================ */
 
 let currentBooth = null;
@@ -8,6 +8,8 @@ let products = [];
 let hotspots = [];
 let editorEngine = null;
 let editorRaycastSurfaces = [];
+let alignEngine = null;
+let alignSplatViewer = null;
 let isPlacementMode = false;
 let selectedHotspotId = null;
 let authToken = localStorage.getItem('vts_admin_token') || null;
@@ -86,6 +88,7 @@ tabButtons.forEach(btn => {
       setTimeout(() => init3DEditor(), 100);
     } else if (tabName === 'reconstruction') {
       loadReconstructionData();
+      setTimeout(() => initAlignmentViewer(), 150);
     }
   });
 });
@@ -154,8 +157,8 @@ function getReconstructionLabel(status) {
     case 'photo_preview': return 'Photo Preview (기본 텍스처)';
     case 'reconstruction_pending': return '⏳ 3D 재구성 큐 대기 중 (Pending)';
     case 'processing': return '⚙️ GPU 정밀 3D 재구성 연산 중 (Processing)';
-    case 'reconstructed': return '✨ 3D Gaussian Splatting 재구성 완료 (검증 대기)';
-    case 'verified': return '🏆 검증 및 퍼블릭 승인 완료 (Verified 3D)';
+    case 'reconstructed': return '✨ 3D Gaussian Splatting 재구성 완료 (정렬 & 검증 대기)';
+    case 'verified': return '🏆 검증 및 퍼블릭 승인 완료 (Spark 3D Gaussian Splatting)';
     case 'failed': return '❌ 3D 재구성 실패 (Failed)';
     default: return status;
   }
@@ -176,7 +179,7 @@ function renderBoothSettings() {
   });
 }
 
-// 5. Precision Reconstruction Dashboard (Phase 4)
+// 5. Precision Reconstruction Dashboard & Alignment (Phase 5)
 async function loadReconstructionData() {
   if (!currentBooth) return;
   try {
@@ -184,7 +187,6 @@ async function loadReconstructionData() {
     const data = await res.json();
     renderReconstructionDashboard(data);
 
-    // If job is processing or pending, poll every 3 seconds
     if (data.activeJob && (data.activeJob.status === 'pending' || data.activeJob.status === 'processing')) {
       if (!reconPollTimer) {
         reconPollTimer = setTimeout(() => {
@@ -202,7 +204,6 @@ function renderReconstructionDashboard(data) {
   const validation = data.validation || { quality: 'poor', validCount: 0, canReconstruct: false };
   const job = data.activeJob;
 
-  // Validation Stats
   document.getElementById('val-photo-count').textContent = `${validation.validCount} 장`;
   
   const qualityBadge = document.getElementById('badge-capture-quality');
@@ -230,7 +231,6 @@ function renderReconstructionDashboard(data) {
     canReconText.style.color = '#ef4444';
   }
 
-  // Active Job & Stage
   const statusBadge = document.getElementById('recon-current-status-badge');
   const jobIdText = document.getElementById('recon-job-id-text');
   const progressPercent = document.getElementById('recon-progress-percent');
@@ -268,11 +268,6 @@ function renderReconstructionDashboard(data) {
     stageText.textContent = formatStageName(job.currentStage);
     workerText.textContent = `Worker: ${job.workerId || '할당 대기 중'}`;
 
-    document.getElementById('diag-reg-cameras').textContent = `${job.diagnostics?.registeredImages || 0} / ${job.diagnostics?.totalImages || validation.validCount}`;
-    document.getElementById('diag-sparse-pts').textContent = `${(job.diagnostics?.sparsePoints || 0).toLocaleString()} pts`;
-    document.getElementById('diag-asset-format').textContent = job.output?.format ? `Gaussian Splat (${job.output.format.toUpperCase()})` : '생성 대기 중';
-
-    // Action Buttons State
     if (job.status === 'pending' || job.status === 'processing') {
       btnTrigger.style.display = 'none';
       btnCancel.style.display = 'inline-flex';
@@ -288,7 +283,7 @@ function renderReconstructionDashboard(data) {
       btnTrigger.textContent = '🔄 정밀 3D 재구성 다시 실행';
       btnCancel.style.display = 'none';
       btnVerify.style.display = 'none';
-    } else { // failed
+    } else {
       btnTrigger.style.display = 'inline-flex';
       btnTrigger.textContent = '🔄 3D 재구성 재시도';
       btnCancel.style.display = 'none';
@@ -309,19 +304,105 @@ function renderReconstructionDashboard(data) {
 function formatStageName(stage) {
   switch (stage) {
     case 'preparing': return '1/7 이미지 다운로드 및 검증 (Preparing)';
-    case 'colmap_feature_extraction': return '2/7 SIFT 시각적 특징점 추출 (COLMAP)';
+    case 'colmap_feature_extraction': return '2/7 SIFT 특징점 추출 (COLMAP)';
     case 'colmap_matching': return '3/7 전수 특징점 매칭 및 에피폴라 기하 분석';
     case 'colmap_mapping': return '4/7 3D 포인트 클라우드 번들 조정 (Mapper)';
     case 'nerfstudio_processing': return '5/7 좌표계 변환 및 데이터셋 패킹';
     case 'splat_training': return '6/7 3D Gaussian Splatting 학습 (Splatfacto)';
-    case 'splat_export': return '7/7 웹 최적화 PLY 공간 에셋 익스포트';
+    case 'splat_export': return '7/7 웹 최적화 PLY/SPZ 공간 에셋 익스포트';
     case 'uploading_result': return '완료 결과 업로드 및 메타데이터 등록';
     case 'completed': return '✨ 정밀 3D 재구성 완료';
     default: return stage || '준비 중';
   }
 }
 
-// 6. Products CRUD Handlers
+// 6. Precision Alignment 3D Viewport Handler
+function initAlignmentViewer() {
+  const canvasContainer = document.getElementById('align-3d-canvas');
+  if (!canvasContainer || !currentBooth) return;
+
+  if (!alignEngine) {
+    alignEngine = BoothEngine.initScene(canvasContainer);
+    animateAlign();
+  }
+
+  // Load Precision Splat Mesh into Alignment Scene
+  const spatialModel = currentBooth.spatialModel || {
+    type: 'gaussian_splat',
+    assetUrl: '/uploads/models/demo_booth_splat.ply',
+    format: 'ply'
+  };
+
+  const transform = spatialModel.transform || {
+    position: [0, 0, 0],
+    rotation: [0, 0, 0],
+    scale: 1.0
+  };
+
+  // Sync Slider UI with existing Transform
+  document.getElementById('slider-pos-x').value = transform.position?.[0] || 0;
+  document.getElementById('val-pos-x').textContent = (transform.position?.[0] || 0).toFixed(2);
+
+  document.getElementById('slider-pos-y').value = transform.position?.[1] || 0;
+  document.getElementById('val-pos-y').textContent = (transform.position?.[1] || 0).toFixed(2);
+
+  document.getElementById('slider-pos-z').value = transform.position?.[2] || 0;
+  document.getElementById('val-pos-z').textContent = (transform.position?.[2] || 0).toFixed(2);
+
+  document.getElementById('slider-rot-y').value = transform.rotation?.[1] || 0;
+  document.getElementById('val-rot-y').textContent = `${transform.rotation?.[1] || 0}°`;
+
+  document.getElementById('slider-scale').value = transform.scale || 1.0;
+  document.getElementById('val-scale').textContent = `${(transform.scale || 1.0).toFixed(2)}x`;
+
+  if (!alignSplatViewer) {
+    alignSplatViewer = new PrecisionSplatViewer({
+      scene: alignEngine.scene,
+      qualityPreset: 'MEDIUM'
+    });
+  }
+
+  alignSplatViewer.load(spatialModel, transform);
+}
+
+function updateAlignTransformFromUI() {
+  if (!alignSplatViewer) return;
+
+  const posX = parseFloat(document.getElementById('slider-pos-x').value);
+  const posY = parseFloat(document.getElementById('slider-pos-y').value);
+  const posZ = parseFloat(document.getElementById('slider-pos-z').value);
+  const rotY = parseFloat(document.getElementById('slider-rot-y').value);
+  const scale = parseFloat(document.getElementById('slider-scale').value);
+
+  document.getElementById('val-pos-x').textContent = posX.toFixed(2);
+  document.getElementById('val-pos-y').textContent = posY.toFixed(2);
+  document.getElementById('val-pos-z').textContent = posZ.toFixed(2);
+  document.getElementById('val-rot-y').textContent = `${rotY}°`;
+  document.getElementById('val-scale').textContent = `${scale.toFixed(2)}x`;
+
+  alignSplatViewer.applyTransform({
+    position: [posX, posY, posZ],
+    rotation: [0, rotY, 0],
+    scale: scale
+  });
+}
+
+function animateAlign() {
+  requestAnimationFrame(animateAlign);
+  if (alignEngine && alignEngine.controls) {
+    alignEngine.controls.update();
+    alignEngine.renderer.render(alignEngine.scene, alignEngine.camera);
+    if (alignSplatViewer) {
+      alignSplatViewer.updateFrameMetrics();
+      const fpsEl = document.getElementById('align-fps-badge');
+      if (fpsEl && alignSplatViewer.frameCount % 20 === 0) {
+        fpsEl.textContent = `${alignSplatViewer.getFPS()} FPS`;
+      }
+    }
+  }
+}
+
+// 7. Products CRUD Handlers
 async function loadProducts() {
   if (!currentBooth) return;
   const res = await authFetch(`/api/booths/${currentBooth.id}/products`);
@@ -347,7 +428,7 @@ async function loadProducts() {
   });
 }
 
-// 7. Visual 3D Hotspot Editor
+// 8. Visual 3D Hotspot Editor
 function init3DEditor() {
   const container = document.getElementById('editor-3d-canvas');
   if (!container || !currentBooth) return;
@@ -355,12 +436,10 @@ function init3DEditor() {
   if (!editorEngine) {
     editorEngine = BoothEngine.initScene(container);
     animateEditor();
-
-    // Raycaster Surface Click Event for Hotspot Placement
     container.addEventListener('click', onEditorCanvasClick);
   }
 
-  editorRaycastSurfaces = BoothEngine.buildBooth(editorEngine.scene, currentBooth);
+  editorRaycastSurfaces = BoothEngine.buildPhotoPreviewBooth(editorEngine.scene, currentBooth);
   updateEditorProductSelect();
   renderEditorHotspots();
 }
@@ -482,7 +561,6 @@ async function onEditorCanvasClick(e) {
 
   try {
     if (selectedHotspotId) {
-      // Reposition Mode
       const res = await authFetch(`/api/hotspots/${selectedHotspotId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -492,7 +570,6 @@ async function onEditorCanvasClick(e) {
         showToast('핫스팟 좌표가 성공적으로 수정되었습니다.');
       }
     } else {
-      // Create New Hotspot Mode
       const res = await authFetch('/api/hotspots', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -572,7 +649,7 @@ function animateEditor() {
   }
 }
 
-// 8. Event Listeners Setup
+// 9. Event Listeners Setup
 function setupAdminEvents() {
   // Toggle Publish
   document.getElementById('btn-toggle-publish').addEventListener('click', async () => {
@@ -630,7 +707,7 @@ function setupAdminEvents() {
     }
   });
 
-  // Verify Reconstruction (Human Approval)
+  // Verify Reconstruction (Human Approval Gate)
   document.getElementById('btn-verify-reconstruction').addEventListener('click', async (e) => {
     const jobId = e.target.dataset.jobId;
     if (!jobId || !confirm('재구성된 3D 부스를 검증 및 퍼블릭으로 승인하시겠습니까?')) return;
@@ -644,6 +721,51 @@ function setupAdminEvents() {
     } catch (err) {
       showToast('검증 승인 실패');
     }
+  });
+
+  // Alignment Sliders
+  ['slider-pos-x', 'slider-pos-y', 'slider-pos-z', 'slider-rot-y', 'slider-scale'].forEach(id => {
+    const slider = document.getElementById(id);
+    if (slider) slider.addEventListener('input', updateAlignTransformFromUI);
+  });
+
+  // Save Alignment Transform
+  document.getElementById('btn-save-alignment').addEventListener('click', async () => {
+    if (!currentBooth || !alignSplatViewer) return;
+    const transform = alignSplatViewer.getTransform();
+
+    try {
+      const updatedSpatialModel = {
+        ...(currentBooth.spatialModel || { type: 'gaussian_splat', format: 'ply' }),
+        transform
+      };
+
+      const res = await authFetch(`/api/booths/${currentBooth.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spatialModel: updatedSpatialModel })
+      });
+
+      if (res.ok) {
+        currentBooth = await res.json();
+        showToast('정밀 3D 공간 정렬 좌표가 성공적으로 저장되었습니다.');
+      } else {
+        showToast('정렬 저장 실패');
+      }
+    } catch (e) {
+      showToast('정렬 저장 실패');
+    }
+  });
+
+  // Reset Alignment
+  document.getElementById('btn-align-reset').addEventListener('click', () => {
+    document.getElementById('slider-pos-x').value = 0;
+    document.getElementById('slider-pos-y').value = 0;
+    document.getElementById('slider-pos-z').value = 0;
+    document.getElementById('slider-rot-y').value = 0;
+    document.getElementById('slider-scale').value = 1.0;
+    updateAlignTransformFromUI();
+    showToast('정렬 좌표가 기본값으로 초기화되었습니다.');
   });
 
   // Placement Mode Toggles
@@ -707,7 +829,7 @@ function setupAdminEvents() {
   });
 }
 
-// 9. Analytics Loader
+// 10. Analytics Loader
 async function loadAnalytics() {
   if (!currentBooth) return;
   try {
@@ -722,7 +844,6 @@ async function loadAnalytics() {
     document.getElementById('stat-samples').textContent = data.samplesCount || 0;
     document.getElementById('stat-apts').textContent = data.appointmentsCount || 0;
 
-    // Leads table
     const leadsTbody = document.getElementById('leads-table-body');
     leadsTbody.innerHTML = '';
     (data.leads || []).forEach(l => {
@@ -738,7 +859,6 @@ async function loadAnalytics() {
       leadsTbody.appendChild(tr);
     });
 
-    // RFQs table
     const rfqsTbody = document.getElementById('rfqs-table-body');
     rfqsTbody.innerHTML = '';
     (data.rfqs || []).forEach(r => {

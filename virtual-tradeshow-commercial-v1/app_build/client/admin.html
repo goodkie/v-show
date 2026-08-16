@@ -11,6 +11,8 @@
   <!-- Three.js & OrbitControls -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- Spark & Precision Splat Viewer Adapter -->
+  <script src="precision-viewer.js"></script>
   <!-- Shared Booth 3D Engine -->
   <script src="booth-engine.js"></script>
 </head>
@@ -49,7 +51,7 @@
     <div class="brand-section">
       <div class="brand-logo">V</div>
       <div class="brand-title">Exhibitor Control Center</div>
-      <span class="badge badge-reconstructed" style="margin-left: 12px;">Phase 4 Orchestration</span>
+      <span class="badge badge-reconstructed" style="margin-left: 12px;">Phase 5 Spark Gaussian 3D</span>
     </div>
     <div class="nav-actions">
       <a href="index.html" target="_blank" class="btn btn-secondary btn-sm" id="btn-preview-public">퍼블릭 부스 열기 ↗</a>
@@ -68,7 +70,7 @@
         <span>🏛️</span> 부스 환경 & 3D 사진
       </div>
       <div class="admin-nav-item" data-tab="reconstruction">
-        <span>⚙️</span> 정밀 3D 재구성 오케스트레이션
+        <span>⚙️</span> 정밀 3D 재구성 & 정렬
       </div>
       <div class="admin-nav-item" data-tab="products">
         <span>📦</span> 제품 및 카탈로그 관리
@@ -131,11 +133,11 @@
           <!-- Quick Status Strip -->
           <div style="display: flex; gap: 16px; align-items: center; background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-sm);">
             <div>
-              <div style="font-size: 12px; color: var(--text-dim); text-transform: uppercase;">3D 공간 재구성 상태</div>
+              <div style="font-size: 12px; color: var(--text-dim); text-transform: uppercase;">3D 공간 렌더링 모드</div>
               <div style="font-weight: 600; font-size: 16px; margin-top: 2px;" id="recon-status-text">Photo Preview</div>
             </div>
             <button class="btn btn-secondary btn-sm" id="btn-quick-goto-recon" style="margin-left: auto;">
-              정밀 3D 재구성 관리 ↗
+              정밀 3D 재구성 & 정렬 도구 ↗
             </button>
           </div>
         </div>
@@ -181,7 +183,7 @@
         </div>
       </section>
 
-      <!-- TAB 3: PRECISION 3D RECONSTRUCTION ORCHESTRATION (PHASE 4) -->
+      <!-- TAB 3: PRECISION 3D RECONSTRUCTION & ALIGNMENT (PHASE 5) -->
       <section id="tab-reconstruction" class="tab-pane" style="display: none;">
         <!-- Card 1: Capture Quality Validation -->
         <div class="card" style="margin-bottom: 24px;">
@@ -207,20 +209,10 @@
               <div class="stat-value" id="val-can-reconstruct" style="font-size: 18px; margin-top: 8px;">검증 대기</div>
             </div>
           </div>
-
-          <div id="capture-guidance-box" style="background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-sm); font-size: 13px;">
-            <div style="font-weight: 600; margin-bottom: 6px; color: var(--brand-accent);">💡 전문가 촬영 권장 가이드 (COLMAP / NeRF 원칙):</div>
-            <ul style="padding-left: 20px; color: var(--text-muted); line-height: 1.6;">
-              <li>인접 사진 간 <strong>60~80% 시각적 오버랩</strong>을 유지하세요.</li>
-              <li>제자리에서 카메라만 회전하지 말고, <strong>실제 발걸음을 옮기며 다각도에서 촬영</strong>하세요.</li>
-              <li>단색의 텍스처 없는 벽면이나 거울/강한 반사 표면은 피하는 것이 좋습니다.</li>
-              <li>촬영 도중 조명(플래시/그림자)이 급변하지 않도록 일관된 노출을 유지하세요.</li>
-            </ul>
-          </div>
         </div>
 
         <!-- Card 2: Active Reconstruction Job Dashboard -->
-        <div class="card">
+        <div class="card" style="margin-bottom: 24px;">
           <div class="card-header">
             <div>
               <h3>⚙️ 정밀 3D 재구성 오케스트레이션 (Pipeline Orchestration)</h3>
@@ -251,20 +243,79 @@
               <span>현재 단계: <strong id="recon-stage-text" style="color: var(--text-main);">준비 중 (Photo Preview)</strong></span>
               <span id="recon-worker-id-text">Worker: 대기 중</span>
             </div>
+          </div>
+        </div>
 
-            <!-- Diagnostics Metrics -->
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-subtle); font-size: 13px;">
-              <div>
-                <div style="color: var(--text-dim); font-size: 11px;">등록된 카메라 / 총 사진</div>
-                <div id="diag-reg-cameras" style="font-weight: 600; margin-top: 2px;">0 / 0</div>
+        <!-- Card 3: PRECISION 3D ALIGNMENT TOOL (PHASE 5) -->
+        <div class="card" id="card-precision-alignment">
+          <div class="card-header">
+            <div>
+              <h3>🔍 정밀 3D 공간 미리보기 & 정렬 도구 (Precision Alignment Tool)</h3>
+              <p style="font-size: 13px;">Gaussian Splat 3D 공간을 부스 월드 좌표계에 맞게 위치(XYZ), 회전, 스케일을 실시간으로 미세 정렬합니다.</p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-secondary btn-sm" id="btn-align-reset">기본값 초기화</button>
+              <button class="btn btn-primary btn-sm" id="btn-save-alignment">💾 정렬 좌표 저장</button>
+            </div>
+          </div>
+
+          <!-- Precision Viewport & Controls Grid -->
+          <div style="display: grid; grid-template-columns: 1fr 320px; gap: 20px;">
+            <!-- 3D Precision Canvas Container -->
+            <div class="editor-viewport-card" id="align-viewport-container" style="height: 480px;">
+              <div class="editor-status-banner">
+                <span>✨ <strong>Spark Gaussian Splatting</strong> 실시간 정렬 뷰포트</span>
+                <span id="align-fps-badge" style="color: var(--brand-accent); font-family: monospace;">60 FPS</span>
               </div>
+              <div id="align-3d-canvas" style="width: 100%; height: 100%;"></div>
+            </div>
+
+            <!-- Alignment Control Sliders -->
+            <div style="background: var(--bg-surface-elevated); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 14px;">
+              <h4 style="font-size: 14px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">트랜스폼 정렬 제어</h4>
+
               <div>
-                <div style="color: var(--text-dim); font-size: 11px;">복원된 3D 포인트 클라우드</div>
-                <div id="diag-sparse-pts" style="font-weight: 600; margin-top: 2px;">0 pts</div>
+                <label class="form-label" style="display: flex; justify-content: space-between;">
+                  <span>위치 X (Position X)</span>
+                  <span id="val-pos-x" style="color: var(--brand-accent);">0.0</span>
+                </label>
+                <input type="range" class="form-input" id="slider-pos-x" min="-5" max="5" step="0.05" value="0">
               </div>
+
               <div>
-                <div style="color: var(--text-dim); font-size: 11px;">생성된 3D 공간 에셋</div>
-                <div id="diag-asset-format" style="font-weight: 600; margin-top: 2px;">Photo Preview (Hexagon)</div>
+                <label class="form-label" style="display: flex; justify-content: space-between;">
+                  <span>위치 Y (Position Y)</span>
+                  <span id="val-pos-y" style="color: var(--brand-accent);">0.0</span>
+                </label>
+                <input type="range" class="form-input" id="slider-pos-y" min="-3" max="3" step="0.05" value="0">
+              </div>
+
+              <div>
+                <label class="form-label" style="display: flex; justify-content: space-between;">
+                  <span>위치 Z (Position Z)</span>
+                  <span id="val-pos-z" style="color: var(--brand-accent);">0.0</span>
+                </label>
+                <input type="range" class="form-input" id="slider-pos-z" min="-5" max="5" step="0.05" value="0">
+              </div>
+
+              <div>
+                <label class="form-label" style="display: flex; justify-content: space-between;">
+                  <span>회전 Y축 (Rotation Y)</span>
+                  <span id="val-rot-y" style="color: var(--brand-accent);">0°</span>
+                </label>
+                <input type="range" class="form-input" id="slider-rot-y" min="-180" max="180" step="1" value="0">
+              </div>
+
+              <div>
+                <label class="form-label" style="display: flex; justify-content: space-between;">
+                  <span>균등 스케일 (Scale)</span>
+                  <span id="val-scale" style="color: var(--brand-accent);">1.00x</span>
+                </label>
+                <input type="range" class="form-input" id="slider-scale" min="0.2" max="3.0" step="0.02" value="1.0">
+              </div>
+
+              <div style="font-size: 11px; color: var(--text-dim); margin-top: auto; line-height: 1.4;">
+                * 핫스팟 핀과 3D 물체의 위치가 일치하도록 조정한 후 [💾 정렬 좌표 저장]을 클릭하세요.
               </div>
             </div>
           </div>
