@@ -24,22 +24,23 @@ if (!fs.existsSync(SEED_DIR)) {
 // Password Policy & Hashing Helpers
 function validatePasswordStrength(password) {
   if (!password || typeof password !== 'string') {
-    return { valid: false, message: 'Password is required.' };
+    return { valid: false, code: 'WEAK_PASSWORD', message: 'Password is required.' };
   }
   if (password.length < 12) {
-    return { valid: false, message: 'Password must be at least 12 characters long.' };
+    return { valid: false, code: 'WEAK_PASSWORD', message: 'Password must be at least 12 characters long.' };
   }
   if (!/[A-Z]/.test(password)) {
-    return { valid: false, message: 'Password must contain at least one uppercase letter (A-Z).' };
+    return { valid: false, code: 'WEAK_PASSWORD', message: 'Password must contain at least one uppercase letter (A-Z).' };
   }
   if (!/[a-z]/.test(password)) {
-    return { valid: false, message: 'Password must contain at least one lowercase letter (a-z).' };
+    return { valid: false, code: 'WEAK_PASSWORD', message: 'Password must contain at least one lowercase letter (a-z).' };
   }
   if (!/[0-9]/.test(password)) {
-    return { valid: false, message: 'Password must contain at least one number (0-9).' };
+    return { valid: false, code: 'WEAK_PASSWORD', message: 'Password must contain at least one number (0-9).' };
   }
   return { valid: true };
 }
+
 
 function generateSecureTempPassword(length = 16) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+';
@@ -693,11 +694,18 @@ class JSONDatabase {
   }
 
   async createUser({ organizationId, email, name, role, password, mustChangePassword = true }) {
+    const strengthCheck = validatePasswordStrength(password);
+    if (!strengthCheck.valid) {
+      const err = new Error(strengthCheck.message);
+      err.code = strengthCheck.code;
+      throw err;
+    }
     return this.mutate((db) => {
       const existing = (db.users || []).find(u => u.email.toLowerCase() === email.toLowerCase());
       if (existing) throw new Error('A user with this email address already exists.');
 
       const { hash, salt } = hashPassword(password);
+
       const user = {
         id: `user-${uuidv4().substring(0, 8)}`,
         organizationId,

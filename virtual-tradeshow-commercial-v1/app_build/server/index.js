@@ -496,22 +496,23 @@ app.post('/api/auth/change-password', requireAuth, async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     const strengthCheck = db.validatePasswordStrength(newPassword);
     if (!strengthCheck.valid) {
-      return res.status(400).json({ error: strengthCheck.message });
+      return res.status(400).json({ error: strengthCheck.message, code: 'WEAK_PASSWORD' });
     }
 
     const user = db.getUserById(req.user.userId);
     if (user && user.hash && user.salt) {
       if (!db.verifyPassword(currentPassword, user.hash, user.salt)) {
-        return res.status(400).json({ error: 'Current password is incorrect.' });
+        return res.status(400).json({ error: 'Current password is incorrect.', code: 'INVALID_CREDENTIALS' });
       }
     }
     await db.updateUserPassword(req.user.userId, newPassword);
     db.logAudit(req.user.userId, req.user.organizationId, 'auth.change_password', 'user', req.user.userId);
     res.json({ success: true, message: 'Password successfully updated.' });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ error: err.message, code: err.code || 'BAD_REQUEST' });
   }
 });
+
 
 app.post('/api/auth/logout', requireAuth, (req, res) => {
   const token = req.headers.authorization.substring(7);
@@ -608,9 +609,10 @@ app.post('/api/events/:id/invite-exhibitor', requireAuth, requireOrganizer, asyn
     } else {
       const strength = db.validatePasswordStrength(initialPassword);
       if (!strength.valid) {
-        return res.status(400).json({ error: `Temporary password invalid: ${strength.message}` });
+        return res.status(400).json({ error: `Temporary password invalid: ${strength.message}`, code: 'WEAK_PASSWORD' });
       }
     }
+
 
     // 1. Create Exhibitor Organization
     const org = await db.createOrganization({
