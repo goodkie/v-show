@@ -12,4 +12,6 @@ app_build/node_modules/
 .DS_Store
 __pycache__/
 *.pyc
+virtual-tradeshow-commercial-v1/app_build/data/db.json
+virtual-tradeshow-commercial-v1/app_build/data/db.temp.json
 

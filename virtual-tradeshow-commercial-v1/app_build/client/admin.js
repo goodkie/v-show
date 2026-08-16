@@ -114,6 +114,15 @@ async function initAdmin() {
 
 async function loadInitialData() {
   try {
+    const meRes = await authFetch('/api/auth/me');
+    if (meRes.ok) {
+      const meData = await meRes.json();
+      const badge = document.getElementById('admin-org-badge');
+      if (badge && meData.organization) {
+        badge.textContent = `${meData.organization.name} (${meData.user.role === 'organizer_admin' ? 'Organizer' : 'Exhibitor'})`;
+      }
+    }
+
     const boothsRes = await authFetch('/api/booths?all=true');
     const booths = await boothsRes.json();
     if (booths.length > 0) {
@@ -129,6 +138,7 @@ async function loadInitialData() {
     console.error('Error loading initial admin data:', err);
   }
 }
+
 
 // 4. Booth Overview & Settings
 function renderBoothOverview() {

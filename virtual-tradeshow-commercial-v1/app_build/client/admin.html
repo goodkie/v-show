@@ -19,7 +19,7 @@
 <body class="admin-shell">
   <!-- Online Trial Notice Banner -->
   <div class="trial-banner">
-    <span>⚠️ <strong>ONLINE TRIAL</strong> — 평가용 관리자 콘솔입니다. 실제 기밀 비즈니스 데이터 및 민감 결제 정보 입력을 삼가해 주세요.</span>
+    <span>🌐 <strong>COMMERCIAL BETA</strong> — 참가사 전용 3D 가상 부스 및 리드 오퍼레이션 콘솔입니다.</span>
   </div>
 
   <!-- Login Modal -->
@@ -27,19 +27,19 @@
     <div class="modal-card" style="max-width: 420px; text-align: center;">
       <div class="brand-logo" style="margin: 0 auto 16px auto; width: 44px; height: 44px; font-size: 20px;">V</div>
       <h2 style="margin-bottom: 8px;">참가사 관리자 로그인</h2>
-      <p style="font-size: 13px; margin-bottom: 24px;">Virtual Trade Show Commercial V1 콘솔에 오신 것을 환영합니다.</p>
+      <p style="font-size: 13px; margin-bottom: 24px;">자사 3D 가상 부스, 제품 및 바이어 리드를 관리합니다.</p>
       
       <form id="form-login" style="text-align: left;">
         <div class="form-group">
-          <label class="form-label">아이디</label>
-          <input type="text" id="login-user" class="form-input" value="admin" required>
+          <label class="form-label">이메일 계정</label>
+          <input type="text" id="login-user" class="form-input" value="apex@vshow.com" placeholder="apex@vshow.com" required>
         </div>
         <div class="form-group">
           <label class="form-label">비밀번호</label>
           <input type="password" id="login-pass" class="form-input" value="admin123" required>
         </div>
         <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 16px;">
-          * 평가용 기본 계정: <code>admin / admin123</code>
+          * 베타 테스트 참가사: <code>apex@vshow.com</code> 또는 <code>bio@vshow.com</code> (PW: <code>admin123</code>)
         </div>
         <button type="submit" class="btn btn-primary" style="width: 100%;">로그인</button>
       </form>
@@ -51,13 +51,15 @@
     <div class="brand-section">
       <div class="brand-logo">V</div>
       <div class="brand-title">Exhibitor Control Center</div>
-      <span class="badge badge-reconstructed" style="margin-left: 12px;">Phase 5 Spark Gaussian 3D</span>
+      <span class="badge badge-reconstructed" style="margin-left: 12px;" id="admin-org-badge">Apex Robotics (Exhibitor)</span>
     </div>
     <div class="nav-actions">
-      <a href="index.html" target="_blank" class="btn btn-secondary btn-sm" id="btn-preview-public">퍼블릭 부스 열기 ↗</a>
+      <a href="lobby.html" target="_blank" class="btn btn-secondary btn-sm">🏛️ 행사 로비</a>
+      <a href="index.html" target="_blank" class="btn btn-secondary btn-sm" id="btn-preview-public">퍼블릭 부스 ↗</a>
       <button class="btn btn-danger btn-sm" id="btn-logout">로그아웃</button>
     </div>
   </header>
+
 
   <!-- Admin Main Layout -->
   <div class="admin-body">
