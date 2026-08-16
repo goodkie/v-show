@@ -7,14 +7,21 @@ Virtual Trade Show Commercial V1 is a commercial-grade SaaS platform connecting 
 
 ## 2. Core Architecture
 
-### 2.1 Technology Stack (Phase 10.7L Legal & Tax Package & First Customer Launch Kit)
+### 2.1 Technology Stack (Phase 10.7M First Customer Acquisition Sprint)
 - **Backend Runtime**: Node.js (v18+)
 - **Server Framework**: Express.js + Native `ws` (WebSocket) with Signed Bearer session tokens, Worker authentication, RBAC, and sliding window rate limiting.
+- **Pilot Acquisition & Qualification Engines**:
+  - Dedicated Pilot Application page (`/pilot-apply.html`) with 16 intake fields, explicit privacy consent, and unique reference ID generation.
+  - Server-Side Algorithmic Lead Qualification (`calculateQualificationScore()`, 0–100 scale, `EARLY`, `QUALIFIED`, `PILOT_READY`, `HIGH_INTENT`).
+  - Server-Side Pilot Success Engine (`calculatePilotSuccessScore()`, 0–100 scale, `SETUP`, `EARLY_USAGE`, `VALUE_DEMONSTRATED`, `STRONG_VALUE`, `UPGRADE_READY`).
+  - CRM-Style Sales Pipeline & Communication Center in Grand Control (`/grand-control.html`).
+  - 12 Production Email Templates in `production_artifacts/first_customer_acquisition/`.
 - **Legal & Tax Professional Review System**:
   - Complete 11-document Legal Review Package (`production_artifacts/legal_review/`).
   - Complete 7-document Tax & Nexus Review Package (`production_artifacts/tax_review/`).
   - Formal Decision Recording templates for outside Counsel & CPA.
   - Fail-closed live billing clearance gate.
+
 - **First Customer Launch Kit & Commercial Outreach**:
   - 12-document Launch Kit (`production_artifacts/first_customer_launch/`) including cold outreach, follow-ups, 15-min demo call script, capture guide, catalog CSV template, success checklist, and performance report.
   - Commercial Upgrade Intent capture (`POST /api/customer/upgrade-intent`) with `awaiting_live_billing_clearance` state (Zero real cash charged).

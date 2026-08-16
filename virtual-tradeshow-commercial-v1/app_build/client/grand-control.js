@@ -1062,15 +1062,19 @@ class GrandControlApp {
         <tr>
           <td>
             <strong>${escapeHtml(l.companyName)}</strong><br>
-            <small class="gc-text-muted">${escapeHtml(l.workEmail)}</small>
+            <small class="gc-text-muted">${escapeHtml(l.workEmail)}</small><br>
+            <span style="font-size:10px; color:#38bdf8; font-family:monospace;">${escapeHtml(l.referenceId || l.id)}</span>
           </td>
           <td>
             ${escapeHtml(l.eventName || 'N/A')}<br>
             <small class="gc-text-muted">Booth: ${escapeHtml(l.boothNumber || 'N/A')}</small>
           </td>
           <td>
-            ${escapeHtml(l.approxProductCount)} Prods<br>
-            <small class="gc-text-muted">Photos: ${escapeHtml(l.photoReadiness)}</small>
+            ${escapeHtml(l.approximateProductCount || l.approxProductCount || '1-5')} Prods<br>
+            <small class="gc-text-muted">Photos: ${escapeHtml(l.photoReadiness || 'not_yet')}</small><br>
+            <span class="gc-badge ${l.qualificationScore >= 70 ? 'gc-badge-verified' : (l.qualificationScore >= 40 ? 'gc-badge-test' : 'gc-badge')}">
+              Score: ${l.qualificationScore || 0}/100 (${escapeHtml(l.qualificationTier || 'EARLY')})
+            </span>
           </td>
           <td>
             <select class="gc-select-sm" onchange="window.gcApp.updateLeadStage('${l.id}', this.value)" style="background:#1e293b; color:#fff; border:1px solid #334155; padding:4px 8px; border-radius:4px;">
@@ -1093,6 +1097,7 @@ class GrandControlApp {
       console.error('Failed to load sales pipeline:', e);
     }
   }
+
 
   async updateLeadStage(leadId, stage) {
     try {

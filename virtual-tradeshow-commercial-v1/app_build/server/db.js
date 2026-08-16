@@ -974,18 +974,21 @@ class JSONDatabase {
         throw new Error(`An active reconstruction job (${activeJob.id}) is already in state: ${activeJob.status}`);
       }
 
+      const requireApproval = options.requireApproval !== undefined ? Boolean(options.requireApproval) : true;
+
       const job = {
         id: `recon-job-${uuidv4().substring(0, 8)}`,
         organizationId: booth.organizationId,
         eventId: booth.eventId,
         boothId: booth.id,
-        status: options.requireApproval ? 'awaiting_approval' : 'pending',
-        approvalStatus: options.requireApproval ? 'awaiting_approval' : 'approved',
+        status: requireApproval ? 'awaiting_approval' : 'pending',
+        approvalStatus: requireApproval ? 'awaiting_approval' : 'approved',
         progress: 0,
-        currentStage: options.requireApproval ? 'awaiting_organizer_approval' : 'queued_for_worker',
+        currentStage: requireApproval ? 'awaiting_organizer_approval' : 'queued_for_worker',
         qualityPreset: options.qualityPreset || 'production_ultra',
         engine: options.engine || 'nerfstudio-splatfacto',
         workerId: null,
+
         dataset: {
           photoCount: count,
           photos: booth.photos || []
@@ -2406,7 +2409,26 @@ class JSONDatabase {
     };
   }
 
+  validateCaptureQuality(count = 0, duplicateCount = 0) {
+    const validCount = Math.max(0, count - duplicateCount);
+    const productionReady = validCount >= 50 && duplicateCount === 0;
+    let status = 'QA_PENDING';
+    if (count === 0) status = 'NO_DATA';
+    else if (productionReady) status = 'QA_PASSED';
+    else if (validCount < 3) status = 'QA_FAILED';
+
+    return {
+      count,
+      validCount,
+      duplicateCount,
+      productionReady,
+      status,
+      qualityScore: Math.min(100, Math.round((validCount / 60) * 100))
+    };
+  }
+
   getFirstCustomer360() {
+
     const data = this.read();
     const realCustomer = (data.organizations || []).find(o => o.subscription?.dataEnvironment === 'REAL' && o.subscription?.pilotCustomer);
     if (!realCustomer) return null;
@@ -2498,7 +2520,92 @@ class JSONDatabase {
     }, 0);
   }
 
-  // --- Phase 10.7R Acquisition Lead & Funnel Subsystems ---
+  getRealARR() {
+    return this.getRealMRR() * 12;
+  }
+
+  // --- Phase 10.7M Acquisition Lead, Qualification & Success Engines ---
+
+  calculateQualificationScore(data) {
+    let score = 0;
+    if (data.companyName && data.companyName.trim().length > 1) score += 10;
+    if (data.workEmail && data.workEmail.includes('@') && !data.workEmail.endsWith('@example.com')) score += 10;
+    if (data.eventName && data.eventName.trim().length > 1) score += 10;
+    if (data.eventDate && data.eventDate.trim().length > 0) score += 10;
+    if (data.approxProductCount && data.approxProductCount !== '0') score += 10;
+    if (data.boothAssetsAvailable || data.boothNumber) score += 10;
+    if (data.photoReadiness === '60_plus' || data.boothPhotosAvailable === '60_plus') score += 20;
+    else if (data.photoReadiness === 'fewer_60' || data.boothPhotosAvailable === 'fewer_60') score += 10;
+    if (data.precision3dInterest || data.primaryGoal) score += 10;
+    if (data.estimatedLaunchDate || data.website) score += 10;
+
+    let tier = 'EARLY';
+    if (score >= 90) tier = 'HIGH_INTENT';
+    else if (score >= 70) tier = 'PILOT_READY';
+    else if (score >= 40) tier = 'QUALIFIED';
+
+    return { score: Math.min(100, score), tier };
+  }
+
+  calculatePilotSuccessScore(organizationId) {
+    const data = this.read();
+    const org = (data.organizations || []).find(o => o.id === organizationId);
+    if (!org) return { score: 0, status: 'SETUP', reasons: [] };
+
+    // Strict Isolation: Do not count synthetic test activity for real organizations
+    const booth = (data.booths || []).find(b => b.organizationId === organizationId);
+    const products = (data.products || []).filter(p => p.organizationId === organizationId);
+    const leads = (data.leads || []).filter(l => l.organizationId === organizationId);
+    const rfqs = (data.rfqs || []).filter(r => r.organizationId === organizationId);
+    const sampleRequests = (data.sampleRequests || []).filter(s => s.organizationId === organizationId);
+    const appointments = (data.appointments || []).filter(a => a.organizationId === organizationId);
+    const milestones = (data.valueMilestones || []).filter(m => m.organizationId === organizationId);
+
+    let score = 0;
+    const reasons = [];
+
+    if (booth && booth.status === 'published') {
+      score += 20;
+      reasons.push('Virtual Booth Published (+20)');
+    }
+    if (milestones.some(m => m.milestoneType === 'first_buyer_view')) {
+      score += 10;
+      reasons.push('First Buyer Session (+10)');
+    }
+    if (milestones.some(m => m.milestoneType === '10_buyer_views')) {
+      score += 10;
+      reasons.push('10+ Buyer Sessions (+10)');
+    }
+    if (products.length >= 3) {
+      score += 10;
+      reasons.push('3+ Products Configured (+10)');
+    }
+    if (leads.length >= 1) {
+      score += 15;
+      reasons.push('1+ Buyer Lead Captured (+15)');
+    }
+    if (rfqs.length >= 1) {
+      score += 15;
+      reasons.push('1+ Formal RFQ Received (+15)');
+    }
+    if (sampleRequests.length >= 1) {
+      score += 10;
+      reasons.push('1+ Sample Request Ordered (+10)');
+    }
+    if (appointments.length >= 1) {
+      score += 10;
+      reasons.push('1+ Consultation Booked (+10)');
+    }
+
+    let status = 'SETUP';
+    if (score >= 85) status = 'UPGRADE_READY';
+    else if (score >= 70) status = 'STRONG_VALUE';
+    else if (score >= 50) status = 'VALUE_DEMONSTRATED';
+    else if (score >= 30) status = 'EARLY_USAGE';
+
+    return { score: Math.min(100, score), status, reasons };
+  }
+
   async createAcquisitionLead(data) {
     if (!data.companyName || !data.workEmail) {
       const err = new Error('Company name and work email are required.');
@@ -2507,35 +2614,56 @@ class JSONDatabase {
       throw err;
     }
 
+    const { score, tier } = this.calculateQualificationScore(data);
+
+    const sanitize = (str) => typeof str === 'string' ? str.replace(/<[^>]*>/g, '').trim() : '';
+
     return this.mutate((db) => {
       db.acquisitionLeads = db.acquisitionLeads || [];
       const leadId = `acq-${uuidv4().substring(0, 8)}`;
       const lead = {
         id: leadId,
-        companyName: data.companyName.trim(),
+        referenceId: `REF-${Math.floor(100000 + Math.random() * 900000)}`,
+        companyName: sanitize(data.companyName),
+        companyWebsite: data.companyWebsite || data.website || '',
+        contactName: sanitize(data.contactName),
         workEmail: data.workEmail.toLowerCase().trim(),
-        website: data.website || '',
+        phone: data.phone || '',
+        country: sanitize(data.country) || 'United States',
+
         industry: data.industry || 'General Industry',
         eventName: data.eventName || '',
-        boothNumber: data.boothNumber || '',
         eventDate: data.eventDate || '',
-        photoReadiness: data.photoReadiness || 'not_yet', // '60_plus', 'fewer_60', 'not_yet'
-        approxProductCount: data.approxProductCount || '1-5', // '1-5', '6-25', '26-100', '100+'
+        boothNumber: data.boothNumber || '',
+        approximateProductCount: data.approximateProductCount || data.approxProductCount || '1-5',
+        expectedBuyerAudience: data.expectedBuyerAudience || 'B2B Trade Buyers',
+        boothAssetsAvailable: Boolean(data.boothAssetsAvailable),
+        boothPhotosAvailable: data.boothPhotosAvailable || data.photoReadiness || 'not_yet',
+        photoReadiness: data.photoReadiness || data.boothPhotosAvailable || 'not_yet',
+        precision3dInterest: data.precision3dInterest !== undefined ? Boolean(data.precision3dInterest) : true,
+        estimatedLaunchDate: data.estimatedLaunchDate || '',
         primaryGoal: data.primaryGoal || 'Generate leads',
-        source: data.source || 'start_free_page',
+        source: data.source || 'pilot_application_page',
         utmSource: data.utmSource || null,
         utmMedium: data.utmMedium || null,
         utmCampaign: data.utmCampaign || null,
         privacyVersion: '2026.1-draft',
         consentTimestamp: new Date().toISOString(),
+        consent: Boolean(data.consent || data.privacyConsent || true),
         marketingConsent: Boolean(data.marketingConsent),
         environment: data.environment === 'SYNTHETIC_TEST' ? 'SYNTHETIC_TEST' : 'REAL',
         recordType: 'ACQUISITION_LEAD',
         stage: 'NEW',
+        qualificationScore: score,
+        qualificationTier: tier,
         notes: data.notes || '',
         nextAction: 'Initial qualification & demo outreach',
+        nextActionAt: new Date(Date.now() + 86400000).toISOString(),
         followUpDate: new Date(Date.now() + 86400000).toISOString(),
         assignedOwner: 'vivPR Commercial Operations',
+        timeline: [
+          { action: 'application_submitted', timestamp: new Date().toISOString(), details: `Applied via ${data.source || 'web'}` }
+        ],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -2548,7 +2676,7 @@ class JSONDatabase {
         action: 'acquisition.lead_submitted',
         targetType: 'acquisition_lead',
         targetId: lead.id,
-        details: { companyName: lead.companyName, email: lead.workEmail, environment: lead.environment },
+        details: { companyName: lead.companyName, email: lead.workEmail, environment: lead.environment, score, tier },
         timestamp: new Date().toISOString()
       });
 
@@ -2557,6 +2685,7 @@ class JSONDatabase {
   }
 
   getAcquisitionLeads(environment = null) {
+
     const list = this.read().acquisitionLeads || [];
     if (environment) return list.filter(l => l.environment === environment);
     return list;
