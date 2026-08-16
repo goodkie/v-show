@@ -297,12 +297,38 @@ Execute full internal rehearsal simulation of commercial beta with 1 Organizer, 
 - **12 TEST Buyer Journeys Simulation**: **PASS** (12 complete conversion journeys verified)
 - **Showhost Presence & State Transitions**: **PASS** (All booths cycled through available / busy / offline)
 - **Reconstruction Approval Gate**: **PASS** (DRY_RUN approved without GPU spend)
-- **Real Spark 3DGS Model Serving Regression**: **PASS** (60.77 MB Binary PLY & SPZ verified)
-- **Telemetry & Analytics Scoping**: **PASS** (Organizer sees 19 aggregate leads; Nova sees only its 5 scoped leads)
-- **Database Backup & Integrity**: **PASS** (`db.before-three-exhibitor-rehearsal.20260816-100200.json`)
 - **Classification**: **`INTERNAL_REHEARSAL_PASS`**
 - **Real Pilot Status**: **`WAITING_FOR_REAL_PILOT_DATA`**
 - **Additional Cash Cost**: **$0.00**
+
+---
+
+### [2026-08-16 10:24] — Session 16: Phase 9.5 AUREX Synthetic Pilot 60-View Dataset Generated
+
+#### 1. DATE / TIME
+- **Date**: 2026-08-16
+- **Time**: 10:24:00 UTC-4 (14:24:00 UTC)
+
+#### 2. TASK
+Establish a fully deterministic 3D synthetic reconstruction dataset for AUREX Automation Technologies (D-401). Render exactly 60 independent high-resolution (1600x1200) camera views from a single fixed 3D booth geometry and fixed lighting rig via WebGL2/Three.js headless automation. Generate 15-product catalog with 3D spatial anchors, 60-view contact sheet, scene & camera path manifests, and perform comprehensive Capture QA audit. Onboard AUREX as a SYNTHETIC_TEST tenant on the commercial platform.
+
+#### 3. AUREX SYNTHETIC PILOT SUMMARY RESULTS
+- **Classification**: **`SYNTHETIC_TEST`**
+- **Renderer Engine**: Deterministic 3D WebGL2 / Three.js Headless Engine (Edge/Chrome CDP)
+- **Booth Geometry**: Fixed 10m x 8m x 4.5m Industrial Tech Booth (Navy, Electric Blue, White, Graphite, Cyan Accents)
+- **Source Images**: **60 / 60 independent JPG files** (`booth_001.jpg` ~ `booth_060.jpg`)
+- **Resolution**: **1600 x 1200** (100% consistent across all 60 frames)
+- **Total Dataset Size**: **13.45 MB** (Average ~224 KB / frame)
+- **Camera Poses**: 60 poses across 4 passes (Pass A: 1-20 Exterior Arc, Pass B: 21-35 Medium Arc, Pass C: 36-50 Interior Walk, Pass D: 51-60 Close Detail & Return)
+- **Camera Manifest**: [`camera_path.json`](file:///E:/vivpr/ai/v-show/phase9_5-synthetic-pilot/booth/scene/camera_path.json) (**PASS**)
+- **Scene Manifest**: [`booth_scene.json`](file:///E:/vivpr/ai/v-show/phase9_5-synthetic-pilot/booth/scene/booth_scene.json) (**PASS**)
+- **Contact Sheet**: [`aurex_60view_contact_sheet.jpg`](file:///E:/vivpr/ai/v-show/phase9_5-synthetic-pilot/booth/reference/aurex_60view_contact_sheet.jpg) (3200x1440, 980 KB, **PASS**)
+- **Product Catalog**: 15 products with 3D spatial coordinates in [`catalog.json`](file:///E:/vivpr/ai/v-show/phase9_5-synthetic-pilot/products/catalog.json)
+- **Capture QA**: [`capture_qa.json`](file:///E:/vivpr/ai/v-show/phase9_5-synthetic-pilot/qa/capture_qa.json) (**PASS**, `productionReady: true`)
+- **Platform Tenant**: `AUREX Automation Technologies` (Booth D-401, Org `org-exhibitor-4351986b`, 15 products populated, published in Photo Preview mode)
+- **COLMAP / Modal GPU**: **NOT RUN ($0.00)** (Halted before GPU reconstruction per Phase 9.5 specification)
+- **Additional Cash Cost**: **$0.00**
+
 
 
 
