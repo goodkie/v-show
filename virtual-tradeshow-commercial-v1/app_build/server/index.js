@@ -419,6 +419,11 @@ app.get('/api/public/governance', (req, res) => {
   res.json(db.getCommercialGovernance());
 });
 
+app.get('/api/public/business-identity', (req, res) => {
+  res.json(db.getBusinessIdentity());
+});
+
+
 
 
 

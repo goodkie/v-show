@@ -1420,6 +1420,7 @@ class JSONDatabase {
       };
     }
     return {
+      businessIdentity: this.getBusinessIdentity(),
       plans: safe,
       pricingVersion: 'pilot-2026.1',
       pricingStatus: flags.pricingStatus || 'approved_for_pilot',
@@ -1429,6 +1430,33 @@ class JSONDatabase {
       maintenanceMode: Boolean(flags.maintenanceMode)
     };
   }
+
+  getBusinessIdentity() {
+    const legalBusinessName = process.env.LEGAL_BUSINESS_NAME || 'vivPR';
+    const legalBusinessAddress = process.env.LEGAL_BUSINESS_ADDRESS || '1633 Center Ave, Fort Lee, NJ 07024, United States';
+    const legalContactEmail = process.env.LEGAL_CONTACT_EMAIL || 'info@vivpr.pro';
+    const legalSupportEmail = process.env.LEGAL_SUPPORT_EMAIL || 'info@vivpr.pro';
+    const governingLaw = process.env.GOVERNING_LAW || 'State of New Jersey, United States';
+    const statementDescriptor = process.env.STRIPE_STATEMENT_DESCRIPTOR || 'VIVPR V-SHOW';
+
+    const isComplete = Boolean(
+      legalBusinessName && legalBusinessName !== '[TO BE COMPLETED BEFORE LIVE BILLING]' &&
+      legalContactEmail && legalContactEmail !== '[TO BE COMPLETED BEFORE LIVE BILLING]' &&
+      governingLaw && governingLaw !== '[TO BE COMPLETED BEFORE LIVE BILLING]'
+    );
+
+    return {
+      legalBusinessName,
+      legalBusinessAddress,
+      legalContactEmail,
+      legalSupportEmail,
+      governingLaw,
+      statementDescriptor,
+      isComplete,
+      status: isComplete ? 'COMPLETE' : 'INCOMPLETE'
+    };
+  }
+
 
 
   getCommercialGovernance() {
@@ -1447,15 +1475,30 @@ class JSONDatabase {
       lastUpdated: '2026-08-16T20:30:00Z'
     };
 
+    const legalBusinessName = process.env.LEGAL_BUSINESS_NAME || 'vivPR';
+    const legalBusinessAddress = process.env.LEGAL_BUSINESS_ADDRESS || '1633 Center Ave, Fort Lee, NJ 07024, United States';
+    const legalContactEmail = process.env.LEGAL_CONTACT_EMAIL || 'info@vivpr.pro';
+    const legalSupportEmail = process.env.LEGAL_SUPPORT_EMAIL || 'info@vivpr.pro';
+    const governingLaw = process.env.GOVERNING_LAW || 'State of New Jersey, United States';
+    const statementDescriptor = process.env.STRIPE_STATEMENT_DESCRIPTOR || 'VIVPR V-SHOW';
+
+    const isComplete = Boolean(
+      legalBusinessName && legalBusinessName !== '[TO BE COMPLETED BEFORE LIVE BILLING]' &&
+      legalContactEmail && legalContactEmail !== '[TO BE COMPLETED BEFORE LIVE BILLING]' &&
+      governingLaw && governingLaw !== '[TO BE COMPLETED BEFORE LIVE BILLING]'
+    );
+
     const businessIdentity = {
-      legalBusinessName: process.env.LEGAL_BUSINESS_NAME || '[TO BE COMPLETED BEFORE LIVE BILLING]',
-      legalBusinessAddress: process.env.LEGAL_BUSINESS_ADDRESS || '[TO BE COMPLETED BEFORE LIVE BILLING]',
-      legalContactEmail: process.env.LEGAL_CONTACT_EMAIL || '[TO BE COMPLETED BEFORE LIVE BILLING]',
-      legalSupportEmail: process.env.LEGAL_SUPPORT_EMAIL || '[TO BE COMPLETED BEFORE LIVE BILLING]',
-      governingLaw: process.env.GOVERNING_LAW || '[TO BE COMPLETED BEFORE LIVE BILLING]',
-      statementDescriptor: process.env.STRIPE_STATEMENT_DESCRIPTOR || 'V-SHOW EXPO',
-      isComplete: Boolean(process.env.LEGAL_BUSINESS_NAME && process.env.LEGAL_CONTACT_EMAIL && process.env.GOVERNING_LAW)
+      legalBusinessName,
+      legalBusinessAddress,
+      legalContactEmail,
+      legalSupportEmail,
+      governingLaw,
+      statementDescriptor,
+      isComplete,
+      status: isComplete ? 'COMPLETE' : 'INCOMPLETE'
     };
+
 
     const taxReadiness = {
       status: process.env.STRIPE_TAX_CONFIGURED === 'true' ? 'ready' : 'review_required',

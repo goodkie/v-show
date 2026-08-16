@@ -777,9 +777,10 @@ class GrandControlApp {
 
         const idEl = document.getElementById('gov-business-identity');
         if (idEl) {
-          idEl.textContent = gov.businessIdentity?.isComplete ? 'READY' : 'INCOMPLETE';
+          idEl.textContent = gov.businessIdentity?.isComplete ? 'COMPLETE' : 'INCOMPLETE';
           idEl.style.color = gov.businessIdentity?.isComplete ? '#34d399' : '#f87171';
         }
+
 
         const taxEl = document.getElementById('gov-tax-readiness');
         if (taxEl) {

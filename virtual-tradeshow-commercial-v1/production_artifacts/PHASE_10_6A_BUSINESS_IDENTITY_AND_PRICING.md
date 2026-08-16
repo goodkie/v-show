@@ -18,16 +18,18 @@ Phase 10.6A establishes the governance infrastructure for Business Identity conf
 
 Business identity details are centralized in `server/db.js` and exposed via `/api/platform/launch-readiness` for deterministic verification.
 
-| Configuration Field | Runtime Value / Default | Status | Purpose |
+| Configuration Field | Runtime Value / Configured | Status | Purpose |
 | :--- | :--- | :--- | :--- |
-| `LEGAL_BUSINESS_NAME` | `[TO BE COMPLETED BEFORE LIVE BILLING]` | `INCOMPLETE` | Statutory commercial vendor identity on invoices & terms |
-| `LEGAL_BUSINESS_ADDRESS` | `[TO BE COMPLETED BEFORE LIVE BILLING]` | `INCOMPLETE` | Corporate postal address for tax nexus and legal service |
-| `LEGAL_CONTACT_EMAIL` | `[TO BE COMPLETED BEFORE LIVE BILLING]` | `INCOMPLETE` | Commercial and legal inquiry inbox |
-| `LEGAL_SUPPORT_EMAIL` | `[TO BE COMPLETED BEFORE LIVE BILLING]` | `INCOMPLETE` | Customer service & technical support contact |
-| `GOVERNING_LAW` | `[TO BE COMPLETED BEFORE LIVE BILLING]` | `INCOMPLETE` | Jurisdiction clause for Terms of Service |
+| `LEGAL_BUSINESS_NAME` | `vivPR` | `COMPLETE` | Statutory commercial vendor identity on invoices & terms |
+| `LEGAL_BUSINESS_ADDRESS` | `1633 Center Ave, Fort Lee, NJ 07024, United States` | `COMPLETE` | Corporate postal address for tax nexus and legal service |
+| `LEGAL_CONTACT_EMAIL` | `info@vivpr.pro` | `COMPLETE` | Commercial and legal inquiry inbox |
+| `LEGAL_SUPPORT_EMAIL` | `info@vivpr.pro` | `COMPLETE` | Customer service & technical support contact |
+| `GOVERNING_LAW` | `State of New Jersey, United States` | `COMPLETE` | Jurisdiction clause for Terms of Service |
 
 ### Safety Invariant
-When any field contains `[TO BE COMPLETED BEFORE LIVE BILLING]`, the Grand Control Center flags the `businessIdentity` blocker as **`INCOMPLETE`**, deterministically preventing automated Stripe Live activation.
+With all fields populated, Grand Control marks `businessIdentity` as **`COMPLETE`** (`READY`).
+Stripe Live remains **`OFF`** (`STRIPE_MODE=test`, `stripeLiveBillingEnabled=false`, `billingKillSwitch=true`) with $0.00 actual cash charged pending legal review (`legalReviewStatus=PENDING`) and owner approval.
+
 
 ---
 

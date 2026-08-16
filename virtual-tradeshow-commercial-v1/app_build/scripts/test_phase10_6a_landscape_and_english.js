@@ -31,13 +31,14 @@ async function runTests() {
   const gov = db.getCommercialGovernance();
   const bi = gov.businessIdentity;
   assert(bi !== undefined, 'Business identity object exists in governance');
-  assert(bi.legalBusinessName === '[TO BE COMPLETED BEFORE LIVE BILLING]', 'Legal business name placeholder present');
-  assert(bi.legalBusinessAddress === '[TO BE COMPLETED BEFORE LIVE BILLING]', 'Legal business address placeholder present');
-  assert(bi.legalContactEmail === '[TO BE COMPLETED BEFORE LIVE BILLING]', 'Legal contact email placeholder present');
-  assert(bi.legalSupportEmail === '[TO BE COMPLETED BEFORE LIVE BILLING]', 'Legal support email placeholder present');
-  assert(bi.governingLaw === '[TO BE COMPLETED BEFORE LIVE BILLING]', 'Governing law placeholder present');
-  assert(bi.isComplete === false, 'Business identity marked as isComplete: false');
-  assert(gov.blockers.some(b => b.id === 'business_identity' && b.state === 'BLOCKED'), 'Business identity blocker is BLOCKED');
+  assert(bi.legalBusinessName === 'vivPR', 'Legal business name is vivPR');
+  assert(bi.legalBusinessAddress === '1633 Center Ave, Fort Lee, NJ 07024, United States', 'Legal business address is Fort Lee, NJ');
+  assert(bi.legalContactEmail === 'info@vivpr.pro', 'Legal contact email is info@vivpr.pro');
+  assert(bi.legalSupportEmail === 'info@vivpr.pro', 'Legal support email is info@vivpr.pro');
+  assert(bi.governingLaw === 'State of New Jersey, United States', 'Governing law is State of New Jersey, United States');
+  assert(bi.isComplete === true, 'Business identity marked as isComplete: true');
+  assert(gov.blockers.some(b => b.id === 'business_identity' && b.state === 'READY'), 'Business identity blocker is READY');
+
 
   // --- Group 2: Pilot Pricing Approval (8 tests) ---
   console.log('\n--- Group 2: Pilot Pricing Approval ---');
@@ -101,14 +102,15 @@ async function runTests() {
   const privHtml = fs.readFileSync(path.join(clientDir, 'privacy.html'), 'utf8');
   const refHtml = fs.readFileSync(path.join(clientDir, 'refund-policy.html'), 'utf8');
 
-  assert(termsHtml.includes('DRAFT — REQUIRES LEGAL REVIEW'), 'Terms of Service displays legal draft notice banner');
-  assert(privHtml.includes('DRAFT — REQUIRES LEGAL REVIEW'), 'Privacy Policy displays legal draft notice banner');
-  assert(refHtml.includes('DRAFT — REQUIRES LEGAL REVIEW'), 'Refund Policy displays legal draft notice banner');
-  assert(termsHtml.includes('[TO BE COMPLETED BEFORE LIVE BILLING]'), 'Terms contains business identity placeholder');
+  assert(termsHtml.includes('vivPR'), 'Terms contains legal business name vivPR');
+  assert(termsHtml.includes('State of New Jersey, United States'), 'Terms contains governing law New Jersey');
+  assert(privHtml.includes('vivPR Privacy Desk'), 'Privacy policy contains vivPR Privacy Desk');
+  assert(refHtml.includes('vivPR Commercial Operations'), 'Refund policy contains vivPR Commercial Operations');
   assert(privHtml.includes('Stripe, Inc.'), 'Privacy policy discloses Stripe payment processing');
   assert(refHtml.includes('7-Day Window'), 'Refund policy specifies clear 7-day criteria');
   assert(termsHtml.includes('3D Gaussian Splatting'), 'Terms discloses 3DGS neural reconstruction specifics');
   assert(refHtml.includes('Customer Portal'), 'Refund policy references Stripe customer portal');
+
 
   console.log('\n============================================================');
   console.log(`TEST SUMMARY: Total: ${totalTests} | Passed: ${passedTests} | Failed: ${failedTests}`);

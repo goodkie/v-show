@@ -30,12 +30,13 @@
 | **Operations** | 긴급 킬 스위치 3종 | **`READY`** | Billing(503), Reconstruction(503), Maintenance 스위치 검증 |
 | **Operations** | 백업 및 복구 훈련 | **`READY`** | `scripts/restore_drill.js` 실행 결과 100% 무결성 복원 성공 |
 | **Legal** | 영문 법률 문서 초안 | **`READY`** | `/terms.html`, `/privacy.html`, `/refund-policy.html` 영문화 및 DRAFT 배너 유지 |
-| **Identity** | 비즈니스 법인 정보 입력 | **`BLOCKED`** | `[TO BE COMPLETED BEFORE LIVE BILLING]` 플레이스홀더 (운영자 입력 대기) |
+| **Identity** | 비즈니스 법인 정보 입력 | **`READY`** | `vivPR` (Fort Lee, NJ, info@vivpr.pro, NJ Law) 등록 완료 (`isComplete: true`) |
 | **Billing** | Stripe Live Mode 활성화 | **`OFF`** | 실제 라이브 키 미설정 및 2단계 라이브 스위치 꺼짐 상태 유지 |
 
 ---
 
 ## 3. 필수 인간 결정 사항 (Human Decisions Required)
-1. **비즈니스 신원 정보 입력**: 상용 라이브 결제 개시 전 실제 법인명, 사업장 주소, 대표 문의 이메일, 준거법 확정.
-2. **법률 문서 최종 승인**: 변호사/법무팀 검토 후 `terms.html`, `privacy.html`, `refund-policy.html`의 DRAFT 표기 해제.
+1. **법률 문서 최종 승인**: 변호사/법무팀 검토 후 `terms.html`, `privacy.html`, `refund-policy.html`의 DRAFT 표기 해제 (`legalReviewStatus=PENDING`).
+2. **세무 넥서스 검토**: 해외/미국 주별 세무 등록 및 송장 발행 정책 검토 (`taxReadiness=REVIEW_REQUIRED`).
 3. **Stripe Live Mode 전환 승인**: 실제 신용카드 과금을 개시할 시점에 Stripe Live Secret Key를 Railway 환경 변수에 주입하고 라이브 승인 플래그 활성화.
+
