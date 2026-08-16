@@ -1286,7 +1286,7 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
     if (flags.billingKillSwitch) {
       return res.status(503).json({
         error: 'BILLING_TEMPORARILY_DISABLED',
-        message: '플랫폼 정기 점검 또는 안전 조치로 인해 신규 구독 결제가 일시 중단되었습니다.'
+        message: 'New subscription checkouts are temporarily disabled due to system maintenance or security controls.'
       });
     }
 
@@ -1300,7 +1300,7 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
       if (env !== 'REAL') {
         return res.status(403).json({
           error: 'LIVE_BILLING_NOT_ALLOWED_FOR_ENVIRONMENT',
-          message: 'TEST 및 SYNTHETIC_TEST 환경에서는 Live Checkout을 진행할 수 없습니다.'
+          message: 'Live checkouts are only permitted for production organizations.'
         });
       }
 
@@ -1309,7 +1309,7 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
       if (!allowedOrgs.includes(org.id)) {
         return res.status(403).json({
           error: 'LIVE_BILLING_NOT_ALLOWED_FOR_ORG',
-          message: '초대 전용 1차 라이브 파일럿에 등록된 승인 고객사만 결제를 진행할 수 있습니다.'
+          message: 'Only pre-approved organizations in the invite-only pilot may proceed with live billing.'
         });
       }
 
@@ -1319,7 +1319,7 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
       if (paidCount >= maxLimit) {
         return res.status(403).json({
           error: 'LIVE_PILOT_CUSTOMER_LIMIT_REACHED',
-          message: '초대 전용 1차 라이브 파일럿 정원(1개사)이 마감되었습니다.'
+          message: 'The invite-only pilot capacity (1 customer) has been reached.'
         });
       }
 
@@ -1327,7 +1327,7 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
       if (flags.pricingStatus !== 'approved_for_pilot' && flags.pricingStatus !== 'approved') {
         return res.status(403).json({
           error: 'PILOT_PRICING_NOT_APPROVED',
-          message: '파일럿 상용 요금제에 대한 최고 운영자의 최종 승인이 필요합니다.'
+          message: 'Pilot pricing requires platform owner approval.'
         });
       }
 
@@ -1335,7 +1335,7 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
       if (flags.legalReviewStatus !== 'approved') {
         return res.status(403).json({
           error: 'LEGAL_REVIEW_NOT_APPROVED',
-          message: '이용약관 및 정책 문서에 대한 법률 검토 승인이 필요합니다.'
+          message: 'Legal terms and policy review approval is required before live checkout.'
         });
       }
 
@@ -1343,7 +1343,7 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
       if (!flags.stripeLiveBillingEnabled || !flags.liveBillingApprovedByOwner) {
         return res.status(403).json({
           error: 'STRIPE_LIVE_MODE_NOT_APPROVED',
-          message: 'Stripe Live Mode 결제 활성화를 위한 최고 운영자의 최종 승인이 필요합니다.'
+          message: 'Stripe Live Mode activation requires platform owner authorization.'
         });
       }
     }
@@ -1357,9 +1357,10 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
     if (!consentTerms || !consentRecurring) {
       return res.status(400).json({
         error: 'CHECKOUT_CONSENT_REQUIRED',
-        message: '이용약관, 개인정보처리방침 및 월간 정기 구독 조건에 대한 명시적 동의가 필요합니다.'
+        message: 'Explicit consent to Terms of Service, Privacy Policy, and recurring monthly billing terms is required.'
       });
     }
+
 
     const gov = db.getCommercialGovernance();
     const planLimits = db.getPlanLimits(requestedPlan);
@@ -1373,11 +1374,13 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
       amountUsd: planLimits.monthlyPriceUsd,
       currency: 'USD',
       interval: 'monthly',
+      pricingVersion: 'pilot-2026.1',
       termsVersion: gov.policyVersions.termsVersion,
       privacyVersion: gov.policyVersions.privacyVersion,
       refundPolicyVersion: gov.policyVersions.refundPolicyVersion,
       acceptedAt: new Date().toISOString()
     };
+
 
     await db.mutate((d) => {
       d.billingEvents = d.billingEvents || [];

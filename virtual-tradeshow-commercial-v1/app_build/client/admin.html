@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,26 +19,26 @@
 <body class="admin-shell">
   <!-- Online Trial Notice Banner -->
   <div class="trial-banner">
-    <span>🌐 <strong>COMMERCIAL BETA</strong> — 참가사 전용 3D 가상 부스 및 리드 오퍼레이션 콘솔입니다.</span>
+    <span>🌐 <strong>COMMERCIAL BETA</strong> — Exhibitor 3D Virtual Booth & Lead Operations Console</span>
   </div>
 
   <!-- Login Modal -->
   <div id="login-modal" class="modal-backdrop active">
     <div class="modal-card" style="max-width: 420px; text-align: center;">
       <div class="brand-logo" style="margin: 0 auto 16px auto; width: 44px; height: 44px; font-size: 20px;">V</div>
-      <h2 style="margin-bottom: 8px;">참가사 관리자 로그인</h2>
-      <p style="font-size: 13px; margin-bottom: 24px;">자사 3D 가상 부스, 제품 및 바이어 리드를 관리합니다.</p>
+      <h2 style="margin-bottom: 8px;">Exhibitor Admin Login</h2>
+      <p style="font-size: 13px; margin-bottom: 24px;">Manage your 3D spatial booth, product catalog, and buyer leads.</p>
       
       <form id="form-login" style="text-align: left;">
         <div class="form-group">
-          <label class="form-label">이메일 계정</label>
+          <label class="form-label">Email Account</label>
           <input type="email" id="login-user" class="form-input" placeholder="exhibitor@company.com" required>
         </div>
         <div class="form-group">
-          <label class="form-label">비밀번호</label>
+          <label class="form-label">Password</label>
           <input type="password" id="login-pass" class="form-input" placeholder="••••••••" required>
         </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">로그인</button>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">Sign In</button>
       </form>
     </div>
   </div>
@@ -47,29 +47,28 @@
   <div id="force-pwd-modal" class="modal-backdrop">
     <div class="modal-card" style="max-width: 420px; text-align: center;">
       <div style="font-size: 32px; margin-bottom: 12px;">🔐</div>
-      <h2 style="margin-bottom: 8px;">새 비밀번호 설정</h2>
+      <h2 style="margin-bottom: 8px;">Set New Password</h2>
       <p style="font-size: 13px; margin-bottom: 20px; color: var(--text-muted);">
-        보안을 위해 초기 발급된 임시 비밀번호를 변경해야 대시보드를 이용하실 수 있습니다.
+        For enhanced security, please change your initial temporary password before proceeding to the dashboard.
       </p>
       
       <form id="form-force-pwd" style="text-align: left;">
         <div class="form-group">
-          <label class="form-label">현재 임시 비밀번호</label>
+          <label class="form-label">Current Temporary Password</label>
           <input type="password" id="force-pwd-current" class="form-input" required>
         </div>
         <div class="form-group">
-          <label class="form-label">새 비밀번호 (6자 이상)</label>
+          <label class="form-label">New Password (Min 6 chars)</label>
           <input type="password" id="force-pwd-new" class="form-input" minlength="6" required>
         </div>
         <div class="form-group">
-          <label class="form-label">새 비밀번호 확인</label>
+          <label class="form-label">Confirm New Password</label>
           <input type="password" id="force-pwd-confirm" class="form-input" minlength="6" required>
         </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">비밀번호 변경 및 시작</button>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">Update Password & Continue</button>
       </form>
     </div>
   </div>
-
 
   <!-- Top Admin Navbar -->
   <header class="admin-nav">
@@ -79,43 +78,41 @@
       <span class="badge badge-reconstructed" style="margin-left: 12px;" id="admin-org-badge">Apex Robotics (Exhibitor)</span>
     </div>
     <div class="nav-actions">
-      <a href="lobby.html" target="_blank" class="btn btn-secondary btn-sm">🏛️ 행사 로비</a>
-      <a href="index.html" target="_blank" class="btn btn-secondary btn-sm" id="btn-preview-public">퍼블릭 부스 ↗</a>
-      <button class="btn btn-danger btn-sm" id="btn-logout">로그아웃</button>
+      <a href="lobby.html" target="_blank" class="btn btn-secondary btn-sm">🏛️ Event Lobby</a>
+      <a href="viewer.html" target="_blank" class="btn btn-secondary btn-sm" id="btn-preview-public">Public Booth ↗</a>
+      <button class="btn btn-danger btn-sm" id="btn-logout">Sign Out</button>
     </div>
   </header>
-
 
   <!-- Admin Main Layout -->
   <div class="admin-body">
     <!-- Sidebar -->
     <aside class="admin-sidebar">
       <div class="admin-nav-item active" data-tab="overview">
-        <span>📊</span> 부스 및 실시간 통계
+        <span>📊</span> Overview & Telemetry
       </div>
       <div class="admin-nav-item" data-tab="booth-settings">
-        <span>🏛️</span> 부스 환경 & 3D 사진
+        <span>🏛️</span> Booth Profile & Photos
       </div>
       <div class="admin-nav-item" data-tab="reconstruction">
-        <span>⚙️</span> 정밀 3D 재구성 & 정렬
+        <span>⚙️</span> Precision 3D & Alignment
       </div>
       <div class="admin-nav-item" data-tab="products">
-        <span>📦</span> 제품 및 카탈로그 관리
+        <span>📦</span> Products & Catalog
       </div>
       <div class="admin-nav-item" data-tab="hotspot-editor">
-        <span>📍</span> Visual 3D 핫스팟 에디터
+        <span>📍</span> Visual 3D Hotspot Editor
       </div>
       <div class="admin-nav-item" data-tab="leads">
-        <span>🤝</span> 유입 리드 & RFQ 관리
+        <span>🤝</span> Leads & RFQ Pipeline
       </div>
       <div class="admin-nav-item" data-tab="billing">
-        <span>💳</span> 요금제 & 빌링 (Billing)
+        <span>💳</span> Billing & Subscriptions
       </div>
       <div class="admin-nav-item" data-tab="inbox">
-        <span>💬</span> 메시지함 <span id="nav-inbox-badge" class="badge badge-reconstructed" style="display:none; font-size:10px; margin-left:6px;">0</span>
+        <span>💬</span> Inbox & Support <span id="nav-inbox-badge" class="badge badge-reconstructed" style="display:none; font-size:10px; margin-left:6px;">0</span>
       </div>
     </aside>
-
 
     <!-- Main Content Area -->
     <main class="admin-content">
@@ -124,31 +121,31 @@
       <section id="tab-overview" class="tab-pane">
         <div class="stats-grid" style="margin-bottom: 24px;">
           <div class="stat-box">
-            <div class="stat-label">부스 누적 방문 (Real Views)</div>
+            <div class="stat-label">Total Booth Visits</div>
             <div class="stat-value" id="stat-views">0</div>
           </div>
           <div class="stat-box">
-            <div class="stat-label">제품 상세 조회 (Product Views)</div>
+            <div class="stat-label">Product Inquiries</div>
             <div class="stat-value" id="stat-clicks">0</div>
           </div>
           <div class="stat-box">
-            <div class="stat-label">핫스팟 클릭 (Hotspot Clicks)</div>
+            <div class="stat-label">Hotspot Clicks</div>
             <div class="stat-value" id="stat-hs-clicks">0</div>
           </div>
           <div class="stat-box">
-            <div class="stat-label">수신된 디지털 명함 (Leads)</div>
+            <div class="stat-label">Digital Leads Collected</div>
             <div class="stat-value" id="stat-leads">0</div>
           </div>
           <div class="stat-box">
-            <div class="stat-label">접수된 견적 요청 (RFQs)</div>
+            <div class="stat-label">RFQs Received</div>
             <div class="stat-value" id="stat-rfqs">0</div>
           </div>
           <div class="stat-box">
-            <div class="stat-label">샘플 신청 (Sample Requests)</div>
+            <div class="stat-label">Sample Requests</div>
             <div class="stat-value" id="stat-samples">0</div>
           </div>
           <div class="stat-box">
-            <div class="stat-label">상담 예약 (Appointments)</div>
+            <div class="stat-label">Appointments Booked</div>
             <div class="stat-value" id="stat-apts">0</div>
           </div>
         </div>
@@ -156,22 +153,22 @@
         <div class="card">
           <div class="card-header">
             <div>
-              <h3 id="current-booth-name-display">부스 정보 로딩 중...</h3>
+              <h3 id="current-booth-name-display">Loading Booth Profile...</h3>
               <p id="current-booth-status-desc" style="font-size: 13px; margin-top: 4px;"></p>
             </div>
             <div style="display: flex; gap: 8px;">
-              <button class="btn btn-primary btn-sm" id="btn-toggle-publish">부스 발행하기</button>
+              <button class="btn btn-primary btn-sm" id="btn-toggle-publish">Publish Booth</button>
             </div>
           </div>
 
           <!-- Quick Status Strip -->
           <div style="display: flex; gap: 16px; align-items: center; background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-sm);">
             <div>
-              <div style="font-size: 12px; color: var(--text-dim); text-transform: uppercase;">3D 공간 렌더링 모드</div>
+              <div style="font-size: 12px; color: var(--text-dim); text-transform: uppercase;">Spatial Rendering Mode</div>
               <div style="font-weight: 600; font-size: 16px; margin-top: 2px;" id="recon-status-text">Photo Preview</div>
             </div>
             <button class="btn btn-secondary btn-sm" id="btn-quick-goto-recon" style="margin-left: auto;">
-              정밀 3D 재구성 & 정렬 도구 ↗
+              Open Precision 3D Tool ↗
             </button>
           </div>
         </div>
@@ -181,16 +178,16 @@
       <section id="tab-booth-settings" class="tab-pane" style="display: none;">
         <div class="card">
           <div class="card-header">
-            <h3>가상 부스 기본 정보</h3>
-            <button class="btn btn-primary btn-sm" id="btn-save-booth-info">저장</button>
+            <h3>Booth Basic Information</h3>
+            <button class="btn btn-primary btn-sm" id="btn-save-booth-info">Save Changes</button>
           </div>
           <form id="form-booth-info">
             <div class="form-group">
-              <label class="form-label">부스 / 기업 명칭</label>
+              <label class="form-label">Exhibitor / Booth Title</label>
               <input type="text" class="form-input" id="edit-booth-name">
             </div>
             <div class="form-group">
-              <label class="form-label">부스 소개 설명</label>
+              <label class="form-label">Booth Description</label>
               <textarea class="form-textarea" id="edit-booth-desc" rows="3"></textarea>
             </div>
           </form>
@@ -199,15 +196,15 @@
         <div class="card">
           <div class="card-header">
             <div>
-              <h3>실물 부스 다각도 사진 업로드</h3>
-              <p style="font-size: 13px;">온라인 Trial에서는 부스당 10~20장의 압축 이미지를 권장합니다. (정밀 3D 재구성 캡처는 30~100장 권장)</p>
+              <h3>Multi-View Booth Photography Upload</h3>
+              <p style="font-size: 13px;">Upload 10-20 images for fast Photo Preview (or 50-80 images for full 3DGS Neural Reconstruction).</p>
             </div>
           </div>
 
           <div class="dropzone" id="photo-dropzone">
             <div style="font-size: 32px; margin-bottom: 8px;">📷</div>
-            <div style="font-weight: 600;">사진 파일을 드래그하여 놓거나 클릭하여 선택하세요.</div>
-            <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">JPG, PNG, WebP 지원 (최대 50장 일괄 업로드, 각 25MB 이하)</div>
+            <div style="font-weight: 600;">Drag and drop photo files or click to browse.</div>
+            <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">JPG, PNG, WebP supported (Up to 50 files batch, max 25MB each)</div>
             <input type="file" id="photo-file-input" multiple accept="image/jpeg,image/png,image/webp" style="display: none;">
           </div>
 
@@ -217,30 +214,30 @@
         </div>
       </section>
 
-      <!-- TAB 3: PRECISION 3D RECONSTRUCTION & ALIGNMENT (PHASE 5) -->
+      <!-- TAB 3: PRECISION 3D RECONSTRUCTION & ALIGNMENT -->
       <section id="tab-reconstruction" class="tab-pane" style="display: none;">
         <!-- Card 1: Capture Quality Validation -->
         <div class="card" style="margin-bottom: 24px;">
           <div class="card-header">
             <div>
-              <h3>📷 캡처 데이터셋 품질 진단 (Capture Validator)</h3>
-              <p style="font-size: 13px;">SfM 특징점 매칭 및 3D Gaussian Splatting 품질을 보장하기 위해 업로드된 사진들을 분석합니다.</p>
+              <h3>📷 Capture Dataset Quality Validator</h3>
+              <p style="font-size: 13px;">Analyzes uploaded photos to verify SfM feature matching and 3D Gaussian Splatting feasibility.</p>
             </div>
-            <span id="badge-capture-quality" class="badge badge-preview">진단 중</span>
+            <span id="badge-capture-quality" class="badge badge-preview">Evaluating</span>
           </div>
 
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px;">
             <div class="stat-box">
-              <div class="stat-label">업로드된 사진 수</div>
+              <div class="stat-label">Uploaded Photos</div>
               <div class="stat-value" id="val-photo-count">0</div>
             </div>
             <div class="stat-box">
-              <div class="stat-label">품질 등급</div>
+              <div class="stat-label">Quality Rating</div>
               <div class="stat-value" id="val-quality-grade">-</div>
             </div>
             <div class="stat-box">
-              <div class="stat-label">재구성 실행 가능 여부</div>
-              <div class="stat-value" id="val-can-reconstruct" style="font-size: 18px; margin-top: 8px;">검증 대기</div>
+              <div class="stat-label">Reconstruction Ready</div>
+              <div class="stat-value" id="val-can-reconstruct" style="font-size: 18px; margin-top: 8px;">Pending Check</div>
             </div>
           </div>
         </div>
@@ -249,13 +246,13 @@
         <div class="card" style="margin-bottom: 24px;">
           <div class="card-header">
             <div>
-              <h3>⚙️ 정밀 3D 재구성 오케스트레이션 (Pipeline Orchestration)</h3>
-              <p style="font-size: 13px;">COLMAP SfM 및 Nerfstudio Splatfacto 비동기 GPU 파이프라인 수명주기를 관리합니다.</p>
+              <h3>⚙️ Precision 3D Pipeline Orchestration</h3>
+              <p style="font-size: 13px;">Manages the asynchronous COLMAP SfM and Nerfstudio Splatfacto GPU lifecycle.</p>
             </div>
             <div style="display: flex; gap: 8px;" id="recon-actions-container">
-              <button class="btn btn-primary btn-sm" id="btn-trigger-reconstruction">🚀 정밀 3D 재구성 요청</button>
-              <button class="btn btn-danger btn-sm" id="btn-cancel-reconstruction" style="display: none;">🛑 작업 취소</button>
-              <button class="btn btn-success btn-sm" id="btn-verify-reconstruction" style="display: none;">✅ 3D 부스 검증 및 승인 (Verify)</button>
+              <button class="btn btn-primary btn-sm" id="btn-trigger-reconstruction">🚀 Request 3DGS Reconstruction</button>
+              <button class="btn btn-danger btn-sm" id="btn-cancel-reconstruction" style="display: none;">🛑 Cancel Job</button>
+              <button class="btn btn-success btn-sm" id="btn-verify-reconstruction" style="display: none;">✅ Verify & Approve 3D Booth</button>
             </div>
           </div>
 
@@ -274,22 +271,22 @@
             </div>
 
             <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-top: 6px;">
-              <span>현재 단계: <strong id="recon-stage-text" style="color: var(--text-main);">준비 중 (Photo Preview)</strong></span>
-              <span id="recon-worker-id-text">Worker: 대기 중</span>
+              <span>Current Stage: <strong id="recon-stage-text" style="color: var(--text-main);">Idle (Photo Preview)</strong></span>
+              <span id="recon-worker-id-text">Worker: Ready</span>
             </div>
           </div>
         </div>
 
-        <!-- Card 3: PRECISION 3D ALIGNMENT TOOL (PHASE 5) -->
+        <!-- Card 3: PRECISION 3D ALIGNMENT TOOL -->
         <div class="card" id="card-precision-alignment">
           <div class="card-header">
             <div>
-              <h3>🔍 정밀 3D 공간 미리보기 & 정렬 도구 (Precision Alignment Tool)</h3>
-              <p style="font-size: 13px;">Gaussian Splat 3D 공간을 부스 월드 좌표계에 맞게 위치(XYZ), 회전, 스케일을 실시간으로 미세 정렬합니다.</p>
+              <h3>🔍 Precision 3D Spatial Alignment Tool</h3>
+              <p style="font-size: 13px;">Fine-tune position (XYZ), rotation, and scale in real time to match 3D space with booth coordinates.</p>
             </div>
             <div style="display: flex; gap: 8px;">
-              <button class="btn btn-secondary btn-sm" id="btn-align-reset">기본값 초기화</button>
-              <button class="btn btn-primary btn-sm" id="btn-save-alignment">💾 정렬 좌표 저장</button>
+              <button class="btn btn-secondary btn-sm" id="btn-align-reset">Reset Defaults</button>
+              <button class="btn btn-primary btn-sm" id="btn-save-alignment">💾 Save Alignment</button>
             </div>
           </div>
 
@@ -298,7 +295,7 @@
             <!-- 3D Precision Canvas Container -->
             <div class="editor-viewport-card" id="align-viewport-container" style="height: 480px;">
               <div class="editor-status-banner">
-                <span>✨ <strong>Spark Gaussian Splatting</strong> 실시간 정렬 뷰포트</span>
+                <span>✨ <strong>Spark Gaussian Splatting</strong> Alignment Viewport</span>
                 <span id="align-fps-badge" style="color: var(--brand-accent); font-family: monospace;">60 FPS</span>
               </div>
               <div id="align-3d-canvas" style="width: 100%; height: 100%;"></div>
@@ -306,11 +303,11 @@
 
             <!-- Alignment Control Sliders -->
             <div style="background: var(--bg-surface-elevated); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 14px;">
-              <h4 style="font-size: 14px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">트랜스폼 정렬 제어</h4>
+              <h4 style="font-size: 14px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">Transform Controls</h4>
 
               <div>
                 <label class="form-label" style="display: flex; justify-content: space-between;">
-                  <span>위치 X (Position X)</span>
+                  <span>Position X</span>
                   <span id="val-pos-x" style="color: var(--brand-accent);">0.0</span>
                 </label>
                 <input type="range" class="form-input" id="slider-pos-x" min="-5" max="5" step="0.05" value="0">
@@ -318,7 +315,7 @@
 
               <div>
                 <label class="form-label" style="display: flex; justify-content: space-between;">
-                  <span>위치 Y (Position Y)</span>
+                  <span>Position Y</span>
                   <span id="val-pos-y" style="color: var(--brand-accent);">0.0</span>
                 </label>
                 <input type="range" class="form-input" id="slider-pos-y" min="-3" max="3" step="0.05" value="0">
@@ -326,7 +323,7 @@
 
               <div>
                 <label class="form-label" style="display: flex; justify-content: space-between;">
-                  <span>위치 Z (Position Z)</span>
+                  <span>Position Z</span>
                   <span id="val-pos-z" style="color: var(--brand-accent);">0.0</span>
                 </label>
                 <input type="range" class="form-input" id="slider-pos-z" min="-5" max="5" step="0.05" value="0">
@@ -334,7 +331,7 @@
 
               <div>
                 <label class="form-label" style="display: flex; justify-content: space-between;">
-                  <span>회전 Y축 (Rotation Y)</span>
+                  <span>Rotation Y (Yaw)</span>
                   <span id="val-rot-y" style="color: var(--brand-accent);">0°</span>
                 </label>
                 <input type="range" class="form-input" id="slider-rot-y" min="-180" max="180" step="1" value="0">
@@ -342,14 +339,14 @@
 
               <div>
                 <label class="form-label" style="display: flex; justify-content: space-between;">
-                  <span>균등 스케일 (Scale)</span>
+                  <span>Uniform Scale</span>
                   <span id="val-scale" style="color: var(--brand-accent);">1.00x</span>
                 </label>
                 <input type="range" class="form-input" id="slider-scale" min="0.2" max="3.0" step="0.02" value="1.0">
               </div>
 
               <div style="font-size: 11px; color: var(--text-dim); margin-top: auto; line-height: 1.4;">
-                * 핫스팟 핀과 3D 물체의 위치가 일치하도록 조정한 후 [💾 정렬 좌표 저장]을 클릭하세요.
+                * Align the 3D model with interactive hotspot markers and click [💾 Save Alignment].
               </div>
             </div>
           </div>
@@ -361,22 +358,22 @@
         <div class="card">
           <div class="card-header">
             <div>
-              <h3>전시 제품 관리 (Product Management)</h3>
-              <p style="font-size: 13px;">가상 부스에 전시할 제품 카탈로그 및 사양을 등록합니다.</p>
+              <h3>Exhibition Products & Catalog</h3>
+              <p style="font-size: 13px;">Manage product listings and specifications for your virtual booth.</p>
             </div>
-            <button class="btn btn-primary btn-sm" id="btn-open-add-product">+ 새 제품 등록</button>
+            <button class="btn btn-primary btn-sm" id="btn-open-add-product">+ Add New Product</button>
           </div>
 
           <table class="data-table">
             <thead>
               <tr>
-                <th>제품명</th>
+                <th>Product Name</th>
                 <th>SKU</th>
-                <th>카테고리</th>
+                <th>Category</th>
                 <th>MOQ</th>
-                <th>도매 단가</th>
-                <th>샘플 제공</th>
-                <th>관리</th>
+                <th>Price (USD)</th>
+                <th>Sample</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="products-table-body">
@@ -392,30 +389,30 @@
           <div class="card-header">
             <div>
               <h3>Visual 3D Hotspot Editor</h3>
-              <p style="font-size: 13px;">3D 부스 화면을 마우스로 탐색하고, 원하는 제품을 선택한 뒤 부스 표면을 직접 클릭하여 핫스팟을 배치/재배치합니다.</p>
+              <p style="font-size: 13px;">Orbit around your 3D booth, select a target product, and click any surface to place an interactive pin.</p>
             </div>
           </div>
 
           <!-- Editor Control Toolbar -->
           <div class="editor-toolbar">
             <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
-              <label class="form-label" style="margin: 0; white-space: nowrap;">연결 제품:</label>
+              <label class="form-label" style="margin: 0; white-space: nowrap;">Target Product:</label>
               <select class="form-select" id="editor-product-select" style="max-width: 280px;">
                 <!-- Dynamically injected -->
               </select>
-              <button class="btn btn-primary btn-sm" id="btn-start-placement">📍 + 핫스팟 배치 모드</button>
-              <button class="btn btn-secondary btn-sm" id="btn-reposition-hotspot" disabled>🔄 재배치</button>
-              <button class="btn btn-danger btn-sm" id="btn-delete-selected-hotspot" disabled>🗑️ 삭제</button>
+              <button class="btn btn-primary btn-sm" id="btn-start-placement">📍 + Place Hotspot</button>
+              <button class="btn btn-secondary btn-sm" id="btn-reposition-hotspot" disabled>🔄 Reposition</button>
+              <button class="btn btn-danger btn-sm" id="btn-delete-selected-hotspot" disabled>🗑️ Delete</button>
             </div>
             <div style="display: flex; gap: 8px;">
-              <button class="btn btn-secondary btn-sm" id="btn-editor-reset-cam">뷰 리셋</button>
+              <button class="btn btn-secondary btn-sm" id="btn-editor-reset-cam">Reset Cam</button>
             </div>
           </div>
 
           <!-- 3D Interactive Viewport Container -->
           <div class="editor-viewport-card" id="editor-viewport-container">
             <div class="editor-status-banner" id="editor-status-banner">
-              <span id="editor-status-text">ℹ️ 상단에서 제품을 선택한 후 [+ 핫스팟 배치 모드] 버튼을 누르고 부스 표면을 클릭하세요.</span>
+              <span id="editor-status-text">ℹ️ Select a product above, click [+ Place Hotspot], then click on the booth surface.</span>
               <span id="editor-selected-info" style="font-weight: 600; color: var(--brand-accent);"></span>
             </div>
             <div id="editor-3d-canvas" style="width: 100%; height: 100%;"></div>
@@ -424,15 +421,15 @@
 
           <!-- Existing Hotspots Table -->
           <div style="margin-top: 24px;">
-            <h4 style="margin-bottom: 12px;">등록된 3D 핫스팟 목록</h4>
+            <h4 style="margin-bottom: 12px;">Active 3D Hotspots</h4>
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>라벨 / 제품명</th>
-                  <th>연결 제품 SKU</th>
-                  <th>3D 좌표 (X, Y, Z)</th>
-                  <th>최종 수정일시</th>
-                  <th>관리</th>
+                  <th>Label / Product</th>
+                  <th>SKU</th>
+                  <th>Coordinates (X, Y, Z)</th>
+                  <th>Last Updated</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="editor-hotspots-table-body">
@@ -447,17 +444,17 @@
       <section id="tab-leads" class="tab-pane" style="display: none;">
         <div class="card" style="margin-bottom: 24px;">
           <div class="card-header">
-            <h3>수신된 디지털 명함 목록 (Leads)</h3>
+            <h3>Digital Business Cards (Leads)</h3>
           </div>
           <table class="data-table">
             <thead>
               <tr>
-                <th>회사명</th>
-                <th>성명</th>
-                <th>이메일</th>
-                <th>연락처</th>
-                <th>직책</th>
-                <th>접수일시</th>
+                <th>Company</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Title</th>
+                <th>Timestamp</th>
               </tr>
             </thead>
             <tbody id="leads-table-body">
@@ -468,17 +465,17 @@
 
         <div class="card">
           <div class="card-header">
-            <h3>접수된 견적 요청 목록 (RFQs)</h3>
+            <h3>Requests for Quotation (RFQs)</h3>
           </div>
           <table class="data-table">
             <thead>
               <tr>
-                <th>제품 ID</th>
-                <th>구매자 / 회사</th>
-                <th>수량</th>
-                <th>희망 단가</th>
-                <th>상태</th>
-                <th>접수일시</th>
+                <th>Product</th>
+                <th>Buyer / Company</th>
+                <th>Quantity</th>
+                <th>Target Price</th>
+                <th>Status</th>
+                <th>Timestamp</th>
               </tr>
             </thead>
             <tbody id="rfqs-table-body">
@@ -494,94 +491,93 @@
         <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
           <div>
             <strong style="color: #60a5fa;">🧪 STRIPE TEST MODE — NO REAL CHARGES</strong>
-            <p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0 0;">현재 결제 시스템은 샌드박스 테스트 모드로 운영 중이며 실제 현금 과금이 발생하지 않습니다 ($0.00).</p>
+            <p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0 0;">Billing is currently running in test sandbox mode. No real cards will be charged ($0.00).</p>
           </div>
           <div style="font-size: 12px; display: flex; gap: 12px;">
-            <a href="terms.html" target="_blank" style="color: var(--accent);">이용약관</a>
-            <a href="privacy.html" target="_blank" style="color: var(--accent);">개인정보처리방침</a>
-            <a href="refund-policy.html" target="_blank" style="color: var(--accent);">환불정책</a>
+            <a href="terms.html" target="_blank" style="color: var(--accent);">Terms</a>
+            <a href="privacy.html" target="_blank" style="color: var(--accent);">Privacy</a>
+            <a href="refund-policy.html" target="_blank" style="color: var(--accent);">Refund Policy</a>
           </div>
         </div>
 
         <div class="card" style="margin-bottom: 24px;">
           <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <h3>💳 자사 요금제 및 구독 상태</h3>
-              <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">플랜별 엔타이틀먼트 및 정밀 3D Gaussian 재구성 권한 관리</p>
+              <h3>💳 Organization Subscription Plan</h3>
+              <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Plan entitlements, product quotas, and Spark 3DGS neural rendering privileges.</p>
             </div>
             <div id="billing-status-badge" class="badge badge-reconstructed">PRO BETA ACTIVE</div>
           </div>
 
-
           <div class="stats-grid" style="margin-bottom: 20px;">
             <div class="stat-box">
-              <div class="stat-label">현재 구독 플랜</div>
+              <div class="stat-label">Active Plan</div>
               <div class="stat-value" id="plan-name-display">PRO</div>
             </div>
             <div class="stat-box">
-              <div class="stat-label">등록 제품 한도</div>
+              <div class="stat-label">Product Quota</div>
               <div class="stat-value" id="plan-products-usage">0 / 25</div>
             </div>
             <div class="stat-box">
-              <div class="stat-label">3D 핫스팟 한도</div>
+              <div class="stat-label">3D Hotspot Quota</div>
               <div class="stat-value" id="plan-hotspots-usage">0 / 15</div>
             </div>
             <div class="stat-box">
-              <div class="stat-label">정밀 3DGS 재구성 권한</div>
-              <div class="stat-value" id="plan-precision-status" style="color: var(--accent);">활성화 (Eligible)</div>
+              <div class="stat-label">Spark 3DGS Privileges</div>
+              <div class="stat-value" id="plan-precision-status" style="color: var(--accent);">Eligible</div>
             </div>
           </div>
 
           <div style="display: flex; gap: 12px; margin-top: 16px;">
-            <button class="btn btn-primary" onclick="window.adminApp.startUpgradeCheckout('pro')">💎 PRO 플랜 구독 ($299/월)</button>
-            <button class="btn btn-secondary" onclick="window.adminApp.startUpgradeCheckout('business')">🏢 BUSINESS 플랜 구독 ($799/월)</button>
-            <button class="btn btn-secondary" onclick="window.adminApp.openCustomerPortal()">⚙️ Stripe 빌링 포털 관리</button>
+            <button class="btn btn-primary" onclick="window.adminApp.startUpgradeCheckout('pro')">💎 Subscribe to PRO ($299/mo)</button>
+            <button class="btn btn-secondary" onclick="window.adminApp.startUpgradeCheckout('business')">🏢 Subscribe to BUSINESS ($799/mo)</button>
+            <button class="btn btn-secondary" onclick="window.adminApp.openCustomerPortal()">⚙️ Stripe Customer Portal</button>
           </div>
         </div>
 
         <div class="card">
           <div class="card-header">
-            <h3>플랜별 기능 및 엔타이틀먼트 비교</h3>
+            <h3>Plan Entitlements Comparison</h3>
           </div>
           <table class="data-table">
             <thead>
               <tr>
-                <th>기능 항목</th>
-                <th>FREE 플랜</th>
-                <th>PRO 플랜 ($299/월)</th>
-                <th>BUSINESS 플랜 ($799/월)</th>
+                <th>Feature</th>
+                <th>FREE Plan</th>
+                <th>PRO Plan ($299/mo)</th>
+                <th>BUSINESS Plan ($799/mo)</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td><strong>최대 등록 제품 수</strong></td>
-                <td>5개</td>
-                <td><strong>25개</strong></td>
-                <td><strong>100개</strong></td>
+                <td><strong>Max Products</strong></td>
+                <td>5 Units</td>
+                <td><strong>25 Units</strong></td>
+                <td><strong>100 Units</strong></td>
               </tr>
               <tr>
-                <td><strong>3D 인터랙티브 핫스팟</strong></td>
-                <td>3개</td>
-                <td><strong>15개</strong></td>
-                <td><strong>50개</strong></td>
+                <td><strong>3D Hotspots</strong></td>
+                <td>3 Pins</td>
+                <td><strong>15 Pins</strong></td>
+                <td><strong>50 Pins</strong></td>
               </tr>
               <tr>
-                <td><strong>Spark 정밀 3D Gaussian 가상 부스</strong></td>
-                <td>미지원 (사진 프리뷰 전용)</td>
-                <td><strong>전체 지원 (Nerfstudio 3DGS)</strong></td>
-                <td><strong>전체 지원 (우선 GPU 처리)</strong></td>
+                <td><strong>Spark Precision 3DGS</strong></td>
+                <td>Photo Preview Only</td>
+                <td><strong>Full 3DGS (SPZ)</strong></td>
+                <td><strong>Full 3DGS (Priority Queue)</strong></td>
               </tr>
               <tr>
-                <td><strong>커스텀 브랜딩 & 테마</strong></td>
-                <td>기본 테마</td>
-                <td><strong>지원</strong></td>
-                <td><strong>지원 (전용 스타일링)</strong></td>
+                <td><strong>Custom Branding & Logo</strong></td>
+                <td>Standard</td>
+                <td><strong>Included</strong></td>
+                <td><strong>Included (Custom Styling)</strong></td>
               </tr>
               <tr>
-                <td><strong>바이어 분석 데이터 CSV 추출</strong></td>
-                <td>미지원</td>
-                <td><strong>지원</strong></td>
-                <td><strong>지원 (API 연동 포함)</strong></td>
+                <td><strong>Leads & RFQ CSV Export</strong></td>
+                <td>Not Included</td>
+                <td><strong>Included</strong></td>
+                <td><strong>Included (API Access)</strong></td>
               </tr>
             </tbody>
           </table>
@@ -593,17 +589,16 @@
         <div class="card" style="margin-bottom: 20px;">
           <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <h3>💬 플랫폼 운영팀 메시지 및 고객 지원</h3>
-              <p style="font-size: 13px; color: var(--text-muted);">플랫폼 본부에서 발송된 공지 및 기술 지원 스레드입니다.</p>
+              <h3>💬 Platform Operations & Support Inbox</h3>
+              <p style="font-size: 13px; color: var(--text-muted);">Official announcements and direct communication threads with platform administration.</p>
             </div>
-            <button class="btn btn-secondary btn-sm" onclick="window.adminApp.openContactOwnerModal()">✉️ 운영팀에 문의하기</button>
+            <button class="btn btn-secondary btn-sm" onclick="window.adminApp.openContactOwnerModal()">✉️ Contact Support</button>
           </div>
           <div id="admin-inbox-list" style="display: flex; flex-direction: column; gap: 12px;">
             <!-- Inbox items -->
           </div>
         </div>
       </section>
-
 
     </main>
   </div>
@@ -612,58 +607,58 @@
   <div id="modal-add-product" class="modal-backdrop">
     <div class="modal-card">
       <div class="modal-header">
-        <h3 id="modal-product-form-title">새 제품 등록</h3>
+        <h3 id="modal-product-form-title">Add New Product</h3>
         <button class="modal-close" data-close-modal>&times;</button>
       </div>
       <form id="form-product-crud">
         <input type="hidden" id="crud-product-id">
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">제품명 *</label>
-            <input type="text" class="form-input" id="crud-name" required placeholder="예: 산업용 6축 협동로봇">
+            <label class="form-label">Product Name *</label>
+            <input type="text" class="form-input" id="crud-name" required placeholder="e.g. 6-Axis Collaborative Robot">
           </div>
           <div class="form-group">
             <label class="form-label">SKU *</label>
-            <input type="text" class="form-input" id="crud-sku" required placeholder="예: APX-ROB-01">
+            <input type="text" class="form-input" id="crud-sku" required placeholder="e.g. APX-ROB-01">
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">카테고리</label>
-            <input type="text" class="form-input" id="crud-category" placeholder="예: Robotics">
+            <label class="form-label">Category</label>
+            <input type="text" class="form-input" id="crud-category" placeholder="e.g. Robotics">
           </div>
           <div class="form-group">
-            <label class="form-label">최소 주문 수량 (MOQ)</label>
+            <label class="form-label">Minimum Order Quantity (MOQ)</label>
             <input type="number" class="form-input" id="crud-moq" min="1" value="1">
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">도매 단가 (USD)</label>
+            <label class="form-label">Wholesale Price (USD)</label>
             <input type="number" class="form-input" id="crud-price" placeholder="15000">
           </div>
           <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 24px;">
             <input type="checkbox" id="crud-contact-price">
             <label for="crud-contact-price" style="font-size: 13px; color: var(--text-main); cursor: pointer;">
-              단가 문의로 표시 (Contact for Price)
+              Display as "Contact for Price"
             </label>
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">제품 대표 이미지 URL</label>
-          <input type="text" class="form-input" id="crud-image" placeholder="https://... 또는 이미지 업로드">
+          <label class="form-label">Product Image URL</label>
+          <input type="text" class="form-input" id="crud-image" placeholder="https://... or upload asset">
         </div>
         <div class="form-group">
-          <label class="form-label">제품 상세 설명</label>
+          <label class="form-label">Product Description</label>
           <textarea class="form-textarea" id="crud-desc" rows="3"></textarea>
         </div>
         <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
           <input type="checkbox" id="crud-sample-avail" checked>
           <label for="crud-sample-avail" style="font-size: 13px; color: var(--text-main); cursor: pointer;">
-            샘플 신청 가능 제품
+            Sample requests available
           </label>
         </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">제품 저장</button>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">Save Product</button>
       </form>
     </div>
   </div>
@@ -672,34 +667,34 @@
   <div id="checkout-consent-modal" class="modal-overlay" style="display: none;">
     <div class="modal-card" style="max-width: 520px;">
       <div class="modal-header">
-        <h3 id="consent-modal-title">💎 구독 플랜 업그레이드 확인</h3>
+        <h3 id="consent-modal-title">💎 Confirm Subscription Upgrade</h3>
         <button class="modal-close-btn" onclick="document.getElementById('checkout-consent-modal').style.display='none'">✕</button>
       </div>
       <div style="padding: 16px 0;">
         <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; padding: 14px; border-radius: 8px; margin-bottom: 20px;">
-          <div style="font-size: 15px; font-weight: 700; color: #60a5fa;" id="consent-plan-headline">PRO 플랜 ($299 / 월)</div>
-          <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">정밀 3D Gaussian Splatting 부스 재구성 및 확장 바이어 분석 기능이 활성화됩니다.</p>
+          <div style="font-size: 15px; font-weight: 700; color: #60a5fa;" id="consent-plan-headline">PRO Plan ($299 / month)</div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Activates Spark 3DGS neural spatial reconstruction, expanded product limits, and buyer analytics.</p>
         </div>
 
         <div style="margin-bottom: 20px;">
           <label style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; cursor: pointer;">
             <input type="checkbox" id="chk-consent-terms" style="margin-top: 3px;">
             <span style="font-size: 13px; line-height: 1.5;">
-              <strong>[필수]</strong> <a href="terms.html" target="_blank" style="color: var(--accent);">서비스 이용약관</a> 및 <a href="privacy.html" target="_blank" style="color: var(--accent);">개인정보 처리방침</a>, <a href="refund-policy.html" target="_blank" style="color: var(--accent);">환불정책</a>의 모든 내용을 확인하였으며 이에 동의합니다.
+              <strong>[Required]</strong> I have reviewed and agree to the <a href="terms.html" target="_blank" style="color: var(--accent);">Terms of Service</a>, <a href="privacy.html" target="_blank" style="color: var(--accent);">Privacy Policy</a>, and <a href="refund-policy.html" target="_blank" style="color: var(--accent);">Refund Policy</a>.
             </span>
           </label>
 
           <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
             <input type="checkbox" id="chk-consent-recurring" style="margin-top: 3px;">
             <span style="font-size: 13px; line-height: 1.5;">
-              <strong>[필수]</strong> 본 상품은 매월 지정된 결제일에 자동 청구되는 <strong>월간 정기 구독(Monthly Recurring)</strong> 상품이며, 언제든지 Stripe 고객 포털에서 즉시 취소할 수 있음을 이해하고 동의합니다.
+              <strong>[Required]</strong> I understand that this is a <strong>monthly recurring subscription</strong> automatically billed until cancelled, and I may cancel anytime via the Stripe Customer Portal.
             </span>
           </label>
         </div>
 
         <div style="display: flex; gap: 10px; justify-content: flex-end;">
-          <button class="btn btn-secondary" onclick="document.getElementById('checkout-consent-modal').style.display='none'">취소</button>
-          <button class="btn btn-primary" id="btn-proceed-checkout" onclick="window.adminApp.proceedWithConsentCheckout()">동의 및 결제 진행</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('checkout-consent-modal').style.display='none'">Cancel</button>
+          <button class="btn btn-primary" id="btn-proceed-checkout" onclick="window.adminApp.proceedWithConsentCheckout()">Agree & Proceed to Checkout</button>
         </div>
       </div>
     </div>

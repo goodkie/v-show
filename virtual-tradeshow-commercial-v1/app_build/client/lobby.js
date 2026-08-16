@@ -48,8 +48,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (booths.length === 0) {
       boothGrid.innerHTML = `
         <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: var(--text-muted);">
-          <h3>🔍 검색 조건과 일치하는 참가사 부스가 없습니다.</h3>
-          <p style="margin-top: 8px;">다른 검색어나 카테고리를 선택해 보세요.</p>
+          <h3>🔍 No exhibitor booths match your search criteria.</h3>
+          <p style="margin-top: 8px;">Try selecting another category or keyword.</p>
         </div>
       `;
       return;
@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     booths.forEach(booth => {
       const card = document.createElement('a');
       card.className = 'booth-card';
-      card.href = `index.html?boothId=${booth.id}`;
+      card.href = `viewer.html?boothId=${booth.id}`;
 
       const coverImg = (booth.photos && booth.photos[0]) || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80';
       const isPrecision = booth.reconstructionStatus === 'verified';
@@ -71,11 +71,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="booth-badge-pos">${badgeHtml}</div>
         </div>
         <div class="booth-content">
-          <div class="booth-name">${booth.name}</div>
-          <div class="booth-desc">${booth.description || '가상 부스 3D 공간과 제품 라인업을 체험해 보세요.'}</div>
+          <div class="booth-name">${escapeHtml(booth.name)}</div>
+          <div class="booth-desc">${escapeHtml(booth.description || 'Explore the 3D virtual booth space and innovative product lineup.')}</div>
           <div class="booth-footer">
-            <span>🚪 부스 입장하기</span>
-            <span style="color: var(--brand-accent); font-weight: 600;">입장 →</span>
+            <span>🚪 Enter 3D Booth</span>
+            <span style="color: var(--brand-accent); font-weight: 600;">Visit &rarr;</span>
           </div>
         </div>
       `;
@@ -110,10 +110,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     btn.addEventListener('click', () => {
       catButtons.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      currentCategory = btn.getAttribute('data-cat');
+      currentCategory = btn.dataset.cat;
       filterBooths();
     });
   });
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
 
   await loadEventData();
 });

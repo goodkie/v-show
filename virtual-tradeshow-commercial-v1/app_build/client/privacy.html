@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>개인정보 처리방침 (Privacy Policy) | Virtual Trade Show Commercial V1</title>
+  <title>Privacy Policy | Virtual Trade Show Commercial V1</title>
   <style>
     :root {
       --bg: #090d16;
@@ -71,58 +71,54 @@
 
   <div class="legal-container">
     <div class="legal-banner">
-      ⚠️ DRAFT — REQUIRES LEGAL REVIEW (본 문서는 법률 전문가의 검토가 필요한 상용 초안 문서입니다)
+      ⚠️ DRAFT — REQUIRES LEGAL REVIEW (This document is a commercial engineering draft subject to attorney review before live billing)
     </div>
 
-    <h1>개인정보 처리방침 (Privacy Policy)</h1>
+    <h1>Privacy Policy</h1>
     <div class="policy-meta">
-      <span><strong>정책 버전:</strong> 2026.1-draft</span>
-      <span><strong>상태:</strong> 초안 (Draft)</span>
-      <span><strong>시행일:</strong> [TO BE COMPLETED BEFORE LIVE BILLING]</span>
+      <span><strong>Policy Version:</strong> 2026.1-draft</span>
+      <span><strong>Status:</strong> Draft</span>
+      <span><strong>Effective Date:</strong> [TO BE COMPLETED BEFORE LIVE BILLING]</span>
     </div>
 
-    <h2>1. 수집하는 개인정보 항목 (Data Inventory)</h2>
-    <p>플랫폼은 가상 전시회 운영 및 비즈니스 매칭을 위해 다음의 정보를 최소한으로 수집합니다:</p>
+    <h2>1. Data Collection and Inventory</h2>
+    <p>To operate the virtual exhibition and business matching workflows, the Platform collects minimal necessary data:</p>
     <ul>
-      <li><strong>회원 계정 정보:</strong> 담당자 성명, 기업 이메일 주소, 소속 조직명, 직책, 암호화된 비밀번호 해시, 로그인 세션 메타데이터.</li>
-      <li><strong>참가사 부스 및 제품 정보:</strong> 회사 소개, 제품 카탈로그, 제원표, 업로드된 부스 촬영 사진(50~100장).</li>
-      <li><strong>바이어 리드 및 견적 요청(RFQ):</strong> 바이어 성명, 회사명, 업무용 이메일, 연락처, 구매 희망 수량, 납기일, 견적 요청 내용.</li>
-      <li><strong>웹 서비스 이용 로그:</strong> 익명 뷰어 세션 ID, 부스 방문 횟수, 3D 핫스팟 클릭, 제품 조회 이벤트(개인 비식별 통계).</li>
+      <li><strong>User Account Information:</strong> Name, corporate email address, organization name, job role, hashed session tokens, and security metadata.</li>
+      <li><strong>Exhibitor Booth & Catalog Data:</strong> Company profiles, product specifications, uploaded booth photographs, and spatial models.</li>
+      <li><strong>Buyer Leads & RFQ Submissions:</strong> Buyer full name, company, work email, phone number, desired quantities, delivery requirements, and inquiry notes.</li>
+      <li><strong>Usage & Telemetry Logs:</strong> Anonymous viewer session IDs, booth visit frequencies, 3D hotspot interaction timestamps (aggregated non-personally identifiable metrics).</li>
     </ul>
 
-    <h2>2. 결제 데이터의 분리 및 Stripe 위탁 처리 (Payment Data)</h2>
-    <p>플랫폼의 모든 유료 구독 결제 처리는 PCI-DSS 레벨 1 인증을 획득한 <strong>Stripe, Inc.</strong>에 의해 전적으로 처리됩니다. 당사의 웹 서버 및 데이터베이스에는 회원의 신용카드 번호(PAN), 유효기간, CVC 코드가 일체 저장되거나 전송되지 않으며, 고객 식별용 Stripe Customer ID 및 Subscription ID 등 결제 참조 메타데이터만 보관됩니다.</p>
+    <h2>2. Payment Data Isolation (Stripe Processing)</h2>
+    <p>All credit card transactions and subscription processing are conducted exclusively by <strong>Stripe, Inc.</strong>, a PCI-DSS Level 1 certified payment service provider. The Company's servers and database never store, receive, or transmit full Primary Account Numbers (PAN) or CVC security codes. We maintain only Stripe Customer IDs and Subscription IDs as payment reference metadata.</p>
 
-    <h2>3. 개인정보의 수집 및 이용 목적 (Purposes)</h2>
+    <h2>3. Purposes of Processing</h2>
     <ul>
-      <li>가상 3D 부스 제공 및 바이어-참가사 간 1:1 비즈니스 상담, 견적서(RFQ) 전달</li>
-      <li>구독 플랜 권한 부여, 요금 결제 관리 및 결제 내역 확인</li>
-      <li>서비스 장애 대응, 보안 침해 사고 방지 및 시스템 품질 향상</li>
+      <li>To host and render interactive 3D virtual trade show booths.</li>
+      <li>To facilitate B2B communication, RFQ submissions, and digital business card delivery between buyers and exhibitors.</li>
+      <li>To enforce subscription entitlements and maintain infrastructure security.</li>
     </ul>
 
-    <h2>4. 개인정보의 제3자 제공 및 위탁 처리 (Subprocessors)</h2>
-    <p>원활한 클라우드 서비스 제공을 위해 다음과 같은 기술 인프라 제공업체에 데이터 처리를 위탁합니다:</p>
+    <h2>4. Subprocessors and Infrastructure Partners</h2>
     <ul>
-      <li><strong>호스팅 인프라:</strong> Railway.app (서버 호스팅 및 암호화 볼륨 스토리지)</li>
-      <li><strong>결제 인프라:</strong> Stripe, Inc. (글로벌 신용카드 결제 및 고객 빌링 포털)</li>
-      <li><strong>GPU 연산 인프라:</strong> Modal Labs (정밀 3D Gaussian Splatting 비동기 렌더링)</li>
-      <li><strong>실시간 화상 통신:</strong> WebRTC P2P (1:1 바이어 화상 상담 음성/영상 스트림)</li>
+      <li><strong>Cloud Hosting:</strong> Railway.app (Container hosting and encrypted persistent volumes)</li>
+      <li><strong>Payment Gateway:</strong> Stripe, Inc. (Global payment processing and billing portal)</li>
+      <li><strong>GPU Compute:</strong> Modal Labs (Asynchronous 3D Gaussian Splatting rendering)</li>
+      <li><strong>Realtime Audio/Video:</strong> WebRTC P2P (Direct peer-to-peer 1:1 consultation streams)</li>
     </ul>
 
-    <h2>5. 개인정보의 보유 및 파기 절차 (Retention & Deletion)</h2>
-    <p>회원 탈퇴 시 또는 개인정보 삭제 요청 접수 시 지체 없이 암호화 해시 및 관련 데이터를 영구 파기합니다. 단, 전자상거래법 등 관련 법령에 따라 보존이 의무화된 거래 기록은 법정 기간 동안 별도 분리 보관 후 파기됩니다.</p>
+    <h2>5. Data Retention and Erasure (DSR)</h2>
+    <p>Data is retained only as long as the organization maintains an active subscription or as required by statutory commercial recordkeeping laws. Users may exercise data subject rights (access, portability, deletion) in accordance with our <a href="terms.html">Privacy Runbook</a>.</p>
 
-    <h2>6. 정보주체의 권리 및 행사 방법 (Privacy Rights)</h2>
-    <p>회원 및 바이어는 언제든지 자신의 개인정보 열람, 정정, 삭제, 처리 정지를 요청할 수 있으며, 참가사 관리자는 어드민 콘솔에서 자신의 리드 및 제품 데이터를 CSV 형식으로 자율 다운로드할 수 있습니다.</p>
-
-    <h2>7. 개인정보 보호책임자 및 연락처</h2>
+    <h2>6. Privacy Officer and Inquiries</h2>
     <ul>
-      <li><strong>개인정보 보호책임자:</strong> [TO BE COMPLETED BEFORE LIVE BILLING]</li>
-      <li><strong>문의 및 고충 처리 이메일:</strong> [TO BE COMPLETED BEFORE LIVE BILLING]</li>
+      <li><strong>Data Privacy Officer:</strong> [TO BE COMPLETED BEFORE LIVE BILLING]</li>
+      <li><strong>Contact Email:</strong> [TO BE COMPLETED BEFORE LIVE BILLING]</li>
     </ul>
 
     <div class="footer-note">
-      <a href="lobby.html">로비로 이동</a> • <a href="pricing.html">요금제 안내</a> • <a href="terms.html">이용약관</a> • <a href="refund-policy.html">환불정책</a>
+      <a href="lobby.html">Event Lobby</a> &bull; <a href="pricing.html">Pricing Plans</a> &bull; <a href="terms.html">Terms of Service</a> &bull; <a href="refund-policy.html">Refund Policy</a>
     </div>
   </div>
 

@@ -1,6 +1,6 @@
 /* ============================================================
    Virtual Trade Show Commercial V1 — 3D Viewer Engine
-   Spark Precision Splatting, Photo Fallback & Realtime Engagement (Phase 5)
+   Spark Precision Splatting, Mobile Landscape 3D Player & Realtime Engagement (Phase 10.6A)
 ============================================================ */
 
 let viewerEngine = null;
@@ -32,11 +32,62 @@ const hudDesc = document.getElementById('hud-booth-desc');
 const loadingOverlay = document.getElementById('viewer-loading-overlay');
 const loadingSubtitle = document.getElementById('loading-subtitle');
 
+// Orientation & Mobile Landscape Manager
+const orientationBanner = document.getElementById('orientation-suggestion-banner');
+
+function initOrientationManager() {
+  const checkOrientation = () => {
+    const isLandscape = window.matchMedia('(orientation: landscape)').matches || (window.innerWidth > window.innerHeight);
+    const isMobileDevice = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 1024;
+
+    if (!isLandscape && isMobileDevice) {
+      if (orientationBanner && !sessionStorage.getItem('vts_dismiss_orientation')) {
+        orientationBanner.style.display = 'flex';
+      }
+    } else {
+      if (orientationBanner) {
+        orientationBanner.style.display = 'none';
+      }
+    }
+
+    // Resize 3D Viewport on orientation change
+    if (viewerEngine && viewerEngine.renderer && viewerEngine.camera) {
+      const w = viewport.clientWidth || window.innerWidth;
+      const h = viewport.clientHeight || window.innerHeight;
+      viewerEngine.camera.aspect = w / h;
+      viewerEngine.camera.updateProjectionMatrix();
+      viewerEngine.renderer.setSize(w, h);
+    }
+  };
+
+  window.addEventListener('resize', checkOrientation);
+  window.addEventListener('orientationchange', checkOrientation);
+  if (screen.orientation) {
+    screen.orientation.addEventListener('change', checkOrientation);
+  }
+  checkOrientation();
+
+  const btnDismiss = document.getElementById('btn-dismiss-orientation');
+  if (btnDismiss) {
+    btnDismiss.addEventListener('click', () => {
+      sessionStorage.setItem('vts_dismiss_orientation', 'true');
+      if (orientationBanner) orientationBanner.style.display = 'none';
+    });
+  }
+}
+
+// Memory & Visibility Throttling
+let isDocumentVisible = true;
+document.addEventListener('visibilitychange', () => {
+  isDocumentVisible = !document.hidden;
+});
+
 // Initialize Viewer
 async function initViewer() {
   const urlParams = new URLSearchParams(window.location.search);
   const boothId = urlParams.get('booth') || urlParams.get('boothId') || 'booth-demo-01';
 
+  initOrientationManager();
   setupEventListeners();
   const success = await loadBoothData(boothId);
   if (success) {
@@ -80,11 +131,11 @@ async function loadBoothData(boothId) {
     const boothRes = await fetch(`/api/booths/${boothId}`);
     if (!boothRes.ok) {
       if (boothRes.status === 404) {
-        hudTitle.textContent = '비공개 또는 존재하지 않는 부스';
-        hudDesc.textContent = '현재 해당 부스는 준비 중(Draft)이거나 발행되지 않았습니다. 관리자에게 문의하세요.';
+        if (hudTitle) hudTitle.textContent = 'Booth Unavailable or Inactive';
+        if (hudDesc) hudDesc.textContent = 'This virtual booth is currently in draft state or not yet published.';
       } else {
-        hudTitle.textContent = '부스 로딩 실패';
-        hudDesc.textContent = '부스 데이터를 불러오는 중 오류가 발생했습니다.';
+        if (hudTitle) hudTitle.textContent = 'Failed to Load Booth';
+        if (hudDesc) hudDesc.textContent = 'An error occurred while loading virtual booth data.';
       }
       if (loadingOverlay) loadingOverlay.style.display = 'none';
       return false;
@@ -97,13 +148,14 @@ async function loadBoothData(boothId) {
     const hsRes = await fetch(`/api/booths/${boothId}/hotspots`);
     hotspots = await hsRes.json();
 
-    navBoothName.textContent = currentBooth.name;
-    hudTitle.textContent = currentBooth.name;
-    hudDesc.textContent = currentBooth.description || '가상 무역 전시관에 오신 것을 환영합니다.';
+    if (navBoothName) navBoothName.textContent = currentBooth.name;
+    if (hudTitle) hudTitle.textContent = currentBooth.name;
+    if (hudDesc) hudDesc.textContent = currentBooth.description || 'Welcome to our virtual trade show booth.';
     updateStatusBadge(currentBooth.reconstructionStatus);
 
     if (!viewerEngine) {
       viewerEngine = BoothEngine.initScene(viewport);
+      setupContextLossRecovery(viewerEngine.renderer);
       animate();
     }
 
@@ -115,11 +167,10 @@ async function loadBoothData(boothId) {
         if (loadingSubtitle) loadingSubtitle.textContent = `[${percent}%] ${msg}`;
       },
       onFallback: (reason) => {
-        showToast(`안내: 정밀 3D 에셋(${reason})을 대체하여 Photo Preview 모드로 자동 전환되었습니다.`);
+        showToast(`Notice: Switched to Photo Preview mode (${reason}).`);
         updateStatusBadge('photo_preview');
       }
     });
-
 
     renderHotspots(hotspots);
     if (loadingOverlay) {
@@ -132,24 +183,40 @@ async function loadBoothData(boothId) {
 
   } catch (error) {
     console.error('Error loading booth data:', error);
-    hudTitle.textContent = '네트워크 오류';
-    hudDesc.textContent = '서버와의 통신이 원활하지 않습니다.';
+    if (hudTitle) hudTitle.textContent = 'Network Error';
+    if (hudDesc) hudDesc.textContent = 'Unable to establish connection to server.';
     if (loadingOverlay) loadingOverlay.style.display = 'none';
     return false;
   }
 }
 
+function setupContextLossRecovery(renderer) {
+  if (!renderer || !renderer.domElement) return;
+  renderer.domElement.addEventListener('webglcontextlost', (e) => {
+    e.preventDefault();
+    console.warn('WebGL context lost. Pausing rendering loop.');
+  }, false);
+
+  renderer.domElement.addEventListener('webglcontextrestored', () => {
+    console.info('WebGL context restored. Rebuilding 3D booth.');
+    if (currentBooth) {
+      loadBoothData(currentBooth.id);
+    }
+  }, false);
+}
+
 function updateStatusBadge(status) {
+  if (!badgeRecon) return;
   badgeRecon.className = 'badge';
   if (status === 'verified') {
     badgeRecon.classList.add('badge-verified');
     badgeRecon.textContent = '✨ Precision 3D (Gaussian Splat)';
   } else if (status === 'reconstructed') {
     badgeRecon.classList.add('badge-reconstructed');
-    badgeRecon.textContent = '3D Reconstructed (검증 대기)';
+    badgeRecon.textContent = '3D Reconstructed (Pending Approval)';
   } else if (status === 'processing') {
     badgeRecon.classList.add('badge-preview');
-    badgeRecon.textContent = 'Photo Preview (3D 연산 중)';
+    badgeRecon.textContent = 'Photo Preview (3D Processing)';
   } else {
     badgeRecon.classList.add('badge-preview');
     badgeRecon.textContent = 'Photo Preview Mode';
@@ -174,7 +241,7 @@ function renderHotspots(list) {
     pin.className = 'hotspot-marker';
     pin.setAttribute('data-hotspot-id', hs.id);
     pin.innerHTML = `<span>+</span><div class="hotspot-pulse"></div>`;
-    pin.title = hs.label || '제품 상세 보기';
+    pin.title = hs.label || 'View Product Details';
 
     pin.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -225,38 +292,49 @@ function setupEventListeners() {
     });
   });
 
-  document.getElementById('btn-reset-view').addEventListener('click', () => {
-    if (viewerEngine && viewerEngine.camera && viewerEngine.controls) {
-      viewerEngine.camera.position.set(0, 2.2, 7.5);
-      viewerEngine.controls.target.set(0, 1.2, -1);
-      viewerEngine.controls.update();
-    }
-  });
+  const resetBtn = document.getElementById('btn-reset-view');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      if (viewerEngine && viewerEngine.camera && viewerEngine.controls) {
+        viewerEngine.camera.position.set(0, 2.2, 7.5);
+        viewerEngine.controls.target.set(0, 1.2, -1);
+        viewerEngine.controls.update();
+      }
+    });
+  }
 
-  document.getElementById('btn-open-catalog').addEventListener('click', openCatalogModal);
+  const catBtn = document.getElementById('btn-open-catalog');
+  if (catBtn) catBtn.addEventListener('click', openCatalogModal);
 
-  document.getElementById('btn-exchange-card').addEventListener('click', () => {
+  const cardBtn = document.getElementById('btn-exchange-card');
+  if (cardBtn) cardBtn.addEventListener('click', () => {
     document.getElementById('modal-lead').classList.add('active');
   });
 
-  document.getElementById('btn-book-appointment').addEventListener('click', () => {
+  const aptBtn = document.getElementById('btn-book-appointment');
+  if (aptBtn) aptBtn.addEventListener('click', () => {
     document.getElementById('modal-appointment').classList.add('active');
   });
 
-  // Live Showhost Trigger
-  document.getElementById('btn-live-showhost').addEventListener('click', () => {
+  const liveBtn = document.getElementById('btn-live-showhost');
+  if (liveBtn) liveBtn.addEventListener('click', () => {
     openConsultationModal();
   });
 
-  document.getElementById('btn-start-call').addEventListener('click', startWebRTCCall);
-  document.getElementById('btn-end-call').addEventListener('click', endWebRTCCall);
+  const startCallBtn = document.getElementById('btn-start-call');
+  if (startCallBtn) startCallBtn.addEventListener('click', startWebRTCCall);
 
-  document.getElementById('btn-action-rfq').addEventListener('click', () => {
+  const endCallBtn = document.getElementById('btn-end-call');
+  if (endCallBtn) endCallBtn.addEventListener('click', endWebRTCCall);
+
+  const rfqBtn = document.getElementById('btn-action-rfq');
+  if (rfqBtn) rfqBtn.addEventListener('click', () => {
     const prodId = document.getElementById('modal-product').dataset.currentProdId;
     openRFQModal(prodId);
   });
 
-  document.getElementById('btn-action-sample').addEventListener('click', () => {
+  const sampleBtn = document.getElementById('btn-action-sample');
+  if (sampleBtn) sampleBtn.addEventListener('click', () => {
     const prodId = document.getElementById('modal-product').dataset.currentProdId;
     openSampleModal(prodId);
   });
@@ -267,7 +345,7 @@ function setupEventListeners() {
 function openProductModal(productId) {
   const prod = products.find(p => p.id === productId);
   if (!prod) {
-    showToast('제품 정보를 찾을 수 없습니다.');
+    showToast('Product information not found.');
     return;
   }
 
@@ -277,10 +355,10 @@ function openProductModal(productId) {
   modal.dataset.currentProdId = prod.id;
   document.getElementById('modal-prod-title').textContent = prod.name;
   document.getElementById('modal-prod-sku').textContent = `SKU: ${prod.sku} | ${prod.category || 'General'}`;
-  document.getElementById('modal-prod-desc').textContent = prod.description || '상세 설명이 등록되지 않았습니다.';
-  document.getElementById('modal-prod-moq').textContent = `${prod.moq} 개`;
-  document.getElementById('modal-prod-price').textContent = prod.contactForPrice ? '단가 문의 (Contact for Price)' : `$${Number(prod.price).toLocaleString()} USD`;
-  document.getElementById('modal-prod-sample').textContent = prod.sampleAvailable ? '신청 가능' : '제공 불가';
+  document.getElementById('modal-prod-desc').textContent = prod.description || 'No detailed description registered.';
+  document.getElementById('modal-prod-moq').textContent = `${prod.moq} Units`;
+  document.getElementById('modal-prod-price').textContent = prod.contactForPrice ? 'Contact for Price' : `$${Number(prod.price).toLocaleString()} USD`;
+  document.getElementById('modal-prod-sample').textContent = prod.sampleAvailable ? 'Available' : 'Unavailable';
   
   const imgEl = document.getElementById('modal-prod-image');
   if (prod.images && prod.images.length > 0) {
@@ -296,11 +374,11 @@ function openProductModal(productId) {
   if (prod.specifications && Object.keys(prod.specifications).length > 0) {
     Object.entries(prod.specifications).forEach(([k, v]) => {
       const row = document.createElement('tr');
-      row.innerHTML = `<td>${k}</td><td><strong>${v}</strong></td>`;
+      row.innerHTML = `<td>${escapeHtml(k)}</td><td><strong>${escapeHtml(v)}</strong></td>`;
       specsTbody.appendChild(row);
     });
   } else {
-    specsTbody.innerHTML = '<tr><td colspan="2">기본 기술 사양서 준비 중</td></tr>';
+    specsTbody.innerHTML = '<tr><td colspan="2">Standard specifications available upon request.</td></tr>';
   }
 
   modal.classList.add('active');
@@ -322,9 +400,9 @@ function openCatalogModal() {
     card.innerHTML = `
       <img src="${img}" style="width:100%; height:120px; object-fit:cover;">
       <div style="padding: 12px;">
-        <h4 style="font-size: 14px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.name}</h4>
-        <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 8px;">${p.sku}</div>
-        <div style="font-size: 13px; font-weight:600; color: var(--brand-accent);">${p.contactForPrice ? '단가 문의' : `$${Number(p.price).toLocaleString()} USD`}</div>
+        <h4 style="font-size: 14px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(p.name)}</h4>
+        <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 8px;">${escapeHtml(p.sku)}</div>
+        <div style="font-size: 13px; font-weight:600; color: var(--brand-accent);">${p.contactForPrice ? 'Contact for Price' : `$${Number(p.price).toLocaleString()} USD`}</div>
       </div>
     `;
 
@@ -359,132 +437,144 @@ function openSampleModal(productId) {
 
 function setupForms() {
   // Lead Form
-  document.getElementById('form-lead').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const payload = {
-      boothId: currentBooth.id,
-      company: document.getElementById('lead-company').value,
-      name: document.getElementById('lead-name').value,
-      email: document.getElementById('lead-email').value,
-      phone: document.getElementById('lead-phone').value,
-      jobTitle: document.getElementById('lead-job').value,
-      notes: document.getElementById('lead-notes').value
-    };
+  const formLead = document.getElementById('form-lead');
+  if (formLead) {
+    formLead.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        boothId: currentBooth.id,
+        company: document.getElementById('lead-company').value,
+        name: document.getElementById('lead-name').value,
+        email: document.getElementById('lead-email').value,
+        phone: document.getElementById('lead-phone').value,
+        jobTitle: document.getElementById('lead-job').value,
+        notes: document.getElementById('lead-notes').value
+      };
 
-    try {
-      const res = await fetch('/api/leads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (res.ok) {
-        showToast('디지털 명함이 성공적으로 전달되었습니다!');
-        document.getElementById('modal-lead').classList.remove('active');
-        document.getElementById('form-lead').reset();
-      } else {
-        showToast(data.error || '전송 실패');
+      try {
+        const res = await fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('Digital business card submitted successfully!');
+          document.getElementById('modal-lead').classList.remove('active');
+          formLead.reset();
+        } else {
+          showToast(data.error || 'Submission failed.');
+        }
+      } catch (err) {
+        showToast('Submission failed. Check network connection.');
       }
-    } catch (err) {
-      showToast('전송 실패: 네트워크 상태를 확인하세요.');
-    }
-  });
+    });
+  }
 
   // RFQ Form
-  document.getElementById('form-rfq').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const payload = {
-      boothId: currentBooth.id,
-      productId: document.getElementById('rfq-product-id').value,
-      buyerName: document.getElementById('rfq-name').value,
-      company: document.getElementById('rfq-company').value,
-      email: document.getElementById('rfq-email').value,
-      quantity: Number(document.getElementById('rfq-quantity').value),
-      targetPrice: Number(document.getElementById('rfq-target-price').value) || undefined,
-      notes: document.getElementById('rfq-notes').value
-    };
+  const formRfq = document.getElementById('form-rfq');
+  if (formRfq) {
+    formRfq.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        boothId: currentBooth.id,
+        productId: document.getElementById('rfq-product-id').value,
+        buyerName: document.getElementById('rfq-name').value,
+        company: document.getElementById('rfq-company').value,
+        email: document.getElementById('rfq-email').value,
+        quantity: Number(document.getElementById('rfq-quantity').value),
+        targetPrice: Number(document.getElementById('rfq-target-price').value) || undefined,
+        notes: document.getElementById('rfq-notes').value
+      };
 
-    try {
-      const res = await fetch('/api/rfqs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (res.ok) {
-        showToast('견적 요청(RFQ)이 정상 접수되었습니다.');
-        document.getElementById('modal-rfq').classList.remove('active');
-        document.getElementById('form-rfq').reset();
-      } else {
-        showToast(data.error || 'RFQ 전송 실패');
+      try {
+        const res = await fetch('/api/rfqs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('Request for Quotation (RFQ) submitted.');
+          document.getElementById('modal-rfq').classList.remove('active');
+          formRfq.reset();
+        } else {
+          showToast(data.error || 'RFQ submission failed.');
+        }
+      } catch (err) {
+        showToast('RFQ submission failed.');
       }
-    } catch (err) {
-      showToast('RFQ 전송 실패');
-    }
-  });
+    });
+  }
 
   // Sample Form
-  document.getElementById('form-sample').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const payload = {
-      boothId: currentBooth.id,
-      productId: document.getElementById('sample-product-id').value,
-      buyerName: document.getElementById('sample-name').value,
-      company: document.getElementById('sample-company').value,
-      email: document.getElementById('sample-email').value,
-      quantity: Number(document.getElementById('sample-qty').value),
-      shippingAddress: document.getElementById('sample-address').value
-    };
+  const formSample = document.getElementById('form-sample');
+  if (formSample) {
+    formSample.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        boothId: currentBooth.id,
+        productId: document.getElementById('sample-product-id').value,
+        buyerName: document.getElementById('sample-name').value,
+        company: document.getElementById('sample-company').value,
+        email: document.getElementById('sample-email').value,
+        quantity: Number(document.getElementById('sample-qty').value),
+        shippingAddress: document.getElementById('sample-address').value
+      };
 
-    try {
-      const res = await fetch('/api/samples', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (res.ok) {
-        showToast('샘플 신청서가 등록되었습니다.');
-        document.getElementById('modal-sample').classList.remove('active');
-        document.getElementById('form-sample').reset();
-      } else {
-        showToast(data.error || '샘플 신청 실패');
+      try {
+        const res = await fetch('/api/samples', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('Sample request submitted.');
+          document.getElementById('modal-sample').classList.remove('active');
+          formSample.reset();
+        } else {
+          showToast(data.error || 'Sample request failed.');
+        }
+      } catch (err) {
+        showToast('Sample request failed.');
       }
-    } catch (err) {
-      showToast('샘플 신청 실패');
-    }
-  });
+    });
+  }
 
   // Appointment Form
-  document.getElementById('form-appointment').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const payload = {
-      boothId: currentBooth.id,
-      buyerName: document.getElementById('apt-name').value,
-      company: document.getElementById('apt-company').value,
-      email: document.getElementById('apt-email').value,
-      requestedTime: document.getElementById('apt-time').value,
-      notes: document.getElementById('apt-notes').value
-    };
+  const formApt = document.getElementById('form-appointment');
+  if (formApt) {
+    formApt.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        boothId: currentBooth.id,
+        buyerName: document.getElementById('apt-name').value,
+        company: document.getElementById('apt-company').value,
+        email: document.getElementById('apt-email').value,
+        requestedTime: document.getElementById('apt-time').value,
+        notes: document.getElementById('apt-notes').value
+      };
 
-    try {
-      const res = await fetch('/api/appointments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (res.ok) {
-        showToast('상담 일정이 성공적으로 예약되었습니다.');
-        document.getElementById('modal-appointment').classList.remove('active');
-        document.getElementById('form-appointment').reset();
-      } else {
-        showToast(data.error || '상담 예약 실패');
+      try {
+        const res = await fetch('/api/appointments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('Consultation appointment scheduled.');
+          document.getElementById('modal-appointment').classList.remove('active');
+          formApt.reset();
+        } else {
+          showToast(data.error || 'Appointment booking failed.');
+        }
+      } catch (err) {
+        showToast('Appointment booking failed.');
       }
-    } catch (err) {
-      showToast('상담 예약 실패');
-    }
-  });
+    });
+  }
 }
 
 // 5. WebSocket & WebRTC P2P Consultation Implementation
@@ -512,7 +602,7 @@ function setupWebSocket(boothId) {
 
   ws.onclose = () => {
     const statusText = document.getElementById('webrtc-status-text');
-    if (statusText) statusText.textContent = '상태: WebSocket 연결 해제됨 (재접속 대기)';
+    if (statusText) statusText.textContent = 'Status: WebSocket Disconnected (Reconnecting)';
   };
 }
 
@@ -530,7 +620,7 @@ async function startWebRTCCall() {
   const btnEnd = document.getElementById('btn-end-call');
 
   try {
-    statusText.textContent = '상태: 카메라/마이크 권한 요청 중...';
+    statusText.textContent = 'Status: Requesting camera & mic permissions...';
     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     
     const localVideo = document.getElementById('local-video');
@@ -546,7 +636,7 @@ async function startWebRTCCall() {
 
     btnStart.style.display = 'none';
     btnEnd.style.display = 'inline-flex';
-    statusText.textContent = '상태: 상대방 연결 대기 중 (STUN P2P)';
+    statusText.textContent = 'Status: Waiting for peer connection (STUN P2P)...';
 
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
@@ -559,9 +649,9 @@ async function startWebRTCCall() {
   } catch (err) {
     console.error('WebRTC getUserMedia error:', err);
     if (err.name === 'NotAllowedError') {
-      statusText.textContent = '오류: 카메라/마이크 접근 권한이 거부되었습니다.';
+      statusText.textContent = 'Error: Camera/mic access denied.';
     } else {
-      statusText.textContent = `오류: 미디어 장치 연결 실패 (${err.message})`;
+      statusText.textContent = `Error: Media connection failed (${err.message})`;
     }
   }
 }
@@ -587,7 +677,7 @@ function createPeerConnection() {
       remoteVideo.srcObject = event.streams[0];
       if (placeholder) placeholder.style.display = 'none';
       const statusText = document.getElementById('webrtc-status-text');
-      if (statusText) statusText.textContent = '상태: 1:1 라이브 화상 연결 완료 (통화 중)';
+      if (statusText) statusText.textContent = 'Status: Live 1:1 consultation connected.';
     }
   };
 
@@ -596,17 +686,17 @@ function createPeerConnection() {
     if (!statusText) return;
     switch (peerConnection.connectionState) {
       case 'connecting':
-        statusText.textContent = '상태: P2P 피어 연결 중...';
+        statusText.textContent = 'Status: Establishing P2P peer connection...';
         break;
       case 'connected':
-        statusText.textContent = '상태: 1:1 실시간 화상 상담 연결 완료';
+        statusText.textContent = 'Status: 1:1 Live Video Consultation Active';
         break;
       case 'disconnected':
       case 'failed':
-        statusText.textContent = '상태: 피어 연결 끊김 또는 실패 (STUN NAT)';
+        statusText.textContent = 'Status: Peer connection disconnected.';
         break;
       case 'closed':
-        statusText.textContent = '상태: 통화 종료됨';
+        statusText.textContent = 'Status: Call ended.';
         break;
     }
   };
@@ -626,7 +716,7 @@ function sendSignaling(payload) {
 async function handleSignalingMessage(data) {
   if (data.type === 'peer_joined') {
     const statusText = document.getElementById('webrtc-status-text');
-    if (statusText) statusText.textContent = '상태: 상대방이 방에 입장했습니다.';
+    if (statusText) statusText.textContent = 'Status: Remote peer entered consultation room.';
     return;
   }
 
@@ -685,13 +775,17 @@ function endWebRTCCall() {
   if (remoteVideo) remoteVideo.srcObject = null;
   if (placeholder) placeholder.style.display = 'block';
 
-  document.getElementById('btn-start-call').style.display = 'inline-flex';
-  document.getElementById('btn-end-call').style.display = 'none';
-  document.getElementById('webrtc-status-text').textContent = '상태: 상담 통화가 종료되었습니다.';
+  const btnStart = document.getElementById('btn-start-call');
+  const btnEnd = document.getElementById('btn-end-call');
+  if (btnStart) btnStart.style.display = 'inline-flex';
+  if (btnEnd) btnEnd.style.display = 'none';
+  const statusText = document.getElementById('webrtc-status-text');
+  if (statusText) statusText.textContent = 'Status: Consultation call ended.';
 }
 
 function showToast(message) {
   const container = document.getElementById('toast-container');
+  if (!container) return;
   const toast = document.createElement('div');
   toast.className = 'toast';
   toast.textContent = message;
@@ -702,9 +796,21 @@ function showToast(message) {
   }, 3500);
 }
 
-// 6. Animation Loop
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// 6. Animation Loop (throttled when backgrounded)
 function animate() {
   requestAnimationFrame(animate);
+  if (!isDocumentVisible) return;
+
   if (viewerEngine && viewerEngine.controls) {
     viewerEngine.controls.update();
     viewerEngine.renderer.render(viewerEngine.scene, viewerEngine.camera);

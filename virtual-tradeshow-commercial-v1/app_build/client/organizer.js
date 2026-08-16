@@ -51,10 +51,10 @@ document.addEventListener('DOMContentLoaded', () => {
           if (loginModal) loginModal.style.display = 'none';
           await loadDashboard();
         } else {
-          alert(`로그인 실패: ${data.error || '계정 정보를 확인해 주세요.'}`);
+          alert(`Login failed: ${data.error || 'Please check your credentials.'}`);
         }
       } catch (err) {
-        alert('로그인 통신 중 오류가 발생했습니다.');
+        alert('Authentication error occurred.');
       }
     });
   }
@@ -93,15 +93,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         const data = await res.json();
         if (res.ok) {
-          alert(`🎉 참가사 계정이 성공적으로 발급되었습니다!\n\n이메일: ${data.user.email}\n임시 비밀번호: ${data.tempPassword}\n\n* 첫 로그인 시 비밀번호 변경이 강제됩니다.`);
+          alert(`🎉 Exhibitor account created successfully!\n\nEmail: ${data.user.email}\nTemporary Password: ${data.tempPassword}\n\n* Password change is enforced on first login.`);
           if (modalInvite) modalInvite.style.display = 'none';
           formInvite.reset();
           await loadDashboard();
         } else {
-          alert(`계정 발급 실패: ${data.error || '오류가 발생했습니다.'}`);
+          alert(`Account creation failed: ${data.error || 'Error occurred.'}`);
         }
       } catch (err) {
-        alert('참가사 계정 발급 중 통신 오류가 발생했습니다.');
+        alert('Communication error creating exhibitor account.');
       }
     });
   }
@@ -121,7 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (loginModal) loginModal.style.display = 'flex';
     });
   }
-
 
   async function loadDashboard() {
     if (!authToken) {
@@ -151,7 +150,6 @@ document.addEventListener('DOMContentLoaded', () => {
       // 3. Load Reconstruction Approvals
       const orgRes = await authFetch('/api/organizations');
       if (orgRes.ok) {
-        // Render any pending jobs
         await loadReconstructionJobs();
       }
 
@@ -168,16 +166,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const tr = document.createElement('tr');
       const isVerified = b.reconstructionStatus === 'verified';
       const statusBadge = b.status === 'published' 
-        ? '<span class="badge badge-verified">공개됨 (Published)</span>'
-        : '<span class="badge" style="background: rgba(148, 163, 184, 0.2);">임시저장 (Draft)</span>';
+        ? '<span class="badge badge-verified">Published</span>'
+        : '<span class="badge" style="background: rgba(148, 163, 184, 0.2);">Draft</span>';
 
       const reconBadge = isVerified
         ? '<span class="badge badge-verified">✨ 3D Gaussian Splat</span>'
         : '<span class="badge badge-preview">Photo Preview</span>';
 
       tr.innerHTML = `
-        <td><strong>${b.name}</strong></td>
-        <td>${b.category || '산업 자동화 / 테크'}</td>
+        <td><strong>${escapeHtml(b.name)}</strong></td>
+        <td>${escapeHtml(b.category || 'Industrial Tech')}</td>
         <td>A-${b.id.substring(b.id.length - 3).toUpperCase()}</td>
         <td>${statusBadge}</td>
         <td>${reconBadge}</td>
@@ -200,17 +198,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (b.reconstructionJobId || b.reconstructionStatus === 'reconstruction_pending') {
           activeJobCount++;
           const tr = document.createElement('tr');
-          const isAwaiting = b.reconstructionStatus === 'reconstruction_pending';
 
           tr.innerHTML = `
-            <td><code>${b.reconstructionJobId || 'recon-job-pending'}</code></td>
-            <td><strong>${b.name}</strong></td>
-            <td>${(b.photos && b.photos.length) || 0}장</td>
+            <td><code>${escapeHtml(b.reconstructionJobId || 'recon-job-pending')}</code></td>
+            <td><strong>${escapeHtml(b.name)}</strong></td>
+            <td>${(b.photos && b.photos.length) || 0} Photos</td>
             <td>Ultra Precision (Splatfacto)</td>
-            <td><span class="badge badge-pending">${b.reconstructionStatus}</span></td>
+            <td><span class="badge badge-pending">${escapeHtml(b.reconstructionStatus)}</span></td>
             <td>$0.00 (Modal Starter)</td>
             <td>
-              <button class="btn btn-primary btn-sm" onclick="approveJob('${b.reconstructionJobId || b.id}')">승인 및 GPU 큐잉</button>
+              <button class="btn btn-primary btn-sm" onclick="approveJob('${b.reconstructionJobId || b.id}')">Authorize GPU Queue</button>
             </td>
           `;
           reconTbody.appendChild(tr);
@@ -221,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
         reconTbody.innerHTML = `
           <tr>
             <td colspan="7" style="text-align: center; color: var(--text-dim); padding: 30px;">
-              현재 승인 대기 중인 3D 재구성 작업이 없습니다.
+              No 3D reconstruction jobs awaiting approval.
             </td>
           </tr>
         `;
@@ -235,16 +232,26 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await authFetch(`/api/reconstruction/jobs/${jobId}/approve`, { method: 'POST' });
       if (res.ok) {
-        alert('3D 재구성 작업이 승인되어 GPU 워커 큐에 등록되었습니다.');
+        alert('3D reconstruction job approved and scheduled in GPU worker queue.');
         await loadDashboard();
       } else {
         const d = await res.json();
-        alert(`승인 처리 안내: ${d.message || d.error || '완료'}`);
+        alert(`Approval notification: ${d.message || d.error || 'Completed'}`);
       }
     } catch (err) {
-      alert('승인 요청 중 오류가 발생했습니다.');
+      alert('Error requesting job approval.');
     }
   };
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
 
   if (authToken) {
     loadDashboard();

@@ -7,14 +7,19 @@ Virtual Trade Show Commercial V1 is a commercial-grade SaaS platform connecting 
 
 ## 2. Core Architecture
 
-### 2.1 Technology Stack (Phase 9.5 Commercial Expansion)
+### 2.1 Technology Stack (Phase 10.6A Commercial Expansion)
 - **Backend Runtime**: Node.js (v18+)
 - **Server Framework**: Express.js + Native `ws` (WebSocket) with Signed Bearer session tokens, Worker authentication, RBAC, and sliding window rate limiting.
-- **Stripe Billing Engine (Test Mode)**: Official `stripe@22.5.0` SDK with Checkout sessions, Customer Portal, and raw body webhook verification.
+- **Stripe Billing Engine (Test Mode)**: Official `stripe@22.5.0` SDK with Checkout sessions, Customer Portal, raw body webhook verification, and deterministic checkout consent auditing.
 - **Security & Password Hashing**: Node.js native `crypto.scryptSync` with 16-byte random salt.
-- **Frontend Core**: Vanilla HTML5, CSS3 (Enterprise SaaS Design System with dark operations styling), Modern ES6+ JavaScript.
+- **Frontend Core**: Vanilla HTML5, CSS3 (Enterprise SaaS Design System with dark operations styling, safe-area insets), Modern ES6+ JavaScript. **100% English-Only UI**.
+- **Mobile Landscape 3D Player**:
+  - `window.matchMedia('(orientation: landscape)')` & `screen.orientation` listener with portrait suggestion banner.
+  - Safe-area insets (`env(safe-area-inset-*)`) & `100dvh` full-bleed rendering.
+  - Touch targets $\ge 44 \times 44\text{px}$, 1-finger orbit, 2-finger pinch zoom.
+  - Background throttling on `document.visibilitychange` & WebGL context loss recovery.
 - **Console Experiences**:
-  - **Platform Owner Grand Control Console (`/grand-control.html`)**: Master tenant oversight, Customer 360, Test MRR / revenue intelligence, 3DGS pipeline control, in-app messaging, feature flags, and CSV exports.
+  - **Platform Owner Grand Control Console (`/grand-control.html`)**: Master tenant oversight, Customer 360, Test MRR / revenue intelligence, 3DGS pipeline control, in-app messaging, feature flags, commercial governance blockers, and CSV exports.
   - **Organizer Admin Console (`/organizer.html`)**: Multi-event management, exhibitor onboarding, event-wide analytics, and reconstruction approval.
   - **Exhibitor Admin Console (`/admin.html`)**: Booth customization, 3D alignment, product/hotspot placement, leads/RFQ tracking, showhost signaling, and Stripe self-serve billing.
 - **3D Graphics Engine & Precision Splatting**:
@@ -30,6 +35,7 @@ Virtual Trade Show Commercial V1 is a commercial-grade SaaS platform connecting 
   - Data Environment Isolation (`REAL`, `TEST`, `SYNTHETIC_TEST`).
   - Storage Driver Abstraction (`STORAGE_DRIVER=volume`).
   - Clean separation between Git-tracked Seed Data (`seed/db.seed.json`) and Runtime Persistence (`DATA_DIR/db.json`).
+
 
 ---
 

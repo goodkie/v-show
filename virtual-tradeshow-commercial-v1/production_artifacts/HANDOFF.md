@@ -438,6 +438,35 @@ Establish complete legal, pricing, and commercial governance before first live c
 - **Dark Pattern Audit**: **`100% PASS`**
 - **Actual Cash Charged**: **`$0.00`**
 
+---
+
+### [2026-08-16 16:51] — Session 21: Phase 10.6A — Business Identity + Pilot Pricing Approval + English-Only UI + Mobile Landscape 3D Player Complete
+
+#### 1. DATE / TIME
+- **Date**: 2026-08-16
+- **Time**: 16:51:00 UTC-4 (20:51:00 UTC)
+
+#### 2. TASK & ACCOMPLISHMENTS
+1. **Business Identity Architecture**: Configured statutory placeholders (`LEGAL_BUSINESS_NAME`, `LEGAL_BUSINESS_ADDRESS`, `LEGAL_CONTACT_EMAIL`, `LEGAL_SUPPORT_EMAIL`, `GOVERNING_LAW`) with `INCOMPLETE` state detection preventing automated live mode.
+2. **Pilot Pricing Approval**: Approved monthly pilot pricing (Free $0, Pro $299, Business $799, USD) under version `pilot-2026.1` and `approved_for_pilot`. Permanent pricing remains unapproved.
+3. **100% English-Only UI Migration**: Migrated all customer-facing & admin HTML/JS (`index.html`, `viewer.html`, `viewer.js`, `admin.html`, `admin.js`, `organizer.html`, `organizer.js`, `grand-control.html`, `grand-control.js`, `lobby.html`, `lobby.js`, `pricing.html`, `terms.html`, `privacy.html`, `refund-policy.html`). Verified zero Hangul characters (`node scripts/scan_hangul.js` -> 0 matches).
+4. **Mobile Landscape 3D Player**:
+   - Implemented `window.matchMedia('(orientation: landscape)')` detection with portrait rotation suggestion banner.
+   - Applied safe-area insets (`env(safe-area-inset-*)`) and full viewport height (`100dvh`).
+   - Touch targets $\ge 44 \times 44\text{px}$, 1-finger orbit, 2-finger pinch zoom.
+   - Throttled render loop on `document.visibilitychange` and added WebGL context loss recovery.
+5. **Deterministic Verification**: 53-item test suite (`test_phase10_6a_landscape_and_english.js`) 100% PASS.
+6. **Zero Real Charge Policy**: `STRIPE_MODE=test`, `stripeLiveBillingEnabled=false`, `billingKillSwitch=true`, actual cash charged: `$0.00`.
+
+#### 3. PHASE 10.6A STATUS
+- **Overall Status**: **`BUSINESS_IDENTITY_READY_FOR_INPUT` + `PILOT_PRICING_APPROVED_FOR_PILOT` + `ENGLISH_ONLY_UI_COMPLETE` + `MOBILE_LANDSCAPE_3D_PLAYER_READY`**
+- **Stripe Mode**: **`TEST`** ($0.00 cash charged)
+- **Stripe Live Mode**: **`OFF`**
+- **Pricing Status**: **`APPROVED_FOR_PILOT (pilot-2026.1)`**
+- **Hangul Character Count in Client UI**: **`0`**
+- **53-Item Test Suite**: **`53 / 53 PASS (100%)`**
+
+
 
 
 

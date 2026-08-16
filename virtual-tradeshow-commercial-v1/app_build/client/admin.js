@@ -33,7 +33,7 @@ async function authFetch(url, options = {}) {
     authToken = null;
     localStorage.removeItem('vts_admin_token');
     loginModal.classList.add('active');
-    showToast('세션이 만료되었습니다. 다시 로그인해 주세요.');
+    showToast('Session expired. Please sign in again.');
     throw new Error('Unauthorized');
   }
   return res;
@@ -63,16 +63,16 @@ formLogin.addEventListener('submit', async (e) => {
       if (data.user && data.user.mustChangePassword) {
         if (forcePwdModal) forcePwdModal.classList.add('active');
         document.getElementById('force-pwd-current').value = password;
-        showToast('초기 비밀번호를 변경해 주세요.');
+        showToast('Please update your initial password.');
       } else {
-        showToast('로그인 성공');
+        showToast('Signed in successfully.');
         initAdmin();
       }
     } else {
-      showToast(data.error || '로그인 실패');
+      showToast(data.error || 'Authentication failed.');
     }
   } catch (err) {
-    showToast('로그인 요청 실패');
+    showToast('Login request failed.');
   }
 });
 
@@ -84,7 +84,7 @@ if (formForcePwd) {
     const confirmPassword = document.getElementById('force-pwd-confirm').value;
 
     if (newPassword !== confirmPassword) {
-      alert('새 비밀번호가 일치하지 않습니다.');
+      alert('New passwords do not match.');
       return;
     }
 
@@ -95,15 +95,15 @@ if (formForcePwd) {
         body: JSON.stringify({ currentPassword, newPassword })
       });
       if (res.ok) {
-        alert('비밀번호가 성공적으로 변경되었습니다.');
+        alert('Password successfully updated.');
         if (forcePwdModal) forcePwdModal.classList.remove('active');
         initAdmin();
       } else {
         const d = await res.json();
-        alert(d.error || '비밀번호 변경 실패');
+        alert(d.error || 'Password update failed.');
       }
     } catch (err) {
-      alert('비밀번호 변경 중 오류가 발생했습니다.');
+      alert('Error updating password.');
     }
   });
 }
@@ -120,9 +120,8 @@ btnLogout.addEventListener('click', async () => {
   authToken = null;
   localStorage.removeItem('vts_admin_token');
   loginModal.classList.add('active');
-  showToast('로그아웃 되었습니다.');
+  showToast('Signed out.');
 });
-
 
 // 2. Tab Navigation
 tabButtons.forEach(btn => {
@@ -140,14 +139,21 @@ tabButtons.forEach(btn => {
     } else if (tabName === 'reconstruction') {
       loadReconstructionData();
       setTimeout(() => initAlignmentViewer(), 150);
+    } else if (tabName === 'billing') {
+      loadBillingInfo();
+    } else if (tabName === 'inbox') {
+      loadInboxMessages();
     }
   });
 });
 
-document.getElementById('btn-quick-goto-recon').addEventListener('click', () => {
-  const reconTabBtn = document.querySelector('.admin-nav-item[data-tab="reconstruction"]');
-  if (reconTabBtn) reconTabBtn.click();
-});
+const quickReconBtn = document.getElementById('btn-quick-goto-recon');
+if (quickReconBtn) {
+  quickReconBtn.addEventListener('click', () => {
+    const reconTabBtn = document.querySelector('.admin-nav-item[data-tab="reconstruction"]');
+    if (reconTabBtn) reconTabBtn.click();
+  });
+}
 
 // 3. Initialize Admin Console
 async function initAdmin() {
@@ -190,38 +196,38 @@ async function loadInitialData() {
   }
 }
 
-
 // 4. Booth Overview & Settings
 function renderBoothOverview() {
   if (!currentBooth) return;
   document.getElementById('current-booth-name-display').textContent = currentBooth.name;
   document.getElementById('current-booth-status-desc').textContent = 
-    `상태: ${currentBooth.status === 'published' ? '공개 발행됨 (Published)' : '비공개 준비 중 (Draft)'} | 부스 ID: ${currentBooth.id}`;
+    `Status: ${currentBooth.status === 'published' ? 'Published (Live)' : 'Draft (Unpublished)'} | Booth ID: ${currentBooth.id}`;
   
   const publishBtn = document.getElementById('btn-toggle-publish');
   if (currentBooth.status === 'published') {
-    publishBtn.textContent = '부스 비공개로 전환';
+    publishBtn.textContent = 'Unpublish Booth';
     publishBtn.className = 'btn btn-secondary btn-sm';
   } else {
-    publishBtn.textContent = '부스 공개 발행하기';
+    publishBtn.textContent = 'Publish Booth';
     publishBtn.className = 'btn btn-primary btn-sm';
   }
 
   const reconText = document.getElementById('recon-status-text');
   reconText.textContent = getReconstructionLabel(currentBooth.reconstructionStatus);
 
-  document.getElementById('btn-preview-public').href = `index.html?booth=${currentBooth.id}`;
+  const previewBtn = document.getElementById('btn-preview-public');
+  if (previewBtn) previewBtn.href = `viewer.html?boothId=${currentBooth.id}`;
 }
 
 function getReconstructionLabel(status) {
   switch (status) {
-    case 'photo_preview': return 'Photo Preview (기본 텍스처)';
-    case 'reconstruction_pending': return '⏳ 3D 재구성 큐 대기 중 (Pending)';
-    case 'processing': return '⚙️ GPU 정밀 3D 재구성 연산 중 (Processing)';
-    case 'reconstructed': return '✨ 3D Gaussian Splatting 재구성 완료 (정렬 & 검증 대기)';
-    case 'verified': return '🏆 검증 및 퍼블릭 승인 완료 (Spark 3D Gaussian Splatting)';
-    case 'failed': return '❌ 3D 재구성 실패 (Failed)';
-    default: return status;
+    case 'photo_preview': return 'Photo Preview (Standard View)';
+    case 'reconstruction_pending': return '⏳ 3D Reconstruction Queue (Pending)';
+    case 'processing': return '⚙️ GPU 3D Reconstruction Running (Processing)';
+    case 'reconstructed': return '✨ 3DGS Reconstruction Complete (Pending Verification)';
+    case 'verified': return '🏆 Verified & Approved (Spark 3D Gaussian Splatting)';
+    case 'failed': return '❌ Reconstruction Failed';
+    default: return status || 'Photo Preview';
   }
 }
 
@@ -240,7 +246,7 @@ function renderBoothSettings() {
   });
 }
 
-// 5. Precision Reconstruction Dashboard & Alignment (Phase 5)
+// 5. Precision Reconstruction Dashboard & Alignment
 async function loadReconstructionData() {
   if (!currentBooth) return;
   try {
@@ -265,7 +271,7 @@ function renderReconstructionDashboard(data) {
   const validation = data.validation || { quality: 'poor', validCount: 0, canReconstruct: false };
   const job = data.activeJob;
 
-  document.getElementById('val-photo-count').textContent = `${validation.validCount} 장`;
+  document.getElementById('val-photo-count').textContent = `${validation.validCount} Photos`;
   
   const qualityBadge = document.getElementById('badge-capture-quality');
   const qualityGrade = document.getElementById('val-quality-grade');
@@ -274,21 +280,21 @@ function renderReconstructionDashboard(data) {
   qualityBadge.className = 'badge';
   if (validation.quality === 'good') {
     qualityBadge.classList.add('badge-reconstructed');
-    qualityBadge.textContent = '품질 우수 (Good)';
+    qualityBadge.textContent = 'High Quality (Good)';
     qualityGrade.textContent = 'Good (A)';
-    canReconText.textContent = '실행 가능 (권장)';
+    canReconText.textContent = 'Ready (Recommended)';
     canReconText.style.color = '#10b981';
   } else if (validation.quality === 'acceptable') {
     qualityBadge.classList.add('badge-preview');
-    qualityBadge.textContent = '적합 (Acceptable)';
+    qualityBadge.textContent = 'Acceptable (B)';
     qualityGrade.textContent = 'Acceptable (B)';
-    canReconText.textContent = '실행 가능 (프리뷰)';
+    canReconText.textContent = 'Ready (Preview)';
     canReconText.style.color = '#eab308';
   } else {
     qualityBadge.classList.add('badge-failed');
-    qualityBadge.textContent = '사진 부족 (Poor)';
-    qualityGrade.textContent = 'Poor (사진 부족)';
-    canReconText.textContent = '실행 불가 (3장 이상 필요)';
+    qualityBadge.textContent = 'Insufficient (Poor)';
+    qualityGrade.textContent = 'Poor (< 3 photos)';
+    canReconText.textContent = 'Need more photos';
     canReconText.style.color = '#ef4444';
   }
 
@@ -327,7 +333,7 @@ function renderReconstructionDashboard(data) {
     progressPercent.textContent = `${job.progress || 0}%`;
     progressBar.style.width = `${job.progress || 0}%`;
     stageText.textContent = formatStageName(job.currentStage);
-    workerText.textContent = `Worker: ${job.workerId || '할당 대기 중'}`;
+    workerText.textContent = `Worker: ${job.workerId || 'Pending Assignment'}`;
 
     if (job.status === 'pending' || job.status === 'processing') {
       btnTrigger.style.display = 'none';
@@ -341,12 +347,12 @@ function renderReconstructionDashboard(data) {
       btnVerify.dataset.jobId = job.id;
     } else if (job.status === 'verified') {
       btnTrigger.style.display = 'inline-flex';
-      btnTrigger.textContent = '🔄 정밀 3D 재구성 다시 실행';
+      btnTrigger.textContent = '🔄 Re-run 3D Reconstruction';
       btnCancel.style.display = 'none';
       btnVerify.style.display = 'none';
     } else {
       btnTrigger.style.display = 'inline-flex';
-      btnTrigger.textContent = '🔄 3D 재구성 재시도';
+      btnTrigger.textContent = '🔄 Retry Reconstruction';
       btnCancel.style.display = 'none';
       btnVerify.style.display = 'none';
     }
@@ -354,8 +360,8 @@ function renderReconstructionDashboard(data) {
     jobIdText.textContent = 'No Active Job';
     progressPercent.textContent = '0%';
     progressBar.style.width = '0%';
-    stageText.textContent = 'Photo Preview 모드 (대기 중)';
-    workerText.textContent = 'Worker: 대기 중';
+    stageText.textContent = 'Photo Preview Mode (Idle)';
+    workerText.textContent = 'Worker: Ready';
     btnTrigger.style.display = 'inline-flex';
     btnCancel.style.display = 'none';
     btnVerify.style.display = 'none';
@@ -364,16 +370,16 @@ function renderReconstructionDashboard(data) {
 
 function formatStageName(stage) {
   switch (stage) {
-    case 'preparing': return '1/7 이미지 다운로드 및 검증 (Preparing)';
-    case 'colmap_feature_extraction': return '2/7 SIFT 특징점 추출 (COLMAP)';
-    case 'colmap_matching': return '3/7 전수 특징점 매칭 및 에피폴라 기하 분석';
-    case 'colmap_mapping': return '4/7 3D 포인트 클라우드 번들 조정 (Mapper)';
-    case 'nerfstudio_processing': return '5/7 좌표계 변환 및 데이터셋 패킹';
-    case 'splat_training': return '6/7 3D Gaussian Splatting 학습 (Splatfacto)';
-    case 'splat_export': return '7/7 웹 최적화 PLY/SPZ 공간 에셋 익스포트';
-    case 'uploading_result': return '완료 결과 업로드 및 메타데이터 등록';
-    case 'completed': return '✨ 정밀 3D 재구성 완료';
-    default: return stage || '준비 중';
+    case 'preparing': return '1/7 Downloading & Validating Assets (Preparing)';
+    case 'colmap_feature_extraction': return '2/7 SIFT Feature Extraction (COLMAP)';
+    case 'colmap_matching': return '3/7 Exhaustive Feature Matching & Epipolar Geometry';
+    case 'colmap_mapping': return '4/7 3D Point Cloud Bundle Adjustment (Mapper)';
+    case 'nerfstudio_processing': return '5/7 Coordinate Transformation & Dataset Packaging';
+    case 'splat_training': return '6/7 3D Gaussian Splatting Training (Splatfacto)';
+    case 'splat_export': return '7/7 Web-Optimized PLY/SPZ Spatial Asset Export';
+    case 'uploading_result': return 'Uploading Results & Registering Metadata';
+    case 'completed': return '✨ Precision 3D Reconstruction Completed';
+    default: return stage || 'Idle';
   }
 }
 
@@ -387,7 +393,6 @@ function initAlignmentViewer() {
     animateAlign();
   }
 
-  // Load Precision Splat Mesh into Alignment Scene
   const spatialModel = currentBooth.spatialModel || {
     type: 'gaussian_splat',
     assetUrl: '/uploads/models/demo_booth_splat.ply',
@@ -400,7 +405,6 @@ function initAlignmentViewer() {
     scale: 1.0
   };
 
-  // Sync Slider UI with existing Transform
   document.getElementById('slider-pos-x').value = transform.position?.[0] || 0;
   document.getElementById('val-pos-x').textContent = (transform.position?.[0] || 0).toFixed(2);
 
@@ -423,7 +427,6 @@ function initAlignmentViewer() {
       qualityPreset: 'MEDIUM'
     });
   }
-
 
   alignSplatViewer.load(spatialModel, transform);
 }
@@ -476,15 +479,15 @@ async function loadProducts() {
   products.forEach(p => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><strong>${p.name}</strong></td>
-      <td><code>${p.sku}</code></td>
-      <td>${p.category || '-'}</td>
-      <td>${p.moq} 개</td>
-      <td>${p.contactForPrice ? '단가 문의' : `$${Number(p.price).toLocaleString()} USD`}</td>
-      <td>${p.sampleAvailable ? '✅ 가능' : '❌ 불가'}</td>
+      <td><strong>${escapeHtml(p.name)}</strong></td>
+      <td><code>${escapeHtml(p.sku)}</code></td>
+      <td>${escapeHtml(p.category || '-')}</td>
+      <td>${p.moq} Units</td>
+      <td>${p.contactForPrice ? 'Contact for Price' : `$${Number(p.price).toLocaleString()} USD`}</td>
+      <td>${p.sampleAvailable ? '✅ Available' : '❌ Unavailable'}</td>
       <td>
-        <button class="btn btn-secondary btn-sm" onclick="editProduct('${p.id}')">수정</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">삭제</button>
+        <button class="btn btn-secondary btn-sm" onclick="editProduct('${p.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">Delete</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -511,7 +514,7 @@ function updateEditorProductSelect() {
   const select = document.getElementById('editor-product-select');
   select.innerHTML = '';
   if (products.length === 0) {
-    select.innerHTML = '<option value="">등록된 제품 없음</option>';
+    select.innerHTML = '<option value="">No products registered</option>';
     return;
   }
   products.forEach(p => {
@@ -537,13 +540,13 @@ function renderEditorHotspotsTable() {
     const prod = products.find(p => p.id === hs.productId);
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><strong>${hs.label || (prod ? prod.name : '핫스팟')}</strong></td>
-      <td><code>${prod ? prod.sku : hs.productId}</code></td>
+      <td><strong>${escapeHtml(hs.label || (prod ? prod.name : 'Hotspot'))}</strong></td>
+      <td><code>${escapeHtml(prod ? prod.sku : hs.productId)}</code></td>
       <td><code>[${hs.position.x}, ${hs.position.y}, ${hs.position.z}]</code></td>
       <td>${new Date(hs.updatedAt || hs.createdAt).toLocaleString()}</td>
       <td>
-        <button class="btn btn-secondary btn-sm" onclick="selectHotspotForEdit('${hs.id}')">선택</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteHotspotById('${hs.id}')">삭제</button>
+        <button class="btn btn-secondary btn-sm" onclick="selectHotspotForEdit('${hs.id}')">Select</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteHotspotById('${hs.id}')">Delete</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -567,7 +570,7 @@ function renderEditorHotspots() {
     const pin = document.createElement('div');
     pin.className = `hotspot-marker admin-marker ${selectedHotspotId === hs.id ? 'selected' : ''}`;
     pin.innerHTML = `<span>📍</span>`;
-    pin.title = hs.label || '3D 핫스팟';
+    pin.title = hs.label || '3D Hotspot';
 
     pin.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -612,13 +615,13 @@ async function onEditorCanvasClick(e) {
 
   const point = BoothEngine.raycastBooth(e, document.getElementById('editor-viewport-container'), editorEngine.camera, editorRaycastSurfaces);
   if (!point) {
-    showToast('부스 바닥 또는 벽면 표면을 클릭해 주세요.');
+    showToast('Please click on a valid floor or wall surface.');
     return;
   }
 
   const selectedProdId = document.getElementById('editor-product-select').value;
   if (!selectedProdId) {
-    showToast('연결할 제품을 선택해 주세요.');
+    showToast('Please select a target product.');
     return;
   }
 
@@ -630,7 +633,7 @@ async function onEditorCanvasClick(e) {
         body: JSON.stringify({ position: point })
       });
       if (res.ok) {
-        showToast('핫스팟 좌표가 성공적으로 수정되었습니다.');
+        showToast('Hotspot coordinates updated.');
       }
     } else {
       const res = await authFetch('/api/hotspots', {
@@ -643,7 +646,7 @@ async function onEditorCanvasClick(e) {
         })
       });
       if (res.ok) {
-        showToast('새 3D 핫스팟이 배치되었습니다.');
+        showToast('New 3D hotspot placed.');
       }
     }
 
@@ -653,7 +656,7 @@ async function onEditorCanvasClick(e) {
     await loadHotspots();
 
   } catch (err) {
-    showToast('핫스팟 저장 중 오류가 발생했습니다.');
+    showToast('Error saving hotspot.');
   }
 }
 
@@ -664,22 +667,22 @@ window.selectHotspotForEdit = function(id) {
     document.getElementById('editor-product-select').value = hs.productId;
     document.getElementById('btn-reposition-hotspot').disabled = false;
     document.getElementById('btn-delete-selected-hotspot').disabled = false;
-    document.getElementById('editor-selected-info').textContent = `선택된 핫스팟: ${hs.label || hs.id}`;
+    document.getElementById('editor-selected-info').textContent = `Selected: ${hs.label || hs.id}`;
     renderEditorHotspots();
   }
 };
 
 window.deleteHotspotById = async function(id) {
-  if (!confirm('이 핫스팟을 삭제하시겠습니까?')) return;
+  if (!confirm('Are you sure you want to delete this hotspot?')) return;
   try {
     const res = await authFetch(`/api/hotspots/${id}`, { method: 'DELETE' });
     if (res.ok) {
-      showToast('핫스팟이 삭제되었습니다.');
+      showToast('Hotspot deleted.');
       if (selectedHotspotId === id) selectedHotspotId = null;
       await loadHotspots();
     }
   } catch (e) {
-    showToast('핫스팟 삭제 실패');
+    showToast('Failed to delete hotspot.');
   }
 };
 
@@ -689,15 +692,15 @@ function updateEditorModeUI() {
   const container = document.getElementById('editor-viewport-container');
 
   if (isPlacementMode) {
-    banner.textContent = '📍 [배치 모드 활성화] 3D 화면의 원하는 부스 표면을 마우스로 클릭하여 핫스팟을 위치시키세요.';
+    banner.textContent = '📍 [Placement Mode Active] Click any surface in the 3D viewport to position your hotspot.';
     banner.style.color = '#38bdf8';
-    btnStart.textContent = '배치 취소';
+    btnStart.textContent = 'Cancel Placement';
     btnStart.className = 'btn btn-danger btn-sm';
     container.classList.add('placement-mode');
   } else {
-    banner.textContent = 'ℹ️ 상단에서 제품을 선택한 후 [+ 핫스팟 배치 모드] 버튼을 누르고 부스 표면을 클릭하세요.';
+    banner.textContent = 'ℹ️ Select a product above, click [+ Place Hotspot], then click on the booth surface.';
     banner.style.color = 'var(--text-main)';
-    btnStart.textContent = '📍 + 핫스팟 배치 모드';
+    btnStart.textContent = '📍 + Place Hotspot';
     btnStart.className = 'btn btn-primary btn-sm';
     container.classList.remove('placement-mode');
   }
@@ -727,10 +730,10 @@ function setupAdminEvents() {
       if (res.ok) {
         currentBooth = await res.json();
         renderBoothOverview();
-        showToast(newStatus === 'published' ? '부스가 공개 발행되었습니다.' : '부스가 비공개로 전환되었습니다.');
+        showToast(newStatus === 'published' ? 'Booth published successfully.' : 'Booth moved to draft.');
       }
     } catch (e) {
-      showToast('상태 변경 실패');
+      showToast('Failed to update status.');
     }
   });
 
@@ -745,44 +748,44 @@ function setupAdminEvents() {
       });
       const data = await res.json();
       if (res.ok) {
-        showToast('정밀 3D 재구성 작업이 큐에 성공적으로 등록되었습니다.');
+        showToast('3D reconstruction job queued successfully.');
         await loadReconstructionData();
       } else {
-        showToast(data.error || '재구성 요청 실패');
+        showToast(data.error || 'Reconstruction request failed.');
       }
     } catch (e) {
-      showToast('재구성 요청 실패');
+      showToast('Reconstruction request failed.');
     }
   });
 
   // Cancel Reconstruction
   document.getElementById('btn-cancel-reconstruction').addEventListener('click', async (e) => {
     const jobId = e.target.dataset.jobId;
-    if (!jobId || !confirm('진행 중인 재구성 작업을 취소하시겠습니까?')) return;
+    if (!jobId || !confirm('Cancel the active reconstruction job?')) return;
     try {
       const res = await authFetch(`/api/reconstruction/jobs/${jobId}/cancel`, { method: 'POST' });
       if (res.ok) {
-        showToast('재구성 작업이 취소되었습니다.');
+        showToast('Reconstruction job cancelled.');
         await loadReconstructionData();
       }
     } catch (err) {
-      showToast('작업 취소 실패');
+      showToast('Cancellation failed.');
     }
   });
 
   // Verify Reconstruction (Human Approval Gate)
   document.getElementById('btn-verify-reconstruction').addEventListener('click', async (e) => {
     const jobId = e.target.dataset.jobId;
-    if (!jobId || !confirm('재구성된 3D 부스를 검증 및 퍼블릭으로 승인하시겠습니까?')) return;
+    if (!jobId || !confirm('Verify and approve this reconstructed 3D booth for public publishing?')) return;
     try {
       const res = await authFetch(`/api/reconstruction/jobs/${jobId}/verify`, { method: 'POST' });
       if (res.ok) {
-        showToast('3D 부스가 검증 완료 및 승인되었습니다!');
+        showToast('3D booth verified and approved!');
         await loadReconstructionData();
         renderBoothOverview();
       }
     } catch (err) {
-      showToast('검증 승인 실패');
+      showToast('Verification approval failed.');
     }
   });
 
@@ -811,12 +814,12 @@ function setupAdminEvents() {
 
       if (res.ok) {
         currentBooth = await res.json();
-        showToast('정밀 3D 공간 정렬 좌표가 성공적으로 저장되었습니다.');
+        showToast('Precision alignment saved.');
       } else {
-        showToast('정렬 저장 실패');
+        showToast('Failed to save alignment.');
       }
     } catch (e) {
-      showToast('정렬 저장 실패');
+      showToast('Failed to save alignment.');
     }
   });
 
@@ -828,7 +831,7 @@ function setupAdminEvents() {
     document.getElementById('slider-rot-y').value = 0;
     document.getElementById('slider-scale').value = 1.0;
     updateAlignTransformFromUI();
-    showToast('정렬 좌표가 기본값으로 초기화되었습니다.');
+    showToast('Alignment reset to defaults.');
   });
 
   // Placement Mode Toggles
@@ -872,22 +875,22 @@ function setupAdminEvents() {
     }
 
     try {
-      showToast('사진들을 업로드 중입니다...');
+      showToast('Uploading photos...');
       const res = await authFetch(`/api/booths/${currentBooth.id}/photos`, {
         method: 'POST',
         body: formData
       });
       const data = await res.json();
       if (res.ok) {
-        showToast(`${data.count}장의 사진이 성공적으로 업로드되었습니다.`);
+        showToast(`${data.count} photos uploaded successfully.`);
         currentBooth = data.booth;
         renderBoothSettings();
         await loadReconstructionData();
       } else {
-        showToast(data.error || '업로드 실패');
+        showToast(data.error || 'Upload failed.');
       }
     } catch (err) {
-      showToast('사진 업로드 실패');
+      showToast('Photo upload failed.');
     }
   });
 }
@@ -912,11 +915,11 @@ async function loadAnalytics() {
     (data.leads || []).forEach(l => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><strong>${l.company}</strong></td>
-        <td>${l.name}</td>
-        <td>${l.email}</td>
-        <td>${l.phone || '-'}</td>
-        <td>${l.jobTitle || '-'}</td>
+        <td><strong>${escapeHtml(l.company)}</strong></td>
+        <td>${escapeHtml(l.name)}</td>
+        <td>${escapeHtml(l.email)}</td>
+        <td>${escapeHtml(l.phone || '-')}</td>
+        <td>${escapeHtml(l.jobTitle || '-')}</td>
         <td>${new Date(l.createdAt).toLocaleString()}</td>
       `;
       leadsTbody.appendChild(tr);
@@ -927,11 +930,11 @@ async function loadAnalytics() {
     (data.rfqs || []).forEach(r => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><code>${r.productId}</code></td>
-        <td>${r.buyerName} (${r.company})</td>
+        <td><code>${escapeHtml(r.productId)}</code></td>
+        <td>${escapeHtml(r.buyerName)} (${escapeHtml(r.company)})</td>
         <td>${r.quantity}</td>
-        <td>${r.targetPrice ? `$${r.targetPrice}` : '협의'}</td>
-        <td><span class="badge badge-preview">${r.status}</span></td>
+        <td>${r.targetPrice ? `$${r.targetPrice}` : 'Negotiable'}</td>
+        <td><span class="badge badge-preview">${escapeHtml(r.status)}</span></td>
         <td>${new Date(r.createdAt).toLocaleString()}</td>
       `;
       rfqsTbody.appendChild(tr);
@@ -943,6 +946,7 @@ async function loadAnalytics() {
 
 function showToast(message) {
   const container = document.getElementById('toast-container');
+  if (!container) return;
   const toast = document.createElement('div');
   toast.className = 'toast';
   toast.textContent = message;
@@ -953,13 +957,11 @@ function showToast(message) {
   }, 3500);
 }
 
-// --- Phase 9.5 Stripe Billing & In-App Messages Logic ---
+// 11. Stripe Billing & In-App Messages Logic
 async function loadBillingInfo() {
-  if (!token) return;
+  if (!authToken) return;
   try {
-    const res = await fetch('/api/billing/my-subscription', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const res = await authFetch('/api/billing/my-subscription');
     const data = await res.json();
     if (!res.ok) return;
 
@@ -970,10 +972,10 @@ async function loadBillingInfo() {
 
     const precEl = document.getElementById('plan-precision-status');
     if (data.entitlements.precision3D) {
-      precEl.textContent = '활성화 (Eligible)';
+      precEl.textContent = 'Eligible';
       precEl.style.color = 'var(--accent)';
     } else {
-      precEl.textContent = 'PRO 플랜 필요 (Locked)';
+      precEl.textContent = 'Requires PRO Plan (Locked)';
       precEl.style.color = 'var(--text-muted)';
     }
   } catch (err) {
@@ -991,11 +993,10 @@ function startUpgradeCheckout(requestedPlan) {
   const headline = document.getElementById('consent-plan-headline');
   if (headline) {
     headline.textContent = requestedPlan === 'pro'
-      ? 'PRO 플랜 ($299 / 월)'
-      : 'BUSINESS 플랜 ($799 / 월)';
+      ? 'PRO Plan ($299 / month)'
+      : 'BUSINESS Plan ($799 / month)';
   }
 
-  // Ensure checkboxes are UNCHECKED initially (no pre-checked dark patterns)
   document.getElementById('chk-consent-terms').checked = false;
   document.getElementById('chk-consent-recurring').checked = false;
 
@@ -1003,26 +1004,23 @@ function startUpgradeCheckout(requestedPlan) {
 }
 
 async function proceedWithConsentCheckout() {
-  if (!token || !pendingCheckoutPlan) return;
+  if (!authToken || !pendingCheckoutPlan) return;
 
   const consentTerms = document.getElementById('chk-consent-terms').checked;
   const consentRecurring = document.getElementById('chk-consent-recurring').checked;
 
   if (!consentTerms || !consentRecurring) {
-    alert('이용약관 및 월간 정기 구독 조건에 모두 동의하셔야 결제를 진행할 수 있습니다.');
+    alert('You must accept the Terms of Service and monthly recurring subscription terms to proceed.');
     return;
   }
 
   document.getElementById('checkout-consent-modal').style.display = 'none';
 
   try {
-    showToast(`${pendingCheckoutPlan.toUpperCase()} 플랜 결제 세션을 생성 중입니다...`);
-    const res = await fetch('/api/billing/create-checkout-session', {
+    showToast(`Creating checkout session for ${pendingCheckoutPlan.toUpperCase()} plan...`);
+    const res = await authFetch('/api/billing/create-checkout-session', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         requestedPlan: pendingCheckoutPlan,
         consentTerms: true,
@@ -1043,19 +1041,15 @@ async function proceedWithConsentCheckout() {
   }
 }
 
-
 async function openCustomerPortal() {
-  if (!token) return;
+  if (!authToken) return;
   try {
-    const res = await fetch('/api/billing/create-portal-session', {
+    const res = await authFetch('/api/billing/create-portal-session', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
+      headers: { 'Content-Type': 'application/json' }
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to open portal.');
+    if (!res.ok) throw new Error(data.error || 'Failed to open customer portal.');
 
     if (data.url) {
       window.location.href = data.url;
@@ -1068,16 +1062,14 @@ async function openCustomerPortal() {
 }
 
 async function loadInboxMessages() {
-  if (!token) return;
+  if (!authToken) return;
   try {
-    const res = await fetch('/api/communications/messages', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const res = await authFetch('/api/communications/messages');
     const messages = await res.json();
     const list = document.getElementById('admin-inbox-list');
     if (!list) return;
 
-    const unreadCount = messages.filter(m => !m.readBy || !m.readBy.some(r => r.orgId === currentOrg?.id)).length;
+    const unreadCount = messages.filter(m => !m.readBy || !m.readBy.some(r => r.orgId === currentBooth?.organizationId)).length;
     const badge = document.getElementById('nav-inbox-badge');
     if (badge) {
       if (unreadCount > 0) {
@@ -1089,7 +1081,7 @@ async function loadInboxMessages() {
     }
 
     if (!messages || messages.length === 0) {
-      list.innerHTML = '<div style="color: var(--text-muted); padding: 16px;">수신된 공지나 메시지가 없습니다.</div>';
+      list.innerHTML = '<div style="color: var(--text-muted); padding: 16px;">No announcements or messages in inbox.</div>';
       return;
     }
 
@@ -1100,7 +1092,7 @@ async function loadInboxMessages() {
           <span class="badge badge-preview">${escapeHtml(m.category)}</span>
         </div>
         <p style="font-size: 13px; color: var(--text-muted); margin: 0 0 10px 0;">${escapeHtml(m.body)}</p>
-        <div style="font-size: 11px; color: var(--text-muted);">발송자: ${escapeHtml(m.senderName)} • ${new Date(m.createdAt).toLocaleString()}</div>
+        <div style="font-size: 11px; color: var(--text-muted);">From: ${escapeHtml(m.senderName)} &bull; ${new Date(m.createdAt).toLocaleString()}</div>
       </div>
     `).join('');
   } catch (err) {
@@ -1109,21 +1101,18 @@ async function loadInboxMessages() {
 }
 
 function openContactOwnerModal() {
-  const subject = prompt('플랫폼 운영팀에 보낼 문의 제목을 입력하세요:');
+  const subject = prompt('Enter inquiry subject for platform operations:');
   if (!subject) return;
-  const body = prompt('문의 내용을 상세히 입력하세요:');
+  const body = prompt('Enter your detailed message:');
   if (!body) return;
 
-  fetch('/api/communications/messages', {
+  authFetch('/api/communications/messages', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ category: 'support', subject, body })
   }).then(res => res.json()).then(data => {
     if (data.success) {
-      showToast('운영팀에 문의 메시지가 전달되었습니다.');
+      showToast('Support message dispatched to platform operations.');
       loadInboxMessages();
     }
   });
@@ -1148,16 +1137,6 @@ window.adminApp = {
   openContactOwnerModal
 };
 
-
 window.addEventListener('DOMContentLoaded', () => {
   initAdmin();
-  // Listen for tab changes to load billing or inbox
-  document.querySelectorAll('.admin-nav-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const tab = item.dataset.tab;
-      if (tab === 'billing') loadBillingInfo();
-      if (tab === 'inbox') loadInboxMessages();
-    });
-  });
 });
-

@@ -427,11 +427,12 @@ const initialSeedData = () => {
     ownerNotes: [],
     featureFlags: {
       stripeLiveBillingEnabled: false,
-      billingKillSwitch: false,
+      billingKillSwitch: true,
       reconstructionKillSwitch: false,
       maintenanceMode: false,
       legalReviewStatus: 'pending',
-      pricingStatus: 'draft',
+      pricingStatus: 'approved_for_pilot',
+      pricingVersion: 'pilot-2026.1',
       liveBillingApprovedByOwner: false,
       pastDueGraceDays: 7,
       livePilotMaxCustomers: 1,
@@ -439,6 +440,7 @@ const initialSeedData = () => {
     }
   };
 };
+
 
 
 
@@ -1411,13 +1413,15 @@ class JSONDatabase {
     }
     return {
       plans: safe,
-      pricingStatus: flags.pricingStatus || 'draft',
+      pricingVersion: 'pilot-2026.1',
+      pricingStatus: flags.pricingStatus || 'approved_for_pilot',
       stripeMode: process.env.STRIPE_SECRET_KEY && process.env.STRIPE_MODE === 'live' ? 'live' : 'test',
       billingKillSwitch: Boolean(flags.billingKillSwitch),
       reconstructionKillSwitch: Boolean(flags.reconstructionKillSwitch),
       maintenanceMode: Boolean(flags.maintenanceMode)
     };
   }
+
 
   getCommercialGovernance() {
     const flags = this.getFeatureFlags();
@@ -1452,7 +1456,8 @@ class JSONDatabase {
     };
 
     const pricingGovernance = {
-      pricingStatus: flags.pricingStatus || 'draft',
+      pricingStatus: flags.pricingStatus || 'approved_for_pilot',
+      pricingVersion: 'pilot-2026.1',
       classification: 'PILOT PRICING',
       billingInterval: 'MONTHLY',
       currency: 'USD',
@@ -1462,6 +1467,7 @@ class JSONDatabase {
         business: { monthlyPriceUsd: 799, status: 'pilot_active' }
       }
     };
+
 
     const deterministicBlockers = [
       { id: 'legal_approval', name: 'Legal Review Approval', state: flags.legalReviewStatus === 'approved' ? 'READY' : 'BLOCKED', detail: 'Terms/Privacy/Refund draft review by human attorney.' },
@@ -1949,17 +1955,19 @@ class JSONDatabase {
   getFeatureFlags() {
     const data = this.read();
     const defaults = {
-      stripeBillingEnabled: true,
+      stripeBillingEnabled: false,
+      stripeLiveBillingEnabled: false,
       grandControlEnabled: true,
       precision3DEnabled: true,
       communicationsEnabled: true,
       businessPlanEnabled: true,
       billingMode: 'test',
-      billingKillSwitch: false,
+      billingKillSwitch: true,
       reconstructionKillSwitch: false,
       maintenanceMode: false,
       legalReviewStatus: 'pending',
-      pricingStatus: 'draft',
+      pricingStatus: 'approved_for_pilot',
+      pricingVersion: 'pilot-2026.1',
       liveBillingApprovedByOwner: false,
       pastDueGraceDays: 7,
       livePilotMaxCustomers: 1,
@@ -1970,6 +1978,7 @@ class JSONDatabase {
       ...(data.featureFlags || {})
     };
   }
+
 
 
   async updateFeatureFlags(flags, authorUserId = null) {

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -51,20 +51,20 @@
   <!-- Login Overlay Modal -->
   <div id="org-login-modal" class="modal-overlay" style="display: flex;">
     <div class="modal-content" style="max-width: 420px;">
-      <h2 style="margin-bottom: 8px;">🏛️ 주최사 관리자 로그인</h2>
+      <h2 style="margin-bottom: 8px;">🏛️ Organizer Admin Login</h2>
       <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
-        가상 무역 전시회 전체 행사 및 참가사 오퍼레이션을 관리합니다.
+        Manage exhibition events, exhibitor onboarding, and event-wide operations.
       </p>
       <form id="form-org-login">
         <div class="form-group">
-          <label class="form-label">이메일 계정</label>
+          <label class="form-label">Email Account</label>
           <input type="email" id="input-org-email" class="form-input" placeholder="organizer@vshow.com" required>
         </div>
         <div class="form-group">
-          <label class="form-label">비밀번호</label>
+          <label class="form-label">Password</label>
           <input type="password" id="input-org-password" class="form-input" placeholder="••••••••" required>
         </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">로그인</button>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Sign In</button>
       </form>
     </div>
   </div>
@@ -72,39 +72,38 @@
   <!-- Invite Exhibitor Modal -->
   <div id="modal-invite-exhibitor" class="modal-overlay" style="display: none;">
     <div class="modal-content" style="max-width: 520px;">
-      <h2 style="margin-bottom: 8px;">🏢 신규 참가사 등록 및 계정 발급</h2>
+      <h2 style="margin-bottom: 8px;">🏢 Register Exhibitor & Issue Credentials</h2>
       <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
-        참가사 조직과 관리자 계정을 생성하고 초기 임시 비밀번호를 발급합니다.
+        Create an exhibitor organization, provision the admin account, and generate temporary login credentials.
       </p>
       <form id="form-invite-exhibitor">
         <div class="form-group">
-          <label class="form-label">참가사 기업명 (Company Name)</label>
-          <input type="text" id="invite-company-name" class="form-input" placeholder="예: Cyberdyne Systems Korea" required>
+          <label class="form-label">Company Name</label>
+          <input type="text" id="invite-company-name" class="form-input" placeholder="e.g. Cyberdyne Systems Korea" required>
         </div>
         <div class="form-group">
-          <label class="form-label">관리자 이메일 (Admin Email)</label>
+          <label class="form-label">Admin Work Email</label>
           <input type="email" id="invite-admin-email" class="form-input" placeholder="admin@cyberdyne.kr" required>
         </div>
         <div class="form-group">
-          <label class="form-label">산업 분야 (Category)</label>
-          <input type="text" id="invite-category" class="form-input" placeholder="예: Robotics / AI" value="Industrial Automation">
+          <label class="form-label">Industry Category</label>
+          <input type="text" id="invite-category" class="form-input" placeholder="e.g. Robotics / AI" value="Industrial Automation">
         </div>
         <div class="form-group">
-          <label class="form-label">부스 번호 (Booth No.)</label>
-          <input type="text" id="invite-booth-num" class="form-input" placeholder="예: C-301">
+          <label class="form-label">Booth Number</label>
+          <input type="text" id="invite-booth-num" class="form-input" placeholder="e.g. C-301">
         </div>
         <div class="form-group">
-          <label class="form-label">초기 임시 비밀번호 (미입력 시 자동생성)</label>
+          <label class="form-label">Temporary Password (Auto-generated if blank)</label>
           <input type="text" id="invite-temp-pwd" class="form-input" placeholder="BetaPass2026!">
         </div>
         <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px;">
-          <button type="button" class="btn btn-secondary" id="btn-cancel-invite">취소</button>
-          <button type="submit" class="btn btn-primary">계정 생성 및 부스 발급</button>
+          <button type="button" class="btn btn-secondary" id="btn-cancel-invite">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Account & Provision Booth</button>
         </div>
       </form>
     </div>
   </div>
-
 
   <!-- Organizer Header -->
   <header class="organizer-header">
@@ -116,8 +115,8 @@
       </div>
     </div>
     <div style="display: flex; gap: 10px; align-items: center;">
-      <a href="lobby.html" class="btn btn-secondary btn-sm" target="_blank">🌐 공개 로비 미리보기</a>
-      <button class="btn btn-secondary btn-sm" id="btn-org-logout">로그아웃</button>
+      <a href="lobby.html" class="btn btn-secondary btn-sm" target="_blank">🌐 Public Lobby Preview</a>
+      <button class="btn btn-secondary btn-sm" id="btn-org-logout">Sign Out</button>
     </div>
   </header>
 
@@ -126,19 +125,19 @@
     <!-- Event-Wide Stats -->
     <div class="grid-stats-4">
       <div class="stat-box">
-        <div class="stat-label">참가사 (Exhibitors)</div>
+        <div class="stat-label">Exhibitors</div>
         <div class="stat-value" id="stat-exhibitors">0</div>
       </div>
       <div class="stat-box">
-        <div class="stat-label">공개 부스 (Published)</div>
+        <div class="stat-label">Published Booths</div>
         <div class="stat-value" id="stat-booths">0</div>
       </div>
       <div class="stat-box">
-        <div class="stat-label">3D 정밀 검증 부스 (Verified)</div>
+        <div class="stat-label">Verified 3DGS Booths</div>
         <div class="stat-value" id="stat-verified-booths" style="color: var(--brand-accent);">0</div>
       </div>
       <div class="stat-box">
-        <div class="stat-label">총 바이어 방문 (Visits)</div>
+        <div class="stat-label">Total Buyer Visits</div>
         <div class="stat-value" id="stat-visits">0</div>
       </div>
     </div>
@@ -147,8 +146,8 @@
     <section class="card" style="margin-bottom: 24px;">
       <div class="card-header">
         <div>
-          <h3>🚀 3D 가우시안 재구성 작업 승인 (Reconstruction Approvals)</h3>
-          <p style="font-size: 13px; color: var(--text-muted);">참가사가 요청한 3D 가우시안 스플래팅 GPU 연산 작업을 검토하고 승인합니다.</p>
+          <h3>🚀 3D Reconstruction Approvals & Pipeline Queue</h3>
+          <p style="font-size: 13px; color: var(--text-muted);">Review and authorize requested 3D Gaussian Splatting GPU compute jobs.</p>
         </div>
       </div>
       <div class="table-container">
@@ -156,12 +155,12 @@
           <thead>
             <tr>
               <th>Job ID</th>
-              <th>참가사 / 부스</th>
-              <th>사진 수</th>
-              <th>품질 프리셋</th>
-              <th>상태</th>
-              <th>비용 예측</th>
-              <th>작업 관리</th>
+              <th>Exhibitor / Booth</th>
+              <th>Photos</th>
+              <th>Quality Preset</th>
+              <th>Status</th>
+              <th>Compute Cost</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody id="recon-approval-tbody">
@@ -175,21 +174,21 @@
     <section class="card" style="margin-bottom: 24px;">
       <div class="card-header">
         <div>
-          <h3>🏢 참가사 및 부스 관리 (Exhibitors Directory)</h3>
-          <p style="font-size: 13px; color: var(--text-muted);">행사에 참여 중인 참가사 목록 및 부스 배포 상태를 관리합니다.</p>
+          <h3>🏢 Exhibitors & Booth Directory</h3>
+          <p style="font-size: 13px; color: var(--text-muted);">Directory of registered exhibitors and spatial deployment statuses.</p>
         </div>
-        <button class="btn btn-primary btn-sm" id="btn-add-exhibitor">+ 신규 참가사 등록</button>
+        <button class="btn btn-primary btn-sm" id="btn-add-exhibitor">+ Register Exhibitor</button>
       </div>
       <div class="table-container">
         <table>
           <thead>
             <tr>
-              <th>참가사명</th>
-              <th>분야 (Category)</th>
-              <th>부스 번호</th>
-              <th>배포 상태</th>
-              <th>3D 공간 상태</th>
-              <th>등록 일자</th>
+              <th>Company Name</th>
+              <th>Category</th>
+              <th>Booth Number</th>
+              <th>Publish Status</th>
+              <th>3D Spatial Status</th>
+              <th>Registration Date</th>
             </tr>
           </thead>
           <tbody id="exhibitor-tbody">
