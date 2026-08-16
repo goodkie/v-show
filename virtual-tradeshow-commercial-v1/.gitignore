@@ -1,0 +1,7 @@
+node_modules/
+app_build/node_modules/
+npm-debug.log
+.DS_Store
+*.log
+app_build/data/uploads/*
+!app_build/data/uploads/.gitkeep

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exhibitor Admin Dashboard — Virtual Trade Show V1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-shell">
+  <!-- Login Overlay (if not logged in) -->
+  <div id="login-modal" class="modal-backdrop active">
+    <div class="modal-card" style="max-width: 420px; text-align: center;">
+      <div class="brand-logo" style="margin: 0 auto 16px auto; width: 44px; height: 44px; font-size: 20px;">V</div>
+      <h2 style="margin-bottom: 8px;">참가사 관리자 로그인</h2>
+      <p style="font-size: 13px; margin-bottom: 24px;">Virtual Trade Show Commercial V1 콘솔에 오신 것을 환영합니다.</p>
+      
+      <form id="form-login" style="text-align: left;">
+        <div class="form-group">
+          <label class="form-label">아이디</label>
+          <input type="text" id="login-user" class="form-input" value="admin" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">비밀번호</label>
+          <input type="password" id="login-pass" class="form-input" value="admin123" required>
+        </div>
+        <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 16px;">
+          * 평가용 기본 계정: <code>admin / admin123</code>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">로그인</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Top Admin Navbar -->
+  <header class="admin-nav">
+    <div class="brand-section">
+      <div class="brand-logo">V</div>
+      <div class="brand-title">Exhibitor Control Center</div>
+      <span class="badge badge-reconstructed" style="margin-left: 12px;">Commercial V1</span>
+    </div>
+    <div class="nav-actions">
+      <a href="index.html" target="_blank" class="btn btn-secondary btn-sm" id="btn-preview-public">퍼블릭 부스 열기 ↗</a>
+      <button class="btn btn-danger btn-sm" id="btn-logout">로그아웃</button>
+    </div>
+  </header>
+
+  <!-- Admin Main Layout -->
+  <div class="admin-body">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar">
+      <div class="admin-nav-item active" data-tab="overview">
+        <span>📊</span> 부스 및 통계 개요
+      </div>
+      <div class="admin-nav-item" data-tab="booth-settings">
+        <span>🏛️</span> 부스 환경 & 3D 사진
+      </div>
+      <div class="admin-nav-item" data-tab="products">
+        <span>📦</span> 제품 및 카탈로그 관리
+      </div>
+      <div class="admin-nav-item" data-tab="hotspots">
+        <span>📍</span> 3D 핫스팟 관리
+      </div>
+      <div class="admin-nav-item" data-tab="leads">
+        <span>🤝</span> 유입 리드 & RFQ 관리
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="admin-content">
+
+      <!-- TAB 1: Overview & Stats -->
+      <section id="tab-overview" class="tab-pane">
+        <div class="stats-grid" style="margin-bottom: 24px;">
+          <div class="stat-box">
+            <div class="stat-label">부스 누적 방문자</div>
+            <div class="stat-value" id="stat-views">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">제품 관심 클릭</div>
+            <div class="stat-value" id="stat-clicks">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">수신된 디지털 명함 (Leads)</div>
+            <div class="stat-value" id="stat-leads">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">접수된 견적 요청 (RFQ)</div>
+            <div class="stat-value" id="stat-rfqs">0</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3 id="current-booth-name-display">부스 정보 로딩 중...</h3>
+              <p id="current-booth-status-desc" style="font-size: 13px; margin-top: 4px;"></p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-primary btn-sm" id="btn-toggle-publish">부스 발행하기</button>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 16px; align-items: center; background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-sm);">
+            <div>
+              <div style="font-size: 12px; color: var(--text-dim); text-transform: uppercase;">3D 공간 재구성 상태</div>
+              <div style="font-weight: 600; font-size: 16px; margin-top: 2px;" id="recon-status-text">Photo Preview</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btn-req-recon" style="margin-left: auto;">
+              정밀 3D 재구성 요청 (Precision SFM/Gaussian)
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: Booth Settings & Photos -->
+      <section id="tab-booth-settings" class="tab-pane" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>가상 부스 기본 정보</h3>
+            <button class="btn btn-primary btn-sm" id="btn-save-booth-info">저장</button>
+          </div>
+          <form id="form-booth-info">
+            <div class="form-group">
+              <label class="form-label">부스 / 기업 명칭</label>
+              <input type="text" class="form-input" id="edit-booth-name">
+            </div>
+            <div class="form-group">
+              <label class="form-label">부스 소개 설명</label>
+              <textarea class="form-textarea" id="edit-booth-desc" rows="3"></textarea>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3>실물 부스 다각도 사진 업로드 (Photo Preview & Precision Capture)</h3>
+              <p style="font-size: 13px;">현장 부스 사진(30~100장 권장)을 업로드하면 즉시 3D Photo Preview 부스가 생성됩니다.</p>
+            </div>
+          </div>
+
+          <div class="dropzone" id="photo-dropzone">
+            <div style="font-size: 32px; margin-bottom: 8px;">📷</div>
+            <div style="font-weight: 600;">사진 파일을 드래그하여 놓거나 클릭하여 선택하세요.</div>
+            <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">JPG, PNG 지원 (최대 50장 일괄 업로드)</div>
+            <input type="file" id="photo-file-input" multiple accept="image/*" style="display: none;">
+          </div>
+
+          <div class="gallery-grid" id="booth-photo-gallery">
+            <!-- Uploaded thumbnails -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: Products Management -->
+      <section id="tab-products" class="tab-pane" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3>전시 제품 관리 (Product Management)</h3>
+              <p style="font-size: 13px;">가상 부스에 전시할 제품 카탈로그 및 사양을 등록합니다.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" id="btn-open-add-product">+ 새 제품 등록</button>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>제품명</th>
+                <th>SKU</th>
+                <th>카테고리</th>
+                <th>MOQ</th>
+                <th>도매 단가</th>
+                <th>샘플 제공</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody id="products-table-body">
+              <!-- Products rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 4: Hotspots Management -->
+      <section id="tab-hotspots" class="tab-pane" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3>3D 핫스팟 좌표 관리 (Product Hotspots)</h3>
+              <p style="font-size: 13px;">3D 가상 부스 내부의 제품 위치에 상호작용 핀을 연결합니다.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" id="btn-open-add-hotspot">+ 핫스팟 추가</button>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>라벨</th>
+                <th>연결 제품</th>
+                <th>3D 좌표 (X, Y, Z)</th>
+                <th>타입</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody id="hotspots-table-body">
+              <!-- Hotspots rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 5: Leads & RFQs -->
+      <section id="tab-leads" class="tab-pane" style="display: none;">
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="card-header">
+            <h3>수신된 디지털 명함 목록 (Leads)</h3>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>회사명</th>
+                <th>성명</th>
+                <th>이메일</th>
+                <th>연락처</th>
+                <th>직책</th>
+                <th>접수일시</th>
+              </tr>
+            </thead>
+            <tbody id="leads-table-body">
+              <!-- Leads rows -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3>접수된 견적 요청 목록 (RFQs)</h3>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>제품 ID</th>
+                <th>구매자 / 회사</th>
+                <th>수량</th>
+                <th>희망 단가</th>
+                <th>상태</th>
+                <th>접수일시</th>
+              </tr>
+            </thead>
+            <tbody id="rfqs-table-body">
+              <!-- RFQs rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Modal: Add / Edit Product -->
+  <div id="modal-add-product" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-product-form-title">새 제품 등록</h3>
+        <button class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <form id="form-product-crud">
+        <input type="hidden" id="crud-product-id">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">제품명 *</label>
+            <input type="text" class="form-input" id="crud-name" required placeholder="예: 산업용 6축 협동로봇">
+          </div>
+          <div class="form-group">
+            <label class="form-label">SKU *</label>
+            <input type="text" class="form-input" id="crud-sku" required placeholder="예: APX-ROB-01">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">카테고리</label>
+            <input type="text" class="form-input" id="crud-category" placeholder="예: Robotics">
+          </div>
+          <div class="form-group">
+            <label class="form-label">최소 주문 수량 (MOQ)</label>
+            <input type="number" class="form-input" id="crud-moq" min="1" value="1">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">도매 단가 (USD)</label>
+            <input type="number" class="form-input" id="crud-price" placeholder="15000">
+          </div>
+          <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 24px;">
+            <input type="checkbox" id="crud-contact-price">
+            <label for="crud-contact-price" style="font-size: 13px; color: var(--text-main); cursor: pointer;">
+              단가 문의로 표시 (Contact for Price)
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">제품 대표 이미지 URL</label>
+          <input type="text" class="form-input" id="crud-image" placeholder="https://... 또는 이미지 업로드">
+        </div>
+        <div class="form-group">
+          <label class="form-label">제품 상세 설명</label>
+          <textarea class="form-textarea" id="crud-desc" rows="3"></textarea>
+        </div>
+        <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="crud-sample-avail" checked>
+          <label for="crud-sample-avail" style="font-size: 13px; color: var(--text-main); cursor: pointer;">
+            샘플 신청 가능 제품
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">제품 저장</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Hotspot -->
+  <div id="modal-add-hotspot" class="modal-backdrop">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>3D 핫스팟 추가</h3>
+        <button class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <form id="form-hotspot-crud">
+        <div class="form-group">
+          <label class="form-label">연결할 제품 선택 *</label>
+          <select class="form-select" id="hs-product-select" required>
+            <!-- Injected dynamically -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">핫스팟 핀 라벨</label>
+          <input type="text" class="form-input" id="hs-label" placeholder="예: 주요 협동로봇 모델">
+        </div>
+        <div class="form-label">3D 좌표 (X, Y, Z)</div>
+        <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+          <input type="number" step="0.1" class="form-input" id="hs-pos-x" placeholder="X (예: -2.5)" required value="-2.0">
+          <input type="number" step="0.1" class="form-input" id="hs-pos-y" placeholder="Y (예: 0.5)" required value="0.2">
+          <input type="number" step="0.1" class="form-input" id="hs-pos-z" placeholder="Z (예: -3.0)" required value="-3.0">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 16px;">핫스팟 등록</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Admin Logic Script -->
+  <script src="admin.js"></script>
+</body>
+</html>

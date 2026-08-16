@@ -1,0 +1,20 @@
+{
+  "name": "virtual-tradeshow-commercial-v1",
+  "version": "1.0.0",
+  "description": "Commercial V1 Virtual Trade Show Platform with 3D Booths & Realtime Engagement",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1",
+    "uuid": "^9.0.1",
+    "ws": "^8.16.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

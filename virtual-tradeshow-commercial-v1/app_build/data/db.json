@@ -1,0 +1,238 @@
+{
+  "booths": [
+    {
+      "id": "booth-demo-01",
+      "exhibitorId": "user-admin-1",
+      "name": "Apex Robotics Global Innovation",
+      "description": "Next-generation industrial automation, smart robotics, and precision logistics solutions for modern manufacturing.",
+      "themeColor": "#0f766e",
+      "status": "published",
+      "reconstructionStatus": "photo_preview",
+      "photos": [
+        "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80"
+      ],
+      "spatialModel": {
+        "type": "photo_preview",
+        "environmentLayout": "hexagon_booth"
+      },
+      "createdAt": "2026-08-16T08:16:47.850Z",
+      "updatedAt": "2026-08-16T08:16:47.851Z"
+    },
+    {
+      "id": "booth-e023c2a9",
+      "exhibitorId": "user-admin-1",
+      "name": "Future Mobility & AI Expo 2026",
+      "description": "Cutting-edge autonomous driving sensors and industrial robotics.",
+      "themeColor": "#0284c7",
+      "status": "published",
+      "reconstructionStatus": "photo_preview",
+      "photos": [
+        "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1200&q=80"
+      ],
+      "spatialModel": {
+        "type": "photo_preview",
+        "environmentLayout": "hexagon_booth"
+      },
+      "createdAt": "2026-08-16T08:20:59.131Z",
+      "updatedAt": "2026-08-16T08:20:59.181Z"
+    }
+  ],
+  "products": [
+    {
+      "id": "prod-01",
+      "boothId": "booth-demo-01",
+      "name": "Apex-Arm X9 Modular Industrial Cobot",
+      "sku": "APX-ROB-X9",
+      "category": "Robotics",
+      "moq": 2,
+      "price": 24500,
+      "contactForPrice": false,
+      "currency": "USD",
+      "description": "High-precision 6-axis collaborative robotic arm with 15kg payload and sub-millimeter positioning repeatability.",
+      "images": [
+        "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80"
+      ],
+      "specifications": {
+        "Payload": "15 kg",
+        "Reach": "1300 mm",
+        "Repeatability": "±0.02 mm",
+        "Power Rating": "48V DC / 600W",
+        "Safety Certs": "ISO 10218-1, CE"
+      },
+      "sampleAvailable": true,
+      "createdAt": "2026-08-16T08:16:47.851Z",
+      "updatedAt": "2026-08-16T08:16:47.851Z"
+    },
+    {
+      "id": "prod-02",
+      "boothId": "booth-demo-01",
+      "name": "OmniVision 3D Spatial LiDAR Scanner",
+      "sku": "LDR-3D-SP1",
+      "category": "Sensors",
+      "moq": 5,
+      "price": 3200,
+      "contactForPrice": false,
+      "currency": "USD",
+      "description": "Ultra-wide angle real-time 3D point cloud scanner for autonomous factory navigation and AGV fleet management.",
+      "images": [
+        "https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=800&q=80"
+      ],
+      "specifications": {
+        "Range": "0.1m ~ 120m",
+        "Field of View": "360° Horiz / 90° Vert",
+        "Sampling Rate": "1.2M points/sec",
+        "Protection": "IP67 Waterproof"
+      },
+      "sampleAvailable": true,
+      "createdAt": "2026-08-16T08:16:47.851Z",
+      "updatedAt": "2026-08-16T08:16:47.851Z"
+    },
+    {
+      "id": "prod-03",
+      "boothId": "booth-demo-01",
+      "name": "CyberGrid Edge AI Control Hub",
+      "sku": "EDG-HUB-PRO",
+      "category": "Control Systems",
+      "moq": 1,
+      "price": null,
+      "contactForPrice": true,
+      "currency": "USD",
+      "description": "Ruggedized DIN-rail industrial edge computing node powered by 275 TOPS AI neural processing unit.",
+      "images": [
+        "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80"
+      ],
+      "specifications": {
+        "Compute": "275 TOPS NPU + 16-Core ARM",
+        "Connectivity": "Quad 10GbE + Dual 5G Redundant",
+        "Operating Temp": "-40°C ~ +85°C"
+      },
+      "sampleAvailable": false,
+      "createdAt": "2026-08-16T08:16:47.851Z",
+      "updatedAt": "2026-08-16T08:16:47.851Z"
+    },
+    {
+      "id": "prod-e6c10c67",
+      "boothId": "booth-demo-01",
+      "name": "Smart Vision Sensor Pro",
+      "sku": "SVS-PRO-100",
+      "category": "Sensors",
+      "moq": 10,
+      "price": 1500,
+      "contactForPrice": false,
+      "currency": "USD",
+      "description": "Ultra high-speed optical vision sensor for automated QC.",
+      "images": [],
+      "specifications": {},
+      "sampleAvailable": false,
+      "createdAt": "2026-08-16T08:16:58.219Z",
+      "updatedAt": "2026-08-16T08:16:58.219Z"
+    },
+    {
+      "id": "prod-123af25f",
+      "boothId": "booth-e023c2a9",
+      "name": "Autonomous L4 Navigation Core",
+      "sku": "NAV-L4-CORE",
+      "category": "Autonomous Driving",
+      "moq": 5,
+      "price": 18500,
+      "contactForPrice": false,
+      "currency": "USD",
+      "description": "Full-stack AI autonomy controller for logistics AGVs.",
+      "images": [
+        "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80"
+      ],
+      "specifications": {},
+      "sampleAvailable": true,
+      "createdAt": "2026-08-16T08:20:59.167Z",
+      "updatedAt": "2026-08-16T08:20:59.167Z"
+    }
+  ],
+  "hotspots": [
+    {
+      "id": "hs-01",
+      "boothId": "booth-demo-01",
+      "productId": "prod-01",
+      "position": {
+        "x": -2.8,
+        "y": 0.2,
+        "z": -3.5
+      },
+      "label": "Cobot Arm X9",
+      "type": "product",
+      "createdAt": "2026-08-16T08:16:47.851Z"
+    },
+    {
+      "id": "hs-02",
+      "boothId": "booth-demo-01",
+      "productId": "prod-02",
+      "position": {
+        "x": 2.6,
+        "y": -0.1,
+        "z": -3.2
+      },
+      "label": "LiDAR Scanner",
+      "type": "product",
+      "createdAt": "2026-08-16T08:16:47.851Z"
+    },
+    {
+      "id": "hs-03",
+      "boothId": "booth-demo-01",
+      "productId": "prod-03",
+      "position": {
+        "x": 0.1,
+        "y": 1.1,
+        "z": -4.8
+      },
+      "label": "Edge Control Hub",
+      "type": "product",
+      "createdAt": "2026-08-16T08:16:47.851Z"
+    },
+    {
+      "id": "hs-755128ca",
+      "boothId": "booth-demo-01",
+      "productId": "prod-e6c10c67",
+      "position": {
+        "x": 1.5,
+        "y": 0.8,
+        "z": -2
+      },
+      "label": "Vision Sensor Pin",
+      "type": "product",
+      "createdAt": "2026-08-16T08:16:58.235Z"
+    }
+  ],
+  "leads": [
+    {
+      "id": "lead-3c95aba5",
+      "boothId": "booth-demo-01",
+      "company": "Future Motors Corp",
+      "name": "David Kim",
+      "email": "david@futuremotors.com",
+      "phone": "+82-10-1234-5678",
+      "jobTitle": "Procurement Director",
+      "createdAt": "2026-08-16T08:16:58.249Z"
+    }
+  ],
+  "rfqs": [
+    {
+      "id": "rfq-663348fe",
+      "status": "new",
+      "boothId": "booth-demo-01",
+      "productId": "prod-e6c10c67",
+      "buyerName": "David Kim",
+      "company": "Future Motors Corp",
+      "email": "david@futuremotors.com",
+      "quantity": 50,
+      "targetPrice": 1350,
+      "createdAt": "2026-08-16T08:16:58.263Z"
+    }
+  ],
+  "samples": [],
+  "appointments": []
+}

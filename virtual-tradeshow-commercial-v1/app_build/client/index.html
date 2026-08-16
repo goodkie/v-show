@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Virtual Trade Show — 3D Commercial Booth Viewer</title>
+  <meta name="description" content="Commercial 3D Virtual Trade Show Booth Experience with Realtime B2B Engagement.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <!-- Three.js & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Navigation -->
+    <header class="top-nav">
+      <div class="brand-section">
+        <div class="brand-logo">V</div>
+        <div>
+          <div class="brand-title" id="nav-booth-name">Virtual Trade Show V1</div>
+          <div id="reconstruction-badge-container">
+            <span class="badge badge-preview" id="badge-recon-status">Photo Preview</span>
+          </div>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <button class="btn btn-secondary btn-sm" id="btn-open-catalog">전체 제품 목록</button>
+        <button class="btn btn-primary btn-sm" id="btn-exchange-card">디지털 명함 교환</button>
+        <button class="btn btn-accent btn-sm" id="btn-live-showhost">1:1 라이브 상담</button>
+        <a href="admin.html" class="btn btn-secondary btn-sm">참가사 관리자</a>
+      </div>
+    </header>
+
+    <!-- 3D Viewport -->
+    <div id="viewport-3d" class="viewport-3d"></div>
+
+    <!-- Hotspot Marker Overlay Layer -->
+    <div id="hotspots-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:25;"></div>
+
+    <!-- HUD Overlay -->
+    <div class="viewer-hud">
+      <div class="hud-panel">
+        <div class="booth-info">
+          <h2 id="hud-booth-title">로딩 중...</h2>
+          <p id="hud-booth-desc">가상 부스 공간을 불러오는 중입니다.</p>
+        </div>
+        <div class="hud-controls-hint">
+          <span>🖱️ 마우스 좌클릭: 360° 회전</span>
+          <span>🔍 스크롤: 줌 인/아웃</span>
+          <span>📍 핫스팟 클릭: 제품 상세</span>
+        </div>
+      </div>
+
+      <div class="hud-actions">
+        <button class="btn btn-secondary" id="btn-reset-view">뷰 초기화</button>
+        <button class="btn btn-secondary" id="btn-book-appointment">상담 예약</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 1: Product Detail Modal -->
+  <div id="modal-product" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 id="modal-prod-title">제품명</h3>
+          <p id="modal-prod-sku" style="font-size: 13px; color: var(--text-dim);">SKU-0000</p>
+        </div>
+        <button class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <img id="modal-prod-image" class="product-hero-img" src="" alt="Product Media">
+      <p id="modal-prod-desc">제품 상세 설명이 표시됩니다.</p>
+      
+      <div class="product-meta-grid">
+        <div>
+          <div class="meta-item-title">최소 주문 수량 (MOQ)</div>
+          <div class="meta-item-val" id="modal-prod-moq">1 개</div>
+        </div>
+        <div>
+          <div class="meta-item-title">도매 공급가</div>
+          <div class="meta-item-val" id="modal-prod-price">단가 문의</div>
+        </div>
+        <div>
+          <div class="meta-item-title">샘플 제공</div>
+          <div class="meta-item-val" id="modal-prod-sample">가능</div>
+        </div>
+      </div>
+
+      <h4 style="margin-top: 16px; margin-bottom: 8px;">제품 사양 (Specification)</h4>
+      <table class="spec-table" id="modal-prod-specs">
+        <tbody>
+          <!-- Specs dynamic injection -->
+        </tbody>
+      </table>
+
+      <div style="display: flex; gap: 12px; margin-top: 24px;">
+        <button class="btn btn-primary" id="btn-action-rfq" style="flex:1;">견적 요청 (RFQ)</button>
+        <button class="btn btn-secondary" id="btn-action-sample" style="flex:1;">샘플 요청</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Product Catalog List Modal -->
+  <div id="modal-catalog" class="modal-backdrop">
+    <div class="modal-card" style="max-width: 800px;">
+      <div class="modal-header">
+        <h3>부스 전시 제품 카탈로그</h3>
+        <button class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <div id="catalog-list-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 16px;">
+        <!-- Catalog cards -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Digital Business Card (Lead) Modal -->
+  <div id="modal-lead" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>디지털 명함 전달 (Digital Business Card)</h3>
+        <button class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <p style="margin-bottom: 16px; font-size: 13px;">전시 참가사에게 귀사의 비즈니스 정보 및 명함을 전달하여 카탈로그 및 파트너십 자료를 수신합니다.</p>
+      <form id="form-lead">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">회사명 *</label>
+            <input type="text" class="form-input" id="lead-company" required placeholder="예: 글로벌 테크 솔루션즈">
+          </div>
+          <div class="form-group">
+            <label class="form-label">성명 *</label>
+            <input type="text" class="form-input" id="lead-name" required placeholder="예: 홍길동">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">이메일 *</label>
+            <input type="email" class="form-input" id="lead-email" required placeholder="name@company.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">연락처 / 전화번호</label>
+            <input type="text" class="form-input" id="lead-phone" placeholder="010-0000-0000">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">직책 / 부서</label>
+          <input type="text" class="form-input" id="lead-job" placeholder="예: 구매팀 수석 엔지니어">
+        </div>
+        <div class="form-group">
+          <label class="form-label">관심 분야 / 메시지</label>
+          <textarea class="form-textarea" id="lead-notes" rows="3" placeholder="관심 제품군 및 비즈니스 목적을 간단히 적어주세요."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 8px;">명함 전송 완료</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 4: RFQ Submission Modal -->
+  <div id="modal-rfq" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>견적 요청 (Request for Quotation - RFQ)</h3>
+        <button class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <form id="form-rfq">
+        <input type="hidden" id="rfq-product-id">
+        <div class="form-group">
+          <label class="form-label">대상 제품</label>
+          <input type="text" class="form-input" id="rfq-product-name" readonly style="background: var(--bg-surface-elevated);">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">희망 구매 수량 (Quantity) *</label>
+            <input type="number" class="form-input" id="rfq-quantity" min="1" required value="10">
+          </div>
+          <div class="form-group">
+            <label class="form-label">희망 목표 단가 (USD)</label>
+            <input type="number" class="form-input" id="rfq-target-price" placeholder="협의 희망 단가">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">구매자 성명 *</label>
+            <input type="text" class="form-input" id="rfq-name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">회사명 *</label>
+            <input type="text" class="form-input" id="rfq-company" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">이메일 *</label>
+          <input type="email" class="form-input" id="rfq-email" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">추가 요구사항 및 납기 조건</label>
+          <textarea class="form-textarea" id="rfq-notes" rows="3" placeholder="납품 희망 일정, 인증 요구사항, 포장 조건 등"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">RFQ 공식 접수</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 5: Sample Request Modal -->
+  <div id="modal-sample" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>제품 샘플 신청 (Sample Request)</h3>
+        <button class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <form id="form-sample">
+        <input type="hidden" id="sample-product-id">
+        <div class="form-group">
+          <label class="form-label">대상 제품</label>
+          <input type="text" class="form-input" id="sample-product-name" readonly style="background: var(--bg-surface-elevated);">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">신청 수량</label>
+            <input type="number" class="form-input" id="sample-qty" value="1" min="1" max="5">
+          </div>
+          <div class="form-group">
+            <label class="form-label">신청자 성명 *</label>
+            <input type="text" class="form-input" id="sample-name" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">회사명 *</label>
+            <input type="text" class="form-input" id="sample-company" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">이메일 *</label>
+            <input type="email" class="form-input" id="sample-email" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">배송지 주소 (Shipping Address)</label>
+          <input type="text" class="form-input" id="sample-address" placeholder="샘플 수령 주소">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">샘플 신청서 제출</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 6: Appointment Booking Modal -->
+  <div id="modal-appointment" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>비즈니스 미팅 / 화상 상담 예약</h3>
+        <button class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <form id="form-appointment">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">신청자 성명 *</label>
+            <input type="text" class="form-input" id="apt-name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">회사명 *</label>
+            <input type="text" class="form-input" id="apt-company" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">이메일 *</label>
+            <input type="email" class="form-input" id="apt-email" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">희망 일시 *</label>
+            <input type="datetime-local" class="form-input" id="apt-time" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">상담 의제 및 사전 질의</label>
+          <textarea class="form-textarea" id="apt-notes" rows="3" placeholder="협의하고 싶은 주요 제품 또는 비즈니스 논의 사항"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">상담 일정 예약 요청</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 7: Live Showhost Consultation Modal -->
+  <div id="modal-showhost" class="modal-backdrop">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge badge-live">LIVE</span>
+          <h3>1:1 라이브 부스 쇼호스트 상담</h3>
+        </div>
+        <button class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <div style="background:#0f172a; border-radius: var(--radius-md); height: 280px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; border: 1px solid var(--border-subtle); margin-bottom: 16px;">
+        <div style="font-size: 36px;">🎙️</div>
+        <div style="font-weight: 600; font-size: 16px;">실시간 P2P WebRTC 상담 채널</div>
+        <div style="font-size: 13px; color: var(--text-dim);" id="showhost-status-text">쇼호스트 대기실에 연결하는 중입니다...</div>
+      </div>
+      <p style="font-size: 13px; margin-bottom: 20px;">
+        부스 현장 담당자 또는 AI/전문 쇼호스트와 1:1로 실시간 음성/화상 상담을 진행합니다.
+      </p>
+      <div style="display: flex; gap: 12px;">
+        <button class="btn btn-accent" id="btn-start-call" style="flex:1;">상담 연결 시작</button>
+        <button class="btn btn-secondary" data-close-modal style="flex:1;">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Main Viewer Logic -->
+  <script src="viewer.js"></script>
+</body>
+</html>
