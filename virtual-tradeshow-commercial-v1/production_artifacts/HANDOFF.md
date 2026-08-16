@@ -278,6 +278,33 @@ Inspect sample pilot package for Nova Robotics Systems (`phase9-sample/exhibitor
 - **COLMAP / Splatfacto**: **NOT_STARTED** (Zero fake metrics generated; halted until genuine photos are provided).
 - **Additional Cash Cost**: **$0.00**
 
+---
+
+### [2026-08-16 10:04] — Session 15: Phase 9 Three-Exhibitor Internal Rehearsal Complete
+
+#### 1. DATE / TIME
+- **Date**: 2026-08-16
+- **Time**: 10:04:00 UTC-4 (14:04:00 UTC)
+
+#### 2. TASK
+Execute full internal rehearsal simulation of commercial beta with 1 Organizer, 3 TEST Exhibitors (Nova Robotics Systems, Helix BioTech Innovations, Orbit Smart Materials), 31 total TEST products, 19 hotspots, and 12 simulated TEST buyer sessions. Verify end-to-end buyer workflows (Lobby → Booth → Product → Lead → RFQ → Sample → Appointment), showhost presence, 3x3 multi-tenant isolation matrix, non-destructive database backup, and real Spark 3DGS rendering regression.
+
+#### 3. REHEARSAL SUMMARY RESULTS (11/11 PASS)
+- **Organizer Authentication & Setup**: **PASS** (`organizer@vshow.com`, Private Event: `event-facd02f8`)
+- **Exhibitor Provisioning & Password Hardening**: **PASS** (Nova A-101, Helix B-205, Orbit C-310 with 16-char crypto temp passwords & 12-char policy enforcement)
+- **Catalog Population (31 Products & Hotspots)**: **PASS** (Nova 12, Helix 10, Orbit 9 products scoped to respective booths)
+- **3x3 Cross-Tenant Isolation Matrix**: **PASS** (100% blocked with HTTP 403 Forbidden)
+- **12 TEST Buyer Journeys Simulation**: **PASS** (12 complete conversion journeys verified)
+- **Showhost Presence & State Transitions**: **PASS** (All booths cycled through available / busy / offline)
+- **Reconstruction Approval Gate**: **PASS** (DRY_RUN approved without GPU spend)
+- **Real Spark 3DGS Model Serving Regression**: **PASS** (60.77 MB Binary PLY & SPZ verified)
+- **Telemetry & Analytics Scoping**: **PASS** (Organizer sees 19 aggregate leads; Nova sees only its 5 scoped leads)
+- **Database Backup & Integrity**: **PASS** (`db.before-three-exhibitor-rehearsal.20260816-100200.json`)
+- **Classification**: **`INTERNAL_REHEARSAL_PASS`**
+- **Real Pilot Status**: **`WAITING_FOR_REAL_PILOT_DATA`**
+- **Additional Cash Cost**: **$0.00**
+
+
 
 
 

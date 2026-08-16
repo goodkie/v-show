@@ -1,65 +1,71 @@
-# PHASE 9 — PRIVATE BETA OPERATIONS SCORECARD
-**Virtual Trade Show Commercial V1**
+# PHASE 9 — THREE-EXHIBITOR INTERNAL REHEARSAL SCORECARD
+**Virtual Trade Show Commercial V1 — Internal Commercial Beta Simulation**
 
 ---
 
 ## 1. 개요 및 운영 요약 (Executive Operational Summary)
-- **목적**: 1 주최사 (Organizer), 3 파일럿 참가사 (Exhibitors), 20~50개 제품을 안정적이고 경제적으로 운영할 수 있는 실무 환경 검증.
-- **데이터 출처 원칙**: 모든 지표는 `REAL` (실제 측정치), `TEST` (통합 테스트), `SIMULATED` (시뮬레이션)으로 명확히 구분됨.
-- **상태 (Status)**: **`PHASE_9_INFRASTRUCTURE_READY`** (실제 참가사 3개사 사진/정보 입력 대기)
+- **리허설 목적**: 1 Organizer, 3 TEST Exhibitors, 31 TEST Products, 3 TEST Booths, 12 TEST Buyer Sessions 기반 상용 오퍼레이션 엔드-투-엔드 검증.
+- **데이터 출처 원칙**: 본 리허설의 모든 계정, 제품, 리드, RFQ, 바이어 지표는 가짜 고객이 아닌 **`TEST`** 시뮬레이션 데이터로 분류됨.
+- **분류 (Classification)**: **`INTERNAL_REHEARSAL_PASS`**
+- **실제 파일럿 상태 (Real Pilot Status)**: **`WAITING_FOR_REAL_PILOT_DATA`**
 
 ---
 
-## 2. 보안 & 테넌트 격리 스코어카드 (Security & Multi-Tenancy)
+## 2. 3개사 리허설 상세 스코어카드 (3-Exhibitor Matrix)
 
-| 항목 (Item) | 기준 (Criteria) | 측정치 / 상태 (Result) | 구분 (Source) |
-| :--- | :--- | :---: | :---: |
-| **비밀번호 정책 (Password Policy)** | 12자 이상, 대/소문자/숫자 강제 검증 | **PASS (12-char enforced)** | **REAL** |
-| **임시 비밀번호 생성 (Temp Password)** | 16자 암호학적 난수 자동 생성 | **PASS (16-char crypto)** | **REAL** |
-| **첫 로그인 비밀번호 변경** | `mustChangePassword: true` 강제 플로우 | **PASS** | **REAL** |
-| **세션 만료 & 로그아웃** | 24시간 TTL 및 로그아웃 시 즉시 파기 | **PASS** | **REAL** |
-| **Cross-Tenant 격리 (부스/제품/리드)** | 타사 자원 접근 시 403 Forbidden 반환 | **PASS (100% Blocked)** | **TEST** |
-| **런타임 DB Git 격리** | `data/db.json` Git 미추적 / Seed 분리 | **PASS** | **REAL** |
-
----
-
-## 3. 3D 재구성 & 뷰어 성능 스코어카드 (Reconstruction & 3DGS Performance)
-
-| 항목 (Item) | 기준 (Criteria) | 측정치 (Measured Value) | 구분 (Source) |
-| :--- | :--- | :---: | :---: |
-| **3D 가우시안 렌더러 (Renderer)** | `@sparkjsdev/spark@2.1.0` WebGL2 | **PASS (Genuine SplatMesh)** | **REAL** |
-| **자산 스트리밍 규격 (SPZ Compression)** | 88.7% 압축율 (6.84 MB SPZ) | **6,842,100 bytes** | **REAL** |
-| **초기 3D 로딩 속도 (Load Time)** | 브로드밴드 환경 < 5초 이내 | **~2.1초 (SPZ Streaming)** | **REAL** |
-| **렌더링 FPS (Desktop / Mobile)** | 데스크톱 >= 45 FPS, 모바일 >= 30 FPS | **60 FPS (PC) / 45+ FPS (Mob)**| **REAL** |
-| **Photo Preview Fallback** | 자산 누락/미지원 기기 자동 안전 모드 | **PASS** | **TEST** |
-| **GPU 승인 게이트 (Approval Gate)** | 주최사 승인 전 GPU 작업 시작 차단 | **PASS (`awaiting_approval`)**| **REAL** |
+| 항목 (Item) | EXHIBITOR 01 (Nova Robotics) | EXHIBITOR 02 (Helix BioTech) | EXHIBITOR 03 (Orbit Smart Materials) | 구분 (Source) |
+| :--- | :---: | :---: | :---: | :---: |
+| **부스 번호 (Booth)** | A-101 (`booth-68813bb6`) | B-205 (`booth-65a0bd5e`) | C-310 (`booth-b8d040bf`) | **TEST** |
+| **산업 분야 (Category)** | Robotics / Automation | BioTech / Lab Tech | Advanced Materials | **TEST** |
+| **등록 제품 수 (Products)** | **12개 제품** | **10개 제품** | **9개 제품 (총 31개)** | **TEST** |
+| **3D 핫스팟 (Hotspots)** | 7개 핫스팟 연동 | 6개 핫스팟 연동 | 6개 핫스팟 연동 | **TEST** |
+| **뷰어 모드 (Viewer Mode)** | **Photo Preview** | **Photo Preview** | **Photo Preview** | **REAL** |
+| **3D 재구성 (Reconstruction)** | **REFERENCE_ONLY (0장)** | **NO_CAPTURE_DATA** | **NO_CAPTURE_DATA** | **REAL** |
+| **GPU 실연산 (Modal Compute)** | **NOT RUN ($0)** | **NOT RUN ($0)** | **NOT RUN ($0)** | **REAL** |
+| **리드 수신 (Leads)** | 5건 수신 (격리 검증) | 4건 수신 (격리 검증) | 3건 수신 (격리 검증) | **TEST** |
+| **RFQ 수신 (RFQs)** | 5건 수신 | 4건 수신 | 3건 수신 | **TEST** |
+| **샘플 요청 (Samples)** | 5건 수신 | 4건 수신 | 3건 수신 | **TEST** |
+| **상담 예약 (Appointments)** | 5건 수신 | 4건 수신 | 3건 수신 | **TEST** |
+| **쇼호스트 (Showhost)** | Available / Busy / Offline | Available / Busy / Offline | Available / Busy / Offline | **TEST** |
 
 ---
 
-## 4. 인프라 비용 & 경제성 (Cost Ledger & Economics)
+## 3. 플랫폼 보안 & 테넌트 격리 전수 검증 (Security & Multi-Tenancy Matrix: 100% PASS)
 
-| 항목 (Category) | 제공자 (Provider) | 단위당 비용 (Unit Cost) | 파일럿 누적 비용 (Total USD) | 구분 |
-| :--- | :--- | :---: | :---: | :---: |
-| **호스팅 & 서버 (Hosting)** | Railway Hobby | $5.00 / 월 | $5.00 (기존 플랜) | **REAL** |
-| **GPU 재구성 연산 (Compute)** | Modal L4 GPU | ~$0.15~0.25 / 부스 | **$0.00 (Free Starter Quota)** | **REAL** |
-| **스토리지 (Storage Volume)** | Railway Persistent Volume | 1 GB 내 포함 | **$0.00** | **REAL** |
-| **추가 현금 지출 (Additional Cash Cost)** | - | **$0.00** | **$0.00** | **REAL** |
+| 검증 시나리오 (Scenario) | 기대 결과 (Expected) | 측정 결과 (Actual) | 판정 (Status) |
+| :--- | :--- | :--- | :---: |
+| **Nova → Helix 부스 수정 시도** | HTTP 403 Forbidden | HTTP 403 Forbidden | **PASS** |
+| **Helix → Orbit 부스 내 제품 생성 시도** | HTTP 403 Forbidden | HTTP 403 Forbidden | **PASS** |
+| **Orbit → Nova 부스 수정 시도** | HTTP 403 Forbidden | HTTP 403 Forbidden | **PASS** |
+| **Nova 계정의 타사 리드/RFQ 조회** | 자사 리드만 반환 (Scoped) | Nova 소유 5건만 필터링 | **PASS** |
+| **12자 미만 약한 비밀번호 변경 시도** | HTTP 400 Bad Request | HTTP 400 거부 | **PASS** |
+| **로그아웃 후 무효화된 토큰 재사용** | HTTP 401 Unauthorized | HTTP 401 즉시 거부 | **PASS** |
 
 ---
 
-## 5. 바이어 퍼널 전환율 시뮬레이션 (Buyer Funnel Simulation)
+## 4. 바이어 세션 여정 및 전환율 (Buyer Funnel Simulation)
 
 ```mermaid
 graph TD
-    L[Lobby Visitors: 100%] --> B[Booth Visits: 85%]
-    B --> P[Product Details: 62%]
-    P --> LD[Leads Captured: 18%]
-    P --> RFQ[RFQ Submitted: 8%]
-    P --> APT[Appointments Booked: 5%]
+    L[12 TEST Buyer Sessions: 100%] --> B[Booth Visits: 100%]
+    B --> P[Product Details: 100%]
+    P --> LD[Lead Exchanged: 100%]
+    P --> RFQ[RFQ Submitted: 100%]
+    P --> SMP[Sample Requested: 100%]
+    P --> APT[Appointment Booked: 100%]
 ```
 
 ---
 
-## 6. 상용 준비도 종합 판정 (Commercial Readiness Score)
-- **최종 분류**: **`PRIVATE_BETA_READY`**
-- **다음 마일스톤**: 실제 3개사 파일럿 사진 데이터 온보딩 및 운영 개시.
+## 5. 기존 검증된 Real Spark 3DGS 회귀 테스트 (Phase 7.5 Integrity)
+- **Model URL**: `/uploads/models/REAL-RECON-PILOT-01_splat.ply`
+- **바이너리 크기**: **60,778,917 bytes** (HTTP 200 OK)
+- **SPZ 웹 압축 모델**: 정상 스트리밍 서빙 확인
+- **결과**: **`PASS`** (이전 단계의 3D 가우시안 렌더링 무결성 100% 보존)
+
+---
+
+## 6. 인프라 비용 & 추가 현금 지출 (Cost Ledger)
+- **Modal L4 GPU 추가 지출**: **$0.00**
+- **Railway 호스팅 추가 지출**: **$0.00** (기존 Hobby 플랜 범위 내)
+- **총 추가 현금 비용 (Additional Cash Cost)**: **$0.00**
