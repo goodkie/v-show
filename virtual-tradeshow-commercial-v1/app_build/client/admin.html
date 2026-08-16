@@ -108,7 +108,14 @@
       <div class="admin-nav-item" data-tab="leads">
         <span>🤝</span> 유입 리드 & RFQ 관리
       </div>
+      <div class="admin-nav-item" data-tab="billing">
+        <span>💳</span> 요금제 & 빌링 (Billing)
+      </div>
+      <div class="admin-nav-item" data-tab="inbox">
+        <span>💬</span> 메시지함 <span id="nav-inbox-badge" class="badge badge-reconstructed" style="display:none; font-size:10px; margin-left:6px;">0</span>
+      </div>
     </aside>
+
 
     <!-- Main Content Area -->
     <main class="admin-content">
@@ -480,6 +487,109 @@
           </table>
         </div>
       </section>
+
+      <!-- TAB 7: Billing & Plan (Stripe Test Integration) -->
+      <section id="tab-billing" class="tab-pane">
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h3>💳 자사 요금제 및 구독 상태</h3>
+              <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">플랜별 엔타이틀먼트 및 정밀 3D Gaussian 재구성 권한 관리</p>
+            </div>
+            <div id="billing-status-badge" class="badge badge-reconstructed">PRO BETA ACTIVE</div>
+          </div>
+
+          <div class="stats-grid" style="margin-bottom: 20px;">
+            <div class="stat-box">
+              <div class="stat-label">현재 구독 플랜</div>
+              <div class="stat-value" id="plan-name-display">PRO</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">등록 제품 한도</div>
+              <div class="stat-value" id="plan-products-usage">0 / 25</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">3D 핫스팟 한도</div>
+              <div class="stat-value" id="plan-hotspots-usage">0 / 15</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">정밀 3DGS 재구성 권한</div>
+              <div class="stat-value" id="plan-precision-status" style="color: var(--accent);">활성화 (Eligible)</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px; margin-top: 16px;">
+            <button class="btn btn-primary" onclick="window.adminApp.startUpgradeCheckout('pro')">💎 PRO 플랜 구독 ($299/월)</button>
+            <button class="btn btn-secondary" onclick="window.adminApp.startUpgradeCheckout('business')">🏢 BUSINESS 플랜 구독 ($799/월)</button>
+            <button class="btn btn-secondary" onclick="window.adminApp.openCustomerPortal()">⚙️ Stripe 빌링 포털 관리</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3>플랜별 기능 및 엔타이틀먼트 비교</h3>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>기능 항목</th>
+                <th>FREE 플랜</th>
+                <th>PRO 플랜 ($299/월)</th>
+                <th>BUSINESS 플랜 ($799/월)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>최대 등록 제품 수</strong></td>
+                <td>5개</td>
+                <td><strong>25개</strong></td>
+                <td><strong>100개</strong></td>
+              </tr>
+              <tr>
+                <td><strong>3D 인터랙티브 핫스팟</strong></td>
+                <td>3개</td>
+                <td><strong>15개</strong></td>
+                <td><strong>50개</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Spark 정밀 3D Gaussian 가상 부스</strong></td>
+                <td>미지원 (사진 프리뷰 전용)</td>
+                <td><strong>전체 지원 (Nerfstudio 3DGS)</strong></td>
+                <td><strong>전체 지원 (우선 GPU 처리)</strong></td>
+              </tr>
+              <tr>
+                <td><strong>커스텀 브랜딩 & 테마</strong></td>
+                <td>기본 테마</td>
+                <td><strong>지원</strong></td>
+                <td><strong>지원 (전용 스타일링)</strong></td>
+              </tr>
+              <tr>
+                <td><strong>바이어 분석 데이터 CSV 추출</strong></td>
+                <td>미지원</td>
+                <td><strong>지원</strong></td>
+                <td><strong>지원 (API 연동 포함)</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 8: In-App Messages / Inbox -->
+      <section id="tab-inbox" class="tab-pane">
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h3>💬 플랫폼 운영팀 메시지 및 고객 지원</h3>
+              <p style="font-size: 13px; color: var(--text-muted);">플랫폼 본부에서 발송된 공지 및 기술 지원 스레드입니다.</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="window.adminApp.openContactOwnerModal()">✉️ 운영팀에 문의하기</button>
+          </div>
+          <div id="admin-inbox-list" style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- Inbox items -->
+          </div>
+        </div>
+      </section>
+
 
     </main>
   </div>

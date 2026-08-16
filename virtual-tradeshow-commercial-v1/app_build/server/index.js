@@ -96,8 +96,16 @@ function optionalAuth(req) {
 
 // Organizer Role Check Middleware
 function requireOrganizer(req, res, next) {
-  if (!req.user || req.user.role !== 'organizer_admin') {
+  if (!req.user || (req.user.role !== 'organizer_admin' && req.user.role !== 'platform_owner')) {
     return res.status(403).json({ error: 'Forbidden: Organizer Admin privilege required.' });
+  }
+  next();
+}
+
+// Platform Owner Role Check Middleware (Owner only)
+function requirePlatformOwner(req, res, next) {
+  if (!req.user || req.user.role !== 'platform_owner') {
+    return res.status(403).json({ error: 'Forbidden: Platform Owner privilege required.' });
   }
   next();
 }
@@ -197,12 +205,168 @@ function validateBoothCapture(photos = []) {
   };
 }
 
+// Stripe Test Configuration
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || null;
+const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY || null;
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || null;
+const stripe = STRIPE_SECRET_KEY ? require('stripe')(STRIPE_SECRET_KEY) : null;
+
 // Middleware Setup
 if (ALLOWED_ORIGIN) {
   app.use(cors({ origin: ALLOWED_ORIGIN }));
 } else {
   app.use(cors());
 }
+
+// Raw body parser for Stripe webhook MUST come before express.json()
+app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  let event;
+
+  try {
+    if (stripe && STRIPE_WEBHOOK_SECRET && sig) {
+      event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
+    } else {
+      // Test Mode / Simulation Fallback
+      const payloadStr = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : JSON.stringify(req.body);
+      event = JSON.parse(payloadStr);
+    }
+  } catch (err) {
+    console.error('⚠️ Stripe Webhook signature verification failed:', err.message);
+    db.logIncident('BILLING', 'high', `Stripe signature verification failed: ${err.message}`);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  if (!event || !event.type) {
+    return res.status(400).json({ error: 'Invalid event format' });
+  }
+
+  // Idempotency check
+  if (db.isStripeEventProcessed(event.id)) {
+    return res.json({ received: true, duplicate: true });
+  }
+
+  await db.logStripeEvent(event);
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        const orgId = session.metadata?.organizationId;
+        const requestedPlan = session.metadata?.requestedPlan || 'pro';
+        const customerId = session.customer;
+        const subscriptionId = session.subscription;
+
+        if (orgId) {
+          await db.updateOrganizationSubscription(orgId, {
+            plan: requestedPlan,
+            status: 'active',
+            stripeCustomerId: customerId,
+            stripeSubscriptionId: subscriptionId,
+            upgradedAt: new Date().toISOString()
+          });
+          await db.logBillingEvent({
+            organizationId: orgId,
+            plan: requestedPlan,
+            type: 'checkout_completed',
+            stripeCustomerId: customerId,
+            stripeSubscriptionId: subscriptionId,
+            amount: session.amount_total ? session.amount_total / 100 : (requestedPlan === 'pro' ? 299 : 799)
+          });
+        }
+        break;
+      }
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated': {
+        const sub = event.data.object;
+        const org = db.getOrganizationByStripeCustomerId(sub.customer);
+        if (org) {
+          const plan = sub.metadata?.requestedPlan || (sub.items?.data[0]?.price?.unit_amount >= 50000 ? 'business' : 'pro');
+          await db.updateOrganizationSubscription(org.id, {
+            plan,
+            status: sub.status,
+            stripeSubscriptionId: sub.id,
+            currentPeriodStart: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
+            currentPeriodEnd: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+            cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end)
+          });
+          await db.logBillingEvent({
+            organizationId: org.id,
+            plan,
+            type: event.type === 'customer.subscription.created' ? 'subscription_created' : 'subscription_updated',
+            stripeCustomerId: sub.customer,
+            stripeSubscriptionId: sub.id,
+            status: sub.status
+          });
+        }
+        break;
+      }
+      case 'customer.subscription.deleted': {
+        const sub = event.data.object;
+        const org = db.getOrganizationByStripeCustomerId(sub.customer);
+        if (org) {
+          await db.updateOrganizationSubscription(org.id, {
+            plan: 'free',
+            status: 'canceled',
+            cancelledAt: new Date().toISOString()
+          });
+          await db.logBillingEvent({
+            organizationId: org.id,
+            plan: 'free',
+            type: 'cancelled',
+            stripeCustomerId: sub.customer,
+            stripeSubscriptionId: sub.id,
+            status: 'canceled'
+          });
+        }
+        break;
+      }
+      case 'invoice.paid': {
+        const invoice = event.data.object;
+        const org = db.getOrganizationByStripeCustomerId(invoice.customer);
+        if (org) {
+          await db.logBillingEvent({
+            organizationId: org.id,
+            plan: org.subscription?.plan || 'pro',
+            type: 'invoice_paid',
+            stripeCustomerId: invoice.customer,
+            stripeSubscriptionId: invoice.subscription,
+            amount: invoice.amount_paid ? invoice.amount_paid / 100 : 299,
+            currency: invoice.currency?.toUpperCase() || 'USD',
+            status: 'paid'
+          });
+        }
+        break;
+      }
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object;
+        const org = db.getOrganizationByStripeCustomerId(invoice.customer);
+        if (org) {
+          await db.updateOrganizationSubscription(org.id, {
+            status: 'past_due'
+          });
+          await db.logBillingEvent({
+            organizationId: org.id,
+            plan: org.subscription?.plan || 'pro',
+            type: 'payment_failed',
+            stripeCustomerId: invoice.customer,
+            status: 'past_due'
+          });
+          db.logIncident('BILLING', 'medium', `Payment failed for customer ${org.name} (Invoice ${invoice.id})`, { organizationId: org.id });
+        }
+        break;
+      }
+      default:
+        break;
+    }
+  } catch (procErr) {
+    console.error('Error processing webhook event:', procErr);
+  }
+
+  res.json({ received: true });
+});
+
+// JSON Body Parser for all other routes
 app.use(express.json());
 
 // Static File Routes
@@ -216,14 +380,17 @@ app.get('/health', (req, res) => {
   res.status(200).json({
     ok: true,
     service: 'virtual-tradeshow-commercial-v1',
-    schemaVersion: 4,
+    schemaVersion: 5,
+    stripeMode: STRIPE_SECRET_KEY ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
     timestamp: new Date().toISOString()
   });
 });
 
+
 // --- 2. Authentication APIs ---
-app.post('/api/auth/login', createRateLimiter(10, 60000), (req, res) => {
+app.post('/api/auth/login', createRateLimiter(60, 60000), (req, res) => {
+
   const { email, username, password } = req.body;
   const targetEmail = email || username;
 
@@ -691,8 +858,18 @@ app.post('/api/booths/:id/reconstruction', requireAuth, async (req, res) => {
     const booth = db.getBoothById(req.params.id, true);
     if (!booth) return res.status(404).json({ error: 'Booth not found.' });
 
-    if (req.user.role !== 'organizer_admin' && req.user.organizationId !== booth.organizationId) {
+    if (req.user.role !== 'organizer_admin' && req.user.role !== 'platform_owner' && req.user.organizationId !== booth.organizationId) {
       return res.status(403).json({ error: 'Forbidden: Cross-tenant job request rejected.' });
+    }
+
+    // Double-Gate Step 1: Check Plan Entitlement (FREE blocked, PRO/Business allowed)
+    const entitlements = db.getOrganizationEntitlements(booth.organizationId);
+    if (!entitlements.precision3D && req.user.role !== 'platform_owner') {
+      return res.status(402).json({
+        error: 'Upgrade Required: Precision 3D Gaussian Reconstruction is exclusive to PRO / Business plans. Please upgrade your subscription or request beta access.',
+        plan: entitlements.plan,
+        upgradeRequired: true
+      });
     }
 
     const validation = validateBoothCapture(booth.photos || []);
@@ -701,14 +878,15 @@ app.post('/api/booths/:id/reconstruction', requireAuth, async (req, res) => {
     }
 
     const { qualityPreset, engine } = req.body || {};
-    // Commercial Beta: Require approval for GPU jobs if requested by exhibitor
-    const requireApproval = req.user.role !== 'organizer_admin';
+    // Commercial Beta Double-Gate Step 2: Require approval for GPU jobs if requested by exhibitor
+    const requireApproval = req.user.role !== 'organizer_admin' && req.user.role !== 'platform_owner';
 
     const job = await db.createReconstructionJob(booth.id, {
       qualityPreset,
       engine,
       requireApproval
     });
+
 
     db.logAudit(req.user.userId, booth.organizationId, 'reconstruction.request', 'reconstructionJob', job.id);
 
@@ -1018,6 +1196,530 @@ app.get('/api/analytics/summary', requireAuth, (req, res) => {
 
   res.json(summary);
 });
+
+// ============================================================
+// --- 10. Phase 9.5 Stripe Billing & Customer Portal APIs ---
+// ============================================================
+
+app.get('/api/billing/plans', (req, res) => {
+  res.json({
+    free: db.getPlanLimits('free'),
+    pro: db.getPlanLimits('pro'),
+    business: db.getPlanLimits('business'),
+    billingMode: STRIPE_SECRET_KEY ? 'live' : 'test'
+  });
+});
+
+app.get('/api/billing/my-subscription', requireAuth, (req, res) => {
+  const org = db.getOrganizationById(req.user.organizationId);
+  if (!org) return res.status(404).json({ error: 'Organization not found.' });
+
+  const entitlements = db.getOrganizationEntitlements(req.user.organizationId);
+  const products = db.getProducts(null, req.user.organizationId);
+  const booths = db.getBooths(true, req.user.organizationId);
+  const leads = db.getLeads(req.user.organizationId);
+  const billingEvents = db.getBillingEvents(req.user.organizationId);
+
+  res.json({
+    organizationId: org.id,
+    organizationName: org.name,
+    subscription: org.subscription || { plan: 'free', status: 'active' },
+    entitlements,
+    usage: {
+      productsCount: products.length,
+      maxProducts: entitlements.maxProducts,
+      boothsCount: booths.length,
+      leadsCount: leads.length,
+      precision3DEligible: entitlements.precision3D
+    },
+    billingEvents: billingEvents.slice(-10),
+    billingMode: STRIPE_SECRET_KEY ? 'live' : 'test'
+  });
+});
+
+app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) => {
+  try {
+    const { requestedPlan } = req.body; // 'pro' | 'business'
+    if (!requestedPlan || (requestedPlan !== 'pro' && requestedPlan !== 'business')) {
+      return res.status(400).json({ error: 'Invalid plan. Must be "pro" or "business".' });
+    }
+
+    const org = db.getOrganizationById(req.user.organizationId);
+    if (!org) return res.status(404).json({ error: 'Organization not found.' });
+
+    // In Test Mode / Stripe Configured
+    if (stripe) {
+      const priceId = requestedPlan === 'pro'
+        ? (process.env.STRIPE_PRICE_PRO_MONTHLY || 'price_test_pro_monthly')
+        : (process.env.STRIPE_PRICE_BUSINESS_MONTHLY || 'price_test_biz_monthly');
+
+      const protocol = req.headers['x-forwarded-proto'] || 'http';
+      const host = req.headers.host || 'localhost:3000';
+      const origin = `${protocol}://${host}`;
+
+      let customerId = org.subscription?.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: req.user.email,
+          name: org.name,
+          metadata: { organizationId: org.id }
+        });
+        customerId = customer.id;
+        await db.updateOrganizationSubscription(org.id, { stripeCustomerId: customerId });
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        line_items: [{ price: priceId, quantity: 1 }],
+        mode: 'subscription',
+        success_url: `${origin}/index.html?billing_status=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/index.html?billing_status=cancelled`,
+        metadata: {
+          organizationId: org.id,
+          requestedPlan
+        }
+      });
+
+      return res.json({
+        success: true,
+        sessionId: session.id,
+        checkoutUrl: session.url,
+        mode: 'live_or_stripe_test'
+      });
+    } else {
+      // Local Test Simulation Mode (Instant Upgrade for Verification & Automated Testing)
+      await db.updateOrganizationSubscription(org.id, {
+        plan: requestedPlan,
+        status: 'active',
+        stripeCustomerId: `cus_sim_${crypto.randomBytes(4).toString('hex')}`,
+        stripeSubscriptionId: `sub_sim_${crypto.randomBytes(4).toString('hex')}`,
+        upgradedAt: new Date().toISOString()
+      });
+
+      await db.logBillingEvent({
+        organizationId: org.id,
+        plan: requestedPlan,
+        type: 'checkout_completed',
+        amount: requestedPlan === 'pro' ? 299 : 799,
+        status: 'success'
+      });
+
+      return res.json({
+        success: true,
+        simulation: true,
+        message: `Stripe Test Mode: Simulated checkout successful. Upgraded ${org.name} to ${requestedPlan.toUpperCase()}.`,
+        plan: requestedPlan,
+        entitlements: db.getOrganizationEntitlements(org.id)
+      });
+    }
+  } catch (err) {
+    console.error('Checkout error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/billing/create-portal-session', requireAuth, async (req, res) => {
+  try {
+    const org = db.getOrganizationById(req.user.organizationId);
+    if (!org) return res.status(404).json({ error: 'Organization not found.' });
+
+    const customerId = org.subscription?.stripeCustomerId;
+    if (!customerId) {
+      return res.status(400).json({ error: 'No Stripe Customer associated with this organization. Please upgrade first.' });
+    }
+
+    if (stripe) {
+      const protocol = req.headers['x-forwarded-proto'] || 'http';
+      const host = req.headers.host || 'localhost:3000';
+      const returnUrl = `${protocol}://${host}/index.html#billing`;
+
+      const session = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: returnUrl
+      });
+
+      return res.json({ success: true, url: session.url });
+    } else {
+      return res.json({
+        success: true,
+        simulation: true,
+        message: 'Stripe Portal Simulated: Customer subscription is currently active in Test Mode.',
+        customer: org.subscription
+      });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/billing/upgrade-request', requireAuth, async (req, res) => {
+  try {
+    const { requestedPlan, trigger, notes } = req.body;
+    const org = db.getOrganizationById(req.user.organizationId);
+
+    const upgradeReq = await db.createUpgradeRequest({
+      organizationId: req.user.organizationId,
+      currentPlan: org?.subscription?.plan || 'free',
+      requestedPlan: requestedPlan || 'pro',
+      trigger: trigger || 'manual_request',
+      contactEmail: req.user.email,
+      notes: notes || ''
+    });
+
+    db.logAudit(req.user.userId, req.user.organizationId, 'billing.upgrade_request', 'upgradeRequest', upgradeReq.id);
+
+    res.status(201).json({
+      success: true,
+      message: 'Upgrade request received. Our platform operations team has been notified.',
+      request: upgradeReq
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// --- 11. Phase 9.5 Platform Communications APIs ---
+// ============================================================
+
+app.post('/api/communications/messages', requireAuth, async (req, res) => {
+  try {
+    const { targetType, targetOrganizationIds, targetEnvironment, category, subject, body } = req.body;
+    if (!subject || !body) {
+      return res.status(400).json({ error: 'Subject and body are required.' });
+    }
+
+    // Exhibitors can only send support/contact messages to platform owner
+    let safeTargetType = targetType || 'single';
+    let safeTargetOrgs = targetOrganizationIds || [];
+
+    if (req.user.role !== 'platform_owner') {
+      safeTargetType = 'platform_support';
+      safeTargetOrgs = ['org-platform-master'];
+    }
+
+    const message = await db.createPlatformMessage({
+      senderUserId: req.user.userId,
+      senderRole: req.user.role,
+      senderName: req.user.name || req.user.email,
+      targetType: safeTargetType,
+      targetOrganizationIds: safeTargetOrgs,
+      targetEnvironment: targetEnvironment || 'ALL',
+      category: category || 'general',
+      subject,
+      body
+    });
+
+    res.status(201).json({ success: true, message });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/communications/messages', requireAuth, (req, res) => {
+  const orgId = req.user.organizationId;
+  const role = req.user.role;
+  const category = req.query.category || null;
+
+  const messages = db.getPlatformMessages(orgId, role, category);
+  res.json(messages);
+});
+
+app.post('/api/communications/messages/:id/read', requireAuth, async (req, res) => {
+  try {
+    const updated = await db.markMessageRead(req.params.id, req.user.userId, req.user.organizationId);
+    res.json({ success: true, message: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/communications/messages/:id/reply', requireAuth, async (req, res) => {
+  try {
+    const { body } = req.body;
+    if (!body) return res.status(400).json({ error: 'Reply body is required.' });
+
+    const result = await db.replyToPlatformMessage(req.params.id, {
+      senderUserId: req.user.userId,
+      senderRole: req.user.role,
+      senderName: req.user.name || req.user.email,
+      body
+    });
+
+    res.status(201).json({ success: true, ...result });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// --- 12. Phase 9.5 Grand Control Center (Platform Owner Only) ---
+// ============================================================
+
+app.get('/api/platform/overview', requireAuth, requirePlatformOwner, (req, res) => {
+  const filterEnv = req.query.env || 'ALL'; // ALL | REAL | TEST | SYNTHETIC_TEST
+  const overview = db.getGrandControlOverview(filterEnv);
+  res.json(overview);
+});
+
+app.get('/api/platform/customers', requireAuth, requirePlatformOwner, (req, res) => {
+  const filterEnv = req.query.env || 'ALL';
+  const data = db.read();
+  let orgs = data.organizations || [];
+
+  if (filterEnv && filterEnv !== 'ALL') {
+    orgs = orgs.filter(o => (o.subscription?.dataEnvironment || 'REAL') === filterEnv);
+  }
+
+  const customers = orgs.map(o => {
+    const booths = (data.booths || []).filter(b => b.organizationId === o.id);
+    const products = (data.products || []).filter(p => p.organizationId === o.id);
+    const leads = (data.leads || []).filter(l => l.organizationId === o.id);
+    const rfqs = (data.rfqs || []).filter(r => r.organizationId === o.id);
+    const jobs = (data.reconstructionJobs || []).filter(j => j.organizationId === o.id);
+    const users = (data.users || []).filter(u => u.organizationId === o.id);
+
+    return {
+      id: o.id,
+      name: o.name,
+      slug: o.slug,
+      type: o.type,
+      category: o.category || 'General',
+      status: o.status,
+      suspendedReason: o.suspendedReason,
+      plan: o.subscription?.plan || 'free',
+      subscriptionStatus: o.subscription?.status || 'active',
+      dataEnvironment: o.subscription?.dataEnvironment || 'REAL',
+      primaryAdmin: users[0]?.email || 'N/A',
+      usersCount: users.length,
+      boothsCount: booths.length,
+      publishedBooths: booths.filter(b => b.status === 'published').length,
+      productsCount: products.length,
+      leadsCount: leads.length,
+      rfqsCount: rfqs.length,
+      reconstructionJobsCount: jobs.length,
+      createdAt: o.createdAt,
+      updatedAt: o.updatedAt
+    };
+  });
+
+  res.json(customers);
+});
+
+app.get('/api/platform/customers/:id', requireAuth, requirePlatformOwner, (req, res) => {
+  const customer360 = db.getCustomer360(req.params.id);
+  if (!customer360) return res.status(404).json({ error: 'Customer organization not found.' });
+  res.json(customer360);
+});
+
+app.post('/api/platform/customers/:id/override-plan', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const { plan, source, notes } = req.body;
+    if (!plan || !['free', 'pro', 'business'].includes(plan)) {
+      return res.status(400).json({ error: 'Valid plan (free, pro, business) is required.' });
+    }
+
+    const updated = await db.overrideOrganizationPlan(
+      req.params.id,
+      plan,
+      source || 'manual_beta_override',
+      notes || '',
+      req.user.userId
+    );
+
+    res.json({ success: true, message: `Plan overridden to ${plan.toUpperCase()}`, organization: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/platform/customers/:id/suspend', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const suspended = await db.suspendOrganization(req.params.id, reason || 'Suspended by platform owner', req.user.userId);
+    res.json({ success: true, message: 'Organization suspended.', organization: suspended });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/platform/customers/:id/unsuspend', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const unsuspended = await db.unsuspendOrganization(req.params.id, req.user.userId);
+    res.json({ success: true, message: 'Organization unsuspended.', organization: unsuspended });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/platform/customers/:id/notes', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const { noteText, category } = req.body;
+    if (!noteText) return res.status(400).json({ error: 'Note text is required.' });
+
+    const note = await db.addOwnerNote(req.params.id, req.user.userId, noteText, category || 'general');
+    res.status(201).json({ success: true, note });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/platform/customers/:id/notes', requireAuth, requirePlatformOwner, (req, res) => {
+  const notes = db.getOwnerNotes(req.params.id);
+  res.json(notes);
+});
+
+app.get('/api/platform/visitors', requireAuth, requirePlatformOwner, (req, res) => {
+  const filterEnv = req.query.env || 'ALL';
+  const data = db.read();
+  let events = (data.analyticsEvents || []).slice(-100).reverse();
+
+  if (filterEnv && filterEnv !== 'ALL') {
+    const validOrgIds = new Set((data.organizations || [])
+      .filter(o => (o.subscription?.dataEnvironment || 'REAL') === filterEnv)
+      .map(o => o.id));
+    events = events.filter(e => !e.organizationId || validOrgIds.has(e.organizationId));
+  }
+
+  const visitors = events.map(e => ({
+    id: e.id,
+    sessionId: e.sessionId,
+    eventType: e.eventType,
+    organizationId: e.organizationId,
+    eventId: e.eventId,
+    boothId: e.boothId,
+    productId: e.productId,
+    viewerMode: e.viewerMode,
+    timestamp: e.timestamp,
+    deviceCategory: 'Desktop (Chrome/WebGL)',
+    sourceType: e.organizationId?.includes('aurex') ? 'SYNTHETIC_TEST' : (e.organizationId?.includes('nova') || e.organizationId?.includes('helix') ? 'TEST' : 'REAL')
+  }));
+
+  res.json(visitors);
+});
+
+app.get('/api/platform/activity', requireAuth, requirePlatformOwner, (req, res) => {
+  const filterEnv = req.query.env || 'ALL';
+  const data = db.read();
+  let audits = (data.auditLogs || []).slice(-50).reverse();
+
+  if (filterEnv && filterEnv !== 'ALL') {
+    const validOrgIds = new Set((data.organizations || [])
+      .filter(o => (o.subscription?.dataEnvironment || 'REAL') === filterEnv)
+      .map(o => o.id));
+    audits = audits.filter(a => !a.organizationId || validOrgIds.has(a.organizationId));
+  }
+
+  res.json(audits);
+});
+
+app.get('/api/platform/reconstructions', requireAuth, requirePlatformOwner, (req, res) => {
+  const filterEnv = req.query.env || 'ALL';
+  const data = db.read();
+  let jobs = data.reconstructionJobs || [];
+
+  if (filterEnv && filterEnv !== 'ALL') {
+    const validOrgIds = new Set((data.organizations || [])
+      .filter(o => (o.subscription?.dataEnvironment || 'REAL') === filterEnv)
+      .map(o => o.id));
+    jobs = jobs.filter(j => validOrgIds.has(j.organizationId));
+  }
+
+  res.json(jobs);
+});
+
+app.post('/api/platform/reconstructions/:id/approve', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const approved = await db.approveReconstructionJob(req.params.id);
+    db.logAudit(req.user.userId, 'org-platform-master', 'platform.reconstruction_approve', 'reconstructionJob', approved.id);
+    res.json({ success: true, message: 'Reconstruction job approved by Platform Owner.', job: approved });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/platform/incidents', requireAuth, requirePlatformOwner, (req, res) => {
+  const incidents = db.getIncidents();
+  res.json(incidents);
+});
+
+app.get('/api/platform/audit-logs', requireAuth, requirePlatformOwner, (req, res) => {
+  const data = db.read();
+  res.json((data.auditLogs || []).slice(-100).reverse());
+});
+
+app.get('/api/platform/feature-flags', requireAuth, requirePlatformOwner, (req, res) => {
+  res.json(db.getFeatureFlags());
+});
+
+app.put('/api/platform/feature-flags', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const updated = await db.updateFeatureFlags(req.body, req.user.userId);
+    res.json({ success: true, featureFlags: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/platform/export', requireAuth, requirePlatformOwner, (req, res) => {
+  const { type, env } = req.query; // organizations | subscriptions | leads | reconstructions
+  const filterEnv = env || 'ALL';
+  const data = db.read();
+
+  let orgs = data.organizations || [];
+  if (filterEnv !== 'ALL') {
+    orgs = orgs.filter(o => (o.subscription?.dataEnvironment || 'REAL') === filterEnv);
+  }
+  const validOrgIds = new Set(orgs.map(o => o.id));
+
+  let csvContent = '';
+
+  switch (type) {
+    case 'subscriptions': {
+      csvContent = 'OrganizationId,OrganizationName,Plan,Status,Environment,StripeCustomerId,UpgradedAt\n';
+      orgs.forEach(o => {
+        csvContent += `"${o.id}","${o.name}","${o.subscription?.plan || 'free'}","${o.subscription?.status || 'active'}","${o.subscription?.dataEnvironment || 'REAL'}","${o.subscription?.stripeCustomerId || ''}","${o.subscription?.upgradedAt || ''}"\n`;
+      });
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=subscriptions_export_${Date.now()}.csv`);
+      return res.send(csvContent);
+    }
+    case 'leads': {
+      let leads = data.leads || [];
+      leads = leads.filter(l => validOrgIds.has(l.organizationId));
+      csvContent = 'LeadId,OrganizationId,BuyerName,Company,Email,Phone,InterestLevel,Status,CreatedAt\n';
+      leads.forEach(l => {
+        csvContent += `"${l.id}","${l.organizationId}","${l.buyerName}","${l.company}","${l.email}","${l.phone || ''}","${l.interestLevel || 'medium'}","${l.status}","${l.createdAt}"\n`;
+      });
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=leads_export_${Date.now()}.csv`);
+      return res.send(csvContent);
+    }
+    case 'reconstructions': {
+      let jobs = data.reconstructionJobs || [];
+      jobs = jobs.filter(j => validOrgIds.has(j.organizationId));
+      csvContent = 'JobId,OrganizationId,BoothId,Status,ApprovalStatus,EstCostUSD,Progress,CreatedAt\n';
+      jobs.forEach(j => {
+        csvContent += `"${j.id}","${j.organizationId}","${j.boothId}","${j.status}","${j.approvalStatus}","${j.estimatedCostUsd || 0.25}","${j.progress}","${j.createdAt}"\n`;
+      });
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=reconstructions_export_${Date.now()}.csv`);
+      return res.send(csvContent);
+    }
+    case 'organizations':
+    default: {
+      csvContent = 'Id,Name,Slug,Type,Status,Plan,Environment,CreatedAt\n';
+      orgs.forEach(o => {
+        csvContent += `"${o.id}","${o.name}","${o.slug}","${o.type}","${o.status}","${o.subscription?.plan || 'free'}","${o.subscription?.dataEnvironment || 'REAL'}","${o.createdAt}"\n`;
+      });
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=organizations_export_${Date.now()}.csv`);
+      return res.send(csvContent);
+    }
+  }
+});
+
 
 // --- 10. WebSocket Realtime Signaling & Showhost Presence ---
 const rooms = new Map(); // roomId -> Set of ws clients

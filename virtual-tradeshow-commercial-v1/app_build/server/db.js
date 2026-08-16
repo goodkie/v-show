@@ -67,11 +67,25 @@ function verifyPassword(password, hash, salt) {
 }
 
 
-// Default Seed Data (Schema Version 4 — Commercial Beta)
+// Default Seed Data (Schema Version 5 — Stripe Billing & Grand Control Center)
 const initialSeedData = () => {
+  const orgPlatformMasterId = 'org-platform-master';
   const orgOrganizerId = 'org-organizer-01';
   const orgApexId = 'org-exhibitor-apex';
   const orgBioId = 'org-exhibitor-bio';
+
+  const platformOwnerUser = {
+    id: 'user-platform-owner',
+    organizationId: orgPlatformMasterId,
+    email: process.env.PLATFORM_OWNER_EMAIL || 'owner@vshow.com',
+    name: 'Platform Master Owner',
+    role: 'platform_owner',
+    ...hashPassword('Owner2026!PlatformSecure', 'seed_salt_owner_1'),
+    mustChangePassword: false,
+    status: 'active',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
 
   const organizerAdminUser = {
     id: 'user-organizer-admin',
@@ -112,14 +126,41 @@ const initialSeedData = () => {
   const betaEventId = 'event-global-tech-2026';
 
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
+    featureFlags: {
+      stripeBillingEnabled: true,
+      grandControlEnabled: true,
+      precision3DEnabled: true,
+      communicationsEnabled: true,
+      businessPlanEnabled: true,
+      billingMode: process.env.STRIPE_SECRET_KEY ? 'live' : 'test'
+    },
     organizations: [
+      {
+        id: orgPlatformMasterId,
+        type: 'platform',
+        name: 'V-Show Platform Headquarters',
+        slug: 'vshow-platform',
+        status: 'active',
+        subscription: {
+          plan: 'business',
+          status: 'active',
+          dataEnvironment: 'REAL'
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
       {
         id: orgOrganizerId,
         type: 'organizer',
         name: 'Global Trade Show Group',
         slug: 'global-trade-show-group',
         status: 'active',
+        subscription: {
+          plan: 'business',
+          status: 'active',
+          dataEnvironment: 'REAL'
+        },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       },
@@ -130,6 +171,11 @@ const initialSeedData = () => {
         slug: 'apex-robotics',
         category: 'Industrial Automation & Robotics',
         status: 'active',
+        subscription: {
+          plan: 'pro',
+          status: 'active',
+          dataEnvironment: 'REAL'
+        },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       },
@@ -138,13 +184,19 @@ const initialSeedData = () => {
         type: 'exhibitor',
         name: 'BioTech Innovations Corp',
         slug: 'biotech-innovations',
+
         category: 'BioTech & HealthTech',
         status: 'active',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }
     ],
-    users: [organizerAdminUser, apexAdminUser, bioAdminUser],
+    users: [
+      platformOwnerUser,
+      organizerAdminUser,
+      apexAdminUser,
+      bioAdminUser
+    ],
     events: [
       {
         id: betaEventId,
@@ -367,9 +419,15 @@ const initialSeedData = () => {
         displayName: 'Apex Technical Lead Host',
         status: 'available'
       }
-    ]
+    ],
+    stripeEvents: [],
+    billingEvents: [],
+    upgradeRequests: [],
+    platformMessages: [],
+    ownerNotes: []
   };
 };
+
 
 class JSONDatabase {
   constructor() {
@@ -402,26 +460,23 @@ class JSONDatabase {
     }
   }
 
-  // Schema Version 3 -> 4 Non-Destructive Migration & Integrity Assurance
+  // Schema Version 4 -> 5 Non-Destructive Migration & Integrity Assurance
   migrateSchema(current) {
-    const isOldVersion = !current.schemaVersion || current.schemaVersion < 4;
-    const needsEventMigration = !current.events || !current.events.some(e => e.slug);
-    const hasMissingCollections = !current.users || current.users.length < 3 || needsEventMigration;
+    const isOldVersion = !current.schemaVersion || current.schemaVersion < 5;
+    const seed = initialSeedData();
 
-    if (isOldVersion || hasMissingCollections) {
-      console.log(`[DB] Migrating schema to version 4 (Multi-Tenant Commercial Beta)...`);
+    if (isOldVersion) {
+      console.log(`[DB] Migrating schema to version 5 (Stripe Billing & Grand Control Center)...`);
 
+      current.schemaVersion = 5;
+      current.featureFlags = current.featureFlags || seed.featureFlags;
+      current.stripeEvents = current.stripeEvents || [];
+      current.billingEvents = current.billingEvents || [];
+      current.upgradeRequests = current.upgradeRequests || [];
+      current.platformMessages = current.platformMessages || [];
+      current.ownerNotes = current.ownerNotes || [];
 
-      const defaultOrgId = 'org-exhibitor-apex';
-      const defaultOrganizerOrgId = 'org-organizer-01';
-      const defaultEventId = 'event-global-tech-2026';
-
-      current.schemaVersion = 4;
-
-
-      const seed = initialSeedData();
-
-      // 1. Ensure organizations
+      // 1. Ensure organizations & default subscriptions
       current.organizations = current.organizations || [];
       seed.organizations.forEach(so => {
         if (!current.organizations.find(o => o.id === so.id)) {
@@ -429,7 +484,23 @@ class JSONDatabase {
         }
       });
 
-      // 2. Ensure users
+      current.organizations = current.organizations.map(org => {
+        let env = 'REAL';
+        if (org.name.includes('AUREX') || org.slug?.includes('aurex')) env = 'SYNTHETIC_TEST';
+        else if (org.name.includes('Nova') || org.name.includes('Helix') || org.name.includes('Orbit')) env = 'TEST';
+
+        return {
+          ...org,
+          subscription: org.subscription || {
+            plan: org.type === 'organizer' || org.type === 'platform' ? 'business' : 'free',
+            status: 'active',
+            dataEnvironment: env,
+            updatedAt: new Date().toISOString()
+          }
+        };
+      });
+
+      // 2. Ensure users (including platform_owner)
       current.users = current.users || [];
       seed.users.forEach(su => {
         if (!current.users.find(u => u.email === su.email)) {
@@ -456,9 +527,9 @@ class JSONDatabase {
         }
       });
 
-
       // 4. Ensure eventExhibitors
       current.eventExhibitors = current.eventExhibitors || seed.eventExhibitors;
+
 
       // 5. Upgrade booths with organizationId and eventId
       current.booths = current.booths || [];
@@ -1020,6 +1091,13 @@ class JSONDatabase {
   }
 
   // --- Products API ---
+  getProducts(boothId = null, organizationId = null) {
+    let list = this.read().products || [];
+    if (boothId) list = list.filter(p => p.boothId === boothId);
+    if (organizationId) list = list.filter(p => p.organizationId === organizationId);
+    return list;
+  }
+
   getProductsByBooth(boothId) {
     return (this.read().products || []).filter(p => p.boothId === boothId);
   }
@@ -1027,6 +1105,7 @@ class JSONDatabase {
   getProductById(id) {
     return (this.read().products || []).find(p => p.id === id) || null;
   }
+
 
   async createProduct(prodData) {
     return this.mutate((db) => {
@@ -1217,6 +1296,510 @@ class JSONDatabase {
       return event;
     });
   }
+
+  // ==========================================
+  // --- 10. Phase 9.5 Stripe Billing & Plan Entitlements ---
+  // ==========================================
+
+  getPlanLimits(plan = 'free') {
+    const p = (plan || 'free').toLowerCase();
+    switch (p) {
+      case 'business':
+        return {
+          plan: 'business',
+          maxProducts: 100,
+          maxHotspots: 50,
+          maxPhotos: 120,
+          precision3D: true,
+          customBranding: true,
+          analyticsExport: true,
+          liveConsultations: true,
+          dedicatedSupport: true,
+          monthlyPriceUsd: 799
+        };
+      case 'pro':
+        return {
+          plan: 'pro',
+          maxProducts: 25,
+          maxHotspots: 15,
+          maxPhotos: 60,
+          precision3D: true,
+          customBranding: true,
+          analyticsExport: true,
+          liveConsultations: true,
+          dedicatedSupport: false,
+          monthlyPriceUsd: 299
+        };
+      case 'free':
+      default:
+        return {
+          plan: 'free',
+          maxProducts: 5,
+          maxHotspots: 3,
+          maxPhotos: 5,
+          precision3D: false,
+          customBranding: false,
+          analyticsExport: false,
+          liveConsultations: false,
+          dedicatedSupport: false,
+          monthlyPriceUsd: 0
+        };
+    }
+  }
+
+  getOrganizationEntitlements(organizationId) {
+    const org = this.getOrganizationById(organizationId);
+    if (!org) return this.getPlanLimits('free');
+    const plan = org.subscription?.plan || 'free';
+    const status = org.subscription?.status || 'active';
+    const limits = this.getPlanLimits(plan);
+
+    // If subscription is canceled/past_due and not in grace period
+    const isActive = status === 'active' || status === 'trialing';
+    return {
+      ...limits,
+      subscriptionStatus: status,
+      isActiveSubscription: isActive,
+      precision3D: isActive ? limits.precision3D : false
+    };
+  }
+
+  getOrganizationByStripeCustomerId(stripeCustomerId) {
+    const list = this.read().organizations || [];
+    return list.find(o => o.subscription?.stripeCustomerId === stripeCustomerId) || null;
+  }
+
+  async updateOrganizationSubscription(organizationId, subscriptionData) {
+    return this.mutate((db) => {
+      const org = db.organizations.find(o => o.id === organizationId);
+      if (!org) throw new Error('Organization not found.');
+
+      org.subscription = {
+        ...(org.subscription || {}),
+        ...subscriptionData,
+        updatedAt: new Date().toISOString()
+      };
+      org.updatedAt = new Date().toISOString();
+      return org;
+    });
+  }
+
+  isStripeEventProcessed(eventId) {
+    const list = this.read().stripeEvents || [];
+    return list.some(e => e.eventId === eventId);
+  }
+
+  async logStripeEvent(eventData) {
+    return this.mutate((db) => {
+      db.stripeEvents = db.stripeEvents || [];
+      const entry = {
+        id: `str-evt-${uuidv4().substring(0, 8)}`,
+        eventId: eventData.id,
+        type: eventData.type,
+        receivedAt: new Date().toISOString(),
+        processedAt: new Date().toISOString(),
+        metadata: eventData.metadata || {}
+      };
+      db.stripeEvents.push(entry);
+      if (db.stripeEvents.length > 2000) db.stripeEvents.shift();
+      return entry;
+    });
+  }
+
+  async logBillingEvent(data) {
+    return this.mutate((db) => {
+      db.billingEvents = db.billingEvents || [];
+      const entry = {
+        id: `bil-${uuidv4().substring(0, 8)}`,
+        organizationId: data.organizationId,
+        plan: data.plan,
+        type: data.type, // checkout_completed, subscription_created, subscription_updated, invoice_paid, payment_failed, cancelled
+        stripeCustomerId: data.stripeCustomerId || null,
+        stripeSubscriptionId: data.stripeSubscriptionId || null,
+        amount: data.amount || 0,
+        currency: data.currency || 'USD',
+        status: data.status || 'success',
+        createdAt: new Date().toISOString()
+      };
+      db.billingEvents.push(entry);
+      if (db.billingEvents.length > 2000) db.billingEvents.shift();
+      return entry;
+    });
+  }
+
+  getBillingEvents(organizationId = null) {
+    let list = this.read().billingEvents || [];
+    if (organizationId) list = list.filter(b => b.organizationId === organizationId);
+    return list;
+  }
+
+  async createUpgradeRequest(data) {
+    return this.mutate((db) => {
+      db.upgradeRequests = db.upgradeRequests || [];
+      const req = {
+        id: `upg-${uuidv4().substring(0, 8)}`,
+        organizationId: data.organizationId,
+        currentPlan: data.currentPlan || 'free',
+        requestedPlan: data.requestedPlan || 'pro',
+        trigger: data.trigger || 'manual', // precision3D, productLimit, leadLimit, manual
+        contactEmail: data.contactEmail,
+        notes: data.notes || '',
+        status: 'pending', // pending, approved, rejected
+        createdAt: new Date().toISOString()
+      };
+      db.upgradeRequests.push(req);
+      return req;
+    });
+  }
+
+  getUpgradeRequests(status = null, organizationId = null) {
+    let list = this.read().upgradeRequests || [];
+    if (status) list = list.filter(u => u.status === status);
+    if (organizationId) list = list.filter(u => u.organizationId === organizationId);
+    return list;
+  }
+
+  async resolveUpgradeRequest(requestId, status, resolutionNotes = '', authorUserId = null) {
+    return this.mutate((db) => {
+      db.upgradeRequests = db.upgradeRequests || [];
+      const req = db.upgradeRequests.find(u => u.id === requestId);
+      if (!req) throw new Error('Upgrade request not found.');
+      req.status = status;
+      req.resolutionNotes = resolutionNotes;
+      req.resolvedBy = authorUserId;
+      req.resolvedAt = new Date().toISOString();
+      return req;
+    });
+  }
+
+  // ==========================================
+  // --- 11. Phase 9.5 Platform Communications ---
+  // ==========================================
+
+  async createPlatformMessage(data) {
+    return this.mutate((db) => {
+      db.platformMessages = db.platformMessages || [];
+      const msg = {
+        id: `msg-${uuidv4().substring(0, 8)}`,
+        conversationId: data.conversationId || `conv-${uuidv4().substring(0, 8)}`,
+        senderUserId: data.senderUserId,
+        senderRole: data.senderRole, // platform_owner, organizer_admin, exhibitor_admin
+        senderName: data.senderName,
+        targetType: data.targetType || 'single', // single, multi, all_exhibitors, all_organizers, broadcast
+        targetOrganizationIds: data.targetOrganizationIds || [],
+        targetEnvironment: data.targetEnvironment || 'ALL', // REAL, TEST, SYNTHETIC_TEST, ALL
+        category: data.category || 'general', // general, support, billing, upgrade, reconstruction, incident, announcement
+        subject: data.subject,
+        body: data.body,
+        status: 'sent',
+        createdAt: new Date().toISOString(),
+        readBy: [], // [{ userId, orgId, readAt }]
+        replies: []
+      };
+      db.platformMessages.push(msg);
+      return msg;
+    });
+  }
+
+  getPlatformMessages(organizationId = null, userRole = null, category = null) {
+    const list = this.read().platformMessages || [];
+    return list.filter(m => {
+      if (category && m.category !== category) return false;
+      if (userRole === 'platform_owner') return true;
+      if (!organizationId) return false;
+
+      if (m.targetType === 'broadcast') return true;
+      if (m.targetType === 'all_exhibitors' && userRole === 'exhibitor_admin') return true;
+      if (m.targetType === 'all_organizers' && userRole === 'organizer_admin') return true;
+      if (m.targetOrganizationIds && m.targetOrganizationIds.includes(organizationId)) return true;
+      if (m.senderUserId && m.senderUserId === organizationId) return true;
+      return false;
+    }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  async markMessageRead(messageId, userId, organizationId) {
+    return this.mutate((db) => {
+      db.platformMessages = db.platformMessages || [];
+      const msg = db.platformMessages.find(m => m.id === messageId);
+      if (!msg) throw new Error('Message not found.');
+      msg.readBy = msg.readBy || [];
+      if (!msg.readBy.some(r => r.userId === userId)) {
+        msg.readBy.push({ userId, orgId: organizationId, readAt: new Date().toISOString() });
+      }
+      return msg;
+    });
+  }
+
+  async replyToPlatformMessage(messageId, replyData) {
+    return this.mutate((db) => {
+      db.platformMessages = db.platformMessages || [];
+      const msg = db.platformMessages.find(m => m.id === messageId);
+      if (!msg) throw new Error('Message not found.');
+      msg.replies = msg.replies || [];
+      const reply = {
+        id: `rep-${uuidv4().substring(0, 8)}`,
+        senderUserId: replyData.senderUserId,
+        senderRole: replyData.senderRole,
+        senderName: replyData.senderName,
+        body: replyData.body,
+        createdAt: new Date().toISOString()
+      };
+      msg.replies.push(reply);
+      msg.updatedAt = new Date().toISOString();
+      return { message: msg, reply };
+    });
+  }
+
+  // ==========================================
+  // --- 12. Grand Control Center Operations & Customer 360 ---
+  // ==========================================
+
+  getGrandControlOverview(filterEnv = 'ALL') {
+    const data = this.read();
+    let orgs = data.organizations || [];
+    let booths = data.booths || [];
+    let prods = data.products || [];
+    let leads = data.leads || [];
+    let rfqs = data.rfqs || [];
+    let jobs = data.reconstructionJobs || [];
+    let incidents = data.incidents || [];
+    let upgradeReqs = data.upgradeRequests || [];
+
+    if (filterEnv && filterEnv !== 'ALL') {
+      orgs = orgs.filter(o => (o.subscription?.dataEnvironment || 'REAL') === filterEnv);
+      const validOrgIds = new Set(orgs.map(o => o.id));
+      booths = booths.filter(b => validOrgIds.has(b.organizationId));
+      prods = prods.filter(p => validOrgIds.has(p.organizationId));
+      leads = leads.filter(l => validOrgIds.has(l.organizationId));
+      rfqs = rfqs.filter(r => validOrgIds.has(r.organizationId));
+      jobs = jobs.filter(j => validOrgIds.has(j.organizationId));
+    }
+
+    const freeCount = orgs.filter(o => (o.subscription?.plan || 'free') === 'free').length;
+    const proCount = orgs.filter(o => o.subscription?.plan === 'pro').length;
+    const bizCount = orgs.filter(o => o.subscription?.plan === 'business').length;
+
+    // Calculate MRR / ARR
+    const testMrr = (proCount * 299) + (bizCount * 799);
+    const testArr = testMrr * 12;
+
+    const totalStorageBytes = booths.reduce((acc, b) => acc + ((b.photos || []).length * 1500000), 0) +
+      jobs.reduce((acc, j) => acc + (j.output?.sizeBytes || 0), 0);
+
+    const totalGpuSpend = jobs.reduce((acc, j) => acc + (j.estimatedCostUsd || (j.status === 'verified' ? 0.25 : 0)), 0);
+
+    return {
+      kpis: {
+        totalOrganizations: orgs.length,
+        freeCustomers: freeCount,
+        proCustomers: proCount,
+        businessCustomers: bizCount,
+        activeEvents: (data.events || []).length,
+        publishedBooths: booths.filter(b => b.status === 'published').length,
+        totalProducts: prods.length,
+        totalLeads: leads.length,
+        totalRfqs: rfqs.length,
+        totalReconstructionJobs: jobs.length,
+        testMrrUsd: testMrr,
+        testArrUsd: testArr,
+        totalGpuSpendUsd: totalGpuSpend,
+        totalStorageBytes,
+        openIncidents: incidents.filter(i => i.status === 'open').length,
+        pendingUpgrades: upgradeReqs.filter(u => u.status === 'pending').length
+      },
+      billingMode: data.featureFlags?.billingMode || 'test',
+      filterEnv
+    };
+  }
+
+  getCustomer360(organizationId) {
+    const data = this.read();
+    const org = (data.organizations || []).find(o => o.id === organizationId);
+    if (!org) return null;
+
+    const users = (data.users || []).filter(u => u.organizationId === organizationId).map(u => ({
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      role: u.role,
+      status: u.status,
+      lastLoginAt: u.lastLoginAt,
+      mustChangePassword: u.mustChangePassword,
+      createdAt: u.createdAt
+    }));
+
+    const booths = (data.booths || []).filter(b => b.organizationId === organizationId);
+    const products = (data.products || []).filter(p => p.organizationId === organizationId);
+    const leads = (data.leads || []).filter(l => l.organizationId === organizationId);
+    const rfqs = (data.rfqs || []).filter(r => r.organizationId === organizationId);
+    const reconstructionJobs = (data.reconstructionJobs || []).filter(j => j.organizationId === organizationId);
+    const billingEvents = (data.billingEvents || []).filter(b => b.organizationId === organizationId);
+    const upgradeRequests = (data.upgradeRequests || []).filter(u => u.organizationId === organizationId);
+    const ownerNotes = (data.ownerNotes || []).filter(n => n.organizationId === organizationId);
+    const incidents = (data.incidents || []).filter(i => i.metadata?.organizationId === organizationId);
+    const auditLogs = (data.auditLogs || []).filter(a => a.organizationId === organizationId);
+
+    // Compute Health Score
+    let healthScore = 50;
+    if (users.length > 0) healthScore += 10;
+    if (booths.some(b => b.status === 'published')) healthScore += 20;
+    if (products.length >= 5) healthScore += 10;
+    if (leads.length > 0) healthScore += 10;
+    let healthStatus = 'ACTIVE';
+    if (healthScore >= 80) healthStatus = 'GROWING';
+    else if (healthScore <= 40) healthStatus = 'AT_RISK';
+
+    const limits = this.getPlanLimits(org.subscription?.plan || 'free');
+
+    return {
+      organization: org,
+      subscription: org.subscription || { plan: 'free', status: 'active', dataEnvironment: 'REAL' },
+      planLimits: limits,
+      health: { score: healthScore, status: healthStatus },
+      users,
+      booths,
+      products,
+      leads,
+      rfqs,
+      reconstructionJobs,
+      billingEvents,
+      upgradeRequests,
+      ownerNotes,
+      incidents,
+      auditLogs
+    };
+  }
+
+  async overrideOrganizationPlan(organizationId, newPlan, source = 'manual_beta', notes = '', authorUserId = null) {
+    return this.mutate((db) => {
+      const org = db.organizations.find(o => o.id === organizationId);
+      if (!org) throw new Error('Organization not found.');
+
+      const prevPlan = org.subscription?.plan || 'free';
+      org.subscription = {
+        ...(org.subscription || {}),
+        plan: newPlan,
+        status: 'active',
+        entitlementSource: source,
+        overrideNotes: notes,
+        overriddenBy: authorUserId,
+        overriddenAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      org.updatedAt = new Date().toISOString();
+
+      db.auditLogs.push({
+        id: `aud-${uuidv4().substring(0, 8)}`,
+        userId: authorUserId,
+        organizationId,
+        action: 'platform.plan_override',
+        targetType: 'organization',
+        targetId: organizationId,
+        details: { prevPlan, newPlan, source, notes },
+        timestamp: new Date().toISOString()
+      });
+
+      return org;
+    });
+  }
+
+  async suspendOrganization(organizationId, reason = '', authorUserId = null) {
+    return this.mutate((db) => {
+      const org = db.organizations.find(o => o.id === organizationId);
+      if (!org) throw new Error('Organization not found.');
+      org.status = 'suspended';
+      org.suspendedReason = reason;
+      org.suspendedBy = authorUserId;
+      org.suspendedAt = new Date().toISOString();
+      org.updatedAt = new Date().toISOString();
+
+      db.auditLogs.push({
+        id: `aud-${uuidv4().substring(0, 8)}`,
+        userId: authorUserId,
+        organizationId,
+        action: 'platform.organization_suspended',
+        targetType: 'organization',
+        targetId: organizationId,
+        details: { reason },
+        timestamp: new Date().toISOString()
+      });
+      return org;
+    });
+  }
+
+  async unsuspendOrganization(organizationId, authorUserId = null) {
+    return this.mutate((db) => {
+      const org = db.organizations.find(o => o.id === organizationId);
+      if (!org) throw new Error('Organization not found.');
+      org.status = 'active';
+      org.suspendedReason = null;
+      org.updatedAt = new Date().toISOString();
+
+      db.auditLogs.push({
+        id: `aud-${uuidv4().substring(0, 8)}`,
+        userId: authorUserId,
+        organizationId,
+        action: 'platform.organization_unsuspended',
+        targetType: 'organization',
+        targetId: organizationId,
+        details: {},
+        timestamp: new Date().toISOString()
+      });
+      return org;
+    });
+  }
+
+  async addOwnerNote(organizationId, authorUserId, noteText, category = 'general') {
+    return this.mutate((db) => {
+      db.ownerNotes = db.ownerNotes || [];
+      const note = {
+        id: `note-${uuidv4().substring(0, 8)}`,
+        organizationId,
+        authorUserId,
+        noteText,
+        category,
+        createdAt: new Date().toISOString()
+      };
+      db.ownerNotes.push(note);
+      return note;
+    });
+  }
+
+  getOwnerNotes(organizationId) {
+    const list = this.read().ownerNotes || [];
+    return list.filter(n => n.organizationId === organizationId);
+  }
+
+  getFeatureFlags() {
+    return this.read().featureFlags || {
+      stripeBillingEnabled: true,
+      grandControlEnabled: true,
+      precision3DEnabled: true,
+      communicationsEnabled: true,
+      businessPlanEnabled: true,
+      billingMode: 'test'
+    };
+  }
+
+  async updateFeatureFlags(flags, authorUserId = null) {
+    return this.mutate((db) => {
+      db.featureFlags = {
+        ...(db.featureFlags || {}),
+        ...flags
+      };
+      db.auditLogs.push({
+        id: `aud-${uuidv4().substring(0, 8)}`,
+        userId: authorUserId,
+        organizationId: 'org-platform-master',
+        action: 'platform.update_feature_flags',
+        targetType: 'featureFlags',
+        targetId: 'global',
+        details: flags,
+        timestamp: new Date().toISOString()
+      });
+      return db.featureFlags;
+    });
+  }
 }
 
 module.exports = new JSONDatabase();
@@ -1224,4 +1807,5 @@ module.exports.verifyPassword = verifyPassword;
 module.exports.hashPassword = hashPassword;
 module.exports.validatePasswordStrength = validatePasswordStrength;
 module.exports.generateSecureTempPassword = generateSecureTempPassword;
+
 

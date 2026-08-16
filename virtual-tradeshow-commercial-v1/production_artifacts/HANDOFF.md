@@ -329,6 +329,35 @@ Establish a fully deterministic 3D synthetic reconstruction dataset for AUREX Au
 - **COLMAP / Modal GPU**: **NOT RUN ($0.00)** (Halted before GPU reconstruction per Phase 9.5 specification)
 - **Additional Cash Cost**: **$0.00**
 
+---
+
+### [2026-08-16 16:01] — Session 17: Phase 9.5 Expansion — Stripe Billing & Grand Control Center Complete
+
+#### 1. DATE / TIME
+- **Date**: 2026-08-16
+- **Time**: 16:01:00 UTC-4 (20:01:00 UTC)
+
+#### 2. TASK
+Implement three connected commercial systems:
+1. **Stripe Billing Integration (Test Mode Only)**: Official `stripe` SDK, Checkout sessions, raw body webhook verification, subscription data model, plan limits and Double-Gate GPU reconstruction check.
+2. **Freemium / PRO / Business Entitlements**: Automatic tier enforcement (Free 5 prods, Pro 25 prods + 3D, Business 100 prods), customer billing portal.
+3. **Owner-Only Grand Control Center (`/grand-control.html`)**: Centralized console for `platform_owner`, Customer 360 view, monetization funnel, real-time traffic chart, 2-way communications hub, safe broadcast modal, environment data isolation (`REAL`, `TEST`, `SYNTHETIC_TEST`), and telemetry CSV exports.
+
+#### 3. TEST RESULTS (10/10 PASS & 11/11 REGRESSION PASS)
+- **Health & Schema Version**: **PASS** (`schemaVersion: 5`, `stripeMode: 'test'`)
+- **Platform Owner Auth & RBAC Isolation**: **PASS** (`requirePlatformOwner` blocks unauthorized access with HTTP 403)
+- **Stripe Checkout & Customer Portal**: **PASS** (Simulated checkout & official API patterns)
+- **Stripe Webhook & Idempotency**: **PASS** (Raw body verification & duplicate prevention via `db.stripeEvents`)
+- **Grand Control Customer 360 & Plan Override**: **PASS** (Operational health score, manual override, owner notes)
+- **Double-Gate GPU Reconstruction Guard**: **PASS** (FREE plan blocked with HTTP 402; PRO plan queued for owner approval)
+- **Platform 2-Way Communications**: **PASS** (Owner ↔ Exhibitor messaging, replies, read tracking)
+- **Telemetry & CSV Export**: **PASS** (`organizations`, `subscriptions`, `leads`, `reconstructions` exports verified)
+- **Grand Control Console Assets**: **PASS** (`/grand-control.html`, CSS, JS served)
+- **Three-Exhibitor Rehearsal Regression**: **PASS** (11/11 tests passed)
+- **Stripe Live Mode**: **NOT ENABLED** (Test mode only)
+- **Additional Cash Cost**: **$0.00**
+
+
 
 
 

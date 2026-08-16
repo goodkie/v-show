@@ -953,4 +953,172 @@ function showToast(message) {
   }, 3500);
 }
 
-window.addEventListener('DOMContentLoaded', initAdmin);
+// --- Phase 9.5 Stripe Billing & In-App Messages Logic ---
+async function loadBillingInfo() {
+  if (!token) return;
+  try {
+    const res = await fetch('/api/billing/my-subscription', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!res.ok) return;
+
+    document.getElementById('plan-name-display').textContent = data.subscription.plan.toUpperCase();
+    document.getElementById('billing-status-badge').textContent = `${data.subscription.plan.toUpperCase()} (${data.subscription.status.toUpperCase()})`;
+    document.getElementById('plan-products-usage').textContent = `${data.usage.productsCount} / ${data.entitlements.maxProducts}`;
+    document.getElementById('plan-hotspots-usage').textContent = `${hotspots.length} / ${data.entitlements.maxHotspots}`;
+
+    const precEl = document.getElementById('plan-precision-status');
+    if (data.entitlements.precision3D) {
+      precEl.textContent = '활성화 (Eligible)';
+      precEl.style.color = 'var(--accent)';
+    } else {
+      precEl.textContent = 'PRO 플랜 필요 (Locked)';
+      precEl.style.color = 'var(--text-muted)';
+    }
+  } catch (err) {
+    console.error('Error loading billing info:', err);
+  }
+}
+
+async function startUpgradeCheckout(requestedPlan) {
+  if (!token) return;
+  try {
+    showToast(`${requestedPlan.toUpperCase()} 플랜 구독 세션을 준비 중입니다...`);
+    const res = await fetch('/api/billing/create-checkout-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ requestedPlan })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create checkout session.');
+
+    if (data.checkoutUrl) {
+      window.location.href = data.checkoutUrl;
+    } else if (data.simulation) {
+      showToast(data.message);
+      await loadBillingInfo();
+    }
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function openCustomerPortal() {
+  if (!token) return;
+  try {
+    const res = await fetch('/api/billing/create-portal-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to open portal.');
+
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      alert(data.message || 'Stripe Customer Portal is in Test Mode.');
+    }
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function loadInboxMessages() {
+  if (!token) return;
+  try {
+    const res = await fetch('/api/communications/messages', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const messages = await res.json();
+    const list = document.getElementById('admin-inbox-list');
+    if (!list) return;
+
+    const unreadCount = messages.filter(m => !m.readBy || !m.readBy.some(r => r.orgId === currentOrg?.id)).length;
+    const badge = document.getElementById('nav-inbox-badge');
+    if (badge) {
+      if (unreadCount > 0) {
+        badge.textContent = unreadCount;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    if (!messages || messages.length === 0) {
+      list.innerHTML = '<div style="color: var(--text-muted); padding: 16px;">수신된 공지나 메시지가 없습니다.</div>';
+      return;
+    }
+
+    list.innerHTML = messages.map(m => `
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 16px; border-radius: 8px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+          <strong style="font-size: 15px; color: var(--text-main);">${escapeHtml(m.subject)}</strong>
+          <span class="badge badge-preview">${escapeHtml(m.category)}</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin: 0 0 10px 0;">${escapeHtml(m.body)}</p>
+        <div style="font-size: 11px; color: var(--text-muted);">발송자: ${escapeHtml(m.senderName)} • ${new Date(m.createdAt).toLocaleString()}</div>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Error loading inbox:', err);
+  }
+}
+
+function openContactOwnerModal() {
+  const subject = prompt('플랫폼 운영팀에 보낼 문의 제목을 입력하세요:');
+  if (!subject) return;
+  const body = prompt('문의 내용을 상세히 입력하세요:');
+  if (!body) return;
+
+  fetch('/api/communications/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ category: 'support', subject, body })
+  }).then(res => res.json()).then(data => {
+    if (data.success) {
+      showToast('운영팀에 문의 메시지가 전달되었습니다.');
+      loadInboxMessages();
+    }
+  });
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+window.adminApp = {
+  startUpgradeCheckout,
+  openCustomerPortal,
+  loadBillingInfo,
+  loadInboxMessages,
+  openContactOwnerModal
+};
+
+window.addEventListener('DOMContentLoaded', () => {
+  initAdmin();
+  // Listen for tab changes to load billing or inbox
+  document.querySelectorAll('.admin-nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const tab = item.dataset.tab;
+      if (tab === 'billing') loadBillingInfo();
+      if (tab === 'inbox') loadInboxMessages();
+    });
+  });
+});
+
