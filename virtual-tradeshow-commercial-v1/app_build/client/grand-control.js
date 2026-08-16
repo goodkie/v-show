@@ -132,11 +132,15 @@ class GrandControlApp {
       case 'incidents':
         this.loadIncidentsAndAudit();
         break;
+      case 'readiness':
+        this.loadLaunchReadiness();
+        break;
       case 'settings':
         this.loadSettings();
         break;
     }
   }
+
 
   // --- 1. Overview ---
   async loadOverview() {
@@ -740,13 +744,57 @@ class GrandControlApp {
     }
   }
 
-  // --- 8. Settings & Export ---
+  // --- 8. Live Launch Readiness Checklist ---
+  async loadLaunchReadiness() {
+    try {
+      const res = await fetch('/api/platform/launch-readiness', {
+        headers: { 'Authorization': `Bearer ${this.token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) return;
+
+      const badge = document.getElementById('readiness-overall-badge');
+      if (badge) {
+        badge.textContent = data.overallStatus === 'LIVE_READY' ? '🎉 LIVE LAUNCH READY' : '⚠️ PRE-PRODUCTION HARDENED';
+        badge.className = data.overallStatus === 'LIVE_READY' ? 'gc-badge gc-badge-active' : 'gc-badge gc-badge-warning';
+      }
+
+      document.getElementById('readiness-live-mode').textContent = data.stripeLiveMode ? 'LIVE MODE (Active)' : 'OFF (Test Mode)';
+      document.getElementById('readiness-pricing-status').textContent = data.pricingStatus.toUpperCase();
+      document.getElementById('readiness-legal-status').textContent = data.legalReviewStatus.toUpperCase();
+      document.getElementById('readiness-owner-auth').textContent = data.liveBillingApprovedByOwner ? 'APPROVED' : 'BLOCKED (Pending Owner Action)';
+
+      const tbody = document.getElementById('readiness-table-body');
+      if (tbody && data.checklist) {
+        tbody.innerHTML = data.checklist.map(item => `
+          <tr>
+            <td><span class="gc-kpi-badge">${escapeHtml(item.category)}</span></td>
+            <td><strong>${escapeHtml(item.title)}</strong></td>
+            <td>
+              <span class="gc-status-pill ${item.status === 'READY' ? 'gc-dot-online' : (item.status === 'OFF' ? 'gc-text-muted' : 'gc-dot-warning')}">
+                ${escapeHtml(item.status)}
+              </span>
+            </td>
+            <td class="gc-text-muted">${escapeHtml(item.detail)}</td>
+          </tr>
+        `).join('');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // --- 9. Settings & Export ---
   async loadSettings() {
     try {
       const res = await fetch('/api/platform/feature-flags', {
         headers: { 'Authorization': `Bearer ${this.token}` }
       });
       const flags = await res.json();
+      document.getElementById('flag-billingKillSwitch').checked = Boolean(flags.billingKillSwitch);
+      document.getElementById('flag-reconstructionKillSwitch').checked = Boolean(flags.reconstructionKillSwitch);
+      document.getElementById('flag-maintenanceMode').checked = Boolean(flags.maintenanceMode);
+
       document.getElementById('flag-stripeBillingEnabled').checked = Boolean(flags.stripeBillingEnabled);
       document.getElementById('flag-precision3DEnabled').checked = Boolean(flags.precision3DEnabled);
       document.getElementById('flag-communicationsEnabled').checked = Boolean(flags.communicationsEnabled);
@@ -758,6 +806,9 @@ class GrandControlApp {
 
   async saveFeatureFlags() {
     const flags = {
+      billingKillSwitch: document.getElementById('flag-billingKillSwitch').checked,
+      reconstructionKillSwitch: document.getElementById('flag-reconstructionKillSwitch').checked,
+      maintenanceMode: document.getElementById('flag-maintenanceMode').checked,
       stripeBillingEnabled: document.getElementById('flag-stripeBillingEnabled').checked,
       precision3DEnabled: document.getElementById('flag-precision3DEnabled').checked,
       communicationsEnabled: document.getElementById('flag-communicationsEnabled').checked,
@@ -773,11 +824,12 @@ class GrandControlApp {
         },
         body: JSON.stringify(flags)
       });
-      if (res.ok) alert('Feature flags updated.');
+      if (res.ok) alert('Feature flags and emergency kill switches updated successfully.');
     } catch (e) {
       alert('Failed to save feature flags');
     }
   }
+
 
   downloadCsv(type) {
     window.open(`/api/platform/export?type=${type}&env=${this.currentEnv}`, '_blank');

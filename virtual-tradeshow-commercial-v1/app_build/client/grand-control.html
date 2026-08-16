@@ -105,11 +105,15 @@
           <button class="gc-nav-item" data-tab="incidents" onclick="window.gcApp.setTab('incidents')">
             <span class="gc-icon">🚨</span> Incidents & Audit Log
           </button>
+          <button class="gc-nav-item" data-tab="readiness" onclick="window.gcApp.setTab('readiness')">
+            <span class="gc-icon">🚀</span> Live Launch Readiness
+          </button>
           <button class="gc-nav-item" data-tab="settings" onclick="window.gcApp.setTab('settings')">
             <span class="gc-icon">⚙️</span> Settings & Export
           </button>
         </div>
       </nav>
+
 
       <!-- Tab Contents -->
       <main class="gc-content-area">
@@ -442,14 +446,81 @@
           </div>
         </section>
 
-        <!-- 8. SETTINGS & EXPORT TAB -->
+        <!-- 8. LIVE LAUNCH READINESS TAB -->
+        <section id="tab-readiness" class="gc-tab-pane">
+          <div class="gc-panel" style="margin-bottom: 24px;">
+            <div class="gc-panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h3>🚀 Live Launch Readiness & Safety Control</h3>
+                <p class="gc-panel-sub">Pre-production hardening status before Stripe Live Mode activation.</p>
+              </div>
+              <div id="readiness-overall-badge" class="gc-badge gc-badge-active" style="font-size: 13px;">CHECKING...</div>
+            </div>
+
+            <div class="gc-kpi-grid" style="margin-bottom: 20px;">
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Stripe Live Mode</div>
+                <div class="gc-kpi-value" id="readiness-live-mode">OFF (Test Mode)</div>
+                <div class="gc-kpi-sub">Strict $0.00 cash cost policy</div>
+              </div>
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Commercial Pricing Status</div>
+                <div class="gc-kpi-value" id="readiness-pricing-status">DRAFT</div>
+                <div class="gc-kpi-sub">Provisional ($299 / $799)</div>
+              </div>
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Legal Review Status</div>
+                <div class="gc-kpi-value" id="readiness-legal-status">PENDING</div>
+                <div class="gc-kpi-sub">Requires human attorney review</div>
+              </div>
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Owner Live Authorization</div>
+                <div class="gc-kpi-value" id="readiness-owner-auth">BLOCKED</div>
+                <div class="gc-kpi-sub">Live billing requires human approval</div>
+              </div>
+            </div>
+
+            <div class="gc-table-container">
+              <table class="gc-table">
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th>Audit Item</th>
+                    <th>Status</th>
+                    <th>Operational Details</th>
+                  </tr>
+                </thead>
+                <tbody id="readiness-table-body">
+                  <!-- Dynamic Readiness Checklist Items -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 9. SETTINGS & EXPORT TAB -->
         <section id="tab-settings" class="gc-tab-pane">
           <div class="gc-dashboard-row">
             <div class="gc-panel gc-panel-flex1">
               <div class="gc-panel-header">
-                <h3>⚙️ Global Feature Flags</h3>
+                <h3>⚙️ Global Feature Flags & Emergency Kill Switches</h3>
               </div>
               <div class="gc-form gc-flags-form" id="gc-feature-flags-form">
+                <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+                  <strong style="color: #f87171; font-size: 13px;">🚨 Emergency Platform Kill Switches</strong>
+                  <div style="margin-top: 8px;">
+                    <label class="gc-toggle-label">
+                      <input type="checkbox" id="flag-billingKillSwitch"> <span style="color: #fca5a5;">Billing Kill Switch (Block All New Checkouts)</span>
+                    </label>
+                    <label class="gc-toggle-label">
+                      <input type="checkbox" id="flag-reconstructionKillSwitch"> <span style="color: #fca5a5;">3DGS Reconstruction Kill Switch (Halt New GPU Jobs)</span>
+                    </label>
+                    <label class="gc-toggle-label">
+                      <input type="checkbox" id="flag-maintenanceMode"> <span style="color: #fca5a5;">Platform Maintenance Mode</span>
+                    </label>
+                  </div>
+                </div>
+
                 <label class="gc-toggle-label">
                   <input type="checkbox" id="flag-stripeBillingEnabled"> <span>Stripe Billing Engine</span>
                 </label>
@@ -465,6 +536,7 @@
                 <button class="gc-btn-primary" onclick="window.gcApp.saveFeatureFlags()">Save Feature Flags</button>
               </div>
             </div>
+
 
             <div class="gc-panel gc-panel-flex1">
               <div class="gc-panel-header">

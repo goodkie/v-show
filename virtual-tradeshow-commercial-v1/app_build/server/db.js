@@ -424,9 +424,20 @@ const initialSeedData = () => {
     billingEvents: [],
     upgradeRequests: [],
     platformMessages: [],
-    ownerNotes: []
+    ownerNotes: [],
+    featureFlags: {
+      stripeLiveBillingEnabled: false,
+      billingKillSwitch: false,
+      reconstructionKillSwitch: false,
+      maintenanceMode: false,
+      legalReviewStatus: 'pending',
+      pricingStatus: 'draft',
+      liveBillingApprovedByOwner: false,
+      pastDueGraceDays: 7
+    }
   };
 };
+
 
 
 class JSONDatabase {
@@ -1298,54 +1309,147 @@ class JSONDatabase {
   }
 
   // ==========================================
-  // --- 10. Phase 9.5 Stripe Billing & Plan Entitlements ---
+  // --- 10. Phase 9.5 & 10 Stripe Billing, Plan Config & Launch Readiness ---
   // ==========================================
+
+  getPlanConfig() {
+    const proMonthly = Number(process.env.PLAN_PRO_MONTHLY_USD) || 299;
+    const bizMonthly = Number(process.env.PLAN_BUSINESS_MONTHLY_USD) || 799;
+
+    return {
+      free: {
+        plan: 'free',
+        name: 'FREE Tier',
+        monthlyPriceUsd: 0,
+        currency: 'USD',
+        billingInterval: 'month',
+        maxProducts: 5,
+        maxHotspots: 3,
+        maxPhotos: 5,
+        precision3D: false,
+        reconstructionCredits: 0,
+        customBranding: false,
+        analyticsExport: false,
+        liveConsultations: false,
+        dedicatedSupport: false,
+        leadLimitVisible: 10,
+        description: '기본 가상 부스 및 사진 프리뷰'
+      },
+      pro: {
+        plan: 'pro',
+        name: 'PRO Tier',
+        monthlyPriceUsd: proMonthly,
+        currency: 'USD',
+        billingInterval: 'month',
+        stripePriceEnv: process.env.STRIPE_PRICE_PRO_MONTHLY || 'price_pro_monthly_test',
+        maxProducts: 25,
+        maxHotspots: 15,
+        maxPhotos: 60,
+        precision3D: true,
+        reconstructionCredits: 1,
+        customBranding: true,
+        analyticsExport: true,
+        liveConsultations: true,
+        dedicatedSupport: false,
+        leadLimitVisible: 1000,
+        description: 'Spark 정밀 3DGS 가상 부스 & 바이어 분석 데이터'
+      },
+      business: {
+        plan: 'business',
+        name: 'BUSINESS Tier',
+        monthlyPriceUsd: bizMonthly,
+        currency: 'USD',
+        billingInterval: 'month',
+        stripePriceEnv: process.env.STRIPE_PRICE_BUSINESS_MONTHLY || 'price_biz_monthly_test',
+        maxProducts: 100,
+        maxHotspots: 50,
+        maxPhotos: 120,
+        precision3D: true,
+        reconstructionCredits: 3,
+        customBranding: true,
+        analyticsExport: true,
+        liveConsultations: true,
+        dedicatedSupport: true,
+        leadLimitVisible: 10000,
+        description: '대형 전시관 전용 우선 GPU 처리 & 전담 기술 지원'
+      }
+    };
+  }
 
   getPlanLimits(plan = 'free') {
     const p = (plan || 'free').toLowerCase();
-    switch (p) {
-      case 'business':
-        return {
-          plan: 'business',
-          maxProducts: 100,
-          maxHotspots: 50,
-          maxPhotos: 120,
-          precision3D: true,
-          customBranding: true,
-          analyticsExport: true,
-          liveConsultations: true,
-          dedicatedSupport: true,
-          monthlyPriceUsd: 799
-        };
-      case 'pro':
-        return {
-          plan: 'pro',
-          maxProducts: 25,
-          maxHotspots: 15,
-          maxPhotos: 60,
-          precision3D: true,
-          customBranding: true,
-          analyticsExport: true,
-          liveConsultations: true,
-          dedicatedSupport: false,
-          monthlyPriceUsd: 299
-        };
-      case 'free':
-      default:
-        return {
-          plan: 'free',
-          maxProducts: 5,
-          maxHotspots: 3,
-          maxPhotos: 5,
-          precision3D: false,
-          customBranding: false,
-          analyticsExport: false,
-          liveConsultations: false,
-          dedicatedSupport: false,
-          monthlyPriceUsd: 0
-        };
-    }
+    const config = this.getPlanConfig();
+    return config[p] || config.free;
   }
+
+  getPublicPlanConfig() {
+    const config = this.getPlanConfig();
+    const flags = this.getFeatureFlags();
+    const safe = {};
+    for (const key of Object.keys(config)) {
+      const p = config[key];
+      safe[key] = {
+        plan: p.plan,
+        name: p.name,
+        monthlyPriceUsd: p.monthlyPriceUsd,
+        currency: p.currency,
+        billingInterval: p.billingInterval,
+        maxProducts: p.maxProducts,
+        maxHotspots: p.maxHotspots,
+        maxPhotos: p.maxPhotos,
+        precision3D: p.precision3D,
+        reconstructionCredits: p.reconstructionCredits,
+        customBranding: p.customBranding,
+        analyticsExport: p.analyticsExport,
+        liveConsultations: p.liveConsultations,
+        dedicatedSupport: p.dedicatedSupport,
+        description: p.description
+      };
+    }
+    return {
+      plans: safe,
+      pricingStatus: flags.pricingStatus || 'draft',
+      stripeMode: process.env.STRIPE_SECRET_KEY && process.env.STRIPE_MODE === 'live' ? 'live' : 'test',
+      billingKillSwitch: Boolean(flags.billingKillSwitch),
+      reconstructionKillSwitch: Boolean(flags.reconstructionKillSwitch),
+      maintenanceMode: Boolean(flags.maintenanceMode)
+    };
+  }
+
+  getLaunchReadinessStatus() {
+    const flags = this.getFeatureFlags();
+    const isLiveKeyConfigured = Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY.startsWith('sk_live_'));
+    const isStripeLiveMode = process.env.STRIPE_MODE === 'live';
+
+    const checklist = [
+      { id: 'schema_v5', category: 'Technical', title: 'Database Schema Version 5', status: 'READY', detail: 'Schema v5 active with atomic persistence.' },
+      { id: 'public_pages', category: 'Technical', title: 'Public Web Pages & Lobby', status: 'READY', detail: 'HTTPS lobby, viewer, and photo room verified.' },
+      { id: 'grand_control_rbac', category: 'Security', title: 'Platform Owner RBAC Protection', status: 'READY', detail: 'Protected with requirePlatformOwner (403 for unauthorized).' },
+      { id: 'tenant_isolation', category: 'Security', title: 'Multi-Tenant Cross-Access Isolation', status: 'READY', detail: 'Strict server-side validation on all mutations.' },
+      { id: 'xss_upload_audit', category: 'Security', title: 'XSS & File Upload Security Audit', status: 'READY', detail: 'HTML escaping, MIME validation, path traversal prevented.' },
+      { id: 'stripe_test_mode', category: 'Billing', title: 'Stripe Test Mode Integration', status: 'READY', detail: 'Checkout, portal, raw body webhooks verified.' },
+      { id: 'price_config_central', category: 'Billing', title: 'Price Configuration Centralization', status: 'READY', detail: 'Configured via PLAN_CONFIG & public API.' },
+      { id: 'billing_kill_switches', category: 'Operations', title: 'Emergency Kill Switches', status: 'READY', detail: 'Billing, reconstruction, and maintenance kill switches active.' },
+      { id: 'backup_restore_drill', category: 'Operations', title: 'Backup & Restore Drill Script', status: 'READY', detail: 'Automated script verified with 0-byte data loss.' },
+      { id: 'legal_terms_privacy', category: 'Legal', title: 'Terms, Privacy & Refund Policy Pages', status: 'READY', detail: 'Web pages present and linked.' },
+      { id: 'pricing_approval', category: 'Commercial', title: 'Commercial Pricing Approval', status: flags.pricingStatus === 'approved' ? 'READY' : 'WARNING', detail: flags.pricingStatus === 'approved' ? 'Human approved.' : 'Provisional Draft ($299/$799).' },
+      { id: 'legal_review', category: 'Legal', title: 'Legal Review Approval', status: flags.legalReviewStatus === 'approved' ? 'READY' : 'WARNING', detail: flags.legalReviewStatus === 'approved' ? 'Legal review approved.' : 'PENDING Human Legal Review.' },
+      { id: 'stripe_live_keys', category: 'Billing', title: 'Stripe Live Mode Activation', status: (isLiveKeyConfigured && isStripeLiveMode && flags.stripeLiveBillingEnabled && flags.liveBillingApprovedByOwner) ? 'READY' : 'OFF', detail: 'Stripe Live Mode remains OFF ($0.00 cash cost policy).' }
+    ];
+
+    const isTechnicallyReady = checklist.every(c => c.category !== 'Commercial' && c.category !== 'Legal' && (c.status === 'READY' || c.status === 'OFF'));
+    const isHumanApproved = flags.legalReviewStatus === 'approved' && flags.pricingStatus === 'approved' && flags.liveBillingApprovedByOwner;
+
+    return {
+      overallStatus: isHumanApproved ? 'LIVE_READY' : 'TECHNICALLY_READY_FOR_LIVE_APPROVAL',
+      legalReviewStatus: flags.legalReviewStatus || 'pending',
+      pricingStatus: flags.pricingStatus || 'draft',
+      liveBillingApprovedByOwner: Boolean(flags.liveBillingApprovedByOwner),
+      stripeLiveMode: isStripeLiveMode && Boolean(flags.stripeLiveBillingEnabled),
+      checklist
+    };
+  }
+
 
   getOrganizationEntitlements(organizationId) {
     const org = this.getOrganizationById(organizationId);

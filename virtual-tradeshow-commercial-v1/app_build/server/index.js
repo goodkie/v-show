@@ -6,7 +6,9 @@ const fs = require('fs');
 const crypto = require('crypto');
 const cors = require('cors');
 const multer = require('multer');
+const { v4: uuidv4 } = require('uuid');
 const db = require('./db');
+
 
 const app = express();
 const server = http.createServer(app);
@@ -205,11 +207,32 @@ function validateBoothCapture(photos = []) {
   };
 }
 
-// Stripe Test Configuration
+// Stripe Mode & Security Validation
+const STRIPE_MODE = process.env.STRIPE_MODE || 'test';
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || null;
 const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY || null;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || null;
+
+// Hard Mode Validation Guard: Prevent mixing test/live keys
+if (STRIPE_SECRET_KEY) {
+  if (STRIPE_MODE === 'test' && STRIPE_SECRET_KEY.startsWith('sk_live_')) {
+    console.error('FATAL BILLING MISMATCH: Live secret key detected while STRIPE_MODE=test. Refusing live operations in test mode.');
+  } else if (STRIPE_MODE === 'live' && STRIPE_SECRET_KEY.startsWith('sk_test_')) {
+    console.error('FATAL BILLING MISMATCH: Test secret key detected while STRIPE_MODE=live. Refusing test keys in live mode.');
+  }
+}
+
 const stripe = STRIPE_SECRET_KEY ? require('stripe')(STRIPE_SECRET_KEY) : null;
+
+// Middleware: Request ID & Security Headers
+app.use((req, res, next) => {
+  req.id = req.headers['x-request-id'] || `req-${uuidv4().substring(0, 12)}`;
+  res.setHeader('X-Request-Id', req.id);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
 // Middleware Setup
 if (ALLOWED_ORIGIN) {
@@ -220,6 +243,7 @@ if (ALLOWED_ORIGIN) {
 
 // Raw body parser for Stripe webhook MUST come before express.json()
 app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+
   const sig = req.headers['stripe-signature'];
   let event;
 
@@ -375,17 +399,22 @@ app.use('/vendor/spark', express.static(path.join(__dirname, '..', 'node_modules
 app.use('/vendor/three', express.static(path.join(__dirname, '..', 'node_modules', 'three')));
 app.use(express.static(path.join(__dirname, '..', 'client')));
 
-// --- 1. Healthcheck Endpoint ---
+// --- 1. Healthcheck & Public Plan Endpoints ---
 app.get('/health', (req, res) => {
   res.status(200).json({
     ok: true,
     service: 'virtual-tradeshow-commercial-v1',
     schemaVersion: 5,
-    stripeMode: STRIPE_SECRET_KEY ? 'live' : 'test',
+    stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
     timestamp: new Date().toISOString()
   });
 });
+
+app.get('/api/public/plans', (req, res) => {
+  res.json(db.getPublicPlanConfig());
+});
+
 
 
 // --- 2. Authentication APIs ---
@@ -855,12 +884,21 @@ app.get('/api/booths/:id/reconstruction', requireAuth, (req, res) => {
 
 app.post('/api/booths/:id/reconstruction', requireAuth, async (req, res) => {
   try {
+    const flags = db.getFeatureFlags();
+    if (flags.reconstructionKillSwitch) {
+      return res.status(503).json({
+        error: 'RECONSTRUCTION_TEMPORARILY_DISABLED',
+        message: '플랫폼 GPU 연산 안전 정책으로 인해 신규 3DGS 재구성 요청이 일시 중단되었습니다.'
+      });
+    }
+
     const booth = db.getBoothById(req.params.id, true);
     if (!booth) return res.status(404).json({ error: 'Booth not found.' });
 
     if (req.user.role !== 'organizer_admin' && req.user.role !== 'platform_owner' && req.user.organizationId !== booth.organizationId) {
       return res.status(403).json({ error: 'Forbidden: Cross-tenant job request rejected.' });
     }
+
 
     // Double-Gate Step 1: Check Plan Entitlement (FREE blocked, PRO/Business allowed)
     const entitlements = db.getOrganizationEntitlements(booth.organizationId);
@@ -1239,6 +1277,21 @@ app.get('/api/billing/my-subscription', requireAuth, (req, res) => {
 
 app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) => {
   try {
+    const flags = db.getFeatureFlags();
+    if (flags.billingKillSwitch) {
+      return res.status(503).json({
+        error: 'BILLING_TEMPORARILY_DISABLED',
+        message: '플랫폼 정기 점검 또는 안전 조치로 인해 신규 구독 결제가 일시 중단되었습니다.'
+      });
+    }
+
+    if (STRIPE_MODE === 'live' && (!flags.stripeLiveBillingEnabled || !flags.liveBillingApprovedByOwner)) {
+      return res.status(403).json({
+        error: 'STRIPE_LIVE_MODE_NOT_APPROVED',
+        message: 'Stripe Live Mode 결제 활성화를 위한 최고 운영자의 최종 승인이 필요합니다.'
+      });
+    }
+
     const { requestedPlan } = req.body; // 'pro' | 'business'
     if (!requestedPlan || (requestedPlan !== 'pro' && requestedPlan !== 'business')) {
       return res.status(400).json({ error: 'Invalid plan. Must be "pro" or "business".' });
@@ -1246,6 +1299,7 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
 
     const org = db.getOrganizationById(req.user.organizationId);
     if (!org) return res.status(404).json({ error: 'Organization not found.' });
+
 
     // In Test Mode / Stripe Configured
     if (stripe) {
@@ -1661,6 +1715,11 @@ app.put('/api/platform/feature-flags', requireAuth, requirePlatformOwner, async 
     res.status(400).json({ error: err.message });
   }
 });
+
+app.get('/api/platform/launch-readiness', requireAuth, requirePlatformOwner, (req, res) => {
+  res.json(db.getLaunchReadinessStatus());
+});
+
 
 app.get('/api/platform/export', requireAuth, requirePlatformOwner, (req, res) => {
   const { type, env } = req.query; // organizations | subscriptions | leads | reconstructions

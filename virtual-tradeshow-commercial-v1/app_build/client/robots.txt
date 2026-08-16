@@ -1,0 +1,15 @@
+User-agent: *
+Disallow: /admin.html
+Disallow: /organizer.html
+Disallow: /grand-control.html
+Disallow: /api/
+Disallow: /data/
+
+Allow: /
+Allow: /lobby.html
+Allow: /viewer.html
+Allow: /terms.html
+Allow: /privacy.html
+Allow: /refund-policy.html
+
+Sitemap: https://v-show-commercial-v1-production.up.railway.app/sitemap.xml

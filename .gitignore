@@ -14,4 +14,7 @@ __pycache__/
 *.pyc
 virtual-tradeshow-commercial-v1/app_build/data/db.json
 virtual-tradeshow-commercial-v1/app_build/data/db.temp.json
+virtual-tradeshow-commercial-v1/app_build/data/backups/
+virtual-tradeshow-commercial-v1/app_build/data/_restore_drill_sandbox/
+
 

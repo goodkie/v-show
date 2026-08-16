@@ -490,6 +490,19 @@
 
       <!-- TAB 7: Billing & Plan (Stripe Test Integration) -->
       <section id="tab-billing" class="tab-pane">
+        <!-- Visible Stripe Test Mode Banner -->
+        <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong style="color: #60a5fa;">🧪 STRIPE TEST MODE — NO REAL CHARGES</strong>
+            <p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0 0;">현재 결제 시스템은 샌드박스 테스트 모드로 운영 중이며 실제 현금 과금이 발생하지 않습니다 ($0.00).</p>
+          </div>
+          <div style="font-size: 12px; display: flex; gap: 12px;">
+            <a href="terms.html" target="_blank" style="color: var(--accent);">이용약관</a>
+            <a href="privacy.html" target="_blank" style="color: var(--accent);">개인정보처리방침</a>
+            <a href="refund-policy.html" target="_blank" style="color: var(--accent);">환불정책</a>
+          </div>
+        </div>
+
         <div class="card" style="margin-bottom: 24px;">
           <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
             <div>
@@ -498,6 +511,7 @@
             </div>
             <div id="billing-status-badge" class="badge badge-reconstructed">PRO BETA ACTIVE</div>
           </div>
+
 
           <div class="stats-grid" style="margin-bottom: 20px;">
             <div class="stat-box">
