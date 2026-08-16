@@ -399,8 +399,8 @@ app.use('/vendor/spark', express.static(path.join(__dirname, '..', 'node_modules
 app.use('/vendor/three', express.static(path.join(__dirname, '..', 'node_modules', 'three')));
 app.use(express.static(path.join(__dirname, '..', 'client')));
 
-// --- 1. Healthcheck & Public Plan Endpoints ---
-app.get('/health', (req, res) => {
+// --- 1. Healthcheck (Canonical: /health, Alias: /api/health) & Public Plan Endpoints ---
+const healthHandler = (req, res) => {
   res.status(200).json({
     ok: true,
     service: 'virtual-tradeshow-commercial-v1',
@@ -409,7 +409,11 @@ app.get('/health', (req, res) => {
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
     timestamp: new Date().toISOString()
   });
-});
+};
+
+app.get('/health', healthHandler);
+app.get('/api/health', healthHandler);
+
 
 app.get('/api/public/plans', (req, res) => {
   res.json(db.getPublicPlanConfig());

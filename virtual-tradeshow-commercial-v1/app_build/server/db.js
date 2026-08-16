@@ -1651,6 +1651,10 @@ class JSONDatabase {
         stripeSubscriptionId: data.stripeSubscriptionId || null,
         amount: data.amount || 0,
         currency: data.currency || 'USD',
+        pricingVersion: data.pricingVersion || 'pilot-2026.1',
+        termsVersion: data.termsVersion || '2026.1-draft',
+        privacyVersion: data.privacyVersion || '2026.1-draft',
+        metadata: data.metadata || {},
         status: data.status || 'success',
         createdAt: new Date().toISOString()
       };
@@ -1659,6 +1663,7 @@ class JSONDatabase {
       return entry;
     });
   }
+
 
   getBillingEvents(organizationId = null) {
     let list = this.read().billingEvents || [];
@@ -2057,10 +2062,33 @@ class JSONDatabase {
       const env = o.subscription?.dataEnvironment || 'REAL';
       const plan = o.subscription?.plan || 'free';
       const status = o.subscription?.status || 'active';
-      return env === 'REAL' && (plan === 'pro' || plan === 'business') && (status === 'active' || status === 'trialing');
+      const isExhibitor = o.type === 'exhibitor';
+      const isManualBeta = o.subscription?.entitlementSource === 'manual_beta_override';
+      const isRealPaid = Boolean(o.subscription?.isRealPaidCustomer);
+      return isExhibitor && env === 'REAL' && (plan === 'pro' || plan === 'business') && (status === 'active' || status === 'trialing') && isRealPaid && !isManualBeta;
     });
     return paid.length;
   }
+
+  getRealMRR() {
+    const data = this.read();
+    const planConfig = this.getPlanConfig();
+    const paid = (data.organizations || []).filter(o => {
+      const env = o.subscription?.dataEnvironment || 'REAL';
+      const plan = o.subscription?.plan || 'free';
+      const status = o.subscription?.status || 'active';
+      const isExhibitor = o.type === 'exhibitor';
+      const isManualBeta = o.subscription?.entitlementSource === 'manual_beta_override';
+      const isRealPaid = Boolean(o.subscription?.isRealPaidCustomer);
+      return isExhibitor && env === 'REAL' && (plan === 'pro' || plan === 'business') && (status === 'active' || status === 'trialing') && isRealPaid && !isManualBeta;
+    });
+    return paid.reduce((acc, o) => {
+      const p = (o.subscription?.plan || 'free').toLowerCase();
+      const price = planConfig[p]?.monthlyPriceUsd || 0;
+      return acc + price;
+    }, 0);
+  }
+
 
   isOrganizationAllowedForLiveBilling(organizationId) {
     const org = this.getOrganizationById(organizationId);
@@ -2072,6 +2100,7 @@ class JSONDatabase {
     const allowedOrgs = flags.liveBillingAllowedOrgs || [];
     return allowedOrgs.includes(organizationId);
   }
+
 }
 
 module.exports = new JSONDatabase();

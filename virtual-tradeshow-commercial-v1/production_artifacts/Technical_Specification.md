@@ -7,11 +7,13 @@ Virtual Trade Show Commercial V1 is a commercial-grade SaaS platform connecting 
 
 ## 2. Core Architecture
 
-### 2.1 Technology Stack (Phase 10.6A Commercial Expansion)
+### 2.1 Technology Stack (Phase 10.6B Pre-Live Commercial Expansion)
 - **Backend Runtime**: Node.js (v18+)
 - **Server Framework**: Express.js + Native `ws` (WebSocket) with Signed Bearer session tokens, Worker authentication, RBAC, and sliding window rate limiting.
+- **Canonical Health Endpoint**: `/health` (Legacy alias `/api/health` supported) providing minimal unprivileged diagnostic payload.
 - **Stripe Billing Engine (Test Mode)**: Official `stripe@22.5.0` SDK with Checkout sessions, Customer Portal, raw body webhook verification, and deterministic checkout consent auditing.
-- **Security & Password Hashing**: Node.js native `crypto.scryptSync` with 16-byte random salt.
+- **Security & Password Hashing**: Node.js native `crypto.scryptSync` with 16-byte random salt, minimum 12-character policy with structured `WEAK_PASSWORD` error codes, and 16+ CSPRNG temporary password generation.
+- **Business Identity & Legal Core**: Centralized `vivPR` statutory configuration (Fort Lee, NJ, USA, info@vivpr.pro, NJ Law).
 - **Frontend Core**: Vanilla HTML5, CSS3 (Enterprise SaaS Design System with dark operations styling, safe-area insets), Modern ES6+ JavaScript. **100% English-Only UI**.
 - **Mobile Landscape 3D Player**:
   - `window.matchMedia('(orientation: landscape)')` & `screen.orientation` listener with portrait suggestion banner.
@@ -35,6 +37,7 @@ Virtual Trade Show Commercial V1 is a commercial-grade SaaS platform connecting 
   - Data Environment Isolation (`REAL`, `TEST`, `SYNTHETIC_TEST`).
   - Storage Driver Abstraction (`STORAGE_DRIVER=volume`).
   - Clean separation between Git-tracked Seed Data (`seed/db.seed.json`) and Runtime Persistence (`DATA_DIR/db.json`).
+
 
 
 ---

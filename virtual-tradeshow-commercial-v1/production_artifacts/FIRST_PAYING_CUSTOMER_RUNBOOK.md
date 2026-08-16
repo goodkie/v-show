@@ -6,6 +6,10 @@
 ## 1. 개요 (Overview)
 본 문서는 플랫폼 런칭 후 **최초의 실제 유료 고객(First Paying Customer)**을 유치하고 온보딩할 때 운영진이 준수해야 할 통제된 표준 운영 절차(SOP)입니다.
 
+- **운영 법인:** vivPR (1633 Center Ave, Fort Lee, NJ 07024, United States, info@vivpr.pro)
+- **파일럿 요금제:** Free ($0), Pro ($299/mo), Business ($799/mo)
+- **현재 과금 상태:** Stripe Test Mode ($0.00 과금, Live Mode OFF)
+
 ---
 
 ## 2. 6단계 통제형 온보딩 절차 (6-Step Controlled Lifecycle)
@@ -13,13 +17,13 @@
 ```
 [1. 고객 정보 접수 및 REAL 계정 생성]
   - 주최사(Organizer)가 오거나이저 콘솔에서 '참가사 초대' 실행 (환경: REAL)
-  - 임시 비밀번호가 담긴 안전한 초대 링크 발송
-  - 고객 첫 로그인 시 강력한 비밀번호(12자 이상)로 변경 필수
+  - 임시 비밀번호(16자 이상 암호학적 난수)가 포함된 안전한 초대 링크 발송
+  - 고객 첫 로그인 시 강력한 비밀번호(12자 이상, 대/소문자/숫자 포함)로 변경 필수
 
 [2. Grand Control 라이브 파일럿 화이트리스트 등록]
   - 플랫폼 오너가 Grand Control에서 해당 고객사 ID를 'liveBillingAllowedOrgs'에 등록
-  - 정원 제한 확인 (LIVE_PILOT_MAX_CUSTOMERS = 1)
-  - 3중 승인 확인 (pricingStatus, legalReviewStatus, liveBillingApprovedByOwner)
+  - 1-고객 정원 제한 확인 (LIVE_PILOT_MAX_CUSTOMERS = 1)
+  - 4중 승인 확인 (pricingStatus, legalReviewStatus, taxReadiness, liveBillingApprovedByOwner)
 
 [3. 카탈로그 및 60뷰 부스 사진 촬영 가이드 전달]
   - 50~100장 다각도 부스 촬영 가이드라인 전달

@@ -1,21 +1,30 @@
-# TAX AND BILLING READINESS ASSESSMENT
-**Virtual Trade Show Commercial V1 — Production Tax & Invoice Evaluation**
+# TAX AND BILLING READINESS SPECIFICATION
+**Virtual Trade Show Commercial V1 — Pre-Live Commercial Review**
 
 ---
 
-## 1. 개요 (Executive Summary)
-- **세무 검토 상태 (Status)**: **`REVIEW_REQUIRED (Pending Business Tax Nexus Determination)`**
-- **Stripe Tax 활성화 여부**: **`OFF (Disabled — No Auto Paid Service Without Approval)`**
-- **기본 통화 및 정산**: USD (미국 달러화 월간 정기 구독)
+## 1. Executive Status
+- **Tax Readiness Status:** **`REVIEW_REQUIRED`**
+- **Stripe Tax Mode:** **`NOT_ENABLED`**
+- **Legal Entity:** `vivPR` (1633 Center Ave, Fort Lee, NJ 07024, United States)
+- **Jurisdiction:** State of New Jersey, United States
+- **Billing Engine:** Stripe Test Mode (API Version 2023-10-16 / SDK 22.5.0)
 
 ---
 
-## 2. 점검 항목 및 런치 전 결정 사항
+## 2. Tax Determination Areas for CPA / Accounting Counsel
 
-| 항목 | 현재 상태 | 런치 전 필요 조치 |
-| :--- | :---: | :--- |
-| **법인 세무 넥서스 (Tax Nexus)** | 미확정 | 주소지 국가/주(State)에 따른 부가가치세(VAT) 또는 판매세(Sales Tax) 과세 대상 판단 |
-| **Stripe Tax 자동 계산** | 비활성화 ($0.00) | 유료 Stripe Tax 부가 기능 도입 여부에 대한 최고 운영자 승인 필요 |
-| **인보이스/영수증 표기** | 기본 템플릿 | 법인 사업자등록번호, 대표자명, 사업장 주소 인보이스 하단 표기 확인 |
-| **신용카드 명세서 표기 (Descriptor)** | `V-SHOW EXPO` | Stripe Dashboard 내 거래 명세서 표기명(Statement Descriptor) 최종 검토 |
-| **B2B 세금계산서/인보이스 발행** | Customer Portal 제공 | 고객이 Stripe Customer Portal에서 PDF 영수증 직접 다운로드 가능 |
+1. **New Jersey Sales Tax (N.J.S.A. 54:32B-1 et seq.):**
+   - Determination of whether cloud-hosted 3D virtual trade show booths constitute taxable digital property/SaaS in New Jersey (6.625% state rate).
+2. **Interstate US Commerce:**
+   - Tracking economic nexus thresholds across California, New York, Texas, and other attendee states.
+3. **Cross-Border International Taxation:**
+   - EU VAT Reverse Charge rules for B2B exhibitors.
+   - UK HMRC VAT compliance.
+4. **Stripe Tax Automated Calculation:**
+   - Evaluated as an optional turn-key integration once live Stripe keys are configured and formal CPA nexus determination is established.
+
+---
+
+## 3. Launch Blocker Integration
+The Grand Control Center actively enforces `taxReadiness: 'review_required'`, which keeps the Tax Review blocker in state **`REVIEW_REQUIRED`**, preventing live Stripe activation until signed off by the platform owner.

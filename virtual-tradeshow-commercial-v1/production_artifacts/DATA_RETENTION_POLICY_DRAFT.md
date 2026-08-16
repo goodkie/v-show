@@ -1,27 +1,25 @@
-# DATA RETENTION POLICY DRAFT
-**Virtual Trade Show Commercial V1 — Information Lifecycle Specification**
+# DATA RETENTION AND DISPOSAL POLICY SPECIFICATION
+**Virtual Trade Show Commercial V1 — Pre-Live Commercial Data Lifecycle**
 
 ---
 
-## ⚠️ DRAFT — REQUIRES LEGAL & COMPLIANCE REVIEW
+## 1. Executive Summary
+This document establishes operational data retention lifecycles, backup cadences, and disposal procedures across all commercial environments (`REAL`, `TEST`, `SYNTHETIC_TEST`).
 
 ---
 
-## 1. 데이터 카테고리별 보존 기간 (Retention Schedule)
+## 2. Data Categories & Retention Lifecycle Matrix
 
-| 데이터 유형 | 보존 기간 (Retention Period) | 보존 근거 및 파기 방식 |
-| :--- | :---: | :--- |
-| **회원 계정 정보 (User Profiles)** | 회원 탈퇴 시까지 | 탈퇴 요청 시 지체 없이 암호화 해시 및 개인정보 영구 파기 |
-| **참가사 부스 & 제품 카탈로그** | 구독 유지 기간 + 유예 30일 | 구독 해지 후 30일간 Free 플랜 보관, 영구 탈퇴 시 삭제 |
-| **바이어 디지털 명함 (Leads)** | 참가사 관리 정책 (기본 1년) | 참가사 요청 시 CSV 내보내기 후 데이터베이스에서 삭제 가능 |
-| **견적 요청서 (RFQs) & 샘플 신청** | 계약 체결 및 분쟁 대응 목적 3년 | 전자상거래 소비자보호 법령에 따른 보존 |
-| **Stripe 결제 및 과금 이력** | 상법 및 세법에 따라 5년 | 세무/회계 감사 대비 (카드번호는 Stripe에서 보관) |
-| **익명 뷰어 세션 & 클릭 로그** | 90일 | 성능 분석 후 자동 롤링 파기 (DB 최대 5,000건 유지) |
-| **플랫폼 운영 감사 로그 (Audit Logs)** | 1년 | 보안 침해 사고 조사 및 관리자 행위 감사용 보존 |
-| **3DGS PLY / SPZ 모델 파일** | 부스 활성 기간 동안 유지 | 비활성 부스 아카이빙 시 SPZ만 보관, 원본 임시 PLY 정리 |
+| Data Classification | Storage Medium | Active Retention Period | Post-Subscription Lifecycle | Policy Decision Type |
+| :--- | :--- | :--- | :--- | :--- |
+| **Source Booth Photos (50–100 imgs)** | `/data/uploads` / Volume | Active Subscription | Retained for 90 days post-cancellation, then archived | `OPERATIONAL DECISION` |
+| **3D Gaussian Splats (SPZ / PLY)** | `/data/uploads` / Volume | Active Subscription | Retained indefinitely in read-only mode for portfolio showcase | `OWNER DECISION` |
+| **Buyer Leads & RFQ Inquiries** | `db.json` / Volume | Active Subscription | Exportable as CSV; retained 12 months for commercial warranty | `LEGAL REVIEW` |
+| **Hashed User Credentials & Salt** | `db.json` / Volume | Active Account | Purged immediately upon verified GDPR/CCPA erasure request | `STATUTORY COMPLIANCE` |
+| **Stripe Billing Reference IDs** | `db.json` / Volume | Active Subscription | Retained 7 years for IRS/NJ statutory accounting records | `TAX COMPLIANCE` |
+| **Anonymous Analytics Telemetry** | `db.json` / Volume | Rolling 90-day window | Automatically pruned when event count exceeds 5,000 | `SYSTEM AUTOMATION` |
 
 ---
 
-## 2. 고객 데이터 내보내기 및 삭제 절차 (Export & Erasure)
-- **자율 내보내기**: 참가사 관리자는 언제든지 어드민 콘솔에서 자신의 리드, RFQ, 제품 데이터를 CSV 형식으로 다운로드할 수 있습니다.
-- **계정 폐쇄 요청**: 참가사가 탈퇴를 신청할 경우, 당사는 백업 스냅샷을 포함하여 30일 이내에 식별 가능한 모든 데이터를 영구 삭제합니다.
+## 3. Data Subject Rights (DSR) & Erasure Procedure
+Exhibitors and buyers may submit erasure requests to `info@vivpr.pro`. Data removal is executed within 30 days pursuant to the procedures documented in `PRIVACY_REQUEST_RUNBOOK.md`.
