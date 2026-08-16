@@ -191,9 +191,9 @@ app.get('/api/booths/:id', (req, res) => {
 
 app.post('/api/booths', requireAuth, async (req, res) => {
   try {
-    const { name, description, themeColor } = req.body;
+    const { name, description, themeColor, status } = req.body;
     if (!name) return res.status(400).json({ error: 'Booth name is required' });
-    const booth = await db.createBooth({ name, description, themeColor, exhibitorId: req.user.userId });
+    const booth = await db.createBooth({ name, description, themeColor, status, exhibitorId: req.user.userId });
     res.status(201).json(booth);
   } catch (err) {
     res.status(500).json({ error: err.message });
