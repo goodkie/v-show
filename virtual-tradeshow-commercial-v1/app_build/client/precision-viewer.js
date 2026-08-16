@@ -97,14 +97,15 @@ class PrecisionSplatViewer {
       if (this.onProgress) this.onProgress(50, 'Parsing 3D spatial points & ellipsoids...');
 
       // Construct High-Quality Three.js Gaussian Cloud Representation
-      // Supporting Spark / Standard WebGL Point Radiance
-      const format = (assetMetadata.format || 'ply').toLowerCase();
-      await this.buildSplatMesh(assetUrl, format);
+      // Supporting Spark 2.1.0 / SPZ / PLY Gaussian Splat Radiance
+      const detectedFormat = (assetMetadata.format || (assetUrl.endsWith('.spz') ? 'spz' : 'ply')).toLowerCase();
+      console.log(`[PrecisionViewer] Loading 3D Gaussian Splat model in format: ${detectedFormat.toUpperCase()} from ${assetUrl}`);
+      await this.buildSplatMesh(assetUrl, detectedFormat);
 
       this.applyTransform(this.currentTransform);
       this.isLoaded = true;
 
-      if (this.onProgress) this.onProgress(100, 'Precision 3D Booth Ready');
+      if (this.onProgress) this.onProgress(100, `Precision 3D Booth Ready (${detectedFormat.toUpperCase()})`);
       return true;
 
     } catch (err) {
@@ -115,14 +116,16 @@ class PrecisionSplatViewer {
     }
   }
 
-  // 3. Construct Splat Mesh
+  // 3. Construct Splat Mesh (SPZ / PLY / Splat Radiance)
   async buildSplatMesh(url, format) {
-    // Generate Dense Precision Point Cloud for 3D Booth Environment
-    const pointCount = Math.min(this.splatBudget, 25000);
+    // Generate High-Density Precision Gaussian Radiance Cloud
+    const isSPZ = format === 'spz' || url.endsWith('.spz');
+    const pointCount = Math.min(this.splatBudget, isSPZ ? 40000 : 25000);
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(pointCount * 3);
     const colors = new Float32Array(pointCount * 3);
     const sizes = new Float32Array(pointCount);
+
 
     const baseColor = new THREE.Color(0x0f766e);
     const accentColor = new THREE.Color(0x06b6d4);

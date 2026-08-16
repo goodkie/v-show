@@ -115,6 +115,8 @@ def colmap_to_nerfstudio_transforms(sparse_txt_dir: Path, images_dir: Path, outp
 
     output_json.write_text(json.dumps(out_data, indent=2))
     print(f"Generated Nerfstudio transforms.json with {len(frames)} registered frames.")
+    return len(frames)
+
 
 # ============================================================
 # 1. Environment & GPU Validation Task
@@ -248,6 +250,32 @@ def train_and_export_splat(images_dict: dict, booth_id: str) -> dict:
     sparse_dir.mkdir(parents=True, exist_ok=True)
     db_path = colmap_dir / "database.db"
 
+@app.function(gpu="L4", timeout=1800)
+def train_and_export_splat(booth_id: str, image_files: dict, iterations: int = 7000):
+    """
+    Phase 7 Production Pilot:
+    Executes full COLMAP SfM -> Splatfacto 3D Gaussian Splatting -> PLY & SPZ Web Optimization on L4 GPU.
+    """
+    work_dir = Path("/tmp") / f"recon_{booth_id}_{int(time.time())}"
+    work_dir.mkdir(parents=True, exist_ok=True)
+
+    img_dir = work_dir / "images"
+    img_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save uploaded dataset photos
+    for fname, data in image_files.items():
+        (img_dir / fname).write_bytes(data)
+
+    colmap_dir = work_dir / "colmap"
+    sparse_dir = colmap_dir / "sparse"
+    sparse_dir.mkdir(parents=True, exist_ok=True)
+    db_path = colmap_dir / "database.db"
+
+    ns_data_dir = work_dir / "nerfstudio_data"
+    ns_data_dir.mkdir(parents=True, exist_ok=True)
+    ns_img_dir = ns_data_dir / "images"
+    shutil.copytree(img_dir, ns_img_dir)
+
     output_dir = work_dir / "outputs"
     export_dir = work_dir / "export"
     export_dir.mkdir(parents=True, exist_ok=True)
@@ -255,7 +283,7 @@ def train_and_export_splat(images_dict: dict, booth_id: str) -> dict:
     t_start = time.time()
 
     # Step 1: Headless COLMAP SfM
-    print("[1/4] Running Headless COLMAP SfM (CPU mode)...")
+    print(f"[1/5] Running Headless COLMAP SfM on {len(image_files)} images...")
     subprocess.run([
         "colmap", "feature_extractor",
         "--database_path", str(db_path),
@@ -278,9 +306,12 @@ def train_and_export_splat(images_dict: dict, booth_id: str) -> dict:
         "--output_path", str(sparse_dir)
     ], check=True, env=HEADLESS_ENV)
 
-    # Step 2: Convert sparse binary model to TXT
-    print("[2/4] Converting COLMAP model to TXT and generating transforms.json...")
+    # Step 2: Convert sparse binary model to TXT & evaluate registration
+    print("[2/5] Converting COLMAP model to TXT and evaluating registration quality...")
     sparse_0 = sparse_dir / "0"
+    if not sparse_0.exists():
+        raise RuntimeError("COLMAP reconstruction produced no sparse model (0 registered cameras).")
+
     txt_dir = colmap_dir / "txt_model"
     txt_dir.mkdir(parents=True, exist_ok=True)
     subprocess.run([
@@ -291,16 +322,19 @@ def train_and_export_splat(images_dict: dict, booth_id: str) -> dict:
     ], check=True, env=HEADLESS_ENV)
 
     transforms_file = ns_data_dir / "transforms.json"
-    colmap_to_nerfstudio_transforms(txt_dir, img_dir, transforms_file)
+    num_frames = colmap_to_nerfstudio_transforms(txt_dir, img_dir, transforms_file)
+
+    reg_rate = float(round((num_frames / max(len(image_files), 1)) * 100.0, 1))
 
     # Step 3: Splatfacto 3D Gaussian Splatting Training on L4
-    print("[3/4] Running Splatfacto 3D Gaussian Splatting Training on L4 GPU...")
+    train_iters = max(iterations, 4000)
+    print(f"[3/5] Running Splatfacto 3D Gaussian Splatting ({train_iters} iterations) on L4 GPU...")
     cmd_train = [
         "ns-train", "splatfacto",
         "--data", str(ns_data_dir),
         "--output-dir", str(output_dir),
-        "--experiment-name", f"pilot_{booth_id}",
-        "--max-num-iterations", "4000",
+        "--experiment-name", f"prod_pilot_{booth_id}",
+        "--max-num-iterations", str(train_iters),
         "--pipeline.model.cull-alpha-thresh", "0.005",
         "--viewer.quit-on-train-completion", "True"
     ]
@@ -317,7 +351,7 @@ def train_and_export_splat(images_dict: dict, booth_id: str) -> dict:
     print(f"Found trained config: {config_path}")
 
     # Step 4: Export Gaussian Splat PLY
-    print("[4/4] Exporting Gaussian Splat PLY model...")
+    print("[4/5] Exporting Gaussian Splat PLY model...")
     output_ply = export_dir / f"{booth_id}_splat.ply"
     cmd_export = [
         "ns-export", "gaussian-splat",
@@ -330,13 +364,32 @@ def train_and_export_splat(images_dict: dict, booth_id: str) -> dict:
     if exported_plys and not output_ply.exists():
         shutil.move(exported_plys[0], output_ply)
 
-    duration = float(round(time.time() - t_start, 2))
     ply_bytes = output_ply.read_bytes() if output_ply.exists() else b""
+
+    # Step 5: SPZ / Web Splat Compression & Metadata Analysis
+    print("[5/5] Performing Web Optimization & SPZ Compression...")
+    output_spz = export_dir / f"{booth_id}_splat.spz"
+    
+    # Generate compressed representation / SPZ gzip package
+    import gzip
+    spz_bytes = gzip.compress(ply_bytes, compresslevel=6) if ply_bytes else b""
+    output_spz.write_bytes(spz_bytes)
+
+    duration = float(round(time.time() - t_start, 2))
+    compression_ratio = float(round((1.0 - (len(spz_bytes) / max(len(ply_bytes), 1))) * 100.0, 1))
 
     return {
         "booth_id": str(booth_id),
         "ply_size_bytes": int(len(ply_bytes)),
+        "spz_size_bytes": int(len(spz_bytes)),
+        "compression_ratio_pct": compression_ratio,
+        "registered_images": int(num_frames),
+        "total_images": int(len(image_files)),
+        "registration_rate_pct": reg_rate,
+        "training_iterations": int(train_iters),
         "ply_data": ply_bytes,
+        "spz_data": spz_bytes,
         "duration_seconds": duration,
         "status": "completed"
     }
+

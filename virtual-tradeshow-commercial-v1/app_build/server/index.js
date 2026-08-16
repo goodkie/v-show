@@ -148,7 +148,7 @@ const upload = multer({
   limits: { fileSize: 25 * 1024 * 1024 }
 });
 
-// Capture Validator Helper
+// Capture Validator Helper (Phase 7 Production Pilot — 50 to 100 Photos Support)
 function validateBoothCapture(photos = []) {
   const count = photos.length;
   const warnings = [];
@@ -159,41 +159,57 @@ function validateBoothCapture(photos = []) {
       validCount: 0,
       warnings: ['No photos uploaded yet.'],
       canReconstruct: false,
-      recommendedAction: 'Upload at least 3-20 photos for trial testing (30-100 recommended for production SfM).'
+      recommendedAction: 'Upload 50-100 high-resolution photos with 60-80% overlap for production 3D reconstruction.'
     };
   }
 
   if (count < 3) {
-    warnings.push(`Only ${count} photo(s) found. Minimum 3 required for basic photogrammetry.`);
+    warnings.push(`Only ${count} photo(s) found. Minimum 3 required for basic trial photogrammetry.`);
     return {
       quality: 'poor',
       validCount: count,
       warnings,
       canReconstruct: false,
-      recommendedAction: 'Upload at least 3 photos to enable precision 3D reconstruction.'
+      recommendedAction: 'Upload at least 3-10 photos for basic preview, or 50-100 for production Gaussian Splatting.'
     };
   }
 
-  if (count >= 3 && count < 10) {
-    warnings.push(`Current dataset has ${count} photos. This satisfies minimal trial requirements but sparse point cloud density may be low.`);
+  if (count >= 3 && count < 15) {
+    warnings.push(`Current dataset has ${count} photos. This satisfies minimal trial requirements, but production quality requires 50-100 photos.`);
     return {
       quality: 'acceptable',
       validCount: count,
       warnings,
       canReconstruct: true,
-      recommendedAction: 'Ready for preview reconstruction. Adding 10-30 more photos from different angles will improve 3D quality.'
+      qualityScore: 65,
+      recommendedAction: 'Ready for trial reconstruction. Adding 30-80 more photos will significantly enhance 3D detail and reduce splat floaters.'
     };
   }
 
-  // count >= 10
+  if (count >= 15 && count < 50) {
+    return {
+      quality: 'good',
+      validCount: count,
+      warnings: [],
+      canReconstruct: true,
+      qualityScore: 85,
+      recommendedAction: 'Good dataset coverage. Adding 20-50 more multi-angle closeups recommended for ultra-fine product textures.'
+    };
+  }
+
+  // count >= 50 (Phase 7 Production Target: 50~100 photos)
   return {
-    quality: 'good',
+    quality: 'excellent',
     validCount: count,
     warnings: [],
     canReconstruct: true,
-    recommendedAction: 'Excellent dataset size for precision COLMAP SfM & Gaussian Splatting.'
+    qualityScore: 98,
+    isProductionReady: true,
+    estimatedSplatPoints: count * 1500,
+    recommendedAction: 'Production-grade dataset detected (50+ photos). Optimized for high-density COLMAP SfM & Splatfacto SPZ optimization.'
   };
 }
+
 
 // Middleware Setup
 if (ALLOWED_ORIGIN) {
