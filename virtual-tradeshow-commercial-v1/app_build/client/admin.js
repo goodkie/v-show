@@ -1,11 +1,20 @@
 /* ============================================================
    Virtual Trade Show Commercial V1 — Exhibitor Admin Console
+   Phase 2 Hardened with Visual 3D Hotspot Editor
 ============================================================ */
 
 let currentBoothId = 'booth-demo-01';
 let currentBooth = null;
 let products = [];
 let hotspots = [];
+let selectedHotspotId = null;
+let isPlacementMode = false;
+let isRepositionMode = false;
+
+// 3D Editor Scene Variables
+let editorEngine = null;
+let editorRaycastSurfaces = [];
+let editorHotspotObjects = [];
 
 // Initialize Admin
 document.addEventListener('DOMContentLoaded', () => {
@@ -14,9 +23,25 @@ document.addEventListener('DOMContentLoaded', () => {
   setupModals();
   setupBoothHandlers();
   setupProductCRUD();
-  setupHotspotCRUD();
   setupPhotoUpload();
+  setupVisualHotspotEditor();
 });
+
+// Helper for authenticated API calls
+async function authFetch(url, options = {}) {
+  const token = localStorage.getItem('vts_admin_token');
+  const headers = {
+    ...options.headers,
+    'Authorization': `Bearer ${token}`
+  };
+  const res = await fetch(url, { ...options, headers });
+  if (res.status === 401) {
+    localStorage.removeItem('vts_admin_token');
+    document.getElementById('login-modal').classList.add('active');
+    throw new Error('Authentication expired. Please login again.');
+  }
+  return res;
+}
 
 // 1. Auth & Session
 function setupAuth() {
@@ -43,10 +68,10 @@ function setupAuth() {
       if (res.ok && data.token) {
         localStorage.setItem('vts_admin_token', data.token);
         loginModal.classList.remove('active');
-        showToast('관리자 로그인에 성공하였습니다.');
+        showToast('관리자 로그인 성공');
         loadAllDashboardData();
       } else {
-        showToast(data.error || '로그인에 실패했습니다.');
+        showToast(data.error || '로그인 실패: 자격 증명을 확인하세요.');
       }
     } catch (err) {
       showToast('서버 연결 실패');
@@ -71,6 +96,10 @@ function setupTabs() {
       document.querySelectorAll('.tab-pane').forEach(p => {
         p.style.display = (p.id === targetId) ? 'block' : 'none';
       });
+
+      if (tab.dataset.tab === 'hotspot-editor') {
+        initEditor3D();
+      }
     });
   });
 }
@@ -85,7 +114,7 @@ async function loadAllDashboardData() {
 
 async function loadBooth() {
   try {
-    const res = await fetch(`/api/booths/${currentBoothId}`);
+    const res = await authFetch(`/api/booths/${currentBoothId}`);
     if (!res.ok) throw new Error('Booth not found');
     currentBooth = await res.json();
 
@@ -93,7 +122,6 @@ async function loadBooth() {
     document.getElementById('current-booth-status-desc').textContent = 
       `상태: ${currentBooth.status.toUpperCase()} | 생성일: ${new Date(currentBooth.createdAt).toLocaleDateString()}`;
     
-    // Status text & buttons
     document.getElementById('recon-status-text').textContent = 
       currentBooth.reconstructionStatus === 'reconstructed' ? '3D Precision Reconstructed' : 'Photo Preview Mode';
 
@@ -106,14 +134,10 @@ async function loadBooth() {
       btnPublish.className = 'btn btn-primary btn-sm';
     }
 
-    // Public Viewer link
     document.getElementById('btn-preview-public').href = `index.html?boothId=${currentBooth.id}`;
-
-    // Edit form inputs
     document.getElementById('edit-booth-name').value = currentBooth.name || '';
     document.getElementById('edit-booth-desc').value = currentBooth.description || '';
 
-    // Render photo gallery
     renderPhotoGallery(currentBooth.photos || []);
 
   } catch (err) {
@@ -135,13 +159,12 @@ function renderPhotoGallery(photos) {
 
 // 4. Booth Handlers
 function setupBoothHandlers() {
-  // Save booth basic info
   document.getElementById('btn-save-booth-info').addEventListener('click', async () => {
     const name = document.getElementById('edit-booth-name').value;
     const desc = document.getElementById('edit-booth-desc').value;
 
     try {
-      const res = await fetch(`/api/booths/${currentBoothId}`, {
+      const res = await authFetch(`/api/booths/${currentBoothId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, description: desc })
@@ -155,17 +178,16 @@ function setupBoothHandlers() {
     }
   });
 
-  // Toggle publish
   document.getElementById('btn-toggle-publish').addEventListener('click', async () => {
     const nextStatus = (currentBooth.status === 'published') ? 'draft' : 'published';
     try {
-      const res = await fetch(`/api/booths/${currentBoothId}`, {
+      const res = await authFetch(`/api/booths/${currentBoothId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: nextStatus })
       });
       if (res.ok) {
-        showToast(`부스 상태가 ${nextStatus} 로 변경되었습니다.`);
+        showToast(`부스 상태가 ${nextStatus.toUpperCase()} 로 변경되었습니다.`);
         loadBooth();
       }
     } catch (e) {
@@ -173,10 +195,9 @@ function setupBoothHandlers() {
     }
   });
 
-  // Request Precision Reconstruction
   document.getElementById('btn-req-recon').addEventListener('click', async () => {
     try {
-      const res = await fetch(`/api/booths/${currentBoothId}/reconstruction`, { method: 'POST' });
+      const res = await authFetch(`/api/booths/${currentBoothId}/reconstruction`, { method: 'POST' });
       const data = await res.json();
       if (res.ok) {
         showToast('정밀 3D 재구성 작업이 대기열에 등록되었습니다.');
@@ -230,13 +251,13 @@ async function uploadPhotos(files) {
   showToast(`${files.length}장의 사진 업로드 중...`);
 
   try {
-    const res = await fetch(`/api/booths/${currentBoothId}/photos`, {
+    const res = await authFetch(`/api/booths/${currentBoothId}/photos`, {
       method: 'POST',
       body: formData
     });
     const data = await res.json();
     if (res.ok) {
-      showToast(`업로드 완료! Photo Preview가 생성되었습니다.`);
+      showToast(`업로드 완료! Photo Preview가 갱신되었습니다.`);
       loadBooth();
     } else {
       showToast(data.error || '사진 업로드 실패');
@@ -249,7 +270,7 @@ async function uploadPhotos(files) {
 // 6. Products CRUD
 async function loadProducts() {
   try {
-    const res = await fetch(`/api/booths/${currentBoothId}/products`);
+    const res = await authFetch(`/api/booths/${currentBoothId}/products`);
     products = await res.json();
 
     const tbody = document.getElementById('products-table-body');
@@ -271,8 +292,8 @@ async function loadProducts() {
       tbody.appendChild(row);
     });
 
-    // Also update hotspot product select dropdown
-    const select = document.getElementById('hs-product-select');
+    // Update product select in 3D Editor toolbar
+    const select = document.getElementById('editor-product-select');
     select.innerHTML = '';
     products.forEach(p => {
       const opt = document.createElement('option');
@@ -309,13 +330,13 @@ function setupProductCRUD() {
     };
 
     try {
-      const res = await fetch('/api/products', {
+      const res = await authFetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       if (res.ok) {
-        showToast('신규 제품이 성공적으로 등록되었습니다.');
+        showToast('신규 제품이 등록되었습니다.');
         document.getElementById('modal-add-product').classList.remove('active');
         loadProducts();
       }
@@ -326,9 +347,9 @@ function setupProductCRUD() {
 }
 
 window.deleteProduct = async function(productId) {
-  if (!confirm('이 제품을 삭제하시겠습니까? 연결된 핫스팟도 함께 제거됩니다.')) return;
+  if (!confirm('이 제품을 삭제하시겠습니까? 연결된 3D 핫스팟도 함께 제거됩니다.')) return;
   try {
-    const res = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
+    const res = await authFetch(`/api/products/${productId}`, { method: 'DELETE' });
     if (res.ok) {
       showToast('제품이 삭제되었습니다.');
       loadProducts();
@@ -339,94 +360,294 @@ window.deleteProduct = async function(productId) {
   }
 };
 
-// 7. Hotspots CRUD
+// 7. Visual 3D Hotspot Editor (Part C)
+function setupVisualHotspotEditor() {
+  const btnStartPlacement = document.getElementById('btn-start-placement');
+  const btnReposition = document.getElementById('btn-reposition-hotspot');
+  const btnDelete = document.getElementById('btn-delete-selected-hotspot');
+  const btnResetCam = document.getElementById('btn-editor-reset-cam');
+
+  btnStartPlacement.addEventListener('click', () => {
+    if (products.length === 0) {
+      showToast('먼저 제품을 1개 이상 등록해 주세요.');
+      return;
+    }
+    isPlacementMode = true;
+    isRepositionMode = false;
+    document.getElementById('editor-viewport-container').classList.add('placement-mode');
+    document.getElementById('editor-status-text').textContent = '🎯 3D 부스 표면을 클릭하여 선택한 제품의 핫스팟을 배치하세요.';
+    btnStartPlacement.classList.replace('btn-primary', 'btn-accent');
+  });
+
+  btnReposition.addEventListener('click', () => {
+    if (!selectedHotspotId) return;
+    isRepositionMode = true;
+    isPlacementMode = false;
+    document.getElementById('editor-viewport-container').classList.add('placement-mode');
+    document.getElementById('editor-status-text').textContent = '🔄 새 위치로 지정할 부스 표면을 클릭하세요.';
+  });
+
+  btnDelete.addEventListener('click', async () => {
+    if (!selectedHotspotId) return;
+    if (!confirm('선택한 핫스팟을 삭제하시겠습니까?')) return;
+    try {
+      const res = await authFetch(`/api/hotspots/${selectedHotspotId}`, { method: 'DELETE' });
+      if (res.ok) {
+        showToast('핫스팟이 삭제되었습니다.');
+        selectedHotspotId = null;
+        updateSelectedUI();
+        loadHotspots();
+      }
+    } catch (e) {
+      showToast('삭제 실패');
+    }
+  });
+
+  btnResetCam.addEventListener('click', () => {
+    if (editorEngine && editorEngine.camera && editorEngine.controls) {
+      editorEngine.camera.position.set(0, 2.2, 7.5);
+      editorEngine.controls.target.set(0, 1.2, -1);
+      editorEngine.controls.update();
+    }
+  });
+}
+
+function initEditor3D() {
+  const container = document.getElementById('editor-3d-canvas');
+  if (editorEngine) return; // Already initialized
+
+  editorEngine = BoothEngine.initScene(container);
+  editorRaycastSurfaces = BoothEngine.buildBooth(editorEngine.scene, currentBooth);
+
+  // Click handler for 3D Viewport Raycasting
+  const viewportCard = document.getElementById('editor-viewport-container');
+  viewportCard.addEventListener('click', handleEditor3DClick);
+
+  // Animation Loop
+  function animateEditor() {
+    requestAnimationFrame(animateEditor);
+    if (editorEngine) {
+      editorEngine.controls.update();
+      editorEngine.renderer.render(editorEngine.scene, editorEngine.camera);
+      updateEditorHotspotsScreenPosition();
+    }
+  }
+  animateEditor();
+
+  renderEditorHotspots();
+}
+
+async function handleEditor3DClick(event) {
+  if (!isPlacementMode && !isRepositionMode) return;
+
+  const hit = BoothEngine.raycastBooth(
+    event,
+    editorEngine.camera,
+    editorRaycastSurfaces,
+    document.getElementById('editor-viewport-container')
+  );
+
+  if (!hit) {
+    return; // Clicked background or overlay
+  }
+
+  const { point } = hit;
+
+  if (isPlacementMode) {
+    const selectedProdId = document.getElementById('editor-product-select').value;
+    const selectedProd = products.find(p => p.id === selectedProdId);
+
+    const payload = {
+      boothId: currentBoothId,
+      productId: selectedProdId,
+      label: selectedProd ? selectedProd.name : 'Product Pin',
+      position: {
+        x: point.x,
+        y: point.y + 0.15, // slight offset from surface
+        z: point.z
+      }
+    };
+
+    try {
+      const res = await authFetch('/api/hotspots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const newHs = await res.json();
+      if (res.ok) {
+        showToast('3D 핫스팟이 성공적으로 배치되었습니다.');
+        isPlacementMode = false;
+        document.getElementById('editor-viewport-container').classList.remove('placement-mode');
+        document.getElementById('btn-start-placement').classList.replace('btn-accent', 'btn-primary');
+        document.getElementById('editor-status-text').textContent = '✅ 핫스팟이 생성되었습니다.';
+        selectedHotspotId = newHs.id;
+        loadHotspots();
+      } else {
+        showToast(newHs.error || '핫스팟 배치 실패');
+      }
+    } catch (e) {
+      showToast('배치 통신 오류');
+    }
+  } else if (isRepositionMode) {
+    const payload = {
+      position: {
+        x: point.x,
+        y: point.y + 0.15,
+        z: point.z
+      }
+    };
+
+    try {
+      const res = await authFetch(`/api/hotspots/${selectedHotspotId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        showToast('핫스팟 위치가 새로 갱신되었습니다.');
+        isRepositionMode = false;
+        document.getElementById('editor-viewport-container').classList.remove('placement-mode');
+        document.getElementById('editor-status-text').textContent = '✅ 위치 갱신 완료.';
+        loadHotspots();
+      }
+    } catch (e) {
+      showToast('재배치 통신 오류');
+    }
+  }
+}
+
 async function loadHotspots() {
   try {
-    const res = await fetch(`/api/booths/${currentBoothId}/hotspots`);
+    const res = await authFetch(`/api/booths/${currentBoothId}/hotspots`);
     hotspots = await res.json();
 
-    const tbody = document.getElementById('hotspots-table-body');
+    // Table render
+    const tbody = document.getElementById('editor-hotspots-table-body');
     tbody.innerHTML = '';
 
     hotspots.forEach(h => {
-      const linkedProd = products.find(p => p.id === h.productId);
-      const prodName = linkedProd ? linkedProd.name : h.productId;
-      const row = document.createElement('tr');
-      row.innerHTML = `
+      const prod = products.find(p => p.id === h.productId);
+      const prodSku = prod ? prod.sku : h.productId;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
         <td><strong>${h.label || 'Hotspot'}</strong></td>
-        <td>${prodName}</td>
-        <td><code>[${h.position.x}, ${h.position.y}, ${h.position.z}]</code></td>
-        <td><span class="badge badge-preview">${h.type}</span></td>
+        <td><code>${prodSku}</code></td>
+        <td><code>[${h.position.x.toFixed(2)}, ${h.position.y.toFixed(2)}, ${h.position.z.toFixed(2)}]</code></td>
+        <td>${new Date(h.updatedAt || h.createdAt).toLocaleString()}</td>
         <td>
-          <button class="btn btn-secondary btn-sm" onclick="deleteHotspot('${h.id}')">삭제</button>
+          <button class="btn btn-secondary btn-sm" onclick="selectHotspot('${h.id}')">선택</button>
         </td>
       `;
-      tbody.appendChild(row);
+      tbody.appendChild(tr);
     });
+
+    renderEditorHotspots();
+    updateSelectedUI();
 
   } catch (e) {
     console.error(e);
   }
 }
 
-function setupHotspotCRUD() {
-  document.getElementById('btn-open-add-hotspot').addEventListener('click', () => {
-    document.getElementById('modal-add-hotspot').classList.add('active');
+function renderEditorHotspots() {
+  if (!editorEngine) return;
+
+  const overlay = document.getElementById('editor-hotspots-overlay');
+  overlay.innerHTML = '';
+
+  // Remove old anchor objects
+  editorHotspotObjects.forEach(item => {
+    editorEngine.scene.remove(item.anchor);
   });
 
-  document.getElementById('form-hotspot-crud').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const payload = {
-      boothId: currentBoothId,
-      productId: document.getElementById('hs-product-select').value,
-      label: document.getElementById('hs-label').value,
-      position: {
-        x: Number(document.getElementById('hs-pos-x').value) || 0,
-        y: Number(document.getElementById('hs-pos-y').value) || 0,
-        z: Number(document.getElementById('hs-pos-z').value) || 0
-      }
-    };
+  editorHotspotObjects = hotspots.map(hs => {
+    const anchor = new THREE.Object3D();
+    anchor.position.set(hs.position.x, hs.position.y, hs.position.z);
+    editorEngine.scene.add(anchor);
 
-    try {
-      const res = await fetch('/api/hotspots', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) {
-        showToast('3D 핫스팟이 성공적으로 등록되었습니다.');
-        document.getElementById('modal-add-hotspot').classList.remove('active');
-        loadHotspots();
-      }
-    } catch (e) {
-      showToast('핫스팟 등록 실패');
-    }
+    const pin = document.createElement('div');
+    pin.className = `hotspot-marker admin-marker ${selectedHotspotId === hs.id ? 'selected' : ''}`;
+    pin.innerHTML = `<span>📍</span>`;
+    pin.title = hs.label;
+
+    pin.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectHotspot(hs.id);
+    });
+
+    overlay.appendChild(pin);
+
+    return {
+      data: hs,
+      anchor,
+      element: pin
+    };
   });
 }
 
-window.deleteHotspot = async function(hotspotId) {
-  if (!confirm('이 핫스팟을 삭제하시겠습니까?')) return;
-  try {
-    const res = await fetch(`/api/hotspots/${hotspotId}`, { method: 'DELETE' });
-    if (res.ok) {
-      showToast('핫스팟이 삭제되었습니다.');
-      loadHotspots();
+function updateEditorHotspotsScreenPosition() {
+  if (!editorEngine || !editorEngine.camera) return;
+
+  const container = document.getElementById('editor-viewport-container');
+  const widthHalf = container.clientWidth / 2;
+  const heightHalf = container.clientHeight / 2;
+  const tempV = new THREE.Vector3();
+
+  editorHotspotObjects.forEach(item => {
+    item.anchor.getWorldPosition(tempV);
+    const behindCamera = tempV.clone().project(editorEngine.camera).z > 1;
+    if (behindCamera) {
+      item.element.style.display = 'none';
+      return;
     }
-  } catch (e) {
-    showToast('삭제 실패');
-  }
+
+    tempV.project(editorEngine.camera);
+    const x = (tempV.x * widthHalf) + widthHalf;
+    const y = -(tempV.y * heightHalf) + heightHalf;
+
+    item.element.style.display = 'flex';
+    item.element.style.left = `${x}px`;
+    item.element.style.top = `${y}px`;
+  });
+}
+
+window.selectHotspot = function(id) {
+  selectedHotspotId = id;
+  updateSelectedUI();
+  renderEditorHotspots();
 };
 
-// 8. Analytics & Leads
+function updateSelectedUI() {
+  const btnReposition = document.getElementById('btn-reposition-hotspot');
+  const btnDelete = document.getElementById('btn-delete-selected-hotspot');
+  const selectedInfo = document.getElementById('editor-selected-info');
+
+  if (selectedHotspotId) {
+    const hs = hotspots.find(h => h.id === selectedHotspotId);
+    btnReposition.disabled = false;
+    btnDelete.disabled = false;
+    selectedInfo.textContent = hs ? `[선택됨: ${hs.label || hs.id}]` : '';
+  } else {
+    btnReposition.disabled = true;
+    btnDelete.disabled = true;
+    selectedInfo.textContent = '';
+  }
+}
+
+// 8. Analytics & Leads (Real Events Calculation)
 async function loadAnalytics() {
   try {
-    const res = await fetch(`/api/booths/${currentBoothId}/analytics`);
+    const res = await authFetch(`/api/booths/${currentBoothId}/analytics`);
     const data = await res.json();
 
     document.getElementById('stat-views').textContent = data.boothViews || 0;
-    document.getElementById('stat-clicks').textContent = data.productClicks || 0;
+    document.getElementById('stat-clicks').textContent = data.productViews || 0;
+    document.getElementById('stat-hs-clicks').textContent = data.hotspotClicks || 0;
     document.getElementById('stat-leads').textContent = data.leadsCount || 0;
     document.getElementById('stat-rfqs').textContent = data.rfqsCount || 0;
+    document.getElementById('stat-samples').textContent = data.samplesCount || 0;
+    document.getElementById('stat-apts').textContent = data.appointmentsCount || 0;
 
     // Render Leads Table
     const leadsTbody = document.getElementById('leads-table-body');

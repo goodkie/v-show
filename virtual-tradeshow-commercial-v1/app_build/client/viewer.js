@@ -1,14 +1,16 @@
 /* ============================================================
    Virtual Trade Show Commercial V1 — 3D Viewer Engine
-   Three.js Space Rendering & Hotspot Interaction
+   Three.js Space Rendering & Real Event Tracking (Phase 2)
 ============================================================ */
 
-let scene, camera, renderer, controls;
+let viewerEngine = null;
+let raycastSurfaces = [];
 let currentBooth = null;
 let products = [];
 let hotspots = [];
 let hotspotObjects = [];
 let ws = null;
+let currentSessionId = `sess-${Math.random().toString(36).substring(2, 9)}`;
 
 // DOM Elements
 const viewport = document.getElementById('viewport-3d');
@@ -23,97 +25,79 @@ async function initViewer() {
   const urlParams = new URLSearchParams(window.location.search);
   const boothId = urlParams.get('boothId') || 'booth-demo-01';
 
-  setupThreeJS();
   setupEventListeners();
-  await loadBoothData(boothId);
-  setupWebSocket(boothId);
-  animate();
+  const success = await loadBoothData(boothId);
+  if (success) {
+    setupWebSocket(boothId);
+    // Track Real booth_view Event
+    trackEvent('booth_view', { source: 'web_client' });
+  }
 }
 
-// 1. Three.js Scene Setup
-function setupThreeJS() {
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0b0f17);
-  scene.fog = new THREE.FogExp2(0x0b0f17, 0.035);
-
-  const aspect = viewport.clientWidth / viewport.clientHeight;
-  camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
-  camera.position.set(0, 2.2, 7.5);
-
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-  renderer.setSize(viewport.clientWidth, viewport.clientHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  viewport.appendChild(renderer.domElement);
-
-  // OrbitControls
-  controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.05;
-  controls.maxPolarAngle = Math.PI / 2 + 0.05; // Do not go below floor
-  controls.minDistance = 2;
-  controls.maxDistance = 15;
-  controls.target.set(0, 1.2, -1);
-
-  // Lighting
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
-  scene.add(ambientLight);
-
-  const dirLight = new THREE.DirectionalLight(0xe0f2fe, 1.2);
-  dirLight.position.set(5, 12, 8);
-  dirLight.castShadow = true;
-  scene.add(dirLight);
-
-  const accentLight = new THREE.PointLight(0x06b6d4, 2.5, 15);
-  accentLight.position.set(0, 4, -2);
-  scene.add(accentLight);
-
-  // Resize handler
-  window.addEventListener('resize', onWindowResize);
+// 1. Event Tracking Helper
+async function trackEvent(type, metadata = {}, productId = null) {
+  if (!currentBooth) return;
+  try {
+    await fetch('/api/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        boothId: currentBooth.id,
+        productId,
+        sessionId: currentSessionId,
+        type,
+        metadata
+      })
+    });
+  } catch (err) {
+    console.warn('Event tracking failed:', err);
+  }
 }
 
-function onWindowResize() {
-  if (!camera || !renderer) return;
-  camera.aspect = viewport.clientWidth / viewport.clientHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(viewport.clientWidth, viewport.clientHeight);
-}
-
-// 2. Load Booth & Build 3D Photo Preview Environment
+// 2. Load Booth & Build 3D Environment using Shared BoothEngine
 async function loadBoothData(boothId) {
   try {
-    // Fetch booth details
     const boothRes = await fetch(`/api/booths/${boothId}`);
-    if (!boothRes.ok) throw new Error('Failed to load booth data');
+    if (!boothRes.ok) {
+      if (boothRes.status === 404) {
+        hudTitle.textContent = '비공개 또는 존재하지 않는 부스';
+        hudDesc.textContent = '현재 해당 부스는 준비 중(Draft)이거나 발행되지 않았습니다. 관리자에게 문의하세요.';
+      } else {
+        hudTitle.textContent = '부스 로딩 실패';
+        hudDesc.textContent = '부스 데이터를 불러오는 중 오류가 발생했습니다.';
+      }
+      return false;
+    }
     currentBooth = await boothRes.json();
 
-    // Fetch products
     const prodRes = await fetch(`/api/booths/${boothId}/products`);
     products = await prodRes.json();
 
-    // Fetch hotspots
     const hsRes = await fetch(`/api/booths/${boothId}/hotspots`);
     hotspots = await hsRes.json();
 
-    // Update UI HUD
+    // UI Updates
     navBoothName.textContent = currentBooth.name;
     hudTitle.textContent = currentBooth.name;
-    hudDesc.textContent = currentBooth.description || 'Virtual Exhibition Space';
-    
-    // Status Badge
+    hudDesc.textContent = currentBooth.description || '가상 무역 전시관에 오신 것을 환영합니다.';
     updateStatusBadge(currentBooth.reconstructionStatus);
 
-    // Build 3D Booth Environment
-    buildBoothEnvironment(currentBooth);
+    // Initialize Three.js Scene via Shared BoothEngine
+    if (!viewerEngine) {
+      viewerEngine = BoothEngine.initScene(viewport);
+      animate();
+    }
+    raycastSurfaces = BoothEngine.buildBooth(viewerEngine.scene, currentBooth);
 
-    // Render Hotspots
+    // Render Hotspot Pins
     renderHotspots(hotspots);
+    return true;
 
   } catch (error) {
     console.error('Error loading booth data:', error);
-    hudTitle.textContent = '부스 로딩 실패';
-    hudDesc.textContent = '부스 정보를 불러올 수 없습니다. 관리자에서 새 부스를 등록해 주세요.';
+    hudTitle.textContent = '네트워크 오류';
+    hudDesc.textContent = '서버와의 통신이 원활하지 않습니다.';
+    return false;
   }
 }
 
@@ -128,143 +112,30 @@ function updateStatusBadge(status) {
   }
 }
 
-// 3. Build 3D Space (Mode A: Photo Preview Structure)
-function buildBoothEnvironment(booth) {
-  // Clear previous booth meshes if any
-  const toRemove = [];
-  scene.traverse(child => {
-    if (child.isMesh && child.userData.boothStructure) {
-      toRemove.push(child);
-    }
-  });
-  toRemove.forEach(m => scene.remove(m));
-
-  const textureLoader = new THREE.TextureLoader();
-
-  // Floor
-  const floorGeo = new THREE.PlaneGeometry(24, 24);
-  const floorMat = new THREE.MeshStandardMaterial({
-    color: 0x111827,
-    roughness: 0.2,
-    metalness: 0.5
-  });
-  const floor = new THREE.Mesh(floorGeo, floorMat);
-  floor.rotation.x = -Math.PI / 2;
-  floor.position.y = -0.5;
-  floor.receiveShadow = true;
-  floor.userData.boothStructure = true;
-  scene.add(floor);
-
-  // Booth Platform
-  const platformGeo = new THREE.CylinderGeometry(6.5, 6.8, 0.2, 32);
-  const platformMat = new THREE.MeshStandardMaterial({
-    color: 0x1e293b,
-    roughness: 0.4,
-    metalness: 0.3
-  });
-  const platform = new THREE.Mesh(platformGeo, platformMat);
-  platform.position.set(0, -0.4, -1);
-  platform.receiveShadow = true;
-  platform.userData.boothStructure = true;
-  scene.add(platform);
-
-  // Grid Helper on floor
-  const grid = new THREE.GridHelper(24, 24, 0x0284c7, 0x1e293b);
-  grid.position.y = -0.49;
-  grid.userData.boothStructure = true;
-  scene.add(grid);
-
-  // Backwall Main Display Panel (Using 1st uploaded photo if available)
-  const backwallGeo = new THREE.BoxGeometry(10, 4.5, 0.2);
-  let backwallMat;
-  if (booth.photos && booth.photos.length > 0) {
-    const mainPhotoTex = textureLoader.load(booth.photos[0]);
-    backwallMat = [
-      new THREE.MeshStandardMaterial({ color: 0x1e293b }),
-      new THREE.MeshStandardMaterial({ color: 0x1e293b }),
-      new THREE.MeshStandardMaterial({ color: 0x1e293b }),
-      new THREE.MeshStandardMaterial({ color: 0x1e293b }),
-      new THREE.MeshStandardMaterial({ map: mainPhotoTex, roughness: 0.5 }), // Front face
-      new THREE.MeshStandardMaterial({ color: 0x0f172a })
-    ];
-  } else {
-    backwallMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
-  }
-
-  const backwall = new THREE.Mesh(backwallGeo, backwallMat);
-  backwall.position.set(0, 1.85, -5.5);
-  backwall.castShadow = true;
-  backwall.receiveShadow = true;
-  backwall.userData.boothStructure = true;
-  scene.add(backwall);
-
-  // Left & Right Display Wing Panels (Using 2nd/3rd photo)
-  const wingGeo = new THREE.BoxGeometry(4.5, 3.8, 0.15);
-  
-  // Left Wing
-  let leftMat;
-  if (booth.photos && booth.photos.length > 1) {
-    leftMat = new THREE.MeshStandardMaterial({ map: textureLoader.load(booth.photos[1]), roughness: 0.5 });
-  } else {
-    leftMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
-  }
-  const leftWing = new THREE.Mesh(wingGeo, leftMat);
-  leftWing.position.set(-5.2, 1.5, -3.2);
-  leftWing.rotation.y = Math.PI / 4;
-  leftWing.userData.boothStructure = true;
-  scene.add(leftWing);
-
-  // Right Wing
-  let rightMat;
-  if (booth.photos && booth.photos.length > 2) {
-    rightMat = new THREE.MeshStandardMaterial({ map: textureLoader.load(booth.photos[2]), roughness: 0.5 });
-  } else {
-    rightMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
-  }
-  const rightWing = new THREE.Mesh(wingGeo, rightMat);
-  rightWing.position.set(5.2, 1.5, -3.2);
-  rightWing.rotation.y = -Math.PI / 4;
-  rightWing.userData.boothStructure = true;
-  scene.add(rightWing);
-
-  // Product Display Pedestals
-  createPedestal(-2.8, -0.4, -3.5, 0.8, 0.9);
-  createPedestal(2.6, -0.4, -3.2, 0.8, 0.9);
-  createPedestal(0.0, -0.4, -1.8, 1.2, 0.7);
-}
-
-function createPedestal(x, y, z, radius, height) {
-  const geo = new THREE.CylinderGeometry(radius, radius * 1.1, height, 24);
-  const mat = new THREE.MeshStandardMaterial({
-    color: 0x334155,
-    roughness: 0.3,
-    metalness: 0.7
-  });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.position.set(x, y + height / 2, z);
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  mesh.userData.boothStructure = true;
-  scene.add(mesh);
-}
-
-// 4. Hotspots 3D to 2D Screen Projection
+// 3. Hotspots 3D-to-2D Screen Projection
 function renderHotspots(list) {
+  if (!viewerEngine) return;
+
+  // Clean old objects
+  hotspotObjects.forEach(item => {
+    viewerEngine.scene.remove(item.anchor);
+  });
+  overlay.innerHTML = '';
+
   hotspotObjects = list.map(hs => {
-    // 3D Anchor Object in Three.js
     const anchor = new THREE.Object3D();
     anchor.position.set(hs.position.x, hs.position.y, hs.position.z);
-    scene.add(anchor);
+    viewerEngine.scene.add(anchor);
 
-    // DOM Marker Pin
     const pin = document.createElement('div');
     pin.className = 'hotspot-marker';
     pin.setAttribute('data-hotspot-id', hs.id);
     pin.innerHTML = `<span>+</span><div class="hotspot-pulse"></div>`;
-    pin.title = hs.label || 'View Product';
+    pin.title = hs.label || '제품 상세 보기';
 
     pin.addEventListener('click', (e) => {
       e.stopPropagation();
+      trackEvent('hotspot_click', { hotspotId: hs.id }, hs.productId);
       openProductModal(hs.productId);
     });
 
@@ -279,7 +150,7 @@ function renderHotspots(list) {
 }
 
 function updateHotspotsScreenPosition() {
-  if (!camera) return;
+  if (!viewerEngine || !viewerEngine.camera) return;
 
   const tempV = new THREE.Vector3();
   const widthHalf = viewport.clientWidth / 2;
@@ -287,15 +158,13 @@ function updateHotspotsScreenPosition() {
 
   hotspotObjects.forEach(item => {
     item.anchor.getWorldPosition(tempV);
-    
-    // Check if behind camera
-    const behindCamera = tempV.clone().project(camera).z > 1;
+    const behindCamera = tempV.clone().project(viewerEngine.camera).z > 1;
     if (behindCamera) {
       item.element.style.display = 'none';
       return;
     }
 
-    tempV.project(camera);
+    tempV.project(viewerEngine.camera);
     const x = (tempV.x * widthHalf) + widthHalf;
     const y = -(tempV.y * heightHalf) + heightHalf;
 
@@ -305,9 +174,8 @@ function updateHotspotsScreenPosition() {
   });
 }
 
-// 5. Modals & Engagement Handlers
+// 4. Modals & Engagement Handlers
 function setupEventListeners() {
-  // Modal close handlers
   document.querySelectorAll('[data-close-modal]').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('active'));
@@ -316,9 +184,11 @@ function setupEventListeners() {
 
   // Reset View
   document.getElementById('btn-reset-view').addEventListener('click', () => {
-    camera.position.set(0, 2.2, 7.5);
-    controls.target.set(0, 1.2, -1);
-    controls.update();
+    if (viewerEngine && viewerEngine.camera && viewerEngine.controls) {
+      viewerEngine.camera.position.set(0, 2.2, 7.5);
+      viewerEngine.controls.target.set(0, 1.2, -1);
+      viewerEngine.controls.update();
+    }
   });
 
   // Open Catalog
@@ -336,6 +206,7 @@ function setupEventListeners() {
 
   // Live Showhost
   document.getElementById('btn-live-showhost').addEventListener('click', () => {
+    trackEvent('consultation_start', { mode: 'webrtc_p2p' });
     document.getElementById('modal-showhost').classList.add('active');
   });
 
@@ -350,7 +221,6 @@ function setupEventListeners() {
     openSampleModal(prodId);
   });
 
-  // Form Submissions
   setupForms();
 }
 
@@ -360,6 +230,9 @@ function openProductModal(productId) {
     showToast('제품 정보를 찾을 수 없습니다.');
     return;
   }
+
+  // Track product_view event
+  trackEvent('product_view', { sku: prod.sku }, prod.id);
 
   const modal = document.getElementById('modal-product');
   modal.dataset.currentProdId = prod.id;
@@ -379,7 +252,6 @@ function openProductModal(productId) {
     imgEl.style.display = 'block';
   }
 
-  // Specifications
   const specsTbody = document.getElementById('modal-prod-specs').querySelector('tbody');
   specsTbody.innerHTML = '';
   if (prod.specifications && Object.keys(prod.specifications).length > 0) {
@@ -466,10 +338,13 @@ function setupForms() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      const data = await res.json();
       if (res.ok) {
         showToast('디지털 명함이 성공적으로 전달되었습니다!');
         document.getElementById('modal-lead').classList.remove('active');
         document.getElementById('form-lead').reset();
+      } else {
+        showToast(data.error || '전송 실패');
       }
     } catch (err) {
       showToast('전송 실패: 네트워크 상태를 확인하세요.');
@@ -496,10 +371,13 @@ function setupForms() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      const data = await res.json();
       if (res.ok) {
-        showToast('견적 요청(RFQ)이 정상적으로 접수되었습니다.');
+        showToast('견적 요청(RFQ)이 정상 접수되었습니다.');
         document.getElementById('modal-rfq').classList.remove('active');
         document.getElementById('form-rfq').reset();
+      } else {
+        showToast(data.error || 'RFQ 전송 실패');
       }
     } catch (err) {
       showToast('RFQ 전송 실패');
@@ -525,10 +403,13 @@ function setupForms() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      const data = await res.json();
       if (res.ok) {
         showToast('샘플 신청서가 등록되었습니다.');
         document.getElementById('modal-sample').classList.remove('active');
         document.getElementById('form-sample').reset();
+      } else {
+        showToast(data.error || '샘플 신청 실패');
       }
     } catch (err) {
       showToast('샘플 신청 실패');
@@ -553,10 +434,13 @@ function setupForms() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      const data = await res.json();
       if (res.ok) {
         showToast('상담 일정이 성공적으로 예약되었습니다.');
         document.getElementById('modal-appointment').classList.remove('active');
         document.getElementById('form-appointment').reset();
+      } else {
+        showToast(data.error || '상담 예약 실패');
       }
     } catch (err) {
       showToast('상담 예약 실패');
@@ -564,7 +448,7 @@ function setupForms() {
   });
 }
 
-// 6. WebSocket Signaling
+// 5. WebSocket Signaling
 function setupWebSocket(boothId) {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(`${protocol}//${window.location.host}`);
@@ -590,7 +474,6 @@ function setupWebSocket(boothId) {
   };
 }
 
-// Toast Helper
 function showToast(message) {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div');
@@ -603,15 +486,14 @@ function showToast(message) {
   }, 3500);
 }
 
-// 7. Animation Loop
+// 6. Animation Loop
 function animate() {
   requestAnimationFrame(animate);
-  if (controls) controls.update();
-  if (renderer && scene && camera) {
-    renderer.render(scene, camera);
+  if (viewerEngine && viewerEngine.controls) {
+    viewerEngine.controls.update();
+    viewerEngine.renderer.render(viewerEngine.scene, viewerEngine.camera);
     updateHotspotsScreenPosition();
   }
 }
 
-// Run on page load
 window.addEventListener('DOMContentLoaded', initViewer);

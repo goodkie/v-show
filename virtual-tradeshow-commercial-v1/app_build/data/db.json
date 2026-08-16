@@ -40,6 +40,22 @@
       },
       "createdAt": "2026-08-16T08:20:59.131Z",
       "updatedAt": "2026-08-16T08:20:59.181Z"
+    },
+    {
+      "id": "booth-693ae4dd",
+      "exhibitorId": "user-admin-1",
+      "name": "Secret Stealth Booth 2026",
+      "description": "",
+      "themeColor": "#0284c7",
+      "status": "published",
+      "reconstructionStatus": "photo_preview",
+      "photos": [],
+      "spatialModel": {
+        "type": "photo_preview",
+        "environmentLayout": "hexagon_booth"
+      },
+      "createdAt": "2026-08-16T08:33:00.502Z",
+      "updatedAt": "2026-08-16T08:33:00.539Z"
     }
   ],
   "products": [
@@ -151,6 +167,23 @@
       "sampleAvailable": true,
       "createdAt": "2026-08-16T08:20:59.167Z",
       "updatedAt": "2026-08-16T08:20:59.167Z"
+    },
+    {
+      "id": "prod-516dd52b",
+      "boothId": "booth-693ae4dd",
+      "name": "LiDAR Telemetry Module",
+      "sku": "LTM-100",
+      "category": "Sensors",
+      "moq": 3,
+      "price": 4500,
+      "contactForPrice": false,
+      "currency": "USD",
+      "description": "Solid-state LiDAR module for industrial AGV automation.",
+      "images": [],
+      "specifications": {},
+      "sampleAvailable": true,
+      "createdAt": "2026-08-16T08:33:00.581Z",
+      "updatedAt": "2026-08-16T08:33:00.581Z"
     }
   ],
   "hotspots": [
@@ -165,7 +198,8 @@
       },
       "label": "Cobot Arm X9",
       "type": "product",
-      "createdAt": "2026-08-16T08:16:47.851Z"
+      "createdAt": "2026-08-16T08:16:47.851Z",
+      "updatedAt": "2026-08-16T08:16:47.851Z"
     },
     {
       "id": "hs-02",
@@ -178,7 +212,8 @@
       },
       "label": "LiDAR Scanner",
       "type": "product",
-      "createdAt": "2026-08-16T08:16:47.851Z"
+      "createdAt": "2026-08-16T08:16:47.851Z",
+      "updatedAt": "2026-08-16T08:16:47.851Z"
     },
     {
       "id": "hs-03",
@@ -191,7 +226,8 @@
       },
       "label": "Edge Control Hub",
       "type": "product",
-      "createdAt": "2026-08-16T08:16:47.851Z"
+      "createdAt": "2026-08-16T08:16:47.851Z",
+      "updatedAt": "2026-08-16T08:16:47.851Z"
     },
     {
       "id": "hs-755128ca",
@@ -204,7 +240,22 @@
       },
       "label": "Vision Sensor Pin",
       "type": "product",
-      "createdAt": "2026-08-16T08:16:58.235Z"
+      "createdAt": "2026-08-16T08:16:58.235Z",
+      "updatedAt": "2026-08-16T08:16:58.235Z"
+    },
+    {
+      "id": "hs-3e56423a",
+      "boothId": "booth-693ae4dd",
+      "productId": "prod-516dd52b",
+      "position": {
+        "x": 2.8,
+        "y": 0.4,
+        "z": -3
+      },
+      "label": "LiDAR Visual Pin",
+      "type": "product",
+      "createdAt": "2026-08-16T08:33:00.605Z",
+      "updatedAt": "2026-08-16T08:33:00.627Z"
     }
   ],
   "leads": [
@@ -217,6 +268,17 @@
       "phone": "+82-10-1234-5678",
       "jobTitle": "Procurement Director",
       "createdAt": "2026-08-16T08:16:58.249Z"
+    },
+    {
+      "id": "lead-7a96d6f9",
+      "boothId": "booth-693ae4dd",
+      "productId": "prod-516dd52b",
+      "company": "Acme Robotics Germany",
+      "name": "Hans Schmidt",
+      "email": "hans@acme-robotics.de",
+      "phone": "+49-170-1234567",
+      "jobTitle": "VP Procurement",
+      "createdAt": "2026-08-16T08:33:00.683Z"
     }
   ],
   "rfqs": [
@@ -231,8 +293,106 @@
       "quantity": 50,
       "targetPrice": 1350,
       "createdAt": "2026-08-16T08:16:58.263Z"
+    },
+    {
+      "id": "rfq-e3e286a4",
+      "status": "new",
+      "boothId": "booth-693ae4dd",
+      "productId": "prod-516dd52b",
+      "buyerName": "Hans Schmidt",
+      "company": "Acme Robotics Germany",
+      "email": "hans@acme-robotics.de",
+      "quantity": 25,
+      "targetPrice": 4200,
+      "createdAt": "2026-08-16T08:33:00.704Z"
     }
   ],
-  "samples": [],
-  "appointments": []
+  "samples": [
+    {
+      "id": "sample-00f22bec",
+      "boothId": "booth-693ae4dd",
+      "productId": "prod-516dd52b",
+      "buyerName": "Hans Schmidt",
+      "company": "Acme Robotics Germany",
+      "email": "hans@acme-robotics.de",
+      "quantity": 1,
+      "createdAt": "2026-08-16T08:33:00.725Z"
+    }
+  ],
+  "appointments": [
+    {
+      "id": "apt-96e5a325",
+      "status": "pending",
+      "boothId": "booth-693ae4dd",
+      "buyerName": "Hans Schmidt",
+      "company": "Acme Robotics Germany",
+      "email": "hans@acme-robotics.de",
+      "requestedTime": "2026-09-01T14:00",
+      "createdAt": "2026-08-16T08:33:00.747Z"
+    }
+  ],
+  "schemaVersion": 2,
+  "events": [
+    {
+      "id": "evt-ecef87ba",
+      "boothId": "booth-693ae4dd",
+      "productId": null,
+      "sessionId": null,
+      "type": "booth_view",
+      "metadata": {},
+      "createdAt": "2026-08-16T08:33:00.647Z"
+    },
+    {
+      "id": "evt-4cbef2ef",
+      "boothId": "booth-693ae4dd",
+      "productId": "prod-516dd52b",
+      "sessionId": null,
+      "type": "hotspot_click",
+      "metadata": {},
+      "createdAt": "2026-08-16T08:33:00.665Z"
+    },
+    {
+      "id": "evt-e3040962",
+      "boothId": "booth-693ae4dd",
+      "productId": "prod-516dd52b",
+      "type": "lead_capture",
+      "metadata": {
+        "leadId": "lead-7a96d6f9",
+        "company": "Acme Robotics Germany"
+      },
+      "createdAt": "2026-08-16T08:33:00.684Z"
+    },
+    {
+      "id": "evt-25cf2e21",
+      "boothId": "booth-693ae4dd",
+      "productId": "prod-516dd52b",
+      "type": "rfq_submit",
+      "metadata": {
+        "rfqId": "rfq-e3e286a4",
+        "quantity": 25
+      },
+      "createdAt": "2026-08-16T08:33:00.704Z"
+    },
+    {
+      "id": "evt-5b09bfb3",
+      "boothId": "booth-693ae4dd",
+      "productId": "prod-516dd52b",
+      "type": "sample_request",
+      "metadata": {
+        "sampleId": "sample-00f22bec",
+        "quantity": 1
+      },
+      "createdAt": "2026-08-16T08:33:00.725Z"
+    },
+    {
+      "id": "evt-49303511",
+      "boothId": "booth-693ae4dd",
+      "type": "appointment_request",
+      "metadata": {
+        "appointmentId": "apt-96e5a325",
+        "requestedTime": "2026-09-01T14:00"
+      },
+      "createdAt": "2026-08-16T08:33:00.747Z"
+    }
+  ]
 }

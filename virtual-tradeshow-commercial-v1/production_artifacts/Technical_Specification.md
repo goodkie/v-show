@@ -7,13 +7,13 @@ Virtual Trade Show Commercial V1 is a commercial-grade SaaS platform connecting 
 
 ## 2. Core Architecture
 
-### 2.1 Technology Stack (Trial / Commercial V1)
+### 2.1 Technology Stack (Phase 2 Hardened)
 - **Backend Runtime**: Node.js (v18+)
-- **Server Framework**: Express.js + Native `ws` (WebSocket) for signaling and realtime notifications.
-- **Frontend Core**: Vanilla HTML5, CSS3 (Custom B2B Design System), Modern ES6+ JavaScript.
-- **3D Graphics Engine**: Three.js (r128+) with OrbitControls, Raycasting for 3D hotspots, and spatial projection planes for Photo Preview.
+- **Server Framework**: Express.js + Native `ws` (WebSocket) with Bearer token authentication middleware.
+- **Frontend Core**: Vanilla HTML5, CSS3 (B2B Design System with responsive mobile layout), Modern ES6+ JavaScript.
+- **Shared 3D Graphics Engine**: Three.js (r128+) standardized via `booth-engine.js` guaranteeing identical coordinates across Admin & Buyer Viewer.
 - **Data Layer (Adapter Pattern)**:
-  - Trial default: `JSONFileAdapter` + Local file storage for uploads.
+  - Trial default: `JSONDatabaseAdapter` (Schema Version 2) with atomic temp-write/rename and in-process mutation locking.
   - Production path: PostgreSQL (Prisma/Knex) + AWS S3 / Cloudflare R2 object storage.
 - **Realtime / Video**:
   - Trial: WebRTC P2P with internal WebSocket signaling.
@@ -21,7 +21,7 @@ Virtual Trade Show Commercial V1 is a commercial-grade SaaS platform connecting 
 
 ---
 
-## 3. Data Models
+## 3. Data Models (Schema Version 2)
 
 ### 3.1 Booth
 ```typescript
@@ -33,7 +33,7 @@ interface Booth {
   themeColor?: string;
   status: 'draft' | 'published' | 'archived';
   reconstructionStatus: 'photo_preview' | 'reconstruction_pending' | 'processing' | 'reconstructed' | 'verified' | 'failed';
-  photos: string[]; // URLs of uploaded capture photos
+  photos: string[];
   spatialModel?: {
     type: 'photo_preview' | 'gaussian_splat' | 'mesh';
     assetUrl?: string;
@@ -53,7 +53,7 @@ interface Product {
   sku: string;
   category?: string;
   moq: number;
-  price: number | null; // null if contactForPrice is true
+  price: number | null;
   contactForPrice: boolean;
   currency: string;
   description: string;
@@ -73,110 +73,55 @@ interface Hotspot {
   productId: string;
   position: { x: number; y: number; z: number };
   label?: string;
-  type?: 'product' | 'info' | 'video';
+  type?: 'product' | 'video' | 'catalog' | 'information' | 'showhost';
   createdAt: string;
+  updatedAt: string;
 }
 ```
 
-### 3.4 Lead & Business Card
+### 3.4 Real Analytics Events
 ```typescript
-interface Lead {
+interface Event {
   id: string;
   boothId: string;
-  company: string;
-  name: string;
-  email: string;
-  phone?: string;
-  jobTitle?: string;
-  notes?: string;
-  createdAt: string;
-}
-```
-
-### 3.5 RFQ (Request for Quotation)
-```typescript
-interface RFQ {
-  id: string;
-  boothId: string;
-  productId: string;
-  buyerName: string;
-  company: string;
-  email: string;
-  quantity: number;
-  targetPrice?: number;
-  deliveryDate?: string;
-  shippingTerms?: string;
-  notes?: string;
-  status: 'new' | 'viewed' | 'responded' | 'negotiating' | 'won' | 'lost';
-  createdAt: string;
-}
-```
-
-### 3.6 Sample Request & Appointment
-```typescript
-interface SampleRequest {
-  id: string;
-  boothId: string;
-  productId: string;
-  buyerName: string;
-  company: string;
-  email: string;
-  quantity: number;
-  shippingAddress?: string;
-  notes?: string;
-  createdAt: string;
-}
-
-interface Appointment {
-  id: string;
-  boothId: string;
-  buyerName: string;
-  company: string;
-  email: string;
-  requestedTime: string;
-  notes?: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  productId?: string;
+  sessionId?: string;
+  type: 'booth_view' | 'product_view' | 'product_click' | 'hotspot_click' | 'lead_capture' | 'sample_request' | 'rfq_submit' | 'appointment_request' | 'consultation_start';
+  metadata?: Record<string, any>;
   createdAt: string;
 }
 ```
 
 ---
 
-## 4. API Endpoints
+## 4. API Endpoints (Hardened Security)
 
 - **Auth**:
-  - `POST /api/auth/login`
-  - `GET /api/auth/me`
+  - `POST /api/auth/login` (Returns cryptographically secure session token)
+  - `GET /api/auth/me` (Protected)
 - **Booths**:
-  - `GET /api/booths` (List booths)
-  - `POST /api/booths` (Create booth)
-  - `GET /api/booths/:id` (Get booth details)
-  - `PUT /api/booths/:id` (Update booth & publish status)
-  - `POST /api/booths/:id/photos` (Upload capture photos)
-  - `POST /api/booths/:id/reconstruction` (Request precision reconstruction)
+  - `GET /api/booths` (Public lists only `published` booths; `?all=true` with Bearer auth lists drafts)
+  - `POST /api/booths` (Protected)
+  - `GET /api/booths/:id` (Public returns `published` only; Protected returns drafts)
+  - `PUT /api/booths/:id` (Protected)
+  - `POST /api/booths/:id/photos` (Protected, strict MIME `image/jpeg,image/png,image/webp`)
+  - `POST /api/booths/:id/reconstruction` (Protected)
 - **Products**:
-  - `GET /api/booths/:boothId/products` (List products)
-  - `POST /api/products` (Create product)
-  - `PUT /api/products/:id` (Update product)
-  - `DELETE /api/products/:id` (Delete product)
-  - `POST /api/products/upload-image` (Upload product media)
-- **Hotspots**:
-  - `GET /api/booths/:boothId/hotspots` (Get booth hotspots)
-  - `POST /api/hotspots` (Create/Save hotspot coordinates)
-  - `DELETE /api/hotspots/:id` (Delete hotspot)
+  - `GET /api/booths/:boothId/products`
+  - `POST /api/products` (Protected)
+  - `PUT /api/products/:id` (Protected)
+  - `DELETE /api/products/:id` (Protected)
+  - `POST /api/products/upload-image` (Protected)
+- **Hotspots (Visual 3D Editor)**:
+  - `GET /api/booths/:boothId/hotspots`
+  - `POST /api/hotspots` (Protected, validates product-booth ownership)
+  - `PUT /api/hotspots/:id` (Protected, supports repositioning)
+  - `DELETE /api/hotspots/:id` (Protected)
+- **Real Analytics & Events**:
+  - `POST /api/events` (Public event collector for whitelisted event types)
+  - `GET /api/booths/:boothId/analytics` (Protected, calculates exact real metrics without simulated baselines)
 - **Buyer Engagement**:
-  - `POST /api/leads` (Digital business card submission)
-  - `POST /api/rfqs` (RFQ submission)
-  - `POST /api/samples` (Sample request)
-  - `POST /api/appointments` (Meeting booking)
-  - `GET /api/booths/:boothId/analytics` (Exhibitor engagement metrics)
-
----
-
-## 5. Reconstruction State Machine
-1. `photo_preview`: Immediate 3D room texture mapping with uploaded capture photos (Zero GPU cost).
-2. `reconstruction_pending`: Queued for background precision processing.
-3. `processing`: Running COLMAP / NeRF / Gaussian Splatting pipeline on GPU worker.
-4. `reconstructed`: 3D asset (PLY/SPZ/GLB) generated and ready.
-5. `verified`: Exhibitor has verified and approved the precision 3D booth.
-6. `failed`: Reconstruction pipeline reported an error (insufficient overlap, blur, etc.).
+  - `POST /api/leads` (Lead submission & server-side event creation)
+  - `POST /api/rfqs` (RFQ submission & server-side event creation)
+  - `POST /api/samples` (Sample request & server-side event creation)
+  - `POST /api/appointments` (Appointment booking & server-side event creation)

@@ -12,6 +12,8 @@
   <!-- Three.js & OrbitControls -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- Shared Booth 3D Engine -->
+  <script src="booth-engine.js"></script>
 </head>
 <body>
   <div class="app-container">
@@ -48,8 +50,8 @@
           <p id="hud-booth-desc">가상 부스 공간을 불러오는 중입니다.</p>
         </div>
         <div class="hud-controls-hint">
-          <span>🖱️ 마우스 좌클릭: 360° 회전</span>
-          <span>🔍 스크롤: 줌 인/아웃</span>
+          <span>🖱️ 마우스 좌클릭 / 터치: 360° 회전</span>
+          <span>🔍 스크롤 / 핀치: 줌 인/아웃</span>
           <span>📍 핫스팟 클릭: 제품 상세</span>
         </div>
       </div>
@@ -238,8 +240,8 @@
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">배송지 주소 (Shipping Address)</label>
-          <input type="text" class="form-input" id="sample-address" placeholder="샘플 수령 주소">
+          <label class="form-label">배송지 주소 (선택 사항)</label>
+          <input type="text" class="form-input" id="sample-address" placeholder="샘플 수령 주소 (추후 협의 가능)">
         </div>
         <button type="submit" class="btn btn-primary" style="width:100%;">샘플 신청서 제출</button>
       </form>
