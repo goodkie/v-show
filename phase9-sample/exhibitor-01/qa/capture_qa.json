@@ -1,0 +1,14 @@
+{
+  "datasetType": "TEST",
+  "company": "Nova Robotics Systems",
+  "imageCount": 0,
+  "validImages": 0,
+  "corruptImages": 0,
+  "duplicateWarnings": 0,
+  "minResolution": "N/A",
+  "maxResolution": "N/A",
+  "totalBytes": 0,
+  "productionReady": false,
+  "reconstructionGate": "WAITING_FOR_IMAGES",
+  "notes": "Reference contact sheet found in reference/. No individual source photos present in booth-photos/. Reconstruction halted until source photos are uploaded."
+}

@@ -1,0 +1,14 @@
+{
+  "datasetType": "TEST",
+  "company": "Nova Robotics Systems",
+  "booth": "A-101",
+  "category": "Robotics / Industrial Automation",
+  "referenceImage": "E:/vivpr/ai/v-show/phase9-sample/exhibitor-01/reference/nova_robotics_60view_reference.png",
+  "referenceType": "CONTACT_SHEET",
+  "expectedBoothImages": 60,
+  "actualBoothImages": 0,
+  "productCount": 12,
+  "reconstructionStatus": "WAITING_FOR_SOURCE_IMAGES",
+  "notes": "Planning reference contact sheet available. Awaiting 60 genuine independent multi-view booth photographs for 3D reconstruction.",
+  "createdAt": "2026-08-16T09:47:00Z"
+}
