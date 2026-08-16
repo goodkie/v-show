@@ -97,6 +97,9 @@
 
         <div class="gc-nav-group">
           <div class="gc-nav-label">COMMERCIAL & SALES</div>
+          <button class="gc-nav-item" data-tab="outreach" onclick="window.gcApp.setTab('outreach')">
+            <span class="gc-icon">📬</span> First 10 Outreach
+          </button>
           <button class="gc-nav-item" data-tab="pipeline" onclick="window.gcApp.setTab('pipeline')">
             <span class="gc-icon">🎯</span> Sales Pipeline
           </button>
@@ -104,6 +107,7 @@
             <span class="gc-icon">📈</span> Acquisition & Funnel
           </button>
         </div>
+
 
         <div class="gc-nav-group">
           <div class="gc-nav-label">OPERATIONS & 3D</div>
@@ -592,10 +596,81 @@
                 </div>
               </div>
             </div>
+        <!-- 10. FIRST 10 PROSPECT OUTREACH TAB (Phase 10.7N) -->
+        <section id="tab-outreach" class="gc-tab-pane">
+          <!-- Outreach Sprint Header & KPIs -->
+          <div class="gc-panel" style="margin-bottom: 24px;">
+            <div class="gc-panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <h3>📬 First 10 Prospect Outreach Sprint</h3>
+                <p class="gc-panel-sub">Manual & assisted outreach operations for vivPR's first 10 commercial prospects. Zero fake contacts.</p>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <a href="/prospect-import-template.csv" download class="gc-btn-secondary" style="text-decoration:none; padding:8px 12px; font-size:13px;">⬇ CSV Template</a>
+                <button class="gc-btn-secondary" onclick="window.gcApp.openProspectImportModal()">⬆ Import Prospects</button>
+                <button class="gc-btn-secondary" onclick="window.gcApp.exportProspectsCsv()">⤓ Export CSV</button>
+                <button class="gc-btn-primary" onclick="window.gcApp.loadOutreachOperations()">↻ Refresh</button>
+              </div>
+            </div>
+
+            <!-- Outreach KPIs Grid -->
+            <div class="gc-kpi-grid" style="margin-bottom: 24px;">
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Sprint Capacity</div>
+                <div class="gc-kpi-value" id="outreach-sprint-capacity">0 / 10</div>
+                <div class="gc-kpi-sub">Target: 10 Real Prospects</div>
+              </div>
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Contacted</div>
+                <div class="gc-kpi-value" id="outreach-contacted-count">0</div>
+                <div class="gc-kpi-sub" id="outreach-contacted-sub">Manual outreach</div>
+              </div>
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Replies Received</div>
+                <div class="gc-kpi-value" id="outreach-replies-count">0</div>
+                <div class="gc-kpi-sub" id="outreach-reply-rate">N/A reply rate</div>
+              </div>
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Demos Scheduled</div>
+                <div class="gc-kpi-value" id="outreach-demos-count">0</div>
+                <div class="gc-kpi-sub" id="outreach-demo-rate">N/A demo rate</div>
+              </div>
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Pilots Accepted</div>
+                <div class="gc-kpi-value" id="outreach-pilots-count">0</div>
+                <div class="gc-kpi-sub" id="outreach-pilot-rate">N/A acceptance</div>
+              </div>
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Follow-Ups Due</div>
+                <div class="gc-kpi-value" id="outreach-followups-due">0</div>
+                <div class="gc-kpi-sub">Requires action</div>
+              </div>
+            </div>
+
+            <!-- Outreach Table -->
+            <div class="gc-table-container">
+              <table class="gc-table">
+                <thead>
+                  <tr>
+                    <th># / Company</th>
+                    <th>Contact & Trade Show</th>
+                    <th>Score & Priority</th>
+                    <th>Stage</th>
+                    <th>Last Contact / Next Due</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="outreach-prospects-tbody">
+                  <!-- Dynamically rendered outreach rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
         </section>
 
         <!-- 10. SALES PIPELINE TAB (Phase 10.7R) -->
         <section id="tab-pipeline" class="gc-tab-pane">
+
           <div class="gc-panel" style="margin-bottom: 24px;">
             <div class="gc-panel-header" style="display:flex; justify-content:space-between; align-items:center;">
               <div>

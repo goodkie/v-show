@@ -2107,6 +2107,73 @@ app.get('/api/platform/upgrade-intents', requireAuth, requirePlatformOwner, (req
   }
 });
 
+// --- Phase 10.7N First 10 Prospect Outreach Operations Endpoints ---
+app.post('/api/platform/outreach/import', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const { prospects, environment } = req.body;
+    const result = await db.importOutreachProspects(prospects, environment || 'REAL', req.user.userId);
+    res.status(201).json({
+      success: true,
+      message: `Imported ${result.totalImported} prospects. (${result.duplicates.length} duplicates skipped)`,
+      ...result
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/platform/outreach/prospects', requireAuth, requirePlatformOwner, (req, res) => {
+  try {
+    const env = req.query.environment || null;
+    const prospects = db.getOutreachProspects(env);
+    res.json({ prospects, count: prospects.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/platform/outreach/prospects/:id', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const updated = await db.updateProspectOutreach(req.params.id, req.body, req.user.userId);
+    res.json({ success: true, prospect: updated });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message, code: err.code });
+  }
+});
+
+app.post('/api/platform/outreach/prospects/:id/dnc', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const reason = req.body.reason || 'Customer request';
+    const updated = await db.setProspectDoNotContact(req.params.id, reason, req.user.userId);
+    res.json({ success: true, message: 'Prospect marked as DO NOT CONTACT', prospect: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/platform/outreach/scorecard', requireAuth, requirePlatformOwner, (req, res) => {
+  try {
+    const env = req.query.environment || 'REAL';
+    const scorecard = db.getOutreachScorecard(env);
+    res.json({ scorecard });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/platform/outreach/export', requireAuth, requirePlatformOwner, (req, res) => {
+  try {
+    const env = req.query.environment || 'REAL';
+    const csv = db.exportOutreachCsv(env);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="prospects_${env.toLowerCase()}.csv"`);
+    res.send(csv);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 
 
 

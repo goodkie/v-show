@@ -7,13 +7,21 @@ Virtual Trade Show Commercial V1 is a commercial-grade SaaS platform connecting 
 
 ## 2. Core Architecture
 
-### 2.1 Technology Stack (Phase 10.7M First Customer Acquisition Sprint)
+### 2.1 Technology Stack (Phase 10.7N First 10 Prospect Outreach Operations)
 - **Backend Runtime**: Node.js (v18+)
 - **Server Framework**: Express.js + Native `ws` (WebSocket) with Signed Bearer session tokens, Worker authentication, RBAC, and sliding window rate limiting.
+- **Outreach & Prospect Subsystems**:
+  - First 10 Prospect Outreach Dashboard in Grand Control (`/grand-control.html`).
+  - Secure CSV Import & Export with Spreadsheet Formula Injection sanitization.
+  - Hard Do-Not-Contact (DNC) safeguard preventing repeat outreach.
+  - Real-time Outreach Scorecard with zero-denominator-safe rate calculation.
+  - Manual Email Assistant (`COPY SUBJECT`, `COPY BODY`, `COPY RECIPIENT`, `MARK SENT`).
+  - Sprint Capacity Tracker (`X / 10` Real Prospects limit).
 - **Pilot Acquisition & Qualification Engines**:
   - Dedicated Pilot Application page (`/pilot-apply.html`) with 16 intake fields, explicit privacy consent, and unique reference ID generation.
   - Server-Side Algorithmic Lead Qualification (`calculateQualificationScore()`, 0–100 scale, `EARLY`, `QUALIFIED`, `PILOT_READY`, `HIGH_INTENT`).
   - Server-Side Pilot Success Engine (`calculatePilotSuccessScore()`, 0–100 scale, `SETUP`, `EARLY_USAGE`, `VALUE_DEMONSTRATED`, `STRONG_VALUE`, `UPGRADE_READY`).
+
   - CRM-Style Sales Pipeline & Communication Center in Grand Control (`/grand-control.html`).
   - 12 Production Email Templates in `production_artifacts/first_customer_acquisition/`.
 - **Legal & Tax Professional Review System**:

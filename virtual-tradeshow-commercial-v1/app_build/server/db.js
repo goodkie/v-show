@@ -2915,7 +2915,289 @@ class JSONDatabase {
     return list;
   }
 
+  // --- Phase 10.7N First 10 Prospect Outreach Operations ---
+  async importOutreachProspects(prospectsArray, environment = 'REAL', authorUserId = null) {
+    if (!Array.isArray(prospectsArray) || prospectsArray.length === 0) {
+      throw new Error('Prospects array must contain at least one record.');
+    }
+
+    const sanitize = (str) => typeof str === 'string' ? str.replace(/<[^>]*>/g, '').trim() : '';
+
+    return this.mutate((db) => {
+      db.outreachProspects = db.outreachProspects || [];
+      const currentRealCount = db.outreachProspects.filter(p => p.dataEnvironment === 'REAL').length;
+      const imported = [];
+      const duplicates = [];
+
+      prospectsArray.forEach((row, idx) => {
+        const companyName = sanitize(row.company_name || row.companyName || '');
+        const contactEmail = sanitize(row.contact_email || row.contactEmail || row.email || '').toLowerCase();
+        const contactName = sanitize(row.contact_name || row.contactName || '');
+        const website = sanitize(row.website || row.companyWebsite || '');
+        const phone = sanitize(row.phone || '');
+        const industry = sanitize(row.industry || 'General Industry');
+        const tradeShow = sanitize(row.trade_show || row.tradeShow || row.eventName || '');
+        const boothNumber = sanitize(row.booth_number || row.boothNumber || '');
+        const eventDate = sanitize(row.event_date || row.eventDate || '');
+        const source = sanitize(row.source || 'Manual Research');
+        const notes = sanitize(row.notes || '');
+
+        if (!companyName && !contactEmail) return;
+
+        // Duplicate Detection
+        const isDuplicate = db.outreachProspects.some(
+          p => (contactEmail && p.contactEmail === contactEmail) ||
+               (companyName && p.companyName.toLowerCase() === companyName.toLowerCase())
+        );
+
+        if (isDuplicate) {
+          duplicates.push({ companyName, contactEmail });
+          return;
+        }
+
+        const nextIndex = currentRealCount + imported.length + 1;
+        const inSprint = environment === 'REAL' ? (nextIndex <= 10) : false;
+
+        const { score, tier } = this.calculateQualificationScore({
+          companyName,
+          workEmail: contactEmail,
+          eventName: tradeShow,
+          eventDate,
+          approxProductCount: '1-5',
+          boothNumber
+        });
+
+        const prospect = {
+          id: `prospect-${uuidv4().substring(0, 8)}`,
+          dataEnvironment: environment === 'SYNTHETIC_TEST' ? 'SYNTHETIC_TEST' : (environment === 'TEST' ? 'TEST' : 'REAL'),
+          recordType: 'ACQUISITION_PROSPECT',
+          commercialStatus: 'prospect',
+          sprintCohort: inSprint ? 'PHASE_10_7N_SPRINT' : (environment === 'REAL' ? 'OUTSIDE_PHASE_10_7N_SPRINT' : 'TEST_COHORT'),
+          sprintIndex: nextIndex,
+          companyName: companyName || 'Unnamed Prospect',
+          website,
+          contactName,
+          contactEmail,
+          phone,
+          industry,
+          tradeShow,
+          boothNumber,
+          eventDate,
+          source,
+          notes,
+          stage: 'READY_TO_CONTACT',
+          priority: score >= 70 ? 'P1' : (score >= 40 ? 'P2' : 'P3'),
+          qualificationScore: score,
+          qualificationTier: tier,
+          doNotContact: false,
+          doNotContactReason: null,
+          doNotContactAt: null,
+          lastContactAt: null,
+          nextFollowUpAt: null,
+          followUpCount: 0,
+          responseCategory: null,
+          objections: [],
+          demoDetails: null,
+          pilotOfferDetails: null,
+          assignedOwner: 'vivPR Commercial Team',
+          timeline: [
+            {
+              action: 'prospect_imported',
+              timestamp: new Date().toISOString(),
+              author: authorUserId || 'system',
+              note: `Imported via ${source}`
+            }
+          ],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        db.outreachProspects.push(prospect);
+        imported.push(prospect);
+      });
+
+      db.auditLogs.push({
+        id: `aud-${uuidv4().substring(0, 8)}`,
+        userId: authorUserId || 'system-admin',
+        organizationId: 'org-platform-master',
+        action: 'outreach.prospects_imported',
+        targetType: 'outreach_prospect',
+        targetId: 'batch',
+        details: { importedCount: imported.length, duplicateCount: duplicates.length, environment },
+        timestamp: new Date().toISOString()
+      });
+
+      return { imported, duplicates, totalImported: imported.length };
+    });
+  }
+
+  getOutreachProspects(environment = null) {
+    const list = this.read().outreachProspects || [];
+    if (environment) return list.filter(p => p.dataEnvironment === environment);
+    return list;
+  }
+
+  getOutreachProspectById(prospectId) {
+    return (this.read().outreachProspects || []).find(p => p.id === prospectId) || null;
+  }
+
+  async updateProspectOutreach(prospectId, actionData, authorUserId = null) {
+    return this.mutate((db) => {
+      const p = (db.outreachProspects || []).find(x => x.id === prospectId);
+      if (!p) throw new Error('Prospect not found');
+
+      if (p.doNotContact && actionData.action === 'contacted') {
+        const err = new Error('Cannot contact prospect: Marked as DO NOT CONTACT.');
+        err.code = 'PROSPECT_DO_NOT_CONTACT';
+        err.status = 400;
+        throw err;
+      }
+
+      if (actionData.stage) p.stage = actionData.stage;
+      if (actionData.priority) p.priority = actionData.priority;
+      if (actionData.notes) p.notes = actionData.notes;
+      if (actionData.responseCategory) p.responseCategory = actionData.responseCategory;
+      if (actionData.objections) p.objections = actionData.objections;
+      if (actionData.demoDetails) p.demoDetails = actionData.demoDetails;
+      if (actionData.pilotOfferDetails) p.pilotOfferDetails = actionData.pilotOfferDetails;
+
+      if (actionData.action === 'contacted') {
+        p.lastContactAt = new Date().toISOString();
+        p.followUpCount = (p.followUpCount || 0) + 1;
+        // Schedule next follow up in 3-4 days
+        p.nextFollowUpAt = new Date(Date.now() + (3.5 * 86400000)).toISOString();
+        if (p.stage === 'READY_TO_CONTACT' || p.stage === 'RESEARCHED') {
+          p.stage = 'CONTACTED';
+        }
+      }
+
+      if (actionData.nextFollowUpAt !== undefined) {
+        p.nextFollowUpAt = actionData.nextFollowUpAt;
+      }
+
+      p.timeline = p.timeline || [];
+      p.timeline.push({
+        action: actionData.action || 'outreach_updated',
+        stage: p.stage,
+        timestamp: new Date().toISOString(),
+        author: authorUserId || 'system-admin',
+        note: actionData.note || actionData.notes || '',
+        channel: actionData.channel || 'EMAIL'
+      });
+      p.updatedAt = new Date().toISOString();
+
+      return p;
+    });
+  }
+
+  async setProspectDoNotContact(prospectId, reason = 'Customer request', authorUserId = null) {
+    return this.mutate((db) => {
+      const p = (db.outreachProspects || []).find(x => x.id === prospectId);
+      if (!p) throw new Error('Prospect not found');
+
+      p.doNotContact = true;
+      p.doNotContactReason = reason;
+      p.doNotContactAt = new Date().toISOString();
+      p.stage = 'NOT_INTERESTED';
+      p.nextFollowUpAt = null;
+
+      p.timeline = p.timeline || [];
+      p.timeline.push({
+        action: 'marked_do_not_contact',
+        timestamp: new Date().toISOString(),
+        author: authorUserId || 'system-admin',
+        note: `Do not contact set: ${reason}`
+      });
+      p.updatedAt = new Date().toISOString();
+
+      return p;
+    });
+  }
+
+  getOutreachScorecard(environment = 'REAL') {
+    const list = this.getOutreachProspects(environment);
+    const total = list.length;
+    const contacted = list.filter(p => ['CONTACTED', 'REPLIED', 'INTERESTED', 'NOT_INTERESTED', 'FOLLOW_UP', 'DEMO_PROPOSED', 'DEMO_SCHEDULED', 'DEMO_COMPLETED', 'PILOT_PROPOSED', 'PILOT_ACCEPTED', 'PILOT_DECLINED', 'NO_RESPONSE'].includes(p.stage)).length;
+    const replies = list.filter(p => ['REPLIED', 'INTERESTED', 'NOT_INTERESTED', 'DEMO_PROPOSED', 'DEMO_SCHEDULED', 'DEMO_COMPLETED', 'PILOT_PROPOSED', 'PILOT_ACCEPTED', 'PILOT_DECLINED'].includes(p.stage)).length;
+    const positiveReplies = list.filter(p => ['INTERESTED', 'DEMO_PROPOSED', 'DEMO_SCHEDULED', 'DEMO_COMPLETED', 'PILOT_PROPOSED', 'PILOT_ACCEPTED'].includes(p.stage)).length;
+    const interested = list.filter(p => p.stage === 'INTERESTED' || p.responseCategory === 'POSITIVE').length;
+    const demosProposed = list.filter(p => ['DEMO_PROPOSED', 'DEMO_SCHEDULED', 'DEMO_COMPLETED', 'PILOT_PROPOSED', 'PILOT_ACCEPTED'].includes(p.stage)).length;
+    const demosScheduled = list.filter(p => ['DEMO_SCHEDULED', 'DEMO_COMPLETED', 'PILOT_PROPOSED', 'PILOT_ACCEPTED'].includes(p.stage)).length;
+    const demosCompleted = list.filter(p => ['DEMO_COMPLETED', 'PILOT_PROPOSED', 'PILOT_ACCEPTED'].includes(p.stage)).length;
+    const pilotsProposed = list.filter(p => ['PILOT_PROPOSED', 'PILOT_ACCEPTED', 'PILOT_DECLINED'].includes(p.stage)).length;
+    const pilotsAccepted = list.filter(p => p.stage === 'PILOT_ACCEPTED').length;
+    const noResponse = list.filter(p => p.stage === 'NO_RESPONSE').length;
+    const notInterested = list.filter(p => p.stage === 'NOT_INTERESTED' || p.responseCategory === 'NOT_INTERESTED' || p.doNotContact).length;
+
+    // Follow-ups due today
+    const nowIso = new Date().toISOString();
+    const followUpsDue = list.filter(p => p.nextFollowUpAt && p.nextFollowUpAt <= nowIso && !p.doNotContact).length;
+
+    const calcRate = (num, denom) => denom > 0 ? `${Math.round((num / denom) * 100)}%` : 'N/A';
+
+    return {
+      environment,
+      sprintCapacity: `${Math.min(10, total)} / 10`,
+      totalProspects: total,
+      contacted,
+      replies,
+      positiveReplies,
+      interested,
+      notInterested,
+      noResponse,
+      followUpsDue,
+      demosProposed,
+      demosScheduled,
+      demosCompleted,
+      pilotsProposed,
+      pilotsAccepted,
+      rates: {
+        replyRate: calcRate(replies, contacted),
+        positiveReplyRate: calcRate(positiveReplies, contacted),
+        demoRate: calcRate(demosScheduled, contacted),
+        pilotAcceptanceRate: calcRate(pilotsAccepted, contacted),
+        noResponseRate: calcRate(noResponse, contacted),
+        notInterestedRate: calcRate(notInterested, contacted)
+      }
+    };
+  }
+
+  exportOutreachCsv(environment = 'REAL') {
+    const list = this.getOutreachProspects(environment);
+    const sanitizeCsvField = (val) => {
+      if (val === null || val === undefined) return '""';
+      let s = String(val).replace(/"/g, '""');
+      // Protect against CSV formula injection
+      if (s.startsWith('=') || s.startsWith('+') || s.startsWith('-') || s.startsWith('@')) {
+        s = `'${s}`;
+      }
+      return `"${s}"`;
+    };
+
+    const headers = ['ID', 'Sprint Index', 'Company', 'Website', 'Contact', 'Email', 'Phone', 'Industry', 'Trade Show', 'Stage', 'Priority', 'Score', 'DNC', 'Last Contact', 'Next Follow-Up'];
+    const rows = list.map(p => [
+      sanitizeCsvField(p.id),
+      sanitizeCsvField(p.sprintIndex),
+      sanitizeCsvField(p.companyName),
+      sanitizeCsvField(p.website),
+      sanitizeCsvField(p.contactName),
+      sanitizeCsvField(p.contactEmail),
+      sanitizeCsvField(p.phone),
+      sanitizeCsvField(p.industry),
+      sanitizeCsvField(p.tradeShow),
+      sanitizeCsvField(p.stage),
+      sanitizeCsvField(p.priority),
+      sanitizeCsvField(p.qualificationScore),
+      sanitizeCsvField(p.doNotContact ? 'YES' : 'NO'),
+      sanitizeCsvField(p.lastContactAt),
+      sanitizeCsvField(p.nextFollowUpAt)
+    ].join(','));
+
+    return [headers.join(','), ...rows].join('\n');
+  }
+
   isOrganizationAllowedForLiveBilling(organizationId) {
+
     const org = this.getOrganizationById(organizationId);
     if (!org) return false;
     const env = org.subscription?.dataEnvironment || 'REAL';

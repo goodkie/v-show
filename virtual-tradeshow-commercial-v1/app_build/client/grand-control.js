@@ -120,6 +120,9 @@ class GrandControlApp {
       case 'subscriptions':
         this.loadSubscriptions();
         break;
+      case 'outreach':
+        this.loadOutreachOperations();
+        break;
       case 'pipeline':
         this.loadSalesPipeline();
         break;
@@ -128,6 +131,7 @@ class GrandControlApp {
         break;
       case 'visitors':
         this.loadVisitors();
+
         break;
       case 'reconstructions':
         this.loadReconstructions();
@@ -1195,9 +1199,154 @@ class GrandControlApp {
     } catch (e) {
       console.error('Failed to load acquisition analytics:', e);
     }
+  // --- Phase 10.7N First 10 Prospect Outreach Operations ---
+  async loadOutreachOperations() {
+    try {
+      const [prospectsRes, scorecardRes] = await Promise.all([
+        fetch('/api/platform/outreach/prospects?environment=REAL', { headers: { 'Authorization': `Bearer ${this.token}` } }),
+        fetch('/api/platform/outreach/scorecard?environment=REAL', { headers: { 'Authorization': `Bearer ${this.token}` } })
+      ]);
+
+      const pData = await prospectsRes.json();
+      const sData = await scorecardRes.json();
+      const sc = sData.scorecard || {};
+
+      // Update KPIs
+      const capEl = document.getElementById('outreach-sprint-capacity');
+      if (capEl) capEl.textContent = sc.sprintCapacity || '0 / 10';
+      const conEl = document.getElementById('outreach-contacted-count');
+      if (conEl) conEl.textContent = sc.contacted || 0;
+      const repEl = document.getElementById('outreach-replies-count');
+      if (repEl) repEl.textContent = sc.replies || 0;
+      const repRateEl = document.getElementById('outreach-reply-rate');
+      if (repRateEl) repRateEl.textContent = `${sc.rates?.replyRate || 'N/A'} reply rate`;
+      const demEl = document.getElementById('outreach-demos-count');
+      if (demEl) demEl.textContent = sc.demosScheduled || 0;
+      const demRateEl = document.getElementById('outreach-demo-rate');
+      if (demRateEl) demRateEl.textContent = `${sc.rates?.demoRate || 'N/A'} demo rate`;
+      const pilEl = document.getElementById('outreach-pilots-count');
+      if (pilEl) pilEl.textContent = sc.pilotsAccepted || 0;
+      const pilRateEl = document.getElementById('outreach-pilot-rate');
+      if (pilRateEl) pilRateEl.textContent = `${sc.rates?.pilotAcceptanceRate || 'N/A'} acceptance`;
+      const fuEl = document.getElementById('outreach-followups-due');
+      if (fuEl) fuEl.textContent = sc.followUpsDue || 0;
+
+      // Render Table
+      const tbody = document.getElementById('outreach-prospects-tbody');
+      if (!tbody) return;
+
+      const list = pData.prospects || [];
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="gc-text-muted" style="text-align:center; padding:24px;">No REAL outreach prospects loaded yet. Click "Import Prospects" or use CSV template.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map((p, idx) => `
+        <tr style="${p.doNotContact ? 'opacity:0.6;' : ''}">
+          <td>
+            <span style="font-family:monospace; color:#38bdf8; font-size:11px;">#${p.sprintIndex || (idx + 1)}</span>
+            <strong>${escapeHtml(p.companyName)}</strong><br>
+            <small class="gc-text-muted">${escapeHtml(p.website || 'No website')}</small>
+            ${p.sprintCohort === 'OUTSIDE_PHASE_10_7N_SPRINT' ? '<span class="gc-badge">Outside Sprint</span>' : ''}
+          </td>
+          <td>
+            <strong>${escapeHtml(p.contactName || 'Trade Show Team')}</strong><br>
+            <small class="gc-text-muted">${escapeHtml(p.contactEmail)}</small><br>
+            <span style="font-size:11px; color:#cbd5e1;">${escapeHtml(p.tradeShow || 'Industry Event')} (Booth: ${escapeHtml(p.boothNumber || 'N/A')})</span>
+          </td>
+          <td>
+            <span class="gc-badge ${p.qualificationScore >= 70 ? 'gc-badge-verified' : 'gc-badge'}">Score: ${p.qualificationScore || 0}/100</span>
+            <span class="gc-badge gc-badge-${p.priority === 'P1' ? 'error' : (p.priority === 'P2' ? 'warning' : 'info')}">${escapeHtml(p.priority || 'P2')}</span>
+            ${p.doNotContact ? '<span class="gc-badge gc-badge-error">DNC</span>' : ''}
+          </td>
+          <td>
+            <select class="gc-select-sm" onchange="window.gcApp.updateProspectStage('${p.id}', this.value)" style="background:#1e293b; color:#fff; border:1px solid #334155; padding:4px 8px; border-radius:4px;">
+              ${['READY_TO_CONTACT', 'CONTACTED', 'REPLIED', 'INTERESTED', 'NOT_INTERESTED', 'FOLLOW_UP', 'DEMO_PROPOSED', 'DEMO_SCHEDULED', 'DEMO_COMPLETED', 'PILOT_PROPOSED', 'PILOT_ACCEPTED', 'PILOT_DECLINED', 'NO_RESPONSE'].map(s => `
+                <option value="${s}" ${p.stage === s ? 'selected' : ''}>${s}</option>
+              `).join('')}
+            </select>
+          </td>
+          <td class="gc-text-muted" style="font-size:12px;">
+            Last: ${p.lastContactAt ? new Date(p.lastContactAt).toLocaleDateString() : 'Never'}<br>
+            Next: ${p.nextFollowUpAt ? new Date(p.nextFollowUpAt).toLocaleDateString() : 'None'}
+          </td>
+          <td>
+            <div style="display:flex; gap:4px; flex-wrap:wrap;">
+              <button class="gc-btn-sm gc-btn-primary" onclick="window.gcApp.openEmailAssistant('${p.id}', 'initial')">✉ Copy Email</button>
+              <button class="gc-btn-sm gc-btn-secondary" onclick="window.gcApp.markProspectContacted('${p.id}')">✓ Mark Sent</button>
+              ${!p.doNotContact ? `
+                <button class="gc-btn-sm" style="background:#7f1d1d; color:#fca5a5; border:none;" onclick="window.gcApp.markProspectDnc('${p.id}')">DNC</button>
+              ` : ''}
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    } catch (e) {
+      console.error('Failed to load outreach operations:', e);
+    }
+  }
+
+  async updateProspectStage(prospectId, stage) {
+    try {
+      const res = await fetch(`/api/platform/outreach/prospects/${prospectId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.token}` },
+        body: JSON.stringify({ stage, action: 'stage_updated', note: `Stage changed to ${stage}` })
+      });
+      if (res.ok) this.loadOutreachOperations();
+    } catch (e) {
+      console.error('Failed to update prospect stage:', e);
+    }
+  }
+
+  async markProspectContacted(prospectId) {
+    try {
+      const res = await fetch(`/api/platform/outreach/prospects/${prospectId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.token}` },
+        body: JSON.stringify({ action: 'contacted', note: 'Initial outreach or follow-up email sent via manual client' })
+      });
+      if (res.ok) {
+        alert('Marked as contacted. Next follow-up automatically scheduled in 3-4 days.');
+        this.loadOutreachOperations();
+      }
+    } catch (e) {
+      alert('Error updating prospect');
+    }
+  }
+
+  async markProspectDnc(prospectId) {
+    if (!confirm('Mark prospect as DO NOT CONTACT? All future outreach will be blocked.')) return;
+    try {
+      const res = await fetch(`/api/platform/outreach/prospects/${prospectId}/dnc`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.token}` },
+        body: JSON.stringify({ reason: 'Manual operator mark' })
+      });
+      if (res.ok) {
+        alert('Prospect marked as DO NOT CONTACT.');
+        this.loadOutreachOperations();
+      }
+    } catch (e) {
+      alert('Error marking DNC');
+    }
+  }
+
+  exportProspectsCsv() {
+    window.open(`/api/platform/outreach/export?token=${encodeURIComponent(this.token)}`, '_blank');
+  }
+
+  openEmailAssistant(prospectId, templateType) {
+    // Copies outreach copy to clipboard
+    const subject = "Free Virtual Booth Pilot for Your Next Trade Show";
+    const body = `Hi,\n\nI'm reaching out from vivPR.\n\nWe've built V-Show, a platform that turns a physical trade-show booth into an interactive online showroom.\n\nBuyers can revisit the booth after the event, explore products, request quotes, request samples, schedule meetings, and contact your team.\n\nWe're currently inviting a small number of exhibitors to try a free virtual booth pilot.\n\nNo credit card is required.\n\nIf you have an upcoming or recently completed trade show, we'd be happy to show you a demo and explain how the pilot works.\n\nWould you be open to a short walkthrough?\n\nBest,\nvivPR\ninfo@vivpr.pro`;
+
+    navigator.clipboard.writeText(`Subject: ${subject}\n\n${body}`);
+    alert('Outreach subject and body copied to clipboard! You can paste into Gmail/Outlook.');
   }
 
 }
+
 
 
 function escapeHtml(str) {
