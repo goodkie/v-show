@@ -18,7 +18,9 @@ const TRIAL_ADMIN_PASSWORD = process.env.TRIAL_ADMIN_PASSWORD || 'admin123';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'trial-session-secret-key';
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || null;
 
-const UPLOADS_DIR = path.join(__dirname, '..', 'data', 'uploads');
+// Dynamic Data Directory for Railway Volume persistence (/data)
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
@@ -26,7 +28,6 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 // In-Memory Active Session Store
 const activeSessions = new Map(); // token -> { userId, username, createdAt }
 
-// Generate Secure Cryptographic Session Token
 function generateSessionToken(userId, username) {
   const token = crypto.randomBytes(32).toString('hex');
   activeSessions.set(token, {
@@ -37,7 +38,6 @@ function generateSessionToken(userId, username) {
   return token;
 }
 
-// Authentication Middleware
 function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -54,7 +54,6 @@ function requireAuth(req, res, next) {
   next();
 }
 
-// Optional Auth Helper (for dual public/admin route behavior)
 function optionalAuth(req) {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -64,6 +63,43 @@ function optionalAuth(req) {
   return null;
 }
 
+// Zero-Cost In-Memory Rate Limiter (Sliding Window)
+const rateLimitMap = new Map(); // key (IP:endpoint) -> { count, resetTime }
+
+function createRateLimiter(maxRequests = 60, windowMs = 60000) {
+  return (req, res, next) => {
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+    const route = req.baseUrl + req.path;
+    const key = `${ip}:${route}`;
+    const now = Date.now();
+
+    let record = rateLimitMap.get(key);
+    if (!record || now > record.resetTime) {
+      record = { count: 1, resetTime: now + windowMs };
+      rateLimitMap.set(key, record);
+      return next();
+    }
+
+    record.count += 1;
+    if (record.count > maxRequests) {
+      return res.status(429).json({
+        error: 'Too many requests. Please slow down and try again in a minute.',
+        retryAfterMs: record.resetTime - now
+      });
+    }
+
+    next();
+  };
+}
+
+// Security Headers Middleware
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  next();
+});
+
 // Multer Storage & Strict MIME Validation
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -72,7 +108,6 @@ const storage = multer.diskStorage({
     cb(null, UPLOADS_DIR);
   },
   filename: (req, file, cb) => {
-    // Generate safe cryptographically random filename
     const ext = path.extname(file.originalname).toLowerCase();
     const safeName = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`;
     cb(null, safeName);
@@ -90,23 +125,35 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 25 * 1024 * 1024 } // 25MB individual limit
+  limits: { fileSize: 25 * 1024 * 1024 }
 });
 
 // Middleware Setup
 if (ALLOWED_ORIGIN) {
   app.use(cors({ origin: ALLOWED_ORIGIN }));
 } else {
-  app.use(cors()); // Same-origin trial default
+  app.use(cors());
 }
 app.use(express.json());
 app.use('/uploads', express.static(UPLOADS_DIR));
 app.use(express.static(path.join(__dirname, '..', 'client')));
 
+// --- Healthcheck Endpoint ---
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    ok: true,
+    service: 'virtual-tradeshow-commercial-v1',
+    schemaVersion: 2,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // --- REST API Endpoints ---
 
 // 1. Auth APIs
-app.post('/api/auth/login', (req, res) => {
+const loginLimiter = createRateLimiter(20, 60000); // Max 20 logins per minute
+
+app.post('/api/auth/login', loginLimiter, (req, res) => {
   const { username, password } = req.body;
   if (username === TRIAL_ADMIN_USER && password === TRIAL_ADMIN_PASSWORD) {
     const token = generateSessionToken('user-admin-1', username);
@@ -123,7 +170,7 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
   res.json({ id: req.user.userId, username: req.user.username, role: 'exhibitor' });
 });
 
-// 2. Booths API (Separating Public and Admin Access)
+// 2. Booths API
 app.get('/api/booths', (req, res) => {
   const user = optionalAuth(req);
   const includeDrafts = Boolean(user && req.query.all === 'true');
@@ -163,7 +210,7 @@ app.put('/api/booths/:id', requireAuth, async (req, res) => {
   }
 });
 
-// Booth Photos Upload (Protected)
+// Booth Photos Upload
 app.post('/api/booths/:id/photos', requireAuth, (req, res) => {
   upload.array('photos', 50)(req, res, async (err) => {
     if (err) {
@@ -190,7 +237,6 @@ app.post('/api/booths/:id/photos', requireAuth, (req, res) => {
   });
 });
 
-// Request Precision Reconstruction (Protected)
 app.post('/api/booths/:id/reconstruction', requireAuth, async (req, res) => {
   const booth = db.getBoothById(req.params.id, true);
   if (!booth) return res.status(404).json({ error: 'Booth not found' });
@@ -324,7 +370,9 @@ const ALLOWED_EVENT_TYPES = [
   'consultation_start'
 ];
 
-app.post('/api/events', async (req, res) => {
+const eventLimiter = createRateLimiter(120, 60000);
+
+app.post('/api/events', eventLimiter, async (req, res) => {
   try {
     const { boothId, productId, sessionId, type, metadata } = req.body;
     if (!boothId || !type) {
@@ -341,14 +389,15 @@ app.post('/api/events', async (req, res) => {
   }
 });
 
-// 6. Public Engagement Endpoints (Server creates events automatically)
-app.post('/api/leads', async (req, res) => {
+// 6. Public Engagement Endpoints
+const engagementLimiter = createRateLimiter(30, 60000);
+
+app.post('/api/leads', engagementLimiter, async (req, res) => {
   try {
     const { boothId, productId, company, name, email, phone, jobTitle, notes } = req.body;
     if (!boothId || !name || !email) {
       return res.status(400).json({ error: 'boothId, name, and email are required' });
     }
-    // Basic email format check
     if (!email.includes('@') || !email.includes('.')) {
       return res.status(400).json({ error: 'Please enter a valid email address.' });
     }
@@ -360,7 +409,7 @@ app.post('/api/leads', async (req, res) => {
   }
 });
 
-app.post('/api/rfqs', async (req, res) => {
+app.post('/api/rfqs', engagementLimiter, async (req, res) => {
   try {
     const { boothId, productId, buyerName, company, email, quantity, targetPrice, deliveryDate, notes } = req.body;
     if (!boothId || !productId || !email || !quantity) {
@@ -373,7 +422,7 @@ app.post('/api/rfqs', async (req, res) => {
   }
 });
 
-app.post('/api/samples', async (req, res) => {
+app.post('/api/samples', engagementLimiter, async (req, res) => {
   try {
     const { boothId, productId, buyerName, company, email, quantity, shippingAddress, notes } = req.body;
     if (!boothId || !productId || !email) {
@@ -386,7 +435,7 @@ app.post('/api/samples', async (req, res) => {
   }
 });
 
-app.post('/api/appointments', async (req, res) => {
+app.post('/api/appointments', engagementLimiter, async (req, res) => {
   try {
     const { boothId, productId, buyerName, company, email, requestedTime, notes } = req.body;
     if (!boothId || !email || !requestedTime) {
@@ -406,7 +455,7 @@ app.get('/api/booths/:boothId/analytics', requireAuth, (req, res) => {
 });
 
 // --- WebSocket Signaling for Realtime / WebRTC Consultation ---
-const rooms = new Map();
+const rooms = new Map(); // roomId -> Set of ws clients
 
 wss.on('connection', (ws) => {
   let currentRoom = null;
@@ -416,13 +465,27 @@ wss.on('connection', (ws) => {
       const data = JSON.parse(message);
       switch (data.type) {
         case 'join_room': {
-          currentRoom = data.roomId;
+          currentRoom = data.roomId || 'default-room';
           if (!rooms.has(currentRoom)) {
             rooms.set(currentRoom, new Set());
           }
           rooms.get(currentRoom).add(ws);
           const clientCount = rooms.get(currentRoom).size;
-          ws.send(JSON.stringify({ type: 'room_joined', roomId: currentRoom, peerCount: clientCount - 1 }));
+          ws.send(JSON.stringify({
+            type: 'room_joined',
+            roomId: currentRoom,
+            peerCount: clientCount - 1
+          }));
+          // Notify other peers in room
+          rooms.get(currentRoom).forEach(client => {
+            if (client !== ws && client.readyState === ws.OPEN) {
+              client.send(JSON.stringify({
+                type: 'peer_joined',
+                roomId: currentRoom,
+                peerCount: clientCount
+              }));
+            }
+          });
           break;
         }
         case 'signal': {
@@ -472,8 +535,10 @@ app.get('*', (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`=======================================================`);
-  console.log(` Virtual Trade Show Commercial V1 (Hardened Phase 2)`);
+  console.log(` Virtual Trade Show Commercial V1 Server (Phase 3 Online Trial)`);
   console.log(` Port: ${PORT}`);
+  console.log(` Data Directory: ${DATA_DIR}`);
+  console.log(` Healthcheck: http://localhost:${PORT}/health`);
   console.log(` Public Viewer: http://localhost:${PORT}/`);
   console.log(` Exhibitor Admin: http://localhost:${PORT}/admin.html`);
   console.log(`=======================================================`);

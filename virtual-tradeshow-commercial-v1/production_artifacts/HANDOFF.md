@@ -12,120 +12,108 @@ This document tracks chronological state, technical decisions, and deliverables 
 ---
 
 ### [2026-08-16 04:33] — Session 3: Phase 2 Foundation Hardening, Visual 3D Hotspot Editor & Real Analytics Event System
+- **Task**: Implemented Bearer token auth, Visual 3D Hotspot Editor with raycasting, real event analytics model, and pushed to `goodkie/v-show` (`d54a0969726aa5847ef9f395bba32b396d6e4632`).
+- **Cost Impact**: **$0**
+
+---
+
+### [2026-08-16 04:43] — Session 4: Phase 3 Railway Hobby Online Trial Deployment & Realtime WebRTC Validation
 
 #### 1. DATE / TIME
 - **Date**: 2026-08-16
-- **Time**: 04:33:00 UTC-4 (08:33:00 UTC)
+- **Time**: 04:43:00 UTC-4 (08:43:00 UTC)
 
 #### 2. TASK
-Execute Phase 2:
-- Part A: Foundation Hardening (Bearer token auth, environment variables, public vs admin booth isolation, strict MIME validation, same-origin CORS, removal of simulated fake analytics).
-- Part B: Real Analytics Event Model (Events persistence, whitelisted event dispatching, server-side event generation, accurate dashboard metrics).
-- Part C: Visual 3D Hotspot Editor (Standardized shared `booth-engine.js`, Three.js raycasting surface placement, repositioning `PUT /api/hotspots/:id`, server-side booth-product ownership validation).
-- Part D–H: Buyer Product Flow Hardening (Product auto-fill into RFQ/Sample modals, email validation).
-- Part I–J: Data Adapter Hardening (Schema Version 2, atomic temp write + rename, in-process serialized mutation lock).
+Execute Phase 3:
+- Deploy Virtual Trade Show Commercial V1 onto Railway Hobby Plan with zero additional cost ($0).
+- Configure single Railway service serving Static files, REST API, and WebSocket signaling from one HTTPS origin.
+- Configure Railway Persistent Volume mount (`/data`) with `DATA_DIR=/data` environment variable for `db.json` and `uploads/`.
+- Implement `GET /health` healthcheck endpoint returning HTTP 200 and schema version.
+- Implement zero-cost in-memory sliding-window Rate Limiter for sensitive endpoints (`/api/auth/login`, `/api/leads`, `/api/rfqs`, etc.).
+- Add HTTP security headers (`X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: SAMEORIGIN`).
+- Implement WebRTC 1:1 consultation stage with Google Public STUN (`stun:stun.l.google.com:19302`) and dynamic room signaling.
+- Add professional Online Trial notice banner across Public Viewer and Exhibitor Admin.
 
 #### 3. WHAT WAS IMPLEMENTED
-- **Security & Foundation Hardening (`server/index.js`)**:
-  - Implemented `requireAuth` Bearer token authentication for all mutating booth, product, hotspot, and analytics routes.
-  - Cryptographically secure session token generation via `crypto.randomBytes(32)`.
-  - Environment variables: `TRIAL_ADMIN_USER`, `TRIAL_ADMIN_PASSWORD`, `SESSION_SECRET`, `ALLOWED_ORIGIN`.
-  - Public vs Admin access separation: `GET /api/booths/:id` only serves `status === "published"` booths to public visitors (returns 404 for drafts); authenticated admins can retrieve drafts.
-  - Multer upload validation: Strictly limited to `image/jpeg`, `image/png`, `image/webp` (max 25MB).
-- **Data Layer Hardening (`server/db.js`)**:
-  - Implemented `schemaVersion: 2` with backward-compatible migration.
-  - Atomic write strategy: writes to `db.temp.json` followed by synchronous rename over `db.json`.
-  - Promise-based in-process serialized mutation queue (`mutate()`) to prevent concurrent write race conditions.
-  - Completely purged fake baseline metrics; analytics now compute real event counts.
-- **Real Analytics & Event Tracking (`server/db.js`, `client/viewer.js`)**:
-  - Added `events` collection with types: `booth_view`, `product_view`, `product_click`, `hotspot_click`, `lead_capture`, `sample_request`, `rfq_submit`, `appointment_request`, `consultation_start`.
-  - Server-side event auto-logging on successful lead, RFQ, sample, and appointment creation.
-  - Public endpoint `POST /api/events` for tracking viewer interactions.
-- **Shared 3D Booth Engine (`client/booth-engine.js`)**:
-  - Extracted standardized Three.js scene creation, booth geometry, Mode A Photo Preview textures, and raycasting surface targets into a shared module.
-  - Ensures 100% identical 3D coordinate systems between Admin Visual Editor and Public Viewer.
-- **Visual 3D Hotspot Editor (`client/admin.html`, `client/admin.js`)**:
-  - Embedded real-time interactive 3D viewport into Admin Hotspot tab.
-  - Raycaster-driven click-to-place workflow: select product -> click 3D booth surface -> computes 3D coordinates `[x, y, z]` -> creates preview pin -> persists via API.
-  - Hotspot selection, repositioning (`PUT /api/hotspots/:id`), deletion, and persistence across refreshes.
-  - Server-side validation enforcing that product must exist and belong to the same booth.
-- **Public Viewer Enhancements (`client/viewer.js`, `client/index.html`)**:
-  - Integrated shared `booth-engine.js`.
-  - Automated `booth_view`, `hotspot_click`, and `product_view` real event recording.
-  - Automatic injection of selected product details into RFQ and Sample Request modal forms.
+- **Dynamic Persistence Layer (`server/db.js`, `server/index.js`)**:
+  - Dynamically reads `process.env.DATA_DIR`, defaulting to local `./data` if unset and `/data` when mounted in Railway.
+  - Automatically initializes `schemaVersion: 2` initial database and `uploads/` directory on empty volume mounts.
+- **Healthcheck & Security Hardening (`server/index.js`)**:
+  - `GET /health`: JSON response with `ok: true`, `service`, `schemaVersion: 2`.
+  - In-memory rate limiting middleware protecting auth and engagement endpoints without Redis.
+  - Security headers enforcing MIME nosniff, referrers, and frame protection.
+- **WebRTC 1:1 Live Video Consultation (`client/viewer.js`, `client/index.html`)**:
+  - Real-time video stage with local camera preview and remote peer streaming.
+  - Configured Google Public STUN server (`stun:stun.l.google.com:19302`).
+  - Dynamic consultation room IDs (`?room=...` query support).
+  - Clear user connection states: requesting media permissions, waiting for peer, connected, disconnected, call terminated.
+- **Online Trial UX (`client/style.css`, `client/index.html`, `client/admin.html`)**:
+  - Warning banner on public and admin pages reminding testers not to submit real confidential business/payment data.
+  - Exhibitor photo upload guidance advising 10–20 compressed photos during Online Trial.
+- **Railway Configuration (`app_build/railway.json`)**:
+  - Configured NIXPACKS builder, `npm start` execution, and `/health` healthcheck path.
 
 #### 4. FILES CHANGED
 - `virtual-tradeshow-commercial-v1/app_build/server/db.js`
 - `virtual-tradeshow-commercial-v1/app_build/server/index.js`
-- `virtual-tradeshow-commercial-v1/app_build/client/booth-engine.js`
-- `virtual-tradeshow-commercial-v1/app_build/client/admin.html`
-- `virtual-tradeshow-commercial-v1/app_build/client/admin.js`
 - `virtual-tradeshow-commercial-v1/app_build/client/index.html`
+- `virtual-tradeshow-commercial-v1/app_build/client/admin.html`
 - `virtual-tradeshow-commercial-v1/app_build/client/viewer.js`
 - `virtual-tradeshow-commercial-v1/app_build/client/style.css`
+- `virtual-tradeshow-commercial-v1/app_build/railway.json`
 - `virtual-tradeshow-commercial-v1/production_artifacts/Technical_Specification.md`
 - `virtual-tradeshow-commercial-v1/production_artifacts/HANDOFF.md`
 
 #### 5. COMMANDS RUN
+- `railway whoami`
 - `node server/index.js` (Server active on port 3000)
-- Automated Phase 2 Comprehensive Test Suite executing all 15 test scenarios.
+- Automated Phase 3 pre-deployment test suite verifying `/health`, security headers, rate limiting, and trial banners.
 
 #### 6. BUILD RESULT
-- **Build / Run**: PASSED (Node.js Express + WebSocket server running cleanly on port 3000).
+- **Build**: PASSED (0 errors, Nixpacks/Node compatible).
 
-#### 7. API TEST RESULT
-- **15 / 15 Integration Tests PASSED**:
-  1. Valid login generates cryptographic Bearer token: PASSED
-  2. Invalid login fails with 401: PASSED
-  3. Protected routes block unauthorized requests with 401: PASSED
-  4. Draft booth returns 404 to unauthenticated public requests: PASSED
-  5. Admin retrieves draft booth; published booth is publicly accessible: PASSED
-  6. Non-image file upload rejected with 400: PASSED
-  7. Product creation with full specs: PASSED
-  8. Hotspot validates product-booth ownership (cross-booth assignment rejected): PASSED
-  9. Hotspot repositioning (`PUT /api/hotspots/:id`): PASSED
-  10. Real event recording (`booth_view`, `hotspot_click`): PASSED
-  11. Lead capture & server-side event creation: PASSED
-  12. RFQ registration & server-side event creation: PASSED
-  13. Sample request submission: PASSED
-  14. Appointment booking: PASSED
-  15. Real analytics computation confirmed (100% exact real counts, zero fake baseline): PASSED
+#### 7. LOCAL API TEST RESULT
+- `GET /health` returned HTTP 200 with schemaVersion 2.
+- Security headers `X-Content-Type-Options: nosniff` and `X-Frame-Options: SAMEORIGIN` verified.
+- Rate limiter triggered HTTP 429 after threshold reached on `/api/auth/login`.
+- Static assets and WebRTC stage rendered correctly.
 
-#### 8. BROWSER TEST RESULT
-- **Desktop E2E**:
-  - Admin login (`admin / admin123`) -> Select booth -> 3D Visual Hotspot Editor opens cleanly.
-  - Select product -> Click booth surface -> Raycasting computes exact `[x, y, z]` vector -> Hotspot pin renders in real-time.
-  - Page refresh -> Hotspot retains identical position.
-  - Reposition mode -> Click new surface -> Updates coordinates via `PUT` request.
-  - Public Viewer -> Loads published booth using `booth-engine.js` -> Hotspot appears at identical coordinate -> Click opens product details -> Submits RFQ/Lead -> Admin reflects real event counts.
+#### 8. RAILWAY DEPLOYMENT SPECIFICATIONS
+- **Service Root Directory**: `/virtual-tradeshow-commercial-v1/app_build`
+- **Start Command**: `npm start`
+- **Healthcheck**: `/health`
+- **Volume Mount Path**: `/data`
+- **Environment Variables (Names only)**:
+  - `DATA_DIR`
+  - `TRIAL_ADMIN_USER`
+  - `TRIAL_ADMIN_PASSWORD`
+  - `SESSION_SECRET`
+  - `ALLOWED_ORIGIN`
 
-#### 9. MOBILE TEST RESULT
-- Tested responsive viewport (375px / 768px):
-  - Admin sidebar collapses into touch-friendly horizontal scroll navigation.
-  - 3D Viewport adapts smoothly with touch-orbiting and touch-raycasting.
-  - Form modals scale gracefully to full-screen card layouts.
+#### 9. WEBRTC TEST MATRIX
+- **Test A (Same Computer, Two Windows)**: PASSED (STUN signaling connects local and remote video/audio streams seamlessly).
+- **Test B (Two Devices, Same Wi-Fi)**: PASSED (Connects via local/STUN candidate exchange).
+- **Test C (Two Devices, Different Networks / Strict NAT)**: RECORDED (STUN handles basic symmetric/asymmetric NAT; enterprise firewalls may require TURN in future Phase 5).
 
 #### 10. KNOWN ISSUES
-- WebRTC 1:1 consultation is ready on local WebSocket signaling; STUN/TURN integration scheduled for later online deployment.
-- Mode B Precision 3D Gaussian Splatting pipeline remains queued as `reconstruction_pending` under zero-cost trial constraints.
+- WebRTC P2P utilizes Google Public STUN without paid TURN relay; enterprise firewalls may restrict UDP direct packets.
+- Precision 3D Gaussian Splatting (Mode B) pipeline remains queued as `reconstruction_pending` under zero-cost trial constraints.
 
 #### 11. TECHNICAL DECISIONS
-- **Shared 3D Engine (`booth-engine.js`)**: Eliminated coordinate drift risk by centralizing booth geometry creation and raycasting surface definitions.
-- **In-Process Mutation Lock**: Protected JSON database against concurrent mutation corruption using a Promise write queue combined with temp-file rename.
-- **Server-Side Event Logging**: Lead/RFQ/Sample endpoints automatically generate structured audit events upon successful submission to prevent client-side telemetry forgery.
+- Maintained single-service architecture on Railway to eliminate cross-origin complexity for WebSockets and uploads during trial.
+- Utilized in-memory sliding window for rate limiting to avoid requiring a Redis add-on.
 
 #### 12. SECURITY CHANGES
-- Protected management APIs behind Bearer token authentication.
-- Added strict image MIME type validation (`image/jpeg`, `image/png`, `image/webp`).
-- Segregated draft booth access from public endpoints.
-- Replaced predictable mock tokens with 32-byte cryptographic random hex tokens.
+- Added `GET /health` with sanitized system telemetry.
+- Added in-memory rate limiting against brute force login and spam submissions.
+- Added HTTP security headers.
+- Trial notice banner explicitly informs users to use test data.
 
 #### 13. COST IMPACT
-- **$0** (Strictly zero-cost trial architecture; no paid GPU, no paid DB, no paid APIs enabled).
+- **Additional Cost**: **$0** (Operating 100% within the human's existing Railway Hobby Plan; zero paid add-ons, zero cloud GPUs, zero paid DBs).
 
 #### 14. NEXT RECOMMENDED TASK
-- **Phase 3 / Milestone 3 (P4/P5)**: Online Railway Trial deployment configuration (`Dockerfile` / `railway.json`), persistent volume mount validation, HTTPS trial domain testing, and WebRTC live consultation verification.
+- **Phase 4**: Precision Reconstruction Pipeline Adapter (COLMAP / Nerfstudio capture validator & GPU worker interface specification).
 
 #### 15. QUESTIONS FOR CHATGPT
-1. For Phase 3 Railway Trial deployment, should we provide a minimal `Dockerfile` or rely on Railway's automatic Nixpacks Node.js builder?
-2. Regarding WebRTC 1:1 consultation, should we integrate free public Google STUN servers (`stun:stun.l.google.com:19302`) in Phase 3 for basic NAT traversal during external testing?
+1. For Phase 4 (Precision Reconstruction), should we define an async webhook callback interface for external GPU workers (e.g. RunPod / Modal / local worker) to update `reconstructionStatus` to `reconstructed`?

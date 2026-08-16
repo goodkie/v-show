@@ -7,17 +7,19 @@ Virtual Trade Show Commercial V1 is a commercial-grade SaaS platform connecting 
 
 ## 2. Core Architecture
 
-### 2.1 Technology Stack (Phase 2 Hardened)
+### 2.1 Technology Stack (Phase 3 Online Trial)
 - **Backend Runtime**: Node.js (v18+)
-- **Server Framework**: Express.js + Native `ws` (WebSocket) with Bearer token authentication middleware.
+- **Server Framework**: Express.js + Native `ws` (WebSocket) with Bearer token authentication middleware and in-memory rate limiting.
 - **Frontend Core**: Vanilla HTML5, CSS3 (B2B Design System with responsive mobile layout), Modern ES6+ JavaScript.
 - **Shared 3D Graphics Engine**: Three.js (r128+) standardized via `booth-engine.js` guaranteeing identical coordinates across Admin & Buyer Viewer.
+- **Realtime Video / Communication**:
+  - WebRTC P2P with Google Public STUN (`stun:stun.l.google.com:19302`) and internal WebSocket signaling.
+  - Dynamic consultation room IDs (`?room=...`).
 - **Data Layer (Adapter Pattern)**:
   - Trial default: `JSONDatabaseAdapter` (Schema Version 2) with atomic temp-write/rename and in-process mutation locking.
-  - Production path: PostgreSQL (Prisma/Knex) + AWS S3 / Cloudflare R2 object storage.
-- **Realtime / Video**:
-  - Trial: WebRTC P2P with internal WebSocket signaling.
-  - Production: TURN Server / LiveKit SFU.
+  - Persistence: Dynamic `DATA_DIR` mounting to Railway Persistent Volume (`/data`).
+- **Deployment**:
+  - Railway Hobby single-service architecture with automatic healthcheck (`/health`) and zero additional cost ($0).
 
 ---
 
@@ -94,10 +96,12 @@ interface Event {
 
 ---
 
-## 4. API Endpoints (Hardened Security)
+## 4. API Endpoints (Hardened Security & Health)
 
+- **System**:
+  - `GET /health` (Returns service health status, schema version, and timestamp)
 - **Auth**:
-  - `POST /api/auth/login` (Returns cryptographically secure session token)
+  - `POST /api/auth/login` (Protected by rate limiter; returns cryptographically secure session token)
   - `GET /api/auth/me` (Protected)
 - **Booths**:
   - `GET /api/booths` (Public lists only `published` booths; `?all=true` with Bearer auth lists drafts)
@@ -118,9 +122,9 @@ interface Event {
   - `PUT /api/hotspots/:id` (Protected, supports repositioning)
   - `DELETE /api/hotspots/:id` (Protected)
 - **Real Analytics & Events**:
-  - `POST /api/events` (Public event collector for whitelisted event types)
+  - `POST /api/events` (Rate limited event collector for whitelisted event types)
   - `GET /api/booths/:boothId/analytics` (Protected, calculates exact real metrics without simulated baselines)
-- **Buyer Engagement**:
+- **Buyer Engagement (Rate Limited)**:
   - `POST /api/leads` (Lead submission & server-side event creation)
   - `POST /api/rfqs` (RFQ submission & server-side event creation)
   - `POST /api/samples` (Sample request & server-side event creation)

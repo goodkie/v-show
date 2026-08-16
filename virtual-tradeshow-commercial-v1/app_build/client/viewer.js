@@ -1,6 +1,6 @@
 /* ============================================================
    Virtual Trade Show Commercial V1 — 3D Viewer Engine
-   Three.js Space Rendering & Real Event Tracking (Phase 2)
+   Three.js Space Rendering, Real Events & WebRTC (Phase 3)
 ============================================================ */
 
 let viewerEngine = null;
@@ -11,6 +11,16 @@ let hotspots = [];
 let hotspotObjects = [];
 let ws = null;
 let currentSessionId = `sess-${Math.random().toString(36).substring(2, 9)}`;
+
+// WebRTC Consultation State
+let peerConnection = null;
+let localStream = null;
+let currentConsultationRoom = null;
+const RTC_CONFIG = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' }
+  ]
+};
 
 // DOM Elements
 const viewport = document.getElementById('viewport-3d');
@@ -23,13 +33,12 @@ const hudDesc = document.getElementById('hud-booth-desc');
 // Initialize Viewer
 async function initViewer() {
   const urlParams = new URLSearchParams(window.location.search);
-  const boothId = urlParams.get('boothId') || 'booth-demo-01';
+  const boothId = urlParams.get('booth') || urlParams.get('boothId') || 'booth-demo-01';
 
   setupEventListeners();
   const success = await loadBoothData(boothId);
   if (success) {
     setupWebSocket(boothId);
-    // Track Real booth_view Event
     trackEvent('booth_view', { source: 'web_client' });
   }
 }
@@ -76,20 +85,17 @@ async function loadBoothData(boothId) {
     const hsRes = await fetch(`/api/booths/${boothId}/hotspots`);
     hotspots = await hsRes.json();
 
-    // UI Updates
     navBoothName.textContent = currentBooth.name;
     hudTitle.textContent = currentBooth.name;
     hudDesc.textContent = currentBooth.description || '가상 무역 전시관에 오신 것을 환영합니다.';
     updateStatusBadge(currentBooth.reconstructionStatus);
 
-    // Initialize Three.js Scene via Shared BoothEngine
     if (!viewerEngine) {
       viewerEngine = BoothEngine.initScene(viewport);
       animate();
     }
     raycastSurfaces = BoothEngine.buildBooth(viewerEngine.scene, currentBooth);
 
-    // Render Hotspot Pins
     renderHotspots(hotspots);
     return true;
 
@@ -116,7 +122,6 @@ function updateStatusBadge(status) {
 function renderHotspots(list) {
   if (!viewerEngine) return;
 
-  // Clean old objects
   hotspotObjects.forEach(item => {
     viewerEngine.scene.remove(item.anchor);
   });
@@ -182,7 +187,6 @@ function setupEventListeners() {
     });
   });
 
-  // Reset View
   document.getElementById('btn-reset-view').addEventListener('click', () => {
     if (viewerEngine && viewerEngine.camera && viewerEngine.controls) {
       viewerEngine.camera.position.set(0, 2.2, 7.5);
@@ -191,26 +195,24 @@ function setupEventListeners() {
     }
   });
 
-  // Open Catalog
   document.getElementById('btn-open-catalog').addEventListener('click', openCatalogModal);
 
-  // Digital Business Card
   document.getElementById('btn-exchange-card').addEventListener('click', () => {
     document.getElementById('modal-lead').classList.add('active');
   });
 
-  // Appointment Booking
   document.getElementById('btn-book-appointment').addEventListener('click', () => {
     document.getElementById('modal-appointment').classList.add('active');
   });
 
-  // Live Showhost
+  // Live Showhost Trigger
   document.getElementById('btn-live-showhost').addEventListener('click', () => {
-    trackEvent('consultation_start', { mode: 'webrtc_p2p' });
-    document.getElementById('modal-showhost').classList.add('active');
+    openConsultationModal();
   });
 
-  // Action Buttons from Product Modal
+  document.getElementById('btn-start-call').addEventListener('click', startWebRTCCall);
+  document.getElementById('btn-end-call').addEventListener('click', endWebRTCCall);
+
   document.getElementById('btn-action-rfq').addEventListener('click', () => {
     const prodId = document.getElementById('modal-product').dataset.currentProdId;
     openRFQModal(prodId);
@@ -231,7 +233,6 @@ function openProductModal(productId) {
     return;
   }
 
-  // Track product_view event
   trackEvent('product_view', { sku: prod.sku }, prod.id);
 
   const modal = document.getElementById('modal-product');
@@ -448,30 +449,209 @@ function setupForms() {
   });
 }
 
-// 5. WebSocket Signaling
+// 5. WebSocket & WebRTC P2P Consultation Implementation
 function setupWebSocket(boothId) {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  ws = new WebSocket(`${protocol}//${window.location.host}`);
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${wsProtocol}//${window.location.host}`;
+  ws = new WebSocket(wsUrl);
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const roomId = urlParams.get('room') || `booth-room-${boothId}`;
+  currentConsultationRoom = roomId;
 
   ws.onopen = () => {
-    ws.send(JSON.stringify({ type: 'join_room', roomId: `booth-room-${boothId}` }));
+    ws.send(JSON.stringify({ type: 'join_room', roomId: currentConsultationRoom }));
   };
 
-  ws.onmessage = (event) => {
+  ws.onmessage = async (event) => {
     try {
       const data = JSON.parse(event.data);
-      if (data.type === 'room_joined') {
-        const text = document.getElementById('showhost-status-text');
-        if (text) {
-          text.textContent = data.peerCount > 0 
-            ? `부스 담당 쇼호스트 온라인 (${data.peerCount}명 참가 중)` 
-            : `쇼호스트 상담 채널 준비 완료 (연결 대기 중)`;
-        }
-      }
+      handleSignalingMessage(data);
     } catch (e) {
       console.error('WS parse error:', e);
     }
   };
+
+  ws.onclose = () => {
+    const statusText = document.getElementById('webrtc-status-text');
+    if (statusText) statusText.textContent = '상태: WebSocket 연결 해제됨 (재접속 대기)';
+  };
+}
+
+function openConsultationModal() {
+  trackEvent('consultation_start', { mode: 'webrtc_p2p' });
+  const modal = document.getElementById('modal-showhost');
+  const roomTag = document.getElementById('webrtc-room-tag');
+  if (roomTag) roomTag.textContent = `Room: ${currentConsultationRoom}`;
+  modal.classList.add('active');
+}
+
+async function startWebRTCCall() {
+  const statusText = document.getElementById('webrtc-status-text');
+  const btnStart = document.getElementById('btn-start-call');
+  const btnEnd = document.getElementById('btn-end-call');
+
+  try {
+    statusText.textContent = '상태: 카메라/마이크 권한 요청 중...';
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    
+    const localVideo = document.getElementById('local-video');
+    if (localVideo) {
+      localVideo.srcObject = localStream;
+    }
+
+    createPeerConnection();
+
+    // Add local tracks to RTCPeerConnection
+    localStream.getTracks().forEach(track => {
+      peerConnection.addTrack(track, localStream);
+    });
+
+    btnStart.style.display = 'none';
+    btnEnd.style.display = 'inline-flex';
+    statusText.textContent = '상태: 상대방 연결 대기 중 (STUN P2P)';
+
+    // Create and send offer
+    const offer = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
+
+    sendSignaling({
+      type: 'offer',
+      sdp: offer
+    });
+
+  } catch (err) {
+    console.error('WebRTC getUserMedia error:', err);
+    if (err.name === 'NotAllowedError') {
+      statusText.textContent = '오류: 카메라/마이크 접근 권한이 거부되었습니다.';
+    } else {
+      statusText.textContent = `오류: 미디어 장치 연결 실패 (${err.message})`;
+    }
+  }
+}
+
+function createPeerConnection() {
+  if (peerConnection) return;
+
+  peerConnection = new RTCPeerConnection(RTC_CONFIG);
+
+  peerConnection.onicecandidate = (event) => {
+    if (event.candidate) {
+      sendSignaling({
+        type: 'candidate',
+        candidate: event.candidate
+      });
+    }
+  };
+
+  peerConnection.ontrack = (event) => {
+    const remoteVideo = document.getElementById('remote-video');
+    const placeholder = document.getElementById('remote-video-placeholder');
+    if (remoteVideo && event.streams[0]) {
+      remoteVideo.srcObject = event.streams[0];
+      if (placeholder) placeholder.style.display = 'none';
+      const statusText = document.getElementById('webrtc-status-text');
+      if (statusText) statusText.textContent = '상태: 1:1 라이브 화상 연결 완료 (통화 중)';
+    }
+  };
+
+  peerConnection.onconnectionstatechange = () => {
+    const statusText = document.getElementById('webrtc-status-text');
+    if (!statusText) return;
+    switch (peerConnection.connectionState) {
+      case 'connecting':
+        statusText.textContent = '상태: P2P 피어 연결 중...';
+        break;
+      case 'connected':
+        statusText.textContent = '상태: 1:1 실시간 화상 상담 연결 완료';
+        break;
+      case 'disconnected':
+      case 'failed':
+        statusText.textContent = '상태: 피어 연결 끊김 또는 실패 (STUN NAT)';
+        break;
+      case 'closed':
+        statusText.textContent = '상태: 통화 종료됨';
+        break;
+    }
+  };
+}
+
+function sendSignaling(payload) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: 'signal',
+      roomId: currentConsultationRoom,
+      from: currentSessionId,
+      payload
+    }));
+  }
+}
+
+async function handleSignalingMessage(data) {
+  if (data.type === 'peer_joined') {
+    const statusText = document.getElementById('webrtc-status-text');
+    if (statusText) statusText.textContent = '상태: 상대방이 방에 입장했습니다.';
+    return;
+  }
+
+  if (data.type !== 'signal' || !data.payload) return;
+
+  const payload = data.payload;
+  if (!peerConnection) {
+    createPeerConnection();
+  }
+
+  if (payload.type === 'offer') {
+    if (!localStream) {
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        document.getElementById('local-video').srcObject = localStream;
+        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+      } catch (e) {
+        console.warn('Could not auto-start local stream on incoming offer:', e);
+      }
+    }
+
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+
+    sendSignaling({
+      type: 'answer',
+      sdp: answer
+    });
+
+  } else if (payload.type === 'answer') {
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+  } else if (payload.type === 'candidate' && payload.candidate) {
+    try {
+      await peerConnection.addIceCandidate(new RTCIceCandidate(payload.candidate));
+    } catch (e) {
+      console.error('Error adding ICE candidate:', e);
+    }
+  }
+}
+
+function endWebRTCCall() {
+  if (localStream) {
+    localStream.getTracks().forEach(t => t.stop());
+    localStream = null;
+  }
+  if (peerConnection) {
+    peerConnection.close();
+    peerConnection = null;
+  }
+
+  const localVideo = document.getElementById('local-video');
+  const remoteVideo = document.getElementById('remote-video');
+  const placeholder = document.getElementById('remote-video-placeholder');
+  if (localVideo) localVideo.srcObject = null;
+  if (remoteVideo) remoteVideo.srcObject = null;
+  if (placeholder) placeholder.style.display = 'block';
+
+  document.getElementById('btn-start-call').style.display = 'inline-flex';
+  document.getElementById('btn-end-call').style.display = 'none';
+  document.getElementById('webrtc-status-text').textContent = '상태: 상담 통화가 종료되었습니다.';
 }
 
 function showToast(message) {

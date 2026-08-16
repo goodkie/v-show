@@ -1,13 +1,13 @@
 /* ============================================================
    Virtual Trade Show Commercial V1 — Design System
-   Modern B2B Commercial Aesthetic (Hardened Phase 2)
+   Modern B2B Commercial Aesthetic (Phase 3 Online Trial)
 ============================================================ */
 
 :root {
   --bg-primary: #0b0f17;
   --bg-surface: #131b2e;
   --bg-surface-elevated: #1e293b;
-  --bg-glass: rgba(19, 27, 46, 0.85);
+  --bg-glass: rgba(19, 27, 46, 0.88);
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-focus: #3b82f6;
   
@@ -50,6 +50,27 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Online Trial Notice Banner */
+.trial-banner {
+  background: linear-gradient(90deg, #b45309, #d97706);
+  color: #ffffff;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  z-index: 50;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.trial-banner a {
+  color: #fff;
+  text-decoration: underline;
+}
+
 /* Typography */
 h1, h2, h3, h4 {
   font-weight: 600;
@@ -74,7 +95,7 @@ p {
 /* Top Navigation Bar */
 .top-nav {
   position: absolute;
-  top: 0;
+  top: 32px;
   left: 0;
   right: 0;
   height: 64px;
@@ -533,6 +554,48 @@ p {
   justify-content: space-between;
 }
 
+/* WebRTC Video Room Panel */
+.webrtc-stage {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  background: #090d16;
+  border-radius: var(--radius-md);
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  margin-bottom: 16px;
+  min-height: 260px;
+}
+
+.video-container {
+  position: relative;
+  background: #0f172a;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-subtle);
+  aspect-ratio: 4 / 3;
+}
+
+.video-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-label {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #fff;
+}
+
 /* Admin Dashboard Specific */
 .admin-shell {
   min-height: 100vh;
@@ -722,6 +785,10 @@ p {
 
 /* Responsive Breakpoints */
 @media (max-width: 768px) {
+  .top-nav {
+    top: 40px;
+    padding: 0 12px;
+  }
   .admin-body {
     flex-direction: column;
     padding: 16px;
@@ -747,5 +814,8 @@ p {
   }
   .editor-viewport-card {
     height: 380px;
+  }
+  .webrtc-stage {
+    grid-template-columns: 1fr;
   }
 }

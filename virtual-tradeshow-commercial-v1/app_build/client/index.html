@@ -16,6 +16,11 @@
   <script src="booth-engine.js"></script>
 </head>
 <body>
+  <!-- Online Trial Notice Banner -->
+  <div class="trial-banner">
+    <span>⚠️ <strong>ONLINE TRIAL</strong> — 평가용 공개 테스트 환경입니다. 실제 기밀 비즈니스 정보, 결제 및 민감 개인정보 입력을 삼가해 주세요.</span>
+  </div>
+
   <div class="app-container">
     <!-- Top Navigation -->
     <header class="top-nav">
@@ -285,27 +290,42 @@
     </div>
   </div>
 
-  <!-- Modal 7: Live Showhost Consultation Modal -->
+  <!-- Modal 7: Live Showhost WebRTC Video Consultation Modal -->
   <div id="modal-showhost" class="modal-backdrop">
-    <div class="modal-card" style="max-width: 680px;">
+    <div class="modal-card" style="max-width: 720px;">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="badge badge-live">LIVE</span>
-          <h3>1:1 라이브 부스 쇼호스트 상담</h3>
+          <h3>1:1 라이브 부스 상담 (WebRTC P2P)</h3>
         </div>
         <button class="modal-close" data-close-modal>&times;</button>
       </div>
-      <div style="background:#0f172a; border-radius: var(--radius-md); height: 280px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; border: 1px solid var(--border-subtle); margin-bottom: 16px;">
-        <div style="font-size: 36px;">🎙️</div>
-        <div style="font-weight: 600; font-size: 16px;">실시간 P2P WebRTC 상담 채널</div>
-        <div style="font-size: 13px; color: var(--text-dim);" id="showhost-status-text">쇼호스트 대기실에 연결하는 중입니다...</div>
+
+      <!-- Real WebRTC Video Stage -->
+      <div class="webrtc-stage">
+        <div class="video-container">
+          <video id="local-video" autoplay playsinline muted></video>
+          <div class="video-label">내 화면 (Local Camera)</div>
+        </div>
+        <div class="video-container">
+          <video id="remote-video" autoplay playsinline></video>
+          <div class="video-label">상대방 화면 (Remote Peer)</div>
+          <div id="remote-video-placeholder" style="position: absolute; color: var(--text-dim); font-size: 13px; text-align: center; padding: 20px;">
+            <div style="font-size: 28px; margin-bottom: 8px;">👤</div>
+            상대방 참가 대기 중...
+          </div>
+        </div>
       </div>
-      <p style="font-size: 13px; margin-bottom: 20px;">
-        부스 현장 담당자 또는 AI/전문 쇼호스트와 1:1로 실시간 음성/화상 상담을 진행합니다.
-      </p>
-      <div style="display: flex; gap: 12px;">
-        <button class="btn btn-accent" id="btn-start-call" style="flex:1;">상담 연결 시작</button>
-        <button class="btn btn-secondary" data-close-modal style="flex:1;">닫기</button>
+
+      <div style="background: var(--bg-surface-elevated); padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 16px; font-size: 13px; display: flex; align-items: center; justify-content: space-between;">
+        <span id="webrtc-status-text">상태: 상담 채널 대기 중</span>
+        <span id="webrtc-room-tag" style="font-family: monospace; font-size: 11px; color: var(--brand-accent);"></span>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button class="btn btn-accent" id="btn-start-call" style="flex: 1;">🎙️ 카메라/마이크 켜고 연결</button>
+        <button class="btn btn-danger" id="btn-end-call" style="flex: 1; display: none;">통화 종료</button>
+        <button class="btn btn-secondary" data-close-modal>닫기</button>
       </div>
     </div>
   </div>

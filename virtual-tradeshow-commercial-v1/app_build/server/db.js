@@ -2,13 +2,18 @@ const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
+// Support configurable DATA_DIR (Railway Volume /data or local fallback)
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 const TEMP_DB_FILE = path.join(DATA_DIR, 'db.temp.json');
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 
-// Ensure data directory exists
+// Ensure data and uploads directories exist
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
 // Initial DB state (Schema Version 2)
@@ -161,7 +166,6 @@ class JSONDatabaseAdapter {
     if (!fs.existsSync(DB_FILE)) {
       this.saveSync(initialData);
     } else {
-      // Migrate older versions if needed
       const current = this.read();
       if (!current.schemaVersion || current.schemaVersion < 2) {
         current.schemaVersion = 2;
@@ -187,7 +191,6 @@ class JSONDatabaseAdapter {
     }
   }
 
-  // Atomic write using temp file + atomic rename
   saveSync(data) {
     try {
       const jsonStr = JSON.stringify(data, null, 2);
@@ -200,7 +203,6 @@ class JSONDatabaseAdapter {
     }
   }
 
-  // In-process serialized write queue for concurrency safety
   async mutate(callback) {
     return new Promise((resolve, reject) => {
       this.writeQueue = this.writeQueue.then(async () => {
@@ -323,7 +325,6 @@ class JSONDatabaseAdapter {
     return this.mutate((db) => {
       const initialLen = (db.products || []).length;
       db.products = (db.products || []).filter(p => p.id !== id);
-      // Clean up linked hotspots
       db.hotspots = (db.hotspots || []).filter(h => h.productId !== id);
       return db.products.length < initialLen;
     });
@@ -340,11 +341,9 @@ class JSONDatabaseAdapter {
 
   async createHotspot(hotspotData) {
     return this.mutate((db) => {
-      // Validate booth
       const booth = (db.booths || []).find(b => b.id === hotspotData.boothId);
       if (!booth) throw new Error('Booth does not exist');
 
-      // Validate product and product-booth association
       const product = (db.products || []).find(p => p.id === hotspotData.productId);
       if (!product) throw new Error('Product does not exist');
       if (product.boothId !== hotspotData.boothId) {
@@ -361,7 +360,7 @@ class JSONDatabaseAdapter {
           z: Number(Number(hotspotData.position.z).toFixed(3)) || 0
         },
         label: hotspotData.label || product.name,
-        type: hotspotData.type || 'product', // supports: product | video | catalog | information
+        type: hotspotData.type || 'product',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -435,7 +434,6 @@ class JSONDatabaseAdapter {
       };
       db.leads = db.leads || [];
       db.leads.push(lead);
-      // Record server-side event
       db.events = db.events || [];
       db.events.push({
         id: `evt-${uuidv4().substring(0, 8)}`,
@@ -459,7 +457,6 @@ class JSONDatabaseAdapter {
       };
       db.rfqs = db.rfqs || [];
       db.rfqs.push(rfq);
-      // Record server-side event
       db.events = db.events || [];
       db.events.push({
         id: `evt-${uuidv4().substring(0, 8)}`,
@@ -482,7 +479,6 @@ class JSONDatabaseAdapter {
       };
       db.samples = db.samples || [];
       db.samples.push(sample);
-      // Record server-side event
       db.events = db.events || [];
       db.events.push({
         id: `evt-${uuidv4().substring(0, 8)}`,
@@ -506,7 +502,6 @@ class JSONDatabaseAdapter {
       };
       db.appointments = db.appointments || [];
       db.appointments.push(apt);
-      // Record server-side event
       db.events = db.events || [];
       db.events.push({
         id: `evt-${uuidv4().substring(0, 8)}`,
@@ -527,7 +522,6 @@ class JSONDatabaseAdapter {
     const samples = (db.samples || []).filter(s => s.boothId === boothId);
     const appointments = (db.appointments || []).filter(a => a.boothId === boothId);
 
-    // Compute REAL counts without simulated baseline
     const boothViews = events.filter(e => e.type === 'booth_view').length;
     const productViews = events.filter(e => e.type === 'product_view' || e.type === 'product_click').length;
     const hotspotClicks = events.filter(e => e.type === 'hotspot_click').length;
