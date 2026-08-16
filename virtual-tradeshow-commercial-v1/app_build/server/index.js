@@ -2079,6 +2079,35 @@ app.post('/api/customer/feedback', requireAuth, async (req, res) => {
   }
 });
 
+// --- Phase 10.7L Upgrade Intent Endpoints ---
+app.post('/api/customer/upgrade-intent', requireAuth, async (req, res) => {
+  try {
+    const intent = await db.recordUpgradeIntent({
+      organizationId: req.user.organizationId,
+      userId: req.user.userId,
+      requestedPlan: req.body.requestedPlan,
+      source: req.body.source || 'admin_console'
+    });
+    res.status(201).json({
+      success: true,
+      message: 'Upgrade intent recorded. A commercial specialist will contact you to activate your plan.',
+      intent
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/platform/upgrade-intents', requireAuth, requirePlatformOwner, (req, res) => {
+  try {
+    const intents = db.getUpgradeIntents();
+    res.json({ intents });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 
 
 

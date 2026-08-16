@@ -2746,6 +2746,46 @@ class JSONDatabase {
     };
   }
 
+  // --- Phase 10.7L Upgrade Intent Without Live Billing ---
+  async recordUpgradeIntent(data) {
+    if (!data.organizationId || !data.requestedPlan) {
+      throw new Error('organizationId and requestedPlan are required.');
+    }
+
+    return this.mutate((db) => {
+      db.upgradeIntents = db.upgradeIntents || [];
+      const intent = {
+        id: `upg-${uuidv4().substring(0, 8)}`,
+        organizationId: data.organizationId,
+        requestedPlan: data.requestedPlan.toLowerCase(), // 'pro' | 'business'
+        source: data.source || 'admin_console',
+        requestedAt: new Date().toISOString(),
+        status: 'awaiting_live_billing_clearance',
+        notes: 'Commercial upgrade request logged. Live billing blocked pending legal/tax clearance.'
+      };
+      db.upgradeIntents.push(intent);
+
+      db.auditLogs.push({
+        id: `aud-${uuidv4().substring(0, 8)}`,
+        userId: data.userId || 'customer-admin',
+        organizationId: data.organizationId,
+        action: 'commercial.upgrade_intent_recorded',
+        targetType: 'upgrade_intent',
+        targetId: intent.id,
+        details: { requestedPlan: intent.requestedPlan, status: intent.status },
+        timestamp: new Date().toISOString()
+      });
+
+      return intent;
+    });
+  }
+
+  getUpgradeIntents(organizationId = null) {
+    const list = this.read().upgradeIntents || [];
+    if (organizationId) return list.filter(u => u.organizationId === organizationId);
+    return list;
+  }
+
   isOrganizationAllowedForLiveBilling(organizationId) {
     const org = this.getOrganizationById(organizationId);
     if (!org) return false;
@@ -2757,6 +2797,7 @@ class JSONDatabase {
     return allowedOrgs.includes(organizationId);
   }
 }
+
 
 
 

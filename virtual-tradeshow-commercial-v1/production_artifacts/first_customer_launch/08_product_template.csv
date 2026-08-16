@@ -1,0 +1,4 @@
+product_name,sku,category,short_description,full_description,website_url,rfq_enabled,sample_enabled,image_filename
+Titan-X5 Industrial Robot Arm,ROB-TX5-2026,Robotics & Automation,High-precision 6-axis articulated robotic arm for assembly lines.,Payload capacity 20kg with repeatability 0.02mm.,https://company.test/tx5,true,false,titan_x5.jpg
+SmartGrip Pneumatic Actuator,ACT-SG2-2026,Pneumatics & Grippers,Adaptive dual-finger robotic gripper with force feedback.,Continuous clamping force adjustment for fragile components.,https://company.test/smartgrip,true,true,smartgrip.jpg
+OptiScan 3D Quality Sensor,SEN-OS3-2026,Sensors & Vision,High-speed inline optical inspection sensor with laser triangulation.,Micron-level defect detection at 120 FPS.,https://company.test/optiscan,true,false,optiscan.jpg
