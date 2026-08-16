@@ -1877,15 +1877,95 @@ app.get('/api/platform/export', requireAuth, requirePlatformOwner, (req, res) =>
     case 'organizations':
     default: {
       csvContent = 'Id,Name,Slug,Type,Status,Plan,Environment,CreatedAt\n';
-      orgs.forEach(o => {
-        csvContent += `"${o.id}","${o.name}","${o.slug}","${o.type}","${o.status}","${o.subscription?.plan || 'free'}","${o.subscription?.dataEnvironment || 'REAL'}","${o.createdAt}"\n`;
-      });
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename=organizations_export_${Date.now()}.csv`);
-      return res.send(csvContent);
-    }
+// --- Phase 10.7 First Real Customer Pre-Activation & Launch Governance APIs ---
+app.post('/api/platform/first-customer/pre-activate', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const result = await db.createRealCustomerPreActivation(req.body, req.user.userId);
+    res.status(201).json({
+      success: true,
+      message: 'First real customer pre-activated successfully. Billing remains OFF.',
+      ...result
+    });
+  } catch (err) {
+    const status = err.status || (err.code === 'LIVE_PILOT_CUSTOMER_LIMIT_REACHED' ? 409 : 400);
+    res.status(status).json({
+      error: err.message,
+      code: err.code || 'PRE_ACTIVATION_FAILED'
+    });
   }
 });
+
+app.get('/api/platform/first-customer/checklist', requireAuth, requirePlatformOwner, (req, res) => {
+  try {
+    const checklist = db.getPreActivationChecklist(req.query.organizationId);
+    res.json(checklist);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/platform/first-customer/preflight', requireAuth, requirePlatformOwner, (req, res) => {
+  try {
+    const preflight = db.getStripeLivePreflight();
+    res.json(preflight);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/platform/governance/legal-approval', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const { docType, status, approvedBy, reviewNotes } = req.body;
+    if (!docType || !status) {
+      return res.status(400).json({ error: 'docType (terms/privacy/refund) and status (approved/pending/rejected) are required.' });
+    }
+    const updatedFlags = await db.recordLegalApproval(docType, { status, approvedBy, reviewNotes }, req.user.userId);
+    res.json({ success: true, featureFlags: updatedFlags });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/platform/governance/tax-review', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const { status, reviewedBy, notes, answers } = req.body;
+    const updatedFlags = await db.recordTaxReview({ status, reviewedBy, notes, answers }, req.user.userId);
+    res.json({ success: true, featureFlags: updatedFlags });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/platform/booths/:id/capture-qa', requireAuth, (req, res) => {
+  try {
+    const booth = db.getBoothById(req.params.id);
+    if (!booth) return res.status(404).json({ error: 'Booth not found' });
+    const photos = req.body.photos || booth.photos || [];
+    const qaResult = db.runCaptureQA(booth.id, photos);
+    res.json(qaResult);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/platform/first-customer/360', requireAuth, requirePlatformOwner, (req, res) => {
+  try {
+    const customer360 = db.getFirstCustomer360();
+    res.json({ customer: customer360 });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/platform/first-customer/launch-board', requireAuth, requirePlatformOwner, (req, res) => {
+  try {
+    const launchBoard = db.getFirstCustomerLaunchBoard();
+    res.json(launchBoard);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 
 // --- 10. WebSocket Realtime Signaling & Showhost Presence ---

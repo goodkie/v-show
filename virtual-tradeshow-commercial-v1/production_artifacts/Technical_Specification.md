@@ -7,9 +7,15 @@ Virtual Trade Show Commercial V1 is a commercial-grade SaaS platform connecting 
 
 ## 2. Core Architecture
 
-### 2.1 Technology Stack (Phase 10.6B Pre-Live Commercial Expansion)
+### 2.1 Technology Stack (Phase 10.7 First Real Customer Pre-Activation)
 - **Backend Runtime**: Node.js (v18+)
 - **Server Framework**: Express.js + Native `ws` (WebSocket) with Signed Bearer session tokens, Worker authentication, RBAC, and sliding window rate limiting.
+- **First Real Customer Pre-Activation Engine**:
+  - 5-Step Onboarding Wizard in Grand Control Console (`/grand-control.html`).
+  - Server-side quota guard (`LIVE_PILOT_MAX_CUSTOMERS = 1`, HTTP 409 `LIVE_PILOT_CUSTOMER_LIMIT_REACHED`).
+  - Explicit data classification: `dataEnvironment: "REAL"`, `commercialStatus: "pre_activation"`, `billingStatus: "not_activated"`, `pilotCustomer: true`, `liveBillingAllowed: false`.
+  - 13-Point Pre-Activation Gate Matrix & 9-Card Launch Board.
+  - Read-only Stripe Live Pre-Flight Panel.
 - **Canonical Health Endpoint**: `/health` (Legacy alias `/api/health` supported) providing minimal unprivileged diagnostic payload.
 - **Stripe Billing Engine (Test Mode)**: Official `stripe@22.5.0` SDK with Checkout sessions, Customer Portal, raw body webhook verification, and deterministic checkout consent auditing.
 - **Security & Password Hashing**: Node.js native `crypto.scryptSync` with 16-byte random salt, minimum 12-character policy with structured `WEAK_PASSWORD` error codes, and 16+ CSPRNG temporary password generation.
@@ -21,7 +27,7 @@ Virtual Trade Show Commercial V1 is a commercial-grade SaaS platform connecting 
   - Touch targets $\ge 44 \times 44\text{px}$, 1-finger orbit, 2-finger pinch zoom.
   - Background throttling on `document.visibilitychange` & WebGL context loss recovery.
 - **Console Experiences**:
-  - **Platform Owner Grand Control Console (`/grand-control.html`)**: Master tenant oversight, Customer 360, Test MRR / revenue intelligence, 3DGS pipeline control, in-app messaging, feature flags, commercial governance blockers, and CSV exports.
+  - **Platform Owner Grand Control Console (`/grand-control.html`)**: Master tenant oversight, First Real Customer Pre-Activation Wizard, Launch Board, Customer 360, Test MRR / revenue intelligence, 3DGS pipeline control, in-app messaging, feature flags, commercial governance blockers, and CSV exports.
   - **Organizer Admin Console (`/organizer.html`)**: Multi-event management, exhibitor onboarding, event-wide analytics, and reconstruction approval.
   - **Exhibitor Admin Console (`/admin.html`)**: Booth customization, 3D alignment, product/hotspot placement, leads/RFQ tracking, showhost signaling, and Stripe self-serve billing.
 - **3D Graphics Engine & Precision Splatting**:
@@ -29,7 +35,7 @@ Virtual Trade Show Commercial V1 is a commercial-grade SaaS platform connecting 
   - Dual Format Engine: High-density binary PLY and 88.7% compressed SPZ streaming with WebGL2 radiance rasterization.
   - Mandatory Fallback: Robust Photo Preview room mode if asset is missing or WebGL2 is unsupported.
 - **Precision 3D Reconstruction Orchestration**:
-  - Pre-flight Capture Validator (50~100 photos recommended for production).
+  - Pre-flight Capture QA Validator (60–100 photos recommended for production).
   - Double-Gate Reconstruction Guard: Exhibitor plan check (`PRO` / `BUSINESS` required) -> `awaiting_approval` -> Platform/Organizer approval -> GPU Worker.
 - **Data Layer & Multi-Tenancy**:
   - `JSONDatabaseAdapter` (**Schema Version 5**) with atomic temp-write/rename.
@@ -37,6 +43,7 @@ Virtual Trade Show Commercial V1 is a commercial-grade SaaS platform connecting 
   - Data Environment Isolation (`REAL`, `TEST`, `SYNTHETIC_TEST`).
   - Storage Driver Abstraction (`STORAGE_DRIVER=volume`).
   - Clean separation between Git-tracked Seed Data (`seed/db.seed.json`) and Runtime Persistence (`DATA_DIR/db.json`).
+
 
 
 

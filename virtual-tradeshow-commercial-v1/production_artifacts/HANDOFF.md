@@ -564,6 +564,42 @@ Establish complete legal, pricing, and commercial governance before first live c
 - **First REAL Customer**: **`WAITING (No profile submitted)`**
 - **Stripe Mode**: **`TEST`** ($0.00 cash charged, Live Billing OFF)
 
+---
+
+### [2026-08-16 17:38] — Session 25: Phase 10.7 — First Real Customer Pre-Activation Complete
+
+#### 1. DATE / TIME
+- **Date**: 2026-08-16
+- **Time**: 17:38:00 UTC-4 (21:38:00 UTC)
+
+#### 2. TASK & ACCOMPLISHMENTS
+1. **5-Step Onboarding Wizard**: Added full 5-Step First Real Customer Onboarding Wizard to Grand Control Console (`/grand-control.html` & `client/grand-control.js`).
+2. **Strict REAL Customer Classification**: Enforced `dataEnvironment: "REAL"`, `commercialStatus: "pre_activation"`, `billingStatus: "not_activated"`, `pilotCustomer: true`, `pricingVersion: "pilot-2026.1"`, and `liveBillingAllowed: false`.
+3. **Pilot Customer Quota Guard**: Server-side enforcement of `LIVE_PILOT_MAX_CUSTOMERS = 1` returning HTTP 409 `LIVE_PILOT_CUSTOMER_LIMIT_REACHED` on excess onboarding attempts.
+4. **13-Point Pre-Activation Gate & 9-Card Launch Board**: Integrated deterministic checklist and launch board cards.
+5. **Stripe Live Pre-Flight Panel**: Integrated read-only preflight panel showing `BLOCKED` status without enabling Live Mode.
+6. **Structured Governance Modules**: Added APIs and DB storage for structured legal sign-off (`terms`, `privacy`, `refund`) and CPA tax review (5 structured questions).
+7. **Pre-flight Capture QA & GPU Double-Gate**: Implemented 60–100 photo multi-view validator and owner approval gate before GPU compute.
+8. **Automated Verification**:
+   - Phase 10.7 Master Suite (`test_phase10_7_pre_activation.js`): `97 / 97 PASS (100%)`
+   - Phase 10.6B Pre-Live Commercial Suite: `64 / 64 PASS (100%)`
+   - Landscape & English Suite: `53 / 53 PASS (100%)`
+   - Password Policy Suite: `57 / 57 PASS (100%)`
+   - Non-Destructive Restore Drill: `100% Data Integrity PASS`
+   - Hangul Character Scan: `0 matches`
+9. **Zero Real Charge Policy**: `STRIPE_MODE=test`, `stripeLiveBillingEnabled=false`, `billingKillSwitch=true`, actual cash charged: `$0.00`.
+
+#### 3. PHASE 10.7 FINAL DETERMINATION
+- **Overall Determination**: **`FIRST_REAL_CUSTOMER_PRE_ACTIVATION_READY`** / **`NO-GO FOR LIVE BILLING`**
+- **System Status**: **`PHASE_10_7_PRE_ACTIVATION_COMPLETE`**
+- **Business Identity**: **`COMPLETE` (`vivPR`, NJ, USA)**
+- **Pricing**: **`APPROVED_FOR_PILOT (pilot-2026.1: Free $0 / Pro $299 / Business $799)`**
+- **First Real Customer System**: **`READY (Wizard & Quota Enforced)`**
+- **Legal Review**: **`PENDING (Structured Review Module Active)`**
+- **Tax Review**: **`REVIEW_REQUIRED (5-Question CPA Module Active)`**
+- **Stripe Mode**: **`TEST`** ($0.00 cash charged, Live Billing OFF)
+
+
 
 
 

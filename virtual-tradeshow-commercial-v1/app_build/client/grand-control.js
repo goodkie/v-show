@@ -809,17 +809,15 @@ class GrandControlApp {
       if (tbody && data.checklist) {
         tbody.innerHTML = data.checklist.map(item => `
           <tr>
-            <td><span class="gc-kpi-badge">${escapeHtml(item.category)}</span></td>
-            <td><strong>${escapeHtml(item.title)}</strong></td>
-            <td>
-              <span class="gc-status-pill ${item.status === 'READY' ? 'gc-dot-online' : (item.status === 'OFF' ? 'gc-text-muted' : 'gc-dot-warning')}">
-                ${escapeHtml(item.status)}
-              </span>
-            </td>
+            <td><span class="gc-badge">${escapeHtml(item.category)}</span></td>
+            <td><strong>${escapeHtml(item.item)}</strong></td>
+            <td><span class="gc-badge ${item.status === 'READY' ? 'gc-badge-verified' : 'gc-badge-test'}">${escapeHtml(item.status)}</span></td>
             <td class="gc-text-muted">${escapeHtml(item.detail)}</td>
           </tr>
         `).join('');
       }
+
+      await this.loadPreActivationGovernance();
     } catch (e) {
       console.error(e);
     }
@@ -876,6 +874,168 @@ class GrandControlApp {
   downloadCsv(type) {
     window.open(`/api/platform/export?type=${type}&env=${this.currentEnv}`, '_blank');
   }
+
+  // --- Phase 10.7 First Real Customer Wizard & Governance ---
+  openFirstCustomerWizard() {
+    const modal = document.getElementById('first-customer-wizard-modal');
+    if (modal) {
+      modal.style.display = 'flex';
+      this.setWizardStep(1);
+    }
+  }
+
+  closeFirstCustomerWizard() {
+    const modal = document.getElementById('first-customer-wizard-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  setWizardStep(step) {
+    for (let i = 1; i <= 5; i++) {
+      const pane = document.getElementById(`wiz-step-${i}`);
+      const pill = document.getElementById(`wiz-step-pill-${i}`);
+      if (pane) pane.style.display = i === step ? 'block' : 'none';
+      if (pill) {
+        if (i === step) pill.className = 'gc-badge gc-badge-active';
+        else if (i < step) pill.className = 'gc-badge gc-badge-verified';
+        else pill.className = 'gc-badge';
+      }
+    }
+  }
+
+  async submitFirstCustomerPreActivation() {
+    const errDiv = document.getElementById('wiz-submit-error');
+    const submitBtn = document.getElementById('wiz-submit-btn');
+    if (errDiv) errDiv.style.display = 'none';
+
+    const payload = {
+      companyName: document.getElementById('wiz-company-name').value.trim(),
+      adminEmail: document.getElementById('wiz-admin-email').value.trim(),
+      website: document.getElementById('wiz-website').value.trim(),
+      industry: document.getElementById('wiz-industry').value.trim(),
+      country: document.getElementById('wiz-country-state').value.trim(),
+      eventName: document.getElementById('wiz-event-name').value.trim(),
+      eventStartDate: document.getElementById('wiz-event-start').value,
+      eventEndDate: document.getElementById('wiz-event-end').value,
+      boothNumber: document.getElementById('wiz-booth-number').value.trim(),
+      boothCategory: document.getElementById('wiz-booth-category').value.trim(),
+      expectedProductCount: Number(document.getElementById('wiz-expected-products').value) || 5,
+      expectedHotspotCount: Number(document.getElementById('wiz-expected-hotspots').value) || 3,
+      expectedSourcePhotoCount: Number(document.getElementById('wiz-expected-photos').value) || 60,
+      photoDatasetPath: document.getElementById('wiz-photo-path').value.trim(),
+      plan: document.getElementById('wiz-plan-select').value
+    };
+
+    if (!payload.companyName || !payload.adminEmail) {
+      if (errDiv) {
+        errDiv.textContent = 'Company Name and Admin Email are required.';
+        errDiv.style.display = 'block';
+      }
+      return;
+    }
+
+    try {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating REAL Customer...';
+
+      const res = await fetch('/api/platform/first-customer/pre-activate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Pre-activation failed');
+      }
+
+      alert(`✅ First REAL Customer Pre-Activated Successfully!\n\nCompany: ${data.organization.name}\nAdmin Email: ${data.user.email}\nTemporary Password: ${data.tempPasswordForDisplay}\n\nPlease provide these credentials securely to the customer admin.`);
+      this.closeFirstCustomerWizard();
+      this.loadOverview();
+      this.loadOrganizations();
+      this.loadReadiness();
+    } catch (err) {
+      if (errDiv) {
+        errDiv.textContent = `❌ ${err.message}`;
+        errDiv.style.display = 'block';
+      }
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Confirm & Create REAL Customer';
+    }
+  }
+
+  async loadPreActivationGovernance() {
+    try {
+      // 1. Launch Board
+      const lbRes = await fetch('/api/platform/first-customer/launch-board', {
+        headers: { 'Authorization': `Bearer ${this.token}` }
+      });
+      if (lbRes.ok) {
+        const lb = await lbRes.json();
+        const grid = document.getElementById('launch-board-grid');
+        if (grid && lb.cards) {
+          grid.innerHTML = lb.cards.map(c => `
+            <div class="gc-kpi-card" style="border-top: 3px solid ${c.status === 'READY' ? '#10b981' : (c.status === 'PENDING' ? '#f59e0b' : '#ef4444')};">
+              <div class="gc-kpi-label">${escapeHtml(c.title)}</div>
+              <div class="gc-kpi-value" style="font-size: 15px; color: ${c.status === 'READY' ? '#10b981' : (c.status === 'PENDING' ? '#f59e0b' : '#ef4444')};">${escapeHtml(c.status)}</div>
+              <div class="gc-kpi-sub">${escapeHtml(c.detail)}</div>
+            </div>
+          `).join('');
+        }
+      }
+
+      // 2. Pre-Activation Checklist (13 items)
+      const clRes = await fetch('/api/platform/first-customer/checklist', {
+        headers: { 'Authorization': `Bearer ${this.token}` }
+      });
+      if (clRes.ok) {
+        const cl = await clRes.json();
+        const tbody = document.getElementById('preactivation-checklist-body');
+        if (tbody && cl.items) {
+          tbody.innerHTML = cl.items.map(i => `
+            <tr>
+              <td><strong>${escapeHtml(i.name)}</strong></td>
+              <td><span class="gc-badge">${escapeHtml(i.id)}</span></td>
+              <td><span class="gc-badge ${i.status === 'READY' ? 'gc-badge-verified' : (i.status === 'PENDING' ? 'gc-badge-test' : 'gc-badge-error')}">${escapeHtml(i.status)}</span></td>
+              <td class="gc-text-muted">${escapeHtml(i.detail)}</td>
+            </tr>
+          `).join('');
+        }
+      }
+
+      // 3. Stripe Live Pre-Flight
+      const pfRes = await fetch('/api/platform/first-customer/preflight', {
+        headers: { 'Authorization': `Bearer ${this.token}` }
+      });
+      if (pfRes.ok) {
+        const pf = await pfRes.json();
+        const badge = document.getElementById('preflight-readiness-badge');
+        const list = document.getElementById('preflight-checks-list');
+        if (badge) {
+          badge.textContent = pf.readinessStatus;
+          badge.className = pf.readinessStatus === 'READY_FOR_OWNER_APPROVAL' ? 'gc-badge gc-badge-active' : 'gc-badge gc-badge-error';
+        }
+        if (list && pf.checks) {
+          list.innerHTML = `
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:8px;">
+              ${pf.checks.map(c => `
+                <div style="background:#1e293b; padding:8px 12px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
+                  <span>${escapeHtml(c.name)}:</span>
+                  <span style="font-weight:600; color:${c.pass ? '#10b981' : '#f59e0b'};">${escapeHtml(c.value)}</span>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load pre-activation governance:', e);
+    }
+  }
+
 }
 
 function escapeHtml(str) {

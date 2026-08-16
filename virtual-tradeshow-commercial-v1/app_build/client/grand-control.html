@@ -537,8 +537,53 @@
                 </tbody>
               </table>
             </div>
+
+            <!-- Phase 10.7 Launch Board & First Real Customer Governance -->
+            <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #334155;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <div>
+                  <h4 style="margin:0; color:#38bdf8; font-size:16px;">🏢 First Real Customer Pre-Activation & Launch Board</h4>
+                  <p style="margin:4px 0 0 0; font-size:12px; color:#94a3b8;">Controlled pre-activation workflow for pilot customer onboarding. Live billing remains locked.</p>
+                </div>
+                <button class="gc-btn-primary" onclick="window.gcApp.openFirstCustomerWizard()">+ Onboard First Real Customer</button>
+              </div>
+
+              <!-- Launch Board 9 Cards Grid -->
+              <div id="launch-board-grid" class="gc-kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 20px;">
+                <!-- Dynamically rendered Launch Board cards -->
+              </div>
+
+              <!-- 13-Item Pre-Activation Checklist -->
+              <h4 style="margin: 16px 0 8px 0; color: #a78bfa;">✅ First Customer Pre-Activation Checklist (13-Point Gate)</h4>
+              <table class="gc-table" style="margin-bottom: 24px;">
+                <thead>
+                  <tr>
+                    <th>Gate Item</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Governance / Operational Details</th>
+                  </tr>
+                </thead>
+                <tbody id="preactivation-checklist-body">
+                  <!-- Dynamically rendered 13 items -->
+                </tbody>
+              </table>
+
+              <!-- Stripe Live Pre-Flight Panel (Read-Only) -->
+              <h4 style="margin: 16px 0 8px 0; color: #fbbf24;">⚡ Stripe Live Pre-Flight Audit (Read-Only)</h4>
+              <div id="stripe-live-preflight-panel" style="background:#0f172a; border:1px solid #334155; border-radius:8px; padding:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                  <span style="font-weight:600; color:#e2e8f0;">Pre-Flight Status:</span>
+                  <span id="preflight-readiness-badge" class="gc-badge gc-badge-error">BLOCKED (Pre-Activation Phase)</span>
+                </div>
+                <div id="preflight-checks-list" style="font-size:13px; color:#94a3b8;">
+                  <!-- Dynamically rendered Pre-flight rows -->
+                </div>
+              </div>
+            </div>
           </div>
         </section>
+
 
 
         <!-- 9. SETTINGS & EXPORT TAB -->
@@ -675,6 +720,162 @@
     </div>
   </div>
 
+  <!-- Phase 10.7 First Real Customer Onboarding Wizard Modal (5-Step) -->
+  <div id="first-customer-wizard-modal" class="gc-modal" style="display:none;">
+    <div class="gc-modal-content" style="max-width: 680px;">
+      <div class="gc-modal-header">
+        <h2>🏢 First Real Customer Onboarding Wizard (PRE-ACTIVATION)</h2>
+        <button class="gc-btn-close" onclick="window.gcApp.closeFirstCustomerWizard()">✕</button>
+      </div>
+      <div class="gc-modal-body">
+        <!-- Wizard Progress Tracker -->
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px; border-bottom:1px solid #334155; padding-bottom:12px;">
+          <span id="wiz-step-pill-1" class="gc-badge gc-badge-active">Step 1: Company</span>
+          <span id="wiz-step-pill-2" class="gc-badge">Step 2: Event</span>
+          <span id="wiz-step-pill-3" class="gc-badge">Step 3: Booth</span>
+          <span id="wiz-step-pill-4" class="gc-badge">Step 4: Plan</span>
+          <span id="wiz-step-pill-5" class="gc-badge">Step 5: Review</span>
+        </div>
+
+        <!-- STEP 1: Company -->
+        <div id="wiz-step-1" class="wiz-step-pane">
+          <h4 style="margin-bottom: 12px; color: #60a5fa;">Step 1: Real Customer Company Profile</h4>
+          <div class="gc-input-group">
+            <label>Company Name *</label>
+            <input type="text" id="wiz-company-name" placeholder="e.g. Apex Industrial Solutions LLC">
+          </div>
+          <div class="gc-input-group">
+            <label>Admin Email *</label>
+            <input type="email" id="wiz-admin-email" placeholder="e.g. admin@apex-industrial.com">
+          </div>
+          <div class="gc-input-group">
+            <label>Company Website</label>
+            <input type="url" id="wiz-website" placeholder="https://apex-industrial.com">
+          </div>
+          <div class="gc-grid-2" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+            <div class="gc-input-group">
+              <label>Industry</label>
+              <input type="text" id="wiz-industry" placeholder="e.g. Industrial Automation">
+            </div>
+            <div class="gc-input-group">
+              <label>Country / State</label>
+              <input type="text" id="wiz-country-state" placeholder="e.g. United States, NJ">
+            </div>
+          </div>
+          <div class="gc-modal-actions" style="margin-top:16px;">
+            <button class="gc-btn-secondary" onclick="window.gcApp.closeFirstCustomerWizard()">Cancel</button>
+            <button class="gc-btn-primary" onclick="window.gcApp.setWizardStep(2)">Next: Event Details →</button>
+          </div>
+        </div>
+
+        <!-- STEP 2: Event -->
+        <div id="wiz-step-2" class="wiz-step-pane" style="display:none;">
+          <h4 style="margin-bottom: 12px; color: #60a5fa;">Step 2: Commercial Event Association</h4>
+          <div class="gc-input-group">
+            <label>Event Name *</label>
+            <input type="text" id="wiz-event-name" placeholder="e.g. International Industrial Expo 2026">
+          </div>
+          <div class="gc-grid-2" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+            <div class="gc-input-group">
+              <label>Event Start Date</label>
+              <input type="date" id="wiz-event-start">
+            </div>
+            <div class="gc-input-group">
+              <label>Event End Date</label>
+              <input type="date" id="wiz-event-end">
+            </div>
+          </div>
+          <div class="gc-grid-2" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+            <div class="gc-input-group">
+              <label>Booth Number *</label>
+              <input type="text" id="wiz-booth-number" placeholder="e.g. Hall A, Booth #A-101">
+            </div>
+            <div class="gc-input-group">
+              <label>Booth Category</label>
+              <input type="text" id="wiz-booth-category" placeholder="e.g. Robotics & Motion Control">
+            </div>
+          </div>
+          <div class="gc-modal-actions" style="margin-top:16px;">
+            <button class="gc-btn-secondary" onclick="window.gcApp.setWizardStep(1)">← Back</button>
+            <button class="gc-btn-primary" onclick="window.gcApp.setWizardStep(3)">Next: Booth Specs →</button>
+          </div>
+        </div>
+
+        <!-- STEP 3: Booth -->
+        <div id="wiz-step-3" class="wiz-step-pane" style="display:none;">
+          <h4 style="margin-bottom: 12px; color: #60a5fa;">Step 3: Booth Data & Photo Capture Intake</h4>
+          <div class="gc-grid-2" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+            <div class="gc-input-group">
+              <label>Expected Product Count *</label>
+              <input type="number" id="wiz-expected-products" value="5" min="1" max="50">
+            </div>
+            <div class="gc-input-group">
+              <label>Expected Hotspot Count</label>
+              <input type="number" id="wiz-expected-hotspots" value="3" min="0" max="20">
+            </div>
+          </div>
+          <div class="gc-input-group">
+            <label>Expected Source Photo Count (Recommended: 60–100 photos)</label>
+            <input type="number" id="wiz-expected-photos" value="60" min="3" max="200">
+          </div>
+          <div class="gc-input-group">
+            <label>Photo Dataset Path / Storage URI (Optional at intake)</label>
+            <input type="text" id="wiz-photo-path" placeholder="e.g. /data/uploads/real-apex-01 or S3 key">
+          </div>
+          <div class="gc-warning-banner" style="font-size:12px;">
+            📸 <strong>Intake Note:</strong> Photos will be processed via Pre-flight Capture QA. GPU 3DGS reconstruction remains subject to Double-Gate Owner Approval.
+          </div>
+          <div class="gc-modal-actions" style="margin-top:16px;">
+            <button class="gc-btn-secondary" onclick="window.gcApp.setWizardStep(2)">← Back</button>
+            <button class="gc-btn-primary" onclick="window.gcApp.setWizardStep(4)">Next: Commercial Plan →</button>
+          </div>
+        </div>
+
+        <!-- STEP 4: Plan -->
+        <div id="wiz-step-4" class="wiz-step-pane" style="display:none;">
+          <h4 style="margin-bottom: 12px; color: #60a5fa;">Step 4: Commercial Plan Selection (PILOT PRICING)</h4>
+          <div class="gc-warning-banner" style="margin-bottom:12px;">
+            🏷️ <strong>PILOT PRICING NOTICE:</strong> Pricing version is <code>pilot-2026.1</code>. This represents approved pilot commercial rates and does not imply permanent pricing.
+          </div>
+          <div class="gc-input-group">
+            <label>Select Pilot Plan *</label>
+            <select id="wiz-plan-select" style="width:100%; padding:10px; background:#0f172a; border:1px solid #334155; color:#fff; border-radius:6px;">
+              <option value="free">FREE — $0/month (Basic 3D Viewer, 5 Products)</option>
+              <option value="pro" selected>PRO — $299/month (Spark 3DGS Precision, 15 Products, 1 Reconstruction Credit)</option>
+              <option value="business">BUSINESS — $799/month (Spark 3DGS Precision, 50 Products, 3 Reconstruction Credits, Priority GPU)</option>
+            </select>
+          </div>
+          <div class="gc-modal-actions" style="margin-top:16px;">
+            <button class="gc-btn-secondary" onclick="window.gcApp.setWizardStep(3)">← Back</button>
+            <button class="gc-btn-primary" onclick="window.gcApp.setWizardStep(5)">Next: Pre-Activation Review →</button>
+          </div>
+        </div>
+
+        <!-- STEP 5: Review -->
+        <div id="wiz-step-5" class="wiz-step-pane" style="display:none;">
+          <h4 style="margin-bottom: 12px; color: #60a5fa;">Step 5: Pre-Activation Review & Governance Safety Checks</h4>
+          <div style="background:#0f172a; border:1px solid #334155; border-radius:6px; padding:12px; margin-bottom:16px;">
+            <table style="width:100%; font-size:13px; color:#cbd5e1;">
+              <tr><td style="padding:4px 0;"><strong>Customer Environment:</strong></td><td style="color:#10b981;">REAL (Explicitly Tagged)</td></tr>
+              <tr><td style="padding:4px 0;"><strong>Commercial Status:</strong></td><td style="color:#f59e0b;">PRE-ACTIVATION</td></tr>
+              <tr><td style="padding:4px 0;"><strong>Stripe Live Billing:</strong></td><td style="color:#ef4444;">DISABLED ($0.00 Cash Cost)</td></tr>
+              <tr><td style="padding:4px 0;"><strong>Pricing Version:</strong></td><td>pilot-2026.1</td></tr>
+              <tr><td style="padding:4px 0;"><strong>Billing Kill Switch:</strong></td><td style="color:#10b981;">ON (Safe)</td></tr>
+              <tr><td style="padding:4px 0;"><strong>Live Pilot Limit:</strong></td><td>Max 1 REAL Customer Enforced</td></tr>
+            </table>
+          </div>
+          <div id="wiz-submit-error" class="gc-warning-banner" style="display:none; color:#ef4444; margin-bottom:12px;"></div>
+          <div class="gc-modal-actions" style="margin-top:16px;">
+            <button class="gc-btn-secondary" onclick="window.gcApp.setWizardStep(4)">← Back</button>
+            <button class="gc-btn-primary" id="wiz-submit-btn" onclick="window.gcApp.submitFirstCustomerPreActivation()">Confirm & Create REAL Customer</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <script src="/grand-control.js"></script>
 </body>
 </html>
+
