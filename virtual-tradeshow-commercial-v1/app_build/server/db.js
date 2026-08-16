@@ -21,7 +21,40 @@ if (!fs.existsSync(SEED_DIR)) {
   fs.mkdirSync(SEED_DIR, { recursive: true });
 }
 
-// Password Hashing Helper (Node.js native scryptSync)
+// Password Policy & Hashing Helpers
+function validatePasswordStrength(password) {
+  if (!password || typeof password !== 'string') {
+    return { valid: false, message: 'Password is required.' };
+  }
+  if (password.length < 12) {
+    return { valid: false, message: 'Password must be at least 12 characters long.' };
+  }
+  if (!/[A-Z]/.test(password)) {
+    return { valid: false, message: 'Password must contain at least one uppercase letter (A-Z).' };
+  }
+  if (!/[a-z]/.test(password)) {
+    return { valid: false, message: 'Password must contain at least one lowercase letter (a-z).' };
+  }
+  if (!/[0-9]/.test(password)) {
+    return { valid: false, message: 'Password must contain at least one number (0-9).' };
+  }
+  return { valid: true };
+}
+
+function generateSecureTempPassword(length = 16) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+';
+  const randomBytes = crypto.randomBytes(length);
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    password += chars[randomBytes[i] % chars.length];
+  }
+  // Ensure it satisfies policy
+  if (!/[A-Z]/.test(password)) password = 'A' + password.slice(1);
+  if (!/[a-z]/.test(password)) password = password.slice(0, 1) + 'a' + password.slice(2);
+  if (!/[0-9]/.test(password)) password = password.slice(0, 2) + '9' + password.slice(3);
+  return password;
+}
+
 function hashPassword(password, salt = null) {
   const userSalt = salt || crypto.randomBytes(16).toString('hex');
   const hash = crypto.scryptSync(password, userSalt, 64).toString('hex');
@@ -32,6 +65,7 @@ function verifyPassword(password, hash, salt) {
   const checkHash = crypto.scryptSync(password, salt, 64).toString('hex');
   return checkHash === hash;
 }
+
 
 // Default Seed Data (Schema Version 4 — Commercial Beta)
 const initialSeedData = () => {
@@ -596,6 +630,10 @@ class JSONDatabase {
   }
 
   async updateUserPassword(userId, newPassword) {
+    const check = validatePasswordStrength(newPassword);
+    if (!check.valid) {
+      throw new Error(check.message);
+    }
     return this.mutate((db) => {
       const user = (db.users || []).find(u => u.id === userId);
       if (!user) throw new Error('User not found.');
@@ -607,6 +645,74 @@ class JSONDatabase {
       return true;
     });
   }
+
+  // --- Phase 9 Operational Incidents & Cost Ledger ---
+  getIncidents(limit = 50) {
+    const list = this.read().incidents || [];
+    return list.slice(-limit).reverse();
+  }
+
+  logIncident({ category, severity, message, organizationId = null, boothId = null, metadata = {} }) {
+    return this.mutate((db) => {
+      db.incidents = db.incidents || [];
+      const entry = {
+        id: `inc-${uuidv4().substring(0, 8)}`,
+        category: category || 'GENERAL',
+        severity: severity || 'LOW', // LOW, MEDIUM, HIGH, CRITICAL
+        message,
+        organizationId,
+        boothId,
+        metadata,
+        timestamp: new Date().toISOString()
+      };
+      db.incidents.push(entry);
+      if (db.incidents.length > 500) db.incidents.shift();
+      return entry;
+    });
+  }
+
+  getCostLedger() {
+    return this.read().costLedger || [
+      {
+        id: 'cost-init-01',
+        category: 'Railway Hobby Hosting',
+        provider: 'Railway',
+        estimatedUsd: 5.00,
+        actualUsd: 5.00,
+        notes: 'Monthly active hobby plan base',
+        timestamp: new Date().toISOString()
+      },
+      {
+        id: 'cost-init-02',
+        category: 'Modal L4 GPU Compute',
+        provider: 'Modal Starter',
+        estimatedUsd: 0.00,
+        actualUsd: 0.00,
+        freeCreditUsed: true,
+        notes: '36-72 image Splatfacto pilot under starter free credit quota',
+        timestamp: new Date().toISOString()
+      }
+    ];
+  }
+
+  logCostEntry({ category, provider, estimatedUsd, actualUsd = 0.0, notes = '', freeCreditUsed = false }) {
+    return this.mutate((db) => {
+      db.costLedger = db.costLedger || [];
+      const entry = {
+        id: `cost-${uuidv4().substring(0, 8)}`,
+        category,
+        provider,
+        estimatedUsd: Number(estimatedUsd) || 0.0,
+        actualUsd: Number(actualUsd) || 0.0,
+        freeCreditUsed: Boolean(freeCreditUsed),
+        notes,
+        timestamp: new Date().toISOString()
+      };
+      db.costLedger.push(entry);
+      return entry;
+    });
+  }
+
 
 
   // --- Events API ---
@@ -1116,3 +1222,6 @@ class JSONDatabase {
 module.exports = new JSONDatabase();
 module.exports.verifyPassword = verifyPassword;
 module.exports.hashPassword = hashPassword;
+module.exports.validatePasswordStrength = validatePasswordStrength;
+module.exports.generateSecureTempPassword = generateSecureTempPassword;
+

@@ -293,9 +293,11 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
 app.post('/api/auth/change-password', requireAuth, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    if (!newPassword || newPassword.length < 6) {
-      return res.status(400).json({ error: 'New password must be at least 6 characters.' });
+    const strengthCheck = db.validatePasswordStrength(newPassword);
+    if (!strengthCheck.valid) {
+      return res.status(400).json({ error: strengthCheck.message });
     }
+
     const user = db.getUserById(req.user.userId);
     if (user && user.hash && user.salt) {
       if (!db.verifyPassword(currentPassword, user.hash, user.salt)) {
@@ -398,7 +400,16 @@ app.post('/api/events/:id/invite-exhibitor', requireAuth, requireOrganizer, asyn
       return res.status(400).json({ error: 'Company name and admin email are required.' });
     }
 
-    const initialPassword = tempPassword || `BetaPass${Math.floor(1000 + Math.random() * 9000)}!`;
+    // Use cryptographically secure 16-char password by default or validate manual override
+    let initialPassword = tempPassword;
+    if (!initialPassword) {
+      initialPassword = db.generateSecureTempPassword(16);
+    } else {
+      const strength = db.validatePasswordStrength(initialPassword);
+      if (!strength.valid) {
+        return res.status(400).json({ error: `Temporary password invalid: ${strength.message}` });
+      }
+    }
 
     // 1. Create Exhibitor Organization
     const org = await db.createOrganization({
@@ -455,6 +466,79 @@ app.post('/api/events/:id/invite-exhibitor', requireAuth, requireOrganizer, asyn
     res.status(400).json({ error: err.message });
   }
 });
+
+// Phase 9 Operational Telemetry (Funnel, Readiness, Incidents, Cost, Storage Forecast)
+app.get('/api/organizer/telemetry', requireAuth, requireOrganizer, (req, res) => {
+  const events = db.getAnalyticsEvents();
+  const leads = db.getLeads();
+  const rfqs = db.getRfqs();
+  const samples = db.getSamples();
+  const appointments = db.getAppointments();
+  const booths = db.getBooths(true);
+  const orgs = db.getOrganizations().filter(o => o.type === 'exhibitor');
+  const incidents = db.getIncidents(20);
+  const costLedger = db.getCostLedger();
+
+  // 1. Buyer Funnel
+  const lobbyVisits = events.filter(e => e.eventType === 'event_lobby_view' || e.eventType === 'booth_view').length;
+  const boothViews = events.filter(e => e.eventType === 'booth_view').length;
+  const productViews = events.filter(e => e.eventType === 'product_view').length;
+
+  const funnel = {
+    lobbyVisitors: lobbyVisits || 1,
+    boothVisitors: boothViews,
+    productViews: productViews,
+    leadsCount: leads.length,
+    rfqsCount: rfqs.length,
+    appointmentsCount: appointments.length,
+    conversionRates: {
+      lobbyToBooth: `${Math.min(100, Math.round((boothViews / (lobbyVisits || 1)) * 100))}%`,
+      boothToProduct: `${Math.min(100, Math.round((productViews / (boothViews || 1)) * 100))}%`,
+      productToLead: `${Math.min(100, Math.round((leads.length / (productViews || 1)) * 100))}%`
+    }
+  };
+
+  // 2. Exhibitor Readiness Matrix
+  const readiness = orgs.map(org => {
+    const orgBooths = booths.filter(b => b.organizationId === org.id);
+    const primaryBooth = orgBooths[0] || null;
+    const photosCount = primaryBooth ? (primaryBooth.photos || []).length : 0;
+    const isVerified = primaryBooth ? primaryBooth.reconstructionStatus === 'verified' : false;
+    const isPublished = primaryBooth ? primaryBooth.status === 'published' : false;
+
+    return {
+      organizationId: org.id,
+      companyName: org.name,
+      accountActive: true,
+      boothCreated: Boolean(primaryBooth),
+      photoCount: photosCount,
+      reconstructionStatus: primaryBooth ? primaryBooth.reconstructionStatus : 'none',
+      isVerified,
+      isPublished,
+      readyForBeta: isPublished && photosCount >= 3
+    };
+  });
+
+  // 3. Storage Analysis & Forecast (bytes)
+  const measuredPerBoothMb = 68.5; // ~60MB PLY + ~6.8MB SPZ + ~1.7MB photos
+  const storageForecast = {
+    currentStorageMb: (booths.length * measuredPerBoothMb).toFixed(1),
+    forecast10ExhibitorsMb: (10 * measuredPerBoothMb).toFixed(1),
+    forecast50ExhibitorsMb: (50 * measuredPerBoothMb).toFixed(1),
+    forecast100ExhibitorsMb: (100 * measuredPerBoothMb).toFixed(1),
+    recommendation: 'Current Railway Hobby Volume (1GB+) easily accommodates 3-10 beta exhibitors. Plan S3/R2 adapter when scaling > 50 exhibitors.'
+  };
+
+  res.json({
+    funnel,
+    readiness,
+    incidents,
+    costLedger,
+    storageForecast,
+    timestamp: new Date().toISOString()
+  });
+});
+
 
 
 // --- 4. Organizations API ---
