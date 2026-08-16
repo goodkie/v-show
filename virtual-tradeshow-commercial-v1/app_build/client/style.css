@@ -1,6 +1,6 @@
 /* ============================================================
    Virtual Trade Show Commercial V1 — Design System
-   Modern B2B Commercial Aesthetic (Phase 3 Online Trial)
+   Modern B2B Commercial Aesthetic (Phase 4 Orchestration)
 ============================================================ */
 
 :root {
@@ -22,6 +22,7 @@
   
   --status-preview: #eab308;
   --status-pending: #f97316;
+  --status-processing: #3b82f6;
   --status-reconstructed: #10b981;
   --status-verified: #06b6d4;
   --status-failed: #ef4444;
@@ -159,16 +160,59 @@ p {
   border: 1px solid rgba(234, 179, 8, 0.3);
 }
 
+.badge-pending {
+  background: rgba(249, 115, 22, 0.15);
+  color: #fb923c;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.badge-processing {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
 .badge-reconstructed {
   background: rgba(16, 185, 129, 0.15);
   color: #6ee7b7;
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
+.badge-verified {
+  background: rgba(6, 182, 212, 0.15);
+  color: #67e8f9;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+}
+
+.badge-failed {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
 .badge-live {
   background: rgba(6, 182, 212, 0.15);
   color: #67e8f9;
   border: 1px solid rgba(6, 182, 212, 0.3);
+}
+
+/* Progress Bar */
+.progress-container {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-surface-elevated);
+  border-radius: 9999px;
+  overflow: hidden;
+  margin: 12px 0 6px 0;
+  border: 1px solid var(--border-subtle);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0284c7, #06b6d4);
+  width: 0%;
+  transition: width 0.4s ease;
+  border-radius: 9999px;
 }
 
 /* 3D Canvas Viewport */
@@ -305,6 +349,14 @@ p {
   background: #b91c1c;
 }
 
+.btn-success {
+  background: #10b981;
+  color: #fff;
+}
+.btn-success:hover {
+  background: #059669;
+}
+
 /* Modals */
 .modal-backdrop {
   position: fixed;
@@ -403,55 +455,6 @@ p {
   gap: 16px;
 }
 
-/* Product Card / Detail */
-.product-hero-img {
-  width: 100%;
-  height: 260px;
-  object-fit: cover;
-  border-radius: var(--radius-md);
-  margin-bottom: 16px;
-  background: #1e293b;
-}
-
-.product-meta-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin: 16px 0;
-  background: var(--bg-primary);
-  padding: 12px;
-  border-radius: var(--radius-sm);
-}
-
-.meta-item-title {
-  font-size: 11px;
-  color: var(--text-dim);
-  text-transform: uppercase;
-}
-
-.meta-item-val {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-.spec-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 16px 0;
-  font-size: 13px;
-}
-
-.spec-table td {
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.spec-table td:first-child {
-  color: var(--text-muted);
-  width: 40%;
-}
-
 /* Hotspot 3D Marker Pins */
 .hotspot-marker {
   position: absolute;
@@ -489,12 +492,6 @@ p {
   background: #ef4444;
   box-shadow: 0 0 20px #ef4444;
   transform: translate(-50%, -50%) scale(1.3);
-}
-
-.hotspot-marker.placement-preview {
-  background: #10b981;
-  box-shadow: 0 0 20px #10b981;
-  animation: pulse-ring 1s infinite;
 }
 
 .hotspot-pulse {

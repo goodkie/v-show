@@ -16,13 +16,18 @@ const PORT = process.env.PORT || 3000;
 const TRIAL_ADMIN_USER = process.env.TRIAL_ADMIN_USER || 'admin';
 const TRIAL_ADMIN_PASSWORD = process.env.TRIAL_ADMIN_PASSWORD || 'admin123';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'trial-session-secret-key';
+const RECONSTRUCTION_WORKER_SECRET = process.env.RECONSTRUCTION_WORKER_SECRET || 'dev-worker-secret-key-2026';
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || null;
 
 // Dynamic Data Directory for Railway Volume persistence (/data)
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
+const MODELS_DIR = path.join(UPLOADS_DIR, 'models');
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+if (!fs.existsSync(MODELS_DIR)) {
+  fs.mkdirSync(MODELS_DIR, { recursive: true });
 }
 
 // In-Memory Active Session Store
@@ -63,8 +68,23 @@ function optionalAuth(req) {
   return null;
 }
 
+// Worker Authentication Middleware
+function requireWorkerAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized: Worker secret missing or invalid.' });
+  }
+
+  const secret = authHeader.substring(7);
+  if (secret !== RECONSTRUCTION_WORKER_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid worker secret.' });
+  }
+
+  next();
+}
+
 // Zero-Cost In-Memory Rate Limiter (Sliding Window)
-const rateLimitMap = new Map(); // key (IP:endpoint) -> { count, resetTime }
+const rateLimitMap = new Map();
 
 function createRateLimiter(maxRequests = 60, windowMs = 60000) {
   return (req, res, next) => {
@@ -128,6 +148,53 @@ const upload = multer({
   limits: { fileSize: 25 * 1024 * 1024 }
 });
 
+// Capture Validator Helper
+function validateBoothCapture(photos = []) {
+  const count = photos.length;
+  const warnings = [];
+
+  if (count === 0) {
+    return {
+      quality: 'poor',
+      validCount: 0,
+      warnings: ['No photos uploaded yet.'],
+      canReconstruct: false,
+      recommendedAction: 'Upload at least 3-20 photos for trial testing (30-100 recommended for production SfM).'
+    };
+  }
+
+  if (count < 3) {
+    warnings.push(`Only ${count} photo(s) found. Minimum 3 required for basic photogrammetry.`);
+    return {
+      quality: 'poor',
+      validCount: count,
+      warnings,
+      canReconstruct: false,
+      recommendedAction: 'Upload at least 3 photos to enable precision 3D reconstruction.'
+    };
+  }
+
+  if (count >= 3 && count < 10) {
+    warnings.push(`Current dataset has ${count} photos. This satisfies minimal trial requirements but sparse point cloud density may be low.`);
+    return {
+      quality: 'acceptable',
+      validCount: count,
+      warnings,
+      canReconstruct: true,
+      recommendedAction: 'Ready for preview reconstruction. Adding 10-30 more photos from different angles will improve 3D quality.'
+    };
+  }
+
+  // count >= 10
+  return {
+    quality: 'good',
+    validCount: count,
+    warnings: [],
+    canReconstruct: true,
+    recommendedAction: 'Excellent dataset size for precision COLMAP SfM & Gaussian Splatting.'
+  };
+}
+
 // Middleware Setup
 if (ALLOWED_ORIGIN) {
   app.use(cors({ origin: ALLOWED_ORIGIN }));
@@ -143,7 +210,7 @@ app.get('/health', (req, res) => {
   res.status(200).json({
     ok: true,
     service: 'virtual-tradeshow-commercial-v1',
-    schemaVersion: 2,
+    schemaVersion: 3,
     timestamp: new Date().toISOString()
   });
 });
@@ -151,7 +218,7 @@ app.get('/health', (req, res) => {
 // --- REST API Endpoints ---
 
 // 1. Auth APIs
-const loginLimiter = createRateLimiter(20, 60000); // Max 20 logins per minute
+const loginLimiter = createRateLimiter(20, 60000);
 
 app.post('/api/auth/login', loginLimiter, (req, res) => {
   const { username, password } = req.body;
@@ -191,9 +258,9 @@ app.get('/api/booths/:id', (req, res) => {
 
 app.post('/api/booths', requireAuth, async (req, res) => {
   try {
-    const { name, description, themeColor, status } = req.body;
+    const { name, description, themeColor, status, photos } = req.body;
     if (!name) return res.status(400).json({ error: 'Booth name is required' });
-    const booth = await db.createBooth({ name, description, themeColor, status, exhibitorId: req.user.userId });
+    const booth = await db.createBooth({ name, description, themeColor, status, photos, exhibitorId: req.user.userId });
     res.status(201).json(booth);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -232,33 +299,153 @@ app.post('/api/booths/:id/photos', requireAuth, (req, res) => {
       success: true,
       count: uploadedUrls.length,
       photos: updated.photos,
+      validation: validateBoothCapture(updated.photos),
       booth: updated
     });
   });
 });
 
-app.post('/api/booths/:id/reconstruction', requireAuth, async (req, res) => {
+// --- 3. Precision Reconstruction Admin APIs (Phase 4) ---
+
+// Get Booth Reconstruction Status & Capture Validation
+app.get('/api/booths/:id/reconstruction', requireAuth, (req, res) => {
   const booth = db.getBoothById(req.params.id, true);
   if (!booth) return res.status(404).json({ error: 'Booth not found' });
 
-  if (!booth.photos || booth.photos.length < 3) {
-    return res.status(400).json({
-      error: 'At least 3 photos (recommended 30-100) are required for precision reconstruction.'
-    });
-  }
-
-  const updated = await db.updateBooth(req.params.id, {
-    reconstructionStatus: 'reconstruction_pending'
-  });
+  const validation = validateBoothCapture(booth.photos || []);
+  const activeJob = db.getReconstructionJobByBoothId(booth.id);
 
   res.json({
-    success: true,
-    message: 'Precision reconstruction job queued.',
-    reconstructionStatus: updated.reconstructionStatus
+    boothId: booth.id,
+    reconstructionStatus: booth.reconstructionStatus,
+    spatialModel: booth.spatialModel,
+    validation,
+    activeJob
   });
 });
 
-// 3. Products API
+// Request Precision Reconstruction (Creates Job)
+app.post('/api/booths/:id/reconstruction', requireAuth, async (req, res) => {
+  try {
+    const booth = db.getBoothById(req.params.id, true);
+    if (!booth) return res.status(404).json({ error: 'Booth not found' });
+
+    const validation = validateBoothCapture(booth.photos || []);
+    if (!validation.canReconstruct) {
+      return res.status(400).json({
+        error: 'Capture validation failed.',
+        validation
+      });
+    }
+
+    const { qualityPreset, engine } = req.body || {};
+    const job = await db.createReconstructionJob(booth.id, { qualityPreset, engine });
+
+    res.status(201).json({
+      success: true,
+      message: 'Precision reconstruction job successfully queued.',
+      jobId: job.id,
+      status: job.status,
+      job
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Get Specific Reconstruction Job
+app.get('/api/reconstruction/jobs/:id', requireAuth, (req, res) => {
+  const job = db.getReconstructionJobById(req.params.id);
+  if (!job) return res.status(404).json({ error: 'Reconstruction job not found' });
+  res.json(job);
+});
+
+// Cancel Pending/Processing Job
+app.post('/api/reconstruction/jobs/:id/cancel', requireAuth, async (req, res) => {
+  try {
+    const job = await db.cancelJob(req.params.id);
+    res.json({ success: true, message: 'Reconstruction job cancelled.', job });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Verify Reconstructed Booth (Human Review Gate)
+app.post('/api/reconstruction/jobs/:id/verify', requireAuth, async (req, res) => {
+  try {
+    const job = await db.verifyJob(req.params.id);
+    res.json({
+      success: true,
+      message: 'Reconstructed 3D booth verified and approved for public display.',
+      job
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// --- 4. Worker Integration APIs (Protected by RECONSTRUCTION_WORKER_SECRET) ---
+
+// Worker Claim Job (Atomic assignment)
+app.post('/api/worker/jobs/claim', requireWorkerAuth, async (req, res) => {
+  try {
+    const { workerId } = req.body;
+    const safeWorkerId = workerId || `worker-${crypto.randomBytes(4).toString('hex')}`;
+    const job = await db.claimNextPendingJob(safeWorkerId);
+
+    if (!job) {
+      return res.status(204).send(); // No pending jobs available
+    }
+
+    res.json({
+      success: true,
+      jobId: job.id,
+      boothId: job.boothId,
+      qualityPreset: job.qualityPreset,
+      engine: job.engine,
+      photos: job.photos,
+      sourcePhotoCount: job.sourcePhotoCount,
+      job
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Worker Progress Update
+app.post('/api/worker/jobs/:id/progress', requireWorkerAuth, async (req, res) => {
+  try {
+    const { progress, currentStage, diagnostics } = req.body;
+    const updated = await db.updateJobProgress(req.params.id, progress, currentStage, diagnostics);
+    res.json({ success: true, job: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Worker Complete Job
+app.post('/api/worker/jobs/:id/complete', requireWorkerAuth, async (req, res) => {
+  try {
+    const { output, diagnostics } = req.body;
+    const completed = await db.completeJob(req.params.id, output, diagnostics);
+    res.json({ success: true, message: 'Job completed successfully.', job: completed });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Worker Report Failure
+app.post('/api/worker/jobs/:id/fail', requireWorkerAuth, async (req, res) => {
+  try {
+    const { stage, error } = req.body;
+    const failed = await db.failJob(req.params.id, { stage, error });
+    res.json({ success: true, message: 'Job marked as failed.', job: failed });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// --- 5. Products API ---
 app.get('/api/booths/:boothId/products', (req, res) => {
   const products = db.getProductsByBoothId(req.params.boothId);
   res.json(products);
@@ -318,7 +505,7 @@ app.post('/api/products/upload-image', requireAuth, (req, res) => {
   });
 });
 
-// 4. Hotspots API
+// --- 6. Hotspots API ---
 app.get('/api/booths/:boothId/hotspots', (req, res) => {
   const hotspots = db.getHotspotsByBoothId(req.params.boothId);
   res.json(hotspots);
@@ -357,7 +544,7 @@ app.delete('/api/hotspots/:id', requireAuth, async (req, res) => {
   }
 });
 
-// 5. Analytics & Real Events API
+// --- 7. Analytics & Real Events API ---
 const ALLOWED_EVENT_TYPES = [
   'booth_view',
   'product_view',
@@ -389,7 +576,7 @@ app.post('/api/events', eventLimiter, async (req, res) => {
   }
 });
 
-// 6. Public Engagement Endpoints
+// --- 8. Public Engagement Endpoints ---
 const engagementLimiter = createRateLimiter(30, 60000);
 
 app.post('/api/leads', engagementLimiter, async (req, res) => {
@@ -455,7 +642,7 @@ app.get('/api/booths/:boothId/analytics', requireAuth, (req, res) => {
 });
 
 // --- WebSocket Signaling for Realtime / WebRTC Consultation ---
-const rooms = new Map(); // roomId -> Set of ws clients
+const rooms = new Map();
 
 wss.on('connection', (ws) => {
   let currentRoom = null;
@@ -476,7 +663,6 @@ wss.on('connection', (ws) => {
             roomId: currentRoom,
             peerCount: clientCount - 1
           }));
-          // Notify other peers in room
           rooms.get(currentRoom).forEach(client => {
             if (client !== ws && client.readyState === ws.OPEN) {
               client.send(JSON.stringify({
@@ -535,8 +721,9 @@ app.get('*', (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`=======================================================`);
-  console.log(` Virtual Trade Show Commercial V1 Server (Phase 3 Online Trial)`);
+  console.log(` Virtual Trade Show Commercial V1 Server (Phase 4 Orchestration)`);
   console.log(` Port: ${PORT}`);
+  console.log(` Schema Version: 3`);
   console.log(` Data Directory: ${DATA_DIR}`);
   console.log(` Healthcheck: http://localhost:${PORT}/health`);
   console.log(` Public Viewer: http://localhost:${PORT}/`);

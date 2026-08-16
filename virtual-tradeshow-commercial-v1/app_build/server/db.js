@@ -16,9 +16,9 @@ if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
-// Initial DB state (Schema Version 2)
+// Initial DB state (Schema Version 3)
 const initialData = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   booths: [
     {
       id: 'booth-demo-01',
@@ -28,6 +28,7 @@ const initialData = {
       themeColor: '#0f766e',
       status: 'published',
       reconstructionStatus: 'photo_preview',
+      reconstructionJobId: null,
       photos: [
         'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80',
         'https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=1200&q=80',
@@ -149,6 +150,7 @@ const initialData = {
       updatedAt: new Date().toISOString()
     }
   ],
+  reconstructionJobs: [],
   events: [],
   leads: [],
   rfqs: [],
@@ -167,12 +169,17 @@ class JSONDatabaseAdapter {
       this.saveSync(initialData);
     } else {
       const current = this.read();
-      if (!current.schemaVersion || current.schemaVersion < 2) {
-        current.schemaVersion = 2;
-        current.events = current.events || [];
-        (current.hotspots || []).forEach(h => {
-          if (!h.updatedAt) h.updatedAt = h.createdAt || new Date().toISOString();
+      let changed = false;
+      if (!current.schemaVersion || current.schemaVersion < 3) {
+        current.schemaVersion = 3;
+        current.reconstructionJobs = current.reconstructionJobs || [];
+        (current.booths || []).forEach(b => {
+          if (b.reconstructionJobId === undefined) b.reconstructionJobId = null;
         });
+        current.events = current.events || [];
+        changed = true;
+      }
+      if (changed) {
         this.saveSync(current);
       }
     }
@@ -245,6 +252,7 @@ class JSONDatabaseAdapter {
         themeColor: boothData.themeColor || '#0284c7',
         status: boothData.status || 'draft',
         reconstructionStatus: boothData.reconstructionStatus || 'photo_preview',
+        reconstructionJobId: null,
         photos: boothData.photos || [],
         spatialModel: boothData.spatialModel || { type: 'photo_preview', environmentLayout: 'hexagon_booth' },
         createdAt: new Date().toISOString(),
@@ -266,6 +274,215 @@ class JSONDatabaseAdapter {
         updatedAt: new Date().toISOString()
       };
       return db.booths[index];
+    });
+  }
+
+  // --- Reconstruction Job Operations (Phase 4 Orchestration) ---
+  getReconstructionJobs() {
+    return this.read().reconstructionJobs || [];
+  }
+
+  getReconstructionJobById(jobId) {
+    return (this.read().reconstructionJobs || []).find(j => j.id === jobId) || null;
+  }
+
+  getReconstructionJobByBoothId(boothId) {
+    const jobs = (this.read().reconstructionJobs || []).filter(j => j.boothId === boothId);
+    if (jobs.length === 0) return null;
+    return jobs[jobs.length - 1]; // Return most recent
+  }
+
+  async createReconstructionJob(boothId, options = {}) {
+    return this.mutate((db) => {
+      const booth = (db.booths || []).find(b => b.id === boothId);
+      if (!booth) throw new Error('Booth not found');
+
+      if (!booth.photos || booth.photos.length < 3) {
+        throw new Error('Insufficient photos for reconstruction. At least 3 photos are required.');
+      }
+
+      // Check if there is already an active job
+      const activeJob = (db.reconstructionJobs || []).find(
+        j => j.boothId === boothId && (j.status === 'pending' || j.status === 'processing')
+      );
+      if (activeJob) {
+        return activeJob;
+      }
+
+      const job = {
+        id: `recon-job-${uuidv4().substring(0, 8)}`,
+        boothId,
+        status: 'pending',
+        engine: options.engine || 'colmap_nerfstudio_splatfacto',
+        qualityPreset: options.qualityPreset || 'standard',
+        sourcePhotoCount: booth.photos.length,
+        photos: booth.photos,
+        progress: 0,
+        currentStage: 'preparing',
+        createdAt: new Date().toISOString(),
+        startedAt: null,
+        completedAt: null,
+        workerId: null,
+        output: null,
+        diagnostics: {
+          registeredImages: 0,
+          totalImages: booth.photos.length,
+          sparsePoints: 0,
+          warnings: []
+        },
+        error: null
+      };
+
+      db.reconstructionJobs = db.reconstructionJobs || [];
+      db.reconstructionJobs.push(job);
+
+      // Update booth status
+      booth.reconstructionStatus = 'reconstruction_pending';
+      booth.reconstructionJobId = job.id;
+      booth.updatedAt = new Date().toISOString();
+
+      return job;
+    });
+  }
+
+  async claimNextPendingJob(workerId) {
+    return this.mutate((db) => {
+      db.reconstructionJobs = db.reconstructionJobs || [];
+      const job = db.reconstructionJobs.find(j => j.status === 'pending');
+      if (!job) return null;
+
+      job.status = 'processing';
+      job.workerId = workerId;
+      job.startedAt = new Date().toISOString();
+      job.currentStage = 'preparing';
+      job.progress = 5;
+
+      const booth = (db.booths || []).find(b => b.id === job.boothId);
+      if (booth) {
+        booth.reconstructionStatus = 'processing';
+        booth.updatedAt = new Date().toISOString();
+      }
+
+      return job;
+    });
+  }
+
+  async updateJobProgress(jobId, progress, currentStage, diagnostics = null) {
+    return this.mutate((db) => {
+      const job = (db.reconstructionJobs || []).find(j => j.id === jobId);
+      if (!job) throw new Error('Job not found');
+      if (job.status !== 'processing') {
+        throw new Error(`Cannot update progress for job in ${job.status} state`);
+      }
+
+      job.progress = Math.min(100, Math.max(0, Number(progress) || job.progress));
+      if (currentStage) job.currentStage = currentStage;
+      if (diagnostics) {
+        job.diagnostics = { ...job.diagnostics, ...diagnostics };
+      }
+
+      return job;
+    });
+  }
+
+  async completeJob(jobId, output, diagnostics = null) {
+    return this.mutate((db) => {
+      const job = (db.reconstructionJobs || []).find(j => j.id === jobId);
+      if (!job) throw new Error('Job not found');
+      if (job.status !== 'processing') {
+        throw new Error(`Cannot complete job in ${job.status} state`);
+      }
+
+      job.status = 'reconstructed';
+      job.progress = 100;
+      job.currentStage = 'completed';
+      job.completedAt = new Date().toISOString();
+      job.output = output || {
+        type: 'gaussian_splat',
+        url: `/uploads/models/${job.boothId}_splat.ply`,
+        format: 'ply',
+        sizeBytes: 15420000
+      };
+      if (diagnostics) {
+        job.diagnostics = { ...job.diagnostics, ...diagnostics };
+      }
+
+      const booth = (db.booths || []).find(b => b.id === job.boothId);
+      if (booth) {
+        booth.reconstructionStatus = 'reconstructed';
+        booth.spatialModel = {
+          type: 'gaussian_splat',
+          assetUrl: job.output.url,
+          format: job.output.format
+        };
+        booth.updatedAt = new Date().toISOString();
+      }
+
+      return job;
+    });
+  }
+
+  async failJob(jobId, errorData) {
+    return this.mutate((db) => {
+      const job = (db.reconstructionJobs || []).find(j => j.id === jobId);
+      if (!job) throw new Error('Job not found');
+
+      job.status = 'failed';
+      job.completedAt = new Date().toISOString();
+      job.error = {
+        stage: errorData.stage || job.currentStage,
+        message: errorData.message || errorData.error || 'Reconstruction pipeline failed'
+      };
+
+      const booth = (db.booths || []).find(b => b.id === job.boothId);
+      if (booth) {
+        booth.reconstructionStatus = 'failed';
+        booth.updatedAt = new Date().toISOString();
+      }
+
+      return job;
+    });
+  }
+
+  async cancelJob(jobId) {
+    return this.mutate((db) => {
+      const job = (db.reconstructionJobs || []).find(j => j.id === jobId);
+      if (!job) throw new Error('Job not found');
+      if (job.status !== 'pending' && job.status !== 'processing') {
+        throw new Error(`Cannot cancel job in ${job.status} state`);
+      }
+
+      job.status = 'cancelled';
+      job.completedAt = new Date().toISOString();
+
+      const booth = (db.booths || []).find(b => b.id === job.boothId);
+      if (booth) {
+        booth.reconstructionStatus = 'photo_preview';
+        booth.reconstructionJobId = null;
+        booth.updatedAt = new Date().toISOString();
+      }
+
+      return job;
+    });
+  }
+
+  async verifyJob(jobId) {
+    return this.mutate((db) => {
+      const job = (db.reconstructionJobs || []).find(j => j.id === jobId);
+      if (!job) throw new Error('Job not found');
+      if (job.status !== 'reconstructed') {
+        throw new Error('Only reconstructed jobs can be verified by admin');
+      }
+
+      job.status = 'verified';
+
+      const booth = (db.booths || []).find(b => b.id === job.boothId);
+      if (booth) {
+        booth.reconstructionStatus = 'verified';
+        booth.updatedAt = new Date().toISOString();
+      }
+
+      return job;
     });
   }
 

@@ -49,7 +49,7 @@
     <div class="brand-section">
       <div class="brand-logo">V</div>
       <div class="brand-title">Exhibitor Control Center</div>
-      <span class="badge badge-reconstructed" style="margin-left: 12px;">Phase 3 Online Trial</span>
+      <span class="badge badge-reconstructed" style="margin-left: 12px;">Phase 4 Orchestration</span>
     </div>
     <div class="nav-actions">
       <a href="index.html" target="_blank" class="btn btn-secondary btn-sm" id="btn-preview-public">퍼블릭 부스 열기 ↗</a>
@@ -66,6 +66,9 @@
       </div>
       <div class="admin-nav-item" data-tab="booth-settings">
         <span>🏛️</span> 부스 환경 & 3D 사진
+      </div>
+      <div class="admin-nav-item" data-tab="reconstruction">
+        <span>⚙️</span> 정밀 3D 재구성 오케스트레이션
       </div>
       <div class="admin-nav-item" data-tab="products">
         <span>📦</span> 제품 및 카탈로그 관리
@@ -125,13 +128,14 @@
             </div>
           </div>
 
+          <!-- Quick Status Strip -->
           <div style="display: flex; gap: 16px; align-items: center; background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-sm);">
             <div>
               <div style="font-size: 12px; color: var(--text-dim); text-transform: uppercase;">3D 공간 재구성 상태</div>
               <div style="font-weight: 600; font-size: 16px; margin-top: 2px;" id="recon-status-text">Photo Preview</div>
             </div>
-            <button class="btn btn-secondary btn-sm" id="btn-req-recon" style="margin-left: auto;">
-              정밀 3D 재구성 요청 (Precision SFM/Gaussian)
+            <button class="btn btn-secondary btn-sm" id="btn-quick-goto-recon" style="margin-left: auto;">
+              정밀 3D 재구성 관리 ↗
             </button>
           </div>
         </div>
@@ -159,8 +163,8 @@
         <div class="card">
           <div class="card-header">
             <div>
-              <h3>실물 부스 다각도 사진 업로드 (Photo Preview & Precision Capture)</h3>
-              <p style="font-size: 13px;">온라인 Trial에서는 부스당 10~20장의 압축 이미지를 권장합니다. (정밀 3D 재구성 캡처는 추후 대용량 지원 예정)</p>
+              <h3>실물 부스 다각도 사진 업로드</h3>
+              <p style="font-size: 13px;">온라인 Trial에서는 부스당 10~20장의 압축 이미지를 권장합니다. (정밀 3D 재구성 캡처는 30~100장 권장)</p>
             </div>
           </div>
 
@@ -177,7 +181,97 @@
         </div>
       </section>
 
-      <!-- TAB 3: Products Management -->
+      <!-- TAB 3: PRECISION 3D RECONSTRUCTION ORCHESTRATION (PHASE 4) -->
+      <section id="tab-reconstruction" class="tab-pane" style="display: none;">
+        <!-- Card 1: Capture Quality Validation -->
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="card-header">
+            <div>
+              <h3>📷 캡처 데이터셋 품질 진단 (Capture Validator)</h3>
+              <p style="font-size: 13px;">SfM 특징점 매칭 및 3D Gaussian Splatting 품질을 보장하기 위해 업로드된 사진들을 분석합니다.</p>
+            </div>
+            <span id="badge-capture-quality" class="badge badge-preview">진단 중</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px;">
+            <div class="stat-box">
+              <div class="stat-label">업로드된 사진 수</div>
+              <div class="stat-value" id="val-photo-count">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">품질 등급</div>
+              <div class="stat-value" id="val-quality-grade">-</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">재구성 실행 가능 여부</div>
+              <div class="stat-value" id="val-can-reconstruct" style="font-size: 18px; margin-top: 8px;">검증 대기</div>
+            </div>
+          </div>
+
+          <div id="capture-guidance-box" style="background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-sm); font-size: 13px;">
+            <div style="font-weight: 600; margin-bottom: 6px; color: var(--brand-accent);">💡 전문가 촬영 권장 가이드 (COLMAP / NeRF 원칙):</div>
+            <ul style="padding-left: 20px; color: var(--text-muted); line-height: 1.6;">
+              <li>인접 사진 간 <strong>60~80% 시각적 오버랩</strong>을 유지하세요.</li>
+              <li>제자리에서 카메라만 회전하지 말고, <strong>실제 발걸음을 옮기며 다각도에서 촬영</strong>하세요.</li>
+              <li>단색의 텍스처 없는 벽면이나 거울/강한 반사 표면은 피하는 것이 좋습니다.</li>
+              <li>촬영 도중 조명(플래시/그림자)이 급변하지 않도록 일관된 노출을 유지하세요.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Card 2: Active Reconstruction Job Dashboard -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3>⚙️ 정밀 3D 재구성 오케스트레이션 (Pipeline Orchestration)</h3>
+              <p style="font-size: 13px;">COLMAP SfM 및 Nerfstudio Splatfacto 비동기 GPU 파이프라인 수명주기를 관리합니다.</p>
+            </div>
+            <div style="display: flex; gap: 8px;" id="recon-actions-container">
+              <button class="btn btn-primary btn-sm" id="btn-trigger-reconstruction">🚀 정밀 3D 재구성 요청</button>
+              <button class="btn btn-danger btn-sm" id="btn-cancel-reconstruction" style="display: none;">🛑 작업 취소</button>
+              <button class="btn btn-success btn-sm" id="btn-verify-reconstruction" style="display: none;">✅ 3D 부스 검증 및 승인 (Verify)</button>
+            </div>
+          </div>
+
+          <!-- Progress Bar & Stage Display -->
+          <div id="recon-job-details-panel" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <span class="badge" id="recon-current-status-badge">Photo Preview</span>
+                <span id="recon-job-id-text" style="font-family: monospace; font-size: 12px; margin-left: 8px; color: var(--text-dim);">No Active Job</span>
+              </div>
+              <div id="recon-progress-percent" style="font-weight: 700; font-size: 18px; color: var(--brand-accent);">0%</div>
+            </div>
+
+            <div class="progress-container">
+              <div class="progress-fill" id="recon-progress-bar"></div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-top: 6px;">
+              <span>현재 단계: <strong id="recon-stage-text" style="color: var(--text-main);">준비 중 (Photo Preview)</strong></span>
+              <span id="recon-worker-id-text">Worker: 대기 중</span>
+            </div>
+
+            <!-- Diagnostics Metrics -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-subtle); font-size: 13px;">
+              <div>
+                <div style="color: var(--text-dim); font-size: 11px;">등록된 카메라 / 총 사진</div>
+                <div id="diag-reg-cameras" style="font-weight: 600; margin-top: 2px;">0 / 0</div>
+              </div>
+              <div>
+                <div style="color: var(--text-dim); font-size: 11px;">복원된 3D 포인트 클라우드</div>
+                <div id="diag-sparse-pts" style="font-weight: 600; margin-top: 2px;">0 pts</div>
+              </div>
+              <div>
+                <div style="color: var(--text-dim); font-size: 11px;">생성된 3D 공간 에셋</div>
+                <div id="diag-asset-format" style="font-weight: 600; margin-top: 2px;">Photo Preview (Hexagon)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: Products Management -->
       <section id="tab-products" class="tab-pane" style="display: none;">
         <div class="card">
           <div class="card-header">
@@ -207,7 +301,7 @@
         </div>
       </section>
 
-      <!-- TAB 4: VISUAL 3D HOTSPOT EDITOR -->
+      <!-- TAB 5: VISUAL 3D HOTSPOT EDITOR -->
       <section id="tab-hotspot-editor" class="tab-pane" style="display: none;">
         <div class="card">
           <div class="card-header">
@@ -264,7 +358,7 @@
         </div>
       </section>
 
-      <!-- TAB 5: Leads & RFQs -->
+      <!-- TAB 6: Leads & RFQs -->
       <section id="tab-leads" class="tab-pane" style="display: none;">
         <div class="card" style="margin-bottom: 24px;">
           <div class="card-header">

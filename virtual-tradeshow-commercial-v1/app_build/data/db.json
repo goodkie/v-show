@@ -7,7 +7,7 @@
       "description": "Next-generation industrial automation, smart robotics, and precision logistics solutions for modern manufacturing.",
       "themeColor": "#0f766e",
       "status": "published",
-      "reconstructionStatus": "photo_preview",
+      "reconstructionStatus": "verified",
       "photos": [
         "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80",
         "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=1200&q=80",
@@ -15,11 +15,13 @@
         "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80"
       ],
       "spatialModel": {
-        "type": "photo_preview",
-        "environmentLayout": "hexagon_booth"
+        "type": "gaussian_splat",
+        "assetUrl": "/uploads/models/booth-demo-01_splat.ply",
+        "format": "ply"
       },
       "createdAt": "2026-08-16T08:16:47.850Z",
-      "updatedAt": "2026-08-16T08:16:47.851Z"
+      "updatedAt": "2026-08-16T08:52:22.423Z",
+      "reconstructionJobId": "recon-job-d4593273"
     },
     {
       "id": "booth-e023c2a9",
@@ -39,7 +41,8 @@
         "environmentLayout": "hexagon_booth"
       },
       "createdAt": "2026-08-16T08:20:59.131Z",
-      "updatedAt": "2026-08-16T08:20:59.181Z"
+      "updatedAt": "2026-08-16T08:20:59.181Z",
+      "reconstructionJobId": null
     },
     {
       "id": "booth-693ae4dd",
@@ -55,7 +58,82 @@
         "environmentLayout": "hexagon_booth"
       },
       "createdAt": "2026-08-16T08:33:00.502Z",
-      "updatedAt": "2026-08-16T08:33:00.539Z"
+      "updatedAt": "2026-08-16T08:33:00.539Z",
+      "reconstructionJobId": null
+    },
+    {
+      "id": "booth-58a4020d",
+      "exhibitorId": "user-admin-1",
+      "name": "Empty Capture Test Booth",
+      "description": "",
+      "themeColor": "#0284c7",
+      "status": "draft",
+      "reconstructionStatus": "photo_preview",
+      "reconstructionJobId": null,
+      "photos": [],
+      "spatialModel": {
+        "type": "photo_preview",
+        "environmentLayout": "hexagon_booth"
+      },
+      "createdAt": "2026-08-16T08:52:22.274Z",
+      "updatedAt": "2026-08-16T08:52:22.274Z"
+    },
+    {
+      "id": "booth-a4a34bd3",
+      "exhibitorId": "user-admin-1",
+      "name": "Python Worker Test Pavilion",
+      "description": "",
+      "themeColor": "#0284c7",
+      "status": "draft",
+      "reconstructionStatus": "photo_preview",
+      "reconstructionJobId": null,
+      "photos": [],
+      "spatialModel": {
+        "type": "photo_preview",
+        "environmentLayout": "hexagon_booth"
+      },
+      "createdAt": "2026-08-16T08:52:30.818Z",
+      "updatedAt": "2026-08-16T08:52:30.818Z"
+    },
+    {
+      "id": "booth-058b220c",
+      "exhibitorId": "user-admin-1",
+      "name": "Advanced Robotics Pavilion 2026",
+      "description": "",
+      "themeColor": "#0284c7",
+      "status": "draft",
+      "reconstructionStatus": "photo_preview",
+      "reconstructionJobId": null,
+      "photos": [],
+      "spatialModel": {
+        "type": "photo_preview",
+        "environmentLayout": "hexagon_booth"
+      },
+      "createdAt": "2026-08-16T08:52:58.642Z",
+      "updatedAt": "2026-08-16T08:52:58.642Z"
+    },
+    {
+      "id": "booth-ef8a89bf",
+      "exhibitorId": "user-admin-1",
+      "name": "Advanced Robotics Pavilion 2026",
+      "description": "",
+      "themeColor": "#0284c7",
+      "status": "draft",
+      "reconstructionStatus": "verified",
+      "reconstructionJobId": "recon-job-5a7fd021",
+      "photos": [
+        "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158",
+        "https://images.unsplash.com/photo-1581092335397-9583fe92d232",
+        "https://images.unsplash.com/photo-1581092160607-ee22621dd758",
+        "https://images.unsplash.com/photo-1518770660439-4636190af475"
+      ],
+      "spatialModel": {
+        "type": "gaussian_splat",
+        "assetUrl": "/uploads/models/booth-ef8a89bf_splat.ply",
+        "format": "ply"
+      },
+      "createdAt": "2026-08-16T08:53:14.461Z",
+      "updatedAt": "2026-08-16T08:53:14.574Z"
     }
   ],
   "products": [
@@ -331,7 +409,7 @@
       "createdAt": "2026-08-16T08:33:00.747Z"
     }
   ],
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "events": [
     {
       "id": "evt-ecef87ba",
@@ -393,6 +471,74 @@
         "requestedTime": "2026-09-01T14:00"
       },
       "createdAt": "2026-08-16T08:33:00.747Z"
+    }
+  ],
+  "reconstructionJobs": [
+    {
+      "id": "recon-job-d4593273",
+      "boothId": "booth-demo-01",
+      "status": "verified",
+      "engine": "colmap_nerfstudio_splatfacto",
+      "qualityPreset": "standard",
+      "sourcePhotoCount": 4,
+      "photos": [
+        "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80"
+      ],
+      "progress": 100,
+      "currentStage": "completed",
+      "createdAt": "2026-08-16T08:52:22.311Z",
+      "startedAt": "2026-08-16T08:52:22.338Z",
+      "completedAt": "2026-08-16T08:52:22.404Z",
+      "workerId": "test-worker-01",
+      "output": {
+        "type": "gaussian_splat",
+        "url": "/uploads/models/booth-demo-01_splat.ply",
+        "format": "ply",
+        "sizeBytes": 15420000
+      },
+      "diagnostics": {
+        "registeredImages": 4,
+        "totalImages": 4,
+        "sparsePoints": 104500,
+        "warnings": []
+      },
+      "error": null
+    },
+    {
+      "id": "recon-job-5a7fd021",
+      "boothId": "booth-ef8a89bf",
+      "status": "verified",
+      "engine": "colmap_nerfstudio_splatfacto",
+      "qualityPreset": "standard",
+      "sourcePhotoCount": 4,
+      "photos": [
+        "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158",
+        "https://images.unsplash.com/photo-1581092335397-9583fe92d232",
+        "https://images.unsplash.com/photo-1581092160607-ee22621dd758",
+        "https://images.unsplash.com/photo-1518770660439-4636190af475"
+      ],
+      "progress": 100,
+      "currentStage": "completed",
+      "createdAt": "2026-08-16T08:53:14.487Z",
+      "startedAt": "2026-08-16T08:53:14.507Z",
+      "completedAt": "2026-08-16T08:53:14.552Z",
+      "workerId": "dry-run-worker-node",
+      "output": {
+        "type": "gaussian_splat",
+        "url": "/uploads/models/booth-ef8a89bf_splat.ply",
+        "format": "ply",
+        "sizeBytes": 16200000
+      },
+      "diagnostics": {
+        "registeredImages": 4,
+        "totalImages": 4,
+        "sparsePoints": 112000,
+        "warnings": []
+      },
+      "error": null
     }
   ]
 }
