@@ -146,9 +146,9 @@
     <main class="wilo-viewport" id="wilo-viewport">
       <!-- Mode Switcher Pill Bar -->
       <div class="wilo-mode-pill-bar">
-        <button class="wilo-mode-btn active" id="btn-mode-3d-orbit" onclick="switchViewerMode('3D_ORBIT')">🌐 3D Orbit</button>
-        <button class="wilo-mode-btn" id="btn-mode-3d-walk" onclick="switchViewerMode('3D_WALK')">🚶 3D Walk</button>
-        <button class="wilo-mode-btn" id="btn-mode-photo" onclick="switchViewerMode('PHOTO_TOUR')">📷 Photo Tour</button>
+        <button class="wilo-mode-btn active" id="btn-mode-photo" onclick="switchViewerMode('PHOTO_TOUR')">📷 Photo Tour (Primary)</button>
+        <button class="wilo-mode-btn" id="btn-mode-3d-orbit" onclick="switchViewerMode('3D_ORBIT')">🌐 3D Preview (Orbit)</button>
+        <button class="wilo-mode-btn" id="btn-mode-3d-walk" onclick="switchViewerMode('3D_WALK')">🚶 3D Walk Preview</button>
       </div>
 
       <!-- Floating Quick Tools -->
@@ -162,14 +162,14 @@
         <strong>Walk Controls:</strong> Use <b>W/A/S/D</b> or <b>Arrow Keys</b> to move. Click & drag to look around.
       </div>
 
-      <!-- 3D Three.js Scene Canvas Container -->
-      <div id="wilo-3d-canvas-container"></div>
-
-      <!-- 2D Photo Tour Fallback Container -->
-      <div id="wilo-photo-container">
+      <!-- 2D Photo Tour Container (Primary Photorealistic Showroom) -->
+      <div id="wilo-photo-container" style="display: block;">
         <img id="wilo-main-image" class="wilo-booth-image" src="/assets/demo/wilo/booth/01_front_hero.jpg" alt="Wilo Booth">
         <div id="wilo-photo-hotspots"></div>
       </div>
+
+      <!-- 3D Three.js Scene Canvas Container -->
+      <div id="wilo-3d-canvas-container" style="display: none;"></div>
     </main>
 
     <!-- Bottom HUD (Photo Tour & Information Strip) -->
@@ -177,15 +177,16 @@
       <div class="wilo-tour-controls">
         <div>
           <span style="font-size:11px; color:#94a3b8; text-transform:uppercase;">View Mode / Title:</span>
-          <span class="wilo-view-title" id="wilo-view-name">Explore in 3D — Full Radiance Showroom</span>
+          <span class="wilo-view-title" id="wilo-view-name">01_front_hero — Front Hero View (1/12)</span>
         </div>
-        <div id="wilo-photo-nav-buttons" style="display:none; gap:8px;">
+        <div id="wilo-photo-nav-buttons" style="display:flex; gap:8px;">
           <button class="wilo-btn" onclick="prevPhotoView()">&larr; Prev</button>
           <button class="wilo-btn" onclick="nextPhotoView()">Next &rarr;</button>
         </div>
       </div>
-      <div class="wilo-thumbnails-strip" id="wilo-thumbnails" style="display:none;"></div>
+      <div class="wilo-thumbnails-strip" id="wilo-thumbnails" style="display:flex;"></div>
     </footer>
+
   </div>
 
   <!-- Product Detail Modal with Genuine 3D Inspection Viewer -->
@@ -344,12 +345,12 @@
 
   <script>
     let demoData = null;
-    let currentViewerMode = '3D_ORBIT'; // '3D_ORBIT' | '3D_WALK' | 'PHOTO_TOUR'
+    let currentViewerMode = 'PHOTO_TOUR'; // Default to verified photorealistic Photo Tour
     let currentPhotoIndex = 0;
     let currentProduct = null;
 
     // Three.js Scene Variables
-    let scene, camera, renderer, orbitControls;
+    let scene = null, camera, renderer, orbitControls;
     let hotspotObjects = [];
     let raycaster = new THREE.Raycaster();
     let mouse = new THREE.Vector2();
@@ -394,14 +395,12 @@
         renderCatalog();
         renderResources();
         renderThumbnails();
-
-        // Initialize 3D Engine
-        init3DScene();
+        renderPhotoTour(); // Primary default
       } catch (err) {
-        console.warn('Falling back to Photo Tour due to load issue:', err);
-        switchViewerMode('PHOTO_TOUR');
+        console.warn('Init load issue:', err);
       }
     }
+
 
     function init3DScene() {
       const container = document.getElementById('wilo-3d-canvas-container');
@@ -663,12 +662,13 @@
         thumbs.style.display = 'flex';
         renderPhotoTour();
       } else {
+        if (!scene) init3DScene();
         canvas3D.style.display = 'block';
         photoContainer.style.display = 'none';
         photoNav.style.display = 'none';
         thumbs.style.display = 'none';
         walkHud.style.display = mode === '3D_WALK' ? 'block' : 'none';
-        viewName.textContent = mode === '3D_ORBIT' ? '3D Orbit Mode — Full Spatial Interactive Showroom' : '3D Walkthrough Mode — WASD / Arrow Locomotion';
+        viewName.textContent = mode === '3D_ORBIT' ? '3D Procedural Preview (Orbit)' : '3D Walk Preview (WASD)';
         
         if (mode === '3D_ORBIT' && orbitControls) {
           orbitControls.enabled = true;
@@ -678,6 +678,7 @@
         }
       }
     }
+
 
     function resetViewerCamera() {
       if (camera && orbitControls) {
