@@ -1,0 +1,224 @@
+{
+  "captureId": "WILO-GOLDEN-RECON-01",
+  "organizationId": "org-wilo-golden-demo",
+  "boothId": "booth-wilo-golden-demo",
+  "dataEnvironment": "SYNTHETIC_TEST",
+  "classification": "GOLDEN_DEMO",
+  "totalImages": 20,
+  "usableImages": 20,
+  "duplicates": 0,
+  "corrupted": 0,
+  "storageDirectory": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images",
+  "qualityRating": {
+    "count": 20,
+    "validCount": 20,
+    "duplicateCount": 0,
+    "grade": "GOOD",
+    "productionReady": false,
+    "canReconstruct": true,
+    "status": "QA_PASSED",
+    "qualityScore": 33
+  },
+  "images": [
+    {
+      "index": 1,
+      "filename": "wilo_view_001.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_1.jpg",
+      "bytes": 99764,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_001.jpg",
+      "sha256": "f395388b68e9f54c5688fad39bd80890f3af5f24ed3812bee2b5ceb0f7beb2ad",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_001.jpg"
+    },
+    {
+      "index": 2,
+      "filename": "wilo_view_002.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_10.jpg",
+      "bytes": 81673,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_002.jpg",
+      "sha256": "8864ffccf4d9c50f8d1cbde391f609d93b0c0fb2fd18fc6db1c857787ff26e5d",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_002.jpg"
+    },
+    {
+      "index": 3,
+      "filename": "wilo_view_003.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_11.jpg",
+      "bytes": 66163,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_003.jpg",
+      "sha256": "5bcfe968850e25385c4691ecec10cda2fd9462df1dadcb305226baa6316c22e1",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_003.jpg"
+    },
+    {
+      "index": 4,
+      "filename": "wilo_view_004.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_12.jpg",
+      "bytes": 68482,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_004.jpg",
+      "sha256": "3ede43d7512a7a98bdcf81a8c1d978713f06b0420270d16de78d7304936b3dc1",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_004.jpg"
+    },
+    {
+      "index": 5,
+      "filename": "wilo_view_005.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_13.jpg",
+      "bytes": 70797,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_005.jpg",
+      "sha256": "f85f1ad16d5d9ba0eec1661680c772cfa9840bfe6b72cddde54f5665837dd509",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_005.jpg"
+    },
+    {
+      "index": 6,
+      "filename": "wilo_view_006.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_14.jpg",
+      "bytes": 67541,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_006.jpg",
+      "sha256": "6d7834bca21c720f55f9e967f283160b75c2ab359ea9613a404f75637c368d6e",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_006.jpg"
+    },
+    {
+      "index": 7,
+      "filename": "wilo_view_007.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_15.jpg",
+      "bytes": 70125,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_007.jpg",
+      "sha256": "f96a6cfe02d66f88dcced723ea5484814893b8c24851650b2a23df00093dc1df",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_007.jpg"
+    },
+    {
+      "index": 8,
+      "filename": "wilo_view_008.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_16.jpg",
+      "bytes": 69210,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_008.jpg",
+      "sha256": "dc31a4c891c157b5e045939f90a468dfdb275991c87646b24f9e1c0139305e89",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_008.jpg"
+    },
+    {
+      "index": 9,
+      "filename": "wilo_view_009.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_17.jpg",
+      "bytes": 66414,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_009.jpg",
+      "sha256": "43ef6a9accf6c5a0c1dfb1dac94f6b687da39780a1e069273b0b5757e1cabd57",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_009.jpg"
+    },
+    {
+      "index": 10,
+      "filename": "wilo_view_010.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_18.jpg",
+      "bytes": 87574,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_010.jpg",
+      "sha256": "0fb3ca101d3cb9be88e66667dba69a9123e63ed588e0e42808a6a855f71cc3bb",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_010.jpg"
+    },
+    {
+      "index": 11,
+      "filename": "wilo_view_011.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_19.jpg",
+      "bytes": 79357,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_011.jpg",
+      "sha256": "4f79d5cef413fe042503a65e8c72ea4a62ab9e73a6fb9b9138c90bee1529f093",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_011.jpg"
+    },
+    {
+      "index": 12,
+      "filename": "wilo_view_012.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_2.jpg",
+      "bytes": 84125,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_012.jpg",
+      "sha256": "c5ce209b57c83e984cf9bac667315e64e42b391e35f19d7f893e9534235e0611",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_012.jpg"
+    },
+    {
+      "index": 13,
+      "filename": "wilo_view_013.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_20.jpg",
+      "bytes": 83860,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_013.jpg",
+      "sha256": "99972718144f6066d124afedd4fa0c244948efd40a167bd0b947f50b7d20587f",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_013.jpg"
+    },
+    {
+      "index": 14,
+      "filename": "wilo_view_014.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_3.jpg",
+      "bytes": 87948,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_014.jpg",
+      "sha256": "df7cc6c97598475295750670d713c6a22586033942fa8baec0196648f5600943",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_014.jpg"
+    },
+    {
+      "index": 15,
+      "filename": "wilo_view_015.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_4.jpg",
+      "bytes": 76438,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_015.jpg",
+      "sha256": "10c42c9f805dee1e279d526735d3f5a3d7ba216fef040072a542d07b373aad80",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_015.jpg"
+    },
+    {
+      "index": 16,
+      "filename": "wilo_view_016.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_5.jpg",
+      "bytes": 78891,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_016.jpg",
+      "sha256": "eaebdefde3f534e4f0ad828648f6bdbe346fe05a4f127e8738bef0cf37f5de6c",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_016.jpg"
+    },
+    {
+      "index": 17,
+      "filename": "wilo_view_017.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_6.jpg",
+      "bytes": 82657,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_017.jpg",
+      "sha256": "e578870fa087a6b88c30e2536189f648a8768f27ed35b3471493c92772b508ca",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_017.jpg"
+    },
+    {
+      "index": 18,
+      "filename": "wilo_view_018.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_7.jpg",
+      "bytes": 75597,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_018.jpg",
+      "sha256": "0343b6b91c23218852ff97de5200bdaa3f623fb35dd6fc4d41b155fa4759af1d",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_018.jpg"
+    },
+    {
+      "index": 19,
+      "filename": "wilo_view_019.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_8.jpg",
+      "bytes": 76890,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_019.jpg",
+      "sha256": "c818d9252c5054365b72c5db83eb4af5ed4343c4c4eca242663adf1b31e2a26e",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_019.jpg"
+    },
+    {
+      "index": 20,
+      "filename": "wilo_view_020.jpg",
+      "originalName": "ChatGPT Image 2026년 8월 17일 오전 03_58_23_9.jpg",
+      "bytes": 93504,
+      "mimeType": "image/jpeg",
+      "url": "/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images/wilo_view_020.jpg",
+      "sha256": "b2a7859fe9a88b8427201510849c3e62e9aa0d7bbaf4daa84fce1fa87a5502c3",
+      "storagePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\organizations\\org-wilo-golden-demo\\booths\\booth-wilo-golden-demo\\captures\\WILO-GOLDEN-RECON-01\\images\\wilo_view_020.jpg"
+    }
+  ]
+}

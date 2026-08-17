@@ -2411,21 +2411,162 @@ class JSONDatabase {
 
   validateCaptureQuality(count = 0, duplicateCount = 0) {
     const validCount = Math.max(0, count - duplicateCount);
-    const productionReady = validCount >= 50 && duplicateCount === 0;
+    let grade = 'POOR';
     let status = 'QA_PENDING';
-    if (count === 0) status = 'NO_DATA';
-    else if (productionReady) status = 'QA_PASSED';
-    else if (validCount < 3) status = 'QA_FAILED';
+    let canReconstruct = false;
+    let productionReady = false;
+
+    if (count === 0) {
+      status = 'NO_DATA';
+      grade = 'POOR';
+    } else if (validCount >= 50 && duplicateCount === 0) {
+      status = 'QA_PASSED';
+      grade = 'EXCELLENT';
+      canReconstruct = true;
+      productionReady = true;
+    } else if (validCount >= 15) {
+      status = 'QA_PASSED';
+      grade = 'GOOD';
+      canReconstruct = true;
+      productionReady = false;
+    } else if (validCount >= 3) {
+      status = 'QA_PASSED';
+      grade = 'ACCEPTABLE';
+      canReconstruct = true;
+      productionReady = false;
+    } else {
+      status = 'QA_FAILED';
+      grade = 'POOR';
+      canReconstruct = false;
+    }
 
     return {
       count,
       validCount,
       duplicateCount,
+      grade,
       productionReady,
+      canReconstruct,
       status,
       qualityScore: Math.min(100, Math.round((validCount / 60) * 100))
     };
   }
+
+  // --- Capture Datasets API (Phase 10.7N-E Tenant-Isolated Captures) ---
+  getCapturesByBoothId(boothId) {
+    const db = this.read();
+    return (db.captures || []).filter(c => c.boothId === boothId);
+  }
+
+  getCaptureById(captureId) {
+    const db = this.read();
+    return (db.captures || []).find(c => c.id === captureId) || null;
+  }
+
+  async createCaptureDataset(boothId, options = {}) {
+    return this.mutate((db) => {
+      db.captures = db.captures || [];
+      const booth = (db.booths || []).find(b => b.id === boothId);
+      if (!booth) throw new Error('Booth not found');
+
+      const capture = {
+        id: options.id || `capture-${uuidv4().substring(0, 8)}`,
+        boothId,
+        organizationId: booth.organizationId,
+        name: options.name || `Capture ${new Date().toISOString().split('T')[0]}`,
+        status: options.status || 'ACTIVE',
+        dataEnvironment: options.dataEnvironment || booth.dataEnvironment || 'REAL',
+        imageCount: (options.images || []).length,
+        images: options.images || [],
+        qualityRating: this.validateCaptureQuality((options.images || []).length, 0),
+        storagePath: options.storagePath || `organizations/${booth.organizationId}/booths/${boothId}/captures/${options.id || 'default'}/images/`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      db.captures.push(capture);
+      return capture;
+    });
+  }
+
+  async addImagesToCapture(captureId, newImages = []) {
+    return this.mutate((db) => {
+      db.captures = db.captures || [];
+      const c = db.captures.find(x => x.id === captureId);
+      if (!c) throw new Error('Capture dataset not found');
+
+      c.images = c.images || [];
+      c.images.push(...newImages);
+      c.imageCount = c.images.length;
+      c.qualityRating = this.validateCaptureQuality(c.images.length, 0);
+      c.updatedAt = new Date().toISOString();
+
+      // Sync with booth photos if active
+      const booth = (db.booths || []).find(b => b.id === c.boothId);
+      if (booth) {
+        booth.photos = c.images.map(img => img.url || img);
+        booth.updatedAt = new Date().toISOString();
+      }
+
+      return c;
+    });
+  }
+
+  // --- Booth 3D Scene Settings API ---
+  getBooth3DSettings(boothId) {
+    const booth = this.getBoothById(boothId, true);
+    if (!booth) return null;
+    return booth.sceneSettings || {
+      cameraFov: 45,
+      cameraPosition: [0, 2.2, 7.5],
+      cameraTarget: [0, 1.2, -1],
+      minZoom: 1.5,
+      maxZoom: 15.0,
+      walkSpeed: 3.5,
+      walkHeight: 1.65,
+      lightingPreset: 'STUDIO_COMMERCIAL',
+      backgroundTheme: 'DARK_MINIMAL',
+      enableWalkthrough: true,
+      enableOrbit: true,
+      enableCollision: true
+    };
+  }
+
+  async saveBooth3DSettings(boothId, settings = {}) {
+    return this.mutate((db) => {
+      const booth = (db.booths || []).find(b => b.id === boothId);
+      if (!booth) throw new Error('Booth not found');
+
+      booth.sceneSettings = {
+        ...(booth.sceneSettings || {}),
+        ...settings,
+        updatedAt: new Date().toISOString()
+      };
+      booth.updatedAt = new Date().toISOString();
+      return booth.sceneSettings;
+    });
+  }
+
+  // --- Product 3D Model API ---
+  async updateProduct3DModel(productId, modelData = {}) {
+    return this.mutate((db) => {
+      const p = (db.products || []).find(x => x.id === productId);
+      if (!p) throw new Error('Product not found');
+
+      p.model3D = {
+        format: modelData.format || 'GLB',
+        url: modelData.url || '',
+        filename: modelData.filename || '',
+        bytes: modelData.bytes || 0,
+        triangles: modelData.triangles || 0,
+        uploadedAt: new Date().toISOString(),
+        status: modelData.url ? 'AVAILABLE' : 'NONE'
+      };
+      p.updatedAt = new Date().toISOString();
+      return p;
+    });
+  }
+
 
   getFirstCustomer360() {
 

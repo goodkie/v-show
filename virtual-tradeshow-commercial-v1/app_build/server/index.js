@@ -26,21 +26,98 @@ const MODELS_DIR = path.join(UPLOADS_DIR, 'models');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!fs.existsSync(MODELS_DIR)) fs.mkdirSync(MODELS_DIR, { recursive: true });
 
-// Multer Storage Configuration
+// Helper to validate image magic bytes
+function validateImageMagicBytes(filePath) {
+  try {
+    const buf = Buffer.alloc(12);
+    const fd = fs.openSync(filePath, 'r');
+    fs.readSync(fd, buf, 0, 12, 0);
+    fs.closeSync(fd);
+
+    // JPEG: FF D8 FF
+    if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return { valid: true, mime: 'image/jpeg' };
+    // PNG: 89 50 4E 47 0D 0A 1A 0A
+    if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return { valid: true, mime: 'image/png' };
+    // WEBP: 52 49 46 46 ... 57 45 42 50
+    if (buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP') return { valid: true, mime: 'image/webp' };
+    
+    return { valid: false, reason: 'INVALID_MAGIC_BYTES' };
+  } catch (e) {
+    return { valid: false, reason: e.message };
+  }
+}
+
+// Multer Storage Configuration — Strict Security & Extension Validation
+const imageFileFilter = (req, file, cb) => {
+  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+  const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
+
+  const originalName = file.originalname.toLowerCase();
+  const ext = path.extname(originalName);
+
+  // Reject double extensions (e.g. payload.php.jpg)
+  const parts = originalName.split('.');
+  if (parts.length > 2) {
+    const secondLast = parts[parts.length - 2];
+    const suspiciousExts = ['php', 'exe', 'sh', 'js', 'py', 'html', 'htm', 'svg', 'bat', 'cmd'];
+    if (suspiciousExts.includes(secondLast)) {
+      return cb(new Error('Security error: Double extension detected and rejected.'), false);
+    }
+  }
+
+  // Reject path traversals
+  if (originalName.includes('..') || originalName.includes('/') || originalName.includes('\\')) {
+    return cb(new Error('Security error: Invalid characters in filename.'), false);
+  }
+
+  if (!allowedExtensions.includes(ext) || !allowedMimes.includes(file.mimetype)) {
+    return cb(new Error(`Invalid file type: ${ext} (${file.mimetype}). Only JPG, PNG, and WebP images are allowed.`), false);
+  }
+
+  cb(null, true);
+};
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, UPLOADS_DIR);
   },
   filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname);
+    const ext = path.extname(file.originalname).toLowerCase();
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
     cb(null, `capture-${uniqueSuffix}${ext}`);
   }
 });
+
 const upload = multer({
   storage: storage,
+  fileFilter: imageFileFilter,
   limits: { fileSize: 25 * 1024 * 1024 }
 });
+
+// Multer 3D Model Storage
+const model3DStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, MODELS_DIR);
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    cb(null, `model-${uniqueSuffix}${ext}`);
+  }
+});
+
+const model3DUpload = multer({
+  storage: model3DStorage,
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ext !== '.glb' && ext !== '.gltf') {
+      return cb(new Error('Only .glb and .gltf 3D model files are accepted.'), false);
+    }
+    cb(null, true);
+  },
+  limits: { fileSize: 100 * 1024 * 1024 } // 100MB for 3D models
+});
+
 
 // In-Memory Active Session Store (Token -> { userId, organizationId, email, name, role, createdAt })
 const activeSessions = new Map();
@@ -994,6 +1071,168 @@ app.post('/api/booths/:id/photos/replace', requireAuth, upload.single('photo'), 
     res.status(500).json({ error: err.message });
   }
 });
+
+// Production Tenant-Isolated Capture Upload Endpoint (Phase 10.7N-E)
+app.post('/api/booths/:id/captures/upload', requireAuth, upload.array('photos', 100), async (req, res) => {
+  try {
+    const booth = db.getBoothById(req.params.id, true);
+    if (!booth) return res.status(404).json({ error: 'Booth not found.' });
+
+    if (req.user.role !== 'organizer_admin' && req.user.role !== 'platform_owner' && req.user.organizationId !== booth.organizationId) {
+      return res.status(403).json({ error: 'Forbidden: Cross-tenant capture upload rejected.' });
+    }
+
+    const captureId = req.body.captureId || `capture-${uuidv4().substring(0, 8)}`;
+    const tenantCaptureDir = path.join(UPLOADS_DIR, 'organizations', booth.organizationId, 'booths', booth.id, 'captures', captureId, 'images');
+    if (!fs.existsSync(tenantCaptureDir)) fs.mkdirSync(tenantCaptureDir, { recursive: true });
+
+    const processedImages = [];
+    const files = req.files || [];
+
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const magic = validateImageMagicBytes(f.path);
+      if (!magic.valid) {
+        fs.unlinkSync(f.path);
+        return res.status(400).json({ error: `Security validation failed for ${f.originalname}: Corrupted or invalid magic bytes.` });
+      }
+
+      // Move into tenant-isolated structure
+      const targetFilename = `view_${String(i + 1).padStart(3, '0')}_${path.basename(f.filename)}`;
+      const targetPath = path.join(tenantCaptureDir, targetFilename);
+      fs.renameSync(f.path, targetPath);
+
+      const buf = fs.readFileSync(targetPath);
+      const hash = crypto.createHash('sha256').update(buf).digest('hex');
+      const publicUrl = `/uploads/organizations/${booth.organizationId}/booths/${booth.id}/captures/${captureId}/images/${targetFilename}`;
+
+      processedImages.push({
+        filename: targetFilename,
+        originalName: f.originalname,
+        bytes: f.size,
+        mimeType: f.mimetype,
+        url: publicUrl,
+        sha256: hash
+      });
+    }
+
+    // Save capture dataset
+    let capture = db.getCaptureById(captureId);
+    if (!capture) {
+      capture = await db.createCaptureDataset(booth.id, {
+        id: captureId,
+        name: req.body.captureName || `Booth Capture ${new Date().toISOString().split('T')[0]}`,
+        images: processedImages,
+        dataEnvironment: booth.dataEnvironment || 'REAL'
+      });
+    } else {
+      capture = await db.addImagesToCapture(captureId, processedImages);
+    }
+
+    const updatedBooth = await db.updateBooth(booth.id, {
+      photos: capture.images.map(img => img.url),
+      activeCaptureId: capture.id,
+      reconstructionStatus: 'photo_preview'
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `Successfully uploaded and validated ${processedImages.length} images.`,
+      captureId: capture.id,
+      count: processedImages.length,
+      images: processedImages,
+      capture,
+      validation: capture.qualityRating,
+      booth: updatedBooth
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Capture Datasets Query Endpoint
+app.get('/api/booths/:id/captures', requireAuth, (req, res) => {
+  try {
+    const booth = db.getBoothById(req.params.id, true);
+    if (!booth) return res.status(404).json({ error: 'Booth not found.' });
+
+    if (req.user.role !== 'organizer_admin' && req.user.role !== 'platform_owner' && req.user.organizationId !== booth.organizationId) {
+      return res.status(403).json({ error: 'Forbidden: Cross-tenant access rejected.' });
+    }
+
+    const captures = db.getCapturesByBoothId(booth.id);
+    res.json({ captures, activeCaptureId: booth.activeCaptureId || null });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Product 3D Model Upload Endpoint (GLB/GLTF)
+app.post('/api/products/:id/model-3d', requireAuth, model3DUpload.single('model'), async (req, res) => {
+  try {
+    const product = db.getProductById(req.params.id);
+    if (!product) return res.status(404).json({ error: 'Product not found.' });
+
+    if (req.user.role !== 'organizer_admin' && req.user.role !== 'platform_owner' && req.user.organizationId !== product.organizationId) {
+      return res.status(403).json({ error: 'Forbidden: Cross-tenant model upload rejected.' });
+    }
+
+    if (!req.file) return res.status(400).json({ error: 'No 3D model file provided.' });
+
+    const tenantProductModelDir = path.join(UPLOADS_DIR, 'organizations', product.organizationId, 'products', product.id);
+    if (!fs.existsSync(tenantProductModelDir)) fs.mkdirSync(tenantProductModelDir, { recursive: true });
+
+    const targetPath = path.join(tenantProductModelDir, req.file.filename);
+    fs.renameSync(req.file.path, targetPath);
+
+    const publicUrl = `/uploads/organizations/${product.organizationId}/products/${product.id}/${req.file.filename}`;
+    const ext = path.extname(req.file.originalname).toLowerCase();
+
+    const updated = await db.updateProduct3DModel(product.id, {
+      format: ext === '.glb' ? 'GLB' : 'GLTF',
+      url: publicUrl,
+      filename: req.file.originalname,
+      bytes: req.file.size
+    });
+
+    res.json({
+      success: true,
+      message: 'Product 3D model uploaded successfully.',
+      model3D: updated.model3D,
+      product: updated
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Booth 3D Scene Settings Endpoints
+app.get('/api/booths/:id/3d-settings', (req, res) => {
+  try {
+    const settings = db.getBooth3DSettings(req.params.id);
+    if (!settings) return res.status(404).json({ error: 'Booth not found.' });
+    res.json({ settings });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/booths/:id/3d-settings', requireAuth, async (req, res) => {
+  try {
+    const booth = db.getBoothById(req.params.id, true);
+    if (!booth) return res.status(404).json({ error: 'Booth not found.' });
+
+    if (req.user.role !== 'organizer_admin' && req.user.role !== 'platform_owner' && req.user.organizationId !== booth.organizationId) {
+      return res.status(403).json({ error: 'Forbidden: Cross-tenant settings update rejected.' });
+    }
+
+    const saved = await db.saveBooth3DSettings(booth.id, req.body.settings || req.body);
+    res.json({ success: true, message: '3D Scene settings saved successfully.', settings: saved });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 
 // --- 6. Precision Reconstruction APIs (with Approval Workflow) ---
@@ -2991,8 +3230,13 @@ const WILO_DEMO_HTML = `<!DOCTYPE html>
 
 app.get(['/wilo-demo.html', '/demo/wilo', '/wilo'], (req, res) => {
   res.setHeader('Content-Type', 'text/html');
+  const wiloFile = path.join(__dirname, '..', 'client', 'wilo-demo.html');
+  if (fs.existsSync(wiloFile)) {
+    return res.sendFile(wiloFile);
+  }
   res.send(WILO_DEMO_HTML);
 });
+
 
 
 

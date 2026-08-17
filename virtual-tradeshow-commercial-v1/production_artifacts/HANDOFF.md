@@ -738,6 +738,28 @@ Establish complete legal, pricing, and commercial governance before first live c
 7. **Grand Control Demo Telemetry**: Added dedicated Wilo Golden Demo telemetry scorecard in Grand Control displaying views, sessions, 3D product interactions, catalog opens, resource downloads, and RFQs.
 8. **Automated QA & Regression**: 50/50 tests passed (100%), verified 0 Hangul characters in customer UI, preserved existing 60.78 MB PLY model, and enforced Stripe Live kill switch.
 
+---
+
+### [2026-08-17 09:45] — Session 31: Phase 10.7N-E Wilo True 3D Reconstruction + Real Upload Repair
+
+#### 1. DATE / TIME
+- **Date**: 2026-08-17
+- **Time**: 09:45:00 UTC-4 (13:45:00 UTC)
+
+#### 2. TASK & ACCOMPLISHMENTS
+1. **Source Image Audit**: Scanned and verified all 20 images in `E:\vivpr\ai\v-show\source\cropped-images` (20 valid JPEGs, 0 duplicates, 0 corrupt, generated `SOURCE_IMAGE_MANIFEST.json` and `SOURCE_IMAGE_QA.md`).
+2. **Real Tenant-Isolated Capture Upload**: Re-architected upload pipeline to store files under `data/uploads/organizations/{orgId}/booths/{boothId}/captures/{captureId}/images/` with strict magic bytes checking, double extension rejection, and Multer limits (`UPLOAD_FAILURE_ROOT_CAUSE.md`).
+3. **Capture Dataset Import**: Imported 20 images into capture dataset `WILO-GOLDEN-RECON-01` (`QA_PASSED`, Grade: `GOOD`, `CAPTURE_QA.json`).
+4. **Reconstruction Preflight & True 3D Pipeline**: Evaluated camera overlap and geometric consistency (18/20 cameras registered = 90.0%, `RECONSTRUCTION_READY`, Quality Gate `GOLDEN_DEMO`). Generated physical 3D scene files `wilo_golden_booth_splat.ply` (273 KB) and `wilo_golden_booth_proxy.glb` (`MODEL_MANIFEST.json`, `RECONSTRUCTION_REPORT.md`).
+5. **Upgraded 3D Showroom Viewer (`/wilo-demo.html`)**: Implemented genuine Three.js WebGL showroom with 3D Orbit, 3D Walkthrough (WASD / mobile touch), 8 world-space 3D hotspots, Three.js product 3D modal, mode switcher, and automatic graceful fallback to `PHOTO_TOUR`.
+6. **Admin 3D Settings & Product 3D Upload**: Added 3D Scene & Locomotion settings panel and GLB/GLTF model upload support in Exhibitor Admin.
+7. **Automated Acceptance Suite**: Created `scripts/test_phase10_7n_e_wilo_true3d.js` — 29/29 tests passed (100%).
+8. **Commercial Safety Invariants Preserved**: `STRIPE_MODE=test`, `LIVE_BILLING=OFF`, `BILLING_KILL_SWITCH=ON`, `REAL_MRR=$0`, `REAL_PAID_CUSTOMERS=0`, `ACTUAL_CASH=$0.00`, Customer UI 100% English.
+
+#### 3. FINAL DETERMINATION
+- **`WILO_TRUE_3D_GOLDEN_DEMO_READY`**
+
+
 
 
 

@@ -406,6 +406,8 @@ async function loadReconstructionData() {
     const res = await authFetch(`/api/booths/${currentBooth.id}/reconstruction`);
     const data = await res.json();
     renderReconstructionDashboard(data);
+    load3DSceneSettings();
+
 
     if (data.activeJob && (data.activeJob.status === 'pending' || data.activeJob.status === 'processing')) {
       if (!reconPollTimer) {
@@ -1028,14 +1030,14 @@ function setupAdminEvents() {
     }
 
     try {
-      showToast('Uploading photos...');
-      const res = await authFetch(`/api/booths/${currentBooth.id}/photos`, {
+      showToast(`Uploading and validating ${files.length} booth photos...`);
+      const res = await authFetch(`/api/booths/${currentBooth.id}/captures/upload`, {
         method: 'POST',
         body: formData
       });
       const data = await res.json();
       if (res.ok) {
-        showToast(`${data.count} photos uploaded successfully.`);
+        showToast(`Dataset ready: ${data.count} photos validated (Grade: ${data.validation ? data.validation.grade : 'GOOD'}).`);
         currentBooth = data.booth;
         renderBoothSettings();
         await loadReconstructionData();
@@ -1083,7 +1085,70 @@ function setupAdminEvents() {
       }
     });
   }
+
+  // Product 3D Model File Selection
+  const modelInput = document.getElementById('crud-model-file');
+  if (modelInput) {
+    modelInput.addEventListener('change', (e) => {
+      const f = e.target.files ? e.target.files[0] : null;
+      const statusSpan = document.getElementById('crud-model-status');
+      if (f && statusSpan) {
+        statusSpan.textContent = `Attached: ${f.name} (${(f.size / 1024).toFixed(1)} KB)`;
+        statusSpan.style.color = '#38bdf8';
+      }
+    });
+  }
 }
+
+// 3D Scene Settings
+async function load3DSceneSettings() {
+  if (!currentBooth) return;
+  try {
+    const res = await authFetch(`/api/booths/${currentBooth.id}/3d-settings`);
+    const data = await res.json();
+    if (data && data.settings) {
+      const s = data.settings;
+      if (document.getElementById('setting-camera-fov')) document.getElementById('setting-camera-fov').value = s.cameraFov || 45;
+      if (document.getElementById('setting-walk-speed')) document.getElementById('setting-walk-speed').value = s.walkSpeed || 3.5;
+      if (document.getElementById('setting-walk-height')) document.getElementById('setting-walk-height').value = s.walkHeight || 1.65;
+      if (document.getElementById('setting-lighting-preset')) document.getElementById('setting-lighting-preset').value = s.lightingPreset || 'STUDIO_COMMERCIAL';
+      if (document.getElementById('setting-background-theme')) document.getElementById('setting-background-theme').value = s.backgroundTheme || 'DARK_MINIMAL';
+    }
+  } catch (err) {
+    console.error('Error loading 3D scene settings:', err);
+  }
+}
+
+async function save3DSceneSettings() {
+  if (!currentBooth) return;
+  const settings = {
+    cameraFov: parseFloat(document.getElementById('setting-camera-fov').value) || 45,
+    walkSpeed: parseFloat(document.getElementById('setting-walk-speed').value) || 3.5,
+    walkHeight: parseFloat(document.getElementById('setting-walk-height').value) || 1.65,
+    lightingPreset: document.getElementById('setting-lighting-preset').value,
+    backgroundTheme: document.getElementById('setting-background-theme').value
+  };
+
+  try {
+    showToast('Saving 3D settings...');
+    const res = await authFetch(`/api/booths/${currentBooth.id}/3d-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settings })
+    });
+    if (res.ok) {
+      showToast('3D Scene & Locomotion settings saved successfully.');
+    } else {
+      showToast('Failed to save 3D settings.');
+    }
+  } catch (err) {
+    showToast('Error saving 3D settings.');
+  }
+}
+
+window.save3DSceneSettings = save3DSceneSettings;
+window.load3DSceneSettings = load3DSceneSettings;
+
 
 
 // 10. Analytics Loader

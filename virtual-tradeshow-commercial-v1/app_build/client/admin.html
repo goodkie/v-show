@@ -355,10 +355,53 @@
               <div style="font-size: 11px; color: var(--text-dim); margin-top: auto; line-height: 1.4;">
                 * Align the 3D model with interactive hotspot markers and click [💾 Save Alignment].
               </div>
+        </div>
+
+        <!-- Card 4: 3D Scene & Navigation Settings -->
+        <div class="card" style="margin-top: 24px;">
+          <div class="card-header">
+            <div>
+              <h3>🌐 3D Scene & Locomotion Settings</h3>
+              <p style="font-size: 13px;">Configure default camera perspective, field of view, walk speed, and environment lighting.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" id="btn-save-3d-scene-settings" onclick="save3DSceneSettings()">💾 Save 3D Settings</button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">Camera FOV (Field of View)</label>
+              <input type="number" class="form-input" id="setting-camera-fov" value="45" min="30" max="80">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Walk Locomotion Speed (m/s)</label>
+              <input type="number" class="form-input" id="setting-walk-speed" value="3.5" min="1" max="10" step="0.5">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Eye-Level Walk Height (m)</label>
+              <input type="number" class="form-input" id="setting-walk-height" value="1.65" min="1.0" max="2.5" step="0.05">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 12px;">
+            <div class="form-group">
+              <label class="form-label">Lighting Preset</label>
+              <select class="form-select" id="setting-lighting-preset">
+                <option value="STUDIO_COMMERCIAL">Studio Commercial (High Contrast)</option>
+                <option value="EXHIBITION_HALL">Exhibition Hall (Ambient Warm)</option>
+                <option value="NEUTRAL_CLEAN">Neutral Clean (Daylight 5500K)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Background Ambience</label>
+              <select class="form-select" id="setting-background-theme">
+                <option value="DARK_MINIMAL">Dark Minimal (#070a12)</option>
+                <option value="DARK_SLATE">Dark Slate (#0f172a)</option>
+                <option value="EXPO_BLUR">Exhibition Blurred Hall</option>
+              </select>
             </div>
           </div>
         </div>
       </section>
+
 
       <!-- TAB 4: Products Management -->
       <section id="tab-products" class="tab-pane" style="display: none;">
@@ -656,9 +699,18 @@
           <input type="text" class="form-input" id="crud-image" placeholder="https://... or upload asset">
         </div>
         <div class="form-group">
+          <label class="form-label">Product 3D Model (GLB / GLTF)</label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="file" id="crud-model-file" accept=".glb,.gltf" style="display: none;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('crud-model-file').click()">📁 Select 3D Model</button>
+            <span id="crud-model-status" style="font-size: 12px; color: var(--text-dim);">No 3D asset attached</span>
+          </div>
+        </div>
+        <div class="form-group">
           <label class="form-label">Product Description</label>
           <textarea class="form-textarea" id="crud-desc" rows="3"></textarea>
         </div>
+
         <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
           <input type="checkbox" id="crud-sample-avail" checked>
           <label for="crud-sample-avail" style="font-size: 13px; color: var(--text-main); cursor: pointer;">
