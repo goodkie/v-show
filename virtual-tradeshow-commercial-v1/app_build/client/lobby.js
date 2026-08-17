@@ -58,30 +58,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     booths.forEach(booth => {
       const card = document.createElement('a');
       card.className = 'booth-card';
-      card.href = `viewer.html?boothId=${booth.id}`;
+      card.href = booth.id === 'booth-wilo-golden-demo' ? 'wilo-demo.html' : `viewer.html?boothId=${booth.id}`;
 
-      const coverImg = (booth.photos && booth.photos[0]) || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80';
+      const coverImg = (booth.photos && booth.photos[0]) || (booth.id === 'booth-wilo-golden-demo' ? '/assets/demo/wilo_placeholder_hero.svg' : 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80');
       const isPrecision = booth.reconstructionStatus === 'verified';
-      const badgeHtml = isPrecision
-        ? `<span class="badge badge-verified" style="box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);">✨ 3D Gaussian Splat</span>`
-        : `<span class="badge badge-preview">Photo Preview</span>`;
+      const badgeHtml = booth.classification === 'GOLDEN_DEMO'
+        ? `<span class="badge" style="background:#dc2626; color:#fff; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);">🌟 Wilo Golden Demo</span>`
+        : (isPrecision
+            ? `<span class="badge badge-verified" style="box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);">✨ 3D Gaussian Splat</span>`
+            : `<span class="badge badge-preview">Photo Preview</span>`);
 
       card.innerHTML = `
-        <div class="booth-cover" style="background-image: url('${coverImg}');">
+        <div class="booth-cover" style="background-image: url('${coverImg}'); background-size: cover; background-position: center;">
           <div class="booth-badge-pos">${badgeHtml}</div>
         </div>
         <div class="booth-content">
           <div class="booth-name">${escapeHtml(booth.name)}</div>
           <div class="booth-desc">${escapeHtml(booth.description || 'Explore the 3D virtual booth space and innovative product lineup.')}</div>
           <div class="booth-footer">
-            <span>🚪 Enter 3D Booth</span>
-            <span style="color: var(--brand-accent); font-weight: 600;">Visit &rarr;</span>
+            <span>🚪 Enter ${booth.classification === 'GOLDEN_DEMO' ? 'Showroom Demo' : '3D Booth'}</span>
+            <span style="color: ${booth.classification === 'GOLDEN_DEMO' ? '#ef4444' : 'var(--brand-accent)'}; font-weight: 600;">Visit &rarr;</span>
           </div>
         </div>
       `;
 
       boothGrid.appendChild(card);
     });
+
   }
 
   function filterBooths() {

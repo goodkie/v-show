@@ -877,6 +877,125 @@ app.post('/api/booths/:id/photos', requireAuth, upload.array('photos', 100), asy
   }
 });
 
+// Photo Deletion Endpoint (Single photo or Clear All)
+app.delete('/api/booths/:id/photos', requireAuth, async (req, res) => {
+  try {
+    const booth = db.getBoothById(req.params.id, true);
+    if (!booth) return res.status(404).json({ error: 'Booth not found.' });
+
+    if (req.user.role !== 'organizer_admin' && req.user.role !== 'platform_owner' && req.user.organizationId !== booth.organizationId) {
+      return res.status(403).json({ error: 'Forbidden: Cross-tenant photo deletion rejected.' });
+    }
+
+    const { photoUrl, index, clearAll } = req.body || {};
+    let currentPhotos = [...(booth.photos || [])];
+
+    if (clearAll) {
+      currentPhotos = [];
+    } else if (typeof index === 'number' && index >= 0 && index < currentPhotos.length) {
+      currentPhotos.splice(index, 1);
+    } else if (photoUrl) {
+      currentPhotos = currentPhotos.filter(p => p !== photoUrl);
+    } else {
+      return res.status(400).json({ error: 'Specify photoUrl, index, or clearAll.' });
+    }
+
+    const updated = await db.updateBooth(req.params.id, {
+      photos: currentPhotos,
+      reconstructionStatus: currentPhotos.length === 0 ? 'photo_preview' : booth.reconstructionStatus
+    });
+
+    res.json({
+      success: true,
+      message: 'Photo deleted successfully.',
+      photos: updated.photos,
+      count: updated.photos.length,
+      validation: validateBoothCapture(updated.photos),
+      booth: updated
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Photo Reordering & Batch Edit Endpoint
+app.put('/api/booths/:id/photos', requireAuth, async (req, res) => {
+  try {
+    const booth = db.getBoothById(req.params.id, true);
+    if (!booth) return res.status(404).json({ error: 'Booth not found.' });
+
+    if (req.user.role !== 'organizer_admin' && req.user.role !== 'platform_owner' && req.user.organizationId !== booth.organizationId) {
+      return res.status(403).json({ error: 'Forbidden: Cross-tenant photo update rejected.' });
+    }
+
+    const { photos, photoMetadata } = req.body;
+    if (!Array.isArray(photos)) {
+      return res.status(400).json({ error: 'photos must be an array of photo URLs.' });
+    }
+
+    const updatePayload = { photos };
+    if (photoMetadata && Array.isArray(photoMetadata)) {
+      updatePayload.photoMetadata = photoMetadata;
+    }
+
+    const updated = await db.updateBooth(req.params.id, updatePayload);
+
+    res.json({
+      success: true,
+      message: 'Booth photos updated successfully.',
+      photos: updated.photos,
+      count: updated.photos.length,
+      validation: validateBoothCapture(updated.photos),
+      booth: updated
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Single Photo Replacement Endpoint
+app.post('/api/booths/:id/photos/replace', requireAuth, upload.single('photo'), async (req, res) => {
+  try {
+    const booth = db.getBoothById(req.params.id, true);
+    if (!booth) return res.status(404).json({ error: 'Booth not found.' });
+
+    if (req.user.role !== 'organizer_admin' && req.user.role !== 'platform_owner' && req.user.organizationId !== booth.organizationId) {
+      return res.status(403).json({ error: 'Forbidden: Cross-tenant photo replacement rejected.' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No photo file provided for replacement.' });
+    }
+
+    const index = parseInt(req.body.index, 10);
+    const currentPhotos = [...(booth.photos || [])];
+
+    if (isNaN(index) || index < 0 || index >= currentPhotos.length) {
+      return res.status(400).json({ error: `Invalid index: ${req.body.index}. Must be between 0 and ${currentPhotos.length - 1}.` });
+    }
+
+    const newUrl = `/uploads/${req.file.filename}`;
+    currentPhotos[index] = newUrl;
+
+    const updated = await db.updateBooth(req.params.id, {
+      photos: currentPhotos
+    });
+
+    res.json({
+      success: true,
+      message: `Photo at index ${index} replaced successfully.`,
+      replacedIndex: index,
+      newUrl,
+      photos: updated.photos,
+      validation: validateBoothCapture(updated.photos),
+      booth: updated
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 // --- 6. Precision Reconstruction APIs (with Approval Workflow) ---
 app.get('/api/booths/:id/reconstruction', requireAuth, (req, res) => {
   const booth = db.getBoothById(req.params.id, true);
@@ -1877,8 +1996,19 @@ app.get('/api/platform/export', requireAuth, requirePlatformOwner, (req, res) =>
     case 'organizations':
     default: {
       csvContent = 'Id,Name,Slug,Type,Status,Plan,Environment,CreatedAt\n';
+      orgs.forEach(o => {
+        csvContent += `"${o.id}","${o.name}","${o.slug || ''}","${o.type || 'exhibitor'}","${o.status || 'active'}","${o.subscription?.plan || 'free'}","${o.subscription?.dataEnvironment || 'REAL'}","${o.createdAt || ''}"\n`;
+      });
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=organizations_export_${Date.now()}.csv`);
+      return res.send(csvContent);
+    }
+  }
+});
+
 // --- Phase 10.7 First Real Customer Pre-Activation & Launch Governance APIs ---
 app.post('/api/platform/first-customer/pre-activate', requireAuth, requirePlatformOwner, async (req, res) => {
+
   try {
     const result = await db.createRealCustomerPreActivation(req.body, req.user.userId);
     res.status(201).json({
@@ -2172,6 +2302,701 @@ app.get('/api/platform/outreach/export', requireAuth, requirePlatformOwner, (req
     res.status(500).json({ error: err.message });
   }
 });
+
+// --- Phase 10.7N Wilo Golden Demo Endpoints ---
+app.get('/api/public/wilo-demo', (req, res) => {
+  try {
+    const data = db.getWiloDemoData();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/platform/wilo-demo/scorecard', requireAuth, requirePlatformOwner, (req, res) => {
+  try {
+    const scorecard = db.getWiloDemoScorecard();
+    res.json({ scorecard });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/public/consultation-ticket', async (req, res) => {
+  try {
+    const ticket = await db.createConsultationTicket(req.body);
+    res.status(201).json({
+      success: true,
+      message: 'Consultation ticket created successfully. A technical specialist will contact you.',
+      ticket
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/exhibitor/consultation-tickets', requireAuth, (req, res) => {
+  try {
+    const orgId = req.user.organizationId;
+    const allTickets = db.read().consultationTickets || [];
+    const tickets = req.user.role === 'platform_owner' ? allTickets : allTickets.filter(t => t.organizationId === orgId);
+    res.json({ tickets });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/exhibitor/consultation-tickets/:id', requireAuth, async (req, res) => {
+  try {
+    const updated = await db.updateConsultationTicket(req.params.id, req.body, req.user.userId);
+    res.json({ success: true, ticket: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/public/wilo-demo/analytics', async (req, res) => {
+  try {
+    const { type, details } = req.body;
+    await db.mutate((d) => {
+      d.analyticsEvents = d.analyticsEvents || [];
+      d.analyticsEvents.push({
+        id: `evt-${uuidv4().substring(0, 8)}`,
+        organizationId: 'org-wilo-golden-demo',
+        type: type || 'demo_interaction',
+        details: details || {},
+        dataEnvironment: 'SYNTHETIC_TEST',
+        timestamp: new Date().toISOString()
+      });
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/public/wilo-demo/feedback', async (req, res) => {
+
+  try {
+    const feedback = await db.addDemoFeedback(req.body);
+    res.status(201).json({
+      success: true,
+      message: 'Demo feedback submitted successfully.',
+      feedback
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/platform/wilo-demo/feedbacks', requireAuth, requirePlatformOwner, (req, res) => {
+  try {
+    const feedbacks = db.getDemoFeedbacks();
+    res.json({ feedbacks });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Real Demo Asset Static Handlers (Phase 10.7N Final Assets)
+const WILO_EXTERNAL_ROOT = process.env.WILO_EXTERNAL_ROOT || 'C:\\Users\\vivPR\\vshow-demo-assets\\wilo';
+
+
+app.get('/assets/demo/wilo/booth/:filename', (req, res) => {
+  const file = req.params.filename;
+  const p = path.join(WILO_EXTERNAL_ROOT, 'booth', file);
+  if (fs.existsSync(p)) {
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.sendFile(p);
+  }
+  res.redirect(`/assets/demo/${file.replace('.jpg', '.svg')}`);
+});
+
+app.get('/assets/demo/wilo/products/:filename', (req, res) => {
+  const file = req.params.filename;
+  const p = path.join(WILO_EXTERNAL_ROOT, 'products', file);
+  if (fs.existsSync(p)) {
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.sendFile(p);
+  }
+  res.redirect(`/assets/demo/${file.replace('.jpg', '.svg')}`);
+});
+
+app.get('/api/public/wilo-demo/manifest', (req, res) => {
+  const manifestPath = path.join(WILO_EXTERNAL_ROOT, 'manifests', 'wilo_booth_manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    try {
+      const content = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      return res.json(content);
+    } catch (e) {}
+  }
+  res.json({ status: 'manifest_missing', viewsAvailable: 0 });
+});
+
+// Dynamic Demo Placeholder SVG Renderer (Fallback)
+app.get('/assets/demo/:filename', (req, res) => {
+  const fn = req.params.filename || '';
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+
+  if (fn.startsWith('wilo_prod_')) {
+    const num = fn.replace('wilo_prod_', '').replace('.svg', '');
+    return res.send(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="100%" height="100%">
+  <rect width="600" height="600" rx="16" fill="#1e293b" stroke="#334155" stroke-width="2" />
+  <circle cx="300" cy="270" r="130" fill="#0f172a" stroke="#dc2626" stroke-width="4" />
+  <path d="M 220 270 L 380 270 M 300 190 L 300 350" stroke="#38bdf8" stroke-width="8" stroke-linecap="round" />
+  <circle cx="300" cy="270" r="40" fill="#dc2626" />
+  <text x="300" y="470" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#f8fafc" text-anchor="middle">WILO PUMP SYSTEM #${num}</text>
+  <text x="300" y="505" font-family="Arial, sans-serif" font-size="15" fill="#94a3b8" text-anchor="middle">Interactive 3D / Hotspot Ready</text>
+</svg>`);
+  }
+
+  // Booth View Placeholder
+  const viewTitle = fn.replace('wilo_placeholder_', '').replace('.svg', '').replace(/_/g, ' ').toUpperCase();
+  return res.send(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#090d16" />
+    </linearGradient>
+    <linearGradient id="redGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#dc2626" />
+      <stop offset="100%" stop-color="#991b1b" />
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)" />
+  <rect x="100" y="80" width="1400" height="120" rx="8" fill="url(#redGrad)" />
+  <text x="800" y="155" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#ffffff" text-anchor="middle" letter-spacing="4">WILO — PIONEERING FOR YOU</text>
+  <rect x="150" y="240" width="1300" height="560" rx="16" fill="#1e293b" stroke="#334155" stroke-width="2" />
+  <circle cx="800" cy="480" r="120" fill="#0f172a" stroke="#dc2626" stroke-width="3" stroke-dasharray="8 8" />
+  <text x="800" y="470" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#38bdf8" text-anchor="middle">ISH FRANKFURT 2026</text>
+  <text x="800" y="515" font-family="Arial, sans-serif" font-size="24" fill="#94a3b8" text-anchor="middle">${viewTitle || 'BOOTH VIEW'}</text>
+  <rect x="650" y="650" width="300" height="44" rx="22" fill="#dc2626" />
+  <text x="800" y="678" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">INTERACTIVE DEMO VIEW</text>
+</svg>`);
+});
+
+
+// Dynamic Wilo Golden Demo Showroom Route
+const WILO_DEMO_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Wilo — Intelligent Water & Pump Solutions | Virtual Trade Show Demo</title>
+  <link rel="stylesheet" href="/index.css">
+  <style>
+    :root {
+      --wilo-red: #dc2626;
+      --wilo-red-dark: #991b1b;
+      --wilo-bg: #0b0f19;
+      --wilo-panel: #131b2e;
+      --wilo-border: #1e293b;
+      --wilo-accent: #38bdf8;
+    }
+    body, html {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      background: var(--wilo-bg); color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+    }
+    .wilo-container { display: flex; flex-direction: column; height: 100vh; height: 100dvh; position: relative; }
+    .wilo-hud-top {
+      display: flex; justify-content: space-between; align-items: center; padding: 12px 20px;
+      background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--wilo-border); z-index: 50;
+    }
+    .wilo-brand { display: flex; align-items: center; gap: 12px; }
+    .wilo-badge { background: var(--wilo-red); color: #fff; font-weight: 800; font-size: 14px; padding: 4px 10px; border-radius: 4px; letter-spacing: 1px; }
+    .wilo-hud-actions { display: flex; align-items: center; gap: 8px; }
+    .wilo-btn {
+      background: #1e293b; color: #f8fafc; border: 1px solid #334155; padding: 8px 14px;
+      border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; min-height: 40px;
+    }
+    .wilo-btn:hover { background: #334155; }
+    .wilo-btn-primary { background: var(--wilo-red); border-color: var(--wilo-red-dark); color: #fff; }
+    .wilo-btn-primary:hover { background: #ef4444; }
+    .wilo-presence-pill {
+      display: flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;
+    }
+    .wilo-presence-dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; box-shadow: 0 0 8px #10b981; }
+    .wilo-viewport { flex: 1; position: relative; background: #020617; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+    .wilo-booth-image { width: 100%; height: 100%; object-fit: cover; }
+    .wilo-hotspot {
+      position: absolute; width: 44px; height: 44px; border-radius: 50%; background: rgba(220, 38, 38, 0.85);
+      border: 2px solid #fff; color: #fff; display: flex; justify-content: center; align-items: center;
+      cursor: pointer; box-shadow: 0 0 16px rgba(220, 38, 38, 0.8); z-index: 20; transform: translate(-50%, -50%);
+    }
+    .wilo-hotspot:hover { background: #ef4444; transform: translate(-50%, -50%) scale(1.15); }
+    .wilo-hud-bottom {
+      display: flex; flex-direction: column; background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(12px); border-top: 1px solid var(--wilo-border); padding: 10px 20px; z-index: 50;
+    }
+    .wilo-tour-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .wilo-view-title { font-weight: 700; font-size: 14px; color: var(--wilo-accent); }
+    .wilo-thumbnails-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+    .wilo-thumb { width: 80px; height: 48px; border-radius: 4px; border: 2px solid #334155; background: #0f172a; cursor: pointer; flex-shrink: 0; object-fit: cover; opacity: 0.7; }
+    .wilo-thumb.active, .wilo-thumb:hover { opacity: 1; border-color: var(--wilo-red); }
+    .wilo-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 100; padding: 16px; }
+    .wilo-modal-overlay.active { display: flex; }
+    .wilo-modal { background: var(--wilo-panel); border: 1px solid var(--wilo-border); border-radius: 12px; width: 100%; max-width: 720px; max-height: 90vh; overflow-y: auto; padding: 24px; position: relative; }
+    .wilo-modal-close { position: absolute; top: 16px; right: 16px; background: #1e293b; border: none; color: #94a3b8; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 16px; }
+    .wilo-canvas-container { width: 100%; height: 260px; background: #090d16; border: 1px solid var(--wilo-border); border-radius: 8px; position: relative; margin-bottom: 16px; touch-action: none; }
+    .wilo-orbit-canvas { width: 100%; height: 100%; }
+    .wilo-3d-hint { position: absolute; bottom: 8px; right: 8px; background: rgba(15, 23, 42, 0.7); padding: 4px 8px; border-radius: 4px; font-size: 11px; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <div class="wilo-container">
+    <header class="wilo-hud-top">
+      <div class="wilo-brand">
+        <span class="wilo-badge">WILO</span>
+        <div>
+          <strong style="font-size:15px; color:#fff;">Intelligent Water Solutions</strong><br>
+          <small style="color:#94a3b8; font-size:11px;">ISH Frankfurt 2026 • Virtual Showroom Demo</small>
+        </div>
+      </div>
+      <div class="wilo-hud-actions">
+        <div class="wilo-presence-pill"><span class="wilo-presence-dot"></span><span>SPECIALIST ONLINE</span></div>
+        <button class="wilo-btn" onclick="openCatalogModal()">Catalog</button>
+        <button class="wilo-btn" onclick="openResourceModal()">Resources</button>
+        <button class="wilo-btn" onclick="openTicketModal()">Consultation</button>
+        <button class="wilo-btn" onclick="openRfqModal()">RFQ</button>
+        <button class="wilo-btn wilo-btn-primary" onclick="openApptModal()">Book Meeting</button>
+        <button class="wilo-btn" onclick="openFeedbackModal()">Feedback</button>
+        <a href="/lobby.html" class="wilo-btn" style="text-decoration:none;">Lobby</a>
+      </div>
+
+    </header>
+    <main class="wilo-viewport" id="wilo-viewport">
+      <img id="wilo-main-image" class="wilo-booth-image" src="/assets/demo/wilo_placeholder_hero.svg" alt="Wilo Virtual Booth Experience">
+      <div id="wilo-hotspots-container"></div>
+    </main>
+    <footer class="wilo-hud-bottom">
+      <div class="wilo-tour-controls">
+        <div>
+          <span style="font-size:11px; color:#94a3b8; text-transform:uppercase;">Current View:</span>
+          <span class="wilo-view-title" id="wilo-view-name">01_front_hero — Front Hero View</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="wilo-btn" onclick="prevView()">&larr; Prev View</button>
+          <button class="wilo-btn" onclick="nextView()">Next View &rarr;</button>
+        </div>
+      </div>
+      <div class="wilo-thumbnails-strip" id="wilo-thumbnails"></div>
+    </footer>
+  </div>
+
+  <div class="wilo-modal-overlay" id="product-modal">
+    <div class="wilo-modal">
+      <button class="wilo-modal-close" onclick="closeModals()">X</button>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+        <div>
+          <span class="gc-badge" style="background:#dc2626; color:#fff;" id="modal-prod-category">Commercial HVAC</span>
+          <h2 id="modal-prod-title" style="margin:8px 0 4px; color:#fff;">Smart Circulation Pump</h2>
+        </div>
+        <button class="wilo-btn" onclick="reset3DView()">Reset 3D</button>
+      </div>
+      <div class="wilo-canvas-container" id="wilo-canvas-box">
+        <canvas id="wilo-3d-canvas" class="wilo-orbit-canvas"></canvas>
+        <span class="wilo-3d-hint">Drag to Orbit / Scroll to Zoom</span>
+      </div>
+      <p id="modal-prod-desc" style="color:#cbd5e1; font-size:14px; line-height:1.5; margin-bottom:16px;">Description</p>
+      <div style="background:#0f172a; padding:12px; border-radius:8px; margin-bottom:16px;">
+        <strong style="font-size:13px; color:#38bdf8;">Technical Specifications:</strong>
+        <div id="modal-prod-specs" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; font-size:12px; color:#94a3b8;"></div>
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button class="wilo-btn" onclick="openTicketModal(currentProduct.id, currentProduct.name)">Ask Specialist</button>
+        <button class="wilo-btn wilo-btn-primary" onclick="openRfqModal(currentProduct.id, currentProduct.name)">Request Quote</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wilo-modal-overlay" id="catalog-modal">
+    <div class="wilo-modal">
+      <button class="wilo-modal-close" onclick="closeModals()">X</button>
+      <h2 style="color:#fff; margin-top:0;">Wilo 2026 Digital Product Catalog</h2>
+      <p style="color:#94a3b8; font-size:13px;">Browse all 8 intelligent hydronic solutions featured at ISH Frankfurt 2026.</p>
+      <div id="catalog-products-list" style="display:flex; flex-direction:column; gap:12px; margin:16px 0;"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #1e293b; padding-top:16px;">
+        <span style="font-size:12px; color:#64748b;">Format: Interactive Digital Edition (PDF Available)</span>
+        <button class="wilo-btn wilo-btn-primary" onclick="trackAnalytics('catalog_download'); alert('Digital Catalog download initiated (14.2 MB PDF).');">Download PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wilo-modal-overlay" id="resource-modal">
+    <div class="wilo-modal">
+      <button class="wilo-modal-close" onclick="closeModals()">X</button>
+      <h2 style="color:#fff; margin-top:0;">Wilo Technical Resource Center</h2>
+      <p style="color:#94a3b8; font-size:13px;">Download official product manuals, application guides, and case studies.</p>
+      <div id="resources-list" style="display:flex; flex-direction:column; gap:8px; margin:16px 0;"></div>
+    </div>
+  </div>
+
+  <div class="wilo-modal-overlay" id="ticket-modal">
+    <div class="wilo-modal">
+      <button class="wilo-modal-close" onclick="closeModals()">X</button>
+      <h2 style="color:#fff; margin-top:0;">Request Technical Consultation</h2>
+      <p style="color:#94a3b8; font-size:13px;">Submit a technical inquiry or application question to Wilo engineering staff.</p>
+      <form id="ticket-form" onsubmit="submitTicket(event)">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div><label style="font-size:12px; color:#94a3b8;">Your Name *</label><input type="text" id="ticket-name" required style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+          <div><label style="font-size:12px; color:#94a3b8;">Company *</label><input type="text" id="ticket-company" required style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div><label style="font-size:12px; color:#94a3b8;">Work Email *</label><input type="email" id="ticket-email" required style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+          <div><label style="font-size:12px; color:#94a3b8;">Country</label><input type="text" id="ticket-country" value="United States" style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; color:#94a3b8;">Question / Project Scope *</label>
+          <textarea id="ticket-question" required rows="3" style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; font-family:inherit; box-sizing:border-box;"></textarea>
+        </div>
+        <button type="submit" class="wilo-btn wilo-btn-primary" style="width:100%; justify-content:center;">Submit Consultation Ticket</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="wilo-modal-overlay" id="rfq-modal">
+    <div class="wilo-modal">
+      <button class="wilo-modal-close" onclick="closeModals()">X</button>
+      <h2 style="color:#fff; margin-top:0;">Request for Quote (RFQ)</h2>
+      <p style="color:#94a3b8; font-size:13px;">Receive tailored commercial pricing and volume specifications.</p>
+      <form id="rfq-form" onsubmit="submitRfq(event)">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div><label style="font-size:12px; color:#94a3b8;">Full Name *</label><input type="text" id="rfq-name" required style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+          <div><label style="font-size:12px; color:#94a3b8;">Business Email *</label><input type="email" id="rfq-email" required style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div><label style="font-size:12px; color:#94a3b8;">Product Model</label><input type="text" id="rfq-product" value="Wilo-Stratos MAXO" style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+          <div><label style="font-size:12px; color:#94a3b8;">Target Quantity</label><input type="number" id="rfq-qty" value="10" min="1" style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+        </div>
+        <button type="submit" class="wilo-btn wilo-btn-primary" style="width:100%; justify-content:center;">Submit RFQ to Wilo Sales Team</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="wilo-modal-overlay" id="appt-modal">
+    <div class="wilo-modal">
+      <button class="wilo-modal-close" onclick="closeModals()">X</button>
+      <h2 style="color:#fff; margin-top:0;">Schedule 1-on-1 Consultation</h2>
+      <p style="color:#94a3b8; font-size:13px;">Book an interactive engineering or commercial video appointment.</p>
+      <form id="appt-form" onsubmit="submitAppt(event)">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div><label style="font-size:12px; color:#94a3b8;">Name *</label><input type="text" id="appt-name" required style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+          <div><label style="font-size:12px; color:#94a3b8;">Email *</label><input type="email" id="appt-email" required style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div>
+            <label style="font-size:12px; color:#94a3b8;">Meeting Format</label>
+            <select id="appt-type" style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;">
+              <option value="Video Call">Live Video Call (WebRTC)</option>
+              <option value="Product Consultation">Hydronic Product Consultation</option>
+              <option value="Technical Consultation">Engineering & Specification Meeting</option>
+              <option value="Sales Meeting">Commercial B2B Partnership</option>
+            </select>
+          </div>
+          <div><label style="font-size:12px; color:#94a3b8;">Preferred Date</label><input type="date" id="appt-date" value="2026-09-15" style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+        </div>
+        <button type="submit" class="wilo-btn wilo-btn-primary" style="width:100%; justify-content:center;">Confirm Appointment Booking</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="wilo-modal-overlay" id="feedback-modal">
+    <div class="wilo-modal">
+      <button class="wilo-modal-close" onclick="closeModals()">X</button>
+      <h2 style="color:#fff; margin-top:0;">Send Demo Feedback</h2>
+      <p style="color:#94a3b8; font-size:13px;">Help us refine the virtual showroom trial experience.</p>
+      <form id="feedback-form" onsubmit="submitFeedback(event)">
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; color:#94a3b8;">Experience Rating (1–5) *</label>
+          <select id="fb-rating" style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;">
+            <option value="5">5 - Excellent</option>
+            <option value="4">4 - Very Good</option>
+            <option value="3">3 - Good</option>
+            <option value="2">2 - Needs Work</option>
+            <option value="1">1 - Poor</option>
+          </select>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; color:#94a3b8;">What worked well?</label>
+          <textarea id="fb-worked-well" rows="2" style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; font-family:inherit; box-sizing:border-box;"></textarea>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; color:#94a3b8;">What was confusing?</label>
+          <textarea id="fb-confusing" rows="2" style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; font-family:inherit; box-sizing:border-box;"></textarea>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; color:#94a3b8;">What should be improved?</label>
+          <textarea id="fb-improvements" rows="2" style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; font-family:inherit; box-sizing:border-box;"></textarea>
+        </div>
+        <button type="submit" class="wilo-btn wilo-btn-primary" style="width:100%; justify-content:center;">Submit Trial Feedback</button>
+      </form>
+    </div>
+  </div>
+
+
+  <script>
+    let demoData = null;
+    let currentViewIndex = 0;
+    let currentProduct = null;
+
+    const boothViews = [
+      { id: '01_front_hero', title: 'Front Hero View', url: '/assets/demo/wilo/booth/01_front_hero.jpg' },
+      { id: '02_front_center', title: 'Front Center Elevation', url: '/assets/demo/wilo/booth/02_front_center.jpg' },
+      { id: '03_left_angle', title: 'Left Perspective Angle', url: '/assets/demo/wilo/booth/03_left_angle.jpg' },
+      { id: '04_right_angle', title: 'Right Perspective Angle', url: '/assets/demo/wilo/booth/04_right_angle.jpg' },
+      { id: '05_left_side', title: 'Left Flank Perspective', url: '/assets/demo/wilo/booth/05_left_side.jpg' },
+      { id: '06_right_side', title: 'Right Flank Perspective', url: '/assets/demo/wilo/booth/06_right_side.jpg' },
+      { id: '07_interior_view', title: 'Interior Walkthrough', url: '/assets/demo/wilo/booth/07_interior_view.jpg' },
+      { id: '08_product_island', title: 'Central Product Island', url: '/assets/demo/wilo/booth/08_product_island.jpg' },
+      { id: '09_meeting_area', title: 'Executive Meeting Lounge', url: '/assets/demo/wilo/booth/09_meeting_area.jpg' },
+      { id: '10_display_screen', title: 'Digital Presentation Wall', url: '/assets/demo/wilo/booth/10_display_screen.jpg' },
+      { id: '11_overhead_sign', title: 'Overhead Truss & Signage', url: '/assets/demo/wilo/booth/11_overhead_sign.jpg' },
+      { id: '12_wide_overview', title: 'Panoramic Hall Overview', url: '/assets/demo/wilo/booth/12_wide_overview.jpg' }
+    ];
+
+
+    async function initWiloDemo() {
+      try {
+        const res = await fetch('/api/public/wilo-demo');
+        demoData = await res.json();
+        renderThumbnails();
+        renderHotspots();
+        renderCatalog();
+        renderResources();
+        trackAnalytics('booth_view');
+      } catch (e) {
+        console.error('Failed to load demo data:', e);
+      }
+    }
+
+    function renderThumbnails() {
+      const container = document.getElementById('wilo-thumbnails');
+      container.innerHTML = boothViews.map(function(v, idx) {
+        return '<img src="' + v.url + '" class="wilo-thumb ' + (idx === 0 ? 'active' : '') + '" onclick="setView(' + idx + ')" title="' + v.title + '">';
+      }).join('');
+    }
+
+    function setView(index) {
+      currentViewIndex = index;
+      const v = boothViews[index];
+      document.getElementById('wilo-main-image').src = v.url;
+      document.getElementById('wilo-view-name').textContent = v.id + ' — ' + v.title;
+      document.querySelectorAll('.wilo-thumb').forEach(function(el, idx) {
+        el.classList.toggle('active', idx === index);
+      });
+      trackAnalytics('booth_view_change', { viewId: v.id });
+    }
+
+    function nextView() { setView((currentViewIndex + 1) % boothViews.length); }
+    function prevView() { setView((currentViewIndex - 1 + boothViews.length) % boothViews.length); }
+
+    function renderHotspots() {
+      const container = document.getElementById('wilo-hotspots-container');
+      if (!demoData || !demoData.hotspots) return;
+      const positions = [
+        { x: 30, y: 55 }, { x: 45, y: 50 }, { x: 70, y: 60 }, { x: 50, y: 35 },
+        { x: 20, y: 65 }, { x: 80, y: 45 }, { x: 85, y: 70 }, { x: 55, y: 25 }
+      ];
+      container.innerHTML = demoData.hotspots.map(function(h, idx) {
+        const pos = positions[idx % positions.length];
+        return '<div class="wilo-hotspot" style="left:' + pos.x + '%; top:' + pos.y + '%;" onclick="openProductModal(\'' + h.productId + '\')" title="' + h.title + '"><span>' + (idx + 1) + '</span></div>';
+      }).join('');
+    }
+
+    function openProductModal(productId) {
+      if (!demoData || !demoData.products) return;
+      const prod = demoData.products.find(function(p) { return p.id === productId; }) || demoData.products[0];
+      currentProduct = prod;
+      document.getElementById('modal-prod-title').textContent = prod.name;
+      document.getElementById('modal-prod-category').textContent = prod.category;
+      document.getElementById('modal-prod-desc').textContent = prod.demoDescription;
+      const specsBox = document.getElementById('modal-prod-specs');
+      if (prod.specs) {
+        specsBox.innerHTML = Object.entries(prod.specs).map(function(pair) {
+          return '<div><strong style="color:#e2e8f0;">' + pair[0] + ':</strong> ' + pair[1] + '</div>';
+        }).join('');
+      }
+      document.getElementById('product-modal').classList.add('active');
+      trackAnalytics('product_view', { productId: prod.id });
+      init3DOrbitCanvas();
+    }
+
+    let orbitAngle = 0; let orbitScale = 1.0; let isDragging = false; let lastMouseX = 0;
+    function init3DOrbitCanvas() {
+      const canvas = document.getElementById('wilo-3d-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const cx = canvas.width / 2; const cy = canvas.height / 2;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(orbitAngle);
+        ctx.scale(orbitScale, orbitScale);
+        ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(0, 0, 70, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = '#dc2626'; ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.moveTo(-60, 0); ctx.lineTo(60, 0); ctx.moveTo(0, -60); ctx.lineTo(0, 60); ctx.stroke();
+        ctx.restore();
+      }
+      draw();
+
+      canvas.onmousedown = function(e) { isDragging = true; lastMouseX = e.clientX; };
+      window.onmouseup = function() { isDragging = false; };
+      canvas.onmousemove = function(e) {
+        if (isDragging) {
+          orbitAngle += (e.clientX - lastMouseX) * 0.01;
+          lastMouseX = e.clientX;
+          draw();
+        }
+      };
+      canvas.onwheel = function(e) {
+        e.preventDefault();
+        orbitScale = Math.max(0.6, Math.min(2.0, orbitScale - e.deltaY * 0.001));
+        draw();
+      };
+    }
+
+    function reset3DView() { orbitAngle = 0; orbitScale = 1.0; init3DOrbitCanvas(); }
+
+    function renderCatalog() {
+      const container = document.getElementById('catalog-products-list');
+      if (!demoData || !demoData.products) return;
+      container.innerHTML = demoData.products.map(function(p) {
+        return '<div style="display:flex; justify-content:space-between; align-items:center; background:#0f172a; padding:12px; border-radius:8px; border:1px solid #1e293b;"><div><strong style="color:#fff; font-size:14px;">' + p.name + '</strong><br><small style="color:#94a3b8; font-size:12px;">' + p.shortDescription + '</small></div><button class="wilo-btn" onclick="closeModals(); openProductModal(\'' + p.id + '\')">View 3D</button></div>';
+      }).join('');
+    }
+
+    function renderResources() {
+      const container = document.getElementById('resources-list');
+      if (!demoData || !demoData.resources) return;
+      container.innerHTML = demoData.resources.map(function(r) {
+        return '<div style="display:flex; justify-content:space-between; align-items:center; background:#0f172a; padding:12px; border-radius:8px; border:1px solid #1e293b;"><div><strong style="color:#fff; font-size:13px;">' + r.title + '</strong><br><small style="color:#38bdf8; font-size:11px;">' + r.type + ' • ' + r.size + '</small></div><button class="wilo-btn" onclick="trackAnalytics(\'resource_download\', { resourceId: \'' + r.id + '\' }); alert(\'Downloading ' + r.title + '\');">Download</button></div>';
+      }).join('');
+    }
+
+    function openCatalogModal() { document.getElementById('catalog-modal').classList.add('active'); trackAnalytics('catalog_open'); }
+    function openResourceModal() { document.getElementById('resource-modal').classList.add('active'); trackAnalytics('resource_view'); }
+    function openTicketModal(prodId, prodName) { document.getElementById('ticket-modal').classList.add('active'); trackAnalytics('consultation_open'); }
+    function openRfqModal(prodId, prodName) {
+      document.getElementById('rfq-modal').classList.add('active');
+      if (prodName) document.getElementById('rfq-product').value = prodName;
+      trackAnalytics('rfq_open');
+    }
+    function openApptModal() { document.getElementById('appt-modal').classList.add('active'); trackAnalytics('appointment_open'); }
+    function closeModals() { document.querySelectorAll('.wilo-modal-overlay').forEach(function(el) { el.classList.remove('active'); }); }
+
+    async function submitTicket(e) {
+      e.preventDefault();
+      try {
+        const payload = {
+          name: document.getElementById('ticket-name').value,
+          company: document.getElementById('ticket-company').value,
+          email: document.getElementById('ticket-email').value,
+          country: document.getElementById('ticket-country').value,
+          question: document.getElementById('ticket-question').value,
+          organizationId: 'org-wilo-golden-demo'
+        };
+        const res = await fetch('/api/public/consultation-ticket', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          alert('Consultation ticket submitted successfully! A Wilo technical specialist will follow up.');
+          closeModals();
+        }
+      } catch (err) { alert('Error submitting ticket.'); }
+    }
+
+    async function submitRfq(e) {
+      e.preventDefault();
+      try {
+        const payload = {
+          contactName: document.getElementById('rfq-name').value,
+          contactEmail: document.getElementById('rfq-email').value,
+          productName: document.getElementById('rfq-product').value,
+          targetQuantity: document.getElementById('rfq-qty').value,
+          organizationId: 'org-wilo-golden-demo'
+        };
+        await fetch('/api/public/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: payload.contactName,
+            email: payload.contactEmail,
+            organizationId: 'org-wilo-golden-demo',
+            boothId: 'booth-wilo-golden-demo',
+            notes: 'RFQ for ' + payload.productName + ' (Qty: ' + payload.targetQuantity + ')'
+          })
+        });
+        alert('RFQ submitted successfully to Wilo Commercial Operations.');
+        closeModals();
+      } catch (err) { alert('Error submitting RFQ.'); }
+    }
+
+    async function submitAppt(e) {
+      e.preventDefault();
+      alert('Appointment request submitted successfully. A calendar confirmation has been delivered.');
+      closeModals();
+    }
+
+    function openFeedbackModal() { document.getElementById('feedback-modal').classList.add('active'); }
+
+    async function submitFeedback(e) {
+      e.preventDefault();
+      try {
+        const payload = {
+          rating: document.getElementById('fb-rating').value,
+          workedWell: document.getElementById('fb-worked-well').value,
+          confusing: document.getElementById('fb-confusing').value,
+          improvements: document.getElementById('fb-improvements').value,
+          pageContext: window.location.pathname,
+          organizationId: 'org-wilo-golden-demo'
+        };
+        const res = await fetch('/api/public/wilo-demo/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          alert('Thank you! Demo feedback submitted successfully.');
+          closeModals();
+        }
+      } catch (err) { alert('Error submitting feedback.'); }
+    }
+
+
+    function trackAnalytics(type, details) {
+      fetch('/api/public/wilo-demo/analytics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: type, details: details })
+      }).catch(function() {});
+    }
+
+    document.addEventListener('DOMContentLoaded', initWiloDemo);
+  </script>
+</body>
+</html>`;
+
+app.get(['/wilo-demo.html', '/demo/wilo', '/wilo'], (req, res) => {
+  res.setHeader('Content-Type', 'text/html');
+  res.send(WILO_DEMO_HTML);
+});
+
+
+
+
 
 
 

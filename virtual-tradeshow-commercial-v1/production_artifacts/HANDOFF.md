@@ -720,6 +720,25 @@ Establish complete legal, pricing, and commercial governance before first live c
 - **Tax Review**: **`REVIEW_REQUIRED (7 Documents in tax_review/)`**
 - **Stripe Mode**: **`TEST`** ($0.00 cash charged, Live Billing OFF)
 
+---
+
+### [2026-08-17 03:00] — Session 30: Phase 10.7N Demo Launch Finalization & Wilo Golden Demo Release Candidate
+
+#### 1. DATE / TIME
+- **Date**: 2026-08-17
+- **Time**: 03:00:00 UTC-4 (07:00:00 UTC)
+
+#### 2. TASK & ACCOMPLISHMENTS
+1. **Wilo Golden Demo Architecture**: Configured `org-wilo-golden-demo` and `booth-wilo-golden-demo` under `SYNTHETIC_TEST` environment with `GOLDEN_DEMO` classification, ensuring zero contamination of real MRR or real customer counts.
+2. **12 Logical Booth Views & Photo Tour**: Implemented 12-view logical tour structure with zero-disk dynamic SVG placeholder fallback. Truthful asset accounting maintained (`0/12` external files until generated).
+3. **8 Demo Hydronic Products & Hotspots**: Configured 8 high-efficiency commercial pump solutions with full specifications and mapped them to 8 spatial showroom hotspots.
+4. **Interactive 3D Product Canvas (`Product3DViewer`)**: Built interactive Canvas-based orbit/zoom/reset viewer with mobile touch controls (one-finger drag, two-finger zoom).
+5. **Digital Catalog & Resource Center**: Implemented digital catalog modal with PDF download workflow and 7 downloadable technical whitepapers/manuals.
+6. **Consultation Ticket Workflow**: Built end-to-end buyer ticket submission and exhibitor admin lifecycle management (`NEW` → `ASSIGNED` → `IN_PROGRESS` → `RESOLVED` → `CLOSED`).
+7. **Grand Control Demo Telemetry**: Added dedicated Wilo Golden Demo telemetry scorecard in Grand Control displaying views, sessions, 3D product interactions, catalog opens, resource downloads, and RFQs.
+8. **Automated QA & Regression**: 50/50 tests passed (100%), verified 0 Hangul characters in customer UI, preserved existing 60.78 MB PLY model, and enforced Stripe Live kill switch.
+
+
 
 
 

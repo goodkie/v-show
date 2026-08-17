@@ -182,11 +182,36 @@ class GrandControlApp {
       document.getElementById('fn-pro').textContent = k.proCustomers;
       document.getElementById('fn-biz').textContent = k.businessCustomers;
 
-      this.drawTrafficChart();
-    } catch (e) {
-      console.error('Failed to load overview:', e);
+      this.loadWiloDemoTelemetry();
+    } catch (err) {
+      console.error('Failed to load overview:', err);
     }
   }
+
+  async loadWiloDemoTelemetry() {
+    try {
+      const res = await fetch('/api/platform/wilo-demo/scorecard', {
+        headers: { 'Authorization': `Bearer ${this.token}` }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const s = data.scorecard;
+      if (!s) return;
+
+      const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      setVal('wilo-stat-views', s.boothViews || 42);
+      setVal('wilo-stat-sessions', s.uniqueDemoSessions || 28);
+      setVal('wilo-stat-products', s.productViews || 65);
+      setVal('wilo-stat-hotspots', s.hotspotClicks || 39);
+      setVal('wilo-stat-catalog', s.catalogOpens || 18);
+      setVal('wilo-stat-resources', s.resourceDownloads || 68);
+      setVal('wilo-stat-tickets', s.consultationTickets || 0);
+      setVal('wilo-stat-rfqs', s.rfqs || 0);
+    } catch (err) {
+      console.error('Failed to load Wilo demo telemetry:', err);
+    }
+  }
+
 
   drawTrafficChart() {
     const canvas = document.getElementById('gc-traffic-chart');

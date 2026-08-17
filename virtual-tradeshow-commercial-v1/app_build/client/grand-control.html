@@ -234,6 +234,65 @@
             </div>
           </div>
 
+          <!-- Wilo Golden Demo Telemetry Card (Phase 10.7N) -->
+          <div class="gc-panel" style="margin-top: 24px;">
+            <div class="gc-panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <h3>🌟 Wilo Golden Demo Operations & Showcase Telemetry</h3>
+                <p class="gc-panel-sub">Isolated synthetic demo telemetry for prospective client walkthroughs. Zero real MRR contamination.</p>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <a href="/wilo-demo.html" target="_blank" class="gc-btn-secondary" style="text-decoration:none; padding:6px 12px; font-size:12px;">↗ Open Showroom Demo</a>
+                <button class="gc-btn-primary" onclick="window.gcApp.loadWiloDemoTelemetry()" style="padding:6px 12px; font-size:12px;">↻ Refresh Telemetry</button>
+              </div>
+            </div>
+
+            <div class="gc-kpi-grid" style="margin-top: 16px;">
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Demo Booth Views</div>
+                <div class="gc-kpi-value" id="wilo-stat-views">42</div>
+                <div class="gc-kpi-sub">Photo Tour Multi-View</div>
+              </div>
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Unique Sessions</div>
+                <div class="gc-kpi-value" id="wilo-stat-sessions">28</div>
+                <div class="gc-kpi-sub">Synthetic buyer visits</div>
+              </div>
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">3D Product Views</div>
+                <div class="gc-kpi-value" id="wilo-stat-products">65</div>
+                <div class="gc-kpi-sub">Interactive Canvas Orbit</div>
+              </div>
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Hotspot Clicks</div>
+                <div class="gc-kpi-value" id="wilo-stat-hotspots">39</div>
+                <div class="gc-kpi-sub">8 Active Spatial Anchors</div>
+              </div>
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Catalog Downloads</div>
+                <div class="gc-kpi-value" id="wilo-stat-catalog">18</div>
+                <div class="gc-kpi-sub">Digital Edition PDF</div>
+              </div>
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Resource Downloads</div>
+                <div class="gc-kpi-value" id="wilo-stat-resources">68</div>
+                <div class="gc-kpi-sub">7 Technical Whitepapers</div>
+              </div>
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Consultation Tickets</div>
+                <div class="gc-kpi-value" id="wilo-stat-tickets">0</div>
+                <div class="gc-kpi-sub">Engineering inquiries</div>
+              </div>
+              <div class="gc-kpi-card">
+                <div class="gc-kpi-label">Demo RFQs Submitted</div>
+                <div class="gc-kpi-value" id="wilo-stat-rfqs">0</div>
+                <div class="gc-kpi-sub">Commercial pricing</div>
+              </div>
+            </div>
+          </div>
+
+          </div>
+
           <!-- Bottom Section: Live Activity Rail & Quick Actions -->
           <div class="gc-dashboard-row">
             <div class="gc-panel gc-panel-flex2">

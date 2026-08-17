@@ -195,10 +195,14 @@
         </div>
 
         <div class="card">
-          <div class="card-header">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
             <div>
               <h3>Multi-View Booth Photography Upload</h3>
               <p style="font-size: 13px;">Upload 10-20 images for fast Photo Preview (or 50-80 images for full 3DGS Neural Reconstruction).</p>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span class="badge badge-preview" id="booth-photo-count-badge">0 Photos</span>
+              <button class="btn btn-secondary btn-sm" id="btn-clear-all-photos" style="display: none; color: #ef4444; border-color: rgba(239,68,68,0.4);" onclick="clearAllBoothPhotos()">Clear All</button>
             </div>
           </div>
 
@@ -207,12 +211,14 @@
             <div style="font-weight: 600;">Drag and drop photo files or click to browse.</div>
             <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">JPG, PNG, WebP supported (Up to 50 files batch, max 25MB each)</div>
             <input type="file" id="photo-file-input" multiple accept="image/jpeg,image/png,image/webp" style="display: none;">
+            <input type="file" id="photo-replace-input" accept="image/jpeg,image/png,image/webp" style="display: none;">
           </div>
 
-          <div class="gallery-grid" id="booth-photo-gallery">
-            <!-- Uploaded thumbnails -->
+          <div class="gallery-grid" id="booth-photo-gallery" style="margin-top: 20px;">
+            <!-- Uploaded photo cards with edit/delete/reorder controls -->
           </div>
         </div>
+
       </section>
 
       <!-- TAB 3: PRECISION 3D RECONSTRUCTION & ALIGNMENT -->

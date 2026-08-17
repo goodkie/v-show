@@ -231,20 +231,173 @@ function getReconstructionLabel(status) {
   }
 }
 
+let replacingPhotoIndex = -1;
+
 function renderBoothSettings() {
   if (!currentBooth) return;
   document.getElementById('edit-booth-name').value = currentBooth.name;
   document.getElementById('edit-booth-desc').value = currentBooth.description || '';
 
+  const photos = currentBooth.photos || [];
   const gallery = document.getElementById('booth-photo-gallery');
+  const countBadge = document.getElementById('booth-photo-count-badge');
+  const btnClearAll = document.getElementById('btn-clear-all-photos');
+
+  if (countBadge) countBadge.textContent = `${photos.length} Photos`;
+  if (btnClearAll) btnClearAll.style.display = photos.length > 0 ? 'inline-block' : 'none';
+
   gallery.innerHTML = '';
-  (currentBooth.photos || []).forEach(url => {
-    const img = document.createElement('img');
-    img.src = url;
-    img.className = 'gallery-thumb';
-    gallery.appendChild(img);
+
+  if (photos.length === 0) {
+    gallery.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 32px 16px; color: var(--text-dim); background: var(--bg-surface-elevated); border-radius: var(--radius-md); border: 1px dashed var(--border-subtle);">
+        <div style="font-size: 24px; margin-bottom: 8px;">📷</div>
+        <p style="font-size: 14px; margin: 0;">No multi-view booth photos uploaded yet.</p>
+        <p style="font-size: 12px; margin-top: 4px;">Upload 10-20 images above to build your 3D interactive booth tour.</p>
+      </div>
+    `;
+    return;
+  }
+
+  photos.forEach((url, idx) => {
+    const card = document.createElement('div');
+    card.className = 'photo-card';
+    card.style.cssText = `
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    `;
+
+    card.innerHTML = `
+      <div style="position: relative; width: 100%; height: 130px; background: #0b0f19; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+        <img src="${url}" alt="View #${idx + 1}" style="width: 100%; height: 100%; object-fit: cover;">
+        <span style="position: absolute; top: 6px; left: 6px; background: rgba(15,23,42,0.85); color: #38bdf8; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(56,189,248,0.4);">
+          #${idx + 1}
+        </span>
+        <span style="position: absolute; bottom: 6px; left: 6px; background: rgba(0,0,0,0.7); color: #94a3b8; font-size: 10px; padding: 1px 6px; border-radius: 3px; max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          ${url.split('/').pop()}
+        </span>
+      </div>
+      <div style="padding: 8px; display: flex; gap: 4px; justify-content: space-between; align-items: center; background: var(--bg-surface); border-top: 1px solid var(--border-subtle);">
+        <div style="display: flex; gap: 4px;">
+          <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 8px; font-size: 11px;" title="Move Earlier" ${idx === 0 ? 'disabled style="opacity:0.3; padding: 4px 8px; font-size: 11px;"' : ''} onclick="moveBoothPhoto(${idx}, ${idx - 1})">
+            ◀
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 8px; font-size: 11px;" title="Move Later" ${idx === photos.length - 1 ? 'disabled style="opacity:0.3; padding: 4px 8px; font-size: 11px;"' : ''} onclick="moveBoothPhoto(${idx}, ${idx + 1})">
+            ▶
+          </button>
+        </div>
+        <div style="display: flex; gap: 4px;">
+          <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 8px; font-size: 11px;" title="Replace this photo" onclick="triggerReplacePhoto(${idx})">
+            🔄 Replace
+          </button>
+          <button type="button" class="btn btn-danger btn-sm" style="padding: 4px 8px; font-size: 11px;" title="Delete this photo" onclick="deleteBoothPhoto(${idx}, '${url}')">
+            🗑️
+          </button>
+        </div>
+      </div>
+    `;
+
+    gallery.appendChild(card);
   });
 }
+
+// Photo Actions
+async function deleteBoothPhoto(index, photoUrl) {
+  if (!currentBooth) return;
+  if (!confirm(`Are you sure you want to delete photo #${index + 1}?`)) return;
+
+  try {
+    showToast('Deleting photo...');
+    const res = await authFetch(`/api/booths/${currentBooth.id}/photos`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ index, photoUrl })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast('Photo deleted successfully.');
+      currentBooth = data.booth;
+      renderBoothSettings();
+      await loadReconstructionData();
+    } else {
+      showToast(data.error || 'Failed to delete photo.');
+    }
+  } catch (err) {
+    showToast('Error deleting photo.');
+  }
+}
+
+async function moveBoothPhoto(fromIndex, toIndex) {
+  if (!currentBooth || !currentBooth.photos) return;
+  const photos = [...currentBooth.photos];
+  if (toIndex < 0 || toIndex >= photos.length) return;
+
+  const [moved] = photos.splice(fromIndex, 1);
+  photos.splice(toIndex, 0, moved);
+
+  try {
+    showToast('Updating photo order...');
+    const res = await authFetch(`/api/booths/${currentBooth.id}/photos`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ photos })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast('Photo order updated.');
+      currentBooth = data.booth;
+      renderBoothSettings();
+    } else {
+      showToast(data.error || 'Failed to update order.');
+    }
+  } catch (err) {
+    showToast('Error updating order.');
+  }
+}
+
+function triggerReplacePhoto(index) {
+  replacingPhotoIndex = index;
+  const replaceInput = document.getElementById('photo-replace-input');
+  if (replaceInput) replaceInput.click();
+}
+
+async function clearAllBoothPhotos() {
+  if (!currentBooth || !currentBooth.photos || currentBooth.photos.length === 0) return;
+  if (!confirm(`Delete all ${currentBooth.photos.length} photos from this booth dataset?`)) return;
+
+  try {
+    showToast('Clearing all photos...');
+    const res = await authFetch(`/api/booths/${currentBooth.id}/photos`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clearAll: true })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast('All photos removed.');
+      currentBooth = data.booth;
+      renderBoothSettings();
+      await loadReconstructionData();
+    } else {
+      showToast(data.error || 'Failed to clear photos.');
+    }
+  } catch (err) {
+    showToast('Error clearing photos.');
+  }
+}
+
+// Global exposure for inline onclick handlers
+window.deleteBoothPhoto = deleteBoothPhoto;
+window.moveBoothPhoto = moveBoothPhoto;
+window.triggerReplacePhoto = triggerReplacePhoto;
+window.clearAllBoothPhotos = clearAllBoothPhotos;
+
 
 // 5. Precision Reconstruction Dashboard & Alignment
 async function loadReconstructionData() {
@@ -891,9 +1044,47 @@ function setupAdminEvents() {
       }
     } catch (err) {
       showToast('Photo upload failed.');
+    } finally {
+      fileInput.value = '';
     }
   });
+
+  // Photo Replace Input
+  const replaceInput = document.getElementById('photo-replace-input');
+  if (replaceInput) {
+    replaceInput.addEventListener('change', async (e) => {
+      const file = e.target.files ? e.target.files[0] : null;
+      if (!file || replacingPhotoIndex < 0 || !currentBooth) return;
+
+      const formData = new FormData();
+      formData.append('photo', file);
+      formData.append('index', replacingPhotoIndex);
+
+      try {
+        showToast(`Replacing photo #${replacingPhotoIndex + 1}...`);
+        const res = await authFetch(`/api/booths/${currentBooth.id}/photos/replace`, {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`Photo #${replacingPhotoIndex + 1} replaced successfully.`);
+          currentBooth = data.booth;
+          renderBoothSettings();
+          await loadReconstructionData();
+        } else {
+          showToast(data.error || 'Failed to replace photo.');
+        }
+      } catch (err) {
+        showToast('Error replacing photo.');
+      } finally {
+        replaceInput.value = '';
+        replacingPhotoIndex = -1;
+      }
+    });
+  }
 }
+
 
 // 10. Analytics Loader
 async function loadAnalytics() {

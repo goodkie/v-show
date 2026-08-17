@@ -3196,7 +3196,429 @@ class JSONDatabase {
     return [headers.join(','), ...rows].join('\n');
   }
 
+  // --- Phase 10.7N Wilo Golden Demo Engine ---
+  ensureWiloGoldenDemo() {
+    return this.mutate((db) => {
+      db.organizations = db.organizations || [];
+      db.booths = db.booths || [];
+      db.products = db.products || [];
+      db.hotspots = db.hotspots || [];
+      db.resources = db.resources || [];
+      db.consultationTickets = db.consultationTickets || [];
+      db.rfqs = db.rfqs || [];
+      db.appointments = db.appointments || [];
+      db.analyticsEvents = db.analyticsEvents || [];
+
+      let wiloOrg = db.organizations.find(o => o.id === 'org-wilo-golden-demo');
+      if (!wiloOrg) {
+        wiloOrg = {
+          id: 'org-wilo-golden-demo',
+          name: 'Wilo SE (Golden Demo)',
+          legalName: 'Wilo SE Interactive Demonstration',
+          slug: 'wilo-golden-demo',
+          classification: 'GOLDEN_DEMO',
+          dataEnvironment: 'SYNTHETIC_TEST',
+          realCustomer: false,
+          realRevenue: false,
+          subscription: {
+            plan: 'BUSINESS',
+            status: 'active',
+            dataEnvironment: 'SYNTHETIC_TEST',
+            pricingVersion: 'pilot-2026.1',
+            mrr: 0,
+            arr: 0,
+            sparkReconstructionCredits: 10
+          },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        db.organizations.push(wiloOrg);
+      }
+
+      let wiloBooth = db.booths.find(b => b.id === 'booth-wilo-golden-demo');
+      if (!wiloBooth) {
+        wiloBooth = {
+          id: 'booth-wilo-golden-demo',
+          organizationId: 'org-wilo-golden-demo',
+          eventId: 'event-beta-2026',
+          name: 'Wilo Intelligent Water & Pump Solutions',
+          tagline: 'Pioneering for You — Smart B2B Trade Show Experience',
+          description: 'Explore high-efficiency circulation pumps, industrial pressure boosting, smart HVAC hydronics, and automated building water management systems in an interactive virtual showroom.',
+          tradeShow: 'ISH Frankfurt 2026',
+          boothNumber: 'Hall 9.0 - Stand B42',
+          themeColor: '#dc2626',
+          status: 'published',
+          fallbackMode: 'photo_tour',
+          specialistStatus: 'AVAILABLE',
+          viewsExpected: 12,
+          viewsAvailable: 12,
+          boothViews: [
+            { id: '01_front_hero', title: 'Front Hero View', filename: '01_front_hero.jpg', status: 'available', url: '/assets/demo/wilo/booth/01_front_hero.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_hero.svg' },
+            { id: '02_front_center', title: 'Front Center Elevation', filename: '02_front_center.jpg', status: 'available', url: '/assets/demo/wilo/booth/02_front_center.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_center.svg' },
+            { id: '03_left_angle', title: 'Left Perspective Angle', filename: '03_left_angle.jpg', status: 'available', url: '/assets/demo/wilo/booth/03_left_angle.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_left.svg' },
+            { id: '04_right_angle', title: 'Right Perspective Angle', filename: '04_right_angle.jpg', status: 'available', url: '/assets/demo/wilo/booth/04_right_angle.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_right.svg' },
+            { id: '05_left_side', title: 'Left Flank Perspective', filename: '05_left_side.jpg', status: 'available', url: '/assets/demo/wilo/booth/05_left_side.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_left_flank.svg' },
+            { id: '06_right_side', title: 'Right Flank Perspective', filename: '06_right_side.jpg', status: 'available', url: '/assets/demo/wilo/booth/06_right_side.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_right_flank.svg' },
+            { id: '07_interior_view', title: 'Interior Walkthrough', filename: '07_interior_view.jpg', status: 'available', url: '/assets/demo/wilo/booth/07_interior_view.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_interior.svg' },
+            { id: '08_product_island', title: 'Central Product Island', filename: '08_product_island.jpg', status: 'available', url: '/assets/demo/wilo/booth/08_product_island.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_island.svg' },
+            { id: '09_meeting_area', title: 'Executive Meeting Lounge', filename: '09_meeting_area.jpg', status: 'available', url: '/assets/demo/wilo/booth/09_meeting_area.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_lounge.svg' },
+            { id: '10_display_screen', title: 'Digital Presentation Wall', filename: '10_display_screen.jpg', status: 'available', url: '/assets/demo/wilo/booth/10_display_screen.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_display.svg' },
+            { id: '11_overhead_sign', title: 'Overhead Truss & Signage', filename: '11_overhead_sign.jpg', status: 'available', url: '/assets/demo/wilo/booth/11_overhead_sign.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_overhead.svg' },
+            { id: '12_wide_overview', title: 'Panoramic Hall Overview', filename: '12_wide_overview.jpg', status: 'available', url: '/assets/demo/wilo/booth/12_wide_overview.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_overview.svg' }
+          ],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        db.booths.push(wiloBooth);
+      } else {
+        wiloBooth.viewsAvailable = 12;
+        wiloBooth.boothViews.forEach(v => {
+          v.status = 'available';
+          v.url = `/assets/demo/wilo/booth/${v.filename}`;
+        });
+      }
+
+
+      // 8 Demo Products
+      const demoProducts = [
+        {
+          id: 'prod-wilo-01',
+          boothId: 'booth-wilo-golden-demo',
+          organizationId: 'org-wilo-golden-demo',
+          name: 'Smart Circulation Pump (Wilo-Stratos MAXO)',
+          category: 'Commercial HVAC & Heating',
+          shortDescription: 'Smart glandless circulation pump with integrated Bluetooth and energy analytics.',
+          demoDescription: 'Next-generation intelligent glandless circulator pump for hot-water heating systems of all kinds, air-conditioning circuits, and closed cooling systems.',
+          specs: { maxHead: '16 m', maxFlow: '62 m³/h', energyIndex: 'EEI ≤ 0.17', connectivity: 'BACnet / Modbus / Bluetooth' },
+          image: '/assets/demo/wilo/products/product_01.jpg',
+          fallbackImage: '/assets/demo/wilo_prod_01.svg',
+          hotspotId: 'hs-wilo-01',
+          dataEnvironment: 'SYNTHETIC_TEST',
+          requestQuoteEnabled: true,
+          requestSampleEnabled: true,
+          consultationEnabled: true,
+          appointmentEnabled: true
+        },
+        {
+          id: 'prod-wilo-02',
+          boothId: 'booth-wilo-golden-demo',
+          organizationId: 'org-wilo-golden-demo',
+          name: 'High-Efficiency Inline Pump (Wilo-Stratos GIGA)',
+          category: 'District Energy & Large Buildings',
+          shortDescription: 'High-efficiency glanded inline pump with electronic motor regulation.',
+          demoDescription: 'High-efficiency inline monobloc pump with EC motor for water heating, cooling, and district energy distribution networks.',
+          specs: { maxHead: '51 m', maxFlow: '120 m³/h', motorEfficiency: 'IE5 Ultra-Premium', pressureRating: 'PN 16' },
+          image: '/assets/demo/wilo/products/product_02.jpg',
+          fallbackImage: '/assets/demo/wilo_prod_02.svg',
+          hotspotId: 'hs-wilo-02',
+          dataEnvironment: 'SYNTHETIC_TEST',
+          requestQuoteEnabled: true,
+          requestSampleEnabled: false,
+          consultationEnabled: true,
+          appointmentEnabled: true
+        },
+        {
+          id: 'prod-wilo-03',
+          boothId: 'booth-wilo-golden-demo',
+          organizationId: 'org-wilo-golden-demo',
+          name: 'Industrial Pressure Booster (Wilo-SiBoost Smart)',
+          category: 'Water Supply & Pressure Boosting',
+          shortDescription: 'Fully automated multi-pump pressure boosting system with smart inverter control.',
+          demoDescription: 'Highly efficient multi-pump pressure booster system featuring 2 to 4 vertical multistage stainless steel pumps with EC motors.',
+          specs: { pumps: '2-4 Multi-Stage', maxPressure: '16 bar', flowCapacity: '140 m³/h', compliance: 'NSF / ANSI 61 & 372' },
+          image: '/assets/demo/wilo/products/product_03.jpg',
+          fallbackImage: '/assets/demo/wilo_prod_03.svg',
+          hotspotId: 'hs-wilo-03',
+          dataEnvironment: 'SYNTHETIC_TEST',
+          requestQuoteEnabled: true,
+          requestSampleEnabled: false,
+          consultationEnabled: true,
+          appointmentEnabled: true
+        },
+        {
+          id: 'prod-wilo-04',
+          boothId: 'booth-wilo-golden-demo',
+          organizationId: 'org-wilo-golden-demo',
+          name: 'Building Water Management System (Wilo-Nexus)',
+          category: 'Smart Municipal & Commercial Water',
+          shortDescription: 'Integrated water intake, treatment, and distribution automation platform.',
+          demoDescription: 'Cloud-enabled intelligent water management system connecting pumps, sensors, valves, and flow meters with real-time SCADA telemetry.',
+          specs: { protocol: 'OPC-UA / MQTT', responseTime: '< 50ms', redundancy: 'N+1 High Availability', cloudSync: 'Real-time TLS' },
+          image: '/assets/demo/wilo/products/product_04.jpg',
+          fallbackImage: '/assets/demo/wilo_prod_04.svg',
+          hotspotId: 'hs-wilo-04',
+          dataEnvironment: 'SYNTHETIC_TEST',
+          requestQuoteEnabled: true,
+          requestSampleEnabled: false,
+          consultationEnabled: true,
+          appointmentEnabled: true
+        },
+        {
+          id: 'prod-wilo-05',
+          boothId: 'booth-wilo-golden-demo',
+          organizationId: 'org-wilo-golden-demo',
+          name: 'HVAC Circulation System (Wilo-Yonos MAXO)',
+          category: 'Commercial HVAC Hydronics',
+          shortDescription: 'Compact high-efficiency pump with LED display for heating and cooling.',
+          demoDescription: 'Standard high-efficiency circulator with ECM technology and integrated differential pressure control for collective housing and offices.',
+          specs: { maxHead: '12 m', maxFlow: '48 m³/h', temperatureRange: '-20°C to +110°C', protectionClass: 'IPX4D' },
+          image: '/assets/demo/wilo/products/product_05.jpg',
+          fallbackImage: '/assets/demo/wilo_prod_05.svg',
+          hotspotId: 'hs-wilo-05',
+          dataEnvironment: 'SYNTHETIC_TEST',
+          requestQuoteEnabled: true,
+          requestSampleEnabled: true,
+          consultationEnabled: true,
+          appointmentEnabled: true
+        },
+        {
+          id: 'prod-wilo-06',
+          boothId: 'booth-wilo-golden-demo',
+          organizationId: 'org-wilo-golden-demo',
+          name: 'Intelligent Pump Controller (Wilo-CC Smart)',
+          category: 'Automation & Controls',
+          shortDescription: 'Multi-pump automation switchboard with touchscreen HMI and remote telemetry.',
+          demoDescription: 'Comfort controller for electronic, continuously variable speed control of direct-on-line or inverter pumps.',
+          specs: { supportedPumps: 'Up to 6', touchScreen: '7-inch Color TFT', fieldbus: 'Modbus TCP / BACnet IP', enclosure: 'IP54 Steel' },
+          image: '/assets/demo/wilo/products/product_06.jpg',
+          fallbackImage: '/assets/demo/wilo_prod_06.svg',
+          hotspotId: 'hs-wilo-06',
+          dataEnvironment: 'SYNTHETIC_TEST',
+          requestQuoteEnabled: true,
+          requestSampleEnabled: false,
+          consultationEnabled: true,
+          appointmentEnabled: true
+        },
+        {
+          id: 'prod-wilo-07',
+          boothId: 'booth-wilo-golden-demo',
+          organizationId: 'org-wilo-golden-demo',
+          name: 'Industrial Water Transfer System (Wilo-DrainLift M)',
+          category: 'Wastewater & Industrial Drainage',
+          shortDescription: 'Heavy-duty wastewater lifting unit with macerator and gas-tight collection tank.',
+          demoDescription: 'Compact sewage lifting unit with single or double pump operation for sewage containing faeces below the backflow level.',
+          specs: { tankVolume: '115 Liters', maxFlow: '55 m³/h', motorPower: '3.0 kW', solidPassage: '40 mm' },
+          image: '/assets/demo/wilo/products/product_07.jpg',
+          fallbackImage: '/assets/demo/wilo_prod_07.svg',
+          hotspotId: 'hs-wilo-07',
+          dataEnvironment: 'SYNTHETIC_TEST',
+          requestQuoteEnabled: true,
+          requestSampleEnabled: false,
+          consultationEnabled: true,
+          appointmentEnabled: true
+        },
+        {
+          id: 'prod-wilo-08',
+          boothId: 'booth-wilo-golden-demo',
+          organizationId: 'org-wilo-golden-demo',
+          name: 'Energy Optimization Platform (Wilo-Care Cloud)',
+          category: 'Cloud Analytics & Predictive Maintenance',
+          shortDescription: 'AI-driven cloud intelligence service for continuous pump efficiency and anomaly detection.',
+          demoDescription: 'Cloud-based monitoring solution offering operational reliability, remote diagnostic insight, and maintenance alerts across global pump fleets.',
+          specs: { predictiveAI: 'Active vibration & power analysis', slaUptime: '99.95%', apiAccess: 'REST / Webhook', dataRetention: '5 Years' },
+          image: '/assets/demo/wilo/products/product_08.jpg',
+          fallbackImage: '/assets/demo/wilo_prod_08.svg',
+          hotspotId: 'hs-wilo-08',
+          dataEnvironment: 'SYNTHETIC_TEST',
+          requestQuoteEnabled: true,
+          requestSampleEnabled: false,
+          consultationEnabled: true,
+          appointmentEnabled: true
+        }
+      ];
+
+      demoProducts.forEach(dp => {
+        const idx = db.products.findIndex(p => p.id === dp.id);
+        if (idx >= 0) db.products[idx] = { ...db.products[idx], ...dp };
+        else db.products.push(dp);
+      });
+
+      // 8 Demo Hotspots
+
+      const demoHotspots = [
+        { id: 'hs-wilo-01', boothId: 'booth-wilo-golden-demo', productId: 'prod-wilo-01', title: 'Wilo-Stratos MAXO', position: { x: -2.2, y: 1.2, z: -1.5 }, viewId: '08_product_island' },
+        { id: 'hs-wilo-02', boothId: 'booth-wilo-golden-demo', productId: 'prod-wilo-02', title: 'Wilo-Stratos GIGA', position: { x: -1.0, y: 1.1, z: -2.4 }, viewId: '08_product_island' },
+        { id: 'hs-wilo-03', boothId: 'booth-wilo-golden-demo', productId: 'prod-wilo-03', title: 'Wilo-SiBoost Smart', position: { x: 1.8, y: 1.0, z: -1.8 }, viewId: '07_interior_view' },
+        { id: 'hs-wilo-04', boothId: 'booth-wilo-golden-demo', productId: 'prod-wilo-04', title: 'Wilo-Nexus Platform', position: { x: 0.0, y: 1.8, z: -3.5 }, viewId: '10_display_screen' },
+        { id: 'hs-wilo-05', boothId: 'booth-wilo-golden-demo', productId: 'prod-wilo-05', title: 'Wilo-Yonos MAXO', position: { x: -2.8, y: 0.9, z: -0.5 }, viewId: '05_left_side' },
+        { id: 'hs-wilo-06', boothId: 'booth-wilo-golden-demo', productId: 'prod-wilo-06', title: 'Wilo-CC Smart Controller', position: { x: 2.2, y: 1.5, z: -2.8 }, viewId: '07_interior_view' },
+        { id: 'hs-wilo-07', boothId: 'booth-wilo-golden-demo', productId: 'prod-wilo-07', title: 'Wilo-DrainLift M', position: { x: 2.6, y: 0.8, z: -0.8 }, viewId: '06_right_side' },
+        { id: 'hs-wilo-08', boothId: 'booth-wilo-golden-demo', productId: 'prod-wilo-08', title: 'Wilo-Care Cloud', position: { x: 0.5, y: 2.0, z: -3.2 }, viewId: '10_display_screen' }
+      ];
+
+      demoHotspots.forEach(dh => {
+        const idx = db.hotspots.findIndex(h => h.id === dh.id);
+        if (idx >= 0) db.hotspots[idx] = { ...db.hotspots[idx], ...dh };
+        else db.hotspots.push(dh);
+      });
+
+      // 7 Resource Center Items
+      const demoResources = [
+        { id: 'res-wilo-01', organizationId: 'org-wilo-golden-demo', title: 'Wilo 2026 Commercial Product Catalog (Digital Edition)', type: 'PDF_CATALOG', size: '14.2 MB', pages: 48, downloads: 12 },
+        { id: 'res-wilo-02', organizationId: 'org-wilo-golden-demo', title: 'Smart Hydronics & Energy Optimization Whitepaper', type: 'WHITEPAPER', size: '3.8 MB', pages: 16, downloads: 8 },
+        { id: 'res-wilo-03', organizationId: 'org-wilo-golden-demo', title: 'Commercial Building Pressure Boosting Application Guide', type: 'APPLICATION_GUIDE', size: '6.1 MB', pages: 24, downloads: 5 },
+        { id: 'res-wilo-04', organizationId: 'org-wilo-golden-demo', title: 'High-Efficiency IE5 Motor Retrofit & Energy Audit Overview', type: 'ENERGY_REPORT', size: '2.4 MB', pages: 12, downloads: 9 },
+        { id: 'res-wilo-05', organizationId: 'org-wilo-golden-demo', title: 'SiBoost Smart Multi-Pump Installation & Commissioning Manual', type: 'MANUAL', size: '8.7 MB', pages: 36, downloads: 4 },
+        { id: 'res-wilo-06', organizationId: 'org-wilo-golden-demo', title: 'Case Study: District Energy Decarbonization Project', type: 'CASE_STUDY', size: '1.9 MB', pages: 8, downloads: 11 },
+        { id: 'res-wilo-07', organizationId: 'org-wilo-golden-demo', title: 'Wilo Virtual Booth Presentation Video (ISH Frankfurt)', type: 'VIDEO_PRESENTATION', size: '42.0 MB', duration: '3m 45s', downloads: 15 }
+      ];
+
+      demoResources.forEach(dr => {
+        const idx = db.resources.findIndex(r => r.id === dr.id);
+        if (idx >= 0) db.resources[idx] = { ...db.resources[idx], ...dr };
+        else db.resources.push(dr);
+      });
+
+      return { org: wiloOrg, booth: wiloBooth, products: demoProducts, hotspots: demoHotspots, resources: demoResources };
+    });
+  }
+
+  getWiloDemoData() {
+    this.ensureWiloGoldenDemo();
+    const data = this.read();
+    const org = data.organizations.find(o => o.id === 'org-wilo-golden-demo');
+    const booth = data.booths.find(b => b.id === 'booth-wilo-golden-demo');
+    const products = data.products.filter(p => p.boothId === 'booth-wilo-golden-demo');
+    const hotspots = data.hotspots.filter(h => h.boothId === 'booth-wilo-golden-demo');
+    const resources = (data.resources || []).filter(r => r.organizationId === 'org-wilo-golden-demo');
+    const tickets = (data.consultationTickets || []).filter(t => t.organizationId === 'org-wilo-golden-demo');
+    const rfqs = (data.rfqs || []).filter(r => r.organizationId === 'org-wilo-golden-demo');
+    const appts = (data.appointments || []).filter(a => a.organizationId === 'org-wilo-golden-demo');
+
+    return {
+      organization: org,
+      booth,
+      products,
+      hotspots,
+      resources,
+      consultationTickets: tickets,
+      rfqs,
+      appointments: appts
+    };
+  }
+
+  getWiloDemoScorecard() {
+    const data = this.getWiloDemoData();
+    const events = (this.read().analyticsEvents || []).filter(e => e.organizationId === 'org-wilo-golden-demo');
+
+    return {
+      environment: 'SYNTHETIC_TEST',
+      classification: 'GOLDEN_DEMO',
+      realCustomer: false,
+      realRevenue: false,
+      boothViews: events.filter(e => e.type === 'booth_view').length + 42,
+      uniqueDemoSessions: events.filter(e => e.type === 'session_start').length + 28,
+      productViews: events.filter(e => e.type === 'product_view').length + 65,
+      hotspotClicks: events.filter(e => e.type === 'hotspot_click').length + 39,
+      catalogOpens: events.filter(e => e.type === 'catalog_open').length + 18,
+      resourceDownloads: (data.resources || []).reduce((acc, r) => acc + (r.downloads || 0), 0),
+      consultationTickets: data.consultationTickets.length,
+      rfqs: data.rfqs.length,
+      appointments: data.appointments.length,
+      feedbacks: (this.read().demoFeedbacks || []).filter(f => f.organizationId === 'org-wilo-golden-demo').length
+    };
+  }
+
+  async addDemoFeedback(feedbackData) {
+    const sanitize = (str) => typeof str === 'string' ? str.replace(/<[^>]*>/g, '').trim() : '';
+
+    return this.mutate((db) => {
+      db.demoFeedbacks = db.demoFeedbacks || [];
+      const item = {
+        id: `fb-${uuidv4().substring(0, 8)}`,
+        organizationId: feedbackData.organizationId || 'org-wilo-golden-demo',
+        rating: Math.max(1, Math.min(5, parseInt(feedbackData.rating || 5, 10))),
+        workedWell: sanitize(feedbackData.workedWell || ''),
+        confusing: sanitize(feedbackData.confusing || ''),
+        improvements: sanitize(feedbackData.improvements || ''),
+        pageContext: sanitize(feedbackData.pageContext || '/wilo-demo.html'),
+        dataEnvironment: 'SYNTHETIC_TEST',
+        classification: 'DEMO_FEEDBACK',
+        createdAt: new Date().toISOString()
+      };
+      db.demoFeedbacks.push(item);
+      return item;
+    });
+  }
+
+  getDemoFeedbacks(orgId = 'org-wilo-golden-demo') {
+    const all = this.read().demoFeedbacks || [];
+    return all.filter(f => f.organizationId === orgId);
+  }
+
+
+  async createConsultationTicket(ticketData) {
+    const sanitize = (str) => typeof str === 'string' ? str.replace(/<[^>]*>/g, '').trim() : '';
+
+    return this.mutate((db) => {
+      db.consultationTickets = db.consultationTickets || [];
+      const ticket = {
+        id: `ticket-${uuidv4().substring(0, 8)}`,
+        organizationId: ticketData.organizationId || 'org-wilo-golden-demo',
+        boothId: ticketData.boothId || 'booth-wilo-golden-demo',
+        name: sanitize(ticketData.name || 'Anonymous Buyer'),
+        company: sanitize(ticketData.company || 'Prospective Partner'),
+        email: sanitize(ticketData.email || '').toLowerCase(),
+        country: sanitize(ticketData.country || 'United States'),
+        interest: sanitize(ticketData.interest || 'General Consultation'),
+        productId: ticketData.productId || null,
+        productName: sanitize(ticketData.productName || ''),
+        question: sanitize(ticketData.question || ''),
+        preferredContactMethod: ticketData.preferredContactMethod || 'EMAIL',
+        preferredTime: ticketData.preferredTime || 'Morning EST',
+        status: 'NEW',
+        assignedTo: 'Wilo Technical Specialist',
+        dataEnvironment: ticketData.dataEnvironment || 'SYNTHETIC_TEST',
+        timeline: [
+          {
+            action: 'ticket_created',
+            timestamp: new Date().toISOString(),
+            note: 'Consultation ticket submitted via virtual showroom'
+          }
+        ],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      db.consultationTickets.push(ticket);
+
+      db.analyticsEvents = db.analyticsEvents || [];
+      db.analyticsEvents.push({
+        id: `evt-${uuidv4().substring(0, 8)}`,
+        organizationId: ticket.organizationId,
+        type: 'consultation_submit',
+        dataEnvironment: ticket.dataEnvironment,
+        timestamp: new Date().toISOString()
+      });
+
+      return ticket;
+    });
+  }
+
+  async updateConsultationTicket(ticketId, updateData, authorUserId = null) {
+    return this.mutate((db) => {
+      const t = (db.consultationTickets || []).find(x => x.id === ticketId);
+      if (!t) throw new Error('Consultation ticket not found');
+
+      if (updateData.status) t.status = updateData.status;
+      if (updateData.assignedTo) t.assignedTo = updateData.assignedTo;
+
+      t.timeline = t.timeline || [];
+      t.timeline.push({
+        action: updateData.action || 'status_updated',
+        status: t.status,
+        timestamp: new Date().toISOString(),
+        author: authorUserId || 'specialist',
+        note: updateData.note || ''
+      });
+      t.updatedAt = new Date().toISOString();
+
+      return t;
+    });
+  }
+
   isOrganizationAllowedForLiveBilling(organizationId) {
+
 
     const org = this.getOrganizationById(organizationId);
     if (!org) return false;
