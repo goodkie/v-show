@@ -2675,6 +2675,32 @@ app.get('/assets/demo/wilo/products/:filename', (req, res) => {
   res.redirect(`/assets/demo/${file.replace('.jpg', '.svg')}`);
 });
 
+app.get('/api/debug/models', (req, res) => {
+  const file = 'REAL_WILO_GAUSSIAN_FINAL.spz';
+  const candidatePaths = [
+    path.join(WILO_CLIENT_ROOT, 'models', file),
+    path.join(__dirname, '..', 'client', 'assets', 'demo', 'wilo', 'models', file),
+    path.join(__dirname, '..', '..', 'app_build', 'client', 'assets', 'demo', 'wilo', 'models', file),
+    path.join(MODELS_DIR, file),
+    path.join(DATA_DIR, 'uploads', 'models', file),
+    path.join(DATA_DIR, 'uploads', 'organizations', 'org-wilo-golden-demo', 'booths', 'booth-wilo-golden-demo', 'models', 'WILO-GEOMETRY-60-01', file),
+    path.join(WILO_EXTERNAL_ROOT, 'models', file)
+  ];
+  const results = candidatePaths.map(p => ({
+    path: p,
+    exists: fs.existsSync(p),
+    size: fs.existsSync(p) ? fs.statSync(p).size : 0
+  }));
+  res.json({
+    cwd: process.cwd(),
+    __dirname: __dirname,
+    DATA_DIR: DATA_DIR,
+    WILO_CLIENT_ROOT: WILO_CLIENT_ROOT,
+    MODELS_DIR: MODELS_DIR,
+    results: results
+  });
+});
+
 app.get('/assets/demo/wilo/models/:filename', (req, res) => {
   const file = req.params.filename;
   const candidatePaths = [
