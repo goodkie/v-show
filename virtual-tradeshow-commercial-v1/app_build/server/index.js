@@ -2701,10 +2701,18 @@ app.get('/api/debug/models', (req, res) => {
   });
 });
 
+const SPZ_DOWNLOAD_URL = 'https://github.com/goodkie/v-show/releases/download/v1.0.0-wilo-assets/REAL_WILO_GAUSSIAN_FINAL.spz';
+
 app.get('/assets/demo/wilo/models/:filename', (req, res) => {
   const file = req.params.filename;
+  const targetDir = path.join(WILO_CLIENT_ROOT, 'models');
+  if (!fs.existsSync(targetDir)) {
+    try { fs.mkdirSync(targetDir, { recursive: true }); } catch (e) {}
+  }
+  const clientModelPath = path.join(targetDir, file);
+
   const candidatePaths = [
-    path.join(WILO_CLIENT_ROOT, 'models', file),
+    clientModelPath,
     path.join(__dirname, '..', 'client', 'assets', 'demo', 'wilo', 'models', file),
     path.join(__dirname, '..', '..', 'app_build', 'client', 'assets', 'demo', 'wilo', 'models', file),
     path.join(MODELS_DIR, file),
@@ -2714,12 +2722,44 @@ app.get('/assets/demo/wilo/models/:filename', (req, res) => {
   ];
 
   for (const p of candidatePaths) {
-    if (fs.existsSync(p)) {
+    if (fs.existsSync(p) && fs.statSync(p).size > 1000000) {
       res.setHeader('Content-Type', 'application/octet-stream');
       res.setHeader('Cache-Control', 'public, max-age=86400');
       return res.sendFile(p);
     }
   }
+
+  // If missing or LFS pointer (<1MB), stream directly from verified GitHub Release CDN
+  if (file === 'REAL_WILO_GAUSSIAN_FINAL.spz') {
+    try {
+      console.log('[MODEL_SYNC] Streaming REAL_WILO_GAUSSIAN_FINAL.spz from verified release CDN...');
+      const https = require('https');
+      const fileStream = fs.createWriteStream(clientModelPath);
+
+      const fetchRelease = (url) => {
+        https.get(url, (response) => {
+          if (response.statusCode === 302 || response.statusCode === 301) {
+            return fetchRelease(response.headers.location);
+          }
+          if (response.statusCode === 200) {
+            res.setHeader('Content-Type', 'application/octet-stream');
+            res.setHeader('Cache-Control', 'public, max-age=86400');
+            response.pipe(res);
+            response.pipe(fileStream);
+          } else {
+            res.status(404).json({ error: '3D model asset not found.' });
+          }
+        }).on('error', (err) => {
+          if (!res.headersSent) res.status(500).json({ error: err.message });
+        });
+      };
+
+      return fetchRelease(SPZ_DOWNLOAD_URL);
+    } catch (e) {
+      console.error('[MODEL_SYNC_ERR]', e);
+    }
+  }
+
   res.status(404).json({ error: '3D model asset not found.' });
 });
 
