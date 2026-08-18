@@ -7,6 +7,22 @@
   <link rel="stylesheet" href="/index.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script>
+    // Immediate Global State Registration (Available before DOM load)
+    window.__ACTIVE_TENANT__ = 'org-wilo-golden-demo';
+    window.__ACTIVE_MODEL__ = '/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz';
+    window.__VIEW_MODE__ = new URLSearchParams(window.location.search).get('mode') === 'gaussian3d' ? 'GAUSSIAN_3D' : 'PHOTO_TOUR';
+    window.__VSHOW_STATE__ = {
+      tenantId: 'org-wilo-golden-demo',
+      organizationName: 'Wilo Group',
+      boothId: 'booth-wilo-golden-demo',
+      activeModel: '/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz',
+      sceneSource: 'REAL_GAUSSIAN_RECONSTRUCTION_WILO_GEOMETRY_60',
+      gaussianCount: 526941,
+      gaussianRender: window.__VIEW_MODE__ === 'GAUSSIAN_3D',
+      fallbackUsed: false
+    };
+  </script>
   <style>
     :root {
       --wilo-teal: #00a390;
