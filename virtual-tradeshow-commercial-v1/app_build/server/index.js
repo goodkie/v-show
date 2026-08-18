@@ -2757,7 +2757,8 @@ app.get('/assets/demo/wilo/models/:filename', (req, res) => {
         });
       };
 
-      return fetchRelease(SPZ_DOWNLOAD_URL);
+      fetchRelease(SPZ_DOWNLOAD_URL);
+      return;
     } catch (e) {
       console.error('[MODEL_SYNC_ERR]', e);
     }
