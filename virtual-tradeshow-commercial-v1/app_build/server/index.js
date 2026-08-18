@@ -2734,20 +2734,23 @@ app.get('/assets/demo/wilo/models/:filename', (req, res) => {
     try {
       console.log('[MODEL_SYNC] Streaming REAL_WILO_GAUSSIAN_FINAL.spz from verified release CDN...');
       const https = require('https');
-      const fileStream = fs.createWriteStream(clientModelPath);
-
       const fetchRelease = (url) => {
-        https.get(url, (response) => {
+        const opts = { headers: { 'User-Agent': 'VShow-Server/1.0' } };
+        https.get(url, opts, (response) => {
           if (response.statusCode === 302 || response.statusCode === 301) {
             return fetchRelease(response.headers.location);
           }
           if (response.statusCode === 200) {
             res.setHeader('Content-Type', 'application/octet-stream');
+            res.setHeader('Content-Length', response.headers['content-length'] || '111539801');
             res.setHeader('Cache-Control', 'public, max-age=86400');
             response.pipe(res);
-            response.pipe(fileStream);
+            try {
+              const fileStream = fs.createWriteStream(clientModelPath);
+              response.pipe(fileStream);
+            } catch (fsErr) {}
           } else {
-            res.status(404).json({ error: '3D model asset not found.' });
+            if (!res.headersSent) res.status(404).json({ error: '3D model asset not found.' });
           }
         }).on('error', (err) => {
           if (!res.headersSent) res.status(500).json({ error: err.message });
