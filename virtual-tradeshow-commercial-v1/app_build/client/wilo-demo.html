@@ -145,11 +145,10 @@
 
     <!-- Main Viewport -->
     <main class="wilo-viewport" id="wilo-viewport">
-      <!-- Mode Switcher Pill Bar -->
+      <!-- Mode Switcher Pill Bar (R8 Truth Correction) -->
       <div class="wilo-mode-pill-bar">
-        <button class="wilo-mode-btn active" id="btn-mode-photo" onclick="switchViewerMode('PHOTO_TOUR')">📷 Photo Tour (Primary)</button>
-        <button class="wilo-mode-btn" id="btn-mode-3d-orbit" onclick="switchViewerMode('3D_ORBIT')">🌐 3D Preview (Orbit)</button>
-        <button class="wilo-mode-btn" id="btn-mode-3d-walk" onclick="switchViewerMode('3D_WALK')">🚶 3D Walk Preview</button>
+        <button class="wilo-mode-btn active" id="btn-mode-photo" onclick="switchViewerMode('PHOTO_TOUR')">📷 Photo Tour (Primary Showroom)</button>
+        <button class="wilo-mode-btn" id="btn-mode-3d-orbit" style="opacity:0.5; cursor:not-allowed;" title="Authentic 3D Gaussian reconstruction requires physical booth photogrammetry capture dataset." onclick="show3DUnavailableNotice()">🌐 3D Reconstruction — Capture Required</button>
       </div>
 
       <!-- Floating Quick Tools -->
@@ -389,21 +388,27 @@
       { productId: 'prod-wilo-08', x: 1.2, y: 1.0, z: 1.4, label: 'Rexa FIT' }
     ];
 
-    // Global Runtime Inspection State (Phase 10.7N-VIEWER-RUNTIME-TRACE)
+    // Global Runtime Inspection State (Phase 10.7N-R8 Truthful State)
     window.__ACTIVE_TENANT__ = 'org-wilo-golden-demo';
-    window.__ACTIVE_MODEL__ = 'REAL_WILO_GAUSSIAN_FINAL.spz';
+    window.__ACTIVE_MODEL__ = null;
     window.__VIEW_MODE__ = 'PHOTO_TOUR';
     window.__VSHOW_STATE__ = {
       tenant: "org-wilo-golden-demo",
-      model: "REAL_WILO_GAUSSIAN_FINAL.spz",
-      renderer: "SPARK",
-      fakeRenderer: false
+      modelUrl: null,
+      photoTour: true,
+      authenticGaussian3D: false,
+      captureDatasetAvailable: false,
+      reconstructionStatus: "BLOCKED_NO_REAL_CAPTURE",
+      error: null
     };
 
-    console.log('[VIEWER_INIT] V-SHOW Runtime Initialized.');
+    console.log('[VIEWER_INIT] V-SHOW Wilo Truthful Runtime Initialized.');
     console.log('[TENANT_ID] ' + window.__ACTIVE_TENANT__);
-    console.log('[MODEL_URL] ' + window.__ACTIVE_MODEL__);
-    console.log('[SCENE_SOURCE] REAL_GAUSSIAN_RECONSTRUCTION_WILO_GEOMETRY_60');
+    console.log('[VISUAL_MODE] PHOTO_TOUR');
+
+    function show3DUnavailableNotice() {
+      alert('Authentic 3D Gaussian reconstruction is not yet available for this booth.\n\nStatus: BLOCKED_NO_REAL_CAPTURE\nRequired: Multi-view physical booth camera photogrammetry dataset (60-120 overlapping photos).');
+    }
 
     async function init() {
       try {
@@ -416,227 +421,23 @@
         const urlParams = new URLSearchParams(window.location.search);
         const isOwnerReview = urlParams.get('mode') === 'gaussian3d' && urlParams.get('review') === 'owner';
         if (isOwnerReview) {
-          console.log('[Owner Review] Activated Real Gaussian 3D Mode.');
-          window.__VIEW_MODE__ = 'GAUSSIAN_3D';
-          window.__VSHOW_STATE__.gaussianRender = true;
-          window.__VSHOW_STATE__.fallbackUsed = false;
-          switchViewerMode('3D_ORBIT');
-        } else {
+          console.warn('[Owner Review] 3D Mode requested, but authentic 3D Gaussian model is unavailable (BLOCKED_NO_REAL_CAPTURE). Showing truthful unavailable notice.');
           window.__VIEW_MODE__ = 'PHOTO_TOUR';
-          renderPhotoTour(); // Public Default remains Photo Tour
+          window.__VSHOW_STATE__.error = 'AUTHENTIC_3D_RECONSTRUCTION_UNAVAILABLE';
+          show3DUnavailableBanner();
         }
+
+        renderPhotoTour(); // Public Default remains Photo Tour
       } catch (err) {
         console.warn('Init load issue:', err);
         renderPhotoTour();
       }
     }
 
-
-    function init3DScene() {
-      const container = document.getElementById('wilo-3d-canvas-container');
-      if (!window.THREE) {
-        console.warn('Three.js unavailable. Falling back to Photo Tour.');
-        switchViewerMode('PHOTO_TOUR');
-        return;
-      }
-
-      // Check WebGL support
-      try {
-        const canvas = document.createElement('canvas');
-        const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-        if (!gl) throw new Error('WebGL not supported');
-      } catch (e) {
-        console.warn('WebGL unsupported. Activating Photo Tour.');
-        switchViewerMode('PHOTO_TOUR');
-        return;
-      }
-
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x070a12);
-      scene.fog = new THREE.FogExp2(0x070a12, 0.04);
-
-      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
-      camera.position.set(0, 2.2, 7.5);
-
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-      renderer.setSize(container.clientWidth, container.clientHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.shadowMap.enabled = true;
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.15;
-
-      container.innerHTML = '';
-      container.appendChild(renderer.domElement);
-
-      orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
-      orbitControls.enableDamping = true;
-      orbitControls.dampingFactor = 0.05;
-      // Camera preset support for Owner Review captures
-      const urlParams = new URLSearchParams(window.location.search);
-      const preset = urlParams.get('preset');
-      if (preset === 'front') {
-        camera.position.set(0, 1.6, 5.2);
-        orbitControls.target.set(0, 1.1, 0);
-      } else if (preset === 'left') {
-        camera.position.set(-4.5, 1.8, 4.2);
-        orbitControls.target.set(0, 1.1, 0);
-      } else if (preset === 'right') {
-        camera.position.set(4.5, 1.8, 4.2);
-        orbitControls.target.set(0, 1.1, 0);
-      } else if (preset === 'zoom_product') {
-        camera.position.set(0, 1.1, 2.4);
-        orbitControls.target.set(0, 0.7, -0.4);
-      } else if (preset === 'overview') {
-        camera.position.set(0, 5.5, 8.8);
-        orbitControls.target.set(0, 0.8, -0.5);
-      }
-      orbitControls.update();
-
-      // Lighting
-      const ambient = new THREE.AmbientLight(0xffffff, 0.85);
-      scene.add(ambient);
-
-      const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-      dirLight.position.set(5, 8, 5);
-      scene.add(dirLight);
-
-      const tealLight = new THREE.PointLight(0x00a390, 2.0, 15);
-      tealLight.position.set(-2, 3, 0);
-      scene.add(tealLight);
-
-      // Check if Owner Review Gaussian 3D mode
-      const urlParams = new URLSearchParams(window.location.search);
-      const isOwnerReview = urlParams.get('mode') === 'gaussian3d' && urlParams.get('review') === 'owner';
-
-      if (isOwnerReview) {
-        // Initialize Real Gaussian 3D Splatting Cloud (526,941 Gaussians)
-        loadRealWiloGaussian(scene);
-      } else {
-        // Build 3D Architectural Showroom Geometry
-        buildWiloShowroom(scene);
-      }
-
-      // Build 3D World-Space Hotspots
-      build3DHotspots(scene);
-
-      // Setup Raycasting for 3D Hotspots
-      renderer.domElement.addEventListener('click', onCanvasClick);
-      renderer.domElement.addEventListener('touchend', onCanvasTouch);
-
-      // Keyboard walk controls
-      window.addEventListener('keydown', (e) => {
-        if (e.code === 'KeyW' || e.code === 'ArrowUp') walkKeys.forward = true;
-        if (e.code === 'KeyS' || e.code === 'ArrowDown') walkKeys.backward = true;
-        if (e.code === 'KeyA' || e.code === 'ArrowLeft') walkKeys.left = true;
-        if (e.code === 'KeyD' || e.code === 'ArrowRight') walkKeys.right = true;
-      });
-      window.addEventListener('keyup', (e) => {
-        if (e.code === 'KeyW' || e.code === 'ArrowUp') walkKeys.forward = false;
-        if (e.code === 'KeyS' || e.code === 'ArrowDown') walkKeys.backward = false;
-        if (e.code === 'KeyA' || e.code === 'ArrowLeft') walkKeys.left = false;
-        if (e.code === 'KeyD' || e.code === 'ArrowRight') walkKeys.right = false;
-      });
-
-      window.addEventListener('resize', onWindowResize);
-
-      animate();
-    }
-
-    function buildWiloShowroom(scene) {
-      // Floor with glossy reflections
-      const floorGeo = new THREE.PlaneGeometry(24, 24);
-      const floorMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.2, metalness: 0.1 });
-      const floor = new THREE.Mesh(floorGeo, floorMat);
-      floor.rotation.x = -Math.PI / 2;
-      scene.add(floor);
-
-      // Main Back Wall (White with Wilo Header)
-      const backWallGeo = new THREE.BoxGeometry(12, 4.5, 0.3);
-      const backWallMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 });
-      const backWall = new THREE.Mesh(backWallGeo, backWallMat);
-      backWall.position.set(0, 2.25, -3.5);
-      scene.add(backWall);
-
-      // LED Video Display Wall
-      const screenGeo = new THREE.PlaneGeometry(3.6, 3.2);
-      const screenMat = new THREE.MeshBasicMaterial({ color: 0x0284c7 });
-      const screen = new THREE.Mesh(screenGeo, screenMat);
-      screen.position.set(2.5, 2.4, -3.34);
-      scene.add(screen);
-
-      // Curved Wilo Teal Reception Counter
-      const counterGeo = new THREE.CylinderGeometry(2.4, 2.4, 1.0, 32, 1, false, 0, Math.PI);
-      const counterMat = new THREE.MeshStandardMaterial({ color: 0x00a390, roughness: 0.3, metalness: 0.2 });
-      const counter = new THREE.Mesh(counterGeo, counterMat);
-      counter.position.set(-1.5, 0.5, 1.2);
-      counter.rotation.y = Math.PI / 2;
-      scene.add(counter);
-
-      // Central Display Pedestal Tables
-      const tableGeo = new THREE.BoxGeometry(6.5, 0.8, 1.2);
-      const tableMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
-      const table = new THREE.Mesh(tableGeo, tableMat);
-      table.position.set(0, 0.4, -0.6);
-      scene.add(table);
-
-      // Overhead Curved Truss & Signage
-      const trussGeo = new THREE.TorusGeometry(4.5, 0.12, 8, 32, Math.PI * 0.9);
-      const trussMat = new THREE.MeshStandardMaterial({ color: 0x00a390, roughness: 0.2, metalness: 0.5 });
-      const truss = new THREE.Mesh(trussGeo, trussMat);
-      truss.position.set(0, 4.2, -0.5);
-      truss.rotation.x = Math.PI / 2;
-      scene.add(truss);
-    }
-
-    let sparkViewerInstance = null;
-
-    async function loadRealWiloGaussian(scene) {
-      console.log('[SPARK_SPZ_LOADER] Initializing Genuine Spark SPZ Gaussian Splatting Loader...');
-      console.log('[REAL_GAUSSIAN_LOADER] model: REAL_WILO_GAUSSIAN_FINAL.spz gaussians: 526941');
-      console.log('[VIEWER_INIT] Initializing Genuine Spark SPZ Gaussian Splatting Loader...');
-
-      window.__VSHOW_STATE__ = {
-        tenant: "org-wilo-golden-demo",
-        model: "REAL_WILO_GAUSSIAN_FINAL.spz",
-        renderer: "SPARK",
-        fakeRenderer: false
-      };
-
-      const modelUrl = '/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz';
-      const container = document.getElementById('wilo-3d-canvas-container');
-
-      if (window.PrecisionSplatViewer) {
-        try {
-          sparkViewerInstance = new PrecisionSplatViewer({
-            container: container,
-            scene: scene,
-            camera: camera,
-            renderer: renderer,
-            onProgress: (p, msg) => {
-              console.log(`[SPARK_SPZ_PROGRESS] ${p}% - ${msg}`);
-              const vTitle = document.getElementById('wilo-view-name');
-              if (vTitle) vTitle.textContent = `Spark 3D Gaussian Decoding (${p}%)...`;
-            },
-            onError: (err) => {
-              console.error('[SPARK_SPZ_ERROR]', err);
-            }
-          });
-
-          const success = await sparkViewerInstance.load({
-            assetUrl: modelUrl,
-            format: 'spz',
-            gaussians: 526941
-          });
-
-          if (success) {
-            console.log('[REAL_GAUSSIAN_MODEL_LOADED] REAL_WILO_GAUSSIAN_FINAL.spz (526,941 splats active on GPU)');
-            console.log('[SPARK_SPZ_SUCCESS] Real Wilo 526,941 Gaussian Splats decoded and rendered on GPU.');
-            const vTitle = document.getElementById('wilo-view-name');
-            if (vTitle) vTitle.textContent = 'Real Wilo Gaussian 3D Reconstruction (Spark SPZ — 526,941 Splats)';
-          }
-        } catch (sErr) {
-          console.error('[SPARK_DECODE_ERR]', sErr);
-        }
+    function show3DUnavailableBanner() {
+      const vTitle = document.getElementById('wilo-view-name');
+      if (vTitle) {
+        vTitle.innerHTML = '<span style="color:#f59e0b;">⚠️ Authentic 3D Reconstruction Unavailable (Real Camera Capture Required)</span>';
       }
     }
 
@@ -747,43 +548,28 @@
       }
     }
 
-    // Viewer Mode Switcher
+    // Viewer Mode Switcher (Enforced Photo Tour only)
     function switchViewerMode(mode) {
-      currentViewerMode = mode;
-      document.getElementById('btn-mode-3d-orbit').classList.toggle('active', mode === '3D_ORBIT');
-      document.getElementById('btn-mode-3d-walk').classList.toggle('active', mode === '3D_WALK');
-      document.getElementById('btn-mode-photo').classList.toggle('active', mode === 'PHOTO_TOUR');
+      if (mode !== 'PHOTO_TOUR') {
+        show3DUnavailableNotice();
+        mode = 'PHOTO_TOUR';
+      }
+      currentViewerMode = 'PHOTO_TOUR';
+      const btnPhoto = document.getElementById('btn-mode-photo');
+      if (btnPhoto) btnPhoto.classList.add('active');
 
       const canvas3D = document.getElementById('wilo-3d-canvas-container');
       const photoContainer = document.getElementById('wilo-photo-container');
       const walkHud = document.getElementById('wilo-walk-hud');
-      const viewName = document.getElementById('wilo-view-name');
       const photoNav = document.getElementById('wilo-photo-nav-buttons');
       const thumbs = document.getElementById('wilo-thumbnails');
 
-      if (mode === 'PHOTO_TOUR') {
-        canvas3D.style.display = 'none';
-        photoContainer.style.display = 'block';
-        walkHud.style.display = 'none';
-        photoNav.style.display = 'flex';
-        thumbs.style.display = 'flex';
-        renderPhotoTour();
-      } else {
-        if (!scene) init3DScene();
-        canvas3D.style.display = 'block';
-        photoContainer.style.display = 'none';
-        photoNav.style.display = 'none';
-        thumbs.style.display = 'none';
-        walkHud.style.display = mode === '3D_WALK' ? 'block' : 'none';
-        viewName.textContent = mode === '3D_ORBIT' ? '3D Procedural Preview (Orbit)' : '3D Walk Preview (WASD)';
-        
-        if (mode === '3D_ORBIT' && orbitControls) {
-          orbitControls.enabled = true;
-        } else if (mode === '3D_WALK' && orbitControls) {
-          orbitControls.enabled = true;
-          orbitControls.maxDistance = 1.0;
-        }
-      }
+      if (canvas3D) canvas3D.style.display = 'none';
+      if (photoContainer) photoContainer.style.display = 'block';
+      if (walkHud) walkHud.style.display = 'none';
+      if (photoNav) photoNav.style.display = 'flex';
+      if (thumbs) thumbs.style.display = 'flex';
+      renderPhotoTour();
     }
 
 

@@ -1,0 +1,25 @@
+{
+  "tenantId": "org-wilo-golden-demo",
+  "organizationName": "Wilo SE (Golden Demo)",
+  "boothId": "booth-wilo-golden-demo",
+  "tradeShow": "ISH Frankfurt 2026",
+  "boothNumber": "Hall 9.0 - Stand B42",
+  "capabilities": {
+    "photoTour": true,
+    "authenticGaussian3D": false,
+    "captureDatasetAvailable": false,
+    "reconstructionStatus": "BLOCKED_NO_REAL_CAPTURE"
+  },
+  "verifiedVisualSource": {
+    "type": "PHOTO_TOUR_HIGH_RES_2D",
+    "viewCount": 12,
+    "resolution": "1600x900",
+    "sha256Validated": true
+  },
+  "threeDimensionalModel": {
+    "active": false,
+    "modelUrl": null,
+    "status": "CAPTURE_REQUIRED",
+    "rejectionNotice": "Previous synthetic Smart Factory model (REAL_WILO_GAUSSIAN_FINAL.spz) permanently rejected and quarantined in forensic archive."
+  }
+}

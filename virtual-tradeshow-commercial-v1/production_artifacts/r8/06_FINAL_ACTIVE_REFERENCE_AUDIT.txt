@@ -1,0 +1,17 @@
+﻿============================================================
+PHASE 10.7N-R8: STEP 11 — FINAL ACTIVE REFERENCE AUDIT
+============================================================
+
+Path                                                                                               LineNumber Line                                                                                                                           
+----                                                                                               ---------- ----                                                                                                                           
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\diagnostics\wilo-spz-only.html         71       modelUrl: "/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz",                                                       
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\diagnostics\wilo-spz-only.html        101       const modelUrl = '/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz';                                                
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\diagnostics\wilo-spz-only.html        102       document.getElementById('diag-model').textContent = 'REAL_WILO_GAUSSIAN_FINAL.spz';                                      
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\diagnostics\wilo-spz-only.html        115         window.__VSHOW_STATE__.decoderReportedGaussianCount = 526941;                                                          
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\diagnostics\wilo-spz-only.html        117         document.getElementById('diag-count').textContent = '526,941 Splats';                                                  
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\server\index.js                             2679   const file = 'REAL_WILO_GAUSSIAN_FINAL.spz';                                                                                 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\server\index.js                             2704 const SPZ_DOWNLOAD_URL = 'https://github.com/goodkie/v-show/releases/download/v1.0.0-wilo-assets/REAL_WILO_GAUSSIAN_FINAL.spz';
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\server\index.js                             2733   if (file === 'REAL_WILO_GAUSSIAN_FINAL.spz' || file.startsWith('REAL_WILO_')) {                                              
+
+
+

@@ -2729,9 +2729,13 @@ app.get('/assets/demo/wilo/models/:filename', (req, res) => {
     }
   }
 
-  // If missing or LFS pointer (<1MB), redirect directly to high-speed verified GitHub Release CDN
-  if (file === 'REAL_WILO_GAUSSIAN_FINAL.spz') {
-    return res.redirect(302, SPZ_DOWNLOAD_URL);
+  // R8 Truth Correction: Authentic 3D reconstruction is not yet available for Wilo
+  if (file === 'REAL_WILO_GAUSSIAN_FINAL.spz' || file.startsWith('REAL_WILO_')) {
+    return res.status(404).json({
+      error: 'AUTHENTIC_3D_RECONSTRUCTION_UNAVAILABLE',
+      message: 'Authentic 3D reconstruction is not available. Real booth camera capture data is required.',
+      photoTourAvailable: true
+    });
   }
 
   res.status(404).json({ error: '3D model asset not found.' });

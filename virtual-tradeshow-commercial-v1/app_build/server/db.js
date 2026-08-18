@@ -3391,6 +3391,10 @@ class JSONDatabase {
           status: 'published',
           fallbackMode: 'photo_tour',
           specialistStatus: 'AVAILABLE',
+          photoTour: true,
+          authenticGaussian3D: false,
+          captureDatasetAvailable: false,
+          reconstructionStatus: 'BLOCKED_NO_REAL_CAPTURE',
           viewsExpected: 12,
           viewsAvailable: 12,
           boothViews: [
