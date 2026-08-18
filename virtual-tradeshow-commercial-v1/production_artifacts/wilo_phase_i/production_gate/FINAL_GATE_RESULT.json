@@ -14,5 +14,6 @@
   "technicalGatePassed": false,
   "final3DSwitchAllowed": false,
   "publicDefaultMode": "PHOTO_TOUR",
-  "failureReason": "Modal GPU compute workspace disabled (ac-GnJcr7PSMINGcnaqdDI4P8 is disabled); stopped before unintended cash charges per safety invariant"
+  "failureReason": "FREE_CREDIT_EXPIRED: Modal workspace ac-GnJcr7PSMINGcnaqdDI4P8 has exceeded its spend limit; halted per zero-cost hard rule",
+  "blockerClassification": "GPU_PAYMENT_APPROVAL_REQUIRED"
 }
