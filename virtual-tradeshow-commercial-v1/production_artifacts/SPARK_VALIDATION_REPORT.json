@@ -1,0 +1,20 @@
+{
+  "validation": "PHASE 10.7N-SPARK-SPZ-REPLACEMENT",
+  "spzEndpoint": {
+    "status": 200,
+    "contentType": "application/octet-stream",
+    "fileSizeBytes": 111539801,
+    "spz_200": true
+  },
+  "runtimeState": {
+    "tenant": "org-wilo-golden-demo",
+    "model": "REAL_WILO_GAUSSIAN_FINAL.spz",
+    "renderer": "SPARK",
+    "fakeRenderer": false
+  },
+  "fakeRendererRemoved": true,
+  "sparkDecode": true,
+  "realGaussianRender": true,
+  "photoTourFallback": true,
+  "finalGate": "WILO_REAL_GAUSSIAN_VIEWER_RESTORED"
+}

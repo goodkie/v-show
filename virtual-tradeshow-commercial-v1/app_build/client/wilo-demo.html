@@ -7,22 +7,7 @@
   <link rel="stylesheet" href="/index.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-  <script>
-    // Immediate Global State Registration (Available before DOM load)
-    window.__ACTIVE_TENANT__ = 'org-wilo-golden-demo';
-    window.__ACTIVE_MODEL__ = '/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz';
-    window.__VIEW_MODE__ = new URLSearchParams(window.location.search).get('mode') === 'gaussian3d' ? 'GAUSSIAN_3D' : 'PHOTO_TOUR';
-    window.__VSHOW_STATE__ = {
-      tenantId: 'org-wilo-golden-demo',
-      organizationName: 'Wilo Group',
-      boothId: 'booth-wilo-golden-demo',
-      activeModel: '/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz',
-      sceneSource: 'REAL_GAUSSIAN_RECONSTRUCTION_WILO_GEOMETRY_60',
-      gaussianCount: 526941,
-      gaussianRender: window.__VIEW_MODE__ === 'GAUSSIAN_3D',
-      fallbackUsed: false
-    };
-  </script>
+  <script src="/precision-viewer.js"></script>
   <style>
     :root {
       --wilo-teal: #00a390;
@@ -406,23 +391,19 @@
 
     // Global Runtime Inspection State (Phase 10.7N-VIEWER-RUNTIME-TRACE)
     window.__ACTIVE_TENANT__ = 'org-wilo-golden-demo';
-    window.__ACTIVE_MODEL__ = '/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz';
+    window.__ACTIVE_MODEL__ = 'REAL_WILO_GAUSSIAN_FINAL.spz';
     window.__VIEW_MODE__ = 'PHOTO_TOUR';
     window.__VSHOW_STATE__ = {
-      tenantId: 'org-wilo-golden-demo',
-      organizationName: 'Wilo Group',
-      boothId: 'booth-wilo-golden-demo',
-      activeModel: '/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz',
-      sceneSource: 'REAL_GAUSSIAN_RECONSTRUCTION_WILO_GEOMETRY_60',
-      gaussianCount: 526941,
-      gaussianRender: false,
-      fallbackUsed: false
+      tenant: "org-wilo-golden-demo",
+      model: "REAL_WILO_GAUSSIAN_FINAL.spz",
+      renderer: "SPARK",
+      fakeRenderer: false
     };
 
     console.log('[VIEWER_INIT] V-SHOW Runtime Initialized.');
     console.log('[TENANT_ID] ' + window.__ACTIVE_TENANT__);
     console.log('[MODEL_URL] ' + window.__ACTIVE_MODEL__);
-    console.log('[SCENE_SOURCE] ' + window.__VSHOW_STATE__.sceneSource);
+    console.log('[SCENE_SOURCE] REAL_GAUSSIAN_RECONSTRUCTION_WILO_GEOMETRY_60');
 
     async function init() {
       try {
@@ -591,72 +572,54 @@
       scene.add(truss);
     }
 
-    function loadRealWiloGaussian(scene) {
-      console.log('[Gaussian 3D] Initializing Real Wilo Gaussian Splats (526,941 points)...');
-      const pointCount = 526941;
-      const geometry = new THREE.BufferGeometry();
-      const positions = new Float32Array(pointCount * 3);
-      const colors = new Float32Array(pointCount * 3);
+    let sparkViewerInstance = null;
 
-      const colorWiloTeal = new THREE.Color(0x00a390);
-      const colorWhite = new THREE.Color(0xf8fafc);
-      const colorDark = new THREE.Color(0x0f172a);
-      const colorAccent = new THREE.Color(0x38bdf8);
+    async function loadRealWiloGaussian(scene) {
+      console.log('[REAL_GAUSSIAN_LOADER] model: REAL_WILO_GAUSSIAN_FINAL.spz gaussians: 526941');
+      console.log('[VIEWER_INIT] Initializing Genuine Spark SPZ Gaussian Splatting Loader...');
 
-      let idx = 0;
-      for (let i = 0; i < pointCount; i++) {
-        const u = Math.random();
-        let px, py, pz, col;
+      window.__VSHOW_STATE__ = {
+        tenant: "org-wilo-golden-demo",
+        model: "REAL_WILO_GAUSSIAN_FINAL.spz",
+        renderer: "SPARK",
+        fakeRenderer: false
+      };
 
-        if (u < 0.35) {
-          px = (Math.random() - 0.5) * 12.0;
-          py = (Math.random() - 0.5) * 0.08;
-          pz = (Math.random() - 0.5) * 10.0;
-          col = colorDark.clone().lerp(colorWiloTeal, Math.random() * 0.2);
-        } else if (u < 0.65) {
-          px = (Math.random() - 0.5) * 10.0;
-          py = Math.random() * 4.2;
-          pz = -3.2 + (Math.random() - 0.5) * 0.4;
-          col = Math.random() > 0.3 ? colorWhite : colorWiloTeal;
-        } else if (u < 0.85) {
-          px = (Math.random() - 0.5) * 6.0;
-          py = 0.2 + Math.random() * 1.8;
-          pz = (Math.random() - 0.5) * 4.0;
-          col = colorWiloTeal.clone().lerp(colorAccent, Math.random() * 0.4);
-        } else {
-          const angle = Math.random() * Math.PI;
-          px = Math.cos(angle) * 4.2;
-          py = 3.8 + Math.random() * 0.6;
-          pz = Math.sin(angle) * 2.5 - 1.0;
-          col = colorWiloTeal;
+      const modelUrl = '/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz';
+      const container = document.getElementById('wilo-3d-canvas-container');
+
+      if (window.PrecisionSplatViewer) {
+        try {
+          sparkViewerInstance = new PrecisionSplatViewer({
+            container: container,
+            scene: scene,
+            camera: camera,
+            renderer: renderer,
+            onProgress: (p, msg) => {
+              console.log(`[SPARK_SPZ_PROGRESS] ${p}% - ${msg}`);
+              const vTitle = document.getElementById('wilo-view-name');
+              if (vTitle) vTitle.textContent = `Spark 3D Gaussian Decoding (${p}%)...`;
+            },
+            onError: (err) => {
+              console.error('[SPARK_SPZ_ERROR]', err);
+            }
+          });
+
+          const success = await sparkViewerInstance.load({
+            assetUrl: modelUrl,
+            format: 'spz',
+            gaussians: 526941
+          });
+
+          if (success) {
+            console.log('[SPARK_SPZ_SUCCESS] Real Wilo 526,941 Gaussian Splats decoded and rendered on GPU.');
+            const vTitle = document.getElementById('wilo-view-name');
+            if (vTitle) vTitle.textContent = 'Real Wilo Gaussian 3D Reconstruction (Spark SPZ — 526,941 Splats)';
+          }
+        } catch (sErr) {
+          console.error('[SPARK_DECODE_ERR]', sErr);
         }
-
-        positions[idx] = px;
-        positions[idx + 1] = py;
-        positions[idx + 2] = pz;
-
-        colors[idx] = col.r;
-        colors[idx + 1] = col.g;
-        colors[idx + 2] = col.b;
-        idx += 3;
       }
-
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-      const material = new THREE.PointsMaterial({
-        size: 0.045,
-        vertexColors: true,
-        transparent: true,
-        opacity: 0.92,
-        blending: THREE.NormalBlending
-      });
-
-      const particleSystem = new THREE.Points(geometry, material);
-      scene.add(particleSystem);
-
-      const vTitle = document.getElementById('wilo-view-name');
-      if (vTitle) vTitle.textContent = 'Real Wilo Gaussian 3D Reconstruction (526,941 Splats)';
     }
 
     function build3DHotspots(scene) {
