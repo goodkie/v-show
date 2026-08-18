@@ -1,0 +1,10 @@
+﻿{
+    "production_approved":  false,
+    "preserved_at":  "2026-08-18T10:05:31Z",
+    "source_phase":  "Phase 9.5 Synthetic Pilot",
+    "ply_sha256":  "B40F8035DDC51817538F99AFFFA7EECA6836E8FCAA243A93BD214166B877CD4D",
+    "wilo_reconstruction":  false,
+    "reason":  "Forensic audit proved this model was reconstructed from Phase 9.5 Synthetic Studio (single_studio.html / build_studio.py), not authentic Wilo booth camera photography.",
+    "spz_sha256":  "FC80E5192CE1C79196E51414E0739524C9E191092C1719829AB414D0E73A32EE",
+    "classification":  "SYNTHETIC_SMART_FACTORY"
+}

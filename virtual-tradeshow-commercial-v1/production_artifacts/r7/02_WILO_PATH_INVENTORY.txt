@@ -1,0 +1,396 @@
+﻿============================================================
+PHASE 10.7N-R7: STEP 2 — WILO PATH INVENTORY
+============================================================
+
+FullName                                                                                                                         Length    LastWriteTime         
+--------                                                                                                                         ------    -------------         
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_reconstruction                                                2026-08-17 오전 9:33:55 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_forensic                                                      2026-08-17 오후 3:47:44 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_phase_i                                                       2026-08-17 오후 8:41:06 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\PHASE_10_7N_E_WILO_TRUE_3D.md                            1833      2026-08-17 오전 9:43:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\PHASE_10_7N_G_REAL_WILO_RECONSTRUCTION.md                1500      2026-08-17 오후 4:33:38 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\WILO_60_VIEW_DATASET_SPEC.md                             972       2026-08-17 오후 8:34:06 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\WILO_COLMAP_QUALIFICATION.md                             423       2026-08-17 오후 8:34:10 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\WILO_RECONSTRUCTION_HISTORY.md                           1027      2026-08-17 오후 8:34:14 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\WILO_12_ASSET_CONTACT_SHEET.png                          1764438   2026-08-18 오전 4:18:36 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\WILO_ASSET_IDENTITY_REPORT.json                          7032      2026-08-18 오전 4:18:36 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\PRODUCTION_WILO_CONTACT_SHEET.png                        1750819   2026-08-18 오전 4:23:14 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\PRODUCTION_REAL_WILO_01.png                              793796    2026-08-18 오전 4:23:18 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\PRODUCTION_REAL_WILO_02.png                              724358    2026-08-18 오전 4:23:22 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\PRODUCTION_REAL_WILO_03.png                              724358    2026-08-18 오전 4:23:26 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_reconstruction\SOURCE_IMAGE_MANIFEST.json           9485      2026-08-17 오전 9:33:58 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_reconstruction\SOURCE_IMAGE_QA.md                   2963      2026-08-17 오전 9:33:58 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_reconstruction\UPLOAD_FAILURE_ROOT_CAUSE.md         3463      2026-08-17 오전 9:34:30 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_reconstruction\CAPTURE_QA.json                      14052     2026-08-17 오전 9:37:26 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_reconstruction\MODEL_MANIFEST.json                  1713      2026-08-17 오전 9:38:06 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_reconstruction\RECONSTRUCTION_REPORT.md             1236      2026-08-17 오전 9:38:06 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_reconstruction\VIEWER_QA.md                         1431      2026-08-17 오전 9:43:18 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_reconstruction\ADMIN_UPLOAD_QA.md                   1153      2026-08-17 오전 9:43:30 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_forensic\CURRENT_VIEWER_RENDER_PATH.md              3020      2026-08-17 오후 3:47:46 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_forensic\WILO_PLY_FORENSIC_REPORT.md                2229      2026-08-17 오후 3:47:58 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_forensic\WILO_GLB_FORENSIC_REPORT.md                1283      2026-08-17 오후 3:48:10 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_forensic\COLMAP_FORENSIC_REPORT.md                  1636      2026-08-17 오후 3:48:28 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_forensic\SPLATFACTO_FORENSIC_REPORT.md              1212      2026-08-17 오후 3:48:44 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_forensic\SPARK_RUNTIME_PROOF.md                     1769      2026-08-17 오후 3:50:08 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_forensic\ASSET_AB_TEST.md                           1308      2026-08-17 오후 3:50:12 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_forensic\CORRUPT_ASSET_TEST.md                      790       2026-08-17 오후 3:50:16 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_forensic\NETWORK_FALLBACK_TEST.md                   814       2026-08-17 오후 3:50:24 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_forensic\UPLOAD_BROWSER_E2E.md                      1933      2026-08-17 오후 3:50:28 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_forensic\RAILWAY_PERSISTENCE_TEST.md                739       2026-08-17 오후 3:50:30 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_forensic\VISUAL_QA.md                               1237      2026-08-17 오후 3:50:34 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_forensic\BROWSER_TRUE_3D_EVIDENCE.md                851       2026-08-17 오후 3:50:36 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_phase_i\production_gate                                       2026-08-17 오후 8:41:06 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_phase_i\PHASE_10_7N_I_PRODUCTION_GATE_REPORT.md     1297      2026-08-17 오후 8:53:40 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_phase_i\GPU_WORKSPACE_DIAGNOSIS.md                  1472      2026-08-17 오후 9:02:46 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_phase_i\PHASE_10_7N_I_R2_PROVENANCE.json            1384      2026-08-18 오전 2:49:48 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_phase_i\production_gate\FINAL_GATE_RESULT.json      630       2026-08-17 오후 9:02:50 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_phase_i\production_gate\01_VALID_GAUSSIAN_PLY.json  248       2026-08-17 오후 8:53:32 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_phase_i\production_gate\04_CORRUPT_FALLBACK.json    276       2026-08-17 오후 8:53:34 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_phase_i\production_gate\07_OWNER_APPROVAL.json      125       2026-08-17 오후 8:53:36 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_phase_i\production_gate\01_front.png                345387    2026-08-18 오전 2:49:48 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_phase_i\production_gate\02_front_left.png           28974     2026-08-18 오전 2:49:48 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_phase_i\production_gate\03_left.png                 356088    2026-08-18 오전 2:49:48 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_phase_i\production_gate\04_front_right.png          12011     2026-08-18 오전 2:49:48 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_phase_i\production_gate\05_right.png                385613    2026-08-18 오전 2:49:48 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_phase_i\production_gate\06_overview.png             13581     2026-08-18 오전 2:49:48 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\wilo_phase_i\production_gate\FINAL_GATE_REPORT.json      1384      2026-08-18 오전 2:49:48 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\screenshots\wilo_demo_screenshot.png                     39281     2026-08-18 오전 3:15:46 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\recovery\WILO_IMAGE_REALITY_MATRIX.csv                   2239      2026-08-18 오전 3:57:26 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\recovery2\03_WILO_DATABASE_MAPPING.md                    662       2026-08-18 오전 3:44:00 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\recovery2\04_WILO_ASSET_URL_REPORT.md                    2924      2026-08-18 오전 3:44:00 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\image_rebuild\WILO_IMAGE_REALITY_MATRIX.csv              2239      2026-08-18 오전 3:57:26 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\image_routing_debug\WILO_IMAGE_NETWORK_TRACE.json        3167      2026-08-18 오전 4:08:24 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\visual_identity_audit\WILO_12_ASSET_CONTACT_SHEET.png    1764438   2026-08-18 오전 4:18:36 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\visual_identity_audit\WILO_ASSET_IDENTITY_REPORT.json    7321      2026-08-18 오전 4:18:36 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\production_truth_check\PRODUCTION_WILO_CONTACT_SHEET.png 1750819   2026-08-18 오전 4:23:14 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\production_truth_check\PRODUCTION_REAL_WILO_01.png       793796    2026-08-18 오전 4:23:18 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\production_truth_check\PRODUCTION_REAL_WILO_02.png       724358    2026-08-18 오전 4:23:22 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\production_truth_check\PRODUCTION_REAL_WILO_03.png       724358    2026-08-18 오전 4:23:26 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\backup_pre_spark\wilo-demo.html.bak                      51510     2026-08-18 오전 4:51:18 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\r6\rejected_synthetic_model\REAL_WILO_GAUSSIAN_FINAL.spz 111539801 2026-08-18 오전 2:49:48 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\r6\rejected_synthetic_model\REAL_WILO_GAUSSIAN_FINAL.ply 130682925 2026-08-18 오전 2:49:48 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\production_artifacts\r7\02_WILO_PATH_INVENTORY.txt                            175       2026-08-18 오전 10:05:40
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\wilo-demo.html                                               51617     2026-08-18 오전 5:45:58 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo                                                       2026-08-18 오전 4:07:37 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\booth                                                 2026-08-18 오전 4:07:37 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\products                                              2026-08-18 오전 4:07:37 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\manifests                                             2026-08-18 오전 4:07:37 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\models                                                2026-08-18 오전 4:26:01 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\booth\01_front_hero.jpg                     368084    2026-08-18 오전 3:57:26 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\booth\02_front_center.jpg                   379833    2026-08-18 오전 3:57:26 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\booth\03_left_angle.jpg                     391936    2026-08-18 오전 3:57:26 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\booth\04_right_angle.jpg                    418072    2026-08-18 오전 3:57:26 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\booth\05_left_side.jpg                      331003    2026-08-18 오전 3:57:26 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\booth\06_right_side.jpg                     387499    2026-08-18 오전 3:57:26 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\booth\07_interior_view.jpg                  373061    2026-08-18 오전 3:57:26 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\booth\08_product_island.jpg                 402942    2026-08-18 오전 3:57:26 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\booth\09_meeting_area.jpg                   323145    2026-08-18 오전 3:57:26 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\booth\10_display_screen.jpg                 419361    2026-08-18 오전 3:57:26 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\booth\11_overhead_sign.jpg                  432736    2026-08-18 오전 3:57:26 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\booth\12_wide_overview.jpg                  404162    2026-08-18 오전 3:57:26 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\products\product_01.jpg                     29877     2026-08-17 오전 3:21:08 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\products\product_02.jpg                     30133     2026-08-17 오전 3:21:08 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\products\product_03.jpg                     30389     2026-08-17 오전 3:21:08 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\products\product_04.jpg                     30645     2026-08-17 오전 3:21:08 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\products\product_05.jpg                     30901     2026-08-17 오전 3:21:08 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\products\product_06.jpg                     31157     2026-08-17 오전 3:21:08 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\products\product_07.jpg                     31413     2026-08-17 오전 3:21:08 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\products\product_08.jpg                     31669     2026-08-17 오전 3:21:08 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\manifests\wilo_booth_manifest.json          10357     2026-08-17 오전 3:21:08 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\models\REAL_WILO_GAUSSIAN_FINAL.ply         130682925 2026-08-18 오전 2:49:48 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\models\REAL_WILO_GAUSSIAN_FINAL.spz         111539801 2026-08-18 오전 2:49:48 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\diagnostics\wilo-spz-only.html                               4791      2026-08-18 오전 6:32:08 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\models\REAL_WILO_GAUSSIAN_FINAL.ply                    130682925 2026-08-18 오전 2:49:48 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\models\REAL_WILO_GAUSSIAN_FINAL.spz                    111539801 2026-08-18 오전 2:49:48 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo                               2026-08-17 오전 9:37:24 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths                        2026-08-17 오전 9:37:24 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil...           2026-08-17 오전 9:37:24 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil...           2026-08-17 오전 9:37:24 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil...           2026-08-17 오전 9:38:03 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil...           2026-08-17 오전 9:37:25 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil...           2026-08-17 오전 9:37:25 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 99764     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 81673     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 66163     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 68482     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 70797     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 67541     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 70125     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 69210     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 66414     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 87574     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 79357     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 84125     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 83860     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 87948     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 76438     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 78891     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 82657     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 75597     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 76890     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 93504     2026-08-17 오전 6:06:42 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil...           2026-08-17 오전 9:38:03 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil...           2026-08-18 오전 2:49:43 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 273061    2026-08-17 오전 9:38:04 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 48        2026-08-17 오전 9:38:06 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 130682925 2026-08-18 오전 2:49:46 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\data\uploads\organizations\org-wilo-golden-demo\booths\booth-wil... 111539801 2026-08-18 오전 2:49:46 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\scripts\test_phase10_7n_e_wilo_true3d.js                            7112      2026-08-17 오전 9:42:44 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\scripts\test_phase10_7n_g_real_wilo_reconstruction.js               4371      2026-08-17 오후 4:33:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01                                                                                     2026-08-17 오후 4:30:19 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02                                                                                     2026-08-18 오전 2:19:49 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\checksums                                                                           2026-08-17 오후 4:30:19 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\colmap                                                                              2026-08-17 오후 4:30:19 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\exports                                                                             2026-08-17 오후 4:30:19 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input                                                                               2026-08-17 오후 4:30:19 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\logs                                                                                2026-08-17 오후 4:30:19 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\nerfstudio                                                                          2026-08-17 오후 4:30:19 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\reports                                                                             2026-08-17 오후 4:33:33 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\spz                                                                                 2026-08-17 오후 4:30:19 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\training                                                                            2026-08-17 오후 4:30:19 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\colmap\database                                                                     2026-08-17 오후 4:30:19 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\colmap\dense                                                                        2026-08-17 오후 4:30:19 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\colmap\sparse                                                                       2026-08-17 오후 4:30:19 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images                                                                        2026-08-17 오후 4:30:19 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_1.jpg                 99764     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_10.jpg                81673     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_11.jpg                66163     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_12.jpg                68482     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_13.jpg                70797     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_14.jpg                67541     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_15.jpg                70125     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_16.jpg                69210     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_17.jpg                66414     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_18.jpg                87574     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_19.jpg                79357     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_2.jpg                 84125     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_20.jpg                83860     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_3.jpg                 87948     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_4.jpg                 76438     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_5.jpg                 78891     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_6.jpg                 82657     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_7.jpg                 75597     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_8.jpg                 76890     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\input\images\ChatGPT Image 2026년 8월 17일 오전 03_58_23_9.jpg                 93504     2026-08-17 오전 6:06:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\reports\COLMAP_DEBUG_LOGS.json                                            3567      2026-08-17 오후 4:33:20 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\reports\COLMAP_REAL_RESULTS.json                                          578       2026-08-17 오후 4:33:25 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\reports\COLMAP_REAL_RESULTS.md                                            1528      2026-08-17 오후 4:33:28 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\reports\NERFSTUDIO_TRAINING_EVIDENCE.md                                   664       2026-08-17 오후 4:33:31 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\reports\SOURCE_IMAGE_AUDIT.json                                           6439      2026-08-17 오후 4:30:27 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-01\reports\WILO_REAL_PLY_FORENSIC.md                                         499       2026-08-17 오후 4:33:33 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\backup                                                                              2026-08-17 오후 4:54:55 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\camera_plan                                                                         2026-08-17 오후 4:55:15 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\checksums                                                                           2026-08-17 오후 4:54:55 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\colmap                                                                              2026-08-17 오후 8:33:59 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\exports                                                                             2026-08-18 오전 2:49:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\manifests                                                                           2026-08-17 오후 4:58:52 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\preview                                                                             2026-08-17 오후 4:54:55 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\qa                                                                                  2026-08-18 오전 2:49:47 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders                                                                             2026-08-17 오후 4:57:55 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\reports                                                                             2026-08-17 오후 8:33:56 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\scene                                                                               2026-08-17 오후 4:57:46 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\source_reference                                                                    2026-08-17 오후 4:54:55 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\run_phase10_7n_i_r2.py                                                    13197     2026-08-18 오전 2:26:43 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\train_and_export_wilo.py                                                  5432      2026-08-17 오후 8:41:02 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\camera_plan\CAMERA_MANIFEST.csv                                           5299      2026-08-17 오후 4:55:15 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\camera_plan\CAMERA_MANIFEST.json                                          27855     2026-08-17 오후 4:55:15 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\colmap\database                                                                     2026-08-17 오후 4:54:55 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\colmap\logs                                                                         2026-08-17 오후 4:54:55 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\colmap\sparse                                                                       2026-08-17 오후 4:59:04 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\colmap\text                                                                         2026-08-17 오후 4:54:55 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\colmap\run_colmap_60_views.py                                             8746      2026-08-17 오후 4:59:00 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\colmap\run_splatfacto_smoke_test.py                                       1023      2026-08-17 오후 8:33:59 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\colmap\run_verified_colmap.py                                             8902      2026-08-17 오후 5:34:16 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\colmap\test_modal_colmap.py                                               912       2026-08-17 오후 8:31:03 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\colmap\sparse\0                                                                     2026-08-17 오후 4:59:04 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\exports\REAL_WILO_GAUSSIAN_FINAL.ply                                      130682925 2026-08-18 오전 2:49:35 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\exports\REAL_WILO_GAUSSIAN_FINAL.spz                                      111539801 2026-08-18 오전 2:49:43 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\manifests\IMAGE_MANIFEST.csv                                              6579      2026-08-17 오후 4:58:52 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\qa\01_front.png                                                           345387    2026-08-18 오전 2:49:47 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\qa\02_front_left.png                                                      28974     2026-08-18 오전 2:49:47 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\qa\03_left.png                                                            356088    2026-08-18 오전 2:49:47 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\qa\04_front_right.png                                                     12011     2026-08-18 오전 2:49:47 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\qa\05_right.png                                                           385613    2026-08-18 오전 2:49:47 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\qa\06_overview.png                                                        13581     2026-08-18 오전 2:49:47 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified                                                                   2026-08-17 오후 4:58:52 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw                                                                         2026-08-17 오후 4:58:52 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\rejected                                                                    2026-08-17 오후 4:54:55 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\render_pipeline.js                                                6388      2026-08-17 오후 4:56:48 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\render_wilo_dataset.py                                            6237      2026-08-17 오후 4:58:18 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_001.jpg                                         345387    2026-08-17 오후 4:58:30 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_002.jpg                                         382163    2026-08-17 오후 4:58:30 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_003.jpg                                         412263    2026-08-17 오후 4:58:31 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_004.jpg                                         390070    2026-08-17 오후 4:58:31 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_005.jpg                                         305902    2026-08-17 오후 4:58:31 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_006.jpg                                         220748    2026-08-17 오후 4:58:32 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_007.jpg                                         224597    2026-08-17 오후 4:58:32 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_008.jpg                                         272935    2026-08-17 오후 4:58:32 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_009.jpg                                         20409     2026-08-17 오후 4:58:33 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_010.jpg                                         29509     2026-08-17 오후 4:58:33 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_011.jpg                                         28974     2026-08-17 오후 4:58:34 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_012.jpg                                         29342     2026-08-17 오후 4:58:34 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_013.jpg                                         20363     2026-08-17 오후 4:58:34 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_014.jpg                                         201281    2026-08-17 오후 4:58:35 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_015.jpg                                         178575    2026-08-17 오후 4:58:35 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_016.jpg                                         241666    2026-08-17 오후 4:58:35 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_017.jpg                                         324862    2026-08-17 오후 4:58:36 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_018.jpg                                         387153    2026-08-17 오후 4:58:36 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_019.jpg                                         389492    2026-08-17 오후 4:58:36 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_020.jpg                                         371472    2026-08-17 오후 4:58:37 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_021.jpg                                         356088    2026-08-17 오후 4:58:37 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_022.jpg                                         377821    2026-08-17 오후 4:58:37 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_023.jpg                                         369330    2026-08-17 오후 4:58:38 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_024.jpg                                         312673    2026-08-17 오후 4:58:38 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_025.jpg                                         250171    2026-08-17 오후 4:58:38 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_026.jpg                                         257347    2026-08-17 오후 4:58:39 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_027.jpg                                         234910    2026-08-17 오후 4:58:39 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_028.jpg                                         12011     2026-08-17 오후 4:58:40 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_029.jpg                                         12011     2026-08-17 오후 4:58:40 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_030.jpg                                         12011     2026-08-17 오후 4:58:40 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_031.jpg                                         12011     2026-08-17 오후 4:58:41 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_032.jpg                                         12011     2026-08-17 오후 4:58:41 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_033.jpg                                         12011     2026-08-17 오후 4:58:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_034.jpg                                         205027    2026-08-17 오후 4:58:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_035.jpg                                         235734    2026-08-17 오후 4:58:43 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_036.jpg                                         267146    2026-08-17 오후 4:58:43 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_037.jpg                                         332612    2026-08-17 오후 4:58:43 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_038.jpg                                         395680    2026-08-17 오후 4:58:44 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_039.jpg                                         368451    2026-08-17 오후 4:58:44 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_040.jpg                                         357758    2026-08-17 오후 4:58:44 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_041.jpg                                         385613    2026-08-17 오후 4:58:45 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_042.jpg                                         411566    2026-08-17 오후 4:58:45 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_043.jpg                                         424956    2026-08-17 오후 4:58:45 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_044.jpg                                         371462    2026-08-17 오후 4:58:46 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_045.jpg                                         314248    2026-08-17 오후 4:58:46 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_046.jpg                                         331165    2026-08-17 오후 4:58:46 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_047.jpg                                         304034    2026-08-17 오후 4:58:47 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_048.jpg                                         28554     2026-08-17 오후 4:58:47 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_049.jpg                                         30584     2026-08-17 오후 4:58:47 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_050.jpg                                         22009     2026-08-17 오후 4:58:48 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_051.jpg                                         13581     2026-08-17 오후 4:58:48 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_052.jpg                                         28149     2026-08-17 오후 4:58:49 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_053.jpg                                         30744     2026-08-17 오후 4:58:49 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_054.jpg                                         263278    2026-08-17 오후 4:58:49 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_055.jpg                                         297153    2026-08-17 오후 4:58:50 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_056.jpg                                         307238    2026-08-17 오후 4:58:50 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_057.jpg                                         365618    2026-08-17 오후 4:58:50 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_058.jpg                                         432187    2026-08-17 오후 4:58:51 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_059.jpg                                         422443    2026-08-17 오후 4:58:51 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\qualified\wilo_60_060.jpg                                         399809    2026-08-17 오후 4:58:52 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_001.jpg                                               345387    2026-08-17 오후 4:58:30 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_002.jpg                                               382163    2026-08-17 오후 4:58:30 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_003.jpg                                               412263    2026-08-17 오후 4:58:31 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_004.jpg                                               390070    2026-08-17 오후 4:58:31 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_005.jpg                                               305902    2026-08-17 오후 4:58:31 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_006.jpg                                               220748    2026-08-17 오후 4:58:32 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_007.jpg                                               224597    2026-08-17 오후 4:58:32 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_008.jpg                                               272935    2026-08-17 오후 4:58:32 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_009.jpg                                               20409     2026-08-17 오후 4:58:33 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_010.jpg                                               29509     2026-08-17 오후 4:58:33 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_011.jpg                                               28974     2026-08-17 오후 4:58:34 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_012.jpg                                               29342     2026-08-17 오후 4:58:34 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_013.jpg                                               20363     2026-08-17 오후 4:58:34 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_014.jpg                                               201281    2026-08-17 오후 4:58:35 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_015.jpg                                               178575    2026-08-17 오후 4:58:35 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_016.jpg                                               241666    2026-08-17 오후 4:58:35 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_017.jpg                                               324862    2026-08-17 오후 4:58:36 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_018.jpg                                               387153    2026-08-17 오후 4:58:36 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_019.jpg                                               389492    2026-08-17 오후 4:58:36 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_020.jpg                                               371472    2026-08-17 오후 4:58:37 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_021.jpg                                               356088    2026-08-17 오후 4:58:37 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_022.jpg                                               377821    2026-08-17 오후 4:58:37 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_023.jpg                                               369330    2026-08-17 오후 4:58:38 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_024.jpg                                               312673    2026-08-17 오후 4:58:38 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_025.jpg                                               250171    2026-08-17 오후 4:58:38 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_026.jpg                                               257347    2026-08-17 오후 4:58:39 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_027.jpg                                               234910    2026-08-17 오후 4:58:39 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_028.jpg                                               12011     2026-08-17 오후 4:58:40 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_029.jpg                                               12011     2026-08-17 오후 4:58:40 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_030.jpg                                               12011     2026-08-17 오후 4:58:40 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_031.jpg                                               12011     2026-08-17 오후 4:58:41 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_032.jpg                                               12011     2026-08-17 오후 4:58:41 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_033.jpg                                               12011     2026-08-17 오후 4:58:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_034.jpg                                               205027    2026-08-17 오후 4:58:42 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_035.jpg                                               235734    2026-08-17 오후 4:58:43 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_036.jpg                                               267146    2026-08-17 오후 4:58:43 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_037.jpg                                               332612    2026-08-17 오후 4:58:43 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_038.jpg                                               395680    2026-08-17 오후 4:58:44 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_039.jpg                                               368451    2026-08-17 오후 4:58:44 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_040.jpg                                               357758    2026-08-17 오후 4:58:44 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_041.jpg                                               385613    2026-08-17 오후 4:58:45 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_042.jpg                                               411566    2026-08-17 오후 4:58:45 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_043.jpg                                               424956    2026-08-17 오후 4:58:45 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_044.jpg                                               371462    2026-08-17 오후 4:58:46 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_045.jpg                                               314248    2026-08-17 오후 4:58:46 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_046.jpg                                               331165    2026-08-17 오후 4:58:46 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_047.jpg                                               304034    2026-08-17 오후 4:58:47 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_048.jpg                                               28554     2026-08-17 오후 4:58:47 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_049.jpg                                               30584     2026-08-17 오후 4:58:47 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_050.jpg                                               22009     2026-08-17 오후 4:58:48 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_051.jpg                                               13581     2026-08-17 오후 4:58:48 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_052.jpg                                               28149     2026-08-17 오후 4:58:49 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_053.jpg                                               30744     2026-08-17 오후 4:58:49 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_054.jpg                                               263278    2026-08-17 오후 4:58:49 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_055.jpg                                               297153    2026-08-17 오후 4:58:50 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_056.jpg                                               307238    2026-08-17 오후 4:58:50 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_057.jpg                                               365618    2026-08-17 오후 4:58:50 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_058.jpg                                               432187    2026-08-17 오후 4:58:51 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_059.jpg                                               422443    2026-08-17 오후 4:58:51 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\renders\raw\wilo_60_060.jpg                                               399809    2026-08-17 오후 4:58:52 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\reports\CAMERA_REGISTRATION_MAP.md                                        883       2026-08-17 오후 8:33:53 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\reports\COLMAP_QUALITY_REPORT.md                                          471       2026-08-17 오후 8:33:56 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\reports\COLMAP_REAL_RESULTS.json                                          163       2026-08-17 오후 8:33:46 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\reports\COLMAP_REAL_RESULTS.md                                            690       2026-08-17 오후 8:33:50 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\reports\DATASET_INTEGRITY.md                                              523       2026-08-17 오후 4:58:52 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\scene\build_studio.py                                                     6469      2026-08-17 오후 4:57:46 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\scene\debug_studio.js                                                     3262      2026-08-17 오후 4:57:13 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\scene\inline_three.js                                                     634       2026-08-17 오후 4:56:05 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\scene\SCENE_LOCK.json                                                     2346      2026-08-17 오후 4:55:15 
+C:\Users\vivPR\vshow-reconstruction\wilo-real-recon-02\scene\wilo_studio.html                                                    617775    2026-08-17 오후 4:57:49 
+C:\Users\vivPR\vshow-demo-assets\wilo                                                                                                      2026-08-18 오전 3:57:23 
+C:\Users\vivPR\vshow-demo-assets\wilo\booth                                                                                                2026-08-18 오전 3:57:24 
+C:\Users\vivPR\vshow-demo-assets\wilo\catalog                                                                                              2026-08-17 오전 2:59:45 
+C:\Users\vivPR\vshow-demo-assets\wilo\icons                                                                                                2026-08-17 오전 2:37:14 
+C:\Users\vivPR\vshow-demo-assets\wilo\manifests                                                                                            2026-08-17 오전 2:59:51 
+C:\Users\vivPR\vshow-demo-assets\wilo\optimized                                                                                            2026-08-17 오전 2:59:45 
+C:\Users\vivPR\vshow-demo-assets\wilo\products                                                                                             2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\quarantine_invalid                                                                                   2026-08-18 오전 3:57:23 
+C:\Users\vivPR\vshow-demo-assets\wilo\reference                                                                                            2026-08-17 오전 2:37:14 
+C:\Users\vivPR\vshow-demo-assets\wilo\resources                                                                                            2026-08-17 오전 2:37:14 
+C:\Users\vivPR\vshow-demo-assets\wilo\booth\01_front_hero.jpg                                                                    368084    2026-08-18 오전 3:57:24 
+C:\Users\vivPR\vshow-demo-assets\wilo\booth\02_front_center.jpg                                                                  379833    2026-08-18 오전 3:57:24 
+C:\Users\vivPR\vshow-demo-assets\wilo\booth\03_left_angle.jpg                                                                    391936    2026-08-18 오전 3:57:24 
+C:\Users\vivPR\vshow-demo-assets\wilo\booth\04_right_angle.jpg                                                                   418072    2026-08-18 오전 3:57:24 
+C:\Users\vivPR\vshow-demo-assets\wilo\booth\05_left_side.jpg                                                                     331003    2026-08-18 오전 3:57:24 
+C:\Users\vivPR\vshow-demo-assets\wilo\booth\06_right_side.jpg                                                                    387499    2026-08-18 오전 3:57:24 
+C:\Users\vivPR\vshow-demo-assets\wilo\booth\07_interior_view.jpg                                                                 373061    2026-08-18 오전 3:57:24 
+C:\Users\vivPR\vshow-demo-assets\wilo\booth\08_product_island.jpg                                                                402942    2026-08-18 오전 3:57:24 
+C:\Users\vivPR\vshow-demo-assets\wilo\booth\09_meeting_area.jpg                                                                  323145    2026-08-18 오전 3:57:24 
+C:\Users\vivPR\vshow-demo-assets\wilo\booth\10_display_screen.jpg                                                                419361    2026-08-18 오전 3:57:24 
+C:\Users\vivPR\vshow-demo-assets\wilo\booth\11_overhead_sign.jpg                                                                 432736    2026-08-18 오전 3:57:24 
+C:\Users\vivPR\vshow-demo-assets\wilo\booth\12_wide_overview.jpg                                                                 404162    2026-08-18 오전 3:57:24 
+C:\Users\vivPR\vshow-demo-assets\wilo\manifests\wilo_booth_manifest.json                                                         10357     2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\products\product_01.jpg                                                                    29877     2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\products\product_02.jpg                                                                    30133     2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\products\product_03.jpg                                                                    30389     2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\products\product_04.jpg                                                                    30645     2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\products\product_05.jpg                                                                    30901     2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\products\product_06.jpg                                                                    31157     2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\products\product_07.jpg                                                                    31413     2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\products\product_08.jpg                                                                    31669     2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\quarantine_invalid\01_front_hero.jpg                                                       4533      2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\quarantine_invalid\02_front_center.jpg                                                     4789      2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\quarantine_invalid\03_left_angle.jpg                                                       5045      2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\quarantine_invalid\04_right_angle.jpg                                                      5301      2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\quarantine_invalid\05_left_side.jpg                                                        5557      2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\quarantine_invalid\06_right_side.jpg                                                       5813      2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\quarantine_invalid\07_interior_view.jpg                                                    6069      2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\quarantine_invalid\08_product_island.jpg                                                   6325      2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\quarantine_invalid\09_meeting_area.jpg                                                     6581      2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\quarantine_invalid\10_display_screen.jpg                                                   6837      2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\quarantine_invalid\11_overhead_sign.jpg                                                    7093      2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\quarantine_invalid\12_wide_overview.jpg                                                    7349      2026-08-17 오전 3:21:06 
+C:\Users\vivPR\vshow-demo-assets\wilo\quarantine_invalid\INVALID_ASSET_MANIFEST.json                                             3288      2026-08-18 오전 3:57:23 
+
+
+
