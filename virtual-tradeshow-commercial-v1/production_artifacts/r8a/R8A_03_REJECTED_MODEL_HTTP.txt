@@ -1,0 +1,7 @@
+﻿
+URL                                                                                                         StatusCode
+---                                                                                                         ----------
+https://v-show-commercial-v1-production.up.railway.app/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz           
+
+
+
