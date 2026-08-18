@@ -2729,39 +2729,9 @@ app.get('/assets/demo/wilo/models/:filename', (req, res) => {
     }
   }
 
-  // If missing or LFS pointer (<1MB), stream directly from verified GitHub Release CDN
+  // If missing or LFS pointer (<1MB), redirect directly to high-speed verified GitHub Release CDN
   if (file === 'REAL_WILO_GAUSSIAN_FINAL.spz') {
-    try {
-      console.log('[MODEL_SYNC] Streaming REAL_WILO_GAUSSIAN_FINAL.spz from verified release CDN...');
-      const https = require('https');
-      const fetchRelease = (url) => {
-        const opts = { headers: { 'User-Agent': 'VShow-Server/1.0' } };
-        https.get(url, opts, (response) => {
-          if (response.statusCode === 302 || response.statusCode === 301) {
-            return fetchRelease(response.headers.location);
-          }
-          if (response.statusCode === 200) {
-            res.setHeader('Content-Type', 'application/octet-stream');
-            res.setHeader('Content-Length', response.headers['content-length'] || '111539801');
-            res.setHeader('Cache-Control', 'public, max-age=86400');
-            response.pipe(res);
-            try {
-              const fileStream = fs.createWriteStream(clientModelPath);
-              response.pipe(fileStream);
-            } catch (fsErr) {}
-          } else {
-            if (!res.headersSent) res.status(404).json({ error: '3D model asset not found.' });
-          }
-        }).on('error', (err) => {
-          if (!res.headersSent) res.status(500).json({ error: err.message });
-        });
-      };
-
-      fetchRelease(SPZ_DOWNLOAD_URL);
-      return;
-    } catch (e) {
-      console.error('[MODEL_SYNC_ERR]', e);
-    }
+    return res.redirect(302, SPZ_DOWNLOAD_URL);
   }
 
   res.status(404).json({ error: '3D model asset not found.' });
