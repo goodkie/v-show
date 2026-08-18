@@ -1,0 +1,86 @@
+[
+  {
+    "filename": "01_front_hero.jpg",
+    "size": 4533,
+    "sha256": "9f4bbb34372c47639cfe25c8b359d30e9ac677a087e047815446f5043e59fa9e",
+    "quarantineTimestamp": "2026-08-18T07:57:23Z",
+    "reason": "Under-100KB invalid production quality (4533 bytes)"
+  },
+  {
+    "filename": "02_front_center.jpg",
+    "size": 4789,
+    "sha256": "9e425f3dae3eca54376fbe3bd61690f5c642d5f95952712205759212c01dfc18",
+    "quarantineTimestamp": "2026-08-18T07:57:23Z",
+    "reason": "Under-100KB invalid production quality (4789 bytes)"
+  },
+  {
+    "filename": "03_left_angle.jpg",
+    "size": 5045,
+    "sha256": "b35de5f4aa786e84e57ac64a11b5edd2bfe9d1242ed58cac75194ed983816fad",
+    "quarantineTimestamp": "2026-08-18T07:57:23Z",
+    "reason": "Under-100KB invalid production quality (5045 bytes)"
+  },
+  {
+    "filename": "04_right_angle.jpg",
+    "size": 5301,
+    "sha256": "7cec082a9174f9a22034094acf7d90240cdcae3aaf77d6479326507e65772c31",
+    "quarantineTimestamp": "2026-08-18T07:57:23Z",
+    "reason": "Under-100KB invalid production quality (5301 bytes)"
+  },
+  {
+    "filename": "05_left_side.jpg",
+    "size": 5557,
+    "sha256": "2779eed0918a45e73eca9751c33d397cbeb85b7c130e28a51cc8f539271fb200",
+    "quarantineTimestamp": "2026-08-18T07:57:23Z",
+    "reason": "Under-100KB invalid production quality (5557 bytes)"
+  },
+  {
+    "filename": "06_right_side.jpg",
+    "size": 5813,
+    "sha256": "ba125c619d1fd9819a6aa89346790bbfd844c7122c303027740bbac3f680884c",
+    "quarantineTimestamp": "2026-08-18T07:57:23Z",
+    "reason": "Under-100KB invalid production quality (5813 bytes)"
+  },
+  {
+    "filename": "07_interior_view.jpg",
+    "size": 6069,
+    "sha256": "94c1ac1b8ca3c1d6b3168e472489fa36c7770fc38931772ecc1bdc0b6c7e2624",
+    "quarantineTimestamp": "2026-08-18T07:57:23Z",
+    "reason": "Under-100KB invalid production quality (6069 bytes)"
+  },
+  {
+    "filename": "08_product_island.jpg",
+    "size": 6325,
+    "sha256": "0b02532a03fb24ebb895676029759c10189e3f34a197f0bb55a9d879c2fdccf1",
+    "quarantineTimestamp": "2026-08-18T07:57:23Z",
+    "reason": "Under-100KB invalid production quality (6325 bytes)"
+  },
+  {
+    "filename": "09_meeting_area.jpg",
+    "size": 6581,
+    "sha256": "e1f229d65d116aea9a0541dc908295b5736de571c70d3884b63ba5371b6daca5",
+    "quarantineTimestamp": "2026-08-18T07:57:23Z",
+    "reason": "Under-100KB invalid production quality (6581 bytes)"
+  },
+  {
+    "filename": "10_display_screen.jpg",
+    "size": 6837,
+    "sha256": "ff0b04f90a08b94c60e7cab3a1a0ae7a6e73f08aad9e7fc389def9f1a1f1dad6",
+    "quarantineTimestamp": "2026-08-18T07:57:23Z",
+    "reason": "Under-100KB invalid production quality (6837 bytes)"
+  },
+  {
+    "filename": "11_overhead_sign.jpg",
+    "size": 7093,
+    "sha256": "8f868e246ccce6425a4f93fca5e79e99e2b8532d20c9a0022b2a2cf0b94cbaf1",
+    "quarantineTimestamp": "2026-08-18T07:57:23Z",
+    "reason": "Under-100KB invalid production quality (7093 bytes)"
+  },
+  {
+    "filename": "12_wide_overview.jpg",
+    "size": 7349,
+    "sha256": "362c4cdb3c7a311c3579b4ea0a85445793972db5e3440f1381954b69de68880d",
+    "quarantineTimestamp": "2026-08-18T07:57:23Z",
+    "reason": "Under-100KB invalid production quality (7349 bytes)"
+  }
+]
