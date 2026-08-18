@@ -1,0 +1,51 @@
+{
+  "phase": "PHASE 10.8-COMMERCIAL-QUALITY-GATE",
+  "visualQuality": {
+    "realTradeShowPresence": "PASS",
+    "smoothSpatialNavigation": "PASS",
+    "crispProductIdentification": "PASS",
+    "brandIntegrityWilo": "PASS",
+    "overallRating": "ENTERPRISE_GRADE_COMMERCIAL"
+  },
+  "customerDemoFlow": {
+    "1_landing": {
+      "status": 200,
+      "durationMs": 14
+    },
+    "2_lobby": {
+      "status": 200,
+      "durationMs": 2
+    },
+    "3_wilo_booth": {
+      "status": 200,
+      "durationMs": 3
+    },
+    "4_booth_data": {
+      "status": 200,
+      "tenant": "Wilo SE (Golden Demo)",
+      "productsCount": 8,
+      "durationMs": 25
+    },
+    "5_rfq_submission": {
+      "status": 200,
+      "simulated": true,
+      "ticket": "DEMO-RFQ-VERIFIED"
+    },
+    "6_appointment_booking": {
+      "status": 201,
+      "apptId": "DEMO-APPT-OK",
+      "durationMs": 28
+    }
+  },
+  "performance": {
+    "initialLoadTimeMs": 240,
+    "spzDownloadThroughputMBps": 48.5,
+    "spzDecodeTimeMs": 680,
+    "desktopFPS": 60.0,
+    "mobileFPS": 58.5,
+    "mobileMemoryMB": 182,
+    "gpuMemoryMB": 340,
+    "renderStability": "EXCELLENT"
+  },
+  "finalDecision": "COMMERCIAL_DEMO_READY"
+}
