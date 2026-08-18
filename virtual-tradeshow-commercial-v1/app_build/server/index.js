@@ -2677,17 +2677,22 @@ app.get('/assets/demo/wilo/products/:filename', (req, res) => {
 
 app.get('/assets/demo/wilo/models/:filename', (req, res) => {
   const file = req.params.filename;
-  const clientModelPath = path.join(WILO_CLIENT_ROOT, 'models', file);
-  if (fs.existsSync(clientModelPath)) {
-    res.setHeader('Content-Type', 'application/octet-stream');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    return res.sendFile(clientModelPath);
-  }
-  const globalModelPath = path.join(MODELS_DIR, file);
-  if (fs.existsSync(globalModelPath)) {
-    res.setHeader('Content-Type', 'application/octet-stream');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    return res.sendFile(globalModelPath);
+  const candidatePaths = [
+    path.join(WILO_CLIENT_ROOT, 'models', file),
+    path.join(__dirname, '..', 'client', 'assets', 'demo', 'wilo', 'models', file),
+    path.join(__dirname, '..', '..', 'app_build', 'client', 'assets', 'demo', 'wilo', 'models', file),
+    path.join(MODELS_DIR, file),
+    path.join(DATA_DIR, 'uploads', 'models', file),
+    path.join(DATA_DIR, 'uploads', 'organizations', 'org-wilo-golden-demo', 'booths', 'booth-wilo-golden-demo', 'models', 'WILO-GEOMETRY-60-01', file),
+    path.join(WILO_EXTERNAL_ROOT, 'models', file)
+  ];
+
+  for (const p of candidatePaths) {
+    if (fs.existsSync(p)) {
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.sendFile(p);
+    }
   }
   res.status(404).json({ error: '3D model asset not found.' });
 });

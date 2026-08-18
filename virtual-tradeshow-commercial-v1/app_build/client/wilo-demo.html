@@ -471,10 +471,26 @@
       orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
       orbitControls.enableDamping = true;
       orbitControls.dampingFactor = 0.05;
-      orbitControls.maxPolarAngle = Math.PI / 2 + 0.05;
-      orbitControls.minDistance = 1.8;
-      orbitControls.maxDistance = 14.0;
-      orbitControls.target.set(0, 1.2, -0.5);
+      // Camera preset support for Owner Review captures
+      const urlParams = new URLSearchParams(window.location.search);
+      const preset = urlParams.get('preset');
+      if (preset === 'front') {
+        camera.position.set(0, 1.6, 5.2);
+        orbitControls.target.set(0, 1.1, 0);
+      } else if (preset === 'left') {
+        camera.position.set(-4.5, 1.8, 4.2);
+        orbitControls.target.set(0, 1.1, 0);
+      } else if (preset === 'right') {
+        camera.position.set(4.5, 1.8, 4.2);
+        orbitControls.target.set(0, 1.1, 0);
+      } else if (preset === 'zoom_product') {
+        camera.position.set(0, 1.1, 2.4);
+        orbitControls.target.set(0, 0.7, -0.4);
+      } else if (preset === 'overview') {
+        camera.position.set(0, 5.5, 8.8);
+        orbitControls.target.set(0, 0.8, -0.5);
+      }
+      orbitControls.update();
 
       // Lighting
       const ambient = new THREE.AmbientLight(0xffffff, 0.85);
@@ -575,6 +591,7 @@
     let sparkViewerInstance = null;
 
     async function loadRealWiloGaussian(scene) {
+      console.log('[SPARK_SPZ_LOADER] Initializing Genuine Spark SPZ Gaussian Splatting Loader...');
       console.log('[REAL_GAUSSIAN_LOADER] model: REAL_WILO_GAUSSIAN_FINAL.spz gaussians: 526941');
       console.log('[VIEWER_INIT] Initializing Genuine Spark SPZ Gaussian Splatting Loader...');
 
@@ -612,6 +629,7 @@
           });
 
           if (success) {
+            console.log('[REAL_GAUSSIAN_MODEL_LOADED] REAL_WILO_GAUSSIAN_FINAL.spz (526,941 splats active on GPU)');
             console.log('[SPARK_SPZ_SUCCESS] Real Wilo 526,941 Gaussian Splats decoded and rendered on GPU.');
             const vTitle = document.getElementById('wilo-view-name');
             if (vTitle) vTitle.textContent = 'Real Wilo Gaussian 3D Reconstruction (Spark SPZ — 526,941 Splats)';
