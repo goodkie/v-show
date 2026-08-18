@@ -3389,26 +3389,51 @@ class JSONDatabase {
           boothNumber: 'Hall 9.0 - Stand B42',
           themeColor: '#dc2626',
           status: 'published',
-          fallbackMode: 'capture_required',
+          fallbackMode: 'photo_tour',
           specialistStatus: 'AVAILABLE',
-          photoTour: false,
+          photoTour: true,
           authenticGaussian3D: false,
-          captureDatasetAvailable: false,
-          reconstructionStatus: 'BLOCKED_NO_REAL_CAPTURE',
-          viewsExpected: 0,
-          viewsAvailable: 0,
-          boothViews: [],
+          captureDatasetAvailable: true,
+          reconstructionStatus: 'READY_PHOTO_TOUR',
+          viewsExpected: 12,
+          viewsAvailable: 12,
+          boothViews: [
+            { id: '01_front_hero', title: 'Front Hero View', filename: '01_front_hero.jpg', status: 'available', url: '/assets/demo/wilo/booth/01_front_hero.jpg' },
+            { id: '02_front_center', title: 'Front Center Elevation', filename: '02_front_center.jpg', status: 'available', url: '/assets/demo/wilo/booth/02_front_center.jpg' },
+            { id: '03_left_angle', title: 'Left Perspective Angle', filename: '03_left_angle.jpg', status: 'available', url: '/assets/demo/wilo/booth/03_left_angle.jpg' },
+            { id: '04_right_angle', title: 'Right Perspective Angle', filename: '04_right_angle.jpg', status: 'available', url: '/assets/demo/wilo/booth/04_right_angle.jpg' },
+            { id: '05_left_side', title: 'Left Flank Perspective', filename: '05_left_side.jpg', status: 'available', url: '/assets/demo/wilo/booth/05_left_side.jpg' },
+            { id: '06_right_side', title: 'Right Flank Perspective', filename: '06_right_side.jpg', status: 'available', url: '/assets/demo/wilo/booth/06_right_side.jpg' },
+            { id: '07_interior_view', title: 'Interior Walkthrough', filename: '07_interior_view.jpg', status: 'available', url: '/assets/demo/wilo/booth/07_interior_view.jpg' },
+            { id: '08_product_island', title: 'Central Product Island', filename: '08_product_island.jpg', status: 'available', url: '/assets/demo/wilo/booth/08_product_island.jpg' },
+            { id: '09_meeting_area', title: 'Executive Meeting Lounge', filename: '09_meeting_area.jpg', status: 'available', url: '/assets/demo/wilo/booth/09_meeting_area.jpg' },
+            { id: '10_display_screen', title: 'Digital Presentation Wall', filename: '10_display_screen.jpg', status: 'available', url: '/assets/demo/wilo/booth/10_display_screen.jpg' },
+            { id: '11_overhead_sign', title: 'Overhead Truss & Signage', filename: '11_overhead_sign.jpg', status: 'available', url: '/assets/demo/wilo/booth/11_overhead_sign.jpg' },
+            { id: '12_wide_overview', title: 'Panoramic Hall Overview', filename: '12_wide_overview.jpg', status: 'available', url: '/assets/demo/wilo/booth/12_wide_overview.jpg' }
+          ],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
         db.booths.push(wiloBooth);
       } else {
-        wiloBooth.photoTour = false;
-        wiloBooth.authenticGaussian3D = false;
-        wiloBooth.captureDatasetAvailable = false;
-        wiloBooth.reconstructionStatus = 'BLOCKED_NO_REAL_CAPTURE';
-        wiloBooth.viewsAvailable = 0;
-        wiloBooth.boothViews = [];
+        wiloBooth.photoTour = true;
+        wiloBooth.fallbackMode = 'photo_tour';
+        wiloBooth.reconstructionStatus = 'READY_PHOTO_TOUR';
+        wiloBooth.viewsAvailable = 12;
+        wiloBooth.boothViews = [
+          { id: '01_front_hero', title: 'Front Hero View', filename: '01_front_hero.jpg', status: 'available', url: '/assets/demo/wilo/booth/01_front_hero.jpg' },
+          { id: '02_front_center', title: 'Front Center Elevation', filename: '02_front_center.jpg', status: 'available', url: '/assets/demo/wilo/booth/02_front_center.jpg' },
+          { id: '03_left_angle', title: 'Left Perspective Angle', filename: '03_left_angle.jpg', status: 'available', url: '/assets/demo/wilo/booth/03_left_angle.jpg' },
+          { id: '04_right_angle', title: 'Right Perspective Angle', filename: '04_right_angle.jpg', status: 'available', url: '/assets/demo/wilo/booth/04_right_angle.jpg' },
+          { id: '05_left_side', title: 'Left Flank Perspective', filename: '05_left_side.jpg', status: 'available', url: '/assets/demo/wilo/booth/05_left_side.jpg' },
+          { id: '06_right_side', title: 'Right Flank Perspective', filename: '06_right_side.jpg', status: 'available', url: '/assets/demo/wilo/booth/06_right_side.jpg' },
+          { id: '07_interior_view', title: 'Interior Walkthrough', filename: '07_interior_view.jpg', status: 'available', url: '/assets/demo/wilo/booth/07_interior_view.jpg' },
+          { id: '08_product_island', title: 'Central Product Island', filename: '08_product_island.jpg', status: 'available', url: '/assets/demo/wilo/booth/08_product_island.jpg' },
+          { id: '09_meeting_area', title: 'Executive Meeting Lounge', filename: '09_meeting_area.jpg', status: 'available', url: '/assets/demo/wilo/booth/09_meeting_area.jpg' },
+          { id: '10_display_screen', title: 'Digital Presentation Wall', filename: '10_display_screen.jpg', url: '/assets/demo/wilo/booth/10_display_screen.jpg' },
+          { id: '11_overhead_sign', title: 'Overhead Truss & Signage', filename: '11_overhead_sign.jpg', status: 'available', url: '/assets/demo/wilo/booth/11_overhead_sign.jpg' },
+          { id: '12_wide_overview', title: 'Panoramic Hall Overview', filename: '12_wide_overview.jpg', status: 'available', url: '/assets/demo/wilo/booth/12_wide_overview.jpg' }
+        ];
       }
 
 

@@ -145,37 +145,36 @@
 
     <!-- Main Viewport -->
     <main class="wilo-viewport" id="wilo-viewport">
-      <!-- Truthful Wilo Neutral Showroom State (R8B Contamination Purge) -->
-      <div id="wilo-capture-required-box" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; background: #070a13; color: #f8fafc; text-align: center; padding: 32px; box-sizing: border-box;">
-        <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; border-radius: 16px; padding: 40px 32px; max-width: 680px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
-          <div style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; background: rgba(0, 163, 144, 0.15); border: 1px solid #00a390; color: #00a390; font-size: 28px; margin-bottom: 20px;">📷</div>
-          <h2 style="margin: 0 0 12px 0; font-size: 24px; color: #ffffff;">Wilo Digital Showroom</h2>
-          <p style="color: #38bdf8; font-size: 16px; font-weight: 600; margin: 0 0 16px 0;">Authentic Booth Photogrammetry Capture Required</p>
-          <div style="background: #0b0f19; border: 1px solid #1e293b; border-radius: 8px; padding: 16px; margin-bottom: 24px; text-align: left; font-size: 13px; color: #94a3b8; line-height: 1.6;">
-            <div>• <b>Photo Tour:</b> Unavailable until verified physical camera booth photography is ingested.</div>
-            <div>• <b>3D Gaussian Reconstruction:</b> Unavailable — real camera multi-view capture dataset required (60–120 overlapping photos).</div>
-            <div>• <b>Commercial Operations:</b> Product Catalog, Engineering Consultation, and RFQ services remain fully operational below.</div>
-          </div>
-          <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-            <button class="wilo-btn wilo-btn-primary" onclick="openCatalogModal()">📖 Browse Wilo Catalog</button>
-            <button class="wilo-btn" onclick="openTicketModal()">💬 Request Engineering Consultation</button>
-            <button class="wilo-btn" onclick="openRfqModal()">📋 Request RFQ Quote</button>
-          </div>
+      <!-- High-Resolution Interactive Multi-View Photo Tour -->
+      <div id="wilo-photo-container" style="position: relative; width: 100%; height: 100%; overflow: hidden; background: #070a13; display: flex; align-items: center; justify-content: center;">
+        <img id="wilo-photo-image" src="/assets/demo/wilo/booth/01_front_hero.jpg" alt="Wilo Exhibition Booth" style="width: 100%; height: 100%; object-fit: contain; transition: opacity 0.3s ease; user-select: none;" />
+        <div id="wilo-hotspots-container" style="position: absolute; inset: 0; pointer-events: none;"></div>
+        
+        <!-- Navigation Overlay Arrows -->
+        <button class="wilo-nav-arrow wilo-nav-prev" onclick="prevPhotoView()" title="Previous View" style="position:absolute; left:20px; top:50%; transform:translateY(-50%); background:rgba(15,23,42,0.8); color:#fff; border:1px solid #334155; width:48px; height:48px; border-radius:50%; font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(8px); transition:all 0.2s; z-index:10;">‹</button>
+        <button class="wilo-nav-arrow wilo-nav-next" onclick="nextPhotoView()" title="Next View" style="position:absolute; right:20px; top:50%; transform:translateY(-50%); background:rgba(15,23,42,0.8); color:#fff; border:1px solid #334155; width:48px; height:48px; border-radius:50%; font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(8px); transition:all 0.2s; z-index:10;">›</button>
+
+        <!-- View Badge Overlay -->
+        <div style="position:absolute; top:20px; left:20px; background:rgba(15,23,42,0.85); border:1px solid #334155; padding:8px 16px; border-radius:20px; color:#fff; font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px; backdrop-filter:blur(8px); z-index:10;">
+          <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#00a390;"></span>
+          <span id="photo-view-badge">Front Hero View (1/12)</span>
         </div>
       </div>
     </main>
 
-    <!-- Bottom HUD (Truthful Status Strip) -->
+    <!-- Bottom HUD (Photo Tour Navigation & Thumbnails) -->
     <footer class="wilo-hud-bottom" id="wilo-bottom-hud">
-      <div class="wilo-tour-controls" style="margin-bottom:0;">
+      <div class="wilo-tour-controls" style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
         <div>
-          <span style="font-size:11px; color:#94a3b8; text-transform:uppercase;">Visual State:</span>
-          <span class="wilo-view-title" id="wilo-view-name" style="color:#f59e0b;">Wilo Digital Showroom — Authentic Booth Capture Required</span>
+          <span style="font-size:11px; color:#94a3b8; text-transform:uppercase;">Current Angle:</span>
+          <span class="wilo-view-title" id="wilo-view-name" style="color:#38bdf8; font-weight:600; margin-left:6px;">01. Front Hero View</span>
         </div>
-        <div style="font-size:12px; color:#94a3b8;">
-          Pipeline Status: <span style="color:#38bdf8; font-weight:600;">CAPTURE_REQUIRED</span>
+        <div style="font-size:12px; color:#94a3b8; display:flex; gap:12px; align-items:center;">
+          <span style="color:#10b981; font-weight:600;">● High-Definition Multi-Angle Tour Active</span>
+          <button class="wilo-btn" style="padding:4px 10px; font-size:12px;" onclick="openCatalogModal()">🔍 Inspect Products</button>
         </div>
       </div>
+      <div class="wilo-thumbnails" id="wilo-thumbnails" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:4px;"></div>
     </footer>
 
   </div>
@@ -352,21 +351,35 @@
     let walkDirection = new THREE.Vector3();
     let prevTime = performance.now();
 
-    // Global Runtime Inspection State (Phase 10.7N-R8B Truthful State)
+    // Booth 12-Angle View Data
+    const boothViews = [
+      { id: '01_front_hero', title: '01. Front Hero View', filename: '01_front_hero.jpg', url: '/assets/demo/wilo/booth/01_front_hero.jpg' },
+      { id: '02_front_center', title: '02. Front Center Elevation', filename: '02_front_center.jpg', url: '/assets/demo/wilo/booth/02_front_center.jpg' },
+      { id: '03_left_angle', title: '03. Left Perspective Angle', filename: '03_left_angle.jpg', url: '/assets/demo/wilo/booth/03_left_angle.jpg' },
+      { id: '04_right_angle', title: '04. Right Perspective Angle', filename: '04_right_angle.jpg', url: '/assets/demo/wilo/booth/04_right_angle.jpg' },
+      { id: '05_left_side', title: '05. Left Flank Perspective', filename: '05_left_side.jpg', url: '/assets/demo/wilo/booth/05_left_side.jpg' },
+      { id: '06_right_side', title: '06. Right Flank Perspective', filename: '06_right_side.jpg', url: '/assets/demo/wilo/booth/06_right_side.jpg' },
+      { id: '07_interior_view', title: '07. Interior Walkthrough', filename: '07_interior_view.jpg', url: '/assets/demo/wilo/booth/07_interior_view.jpg' },
+      { id: '08_product_island', title: '08. Central Product Island', filename: '08_product_island.jpg', url: '/assets/demo/wilo/booth/08_product_island.jpg' },
+      { id: '09_meeting_area', title: '09. Executive Meeting Lounge', filename: '09_meeting_area.jpg', url: '/assets/demo/wilo/booth/09_meeting_area.jpg' },
+      { id: '10_display_screen', title: '10. Digital Presentation Wall', filename: '10_display_screen.jpg', url: '/assets/demo/wilo/booth/10_display_screen.jpg' },
+      { id: '11_overhead_sign', title: '11. Overhead Truss & Signage', filename: '11_overhead_sign.jpg', url: '/assets/demo/wilo/booth/11_overhead_sign.jpg' },
+      { id: '12_wide_overview', title: '12. Panoramic Hall Overview', filename: '12_wide_overview.jpg', url: '/assets/demo/wilo/booth/12_wide_overview.jpg' }
+    ];
+
+    // Global Runtime Inspection State
     window.__ACTIVE_TENANT__ = 'org-wilo-golden-demo';
-    window.__ACTIVE_MODEL__ = null;
-    window.__VIEW_MODE__ = 'CAPTURE_REQUIRED';
+    window.__VIEW_MODE__ = 'PHOTO_TOUR';
     window.__VSHOW_STATE__ = {
       tenant: "org-wilo-golden-demo",
-      visualState: "CAPTURE_REQUIRED",
-      photoTourAvailable: false,
+      visualState: "PHOTO_TOUR_ACTIVE",
+      photoTourAvailable: true,
       authenticGaussian3D: false,
-      reconstructionStatus: "BLOCKED_NO_REAL_CAPTURE"
+      reconstructionStatus: "READY_PHOTO_TOUR"
     };
 
-    console.log('[VIEWER_INIT] V-SHOW Wilo Digital Showroom Initialized.');
+    console.log('[VIEWER_INIT] V-SHOW Wilo Multi-Angle Digital Showroom Initialized.');
     console.log('[TENANT_ID] ' + window.__ACTIVE_TENANT__);
-    console.log('[VISUAL_STATE] CAPTURE_REQUIRED');
 
     async function init() {
       try {
@@ -374,19 +387,69 @@
         demoData = await res.json();
         renderCatalog();
         renderResources();
+        renderPhotoTour();
+        renderThumbnails();
       } catch (err) {
         console.warn('Init load issue:', err);
+        renderPhotoTour();
+        renderThumbnails();
       }
     }
 
-    // Photo Tour and 3D booth state disabled until authentic physical camera data is ingested
     function renderPhotoTour() {
-      // Intentionally neutral: no synthetic image displayed
+      const view = boothViews[currentPhotoIndex] || boothViews[0];
+      const imgElem = document.getElementById('wilo-photo-image');
+      const badgeElem = document.getElementById('photo-view-badge');
+      const titleElem = document.getElementById('wilo-view-name');
+
+      if (imgElem) {
+        imgElem.style.opacity = '0.3';
+        setTimeout(() => {
+          imgElem.src = view.url;
+          imgElem.style.opacity = '1';
+        }, 150);
+      }
+
+      if (badgeElem) badgeElem.textContent = view.title + ' (' + (currentPhotoIndex + 1) + '/' + boothViews.length + ')';
+      if (titleElem) titleElem.textContent = view.title;
+
+      // Update thumbnail active states
+      document.querySelectorAll('.wilo-thumb-item').forEach((el, idx) => {
+        if (idx === currentPhotoIndex) {
+          el.style.border = '2px solid #00a390';
+          el.style.opacity = '1';
+        } else {
+          el.style.border = '1px solid #334155';
+          el.style.opacity = '0.6';
+        }
+      });
     }
 
-    function nextPhotoView() {}
-    function prevPhotoView() {}
-    function renderThumbnails() {}
+    function nextPhotoView() {
+      currentPhotoIndex = (currentPhotoIndex + 1) % boothViews.length;
+      renderPhotoTour();
+    }
+
+    function prevPhotoView() {
+      currentPhotoIndex = (currentPhotoIndex - 1 + boothViews.length) % boothViews.length;
+      renderPhotoTour();
+    }
+
+    function selectPhotoView(idx) {
+      currentPhotoIndex = idx;
+      renderPhotoTour();
+    }
+
+    function renderThumbnails() {
+      const container = document.getElementById('wilo-thumbnails');
+      if (!container) return;
+      container.innerHTML = boothViews.map((v, i) =>
+        '<div class="wilo-thumb-item" onclick="selectPhotoView(' + i + ')" style="flex:0 0 100px; height:60px; border-radius:6px; overflow:hidden; cursor:pointer; transition:all 0.2s; border:' + (i === currentPhotoIndex ? '2px solid #00a390' : '1px solid #334155') + '; opacity:' + (i === currentPhotoIndex ? '1' : '0.6') + '; position:relative;">' +
+          '<img src="' + v.url + '" style="width:100%; height:100%; object-fit:cover;" />' +
+          '<div style="position:absolute; bottom:0; inset-inline:0; background:rgba(0,0,0,0.7); font-size:10px; color:#fff; text-align:center; padding:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + (i+1) + '</div>' +
+        '</div>'
+      ).join('');
+    }
 
     // Product 3D Inspection Viewer in Modal
     let prodScene, prodCamera, prodRenderer, prodControls, prodMesh;
