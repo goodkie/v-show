@@ -1,0 +1,16 @@
+{
+  "gate": "PHASE_10_7N_R9B_AUTHENTIC_CAPTURE_ACCEPTANCE",
+  "executedAt": "2026-08-18T12:15:25Z",
+  "targetDirectory": "data/capture-ingest/wilo/incoming",
+  "totalFiles": 0,
+  "extensions": [],
+  "totalSizeBytes": 0,
+  "totalSizeMB": 0.0,
+  "directoryStructure": {
+    "incoming": "data/capture-ingest/wilo/incoming",
+    "accepted": "data/capture-ingest/wilo/accepted",
+    "rejected": "data/capture-ingest/wilo/rejected",
+    "manifests": "data/capture-ingest/wilo/manifests"
+  },
+  "status": "WAITING_FOR_UPLOAD"
+}
