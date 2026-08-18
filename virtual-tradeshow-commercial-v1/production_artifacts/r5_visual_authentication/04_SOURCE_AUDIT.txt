@@ -1,0 +1,30 @@
+============================================================
+PHASE 10.7N-R5 — SOURCE CODE AUDIT
+============================================================
+
+1. SPARK / SPZ / VIEWER BINDINGS:
+  - <script src="/precision-viewer.js"></script>: PRESENT
+  - PrecisionSplatViewer instantiation: PRESENT
+  - Model URL (REAL_WILO_GAUSSIAN_FINAL.spz): PRESENT
+
+2. FAKE RECONSTRUCTION SEARCH:
+  - Math.random() + THREE.Points: CLEAN (PASS)
+  - THREE.Points(geometry): CLEAN (PASS)
+  - Float32Array(pointCount): CLEAN (PASS)
+
+3. CODE EVIDENCE EXTRACT (wilo-demo.html loadRealWiloGaussian):
+------------------------------------------------------------
+async function loadRealWiloGaussian(scene) {
+  console.log('[SPARK_SPZ_LOADER] Initializing Genuine Spark SPZ Gaussian Splatting Loader...');
+  console.log('[REAL_GAUSSIAN_LOADER] model: REAL_WILO_GAUSSIAN_FINAL.spz gaussians: 526941');
+  window.__VSHOW_STATE__ = {
+    tenant: "org-wilo-golden-demo",
+    model: "REAL_WILO_GAUSSIAN_FINAL.spz",
+    renderer: "SPARK",
+    fakeRenderer: false
+  };
+  const modelUrl = '/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz';
+  sparkViewerInstance = new PrecisionSplatViewer({ ... });
+  const success = await sparkViewerInstance.load({ assetUrl: modelUrl, format: 'spz', gaussians: 526941 });
+}
+------------------------------------------------------------

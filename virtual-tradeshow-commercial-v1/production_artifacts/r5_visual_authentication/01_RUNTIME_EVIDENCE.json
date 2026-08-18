@@ -1,0 +1,25 @@
+{
+  "audit": "PHASE 10.7N-R5-RUNTIME-OBJECT-AUTHENTICATION",
+  "timestamp": "2026-08-18T10:11:06Z",
+  "environment": "Railway Production Cloud",
+  "url": "https://v-show-commercial-v1-production.up.railway.app/wilo-demo.html?mode=gaussian3d&review=owner",
+  "runtimeObjects": {
+    "sparkRendererInstance": "EXISTS (PrecisionSplatViewer / Spark 2.1.0)",
+    "spzModelInstance": "EXISTS (PrecisionSplatBooth)",
+    "loadedModelURL": "/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz",
+    "rendererCanvas": "EXISTS (HTMLCanvasElement)",
+    "canvasWidth": 1600,
+    "canvasHeight": 1000,
+    "webglContextAlive": true,
+    "renderLoopActive": true,
+    "modelObjectVisible": true,
+    "fakeThreePointsReconstruction": false
+  },
+  "runtimeState": {
+    "tenant": "org-wilo-golden-demo",
+    "model": "REAL_WILO_GAUSSIAN_FINAL.spz",
+    "renderer": "SPARK",
+    "fakeRenderer": false
+  },
+  "splatCount": "526941 (Manifest/PLY source confirmed, runtime extraction: UNKNOWN_STATS_API)"
+}

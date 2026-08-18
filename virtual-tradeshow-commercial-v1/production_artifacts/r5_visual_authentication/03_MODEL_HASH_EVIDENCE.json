@@ -1,0 +1,20 @@
+{
+  "step0_local": {
+    "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\client\\assets\\demo\\wilo\\models\\REAL_WILO_GAUSSIAN_FINAL.spz",
+    "exists": true,
+    "sizeBytes": 111539801,
+    "sha256": "FC80E5192CE1C79196E51414E0739524C9E191092C1719829AB414D0E73A32EE",
+    "expectedSize": 111539801,
+    "expectedSha256": "FC80E5192CE1C79196E51414E0739524C9E191092C1719829AB414D0E73A32EE",
+    "pass": true
+  },
+  "step1_production": {
+    "url": "https://v-show-commercial-v1-production.up.railway.app/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz",
+    "downloadedSizeBytes": 111539801,
+    "downloadedSha256": "FC80E5192CE1C79196E51414E0739524C9E191092C1719829AB414D0E73A32EE",
+    "downloadDurationSeconds": 93.42,
+    "byteSizeMatch": true,
+    "sha256Match": true,
+    "pass": true
+  }
+}

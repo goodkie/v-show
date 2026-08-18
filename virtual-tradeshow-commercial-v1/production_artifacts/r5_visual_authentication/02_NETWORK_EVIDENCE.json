@@ -1,0 +1,10 @@
+{
+  "audit": "PHASE 10.7N-R5-NETWORK-EVIDENCE",
+  "requestUrl": "https://v-show-commercial-v1-production.up.railway.app/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz",
+  "httpStatus": 200,
+  "contentType": "application/octet-stream",
+  "contentLength": 111539801,
+  "transferredBytes": 111539801,
+  "expectedModel": "REAL_WILO_GAUSSIAN_FINAL.spz",
+  "modelMatched": true
+}
