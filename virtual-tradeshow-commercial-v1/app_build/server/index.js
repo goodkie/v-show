@@ -2675,6 +2675,23 @@ app.get('/assets/demo/wilo/products/:filename', (req, res) => {
   res.redirect(`/assets/demo/${file.replace('.jpg', '.svg')}`);
 });
 
+app.get('/assets/demo/wilo/models/:filename', (req, res) => {
+  const file = req.params.filename;
+  const clientModelPath = path.join(WILO_CLIENT_ROOT, 'models', file);
+  if (fs.existsSync(clientModelPath)) {
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.sendFile(clientModelPath);
+  }
+  const globalModelPath = path.join(MODELS_DIR, file);
+  if (fs.existsSync(globalModelPath)) {
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.sendFile(globalModelPath);
+  }
+  res.status(404).json({ error: '3D model asset not found.' });
+});
+
 app.get('/api/public/wilo-demo/manifest', (req, res) => {
   const clientManifest = path.join(WILO_CLIENT_ROOT, 'manifests', 'wilo_booth_manifest.json');
   if (fs.existsSync(clientManifest)) {

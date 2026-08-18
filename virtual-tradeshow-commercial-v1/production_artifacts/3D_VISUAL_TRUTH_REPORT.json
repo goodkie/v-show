@@ -1,0 +1,28 @@
+{
+  "audit": "PHASE 10.7N-3D-VISUAL-TRUTH-CHECK",
+  "modelAsset": {
+    "url": "/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz",
+    "httpStatus": 200,
+    "contentType": "application/octet-stream",
+    "sizeBytes": 111539801,
+    "gaussianCount": 526941,
+    "status": "PASS"
+  },
+  "viewerRuntime": {
+    "sparkInitialized": "PASS",
+    "modelDownloaded": "PASS",
+    "firstSplatVisible": "PASS",
+    "orbitControls": "PASS"
+  },
+  "visualReview": {
+    "wiloBoothGeometry": "PASS",
+    "receptionCounter": "PASS",
+    "pumpIslands": "PASS",
+    "overheadSignage": "PASS",
+    "lighting": "PASS",
+    "floor": "PASS",
+    "noPrimitiveBlocks": "PASS",
+    "noPlaceholderCylinder": "PASS"
+  },
+  "realWilo3DConfirmed": true
+}

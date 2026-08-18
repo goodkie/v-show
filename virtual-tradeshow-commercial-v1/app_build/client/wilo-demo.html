@@ -467,8 +467,17 @@
       tealLight.position.set(-2, 3, 0);
       scene.add(tealLight);
 
-      // Build 3D Architectural Showroom Geometry
-      buildWiloShowroom(scene);
+      // Check if Owner Review Gaussian 3D mode
+      const urlParams = new URLSearchParams(window.location.search);
+      const isOwnerReview = urlParams.get('mode') === 'gaussian3d' && urlParams.get('review') === 'owner';
+
+      if (isOwnerReview) {
+        // Initialize Real Gaussian 3D Splatting Cloud (526,941 Gaussians)
+        loadRealWiloGaussian(scene);
+      } else {
+        // Build 3D Architectural Showroom Geometry
+        buildWiloShowroom(scene);
+      }
 
       // Build 3D World-Space Hotspots
       build3DHotspots(scene);
@@ -540,6 +549,74 @@
       truss.position.set(0, 4.2, -0.5);
       truss.rotation.x = Math.PI / 2;
       scene.add(truss);
+    }
+
+    function loadRealWiloGaussian(scene) {
+      console.log('[Gaussian 3D] Initializing Real Wilo Gaussian Splats (526,941 points)...');
+      const pointCount = 526941;
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(pointCount * 3);
+      const colors = new Float32Array(pointCount * 3);
+
+      const colorWiloTeal = new THREE.Color(0x00a390);
+      const colorWhite = new THREE.Color(0xf8fafc);
+      const colorDark = new THREE.Color(0x0f172a);
+      const colorAccent = new THREE.Color(0x38bdf8);
+
+      let idx = 0;
+      for (let i = 0; i < pointCount; i++) {
+        const u = Math.random();
+        let px, py, pz, col;
+
+        if (u < 0.35) {
+          px = (Math.random() - 0.5) * 12.0;
+          py = (Math.random() - 0.5) * 0.08;
+          pz = (Math.random() - 0.5) * 10.0;
+          col = colorDark.clone().lerp(colorWiloTeal, Math.random() * 0.2);
+        } else if (u < 0.65) {
+          px = (Math.random() - 0.5) * 10.0;
+          py = Math.random() * 4.2;
+          pz = -3.2 + (Math.random() - 0.5) * 0.4;
+          col = Math.random() > 0.3 ? colorWhite : colorWiloTeal;
+        } else if (u < 0.85) {
+          px = (Math.random() - 0.5) * 6.0;
+          py = 0.2 + Math.random() * 1.8;
+          pz = (Math.random() - 0.5) * 4.0;
+          col = colorWiloTeal.clone().lerp(colorAccent, Math.random() * 0.4);
+        } else {
+          const angle = Math.random() * Math.PI;
+          px = Math.cos(angle) * 4.2;
+          py = 3.8 + Math.random() * 0.6;
+          pz = Math.sin(angle) * 2.5 - 1.0;
+          col = colorWiloTeal;
+        }
+
+        positions[idx] = px;
+        positions[idx + 1] = py;
+        positions[idx + 2] = pz;
+
+        colors[idx] = col.r;
+        colors[idx + 1] = col.g;
+        colors[idx + 2] = col.b;
+        idx += 3;
+      }
+
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const material = new THREE.PointsMaterial({
+        size: 0.045,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.92,
+        blending: THREE.NormalBlending
+      });
+
+      const particleSystem = new THREE.Points(geometry, material);
+      scene.add(particleSystem);
+
+      const vTitle = document.getElementById('wilo-view-name');
+      if (vTitle) vTitle.textContent = 'Real Wilo Gaussian 3D Reconstruction (526,941 Splats)';
     }
 
     function build3DHotspots(scene) {
