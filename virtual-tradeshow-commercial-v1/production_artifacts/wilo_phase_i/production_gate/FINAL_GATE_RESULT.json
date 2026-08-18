@@ -1,0 +1,18 @@
+{
+  "datasetId": "WILO-GEOMETRY-60-01",
+  "reconstructionId": "WILO-REAL-RECON-02",
+  "gates": {
+    "validGaussianPly": false,
+    "sparkDecode": false,
+    "assetAB": false,
+    "corruptFallback": true,
+    "productionPersistence": false,
+    "visualQA": false
+  },
+  "visualScore": null,
+  "ownerApproval": "pending",
+  "technicalGatePassed": false,
+  "final3DSwitchAllowed": false,
+  "publicDefaultMode": "PHOTO_TOUR",
+  "failureReason": "Modal GPU compute workspace disabled (ac-GnJcr7PSMINGcnaqdDI4P8 is disabled); stopped before unintended cash charges per safety invariant"
+}

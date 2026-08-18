@@ -1,0 +1,6 @@
+{
+  "gate": "GATE_01_VALID_GAUSSIAN_PLY",
+  "passed": false,
+  "reason": "Modal GPU compute workspace disabled (ac-GnJcr7PSMINGcnaqdDI4P8 is disabled); Splatfacto training halted to prevent cash charges.",
+  "evaluatedAt": "2026-08-17T20:53:00Z"
+}
