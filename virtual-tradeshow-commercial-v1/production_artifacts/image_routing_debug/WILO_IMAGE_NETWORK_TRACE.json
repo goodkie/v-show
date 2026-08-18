@@ -1,0 +1,103 @@
+{
+  "audit": "PHASE 10.7N-IMAGE-ROUTING-DEBUG",
+  "totalAssets": 12,
+  "allDirectLoadsWorking": true,
+  "trace": [
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/01_front_hero.jpg",
+      "filename": "01_front_hero.jpg",
+      "status": 200,
+      "contentType": "image/jpeg",
+      "bytes": 368084,
+      "directLoadSuccess": true
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/02_front_center.jpg",
+      "filename": "02_front_center.jpg",
+      "status": 200,
+      "contentType": "image/jpeg",
+      "bytes": 379833,
+      "directLoadSuccess": true
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/03_left_angle.jpg",
+      "filename": "03_left_angle.jpg",
+      "status": 200,
+      "contentType": "image/jpeg",
+      "bytes": 391936,
+      "directLoadSuccess": true
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/04_right_angle.jpg",
+      "filename": "04_right_angle.jpg",
+      "status": 200,
+      "contentType": "image/jpeg",
+      "bytes": 418072,
+      "directLoadSuccess": true
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/05_left_side.jpg",
+      "filename": "05_left_side.jpg",
+      "status": 200,
+      "contentType": "image/jpeg",
+      "bytes": 331003,
+      "directLoadSuccess": true
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/06_right_side.jpg",
+      "filename": "06_right_side.jpg",
+      "status": 200,
+      "contentType": "image/jpeg",
+      "bytes": 387499,
+      "directLoadSuccess": true
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/07_interior_view.jpg",
+      "filename": "07_interior_view.jpg",
+      "status": 200,
+      "contentType": "image/jpeg",
+      "bytes": 373061,
+      "directLoadSuccess": true
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/08_product_island.jpg",
+      "filename": "08_product_island.jpg",
+      "status": 200,
+      "contentType": "image/jpeg",
+      "bytes": 402942,
+      "directLoadSuccess": true
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/09_meeting_area.jpg",
+      "filename": "09_meeting_area.jpg",
+      "status": 200,
+      "contentType": "image/jpeg",
+      "bytes": 323145,
+      "directLoadSuccess": true
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/10_display_screen.jpg",
+      "filename": "10_display_screen.jpg",
+      "status": 200,
+      "contentType": "image/jpeg",
+      "bytes": 419361,
+      "directLoadSuccess": true
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/11_overhead_sign.jpg",
+      "filename": "11_overhead_sign.jpg",
+      "status": 200,
+      "contentType": "image/jpeg",
+      "bytes": 432736,
+      "directLoadSuccess": true
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/12_wide_overview.jpg",
+      "filename": "12_wide_overview.jpg",
+      "status": 200,
+      "contentType": "image/jpeg",
+      "bytes": 404162,
+      "directLoadSuccess": true
+    }
+  ]
+}

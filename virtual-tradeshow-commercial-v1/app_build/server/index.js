@@ -2638,34 +2638,55 @@ app.get('/api/platform/wilo-demo/feedbacks', requireAuth, requirePlatformOwner, 
 });
 
 // Real Demo Asset Static Handlers (Phase 10.7N Final Assets)
+const WILO_CLIENT_ROOT = path.join(__dirname, '..', 'client', 'assets', 'demo', 'wilo');
 const WILO_EXTERNAL_ROOT = process.env.WILO_EXTERNAL_ROOT || 'C:\\Users\\vivPR\\vshow-demo-assets\\wilo';
-
 
 app.get('/assets/demo/wilo/booth/:filename', (req, res) => {
   const file = req.params.filename;
-  const p = path.join(WILO_EXTERNAL_ROOT, 'booth', file);
-  if (fs.existsSync(p)) {
+  const clientPath = path.join(WILO_CLIENT_ROOT, 'booth', file);
+  if (fs.existsSync(clientPath)) {
+    res.setHeader('Content-Type', 'image/jpeg');
     res.setHeader('Cache-Control', 'public, max-age=86400');
-    return res.sendFile(p);
+    return res.sendFile(clientPath);
+  }
+  const extPath = path.join(WILO_EXTERNAL_ROOT, 'booth', file);
+  if (fs.existsSync(extPath)) {
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.sendFile(extPath);
   }
   res.redirect(`/assets/demo/${file.replace('.jpg', '.svg')}`);
 });
 
 app.get('/assets/demo/wilo/products/:filename', (req, res) => {
   const file = req.params.filename;
-  const p = path.join(WILO_EXTERNAL_ROOT, 'products', file);
-  if (fs.existsSync(p)) {
+  const clientPath = path.join(WILO_CLIENT_ROOT, 'products', file);
+  if (fs.existsSync(clientPath)) {
+    res.setHeader('Content-Type', 'image/jpeg');
     res.setHeader('Cache-Control', 'public, max-age=86400');
-    return res.sendFile(p);
+    return res.sendFile(clientPath);
+  }
+  const extPath = path.join(WILO_EXTERNAL_ROOT, 'products', file);
+  if (fs.existsSync(extPath)) {
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.sendFile(extPath);
   }
   res.redirect(`/assets/demo/${file.replace('.jpg', '.svg')}`);
 });
 
 app.get('/api/public/wilo-demo/manifest', (req, res) => {
-  const manifestPath = path.join(WILO_EXTERNAL_ROOT, 'manifests', 'wilo_booth_manifest.json');
-  if (fs.existsSync(manifestPath)) {
+  const clientManifest = path.join(WILO_CLIENT_ROOT, 'manifests', 'wilo_booth_manifest.json');
+  if (fs.existsSync(clientManifest)) {
     try {
-      const content = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      const content = JSON.parse(fs.readFileSync(clientManifest, 'utf8'));
+      return res.json(content);
+    } catch (e) {}
+  }
+  const extManifest = path.join(WILO_EXTERNAL_ROOT, 'manifests', 'wilo_booth_manifest.json');
+  if (fs.existsSync(extManifest)) {
+    try {
+      const content = JSON.parse(fs.readFileSync(extManifest, 'utf8'));
       return res.json(content);
     } catch (e) {}
   }
