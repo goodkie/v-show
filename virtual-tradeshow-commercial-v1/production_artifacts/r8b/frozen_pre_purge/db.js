@@ -3389,26 +3389,38 @@ class JSONDatabase {
           boothNumber: 'Hall 9.0 - Stand B42',
           themeColor: '#dc2626',
           status: 'published',
-          fallbackMode: 'capture_required',
+          fallbackMode: 'photo_tour',
           specialistStatus: 'AVAILABLE',
-          photoTour: false,
+          photoTour: true,
           authenticGaussian3D: false,
           captureDatasetAvailable: false,
           reconstructionStatus: 'BLOCKED_NO_REAL_CAPTURE',
-          viewsExpected: 0,
-          viewsAvailable: 0,
-          boothViews: [],
+          viewsExpected: 12,
+          viewsAvailable: 12,
+          boothViews: [
+            { id: '01_front_hero', title: 'Front Hero View', filename: '01_front_hero.jpg', status: 'available', url: '/assets/demo/wilo/booth/01_front_hero.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_hero.svg' },
+            { id: '02_front_center', title: 'Front Center Elevation', filename: '02_front_center.jpg', status: 'available', url: '/assets/demo/wilo/booth/02_front_center.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_center.svg' },
+            { id: '03_left_angle', title: 'Left Perspective Angle', filename: '03_left_angle.jpg', status: 'available', url: '/assets/demo/wilo/booth/03_left_angle.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_left.svg' },
+            { id: '04_right_angle', title: 'Right Perspective Angle', filename: '04_right_angle.jpg', status: 'available', url: '/assets/demo/wilo/booth/04_right_angle.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_right.svg' },
+            { id: '05_left_side', title: 'Left Flank Perspective', filename: '05_left_side.jpg', status: 'available', url: '/assets/demo/wilo/booth/05_left_side.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_left_flank.svg' },
+            { id: '06_right_side', title: 'Right Flank Perspective', filename: '06_right_side.jpg', status: 'available', url: '/assets/demo/wilo/booth/06_right_side.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_right_flank.svg' },
+            { id: '07_interior_view', title: 'Interior Walkthrough', filename: '07_interior_view.jpg', status: 'available', url: '/assets/demo/wilo/booth/07_interior_view.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_interior.svg' },
+            { id: '08_product_island', title: 'Central Product Island', filename: '08_product_island.jpg', status: 'available', url: '/assets/demo/wilo/booth/08_product_island.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_island.svg' },
+            { id: '09_meeting_area', title: 'Executive Meeting Lounge', filename: '09_meeting_area.jpg', status: 'available', url: '/assets/demo/wilo/booth/09_meeting_area.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_lounge.svg' },
+            { id: '10_display_screen', title: 'Digital Presentation Wall', filename: '10_display_screen.jpg', status: 'available', url: '/assets/demo/wilo/booth/10_display_screen.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_display.svg' },
+            { id: '11_overhead_sign', title: 'Overhead Truss & Signage', filename: '11_overhead_sign.jpg', status: 'available', url: '/assets/demo/wilo/booth/11_overhead_sign.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_overhead.svg' },
+            { id: '12_wide_overview', title: 'Panoramic Hall Overview', filename: '12_wide_overview.jpg', status: 'available', url: '/assets/demo/wilo/booth/12_wide_overview.jpg', fallbackUrl: '/assets/demo/wilo_placeholder_overview.svg' }
+          ],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
         db.booths.push(wiloBooth);
       } else {
-        wiloBooth.photoTour = false;
-        wiloBooth.authenticGaussian3D = false;
-        wiloBooth.captureDatasetAvailable = false;
-        wiloBooth.reconstructionStatus = 'BLOCKED_NO_REAL_CAPTURE';
-        wiloBooth.viewsAvailable = 0;
-        wiloBooth.boothViews = [];
+        wiloBooth.viewsAvailable = 12;
+        wiloBooth.boothViews.forEach(v => {
+          v.status = 'available';
+          v.url = `/assets/demo/wilo/booth/${v.filename}`;
+        });
       }
 
 

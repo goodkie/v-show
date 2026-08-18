@@ -145,37 +145,46 @@
 
     <!-- Main Viewport -->
     <main class="wilo-viewport" id="wilo-viewport">
-      <!-- Truthful Wilo Neutral Showroom State (R8B Contamination Purge) -->
-      <div id="wilo-capture-required-box" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; background: #070a13; color: #f8fafc; text-align: center; padding: 32px; box-sizing: border-box;">
-        <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; border-radius: 16px; padding: 40px 32px; max-width: 680px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
-          <div style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; background: rgba(0, 163, 144, 0.15); border: 1px solid #00a390; color: #00a390; font-size: 28px; margin-bottom: 20px;">📷</div>
-          <h2 style="margin: 0 0 12px 0; font-size: 24px; color: #ffffff;">Wilo Digital Showroom</h2>
-          <p style="color: #38bdf8; font-size: 16px; font-weight: 600; margin: 0 0 16px 0;">Authentic Booth Photogrammetry Capture Required</p>
-          <div style="background: #0b0f19; border: 1px solid #1e293b; border-radius: 8px; padding: 16px; margin-bottom: 24px; text-align: left; font-size: 13px; color: #94a3b8; line-height: 1.6;">
-            <div>• <b>Photo Tour:</b> Unavailable until verified physical camera booth photography is ingested.</div>
-            <div>• <b>3D Gaussian Reconstruction:</b> Unavailable — real camera multi-view capture dataset required (60–120 overlapping photos).</div>
-            <div>• <b>Commercial Operations:</b> Product Catalog, Engineering Consultation, and RFQ services remain fully operational below.</div>
-          </div>
-          <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-            <button class="wilo-btn wilo-btn-primary" onclick="openCatalogModal()">📖 Browse Wilo Catalog</button>
-            <button class="wilo-btn" onclick="openTicketModal()">💬 Request Engineering Consultation</button>
-            <button class="wilo-btn" onclick="openRfqModal()">📋 Request RFQ Quote</button>
-          </div>
-        </div>
+      <!-- Mode Switcher Pill Bar (R8 Truth Correction) -->
+      <div class="wilo-mode-pill-bar">
+        <button class="wilo-mode-btn active" id="btn-mode-photo" onclick="switchViewerMode('PHOTO_TOUR')">📷 Photo Tour (Primary Showroom)</button>
+        <button class="wilo-mode-btn" id="btn-mode-3d-orbit" style="opacity:0.5; cursor:not-allowed;" title="Authentic 3D Gaussian reconstruction requires physical booth photogrammetry capture dataset." onclick="show3DUnavailableNotice()">🌐 3D Reconstruction — Capture Required</button>
       </div>
+
+      <!-- Floating Quick Tools -->
+      <div class="wilo-floating-tools">
+        <button class="wilo-tool-btn" title="Reset Camera View" onclick="resetViewerCamera()">🎯</button>
+        <button class="wilo-tool-btn" title="Toggle Fullscreen" onclick="toggleFullscreen()">⛶</button>
+      </div>
+
+      <!-- Walk Navigation Instructions -->
+      <div class="wilo-walk-hud" id="wilo-walk-hud">
+        <strong>Walk Controls:</strong> Use <b>W/A/S/D</b> or <b>Arrow Keys</b> to move. Click & drag to look around.
+      </div>
+
+      <!-- 2D Photo Tour Container (Primary Photorealistic Showroom) -->
+      <div id="wilo-photo-container" style="display: block;">
+        <img id="wilo-main-image" class="wilo-booth-image" src="/assets/demo/wilo/booth/01_front_hero.jpg" alt="Wilo Booth">
+        <div id="wilo-photo-hotspots"></div>
+      </div>
+
+      <!-- 3D Three.js Scene Canvas Container -->
+      <div id="wilo-3d-canvas-container" style="display: none;"></div>
     </main>
 
-    <!-- Bottom HUD (Truthful Status Strip) -->
+    <!-- Bottom HUD (Photo Tour & Information Strip) -->
     <footer class="wilo-hud-bottom" id="wilo-bottom-hud">
-      <div class="wilo-tour-controls" style="margin-bottom:0;">
+      <div class="wilo-tour-controls">
         <div>
-          <span style="font-size:11px; color:#94a3b8; text-transform:uppercase;">Visual State:</span>
-          <span class="wilo-view-title" id="wilo-view-name" style="color:#f59e0b;">Wilo Digital Showroom — Authentic Booth Capture Required</span>
+          <span style="font-size:11px; color:#94a3b8; text-transform:uppercase;">View Mode / Title:</span>
+          <span class="wilo-view-title" id="wilo-view-name">01_front_hero — Front Hero View (1/12)</span>
         </div>
-        <div style="font-size:12px; color:#94a3b8;">
-          Pipeline Status: <span style="color:#38bdf8; font-weight:600;">CAPTURE_REQUIRED</span>
+        <div id="wilo-photo-nav-buttons" style="display:flex; gap:8px;">
+          <button class="wilo-btn" onclick="prevPhotoView()">&larr; Prev</button>
+          <button class="wilo-btn" onclick="nextPhotoView()">Next &rarr;</button>
         </div>
       </div>
+      <div class="wilo-thumbnails-strip" id="wilo-thumbnails" style="display:flex;"></div>
     </footer>
 
   </div>
@@ -352,21 +361,54 @@
     let walkDirection = new THREE.Vector3();
     let prevTime = performance.now();
 
-    // Global Runtime Inspection State (Phase 10.7N-R8B Truthful State)
+    const boothViews = [
+      { id: '01_front_hero', title: 'Front Hero View', url: '/assets/demo/wilo/booth/01_front_hero.jpg' },
+      { id: '02_front_center', title: 'Front Center Elevation', url: '/assets/demo/wilo/booth/02_front_center.jpg' },
+      { id: '03_left_angle', title: 'Left Perspective Angle', url: '/assets/demo/wilo/booth/03_left_angle.jpg' },
+      { id: '04_right_angle', title: 'Right Perspective Angle', url: '/assets/demo/wilo/booth/04_right_angle.jpg' },
+      { id: '05_left_side', title: 'Left Flank Perspective', url: '/assets/demo/wilo/booth/05_left_side.jpg' },
+      { id: '06_right_side', title: 'Right Flank Perspective', url: '/assets/demo/wilo/booth/06_right_side.jpg' },
+      { id: '07_interior_view', title: 'Interior Walkthrough', url: '/assets/demo/wilo/booth/07_interior_view.jpg' },
+      { id: '08_product_island', title: 'Central Product Island', url: '/assets/demo/wilo/booth/08_product_island.jpg' },
+      { id: '09_meeting_area', title: 'Executive Meeting Lounge', url: '/assets/demo/wilo/booth/09_meeting_area.jpg' },
+      { id: '10_display_screen', title: 'Digital Presentation Wall', url: '/assets/demo/wilo/booth/10_display_screen.jpg' },
+      { id: '11_overhead_sign', title: 'Overhead Truss & Signage', url: '/assets/demo/wilo/booth/11_overhead_sign.jpg' },
+      { id: '12_wide_overview', title: 'Panoramic Hall Overview', url: '/assets/demo/wilo/booth/12_wide_overview.jpg' }
+    ];
+
+    // Spatial 3D Hotspot Coordinates for Wilo Products
+    const spatialHotspotCoords = [
+      { productId: 'prod-wilo-01', x: -1.8, y: 1.2, z: 0.5, label: 'SiBoost Smart' },
+      { productId: 'prod-wilo-02', x: -0.8, y: 1.1, z: -0.2, label: 'Stratos MAXO' },
+      { productId: 'prod-wilo-03', x: 0.2, y: 1.1, z: -0.2, label: 'Yonos PICO' },
+      { productId: 'prod-wilo-04', x: 1.2, y: 1.1, z: -0.2, label: 'Medana CH1-L' },
+      { productId: 'prod-wilo-05', x: 1.8, y: 1.0, z: 0.6, label: 'Helix V' },
+      { productId: 'prod-wilo-06', x: -1.2, y: 1.0, z: 1.4, label: 'Initial Drain' },
+      { productId: 'prod-wilo-07', x: 0.0, y: 1.0, z: 1.5, label: 'Plavis 013-C' },
+      { productId: 'prod-wilo-08', x: 1.2, y: 1.0, z: 1.4, label: 'Rexa FIT' }
+    ];
+
+    // Global Runtime Inspection State (Phase 10.7N-R8 Truthful State)
     window.__ACTIVE_TENANT__ = 'org-wilo-golden-demo';
     window.__ACTIVE_MODEL__ = null;
-    window.__VIEW_MODE__ = 'CAPTURE_REQUIRED';
+    window.__VIEW_MODE__ = 'PHOTO_TOUR';
     window.__VSHOW_STATE__ = {
       tenant: "org-wilo-golden-demo",
-      visualState: "CAPTURE_REQUIRED",
-      photoTourAvailable: false,
+      modelUrl: null,
+      photoTour: true,
       authenticGaussian3D: false,
-      reconstructionStatus: "BLOCKED_NO_REAL_CAPTURE"
+      captureDatasetAvailable: false,
+      reconstructionStatus: "BLOCKED_NO_REAL_CAPTURE",
+      error: null
     };
 
-    console.log('[VIEWER_INIT] V-SHOW Wilo Digital Showroom Initialized.');
+    console.log('[VIEWER_INIT] V-SHOW Wilo Truthful Runtime Initialized.');
     console.log('[TENANT_ID] ' + window.__ACTIVE_TENANT__);
-    console.log('[VISUAL_STATE] CAPTURE_REQUIRED');
+    console.log('[VISUAL_MODE] PHOTO_TOUR');
+
+    function show3DUnavailableNotice() {
+      alert('Authentic 3D Gaussian reconstruction is not yet available for this booth.\n\nStatus: BLOCKED_NO_REAL_CAPTURE\nRequired: Multi-view physical booth camera photogrammetry dataset (60-120 overlapping photos).');
+    }
 
     async function init() {
       try {
@@ -374,19 +416,205 @@
         demoData = await res.json();
         renderCatalog();
         renderResources();
+        renderThumbnails();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const isOwnerReview = urlParams.get('mode') === 'gaussian3d' && urlParams.get('review') === 'owner';
+        if (isOwnerReview) {
+          console.warn('[Owner Review] 3D Mode requested, but authentic 3D Gaussian model is unavailable (BLOCKED_NO_REAL_CAPTURE). Showing truthful unavailable notice.');
+          window.__VIEW_MODE__ = 'PHOTO_TOUR';
+          window.__VSHOW_STATE__.error = 'AUTHENTIC_3D_RECONSTRUCTION_UNAVAILABLE';
+          show3DUnavailableBanner();
+        }
+
+        renderPhotoTour(); // Public Default remains Photo Tour
       } catch (err) {
         console.warn('Init load issue:', err);
+        renderPhotoTour();
       }
     }
 
-    // Photo Tour and 3D booth state disabled until authentic physical camera data is ingested
-    function renderPhotoTour() {
-      // Intentionally neutral: no synthetic image displayed
+    function show3DUnavailableBanner() {
+      const vTitle = document.getElementById('wilo-view-name');
+      if (vTitle) {
+        vTitle.innerHTML = '<span style="color:#f59e0b;">⚠️ Authentic 3D Reconstruction Unavailable (Real Camera Capture Required)</span>';
+      }
     }
 
-    function nextPhotoView() {}
-    function prevPhotoView() {}
-    function renderThumbnails() {}
+    function build3DHotspots(scene) {
+      hotspotObjects = [];
+      spatialHotspotCoords.forEach(hs => {
+        // Outer pulsing ring
+        const sphereGeo = new THREE.SphereGeometry(0.12, 16, 16);
+        const sphereMat = new THREE.MeshBasicMaterial({ color: 0x00a390 });
+        const marker = new THREE.Mesh(sphereGeo, sphereMat);
+        marker.position.set(hs.x, hs.y, hs.z);
+        marker.userData = { productId: hs.productId, label: hs.label };
+        
+        // Inner white dot
+        const innerGeo = new THREE.SphereGeometry(0.06, 8, 8);
+        const innerMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const inner = new THREE.Mesh(innerGeo, innerMat);
+        marker.add(inner);
+
+        scene.add(marker);
+        hotspotObjects.push(marker);
+      });
+    }
+
+    function onCanvasClick(e) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(hotspotObjects, true);
+
+      if (intersects.length > 0) {
+        let root = intersects[0].object;
+        while (root.parent && root.parent !== scene) root = root.parent;
+        if (root.userData && root.userData.productId) {
+          openProductModal(root.userData.productId);
+        }
+      }
+    }
+
+    function onCanvasTouch(e) {
+      if (e.changedTouches.length === 0) return;
+      const t = e.changedTouches[0];
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((t.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((t.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(hotspotObjects, true);
+
+      if (intersects.length > 0) {
+        let root = intersects[0].object;
+        while (root.parent && root.parent !== scene) root = root.parent;
+        if (root.userData && root.userData.productId) {
+          openProductModal(root.userData.productId);
+        }
+      }
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('wilo-3d-canvas-container');
+      if (!container || !renderer || !camera) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const time = performance.now();
+      const delta = (time - prevTime) / 1000;
+      prevTime = time;
+
+      // Animate hotspots pulsation
+      hotspotObjects.forEach((hs, i) => {
+        const s = 1.0 + Math.sin(time * 0.005 + i) * 0.25;
+        hs.scale.set(s, s, s);
+      });
+
+      // Walk mode locomotion
+      if (currentViewerMode === '3D_WALK' && orbitControls) {
+        const moveSpeed = 3.5;
+        walkVelocity.x = 0;
+        walkVelocity.z = 0;
+
+        if (walkKeys.forward) walkVelocity.z -= moveSpeed * delta;
+        if (walkKeys.backward) walkVelocity.z += moveSpeed * delta;
+        if (walkKeys.left) walkVelocity.x -= moveSpeed * delta;
+        if (walkKeys.right) walkVelocity.x += moveSpeed * delta;
+
+        camera.translateX(walkVelocity.x);
+        camera.translateZ(walkVelocity.z);
+        camera.position.y = 1.65; // keep eye level
+
+        // Constrain walking bounds
+        camera.position.x = Math.max(-5.0, Math.min(5.0, camera.position.x));
+        camera.position.z = Math.max(-2.5, Math.min(6.0, camera.position.z));
+      }
+
+      if (orbitControls && currentViewerMode === '3D_ORBIT') {
+        orbitControls.update();
+      }
+
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+    }
+
+    // Viewer Mode Switcher (Enforced Photo Tour only)
+    function switchViewerMode(mode) {
+      if (mode !== 'PHOTO_TOUR') {
+        show3DUnavailableNotice();
+        mode = 'PHOTO_TOUR';
+      }
+      currentViewerMode = 'PHOTO_TOUR';
+      const btnPhoto = document.getElementById('btn-mode-photo');
+      if (btnPhoto) btnPhoto.classList.add('active');
+
+      const canvas3D = document.getElementById('wilo-3d-canvas-container');
+      const photoContainer = document.getElementById('wilo-photo-container');
+      const walkHud = document.getElementById('wilo-walk-hud');
+      const photoNav = document.getElementById('wilo-photo-nav-buttons');
+      const thumbs = document.getElementById('wilo-thumbnails');
+
+      if (canvas3D) canvas3D.style.display = 'none';
+      if (photoContainer) photoContainer.style.display = 'block';
+      if (walkHud) walkHud.style.display = 'none';
+      if (photoNav) photoNav.style.display = 'flex';
+      if (thumbs) thumbs.style.display = 'flex';
+      renderPhotoTour();
+    }
+
+
+    function resetViewerCamera() {
+      if (camera && orbitControls) {
+        camera.position.set(0, 2.2, 7.5);
+        orbitControls.target.set(0, 1.2, -0.5);
+        orbitControls.update();
+      }
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    // Photo Tour Functions
+    function renderPhotoTour() {
+      const v = boothViews[currentPhotoIndex];
+      document.getElementById('wilo-main-image').src = v.url;
+      document.getElementById('wilo-view-name').textContent = v.title + ' (' + (currentPhotoIndex + 1) + '/12)';
+      document.querySelectorAll('.wilo-thumb').forEach((el, idx) => {
+        el.classList.toggle('active', idx === currentPhotoIndex);
+      });
+    }
+
+    function nextPhotoView() {
+      currentPhotoIndex = (currentPhotoIndex + 1) % boothViews.length;
+      renderPhotoTour();
+    }
+
+    function prevPhotoView() {
+      currentPhotoIndex = (currentPhotoIndex - 1 + boothViews.length) % boothViews.length;
+      renderPhotoTour();
+    }
+
+    function renderThumbnails() {
+      const strip = document.getElementById('wilo-thumbnails');
+      strip.innerHTML = boothViews.map((v, i) => 
+        '<img class="wilo-thumb' + (i === 0 ? ' active' : '') + '" src="' + v.url + '" title="' + v.title + '" onclick="currentPhotoIndex=' + i + '; renderPhotoTour();">'
+      ).join('');
+    }
 
     // Product 3D Inspection Viewer in Modal
     let prodScene, prodCamera, prodRenderer, prodControls, prodMesh;

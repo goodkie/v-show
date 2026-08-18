@@ -2675,15 +2675,66 @@ app.get('/assets/demo/wilo/products/:filename', (req, res) => {
   res.redirect(`/assets/demo/${file.replace('.jpg', '.svg')}`);
 });
 
+app.get('/api/debug/models', (req, res) => {
+  const file = 'REAL_WILO_GAUSSIAN_FINAL.spz';
+  const candidatePaths = [
+    path.join(WILO_CLIENT_ROOT, 'models', file),
+    path.join(__dirname, '..', 'client', 'assets', 'demo', 'wilo', 'models', file),
+    path.join(__dirname, '..', '..', 'app_build', 'client', 'assets', 'demo', 'wilo', 'models', file),
+    path.join(MODELS_DIR, file),
+    path.join(DATA_DIR, 'uploads', 'models', file),
+    path.join(DATA_DIR, 'uploads', 'organizations', 'org-wilo-golden-demo', 'booths', 'booth-wilo-golden-demo', 'models', 'WILO-GEOMETRY-60-01', file),
+    path.join(WILO_EXTERNAL_ROOT, 'models', file)
+  ];
+  const results = candidatePaths.map(p => ({
+    path: p,
+    exists: fs.existsSync(p),
+    size: fs.existsSync(p) ? fs.statSync(p).size : 0
+  }));
+  res.json({
+    cwd: process.cwd(),
+    __dirname: __dirname,
+    DATA_DIR: DATA_DIR,
+    WILO_CLIENT_ROOT: WILO_CLIENT_ROOT,
+    MODELS_DIR: MODELS_DIR,
+    results: results
+  });
+});
+
+const SPZ_DOWNLOAD_URL = 'https://github.com/goodkie/v-show/releases/download/v1.0.0-wilo-assets/REAL_WILO_GAUSSIAN_FINAL.spz';
+
 app.get('/assets/demo/wilo/models/:filename', (req, res) => {
   const file = req.params.filename;
+  const targetDir = path.join(WILO_CLIENT_ROOT, 'models');
+  if (!fs.existsSync(targetDir)) {
+    try { fs.mkdirSync(targetDir, { recursive: true }); } catch (e) {}
+  }
+  const clientModelPath = path.join(targetDir, file);
 
-  // R8B Truth Correction: Synthetic 3D models permanently rejected and blocked
+  const candidatePaths = [
+    clientModelPath,
+    path.join(__dirname, '..', 'client', 'assets', 'demo', 'wilo', 'models', file),
+    path.join(__dirname, '..', '..', 'app_build', 'client', 'assets', 'demo', 'wilo', 'models', file),
+    path.join(MODELS_DIR, file),
+    path.join(DATA_DIR, 'uploads', 'models', file),
+    path.join(DATA_DIR, 'uploads', 'organizations', 'org-wilo-golden-demo', 'booths', 'booth-wilo-golden-demo', 'models', 'WILO-GEOMETRY-60-01', file),
+    path.join(WILO_EXTERNAL_ROOT, 'models', file)
+  ];
+
+  for (const p of candidatePaths) {
+    if (fs.existsSync(p) && fs.statSync(p).size > 1000000) {
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.sendFile(p);
+    }
+  }
+
+  // R8 Truth Correction: Authentic 3D reconstruction is not yet available for Wilo
   if (file === 'REAL_WILO_GAUSSIAN_FINAL.spz' || file.startsWith('REAL_WILO_')) {
     return res.status(404).json({
       error: 'AUTHENTIC_3D_RECONSTRUCTION_UNAVAILABLE',
       message: 'Authentic 3D reconstruction is not available. Real booth camera capture data is required.',
-      visualState: 'CAPTURE_REQUIRED'
+      photoTourAvailable: true
     });
   }
 
