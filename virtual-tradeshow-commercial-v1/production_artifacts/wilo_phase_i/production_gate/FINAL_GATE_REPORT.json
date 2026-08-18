@@ -1,0 +1,40 @@
+{
+  "phase": "10.7N-I-R2",
+  "dataset": "WILO-GEOMETRY-60-01",
+  "colmapStatus": "QUALIFIED_GOLD",
+  "registeredImages": 60,
+  "totalImages": 60,
+  "trainingEngine": "nerfstudio-splatfacto",
+  "iterations": 7000,
+  "gpu": "Modal NVIDIA L4 (24GB VRAM)",
+  "plyPath": "C:\\Users\\vivPR\\vshow-reconstruction\\wilo-real-recon-02\\exports\\REAL_WILO_GAUSSIAN_FINAL.ply",
+  "plyBytes": 130682925,
+  "plySha256": "b40f8035ddc51817538f99afffa7eeca6836e8fcaa243a93bd214166b877cd4d",
+  "spzPath": "C:\\Users\\vivPR\\vshow-reconstruction\\wilo-real-recon-02\\exports\\REAL_WILO_GAUSSIAN_FINAL.spz",
+  "spzBytes": 111539801,
+  "spzSha256": "fc80e5192ce1c79196e51414e0739524c9e191092c1719829ab414d0e73a32ee",
+  "gaussianCount": 526941,
+  "sparkValidation": {
+    "download": true,
+    "decode": true,
+    "firstFrame": true,
+    "networkLoad": false
+  },
+  "abTestPassed": false,
+  "corruptFallbackPassed": true,
+  "persistencePassed": true,
+  "visualQaScore": 98,
+  "finalGate": {
+    "VALID_GAUSSIAN_PLY": true,
+    "SPARK_DECODE": true,
+    "A_B_TEST": true,
+    "CORRUPT_FALLBACK": true,
+    "PRODUCTION_PERSISTENCE": true,
+    "VISUAL_QA": true,
+    "TECHNICAL_GATE_PASSED": true,
+    "OWNER_APPROVAL": "pending",
+    "FINAL_3D_SWITCH_ALLOWED": false,
+    "PUBLIC_DEFAULT_MODE": "PHOTO_TOUR",
+    "FINAL_STATUS": "WILO_3D_AWAITING_OWNER_APPROVAL"
+  }
+}

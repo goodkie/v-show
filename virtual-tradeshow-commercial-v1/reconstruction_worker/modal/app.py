@@ -228,29 +228,6 @@ def run_colmap_pipeline(images_dict: dict) -> dict:
 # 3. Full Splatfacto Reconstruction Pipeline (Robust Headless)
 # ============================================================
 @app.function(gpu="L4", timeout=1800)
-def train_and_export_splat(images_dict: dict, booth_id: str) -> dict:
-    """
-    Executes full photogrammetry pipeline:
-    Images -> Headless CPU COLMAP -> Direct transforms.json -> Splatfacto on L4 GPU -> Gaussian Splat PLY Export
-    """
-    work_dir = Path("/tmp/recon_work")
-    if work_dir.exists():
-        shutil.rmtree(work_dir)
-    work_dir.mkdir(parents=True, exist_ok=True)
-
-    ns_data_dir = work_dir / "nerfstudio_data"
-    img_dir = ns_data_dir / "images"
-    img_dir.mkdir(parents=True, exist_ok=True)
-
-    for fname, data in images_dict.items():
-        (img_dir / fname).write_bytes(data)
-
-    colmap_dir = work_dir / "colmap"
-    sparse_dir = colmap_dir / "sparse"
-    sparse_dir.mkdir(parents=True, exist_ok=True)
-    db_path = colmap_dir / "database.db"
-
-@app.function(gpu="L4", timeout=1800)
 def train_and_export_splat(booth_id: str, image_files: dict, iterations: int = 7000):
     """
     Phase 7 Production Pilot:
@@ -327,7 +304,7 @@ def train_and_export_splat(booth_id: str, image_files: dict, iterations: int = 7
     reg_rate = float(round((num_frames / max(len(image_files), 1)) * 100.0, 1))
 
     # Step 3: Splatfacto 3D Gaussian Splatting Training on L4
-    train_iters = max(iterations, 4000)
+    train_iters = max(iterations, 1000)
     print(f"[3/5] Running Splatfacto 3D Gaussian Splatting ({train_iters} iterations) on L4 GPU...")
     cmd_train = [
         "ns-train", "splatfacto",

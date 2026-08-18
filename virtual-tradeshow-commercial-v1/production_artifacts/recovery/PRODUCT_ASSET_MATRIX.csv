@@ -1,0 +1,9 @@
+product_id,name,image,model,viewer,status
+prod-wilo-01,"Wilo-SiBoost Smart (FC) Helix V",/assets/demo/wilo/products/product_01.jpg,3D_PROCEDURAL_PROXY,Viewer Hotspot #1,ACTIVE_VERIFIED
+prod-wilo-02,"Wilo-Stratos MAXO High-Efficiency Pump",/assets/demo/wilo/products/product_02.jpg,3D_PROCEDURAL_PROXY,Viewer Hotspot #2,ACTIVE_VERIFIED
+prod-wilo-03,"Wilo-Yonos PICO Circulation Pump",/assets/demo/wilo/products/product_03.jpg,3D_PROCEDURAL_PROXY,Viewer Hotspot #3,ACTIVE_VERIFIED
+prod-wilo-04,"Wilo-Medana CH1-L Multistage Pump",/assets/demo/wilo/products/product_04.jpg,3D_PROCEDURAL_PROXY,Viewer Hotspot #4,ACTIVE_VERIFIED
+prod-wilo-05,"Wilo-Helix V High-Pressure Pump",/assets/demo/wilo/products/product_05.jpg,3D_PROCEDURAL_PROXY,Viewer Hotspot #5,ACTIVE_VERIFIED
+prod-wilo-06,"Wilo-Initial Drain Submersible Pump",/assets/demo/wilo/products/product_06.jpg,3D_PROCEDURAL_PROXY,Viewer Hotspot #6,ACTIVE_VERIFIED
+prod-wilo-07,"Wilo-Plavis 013-C Condensate Removal",/assets/demo/wilo/products/product_07.jpg,3D_PROCEDURAL_PROXY,Viewer Hotspot #7,ACTIVE_VERIFIED
+prod-wilo-08,"Wilo-Rexa FIT Sewage Submersible Pump",/assets/demo/wilo/products/product_08.jpg,3D_PROCEDURAL_PROXY,Viewer Hotspot #8,ACTIVE_VERIFIED

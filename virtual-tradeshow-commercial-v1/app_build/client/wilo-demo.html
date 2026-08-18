@@ -395,9 +395,18 @@
         renderCatalog();
         renderResources();
         renderThumbnails();
-        renderPhotoTour(); // Primary default
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const isOwnerReview = urlParams.get('mode') === 'gaussian3d' && urlParams.get('review') === 'owner';
+        if (isOwnerReview) {
+          console.log('[Owner Review] Activated Real Gaussian 3D Mode.');
+          switchViewerMode('3D_ORBIT');
+        } else {
+          renderPhotoTour(); // Public Default remains Photo Tour
+        }
       } catch (err) {
         console.warn('Init load issue:', err);
+        renderPhotoTour();
       }
     }
 
