@@ -1,0 +1,478 @@
+{
+  "totalFiles": 71,
+  "filesWithExif": 20,
+  "filesWithoutExif": 51,
+  "cameraModels": [],
+  "dateRange": {
+    "earliest": null,
+    "latest": null
+  },
+  "fileDetails": [
+    {
+      "fileName": "booth01_a1_1787070019183.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth01_a2_1787070037115.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth01_a3_1787070052150.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth02_a1_1787070070691.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth02_a2_1787070091133.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth02_a3_1787070104226.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth03_a1_1787070141591.jpg",
+      "hasExif": false,
+      "resolution": "1200x896",
+      "exif": {}
+    },
+    {
+      "fileName": "booth03_a2_1787070152139.jpg",
+      "hasExif": false,
+      "resolution": "1200x896",
+      "exif": {}
+    },
+    {
+      "fileName": "booth03_a3_1787070825035.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth04_a1_1787070866680.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth04_a2_1787070881705.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth04_a3_1787070900478.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth05_a1_1787070942987.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth05_a2_1787070958282.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth05_a3_1787071656024.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth06_a1_1787071684860.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth06_a2_1787071694387.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth06_a3_1787071706216.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth07_a1_1787071736522.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth07_a2_1787071748400.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth07_a3_1787072118180.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth08_a1_1787070145436.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth08_a2_1787070160492.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth08_a3_1787072151110.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth09_a1_1787072159575.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth09_a2_1787072171055.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth09_a3_1787072204197.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth10_a1_1787072215608.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth10_a2_1787072461761.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth10_a3_1787072470284.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth11_a1_1787072510070.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth11_a2_1787072522975.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth11_a3_1787072531860.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth12_a1_1787072574121.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth12_a2_1787072821602.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth12_a3_1787072832412.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth13_a1_1787070148283.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth13_a2_1787070161777.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth13_a3_1787072876447.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth14_a1_1787072887703.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth14_a2_1787072899193.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth14_a3_1787072979702.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth15_a1_1787073788540.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth15_a2_1787073799068.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth15_a3_1787073807719.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth16_a1_1787073863197.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth16_a2_1787073875235.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth16_a3_1787073886620.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth17_a1_1787070145827.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth17_a2_1787070163341.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "booth18_a1_1787074134093.jpg",
+      "hasExif": false,
+      "resolution": "1024x1024",
+      "exif": {}
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_1.jpg",
+      "hasExif": true,
+      "resolution": "373x237",
+      "exif": {
+        "Orientation": "1"
+      }
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_2.jpg",
+      "hasExif": true,
+      "resolution": "308x236",
+      "exif": {
+        "Orientation": "1"
+      }
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_3.jpg",
+      "hasExif": true,
+      "resolution": "319x236",
+      "exif": {
+        "Orientation": "1"
+      }
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_4.jpg",
+      "hasExif": true,
+      "resolution": "273x236",
+      "exif": {
+        "Orientation": "1"
+      }
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_5.jpg",
+      "hasExif": true,
+      "resolution": "278x237",
+      "exif": {
+        "Orientation": "1"
+      }
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_6.jpg",
+      "hasExif": true,
+      "resolution": "305x222",
+      "exif": {
+        "Orientation": "1"
+      }
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_7.jpg",
+      "hasExif": true,
+      "resolution": "271x220",
+      "exif": {
+        "Orientation": "1"
+      }
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_8.jpg",
+      "hasExif": true,
+      "resolution": "284x221",
+      "exif": {
+        "Orientation": "1"
+      }
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_9.jpg",
+      "hasExif": true,
+      "resolution": "370x220",
+      "exif": {
+        "Orientation": "1"
+      }
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_10.jpg",
+      "hasExif": true,
+      "resolution": "302x223",
+      "exif": {
+        "Orientation": "1"
+      }
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_11.jpg",
+      "hasExif": true,
+      "resolution": "312x188",
+      "exif": {
+        "Orientation": "1"
+      }
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_12.jpg",
+      "hasExif": true,
+      "resolution": "310x186",
+      "exif": {
+        "Orientation": "1"
+      }
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_13.jpg",
+      "hasExif": true,
+      "resolution": "315x187",
+      "exif": {
+        "Orientation": "1"
+      }
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_14.jpg",
+      "hasExif": true,
+      "resolution": "309x189",
+      "exif": {
+        "Orientation": "1"
+      }
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_15.jpg",
+      "hasExif": true,
+      "resolution": "306x189",
+      "exif": {
+        "Orientation": "1"
+      }
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_16.jpg",
+      "hasExif": true,
+      "resolution": "278x230",
+      "exif": {
+        "Orientation": "1"
+      }
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_17.jpg",
+      "hasExif": true,
+      "resolution": "270x228",
+      "exif": {
+        "Orientation": "1"
+      }
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_18.jpg",
+      "hasExif": true,
+      "resolution": "323x230",
+      "exif": {
+        "Orientation": "1"
+      }
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_19.jpg",
+      "hasExif": true,
+      "resolution": "344x231",
+      "exif": {
+        "Orientation": "1"
+      }
+    },
+    {
+      "fileName": "ChatGPT Image 2026\ub144 8\uc6d4 17\uc77c \uc624\uc804 03_58_23_20.jpg",
+      "hasExif": true,
+      "resolution": "313x228",
+      "exif": {
+        "Orientation": "1"
+      }
+    }
+  ]
+}
