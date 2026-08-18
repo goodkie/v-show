@@ -1,0 +1,24 @@
+﻿============================================================
+PHASE 10.7N-R8B-DEPLOY-FIX: STEP 5 — LFS DEPLOY AUDIT
+============================================================
+
+GIT LFS TRACKED FILES:
+fc80e5192c * virtual-tradeshow-commercial-v1/app_build/client/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz
+
+
+GIT LFS STATUS:
+On branch master
+Objects to be pushed to origin/master:
+
+
+Objects to be committed:
+
+
+Objects not staged for commit:
+
+
+
+
+ACTIVE PRODUCTION LFS DEPENDENCY:
+NONE. Active production build does NOT require or depend on any Git LFS models.
+Rejected SPZ remains in forensic quarantine only.

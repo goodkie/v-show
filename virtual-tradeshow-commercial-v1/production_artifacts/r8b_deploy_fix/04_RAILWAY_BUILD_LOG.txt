@@ -1,0 +1,17 @@
+Mounting volume on: /var/lib/containers/railwayapp/bind-mounts/f0643b21-5f56-4aa0-8994-48df21912c76/vol_jy9ltm2g2kwntt3p
+Starting Container
+npm warn config production Use `--omit=dev` instead.
+
+> virtual-tradeshow-commercial-v1@1.0.0 start
+> node server/index.js
+
+=======================================================
+ Virtual Trade Show Commercial Beta Server (Phase 8 Multi-Tenant)
+ Port: 8080
+ Data Directory: /data
+ Healthcheck: http://localhost:8080/health
+ Event Lobby: http://localhost:8080/lobby.html
+ Organizer Admin: http://localhost:8080/organizer.html
+ Exhibitor Admin: http://localhost:8080/admin.html
+ Schema Version: 4
+=======================================================

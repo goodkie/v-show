@@ -1,0 +1,38 @@
+﻿============================================================
+PHASE 10.7N-R8B-DEPLOY-FIX: STEP 1 — GIT SOURCE OF TRUTH
+============================================================
+
+BRANCH: master
+LOCAL_HEAD: f83e96fc5530b0c02b7fed8e974dec37973d79d8
+ORIGIN_MASTER: f83e96fc5530b0c02b7fed8e974dec37973d79d8
+MATCH: TRUE
+
+LATEST LOG:
+f83e96f feat(phase10.7N-R8B): Record all R8B evidence artifacts and audit results
+
+REMOTES:
+origin	https://github.com/goodkie/v-show.git (fetch)
+origin	https://github.com/goodkie/v-show.git (push)
+
+
+GIT STATUS:
+On branch master
+Your branch is up to date with 'origin/master'.
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	../phase9-sample/exhibitor-01/reference/
+	../phase9_5-synthetic-pilot/
+	../source/
+	app_build/scripts/test_phase10_7n_demo_launch_finalization.js
+	production_artifacts/R6_CAMERA_TRANSFORMS.json
+	production_artifacts/REALITY_TEST_01.png
+	production_artifacts/REALITY_TEST_02.png
+	production_artifacts/REALITY_TEST_03.png
+	production_artifacts/backup_pre_spark/
+	production_artifacts/truth_check/
+	run_recovery_audit.py
+	run_truth_check.py
+
+nothing added to commit but untracked files present (use "git add" to track)
+

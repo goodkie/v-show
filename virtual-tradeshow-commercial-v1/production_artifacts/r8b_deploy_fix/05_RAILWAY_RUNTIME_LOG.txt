@@ -1,0 +1,7 @@
+Active deployment 23a251d9-36e2-4dcf-b1d5-1d30f2a5737b runtime startup:
+Status: ONLINE
+Listening on port: 8080 (PORT environment variable injected by Railway)
+Mounted volume: /data (0.1 GB / 4.9 GB)
+Healthcheck: 200 OK at /health
+Serving static assets from app_build/client
+Serving API endpoints from app_build/server

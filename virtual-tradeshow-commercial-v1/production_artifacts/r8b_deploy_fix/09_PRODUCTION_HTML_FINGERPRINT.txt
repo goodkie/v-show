@@ -1,0 +1,15 @@
+============================================================
+PHASE 10.7N-R8B-DEPLOY-FIX: STEP 8 — HTML FINGERPRINT
+============================================================
+
+STATUS=200
+LENGTH=33789
+
+SMART FACTORY PLATFORM = False
+AUTONOMOUS LOGISTICS = False
+526,941 = False
+526941 = False
+SPARK_SPZ_SUCCESS = False
+REAL_GAUSSIAN_MODEL_LOADED = False
+Authentic Booth Photogrammetry Capture Required = True
+BLOCKED_NO_REAL_CAPTURE = True

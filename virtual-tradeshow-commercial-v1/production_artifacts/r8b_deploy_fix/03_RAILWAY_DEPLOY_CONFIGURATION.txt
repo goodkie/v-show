@@ -1,0 +1,72 @@
+﻿============================================================
+PHASE 10.7N-R8B-DEPLOY-FIX: STEP 3 — RAILWAY DEPLOY CONFIG
+============================================================
+
+PROJECT: v-show-commercial-v1 (4c4094c5-e6c2-4996-bbd8-e9e254828069)
+ENVIRONMENT: production (1241ff56-1c40-48a3-8831-eb4b1f913f13)
+SERVICE: v-show-commercial-v1 (8e807076-c4bf-4f0a-8bdc-e56d9ecb2016)
+PUBLIC DOMAIN: https://v-show-commercial-v1-production.up.railway.app
+VOLUME: v-show-commercial-v1-volume (/data)
+
+DEPLOYMENT METHOD:
+Railway CLI Direct Upload Deployment (railway up)
+
+CURRENT ACTIVE DEPLOYMENT ID:
+23a251d9-36e2-4dcf-b1d5-1d30f2a5737b (Deployed: 2026-08-18 06:06:13 -04:00)
+
+ROOT CAUSE CLASSIFICATION:
+F / H — Railway service uses CLI direct upload deployment ('railway up') rather than GitHub webhook auto-sync.
+When git push was executed for commit f83e96f, Railway did not auto-deploy because the service source is not wired to GitHub webhooks.
+
+STATUS DETAILS:
+
+Workspace:       goodkie's Projects
+
+Project:         v-show-commercial-v1
+Project ID:      4c4094c5-e6c2-4996-bbd8-e9e254828069
+
+Environment:     production
+Environment ID:  1241ff56-1c40-48a3-8831-eb4b1f913f13
+
+Linked service
+
+v-show-commercial-v1
+    status:        ??Online
+    url:           https://v-show-commercial-v1-production.up.railway.app
+    volume:        v-show-commercial-v1-volume 쨌 /data 쨌 0.1 GB / 4.9 GB
+    region:        sfo
+    deployment ID: 23a251d9-36e2-4dcf-b1d5-1d30f2a5737b
+    service ID:    8e807076-c4bf-4f0a-8bdc-e56d9ecb2016
+
+????????????????????????????????????????????????
+
+All resources
+
+    Services
+      - v-show-commercial-v1: ??Online 쨌 https://v-show-commercial-v1-production.up.railway.app 쨌 v-show-commercial-v1-volume
+
+
+
+RECENT DEPLOYMENTS:
+Recent Deployments
+  23a251d9-36e2-4dcf-b1d5-1d30f2a5737b | SUCCESS | 2026-08-18 06:06:13 -04:00
+  89f755df-cbf8-4b37-81e8-a9cbd08fb336 | REMOVED | 2026-08-18 05:58:20 -04:00
+  c015408a-748c-45bd-b876-8ab617b5d8e0 | FAILED | 2026-08-18 05:57:00 -04:00
+  d1e57fc2-88d7-4017-9a0b-fb0a8ff4b36b | FAILED | 2026-08-18 05:55:41 -04:00
+  ff19109f-676b-4929-9da1-e85f1f15bf09 | FAILED | 2026-08-18 05:53:44 -04:00
+  733e62f7-caec-4d21-a987-9ab9d54a8e3d | FAILED | 2026-08-18 05:50:45 -04:00
+  d64d7482-fa74-4e30-89e3-6eaa7e109da5 | FAILED | 2026-08-18 05:49:11 -04:00
+  ba462393-ca78-4aed-b4ea-2027b287180b | FAILED | 2026-08-18 05:48:08 -04:00
+  dbce2ead-12c0-4c07-8580-a35aa41eb562 | REMOVED | 2026-08-18 05:32:24 -04:00
+  5835157c-8fcb-47b6-864a-f597eeeae88d | REMOVED | 2026-08-18 05:26:48 -04:00
+  a6ef3280-a82a-457c-b17a-209a7d1c2cdf | REMOVED | 2026-08-18 04:50:25 -04:00
+  3bd58eb3-b5e9-4f02-a194-bf9faa0393c3 | REMOVED | 2026-08-18 04:33:38 -04:00
+  fa786304-9bc3-4a1d-979e-cbd3ec9010fc | REMOVED | 2026-08-18 04:27:25 -04:00
+  9095d0c6-0aff-4dcf-928e-59122645e1fb | REMOVED | 2026-08-18 04:08:50 -04:00
+  7a668d55-b776-4f8c-966e-789d8a677d1f | REMOVED | 2026-08-18 03:57:47 -04:00
+  60cdef5e-d82b-487c-87a2-c611f6faff86 | REMOVED | 2026-08-18 03:44:30 -04:00
+  4e8f2f74-a13a-42c3-b739-340fa5902218 | REMOVED | 2026-08-18 03:35:36 -04:00
+  345e08b9-db24-48a3-a9df-f1474414fd39 | REMOVED | 2026-08-16 05:00:23 -04:00
+  44dd92e4-8f34-443f-b8b4-34750fc2f9d8 | REMOVED | 2026-08-16 04:54:00 -04:00
+  7ebfdc6e-03ce-4294-9dbd-c116d4d8d89f | REMOVED | 2026-08-16 04:45:51 -04:00
+

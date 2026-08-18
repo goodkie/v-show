@@ -1,0 +1,15 @@
+﻿============================================================
+PHASE 10.7N-R8B-DEPLOY-FIX: STEP 2 — LOCAL RUNTIME AUDIT
+============================================================
+
+===== .\app_build\client =====
+
+Path                                                                                                                     LineNumber Line                 
+----                                                                                                                     ---------- ----                 
+E:\vivpr\ai\v-show\virtual-tradeshow-commercial-v1\app_build\client\assets\demo\wilo\models\REAL_WILO_GAUSSIAN_FINAL.ply          4 element vertex 526941
+
+
+
+
+===== .\app_build\server =====
+
