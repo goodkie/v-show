@@ -6,6 +6,8 @@ v-show-reconstruction-work/
 *.spz
 *.splat
 *.ksplat
+!virtual-tradeshow-commercial-v1/app_build/client/assets/demo/wilo/experimental/*.ply
+!virtual-tradeshow-commercial-v1/app_build/client/assets/demo/wilo/experimental/*.spz
 node_modules/
 app_build/node_modules/
 *.log
