@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wilo Partial 3D Preview</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #070a12; overflow: hidden; width: 100vw; height: 100vh; }
+    #loading-overlay {
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: #070a12; z-index: 100; color: #f8fafc;
+    }
+    .spinner {
+      width: 48px; height: 48px; border-radius: 50%;
+      border: 3px solid #334155; border-top-color: #f59e0b;
+      animation: spin 1s linear infinite; margin-bottom: 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-family: sans-serif; font-size: 14px; font-weight: 600; }
+    .loading-sub { font-family: sans-serif; font-size: 12px; color: #64748b; margin-top: 6px; }
+    #error-overlay {
+      position: fixed; inset: 0; display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: #070a12; z-index: 100; color: #f8fafc;
+    }
+    #error-overlay .err-icon { font-size: 32px; color: #ef4444; margin-bottom: 12px; }
+    #error-overlay .err-msg { font-family: sans-serif; font-size: 14px; font-weight: 600; }
+    #error-overlay .err-detail { font-family: monospace; font-size: 11px; color: #64748b; margin-top: 8px; max-width: 480px; text-align: center; word-break: break-all; }
+    #canvas-container { position: fixed; inset: 0; width: 100%; height: 100%; }
+    #ready-indicator {
+      display: none; position: fixed; bottom: 12px; right: 16px;
+      background: rgba(15,23,42,0.9); border: 1px solid #334155;
+      padding: 6px 12px; border-radius: 20px; font-family: sans-serif;
+      font-size: 11px; color: #10b981; font-weight: 600; z-index: 50;
+    }
+    #hint {
+      display: none; position: fixed; bottom: 12px; left: 50%;
+      transform: translateX(-50%); font-family: sans-serif; font-size: 11px;
+      color: #475569; z-index: 50; white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-text">Loading authentic partial Gaussian reconstruction...</div>
+    <div class="loading-sub">52 MB PLY • 261,247 Gaussians • 15-image authentic subset</div>
+  </div>
+  <div id="error-overlay">
+    <div class="err-icon">⚠</div>
+    <div class="err-msg">Partial 3D model failed to load.</div>
+    <div class="err-detail" id="error-detail"></div>
+  </div>
+  <div id="canvas-container"></div>
+  <div id="ready-indicator">● Orbit Drag · Scroll Zoom</div>
+  <div id="hint">Drag to orbit • Scroll to zoom • Double-click to reset</div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.159.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as GaussianSplats3D from 'https://cdn.jsdelivr.net/npm/@mkkellogg/gaussian-splats-3d@0.4.5/build/gaussian-splats-3d.module.js';
+
+    const PLY_URL = '/assets/demo/wilo/experimental/WILO_AUTHENTIC_PARTIAL_EXPERIMENT_01.ply';
+
+    function showError(msg) {
+      document.getElementById('loading-overlay').style.display = 'none';
+      const eo = document.getElementById('error-overlay');
+      document.getElementById('error-detail').textContent = msg;
+      eo.style.display = 'flex';
+      // Notify parent frame
+      try { window.parent.postMessage({ type: 'PARTIAL_3D_ERROR', message: msg }, '*'); } catch(e){}
+    }
+
+    function updateProgress(msg) {
+      const el = document.getElementById('loading-text');
+      if (el) el.textContent = msg;
+    }
+
+    async function init() {
+      try {
+        const container = document.getElementById('canvas-container');
+
+        const viewer = new GaussianSplats3D.Viewer({
+          rootElement: container,
+          selfDrivenMode: true,
+          useBuiltInControls: true,
+          initialCameraPosition: [0, 1.8, 6.0],
+          initialCameraLookAt: [0, 0.8, 0],
+          cameraUp: [0, 1, 0],
+          sharedMemoryForWorkers: false,
+          enableSplatSort: true,
+          dynamicScene: false,
+          freeIntermediateSplatData: true,
+          onProgress: (progress, name, type) => {
+            if (type === GaussianSplats3D.LoaderStatus.Downloading) {
+              updateProgress('Downloading: ' + Math.round(progress * 100) + '%');
+            } else if (type === GaussianSplats3D.LoaderStatus.Processing) {
+              updateProgress('Processing Gaussian data...');
+            }
+          }
+        });
+
+        viewer.addSplatScene(PLY_URL, {
+          splatAlphaRemovalThreshold: 5,
+          showLoadingUI: false,
+          position: [0, 0, 0],
+          rotation: [0, 0, 0, 1],
+          scale: [1, 1, 1],
+        })
+        .then(() => {
+          document.getElementById('loading-overlay').style.display = 'none';
+          document.getElementById('ready-indicator').style.display = 'block';
+          document.getElementById('hint').style.display = 'block';
+          // Notify parent frame
+          try { window.parent.postMessage({ type: 'PARTIAL_3D_LOADED', gaussians: 261247 }, '*'); } catch(e){}
+        })
+        .catch(err => {
+          showError('PLY load failed: ' + err.message);
+        });
+
+        viewer.start();
+
+      } catch (err) {
+        showError('GaussianSplats3D init error: ' + err.message);
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

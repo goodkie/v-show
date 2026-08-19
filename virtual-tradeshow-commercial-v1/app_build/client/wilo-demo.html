@@ -118,6 +118,8 @@
     .wilo-product-3d-box { width: 100%; height: 280px; background: #050811; border: 1px solid var(--wilo-border); border-radius: 8px; position: relative; margin-bottom: 16px; }
     #product-3d-canvas { width: 100%; height: 100%; }
     .wilo-product-hint { position: absolute; bottom: 8px; right: 8px; background: rgba(15, 23, 42, 0.75); padding: 4px 10px; border-radius: 4px; font-size: 11px; color: #94a3b8; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -145,11 +147,11 @@
 
     <!-- Main Viewport -->
     <main class="wilo-viewport" id="wilo-viewport">
-      <!-- Mode Switcher Pill Bar -->
+      <!-- Mode Switcher Pill Bar — Three States -->
       <div class="wilo-mode-pill-bar">
-        <button class="wilo-mode-btn active" id="btn-mode-photo" onclick="switchViewerMode('PHOTO_TOUR')">📷 Photo Tour (Primary)</button>
-        <button class="wilo-mode-btn" id="btn-mode-3d-orbit" onclick="switchViewerMode('3D_VIEWER')">🌐 3D Viewer (Orbit)</button>
-        <button class="wilo-mode-btn" id="btn-mode-3d-walk" disabled style="opacity:0.45; cursor:not-allowed;" title="Requires R10 Gaussian 3D Reconstruction">🚶 3D Walk (Locked)</button>
+        <button class="wilo-mode-btn active" id="btn-mode-photo" onclick="switchViewerMode('PHOTO_TOUR')">📷 Photo Tour</button>
+        <button class="wilo-mode-btn" id="btn-mode-partial" onclick="switchViewerMode('PARTIAL_PREVIEW')">🔬 Partial Experimental Preview</button>
+        <button class="wilo-mode-btn" id="btn-mode-3d-full" onclick="switchViewerMode('FULL_3D_PENDING')" style="opacity:0.55; cursor:not-allowed;" disabled title="Requires additional real-world capture">🌐 Full 3D (Pending)</button>
       </div>
 
       <!-- Floating Quick Tools -->
@@ -175,14 +177,45 @@
         </div>
       </div>
 
-      <!-- 3D Viewer Canvas Container (Clean Engine Shell with Pending Overlay) -->
+      <!-- Partial Experimental Preview Container -->
+      <div id="wilo-partial-preview-container" style="position: absolute; inset: 0; width: 100%; height: 100%; display: none; background: #070a12; z-index: 10; flex-direction: column; align-items: stretch; justify-content: stretch;">
+        <!-- Experiment Badge (overlaid on top of iframe) -->
+        <div id="partial-preview-badge" style="position:absolute; top:8px; left:50%; transform:translateX(-50%); z-index:40; background:rgba(245,158,11,0.18); border:1px solid #f59e0b; border-radius:20px; padding:5px 16px; display:flex; align-items:center; gap:8px; white-space:nowrap; pointer-events:none;">
+          <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#f59e0b; box-shadow:0 0 8px #f59e0b;"></span>
+          <span style="color:#fbbf24; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">PARTIAL AUTHENTIC 3D — EXPERIMENTAL</span>
+        </div>
+        <div id="partial-preview-subtitle" style="position:absolute; top:42px; left:50%; transform:translateX(-50%); z-index:40; color:#94a3b8; font-size:11px; white-space:nowrap; pointer-events:none;">Front + Left Hydronic Pump Island Only</div>
+
+        <!-- Iframe-based 3D viewer (GaussianSplats3D, self-contained) -->
+        <iframe
+          id="partial-3d-iframe"
+          src="/assets/demo/wilo/experimental/partial-3d-viewer.html"
+          style="position:absolute; inset:0; width:100%; height:100%; border:none; z-index:10;"
+          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+          title="Wilo Partial Experimental 3D Preview">
+        </iframe>
+
+        <!-- Limitation Notice (pointer-events:none so orbit still works in iframe) -->
+        <div id="partial-limitation-notice" style="position:absolute; bottom:8px; left:50%; transform:translateX(-50%); z-index:40; background:rgba(15,23,42,0.88); border:1px solid #f59e0b44; border-radius:8px; padding:10px 18px; max-width:520px; width:calc(100% - 40px); pointer-events:none;">
+          <p style="margin:0; color:#94a3b8; font-size:11px; line-height:1.5; text-align:center;">
+            Experimental partial reconstruction from authentic Wilo capture photographs.
+            Coverage: front + left pump display area only.
+            Holes and incomplete geometry outside captured region are expected.
+            <span style="color:#64748b;">Full 360° reconstruction requires additional real-world capture.</span>
+          </p>
+        </div>
+      </div>
+
+
+      <!-- Full 3D Reconstruction Pending Container -->
       <div id="wilo-3d-canvas-container" style="position: absolute; inset: 0; width: 100%; height: 100%; display: none; background: #070a12; z-index: 10; align-items: center; justify-content: center;">
         <div id="wilo-3d-pending-card" style="position: relative; max-width: 480px; margin: auto; background: rgba(15, 23, 42, 0.95); border: 1px solid #334155; border-radius: 12px; padding: 32px 24px; text-align: center; backdrop-filter: blur(12px); box-shadow: 0 20px 40px rgba(0,0,0,0.6); z-index: 25;">
           <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto; color: #38bdf8; font-size: 22px;">🌐</div>
           <h3 style="color: #38bdf8; margin: 0 0 10px 0; font-size: 18px; font-weight: 700;">Authentic Wilo 3D Reconstruction Pending</h3>
           <p style="color: #cbd5e1; font-size: 14px; margin: 0 0 20px 0; line-height: 1.6;">
             Real capture dataset has been received.<br>
-            3D reconstruction has not yet been generated.
+            Additional bridge coverage is required for complete 360° reconstruction.<br>
+            Full reconstruction has not yet been generated.
           </p>
           <button class="wilo-btn wilo-btn-primary" onclick="switchViewerMode('PHOTO_TOUR')" style="padding: 10px 24px; font-size: 14px; margin: 0 auto; display: inline-flex;">Return to Photo Tour</button>
         </div>
@@ -485,43 +518,124 @@
       renderPhotoTour();
     }
 
+    // ── Runtime Truth State ──────────────────────────────────
+    window.__VSHOW_STATE__ = {
+      tenant: "org-wilo-golden-demo",
+      photoTour: true,
+      partialAuthentic3DPreview: false,
+      partialModel: "WILO_AUTHENTIC_PARTIAL_EXPERIMENT_01.spz",
+      partialModelCoverage: "FRONT_AND_LEFT_HYDRONIC_PUMP_ISLAND_ONLY",
+      fullAuthenticGaussian3D: false,
+      fullReconstructionStatus: "PENDING_ADDITIONAL_REAL_CAPTURE",
+      syntheticFallback: false
+    };
+
+    let partialViewer = null;
+    let partialViewerScene = null;
+    let partialViewerCamera = null;
+    let partialViewerRenderer = null;
+    let partialViewerControls = null;
+    let partialViewerAnimating = false;
+    let partialLoaded = false;
+
     function switchViewerMode(mode) {
       currentViewerMode = mode;
       window.__VIEW_MODE__ = mode;
-      console.log('[PHOTO_OVERLAY_CHANGE] Mode:', mode);
+      console.log('[MODE_CHANGE]', mode);
 
       const btnPhoto = document.getElementById('btn-mode-photo');
-      const btn3D = document.getElementById('btn-mode-3d-orbit');
+      const btnPartial = document.getElementById('btn-mode-partial');
+      const btnFull = document.getElementById('btn-mode-3d-full');
       const photoContainer = document.getElementById('wilo-photo-container');
+      const partialContainer = document.getElementById('wilo-partial-preview-container');
       const canvas3DContainer = document.getElementById('wilo-3d-canvas-container');
       const thumbnails = document.getElementById('wilo-thumbnails');
       const viewTitle = document.getElementById('wilo-view-name');
       const statusIndicator = document.getElementById('wilo-hud-status-indicator');
 
       if (btnPhoto) btnPhoto.classList.toggle('active', mode === 'PHOTO_TOUR');
-      if (btn3D) btn3D.classList.toggle('active', mode === '3D_VIEWER');
+      if (btnPartial) btnPartial.classList.toggle('active', mode === 'PARTIAL_PREVIEW');
+      if (btnFull) btnFull.classList.toggle('active', false);
 
       if (mode === 'PHOTO_TOUR') {
         if (photoContainer) photoContainer.style.display = 'flex';
+        if (partialContainer) partialContainer.style.display = 'none';
         if (canvas3DContainer) canvas3DContainer.style.display = 'none';
         if (thumbnails) thumbnails.style.display = 'flex';
         if (statusIndicator) {
           statusIndicator.style.color = '#10b981';
           statusIndicator.textContent = '● High-Definition Multi-Angle Tour Active';
         }
+        window.__VSHOW_STATE__.photoTour = true;
+        window.__VSHOW_STATE__.partialAuthentic3DPreview = false;
         renderPhotoTour();
-      } else if (mode === '3D_VIEWER') {
+
+      } else if (mode === 'PARTIAL_PREVIEW') {
         if (photoContainer) photoContainer.style.display = 'none';
-        if (canvas3DContainer) {
-          canvas3DContainer.style.display = 'flex';
-          if (!scene) init3DScene();
-        }
+        if (canvas3DContainer) canvas3DContainer.style.display = 'none';
+        if (partialContainer) partialContainer.style.display = 'flex';
         if (thumbnails) thumbnails.style.display = 'none';
-        if (viewTitle) viewTitle.textContent = '3D Viewer Ready — Authentic Wilo Reconstruction Pending';
+        if (viewTitle) viewTitle.textContent = 'Partial Experimental Preview — Front + Left Hydronic Pump Island';
+        if (statusIndicator) {
+          statusIndicator.style.color = '#f59e0b';
+          statusIndicator.textContent = '● Partial Authentic 3D Experimental Preview Active';
+        }
+        window.__VSHOW_STATE__.photoTour = false;
+        window.__VSHOW_STATE__.partialAuthentic3DPreview = true;
+        if (!partialLoaded) {
+          loadPartialPreview();
+        }
+
+      } else if (mode === 'FULL_3D_PENDING') {
+        if (photoContainer) photoContainer.style.display = 'none';
+        if (partialContainer) partialContainer.style.display = 'none';
+        if (canvas3DContainer) canvas3DContainer.style.display = 'flex';
+        if (thumbnails) thumbnails.style.display = 'none';
+        if (viewTitle) viewTitle.textContent = 'Authentic Wilo 3D Reconstruction — Pending';
         if (statusIndicator) {
           statusIndicator.style.color = '#38bdf8';
-          statusIndicator.textContent = '● 3D Viewer Ready | Authentic Model: Not Yet Available';
+          statusIndicator.textContent = '● Full 3D Reconstruction: Pending Additional Real-World Capture';
         }
+        window.__VSHOW_STATE__.photoTour = false;
+        window.__VSHOW_STATE__.partialAuthentic3DPreview = false;
+      }
+    }
+
+    function loadPartialPreview() {
+      // Iframe-based viewer: just ensure iframe is present and loaded.
+      // The iframe handles its own loading/error states internally.
+      // Listen for postMessage from iframe to update state.
+      partialLoaded = true;
+      window.__VSHOW_STATE__.partialAuthentic3DPreview = true;
+
+      // Reload iframe if navigating back to this mode
+      const iframe = document.getElementById('partial-3d-iframe');
+      if (iframe && iframe.src.indexOf('partial-3d-viewer.html') < 0) {
+        iframe.src = '/assets/demo/wilo/experimental/partial-3d-viewer.html';
+      }
+    }
+
+    // Listen for messages from the partial-3d-viewer iframe
+    window.addEventListener('message', (evt) => {
+      if (evt.data && evt.data.type === 'PARTIAL_3D_LOADED') {
+        console.log('[PARTIAL_PREVIEW] Iframe 3D loaded. Gaussians:', evt.data.gaussians);
+        window.__VSHOW_STATE__.partialAuthentic3DPreview = true;
+        partialLoaded = true;
+      } else if (evt.data && evt.data.type === 'PARTIAL_3D_ERROR') {
+        console.error('[PARTIAL_PREVIEW] Iframe 3D error:', evt.data.message);
+      }
+    });
+
+
+    function resetViewerCamera() {
+      if (currentViewerMode === 'PARTIAL_PREVIEW' && partialViewerCamera && partialViewerControls) {
+        partialViewerCamera.position.set(0, 1.8, 6.0);
+        partialViewerControls.target.set(0, 0.8, 0);
+        partialViewerControls.update();
+      } else if (camera && orbitControls) {
+        camera.position.set(0, 2.4, 7.5);
+        orbitControls.target.set(0, 1.2, -0.5);
+        orbitControls.update();
       }
     }
 
@@ -539,7 +653,6 @@
       renderer.setSize(container.clientWidth, container.clientHeight);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-      // Append canvas behind overlay pending card
       renderer.domElement.style.position = 'absolute';
       renderer.domElement.style.inset = '0';
       renderer.domElement.style.width = '100%';
@@ -555,46 +668,37 @@
       orbitControls.maxDistance = 15.0;
       orbitControls.target.set(0, 1.2, -0.5);
 
-      // Studio Lighting for viewer engine
       const ambient = new THREE.AmbientLight(0xffffff, 0.85);
       scene.add(ambient);
-
       const dirLight = new THREE.DirectionalLight(0xffffff, 1.3);
       dirLight.position.set(5, 8, 5);
       scene.add(dirLight);
 
-      // ZERO placeholder meshes added (NO walls, NO boxes, NO grid)
-      // Authentic model will be attached in R10 upon reconstruction completion.
-
       window.addEventListener('resize', onWindowResize);
-
       animate3D();
     }
 
     function onWindowResize() {
       const container = document.getElementById('wilo-3d-canvas-container');
-      if (!container || !renderer || !camera) return;
-      camera.aspect = container.clientWidth / container.clientHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
+      if (container && renderer && camera) {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      }
+      if (partialViewerRenderer && partialViewerCamera) {
+        const pc = document.getElementById('partial-splat-canvas-target');
+        if (pc) {
+          partialViewerCamera.aspect = pc.clientWidth / pc.clientHeight;
+          partialViewerCamera.updateProjectionMatrix();
+          partialViewerRenderer.setSize(pc.clientWidth, pc.clientHeight);
+        }
+      }
     }
 
     function animate3D() {
       requestAnimationFrame(animate3D);
-      if (orbitControls && currentViewerMode === '3D_VIEWER') {
-        orbitControls.update();
-      }
-      if (renderer && scene && camera && currentViewerMode === '3D_VIEWER') {
-        renderer.render(scene, camera);
-      }
-    }
-
-    function resetViewerCamera() {
-      if (camera && orbitControls) {
-        camera.position.set(0, 2.4, 7.5);
-        orbitControls.target.set(0, 1.2, -0.5);
-        orbitControls.update();
-      }
+      if (orbitControls && currentViewerMode === 'FULL_3D_PENDING') orbitControls.update();
+      if (renderer && scene && camera && currentViewerMode === 'FULL_3D_PENDING') renderer.render(scene, camera);
     }
 
     function toggleFullscreen() {

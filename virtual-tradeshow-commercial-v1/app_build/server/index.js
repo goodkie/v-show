@@ -2675,6 +2675,17 @@ app.get('/assets/demo/wilo/products/:filename', (req, res) => {
   res.redirect(`/assets/demo/${file.replace('.jpg', '.svg')}`);
 });
 
+app.get('/assets/demo/wilo/experimental/:filename', (req, res) => {
+  const file = req.params.filename;
+  const filePath = path.join(__dirname, '..', 'client', 'assets', 'demo', 'wilo', 'experimental', file);
+  if (fs.existsSync(filePath)) {
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.sendFile(filePath);
+  }
+  res.status(404).json({ error: 'Experimental model asset not found.' });
+});
+
 app.get('/assets/demo/wilo/models/:filename', (req, res) => {
   const file = req.params.filename;
 
