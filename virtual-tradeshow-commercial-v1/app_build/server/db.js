@@ -3407,9 +3407,25 @@ class JSONDatabase {
             { id: '07_interior_view', title: 'Interior Walkthrough', filename: '07_interior_view.jpg', status: 'available', url: '/assets/demo/wilo/booth/07_interior_view.jpg' },
             { id: '08_product_island', title: 'Central Product Island', filename: '08_product_island.jpg', status: 'available', url: '/assets/demo/wilo/booth/08_product_island.jpg' },
             { id: '09_meeting_area', title: 'Executive Meeting Lounge', filename: '09_meeting_area.jpg', status: 'available', url: '/assets/demo/wilo/booth/09_meeting_area.jpg' },
-            { id: '10_display_screen', title: 'Digital Presentation Wall', filename: '10_display_screen.jpg', status: 'available', url: '/assets/demo/wilo/booth/10_display_screen.jpg' },
-            { id: '11_overhead_sign', title: 'Overhead Truss & Signage', filename: '11_overhead_sign.jpg', status: 'available', url: '/assets/demo/wilo/booth/11_overhead_sign.jpg' },
-            { id: '12_wide_overview', title: 'Panoramic Hall Overview', filename: '12_wide_overview.jpg', status: 'available', url: '/assets/demo/wilo/booth/12_wide_overview.jpg' }
+          photoTour: true,
+          captureDatasetAvailable: true,
+          authenticGaussian3D: false,
+          fallbackMode: 'photo_tour',
+          reconstructionStatus: 'AUTHENTIC_CAPTURE_AVAILABLE_RECONSTRUCTION_PENDING',
+          viewsAvailable: 12,
+          boothViews: [
+            { id: 'view_01_front_hero', title: '01. Front Hero View', filename: 'view_01.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_01.jpg' },
+            { id: 'view_02_front_elevation', title: '02. Front Center Elevation', filename: 'view_02.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_02.jpg' },
+            { id: 'view_03_left_perspective', title: '03. Left Perspective Angle', filename: 'view_03.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_03.jpg' },
+            { id: 'view_04_left_flank', title: '04. Left Flank & Reception', filename: 'view_04.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_04.jpg' },
+            { id: 'view_05_interior_entrance', title: '05. Interior Aisle Entrance', filename: 'view_05.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_05.jpg' },
+            { id: 'view_06_central_products', title: '06. Central Hydronic Pump Island', filename: 'view_06.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_06.jpg' },
+            { id: 'view_07_rear_presentation', title: '07. Digital Presentation Wall', filename: 'view_07.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_07.jpg' },
+            { id: 'view_08_meeting_lounge', title: '08. Executive Consultation Lounge', filename: 'view_08.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_08.jpg' },
+            { id: 'view_09_right_rear', title: '09. Right Rear Perspective', filename: 'view_09.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_09.jpg' },
+            { id: 'view_10_right_flank', title: '10. Right Flank & Smart Systems', filename: 'view_10.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_10.jpg' },
+            { id: 'view_11_overhead_truss', title: '11. Overhead Lighting & Branding', filename: 'view_11.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_11.jpg' },
+            { id: 'view_12_hall_overview', title: '12. Panoramic Hall Overview', filename: 'view_12.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_12.jpg' }
           ],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
@@ -3417,22 +3433,24 @@ class JSONDatabase {
         db.booths.push(wiloBooth);
       } else {
         wiloBooth.photoTour = true;
+        wiloBooth.captureDatasetAvailable = true;
+        wiloBooth.authenticGaussian3D = false;
         wiloBooth.fallbackMode = 'photo_tour';
-        wiloBooth.reconstructionStatus = 'READY_PHOTO_TOUR';
+        wiloBooth.reconstructionStatus = 'AUTHENTIC_CAPTURE_AVAILABLE_RECONSTRUCTION_PENDING';
         wiloBooth.viewsAvailable = 12;
         wiloBooth.boothViews = [
-          { id: '01_front_hero', title: 'Front Hero View', filename: '01_front_hero.jpg', status: 'available', url: '/assets/demo/wilo/booth/01_front_hero.jpg' },
-          { id: '02_front_center', title: 'Front Center Elevation', filename: '02_front_center.jpg', status: 'available', url: '/assets/demo/wilo/booth/02_front_center.jpg' },
-          { id: '03_left_angle', title: 'Left Perspective Angle', filename: '03_left_angle.jpg', status: 'available', url: '/assets/demo/wilo/booth/03_left_angle.jpg' },
-          { id: '04_right_angle', title: 'Right Perspective Angle', filename: '04_right_angle.jpg', status: 'available', url: '/assets/demo/wilo/booth/04_right_angle.jpg' },
-          { id: '05_left_side', title: 'Left Flank Perspective', filename: '05_left_side.jpg', status: 'available', url: '/assets/demo/wilo/booth/05_left_side.jpg' },
-          { id: '06_right_side', title: 'Right Flank Perspective', filename: '06_right_side.jpg', status: 'available', url: '/assets/demo/wilo/booth/06_right_side.jpg' },
-          { id: '07_interior_view', title: 'Interior Walkthrough', filename: '07_interior_view.jpg', status: 'available', url: '/assets/demo/wilo/booth/07_interior_view.jpg' },
-          { id: '08_product_island', title: 'Central Product Island', filename: '08_product_island.jpg', status: 'available', url: '/assets/demo/wilo/booth/08_product_island.jpg' },
-          { id: '09_meeting_area', title: 'Executive Meeting Lounge', filename: '09_meeting_area.jpg', status: 'available', url: '/assets/demo/wilo/booth/09_meeting_area.jpg' },
-          { id: '10_display_screen', title: 'Digital Presentation Wall', filename: '10_display_screen.jpg', url: '/assets/demo/wilo/booth/10_display_screen.jpg' },
-          { id: '11_overhead_sign', title: 'Overhead Truss & Signage', filename: '11_overhead_sign.jpg', status: 'available', url: '/assets/demo/wilo/booth/11_overhead_sign.jpg' },
-          { id: '12_wide_overview', title: 'Panoramic Hall Overview', filename: '12_wide_overview.jpg', status: 'available', url: '/assets/demo/wilo/booth/12_wide_overview.jpg' }
+          { id: 'view_01_front_hero', title: '01. Front Hero View', filename: 'view_01.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_01.jpg' },
+          { id: 'view_02_front_elevation', title: '02. Front Center Elevation', filename: 'view_02.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_02.jpg' },
+          { id: 'view_03_left_perspective', title: '03. Left Perspective Angle', filename: 'view_03.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_03.jpg' },
+          { id: 'view_04_left_flank', title: '04. Left Flank & Reception', filename: 'view_04.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_04.jpg' },
+          { id: 'view_05_interior_entrance', title: '05. Interior Aisle Entrance', filename: 'view_05.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_05.jpg' },
+          { id: 'view_06_central_products', title: '06. Central Hydronic Pump Island', filename: 'view_06.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_06.jpg' },
+          { id: 'view_07_rear_presentation', title: '07. Digital Presentation Wall', filename: 'view_07.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_07.jpg' },
+          { id: 'view_08_meeting_lounge', title: '08. Executive Consultation Lounge', filename: 'view_08.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_08.jpg' },
+          { id: 'view_09_right_rear', title: '09. Right Rear Perspective', filename: 'view_09.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_09.jpg' },
+          { id: 'view_10_right_flank', title: '10. Right Flank & Smart Systems', filename: 'view_10.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_10.jpg' },
+          { id: 'view_11_overhead_truss', title: '11. Overhead Lighting & Branding', filename: 'view_11.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_11.jpg' },
+          { id: 'view_12_hall_overview', title: '12. Panoramic Hall Overview', filename: 'view_12.jpg', status: 'available', url: '/assets/demo/wilo/authentic-booth/view_12.jpg' }
         ];
       }
 
