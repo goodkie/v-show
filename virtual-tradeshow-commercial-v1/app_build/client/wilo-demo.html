@@ -395,6 +395,7 @@
     ];
 
     // Global Runtime Inspection State
+    window.boothViews = boothViews;
     window.__ACTIVE_TENANT__ = 'org-wilo-golden-demo';
     window.__VIEW_MODE__ = 'PHOTO_TOUR';
     window.__VSHOW_STATE__ = {
@@ -426,6 +427,7 @@
         demoData = await res.json();
         if (demoData && demoData.booth && Array.isArray(demoData.booth.boothViews) && demoData.booth.boothViews.length > 0) {
           boothViews = demoData.booth.boothViews;
+          window.boothViews = boothViews;
         }
         renderCatalog();
         renderResources();
