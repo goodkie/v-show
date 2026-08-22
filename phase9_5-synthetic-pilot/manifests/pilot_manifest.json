@@ -1,0 +1,20 @@
+{
+  "pilotType": "SYNTHETIC_TEST",
+  "company": "AUREX Automation Technologies",
+  "event": "Virtual Industry Innovation Expo 2026 — Synthetic Production Pilot",
+  "boothNumber": "D-401",
+  "adminEmail": "pilot-admin@aurex-automation.test",
+  "productCount": 15,
+  "expectedSourceImages": 60,
+  "actualSourceImages": 60,
+  "resolution": "1600x1200",
+  "renderMethod": "deterministic_3d_webgl2",
+  "reconstructionTruth": "synthetic_capture_ready",
+  "analyticsSourceType": "SYNTHETIC_TEST",
+  "datasetLocation": "E:\\vivpr\\ai\\v-show\\phase9_5-synthetic-pilot\\booth\\source-images",
+  "contactSheet": "E:\\vivpr\\ai\\v-show\\phase9_5-synthetic-pilot\\booth\\reference\\aurex_60view_contact_sheet.jpg",
+  "cameraPathManifest": "E:\\vivpr\\ai\\v-show\\phase9_5-synthetic-pilot\\booth\\scene\\camera_path.json",
+  "sceneManifest": "E:\\vivpr\\ai\\v-show\\phase9_5-synthetic-pilot\\booth\\scene\\booth_scene.json",
+  "captureQA": "PASS",
+  "createdAt": "2026-08-16T10:20:50Z"
+}

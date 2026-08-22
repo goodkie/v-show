@@ -1,0 +1,32 @@
+[
+  {
+    "rfqId": "AUREX-RFQ-001",
+    "productSku": "AXR-500",
+    "productName": "AXR-500 Autonomous Mobile Robot",
+    "quantity": 2,
+    "targetDelivery": "Q4 2026",
+    "buyerCompany": "Smart Logistics Global",
+    "buyerEmail": "buyer01@example.test",
+    "type": "SYNTHETIC_TEST"
+  },
+  {
+    "rfqId": "AUREX-RFQ-002",
+    "productSku": "COBOT-C7",
+    "productName": "COBOT C7 Collaborative Robot",
+    "quantity": 4,
+    "targetDelivery": "Q1 2027",
+    "buyerCompany": "Auto Assembly Systems",
+    "buyerEmail": "buyer04@example.test",
+    "type": "SYNTHETIC_TEST"
+  },
+  {
+    "rfqId": "AUREX-RFQ-003",
+    "productSku": "VIS-4K",
+    "productName": "VIS-4K Machine Vision System",
+    "quantity": 10,
+    "targetDelivery": "Q4 2026",
+    "buyerCompany": "Vision Systems International",
+    "buyerEmail": "buyer05@example.test",
+    "type": "SYNTHETIC_TEST"
+  }
+]

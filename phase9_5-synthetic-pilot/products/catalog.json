@@ -1,0 +1,152 @@
+[
+  {
+    "name": "AXR-500 Autonomous Mobile Robot",
+    "sku": "AXR-500",
+    "category": "Autonomous Robotics",
+    "moq": 1,
+    "priceMode": "contact",
+    "description": "Synthetic test AMR designed for warehouse and smart factory intralogistics.",
+    "position": [0, 0.4, 0],
+    "testData": true
+  },
+  {
+    "name": "COBOT C7 Collaborative Robot",
+    "sku": "COBOT-C7",
+    "category": "Collaborative Robotics",
+    "moq": 1,
+    "priceMode": "contact",
+    "description": "Seven-axis collaborative robotic arm for flexible industrial automation.",
+    "position": [-3.2, 1.0, -1.5],
+    "testData": true
+  },
+  {
+    "name": "VIS-4K Machine Vision System",
+    "sku": "VIS-4K",
+    "category": "Machine Vision",
+    "moq": 2,
+    "priceMode": "contact",
+    "description": "4K industrial vision inspection platform for automated quality control.",
+    "position": [3.1, 1.2, -1.0],
+    "testData": true
+  },
+  {
+    "name": "FLEX-20 Smart Conveyor",
+    "sku": "FLEX-20",
+    "category": "Material Handling",
+    "moq": 1,
+    "priceMode": "contact",
+    "description": "Modular smart conveyor system with programmable routing.",
+    "position": [-2.5, 0.8, -2.8],
+    "testData": true
+  },
+  {
+    "name": "LIDAR X360 Industrial Scanner",
+    "sku": "LIDAR-X360",
+    "category": "Industrial Sensors",
+    "moq": 5,
+    "priceMode": "contact",
+    "description": "360-degree industrial LiDAR for robotics and facility mapping.",
+    "position": [2.2, 1.1, -0.5],
+    "testData": true
+  },
+  {
+    "name": "GRIP-PRO Adaptive Robot Gripper",
+    "sku": "GRIP-PRO",
+    "category": "Robot Tooling",
+    "moq": 5,
+    "priceMode": "contact",
+    "description": "Adaptive robotic gripper for mixed-object industrial handling.",
+    "position": [-2.0, 1.0, -0.8],
+    "testData": true
+  },
+  {
+    "name": "EDGE-X Industrial Edge Computer",
+    "sku": "EDGE-X",
+    "category": "Industrial Computing",
+    "moq": 5,
+    "priceMode": "contact",
+    "description": "Rugged edge computer for AI inference and industrial control.",
+    "position": [3.5, 1.3, -2.5],
+    "testData": true
+  },
+  {
+    "name": "SAFE-500 Safety Scanner",
+    "sku": "SAFE-500",
+    "category": "Safety Systems",
+    "moq": 5,
+    "priceMode": "contact",
+    "description": "Industrial safety scanner for collaborative robotic workcells.",
+    "position": [2.5, 0.6, 1.5],
+    "testData": true
+  },
+  {
+    "name": "SERVO-X8 Motion Controller",
+    "sku": "SERVO-X8",
+    "category": "Motion Control",
+    "moq": 10,
+    "priceMode": "contact",
+    "description": "Eight-axis high-speed servo control platform.",
+    "position": [1.5, 1.5, -3.8],
+    "testData": true
+  },
+  {
+    "name": "PLC-NOVA Programmable Controller",
+    "sku": "PLC-NOVA",
+    "category": "Industrial Control",
+    "moq": 10,
+    "priceMode": "contact",
+    "description": "Modular PLC platform for smart factory automation.",
+    "position": [0.5, 1.5, -3.8],
+    "testData": true
+  },
+  {
+    "name": "AGV-FLEET Fleet Management Platform",
+    "sku": "AGV-FLEET",
+    "category": "Fleet Software",
+    "moq": 1,
+    "priceMode": "contact",
+    "description": "Synthetic fleet orchestration software for AGV and AMR systems.",
+    "position": [-0.5, 2.2, -3.9],
+    "testData": true
+  },
+  {
+    "name": "DTWIN Factory Digital Twin",
+    "sku": "DTWIN",
+    "category": "Digital Twin",
+    "moq": 1,
+    "priceMode": "contact",
+    "description": "Factory simulation and digital twin visualization platform.",
+    "position": [0.0, 2.5, -3.9],
+    "testData": true
+  },
+  {
+    "name": "INSPECT-AI Vision Inspection Platform",
+    "sku": "INSPECT-AI",
+    "category": "AI Inspection",
+    "moq": 1,
+    "priceMode": "contact",
+    "description": "AI-assisted industrial visual inspection platform.",
+    "position": [2.8, 1.2, -1.8],
+    "testData": true
+  },
+  {
+    "name": "PICK-X Robotic Picking Cell",
+    "sku": "PICK-X",
+    "category": "Robotic Cells",
+    "moq": 1,
+    "priceMode": "contact",
+    "description": "Integrated robotic bin-picking and sorting cell.",
+    "position": [-3.5, 1.2, -2.5],
+    "testData": true
+  },
+  {
+    "name": "SMART-I/O Distributed I/O System",
+    "sku": "SMART-IO",
+    "category": "Industrial I/O",
+    "moq": 10,
+    "priceMode": "contact",
+    "description": "Distributed industrial I/O modules for smart manufacturing.",
+    "position": [-1.5, 1.4, -3.8],
+    "testData": true
+  }
+]

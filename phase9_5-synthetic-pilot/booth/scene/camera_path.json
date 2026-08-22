@@ -1,0 +1,1027 @@
+{
+  "cameraCount": 60,
+  "focalLengthMm": 32,
+  "resolution": "1600x1200",
+  "poses": [
+    {
+      "frame": 1,
+      "file": "booth_001.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        -10.3366,
+        1.65,
+        2.7622
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 2,
+      "file": "booth_002.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        -9.8857,
+        1.6987,
+        4.1173
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 3,
+      "file": "booth_003.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        -9.253,
+        1.7421,
+        5.4159
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 4,
+      "file": "booth_004.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        -8.4435,
+        1.7756,
+        6.6307
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 5,
+      "file": "booth_005.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        -7.4671,
+        1.7954,
+        7.7347
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 6,
+      "file": "booth_006.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        -6.3384,
+        1.7995,
+        8.7016
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 7,
+      "file": "booth_007.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        -5.0771,
+        1.7874,
+        9.5074
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 8,
+      "file": "booth_008.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        -3.7075,
+        1.7604,
+        10.1314
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 9,
+      "file": "booth_009.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        -2.2575,
+        1.7214,
+        10.5571
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 10,
+      "file": "booth_010.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        -0.7581,
+        1.6747,
+        10.7729
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 11,
+      "file": "booth_011.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        0.7581,
+        1.6253,
+        10.7729
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 12,
+      "file": "booth_012.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        2.2575,
+        1.5786,
+        10.5571
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 13,
+      "file": "booth_013.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        3.7075,
+        1.5396,
+        10.1314
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 14,
+      "file": "booth_014.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        5.0771,
+        1.5126,
+        9.5074
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 15,
+      "file": "booth_015.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        6.3384,
+        1.5005,
+        8.7016
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 16,
+      "file": "booth_016.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        7.4671,
+        1.5046,
+        7.7347
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 17,
+      "file": "booth_017.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        8.4435,
+        1.5244,
+        6.6307
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 18,
+      "file": "booth_018.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        9.253,
+        1.5579,
+        5.4159
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 19,
+      "file": "booth_019.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        9.8857,
+        1.6013,
+        4.1173
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 20,
+      "file": "booth_020.jpg",
+      "pass": "A_EXTERIOR_ARC",
+      "position": [
+        10.3366,
+        1.65,
+        2.7622
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 21,
+      "file": "booth_021.jpg",
+      "pass": "B_MEDIUM_ARC",
+      "position": [
+        -7.1014,
+        1.55,
+        3.1
+      ],
+      "target": [
+        -0.568,
+        1.1,
+        -1.2
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 22,
+      "file": "booth_022.jpg",
+      "pass": "B_MEDIUM_ARC",
+      "position": [
+        -6.4032,
+        1.5945,
+        4.1064
+      ],
+      "target": [
+        -0.512,
+        1.1,
+        -1.2
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 23,
+      "file": "booth_023.jpg",
+      "pass": "B_MEDIUM_ARC",
+      "position": [
+        -5.5505,
+        1.6368,
+        4.982
+      ],
+      "target": [
+        -0.444,
+        1.1,
+        -1.2
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 24,
+      "file": "booth_024.jpg",
+      "pass": "B_MEDIUM_ARC",
+      "position": [
+        -4.5701,
+        1.6747,
+        5.7031
+      ],
+      "target": [
+        -0.366,
+        1.1,
+        -1.2
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 25,
+      "file": "booth_025.jpg",
+      "pass": "B_MEDIUM_ARC",
+      "position": [
+        -3.4925,
+        1.7064,
+        6.2523
+      ],
+      "target": [
+        -0.279,
+        1.1,
+        -1.2
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 26,
+      "file": "booth_026.jpg",
+      "pass": "B_MEDIUM_ARC",
+      "position": [
+        -2.3502,
+        1.7302,
+        6.6193
+      ],
+      "target": [
+        -0.188,
+        1.1,
+        -1.2
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 27,
+      "file": "booth_027.jpg",
+      "pass": "B_MEDIUM_ARC",
+      "position": [
+        -1.1758,
+        1.745,
+        6.8009
+      ],
+      "target": [
+        -0.094,
+        1.1,
+        -1.2
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 28,
+      "file": "booth_028.jpg",
+      "pass": "B_MEDIUM_ARC",
+      "position": [
+        0.0,
+        1.75,
+        6.8
+      ],
+      "target": [
+        0.0,
+        1.1,
+        -1.2
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 29,
+      "file": "booth_029.jpg",
+      "pass": "B_MEDIUM_ARC",
+      "position": [
+        1.1493,
+        1.745,
+        6.6249
+      ],
+      "target": [
+        0.092,
+        1.1,
+        -1.2
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 30,
+      "file": "booth_030.jpg",
+      "pass": "B_MEDIUM_ARC",
+      "position": [
+        2.2479,
+        1.7302,
+        6.2876
+      ],
+      "target": [
+        0.18,
+        1.1,
+        -1.2
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 31,
+      "file": "booth_031.jpg",
+      "pass": "B_MEDIUM_ARC",
+      "position": [
+        3.2761,
+        1.7064,
+        5.8029
+      ],
+      "target": [
+        0.262,
+        1.1,
+        -1.2
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 32,
+      "file": "booth_032.jpg",
+      "pass": "B_MEDIUM_ARC",
+      "position": [
+        4.2177,
+        1.6747,
+        5.1863
+      ],
+      "target": [
+        0.337,
+        1.1,
+        -1.2
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 33,
+      "file": "booth_033.jpg",
+      "pass": "B_MEDIUM_ARC",
+      "position": [
+        5.0602,
+        1.6368,
+        4.4536
+      ],
+      "target": [
+        0.405,
+        1.1,
+        -1.2
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 34,
+      "file": "booth_034.jpg",
+      "pass": "B_MEDIUM_ARC",
+      "position": [
+        5.7934,
+        1.5945,
+        3.6201
+      ],
+      "target": [
+        0.463,
+        1.1,
+        -1.2
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 35,
+      "file": "booth_035.jpg",
+      "pass": "B_MEDIUM_ARC",
+      "position": [
+        6.4086,
+        1.55,
+        2.7
+      ],
+      "target": [
+        0.513,
+        1.1,
+        -1.2
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 36,
+      "file": "booth_036.jpg",
+      "pass": "C_INTERIOR_WALK",
+      "position": [
+        -2.8,
+        1.55,
+        3.5
+      ],
+      "target": [
+        -3.0,
+        1.1,
+        -1.5
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 37,
+      "file": "booth_037.jpg",
+      "pass": "C_INTERIOR_WALK",
+      "position": [
+        -2.5,
+        1.5,
+        2.2
+      ],
+      "target": [
+        -3.1,
+        1.1,
+        -1.5
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 38,
+      "file": "booth_038.jpg",
+      "pass": "C_INTERIOR_WALK",
+      "position": [
+        -2.0,
+        1.5,
+        1.0
+      ],
+      "target": [
+        -2.8,
+        1.1,
+        -1.5
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 39,
+      "file": "booth_039.jpg",
+      "pass": "C_INTERIOR_WALK",
+      "position": [
+        -1.5,
+        1.55,
+        0.2
+      ],
+      "target": [
+        0.0,
+        0.8,
+        0.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 40,
+      "file": "booth_040.jpg",
+      "pass": "C_INTERIOR_WALK",
+      "position": [
+        -1.0,
+        1.6,
+        -0.5
+      ],
+      "target": [
+        -0.5,
+        1.8,
+        -3.8
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 41,
+      "file": "booth_041.jpg",
+      "pass": "C_INTERIOR_WALK",
+      "position": [
+        0.0,
+        1.65,
+        0.5
+      ],
+      "target": [
+        0.0,
+        0.6,
+        0.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 42,
+      "file": "booth_042.jpg",
+      "pass": "C_INTERIOR_WALK",
+      "position": [
+        0.0,
+        1.6,
+        -0.8
+      ],
+      "target": [
+        0.0,
+        2.2,
+        -3.9
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 43,
+      "file": "booth_043.jpg",
+      "pass": "C_INTERIOR_WALK",
+      "position": [
+        0.8,
+        1.6,
+        -1.0
+      ],
+      "target": [
+        2.8,
+        1.2,
+        -1.5
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 44,
+      "file": "booth_044.jpg",
+      "pass": "C_INTERIOR_WALK",
+      "position": [
+        1.5,
+        1.55,
+        -0.5
+      ],
+      "target": [
+        3.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 45,
+      "file": "booth_045.jpg",
+      "pass": "C_INTERIOR_WALK",
+      "position": [
+        2.0,
+        1.55,
+        0.5
+      ],
+      "target": [
+        3.1,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 46,
+      "file": "booth_046.jpg",
+      "pass": "C_INTERIOR_WALK",
+      "position": [
+        2.5,
+        1.5,
+        1.8
+      ],
+      "target": [
+        2.2,
+        1.0,
+        -0.5
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 47,
+      "file": "booth_047.jpg",
+      "pass": "C_INTERIOR_WALK",
+      "position": [
+        2.8,
+        1.55,
+        2.8
+      ],
+      "target": [
+        0.0,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 48,
+      "file": "booth_048.jpg",
+      "pass": "C_INTERIOR_WALK",
+      "position": [
+        2.0,
+        1.6,
+        3.8
+      ],
+      "target": [
+        0.0,
+        1.3,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 49,
+      "file": "booth_049.jpg",
+      "pass": "C_INTERIOR_WALK",
+      "position": [
+        1.0,
+        1.65,
+        4.5
+      ],
+      "target": [
+        0.0,
+        1.3,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 50,
+      "file": "booth_050.jpg",
+      "pass": "C_INTERIOR_WALK",
+      "position": [
+        0.0,
+        1.65,
+        5.0
+      ],
+      "target": [
+        0.0,
+        1.3,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 51,
+      "file": "booth_051.jpg",
+      "pass": "D_CLOSE_DETAIL_RETURN",
+      "position": [
+        -3.0,
+        1.4,
+        0.2
+      ],
+      "target": [
+        -3.2,
+        1.0,
+        -1.5
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 52,
+      "file": "booth_052.jpg",
+      "pass": "D_CLOSE_DETAIL_RETURN",
+      "position": [
+        -2.4,
+        1.35,
+        -0.8
+      ],
+      "target": [
+        -2.0,
+        1.0,
+        -0.8
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 53,
+      "file": "booth_053.jpg",
+      "pass": "D_CLOSE_DETAIL_RETURN",
+      "position": [
+        -1.2,
+        1.3,
+        0.8
+      ],
+      "target": [
+        0.0,
+        0.4,
+        0.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 54,
+      "file": "booth_054.jpg",
+      "pass": "D_CLOSE_DETAIL_RETURN",
+      "position": [
+        1.2,
+        1.3,
+        0.8
+      ],
+      "target": [
+        0.0,
+        0.4,
+        0.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 55,
+      "file": "booth_055.jpg",
+      "pass": "D_CLOSE_DETAIL_RETURN",
+      "position": [
+        2.2,
+        1.35,
+        0.5
+      ],
+      "target": [
+        3.1,
+        1.2,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 56,
+      "file": "booth_056.jpg",
+      "pass": "D_CLOSE_DETAIL_RETURN",
+      "position": [
+        2.0,
+        1.4,
+        -1.2
+      ],
+      "target": [
+        1.5,
+        1.5,
+        -3.8
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 57,
+      "file": "booth_057.jpg",
+      "pass": "D_CLOSE_DETAIL_RETURN",
+      "position": [
+        -0.5,
+        1.5,
+        -2.0
+      ],
+      "target": [
+        0.0,
+        2.0,
+        -3.9
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 58,
+      "file": "booth_058.jpg",
+      "pass": "D_CLOSE_DETAIL_RETURN",
+      "position": [
+        -3.5,
+        1.7,
+        5.5
+      ],
+      "target": [
+        0.0,
+        1.3,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 59,
+      "file": "booth_059.jpg",
+      "pass": "D_CLOSE_DETAIL_RETURN",
+      "position": [
+        0.0,
+        1.75,
+        6.2
+      ],
+      "target": [
+        0.0,
+        1.3,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    },
+    {
+      "frame": 60,
+      "file": "booth_060.jpg",
+      "pass": "D_CLOSE_DETAIL_RETURN",
+      "position": [
+        3.5,
+        1.7,
+        5.5
+      ],
+      "target": [
+        0.0,
+        1.3,
+        -1.0
+      ],
+      "focalLengthMm": 32,
+      "fov": 54.4
+    }
+  ]
+}

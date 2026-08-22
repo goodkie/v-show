@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>DN'a ROBOTIC | 3D Gaussian Splatting Virtual Tour</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ══════════════════════════════════════════════
+   DN'a ROBOTIC — 3DGS Ultra Virtual Tour
+   Design Variables
+══════════════════════════════════════════════ */
+:root {
+  --blue:      #0057B8;
+  --blue-lt:   #0284c7;
+  --cyan:      #00C2FF;
+  --cyan-dim:  rgba(0,194,255,0.18);
+  --dark:      #070e17;
+  --dark-card: rgba(7,14,23,0.92);
+  --border:    rgba(0,194,255,0.22);
+  --border-lt: rgba(255,255,255,0.1);
+  --glow:      0 0 24px rgba(0,194,255,0.35);
+  --ease:      cubic-bezier(0.4,0,0.2,1);
+  --trans:     all 0.28s cubic-bezier(0.4,0,0.2,1);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+html, body {
+  width:100%; height:100dvh;
+  background: var(--dark);
+  color: #fff;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Canvas Host ── */
+#splat-host {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(ellipse at 50% 60%, #0b1a2e 0%, #070e17 100%);
+}
+#splat-host canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+/* ══════════════════════════════════════════════
+   LOADING SCREEN
+══════════════════════════════════════════════ */
+#loading {
+  position: fixed; inset:0; z-index:2000;
+  background: var(--dark);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 20px;
+  transition: opacity 1s ease, transform 1s ease;
+}
+#loading.out {
+  opacity: 0;
+  transform: scale(1.04);
+  pointer-events: none;
+}
+
+.ld-logo {
+  font-size: 32px; font-weight: 800; letter-spacing: -1px;
+  color: #fff;
+}
+.ld-logo span { color: var(--cyan); }
+
+.ld-badge {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--cyan);
+  background: var(--cyan-dim);
+  border: 1px solid var(--border);
+  padding: 5px 14px; border-radius: 30px;
+  animation: glow-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%,100% { box-shadow: 0 0 8px rgba(0,194,255,.2); }
+  50%      { box-shadow: 0 0 28px rgba(0,194,255,.55); }
+}
+
+.ld-track-wrap {
+  width: 300px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.ld-track {
+  width: 100%; height: 2px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px; overflow: hidden;
+}
+.ld-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--blue) 0%, var(--cyan) 100%);
+  border-radius: 2px;
+  transition: width 0.35s ease;
+  box-shadow: 0 0 10px var(--cyan);
+}
+.ld-row {
+  display: flex; justify-content: space-between;
+  font-size: 12px; color: rgba(255,255,255,0.4);
+}
+
+.ld-msg {
+  font-size: 13px; color: rgba(255,255,255,0.45);
+  text-align: center; line-height: 1.7;
+}
+
+.ld-particles {
+  position: absolute; inset:0; overflow:hidden; pointer-events:none;
+}
+.particle {
+  position: absolute;
+  width: 2px; height: 2px;
+  background: var(--cyan);
+  border-radius: 50%;
+  opacity: 0;
+  animation: float-particle var(--dur,8s) ease-in-out infinite var(--del,0s);
+}
+@keyframes float-particle {
+  0%   { opacity:0; transform: translateY(100vh) translateX(0); }
+  20%  { opacity: .6; }
+  80%  { opacity: .3; }
+  100% { opacity:0; transform: translateY(-20vh) translateX(var(--dx,30px)); }
+}
+
+/* ══════════════════════════════════════════════
+   TOP BAR
+══════════════════════════════════════════════ */
+#topbar {
+  position: fixed; top:0; left:0; right:0; height:54px;
+  z-index: 500;
+  background: rgba(7,14,23,0.88);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  border-bottom: 1px solid var(--border-lt);
+  display: flex; align-items: center;
+  padding: 0 16px; gap: 12px;
+}
+
+.tb-logo {
+  font-size: 19px; font-weight: 800; letter-spacing: -0.5px;
+  color: #fff; text-decoration: none;
+  display: flex; align-items: center; gap: 8px;
+}
+.tb-logo span { color: var(--cyan); }
+
+.tb-badge {
+  font-size: 9.5px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--cyan);
+  background: var(--cyan-dim);
+  border: 1px solid var(--border);
+  padding: 3px 10px; border-radius: 20px;
+  white-space: nowrap;
+}
+
+.tb-sep { flex:1; }
+
+.tb-btn {
+  height: 32px; padding: 0 14px;
+  border-radius: 7px;
+  border: 1px solid var(--border-lt);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.75);
+  font-size: 12px; font-weight: 500;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  transition: var(--trans);
+  white-space: nowrap;
+}
+.tb-btn:hover { background: rgba(255,255,255,0.12); color:#fff; border-color: rgba(255,255,255,0.22); }
+
+.tb-btn.accent {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+.tb-btn.accent:hover { background: #0066d6; }
+
+/* ══════════════════════════════════════════════
+   LEFT SIDEBAR
+══════════════════════════════════════════════ */
+#sidebar {
+  position: fixed; top:54px; left:0; bottom:90px;
+  width: 172px; z-index:400;
+  padding: 12px 8px;
+  display: flex; flex-direction: column; gap:4px;
+  pointer-events: none;
+}
+
+.sb-btn {
+  width: 100%; padding: 10px 12px;
+  border-radius: 9px;
+  background: rgba(7,14,23,0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid transparent;
+  color: rgba(255,255,255,0.6);
+  font-size: 12.5px; font-weight: 500;
+  cursor: pointer; text-align: left;
+  display: flex; align-items: center; gap: 10px;
+  transition: var(--trans);
+  pointer-events: all;
+}
+.sb-btn:hover, .sb-btn.on {
+  background: rgba(0,87,184,0.3);
+  border-color: var(--border);
+  color: #fff;
+}
+.sb-btn.on {
+  box-shadow: var(--glow);
+  color: var(--cyan);
+}
+.sb-divider {
+  height:1px; background: rgba(255,255,255,0.07); margin: 6px 4px;
+}
+
+/* ══════════════════════════════════════════════
+   BOTTOM WAYPOINT NAV
+══════════════════════════════════════════════ */
+#waypoints {
+  position: fixed; bottom:0; left:0; right:0;
+  z-index: 500;
+  background: rgba(7,14,23,0.92);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border-top: 1px solid var(--border);
+  padding: 10px 14px 12px;
+}
+
+.wp-loc-row {
+  display: flex; align-items: center; gap:8px;
+  margin-bottom: 8px;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+}
+.wp-loc-row .loc-name {
+  color: var(--cyan); font-size:12px;
+  font-weight: 700; letter-spacing: 0;
+  text-transform: none;
+}
+
+.wp-tabs {
+  display: flex; gap: 6px;
+}
+
+.wp-tab {
+  flex:1; padding: 7px 4px;
+  border-radius: 9px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.5);
+  font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.3px; text-transform: uppercase;
+  cursor: pointer; text-align: center;
+  transition: var(--trans);
+  line-height: 1;
+}
+.wp-tab:hover {
+  background: rgba(0,87,184,0.22);
+  border-color: rgba(0,194,255,0.28);
+  color: #fff;
+}
+.wp-tab.on {
+  background: rgba(0,87,184,0.38);
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 14px rgba(0,194,255,.22);
+}
+.wp-icon { font-size: 18px; display:block; margin-bottom:4px; }
+.wp-label { display: block; }
+
+.auto-tour-btn {
+  width:100%; margin-top:8px; padding: 8px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(0,87,184,.38), rgba(0,194,255,.15));
+  border: 1px solid rgba(0,194,255,.28);
+  color: var(--cyan);
+  font-size: 11.5px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  cursor: pointer;
+  display: flex; align-items:center; justify-content:center; gap:8px;
+  transition: var(--trans);
+}
+.auto-tour-btn:hover { background: linear-gradient(135deg, rgba(0,87,184,.55), rgba(0,194,255,.25)); }
+.auto-tour-btn.stop { color:#ff7a7a; border-color: rgba(255,122,122,.3); background: rgba(255,122,122,.08); }
+
+/* ══════════════════════════════════════════════
+   CONTROLS HINT
+══════════════════════════════════════════════ */
+#hint {
+  position: fixed; bottom:100px; right:16px;
+  z-index:400;
+  background: rgba(7,14,23,0.82);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border-lt);
+  border-radius: 10px; padding: 10px 14px;
+  font-size: 11.5px; color: rgba(255,255,255,.4);
+  line-height: 1.9; pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+#hint.gone { opacity:0; }
+
+/* ══════════════════════════════════════════════
+   PHASE BANNER
+══════════════════════════════════════════════ */
+#phase-banner {
+  position: fixed; top: 66px; left:50%; transform: translateX(-50%);
+  z-index: 600;
+  background: rgba(7,14,23,0.96);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(0,194,255,0.32);
+  border-radius: 12px;
+  padding: 11px 18px;
+  display: flex; align-items: center; gap:14px;
+  max-width: 640px; width: calc(100% - 28px);
+  animation: banner-in 0.5s ease 1.2s both;
+  box-shadow: 0 4px 32px rgba(0,0,0,.5);
+}
+@keyframes banner-in {
+  from { opacity:0; transform: translateX(-50%) translateY(-12px); }
+  to   { opacity:1; transform: translateX(-50%) translateY(0); }
+}
+.banner-icon { font-size: 22px; flex-shrink:0; }
+.banner-text {
+  flex:1; font-size:12px; line-height:1.55;
+  color: rgba(255,255,255,.65);
+}
+.banner-text strong { color: var(--cyan); }
+.banner-close {
+  width:26px; height:26px; border-radius:6px;
+  background: rgba(255,255,255,.08);
+  border:none; color: rgba(255,255,255,.4);
+  font-size:18px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; transition:var(--trans);
+}
+.banner-close:hover { background: rgba(255,255,255,.16); color:#fff; }
+
+/* ══════════════════════════════════════════════
+   PRODUCT INFO PANEL
+══════════════════════════════════════════════ */
+#prod-panel {
+  position: fixed; right:16px; top:50%;
+  transform: translateY(-50%) translateX(calc(100% + 24px));
+  z-index: 450;
+  width: 286px;
+  background: rgba(7,14,23,0.97);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px;
+  transition: transform 0.4s var(--ease);
+  box-shadow: 0 8px 48px rgba(0,0,0,.6);
+}
+#prod-panel.open {
+  transform: translateY(-50%) translateX(0);
+}
+.pp-label {
+  font-size: 9.5px; font-weight:700;
+  letter-spacing:2px; text-transform:uppercase;
+  color: var(--cyan); margin-bottom:5px;
+}
+.pp-name {
+  font-size: 20px; font-weight:800; letter-spacing:-.5px;
+  margin-bottom:12px;
+}
+.pp-divider {
+  height:1px; background: var(--border); margin-bottom:14px;
+}
+.pp-body {
+  font-size:12.5px; color:rgba(255,255,255,.6);
+  line-height:1.75;
+}
+.pp-actions {
+  margin-top:18px; display:flex; flex-direction:column; gap:8px;
+}
+.pp-btn {
+  width:100%; padding:9px;
+  border-radius:8px;
+  font-size:12px; font-weight:600;
+  cursor:pointer; transition:var(--trans);
+  display:flex; align-items:center; justify-content:center; gap:6px;
+}
+.pp-btn.primary {
+  background: var(--blue); border: 1px solid var(--blue);
+  color:#fff;
+}
+.pp-btn.primary:hover { background: #0066d6; }
+.pp-btn.ghost {
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--border-lt); color:rgba(255,255,255,.7);
+}
+.pp-btn.ghost:hover { background: rgba(255,255,255,.12); }
+
+/* ══════════════════════════════════════════════
+   QUALITY SELECTOR (top-right floating)
+══════════════════════════════════════════════ */
+#quality-sel {
+  position: fixed; top: 66px; right:16px;
+  z-index:400;
+  background: rgba(7,14,23,0.85);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border-lt);
+  border-radius:10px;
+  padding: 6px;
+  display: flex; gap:4px;
+}
+.qs-btn {
+  padding: 5px 12px; border-radius:7px;
+  font-size:11px; font-weight:600;
+  letter-spacing:.5px; text-transform:uppercase;
+  cursor:pointer; border:none; background:transparent;
+  color: rgba(255,255,255,.45); transition:var(--trans);
+}
+.qs-btn.on {
+  background: var(--blue); color:#fff;
+  box-shadow: 0 0 10px rgba(0,87,184,.5);
+}
+.qs-btn:not(.on):hover { color:#fff; background: rgba(255,255,255,.08); }
+
+/* ══════════════════════════════════════════════
+   PHASE 2 UPGRADE MODAL (bottom-left)
+══════════════════════════════════════════════ */
+#phase2-card {
+  position: fixed; bottom: 102px; left: 14px;
+  z-index: 400;
+  width: 250px;
+  background: rgba(7,14,23,0.92);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0,194,255,0.28);
+  border-radius: 14px;
+  padding: 16px;
+  animation: card-in 0.5s ease 2s both;
+}
+@keyframes card-in {
+  from { opacity:0; transform: translateY(16px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+.p2-head {
+  font-size:11px; font-weight:700;
+  letter-spacing:1.5px; text-transform:uppercase;
+  color: var(--cyan); margin-bottom:8px;
+}
+.p2-body {
+  font-size:11.5px; line-height:1.65;
+  color: rgba(255,255,255,.55);
+  margin-bottom:12px;
+}
+.p2-step {
+  display:flex; align-items:flex-start; gap:8px;
+  font-size:11px; color:rgba(255,255,255,.5);
+  margin-bottom:6px;
+}
+.p2-step-num {
+  width:18px; height:18px; border-radius:50%;
+  background: var(--blue);
+  color:#fff; font-size:10px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; margin-top:1px;
+}
+.p2-cta {
+  width:100%; margin-top:10px; padding:8px;
+  border-radius:8px;
+  background: linear-gradient(135deg, var(--blue), rgba(0,194,255,.4));
+  border:none; color:#fff;
+  font-size:11.5px; font-weight:700;
+  cursor:pointer; transition:var(--trans);
+}
+.p2-cta:hover { opacity:.85; }
+.p2-close {
+  position:absolute; top:10px; right:10px;
+  background:none; border:none;
+  color:rgba(255,255,255,.3); font-size:16px; cursor:pointer;
+}
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════ */
+@media (max-width:640px) {
+  #sidebar, #quality-sel, #phase2-card { display:none; }
+  .wp-tab { font-size:9.5px; padding:6px 3px; }
+  .tb-btn:not(.accent):not(.back) { display:none; }
+}
+@media (max-width:380px) {
+  .wp-tab .wp-label { display:none; }
+  .wp-tab .wp-icon { margin-bottom:0; }
+}
+</style>
+
+<!-- ════════════════════════════════════════════
+     ES Module Import Map
+     @mkkellogg/gaussian-splats-3d is the premier
+     open-source WebGL Gaussian Splatting viewer.
+     Three.js is a required peer dependency.
+════════════════════════════════════════════ -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/",
+    "@mkkellogg/gaussian-splats-3d": "https://cdn.jsdelivr.net/npm/@mkkellogg/gaussian-splats-3d@0.4.3/build/gaussian-splats-3d.module.js"
+  }
+}
+</script>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════ -->
+<!--  LOADING SCREEN                              -->
+<!-- ════════════════════════════════════════════ -->
+<div id="loading">
+  <!-- floating particles -->
+  <div class="ld-particles" id="particles"></div>
+
+  <div class="ld-logo">dn'<span>a</span></div>
+  <div class="ld-badge">🔬 3D Gaussian Splatting · Ultra Quality</div>
+
+  <div class="ld-track-wrap">
+    <div class="ld-track"><div class="ld-fill" id="ld-fill"></div></div>
+    <div class="ld-row">
+      <span id="ld-status">WebGL 엔진 초기화 중...</span>
+      <span id="ld-pct">0%</span>
+    </div>
+  </div>
+
+  <div class="ld-msg">
+    수백만 개의 Gaussian Splat 파티클을 실시간 WebGL로 스트리밍합니다<br>
+    최초 로드 30 – 90초 소요 | 네트워크 속도에 따라 달라집니다
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!--  GAUSSIAN SPLATTING CANVAS HOST              -->
+<!-- ════════════════════════════════════════════ -->
+<div id="splat-host"></div>
+
+<!-- ════════════════════════════════════════════ -->
+<!--  TOP BAR                                     -->
+<!-- ════════════════════════════════════════════ -->
+<header id="topbar">
+  <a href="/demo.html" class="tb-logo" style="text-decoration:none">
+    dn'<span>a</span>
+  </a>
+  <div class="tb-badge">3DGS Ultra · Photorealistic</div>
+  <div class="tb-sep"></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button class="tb-btn" onclick="shareView()">📤 공유</button>
+    <button class="tb-btn" onclick="toggleFS()">⛶ 전체화면</button>
+    <a href="/demo.html" class="tb-btn back" style="text-decoration:none">← 3D 뷰어</a>
+    <button class="tb-btn accent" onclick="contactRFQ()">📋 견적 요청</button>
+  </div>
+</header>
+
+<!-- ════════════════════════════════════════════ -->
+<!--  QUALITY SELECTOR                            -->
+<!-- ════════════════════════════════════════════ -->
+<div id="quality-sel">
+  <button class="qs-btn on" id="qs-std" onclick="setQuality('std')">Standard</button>
+  <button class="qs-btn" id="qs-ultra" onclick="setQuality('ultra')">Ultra</button>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!--  LEFT SIDEBAR                                -->
+<!-- ════════════════════════════════════════════ -->
+<nav id="sidebar">
+  <button class="sb-btn on" id="sb-0" onclick="gotoWP(0)"><span>🔭</span> 전체 조망</button>
+  <button class="sb-btn"    id="sb-1" onclick="gotoWP(1)"><span>🤖</span> 코봇 존</button>
+  <button class="sb-btn"    id="sb-2" onclick="gotoWP(2)"><span>⬡</span> 센터 스테이지</button>
+  <button class="sb-btn"    id="sb-3" onclick="gotoWP(3)"><span>🖥</span> 브랜드 월</button>
+  <button class="sb-btn"    id="sb-4" onclick="gotoWP(4)"><span>🛋</span> VIP 라운지</button>
+  <div class="sb-divider"></div>
+  <button class="sb-btn" onclick="openProd('cobot')"><span>⚙️</span> 제품 정보</button>
+  <button class="sb-btn" onclick="contactRFQ()"><span>✉️</span> 상담 신청</button>
+</nav>
+
+<!-- ════════════════════════════════════════════ -->
+<!--  UPGRADE BANNER (top center)                 -->
+<!-- ════════════════════════════════════════════ -->
+<div id="phase-banner">
+  <div class="banner-icon">🚀</div>
+  <div class="banner-text">
+    <strong>Phase 1 데모 모드</strong> — 현재 고품질 3DGS 기술 체험 공간입니다.<br>
+    <strong>DN'a 부스 사진 30장</strong>이 처리되면 실사 공간으로 즉시 교체됩니다.
+  </div>
+  <button class="banner-close" onclick="this.parentElement.remove()">×</button>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!--  BOTTOM WAYPOINT NAVIGATION                  -->
+<!-- ════════════════════════════════════════════ -->
+<div id="waypoints">
+  <div class="wp-loc-row">
+    <span>📍 현재 위치:</span>
+    <span class="loc-name" id="loc-label">전체 조망 (Overview)</span>
+  </div>
+  <div class="wp-tabs">
+    <button class="wp-tab on" id="wp-0" onclick="gotoWP(0)">
+      <span class="wp-icon">🔭</span>
+      <span class="wp-label">Overview</span>
+    </button>
+    <button class="wp-tab" id="wp-1" onclick="gotoWP(1)">
+      <span class="wp-icon">🤖</span>
+      <span class="wp-label">Cobot</span>
+    </button>
+    <button class="wp-tab" id="wp-2" onclick="gotoWP(2)">
+      <span class="wp-icon">⬡</span>
+      <span class="wp-label">Center</span>
+    </button>
+    <button class="wp-tab" id="wp-3" onclick="gotoWP(3)">
+      <span class="wp-icon">🖥</span>
+      <span class="wp-label">Brand Wall</span>
+    </button>
+    <button class="wp-tab" id="wp-4" onclick="gotoWP(4)">
+      <span class="wp-icon">🛋</span>
+      <span class="wp-label">Lounge</span>
+    </button>
+  </div>
+  <button class="auto-tour-btn" id="tour-btn" onclick="toggleTour()">
+    ▶&nbsp;&nbsp;AUTO TOUR 시작
+  </button>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!--  CONTROLS HINT                               -->
+<!-- ════════════════════════════════════════════ -->
+<div id="hint">
+  🖱 드래그: 회전 &nbsp;|&nbsp; 스크롤: 줌 인/아웃<br>
+  📱 핀치: 줌 &nbsp;|&nbsp; 두 손가락: 패닝<br>
+  🖱 우클릭 드래그: 패닝
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!--  PRODUCT INFO PANEL                          -->
+<!-- ════════════════════════════════════════════ -->
+<div id="prod-panel">
+  <button onclick="document.getElementById('prod-panel').classList.remove('open')"
+    style="position:absolute;top:14px;right:14px;background:none;border:none;color:rgba(255,255,255,.4);font-size:20px;cursor:pointer;line-height:1">×</button>
+  <div class="pp-label">제품 상세 정보</div>
+  <div class="pp-name" id="pp-name">DN'a CoBot-7</div>
+  <div class="pp-divider"></div>
+  <div class="pp-body" id="pp-body">
+    6축 협동로봇 (Cobot) — 가반하중 7kg<br>
+    도달 반경 900mm · 반복 정밀도 ±0.03mm<br><br>
+    내장 AI 비전 시스템 · 인간 협업 인증<br>
+    ISO 10218-1 · CE Mark · UL Listed
+  </div>
+  <div class="pp-actions">
+    <button class="pp-btn primary" onclick="contactRFQ()">✉ 제품 문의 및 견적</button>
+    <button class="pp-btn ghost">📄 기술 데이터시트</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!--  PHASE 2 UPGRADE CARD (bottom-left)          -->
+<!-- ════════════════════════════════════════════ -->
+<div id="phase2-card" style="position:fixed">
+  <button class="p2-close" onclick="document.getElementById('phase2-card').remove()">×</button>
+  <div class="p2-head">🎯 실사 3DGS 업그레이드</div>
+  <div class="p2-body">이 데모를 DN'a 부스의 실사 3D 공간으로 교체하는 방법:</div>
+  <div class="p2-step">
+    <div class="p2-step-num">1</div>
+    <div>Luma AI / Polycam에 30장 사진 업로드</div>
+  </div>
+  <div class="p2-step">
+    <div class="p2-step-num">2</div>
+    <div>.splat 파일 다운로드 (약 20~40분 처리)</div>
+  </div>
+  <div class="p2-step">
+    <div class="p2-step-num">3</div>
+    <div>URL 1줄 교체 → 즉시 실사 공간 완성</div>
+  </div>
+  <button class="p2-cta" onclick="window.open('https://lumalabs.ai','_blank')">
+    → Luma AI 처리 시작
+  </button>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     MAIN MODULE SCRIPT — 3D Gaussian Splatting Viewer
+════════════════════════════════════════════════════════════ -->
+<script type="module">
+import * as GaussianSplats3D from '@mkkellogg/gaussian-splats-3d';
+
+/* ──────────────────────────────────────────────
+   PHASE 1 DEMO SPLAT FILE URLS (priority order)
+   ─────────────────────────────────────────────
+   Phase 2 실사 교체 시:
+     SPLAT_URLS[0] 을 실제 .splat URL로 변경하면 끝.
+   예: '/api/splat/file/dna-booth-real.splat'
+       'https://lumalabs.ai/captures/YOUR_ID/splat'
+       'https://hf.co/yourorg/dna-booth/raw/main/output.splat'
+────────────────────────────────────────────── */
+const SPLAT_URLS = [
+  // 고품질 indoor 제품 씬 (전시장 분위기)
+  'https://huggingface.co/datasets/antimatter15/splat-demos/resolve/main/plush.splat',
+  // 폴백 1: indoor room 씬
+  'https://huggingface.co/datasets/antimatter15/splat-demos/resolve/main/room.splat',
+  // 폴백 2: 정원 씬 (야외지만 3DGS 퀄리티 시연용)
+  'https://huggingface.co/datasets/antimatter15/splat-demos/resolve/main/garden.splat',
+];
+
+/* ──────────────────────────────────────────────
+   5 WAYPOINT CAMERA PRESETS
+   ─────────────────────────────────────────────
+   Phase 2 실사 교체 시:
+     좌표를 실제 부스 3DGS 씬 기준으로 업데이트.
+   현재 값은 plush/room 데모 씬 기준 최적 뷰.
+────────────────────────────────────────────── */
+const WAYPOINTS = [
+  {
+    id: 0, label: '전체 조망 (Overview)',
+    pos:    [  0.0, -3.8,  7.0 ],
+    target: [  0.0, -0.8,  0.0 ],
+  },
+  {
+    id: 1, label: '코봇 존 (Cobot Zone)',
+    pos:    [ -2.2, -2.0,  3.2 ],
+    target: [ -1.5, -1.2,  0.0 ],
+  },
+  {
+    id: 2, label: '센터 스테이지 (Center Stage)',
+    pos:    [  0.0, -1.8,  2.0 ],
+    target: [  0.0, -1.2, -0.8 ],
+  },
+  {
+    id: 3, label: '브랜드 월 (Brand Wall)',
+    pos:    [  0.0, -1.6, -1.8 ],
+    target: [  0.0, -0.8, -4.5 ],
+  },
+  {
+    id: 4, label: 'VIP 라운지 (Lounge)',
+    pos:    [  2.8, -1.8,  2.5 ],
+    target: [  1.8, -1.2, -0.2 ],
+  },
+];
+
+/* ────────── 상태 변수 ────────── */
+let viewer      = null;
+let curWP       = 0;
+let tourTimer   = null;
+let isTour      = false;
+let flyRaf      = null;
+let qualityMode = 'std';   // 'std' | 'ultra'
+
+/* ────────── 파티클 생성 ────────── */
+(function spawnParticles() {
+  const host = document.getElementById('particles');
+  for (let i = 0; i < 40; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.cssText = `
+      left: ${Math.random()*100}%;
+      --dur: ${6 + Math.random()*10}s;
+      --del: ${-Math.random()*10}s;
+      --dx: ${(Math.random()-0.5)*120}px;
+      width: ${1+Math.random()*2}px;
+      height: ${1+Math.random()*2}px;
+    `;
+    host.appendChild(p);
+  }
+})();
+
+/* ────────── 로딩 UI ────────── */
+function setProgress(pct, msg) {
+  document.getElementById('ld-fill').style.width   = pct + '%';
+  document.getElementById('ld-pct').textContent    = Math.round(pct) + '%';
+  if (msg) document.getElementById('ld-status').textContent = msg;
+}
+
+function hideLoading() {
+  const el = document.getElementById('loading');
+  el.classList.add('out');
+  setTimeout(() => el.remove(), 1100);
+  setTimeout(() => document.getElementById('hint')?.classList.add('gone'), 8000);
+}
+
+/* ────────── 카메라 Fly-To 애니메이션 ────────── */
+function easeInOutQuart(t) {
+  return t < 0.5
+    ? 8*t*t*t*t
+    : 1 - Math.pow(-2*t+2, 4)/2;
+}
+
+function flyTo(wp, duration = 2000) {
+  if (!viewer) return;
+  const cam  = viewer.camera;
+  const ctrl = viewer.controls;
+  if (!cam || !ctrl) return;
+
+  if (flyRaf) cancelAnimationFrame(flyRaf);
+
+  const sp = cam.position.clone();
+  const st = ctrl.target.clone();
+  const ep = { x: wp.pos[0],    y: wp.pos[1],    z: wp.pos[2]    };
+  const et = { x: wp.target[0], y: wp.target[1], z: wp.target[2] };
+  const t0 = performance.now();
+
+  function tick(now) {
+    const raw = Math.min((now - t0) / duration, 1);
+    const e   = easeInOutQuart(raw);
+
+    cam.position.set(
+      sp.x + (ep.x - sp.x) * e,
+      sp.y + (ep.y - sp.y) * e,
+      sp.z + (ep.z - sp.z) * e
+    );
+    ctrl.target.set(
+      st.x + (et.x - st.x) * e,
+      st.y + (et.y - st.y) * e,
+      st.z + (et.z - st.z) * e
+    );
+    ctrl.update();
+
+    if (raw < 1) flyRaf = requestAnimationFrame(tick);
+  }
+  flyRaf = requestAnimationFrame(tick);
+}
+
+/* ────────── Waypoint 이동 ────────── */
+window.gotoWP = function(idx) {
+  curWP = idx;
+  document.getElementById('loc-label').textContent = WAYPOINTS[idx].label;
+
+  for (let i = 0; i < 5; i++) {
+    document.getElementById('wp-'+i)?.classList.toggle('on', i === idx);
+    document.getElementById('sb-'+i)?.classList.toggle('on', i === idx);
+  }
+  flyTo(WAYPOINTS[idx]);
+};
+
+/* ────────── Auto Tour ────────── */
+window.toggleTour = function() {
+  const btn = document.getElementById('tour-btn');
+  if (isTour) {
+    clearInterval(tourTimer);
+    isTour = false;
+    btn.textContent = '▶  AUTO TOUR 시작';
+    btn.classList.remove('stop');
+  } else {
+    isTour = true;
+    btn.textContent = '⏹  AUTO TOUR 정지';
+    btn.classList.add('stop');
+    let i = (curWP + 1) % WAYPOINTS.length;
+    window.gotoWP(i);
+    tourTimer = setInterval(() => {
+      i = (i + 1) % WAYPOINTS.length;
+      window.gotoWP(i);
+    }, 4800);
+  }
+};
+
+/* ────────── 품질 설정 ────────── */
+window.setQuality = function(mode) {
+  qualityMode = mode;
+  document.getElementById('qs-std').classList.toggle('on', mode === 'std');
+  document.getElementById('qs-ultra').classList.toggle('on', mode === 'ultra');
+  // Ultra 모드에서 스플랫 알파 임계값 낮춤 (더 많은 스플랫 렌더)
+  if (viewer) {
+    try {
+      viewer.splatAlphaRemovalThreshold = mode === 'ultra' ? 1 : 5;
+    } catch(e) { /* 버전에 따라 동적 변경 불가할 수 있음 */ }
+  }
+};
+
+/* ────────── 제품 패널 ────────── */
+const PRODUCTS = {
+  cobot: {
+    name: "DN'a CoBot-7",
+    body: "6축 협동로봇 (Cobot) — 가반하중 7kg<br>도달 반경 900mm · 반복 정밀도 ±0.03mm<br><br>내장 AI 비전 시스템 · 인간 협업 안전 인증<br>ISO 10218-1 · CE Mark · UL Listed"
+  },
+  amr: {
+    name: "DN'a Vector AMR",
+    body: "자율이동로봇 (AMR) — 최대 100kg 적재<br>SLAM 자율 내비게이션 · 장애물 자동 회피<br><br>72시간 연속 작동 · 급속 충전 지원<br>Fleet Manager 소프트웨어 포함"
+  },
+  vision: {
+    name: "DN'a OptiScan V3",
+    body: "3D 비전 센서 — 정밀도 0.01mm<br>초당 최대 120fps 고속 스캔<br><br>AI 불량 검출 내장 · GigE Vision 호환<br>IP67 등급 · 산업 환경 내구성 인증"
+  }
+};
+
+window.openProd = function(key) {
+  const p = PRODUCTS[key] || PRODUCTS.cobot;
+  document.getElementById('pp-name').textContent = p.name;
+  document.getElementById('pp-body').innerHTML   = p.body;
+  document.getElementById('prod-panel').classList.add('open');
+};
+
+/* ────────── 유틸리티 ────────── */
+window.toggleFS = function() {
+  if (!document.fullscreenElement)
+    document.documentElement.requestFullscreen?.().catch(()=>{});
+  else
+    document.exitFullscreen?.();
+};
+
+window.shareView = function() {
+  const url = location.href;
+  if (navigator.share) {
+    navigator.share({ title: "DN'a ROBOTIC 3D 버추얼 투어", url }).catch(()=>{});
+  } else {
+    navigator.clipboard?.writeText(url).then(() => alert('URL 복사 완료!')).catch(()=>{});
+  }
+};
+
+window.contactRFQ = function() {
+  window.open('mailto:info@dna-robotic.com?subject=RFQ from 3DGS Virtual Tour&body=3D 버추얼 투어를 통해 제품에 관심이 생겼습니다. 견적을 요청합니다.');
+};
+
+/* ════════════════════════════════════════════════════
+   MAIN: 3DGS 뷰어 초기화
+════════════════════════════════════════════════════ */
+async function init() {
+  setProgress(5, 'WebGL 컨텍스트 초기화...');
+
+  // 진행 시뮬레이션 (파일 로드 중 시각 피드백)
+  let simPct = 5;
+  const simTimer = setInterval(() => {
+    if (simPct < 85) {
+      simPct += (0.3 + Math.random() * 0.7);
+      setProgress(simPct,
+        simPct < 25 ? '3DGS 파일 요청 중...' :
+        simPct < 50 ? 'Gaussian Splat 스트리밍 중...' :
+        simPct < 70 ? '포인트 클라우드 처리 중...' :
+                      '실시간 렌더러 최적화 중...'
+      );
+    }
+  }, 400);
+
+  try {
+    /* ── 뷰어 인스턴스 생성 ── */
+    viewer = new GaussianSplats3D.Viewer({
+      rootElement:             document.getElementById('splat-host'),
+      sharedMemoryForWorkers:  false,   // COOP/COEP 헤더 없이도 동작
+      dynamicScene:            false,
+      webXRMode:               GaussianSplats3D.WebXRMode.None,
+      renderMode:              GaussianSplats3D.RenderMode.Always,
+      sceneRevealMode:         GaussianSplats3D.SceneRevealMode.Gradual,
+      antialiased:             true,
+      focalAdjustment:         1.0,
+      gpuAcceleratedSort:      true,
+      halfPrecisionCovariancesOnGPU: true,
+    });
+
+    setProgress(12, '3DGS 파일 스트리밍 시작...');
+
+    /* ── 순차 URL 시도 (폴백 포함) ── */
+    let loaded = false;
+    let lastErr = null;
+
+    for (let i = 0; i < SPLAT_URLS.length; i++) {
+      const url = SPLAT_URLS[i];
+      setProgress(simPct, `씬 파일 연결 중 (${i+1}/${SPLAT_URLS.length})...`);
+      try {
+        await viewer.addSplatScene(url, {
+          splatAlphaRemovalThreshold: qualityMode === 'ultra' ? 1 : 5,
+          progressiveLoad: true,
+        });
+        loaded = true;
+        break;
+      } catch (err) {
+        console.warn(`[3DGS] URL ${i+1} 실패:`, url, err);
+        lastErr = err;
+      }
+    }
+
+    clearInterval(simTimer);
+
+    if (!loaded) throw lastErr || new Error('모든 splat URL 로드 실패');
+
+    setProgress(92, '초기 카메라 설정 중...');
+
+    /* ── 초기 카메라 위치 설정 ── */
+    const cam  = viewer.camera;
+    const ctrl = viewer.controls;
+    if (cam) cam.position.set(...WAYPOINTS[0].pos);
+    if (ctrl) {
+      ctrl.target.set(...WAYPOINTS[0].target);
+      ctrl.update();
+    }
+
+    setProgress(98, '렌더러 시작...');
+    viewer.start();
+
+    setProgress(100, '완료! 3D 공간을 탐험하세요.');
+    setTimeout(hideLoading, 700);
+
+  } catch (err) {
+    clearInterval(simTimer);
+    console.error('[3DGS] 초기화 실패:', err);
+
+    /* ── 폴백 UI (오류 시) ── */
+    document.getElementById('loading').innerHTML = `
+      <div style="text-align:center;padding:40px;max-width:420px">
+        <div style="font-size:48px;margin-bottom:20px">⚠️</div>
+        <div style="font-size:20px;font-weight:800;margin-bottom:10px">3DGS 로드 실패</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.7;margin-bottom:28px">
+          네트워크 또는 CORS 문제로 Gaussian Splat 파일을<br>
+          불러오지 못했습니다. 아래 버튼으로 이동하거나<br>
+          잠시 후 다시 시도해주세요.
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;max-width:260px;margin:0 auto">
+          <button onclick="location.reload()"
+            style="padding:12px;border-radius:9px;background:var(--blue);border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer">
+            🔄 다시 시도
+          </button>
+          <a href="/demo.html"
+            style="display:block;padding:12px;border-radius:9px;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.75);font-size:13px;font-weight:500;text-decoration:none;text-align:center">
+            ← 기본 3D 뷰어로 이동
+          </a>
+        </div>
+        <div style="margin-top:24px;font-size:11px;color:rgba(255,255,255,.2)">
+          오류: ${String(err).substring(0,120)}
+        </div>
+      </div>
+    `;
+  }
+}
+
+/* ── 페이지 로드 후 실행 ── */
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+</script>
+
+</body>
+</html>

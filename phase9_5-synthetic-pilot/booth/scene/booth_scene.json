@@ -1,0 +1,66 @@
+{
+  "sceneName": "AUREX Automation Technologies Exhibition Booth",
+  "dimensions": {
+    "widthMeters": 10.0,
+    "depthMeters": 8.0,
+    "heightMeters": 4.5
+  },
+  "coordinateConvention": "Three.js (+Y up, -Z forward, +X right)",
+  "colorPalette": {
+    "deepNavy": "#0b132b",
+    "electricBlue": "#1c64f2",
+    "white": "#f8fafc",
+    "graphite": "#1e293b",
+    "cyanAccent": "#06b6d4",
+    "metallic": "#94a3b8"
+  },
+  "structures": [
+    {
+      "name": "Overhead Suspended Header",
+      "position": [0, 4.0, -1.0],
+      "size": [9.0, 0.8, 6.0],
+      "text": "AUREX AUTOMATION TECHNOLOGIES"
+    },
+    {
+      "name": "Main Rear Display Wall",
+      "position": [0, 2.0, -3.95],
+      "size": [9.6, 4.0, 0.2],
+      "screenText": "SMART FACTORY AUTOMATION WITHOUT LIMITS"
+    },
+    {
+      "name": "Floor Carpet with SfM Grid Pattern",
+      "position": [0, 0, -1.0],
+      "size": [10.0, 0.05, 8.0],
+      "material": "Graphite Carpet with High-Contrast Distinctive Navigation Markers"
+    },
+    {
+      "name": "Left Robot Automation Cell",
+      "position": [-3.2, 0.4, -1.5],
+      "products": ["COBOT-C7", "GRIP-PRO", "PICK-X", "FLEX-20"]
+    },
+    {
+      "name": "Central Island AMR Platform",
+      "position": [0.0, 0.2, 0.0],
+      "products": ["AXR-500"]
+    },
+    {
+      "name": "Right Vision & Sensor Pedestal",
+      "position": [3.1, 0.5, -1.0],
+      "products": ["VIS-4K", "LIDAR-X360", "INSPECT-AI", "SAFE-500", "EDGE-X"]
+    },
+    {
+      "name": "Rear Controller & I/O Tower Wall",
+      "position": [0.5, 1.5, -3.8],
+      "products": ["PLC-NOVA", "SERVO-X8", "SMART-IO", "DTWIN", "AGV-FLEET"]
+    }
+  ],
+  "lighting": {
+    "overheadAreaLights": 4,
+    "ambientLightIntensity": 0.65,
+    "directionalSpotlights": [
+      { "position": [-4, 5, 4], "target": [0, 1, 0], "intensity": 1.2 },
+      { "position": [4, 5, 4], "target": [0, 1, 0], "intensity": 1.2 }
+    ]
+  },
+  "reproducibilitySeed": 20260915
+}

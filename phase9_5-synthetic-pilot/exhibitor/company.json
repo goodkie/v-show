@@ -1,0 +1,14 @@
+{
+  "companyName": "AUREX Automation Technologies",
+  "brandName": "AUREX",
+  "slug": "aurex-automation",
+  "type": "SYNTHETIC_TEST",
+  "industry": "Industrial Automation / Smart Factory",
+  "category": "Robotics / Smart Manufacturing",
+  "boothNumber": "D-401",
+  "adminEmail": "pilot-admin@aurex-automation.test",
+  "tagline": "Automation Without Limits — Smart Factory Precision",
+  "description": "Deterministic 3D synthetic test exhibitor for precision Gaussian reconstruction pipeline validation.",
+  "website": "https://aurex-automation.test",
+  "createdAt": "2026-08-16T10:15:00Z"
+}

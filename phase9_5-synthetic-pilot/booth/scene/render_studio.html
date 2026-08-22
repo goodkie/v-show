@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AUREX 3D Synthetic Booth Studio</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    body { margin: 0; background: #050811; color: #fff; font-family: sans-serif; overflow: hidden; }
+    #canvas-container { width: 1600px; height: 1200px; position: absolute; top: 0; left: 0; }
+    #ui-overlay { position: absolute; bottom: 20px; left: 20px; z-index: 10; background: rgba(0,0,0,0.8); padding: 15px 25px; border-radius: 8px; border: 1px solid #1c64f2; }
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+  <div id="ui-overlay">
+    <h3 style="margin: 0 0 8px 0; color: #00d2ff;">AUREX 60-View Synthetic Render Studio</h3>
+    <div id="render-status">Ready to render 60 deterministic views...</div>
+  </div>
+
+  <script>
+    const width = 1600;
+    const height = 1200;
+    const container = document.getElementById('canvas-container');
+    const statusEl = document.getElementById('render-status');
+
+    // 1. Scene & Renderer Setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x070b14);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(1);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    container.appendChild(renderer.domElement);
+
+    const camera = new THREE.PerspectiveCamera(54.4, width / height, 0.1, 100);
+
+    // 2. Fixed Materials
+    const matCarpet = new THREE.MeshStandardMaterial({ color: 0x1e2430, roughness: 0.85, metalness: 0.1 });
+    const matWallWhite = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.4, metalness: 0.05 });
+    const matNavy = new THREE.MeshStandardMaterial({ color: 0x0b132b, roughness: 0.3, metalness: 0.2 });
+    const matBlue = new THREE.MeshStandardMaterial({ color: 0x1c64f2, roughness: 0.25, metalness: 0.4 });
+    const matCyan = new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.2, metalness: 0.5 });
+    const matAlum = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.35, metalness: 0.85 });
+    const matDark = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5, metalness: 0.3 });
+    const matGlow = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
+    const matScreen = new THREE.MeshBasicMaterial({ color: 0x1e3a8a });
+
+    // Texture Canvas Generator for distinctive SfM text & markers
+    function createTextTexture(text, subtext = "", bg = "#0b132b", fg = "#00e5ff", w = 1024, h = 512) {
+      const cvs = document.createElement('canvas');
+      cvs.width = w; cvs.height = h;
+      const ctx = cvs.getContext('2d');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, w, h);
+      
+      // Grid lines for SfM corner features
+      ctx.strokeStyle = "rgba(255,255,255,0.15)";
+      ctx.lineWidth = 4;
+      for (let x = 0; x < w; x += 64) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+      for (let y = 0; y < h; y += 64) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+
+      ctx.fillStyle = fg;
+      ctx.font = "bold 64px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(text, w / 2, h / 2 - (subtext ? 20 : -20));
+
+      if (subtext) {
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "32px sans-serif";
+        ctx.fillText(subtext, w / 2, h / 2 + 50);
+      }
+      return new THREE.CanvasTexture(cvs);
+    }
+
+    // Floor Carpet with High-Contrast SfM Markers
+    const floorGeo = new THREE.BoxGeometry(10.0, 0.05, 8.0);
+    const floorTex = createTextTexture("AUREX SMART FACTORY", "PRECISION AUTOMATION • ZONE D-401", "#151c28", "#38bdf8", 2048, 2048);
+    floorTex.wrapS = THREE.RepeatWrapping;
+    floorTex.wrapT = THREE.RepeatWrapping;
+    floorTex.repeat.set(2, 2);
+    const floorMat = new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.8 });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.position.set(0, -0.025, -1.0);
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    // 3. Overhead Suspended Header
+    const headerGeo = new THREE.BoxGeometry(8.5, 0.8, 5.5);
+    const headerTex = createTextTexture("AUREX AUTOMATION TECHNOLOGIES", "INTELLIGENT ROBOTICS & SMART MANUFACTURING", "#0b132b", "#00e5ff", 2048, 512);
+    const headerMat = new THREE.MeshStandardMaterial({ map: headerTex, roughness: 0.3, metalness: 0.3 });
+    const header = new THREE.Mesh(headerGeo, headerMat);
+    header.position.set(0, 4.0, -1.0);
+    header.castShadow = true;
+    scene.add(header);
+
+    // Header support columns (thin trusses)
+    const colGeo = new THREE.CylinderGeometry(0.06, 0.06, 4.0, 16);
+    [[-4.1, 2.0, -3.6], [4.1, 2.0, -3.6], [-4.1, 2.0, 1.6], [4.1, 2.0, 1.6]].forEach(pos => {
+      const col = new THREE.Mesh(colGeo, matAlum);
+      col.position.set(...pos);
+      scene.add(col);
+    });
+
+    // 4. Rear Main Display Wall
+    const rearWallGeo = new THREE.BoxGeometry(9.6, 3.8, 0.2);
+    const rearWall = new THREE.Mesh(rearWallGeo, matNavy);
+    rearWall.position.set(0, 1.9, -3.95);
+    rearWall.receiveShadow = true;
+    scene.add(rearWall);
+
+    // Large Center Video Screen
+    const screenGeo = new THREE.PlaneGeometry(6.0, 2.2);
+    const screenTex = createTextTexture("SMART FACTORY PLATFORM", "AUTONOMOUS LOGISTICS • DIGITAL TWIN AI", "#0f172a", "#38bdf8", 2048, 1024);
+    const screenMat = new THREE.MeshBasicMaterial({ map: screenTex });
+    const screen = new THREE.Mesh(screenGeo, screenMat);
+    screen.position.set(0, 2.2, -3.83);
+    scene.add(screen);
+
+    // 5. Central Island — AXR-500 AMR
+    const amrIslandGeo = new THREE.CylinderGeometry(1.6, 1.7, 0.15, 32);
+    const amrIsland = new THREE.Mesh(amrIslandGeo, matDark);
+    amrIsland.position.set(0, 0.075, 0.0);
+    amrIsland.receiveShadow = true;
+    scene.add(amrIsland);
+
+    // AXR-500 Robot Proxy
+    const amrBodyGeo = new THREE.BoxGeometry(1.0, 0.35, 1.4);
+    const amrBody = new THREE.Mesh(amrBodyGeo, matWallWhite);
+    amrBody.position.set(0, 0.32, 0.0);
+    amrBody.castShadow = true;
+    scene.add(amrBody);
+
+    const amrTopGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.12, 24);
+    const amrTop = new THREE.Mesh(amrTopGeo, matBlue);
+    amrTop.position.set(0, 0.55, -0.1);
+    scene.add(amrTop);
+
+    // 6. Left Zone — Collaborative Robot Cell (COBOT-C7, FLEX-20, GRIP-PRO)
+    const leftDeskGeo = new THREE.BoxGeometry(2.4, 0.85, 1.4);
+    const leftDesk = new THREE.Mesh(leftDeskGeo, matDark);
+    leftDesk.position.set(-3.1, 0.425, -1.5);
+    leftDesk.castShadow = true; leftDesk.receiveShadow = true;
+    scene.add(leftDesk);
+
+    // Cobot Arm Segments
+    const cobotBase = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.2, 16), matAlum);
+    cobotBase.position.set(-3.1, 0.95, -1.5);
+    scene.add(cobotBase);
+
+    const arm1 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.7, 16), matBlue);
+    arm1.position.set(-3.1, 1.35, -1.5);
+    arm1.rotation.z = Math.PI / 6;
+    scene.add(arm1);
+
+    const arm2 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.6, 16), matWallWhite);
+    arm2.position.set(-2.8, 1.7, -1.5);
+    arm2.rotation.z = -Math.PI / 4;
+    scene.add(arm2);
+
+    // Smart Conveyor FLEX-20
+    const convGeo = new THREE.BoxGeometry(1.8, 0.7, 0.6);
+    const conv = new THREE.Mesh(convGeo, matAlum);
+    conv.position.set(-2.5, 0.35, -2.8);
+    conv.castShadow = true;
+    scene.add(conv);
+
+    // 7. Right Zone — Vision & Sensor Tower (VIS-4K, LIDAR-X360, SAFE-500)
+    const rightDeskGeo = new THREE.BoxGeometry(2.2, 0.9, 1.3);
+    const rightDesk = new THREE.Mesh(rightDeskGeo, matDark);
+    rightDesk.position.set(3.0, 0.45, -1.0);
+    rightDesk.castShadow = true; rightDesk.receiveShadow = true;
+    scene.add(rightDesk);
+
+    // Vision Camera Pole & VIS-4K Camera
+    const visPole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.1, 16), matAlum);
+    visPole.position.set(3.1, 1.45, -1.0);
+    scene.add(visPole);
+
+    const camBox = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.2, 0.35), matCyan);
+    camBox.position.set(3.1, 1.95, -0.9);
+    scene.add(camBox);
+
+    // LiDAR X360 Scanner
+    const lidar = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.22, 24), matDark);
+    lidar.position.set(2.4, 1.01, -0.8);
+    scene.add(lidar);
+
+    // 8. Front Reception / Info Kiosk
+    const kioskGeo = new THREE.BoxGeometry(1.6, 1.0, 0.6);
+    const kioskTex = createTextTexture("AUREX", "INFO DESK", "#0b132b", "#ffffff", 1024, 512);
+    const kioskMat = new THREE.MeshStandardMaterial({ map: kioskTex, roughness: 0.4 });
+    const kiosk = new THREE.Mesh(kioskGeo, kioskMat);
+    kiosk.position.set(-2.8, 0.5, 2.0);
+    kiosk.castShadow = true;
+    scene.add(kiosk);
+
+    // 9. Fixed Lighting Rig
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+
+    const mainLight1 = new THREE.DirectionalLight(0xffffff, 1.1);
+    mainLight1.position.set(-5, 7, 5);
+    mainLight1.castShadow = true;
+    mainLight1.shadow.mapSize.width = 2048;
+    mainLight1.shadow.mapSize.height = 2048;
+    scene.add(mainLight1);
+
+    const mainLight2 = new THREE.DirectionalLight(0xdbeafe, 0.9);
+    mainLight2.position.set(5, 7, 5);
+    scene.add(mainLight2);
+
+    const topFill = new THREE.PointLight(0x00d2ff, 1.2, 12);
+    topFill.position.set(0, 3.8, 0);
+    scene.add(topFill);
+
+    // 10. Global Render API
+    window.renderFrame = function(pos, target, fov = 54.4) {
+      camera.position.set(pos[0], pos[1], pos[2]);
+      camera.lookAt(target[0], target[1], target[2]);
+      camera.fov = fov;
+      camera.updateProjectionMatrix();
+      renderer.render(scene, camera);
+      return renderer.domElement.toDataURL('image/jpeg', 0.95);
+    };
+
+    window.isStudioReady = true;
+    statusEl.textContent = "AUREX 3D Scene Initialized & Deterministic Engine Ready.";
+  </script>
+</body>
+</html>

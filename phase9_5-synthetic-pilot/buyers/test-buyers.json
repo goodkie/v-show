@@ -1,0 +1,12 @@
+[
+  { "buyerId": "AUREX-TEST-BUYER-001", "name": "Synthetic Buyer 01", "company": "Smart Logistics Global", "email": "buyer01@example.test", "type": "SYNTHETIC_TEST" },
+  { "buyerId": "AUREX-TEST-BUYER-002", "name": "Synthetic Buyer 02", "company": "Advanced Robotics Corp", "email": "buyer02@example.test", "type": "SYNTHETIC_TEST" },
+  { "buyerId": "AUREX-TEST-BUYER-003", "name": "Synthetic Buyer 03", "company": "Precision Electronics Group", "email": "buyer03@example.test", "type": "SYNTHETIC_TEST" },
+  { "buyerId": "AUREX-TEST-BUYER-004", "name": "Synthetic Buyer 04", "company": "Auto Assembly Systems", "email": "buyer04@example.test", "type": "SYNTHETIC_TEST" },
+  { "buyerId": "AUREX-TEST-BUYER-005", "name": "Synthetic Buyer 05", "company": "Vision Systems International", "email": "buyer05@example.test", "type": "SYNTHETIC_TEST" },
+  { "buyerId": "AUREX-TEST-BUYER-006", "name": "Synthetic Buyer 06", "company": "Industrial Motion Technologies", "email": "buyer06@example.test", "type": "SYNTHETIC_TEST" },
+  { "buyerId": "AUREX-TEST-BUYER-007", "name": "Synthetic Buyer 07", "company": "Digital Factory Solutions", "email": "buyer07@example.test", "type": "SYNTHETIC_TEST" },
+  { "buyerId": "AUREX-TEST-BUYER-008", "name": "Synthetic Buyer 08", "company": "Smart Sensor Innovations", "email": "buyer08@example.test", "type": "SYNTHETIC_TEST" },
+  { "buyerId": "AUREX-TEST-BUYER-009", "name": "Synthetic Buyer 09", "company": "Intelligent Automation Labs", "email": "buyer09@example.test", "type": "SYNTHETIC_TEST" },
+  { "buyerId": "AUREX-TEST-BUYER-010", "name": "Synthetic Buyer 010", "company": "NextGen Manufacturing Group", "email": "buyer10@example.test", "type": "SYNTHETIC_TEST" }
+]
