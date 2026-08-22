@@ -1049,6 +1049,185 @@ class JSONDatabase {
           samplesRequested: 29,
           meetingsBooked: 38
         }
+      },
+      // --- Phase dn’a-C03: DIY Booth Builder Beta Controlled Projects ---
+      {
+        id: 'proj-diy-haven-01',
+        channel: 'DIY_BUILDER',
+        company: 'Haven & Oak Furniture Co.',
+        contact: 'Julian Vance (VP Trade Sales)',
+        email: 'julian.vance@havenoak.example',
+        phone: '+1 (336) 555-0142',
+        website: 'https://havenoak.example',
+        description: 'Heritage American craftsmanship specializing in solid white oak, walnut furnishings, and architectural trade exhibition displays.',
+        tradeShow: 'High Point Market Fall 2026',
+        showStartDate: '2026-10-17',
+        showEndDate: '2026-10-21',
+        daysUntilShow: 56,
+        city: 'High Point, NC',
+        venue: 'IHFC Main Building',
+        boothNumber: 'Stand W-412 (Interhall)',
+        industry: 'Furniture, Home Decor & Lighting',
+        numberOfProducts: 8,
+        experienceType: 'DIGITAL_SHOWROOM',
+        templateId: 'MODERN',
+        hotspotBindings: { hotspot1: 'prod-diy-h1', hotspot2: 'prod-diy-h2', hotspot3: 'prod-diy-h3' },
+        serviceSelections: ['3D_BOOTH_DESIGN', 'DIGITAL_CATALOG', 'SMART_CARD', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE'],
+        status: 'PUBLISHED',
+        priority: 'NORMAL',
+        blockingReason: 'NONE',
+        createdAt: '2026-08-16T10:00:00.000Z',
+        updatedAt: '2026-08-22T02:00:00.000Z',
+        publishedAt: '2026-08-21T10:00:00.000Z',
+        settings: {
+          enableLeadForm: true,
+          enableRfq: true,
+          enableSampleRequest: true,
+          enableAppointments: true,
+          leadEmail: 'julian.vance@havenoak.example'
+        },
+        assets: [
+          { key: 'LOGO', label: 'Vector Brand Logo', required: true, status: 'APPROVED', url: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300' },
+          { key: 'HERO_IMAGE', label: 'Hero Booth Banner', required: true, status: 'APPROVED', url: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=1200' },
+          { key: 'CATALOG_PDF', label: 'Lookbook & Spec Catalog', required: true, status: 'APPROVED', url: '/demo.html' }
+        ],
+        products: [
+          { id: 'prod-diy-h1', name: 'Monarch Solid White Oak Dining Table', sku: 'HVO-DS-01', category: 'Dining Furniture', price: 4200, currency: 'USD', wholesaleVisible: true, moq: 2, heroImage: 'https://images.unsplash.com/photo-1577140917170-285929fb55b7?w=800', description: 'Handcrafted Appalachian white oak 8-seater dining table with mortise-and-tenon joinery.' },
+          { id: 'prod-diy-h2', name: 'Kensington Low-Profile Sectional Sofa', sku: 'HVO-SF-04', category: 'Living Room', price: 6800, currency: 'USD', wholesaleVisible: true, moq: 1, heroImage: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800', description: 'Full-grain Italian aniline leather sectional with modular configuration options.' },
+          { id: 'prod-diy-h3', name: 'Sutton Architectural Credenza', sku: 'HVO-CR-09', category: 'Storage & Media', price: 3400, currency: 'USD', wholesaleVisible: true, moq: 2, heroImage: 'https://images.unsplash.com/photo-1538688525198-9b88f6f53126?w=800', description: 'Brushed brass inlay cabinet doors with integrated soft-close European hinges.' }
+        ],
+        revisions: [
+          { version: 'v1', publishedAt: '2026-08-21T10:00:00.000Z', publicUrl: '/demo.html?project=proj-diy-haven-01', notes: 'Initial DIY Builder publish' }
+        ],
+        publishRecord: {
+          publishedAt: '2026-08-21T10:00:00.000Z',
+          publishedBy: 'Julian Vance (Self-Service)',
+          publicUrl: '/demo.html?project=proj-diy-haven-01',
+          activeServices: ['DIGITAL_SHOWROOM', 'DIGITAL_CATALOG', 'SMART_CARD', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE']
+        },
+        analytics: {
+          boothVisits: 342,
+          productViews: 819,
+          qrScans: 86,
+          catalogDownloads: 114,
+          leadsCaptured: 19,
+          rfqsSubmitted: 11,
+          samplesRequested: 7,
+          meetingsBooked: 8
+        }
+      },
+      {
+        id: 'proj-diy-nova-02',
+        channel: 'DIY_BUILDER',
+        company: 'Maison Nova Haute Apparel',
+        contact: 'Claire Delacroix (Creative Director)',
+        email: 'claire@maisonnova.example',
+        phone: '+1 (212) 555-0819',
+        website: 'https://maisonnova.example',
+        description: 'Contemporary European luxury pret-a-porter and artisan leather accessory atelier.',
+        tradeShow: 'COTERIE New York 2026',
+        showStartDate: '2026-09-22',
+        showEndDate: '2026-09-24',
+        daysUntilShow: 31,
+        city: 'New York, NY',
+        venue: 'Javits Center',
+        boothNumber: 'Booth 2140',
+        industry: 'Fashion, Footwear & Luxury Apparel',
+        numberOfProducts: 12,
+        experienceType: 'DESIGNED_3D',
+        templateId: 'PREMIUM',
+        hotspotBindings: { hotspot1: 'prod-diy-n1', hotspot2: 'prod-diy-n2' },
+        serviceSelections: ['3D_BOOTH_DESIGN', 'DIGITAL_CATALOG', 'SMART_CARD', 'PRODUCT_QR'],
+        status: 'QUALIFICATION',
+        priority: 'DUE_SOON',
+        blockingReason: 'WAITING_CLIENT',
+        createdAt: '2026-08-18T14:00:00.000Z',
+        updatedAt: '2026-08-22T02:00:00.000Z',
+        managedHandoff: {
+          requestedAt: '2026-08-21T15:30:00.000Z',
+          notes: 'Customer requested dn’a Managed Production to finish high-end 3D pavilion and linesheet binding.',
+          requestedBy: 'Claire Delacroix',
+          handoffStatus: 'ACTIVE'
+        },
+        settings: {
+          enableLeadForm: true,
+          enableRfq: true,
+          enableSampleRequest: true,
+          enableAppointments: true,
+          leadEmail: 'claire@maisonnova.example'
+        },
+        assets: [
+          { key: 'LOGO', label: 'Vector Brand Logo', required: true, status: 'APPROVED', url: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300' }
+        ],
+        products: [
+          { id: 'prod-diy-n1', name: 'Atelier Cashmere Overcoat — Charcoal', sku: 'MN-OW-01', category: 'Outerwear', price: 1850, currency: 'USD', wholesaleVisible: true, moq: 6, heroImage: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=800', description: 'Double-faced Italian cashmere blend with hand-stitched lapels.' },
+          { id: 'prod-diy-n2', name: 'Palais Calfskin Sculptural Handbag', sku: 'MN-BG-08', category: 'Accessories', price: 920, currency: 'USD', wholesaleVisible: true, moq: 10, heroImage: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800', description: 'Handmade calfskin tote with custom brushed palladium hardware.' }
+        ],
+        revisions: [],
+        publishRecord: null,
+        analytics: {
+          boothVisits: 0,
+          productViews: 0,
+          qrScans: 0,
+          catalogDownloads: 0,
+          leadsCaptured: 0,
+          rfqsSubmitted: 0,
+          samplesRequested: 0,
+          meetingsBooked: 0
+        }
+      },
+      {
+        id: 'proj-diy-lumina-03',
+        channel: 'DIY_BUILDER',
+        company: 'Lumina Craft & Giftworks',
+        contact: 'Dave K. Sterling (VP Merchandising)',
+        email: 'dave@luminacraft.example',
+        phone: '+1 (702) 555-0941',
+        website: 'https://luminacraft.example',
+        description: 'Wholesale supplier of design-forward lifestyle gifts, illuminated craft novelties, and retail displays.',
+        tradeShow: 'ASD Market Week Las Vegas 2026',
+        showStartDate: '2026-08-20',
+        showEndDate: '2026-08-23',
+        daysUntilShow: 0,
+        city: 'Las Vegas, NV',
+        venue: 'Las Vegas Convention Center',
+        boothNumber: 'Central Hall — Stand C-842',
+        industry: 'Gifts, Novelties & General Merchandise',
+        numberOfProducts: 6,
+        experienceType: 'PHOTO_TOUR',
+        templateId: 'INDUSTRIAL',
+        hotspotBindings: { hotspot1: 'prod-diy-l1' },
+        serviceSelections: ['PHOTO_TOUR', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE', 'SAMPLE_REQUEST'],
+        status: 'DRAFT',
+        priority: 'SHOW_STARTED',
+        blockingReason: 'NONE',
+        createdAt: '2026-08-20T09:00:00.000Z',
+        updatedAt: '2026-08-22T02:00:00.000Z',
+        settings: {
+          enableLeadForm: true,
+          enableRfq: true,
+          enableSampleRequest: true,
+          enableAppointments: true,
+          leadEmail: 'dave@luminacraft.example'
+        },
+        assets: [
+          { key: 'LOGO', label: 'Vector Brand Logo', required: true, status: 'APPROVED', url: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300' }
+        ],
+        products: [
+          { id: 'prod-diy-l1', name: 'Prism Light Ambient LED Lantern', sku: 'LUM-LT-01', category: 'Illumination', price: 38, currency: 'USD', wholesaleVisible: true, moq: 24, heroImage: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800', description: 'Rechargeable wireless ambient light sculpture with touch dimmer.' }
+        ],
+        revisions: [],
+        publishRecord: null,
+        analytics: {
+          boothVisits: 0,
+          productViews: 0,
+          qrScans: 0,
+          catalogDownloads: 0,
+          leadsCaptured: 0,
+          rfqsSubmitted: 0,
+          samplesRequested: 0,
+          meetingsBooked: 0
+        }
       }
     ];
 
@@ -2480,6 +2659,606 @@ class JSONDatabase {
       return duplicated;
     });
   }
+
+  // ================================================================
+  // --- Phase dn’a-C03: DIY Booth Builder Beta Operations Engine ---
+  // ================================================================
+
+  async createOrGetDiyDraft(projectId = null, exhibitorEmail = null, initialData = {}) {
+    return this.mutate((db) => {
+      db.productionProjects = db.productionProjects || [];
+      const now = new Date().toISOString();
+
+      if (projectId) {
+        const existing = db.productionProjects.find(p => p.id === projectId);
+        if (existing) return existing;
+      }
+
+      if (exhibitorEmail) {
+        const existingByEmail = db.productionProjects.find(p => p.email === exhibitorEmail && p.channel === 'DIY_BUILDER' && p.status === 'DRAFT');
+        if (existingByEmail) return existingByEmail;
+      }
+
+      const id = projectId || `proj-diy-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+      const showStartDate = (initialData.showStartDate || '').trim();
+      const showEndDate = (initialData.showEndDate || '').trim();
+      const prio = this.calculateShowDatePriority(showStartDate, showEndDate);
+
+      const defaultServices = ['3D_BOOTH_DESIGN', 'DIGITAL_CATALOG', 'SMART_CARD', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE'];
+
+      const newDiyProject = {
+        id,
+        channel: 'DIY_BUILDER',
+        productionRequestId: null,
+        company: (initialData.company || 'New Exhibitor Space').trim(),
+        contact: (initialData.contact || '').trim(),
+        email: (initialData.email || exhibitorEmail || '').trim(),
+        phone: (initialData.phone || '').trim(),
+        website: (initialData.website || '').trim(),
+        description: (initialData.description || '').trim(),
+        tradeShow: (initialData.tradeShow || 'Upcoming Trade Expo 2026').trim(),
+        showStartDate,
+        showEndDate,
+        daysUntilShow: prio.daysUntilShow,
+        city: (initialData.city || '').trim(),
+        venue: (initialData.venue || '').trim(),
+        boothNumber: (initialData.boothNumber || 'Stand TBD').trim(),
+        industry: (initialData.industry || 'General B2B').trim(),
+        numberOfProducts: Array.isArray(initialData.products) ? initialData.products.length : 0,
+        experienceType: initialData.experienceType || 'DIGITAL_SHOWROOM',
+        templateId: initialData.templateId || 'MODERN',
+        hotspotBindings: initialData.hotspotBindings || { hotspot1: null, hotspot2: null, hotspot3: null },
+        serviceSelections: defaultServices,
+        assignedProducer: 'Self-Service (dn’a Beta Engine)',
+        assignedReviewer: 'Automated QA Engine',
+        status: 'DRAFT',
+        priority: prio.priority,
+        blockingReason: 'NONE',
+        createdAt: now,
+        updatedAt: now,
+        publishedAt: null,
+        settings: {
+          enableLeadForm: true,
+          enableRfq: true,
+          enableSampleRequest: true,
+          enableAppointments: true,
+          leadEmail: initialData.email || exhibitorEmail || ''
+        },
+        assets: [
+          { key: 'LOGO', label: 'Vector Brand Logo', required: true, status: 'MISSING', url: '' },
+          { key: 'HERO_IMAGE', label: 'Hero Booth Banner', required: true, status: 'MISSING', url: '' },
+          { key: 'CATALOG_PDF', label: 'Lookbook & Spec Catalog', required: false, status: 'MISSING', url: '' },
+          { key: 'BOOTH_PHOTOS', label: 'Physical Booth Photos', required: false, status: 'MISSING', url: '' },
+          { key: 'BRAND_GUIDELINES', label: 'Brand Guidelines', required: false, status: 'MISSING', url: '' }
+        ],
+        products: Array.isArray(initialData.products) ? initialData.products : [],
+        revisions: [],
+        clientFeedback: [],
+        publishRecord: null,
+        analytics: {
+          boothVisits: 0,
+          productViews: 0,
+          qrScans: 0,
+          catalogDownloads: 0,
+          leadsCaptured: 0,
+          rfqsSubmitted: 0,
+          samplesRequested: 0,
+          meetingsBooked: 0
+        },
+        activityHistory: [
+          { timestamp: now, action: 'DIY_DRAFT_CREATED', actor: 'Customer', details: `Initialized DIY Booth project ${id}` }
+        ]
+      };
+
+      db.productionProjects.unshift(newDiyProject);
+      return newDiyProject;
+    });
+  }
+
+  async updateDiyCompany(projectId, companyData) {
+    return this.mutate((db) => {
+      const p = (db.productionProjects || []).find(x => x.id === projectId);
+      if (!p) throw new Error(`Project ${projectId} not found`);
+      const now = new Date().toISOString();
+
+      if (companyData.company !== undefined) p.company = (companyData.company || '').trim();
+      if (companyData.contact !== undefined) p.contact = (companyData.contact || '').trim();
+      if (companyData.email !== undefined) {
+        p.email = (companyData.email || '').trim();
+        if (p.settings) p.settings.leadEmail = p.settings.leadEmail || p.email;
+      }
+      if (companyData.phone !== undefined) p.phone = (companyData.phone || '').trim();
+      if (companyData.website !== undefined) p.website = (companyData.website || '').trim();
+      if (companyData.description !== undefined) p.description = (companyData.description || '').trim();
+      if (companyData.industry !== undefined) p.industry = (companyData.industry || '').trim();
+      if (companyData.socialUrls !== undefined) p.socialUrls = companyData.socialUrls;
+
+      if (companyData.logoUrl) {
+        const logoAsset = (p.assets || []).find(a => a.key === 'LOGO');
+        if (logoAsset) {
+          logoAsset.url = companyData.logoUrl;
+          logoAsset.status = 'APPROVED';
+        }
+      }
+
+      p.updatedAt = now;
+      p.activityHistory = p.activityHistory || [];
+      p.activityHistory.unshift({ timestamp: now, action: 'DIY_COMPANY_UPDATED', actor: 'Customer', details: 'Updated company & contact profile' });
+
+      return p;
+    });
+  }
+
+  async updateDiyShow(projectId, showData) {
+    return this.mutate((db) => {
+      const p = (db.productionProjects || []).find(x => x.id === projectId);
+      if (!p) throw new Error(`Project ${projectId} not found`);
+      const now = new Date().toISOString();
+
+      if (showData.tradeShow !== undefined) p.tradeShow = (showData.tradeShow || '').trim();
+      if (showData.showStartDate !== undefined) p.showStartDate = (showData.showStartDate || '').trim();
+      if (showData.showEndDate !== undefined) p.showEndDate = (showData.showEndDate || '').trim();
+      if (showData.city !== undefined) p.city = (showData.city || '').trim();
+      if (showData.venue !== undefined) p.venue = (showData.venue || '').trim();
+      if (showData.boothNumber !== undefined) p.boothNumber = (showData.boothNumber || '').trim();
+
+      const prio = this.calculateShowDatePriority(p.showStartDate, p.showEndDate);
+      p.daysUntilShow = prio.daysUntilShow;
+      p.priority = prio.priority;
+      p.updatedAt = now;
+
+      p.activityHistory = p.activityHistory || [];
+      p.activityHistory.unshift({ timestamp: now, action: 'DIY_SHOW_UPDATED', actor: 'Customer', details: `Updated trade show specs (${p.tradeShow})` });
+
+      return p;
+    });
+  }
+
+  async addOrUpdateDiyProduct(projectId, productData) {
+    return this.mutate((db) => {
+      const p = (db.productionProjects || []).find(x => x.id === projectId);
+      if (!p) throw new Error(`Project ${projectId} not found`);
+      const now = new Date().toISOString();
+
+      p.products = p.products || [];
+      const prodId = productData.id || `prod-diy-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 5)}`;
+
+      const prodRecord = {
+        id: prodId,
+        name: (productData.name || 'Untitled Product').trim(),
+        sku: (productData.sku || `SKU-${Date.now().toString().slice(-4)}`).trim(),
+        category: (productData.category || 'Featured Products').trim(),
+        price: parseFloat(productData.price) || 0,
+        currency: productData.currency || 'USD',
+        wholesaleVisible: productData.wholesaleVisible !== false,
+        moq: parseInt(productData.moq, 10) || 1,
+        heroImage: productData.heroImage || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800',
+        gallery: Array.isArray(productData.gallery) ? productData.gallery : [],
+        description: (productData.description || '').trim(),
+        specs: typeof productData.specs === 'object' ? productData.specs : {},
+        catalogPdf: productData.catalogPdf || '',
+        videoUrl: productData.videoUrl || '',
+        hotspotId: productData.hotspotId || null,
+        updatedAt: now
+      };
+
+      const idx = p.products.findIndex(x => x.id === prodId);
+      if (idx >= 0) {
+        p.products[idx] = { ...p.products[idx], ...prodRecord };
+      } else {
+        p.products.push(prodRecord);
+      }
+
+      p.numberOfProducts = p.products.length;
+      p.updatedAt = now;
+
+      // Update product images asset checklist status
+      const pImgAsset = (p.assets || []).find(a => a.key === 'PRODUCT_IMAGES');
+      if (pImgAsset) pImgAsset.status = 'APPROVED';
+
+      p.activityHistory = p.activityHistory || [];
+      p.activityHistory.unshift({ timestamp: now, action: 'DIY_PRODUCT_SAVED', actor: 'Customer', details: `Saved product: ${prodRecord.name}` });
+
+      return { project: p, product: prodRecord };
+    });
+  }
+
+  async deleteDiyProduct(projectId, productId) {
+    return this.mutate((db) => {
+      const p = (db.productionProjects || []).find(x => x.id === projectId);
+      if (!p) throw new Error(`Project ${projectId} not found`);
+      const now = new Date().toISOString();
+
+      p.products = (p.products || []).filter(x => x.id !== productId);
+      p.numberOfProducts = p.products.length;
+      p.updatedAt = now;
+
+      // Clear any hotspot binding associated with this product
+      if (p.hotspotBindings) {
+        Object.keys(p.hotspotBindings).forEach(k => {
+          if (p.hotspotBindings[k] === productId) p.hotspotBindings[k] = null;
+        });
+      }
+
+      p.activityHistory = p.activityHistory || [];
+      p.activityHistory.unshift({ timestamp: now, action: 'DIY_PRODUCT_DELETED', actor: 'Customer', details: `Removed product ${productId}` });
+
+      return p;
+    });
+  }
+
+  async duplicateDiyProduct(projectId, productId) {
+    return this.mutate((db) => {
+      const p = (db.productionProjects || []).find(x => x.id === projectId);
+      if (!p) throw new Error(`Project ${projectId} not found`);
+      const prod = (p.products || []).find(x => x.id === productId);
+      if (!prod) throw new Error(`Product ${productId} not found`);
+      const now = new Date().toISOString();
+
+      const dupId = `prod-diy-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 5)}`;
+      const duplicated = {
+        ...prod,
+        id: dupId,
+        name: `${prod.name} (Copy)`,
+        sku: `${prod.sku}-COPY`,
+        hotspotId: null,
+        updatedAt: now
+      };
+
+      p.products.push(duplicated);
+      p.numberOfProducts = p.products.length;
+      p.updatedAt = now;
+
+      p.activityHistory = p.activityHistory || [];
+      p.activityHistory.unshift({ timestamp: now, action: 'DIY_PRODUCT_DUPLICATED', actor: 'Customer', details: `Duplicated product: ${duplicated.name}` });
+
+      return { project: p, product: duplicated };
+    });
+  }
+
+  async bulkAddDiyProducts(projectId, productsList) {
+    return this.mutate((db) => {
+      const p = (db.productionProjects || []).find(x => x.id === projectId);
+      if (!p) throw new Error(`Project ${projectId} not found`);
+      const now = new Date().toISOString();
+
+      if (!Array.isArray(productsList)) throw new Error('productsList must be an array');
+      p.products = p.products || [];
+
+      productsList.forEach((item, i) => {
+        const prodId = item.id || `prod-diy-${Date.now().toString(36)}-${i}`;
+        p.products.push({
+          id: prodId,
+          name: (item.name || `Product #${p.products.length + 1}`).trim(),
+          sku: (item.sku || `SKU-${p.products.length + 101}`).trim(),
+          category: (item.category || 'General').trim(),
+          price: parseFloat(item.price) || 0,
+          currency: item.currency || 'USD',
+          wholesaleVisible: item.wholesaleVisible !== false,
+          moq: parseInt(item.moq, 10) || 1,
+          heroImage: item.heroImage || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800',
+          gallery: Array.isArray(item.gallery) ? item.gallery : [],
+          description: (item.description || '').trim(),
+          specs: typeof item.specs === 'object' ? item.specs : {},
+          catalogPdf: item.catalogPdf || '',
+          videoUrl: item.videoUrl || '',
+          updatedAt: now
+        });
+      });
+
+      p.numberOfProducts = p.products.length;
+      p.updatedAt = now;
+
+      p.activityHistory = p.activityHistory || [];
+      p.activityHistory.unshift({ timestamp: now, action: 'DIY_PRODUCTS_BULK_ADDED', actor: 'Customer', details: `Bulk added ${productsList.length} products` });
+
+      return p;
+    });
+  }
+
+  async updateDiyAssets(projectId, assetUpdates) {
+    return this.mutate((db) => {
+      const p = (db.productionProjects || []).find(x => x.id === projectId);
+      if (!p) throw new Error(`Project ${projectId} not found`);
+      const now = new Date().toISOString();
+
+      p.assets = p.assets || [];
+
+      if (assetUpdates.logoUrl) {
+        let logo = p.assets.find(a => a.key === 'LOGO');
+        if (!logo) { logo = { key: 'LOGO', label: 'Vector Brand Logo', required: true, status: 'APPROVED', url: '' }; p.assets.push(logo); }
+        logo.url = assetUpdates.logoUrl;
+        logo.status = 'APPROVED';
+      }
+
+      if (assetUpdates.heroImageUrl) {
+        let hero = p.assets.find(a => a.key === 'HERO_IMAGE');
+        if (!hero) { hero = { key: 'HERO_IMAGE', label: 'Hero Booth Banner', required: true, status: 'APPROVED', url: '' }; p.assets.push(hero); }
+        hero.url = assetUpdates.heroImageUrl;
+        hero.status = 'APPROVED';
+      }
+
+      if (assetUpdates.catalogPdfUrl) {
+        let cat = p.assets.find(a => a.key === 'CATALOG_PDF');
+        if (!cat) { cat = { key: 'CATALOG_PDF', label: 'Lookbook & Spec Catalog', required: false, status: 'APPROVED', url: '' }; p.assets.push(cat); }
+        cat.url = assetUpdates.catalogPdfUrl;
+        cat.status = 'APPROVED';
+      }
+
+      if (assetUpdates.boothPhotosUrl) {
+        let bp = p.assets.find(a => a.key === 'BOOTH_PHOTOS');
+        if (!bp) { bp = { key: 'BOOTH_PHOTOS', label: 'Physical Booth Photos', required: false, status: 'APPROVED', url: '' }; p.assets.push(bp); }
+        bp.url = assetUpdates.boothPhotosUrl;
+        bp.status = 'APPROVED';
+      }
+
+      p.updatedAt = now;
+      p.activityHistory = p.activityHistory || [];
+      p.activityHistory.unshift({ timestamp: now, action: 'DIY_ASSETS_UPDATED', actor: 'Customer', details: 'Updated asset uploads' });
+
+      return p;
+    });
+  }
+
+  async updateDiyExperience(projectId, experienceType) {
+    return this.mutate((db) => {
+      const p = (db.productionProjects || []).find(x => x.id === projectId);
+      if (!p) throw new Error(`Project ${projectId} not found`);
+      const now = new Date().toISOString();
+
+      const validExperiences = ['DIGITAL_SHOWROOM', 'PHOTO_TOUR', 'DESIGNED_3D', 'AUTHENTIC_3D'];
+      const exp = validExperiences.includes(experienceType) ? experienceType : 'DIGITAL_SHOWROOM';
+
+      p.experienceType = exp;
+      if (exp === 'AUTHENTIC_3D') {
+        p.authentic3dReviewRequested = true;
+        p.authentic3dStatus = 'AUTHENTIC_3D_REVIEW_REQUIRED';
+      }
+
+      p.updatedAt = now;
+      p.activityHistory = p.activityHistory || [];
+      p.activityHistory.unshift({ timestamp: now, action: 'DIY_EXPERIENCE_SELECTED', actor: 'Customer', details: `Selected experience type: ${exp}` });
+
+      return p;
+    });
+  }
+
+  async updateDiyTemplate(projectId, templateId, hotspotBindings = {}) {
+    return this.mutate((db) => {
+      const p = (db.productionProjects || []).find(x => x.id === projectId);
+      if (!p) throw new Error(`Project ${projectId} not found`);
+      const now = new Date().toISOString();
+
+      const validTemplates = ['MODERN', 'PREMIUM', 'INDUSTRIAL', 'MINIMAL'];
+      p.templateId = validTemplates.includes(templateId) ? templateId : 'MODERN';
+      p.hotspotBindings = { ...(p.hotspotBindings || {}), ...hotspotBindings };
+
+      p.updatedAt = now;
+      p.activityHistory = p.activityHistory || [];
+      p.activityHistory.unshift({ timestamp: now, action: 'DIY_TEMPLATE_SELECTED', actor: 'Customer', details: `Selected template: ${p.templateId}` });
+
+      return p;
+    });
+  }
+
+  async updateDiySettings(projectId, settingsData) {
+    return this.mutate((db) => {
+      const p = (db.productionProjects || []).find(x => x.id === projectId);
+      if (!p) throw new Error(`Project ${projectId} not found`);
+      const now = new Date().toISOString();
+
+      p.settings = {
+        ...(p.settings || {}),
+        enableLeadForm: settingsData.enableLeadForm !== false,
+        enableRfq: settingsData.enableRfq !== false,
+        enableSampleRequest: settingsData.enableSampleRequest !== false,
+        enableAppointments: settingsData.enableAppointments !== false,
+        leadEmail: (settingsData.leadEmail || p.email || '').trim()
+      };
+
+      p.updatedAt = now;
+      return p;
+    });
+  }
+
+  calculateDiyReadiness(project) {
+    const checks = {
+      companyNamePresent: Boolean(project.company && project.company !== 'New Exhibitor Space'),
+      contactEmailPresent: Boolean(project.email),
+      contactNamePresent: Boolean(project.contact),
+      tradeShowDefined: Boolean(project.tradeShow),
+      hasProducts: Boolean(project.products && project.products.length > 0),
+      productsHaveImages: Boolean(project.products && project.products.every(p => Boolean(p.heroImage))),
+      leadDestinationConfigured: Boolean(project.settings && project.settings.leadEmail)
+    };
+
+    const missing = [];
+    if (!checks.companyNamePresent) missing.push('Company Name is required');
+    if (!checks.contactEmailPresent) missing.push('Primary Contact Email is required');
+    if (!checks.tradeShowDefined) missing.push('Trade Show name is required');
+    if (!checks.hasProducts) missing.push('At least 1 product must be added');
+    if (!checks.productsHaveImages) missing.push('All products must have a hero image');
+
+    const total = Object.keys(checks).length;
+    const passed = Object.values(checks).filter(Boolean).length;
+    const score = Math.round((passed / total) * 100);
+
+    return {
+      ready: missing.length === 0,
+      score,
+      checks,
+      missing
+    };
+  }
+
+  async publishDiyProject(projectId, actor = 'Self-Service Customer') {
+    return this.mutate((db) => {
+      const p = (db.productionProjects || []).find(x => x.id === projectId);
+      if (!p) throw new Error(`Project ${projectId} not found`);
+      const readiness = this.calculateDiyReadiness(p);
+
+      if (!readiness.ready) {
+        throw new Error(`Cannot publish booth. Missing requirements: ${readiness.missing.join(', ')}`);
+      }
+
+      const now = new Date().toISOString();
+      const currentVersionNum = (p.revisions || []).length + 1;
+      const versionTag = `v${currentVersionNum}`;
+      const publicUrl = `/demo.html?project=${p.id}&template=${p.templateId || 'MODERN'}`;
+
+      p.status = 'PUBLISHED';
+      p.publishedAt = now;
+      p.updatedAt = now;
+
+      p.revisions = p.revisions || [];
+      p.revisions.unshift({
+        version: versionTag,
+        publishedAt: now,
+        publishedBy: actor,
+        publicUrl,
+        deliverableType: p.experienceType || 'DIGITAL_SHOWROOM',
+        notes: `Self-service publish ${versionTag}`
+      });
+
+      p.publishRecord = {
+        publishedAt: now,
+        publishedBy: actor,
+        publicUrl,
+        version: versionTag,
+        activeServices: ['DIGITAL_SHOWROOM', 'DIGITAL_CATALOG', 'SMART_CARD', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE']
+      };
+
+      p.activityHistory = p.activityHistory || [];
+      p.activityHistory.unshift({ timestamp: now, action: 'DIY_BOOTH_PUBLISHED', actor, details: `Published booth live as ${versionTag} (${publicUrl})` });
+
+      return { project: p, publicUrl, version: versionTag };
+    });
+  }
+
+  async handoffDiyToManaged(projectId, notes = '', actor = 'Customer') {
+    return this.mutate((db) => {
+      const p = (db.productionProjects || []).find(x => x.id === projectId);
+      if (!p) throw new Error(`Project ${projectId} not found`);
+      const now = new Date().toISOString();
+
+      // Convergence: Re-use all existing company data, products, and assets without re-entry!
+      p.status = 'QUALIFICATION';
+      p.assignedProducer = 'Elena Rostova (Lead 3D Producer)';
+      p.assignedReviewer = 'Marcus Vance (QA Director)';
+      p.managedHandoff = {
+        requestedAt: now,
+        requestedBy: actor,
+        notes: notes || 'Customer requested Managed Production assistance.',
+        handoffStatus: 'ACTIVE'
+      };
+
+      // Create linked production request record in productionRequests collection
+      db.productionRequests = db.productionRequests || [];
+      const reqId = `req-diy-handoff-${Date.now().toString(36)}`;
+      db.productionRequests.unshift({
+        id: reqId,
+        companyName: p.company,
+        contactName: p.contact,
+        email: p.email,
+        phone: p.phone,
+        website: p.website,
+        tradeShow: p.tradeShow,
+        showDate: p.showStartDate,
+        city: p.city,
+        boothNumber: p.boothNumber,
+        industry: p.industry,
+        productCount: p.numberOfProducts || 8,
+        services: p.serviceSelections || ['3D_BOOTH_DESIGN', 'DIGITAL_CATALOG', 'SMART_CARD', 'PRODUCT_QR'],
+        notes: `[DIY Handoff] ${notes}`,
+        projectId: p.id,
+        status: 'QUALIFIED',
+        createdAt: now
+      });
+
+      p.productionRequestId = reqId;
+      p.internalNotes = p.internalNotes || [];
+      p.internalNotes.unshift({
+        id: `n-${Date.now()}`,
+        text: `[DIY -> Managed Handoff] Customer requested dn’a team to finish production. Existing products (${p.products.length}) and assets retained with zero data loss. Notes: ${notes}`,
+        author: actor,
+        createdAt: now
+      });
+
+      p.clientVisibleNotes = p.clientVisibleNotes || [];
+      p.clientVisibleNotes.unshift({
+        id: `cn-${Date.now()}`,
+        text: 'Your project has been transferred to dn’a Managed Production! Our lead 3D engineers are reviewing your booth.',
+        author: 'dn’a Production Team',
+        createdAt: now
+      });
+
+      p.updatedAt = now;
+      p.activityHistory = p.activityHistory || [];
+      p.activityHistory.unshift({ timestamp: now, action: 'DIY_MANAGED_HANDOFF', actor, details: `Handed off project ${p.id} to Managed Production Queue` });
+
+      return { project: p, productionRequestId: reqId };
+    });
+  }
+
+  async submitDiyFeedback(payload) {
+    return this.mutate((db) => {
+      db.platformMessages = db.platformMessages || [];
+      const now = new Date().toISOString();
+      const fb = {
+        id: `fb-${Date.now().toString(36)}`,
+        projectId: payload.projectId || null,
+        company: payload.company || 'Unknown',
+        email: payload.email || 'anonymous',
+        type: payload.type || 'BETA_FEEDBACK',
+        step: payload.step || 'BUILDER',
+        message: payload.message || '',
+        submittedAt: now
+      };
+      db.platformMessages.unshift(fb);
+      return fb;
+    });
+  }
+
+  getDiyAnalytics(projectId) {
+    const p = (this.read().productionProjects || []).find(x => x.id === projectId);
+    if (!p) throw new Error(`Project ${projectId} not found`);
+
+    // Pure real metrics (zero fake analytics injection)
+    return p.analytics || {
+      boothVisits: 0,
+      productViews: 0,
+      qrScans: 0,
+      catalogDownloads: 0,
+      leadsCaptured: 0,
+      rfqsSubmitted: 0,
+      samplesRequested: 0,
+      meetingsBooked: 0
+    };
+  }
+
+  async recordDiyAnalyticsEvent(projectId, eventType, metadata = {}) {
+    return this.mutate((db) => {
+      const p = (db.productionProjects || []).find(x => x.id === projectId);
+      if (!p) return null;
+
+      p.analytics = p.analytics || {
+        boothVisits: 0, productViews: 0, qrScans: 0, catalogDownloads: 0,
+        leadsCaptured: 0, rfqsSubmitted: 0, samplesRequested: 0, meetingsBooked: 0
+      };
+
+      if (eventType === 'VISIT') p.analytics.boothVisits++;
+      else if (eventType === 'PRODUCT_VIEW') p.analytics.productViews++;
+      else if (eventType === 'QR_SCAN') p.analytics.qrScans++;
+      else if (eventType === 'CATALOG_DOWNLOAD') p.analytics.catalogDownloads++;
+      else if (eventType === 'LEAD_SUBMISSION') p.analytics.leadsCaptured++;
+      else if (eventType === 'RFQ_SUBMISSION') p.analytics.rfqsSubmitted++;
+      else if (eventType === 'SAMPLE_REQUEST') p.analytics.samplesRequested++;
+      else if (eventType === 'APPOINTMENT_BOOKED') p.analytics.meetingsBooked++;
+
+      return p.analytics;
+    });
+  }
+
 
   // --- Analytics API ---
   getAnalyticsEvents(organizationId = null, eventId = null) {

@@ -1,17 +1,9 @@
-# Railway 업로드 제외 목록
-# 대용량 파일 / 불필요한 로컬 데이터 제외
-
-# 대용량 3D 모델 파일
-client/assets/demo/**/*.ply
-client/assets/demo/**/*.spz
-!client/assets/demo/wilo/experimental/*.ply
-!client/assets/demo/wilo/experimental/*.spz
-client/assets/demo/**/*.glb
-client/assets/demo/**/*.obj
-
-# 대용량 업로드 데이터
+node_modules/
+.git/
+*.log
+*.ply
+*.spz
+*.glb
+*.obj
 data/uploads/
 data/backups/
-
-# 로컬 개발용 데이터만
-# data/db.json 은 포함 (필요)

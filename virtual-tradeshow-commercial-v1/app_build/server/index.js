@@ -1751,6 +1751,194 @@ app.get('/api/client-portal/:id', (req, res) => {
   res.json(project);
 });
 
+// ================================================================
+// --- Phase dn’a-C03: DIY Booth Builder Beta REST Endpoints ---
+// ================================================================
+
+// 1. Create or Get DIY Project Draft
+app.post('/api/diy/projects', createRateLimiter(60, 60000), async (req, res) => {
+  try {
+    const { projectId, email, company, contact, tradeShow } = req.body;
+    const project = await db.createOrGetDiyDraft(projectId, email, { company, contact, email, tradeShow });
+    res.status(201).json({ success: true, project });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 2. Fetch DIY Project Details
+app.get('/api/diy/projects/:id', (req, res) => {
+  const project = db.getProductionProjectById(req.params.id, true);
+  if (!project) return res.status(404).json({ error: 'DIY project not found.' });
+  res.json(project);
+});
+
+// 3. Step 1: Update Company & Contact Profile
+app.patch('/api/diy/projects/:id/company', createRateLimiter(60, 60000), async (req, res) => {
+  try {
+    const project = await db.updateDiyCompany(req.params.id, req.body);
+    res.json({ success: true, project });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 4. Step 2: Update Trade Show Specifications
+app.patch('/api/diy/projects/:id/show', createRateLimiter(60, 60000), async (req, res) => {
+  try {
+    const project = await db.updateDiyShow(req.params.id, req.body);
+    res.json({ success: true, project });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 5. Step 3: Add or Update Product
+app.post('/api/diy/projects/:id/products', createRateLimiter(60, 60000), async (req, res) => {
+  try {
+    const result = await db.addOrUpdateDiyProduct(req.params.id, req.body);
+    res.status(201).json({ success: true, product: result.product, project: result.project });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 6. Delete Product
+app.delete('/api/diy/projects/:id/products/:productId', createRateLimiter(60, 60000), async (req, res) => {
+  try {
+    const project = await db.deleteDiyProduct(req.params.id, req.params.productId);
+    res.json({ success: true, project });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 7. Duplicate Product
+app.post('/api/diy/projects/:id/products/duplicate', createRateLimiter(60, 60000), async (req, res) => {
+  try {
+    const { productId } = req.body;
+    const result = await db.duplicateDiyProduct(req.params.id, productId);
+    res.status(201).json({ success: true, product: result.product, project: result.project });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 8. Bulk Add Products
+app.post('/api/diy/projects/:id/products/bulk', createRateLimiter(30, 60000), async (req, res) => {
+  try {
+    const { products } = req.body;
+    const project = await db.bulkAddDiyProducts(req.params.id, products);
+    res.status(201).json({ success: true, project });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 9. Step 4: Update Uploaded Assets
+app.patch('/api/diy/projects/:id/assets', createRateLimiter(60, 60000), async (req, res) => {
+  try {
+    const project = await db.updateDiyAssets(req.params.id, req.body);
+    res.json({ success: true, project });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 10. Step 5: Update Experience Type Selection
+app.patch('/api/diy/projects/:id/experience', createRateLimiter(60, 60000), async (req, res) => {
+  try {
+    const { experienceType } = req.body;
+    const project = await db.updateDiyExperience(req.params.id, experienceType);
+    res.json({ success: true, project });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 11. Step 6: Select Template & Bind Hotspots
+app.patch('/api/diy/projects/:id/template', createRateLimiter(60, 60000), async (req, res) => {
+  try {
+    const { templateId, hotspotBindings } = req.body;
+    const project = await db.updateDiyTemplate(req.params.id, templateId, hotspotBindings);
+    res.json({ success: true, project });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 12. Update Lead / Action Settings
+app.patch('/api/diy/projects/:id/settings', createRateLimiter(60, 60000), async (req, res) => {
+  try {
+    const project = await db.updateDiySettings(req.params.id, req.body);
+    res.json({ success: true, project });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 13. Calculate Preview Readiness
+app.get('/api/diy/projects/:id/readiness', (req, res) => {
+  const project = db.getProductionProjectById(req.params.id, true);
+  if (!project) return res.status(404).json({ error: 'Project not found' });
+  const readiness = db.calculateDiyReadiness(project);
+  res.json(readiness);
+});
+
+// 14. Step 8: Self-Service Safe Publish
+app.post('/api/diy/projects/:id/publish', createRateLimiter(30, 60000), async (req, res) => {
+  try {
+    const { actor } = req.body;
+    const result = await db.publishDiyProject(req.params.id, actor || 'Customer');
+    res.status(200).json({ success: true, ...result });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 15. DIY -> Managed Production Handoff (Zero Data Loss)
+app.post('/api/diy/projects/:id/handoff-to-managed', createRateLimiter(30, 60000), async (req, res) => {
+  try {
+    const { notes, actor } = req.body;
+    const result = await db.handoffDiyToManaged(req.params.id, notes, actor || 'Customer');
+    res.status(201).json({ success: true, ...result });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 16. Submit Feedback or Issue Report
+app.post('/api/diy/feedback', createRateLimiter(30, 60000), async (req, res) => {
+  try {
+    const feedback = await db.submitDiyFeedback(req.body);
+    res.status(201).json({ success: true, feedback });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 17. Real Project Analytics (Zero Fake Data)
+app.get('/api/diy/projects/:id/analytics', (req, res) => {
+  try {
+    const analytics = db.getDiyAnalytics(req.params.id);
+    res.json(analytics);
+  } catch (err) {
+    res.status(404).json({ error: err.message });
+  }
+});
+
+// 18. Track Event for DIY Project
+app.post('/api/diy/projects/:id/analytics/events', createRateLimiter(120, 60000), async (req, res) => {
+  try {
+    const { eventType, metadata } = req.body;
+    const analytics = await db.recordDiyAnalyticsEvent(req.params.id, eventType, metadata);
+    res.json({ success: true, analytics });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+
 // --- 9. Realtime Analytics API ---
 app.post('/api/analytics/events', createRateLimiter(120, 60000), async (req, res) => {
   try {

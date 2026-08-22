@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>dn’a Booth Builder — Early Access Preview</title>
-  <meta name="description" content="Design your own 3D virtual trade show booth with the dn’a self-service builder. Early access beta preview.">
+  <title>dn’a Booth Builder — Early Access Beta</title>
+  <meta name="description" content="Build and deploy your 3D digital trade show showroom, digital catalog, smart card, and product QRs with the dn’a self-service builder beta.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -27,175 +27,1124 @@
       line-height: 1.6;
     }
     .app-nav {
-      padding: 16px 32px;
+      padding: 12px 28px;
       background: #0f172a;
       border-bottom: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
     }
     .container {
-      max-width: 900px;
-      margin: 40px auto 80px;
+      max-width: 1280px;
+      margin: 24px auto 80px;
       padding: 0 20px;
     }
-    .beta-banner {
-      background: rgba(245, 158, 11, 0.15);
-      border: 1px solid #f59e0b;
+
+    /* Stepper Bar */
+    .stepper-nav {
+      display: flex;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 14px 20px;
-      color: #fbbf24;
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 30px;
+      padding: 8px 12px;
+      margin-bottom: 24px;
+      overflow-x: auto;
+      gap: 6px;
+    }
+    .step-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .step-btn.active {
+      background: #0284c7;
+      color: #fff;
+    }
+    .step-btn.completed {
+      color: #34d399;
+    }
+    .step-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .step-btn.active .step-dot { background: #fff; color: #0284c7; }
+
+    /* Builder Card Box */
+    .builder-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    .box-header {
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding-bottom: 14px;
+      margin-bottom: 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
       gap: 12px;
     }
-    .steps-container {
+    .box-title { font-size: 20px; font-weight: 800; color: #fff; margin: 0; }
+    .box-desc { font-size: 13px; color: #94a3b8; margin: 4px 0 0 0; }
+
+    /* Forms & Inputs */
+    .form-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      grid-template-columns: 1fr 1fr;
       gap: 18px;
-      margin-bottom: 40px;
     }
-    .step-card {
-      background: var(--card-bg);
+    @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+    }
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      background: #070e17;
+      border: 1px solid #334155;
+      color: #fff;
+      font-size: 13px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    /* Buttons */
+    .btn-action {
+      background: #0284c7;
+      border: none;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-action:hover { background: #0369a1; }
+    .btn-sub {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #cbd5e1;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn-sub:hover { background: #334155; color: #fff; }
+    .btn-handoff {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #000;
+      font-weight: 800;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* Selection Cards Grid */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 14px;
+    }
+    .choice-card {
+      background: #070e17;
+      border: 2px solid #1e293b;
+      border-radius: 12px;
+      padding: 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .choice-card:hover { border-color: #38bdf8; }
+    .choice-card.selected {
+      border-color: #0284c7;
+      background: rgba(2, 132, 199, 0.08);
+    }
+    .choice-card .tag {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* Product Item Box */
+    .product-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: #070e17;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .product-thumb {
+      width: 52px;
+      height: 52px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #1e293b;
+    }
+
+    /* Simulator Container */
+    .preview-frame-container {
+      background: #070e17;
       border: 1px solid var(--border);
       border-radius: 14px;
       padding: 20px;
-      position: relative;
+      text-align: center;
     }
-    .step-number {
-      font-size: 11px;
-      font-weight: 800;
-      color: #38bdf8;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 6px;
+    .preview-frame {
+      width: 100%;
+      height: 620px;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      background: #0f172a;
+      transition: width 0.3s;
     }
-    .step-title {
-      font-size: 16px;
-      font-weight: 700;
-      margin: 0 0 8px 0;
-      color: #fff;
-    }
-    .step-desc {
-      font-size: 13px;
-      color: #94a3b8;
-      margin: 0;
-      line-height: 1.5;
+    .preview-frame.mobile {
+      width: 375px;
+      margin: 0 auto;
     }
 
-    /* Fallback Managed Banner */
-    .fallback-card {
-      background: linear-gradient(135deg, rgba(15, 23, 42, 1) 0%, rgba(8, 47, 73, 0.7) 100%);
-      border: 2px solid #0284c7;
+    /* Modal Backdrop */
+    .modal-backdrop {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
       border-radius: 16px;
-      padding: 32px;
-      text-align: center;
-      box-shadow: 0 20px 40px rgba(2, 132, 199, 0.25);
+      max-width: 640px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 28px;
+      position: relative;
     }
-    .fallback-title { font-size: 24px; font-weight: 800; color: #fff; margin: 0 0 10px 0; }
-    .fallback-desc { font-size: 15px; color: #cbd5e1; max-width: 600px; margin: 0 auto 24px auto; line-height: 1.6; }
-    .btn-managed {
-      display: inline-block;
-      background: linear-gradient(135deg, #0284c7, #2563eb);
-      color: #fff;
-      padding: 14px 32px;
-      border-radius: 8px;
-      font-weight: 800;
-      text-decoration: none;
-      font-size: 15px;
-      box-shadow: 0 6px 20px rgba(2, 132, 199, 0.4);
-      transition: all 0.2s;
-    }
-    .btn-managed:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(2, 132, 199, 0.55); }
   </style>
 </head>
 <body>
 
-  <nav class="app-nav">
-    <a href="/" style="color: #fff; text-decoration: none; font-weight: 800; font-size: 20px;">dn’a</a>
-    <a href="/" style="color: #94a3b8; text-decoration: none; font-size: 14px; font-weight: 600;">← Back to Home</a>
-  </nav>
+  <!-- App Header -->
+  <header class="app-nav">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <a href="/" style="color:#fff; text-decoration:none; font-weight:800; font-size:18px;">dn’a</a>
+      <span style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid #38bdf8; font-size:11px; font-weight:800; padding:2px 8px; border-radius:6px;">BOOTH BUILDER BETA</span>
+      <span id="save-status" style="font-size:11px; color:#94a3b8; margin-left:10px;">✓ Auto-saved</span>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button class="btn-handoff" onclick="openHandoffModal()">⚡ Have dn’a Build It For Me</button>
+      <button class="btn-sub" onclick="openFeedbackModal()">💬 Beta Feedback</button>
+      <a href="/production.html" class="btn-sub" style="font-size:11px;">Operations Center ↗</a>
+    </div>
+  </header>
 
   <main class="container">
-    <div class="beta-banner">
-      <div><b>🔬 Early Access / Beta Preview:</b> The dn’a DIY Booth Builder is currently in private beta testing.</div>
-      <a href="/start.html" style="color: #fff; background: #d97706; padding: 5px 12px; border-radius: 6px; text-decoration: none; font-size: 12px;">Request Production Instead →</a>
-    </div>
+    <!-- Stepper Navigation -->
+    <nav class="stepper-nav">
+      <button class="step-btn active" id="sbtn-1" onclick="goToStep(1)"><div class="step-dot">1</div> Company</button>
+      <button class="step-btn" id="sbtn-2" onclick="goToStep(2)"><div class="step-dot">2</div> Trade Show</button>
+      <button class="step-btn" id="sbtn-3" onclick="goToStep(3)"><div class="step-dot">3</div> Products (<span id="s-prod-cnt">0</span>)</button>
+      <button class="step-btn" id="sbtn-4" onclick="goToStep(4)"><div class="step-dot">4</div> Assets</button>
+      <button class="step-btn" id="sbtn-5" onclick="goToStep(5)"><div class="step-dot">5</div> Experience</button>
+      <button class="step-btn" id="sbtn-6" onclick="goToStep(6)"><div class="step-dot">6</div> Template</button>
+      <button class="step-btn" id="sbtn-7" onclick="goToStep(7)"><div class="step-dot">7</div> Live Preview</button>
+      <button class="step-btn" id="sbtn-8" onclick="goToStep(8)"><div class="step-dot">8</div> Publish & Live</button>
+    </nav>
 
-    <h1 style="font-size: 32px; font-weight: 800; margin: 0 0 10px 0; letter-spacing: -0.5px;">dn’a Booth Builder — 9-Step Conceptual Architecture</h1>
-    <p style="color: #94a3b8; font-size: 16px; margin: 0 0 32px 0;">Our template-first slot-binding engine transforms raw exhibitor parameters into an interactive WebGL 3D booth in minutes.</p>
-
-    <!-- 9 Conceptual Steps -->
-    <div class="steps-container">
-      <div class="step-card">
-        <div class="step-number">Step 01</div>
-        <h3 class="step-title">Company Profile</h3>
-        <p class="step-desc">Bind company name, industry category, slogan, and official website URL.</p>
+    <!-- STEP 1: COMPANY PROFILE -->
+    <section class="builder-box" id="step-1">
+      <div class="box-header">
+        <div>
+          <h2 class="box-title">Step 1 — Company & Exhibitor Profile</h2>
+          <p class="box-desc">Enter your brand identity. This will be automatically persisted to your reusable exhibitor profile.</p>
+        </div>
+        <button class="btn-action" onclick="saveCompanyStep(true)">Save & Continue →</button>
       </div>
 
-      <div class="step-card">
-        <div class="step-number">Step 02</div>
-        <h3 class="step-title">Logo & Brand Theme</h3>
-        <p class="step-desc">Upload SVG/PNG vector logo and select primary/accent color codes for 3D ribbons.</p>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Company / Brand Name *</label>
+          <input type="text" id="f-company" class="form-input" placeholder="e.g., Haven & Oak Furniture Co." onblur="saveCompanyStep(false)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Industry Category *</label>
+          <select id="f-industry" class="form-select" onchange="saveCompanyStep(false)">
+            <option value="Furniture, Home Decor & Lighting">Furniture, Home Decor & Lighting</option>
+            <option value="Fashion, Footwear & Luxury Apparel">Fashion, Footwear & Luxury Apparel</option>
+            <option value="Gifts, Novelties & General Merchandise">Gifts, Novelties & General Merchandise</option>
+            <option value="Industrial Automation & Machinery">Industrial Automation & Machinery</option>
+            <option value="Consumer Electronics & Hardware">Consumer Electronics & Hardware</option>
+            <option value="Health, Medical & Diagnostics">Health, Medical & Diagnostics</option>
+            <option value="Other Commercial B2B">Other Commercial B2B</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Primary Contact Person *</label>
+          <input type="text" id="f-contact" class="form-input" placeholder="e.g., Julian Vance" onblur="saveCompanyStep(false)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Primary Sales Email *</label>
+          <input type="email" id="f-email" class="form-input" placeholder="e.g., sales@havenoak.example" onblur="saveCompanyStep(false)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          <input type="tel" id="f-phone" class="form-input" placeholder="e.g., +1 (336) 555-0142" onblur="saveCompanyStep(false)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Official Website URL</label>
+          <input type="url" id="f-website" class="form-input" placeholder="e.g., https://havenoak.example" onblur="saveCompanyStep(false)">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Company Overview / Tagline</label>
+          <textarea id="f-desc" class="form-textarea" rows="3" placeholder="Heritage American craftsmanship specializing in solid white oak furnishings..." onblur="saveCompanyStep(false)"></textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Brand Logo Image URL</label>
+          <input type="url" id="f-logo" class="form-input" placeholder="e.g., https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300" onblur="saveCompanyStep(false)">
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 2: TRADE SHOW -->
+    <section class="builder-box" id="step-2" style="display:none;">
+      <div class="box-header">
+        <div>
+          <h2 class="box-title">Step 2 — Trade Show Specifications</h2>
+          <p class="box-desc">Select your target exhibition or define a custom trade show schedule.</p>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-sub" onclick="goToStep(1)">← Back</button>
+          <button class="btn-action" onclick="saveShowStep(true)">Save & Continue →</button>
+        </div>
       </div>
 
-      <div class="step-card">
-        <div class="step-number">Step 03</div>
-        <h3 class="step-title">Trade Show & Stand</h3>
-        <p class="step-desc">Input trade show name, exhibition dates, city, and physical stand number (e.g. B128).</p>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Quick Select Predefined Show</label>
+          <select id="f-pre-show" class="form-select" onchange="applyPredefinedShow()">
+            <option value="">-- Or enter custom show below --</option>
+            <option value="High Point Market Fall 2026|2026-10-17|2026-10-21|High Point, NC|IHFC Main Building|Stand W-412">High Point Market Fall 2026 (Oct 17–21)</option>
+            <option value="COTERIE New York 2026|2026-09-22|2026-09-24|New York, NY|Javits Center|Booth 2140">COTERIE New York 2026 (Sep 22–24)</option>
+            <option value="ASD Market Week Las Vegas 2026|2026-08-20|2026-08-23|Las Vegas, NV|Las Vegas Convention Center|Stand C-842">ASD Market Week Las Vegas 2026 (Aug 20–23)</option>
+            <option value="CES Las Vegas 2027|2027-01-05|2027-01-08|Las Vegas, NV|LVCC Tech East|Booth 51200">CES Las Vegas 2027 (Jan 5–8)</option>
+            <option value="IMTS Chicago 2026|2026-09-14|2026-09-19|Chicago, IL|McCormick Place|South Building S-3100">IMTS Chicago 2026 (Sep 14–19)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Trade Show Name *</label>
+          <input type="text" id="f-show-name" class="form-input" placeholder="e.g., High Point Market Fall 2026" onblur="saveShowStep(false)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Show Start Date *</label>
+          <input type="date" id="f-show-start" class="form-input" onchange="saveShowStep(false)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Show End Date *</label>
+          <input type="date" id="f-show-end" class="form-input" onchange="saveShowStep(false)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Host City & State</label>
+          <input type="text" id="f-show-city" class="form-input" placeholder="e.g., High Point, NC" onblur="saveShowStep(false)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Venue / Convention Center</label>
+          <input type="text" id="f-show-venue" class="form-input" placeholder="e.g., IHFC Main Building" onblur="saveShowStep(false)">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Booth / Stand Number</label>
+          <input type="text" id="f-show-booth" class="form-input" placeholder="e.g., Stand W-412 (Interhall)" onblur="saveShowStep(false)">
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 3: PRODUCTS -->
+    <section class="builder-box" id="step-3" style="display:none;">
+      <div class="box-header">
+        <div>
+          <h2 class="box-title">Step 3 — Products & Specifications (<span id="prod-list-count">0</span>)</h2>
+          <p class="box-desc">Add 1 to 20 products. Each product will automatically get a digital showroom plinth, catalog card, and waypoint QR code.</p>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn-sub" onclick="openProductModal()">+ Add Product</button>
+          <button class="btn-sub" onclick="seedSampleProducts()">⚡ Batch Sample Products</button>
+          <button class="btn-action" onclick="goToStep(4)">Save & Continue →</button>
+        </div>
       </div>
 
-      <div class="step-card">
-        <div class="step-number">Step 04</div>
-        <h3 class="step-title">Product Catalog Slots</h3>
-        <p class="step-desc">Define 6 to 12 product names, descriptions, MOQ, and wholesale price brackets.</p>
+      <div id="products-list-host"></div>
+    </section>
+
+    <!-- STEP 4: ASSETS -->
+    <section class="builder-box" id="step-4" style="display:none;">
+      <div class="box-header">
+        <div>
+          <h2 class="box-title">Step 4 — Asset Library & Uploads</h2>
+          <p class="box-desc">Provide branding banners, PDF spec catalogs, and lookbooks for your digital showroom.</p>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-sub" onclick="goToStep(3)">← Back</button>
+          <button class="btn-action" onclick="saveAssetsStep(true)">Save & Continue →</button>
+        </div>
       </div>
 
-      <div class="step-card">
-        <div class="step-number">Step 05</div>
-        <h3 class="step-title">High-Res Media Upload</h3>
-        <p class="step-desc">Attach multi-angle product photography and GLB 3D models for hologram plinths.</p>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Hero Booth Banner Image URL</label>
+          <input type="url" id="f-asset-hero" class="form-input" placeholder="e.g., https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=1200" onblur="saveAssetsStep(false)">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">2026 Lookbook / Spec Catalog PDF URL</label>
+          <input type="url" id="f-asset-catalog" class="form-input" placeholder="e.g., https://havenoak.example/catalog.pdf" onblur="saveAssetsStep(false)">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Physical Booth Photo / Architectural Rendering URL (Optional)</label>
+          <input type="url" id="f-asset-booth" class="form-input" placeholder="e.g., https://images.unsplash.com/photo-1513694203232-719a280e022f?w=1200" onblur="saveAssetsStep(false)">
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 5: EXPERIENCE SELECTION -->
+    <section class="builder-box" id="step-5" style="display:none;">
+      <div class="box-header">
+        <div>
+          <h2 class="box-title">Step 5 — Choose Booth Experience Type</h2>
+          <p class="box-desc">Select how buyers interact with your virtual space.</p>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-sub" onclick="goToStep(4)">← Back</button>
+          <button class="btn-action" onclick="saveExperienceStep(true)">Save & Continue →</button>
+        </div>
       </div>
 
-      <div class="step-card">
-        <div class="step-number">Step 06</div>
-        <h3 class="step-title">PDF Datasheet Hub</h3>
-        <p class="step-desc">Upload downloadable engineering spec sheets and product brochures.</p>
+      <div class="cards-grid">
+        <div class="choice-card selected" id="exp-DIGITAL_SHOWROOM" onclick="selectExperience('DIGITAL_SHOWROOM')">
+          <span class="tag" style="background:#0284c7; color:#fff;">POPULAR</span>
+          <h3 style="margin:0 0 6px 0; color:#fff; font-size:16px;">Digital Showroom</h3>
+          <p style="font-size:12px; color:#94a3b8; margin:0;">Clean, responsive 3D-styled interactive web showroom with plinths, smart card, and QR waypoints.</p>
+        </div>
+        <div class="choice-card" id="exp-PHOTO_TOUR" onclick="selectExperience('PHOTO_TOUR')">
+          <span class="tag" style="background:#10b981; color:#fff;">PHOTO-REAL</span>
+          <h3 style="margin:0 0 6px 0; color:#fff; font-size:16px;">Photo Tour</h3>
+          <p style="font-size:12px; color:#94a3b8; margin:0;">High-resolution 360° panoramic navigation nodes connected to live product drawers.</p>
+        </div>
+        <div class="choice-card" id="exp-DESIGNED_3D" onclick="selectExperience('DESIGNED_3D')">
+          <span class="tag" style="background:#8b5cf6; color:#fff;">3D WEBGL</span>
+          <h3 style="margin:0 0 6px 0; color:#fff; font-size:16px;">Designed 3D</h3>
+          <p style="font-size:12px; color:#94a3b8; margin:0;">Interactive WebGL architectural booth with real-time orbit navigation and lighting.</p>
+        </div>
+        <div class="choice-card" id="exp-AUTHENTIC_3D" onclick="selectExperience('AUTHENTIC_3D')">
+          <span class="tag" style="background:#f59e0b; color:#000;">REQUIRES REVIEW</span>
+          <h3 style="margin:0 0 6px 0; color:#fff; font-size:16px;">Authentic 3D Capture</h3>
+          <p style="font-size:12px; color:#94a3b8; margin:0;">Photogrammetric Gaussian reconstruction from physical stand photos. Routes to dn'a 3D Review team.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 6: TEMPLATE & HOTSPOTS -->
+    <section class="builder-box" id="step-6" style="display:none;">
+      <div class="box-header">
+        <div>
+          <h2 class="box-title">Step 6 — Booth Template & Hotspot Binding</h2>
+          <p class="box-desc">Choose a curated aesthetic layout and bind your priority products to key focal hotspots.</p>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-sub" onclick="goToStep(5)">← Back</button>
+          <button class="btn-action" onclick="saveTemplateStep(true)">Save & Continue →</button>
+        </div>
       </div>
 
-      <div class="step-card">
-        <div class="step-number">Step 07</div>
-        <h3 class="step-title">Smart Exhibitor Card</h3>
-        <p class="step-desc">Configure booth sales reps, direct contact phone numbers, and downloadable vCards.</p>
+      <div class="cards-grid" style="margin-bottom:24px;">
+        <div class="choice-card selected" id="tmpl-MODERN" onclick="selectTemplate('MODERN')">
+          <h3 style="margin:0 0 4px; color:#fff; font-size:15px;">Modern Minimalist</h3>
+          <p style="font-size:12px; color:#94a3b8; margin:0;">Clean geometric plinths, high-contrast dark theme, and sleek typography.</p>
+        </div>
+        <div class="choice-card" id="tmpl-PREMIUM" onclick="selectTemplate('PREMIUM')">
+          <h3 style="margin:0 0 4px; color:#fff; font-size:15px;">Luxury Pavilion</h3>
+          <p style="font-size:12px; color:#94a3b8; margin:0;">Warm architectural lighting, metallic accents, and editorial linesheet format.</p>
+        </div>
+        <div class="choice-card" id="tmpl-INDUSTRIAL" onclick="selectTemplate('INDUSTRIAL')">
+          <h3 style="margin:0 0 4px; color:#fff; font-size:15px;">Industrial Showcase</h3>
+          <p style="font-size:12px; color:#94a3b8; margin:0;">Engineered plinths with prominent spec tables and technical datasheet hubs.</p>
+        </div>
+        <div class="choice-card" id="tmpl-MINIMAL" onclick="selectTemplate('MINIMAL')">
+          <h3 style="margin:0 0 4px; color:#fff; font-size:15px;">Nordic Studio</h3>
+          <p style="font-size:12px; color:#94a3b8; margin:0;">Natural wood tones, soft diffused illumination, and uncluttered layout.</p>
+        </div>
       </div>
 
-      <div class="step-card">
-        <div class="step-number">Step 08</div>
-        <h3 class="step-title">3D Booth Template</h3>
-        <p class="step-desc">Select architectural booth layout: Island 4-side, Corner 2-side, or In-Line Pavilion.</p>
+      <h3 style="font-size:15px; color:#fff; margin:20px 0 10px;">Focal Hotspot Assignments</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Hotspot #1 (Hero Center Plinth)</label>
+          <select id="f-hotspot-1" class="form-select" onchange="saveTemplateStep(false)"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hotspot #2 (Left Display)</label>
+          <select id="f-hotspot-2" class="form-select" onchange="saveTemplateStep(false)"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hotspot #3 (Right Display)</label>
+          <select id="f-hotspot-3" class="form-select" onchange="saveTemplateStep(false)"></select>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 7: LIVE PREVIEW -->
+    <section class="builder-box" id="step-7" style="display:none;">
+      <div class="box-header">
+        <div>
+          <h2 class="box-title">Step 7 — Live Interactive Preview</h2>
+          <p class="box-desc">Test your digital showroom exactly as trade buyers will experience it on desktop and mobile.</p>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button class="btn-sub" id="btn-view-desktop" style="background:#0284c7; color:#fff;" onclick="setPreviewDevice('desktop')">💻 Desktop View</button>
+          <button class="btn-sub" id="btn-view-mobile" onclick="setPreviewDevice('mobile')">📱 Mobile View</button>
+          <button class="btn-action" onclick="goToStep(8)">Proceed to Publish →</button>
+        </div>
       </div>
 
-      <div class="step-card">
-        <div class="step-number">Step 09</div>
-        <h3 class="step-title">Instant Live Preview</h3>
-        <p class="step-desc">Automated slot-binding renders your live 3D showroom with working RFQ endpoints.</p>
+      <div class="preview-frame-container">
+        <iframe id="preview-iframe" class="preview-frame" src="/demo.html"></iframe>
       </div>
-    </div>
+    </section>
 
-    <!-- Strong Fallback Managed Production CTA -->
-    <div class="fallback-card">
-      <h2 class="fallback-title">Need Your Digital Booth Live Now?</h2>
-      <p class="fallback-desc">
-        Don't have time to configure assets before your next trade show? Let our dedicated 3D production team build and launch your showroom in <b>5 business days</b>.
-      </p>
-      <a href="/start.html" class="btn-managed">Request Managed Production Now →</a>
-    </div>
+    <!-- STEP 8: PUBLISH & ANALYTICS -->
+    <section class="builder-box" id="step-8" style="display:none;">
+      <div class="box-header">
+        <div>
+          <h2 class="box-title">Step 8 — Readiness Check & Safe Publish</h2>
+          <p class="box-desc">Verify completeness and deploy your digital showroom live to trade buyers.</p>
+        </div>
+        <button class="btn-action" id="btn-publish-live" style="background:#10b981; font-size:14px; padding:12px 24px;" onclick="publishBoothLive()">🚀 Publish My Digital Booth Live</button>
+      </div>
+
+      <!-- Readiness Card -->
+      <div style="background:#070e17; border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:24px;" id="readiness-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="margin:0; font-size:16px; color:#fff;">Preview Completeness Engine</h3>
+          <span id="readiness-badge" style="font-size:12px; font-weight:800; padding:4px 10px; border-radius:6px; background:rgba(56,189,248,0.2); color:#38bdf8;">CHECKING...</span>
+        </div>
+        <div id="readiness-missing" style="font-size:13px; color:#f87171;"></div>
+      </div>
+
+      <!-- Live Deliverable Links -->
+      <div id="live-links-card" style="display:none; background:rgba(16,185,129,0.08); border:1px solid #10b981; border-radius:12px; padding:20px; margin-bottom:24px;">
+        <h3 style="color:#34d399; margin:0 0 10px 0; font-size:16px;">✓ Showroom Published Live!</h3>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:13px;">
+          <div><b>3D Showroom:</b> <a id="pub-link-showroom" href="#" target="_blank" style="color:#38bdf8;">Open Showroom ↗</a></div>
+          <div><b>Smart Card:</b> <a id="pub-link-card" href="#" target="_blank" style="color:#38bdf8;">Open Smart Card ↗</a></div>
+          <div><b>Product QRs:</b> <a id="pub-link-qr" href="#" target="_blank" style="color:#38bdf8;">Open Product QR Pass ↗</a></div>
+          <div><b>Catalog Hub:</b> <a id="pub-link-catalog" href="#" target="_blank" style="color:#38bdf8;">Open Catalog Hub ↗</a></div>
+        </div>
+      </div>
+
+      <!-- Realtime Analytics Summary -->
+      <div style="background:#070e17; border:1px solid var(--border); border-radius:12px; padding:20px;">
+        <h3 style="margin:0 0 14px 0; font-size:16px; color:#fff;">Live Exhibition Analytics</h3>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:12px; text-align:center;">
+          <div style="background:#0f172a; padding:14px; border-radius:8px;"><div style="font-size:22px; font-weight:800; color:#38bdf8;" id="an-visits">0</div><small style="color:#94a3b8;">Booth Visits</small></div>
+          <div style="background:#0f172a; padding:14px; border-radius:8px;"><div style="font-size:22px; font-weight:800; color:#38bdf8;" id="an-views">0</div><small style="color:#94a3b8;">Product Views</small></div>
+          <div style="background:#0f172a; padding:14px; border-radius:8px;"><div style="font-size:22px; font-weight:800; color:#38bdf8;" id="an-scans">0</div><small style="color:#94a3b8;">QR Scans</small></div>
+          <div style="background:#0f172a; padding:14px; border-radius:8px;"><div style="font-size:22px; font-weight:800; color:#38bdf8;" id="an-downloads">0</div><small style="color:#94a3b8;">Catalogs Saved</small></div>
+          <div style="background:#0f172a; padding:14px; border-radius:8px;"><div style="font-size:22px; font-weight:800; color:#10b981;" id="an-leads">0</div><small style="color:#94a3b8;">Leads Captured</small></div>
+          <div style="background:#0f172a; padding:14px; border-radius:8px;"><div style="font-size:22px; font-weight:800; color:#10b981;" id="an-rfqs">0</div><small style="color:#94a3b8;">RFQs Received</small></div>
+        </div>
+      </div>
+    </section>
   </main>
 
+  <!-- MODAL 1: ADD / EDIT PRODUCT -->
+  <div class="modal-backdrop" id="modal-product">
+    <div class="modal-box">
+      <h3 style="margin:0 0 16px 0; color:#fff; font-size:18px;" id="modal-prod-title">Add New Product</h3>
+      <form onsubmit="saveProductModal(event)">
+        <input type="hidden" id="mp-id">
+        <div class="form-group">
+          <label class="form-label">Product Name *</label>
+          <input type="text" id="mp-name" class="form-input" required placeholder="e.g., Monarch Solid White Oak Dining Table">
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">SKU / Item Code</label>
+            <input type="text" id="mp-sku" class="form-input" placeholder="e.g., HVO-DS-01">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <input type="text" id="mp-category" class="form-input" placeholder="e.g., Dining Furniture">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Wholesale Price (USD)</label>
+            <input type="number" id="mp-price" class="form-input" placeholder="e.g., 4200">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Minimum Order Qty (MOQ)</label>
+            <input type="number" id="mp-moq" class="form-input" value="1">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Product Hero Image URL *</label>
+          <input type="url" id="mp-image" class="form-input" required placeholder="e.g., https://images.unsplash.com/photo-1577140917170-285929fb55b7?w=800">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Product Copy & Specifications</label>
+          <textarea id="mp-desc" class="form-textarea" rows="3" placeholder="Handcrafted Appalachian white oak 8-seater dining table..."></textarea>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+          <button type="button" class="btn-sub" onclick="closeProductModal()">Cancel</button>
+          <button type="submit" class="btn-action">Save Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: DIY -> MANAGED HANDOFF -->
+  <div class="modal-backdrop" id="modal-handoff">
+    <div class="modal-box">
+      <h3 style="margin:0 0 8px 0; color:#fff; font-size:18px;">⚡ Transfer to dn’a Managed Production</h3>
+      <p style="font-size:13px; color:#94a3b8; margin:0 0 16px 0;">Our professional 3D engineers will take your existing company profile, products, and assets and complete the full custom 3D build for you. Zero data re-entry required.</p>
+      <form onsubmit="submitManagedHandoff(event)">
+        <div class="form-group">
+          <label class="form-label">Specific Instructions / Requirements</label>
+          <textarea id="handoff-notes" class="form-textarea" rows="4" placeholder="e.g., Please customize the 3D lighting, build custom plinths for our new 2026 furniture line, and verify lookbook links."></textarea>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn-sub" onclick="closeHandoffModal()">Cancel</button>
+          <button type="submit" class="btn-handoff" style="font-size:13px; padding:10px 18px;">Transfer to Managed Team ↗</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: BETA FEEDBACK -->
+  <div class="modal-backdrop" id="modal-feedback">
+    <div class="modal-box">
+      <h3 style="margin:0 0 8px 0; color:#fff; font-size:18px;">💬 Submit Beta Feedback / Report Issue</h3>
+      <p style="font-size:13px; color:#94a3b8; margin:0 0 16px 0;">Help us refine the self-service builder for commercial exhibitors.</p>
+      <form onsubmit="submitBetaFeedback(event)">
+        <div class="form-group">
+          <label class="form-label">Feedback Message</label>
+          <textarea id="fb-text" class="form-textarea" rows="4" required placeholder="Describe what worked well or what we can improve..."></textarea>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn-sub" onclick="closeFeedbackModal()">Cancel</button>
+          <button type="submit" class="btn-action">Send Feedback</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    let PROJECT_ID = urlParams.get('id') || localStorage.getItem('dna_diy_project_id') || 'proj-diy-haven-01';
+    let PROJECT_DATA = null;
+    let CURRENT_STEP = 1;
+
+    async function initBuilder() {
+      try {
+        const res = await fetch(`/api/diy/projects/${PROJECT_ID}`);
+        if (res.ok) {
+          PROJECT_DATA = await res.json();
+        } else {
+          // Initialize fresh draft
+          const createRes = await fetch('/api/diy/projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectId: PROJECT_ID, company: 'My Exhibitor Space' })
+          });
+          const data = await createRes.json();
+          PROJECT_DATA = data.project;
+        }
+        localStorage.setItem('dna_diy_project_id', PROJECT_DATA.id);
+        renderProjectData();
+      } catch (err) {
+        console.error('Failed to init builder project:', err);
+      }
+    }
+
+    function renderProjectData() {
+      const p = PROJECT_DATA;
+      // Step 1
+      document.getElementById('f-company').value = p.company || '';
+      document.getElementById('f-industry').value = p.industry || 'Furniture, Home Decor & Lighting';
+      document.getElementById('f-contact').value = p.contact || '';
+      document.getElementById('f-email').value = p.email || '';
+      document.getElementById('f-phone').value = p.phone || '';
+      document.getElementById('f-website').value = p.website || '';
+      document.getElementById('f-desc').value = p.description || '';
+      const logoAsset = (p.assets || []).find(a => a.key === 'LOGO');
+      document.getElementById('f-logo').value = (logoAsset && logoAsset.url) ? logoAsset.url : '';
+
+      // Step 2
+      document.getElementById('f-show-name').value = p.tradeShow || '';
+      document.getElementById('f-show-start').value = p.showStartDate || '';
+      document.getElementById('f-show-end').value = p.showEndDate || '';
+      document.getElementById('f-show-city').value = p.city || '';
+      document.getElementById('f-show-venue').value = p.venue || '';
+      document.getElementById('f-show-booth').value = p.boothNumber || '';
+
+      // Step 3
+      renderProductsList();
+
+      // Step 4
+      const heroAsset = (p.assets || []).find(a => a.key === 'HERO_IMAGE');
+      const catAsset = (p.assets || []).find(a => a.key === 'CATALOG_PDF');
+      const boothAsset = (p.assets || []).find(a => a.key === 'BOOTH_PHOTOS');
+      document.getElementById('f-asset-hero').value = (heroAsset && heroAsset.url) ? heroAsset.url : '';
+      document.getElementById('f-asset-catalog').value = (catAsset && catAsset.url) ? catAsset.url : '';
+      document.getElementById('f-asset-booth').value = (boothAsset && boothAsset.url) ? boothAsset.url : '';
+
+      // Step 5
+      selectExperience(p.experienceType || 'DIGITAL_SHOWROOM', false);
+
+      // Step 6
+      selectTemplate(p.templateId || 'MODERN', false);
+      populateHotspotDropdowns();
+
+      // Step 8: Analytics & Status
+      renderPublishAndAnalytics();
+    }
+
+    function goToStep(step) {
+      CURRENT_STEP = step;
+      for (let i = 1; i <= 8; i++) {
+        const sec = document.getElementById(`step-1`);
+        const target = document.getElementById(`step-${i}`);
+        const btn = document.getElementById(`sbtn-${i}`);
+        if (target) target.style.display = (i === step) ? 'block' : 'none';
+        if (btn) {
+          btn.className = (i === step) ? 'step-btn active' : 'step-btn';
+        }
+      }
+      if (step === 7) updatePreviewFrame();
+      if (step === 8) checkReadinessScorecard();
+    }
+
+    function flashSaved() {
+      const el = document.getElementById('save-status');
+      el.textContent = '✓ Saved just now';
+      el.style.color = '#34d399';
+      setTimeout(() => { el.style.color = '#94a3b8'; }, 2000);
+    }
+
+    // Step 1 Save
+    async function saveCompanyStep(advance = false) {
+      const payload = {
+        company: document.getElementById('f-company').value,
+        industry: document.getElementById('f-industry').value,
+        contact: document.getElementById('f-contact').value,
+        email: document.getElementById('f-email').value,
+        phone: document.getElementById('f-phone').value,
+        website: document.getElementById('f-website').value,
+        description: document.getElementById('f-desc').value,
+        logoUrl: document.getElementById('f-logo').value
+      };
+      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/company`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      PROJECT_DATA = data.project;
+      flashSaved();
+      if (advance) goToStep(2);
+    }
+
+    // Step 2 Save
+    function applyPredefinedShow() {
+      const val = document.getElementById('f-pre-show').value;
+      if (!val) return;
+      const [name, start, end, city, venue, booth] = val.split('|');
+      document.getElementById('f-show-name').value = name;
+      document.getElementById('f-show-start').value = start;
+      document.getElementById('f-show-end').value = end;
+      document.getElementById('f-show-city').value = city;
+      document.getElementById('f-show-venue').value = venue;
+      document.getElementById('f-show-booth').value = booth;
+      saveShowStep(false);
+    }
+
+    async function saveShowStep(advance = false) {
+      const payload = {
+        tradeShow: document.getElementById('f-show-name').value,
+        showStartDate: document.getElementById('f-show-start').value,
+        showEndDate: document.getElementById('f-show-end').value,
+        city: document.getElementById('f-show-city').value,
+        venue: document.getElementById('f-show-venue').value,
+        boothNumber: document.getElementById('f-show-booth').value
+      };
+      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/show`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      PROJECT_DATA = data.project;
+      flashSaved();
+      if (advance) goToStep(3);
+    }
+
+    // Step 3 Products
+    function renderProductsList() {
+      const prods = PROJECT_DATA.products || [];
+      document.getElementById('s-prod-cnt').textContent = prods.length;
+      document.getElementById('prod-list-count').textContent = prods.length;
+      const host = document.getElementById('products-list-host');
+
+      if (prods.length === 0) {
+        host.innerHTML = `
+          <div style="text-align:center; padding:36px; background:#070e17; border:1px dashed #334155; border-radius:12px;">
+            <p style="color:#94a3b8; font-size:14px; margin:0 0 14px 0;">No products added yet. Add your first trade exhibition product or batch sample items.</p>
+            <button class="btn-action" onclick="openProductModal()">+ Add First Product</button>
+          </div>
+        `;
+        return;
+      }
+
+      host.innerHTML = prods.map(p => `
+        <div class="product-row">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <img src="${p.heroImage}" class="product-thumb" alt="${p.name}">
+            <div>
+              <div style="font-weight:700; color:#fff; font-size:14px;">${p.name}</div>
+              <div style="font-size:11px; color:#94a3b8;">SKU: ${p.sku || 'N/A'} · Category: ${p.category || 'General'} · Price: $${p.price || 'Inquire'}</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-sub" onclick="duplicateProduct('${p.id}')">Duplicate</button>
+            <button class="btn-sub" style="color:#f87171;" onclick="deleteProduct('${p.id}')">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openProductModal() {
+      document.getElementById('mp-id').value = '';
+      document.getElementById('mp-name').value = '';
+      document.getElementById('mp-sku').value = '';
+      document.getElementById('mp-category').value = '';
+      document.getElementById('mp-price').value = '';
+      document.getElementById('mp-moq').value = '1';
+      document.getElementById('mp-image').value = '';
+      document.getElementById('mp-desc').value = '';
+      document.getElementById('modal-product').style.display = 'flex';
+    }
+    function closeProductModal() { document.getElementById('modal-product').style.display = 'none'; }
+
+    async function saveProductModal(e) {
+      e.preventDefault();
+      const payload = {
+        id: document.getElementById('mp-id').value || null,
+        name: document.getElementById('mp-name').value,
+        sku: document.getElementById('mp-sku').value,
+        category: document.getElementById('mp-category').value,
+        price: document.getElementById('mp-price').value,
+        moq: document.getElementById('mp-moq').value,
+        heroImage: document.getElementById('mp-image').value,
+        description: document.getElementById('mp-desc').value
+      };
+      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      PROJECT_DATA = data.project;
+      closeProductModal();
+      renderProductsList();
+      populateHotspotDropdowns();
+      flashSaved();
+    }
+
+    async function duplicateProduct(productId) {
+      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/products/duplicate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId })
+      });
+      const data = await res.json();
+      PROJECT_DATA = data.project;
+      renderProductsList();
+      populateHotspotDropdowns();
+      flashSaved();
+    }
+
+    async function deleteProduct(productId) {
+      if (!confirm('Remove this product?')) return;
+      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/products/${productId}`, { method: 'DELETE' });
+      const data = await res.json();
+      PROJECT_DATA = data.project;
+      renderProductsList();
+      populateHotspotDropdowns();
+      flashSaved();
+    }
+
+    async function seedSampleProducts() {
+      const sampleBatch = [
+        { name: 'Architectural Executive Desk — Walnut', sku: 'HVO-DK-01', category: 'Office', price: 3200, moq: 1, heroImage: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=800', description: 'Solid American black walnut executive desk with cable management ports.' },
+        { name: 'Aero Ergonomic Lounge Chair', sku: 'HVO-CH-05', category: 'Seating', price: 1450, moq: 2, heroImage: 'https://images.unsplash.com/photo-1580481077197-b6764d85215d?w=800', description: 'Molded plywood lounge chair upholstered in top-grain leather.' },
+        { name: 'Metropolis Brass LED Chandelier', sku: 'HVO-LT-09', category: 'Lighting', price: 2100, moq: 1, heroImage: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=800', description: 'Brushed solid brass sculptural multi-tier chandelier.' }
+      ];
+      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/products/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ products: sampleBatch })
+      });
+      const data = await res.json();
+      PROJECT_DATA = data.project;
+      renderProductsList();
+      populateHotspotDropdowns();
+      flashSaved();
+    }
+
+    // Step 4 Assets
+    async function saveAssetsStep(advance = false) {
+      const payload = {
+        heroImageUrl: document.getElementById('f-asset-hero').value,
+        catalogPdfUrl: document.getElementById('f-asset-catalog').value,
+        boothPhotosUrl: document.getElementById('f-asset-booth').value
+      };
+      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/assets`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      PROJECT_DATA = data.project;
+      flashSaved();
+      if (advance) goToStep(5);
+    }
+
+    // Step 5 Experience
+    async function selectExperience(type, save = true) {
+      ['DIGITAL_SHOWROOM', 'PHOTO_TOUR', 'DESIGNED_3D', 'AUTHENTIC_3D'].forEach(t => {
+        const card = document.getElementById(`exp-${t}`);
+        if (card) card.className = (t === type) ? 'choice-card selected' : 'choice-card';
+      });
+      if (save) {
+        const res = await fetch(`/api/diy/projects/${PROJECT_ID}/experience`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ experienceType: type })
+        });
+        const data = await res.json();
+        PROJECT_DATA = data.project;
+        flashSaved();
+      }
+    }
+    function saveExperienceStep(advance = false) {
+      if (advance) goToStep(6);
+    }
+
+    // Step 6 Template & Hotspots
+    async function selectTemplate(templateId, save = true) {
+      ['MODERN', 'PREMIUM', 'INDUSTRIAL', 'MINIMAL'].forEach(t => {
+        const card = document.getElementById(`tmpl-${t}`);
+        if (card) card.className = (t === templateId) ? 'choice-card selected' : 'choice-card';
+      });
+      if (save) saveTemplateStep(false);
+    }
+
+    function populateHotspotDropdowns() {
+      const prods = PROJECT_DATA.products || [];
+      const opts = '<option value="">-- Select Product --</option>' + prods.map(p => `<option value="${p.id}">${p.name} ($${p.price || 0})</option>`).join('');
+      const h1 = document.getElementById('f-hotspot-1');
+      const h2 = document.getElementById('f-hotspot-2');
+      const h3 = document.getElementById('f-hotspot-3');
+      h1.innerHTML = opts; h2.innerHTML = opts; h3.innerHTML = opts;
+
+      const bindings = PROJECT_DATA.hotspotBindings || {};
+      if (bindings.hotspot1) h1.value = bindings.hotspot1;
+      if (bindings.hotspot2) h2.value = bindings.hotspot2;
+      if (bindings.hotspot3) h3.value = bindings.hotspot3;
+    }
+
+    async function saveTemplateStep(advance = false) {
+      const selectedTmpl = document.querySelector('.choice-card.selected[id^="tmpl-"]')?.id.replace('tmpl-', '') || 'MODERN';
+      const hotspotBindings = {
+        hotspot1: document.getElementById('f-hotspot-1').value || null,
+        hotspot2: document.getElementById('f-hotspot-2').value || null,
+        hotspot3: document.getElementById('f-hotspot-3').value || null
+      };
+      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/template`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateId: selectedTmpl, hotspotBindings })
+      });
+      const data = await res.json();
+      PROJECT_DATA = data.project;
+      flashSaved();
+      if (advance) goToStep(7);
+    }
+
+    // Step 7 Preview
+    function updatePreviewFrame() {
+      const tmpl = PROJECT_DATA.templateId || 'MODERN';
+      document.getElementById('preview-iframe').src = `/demo.html?project=${PROJECT_ID}&template=${tmpl}`;
+    }
+    function setPreviewDevice(mode) {
+      const iframe = document.getElementById('preview-iframe');
+      const bDesktop = document.getElementById('btn-view-desktop');
+      const bMobile = document.getElementById('btn-view-mobile');
+      if (mode === 'mobile') {
+        iframe.className = 'preview-frame mobile';
+        bMobile.style.background = '#0284c7'; bMobile.style.color = '#fff';
+        bDesktop.style.background = '#1e293b'; bDesktop.style.color = '#cbd5e1';
+      } else {
+        iframe.className = 'preview-frame';
+        bDesktop.style.background = '#0284c7'; bDesktop.style.color = '#fff';
+        bMobile.style.background = '#1e293b'; bMobile.style.color = '#cbd5e1';
+      }
+    }
+
+    // Step 8 Publish & Readiness
+    async function checkReadinessScorecard() {
+      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/readiness`);
+      const r = await res.json();
+      const badge = document.getElementById('readiness-badge');
+      const missHost = document.getElementById('readiness-missing');
+      const pBtn = document.getElementById('btn-publish-live');
+
+      if (r.ready) {
+        badge.style.background = 'rgba(16,185,129,0.2)';
+        badge.style.color = '#34d399';
+        badge.textContent = `✓ 100% READY TO PUBLISH`;
+        missHost.innerHTML = '<span style="color:#34d399;">All essential requirements fulfilled. Ready for live exhibition launch!</span>';
+        pBtn.disabled = false;
+        pBtn.style.opacity = '1';
+      } else {
+        badge.style.background = 'rgba(239,68,68,0.2)';
+        badge.style.color = '#f87171';
+        badge.textContent = `ACTION REQUIRED (${r.score}%)`;
+        missHost.innerHTML = '<b>Required before publishing:</b><ul style="margin:6px 0 0 20px;">' + r.missing.map(m => `<li>${m}</li>`).join('') + '</ul>';
+        pBtn.disabled = true;
+        pBtn.style.opacity = '0.5';
+      }
+    }
+
+    async function publishBoothLive() {
+      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actor: PROJECT_DATA.contact || 'Self-Service Customer' })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Failed to publish');
+        return;
+      }
+      PROJECT_DATA = data.project;
+      alert(`✓ Digital Booth published live as ${data.version}!`);
+      renderPublishAndAnalytics();
+    }
+
+    function renderPublishAndAnalytics() {
+      const p = PROJECT_DATA;
+      if (p.status === 'PUBLISHED' && p.publishRecord) {
+        document.getElementById('live-links-card').style.display = 'block';
+        document.getElementById('pub-link-showroom').href = p.publishRecord.publicUrl || `/demo.html?project=${p.id}`;
+        document.getElementById('pub-link-card').href = `/card.html?project=${p.id}`;
+        document.getElementById('pub-link-qr').href = `/qr.html?project=${p.id}`;
+        document.getElementById('pub-link-catalog').href = `/demo.html?project=${p.id}`;
+      }
+
+      const an = p.analytics || {};
+      document.getElementById('an-visits').textContent = an.boothVisits || 0;
+      document.getElementById('an-views').textContent = an.productViews || 0;
+      document.getElementById('an-scans').textContent = an.qrScans || 0;
+      document.getElementById('an-downloads').textContent = an.catalogDownloads || 0;
+      document.getElementById('an-leads').textContent = an.leadsCaptured || 0;
+      document.getElementById('an-rfqs').textContent = an.rfqsSubmitted || 0;
+    }
+
+    // Managed Handoff
+    function openHandoffModal() { document.getElementById('modal-handoff').style.display = 'flex'; }
+    function closeHandoffModal() { document.getElementById('modal-handoff').style.display = 'none'; }
+    async function submitManagedHandoff(e) {
+      e.preventDefault();
+      const notes = document.getElementById('handoff-notes').value;
+      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/handoff-to-managed`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes, actor: PROJECT_DATA.contact || 'Customer' })
+      });
+      const data = await res.json();
+      closeHandoffModal();
+      alert('✓ Project successfully transferred to dn’a Managed Production Queue!\nOur lead 3D engineers will take over production.');
+      PROJECT_DATA = data.project;
+      window.location.href = `/client-portal.html?id=${PROJECT_ID}`;
+    }
+
+    // Beta Feedback
+    function openFeedbackModal() { document.getElementById('modal-feedback').style.display = 'flex'; }
+    function closeFeedbackModal() { document.getElementById('modal-feedback').style.display = 'none'; }
+    async function submitBetaFeedback(e) {
+      e.preventDefault();
+      const msg = document.getElementById('fb-text').value;
+      await fetch('/api/diy/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: PROJECT_ID, company: PROJECT_DATA.company, email: PROJECT_DATA.email, message: msg, step: `STEP_${CURRENT_STEP}` })
+      });
+      closeFeedbackModal();
+      alert('✓ Thank you for your feedback! The dn’a product engineering team has received your ticket.');
+    }
+
+    initBuilder();
+  </script>
 </body>
 </html>
