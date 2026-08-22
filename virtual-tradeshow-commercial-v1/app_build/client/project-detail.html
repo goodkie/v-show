@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Project Workspace — dn’a Operations</title>
+  <meta name="description" content="Internal project workspace for managing 3D virtual showroom asset intake, production tasks, QA, client approvals, and publishing.">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    :root {
+      --primary: #0284c7;
+      --accent: #38bdf8;
+      --bg: #070e17;
+      --card-bg: #0f172a;
+      --border: #1e293b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: #f8fafc;
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+    }
+    .app-nav {
+      padding: 12px 28px;
+      background: #0f172a;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .container {
+      max-width: 1360px;
+      margin: 24px auto 80px;
+      padding: 0 20px;
+    }
+
+    /* Workspace Header */
+    .ws-header {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .project-title { font-size: 26px; font-weight: 800; color: #fff; margin: 0 0 4px 0; }
+    .project-subtitle { color: #38bdf8; font-size: 14px; font-weight: 600; }
+    .header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+    /* Layout Grid */
+    .ws-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 990px) { .ws-grid { grid-template-columns: 1fr; } }
+
+    /* Workspace Card Box */
+    .ws-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+      margin-bottom: 24px;
+    }
+    .box-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #fff;
+      margin: 0 0 16px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding-bottom: 10px;
+    }
+
+    /* Data Tables inside Workspace */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .data-table th { background: #1e293b; color: #94a3b8; padding: 10px 12px; font-weight: 700; text-align: left; }
+    .data-table td { padding: 12px; border-bottom: 1px solid #1e293b; color: #cbd5e1; vertical-align: middle; }
+
+    /* Action Buttons */
+    .btn-action {
+      background: #0284c7;
+      border: none;
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-action:hover { background: #0369a1; }
+    .btn-sub {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #cbd5e1;
+      padding: 7px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-sub:hover { background: #334155; color: #fff; }
+
+    /* Status Pills */
+    .status-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-approved, .badge-done, .badge-qa_pass { background: rgba(16,185,129,0.2); border: 1px solid #10b981; color: #34d399; }
+    .badge-missing, .badge-blocked, .badge-revision_required { background: rgba(239,68,68,0.2); border: 1px solid #ef4444; color: #f87171; }
+    .badge-in_review, .badge-in_progress { background: rgba(56,189,248,0.2); border: 1px solid #38bdf8; color: #7dd3fc; }
+    .badge-requested, .badge-ready { background: rgba(245,158,11,0.2); border: 1px solid #f59e0b; color: #fbbf24; }
+
+    /* Notes Area */
+    .note-item {
+      background: rgba(255,255,255,0.03);
+      border-left: 3px solid #0284c7;
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+    .note-item.internal { border-left-color: #f59e0b; }
+    .note-meta { font-size: 10px; color: #64748b; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+  <header class="app-nav">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <a href="/production.html" style="color:#94a3b8; text-decoration:none; font-size:14px; font-weight:700;">← Production Center</a>
+      <span style="color:#64748b;">/</span>
+      <span id="nav-project-id" style="color:#fff; font-weight:800; font-size:14px;">Loading...</span>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <a id="link-client-portal" href="#" target="_blank" class="btn-sub" style="color:#38bdf8; text-decoration:none;">Client Portal ↗</a>
+      <button class="btn-action" onclick="loadProjectData()">↻ Refresh</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Project Header -->
+    <div class="ws-header">
+      <div>
+        <div style="font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;" id="hdr-req-id">PROJECT RECORD</div>
+        <h1 class="project-title" id="hdr-company">Loading Company...</h1>
+        <div class="project-subtitle" id="hdr-show">Loading Trade Show & Booth...</div>
+      </div>
+      <div class="header-actions">
+        <div style="text-align:right; margin-right:12px;">
+          <div style="font-size:11px; color:#94a3b8;">Show Date SLA</div>
+          <b id="hdr-sla" style="font-size:16px; color:#38bdf8;">--</b>
+        </div>
+        <div>
+          <label style="display:block; font-size:11px; color:#94a3b8; margin-bottom:4px;">Lifecycle State</label>
+          <select id="status-select" class="btn-sub" style="background:#070e17; padding:8px 12px; font-size:12px; font-weight:700; color:#fff;" onchange="advanceStatus()">
+            <option value="NEW_REQUEST">NEW_REQUEST</option>
+            <option value="QUALIFICATION">QUALIFICATION</option>
+            <option value="AWAITING_CLIENT">AWAITING_CLIENT</option>
+            <option value="ASSET_INTAKE">ASSET_INTAKE</option>
+            <option value="READY_FOR_PRODUCTION">READY_FOR_PRODUCTION</option>
+            <option value="IN_PRODUCTION">IN_PRODUCTION</option>
+            <option value="INTERNAL_QA">INTERNAL_QA</option>
+            <option value="CLIENT_REVIEW">CLIENT_REVIEW</option>
+            <option value="REVISION_REQUESTED">REVISION_REQUESTED</option>
+            <option value="APPROVED">APPROVED</option>
+            <option value="READY_TO_PUBLISH">READY_TO_PUBLISH</option>
+            <option value="PUBLISHED">PUBLISHED</option>
+            <option value="SHOW_LIVE">SHOW_LIVE</option>
+            <option value="POST_SHOW">POST_SHOW</option>
+            <option value="COMPLETED">COMPLETED</option>
+            <option value="BLOCKED">BLOCKED</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Workspace Grid -->
+    <div class="ws-grid">
+      <!-- Left Column: Operations & Execution -->
+      <div>
+        <!-- 1. Asset Intake Checklist -->
+        <div class="ws-box">
+          <div class="box-title">
+            <span>📦 Asset Intake Checklist</span>
+            <button class="btn-sub" onclick="requestMissingAssets()">✉ Request Missing Assets from Client</button>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Asset Item</th>
+                <th>Required</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="assets-tbody">
+              <tr><td colspan="4" style="text-align:center;">Loading assets...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 2. Service-Aware Production Tasks -->
+        <div class="ws-box">
+          <div class="box-title">
+            <span>⚡ Production Tasks Engine</span>
+            <span style="font-size:12px; color:#94a3b8;" id="tasks-progress">0 / 0 Done</span>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Task Name</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="tasks-tbody">
+              <tr><td colspan="4" style="text-align:center;">Loading tasks...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 3. Internal QA Checklist -->
+        <div class="ws-box">
+          <div class="box-title">
+            <span>🔍 Internal QA Gate Checklist</span>
+            <span id="qa-badge" class="status-badge">PENDING</span>
+          </div>
+          <div id="qa-checks-host" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12px; margin-bottom:16px;"></div>
+          <div style="display:flex; gap:10px;">
+            <button class="btn-action" style="background:#10b981;" onclick="submitQA('QA_PASS')">✓ Submit QA Pass</button>
+            <button class="btn-sub" style="color:#f87171;" onclick="submitQA('REVISION_REQUIRED')">✕ Require Revision</button>
+          </div>
+        </div>
+
+        <!-- 4. Deliverable Revisions & Client Feedback -->
+        <div class="ws-box">
+          <div class="box-title">
+            <span>🌐 Deliverable Previews & Versions</span>
+            <button class="btn-sub" onclick="openPublishModal()">🚀 Publish Live</button>
+          </div>
+          <div id="revisions-host" style="margin-bottom:18px;"></div>
+          <h4 style="font-size:13px; margin:16px 0 8px; color:#94a3b8;">Client Review Feedback Log</h4>
+          <div id="feedback-host"></div>
+        </div>
+      </div>
+
+      <!-- Right Column: Notes, Activity & Customer Memory -->
+      <div>
+        <!-- Exhibitor Specs Card -->
+        <div class="ws-box">
+          <div class="box-title"><span>🏢 Exhibitor Specifications</span></div>
+          <div style="font-size:12px; color:#cbd5e1; line-height:1.8;" id="exhibitor-specs">
+            Loading specifications...
+          </div>
+        </div>
+
+        <!-- Strict Notes Isolation -->
+        <div class="ws-box">
+          <div class="box-title">
+            <span>📝 Project Notes</span>
+            <span style="font-size:10px; background:#f59e0b; color:#000; padding:2px 6px; border-radius:4px; font-weight:800;">ISOLATED</span>
+          </div>
+          <div style="display:flex; gap:6px; margin-bottom:12px;">
+            <button id="tab-note-internal" class="btn-sub" style="background:#0284c7; color:#fff;" onclick="switchNoteTab('internal')">🔒 Internal Operator Notes</button>
+            <button id="tab-note-client" class="btn-sub" onclick="switchNoteTab('client')">🌐 Client Visible</button>
+          </div>
+          <form onsubmit="postNote(event)" style="margin-bottom:14px;">
+            <textarea id="note-input" rows="2" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:6px; padding:8px; color:#fff; font-size:12px;" placeholder="Add note..."></textarea>
+            <button type="submit" class="btn-action" style="width:100%; margin-top:6px;">Add Note</button>
+          </form>
+          <div id="notes-host"></div>
+        </div>
+
+        <!-- Multi-Show / Next Show Capability -->
+        <div class="ws-box">
+          <div class="box-title"><span>🔄 Multi-Show / Next Edition</span></div>
+          <p style="font-size:12px; color:#94a3b8; margin:0 0 12px 0;">Duplicate this client profile, products, and core assets for their next trade show.</p>
+          <button class="btn-action" style="width:100%;" onclick="duplicateForNextShow()">Duplicate for Next Show ↗</button>
+          <button class="btn-sub" style="width:100%; margin-top:8px;" onclick="generatePostShowReport()">📊 Generate Post-Show Report</button>
+        </div>
+
+        <!-- Activity History Audit -->
+        <div class="ws-box">
+          <div class="box-title"><span>📜 Activity Audit Trail</span></div>
+          <div id="activity-host" style="font-size:11px; max-height:240px; overflow-y:auto;"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const PROJECT_ID = urlParams.get('id') || 'proj-hpmkt-haven-01';
+    let PROJECT_DATA = null;
+    let CURRENT_NOTE_TAB = 'internal';
+
+    async function loadProjectData() {
+      try {
+        const res = await fetch(`/api/production-projects/${PROJECT_ID}`);
+        if (!res.ok) throw new Error('Project not found');
+        PROJECT_DATA = await res.json();
+        renderWorkspace();
+      } catch (err) {
+        alert('Failed to load project: ' + err.message);
+      }
+    }
+
+    function renderWorkspace() {
+      const p = PROJECT_DATA;
+      document.getElementById('nav-project-id').textContent = p.id;
+      document.getElementById('hdr-req-id').textContent = `PROJECT RECORD · ${p.id}`;
+      document.getElementById('hdr-company').textContent = p.company;
+      document.getElementById('hdr-show').textContent = `📍 ${p.tradeShow} (${p.city || ''}) · Booth: ${p.boothNumber || 'Stand TBD'}`;
+      document.getElementById('hdr-sla').textContent = p.daysUntilShow !== null ? (p.daysUntilShow >= 0 ? `${p.daysUntilShow} Days Remaining` : `${Math.abs(p.daysUntilShow)} Days Post-Show`) : 'Flexible';
+      document.getElementById('status-select').value = p.status;
+      document.getElementById('link-client-portal').href = `/client-portal.html?id=${p.id}`;
+
+      // 1. Assets
+      const assetsTbody = document.getElementById('assets-tbody');
+      assetsTbody.innerHTML = (p.assets || []).map(a => `
+        <tr>
+          <td><b>${a.label}</b></td>
+          <td>${a.required ? '<span style="color:#ef4444; font-weight:700;">Required</span>' : '<span style="color:#94a3b8;">Optional</span>'}</td>
+          <td><span class="status-badge badge-${a.status.toLowerCase()}">${a.status}</span></td>
+          <td>
+            <select class="btn-sub" onchange="updateAsset('${a.key}', this.value)">
+              <option value="">Update...</option>
+              <option value="RECEIVED">Mark Received</option>
+              <option value="APPROVED">Mark Approved</option>
+              <option value="REJECTED">Mark Rejected</option>
+              <option value="REQUESTED">Mark Requested</option>
+            </select>
+          </td>
+        </tr>
+      `).join('');
+
+      // 2. Tasks
+      const tasksTbody = document.getElementById('tasks-tbody');
+      const doneCount = (p.tasks || []).filter(t => t.status === 'DONE').length;
+      document.getElementById('tasks-progress').textContent = `${doneCount} / ${(p.tasks || []).length} Done`;
+
+      tasksTbody.innerHTML = (p.tasks || []).map(t => `
+        <tr>
+          <td><b>${t.name}</b><br><small style="color:#94a3b8;">Assigned: ${t.assignedTo || 'Elena Rostova'}</small></td>
+          <td><span style="font-size:10px; background:#1e293b; padding:2px 6px; border-radius:4px;">${t.category}</span></td>
+          <td><span class="status-badge badge-${t.status.toLowerCase()}">${t.status}</span></td>
+          <td>
+            <select class="btn-sub" onchange="updateTask('${t.id}', this.value)">
+              <option value="">Advance...</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="DONE">Mark Done</option>
+              <option value="BLOCKED">Mark Blocked</option>
+            </select>
+          </td>
+        </tr>
+      `).join('');
+
+      // 3. QA Checklist
+      const qaHost = document.getElementById('qa-checks-host');
+      const qa = p.qaChecklist || { status: 'PENDING', checks: {} };
+      document.getElementById('qa-badge').className = `status-badge badge-${(qa.status || 'pending').toLowerCase()}`;
+      document.getElementById('qa-badge').textContent = qa.status || 'PENDING';
+
+      const checkLabels = {
+        correctCompany: 'Company profile verified',
+        correctLogo: 'Logo & brand colors match',
+        correctBooth: 'Booth & stand signage verified',
+        correctProducts: 'Product count & specs verified',
+        noBrokenImages: 'Zero broken image links',
+        noBrokenCatalog: 'Datasheets & catalogs verified',
+        qrWorks: 'Product QR routes verified',
+        rfqWorks: 'RFQ intake verified',
+        sampleWorks: 'Sample requests verified',
+        appointmentWorks: 'Meeting bookings verified',
+        mobileWorks: 'Mobile responsiveness verified',
+        truthful3DState: 'Truthful 3D state verified'
+      };
+
+      qaHost.innerHTML = Object.keys(checkLabels).map(k => `
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+          <input type="checkbox" id="qa-${k}" ${qa.checks && qa.checks[k] ? 'checked' : ''}>
+          <span>${checkLabels[k]}</span>
+        </label>
+      `).join('');
+
+      // 4. Revisions & Previews
+      const revHost = document.getElementById('revisions-host');
+      revHost.innerHTML = (p.revisions && p.revisions.length > 0)
+        ? p.revisions.map(r => `
+          <div style="padding:10px 14px; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <b>${r.version} · ${r.deliverableType}</b>
+              <div style="font-size:11px; color:#94a3b8;">${r.notes || ''} (${new Date(r.createdAt).toLocaleDateString()})</div>
+            </div>
+            <a href="${r.previewUrl || '/demo.html'}" target="_blank" class="btn-sub" style="color:#38bdf8; text-decoration:none;">Open Preview ↗</a>
+          </div>
+        `).join('')
+        : '<div style="color:#94a3b8; font-size:12px;">No revisions uploaded yet. Initial preview: <a href="/demo.html" target="_blank" style="color:#38bdf8;">/demo.html</a></div>';
+
+      // Feedback
+      const fbHost = document.getElementById('feedback-host');
+      fbHost.innerHTML = (p.clientFeedback && p.clientFeedback.length > 0)
+        ? p.clientFeedback.map(f => `
+          <div style="padding:10px 12px; background:rgba(2,132,199,0.08); border:1px solid rgba(2,132,199,0.3); border-radius:8px; margin-bottom:8px; font-size:12px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <b>${f.clientName} [${f.type}]</b>
+              <small style="color:#94a3b8;">${new Date(f.submittedAt).toLocaleDateString()}</small>
+            </div>
+            <div>"${f.comment}"</div>
+          </div>
+        `).join('')
+        : '<div style="color:#94a3b8; font-size:12px;">No client feedback submitted yet.</div>';
+
+      // 5. Exhibitor Specs
+      document.getElementById('exhibitor-specs').innerHTML = `
+        <div><b>Contact:</b> ${p.contact} (${p.email})</div>
+        <div><b>Phone:</b> ${p.phone || 'N/A'}</div>
+        <div><b>Website:</b> <a href="${p.website}" target="_blank" style="color:#38bdf8;">${p.website || 'N/A'}</a></div>
+        <div><b>Industry:</b> ${p.industry || 'B2B'}</div>
+        <div><b>Products:</b> ${p.numberOfProducts || 8} Items</div>
+        <div><b>Services:</b> ${(p.serviceSelections || []).join(', ')}</div>
+      `;
+
+      // 6. Notes
+      renderNotes();
+
+      // 7. Activity History
+      const actHost = document.getElementById('activity-host');
+      actHost.innerHTML = (p.activityHistory || []).map(a => `
+        <div style="padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.04);">
+          <div style="color:#e2e8f0;"><b>${a.action}</b> — <span style="color:#94a3b8;">${a.details}</span></div>
+          <div style="font-size:10px; color:#64748b;">${new Date(a.timestamp).toLocaleString()} · ${a.actor}</div>
+        </div>
+      `).join('');
+    }
+
+    function switchNoteTab(tab) {
+      CURRENT_NOTE_TAB = tab;
+      document.getElementById('tab-note-internal').style.background = tab === 'internal' ? '#0284c7' : '#1e293b';
+      document.getElementById('tab-note-internal').style.color = tab === 'internal' ? '#fff' : '#cbd5e1';
+      document.getElementById('tab-note-client').style.background = tab === 'client' ? '#0284c7' : '#1e293b';
+      document.getElementById('tab-note-client').style.color = tab === 'client' ? '#fff' : '#cbd5e1';
+      renderNotes();
+    }
+
+    function renderNotes() {
+      const p = PROJECT_DATA;
+      const host = document.getElementById('notes-host');
+      const list = CURRENT_NOTE_TAB === 'internal' ? (p.internalNotes || []) : (p.clientVisibleNotes || []);
+
+      if (list.length === 0) {
+        host.innerHTML = `<div style="color:#94a3b8; font-size:12px; padding:10px 0;">No ${CURRENT_NOTE_TAB} notes recorded.</div>`;
+        return;
+      }
+
+      host.innerHTML = list.map(n => `
+        <div class="note-item ${CURRENT_NOTE_TAB === 'internal' ? 'internal' : ''}">
+          <div>${n.text}</div>
+          <div class="note-meta">${new Date(n.createdAt).toLocaleDateString()} · ${n.author}</div>
+        </div>
+      `).join('');
+    }
+
+    async function advanceStatus() {
+      const newStatus = document.getElementById('status-select').value;
+      await fetch(`/api/production-projects/${PROJECT_ID}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus, actor: 'Operations' })
+      });
+      loadProjectData();
+    }
+
+    async function updateAsset(assetKey, status) {
+      if (!status) return;
+      await fetch(`/api/production-projects/${PROJECT_ID}/assets`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assetKey, status, actor: 'Operations' })
+      });
+      loadProjectData();
+    }
+
+    async function updateTask(taskId, status) {
+      if (!status) return;
+      await fetch(`/api/production-projects/${PROJECT_ID}/tasks`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId, status, actor: 'Operations' })
+      });
+      loadProjectData();
+    }
+
+    async function submitQA(status) {
+      const checks = {};
+      document.querySelectorAll('#qa-checks-host input[type="checkbox"]').forEach(cb => {
+        const key = cb.id.replace('qa-', '');
+        checks[key] = cb.checked;
+      });
+
+      await fetch(`/api/production-projects/${PROJECT_ID}/qa`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, checks, actor: 'Marcus Vance (QA Director)' })
+      });
+      alert(`QA status submitted as ${status}`);
+      loadProjectData();
+    }
+
+    async function postNote(e) {
+      e.preventDefault();
+      const text = document.getElementById('note-input').value.trim();
+      if (!text) return;
+      await fetch(`/api/production-projects/${PROJECT_ID}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ noteText: text, isClientVisible: CURRENT_NOTE_TAB === 'client', author: 'Operations' })
+      });
+      document.getElementById('note-input').value = '';
+      loadProjectData();
+    }
+
+    async function requestMissingAssets() {
+      const missing = (PROJECT_DATA.assets || []).filter(a => a.status === 'MISSING').map(a => a.label);
+      if (missing.length === 0) {
+        alert('All assets are already received or approved!');
+        return;
+      }
+      alert(`Request email dispatched to ${PROJECT_DATA.email} for missing items:\n- ` + missing.join('\n- '));
+    }
+
+    async function openPublishModal() {
+      if (confirm('Confirm publish of 3D Showroom to live production URL?')) {
+        await fetch(`/api/production-projects/${PROJECT_ID}/publish`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ publicUrl: `/demo.html?project=${PROJECT_ID}`, actor: 'Production Manager' })
+        });
+        alert('Showroom published live!');
+        loadProjectData();
+      }
+    }
+
+    async function generatePostShowReport() {
+      await fetch(`/api/production-projects/${PROJECT_ID}/post-show-report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actor: 'Analytics Engine' })
+      });
+      alert('Post-show report generated successfully!');
+      loadProjectData();
+    }
+
+    async function duplicateForNextShow() {
+      const nextShow = prompt('Enter Next Trade Show Name & Year:', `2027 Edition — ${PROJECT_DATA.tradeShow}`);
+      if (!nextShow) return;
+      const res = await fetch(`/api/production-projects/${PROJECT_ID}/duplicate-next-show`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newShowData: { tradeShow: nextShow }, actor: 'Operations' })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Duplicated project created: ${data.project.id}`);
+        window.location.href = `/project-detail.html?id=${data.project.id}`;
+      }
+    }
+
+    loadProjectData();
+  </script>
+</body>
+</html>

@@ -1582,6 +1582,175 @@ app.patch('/api/production-requests/:id/status', async (req, res) => {
   }
 });
 
+// --- 8.6 dn’a-C02 Managed Production Projects Operations APIs ---
+
+// 1. List Projects with filters & search
+app.get('/api/production-projects', (req, res) => {
+  const { status, priority, tradeShow, company, search } = req.query;
+  const list = db.getProductionProjects({ status, priority, tradeShow, company, search });
+  res.json(list);
+});
+
+// 2. Get Single Project (Internal Operator View)
+app.get('/api/production-projects/:id', (req, res) => {
+  const project = db.getProductionProjectById(req.params.id, false);
+  if (!project) return res.status(404).json({ error: 'Production project not found.' });
+  res.json(project);
+});
+
+// 3. Create Project Directly
+app.post('/api/production-projects', createRateLimiter(30, 60000), async (req, res) => {
+  try {
+    const { company, tradeShow, email } = req.body;
+    if (!company || !tradeShow) {
+      return res.status(400).json({ error: 'Company name and trade show are required.' });
+    }
+    const project = await db.createProductionProject(req.body, req.body.actor || 'Operations');
+    res.status(201).json({ success: true, project });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 4. Qualify Production Request & Convert to Project
+app.post('/api/production-projects/qualify-request', async (req, res) => {
+  try {
+    const { requestId, overrideData } = req.body;
+    if (!requestId) return res.status(400).json({ error: 'requestId is required.' });
+    const project = await db.qualifyRequestAndCreateProject(requestId, overrideData || {}, req.body.actor || 'Operations');
+    if (!project) return res.status(404).json({ error: 'Production request not found.' });
+    res.status(201).json({ success: true, project });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 5. Update Status & Blocking Reason
+app.patch('/api/production-projects/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, reason, actor } = req.body;
+    if (!status) return res.status(400).json({ error: 'Status is required.' });
+    const updated = await db.updateProjectStatus(id, status, reason || '', actor || 'Operations');
+    if (!updated) return res.status(404).json({ error: 'Project not found.' });
+    res.json({ success: true, project: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 6. Update Asset Item Status
+app.patch('/api/production-projects/:id/assets', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { assetKey, status, notes, actor } = req.body;
+    if (!assetKey || !status) return res.status(400).json({ error: 'assetKey and status are required.' });
+    const updated = await db.updateProjectAsset(id, assetKey, status, notes || '', actor || 'Operations');
+    if (!updated) return res.status(404).json({ error: 'Project or asset item not found.' });
+    res.json({ success: true, project: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 7. Update Production Task Status
+app.patch('/api/production-projects/:id/tasks', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { taskId, status, notes, actor } = req.body;
+    if (!taskId || !status) return res.status(400).json({ error: 'taskId and status are required.' });
+    const updated = await db.updateProjectTask(id, taskId, status, notes || '', actor || 'Operations');
+    if (!updated) return res.status(404).json({ error: 'Project or task not found.' });
+    res.json({ success: true, project: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 8. Submit Internal QA Review
+app.post('/api/production-projects/:id/qa', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, checks, notes, actor } = req.body;
+    const updated = await db.submitProjectQA(id, { status, checks, notes }, actor || 'QA Director');
+    if (!updated) return res.status(404).json({ error: 'Project not found.' });
+    res.json({ success: true, project: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 9. Submit Client Feedback / Revision / Approval
+app.post('/api/production-projects/:id/feedback', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { type, deliverable, comment, clientName } = req.body;
+    const updated = await db.submitClientFeedback(id, { type, deliverable, comment, clientName });
+    if (!updated) return res.status(404).json({ error: 'Project not found.' });
+    res.json({ success: true, project: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 10. Publish Deliverable Live
+app.post('/api/production-projects/:id/publish', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { publicUrl, actor } = req.body;
+    const updated = await db.publishProject(id, { publicUrl }, actor || 'Production Manager');
+    if (!updated) return res.status(404).json({ error: 'Project not found.' });
+    res.json({ success: true, project: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 11. Add Note (Internal vs Client-Visible)
+app.post('/api/production-projects/:id/notes', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { noteText, isClientVisible, author } = req.body;
+    if (!noteText) return res.status(400).json({ error: 'noteText is required.' });
+    const updated = await db.addProjectNote(id, noteText, !!isClientVisible, author || 'Operations');
+    if (!updated) return res.status(404).json({ error: 'Project not found.' });
+    res.json({ success: true, project: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 12. Generate Post-Show Report
+app.post('/api/production-projects/:id/post-show-report', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updated = await db.generatePostShowReport(id, req.body.actor || 'Analytics Engine');
+    if (!updated) return res.status(404).json({ error: 'Project not found.' });
+    res.json({ success: true, project: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 13. Duplicate Project For Next Show (Multi-Show Customer Memory)
+app.post('/api/production-projects/:id/duplicate-next-show', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const newProject = await db.duplicateProjectForNextShow(id, req.body.newShowData || {}, req.body.actor || 'Operations');
+    if (!newProject) return res.status(404).json({ error: 'Source project not found.' });
+    res.status(201).json({ success: true, project: newProject });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 14. Client Portal Safe View (Zero Internal Note Leakage)
+app.get('/api/client-portal/:id', (req, res) => {
+  const project = db.getProductionProjectById(req.params.id, true);
+  if (!project) return res.status(404).json({ error: 'Showroom project not found.' });
+  res.json(project);
+});
+
 // --- 9. Realtime Analytics API ---
 app.post('/api/analytics/events', createRateLimiter(120, 60000), async (req, res) => {
   try {

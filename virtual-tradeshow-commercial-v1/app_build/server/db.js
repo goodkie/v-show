@@ -127,7 +127,7 @@ const initialSeedData = () => {
   const betaEventId = 'event-global-tech-2026';
 
   return {
-    schemaVersion: 5,
+    schemaVersion: 6,
     featureFlags: {
       stripeBillingEnabled: true,
       grandControlEnabled: true,
@@ -390,6 +390,9 @@ const initialSeedData = () => {
     samples: [],
     appointments: [],
     productionRequests: [],
+    productionProjects: [],
+    exhibitorProfiles: [],
+    tradeShows: [],
     analyticsEvents: [],
     reconstructionJobs: [
       {
@@ -463,9 +466,11 @@ class JSONDatabase {
         const raw = fs.readFileSync(DB_FILE, 'utf-8');
         const parsed = JSON.parse(raw);
         this.memoryData = this.migrateSchema(parsed);
+        this.ensureControlledProjects(this.memoryData);
       } catch (err) {
         console.error('Failed to read db.json, generating fallback state:', err);
         const fallback = initialSeedData();
+        this.ensureControlledProjects(fallback);
         fs.writeFileSync(DB_FILE, JSON.stringify(fallback, null, 2), 'utf-8');
         this.memoryData = fallback;
       }
@@ -478,15 +483,15 @@ class JSONDatabase {
     }
   }
 
-  // Schema Version 4 -> 5 Non-Destructive Migration & Integrity Assurance
+  // Schema Version 5 -> 6 Non-Destructive Migration & Integrity Assurance (dn'a-C02)
   migrateSchema(current) {
-    const isOldVersion = !current.schemaVersion || current.schemaVersion < 5;
+    const isOldVersion = !current.schemaVersion || current.schemaVersion < 6;
     const seed = initialSeedData();
 
     if (isOldVersion) {
-      console.log(`[DB] Migrating schema to version 5 (Stripe Billing & Grand Control Center)...`);
+      console.log(`[DB] Migrating schema to version 6 (dn'a-C02 Managed Production Operations)...`);
 
-      current.schemaVersion = 5;
+      current.schemaVersion = 6;
       current.featureFlags = current.featureFlags || seed.featureFlags;
       current.stripeEvents = current.stripeEvents || [];
       current.billingEvents = current.billingEvents || [];
@@ -597,12 +602,461 @@ class JSONDatabase {
       current.auditLogs = current.auditLogs || [];
       current.showhosts = current.showhosts || [];
       current.productionRequests = current.productionRequests || [];
+      current.productionProjects = current.productionProjects || [];
+      current.exhibitorProfiles = current.exhibitorProfiles || [];
+      // Seed Controlled Test Projects if missing (Phase dn’a-C02)
+      const controlledTestProjects = [
+          {
+            id: 'proj-hpmkt-haven-01',
+            productionRequestId: 'req-seed-01',
+            company: 'Haven & Oak Furniture Co.',
+            contact: 'Julian Vance (VP Trade Sales)',
+            email: 'julian.vance@havenoak.example',
+            phone: '+1 (336) 555-0142',
+            website: 'https://havenoak.example',
+            tradeShow: 'High Point Market Fall 2026',
+            showStartDate: '2026-10-17',
+            showEndDate: '2026-10-21',
+            daysUntilShow: 56,
+            city: 'High Point, NC',
+            venue: 'IHFC Main Building',
+            boothNumber: 'Stand W-412 (Interhall)',
+            industry: 'Furniture, Home Decor & Lighting',
+            numberOfProducts: 12,
+            serviceSelections: ['3D_BOOTH_DESIGN', 'PHOTO_TOUR', 'DIGITAL_CATALOG', 'SMART_CARD', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE'],
+            assignedProducer: 'Elena Rostova (Lead 3D Producer)',
+            assignedReviewer: 'Marcus Vance (QA Director)',
+            status: 'PUBLISHED',
+            priority: 'NORMAL',
+            blockingReason: 'NONE',
+            createdAt: '2026-08-10T09:00:00.000Z',
+            updatedAt: new Date().toISOString(),
+            dueAt: '2026-09-15',
+            publishedAt: '2026-08-20T14:30:00.000Z',
+            internalNotes: [
+              { id: 'n1', text: 'Client CAD files for 2026 sectional sofas received and optimized.', author: 'Elena Rostova', createdAt: '2026-08-12T10:00:00.000Z' },
+              { id: 'n2', text: 'QA inspection completed. High Point showroom URL generated.', author: 'Marcus Vance', createdAt: '2026-08-20T14:00:00.000Z' }
+            ],
+            clientVisibleNotes: [
+              { id: 'cn1', text: 'Your 3D virtual showroom has been built, tested, and published live!', author: 'dn’a Production Team', createdAt: '2026-08-20T14:30:00.000Z' }
+            ],
+            assets: [
+              { key: 'LOGO', label: 'Vector Brand Logo (SVG/PNG)', required: true, status: 'APPROVED', receivedAt: '2026-08-11' },
+              { key: 'COMPANY_DESCRIPTION', label: 'Company Overview & Tagline', required: true, status: 'APPROVED', receivedAt: '2026-08-11' },
+              { key: 'PRODUCT_NAMES', label: 'Product Names & SKUs', required: true, status: 'APPROVED', receivedAt: '2026-08-11' },
+              { key: 'PRODUCT_IMAGES', label: 'High-Res Product Photography', required: true, status: 'APPROVED', receivedAt: '2026-08-12' },
+              { key: 'CATALOG_PDF', label: '2026 Lookbook & Spec Catalog (PDF)', required: true, status: 'APPROVED', receivedAt: '2026-08-13' },
+              { key: 'CONTACT_INFORMATION', label: 'Sales Rep Details for Smart Card', required: true, status: 'APPROVED', receivedAt: '2026-08-11' }
+            ],
+            tasks: [
+              { id: 't1', key: '3D_BOOTH_DESIGN', name: '3D Virtual Booth Architecture', status: 'DONE', completedAt: '2026-08-16' },
+              { id: 't2', key: 'PRODUCT_SETUP', name: '12x 3D Product Plinths & Spec Binding', status: 'DONE', completedAt: '2026-08-17' },
+              { id: 't3', key: 'CATALOG_INTEGRATION', name: 'Lookbook PDF Download Hub', status: 'DONE', completedAt: '2026-08-18' },
+              { id: 't4', key: 'SMART_CARD_SETUP', name: 'Julian Vance Smart Card Setup', status: 'DONE', completedAt: '2026-08-18' },
+              { id: 't5', key: 'RFQ_SETUP', name: 'Wholesale Pricing & Lead Endpoints', status: 'DONE', completedAt: '2026-08-19' }
+            ],
+            qaChecklist: {
+              status: 'QA_PASS',
+              reviewer: 'Marcus Vance (QA Director)',
+              reviewedAt: '2026-08-20T13:45:00.000Z',
+              checks: {
+                correctCompany: true, correctLogo: true, correctBooth: true, correctProducts: true,
+                noBrokenImages: true, noBrokenCatalog: true, qrWorks: true, rfqWorks: true,
+                sampleWorks: true, appointmentWorks: true, mobileWorks: true, truthful3DState: true
+              }
+            },
+            revisions: [
+              { version: 'v1', deliverableType: 'DIGITAL_BOOTH', previewUrl: '/demo.html', createdAt: '2026-08-18T16:00:00.000Z', status: 'APPROVED', notes: 'Initial complete build' }
+            ],
+            clientFeedback: [
+              { id: 'fb1', type: 'APPROVAL', deliverable: '3D Showroom & Smart Card', comment: 'Showroom looks fantastic! The wood grain and lighting match our physical stand.', submittedAt: '2026-08-20T11:00:00.000Z', clientName: 'Julian Vance' }
+            ],
+            publishRecord: {
+              publishedAt: '2026-08-20T14:30:00.000Z',
+              publishedBy: 'Elena Rostova',
+              publicUrl: '/demo.html',
+              activeServices: ['3D_BOOTH_DESIGN', 'PHOTO_TOUR', 'DIGITAL_CATALOG', 'SMART_CARD', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE']
+            }
+          },
+          {
+            id: 'proj-coterie-nova-02',
+            productionRequestId: 'req-seed-02',
+            company: 'Maison Nova Haute Apparel',
+            contact: 'Claire Delacroix (Creative Director)',
+            email: 'claire@maisonnova.example',
+            phone: '+1 (212) 555-0819',
+            website: 'https://maisonnova.example',
+            tradeShow: 'COTERIE New York 2026',
+            showStartDate: '2026-09-22',
+            showEndDate: '2026-09-24',
+            daysUntilShow: 31,
+            city: 'New York, NY',
+            venue: 'Javits Center',
+            boothNumber: 'Booth 2140',
+            industry: 'Fashion, Footwear & Luxury Apparel',
+            numberOfProducts: 18,
+            serviceSelections: ['3D_BOOTH_DESIGN', 'DIGITAL_CATALOG', 'SMART_CARD', 'PRODUCT_QR', 'SAMPLE_REQUEST'],
+            assignedProducer: 'Elena Rostova',
+            assignedReviewer: 'Marcus Vance',
+            status: 'CLIENT_REVIEW',
+            priority: 'DUE_SOON',
+            blockingReason: 'WAITING_CLIENT',
+            createdAt: '2026-08-15T11:00:00.000Z',
+            updatedAt: new Date().toISOString(),
+            dueAt: '2026-09-10',
+            internalNotes: [
+              { id: 'n1', text: 'v2 revisions incorporated: updated high-res handbag images.', author: 'Elena Rostova', createdAt: '2026-08-21T09:00:00.000Z' }
+            ],
+            clientVisibleNotes: [
+              { id: 'cn1', text: 'v2 preview is ready for your review and approval.', author: 'dn’a Production Team', createdAt: '2026-08-21T10:00:00.000Z' }
+            ],
+            assets: [
+              { key: 'LOGO', label: 'Vector Brand Logo (SVG/PNG)', required: true, status: 'APPROVED', receivedAt: '2026-08-15' },
+              { key: 'COMPANY_DESCRIPTION', label: 'Company Overview & Tagline', required: true, status: 'APPROVED', receivedAt: '2026-08-15' },
+              { key: 'PRODUCT_NAMES', label: 'Product Names & SKUs', required: true, status: 'APPROVED', receivedAt: '2026-08-16' },
+              { key: 'PRODUCT_IMAGES', label: 'High-Res Product Photography', required: true, status: 'APPROVED', receivedAt: '2026-08-18' },
+              { key: 'CATALOG_PDF', label: 'Lookbook & Linesheet (PDF)', required: true, status: 'APPROVED', receivedAt: '2026-08-17' },
+              { key: 'CONTACT_INFORMATION', label: 'Sales Rep Details for Smart Card', required: true, status: 'APPROVED', receivedAt: '2026-08-15' }
+            ],
+            tasks: [
+              { id: 't1', key: '3D_BOOTH_DESIGN', name: '3D Luxury Pavilion Architecture', status: 'DONE', completedAt: '2026-08-19' },
+              { id: 't2', key: 'PRODUCT_SETUP', name: '18x Fashion Linesheet Product Binding', status: 'DONE', completedAt: '2026-08-20' },
+              { id: 't3', key: 'CATALOG_INTEGRATION', name: 'Digital Lookbook Center', status: 'DONE', completedAt: '2026-08-20' },
+              { id: 't4', key: 'SMART_CARD_SETUP', name: 'Claire Delacroix Smart Card Setup', status: 'DONE', completedAt: '2026-08-21' }
+            ],
+            qaChecklist: {
+              status: 'QA_PASS',
+              reviewer: 'Marcus Vance',
+              reviewedAt: '2026-08-21T11:00:00.000Z',
+              checks: {
+                correctCompany: true, correctLogo: true, correctBooth: true, correctProducts: true,
+                noBrokenImages: true, noBrokenCatalog: true, qrWorks: true, rfqWorks: true,
+                sampleWorks: true, appointmentWorks: true, mobileWorks: true, truthful3DState: true
+              }
+            },
+            revisions: [
+              { version: 'v1', deliverableType: 'DIGITAL_BOOTH', previewUrl: '/demo.html', createdAt: '2026-08-19T14:00:00.000Z', status: 'SUPERSEDED', notes: 'Initial build' },
+              { version: 'v2', deliverableType: 'DIGITAL_BOOTH', previewUrl: '/demo.html', createdAt: '2026-08-21T10:00:00.000Z', status: 'IN_REVIEW', notes: 'Updated line photography' }
+            ],
+            clientFeedback: [
+              { id: 'fb1', type: 'REVISION_REQUEST', deliverable: 'Product Photos', comment: 'Please use our updated winter collection hero image for Product #4.', submittedAt: '2026-08-20T16:00:00.000Z', clientName: 'Claire Delacroix' }
+            ]
+          },
+          {
+            id: 'proj-asd-lumina-03',
+            productionRequestId: 'req-seed-03',
+            company: 'Lumina Craft & Giftworks',
+            contact: 'Dave K. Sterling (VP Merchandising)',
+            email: 'dave@luminacraft.example',
+            phone: '+1 (702) 555-0941',
+            website: 'https://luminacraft.example',
+            tradeShow: 'ASD Market Week Las Vegas 2026',
+            showStartDate: '2026-08-20',
+            showEndDate: '2026-08-23',
+            daysUntilShow: 0,
+            city: 'Las Vegas, NV',
+            venue: 'Las Vegas Convention Center',
+            boothNumber: 'Central Hall — Stand C-842',
+            industry: 'Gifts, Novelties & General Merchandise',
+            numberOfProducts: 24,
+            serviceSelections: ['3D_BOOTH_DESIGN', 'PHOTO_TOUR', 'SMART_CARD', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE', 'SAMPLE_REQUEST'],
+            assignedProducer: 'Kenji Sato',
+            assignedReviewer: 'Marcus Vance',
+            status: 'SHOW_LIVE',
+            priority: 'SHOW_STARTED',
+            blockingReason: 'NONE',
+            createdAt: '2026-08-01T08:00:00.000Z',
+            updatedAt: new Date().toISOString(),
+            dueAt: '2026-08-18',
+            publishedAt: '2026-08-19T09:00:00.000Z',
+            internalNotes: [
+              { id: 'n1', text: 'Exhibition is currently active on trade show floor. QR traffic live.', author: 'Kenji Sato', createdAt: '2026-08-20T10:00:00.000Z' }
+            ],
+            clientVisibleNotes: [
+              { id: 'cn1', text: 'Your 3D showroom and QR passes are active for ASD Market Week!', author: 'dn’a Production Team', createdAt: '2026-08-19T09:00:00.000Z' }
+            ],
+            assets: [
+              { key: 'LOGO', label: 'Vector Brand Logo (SVG/PNG)', required: true, status: 'APPROVED', receivedAt: '2026-08-02' },
+              { key: 'COMPANY_DESCRIPTION', label: 'Company Overview', required: true, status: 'APPROVED', receivedAt: '2026-08-02' },
+              { key: 'PRODUCT_NAMES', label: 'Product Names & SKUs', required: true, status: 'APPROVED', receivedAt: '2026-08-03' },
+              { key: 'PRODUCT_IMAGES', label: 'High-Res Product Photos', required: true, status: 'APPROVED', receivedAt: '2026-08-05' },
+              { key: 'CATALOG_PDF', label: 'Wholesale Merchandise Catalog', required: true, status: 'APPROVED', receivedAt: '2026-08-04' }
+            ],
+            tasks: [
+              { id: 't1', key: '3D_BOOTH_DESIGN', name: '3D Pavilion & Hologram Plinths', status: 'DONE', completedAt: '2026-08-15' },
+              { id: 't2', key: 'PRODUCT_QR_SETUP', name: '24x Product Waypoint QRs', status: 'DONE', completedAt: '2026-08-17' },
+              { id: 't3', key: 'RFQ_SETUP', name: 'Wholesale Lead Capture & Sample Intake', status: 'DONE', completedAt: '2026-08-18' }
+            ],
+            qaChecklist: {
+              status: 'QA_PASS',
+              reviewer: 'Marcus Vance',
+              reviewedAt: '2026-08-18T15:00:00.000Z',
+              checks: {
+                correctCompany: true, correctLogo: true, correctBooth: true, correctProducts: true,
+                noBrokenImages: true, noBrokenCatalog: true, qrWorks: true, rfqWorks: true,
+                sampleWorks: true, appointmentWorks: true, mobileWorks: true, truthful3DState: true
+              }
+            },
+            revisions: [
+              { version: 'v1', deliverableType: 'DIGITAL_BOOTH', previewUrl: '/demo.html', createdAt: '2026-08-18T14:00:00.000Z', status: 'APPROVED', notes: 'Final build' }
+            ],
+            publishRecord: {
+              publishedAt: '2026-08-19T09:00:00.000Z',
+              publishedBy: 'Kenji Sato',
+              publicUrl: '/demo.html',
+              activeServices: ['3D_BOOTH_DESIGN', 'PHOTO_TOUR', 'SMART_CARD', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE', 'SAMPLE_REQUEST']
+            },
+            postShowReport: {
+              generatedAt: '2026-08-22T00:00:00.000Z',
+              boothVisits: 1428,
+              productViews: 3614,
+              qrScans: 319,
+              catalogDownloads: 482,
+              leadsCaptured: 89,
+              rfqsSubmitted: 47,
+              samplesRequested: 29,
+              meetingsBooked: 38
+            }
+          }
+        ];
+
+        controlledTestProjects.forEach(sp => {
+          if (!current.productionProjects.find(p => p.id === sp.id)) {
+            current.productionProjects.push(sp);
+          }
+        });
 
       // Atomic save migrated structure
       fs.writeFileSync(DB_FILE, JSON.stringify(current, null, 2), 'utf-8');
       console.log('[DB] Schema version 4 migration successfully applied.');
     }
     return current;
+  }
+
+  ensureControlledProjects(data) {
+    if (!data) return;
+    data.productionProjects = data.productionProjects || [];
+
+    const controlledProjects = [
+      {
+        id: 'proj-hpmkt-haven-01',
+        productionRequestId: 'req-seed-01',
+        company: 'Haven & Oak Furniture Co.',
+        contact: 'Julian Vance (VP Trade Sales)',
+        email: 'julian.vance@havenoak.example',
+        phone: '+1 (336) 555-0142',
+        website: 'https://havenoak.example',
+        tradeShow: 'High Point Market Fall 2026',
+        showStartDate: '2026-10-17',
+        showEndDate: '2026-10-21',
+        daysUntilShow: 56,
+        city: 'High Point, NC',
+        venue: 'IHFC Main Building',
+        boothNumber: 'Stand W-412 (Interhall)',
+        industry: 'Furniture, Home Decor & Lighting',
+        numberOfProducts: 12,
+        serviceSelections: ['3D_BOOTH_DESIGN', 'PHOTO_TOUR', 'DIGITAL_CATALOG', 'SMART_CARD', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE'],
+        assignedProducer: 'Elena Rostova (Lead 3D Producer)',
+        assignedReviewer: 'Marcus Vance (QA Director)',
+        status: 'PUBLISHED',
+        priority: 'NORMAL',
+        blockingReason: 'NONE',
+        createdAt: '2026-08-10T09:00:00.000Z',
+        updatedAt: new Date().toISOString(),
+        dueAt: '2026-09-15',
+        publishedAt: '2026-08-20T14:30:00.000Z',
+        internalNotes: [
+          { id: 'n1', text: 'Client CAD files for 2026 sectional sofas received and optimized.', author: 'Elena Rostova', createdAt: '2026-08-12T10:00:00.000Z' },
+          { id: 'n2', text: 'QA inspection completed. High Point showroom URL generated.', author: 'Marcus Vance', createdAt: '2026-08-20T14:00:00.000Z' }
+        ],
+        clientVisibleNotes: [
+          { id: 'cn1', text: 'Your 3D virtual showroom has been built, tested, and published live!', author: 'dn’a Production Team', createdAt: '2026-08-20T14:30:00.000Z' }
+        ],
+        assets: [
+          { key: 'LOGO', label: 'Vector Brand Logo (SVG/PNG)', required: true, status: 'APPROVED', receivedAt: '2026-08-11' },
+          { key: 'COMPANY_DESCRIPTION', label: 'Company Overview & Tagline', required: true, status: 'APPROVED', receivedAt: '2026-08-11' },
+          { key: 'PRODUCT_NAMES', label: 'Product Names & SKUs', required: true, status: 'APPROVED', receivedAt: '2026-08-11' },
+          { key: 'PRODUCT_IMAGES', label: 'High-Res Product Photography', required: true, status: 'APPROVED', receivedAt: '2026-08-12' },
+          { key: 'CATALOG_PDF', label: '2026 Lookbook & Spec Catalog (PDF)', required: true, status: 'APPROVED', receivedAt: '2026-08-13' },
+          { key: 'CONTACT_INFORMATION', label: 'Sales Rep Details for Smart Card', required: true, status: 'APPROVED', receivedAt: '2026-08-11' }
+        ],
+        tasks: [
+          { id: 't1', key: '3D_BOOTH_DESIGN', name: '3D Virtual Booth Architecture', status: 'DONE', completedAt: '2026-08-16' },
+          { id: 't2', key: 'PRODUCT_SETUP', name: '12x 3D Product Plinths & Spec Binding', status: 'DONE', completedAt: '2026-08-17' },
+          { id: 't3', key: 'CATALOG_INTEGRATION', name: 'Lookbook PDF Download Hub', status: 'DONE', completedAt: '2026-08-18' },
+          { id: 't4', key: 'SMART_CARD_SETUP', name: 'Julian Vance Smart Card Setup', status: 'DONE', completedAt: '2026-08-18' },
+          { id: 't5', key: 'RFQ_SETUP', name: 'Wholesale Pricing & Lead Endpoints', status: 'DONE', completedAt: '2026-08-19' }
+        ],
+        qaChecklist: {
+          status: 'QA_PASS',
+          reviewer: 'Marcus Vance (QA Director)',
+          reviewedAt: '2026-08-20T13:45:00.000Z',
+          checks: {
+            correctCompany: true, correctLogo: true, correctBooth: true, correctProducts: true,
+            noBrokenImages: true, noBrokenCatalog: true, qrWorks: true, rfqWorks: true,
+            sampleWorks: true, appointmentWorks: true, mobileWorks: true, truthful3DState: true
+          }
+        },
+        revisions: [
+          { version: 'v1', deliverableType: 'DIGITAL_BOOTH', previewUrl: '/demo.html', createdAt: '2026-08-18T16:00:00.000Z', status: 'APPROVED', notes: 'Initial complete build' }
+        ],
+        clientFeedback: [
+          { id: 'fb1', type: 'APPROVAL', deliverable: '3D Showroom & Smart Card', comment: 'Showroom looks fantastic! The wood grain and lighting match our physical stand.', submittedAt: '2026-08-20T11:00:00.000Z', clientName: 'Julian Vance' }
+        ],
+        publishRecord: {
+          publishedAt: '2026-08-20T14:30:00.000Z',
+          publishedBy: 'Elena Rostova',
+          publicUrl: '/demo.html',
+          activeServices: ['3D_BOOTH_DESIGN', 'PHOTO_TOUR', 'DIGITAL_CATALOG', 'SMART_CARD', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE']
+        }
+      },
+      {
+        id: 'proj-coterie-nova-02',
+        productionRequestId: 'req-seed-02',
+        company: 'Maison Nova Haute Apparel',
+        contact: 'Claire Delacroix (Creative Director)',
+        email: 'claire@maisonnova.example',
+        phone: '+1 (212) 555-0819',
+        website: 'https://maisonnova.example',
+        tradeShow: 'COTERIE New York 2026',
+        showStartDate: '2026-09-22',
+        showEndDate: '2026-09-24',
+        daysUntilShow: 31,
+        city: 'New York, NY',
+        venue: 'Javits Center',
+        boothNumber: 'Booth 2140',
+        industry: 'Fashion, Footwear & Luxury Apparel',
+        numberOfProducts: 18,
+        serviceSelections: ['3D_BOOTH_DESIGN', 'DIGITAL_CATALOG', 'SMART_CARD', 'PRODUCT_QR', 'SAMPLE_REQUEST'],
+        assignedProducer: 'Elena Rostova',
+        assignedReviewer: 'Marcus Vance',
+        status: 'CLIENT_REVIEW',
+        priority: 'DUE_SOON',
+        blockingReason: 'WAITING_CLIENT',
+        createdAt: '2026-08-15T11:00:00.000Z',
+        updatedAt: new Date().toISOString(),
+        dueAt: '2026-09-10',
+        internalNotes: [
+          { id: 'n1', text: 'v2 revisions incorporated: updated high-res handbag images.', author: 'Elena Rostova', createdAt: '2026-08-21T09:00:00.000Z' }
+        ],
+        clientVisibleNotes: [
+          { id: 'cn1', text: 'v2 preview is ready for your review and approval.', author: 'dn’a Production Team', createdAt: '2026-08-21T10:00:00.000Z' }
+        ],
+        assets: [
+          { key: 'LOGO', label: 'Vector Brand Logo (SVG/PNG)', required: true, status: 'APPROVED', receivedAt: '2026-08-15' },
+          { key: 'COMPANY_DESCRIPTION', label: 'Company Overview & Tagline', required: true, status: 'APPROVED', receivedAt: '2026-08-15' },
+          { key: 'PRODUCT_NAMES', label: 'Product Names & SKUs', required: true, status: 'APPROVED', receivedAt: '2026-08-16' },
+          { key: 'PRODUCT_IMAGES', label: 'High-Res Product Photography', required: true, status: 'APPROVED', receivedAt: '2026-08-18' },
+          { key: 'CATALOG_PDF', label: 'Lookbook & Linesheet (PDF)', required: true, status: 'APPROVED', receivedAt: '2026-08-17' },
+          { key: 'CONTACT_INFORMATION', label: 'Sales Rep Details for Smart Card', required: true, status: 'APPROVED', receivedAt: '2026-08-15' }
+        ],
+        tasks: [
+          { id: 't1', key: '3D_BOOTH_DESIGN', name: '3D Luxury Pavilion Architecture', status: 'DONE', completedAt: '2026-08-19' },
+          { id: 't2', key: 'PRODUCT_SETUP', name: '18x Fashion Linesheet Product Binding', status: 'DONE', completedAt: '2026-08-20' },
+          { id: 't3', key: 'CATALOG_INTEGRATION', name: 'Digital Lookbook Center', status: 'DONE', completedAt: '2026-08-20' },
+          { id: 't4', key: 'SMART_CARD_SETUP', name: 'Claire Delacroix Smart Card Setup', status: 'DONE', completedAt: '2026-08-21' }
+        ],
+        qaChecklist: {
+          status: 'QA_PASS',
+          reviewer: 'Marcus Vance',
+          reviewedAt: '2026-08-21T11:00:00.000Z',
+          checks: {
+            correctCompany: true, correctLogo: true, correctBooth: true, correctProducts: true,
+            noBrokenImages: true, noBrokenCatalog: true, qrWorks: true, rfqWorks: true,
+            sampleWorks: true, appointmentWorks: true, mobileWorks: true, truthful3DState: true
+          }
+        },
+        revisions: [
+          { version: 'v1', deliverableType: 'DIGITAL_BOOTH', previewUrl: '/demo.html', createdAt: '2026-08-19T14:00:00.000Z', status: 'SUPERSEDED', notes: 'Initial build' },
+          { version: 'v2', deliverableType: 'DIGITAL_BOOTH', previewUrl: '/demo.html', createdAt: '2026-08-21T10:00:00.000Z', status: 'IN_REVIEW', notes: 'Updated line photography' }
+        ],
+        clientFeedback: [
+          { id: 'fb1', type: 'REVISION_REQUEST', deliverable: 'Product Photos', comment: 'Please use our updated winter collection hero image for Product #4.', submittedAt: '2026-08-20T16:00:00.000Z', clientName: 'Claire Delacroix' }
+        ]
+      },
+      {
+        id: 'proj-asd-lumina-03',
+        productionRequestId: 'req-seed-03',
+        company: 'Lumina Craft & Giftworks',
+        contact: 'Dave K. Sterling (VP Merchandising)',
+        email: 'dave@luminacraft.example',
+        phone: '+1 (702) 555-0941',
+        website: 'https://luminacraft.example',
+        tradeShow: 'ASD Market Week Las Vegas 2026',
+        showStartDate: '2026-08-20',
+        showEndDate: '2026-08-23',
+        daysUntilShow: 0,
+        city: 'Las Vegas, NV',
+        venue: 'Las Vegas Convention Center',
+        boothNumber: 'Central Hall — Stand C-842',
+        industry: 'Gifts, Novelties & General Merchandise',
+        numberOfProducts: 24,
+        serviceSelections: ['3D_BOOTH_DESIGN', 'PHOTO_TOUR', 'SMART_CARD', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE', 'SAMPLE_REQUEST'],
+        assignedProducer: 'Kenji Sato',
+        assignedReviewer: 'Marcus Vance',
+        status: 'SHOW_LIVE',
+        priority: 'SHOW_STARTED',
+        blockingReason: 'NONE',
+        createdAt: '2026-08-01T08:00:00.000Z',
+        updatedAt: new Date().toISOString(),
+        dueAt: '2026-08-18',
+        publishedAt: '2026-08-19T09:00:00.000Z',
+        internalNotes: [
+          { id: 'n1', text: 'Exhibition is currently active on trade show floor. QR traffic live.', author: 'Kenji Sato', createdAt: '2026-08-20T10:00:00.000Z' }
+        ],
+        clientVisibleNotes: [
+          { id: 'cn1', text: 'Your 3D showroom and QR passes are active for ASD Market Week!', author: 'dn’a Production Team', createdAt: '2026-08-19T09:00:00.000Z' }
+        ],
+        assets: [
+          { key: 'LOGO', label: 'Vector Brand Logo (SVG/PNG)', required: true, status: 'APPROVED', receivedAt: '2026-08-02' },
+          { key: 'COMPANY_DESCRIPTION', label: 'Company Overview', required: true, status: 'APPROVED', receivedAt: '2026-08-02' },
+          { key: 'PRODUCT_NAMES', label: 'Product Names & SKUs', required: true, status: 'APPROVED', receivedAt: '2026-08-03' },
+          { key: 'PRODUCT_IMAGES', label: 'High-Res Product Photos', required: true, status: 'APPROVED', receivedAt: '2026-08-05' },
+          { key: 'CATALOG_PDF', label: 'Wholesale Merchandise Catalog', required: true, status: 'APPROVED', receivedAt: '2026-08-04' }
+        ],
+        tasks: [
+          { id: 't1', key: '3D_BOOTH_DESIGN', name: '3D Pavilion & Hologram Plinths', status: 'DONE', completedAt: '2026-08-15' },
+          { id: 't2', key: 'PRODUCT_QR_SETUP', name: '24x Product Waypoint QRs', status: 'DONE', completedAt: '2026-08-17' },
+          { id: 't3', key: 'RFQ_SETUP', name: 'Wholesale Lead Capture & Sample Intake', status: 'DONE', completedAt: '2026-08-18' }
+        ],
+        qaChecklist: {
+          status: 'QA_PASS',
+          reviewer: 'Marcus Vance',
+          reviewedAt: '2026-08-18T15:00:00.000Z',
+          checks: {
+            correctCompany: true, correctLogo: true, correctBooth: true, correctProducts: true,
+            noBrokenImages: true, noBrokenCatalog: true, qrWorks: true, rfqWorks: true,
+            sampleWorks: true, appointmentWorks: true, mobileWorks: true, truthful3DState: true
+          }
+        },
+        revisions: [
+          { version: 'v1', deliverableType: 'DIGITAL_BOOTH', previewUrl: '/demo.html', createdAt: '2026-08-18T14:00:00.000Z', status: 'APPROVED', notes: 'Final build' }
+        ],
+        publishRecord: {
+          publishedAt: '2026-08-19T09:00:00.000Z',
+          publishedBy: 'Kenji Sato',
+          publicUrl: '/demo.html',
+          activeServices: ['3D_BOOTH_DESIGN', 'PHOTO_TOUR', 'SMART_CARD', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE', 'SAMPLE_REQUEST']
+        },
+        postShowReport: {
+          generatedAt: '2026-08-22T00:00:00.000Z',
+          boothVisits: 1428,
+          productViews: 3614,
+          qrScans: 319,
+          catalogDownloads: 482,
+          leadsCaptured: 89,
+          rfqsSubmitted: 47,
+          samplesRequested: 29,
+          meetingsBooked: 38
+        }
+      }
+    ];
+
+    controlledProjects.forEach(sp => {
+      if (!data.productionProjects.find(p => p.id === sp.id)) {
+        data.productionProjects.push(sp);
+      }
+    });
   }
 
   read() {
@@ -1358,6 +1812,672 @@ class JSONDatabase {
       if (internalNotes) req.internalNotes = internalNotes;
       req.updatedAt = new Date().toISOString();
       return req;
+    });
+  }
+
+  // =========================================================================
+  // dn’a-C02 — MANAGED PRODUCTION OPERATIONS ENGINE
+  // =========================================================================
+
+  calculateShowDatePriority(showStartDate, showEndDate) {
+    if (!showStartDate) return { daysUntilShow: null, priority: 'NORMAL' };
+    const now = new Date();
+    const start = new Date(showStartDate);
+    const end = showEndDate ? new Date(showEndDate) : new Date(showStartDate);
+
+    // If currently during the show
+    if (now >= start && now <= new Date(end.getTime() + 86400000)) {
+      return { daysUntilShow: 0, priority: 'SHOW_STARTED' };
+    }
+    // If show has passed
+    if (now > new Date(end.getTime() + 86400000)) {
+      const daysPast = Math.floor((now - end) / (1000 * 60 * 60 * 24));
+      return { daysUntilShow: -daysPast, priority: 'SHOW_ENDED' };
+    }
+
+    const diffDays = Math.ceil((start - now) / (1000 * 60 * 60 * 24));
+    let priority = 'NORMAL';
+    if (diffDays <= 2) priority = 'CRITICAL';
+    else if (diffDays <= 7) priority = 'URGENT';
+    else if (diffDays <= 14) priority = 'DUE_SOON';
+
+    return { daysUntilShow: diffDays, priority };
+  }
+
+  generateStandardAssetsChecklist(serviceSelections = []) {
+    return [
+      { key: 'LOGO', label: 'Vector Brand Logo (SVG/PNG)', required: true, status: 'MISSING', notes: '' },
+      { key: 'COMPANY_DESCRIPTION', label: 'Company Overview & Slogan', required: true, status: 'MISSING', notes: '' },
+      { key: 'CONTACT_INFORMATION', label: 'Sales Rep Details for Smart Card', required: true, status: 'MISSING', notes: '' },
+      { key: 'PRODUCT_NAMES', label: 'Product Names, SKUs & Categories', required: true, status: 'MISSING', notes: '' },
+      { key: 'PRODUCT_DESCRIPTIONS', label: 'Product Copy & Technical Specs', required: true, status: 'MISSING', notes: '' },
+      { key: 'PRODUCT_IMAGES', label: 'High-Res Product Photography', required: true, status: 'MISSING', notes: '' },
+      { key: 'CATALOG_PDF', label: 'Digital Catalog & Datasheets (PDF)', required: serviceSelections.includes('DIGITAL_CATALOG'), status: 'MISSING', notes: '' },
+      { key: 'BOOTH_PHOTOS', label: 'Physical Booth Renderings or Photos', required: false, status: 'MISSING', notes: '' },
+      { key: 'BRAND_GUIDELINES', label: 'Color Palette Codes & Typography', required: false, status: 'MISSING', notes: '' }
+    ];
+  }
+
+  generateServiceAwareTasks(serviceSelections = [], project = {}) {
+    const tasks = [];
+    let idCounter = 1;
+
+    tasks.push({
+      id: `task-${idCounter++}`,
+      key: '3D_BOOTH_DESIGN',
+      name: '3D Architectural Virtual Booth Setup',
+      category: '3D_PRODUCTION',
+      status: 'READY',
+      assignedTo: project.assignedProducer || 'Elena Rostova (Lead 3D Producer)',
+      dueDate: project.dueAt || ''
+    });
+
+    tasks.push({
+      id: `task-${idCounter++}`,
+      key: 'PRODUCT_SETUP',
+      name: `Configure ${project.numberOfProducts || 8}x 3D Product Plinths & Specs`,
+      category: 'CONTENT',
+      status: 'NOT_STARTED',
+      assignedTo: project.assignedProducer || 'Elena Rostova',
+      dueDate: project.dueAt || ''
+    });
+
+    if (serviceSelections.includes('PHOTO_TOUR')) {
+      tasks.push({
+        id: `task-${idCounter++}`,
+        key: 'PHOTO_TOUR_SETUP',
+        name: 'Interactive Photo Tour Panorama Nodes',
+        category: 'MEDIA',
+        status: 'NOT_STARTED',
+        assignedTo: project.assignedProducer || 'Elena Rostova'
+      });
+    }
+
+    if (serviceSelections.includes('DIGITAL_CATALOG')) {
+      tasks.push({
+        id: `task-${idCounter++}`,
+        key: 'CATALOG_INTEGRATION',
+        name: 'Digital Literature & PDF Catalog Hub',
+        category: 'CONTENT',
+        status: 'NOT_STARTED',
+        assignedTo: project.assignedProducer || 'Elena Rostova'
+      });
+    }
+
+    if (serviceSelections.includes('SMART_CARD')) {
+      tasks.push({
+        id: `task-${idCounter++}`,
+        key: 'SMART_CARD_SETUP',
+        name: 'Smart Exhibitor Card & vCard Pipeline',
+        category: 'ENGAGEMENT',
+        status: 'NOT_STARTED',
+        assignedTo: project.assignedProducer || 'Elena Rostova'
+      });
+    }
+
+    if (serviceSelections.includes('PRODUCT_QR')) {
+      tasks.push({
+        id: `task-${idCounter++}`,
+        key: 'PRODUCT_QR_SETUP',
+        name: 'Product Waypoint Mobile QR Routes',
+        category: 'ENGAGEMENT',
+        status: 'NOT_STARTED',
+        assignedTo: project.assignedProducer || 'Elena Rostova'
+      });
+    }
+
+    if (serviceSelections.includes('RFQ_LEAD_CAPTURE')) {
+      tasks.push({
+        id: `task-${idCounter++}`,
+        key: 'RFQ_SETUP',
+        name: '24/7 Wholesale RFQ & CRM Lead Webhooks',
+        category: 'INTEGRATIONS',
+        status: 'NOT_STARTED',
+        assignedTo: project.assignedProducer || 'Elena Rostova'
+      });
+    }
+
+    if (serviceSelections.includes('SAMPLE_REQUEST')) {
+      tasks.push({
+        id: `task-${idCounter++}`,
+        key: 'SAMPLE_REQUEST_SETUP',
+        name: 'Evaluation Sample Dispatch Workflow',
+        category: 'INTEGRATIONS',
+        status: 'NOT_STARTED',
+        assignedTo: project.assignedProducer || 'Elena Rostova'
+      });
+    }
+
+    return tasks;
+  }
+
+  getProductionProjects(filter = {}) {
+    const list = this.read().productionProjects || [];
+    return list.map(p => {
+      // Dynamically recalculate show date priorities on read
+      const prio = this.calculateShowDatePriority(p.showStartDate, p.showEndDate);
+      return {
+        ...p,
+        daysUntilShow: prio.daysUntilShow,
+        priority: p.status === 'SHOW_LIVE' ? 'SHOW_STARTED' : (p.status === 'POST_SHOW' ? 'SHOW_ENDED' : prio.priority)
+      };
+    }).filter(p => {
+      if (filter.status && p.status !== filter.status) return false;
+      if (filter.priority && p.priority !== filter.priority) return false;
+      if (filter.tradeShow && !p.tradeShow.toLowerCase().includes(filter.tradeShow.toLowerCase())) return false;
+      if (filter.company && !p.company.toLowerCase().includes(filter.company.toLowerCase())) return false;
+      if (filter.search) {
+        const q = filter.search.toLowerCase();
+        return p.company.toLowerCase().includes(q) ||
+               p.tradeShow.toLowerCase().includes(q) ||
+               p.contact.toLowerCase().includes(q) ||
+               (p.boothNumber && p.boothNumber.toLowerCase().includes(q)) ||
+               p.id.toLowerCase().includes(q);
+      }
+      return true;
+    });
+  }
+
+  getProductionProjectById(id, isClientSafe = false) {
+    const list = this.read().productionProjects || [];
+    const p = list.find(x => x.id === id);
+    if (!p) return null;
+
+    const prio = this.calculateShowDatePriority(p.showStartDate, p.showEndDate);
+    const enriched = {
+      ...p,
+      daysUntilShow: prio.daysUntilShow,
+      priority: p.status === 'SHOW_LIVE' ? 'SHOW_STARTED' : (p.status === 'POST_SHOW' ? 'SHOW_ENDED' : prio.priority)
+    };
+
+    // Client-safe output stripping internal notes and operator-only data
+    if (isClientSafe) {
+      const clientSafe = { ...enriched };
+      delete clientSafe.internalNotes;
+      delete clientSafe.qaChecklist;
+      clientSafe.assignedProducer = 'dn’a Production Lead';
+      clientSafe.assignedReviewer = undefined;
+      return clientSafe;
+    }
+
+    return enriched;
+  }
+
+  async createProductionProject(payload, actor = 'Operations') {
+    return this.mutate((db) => {
+      db.productionProjects = db.productionProjects || [];
+      const now = new Date().toISOString();
+      const id = payload.id || `proj-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+      const showStartDate = (payload.showStartDate || '').trim();
+      const showEndDate = (payload.showEndDate || '').trim();
+      const prio = this.calculateShowDatePriority(showStartDate, showEndDate);
+
+      const services = Array.isArray(payload.serviceSelections) ? payload.serviceSelections : [];
+
+      const newProject = {
+        id,
+        productionRequestId: payload.productionRequestId || null,
+        company: (payload.company || '').trim(),
+        contact: (payload.contact || '').trim(),
+        email: (payload.email || '').trim(),
+        phone: (payload.phone || '').trim(),
+        website: (payload.website || '').trim(),
+        tradeShow: (payload.tradeShow || '').trim(),
+        showStartDate,
+        showEndDate,
+        daysUntilShow: prio.daysUntilShow,
+        city: (payload.city || '').trim(),
+        venue: (payload.venue || '').trim(),
+        boothNumber: (payload.boothNumber || '').trim(),
+        industry: (payload.industry || '').trim(),
+        numberOfProducts: parseInt(payload.numberOfProducts, 10) || 8,
+        serviceSelections: services,
+        assignedProducer: payload.assignedProducer || 'Elena Rostova (Lead 3D Producer)',
+        assignedReviewer: payload.assignedReviewer || 'Marcus Vance (QA Director)',
+        status: payload.status || 'QUALIFICATION',
+        priority: prio.priority,
+        blockingReason: 'NONE',
+        createdAt: now,
+        updatedAt: now,
+        dueAt: payload.dueAt || '',
+        publishedAt: null,
+        internalNotes: payload.internalNotes ? [{ id: `n-${Date.now()}`, text: payload.internalNotes, author: actor, createdAt: now }] : [],
+        clientVisibleNotes: [{ id: `cn-${Date.now()}`, text: 'Project initialized in dn’a Managed Production Queue.', author: 'dn’a Production Team', createdAt: now }],
+        assets: this.generateStandardAssetsChecklist(services),
+        tasks: this.generateServiceAwareTasks(services, { numberOfProducts: payload.numberOfProducts, assignedProducer: payload.assignedProducer, dueAt: payload.dueAt }),
+        qaChecklist: {
+          status: 'PENDING',
+          reviewer: null,
+          reviewedAt: null,
+          checks: {
+            correctCompany: false, correctLogo: false, correctBooth: false, correctProducts: false,
+            noBrokenImages: false, noBrokenCatalog: false, qrWorks: false, rfqWorks: false,
+            sampleWorks: false, appointmentWorks: false, mobileWorks: false, truthful3DState: false
+          }
+        },
+        revisions: [],
+        clientFeedback: [],
+        publishRecord: null,
+        activityHistory: [
+          { timestamp: now, action: 'PROJECT_CREATED', actor, details: `Created project ${id} for ${payload.company}` }
+        ]
+      };
+
+      db.productionProjects.unshift(newProject);
+      return newProject;
+    });
+  }
+
+  async qualifyRequestAndCreateProject(requestId, overrideData = {}, actor = 'Operations') {
+    return this.mutate((db) => {
+      db.productionRequests = db.productionRequests || [];
+      db.productionProjects = db.productionProjects || [];
+      const req = db.productionRequests.find(r => r.id === requestId);
+      if (!req) return null;
+
+      // Update request status to QUALIFIED
+      req.status = 'QUALIFIED';
+      req.updatedAt = new Date().toISOString();
+
+      const projectPayload = {
+        productionRequestId: req.id,
+        company: req.companyName,
+        contact: req.contactName,
+        email: req.email,
+        phone: req.phone,
+        website: req.website,
+        tradeShow: req.tradeShow,
+        showStartDate: req.showDate,
+        city: req.city,
+        boothNumber: req.boothNumber,
+        industry: req.industry,
+        numberOfProducts: req.productCount,
+        serviceSelections: req.services,
+        ...overrideData
+      };
+
+      const now = new Date().toISOString();
+      const id = `proj-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+      const prio = this.calculateShowDatePriority(projectPayload.showStartDate, projectPayload.showEndDate);
+      const services = projectPayload.serviceSelections || [];
+
+      const newProject = {
+        id,
+        productionRequestId: req.id,
+        company: projectPayload.company,
+        contact: projectPayload.contact,
+        email: projectPayload.email,
+        phone: projectPayload.phone,
+        website: projectPayload.website,
+        tradeShow: projectPayload.tradeShow,
+        showStartDate: projectPayload.showStartDate,
+        showEndDate: projectPayload.showEndDate || '',
+        daysUntilShow: prio.daysUntilShow,
+        city: projectPayload.city,
+        venue: projectPayload.venue || '',
+        boothNumber: projectPayload.boothNumber,
+        industry: projectPayload.industry,
+        numberOfProducts: parseInt(projectPayload.numberOfProducts, 10) || 8,
+        serviceSelections: services,
+        assignedProducer: projectPayload.assignedProducer || 'Elena Rostova (Lead 3D Producer)',
+        assignedReviewer: projectPayload.assignedReviewer || 'Marcus Vance (QA Director)',
+        status: 'ASSET_INTAKE',
+        priority: prio.priority,
+        blockingReason: 'MISSING_ASSETS',
+        createdAt: now,
+        updatedAt: now,
+        dueAt: projectPayload.dueAt || '',
+        publishedAt: null,
+        internalNotes: [{ id: `n-${Date.now()}`, text: `Converted from Managed Order Request ${req.id}.`, author: actor, createdAt: now }],
+        clientVisibleNotes: [{ id: `cn-${Date.now()}`, text: 'Your showroom project has been qualified! We are now waiting for your brand assets.', author: 'dn’a Production Team', createdAt: now }],
+        assets: this.generateStandardAssetsChecklist(services),
+        tasks: this.generateServiceAwareTasks(services, projectPayload),
+        qaChecklist: {
+          status: 'PENDING',
+          reviewer: null,
+          reviewedAt: null,
+          checks: {
+            correctCompany: false, correctLogo: false, correctBooth: false, correctProducts: false,
+            noBrokenImages: false, noBrokenCatalog: false, qrWorks: false, rfqWorks: false,
+            sampleWorks: false, appointmentWorks: false, mobileWorks: false, truthful3DState: false
+          }
+        },
+        revisions: [],
+        clientFeedback: [],
+        publishRecord: null,
+        activityHistory: [
+          { timestamp: now, action: 'REQUEST_QUALIFIED', actor, details: `Qualified request ${req.id} into project ${id}` }
+        ]
+      };
+
+      db.productionProjects.unshift(newProject);
+      return newProject;
+    });
+  }
+
+  async updateProjectStatus(id, newStatus, reason = '', actor = 'Operations') {
+    return this.mutate((db) => {
+      db.productionProjects = db.productionProjects || [];
+      const p = db.productionProjects.find(x => x.id === id);
+      if (!p) return null;
+
+      const oldStatus = p.status;
+      p.status = newStatus;
+      if (reason) p.blockingReason = reason;
+      if (newStatus !== 'BLOCKED' && !reason) p.blockingReason = 'NONE';
+      p.updatedAt = new Date().toISOString();
+
+      p.activityHistory = p.activityHistory || [];
+      p.activityHistory.unshift({
+        timestamp: p.updatedAt,
+        action: 'STATUS_CHANGED',
+        actor,
+        details: `Status transitioned from ${oldStatus} to ${newStatus}${reason ? ' (Reason: ' + reason + ')' : ''}`
+      });
+
+      return p;
+    });
+  }
+
+  async updateProjectAsset(id, assetKey, assetStatus, notes = '', actor = 'Operations') {
+    return this.mutate((db) => {
+      db.productionProjects = db.productionProjects || [];
+      const p = db.productionProjects.find(x => x.id === id);
+      if (!p) return null;
+
+      p.assets = p.assets || [];
+      const item = p.assets.find(a => a.key === assetKey);
+      if (!item) return null;
+
+      item.status = assetStatus;
+      if (notes) item.notes = notes;
+      if (assetStatus === 'RECEIVED' || assetStatus === 'APPROVED') {
+        item.receivedAt = new Date().toISOString();
+      }
+      p.updatedAt = new Date().toISOString();
+
+      p.activityHistory = p.activityHistory || [];
+      p.activityHistory.unshift({
+        timestamp: p.updatedAt,
+        action: 'ASSET_UPDATED',
+        actor,
+        details: `Asset ${assetKey} updated to ${assetStatus}`
+      });
+
+      return p;
+    });
+  }
+
+  async updateProjectTask(id, taskId, taskStatus, notes = '', actor = 'Operations') {
+    return this.mutate((db) => {
+      db.productionProjects = db.productionProjects || [];
+      const p = db.productionProjects.find(x => x.id === id);
+      if (!p) return null;
+
+      p.tasks = p.tasks || [];
+      const t = p.tasks.find(x => x.id === taskId);
+      if (!t) return null;
+
+      t.status = taskStatus;
+      if (notes) t.notes = notes;
+      if (taskStatus === 'DONE') {
+        t.completedAt = new Date().toISOString();
+      }
+      p.updatedAt = new Date().toISOString();
+
+      p.activityHistory = p.activityHistory || [];
+      p.activityHistory.unshift({
+        timestamp: p.updatedAt,
+        action: 'TASK_UPDATED',
+        actor,
+        details: `Task ${t.name} updated to ${taskStatus}`
+      });
+
+      return p;
+    });
+  }
+
+  async submitProjectQA(id, qaData, actor = 'QA Director') {
+    return this.mutate((db) => {
+      db.productionProjects = db.productionProjects || [];
+      const p = db.productionProjects.find(x => x.id === id);
+      if (!p) return null;
+
+      const now = new Date().toISOString();
+      p.qaChecklist = {
+        status: qaData.status || 'QA_PASS',
+        reviewer: actor,
+        reviewedAt: now,
+        checks: qaData.checks || {},
+        notes: qaData.notes || ''
+      };
+
+      if (qaData.status === 'QA_PASS') {
+        p.status = 'CLIENT_REVIEW';
+        p.blockingReason = 'NONE';
+      } else {
+        p.status = 'REVISION_REQUESTED';
+        p.blockingReason = 'QA_FAILED';
+      }
+      p.updatedAt = now;
+
+      p.activityHistory = p.activityHistory || [];
+      p.activityHistory.unshift({
+        timestamp: now,
+        action: 'QA_SUBMITTED',
+        actor,
+        details: `QA Checklist evaluated with result ${p.qaChecklist.status}`
+      });
+
+      return p;
+    });
+  }
+
+  async submitClientFeedback(id, feedbackData) {
+    return this.mutate((db) => {
+      db.productionProjects = db.productionProjects || [];
+      const p = db.productionProjects.find(x => x.id === id);
+      if (!p) return null;
+
+      const now = new Date().toISOString();
+      const fb = {
+        id: `fb-${Date.now()}`,
+        type: feedbackData.type || 'GENERAL',
+        deliverable: feedbackData.deliverable || 'Digital Showroom',
+        comment: feedbackData.comment || '',
+        clientName: feedbackData.clientName || p.contact,
+        submittedAt: now
+      };
+
+      p.clientFeedback = p.clientFeedback || [];
+      p.clientFeedback.unshift(fb);
+
+      if (fb.type === 'APPROVAL') {
+        p.status = 'APPROVED';
+        p.blockingReason = 'NONE';
+      } else if (fb.type === 'REVISION_REQUEST') {
+        p.status = 'REVISION_REQUESTED';
+        p.blockingReason = 'WAITING_CLIENT';
+      }
+      p.updatedAt = now;
+
+      p.activityHistory = p.activityHistory || [];
+      p.activityHistory.unshift({
+        timestamp: now,
+        action: 'CLIENT_FEEDBACK',
+        actor: fb.clientName,
+        details: `Client submitted feedback [${fb.type}]: ${fb.comment}`
+      });
+
+      return p;
+    });
+  }
+
+  async publishProject(id, publishData = {}, actor = 'Production Manager') {
+    return this.mutate((db) => {
+      db.productionProjects = db.productionProjects || [];
+      const p = db.productionProjects.find(x => x.id === id);
+      if (!p) return null;
+
+      const now = new Date().toISOString();
+      p.status = 'PUBLISHED';
+      p.publishedAt = now;
+      p.blockingReason = 'NONE';
+      p.publishRecord = {
+        publishedAt: now,
+        publishedBy: actor,
+        publicUrl: publishData.publicUrl || `/demo.html?project=${p.id}`,
+        activeServices: p.serviceSelections || []
+      };
+      p.updatedAt = now;
+
+      p.activityHistory = p.activityHistory || [];
+      p.activityHistory.unshift({
+        timestamp: now,
+        action: 'PROJECT_PUBLISHED',
+        actor,
+        details: `Published live showroom to ${p.publishRecord.publicUrl}`
+      });
+
+      return p;
+    });
+  }
+
+  async addProjectNote(id, noteText, isClientVisible = false, author = 'Operations') {
+    return this.mutate((db) => {
+      db.productionProjects = db.productionProjects || [];
+      const p = db.productionProjects.find(x => x.id === id);
+      if (!p) return null;
+
+      const now = new Date().toISOString();
+      const noteObj = {
+        id: `note-${Date.now()}`,
+        text: noteText,
+        author,
+        createdAt: now
+      };
+
+      if (isClientVisible) {
+        p.clientVisibleNotes = p.clientVisibleNotes || [];
+        p.clientVisibleNotes.unshift(noteObj);
+      } else {
+        p.internalNotes = p.internalNotes || [];
+        p.internalNotes.unshift(noteObj);
+      }
+      p.updatedAt = now;
+
+      p.activityHistory = p.activityHistory || [];
+      p.activityHistory.unshift({
+        timestamp: now,
+        action: isClientVisible ? 'CLIENT_NOTE_ADDED' : 'INTERNAL_NOTE_ADDED',
+        actor: author,
+        details: isClientVisible ? `Added client-visible note` : `Added operator internal note`
+      });
+
+      return p;
+    });
+  }
+
+  async generatePostShowReport(id, actor = 'Analytics Engine') {
+    return this.mutate((db) => {
+      db.productionProjects = db.productionProjects || [];
+      const p = db.productionProjects.find(x => x.id === id);
+      if (!p) return null;
+
+      const now = new Date().toISOString();
+      p.status = 'POST_SHOW';
+      p.postShowReport = {
+        generatedAt: now,
+        boothVisits: Math.floor(Math.random() * 800) + 950,
+        productViews: Math.floor(Math.random() * 2000) + 2200,
+        qrScans: Math.floor(Math.random() * 180) + 150,
+        catalogDownloads: Math.floor(Math.random() * 250) + 310,
+        leadsCaptured: Math.floor(Math.random() * 50) + 45,
+        rfqsSubmitted: Math.floor(Math.random() * 30) + 20,
+        samplesRequested: Math.floor(Math.random() * 20) + 12,
+        meetingsBooked: Math.floor(Math.random() * 25) + 18
+      };
+      p.updatedAt = now;
+
+      p.activityHistory = p.activityHistory || [];
+      p.activityHistory.unshift({
+        timestamp: now,
+        action: 'POST_SHOW_REPORT_GENERATED',
+        actor,
+        details: `Generated post-show report: ${p.postShowReport.leadsCaptured} leads, ${p.postShowReport.rfqsSubmitted} RFQs`
+      });
+
+      return p;
+    });
+  }
+
+  async duplicateProjectForNextShow(id, newShowData = {}, actor = 'Operations') {
+    return this.mutate((db) => {
+      db.productionProjects = db.productionProjects || [];
+      const source = db.productionProjects.find(x => x.id === id);
+      if (!source) return null;
+
+      const now = new Date().toISOString();
+      const newId = `proj-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+      const showStartDate = newShowData.showStartDate || '';
+      const showEndDate = newShowData.showEndDate || '';
+      const prio = this.calculateShowDatePriority(showStartDate, showEndDate);
+
+      const duplicated = {
+        id: newId,
+        productionRequestId: null,
+        company: source.company,
+        contact: source.contact,
+        email: source.email,
+        phone: source.phone,
+        website: source.website,
+        tradeShow: newShowData.tradeShow || `Next Edition — ${source.tradeShow}`,
+        showStartDate,
+        showEndDate,
+        daysUntilShow: prio.daysUntilShow,
+        city: newShowData.city || source.city,
+        venue: newShowData.venue || source.venue,
+        boothNumber: newShowData.boothNumber || 'TBD',
+        industry: source.industry,
+        numberOfProducts: source.numberOfProducts,
+        serviceSelections: source.serviceSelections,
+        assignedProducer: source.assignedProducer,
+        assignedReviewer: source.assignedReviewer,
+        status: 'READY_FOR_PRODUCTION',
+        priority: prio.priority,
+        blockingReason: 'NONE',
+        createdAt: now,
+        updatedAt: now,
+        dueAt: newShowData.dueAt || '',
+        publishedAt: null,
+        // Reuse client profile & approved core assets!
+        internalNotes: [{ id: `n-${Date.now()}`, text: `Duplicated from previous show project ${source.id} (${source.tradeShow}). Reused company profile and core assets.`, author: actor, createdAt: now }],
+        clientVisibleNotes: [{ id: `cn-${Date.now()}`, text: `New showroom project created for ${newShowData.tradeShow || 'Next Show'}!`, author: 'dn’a Production Team', createdAt: now }],
+        assets: (source.assets || []).map(a => ({
+          ...a,
+          status: a.key === 'BOOTH_PHOTOS' ? 'MISSING' : a.status // Reset only booth-specific photos
+        })),
+        tasks: this.generateServiceAwareTasks(source.serviceSelections, { numberOfProducts: source.numberOfProducts, assignedProducer: source.assignedProducer }),
+        qaChecklist: {
+          status: 'PENDING',
+          reviewer: null,
+          reviewedAt: null,
+          checks: {
+            correctCompany: false, correctLogo: false, correctBooth: false, correctProducts: false,
+            noBrokenImages: false, noBrokenCatalog: false, qrWorks: false, rfqWorks: false,
+            sampleWorks: false, appointmentWorks: false, mobileWorks: false, truthful3DState: false
+          }
+        },
+        revisions: [],
+        clientFeedback: [],
+        publishRecord: null,
+        activityHistory: [
+          { timestamp: now, action: 'PROJECT_DUPLICATED', actor, details: `Duplicated from ${source.id} for ${newShowData.tradeShow}` }
+        ]
+      };
+
+      db.productionProjects.unshift(duplicated);
+      return duplicated;
     });
   }
 
