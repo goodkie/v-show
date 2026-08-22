@@ -1,0 +1,25 @@
+{
+  "model": "WILO_AUTHENTIC_PARTIAL_EXPERIMENT_01",
+  "authentic_source": true,
+  "technical_generation": true,
+  "visual_quality_pass": false,
+  "production_approved": false,
+  "owner_approved": false,
+  "reason": "Training-pose renders remain visually unrecognizable; insufficient capture parallax/baseline produced needle floaters and incoherent geometry.",
+  "ply_file": {
+    "filename": "WILO_AUTHENTIC_PARTIAL_EXPERIMENT_01.ply",
+    "bytes": 52249453,
+    "sha256": "4DB41B3EAA3A0E69059365156777CB8F0E31EF6979AC225C066067FA44EFB421",
+    "gaussian_count": 210677
+  },
+  "spz_file": {
+    "filename": "WILO_AUTHENTIC_PARTIAL_EXPERIMENT_01.spz",
+    "bytes": 20896877,
+    "sha256": "D7E46475DBD7E32DDA0302C611B609B9C12BF2152114932B6A9D7BA32FDB882E"
+  },
+  "colmap_subset_images": 15,
+  "training_iterations": 2000,
+  "forensic_status": "ARCHIVED_EVIDENCE_ONLY",
+  "public_showroom_action": "REMOVED_FROM_PUBLIC_UI",
+  "diagnostic_route": "/diagnostics/wilo-partial-experiment-01.html"
+}

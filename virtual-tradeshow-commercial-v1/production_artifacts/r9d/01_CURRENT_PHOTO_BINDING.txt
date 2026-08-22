@@ -1,0 +1,25 @@
+CURRENT PHOTO BINDING INVESTIGATION REPORT (PHASE 10.7N-R9D)
+Date: 2026-08-18
+
+1. CURRENT REQUESTED URLS in wilo-demo.html:
+   - /assets/demo/wilo/booth/01_front_hero.jpg
+   - /assets/demo/wilo/booth/02_front_center.jpg
+   - /assets/demo/wilo/booth/03_left_angle.jpg
+   - /assets/demo/wilo/booth/04_right_angle.jpg
+   - /assets/demo/wilo/booth/05_left_side.jpg
+   - /assets/demo/wilo/booth/06_right_side.jpg
+   - /assets/demo/wilo/booth/07_interior_view.jpg
+   - /assets/demo/wilo/booth/08_product_island.jpg
+   - /assets/demo/wilo/booth/09_meeting_area.jpg
+   - /assets/demo/wilo/booth/10_display_screen.jpg
+   - /assets/demo/wilo/booth/11_overhead_sign.jpg
+   - /assets/demo/wilo/booth/12_wide_overview.jpg
+
+2. DISK MAPPING & ASSET INTEGRITY:
+   - Location: app_build/client/assets/demo/wilo/booth/
+   - Status: Files exist on disk but contain historical placeholder/synthetic images rather than the 71 authentic incoming capture photographs placed in data/capture-ingest/wilo/incoming/.
+   - Furthermore, the incoming capture dataset (71 photos) was not yet accepted, ingested, or bound to the public runtime directory.
+
+3. ROOT CAUSE DETERMINATION:
+   ROOT_CAUSE=AUTHENTIC_DATASET_NOT_INGESTED_AND_UI_BOUND_TO_LEGACY_SYNTHETIC_PATHS
+   (The 71 authentic incoming Wilo booth photographs in data/capture-ingest/wilo/incoming/ have not been processed into the canonical accepted dataset, published to the static public asset directory, or bound via the dynamic AUTHENTIC_PHOTO_TOUR_MANIFEST.json).

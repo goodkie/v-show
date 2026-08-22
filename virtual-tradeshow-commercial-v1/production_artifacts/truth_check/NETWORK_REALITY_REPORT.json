@@ -1,0 +1,151 @@
+{
+  "audit": "PHASE 10.7N-TRUTH-CHECK",
+  "assetsTested": 12,
+  "allAssetsValid": false,
+  "networkReality": [
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/01_front_hero.jpg",
+      "httpStatus": 200,
+      "contentType": "image/jpeg",
+      "byteSize": 4533,
+      "dimension": "1600x900",
+      "magicBytes": "FFD8FFE0",
+      "status": "INVALID_ASSET",
+      "reasons": [
+        "Size 4,533 bytes is < 100KB"
+      ]
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/02_front_center.jpg",
+      "httpStatus": 200,
+      "contentType": "image/jpeg",
+      "byteSize": 4789,
+      "dimension": "1600x900",
+      "magicBytes": "FFD8FFE0",
+      "status": "INVALID_ASSET",
+      "reasons": [
+        "Size 4,789 bytes is < 100KB"
+      ]
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/03_left_angle.jpg",
+      "httpStatus": 200,
+      "contentType": "image/jpeg",
+      "byteSize": 5045,
+      "dimension": "1600x900",
+      "magicBytes": "FFD8FFE0",
+      "status": "INVALID_ASSET",
+      "reasons": [
+        "Size 5,045 bytes is < 100KB"
+      ]
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/04_right_angle.jpg",
+      "httpStatus": 200,
+      "contentType": "image/jpeg",
+      "byteSize": 5301,
+      "dimension": "1600x900",
+      "magicBytes": "FFD8FFE0",
+      "status": "INVALID_ASSET",
+      "reasons": [
+        "Size 5,301 bytes is < 100KB"
+      ]
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/05_left_side.jpg",
+      "httpStatus": 200,
+      "contentType": "image/jpeg",
+      "byteSize": 5557,
+      "dimension": "1600x900",
+      "magicBytes": "FFD8FFE0",
+      "status": "INVALID_ASSET",
+      "reasons": [
+        "Size 5,557 bytes is < 100KB"
+      ]
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/06_right_side.jpg",
+      "httpStatus": 200,
+      "contentType": "image/jpeg",
+      "byteSize": 5813,
+      "dimension": "1600x900",
+      "magicBytes": "FFD8FFE0",
+      "status": "INVALID_ASSET",
+      "reasons": [
+        "Size 5,813 bytes is < 100KB"
+      ]
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/07_interior_view.jpg",
+      "httpStatus": 200,
+      "contentType": "image/jpeg",
+      "byteSize": 6069,
+      "dimension": "1600x900",
+      "magicBytes": "FFD8FFE0",
+      "status": "INVALID_ASSET",
+      "reasons": [
+        "Size 6,069 bytes is < 100KB"
+      ]
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/08_product_island.jpg",
+      "httpStatus": 200,
+      "contentType": "image/jpeg",
+      "byteSize": 6325,
+      "dimension": "1600x900",
+      "magicBytes": "FFD8FFE0",
+      "status": "INVALID_ASSET",
+      "reasons": [
+        "Size 6,325 bytes is < 100KB"
+      ]
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/09_meeting_area.jpg",
+      "httpStatus": 200,
+      "contentType": "image/jpeg",
+      "byteSize": 6581,
+      "dimension": "1600x900",
+      "magicBytes": "FFD8FFE0",
+      "status": "INVALID_ASSET",
+      "reasons": [
+        "Size 6,581 bytes is < 100KB"
+      ]
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/10_display_screen.jpg",
+      "httpStatus": 200,
+      "contentType": "image/jpeg",
+      "byteSize": 6837,
+      "dimension": "1600x900",
+      "magicBytes": "FFD8FFE0",
+      "status": "INVALID_ASSET",
+      "reasons": [
+        "Size 6,837 bytes is < 100KB"
+      ]
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/11_overhead_sign.jpg",
+      "httpStatus": 200,
+      "contentType": "image/jpeg",
+      "byteSize": 7093,
+      "dimension": "1600x900",
+      "magicBytes": "FFD8FFE0",
+      "status": "INVALID_ASSET",
+      "reasons": [
+        "Size 7,093 bytes is < 100KB"
+      ]
+    },
+    {
+      "url": "http://localhost:3000/assets/demo/wilo/booth/12_wide_overview.jpg",
+      "httpStatus": 200,
+      "contentType": "image/jpeg",
+      "byteSize": 7349,
+      "dimension": "1600x900",
+      "magicBytes": "FFD8FFE0",
+      "status": "INVALID_ASSET",
+      "reasons": [
+        "Size 7,349 bytes is < 100KB"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "ply_path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\client\\assets\\demo\\wilo\\experimental\\WILO_AUTHENTIC_PARTIAL_EXPERIMENT_01.ply",
+  "ply_bytes": 52249453,
+  "ply_sha256": "4DB41B3EAA3A0E69059365156777CB8F0E31EF6979AC225C066067FA44EFB421",
+  "spz_path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\client\\assets\\demo\\wilo\\experimental\\WILO_AUTHENTIC_PARTIAL_EXPERIMENT_01.spz",
+  "spz_bytes": 20896877,
+  "spz_sha256": "D7E46475DBD7E32DDA0302C611B609B9C12BF2152114932B6A9D7BA32FDB882E",
+  "gaussian_count": 210677,
+  "model_bbox_min": [
+    -6.631168365478516,
+    -6.716390609741211,
+    -9.42819881439209
+  ],
+  "model_bbox_max": [
+    10.297670364379883,
+    11.356069564819336,
+    4.999784469604492
+  ],
+  "model_center": [
+    1.8332509994506836,
+    2.3198394775390625,
+    -2.214207172393799
+  ],
+  "model_extent": [
+    16.9288387298584,
+    18.072460174560547,
+    14.427983283996582
+  ],
+  "robust_center": [
+    -0.024559497833251953,
+    -0.04513716697692871,
+    -0.07339763641357422
+  ],
+  "robust_extent": [
+    9.0752534866333,
+    9.033248901367188,
+    9.334782600402832
+  ],
+  "fit_camera_target": [
+    -0.024559497833251953,
+    -0.04513716697692871,
+    -0.07339763641357422
+  ],
+  "fit_camera_distance": 16.90211906677268,
+  "suggested_camera_position": [
+    -0.024559497833251953,
+    -0.04513716697692871,
+    16.828721430359106
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "deployMatch": true,
+  "localHtmlSha256": "098ece188e6bb6e965a424a818c4c028f4fc847c04ae46566702d4fbd28c1202",
+  "prodHtmlSha256": "098ece188e6bb6e965a424a818c4c028f4fc847c04ae46566702d4fbd28c1202",
+  "apiMismatch": false,
+  "localApi": {
+    "count": 12,
+    "firstUrl": "/assets/demo/wilo/authentic-booth/view_01.jpg",
+    "photoTour": true
+  },
+  "prodApi": {
+    "count": 12,
+    "firstUrl": "/assets/demo/wilo/authentic-booth/view_01.jpg",
+    "photoTour": true
+  },
+  "localTest": {
+    "loadTimeMs": 2506,
+    "data": {
+      "imgSrc": "http://127.0.0.1:3000/assets/demo/wilo/authentic-booth/view_01.jpg",
+      "imgComplete": true,
+      "imgNaturalWidth": 1024,
+      "imgNaturalHeight": 1024,
+      "imgDisplay": "block",
+      "imgOpacity": "1",
+      "containerDisplay": "flex",
+      "canvasContainerDisplay": "none",
+      "centerElementId": "wilo-photo-image",
+      "centerElementTag": "IMG",
+      "errorBoxDisplay": "none",
+      "boothViewsCount": 12,
+      "firstViewUrl": "/assets/demo/wilo/authentic-booth/view_01.jpg",
+      "vshowState": {
+        "tenant": "org-wilo-golden-demo",
+        "visualState": "PHOTO_TOUR_ACTIVE",
+        "photoTourAvailable": true,
+        "captureDatasetAvailable": true,
+        "authenticGaussian3D": false,
+        "reconstructionStatus": "AUTHENTIC_CAPTURE_AVAILABLE_RECONSTRUCTION_PENDING"
+      }
+    }
+  },
+  "prodTest": {
+    "loadTimeMs": 2506,
+    "data": {
+      "imgSrc": "https://v-show-commercial-v1-production.up.railway.app/assets/demo/wilo/authentic-booth/view_01.jpg",
+      "imgComplete": true,
+      "imgNaturalWidth": 1024,
+      "imgNaturalHeight": 1024,
+      "imgDisplay": "block",
+      "imgOpacity": "1",
+      "containerDisplay": "flex",
+      "canvasContainerDisplay": "none",
+      "centerElementId": "wilo-photo-image",
+      "centerElementTag": "IMG",
+      "errorBoxDisplay": "none",
+      "boothViewsCount": 12,
+      "firstViewUrl": "/assets/demo/wilo/authentic-booth/view_01.jpg",
+      "vshowState": {
+        "tenant": "org-wilo-golden-demo",
+        "visualState": "PHOTO_TOUR_ACTIVE",
+        "photoTourAvailable": true,
+        "captureDatasetAvailable": true,
+        "authenticGaussian3D": false,
+        "reconstructionStatus": "AUTHENTIC_CAPTURE_AVAILABLE_RECONSTRUCTION_PENDING"
+      }
+    }
+  },
+  "localPhotoVisible": true,
+  "localGrayPlaceholder": false,
+  "prodPhotoVisible": true,
+  "prodGrayPlaceholder": false
+}

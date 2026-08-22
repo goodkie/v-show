@@ -1,0 +1,124 @@
+01_PLACEHOLDER_GEOMETRY_TRACE.txt
+Generated: 2026-08-19T00:11:37.170Z
+
+Found 112 geometry / placeholder references in client code:
+
+[index.html:7] (showroom) <meta name="description" content="Transform physical booth photography into high-fidelity 3D virtual showrooms. Keep your trade show presence active 24/7 with interactive product hotspots, RFQ capture, and buyer engagement analytics.">
+[index.html:9] (showroom) <meta property="og:description" content="Turn your physical booth into an interactive virtual showroom. Capture leads, showcase products, and close RFQs year-round.">
+[index.html:277] (showroom) Transform booth photography into an interactive virtual showroom where global buyers can explore products, request quotes, order samples, and connect with your commercial team 24/7.
+[index.html:304] (showroom) <p>Capture 60–100 multi-angle photos of your physical exhibit. Our pipeline reconstructs an interactive navigable virtual showroom.</p>
+[index.html:349] (showroom) <p style="color: #94a3b8; font-size: 13px; margin-bottom: 20px;">Basic virtual showroom setup for individual exhibitors.</p>
+[viewer.js:675] (placeholder) const placeholder = document.getElementById('remote-video-placeholder');
+[viewer.js:678] (placeholder) if (placeholder) placeholder.style.display = 'none';
+[viewer.js:773] (placeholder) const placeholder = document.getElementById('remote-video-placeholder');
+[viewer.js:776] (placeholder) if (placeholder) placeholder.style.display = 'block';
+[booth-engine.js:118] (PlaneGeometry) const floorGeo = new THREE.PlaneGeometry(12, 12);
+[booth-engine.js:132] (PlaneGeometry) const carpetGeo = new THREE.PlaneGeometry(9, 7);
+[booth-engine.js:145] (PlaneGeometry) const backwallGeo = new THREE.PlaneGeometry(11, 4.2);
+[booth-engine.js:165] (PlaneGeometry) const leftWallGeo = new THREE.PlaneGeometry(9, 4.2);
+[booth-engine.js:180] (PlaneGeometry) const rightWallGeo = new THREE.PlaneGeometry(9, 4.2);
+[booth-engine.js:202] (CylinderGeometry) const pedGeo = new THREE.CylinderGeometry(0.7, 0.8, 0.9, 32);
+[precision-viewer.js:150] (PlaneGeometry) const raycastFloorGeo = new THREE.PlaneGeometry(16, 16);
+[lobby.html:207] (placeholder) <input type="text" id="input-search" class="search-input" placeholder="Search exhibitors or product keywords...">
+[organizer.html:61] (placeholder) <input type="email" id="input-org-email" class="form-input" placeholder="organizer@vshow.com" required>
+[organizer.html:65] (placeholder) <input type="password" id="input-org-password" class="form-input" placeholder="••••••••" required>
+[organizer.html:82] (placeholder) <input type="text" id="invite-company-name" class="form-input" placeholder="e.g. Cyberdyne Systems Korea" required>
+[organizer.html:86] (placeholder) <input type="email" id="invite-admin-email" class="form-input" placeholder="admin@cyberdyne.kr" required>
+[organizer.html:90] (placeholder) <input type="text" id="invite-category" class="form-input" placeholder="e.g. Robotics / AI" value="Industrial Automation">
+[organizer.html:94] (placeholder) <input type="text" id="invite-booth-num" class="form-input" placeholder="e.g. C-301">
+[organizer.html:98] (placeholder) <input type="text" id="invite-temp-pwd" class="form-input" placeholder="BetaPass2026!Secure">
+[viewer.html:234] (placeholder) <input type="text" class="form-input" id="lead-company" required placeholder="e.g. Apex Global Solutions">
+[viewer.html:238] (placeholder) <input type="text" class="form-input" id="lead-name" required placeholder="e.g. Jane Doe">
+[viewer.html:244] (placeholder) <input type="email" class="form-input" id="lead-email" required placeholder="jane.doe@company.com">
+[viewer.html:248] (placeholder) <input type="tel" class="form-input" id="lead-phone" placeholder="+1 (555) 019-2834">
+[viewer.html:253] (placeholder) <input type="text" class="form-input" id="lead-job" placeholder="e.g. VP of Procurement">
+[viewer.html:257] (placeholder) <textarea class="form-textarea" id="lead-notes" rows="3" placeholder="Tell us about your sourcing needs or partnership inquiries..."></textarea>
+[viewer.html:280] (placeholder) <input type="text" class="form-input" id="rfq-name" required placeholder="Jane Doe">
+[viewer.html:284] (placeholder) <input type="text" class="form-input" id="rfq-company" required placeholder="Apex Global Solutions">
+[viewer.html:290] (placeholder) <input type="email" class="form-input" id="rfq-email" required placeholder="jane.doe@company.com">
+[viewer.html:294] (placeholder) <input type="number" class="form-input" id="rfq-quantity" min="1" required placeholder="100">
+[viewer.html:299] (placeholder) <input type="number" class="form-input" id="rfq-target-price" placeholder="Target wholesale unit price">
+[viewer.html:303] (placeholder) <textarea class="form-textarea" id="rfq-notes" rows="3" placeholder="Specify certifications, lead time, FOB/CIF terms..."></textarea>
+[viewer.html:326] (placeholder) <input type="text" class="form-input" id="sample-name" required placeholder="Jane Doe">
+[viewer.html:330] (placeholder) <input type="text" class="form-input" id="sample-company" required placeholder="Apex Global Solutions">
+[viewer.html:336] (placeholder) <input type="email" class="form-input" id="sample-email" required placeholder="jane.doe@company.com">
+[viewer.html:345] (placeholder) <textarea class="form-textarea" id="sample-address" rows="2" required placeholder="Full international shipping address, postal code, and contact number"></textarea>
+[viewer.html:363] (placeholder) <input type="text" class="form-input" id="apt-name" required placeholder="Jane Doe">
+[viewer.html:367] (placeholder) <input type="text" class="form-input" id="apt-company" required placeholder="Apex Global Solutions">
+[viewer.html:373] (placeholder) <input type="email" class="form-input" id="apt-email" required placeholder="jane.doe@company.com">
+[viewer.html:382] (placeholder) <textarea class="form-textarea" id="apt-notes" rows="3" placeholder="Describe the topics and requirements for this consultation..."></textarea>
+[viewer.html:408] (placeholder) <div id="remote-video-placeholder" style="color: var(--text-dim); font-size: 13px; text-align: center;">
+[start.html:7] (showroom) <meta name="description" content="Apply for the vivPR V-Show free virtual trade show booth pilot. Transform your trade show exhibit into an interactive online showroom.">
+[start.html:100] (placeholder) <input type="text" id="companyName" required placeholder="e.g. Acme Industrial Robotics">
+[start.html:104] (placeholder) <input type="email" id="workEmail" required placeholder="you@company.com">
+[start.html:108] (placeholder) <input type="url" id="website" placeholder="https://company.com">
+[start.html:112] (placeholder) <input type="text" id="industry" placeholder="e.g. Industrial Automation / Hardware">
+[start.html:119] (placeholder) <input type="text" id="eventName" required placeholder="e.g. Global Automation Expo 2026">
+[start.html:123] (placeholder) <input type="text" id="boothNumber" placeholder="e.g. Hall A, Booth #A-102">
+[pilot-apply.html:7] (showroom) <meta name="description" content="Apply for the vivPR V-Show free commercial trade show virtual showroom pilot. Turn your real physical exhibit into an interactive 3D online showroom.">
+[pilot-apply.html:121] (showroom) 100% Free Pilot. No credit card required. Extend your trade show ROI with an interactive virtual showroom.
+[pilot-apply.html:130] (placeholder) <input type="text" id="companyName" required placeholder="e.g. Apex Motion Dynamics">
+[pilot-apply.html:134] (placeholder) <input type="url" id="companyWebsite" placeholder="https://apexmotion.test">
+[pilot-apply.html:138] (placeholder) <input type="text" id="contactName" required placeholder="e.g. Alex Morgan">
+[pilot-apply.html:142] (placeholder) <input type="email" id="workEmail" required placeholder="alex@apexmotion.test">
+[pilot-apply.html:146] (placeholder) <input type="tel" id="phone" placeholder="+1 (555) 019-2834">
+[pilot-apply.html:150] (placeholder) <input type="text" id="country" value="United States" placeholder="Country">
+[pilot-apply.html:154] (placeholder) <input type="text" id="industry" placeholder="e.g. Industrial Automation, Robotics, Medical Devices">
+[pilot-apply.html:163] (placeholder) <input type="text" id="eventName" required placeholder="e.g. Automate 2026 Chicago / IMTS">
+[pilot-apply.html:171] (placeholder) <input type="text" id="boothNumber" placeholder="e.g. Hall B, Booth #B-304">
+[pilot-apply.html:189] (placeholder) <input type="text" id="expectedBuyerAudience" placeholder="e.g. System Integrators, Plant Managers">
+[pilot-apply.html:205] (placeholder) <textarea id="notes" rows="3" placeholder="Tell us about your flagship products or specific trade show goals..."></textarea>
+[wilo-demo.html:333] (showroom) <p style="color:#94a3b8; font-size:13px;">Help us refine the virtual showroom trial experience.</p>
+[wilo-demo.html:565] (buildWiloShowroomStage) buildWiloShowroomStage(scene);
+[wilo-demo.html:572] (buildWiloShowroomStage) function buildWiloShowroomStage(targetScene) {
+[wilo-demo.html:574] (PlaneGeometry) const floorGeo = new THREE.PlaneGeometry(24, 24);
+[wilo-demo.html:580] (GridHelper) const grid = new THREE.GridHelper(24, 24, 0x00a390, 0x1e293b);
+[wilo-demo.html:585] (BoxGeometry) const backWallGeo = new THREE.BoxGeometry(12, 4.5, 0.3);
+[wilo-demo.html:592] (PlaneGeometry) const screenGeo = new THREE.PlaneGeometry(3.6, 3.2);
+[wilo-demo.html:599] (CylinderGeometry) const counterGeo = new THREE.CylinderGeometry(2.2, 2.2, 1.0, 32, 1, false, 0, Math.PI);
+[wilo-demo.html:607] (BoxGeometry) const tableGeo = new THREE.BoxGeometry(6.5, 0.8, 1.2);
+[wilo-demo.html:717] (CylinderGeometry) const bodyGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.8, 24);
+[wilo-demo.html:722] (BoxGeometry) const motorGeo = new THREE.BoxGeometry(0.5, 0.45, 0.45);
+[demo.html:32] (BoxGeometry) function box(w,h,d,c,x,y,z){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;scene.add(m);return m}
+[demo.html:39] (BoxGeometry) PRODUCTS.forEach((p,i)=>{let x=-3.8+i*2.35,z=-1.35;box(1.2,.18,1.05,white,x,.12,z);let g=new THREE.Group();let body=new THREE.Mesh(new THREE.CylinderGeometry(.28,.34,.8,24),mat(teal,.25,.3));body.position.y=.72;g.add(body);let motor=new THREE.Mesh(new THREE.BoxGeometry(.55,.55,.48),mat(dark,.35,.3));motor.position.y=1.25;g.add(motor);let pipe=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,.85,20),mat(0x1a3437,.5,.25));pipe.rotation.z=Math.PI/2;pipe.position.y=.45;g.add(pipe);g.position.set(x,.18,z);g.userData.product=p;scene.add(g);let ring=new THREE.Mesh(new THREE.TorusGeometry(.48,.035,10,32),new THREE.MeshBasicMaterial({color:0x35d3c7}));ring.rotation.x=Math.PI/2;ring.position.set(x,1.65,z);ring.userData.product=p;scene.add(ring);hotspots.push(ring)});
+[demo.html:39] (CylinderGeometry) PRODUCTS.forEach((p,i)=>{let x=-3.8+i*2.35,z=-1.35;box(1.2,.18,1.05,white,x,.12,z);let g=new THREE.Group();let body=new THREE.Mesh(new THREE.CylinderGeometry(.28,.34,.8,24),mat(teal,.25,.3));body.position.y=.72;g.add(body);let motor=new THREE.Mesh(new THREE.BoxGeometry(.55,.55,.48),mat(dark,.35,.3));motor.position.y=1.25;g.add(motor);let pipe=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,.85,20),mat(0x1a3437,.5,.25));pipe.rotation.z=Math.PI/2;pipe.position.y=.45;g.add(pipe);g.position.set(x,.18,z);g.userData.product=p;scene.add(g);let ring=new THREE.Mesh(new THREE.TorusGeometry(.48,.035,10,32),new THREE.MeshBasicMaterial({color:0x35d3c7}));ring.rotation.x=Math.PI/2;ring.position.set(x,1.65,z);ring.userData.product=p;scene.add(ring);hotspots.push(ring)});
+[demo.html:41] (CylinderGeometry) for(let a=0;a<4;a++){let ang=a*Math.PI/2;box(.55,.5,.55,white,3.5+Math.cos(ang)*1.2,.25,1.6+Math.sin(ang)*1.2)}let table=new THREE.Mesh(new THREE.CylinderGeometry(1,1,.08,32),mat(white));table.position.set(3.5,.75,1.6);scene.add(table);
+[demo.html:44] (PlaneGeometry) function sign(text,x,y,z,w,h){let c=document.createElement('canvas');c.width=1024;c.height=220;let q=c.getContext('2d');q.clearRect(0,0,c.width,c.height);q.fillStyle='#007f7b';q.font='700 72px Arial';q.textAlign='center';q.fillText(text,512,130);let t=new THREE.CanvasTexture(c),m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:t,transparent:true}));m.position.set(x,y,z);scene.add(m)}
+[demo.html:50] (placeholder) if(type==='ticket')el.innerHTML=`<h2>Consultation Ticket</h2><p>Create a demo consultation request for a booth specialist.</p><input class="field" placeholder="Name"><input class="field" placeholder="Work email"><select class="field"><option>Product consultation</option><option>RFQ / pricing</option><option>Engineering discussion</option><option>Distributor inquiry</option></select><textarea class="field" rows="4" placeholder="What would you like to discuss?"></textarea><button class="btn primary" style="width:100%" onclick="fakeTicket()">Create Demo Ticket</button><div id="ticketResult"></div>`;
+[demo.html:53] (placeholder) if(type==='media')el.innerHTML=`<h2>Media Wall</h2><p>On-demand booth content for visitors in any time zone.</p><div class="ticket"><b>▶ Company Overview</b><br><small>2:10 · Demo media placeholder</small></div><div class="ticket"><b>▶ Smart Pump Technology</b><br><small>3:45 · Demo media placeholder</small></div><div class="ticket"><b>▶ Sustainability & Efficiency</b><br><small>2:55 · Demo media placeholder</small></div>`;
+[demo.html:58] (BoxGeometry) function productViewer(){let host=document.getElementById('product3d');if(!host)return;let s=new THREE.Scene(),c=new THREE.PerspectiveCamera(45,host.clientWidth/host.clientHeight,.1,20),r=new THREE.WebGLRenderer({antialias:true,alpha:true});r.setSize(host.clientWidth,host.clientHeight);r.setPixelRatio(Math.min(devicePixelRatio,2));host.appendChild(r.domElement);s.add(new THREE.HemisphereLight(0xffffff,0x12383a,2));let g=new THREE.Group(),b=new THREE.Mesh(new THREE.CylinderGeometry(.7,.8,1.7,32),mat(teal,.3,.25));g.add(b);let m=new THREE.Mesh(new THREE.BoxGeometry(1.25,1.05,1.05),mat(dark,.4,.2));m.position.y=1.25;g.add(m);let p=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,2.2,24),mat(0x18383b,.5,.2));p.rotation.z=Math.PI/2;p.position.y=-.5;g.add(p);s.add(g);c.position.set(3,2.2,4);c.lookAt(0,.4,0);let ctl=new THREE.OrbitControls(c,r.domElement);ctl.enableDamping=true;(function loop(){if(!host.isConnected)return;requestAnimationFrame(loop);ctl.update();g.rotation.y+=.003;r.render(s,c)})()}
+[demo.html:58] (CylinderGeometry) function productViewer(){let host=document.getElementById('product3d');if(!host)return;let s=new THREE.Scene(),c=new THREE.PerspectiveCamera(45,host.clientWidth/host.clientHeight,.1,20),r=new THREE.WebGLRenderer({antialias:true,alpha:true});r.setSize(host.clientWidth,host.clientHeight);r.setPixelRatio(Math.min(devicePixelRatio,2));host.appendChild(r.domElement);s.add(new THREE.HemisphereLight(0xffffff,0x12383a,2));let g=new THREE.Group(),b=new THREE.Mesh(new THREE.CylinderGeometry(.7,.8,1.7,32),mat(teal,.3,.25));g.add(b);let m=new THREE.Mesh(new THREE.BoxGeometry(1.25,1.05,1.05),mat(dark,.4,.2));m.position.y=1.25;g.add(m);let p=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,2.2,24),mat(0x18383b,.5,.2));p.rotation.z=Math.PI/2;p.position.y=-.5;g.add(p);s.add(g);c.position.set(3,2.2,4);c.lookAt(0,.4,0);let ctl=new THREE.OrbitControls(c,r.domElement);ctl.enableDamping=true;(function loop(){if(!host.isConnected)return;requestAnimationFrame(loop);ctl.update();g.rotation.y+=.003;r.render(s,c)})()}
+[admin.html:35] (placeholder) <input type="email" id="login-user" class="form-input" placeholder="exhibitor@company.com" required>
+[admin.html:39] (placeholder) <input type="password" id="login-pass" class="form-input" placeholder="••••••••" required>
+[admin.html:668] (placeholder) <input type="text" class="form-input" id="crud-name" required placeholder="e.g. 6-Axis Collaborative Robot">
+[admin.html:672] (placeholder) <input type="text" class="form-input" id="crud-sku" required placeholder="e.g. APX-ROB-01">
+[admin.html:678] (placeholder) <input type="text" class="form-input" id="crud-category" placeholder="e.g. Robotics">
+[admin.html:688] (placeholder) <input type="number" class="form-input" id="crud-price" placeholder="15000">
+[admin.html:699] (placeholder) <input type="text" class="form-input" id="crud-image" placeholder="https://... or upload asset">
+[grand-control.html:25] (placeholder) <input type="email" id="gc-email" required placeholder="owner@vshow.com" autocomplete="username">
+[grand-control.html:29] (placeholder) <input type="password" id="gc-password" required placeholder="••••••••••••" autocomplete="current-password">
+[grand-control.html:339] (placeholder) <input type="text" id="customer-search-input" placeholder="Search by name, slug or admin email..." onkeyup="window.gcApp.filterCustomers(this.value)">
+[grand-control.html:485] (placeholder) <div class="gc-placeholder-msg">Select a message from the left to view conversation and reply.</div>
+[grand-control.html:488] (placeholder) <textarea id="gc-reply-input" placeholder="Type an official platform response..."></textarea>
+[grand-control.html:574] (placeholder) <div class="gc-kpi-sub">Legal entity & address placeholders</div>
+[grand-control.html:932] (placeholder) <input type="text" id="bc-subject" placeholder="e.g. Platform Notice: Precision 3D Engine v2.1 Activated">
+[grand-control.html:936] (placeholder) <textarea id="bc-body" rows="5" placeholder="Enter sanitized text message..."></textarea>
+[grand-control.html:971] (placeholder) <input type="text" id="wiz-company-name" placeholder="e.g. Apex Industrial Solutions LLC">
+[grand-control.html:975] (placeholder) <input type="email" id="wiz-admin-email" placeholder="e.g. admin@apex-industrial.com">
+[grand-control.html:979] (placeholder) <input type="url" id="wiz-website" placeholder="https://apex-industrial.com">
+[grand-control.html:984] (placeholder) <input type="text" id="wiz-industry" placeholder="e.g. Industrial Automation">
+[grand-control.html:988] (placeholder) <input type="text" id="wiz-country-state" placeholder="e.g. United States, NJ">
+[grand-control.html:1002] (placeholder) <input type="text" id="wiz-event-name" placeholder="e.g. International Industrial Expo 2026">
+[grand-control.html:1017] (placeholder) <input type="text" id="wiz-booth-number" placeholder="e.g. Hall A, Booth #A-101">
+[grand-control.html:1021] (placeholder) <input type="text" id="wiz-booth-category" placeholder="e.g. Robotics & Motion Control">
+[grand-control.html:1049] (placeholder) <input type="text" id="wiz-photo-path" placeholder="e.g. /data/uploads/real-apex-01 or S3 key">
+[grand-control.js:416] (placeholder) <textarea id="c360-note-input" rows="3" placeholder="Add confidential internal note..."></textarea>
+[grand-control.js:1367] (showroom) const body = `Hi,\n\nI'm reaching out from vivPR.\n\nWe've built V-Show, a platform that turns a physical trade-show booth into an interactive online showroom.\n\nBuyers can revisit the booth after the event, explore products, request quotes, request samples, schedule meetings, and contact your team.\n\nWe're currently inviting a small number of exhibitors to try a free virtual booth pilot.\n\nNo credit card is required.\n\nIf you have an upcoming or recently completed trade show, we'd be happy to show you a demo and explain how the pilot works.\n\nWould you be open to a short walkthrough?\n\nBest,\nvivPR\ninfo@vivpr.pro`;
+[lobby.js:63] (placeholder) const coverImg = (booth.photos && booth.photos[0]) || (booth.id === 'booth-wilo-golden-demo' ? '/assets/demo/wilo_placeholder_hero.svg' : 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80');
+
+============================================================
+IDENTIFIED PLACEHOLDER FUNCTION:
+PLACEHOLDER_SCENE_FUNCTION=buildWiloShowroomStage
+LOCATION=app_build/client/wilo-demo.html:569-615
+RESPONSIBLE GEOMETRY: floor PlaneGeometry, GridHelper, backWall BoxGeometry, screen PlaneGeometry, counter CylinderGeometry, table BoxGeometry, truss TorusGeometry
+ACTION: Complete removal of placeholder meshes when authentic Gaussian 3D model is pending.

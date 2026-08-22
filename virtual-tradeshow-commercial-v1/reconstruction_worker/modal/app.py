@@ -1,6 +1,6 @@
 """
 Virtual Trade Show Commercial V1 — Modal L4 Precision Reconstruction Worker
-Zero Cash Cost ($0) Pilot using Modal Starter Compute Credits (Phase 6)
+Authentic Wilo 3D Reconstruction Pipeline (Phase 10.7N-R10)
 """
 
 import os
@@ -76,18 +76,14 @@ def colmap_to_nerfstudio_transforms(sparse_txt_dir: Path, images_dir: Path, outp
             cam_id = int(parts[8])
             fname = parts[9]
 
-            # Convert COLMAP w2c (OpenGL/OpenCV) to Nerfstudio c2w
             R = qvec2rotmat(qvec)
-            # Transpose R
             Rt = [[R[j][k] for j in range(3)] for k in range(3)]
-            # -Rt * tvec
             t_inv = [
                 -(Rt[0][0] * tvec[0] + Rt[0][1] * tvec[1] + Rt[0][2] * tvec[2]),
                 -(Rt[1][0] * tvec[0] + Rt[1][1] * tvec[1] + Rt[1][2] * tvec[2]),
                 -(Rt[2][0] * tvec[0] + Rt[2][1] * tvec[1] + Rt[2][2] * tvec[2]),
             ]
 
-            # Nerfstudio OpenGL coordinate transform (flip Y and Z)
             c2w = [
                 [Rt[0][0], -Rt[0][1], -Rt[0][2], t_inv[0]],
                 [Rt[1][0], -Rt[1][1], -Rt[1][2], t_inv[1]],
@@ -100,7 +96,7 @@ def colmap_to_nerfstudio_transforms(sparse_txt_dir: Path, images_dir: Path, outp
                 "transform_matrix": c2w
             })
 
-    cam0 = list(cameras.values())[0] if cameras else {"w": 1280, "h": 960, "fl_x": 1000.0, "fl_y": 1000.0, "cx": 640.0, "cy": 480.0}
+    cam0 = list(cameras.values())[0] if cameras else {"w": 1024, "h": 1024, "fl_x": 1000.0, "fl_y": 1000.0, "cx": 512.0, "cy": 512.0}
 
     out_data = {
         "camera_model": "OPENCV",
@@ -163,9 +159,9 @@ def validate_environment() -> dict:
 # ============================================================
 # 2. COLMAP Validation Pipeline (Headless-Safe)
 # ============================================================
-@app.function(gpu="L4", timeout=600)
+@app.function(gpu="L4", timeout=900)
 def run_colmap_pipeline(images_dict: dict) -> dict:
-    """Runs headless COLMAP on uploaded images dict."""
+    """Runs headless COLMAP on authentic capture images."""
     work_dir = Path("/tmp/colmap_work")
     if work_dir.exists():
         shutil.rmtree(work_dir)
@@ -183,22 +179,29 @@ def run_colmap_pipeline(images_dict: dict) -> dict:
 
     t0 = time.time()
 
+    # Feature extraction with SIMPLE_RADIAL per-image intrinsics
     cmd_extract = [
         "colmap", "feature_extractor",
         "--database_path", str(db_path),
         "--image_path", str(img_dir),
-        "--ImageReader.camera_model", "OPENCV",
-        "--ImageReader.single_camera", "1",
+        "--ImageReader.camera_model", "SIMPLE_RADIAL",
+        "--ImageReader.single_camera", "0",
         "--SiftExtraction.use_gpu", "0"
     ]
-    subprocess.run(cmd_extract, check=True, env=HEADLESS_ENV)
+    p_extract = subprocess.run(cmd_extract, capture_output=True, text=True, env=HEADLESS_ENV)
+    print("Extract stdout:", p_extract.stdout[-500:] if p_extract.stdout else "")
+    if p_extract.returncode != 0:
+        raise RuntimeError(f"Feature extraction failed: {p_extract.stderr}")
 
     cmd_match = [
         "colmap", "exhaustive_matcher",
         "--database_path", str(db_path),
         "--SiftMatching.use_gpu", "0"
     ]
-    subprocess.run(cmd_match, check=True, env=HEADLESS_ENV)
+    p_match = subprocess.run(cmd_match, capture_output=True, text=True, env=HEADLESS_ENV)
+    print("Match stdout:", p_match.stdout[-500:] if p_match.stdout else "")
+    if p_match.returncode != 0:
+        raise RuntimeError(f"Matching failed: {p_match.stderr}")
 
     cmd_map = [
         "colmap", "mapper",
@@ -206,31 +209,74 @@ def run_colmap_pipeline(images_dict: dict) -> dict:
         "--image_path", str(img_dir),
         "--output_path", str(sparse_dir)
     ]
-    subprocess.run(cmd_map, check=True, env=HEADLESS_ENV)
+    p_map = subprocess.run(cmd_map, capture_output=True, text=True, env=HEADLESS_ENV)
+    print("Map stdout:", p_map.stdout[-1000:] if p_map.stdout else "")
+    print("Map stderr:", p_map.stderr[-500:] if p_map.stderr else "")
 
     elapsed = float(round(time.time() - t0, 2))
 
-    model_dir = sparse_dir / "0"
-    registered_images = int(len(images_dict)) if model_dir.exists() else 0
-    points3d_count = 54800 if model_dir.exists() else 0
+    # Convert sparse model to TXT to parse statistics
+    sparse_0 = sparse_dir / "0"
+    txt_dir = work_dir / "txt_model"
+    txt_dir.mkdir(parents=True, exist_ok=True)
+
+    registered_images = 0
+    sparse_points = 0
+    cameras_txt = ""
+    images_txt = ""
+    points3D_txt = ""
+
+    if sparse_0.exists():
+        subprocess.run([
+            "colmap", "model_converter",
+            "--input_path", str(sparse_0),
+            "--output_path", str(txt_dir),
+            "--output_type", "TXT"
+        ], check=True, env=HEADLESS_ENV)
+
+        if (txt_dir / "images.txt").exists():
+            images_txt = (txt_dir / "images.txt").read_text()
+            lines = [l for l in images_txt.splitlines() if l.strip() and not l.startswith("#")]
+            registered_images = len(lines) // 2
+
+        if (txt_dir / "points3D.txt").exists():
+            points3D_txt = (txt_dir / "points3D.txt").read_text()
+            pt_lines = [l for l in points3D_txt.splitlines() if l.strip() and not l.startswith("#")]
+            sparse_points = len(pt_lines)
+
+        if (txt_dir / "cameras.txt").exists():
+            cameras_txt = (txt_dir / "cameras.txt").read_text()
+
     reg_rate = float(round((registered_images / max(1, len(images_dict))) * 100, 1))
+
+    # Collect binary model files
+    db_bytes = db_path.read_bytes() if db_path.exists() else b""
+    cameras_bin = (sparse_0 / "cameras.bin").read_bytes() if (sparse_0 / "cameras.bin").exists() else b""
+    images_bin = (sparse_0 / "images.bin").read_bytes() if (sparse_0 / "images.bin").exists() else b""
+    points3d_bin = (sparse_0 / "points3D.bin").read_bytes() if (sparse_0 / "points3D.bin").exists() else b""
 
     return {
         "input_images": int(len(images_dict)),
         "registered_images": registered_images,
         "registration_rate": reg_rate,
-        "sparse_points": points3d_count,
+        "sparse_points": sparse_points,
         "elapsed_seconds": elapsed,
-        "status": "GOOD" if reg_rate >= 80 else ("ACCEPTABLE" if reg_rate >= 60 else "POOR")
+        "status": "GOLD" if reg_rate >= 90 else ("GOOD" if reg_rate >= 80 else ("ACCEPTABLE" if reg_rate >= 60 else "POOR")),
+        "cameras_txt": cameras_txt,
+        "images_txt": images_txt,
+        "points3D_txt": points3D_txt,
+        "database_db": db_bytes,
+        "cameras_bin": cameras_bin,
+        "images_bin": images_bin,
+        "points3D_bin": points3d_bin
     }
 
 # ============================================================
 # 3. Full Splatfacto Reconstruction Pipeline (Robust Headless)
 # ============================================================
-@app.function(gpu="L4", timeout=1800)
+@app.function(gpu="L4", timeout=2400)
 def train_and_export_splat(booth_id: str, image_files: dict, iterations: int = 7000):
     """
-    Phase 7 Production Pilot:
     Executes full COLMAP SfM -> Splatfacto 3D Gaussian Splatting -> PLY & SPZ Web Optimization on L4 GPU.
     """
     work_dir = Path("/tmp") / f"recon_{booth_id}_{int(time.time())}"
@@ -239,7 +285,6 @@ def train_and_export_splat(booth_id: str, image_files: dict, iterations: int = 7
     img_dir = work_dir / "images"
     img_dir.mkdir(parents=True, exist_ok=True)
 
-    # Save uploaded dataset photos
     for fname, data in image_files.items():
         (img_dir / fname).write_bytes(data)
 
@@ -259,14 +304,13 @@ def train_and_export_splat(booth_id: str, image_files: dict, iterations: int = 7
 
     t_start = time.time()
 
-    # Step 1: Headless COLMAP SfM
     print(f"[1/5] Running Headless COLMAP SfM on {len(image_files)} images...")
     subprocess.run([
         "colmap", "feature_extractor",
         "--database_path", str(db_path),
         "--image_path", str(img_dir),
-        "--ImageReader.camera_model", "OPENCV",
-        "--ImageReader.single_camera", "1",
+        "--ImageReader.camera_model", "SIMPLE_RADIAL",
+        "--ImageReader.single_camera", "0",
         "--SiftExtraction.use_gpu", "0"
     ], check=True, env=HEADLESS_ENV)
 
@@ -283,7 +327,6 @@ def train_and_export_splat(booth_id: str, image_files: dict, iterations: int = 7
         "--output_path", str(sparse_dir)
     ], check=True, env=HEADLESS_ENV)
 
-    # Step 2: Convert sparse binary model to TXT & evaluate registration
     print("[2/5] Converting COLMAP model to TXT and evaluating registration quality...")
     sparse_0 = sparse_dir / "0"
     if not sparse_0.exists():
@@ -303,14 +346,13 @@ def train_and_export_splat(booth_id: str, image_files: dict, iterations: int = 7
 
     reg_rate = float(round((num_frames / max(len(image_files), 1)) * 100.0, 1))
 
-    # Step 3: Splatfacto 3D Gaussian Splatting Training on L4
     train_iters = max(iterations, 1000)
     print(f"[3/5] Running Splatfacto 3D Gaussian Splatting ({train_iters} iterations) on L4 GPU...")
     cmd_train = [
         "ns-train", "splatfacto",
         "--data", str(ns_data_dir),
         "--output-dir", str(output_dir),
-        "--experiment-name", f"prod_pilot_{booth_id}",
+        "--experiment-name", f"authentic_{booth_id}",
         "--max-num-iterations", str(train_iters),
         "--pipeline.model.cull-alpha-thresh", "0.005",
         "--viewer.quit-on-train-completion", "True"
@@ -327,9 +369,9 @@ def train_and_export_splat(booth_id: str, image_files: dict, iterations: int = 7
     config_path = config_files[0]
     print(f"Found trained config: {config_path}")
 
-    # Step 4: Export Gaussian Splat PLY
+    # Export Gaussian Splat PLY
     print("[4/5] Exporting Gaussian Splat PLY model...")
-    output_ply = export_dir / f"{booth_id}_splat.ply"
+    output_ply = export_dir / "WILO_AUTHENTIC_RECON_01.ply"
     cmd_export = [
         "ns-export", "gaussian-splat",
         "--load-config", str(config_path),
@@ -343,11 +385,9 @@ def train_and_export_splat(booth_id: str, image_files: dict, iterations: int = 7
 
     ply_bytes = output_ply.read_bytes() if output_ply.exists() else b""
 
-    # Step 5: SPZ / Web Splat Compression & Metadata Analysis
+    # SPZ Web Splat Compression
     print("[5/5] Performing Web Optimization & SPZ Compression...")
-    output_spz = export_dir / f"{booth_id}_splat.spz"
-    
-    # Generate compressed representation / SPZ gzip package
+    output_spz = export_dir / "WILO_AUTHENTIC_RECON_01.spz"
     import gzip
     spz_bytes = gzip.compress(ply_bytes, compresslevel=6) if ply_bytes else b""
     output_spz.write_bytes(spz_bytes)
@@ -357,6 +397,8 @@ def train_and_export_splat(booth_id: str, image_files: dict, iterations: int = 7
 
     return {
         "booth_id": str(booth_id),
+        "ply_name": "WILO_AUTHENTIC_RECON_01.ply",
+        "spz_name": "WILO_AUTHENTIC_RECON_01.spz",
         "ply_size_bytes": int(len(ply_bytes)),
         "spz_size_bytes": int(len(spz_bytes)),
         "compression_ratio_pct": compression_ratio,
@@ -366,7 +408,7 @@ def train_and_export_splat(booth_id: str, image_files: dict, iterations: int = 7
         "training_iterations": int(train_iters),
         "ply_data": ply_bytes,
         "spz_data": spz_bytes,
+        "transforms_json": transforms_file.read_text() if transforms_file.exists() else "",
         "duration_seconds": duration,
         "status": "completed"
     }
-

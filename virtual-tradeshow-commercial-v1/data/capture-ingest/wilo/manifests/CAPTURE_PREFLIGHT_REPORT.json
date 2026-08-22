@@ -1,0 +1,60 @@
+{
+  "validator": "V-SHOW Real Capture Dataset Preflight (Phase 10.7N-R8)",
+  "executedAt": "2026-08-18T17:45:00.269Z",
+  "targetDirectory": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\data\\capture-ingest\\wilo\\incoming",
+  "metrics": {
+    "totalImageCount": 71,
+    "validExtensions": [
+      ".jpg",
+      ".jpeg",
+      ".png",
+      ".dng",
+      ".cr2",
+      ".cr3",
+      ".nef",
+      ".arw"
+    ],
+    "totalSizeBytes": 39965429,
+    "totalSizeMB": "38.11",
+    "uniqueHashCount": 71,
+    "duplicateCount": 0,
+    "duplicateFiles": [],
+    "corruptCount": 0,
+    "corruptFiles": [],
+    "resolutionDistribution": {
+      "1024x1024": 49,
+      "1200x896": 2,
+      "373x237": 1,
+      "308x236": 1,
+      "319x236": 1,
+      "273x236": 1,
+      "278x237": 1,
+      "305x222": 1,
+      "271x220": 1,
+      "284x221": 1,
+      "370x220": 1,
+      "302x223": 1,
+      "312x188": 1,
+      "310x186": 1,
+      "315x187": 1,
+      "309x189": 1,
+      "306x189": 1,
+      "278x230": 1,
+      "270x228": 1,
+      "323x230": 1,
+      "344x231": 1,
+      "313x228": 1
+    },
+    "earliestTimestamp": "2026-08-17T10:06:42.000Z",
+    "latestTimestamp": "2026-08-18T17:28:56.000Z"
+  },
+  "qualificationGate": {
+    "minimumRecommendedImages": 60,
+    "optimalImagesTarget": 100,
+    "hasSufficientCount": true,
+    "noDuplicates": true,
+    "noCorruptFiles": true
+  },
+  "technicalStatus": "TECHNICAL_PREFLIGHT_PASS",
+  "humanProvenanceNotice": "Technical pass only validates file integrity and quantity. Physical camera authentication is determined through human source provenance review."
+}

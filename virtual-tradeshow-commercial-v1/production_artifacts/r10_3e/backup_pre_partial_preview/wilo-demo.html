@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Wilo — Intelligent Water & Pump Solutions | 3D Virtual Showroom Demo</title>
+  <link rel="stylesheet" href="/index.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="/precision-viewer.js"></script>
+  <style>
+    :root {
+      --wilo-teal: #00a390;
+      --wilo-teal-dark: #007a6c;
+      --wilo-accent: #38bdf8;
+      --wilo-bg: #070a12;
+      --wilo-panel: rgba(15, 23, 42, 0.92);
+      --wilo-border: #1e293b;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    body, html {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      background: var(--wilo-bg); color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      touch-action: none;
+    }
+    .wilo-container { display: flex; flex-direction: column; height: 100vh; height: 100dvh; position: relative; }
+    
+    /* Top HUD */
+    .wilo-hud-top {
+      display: flex; justify-content: space-between; align-items: center; padding: 12px 20px;
+      background: rgba(11, 15, 25, 0.88); backdrop-filter: blur(12px); border-bottom: 1px solid var(--wilo-border); z-index: 50;
+      padding-top: max(12px, var(--safe-top));
+    }
+    .wilo-brand { display: flex; align-items: center; gap: 12px; }
+    .wilo-badge { background: var(--wilo-teal); color: #fff; font-weight: 800; font-size: 14px; padding: 4px 10px; border-radius: 4px; letter-spacing: 1px; }
+    .wilo-hud-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    
+    .wilo-btn {
+      background: #1e293b; color: #f8fafc; border: 1px solid #334155; padding: 8px 14px;
+      border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; min-height: 40px;
+      touch-action: manipulation;
+    }
+    .wilo-btn:hover { background: #334155; }
+    .wilo-btn-primary { background: var(--wilo-teal); border-color: var(--wilo-teal-dark); color: #fff; }
+    .wilo-btn-primary:hover { background: #00bfab; }
+    .wilo-btn-active { background: var(--wilo-teal); border-color: var(--wilo-teal); color: #fff; }
+
+    .wilo-presence-pill {
+      display: flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;
+    }
+    .wilo-presence-dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; box-shadow: 0 0 8px #10b981; }
+
+    /* Viewport Area */
+    .wilo-viewport { flex: 1; position: relative; background: #020617; overflow: hidden; width: 100%; height: 100%; }
+    #wilo-3d-canvas-container { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 10; }
+    #wilo-photo-container { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 5; display: flex; align-items: center; justify-content: center; background: #070a13; overflow: hidden; }
+    .wilo-booth-image { width: 100%; height: 100%; object-fit: cover; }
+    
+    /* 2D Photo Hotspot Overlay */
+    .wilo-hotspot-2d {
+      position: absolute; width: 44px; height: 44px; border-radius: 50%; background: rgba(0, 163, 144, 0.9);
+      border: 2px solid #fff; color: #fff; display: flex; justify-content: center; align-items: center;
+      cursor: pointer; box-shadow: 0 0 16px rgba(0, 163, 144, 0.8); z-index: 20; transform: translate(-50%, -50%);
+    }
+
+    /* HUD Overlay Controls */
+    .wilo-mode-pill-bar {
+      position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 6px; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(8px);
+      padding: 6px; border-radius: 30px; border: 1px solid var(--wilo-border); z-index: 40;
+    }
+    .wilo-mode-btn {
+      background: transparent; border: none; color: #94a3b8; padding: 6px 14px;
+      border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s ease;
+    }
+    .wilo-mode-btn.active { background: var(--wilo-teal); color: #fff; box-shadow: 0 2px 8px rgba(0, 163, 144, 0.4); }
+
+    .wilo-floating-tools {
+      position: absolute; right: 20px; top: 80px; display: flex; flex-direction: column; gap: 8px; z-index: 40;
+    }
+    .wilo-tool-btn {
+      width: 42px; height: 42px; border-radius: 8px; background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--wilo-border); color: #fff; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 16px; backdrop-filter: blur(8px);
+    }
+    .wilo-tool-btn:hover { background: #334155; }
+
+    /* Navigation / Walk Instructions */
+    .wilo-walk-hud {
+      position: absolute; bottom: 80px; left: 20px; background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px); border: 1px solid var(--wilo-border); border-radius: 8px;
+      padding: 10px 14px; font-size: 12px; color: #cbd5e1; z-index: 40; display: none;
+    }
+
+    /* Bottom HUD */
+    .wilo-hud-bottom {
+      display: flex; flex-direction: column; background: rgba(11, 15, 25, 0.92);
+      backdrop-filter: blur(12px); border-top: 1px solid var(--wilo-border); padding: 10px 20px; z-index: 50;
+      padding-bottom: max(10px, var(--safe-bottom));
+    }
+    .wilo-tour-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .wilo-view-title { font-weight: 700; font-size: 14px; color: var(--wilo-accent); }
+    .wilo-thumbnails-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+    .wilo-thumb { width: 80px; height: 48px; border-radius: 4px; border: 2px solid #334155; background: #0f172a; cursor: pointer; flex-shrink: 0; object-fit: cover; opacity: 0.7; }
+    .wilo-thumb.active, .wilo-thumb:hover { opacity: 1; border-color: var(--wilo-teal); }
+
+    /* Modals */
+    .wilo-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 100; padding: 16px; }
+    .wilo-modal-overlay.active { display: flex; }
+    .wilo-modal { background: var(--wilo-panel); border: 1px solid var(--wilo-border); border-radius: 12px; width: 100%; max-width: 760px; max-height: 90vh; overflow-y: auto; padding: 24px; position: relative; }
+    .wilo-modal-close { position: absolute; top: 16px; right: 16px; background: #1e293b; border: none; color: #94a3b8; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 16px; }
+    
+    /* 3D Product Inspection Canvas in Modal */
+    .wilo-product-3d-box { width: 100%; height: 280px; background: #050811; border: 1px solid var(--wilo-border); border-radius: 8px; position: relative; margin-bottom: 16px; }
+    #product-3d-canvas { width: 100%; height: 100%; }
+    .wilo-product-hint { position: absolute; bottom: 8px; right: 8px; background: rgba(15, 23, 42, 0.75); padding: 4px 10px; border-radius: 4px; font-size: 11px; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <div class="wilo-container">
+    <!-- Top HUD -->
+    <header class="wilo-hud-top">
+      <div class="wilo-brand">
+        <span class="wilo-badge">WILO</span>
+        <div>
+          <strong style="font-size:15px; color:#fff;">Wilo Group</strong><br>
+          <small style="color:#94a3b8; font-size:11px;">Intelligent Water Solutions • ISH Frankfurt 2026 3D Virtual Showroom</small>
+        </div>
+      </div>
+      <div class="wilo-hud-actions">
+        <div class="wilo-presence-pill"><span class="wilo-presence-dot"></span><span>SPECIALIST ONLINE</span></div>
+        <button class="wilo-btn" onclick="openCatalogModal()">Catalog</button>
+        <button class="wilo-btn" onclick="openResourceModal()">Resources</button>
+        <button class="wilo-btn" onclick="openTicketModal()">Consultation</button>
+        <button class="wilo-btn" onclick="openRfqModal()">RFQ</button>
+        <button class="wilo-btn wilo-btn-primary" onclick="openApptModal()">Book Meeting</button>
+        <button class="wilo-btn" onclick="openFeedbackModal()">Feedback</button>
+        <a href="/lobby.html" class="wilo-btn" style="text-decoration:none;">Lobby</a>
+      </div>
+    </header>
+
+    <!-- Main Viewport -->
+    <main class="wilo-viewport" id="wilo-viewport">
+      <!-- Mode Switcher Pill Bar -->
+      <div class="wilo-mode-pill-bar">
+        <button class="wilo-mode-btn active" id="btn-mode-photo" onclick="switchViewerMode('PHOTO_TOUR')">📷 Photo Tour (Primary)</button>
+        <button class="wilo-mode-btn" id="btn-mode-3d-orbit" onclick="switchViewerMode('3D_VIEWER')">🌐 3D Viewer (Orbit)</button>
+        <button class="wilo-mode-btn" id="btn-mode-3d-walk" disabled style="opacity:0.45; cursor:not-allowed;" title="Requires R10 Gaussian 3D Reconstruction">🚶 3D Walk (Locked)</button>
+      </div>
+
+      <!-- Floating Quick Tools -->
+      <div class="wilo-floating-tools">
+        <button class="wilo-tool-btn" title="Reset Camera View" onclick="resetViewerCamera()">🎯</button>
+        <button class="wilo-tool-btn" title="Toggle Fullscreen" onclick="toggleFullscreen()">⛶</button>
+      </div>
+
+      <!-- High-Resolution Interactive Multi-View Photo Tour (Primary) -->
+      <div id="wilo-photo-container">
+        <img id="wilo-photo-image" src="/assets/demo/wilo/authentic-booth/view_01.jpg" alt="Wilo Exhibition Booth" onerror="handleImageError(this)" style="display:block; width: 100%; height: 100%; object-fit: cover; user-select: none;" />
+        <div id="wilo-hotspots-container" style="position: absolute; inset: 0; pointer-events: none;"></div>
+        <div id="wilo-image-error-notice" style="display:none; position:absolute; top:70px; left:20px; background:rgba(239,68,68,0.9); color:#fff; padding:8px 16px; border-radius:8px; font-size:12px; font-weight:600; z-index:20;"></div>
+        
+        <!-- Navigation Overlay Arrows -->
+        <button class="wilo-nav-arrow wilo-nav-prev" onclick="prevPhotoView()" title="Previous View" style="position:absolute; left:20px; top:50%; transform:translateY(-50%); background:rgba(15,23,42,0.8); color:#fff; border:1px solid #334155; width:48px; height:48px; border-radius:50%; font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(8px); transition:all 0.2s; z-index:10;">‹</button>
+        <button class="wilo-nav-arrow wilo-nav-next" onclick="nextPhotoView()" title="Next View" style="position:absolute; right:20px; top:50%; transform:translateY(-50%); background:rgba(15,23,42,0.8); color:#fff; border:1px solid #334155; width:48px; height:48px; border-radius:50%; font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(8px); transition:all 0.2s; z-index:10;">›</button>
+
+        <!-- View Badge Overlay -->
+        <div style="position:absolute; top:20px; left:20px; background:rgba(15,23,42,0.85); border:1px solid #334155; padding:8px 16px; border-radius:20px; color:#fff; font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px; backdrop-filter:blur(8px); z-index:10;">
+          <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#00a390;"></span>
+          <span id="photo-view-badge">Front Hero View (1/12)</span>
+        </div>
+      </div>
+
+      <!-- 3D Viewer Canvas Container (Clean Engine Shell with Pending Overlay) -->
+      <div id="wilo-3d-canvas-container" style="position: absolute; inset: 0; width: 100%; height: 100%; display: none; background: #070a12; z-index: 10; align-items: center; justify-content: center;">
+        <div id="wilo-3d-pending-card" style="position: relative; max-width: 480px; margin: auto; background: rgba(15, 23, 42, 0.95); border: 1px solid #334155; border-radius: 12px; padding: 32px 24px; text-align: center; backdrop-filter: blur(12px); box-shadow: 0 20px 40px rgba(0,0,0,0.6); z-index: 25;">
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto; color: #38bdf8; font-size: 22px;">🌐</div>
+          <h3 style="color: #38bdf8; margin: 0 0 10px 0; font-size: 18px; font-weight: 700;">Authentic Wilo 3D Reconstruction Pending</h3>
+          <p style="color: #cbd5e1; font-size: 14px; margin: 0 0 20px 0; line-height: 1.6;">
+            Real capture dataset has been received.<br>
+            3D reconstruction has not yet been generated.
+          </p>
+          <button class="wilo-btn wilo-btn-primary" onclick="switchViewerMode('PHOTO_TOUR')" style="padding: 10px 24px; font-size: 14px; margin: 0 auto; display: inline-flex;">Return to Photo Tour</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom HUD (Photo Tour Navigation & Thumbnails) -->
+    <footer class="wilo-hud-bottom" id="wilo-bottom-hud">
+      <div class="wilo-tour-controls" style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span style="font-size:11px; color:#94a3b8; text-transform:uppercase;">Current View:</span>
+          <span class="wilo-view-title" id="wilo-view-name" style="color:#38bdf8; font-weight:600; margin-left:6px;">01. Front Hero View</span>
+        </div>
+        <div style="font-size:12px; color:#94a3b8; display:flex; gap:12px; align-items:center;">
+          <span id="wilo-hud-status-indicator" style="color:#10b981; font-weight:600;">● High-Definition Multi-Angle Tour Active</span>
+          <button class="wilo-btn" style="padding:4px 10px; font-size:12px;" onclick="openCatalogModal()">🔍 Inspect Products</button>
+        </div>
+      </div>
+      <div class="wilo-thumbnails" id="wilo-thumbnails" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:4px;"></div>
+    </footer>
+
+  </div>
+
+  <!-- Product Detail Modal with Genuine 3D Inspection Viewer -->
+  <div class="wilo-modal-overlay" id="product-modal">
+    <div class="wilo-modal">
+      <button class="wilo-modal-close" onclick="closeModals()">X</button>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h2 id="modal-prod-name" style="margin:0; color:#fff;">Product Title</h2>
+        <span class="wilo-badge" id="modal-prod-sku">WILO-PUMP</span>
+      </div>
+      <div class="wilo-product-3d-box">
+        <div id="product-3d-canvas"></div>
+        <div class="wilo-product-hint">🖱️ Drag to rotate 3D pump • Scroll to zoom</div>
+      </div>
+      <p id="modal-prod-desc" style="color:#cbd5e1; font-size:14px; line-height:1.6;"></p>
+      <div style="background:#090d16; border:1px solid #1e293b; border-radius:8px; padding:16px; margin-bottom:16px;">
+        <h4 style="margin:0 0 8px 0; color:#38bdf8; font-size:13px; text-transform:uppercase;">Engineering Specifications</h4>
+        <div id="modal-prod-specs" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px; color:#94a3b8;"></div>
+      </div>
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button class="wilo-btn" onclick="openTicketModalFromProd()">Request Engineering Spec</button>
+        <button class="wilo-btn wilo-btn-primary" onclick="openRfqModalFromProd()">Request Commercial Quote (RFQ)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Catalog Modal -->
+  <div class="wilo-modal-overlay" id="catalog-modal">
+    <div class="wilo-modal">
+      <button class="wilo-modal-close" onclick="closeModals()">X</button>
+      <h2 style="color:#fff; margin-top:0;">Wilo Digital Product Catalog</h2>
+      <p style="color:#94a3b8; font-size:13px;">Commercial building hydronic systems, smart inline circulators, and municipal booster systems.</p>
+      <div id="catalog-products-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px; max-height:360px; overflow-y:auto;"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #1e293b; padding-top:16px;">
+        <span style="font-size:12px; color:#94a3b8;">Complete ISH 2026 Range • 14.2 MB PDF</span>
+        <button class="wilo-btn wilo-btn-primary" onclick="downloadCatalog()">📥 Download Full Catalog PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resources Modal -->
+  <div class="wilo-modal-overlay" id="resource-modal">
+    <div class="wilo-modal">
+      <button class="wilo-modal-close" onclick="closeModals()">X</button>
+      <h2 style="color:#fff; margin-top:0;">Technical Resource Center</h2>
+      <p style="color:#94a3b8; font-size:13px;">CAD models, BIM revit families, whitepapers, and pump selection engineering curves.</p>
+      <div id="resources-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+    </div>
+  </div>
+
+  <!-- Consultation Ticket Modal -->
+  <div class="wilo-modal-overlay" id="ticket-modal">
+    <div class="wilo-modal">
+      <button class="wilo-modal-close" onclick="closeModals()">X</button>
+      <h2 style="color:#fff; margin-top:0;">Technical Consultation Request</h2>
+      <p style="color:#94a3b8; font-size:13px;">Direct inquiry to Wilo Applications Engineering team.</p>
+      <form id="ticket-form" onsubmit="submitTicket(event)">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div><label style="font-size:12px; color:#94a3b8;">Name *</label><input type="text" id="ticket-name" required style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+          <div><label style="font-size:12px; color:#94a3b8;">Company *</label><input type="text" id="ticket-company" required style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div><label style="font-size:12px; color:#94a3b8;">Email *</label><input type="email" id="ticket-email" required style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+          <div><label style="font-size:12px; color:#94a3b8;">Country</label><input type="text" id="ticket-country" value="Germany" style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; color:#94a3b8;">Technical Question / Project Scope *</label>
+          <textarea id="ticket-question" rows="3" required style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; font-family:inherit; box-sizing:border-box;"></textarea>
+        </div>
+        <button type="submit" class="wilo-btn wilo-btn-primary" style="width:100%; justify-content:center;">Submit Consultation Ticket</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- RFQ Modal -->
+  <div class="wilo-modal-overlay" id="rfq-modal">
+    <div class="wilo-modal">
+      <button class="wilo-modal-close" onclick="closeModals()">X</button>
+      <h2 style="color:#fff; margin-top:0;">Request for Commercial Quote (RFQ)</h2>
+      <p style="color:#94a3b8; font-size:13px;">Receive volume pricing, lead times, and project terms.</p>
+      <form id="rfq-form" onsubmit="submitRfq(event)">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div><label style="font-size:12px; color:#94a3b8;">Contact Name *</label><input type="text" id="rfq-name" required style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+          <div><label style="font-size:12px; color:#94a3b8;">Email Address *</label><input type="email" id="rfq-email" required style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div><label style="font-size:12px; color:#94a3b8;">Product</label><input type="text" id="rfq-product" value="Wilo-SiBoost Smart (Helix EXCEL)" style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+          <div><label style="font-size:12px; color:#94a3b8;">Target Quantity</label><input type="number" id="rfq-qty" value="5" min="1" style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+        </div>
+        <button type="submit" class="wilo-btn wilo-btn-primary" style="width:100%; justify-content:center;">Submit RFQ</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Appointment Modal -->
+  <div class="wilo-modal-overlay" id="appt-modal">
+    <div class="wilo-modal">
+      <button class="wilo-modal-close" onclick="closeModals()">X</button>
+      <h2 style="color:#fff; margin-top:0;">Schedule 1-on-1 Consultation</h2>
+      <p style="color:#94a3b8; font-size:13px;">Book an interactive engineering or commercial video appointment.</p>
+      <form id="appt-form" onsubmit="submitAppt(event)">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div><label style="font-size:12px; color:#94a3b8;">Name *</label><input type="text" id="appt-name" required style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+          <div><label style="font-size:12px; color:#94a3b8;">Email *</label><input type="email" id="appt-email" required style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div>
+            <label style="font-size:12px; color:#94a3b8;">Meeting Format</label>
+            <select id="appt-type" style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;">
+              <option value="Video Call">Live Video Call (WebRTC)</option>
+              <option value="Product Consultation">Hydronic Product Consultation</option>
+              <option value="Technical Consultation">Engineering & Specification Meeting</option>
+              <option value="Sales Meeting">Commercial B2B Partnership</option>
+            </select>
+          </div>
+          <div><label style="font-size:12px; color:#94a3b8;">Preferred Date</label><input type="date" id="appt-date" value="2026-09-15" style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;"></div>
+        </div>
+        <button type="submit" class="wilo-btn wilo-btn-primary" style="width:100%; justify-content:center;">Confirm Appointment Booking</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Feedback Modal -->
+  <div class="wilo-modal-overlay" id="feedback-modal">
+    <div class="wilo-modal">
+      <button class="wilo-modal-close" onclick="closeModals()">X</button>
+      <h2 style="color:#fff; margin-top:0;">Send Demo Feedback</h2>
+      <p style="color:#94a3b8; font-size:13px;">Help us refine the virtual showroom trial experience.</p>
+      <form id="feedback-form" onsubmit="submitFeedback(event)">
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; color:#94a3b8;">Experience Rating (1–5) *</label>
+          <select id="fb-rating" style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; box-sizing:border-box;">
+            <option value="5">5 - Excellent</option>
+            <option value="4">4 - Very Good</option>
+            <option value="3">3 - Good</option>
+            <option value="2">2 - Needs Work</option>
+            <option value="1">1 - Poor</option>
+          </select>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; color:#94a3b8;">What worked well?</label>
+          <textarea id="fb-worked-well" rows="2" style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; font-family:inherit; box-sizing:border-box;"></textarea>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; color:#94a3b8;">What was confusing?</label>
+          <textarea id="fb-confusing" rows="2" style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; font-family:inherit; box-sizing:border-box;"></textarea>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; color:#94a3b8;">What should be improved?</label>
+          <textarea id="fb-improvements" rows="2" style="width:100%; background:#0f172a; border:1px solid #334155; color:#fff; padding:8px; border-radius:6px; font-family:inherit; box-sizing:border-box;"></textarea>
+        </div>
+        <button type="submit" class="wilo-btn wilo-btn-primary" style="width:100%; justify-content:center;">Submit Trial Feedback</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let demoData = null;
+    let currentViewerMode = 'PHOTO_TOUR'; // Default to verified photorealistic Photo Tour
+    let currentPhotoIndex = 0;
+    let currentProduct = null;
+
+    // Three.js Scene Variables
+    let scene = null, camera, renderer, orbitControls;
+    let hotspotObjects = [];
+    let raycaster = new THREE.Raycaster();
+    let mouse = new THREE.Vector2();
+
+    // Walkthrough variables
+    let walkKeys = { forward: false, backward: false, left: false, right: false };
+    let walkVelocity = new THREE.Vector3();
+    let walkDirection = new THREE.Vector3();
+    let prevTime = performance.now();
+
+    // Authentic Booth 12-Angle View Data from Real Ingested Capture
+    let boothViews = [
+      { id: 'view_01_front_hero', title: '01. Front Hero View', filename: 'view_01.jpg', url: '/assets/demo/wilo/authentic-booth/view_01.jpg' },
+      { id: 'view_02_front_elevation', title: '02. Front Center Elevation', filename: 'view_02.jpg', url: '/assets/demo/wilo/authentic-booth/view_02.jpg' },
+      { id: 'view_03_left_perspective', title: '03. Left Perspective Angle', filename: 'view_03.jpg', url: '/assets/demo/wilo/authentic-booth/view_03.jpg' },
+      { id: 'view_04_left_flank', title: '04. Left Flank & Reception', filename: 'view_04.jpg', url: '/assets/demo/wilo/authentic-booth/view_04.jpg' },
+      { id: 'view_05_interior_entrance', title: '05. Interior Aisle Entrance', filename: 'view_05.jpg', url: '/assets/demo/wilo/authentic-booth/view_05.jpg' },
+      { id: 'view_06_central_products', title: '06. Central Hydronic Pump Island', filename: 'view_06.jpg', url: '/assets/demo/wilo/authentic-booth/view_06.jpg' },
+      { id: 'view_07_rear_presentation', title: '07. Digital Presentation Wall', filename: 'view_07.jpg', url: '/assets/demo/wilo/authentic-booth/view_07.jpg' },
+      { id: 'view_08_meeting_lounge', title: '08. Executive Consultation Lounge', filename: 'view_08.jpg', url: '/assets/demo/wilo/authentic-booth/view_08.jpg' },
+      { id: 'view_09_right_rear', title: '09. Right Rear Perspective', filename: 'view_09.jpg', url: '/assets/demo/wilo/authentic-booth/view_09.jpg' },
+      { id: 'view_10_right_flank', title: '10. Right Flank & Smart Systems', filename: 'view_10.jpg', url: '/assets/demo/wilo/authentic-booth/view_10.jpg' },
+      { id: 'view_11_overhead_truss', title: '11. Overhead Lighting & Branding', filename: 'view_11.jpg', url: '/assets/demo/wilo/authentic-booth/view_11.jpg' },
+      { id: 'view_12_hall_overview', title: '12. Panoramic Hall Overview', filename: 'view_12.jpg', url: '/assets/demo/wilo/authentic-booth/view_12.jpg' }
+    ];
+
+    // Global Runtime Inspection State
+    window.boothViews = boothViews;
+    window.__ACTIVE_TENANT__ = 'org-wilo-golden-demo';
+    window.__VIEW_MODE__ = 'PHOTO_TOUR';
+    window.__VSHOW_STATE__ = {
+      tenant: "org-wilo-golden-demo",
+      visualState: "PHOTO_TOUR_ACTIVE",
+      photoTourAvailable: true,
+      captureDatasetAvailable: true,
+      authenticGaussian3D: false,
+      reconstructionStatus: "AUTHENTIC_CAPTURE_AVAILABLE_RECONSTRUCTION_PENDING"
+    };
+
+    console.log('[VIEWER_INIT] V-SHOW Wilo Multi-Angle Digital Showroom Initialized.');
+    console.log('[TENANT_ID] ' + window.__ACTIVE_TENANT__);
+
+    function handleImageError(img) {
+      console.error('[PHOTO_IMAGE_ERROR] Failed to load authentic booth image:', img.src);
+      const errBox = document.getElementById('wilo-image-error-notice');
+      if (errBox) {
+        errBox.style.display = 'block';
+        errBox.textContent = 'Authentic booth image failed to load: ' + img.src;
+      }
+    }
+
+    async function init() {
+      console.log('[PHOTO_MANIFEST] Initializing with authentic capture manifest');
+      console.log('[PHOTO_API] Ingesting /api/public/wilo-demo');
+      try {
+        const res = await fetch('/api/public/wilo-demo');
+        demoData = await res.json();
+        if (demoData && demoData.booth && Array.isArray(demoData.booth.boothViews) && demoData.booth.boothViews.length > 0) {
+          boothViews = demoData.booth.boothViews;
+          window.boothViews = boothViews;
+        }
+        renderCatalog();
+        renderResources();
+        renderPhotoTour();
+        renderThumbnails();
+      } catch (err) {
+        console.warn('[PHOTO_API] Init load issue:', err);
+        renderPhotoTour();
+        renderThumbnails();
+      }
+    }
+
+    function renderPhotoTour() {
+      const view = boothViews[currentPhotoIndex] || boothViews[0];
+      const imgElem = document.getElementById('wilo-photo-image');
+      const badgeElem = document.getElementById('photo-view-badge');
+      const titleElem = document.getElementById('wilo-view-name');
+      const errBox = document.getElementById('wilo-image-error-notice');
+      if (errBox) errBox.style.display = 'none';
+
+      if (imgElem) {
+        console.log('[PHOTO_WRITE]', view.url);
+        imgElem.src = view.url;
+        imgElem.style.opacity = '1';
+        console.log('[PHOTO_IMAGE_LOAD]', view.id);
+      }
+
+      if (badgeElem) badgeElem.textContent = view.title + ' (' + (currentPhotoIndex + 1) + '/' + boothViews.length + ')';
+      if (titleElem) titleElem.textContent = view.title;
+
+      // Update thumbnail active states
+      document.querySelectorAll('.wilo-thumb-item').forEach((el, idx) => {
+        if (idx === currentPhotoIndex) {
+          el.style.border = '2px solid #00a390';
+          el.style.opacity = '1';
+        } else {
+          el.style.border = '1px solid #334155';
+          el.style.opacity = '0.6';
+        }
+      });
+    }
+
+    function nextPhotoView() {
+      currentPhotoIndex = (currentPhotoIndex + 1) % boothViews.length;
+      renderPhotoTour();
+    }
+
+    function prevPhotoView() {
+      currentPhotoIndex = (currentPhotoIndex - 1 + boothViews.length) % boothViews.length;
+      renderPhotoTour();
+    }
+
+    function selectPhotoView(idx) {
+      currentPhotoIndex = idx;
+      renderPhotoTour();
+    }
+
+    function switchViewerMode(mode) {
+      currentViewerMode = mode;
+      window.__VIEW_MODE__ = mode;
+      console.log('[PHOTO_OVERLAY_CHANGE] Mode:', mode);
+
+      const btnPhoto = document.getElementById('btn-mode-photo');
+      const btn3D = document.getElementById('btn-mode-3d-orbit');
+      const photoContainer = document.getElementById('wilo-photo-container');
+      const canvas3DContainer = document.getElementById('wilo-3d-canvas-container');
+      const thumbnails = document.getElementById('wilo-thumbnails');
+      const viewTitle = document.getElementById('wilo-view-name');
+      const statusIndicator = document.getElementById('wilo-hud-status-indicator');
+
+      if (btnPhoto) btnPhoto.classList.toggle('active', mode === 'PHOTO_TOUR');
+      if (btn3D) btn3D.classList.toggle('active', mode === '3D_VIEWER');
+
+      if (mode === 'PHOTO_TOUR') {
+        if (photoContainer) photoContainer.style.display = 'flex';
+        if (canvas3DContainer) canvas3DContainer.style.display = 'none';
+        if (thumbnails) thumbnails.style.display = 'flex';
+        if (statusIndicator) {
+          statusIndicator.style.color = '#10b981';
+          statusIndicator.textContent = '● High-Definition Multi-Angle Tour Active';
+        }
+        renderPhotoTour();
+      } else if (mode === '3D_VIEWER') {
+        if (photoContainer) photoContainer.style.display = 'none';
+        if (canvas3DContainer) {
+          canvas3DContainer.style.display = 'flex';
+          if (!scene) init3DScene();
+        }
+        if (thumbnails) thumbnails.style.display = 'none';
+        if (viewTitle) viewTitle.textContent = '3D Viewer Ready — Authentic Wilo Reconstruction Pending';
+        if (statusIndicator) {
+          statusIndicator.style.color = '#38bdf8';
+          statusIndicator.textContent = '● 3D Viewer Ready | Authentic Model: Not Yet Available';
+        }
+      }
+    }
+
+    function init3DScene() {
+      const container = document.getElementById('wilo-3d-canvas-container');
+      if (!container || !window.THREE) return;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x070a12);
+
+      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+      camera.position.set(0, 2.4, 7.5);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+      // Append canvas behind overlay pending card
+      renderer.domElement.style.position = 'absolute';
+      renderer.domElement.style.inset = '0';
+      renderer.domElement.style.width = '100%';
+      renderer.domElement.style.height = '100%';
+      renderer.domElement.style.zIndex = '5';
+      container.insertBefore(renderer.domElement, container.firstChild);
+
+      orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
+      orbitControls.enableDamping = true;
+      orbitControls.dampingFactor = 0.05;
+      orbitControls.maxPolarAngle = Math.PI / 2 + 0.05;
+      orbitControls.minDistance = 1.5;
+      orbitControls.maxDistance = 15.0;
+      orbitControls.target.set(0, 1.2, -0.5);
+
+      // Studio Lighting for viewer engine
+      const ambient = new THREE.AmbientLight(0xffffff, 0.85);
+      scene.add(ambient);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1.3);
+      dirLight.position.set(5, 8, 5);
+      scene.add(dirLight);
+
+      // ZERO placeholder meshes added (NO walls, NO boxes, NO grid)
+      // Authentic model will be attached in R10 upon reconstruction completion.
+
+      window.addEventListener('resize', onWindowResize);
+
+      animate3D();
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('wilo-3d-canvas-container');
+      if (!container || !renderer || !camera) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    function animate3D() {
+      requestAnimationFrame(animate3D);
+      if (orbitControls && currentViewerMode === '3D_VIEWER') {
+        orbitControls.update();
+      }
+      if (renderer && scene && camera && currentViewerMode === '3D_VIEWER') {
+        renderer.render(scene, camera);
+      }
+    }
+
+    function resetViewerCamera() {
+      if (camera && orbitControls) {
+        camera.position.set(0, 2.4, 7.5);
+        orbitControls.target.set(0, 1.2, -0.5);
+        orbitControls.update();
+      }
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    function renderThumbnails() {
+      const container = document.getElementById('wilo-thumbnails');
+      if (!container) return;
+      container.innerHTML = boothViews.map((v, i) =>
+        '<div class="wilo-thumb-item" onclick="selectPhotoView(' + i + ')" style="flex:0 0 100px; height:60px; border-radius:6px; overflow:hidden; cursor:pointer; transition:all 0.2s; border:' + (i === currentPhotoIndex ? '2px solid #00a390' : '1px solid #334155') + '; opacity:' + (i === currentPhotoIndex ? '1' : '0.6') + '; position:relative;">' +
+          '<img src="' + v.url + '" onerror="handleImageError(this)" style="width:100%; height:100%; object-fit:cover;" />' +
+          '<div style="position:absolute; bottom:0; inset-inline:0; background:rgba(0,0,0,0.7); font-size:10px; color:#fff; text-align:center; padding:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + (i+1) + '</div>' +
+        '</div>'
+      ).join('');
+    }
+
+    // Product 3D Inspection Viewer in Modal
+    let prodScene, prodCamera, prodRenderer, prodControls, prodMesh;
+
+    function openProductModal(prodId) {
+      if (!demoData || !demoData.products) return;
+      const p = demoData.products.find(x => x.id === prodId) || demoData.products[0];
+      currentProduct = p;
+
+      document.getElementById('modal-prod-name').textContent = p.name;
+      document.getElementById('modal-prod-sku').textContent = p.sku;
+      document.getElementById('modal-prod-desc').textContent = p.description;
+
+      const specsBox = document.getElementById('modal-prod-specs');
+      specsBox.innerHTML = Object.entries(p.specs || {}).map(([k, v]) =>
+        '<div><b style="color:#f8fafc;">' + k + ':</b> ' + v + '</div>'
+      ).join('');
+
+      document.getElementById('product-modal').classList.add('active');
+      initProduct3DCanvas(p);
+    }
+
+    function initProduct3DCanvas(product) {
+      const container = document.getElementById('product-3d-canvas');
+      container.innerHTML = '';
+
+      prodScene = new THREE.Scene();
+      prodScene.background = new THREE.Color(0x050811);
+
+      prodCamera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 20);
+      prodCamera.position.set(0, 0.8, 2.5);
+
+      prodRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      prodRenderer.setSize(container.clientWidth, container.clientHeight);
+      prodRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(prodRenderer.domElement);
+
+      prodControls = new THREE.OrbitControls(prodCamera, prodRenderer.domElement);
+      prodControls.enableDamping = true;
+      prodControls.autoRotate = true;
+      prodControls.autoRotateSpeed = 2.0;
+
+      const amb = new THREE.AmbientLight(0xffffff, 0.9);
+      prodScene.add(amb);
+      const light = new THREE.DirectionalLight(0x00a390, 1.5);
+      light.position.set(3, 4, 3);
+      prodScene.add(light);
+
+      // Build 3D Product Geometry (Hydronic Impeller / Inline Pump Assembly)
+      const group = new THREE.Group();
+      
+      const bodyGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.8, 24);
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x007a6c, roughness: 0.3, metalness: 0.4 });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      group.add(body);
+
+      const motorGeo = new THREE.BoxGeometry(0.5, 0.45, 0.45);
+      const motorMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+      const motor = new THREE.Mesh(motorGeo, motorMat);
+      motor.position.set(0, 0.5, 0);
+      group.add(motor);
+
+      const flangeGeo = new THREE.TorusGeometry(0.4, 0.08, 12, 24);
+      const flangeMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8 });
+      const flange = new THREE.Mesh(flangeGeo, flangeMat);
+      flange.position.set(0, -0.4, 0);
+      flange.rotation.x = Math.PI / 2;
+      group.add(flange);
+
+      prodMesh = group;
+      prodScene.add(prodMesh);
+
+      function prodAnimate() {
+        if (!document.getElementById('product-modal').classList.contains('active')) return;
+        requestAnimationFrame(prodAnimate);
+        if (prodControls) prodControls.update();
+        if (prodRenderer && prodScene && prodCamera) prodRenderer.render(prodScene, prodCamera);
+      }
+      prodAnimate();
+    }
+
+    function renderCatalog() {
+      const list = document.getElementById('catalog-products-list');
+      if (!demoData || !demoData.products) return;
+      list.innerHTML = demoData.products.map(p => 
+        '<div style="display:flex; justify-content:space-between; align-items:center; background:#0f172a; padding:12px; border-radius:8px; border:1px solid #1e293b;">' +
+          '<div><strong style="color:#fff; font-size:14px;">' + p.name + '</strong><br><small style="color:#94a3b8; font-size:12px;">' + p.shortDescription + '</small></div>' +
+          '<button class="wilo-btn" onclick="closeModals(); openProductModal(\'' + p.id + '\')">Inspect in 3D</button>' +
+        '</div>'
+      ).join('');
+    }
+
+    function renderResources() {
+      const list = document.getElementById('resources-list');
+      if (!demoData || !demoData.resources) return;
+      list.innerHTML = demoData.resources.map(r => 
+        '<div style="display:flex; justify-content:space-between; align-items:center; background:#0f172a; padding:12px; border-radius:8px; border:1px solid #1e293b;">' +
+          '<div><strong style="color:#fff; font-size:13px;">' + r.title + '</strong><br><small style="color:#38bdf8; font-size:11px;">' + r.type + ' • ' + r.size + '</small></div>' +
+          '<button class="wilo-btn" onclick="alert(\'Downloading ' + r.title + '\')">Download</button>' +
+        '</div>'
+      ).join('');
+    }
+
+    function openCatalogModal() { document.getElementById('catalog-modal').classList.add('active'); }
+    function openResourceModal() { document.getElementById('resource-modal').classList.add('active'); }
+    function openTicketModal() { document.getElementById('ticket-modal').classList.add('active'); }
+    function openRfqModal() { document.getElementById('rfq-modal').classList.add('active'); }
+    function openApptModal() { document.getElementById('appt-modal').classList.add('active'); }
+    function openFeedbackModal() { document.getElementById('feedback-modal').classList.add('active'); }
+    function closeModals() { document.querySelectorAll('.wilo-modal-overlay').forEach(el => el.classList.remove('active')); }
+
+    function openTicketModalFromProd() {
+      closeModals();
+      if (currentProduct) document.getElementById('ticket-question').value = 'Technical question regarding ' + currentProduct.name + ' (SKU: ' + currentProduct.sku + '): ';
+      openTicketModal();
+    }
+
+    function openRfqModalFromProd() {
+      closeModals();
+      if (currentProduct) document.getElementById('rfq-product').value = currentProduct.name;
+      openRfqModal();
+    }
+
+    function downloadCatalog() {
+      alert('Downloading Wilo ISH Frankfurt 2026 Commercial Catalog (14.2 MB PDF)...');
+      closeModals();
+    }
+
+    async function submitTicket(e) {
+      e.preventDefault();
+      try {
+        const payload = {
+          name: document.getElementById('ticket-name').value,
+          company: document.getElementById('ticket-company').value,
+          email: document.getElementById('ticket-email').value,
+          country: document.getElementById('ticket-country').value,
+          question: document.getElementById('ticket-question').value,
+          organizationId: 'org-wilo-golden-demo'
+        };
+        const res = await fetch('/api/public/consultation-ticket', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          alert('Consultation ticket submitted successfully! A Wilo technical specialist will follow up.');
+          closeModals();
+        }
+      } catch (err) { alert('Error submitting ticket.'); }
+    }
+
+    async function submitRfq(e) {
+      e.preventDefault();
+      try {
+        const payload = {
+          name: document.getElementById('rfq-name').value,
+          email: document.getElementById('rfq-email').value,
+          organizationId: 'org-wilo-golden-demo',
+          boothId: 'booth-wilo-golden-demo',
+          notes: 'RFQ for ' + document.getElementById('rfq-product').value + ' (Qty: ' + document.getElementById('rfq-qty').value + ')'
+        };
+        await fetch('/api/public/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        alert('RFQ submitted successfully to Wilo Commercial Operations.');
+        closeModals();
+      } catch (err) { alert('Error submitting RFQ.'); }
+    }
+
+    async function submitAppt(e) {
+      e.preventDefault();
+      alert('Appointment request submitted successfully. A calendar confirmation has been delivered.');
+      closeModals();
+    }
+
+    async function submitFeedback(e) {
+      e.preventDefault();
+      try {
+        const payload = {
+          rating: document.getElementById('fb-rating').value,
+          workedWell: document.getElementById('fb-worked-well').value,
+          confusing: document.getElementById('fb-confusing').value,
+          improvements: document.getElementById('fb-improvements').value,
+          pageContext: window.location.pathname,
+          organizationId: 'org-wilo-golden-demo'
+        };
+        const res = await fetch('/api/public/wilo-demo/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          alert('Thank you! Demo feedback submitted successfully.');
+          closeModals();
+        }
+      } catch (err) { alert('Error submitting feedback.'); }
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
