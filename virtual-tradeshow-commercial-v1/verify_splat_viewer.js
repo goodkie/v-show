@@ -2,7 +2,6 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
 const outDir = 'C:/Users/vivPR/.gemini/antigravity/brain/9afb9fd9-3f7d-4d23-9c77-091fbc3ca5d8';
-
 const BASE = 'https://v-show-commercial-v1-production.up.railway.app';
 
 (async () => {
@@ -17,40 +16,40 @@ const BASE = 'https://v-show-commercial-v1-production.up.railway.app';
     ],
   });
 
-  console.log('Navigating to live 3DGS demo-splat.html...');
-  const page = await browser.newPage();
-  await page.setViewport({ width: 1400, height: 900 });
-  
-  page.on('console', msg => console.log(`  BROWSER CONSOLE: ${msg.text()}`));
-
-  await page.goto(`${BASE}/demo-splat.html`, { waitUntil: 'networkidle2', timeout: 90000 });
-  console.log('  Page loaded, waiting 8 seconds for Gaussian Splats streaming...');
-  await new Promise(r => setTimeout(r, 8000));
-
-  const outPath1 = path.join(outDir, '28_FINAL_3DGS_LIVE_SPLATS.png');
-  await page.screenshot({ path: outPath1, fullPage: false });
+  // 1. Capture Landing Page 3D Booth
+  console.log('1. Capturing Landing Page 3D Booth...');
+  const page1 = await browser.newPage();
+  await page1.setViewport({ width: 1400, height: 900 });
+  await page1.goto(`${BASE}/?ts=${Date.now()}`, { waitUntil: 'networkidle2', timeout: 60000 });
+  await new Promise(r => setTimeout(r, 4000));
+  const outPath1 = path.join(outDir, '31_LIVE_LANDING_REAL_3D_BOOTH.png');
+  await page1.screenshot({ path: outPath1, fullPage: false });
   console.log(`  Saved: ${outPath1}`);
+  await page1.close();
 
-  // Test clicking Waypoint 1 (Cobot)
-  console.log('Clicking Waypoint 1 (Cobot)...');
-  await page.evaluate(() => {
-    if (window.gotoWP) window.gotoWP(1);
-  });
-  await new Promise(r => setTimeout(r, 3000));
-  const outPath2 = path.join(outDir, '29_FINAL_3DGS_LIVE_WAYPOINT_1.png');
-  await page.screenshot({ path: outPath2, fullPage: false });
+  // 2. Capture Full 3D Showroom (/demo.html)
+  console.log('2. Capturing 3D Showroom...');
+  const page2 = await browser.newPage();
+  await page2.setViewport({ width: 1400, height: 900 });
+  await page2.goto(`${BASE}/demo.html?ts=${Date.now()}`, { waitUntil: 'networkidle2', timeout: 60000 });
+  await new Promise(r => setTimeout(r, 4000));
+  const outPath2 = path.join(outDir, '32_LIVE_DEMO_SHOWROOM_REAL_3D.png');
+  await page2.screenshot({ path: outPath2, fullPage: false });
   console.log(`  Saved: ${outPath2}`);
+  await page2.close();
 
-  // Test clicking Waypoint 2 (Center)
-  console.log('Clicking Waypoint 2 (Center)...');
-  await page.evaluate(() => {
-    if (window.gotoWP) window.gotoWP(2);
-  });
-  await new Promise(r => setTimeout(r, 3000));
-  const outPath3 = path.join(outDir, '30_FINAL_3DGS_LIVE_WAYPOINT_2.png');
-  await page.screenshot({ path: outPath3, fullPage: false });
+  // 3. Capture 3DGS Virtual Tour Page (/demo-splat.html)
+  console.log('3. Capturing 3DGS Virtual Tour Page...');
+  const page3 = await browser.newPage();
+  await page3.setViewport({ width: 1400, height: 900 });
+  page3.on('console', msg => console.log(`  [3DGS CONSOLE] ${msg.text()}`));
+  await page3.goto(`${BASE}/demo-splat.html?ts=${Date.now()}`, { waitUntil: 'networkidle2', timeout: 60000 });
+  await new Promise(r => setTimeout(r, 5000));
+  const outPath3 = path.join(outDir, '33_LIVE_3DGS_TOUR_PAGE.png');
+  await page3.screenshot({ path: outPath3, fullPage: false });
   console.log(`  Saved: ${outPath3}`);
+  await page3.close();
 
   await browser.close();
-  console.log('\n✅ 3DGS ALL SCREENSHOTS COMPLETED SUCCESSFULLY!');
+  console.log('\n✅ ALL LIVE SCREENSHOTS CAPTURED SUCCESSFULLY!');
 })();

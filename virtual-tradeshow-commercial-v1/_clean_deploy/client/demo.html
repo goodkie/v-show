@@ -814,6 +814,7 @@
       mesh(new THREE.BoxGeometry(14.2, 1.2, 0.25), fasciaBoxMat, 0,0,0, 0, 5.2, 9.8);
       const rearSign = new THREE.Mesh(new THREE.PlaneGeometry(14.0, 1.15), fasciaFrontMeshMat);
       rearSign.position.set(0, 5.2, 9.66);
+      rearSign.rotation.set(0, Math.PI, 0); // Face viewer correctly
       scene.add(rearSign);
 
       // Left & Right Sides
