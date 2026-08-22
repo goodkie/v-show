@@ -1006,103 +1006,6 @@
         reset: { pos: new THREE.Vector3(0, 0.0, 12.0), look: new THREE.Vector3(0, 0.0, 0) }
       };
 
-      try {
-        // 1. Scene
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x060a12);
-
-        // 2. Camera
-        const rect = frameBox.getBoundingClientRect();
-        const aspect = rect.width / (rect.height || 560);
-        camera = new THREE.PerspectiveCamera(46, aspect, 0.1, 100);
-        camera.position.set(0, 0.0, 12.0);
-
-        // 3. Renderer with Photorealistic PBR Tone Mapping
-        renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
-        renderer.setSize(rect.width, rect.height || 560);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0;
-
-        // 4. OrbitControls
-        controls = new THREE.OrbitControls(camera, canvas);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.06;
-        controls.target.copy(currentLookAt);
-        controls.minDistance = 3.0;
-        controls.maxDistance = 18.0;
-        controls.maxPolarAngle = Math.PI / 2 + 0.15;
-        controls.minPolarAngle = Math.PI / 2 - 0.25;
-        controls.minAzimuthAngle = -Math.PI * 0.35;
-        controls.maxAzimuthAngle = Math.PI * 0.35;
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.35;
-
-        // Pause auto-rotate on user interaction
-        canvas.addEventListener('pointerdown', () => { controls.autoRotate = false; });
-
-        // 30-angle texture switching on 3D orbit rotation
-        controls.addEventListener('change', () => {
-          if (isTransitioning) return;
-          const az = controls.getAzimuthalAngle();
-          const normAng = Math.min(10, Math.max(1, Math.round(((az + Math.PI * 0.32) / (Math.PI * 0.64)) * 9) + 1));
-          const pol = controls.getPolarAngle();
-          const lvl = pol < 1.45 ? '6ft' : (pol > 1.68 ? 'floor' : 'eye');
-          if (normAng !== currentAngle || lvl !== currentLevel) {
-            currentAngle = normAng;
-            currentLevel = lvl;
-            ['floor', 'eye', '6ft'].forEach(l => {
-              const b = document.getElementById(`hero-btn-lvl-${l}`);
-              if (b) b.classList.toggle('active', l === lvl);
-            });
-            for (let i = 1; i <= 10; i++) {
-              const b = document.getElementById(`hero-btn-ang-${i}`);
-              if (b) b.classList.toggle('active', i === normAng);
-            }
-            switchHeroBackdropAngle(lvl, normAng);
-          }
-        });
-
-        // 5. Build Photorealistic 3D Curved Environment
-        buildArchitecture();
-
-        // 6. Render Loop
-        function animate() {
-          animId = requestAnimationFrame(animate);
-
-          // Camera tween interpolation
-          if (isTransitioning && targetCamPos && targetLookAt) {
-            camera.position.lerp(targetCamPos, 0.065);
-            currentLookAt.lerp(targetLookAt, 0.065);
-            controls.target.copy(currentLookAt);
-            if (camera.position.distanceTo(targetCamPos) < 0.08 && currentLookAt.distanceTo(targetLookAt) < 0.08) {
-              camera.position.copy(targetCamPos);
-              currentLookAt.copy(targetLookAt);
-              controls.target.copy(currentLookAt);
-              isTransitioning = false;
-            }
-          }
-
-          controls.update();
-          updateProjectedHotspots();
-          renderer.render(scene, camera);
-        }
-        animate();
-
-        // Window resize listener
-        window.addEventListener('resize', () => {
-          const r = frameBox.getBoundingClientRect();
-          if (r.width > 0 && r.height > 0) {
-            camera.aspect = r.width / r.height;
-            camera.updateProjectionMatrix();
-            renderer.setSize(r.width, r.height);
-          }
-        });
-
-      } catch (e) {
-        console.warn('Hero 3D Showroom WebGL init error:', e);
-      }
-
       // ── 30-Angle Volumetric Virtual Tour Texture Manager ──
       let backdropMesh = null;
       let backdropMat = null;
@@ -1205,6 +1108,103 @@
           backdropMesh.position.set(0, 0.0, -10.0);
           scene.add(backdropMesh);
         });
+      }
+
+      try {
+        // 1. Scene
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x060a12);
+
+        // 2. Camera
+        const rect = frameBox.getBoundingClientRect();
+        const aspect = rect.width / (rect.height || 560);
+        camera = new THREE.PerspectiveCamera(46, aspect, 0.1, 100);
+        camera.position.set(0, 0.0, 12.0);
+
+        // 3. Renderer with Photorealistic PBR Tone Mapping
+        renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
+        renderer.setSize(rect.width, rect.height || 560);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+
+        // 4. OrbitControls
+        controls = new THREE.OrbitControls(camera, canvas);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.06;
+        controls.target.copy(currentLookAt);
+        controls.minDistance = 3.0;
+        controls.maxDistance = 18.0;
+        controls.maxPolarAngle = Math.PI / 2 + 0.15;
+        controls.minPolarAngle = Math.PI / 2 - 0.25;
+        controls.minAzimuthAngle = -Math.PI * 0.35;
+        controls.maxAzimuthAngle = Math.PI * 0.35;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.35;
+
+        // Pause auto-rotate on user interaction
+        canvas.addEventListener('pointerdown', () => { controls.autoRotate = false; });
+
+        // 30-angle texture switching on 3D orbit rotation
+        controls.addEventListener('change', () => {
+          if (isTransitioning) return;
+          const az = controls.getAzimuthalAngle();
+          const normAng = Math.min(10, Math.max(1, Math.round(((az + Math.PI * 0.32) / (Math.PI * 0.64)) * 9) + 1));
+          const pol = controls.getPolarAngle();
+          const lvl = pol < 1.45 ? '6ft' : (pol > 1.68 ? 'floor' : 'eye');
+          if (normAng !== currentAngle || lvl !== currentLevel) {
+            currentAngle = normAng;
+            currentLevel = lvl;
+            ['floor', 'eye', '6ft'].forEach(l => {
+              const b = document.getElementById(`hero-btn-lvl-${l}`);
+              if (b) b.classList.toggle('active', l === lvl);
+            });
+            for (let i = 1; i <= 10; i++) {
+              const b = document.getElementById(`hero-btn-ang-${i}`);
+              if (b) b.classList.toggle('active', i === normAng);
+            }
+            switchHeroBackdropAngle(lvl, normAng);
+          }
+        });
+
+        // 5. Build Photorealistic 3D Curved Environment
+        buildArchitecture();
+
+        // 6. Render Loop
+        function animate() {
+          animId = requestAnimationFrame(animate);
+
+          // Camera tween interpolation
+          if (isTransitioning && targetCamPos && targetLookAt) {
+            camera.position.lerp(targetCamPos, 0.065);
+            currentLookAt.lerp(targetLookAt, 0.065);
+            controls.target.copy(currentLookAt);
+            if (camera.position.distanceTo(targetCamPos) < 0.08 && currentLookAt.distanceTo(targetLookAt) < 0.08) {
+              camera.position.copy(targetCamPos);
+              currentLookAt.copy(targetLookAt);
+              controls.target.copy(currentLookAt);
+              isTransitioning = false;
+            }
+          }
+
+          controls.update();
+          updateProjectedHotspots();
+          renderer.render(scene, camera);
+        }
+        animate();
+
+        // Window resize listener
+        window.addEventListener('resize', () => {
+          const r = frameBox.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) {
+            camera.aspect = r.width / r.height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(r.width, r.height);
+          }
+        });
+
+      } catch (e) {
+        console.warn('Hero 3D Showroom WebGL init error:', e);
       }
 
       // ── Dynamic 3D Hotspot Screen Space Projection ──
