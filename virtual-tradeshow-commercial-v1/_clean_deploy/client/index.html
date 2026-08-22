@@ -984,15 +984,15 @@
       let autoTourTimer = null;
       let autoTourIndex = 0;
 
-      // 3D Product Positions for Projected Hotspots (Matched to Photorealistic Visual Master)
+      // 3D Product Positions for Projected Hotspots (Matched to DN'a ROBOTIC Master Visual)
       const PRODUCT_3D_POS = {
-        cobot: new THREE.Vector3(-0.25, 0.6, -9.5),
-        amr: new THREE.Vector3(-3.2, -2.3, -9.5),
-        optiscan: new THREE.Vector3(1.9, 0.3, -9.5),
-        flowdrive: new THREE.Vector3(-3.4, 0.4, -9.5),
-        edgecore: new THREE.Vector3(-0.15, -1.3, -9.5),
-        flexgrip: new THREE.Vector3(5.4, -0.6, -9.5),
-        lasercell: new THREE.Vector3(3.9, -2.3, -9.5)
+        cobot: new THREE.Vector3(-3.2, -1.2, -9.5),
+        amr: new THREE.Vector3(0.8, -1.2, -9.5),
+        optiscan: new THREE.Vector3(3.6, -0.9, -9.5),
+        flowdrive: new THREE.Vector3(-4.8, 0.4, -9.5),
+        edgecore: new THREE.Vector3(0.8, 0.4, -9.5),
+        flexgrip: new THREE.Vector3(4.8, 0.4, -9.5),
+        lasercell: new THREE.Vector3(2.8, -1.6, -9.5)
       };
 
       // Camera Preset Positions calibrated to photorealistic 3D space
@@ -1116,14 +1116,21 @@
         return `/assets/demo/dna-showcase/angles/angle_${level}_${pad}.jpg`;
       }
 
+      function configureTexture(t) {
+        t.generateMipmaps = true;
+        t.minFilter = THREE.LinearMipmapLinearFilter;
+        t.magFilter = THREE.LinearFilter;
+        if (renderer && renderer.capabilities) {
+          t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        }
+        return t;
+      }
+
       function preloadAngleTextures() {
         for (let i = 1; i <= 10; i++) {
           const path = getAngleTexturePath('eye', i);
           texLoader.load(path, (t) => {
-            t.generateMipmaps = false;
-            t.minFilter = THREE.LinearFilter;
-            t.magFilter = THREE.LinearFilter;
-            textureCache[`eye_${i}`] = t;
+            textureCache[`eye_${i}`] = configureTexture(t);
           });
         }
       }
