@@ -4056,7 +4056,7 @@ app.get('/demo-premium.html', (req, res) => {
 
 // SPA Fallback Route
 app.get('*', (req, res) => {
-  if (req.path.startsWith('/uploads/') || req.path.startsWith('/api/') || req.path.startsWith('/vendor/')) {
+  if (req.path.startsWith('/uploads/') || req.path.startsWith('/api/')) {
     return res.status(404).json({ error: 'Not Found' });
   }
   if (req.path.startsWith('/organizer')) {
@@ -4068,7 +4068,7 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`=======================================================`);
   console.log(` Virtual Trade Show Commercial Beta Server (Phase 8 Multi-Tenant)`);
   console.log(` Port: ${PORT}`);
