@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>dn’a Booth Builder — Early Access Preview</title>
+  <meta name="description" content="Design your own 3D virtual trade show booth with the dn’a self-service builder. Early access beta preview.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    :root {
+      --primary: #0284c7;
+      --accent: #38bdf8;
+      --bg: #070e17;
+      --card-bg: #0f172a;
+      --border: #1e293b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: #f8fafc;
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+    }
+    .app-nav {
+      padding: 16px 32px;
+      background: #0f172a;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .container {
+      max-width: 900px;
+      margin: 40px auto 80px;
+      padding: 0 20px;
+    }
+    .beta-banner {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid #f59e0b;
+      border-radius: 12px;
+      padding: 14px 20px;
+      color: #fbbf24;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .steps-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 18px;
+      margin-bottom: 40px;
+    }
+    .step-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      position: relative;
+    }
+    .step-number {
+      font-size: 11px;
+      font-weight: 800;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .step-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0 0 8px 0;
+      color: #fff;
+    }
+    .step-desc {
+      font-size: 13px;
+      color: #94a3b8;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    /* Fallback Managed Banner */
+    .fallback-card {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 1) 0%, rgba(8, 47, 73, 0.7) 100%);
+      border: 2px solid #0284c7;
+      border-radius: 16px;
+      padding: 32px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(2, 132, 199, 0.25);
+    }
+    .fallback-title { font-size: 24px; font-weight: 800; color: #fff; margin: 0 0 10px 0; }
+    .fallback-desc { font-size: 15px; color: #cbd5e1; max-width: 600px; margin: 0 auto 24px auto; line-height: 1.6; }
+    .btn-managed {
+      display: inline-block;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-weight: 800;
+      text-decoration: none;
+      font-size: 15px;
+      box-shadow: 0 6px 20px rgba(2, 132, 199, 0.4);
+      transition: all 0.2s;
+    }
+    .btn-managed:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(2, 132, 199, 0.55); }
+  </style>
+</head>
+<body>
+
+  <nav class="app-nav">
+    <a href="/" style="color: #fff; text-decoration: none; font-weight: 800; font-size: 20px;">dn’a</a>
+    <a href="/" style="color: #94a3b8; text-decoration: none; font-size: 14px; font-weight: 600;">← Back to Home</a>
+  </nav>
+
+  <main class="container">
+    <div class="beta-banner">
+      <div><b>🔬 Early Access / Beta Preview:</b> The dn’a DIY Booth Builder is currently in private beta testing.</div>
+      <a href="/start.html" style="color: #fff; background: #d97706; padding: 5px 12px; border-radius: 6px; text-decoration: none; font-size: 12px;">Request Production Instead →</a>
+    </div>
+
+    <h1 style="font-size: 32px; font-weight: 800; margin: 0 0 10px 0; letter-spacing: -0.5px;">dn’a Booth Builder — 9-Step Conceptual Architecture</h1>
+    <p style="color: #94a3b8; font-size: 16px; margin: 0 0 32px 0;">Our template-first slot-binding engine transforms raw exhibitor parameters into an interactive WebGL 3D booth in minutes.</p>
+
+    <!-- 9 Conceptual Steps -->
+    <div class="steps-container">
+      <div class="step-card">
+        <div class="step-number">Step 01</div>
+        <h3 class="step-title">Company Profile</h3>
+        <p class="step-desc">Bind company name, industry category, slogan, and official website URL.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">Step 02</div>
+        <h3 class="step-title">Logo & Brand Theme</h3>
+        <p class="step-desc">Upload SVG/PNG vector logo and select primary/accent color codes for 3D ribbons.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">Step 03</div>
+        <h3 class="step-title">Trade Show & Stand</h3>
+        <p class="step-desc">Input trade show name, exhibition dates, city, and physical stand number (e.g. B128).</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">Step 04</div>
+        <h3 class="step-title">Product Catalog Slots</h3>
+        <p class="step-desc">Define 6 to 12 product names, descriptions, MOQ, and wholesale price brackets.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">Step 05</div>
+        <h3 class="step-title">High-Res Media Upload</h3>
+        <p class="step-desc">Attach multi-angle product photography and GLB 3D models for hologram plinths.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">Step 06</div>
+        <h3 class="step-title">PDF Datasheet Hub</h3>
+        <p class="step-desc">Upload downloadable engineering spec sheets and product brochures.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">Step 07</div>
+        <h3 class="step-title">Smart Exhibitor Card</h3>
+        <p class="step-desc">Configure booth sales reps, direct contact phone numbers, and downloadable vCards.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">Step 08</div>
+        <h3 class="step-title">3D Booth Template</h3>
+        <p class="step-desc">Select architectural booth layout: Island 4-side, Corner 2-side, or In-Line Pavilion.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">Step 09</div>
+        <h3 class="step-title">Instant Live Preview</h3>
+        <p class="step-desc">Automated slot-binding renders your live 3D showroom with working RFQ endpoints.</p>
+      </div>
+    </div>
+
+    <!-- Strong Fallback Managed Production CTA -->
+    <div class="fallback-card">
+      <h2 class="fallback-title">Need Your Digital Booth Live Now?</h2>
+      <p class="fallback-desc">
+        Don't have time to configure assets before your next trade show? Let our dedicated 3D production team build and launch your showroom in <b>5 business days</b>.
+      </p>
+      <a href="/start.html" class="btn-managed">Request Managed Production Now →</a>
+    </div>
+  </main>
+
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>dn’a Internal Production Inbox — Order Intake Verification</title>
+  <meta name="description" content="Internal operations surface for reviewing incoming Managed Production showroom requests.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    :root {
+      --primary: #0284c7;
+      --accent: #38bdf8;
+      --bg: #070e17;
+      --card-bg: #0f172a;
+      --border: #1e293b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: #f8fafc;
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+    }
+    .app-nav {
+      padding: 16px 32px;
+      background: #0f172a;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 32px auto 80px;
+      padding: 0 20px;
+    }
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .stat-card small { color: #94a3b8; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+    .stat-card b { display: block; font-size: 28px; font-weight: 800; color: #fff; margin-top: 4px; }
+
+    /* Orders Table */
+    .table-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+    th {
+      background: #1e293b;
+      color: #94a3b8;
+      font-weight: 700;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+    }
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #1e293b;
+      color: #cbd5e1;
+    }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .status-new { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); }
+    .status-in_production { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .status-completed { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+
+    .btn-refresh {
+      background: #0284c7;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-refresh:hover { background: #0369a1; }
+  </style>
+</head>
+<body>
+
+  <nav class="app-nav">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <a href="/" style="color:#fff; text-decoration:none; font-weight:800; font-size:20px;">dn’a</a>
+      <span style="background:rgba(239,68,68,0.2); border:1px solid #ef4444; color:#fca5a5; font-size:10px; font-weight:800; padding:2px 8px; border-radius:4px; text-transform:uppercase;">
+        INTERNAL OPS INBOX
+      </span>
+    </div>
+    <a href="/" style="color:#94a3b8; text-decoration:none; font-size:14px; font-weight:600;">← Back to Home</a>
+  </nav>
+
+  <main class="container">
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:24px;">
+      <div>
+        <h1 style="font-size: 26px; font-weight: 800; margin: 0 0 6px 0; color: #fff;">Managed Production Intake Queue</h1>
+        <p style="color: #94a3b8; font-size: 14px; margin: 0;">Verified incoming B2B trade show showroom requests from the dn’a commercial platform.</p>
+      </div>
+      <button class="btn-refresh" onclick="loadProductionRequests()">↻ Refresh Queue</button>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <small>Total Production Orders</small>
+        <b id="stat-total" style="color:#38bdf8;">0</b>
+      </div>
+      <div class="stat-card">
+        <small>Pending Qualification (NEW)</small>
+        <b id="stat-new" style="color:#fbbf24;">0</b>
+      </div>
+      <div class="stat-card">
+        <small>Active in Production</small>
+        <b id="stat-active" style="color:#34d399;">0</b>
+      </div>
+    </div>
+
+    <!-- Requests Table -->
+    <div class="table-box">
+      <table>
+        <thead>
+          <tr>
+            <th>Request ID</th>
+            <th>Company & Contact</th>
+            <th>Trade Show & City</th>
+            <th>Show Date (SLA)</th>
+            <th>Services Scope</th>
+            <th>Status</th>
+            <th>Received At</th>
+          </tr>
+        </thead>
+        <tbody id="requests-tbody">
+          <tr><td colspan="7" style="text-align:center; padding:32px; color:#94a3b8;">Loading production requests...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    async function loadProductionRequests() {
+      const tbody = document.getElementById('requests-tbody');
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:32px; color:#94a3b8;">Fetching records...</td></tr>';
+      try {
+        const res = await fetch('/api/production-requests');
+        const list = await res.json();
+
+        document.getElementById('stat-total').textContent = list.length;
+        document.getElementById('stat-new').textContent = list.filter(r => r.status === 'NEW_REQUEST').length;
+        document.getElementById('stat-active').textContent = list.filter(r => r.status === 'IN_PRODUCTION').length;
+
+        if (list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:32px; color:#94a3b8;">No production requests yet. Submit one at <a href="/start.html" style="color:#38bdf8;">/start.html</a>.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = list.map(r => `
+          <tr>
+            <td><code>${r.id}</code></td>
+            <td>
+              <b>${r.companyName}</b><br>
+              <small style="color:#94a3b8;">${r.contactName} (${r.email})</small>
+            </td>
+            <td>
+              ${r.tradeShow || 'N/A'}<br>
+              <small style="color:#94a3b8;">${r.city || 'Flexible'} · ${r.boothNumber || 'Stand TBD'}</small>
+            </td>
+            <td>
+              <b>${r.showDate || 'TBD'}</b><br>
+              <small style="color:${r.daysUntilShow !== null && r.daysUntilShow <= 14 ? '#ef4444' : '#38bdf8'}; font-weight:700;">
+                ${r.daysUntilShow !== null ? r.daysUntilShow + ' Days Remaining' : 'Flexible Schedule'}
+              </small>
+            </td>
+            <td>
+              <small style="color:#cbd5e1;">${(r.services || []).join(', ') || 'Full Showroom'}</small>
+            </td>
+            <td>
+              <span class="status-badge status-${r.status ? r.status.toLowerCase() : 'new'}">${r.status || 'NEW_REQUEST'}</span>
+            </td>
+            <td><small style="color:#94a3b8;">${new Date(r.createdAt).toLocaleString()}</small></td>
+          </tr>
+        `).join('');
+
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:32px; color:#ef4444;">Failed to load requests: ${err.message}</td></tr>`;
+      }
+    }
+
+    loadProductionRequests();
+  </script>
+</body>
+</html>

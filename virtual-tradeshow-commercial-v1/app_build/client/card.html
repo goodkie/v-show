@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Alex Vance — Smart Exhibitor Card | dn’a Robotics</title>
+  <meta name="description" content="Connect with Alex Vance, VP of Global B2B Solutions at dn’a Robotics. Download vCard, explore our 3D trade show booth, and request wholesale RFQs.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0284c7;
+      --accent: #38bdf8;
+      --bg: #070e17;
+      --card-bg: #0f172a;
+      --border: #1e293b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: #f8fafc;
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+      margin: 0;
+      padding: 24px 16px 60px;
+      display: flex;
+      justify-content: center;
+    }
+    .card-container {
+      width: 100%;
+      max-width: 440px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    }
+    .card-header {
+      background: linear-gradient(135deg, #0284c7, #1e3a8a);
+      padding: 32px 24px 24px;
+      text-align: center;
+      position: relative;
+    }
+    .badge-expo {
+      display: inline-block;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #e0f2fe;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .avatar-box {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: #0369a1;
+      border: 4px solid #0f172a;
+      margin: 0 auto 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    }
+    .rep-name { font-size: 24px; font-weight: 800; margin: 0 0 4px; color: #fff; }
+    .rep-title { font-size: 13px; color: #bae6fd; font-weight: 600; margin-bottom: 2px; }
+    .rep-company { font-size: 12px; color: #93c5fd; }
+
+    .card-body { padding: 24px 20px; }
+
+    /* Action Buttons Stack */
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .btn-card-action {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f8fafc;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-card-action:hover { background: #334155; border-color: var(--accent); }
+    .btn-card-action.primary {
+      grid-column: span 2;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      border-color: #0284c7;
+      color: #fff;
+      font-size: 15px;
+      padding: 14px;
+    }
+    .btn-card-action.primary:hover { opacity: 0.95; transform: translateY(-1px); }
+
+    /* Quick Lead Exchange Form */
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 20px 0 10px;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .input-box {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: #0d1b2a;
+      color: #fff;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+    .input-box:focus { outline: none; border-color: var(--accent); }
+    .btn-submit-lead {
+      width: 100%;
+      background: #0284c7;
+      border: none;
+      color: #fff;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-submit-lead:hover { background: #0369a1; }
+
+    .result-msg {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <main class="card-container">
+    <!-- Card Header Profile -->
+    <header class="card-header">
+      <div class="badge-expo">📍 GIAE Expo 2026 · Stand B128</div>
+      <div class="avatar-box">AV</div>
+      <h1 class="rep-name">Alex Vance</h1>
+      <div class="rep-title">VP of Global B2B Solutions</div>
+      <div class="rep-company">dn’a Robotics & Smart Automation Corp.</div>
+    </header>
+
+    <div class="card-body">
+      <!-- Quick Action Buttons -->
+      <div class="action-grid">
+        <button class="btn-card-action primary" onclick="downloadVCard()">
+          <span>💾 Save Contact to Phone (.vcf)</span>
+        </button>
+        <a href="/demo.html" class="btn-card-action">
+          <span>🌐 View 3D Booth</span>
+        </a>
+        <a href="/demo.html" class="btn-card-action">
+          <span>▤ View Catalog</span>
+        </a>
+        <a href="/demo.html" class="btn-card-action">
+          <span>✉ Request RFQ</span>
+        </a>
+        <a href="/demo.html" class="btn-card-action">
+          <span>📅 Book Meeting</span>
+        </a>
+      </div>
+
+      <!-- Quick Lead Form -->
+      <div class="section-title">
+        <span>🤝 Exchange Digital Business Card</span>
+      </div>
+      <form onsubmit="submitQuickLead(event)">
+        <input id="lead-name" class="input-box" required placeholder="Your Full Name *">
+        <input id="lead-company" class="input-box" required placeholder="Your Company Name *">
+        <input id="lead-email" type="email" class="input-box" required placeholder="Your Work Email *">
+        <input id="lead-phone" class="input-box" placeholder="Mobile / WhatsApp">
+        <button type="submit" class="btn-submit-lead">Send My Card to Alex</button>
+      </form>
+      <div id="lead-result"></div>
+
+      <!-- Footer Branding -->
+      <div style="text-align:center; margin-top:24px; padding-top:16px; border-top:1px solid #1e293b; font-size:11px; color:#64748b;">
+        Powered by <b>dn’a Smart Exhibitor Card</b> · Virtual Trade Show Commercial Platform
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function downloadVCard() {
+      const vcard = `BEGIN:VCARD\nVERSION:3.0\nN:Vance;Alex;;;\nFN:Alex Vance\nORG:dn'a Robotics & Smart Automation Corp.\nTITLE:VP of Global B2B Solutions\nTEL;TYPE=WORK,VOICE:+15553829011\nEMAIL:alex.vance@dna-robotics.demo\nURL:https://v-show-commercial-v1-production.up.railway.app/card.html\nNOTE:Met at Global Industry & Automation Expo 2026 Booth B128\nEND:VCARD`;
+      const blob = new Blob([vcard], { type: 'text/vcard' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'Alex_Vance_dna_Robotics.vcf';
+      a.click();
+    }
+
+    async function submitQuickLead(e) {
+      e.preventDefault();
+      const resEl = document.getElementById('lead-result');
+      resEl.innerHTML = '<div style="color:#94a3b8; padding:8px;">Submitting contact...</div>';
+      try {
+        const payload = {
+          boothId: 'booth-demo-01',
+          buyerName: document.getElementById('lead-name').value,
+          company: document.getElementById('lead-company').value,
+          email: document.getElementById('lead-email').value,
+          phone: document.getElementById('lead-phone').value,
+          notes: 'Exchanged via Smart Exhibitor Card mobile interface'
+        };
+        const res = await fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          resEl.innerHTML = `
+            <div class="result-msg" style="background:rgba(16,185,129,0.15); border:1px solid #10b981; color:#34d399;">
+              <b>✓ Contact Exchanged!</b><br>
+              Alex Vance has received your details and will follow up shortly.
+            </div>
+          `;
+        } else {
+          resEl.innerHTML = `<div class="result-msg" style="color:#ef4444;">${data.error || 'Submission failed'}</div>`;
+        }
+      } catch (err) {
+        resEl.innerHTML = `<div class="result-msg" style="color:#ef4444;">Network error: ${err.message}</div>`;
+      }
+    }
+  </script>
+</body>
+</html>

@@ -389,6 +389,7 @@ const initialSeedData = () => {
     rfqs: [],
     samples: [],
     appointments: [],
+    productionRequests: [],
     analyticsEvents: [],
     reconstructionJobs: [
       {
@@ -595,6 +596,7 @@ class JSONDatabase {
 
       current.auditLogs = current.auditLogs || [];
       current.showhosts = current.showhosts || [];
+      current.productionRequests = current.productionRequests || [];
 
       // Atomic save migrated structure
       fs.writeFileSync(DB_FILE, JSON.stringify(current, null, 2), 'utf-8');
@@ -1296,6 +1298,66 @@ class JSONDatabase {
       };
       db.appointments.push(item);
       return item;
+    });
+  }
+
+  // --- Managed Production Requests (Phase dn’a-C01) ---
+  getProductionRequests() {
+    const data = this.read();
+    return (data.productionRequests || []).slice();
+  }
+
+  async createProductionRequest(payload) {
+    return this.mutate((db) => {
+      db.productionRequests = db.productionRequests || [];
+      const id = `req-${Date.now()}-${uuidv4().substring(0, 6)}`;
+      const now = new Date().toISOString();
+      
+      // Calculate days until show date if showDate provided
+      let daysUntilShow = null;
+      if (payload.showDate) {
+        const show = new Date(payload.showDate);
+        const today = new Date();
+        const diffTime = show - today;
+        daysUntilShow = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+
+      const newRequest = {
+        id,
+        companyName: (payload.companyName || '').trim() || 'Unknown Company',
+        contactName: (payload.contactName || '').trim() || '',
+        email: (payload.email || '').trim() || '',
+        phone: (payload.phone || '').trim() || '',
+        website: (payload.website || '').trim() || '',
+        tradeShow: (payload.tradeShow || '').trim() || '',
+        showDate: (payload.showDate || '').trim() || '',
+        daysUntilShow,
+        city: (payload.city || '').trim() || '',
+        boothNumber: (payload.boothNumber || '').trim() || '',
+        industry: (payload.industry || '').trim() || '',
+        productCount: parseInt(payload.productCount, 10) || 5,
+        services: Array.isArray(payload.services) ? payload.services : (payload.services ? [payload.services] : []),
+        deadline: (payload.deadline || '').trim() || '',
+        notes: (payload.notes || '').trim() || '',
+        status: 'NEW_REQUEST',
+        createdAt: now,
+        updatedAt: now
+      };
+
+      db.productionRequests.unshift(newRequest);
+      return newRequest;
+    });
+  }
+
+  async updateProductionRequestStatus(id, newStatus, internalNotes = '') {
+    return this.mutate((db) => {
+      db.productionRequests = db.productionRequests || [];
+      const req = db.productionRequests.find(r => r.id === id);
+      if (!req) return null;
+      req.status = newStatus;
+      if (internalNotes) req.internalNotes = internalNotes;
+      req.updatedAt = new Date().toISOString();
+      return req;
     });
   }
 

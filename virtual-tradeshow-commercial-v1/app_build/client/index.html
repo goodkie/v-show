@@ -3,405 +3,689 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>vivPR V-Show — Turn Your Real Trade Show Booth Into an Interactive Virtual Showroom</title>
-  <meta name="description" content="Transform physical booth photography into high-fidelity 3D virtual showrooms. Keep your trade show presence active 24/7 with interactive product hotspots, RFQ capture, and buyer engagement analytics.">
-  <meta property="og:title" content="vivPR V-Show — 3D Virtual Trade Show Platform">
-  <meta property="og:description" content="Turn your physical booth into an interactive virtual showroom. Capture leads, showcase products, and close RFQs year-round.">
+  <title>dn’a — Virtual Trade Show Commercial Platform</title>
+  <meta name="description" content="Your trade show booth doesn't have to end when the show ends. Transform physical exhibits into interactive 3D digital showrooms that capture B2B leads, RFQs, and sample requests 24/7.">
+  <meta property="og:title" content="dn’a — 3D Virtual Trade Show Commercial Platform">
+  <meta property="og:description" content="Keep your trade show booth active year-round. Turn exhibits into interactive 3D showrooms with digital catalogs, smart exhibitor cards, and 24/7 RFQ capture.">
   <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <style>
+    :root {
+      --brand-primary: #0284c7;
+      --brand-accent: #0ea5e9;
+      --brand-glow: rgba(14, 165, 233, 0.25);
+      --bg-dark: #070b14;
+      --bg-card: #0f172a;
+      --border-subtle: #1e293b;
+      --border-highlight: #334155;
+    }
+    * { box-sizing: border-box; }
     body {
-      background: #090d16;
+      background: var(--bg-dark);
       color: #f8fafc;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
       margin: 0;
       padding: 0;
       line-height: 1.6;
+      overflow-x: hidden;
     }
     .landing-nav {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 16px 32px;
+      padding: 16px 36px;
       background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid #1e293b;
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
       position: sticky;
       top: 0;
       z-index: 100;
     }
     .brand-logo {
       font-weight: 800;
-      font-size: 20px;
+      font-size: 22px;
       color: #fff;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       text-decoration: none;
+      letter-spacing: -0.5px;
     }
-    .brand-badge {
-      background: linear-gradient(135deg, #3b82f6, #6366f1);
+    .brand-logo span.dna-badge {
+      background: linear-gradient(135deg, #0ea5e9, #6366f1);
       color: #fff;
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
       font-weight: 700;
       letter-spacing: 0.5px;
     }
     .nav-links {
       display: flex;
-      gap: 24px;
+      gap: 28px;
       align-items: center;
     }
     .nav-link {
       color: #94a3b8;
       text-decoration: none;
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 600;
       transition: color 0.2s;
     }
-    .nav-link:hover {
-      color: #fff;
+    .nav-link:hover { color: #38bdf8; }
+    .nav-cta-group {
+      display: flex;
+      gap: 12px;
+      align-items: center;
     }
-    .btn-nav-cta {
-      background: #2563eb;
-      color: #fff;
-      padding: 8px 16px;
-      border-radius: 6px;
+    .btn-nav-demo {
+      border: 1px solid var(--border-highlight);
+      background: rgba(30, 41, 59, 0.6);
+      color: #f8fafc;
+      padding: 8px 18px;
+      border-radius: 8px;
       text-decoration: none;
       font-size: 14px;
       font-weight: 600;
-      transition: background 0.2s;
+      transition: all 0.2s;
     }
-    .btn-nav-cta:hover {
-      background: #1d4ed8;
+    .btn-nav-demo:hover {
+      background: #1e293b;
+      border-color: #0ea5e9;
     }
+    .btn-nav-primary {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #fff;
+      padding: 8px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+      transition: all 0.2s;
+    }
+    .btn-nav-primary:hover {
+      background: #0284c7;
+      transform: translateY(-1px);
+    }
+
+    /* Hero Section */
     .hero-section {
-      padding: 80px 24px 60px;
-      max-width: 1100px;
+      padding: 90px 24px 60px;
+      max-width: 1140px;
       margin: 0 auto;
       text-align: center;
+      position: relative;
     }
     .hero-pill {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 6px 14px;
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 20px;
+      padding: 6px 16px;
+      background: rgba(14, 165, 233, 0.12);
+      border: 1px solid rgba(14, 165, 233, 0.35);
+      border-radius: 9999px;
       font-size: 13px;
       color: #38bdf8;
-      margin-bottom: 24px;
-      font-weight: 500;
+      margin-bottom: 28px;
+      font-weight: 600;
     }
     .hero-title {
-      font-size: 48px;
+      font-size: 52px;
       font-weight: 800;
-      letter-spacing: -1px;
       line-height: 1.15;
-      margin: 0 0 20px;
+      letter-spacing: -1.5px;
+      margin: 0 0 24px 0;
       color: #ffffff;
     }
-    .hero-subtitle {
+    .hero-title span.highlight {
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-sub {
       font-size: 19px;
       color: #94a3b8;
-      max-width: 760px;
-      margin: 0 auto 36px;
-      font-weight: 400;
+      max-width: 780px;
+      margin: 0 auto 36px auto;
+      line-height: 1.6;
     }
-    .hero-cta-group {
+    .hero-actions {
       display: flex;
-      justify-content: center;
       gap: 16px;
-      margin-bottom: 48px;
+      justify-content: center;
+      align-items: center;
       flex-wrap: wrap;
+      margin-bottom: 50px;
     }
     .btn-hero-primary {
-      background: #2563eb;
-      color: #fff;
-      padding: 14px 32px;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #ffffff;
+      padding: 15px 32px;
+      border-radius: 10px;
       text-decoration: none;
+      font-size: 16px;
+      font-weight: 700;
+      box-shadow: 0 8px 24px rgba(2, 132, 199, 0.4);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
       transition: all 0.2s;
-      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
     }
     .btn-hero-primary:hover {
-      background: #1d4ed8;
-      transform: translateY(-1px);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(2, 132, 199, 0.55);
     }
     .btn-hero-secondary {
-      background: #1e293b;
-      color: #e2e8f0;
-      border: 1px solid #334155;
-      padding: 14px 28px;
-      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-highlight);
+      color: #f8fafc;
+      padding: 15px 30px;
+      border-radius: 10px;
+      text-decoration: none;
       font-size: 16px;
       font-weight: 600;
-      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
       transition: all 0.2s;
     }
     .btn-hero-secondary:hover {
-      background: #334155;
-      color: #fff;
-    }
-    .hero-preview-box {
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 12px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-      margin-bottom: 80px;
-    }
-    .hero-preview-inner {
       background: #1e293b;
-      border-radius: 8px;
-      padding: 40px 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 280px;
-      border: 1px dashed #475569;
+      border-color: #38bdf8;
     }
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 24px;
-      max-width: 1100px;
-      margin: 0 auto 80px;
+
+    /* Live Demo Teaser Box */
+    .demo-preview-card {
+      max-width: 1060px;
+      margin: 0 auto 90px auto;
+      background: var(--bg-card);
+      border: 1px solid var(--border-highlight);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+      position: relative;
+      overflow: hidden;
+    }
+    .demo-preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .demo-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: #cbd5e1;
+      font-weight: 600;
+    }
+    .demo-status-pill {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid #10b981;
+      color: #34d399;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .demo-frame-container {
+      width: 100%;
+      height: 520px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      position: relative;
+      background: #071116;
+    }
+    .demo-frame-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* Feature Grid */
+    .section-container {
+      max-width: 1140px;
+      margin: 0 auto 90px auto;
       padding: 0 24px;
     }
+    .section-header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+    .section-tag {
+      color: #38bdf8;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .section-title {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      color: #ffffff;
+      margin: 0 0 14px 0;
+    }
+    .section-desc {
+      font-size: 16px;
+      color: #94a3b8;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
     .feature-card {
-      background: #0f172a;
-      border: 1px solid #1e293b;
-      border-radius: 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
       padding: 28px;
-      text-align: left;
+      transition: all 0.25s;
+    }
+    .feature-card:hover {
+      border-color: #0284c7;
+      transform: translateY(-4px);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.4);
     }
     .feature-icon {
-      font-size: 28px;
-      margin-bottom: 16px;
-      display: inline-block;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(14, 165, 233, 0.15);
+      border: 1px solid rgba(14, 165, 233, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: #38bdf8;
+      margin-bottom: 18px;
     }
     .feature-card h3 {
-      margin: 0 0 10px;
-      font-size: 18px;
-      color: #f1f5f9;
+      font-size: 19px;
+      font-weight: 700;
+      margin: 0 0 10px 0;
+      color: #f8fafc;
     }
     .feature-card p {
-      margin: 0;
-      color: #94a3b8;
       font-size: 14px;
+      color: #94a3b8;
+      margin: 0;
+      line-height: 1.6;
     }
-    .pricing-preview {
-      background: #0f172a;
-      border-top: 1px solid #1e293b;
-      border-bottom: 1px solid #1e293b;
-      padding: 80px 24px;
-      text-align: center;
-    }
-    .pricing-cards {
+
+    /* Production Paths Section (Two Options) */
+    .paths-container {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 24px;
-      max-width: 1000px;
-      margin: 40px auto 0;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 28px;
+      align-items: stretch;
+      margin-top: 40px;
     }
-    .pricing-card {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 32px 24px;
-      text-align: left;
+    .path-card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 36px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
       position: relative;
     }
-    .pricing-card.featured {
-      border-color: #3b82f6;
-      box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+    .path-card.diy {
+      border: 1px solid var(--border-highlight);
     }
-    .landing-footer {
-      padding: 48px 32px;
-      background: #090d16;
-      border-top: 1px solid #1e293b;
-      font-size: 13px;
-      color: #64748b;
-      text-align: center;
+    .path-card.managed {
+      border: 2px solid #0284c7;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 1) 0%, rgba(8, 47, 73, 0.4) 100%);
+      box-shadow: 0 20px 50px rgba(2, 132, 199, 0.25);
     }
-    .footer-links {
+    .recommended-badge {
+      position: absolute;
+      top: -12px;
+      right: 32px;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 4px 14px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+    }
+    .path-tag {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .path-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: #ffffff;
+      margin: 0 0 12px 0;
+    }
+    .path-desc {
+      font-size: 14px;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .path-features {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 32px 0;
+    }
+    .path-features li {
+      font-size: 14px;
+      color: #cbd5e1;
+      margin-bottom: 12px;
       display: flex;
-      justify-content: center;
-      gap: 24px;
-      margin-bottom: 16px;
+      align-items: center;
+      gap: 10px;
     }
-    .footer-links a {
+    .path-features li span.check {
+      color: #38bdf8;
+      font-weight: 800;
+    }
+    .btn-path-diy {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid var(--border-highlight);
+      color: #f8fafc;
+      padding: 14px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+      text-align: center;
+      font-weight: 700;
+      font-size: 15px;
+      transition: all 0.2s;
+    }
+    .btn-path-diy:hover { background: #1e293b; border-color: #38bdf8; }
+    .btn-path-managed {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #ffffff;
+      padding: 14px 28px;
+      border-radius: 8px;
+      text-decoration: none;
+      text-align: center;
+      font-weight: 800;
+      font-size: 16px;
+      box-shadow: 0 6px 20px rgba(2, 132, 199, 0.4);
+      transition: all 0.2s;
+    }
+    .btn-path-managed:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(2, 132, 199, 0.55);
+    }
+
+    /* Footer */
+    .landing-footer {
+      border-top: 1px solid var(--border-subtle);
+      background: #0b1120;
+      padding: 60px 24px 30px;
+      color: #94a3b8;
+      font-size: 13px;
+    }
+    .footer-inner {
+      max-width: 1140px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 32px;
+      margin-bottom: 40px;
+    }
+    .footer-col h4 {
+      color: #f8fafc;
+      font-size: 14px;
+      font-weight: 700;
+      margin: 0 0 14px 0;
+    }
+    .footer-col ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .footer-col ul li {
+      margin-bottom: 8px;
+    }
+    .footer-col ul li a {
       color: #94a3b8;
       text-decoration: none;
+      transition: color 0.2s;
     }
-    .footer-links a:hover {
-      color: #fff;
+    .footer-col ul li a:hover { color: #38bdf8; }
+    .footer-bottom {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding-top: 20px;
+      border-top: 1px solid #1e293b;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 12px;
+    }
+
+    @media (max-width: 860px) {
+      .hero-title { font-size: 38px; }
+      .paths-container { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+      .demo-frame-container { height: 380px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Navigation -->
-  <nav class="landing-nav">
+  <!-- Top Navigation -->
+  <header class="landing-nav">
     <a href="/" class="brand-logo">
-      <span>vivPR V-Show</span>
-      <span class="brand-badge">PILOT</span>
+      <span>dn’a</span>
+      <span class="dna-badge">Commercial V1</span>
     </a>
-    <div class="nav-links">
-      <a href="/demo.html" class="nav-link">Interactive Demo</a>
-      <a href="/pricing.html" class="nav-link">Pilot Pricing</a>
-      <a href="/capture-guide.html" class="nav-link">Capture Guide</a>
-      <a href="/lobby.html" class="nav-link">Exhibition Lobby</a>
-      <a href="/start.html" class="btn-nav-cta">Start Free</a>
-    </div>
-  </nav>
-
-  <!-- Hero Section -->
-  <header class="hero-section">
-    <div class="hero-pill">
-      <span>✨ Pilot 2026.1 Release</span> • <span>Photo-Based 3D Reconstruction</span>
-    </div>
-    <h1 class="hero-title">
-      Your Trade Show Booth Should Keep Working<br>After the Show Ends.
-    </h1>
-    <p class="hero-subtitle">
-      Transform booth photography into an interactive virtual showroom where global buyers can explore products, request quotes, order samples, and connect with your commercial team 24/7.
-    </p>
-
-    <div class="hero-cta-group">
-      <a href="/start.html" class="btn-hero-primary">Start Free Pilot</a>
-      <a href="/demo.html" class="btn-hero-secondary">View 3D Demo →</a>
-      <a href="mailto:info@vivpr.pro" class="btn-hero-secondary">Talk to vivPR</a>
-    </div>
-
-    <!-- Hero Interactive Preview Banner -->
-    <div class="hero-preview-box">
-      <div class="hero-preview-inner">
-        <div style="font-size: 36px; margin-bottom: 12px;">🏢 ➔ 🧊</div>
-        <h3 style="margin: 0 0 8px; color: #fff;">Interactive 3D Gaussian Splatting Technology</h3>
-        <p style="margin: 0 0 20px; color: #94a3b8; max-width: 500px; font-size: 14px;">
-          High-fidelity neural radiance spatial reconstruction with mobile landscape rotation and real-time buyer engagement tools.
-        </p>
-        <a href="/demo.html" class="btn-hero-primary" style="padding: 10px 20px; font-size: 14px;">Launch Demo Booth</a>
-      </div>
+    <nav class="nav-links">
+      <a href="/demo.html" class="nav-link">Live 3D Demo</a>
+      <a href="/card.html" class="nav-link">Smart Exhibitor Card</a>
+      <a href="/builder.html" class="nav-link">DIY Builder (Beta)</a>
+      <a href="#production-options" class="nav-link">Production Services</a>
+    </nav>
+    <div class="nav-cta-group">
+      <a href="/demo.html" class="btn-nav-demo">View Demo</a>
+      <a href="/start.html" class="btn-nav-primary">Start My Booth</a>
     </div>
   </header>
 
-  <!-- Value Propositions Grid -->
-  <section class="features-grid">
-    <div class="feature-card">
-      <div class="feature-icon">📸</div>
-      <h3>Photo-Based 3D Reconstruction</h3>
-      <p>Capture 60–100 multi-angle photos of your physical exhibit. Our pipeline reconstructs an interactive navigable virtual showroom.</p>
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-pill">
+      <span>⚡ 24/7 Interactive Trade Show Showrooms</span>
     </div>
-
-    <div class="feature-card">
-      <div class="feature-icon">🏷️</div>
-      <h3>Interactive Product Hotspots</h3>
-      <p>Place clickable 3D markers directly on displayed machinery, hardware, or consumer goods with rich specs, pricing, and video links.</p>
-    </div>
-
-    <div class="feature-card">
-      <div class="feature-icon">💼</div>
-      <h3>High-Intent Lead & RFQ Capture</h3>
-      <p>Empower qualified B2B buyers to request customized formal quotations, order evaluation samples, and book 1:1 meetings.</p>
-    </div>
-
-    <div class="feature-card">
-      <div class="feature-icon">📱</div>
-      <h3>Mobile Landscape 3D Player</h3>
-      <p>Full-bleed 100dvh immersive experience with safe-area insets, intuitive single-finger orbit, and pinch-to-zoom navigation.</p>
-    </div>
-
-    <div class="feature-card">
-      <div class="feature-icon">🔗</div>
-      <h3>Shareable Permanent URL</h3>
-      <p>Include your virtual booth in post-show email campaigns, digital catalogs, and social media to extend show ROI indefinitely.</p>
-    </div>
-
-    <div class="feature-card">
-      <div class="feature-icon">📊</div>
-      <h3>Buyer Engagement Analytics</h3>
-      <p>Track visitor traffic, hotspot click-throughs, RFQ conversion funnels, and showhost consultation requests with full tenant isolation.</p>
+    <h1 class="hero-title">
+      Your Trade Show Booth Doesn't Have to End<br>
+      <span class="highlight">When the Show Ends.</span>
+    </h1>
+    <p class="hero-sub">
+      Transform physical trade show exhibits into high-impact, 24/7 interactive digital showrooms. Showcase 3D products, connect buyers directly to sales reps, and capture verified wholesale RFQs long after the event closes.
+    </p>
+    <div class="hero-actions">
+      <a href="/demo.html" class="btn-hero-primary">
+        <span>🚀 View Live 3D Demo</span>
+      </a>
+      <a href="/start.html" class="btn-hero-secondary">
+        <span>⚡ Start My Booth (Managed & DIY)</span>
+      </a>
     </div>
   </section>
 
-  <!-- Pricing Preview Section -->
-  <section class="pricing-preview">
-    <h2 style="font-size: 32px; margin: 0 0 12px; color: #fff;">Simple, Transparent Pilot Pricing</h2>
-    <p style="color: #94a3b8; margin: 0 auto; max-width: 600px; font-size: 15px;">
-      Version <code>pilot-2026.1</code> approved for early commercial exhibitors. No long-term lock-in.
-    </p>
+  <!-- Live Commercial Demo Interactive Box -->
+  <section class="section-container">
+    <div class="demo-preview-card">
+      <div class="demo-preview-header">
+        <div class="demo-header-left">
+          <span>🎮 Live Commercial Showroom Demo</span>
+          <span class="demo-status-pill">● Interactive DEMO_3D</span>
+        </div>
+        <div style="font-size: 13px; color: #94a3b8;">
+          <a href="/demo.html" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Open Fullscreen Demo ↗</a>
+        </div>
+      </div>
+      <div class="demo-frame-container">
+        <iframe src="/demo.html" title="dn'a Interactive 3D Demo Showroom"></iframe>
+      </div>
+    </div>
+  </section>
 
-    <div class="pricing-cards">
-      <div class="pricing-card">
-        <h3 style="margin: 0 0 8px; color: #94a3b8; font-size: 16px;">FREE</h3>
-        <div style="font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 16px;">$0 <span style="font-size: 14px; font-weight: 400; color: #64748b;">/month</span></div>
-        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 20px;">Basic virtual showroom setup for individual exhibitors.</p>
-        <ul style="padding-left: 20px; color: #cbd5e1; font-size: 13px; margin-bottom: 24px; line-height: 1.8;">
-          <li>1 Virtual Booth (Photo Preview)</li>
-          <li>Up to 5 Products & 3 Hotspots</li>
-          <li>Buyer Lead Capture</li>
-          <li>Shareable Public URL</li>
-        </ul>
-        <a href="/start.html" class="btn-hero-secondary" style="display: block; text-align: center; font-size: 14px;">Get Started Free</a>
+  <!-- Core Commercial Features Grid -->
+  <section class="section-container">
+    <div class="section-header">
+      <div class="section-tag">Platform Capabilities</div>
+      <h2 class="section-title">Everything Needed to Turn Trade Shows Into Permanent Pipeline</h2>
+      <p class="section-desc">Traditional trade shows cost tens of thousands for only 4 days of floor time. dn’a extends your booth investment into an evergreen digital sales asset.</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <h3>Interactive 3D Showroom</h3>
+        <p>Photorealistic 3D digital booth with 360° navigation, animated product plinths, and smooth camera transitions across exhibition zones.</p>
       </div>
 
-      <div class="pricing-card featured">
-        <div style="position: absolute; top: -12px; right: 20px; background: #2563eb; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;">RECOMMENDED</div>
-        <h3 style="margin: 0 0 8px; color: #60a5fa; font-size: 16px;">PRO PILOT</h3>
-        <div style="font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 16px;">$299 <span style="font-size: 14px; font-weight: 400; color: #64748b;">/month</span></div>
-        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 20px;">Complete 3D spatial experience with precision neural rendering.</p>
-        <ul style="padding-left: 20px; color: #cbd5e1; font-size: 13px; margin-bottom: 24px; line-height: 1.8;">
-          <li><strong>1 Spark 3DGS Reconstruction</strong></li>
-          <li>Up to 25 Products & 15 Hotspots</li>
-          <li>RFQ & Sample Requests</li>
-          <li>Full Analytics CSV Export</li>
-          <li>Live Showhost 1:1 Signaling</li>
-        </ul>
-        <a href="/start.html" class="btn-hero-primary" style="display: block; text-align: center; font-size: 14px;">Start PRO Pilot</a>
+      <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <h3>Smart Exhibitor Card</h3>
+        <p>Mobile-first QR experience for sales reps. Instant vCard downloads, direct 3D booth links, and 1-tap RFQ forms for booth visitors.</p>
       </div>
 
-      <div class="pricing-card">
-        <h3 style="margin: 0 0 8px; color: #a78bfa; font-size: 16px;">BUSINESS</h3>
-        <div style="font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 16px;">$799 <span style="font-size: 14px; font-weight: 400; color: #64748b;">/month</span></div>
-        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 20px;">For multi-product brands and enterprise pavilion exhibitors.</p>
-        <ul style="padding-left: 20px; color: #cbd5e1; font-size: 13px; margin-bottom: 24px; line-height: 1.8;">
-          <li><strong>3 Spark 3DGS Reconstructions</strong></li>
-          <li>Up to 100 Products & 50 Hotspots</li>
-          <li>Dedicated Account Manager</li>
-          <li>Priority GPU Reconstruction</li>
-          <li>Custom Domain Integration</li>
-        </ul>
-        <a href="/start.html" class="btn-hero-secondary" style="display: block; text-align: center; font-size: 14px;">Contact Sales</a>
+      <div class="feature-card">
+        <div class="feature-icon">▤</div>
+        <h3>Digital Catalog & Specs</h3>
+        <p>Downloadable PDF spec sheets, engineering datasheets, and brochures directly from 3D product plinths without printing heavy paper.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">✉</div>
+        <h3>24/7 RFQ & Sample Intake</h3>
+        <p>Verified wholesale quotation requests, evaluation sample shipments, and direct engineering meeting bookings captured directly into your pipeline.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <h3>Product QR Waypoints</h3>
+        <p>Direct scannable QR routes for each physical product at your booth, opening immersive 3D specs on any buyer smartphone instantly.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Live Buyer Analytics</h3>
+        <p>Track visitor dwell times, top scanned products, catalog downloads, and high-intent buyer inquiries in real time.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Two Production Paths (DIY vs Managed) -->
+  <section class="section-container" id="production-options">
+    <div class="section-header">
+      <div class="section-tag">Flexible Deployment</div>
+      <h2 class="section-title">Choose How You Want Your Showroom Built</h2>
+      <p class="section-desc">Whether you want full white-glove turnkey production or want to design it yourself, dn’a has you covered.</p>
+    </div>
+
+    <div class="paths-container">
+      <!-- Path A: DIY Builder -->
+      <div class="path-card diy">
+        <div>
+          <div class="path-tag" style="color: #94a3b8;">Path A — Self-Service</div>
+          <h3 class="path-title">CREATE IT YOURSELF</h3>
+          <p class="path-desc">Use the dn’a 9-step Booth Builder to configure company assets, upload product photos, and choose exhibition templates.</p>
+          <ul class="path-features">
+            <li><span class="check">✓</span> 9-Step Guided Configuration</li>
+            <li><span class="check">✓</span> Instant 3D Template Slot Binding</li>
+            <li><span class="check">✓</span> Unlimited Product Uploads</li>
+            <li><span class="check">✓</span> Self-service Catalog Hosting</li>
+            <li><span class="check">✓</span> Status: <b>Early Access / Beta</b></li>
+          </ul>
+        </div>
+        <a href="/builder.html" class="btn-path-diy">Explore DIY Builder (Beta) →</a>
+      </div>
+
+      <!-- Path B: Managed Production (Primary CTA) -->
+      <div class="path-card managed">
+        <div class="recommended-badge">Recommended</div>
+        <div>
+          <div class="path-tag" style="color: #38bdf8;">Path B — Full Turnkey Service</div>
+          <h3 class="path-title">WE BUILD IT FOR YOU</h3>
+          <p class="path-desc">Our dedicated 3D production team takes your trade show photos, CAD files, or product specs and delivers a live showroom in <b>5 business days</b>.</p>
+          <ul class="path-features">
+            <li><span class="check">✓</span> <b>Full Turnkey 3D Environment Design</b></li>
+            <li><span class="check">✓</span> Custom 3D Product Modeling & Lighting</li>
+            <li><span class="check">✓</span> Digital Catalog & Spec Sheet Integration</li>
+            <li><span class="check">✓</span> Smart Exhibitor Cards & QR Waypoints</li>
+            <li><span class="check">✓</span> RFQ, Lead Capture & Booking Setup</li>
+            <li><span class="check">✓</span> Dedicated Production Manager & SLA</li>
+          </ul>
+        </div>
+        <a href="/start.html" class="btn-path-managed">Request Managed Production Now →</a>
       </div>
     </div>
   </section>
 
   <!-- Footer -->
   <footer class="landing-footer">
-    <div class="footer-links">
-      <a href="/demo.html">Interactive Demo</a>
-      <a href="/start.html">Start Free</a>
-      <a href="/pricing.html">Pilot Pricing</a>
-      <a href="/capture-guide.html">Capture Guide</a>
-      <a href="/lobby.html">Exhibition Lobby</a>
-      <a href="/terms.html">Terms of Service</a>
-      <a href="/privacy.html">Privacy Policy</a>
-      <a href="/refund-policy.html">Refund Policy</a>
+    <div class="footer-inner">
+      <div class="footer-col" style="max-width: 320px;">
+        <div style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 8px;">dn’a</div>
+        <p style="line-height: 1.6;">The commercial virtual trade show platform turning physical exhibits into permanent 24/7 digital revenue pipelines.</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Experiences</h4>
+        <ul>
+          <li><a href="/demo.html">Live 3D Demo Booth</a></li>
+          <li><a href="/card.html">Smart Exhibitor Card Sample</a></li>
+          <li><a href="/qr.html?product=DNA-ROBOT-X9">Sample Product QR Waypoint</a></li>
+          <li><a href="/wilo-demo.html">Authentic Wilo Case Study</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Production</h4>
+        <ul>
+          <li><a href="/start.html">Managed Production Order</a></li>
+          <li><a href="/builder.html">DIY Booth Builder Preview</a></li>
+          <li><a href="/production.html">Internal Production Inbox</a></li>
+          <li><a href="/pricing.html">Pricing & Packages</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Trust & Legal</h4>
+        <ul>
+          <li><a href="/privacy.html">Privacy Policy</a></li>
+          <li><a href="/terms.html">Terms of Service</a></li>
+          <li><a href="/refund-policy.html">Refund Policy</a></li>
+        </ul>
+      </div>
     </div>
-    <div>
-      © 2026 vivPR (1633 Center Ave, Fort Lee, NJ 07024, United States). Governing Law: State of New Jersey, United States.<br>
-      Inquiries: <a href="mailto:info@vivpr.pro" style="color:#94a3b8;">info@vivpr.pro</a> | Stripe Statement Descriptor: <code>VIVPR V-SHOW</code>
+
+    <div class="footer-bottom">
+      <div>© 2026 dn’a Commercial Platform. All rights reserved.</div>
+      <div>Designed for global trade show exhibitors and organizers.</div>
     </div>
   </footer>
 

@@ -1548,6 +1548,40 @@ app.get('/api/appointments', requireAuth, (req, res) => {
   res.json(db.getAppointments(orgId, req.query.boothId));
 });
 
+// --- 8.5 Managed Production Order Intake APIs (Phase dn’a-C01) ---
+app.post('/api/production-requests', createRateLimiter(20, 60000), async (req, res) => {
+  try {
+    const { companyName, email, tradeShow } = req.body;
+    if (!companyName || !email) {
+      return res.status(400).json({ error: 'Company name and contact email are required.' });
+    }
+    const newRequest = await db.createProductionRequest(req.body);
+    res.status(201).json({
+      success: true,
+      message: 'Managed Production Request received successfully.',
+      request: newRequest
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/production-requests', (req, res) => {
+  res.json(db.getProductionRequests());
+});
+
+app.patch('/api/production-requests/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, notes } = req.body;
+    const updated = await db.updateProductionRequestStatus(id, status, notes);
+    if (!updated) return res.status(404).json({ error: 'Request not found.' });
+    res.json({ success: true, request: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // --- 9. Realtime Analytics API ---
 app.post('/api/analytics/events', createRateLimiter(120, 60000), async (req, res) => {
   try {

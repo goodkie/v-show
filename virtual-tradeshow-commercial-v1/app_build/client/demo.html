@@ -1,60 +1,1022 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>vivPR V-Show — Industrial Virtual Booth Demo</title>
-<meta name="description" content="Immersive virtual trade show demo with interactive 3D products, catalog, consultation tickets and virtual services.">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<style>
-:root{--teal:#008f8c;--teal2:#00b8ad;--ink:#07151a;--panel:rgba(5,22,27,.9);--line:rgba(255,255,255,.15);--safe:env(safe-area-inset-bottom,0px)}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071116;color:#fff;font-family:Inter,Arial,sans-serif}button{font:inherit}.app{position:relative;width:100%;height:100dvh}.stage{position:absolute;inset:0}.top{position:absolute;z-index:20;top:0;left:0;right:0;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(2,12,15,.92),rgba(2,12,15,.3),transparent)}.brand{display:flex;gap:10px;align-items:center}.logo{font-size:24px;font-weight:800;font-style:italic;color:#35d3c7}.pill{font-size:10px;letter-spacing:.08em;border:1px solid var(--line);border-radius:20px;padding:5px 9px;background:rgba(0,0,0,.3)}.top-actions{display:flex;gap:7px}.btn{border:1px solid var(--line);background:rgba(4,23,27,.82);color:#fff;padding:9px 12px;border-radius:9px;cursor:pointer}.btn.primary{background:var(--teal);border-color:var(--teal)}.rail{position:absolute;z-index:20;left:14px;top:82px;display:flex;flex-direction:column;gap:7px}.rail .btn{width:46px;height:46px;padding:0;font-size:20px}.hud{position:absolute;z-index:10;bottom:calc(14px + var(--safe));left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;background:rgba(3,18,22,.82);border:1px solid var(--line);border-radius:22px;padding:7px 10px;backdrop-filter:blur(12px)}.hud button{border:0;background:transparent;color:#d9f8f5;padding:7px 10px;cursor:pointer}.drawer{position:absolute;z-index:30;right:0;top:0;height:100%;width:min(430px,94vw);background:var(--panel);border-left:1px solid var(--line);backdrop-filter:blur(18px);transform:translateX(105%);transition:.25s;padding:72px 18px 20px;overflow:auto}.drawer.open{transform:none}.drawer h2{margin:0 0 5px}.drawer p{color:#a9c1c5;line-height:1.5}.close{position:absolute;right:14px;top:15px}.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}.card{border:1px solid var(--line);border-radius:13px;padding:12px;background:rgba(255,255,255,.05);cursor:pointer}.card:hover{border-color:#39d9cd}.card b{display:block;margin-bottom:5px}.card small{color:#9fb9bc}.product-hero{height:240px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:radial-gradient(circle,#174b4b,#06191d);margin:12px 0}.field{display:block;width:100%;margin:8px 0;padding:11px;border-radius:8px;border:1px solid var(--line);background:#071b20;color:white}.ticket{padding:12px;border-radius:10px;background:rgba(0,143,140,.12);border:1px solid rgba(53,211,199,.35);margin:10px 0}.notice{position:absolute;z-index:15;left:74px;bottom:76px;max-width:310px;background:rgba(3,18,22,.85);border:1px solid var(--line);padding:11px 13px;border-radius:12px;color:#c4d8da;font-size:12px}.hotlabel{position:absolute;pointer-events:none;background:#fff;color:#082124;padding:5px 8px;border-radius:12px;font-size:11px;font-weight:700;display:none}.disclaimer{font-size:10px;color:#79979a;margin-top:15px}@media(max-width:700px){.top{padding:9px}.top .pill{display:none}.top-actions .btn:not(.primary){display:none}.rail{left:8px;top:65px}.rail .btn{width:42px;height:42px}.notice{display:none}.hud{width:calc(100% - 16px);justify-content:space-around;bottom:calc(7px + var(--safe));font-size:11px}.hud button{padding:7px 4px}.drawer{width:100%}.cards{grid-template-columns:1fr 1fr}}@media(orientation:portrait) and (max-width:700px){.rotate:after{content:'Rotate to landscape for the best 3D experience';position:absolute;z-index:40;left:50%;top:62px;transform:translateX(-50%);background:#063238;border:1px solid #1db9b0;padding:8px 12px;border-radius:20px;font-size:11px;white-space:nowrap}}
-</style>
-</head><body><div class="app rotate">
-<div id="stage" class="stage"></div><div id="hotlabel" class="hotlabel"></div>
-<header class="top"><div class="brand"><span class="logo">AQUAFLOW</span><span class="pill">INDUSTRIAL WATER SOLUTIONS · DEMO BOOTH</span></div><div class="top-actions"><button class="btn" onclick="openPanel('catalog')">Catalog</button><button class="btn" onclick="openPanel('ticket')">Consultation Ticket</button><button class="btn primary" onclick="openPanel('live')">Talk to an Expert</button></div></header>
-<nav class="rail"><button class="btn" title="Products" onclick="openPanel('products')">◈</button><button class="btn" title="Catalog" onclick="openPanel('catalog')">▤</button><button class="btn" title="Videos" onclick="openPanel('media')">▶</button><button class="btn" title="Services" onclick="openPanel('services')">✦</button><button class="btn" title="Contact" onclick="openPanel('ticket')">✉</button></nav>
-<div class="notice"><b>Interactive 3D Booth</b><br>Explore the booth, select glowing product markers, rotate products in 3D, collect literature, and request a live consultation.</div>
-<div class="hud"><button onclick="resetCamera()">⌂ Home</button><button onclick="focusZone('products')">◉ Products</button><button onclick="focusZone('meeting')">◎ Meeting Area</button><button onclick="toggleAuto()">↻ Auto Tour</button><button onclick="openPanel('bag')">▣ My Briefcase <span id="bagCount">0</span></button></div>
-<aside id="drawer" class="drawer"><button class="btn close" onclick="closePanel()">✕</button><div id="panel"></div></aside>
-</div>
-<script>
-const PRODUCTS=[
-{id:'VX-90',name:'VX-90 Vertical Inline Pump',type:'High-Efficiency Pump',flow:'180 m³/h',head:'52 m',eff:'IE5-ready',desc:'Compact vertical inline system for commercial building circulation.'},
-{id:'SC-40',name:'SC-40 Smart Circulator',type:'Smart Pump',flow:'42 m³/h',head:'18 m',eff:'Adaptive',desc:'Connected circulator with demand-based speed control and energy telemetry.'},
-{id:'BS-120',name:'BS-120 Booster System',type:'Pressure Booster',flow:'260 m³/h',head:'70 m',eff:'Variable speed',desc:'Multi-pump pressure boosting concept for high-rise water supply.'},
-{id:'DR-65',name:'DR-65 Drainage Pump',type:'Submersible',flow:'95 m³/h',head:'31 m',eff:'Rugged duty',desc:'Submersible drainage concept for infrastructure and industrial applications.'}
-];
-let scene,camera,renderer,controls,auto=false,raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2(),hotspots=[],bag=[];
-const teal=0x009c96, dark=0x0b2428, white=0xf4f7f5;
-function init(){const host=document.getElementById('stage');scene=new THREE.Scene();scene.background=new THREE.Color(0x071116);scene.fog=new THREE.Fog(0x071116,15,32);camera=new THREE.PerspectiveCamera(52,innerWidth/innerHeight,.1,100);camera.position.set(8,4.4,10);renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;host.appendChild(renderer.domElement);controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.target.set(0,1.5,0);controls.minDistance=3;controls.maxDistance=18;controls.maxPolarAngle=Math.PI/2.05;
-scene.add(new THREE.HemisphereLight(0xffffff,0x16363a,1.25));let sun=new THREE.DirectionalLight(0xffffff,1.1);sun.position.set(4,10,6);sun.castShadow=true;scene.add(sun);buildBooth();renderer.domElement.addEventListener('pointerdown',pick);addEventListener('resize',resize);animate()}
-function mat(c,metal=.05,rough=.45){return new THREE.MeshStandardMaterial({color:c,metalness:metal,roughness:rough})}
-function box(w,h,d,c,x,y,z){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;scene.add(m);return m}
-function buildBooth(){box(12,.12,8,0xe8eeec,0,0,0);box(11,3.7,.18,white,0,1.85,-3.4);box(.18,3.7,5.5,white,-5.4,1.85,-.7);box(4.8,.2,1.4,white,0,4.2,-2.6);box(4.5,.08,1.15,teal,0,4.08,-2.5);box(4.8,.75,.85,white,-1.2,.4,.4);box(4.25,.58,.9,teal,-1.2,.45,.39);box(2.2,1.05,.75,white,3.3,.53,-1.8);box(2.05,.82,.8,teal,3.3,.56,-1.78);
-// illuminated architectural ribbons
-box(10,.08,.18,teal,0,3.45,-3.25);box(.15,2.7,.15,teal,-4.9,2.0,-3.2);
-// screen
-box(3.1,1.75,.08,0x123f45,-3.0,2.15,-3.25);box(2.9,1.55,.06,0x2f7f88,-3.0,2.15,-3.18);
-// product plinths + procedural pump models
-PRODUCTS.forEach((p,i)=>{let x=-3.8+i*2.35,z=-1.35;box(1.2,.18,1.05,white,x,.12,z);let g=new THREE.Group();let body=new THREE.Mesh(new THREE.CylinderGeometry(.28,.34,.8,24),mat(teal,.25,.3));body.position.y=.72;g.add(body);let motor=new THREE.Mesh(new THREE.BoxGeometry(.55,.55,.48),mat(dark,.35,.3));motor.position.y=1.25;g.add(motor);let pipe=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,.85,20),mat(0x1a3437,.5,.25));pipe.rotation.z=Math.PI/2;pipe.position.y=.45;g.add(pipe);g.position.set(x,.18,z);g.userData.product=p;scene.add(g);let ring=new THREE.Mesh(new THREE.TorusGeometry(.48,.035,10,32),new THREE.MeshBasicMaterial({color:0x35d3c7}));ring.rotation.x=Math.PI/2;ring.position.set(x,1.65,z);ring.userData.product=p;scene.add(ring);hotspots.push(ring)});
-// meeting zone
-for(let a=0;a<4;a++){let ang=a*Math.PI/2;box(.55,.5,.55,white,3.5+Math.cos(ang)*1.2,.25,1.6+Math.sin(ang)*1.2)}let table=new THREE.Mesh(new THREE.CylinderGeometry(1,1,.08,32),mat(white));table.position.set(3.5,.75,1.6);scene.add(table);
-// signage using canvas textures
-sign('AQUAFLOW',0,2.65,-3.28,3.4,.8);sign('Smart solutions for a better future',2.9,2.3,-3.27,3,.55);}
-function sign(text,x,y,z,w,h){let c=document.createElement('canvas');c.width=1024;c.height=220;let q=c.getContext('2d');q.clearRect(0,0,c.width,c.height);q.fillStyle='#007f7b';q.font='700 72px Arial';q.textAlign='center';q.fillText(text,512,130);let t=new THREE.CanvasTexture(c),m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:t,transparent:true}));m.position.set(x,y,z);scene.add(m)}
-function pick(e){let r=renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(mouse,camera);let hits=raycaster.intersectObjects(scene.children,true);let hit=hits.find(h=>{let o=h.object;while(o){if(o.userData&&o.userData.product)return true;o=o.parent}return false});if(hit){let o=hit.object;while(o&&!o.userData.product)o=o.parent;if(o)showProduct(o.userData.product)}}
-function showProduct(p){openPanel('product',p)}
-function openPanel(type,data){let el=document.getElementById('panel'),d=document.getElementById('drawer');d.classList.add('open');if(type==='products')el.innerHTML=`<h2>3D Product Gallery</h2><p>Select a product to inspect specifications and open its interactive 3D model.</p><div class="cards">${PRODUCTS.map(p=>`<div class="card" onclick="showProduct(PRODUCTS.find(x=>x.id==='${p.id}'))"><b>${p.name}</b><small>${p.type}</small></div>`).join('')}</div>`;
-if(type==='product'){let p=data;el.innerHTML=`<h2>${p.name}</h2><p>${p.desc}</p><div id="product3d" class="product-hero"></div><div class="cards"><div class="card"><small>Flow</small><b>${p.flow}</b></div><div class="card"><small>Head</small><b>${p.head}</b></div><div class="card"><small>Efficiency</small><b>${p.eff}</b></div><div class="card"><small>Model</small><b>${p.id}</b></div></div><button class="btn primary" style="width:100%;margin-top:12px" onclick="addBag('${p.id}')">Add Spec Sheet to Briefcase</button><button class="btn" style="width:100%;margin-top:8px" onclick="openPanel('ticket')">Request Product Consultation</button>`;setTimeout(productViewer,30)}
-if(type==='catalog')el.innerHTML=`<h2>Digital Catalog Center</h2><p>Collect product literature without carrying printed brochures.</p><div class="cards"><div class="card" onclick="addBag('CATALOG')"><b>Complete Pump Solutions</b><small>Product catalog · Demo PDF item</small></div><div class="card" onclick="addBag('SUSTAINABILITY')"><b>Sustainability Overview</b><small>ESG & efficiency brief</small></div><div class="card" onclick="addBag('SMART')"><b>Smart Water Solutions</b><small>Connected systems guide</small></div><div class="card" onclick="addBag('APPLICATIONS')"><b>Application Guide</b><small>HVAC · Water · Industry · Drainage</small></div></div>`;
-if(type==='ticket')el.innerHTML=`<h2>Consultation Ticket</h2><p>Create a demo consultation request for a booth specialist.</p><input class="field" placeholder="Name"><input class="field" placeholder="Work email"><select class="field"><option>Product consultation</option><option>RFQ / pricing</option><option>Engineering discussion</option><option>Distributor inquiry</option></select><textarea class="field" rows="4" placeholder="What would you like to discuss?"></textarea><button class="btn primary" style="width:100%" onclick="fakeTicket()">Create Demo Ticket</button><div id="ticketResult"></div>`;
-if(type==='live')el.innerHTML=`<h2>Virtual Expert Desk</h2><p>Choose how you want to connect with the exhibitor.</p><div class="cards"><div class="card"><b>Live Video</b><small>WebRTC 1:1 booth consultation</small></div><div class="card"><b>Schedule Meeting</b><small>Reserve a future time slot</small></div><div class="card"><b>Ask an Engineer</b><small>Technical Q&A ticket</small></div><div class="card"><b>Request RFQ</b><small>Commercial quotation workflow</small></div></div><div class="ticket"><b>Demo host status: Available</b><br><small>This demo does not contact a real company representative.</small></div>`;
-if(type==='services')el.innerHTML=`<h2>Virtual Booth Services</h2><div class="cards"><div class="card"><b>Smart Match</b><small>Find products by application</small></div><div class="card"><b>Virtual Briefcase</b><small>Save brochures and specs</small></div><div class="card"><b>RFQ Center</b><small>Request quotations</small></div><div class="card"><b>Sample Request</b><small>Request evaluation units</small></div><div class="card"><b>Expert Tickets</b><small>Technical consultation queue</small></div><div class="card"><b>Meeting Scheduler</b><small>Book video consultations</small></div><div class="card"><b>Guided Tour</b><small>Automated booth walkthrough</small></div><div class="card"><b>Product Compare</b><small>Compare specifications</small></div></div>`;
-if(type==='media')el.innerHTML=`<h2>Media Wall</h2><p>On-demand booth content for visitors in any time zone.</p><div class="ticket"><b>▶ Company Overview</b><br><small>2:10 · Demo media placeholder</small></div><div class="ticket"><b>▶ Smart Pump Technology</b><br><small>3:45 · Demo media placeholder</small></div><div class="ticket"><b>▶ Sustainability & Efficiency</b><br><small>2:55 · Demo media placeholder</small></div>`;
-if(type==='bag')el.innerHTML=`<h2>My Virtual Briefcase</h2><p>${bag.length?bag.map(x=>`<div class="ticket">✓ ${x}</div>`).join(''):'No resources saved yet. Add catalogs or product spec sheets as you explore.'}</p><button class="btn primary" style="width:100%">Email My Demo Briefcase</button>`;el.innerHTML+=`<div class="disclaimer">Independent synthetic demonstration by vivPR. The booth design is based on a user-supplied industrial trade-show reference image. AQUAFLOW and all product names/specifications shown here are fictional demo content.</div>`}
-function closePanel(){document.getElementById('drawer').classList.remove('open')}
-function addBag(x){if(!bag.includes(x))bag.push(x);document.getElementById('bagCount').textContent=bag.length;openPanel('bag')}
-function fakeTicket(){document.getElementById('ticketResult').innerHTML='<div class="ticket"><b>Demo ticket created</b><br>Reference: DEMO-'+Math.random().toString(36).slice(2,8).toUpperCase()+'<br><small>No message was sent externally.</small></div>'}
-function productViewer(){let host=document.getElementById('product3d');if(!host)return;let s=new THREE.Scene(),c=new THREE.PerspectiveCamera(45,host.clientWidth/host.clientHeight,.1,20),r=new THREE.WebGLRenderer({antialias:true,alpha:true});r.setSize(host.clientWidth,host.clientHeight);r.setPixelRatio(Math.min(devicePixelRatio,2));host.appendChild(r.domElement);s.add(new THREE.HemisphereLight(0xffffff,0x12383a,2));let g=new THREE.Group(),b=new THREE.Mesh(new THREE.CylinderGeometry(.7,.8,1.7,32),mat(teal,.3,.25));g.add(b);let m=new THREE.Mesh(new THREE.BoxGeometry(1.25,1.05,1.05),mat(dark,.4,.2));m.position.y=1.25;g.add(m);let p=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,2.2,24),mat(0x18383b,.5,.2));p.rotation.z=Math.PI/2;p.position.y=-.5;g.add(p);s.add(g);c.position.set(3,2.2,4);c.lookAt(0,.4,0);let ctl=new THREE.OrbitControls(c,r.domElement);ctl.enableDamping=true;(function loop(){if(!host.isConnected)return;requestAnimationFrame(loop);ctl.update();g.rotation.y+=.003;r.render(s,c)})()}
-function resetCamera(){camera.position.set(8,4.4,10);controls.target.set(0,1.5,0)}function focusZone(z){if(z==='products'){camera.position.set(5,2.7,5);controls.target.set(0,1,-1.3)}else{camera.position.set(7,3,5);controls.target.set(3.5,.8,1.6)}}function toggleAuto(){auto=!auto}function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}function animate(){requestAnimationFrame(animate);if(auto){let t=Date.now()*.00018;camera.position.x=Math.sin(t)*10;camera.position.z=Math.cos(t)*10;camera.lookAt(0,1.2,0)}controls.update();hotspots.forEach((h,i)=>h.rotation.z+=.008+i*.001);renderer.render(scene,camera)}init();
-</script></body></html>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>dn’a — 3D Commercial Virtual Booth Demo</title>
+  <meta name="description" content="Immersive 3D virtual trade show commercial demo with interactive products, digital catalogs, Smart Exhibitor Card, and real-time RFQ intake.">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-light: #38bdf8;
+      --accent: #6366f1;
+      --dark: #070e17;
+      --panel-bg: rgba(10, 20, 32, 0.92);
+      --border: rgba(255, 255, 255, 0.14);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--dark);
+      color: #fff;
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    }
+    button, input, select, textarea { font-family: inherit; }
+    .app { position: relative; width: 100%; height: 100dvh; }
+    .stage { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+    /* Top Bar */
+    .top-bar {
+      position: absolute;
+      z-index: 30;
+      top: 0; left: 0; right: 0;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(180deg, rgba(7, 14, 23, 0.95), rgba(7, 14, 23, 0.4), transparent);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .brand-group {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .brand-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #38bdf8;
+      letter-spacing: -0.5px;
+      text-decoration: none;
+    }
+    .badge-demo {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      border: 1px solid #0284c7;
+      border-radius: 20px;
+      padding: 4px 9px;
+      background: rgba(2, 132, 199, 0.2);
+      color: #7dd3fc;
+      text-transform: uppercase;
+    }
+    .top-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .btn-top {
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.8);
+      color: #f8fafc;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-top:hover { background: #1e293b; border-color: #38bdf8; }
+    .btn-top.primary {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      border-color: #0284c7;
+      color: #fff;
+    }
+
+    /* Left Side Rail Navigation */
+    .rail-nav {
+      position: absolute;
+      z-index: 25;
+      left: 16px;
+      top: 85px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .rail-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.85);
+      color: #f8fafc;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: all 0.2s;
+    }
+    .rail-btn:hover {
+      background: #0284c7;
+      border-color: #38bdf8;
+      transform: translateX(2px);
+    }
+
+    /* Bottom HUD */
+    .hud-bar {
+      position: absolute;
+      z-index: 25;
+      bottom: calc(16px + var(--safe-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: rgba(10, 20, 32, 0.88);
+      border: 1px solid var(--border);
+      border-radius: 30px;
+      padding: 6px 12px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .hud-btn {
+      border: none;
+      background: transparent;
+      color: #cbd5e1;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 7px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hud-btn:hover, .hud-btn.active {
+      background: rgba(14, 165, 233, 0.2);
+      color: #38bdf8;
+    }
+
+    /* Floating Notice Overlay */
+    .notice-box {
+      position: absolute;
+      z-index: 20;
+      left: 76px;
+      bottom: 85px;
+      max-width: 320px;
+      background: rgba(10, 20, 32, 0.9);
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+      border-radius: 12px;
+      color: #94a3b8;
+      font-size: 12px;
+      line-height: 1.5;
+      backdrop-filter: blur(12px);
+    }
+    .notice-box b { color: #f8fafc; font-size: 13px; }
+
+    /* Side Drawer / Modal System */
+    .drawer {
+      position: absolute;
+      z-index: 40;
+      right: 0;
+      top: 0;
+      height: 100%;
+      width: min(480px, 94vw);
+      background: var(--panel-bg);
+      border-left: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      transform: translateX(105%);
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 75px 24px 30px;
+      overflow-y: auto;
+      box-shadow: -15px 0 40px rgba(0,0,0,0.7);
+    }
+    .drawer.open { transform: none; }
+    .drawer-close {
+      position: absolute;
+      right: 18px;
+      top: 18px;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    .drawer-close:hover { background: rgba(239,68,68,0.8); }
+
+    /* UI Cards and Controls inside Drawer */
+    .drawer-title { font-size: 22px; font-weight: 800; margin: 0 0 6px 0; color: #fff; }
+    .drawer-subtitle { color: #94a3b8; font-size: 13px; line-height: 1.5; margin: 0 0 20px 0; }
+    .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .info-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      background: rgba(255,255,255,0.03);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .info-card:hover {
+      border-color: #38bdf8;
+      background: rgba(14, 165, 233, 0.08);
+      transform: translateY(-2px);
+    }
+    .info-card b { display: block; font-size: 13px; color: #f8fafc; margin-bottom: 4px; }
+    .info-card small { color: #94a3b8; font-size: 11px; }
+
+    /* Product 3D Hero Preview Container inside Drawer */
+    .product-3d-box {
+      height: 220px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: radial-gradient(circle, #0c2333, #070e17);
+      margin: 16px 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Form Fields */
+    .form-field {
+      width: 100%;
+      margin: 8px 0 14px 0;
+      padding: 11px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0d1b2a;
+      color: #fff;
+      font-size: 13px;
+    }
+    .form-field:focus { outline: none; border-color: #38bdf8; }
+    .btn-action {
+      width: 100%;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 6px;
+    }
+    .btn-action:hover { opacity: 0.92; transform: translateY(-1px); }
+    .btn-secondary {
+      width: 100%;
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid var(--border);
+      color: #f8fafc;
+      padding: 11px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { background: #1e293b; border-color: #38bdf8; }
+
+    .result-banner {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 8px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid #10b981;
+      color: #34d399;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .disclaimer-box {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 24px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .top-bar { padding: 10px 14px; }
+      .badge-demo { display: none; }
+      .notice-box { display: none; }
+      .rail-nav { left: 10px; top: 70px; }
+      .hud-bar { width: calc(100% - 24px); justify-content: space-around; font-size: 11px; }
+      .hud-btn { padding: 6px 8px; font-size: 11px; }
+      .drawer { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- 3D Canvas Stage -->
+    <div id="stage" class="stage"></div>
+
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="brand-group">
+        <a href="/" class="brand-title">dn’a</a>
+        <span class="badge-demo">DESIGNED_3D SHOWROOM DEMO</span>
+      </div>
+      <div class="top-actions">
+        <button class="btn-top" onclick="openPanel('catalog')">▤ Catalog</button>
+        <button class="btn-top" onclick="openPanel('card')">📱 Smart Card</button>
+        <button class="btn-top primary" onclick="openPanel('rfq')">Request RFQ</button>
+      </div>
+    </header>
+
+    <!-- Left Rail -->
+    <nav class="rail-nav">
+      <button class="rail-btn" title="3D Products" onclick="openPanel('products')">◈</button>
+      <button class="rail-btn" title="Digital Catalog" onclick="openPanel('catalog')">▤</button>
+      <button class="rail-btn" title="Smart Exhibitor Card" onclick="openPanel('card')">📱</button>
+      <button class="rail-btn" title="Live Expert Booking" onclick="openPanel('meeting')">📅</button>
+      <button class="rail-btn" title="Request Sample" onclick="openPanel('sample')">📦</button>
+    </nav>
+
+    <!-- Informational Notice -->
+    <div class="notice-box">
+      <b>Interactive 3D Showroom Demo</b><br>
+      Click glowing product rings to inspect 3D models, download datasheets, and test live wholesale RFQ intake.
+    </div>
+
+    <!-- Bottom HUD Navigation -->
+    <div class="hud-bar">
+      <button class="hud-btn" onclick="resetCamera()">⌂ Home View</button>
+      <button class="hud-btn" onclick="focusZone('products')">◉ Products Zone</button>
+      <button class="hud-btn" onclick="focusZone('meeting')">◎ Meeting Lounge</button>
+      <button class="hud-btn" onclick="toggleAutoTour()">↻ Auto Tour</button>
+      <button class="hud-btn" onclick="openPanel('briefcase')">▣ Briefcase (<span id="briefcase-count">0</span>)</button>
+      <button class="hud-btn" onclick="openPanel('analytics')">📊 Analytics</button>
+    </div>
+
+    <!-- Side Panel Drawer -->
+    <aside id="drawer" class="drawer">
+      <button class="drawer-close" onclick="closePanel()">✕</button>
+      <div id="drawer-content"></div>
+    </aside>
+  </div>
+
+  <script>
+    // ── 1. Canonical Products Dataset (8 Sample B2B Automation Products) ──
+    const PRODUCTS = [
+      {
+        id: 'DNA-ROBOT-X9',
+        name: 'dn’a Apex-Arm X9 Cobot',
+        type: 'Collaborative Robot',
+        moq: '1 Unit',
+        price: '$24,500 – $28,900 USD',
+        reach: '1,350 mm',
+        payload: '16 kg',
+        desc: '6-axis precision collaborative robot with integrated torque feedback sensors and zero-code lead-through teaching.',
+        color: 0x0284c7
+      },
+      {
+        id: 'DNA-AGV-500',
+        name: 'dn’a Nav-AGV 500 Transport',
+        type: 'Autonomous Mobile Robot',
+        moq: '2 Units',
+        price: '$32,000 – $36,500 USD',
+        reach: '1.8 m/s SLAM',
+        payload: '500 kg',
+        desc: 'Heavy-duty autonomous mobile logistics robot utilizing SLAM LiDAR navigation for pallet intralogistics.',
+        color: 0x6366f1
+      },
+      {
+        id: 'DNA-VISION-3D',
+        name: 'dn’a Vision-Sense 3D Scanner',
+        type: 'Industrial Metrology',
+        moq: '1 Unit',
+        price: '$18,900 – $22,000 USD',
+        reach: '120 fps Blue LED',
+        payload: '±5 μm Accuracy',
+        desc: 'Ultra-high-speed structured light 3D surface scanner engineered for 100% in-line quality inspection.',
+        color: 0x10b981
+      },
+      {
+        id: 'DNA-GRIPPER-H40',
+        name: 'dn’a Smart-Gripper H40',
+        type: 'Robotic End-Effector',
+        moq: '4 Units',
+        price: '$3,200 – $4,100 USD',
+        reach: '60 mm Stroke',
+        payload: '140 N Force',
+        desc: 'Servo-electric 2-finger adaptive gripper with programmable force control and vacuum integration.',
+        color: 0xf59e0b
+      },
+      {
+        id: 'DNA-FLOW-PRO',
+        name: 'dn’a Flow-Control Pro Module',
+        type: 'Fluidic Automation',
+        moq: '1 Unit',
+        price: '$14,800 – $19,200 USD',
+        reach: '220 m³/h Flow',
+        payload: 'IE5 Ultra-Premium',
+        desc: 'Intelligent fluid circulation and pressure management station equipped with variable frequency drive.',
+        color: 0x06b6d4
+      },
+      {
+        id: 'DNA-INVERTER-S',
+        name: 'dn’a Synchro-Drive Inverter',
+        type: 'Power Electronics',
+        moq: '5 Units',
+        price: '$1,450 – $2,300 USD',
+        reach: 'EtherCAT / PROFINET',
+        payload: '98.7% Efficiency',
+        desc: 'High-efficiency variable frequency motor drive optimized for high-dynamic robotics and packaging.',
+        color: 0x8b5cf6
+      },
+      {
+        id: 'DNA-EDGE-GATEWAY',
+        name: 'dn’a Edge-Core IoT Gateway',
+        type: 'Industrial Computing',
+        moq: '2 Units',
+        price: '$2,100 – $2,800 USD',
+        reach: '26 TOPS NPU',
+        payload: '4x GbE / CAN-FD',
+        desc: 'Fanless DIN-rail industrial computer designed for high-speed edge AI processing and cloud bridging.',
+        color: 0xec4899
+      },
+      {
+        id: 'DNA-WELD-CELL',
+        name: 'dn’a Laser-Weld Pro Cell',
+        type: 'Turnkey Workcell',
+        moq: '1 Unit',
+        price: '$115,000 – $145,000 USD',
+        reach: '3,000 W Fiber',
+        payload: 'Dual Rotary Station',
+        desc: 'Fully enclosed robotic fiber laser welding cell with Class 1 laser safety interlocks and seam tracking.',
+        color: 0xef4444
+      }
+    ];
+
+    let scene, camera, renderer, controls, autoTour = false;
+    let raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
+    let hotspotMeshes = [], briefcaseItems = [];
+
+    // ── 2. Initialize Three.js 3D Booth ──
+    function initBooth() {
+      const host = document.getElementById('stage');
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x070e17);
+      scene.fog = new THREE.Fog(0x070e17, 18, 38);
+
+      camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.1, 100);
+      camera.position.set(9, 5.2, 11);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.setSize(innerWidth, innerHeight);
+      renderer.shadowMap.enabled = true;
+      host.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.target.set(0, 1.5, 0);
+      controls.minDistance = 3.5;
+      controls.maxDistance = 20;
+      controls.maxPolarAngle = Math.PI / 2.05;
+
+      // Lights
+      scene.add(new THREE.HemisphereLight(0xffffff, 0x111e2e, 1.3));
+      const sun = new THREE.DirectionalLight(0xffffff, 1.2);
+      sun.position.set(6, 12, 8);
+      sun.castShadow = true;
+      scene.add(sun);
+
+      buildBoothGeometry();
+
+      renderer.domElement.addEventListener('pointerdown', handleSceneClick);
+      window.addEventListener('resize', handleResize);
+      animateLoop();
+    }
+
+    function createMat(color, metal = 0.1, rough = 0.4) {
+      return new THREE.MeshStandardMaterial({ color, metalness: metal, roughness: rough });
+    }
+
+    function createBox(w, h, d, color, x, y, z) {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), createMat(color));
+      mesh.position.set(x, y, z);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      scene.add(mesh);
+      return mesh;
+    }
+
+    function buildBoothGeometry() {
+      const white = 0xf1f5f9, teal = 0x0284c7, dark = 0x0f172a;
+
+      // Floor & Wall Partitions
+      createBox(15, 0.15, 10, 0x1e293b, 0, 0, 0);
+      createBox(14, 4.2, 0.2, white, 0, 2.1, -4.8);
+      createBox(0.2, 4.2, 7.5, white, -7.0, 2.1, -1.0);
+
+      // Top Canopy / Architectural Brand Fascia
+      createBox(7.2, 0.3, 1.8, white, 0, 4.6, -3.8);
+      createBox(6.8, 0.12, 1.5, teal, 0, 4.45, -3.75);
+
+      // Digital Media Screen on Back Wall
+      createBox(4.2, 2.2, 0.08, 0x082f49, -3.8, 2.4, -4.68);
+      createBox(4.0, 2.0, 0.06, 0x0284c7, -3.8, 2.4, -4.62);
+
+      // Front Reception Desk
+      createBox(3.4, 0.9, 0.9, white, -4.2, 0.45, 2.2);
+      createBox(3.2, 0.75, 0.85, teal, -4.2, 0.5, 2.22);
+
+      // Meeting Lounge Table & Chairs
+      const table = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.08, 32), createMat(white));
+      table.position.set(4.5, 0.8, 2.2);
+      scene.add(table);
+      for (let i = 0; i < 4; i++) {
+        const ang = (i * Math.PI) / 2;
+        createBox(0.55, 0.55, 0.55, dark, 4.5 + Math.cos(ang) * 1.5, 0.28, 2.2 + Math.sin(ang) * 1.5);
+      }
+
+      // Brand Signage
+      createSign('dn’a Robotics', 0, 3.2, -4.68, 5.0, 1.0, '#0ea5e9');
+      createSign('Next-Generation Intelligent Automation', 0, 2.6, -4.67, 4.8, 0.5, '#64748b');
+
+      // 8 Product Plinths and Interactive Hologram Rings
+      const plinthPositions = [
+        { x: -5.2, z: -2.8 }, { x: -2.6, z: -2.8 }, { x: 0.0, z: -2.8 }, { x: 2.6, z: -2.8 },
+        { x: -3.8, z: -0.6 }, { x: -1.2, z: -0.6 }, { x: 1.4, z: -0.6 }, { x: 4.0, z: -0.6 }
+      ];
+
+      PRODUCTS.forEach((p, idx) => {
+        const pos = plinthPositions[idx];
+        createBox(1.1, 0.2, 1.1, white, pos.x, 0.1, pos.z);
+
+        // Product procedural proxy model
+        const group = new THREE.Group();
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.35, 0.75, 24), createMat(p.color, 0.3, 0.3));
+        base.position.y = 0.65;
+        group.add(base);
+
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.48, 0.42), createMat(dark, 0.4, 0.2));
+        head.position.y = 1.15;
+        group.add(head);
+
+        group.position.set(pos.x, 0.1, pos.z);
+        group.userData.product = p;
+        scene.add(group);
+
+        // Glowing Hotspot Ring
+        const ringGeo = new THREE.TorusGeometry(0.44, 0.035, 12, 32);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = Math.PI / 2;
+        ring.position.set(pos.x, 1.6, pos.z);
+        ring.userData.product = p;
+        scene.add(ring);
+        hotspotMeshes.push(ring);
+      });
+    }
+
+    function createSign(text, x, y, z, w, h, textColor = '#0284c7') {
+      const c = document.createElement('canvas');
+      c.width = 1024; c.height = 256;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, c.width, c.height);
+      ctx.fillStyle = textColor;
+      ctx.font = '800 68px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(text, 512, 140);
+      const texture = new THREE.CanvasTexture(c);
+      const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+      const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+      plane.position.set(x, y, z);
+      scene.add(plane);
+    }
+
+    function handleSceneClick(e) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+
+      const intersects = raycaster.intersectObjects(scene.children, true);
+      const hit = intersects.find(h => {
+        let obj = h.object;
+        while (obj) {
+          if (obj.userData && obj.userData.product) return true;
+          obj = obj.parent;
+        }
+        return false;
+      });
+
+      if (hit) {
+        let obj = hit.object;
+        while (obj && !obj.userData.product) obj = obj.parent;
+        if (obj && obj.userData.product) {
+          openPanel('product', obj.userData.product);
+        }
+      }
+    }
+
+    // ── 3. Panel & Drawer Drawer Controllers ──
+    function openPanel(type, data = null) {
+      const drawer = document.getElementById('drawer');
+      const content = document.getElementById('drawer-content');
+      drawer.classList.add('open');
+
+      if (type === 'products') {
+        content.innerHTML = `
+          <h2 class="drawer-title">3D Products Gallery</h2>
+          <p class="drawer-subtitle">Select any commercial product to inspect engineering specifications, request wholesale pricing, or book an engineer.</p>
+          <div class="card-grid">
+            ${PRODUCTS.map(p => `
+              <div class="info-card" onclick="openPanel('product', PRODUCTS.find(x => x.id === '${p.id}'))">
+                <b>${p.name}</b>
+                <small style="color:#38bdf8;">${p.type}</small>
+                <div style="font-size:11px; color:#cbd5e1; margin-top:4px;">${p.price}</div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+      else if (type === 'product') {
+        const p = data;
+        content.innerHTML = `
+          <div style="font-size:11px; font-weight:700; color:#38bdf8; text-transform:uppercase; margin-bottom:4px;">${p.type}</div>
+          <h2 class="drawer-title">${p.name}</h2>
+          <p class="drawer-subtitle">${p.desc}</p>
+          <div id="product-3d-host" class="product-3d-box"></div>
+          <div class="card-grid">
+            <div class="info-card"><small>Wholesale Price</small><b>${p.price}</b></div>
+            <div class="info-card"><small>Minimum Order</small><b>${p.moq}</b></div>
+            <div class="info-card"><small>Key Spec</small><b>${p.reach}</b></div>
+            <div class="info-card"><small>Performance</small><b>${p.payload}</b></div>
+          </div>
+          <button class="btn-action" onclick="openPanel('rfq', '${p.id}')">Request Wholesale Pricing / RFQ</button>
+          <button class="btn-secondary" onclick="openPanel('sample', '${p.id}')">Request Evaluation Unit / Sample</button>
+          <button class="btn-secondary" onclick="addToBriefcase('${p.name} Spec Sheet')">📥 Save Spec Sheet to Briefcase</button>
+          <button class="btn-secondary" onclick="openPanel('meeting', '${p.name}')">📅 Book 1:1 Engineering Consultation</button>
+          <div class="disclaimer-box">
+            <b>Commercial Demo Notice:</b> dn’a B2B products shown above represent turnkey slot-bound exhibition assets.
+          </div>
+        `;
+        setTimeout(() => renderProduct3DPreview(p), 40);
+      }
+      else if (type === 'catalog') {
+        content.innerHTML = `
+          <h2 class="drawer-title">Digital Catalog Center</h2>
+          <p class="drawer-subtitle">Collect digital datasheets and engineering catalogs instantly without carrying printed trade show collateral.</p>
+          <div class="info-card" style="margin-bottom:12px;" onclick="addToBriefcase('2026 Master Robotics Catalog (PDF)')">
+            <b>📖 2026 Master Robotics & Automation Catalog</b>
+            <small>48 Pages · Comprehensive Product Specifications (14.2 MB)</small>
+            <div style="color:#38bdf8; font-size:11px; margin-top:6px;">+ Add to My Briefcase</div>
+          </div>
+          <div class="info-card" style="margin-bottom:12px;" onclick="addToBriefcase('Cobot Integration & Safety Guide (PDF)')">
+            <b>📘 Cobot Integration & Safety ROI Guide</b>
+            <small>Payback calculators, safety certification, and machine tending case studies</small>
+            <div style="color:#38bdf8; font-size:11px; margin-top:6px;">+ Add to My Briefcase</div>
+          </div>
+          <div class="info-card" style="margin-bottom:12px;" onclick="addToBriefcase('Autonomous AGV Fleet Guide (PDF)')">
+            <b>📙 Autonomous Intralogistics & SLAM Guide</b>
+            <small>Warehouse logistics dispatching & WMS integration architecture</small>
+            <div style="color:#38bdf8; font-size:11px; margin-top:6px;">+ Add to My Briefcase</div>
+          </div>
+          <button class="btn-action" onclick="openPanel('briefcase')">Open My Briefcase</button>
+        `;
+      }
+      else if (type === 'card') {
+        content.innerHTML = `
+          <h2 class="drawer-title">Smart Exhibitor Card</h2>
+          <p class="drawer-subtitle">Mobile-first QR & contact pass for booth sales representatives.</p>
+          <div style="background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:12px; padding:18px; text-align:center; margin-bottom:18px;">
+            <div style="width:64px; height:64px; border-radius:50%; background:#0284c7; color:#fff; font-size:24px; font-weight:800; display:flex; align-items:center; justify-content:center; margin:0 auto 10px;">AV</div>
+            <h3 style="margin:0; font-size:18px;">Alex Vance</h3>
+            <div style="color:#38bdf8; font-size:12px; font-weight:600;">VP of Global B2B Solutions</div>
+            <div style="color:#94a3b8; font-size:12px; margin-top:4px;">dn’a Robotics Corp. · Booth B128</div>
+            <a href="/card.html" target="_blank" style="display:inline-block; margin-top:12px; font-size:12px; color:#38bdf8; text-decoration:none; font-weight:700;">Open Mobile-First Card Page ↗</a>
+          </div>
+          <button class="btn-action" onclick="downloadVCard()">💾 Save Contact (.vcf)</button>
+          <button class="btn-secondary" onclick="openPanel('rfq')">✉ Send RFQ to Rep</button>
+          <button class="btn-secondary" onclick="openPanel('meeting')">📅 Book Meeting with Alex</button>
+        `;
+      }
+      else if (type === 'rfq') {
+        const prodId = data || 'DNA-ROBOT-X9';
+        content.innerHTML = `
+          <h2 class="drawer-title">Request Wholesale RFQ</h2>
+          <p class="drawer-subtitle">Submit a formal price quotation request. Submissions are saved persistently to our commercial intake queue.</p>
+          <form onsubmit="submitRFQ(event)">
+            <label style="font-size:12px; color:#94a3b8;">Target Product</label>
+            <select id="rfq-product" class="form-field">
+              ${PRODUCTS.map(p => `<option value="${p.id}" ${p.id === prodId ? 'selected' : ''}>${p.name}</option>`).join('')}
+            </select>
+            <label style="font-size:12px; color:#94a3b8;">Your Name *</label>
+            <input id="rfq-name" class="form-field" required placeholder="e.g. John Doe">
+            <label style="font-size:12px; color:#94a3b8;">Company Name *</label>
+            <input id="rfq-company" class="form-field" required placeholder="e.g. Acme Industrial Ltd.">
+            <label style="font-size:12px; color:#94a3b8;">Work Email *</label>
+            <input id="rfq-email" type="email" class="form-field" required placeholder="john@acme.com">
+            <label style="font-size:12px; color:#94a3b8;">Estimated Quantity</label>
+            <input id="rfq-qty" type="number" class="form-field" value="5" min="1">
+            <label style="font-size:12px; color:#94a3b8;">Project Notes / Application Details</label>
+            <textarea id="rfq-notes" class="form-field" rows="3" placeholder="Describe your operating environment or target delivery date"></textarea>
+            <button type="submit" class="btn-action">Submit RFQ Request</button>
+          </form>
+          <div id="rfq-result"></div>
+        `;
+      }
+      else if (type === 'sample') {
+        const prodId = data || 'DNA-GRIPPER-H40';
+        content.innerHTML = `
+          <h2 class="drawer-title">Request Evaluation Sample</h2>
+          <p class="drawer-subtitle">Request an evaluation unit for in-house engineering testing and validation.</p>
+          <form onsubmit="submitSample(event)">
+            <label style="font-size:12px; color:#94a3b8;">Product Evaluation Unit</label>
+            <select id="sample-product" class="form-field">
+              ${PRODUCTS.map(p => `<option value="${p.id}" ${p.id === prodId ? 'selected' : ''}>${p.name}</option>`).join('')}
+            </select>
+            <label style="font-size:12px; color:#94a3b8;">Engineer Name *</label>
+            <input id="sample-name" class="form-field" required placeholder="e.g. Sarah Connor">
+            <label style="font-size:12px; color:#94a3b8;">Company / Facility *</label>
+            <input id="sample-company" class="form-field" required placeholder="e.g. Cyberdyne Labs">
+            <label style="font-size:12px; color:#94a3b8;">Corporate Email *</label>
+            <input id="sample-email" type="email" class="form-field" required placeholder="s.connor@cyberdyne.com">
+            <label style="font-size:12px; color:#94a3b8;">Shipping Address</label>
+            <textarea id="sample-notes" class="form-field" rows="2" placeholder="Facility address for unit shipment"></textarea>
+            <button type="submit" class="btn-action">Submit Evaluation Request</button>
+          </form>
+          <div id="sample-result"></div>
+        `;
+      }
+      else if (type === 'meeting') {
+        content.innerHTML = `
+          <h2 class="drawer-title">Book Engineering Meeting</h2>
+          <p class="drawer-subtitle">Schedule a 1:1 technical video consultation with a dn’a application specialist.</p>
+          <form onsubmit="submitMeeting(event)">
+            <label style="font-size:12px; color:#94a3b8;">Your Name *</label>
+            <input id="meet-name" class="form-field" required placeholder="e.g. Michael Scott">
+            <label style="font-size:12px; color:#94a3b8;">Company Name *</label>
+            <input id="meet-company" class="form-field" required placeholder="e.g. Dunder Mifflin Automation">
+            <label style="font-size:12px; color:#94a3b8;">Email Address *</label>
+            <input id="meet-email" type="email" class="form-field" required placeholder="michael@dunder.com">
+            <label style="font-size:12px; color:#94a3b8;">Preferred Date & Time</label>
+            <input id="meet-date" type="datetime-local" class="form-field" required>
+            <label style="font-size:12px; color:#94a3b8;">Discussion Topic</label>
+            <textarea id="meet-notes" class="form-field" rows="2" placeholder="Describe system requirements or payload specs"></textarea>
+            <button type="submit" class="btn-action">Confirm Meeting Booking</button>
+          </form>
+          <div id="meet-result"></div>
+        `;
+      }
+      else if (type === 'briefcase') {
+        content.innerHTML = `
+          <h2 class="drawer-title">My Virtual Briefcase</h2>
+          <p class="drawer-subtitle">Collected product datasheets, catalogs, and collateral from this exhibition session.</p>
+          ${briefcaseItems.length === 0 
+            ? `<div style="padding:24px; text-align:center; color:#94a3b8; border:1px dashed var(--border); border-radius:10px;">Briefcase is empty. Click "+ Add to Briefcase" on any product or catalog item to collect it here.</div>`
+            : briefcaseItems.map(item => `
+              <div style="padding:10px 14px; background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                <span>✓ ${item}</span>
+                <small style="color:#38bdf8; font-weight:700;">Ready</small>
+              </div>
+            `).join('')
+          }
+          ${briefcaseItems.length > 0 ? `<button class="btn-action" style="margin-top:14px;" onclick="emailBriefcase()">📥 Email Complete Package to Me</button>` : ''}
+        `;
+      }
+      else if (type === 'analytics') {
+        content.innerHTML = `
+          <h2 class="drawer-title">Showroom Analytics</h2>
+          <div style="background:rgba(245,158,11,0.15); border:1px solid #f59e0b; color:#fbbf24; padding:8px 12px; border-radius:8px; font-size:11px; font-weight:700; margin-bottom:14px;">
+            ⚠️ DEMO DATA — Simulated Real-Time B2B Trade Show Telemetry
+          </div>
+          <div class="card-grid">
+            <div class="info-card"><small>Total Visitors</small><b style="font-size:16px; color:#38bdf8;">1,428</b></div>
+            <div class="info-card"><small>Unique Buyers</small><b style="font-size:16px; color:#34d399;">892</b></div>
+            <div class="info-card"><small>Product 3D Views</small><b style="font-size:16px; color:#818cf8;">3,614</b></div>
+            <div class="info-card"><small>RFQs Submitted</small><b style="font-size:16px; color:#f43f5e;">47</b></div>
+          </div>
+          <h4 style="margin:16px 0 8px; font-size:13px;">Top Scanned Products (Simulated)</h4>
+          <div style="font-size:12px; color:#cbd5e1; line-height:1.8;">
+            <div>• dn’a Apex-Arm X9 Cobot: <b>1,142 views / 117 QR scans</b></div>
+            <div>• dn’a Nav-AGV 500 Transport: <b>842 views / 83 QR scans</b></div>
+            <div>• dn’a Vision-Sense 3D Scanner: <b>618 views / 52 QR scans</b></div>
+            <div>• dn’a Laser-Weld Pro Cell: <b>492 views / 42 QR scans</b></div>
+          </div>
+        `;
+      }
+    }
+
+    function closePanel() {
+      document.getElementById('drawer').classList.remove('open');
+    }
+
+    function addToBriefcase(item) {
+      if (!briefcaseItems.includes(item)) {
+        briefcaseItems.push(item);
+        document.getElementById('briefcase-count').textContent = briefcaseItems.length;
+      }
+      openPanel('briefcase');
+    }
+
+    function emailBriefcase() {
+      alert('Demo Briefcase sent! In live production, complete PDF datasheets and spec packets are emailed directly to the buyer.');
+    }
+
+    function downloadVCard() {
+      const vcard = `BEGIN:VCARD\nVERSION:3.0\nN:Vance;Alex;;;\nFN:Alex Vance\nORG:dn'a Robotics & Smart Automation Corp.\nTITLE:VP of Global B2B Solutions\nTEL;TYPE=WORK,VOICE:+15553829011\nEMAIL:alex.vance@dna-robotics.demo\nURL:https://v-show-commercial-v1-production.up.railway.app/card.html\nEND:VCARD`;
+      const blob = new Blob([vcard], { type: 'text/vcard' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'Alex_Vance_dna_Robotics.vcf';
+      a.click();
+    }
+
+    // ── 4. Form Submissions to Backend APIs ──
+    async function submitRFQ(e) {
+      e.preventDefault();
+      const resEl = document.getElementById('rfq-result');
+      resEl.innerHTML = '<div style="color:#94a3b8; padding:10px;">Submitting RFQ...</div>';
+      try {
+        const payload = {
+          boothId: 'booth-demo-01',
+          productId: document.getElementById('rfq-product').value,
+          buyerName: document.getElementById('rfq-name').value,
+          company: document.getElementById('rfq-company').value,
+          email: document.getElementById('rfq-email').value,
+          quantity: document.getElementById('rfq-qty').value,
+          notes: document.getElementById('rfq-notes').value
+        };
+        const res = await fetch('/api/rfqs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          resEl.innerHTML = `
+            <div class="result-banner">
+              <b>✓ RFQ Submitted Successfully!</b><br>
+              Reference ID: <code>${data.rfq?.id || 'RFQ-CONFIRMED'}</code><br>
+              A formal quotation has been routed to the sales team.
+            </div>
+          `;
+        } else {
+          resEl.innerHTML = `<div style="color:#ef4444; margin-top:10px;">${data.error || 'Submission failed'}</div>`;
+        }
+      } catch (err) {
+        resEl.innerHTML = `<div style="color:#ef4444; margin-top:10px;">Network error: ${err.message}</div>`;
+      }
+    }
+
+    async function submitSample(e) {
+      e.preventDefault();
+      const resEl = document.getElementById('sample-result');
+      resEl.innerHTML = '<div style="color:#94a3b8; padding:10px;">Submitting sample request...</div>';
+      try {
+        const payload = {
+          boothId: 'booth-demo-01',
+          productId: document.getElementById('sample-product').value,
+          buyerName: document.getElementById('sample-name').value,
+          company: document.getElementById('sample-company').value,
+          email: document.getElementById('sample-email').value,
+          quantity: 1,
+          notes: document.getElementById('sample-notes').value
+        };
+        const res = await fetch('/api/samples', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          resEl.innerHTML = `
+            <div class="result-banner">
+              <b>✓ Evaluation Sample Request Received!</b><br>
+              Request ID: <code>${data.sample?.id || 'SAMPLE-CONFIRMED'}</code><br>
+              Application engineering will verify facility requirements prior to dispatch.
+            </div>
+          `;
+        } else {
+          resEl.innerHTML = `<div style="color:#ef4444; margin-top:10px;">${data.error || 'Submission failed'}</div>`;
+        }
+      } catch (err) {
+        resEl.innerHTML = `<div style="color:#ef4444; margin-top:10px;">Network error: ${err.message}</div>`;
+      }
+    }
+
+    async function submitMeeting(e) {
+      e.preventDefault();
+      const resEl = document.getElementById('meet-result');
+      resEl.innerHTML = '<div style="color:#94a3b8; padding:10px;">Booking meeting...</div>';
+      try {
+        const payload = {
+          boothId: 'booth-demo-01',
+          buyerName: document.getElementById('meet-name').value,
+          company: document.getElementById('meet-company').value,
+          email: document.getElementById('meet-email').value,
+          requestedAt: document.getElementById('meet-date').value,
+          notes: document.getElementById('meet-notes').value
+        };
+        const res = await fetch('/api/appointments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          resEl.innerHTML = `
+            <div class="result-banner">
+              <b>✓ Meeting Consultation Confirmed!</b><br>
+              Appointment Ref: <code>${data.appointment?.id || 'APT-CONFIRMED'}</code><br>
+              Calendar invitation dispatched to ${payload.email}.
+            </div>
+          `;
+        } else {
+          resEl.innerHTML = `<div style="color:#ef4444; margin-top:10px;">${data.error || 'Booking failed'}</div>`;
+        }
+      } catch (err) {
+        resEl.innerHTML = `<div style="color:#ef4444; margin-top:10px;">Network error: ${err.message}</div>`;
+      }
+    }
+
+    // ── 5. In-Drawer Mini 3D Preview ──
+    function renderProduct3DPreview(p) {
+      const host = document.getElementById('product-3d-host');
+      if (!host) return;
+      const s = new THREE.Scene();
+      const c = new THREE.PerspectiveCamera(45, host.clientWidth / host.clientHeight, 0.1, 20);
+      const r = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      r.setSize(host.clientWidth, host.clientHeight);
+      host.appendChild(r.domElement);
+
+      s.add(new THREE.HemisphereLight(0xffffff, 0x112233, 2.2));
+      const group = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.8, 1.8, 32), createMat(p.color, 0.4, 0.3));
+      group.add(body);
+      const head = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.1, 1.1), createMat(0x0f172a, 0.5, 0.2));
+      head.position.y = 1.3;
+      group.add(head);
+      s.add(group);
+
+      c.position.set(3.2, 2.2, 4.2);
+      c.lookAt(0, 0.5, 0);
+      const orbit = new THREE.OrbitControls(c, r.domElement);
+      orbit.enableDamping = true;
+
+      function renderMini() {
+        if (!host.isConnected) return;
+        requestAnimationFrame(renderMini);
+        orbit.update();
+        group.rotation.y += 0.005;
+        r.render(s, c);
+      }
+      renderMini();
+    }
+
+    // ── 6. Camera Navigation Utilities ──
+    function resetCamera() {
+      camera.position.set(9, 5.2, 11);
+      controls.target.set(0, 1.5, 0);
+    }
+    function focusZone(zone) {
+      if (zone === 'products') {
+        camera.position.set(5.5, 3.2, 6.0);
+        controls.target.set(0, 1.2, -1.5);
+      } else {
+        camera.position.set(7.5, 3.5, 6.5);
+        controls.target.set(4.5, 1.0, 2.2);
+      }
+    }
+    function toggleAutoTour() {
+      autoTour = !autoTour;
+    }
+    function handleResize() {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    }
+    function animateLoop() {
+      requestAnimationFrame(animateLoop);
+      if (autoTour) {
+        const time = Date.now() * 0.00015;
+        camera.position.x = Math.sin(time) * 12;
+        camera.position.z = Math.cos(time) * 12;
+        camera.lookAt(0, 1.5, 0);
+      }
+      controls.update();
+      hotspotMeshes.forEach((h, idx) => {
+        h.rotation.z += 0.01 + idx * 0.001;
+      });
+      renderer.render(scene, camera);
+    }
+
+    initBooth();
+  </script>
+</body>
+</html>
