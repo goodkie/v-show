@@ -943,10 +943,13 @@
     // ══════════════════════════════════════════════════════════════════════
     // LIVE PHOTOREALISTIC 3D WEBGL ENGINE (THREE.JS R128 + ORBITCONTROLS)
     // ══════════════════════════════════════════════════════════════════════
-    (function init3DHeroShowroom() {
+    function init3DHeroShowroom() {
       const canvas = document.getElementById('hero-3d-canvas');
       const frameBox = document.getElementById('showcase-frame-box');
-      if (!canvas || !window.THREE) return;
+      if (!canvas || !window.THREE) {
+        console.warn('init3DHeroShowroom: canvas or THREE missing', { canvas: !!canvas, THREE: !!window.THREE });
+        return;
+      }
 
       let scene, camera, renderer, controls;
       let animId;
@@ -1416,4 +1419,13 @@
         }
       };
 
-    })();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init3DHeroShowroom);
+    } else {
+      init3DHeroShowroom();
+    }
+  </script>
+</body>
+</html>
