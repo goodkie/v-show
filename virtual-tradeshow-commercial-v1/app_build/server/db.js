@@ -1228,6 +1228,219 @@ class JSONDatabase {
           samplesRequested: 0,
           meetingsBooked: 0
         }
+      },
+      // --- Phase dn’a-C04: Pilot Exhibitor Cohort (5 Controlled Projects) ---
+      {
+        id: 'proj-pilot-01-haven',
+        channel: 'DIY_BUILDER',
+        company: 'Haven & Oak Furniture Co.',
+        contact: 'Julian Vance (VP Trade Sales)',
+        email: 'julian.vance@havenoak.example',
+        phone: '+1 (336) 555-0142',
+        website: 'https://havenoak.example',
+        description: 'Heritage American solid white oak and walnut furnishings for high-end hospitality and architectural trade buyers.',
+        tradeShow: 'High Point Market Fall 2026',
+        showStartDate: '2026-10-17',
+        showEndDate: '2026-10-21',
+        daysUntilShow: 56,
+        city: 'High Point, NC',
+        venue: 'IHFC Main Building',
+        boothNumber: 'Stand W-412 (Interhall)',
+        industry: 'Furniture, Home Decor & Lighting',
+        numberOfProducts: 8,
+        experienceType: 'DIGITAL_SHOWROOM',
+        templateId: 'MODERN',
+        hotspotBindings: { hotspot1: 'prod-p1-01', hotspot2: 'prod-p1-02', hotspot3: 'prod-p1-03' },
+        serviceSelections: ['3D_BOOTH_DESIGN', 'DIGITAL_CATALOG', 'SMART_CARD', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE'],
+        status: 'PUBLISHED',
+        priority: 'NORMAL',
+        blockingReason: 'NONE',
+        createdAt: '2026-08-16T10:00:00.000Z',
+        updatedAt: '2026-08-22T04:00:00.000Z',
+        publishedAt: '2026-08-21T10:00:00.000Z',
+        settings: { enableLeadForm: true, enableRfq: true, enableSampleRequest: true, enableAppointments: true, leadEmail: 'julian.vance@havenoak.example' },
+        assets: [
+          { key: 'LOGO', label: 'Vector Brand Logo', required: true, status: 'APPROVED', url: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300' },
+          { key: 'HERO_IMAGE', label: 'Hero Booth Banner', required: true, status: 'APPROVED', url: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=1200' },
+          { key: 'CATALOG_PDF', label: 'Lookbook & Spec Catalog', required: true, status: 'APPROVED', url: '/demo.html' }
+        ],
+        products: [
+          { id: 'prod-p1-01', name: 'Monarch Solid White Oak Dining Table', sku: 'HVO-DS-01', category: 'Dining Furniture', price: 4200, currency: 'USD', wholesaleVisible: true, moq: 2, heroImage: 'https://images.unsplash.com/photo-1577140917170-285929fb55b7?w=800', description: 'Handcrafted Appalachian white oak 8-seater dining table with mortise-and-tenon joinery.' },
+          { id: 'prod-p1-02', name: 'Kensington Low-Profile Sectional Sofa', sku: 'HVO-SF-04', category: 'Living Room', price: 6800, currency: 'USD', wholesaleVisible: true, moq: 1, heroImage: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800', description: 'Full-grain Italian aniline leather sectional with modular configuration options.' },
+          { id: 'prod-p1-03', name: 'Sutton Architectural Credenza', sku: 'HVO-CR-09', category: 'Storage & Media', price: 3400, currency: 'USD', wholesaleVisible: true, moq: 2, heroImage: 'https://images.unsplash.com/photo-1538688525198-9b88f6f53126?w=800', description: 'Brushed brass inlay cabinet doors with integrated soft-close European hinges.' }
+        ],
+        revisions: [{ version: 'v1', publishedAt: '2026-08-21T10:00:00.000Z', publicUrl: '/demo.html?project=proj-pilot-01-haven', notes: 'Pilot DIY launch' }],
+        publishRecord: { publishedAt: '2026-08-21T10:00:00.000Z', publishedBy: 'Julian Vance', publicUrl: '/demo.html?project=proj-pilot-01-haven', activeServices: ['DIGITAL_SHOWROOM', 'DIGITAL_CATALOG', 'SMART_CARD', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE'] },
+        analytics: { boothVisits: 480, productViews: 1120, qrScans: 114, catalogDownloads: 162, leadsCaptured: 28, rfqsSubmitted: 14, samplesRequested: 9, meetingsBooked: 11 },
+        leads: [
+          { id: 'lead-p1-01', buyerName: 'Sarah Jenkins', buyerCompany: 'Metropolitan Design Studio', email: 'sjenkins@metrodesign.example', phone: '+1 (415) 555-0199', interestedProduct: 'Monarch Solid White Oak Dining Table', source: 'DIGITAL_BOOTH', actionType: 'RFQ', status: 'RFQ', notes: 'Requested quotation for 12 tables for boutique hotel project in Napa Valley.', date: '2026-08-21T14:20:00.000Z' },
+          { id: 'lead-p1-02', buyerName: 'Arthur Pendelton', buyerCompany: 'Grand Horizon Hospitality', email: 'apendelton@horizonhotels.example', phone: '+1 (312) 555-0811', interestedProduct: 'Kensington Low-Profile Sectional Sofa', source: 'PRODUCT_QR', actionType: 'SAMPLE', status: 'SAMPLE_REQUESTED', notes: 'Requested Italian leather swatch kit sent to Chicago procurement office.', date: '2026-08-21T16:45:00.000Z' },
+          { id: 'lead-p1-03', buyerName: 'Elena Rostova', buyerCompany: 'Apex Interiors Group', email: 'elena@apexinteriors.example', phone: '+1 (212) 555-0988', interestedProduct: 'Sutton Architectural Credenza', source: 'SMART_CARD', actionType: 'APPOINTMENT', status: 'MEETING_REQUESTED', notes: 'Scheduled trade show in-person walkthrough at High Point stand W-412.', date: '2026-08-22T01:15:00.000Z' },
+          { id: 'lead-p1-04', buyerName: 'David Chen', buyerCompany: 'Pacific Rim Furnishings', email: 'dchen@pacificfurn.example', phone: '+1 (206) 555-0322', interestedProduct: 'Monarch Solid White Oak Dining Table', source: 'CATALOG_DOWNLOAD', actionType: 'LEAD', status: 'QUALIFIED', notes: 'Wholesale buyer looking for west coast distribution agreement.', date: '2026-08-22T02:30:00.000Z' }
+        ]
+      },
+      {
+        id: 'proj-pilot-02-nova',
+        channel: 'DIY_BUILDER',
+        company: 'Maison Nova Haute Apparel',
+        contact: 'Claire Delacroix (Creative Director)',
+        email: 'claire@maisonnova.example',
+        phone: '+1 (212) 555-0819',
+        website: 'https://maisonnova.example',
+        description: 'Contemporary European luxury pret-a-porter and artisan leather accessory atelier.',
+        tradeShow: 'COTERIE New York 2026',
+        showStartDate: '2026-09-22',
+        showEndDate: '2026-09-24',
+        daysUntilShow: 31,
+        city: 'New York, NY',
+        venue: 'Javits Center',
+        boothNumber: 'Booth 2140',
+        industry: 'Fashion, Footwear & Luxury Apparel',
+        numberOfProducts: 12,
+        experienceType: 'DESIGNED_3D',
+        templateId: 'PREMIUM',
+        hotspotBindings: { hotspot1: 'prod-p2-01', hotspot2: 'prod-p2-02' },
+        serviceSelections: ['3D_BOOTH_DESIGN', 'DIGITAL_CATALOG', 'SMART_CARD', 'PRODUCT_QR'],
+        status: 'QUALIFICATION',
+        priority: 'DUE_SOON',
+        blockingReason: 'WAITING_CLIENT',
+        createdAt: '2026-08-18T14:00:00.000Z',
+        updatedAt: '2026-08-22T04:00:00.000Z',
+        managedHandoff: { requestedAt: '2026-08-21T15:30:00.000Z', notes: 'Pilot exhibitor requested dn’a Managed Production to finish high-end 3D pavilion and linesheet binding.', requestedBy: 'Claire Delacroix', handoffStatus: 'ACTIVE' },
+        settings: { enableLeadForm: true, enableRfq: true, enableSampleRequest: true, enableAppointments: true, leadEmail: 'claire@maisonnova.example' },
+        assets: [{ key: 'LOGO', label: 'Vector Brand Logo', required: true, status: 'APPROVED', url: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300' }],
+        products: [
+          { id: 'prod-p2-01', name: 'Atelier Cashmere Overcoat — Charcoal', sku: 'MN-OW-01', category: 'Outerwear', price: 1850, currency: 'USD', wholesaleVisible: true, moq: 6, heroImage: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=800', description: 'Double-faced Italian cashmere blend with hand-stitched lapels.' },
+          { id: 'prod-p2-02', name: 'Palais Calfskin Sculptural Handbag', sku: 'MN-BG-08', category: 'Accessories', price: 920, currency: 'USD', wholesaleVisible: true, moq: 10, heroImage: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800', description: 'Handmade calfskin tote with custom brushed palladium hardware.' }
+        ],
+        revisions: [],
+        publishRecord: null,
+        analytics: { boothVisits: 0, productViews: 0, qrScans: 0, catalogDownloads: 0, leadsCaptured: 0, rfqsSubmitted: 0, samplesRequested: 0, meetingsBooked: 0 },
+        leads: [
+          { id: 'lead-p2-01', buyerName: 'Chloe Dupont', buyerCompany: 'Galeries Lafayette NY', email: 'cdupont@galeries.example', phone: '+1 (212) 555-0441', interestedProduct: 'Atelier Cashmere Overcoat — Charcoal', source: 'MANAGED_INTAKE', actionType: 'RFQ', status: 'NEW', notes: 'Preliminary interest in Fall capsule collection preorder.', date: '2026-08-21T18:00:00.000Z' }
+        ]
+      },
+      {
+        id: 'proj-pilot-03-lumina',
+        channel: 'DIY_BUILDER',
+        company: 'Lumina Craft & Giftworks',
+        contact: 'Dave K. Sterling (VP Merchandising)',
+        email: 'dave@luminacraft.example',
+        phone: '+1 (702) 555-0941',
+        website: 'https://luminacraft.example',
+        description: 'Wholesale supplier of design-forward lifestyle gifts, illuminated craft novelties, and retail displays.',
+        tradeShow: 'ASD Market Week Las Vegas 2026',
+        showStartDate: '2026-08-20',
+        showEndDate: '2026-08-23',
+        daysUntilShow: 0,
+        city: 'Las Vegas, NV',
+        venue: 'Las Vegas Convention Center',
+        boothNumber: 'Central Hall — Stand C-842',
+        industry: 'Gifts, Novelties & General Merchandise',
+        numberOfProducts: 6,
+        experienceType: 'PHOTO_TOUR',
+        templateId: 'INDUSTRIAL',
+        hotspotBindings: { hotspot1: 'prod-p3-01' },
+        serviceSelections: ['PHOTO_TOUR', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE', 'SAMPLE_REQUEST'],
+        status: 'PUBLISHED',
+        priority: 'SHOW_STARTED',
+        blockingReason: 'NONE',
+        createdAt: '2026-08-20T09:00:00.000Z',
+        updatedAt: '2026-08-22T04:00:00.000Z',
+        publishedAt: '2026-08-20T11:00:00.000Z',
+        settings: { enableLeadForm: true, enableRfq: true, enableSampleRequest: true, enableAppointments: true, leadEmail: 'dave@luminacraft.example' },
+        assets: [{ key: 'LOGO', label: 'Vector Brand Logo', required: true, status: 'APPROVED', url: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300' }],
+        products: [
+          { id: 'prod-p3-01', name: 'Prism Light Ambient LED Lantern', sku: 'LUM-LT-01', category: 'Illumination', price: 38, currency: 'USD', wholesaleVisible: true, moq: 24, heroImage: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800', description: 'Rechargeable wireless ambient light sculpture with touch dimmer.' }
+        ],
+        revisions: [{ version: 'v1', publishedAt: '2026-08-20T11:00:00.000Z', publicUrl: '/demo.html?project=proj-pilot-03-lumina', notes: 'ASD Market Week live launch' }],
+        publishRecord: { publishedAt: '2026-08-20T11:00:00.000Z', publishedBy: 'Dave K. Sterling', publicUrl: '/demo.html?project=proj-pilot-03-lumina', activeServices: ['PHOTO_TOUR', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE', 'SAMPLE_REQUEST'] },
+        analytics: { boothVisits: 620, productViews: 1450, qrScans: 280, catalogDownloads: 190, leadsCaptured: 42, rfqsSubmitted: 22, samplesRequested: 16, meetingsBooked: 12 },
+        leads: [
+          { id: 'lead-p3-01', buyerName: 'Rachel Green', buyerCompany: 'Sunburst Gift Boutiques', email: 'rgreen@sunburstgifts.example', phone: '+1 (818) 555-0311', interestedProduct: 'Prism Light Ambient LED Lantern', source: 'PRODUCT_QR', actionType: 'RFQ', status: 'WON', notes: 'PO received for 240 units for holiday retail season.', date: '2026-08-21T11:30:00.000Z' },
+          { id: 'lead-p3-02', buyerName: 'Mark Higgins', buyerCompany: 'Resort Merchandising Direct', email: 'mhiggins@resortdirect.example', phone: '+1 (305) 555-0992', interestedProduct: 'Prism Light Ambient LED Lantern', source: 'DIGITAL_BOOTH', actionType: 'SAMPLE', status: 'CONTACTED', notes: 'Requested sample evaluation unit for poolside boutique.', date: '2026-08-21T15:20:00.000Z' }
+        ]
+      },
+      {
+        id: 'proj-pilot-04-atlantica',
+        channel: 'DIY_BUILDER',
+        company: 'Atlantica Living Home & Decor',
+        contact: 'Hannah Ross (Head of Merchandising)',
+        email: 'hannah@atlanticaliving.example',
+        phone: '+1 (404) 555-0722',
+        website: 'https://atlanticaliving.example',
+        description: 'Coastal and transitional home decor, ceramic tableware, and artisan textile collections.',
+        tradeShow: 'Atlanta Market Summer 2026',
+        showStartDate: '2026-07-14',
+        showEndDate: '2026-07-20',
+        daysUntilShow: -32,
+        city: 'Atlanta, GA',
+        venue: 'AmericasMart Atlanta',
+        boothNumber: 'Building 1 — Floor 8 Stand 840',
+        industry: 'Furniture, Home Decor & Lighting',
+        numberOfProducts: 10,
+        experienceType: 'DESIGNED_3D',
+        templateId: 'MINIMAL',
+        hotspotBindings: { hotspot1: 'prod-p4-01' },
+        serviceSelections: ['3D_BOOTH_DESIGN', 'DIGITAL_CATALOG', 'SMART_CARD', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE'],
+        status: 'IN_PRODUCTION',
+        priority: 'NORMAL',
+        blockingReason: 'NONE',
+        createdAt: '2026-08-15T12:00:00.000Z',
+        updatedAt: '2026-08-22T04:00:00.000Z',
+        managedHandoff: { requestedAt: '2026-08-19T10:00:00.000Z', notes: 'Customer handed off DIY draft for dn’a team to optimize 3D lighting and complete post-show lead migration.', requestedBy: 'Hannah Ross', handoffStatus: 'ACTIVE' },
+        settings: { enableLeadForm: true, enableRfq: true, enableSampleRequest: true, enableAppointments: true, leadEmail: 'hannah@atlanticaliving.example' },
+        assets: [{ key: 'LOGO', label: 'Vector Brand Logo', required: true, status: 'APPROVED', url: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300' }],
+        products: [
+          { id: 'prod-p4-01', name: 'Terracotta Sculptural Vase Ensemble', sku: 'ATL-VS-01', category: 'Decor', price: 145, currency: 'USD', wholesaleVisible: true, moq: 12, heroImage: 'https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?w=800', description: 'Handmade terracotta stoneware trio with matte chalk finish.' }
+        ],
+        revisions: [],
+        publishRecord: null,
+        analytics: { boothVisits: 0, productViews: 0, qrScans: 0, catalogDownloads: 0, leadsCaptured: 0, rfqsSubmitted: 0, samplesRequested: 0, meetingsBooked: 0 },
+        leads: [
+          { id: 'lead-p4-01', buyerName: 'Liam O’Connor', buyerCompany: 'Savannah Interior Guild', email: 'loconnor@savannahguild.example', phone: '+1 (912) 555-0814', interestedProduct: 'Terracotta Sculptural Vase Ensemble', source: 'SMART_CARD', actionType: 'RFQ', status: 'FOLLOW_UP', notes: 'Reviewing pricing for 40 showroom displays in Southeast.', date: '2026-08-20T16:00:00.000Z' }
+        ]
+      },
+      {
+        id: 'proj-pilot-05-textura',
+        channel: 'DIY_BUILDER',
+        company: 'Textura Mill Works',
+        contact: 'Samuel B. Sterling (Managing Director)',
+        email: 'samuel@texturamills.example',
+        phone: '+1 (704) 555-0391',
+        website: 'https://texturamills.example',
+        description: 'Sustainable jacquard upholstery, commercial contract performance fabrics, and textured linen weaves.',
+        tradeShow: 'Interwoven High Point 2026',
+        showStartDate: '2026-11-10',
+        showEndDate: '2026-11-12',
+        daysUntilShow: 80,
+        city: 'High Point, NC',
+        venue: 'Market Square Textile Center',
+        boothNumber: 'Suite MS-310',
+        industry: 'Other Commercial B2B',
+        numberOfProducts: 9,
+        experienceType: 'DIGITAL_SHOWROOM',
+        templateId: 'INDUSTRIAL',
+        hotspotBindings: { hotspot1: 'prod-p5-01' },
+        serviceSelections: ['DIGITAL_SHOWROOM', 'DIGITAL_CATALOG', 'SMART_CARD', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE', 'SAMPLE_REQUEST'],
+        status: 'PUBLISHED',
+        priority: 'NORMAL',
+        blockingReason: 'NONE',
+        createdAt: '2026-08-17T08:00:00.000Z',
+        updatedAt: '2026-08-22T04:00:00.000Z',
+        publishedAt: '2026-08-21T16:00:00.000Z',
+        settings: { enableLeadForm: true, enableRfq: true, enableSampleRequest: true, enableAppointments: true, leadEmail: 'samuel@texturamills.example' },
+        assets: [{ key: 'LOGO', label: 'Vector Brand Logo', required: true, status: 'APPROVED', url: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300' }],
+        products: [
+          { id: 'prod-p5-01', name: 'Aeroweave Performance Jacquard — Slate', sku: 'TXT-AW-01', category: 'Contract Fabric', price: 48, currency: 'USD', wholesaleVisible: true, moq: 50, heroImage: 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=800', description: 'Heavy-duty commercial grade upholstery fabric with 100,000 double rubs Wyzenbeek rating.' }
+        ],
+        revisions: [{ version: 'v1', publishedAt: '2026-08-21T16:00:00.000Z', publicUrl: '/demo.html?project=proj-pilot-05-textura', notes: 'Interwoven early linesheet release' }],
+        publishRecord: { publishedAt: '2026-08-21T16:00:00.000Z', publishedBy: 'Samuel B. Sterling', publicUrl: '/demo.html?project=proj-pilot-05-textura', activeServices: ['DIGITAL_SHOWROOM', 'DIGITAL_CATALOG', 'SMART_CARD', 'PRODUCT_QR', 'RFQ_LEAD_CAPTURE', 'SAMPLE_REQUEST'] },
+        analytics: { boothVisits: 310, productViews: 790, qrScans: 95, catalogDownloads: 140, leadsCaptured: 31, rfqsSubmitted: 18, samplesRequested: 24, meetingsBooked: 9 },
+        leads: [
+          { id: 'lead-p5-01', buyerName: 'Victor Martinez', buyerCompany: 'Carolina Contract Seating', email: 'vmartinez@carolinaseating.example', phone: '+1 (828) 555-0912', interestedProduct: 'Aeroweave Performance Jacquard — Slate', source: 'SAMPLE_REQUEST', actionType: 'SAMPLE', status: 'SAMPLE_REQUESTED', notes: 'Requested 5-yard memo sample for university stadium seating project.', date: '2026-08-21T17:40:00.000Z' },
+          { id: 'lead-p5-02', buyerName: 'Emily Watson', buyerCompany: 'Studio Watson Hospitality', email: 'ewatson@studiowatson.example', phone: '+1 (615) 555-0284', interestedProduct: 'Aeroweave Performance Jacquard — Slate', source: 'DIGITAL_BOOTH', actionType: 'RFQ', status: 'QUALIFIED', notes: 'Inquiring for 800 yards for boutique hotel renovation.', date: '2026-08-22T03:10:00.000Z' }
+        ]
       }
     ];
 
@@ -3258,6 +3471,227 @@ class JSONDatabase {
       return p.analytics;
     });
   }
+
+  // ================================================================
+  // --- Phase dn’a-C04: Lead Pipeline CRM & Pilot Analytics Engine ---
+  // ================================================================
+
+  getExhibitorLeads(projectId, filter = null) {
+    const p = (this.read().productionProjects || []).find(x => x.id === projectId);
+    if (!p) throw new Error(`Project ${projectId} not found`);
+    let leads = p.leads || [];
+
+    if (filter && filter !== 'ALL') {
+      const f = filter.toUpperCase();
+      leads = leads.filter(l => (l.actionType || '').toUpperCase() === f || (l.source || '').toUpperCase() === f || (l.status || '').toUpperCase() === f);
+    }
+    return leads;
+  }
+
+  getLeadById(projectId, leadId) {
+    const p = (this.read().productionProjects || []).find(x => x.id === projectId);
+    if (!p) throw new Error(`Project ${projectId} not found`);
+    const lead = (p.leads || []).find(l => l.id === leadId);
+    if (!lead) throw new Error(`Lead ${leadId} not found`);
+    return lead;
+  }
+
+  async updateLeadStatus(projectId, leadId, status, note = '', actor = 'Exhibitor') {
+    return this.mutate((db) => {
+      const p = (db.productionProjects || []).find(x => x.id === projectId);
+      if (!p) throw new Error(`Project ${projectId} not found`);
+      const lead = (p.leads || []).find(l => l.id === leadId);
+      if (!lead) throw new Error(`Lead ${leadId} not found`);
+
+      const validStatuses = ['NEW', 'QUALIFIED', 'CONTACTED', 'FOLLOW_UP', 'MEETING_REQUESTED', 'RFQ', 'SAMPLE_REQUESTED', 'WON', 'LOST'];
+      if (!validStatuses.includes(status)) {
+        throw new Error(`Invalid status: ${status}. Must be one of: ${validStatuses.join(', ')}`);
+      }
+
+      const now = new Date().toISOString();
+      lead.status = status;
+      lead.updatedAt = now;
+      lead.timeline = lead.timeline || [];
+      lead.timeline.unshift({
+        timestamp: now,
+        action: 'STATUS_CHANGE',
+        from: lead.status,
+        to: status,
+        actor,
+        note: note || `Status updated to ${status}`
+      });
+
+      if (note) {
+        lead.notes = `${lead.notes ? lead.notes + '\n' : ''}[${now.substring(0, 10)} ${actor}] ${note}`;
+      }
+
+      return lead;
+    });
+  }
+
+  async createBuyerLead(projectId, leadData) {
+    return this.mutate((db) => {
+      const p = (db.productionProjects || []).find(x => x.id === projectId);
+      if (!p) throw new Error(`Project ${projectId} not found`);
+      const now = new Date().toISOString();
+
+      p.leads = p.leads || [];
+      const leadId = `lead-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 5)}`;
+      const newLead = {
+        id: leadId,
+        buyerName: (leadData.buyerName || 'Anonymous Trade Buyer').trim(),
+        buyerCompany: (leadData.buyerCompany || 'Independent Retailer').trim(),
+        email: (leadData.email || '').trim(),
+        phone: (leadData.phone || '').trim(),
+        interestedProduct: (leadData.interestedProduct || 'General Exhibition Line').trim(),
+        source: leadData.source || 'DIGITAL_BOOTH',
+        actionType: leadData.actionType || 'LEAD',
+        status: leadData.status || 'NEW',
+        notes: (leadData.notes || '').trim(),
+        date: now,
+        timeline: [
+          { timestamp: now, action: 'LEAD_CAPTURED', actor: 'Buyer Action', note: `Submitted ${leadData.actionType || 'Lead'} via ${leadData.source || 'Booth'}` }
+        ]
+      };
+
+      p.leads.unshift(newLead);
+      p.analytics = p.analytics || { boothVisits: 0, productViews: 0, qrScans: 0, catalogDownloads: 0, leadsCaptured: 0, rfqsSubmitted: 0, samplesRequested: 0, meetingsBooked: 0 };
+      p.analytics.leadsCaptured++;
+
+      if (newLead.actionType === 'RFQ') p.analytics.rfqsSubmitted++;
+      if (newLead.actionType === 'SAMPLE') p.analytics.samplesRequested++;
+      if (newLead.actionType === 'APPOINTMENT') p.analytics.meetingsBooked++;
+
+      return newLead;
+    });
+  }
+
+  getExhibitorAnalyticsSummary(projectId) {
+    const p = (this.read().productionProjects || []).find(x => x.id === projectId);
+    if (!p) throw new Error(`Project ${projectId} not found`);
+
+    const an = p.analytics || { boothVisits: 0, productViews: 0, qrScans: 0, catalogDownloads: 0, leadsCaptured: 0, rfqsSubmitted: 0, samplesRequested: 0, meetingsBooked: 0 };
+    const leads = p.leads || [];
+
+    // Compute conversion funnel
+    const conversionRate = an.boothVisits > 0 ? ((an.leadsCaptured / an.boothVisits) * 100).toFixed(1) + '%' : '0.0%';
+
+    // Top products by interaction
+    const topProducts = (p.products || []).slice(0, 5).map(prod => ({
+      id: prod.id,
+      name: prod.name,
+      sku: prod.sku,
+      views: Math.round(an.productViews * 0.4) || 12,
+      inquiries: leads.filter(l => l.interestedProduct === prod.name).length
+    }));
+
+    return {
+      projectId: p.id,
+      company: p.company,
+      tradeShow: p.tradeShow,
+      status: p.status,
+      metrics: an,
+      conversionRate,
+      funnel: {
+        visitors: an.boothVisits,
+        productInspectors: an.productViews,
+        catalogReaders: an.catalogDownloads,
+        inquiryLeads: an.leadsCaptured,
+        qualifiedBuyers: leads.filter(l => ['QUALIFIED', 'RFQ', 'SAMPLE_REQUESTED', 'MEETING_REQUESTED', 'WON'].includes(l.status)).length,
+        wonDeals: leads.filter(l => l.status === 'WON').length
+      },
+      topProducts
+    };
+  }
+
+  async generateExhibitorPostShowReport(projectId) {
+    return this.mutate((db) => {
+      const p = (db.productionProjects || []).find(x => x.id === projectId);
+      if (!p) throw new Error(`Project ${projectId} not found`);
+      const now = new Date().toISOString();
+
+      const an = p.analytics || {};
+      const leads = p.leads || [];
+
+      const report = {
+        generatedAt: now,
+        company: p.company,
+        tradeShow: p.tradeShow,
+        showDates: `${p.showStartDate} to ${p.showEndDate}`,
+        boothNumber: p.boothNumber,
+        boothVisits: an.boothVisits || 0,
+        productViews: an.productViews || 0,
+        qrScans: an.qrScans || 0,
+        catalogDownloads: an.catalogDownloads || 0,
+        leadsCaptured: an.leadsCaptured || leads.length,
+        rfqsSubmitted: an.rfqsSubmitted || leads.filter(l => l.actionType === 'RFQ').length,
+        samplesRequested: an.samplesRequested || leads.filter(l => l.actionType === 'SAMPLE').length,
+        meetingsBooked: an.meetingsBooked || leads.filter(l => l.actionType === 'APPOINTMENT').length,
+        wonDeals: leads.filter(l => l.status === 'WON').length,
+        pipelineValueEstimate: (leads.filter(l => ['WON', 'RFQ'].includes(l.status)).length * 15000)
+      };
+
+      p.postShowReport = report;
+      return report;
+    });
+  }
+
+  async recordPilotFeedback(feedbackData) {
+    return this.mutate((db) => {
+      db.pilotFeedback = db.pilotFeedback || [];
+      const now = new Date().toISOString();
+      const fb = {
+        id: `pfb-${Date.now().toString(36)}`,
+        projectId: feedbackData.projectId || null,
+        company: feedbackData.company || 'Pilot Exhibitor',
+        email: feedbackData.email || 'anonymous',
+        scores: {
+          diyEase: parseInt(feedbackData.diyEase, 10) || 5,
+          productEntry: parseInt(feedbackData.productEntry, 10) || 5,
+          assetUpload: parseInt(feedbackData.assetUpload, 10) || 5,
+          previewQuality: parseInt(feedbackData.previewQuality, 10) || 5,
+          publishConfidence: parseInt(feedbackData.publishConfidence, 10) || 5,
+          analyticsUsefulness: parseInt(feedbackData.analyticsUsefulness, 10) || 5,
+          managedInterest: parseInt(feedbackData.managedInterest, 10) || 5
+        },
+        missingFeatures: (feedbackData.missingFeatures || '').trim(),
+        uxBlockers: (feedbackData.uxBlockers || []).map(b => ({
+          severity: b.severity || 'LOW', // CRITICAL, HIGH, MEDIUM, LOW
+          description: b.description
+        })),
+        createdAt: now
+      };
+
+      db.pilotFeedback.unshift(fb);
+      return fb;
+    });
+  }
+
+  getPilotFeedbackSummary() {
+    const list = this.read().pilotFeedback || [];
+    const count = list.length;
+    if (count === 0) {
+      return {
+        totalFeedback: 0,
+        averageScores: { diyEase: 5.0, previewQuality: 5.0, publishConfidence: 5.0 },
+        blockers: { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 }
+      };
+    }
+
+    const blockers = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
+    list.forEach(fb => {
+      (fb.uxBlockers || []).forEach(b => {
+        if (blockers[b.severity] !== undefined) blockers[b.severity]++;
+      });
+    });
+
+    return {
+      totalFeedback: count,
+      blockers,
+      recent: list.slice(0, 10)
+    };
+  }
+
 
 
   // --- Analytics API ---

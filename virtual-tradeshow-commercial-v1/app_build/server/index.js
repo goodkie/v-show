@@ -1939,7 +1939,120 @@ app.post('/api/diy/projects/:id/analytics/events', createRateLimiter(120, 60000)
 });
 
 
-// --- 9. Realtime Analytics API ---
+// ================================================================
+// --- Phase dn'a-C04: Lead Pipeline CRM & Pilot Analytics REST API ---
+// ================================================================
+
+// Lead Inbox: GET all leads for a project (with optional filter)
+app.get('/api/diy/projects/:id/leads', createRateLimiter(60, 60000), (req, res) => {
+  try {
+    const filter = req.query.filter || null;
+    const leads = db.getExhibitorLeads(req.params.id, filter);
+    res.json({ success: true, leads, count: leads.length });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Lead Detail: GET single lead
+app.get('/api/diy/projects/:id/leads/:leadId', createRateLimiter(60, 60000), (req, res) => {
+  try {
+    const lead = db.getLeadById(req.params.id, req.params.leadId);
+    res.json({ success: true, lead });
+  } catch (err) {
+    res.status(404).json({ error: err.message });
+  }
+});
+
+// Create Buyer Lead (from booth, QR scan, catalog, etc.)
+app.post('/api/diy/projects/:id/leads', createRateLimiter(60, 60000), async (req, res) => {
+  try {
+    const lead = await db.createBuyerLead(req.params.id, req.body);
+    res.status(201).json({ success: true, lead });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Follow-up: Update Lead Status (CONTACTED, FOLLOW_UP, QUALIFIED, WON, LOST)
+app.patch('/api/diy/projects/:id/leads/:leadId/status', createRateLimiter(60, 60000), async (req, res) => {
+  try {
+    const { status, note, actor } = req.body;
+    const lead = await db.updateLeadStatus(req.params.id, req.params.leadId, status, note, actor);
+    res.json({ success: true, lead });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Exhibitor Analytics Summary (Visitor funnel, conversion, top products)
+app.get('/api/diy/projects/:id/analytics/summary', createRateLimiter(60, 60000), (req, res) => {
+  try {
+    const summary = db.getExhibitorAnalyticsSummary(req.params.id);
+    res.json({ success: true, summary });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Post-Show Report Generation
+app.post('/api/diy/projects/:id/post-show-report', createRateLimiter(30, 60000), async (req, res) => {
+  try {
+    const report = await db.generateExhibitorPostShowReport(req.params.id);
+    res.json({ success: true, report });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Pilot Feedback Submission
+app.post('/api/pilot/feedback', createRateLimiter(30, 60000), async (req, res) => {
+  try {
+    const feedback = await db.recordPilotFeedback(req.body);
+    res.status(201).json({ success: true, feedback });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Pilot Feedback Summary (UX Blockers Report)
+app.get('/api/pilot/feedback/summary', createRateLimiter(30, 60000), (req, res) => {
+  try {
+    const summary = db.getPilotFeedbackSummary();
+    res.json({ success: true, summary });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Pilot Cohort Projects List (all 5 pilot projects)
+app.get('/api/pilot/projects', createRateLimiter(60, 60000), (req, res) => {
+  try {
+    const pilotIds = ['proj-pilot-01-haven', 'proj-pilot-02-nova', 'proj-pilot-03-lumina', 'proj-pilot-04-atlantica', 'proj-pilot-05-textura'];
+    const data = db.read();
+    const projects = (data.productionProjects || [])
+      .filter(p => pilotIds.includes(p.id))
+      .map(p => ({
+        id: p.id,
+        company: p.company,
+        tradeShow: p.tradeShow,
+        status: p.status,
+        channel: p.channel,
+        experienceType: p.experienceType,
+        templateId: p.templateId,
+        leadCount: (p.leads || []).length,
+        analytics: p.analytics || {},
+        managedHandoff: p.managedHandoff ? { handoffStatus: p.managedHandoff.handoffStatus } : null,
+        publishedAt: p.publishedAt || null
+      }));
+    res.json({ success: true, projects, count: projects.length });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+
+
 app.post('/api/analytics/events', createRateLimiter(120, 60000), async (req, res) => {
   try {
     const { eventType, boothId, productId, viewerMode, sessionId, metadata } = req.body;
