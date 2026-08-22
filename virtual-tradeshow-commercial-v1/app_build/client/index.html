@@ -960,88 +960,67 @@
       let autoTourTimer = null;
       let autoTourIndex = 0;
 
-      // 3D Product Positions for Projected Hotspots
+      // 3D Product Positions for Projected Hotspots (Matched to Photorealistic Visual Master)
       const PRODUCT_3D_POS = {
-        cobot: new THREE.Vector3(-2.8, 1.8, -0.5),
-        amr: new THREE.Vector3(-4.5, 0.7, 2.2),
-        optiscan: new THREE.Vector3(2.2, 1.6, -0.8),
-        flowdrive: new THREE.Vector3(-5.8, 1.4, -3.5),
-        edgecore: new THREE.Vector3(0.2, 1.2, 1.5),
-        flexgrip: new THREE.Vector3(4.8, 1.4, -1.2),
-        lasercell: new THREE.Vector3(5.5, 1.8, 1.8)
+        cobot: new THREE.Vector3(-0.25, 0.6, -9.5),
+        amr: new THREE.Vector3(-3.2, -2.3, -9.5),
+        optiscan: new THREE.Vector3(1.9, 0.3, -9.5),
+        flowdrive: new THREE.Vector3(-3.4, 0.4, -9.5),
+        edgecore: new THREE.Vector3(-0.15, -1.3, -9.5),
+        flexgrip: new THREE.Vector3(5.4, -0.6, -9.5),
+        lasercell: new THREE.Vector3(3.9, -2.3, -9.5)
       };
 
-      // Camera Preset Positions
+      // Camera Preset Positions calibrated to photorealistic 3D space
       const PRESETS = {
-        overview: { pos: new THREE.Vector3(0, 7.2, 13.8), look: new THREE.Vector3(0, 1.2, -0.5) },
-        island: { pos: new THREE.Vector3(-1.8, 3.2, 4.2), look: new THREE.Vector3(-1.2, 1.0, 0.5) },
-        automation: { pos: new THREE.Vector3(-4.5, 2.8, -0.5), look: new THREE.Vector3(-5.2, 1.4, -3.2) },
-        robot: { pos: new THREE.Vector3(-2.2, 2.2, 1.8), look: new THREE.Vector3(-2.8, 1.3, -0.5) },
-        lounge: { pos: new THREE.Vector3(3.6, 2.2, 5.0), look: new THREE.Vector3(4.2, 0.9, 2.2) },
-        media: { pos: new THREE.Vector3(-2.8, 3.0, -1.8), look: new THREE.Vector3(-4.5, 2.4, -5.5) },
-        reset: { pos: new THREE.Vector3(0, 7.2, 13.8), look: new THREE.Vector3(0, 1.2, -0.5) }
+        overview: { pos: new THREE.Vector3(0, 0.0, 12.0), look: new THREE.Vector3(0, 0.0, 0) },
+        island: { pos: new THREE.Vector3(-2.4, -0.3, 7.0), look: new THREE.Vector3(-2.4, -0.3, 0) },
+        automation: { pos: new THREE.Vector3(2.8, -0.4, 7.0), look: new THREE.Vector3(2.8, -0.4, 0) },
+        robot: { pos: new THREE.Vector3(-0.25, 0.4, 5.5), look: new THREE.Vector3(-0.25, 0.4, 0) },
+        lounge: { pos: new THREE.Vector3(4.8, -0.5, 7.5), look: new THREE.Vector3(4.8, -0.5, 0) },
+        media: { pos: new THREE.Vector3(-4.8, 0.5, 7.5), look: new THREE.Vector3(-4.8, 0.5, 0) },
+        reset: { pos: new THREE.Vector3(0, 0.0, 12.0), look: new THREE.Vector3(0, 0.0, 0) }
       };
 
       try {
         // 1. Scene
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x060a12);
-        scene.fog = new THREE.FogExp2(0x060a12, 0.025);
 
         // 2. Camera
         const rect = frameBox.getBoundingClientRect();
         const aspect = rect.width / (rect.height || 560);
-        camera = new THREE.PerspectiveCamera(42, aspect, 0.1, 100);
-        camera.position.set(0, 7.2, 13.8);
+        camera = new THREE.PerspectiveCamera(46, aspect, 0.1, 100);
+        camera.position.set(0, 0.0, 12.0);
 
         // 3. Renderer with Photorealistic PBR Tone Mapping
         renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
         renderer.setSize(rect.width, rect.height || 560);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMappingExposure = 1.0;
 
         // 4. OrbitControls
         controls = new THREE.OrbitControls(camera, canvas);
         controls.enableDamping = true;
         controls.dampingFactor = 0.06;
         controls.target.copy(currentLookAt);
-        controls.maxPolarAngle = Math.PI / 2 - 0.05;
-        controls.minDistance = 2.5;
-        controls.maxDistance = 22;
+        controls.minDistance = 3.0;
+        controls.maxDistance = 18.0;
+        controls.maxPolarAngle = Math.PI / 2 + 0.15;
+        controls.minPolarAngle = Math.PI / 2 - 0.25;
+        controls.minAzimuthAngle = -Math.PI * 0.35;
+        controls.maxAzimuthAngle = Math.PI * 0.35;
         controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.45;
+        controls.autoRotateSpeed = 0.35;
 
         // Pause auto-rotate on user interaction
         canvas.addEventListener('pointerdown', () => { controls.autoRotate = false; });
 
-        // 5. Lighting Setup
-        const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x091424, 1.2);
-        scene.add(hemiLight);
-
-        const keySun = new THREE.DirectionalLight(0xffffff, 1.4);
-        keySun.position.set(8, 14, 10);
-        keySun.castShadow = true;
-        keySun.shadow.mapSize.width = 1024;
-        keySun.shadow.mapSize.height = 1024;
-        keySun.shadow.bias = -0.0005;
-        scene.add(keySun);
-
-        const blueSpot = new THREE.SpotLight(0x38bdf8, 2.2, 25, Math.PI / 4, 0.4, 1);
-        blueSpot.position.set(-2, 10, -1);
-        scene.add(blueSpot);
-
-        const loungeSpot = new THREE.SpotLight(0xfef08a, 1.2, 16, Math.PI / 3, 0.5, 1);
-        loungeSpot.position.set(4.5, 8, 2.2);
-        scene.add(loungeSpot);
-
-        // 6. Build 3D Architecture & Products
+        // 5. Build Photorealistic 3D Curved Environment
         buildArchitecture();
-        buildProductAssemblies();
 
-        // 7. Render Loop
+        // 6. Render Loop
         function animate() {
           animId = requestAnimationFrame(animate);
 
@@ -1078,25 +1057,9 @@
         console.warn('Hero 3D Showroom WebGL init error:', e);
       }
 
-      // ── Helper: PBR Material ──
-      function pbr(params) {
-        return new THREE.MeshStandardMaterial({
-          color: params.color !== undefined ? params.color : 0xffffff,
-          metalness: params.metalness !== undefined ? params.metalness : 0.3,
-          roughness: params.roughness !== undefined ? params.roughness : 0.35,
-          emissive: params.emissive || 0x000000,
-          emissiveIntensity: params.emissiveIntensity || 0.0
-        });
-      }
-
       // ── Build 3D Showroom Architecture ──
       function buildArchitecture() {
-        const darkMetal = pbr({ color: 0x0f172a, metalness: 0.8, roughness: 0.25 });
-        const brightWhite = pbr({ color: 0xf8fafc, metalness: 0.1, roughness: 0.25 });
-        const floorMat = pbr({ color: 0x111c2e, metalness: 0.4, roughness: 0.45 });
-        const glowCyan = pbr({ color: 0x0284c7, emissive: 0x0284c7, emissiveIntensity: 0.9 });
-
-        // 0. High-Resolution Photorealistic 3D Curved Environment Backdrop (100% Visual Master Match)
+        // High-Resolution Photorealistic 3D Curved Environment Backdrop (100% Visual Master Match)
         const texLoader = new THREE.TextureLoader();
         texLoader.load('/assets/demo/dna-showcase/hero/dna_showcase_photoreal_hero.jpg', function(tex) {
           tex.generateMipmaps = false;
@@ -1104,268 +1067,19 @@
           tex.magFilter = THREE.LinearFilter;
           
           // Curved 3D Panoramic Screen (Width 28m, Height 15.75m, Depth Curve)
-          const planeGeo = new THREE.PlaneGeometry(28, 15.75, 32, 16);
+          const planeGeo = new THREE.PlaneGeometry(28, 15.75, 48, 24);
           const pos = planeGeo.attributes.position;
           for (let i = 0; i < pos.count; i++) {
             const x = pos.getX(i);
-            pos.setZ(i, -(x * x) * 0.012);
+            pos.setZ(i, -(x * x) * 0.015);
           }
           planeGeo.computeVertexNormals();
 
           const planeMat = new THREE.MeshBasicMaterial({ map: tex, toneMapped: true });
           const backdrop = new THREE.Mesh(planeGeo, planeMat);
-          backdrop.position.set(0, 1.8, -6.5);
+          backdrop.position.set(0, 0.0, -10.0);
           scene.add(backdrop);
         });
-
-        // Raised Platform Floor (17m x 13m)
-        const floor = new THREE.Mesh(new THREE.BoxGeometry(17, 0.2, 13), floorMat);
-        floor.position.set(0, -0.1, 0);
-        floor.receiveShadow = true;
-        scene.add(floor);
-
-        // Floor Neon Edge Trim
-        const floorTrim = new THREE.Mesh(new THREE.BoxGeometry(17.2, 0.05, 13.2), glowCyan);
-        floorTrim.position.set(0, -0.05, 0);
-        scene.add(floorTrim);
-
-        // Main Curved Back Architecture Wall
-        const backWall = new THREE.Mesh(new THREE.BoxGeometry(16, 4.8, 0.25), brightWhite);
-        backWall.position.set(0, 2.3, -5.8);
-        backWall.castShadow = true;
-        backWall.receiveShadow = true;
-        scene.add(backWall);
-
-        // Left Partition Wall
-        const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.25, 4.8, 8.5), brightWhite);
-        leftWall.position.set(-8.0, 2.3, -1.6);
-        leftWall.castShadow = true;
-        leftWall.receiveShadow = true;
-        scene.add(leftWall);
-
-        // Overhead Truss Canopy & Brand Fascia
-        const canopy = new THREE.Mesh(new THREE.BoxGeometry(16.2, 0.4, 3.2), darkMetal);
-        canopy.position.set(0, 5.0, -4.2);
-        scene.add(canopy);
-
-        // Suspended Columns
-        [-7.8, 7.8].forEach(x => {
-          const col = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 5.0, 16), darkMetal);
-          col.position.set(x, 2.5, -2.6);
-          col.castShadow = true;
-          scene.add(col);
-        });
-
-        // 3D Brand Sign Textures
-        createBrandSign('dn’a INDUSTRIAL INNOVATION', 0, 3.8, -5.66, 7.5, 1.2, '#38bdf8');
-        createBrandSign('Next-Generation B2B Automation & Robotic Systems', 0, 3.1, -5.65, 6.8, 0.5, '#94a3b8');
-
-        // LED Media Wall
-        const mediaBezel = new THREE.Mesh(new THREE.BoxGeometry(5.2, 2.6, 0.1), darkMetal);
-        mediaBezel.position.set(-4.5, 2.5, -5.65);
-        scene.add(mediaBezel);
-        const mediaScreen = new THREE.Mesh(new THREE.PlaneGeometry(5.0, 2.4), pbr({ color: 0x0369a1, emissive: 0x0284c7, emissiveIntensity: 0.7 }));
-        mediaScreen.position.set(-4.5, 2.5, -5.59);
-        scene.add(mediaScreen);
-
-        // Front Curved Reception Counter
-        const desk = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.0, 1.0), brightWhite);
-        desk.position.set(-4.5, 0.5, 3.2);
-        desk.castShadow = true;
-        scene.add(desk);
-        const deskAccent = new THREE.Mesh(new THREE.BoxGeometry(3.62, 0.2, 1.02), glowCyan);
-        deskAccent.position.set(-4.5, 0.6, 3.2);
-        scene.add(deskAccent);
-
-        // Meeting Lounge (Table + 4 Chairs)
-        const tableTop = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 0.08, 32), pbr({ color: 0x334155, metalness: 0.2, roughness: 0.25 }));
-        tableTop.position.set(4.5, 0.85, 2.2);
-        tableTop.castShadow = true;
-        scene.add(tableTop);
-        const tableLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.25, 0.85, 16), darkMetal);
-        tableLeg.position.set(4.5, 0.42, 2.2);
-        scene.add(tableLeg);
-
-        for (let i = 0; i < 4; i++) {
-          const ang = (i * Math.PI) / 2;
-          const stool = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.55, 24), darkMetal);
-          stool.position.set(4.5 + Math.cos(ang) * 1.6, 0.28, 2.2 + Math.sin(ang) * 1.6);
-          stool.castShadow = true;
-          scene.add(stool);
-        }
-      }
-
-      function createBrandSign(text, x, y, z, w, h, textColor) {
-        const c = document.createElement('canvas');
-        c.width = 2048; c.height = 512;
-        const ctx = c.getContext('2d');
-        ctx.clearRect(0, 0, c.width, c.height);
-        ctx.fillStyle = textColor;
-        ctx.font = '800 110px Arial, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(text, 1024, 280);
-        const texture = new THREE.CanvasTexture(c);
-        const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
-        const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
-        plane.position.set(x, y, z);
-        scene.add(plane);
-      }
-
-      // ── Build 8 High-Fidelity 3D Product Assemblies ──
-      function buildProductAssemblies() {
-        const darkMetal = pbr({ color: 0x1e293b, metalness: 0.85, roughness: 0.2 });
-        const brightWhite = pbr({ color: 0xf1f5f9, metalness: 0.2, roughness: 0.3 });
-        const industrialOrange = pbr({ color: 0xf97316, metalness: 0.3, roughness: 0.3 });
-        const cyanGlow = pbr({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.9 });
-        const plinthMat = pbr({ color: 0x0f172a, metalness: 0.6, roughness: 0.35 });
-
-        // Helper: Pedestal / Plinth
-        function addPlinth(x, z, w, d, h) {
-          const base = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), plinthMat);
-          base.position.set(x, h / 2, z);
-          base.castShadow = true;
-          base.receiveShadow = true;
-          scene.add(base);
-
-          const rim = new THREE.Mesh(new THREE.BoxGeometry(w + 0.05, 0.04, d + 0.05), cyanGlow);
-          rim.position.set(x, 0.02, z);
-          scene.add(rim);
-        }
-
-        // 1. Apex Cobot X16 (6-Axis Robotic Arm)
-        addPlinth(-2.8, -0.5, 1.4, 1.4, 0.85);
-        const cobotGroup = new THREE.Group();
-        cobotGroup.position.set(-2.8, 0.85, -0.5);
-
-        const baseCyl = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.25, 32), darkMetal);
-        baseCyl.position.y = 0.125;
-        cobotGroup.add(baseCyl);
-
-        const j1 = new THREE.Mesh(new THREE.SphereGeometry(0.22, 24, 24), industrialOrange);
-        j1.position.y = 0.35;
-        cobotGroup.add(j1);
-
-        const arm1 = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.7, 24), brightWhite);
-        arm1.position.set(0, 0.7, 0);
-        arm1.rotation.z = -0.3;
-        cobotGroup.add(arm1);
-
-        const j2 = new THREE.Mesh(new THREE.SphereGeometry(0.18, 24, 24), industrialOrange);
-        j2.position.set(0.18, 1.05, 0);
-        cobotGroup.add(j2);
-
-        const arm2 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.11, 0.6, 24), brightWhite);
-        arm2.position.set(0.35, 1.25, 0);
-        arm2.rotation.z = 0.6;
-        cobotGroup.add(arm2);
-
-        const toolRing = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.02, 16, 32), cyanGlow);
-        toolRing.position.set(0.52, 1.45, 0);
-        toolRing.rotation.x = Math.PI / 2;
-        cobotGroup.add(toolRing);
-        scene.add(cobotGroup);
-
-        // 2. Vector AMR 600 (Autonomous Mobile Robot)
-        const amrGroup = new THREE.Group();
-        amrGroup.position.set(-4.5, 0.05, 2.2);
-
-        const amrBody = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.35, 0.95), brightWhite);
-        amrBody.position.y = 0.25;
-        amrBody.castShadow = true;
-        amrGroup.add(amrBody);
-
-        const lidarDome = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.12, 24), darkMetal);
-        lidarDome.position.set(0.5, 0.48, 0);
-        amrGroup.add(lidarDome);
-
-        const lidarLaser = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.03, 24), cyanGlow);
-        lidarLaser.position.set(0.5, 0.48, 0);
-        amrGroup.add(lidarLaser);
-        scene.add(amrGroup);
-
-        // 3. OptiScan V3 (3D Inspection Camera)
-        addPlinth(2.2, -0.8, 1.2, 1.2, 0.95);
-        const optiGroup = new THREE.Group();
-        optiGroup.position.set(2.2, 0.95, -0.8);
-
-        const optiPole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.5, 16), darkMetal);
-        optiPole.position.y = 0.25;
-        optiGroup.add(optiPole);
-
-        const optiHead = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.22, 0.28), darkMetal);
-        optiHead.position.set(0, 0.55, 0);
-        optiGroup.add(optiHead);
-
-        const optiBeam = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.08, 0.02), cyanGlow);
-        optiBeam.position.set(0, 0.55, 0.145);
-        optiGroup.add(optiBeam);
-        scene.add(optiGroup);
-
-        // 4. FlowDrive P500 (Smart Pump System)
-        addPlinth(-5.8, -3.5, 1.3, 1.3, 0.7);
-        const pumpGroup = new THREE.Group();
-        pumpGroup.position.set(-5.8, 0.7, -3.5);
-
-        const pumpBody = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 0.6, 24), darkMetal);
-        pumpBody.position.y = 0.3;
-        pumpBody.rotation.z = Math.PI / 2;
-        pumpGroup.add(pumpBody);
-
-        const pumpMotor = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.45, 24), brightWhite);
-        pumpMotor.position.set(-0.4, 0.3, 0);
-        pumpMotor.rotation.z = Math.PI / 2;
-        pumpGroup.add(pumpMotor);
-        scene.add(pumpGroup);
-
-        // 5. EdgeCore IPC (Industrial Edge Computer)
-        addPlinth(0.2, 1.5, 1.1, 1.1, 0.75);
-        const ipcGroup = new THREE.Group();
-        ipcGroup.position.set(0.2, 0.75, 1.5);
-
-        const ipcBox = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.24, 0.42), darkMetal);
-        ipcBox.position.y = 0.12;
-        ipcGroup.add(ipcBox);
-
-        const ipcFins = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.06, 0.38), pbr({ color: 0x475569, metalness: 0.9 }));
-        ipcFins.position.set(0, 0.26, 0);
-        ipcGroup.add(ipcFins);
-
-        const ipcLed = new THREE.Mesh(new THREE.SphereGeometry(0.02, 12, 12), cyanGlow);
-        ipcLed.position.set(0.22, 0.12, 0.215);
-        ipcGroup.add(ipcLed);
-        scene.add(ipcGroup);
-
-        // 6. FlexGrip E80 (Adaptive Servo Gripper)
-        addPlinth(4.8, -1.2, 1.2, 1.2, 0.9);
-        const gripGroup = new THREE.Group();
-        gripGroup.position.set(4.8, 0.9, -1.2);
-
-        const gripBase = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.2, 0.25, 24), darkMetal);
-        gripBase.position.y = 0.125;
-        gripGroup.add(gripBase);
-
-        const finger1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.32, 0.08), industrialOrange);
-        finger1.position.set(-0.12, 0.38, 0);
-        gripGroup.add(finger1);
-
-        const finger2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.32, 0.08), industrialOrange);
-        finger2.position.set(0.12, 0.38, 0);
-        gripGroup.add(finger2);
-        scene.add(gripGroup);
-
-        // 7. LaserCell LX (Laser Processing Cell)
-        addPlinth(5.5, 1.8, 1.6, 1.6, 0.6);
-        const laserGroup = new THREE.Group();
-        laserGroup.position.set(5.5, 0.6, 1.8);
-
-        const laserCab = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.4, 1.1), brightWhite);
-        laserCab.position.y = 0.7;
-        laserGroup.add(laserCab);
-
-        const laserWin = new THREE.Mesh(new THREE.PlaneGeometry(0.65, 0.55), pbr({ color: 0x0f172a, roughness: 0.1, metalness: 0.9 }));
-        laserWin.position.set(0, 0.85, 0.555);
-        laserGroup.add(laserWin);
-        scene.add(laserGroup);
       }
 
       // ── Dynamic 3D Hotspot Screen Space Projection ──

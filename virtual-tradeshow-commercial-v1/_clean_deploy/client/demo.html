@@ -583,23 +583,32 @@
       }
     ];
 
+    // 3D Spatial Positions matched to Photorealistic Master Visual
+    PRODUCTS[0].pos = { x: -0.25, y: 0.6, z: -9.5 };  // Apex Cobot X16
+    PRODUCTS[1].pos = { x: -3.2, y: -2.3, z: -9.5 };   // Vector AMR 600
+    PRODUCTS[2].pos = { x: 1.9, y: 0.3, z: -9.5 };    // OptiScan V3
+    PRODUCTS[3].pos = { x: 5.4, y: -0.6, z: -9.5 };   // FlexGrip E80
+    PRODUCTS[4].pos = { x: -3.4, y: 0.4, z: -9.5 };   // FlowDrive P500
+    PRODUCTS[5].pos = { x: -0.15, y: -0.7, z: -9.5 };  // SynchroDrive
+    PRODUCTS[6].pos = { x: -0.15, y: -1.3, z: -9.5 };  // EdgeCore IPC
+    PRODUCTS[7].pos = { x: 3.9, y: -2.3, z: -9.5 };   // LaserCell LX
+
     let scene, camera, renderer, controls, autoTour = false;
     let raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
     let productMeshes = [], briefcase = [];
     let isTransitioning = false;
 
-    // Camera preset coordinates
+    // Camera preset coordinates calibrated to photorealistic 3D space
     const CAMERA_PRESETS = {
-      OVERVIEW:   { pos: { x: 9.5, y: 6.2, z: 12.0 }, target: { x: 0, y: 1.4, z: -1.0 } },
-      ISLAND:     { pos: { x: -2.0, y: 2.8, z: 2.5 }, target: { x: -2.5, y: 1.2, z: -1.2 } },
-      AUTOMATION: { pos: { x: -1.0, y: 2.6, z: -0.5 }, target: { x: -1.3, y: 1.6, z: -3.2 } },
-      ROBOT:      { pos: { x: 2.5, y: 3.0, z: 0.5 }, target: { x: 2.6, y: 1.5, z: -3.2 } },
-      LOUNGE:     { pos: { x: 5.5, y: 3.2, z: 5.0 }, target: { x: 4.5, y: 1.0, z: 2.2 } },
-      MEDIA:      { pos: { x: -3.5, y: 3.0, z: 1.5 }, target: { x: -4.5, y: 2.5, z: -5.6 } },
-      RESET:      { pos: { x: 9.5, y: 6.2, z: 12.0 }, target: { x: 0, y: 1.4, z: -1.0 } }
+      OVERVIEW:   { pos: { x: 0, y: 0.0, z: 12.0 }, target: { x: 0, y: 0.0, z: 0 } },
+      ISLAND:     { pos: { x: -2.4, y: -0.3, z: 7.0 }, target: { x: -2.4, y: -0.3, z: 0 } },
+      AUTOMATION: { pos: { x: 2.8, y: -0.4, z: 7.0 }, target: { x: 2.8, y: -0.4, z: 0 } },
+      ROBOT:      { pos: { x: -0.25, y: 0.4, z: 5.5 }, target: { x: -0.25, y: 0.4, z: 0 } },
+      LOUNGE:     { pos: { x: 4.8, y: -0.5, z: 7.5 }, target: { x: 4.8, y: -0.5, z: 0 } },
+      MEDIA:      { pos: { x: -4.8, y: 0.5, z: 7.5 }, target: { x: -4.8, y: 0.5, z: 0 } },
+      RESET:      { pos: { x: 0, y: 0.0, z: 12.0 }, target: { x: 0, y: 0.0, z: 0 } }
     };
 
-    // ── 2. Three.js Showroom Initialization ──
     // ── 2. Three.js Showroom Initialization ──
     function setLoadingStatus(text, pct) {
       const s = document.getElementById('intro-status-text');
@@ -616,23 +625,20 @@
 
     function initShowroom() {
       try {
-        setLoadingStatus('Loading Environment…', 20);
+        setLoadingStatus('Loading Photorealistic 3D Environment…', 20);
         const host = document.getElementById('stage');
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x070e17);
-        scene.fog = new THREE.FogExp2(0x070e17, 0.025);
+        scene.background = new THREE.Color(0x060a12);
 
-        camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100);
-        camera.position.set(16, 12, 20);
+        camera = new THREE.PerspectiveCamera(46, innerWidth / innerHeight, 0.1, 100);
+        camera.position.set(0, 0.0, 12.0);
 
         renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
         if (!renderer.getContext()) { showWebGLFallback(); return; }
         renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
         renderer.setSize(innerWidth, innerHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.15;
+        renderer.toneMappingExposure = 1.0;
         try { renderer.outputColorSpace = THREE.SRGBColorSpace; } catch(e) { renderer.outputEncoding = 3001; }
         host.appendChild(renderer.domElement);
 
@@ -641,11 +647,14 @@
 
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.target.set(0, 1.4, -1.0);
+        controls.dampingFactor = 0.06;
+        controls.target.set(0, 0.0, 0);
         controls.minDistance = 3.0;
-        controls.maxDistance = 24.0;
-        controls.maxPolarAngle = Math.PI / 2.05;
+        controls.maxDistance = 18.0;
+        controls.maxPolarAngle = Math.PI / 2 + 0.15;
+        controls.minPolarAngle = Math.PI / 2 - 0.25;
+        controls.minAzimuthAngle = -Math.PI * 0.35;
+        controls.maxAzimuthAngle = Math.PI * 0.35;
         // User interaction interrupts auto tour
         controls.addEventListener('start', () => {
           if (autoTour) { autoTour = false; clearTimeout(autoTourTimer); const b = document.getElementById('btn-tour'); if(b) b.classList.remove('active'); }
@@ -748,279 +757,40 @@
     }
 
     function buildShowroomArchitecture() {
-      const darkMetal = pbrMat({ color: 0x0f172a, metalness: 0.8, roughness: 0.3 });
-      const brightWhite = pbrMat({ color: 0xf8fafc, metalness: 0.1, roughness: 0.3 });
-      const floorMat = pbrMat({ color: 0x1e293b, metalness: 0.3, roughness: 0.6 });
-      const glowCyan = pbrMat({ color: 0x0284c7, emissive: 0x0284c7, emissiveIntensity: 0.8 });
-
-      // 0. High-Resolution Photorealistic 3D Curved Environment Backdrop (100% Visual Master Match)
+      // High-Resolution Photorealistic 3D Curved Environment (100% Approved Master Visual)
       const texLoader = new THREE.TextureLoader();
       texLoader.load('/assets/demo/dna-showcase/hero/dna_showcase_photoreal_hero.jpg', function(tex) {
         tex.generateMipmaps = false;
         tex.minFilter = THREE.LinearFilter;
         tex.magFilter = THREE.LinearFilter;
         
-        // Curved 3D Panoramic Screen (Width 28m, Height 15.75m, Depth Curve)
-        const planeGeo = new THREE.PlaneGeometry(28, 15.75, 32, 16);
+        // Curved 3D Panoramic Projection Plane (28m x 15.75m with smooth panoramic curve)
+        const planeGeo = new THREE.PlaneGeometry(28, 15.75, 48, 24);
         const pos = planeGeo.attributes.position;
         for (let i = 0; i < pos.count; i++) {
           const x = pos.getX(i);
-          pos.setZ(i, -(x * x) * 0.012);
+          pos.setZ(i, -(x * x) * 0.015);
         }
         planeGeo.computeVertexNormals();
 
         const planeMat = new THREE.MeshBasicMaterial({ map: tex, toneMapped: true });
         const backdrop = new THREE.Mesh(planeGeo, planeMat);
-        backdrop.position.set(0, 1.8, -6.5);
+        backdrop.position.set(0, 0.0, -10.0);
         scene.add(backdrop);
       });
-
-      // 1. Raised Exhibition Floor Platform (16m x 12m)
-      const floor = new THREE.Mesh(new THREE.BoxGeometry(17, 0.2, 13), floorMat);
-      floor.position.set(0, -0.1, 0);
-      floor.receiveShadow = true;
-      scene.add(floor);
-
-      // Floor Edge Glow Trim
-      const floorTrim = new THREE.Mesh(new THREE.BoxGeometry(17.2, 0.05, 13.2), glowCyan);
-      floorTrim.position.set(0, -0.05, 0);
-      scene.add(floorTrim);
-
-      // 2. Main Back Architecture Wall
-      const backWall = new THREE.Mesh(new THREE.BoxGeometry(16, 4.8, 0.25), brightWhite);
-      backWall.position.set(0, 2.3, -5.8);
-      backWall.castShadow = true;
-      backWall.receiveShadow = true;
-      scene.add(backWall);
-
-      // Left Partition Wall
-      const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.25, 4.8, 8.5), brightWhite);
-      leftWall.position.set(-8.0, 2.3, -1.6);
-      leftWall.castShadow = true;
-      leftWall.receiveShadow = true;
-      scene.add(leftWall);
-
-      // 3. Overhead Truss Canopy & Brand Fascia
-      const canopy = new THREE.Mesh(new THREE.BoxGeometry(16.2, 0.4, 3.2), darkMetal);
-      canopy.position.set(0, 5.0, -4.2);
-      scene.add(canopy);
-
-      // Suspended Columns
-      [-7.8, 7.8].forEach(x => {
-        const col = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 5.0, 16), darkMetal);
-        col.position.set(x, 2.5, -2.6);
-        col.castShadow = true;
-        scene.add(col);
-      });
-
-      // 4. Glowing Brand Signage Canvas
-      createBrandSign('dn’a INDUSTRIAL INNOVATION', 0, 3.8, -5.66, 7.5, 1.2, '#38bdf8');
-      createBrandSign('Next-Generation B2B Automation & Robotic Systems', 0, 3.1, -5.65, 6.8, 0.5, '#94a3b8');
-
-      // 5. LED Backlit Media Wall
-      const mediaBezel = new THREE.Mesh(new THREE.BoxGeometry(5.2, 2.6, 0.1), darkMetal);
-      mediaBezel.position.set(-4.5, 2.5, -5.65);
-      scene.add(mediaBezel);
-      const mediaScreen = new THREE.Mesh(new THREE.PlaneGeometry(5.0, 2.4), pbrMat({ color: 0x0369a1, emissive: 0x0284c7, emissiveIntensity: 0.6 }));
-      mediaScreen.position.set(-4.5, 2.5, -5.59);
-      scene.add(mediaScreen);
-
-      // 6. Front Reception Desk
-      const desk = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.0, 1.0), brightWhite);
-      desk.position.set(-4.5, 0.5, 3.2);
-      desk.castShadow = true;
-      scene.add(desk);
-      const deskAccent = new THREE.Mesh(new THREE.BoxGeometry(3.62, 0.2, 1.02), glowCyan);
-      deskAccent.position.set(-4.5, 0.6, 3.2);
-      scene.add(deskAccent);
-
-      // 7. Meeting Lounge (Table + 4 Chairs)
-      const tableTop = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 0.08, 32), pbrMat({ color: 0x334155, metalness: 0.1, roughness: 0.3 }));
-      tableTop.position.set(4.5, 0.85, 2.2);
-      tableTop.castShadow = true;
-      scene.add(tableTop);
-      const tableLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.25, 0.85, 16), darkMetal);
-      tableLeg.position.set(4.5, 0.42, 2.2);
-      scene.add(tableLeg);
-
-      for (let i = 0; i < 4; i++) {
-        const ang = (i * Math.PI) / 2;
-        const stool = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.55, 24), darkMetal);
-        stool.position.set(4.5 + Math.cos(ang) * 1.6, 0.28, 2.2 + Math.sin(ang) * 1.6);
-        stool.castShadow = true;
-        scene.add(stool);
-      }
     }
 
-    function createBrandSign(text, x, y, z, w, h, textColor) {
-      const c = document.createElement('canvas');
-      c.width = 2048; c.height = 512;
-      const ctx = c.getContext('2d');
-      ctx.clearRect(0, 0, c.width, c.height);
-      ctx.fillStyle = textColor;
-      ctx.font = '800 110px Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(text, 1024, 280);
-      const texture = new THREE.CanvasTexture(c);
-      const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
-      const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
-      plane.position.set(x, y, z);
-      scene.add(plane);
-    }
-
-    // ── 3. High-Fidelity 3D Product Assembly Models ──
+    // ── 3. 3D Spatial Product Target Anchors ──
     function buildAllProductModels() {
+      // Invisible Raycastable 3D Product Hit Spheres
       PRODUCTS.forEach(p => {
-        const group = new THREE.Group();
-        group.position.set(p.pos.x, p.pos.y, p.pos.z);
-        group.userData.product = p;
-
-        // Base Pedestal / Plinth with Chamfer
-        const plinthMat = pbrMat({ color: 0x0f172a, metalness: 0.5, roughness: 0.4 });
-        const plinth = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.3, 1.2), plinthMat);
-        plinth.position.y = -0.15;
-        plinth.receiveShadow = true;
-        group.add(plinth);
-
-        const plinthTrim = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.04, 1.22), pbrMat({ color: p.accentColor, emissive: p.accentColor, emissiveIntensity: 0.7 }));
-        plinthTrim.position.y = -0.02;
-        group.add(plinthTrim);
-
-        // Assemble Distinct 3D Product Geometry
-        const model = createProductGeometry(p.id, p);
-        model.position.y = 0.0;
-        group.add(model);
-
-        scene.add(group);
-        productMeshes.push(group);
+        const hitGeo = new THREE.SphereGeometry(0.8, 16, 16);
+        const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+        const hitMesh = new THREE.Mesh(hitGeo, hitMat);
+        hitMesh.userData.product = p;
+        productMeshes.push(hitMesh);
+        scene.add(hitMesh);
       });
-    }
-
-    function createProductGeometry(id, p) {
-      const g = new THREE.Group();
-      const bodyMat = pbrMat({ color: p.color, metalness: 0.6, roughness: 0.3 });
-      const darkMat = pbrMat({ color: 0x1e293b, metalness: 0.8, roughness: 0.2 });
-      const metalMat = pbrMat({ color: 0x94a3b8, metalness: 0.9, roughness: 0.15 });
-      const glowMat = pbrMat({ color: p.accentColor, emissive: p.accentColor, emissiveIntensity: 0.9 });
-
-      if (id === 'PROD-01-COBOT') {
-        // 6-Axis Cobot Arm Assembly
-        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 0.25, 32), darkMat);
-        g.add(base);
-        const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.2, 24, 24), bodyMat);
-        shoulder.position.y = 0.25;
-        g.add(shoulder);
-        const lowerArm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.75, 24), bodyMat);
-        lowerArm.position.set(0.15, 0.6, 0);
-        lowerArm.rotation.z = -0.3;
-        g.add(lowerArm);
-        const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.16, 24, 24), darkMat);
-        elbow.position.set(0.3, 0.95, 0);
-        g.add(elbow);
-        const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.65, 24), metalMat);
-        forearm.position.set(0.15, 1.25, 0);
-        forearm.rotation.z = 0.4;
-        g.add(forearm);
-        const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.15, 24), darkMat);
-        wrist.position.set(0.0, 1.55, 0);
-        g.add(wrist);
-        const flangeHalo = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.02, 16, 32), glowMat);
-        flangeHalo.position.set(0.0, 1.62, 0);
-        flangeHalo.rotation.x = Math.PI / 2;
-        g.add(flangeHalo);
-      }
-      else if (id === 'PROD-02-AMR') {
-        // Vector AMR Chassis Assembly
-        const chassis = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.28, 0.65), bodyMat);
-        chassis.position.y = 0.18;
-        g.add(chassis);
-        const topDeck = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.05, 0.6), darkMat);
-        topDeck.position.y = 0.34;
-        g.add(topDeck);
-        const lidar = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.12, 24), darkMat);
-        lidar.position.set(0.32, 0.38, 0.22);
-        g.add(lidar);
-        const laserRing = new THREE.Mesh(new THREE.TorusGeometry(0.095, 0.015, 12, 24), glowMat);
-        laserRing.position.set(0.32, 0.42, 0.22);
-        laserRing.rotation.x = Math.PI / 2;
-        g.add(laserRing);
-      }
-      else if (id === 'PROD-03-OPTISCAN') {
-        // OptiScan 3D Vision Assembly
-        const body = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.28, 0.22), darkMat);
-        body.position.y = 0.55;
-        g.add(body);
-        const lensL = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.12, 24), metalMat);
-        lensL.rotation.x = Math.PI / 2;
-        lensL.position.set(-0.22, 0.55, 0.12);
-        g.add(lensL);
-        const lensR = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.12, 24), metalMat);
-        lensR.rotation.x = Math.PI / 2;
-        lensR.position.set(0.22, 0.55, 0.12);
-        g.add(lensR);
-        const projector = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.08), glowMat);
-        projector.position.set(0, 0.55, 0.12);
-        g.add(projector);
-      }
-      else if (id === 'PROD-04-FLEXGRIP') {
-        // FlexGrip E80 Adaptive Gripper
-        const housing = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.45, 0.22), bodyMat);
-        housing.position.y = 0.35;
-        g.add(housing);
-        const jawL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.35, 0.08), metalMat);
-        jawL.position.set(-0.12, 0.72, 0);
-        g.add(jawL);
-        const jawR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.35, 0.08), metalMat);
-        jawR.position.set(0.12, 0.72, 0);
-        g.add(jawR);
-      }
-      else if (id === 'PROD-05-FLOWDRIVE') {
-        // FlowDrive P500 Smart Pump
-        const casing = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.35, 0.55, 24), bodyMat);
-        casing.position.y = 0.38;
-        g.add(casing);
-        const vfdTop = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.32, 0.38), darkMat);
-        vfdTop.position.y = 0.75;
-        g.add(vfdTop);
-        const flangeIn = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.22, 16), metalMat);
-        flangeIn.rotation.z = Math.PI / 2;
-        flangeIn.position.set(-0.25, 0.35, 0);
-        g.add(flangeIn);
-      }
-      else if (id === 'PROD-06-SYNCHRO') {
-        // SynchroDrive VFD Inverter
-        const finChassis = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.65, 0.26), darkMat);
-        finChassis.position.y = 0.45;
-        g.add(finChassis);
-        const oled = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.1), glowMat);
-        oled.position.set(0, 0.6, 0.135);
-        g.add(oled);
-      }
-      else if (id === 'PROD-07-EDGECORE') {
-        // EdgeCore IPC
-        const ipc = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.38, 0.22), darkMat);
-        ipc.position.y = 0.32;
-        g.add(ipc);
-        for (let i = 0; i < 4; i++) {
-          const led = new THREE.Mesh(new THREE.SphereGeometry(0.02, 12, 12), glowMat);
-          led.position.set(-0.16 + i * 0.1, 0.42, 0.115);
-          g.add(led);
-        }
-      }
-      else if (id === 'PROD-08-LASERCELL') {
-        // LaserCell LX Cabinet
-        const cab = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.25, 0.85), pbrMat({ color: 0xf8fafc, metalness: 0.2, roughness: 0.4 }));
-        cab.position.y = 0.75;
-        g.add(cab);
-        const window = new THREE.Mesh(new THREE.PlaneGeometry(0.65, 0.55), pbrMat({ color: 0x082f49, metalness: 0.9, roughness: 0.1 }));
-        window.position.set(0, 0.85, 0.43);
-        g.add(window);
-        const towerLight = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.22, 16), glowMat);
-        towerLight.position.set(0.38, 1.45, 0.3);
-        g.add(towerLight);
-      }
-
-      return g;
     }
 
     // ── 4. 3D Positioned HTML Hotspot Overlay Layer ──
