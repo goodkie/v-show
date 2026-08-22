@@ -1019,6 +1019,59 @@
           t.repeat.x = -1;
         });
 
+        // ── Dynamic High-Res DN'a Fascia Signage Texture ──
+        function createFasciaTexture(text = "dn'a ROBOTIC", sub = "ADVANCED AUTOMATION & AI") {
+          const cvs = document.createElement('canvas');
+          cvs.width = 2048; cvs.height = 384;
+          const ctx = cvs.getContext('2d');
+          // Background Gradient (Dark Tech Navy to Royal Blue)
+          const grad = ctx.createLinearGradient(0, 0, 2048, 0);
+          grad.addColorStop(0, '#040d1a');
+          grad.addColorStop(0.5, '#0a1e38');
+          grad.addColorStop(1, '#040d1a');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, 2048, 384);
+
+          // Top and Bottom Glowing Accent Lines
+          ctx.fillStyle = '#00c2ff';
+          ctx.fillRect(0, 0, 2048, 8);
+          ctx.fillRect(0, 376, 2048, 8);
+
+          // DNA Helix / Tech Icon
+          ctx.strokeStyle = '#00c2ff';
+          ctx.lineWidth = 14;
+          ctx.beginPath();
+          ctx.arc(280, 192, 70, -Math.PI*0.5, Math.PI*0.5);
+          ctx.stroke();
+          ctx.strokeStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.arc(360, 192, 70, Math.PI*0.5, -Math.PI*0.5);
+          ctx.stroke();
+
+          // Main Typography
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '900 130px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          ctx.fillText("dn'a", 480, 215);
+
+          ctx.fillStyle = '#00c2ff';
+          ctx.font = '700 96px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          ctx.fillText("ROBOTIC", 820, 215);
+
+          // Subtitle Badge
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.75)';
+          ctx.font = '600 38px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          ctx.letterSpacing = '8px';
+          ctx.fillText(sub, 1420, 210);
+
+          const tex = new THREE.CanvasTexture(cvs);
+          tex.wrapS = THREE.ClampToEdgeWrapping;
+          tex.wrapT = THREE.ClampToEdgeWrapping;
+          return tex;
+        }
+
+        const fasciaFrontTex = createFasciaTexture("dn'a ROBOTIC", "SMART FACTORY & COBOTICS");
+        const fasciaSideTex = createFasciaTexture("dn'a", "PRECISION AUTOMATION");
+
         function mat(color, metal = 0.1, rough = 0.6, emissive = 0x000000, emissInt = 0) {
           return new THREE.MeshStandardMaterial({ color, metalness: metal, roughness: rough, emissive, emissiveIntensity: emissInt });
         }
@@ -1030,75 +1083,174 @@
           scene.add(m); return m;
         }
 
-        // Exhibition Hall floor
-        mesh(new THREE.PlaneGeometry(80, 80), mat(0x141b26, 0.05, 0.85), -Math.PI/2, 0, 0, 0, -0.01, 10);
+        // 1. Exhibition Hall floor (Dark polished concrete)
+        mesh(new THREE.PlaneGeometry(80, 80), mat(0x111722, 0.1, 0.7), -Math.PI/2, 0, 0, 0, -0.01, 10);
 
-        // Booth Carpet (Navy Blue) & Edge Glow
-        const carpetEdgeMat = mat(0x0284c7, 0.4, 0.4, 0x0284c7, 0.8);
-        mesh(new THREE.PlaneGeometry(14, 14), mat(0x0b2542, 0.05, 0.9), -Math.PI/2, 0, 0, 0, 0.01, 3);
-        [-7, 7].forEach(x => mesh(new THREE.BoxGeometry(0.08, 0.05, 14), carpetEdgeMat, 0,0,0, x, 0.025, 3));
-        [-4, 10].forEach(z => mesh(new THREE.BoxGeometry(14, 0.05, 0.08), carpetEdgeMat, 0,0,0, 0, 0.025, z));
+        // 2. Booth Carpet (Navy Blue) & Glowing Neon Cyan Edge
+        mesh(new THREE.PlaneGeometry(14, 14), mat(0x0a1c33, 0.05, 0.92), -Math.PI/2, 0, 0, 0, 0.01, 3);
+        const neonCyan = mat(0x00c2ff, 0.8, 0.2, 0x00c2ff, 2.5);
+        [-7, 7].forEach(x => mesh(new THREE.BoxGeometry(0.08, 0.06, 14), neonCyan, 0,0,0, x, 0.03, 3));
+        [-4, 10].forEach(z => mesh(new THREE.BoxGeometry(14, 0.06, 0.08), neonCyan, 0,0,0, 0, 0.03, z));
 
-        // Back Wall & Fascia
+        // 3. Back Wall & Center LED Video Wall
         mesh(new THREE.BoxGeometry(14.2, 5.2, 0.3), mat(0xf0f4f8, 0.15, 0.4), 0,0,0, 0, 2.6, 10.15);
-        mesh(new THREE.BoxGeometry(13.8, 1.4, 0.15), mat(0x081326, 0.3, 0.3, 0x0284c7, 0.4), 0,0,0, 0, 4.4, 10.0);
-
-        // Hero Brand Master Graphic (Double-sided, correctly oriented)
+        
+        // Large 16:9 Central Video Wall Display
         const heroPanel = new THREE.Mesh(
-          new THREE.PlaneGeometry(10.5, 3.2),
+          new THREE.PlaneGeometry(11.0, 3.4),
           new THREE.MeshBasicMaterial({ map: heroTex, side: THREE.DoubleSide })
         );
-        heroPanel.position.set(0, 2.3, 9.95);
+        heroPanel.position.set(0, 2.4, 9.95);
         scene.add(heroPanel);
 
-        // Structural Pillars
-        const pillarMat = mat(0xffffff, 0.5, 0.3);
+        // 4. Structural White Pillars (4 columns)
+        const pillarMat = mat(0xffffff, 0.4, 0.25);
         [[-6.5, 5.2, -3.8], [6.5, 5.2, -3.8], [-6.5, 5.2, 9.8], [6.5, 5.2, 9.8]].forEach(([x, h, z]) => {
-          mesh(new THREE.BoxGeometry(0.32, h, 0.32), pillarMat, 0,0,0, x, h/2, z);
+          mesh(new THREE.BoxGeometry(0.35, h, 0.35), pillarMat, 0,0,0, x, h/2, z);
+          // Column LED accent runners
+          mesh(new THREE.BoxGeometry(0.06, h, 0.36), neonCyan, 0,0,0, x + (x < 0 ? 0.18 : -0.18), h/2, z);
         });
 
-        // Canopy
-        const canopyMat = mat(0x0f1929, 0.6, 0.3, 0x0284c7, 0.2);
-        mesh(new THREE.BoxGeometry(14, 0.22, 0.22), canopyMat, 0,0,0, 0, 5.2, -3.8);
-        mesh(new THREE.BoxGeometry(14, 0.22, 0.22), canopyMat, 0,0,0, 0, 5.2, 9.8);
-        mesh(new THREE.BoxGeometry(0.22, 0.22, 13.8), canopyMat, 0,0,0, -6.5, 5.2, 3);
-        mesh(new THREE.BoxGeometry(0.22, 0.22, 13.8), canopyMat, 0,0,0,  6.5, 5.2, 3);
+        // 5. Overhead Volumetric Canopy with DN'a ROBOTIC Brand Signage
+        const fasciaBoxMat = mat(0x0c1b30, 0.5, 0.3);
+        const fasciaFrontMeshMat = new THREE.MeshBasicMaterial({ map: fasciaFrontTex, side: THREE.DoubleSide });
+        const fasciaSideMeshMat = new THREE.MeshBasicMaterial({ map: fasciaSideTex, side: THREE.DoubleSide });
 
-        const canopyLedMat = mat(0x0ea5e9, 0.8, 0.2, 0x38bdf8, 1.8);
-        mesh(new THREE.BoxGeometry(13.8, 0.04, 0.04), canopyLedMat, 0,0,0, 0, 5.08, -3.7);
-        mesh(new THREE.BoxGeometry(13.8, 0.04, 0.04), canopyLedMat, 0,0,0, 0, 5.08,  9.7);
+        // Front Fascia Box (facing -Z towards audience)
+        mesh(new THREE.BoxGeometry(14.2, 1.2, 0.25), fasciaBoxMat, 0,0,0, 0, 5.2, -3.8);
+        const frontSign = new THREE.Mesh(new THREE.PlaneGeometry(14.0, 1.15), fasciaFrontMeshMat);
+        frontSign.position.set(0, 5.2, -3.94);
+        frontSign.rotation.set(0, Math.PI, 0); // Face viewer
+        scene.add(frontSign);
 
-        // Side Walls
-        mesh(new THREE.BoxGeometry(0.2, 3.0, 5.5), mat(0xf0f4f8, 0.1, 0.5), 0,0,0, -6.9, 1.5, 6.8);
-        mesh(new THREE.BoxGeometry(0.2, 3.0, 5.5), mat(0xf0f4f8, 0.1, 0.5), 0,0,0,  6.9, 1.5, 6.8);
+        // Rear Fascia Box
+        mesh(new THREE.BoxGeometry(14.2, 1.2, 0.25), fasciaBoxMat, 0,0,0, 0, 5.2, 9.8);
+        const rearSign = new THREE.Mesh(new THREE.PlaneGeometry(14.0, 1.15), fasciaFrontMeshMat);
+        rearSign.position.set(0, 5.2, 9.66);
+        scene.add(rearSign);
 
-        // Reception Lounge
-        mesh(new THREE.BoxGeometry(3.2, 1.05, 0.6), mat(0x1b2f48, 0.3, 0.5), 0,0,0, 0, 0.525, 9.0);
+        // Left & Right Canopy Sides
+        mesh(new THREE.BoxGeometry(0.25, 1.2, 13.8), fasciaBoxMat, 0,0,0, -6.5, 5.2, 3.0);
+        mesh(new THREE.BoxGeometry(0.25, 1.2, 13.8), fasciaBoxMat, 0,0,0,  6.5, 5.2, 3.0);
+        const rightSign = new THREE.Mesh(new THREE.PlaneGeometry(13.6, 1.15), fasciaSideMeshMat);
+        rightSign.position.set(6.64, 5.2, 3.0);
+        rightSign.rotation.set(0, Math.PI*0.5, 0);
+        scene.add(rightSign);
 
-        // ── 8 Exhibition Plinths with 3D Products ──
+        // Canopy LED Neon Underglow Lines
+        mesh(new THREE.BoxGeometry(14.0, 0.05, 0.05), neonCyan, 0,0,0, 0, 4.58, -3.8);
+        mesh(new THREE.BoxGeometry(14.0, 0.05, 0.05), neonCyan, 0,0,0, 0, 4.58,  9.8);
+        mesh(new THREE.BoxGeometry(0.05, 0.05, 13.8), neonCyan, 0,0,0, -6.5, 4.58, 3.0);
+        mesh(new THREE.BoxGeometry(0.05, 0.05, 13.8), neonCyan, 0,0,0,  6.5, 4.58, 3.0);
+
+        // 6. Side Acoustic Divider Walls
+        mesh(new THREE.BoxGeometry(0.2, 3.2, 5.5), mat(0x132238, 0.2, 0.5), 0,0,0, -6.9, 1.6, 6.8);
+        mesh(new THREE.BoxGeometry(0.2, 3.2, 5.5), mat(0x132238, 0.2, 0.5), 0,0,0,  6.9, 1.6, 6.8);
+
+        // ── Function to build highly realistic multi-jointed 6-axis robotic arms ──
+        function buildArticulatedCobot(x, y, z, scale=1.0, poseYaw=0, posePitch=0.3, armColor=0xffffff) {
+          const cobotGroup = new THREE.Group();
+          const whiteMat = mat(armColor, 0.3, 0.25);
+          const darkJointMat = mat(0x1e293b, 0.8, 0.2);
+          const jointGlowMat = mat(0x00c2ff, 0.5, 0.3, 0x00c2ff, 2.0);
+          const gripperMat = mat(0x334155, 0.9, 0.15);
+
+          // Base Pedestal
+          const base = new THREE.Mesh(new THREE.CylinderGeometry(0.18*scale, 0.22*scale, 0.15*scale, 24), darkJointMat);
+          base.position.set(0, 0.075*scale, 0);
+          cobotGroup.add(base);
+
+          // Shoulder Swivel
+          const shoulder = new THREE.Mesh(new THREE.CylinderGeometry(0.15*scale, 0.15*scale, 0.2*scale, 20), whiteMat);
+          shoulder.position.set(0, 0.22*scale, 0);
+          cobotGroup.add(shoulder);
+
+          // Joint 1 LED Ring
+          const j1Ring = new THREE.Mesh(new THREE.TorusGeometry(0.152*scale, 0.015*scale, 8, 24), jointGlowMat);
+          j1Ring.rotation.x = Math.PI*0.5;
+          j1Ring.position.set(0, 0.22*scale, 0);
+          cobotGroup.add(j1Ring);
+
+          // Upper Arm Link (Angled)
+          const arm1 = new THREE.Mesh(new THREE.CylinderGeometry(0.11*scale, 0.13*scale, 0.65*scale, 16), whiteMat);
+          arm1.position.set(0.1*scale, 0.55*scale, 0.1*scale);
+          arm1.rotation.set(posePitch, poseYaw, 0.2);
+          cobotGroup.add(arm1);
+
+          // Elbow Joint
+          const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.14*scale, 16, 16), darkJointMat);
+          elbow.position.set(0.18*scale, 0.88*scale, 0.22*scale);
+          cobotGroup.add(elbow);
+
+          // Forearm Link
+          const arm2 = new THREE.Mesh(new THREE.CylinderGeometry(0.09*scale, 0.11*scale, 0.55*scale, 16), whiteMat);
+          arm2.position.set(0.28*scale, 1.15*scale, 0.05*scale);
+          arm2.rotation.set(-0.4, poseYaw, -0.3);
+          cobotGroup.add(arm2);
+
+          // Wrist Unit & Tool Flange
+          const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.08*scale, 0.08*scale, 0.14*scale, 16), darkJointMat);
+          wrist.position.set(0.38*scale, 1.4*scale, -0.1*scale);
+          wrist.rotation.z = Math.PI*0.5;
+          cobotGroup.add(wrist);
+
+          // 2-Finger Industrial Gripper with Workpiece
+          const gripL = new THREE.Mesh(new THREE.BoxGeometry(0.03*scale, 0.1*scale, 0.03*scale), gripperMat);
+          gripL.position.set(0.35*scale, 1.5*scale, -0.12*scale);
+          const gripR = new THREE.Mesh(new THREE.BoxGeometry(0.03*scale, 0.1*scale, 0.03*scale), gripperMat);
+          gripR.position.set(0.41*scale, 1.5*scale, -0.12*scale);
+          cobotGroup.add(gripL); cobotGroup.add(gripR);
+
+          // Golden Sample Component held by gripper
+          const part = new THREE.Mesh(new THREE.CylinderGeometry(0.04*scale, 0.04*scale, 0.08*scale, 16), mat(0xf59e0b, 0.8, 0.2));
+          part.position.set(0.38*scale, 1.5*scale, -0.12*scale);
+          cobotGroup.add(part);
+
+          cobotGroup.position.set(x, y, z);
+          scene.add(cobotGroup);
+          return cobotGroup;
+        }
+
+        // 7. FRONT DEMONSTRATION ISLAND (Long Table with 4 Articulated Robot Arms, as in reference photo)
+        const frontIslandMat = mat(0xf8fafc, 0.2, 0.35);
+        mesh(new THREE.BoxGeometry(5.8, 0.95, 1.4), frontIslandMat, 0,0,0, -3.5, 0.475, -2.0);
+        mesh(new THREE.BoxGeometry(5.84, 0.05, 1.44), neonCyan, 0,0,0, -3.5, 0.03, -2.0);
+        mesh(new THREE.BoxGeometry(5.84, 0.03, 1.44), neonCyan, 0,0,0, -3.5, 0.95, -2.0);
+
+        // Row of 4 synchronized cobot arms on front table
+        buildArticulatedCobot(-5.5, 0.95, -2.0, 1.1, 0.1, 0.4, 0xffffff);
+        buildArticulatedCobot(-4.2, 0.95, -2.0, 1.0, -0.2, 0.2, 0xf0fdf4);
+        buildArticulatedCobot(-2.8, 0.95, -2.0, 1.0, 0.3, 0.5, 0xffffff);
+        buildArticulatedCobot(-1.5, 0.95, -2.0, 0.9, -0.1, 0.3, 0xf8fafc);
+
+        // 8. RIGHT FEATURED ROBOT CELL (White Podium with Active Cobot)
+        mesh(new THREE.BoxGeometry(1.5, 1.0, 1.5), frontIslandMat, 0,0,0, 4.0, 0.5, -2.0);
+        mesh(new THREE.BoxGeometry(1.54, 0.05, 1.54), neonCyan, 0,0,0, 4.0, 0.03, -2.0);
+        mesh(new THREE.BoxGeometry(1.54, 0.03, 1.54), neonCyan, 0,0,0, 4.0, 1.0, -2.0);
+        buildArticulatedCobot(4.0, 1.0, -2.0, 1.35, 0.4, 0.35, 0xffffff);
+
+        // 9. MID & REAR EXHIBITION PODIUMS (AMR, OptiScan, Industrial PC, LaserCell)
         const plinthMat = mat(0xf5f8ff, 0.25, 0.45);
-        const plinthLedMat = mat(0x0284c7, 0.5, 0.3, 0x0284c7, 1.2);
 
-        Object.entries(PRODUCT_3D_POS).forEach(([key, pos]) => {
-          mesh(new THREE.BoxGeometry(1.1, 1.0, 1.1), plinthMat, 0,0,0, pos.x, 0.5, pos.z);
-          mesh(new THREE.BoxGeometry(1.12, 0.04, 1.12), plinthLedMat, 0,0,0, pos.x, 0.03, pos.z);
+        // Vector AMR on floor runway
+        const amrPos = PRODUCT_3D_POS.amr;
+        const amrBody = mesh(new THREE.BoxGeometry(0.85, 0.24, 0.65), mat(0x0f172a, 0.7, 0.3), 0,0,0, amrPos.x, 0.12, amrPos.z);
+        mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.08, 16), neonCyan, 0,0,0, amrPos.x, 0.28, amrPos.z);
+        mesh(new THREE.BoxGeometry(0.86, 0.04, 0.04), neonCyan, 0,0,0, amrPos.x, 0.2, amrPos.z+0.32);
 
-          // Product model geometry on plinth
-          if (key === 'cobot') {
-            const arm1 = mesh(new THREE.BoxGeometry(0.12, 0.55, 0.12), mat(0x0284c7, 0.6, 0.3), 0,0,0.2, pos.x, 1.43, pos.z);
-            const head = mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.18, 12), mat(0x222222, 0.6, 0.3), 0,0,0.5, pos.x+0.2, 2.42, pos.z);
-          } else if (key === 'amr') {
-            mesh(new THREE.BoxGeometry(0.7, 0.18, 0.55), mat(0xeab308, 0.4, 0.5), 0,0,0, pos.x, 1.09, pos.z);
-          } else if (key === 'optiscan') {
-            mesh(new THREE.BoxGeometry(0.35, 0.12, 0.12), mat(0x10b981, 0.6, 0.3), 0,0,0, pos.x, 1.08, pos.z);
-          } else if (key === 'flexgrip') {
-            mesh(new THREE.BoxGeometry(0.16, 0.22, 0.14), mat(0x6366f1, 0.6, 0.3), 0,0,0, pos.x, 1.11, pos.z);
-          } else if (key === 'lasercell') {
-            mesh(new THREE.BoxGeometry(0.65, 0.65, 0.6), mat(0xef4444, 0.5, 0.5), 0,0,0, pos.x, 1.325, pos.z);
-          } else {
-            mesh(new THREE.BoxGeometry(0.3, 0.2, 0.3), mat(0x38bdf8, 0.5, 0.4), 0,0,0, pos.x, 1.1, pos.z);
-          }
-        });
+        // OptiScan 3D Inspection Station
+        mesh(new THREE.BoxGeometry(1.2, 0.95, 1.2), plinthMat, 0,0,0, 1.2, 0.475, 2.5);
+        mesh(new THREE.BoxGeometry(1.22, 0.04, 1.22), neonCyan, 0,0,0, 1.2, 0.03, 2.5);
+        mesh(new THREE.BoxGeometry(0.38, 0.18, 0.18), mat(0x00c2ff, 0.8, 0.2), 0,0,0, 1.2, 1.05, 2.5);
+
+        // LaserCell LX
+        const laserPos = PRODUCT_3D_POS.lasercell;
+        mesh(new THREE.BoxGeometry(1.8, 1.8, 1.4), mat(0x1e293b, 0.6, 0.4), 0,0,0, laserPos.x, 0.9, laserPos.z);
+        mesh(new THREE.BoxGeometry(1.0, 0.9, 0.05), mat(0xef4444, 0.3, 0.2, 0xef4444, 0.8), 0,0,0, laserPos.x, 1.2, laserPos.z-0.71);
+
+        // Reception Lounge Desk & VIP Chairs
+        mesh(new THREE.BoxGeometry(3.5, 1.1, 0.7), mat(0x0c1b30, 0.4, 0.4), 0,0,0, -4.5, 0.55, 7.5);
+        mesh(new THREE.BoxGeometry(3.54, 0.04, 0.74), neonCyan, 0,0,0, -4.5, 0.03, 7.5);
       }
 
       try {

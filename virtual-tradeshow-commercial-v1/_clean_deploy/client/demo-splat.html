@@ -769,16 +769,25 @@ let qualityMode = 'std';   // 'std' | 'ultra'
 
 /* ────────── 로딩 UI ────────── */
 function setProgress(pct, msg) {
-  document.getElementById('ld-fill').style.width   = pct + '%';
-  document.getElementById('ld-pct').textContent    = Math.round(pct) + '%';
-  if (msg) document.getElementById('ld-status').textContent = msg;
+  const fill = document.getElementById('ld-fill');
+  const pctEl = document.getElementById('ld-pct');
+  const statusEl = document.getElementById('ld-status');
+  if (fill) fill.style.width = pct + '%';
+  if (pctEl) pctEl.textContent = Math.round(pct) + '%';
+  if (statusEl && msg) statusEl.textContent = msg;
 }
 
 function hideLoading() {
   const el = document.getElementById('loading');
+  if (!el) return;
   el.classList.add('out');
-  setTimeout(() => el.remove(), 1100);
-  setTimeout(() => document.getElementById('hint')?.classList.add('gone'), 8000);
+  setTimeout(() => {
+    if (el) el.style.display = 'none';
+  }, 1100);
+  setTimeout(() => {
+    const hint = document.getElementById('hint');
+    if (hint) hint.classList.add('gone');
+  }, 8000);
 }
 
 /* ────────── 카메라 Fly-To 애니메이션 ────────── */
@@ -1005,30 +1014,34 @@ async function init() {
     console.error('[3DGS] 초기화 실패:', err);
 
     /* ── 폴백 UI (오류 시) ── */
-    document.getElementById('loading').innerHTML = `
-      <div style="text-align:center;padding:40px;max-width:420px">
-        <div style="font-size:48px;margin-bottom:20px">⚠️</div>
-        <div style="font-size:20px;font-weight:800;margin-bottom:10px">3DGS 로드 실패</div>
-        <div style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.7;margin-bottom:28px">
-          네트워크 또는 CORS 문제로 Gaussian Splat 파일을<br>
-          불러오지 못했습니다. 아래 버튼으로 이동하거나<br>
-          잠시 후 다시 시도해주세요.
+    const ld = document.getElementById('loading');
+    if (ld) {
+      ld.style.display = 'flex';
+      ld.classList.remove('out');
+      ld.innerHTML = `
+        <div style="text-align:center;padding:40px;max-width:420px">
+          <div style="font-size:48px;margin-bottom:20px">⚠️</div>
+          <div style="font-size:20px;font-weight:800;margin-bottom:10px">3DGS 로드 오류</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.7;margin-bottom:28px">
+            Gaussian Splat 파일을 불러오지 못했습니다.<br>
+            아래 버튼으로 이동하거나 다시 시도해주세요.
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;max-width:260px;margin:0 auto">
+            <button onclick="location.reload()"
+              style="padding:12px;border-radius:9px;background:var(--blue);border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer">
+              🔄 다시 시도
+            </button>
+            <a href="/demo.html"
+              style="display:block;padding:12px;border-radius:9px;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.75);font-size:13px;font-weight:500;text-decoration:none;text-align:center">
+              ← 3D 쇼룸으로 이동
+            </a>
+          </div>
+          <div style="margin-top:24px;font-size:11px;color:rgba(255,255,255,.2)">
+            오류: ${String(err).substring(0,120)}
+          </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:10px;max-width:260px;margin:0 auto">
-          <button onclick="location.reload()"
-            style="padding:12px;border-radius:9px;background:var(--blue);border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer">
-            🔄 다시 시도
-          </button>
-          <a href="/demo.html"
-            style="display:block;padding:12px;border-radius:9px;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.75);font-size:13px;font-weight:500;text-decoration:none;text-align:center">
-            ← 기본 3D 뷰어로 이동
-          </a>
-        </div>
-        <div style="margin-top:24px;font-size:11px;color:rgba(255,255,255,.2)">
-          오류: ${String(err).substring(0,120)}
-        </div>
-      </div>
-    `;
+      `;
+    }
   }
 }
 
