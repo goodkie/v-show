@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Alex Vance — Smart Exhibitor Card | dn’a Robotics</title>
-  <meta name="description" content="Connect with Alex Vance, VP of Global B2B Solutions at dn’a Robotics. Download vCard, explore our 3D trade show booth, and request wholesale RFQs.">
+  <title>Julian Vance — Smart Exhibitor Card | dn’a Industrial Automation</title>
+  <meta name="description" content="Connect with Julian Vance, VP of Global Industrial Solutions at dn’a Industrial Automation. Download vCard, explore our 3D trade show booth, and request wholesale RFQs.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
       --primary: #0284c7;
@@ -15,25 +15,29 @@
       --bg: #070e17;
       --card-bg: #0f172a;
       --border: #1e293b;
+      --border-accent: rgba(56, 189, 248, 0.3);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
     }
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: var(--bg);
-      color: #f8fafc;
-      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
-      margin: 0;
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
       padding: 24px 16px 60px;
       display: flex;
       justify-content: center;
+      min-height: 100vh;
     }
+    .mono { font-family: 'JetBrains Mono', monospace; }
     .card-container {
       width: 100%;
       max-width: 440px;
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 20px;
+      border-radius: 24px;
       overflow: hidden;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+      box-shadow: 0 25px 60px rgba(0,0,0,0.7);
     }
     .card-header {
       background: linear-gradient(135deg, #0284c7, #1e3a8a);
@@ -43,10 +47,10 @@
     }
     .badge-expo {
       display: inline-block;
-      background: rgba(0,0,0,0.3);
-      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.25);
       border-radius: 20px;
-      padding: 4px 12px;
+      padding: 5px 14px;
       font-size: 11px;
       font-weight: 700;
       color: #e0f2fe;
@@ -55,19 +59,19 @@
       letter-spacing: 0.5px;
     }
     .avatar-box {
-      width: 90px;
-      height: 90px;
+      width: 96px;
+      height: 96px;
       border-radius: 50%;
-      background: #0369a1;
+      background: linear-gradient(135deg, #0369a1, #38bdf8);
       border: 4px solid #0f172a;
       margin: 0 auto 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 32px;
+      font-size: 34px;
       font-weight: 800;
       color: #fff;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     }
     .rep-name { font-size: 24px; font-weight: 800; margin: 0 0 4px; color: #fff; }
     .rep-title { font-size: 13px; color: #bae6fd; font-weight: 600; margin-bottom: 2px; }
@@ -75,7 +79,6 @@
 
     .card-body { padding: 24px 20px; }
 
-    /* Action Buttons Stack */
     .action-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -87,166 +90,174 @@
       border: 1px solid #334155;
       color: #f8fafc;
       padding: 12px;
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 13px;
       font-weight: 700;
       text-decoration: none;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 8px;
       cursor: pointer;
       transition: all 0.2s;
     }
-    .btn-card-action:hover { background: #334155; border-color: var(--accent); }
-    .btn-card-action.primary {
-      grid-column: span 2;
+    .btn-card-action:hover {
+      background: #2563eb;
+      border-color: #38bdf8;
+      transform: translateY(-2px);
+    }
+    .btn-primary-card {
       background: linear-gradient(135deg, #0284c7, #2563eb);
-      border-color: #0284c7;
-      color: #fff;
-      font-size: 15px;
-      padding: 14px;
-    }
-    .btn-card-action.primary:hover { opacity: 0.95; transform: translateY(-1px); }
-
-    /* Quick Lead Exchange Form */
-    .section-title {
-      font-size: 15px;
-      font-weight: 700;
-      margin: 20px 0 10px;
-      color: #f8fafc;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .input-box {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 8px;
-      border: 1px solid #334155;
-      background: #0d1b2a;
-      color: #fff;
-      font-size: 13px;
-      margin-bottom: 10px;
-    }
-    .input-box:focus { outline: none; border-color: var(--accent); }
-    .btn-submit-lead {
-      width: 100%;
-      background: #0284c7;
       border: none;
       color: #fff;
-      padding: 12px;
-      border-radius: 8px;
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 800;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
       cursor: pointer;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 20px rgba(2, 132, 199, 0.4);
       transition: all 0.2s;
     }
-    .btn-submit-lead:hover { background: #0369a1; }
+    .btn-primary-card:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 6px 25px rgba(2, 132, 199, 0.6); }
 
-    .result-msg {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 8px;
-      font-size: 12px;
-      line-height: 1.5;
+    .info-section {
+      background: #09121d;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 20px;
     }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-size: 13px;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: var(--text-muted); font-weight: 600; }
+    .info-val { color: var(--text); font-weight: 700; }
+
+    .product-quick-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .product-pill {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-decoration: none;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .product-pill:hover { background: #1e293b; border-color: #38bdf8; }
   </style>
 </head>
 <body>
-
-  <main class="card-container">
-    <!-- Card Header Profile -->
-    <header class="card-header">
-      <div class="badge-expo">📍 GIAE Expo 2026 · Stand B128</div>
-      <div class="avatar-box">AV</div>
-      <h1 class="rep-name">Alex Vance</h1>
-      <div class="rep-title">VP of Global B2B Solutions</div>
-      <div class="rep-company">dn’a Robotics & Smart Automation Corp.</div>
-    </header>
+  <div class="card-container">
+    <div class="card-header">
+      <div class="badge-expo">Stand W-412 • High Point Market</div>
+      <div class="avatar-box">JV</div>
+      <h1 class="rep-name">Julian Vance</h1>
+      <div class="rep-title">VP of Global Industrial Solutions</div>
+      <div class="rep-company">dn’a Industrial Automation Corp.</div>
+    </div>
 
     <div class="card-body">
-      <!-- Quick Action Buttons -->
+      <!-- 1-Click Save Contact -->
+      <button class="btn-primary-card" onclick="downloadVCard()">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save Contact to Phone (.vcf)
+      </button>
+
+      <!-- Communication Actions -->
       <div class="action-grid">
-        <button class="btn-card-action primary" onclick="downloadVCard()">
-          <span>💾 Save Contact to Phone (.vcf)</span>
-        </button>
-        <a href="/demo.html" class="btn-card-action">
-          <span>🌐 View 3D Booth</span>
+        <a href="tel:+13365550142" class="btn-card-action">
+          📞 Direct Call
         </a>
-        <a href="/demo.html" class="btn-card-action">
-          <span>▤ View Catalog</span>
+        <a href="mailto:julian.vance@havenoak.example?subject=Inquiry%20from%20Trade%20Show" class="btn-card-action">
+          ✉ Send Email
         </a>
-        <a href="/demo.html" class="btn-card-action">
-          <span>✉ Request RFQ</span>
+        <a href="/demo.html" class="btn-card-action" style="background:#0f2847; border-color:#0284c7; color:#38bdf8;">
+          🌐 3D Booth
         </a>
-        <a href="/demo.html" class="btn-card-action">
-          <span>📅 Book Meeting</span>
+        <a href="/qr.html" class="btn-card-action">
+          ▦ Product QRs
         </a>
       </div>
 
-      <!-- Quick Lead Form -->
-      <div class="section-title">
-        <span>🤝 Exchange Digital Business Card</span>
+      <!-- Quick Profile Data -->
+      <div class="info-section">
+        <div class="info-row">
+          <span class="info-label">Direct Phone</span>
+          <span class="info-val mono">+1 (336) 555-0142</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Corporate Email</span>
+          <span class="info-val">julian.vance@havenoak.example</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Exhibition Booth</span>
+          <span class="info-val">Interhall Stand W-412</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Show Dates</span>
+          <span class="info-val">Oct 17 – 21, 2026</span>
+        </div>
       </div>
-      <form onsubmit="submitQuickLead(event)">
-        <input id="lead-name" class="input-box" required placeholder="Your Full Name *">
-        <input id="lead-company" class="input-box" required placeholder="Your Company Name *">
-        <input id="lead-email" type="email" class="input-box" required placeholder="Your Work Email *">
-        <input id="lead-phone" class="input-box" placeholder="Mobile / WhatsApp">
-        <button type="submit" class="btn-submit-lead">Send My Card to Alex</button>
-      </form>
-      <div id="lead-result"></div>
 
-      <!-- Footer Branding -->
-      <div style="text-align:center; margin-top:24px; padding-top:16px; border-top:1px solid #1e293b; font-size:11px; color:#64748b;">
-        Powered by <b>dn’a Smart Exhibitor Card</b> · Virtual Trade Show Commercial Platform
+      <!-- Flagship Products Quick Access -->
+      <h3 style="font-size: 14px; font-weight: 800; margin-bottom: 10px; color: #38bdf8;">Flagship Automation Line</h3>
+      <div class="product-quick-list">
+        <a href="/demo.html" class="product-pill">
+          <span>Apex Cobot X16 (6-Axis Robotic Arm)</span>
+          <span style="color:#38bdf8; font-size:11px;">View 3D →</span>
+        </a>
+        <a href="/demo.html" class="product-pill">
+          <span>Vector AMR 600 (Autonomous Mobile Robot)</span>
+          <span style="color:#38bdf8; font-size:11px;">View 3D →</span>
+        </a>
+        <a href="/demo.html" class="product-pill">
+          <span>OptiScan V3 (Industrial 3D Inspection)</span>
+          <span style="color:#38bdf8; font-size:11px;">View 3D →</span>
+        </a>
+        <a href="/demo.html" class="product-pill">
+          <span>FlexGrip E80 (Adaptive Servo Gripper)</span>
+          <span style="color:#38bdf8; font-size:11px;">View 3D →</span>
+        </a>
+      </div>
+
+      <div style="text-align: center; margin-top: 24px;">
+        <a href="/demo.html" style="color: var(--text-muted); font-size: 12px; text-decoration: none;">
+          Powered by <b>dn’a Virtual Trade Show Commercial Platform</b>
+        </a>
       </div>
     </div>
-  </main>
+  </div>
 
   <script>
     function downloadVCard() {
-      const vcard = `BEGIN:VCARD\nVERSION:3.0\nN:Vance;Alex;;;\nFN:Alex Vance\nORG:dn'a Robotics & Smart Automation Corp.\nTITLE:VP of Global B2B Solutions\nTEL;TYPE=WORK,VOICE:+15553829011\nEMAIL:alex.vance@dna-robotics.demo\nURL:https://v-show-commercial-v1-production.up.railway.app/card.html\nNOTE:Met at Global Industry & Automation Expo 2026 Booth B128\nEND:VCARD`;
+      const vcard = `BEGIN:VCARD\nVERSION:3.0\nN:Vance;Julian;;;\nFN:Julian Vance\nORG:dn’a Industrial Automation Corp.\nTITLE:VP of Global Industrial Solutions\nTEL;TYPE=WORK,VOICE:+1-336-555-0142\nEMAIL:julian.vance@havenoak.example\nURL:https://v-show-commercial-v1-production.up.railway.app/card.html\nNOTE:Met at High Point Market Fall 2026 Stand W-412\nEND:VCARD`;
       const blob = new Blob([vcard], { type: 'text/vcard' });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'Alex_Vance_dna_Robotics.vcf';
+      a.href = url; a.download = 'Julian_Vance_dna.vcf';
       a.click();
-    }
-
-    async function submitQuickLead(e) {
-      e.preventDefault();
-      const resEl = document.getElementById('lead-result');
-      resEl.innerHTML = '<div style="color:#94a3b8; padding:8px;">Submitting contact...</div>';
-      try {
-        const payload = {
-          boothId: 'booth-demo-01',
-          buyerName: document.getElementById('lead-name').value,
-          company: document.getElementById('lead-company').value,
-          email: document.getElementById('lead-email').value,
-          phone: document.getElementById('lead-phone').value,
-          notes: 'Exchanged via Smart Exhibitor Card mobile interface'
-        };
-        const res = await fetch('/api/leads', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (res.ok) {
-          resEl.innerHTML = `
-            <div class="result-msg" style="background:rgba(16,185,129,0.15); border:1px solid #10b981; color:#34d399;">
-              <b>✓ Contact Exchanged!</b><br>
-              Alex Vance has received your details and will follow up shortly.
-            </div>
-          `;
-        } else {
-          resEl.innerHTML = `<div class="result-msg" style="color:#ef4444;">${data.error || 'Submission failed'}</div>`;
-        }
-      } catch (err) {
-        resEl.innerHTML = `<div class="result-msg" style="color:#ef4444;">Network error: ${err.message}</div>`;
-      }
     }
   </script>
 </body>

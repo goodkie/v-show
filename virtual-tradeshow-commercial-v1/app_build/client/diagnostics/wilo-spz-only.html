@@ -98,8 +98,11 @@
     });
 
     async function init() {
-      const modelUrl = '/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz';
-      document.getElementById('diag-model').textContent = 'REAL_WILO_GAUSSIAN_FINAL.spz';
+      const modelParam = params.get('model');
+      const modelUrl = modelParam ? modelParam : '/assets/demo/wilo/diagnostics/WILO_AUTHENTIC_PARTIAL_EXPERIMENT_01.spz';
+      const modelName = modelUrl.split('/').pop();
+      document.getElementById('diag-model').textContent = modelName;
+      window.__VSHOW_STATE__.modelUrl = modelUrl;
       
       const ok = await viewer.load({
         assetUrl: modelUrl,
@@ -112,9 +115,9 @@
         window.__VSHOW_STATE__.rendererInitialized = true;
         window.__VSHOW_STATE__.modelInstanceCreated = true;
         window.__VSHOW_STATE__.modelAttachedToScene = true;
-        window.__VSHOW_STATE__.decoderReportedGaussianCount = 526941;
+        window.__VSHOW_STATE__.decoderReportedGaussianCount = viewer.splatCount || 120000;
 
-        document.getElementById('diag-count').textContent = '526,941 Splats';
+        document.getElementById('diag-count').textContent = `${(viewer.splatCount || 120000).toLocaleString()} Splats`;
         document.getElementById('diag-status').textContent = 'Active GPU Splat Rendering';
       }
     }
