@@ -3,11 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>dn’a — Virtual Trade Show Commercial Platform</title>
+  <title>dn'a — Virtual Trade Show Commercial Platform</title>
   <meta name="description" content="Your trade show booth doesn't have to end when the show ends. Transform physical exhibits into sales-grade 3D digital showrooms that capture B2B wholesale leads, RFQs, and sample requests 24/7.">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="dn'a — Virtual Trade Show Commercial Platform">
+  <meta property="og:description" content="Sales-grade 3D digital showrooms for B2B trade shows. Built to convert buyers 365 days a year.">
+  <meta property="og:image" content="/assets/demo/dna-showcase/hero/dna_showcase_photoreal_hero.jpg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="/assets/demo/dna-showcase/hero/dna_showcase_photoreal_hero.jpg">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
   <style>
     :root {
       --primary: #0284c7;
@@ -20,6 +30,7 @@
       --text: #f8fafc;
       --text-muted: #94a3b8;
       --success: #10b981;
+      --cyan: #06b6d4;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -30,21 +41,18 @@
     .mono { font-family: 'JetBrains Mono', monospace; }
     a { color: inherit; text-decoration: none; }
 
-    /* Navigation */
+    /* ── Navigation ── */
     .nav-bar {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 16px 36px; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100;
+      padding: 14px 36px; background: rgba(7, 11, 20, 0.95); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 200;
     }
     .brand-logo {
       font-weight: 800; font-size: 22px; color: #fff;
       display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px;
     }
-    .dna-badge {
-      background: linear-gradient(135deg, #0ea5e9, #6366f1);
-      color: #fff; font-size: 11px; padding: 3px 8px; border-radius: 6px; font-weight: 700;
-    }
-    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .dna-icon { color: #38bdf8; }
+    .nav-links { display: flex; gap: 24px; align-items: center; }
     .nav-link { color: #94a3b8; font-size: 14px; font-weight: 600; transition: color 0.2s; }
     .nav-link:hover { color: #38bdf8; }
     .btn-nav-primary {
@@ -52,34 +60,37 @@
       padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 700;
       box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4); transition: all 0.2s;
     }
-    .btn-nav-primary:hover { opacity: 0.95; transform: translateY(-1px); }
+    .btn-nav-primary:hover { opacity: 0.9; transform: translateY(-1px); }
 
-    /* Hero Section */
+    /* ── Hero Section ── */
     .hero-section {
-      padding: 80px 24px 60px; max-width: 1240px; margin: 0 auto; text-align: center;
+      padding: 72px 24px 48px; max-width: 1400px; margin: 0 auto; text-align: center;
     }
     .hero-pill {
       display: inline-flex; align-items: center; gap: 8px;
-      background: rgba(14, 165, 233, 0.12); border: 1px solid rgba(14, 165, 233, 0.35);
-      border-radius: 30px; padding: 6px 16px; font-size: 12px; font-weight: 700;
-      color: #38bdf8; margin-bottom: 24px; text-transform: uppercase;
+      background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.3);
+      border-radius: 30px; padding: 6px 16px; font-size: 11px; font-weight: 700;
+      color: #38bdf8; margin-bottom: 22px; text-transform: uppercase; letter-spacing: 0.5px;
     }
     .hero-title {
-      font-size: 52px; font-weight: 800; line-height: 1.15;
-      letter-spacing: -1.5px; margin-bottom: 20px;
+      font-size: clamp(32px, 4vw, 54px); font-weight: 800; line-height: 1.12;
+      letter-spacing: -1.5px; margin-bottom: 18px;
     }
     .hero-title span {
       background: linear-gradient(135deg, #38bdf8, #818cf8);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
     .hero-desc {
-      font-size: 18px; color: var(--text-muted); max-width: 720px;
-      margin: 0 auto 36px; line-height: 1.6;
+      font-size: 17px; color: var(--text-muted); max-width: 680px;
+      margin: 0 auto 32px; line-height: 1.65;
     }
-    .hero-ctas { display: flex; gap: 16px; justify-content: center; margin-bottom: 50px; flex-wrap: wrap; }
+    .hero-ctas {
+      display: flex; gap: 14px; justify-content: center; margin-bottom: 44px; flex-wrap: wrap;
+    }
     .btn-hero {
       padding: 14px 28px; border-radius: 10px; font-size: 15px; font-weight: 700;
       cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;
+      text-decoration: none; border: none;
     }
     .btn-hero-primary {
       background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff;
@@ -91,23 +102,211 @@
     }
     .btn-hero-secondary:hover { background: #1e293b; border-color: #38bdf8; }
 
-    /* Live Interactive Showroom Window */
-    .hero-preview-frame {
-      width: 100%; max-width: 1140px; height: 560px; margin: 0 auto 80px;
-      border: 1px solid var(--border-accent); border-radius: 20px; overflow: hidden;
-      box-shadow: 0 25px 80px rgba(0,0,0,0.8), 0 0 40px rgba(14, 165, 233, 0.15);
-      position: relative; background: #070e17;
+    /* ── Photorealistic Hero Frame ── */
+    .showcase-frame-wrapper {
+      width: 100%; max-width: 1340px; margin: 0 auto 80px;
+      position: relative;
     }
-    .preview-iframe { width: 100%; height: 100%; border: none; }
+    .showcase-label-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px; padding: 0 4px;
+    }
+    .showcase-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+      color: #38bdf8; background: rgba(14, 165, 233, 0.1);
+      border: 1px solid rgba(14, 165, 233, 0.25); border-radius: 20px; padding: 4px 12px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .showcase-label::before {
+      content: ''; display: block; width: 6px; height: 6px; border-radius: 50%;
+      background: #38bdf8; animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+    }
+    .showcase-enter-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff;
+      padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4); transition: all 0.2s;
+      text-decoration: none;
+    }
+    .showcase-enter-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(2, 132, 199, 0.6); }
 
-    /* Section Styling */
+    .showcase-frame {
+      width: 100%; aspect-ratio: 16/9; max-height: 720px;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.85), 0 0 60px rgba(14, 165, 233, 0.12);
+      position: relative; background: #050a12;
+    }
+    .showcase-hero-img {
+      width: 100%; height: 100%; object-fit: cover; object-position: center;
+      display: block;
+    }
+
+    /* ── Interactive Overlay Controls (on Hero Image) ── */
+    .showcase-overlay {
+      position: absolute; inset: 0;
+      pointer-events: none;
+    }
+
+    /* Top Control Bar */
+    .overlay-top-bar {
+      position: absolute; top: 0; left: 0; right: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px;
+      background: linear-gradient(180deg, rgba(5,10,18,0.92) 0%, transparent 100%);
+      pointer-events: all;
+    }
+    .overlay-brand {
+      display: flex; align-items: center; gap: 10px; color: #fff;
+      font-weight: 800; font-size: 16px;
+    }
+    .overlay-badge {
+      font-size: 9px; font-weight: 700; color: #38bdf8;
+      border: 1px solid rgba(56,189,248,0.4); border-radius: 20px; padding: 3px 9px;
+      letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .overlay-actions {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .overlay-btn {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255,255,255,0.15);
+      color: #f8fafc; padding: 7px 14px; border-radius: 7px;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s; text-decoration: none;
+      backdrop-filter: blur(8px);
+    }
+    .overlay-btn:hover { background: rgba(30,41,59,0.9); border-color: #38bdf8; color: #38bdf8; }
+    .overlay-btn-primary {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      border-color: transparent; color: #fff;
+      box-shadow: 0 4px 14px rgba(2,132,199,0.4);
+    }
+    .overlay-btn-primary:hover { opacity: 0.9; transform: translateY(-1px); color: #fff; }
+
+    /* Left Navigation */
+    .overlay-left-nav {
+      position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+      display: flex; flex-direction: column; gap: 4px;
+      pointer-events: all;
+    }
+    .nav-preset-btn {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(10, 16, 28, 0.88); border: 1px solid rgba(255,255,255,0.1);
+      color: #cbd5e1; padding: 8px 14px; border-radius: 8px;
+      font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+      backdrop-filter: blur(8px); text-decoration: none; white-space: nowrap;
+    }
+    .nav-preset-btn:hover, .nav-preset-btn.active {
+      background: rgba(2, 132, 199, 0.2); border-color: #38bdf8; color: #38bdf8;
+    }
+    .nav-preset-icon { font-size: 13px; opacity: 0.8; width: 16px; text-align: center; }
+
+    /* Product Hotspots */
+    .product-hotspot {
+      position: absolute; pointer-events: all; cursor: pointer;
+      transform: translate(-50%, -50%);
+    }
+    .hotspot-dot {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(2, 132, 199, 0.25); border: 2px solid #38bdf8;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.4);
+      animation: hotspot-pulse 2.5s infinite;
+      transition: all 0.2s;
+    }
+    .hotspot-dot::after {
+      content: ''; width: 8px; height: 8px; border-radius: 50%; background: #38bdf8;
+    }
+    .product-hotspot:hover .hotspot-dot {
+      background: rgba(2, 132, 199, 0.5); transform: scale(1.15);
+    }
+    @keyframes hotspot-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.5); }
+      70% { box-shadow: 0 0 0 10px rgba(56, 189, 248, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+    }
+    .hotspot-label {
+      position: absolute; left: 36px; top: 50%; transform: translateY(-50%);
+      background: rgba(7, 11, 20, 0.92); border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 8px; padding: 7px 12px; min-width: 150px;
+      backdrop-filter: blur(8px); transition: all 0.2s; pointer-events: none;
+      white-space: nowrap;
+    }
+    .product-hotspot:hover .hotspot-label { border-color: #38bdf8; background: rgba(2,15,30,0.95); }
+    .hotspot-name { font-size: 11px; font-weight: 700; color: #f8fafc; line-height: 1.2; }
+    .hotspot-cat { font-size: 9px; color: #38bdf8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+    .hotspot-view { font-size: 9px; color: #64748b; margin-top: 4px; font-weight: 600; }
+
+    /* Bottom Presets Strip */
+    .overlay-bottom-bar {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px 20px;
+      background: linear-gradient(0deg, rgba(5,10,18,0.95) 0%, transparent 100%);
+      pointer-events: all;
+    }
+    .preset-thumb {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      cursor: pointer; transition: all 0.2s; text-decoration: none;
+    }
+    .preset-img {
+      width: 72px; height: 46px; border-radius: 6px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.12); background: #0d1726;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; color: #38bdf8; transition: all 0.2s;
+    }
+    .preset-thumb:hover .preset-img, .preset-thumb.active .preset-img {
+      border-color: #38bdf8; box-shadow: 0 0 12px rgba(56,189,248,0.3);
+    }
+    .preset-name {
+      font-size: 8px; font-weight: 700; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      transition: color 0.2s;
+    }
+    .preset-thumb:hover .preset-name, .preset-thumb.active .preset-name { color: #38bdf8; }
+    .briefcase-chip {
+      position: absolute; right: 16px; bottom: 58px;
+      background: rgba(10, 16, 28, 0.92); border: 1px solid rgba(56,189,248,0.3);
+      border-radius: 20px; padding: 6px 14px;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; font-weight: 700; color: #f8fafc;
+      cursor: pointer; backdrop-filter: blur(8px); transition: all 0.2s;
+      pointer-events: all; text-decoration: none;
+    }
+    .briefcase-chip:hover { border-color: #38bdf8; color: #38bdf8; }
+
+    /* ── Section Styling ── */
     .section { padding: 60px 24px; max-width: 1200px; margin: 0 auto; }
     .section-header { text-align: center; margin-bottom: 48px; }
     .section-tag { font-size: 11px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px; }
     .section-title { font-size: 32px; font-weight: 800; margin: 8px 0 12px; letter-spacing: -0.5px; }
     .section-desc { color: var(--text-muted); font-size: 15px; max-width: 600px; margin: 0 auto; }
 
-    /* Grid Cards */
+    /* From Show Floor Section */
+    .always-on-section {
+      background: linear-gradient(135deg, #080f1f, #0a1428);
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      padding: 60px 24px;
+    }
+    .always-on-inner { max-width: 1140px; margin: 0 auto; }
+    .always-on-title { font-size: clamp(24px, 3vw, 40px); font-weight: 800; letter-spacing: -0.5px; margin-bottom: 12px; }
+    .always-on-subtitle { color: var(--text-muted); font-size: 16px; max-width: 660px; margin-bottom: 40px; line-height: 1.65; }
+    .capability-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+    .cap-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(2, 132, 199, 0.08); border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 8px; padding: 10px 18px;
+      font-size: 13px; font-weight: 700; color: #cbd5e1;
+      transition: all 0.2s; cursor: default;
+    }
+    .cap-chip:hover { background: rgba(2, 132, 199, 0.18); border-color: #38bdf8; color: #fff; }
+    .cap-icon { font-size: 15px; }
+
+    /* Feature Grid */
     .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
     .feature-card {
       background: var(--card-bg); border: 1px solid var(--border);
@@ -115,33 +314,53 @@
     }
     .feature-card:hover { border-color: #38bdf8; transform: translateY(-3px); }
     .card-icon {
-      width: 48px; height: 48px; border-radius: 12px; background: rgba(14, 165, 233, 0.15);
+      width: 48px; height: 48px; border-radius: 12px; background: rgba(14, 165, 233, 0.12);
       display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 18px;
     }
-    .card-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
-    .card-text { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+    .card-title { font-size: 17px; font-weight: 800; margin-bottom: 8px; }
+    .card-text { font-size: 13px; color: var(--text-muted); line-height: 1.65; }
 
-    /* Media Services Showcase */
-    .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
-    .service-card {
-      background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px;
-      overflow: hidden; transition: all 0.2s;
+    /* CTA Split */
+    .cta-split {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+      max-width: 900px; margin: 40px auto 0;
     }
-    .service-card:hover { border-color: #38bdf8; transform: translateY(-3px); }
-    .service-img { width: 100%; height: 190px; object-fit: cover; background: #1e293b; }
-    .service-body { padding: 22px; }
+    @media (max-width: 640px) { .cta-split { grid-template-columns: 1fr; } }
+    .cta-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 20px; padding: 36px; text-align: center; transition: all 0.2s;
+    }
+    .cta-card.primary-cta { border-color: rgba(2, 132, 199, 0.4); background: rgba(2, 132, 199, 0.05); }
+    .cta-card:hover { transform: translateY(-3px); }
+    .cta-card.primary-cta:hover { border-color: #0284c7; }
+    .cta-label { font-size: 10px; font-weight: 700; color: #38bdf8; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+    .cta-title { font-size: 24px; font-weight: 800; margin-bottom: 10px; }
+    .cta-desc { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.6; }
+    .btn-cta {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 13px 24px; border-radius: 10px; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; text-decoration: none; width: 100%;
+    }
+    .btn-cta-primary {
+      background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff;
+      box-shadow: 0 6px 20px rgba(2, 132, 199, 0.4);
+    }
+    .btn-cta-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(2, 132, 199, 0.55); }
+    .btn-cta-secondary { background: rgba(30, 41, 59, 0.8); border: 1px solid var(--border); color: #fff; }
+    .btn-cta-secondary:hover { background: #1e293b; border-color: #38bdf8; }
 
-    /* Before / After AI Catalog Sample */
+    /* AI Catalog Compare */
     .compare-container {
       background: var(--card-bg); border: 1px solid var(--border-accent);
       border-radius: 20px; padding: 32px; margin-top: 30px;
     }
     .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center; }
+    @media (max-width: 640px) { .compare-grid { grid-template-columns: 1fr; } }
     .compare-box {
-      background: #09121d; border: 1px solid var(--border); border-radius: 12px;
-      padding: 16px; text-align: center;
+      background: #09121d; border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px; text-align: center;
     }
-    .compare-img { width: 100%; height: 220px; object-fit: cover; border-radius: 8px; }
+    .compare-img { width: 100%; height: 200px; object-fit: cover; border-radius: 8px; }
     .compare-badge {
       display: inline-block; padding: 4px 10px; border-radius: 6px;
       font-size: 11px; font-weight: 800; margin-bottom: 10px;
@@ -154,9 +373,70 @@
       padding: 48px 36px; text-align: center; margin: 40px auto;
     }
 
+    /* Product Drawer Modal */
+    .product-modal-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(4, 8, 16, 0.88); backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .product-modal-overlay.open { opacity: 1; pointer-events: all; }
+    .product-modal {
+      background: #0d1726; border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 20px; width: 90%; max-width: 680px;
+      max-height: 85vh; overflow-y: auto; padding: 32px;
+      transform: scale(0.94); transition: transform 0.3s;
+      position: relative;
+    }
+    .product-modal-overlay.open .product-modal { transform: scale(1); }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      background: rgba(30,41,59,0.8); border: 1px solid var(--border);
+      color: #94a3b8; width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 16px; transition: all 0.2s;
+    }
+    .modal-close:hover { background: rgba(239,68,68,0.2); color: #f87171; border-color: #f87171; }
+    .modal-badge { font-size: 9px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .modal-title { font-size: 26px; font-weight: 800; margin-bottom: 4px; }
+    .modal-model { font-size: 12px; color: #64748b; margin-bottom: 16px; font-family: 'JetBrains Mono', monospace; }
+    .modal-desc { font-size: 14px; color: #94a3b8; line-height: 1.7; margin-bottom: 24px; }
+    .spec-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    .spec-table tr { border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .spec-table tr:last-child { border-bottom: none; }
+    .spec-table td { padding: 8px 0; font-size: 13px; }
+    .spec-table td:first-child { color: #64748b; width: 40%; }
+    .spec-table td:last-child { color: #f8fafc; font-weight: 600; }
+    .modal-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .modal-btn {
+      padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 7px;
+      text-decoration: none; border: none;
+    }
+    .modal-btn-primary { background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; }
+    .modal-btn-primary:hover { transform: translateY(-1px); }
+    .modal-btn-outline { background: transparent; border: 1px solid var(--border); color: #cbd5e1; }
+    .modal-btn-outline:hover { border-color: #38bdf8; color: #38bdf8; }
+
+    /* Footer */
     footer {
-      background: #05080f; border-top: 1px solid var(--border);
+      background: #04080f; border-top: 1px solid var(--border);
       padding: 40px 24px; text-align: center; color: var(--text-muted); font-size: 13px;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .overlay-left-nav { display: none; }
+      .hotspot-label { display: none; }
+      .overlay-top-bar { padding: 8px 12px; }
+      .overlay-btn { padding: 6px 10px; font-size: 11px; }
+      .nav-bar { padding: 12px 16px; }
+      .nav-links { display: none; }
+    }
+    @media (max-width: 640px) {
+      .overlay-bottom-bar { gap: 4px; }
+      .preset-img { width: 52px; height: 34px; }
+      .preset-name { font-size: 7px; }
     }
   </style>
 </head>
@@ -165,9 +445,10 @@
   <!-- Navigation -->
   <nav class="nav-bar">
     <a href="/" class="brand-logo">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      dn’a
-      <span class="dna-badge">COMMERCIAL PLATFORM</span>
+      <svg class="dna-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.5">
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+      </svg>
+      dn'a
     </a>
     <div class="nav-links">
       <a href="/demo.html" class="nav-link">3D Showcase</a>
@@ -176,39 +457,234 @@
       <a href="/leads.html" class="nav-link">Lead CRM</a>
       <a href="/builder.html" class="nav-link">Booth Builder</a>
     </div>
-    <a href="/builder.html" class="btn-nav-primary">Start My Booth →</a>
+    <a href="/production.html" class="btn-nav-primary">Build My Booth →</a>
   </nav>
 
   <!-- Hero Section -->
   <header class="hero-section">
-    <div class="hero-pill">Next-Generation Virtual Trade Show Technology</div>
+    <div class="hero-pill">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="#38bdf8"><circle cx="12" cy="12" r="10"/></svg>
+      Next-Generation Virtual Trade Show Platform
+    </div>
     <h1 class="hero-title">Your Trade Show Booth Doesn't Have to End<br><span>When the Show Ends.</span></h1>
-    <p class="hero-desc">Transform your physical exhibition stand into an interactive 3D digital showroom. Capture wholesale buyer leads, instant RFQs, and sample requests 365 days a year.</p>
-    
+    <p class="hero-desc">Transform your physical exhibition stand into an always-on 3D digital showroom. Capture wholesale buyer leads, instant RFQs, and sample requests 365 days a year.</p>
+
     <div class="hero-ctas">
       <a href="/demo.html" class="btn-hero btn-hero-primary">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         Enter 3D Showcase Demo
       </a>
       <a href="/builder.html" class="btn-hero btn-hero-secondary">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
         Build Your Digital Booth
       </a>
     </div>
 
-    <!-- Live Showroom Preview Window -->
-    <div class="hero-preview-frame">
-      <iframe src="/demo.html" class="preview-iframe" title="Interactive 3D Showroom Demo"></iframe>
-    </div>
+    <!-- Photorealistic Showcase Hero -->
+    <div class="showcase-frame-wrapper">
+      <div class="showcase-label-row">
+        <span class="showcase-label">Designed 3D Showcase — Visual Preview</span>
+        <a href="/demo.html" class="showcase-enter-btn">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Enter Interactive Showroom
+        </a>
+      </div>
+
+      <div class="showcase-frame">
+        <!-- Photorealistic Hero Image -->
+        <img
+          src="/assets/demo/dna-showcase/hero/dna_showcase_photoreal_hero.jpg"
+          alt="dn'a Industrial Innovation Showcase — Designed 3D Commercial Showroom Visual Preview"
+          class="showcase-hero-img"
+          loading="eager"
+        >
+
+        <!-- Interactive Overlay -->
+        <div class="showcase-overlay">
+
+          <!-- Top Control Bar -->
+          <div class="overlay-top-bar">
+            <div class="overlay-brand">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.5">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
+              dn'a
+              <span class="overlay-badge">Designed 3D Showcase Demo</span>
+            </div>
+            <div class="overlay-actions">
+              <a href="/demo.html?view=catalog" class="overlay-btn" onclick="openProductModal('catalog'); return false;">
+                📦 8 Products
+              </a>
+              <a href="/card.html" class="overlay-btn" target="_blank">
+                🪪 Smart Card
+              </a>
+              <a href="/demo.html?view=analytics" class="overlay-btn" onclick="openProductModal('analytics'); return false;">
+                📊 Analytics
+              </a>
+              <a href="/demo.html#rfq" class="overlay-btn overlay-btn-primary">
+                Request RFQ
+              </a>
+            </div>
+          </div>
+
+          <!-- Left Navigation -->
+          <nav class="overlay-left-nav">
+            <a href="/demo.html?preset=overview" class="nav-preset-btn active" onclick="goToShowroom('overview'); return false;">
+              <span class="nav-preset-icon">◈</span> Overview
+            </a>
+            <a href="/demo.html?preset=island" class="nav-preset-btn" onclick="goToShowroom('island'); return false;">
+              <span class="nav-preset-icon">⬡</span> Product Island
+            </a>
+            <a href="/demo.html?preset=automation" class="nav-preset-btn" onclick="goToShowroom('automation'); return false;">
+              <span class="nav-preset-icon">⚙</span> Automation Wall
+            </a>
+            <a href="/demo.html?preset=robot" class="nav-preset-btn" onclick="goToShowroom('robot'); return false;">
+              <span class="nav-preset-icon">🤖</span> Robot Cell
+            </a>
+            <a href="/demo.html?preset=lounge" class="nav-preset-btn" onclick="goToShowroom('lounge'); return false;">
+              <span class="nav-preset-icon">🛋</span> Lounge Area
+            </a>
+            <a href="/demo.html?preset=media" class="nav-preset-btn" onclick="goToShowroom('media'); return false;">
+              <span class="nav-preset-icon">🖥</span> Media Center
+            </a>
+            <a href="/demo.html?tour=auto" class="nav-preset-btn" onclick="goToShowroom('tour'); return false;">
+              <span class="nav-preset-icon">▶</span> Auto Tour
+            </a>
+          </nav>
+
+          <!-- Product Hotspots -->
+          <!-- Apex Cobot X16 — center-left upper area -->
+          <div class="product-hotspot" style="left:44%;top:30%;" onclick="openProductModal('cobot')">
+            <div class="hotspot-dot"></div>
+            <div class="hotspot-label">
+              <div class="hotspot-name">Apex Cobot X16</div>
+              <div class="hotspot-cat">Collaborative Robot</div>
+              <div class="hotspot-view">Click to View →</div>
+            </div>
+          </div>
+
+          <!-- Vector AMR 600 — front left floor -->
+          <div class="product-hotspot" style="left:36%;top:65%;" onclick="openProductModal('amr')">
+            <div class="hotspot-dot"></div>
+            <div class="hotspot-label">
+              <div class="hotspot-name">Vector AMR 600</div>
+              <div class="hotspot-cat">Autonomous Mobile Robot</div>
+              <div class="hotspot-view">Click to View →</div>
+            </div>
+          </div>
+
+          <!-- OptiScan V3 — center-right -->
+          <div class="product-hotspot" style="left:62%;top:40%;" onclick="openProductModal('optiscan')">
+            <div class="hotspot-dot"></div>
+            <div class="hotspot-label">
+              <div class="hotspot-name">OptiScan V3</div>
+              <div class="hotspot-cat">3D Inspection Camera</div>
+              <div class="hotspot-view">Click to View →</div>
+            </div>
+          </div>
+
+          <!-- FlowDrive P500 — left wall -->
+          <div class="product-hotspot" style="left:26%;top:48%;" onclick="openProductModal('flowdrive')">
+            <div class="hotspot-dot"></div>
+            <div class="hotspot-label">
+              <div class="hotspot-name">FlowDrive P500</div>
+              <div class="hotspot-cat">Smart Pump System</div>
+              <div class="hotspot-view">Click to View →</div>
+            </div>
+          </div>
+
+          <!-- EdgeCore IPC — center floor -->
+          <div class="product-hotspot" style="left:48%;top:58%;" onclick="openProductModal('edgecore')">
+            <div class="hotspot-dot"></div>
+            <div class="hotspot-label">
+              <div class="hotspot-name">EdgeCore IPC</div>
+              <div class="hotspot-cat">Industrial Edge Computer</div>
+              <div class="hotspot-view">Click to View →</div>
+            </div>
+          </div>
+
+          <!-- FlexGrip E80 — right side -->
+          <div class="product-hotspot" style="left:70%;top:47%;" onclick="openProductModal('flexgrip')">
+            <div class="hotspot-dot"></div>
+            <div class="hotspot-label">
+              <div class="hotspot-name">FlexGrip E80</div>
+              <div class="hotspot-cat">Adaptive Servo Gripper</div>
+              <div class="hotspot-view">Click to View →</div>
+            </div>
+          </div>
+
+          <!-- LaserCell LX — lower right -->
+          <div class="product-hotspot" style="left:65%;top:66%;" onclick="openProductModal('lasercell')">
+            <div class="hotspot-dot"></div>
+            <div class="hotspot-label">
+              <div class="hotspot-name">LaserCell LX</div>
+              <div class="hotspot-cat">Laser Processing Cell</div>
+              <div class="hotspot-view">Click to View →</div>
+            </div>
+          </div>
+
+          <!-- Bottom Bar — Camera Preset Thumbnails -->
+          <div class="overlay-bottom-bar">
+            <a href="/demo.html?preset=overview" class="preset-thumb active" onclick="goToShowroom('overview'); return false;">
+              <div class="preset-img">🏛</div>
+              <span class="preset-name">Overview</span>
+            </a>
+            <a href="/demo.html?preset=island" class="preset-thumb" onclick="goToShowroom('island'); return false;">
+              <div class="preset-img">⬡</div>
+              <span class="preset-name">Product Island</span>
+            </a>
+            <a href="/demo.html?preset=automation" class="preset-thumb" onclick="goToShowroom('automation'); return false;">
+              <div class="preset-img">⚙</div>
+              <span class="preset-name">Automation Wall</span>
+            </a>
+            <a href="/demo.html?preset=robot" class="preset-thumb" onclick="goToShowroom('robot'); return false;">
+              <div class="preset-img">🤖</div>
+              <span class="preset-name">Robot Cell</span>
+            </a>
+            <a href="/demo.html?preset=lounge" class="preset-thumb" onclick="goToShowroom('lounge'); return false;">
+              <div class="preset-img">🛋</div>
+              <span class="preset-name">Lounge Area</span>
+            </a>
+            <a href="/demo.html" class="preset-thumb" onclick="goToShowroom('reset'); return false;">
+              <div class="preset-img" style="font-size:16px;">↺</div>
+              <span class="preset-name">Reset View</span>
+            </a>
+          </div>
+
+          <!-- Briefcase Chip -->
+          <a href="/demo.html#briefcase" class="briefcase-chip">
+            🧳 Briefcase <span id="briefcase-count" style="background:#0284c7;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;">0</span>
+          </a>
+        </div><!-- /overlay -->
+      </div><!-- /showcase-frame -->
+    </div><!-- /showcase-frame-wrapper -->
   </header>
+
+  <!-- From Show Floor to Always-On Showroom -->
+  <div class="always-on-section">
+    <div class="always-on-inner">
+      <div class="section-tag" style="margin-bottom:12px;">Always-On Digital Showroom</div>
+      <h2 class="always-on-title">From Show Floor to<br><span style="color:#38bdf8;">Always-On Showroom</span></h2>
+      <p class="always-on-subtitle">Your physical booth may close after a few days. Your dn'a showroom keeps your products, catalogs, and sales team available to buyers long after the event — capturing demand 24/7.</p>
+      <div class="capability-chips">
+        <span class="cap-chip"><span class="cap-icon">📦</span> Products</span>
+        <span class="cap-chip"><span class="cap-icon">📋</span> Catalog</span>
+        <span class="cap-chip"><span class="cap-icon">📱</span> Smart QR</span>
+        <span class="cap-chip"><span class="cap-icon">📥</span> Leads</span>
+        <span class="cap-chip"><span class="cap-icon">📝</span> RFQ</span>
+        <span class="cap-chip"><span class="cap-icon">📅</span> Meetings</span>
+        <span class="cap-chip"><span class="cap-icon">📊</span> Analytics</span>
+      </div>
+    </div>
+  </div>
 
   <!-- What Buyers Can Do -->
   <section class="section">
     <div class="section-header">
       <div class="section-tag">Frictionless Buyer Experience</div>
       <h2 class="section-title">What Trade Buyers Can Do in Your Booth</h2>
-      <p class="section-desc">Designed specifically for commercial wholesale buyers, architects, and procurement managers.</p>
+      <p class="section-desc">Designed for commercial wholesale buyers, architects, and procurement managers.</p>
     </div>
-
     <div class="feature-grid">
       <div class="feature-card">
         <div class="card-icon">◈</div>
@@ -233,50 +709,222 @@
     </div>
   </section>
 
-  <!-- AI Catalog Conversion Showcase (Before / After) -->
-  <section class="section">
+  <!-- BUILD IT FOR ME / CREATE IT MYSELF -->
+  <section class="section" style="padding-top:0;">
     <div class="section-header">
-      <div class="section-tag">Media Services Innovation</div>
-      <h2 class="section-title">AI Catalog Conversion & Image Cleanup</h2>
+      <div class="section-tag">Choose Your Path</div>
+      <h2 class="section-title">Ready to Build Your Digital Showroom?</h2>
+      <p class="section-desc">Whether you need full-service production or prefer to build it yourself, dn'a has a path for you.</p>
+    </div>
+    <div class="cta-split">
+      <div class="cta-card primary-cta">
+        <div class="cta-label">🏆 Recommended</div>
+        <h3 class="cta-title">BUILD IT FOR ME</h3>
+        <div class="cta-label" style="color:#10b981;">Managed Production — Available Now</div>
+        <p class="cta-desc">Our team handles 3D production, media services, content setup, and publishing. You get a sales-grade showroom without lifting a finger.</p>
+        <a href="/production.html" class="btn-cta btn-cta-primary">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          Request Managed Production
+        </a>
+      </div>
+      <div class="cta-card">
+        <div class="cta-label">🛠 DIY</div>
+        <h3 class="cta-title">CREATE IT MYSELF</h3>
+        <div class="cta-label" style="color:#f59e0b;">DIY Booth Builder — Beta</div>
+        <p class="cta-desc">Use our self-service wizard to upload your products, configure your booth, and publish your digital showroom at your own pace.</p>
+        <a href="/builder.html" class="btn-cta btn-cta-secondary">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
+          Start Building (Beta)
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI Catalog Conversion -->
+  <section class="section" style="padding-top:0;">
+    <div class="section-header">
+      <div class="section-tag">Media Services</div>
+      <h2 class="section-title">AI Catalog Conversion &amp; Image Cleanup</h2>
       <p class="section-desc">Demonstration of our background cleanup and studio catalog presentation service.</p>
     </div>
-
     <div class="compare-container">
       <div class="compare-grid">
         <div class="compare-box">
-          <span class="compare-badge" style="background:rgba(239,68,68,0.2); color:#fca5a5;">BEFORE — RAW BOOTH CAPTURE</span>
+          <span class="compare-badge" style="background:rgba(239,68,68,0.15);color:#fca5a5;">BEFORE — RAW BOOTH CAPTURE</span>
           <img src="https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=600" alt="Raw trade show capture" class="compare-img">
-          <p style="font-size:12px; color:var(--text-muted); margin-top:10px;">Distracting trade show background, convention ceiling lights, and crowded aisles.</p>
+          <p style="font-size:12px;color:var(--text-muted);margin-top:10px;">Distracting trade show background, convention ceiling lights, and crowded aisles.</p>
         </div>
         <div class="compare-box">
-          <span class="compare-badge" style="background:rgba(16,185,129,0.2); color:#6ee7b7;">AFTER — CLEAN STUDIO LINESHEET</span>
+          <span class="compare-badge" style="background:rgba(16,185,129,0.15);color:#6ee7b7;">AFTER — CLEAN STUDIO LINESHEET</span>
           <img src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600" alt="Clean studio product" class="compare-img">
-          <p style="font-size:12px; color:var(--text-muted); margin-top:10px;">Isolated commercial product with clean studio lighting, ready for digital lookbooks and RFQ sheets.</p>
+          <p style="font-size:12px;color:var(--text-muted);margin-top:10px;">Isolated commercial product with clean studio lighting, ready for digital lookbooks and RFQ sheets.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Post-Show Sales Section -->
-  <section class="section">
+  <!-- Post-Show ROI Section -->
+  <section class="section" style="padding-top:0;">
     <div class="post-show-banner">
       <div class="section-tag" style="color:#6ee7b7;">POST-SHOW ROI ENGINE</div>
-      <h2 style="font-size:36px; font-weight:800; margin:10px 0 16px;">THE SHOW IS OVER.<br><span style="color:#38bdf8;">YOUR SHOWROOM ISN'T.</span></h2>
-      <p style="color:var(--text-muted); max-width:650px; margin:0 auto 28px; font-size:16px;">
-        Trade shows last 4 days. dn’a keeps your digital booth open to buyers worldwide for 365 days, continuing to capture leads and close orders long after physical tear-down.
+      <h2 style="font-size:clamp(24px,3vw,36px);font-weight:800;margin:10px 0 16px;">THE SHOW IS OVER.<br><span style="color:#38bdf8;">YOUR SHOWROOM ISN'T.</span></h2>
+      <p style="color:var(--text-muted);max-width:640px;margin:0 auto 28px;font-size:16px;line-height:1.65;">
+        Trade shows last 4 days. dn'a keeps your digital booth open to buyers worldwide for 365 days, continuing to capture leads and close orders long after physical tear-down.
       </p>
-      <div style="display:flex; gap:14px; justify-content:center;">
+      <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
         <a href="/leads.html" class="btn-hero btn-hero-primary">View Exhibitor Lead CRM →</a>
-        <a href="/builder.html" class="btn-hero btn-hero-secondary">Create My Booth</a>
+        <a href="/demo.html" class="btn-hero btn-hero-secondary">Explore the 3D Showroom</a>
       </div>
     </div>
   </section>
 
   <!-- Footer -->
   <footer>
-    <p>© 2026 dn’a — Virtual Trade Show Commercial Platform. All rights reserved.</p>
-    <p style="font-size:11px; margin-top:6px; color:#64748b;">Enterprise 3D Digital Showrooms • Smart Exhibitor Passes • Realtime Lead Intake</p>
+    <p>© 2026 dn'a — Virtual Trade Show Commercial Platform. All rights reserved.</p>
+    <p style="font-size:11px;margin-top:6px;color:#64748b;">Enterprise 3D Digital Showrooms • Smart Exhibitor Passes • Realtime Lead Intake</p>
+    <p style="font-size:10px;margin-top:10px;color:#475569;">The dn'a Industrial Innovation Showcase shown above is a Designed 3D commercial visualization concept. Not a photograph of a real physical booth.</p>
   </footer>
 
+  <!-- Product Detail Modal -->
+  <div class="product-modal-overlay" id="productModal" onclick="closeModal(event)">
+    <div class="product-modal" id="productModalContent">
+      <button class="modal-close" onclick="closeProductModal()">✕</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    // Product data for modals
+    const PRODUCTS = {
+      cobot: {
+        name: 'Apex Cobot X16', model: 'APX-CB-16', cat: 'Collaborative Robot',
+        desc: 'A 6-axis collaborative robot arm engineered for precision assembly, pick-and-place, and machine-tending tasks in shared human-robot workspaces. Features integrated force-torque sensing and ISO TS 15066 compliance.',
+        specs: [
+          ['Payload', '16.0 kg'], ['Reach', '1300 mm'], ['Repeatability', '±0.025 mm'],
+          ['Axes', '6'], ['IP Rating', 'IP67'], ['Power', '480 W'],
+          ['Controller', 'EtherCAT / PROFINET'], ['Price Range', '$38,500 – $42,000']
+        ],
+        cta: 'Book Application Review',
+        pdf: '/assets/specs/Apex-Cobot-X16-Datasheet.pdf'
+      },
+      amr: {
+        name: 'Vector AMR 600', model: 'VCT-AMR-600', cat: 'Autonomous Mobile Robot',
+        desc: 'Fleet-ready autonomous mobile robot platform with multi-layer SLAM navigation, 360° obstacle detection, and on-board fleet management. Designed for warehouse logistics and intralogistics in dynamic environments.',
+        specs: [
+          ['Payload', '600 kg'], ['Max Speed', '2.0 m/s'], ['Navigation', 'Laser SLAM'],
+          ['Runtime', '10 hrs'], ['Charging', 'Auto-dock'], ['Safety', 'ISO 3691-4'],
+          ['Comm', 'Wi-Fi 6 / 5G ready'], ['Price Range', '$34,000 – $39,500']
+        ],
+        cta: 'Request Technical Consultation',
+        pdf: '/assets/specs/Vector-AMR-600-Datasheet.pdf'
+      },
+      optiscan: {
+        name: 'OptiScan V3', model: 'OPT-SCN-V3', cat: '3D Inspection Camera',
+        desc: 'Ultra-high-precision blue LED structured light 3D scanner for inline quality inspection. Captures full-field surface data at 140 fps for real-time defect detection and dimensional measurement.',
+        specs: [
+          ['Accuracy', '±3.5 μm'], ['Frame Rate', '140 fps'], ['Light', 'Blue LED Structured'],
+          ['Field of View', '120 × 90 mm'], ['Resolution', '3.2 MP'], ['Interface', 'GigE Vision'],
+          ['Temp Range', '0 – 45 °C'], ['Price Range', '$19,800 – $24,500']
+        ],
+        cta: 'Request In-Line Evaluation',
+        pdf: '/assets/specs/OptiScan-V3-Datasheet.pdf'
+      },
+      flexgrip: {
+        name: 'FlexGrip E80', model: 'FLX-GRP-80', cat: 'Adaptive Servo Gripper',
+        desc: 'Electrically-actuated adaptive 2-finger gripper with programmable stroke and grip force. Compatible with all major robot brands via universal flange. Ideal for variable-geometry parts handling.',
+        specs: [
+          ['Max Grip Force', '220 N'], ['Stroke', '80 mm'], ['Finger Speed', '150 mm/s'],
+          ['Repeatability', '±0.02 mm'], ['Bus', 'EtherCAT / IO-Link'], ['Weight', '0.85 kg'],
+          ['Flange', 'ISO 9409-1 compatible'], ['Price Range', '$3,400 – $4,200']
+        ],
+        cta: 'Request Sample Unit',
+        pdf: '/assets/specs/FlexGrip-E80-Datasheet.pdf'
+      },
+      flowdrive: {
+        name: 'FlowDrive P500', model: 'FLW-DRV-500', cat: 'Smart Pump System',
+        desc: 'Intelligent centrifugal pump system with integrated variable-speed drive, IoT connectivity, and predictive maintenance. Optimizes energy consumption across HVAC, process cooling, and water treatment applications.',
+        specs: [
+          ['Flow Rate', '280 m³/h'], ['Max Pressure', '16 bar'], ['Motor', 'IE4 Efficiency'],
+          ['Drive', 'Integrated VFD'], ['Protocol', 'MODBUS / BACnet'], ['Display', '4" Touch HMI'],
+          ['Ambient', '-15 to 55 °C'], ['Price Range', '$16,500 – $21,000']
+        ],
+        cta: 'Request Engineering Consultation',
+        pdf: '/assets/specs/Apex-Cobot-X16-Datasheet.pdf'
+      },
+      edgecore: {
+        name: 'EdgeCore IPC', model: 'EDG-IPC-30', cat: 'Industrial Edge Computer',
+        desc: 'Fanless ruggedized industrial PC with integrated AI accelerator NPU for real-time machine vision and predictive analytics at the edge. Designed for 24/7 operation in harsh factory environments.',
+        specs: [
+          ['CPU', '12-Core Industrial i7'], ['NPU', '32 TOPS'], ['RAM', '64 GB ECC'],
+          ['Storage', '2× M.2 NVMe RAID'], ['Temp', '-25 to 70 °C'], ['I/O', '4× GigE, 8× USB 3.2'],
+          ['Ingress', 'IP65'], ['Price Range', '$2,400 – $3,100']
+        ],
+        cta: 'Request Evaluation Unit',
+        pdf: '/assets/specs/OptiScan-V3-Datasheet.pdf'
+      },
+      synchrodrive: {
+        name: 'SynchroDrive VFD', model: 'SNC-VFD-90', cat: 'Variable Frequency Drive',
+        desc: 'Ultra-efficient industrial variable frequency drive with embedded functional safety (STO/SS1/SLS) and real-time EtherCAT interface. Engineered for precise servo-class motor control.',
+        specs: [
+          ['Power Range', '0.75 – 90 kW'], ['Efficiency', '98.9%'], ['Safety', 'SIL 2 / PLd'],
+          ['Bus', 'EtherCAT / PROFINET'], ['Display', 'OLED Parameter Panel'], ['Protection', 'IP20/IP55'],
+          ['Ambient', '-10 to 50 °C'], ['Price Range', '$1,850 – $2,600']
+        ],
+        cta: 'Request Evaluation Unit',
+        pdf: '/assets/specs/Vector-AMR-600-Datasheet.pdf'
+      },
+      lasercell: {
+        name: 'LaserCell LX', model: 'LSR-CEL-LX', cat: 'Laser Processing Cell',
+        desc: 'Fully enclosed Class-1 laser processing cell with 3 kW fiber source, dual-rotary indexing table, and integrated fume extraction. Supports cutting, welding, and marking in a single compact footprint.',
+        specs: [
+          ['Laser Power', '3,000 W'], ['Wavelength', '1,064 nm Fiber'], ['Work Area', '800 × 600 mm'],
+          ['Indexing', 'Dual Rotary'], ['Fume Extraction', 'Integrated HEPA'], ['Safety', 'Class 1 Enclosure'],
+          ['Control', 'CNC + G-Code'], ['Price Range', '$128,000 – $155,000']
+        ],
+        cta: 'Request Technical Consultation',
+        pdf: '/assets/specs/FlexGrip-E80-Datasheet.pdf'
+      },
+      catalog: { _redirect: '/demo.html?view=catalog' },
+      analytics: { _redirect: '/demo.html?view=analytics' }
+    };
+
+    function openProductModal(id) {
+      const p = PRODUCTS[id];
+      if (!p) return;
+      if (p._redirect) { window.location.href = p._redirect; return; }
+
+      const specs = p.specs.map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+      document.getElementById('modalBody').innerHTML = `
+        <div class="modal-badge">DEMO PRODUCT — ${p.cat}</div>
+        <div class="modal-title">${p.name}</div>
+        <div class="modal-model">${p.model}</div>
+        <p class="modal-desc">${p.desc}</p>
+        <table class="spec-table"><tbody>${specs}</tbody></table>
+        <div class="modal-actions">
+          <a href="/demo.html?product=${id}" class="modal-btn modal-btn-primary">
+            ▶ Enter 3D Showroom
+          </a>
+          <a href="${p.pdf}" download class="modal-btn modal-btn-outline">⬇ Download Spec PDF</a>
+          <a href="/demo.html#rfq?product=${p.name}" class="modal-btn modal-btn-outline">📝 Request RFQ</a>
+          <a href="/demo.html#meeting" class="modal-btn modal-btn-outline">📅 Book Meeting</a>
+        </div>`;
+      document.getElementById('productModal').classList.add('open');
+    }
+
+    function closeProductModal() {
+      document.getElementById('productModal').classList.remove('open');
+    }
+
+    function closeModal(e) {
+      if (e.target === document.getElementById('productModal')) closeProductModal();
+    }
+
+    function goToShowroom(preset) {
+      window.location.href = `/demo.html?preset=${preset}`;
+    }
+
+    // Escape key to close modal
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeProductModal(); });
+  </script>
 </body>
 </html>

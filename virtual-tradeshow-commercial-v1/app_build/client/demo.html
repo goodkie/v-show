@@ -204,18 +204,75 @@
     }
     .catalog-card:hover { border-color: #38bdf8; transform: translateY(-2px); }
 
-    /* Intro Overlay / Loader */
+    /* Intro Overlay / Loading Poster */
     .intro-overlay {
       position: absolute; inset: 0; z-index: 100;
-      background: #070e17; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; transition: opacity 0.6s ease;
+      background: #050a12; display: flex; flex-direction: column;
+      align-items: stretch; justify-content: stretch;
+      transition: opacity 0.8s ease;
     }
     .intro-overlay.fade-out { opacity: 0; pointer-events: none; }
-    .intro-spinner {
-      width: 48px; height: 48px; border: 3px solid rgba(56, 189, 248, 0.2);
-      border-top-color: #38bdf8; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;
+    .intro-poster-img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; object-position: center;
+    }
+    .intro-poster-scrim {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(5,10,18,0.92) 0%, rgba(5,10,18,0.25) 60%, rgba(5,10,18,0.4) 100%);
+    }
+    .intro-status-bar {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 28px 32px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .intro-status-text {
+      font-size: 13px; color: #94a3b8; font-weight: 600; letter-spacing: 0.3px;
+    }
+    .intro-progress-track {
+      width: 220px; height: 2px; background: rgba(255,255,255,0.12); border-radius: 2px; overflow: hidden;
+    }
+    .intro-progress-fill {
+      height: 100%; background: linear-gradient(90deg, #0284c7, #38bdf8);
+      border-radius: 2px; width: 0%; transition: width 0.5s ease;
+    }
+    .intro-brand-label {
+      font-size: 11px; font-weight: 700; color: #38bdf8;
+      letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* WebGL Fallback */
+    .webgl-fallback {
+      position: absolute; inset: 0; z-index: 90;
+      display: none; flex-direction: column; align-items: stretch;
+    }
+    .webgl-fallback.visible { display: flex; }
+    .fallback-img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; object-position: center;
+    }
+    .fallback-scrim {
+      position: absolute; inset: 0;
+      background: rgba(5,10,18,0.65);
+    }
+    .fallback-content {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px; padding: 24px;
+    }
+    .fallback-title {
+      font-size: 18px; font-weight: 800; color: #fff; text-align: center;
+    }
+    .fallback-note {
+      font-size: 13px; color: #94a3b8; text-align: center; max-width: 380px; line-height: 1.6;
+    }
+    .fallback-actions {
+      display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 8px;
+    }
+    .fallback-btn {
+      padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .fallback-btn-primary { background: linear-gradient(135deg,#0284c7,#2563eb); color: #fff; border: none; }
+    .fallback-btn-outline { background: rgba(15,23,42,0.8); border: 1px solid rgba(56,189,248,0.4); color: #38bdf8; }
 
     @media (max-width: 768px) {
       .top-bar { padding: 10px 14px; }
@@ -230,11 +287,37 @@
 </head>
 <body>
   <div class="app">
-    <!-- Intro Loader -->
+    <!-- Loading Poster (Photorealistic Hero) -->
     <div id="intro-loader" class="intro-overlay">
-      <div class="intro-spinner"></div>
-      <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 6px; color:#38bdf8;">dn’a INDUSTRIAL INNOVATION SHOWCASE</h2>
-      <p style="color: #94a3b8; font-size: 13px;">Loading Sales-Grade 3D Digital Showroom...</p>
+      <img src="/assets/demo/dna-showcase/hero/dna_showcase_photoreal_hero.jpg"
+           alt="dn'a Industrial Innovation Showcase — Loading"
+           class="intro-poster-img">
+      <div class="intro-poster-scrim"></div>
+      <div class="intro-status-bar">
+        <div class="intro-brand-label">dn'a — Industrial Innovation Showcase</div>
+        <div id="intro-status-text" class="intro-status-text">Preparing Interactive Showroom…</div>
+        <div class="intro-progress-track">
+          <div id="intro-progress-fill" class="intro-progress-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WebGL Failure Fallback -->
+    <div id="webgl-fallback" class="webgl-fallback">
+      <img src="/assets/demo/dna-showcase/hero/dna_showcase_photoreal_hero.jpg"
+           alt="dn'a Industrial Innovation Showcase" class="fallback-img">
+      <div class="fallback-scrim"></div>
+      <div class="fallback-content">
+        <div class="intro-brand-label">dn'a — Designed 3D Showcase</div>
+        <div class="fallback-title">Interactive 3D Unavailable</div>
+        <div class="fallback-note">Your device may not support WebGL. All commercial features remain available.</div>
+        <div class="fallback-actions">
+          <a href="#" onclick="openPanel('catalog'); document.getElementById('webgl-fallback').classList.remove('visible'); return false;" class="fallback-btn fallback-btn-primary">📦 View 8 Products</a>
+          <a href="/card.html" target="_blank" class="fallback-btn fallback-btn-outline">🪪 Smart Card</a>
+          <a href="#" onclick="openPanel('rfq'); document.getElementById('webgl-fallback').classList.remove('visible'); return false;" class="fallback-btn fallback-btn-outline">📝 Request RFQ</a>
+          <a href="#" onclick="openPanel('meeting'); document.getElementById('webgl-fallback').classList.remove('visible'); return false;" class="fallback-btn fallback-btn-outline">📅 Book Meeting</a>
+        </div>
+      </div>
     </div>
 
     <!-- 3D Canvas Stage -->
@@ -260,14 +343,15 @@
       </div>
     </header>
 
-    <!-- Left Rail -->
-    <nav class="rail-nav">
-      <button class="rail-btn" title="Flagship Products" onclick="openPanel('catalog')">◈</button>
-      <button class="rail-btn" title="Digital Lookbook" onclick="openPanel('lookbook')">▤</button>
-      <button class="rail-btn" title="Smart Card" onclick="openPanel('card')">📱</button>
-      <button class="rail-btn" title="Product QR Pass" onclick="window.open('/qr.html', '_blank')">▦</button>
-      <button class="rail-btn" title="Book Consultation" onclick="openPanel('meeting')">📅</button>
-      <button class="rail-btn" title="Auto Tour" id="btn-tour" onclick="toggleAutoTour()">▶</button>
+    <!-- Left Side Navigation Rail (full labels) -->
+    <nav class="rail-nav" style="top:74px; gap:5px;">
+      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Overview" onclick="setPreset('OVERVIEW')">◈ <span style="font-size:11px;">Overview</span></button>
+      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Product Island" onclick="setPreset('ISLAND')">⬡ <span style="font-size:11px;">Product Island</span></button>
+      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Automation Wall" onclick="setPreset('AUTOMATION')">⚙ <span style="font-size:11px;">Automation Wall</span></button>
+      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Robot Cell" onclick="setPreset('ROBOT')">🤖 <span style="font-size:11px;">Robot Cell</span></button>
+      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Lounge Area" onclick="setPreset('LOUNGE')">🛋 <span style="font-size:11px;">Lounge Area</span></button>
+      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Media Center" onclick="setPreset('MEDIA')">🖥 <span style="font-size:11px;">Media Center</span></button>
+      <button class="rail-btn active" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" id="btn-tour" title="Auto Tour" onclick="toggleAutoTour()">▶ <span style="font-size:11px;">Auto Tour</span></button>
     </nav>
 
     <!-- Bottom HUD Presets -->
@@ -277,6 +361,7 @@
       <button class="hud-btn" onclick="setPreset('AUTOMATION')">Automation Wall</button>
       <button class="hud-btn" onclick="setPreset('ROBOT')">Robot Cell</button>
       <button class="hud-btn" onclick="setPreset('LOUNGE')">Lounge</button>
+      <button class="hud-btn" onclick="setPreset('MEDIA')">Media Center</button>
       <button class="hud-btn" onclick="setPreset('RESET')">Reset View</button>
     </div>
 
@@ -500,56 +585,121 @@
 
     // Camera preset coordinates
     const CAMERA_PRESETS = {
-      OVERVIEW: { pos: { x: 9.5, y: 6.2, z: 12.0 }, target: { x: 0, y: 1.4, z: -1.0 } },
-      ISLAND: { pos: { x: -2.0, y: 2.8, z: 2.5 }, target: { x: -2.5, y: 1.2, z: -1.2 } },
+      OVERVIEW:   { pos: { x: 9.5, y: 6.2, z: 12.0 }, target: { x: 0, y: 1.4, z: -1.0 } },
+      ISLAND:     { pos: { x: -2.0, y: 2.8, z: 2.5 }, target: { x: -2.5, y: 1.2, z: -1.2 } },
       AUTOMATION: { pos: { x: -1.0, y: 2.6, z: -0.5 }, target: { x: -1.3, y: 1.6, z: -3.2 } },
-      ROBOT: { pos: { x: 2.5, y: 3.0, z: 0.5 }, target: { x: 2.6, y: 1.5, z: -3.2 } },
-      LOUNGE: { pos: { x: 5.5, y: 3.2, z: 5.0 }, target: { x: 4.5, y: 1.0, z: 2.2 } },
-      RESET: { pos: { x: 9.5, y: 6.2, z: 12.0 }, target: { x: 0, y: 1.4, z: -1.0 } }
+      ROBOT:      { pos: { x: 2.5, y: 3.0, z: 0.5 }, target: { x: 2.6, y: 1.5, z: -3.2 } },
+      LOUNGE:     { pos: { x: 5.5, y: 3.2, z: 5.0 }, target: { x: 4.5, y: 1.0, z: 2.2 } },
+      MEDIA:      { pos: { x: -3.5, y: 3.0, z: 1.5 }, target: { x: -4.5, y: 2.5, z: -5.6 } },
+      RESET:      { pos: { x: 9.5, y: 6.2, z: 12.0 }, target: { x: 0, y: 1.4, z: -1.0 } }
     };
 
     // ── 2. Three.js Showroom Initialization ──
-    function initShowroom() {
-      const host = document.getElementById('stage');
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x070e17);
-      scene.fog = new THREE.FogExp2(0x070e17, 0.025);
-
-      camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100);
-      camera.position.set(16, 12, 20); // Starting far for opening animation
-
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
-      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-      renderer.setSize(innerWidth, innerHeight);
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.15;
-      host.appendChild(renderer.domElement);
-
-      controls = new THREE.OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.05;
-      controls.target.set(0, 1.4, -1.0);
-      controls.minDistance = 3.0;
-      controls.maxDistance = 24.0;
-      controls.maxPolarAngle = Math.PI / 2.05;
-
-      setupLighting();
-      buildShowroomArchitecture();
-      buildAllProductModels();
-      createHotspotTags();
-
-      // Opening Cinematic Fly-in
-      setTimeout(() => {
-        document.getElementById('intro-loader').classList.add('fade-out');
-        tweenCamera(CAMERA_PRESETS.OVERVIEW.pos, CAMERA_PRESETS.OVERVIEW.target, 2200);
-      }, 400);
-
-      window.addEventListener('resize', handleResize);
-      renderer.domElement.addEventListener('pointerdown', handleSceneClick);
-      requestAnimationFrame(renderLoop);
+    // ── 2. Three.js Showroom Initialization ──
+    function setLoadingStatus(text, pct) {
+      const s = document.getElementById('intro-status-text');
+      const f = document.getElementById('intro-progress-fill');
+      if (s) s.textContent = text;
+      if (f) f.style.width = pct + '%';
     }
+
+    function showWebGLFallback() {
+      const overlay = document.getElementById('intro-loader');
+      if (overlay) { overlay.classList.add('fade-out'); setTimeout(() => overlay.remove(), 900); }
+      document.getElementById('webgl-fallback').classList.add('visible');
+    }
+
+    function initShowroom() {
+      try {
+        setLoadingStatus('Loading Environment…', 20);
+        const host = document.getElementById('stage');
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x070e17);
+        scene.fog = new THREE.FogExp2(0x070e17, 0.025);
+
+        camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100);
+        camera.position.set(16, 12, 20);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+        if (!renderer.getContext()) { showWebGLFallback(); return; }
+        renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+        renderer.setSize(innerWidth, innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.15;
+        try { renderer.outputColorSpace = THREE.SRGBColorSpace; } catch(e) { renderer.outputEncoding = 3001; }
+        host.appendChild(renderer.domElement);
+
+        // GPU context lost handler
+        renderer.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); showWebGLFallback(); });
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 1.4, -1.0);
+        controls.minDistance = 3.0;
+        controls.maxDistance = 24.0;
+        controls.maxPolarAngle = Math.PI / 2.05;
+        // User interaction interrupts auto tour
+        controls.addEventListener('start', () => {
+          if (autoTour) { autoTour = false; clearTimeout(autoTourTimer); const b = document.getElementById('btn-tour'); if(b) b.classList.remove('active'); }
+        });
+
+        setLoadingStatus('Loading Environment…', 45);
+        setupLighting();
+        buildShowroomArchitecture();
+
+        setLoadingStatus('Loading Products…', 75);
+        buildAllProductModels();
+        createHotspotTags();
+
+        setLoadingStatus('Ready', 100);
+
+        // Opening Cinematic Fly-in → then apply URL params
+        setTimeout(() => {
+          const loader = document.getElementById('intro-loader');
+          if (loader) { loader.classList.add('fade-out'); setTimeout(() => { try { loader.remove(); } catch(e) {} }, 900); }
+
+          const params = new URLSearchParams(window.location.search);
+          const presetParam = (params.get('preset') || '').toUpperCase();
+          const productParam = params.get('product');
+          const viewParam = params.get('view');
+          const tourParam = params.get('tour');
+
+          if (presetParam && CAMERA_PRESETS[presetParam]) {
+            tweenCamera(CAMERA_PRESETS[presetParam].pos, CAMERA_PRESETS[presetParam].target, 2000);
+            highlightHudBtn(presetParam);
+          } else {
+            tweenCamera(CAMERA_PRESETS.OVERVIEW.pos, CAMERA_PRESETS.OVERVIEW.target, 2200);
+          }
+
+          if (productParam) {
+            const p = PRODUCTS.find(x => x.name.toLowerCase().replace(/\s/g,'').includes(productParam.toLowerCase().replace(/\s/g,'')) || x.id.toLowerCase().includes(productParam.toLowerCase()));
+            if (p) setTimeout(() => openProductDetail(p), 2500);
+          }
+          if (viewParam === 'catalog') setTimeout(() => openPanel('catalog'), 800);
+          if (viewParam === 'analytics') setTimeout(() => openPanel('analytics'), 800);
+          if (window.location.hash === '#rfq' || viewParam === 'rfq') setTimeout(() => openPanel('rfq'), 800);
+          if (tourParam === 'auto') setTimeout(() => { autoTour = false; toggleAutoTour(); }, 2600);
+        }, 350);
+
+        window.addEventListener('resize', handleResize);
+        renderer.domElement.addEventListener('pointerdown', handleSceneClick);
+        requestAnimationFrame(renderLoop);
+
+      } catch(err) {
+        console.error('Showroom init error:', err);
+        showWebGLFallback();
+      }
+    }
+
+    function highlightHudBtn(presetKey) {
+      document.querySelectorAll('.hud-btn').forEach(b => {
+        b.classList.toggle('active', b.textContent.toUpperCase().replace(/\s/g,'') === presetKey.replace(/\s/g,'') || b.onclick?.toString().includes(presetKey));
+      });
+    }
+
 
     function setupLighting() {
       // Ambient warm-neutral exhibition fill
@@ -917,9 +1067,29 @@
       requestAnimationFrame(updateTween);
     }
 
+    let autoTourTimer = null;
+    const AUTO_TOUR_SEQUENCE = ['OVERVIEW', 'ISLAND', 'AUTOMATION', 'ROBOT', 'LOUNGE', 'MEDIA'];
+    let autoTourIndex = 0;
+
     function toggleAutoTour() {
       autoTour = !autoTour;
-      document.getElementById('btn-tour').classList.toggle('active', autoTour);
+      const btn = document.getElementById('btn-tour');
+      if (btn) btn.classList.toggle('active', autoTour);
+      if (autoTour) {
+        autoTourIndex = 0;
+        runAutoTourStep();
+      } else {
+        clearTimeout(autoTourTimer);
+      }
+    }
+
+    function runAutoTourStep() {
+      if (!autoTour) return;
+      const key = AUTO_TOUR_SEQUENCE[autoTourIndex % AUTO_TOUR_SEQUENCE.length];
+      const preset = CAMERA_PRESETS[key];
+      tweenCamera(preset.pos, preset.target, 1800);
+      autoTourIndex++;
+      autoTourTimer = setTimeout(runAutoTourStep, 4500);
     }
 
     // ── 6. Drawer Controller & Sales-Grade Content ──
@@ -1263,11 +1433,6 @@
 
     function renderLoop() {
       controls.update();
-      if (autoTour) {
-        scene.rotation.y += 0.0015;
-      } else {
-        scene.rotation.y = 0;
-      }
       renderer.render(scene, camera);
       updateHotspots();
       requestAnimationFrame(renderLoop);
