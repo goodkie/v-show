@@ -946,9 +946,18 @@ async function init() {
       focalAdjustment:         1.0,
       gpuAcceleratedSort:      true,
       halfPrecisionCovariancesOnGPU: true,
+      cameraUp:                [0, 1, 0],
+      initialCameraPosition:   WAYPOINTS[0].pos,
+      initialCameraLookAt:     WAYPOINTS[0].target,
     });
 
-    setProgress(12, '3DGS 파일 스트리밍 시작...');
+    viewer.start();
+    setProgress(30, '3DGS 실시간 렌더러 가동...');
+
+    // 로딩 안전 타이머 (최대 3.5초 후 3D 공간 표시)
+    setTimeout(() => {
+      hideLoading();
+    }, 3500);
 
     /* ── 순차 URL 시도 (폴백 포함) ── */
     let loaded = false;
@@ -956,11 +965,14 @@ async function init() {
 
     for (let i = 0; i < SPLAT_URLS.length; i++) {
       const url = SPLAT_URLS[i];
-      setProgress(simPct, `씬 파일 연결 중 (${i+1}/${SPLAT_URLS.length})...`);
+      setProgress(50, `3DGS 씬 스트리밍 중 (${i+1}/${SPLAT_URLS.length})...`);
       try {
         await viewer.addSplatScene(url, {
           splatAlphaRemovalThreshold: qualityMode === 'ultra' ? 1 : 5,
           progressiveLoad: true,
+          onProgress: (percent, percentLabel) => {
+            setProgress(Math.max(50, Math.min(99, percent)), `Gaussian Splat 디코딩 (${percentLabel || Math.round(percent)+'%'})`);
+          }
         });
         loaded = true;
         break;
@@ -974,7 +986,7 @@ async function init() {
 
     if (!loaded) throw lastErr || new Error('모든 splat URL 로드 실패');
 
-    setProgress(92, '초기 카메라 설정 중...');
+    setProgress(95, '카메라 및 웨이포인트 보정...');
 
     /* ── 초기 카메라 위치 설정 ── */
     const cam  = viewer.camera;
@@ -985,11 +997,8 @@ async function init() {
       ctrl.update();
     }
 
-    setProgress(98, '렌더러 시작...');
-    viewer.start();
-
     setProgress(100, '완료! 3D 공간을 탐험하세요.');
-    setTimeout(hideLoading, 700);
+    setTimeout(hideLoading, 500);
 
   } catch (err) {
     clearInterval(simTimer);
