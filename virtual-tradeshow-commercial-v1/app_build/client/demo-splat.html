@@ -701,12 +701,10 @@ import * as GaussianSplats3D from '@mkkellogg/gaussian-splats-3d';
        'https://hf.co/yourorg/dna-booth/raw/main/output.splat'
 ────────────────────────────────────────────── */
 const SPLAT_URLS = [
-  // 1. 산업 전시 쇼케이스 3DGS (29MB 고화질 실사 공간)
-  'https://projects.markkellogg.org/threejs/assets/data/truck/truck.ksplat',
-  // 2. 고속 로드 제품 쇼케이스 (4.2MB 초고속 폴백)
-  'https://projects.markkellogg.org/threejs/assets/data/bonsai/bonsai_trimmed.ksplat',
-  // 3. 초고해상도 풀 스페이셜 씬 (75MB 울트라 퀄리티)
-  'https://projects.markkellogg.org/threejs/assets/data/garden/garden.ksplat',
+  // 1. 로컬 내장 3DGS 실사 쇼케이스 (4.2MB 초고속 로드, CORS 100% 무결성)
+  '/assets/splat/demo_booth.ksplat',
+  // 2. 서버 업로드 모델 경로 (Phase 2 실제 DN'a 부스 모델 업로드용)
+  '/uploads/models/REAL-RECON-PILOT-01_splat.ply',
 ];
 
 /* ──────────────────────────────────────────────
@@ -718,28 +716,28 @@ const SPLAT_URLS = [
 const WAYPOINTS = [
   {
     id: 0, label: '전체 조망 (Overview)',
-    pos:    [ -3.5, 2.2, 4.5 ],
-    target: [ 0.0, 0.4, 0.0 ],
+    pos:    [ 0.0, 1.2, 3.5 ],
+    target: [ 0.0, 0.0, 0.0 ],
   },
   {
     id: 1, label: '코봇/장비 존 (Cobot & Machine Zone)',
-    pos:    [ -1.8, 1.2, 2.0 ],
-    target: [ -0.4, 0.6, 0.2 ],
+    pos:    [ -1.2, 0.8, 1.5 ],
+    target: [ -0.2, 0.2, 0.0 ],
   },
   {
     id: 2, label: '센터 스테이지 (Center Stage)',
-    pos:    [ 0.0, 1.0, 2.8 ],
-    target: [ 0.0, 0.5, 0.0 ],
+    pos:    [ 0.0, 0.5, 1.8 ],
+    target: [ 0.0, 0.2, 0.0 ],
   },
   {
     id: 3, label: '브랜드 파사드 (Brand Facade)',
-    pos:    [ 2.8, 1.5, 3.2 ],
-    target: [ 0.2, 0.8, -0.5 ],
+    pos:    [ 1.4, 0.9, 2.0 ],
+    target: [ 0.0, 0.2, -0.2 ],
   },
   {
     id: 4, label: 'VIP 라운지 (Lounge)',
-    pos:    [ 3.5, 1.8, 1.5 ],
-    target: [ 0.5, 0.5, -1.0 ],
+    pos:    [ 1.8, 1.0, 1.2 ],
+    target: [ 0.2, 0.2, -0.4 ],
   },
 ];
 
