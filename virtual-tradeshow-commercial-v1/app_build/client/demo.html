@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>dn’a — Industrial Innovation Showcase (Sales-Grade 3D Showroom)</title>
-  <meta name="description" content="Sales-grade interactive 3D digital trade show showroom featuring turnkey B2B industrial automation products, live RFQ intake, digital catalog, and smart card.">
+  <meta name="classification" content="DESIGNED_3D">
+  <meta name="description" content="Sales-grade interactive DESIGNED_3D digital trade show showroom featuring turnkey B2B industrial automation products, live RFQ intake, digital catalog, and smart card.">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -117,26 +118,35 @@
       padding: 2px 7px; border-radius: 12px;
     }
 
-    /* 3D Hotspot Tags */
+    /* 3D Hotspot Tags — Minimal subtle marker that expands on hover */
     .hotspot-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; overflow: hidden; }
     .hotspot-tag {
-      position: absolute; transform: translate(-50%, -100%);
+      position: absolute; transform: translate(-50%, -50%);
       pointer-events: auto; cursor: pointer;
-      display: flex; align-items: center; gap: 6px;
-      background: rgba(10, 20, 34, 0.92); backdrop-filter: blur(8px);
-      border: 1px solid #38bdf8; border-radius: 20px; padding: 5px 12px;
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(10, 20, 34, 0.92); backdrop-filter: blur(10px);
+      border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 20px; padding: 4px 6px;
       color: #fff; font-size: 11px; font-weight: 700;
       box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4);
-      transition: all 0.2s; white-space: nowrap;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); white-space: nowrap;
+    }
+    .hotspot-tag .hotspot-label-text {
+      max-width: 0; opacity: 0; overflow: hidden; transition: all 0.25s ease;
     }
     .hotspot-tag:hover {
-      background: #0284c7; transform: translate(-50%, -105%) scale(1.05);
-      box-shadow: 0 6px 20px rgba(14, 165, 233, 0.6);
+      background: rgba(2, 132, 199, 0.95); border-color: #38bdf8; padding: 5px 12px;
+      transform: translate(-50%, -50%) scale(1.08); box-shadow: 0 6px 24px rgba(14, 165, 233, 0.7);
     }
-    .hotspot-dot { width: 8px; height: 8px; border-radius: 50%; background: #38bdf8; animation: pulse 1.8s infinite; }
+    .hotspot-tag:hover .hotspot-label-text {
+      max-width: 200px; opacity: 1; margin-left: 2px;
+    }
+    .hotspot-dot {
+      width: 10px; height: 10px; border-radius: 50%; background: #38bdf8;
+      box-shadow: 0 0 8px #38bdf8; flex-shrink: 0; animation: pulse 1.8s infinite;
+    }
     @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
-      70% { box-shadow: 0 0 0 8px rgba(56, 189, 248, 0); }
+      0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.8); }
+      70% { box-shadow: 0 0 0 10px rgba(56, 189, 248, 0); }
       100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
     }
 
@@ -333,35 +343,33 @@
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
           dn’a
         </a>
-        <span class="badge-demo">DESIGNED 3D SHOWCASE DEMO</span>
+        <span class="badge-demo">DESIGNED INTERACTIVE 3D</span>
       </div>
       <div class="top-actions">
-        <button class="btn-top" onclick="openPanel('catalog')">▤ 8 Products</button>
-        <button class="btn-top" onclick="openPanel('card')">📱 Smart Card</button>
+        <button class="btn-top" onclick="openPanel('catalog')">📦 Products</button>
+        <button class="btn-top" onclick="openPanel('card')">🪪 Smart Card</button>
         <button class="btn-top" onclick="openPanel('analytics')">📊 Analytics</button>
         <button class="btn-top primary" onclick="openPanel('rfq')">Request RFQ</button>
       </div>
     </header>
 
-    <!-- Left Side Navigation Rail (full labels) -->
+    <!-- Left Side Navigation Rail -->
     <nav class="rail-nav" style="top:74px; gap:5px;">
       <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Overview" onclick="setPreset('OVERVIEW')">◈ <span style="font-size:11px;">Overview</span></button>
-      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Product Island" onclick="setPreset('ISLAND')">⬡ <span style="font-size:11px;">Product Island</span></button>
-      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Automation Wall" onclick="setPreset('AUTOMATION')">⚙ <span style="font-size:11px;">Automation Wall</span></button>
-      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Robot Cell" onclick="setPreset('ROBOT')">🤖 <span style="font-size:11px;">Robot Cell</span></button>
-      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Lounge Area" onclick="setPreset('LOUNGE')">🛋 <span style="font-size:11px;">Lounge Area</span></button>
-      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Media Center" onclick="setPreset('MEDIA')">🖥 <span style="font-size:11px;">Media Center</span></button>
+      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Products" onclick="setPreset('ISLAND')">⬡ <span style="font-size:11px;">Products</span></button>
+      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Meeting Area" onclick="setPreset('LOUNGE')">🛋 <span style="font-size:11px;">Meeting Area</span></button>
+      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Featured Collection" onclick="setPreset('ROBOT')">🤖 <span style="font-size:11px;">Featured Collection</span></button>
+      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Brand Wall" onclick="setPreset('MEDIA')">🖥 <span style="font-size:11px;">Brand Wall</span></button>
       <button class="rail-btn active" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" id="btn-tour" title="Auto Tour" onclick="toggleAutoTour()">▶ <span style="font-size:11px;">Auto Tour</span></button>
     </nav>
 
     <!-- Bottom HUD Presets -->
     <div class="hud-bar">
       <button class="hud-btn active" onclick="setPreset('OVERVIEW')">Overview</button>
-      <button class="hud-btn" onclick="setPreset('ISLAND')">Product Island</button>
-      <button class="hud-btn" onclick="setPreset('AUTOMATION')">Automation Wall</button>
-      <button class="hud-btn" onclick="setPreset('ROBOT')">Robot Cell</button>
-      <button class="hud-btn" onclick="setPreset('LOUNGE')">Lounge</button>
-      <button class="hud-btn" onclick="setPreset('MEDIA')">Media Center</button>
+      <button class="hud-btn" onclick="setPreset('ISLAND')">Products</button>
+      <button class="hud-btn" onclick="setPreset('LOUNGE')">Meeting Area</button>
+      <button class="hud-btn" onclick="setPreset('ROBOT')">Featured Collection</button>
+      <button class="hud-btn" onclick="setPreset('MEDIA')">Brand Wall</button>
       <button class="hud-btn" onclick="setPreset('RESET')">Reset View</button>
     </div>
 
@@ -1004,7 +1012,7 @@
         const el = document.createElement('div');
         el.className = 'hotspot-tag';
         el.id = `hotspot-${p.id}`;
-        el.innerHTML = `<span class="hotspot-dot"></span><span>${p.name}</span><span style="color:#38bdf8;">• View →</span>`;
+        el.innerHTML = `<span class="hotspot-dot"></span><span class="hotspot-label-text">${p.name} • View →</span>`;
         el.onclick = () => openProductDetail(p);
         layer.appendChild(el);
       });
@@ -1216,6 +1224,30 @@
           </form>
           <div id="meet-banner" style="display:none; margin-top:14px; padding:12px; border-radius:8px; background:rgba(16,185,129,0.15); border:1px solid #10b981; color:#34d399; font-size:12px;"></div>
         `;
+      else if (type === 'sample') {
+        const prod = data || PRODUCTS[0];
+        title.innerText = 'Request Evaluation / Sample Unit';
+        content.innerHTML = `
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Request a physical sample or evaluation unit for technical qualification in your production facility.</p>
+          <form onsubmit="submitSample(event)">
+            <label class="form-label">Product to Evaluate *</label>
+            <select id="sample-product" class="form-field">
+              ${PRODUCTS.map(p => `<option value="${p.name} (${p.model})" ${p.id === prod.id ? 'selected' : ''}>${p.name} (${p.model})</option>`).join('')}
+            </select>
+            <label class="form-label">Full Name *</label>
+            <input id="sample-name" class="form-field" required placeholder="e.g. David Vance">
+            <label class="form-label">Company / Lab *</label>
+            <input id="sample-company" class="form-field" required placeholder="e.g. Apex Industrial Automation">
+            <label class="form-label">Work Email *</label>
+            <input id="sample-email" type="email" class="form-field" required placeholder="d.vance@apex.example">
+            <label class="form-label">Destination Facility / Shipping Address *</label>
+            <input id="sample-address" class="form-field" required placeholder="Factory / Lab shipping address">
+            <label class="form-label">Evaluation Details & Application Target</label>
+            <textarea id="sample-notes" class="form-field" rows="2" placeholder="Describe your test setup or trial timeline..."></textarea>
+            <button type="submit" class="btn-action">Submit Sample Evaluation Request</button>
+          </form>
+          <div id="sample-banner" style="display:none; margin-top:14px; padding:12px; border-radius:8px; background:rgba(16,185,129,0.15); border:1px solid #10b981; color:#34d399; font-size:12px;"></div>
+        `;
       }
     }
 
@@ -1257,6 +1289,7 @@
 
         <!-- Product-Aware Primary CTA -->
         <button class="btn-action" onclick="openPanel('rfq', PRODUCTS.find(x => x.id === '${p.id}'))">${p.ctaLabel}</button>
+        <button class="btn-secondary" onclick="openPanel('sample', PRODUCTS.find(x => x.id === '${p.id}'))">📦 Request Evaluation / Sample Unit</button>
         <button class="btn-secondary" onclick="addToBriefcase('${p.id}')">📥 Add to My Briefcase</button>
         <button class="btn-secondary" onclick="openPanel('meeting')">📅 Schedule 1:1 Video Consultation</button>
 
@@ -1342,26 +1375,56 @@
       const notes = document.getElementById('rfq-notes').value;
 
       try {
-        const res = await fetch('/api/diy/projects/proj-pilot-01-haven/leads', {
+        const res = await fetch('/api/rfqs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            buyerName: name,
-            buyerCompany: comp,
+            name,
+            company: comp,
             email,
-            interestedProduct: `${prod.name} (${prod.model})`,
-            source: 'DIGITAL_SHOWROOM',
-            actionType: 'RFQ',
-            status: 'RFQ',
-            notes: `Quantity: ${qty} units. Application: ${notes}`
+            products: [`${prod.name} (${prod.model})`],
+            estimatedQuantity: `${qty} units`,
+            message: notes
           })
         }).then(r => r.json());
 
         const banner = document.getElementById('rfq-banner');
         banner.style.display = 'block';
-        banner.innerHTML = `<b>✓ RFQ RECEIVED SUCCESSFULLY!</b><br>Reference ID: <b>${res.lead?.id || 'RFQ-' + Date.now().toString(36).toUpperCase()}</b><br>Our technical sales team will deliver your price linesheet within 24 hours.`;
+        banner.innerHTML = `<b>✓ RFQ RECEIVED SUCCESSFULLY!</b><br>Reference ID: <b>${res.referenceId || 'RFQ-' + Date.now().toString(36).toUpperCase()}</b><br>Our technical sales team will deliver your price linesheet within 24 hours.`;
       } catch (err) {
         alert('RFQ submitted locally: Reference RFQ-' + Date.now().toString(36).toUpperCase());
+      }
+    }
+
+    async function submitSample(e) {
+      e.preventDefault();
+      const prod = document.getElementById('sample-product').value;
+      const name = document.getElementById('sample-name').value;
+      const comp = document.getElementById('sample-company').value;
+      const email = document.getElementById('sample-email').value;
+      const addr = document.getElementById('sample-address').value;
+      const notes = document.getElementById('sample-notes').value;
+
+      try {
+        const res = await fetch('/api/samples', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            company: comp,
+            email,
+            shippingAddress: addr,
+            product: prod,
+            quantity: 1,
+            message: notes
+          })
+        }).then(r => r.json());
+
+        const banner = document.getElementById('sample-banner');
+        banner.style.display = 'block';
+        banner.innerHTML = `<b>✓ SAMPLE REQUEST SUBMITTED!</b><br>Ref: <b>${res.referenceId || 'SMP-' + Date.now().toString(36).toUpperCase()}</b><br>Technical evaluation agreement will be emailed to ${email}.`;
+      } catch (err) {
+        alert('Sample request logged. Ref: SMP-' + Date.now().toString(36).toUpperCase());
       }
     }
 
@@ -1374,24 +1437,23 @@
       const notes = document.getElementById('meet-notes').value;
 
       try {
-        const res = await fetch('/api/diy/projects/proj-pilot-01-haven/leads', {
+        const res = await fetch('/api/appointments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            buyerName: name,
-            buyerCompany: comp,
+            name,
+            company: comp,
             email,
-            interestedProduct: 'Industrial Automation Line',
-            source: 'SHOWROOM_MEETING',
-            actionType: 'APPOINTMENT',
-            status: 'MEETING_REQUESTED',
-            notes: `Requested Time: ${date}. Topic: ${notes}`
+            meetingType: 'In Booth',
+            preferredDate: date,
+            preferredTime: 'Scheduled Slot',
+            message: notes
           })
         }).then(r => r.json());
 
         const banner = document.getElementById('meet-banner');
         banner.style.display = 'block';
-        banner.innerHTML = `<b>✓ CONSULTATION CONFIRMED!</b><br>Meeting Ref: <b>${res.lead?.id || 'MEET-' + Date.now().toString(36).toUpperCase()}</b><br>A calendar invitation has been prepared for ${email}.`;
+        banner.innerHTML = `<b>✓ CONSULTATION CONFIRMED!</b><br>Meeting Ref: <b>${res.referenceId || 'MEET-' + Date.now().toString(36).toUpperCase()}</b><br>A calendar invitation has been prepared for ${email}.`;
       } catch (err) {
         alert('Meeting confirmed. Ref: MEET-' + Date.now().toString(36).toUpperCase());
       }

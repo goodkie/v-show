@@ -1461,26 +1461,61 @@ app.get('/api/leads', requireAuth, (req, res) => {
 
 app.post('/api/rfqs', createRateLimiter(30, 60000), async (req, res) => {
   try {
-    const { boothId, productId, buyerName, company, email, quantity, targetPrice, notes } = req.body;
-    if (!boothId || !productId || !email || !buyerName) {
-      return res.status(400).json({ error: 'Booth, product, buyer name, and email are required.' });
+    const { boothId, productId, buyerName, name, company, email, quantity, estimatedQuantity, targetPrice, notes, message, products, phone, country, buyerType, targetDelivery } = req.body;
+    const finalName = buyerName || name;
+    if (!email || !finalName) {
+      return res.status(400).json({ error: 'Name and email are required.' });
     }
-    const booth = db.getBoothById(boothId, true);
-    if (!booth) return res.status(404).json({ error: 'Booth not found.' });
 
-    const rfq = await db.createRfq({
-      organizationId: booth.organizationId,
-      eventId: booth.eventId,
-      boothId,
-      productId,
-      buyerName,
-      company,
+    if (boothId) {
+      const booth = db.getBoothById(boothId, true);
+      if (booth) {
+        const rfq = await db.createRfq({
+          organizationId: booth.organizationId,
+          eventId: booth.eventId,
+          boothId,
+          productId: productId || 'default-prod',
+          buyerName: finalName,
+          company,
+          email,
+          quantity: quantity || estimatedQuantity,
+          targetPrice,
+          notes: notes || message
+        });
+        return res.status(201).json({ success: true, message: 'RFQ submitted successfully.', rfq, referenceId: rfq.id });
+      }
+    }
+
+    // Standalone / Showcase RFQ
+    const refId = `rfq-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+    const leadEntry = {
+      id: refId,
+      buyerName: finalName,
+      buyerCompany: company || 'Enterprise Buyer',
       email,
-      quantity,
-      targetPrice,
-      notes
+      phone: phone || '',
+      country: country || 'Global',
+      buyerType: buyerType || 'Wholesale Buyer',
+      interestedProduct: Array.isArray(products) ? products.join(', ') : (products || productId || 'Flagship Automation Systems'),
+      source: 'DESIGNED_3D_SHOWROOM_RFQ',
+      actionType: 'RFQ',
+      status: 'RFQ_RECEIVED',
+      quantity: quantity || estimatedQuantity || '1-5 Units',
+      timeline: targetDelivery || 'Immediate / 30 Days',
+      notes: notes || message || 'Direct wholesale quotation request from 3D Showroom.',
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await db.createExhibitorLead('proj-pilot-01-haven', leadEntry);
+    } catch (e) {}
+
+    res.status(201).json({
+      success: true,
+      message: 'Formal RFQ received. Our technical sales engineering team will deliver a certified quotation linesheet within 24 hours.',
+      referenceId: refId,
+      rfq: leadEntry
     });
-    res.status(201).json({ success: true, message: 'RFQ submitted successfully.', rfq });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -1494,22 +1529,54 @@ app.get('/api/rfqs', requireAuth, (req, res) => {
 
 app.post('/api/samples', createRateLimiter(30, 60000), async (req, res) => {
   try {
-    const { boothId, productId, buyerName, company, email, quantity, notes } = req.body;
-    const booth = db.getBoothById(boothId, true);
-    if (!booth) return res.status(404).json({ error: 'Booth not found.' });
+    const { boothId, productId, product, buyerName, name, company, email, quantity, notes, message, shippingAddress } = req.body;
+    const finalName = buyerName || name;
+    if (!email || !finalName) {
+      return res.status(400).json({ error: 'Name and email are required.' });
+    }
 
-    const sample = await db.createSample({
-      organizationId: booth.organizationId,
-      eventId: booth.eventId,
-      boothId,
-      productId,
-      buyerName,
-      company,
+    if (boothId) {
+      const booth = db.getBoothById(boothId, true);
+      if (booth) {
+        const sample = await db.createSample({
+          organizationId: booth.organizationId,
+          eventId: booth.eventId,
+          boothId,
+          productId: productId || product || 'sample-prod',
+          buyerName: finalName,
+          company,
+          email,
+          quantity: quantity || 1,
+          notes: notes || message
+        });
+        return res.status(201).json({ success: true, message: 'Sample request submitted.', sample, referenceId: sample.id });
+      }
+    }
+
+    const refId = `sample-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+    const sampleEntry = {
+      id: refId,
+      buyerName: finalName,
+      buyerCompany: company || 'Evaluation Team',
       email,
-      quantity,
-      notes
+      interestedProduct: product || productId || 'Evaluation Unit',
+      source: '3D_SAMPLE_REQUEST',
+      actionType: 'SAMPLE',
+      status: 'SAMPLE_REQUESTED',
+      notes: `Shipping: ${shippingAddress || 'To be confirmed'}. Qty: ${quantity || 1}. Notes: ${notes || message || ''}`,
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await db.createExhibitorLead('proj-pilot-01-haven', sampleEntry);
+    } catch (e) {}
+
+    res.status(201).json({
+      success: true,
+      message: 'Evaluation unit / sample request logged. Technical evaluation agreement will be emailed to ' + email,
+      referenceId: refId,
+      sample: sampleEntry
     });
-    res.status(201).json({ success: true, message: 'Sample request submitted.', sample });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -1522,22 +1589,54 @@ app.get('/api/samples', requireAuth, (req, res) => {
 
 app.post('/api/appointments', createRateLimiter(30, 60000), async (req, res) => {
   try {
-    const { boothId, productId, buyerName, company, email, requestedAt, notes } = req.body;
-    const booth = db.getBoothById(boothId, true);
-    if (!booth) return res.status(404).json({ error: 'Booth not found.' });
+    const { boothId, productId, buyerName, name, company, email, requestedAt, preferredDate, preferredTime, meetingType, notes, message } = req.body;
+    const finalName = buyerName || name;
+    if (!email || !finalName) {
+      return res.status(400).json({ error: 'Name and email are required.' });
+    }
 
-    const apt = await db.createAppointment({
-      organizationId: booth.organizationId,
-      eventId: booth.eventId,
-      boothId,
-      productId,
-      buyerName,
-      company,
+    if (boothId) {
+      const booth = db.getBoothById(boothId, true);
+      if (booth) {
+        const apt = await db.createAppointment({
+          organizationId: booth.organizationId,
+          eventId: booth.eventId,
+          boothId,
+          productId: productId || 'booth-visit',
+          buyerName: finalName,
+          company,
+          email,
+          requestedAt: requestedAt || `${preferredDate || ''} ${preferredTime || ''}`,
+          notes: notes || message
+        });
+        return res.status(201).json({ success: true, message: 'Meeting appointment requested.', appointment: apt, referenceId: apt.id });
+      }
+    }
+
+    const refId = `meet-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+    const apptEntry = {
+      id: refId,
+      buyerName: finalName,
+      buyerCompany: company || 'Trade Buyer',
       email,
-      requestedAt,
-      notes
+      interestedProduct: 'Industrial Solutions',
+      source: 'SHOWROOM_APPOINTMENT',
+      actionType: 'APPOINTMENT',
+      status: 'MEETING_REQUESTED',
+      notes: `Type: ${meetingType || 'In Booth'}. Requested: ${requestedAt || (preferredDate ? `${preferredDate} ${preferredTime || ''}` : 'Scheduled Slot')}. Notes: ${notes || message || ''}`,
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await db.createExhibitorLead('proj-pilot-01-haven', apptEntry);
+    } catch (e) {}
+
+    res.status(201).json({
+      success: true,
+      message: 'Consultation confirmed. A calendar invitation has been prepared for ' + email,
+      referenceId: refId,
+      appointment: apptEntry
     });
-    res.status(201).json({ success: true, message: 'Meeting appointment requested.', appointment: apt });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -3857,6 +3956,102 @@ wss.on('connection', (ws) => {
       }
     }
   });
+});
+
+// ======================================================================
+// dn'a-C04 — PHOTOREALISTIC COMMERCIAL 3D SHOWCASE & PILOT APIS
+// ======================================================================
+
+// In-memory / data storage for showcase hero metadata
+const SHOWCASE_HERO_META_FILE = path.join(DATA_DIR, 'showcase_hero_meta.json');
+let showcaseHeroMeta = {
+  activeHero: '/assets/demo/dna-showcase/hero/dna_showcase_photoreal_hero.jpg',
+  label: 'DESIGNED 3D SHOWCASE — VISUAL PREVIEW',
+  truthfulDescription: 'High-resolution photorealistic architectural visualization of dn’a Industrial Innovation Showcase. Designed commercial concept.',
+  updatedAt: new Date().toISOString()
+};
+if (fs.existsSync(SHOWCASE_HERO_META_FILE)) {
+  try {
+    showcaseHeroMeta = JSON.parse(fs.readFileSync(SHOWCASE_HERO_META_FILE, 'utf-8'));
+  } catch (e) {}
+}
+
+// 1. GET Showcase Hero Meta
+app.get('/api/showcase/hero-image', (req, res) => {
+  res.json({ success: true, hero: showcaseHeroMeta });
+});
+
+// 2. POST Showcase Hero Image (Admin / User-Supplied Image Upload)
+const heroStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const heroDir = path.join(__dirname, '..', 'client', 'assets', 'demo', 'dna-showcase', 'hero');
+    if (!fs.existsSync(heroDir)) fs.mkdirSync(heroDir, { recursive: true });
+    cb(null, heroDir);
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const uniqueSuffix = `${Date.now()}`;
+    cb(null, `showcase_hero_custom_${uniqueSuffix}${ext}`);
+  }
+});
+const heroUpload = multer({
+  storage: heroStorage,
+  fileFilter: imageFileFilter,
+  limits: { fileSize: 25 * 1024 * 1024 }
+});
+
+app.post('/api/showcase/hero-image', heroUpload.single('heroImage'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file uploaded.' });
+    }
+
+    const filePath = req.file.path;
+    const magic = validateImageMagicBytes(filePath);
+    if (!magic.valid) {
+      try { fs.unlinkSync(filePath); } catch (e) {}
+      return res.status(400).json({ error: 'Security error: Invalid image file magic bytes.' });
+    }
+
+    const relPath = `/assets/demo/dna-showcase/hero/${path.basename(filePath)}`;
+    const label = req.body.label || 'DESIGNED 3D SHOWCASE — VISUAL PREVIEW';
+    const isLandingHero = req.body.setAsLandingHero !== 'false';
+
+    if (isLandingHero) {
+      showcaseHeroMeta = {
+        activeHero: relPath,
+        label: label,
+        truthfulDescription: 'High-resolution photorealistic architectural visualization. Designed commercial concept.',
+        updatedAt: new Date().toISOString(),
+        originalFileName: req.file.originalname,
+        sizeBytes: req.file.size
+      };
+      fs.writeFileSync(SHOWCASE_HERO_META_FILE, JSON.stringify(showcaseHeroMeta, null, 2), 'utf-8');
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Showcase hero image uploaded successfully.',
+      hero: showcaseHeroMeta
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. Product QR Route: /p/:sku
+app.get('/p/:sku', (req, res) => {
+  const sku = req.params.sku;
+  console.log(`[ANALYTICS] PRODUCT_QR_SCAN: ${sku} at ${new Date().toISOString()}`);
+  res.redirect(`/demo.html?product=${encodeURIComponent(sku)}&source=qr`);
+});
+
+// Canonical Showcase Alias Routes
+app.get('/showcase', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'client', 'demo.html'));
+});
+app.get('/demo-premium.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'client', 'demo.html'));
 });
 
 // SPA Fallback Route
