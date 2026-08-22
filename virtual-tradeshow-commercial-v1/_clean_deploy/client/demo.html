@@ -297,15 +297,12 @@
 </head>
 <body>
   <div class="app">
-    <!-- Loading Poster (Photorealistic Hero) -->
-    <div id="intro-loader" class="intro-overlay">
-      <img src="/assets/demo/dna-showcase/hero/dna_showcase_photoreal_hero.jpg"
-           alt="dn'a Industrial Innovation Showcase — Loading"
-           class="intro-poster-img">
-      <div class="intro-poster-scrim"></div>
-      <div class="intro-status-bar">
-        <div class="intro-brand-label">dn'a — Industrial Innovation Showcase</div>
-        <div id="intro-status-text" class="intro-status-text">Preparing Interactive Showroom…</div>
+    <!-- Modern Minimal 3D Initialization Loader -->
+    <div id="intro-loader" class="intro-overlay" style="background: rgba(7, 11, 20, 0.92); backdrop-filter: blur(8px);">
+      <div class="intro-status-bar" style="position: absolute; top: 50%; transform: translateY(-50%);">
+        <div style="width: 42px; height: 42px; border: 3px solid rgba(56,189,248,0.2); border-top-color: #38bdf8; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px;"></div>
+        <div class="intro-brand-label">dn'a — LIVE 3D WEBGL ENGINE</div>
+        <div id="intro-status-text" class="intro-status-text">Initializing High-Fidelity 3D Showroom…</div>
         <div class="intro-progress-track">
           <div id="intro-progress-fill" class="intro-progress-fill"></div>
         </div>
@@ -664,10 +661,10 @@
 
         setLoadingStatus('Ready', 100);
 
-        // Opening Cinematic Fly-in → then apply URL params
+        // Instant Reveal 3D Engine
         setTimeout(() => {
           const loader = document.getElementById('intro-loader');
-          if (loader) { loader.classList.add('fade-out'); setTimeout(() => { try { loader.remove(); } catch(e) {} }, 900); }
+          if (loader) { loader.classList.add('fade-out'); setTimeout(() => { try { loader.remove(); } catch(e) {} }, 400); }
 
           const params = new URLSearchParams(window.location.search);
           const presetParam = (params.get('preset') || '').toUpperCase();
