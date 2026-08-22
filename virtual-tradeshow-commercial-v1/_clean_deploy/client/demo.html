@@ -360,29 +360,15 @@
       <button class="rail-btn active" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" id="btn-tour" title="Auto Tour" onclick="toggleAutoTour()">▶ <span style="font-size:11px;">Auto Tour</span></button>
     </nav>
 
-    <!-- 30-Angle Volumetric Virtual Tour Controls -->
+    <!-- Waypoint Navigation HUD -->
     <div style="position: absolute; bottom: 84px; left: 50%; transform: translateX(-50%); z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: all;">
-      <!-- Elevation Switcher (3 Height Levels) -->
-      <div style="display: flex; gap: 4px; background: rgba(7, 11, 20, 0.88); padding: 4px 8px; border-radius: 24px; border: 1px solid rgba(56,189,248,0.3); backdrop-filter: blur(12px); box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
-        <span style="font-size: 11px; font-weight: 700; color: #94a3b8; display: flex; align-items: center; padding: 0 6px;">HEIGHT:</span>
-        <button id="btn-lvl-floor" class="hud-btn" style="padding: 4px 10px; font-size: 11px; border-radius: 16px;" onclick="setElevationLevel('floor')">⬇ Floor (0.5m)</button>
-        <button id="btn-lvl-eye" class="hud-btn active" style="padding: 4px 10px; font-size: 11px; border-radius: 16px;" onclick="setElevationLevel('eye')">👁 Eye (1.6m)</button>
-        <button id="btn-lvl-6ft" class="hud-btn" style="padding: 4px 10px; font-size: 11px; border-radius: 16px;" onclick="setElevationLevel('6ft')">⬆ 6ft High (2.0m)</button>
-      </div>
-
-      <!-- 360° 10-Angle Orbital Dial -->
-      <div style="display: flex; gap: 4px; background: rgba(7, 11, 20, 0.88); padding: 4px 10px; border-radius: 24px; border: 1px solid rgba(56,189,248,0.3); backdrop-filter: blur(12px); box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
-        <span style="font-size: 11px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; padding-right: 4px;">360° ANGLE:</span>
-        <button id="btn-ang-1" class="hud-btn active" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(1)">01</button>
-        <button id="btn-ang-2" class="hud-btn" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(2)">02</button>
-        <button id="btn-ang-3" class="hud-btn" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(3)">03</button>
-        <button id="btn-ang-4" class="hud-btn" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(4)">04</button>
-        <button id="btn-ang-5" class="hud-btn" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(5)">05</button>
-        <button id="btn-ang-6" class="hud-btn" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(6)">06</button>
-        <button id="btn-ang-7" class="hud-btn" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(7)">07</button>
-        <button id="btn-ang-8" class="hud-btn" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(8)">08</button>
-        <button id="btn-ang-9" class="hud-btn" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(9)">09</button>
-        <button id="btn-ang-10" class="hud-btn" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(10)">10</button>
+      <div style="display:flex; gap:6px; background: rgba(7,11,20,0.92); padding:6px 12px; border-radius:24px; border: 1px solid rgba(56,189,248,0.3); backdrop-filter:blur(12px); box-shadow:0 4px 20px rgba(0,0,0,0.5);">
+        <span style="font-size:11px; font-weight:700; color:#94a3b8; display:flex; align-items:center; padding:0 6px;">📍 LOCATION:</span>
+        <button id="wp-btn-0" class="hud-btn active" style="padding:4px 10px; font-size:11px; border-radius:16px;" onclick="flyToWaypoint(0)">🔭 Overview</button>
+        <button id="wp-btn-1" class="hud-btn" style="padding:4px 10px; font-size:11px; border-radius:16px;" onclick="flyToWaypoint(1)">🤖 Cobot Zone</button>
+        <button id="wp-btn-2" class="hud-btn" style="padding:4px 10px; font-size:11px; border-radius:16px;" onclick="flyToWaypoint(2)">⬡ Center Stage</button>
+        <button id="wp-btn-3" class="hud-btn" style="padding:4px 10px; font-size:11px; border-radius:16px;" onclick="flyToWaypoint(3)">🖥 Brand Wall</button>
+        <button id="wp-btn-4" class="hud-btn" style="padding:4px 10px; font-size:11px; border-radius:16px;" onclick="flyToWaypoint(4)">🛋 Lounge</button>
       </div>
     </div>
 
@@ -413,229 +399,161 @@
   </div>
 
   <script>
-    // ── 1. Fictional-but-Realistic Industrial Automation Flagship Product Lineup ──
+    // ── 1. DN'a ROBOTIC Product Lineup ──
     const PRODUCTS = [
       {
-        id: 'PROD-01-COBOT',
-        name: 'Apex Cobot X16',
-        model: 'APX-CB-16',
-        category: 'Collaborative Robotics',
-        tag: 'Cobot Arm',
-        pos: { x: -3.8, y: 1.0, z: -1.2 },
-        color: 0x0284c7,
-        accentColor: 0x38bdf8,
-        price: '$38,500 – $42,000 USD',
-        moq: '1 Unit',
-        leadTime: '2 Weeks',
+        id: 'PROD-01-COBOT', name: 'Apex Cobot X16', model: 'APX-CB-16',
+        category: 'Collaborative Robotics', tag: 'Cobot Arm',
+        color: 0x0284c7, accentColor: 0x38bdf8,
+        price: '$38,500 – $42,000 USD', moq: '1 Unit', leadTime: '2 Weeks',
         warranty: '24 Months Full Manufacturer Warranty',
-        payload: '16.0 kg Payload',
-        reach: '1300 mm Radius',
-        accuracy: '±0.03 mm Repeatability',
-        power: '48V DC / 650W Max',
+        payload: '16.0 kg Payload', reach: '1300 mm Radius',
+        accuracy: '±0.03 mm Repeatability', power: '48V DC / 650W Max',
         dimensions: 'Base Ø210mm, Height 1420mm',
-        ctaType: 'APPOINTMENT',
-        ctaLabel: 'Book Application Review',
+        ctaType: 'APPOINTMENT', ctaLabel: 'Book Application Review',
         pdfFile: '/assets/specs/Apex-Cobot-X16-Datasheet.pdf',
-        desc: '6-axis precision collaborative robot with integrated joint torque sensors, safety-certified collision detection, and zero-code hand-guiding lead-through teaching.',
-        fullDesc: 'Engineered for high-mix machine tending, palletizing, and precision assembly. The Apex Cobot X16 integrates high-resolution optical encoders and ISO/TS 15066 certified power-and-force limiting.'
+        desc: '6-axis precision collaborative robot with integrated joint torque sensors, safety-certified collision detection.',
+        fullDesc: 'Engineered for high-mix machine tending, palletizing, and precision assembly. ISO/TS 15066 certified.'
       },
       {
-        id: 'PROD-02-AMR',
-        name: 'Vector AMR 600',
-        model: 'VCT-AMR-600',
-        category: 'Autonomous Intralogistics',
-        tag: 'Mobile AMR',
-        pos: { x: -1.2, y: 0.5, z: -1.2 },
-        color: 0xeab308,
-        accentColor: 0xfde047,
-        price: '$34,000 – $39,500 USD',
-        moq: '2 Units',
-        leadTime: '3 Weeks',
+        id: 'PROD-02-AMR', name: 'Vector AMR 600', model: 'VCT-AMR-600',
+        category: 'Autonomous Intralogistics', tag: 'Mobile AMR',
+        color: 0xeab308, accentColor: 0xfde047,
+        price: '$34,000 – $39,500 USD', moq: '2 Units', leadTime: '3 Weeks',
         warranty: '24 Months Warranty',
-        payload: '600 kg Deck Payload',
-        reach: '2.0 m/s Max Speed',
-        accuracy: '±10 mm Docking Precision',
-        power: 'Lithium LiFePO4 48V 60Ah (10h Run)',
+        payload: '600 kg Deck Payload', reach: '2.0 m/s Max Speed',
+        accuracy: '±10 mm Docking Precision', power: 'LiFePO4 48V 60Ah',
         dimensions: '980 x 680 x 280 mm',
-        ctaType: 'CONSULTATION',
-        ctaLabel: 'Request Technical Consultation',
+        ctaType: 'CONSULTATION', ctaLabel: 'Request Technical Consultation',
         pdfFile: '/assets/specs/Vector-AMR-600-Datasheet.pdf',
-        desc: 'Heavy-duty autonomous mobile logistics robot utilizing dual 360° LiDAR safety scanners and natural feature SLAM navigation for pallet transport.',
-        fullDesc: 'Seamlessly integrates with MES/WMS software via VDA 5050 standard. Features dynamic obstacle avoidance, automatic opportunistic charging, and omnidirectional suspension.'
+        desc: 'Heavy-duty autonomous mobile logistics robot with dual 360° LiDAR safety scanners.',
+        fullDesc: 'Integrates with MES/WMS via VDA 5050. Features dynamic obstacle avoidance and automatic charging.'
       },
       {
-        id: 'PROD-03-OPTISCAN',
-        name: 'OptiScan V3',
-        model: 'OPT-SCN-V3',
-        category: 'Industrial Metrology',
-        tag: '3D Vision',
-        pos: { x: 1.4, y: 1.1, z: -1.2 },
-        color: 0x10b981,
-        accentColor: 0x34d399,
-        price: '$19,800 – $24,500 USD',
-        moq: '1 Unit',
-        leadTime: '1 Week',
+        id: 'PROD-03-OPTISCAN', name: 'OptiScan V3', model: 'OPT-SCN-V3',
+        category: 'Industrial Metrology', tag: '3D Vision',
+        color: 0x10b981, accentColor: 0x34d399,
+        price: '$19,800 – $24,500 USD', moq: '1 Unit', leadTime: '1 Week',
         warranty: '36 Months Calibrated',
-        payload: 'Dual 12MP Global Shutter',
-        reach: '350 x 240 x 180 mm FOV',
-        accuracy: '±3.5 μm Accuracy',
-        power: 'GigE PoE+ 25.5W',
+        payload: 'Dual 12MP Global Shutter', reach: '350 x 240 x 180 mm FOV',
+        accuracy: '±3.5 μm Accuracy', power: 'GigE PoE+ 25.5W',
         dimensions: '240 x 120 x 85 mm',
-        ctaType: 'SAMPLE',
-        ctaLabel: 'Request In-Line Evaluation',
+        ctaType: 'SAMPLE', ctaLabel: 'Request In-Line Evaluation',
         pdfFile: '/assets/specs/OptiScan-V3-Datasheet.pdf',
-        desc: 'Ultra-high-speed structured light 3D metrology sensor for 100% inline dimensional verification and GD&T quality inspection on automotive lines.',
-        fullDesc: 'Projects 450nm blue fringe patterns captured by dual calibrated telecentric cameras to output dense point clouds at up to 140 frames per second.'
+        desc: 'Ultra-high-speed structured light 3D metrology sensor for inline dimensional verification.',
+        fullDesc: '450nm blue fringe patterns captured by dual calibrated telecentric cameras, 140fps point cloud output.'
       },
       {
-        id: 'PROD-04-FLEXGRIP',
-        name: 'FlexGrip E80',
-        model: 'FLX-GRP-80',
-        category: 'Robotic End-Effector',
-        tag: 'Adaptive Gripper',
-        pos: { x: 4.0, y: 1.0, z: -1.2 },
-        color: 0x6366f1,
-        accentColor: 0x818cf8,
-        price: '$3,400 – $4,200 USD',
-        moq: '2 Units',
-        leadTime: 'Immediate Stock',
+        id: 'PROD-04-FLEXGRIP', name: 'FlexGrip E80', model: 'FLX-GRP-80',
+        category: 'Robotic End-Effector', tag: 'Adaptive Gripper',
+        color: 0x6366f1, accentColor: 0x818cf8,
+        price: '$3,400 – $4,200 USD', moq: '2 Units', leadTime: 'Immediate Stock',
         warranty: '24 Months Warranty',
-        payload: '20 N to 220 N Grip Force',
-        reach: '80 mm Parallel Stroke',
-        accuracy: '±0.02 mm Jaw Repeatability',
-        power: '24V DC / IO-Link & EtherCAT',
-        dimensions: '165 x 74 x 58 mm (1.15 kg)',
-        ctaType: 'SAMPLE',
-        ctaLabel: 'Request Sample Unit',
+        payload: '20 N to 220 N Grip Force', reach: '80 mm Parallel Stroke',
+        accuracy: '±0.02 mm Jaw Repeatability', power: '24V DC / IO-Link & EtherCAT',
+        dimensions: '165 x 74 x 58 mm',
+        ctaType: 'SAMPLE', ctaLabel: 'Request Sample Unit',
         pdfFile: '/assets/specs/FlexGrip-E80-Datasheet.pdf',
-        desc: 'Servo-electric 2-finger adaptive gripper with programmable force regulation, part presence verification, and quick-change finger mounts.',
-        fullDesc: 'Ideal for precision electronic assembly and CNC machine tending. Features integrated grip confirmation sensors and rugged anodized aluminum frame.'
+        desc: 'Servo-electric 2-finger adaptive gripper with programmable force regulation.',
+        fullDesc: 'Ideal for precision electronic assembly. Quick-change finger mounts, integrated grip sensors.'
       },
       {
-        id: 'PROD-05-FLOWDRIVE',
-        name: 'FlowDrive P500',
-        model: 'FLW-DRV-500',
-        category: 'Fluid Automation',
-        tag: 'Smart Pump',
-        pos: { x: -5.2, y: 1.0, z: -3.2 },
-        color: 0x06b6d4,
-        accentColor: 0x67e8f9,
-        price: '$16,500 – $21,000 USD',
-        moq: '1 Unit',
-        leadTime: '3 Weeks',
+        id: 'PROD-05-FLOWDRIVE', name: 'FlowDrive P500', model: 'FLW-DRV-500',
+        category: 'Fluid Automation', tag: 'Smart Pump',
+        color: 0x06b6d4, accentColor: 0x67e8f9,
+        price: '$16,500 – $21,000 USD', moq: '1 Unit', leadTime: '3 Weeks',
         warranty: '36 Months Warranty',
-        payload: '280 m³/h Max Flow',
-        reach: '16 bar Head Pressure',
-        accuracy: 'IE5 Ultra-Premium Motor',
-        power: '380-480V 3-Phase 15kW',
+        payload: '280 m³/h Max Flow', reach: '16 bar Head Pressure',
+        accuracy: 'IE5 Ultra-Premium Motor', power: '380-480V 3-Phase 15kW',
         dimensions: '580 x 360 x 440 mm',
-        ctaType: 'CONSULTATION',
-        ctaLabel: 'Request Engineering Consultation',
+        ctaType: 'CONSULTATION', ctaLabel: 'Request Engineering Consultation',
         pdfFile: '/assets/specs/Apex-Cobot-X16-Datasheet.pdf',
-        desc: 'Intelligent fluid circulation and pressure booster station with integrated VFD inverter, predictive cavitation diagnostics, and Modbus/BACnet.',
-        fullDesc: 'Optimized for commercial HVAC, industrial coolant delivery, and high-efficiency water processing with self-optimizing differential pressure curves.'
+        desc: 'Intelligent fluid circulation station with integrated VFD and predictive diagnostics.',
+        fullDesc: 'Optimized for commercial HVAC, industrial coolant delivery with self-optimizing pressure curves.'
       },
       {
-        id: 'PROD-06-SYNCHRO',
-        name: 'SynchroDrive VFD',
-        model: 'SNC-VFD-90',
-        category: 'Power Electronics',
-        tag: 'Servo Drive',
-        pos: { x: -2.6, y: 1.0, z: -3.2 },
-        color: 0xf97316,
-        accentColor: 0xfb923c,
-        price: '$1,850 – $2,600 USD',
-        moq: '4 Units',
-        leadTime: '1 Week',
+        id: 'PROD-06-SYNCHRO', name: 'SynchroDrive VFD', model: 'SNC-VFD-90',
+        category: 'Power Electronics', tag: 'Servo Drive',
+        color: 0xf97316, accentColor: 0xfb923c,
+        price: '$1,850 – $2,600 USD', moq: '4 Units', leadTime: '1 Week',
         warranty: '24 Months Warranty',
-        payload: '98.9% Inverter Efficiency',
-        reach: '100 μs Current Loop Cycle',
-        accuracy: 'Safe Torque Off (SIL 3 / PLe)',
-        power: '3-Phase 400V 7.5kW',
+        payload: '98.9% Inverter Efficiency', reach: '100 μs Current Loop Cycle',
+        accuracy: 'Safe Torque Off (SIL 3 / PLe)', power: '3-Phase 400V 7.5kW',
         dimensions: '220 x 85 x 180 mm',
-        ctaType: 'SAMPLE',
-        ctaLabel: 'Request Evaluation Unit',
+        ctaType: 'SAMPLE', ctaLabel: 'Request Evaluation Unit',
         pdfFile: '/assets/specs/Vector-AMR-600-Datasheet.pdf',
-        desc: 'Multi-axis servo drive controller supporting EtherCAT, PROFINET IRT, and dual encoder feedback for high-speed multi-axis motion synchronization.',
-        fullDesc: 'Equipped with front OLED diagnostic panel, removable terminal blocks, and active thermal management for continuous heavy-duty industrial cycles.'
+        desc: 'Multi-axis servo drive supporting EtherCAT, PROFINET IRT for high-speed motion synchronization.',
+        fullDesc: 'Front OLED diagnostic panel, removable terminal blocks, active thermal management.'
       },
       {
-        id: 'PROD-07-EDGECORE',
-        name: 'EdgeCore IPC',
-        model: 'EDG-IPC-30',
-        category: 'Industrial Computing',
-        tag: 'Edge AI Computer',
-        pos: { x: 0.0, y: 1.0, z: -3.2 },
-        color: 0xa855f7,
-        accentColor: 0xc084fc,
-        price: '$2,400 – $3,100 USD',
-        moq: '2 Units',
-        leadTime: 'Immediate Stock',
+        id: 'PROD-07-EDGECORE', name: 'EdgeCore IPC', model: 'EDG-IPC-30',
+        category: 'Industrial Computing', tag: 'Edge AI Computer',
+        color: 0xa855f7, accentColor: 0xc084fc,
+        price: '$2,400 – $3,100 USD', moq: '2 Units', leadTime: 'Immediate Stock',
         warranty: '36 Months Enterprise',
-        payload: '32 TOPS AI NPU Accelerator',
-        reach: '4x GbE, 2x Isolated RS485',
-        accuracy: '-25°C to +70°C Fanless Range',
-        power: '9-36V DC Wide Voltage Input',
-        dimensions: '190 x 140 x 65 mm (DIN-Rail)',
-        ctaType: 'SAMPLE',
-        ctaLabel: 'Request Evaluation Unit',
+        payload: '32 TOPS AI NPU Accelerator', reach: '4x GbE, 2x Isolated RS485',
+        accuracy: '-25°C to +70°C Fanless', power: '9-36V DC Wide Voltage',
+        dimensions: '190 x 140 x 65 mm',
+        ctaType: 'SAMPLE', ctaLabel: 'Request Evaluation Unit',
         pdfFile: '/assets/specs/OptiScan-V3-Datasheet.pdf',
-        desc: 'Rugged fanless DIN-rail industrial computer designed for OT-to-cloud telemetry, deep learning computer vision inspection, and protocol conversion.',
-        fullDesc: 'Features quad-core x86 industrial processor with hardware watchdog, TPM 2.0 security, dual M.2 NVMe storage slots, and IP40 aluminum chassis.'
+        desc: 'Rugged fanless DIN-rail industrial computer for OT-to-cloud telemetry and deep learning CV.',
+        fullDesc: 'Quad-core x86 industrial processor, hardware watchdog, TPM 2.0, dual M.2 NVMe, IP40 chassis.'
       },
       {
-        id: 'PROD-08-LASERCELL',
-        name: 'LaserCell LX',
-        model: 'LSR-CEL-LX',
-        category: 'Turnkey Automation Cell',
-        tag: 'Laser Processing',
-        pos: { x: 2.6, y: 1.0, z: -3.2 },
-        color: 0xef4444,
-        accentColor: 0xf87171,
-        price: '$128,000 – $155,000 USD',
-        moq: '1 Workcell',
-        leadTime: '6 Weeks',
+        id: 'PROD-08-LASERCELL', name: 'LaserCell LX', model: 'LSR-CEL-LX',
+        category: 'Turnkey Automation Cell', tag: 'Laser Processing',
+        color: 0xef4444, accentColor: 0xf87171,
+        price: '$128,000 – $155,000 USD', moq: '1 Workcell', leadTime: '6 Weeks',
         warranty: '24 Months On-Site Commissioning',
-        payload: '3,000 W Fiber Laser Source',
-        reach: 'Dual Indexing Rotary Tables',
-        accuracy: '±0.05 mm Seam Tracking',
-        power: '400V 3-Phase 32A',
+        payload: '3,000 W Fiber Laser Source', reach: 'Dual Indexing Rotary Tables',
+        accuracy: '±0.05 mm Seam Tracking', power: '400V 3-Phase 32A',
         dimensions: '2200 x 1800 x 2100 mm',
-        ctaType: 'CONSULTATION',
-        ctaLabel: 'Request Technical Consultation',
+        ctaType: 'CONSULTATION', ctaLabel: 'Request Technical Consultation',
         pdfFile: '/assets/specs/FlexGrip-E80-Datasheet.pdf',
-        desc: 'Fully enclosed Class 1 laser welding and cutting cell with dual rotary stations for zero-downtime part loading, fume extraction, and robotic seam guidance.',
-        fullDesc: 'Turnkey industrial workstation with interlocked laser-safe viewing windows, Siemens PLC master controller, and comprehensive machine safety package.'
+        desc: 'Class 1 laser welding and cutting cell with dual rotary stations and robotic seam guidance.',
+        fullDesc: 'Interlocked laser-safe windows, Siemens PLC master controller, comprehensive safety package.'
       }
     ];
 
-    // 3D Spatial Positions matched to DN'a ROBOTIC Master Visual
-    PRODUCTS[0].pos = { x: -3.2, y: -1.2, z: -9.5 };  // Apex Cobot Arm Series (Front Left Plinth)
-    PRODUCTS[1].pos = { x: 0.8, y: -1.2, z: -9.5 };   // Robotic Articulated Arm (Front Center Plinth)
-    PRODUCTS[2].pos = { x: 3.6, y: -0.9, z: -9.5 };   // Precision Tooling Station (Front Right Plinth)
-    PRODUCTS[3].pos = { x: -4.8, y: 0.4, z: -9.5 };   // AI Vision & Automation Wall (Left Back Wall)
-    PRODUCTS[4].pos = { x: 0.8, y: 0.4, z: -9.5 };    // DN'a Intelligent Center (Center Back Wall)
-    PRODUCTS[5].pos = { x: 4.8, y: 0.4, z: -9.5 };    // Next-Gen Robotic Solutions (Right Back Wall)
-    PRODUCTS[6].pos = { x: -0.8, y: -0.2, z: -9.5 };  // Mezzanine / Lounge Area
-    PRODUCTS[7].pos = { x: 2.8, y: -1.6, z: -9.5 };   // Turnkey Workcell & Laser Guidance
+    // ── 3D Real-Space Position for each product inside the booth ──
+    // Actual booth coordinate system (Y=up, Z=forward into booth)
+    PRODUCTS[0].pos = { x: -6.0, y: 0.0, z: -2.0 };   // Cobot Arm — front-left plinth
+    PRODUCTS[1].pos = { x: -3.5, y: 0.0, z: 4.0 };    // Vector AMR — mid left
+    PRODUCTS[2].pos = { x: -1.0, y: 0.0, z: -2.0 };   // OptiScan — front center-left
+    PRODUCTS[3].pos = { x:  2.0, y: 0.0, z: -2.0 };   // FlexGrip — front center-right
+    PRODUCTS[4].pos = { x:  5.5, y: 0.0, z: -2.0 };   // FlowDrive — front-right plinth
+    PRODUCTS[5].pos = { x: -5.5, y: 0.0, z: 7.0 };    // SynchroDrive — rear left
+    PRODUCTS[6].pos = { x:  0.0, y: 0.0, z: 7.0 };    // EdgeCore IPC — rear center
+    PRODUCTS[7].pos = { x:  5.5, y: 0.0, z: 7.0 };    // LaserCell — rear right
+
+    // ── 5 Waypoints for Walk-Through Tour ──
+    const WAYPOINTS = [
+      { pos: { x: 0,    y: 3.2, z: -14 }, look: { x: 0,    y: 1.8, z: 2  }, label: 'Overview'    },  // 0 Overview
+      { pos: { x: -4.2, y: 1.6, z: -4.5 }, look: { x: -6.0, y: 1.2, z: -2 }, label: 'Cobot Zone'  },  // 1 Cobot Zone
+      { pos: { x: 0,    y: 1.7, z: -2.5 }, look: { x: 0,    y: 2.0, z: 6  }, label: 'Center Stage' }, // 2 Center Stage
+      { pos: { x: 0,    y: 1.8, z: 3.5  }, look: { x: 0,    y: 2.8, z: 10 }, label: 'Brand Wall'  },  // 3 Brand Wall
+      { pos: { x: 4.2,  y: 1.6, z: 5.0  }, look: { x: 0,    y: 1.2, z: 9  }, label: 'Lounge'      }   // 4 Lounge
+    ];
+
+    // ── Camera Presets (mapped to waypoints) ──
+    const CAMERA_PRESETS = {
+      OVERVIEW:   WAYPOINTS[0],
+      ISLAND:     WAYPOINTS[1],
+      ROBOT:      WAYPOINTS[1],
+      LOUNGE:     WAYPOINTS[4],
+      MEDIA:      WAYPOINTS[3],
+      AUTOMATION: WAYPOINTS[2],
+      RESET:      WAYPOINTS[0]
+    };
 
     let scene, camera, renderer, controls, autoTour = false;
     let raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
     let productMeshes = [], briefcase = [];
     let isTransitioning = false;
+    let autoTourTimer = null, autoTourIndex = 0;
+    let currentWaypointIdx = 0;
 
-    // Camera preset coordinates calibrated to photorealistic 3D space
-    const CAMERA_PRESETS = {
-      OVERVIEW:   { pos: { x: 0, y: 0.0, z: 12.0 }, target: { x: 0, y: 0.0, z: 0 } },
-      ISLAND:     { pos: { x: -2.4, y: -0.3, z: 7.0 }, target: { x: -2.4, y: -0.3, z: 0 } },
-      AUTOMATION: { pos: { x: 2.8, y: -0.4, z: 7.0 }, target: { x: 2.8, y: -0.4, z: 0 } },
-      ROBOT:      { pos: { x: -0.25, y: 0.4, z: 5.5 }, target: { x: -0.25, y: 0.4, z: 0 } },
-      LOUNGE:     { pos: { x: 4.8, y: -0.5, z: 7.5 }, target: { x: 4.8, y: -0.5, z: 0 } },
-      MEDIA:      { pos: { x: -4.8, y: 0.5, z: 7.5 }, target: { x: -4.8, y: 0.5, z: 0 } },
-      RESET:      { pos: { x: 0, y: 0.0, z: 12.0 }, target: { x: 0, y: 0.0, z: 0 } }
-    };
-
-    // ── 2. Three.js Showroom Initialization ──
+    // ── Loading Status ──
     function setLoadingStatus(text, pct) {
       const s = document.getElementById('intro-status-text');
       const f = document.getElementById('intro-progress-fill');
@@ -649,94 +567,80 @@
       document.getElementById('webgl-fallback').classList.add('visible');
     }
 
+    // ═══════════════════════════════════════════════════════════
+    //  MAIN 3D SHOWROOM INIT — REAL ARCHITECTURAL SPACE
+    // ═══════════════════════════════════════════════════════════
     function initShowroom() {
       try {
-        setLoadingStatus('Loading Photorealistic 3D Environment…', 20);
+        setLoadingStatus('Initializing 3D Architectural Environment…', 10);
+
         const host = document.getElementById('stage');
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x060a12);
+        scene.background = new THREE.Color(0x0a101d);
+        scene.fog = new THREE.Fog(0x0a101d, 35, 95);
 
-        camera = new THREE.PerspectiveCamera(46, innerWidth / innerHeight, 0.1, 100);
-        camera.position.set(0, 0.0, 12.0);
+        camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 140);
+        camera.position.set(0, 3.2, -14);
 
-        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+        renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
         if (!renderer.getContext()) { showWebGLFallback(); return; }
         renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
         renderer.setSize(innerWidth, innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.0;
         try { renderer.outputColorSpace = THREE.SRGBColorSpace; } catch(e) { renderer.outputEncoding = 3001; }
         host.appendChild(renderer.domElement);
+        renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); showWebGLFallback(); });
 
-        // GPU context lost handler
-        renderer.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); showWebGLFallback(); });
-
+        // OrbitControls for mouse-look / drag navigation
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.06;
-        controls.target.set(0, 0.0, 0);
-        controls.minDistance = 3.0;
-        controls.maxDistance = 18.0;
-        controls.maxPolarAngle = Math.PI / 2 + 0.15;
-        controls.minPolarAngle = Math.PI / 2 - 0.25;
-        controls.minAzimuthAngle = -Math.PI * 0.35;
-        controls.maxAzimuthAngle = Math.PI * 0.35;
-        // User interaction interrupts auto tour
+        controls.dampingFactor = 0.08;
+        controls.target.set(0, 1.8, 2);
+        controls.minDistance = 1.0;
+        controls.maxDistance = 45;
+        controls.maxPolarAngle = Math.PI * 0.72;
+        controls.minPolarAngle = Math.PI * 0.08;
         controls.addEventListener('start', () => {
-          if (autoTour) { autoTour = false; clearTimeout(autoTourTimer); const b = document.getElementById('btn-tour'); if(b) b.classList.remove('active'); }
+          if (autoTour) { autoTour = false; clearTimeout(autoTourTimer); document.getElementById('btn-tour')?.classList.remove('active'); }
         });
 
-        // Dynamic 30-angle texture switching on 3D rotation
-        controls.addEventListener('change', () => {
-          if (isTransitioning) return;
-          const az = controls.getAzimuthalAngle();
-          const normAng = Math.min(10, Math.max(1, Math.round(((az + Math.PI * 0.32) / (Math.PI * 0.64)) * 9) + 1));
-          const pol = controls.getPolarAngle();
-          const lvl = pol < 1.45 ? '6ft' : (pol > 1.68 ? 'floor' : 'eye');
-          if (normAng !== currentAngle || lvl !== currentLevel) {
-            switchBackdropAngle(lvl, normAng);
-          }
-        });
+        setLoadingStatus('Building 3D Exhibition Hall…', 25);
+        buildLighting();
 
-        setLoadingStatus('Loading Environment…', 45);
-        setupLighting();
-        buildShowroomArchitecture();
+        setLoadingStatus('Constructing Booth Architecture…', 45);
+        buildBoothArchitecture();
 
-        setLoadingStatus('Loading Products…', 75);
-        buildAllProductModels();
+        setLoadingStatus('Placing Exhibition Products…', 65);
+        buildProductDisplays();
+
+        setLoadingStatus('Creating Navigation Hotspots…', 80);
         createHotspotTags();
 
-        setLoadingStatus('Ready', 100);
+        setLoadingStatus('Ready — Enter the Showroom', 100);
 
-        // Instant Reveal 3D Engine
         setTimeout(() => {
           const loader = document.getElementById('intro-loader');
-          if (loader) { loader.classList.add('fade-out'); setTimeout(() => { try { loader.remove(); } catch(e) {} }, 400); }
+          if (loader) { loader.classList.add('fade-out'); setTimeout(() => { try { loader.remove(); } catch(e){} }, 500); }
+
+          // Fly in from exterior overview
+          tweenCamera(WAYPOINTS[0].pos, WAYPOINTS[0].look, 2000);
 
           const params = new URLSearchParams(window.location.search);
           const presetParam = (params.get('preset') || '').toUpperCase();
-          const productParam = params.get('product');
-          const viewParam = params.get('view');
-          const tourParam = params.get('tour');
-
           if (presetParam && CAMERA_PRESETS[presetParam]) {
-            tweenCamera(CAMERA_PRESETS[presetParam].pos, CAMERA_PRESETS[presetParam].target, 2000);
-            highlightHudBtn(presetParam);
-          } else {
-            tweenCamera(CAMERA_PRESETS.OVERVIEW.pos, CAMERA_PRESETS.OVERVIEW.target, 2200);
+            setTimeout(() => flyToWaypoint(WAYPOINTS.indexOf(CAMERA_PRESETS[presetParam])), 2200);
           }
+          if (params.get('tour') === 'auto') setTimeout(() => { autoTour = false; toggleAutoTour(); }, 2600);
+        }, 400);
 
-          if (productParam) {
-            const p = PRODUCTS.find(x => x.name.toLowerCase().replace(/\s/g,'').includes(productParam.toLowerCase().replace(/\s/g,'')) || x.id.toLowerCase().includes(productParam.toLowerCase()));
-            if (p) setTimeout(() => openProductDetail(p), 2500);
-          }
-          if (viewParam === 'catalog') setTimeout(() => openPanel('catalog'), 800);
-          if (viewParam === 'analytics') setTimeout(() => openPanel('analytics'), 800);
-          if (window.location.hash === '#rfq' || viewParam === 'rfq') setTimeout(() => openPanel('rfq'), 800);
-          if (tourParam === 'auto') setTimeout(() => { autoTour = false; toggleAutoTour(); }, 2600);
-        }, 350);
-
-        window.addEventListener('resize', handleResize);
+        window.addEventListener('resize', () => {
+          camera.aspect = innerWidth / innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(innerWidth, innerHeight);
+        });
         renderer.domElement.addEventListener('pointerdown', handleSceneClick);
         requestAnimationFrame(renderLoop);
 
@@ -746,180 +650,306 @@
       }
     }
 
-    function highlightHudBtn(presetKey) {
-      document.querySelectorAll('.hud-btn').forEach(b => {
-        b.classList.toggle('active', b.textContent.toUpperCase().replace(/\s/g,'') === presetKey.replace(/\s/g,'') || b.onclick?.toString().includes(presetKey));
-      });
-    }
+    // ═══════════════════════════════════════════════════════════
+    //  LIGHTING SYSTEM — Exhibition Trade Show
+    // ═══════════════════════════════════════════════════════════
+    function buildLighting() {
+      // Ambient base
+      scene.add(new THREE.AmbientLight(0xd8e8ff, 0.65));
 
-    function setupLighting() {
-      // Ambient warm-neutral exhibition fill
-      const hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x091424, 1.1);
-      scene.add(hemiLight);
-
-      // Key Directional Sun
-      const keySun = new THREE.DirectionalLight(0xffffff, 1.4);
-      keySun.position.set(8, 14, 10);
+      // Key Sun from front-above
+      const keySun = new THREE.DirectionalLight(0xffffff, 1.3);
+      keySun.position.set(0, 14, -8);
       keySun.castShadow = true;
-      keySun.shadow.mapSize.width = 2048;
-      keySun.shadow.mapSize.height = 2048;
+      keySun.shadow.mapSize.set(1024, 1024);
       keySun.shadow.camera.near = 0.5;
-      keySun.shadow.camera.far = 35;
-      keySun.shadow.camera.left = -12;
-      keySun.shadow.camera.right = 12;
-      keySun.shadow.camera.top = 12;
-      keySun.shadow.camera.bottom = -12;
+      keySun.shadow.camera.far = 30;
+      keySun.shadow.camera.left = -10;
+      keySun.shadow.camera.right = 10;
+      keySun.shadow.camera.top = 10;
+      keySun.shadow.camera.bottom = -10;
       keySun.shadow.bias = -0.0005;
       scene.add(keySun);
 
-      // Overhead Soft Exhibition Blue Fill
-      const blueSpot = new THREE.SpotLight(0x38bdf8, 1.8, 22, Math.PI / 4, 0.4, 1);
-      blueSpot.position.set(-2, 10, -1);
-      scene.add(blueSpot);
+      // Sky hemisphere
+      const sky = new THREE.HemisphereLight(0x90caf9, 0x1e293b, 0.6);
+      scene.add(sky);
 
-      // Meeting Lounge Warm Accent
-      const warmSpot = new THREE.SpotLight(0xfef08a, 1.2, 15, Math.PI / 3, 0.5, 1);
-      warmSpot.position.set(4.5, 8, 2.2);
-      scene.add(warmSpot);
+      // ── Spotlights pointing at products ──
+      const spotPositions = [
+        [-5, 5.5, -2], [0, 5.5, -2], [5, 5.5, -2],    // Front row
+        [-5, 5.5,  4], [0, 5.5,  4], [5, 5.5,  4],    // Mid row
+        [-5, 5.5,  8], [0, 5.5,  8], [5, 5.5,  8],    // Rear row
+      ];
+      spotPositions.forEach(([x, y, z]) => {
+        const spot = new THREE.SpotLight(0xfffaed, 1.8, 20, Math.PI / 5, 0.4, 1.2);
+        spot.position.set(x, y, z);
+        spot.target.position.set(x, 0.5, z);
+        scene.add(spot);
+        scene.add(spot.target);
+      });
+
+      // Floor accent strips
+      const ledStrip1 = new THREE.PointLight(0x0ea5e9, 1.5, 10, 2);
+      ledStrip1.position.set(-6.5, 0.2, 3);
+      scene.add(ledStrip1);
+      const ledStrip2 = new THREE.PointLight(0x0ea5e9, 1.5, 10, 2);
+      ledStrip2.position.set(6.5, 0.2, 3);
+      scene.add(ledStrip2);
     }
 
-    function pbrMat(params) {
-      return new THREE.MeshStandardMaterial({
-        color: params.color || 0xffffff,
-        metalness: params.metalness !== undefined ? params.metalness : 0.2,
-        roughness: params.roughness !== undefined ? params.roughness : 0.4,
-        emissive: params.emissive || 0x000000,
-        emissiveIntensity: params.emissiveIntensity || 0.0
+    // ═══════════════════════════════════════════════════════════
+    //  BOOTH ARCHITECTURE — Real 3D Geometry
+    // ═══════════════════════════════════════════════════════════
+    function buildBoothArchitecture() {
+      const texLoader = new THREE.TextureLoader();
+      const heroTex = texLoader.load('/assets/demo/dna-showcase/hero/dna_robotic_hero_master.jpg', (t) => {
+        t.wrapS = THREE.RepeatWrapping;
+        t.repeat.x = -1;
+      });
+
+      function mat(color, metal = 0.1, rough = 0.6, emissive = 0x000000, emissInt = 0) {
+        return new THREE.MeshStandardMaterial({ color, metalness: metal, roughness: rough, emissive, emissiveIntensity: emissInt });
+      }
+      function mesh(geo, material, rx=0, ry=0, rz=0, x=0, y=0, z=0, shadow=true) {
+        const m = new THREE.Mesh(geo, material);
+        m.rotation.set(rx, ry, rz);
+        m.position.set(x, y, z);
+        if (shadow) { m.castShadow = true; m.receiveShadow = true; }
+        scene.add(m); return m;
+      }
+
+      // Exhibition Hall floor
+      const hallFloorMat = mat(0x141b26, 0.05, 0.85);
+      mesh(new THREE.PlaneGeometry(80, 80), hallFloorMat, -Math.PI/2, 0, 0, 0, -0.01, 10, false);
+
+      // Booth carpet (navy blue)
+      const carpetMat = mat(0x0b2542, 0.05, 0.9);
+      const carpetEdgeMat = mat(0x0284c7, 0.4, 0.4, 0x0284c7, 0.8);
+      mesh(new THREE.PlaneGeometry(14, 14), carpetMat, -Math.PI/2, 0, 0, 0, 0.01, 3, false);
+      [-7, 7].forEach(x => mesh(new THREE.BoxGeometry(0.08, 0.05, 14), carpetEdgeMat, 0,0,0, x, 0.025, 3));
+      [-4, 10].forEach(z => mesh(new THREE.BoxGeometry(14, 0.05, 0.08), carpetEdgeMat, 0,0,0, 0, 0.025, z));
+
+      // Back Fascia Wall
+      const fasciaMat = mat(0xf0f4f8, 0.15, 0.4);
+      mesh(new THREE.BoxGeometry(14.2, 5.2, 0.3), fasciaMat, 0,0,0, 0, 2.6, 10.15);
+
+      // DN'a ROBOTIC Brand sign panel (top center header)
+      const signMat = mat(0x081326, 0.3, 0.3, 0x0284c7, 0.4);
+      mesh(new THREE.BoxGeometry(13.8, 1.4, 0.15), signMat, 0,0,0, 0, 4.4, 10.0);
+
+      // Brand wall hero image panel (facing -Z towards audience)
+      const heroPanel = new THREE.Mesh(
+        new THREE.PlaneGeometry(10.5, 3.2),
+        new THREE.MeshBasicMaterial({ map: heroTex, side: THREE.DoubleSide })
+      );
+      heroPanel.position.set(0, 2.3, 9.95);
+      scene.add(heroPanel);
+
+      // Structural Pillars (white aluminum)
+      const pillarMat = mat(0xffffff, 0.5, 0.3);
+      const pillarPos = [[-6.5, 5.2, -3.8], [6.5, 5.2, -3.8], [-6.5, 5.2, 9.8], [6.5, 5.2, 9.8]];
+      pillarPos.forEach(([x, h, z]) => {
+        mesh(new THREE.BoxGeometry(0.32, h, 0.32), pillarMat, 0,0,0, x, h/2, z);
+      });
+
+      // Overhead Canopy Frame
+      const canopyMat = mat(0x0f1929, 0.6, 0.3, 0x0284c7, 0.2);
+      mesh(new THREE.BoxGeometry(14, 0.22, 0.22), canopyMat, 0,0,0, 0, 5.2, -3.8);
+      mesh(new THREE.BoxGeometry(14, 0.22, 0.22), canopyMat, 0,0,0, 0, 5.2, 9.8);
+      mesh(new THREE.BoxGeometry(0.22, 0.22, 13.8), canopyMat, 0,0,0, -6.5, 5.2, 3);
+      mesh(new THREE.BoxGeometry(0.22, 0.22, 13.8), canopyMat, 0,0,0,  6.5, 5.2, 3);
+
+      const canopyLedMat = mat(0x0ea5e9, 0.8, 0.2, 0x38bdf8, 1.8);
+      mesh(new THREE.BoxGeometry(13.8, 0.04, 0.04), canopyLedMat, 0,0,0, 0, 5.08, -3.7);
+      mesh(new THREE.BoxGeometry(13.8, 0.04, 0.04), canopyLedMat, 0,0,0, 0, 5.08,  9.7);
+
+      // Side Walls
+      const sideWallMat = mat(0xf0f4f8, 0.1, 0.5);
+      mesh(new THREE.BoxGeometry(0.2, 3.0, 5.5), sideWallMat, 0,0,0, -6.9, 1.5, 6.8);
+      mesh(new THREE.BoxGeometry(0.2, 3.0, 5.5), sideWallMat, 0,0,0,  6.9, 1.5, 6.8);
+
+      // Lounge in rear
+      const platformMat = mat(0x132338, 0.2, 0.6);
+      mesh(new THREE.BoxGeometry(6.5, 0.12, 3.2), platformMat, 0,0,0, 0, 0.06, 11.2);
+      const counterMat = mat(0x1b2f48, 0.3, 0.5);
+      mesh(new THREE.BoxGeometry(3.2, 1.05, 0.6), counterMat, 0,0,0, 0, 0.525, 9.0);
+      const counterTopMat = mat(0x2d4a62, 0.6, 0.25);
+      mesh(new THREE.BoxGeometry(3.7, 0.06, 0.8), counterTopMat, 0,0,0, 0, 1.06, 9.2);
+
+      // Lounge seating (2 chairs each side)
+      const chairMat = mat(0x0a1625, 0.2, 0.6);
+      const cushionMat = mat(0x1e3d6e, 0.3, 0.5);
+      [[-2, 11.5], [2, 11.5]].forEach(([x, z]) => {
+        mesh(new THREE.BoxGeometry(0.8, 0.4, 0.8), chairMat, 0,0,0, x, 0.2, z);    // seat
+        mesh(new THREE.BoxGeometry(0.8, 0.8, 0.12), chairMat, 0,0,0, x, 0.6, z+0.34); // backrest
+        mesh(new THREE.BoxGeometry(0.7, 0.08, 0.7), cushionMat, 0,0,0, x, 0.41, z); // cushion
+      });
+
+      // Round lounge table
+      const tableGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.65, 16);
+      mesh(tableGeo, counterTopMat, 0,0,0, 0, 0.325, 11.5);
+      const tableTopGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.04, 24);
+      mesh(tableTopGeo, mat(0x3d6080, 0.7, 0.2), 0,0,0, 0, 0.66, 11.5);
+
+      // Small indoor plants
+      const plantPotMat = mat(0x2a1a0a, 0.1, 0.8);
+      const plantMat = mat(0x1a4a1a, 0.0, 0.9);
+      [-5.5, 5.5].forEach(x => {
+        mesh(new THREE.CylinderGeometry(0.18, 0.14, 0.3, 12), plantPotMat, 0,0,0, x, 0.15, 10.5);
+        mesh(new THREE.SphereGeometry(0.32, 8, 6), plantMat, 0,0,0, x, 0.55, 10.5);
+      });
+
+      // ─────────────────────────────────────────────
+      // SPOTLIGHT LIGHT FIXTURES (visible ceiling elements)
+      // ─────────────────────────────────────────────
+      const fixtureMat = mat(0x888888, 0.8, 0.2);
+      const fixtureGeo = new THREE.CylinderGeometry(0.06, 0.09, 0.25, 8);
+      [[-5,3],[-5,6],[-5,9],[0,3],[0,6],[0,9],[5,3],[5,6],[5,9]].forEach(([x, z]) => {
+        mesh(fixtureGeo, fixtureMat, 0,0,0, x, 5.05, z);
       });
     }
 
-    // ── 30-Angle Volumetric Virtual Tour Texture Manager ──
-    let backdropMesh = null;
-    let backdropMat = null;
-    const textureCache = {};
-    let currentLevel = 'eye'; // 'floor', 'eye', '6ft'
-    let currentAngle = 1;     // 1 to 10
-    const texLoader = new THREE.TextureLoader();
+    // ═══════════════════════════════════════════════════════════
+    //  PRODUCT DISPLAY STANDS — 8 exhibition plinths with products
+    // ═══════════════════════════════════════════════════════════
+    function buildProductDisplays() {
+      const plinthMat = new THREE.MeshStandardMaterial({ color: 0xf5f8ff, metalness: 0.25, roughness: 0.45 });
+      const plinthLedMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, emissive: 0x0284c7, emissiveIntensity: 1.2, metalness: 0.5, roughness: 0.3 });
 
-    function getAngleTexturePath(level, ang) {
-      const pad = String(ang).padStart(2, '0');
-      return `/assets/demo/dna-showcase/angles/angle_${level}_${pad}.jpg`;
-    }
+      PRODUCTS.forEach((p, i) => {
+        const px = p.pos.x, pz = p.pos.z;
 
-    function configureTexture(t) {
-      t.generateMipmaps = true;
-      t.minFilter = THREE.LinearMipmapLinearFilter;
-      t.magFilter = THREE.LinearFilter;
-      if (renderer && renderer.capabilities) {
-        t.anisotropy = renderer.capabilities.getMaxAnisotropy();
-      }
-      return t;
-    }
+        // Plinth base
+        const plinth = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.0, 1.1), plinthMat);
+        plinth.position.set(px, 0.5, pz);
+        plinth.castShadow = true;
+        plinth.receiveShadow = true;
+        scene.add(plinth);
 
-    function preloadAngleTextures() {
-      // Preload primary angles
-      for (let i = 1; i <= 10; i++) {
-        const path = getAngleTexturePath('eye', i);
-        texLoader.load(path, (t) => {
-          textureCache[`eye_${i}`] = configureTexture(t);
-        });
-      }
-    }
+        // LED accent strip on plinth edge
+        const ledStrip = new THREE.Mesh(new THREE.BoxGeometry(1.12, 0.04, 1.12), plinthLedMat);
+        ledStrip.position.set(px, 0.03, pz);
+        scene.add(ledStrip);
 
-    function switchBackdropAngle(level, angleNum) {
-      currentLevel = level;
-      currentAngle = angleNum;
-      const key = `${level}_${angleNum}`;
+        // Product 3D geometry on top of plinth
+        const productGroup = createProductGeometry(p.id, p);
+        productGroup.position.set(px, 1.0, pz);
+        productGroup.userData.product = p;
+        productMeshes.push(productGroup);
+        scene.add(productGroup);
 
-      // Update UI active buttons
-      ['floor', 'eye', '6ft'].forEach(l => {
-        const b = document.getElementById(`btn-lvl-${l}`);
-        if (b) b.classList.toggle('active', l === level);
-      });
-      for (let i = 1; i <= 10; i++) {
-        const b = document.getElementById(`btn-ang-${i}`);
-        if (b) b.classList.toggle('active', i === angleNum);
-      }
-
-      if (textureCache[key]) {
-        if (backdropMat) {
-          backdropMat.map = textureCache[key];
-          backdropMat.needsUpdate = true;
-        }
-      } else {
-        const path = getAngleTexturePath(level, angleNum);
-        texLoader.load(path, (t) => {
-          textureCache[key] = configureTexture(t);
-          if (backdropMat && currentLevel === level && currentAngle === angleNum) {
-            backdropMat.map = textureCache[key];
-            backdropMat.needsUpdate = true;
-          }
-        });
-      }
-    }
-
-    function setElevationLevel(lvl) {
-      currentLevel = lvl;
-      const targetY = (lvl === 'floor') ? -0.8 : ((lvl === '6ft') ? 1.0 : 0.0);
-      tweenCamera({ x: camera.position.x, y: targetY, z: camera.position.z }, { x: 0, y: targetY * 0.5, z: 0 }, 1000);
-      switchBackdropAngle(currentLevel, currentAngle);
-    }
-
-    function setBoothAngle(angIdx) {
-      currentAngle = angIdx;
-      // Calculate 3D orbital camera angle for 10 perspectives around the booth
-      const norm = (angIdx - 5.5) / 4.5; // -1 to +1
-      const rad = norm * (Math.PI * 0.32);
-      const dist = 12.0;
-      const targetX = Math.sin(rad) * dist;
-      const targetZ = Math.cos(rad) * dist;
-      const targetY = (currentLevel === 'floor') ? -0.8 : ((currentLevel === '6ft') ? 1.0 : 0.0);
-
-      tweenCamera({ x: targetX, y: targetY, z: targetZ }, { x: 0, y: targetY * 0.5, z: 0 }, 1200);
-      switchBackdropAngle(currentLevel, currentAngle);
-    }
-
-    function buildShowroomArchitecture() {
-      // 30-Angle Multi-View Photorealistic Projection Canvas
-      preloadAngleTextures();
-
-      texLoader.load(getAngleTexturePath('eye', 1), function(tex) {
-        tex.generateMipmaps = false;
-        tex.minFilter = THREE.LinearFilter;
-        tex.magFilter = THREE.LinearFilter;
-        textureCache['eye_1'] = tex;
-        
-        // Curved 3D Panoramic Projection Plane (28m x 15.75m with smooth panoramic curve)
-        const planeGeo = new THREE.PlaneGeometry(28, 15.75, 48, 24);
-        const pos = planeGeo.attributes.position;
-        for (let i = 0; i < pos.count; i++) {
-          const x = pos.getX(i);
-          pos.setZ(i, -(x * x) * 0.015);
-        }
-        planeGeo.computeVertexNormals();
-
-        backdropMat = new THREE.MeshBasicMaterial({ map: tex, toneMapped: true });
-        backdropMesh = new THREE.Mesh(planeGeo, backdropMat);
-        backdropMesh.position.set(0, 0.0, -10.0);
-        scene.add(backdropMesh);
-      });
-    }
-
-    // ── 3. 3D Spatial Product Target Anchors ──
-    function buildAllProductModels() {
-      // Invisible Raycastable 3D Product Hit Spheres
-      PRODUCTS.forEach(p => {
-        const hitGeo = new THREE.SphereGeometry(0.8, 16, 16);
-        const hitMat = new THREE.MeshBasicMaterial({ visible: false });
-        const hitMesh = new THREE.Mesh(hitGeo, hitMat);
-        hitMesh.position.set(p.pos.x, p.pos.y, p.pos.z);
+        // Invisible large raycast target
+        const hitMesh = new THREE.Mesh(
+          new THREE.BoxGeometry(1.2, 2.0, 1.2),
+          new THREE.MeshBasicMaterial({ visible: false })
+        );
+        hitMesh.position.set(px, 1.0, pz);
         hitMesh.userData.product = p;
         productMeshes.push(hitMesh);
         scene.add(hitMesh);
       });
     }
 
-    // ── 4. 3D Positioned HTML Hotspot Overlay Layer ──
+    // Product geometry builder
+    function createProductGeometry(id, p) {
+      const g = new THREE.Group();
+      const col = p.color || 0x0284c7;
+      const acc = p.accentColor || 0x38bdf8;
+      const mat = (c, m=0.4, r=0.4, em=0x000000, ei=0) => new THREE.MeshStandardMaterial({ color: c, metalness: m, roughness: r, emissive: em, emissiveIntensity: ei });
+
+      if (id.includes('COBOT')) {
+        // 6-axis cobot arm
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.25, 0.15, 16), mat(0xeeeeee, 0.5, 0.35));
+        const arm1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.12), mat(col, 0.6, 0.3));
+        const arm2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.45, 0.1), mat(0xffffff, 0.4, 0.4));
+        const joint1 = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 10), mat(acc, 0.7, 0.25, acc, 0.4));
+        const joint2 = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 10), mat(acc, 0.7, 0.25, acc, 0.4));
+        const head = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.18, 12), mat(0x222222, 0.6, 0.3));
+        base.position.set(0, 0.075, 0);
+        arm1.position.set(0, 0.43, 0); arm1.rotation.z = 0.2;
+        joint1.position.set(0.05, 0.72, 0);
+        arm2.position.set(0.1, 0.98, 0); arm2.rotation.z = -0.15;
+        joint2.position.set(0.18, 1.22, 0);
+        head.position.set(0.2, 1.42, 0); head.rotation.z = 0.5;
+        [base, arm1, arm2, joint1, joint2, head].forEach(m => { m.castShadow = true; g.add(m); });
+      } else if (id.includes('AMR')) {
+        // Flat AMR mobile robot
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.18, 0.55), mat(col, 0.4, 0.5));
+        const top = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.06, 0.5), mat(0x222222, 0.6, 0.3));
+        const wheel = (x, z) => {
+          const w = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.06, 12), mat(0x111111, 0.3, 0.9));
+          w.position.set(x, -0.06, z); w.rotation.z = Math.PI/2; return w;
+        };
+        const scanner = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.08, 10), mat(acc, 0.6, 0.2, acc, 0.6));
+        body.position.set(0, 0.09, 0); top.position.set(0, 0.2, 0);
+        scanner.position.set(0.25, 0.24, 0);
+        [body, top, scanner, wheel(-0.38,0.22), wheel(0.38,0.22), wheel(-0.38,-0.22), wheel(0.38,-0.22)].forEach(m => { m.castShadow = true; g.add(m); });
+      } else if (id.includes('OPTISCAN')) {
+        // Structured light sensor
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.12, 0.12), mat(0x333333, 0.6, 0.3));
+        const lens1 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.05, 10), mat(0x111111, 0.3, 0.4));
+        const lens2 = lens1.clone();
+        const projector = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.05, 0.06, 8), mat(acc, 0.7, 0.2, acc, 0.8));
+        body.position.set(0, 0.08, 0);
+        lens1.position.set(-0.1, 0.08, 0.085); lens1.rotation.x = Math.PI/2;
+        lens2.position.set(0.1, 0.08, 0.085); lens2.rotation.x = Math.PI/2;
+        projector.position.set(0, 0.08, -0.085); projector.rotation.x = Math.PI/2;
+        [body, lens1, lens2, projector].forEach(m => { m.castShadow = true; g.add(m); });
+      } else if (id.includes('FLEXGRIP')) {
+        // 2-finger gripper
+        const base = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.22, 0.14), mat(0xcccccc, 0.6, 0.3));
+        const finger1 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.18, 0.04), mat(col, 0.5, 0.3));
+        const finger2 = finger1.clone();
+        const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.1, 6), mat(0x333333, 0.3, 0.8));
+        base.position.set(0, 0.11, 0);
+        finger1.position.set(-0.06, 0.31, 0); finger2.position.set(0.06, 0.31, 0);
+        cable.position.set(0, -0.05, 0);
+        [base, finger1, finger2, cable].forEach(m => { m.castShadow = true; g.add(m); });
+      } else if (id.includes('FLOWDRIVE')) {
+        // Pump station
+        const housing = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.38, 16), mat(0x88aacc, 0.5, 0.4));
+        const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.28, 12), mat(0x333355, 0.5, 0.4));
+        const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.25, 8), mat(0xaaaaaa, 0.6, 0.3));
+        housing.position.set(0, 0.19, 0); motor.position.set(0, 0.48, 0);
+        pipe.position.set(0.2, 0.19, 0); pipe.rotation.z = Math.PI/2;
+        [housing, motor, pipe].forEach(m => { m.castShadow = true; g.add(m); });
+      } else if (id.includes('SYNCHRO')) {
+        // VFD drive box
+        const box = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.38, 0.12), mat(0x222233, 0.4, 0.5));
+        const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.05), new THREE.MeshStandardMaterial({ color: 0x00ff88, emissive: 0x00ff44, emissiveIntensity: 1.2 }));
+        const terminal = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.06, 0.05), mat(0x444444, 0.3, 0.6));
+        box.position.set(0, 0.19, 0); screen.position.set(0, 0.27, 0.065);
+        terminal.position.set(0, 0.06, 0.09);
+        [box, screen, terminal].forEach(m => { m.castShadow = true; g.add(m); });
+      } else if (id.includes('EDGECORE')) {
+        // Industrial PC
+        const chassis = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.1, 0.24), mat(0x2a2a2a, 0.5, 0.4));
+        const port1 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.025, 0.01), mat(0x3366cc, 0.3, 0.5));
+        const port2 = port1.clone(); const port3 = port1.clone();
+        const power = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.015, 8), mat(0x00ee00, 0.2, 0.5, 0x00ff00, 2));
+        chassis.position.set(0, 0.05, 0);
+        port1.position.set(0.12, 0.05, -0.125); port2.position.set(0.06, 0.05, -0.125); port3.position.set(0.0, 0.05, -0.125);
+        power.position.set(-0.12, 0.1, -0.12); power.rotation.x = Math.PI/2;
+        [chassis, port1, port2, port3, power].forEach(m => { m.castShadow = true; g.add(m); });
+      } else {
+        // LaserCell — turnkey workcell
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.65, 0.6), mat(0x1a1a1a, 0.5, 0.5));
+        const door = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.5), mat(0x0a2a0a, 0.3, 0.6, 0x003300, 0.3));
+        const laser = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.55, 8), mat(acc, 0.7, 0.2, acc, 1.0));
+        frame.position.set(0, 0.325, 0); door.position.set(0.33, 0.35, 0);
+        laser.position.set(0, 0.55, 0); laser.rotation.x = Math.PI/2;
+        [frame, door, laser].forEach(m => { m.castShadow = true; g.add(m); });
+      }
+
+      // Rotate slightly for dynamic display angle
+      g.rotation.y = (Math.random() - 0.5) * 0.4;
+      return g;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  HOTSPOT TAGS — 3D Screen-Space Projected Labels
+    // ═══════════════════════════════════════════════════════════
     function createHotspotTags() {
       const layer = document.getElementById('hotspot-layer');
       layer.innerHTML = '';
@@ -938,15 +968,9 @@
       PRODUCTS.forEach(p => {
         const el = document.getElementById(`hotspot-${p.id}`);
         if (!el) return;
-        wp.set(p.pos.x, p.pos.y + 1.2, p.pos.z);
+        wp.set(p.pos.x, p.pos.y + 2.0, p.pos.z);
         wp.project(camera);
-
-        // Check if behind camera
-        if (wp.z > 1.0) {
-          el.style.display = 'none';
-          return;
-        }
-
+        if (wp.z > 1.0) { el.style.display = 'none'; return; }
         const x = (wp.x * 0.5 + 0.5) * innerWidth;
         const y = (-(wp.y * 0.5) + 0.5) * innerHeight;
         el.style.display = 'flex';
@@ -955,67 +979,95 @@
       });
     }
 
-    // ── 5. Camera Tweening & Preset Controller ──
+    // ═══════════════════════════════════════════════════════════
+    //  NAVIGATION — Waypoint fly-to & Camera Tween
+    // ═══════════════════════════════════════════════════════════
+    function flyToWaypoint(idx) {
+      currentWaypointIdx = idx;
+      const wp = WAYPOINTS[idx];
+      if (!wp) return;
+      // Update UI
+      for (let i = 0; i < WAYPOINTS.length; i++) {
+        const b = document.getElementById(`wp-btn-${i}`);
+        if (b) b.classList.toggle('active', i === idx);
+      }
+      tweenCamera(wp.pos, wp.look, 1600);
+    }
+
     function setPreset(key) {
       document.querySelectorAll('.hud-btn').forEach(b => b.classList.remove('active'));
       event?.target?.classList.add('active');
       autoTour = false;
-      document.getElementById('btn-tour').classList.remove('active');
-
-      const preset = CAMERA_PRESETS[key] || CAMERA_PRESETS.OVERVIEW;
-      tweenCamera(preset.pos, preset.target, 1400);
+      document.getElementById('btn-tour')?.classList.remove('active');
+      const wp = CAMERA_PRESETS[key] || WAYPOINTS[0];
+      tweenCamera(wp.pos, wp.look, 1600);
     }
 
-    function tweenCamera(targetPos, targetLookAt, duration = 1200) {
+    function tweenCamera(targetPos, targetLook, duration = 1400) {
       isTransitioning = true;
       const startPos = camera.position.clone();
       const startTarget = controls.target.clone();
+      const endPos = new THREE.Vector3(targetPos.x, targetPos.y, targetPos.z);
+      const endTarget = new THREE.Vector3(targetLook.x, targetLook.y, targetLook.z);
       const startTime = performance.now();
 
-      function updateTween(now) {
-        const elapsed = now - startTime;
-        const t = Math.min(1.0, elapsed / duration);
-        const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-
-        camera.position.lerpVectors(startPos, new THREE.Vector3(targetPos.x, targetPos.y, targetPos.z), ease);
-        controls.target.lerpVectors(startTarget, new THREE.Vector3(targetLookAt.x, targetLookAt.y, targetLookAt.z), ease);
+      function update(now) {
+        const t = Math.min(1, (now - startTime) / duration);
+        const e = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+        camera.position.lerpVectors(startPos, endPos, e);
+        controls.target.lerpVectors(startTarget, endTarget, e);
         controls.update();
-
-        if (t < 1.0) {
-          requestAnimationFrame(updateTween);
-        } else {
-          isTransitioning = false;
-        }
+        if (t < 1) requestAnimationFrame(update);
+        else isTransitioning = false;
       }
-      requestAnimationFrame(updateTween);
+      requestAnimationFrame(update);
     }
 
-    let autoTourTimer = null;
-    const AUTO_TOUR_SEQUENCE = ['OVERVIEW', 'ISLAND', 'AUTOMATION', 'ROBOT', 'LOUNGE', 'MEDIA'];
-    let autoTourIndex = 0;
-
+    // Auto Tour
+    const AUTO_TOUR_SEQ = [0, 1, 2, 3, 4, 1];
     function toggleAutoTour() {
       autoTour = !autoTour;
-      const btn = document.getElementById('btn-tour');
-      if (btn) btn.classList.toggle('active', autoTour);
-      if (autoTour) {
-        autoTourIndex = 0;
-        runAutoTourStep();
-      } else {
-        clearTimeout(autoTourTimer);
+      document.getElementById('btn-tour')?.classList.toggle('active', autoTour);
+      if (autoTour) { autoTourIndex = 0; runAutoTourStep(); }
+      else clearTimeout(autoTourTimer);
+    }
+    function runAutoTourStep() {
+      if (!autoTour) return;
+      flyToWaypoint(AUTO_TOUR_SEQ[autoTourIndex % AUTO_TOUR_SEQ.length]);
+      autoTourIndex++;
+      autoTourTimer = setTimeout(runAutoTourStep, 5000);
+    }
+
+    // Click scene to open product
+    function handleSceneClick(e) {
+      if (isTransitioning) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(productMeshes, true);
+      if (hits.length > 0) {
+        let obj = hits[0].object;
+        while (obj && !obj.userData?.product) obj = obj.parent;
+        if (obj?.userData?.product) openProductDetail(obj.userData.product);
       }
     }
 
-    function runAutoTourStep() {
-      if (!autoTour) return;
-      const key = AUTO_TOUR_SEQUENCE[autoTourIndex % AUTO_TOUR_SEQUENCE.length];
-      const preset = CAMERA_PRESETS[key];
-      tweenCamera(preset.pos, preset.target, 1800);
-      autoTourIndex++;
-      autoTourTimer = setTimeout(runAutoTourStep, 4500);
+    // Main render loop
+    function renderLoop() {
+      controls.update();
+      // Gently rotate product models
+      productMeshes.forEach((m, i) => {
+        if (m.userData?.product && m.geometry?.type !== 'BoxGeometry') {
+          m.rotation.y += 0.003;
+        }
+      });
+      renderer.render(scene, camera);
+      updateHotspots();
+      requestAnimationFrame(renderLoop);
     }
 
-    // ── 6. Drawer Controller & Sales-Grade Content ──
+    // ── Drawer UI & Product Detail ──
     function openPanel(type, data = null) {
       const drawer = document.getElementById('drawer');
       const title = document.getElementById('drawer-header-title');
@@ -1025,7 +1077,7 @@
       if (type === 'catalog') {
         title.innerText = 'Flagship Automation Lineup (8 Products)';
         content.innerHTML = `
-          <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Click any commercial product to inspect 3D engineering assemblies, download certified datasheets, or request wholesale quotes.</p>
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Click any product to inspect 3D engineering assemblies, download datasheets, or request quotes.</p>
           <div class="catalog-grid">
             ${PRODUCTS.map(p => `
               <div class="catalog-card" onclick="openProductDetail(PRODUCTS.find(x => x.id === '${p.id}'))">
@@ -1035,135 +1087,72 @@
                 <div style="font-size:11px; color:#94a3b8; margin-top:4px;">${p.payload}</div>
               </div>
             `).join('')}
-          </div>
-        `;
-      }
-      else if (type === 'card') {
+          </div>`;
+      } else if (type === 'card') {
         title.innerText = 'Smart Exhibitor Pass';
         content.innerHTML = `
           <div style="background:var(--dark-card); border:1px solid var(--border); border-radius:12px; padding:20px; text-align:center; margin-bottom:16px;">
             <div style="width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg,#0284c7,#2563eb); color:#fff; font-size:26px; font-weight:800; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">JV</div>
             <h3 style="font-size:18px; font-weight:800;">Julian Vance</h3>
             <div style="color:#38bdf8; font-size:12px; font-weight:700; margin-top:2px;">VP of Global Industrial Solutions</div>
-            <div style="color:#94a3b8; font-size:12px; margin-top:4px;">dn’a Industrial Automation Corp. • Stand W-412</div>
-            <a href="/card.html" target="_blank" style="display:inline-block; margin-top:12px; font-size:12px; color:#38bdf8; text-decoration:none; font-weight:700;">Open Standalone Mobile Card ↗</a>
+            <div style="color:#94a3b8; font-size:12px; margin-top:4px;">dn'a Industrial Automation Corp. • Stand W-412</div>
           </div>
           <button class="btn-action" onclick="downloadVCard()">💾 Save Contact Card (.vcf)</button>
-          <button class="btn-secondary" onclick="openPanel('rfq')">✉ Submit Direct RFQ to Julian</button>
-          <button class="btn-secondary" onclick="openPanel('meeting')">📅 Book 1:1 Show Meeting</button>
-        `;
-      }
-      else if (type === 'briefcase') {
+          <button class="btn-secondary" onclick="openPanel('rfq')">✉ Submit Direct RFQ</button>
+          <button class="btn-secondary" onclick="openPanel('meeting')">📅 Book 1:1 Show Meeting</button>`;
+      } else if (type === 'briefcase') {
         title.innerText = 'My Virtual Trade Show Briefcase';
         content.innerHTML = `
-          <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Collected product engineering datasheets and quotation requests.</p>
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Collected product datasheets and quotation requests.</p>
           ${briefcase.length === 0 
-            ? `<div style="padding:28px; text-align:center; color:var(--text-muted); border:1px dashed var(--border); border-radius:10px;">Your briefcase is empty. Click "+ Add to Briefcase" on any product to bundle datasheets and request combined quotes.</div>`
+            ? `<div style="padding:28px; text-align:center; color:var(--text-muted); border:1px dashed var(--border); border-radius:10px;">Your briefcase is empty. Click "+ Add to Briefcase" on any product.</div>`
             : briefcase.map((item, idx) => `
               <div style="padding:12px 16px; background:var(--dark-card); border:1px solid var(--border); border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                  <b style="font-size:13px;">${item.name}</b>
-                  <div style="font-size:11px; color:#38bdf8;">${item.model} • ${item.price}</div>
-                </div>
+                <div><b style="font-size:13px;">${item.name}</b><div style="font-size:11px; color:#38bdf8;">${item.model} • ${item.price}</div></div>
                 <button onclick="removeFromBriefcase(${idx})" style="background:transparent; border:none; color:var(--danger); cursor:pointer; font-size:14px;">✕</button>
-              </div>
-            `).join('')
+              </div>`).join('')
           }
-          ${briefcase.length > 0 ? `
-            <button class="btn-action" style="margin-top:14px;" onclick="openPanel('rfq')">Request Combined Quote for Briefcase (${briefcase.length} Items)</button>
-          ` : ''}
-        `;
-      }
-      else if (type === 'analytics') {
+          ${briefcase.length > 0 ? `<button class="btn-action" style="margin-top:14px;" onclick="openPanel('rfq')">Request Combined Quote (${briefcase.length} Items)</button>` : ''}`;
+      } else if (type === 'analytics') {
         title.innerText = 'Exhibitor Analytics (Demo Telemetry)';
         content.innerHTML = `
           <div style="background:rgba(245,158,11,0.12); border:1px solid var(--warning); color:#fbbf24; padding:10px 14px; border-radius:8px; font-size:11px; font-weight:700; margin-bottom:16px;">
-            ⚠️ DEMO ANALYTICS — Simulated Exhibition Telemetry for Commercial Presentation
+            ⚠️ DEMO ANALYTICS — Simulated Exhibition Telemetry
           </div>
           <div class="catalog-grid" style="margin-bottom:16px;">
             <div class="catalog-card"><small style="color:var(--text-muted);">Booth Visitors</small><b style="display:block; font-size:20px; color:#38bdf8;" class="mono">1,428</b></div>
             <div class="catalog-card"><small style="color:var(--text-muted);">Unique Buyers</small><b style="display:block; font-size:20px; color:#34d399;" class="mono">892</b></div>
-            <div class="catalog-card"><small style="color:var(--text-muted);">Floor QR Scans</small><b style="display:block; font-size:20px; color:#a78bfa;" class="mono">319</b></div>
+            <div class="catalog-card"><small style="color:var(--text-muted);">QR Scans</small><b style="display:block; font-size:20px; color:#a78bfa;" class="mono">319</b></div>
             <div class="catalog-card"><small style="color:var(--text-muted);">Qualified RFQs</small><b style="display:block; font-size:20px; color:#f59e0b;" class="mono">47</b></div>
-          </div>
-          <h4 style="font-size:13px; font-weight:700; margin-bottom:8px;">Buyer Conversion Funnel</h4>
-          <div style="font-size:12px; color:var(--text-muted); line-height:1.8; background:var(--dark-card); padding:12px; border-radius:8px; border:1px solid var(--border);">
-            • Showroom Traffic: 1,428 visits (100%)<br>
-            • 3D Product Inspection: 3,614 views (253%)<br>
-            • Catalog Downloads: 482 downloads (33.7%)<br>
-            • Wholesale Inquiries / RFQ: 89 submissions (6.2%)
-          </div>
-        `;
-      }
-      else if (type === 'rfq') {
+          </div>`;
+      } else if (type === 'rfq') {
         const prod = data || PRODUCTS[0];
         title.innerText = 'Request Wholesale Quotation';
         content.innerHTML = `
-          <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Submit a formal RFQ. Requests are routed to our live platform intake queue.</p>
           <form onsubmit="submitRFQ(event)">
             <label class="form-label">Target Product Line</label>
-            <select id="rfq-product" class="form-field">
-              ${PRODUCTS.map(p => `<option value="${p.id}" ${p.id === prod.id ? 'selected' : ''}>${p.name} (${p.model})</option>`).join('')}
-            </select>
-            <label class="form-label">Buyer Full Name *</label>
-            <input id="rfq-name" class="form-field" required placeholder="e.g. Marcus Sterling">
-            <label class="form-label">Company / Enterprise *</label>
-            <input id="rfq-company" class="form-field" required placeholder="e.g. Apex Manufacturing Solutions">
-            <label class="form-label">Corporate Email *</label>
-            <input id="rfq-email" type="email" class="form-field" required placeholder="m.sterling@apex.example">
-            <label class="form-label">Target Unit Quantity</label>
-            <input id="rfq-qty" type="number" class="form-field" value="4" min="1">
-            <label class="form-label">Application Specifications & Delivery Target</label>
-            <textarea id="rfq-notes" class="form-field" rows="3" placeholder="Describe payload environment, factory location, or timeline..."></textarea>
+            <select id="rfq-product" class="form-field">${PRODUCTS.map(p => `<option value="${p.id}" ${p.id===prod.id?'selected':''}>${p.name} (${p.model})</option>`).join('')}</select>
+            <label class="form-label">Buyer Full Name *</label><input id="rfq-name" class="form-field" required placeholder="e.g. Marcus Sterling">
+            <label class="form-label">Company *</label><input id="rfq-company" class="form-field" required placeholder="e.g. Apex Manufacturing">
+            <label class="form-label">Corporate Email *</label><input id="rfq-email" type="email" class="form-field" required placeholder="m.sterling@apex.example">
+            <label class="form-label">Quantity</label><input id="rfq-qty" type="number" class="form-field" value="4" min="1">
+            <label class="form-label">Specifications & Delivery</label>
+            <textarea id="rfq-notes" class="form-field" rows="3" placeholder="Describe application, location, or timeline..."></textarea>
             <button type="submit" class="btn-action">Submit Formal RFQ</button>
           </form>
-          <div id="rfq-banner" style="display:none; margin-top:14px; padding:12px; border-radius:8px; background:rgba(16,185,129,0.15); border:1px solid #10b981; color:#34d399; font-size:12px;"></div>
-        `;
-      }
-      else if (type === 'meeting') {
+          <div id="rfq-banner" style="display:none; margin-top:14px; padding:12px; border-radius:8px; background:rgba(16,185,129,0.15); border:1px solid #10b981; color:#34d399; font-size:12px;"></div>`;
+      } else if (type === 'meeting') {
         title.innerText = 'Book Engineering Consultation';
         content.innerHTML = `
-          <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Schedule a 1:1 technical consultation with a dn’a application engineer.</p>
           <form onsubmit="submitMeeting(event)">
-            <label class="form-label">Your Name *</label>
-            <input id="meet-name" class="form-field" required placeholder="e.g. Sarah Jenkins">
-            <label class="form-label">Company Name *</label>
-            <input id="meet-company" class="form-field" required placeholder="e.g. Horizon Robotics LLC">
-            <label class="form-label">Business Email *</label>
-            <input id="meet-email" type="email" class="form-field" required placeholder="s.jenkins@horizon.example">
-            <label class="form-label">Preferred Date & Time</label>
-            <input id="meet-date" type="datetime-local" class="form-field" required>
-            <label class="form-label">Technical Topics to Cover</label>
-            <textarea id="meet-notes" class="form-field" rows="2" placeholder="e.g. Cycle time simulation, end-effector payload, safety standards"></textarea>
+            <label class="form-label">Your Name *</label><input id="meet-name" class="form-field" required placeholder="e.g. Sarah Jenkins">
+            <label class="form-label">Company *</label><input id="meet-company" class="form-field" required placeholder="e.g. Horizon Robotics">
+            <label class="form-label">Email *</label><input id="meet-email" type="email" class="form-field" required placeholder="s.jenkins@horizon.example">
+            <label class="form-label">Preferred Date & Time</label><input id="meet-date" type="datetime-local" class="form-field" required>
+            <label class="form-label">Topics</label><textarea id="meet-notes" class="form-field" rows="2" placeholder="Cycle time, payload, safety standards..."></textarea>
             <button type="submit" class="btn-action">Confirm Consultation Booking</button>
           </form>
-          <div id="meet-banner" style="display:none; margin-top:14px; padding:12px; border-radius:8px; background:rgba(16,185,129,0.15); border:1px solid #10b981; color:#34d399; font-size:12px;"></div>
-        `;
-      }
-      else if (type === 'sample') {
-        const prod = data || PRODUCTS[0];
-        title.innerText = 'Request Evaluation / Sample Unit';
-        content.innerHTML = `
-          <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Request a physical sample or evaluation unit for technical qualification in your production facility.</p>
-          <form onsubmit="submitSample(event)">
-            <label class="form-label">Product to Evaluate *</label>
-            <select id="sample-product" class="form-field">
-              ${PRODUCTS.map(p => `<option value="${p.name} (${p.model})" ${p.id === prod.id ? 'selected' : ''}>${p.name} (${p.model})</option>`).join('')}
-            </select>
-            <label class="form-label">Full Name *</label>
-            <input id="sample-name" class="form-field" required placeholder="e.g. David Vance">
-            <label class="form-label">Company / Lab *</label>
-            <input id="sample-company" class="form-field" required placeholder="e.g. Apex Industrial Automation">
-            <label class="form-label">Work Email *</label>
-            <input id="sample-email" type="email" class="form-field" required placeholder="d.vance@apex.example">
-            <label class="form-label">Destination Facility / Shipping Address *</label>
-            <input id="sample-address" class="form-field" required placeholder="Factory / Lab shipping address">
-            <label class="form-label">Evaluation Details & Application Target</label>
-            <textarea id="sample-notes" class="form-field" rows="2" placeholder="Describe your test setup or trial timeline..."></textarea>
-            <button type="submit" class="btn-action">Submit Sample Evaluation Request</button>
-          </form>
-          <div id="sample-banner" style="display:none; margin-top:14px; padding:12px; border-radius:8px; background:rgba(16,185,129,0.15); border:1px solid #10b981; color:#34d399; font-size:12px;"></div>
-        `;
+          <div id="meet-banner" style="display:none; margin-top:14px; padding:12px; border-radius:8px; background:rgba(16,185,129,0.15); border:1px solid #10b981; color:#34d399; font-size:12px;"></div>`;
       }
     }
 
@@ -1172,18 +1161,13 @@
       const title = document.getElementById('drawer-header-title');
       const content = document.getElementById('drawer-content');
       drawer.classList.add('open');
-
       title.innerText = p.name;
       content.innerHTML = `
         <span class="badge-demo" style="font-size:10px;">${p.category}</span>
         <h2 style="font-size:22px; font-weight:800; margin:6px 0 2px;">${p.name}</h2>
         <div style="font-size:13px; color:#38bdf8; font-weight:700; margin-bottom:12px;">Model: ${p.model}</div>
         <p style="color:var(--text-muted); font-size:13px; line-height:1.5;">${p.fullDesc}</p>
-
-        <!-- 3D Interactive Viewer Box -->
         <div id="product-3d-host" class="product-3d-box"></div>
-
-        <!-- Technical Specification Matrix -->
         <h4 style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-top:16px;">Engineering Specifications</h4>
         <table class="specs-table">
           <tr><td>Wholesale Price</td><td>${p.price}</td></tr>
@@ -1193,227 +1177,86 @@
           <tr><td>Working Radius / Reach</td><td>${p.reach}</td></tr>
           <tr><td>System Precision</td><td>${p.accuracy}</td></tr>
           <tr><td>Power / Input</td><td>${p.power}</td></tr>
-          <tr><td>Dimensions / Weight</td><td>${p.dimensions}</td></tr>
-          <tr><td>Warranty Standard</td><td>${p.warranty}</td></tr>
+          <tr><td>Dimensions</td><td>${p.dimensions}</td></tr>
+          <tr><td>Warranty</td><td>${p.warranty}</td></tr>
         </table>
-
-        <!-- Download Certified Spec PDF -->
         <a href="${p.pdfFile}" download class="btn-secondary" style="display:flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; margin-bottom:8px;">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download Engineering Datasheet (PDF)
+          ⬇ Download Engineering Datasheet (PDF)
         </a>
-
-        <!-- Product-Aware Primary CTA -->
         <button class="btn-action" onclick="openPanel('rfq', PRODUCTS.find(x => x.id === '${p.id}'))">${p.ctaLabel}</button>
-        <button class="btn-secondary" onclick="openPanel('sample', PRODUCTS.find(x => x.id === '${p.id}'))">📦 Request Evaluation / Sample Unit</button>
         <button class="btn-secondary" onclick="addToBriefcase('${p.id}')">📥 Add to My Briefcase</button>
-        <button class="btn-secondary" onclick="openPanel('meeting')">📅 Schedule 1:1 Video Consultation</button>
+        <button class="btn-secondary" onclick="openPanel('meeting')">📅 Schedule Video Consultation</button>`;
 
-        <div style="font-size:11px; color:#64748b; margin-top:20px; border-top:1px solid rgba(255,255,255,0.08); padding-top:10px;">
-          dn’a Commercial Showcase Asset • Verified PBR Materials & Mechanical Geometry
-        </div>
-      `;
-
-      // Tween Camera to focus on product
-      tweenCamera({ x: p.pos.x + 2.2, y: p.pos.y + 1.4, z: p.pos.z + 2.6 }, p.pos, 1000);
-      setTimeout(() => renderProduct3DPreview(p), 50);
+      // Fly camera to product
+      tweenCamera({ x: p.pos.x + 2.5, y: p.pos.y + 1.8, z: p.pos.z + 3.0 }, { x: p.pos.x, y: p.pos.y + 0.8, z: p.pos.z }, 1200);
+      setTimeout(() => renderProduct3DPreview(p), 80);
     }
 
-    function closeDrawer() {
-      document.getElementById('drawer').classList.remove('open');
-    }
+    function closeDrawer() { document.getElementById('drawer').classList.remove('open'); }
 
-    // ── 7. Single Product 3D Hero Preview ──
+    // Mini product preview renderer
     let miniRenderer, miniScene, miniCamera;
     function renderProduct3DPreview(p) {
       const host = document.getElementById('product-3d-host');
       if (!host) return;
       host.innerHTML = '';
-
       miniScene = new THREE.Scene();
-      miniCamera = new THREE.PerspectiveCamera(45, host.clientWidth / host.clientHeight, 0.1, 20);
-      miniCamera.position.set(2.4, 1.8, 2.8);
-
+      miniCamera = new THREE.PerspectiveCamera(45, host.clientWidth / (host.clientHeight || 240), 0.1, 20);
+      miniCamera.position.set(2, 1.5, 2.5);
       miniRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-      miniRenderer.setSize(host.clientWidth, host.clientHeight);
+      miniRenderer.setSize(host.clientWidth, host.clientHeight || 240);
       miniRenderer.setPixelRatio(Math.min(devicePixelRatio, 2));
       host.appendChild(miniRenderer.domElement);
-
-      const miniControls = new THREE.OrbitControls(miniCamera, miniRenderer.domElement);
-      miniControls.enableDamping = true;
-      miniControls.autoRotate = true;
-      miniControls.autoRotateSpeed = 2.0;
-
+      const mc = new THREE.OrbitControls(miniCamera, miniRenderer.domElement);
+      mc.enableDamping = true; mc.autoRotate = true; mc.autoRotateSpeed = 2.2;
       miniScene.add(new THREE.HemisphereLight(0xffffff, 0x111e2e, 1.2));
-      const light = new THREE.DirectionalLight(0xffffff, 1.4);
-      light.position.set(4, 6, 4);
-      miniScene.add(light);
-
+      const dl = new THREE.DirectionalLight(0xffffff, 1.4); dl.position.set(4, 6, 4); miniScene.add(dl);
       const model = createProductGeometry(p.id, p);
       model.position.set(0, -0.2, 0);
       miniScene.add(model);
-
-      function miniLoop() {
-        if (!document.getElementById('product-3d-host')) return;
-        miniControls.update();
-        miniRenderer.render(miniScene, miniCamera);
-        requestAnimationFrame(miniLoop);
-      }
-      miniLoop();
+      function loop() { if (!document.getElementById('product-3d-host')) return; mc.update(); miniRenderer.render(miniScene, miniCamera); requestAnimationFrame(loop); }
+      loop();
     }
 
-    // ── 8. Briefcase Management ──
+    // Briefcase
     function addToBriefcase(prodId) {
       const prod = PRODUCTS.find(p => p.id === prodId);
-      if (!prod) return;
-      if (!briefcase.find(b => b.id === prod.id)) {
-        briefcase.push(prod);
-      }
+      if (!prod || briefcase.find(b => b.id === prod.id)) return;
+      briefcase.push(prod);
       document.getElementById('briefcase-count').innerText = briefcase.length;
       openPanel('briefcase');
     }
-
     function removeFromBriefcase(index) {
       briefcase.splice(index, 1);
       document.getElementById('briefcase-count').innerText = briefcase.length;
       openPanel('briefcase');
     }
 
-    // ── 9. Forms & Real Persistence Handlers ──
+    // Form handlers
     async function submitRFQ(e) {
       e.preventDefault();
       const pId = document.getElementById('rfq-product').value;
       const prod = PRODUCTS.find(x => x.id === pId) || PRODUCTS[0];
-      const name = document.getElementById('rfq-name').value;
-      const comp = document.getElementById('rfq-company').value;
-      const email = document.getElementById('rfq-email').value;
-      const qty = document.getElementById('rfq-qty').value;
-      const notes = document.getElementById('rfq-notes').value;
-
       try {
-        const res = await fetch('/api/rfqs', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name,
-            company: comp,
-            email,
-            products: [`${prod.name} (${prod.model})`],
-            estimatedQuantity: `${qty} units`,
-            message: notes
-          })
-        }).then(r => r.json());
-
+        const res = await fetch('/api/rfqs', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name: document.getElementById('rfq-name').value, company: document.getElementById('rfq-company').value, email: document.getElementById('rfq-email').value, products: [`${prod.name} (${prod.model})`], estimatedQuantity: `${document.getElementById('rfq-qty').value} units`, message: document.getElementById('rfq-notes').value }) }).then(r => r.json());
         const banner = document.getElementById('rfq-banner');
         banner.style.display = 'block';
-        banner.innerHTML = `<b>✓ RFQ RECEIVED SUCCESSFULLY!</b><br>Reference ID: <b>${res.referenceId || 'RFQ-' + Date.now().toString(36).toUpperCase()}</b><br>Our technical sales team will deliver your price linesheet within 24 hours.`;
-      } catch (err) {
-        alert('RFQ submitted locally: Reference RFQ-' + Date.now().toString(36).toUpperCase());
-      }
+        banner.innerHTML = `<b>✓ RFQ RECEIVED!</b><br>Reference: <b>${res.referenceId || 'RFQ-' + Date.now().toString(36).toUpperCase()}</b>`;
+      } catch(err) { alert('RFQ submitted. Ref: RFQ-' + Date.now().toString(36).toUpperCase()); }
     }
-
-    async function submitSample(e) {
-      e.preventDefault();
-      const prod = document.getElementById('sample-product').value;
-      const name = document.getElementById('sample-name').value;
-      const comp = document.getElementById('sample-company').value;
-      const email = document.getElementById('sample-email').value;
-      const addr = document.getElementById('sample-address').value;
-      const notes = document.getElementById('sample-notes').value;
-
-      try {
-        const res = await fetch('/api/samples', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name,
-            company: comp,
-            email,
-            shippingAddress: addr,
-            product: prod,
-            quantity: 1,
-            message: notes
-          })
-        }).then(r => r.json());
-
-        const banner = document.getElementById('sample-banner');
-        banner.style.display = 'block';
-        banner.innerHTML = `<b>✓ SAMPLE REQUEST SUBMITTED!</b><br>Ref: <b>${res.referenceId || 'SMP-' + Date.now().toString(36).toUpperCase()}</b><br>Technical evaluation agreement will be emailed to ${email}.`;
-      } catch (err) {
-        alert('Sample request logged. Ref: SMP-' + Date.now().toString(36).toUpperCase());
-      }
-    }
-
     async function submitMeeting(e) {
       e.preventDefault();
-      const name = document.getElementById('meet-name').value;
-      const comp = document.getElementById('meet-company').value;
-      const email = document.getElementById('meet-email').value;
-      const date = document.getElementById('meet-date').value;
-      const notes = document.getElementById('meet-notes').value;
-
       try {
-        const res = await fetch('/api/appointments', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name,
-            company: comp,
-            email,
-            meetingType: 'In Booth',
-            preferredDate: date,
-            preferredTime: 'Scheduled Slot',
-            message: notes
-          })
-        }).then(r => r.json());
-
+        const res = await fetch('/api/appointments', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name: document.getElementById('meet-name').value, company: document.getElementById('meet-company').value, email: document.getElementById('meet-email').value, meetingType:'In Booth', preferredDate: document.getElementById('meet-date').value, message: document.getElementById('meet-notes').value }) }).then(r => r.json());
         const banner = document.getElementById('meet-banner');
         banner.style.display = 'block';
-        banner.innerHTML = `<b>✓ CONSULTATION CONFIRMED!</b><br>Meeting Ref: <b>${res.referenceId || 'MEET-' + Date.now().toString(36).toUpperCase()}</b><br>A calendar invitation has been prepared for ${email}.`;
-      } catch (err) {
-        alert('Meeting confirmed. Ref: MEET-' + Date.now().toString(36).toUpperCase());
-      }
+        banner.innerHTML = `<b>✓ CONFIRMED!</b><br>Ref: <b>${res.referenceId || 'MEET-' + Date.now().toString(36).toUpperCase()}</b>`;
+      } catch(err) { alert('Meeting confirmed. Ref: MEET-' + Date.now().toString(36).toUpperCase()); }
     }
-
     function downloadVCard() {
-      const vcard = `BEGIN:VCARD\nVERSION:3.0\nN:Vance;Julian;;;\nFN:Julian Vance\nORG:dn’a Industrial Automation Corp.\nTITLE:VP of Global Industrial Solutions\nTEL;TYPE=WORK,VOICE:+1-336-555-0142\nEMAIL:julian.vance@havenoak.example\nURL:https://v-show-commercial-v1-production.up.railway.app/demo.html\nEND:VCARD`;
+      const vcard = `BEGIN:VCARD\nVERSION:3.0\nN:Vance;Julian;;;\nFN:Julian Vance\nORG:dn'a Industrial Automation Corp.\nTITLE:VP of Global Industrial Solutions\nTEL;TYPE=WORK,VOICE:+1-336-555-0142\nEMAIL:julian.vance@havenoak.example\nURL:https://v-show-commercial-v1-production.up.railway.app/demo.html\nEND:VCARD`;
       const blob = new Blob([vcard], { type: 'text/vcard' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = 'Julian_Vance_dna.vcf';
-      a.click();
-    }
-
-    function handleSceneClick(e) {
-      if (isTransitioning) return;
-      const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      raycaster.setFromCamera(mouse, camera);
-
-      const intersects = raycaster.intersectObjects(productMeshes, true);
-      if (intersects.length > 0) {
-        let obj = intersects[0].object;
-        while (obj && (!obj.userData || !obj.userData.product)) {
-          obj = obj.parent;
-        }
-        if (obj && obj.userData.product) {
-          openProductDetail(obj.userData.product);
-        }
-      }
-    }
-
-    function handleResize() {
-      camera.aspect = innerWidth / innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(innerWidth, innerHeight);
-    }
-
-    function renderLoop() {
-      controls.update();
-      renderer.render(scene, camera);
-      updateHotspots();
-      requestAnimationFrame(renderLoop);
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Julian_Vance_dna.vcf'; a.click();
     }
 
     window.onload = initShowroom;
