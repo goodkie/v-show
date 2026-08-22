@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pricing Plans | V-Show Virtual Trade Show</title>
+  <meta name="description" content="Transparent pricing for Virtual Trade Show Commercial V1. From Free starter booths to precision Spark 3D Gaussian Splatting.">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: #111827;
+      --border: #1f2937;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --accent-pro: #8b5cf6;
+      --accent-biz: #ec4899;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-family);
+      line-height: 1.6;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(17, 24, 39, 0.8);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo { font-size: 18px; font-weight: 700; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 8px; }
+    .nav-links { display: flex; gap: 16px; align-items: center; }
+    .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; transition: color 0.2s; }
+    .nav-links a:hover { color: #fff; }
+    .btn-login { background: var(--accent); color: #fff; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600; }
+
+    .pricing-container {
+      max-width: 1140px;
+      margin: 40px auto;
+      padding: 0 20px;
+      flex: 1;
+    }
+
+    .hero-section {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .hero-section h1 {
+      font-size: 36px;
+      font-weight: 800;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+    .hero-section p {
+      font-size: 17px;
+      color: var(--text-muted);
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    .pilot-notice {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 6px 16px;
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      border-radius: 20px;
+      font-size: 13px;
+      color: #93c5fd;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-bottom: 56px;
+    }
+
+    .plan-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px 24px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .plan-card:hover {
+      transform: translateY(-2px);
+      border-color: #374151;
+    }
+    .plan-card.featured {
+      border-color: var(--accent-pro);
+      box-shadow: 0 8px 24px rgba(139, 92, 246, 0.12);
+    }
+    .plan-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent-pro);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 12px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .plan-name { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .plan-desc { font-size: 13px; color: var(--text-muted); min-height: 40px; margin-bottom: 20px; }
+    .plan-price { font-size: 38px; font-weight: 800; margin-bottom: 4px; }
+    .plan-price span { font-size: 15px; font-weight: 400; color: var(--text-muted); }
+    .plan-subtext { font-size: 12px; color: var(--text-muted); margin-bottom: 24px; }
+
+    .plan-features {
+      list-style: none;
+      margin-bottom: 32px;
+      flex: 1;
+    }
+    .plan-features li {
+      font-size: 14px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .plan-features li:last-child { border-bottom: none; }
+    .check-icon { color: #10b981; font-weight: bold; }
+    .cross-icon { color: #6b7280; }
+
+    .btn-plan {
+      display: block;
+      width: 100%;
+      padding: 12px 0;
+      text-align: center;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s;
+    }
+    .btn-free { background: #374151; color: #fff; }
+    .btn-free:hover { background: #4b5563; }
+    .btn-pro { background: var(--accent-pro); color: #fff; }
+    .btn-pro:hover { background: #7c3aed; }
+    .btn-biz { background: #1f2937; color: #fff; border: 1px solid #374151; }
+    .btn-biz:hover { background: #374151; }
+
+    .faq-section {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 36px 32px;
+      margin-bottom: 48px;
+    }
+    .faq-section h2 { font-size: 22px; font-weight: 700; margin-bottom: 20px; text-align: center; }
+    .faq-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+    .faq-item h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; color: #e5e7eb; }
+    .faq-item p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+    footer {
+      background: #0b0f19;
+      border-top: 1px solid var(--border);
+      padding: 24px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .footer-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 12px; }
+    .footer-links a { color: var(--text-muted); text-decoration: none; }
+    .footer-links a:hover { color: #fff; }
+
+    @media (max-width: 768px) {
+      .pricing-grid { grid-template-columns: 1fr; max-width: 440px; margin-left: auto; margin-right: auto; }
+      .faq-grid { grid-template-columns: 1fr; }
+      .hero-section h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="lobby.html" class="logo">
+      <span>🌐</span> V-SHOW COMMERCIAL V1
+    </a>
+    <div class="nav-links">
+      <a href="lobby.html">Event Lobby</a>
+      <a href="pricing.html" style="color: #fff; font-weight: 600;">Pricing Plans</a>
+      <a href="admin.html" class="btn-login">Exhibitor Login</a>
+    </div>
+  </header>
+
+  <div class="pricing-container">
+    <div class="hero-section">
+      <h1>Transparent & Honest Commercial Plans</h1>
+      <p>Start freely with basic booth hosting and multi-angle Photo Preview. Upgrade anytime for precision 3D Gaussian Splatting (SPZ) reconstruction.</p>
+      <div class="pilot-notice">
+        🧪 <strong>PILOT PRICING</strong> (v2026.1) — Pricing may change before general commercial availability. Safe evaluation sandbox.
+      </div>
+    </div>
+
+    <div class="pricing-grid">
+      <!-- 1. FREE PLAN -->
+      <div class="plan-card" id="plan-free-card">
+        <div class="plan-name">FREE</div>
+        <div class="plan-desc">Standard virtual booth, 360 photo preview room, and essential digital lead collection</div>
+        <div class="plan-price">$0 <span>/ mo</span></div>
+        <div class="plan-subtext">No credit card required to get started</div>
+        <ul class="plan-features">
+          <li><span class="check-icon">✔</span> 1 Standard Virtual Booth</li>
+          <li><span class="check-icon">✔</span> Up to 5 Product Listings</li>
+          <li><span class="check-icon">✔</span> 3 Interactive 3D Hotspots</li>
+          <li><span class="check-icon">✔</span> Multi-View Photo Preview Room</li>
+          <li><span class="check-icon">✔</span> Digital Business Card Lead Collection</li>
+          <li><span class="cross-icon">✖</span> Spark Precision 3DGS (Not Included)</li>
+          <li><span class="cross-icon">✖</span> Lead Data CSV Export (Not Included)</li>
+        </ul>
+        <a href="admin.html" class="btn-plan btn-free">Get Started Free</a>
+      </div>
+
+      <!-- 2. PRO PLAN (Featured) -->
+      <div class="plan-card featured" id="plan-pro-card">
+        <div class="plan-badge">PILOT RECOMMENDED</div>
+        <div class="plan-name" style="color: #a78bfa;">PRO</div>
+        <div class="plan-desc">Spark 2.1.0 Precision 3D Gaussian Splatting Booth & Realtime Buyer Analytics</div>
+        <div class="plan-price">$299 <span>/ mo</span></div>
+        <div class="plan-subtext">Cancel anytime via Stripe Customer Portal</div>
+        <ul class="plan-features">
+          <li><span class="check-icon">✔</span> <strong>Precision 3D Gaussian Splatting (SPZ)</strong></li>
+          <li><span class="check-icon">✔</span> 1 3DGS Reconstruction Credit Included</li>
+          <li><span class="check-icon">✔</span> Up to 25 Product Listings</li>
+          <li><span class="check-icon">✔</span> 15 Interactive 3D Hotspots</li>
+          <li><span class="check-icon">✔</span> Full Leads & RFQs CSV Export</li>
+          <li><span class="check-icon">✔</span> 1:1 Live Video Consultation (WebRTC)</li>
+          <li><span class="check-icon">✔</span> Custom Brand Colors & Logo</li>
+        </ul>
+        <a href="admin.html" class="btn-plan btn-pro">Subscribe to PRO</a>
+      </div>
+
+      <!-- 3. BUSINESS PLAN -->
+      <div class="plan-card" id="plan-biz-card">
+        <div class="plan-name">BUSINESS</div>
+        <div class="plan-desc">Multi-hall exhibition, priority GPU processing queue, and dedicated technical SLA</div>
+        <div class="plan-price">$799 <span>/ mo</span></div>
+        <div class="plan-subtext">For enterprises with large product portfolios</div>
+        <ul class="plan-features">
+          <li><span class="check-icon">✔</span> <strong>3 Precision 3DGS Reconstruction Credits</strong></li>
+          <li><span class="check-icon">✔</span> Priority GPU Rendering Queue</li>
+          <li><span class="check-icon">✔</span> Up to 100 Product Listings</li>
+          <li><span class="check-icon">✔</span> 50 Interactive 3D Hotspots</li>
+          <li><span class="check-icon">✔</span> Unlimited Leads & RFQ Pipeline</li>
+          <li><span class="check-icon">✔</span> Dedicated Technical Support SLA</li>
+          <li><span class="check-icon">✔</span> Multi-Booth Enterprise Management</li>
+        </ul>
+        <a href="admin.html" class="btn-plan btn-biz">Contact for Enterprise</a>
+      </div>
+    </div>
+
+    <!-- FAQ & Commercial Disclosures -->
+    <div class="faq-section">
+      <h2>Frequently Asked Questions (FAQ)</h2>
+      <div class="faq-grid">
+        <div class="faq-item">
+          <h3>Q. How does billing and cancellation work?</h3>
+          <p>Paid plans are billed monthly through Stripe's secure infrastructure. You can cancel recurring renewals anytime with a single click inside the Exhibitor Admin Console via the Stripe Customer Portal.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Q. What is 3D Gaussian Splatting (3DGS) reconstruction?</h3>
+          <p>3DGS uses computer vision algorithms to convert 60-80 multi-angle photos into an interactive 3D spatial model (SPZ). It is an algorithmic reconstruction and may differ from physical perfection.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Q. Is my booth data deleted if I cancel my subscription?</h3>
+          <p>No. Your uploaded catalog, company profile, and collected buyer leads are safely preserved and remain accessible within Free tier limits.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Q. What is the refund policy?</h3>
+          <p>Refunds are processed in accordance with our Refund Policy. Once cloud GPU compute resources have been expended on 3DGS reconstruction, partial limitations may apply.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-links">
+      <a href="terms.html">Terms of Service</a>
+      <span>•</span>
+      <a href="privacy.html">Privacy Policy</a>
+      <span>•</span>
+      <a href="refund-policy.html">Refund Policy</a>
+      <span>•</span>
+      <a href="pricing.html">Pricing Plans</a>
+    </div>
+    <p>&copy; 2026 Virtual Trade Show Commercial V1. All rights reserved. (Sandbox Test Mode)</p>
+  </footer>
+
+</body>
+</html>

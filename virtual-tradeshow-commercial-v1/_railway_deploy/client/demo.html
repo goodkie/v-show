@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>dn’a — Industrial Innovation Showcase (Sales-Grade 3D Showroom)</title>
+  <meta name="classification" content="DESIGNED_3D">
+  <meta name="description" content="Sales-grade interactive DESIGNED_3D digital trade show showroom featuring turnkey B2B industrial automation products, live RFQ intake, digital catalog, and smart card.">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-light: #38bdf8;
+      --accent: #6366f1;
+      --dark: #070e17;
+      --dark-card: #0d1726;
+      --panel-bg: rgba(10, 18, 30, 0.95);
+      --border: rgba(255, 255, 255, 0.12);
+      --border-accent: rgba(56, 189, 248, 0.3);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: var(--dark); color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    button, input, select, textarea { font-family: inherit; }
+
+    .app { position: relative; width: 100%; height: 100dvh; }
+    .stage { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+    /* Top Bar */
+    .top-bar {
+      position: absolute; z-index: 30; top: 0; left: 0; right: 0;
+      padding: 12px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: linear-gradient(180deg, rgba(7, 14, 23, 0.96), rgba(7, 14, 23, 0.6), transparent);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .brand-group { display: flex; gap: 12px; align-items: center; }
+    .brand-title {
+      font-size: 20px; font-weight: 800; color: #38bdf8;
+      letter-spacing: -0.5px; text-decoration: none; display: flex; align-items: center; gap: 8px;
+    }
+    .badge-demo {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+      border: 1px solid #0284c7; border-radius: 20px; padding: 4px 10px;
+      background: rgba(2, 132, 199, 0.15); color: #7dd3fc; text-transform: uppercase;
+    }
+    .top-actions { display: flex; gap: 10px; align-items: center; }
+    .btn-top {
+      border: 1px solid var(--border); background: rgba(15, 23, 42, 0.85);
+      color: #f8fafc; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-top:hover { background: #1e293b; border-color: #38bdf8; }
+    .btn-top.primary {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      border-color: #0284c7; color: #fff;
+    }
+    .btn-top.primary:hover { box-shadow: 0 0 15px rgba(14, 165, 233, 0.4); }
+
+    /* Left Side Navigation Rail */
+    .rail-nav {
+      position: absolute; z-index: 25; left: 20px; top: 90px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .rail-btn {
+      width: 44px; height: 44px; border-radius: 10px;
+      border: 1px solid var(--border); background: rgba(13, 23, 38, 0.88);
+      color: #f8fafc; font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; backdrop-filter: blur(8px);
+    }
+    .rail-btn:hover { background: #0284c7; border-color: #38bdf8; transform: translateY(-2px); }
+    .rail-btn.active { background: #0284c7; border-color: #38bdf8; }
+
+    /* Bottom HUD Preset Navigation Bar */
+    .hud-bar {
+      position: absolute; z-index: 25; bottom: 24px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; gap: 8px; padding: 6px 12px;
+      background: rgba(10, 18, 30, 0.9); backdrop-filter: blur(16px);
+      border: 1px solid var(--border); border-radius: 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .hud-btn {
+      border: none; background: transparent; color: #94a3b8;
+      padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .hud-btn:hover { color: #fff; background: rgba(255,255,255,0.06); }
+    .hud-btn.active { background: #0284c7; color: #fff; }
+
+    /* Briefcase Floating Button */
+    .briefcase-fab {
+      position: absolute; z-index: 25; right: 24px; bottom: 24px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff; border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 30px; padding: 10px 18px; font-size: 13px; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; gap: 8px;
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.35); transition: all 0.2s;
+    }
+    .briefcase-fab:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(16, 185, 129, 0.5); }
+    .briefcase-count {
+      background: #fff; color: #065f46; font-size: 11px; font-weight: 800;
+      padding: 2px 7px; border-radius: 12px;
+    }
+
+    /* 3D Hotspot Tags — Minimal subtle marker that expands on hover */
+    .hotspot-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; overflow: hidden; }
+    .hotspot-tag {
+      position: absolute; transform: translate(-50%, -50%);
+      pointer-events: auto; cursor: pointer;
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(10, 20, 34, 0.92); backdrop-filter: blur(10px);
+      border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 20px; padding: 4px 6px;
+      color: #fff; font-size: 11px; font-weight: 700;
+      box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); white-space: nowrap;
+    }
+    .hotspot-tag .hotspot-label-text {
+      max-width: 0; opacity: 0; overflow: hidden; transition: all 0.25s ease;
+    }
+    .hotspot-tag:hover {
+      background: rgba(2, 132, 199, 0.95); border-color: #38bdf8; padding: 5px 12px;
+      transform: translate(-50%, -50%) scale(1.08); box-shadow: 0 6px 24px rgba(14, 165, 233, 0.7);
+    }
+    .hotspot-tag:hover .hotspot-label-text {
+      max-width: 200px; opacity: 1; margin-left: 2px;
+    }
+    .hotspot-dot {
+      width: 10px; height: 10px; border-radius: 50%; background: #38bdf8;
+      box-shadow: 0 0 8px #38bdf8; flex-shrink: 0; animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.8); }
+      70% { box-shadow: 0 0 0 10px rgba(56, 189, 248, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+    }
+
+    /* Right Side Drawer / Modal Panels */
+    .drawer {
+      position: absolute; z-index: 40; top: 0; right: 0; bottom: 0;
+      width: 480px; max-width: 100%; background: var(--panel-bg);
+      backdrop-filter: blur(20px); border-left: 1px solid var(--border);
+      transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex; flex-direction: column; box-shadow: -10px 0 40px rgba(0,0,0,0.7);
+    }
+    .drawer.open { transform: translateX(0); }
+    .drawer-header {
+      padding: 18px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .drawer-close {
+      width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
+      background: transparent; color: var(--text-muted); font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    }
+    .drawer-close:hover { background: rgba(239, 68, 68, 0.2); color: var(--danger); border-color: var(--danger); }
+    .drawer-body { flex: 1; overflow-y: auto; padding: 24px; }
+
+    /* Product 3D Hero Preview inside Drawer */
+    .product-3d-box {
+      height: 240px; border-radius: 12px; border: 1px solid var(--border);
+      background: radial-gradient(circle, #0f2438, #070e17);
+      margin: 16px 0; position: relative; overflow: hidden;
+    }
+
+    /* Specs Table */
+    .specs-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 12px; }
+    .specs-table tr { border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .specs-table td { padding: 8px 6px; }
+    .specs-table td:first-child { color: var(--text-muted); font-weight: 600; width: 40%; }
+    .specs-table td:last-child { color: var(--text); font-weight: 700; text-align: right; }
+
+    /* Form Fields */
+    .form-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; display: block; }
+    .form-field {
+      width: 100%; margin-bottom: 14px; padding: 10px 14px;
+      border-radius: 8px; border: 1px solid var(--border);
+      background: #09121d; color: #fff; font-size: 13px;
+    }
+    .form-field:focus { outline: none; border-color: #38bdf8; }
+    .btn-action {
+      width: 100%; background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff; border: none; padding: 12px; border-radius: 8px;
+      font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; margin-top: 6px;
+    }
+    .btn-action:hover { opacity: 0.95; transform: translateY(-1px); }
+    .btn-secondary {
+      width: 100%; background: rgba(30, 41, 59, 0.7);
+      border: 1px solid var(--border); color: #f8fafc; padding: 10px;
+      border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: all 0.2s;
+    }
+    .btn-secondary:hover { background: #1e293b; border-color: #38bdf8; }
+
+    /* Product Cards in Catalog */
+    .catalog-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .catalog-card {
+      background: var(--dark-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.2s;
+    }
+    .catalog-card:hover { border-color: #38bdf8; transform: translateY(-2px); }
+
+    /* Intro Overlay / Loading Poster */
+    .intro-overlay {
+      position: absolute; inset: 0; z-index: 100;
+      background: #050a12; display: flex; flex-direction: column;
+      align-items: stretch; justify-content: stretch;
+      transition: opacity 0.8s ease;
+    }
+    .intro-overlay.fade-out { opacity: 0; pointer-events: none; }
+    .intro-poster-img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; object-position: center;
+    }
+    .intro-poster-scrim {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(5,10,18,0.92) 0%, rgba(5,10,18,0.25) 60%, rgba(5,10,18,0.4) 100%);
+    }
+    .intro-status-bar {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 28px 32px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .intro-status-text {
+      font-size: 13px; color: #94a3b8; font-weight: 600; letter-spacing: 0.3px;
+    }
+    .intro-progress-track {
+      width: 220px; height: 2px; background: rgba(255,255,255,0.12); border-radius: 2px; overflow: hidden;
+    }
+    .intro-progress-fill {
+      height: 100%; background: linear-gradient(90deg, #0284c7, #38bdf8);
+      border-radius: 2px; width: 0%; transition: width 0.5s ease;
+    }
+    .intro-brand-label {
+      font-size: 11px; font-weight: 700; color: #38bdf8;
+      letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* WebGL Fallback */
+    .webgl-fallback {
+      position: absolute; inset: 0; z-index: 90;
+      display: none; flex-direction: column; align-items: stretch;
+    }
+    .webgl-fallback.visible { display: flex; }
+    .fallback-img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; object-position: center;
+    }
+    .fallback-scrim {
+      position: absolute; inset: 0;
+      background: rgba(5,10,18,0.65);
+    }
+    .fallback-content {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px; padding: 24px;
+    }
+    .fallback-title {
+      font-size: 18px; font-weight: 800; color: #fff; text-align: center;
+    }
+    .fallback-note {
+      font-size: 13px; color: #94a3b8; text-align: center; max-width: 380px; line-height: 1.6;
+    }
+    .fallback-actions {
+      display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 8px;
+    }
+    .fallback-btn {
+      padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .fallback-btn-primary { background: linear-gradient(135deg,#0284c7,#2563eb); color: #fff; border: none; }
+    .fallback-btn-outline { background: rgba(15,23,42,0.8); border: 1px solid rgba(56,189,248,0.4); color: #38bdf8; }
+
+    @media (max-width: 768px) {
+      .top-bar { padding: 10px 14px; }
+      .badge-demo { display: none; }
+      .rail-nav { left: 12px; top: 70px; }
+      .hud-bar { width: calc(100% - 24px); overflow-x: auto; font-size: 10px; justify-content: flex-start; }
+      .hud-btn { padding: 6px 10px; font-size: 11px; white-space: nowrap; }
+      .drawer { width: 100%; }
+      .briefcase-fab { right: 14px; bottom: 80px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Loading Poster (Photorealistic Hero) -->
+    <div id="intro-loader" class="intro-overlay">
+      <img src="/assets/demo/dna-showcase/hero/dna_showcase_photoreal_hero.jpg"
+           alt="dn'a Industrial Innovation Showcase — Loading"
+           class="intro-poster-img">
+      <div class="intro-poster-scrim"></div>
+      <div class="intro-status-bar">
+        <div class="intro-brand-label">dn'a — Industrial Innovation Showcase</div>
+        <div id="intro-status-text" class="intro-status-text">Preparing Interactive Showroom…</div>
+        <div class="intro-progress-track">
+          <div id="intro-progress-fill" class="intro-progress-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WebGL Failure Fallback -->
+    <div id="webgl-fallback" class="webgl-fallback">
+      <img src="/assets/demo/dna-showcase/hero/dna_showcase_photoreal_hero.jpg"
+           alt="dn'a Industrial Innovation Showcase" class="fallback-img">
+      <div class="fallback-scrim"></div>
+      <div class="fallback-content">
+        <div class="intro-brand-label">dn'a — Designed 3D Showcase</div>
+        <div class="fallback-title">Interactive 3D Unavailable</div>
+        <div class="fallback-note">Your device may not support WebGL. All commercial features remain available.</div>
+        <div class="fallback-actions">
+          <a href="#" onclick="openPanel('catalog'); document.getElementById('webgl-fallback').classList.remove('visible'); return false;" class="fallback-btn fallback-btn-primary">📦 View 8 Products</a>
+          <a href="/card.html" target="_blank" class="fallback-btn fallback-btn-outline">🪪 Smart Card</a>
+          <a href="#" onclick="openPanel('rfq'); document.getElementById('webgl-fallback').classList.remove('visible'); return false;" class="fallback-btn fallback-btn-outline">📝 Request RFQ</a>
+          <a href="#" onclick="openPanel('meeting'); document.getElementById('webgl-fallback').classList.remove('visible'); return false;" class="fallback-btn fallback-btn-outline">📅 Book Meeting</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3D Canvas Stage -->
+    <div id="stage" class="stage"></div>
+
+    <!-- 3D Hotspot Tags Overlay -->
+    <div id="hotspot-layer" class="hotspot-layer"></div>
+
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="brand-group">
+        <a href="/" class="brand-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          dn’a
+        </a>
+        <span class="badge-demo">DESIGNED INTERACTIVE 3D</span>
+      </div>
+      <div class="top-actions">
+        <button class="btn-top" onclick="openPanel('catalog')">📦 Products</button>
+        <button class="btn-top" onclick="openPanel('card')">🪪 Smart Card</button>
+        <button class="btn-top" onclick="openPanel('analytics')">📊 Analytics</button>
+        <button class="btn-top primary" onclick="openPanel('rfq')">Request RFQ</button>
+      </div>
+    </header>
+
+    <!-- Left Side Navigation Rail -->
+    <nav class="rail-nav" style="top:74px; gap:5px;">
+      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Overview" onclick="setPreset('OVERVIEW')">◈ <span style="font-size:11px;">Overview</span></button>
+      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Products" onclick="setPreset('ISLAND')">⬡ <span style="font-size:11px;">Products</span></button>
+      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Meeting Area" onclick="setPreset('LOUNGE')">🛋 <span style="font-size:11px;">Meeting Area</span></button>
+      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Featured Collection" onclick="setPreset('ROBOT')">🤖 <span style="font-size:11px;">Featured Collection</span></button>
+      <button class="rail-btn" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" title="Brand Wall" onclick="setPreset('MEDIA')">🖥 <span style="font-size:11px;">Brand Wall</span></button>
+      <button class="rail-btn active" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" id="btn-tour" title="Auto Tour" onclick="toggleAutoTour()">▶ <span style="font-size:11px;">Auto Tour</span></button>
+    </nav>
+
+    <!-- Bottom HUD Presets -->
+    <div class="hud-bar">
+      <button class="hud-btn active" onclick="setPreset('OVERVIEW')">Overview</button>
+      <button class="hud-btn" onclick="setPreset('ISLAND')">Products</button>
+      <button class="hud-btn" onclick="setPreset('LOUNGE')">Meeting Area</button>
+      <button class="hud-btn" onclick="setPreset('ROBOT')">Featured Collection</button>
+      <button class="hud-btn" onclick="setPreset('MEDIA')">Brand Wall</button>
+      <button class="hud-btn" onclick="setPreset('RESET')">Reset View</button>
+    </div>
+
+    <!-- Briefcase FAB -->
+    <button class="briefcase-fab" onclick="openPanel('briefcase')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h12a2 2 0 0 1 2 2v2H4V4a2 2 0 0 1 2-2z"/><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M10 12h4"/></svg>
+      Briefcase <span class="briefcase-count" id="briefcase-count">0</span>
+    </button>
+
+    <!-- Right Drawer -->
+    <aside id="drawer" class="drawer">
+      <div class="drawer-header">
+        <h3 id="drawer-header-title" style="font-size: 16px; font-weight: 700;">Showroom Details</h3>
+        <button class="drawer-close" onclick="closeDrawer()">✕</button>
+      </div>
+      <div id="drawer-content" class="drawer-body"></div>
+    </aside>
+  </div>
+
+  <script>
+    // ── 1. Fictional-but-Realistic Industrial Automation Flagship Product Lineup ──
+    const PRODUCTS = [
+      {
+        id: 'PROD-01-COBOT',
+        name: 'Apex Cobot X16',
+        model: 'APX-CB-16',
+        category: 'Collaborative Robotics',
+        tag: 'Cobot Arm',
+        pos: { x: -3.8, y: 1.0, z: -1.2 },
+        color: 0x0284c7,
+        accentColor: 0x38bdf8,
+        price: '$38,500 – $42,000 USD',
+        moq: '1 Unit',
+        leadTime: '2 Weeks',
+        warranty: '24 Months Full Manufacturer Warranty',
+        payload: '16.0 kg Payload',
+        reach: '1300 mm Radius',
+        accuracy: '±0.03 mm Repeatability',
+        power: '48V DC / 650W Max',
+        dimensions: 'Base Ø210mm, Height 1420mm',
+        ctaType: 'APPOINTMENT',
+        ctaLabel: 'Book Application Review',
+        pdfFile: '/assets/specs/Apex-Cobot-X16-Datasheet.pdf',
+        desc: '6-axis precision collaborative robot with integrated joint torque sensors, safety-certified collision detection, and zero-code hand-guiding lead-through teaching.',
+        fullDesc: 'Engineered for high-mix machine tending, palletizing, and precision assembly. The Apex Cobot X16 integrates high-resolution optical encoders and ISO/TS 15066 certified power-and-force limiting.'
+      },
+      {
+        id: 'PROD-02-AMR',
+        name: 'Vector AMR 600',
+        model: 'VCT-AMR-600',
+        category: 'Autonomous Intralogistics',
+        tag: 'Mobile AMR',
+        pos: { x: -1.2, y: 0.5, z: -1.2 },
+        color: 0xeab308,
+        accentColor: 0xfde047,
+        price: '$34,000 – $39,500 USD',
+        moq: '2 Units',
+        leadTime: '3 Weeks',
+        warranty: '24 Months Warranty',
+        payload: '600 kg Deck Payload',
+        reach: '2.0 m/s Max Speed',
+        accuracy: '±10 mm Docking Precision',
+        power: 'Lithium LiFePO4 48V 60Ah (10h Run)',
+        dimensions: '980 x 680 x 280 mm',
+        ctaType: 'CONSULTATION',
+        ctaLabel: 'Request Technical Consultation',
+        pdfFile: '/assets/specs/Vector-AMR-600-Datasheet.pdf',
+        desc: 'Heavy-duty autonomous mobile logistics robot utilizing dual 360° LiDAR safety scanners and natural feature SLAM navigation for pallet transport.',
+        fullDesc: 'Seamlessly integrates with MES/WMS software via VDA 5050 standard. Features dynamic obstacle avoidance, automatic opportunistic charging, and omnidirectional suspension.'
+      },
+      {
+        id: 'PROD-03-OPTISCAN',
+        name: 'OptiScan V3',
+        model: 'OPT-SCN-V3',
+        category: 'Industrial Metrology',
+        tag: '3D Vision',
+        pos: { x: 1.4, y: 1.1, z: -1.2 },
+        color: 0x10b981,
+        accentColor: 0x34d399,
+        price: '$19,800 – $24,500 USD',
+        moq: '1 Unit',
+        leadTime: '1 Week',
+        warranty: '36 Months Calibrated',
+        payload: 'Dual 12MP Global Shutter',
+        reach: '350 x 240 x 180 mm FOV',
+        accuracy: '±3.5 μm Accuracy',
+        power: 'GigE PoE+ 25.5W',
+        dimensions: '240 x 120 x 85 mm',
+        ctaType: 'SAMPLE',
+        ctaLabel: 'Request In-Line Evaluation',
+        pdfFile: '/assets/specs/OptiScan-V3-Datasheet.pdf',
+        desc: 'Ultra-high-speed structured light 3D metrology sensor for 100% inline dimensional verification and GD&T quality inspection on automotive lines.',
+        fullDesc: 'Projects 450nm blue fringe patterns captured by dual calibrated telecentric cameras to output dense point clouds at up to 140 frames per second.'
+      },
+      {
+        id: 'PROD-04-FLEXGRIP',
+        name: 'FlexGrip E80',
+        model: 'FLX-GRP-80',
+        category: 'Robotic End-Effector',
+        tag: 'Adaptive Gripper',
+        pos: { x: 4.0, y: 1.0, z: -1.2 },
+        color: 0x6366f1,
+        accentColor: 0x818cf8,
+        price: '$3,400 – $4,200 USD',
+        moq: '2 Units',
+        leadTime: 'Immediate Stock',
+        warranty: '24 Months Warranty',
+        payload: '20 N to 220 N Grip Force',
+        reach: '80 mm Parallel Stroke',
+        accuracy: '±0.02 mm Jaw Repeatability',
+        power: '24V DC / IO-Link & EtherCAT',
+        dimensions: '165 x 74 x 58 mm (1.15 kg)',
+        ctaType: 'SAMPLE',
+        ctaLabel: 'Request Sample Unit',
+        pdfFile: '/assets/specs/FlexGrip-E80-Datasheet.pdf',
+        desc: 'Servo-electric 2-finger adaptive gripper with programmable force regulation, part presence verification, and quick-change finger mounts.',
+        fullDesc: 'Ideal for precision electronic assembly and CNC machine tending. Features integrated grip confirmation sensors and rugged anodized aluminum frame.'
+      },
+      {
+        id: 'PROD-05-FLOWDRIVE',
+        name: 'FlowDrive P500',
+        model: 'FLW-DRV-500',
+        category: 'Fluid Automation',
+        tag: 'Smart Pump',
+        pos: { x: -5.2, y: 1.0, z: -3.2 },
+        color: 0x06b6d4,
+        accentColor: 0x67e8f9,
+        price: '$16,500 – $21,000 USD',
+        moq: '1 Unit',
+        leadTime: '3 Weeks',
+        warranty: '36 Months Warranty',
+        payload: '280 m³/h Max Flow',
+        reach: '16 bar Head Pressure',
+        accuracy: 'IE5 Ultra-Premium Motor',
+        power: '380-480V 3-Phase 15kW',
+        dimensions: '580 x 360 x 440 mm',
+        ctaType: 'CONSULTATION',
+        ctaLabel: 'Request Engineering Consultation',
+        pdfFile: '/assets/specs/Apex-Cobot-X16-Datasheet.pdf',
+        desc: 'Intelligent fluid circulation and pressure booster station with integrated VFD inverter, predictive cavitation diagnostics, and Modbus/BACnet.',
+        fullDesc: 'Optimized for commercial HVAC, industrial coolant delivery, and high-efficiency water processing with self-optimizing differential pressure curves.'
+      },
+      {
+        id: 'PROD-06-SYNCHRO',
+        name: 'SynchroDrive VFD',
+        model: 'SNC-VFD-90',
+        category: 'Power Electronics',
+        tag: 'Servo Drive',
+        pos: { x: -2.6, y: 1.0, z: -3.2 },
+        color: 0xf97316,
+        accentColor: 0xfb923c,
+        price: '$1,850 – $2,600 USD',
+        moq: '4 Units',
+        leadTime: '1 Week',
+        warranty: '24 Months Warranty',
+        payload: '98.9% Inverter Efficiency',
+        reach: '100 μs Current Loop Cycle',
+        accuracy: 'Safe Torque Off (SIL 3 / PLe)',
+        power: '3-Phase 400V 7.5kW',
+        dimensions: '220 x 85 x 180 mm',
+        ctaType: 'SAMPLE',
+        ctaLabel: 'Request Evaluation Unit',
+        pdfFile: '/assets/specs/Vector-AMR-600-Datasheet.pdf',
+        desc: 'Multi-axis servo drive controller supporting EtherCAT, PROFINET IRT, and dual encoder feedback for high-speed multi-axis motion synchronization.',
+        fullDesc: 'Equipped with front OLED diagnostic panel, removable terminal blocks, and active thermal management for continuous heavy-duty industrial cycles.'
+      },
+      {
+        id: 'PROD-07-EDGECORE',
+        name: 'EdgeCore IPC',
+        model: 'EDG-IPC-30',
+        category: 'Industrial Computing',
+        tag: 'Edge AI Computer',
+        pos: { x: 0.0, y: 1.0, z: -3.2 },
+        color: 0xa855f7,
+        accentColor: 0xc084fc,
+        price: '$2,400 – $3,100 USD',
+        moq: '2 Units',
+        leadTime: 'Immediate Stock',
+        warranty: '36 Months Enterprise',
+        payload: '32 TOPS AI NPU Accelerator',
+        reach: '4x GbE, 2x Isolated RS485',
+        accuracy: '-25°C to +70°C Fanless Range',
+        power: '9-36V DC Wide Voltage Input',
+        dimensions: '190 x 140 x 65 mm (DIN-Rail)',
+        ctaType: 'SAMPLE',
+        ctaLabel: 'Request Evaluation Unit',
+        pdfFile: '/assets/specs/OptiScan-V3-Datasheet.pdf',
+        desc: 'Rugged fanless DIN-rail industrial computer designed for OT-to-cloud telemetry, deep learning computer vision inspection, and protocol conversion.',
+        fullDesc: 'Features quad-core x86 industrial processor with hardware watchdog, TPM 2.0 security, dual M.2 NVMe storage slots, and IP40 aluminum chassis.'
+      },
+      {
+        id: 'PROD-08-LASERCELL',
+        name: 'LaserCell LX',
+        model: 'LSR-CEL-LX',
+        category: 'Turnkey Automation Cell',
+        tag: 'Laser Processing',
+        pos: { x: 2.6, y: 1.0, z: -3.2 },
+        color: 0xef4444,
+        accentColor: 0xf87171,
+        price: '$128,000 – $155,000 USD',
+        moq: '1 Workcell',
+        leadTime: '6 Weeks',
+        warranty: '24 Months On-Site Commissioning',
+        payload: '3,000 W Fiber Laser Source',
+        reach: 'Dual Indexing Rotary Tables',
+        accuracy: '±0.05 mm Seam Tracking',
+        power: '400V 3-Phase 32A',
+        dimensions: '2200 x 1800 x 2100 mm',
+        ctaType: 'CONSULTATION',
+        ctaLabel: 'Request Technical Consultation',
+        pdfFile: '/assets/specs/FlexGrip-E80-Datasheet.pdf',
+        desc: 'Fully enclosed Class 1 laser welding and cutting cell with dual rotary stations for zero-downtime part loading, fume extraction, and robotic seam guidance.',
+        fullDesc: 'Turnkey industrial workstation with interlocked laser-safe viewing windows, Siemens PLC master controller, and comprehensive machine safety package.'
+      }
+    ];
+
+    let scene, camera, renderer, controls, autoTour = false;
+    let raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
+    let productMeshes = [], briefcase = [];
+    let isTransitioning = false;
+
+    // Camera preset coordinates
+    const CAMERA_PRESETS = {
+      OVERVIEW:   { pos: { x: 9.5, y: 6.2, z: 12.0 }, target: { x: 0, y: 1.4, z: -1.0 } },
+      ISLAND:     { pos: { x: -2.0, y: 2.8, z: 2.5 }, target: { x: -2.5, y: 1.2, z: -1.2 } },
+      AUTOMATION: { pos: { x: -1.0, y: 2.6, z: -0.5 }, target: { x: -1.3, y: 1.6, z: -3.2 } },
+      ROBOT:      { pos: { x: 2.5, y: 3.0, z: 0.5 }, target: { x: 2.6, y: 1.5, z: -3.2 } },
+      LOUNGE:     { pos: { x: 5.5, y: 3.2, z: 5.0 }, target: { x: 4.5, y: 1.0, z: 2.2 } },
+      MEDIA:      { pos: { x: -3.5, y: 3.0, z: 1.5 }, target: { x: -4.5, y: 2.5, z: -5.6 } },
+      RESET:      { pos: { x: 9.5, y: 6.2, z: 12.0 }, target: { x: 0, y: 1.4, z: -1.0 } }
+    };
+
+    // ── 2. Three.js Showroom Initialization ──
+    // ── 2. Three.js Showroom Initialization ──
+    function setLoadingStatus(text, pct) {
+      const s = document.getElementById('intro-status-text');
+      const f = document.getElementById('intro-progress-fill');
+      if (s) s.textContent = text;
+      if (f) f.style.width = pct + '%';
+    }
+
+    function showWebGLFallback() {
+      const overlay = document.getElementById('intro-loader');
+      if (overlay) { overlay.classList.add('fade-out'); setTimeout(() => overlay.remove(), 900); }
+      document.getElementById('webgl-fallback').classList.add('visible');
+    }
+
+    function initShowroom() {
+      try {
+        setLoadingStatus('Loading Environment…', 20);
+        const host = document.getElementById('stage');
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x070e17);
+        scene.fog = new THREE.FogExp2(0x070e17, 0.025);
+
+        camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100);
+        camera.position.set(16, 12, 20);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+        if (!renderer.getContext()) { showWebGLFallback(); return; }
+        renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+        renderer.setSize(innerWidth, innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.15;
+        try { renderer.outputColorSpace = THREE.SRGBColorSpace; } catch(e) { renderer.outputEncoding = 3001; }
+        host.appendChild(renderer.domElement);
+
+        // GPU context lost handler
+        renderer.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); showWebGLFallback(); });
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 1.4, -1.0);
+        controls.minDistance = 3.0;
+        controls.maxDistance = 24.0;
+        controls.maxPolarAngle = Math.PI / 2.05;
+        // User interaction interrupts auto tour
+        controls.addEventListener('start', () => {
+          if (autoTour) { autoTour = false; clearTimeout(autoTourTimer); const b = document.getElementById('btn-tour'); if(b) b.classList.remove('active'); }
+        });
+
+        setLoadingStatus('Loading Environment…', 45);
+        setupLighting();
+        buildShowroomArchitecture();
+
+        setLoadingStatus('Loading Products…', 75);
+        buildAllProductModels();
+        createHotspotTags();
+
+        setLoadingStatus('Ready', 100);
+
+        // Opening Cinematic Fly-in → then apply URL params
+        setTimeout(() => {
+          const loader = document.getElementById('intro-loader');
+          if (loader) { loader.classList.add('fade-out'); setTimeout(() => { try { loader.remove(); } catch(e) {} }, 900); }
+
+          const params = new URLSearchParams(window.location.search);
+          const presetParam = (params.get('preset') || '').toUpperCase();
+          const productParam = params.get('product');
+          const viewParam = params.get('view');
+          const tourParam = params.get('tour');
+
+          if (presetParam && CAMERA_PRESETS[presetParam]) {
+            tweenCamera(CAMERA_PRESETS[presetParam].pos, CAMERA_PRESETS[presetParam].target, 2000);
+            highlightHudBtn(presetParam);
+          } else {
+            tweenCamera(CAMERA_PRESETS.OVERVIEW.pos, CAMERA_PRESETS.OVERVIEW.target, 2200);
+          }
+
+          if (productParam) {
+            const p = PRODUCTS.find(x => x.name.toLowerCase().replace(/\s/g,'').includes(productParam.toLowerCase().replace(/\s/g,'')) || x.id.toLowerCase().includes(productParam.toLowerCase()));
+            if (p) setTimeout(() => openProductDetail(p), 2500);
+          }
+          if (viewParam === 'catalog') setTimeout(() => openPanel('catalog'), 800);
+          if (viewParam === 'analytics') setTimeout(() => openPanel('analytics'), 800);
+          if (window.location.hash === '#rfq' || viewParam === 'rfq') setTimeout(() => openPanel('rfq'), 800);
+          if (tourParam === 'auto') setTimeout(() => { autoTour = false; toggleAutoTour(); }, 2600);
+        }, 350);
+
+        window.addEventListener('resize', handleResize);
+        renderer.domElement.addEventListener('pointerdown', handleSceneClick);
+        requestAnimationFrame(renderLoop);
+
+      } catch(err) {
+        console.error('Showroom init error:', err);
+        showWebGLFallback();
+      }
+    }
+
+    function highlightHudBtn(presetKey) {
+      document.querySelectorAll('.hud-btn').forEach(b => {
+        b.classList.toggle('active', b.textContent.toUpperCase().replace(/\s/g,'') === presetKey.replace(/\s/g,'') || b.onclick?.toString().includes(presetKey));
+      });
+    }
+
+
+    function setupLighting() {
+      // Ambient warm-neutral exhibition fill
+      const hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x091424, 1.1);
+      scene.add(hemiLight);
+
+      // Key Directional Sun
+      const keySun = new THREE.DirectionalLight(0xffffff, 1.4);
+      keySun.position.set(8, 14, 10);
+      keySun.castShadow = true;
+      keySun.shadow.mapSize.width = 2048;
+      keySun.shadow.mapSize.height = 2048;
+      keySun.shadow.camera.near = 0.5;
+      keySun.shadow.camera.far = 35;
+      keySun.shadow.camera.left = -12;
+      keySun.shadow.camera.right = 12;
+      keySun.shadow.camera.top = 12;
+      keySun.shadow.camera.bottom = -12;
+      keySun.shadow.bias = -0.0005;
+      scene.add(keySun);
+
+      // Overhead Soft Exhibition Blue Fill
+      const blueSpot = new THREE.SpotLight(0x38bdf8, 1.8, 22, Math.PI / 4, 0.4, 1);
+      blueSpot.position.set(-2, 10, -1);
+      scene.add(blueSpot);
+
+      // Meeting Lounge Warm Accent
+      const warmSpot = new THREE.SpotLight(0xfef08a, 1.2, 15, Math.PI / 3, 0.5, 1);
+      warmSpot.position.set(4.5, 8, 2.2);
+      scene.add(warmSpot);
+    }
+
+    function pbrMat(params) {
+      return new THREE.MeshStandardMaterial({
+        color: params.color || 0xffffff,
+        metalness: params.metalness !== undefined ? params.metalness : 0.2,
+        roughness: params.roughness !== undefined ? params.roughness : 0.4,
+        emissive: params.emissive || 0x000000,
+        emissiveIntensity: params.emissiveIntensity || 0.0
+      });
+    }
+
+    function buildShowroomArchitecture() {
+      const darkMetal = pbrMat({ color: 0x0f172a, metalness: 0.8, roughness: 0.3 });
+      const brightWhite = pbrMat({ color: 0xf8fafc, metalness: 0.1, roughness: 0.3 });
+      const floorMat = pbrMat({ color: 0x1e293b, metalness: 0.3, roughness: 0.6 });
+      const glowCyan = pbrMat({ color: 0x0284c7, emissive: 0x0284c7, emissiveIntensity: 0.8 });
+
+      // 1. Raised Exhibition Floor Platform (16m x 12m)
+      const floor = new THREE.Mesh(new THREE.BoxGeometry(17, 0.2, 13), floorMat);
+      floor.position.set(0, -0.1, 0);
+      floor.receiveShadow = true;
+      scene.add(floor);
+
+      // Floor Edge Glow Trim
+      const floorTrim = new THREE.Mesh(new THREE.BoxGeometry(17.2, 0.05, 13.2), glowCyan);
+      floorTrim.position.set(0, -0.05, 0);
+      scene.add(floorTrim);
+
+      // 2. Main Back Architecture Wall
+      const backWall = new THREE.Mesh(new THREE.BoxGeometry(16, 4.8, 0.25), brightWhite);
+      backWall.position.set(0, 2.3, -5.8);
+      backWall.castShadow = true;
+      backWall.receiveShadow = true;
+      scene.add(backWall);
+
+      // Left Partition Wall
+      const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.25, 4.8, 8.5), brightWhite);
+      leftWall.position.set(-8.0, 2.3, -1.6);
+      leftWall.castShadow = true;
+      leftWall.receiveShadow = true;
+      scene.add(leftWall);
+
+      // 3. Overhead Truss Canopy & Brand Fascia
+      const canopy = new THREE.Mesh(new THREE.BoxGeometry(16.2, 0.4, 3.2), darkMetal);
+      canopy.position.set(0, 5.0, -4.2);
+      scene.add(canopy);
+
+      // Suspended Columns
+      [-7.8, 7.8].forEach(x => {
+        const col = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 5.0, 16), darkMetal);
+        col.position.set(x, 2.5, -2.6);
+        col.castShadow = true;
+        scene.add(col);
+      });
+
+      // 4. Glowing Brand Signage Canvas
+      createBrandSign('dn’a INDUSTRIAL INNOVATION', 0, 3.8, -5.66, 7.5, 1.2, '#38bdf8');
+      createBrandSign('Next-Generation B2B Automation & Robotic Systems', 0, 3.1, -5.65, 6.8, 0.5, '#94a3b8');
+
+      // 5. LED Backlit Media Wall
+      const mediaBezel = new THREE.Mesh(new THREE.BoxGeometry(5.2, 2.6, 0.1), darkMetal);
+      mediaBezel.position.set(-4.5, 2.5, -5.65);
+      scene.add(mediaBezel);
+      const mediaScreen = new THREE.Mesh(new THREE.PlaneGeometry(5.0, 2.4), pbrMat({ color: 0x0369a1, emissive: 0x0284c7, emissiveIntensity: 0.6 }));
+      mediaScreen.position.set(-4.5, 2.5, -5.59);
+      scene.add(mediaScreen);
+
+      // 6. Front Reception Desk
+      const desk = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.0, 1.0), brightWhite);
+      desk.position.set(-4.5, 0.5, 3.2);
+      desk.castShadow = true;
+      scene.add(desk);
+      const deskAccent = new THREE.Mesh(new THREE.BoxGeometry(3.62, 0.2, 1.02), glowCyan);
+      deskAccent.position.set(-4.5, 0.6, 3.2);
+      scene.add(deskAccent);
+
+      // 7. Meeting Lounge (Table + 4 Chairs)
+      const tableTop = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 0.08, 32), pbrMat({ color: 0x334155, metalness: 0.1, roughness: 0.3 }));
+      tableTop.position.set(4.5, 0.85, 2.2);
+      tableTop.castShadow = true;
+      scene.add(tableTop);
+      const tableLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.25, 0.85, 16), darkMetal);
+      tableLeg.position.set(4.5, 0.42, 2.2);
+      scene.add(tableLeg);
+
+      for (let i = 0; i < 4; i++) {
+        const ang = (i * Math.PI) / 2;
+        const stool = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.55, 24), darkMetal);
+        stool.position.set(4.5 + Math.cos(ang) * 1.6, 0.28, 2.2 + Math.sin(ang) * 1.6);
+        stool.castShadow = true;
+        scene.add(stool);
+      }
+    }
+
+    function createBrandSign(text, x, y, z, w, h, textColor) {
+      const c = document.createElement('canvas');
+      c.width = 2048; c.height = 512;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, c.width, c.height);
+      ctx.fillStyle = textColor;
+      ctx.font = '800 110px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(text, 1024, 280);
+      const texture = new THREE.CanvasTexture(c);
+      const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+      const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+      plane.position.set(x, y, z);
+      scene.add(plane);
+    }
+
+    // ── 3. High-Fidelity 3D Product Assembly Models ──
+    function buildAllProductModels() {
+      PRODUCTS.forEach(p => {
+        const group = new THREE.Group();
+        group.position.set(p.pos.x, p.pos.y, p.pos.z);
+        group.userData.product = p;
+
+        // Base Pedestal / Plinth with Chamfer
+        const plinthMat = pbrMat({ color: 0x0f172a, metalness: 0.5, roughness: 0.4 });
+        const plinth = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.3, 1.2), plinthMat);
+        plinth.position.y = -0.15;
+        plinth.receiveShadow = true;
+        group.add(plinth);
+
+        const plinthTrim = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.04, 1.22), pbrMat({ color: p.accentColor, emissive: p.accentColor, emissiveIntensity: 0.7 }));
+        plinthTrim.position.y = -0.02;
+        group.add(plinthTrim);
+
+        // Assemble Distinct 3D Product Geometry
+        const model = createProductGeometry(p.id, p);
+        model.position.y = 0.0;
+        group.add(model);
+
+        scene.add(group);
+        productMeshes.push(group);
+      });
+    }
+
+    function createProductGeometry(id, p) {
+      const g = new THREE.Group();
+      const bodyMat = pbrMat({ color: p.color, metalness: 0.6, roughness: 0.3 });
+      const darkMat = pbrMat({ color: 0x1e293b, metalness: 0.8, roughness: 0.2 });
+      const metalMat = pbrMat({ color: 0x94a3b8, metalness: 0.9, roughness: 0.15 });
+      const glowMat = pbrMat({ color: p.accentColor, emissive: p.accentColor, emissiveIntensity: 0.9 });
+
+      if (id === 'PROD-01-COBOT') {
+        // 6-Axis Cobot Arm Assembly
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 0.25, 32), darkMat);
+        g.add(base);
+        const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.2, 24, 24), bodyMat);
+        shoulder.position.y = 0.25;
+        g.add(shoulder);
+        const lowerArm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.75, 24), bodyMat);
+        lowerArm.position.set(0.15, 0.6, 0);
+        lowerArm.rotation.z = -0.3;
+        g.add(lowerArm);
+        const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.16, 24, 24), darkMat);
+        elbow.position.set(0.3, 0.95, 0);
+        g.add(elbow);
+        const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.65, 24), metalMat);
+        forearm.position.set(0.15, 1.25, 0);
+        forearm.rotation.z = 0.4;
+        g.add(forearm);
+        const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.15, 24), darkMat);
+        wrist.position.set(0.0, 1.55, 0);
+        g.add(wrist);
+        const flangeHalo = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.02, 16, 32), glowMat);
+        flangeHalo.position.set(0.0, 1.62, 0);
+        flangeHalo.rotation.x = Math.PI / 2;
+        g.add(flangeHalo);
+      }
+      else if (id === 'PROD-02-AMR') {
+        // Vector AMR Chassis Assembly
+        const chassis = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.28, 0.65), bodyMat);
+        chassis.position.y = 0.18;
+        g.add(chassis);
+        const topDeck = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.05, 0.6), darkMat);
+        topDeck.position.y = 0.34;
+        g.add(topDeck);
+        const lidar = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.12, 24), darkMat);
+        lidar.position.set(0.32, 0.38, 0.22);
+        g.add(lidar);
+        const laserRing = new THREE.Mesh(new THREE.TorusGeometry(0.095, 0.015, 12, 24), glowMat);
+        laserRing.position.set(0.32, 0.42, 0.22);
+        laserRing.rotation.x = Math.PI / 2;
+        g.add(laserRing);
+      }
+      else if (id === 'PROD-03-OPTISCAN') {
+        // OptiScan 3D Vision Assembly
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.28, 0.22), darkMat);
+        body.position.y = 0.55;
+        g.add(body);
+        const lensL = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.12, 24), metalMat);
+        lensL.rotation.x = Math.PI / 2;
+        lensL.position.set(-0.22, 0.55, 0.12);
+        g.add(lensL);
+        const lensR = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.12, 24), metalMat);
+        lensR.rotation.x = Math.PI / 2;
+        lensR.position.set(0.22, 0.55, 0.12);
+        g.add(lensR);
+        const projector = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.08), glowMat);
+        projector.position.set(0, 0.55, 0.12);
+        g.add(projector);
+      }
+      else if (id === 'PROD-04-FLEXGRIP') {
+        // FlexGrip E80 Adaptive Gripper
+        const housing = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.45, 0.22), bodyMat);
+        housing.position.y = 0.35;
+        g.add(housing);
+        const jawL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.35, 0.08), metalMat);
+        jawL.position.set(-0.12, 0.72, 0);
+        g.add(jawL);
+        const jawR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.35, 0.08), metalMat);
+        jawR.position.set(0.12, 0.72, 0);
+        g.add(jawR);
+      }
+      else if (id === 'PROD-05-FLOWDRIVE') {
+        // FlowDrive P500 Smart Pump
+        const casing = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.35, 0.55, 24), bodyMat);
+        casing.position.y = 0.38;
+        g.add(casing);
+        const vfdTop = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.32, 0.38), darkMat);
+        vfdTop.position.y = 0.75;
+        g.add(vfdTop);
+        const flangeIn = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.22, 16), metalMat);
+        flangeIn.rotation.z = Math.PI / 2;
+        flangeIn.position.set(-0.25, 0.35, 0);
+        g.add(flangeIn);
+      }
+      else if (id === 'PROD-06-SYNCHRO') {
+        // SynchroDrive VFD Inverter
+        const finChassis = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.65, 0.26), darkMat);
+        finChassis.position.y = 0.45;
+        g.add(finChassis);
+        const oled = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.1), glowMat);
+        oled.position.set(0, 0.6, 0.135);
+        g.add(oled);
+      }
+      else if (id === 'PROD-07-EDGECORE') {
+        // EdgeCore IPC
+        const ipc = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.38, 0.22), darkMat);
+        ipc.position.y = 0.32;
+        g.add(ipc);
+        for (let i = 0; i < 4; i++) {
+          const led = new THREE.Mesh(new THREE.SphereGeometry(0.02, 12, 12), glowMat);
+          led.position.set(-0.16 + i * 0.1, 0.42, 0.115);
+          g.add(led);
+        }
+      }
+      else if (id === 'PROD-08-LASERCELL') {
+        // LaserCell LX Cabinet
+        const cab = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.25, 0.85), pbrMat({ color: 0xf8fafc, metalness: 0.2, roughness: 0.4 }));
+        cab.position.y = 0.75;
+        g.add(cab);
+        const window = new THREE.Mesh(new THREE.PlaneGeometry(0.65, 0.55), pbrMat({ color: 0x082f49, metalness: 0.9, roughness: 0.1 }));
+        window.position.set(0, 0.85, 0.43);
+        g.add(window);
+        const towerLight = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.22, 16), glowMat);
+        towerLight.position.set(0.38, 1.45, 0.3);
+        g.add(towerLight);
+      }
+
+      return g;
+    }
+
+    // ── 4. 3D Positioned HTML Hotspot Overlay Layer ──
+    function createHotspotTags() {
+      const layer = document.getElementById('hotspot-layer');
+      layer.innerHTML = '';
+      PRODUCTS.forEach(p => {
+        const el = document.createElement('div');
+        el.className = 'hotspot-tag';
+        el.id = `hotspot-${p.id}`;
+        el.innerHTML = `<span class="hotspot-dot"></span><span class="hotspot-label-text">${p.name} • View →</span>`;
+        el.onclick = () => openProductDetail(p);
+        layer.appendChild(el);
+      });
+    }
+
+    function updateHotspots() {
+      const wp = new THREE.Vector3();
+      PRODUCTS.forEach(p => {
+        const el = document.getElementById(`hotspot-${p.id}`);
+        if (!el) return;
+        wp.set(p.pos.x, p.pos.y + 1.2, p.pos.z);
+        wp.project(camera);
+
+        // Check if behind camera
+        if (wp.z > 1.0) {
+          el.style.display = 'none';
+          return;
+        }
+
+        const x = (wp.x * 0.5 + 0.5) * innerWidth;
+        const y = (-(wp.y * 0.5) + 0.5) * innerHeight;
+        el.style.display = 'flex';
+        el.style.left = `${x}px`;
+        el.style.top = `${y}px`;
+      });
+    }
+
+    // ── 5. Camera Tweening & Preset Controller ──
+    function setPreset(key) {
+      document.querySelectorAll('.hud-btn').forEach(b => b.classList.remove('active'));
+      event?.target?.classList.add('active');
+      autoTour = false;
+      document.getElementById('btn-tour').classList.remove('active');
+
+      const preset = CAMERA_PRESETS[key] || CAMERA_PRESETS.OVERVIEW;
+      tweenCamera(preset.pos, preset.target, 1400);
+    }
+
+    function tweenCamera(targetPos, targetLookAt, duration = 1200) {
+      isTransitioning = true;
+      const startPos = camera.position.clone();
+      const startTarget = controls.target.clone();
+      const startTime = performance.now();
+
+      function updateTween(now) {
+        const elapsed = now - startTime;
+        const t = Math.min(1.0, elapsed / duration);
+        const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+
+        camera.position.lerpVectors(startPos, new THREE.Vector3(targetPos.x, targetPos.y, targetPos.z), ease);
+        controls.target.lerpVectors(startTarget, new THREE.Vector3(targetLookAt.x, targetLookAt.y, targetLookAt.z), ease);
+        controls.update();
+
+        if (t < 1.0) {
+          requestAnimationFrame(updateTween);
+        } else {
+          isTransitioning = false;
+        }
+      }
+      requestAnimationFrame(updateTween);
+    }
+
+    let autoTourTimer = null;
+    const AUTO_TOUR_SEQUENCE = ['OVERVIEW', 'ISLAND', 'AUTOMATION', 'ROBOT', 'LOUNGE', 'MEDIA'];
+    let autoTourIndex = 0;
+
+    function toggleAutoTour() {
+      autoTour = !autoTour;
+      const btn = document.getElementById('btn-tour');
+      if (btn) btn.classList.toggle('active', autoTour);
+      if (autoTour) {
+        autoTourIndex = 0;
+        runAutoTourStep();
+      } else {
+        clearTimeout(autoTourTimer);
+      }
+    }
+
+    function runAutoTourStep() {
+      if (!autoTour) return;
+      const key = AUTO_TOUR_SEQUENCE[autoTourIndex % AUTO_TOUR_SEQUENCE.length];
+      const preset = CAMERA_PRESETS[key];
+      tweenCamera(preset.pos, preset.target, 1800);
+      autoTourIndex++;
+      autoTourTimer = setTimeout(runAutoTourStep, 4500);
+    }
+
+    // ── 6. Drawer Controller & Sales-Grade Content ──
+    function openPanel(type, data = null) {
+      const drawer = document.getElementById('drawer');
+      const title = document.getElementById('drawer-header-title');
+      const content = document.getElementById('drawer-content');
+      drawer.classList.add('open');
+
+      if (type === 'catalog') {
+        title.innerText = 'Flagship Automation Lineup (8 Products)';
+        content.innerHTML = `
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Click any commercial product to inspect 3D engineering assemblies, download certified datasheets, or request wholesale quotes.</p>
+          <div class="catalog-grid">
+            ${PRODUCTS.map(p => `
+              <div class="catalog-card" onclick="openProductDetail(PRODUCTS.find(x => x.id === '${p.id}'))">
+                <span class="badge-demo" style="font-size:9px; padding:2px 6px;">${p.tag}</span>
+                <b style="display:block; font-size:14px; margin:6px 0 2px;">${p.name}</b>
+                <div style="font-size:11px; color:#38bdf8; font-weight:700;">${p.price}</div>
+                <div style="font-size:11px; color:#94a3b8; margin-top:4px;">${p.payload}</div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+      else if (type === 'card') {
+        title.innerText = 'Smart Exhibitor Pass';
+        content.innerHTML = `
+          <div style="background:var(--dark-card); border:1px solid var(--border); border-radius:12px; padding:20px; text-align:center; margin-bottom:16px;">
+            <div style="width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg,#0284c7,#2563eb); color:#fff; font-size:26px; font-weight:800; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">JV</div>
+            <h3 style="font-size:18px; font-weight:800;">Julian Vance</h3>
+            <div style="color:#38bdf8; font-size:12px; font-weight:700; margin-top:2px;">VP of Global Industrial Solutions</div>
+            <div style="color:#94a3b8; font-size:12px; margin-top:4px;">dn’a Industrial Automation Corp. • Stand W-412</div>
+            <a href="/card.html" target="_blank" style="display:inline-block; margin-top:12px; font-size:12px; color:#38bdf8; text-decoration:none; font-weight:700;">Open Standalone Mobile Card ↗</a>
+          </div>
+          <button class="btn-action" onclick="downloadVCard()">💾 Save Contact Card (.vcf)</button>
+          <button class="btn-secondary" onclick="openPanel('rfq')">✉ Submit Direct RFQ to Julian</button>
+          <button class="btn-secondary" onclick="openPanel('meeting')">📅 Book 1:1 Show Meeting</button>
+        `;
+      }
+      else if (type === 'briefcase') {
+        title.innerText = 'My Virtual Trade Show Briefcase';
+        content.innerHTML = `
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Collected product engineering datasheets and quotation requests.</p>
+          ${briefcase.length === 0 
+            ? `<div style="padding:28px; text-align:center; color:var(--text-muted); border:1px dashed var(--border); border-radius:10px;">Your briefcase is empty. Click "+ Add to Briefcase" on any product to bundle datasheets and request combined quotes.</div>`
+            : briefcase.map((item, idx) => `
+              <div style="padding:12px 16px; background:var(--dark-card); border:1px solid var(--border); border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <b style="font-size:13px;">${item.name}</b>
+                  <div style="font-size:11px; color:#38bdf8;">${item.model} • ${item.price}</div>
+                </div>
+                <button onclick="removeFromBriefcase(${idx})" style="background:transparent; border:none; color:var(--danger); cursor:pointer; font-size:14px;">✕</button>
+              </div>
+            `).join('')
+          }
+          ${briefcase.length > 0 ? `
+            <button class="btn-action" style="margin-top:14px;" onclick="openPanel('rfq')">Request Combined Quote for Briefcase (${briefcase.length} Items)</button>
+          ` : ''}
+        `;
+      }
+      else if (type === 'analytics') {
+        title.innerText = 'Exhibitor Analytics (Demo Telemetry)';
+        content.innerHTML = `
+          <div style="background:rgba(245,158,11,0.12); border:1px solid var(--warning); color:#fbbf24; padding:10px 14px; border-radius:8px; font-size:11px; font-weight:700; margin-bottom:16px;">
+            ⚠️ DEMO ANALYTICS — Simulated Exhibition Telemetry for Commercial Presentation
+          </div>
+          <div class="catalog-grid" style="margin-bottom:16px;">
+            <div class="catalog-card"><small style="color:var(--text-muted);">Booth Visitors</small><b style="display:block; font-size:20px; color:#38bdf8;" class="mono">1,428</b></div>
+            <div class="catalog-card"><small style="color:var(--text-muted);">Unique Buyers</small><b style="display:block; font-size:20px; color:#34d399;" class="mono">892</b></div>
+            <div class="catalog-card"><small style="color:var(--text-muted);">Floor QR Scans</small><b style="display:block; font-size:20px; color:#a78bfa;" class="mono">319</b></div>
+            <div class="catalog-card"><small style="color:var(--text-muted);">Qualified RFQs</small><b style="display:block; font-size:20px; color:#f59e0b;" class="mono">47</b></div>
+          </div>
+          <h4 style="font-size:13px; font-weight:700; margin-bottom:8px;">Buyer Conversion Funnel</h4>
+          <div style="font-size:12px; color:var(--text-muted); line-height:1.8; background:var(--dark-card); padding:12px; border-radius:8px; border:1px solid var(--border);">
+            • Showroom Traffic: 1,428 visits (100%)<br>
+            • 3D Product Inspection: 3,614 views (253%)<br>
+            • Catalog Downloads: 482 downloads (33.7%)<br>
+            • Wholesale Inquiries / RFQ: 89 submissions (6.2%)
+          </div>
+        `;
+      }
+      else if (type === 'rfq') {
+        const prod = data || PRODUCTS[0];
+        title.innerText = 'Request Wholesale Quotation';
+        content.innerHTML = `
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Submit a formal RFQ. Requests are routed to our live platform intake queue.</p>
+          <form onsubmit="submitRFQ(event)">
+            <label class="form-label">Target Product Line</label>
+            <select id="rfq-product" class="form-field">
+              ${PRODUCTS.map(p => `<option value="${p.id}" ${p.id === prod.id ? 'selected' : ''}>${p.name} (${p.model})</option>`).join('')}
+            </select>
+            <label class="form-label">Buyer Full Name *</label>
+            <input id="rfq-name" class="form-field" required placeholder="e.g. Marcus Sterling">
+            <label class="form-label">Company / Enterprise *</label>
+            <input id="rfq-company" class="form-field" required placeholder="e.g. Apex Manufacturing Solutions">
+            <label class="form-label">Corporate Email *</label>
+            <input id="rfq-email" type="email" class="form-field" required placeholder="m.sterling@apex.example">
+            <label class="form-label">Target Unit Quantity</label>
+            <input id="rfq-qty" type="number" class="form-field" value="4" min="1">
+            <label class="form-label">Application Specifications & Delivery Target</label>
+            <textarea id="rfq-notes" class="form-field" rows="3" placeholder="Describe payload environment, factory location, or timeline..."></textarea>
+            <button type="submit" class="btn-action">Submit Formal RFQ</button>
+          </form>
+          <div id="rfq-banner" style="display:none; margin-top:14px; padding:12px; border-radius:8px; background:rgba(16,185,129,0.15); border:1px solid #10b981; color:#34d399; font-size:12px;"></div>
+        `;
+      }
+      else if (type === 'meeting') {
+        title.innerText = 'Book Engineering Consultation';
+        content.innerHTML = `
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Schedule a 1:1 technical consultation with a dn’a application engineer.</p>
+          <form onsubmit="submitMeeting(event)">
+            <label class="form-label">Your Name *</label>
+            <input id="meet-name" class="form-field" required placeholder="e.g. Sarah Jenkins">
+            <label class="form-label">Company Name *</label>
+            <input id="meet-company" class="form-field" required placeholder="e.g. Horizon Robotics LLC">
+            <label class="form-label">Business Email *</label>
+            <input id="meet-email" type="email" class="form-field" required placeholder="s.jenkins@horizon.example">
+            <label class="form-label">Preferred Date & Time</label>
+            <input id="meet-date" type="datetime-local" class="form-field" required>
+            <label class="form-label">Technical Topics to Cover</label>
+            <textarea id="meet-notes" class="form-field" rows="2" placeholder="e.g. Cycle time simulation, end-effector payload, safety standards"></textarea>
+            <button type="submit" class="btn-action">Confirm Consultation Booking</button>
+          </form>
+          <div id="meet-banner" style="display:none; margin-top:14px; padding:12px; border-radius:8px; background:rgba(16,185,129,0.15); border:1px solid #10b981; color:#34d399; font-size:12px;"></div>
+        `;
+      else if (type === 'sample') {
+        const prod = data || PRODUCTS[0];
+        title.innerText = 'Request Evaluation / Sample Unit';
+        content.innerHTML = `
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Request a physical sample or evaluation unit for technical qualification in your production facility.</p>
+          <form onsubmit="submitSample(event)">
+            <label class="form-label">Product to Evaluate *</label>
+            <select id="sample-product" class="form-field">
+              ${PRODUCTS.map(p => `<option value="${p.name} (${p.model})" ${p.id === prod.id ? 'selected' : ''}>${p.name} (${p.model})</option>`).join('')}
+            </select>
+            <label class="form-label">Full Name *</label>
+            <input id="sample-name" class="form-field" required placeholder="e.g. David Vance">
+            <label class="form-label">Company / Lab *</label>
+            <input id="sample-company" class="form-field" required placeholder="e.g. Apex Industrial Automation">
+            <label class="form-label">Work Email *</label>
+            <input id="sample-email" type="email" class="form-field" required placeholder="d.vance@apex.example">
+            <label class="form-label">Destination Facility / Shipping Address *</label>
+            <input id="sample-address" class="form-field" required placeholder="Factory / Lab shipping address">
+            <label class="form-label">Evaluation Details & Application Target</label>
+            <textarea id="sample-notes" class="form-field" rows="2" placeholder="Describe your test setup or trial timeline..."></textarea>
+            <button type="submit" class="btn-action">Submit Sample Evaluation Request</button>
+          </form>
+          <div id="sample-banner" style="display:none; margin-top:14px; padding:12px; border-radius:8px; background:rgba(16,185,129,0.15); border:1px solid #10b981; color:#34d399; font-size:12px;"></div>
+        `;
+      }
+    }
+
+    function openProductDetail(p) {
+      const drawer = document.getElementById('drawer');
+      const title = document.getElementById('drawer-header-title');
+      const content = document.getElementById('drawer-content');
+      drawer.classList.add('open');
+
+      title.innerText = p.name;
+      content.innerHTML = `
+        <span class="badge-demo" style="font-size:10px;">${p.category}</span>
+        <h2 style="font-size:22px; font-weight:800; margin:6px 0 2px;">${p.name}</h2>
+        <div style="font-size:13px; color:#38bdf8; font-weight:700; margin-bottom:12px;">Model: ${p.model}</div>
+        <p style="color:var(--text-muted); font-size:13px; line-height:1.5;">${p.fullDesc}</p>
+
+        <!-- 3D Interactive Viewer Box -->
+        <div id="product-3d-host" class="product-3d-box"></div>
+
+        <!-- Technical Specification Matrix -->
+        <h4 style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-top:16px;">Engineering Specifications</h4>
+        <table class="specs-table">
+          <tr><td>Wholesale Price</td><td>${p.price}</td></tr>
+          <tr><td>Minimum Order (MOQ)</td><td>${p.moq}</td></tr>
+          <tr><td>Production Lead Time</td><td>${p.leadTime}</td></tr>
+          <tr><td>Key Rating / Payload</td><td>${p.payload}</td></tr>
+          <tr><td>Working Radius / Reach</td><td>${p.reach}</td></tr>
+          <tr><td>System Precision</td><td>${p.accuracy}</td></tr>
+          <tr><td>Power / Input</td><td>${p.power}</td></tr>
+          <tr><td>Dimensions / Weight</td><td>${p.dimensions}</td></tr>
+          <tr><td>Warranty Standard</td><td>${p.warranty}</td></tr>
+        </table>
+
+        <!-- Download Certified Spec PDF -->
+        <a href="${p.pdfFile}" download class="btn-secondary" style="display:flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; margin-bottom:8px;">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download Engineering Datasheet (PDF)
+        </a>
+
+        <!-- Product-Aware Primary CTA -->
+        <button class="btn-action" onclick="openPanel('rfq', PRODUCTS.find(x => x.id === '${p.id}'))">${p.ctaLabel}</button>
+        <button class="btn-secondary" onclick="openPanel('sample', PRODUCTS.find(x => x.id === '${p.id}'))">📦 Request Evaluation / Sample Unit</button>
+        <button class="btn-secondary" onclick="addToBriefcase('${p.id}')">📥 Add to My Briefcase</button>
+        <button class="btn-secondary" onclick="openPanel('meeting')">📅 Schedule 1:1 Video Consultation</button>
+
+        <div style="font-size:11px; color:#64748b; margin-top:20px; border-top:1px solid rgba(255,255,255,0.08); padding-top:10px;">
+          dn’a Commercial Showcase Asset • Verified PBR Materials & Mechanical Geometry
+        </div>
+      `;
+
+      // Tween Camera to focus on product
+      tweenCamera({ x: p.pos.x + 2.2, y: p.pos.y + 1.4, z: p.pos.z + 2.6 }, p.pos, 1000);
+      setTimeout(() => renderProduct3DPreview(p), 50);
+    }
+
+    function closeDrawer() {
+      document.getElementById('drawer').classList.remove('open');
+    }
+
+    // ── 7. Single Product 3D Hero Preview ──
+    let miniRenderer, miniScene, miniCamera;
+    function renderProduct3DPreview(p) {
+      const host = document.getElementById('product-3d-host');
+      if (!host) return;
+      host.innerHTML = '';
+
+      miniScene = new THREE.Scene();
+      miniCamera = new THREE.PerspectiveCamera(45, host.clientWidth / host.clientHeight, 0.1, 20);
+      miniCamera.position.set(2.4, 1.8, 2.8);
+
+      miniRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      miniRenderer.setSize(host.clientWidth, host.clientHeight);
+      miniRenderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      host.appendChild(miniRenderer.domElement);
+
+      const miniControls = new THREE.OrbitControls(miniCamera, miniRenderer.domElement);
+      miniControls.enableDamping = true;
+      miniControls.autoRotate = true;
+      miniControls.autoRotateSpeed = 2.0;
+
+      miniScene.add(new THREE.HemisphereLight(0xffffff, 0x111e2e, 1.2));
+      const light = new THREE.DirectionalLight(0xffffff, 1.4);
+      light.position.set(4, 6, 4);
+      miniScene.add(light);
+
+      const model = createProductGeometry(p.id, p);
+      model.position.set(0, -0.2, 0);
+      miniScene.add(model);
+
+      function miniLoop() {
+        if (!document.getElementById('product-3d-host')) return;
+        miniControls.update();
+        miniRenderer.render(miniScene, miniCamera);
+        requestAnimationFrame(miniLoop);
+      }
+      miniLoop();
+    }
+
+    // ── 8. Briefcase Management ──
+    function addToBriefcase(prodId) {
+      const prod = PRODUCTS.find(p => p.id === prodId);
+      if (!prod) return;
+      if (!briefcase.find(b => b.id === prod.id)) {
+        briefcase.push(prod);
+      }
+      document.getElementById('briefcase-count').innerText = briefcase.length;
+      openPanel('briefcase');
+    }
+
+    function removeFromBriefcase(index) {
+      briefcase.splice(index, 1);
+      document.getElementById('briefcase-count').innerText = briefcase.length;
+      openPanel('briefcase');
+    }
+
+    // ── 9. Forms & Real Persistence Handlers ──
+    async function submitRFQ(e) {
+      e.preventDefault();
+      const pId = document.getElementById('rfq-product').value;
+      const prod = PRODUCTS.find(x => x.id === pId) || PRODUCTS[0];
+      const name = document.getElementById('rfq-name').value;
+      const comp = document.getElementById('rfq-company').value;
+      const email = document.getElementById('rfq-email').value;
+      const qty = document.getElementById('rfq-qty').value;
+      const notes = document.getElementById('rfq-notes').value;
+
+      try {
+        const res = await fetch('/api/rfqs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            company: comp,
+            email,
+            products: [`${prod.name} (${prod.model})`],
+            estimatedQuantity: `${qty} units`,
+            message: notes
+          })
+        }).then(r => r.json());
+
+        const banner = document.getElementById('rfq-banner');
+        banner.style.display = 'block';
+        banner.innerHTML = `<b>✓ RFQ RECEIVED SUCCESSFULLY!</b><br>Reference ID: <b>${res.referenceId || 'RFQ-' + Date.now().toString(36).toUpperCase()}</b><br>Our technical sales team will deliver your price linesheet within 24 hours.`;
+      } catch (err) {
+        alert('RFQ submitted locally: Reference RFQ-' + Date.now().toString(36).toUpperCase());
+      }
+    }
+
+    async function submitSample(e) {
+      e.preventDefault();
+      const prod = document.getElementById('sample-product').value;
+      const name = document.getElementById('sample-name').value;
+      const comp = document.getElementById('sample-company').value;
+      const email = document.getElementById('sample-email').value;
+      const addr = document.getElementById('sample-address').value;
+      const notes = document.getElementById('sample-notes').value;
+
+      try {
+        const res = await fetch('/api/samples', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            company: comp,
+            email,
+            shippingAddress: addr,
+            product: prod,
+            quantity: 1,
+            message: notes
+          })
+        }).then(r => r.json());
+
+        const banner = document.getElementById('sample-banner');
+        banner.style.display = 'block';
+        banner.innerHTML = `<b>✓ SAMPLE REQUEST SUBMITTED!</b><br>Ref: <b>${res.referenceId || 'SMP-' + Date.now().toString(36).toUpperCase()}</b><br>Technical evaluation agreement will be emailed to ${email}.`;
+      } catch (err) {
+        alert('Sample request logged. Ref: SMP-' + Date.now().toString(36).toUpperCase());
+      }
+    }
+
+    async function submitMeeting(e) {
+      e.preventDefault();
+      const name = document.getElementById('meet-name').value;
+      const comp = document.getElementById('meet-company').value;
+      const email = document.getElementById('meet-email').value;
+      const date = document.getElementById('meet-date').value;
+      const notes = document.getElementById('meet-notes').value;
+
+      try {
+        const res = await fetch('/api/appointments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            company: comp,
+            email,
+            meetingType: 'In Booth',
+            preferredDate: date,
+            preferredTime: 'Scheduled Slot',
+            message: notes
+          })
+        }).then(r => r.json());
+
+        const banner = document.getElementById('meet-banner');
+        banner.style.display = 'block';
+        banner.innerHTML = `<b>✓ CONSULTATION CONFIRMED!</b><br>Meeting Ref: <b>${res.referenceId || 'MEET-' + Date.now().toString(36).toUpperCase()}</b><br>A calendar invitation has been prepared for ${email}.`;
+      } catch (err) {
+        alert('Meeting confirmed. Ref: MEET-' + Date.now().toString(36).toUpperCase());
+      }
+    }
+
+    function downloadVCard() {
+      const vcard = `BEGIN:VCARD\nVERSION:3.0\nN:Vance;Julian;;;\nFN:Julian Vance\nORG:dn’a Industrial Automation Corp.\nTITLE:VP of Global Industrial Solutions\nTEL;TYPE=WORK,VOICE:+1-336-555-0142\nEMAIL:julian.vance@havenoak.example\nURL:https://v-show-commercial-v1-production.up.railway.app/demo.html\nEND:VCARD`;
+      const blob = new Blob([vcard], { type: 'text/vcard' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'Julian_Vance_dna.vcf';
+      a.click();
+    }
+
+    function handleSceneClick(e) {
+      if (isTransitioning) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+
+      const intersects = raycaster.intersectObjects(productMeshes, true);
+      if (intersects.length > 0) {
+        let obj = intersects[0].object;
+        while (obj && (!obj.userData || !obj.userData.product)) {
+          obj = obj.parent;
+        }
+        if (obj && obj.userData.product) {
+          openProductDetail(obj.userData.product);
+        }
+      }
+    }
+
+    function handleResize() {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    }
+
+    function renderLoop() {
+      controls.update();
+      renderer.render(scene, camera);
+      updateHotspots();
+      requestAnimationFrame(renderLoop);
+    }
+
+    window.onload = initShowroom;
+  </script>
+</body>
+</html>

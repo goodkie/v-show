@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy | Virtual Trade Show Commercial V1</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: #111827;
+      --border: #1f2937;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --accent: #3b82f6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.7;
+      padding: 40px 20px;
+    }
+    .legal-container {
+      max-width: 880px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 36px 32px;
+    }
+    .legal-banner {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid #f59e0b;
+      color: #fbbf24;
+      padding: 14px 18px;
+      border-radius: 8px;
+      font-weight: bold;
+      margin-bottom: 28px;
+      text-align: center;
+      font-size: 14px;
+    }
+    .policy-meta {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    h1 { font-size: 26px; margin-bottom: 12px; }
+    h2 { font-size: 18px; margin: 24px 0 10px 0; color: #60a5fa; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px; }
+    p, ul { font-size: 14px; color: #d1d5db; margin-bottom: 12px; }
+    ul { padding-left: 24px; }
+    li { margin-bottom: 6px; }
+    .footer-note {
+      margin-top: 36px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+  <div class="legal-container">
+    <div class="legal-banner">
+      ⚠️ DRAFT — REQUIRES LEGAL REVIEW (This document is a commercial engineering draft subject to attorney review before live billing)
+    </div>
+
+    <h1>Privacy Policy</h1>
+    <div class="policy-meta">
+      <span><strong>Policy Version:</strong> 2026.1-draft</span>
+      <span><strong>Status:</strong> Draft</span>
+      <span><strong>Effective Date:</strong> [TO BE COMPLETED BEFORE LIVE BILLING]</span>
+    </div>
+
+    <h2>1. Data Collection and Inventory</h2>
+    <p>To operate the virtual exhibition and business matching workflows, the Platform collects minimal necessary data:</p>
+    <ul>
+      <li><strong>User Account Information:</strong> Name, corporate email address, organization name, job role, hashed session tokens, and security metadata.</li>
+      <li><strong>Exhibitor Booth & Catalog Data:</strong> Company profiles, product specifications, uploaded booth photographs, and spatial models.</li>
+      <li><strong>Buyer Leads & RFQ Submissions:</strong> Buyer full name, company, work email, phone number, desired quantities, delivery requirements, and inquiry notes.</li>
+      <li><strong>Usage & Telemetry Logs:</strong> Anonymous viewer session IDs, booth visit frequencies, 3D hotspot interaction timestamps (aggregated non-personally identifiable metrics).</li>
+    </ul>
+
+    <h2>2. Payment Data Isolation (Stripe Processing)</h2>
+    <p>All credit card transactions and subscription processing are conducted exclusively by <strong>Stripe, Inc.</strong>, a PCI-DSS Level 1 certified payment service provider. The Company's servers and database never store, receive, or transmit full Primary Account Numbers (PAN) or CVC security codes. We maintain only Stripe Customer IDs and Subscription IDs as payment reference metadata.</p>
+
+    <h2>3. Purposes of Processing</h2>
+    <ul>
+      <li>To host and render interactive 3D virtual trade show booths.</li>
+      <li>To facilitate B2B communication, RFQ submissions, and digital business card delivery between buyers and exhibitors.</li>
+      <li>To enforce subscription entitlements and maintain infrastructure security.</li>
+    </ul>
+
+    <h2>4. Subprocessors and Infrastructure Partners</h2>
+    <ul>
+      <li><strong>Cloud Hosting:</strong> Railway.app (Container hosting and encrypted persistent volumes)</li>
+      <li><strong>Payment Gateway:</strong> Stripe, Inc. (Global payment processing and billing portal)</li>
+      <li><strong>GPU Compute:</strong> Modal Labs (Asynchronous 3D Gaussian Splatting rendering)</li>
+      <li><strong>Realtime Audio/Video:</strong> WebRTC P2P (Direct peer-to-peer 1:1 consultation streams)</li>
+    </ul>
+
+    <h2>5. Data Retention and Erasure (DSR)</h2>
+    <p>Data is retained only as long as the organization maintains an active subscription or as required by statutory commercial recordkeeping laws. Users may exercise data subject rights (access, portability, deletion) in accordance with our <a href="terms.html">Privacy Runbook</a>.</p>
+
+    <h2>6. Privacy Officer and Inquiries</h2>
+    <ul>
+      <li><strong>Data Privacy & Governance:</strong> vivPR Privacy Desk</li>
+      <li><strong>Contact Email:</strong> info@vivpr.pro</li>
+      <li><strong>Postal Address:</strong> 1633 Center Ave, Fort Lee, NJ 07024, United States</li>
+    </ul>
+
+
+    <div class="footer-note">
+      <a href="lobby.html">Event Lobby</a> &bull; <a href="pricing.html">Pricing Plans</a> &bull; <a href="terms.html">Terms of Service</a> &bull; <a href="refund-policy.html">Refund Policy</a>
+    </div>
+  </div>
+
+</body>
+</html>

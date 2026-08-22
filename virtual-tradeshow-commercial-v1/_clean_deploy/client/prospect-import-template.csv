@@ -1,0 +1,3 @@
+company_name,website,contact_name,contact_email,phone,industry,trade_show,booth_number,event_date,source,notes
+Sample Industrial Robotics (TEST ONLY),https://example.test,Alex Morgan,alex@example.test,+1 (555) 019-2834,Industrial Automation,Automate 2026,B-304,2026-09-15,Trade Show Directory,Flagship 6-axis robot arm exhibitor (SAMPLE DATA ONLY)
+Sample Medical Devices Inc (TEST ONLY),https://medexample.test,Sarah Connor,sarah@medexample.test,+1 (555) 019-5821,Medical Devices,MD&M West 2026,Hall A-12,2026-10-20,Manual Research,Surgical equipment manufacturer (SAMPLE DATA ONLY)

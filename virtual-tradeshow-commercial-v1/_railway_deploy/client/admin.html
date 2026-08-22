@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exhibitor Admin Dashboard — Virtual Trade Show V1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <!-- Three.js & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- Spark & Precision Splat Viewer Adapter -->
+  <script src="precision-viewer.js"></script>
+  <!-- Shared Booth 3D Engine -->
+  <script src="booth-engine.js"></script>
+</head>
+<body class="admin-shell">
+  <!-- Online Trial Notice Banner -->
+  <div class="trial-banner">
+    <span>🌐 <strong>COMMERCIAL BETA</strong> — Exhibitor 3D Virtual Booth & Lead Operations Console</span>
+  </div>
+
+  <!-- Login Modal -->
+  <div id="login-modal" class="modal-backdrop active">
+    <div class="modal-card" style="max-width: 420px; text-align: center;">
+      <div class="brand-logo" style="margin: 0 auto 16px auto; width: 44px; height: 44px; font-size: 20px;">V</div>
+      <h2 style="margin-bottom: 8px;">Exhibitor Admin Login</h2>
+      <p style="font-size: 13px; margin-bottom: 24px;">Manage your 3D spatial booth, product catalog, and buyer leads.</p>
+      
+      <form id="form-login" style="text-align: left;">
+        <div class="form-group">
+          <label class="form-label">Email Account</label>
+          <input type="email" id="login-user" class="form-input" placeholder="exhibitor@company.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="login-pass" class="form-input" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Force Password Change Modal (First Login) -->
+  <div id="force-pwd-modal" class="modal-backdrop">
+    <div class="modal-card" style="max-width: 420px; text-align: center;">
+      <div style="font-size: 32px; margin-bottom: 12px;">🔐</div>
+      <h2 style="margin-bottom: 8px;">Set New Password</h2>
+      <p style="font-size: 13px; margin-bottom: 20px; color: var(--text-muted);">
+        For enhanced security, please change your initial temporary password before proceeding to the dashboard.
+      </p>
+      
+      <form id="form-force-pwd" style="text-align: left;">
+        <div class="form-group">
+          <label class="form-label">Current Temporary Password</label>
+          <input type="password" id="force-pwd-current" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">New Password (Minimum 12 characters)</label>
+          <input type="password" id="force-pwd-new" class="form-input" minlength="12" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm New Password</label>
+          <input type="password" id="force-pwd-confirm" class="form-input" minlength="12" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">Update Password & Continue</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Top Admin Navbar -->
+  <header class="admin-nav">
+    <div class="brand-section">
+      <div class="brand-logo">V</div>
+      <div class="brand-title">Exhibitor Control Center</div>
+      <span class="badge badge-reconstructed" style="margin-left: 12px;" id="admin-org-badge">Wilo Group (Exhibitor)</span>
+    </div>
+    <div class="nav-actions">
+      <a href="lobby.html" target="_blank" class="btn btn-secondary btn-sm">🏛️ Event Lobby</a>
+      <a href="viewer.html" target="_blank" class="btn btn-secondary btn-sm" id="btn-preview-public">Public Booth ↗</a>
+      <button class="btn btn-danger btn-sm" id="btn-logout">Sign Out</button>
+    </div>
+  </header>
+
+  <!-- Admin Main Layout -->
+  <div class="admin-body">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar">
+      <div class="admin-nav-item active" data-tab="overview">
+        <span>📊</span> Overview & Telemetry
+      </div>
+      <div class="admin-nav-item" data-tab="booth-settings">
+        <span>🏛️</span> Booth Profile & Photos
+      </div>
+      <div class="admin-nav-item" data-tab="reconstruction">
+        <span>⚙️</span> Precision 3D & Alignment
+      </div>
+      <div class="admin-nav-item" data-tab="products">
+        <span>📦</span> Products & Catalog
+      </div>
+      <div class="admin-nav-item" data-tab="hotspot-editor">
+        <span>📍</span> Visual 3D Hotspot Editor
+      </div>
+      <div class="admin-nav-item" data-tab="leads">
+        <span>🤝</span> Leads & RFQ Pipeline
+      </div>
+      <div class="admin-nav-item" data-tab="billing">
+        <span>💳</span> Billing & Subscriptions
+      </div>
+      <div class="admin-nav-item" data-tab="inbox">
+        <span>💬</span> Inbox & Support <span id="nav-inbox-badge" class="badge badge-reconstructed" style="display:none; font-size:10px; margin-left:6px;">0</span>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="admin-content">
+
+      <!-- TAB 1: Overview & Real Stats -->
+      <section id="tab-overview" class="tab-pane">
+        <div class="stats-grid" style="margin-bottom: 24px;">
+          <div class="stat-box">
+            <div class="stat-label">Total Booth Visits</div>
+            <div class="stat-value" id="stat-views">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Product Inquiries</div>
+            <div class="stat-value" id="stat-clicks">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Hotspot Clicks</div>
+            <div class="stat-value" id="stat-hs-clicks">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Digital Leads Collected</div>
+            <div class="stat-value" id="stat-leads">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">RFQs Received</div>
+            <div class="stat-value" id="stat-rfqs">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Sample Requests</div>
+            <div class="stat-value" id="stat-samples">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Appointments Booked</div>
+            <div class="stat-value" id="stat-apts">0</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3 id="current-booth-name-display">Loading Booth Profile...</h3>
+              <p id="current-booth-status-desc" style="font-size: 13px; margin-top: 4px;"></p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-primary btn-sm" id="btn-toggle-publish">Publish Booth</button>
+            </div>
+          </div>
+
+          <!-- Quick Status Strip -->
+          <div style="display: flex; gap: 16px; align-items: center; background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-sm);">
+            <div>
+              <div style="font-size: 12px; color: var(--text-dim); text-transform: uppercase;">Spatial Rendering Mode</div>
+              <div style="font-weight: 600; font-size: 16px; margin-top: 2px;" id="recon-status-text">Photo Preview</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btn-quick-goto-recon" style="margin-left: auto;">
+              Open Precision 3D Tool ↗
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: Booth Settings & Photos -->
+      <section id="tab-booth-settings" class="tab-pane" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>Booth Basic Information</h3>
+            <button class="btn btn-primary btn-sm" id="btn-save-booth-info">Save Changes</button>
+          </div>
+          <form id="form-booth-info">
+            <div class="form-group">
+              <label class="form-label">Exhibitor / Booth Title</label>
+              <input type="text" class="form-input" id="edit-booth-name">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Booth Description</label>
+              <textarea class="form-textarea" id="edit-booth-desc" rows="3"></textarea>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h3>Multi-View Booth Photography Upload</h3>
+              <p style="font-size: 13px;">Upload 10-20 images for fast Photo Preview (or 50-80 images for full 3DGS Neural Reconstruction).</p>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span class="badge badge-preview" id="booth-photo-count-badge">0 Photos</span>
+              <button class="btn btn-secondary btn-sm" id="btn-clear-all-photos" style="display: none; color: #ef4444; border-color: rgba(239,68,68,0.4);" onclick="clearAllBoothPhotos()">Clear All</button>
+            </div>
+          </div>
+
+          <div class="dropzone" id="photo-dropzone">
+            <div style="font-size: 32px; margin-bottom: 8px;">📷</div>
+            <div style="font-weight: 600;">Drag and drop photo files or click to browse.</div>
+            <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">JPG, PNG, WebP supported (Up to 50 files batch, max 25MB each)</div>
+            <input type="file" id="photo-file-input" multiple accept="image/jpeg,image/png,image/webp" style="display: none;">
+            <input type="file" id="photo-replace-input" accept="image/jpeg,image/png,image/webp" style="display: none;">
+          </div>
+
+          <div class="gallery-grid" id="booth-photo-gallery" style="margin-top: 20px;">
+            <!-- Uploaded photo cards with edit/delete/reorder controls -->
+          </div>
+        </div>
+
+      </section>
+
+      <!-- TAB 3: PRECISION 3D RECONSTRUCTION & ALIGNMENT -->
+      <section id="tab-reconstruction" class="tab-pane" style="display: none;">
+        <!-- Card 1: Capture Quality Validation -->
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="card-header">
+            <div>
+              <h3>📷 Capture Dataset Quality Validator</h3>
+              <p style="font-size: 13px;">Analyzes uploaded photos to verify SfM feature matching and 3D Gaussian Splatting feasibility.</p>
+            </div>
+            <span id="badge-capture-quality" class="badge badge-preview">Evaluating</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px;">
+            <div class="stat-box">
+              <div class="stat-label">Uploaded Photos</div>
+              <div class="stat-value" id="val-photo-count">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Quality Rating</div>
+              <div class="stat-value" id="val-quality-grade">-</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Reconstruction Ready</div>
+              <div class="stat-value" id="val-can-reconstruct" style="font-size: 18px; margin-top: 8px;">Pending Check</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Active Reconstruction Job Dashboard -->
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="card-header">
+            <div>
+              <h3>⚙️ Precision 3D Pipeline Orchestration</h3>
+              <p style="font-size: 13px;">Manages the asynchronous COLMAP SfM and Nerfstudio Splatfacto GPU lifecycle.</p>
+            </div>
+            <div style="display: flex; gap: 8px;" id="recon-actions-container">
+              <button class="btn btn-primary btn-sm" id="btn-trigger-reconstruction">🚀 Request 3DGS Reconstruction</button>
+              <button class="btn btn-danger btn-sm" id="btn-cancel-reconstruction" style="display: none;">🛑 Cancel Job</button>
+              <button class="btn btn-success btn-sm" id="btn-verify-reconstruction" style="display: none;">✅ Verify & Approve 3D Booth</button>
+            </div>
+          </div>
+
+          <!-- Progress Bar & Stage Display -->
+          <div id="recon-job-details-panel" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <span class="badge" id="recon-current-status-badge">Photo Preview</span>
+                <span id="recon-job-id-text" style="font-family: monospace; font-size: 12px; margin-left: 8px; color: var(--text-dim);">No Active Job</span>
+              </div>
+              <div id="recon-progress-percent" style="font-weight: 700; font-size: 18px; color: var(--brand-accent);">0%</div>
+            </div>
+
+            <div class="progress-container">
+              <div class="progress-fill" id="recon-progress-bar"></div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-top: 6px;">
+              <span>Current Stage: <strong id="recon-stage-text" style="color: var(--text-main);">Idle (Photo Preview)</strong></span>
+              <span id="recon-worker-id-text">Worker: Ready</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: PRECISION 3D ALIGNMENT TOOL -->
+        <div class="card" id="card-precision-alignment">
+          <div class="card-header">
+            <div>
+              <h3>🔍 Precision 3D Spatial Alignment Tool</h3>
+              <p style="font-size: 13px;">Fine-tune position (XYZ), rotation, and scale in real time to match 3D space with booth coordinates.</p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-secondary btn-sm" id="btn-align-reset">Reset Defaults</button>
+              <button class="btn btn-primary btn-sm" id="btn-save-alignment">💾 Save Alignment</button>
+            </div>
+          </div>
+
+          <!-- Precision Viewport & Controls Grid -->
+          <div style="display: grid; grid-template-columns: 1fr 320px; gap: 20px;">
+            <!-- 3D Precision Canvas Container -->
+            <div class="editor-viewport-card" id="align-viewport-container" style="height: 480px;">
+              <div class="editor-status-banner">
+                <span>✨ <strong>Spark Gaussian Splatting</strong> Alignment Viewport</span>
+                <span id="align-fps-badge" style="color: var(--brand-accent); font-family: monospace;">60 FPS</span>
+              </div>
+              <div id="align-3d-canvas" style="width: 100%; height: 100%;"></div>
+            </div>
+
+            <!-- Alignment Control Sliders -->
+            <div style="background: var(--bg-surface-elevated); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 14px;">
+              <h4 style="font-size: 14px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">Transform Controls</h4>
+
+              <div>
+                <label class="form-label" style="display: flex; justify-content: space-between;">
+                  <span>Position X</span>
+                  <span id="val-pos-x" style="color: var(--brand-accent);">0.0</span>
+                </label>
+                <input type="range" class="form-input" id="slider-pos-x" min="-5" max="5" step="0.05" value="0">
+              </div>
+
+              <div>
+                <label class="form-label" style="display: flex; justify-content: space-between;">
+                  <span>Position Y</span>
+                  <span id="val-pos-y" style="color: var(--brand-accent);">0.0</span>
+                </label>
+                <input type="range" class="form-input" id="slider-pos-y" min="-3" max="3" step="0.05" value="0">
+              </div>
+
+              <div>
+                <label class="form-label" style="display: flex; justify-content: space-between;">
+                  <span>Position Z</span>
+                  <span id="val-pos-z" style="color: var(--brand-accent);">0.0</span>
+                </label>
+                <input type="range" class="form-input" id="slider-pos-z" min="-5" max="5" step="0.05" value="0">
+              </div>
+
+              <div>
+                <label class="form-label" style="display: flex; justify-content: space-between;">
+                  <span>Rotation Y (Yaw)</span>
+                  <span id="val-rot-y" style="color: var(--brand-accent);">0°</span>
+                </label>
+                <input type="range" class="form-input" id="slider-rot-y" min="-180" max="180" step="1" value="0">
+              </div>
+
+              <div>
+                <label class="form-label" style="display: flex; justify-content: space-between;">
+                  <span>Uniform Scale</span>
+                  <span id="val-scale" style="color: var(--brand-accent);">1.00x</span>
+                </label>
+                <input type="range" class="form-input" id="slider-scale" min="0.2" max="3.0" step="0.02" value="1.0">
+              </div>
+
+              <div style="font-size: 11px; color: var(--text-dim); margin-top: auto; line-height: 1.4;">
+                * Align the 3D model with interactive hotspot markers and click [💾 Save Alignment].
+              </div>
+        </div>
+
+        <!-- Card 4: 3D Scene & Navigation Settings -->
+        <div class="card" style="margin-top: 24px;">
+          <div class="card-header">
+            <div>
+              <h3>🌐 3D Scene & Locomotion Settings</h3>
+              <p style="font-size: 13px;">Configure default camera perspective, field of view, walk speed, and environment lighting.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" id="btn-save-3d-scene-settings" onclick="save3DSceneSettings()">💾 Save 3D Settings</button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">Camera FOV (Field of View)</label>
+              <input type="number" class="form-input" id="setting-camera-fov" value="45" min="30" max="80">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Walk Locomotion Speed (m/s)</label>
+              <input type="number" class="form-input" id="setting-walk-speed" value="3.5" min="1" max="10" step="0.5">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Eye-Level Walk Height (m)</label>
+              <input type="number" class="form-input" id="setting-walk-height" value="1.65" min="1.0" max="2.5" step="0.05">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 12px;">
+            <div class="form-group">
+              <label class="form-label">Lighting Preset</label>
+              <select class="form-select" id="setting-lighting-preset">
+                <option value="STUDIO_COMMERCIAL">Studio Commercial (High Contrast)</option>
+                <option value="EXHIBITION_HALL">Exhibition Hall (Ambient Warm)</option>
+                <option value="NEUTRAL_CLEAN">Neutral Clean (Daylight 5500K)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Background Ambience</label>
+              <select class="form-select" id="setting-background-theme">
+                <option value="DARK_MINIMAL">Dark Minimal (#070a12)</option>
+                <option value="DARK_SLATE">Dark Slate (#0f172a)</option>
+                <option value="EXPO_BLUR">Exhibition Blurred Hall</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- TAB 4: Products Management -->
+      <section id="tab-products" class="tab-pane" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3>Exhibition Products & Catalog</h3>
+              <p style="font-size: 13px;">Manage product listings and specifications for your virtual booth.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" id="btn-open-add-product">+ Add New Product</button>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Product Name</th>
+                <th>SKU</th>
+                <th>Category</th>
+                <th>MOQ</th>
+                <th>Price (USD)</th>
+                <th>Sample</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="products-table-body">
+              <!-- Products rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 5: VISUAL 3D HOTSPOT EDITOR -->
+      <section id="tab-hotspot-editor" class="tab-pane" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3>Visual 3D Hotspot Editor</h3>
+              <p style="font-size: 13px;">Orbit around your 3D booth, select a target product, and click any surface to place an interactive pin.</p>
+            </div>
+          </div>
+
+          <!-- Editor Control Toolbar -->
+          <div class="editor-toolbar">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+              <label class="form-label" style="margin: 0; white-space: nowrap;">Target Product:</label>
+              <select class="form-select" id="editor-product-select" style="max-width: 280px;">
+                <!-- Dynamically injected -->
+              </select>
+              <button class="btn btn-primary btn-sm" id="btn-start-placement">📍 + Place Hotspot</button>
+              <button class="btn btn-secondary btn-sm" id="btn-reposition-hotspot" disabled>🔄 Reposition</button>
+              <button class="btn btn-danger btn-sm" id="btn-delete-selected-hotspot" disabled>🗑️ Delete</button>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-secondary btn-sm" id="btn-editor-reset-cam">Reset Cam</button>
+            </div>
+          </div>
+
+          <!-- 3D Interactive Viewport Container -->
+          <div class="editor-viewport-card" id="editor-viewport-container">
+            <div class="editor-status-banner" id="editor-status-banner">
+              <span id="editor-status-text">ℹ️ Select a product above, click [+ Place Hotspot], then click on the booth surface.</span>
+              <span id="editor-selected-info" style="font-weight: 600; color: var(--brand-accent);"></span>
+            </div>
+            <div id="editor-3d-canvas" style="width: 100%; height: 100%;"></div>
+            <div id="editor-hotspots-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:25;"></div>
+          </div>
+
+          <!-- Existing Hotspots Table -->
+          <div style="margin-top: 24px;">
+            <h4 style="margin-bottom: 12px;">Active 3D Hotspots</h4>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Label / Product</th>
+                  <th>SKU</th>
+                  <th>Coordinates (X, Y, Z)</th>
+                  <th>Last Updated</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="editor-hotspots-table-body">
+                <!-- Injected rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 6: Leads & RFQs -->
+      <section id="tab-leads" class="tab-pane" style="display: none;">
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="card-header">
+            <h3>Digital Business Cards (Leads)</h3>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Company</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Title</th>
+                <th>Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="leads-table-body">
+              <!-- Leads rows -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3>Requests for Quotation (RFQs)</h3>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Buyer / Company</th>
+                <th>Quantity</th>
+                <th>Target Price</th>
+                <th>Status</th>
+                <th>Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="rfqs-table-body">
+              <!-- RFQs rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 7: Billing & Plan (Stripe Test Integration) -->
+      <section id="tab-billing" class="tab-pane">
+        <!-- Visible Stripe Test Mode Banner -->
+        <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong style="color: #60a5fa;">🧪 STRIPE TEST MODE — NO REAL CHARGES</strong>
+            <p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0 0;">Billing is currently running in test sandbox mode. No real cards will be charged ($0.00).</p>
+          </div>
+          <div style="font-size: 12px; display: flex; gap: 12px;">
+            <a href="terms.html" target="_blank" style="color: var(--accent);">Terms</a>
+            <a href="privacy.html" target="_blank" style="color: var(--accent);">Privacy</a>
+            <a href="refund-policy.html" target="_blank" style="color: var(--accent);">Refund Policy</a>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h3>💳 Organization Subscription Plan</h3>
+              <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Plan entitlements, product quotas, and Spark 3DGS neural rendering privileges.</p>
+            </div>
+            <div id="billing-status-badge" class="badge badge-reconstructed">PRO BETA ACTIVE</div>
+          </div>
+
+          <div class="stats-grid" style="margin-bottom: 20px;">
+            <div class="stat-box">
+              <div class="stat-label">Active Plan</div>
+              <div class="stat-value" id="plan-name-display">PRO</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Product Quota</div>
+              <div class="stat-value" id="plan-products-usage">0 / 25</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">3D Hotspot Quota</div>
+              <div class="stat-value" id="plan-hotspots-usage">0 / 15</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Spark 3DGS Privileges</div>
+              <div class="stat-value" id="plan-precision-status" style="color: var(--accent);">Eligible</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px; margin-top: 16px;">
+            <button class="btn btn-primary" onclick="window.adminApp.startUpgradeCheckout('pro')">💎 Subscribe to PRO ($299/mo)</button>
+            <button class="btn btn-secondary" onclick="window.adminApp.startUpgradeCheckout('business')">🏢 Subscribe to BUSINESS ($799/mo)</button>
+            <button class="btn btn-secondary" onclick="window.adminApp.openCustomerPortal()">⚙️ Stripe Customer Portal</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3>Plan Entitlements Comparison</h3>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th>FREE Plan</th>
+                <th>PRO Plan ($299/mo)</th>
+                <th>BUSINESS Plan ($799/mo)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Max Products</strong></td>
+                <td>5 Units</td>
+                <td><strong>25 Units</strong></td>
+                <td><strong>100 Units</strong></td>
+              </tr>
+              <tr>
+                <td><strong>3D Hotspots</strong></td>
+                <td>3 Pins</td>
+                <td><strong>15 Pins</strong></td>
+                <td><strong>50 Pins</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Spark Precision 3DGS</strong></td>
+                <td>Photo Preview Only</td>
+                <td><strong>Full 3DGS (SPZ)</strong></td>
+                <td><strong>Full 3DGS (Priority Queue)</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Custom Branding & Logo</strong></td>
+                <td>Standard</td>
+                <td><strong>Included</strong></td>
+                <td><strong>Included (Custom Styling)</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Leads & RFQ CSV Export</strong></td>
+                <td>Not Included</td>
+                <td><strong>Included</strong></td>
+                <td><strong>Included (API Access)</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 8: In-App Messages / Inbox -->
+      <section id="tab-inbox" class="tab-pane">
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h3>💬 Platform Operations & Support Inbox</h3>
+              <p style="font-size: 13px; color: var(--text-muted);">Official announcements and direct communication threads with platform administration.</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="window.adminApp.openContactOwnerModal()">✉️ Contact Support</button>
+          </div>
+          <div id="admin-inbox-list" style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- Inbox items -->
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Modal: Add / Edit Product -->
+  <div id="modal-add-product" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-product-form-title">Add New Product</h3>
+        <button class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <form id="form-product-crud">
+        <input type="hidden" id="crud-product-id">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Product Name *</label>
+            <input type="text" class="form-input" id="crud-name" required placeholder="e.g. 6-Axis Collaborative Robot">
+          </div>
+          <div class="form-group">
+            <label class="form-label">SKU *</label>
+            <input type="text" class="form-input" id="crud-sku" required placeholder="e.g. APX-ROB-01">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <input type="text" class="form-input" id="crud-category" placeholder="e.g. Robotics">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Minimum Order Quantity (MOQ)</label>
+            <input type="number" class="form-input" id="crud-moq" min="1" value="1">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Wholesale Price (USD)</label>
+            <input type="number" class="form-input" id="crud-price" placeholder="15000">
+          </div>
+          <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 24px;">
+            <input type="checkbox" id="crud-contact-price">
+            <label for="crud-contact-price" style="font-size: 13px; color: var(--text-main); cursor: pointer;">
+              Display as "Contact for Price"
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Product Image URL</label>
+          <input type="text" class="form-input" id="crud-image" placeholder="https://... or upload asset">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Product 3D Model (GLB / GLTF)</label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="file" id="crud-model-file" accept=".glb,.gltf" style="display: none;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('crud-model-file').click()">📁 Select 3D Model</button>
+            <span id="crud-model-status" style="font-size: 12px; color: var(--text-dim);">No 3D asset attached</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Product Description</label>
+          <textarea class="form-textarea" id="crud-desc" rows="3"></textarea>
+        </div>
+
+        <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="crud-sample-avail" checked>
+          <label for="crud-sample-avail" style="font-size: 13px; color: var(--text-main); cursor: pointer;">
+            Sample requests available
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">Save Product</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Checkout Consent Modal (Phase 10.6 Governance) -->
+  <div id="checkout-consent-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 id="consent-modal-title">💎 Confirm Subscription Upgrade</h3>
+        <button class="modal-close-btn" onclick="document.getElementById('checkout-consent-modal').style.display='none'">✕</button>
+      </div>
+      <div style="padding: 16px 0;">
+        <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; padding: 14px; border-radius: 8px; margin-bottom: 20px;">
+          <div style="font-size: 15px; font-weight: 700; color: #60a5fa;" id="consent-plan-headline">PRO Plan ($299 / month)</div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Activates Spark 3DGS neural spatial reconstruction, expanded product limits, and buyer analytics.</p>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; cursor: pointer;">
+            <input type="checkbox" id="chk-consent-terms" style="margin-top: 3px;">
+            <span style="font-size: 13px; line-height: 1.5;">
+              <strong>[Required]</strong> I have reviewed and agree to the <a href="terms.html" target="_blank" style="color: var(--accent);">Terms of Service</a>, <a href="privacy.html" target="_blank" style="color: var(--accent);">Privacy Policy</a>, and <a href="refund-policy.html" target="_blank" style="color: var(--accent);">Refund Policy</a>.
+            </span>
+          </label>
+
+          <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
+            <input type="checkbox" id="chk-consent-recurring" style="margin-top: 3px;">
+            <span style="font-size: 13px; line-height: 1.5;">
+              <strong>[Required]</strong> I understand that this is a <strong>monthly recurring subscription</strong> automatically billed until cancelled, and I may cancel anytime via the Stripe Customer Portal.
+            </span>
+          </label>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button class="btn btn-secondary" onclick="document.getElementById('checkout-consent-modal').style.display='none'">Cancel</button>
+          <button class="btn btn-primary" id="btn-proceed-checkout" onclick="window.adminApp.proceedWithConsentCheckout()">Agree & Proceed to Checkout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Admin Logic Script -->
+  <script src="admin.js"></script>
+
+</body>
+</html>
