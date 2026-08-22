@@ -4068,7 +4068,7 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`=======================================================`);
   console.log(` Virtual Trade Show Commercial Beta Server (Phase 8 Multi-Tenant)`);
   console.log(` Port: ${PORT}`);
