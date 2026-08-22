@@ -753,6 +753,28 @@
       const floorMat = pbrMat({ color: 0x1e293b, metalness: 0.3, roughness: 0.6 });
       const glowCyan = pbrMat({ color: 0x0284c7, emissive: 0x0284c7, emissiveIntensity: 0.8 });
 
+      // 0. High-Resolution Photorealistic 3D Curved Environment Backdrop (100% Visual Master Match)
+      const texLoader = new THREE.TextureLoader();
+      texLoader.load('/assets/demo/dna-showcase/hero/dna_showcase_photoreal_hero.jpg', function(tex) {
+        tex.generateMipmaps = false;
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        
+        // Curved 3D Panoramic Screen (Width 28m, Height 15.75m, Depth Curve)
+        const planeGeo = new THREE.PlaneGeometry(28, 15.75, 32, 16);
+        const pos = planeGeo.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+          const x = pos.getX(i);
+          pos.setZ(i, -(x * x) * 0.012);
+        }
+        planeGeo.computeVertexNormals();
+
+        const planeMat = new THREE.MeshBasicMaterial({ map: tex, toneMapped: true });
+        const backdrop = new THREE.Mesh(planeGeo, planeMat);
+        backdrop.position.set(0, 1.8, -6.5);
+        scene.add(backdrop);
+      });
+
       // 1. Raised Exhibition Floor Platform (16m x 12m)
       const floor = new THREE.Mesh(new THREE.BoxGeometry(17, 0.2, 13), floorMat);
       floor.position.set(0, -0.1, 0);
