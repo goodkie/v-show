@@ -360,6 +360,32 @@
       <button class="rail-btn active" style="width:auto; padding:0 14px; font-size:12px; font-weight:700; gap:8px; display:flex; align-items:center;" id="btn-tour" title="Auto Tour" onclick="toggleAutoTour()">▶ <span style="font-size:11px;">Auto Tour</span></button>
     </nav>
 
+    <!-- 30-Angle Volumetric Virtual Tour Controls -->
+    <div style="position: absolute; bottom: 84px; left: 50%; transform: translateX(-50%); z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: all;">
+      <!-- Elevation Switcher (3 Height Levels) -->
+      <div style="display: flex; gap: 4px; background: rgba(7, 11, 20, 0.88); padding: 4px 8px; border-radius: 24px; border: 1px solid rgba(56,189,248,0.3); backdrop-filter: blur(12px); box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+        <span style="font-size: 11px; font-weight: 700; color: #94a3b8; display: flex; align-items: center; padding: 0 6px;">HEIGHT:</span>
+        <button id="btn-lvl-floor" class="hud-btn" style="padding: 4px 10px; font-size: 11px; border-radius: 16px;" onclick="setElevationLevel('floor')">⬇ Floor (0.5m)</button>
+        <button id="btn-lvl-eye" class="hud-btn active" style="padding: 4px 10px; font-size: 11px; border-radius: 16px;" onclick="setElevationLevel('eye')">👁 Eye (1.6m)</button>
+        <button id="btn-lvl-6ft" class="hud-btn" style="padding: 4px 10px; font-size: 11px; border-radius: 16px;" onclick="setElevationLevel('6ft')">⬆ 6ft High (2.0m)</button>
+      </div>
+
+      <!-- 360° 10-Angle Orbital Dial -->
+      <div style="display: flex; gap: 4px; background: rgba(7, 11, 20, 0.88); padding: 4px 10px; border-radius: 24px; border: 1px solid rgba(56,189,248,0.3); backdrop-filter: blur(12px); box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+        <span style="font-size: 11px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; padding-right: 4px;">360° ANGLE:</span>
+        <button id="btn-ang-1" class="hud-btn active" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(1)">01</button>
+        <button id="btn-ang-2" class="hud-btn" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(2)">02</button>
+        <button id="btn-ang-3" class="hud-btn" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(3)">03</button>
+        <button id="btn-ang-4" class="hud-btn" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(4)">04</button>
+        <button id="btn-ang-5" class="hud-btn" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(5)">05</button>
+        <button id="btn-ang-6" class="hud-btn" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(6)">06</button>
+        <button id="btn-ang-7" class="hud-btn" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(7)">07</button>
+        <button id="btn-ang-8" class="hud-btn" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(8)">08</button>
+        <button id="btn-ang-9" class="hud-btn" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(9)">09</button>
+        <button id="btn-ang-10" class="hud-btn" style="padding: 4px 8px; font-size: 11px; min-width: 28px;" onclick="setBoothAngle(10)">10</button>
+      </div>
+    </div>
+
     <!-- Bottom HUD Presets -->
     <div class="hud-bar">
       <button class="hud-btn active" onclick="setPreset('OVERVIEW')">Overview</button>
@@ -660,6 +686,18 @@
           if (autoTour) { autoTour = false; clearTimeout(autoTourTimer); const b = document.getElementById('btn-tour'); if(b) b.classList.remove('active'); }
         });
 
+        // Dynamic 30-angle texture switching on 3D rotation
+        controls.addEventListener('change', () => {
+          if (isTransitioning) return;
+          const az = controls.getAzimuthalAngle();
+          const normAng = Math.min(10, Math.max(1, Math.round(((az + Math.PI * 0.32) / (Math.PI * 0.64)) * 9) + 1));
+          const pol = controls.getPolarAngle();
+          const lvl = pol < 1.45 ? '6ft' : (pol > 1.68 ? 'floor' : 'eye');
+          if (normAng !== currentAngle || lvl !== currentLevel) {
+            switchBackdropAngle(lvl, normAng);
+          }
+        });
+
         setLoadingStatus('Loading Environment…', 45);
         setupLighting();
         buildShowroomArchitecture();
@@ -756,13 +794,97 @@
       });
     }
 
+    // ── 30-Angle Volumetric Virtual Tour Texture Manager ──
+    let backdropMesh = null;
+    let backdropMat = null;
+    const textureCache = {};
+    let currentLevel = 'eye'; // 'floor', 'eye', '6ft'
+    let currentAngle = 1;     // 1 to 10
+    const texLoader = new THREE.TextureLoader();
+
+    function getAngleTexturePath(level, ang) {
+      const pad = String(ang).padStart(2, '0');
+      return `/assets/demo/dna-showcase/angles/angle_${level}_${pad}.jpg`;
+    }
+
+    function preloadAngleTextures() {
+      // Preload initial row
+      for (let i = 1; i <= 10; i++) {
+        const path = getAngleTexturePath('eye', i);
+        texLoader.load(path, (t) => {
+          t.generateMipmaps = false;
+          t.minFilter = THREE.LinearFilter;
+          t.magFilter = THREE.LinearFilter;
+          textureCache[`eye_${i}`] = t;
+        });
+      }
+    }
+
+    function switchBackdropAngle(level, angleNum) {
+      currentLevel = level;
+      currentAngle = angleNum;
+      const key = `${level}_${angleNum}`;
+
+      // Update UI active buttons
+      ['floor', 'eye', '6ft'].forEach(l => {
+        const b = document.getElementById(`btn-lvl-${l}`);
+        if (b) b.classList.toggle('active', l === level);
+      });
+      for (let i = 1; i <= 10; i++) {
+        const b = document.getElementById(`btn-ang-${i}`);
+        if (b) b.classList.toggle('active', i === angleNum);
+      }
+
+      if (textureCache[key]) {
+        if (backdropMat) {
+          backdropMat.map = textureCache[key];
+          backdropMat.needsUpdate = true;
+        }
+      } else {
+        const path = getAngleTexturePath(level, angleNum);
+        texLoader.load(path, (t) => {
+          t.generateMipmaps = false;
+          t.minFilter = THREE.LinearFilter;
+          t.magFilter = THREE.LinearFilter;
+          textureCache[key] = t;
+          if (backdropMat && currentLevel === level && currentAngle === angleNum) {
+            backdropMat.map = t;
+            backdropMat.needsUpdate = true;
+          }
+        });
+      }
+    }
+
+    function setElevationLevel(lvl) {
+      currentLevel = lvl;
+      const targetY = (lvl === 'floor') ? -0.8 : ((lvl === '6ft') ? 1.0 : 0.0);
+      tweenCamera({ x: camera.position.x, y: targetY, z: camera.position.z }, { x: 0, y: targetY * 0.5, z: 0 }, 1000);
+      switchBackdropAngle(currentLevel, currentAngle);
+    }
+
+    function setBoothAngle(angIdx) {
+      currentAngle = angIdx;
+      // Calculate 3D orbital camera angle for 10 perspectives around the booth
+      const norm = (angIdx - 5.5) / 4.5; // -1 to +1
+      const rad = norm * (Math.PI * 0.32);
+      const dist = 12.0;
+      const targetX = Math.sin(rad) * dist;
+      const targetZ = Math.cos(rad) * dist;
+      const targetY = (currentLevel === 'floor') ? -0.8 : ((currentLevel === '6ft') ? 1.0 : 0.0);
+
+      tweenCamera({ x: targetX, y: targetY, z: targetZ }, { x: 0, y: targetY * 0.5, z: 0 }, 1200);
+      switchBackdropAngle(currentLevel, currentAngle);
+    }
+
     function buildShowroomArchitecture() {
-      // High-Resolution Photorealistic 3D Curved Environment (100% Approved Master Visual)
-      const texLoader = new THREE.TextureLoader();
-      texLoader.load('/assets/demo/dna-showcase/hero/dna_showcase_photoreal_hero.jpg', function(tex) {
+      // 30-Angle Multi-View Photorealistic Projection Canvas
+      preloadAngleTextures();
+
+      texLoader.load(getAngleTexturePath('eye', 1), function(tex) {
         tex.generateMipmaps = false;
         tex.minFilter = THREE.LinearFilter;
         tex.magFilter = THREE.LinearFilter;
+        textureCache['eye_1'] = tex;
         
         // Curved 3D Panoramic Projection Plane (28m x 15.75m with smooth panoramic curve)
         const planeGeo = new THREE.PlaneGeometry(28, 15.75, 48, 24);
@@ -773,10 +895,10 @@
         }
         planeGeo.computeVertexNormals();
 
-        const planeMat = new THREE.MeshBasicMaterial({ map: tex, toneMapped: true });
-        const backdrop = new THREE.Mesh(planeGeo, planeMat);
-        backdrop.position.set(0, 0.0, -10.0);
-        scene.add(backdrop);
+        backdropMat = new THREE.MeshBasicMaterial({ map: tex, toneMapped: true });
+        backdropMesh = new THREE.Mesh(planeGeo, backdropMat);
+        backdropMesh.position.set(0, 0.0, -10.0);
+        scene.add(backdropMesh);
       });
     }
 
@@ -787,6 +909,7 @@
         const hitGeo = new THREE.SphereGeometry(0.8, 16, 16);
         const hitMat = new THREE.MeshBasicMaterial({ visible: false });
         const hitMesh = new THREE.Mesh(hitGeo, hitMat);
+        hitMesh.position.set(p.pos.x, p.pos.y, p.pos.z);
         hitMesh.userData.product = p;
         productMeshes.push(hitMesh);
         scene.add(hitMesh);

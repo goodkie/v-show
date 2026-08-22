@@ -635,6 +635,30 @@
                 <div class="hotspot-view">Click to Inspect →</div>
               </div>
             </div>
+          <!-- 30-Angle Volumetric Virtual Tour Controls -->
+          <div style="position: absolute; bottom: 74px; left: 50%; transform: translateX(-50%); z-index: 25; display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: all;">
+            <!-- Elevation Switcher (3 Height Levels) -->
+            <div style="display: flex; gap: 4px; background: rgba(7, 11, 20, 0.88); padding: 3px 8px; border-radius: 20px; border: 1px solid rgba(56,189,248,0.3); backdrop-filter: blur(12px); box-shadow: 0 4px 16px rgba(0,0,0,0.5);">
+              <span style="font-size: 10px; font-weight: 700; color: #94a3b8; display: flex; align-items: center; padding: 0 4px;">HEIGHT:</span>
+              <button id="hero-btn-lvl-floor" class="overlay-btn" style="padding: 2px 8px; font-size: 10px; border-radius: 12px;" onclick="setHeroElevation('floor')">⬇ Floor (0.5m)</button>
+              <button id="hero-btn-lvl-eye" class="overlay-btn active" style="padding: 2px 8px; font-size: 10px; border-radius: 12px;" onclick="setHeroElevation('eye')">👁 Eye (1.6m)</button>
+              <button id="hero-btn-lvl-6ft" class="overlay-btn" style="padding: 2px 8px; font-size: 10px; border-radius: 12px;" onclick="setHeroElevation('6ft')">⬆ 6ft High (2.0m)</button>
+            </div>
+
+            <!-- 360° 10-Angle Orbital Jump Dial -->
+            <div style="display: flex; gap: 3px; background: rgba(7, 11, 20, 0.88); padding: 3px 8px; border-radius: 20px; border: 1px solid rgba(56,189,248,0.3); backdrop-filter: blur(12px); box-shadow: 0 4px 16px rgba(0,0,0,0.5);">
+              <span style="font-size: 10px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; padding-right: 4px;">360° ANGLE:</span>
+              <button id="hero-btn-ang-1" class="overlay-btn active" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(1)">01</button>
+              <button id="hero-btn-ang-2" class="overlay-btn" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(2)">02</button>
+              <button id="hero-btn-ang-3" class="overlay-btn" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(3)">03</button>
+              <button id="hero-btn-ang-4" class="overlay-btn" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(4)">04</button>
+              <button id="hero-btn-ang-5" class="overlay-btn" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(5)">05</button>
+              <button id="hero-btn-ang-6" class="overlay-btn" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(6)">06</button>
+              <button id="hero-btn-ang-7" class="overlay-btn" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(7)">07</button>
+              <button id="hero-btn-ang-8" class="overlay-btn" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(8)">08</button>
+              <button id="hero-btn-ang-9" class="overlay-btn" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(9)">09</button>
+              <button id="hero-btn-ang-10" class="overlay-btn" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(10)">10</button>
+            </div>
           </div>
 
           <!-- Bottom Bar — Camera Preset Thumbnails -->
@@ -1017,6 +1041,28 @@
         // Pause auto-rotate on user interaction
         canvas.addEventListener('pointerdown', () => { controls.autoRotate = false; });
 
+        // 30-angle texture switching on 3D orbit rotation
+        controls.addEventListener('change', () => {
+          if (isTransitioning) return;
+          const az = controls.getAzimuthalAngle();
+          const normAng = Math.min(10, Math.max(1, Math.round(((az + Math.PI * 0.32) / (Math.PI * 0.64)) * 9) + 1));
+          const pol = controls.getPolarAngle();
+          const lvl = pol < 1.45 ? '6ft' : (pol > 1.68 ? 'floor' : 'eye');
+          if (normAng !== currentAngle || lvl !== currentLevel) {
+            currentAngle = normAng;
+            currentLevel = lvl;
+            ['floor', 'eye', '6ft'].forEach(l => {
+              const b = document.getElementById(`hero-btn-lvl-${l}`);
+              if (b) b.classList.toggle('active', l === lvl);
+            });
+            for (let i = 1; i <= 10; i++) {
+              const b = document.getElementById(`hero-btn-ang-${i}`);
+              if (b) b.classList.toggle('active', i === normAng);
+            }
+            switchHeroBackdropAngle(lvl, normAng);
+          }
+        });
+
         // 5. Build Photorealistic 3D Curved Environment
         buildArchitecture();
 
@@ -1057,14 +1103,92 @@
         console.warn('Hero 3D Showroom WebGL init error:', e);
       }
 
+      // ── 30-Angle Volumetric Virtual Tour Texture Manager ──
+      let backdropMesh = null;
+      let backdropMat = null;
+      const textureCache = {};
+      let currentLevel = 'eye';
+      let currentAngle = 1;
+      const texLoader = new THREE.TextureLoader();
+
+      function getAngleTexturePath(level, ang) {
+        const pad = String(ang).padStart(2, '0');
+        return `/assets/demo/dna-showcase/angles/angle_${level}_${pad}.jpg`;
+      }
+
+      function preloadAngleTextures() {
+        for (let i = 1; i <= 10; i++) {
+          const path = getAngleTexturePath('eye', i);
+          texLoader.load(path, (t) => {
+            t.generateMipmaps = false;
+            t.minFilter = THREE.LinearFilter;
+            t.magFilter = THREE.LinearFilter;
+            textureCache[`eye_${i}`] = t;
+          });
+        }
+      }
+
+      window.setHeroElevation = function(lvl) {
+        currentLevel = lvl;
+        ['floor', 'eye', '6ft'].forEach(l => {
+          const b = document.getElementById(`hero-btn-lvl-${l}`);
+          if (b) b.classList.toggle('active', l === lvl);
+        });
+        const targetY = (lvl === 'floor') ? -0.8 : ((lvl === '6ft') ? 1.0 : 0.0);
+        targetCamPos = new THREE.Vector3(camera.position.x, targetY, camera.position.z);
+        targetLookAt = new THREE.Vector3(0, targetY * 0.5, 0);
+        isTransitioning = true;
+        switchHeroBackdropAngle(currentLevel, currentAngle);
+      };
+
+      window.setHeroAngle = function(angIdx) {
+        currentAngle = angIdx;
+        for (let i = 1; i <= 10; i++) {
+          const b = document.getElementById(`hero-btn-ang-${i}`);
+          if (b) b.classList.toggle('active', i === angIdx);
+        }
+        const norm = (angIdx - 5.5) / 4.5;
+        const rad = norm * (Math.PI * 0.32);
+        const dist = 12.0;
+        const targetX = Math.sin(rad) * dist;
+        const targetZ = Math.cos(rad) * dist;
+        const targetY = (currentLevel === 'floor') ? -0.8 : ((currentLevel === '6ft') ? 1.0 : 0.0);
+        targetCamPos = new THREE.Vector3(targetX, targetY, targetZ);
+        targetLookAt = new THREE.Vector3(0, targetY * 0.5, 0);
+        isTransitioning = true;
+        switchHeroBackdropAngle(currentLevel, currentAngle);
+      };
+
+      function switchHeroBackdropAngle(level, angleNum) {
+        const key = `${level}_${angleNum}`;
+        if (textureCache[key]) {
+          if (backdropMat) {
+            backdropMat.map = textureCache[key];
+            backdropMat.needsUpdate = true;
+          }
+        } else {
+          const path = getAngleTexturePath(level, angleNum);
+          texLoader.load(path, (t) => {
+            t.generateMipmaps = false;
+            t.minFilter = THREE.LinearFilter;
+            t.magFilter = THREE.LinearFilter;
+            textureCache[key] = t;
+            if (backdropMat && currentLevel === level && currentAngle === angleNum) {
+              backdropMat.map = t;
+              backdropMat.needsUpdate = true;
+            }
+          });
+        }
+      }
+
       // ── Build 3D Showroom Architecture ──
       function buildArchitecture() {
-        // High-Resolution Photorealistic 3D Curved Environment Backdrop (100% Visual Master Match)
-        const texLoader = new THREE.TextureLoader();
-        texLoader.load('/assets/demo/dna-showcase/hero/dna_showcase_photoreal_hero.jpg', function(tex) {
+        preloadAngleTextures();
+        texLoader.load(getAngleTexturePath('eye', 1), function(tex) {
           tex.generateMipmaps = false;
           tex.minFilter = THREE.LinearFilter;
           tex.magFilter = THREE.LinearFilter;
+          textureCache['eye_1'] = tex;
           
           // Curved 3D Panoramic Screen (Width 28m, Height 15.75m, Depth Curve)
           const planeGeo = new THREE.PlaneGeometry(28, 15.75, 48, 24);
@@ -1075,10 +1199,10 @@
           }
           planeGeo.computeVertexNormals();
 
-          const planeMat = new THREE.MeshBasicMaterial({ map: tex, toneMapped: true });
-          const backdrop = new THREE.Mesh(planeGeo, planeMat);
-          backdrop.position.set(0, 0.0, -10.0);
-          scene.add(backdrop);
+          backdropMat = new THREE.MeshBasicMaterial({ map: tex, toneMapped: true });
+          backdropMesh = new THREE.Mesh(planeGeo, backdropMat);
+          backdropMesh.position.set(0, 0.0, -10.0);
+          scene.add(backdropMesh);
         });
       }
 
