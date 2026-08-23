@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -108,7 +108,7 @@ html, body {
 }
 
 /* ══════════════════════════════════════════════
-   BOTTOM PRODUCT SHORTCUT CARDS TRAY
+   BOTTOM PRODUCT SHORTCUT CARDS TRAY (4 ROBOTS)
 ══════════════════════════════════════════════ */
 #product-cards-tray {
   height: 125px; flex-shrink: 0;
@@ -152,7 +152,7 @@ html, body {
 }
 
 /* ══════════════════════════════════════════════
-   3D FLOATING PRODUCT HOTSPOTS (PERMANENT TITLE & THUMBNAIL)
+   3D FLOATING PRODUCT HOTSPOTS (PERMANENT TITLE & MINI THUMBNAIL)
 ══════════════════════════════════════════════ */
 #hotspot-layer { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
 
@@ -188,10 +188,10 @@ html, body {
 }
 
 /* ══════════════════════════════════════════════
-   RIGHT UNIFIED SIDEBAR (Vantage Points + Radar + Equipment Specs)
+   RIGHT UNIFIED SIDEBAR (Radar + Equipment Specs)
 ══════════════════════════════════════════════ */
 .unified-sidebar {
-  height: 100%; display: flex; flex-direction: column; gap: 12px;
+  height: 100%; display: flex; flex-direction: column; gap: 14px;
   background: var(--panel-bg); border: 1px solid var(--panel-border);
   border-radius: 16px; padding: 16px; backdrop-filter: blur(20px);
   overflow-y: auto; box-shadow: 0 16px 36px rgba(0,0,0,0.6);
@@ -200,35 +200,23 @@ html, body {
 .panel-head { font-size: 10px; font-weight: 800; color: var(--cyan); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 2px; }
 .panel-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
 
-/* 1. Vantage Points */
-.node-list { display: flex; flex-direction: column; gap: 6px; }
-.node-btn {
-  width: 100%; display: flex; align-items: center; justify-content: space-between;
-  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 10px; color: var(--text-muted); font-size: 11px; font-weight: 600;
-  padding: 8px 10px; cursor: pointer; transition: var(--trans); text-align: left;
-}
-.node-btn:hover { background: rgba(0,194,255,0.08); color: #fff; border-color: var(--panel-border); }
-.node-btn.active { background: rgba(0,194,255,0.18); border-color: var(--cyan); color: var(--cyan); font-weight: 800; box-shadow: 0 0 14px rgba(0,194,255,0.25); }
-.node-meta { font-size: 8.5px; opacity: 0.7; font-family: var(--mono); }
-
-/* 2. Radar Minimap */
+/* 1. Radar Minimap */
 .radar-box {
   background: rgba(2, 5, 11, 0.7); border: 1px solid var(--panel-border);
-  border-radius: 12px; padding: 10px;
+  border-radius: 12px; padding: 12px;
 }
-.radar-header { font-size: 9px; font-weight: 800; color: var(--cyan); letter-spacing: 1px; text-transform: uppercase; display: flex; justify-content: space-between; margin-bottom: 6px; }
-#radar-canvas { width: 100%; height: 75px; display: block; border-radius: 6px; }
+.radar-header { font-size: 9.5px; font-weight: 800; color: var(--cyan); letter-spacing: 1px; text-transform: uppercase; display: flex; justify-content: space-between; margin-bottom: 8px; }
+#radar-canvas { width: 100%; height: 95px; display: block; border-radius: 6px; }
 
-/* 3. Focus Equipment Specs Box */
+/* 2. Focus Equipment Specs Box */
 .spec-panel-box {
   background: rgba(2, 5, 11, 0.65); border: 1px solid var(--panel-border);
-  border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px;
+  border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px;
 }
-.spec-title { font-size: 13px; font-weight: 800; color: #fff; display: flex; justify-content: space-between; align-items: center; }
-.spec-desc { font-size: 10.5px; color: var(--text-muted); line-height: 1.45; }
-.spec-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.spec-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 5px 7px; }
+.spec-title { font-size: 13.5px; font-weight: 800; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+.spec-desc { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+.spec-list { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 4px; }
+.spec-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 6px 8px; }
 .spec-k { font-size: 8.5px; color: var(--text-muted); font-weight: 600; }
 .spec-v { font-size: 11px; color: var(--cyan); font-weight: 700; font-family: var(--mono); }
 
@@ -244,7 +232,7 @@ html, body {
 .foot-actions { display: flex; align-items: center; gap: 8px; }
 
 /* ══════════════════════════════════════════════
-   PRODUCT INSPECTION DRAWER & HIGH-RES VISUALS
+   PRODUCT INSPECTION DRAWER & 360° 3D MINI PLAYER
 ══════════════════════════════════════════════ */
 #drawer-scrim {
   position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
@@ -254,7 +242,7 @@ html, body {
 
 .drawer {
   position: absolute; z-index: 500; top: 0; right: 0; bottom: 0;
-  width: 450px; max-width: 92vw; background: rgba(7, 14, 26, 0.98);
+  width: 460px; max-width: 94vw; background: rgba(7, 14, 26, 0.98);
   backdrop-filter: blur(26px); border-left: 1px solid var(--panel-border);
   transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex; flex-direction: column; box-shadow: -15px 0 50px rgba(0,0,0,0.9);
@@ -273,23 +261,49 @@ html, body {
 .drawer-close:hover { background: rgba(239, 68, 68, 0.2); color: #ef4444; border-color: #ef4444; }
 .drawer-body { flex: 1; overflow-y: auto; padding: 18px; }
 
-/* HIGH-RES PRODUCT HERO IMAGE BOX */
+/* MEDIA CONTAINER (4K PHOTO VS 360° 3D MINI PLAYER) */
+.drawer-media-tabs {
+  display: flex; gap: 6px; margin: 4px 0 8px;
+}
+.media-tab-btn {
+  flex: 1; padding: 6px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; color: var(--text-muted); cursor: pointer; transition: var(--trans);
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.media-tab-btn:hover { background: rgba(0,194,255,0.08); color: #fff; border-color: var(--panel-border); }
+.media-tab-btn.active {
+  background: rgba(0,194,255,0.2); border-color: var(--cyan); color: var(--cyan);
+  box-shadow: 0 0 12px rgba(0,194,255,0.3);
+}
+
 .drawer-img-box {
   width: 100%; border-radius: 12px; overflow: hidden;
-  border: 1px solid var(--panel-border); margin: 6px 0 14px;
+  border: 1px solid var(--panel-border); margin: 0 0 14px;
   position: relative; background: #000; box-shadow: 0 10px 28px rgba(0,0,0,0.7);
+  height: 220px;
 }
 .drawer-img-box img {
-  width: 100%; height: 210px; object-fit: cover; display: block;
+  width: 100%; height: 100%; object-fit: cover; display: block;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .drawer-img-box:hover img { transform: scale(1.04); }
-.drawer-img-badge {
-  position: absolute; bottom: 9px; right: 9px;
-  background: rgba(5, 11, 22, 0.88); border: 1px solid var(--panel-border);
-  border-radius: 20px; padding: 3px 9px; font-size: 8.5px; font-weight: 800;
-  color: var(--cyan); backdrop-filter: blur(8px); font-family: var(--mono);
+
+/* MINI 3D TURNTABLE CONTAINER */
+#drawer-3d-view {
+  width: 100%; height: 100%; position: absolute; inset: 0; display: none; background: radial-gradient(circle at center, #0a192f 0%, #02050b 100%);
 }
+#drawer-3d-canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+#drawer-3d-canvas:active { cursor: grabbing; }
+.mini-3d-controls {
+  position: absolute; bottom: 8px; left: 8px; right: 8px; display: flex; justify-content: space-between; align-items: center; pointer-events: none;
+}
+.mini-3d-pill {
+  pointer-events: auto; background: rgba(5, 11, 22, 0.88); border: 1px solid var(--panel-border);
+  border-radius: 20px; padding: 3px 8px; font-size: 8.5px; font-weight: 800;
+  color: var(--cyan); backdrop-filter: blur(8px); font-family: var(--mono); cursor: pointer;
+}
+.mini-3d-pill:hover { background: var(--cyan); color: #000; }
 
 .drawer-hero {
   border-radius: 12px; border: 1px solid var(--panel-border);
@@ -302,7 +316,7 @@ html, body {
 .drawer-specs-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 11.5px; }
 .drawer-specs-table tr { border-bottom: 1px solid rgba(255,255,255,0.06); }
 .drawer-specs-table td { padding: 7px 5px; }
-.drawer-specs-table td:first-child { color: var(--text-muted); font-weight: 600; width: 38%; }
+.drawer-specs-table td:first-child { color: var(--text-muted); font-weight: 600; width: 42%; }
 .drawer-specs-table td:last-child { color: #fff; font-weight: 700; text-align: right; font-family: var(--mono); color: var(--cyan); }
 
 /* ROTATE TO LANDSCAPE BANNER FOR MOBILE PORTRAIT */
@@ -378,23 +392,13 @@ html, body {
   .prod-card-thumb { width: 50px; }
   .prod-card-title { font-size: 10.5px; }
 
-  #mobile-portrait-bar {
-    display: flex !important; gap: 6px; width: 100%; margin-top: 4px;
-  }
-  #mobile-portrait-bar .node-btn {
-    flex: 1; padding: 7px 8px; font-size: 10.5px; justify-content: center;
-  }
-
   #studio-footer { padding: 0 10px; font-size: 9.5px; height: 36px; }
   .foot-info span:not(:last-child) { display: none; }
   .drawer { width: 100vw; max-width: 100vw; }
 }
 
-#mobile-portrait-bar { display: none; }
-
 @media (max-width: 960px) and (orientation: landscape), (max-height: 540px) {
   #portrait-tip-bar { display: none !important; }
-  #mobile-portrait-bar { display: none !important; }
   
   #topbar { height: 38px; padding: 0 10px; background: rgba(5, 11, 22, 0.92); }
   .brand-logo { font-size: 14.5px; }
@@ -411,17 +415,16 @@ html, body {
 
   .unified-sidebar { padding: 8px; gap: 6px; }
   .panel-sub { display: none; }
-  .node-btn { padding: 5px 6px; font-size: 9.5px; }
   .radar-box { padding: 5px; }
-  #radar-canvas { height: 50px; }
+  #radar-canvas { height: 60px; }
   .spec-panel-box { padding: 6px; }
 
   #studio-footer { height: 34px; padding: 0 10px; font-size: 9.5px; background: rgba(5, 11, 22, 0.92); }
   .foot-info span:nth-child(1), .foot-info span:nth-child(2) { display: none; }
   .foot-actions .btn-ui { padding: 2px 7px; font-size: 9.5px; }
 
-  .drawer { width: 330px; }
-  .drawer-img-box img { height: 150px; }
+  .drawer { width: 340px; }
+  .drawer-img-box { height: 160px; }
   .drawer-body { padding: 12px; }
   .drawer-specs-table td { padding: 5px 3px; font-size: 10.5px; }
 }
@@ -436,17 +439,17 @@ html, body {
       <div class="brand-badge"><div class="pulse-dot"></div> 64K ULTRA-HD MASTER STUDIO</div>
     </div>
     <div class="top-actions">
-      <a href="/demo.html" class="btn-ui">← 3D 쇼룸</a>
-      <a href="/demo-splat.html" class="btn-ui">△ 3DGS 뷰어</a>
-      <button class="btn-ui download" onclick="openDownloadModal()">📥 64K 다운로드</button>
-      <button class="btn-ui primary" onclick="openRFQ()">📋 RFQ 견적</button>
+      <a href="/demo.html" class="btn-ui">← 3D SHOWROOM</a>
+      <a href="/demo-splat.html" class="btn-ui">△ 3DGS VIEWER</a>
+      <button class="btn-ui download" onclick="openDownloadModal()">📥 64K DOWNLOAD</button>
+      <button class="btn-ui primary" onclick="openRFQ()">📋 REQUEST RFQ</button>
     </div>
   </header>
 
   <!-- MOBILE PORTRAIT TIP BANNER -->
   <div id="portrait-tip-bar" onclick="this.style.display='none'">
-    📱 스마트폰을 <strong>[가로 모드]</strong>로 회전하시면 더욱 넓은 64K 360° 스튜디오 투어를 즐기실 수 있습니다!
-    <span>(탭하여 알림 닫기)</span>
+    📱 Rotate your phone to <strong>[Landscape Mode]</strong> for the optimal ultra-wide 64K studio experience!
+    <span>(Tap to dismiss)</span>
   </div>
 
   <!-- MAIN STUDIO WORKSPACE (Center Player + Right Unified Sidebar) -->
@@ -457,18 +460,11 @@ html, body {
         <canvas id="three-canvas"></canvas>
         <!-- 3D Hotspot Tags Overlay -->
         <div id="hotspot-layer"></div>
-        <div class="player-tag">🌐 64K Master Ultra-HD 실사 투어</div>
+        <div class="player-tag">🌐 64K Master Ultra-HD 360° Tour</div>
         <div class="res-pill" id="res-indicator">65536 × 32768 ULTRA-HD</div>
       </div>
 
-      <!-- Mobile Portrait Fallback Node Switcher -->
-      <div id="mobile-portrait-bar">
-        <button class="node-btn active" id="mpb-0" onclick="switchNode(0)">📷 01. 중앙</button>
-        <button class="node-btn" id="mpb-1" onclick="switchNode(1)">🤖 02. 코봇</button>
-        <button class="node-btn" id="mpb-2" onclick="switchNode(2)">🚛 03. AMR</button>
-      </div>
-
-      <!-- BOTTOM PRODUCT SHORTCUT CARDS TRAY -->
+      <!-- BOTTOM PRODUCT SHORTCUT CARDS TRAY (4 ROBOTS) -->
       <div id="product-cards-tray">
         <div class="prod-quick-card active" id="pcard-0" onclick="focusProduct(0)">
           <div class="prod-card-thumb">
@@ -477,8 +473,8 @@ html, body {
           <div class="prod-card-body">
             <div class="prod-card-cat">COBOT</div>
             <div class="prod-card-title">Apex Cobot X16</div>
-            <div class="prod-card-spec">16.0kg Payload · 6축 정밀</div>
-            <div class="prod-card-btn">상세보기 <span>→</span></div>
+            <div class="prod-card-spec">16.0kg Payload · 6-Axis Precision</div>
+            <div class="prod-card-btn">Inspect Specs <span>→</span></div>
           </div>
         </div>
 
@@ -487,87 +483,68 @@ html, body {
             <img src="/assets/demo/dna-showcase/products/vector_amr_600.jpg" alt="Vector AMR 600">
           </div>
           <div class="prod-card-body">
-            <div class="prod-card-cat">AMR ROBOT</div>
+            <div class="prod-card-cat">AMR LOGISTICS</div>
             <div class="prod-card-title">Vector AMR 600</div>
-            <div class="prod-card-spec">600kg 적재 · 3D LiDAR SLAM</div>
-            <div class="prod-card-btn">상세보기 <span>→</span></div>
+            <div class="prod-card-spec">600kg Payload · 3D LiDAR SLAM</div>
+            <div class="prod-card-btn">Inspect Specs <span>→</span></div>
           </div>
         </div>
 
         <div class="prod-quick-card" id="pcard-2" onclick="focusProduct(2)">
           <div class="prod-card-thumb">
-            <img src="/assets/demo/dna-showcase/products/vision_led_wall.jpg" alt="Vision Telemetry LED">
+            <img src="/assets/demo/dna-showcase/products/delta_d12.jpg" alt="Titan Delta D12">
           </div>
           <div class="prod-card-body">
-            <div class="prod-card-cat">SMART ENGINE</div>
-            <div class="prod-card-title">Vision LED 월</div>
-            <div class="prod-card-spec">8K Micro-LED · 실시간 관제</div>
-            <div class="prod-card-btn">상세보기 <span>→</span></div>
+            <div class="prod-card-cat">HIGH-SPEED PACKAGING</div>
+            <div class="prod-card-title">Titan Delta D12</div>
+            <div class="prod-card-spec">240 Picks/min · Parallel Arm</div>
+            <div class="prod-card-btn">Inspect Specs <span>→</span></div>
           </div>
         </div>
 
         <div class="prod-quick-card" id="pcard-3" onclick="focusProduct(3)">
           <div class="prod-card-thumb">
-            <img src="/assets/demo/dna-showcase/products/vip_glass_lounge.jpg" alt="VIP Glass Lounge">
+            <img src="/assets/demo/dna-showcase/products/scara_s8.jpg" alt="Hyperion SCARA S8">
           </div>
           <div class="prod-card-body">
-            <div class="prod-card-cat">ARCHITECTURE</div>
-            <div class="prod-card-title">VIP Glass Hub</div>
-            <div class="prod-card-spec">2층 복층 통유리 · 45㎡ 라운지</div>
-            <div class="prod-card-btn">상세보기 <span>→</span></div>
+            <div class="prod-card-cat">PRECISION ASSEMBLY</div>
+            <div class="prod-card-title">Hyperion SCARA S8</div>
+            <div class="prod-card-spec">0.32s Cycle · ±0.010mm Acc.</div>
+            <div class="prod-card-btn">Inspect Specs <span>→</span></div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- RIGHT UNIFIED SIDEBAR (Vantage Points + Radar + Equipment Specs) -->
+    <!-- RIGHT UNIFIED SIDEBAR (Booth Radar & Focused Equipment Specs) -->
     <aside class="unified-sidebar">
-      <div>
-        <div class="panel-head">SPATIAL VANTAGE POINTS</div>
-        <div class="panel-sub">64K 마스터 실사 3대 시점</div>
-      </div>
-      <div class="node-list">
-        <button class="node-btn active" id="nb-0" onclick="switchNode(0)">
-          <span>📷 01. 부스 메인 중앙 전경</span>
-          <span class="node-meta">64K MASTER</span>
-        </button>
-        <button class="node-btn" id="nb-1" onclick="switchNode(1)">
-          <span>🤖 02. 코봇 워크스테이션</span>
-          <span class="node-meta">64K MASTER</span>
-        </button>
-        <button class="node-btn" id="nb-2" onclick="switchNode(2)">
-          <span>🚛 03. AMR & 미디어 파사드</span>
-          <span class="node-meta">64K MASTER</span>
-        </button>
-      </div>
-
-      <!-- Booth Radar Minimap -->
+      <!-- 1. Booth Radar Minimap -->
       <div class="radar-box">
         <div class="radar-header">
-          <span>BOOTH RADAR</span>
-          <span id="radar-loc-txt">01. MAIN 360°</span>
+          <span>BOOTH RADAR MINIMAP</span>
+          <span id="radar-loc-txt">01. MAIN BOOTH</span>
         </div>
-        <canvas id="radar-canvas" width="306" height="75"></canvas>
+        <canvas id="radar-canvas" width="306" height="95"></canvas>
       </div>
 
-      <!-- Live Target Specs Box -->
+      <!-- 2. Live Target Specs Box -->
       <div class="spec-panel-box">
-        <div class="panel-head" style="margin-bottom:0;">FOCUS EQUIPMENT</div>
+        <div class="panel-head" style="margin-bottom:0;">FOCUSED ROBOTIC SYSTEM</div>
         <div class="spec-title">
-          <span id="side-spec-title">DN'a Apex CoBot X16</span>
-          <button class="btn-ui" style="padding:2px 6px;font-size:9px;" onclick="openCurrentProductDrawer()">상세보기 →</button>
+          <span id="side-spec-title">Apex Cobot X16</span>
+          <button class="btn-ui" style="padding:2px 6px;font-size:9px;" onclick="openCurrentProductDrawer()">Details →</button>
         </div>
-        <div class="spec-desc" id="side-spec-desc">중앙 원형 전시대 6축 정밀 협동로봇 — ±0.025mm 반복 정밀도, 고속 픽앤플레이스</div>
+        <div class="spec-desc" id="side-spec-desc">6-axis precision collaborative robot with integrated joint torque sensors and ISO/TS 15066 safety certification.</div>
         <div class="spec-list" id="side-spec-list">
-          <div class="spec-item"><div class="spec-k">가반하중</div><div class="spec-v">16.0 kg</div></div>
-          <div class="spec-item"><div class="spec-k">반복정밀도</div><div class="spec-v">±0.025 mm</div></div>
-          <div class="spec-item"><div class="spec-k">작업반경</div><div class="spec-v">1300 mm</div></div>
-          <div class="spec-item"><div class="spec-k">안전등급</div><div class="spec-v">ISO TS 15066</div></div>
+          <div class="spec-item"><div class="spec-k">PAYLOAD</div><div class="spec-v">16.0 kg</div></div>
+          <div class="spec-item"><div class="spec-k">REPEATABILITY</div><div class="spec-v">±0.025 mm</div></div>
+          <div class="spec-item"><div class="spec-k">REACH</div><div class="spec-v">1300 mm</div></div>
+          <div class="spec-item"><div class="spec-k">SAFETY</div><div class="spec-v">ISO TS 15066</div></div>
         </div>
       </div>
 
-      <button class="btn-ui primary" style="margin-top:auto;justify-content:center;padding:9px;" onclick="openRFQ()">
-        📝 1:1 맞춤 견적 및 기술 상담 요청
+      <button class="btn-ui primary" style="margin-top:auto;justify-content:center;padding:11px;font-size:12px;" onclick="openRFQ()">
+        📝 Request 1:1 Technical & RFQ Quote
       </button>
     </aside>
   </main>
@@ -575,16 +552,16 @@ html, body {
   <!-- STUDIO FOOTER -->
   <footer id="studio-footer">
     <div class="foot-info">
-      <span>엔진: <strong>Three.js WebGL 64K Master</strong></span>
-      <span>필터링: <strong>16x Anisotropic + ACES Filmic HDR</strong></span>
-      <span>현재 위치: <strong id="foot-loc">01. 부스 메인 중앙 전경</strong></span>
+      <span>Engine: <strong>Three.js WebGL 64K Master</strong></span>
+      <span>Filtering: <strong>16x Anisotropic + ACES Filmic HDR</strong></span>
+      <span>Vantage: <strong id="foot-loc">01. Main Booth Center</strong></span>
     </div>
     <div class="foot-actions">
       <button class="btn-ui" id="btn-autotour" onclick="toggleAutoTour()">
-        <span>▶</span> AUTO TOUR 시작
+        <span>▶</span> START AUTO TOUR
       </button>
       <button class="btn-ui" onclick="toggleFullscreen()">
-        <span>⛶</span> 전체화면
+        <span>⛶</span> FULLSCREEN
       </button>
     </div>
   </footer>
@@ -593,7 +570,7 @@ html, body {
   <div id="drawer-scrim" onclick="closeDrawer()"></div>
 
   <!-- ══════════════════════════════════════════════
-       PRODUCT INSPECTION DRAWER WITH HIGH-RES HERO VISUALS
+       PRODUCT INSPECTION DRAWER WITH HIGH-RES HERO VISUALS & 360° 3D MINI PLAYER
   ══════════════════════════════════════════════ -->
   <aside class="drawer" id="product-drawer">
     <div class="drawer-header">
@@ -604,10 +581,29 @@ html, body {
       <button class="drawer-close" onclick="closeDrawer()">✕</button>
     </div>
     <div class="drawer-body">
-      <!-- High-Res Product Hero Photo -->
+      <!-- Media Mode Switcher Tabs -->
+      <div class="drawer-media-tabs">
+        <button class="media-tab-btn active" id="tab-photo" onclick="setDrawerMediaMode('photo')">
+          🖼 4K STUDIO PHOTO
+        </button>
+        <button class="media-tab-btn" id="tab-3d" onclick="setDrawerMediaMode('3d')">
+          🔄 360° 3D VIEWER
+        </button>
+      </div>
+
+      <!-- High-Res Product Hero Photo & 360 3D Mini View -->
       <div class="drawer-img-box" id="drw-img-box">
         <img id="drw-img" src="/assets/demo/dna-showcase/products/apex_cobot_x16.jpg" alt="Product Visual">
-        <div class="drawer-img-badge">STUDIO PRODUCT HERO 4K</div>
+        
+        <!-- Embedded Mini 3D Turntable View -->
+        <div id="drawer-3d-view">
+          <canvas id="drawer-3d-canvas"></canvas>
+          <div class="mini-3d-controls">
+            <button class="mini-3d-pill" onclick="toggleDrawer3dAutoRotate()" id="btn-3d-autorot">🔄 Auto-Rotate: ON</button>
+            <button class="mini-3d-pill" onclick="toggleDrawer3dWireframe()" id="btn-3d-wire">⚡ Wireframe: OFF</button>
+            <button class="mini-3d-pill" onclick="resetDrawer3dCamera()">🎯 Reset View</button>
+          </div>
+        </div>
       </div>
 
       <div class="drawer-hero">
@@ -622,20 +618,18 @@ html, body {
 
       <div class="panel-head" style="margin:14px 0 6px;">KEY HIGHLIGHTS</div>
       <div style="font-size:11px;color:var(--text-muted);line-height:1.6;" id="drw-highlights">
-        • 스마트 토크 센서 내장으로 작업자와의 안전한 협업 보장<br>
-        • 고정밀 가공 머신 텐딩, 팔레타이징, 조립 공정 최적화<br>
-        • 원터치 캘리브레이션 및 3D 비전 솔루션 플러그앤플레이 연동
+        <!-- Injected via JS -->
       </div>
 
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px;">
         <button class="btn-ui primary" style="justify-content:center;padding:10px;font-size:12px;" onclick="openRFQ()">
-          📝 1:1 맞춤 견적 및 기술 상담 요청 (RFQ)
+          📝 Request 1:1 Custom RFQ
         </button>
         <button class="btn-ui download" style="justify-content:center;padding:8px;" onclick="openDownloadModal()">
-          📥 64K 마스터 초고화질 원본 받기
+          📥 Download 64K Master Original Assets
         </button>
         <a href="/demo.html" class="btn-ui" style="justify-content:center;padding:8px;">
-          🌐 3D 가상 쇼룸에서 3D 모델로 열기 →
+          🌐 Open in Virtual 3D Showroom →
         </a>
       </div>
     </div>
@@ -647,85 +641,87 @@ html, body {
   <div class="modal-box">
     <button class="modal-close" onclick="closeDownloadModal()">✕</button>
     <div style="font-size:10px;font-weight:800;color:var(--cyan);letter-spacing:1px;text-transform:uppercase;">64K MASTER ULTRA-HD ORIGINAL ASSETS</div>
-    <h2 style="font-size:17px;font-weight:800;color:#fff;margin:6px 0 6px;">📸 64K 마스터 초고화질 원본 다운로드</h2>
+    <h2 style="font-size:17px;font-weight:800;color:#fff;margin:6px 0 6px;">📸 64K Master Ultra-HD Download</h2>
     <p style="font-size:11px;color:var(--text-muted);line-height:1.5;margin-bottom:14px;">
-      스튜디오 뷰어에 사용된 64K(65536×32768) 마스터 실사 원본 이미지입니다.
+      Direct download links for 64K (65,536 × 32,768) uncompressed equirectangular panorama master photography assets.
     </p>
 
     <div class="dl-card">
       <div class="dl-info">
-        <div class="dl-title">01. 부스 메인 중앙 전경 (Middle Master)</div>
+        <div class="dl-title">01. Main Booth Central Panorama (Middle Master)</div>
         <div class="dl-meta">Ultra-HD Equirectangular JPG (64K Master) · 3.7 MB</div>
       </div>
-      <a href="/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg" download="DN_a_Booth_Main_64K.jpg" class="dl-btn">⬇ 다운로드</a>
+      <a href="/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg" download="DN_a_Booth_Main_64K.jpg" class="dl-btn">⬇ Download</a>
     </div>
 
     <div class="dl-card">
       <div class="dl-info">
-        <div class="dl-title">02. 코봇 워크스테이션 (Left Master)</div>
+        <div class="dl-title">02. Cobot Workstation Area (Left Master)</div>
         <div class="dl-meta">Ultra-HD Equirectangular JPG (64K Master) · 3.5 MB</div>
       </div>
-      <a href="/assets/demo/dna-showcase/pano360/node1_360_panorama_8k.jpg" download="DN_a_Cobot_Station_64K.jpg" class="dl-btn">⬇ 다운로드</a>
+      <a href="/assets/demo/dna-showcase/pano360/node1_360_panorama_8k.jpg" download="DN_a_Cobot_Station_64K.jpg" class="dl-btn">⬇ Download</a>
     </div>
 
     <div class="dl-card">
       <div class="dl-info">
-        <div class="dl-title">03. AMR & 미디어 파사드 (Right Master)</div>
+        <div class="dl-title">03. AMR & Media Cell Area (Right Master)</div>
         <div class="dl-meta">Ultra-HD Equirectangular JPG (64K Master) · 4.0 MB</div>
       </div>
-      <a href="/assets/demo/dna-showcase/pano360/node2_360_panorama_8k.jpg" download="DN_a_AMR_Facade_64K.jpg" class="dl-btn">⬇ 다운로드</a>
+      <a href="/assets/demo/dna-showcase/pano360/node2_360_panorama_8k.jpg" download="DN_a_AMR_Cell_64K.jpg" class="dl-btn">⬇ Download</a>
     </div>
 
     <div style="display:flex;gap:10px;margin-top:14px;">
-      <button class="btn-ui primary" style="flex:1;justify-content:center;padding:10px;" onclick="downloadAllPhotos()">📦 3종 전체 다운로드</button>
-      <button class="btn-ui" style="padding:10px;" onclick="closeDownloadModal()">닫기</button>
+      <button class="btn-ui primary" style="flex:1;justify-content:center;padding:10px;" onclick="downloadAllPhotos()">📦 Download All 3 Master Views</button>
+      <button class="btn-ui" style="padding:10px;" onclick="closeDownloadModal()">Close</button>
     </div>
   </div>
 </div>
 
-<div id="toast">알림</div>
+<div id="toast">Notification</div>
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   MATTERPORT 64K ULTRA-HD MASTER STUDIO ENGINE (v7.0)
-   - 2/3 Height 3D Player + Bottom Product Shortcut Cards Bar
-   - Permanent 3D Floating Capsules with Title & Product Thumbnail
-   - Unified Right Sidebar (Vantage Points, Minimap, Target Specs)
-   - High-Res Product Hero Images & Progressive Texture Preloader
+   MATTERPORT 64K ULTRA-HD MASTER STUDIO ENGINE (v8.0)
+   - 4 Industrial Robotic Dummy Systems
+   - 2/3 Height 3D Main Player + Bottom 4-Product Tray
+   - Permanent 3D Floating Capsules with Thumbnails & English Titles
+   - Right Unified Sidebar (Radar Minimap + Focused Robot Specs)
+   - Product Inspection Drawer: 4K Photo & Interactive 360° 3D Mini Player
+   - 100% Full English Localization
 ═══════════════════════════════════════════════════════════ */
 
 // 1. SPATIAL NODES (64K Master Panoramas - No People)
 const SPATIAL_NODES = [
   {
     id: 0,
-    name: "01. 부스 메인 중앙 전경 (Middle Master)",
+    name: "01. Main Booth Center (Middle Master)",
     preview: "/assets/demo/dna-showcase/pano360/node0_preview.jpg",
     image8k: "/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg",
     image16k: "/assets/demo/dna-showcase/pano360/node0_360_panorama_16k.jpg",
     puckPos: new THREE.Vector3(0, -160, -320),
-    radarPos: { x: 153, y: 62 }
+    radarPos: { x: 153, y: 72 }
   },
   {
     id: 1,
-    name: "02. 코봇 워크스테이션 (Left Master)",
+    name: "02. Cobot Workstation (Left Master)",
     preview: "/assets/demo/dna-showcase/pano360/node1_preview.jpg",
     image8k: "/assets/demo/dna-showcase/pano360/node1_360_panorama_8k.jpg",
     image16k: "/assets/demo/dna-showcase/pano360/node1_360_panorama_16k.jpg",
     puckPos: new THREE.Vector3(-150, -160, -250),
-    radarPos: { x: 80, y: 48 }
+    radarPos: { x: 75, y: 55 }
   },
   {
     id: 2,
-    name: "03. AMR & 미디어 파사드 (Right Master)",
+    name: "03. AMR & Automation Cell (Right Master)",
     preview: "/assets/demo/dna-showcase/pano360/node2_preview.jpg",
     image8k: "/assets/demo/dna-showcase/pano360/node2_360_panorama_8k.jpg",
     image16k: "/assets/demo/dna-showcase/pano360/node2_360_panorama_16k.jpg",
     puckPos: new THREE.Vector3(150, -160, -250),
-    radarPos: { x: 226, y: 48 }
+    radarPos: { x: 231, y: 55 }
   }
 ];
 
-// 2. PRODUCTS & 3D FLOATING HOTSPOTS WITH STUDIO HERO IMAGES
+// 2. FOUR DISTINCT INDUSTRIAL ROBOT PRODUCTS
 const PRODUCTS_DATA = [
   {
     id: 'PROD-01-COBOT',
@@ -735,20 +731,21 @@ const PRODUCTS_DATA = [
     image: '/assets/demo/dna-showcase/products/apex_cobot_x16.jpg',
     worldPos: new THREE.Vector3(0, -65, -380),
     nodeIdx: 0,
-    desc: '중앙 원형 전시대 6축 정밀 협동로봇 — ±0.025mm 반복 정밀도, 내장 토크 센서 기반 협업 안전 인증.',
+    desc: '6-axis precision collaborative robotic arm with ±0.025mm repeatability, smart joint torque sensing, and ISO/TS 15066 safety compliance.',
     specs: [
-      ['가반하중', '16.0 kg Payload'],
-      ['작업반경', '1300 mm Radius'],
-      ['반복정밀도', '±0.025 mm Repeatability'],
-      ['구동전원', '48V DC / 650W Max'],
-      ['안전등급', 'ISO TS 15066 Certified'],
-      ['납기 및 MOQ', '1 Unit / 2 Weeks']
+      ['Payload Capacity', '16.0 kg Payload'],
+      ['Working Radius', '1,300 mm Reach'],
+      ['Repeatability', '±0.025 mm Repeatability'],
+      ['Drive Power', '48V DC / 650W Max'],
+      ['Safety Class', 'ISO/TS 15066 Certified'],
+      ['Lead Time & MOQ', '1 Unit / 2 Weeks']
     ],
     highlights: [
-      '스마트 관절 토크 센서 내장으로 작업자와의 안전한 무방호 협업 실현',
-      '고정밀 가공 머신 텐딩, 팔레타이징, 정밀 부품 조립 공정 최적화',
-      '직관적인 티칭 펜던트 및 3D 디지털 트윈 실시간 텔레메트리 연동'
-    ]
+      'Built-in joint torque sensors enable safe, barrier-free human-robot collaboration',
+      'Optimized for CNC machine tending, high-payload palletizing, and sub-assembly',
+      'Real-time 3D digital twin telemetry streaming via ROS2 / OPC-UA'
+    ],
+    robotType: 'cobot'
   },
   {
     id: 'PROD-02-AMR',
@@ -758,63 +755,69 @@ const PRODUCTS_DATA = [
     image: '/assets/demo/dna-showcase/products/vector_amr_600.jpg',
     worldPos: new THREE.Vector3(-220, -130, -290),
     nodeIdx: 2,
-    desc: 'Laser SLAM 자율주행 물류 로봇 — 최대 600kg 적재, 듀얼 360° LiDAR 동적 장애물 회피 및 자동 도킹 충전.',
+    desc: 'Heavy-duty Laser SLAM autonomous mobile robot with 600kg deck load, dual 360° safety LiDAR, and autonomous inductive docking.',
     specs: [
-      ['적재중량', '600 kg Deck Payload'],
-      ['최대속도', '2.0 m/s Max Speed'],
-      ['도킹정밀도', '±10 mm Docking Precision'],
-      ['항법방식', '3D LiDAR SLAM + Vision'],
-      ['배터리', 'LiFePO4 48V 60Ah (10h)'],
-      ['표준규격', 'VDA 5050 MES/WMS Compliant']
+      ['Payload Capacity', '600 kg Deck Load'],
+      ['Maximum Speed', '2.0 m/s Max Speed'],
+      ['Docking Accuracy', '±10 mm Docking Precision'],
+      ['Navigation Mode', '3D LiDAR SLAM + Dual Vision'],
+      ['Battery Life', 'LiFePO4 48V 60Ah (10h)'],
+      ['Standards', 'VDA 5050 Fleet Compliant']
     ],
     highlights: [
-      '상하차 자동 리프트 및 컨베이어 상부 모듈 교체형 설계',
-      '공장 내 지게차, 작업자 혼재 환경에서도 360° 안전 라이다 실시간 회피',
-      '중앙 관제 FMS와 연동되어 멀티 플릿 최적 경로 자율 배차'
-    ]
+      'Interchangeable top modules for powered roller conveyor and electric scissor lift',
+      'Dynamic 360° obstacle avoidance in mixed human and forklift traffic environments',
+      'Direct FMS dispatch integration with multi-fleet autonomous route scheduling'
+    ],
+    robotType: 'amr'
   },
   {
-    id: 'PROD-03-VISION',
-    name: 'Vision LED 월',
-    model: 'DN-LED-6034',
-    category: 'Smart Control Center',
-    image: '/assets/demo/dna-showcase/products/vision_led_wall.jpg',
-    worldPos: new THREE.Vector3(0, 65, -390),
+    id: 'PROD-03-DELTA',
+    name: 'Titan Delta D12',
+    model: 'TTN-DL-12',
+    category: 'High-Speed Packaging',
+    image: '/assets/demo/dna-showcase/products/delta_d12.jpg',
+    worldPos: new THREE.Vector3(190, -40, -320),
     nodeIdx: 0,
-    desc: '부스 중앙 커브드 8K 비디오 파사드 & 로봇 군집 실시간 디지털 트윈 관제 센터.',
+    desc: 'Ultra-fast parallel Delta robot with 240 picks/min throughput, carbon-fiber kinematic arms, and dynamic AI conveyor tracking.',
     specs: [
-      ['디스플레이', 'Seamless Curved Micro-LED'],
-      ['해상도', '8K UHD Fine-Pitch (0.9mm)'],
-      ['화면크기', '6000 x 3400 mm'],
-      ['관제솔루션', 'DN\'a Smart Twin 3D Engine'],
-      ['밝기', '1400 nits HDR Peak'],
-      ['통신규격', 'OPC-UA / MQTT / ROS2']
+      ['Pick Rate', 'Up to 240 Picks / min'],
+      ['Payload Capacity', '12.0 kg High-Speed Load'],
+      ['Work Envelope', '1,600 mm Diameter'],
+      ['Repeatability', '±0.05 mm Repeatability'],
+      ['End-Effector', 'Multi-Venturi Vacuum Suction'],
+      ['Ingress Protection', 'IP65 Washdown Certified']
     ],
     highlights: [
-      '모든 현장 로봇의 실시간 관절 각도, 속도, 전력 소모량 3D 오버레이',
-      '이상 진동 및 충돌 전조 감지 AI 텔레메트리 대시보드',
-      '전시장 부스 맞춤형 3D 인터랙티브 그래픽 모션 송출'
-    ]
+      'Ultra-lightweight carbon fiber parallel struts engineered for extreme acceleration',
+      'High-speed vision-guided conveyor belt tracking with dynamic sync sorting',
+      'FDA-compliant construction suitable for pharmaceutical and food packaging'
+    ],
+    robotType: 'delta'
   },
   {
-    id: 'PROD-04-LOUNGE',
-    name: 'VIP Glass Hub',
-    model: 'DNA-VIP-2F',
-    category: 'Executive Meeting Architecture',
-    image: '/assets/demo/dna-showcase/products/vip_glass_lounge.jpg',
-    worldPos: new THREE.Vector3(260, 60, -320),
+    id: 'PROD-04-SCARA',
+    name: 'Hyperion SCARA S8',
+    model: 'HYP-SC-08',
+    category: 'Precision Assembly',
+    image: '/assets/demo/dna-showcase/products/scara_s8.jpg',
+    worldPos: new THREE.Vector3(-140, 20, -350),
     nodeIdx: 1,
-    desc: '2층 복층 통유리 VIP 비즈니스 미팅 라운지 및 파노라마 뷰포인트.',
+    desc: 'Sub-micron 4-axis SCARA robot for high-precision semiconductor, PCB wafer handling, and micro-component cleanroom assembly.',
     specs: [
-      ['공간면적', '45 ㎡ VIP Lounge'],
-      ['유리사양', 'Acoustic Soundproof Glass'],
-      ['편의시설', 'Private Conference & Bar'],
-      ['네트워크', 'Wi-Fi 7 / Smart Display']
+      ['Standard Cycle Time', '0.32 s Standard Cycle'],
+      ['Payload Capacity', '8.0 kg Max Payload'],
+      ['Arm Reach', '800 mm Total Span'],
+      ['Positioning Repeat.', '±0.010 mm (XY) / ±0.005 mm (Z)'],
+      ['Z-Stroke', '200 mm Precision Ball Screw'],
+      ['Cleanroom Class', 'ISO Class 4 Compliant']
     ],
     highlights: [
-      '전시장 소음을 완벽 차단하는 프라이빗 바이어 상담 공간',
-      '부스 전체 로보틱스 라인을 한눈에 조망하는 파노라믹 뷰'
-    ]
+      'Sub-micron absolute optical encoder feedback for ultra-tight tolerance placement',
+      'Internal cable routing prevents particulate generation and line interference',
+      'Integrated micro-force sensing for delicate snap-fit electronics manufacturing'
+    ],
+    robotType: 'scara'
   }
 ];
 
@@ -828,7 +831,7 @@ let textureCache = {};
 let autoTourActive = false, autoTourTimer = null;
 const container = document.getElementById('viewer-container');
 
-// 3. INIT THREE.JS ENGINE
+// 3. INIT MAIN THREE.JS ENGINE
 function initThree() {
   const canvas = document.getElementById('three-canvas');
   scene = new THREE.Scene();
@@ -910,6 +913,7 @@ function initThree() {
     }
   });
 
+  initDrawer3D();
   switchNode(0);
 }
 
@@ -996,7 +1000,6 @@ function switchNode(idx) {
   currentNodeIdx = idx;
   const node = SPATIAL_NODES[idx];
 
-  document.querySelectorAll('.node-btn').forEach((b, i) => b.classList.toggle('active', (i % 3) === idx));
   document.getElementById('radar-loc-txt').textContent = node.name.toUpperCase();
   document.getElementById('foot-loc').textContent = node.name;
 
@@ -1028,7 +1031,7 @@ function switchNode(idx) {
 
   drawRadar();
   updateFocusSpec(idx === 2 ? 1 : idx === 1 ? 3 : 0);
-  showToast('📍 ' + node.name + ' 공간으로 이동');
+  showToast('📍 Navigated to ' + node.name);
 }
 
 // 8. FOCUS PRODUCT (From bottom cards or hotspots)
@@ -1063,7 +1066,279 @@ function updateFocusSpec(idx) {
   document.querySelectorAll('.prod-quick-card').forEach((c, i) => c.classList.toggle('active', i === idx));
 }
 
-// 10. PRODUCT INSPECTION DRAWER (WITH HIGH-RES HERO IMAGE)
+// 10. PRODUCT INSPECTION DRAWER (WITH HIGH-RES HERO IMAGE & 360° 3D MINI PLAYER)
+let drawer3dScene, drawer3dCamera, drawer3dRenderer, drawer3dControls;
+let drawer3dModelGroup = null;
+let drawer3dAutoRotate = true;
+let drawer3dWireframe = false;
+let currentMediaMode = 'photo'; // 'photo' | '3d'
+
+function initDrawer3D() {
+  const canvas = document.getElementById('drawer-3d-canvas');
+  if (!canvas) return;
+
+  drawer3dScene = new THREE.Scene();
+  drawer3dCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+  drawer3dCamera.position.set(0, 2.2, 4.5);
+
+  drawer3dRenderer = new THREE.WebGLRenderer({
+    canvas: canvas,
+    antialias: true,
+    alpha: true,
+    powerPreference: 'high-performance'
+  });
+  drawer3dRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  drawer3dRenderer.outputEncoding = THREE.sRGBEncoding;
+
+  drawer3dControls = new THREE.OrbitControls(drawer3dCamera, canvas);
+  drawer3dControls.enableDamping = true;
+  drawer3dControls.dampingFactor = 0.08;
+  drawer3dControls.autoRotate = true;
+  drawer3dControls.autoRotateSpeed = 2.0;
+  drawer3dControls.minDistance = 2.0;
+  drawer3dControls.maxDistance = 8.0;
+  drawer3dControls.target.set(0, 0.6, 0);
+
+  // Lighting for studio turntable
+  const hemiLight = new THREE.HemisphereLight(0xffffff, 0x051122, 1.2);
+  drawer3dScene.add(hemiLight);
+
+  const dirLight1 = new THREE.DirectionalLight(0x00c2ff, 1.5);
+  dirLight1.position.set(5, 8, 5);
+  drawer3dScene.add(dirLight1);
+
+  const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 1.0);
+  dirLight2.position.set(-5, 4, -4);
+  drawer3dScene.add(dirLight2);
+
+  // Studio Turntable Platform
+  const baseRing = new THREE.Mesh(
+    new THREE.RingGeometry(1.6, 1.8, 48),
+    new THREE.MeshBasicMaterial({ color: 0x00c2ff, side: THREE.DoubleSide, transparent: true, opacity: 0.6 })
+  );
+  baseRing.rotation.x = -Math.PI / 2;
+  baseRing.position.y = -0.01;
+  drawer3dScene.add(baseRing);
+
+  const grid = new THREE.GridHelper(3.6, 16, 0x00c2ff, 0x1e293b);
+  grid.position.y = 0;
+  drawer3dScene.add(grid);
+
+  renderDrawer3DLoop();
+}
+
+function renderDrawer3DLoop() {
+  requestAnimationFrame(renderDrawer3DLoop);
+  if (currentMediaMode === '3d' && drawer3dRenderer && drawer3dScene && drawer3dCamera) {
+    drawer3dControls.update();
+    drawer3dRenderer.render(drawer3dScene, drawer3dCamera);
+  }
+}
+
+function buildProceduralRobotModel(type) {
+  if (drawer3dModelGroup) {
+    drawer3dScene.remove(drawer3dModelGroup);
+    drawer3dModelGroup.traverse(c => {
+      if (c.geometry) c.geometry.dispose();
+      if (c.material) {
+        if (Array.isArray(c.material)) c.material.forEach(m => m.dispose());
+        else c.material.dispose();
+      }
+    });
+  }
+
+  drawer3dModelGroup = new THREE.Group();
+  const matWhite = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.25, metalness: 0.15, wireframe: drawer3dWireframe });
+  const matMetal = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.35, metalness: 0.85, wireframe: drawer3dWireframe });
+  const matCyan = new THREE.MeshStandardMaterial({ color: 0x00c2ff, emissive: 0x00c2ff, emissiveIntensity: 0.6, roughness: 0.1, wireframe: drawer3dWireframe });
+
+  if (type === 'cobot') {
+    // 6-Axis Cobot
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 0.3, 32), matMetal);
+    base.position.y = 0.15;
+    drawer3dModelGroup.add(base);
+
+    const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.32, 24, 24), matCyan);
+    shoulder.position.y = 0.45;
+    drawer3dModelGroup.add(shoulder);
+
+    const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 1.1, 24), matWhite);
+    upperArm.position.set(0.2, 0.95, 0);
+    upperArm.rotation.z = -0.35;
+    drawer3dModelGroup.add(upperArm);
+
+    const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.26, 24, 24), matMetal);
+    elbow.position.set(0.4, 1.45, 0);
+    drawer3dModelGroup.add(elbow);
+
+    const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.9, 24), matWhite);
+    forearm.position.set(0.15, 1.8, 0);
+    forearm.rotation.z = 0.45;
+    drawer3dModelGroup.add(forearm);
+
+    const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.25, 20), matCyan);
+    wrist.position.set(-0.1, 2.15, 0);
+    drawer3dModelGroup.add(wrist);
+
+    // Gripper
+    const gripBase = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.08, 0.15), matMetal);
+    gripBase.position.set(-0.1, 2.3, 0);
+    drawer3dModelGroup.add(gripBase);
+
+    const finger1 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.2, 0.08), matWhite);
+    finger1.position.set(-0.18, 2.42, 0);
+    const finger2 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.2, 0.08), matWhite);
+    finger2.position.set(-0.02, 2.42, 0);
+    drawer3dModelGroup.add(finger1, finger2);
+  } else if (type === 'amr') {
+    // Vector AMR 600
+    const chassis = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.45, 1.1), matWhite);
+    chassis.position.y = 0.35;
+    drawer3dModelGroup.add(chassis);
+
+    const lowerTrim = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.12, 1.15), matMetal);
+    lowerTrim.position.y = 0.15;
+    drawer3dModelGroup.add(lowerTrim);
+
+    const lightStrip = new THREE.Mesh(new THREE.BoxGeometry(1.66, 0.04, 1.16), matCyan);
+    lightStrip.position.y = 0.32;
+    drawer3dModelGroup.add(lightStrip);
+
+    // 360 LiDAR puck
+    const lidar = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.18, 24), matCyan);
+    lidar.position.set(0.65, 0.65, 0.4);
+    drawer3dModelGroup.add(lidar);
+
+    // Roller deck
+    for (let i = -0.55; i <= 0.55; i += 0.25) {
+      const roller = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.9, 16), matMetal);
+      roller.rotation.z = Math.PI / 2;
+      roller.position.set(0, 0.62, i);
+      drawer3dModelGroup.add(roller);
+    }
+  } else if (type === 'delta') {
+    // Titan Delta D12
+    const topPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.15, 6), matMetal);
+    topPlate.position.y = 2.1;
+    drawer3dModelGroup.add(topPlate);
+
+    const movingPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.08, 6), matCyan);
+    movingPlate.position.y = 0.65;
+    drawer3dModelGroup.add(movingPlate);
+
+    // 3 pairs of parallel carbon fiber struts
+    for (let i = 0; i < 3; i++) {
+      const ang = (i * Math.PI * 2) / 3;
+      const bX = Math.cos(ang) * 0.6;
+      const bZ = Math.sin(ang) * 0.6;
+      const mX = Math.cos(ang) * 0.22;
+      const mZ = Math.sin(ang) * 0.22;
+
+      const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.3, 16), matWhite);
+      motor.position.set(bX, 2.0, bZ);
+      drawer3dModelGroup.add(motor);
+
+      const upperStrut = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.75, 12), matMetal);
+      upperStrut.position.set(bX * 1.15, 1.6, bZ * 1.15);
+      drawer3dModelGroup.add(upperStrut);
+
+      const strut1 = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.1, 12), matWhite);
+      strut1.position.set((bX + mX) * 0.65 - 0.06, 1.1, (bZ + mZ) * 0.65);
+      const strut2 = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.1, 12), matWhite);
+      strut2.position.set((bX + mX) * 0.65 + 0.06, 1.1, (bZ + mZ) * 0.65);
+      drawer3dModelGroup.add(strut1, strut2);
+    }
+
+    const suctionCup = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.22, 20), matCyan);
+    suctionCup.rotation.x = Math.PI;
+    suctionCup.position.y = 0.5;
+    drawer3dModelGroup.add(suctionCup);
+  } else if (type === 'scara') {
+    // Hyperion SCARA S8
+    const baseCol = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 1.1, 32), matWhite);
+    baseCol.position.y = 0.55;
+    drawer3dModelGroup.add(baseCol);
+
+    const joint1 = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.3, 24), matMetal);
+    joint1.position.y = 1.15;
+    drawer3dModelGroup.add(joint1);
+
+    const arm1 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.24, 0.35), matWhite);
+    arm1.position.set(0.4, 1.25, 0);
+    drawer3dModelGroup.add(arm1);
+
+    const joint2 = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.35, 24), matCyan);
+    joint2.position.set(0.8, 1.28, 0);
+    drawer3dModelGroup.add(joint2);
+
+    const arm2 = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.2, 0.28), matWhite);
+    arm2.position.set(1.15, 1.3, 0);
+    drawer3dModelGroup.add(arm2);
+
+    // Z-Axis vertical ball screw & micro tool
+    const zShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.95, 20), matMetal);
+    zShaft.position.set(1.45, 1.1, 0);
+    drawer3dModelGroup.add(zShaft);
+
+    const microTool = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.04, 0.2, 16), matCyan);
+    microTool.position.set(1.45, 0.55, 0);
+    drawer3dModelGroup.add(microTool);
+  }
+
+  drawer3dScene.add(drawer3dModelGroup);
+}
+
+function setDrawerMediaMode(mode) {
+  currentMediaMode = mode;
+  const tabPhoto = document.getElementById('tab-photo');
+  const tab3d = document.getElementById('tab-3d');
+  const imgEl = document.getElementById('drw-img');
+  const view3d = document.getElementById('drawer-3d-view');
+
+  if (mode === '3d') {
+    tabPhoto.classList.remove('active');
+    tab3d.classList.add('active');
+    imgEl.style.display = 'none';
+    view3d.style.display = 'block';
+
+    const p = PRODUCTS_DATA[currentSelectedProdIdx];
+    buildProceduralRobotModel(p.robotType || 'cobot');
+
+    const rect = document.getElementById('drw-img-box').getBoundingClientRect();
+    if (drawer3dRenderer && drawer3dCamera) {
+      drawer3dCamera.aspect = rect.width / rect.height;
+      drawer3dCamera.updateProjectionMatrix();
+      drawer3dRenderer.setSize(rect.width, rect.height);
+    }
+    showToast('🔄 360° Interactive 3D Turntable Activated');
+  } else {
+    tabPhoto.classList.add('active');
+    tab3d.classList.remove('active');
+    imgEl.style.display = 'block';
+    view3d.style.display = 'none';
+  }
+}
+
+function toggleDrawer3dAutoRotate() {
+  drawer3dAutoRotate = !drawer3dAutoRotate;
+  if (drawer3dControls) drawer3dControls.autoRotate = drawer3dAutoRotate;
+  document.getElementById('btn-3d-autorot').textContent = '🔄 Auto-Rotate: ' + (drawer3dAutoRotate ? 'ON' : 'OFF');
+}
+
+function toggleDrawer3dWireframe() {
+  drawer3dWireframe = !drawer3dWireframe;
+  const p = PRODUCTS_DATA[currentSelectedProdIdx];
+  buildProceduralRobotModel(p.robotType || 'cobot');
+  document.getElementById('btn-3d-wire').textContent = '⚡ Wireframe: ' + (drawer3dWireframe ? 'ON' : 'OFF');
+}
+
+function resetDrawer3dCamera() {
+  if (drawer3dCamera && drawer3dControls) {
+    drawer3dCamera.position.set(0, 2.2, 4.5);
+    drawer3dControls.target.set(0, 0.6, 0);
+  }
+}
+
 function openProductDrawer(idx) {
   currentSelectedProdIdx = idx;
   const p = PRODUCTS_DATA[idx];
@@ -1078,12 +1353,13 @@ function openProductDrawer(idx) {
 
   // Product Image
   const imgEl = document.getElementById('drw-img');
-  const imgBox = document.getElementById('drw-img-box');
   if (p.image) {
     imgEl.src = p.image;
-    imgBox.style.display = 'block';
-  } else {
-    imgBox.style.display = 'none';
+  }
+
+  // Update 3D model if already in 3D mode
+  if (currentMediaMode === '3d') {
+    buildProceduralRobotModel(p.robotType || 'cobot');
   }
 
   const table = document.getElementById('drw-specs-table');
@@ -1097,7 +1373,7 @@ function openProductDrawer(idx) {
 
   document.getElementById('drawer-scrim').classList.add('open');
   document.getElementById('product-drawer').classList.add('open');
-  showToast('🔍 ' + p.name + ' 세부 스펙 분석 카드 열림');
+  showToast('🔍 Inspecting ' + p.name);
 }
 
 function openCurrentProductDrawer() {
@@ -1115,14 +1391,14 @@ function toggleAutoTour() {
   if (autoTourActive) {
     clearInterval(autoTourTimer);
     autoTourActive = false;
-    btn.innerHTML = '<span>▶</span> AUTO TOUR 시작';
+    btn.innerHTML = '<span>▶</span> START AUTO TOUR';
     btn.classList.remove('primary');
-    showToast('⏹ 자동 투어 정지');
+    showToast('⏹ Auto tour stopped');
   } else {
     autoTourActive = true;
-    btn.innerHTML = '<span>⏹</span> 투어 정지';
+    btn.innerHTML = '<span>⏹</span> STOP AUTO TOUR';
     btn.classList.add('primary');
-    showToast('▶ 5초 간격 3개 거점 자동 투어 시작');
+    showToast('▶ 5s Interval Automated 360° Studio Tour Started');
     let ni = (currentNodeIdx + 1) % SPATIAL_NODES.length;
     switchNode(ni);
     autoTourTimer = setInterval(() => { ni = (currentNodeIdx + 1) % SPATIAL_NODES.length; switchNode(ni); }, 5000);
@@ -1154,7 +1430,7 @@ function drawRadar() {
   ctx.fillStyle = 'rgba(0,194,255,0.25)';
   ctx.beginPath();
   ctx.moveTo(cur.radarPos.x, cur.radarPos.y);
-  ctx.arc(cur.radarPos.x, cur.radarPos.y, 22, angle - 0.4, angle + 0.4);
+  ctx.arc(cur.radarPos.x, cur.radarPos.y, 24, angle - 0.4, angle + 0.4);
   ctx.closePath();
   ctx.fill();
 }
@@ -1202,7 +1478,7 @@ function downloadAllPhotos() {
       document.body.removeChild(a);
     }, idx * 600);
   });
-  showToast('📥 64K 마스터 초고화질 원본 사진 다운로드가 시작되었습니다.');
+  showToast('📥 64K Master Ultra-HD photos download started.');
 }
 
 function openRFQ() { window.open('mailto:sales@dna-robotic.com?subject=RFQ%20from%20Matterport%2064K%20Studio'); }
