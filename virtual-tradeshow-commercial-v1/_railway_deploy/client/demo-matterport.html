@@ -291,7 +291,7 @@ html, body {
         <canvas id="three-canvas"></canvas>
         <div id="mattertags-host"></div>
         <div class="player-tag">🔄 360° 인터랙티브 3D 플레이어</div>
-        <div class="res-pill">16384 × 8192 UHD</div>
+        <div class="res-pill" id="res-indicator">16384 × 8192 UHD</div>
       </div>
     </section>
 
@@ -410,7 +410,7 @@ html, body {
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   MATTERPORT 16K ULTRA-HD 360° STUDIO ENGINE (v6.1)
+   MATTERPORT 16K ULTRA-HD 360° STUDIO ENGINE (v6.2)
    - Reduced 50% Studio Player Container Architecture
    - Exterior UI Control Suite (All buttons outside player)
    - 16K (16384x8192) AI Super-Resolution Photoreal Textures
@@ -418,7 +418,7 @@ html, body {
    - 3 Vantage Point Transitions & Floor Navigation Rings
 ═══════════════════════════════════════════════════════════ */
 
-// 1. SPATIAL NODES (16K Ultra-HD Equirectangular Photoreal Assets)
+// 1. SPATIAL NODES (16K & 8K Ultra-HD Equirectangular Photoreal Assets)
 const SPATIAL_NODES = [
   {
     id: 0,
@@ -515,7 +515,7 @@ let textureCache = {};
 let autoTourActive = false, autoTourTimer = null;
 const container = document.getElementById('viewer-container');
 
-// 3. INIT THREE.JS 16K SPATIAL SCENE
+// 3. INIT THREE.JS SPATIAL SCENE
 function initThree() {
   const canvas = document.getElementById('three-canvas');
   scene = new THREE.Scene();
@@ -529,7 +529,7 @@ function initThree() {
   camera = new THREE.PerspectiveCamera(70, width / height, 0.01, 2000);
   camera.position.set(0, 0, 0.01);
 
-  // Full DPR WebGL Renderer for 16K Clarity
+  // Full DPR WebGL Renderer
   renderer = new THREE.WebGLRenderer({
     canvas: canvas,
     antialias: true,
@@ -541,6 +541,12 @@ function initThree() {
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.08;
+
+  const maxTex = renderer.capabilities.maxTextureSize || 8192;
+  const resPill = document.getElementById('res-indicator');
+  if (resPill) {
+    resPill.textContent = maxTex >= 16384 ? '16384 × 8192 UHD' : '8192 × 4096 UHD (MAX GPU)';
+  }
 
   // 360° Free Look OrbitControls
   controls = new THREE.OrbitControls(camera, canvas);
@@ -641,7 +647,7 @@ function buildMattertagsDOM() {
   });
 }
 
-// 6. HIGH-RESOLUTION TEXTURE LOADER WITH FALLBACK
+// 6. HIGH-RESOLUTION TEXTURE LOADER WITH HARDWARE ADAPTATION
 function loadNodeTexture(url, callback) {
   if (textureCache[url]) { callback(textureCache[url]); return; }
   textureLoader.load(url, (tex) => {
@@ -653,12 +659,10 @@ function loadNodeTexture(url, callback) {
     tex.needsUpdate = true;
     textureCache[url] = tex;
     callback(tex);
-  }, undefined, (err) => {
-    console.error('Texture load error:', err);
   });
 }
 
-// 7. SWITCH SPATIAL NODE (3 Vantage Points Switching with Instant 8K & Progressive 16K)
+// 7. SWITCH SPATIAL NODE (3 Vantage Points Switching)
 function switchNode(idx) {
   currentNodeIdx = idx;
   const node = SPATIAL_NODES[idx];
@@ -667,13 +671,20 @@ function switchNode(idx) {
   document.getElementById('radar-loc-txt').textContent = node.name.toUpperCase();
   document.getElementById('foot-loc').textContent = node.name;
 
-  // Load 8K immediate or 16K texture
-  const targetUrl = node.image16k || node.image8k;
-  loadNodeTexture(targetUrl, (tex) => {
-    photoMaterial.map = tex;
-    photoMaterial.needsUpdate = true;
-    photoMaterial.opacity = 1.0;
-  });
+  // Use hardware-supported optimal texture (16K if GPU maxTextureSize >= 16384, else 8K)
+  const maxTex = renderer ? renderer.capabilities.maxTextureSize : 8192;
+  const targetUrl = (maxTex >= 16384 && node.image16k) ? node.image16k : (node.image8k || node.image16k);
+
+  new TWEEN.Tween(photoMaterial)
+    .to({ opacity: 0.35 }, 200)
+    .onComplete(() => {
+      loadNodeTexture(targetUrl, (tex) => {
+        photoMaterial.map = tex;
+        photoMaterial.needsUpdate = true;
+        new TWEEN.Tween(photoMaterial).to({ opacity: 1.0 }, 300).start();
+      });
+    })
+    .start();
 
   floorPucks.forEach((p, i) => {
     p.children[0].material.opacity = (i === idx) ? 0.20 : 0.85;
@@ -682,7 +693,7 @@ function switchNode(idx) {
 
   drawRadar();
   updateFocusSpec(idx === 2 ? 2 : idx === 1 ? 1 : 0);
-  showToast('📍 ' + node.name + ' 16K 초고화질 공간으로 이동');
+  showToast('📍 ' + node.name + ' 초고화질 공간으로 이동');
 }
 
 // 8. UPDATE RIGHT FOCUS SPEC PANEL
