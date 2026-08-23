@@ -225,8 +225,8 @@ html, body {
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   MATTERPORT 3D SPATIAL DIGITAL TWIN ENGINE  v4.2
-   - 8K Ultra-HD Crisp Screen Projection
+   MATTERPORT 3D SPATIAL DIGITAL TWIN ENGINE  v4.3
+   - 8K Ultra-HD Crisp Screen Projection (Edge-to-Edge)
    - Zero Fisheye Distortion (Flat Perspective + Smooth Orbit)
    - Exact Sub-pixel Mattertag Pins
    - Smooth Interactive Navigation
@@ -245,31 +245,30 @@ const SPATIAL_NODES = [
     id: 1,
     name: "02. 전면 코봇 7대 라인업 (CoBots)",
     image: "/assets/demo/dna-showcase/ultra/node1_cobots_8k.jpg",
-    camLook: { x: 1.5, y: -0.2, z: 10.0 },
+    camLook: { x: 2.0, y: -0.3, z: 10.0 },
     radarPos: { x: 95, y: 72 }
   },
   {
     id: 2,
     name: "03. AMR 자율주행 물류 존 (AMR AGV)",
     image: "/assets/demo/dna-showcase/ultra/node2_amr_8k.jpg",
-    camLook: { x: -0.1, y: -0.5, z: 10.0 },
+    camLook: { x: -0.2, y: -0.7, z: 10.0 },
     radarPos: { x: 55, y: 48 }
   },
   {
     id: 3,
     name: "04. AI 비전 미디어 월 (LED Wall)",
     image: "/assets/demo/dna-showcase/ultra/node0_entrance_8k.jpg",
-    camLook: { x: 2.5, y: 0.8, z: 10.0 },
+    camLook: { x: 3.2, y: 1.0, z: 10.0 },
     radarPos: { x: 73, y: 28 }
   }
 ];
 
+const planeW = 21.6;
+const planeH = 12.15;
+
 // Helper to calculate exact 3D world position on the projection plane (at Z = 10)
-// nx: normalized image X (-1.0 left to +1.0 right)
-// ny: normalized image Y (-1.0 bottom to +1.0 top)
 function imgCoord(nx, ny) {
-  const planeW = 18.6;
-  const planeH = 10.46;
   return new THREE.Vector3(nx * (planeW * 0.5), ny * (planeH * 0.5), 9.95);
 }
 
@@ -280,7 +279,6 @@ const MATTERTAGS = [
     badge: 'Autonomous Logistics',
     title: "DN'a Vector AMR 600",
     desc: 'Laser SLAM 자율주행 물류 로봇 — 최대 600kg 적재, 360° LiDAR 장애물 회피',
-    // Center floor AMR: center X (-0.02), lower Y (-0.52)
     worldPos: imgCoord(-0.02, -0.52),
     specs: [
       ['적재중량', '600 kg'], ['최대속도', '2.0 m/s'],
@@ -293,7 +291,6 @@ const MATTERTAGS = [
     badge: 'Collaborative Robot Array',
     title: "DN'a CoBot X16 — 7대 라인업",
     desc: '7대 연동 6축 협동로봇 조립 라인 — ±0.025mm 반복 정밀도, AI 비전 통합',
-    // Right curved counter cobots: right X (+0.55), lower Y (-0.28)
     worldPos: imgCoord(0.55, -0.28),
     specs: [
       ['가반하중', '16.0 kg'], ['작업반경', '1300 mm'],
@@ -306,7 +303,6 @@ const MATTERTAGS = [
     badge: 'Digital Media Wall',
     title: "AI · Vision · Automation LED Wall",
     desc: '16:9 대형 미디어 파사드 — 실시간 스마트 팩토리 대시보드 및 로봇 제어 현황',
-    // Right upper LED screen: right X (+0.52), upper Y (+0.16)
     worldPos: imgCoord(0.52, 0.16),
     specs: [
       ['해상도', '4K UHD Fine-Pitch'], ['휘도', '1200 nits'],
@@ -318,7 +314,6 @@ const MATTERTAGS = [
     badge: 'Smart Factory Booth',
     title: "DN'a ROBOTIC 메인 캐노피",
     desc: 'NEXT-GEN ROBOTIC SOLUTIONS — 미래형 스마트 팩토리 토탈 솔루션 부스',
-    // Top canopy: center-right X (+0.25), top Y (+0.82)
     worldPos: imgCoord(0.25, 0.82),
     specs: [
       ['부스규모', '18 x 12 m (216㎡)'], ['주요기술', 'AI CoBot, AMR SLAM'],
@@ -330,7 +325,6 @@ const MATTERTAGS = [
     badge: 'Robotics Parts & Sensors',
     title: "정밀 부품 & 그리퍼 전시대",
     desc: '모듈형 2핑거 전동 서보 그리퍼 및 3D AI 비전 센서 라인업',
-    // Left display tables: left X (-0.45), lower Y (-0.35)
     worldPos: imgCoord(-0.45, -0.35),
     specs: [
       ['그립력', '220 N'], ['스트로크', '80 mm'],
@@ -354,8 +348,8 @@ function initThree() {
   scene = new THREE.Scene();
   textureLoader = new THREE.TextureLoader();
 
-  // Natural perspective camera (54° FOV — 100% natural, ZERO fisheye barrel distortion)
-  camera = new THREE.PerspectiveCamera(54, window.innerWidth / window.innerHeight, 0.1, 100);
+  // Natural perspective camera (50° FOV — 100% natural, ZERO fisheye barrel distortion)
+  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
   camera.position.set(0, 0, 0);
 
   // Full native DPR rendering for ultra-crisp 8K sharpness
@@ -378,16 +372,13 @@ function initThree() {
   controls.enableZoom = false; // Fixed perspective
   controls.enablePan = false;
   controls.target.set(0, 0, 10.0);
-  controls.maxPolarAngle = Math.PI * 0.56; // Natural eye-level look range
-  controls.minPolarAngle = Math.PI * 0.44;
-  controls.maxAzimuthAngle = Math.PI * 0.20; // Natural panning
-  controls.minAzimuthAngle = -Math.PI * 0.20;
-  controls.rotateSpeed = -0.35;
+  controls.maxPolarAngle = Math.PI * 0.55; // Natural eye-level look range
+  controls.minPolarAngle = Math.PI * 0.45;
+  controls.maxAzimuthAngle = Math.PI * 0.18; // Natural panning
+  controls.minAzimuthAngle = -Math.PI * 0.18;
+  controls.rotateSpeed = -0.32;
 
-  // ── 8K ULTRA-HD PHOTOGRAMMETRIC PROJECTION PLANE ──
-  // Plane dimensions calculated to fill 100% of viewport with ZERO borders and ZERO distortion
-  const planeW = 18.6;
-  const planeH = 10.46;
+  // ── 8K ULTRA-HD PHOTOGRAMMETRIC PROJECTION PLANE (Edge-to-Edge) ──
   const planeGeo = new THREE.PlaneGeometry(planeW, planeH, 32, 32);
 
   photoMaterial = new THREE.MeshBasicMaterial({
@@ -415,18 +406,18 @@ function initThree() {
 function buildFloorPucks() {
   SPATIAL_NODES.forEach((node, idx) => {
     const g = new THREE.Group();
-    const xPos = (idx - 1.5) * 2.8;
-    g.position.set(xPos, -3.8, 8.0);
+    const xPos = (idx - 1.5) * 3.2;
+    g.position.set(xPos, -4.2, 8.2);
 
     const ring = new THREE.Mesh(
-      new THREE.RingGeometry(0.42, 0.62, 32),
+      new THREE.RingGeometry(0.48, 0.70, 32),
       new THREE.MeshBasicMaterial({ color: 0x00c2ff, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
     );
     ring.rotation.x = -Math.PI / 2;
     g.add(ring);
 
     const disk = new THREE.Mesh(
-      new THREE.CircleGeometry(0.34, 24),
+      new THREE.CircleGeometry(0.38, 24),
       new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 })
     );
     disk.rotation.x = -Math.PI / 2;
@@ -456,17 +447,17 @@ function buildFloorPucks() {
 // 5. 3D DOLLHOUSE WIREFRAME
 function buildDollhouseMesh() {
   dollhouseGroup = new THREE.Group();
-  const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(16, 12), new THREE.MeshBasicMaterial({ color:0x0284c7, transparent:true, opacity:0.18, side:THREE.DoubleSide }));
+  const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(18, 14), new THREE.MeshBasicMaterial({ color:0x0284c7, transparent:true, opacity:0.18, side:THREE.DoubleSide }));
   floorMesh.rotation.x = -Math.PI / 2;
-  floorMesh.position.set(0, -3.8, 8.0);
+  floorMesh.position.set(0, -4.2, 8.2);
   dollhouseGroup.add(floorMesh);
 
-  const grid = new THREE.GridHelper(16, 16, 0x00c2ff, 0x1e293b);
-  grid.position.set(0, -3.79, 8.0);
+  const grid = new THREE.GridHelper(18, 18, 0x00c2ff, 0x1e293b);
+  grid.position.set(0, -4.19, 8.2);
   dollhouseGroup.add(grid);
 
-  const box = new THREE.BoxHelper(new THREE.Mesh(new THREE.BoxGeometry(16, 8, 10)), 0x00c2ff);
-  box.position.set(0, 0, 8.0);
+  const box = new THREE.BoxHelper(new THREE.Mesh(new THREE.BoxGeometry(18, 9, 12)), 0x00c2ff);
+  box.position.set(0, 0, 8.2);
   dollhouseGroup.add(box);
 
   dollhouseGroup.visible = false;
@@ -546,10 +537,10 @@ function setMode(mode) {
     dollhouseGroup.visible = false;
     photoMesh.visible = true;
     photoMaterial.opacity = 1.0;
-    controls.maxPolarAngle = Math.PI * 0.56;
-    controls.minPolarAngle = Math.PI * 0.44;
-    controls.maxAzimuthAngle = Math.PI * 0.20;
-    controls.minAzimuthAngle = -Math.PI * 0.20;
+    controls.maxPolarAngle = Math.PI * 0.55;
+    controls.minPolarAngle = Math.PI * 0.45;
+    controls.maxAzimuthAngle = Math.PI * 0.18;
+    controls.minAzimuthAngle = -Math.PI * 0.18;
     new TWEEN.Tween(camera.position).to({x:0, y:0, z:0}, 800).easing(TWEEN.Easing.Cubic.Out).start();
     new TWEEN.Tween(controls.target).to(node.camLook, 800).easing(TWEEN.Easing.Cubic.Out).start();
     showToast('📸 8K 초고화질 실사 파노라마 투어');
@@ -562,7 +553,7 @@ function setMode(mode) {
     controls.maxAzimuthAngle = Infinity;
     controls.minAzimuthAngle = -Infinity;
     new TWEEN.Tween(camera.position).to({x:0, y:6.0, z:-2.0}, 900).easing(TWEEN.Easing.Cubic.Out).start();
-    new TWEEN.Tween(controls.target).to({x:0, y:0, z:8.0}, 900).easing(TWEEN.Easing.Cubic.Out).start();
+    new TWEEN.Tween(controls.target).to({x:0, y:0, z:8.2}, 900).easing(TWEEN.Easing.Cubic.Out).start();
     showToast('🏠 3D Dollhouse 입체 투시도 모드');
   } else if (mode === 'floor') {
     dollhouseGroup.visible = true;
@@ -571,8 +562,8 @@ function setMode(mode) {
     controls.minPolarAngle = Math.PI * 0.15;
     controls.maxAzimuthAngle = Infinity;
     controls.minAzimuthAngle = -Infinity;
-    new TWEEN.Tween(camera.position).to({x:0, y:14.0, z:8.01}, 900).easing(TWEEN.Easing.Cubic.Out).start();
-    new TWEEN.Tween(controls.target).to({x:0, y:0, z:8.0}, 900).easing(TWEEN.Easing.Cubic.Out).start();
+    new TWEEN.Tween(camera.position).to({x:0, y:14.0, z:8.21}, 900).easing(TWEEN.Easing.Cubic.Out).start();
+    new TWEEN.Tween(controls.target).to({x:0, y:0, z:8.2}, 900).easing(TWEEN.Easing.Cubic.Out).start();
     showToast('🗺️ 2D 부스 평면도 모드');
   }
 }
