@@ -932,23 +932,21 @@ function switchNode(idx) {
   const maxTex = renderer ? renderer.capabilities.maxTextureSize : 8192;
   const hdTargetUrl = (maxTex >= 16384 && node.image16k) ? node.image16k : (node.image8k || node.image16k);
 
-  // 1. Immediate 2K preview (~50ms)
+  // 1. Immediate fast preview
   if (node.preview) {
     loadNodeTexture(node.preview, (prevTex) => {
-      if (currentNodeIdx === idx && !photoMaterial.map) {
+      if (currentNodeIdx === idx) {
         photoMaterial.map = prevTex;
         photoMaterial.needsUpdate = true;
-        photoMaterial.opacity = 1.0;
       }
     });
   }
 
-  // 2. Background HD update (seamless crossfade)
+  // 2. HD Ultra-Res update
   loadNodeTexture(hdTargetUrl, (hdTex) => {
     if (currentNodeIdx === idx) {
       photoMaterial.map = hdTex;
       photoMaterial.needsUpdate = true;
-      new TWEEN.Tween(photoMaterial).to({ opacity: 1.0 }, 200).start();
     }
   });
 
