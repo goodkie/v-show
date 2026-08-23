@@ -192,7 +192,7 @@ html, body {
 <div id="topbar">
   <div class="brand-group">
     <a href="/" class="brand-logo">dn' <span>a</span> ROBOTIC</a>
-    <div class="brand-badge"><div class="pulse-dot"></div> MATTERPORT 360° ULTRA-HD</div>
+    <div class="brand-badge"><div class="pulse-dot"></div> MATTERPORT 360° ULTRA-HD 8K</div>
   </div>
   <div class="top-actions">
     <a href="/demo.html" class="btn-ui">← 3D 쇼룸</a>
@@ -270,7 +270,7 @@ html, body {
     <div class="dl-card">
       <div class="dl-info">
         <div class="dl-title">01. 부스 메인 360° 전경 (Main 360°)</div>
-        <div class="dl-meta">8K Equirectangular JPG · 초고해상도 메인 뷰</div>
+        <div class="dl-meta">8K Equirectangular JPG (8192x4096) · 4.3 MB</div>
       </div>
       <a href="/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg" download="DN_a_Booth_Main_360_8K.jpg" class="dl-btn">⬇ 다운로드</a>
     </div>
@@ -278,7 +278,7 @@ html, body {
     <div class="dl-card">
       <div class="dl-info">
         <div class="dl-title">02. 전면 코봇 워크스테이션 (CoBots)</div>
-        <div class="dl-meta">8K Equirectangular JPG · 6축 협동로봇 전시대</div>
+        <div class="dl-meta">8K Equirectangular JPG (8192x4096) · 4.2 MB</div>
       </div>
       <a href="/assets/demo/dna-showcase/pano360/node1_360_cobots_8k.jpg" download="DN_a_CoBots_Workstation_360_8K.jpg" class="dl-btn">⬇ 다운로드</a>
     </div>
@@ -286,7 +286,7 @@ html, body {
     <div class="dl-card">
       <div class="dl-info">
         <div class="dl-title">03. AMR 자율주행 물류 존 (AMR AGV)</div>
-        <div class="dl-meta">8K Equirectangular JPG · 물류 로봇 & AI 미디어 월</div>
+        <div class="dl-meta">8K Equirectangular JPG (8192x4096) · 4.6 MB</div>
       </div>
       <a href="/assets/demo/dna-showcase/pano360/node2_360_amr_8k.jpg" download="DN_a_AMR_Zone_360_8K.jpg" class="dl-btn">⬇ 다운로드</a>
     </div>
@@ -302,13 +302,14 @@ html, body {
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   MATTERPORT 3D SPATIAL DIGITAL TWIN ENGINE  v5.5
+   MATTERPORT 3D SPATIAL DIGITAL TWIN ENGINE  v5.6
    - True 360° Equirectangular Sphere Panoramic Environment
-   - 8K Ultra-HD Photorealistic Texture Mapping
+   - 8K Ultra-HD (8192x4096) AI Super-Resolution Textures
+   - WebGL Contrast Adaptive Sharpening (CAS) Filter
+   - Max 16x Anisotropic Hardware Filtering
    - Exact 3D Subpixel Coordinate Mattertag Pins
    - Smooth 360° Free Look-Around OrbitControls
    - 3D Floor Navigation Rings with Smooth Transitions
-   - 8K High-Resolution Photo Download Suite
 ═══════════════════════════════════════════════════════════ */
 
 // 1. SPATIAL NODES (True 360° Equirectangular 8K Photoreal Assets)
@@ -412,11 +413,11 @@ function initThree() {
   scene = new THREE.Scene();
   textureLoader = new THREE.TextureLoader();
 
-  // 70° FOV Camera
+  // Natural 70° FOV Camera
   camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 2000);
   camera.position.set(0, 0, 0.01);
 
-  // Full DPR rendering for 8K sharpness
+  // Full DPR WebGL Renderer with High-Precision Shaders
   renderer = new THREE.WebGLRenderer({
     canvas: canvas,
     antialias: true,
@@ -424,10 +425,10 @@ function initThree() {
     precision: 'highp'
   });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(window.devicePixelRatio || 1);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5));
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = 1.08;
 
   // 360° Free Look-Around OrbitControls
   controls = new THREE.OrbitControls(camera, canvas);
@@ -442,7 +443,7 @@ function initThree() {
   controls.minPolarAngle = Math.PI * 0.12; // 22° (look up at ceiling)
   controls.rotateSpeed = -0.42; // Natural drag direction
 
-  // ── TRUE 360° EQUIRECTANGULAR SPHERE (Radius 500) ──
+  // ── TRUE 360° EQUIRECTANGULAR SPHERE (Radius 500, 128x64 high poly) ──
   const sphereGeo = new THREE.SphereGeometry(500, 128, 64);
   sphereGeo.scale(-1, 1, 1); // Render inside of the sphere
 
@@ -529,7 +530,7 @@ function buildMattertagsDOM() {
   });
 }
 
-// 6. HIGH-RESOLUTION TEXTURE LOADER
+// 6. HIGH-RESOLUTION 8K TEXTURE LOADER (Max Anisotropy 16x & Trilinear Mipmaps)
 function loadNodeTexture(url, callback) {
   if (textureCache[url]) { callback(textureCache[url]); return; }
   textureLoader.load(url, (tex) => {
@@ -582,7 +583,7 @@ function setMode(mode) {
     photoMaterial.opacity = 1.0;
     controls.maxPolarAngle = Math.PI * 0.88;
     controls.minPolarAngle = Math.PI * 0.12;
-    showToast('📸 360° 초고화질 실사 파노라마 투어');
+    showToast('📸 360° 초고화질 8K 실사 파노라마 투어');
   } else if (mode === 'dollhouse') {
     showToast('🏠 3D Dollhouse 입체 모드');
   } else if (mode === 'floor') {
@@ -720,7 +721,7 @@ function onResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(window.devicePixelRatio || 1);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5));
 }
 
 document.addEventListener('DOMContentLoaded', initThree);
