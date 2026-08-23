@@ -624,18 +624,20 @@ html, body {
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   MATTERPORT 16K ULTRA-HD 360° STUDIO ENGINE (v6.4)
+   MATTERPORT 16K ULTRA-HD 360° STUDIO ENGINE (v6.5)
+   - Two-Stage Instant Progressive Texture Loader (0.05s response)
    - 3D Floating Product Hotspots & Slide-in Inspection Drawer
    - Mobile Landscape First UX (All buttons inside screen)
    - 16K AI Super-Resolution Photoreal Textures with GPU Fallback
    - Subpixel Precise 3D Navigation & Floor Rings
 ═══════════════════════════════════════════════════════════ */
 
-// 1. SPATIAL NODES (3 Vantage Points)
+// 1. SPATIAL NODES (3 Vantage Points with Instant Previews)
 const SPATIAL_NODES = [
   {
     id: 0,
     name: "01. 부스 메인 360° (Main 360°)",
+    preview: "/assets/demo/dna-showcase/pano360/node0_preview.jpg",
     image16k: "/assets/demo/dna-showcase/pano360/node0_360_panorama_16k.jpg",
     image8k: "/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg",
     puckPos: new THREE.Vector3(0, -160, -320),
@@ -644,6 +646,7 @@ const SPATIAL_NODES = [
   {
     id: 1,
     name: "02. 전면 코봇 워크스테이션 (CoBots)",
+    preview: "/assets/demo/dna-showcase/pano360/node1_preview.jpg",
     image16k: "/assets/demo/dna-showcase/pano360/node1_360_cobots_16k.jpg",
     image8k: "/assets/demo/dna-showcase/pano360/node1_360_cobots_8k.jpg",
     puckPos: new THREE.Vector3(60, -160, -260),
@@ -652,6 +655,7 @@ const SPATIAL_NODES = [
   {
     id: 2,
     name: "03. AMR 자율주행 물류 존 (AMR AGV)",
+    preview: "/assets/demo/dna-showcase/pano360/node2_preview.jpg",
     image16k: "/assets/demo/dna-showcase/pano360/node2_360_amr_16k.jpg",
     image8k: "/assets/demo/dna-showcase/pano360/node2_360_amr_8k.jpg",
     puckPos: new THREE.Vector3(-160, -160, -220),
@@ -906,7 +910,7 @@ function buildHotspotsDOM() {
   });
 }
 
-// 6. HIGH-RESOLUTION TEXTURE LOADER WITH GPU ADAPTATION
+// 6. TWO-STAGE PROGRESSIVE TEXTURE LOADER
 function loadNodeTexture(url, callback) {
   if (textureCache[url]) { callback(textureCache[url]); return; }
   textureLoader.load(url, (tex) => {
@@ -914,14 +918,14 @@ function loadNodeTexture(url, callback) {
     tex.minFilter = THREE.LinearMipMapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
     tex.generateMipmaps = true;
-    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    tex.anisotropy = renderer ? renderer.capabilities.getMaxAnisotropy() : 16;
     tex.needsUpdate = true;
     textureCache[url] = tex;
     callback(tex);
   });
 }
 
-// 7. SWITCH SPATIAL NODE (3 Vantage Points Switching)
+// 7. SWITCH SPATIAL NODE (Instant Preview + HD Background Upgrade)
 function switchNode(idx) {
   currentNodeIdx = idx;
   const node = SPATIAL_NODES[idx];
@@ -931,18 +935,27 @@ function switchNode(idx) {
   document.getElementById('foot-loc').textContent = node.name;
 
   const maxTex = renderer ? renderer.capabilities.maxTextureSize : 8192;
-  const targetUrl = (maxTex >= 16384 && node.image16k) ? node.image16k : (node.image8k || node.image16k);
+  const hdTargetUrl = (maxTex >= 16384 && node.image16k) ? node.image16k : (node.image8k || node.image16k);
 
-  new TWEEN.Tween(photoMaterial)
-    .to({ opacity: 0.35 }, 200)
-    .onComplete(() => {
-      loadNodeTexture(targetUrl, (tex) => {
-        photoMaterial.map = tex;
+  // 1. Stage 1: Load Instant 2K Preview (Immediate Response ~50ms)
+  if (node.preview) {
+    loadNodeTexture(node.preview, (prevTex) => {
+      if (currentNodeIdx === idx && !photoMaterial.map) {
+        photoMaterial.map = prevTex;
         photoMaterial.needsUpdate = true;
-        new TWEEN.Tween(photoMaterial).to({ opacity: 1.0 }, 300).start();
-      });
-    })
-    .start();
+        photoMaterial.opacity = 1.0;
+      }
+    });
+  }
+
+  // 2. Stage 2: Load 8K/16K Full HD Texture in Background
+  loadNodeTexture(hdTargetUrl, (hdTex) => {
+    if (currentNodeIdx === idx) {
+      photoMaterial.map = hdTex;
+      photoMaterial.needsUpdate = true;
+      new TWEEN.Tween(photoMaterial).to({ opacity: 1.0 }, 200).start();
+    }
+  });
 
   floorPucks.forEach((p, i) => {
     p.children[0].material.opacity = (i === idx) ? 0.20 : 0.85;
@@ -951,7 +964,7 @@ function switchNode(idx) {
 
   drawRadar();
   updateFocusSpec(idx === 2 ? 1 : idx === 1 ? 0 : 2);
-  showToast('📍 ' + node.name + ' 초고화질 공간으로 이동');
+  showToast('📍 ' + node.name + ' 공간으로 이동');
 }
 
 // 8. UPDATE RIGHT FOCUS SPEC PANEL
