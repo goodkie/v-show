@@ -844,6 +844,14 @@ function initThree() {
     if (n.image8k) loadNodeTexture(n.image8k);
   });
 
+  // Preload product hero images
+  PRODUCTS_DATA.forEach(p => {
+    if (p.image) {
+      const im = new Image();
+      im.src = p.image;
+    }
+  });
+
   switchNode(0);
 }
 
