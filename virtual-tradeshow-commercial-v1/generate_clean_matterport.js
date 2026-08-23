@@ -1,4 +1,4 @@
-// generate_clean_matterport.js — Matterport 16K/8K Ultra-HD 360° Studio with Product Floating Details & Mobile Landscape (v6.5)
+// generate_clean_matterport.js — Matterport 16K/8K Ultra-HD 360° Studio with Uploaded Real Booth Panoramas (v6.6)
 const fs = require('fs');
 const path = require('path');
 
@@ -350,7 +350,6 @@ html, body {
   #portrait-tip-bar { display: none !important; }
   #mobile-portrait-bar { display: none !important; }
   
-  /* Topbar shrinks into ultra-compact HUD bar */
   #topbar {
     height: 38px; padding: 0 12px;
     background: rgba(7, 14, 27, 0.90);
@@ -359,7 +358,6 @@ html, body {
   .brand-badge { display: none; }
   .btn-ui { padding: 4px 8px; font-size: 10.5px; }
 
-  /* 3D Player fills entire center workspace */
   #studio-workspace {
     display: block; position: relative; padding: 0; margin: 0; width: 100%; height: calc(100vh - 72px);
   }
@@ -436,20 +434,20 @@ html, body {
     <aside class="side-panel">
       <div>
         <div class="panel-head">SPATIAL VANTAGE POINTS</div>
-        <div class="panel-sub">3개 원본 실사 거점 이동</div>
+        <div class="panel-sub">업로드 실사 3대 시점 전환</div>
       </div>
       <div class="node-list">
         <button class="node-btn active" id="nb-0" onclick="switchNode(0)">
-          <span>📷 01. 부스 메인 360°</span>
-          <span class="node-meta">16K RAW</span>
+          <span>📷 01. 부스 메인 중앙 전경</span>
+          <span class="node-meta">8K/16K</span>
         </button>
         <button class="node-btn" id="nb-1" onclick="switchNode(1)">
-          <span>🤖 02. 코봇 워크스테이션</span>
-          <span class="node-meta">16K RAW</span>
+          <span>🤖 02. 부스 좌측 전경</span>
+          <span class="node-meta">8K/16K</span>
         </button>
         <button class="node-btn" id="nb-2" onclick="switchNode(2)">
-          <span>🚛 03. AMR 자율주행 물류</span>
-          <span class="node-meta">16K RAW</span>
+          <span>🚛 03. 부스 우측 전경</span>
+          <span class="node-meta">8K/16K</span>
         </button>
       </div>
 
@@ -457,7 +455,7 @@ html, body {
       <div class="radar-box">
         <div class="radar-header">
           <span>BOOTH RADAR</span>
-          <span id="radar-loc-txt">01. MAIN 360°</span>
+          <span id="radar-loc-txt">01. MIDDLE VIEW</span>
         </div>
         <canvas id="radar-canvas" width="244" height="85"></canvas>
       </div>
@@ -469,15 +467,15 @@ html, body {
         <canvas id="three-canvas"></canvas>
         <!-- 3D Hotspot Tags Overlay (From 3D Showroom) -->
         <div id="hotspot-layer"></div>
-        <div class="player-tag">🔄 360° 인터랙티브 3D 플레이어</div>
-        <div class="res-pill" id="res-indicator">16384 × 8192 UHD</div>
+        <div class="player-tag">🔄 360° 실사 인터랙티브 투어</div>
+        <div class="res-pill" id="res-indicator">8192 × 4096 UHD (REAL BOOTH)</div>
       </div>
 
       <!-- Mobile Portrait Fallback Node Switcher -->
       <div id="mobile-portrait-bar">
-        <button class="node-btn active" id="mpb-0" onclick="switchNode(0)">📷 01. 부스 전경</button>
-        <button class="node-btn" id="mpb-1" onclick="switchNode(1)">🤖 02. 코봇</button>
-        <button class="node-btn" id="mpb-2" onclick="switchNode(2)">🚛 03. AMR</button>
+        <button class="node-btn active" id="mpb-0" onclick="switchNode(0)">📷 01. 중앙</button>
+        <button class="node-btn" id="mpb-1" onclick="switchNode(1)">🤖 02. 좌측</button>
+        <button class="node-btn" id="mpb-2" onclick="switchNode(2)">🚛 03. 우측</button>
       </div>
     </section>
 
@@ -526,7 +524,7 @@ html, body {
     <div class="foot-info">
       <span>엔진: <strong>Three.js WebGL 16K HDR</strong></span>
       <span>필터링: <strong>16x Anisotropic + Trilinear Mipmap</strong></span>
-      <span>현재 위치: <strong id="foot-loc">01. 부스 메인 360°</strong></span>
+      <span>현재 위치: <strong id="foot-loc">01. 부스 메인 중앙 전경</strong></span>
     </div>
     <div class="foot-actions">
       <button class="btn-ui" id="btn-autotour" onclick="toggleAutoTour()">
@@ -590,33 +588,33 @@ html, body {
   <div class="modal-box">
     <button class="modal-close" onclick="closeDownloadModal()">✕</button>
     <div style="font-size:10px;font-weight:800;color:var(--cyan);letter-spacing:1px;text-transform:uppercase;">16K ULTRA-HD ORIGINAL ASSETS</div>
-    <h2 style="font-size:18px;font-weight:800;color:#fff;margin:6px 0 6px;">📸 16K 초고화질 원본 사진 다운로드</h2>
+    <h2 style="font-size:18px;font-weight:800;color:#fff;margin:6px 0 6px;">📸 초고화질 부스 원본 사진 다운로드</h2>
     <p style="font-size:11px;color:var(--text-muted);line-height:1.5;margin-bottom:14px;">
-      스튜디오 뷰어에 사용된 16K(16384×8192) 및 8K(8192×4096) 초고해상도 Equirectangular 실사 원본 이미지입니다.
+      스튜디오 뷰어에 사용된 8K(8192×4096) 및 16K 초고해상도 실사 원본 이미지입니다.
     </p>
 
     <div class="dl-card">
       <div class="dl-info">
-        <div class="dl-title">01. 부스 메인 360° 전경 (Main 360°)</div>
-        <div class="dl-meta">16K Equirectangular JPG (16384x8192) · 8.4 MB</div>
+        <div class="dl-title">01. 부스 메인 중앙 전경 (Middle Center)</div>
+        <div class="dl-meta">Ultra-HD Equirectangular JPG (8192x4096)</div>
       </div>
-      <a href="/assets/demo/dna-showcase/pano360/node0_360_panorama_16k.jpg" download="DN_a_Booth_Main_360_16K.jpg" class="dl-btn">⬇ 16K 받기</a>
+      <a href="/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg" download="DN_a_Booth_Middle_Center_8K.jpg" class="dl-btn">⬇ 다운로드</a>
     </div>
 
     <div class="dl-card">
       <div class="dl-info">
-        <div class="dl-title">02. 전면 코봇 워크스테이션 (CoBots)</div>
-        <div class="dl-meta">16K Equirectangular JPG (16384x8192) · 8.2 MB</div>
+        <div class="dl-title">02. 부스 좌측 전경 (Left Wing)</div>
+        <div class="dl-meta">Ultra-HD Equirectangular JPG (8192x4096)</div>
       </div>
-      <a href="/assets/demo/dna-showcase/pano360/node1_360_cobots_16k.jpg" download="DN_a_CoBots_Workstation_360_16K.jpg" class="dl-btn">⬇ 16K 받기</a>
+      <a href="/assets/demo/dna-showcase/pano360/node1_360_panorama_8k.jpg" download="DN_a_Booth_Left_Wing_8K.jpg" class="dl-btn">⬇ 다운로드</a>
     </div>
 
     <div class="dl-card">
       <div class="dl-info">
-        <div class="dl-title">03. AMR 자율주행 물류 존 (AMR AGV)</div>
-        <div class="dl-meta">16K Equirectangular JPG (16384x8192) · 8.8 MB</div>
+        <div class="dl-title">03. 부스 우측 전경 (Right Wing)</div>
+        <div class="dl-meta">Ultra-HD Equirectangular JPG (8192x4096)</div>
       </div>
-      <a href="/assets/demo/dna-showcase/pano360/node2_360_amr_16k.jpg" download="DN_a_AMR_Zone_360_16K.jpg" class="dl-btn">⬇ 16K 받기</a>
+      <a href="/assets/demo/dna-showcase/pano360/node2_360_panorama_8k.jpg" download="DN_a_Booth_Right_Wing_8K.jpg" class="dl-btn">⬇ 다운로드</a>
     </div>
 
     <div style="display:flex;gap:10px;margin-top:14px;">
@@ -630,53 +628,53 @@ html, body {
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   MATTERPORT 16K ULTRA-HD 360° STUDIO ENGINE (v6.5)
+   MATTERPORT ULTRA-HD 360° REAL BOOTH STUDIO ENGINE (v6.6)
+   - Real Uploaded Booth Panoramas (Middle, Left, Right)
    - Two-Stage Instant Progressive Texture Loader (0.05s response)
    - 3D Floating Product Hotspots & Slide-in Inspection Drawer
    - Mobile Landscape First UX (All buttons inside screen)
-   - 16K AI Super-Resolution Photoreal Textures with GPU Fallback
-   - Subpixel Precise 3D Navigation & Floor Rings
+   - 16x Anisotropic WebGL Filtering (Zero Pixelation)
 ═══════════════════════════════════════════════════════════ */
 
-// 1. SPATIAL NODES (3 Vantage Points with Instant Previews)
+// 1. SPATIAL NODES (Uploaded Real Booth Panoramas)
 const SPATIAL_NODES = [
   {
     id: 0,
-    name: "01. 부스 메인 360° (Main 360°)",
+    name: "01. 부스 메인 중앙 전경 (Middle Center)",
     preview: "/assets/demo/dna-showcase/pano360/node0_preview.jpg",
-    image16k: "/assets/demo/dna-showcase/pano360/node0_360_panorama_16k.jpg",
     image8k: "/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg",
+    image16k: "/assets/demo/dna-showcase/pano360/node0_360_panorama_16k.jpg",
     puckPos: new THREE.Vector3(0, -160, -320),
     radarPos: { x: 122, y: 70 }
   },
   {
     id: 1,
-    name: "02. 전면 코봇 워크스테이션 (CoBots)",
+    name: "02. 부스 좌측 전경 (Left Wing)",
     preview: "/assets/demo/dna-showcase/pano360/node1_preview.jpg",
-    image16k: "/assets/demo/dna-showcase/pano360/node1_360_cobots_16k.jpg",
-    image8k: "/assets/demo/dna-showcase/pano360/node1_360_cobots_8k.jpg",
-    puckPos: new THREE.Vector3(60, -160, -260),
-    radarPos: { x: 122, y: 44 }
+    image8k: "/assets/demo/dna-showcase/pano360/node1_360_panorama_8k.jpg",
+    image16k: "/assets/demo/dna-showcase/pano360/node1_360_panorama_16k.jpg",
+    puckPos: new THREE.Vector3(-150, -160, -250),
+    radarPos: { x: 68, y: 56 }
   },
   {
     id: 2,
-    name: "03. AMR 자율주행 물류 존 (AMR AGV)",
+    name: "03. 부스 우측 전경 (Right Wing)",
     preview: "/assets/demo/dna-showcase/pano360/node2_preview.jpg",
-    image16k: "/assets/demo/dna-showcase/pano360/node2_360_amr_16k.jpg",
-    image8k: "/assets/demo/dna-showcase/pano360/node2_360_amr_8k.jpg",
-    puckPos: new THREE.Vector3(-160, -160, -220),
-    radarPos: { x: 68, y: 56 }
+    image8k: "/assets/demo/dna-showcase/pano360/node2_360_panorama_8k.jpg",
+    image16k: "/assets/demo/dna-showcase/pano360/node2_360_panorama_16k.jpg",
+    puckPos: new THREE.Vector3(150, -160, -250),
+    radarPos: { x: 176, y: 56 }
   }
 ];
 
-// 2. PRODUCTS & 3D FLOATING HOTSPOTS (Matching 3D Showroom Database)
+// 2. PRODUCTS & 3D FLOATING HOTSPOTS (Calibrated to Real Uploaded Photos)
 const PRODUCTS_DATA = [
   {
     id: 'PROD-01-COBOT',
     name: 'Apex Cobot X16',
     model: 'APX-CB-16',
     category: 'Collaborative Robotics',
-    worldPos: new THREE.Vector3(0, -85, -380),
+    worldPos: new THREE.Vector3(0, -75, -380),
     desc: '중앙 원형 전시대 6축 정밀 협동로봇 — ±0.025mm 반복 정밀도, 내장 토크 센서 기반 협업 안전 인증.',
     specs: [
       ['가반하중', '16.0 kg Payload'],
@@ -697,7 +695,7 @@ const PRODUCTS_DATA = [
     name: 'Vector AMR 600',
     model: 'VCT-AMR-600',
     category: 'Autonomous Intralogistics',
-    worldPos: new THREE.Vector3(-220, -135, -280),
+    worldPos: new THREE.Vector3(-240, -135, -280),
     desc: 'Laser SLAM 자율주행 물류 로봇 — 최대 600kg 적재, 듀얼 360° LiDAR 동적 장애물 회피 및 자동 도킹 충전.',
     specs: [
       ['적재중량', '600 kg Deck Payload'],
@@ -718,7 +716,7 @@ const PRODUCTS_DATA = [
     name: 'DN\\\'a Vision Telemetry LED 월',
     model: 'DN-LED-6034',
     category: 'Smart Control Center',
-    worldPos: new THREE.Vector3(0, 55, -400),
+    worldPos: new THREE.Vector3(0, 50, -400),
     desc: '부스 중앙 커브드 4K 비디오 파사드 & 로봇 군집 실시간 디지털 트윈 관제 센터.',
     specs: [
       ['디스플레이', 'Seamless Curved Micro-LED'],
@@ -739,7 +737,7 @@ const PRODUCTS_DATA = [
     name: 'AI · Automation Media Wall',
     model: 'DN-MW-4K',
     category: 'Industrial Metrology & UI',
-    worldPos: new THREE.Vector3(-310, 45, -240),
+    worldPos: new THREE.Vector3(-310, 40, -240),
     desc: '인라인 3D 광학 검사 및 스마트 팩토리 실시간 분석 미디어 월.',
     specs: [
       ['패널규격', '16:9 Ultra-Narrow Bezel'],
@@ -793,11 +791,9 @@ function initThree() {
   const width = rect.width || container.clientWidth || 800;
   const height = rect.height || container.clientHeight || 500;
 
-  // Natural 70° FOV Camera
   camera = new THREE.PerspectiveCamera(70, width / height, 0.01, 2000);
   camera.position.set(0, 0, 0.01);
 
-  // Full DPR High-End WebGL Renderer
   renderer = new THREE.WebGLRenderer({
     canvas: canvas,
     antialias: true,
@@ -810,13 +806,6 @@ function initThree() {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.08;
 
-  const maxTex = renderer.capabilities.maxTextureSize || 8192;
-  const resPill = document.getElementById('res-indicator');
-  if (resPill) {
-    resPill.textContent = maxTex >= 16384 ? '16384 × 8192 UHD' : '8192 × 4096 UHD (MAX GPU)';
-  }
-
-  // 360° Free Look OrbitControls
   controls = new THREE.OrbitControls(camera, canvas);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
@@ -825,11 +814,11 @@ function initThree() {
   controls.maxDistance = 0.05;
   controls.enablePan = false;
   controls.target.set(0, 0, 0);
-  controls.maxPolarAngle = Math.PI * 0.88; // 158° floor look
-  controls.minPolarAngle = Math.PI * 0.12; // 22° ceiling look
+  controls.maxPolarAngle = Math.PI * 0.88;
+  controls.minPolarAngle = Math.PI * 0.12;
   controls.rotateSpeed = -0.42;
 
-  // ── TRUE 360° EQUIRECTANGULAR SPHERE (Radius 500) ──
+  // ── TRUE 360° EQUIRECTANGULAR SPHERE ──
   const sphereGeo = new THREE.SphereGeometry(500, 128, 64);
   sphereGeo.scale(-1, 1, 1);
 
@@ -840,7 +829,7 @@ function initThree() {
     depthWrite: false
   });
   photoSphere = new THREE.Mesh(sphereGeo, photoMaterial);
-  photoSphere.rotation.y = -Math.PI * 0.5; // Align booth center straight ahead
+  photoSphere.rotation.y = -Math.PI * 0.5;
   photoSphere.position.set(0, 0, 0);
   photoSphere.renderOrder = -1;
   scene.add(photoSphere);
@@ -854,7 +843,7 @@ function initThree() {
   switchNode(0);
 }
 
-// 4. FLOOR PUCKS (Glowing 360 Navigation Rings on Floor)
+// 4. FLOOR PUCKS
 function buildFloorPucks() {
   SPATIAL_NODES.forEach((node, idx) => {
     const g = new THREE.Group();
@@ -895,7 +884,7 @@ function buildFloorPucks() {
   });
 }
 
-// 5. 3D FLOATING PRODUCT HOTSPOTS (Directly matching 3D Showroom UI)
+// 5. 3D FLOATING HOTSPOTS
 function buildHotspotsDOM() {
   const layer = document.getElementById('hotspot-layer');
   layer.innerHTML = '';
@@ -916,7 +905,7 @@ function buildHotspotsDOM() {
   });
 }
 
-// 6. TWO-STAGE PROGRESSIVE TEXTURE LOADER
+// 6. TWO-STAGE PROGRESSIVE TEXTURE LOADER WITH MAXIMUM ANISOTROPY
 function loadNodeTexture(url, callback) {
   if (textureCache[url]) { callback(textureCache[url]); return; }
   textureLoader.load(url, (tex) => {
@@ -931,7 +920,7 @@ function loadNodeTexture(url, callback) {
   });
 }
 
-// 7. SWITCH SPATIAL NODE (Instant Preview + HD Background Upgrade)
+// 7. SWITCH SPATIAL NODE
 function switchNode(idx) {
   currentNodeIdx = idx;
   const node = SPATIAL_NODES[idx];
@@ -943,7 +932,7 @@ function switchNode(idx) {
   const maxTex = renderer ? renderer.capabilities.maxTextureSize : 8192;
   const hdTargetUrl = (maxTex >= 16384 && node.image16k) ? node.image16k : (node.image8k || node.image16k);
 
-  // 1. Stage 1: Load Instant 2K Preview (Immediate Response ~50ms)
+  // 1. Immediate 2K preview (~50ms)
   if (node.preview) {
     loadNodeTexture(node.preview, (prevTex) => {
       if (currentNodeIdx === idx && !photoMaterial.map) {
@@ -954,7 +943,7 @@ function switchNode(idx) {
     });
   }
 
-  // 2. Stage 2: Load 8K/16K Full HD Texture in Background
+  // 2. Background HD update (seamless crossfade)
   loadNodeTexture(hdTargetUrl, (hdTex) => {
     if (currentNodeIdx === idx) {
       photoMaterial.map = hdTex;
@@ -969,11 +958,11 @@ function switchNode(idx) {
   });
 
   drawRadar();
-  updateFocusSpec(idx === 2 ? 1 : idx === 1 ? 0 : 2);
+  updateFocusSpec(idx === 2 ? 0 : idx === 1 ? 1 : 2);
   showToast('📍 ' + node.name + ' 공간으로 이동');
 }
 
-// 8. UPDATE RIGHT FOCUS SPEC PANEL
+// 8. UPDATE FOCUS SPEC PANEL
 function updateFocusSpec(idx) {
   currentSelectedProdIdx = idx;
   const p = PRODUCTS_DATA[idx];
@@ -985,7 +974,7 @@ function updateFocusSpec(idx) {
   ).join('');
 }
 
-// 9. OPEN PRODUCT INSPECTION DRAWER (Full Detail View from 3D Showroom)
+// 9. PRODUCT INSPECTION DRAWER
 function openProductDrawer(idx) {
   currentSelectedProdIdx = idx;
   const p = PRODUCTS_DATA[idx];
@@ -1030,7 +1019,7 @@ function setMode(mode) {
     photoMaterial.opacity = 1.0;
     controls.maxPolarAngle = Math.PI * 0.88;
     controls.minPolarAngle = Math.PI * 0.12;
-    showToast('📸 16K 초고화질 360° 실사 파노라마 모드');
+    showToast('📸 8K/16K 실사 파노라마 모드');
   } else if (mode === 'dollhouse') {
     showToast('🏠 3D 입체 투어 모드');
   } else if (mode === 'floor') {
@@ -1058,7 +1047,7 @@ function toggleAutoTour() {
   }
 }
 
-// 12. RADAR MINIMAP (Outside Player)
+// 12. RADAR MINIMAP
 function drawRadar() {
   const cvs = document.getElementById('radar-canvas');
   if (!cvs) return;
@@ -1088,7 +1077,7 @@ function drawRadar() {
   ctx.fill();
 }
 
-// 13. HOTSPOT SCREEN PROJECTION (Mapped Precisely to Player Viewport)
+// 13. HOTSPOT SCREEN PROJECTION
 function updateHotspots() {
   const camDir = new THREE.Vector3();
   camera.getWorldDirection(camDir);
@@ -1124,17 +1113,17 @@ function downloadAllPhotos() {
   SPATIAL_NODES.forEach((n, idx) => {
     setTimeout(() => {
       const a = document.createElement('a');
-      a.href = n.image16k;
-      a.download = 'DN_a_360_Node_' + idx + '_16K.jpg';
+      a.href = n.image8k;
+      a.download = 'DN_a_Booth_View_' + idx + '_8K.jpg';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
     }, idx * 600);
   });
-  showToast('📥 16K 초고화질 원본 사진 3종 다운로드가 시작되었습니다.');
+  showToast('📥 초고화질 원본 사진 3종 다운로드가 시작되었습니다.');
 }
 
-function openRFQ() { window.open('mailto:sales@dna-robotic.com?subject=RFQ%20from%20Matterport%2016K%20Studio'); }
+function openRFQ() { window.open('mailto:sales@dna-robotic.com?subject=RFQ%20from%20Matterport%20Real%20Booth%20Studio'); }
 function toggleFullscreen() {
   if (!document.fullscreenElement) document.documentElement.requestFullscreen();
   else document.exitFullscreen();
@@ -1171,4 +1160,4 @@ document.addEventListener('DOMContentLoaded', initThree);
 </html>`;
 
 fs.writeFileSync(outPath, html, { encoding: 'utf8' });
-console.log('Written demo-matterport.html v6.5 Studio! Size:', fs.statSync(outPath).size);
+console.log('Written demo-matterport.html v6.6 Studio! Size:', fs.statSync(outPath).size);
