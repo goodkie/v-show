@@ -47,22 +47,7 @@ html, body {
   display: block; z-index: 1;
 }
 
-/* Photographic Backdrop Layer */
-#photo-backdrop {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  z-index: 0;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), filter 0.5s ease;
-  transform-origin: center center;
-}
-#photo-backdrop.dollhouse-mode {
-  opacity: 0.15;
-  filter: blur(12px) brightness(0.4);
-  transform: scale(0.9);
-}
+
 
 /* ══════════════════════════════════════════════
    TOP NAVIGATION BAR
@@ -303,9 +288,6 @@ html, body {
 </head>
 <body>
 
-<!-- Photographic Backdrop Layer (Real 100% Photos) -->
-<div id="photo-backdrop"></div>
-
 <!-- 3D WebGL Canvas Layer (Three.js Spatial Graph, Pucks, Mattertags) -->
 <div id="viewer-container">
   <canvas id="three-canvas"></canvas>
@@ -530,6 +512,9 @@ let currentNodeIdx = 0;
 let currentMode = 'tour'; // 'tour' | 'dollhouse' | 'floor'
 let scene, camera, renderer, controls;
 let floorPucks = [];
+let photoSphere, photoMaterial;
+let textureLoader;
+let textureCache = {};
 let autoTourActive = false, autoTourTimer = null;
 
 // ── 3. THREE.JS SPATIAL SCENE INITIALIZATION ──
@@ -538,21 +523,33 @@ function initThree() {
   const canvas = document.getElementById('three-canvas');
 
   scene = new THREE.Scene();
+  textureLoader = new THREE.TextureLoader();
   
-  camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 200);
+  camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 300);
   camera.position.set(0, 1.6, -7.0);
 
-  renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+  renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: false, antialias: true, powerPreference: 'high-performance' });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
+  // Orbit / Panorama Look Controls
   controls = new THREE.OrbitControls(camera, canvas);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.08;
+  controls.dampingFactor = 0.06;
   controls.target.set(0, 1.5, 2.0);
-  controls.minDistance = 0.5;
-  controls.maxDistance = 35;
-  controls.maxPolarAngle = Math.PI * 0.88;
+  controls.minDistance = 0.1;
+  controls.maxDistance = 60;
+  controls.maxPolarAngle = Math.PI * 0.92;
+  controls.minPolarAngle = Math.PI * 0.08;
+  controls.rotateSpeed = -0.55; // Natural panoramic drag
+
+  // ── 3D PHOTOGRAPHIC PANORAMA SPHERE (True 3D Spatial Projection) ──
+  const sphereGeo = new THREE.SphereGeometry(65, 64, 32);
+  sphereGeo.scale(-1, 1, 1); // Inward facing
+  photoMaterial = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, transparent: true, opacity: 1.0 });
+  photoSphere = new THREE.Mesh(sphereGeo, photoMaterial);
+  photoSphere.position.set(0, 1.6, -7.0);
+  scene.add(photoSphere);
 
   // Build 3D Floor Pucks (Matterport-style navigation rings)
   buildFloorPucks();
@@ -577,14 +574,14 @@ function buildFloorPucks() {
     puckGroup.position.set(node.floorPos.x, 0.02, node.floorPos.z);
 
     // Outer Ring
-    const ringGeo = new THREE.RingGeometry(0.35, 0.45, 32);
+    const ringGeo = new THREE.RingGeometry(0.45, 0.6, 32);
     const ringMat = new THREE.MeshBasicMaterial({ color: 0x00c2ff, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
     const ring = new THREE.Mesh(ringGeo, ringMat);
     ring.rotation.x = -Math.PI * 0.5;
     puckGroup.add(ring);
 
     // Inner Disc
-    const discGeo = new THREE.CircleGeometry(0.25, 24);
+    const discGeo = new THREE.CircleGeometry(0.35, 24);
     const discMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
     const disc = new THREE.Mesh(discGeo, discMat);
     disc.rotation.x = -Math.PI * 0.5;
@@ -621,16 +618,21 @@ function buildDollhouseMesh() {
   dollhouseGroup = new THREE.Group();
 
   // Booth Perimeter
-  const floorMat = new THREE.MeshBasicMaterial({ color: 0x0284c7, transparent: true, opacity: 0.12, side: THREE.DoubleSide });
-  const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), floorMat);
+  const floorMat = new THREE.MeshBasicMaterial({ color: 0x0284c7, transparent: true, opacity: 0.18, side: THREE.DoubleSide });
+  const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(16, 16), floorMat);
   floorMesh.rotation.x = -Math.PI * 0.5;
   floorMesh.position.set(0, 0, 1.5);
   dollhouseGroup.add(floorMesh);
 
   // Booth Grid Box Lines
-  const gridHelper = new THREE.GridHelper(14, 14, 0x00c2ff, 0x1e293b);
+  const gridHelper = new THREE.GridHelper(16, 16, 0x00c2ff, 0x1e293b);
   gridHelper.position.set(0, 0.01, 1.5);
   dollhouseGroup.add(gridHelper);
+
+  // 3D Canopy Boundary Wireframe
+  const canopyBox = new THREE.BoxHelper(new THREE.Mesh(new THREE.BoxGeometry(14, 5, 14)), 0x00c2ff);
+  canopyBox.position.set(0, 2.5, 1.5);
+  dollhouseGroup.add(canopyBox);
 
   dollhouseGroup.visible = false;
   scene.add(dollhouseGroup);
@@ -658,7 +660,20 @@ function buildMattertagsDOM() {
   });
 }
 
-// ── 7. SPATIAL NODE TRANSITION (Matterport Fly-in) ──
+// ── 7. SPATIAL NODE TRANSITION (Matterport 3D Dolly & Texture Swap) ──
+function loadNodeTexture(url, callback) {
+  if (textureCache[url]) {
+    callback(textureCache[url]);
+    return;
+  }
+  textureLoader.load(url, (tex) => {
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.repeat.x = -1; // Correct panoramic orientation
+    textureCache[url] = tex;
+    callback(tex);
+  });
+}
+
 function switchNode(idx) {
   currentNodeIdx = idx;
   const node = SPATIAL_NODES[idx];
@@ -667,19 +682,19 @@ function switchNode(idx) {
   document.querySelectorAll('.node-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
   document.getElementById('radar-loc-txt').textContent = node.name.toUpperCase();
 
-  // Crossfade Photo Backdrop
-  const backdrop = document.getElementById('photo-backdrop');
-  backdrop.style.opacity = '0.3';
-  backdrop.style.transform = 'scale(1.05)';
-  
-  setTimeout(() => {
-    backdrop.style.backgroundImage = `url("${node.image}")`;
-    backdrop.style.opacity = currentMode === 'dollhouse' ? '0.15' : '1';
-    backdrop.style.transform = currentMode === 'dollhouse' ? 'scale(0.9)' : 'scale(1.0)';
-  }, 250);
+  // Load Real Photograph onto 3D Panorama Sphere
+  loadNodeTexture(node.image, (tex) => {
+    photoMaterial.map = tex;
+    photoMaterial.needsUpdate = true;
+  });
 
-  // Smooth Camera Fly-To Interpolation
+  // Move 3D Panorama Sphere & Camera to New Spatial Coordinates
   if (currentMode === 'tour') {
+    new TWEEN.Tween(photoSphere.position)
+      .to({ x: node.floorPos.x, y: 1.6, z: node.floorPos.z }, 900)
+      .easing(TWEEN.Easing.Cubic.Out)
+      .start();
+
     new TWEEN.Tween(camera.position)
       .to({ x: node.floorPos.x, y: 1.6, z: node.floorPos.z }, 900)
       .easing(TWEEN.Easing.Cubic.Out)
@@ -694,12 +709,12 @@ function switchNode(idx) {
   // Update Floor Puck Opacities
   floorPucks.forEach((puck, i) => {
     const isCurrent = (i === idx);
-    puck.children[0].material.opacity = isCurrent ? 0.3 : 0.85;
-    puck.children[1].material.opacity = isCurrent ? 0.4 : 0.9;
+    puck.children[0].material.opacity = isCurrent ? 0.25 : 0.85;
+    puck.children[1].material.opacity = isCurrent ? 0.35 : 0.9;
   });
 
   drawRadar();
-  showToast(`📍 ${node.name} 시점으로 이동했습니다.`);
+  showToast(`📍 ${node.name} 실사 공간으로 이동했습니다.`);
 }
 
 // ── 8. VIEW MODE CONTROLLER ──
@@ -709,25 +724,31 @@ function setMode(mode) {
   document.getElementById('btn-mode-dollhouse').classList.toggle('active', mode === 'dollhouse');
   document.getElementById('btn-mode-floor').classList.toggle('active', mode === 'floor');
 
-  const backdrop = document.getElementById('photo-backdrop');
-
   if (mode === 'tour') {
     dollhouseGroup.visible = false;
-    backdrop.classList.remove('dollhouse-mode');
+    if (photoSphere) {
+      photoSphere.visible = true;
+      photoMaterial.opacity = 1.0;
+    }
     const node = SPATIAL_NODES[currentNodeIdx];
     new TWEEN.Tween(camera.position).to({ x: node.floorPos.x, y: 1.6, z: node.floorPos.z }, 1000).easing(TWEEN.Easing.Cubic.Out).start();
     new TWEEN.Tween(controls.target).to({ x: node.camLook.x, y: node.camLook.y, z: node.camLook.z }, 1000).easing(TWEEN.Easing.Cubic.Out).start();
-    showToast('📸 100% 실사 사진 공간 투어 모드');
+    showToast('📸 100% 실사 360° 파노라마 3D 공간 투어');
   } else if (mode === 'dollhouse') {
     dollhouseGroup.visible = true;
-    backdrop.classList.add('dollhouse-mode');
-    new TWEEN.Tween(camera.position).to({ x: 0, y: 12.0, z: -14.0 }, 1000).easing(TWEEN.Easing.Cubic.Out).start();
+    if (photoSphere) {
+      photoSphere.visible = true;
+      photoMaterial.opacity = 0.15;
+    }
+    new TWEEN.Tween(camera.position).to({ x: 0, y: 14.0, z: -16.0 }, 1000).easing(TWEEN.Easing.Cubic.Out).start();
     new TWEEN.Tween(controls.target).to({ x: 0, y: 0.5, z: 1.5 }, 1000).easing(TWEEN.Easing.Cubic.Out).start();
     showToast('🏠 3D Dollhouse 입체 투시도 모드 (바닥 링을 클릭해 실사 공간으로 진입)');
   } else if (mode === 'floor') {
     dollhouseGroup.visible = true;
-    backdrop.classList.add('dollhouse-mode');
-    new TWEEN.Tween(camera.position).to({ x: 0, y: 18.0, z: 1.51 }, 1000).easing(TWEEN.Easing.Cubic.Out).start();
+    if (photoSphere) {
+      photoSphere.visible = false;
+    }
+    new TWEEN.Tween(camera.position).to({ x: 0, y: 20.0, z: 1.51 }, 1000).easing(TWEEN.Easing.Cubic.Out).start();
     new TWEEN.Tween(controls.target).to({ x: 0, y: 0, z: 1.5 }, 1000).easing(TWEEN.Easing.Cubic.Out).start();
     showToast('🗺️ 2D 부스 평면도 모드');
   }
