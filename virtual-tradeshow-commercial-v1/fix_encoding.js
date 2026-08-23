@@ -1,4 +1,10 @@
-<!DOCTYPE html>
+// fix_encoding.js — Write demo-matterport.html with correct UTF-8 BOM-free encoding
+const fs = require('fs');
+const path = require('path');
+
+const outPath = path.join('E:/vivpr/ai/v-show/virtual-tradeshow-commercial-v1/app_build/client/demo-matterport.html');
+
+const html = `<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -7,9 +13,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <!-- Three.js & OrbitControls -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"><\/script>
 
 <style>
 :root {
@@ -583,6 +589,10 @@ function onResize() {
 }
 
 document.addEventListener('DOMContentLoaded', initThree);
-</script>
+<\/script>
 </body>
-</html>
+</html>`;
+
+fs.writeFileSync(outPath, html, { encoding: 'utf8' });
+console.log('Written: ' + outPath);
+console.log('Size: ' + fs.statSync(outPath).size + ' bytes');
