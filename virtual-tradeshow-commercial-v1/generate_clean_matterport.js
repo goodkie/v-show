@@ -1,4 +1,4 @@
-// generate_clean_matterport.js — Ultra-sharp 8K AI Matterport Virtual Tour
+// generate_clean_matterport.js — Ultra-sharp 8K AI Matterport Virtual Tour v4.3
 const fs = require('fs');
 const path = require('path');
 
@@ -82,16 +82,16 @@ html, body {
 .mattertag-element { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; }
 .mattertag-beacon {
   width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  background: rgba(0, 194, 255, 0.95); box-shadow: 0 0 0 5px rgba(0,194,255,0.3), 0 0 24px var(--cyan);
-  animation: beacon-pulse 2s infinite; color: #000; font-size: 13px; font-weight: 900;
+  background: rgba(0, 194, 255, 0.95); box-shadow: 0 0 0 5px rgba(0,194,255,0.35), 0 0 24px var(--cyan);
+  animation: beacon-pulse 2s infinite; color: #000; font-size: 14px; font-weight: 900;
 }
 .mattertag-beacon::after { content: '+'; font-family: var(--font); }
 @keyframes beacon-pulse {
-  0%,100%{ box-shadow: 0 0 0 5px rgba(0,194,255,0.3), 0 0 24px var(--cyan); transform: scale(1); }
-  50%{ box-shadow: 0 0 0 12px rgba(0,194,255,0.1), 0 0 35px var(--cyan); transform: scale(1.08); }
+  0%,100%{ box-shadow: 0 0 0 5px rgba(0,194,255,0.35), 0 0 24px var(--cyan); transform: scale(1); }
+  50%{ box-shadow: 0 0 0 12px rgba(0,194,255,0.12), 0 0 35px var(--cyan); transform: scale(1.1); }
 }
 .mattertag-card {
-  position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+  position: absolute; bottom: 34px; left: 50%; transform: translateX(-50%);
   background: var(--panel-bg); border: 1px solid var(--panel-border);
   border-radius: 10px; padding: 12px 16px; min-width: 220px; max-width: 260px;
   backdrop-filter: blur(16px); display: none; box-shadow: 0 12px 30px rgba(0,0,0,0.6);
@@ -231,53 +231,61 @@ html, body {
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   MATTERPORT 3D SPATIAL DIGITAL TWIN ENGINE  v4.0
-   - Ultra-HD 8K AI Photorealistic Projection
-   - Natural Cylindrical Perspective (Zero Fisheye Distortion)
-   - Exact Sub-pixel 3D Mattertag Pin Positioning
-   - Smooth Interactive Panoramic Look-Around Controls
+   MATTERPORT 3D SPATIAL DIGITAL TWIN ENGINE  v4.3
+   - 8K Ultra-HD Crisp Screen Projection (Edge-to-Edge)
+   - Zero Fisheye Distortion (Flat Perspective + Smooth Orbit)
+   - Exact Sub-pixel Mattertag Pins
+   - Smooth Interactive Navigation
 ═══════════════════════════════════════════════════════════ */
 
-// 1. SPATIAL NODES (Ultra-High Resolution 8K AI Photoreal Assets)
+// 1. SPATIAL NODES (8K AI Ultra-HD Assets)
 const SPATIAL_NODES = [
   {
     id: 0,
     name: "01. 부스 메인 조망 (Main View)",
     image: "/assets/demo/dna-showcase/ultra/node0_entrance_8k.jpg",
-    camLook: { x: 0, y: 0.1, z: 5.0 },
+    camLook: { x: 0, y: 0, z: 10.0 },
     radarPos: { x: 73, y: 100 }
   },
   {
     id: 1,
     name: "02. 전면 코봇 7대 라인업 (CoBots)",
     image: "/assets/demo/dna-showcase/ultra/node1_cobots_8k.jpg",
-    camLook: { x: 0.5, y: -0.1, z: 5.0 },
+    camLook: { x: 2.0, y: -0.3, z: 10.0 },
     radarPos: { x: 95, y: 72 }
   },
   {
     id: 2,
     name: "03. AMR 자율주행 물류 존 (AMR AGV)",
     image: "/assets/demo/dna-showcase/ultra/node2_amr_8k.jpg",
-    camLook: { x: -0.1, y: -0.3, z: 5.0 },
+    camLook: { x: -0.2, y: -0.7, z: 10.0 },
     radarPos: { x: 55, y: 48 }
   },
   {
     id: 3,
     name: "04. AI 비전 미디어 월 (LED Wall)",
     image: "/assets/demo/dna-showcase/ultra/node0_entrance_8k.jpg",
-    camLook: { x: 1.2, y: 0.3, z: 4.8 },
+    camLook: { x: 3.2, y: 1.0, z: 10.0 },
     radarPos: { x: 73, y: 28 }
   }
 ];
 
-// 2. 3D MATTERTAGS (Exact Positions matching Real Physical Objects in 3D Space)
+const planeW = 21.6;
+const planeH = 12.15;
+
+// Helper to calculate exact 3D world position on the projection plane (at Z = 10)
+function imgCoord(nx, ny) {
+  return new THREE.Vector3(nx * (planeW * 0.5), ny * (planeH * 0.5), 9.95);
+}
+
+// 2. 3D MATTERTAGS (Exact Positions matching Real Physical Objects in the 8K Photo)
 const MATTERTAGS = [
   {
     id: 'amr-vector',
     badge: 'Autonomous Logistics',
     title: "DN'a Vector AMR 600",
     desc: 'Laser SLAM 자율주행 물류 로봇 — 최대 600kg 적재, 360° LiDAR 장애물 회피',
-    worldPos: new THREE.Vector3(-0.06, -0.72, 3.4), // Center foreground floor AMR
+    worldPos: imgCoord(-0.02, -0.52),
     specs: [
       ['적재중량', '600 kg'], ['최대속도', '2.0 m/s'],
       ['항법방식', '3D LiDAR SLAM'], ['연속작동', '10 시간 (급속충전)'],
@@ -289,7 +297,7 @@ const MATTERTAGS = [
     badge: 'Collaborative Robot Array',
     title: "DN'a CoBot X16 — 7대 라인업",
     desc: '7대 연동 6축 협동로봇 조립 라인 — ±0.025mm 반복 정밀도, AI 비전 통합',
-    worldPos: new THREE.Vector3(1.75, -0.45, 3.4), // Right curved counter cobots
+    worldPos: imgCoord(0.55, -0.28),
     specs: [
       ['가반하중', '16.0 kg'], ['작업반경', '1300 mm'],
       ['반복정밀도', '±0.025 mm'], ['안전등급', 'ISO TS 15066'],
@@ -301,7 +309,7 @@ const MATTERTAGS = [
     badge: 'Digital Media Wall',
     title: "AI · Vision · Automation LED Wall",
     desc: '16:9 대형 미디어 파사드 — 실시간 스마트 팩토리 대시보드 및 로봇 제어 현황',
-    worldPos: new THREE.Vector3(1.58, 0.40, 3.5), // Right high LED display
+    worldPos: imgCoord(0.52, 0.16),
     specs: [
       ['해상도', '4K UHD Fine-Pitch'], ['휘도', '1200 nits'],
       ['화면크기', '6000 x 3400 mm'], ['인터페이스', 'Real-time Telemetry']
@@ -312,7 +320,7 @@ const MATTERTAGS = [
     badge: 'Smart Factory Booth',
     title: "DN'a ROBOTIC 메인 캐노피",
     desc: 'NEXT-GEN ROBOTIC SOLUTIONS — 미래형 스마트 팩토리 토탈 솔루션 부스',
-    worldPos: new THREE.Vector3(0.55, 1.45, 3.3), // Top canopy signage
+    worldPos: imgCoord(0.25, 0.82),
     specs: [
       ['부스규모', '18 x 12 m (216㎡)'], ['주요기술', 'AI CoBot, AMR SLAM'],
       ['전시인증', 'CE / ISO 9001'], ['현장상담', 'VIP 부스 1:1 매칭']
@@ -323,7 +331,7 @@ const MATTERTAGS = [
     badge: 'Robotics Parts & Sensors',
     title: "정밀 부품 & 그리퍼 전시대",
     desc: '모듈형 2핑거 전동 서보 그리퍼 및 3D AI 비전 센서 라인업',
-    worldPos: new THREE.Vector3(-1.42, -0.52, 3.4), // Left exhibition pedestals
+    worldPos: imgCoord(-0.45, -0.35),
     specs: [
       ['그립력', '220 N'], ['스트로크', '80 mm'],
       ['사이클 타임', '0.8 초'], ['적용분야', '고속 픽앤플레이스']
@@ -346,11 +354,11 @@ function initThree() {
   scene = new THREE.Scene();
   textureLoader = new THREE.TextureLoader();
 
-  // Natural human perspective FOV (54°) - completely eliminates fisheye barrel distortion
-  camera = new THREE.PerspectiveCamera(54, window.innerWidth / window.innerHeight, 0.01, 100);
+  // Natural perspective camera (50° FOV — 100% natural, ZERO fisheye barrel distortion)
+  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
   camera.position.set(0, 0, 0);
 
-  // Full DPR rendering for pixel-perfect sharpness
+  // Full native DPR rendering for ultra-crisp 8K sharpness
   renderer = new THREE.WebGLRenderer({
     canvas: canvas,
     antialias: true,
@@ -366,33 +374,27 @@ function initThree() {
   // OrbitControls for natural panoramic look-around
   controls = new THREE.OrbitControls(camera, canvas);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.06;
-  controls.enableZoom = false; // Keep natural perspective without accidental zooming
+  controls.dampingFactor = 0.08;
+  controls.enableZoom = false; // Fixed perspective
   controls.enablePan = false;
-  controls.target.set(0, 0.1, 5.0);
-  // Restrict angles to natural eye-level look range
-  controls.maxPolarAngle = Math.PI * 0.58; // Look down up to ~15°
-  controls.minPolarAngle = Math.PI * 0.42; // Look up up to ~15°
-  controls.maxAzimuthAngle = Math.PI * 0.35; // Panning left/right ~65°
-  controls.minAzimuthAngle = -Math.PI * 0.35;
-  controls.rotateSpeed = -0.4;
+  controls.target.set(0, 0, 10.0);
+  controls.maxPolarAngle = Math.PI * 0.55; // Natural eye-level look range
+  controls.minPolarAngle = Math.PI * 0.45;
+  controls.maxAzimuthAngle = Math.PI * 0.18; // Natural panning
+  controls.minAzimuthAngle = -Math.PI * 0.18;
+  controls.rotateSpeed = -0.32;
 
-  // ── NATURAL CYLINDRICAL PHOTOGRAMMETRIC PROJECTION SCREEN ──
-  // Curved cylinder geometry spanning natural 80° arc — perfectly flat perspective without edge stretching
-  const radius = 5.2;
-  const height = 4.2;
-  const arc = Math.PI * 0.65; // ~117° wide arc
-  const cylGeo = new THREE.CylinderGeometry(radius, radius, height, 64, 16, true, Math.PI * 0.5 - arc * 0.5, arc);
-  cylGeo.scale(-1, 1, 1); // Inward facing
+  // ── 8K ULTRA-HD PHOTOGRAMMETRIC PROJECTION PLANE (Edge-to-Edge) ──
+  const planeGeo = new THREE.PlaneGeometry(planeW, planeH, 32, 32);
 
   photoMaterial = new THREE.MeshBasicMaterial({
-    side: THREE.FrontSide,
-    depthWrite: false,
+    side: THREE.DoubleSide,
     transparent: true,
-    opacity: 1.0
+    opacity: 1.0,
+    depthWrite: false
   });
-  photoMesh = new THREE.Mesh(cylGeo, photoMaterial);
-  photoMesh.position.set(0, 0.1, 0);
+  photoMesh = new THREE.Mesh(planeGeo, photoMaterial);
+  photoMesh.position.set(0, 0, 10.0);
   photoMesh.renderOrder = -1;
   scene.add(photoMesh);
 
@@ -406,27 +408,26 @@ function initThree() {
   switchNode(0);
 }
 
-// 4. FLOOR PUCKS (Glowing Matterport Navigation Rings on Floor)
+// 4. FLOOR PUCKS (Glowing Navigation Rings on Floor)
 function buildFloorPucks() {
   SPATIAL_NODES.forEach((node, idx) => {
     const g = new THREE.Group();
-    // Position pucks on the floor in front of the viewer
-    const xPos = (idx - 1.5) * 1.1;
-    g.position.set(xPos, -0.95, 2.6);
+    const xPos = (idx - 1.5) * 3.2;
+    g.position.set(xPos, -4.2, 8.2);
 
     const ring = new THREE.Mesh(
-      new THREE.RingGeometry(0.18, 0.26, 32),
+      new THREE.RingGeometry(0.48, 0.70, 32),
       new THREE.MeshBasicMaterial({ color: 0x00c2ff, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
     );
     ring.rotation.x = -Math.PI / 2;
     g.add(ring);
 
     const disk = new THREE.Mesh(
-      new THREE.CircleGeometry(0.14, 24),
+      new THREE.CircleGeometry(0.38, 24),
       new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 })
     );
     disk.rotation.x = -Math.PI / 2;
-    disk.position.y = 0.002;
+    disk.position.y = 0.005;
     g.add(disk);
 
     g.userData.nodeIdx = idx;
@@ -452,17 +453,17 @@ function buildFloorPucks() {
 // 5. 3D DOLLHOUSE WIREFRAME
 function buildDollhouseMesh() {
   dollhouseGroup = new THREE.Group();
-  const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), new THREE.MeshBasicMaterial({ color:0x0284c7, transparent:true, opacity:0.18, side:THREE.DoubleSide }));
+  const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(18, 14), new THREE.MeshBasicMaterial({ color:0x0284c7, transparent:true, opacity:0.18, side:THREE.DoubleSide }));
   floorMesh.rotation.x = -Math.PI / 2;
-  floorMesh.position.set(0, -0.95, 3.0);
+  floorMesh.position.set(0, -4.2, 8.2);
   dollhouseGroup.add(floorMesh);
 
-  const grid = new THREE.GridHelper(8, 12, 0x00c2ff, 0x1e293b);
-  grid.position.set(0, -0.94, 3.0);
+  const grid = new THREE.GridHelper(18, 18, 0x00c2ff, 0x1e293b);
+  grid.position.set(0, -4.19, 8.2);
   dollhouseGroup.add(grid);
 
-  const box = new THREE.BoxHelper(new THREE.Mesh(new THREE.BoxGeometry(6.5, 3, 5)), 0x00c2ff);
-  box.position.set(0, 0.5, 3.0);
+  const box = new THREE.BoxHelper(new THREE.Mesh(new THREE.BoxGeometry(18, 9, 12)), 0x00c2ff);
+  box.position.set(0, 0, 8.2);
   dollhouseGroup.add(box);
 
   dollhouseGroup.visible = false;
@@ -495,12 +496,10 @@ function loadNodeTexture(url, callback) {
   if (textureCache[url]) { callback(textureCache[url]); return; }
   textureLoader.load(url, (tex) => {
     tex.encoding = THREE.sRGBEncoding;
-    tex.minFilter = THREE.LinearMipMapLinearFilter; // Trilinear for crystal clarity
+    tex.minFilter = THREE.LinearMipMapLinearFilter; // Sharpest mipmap filtering
     tex.magFilter = THREE.LinearFilter;
     tex.generateMipmaps = true;
     tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    tex.wrapS = THREE.ClampToEdgeWrapping;
-    tex.wrapT = THREE.ClampToEdgeWrapping;
     tex.needsUpdate = true;
     textureCache[url] = tex;
     callback(tex);
@@ -515,7 +514,6 @@ function switchNode(idx) {
   document.querySelectorAll('.node-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
   document.getElementById('radar-loc-txt').textContent = node.name.toUpperCase();
 
-  // Load ultra-sharp texture
   loadNodeTexture(node.image, (tex) => {
     photoMaterial.map = tex;
     photoMaterial.needsUpdate = true;
@@ -545,10 +543,10 @@ function setMode(mode) {
     dollhouseGroup.visible = false;
     photoMesh.visible = true;
     photoMaterial.opacity = 1.0;
-    controls.maxPolarAngle = Math.PI * 0.58;
-    controls.minPolarAngle = Math.PI * 0.42;
-    controls.maxAzimuthAngle = Math.PI * 0.35;
-    controls.minAzimuthAngle = -Math.PI * 0.35;
+    controls.maxPolarAngle = Math.PI * 0.55;
+    controls.minPolarAngle = Math.PI * 0.45;
+    controls.maxAzimuthAngle = Math.PI * 0.18;
+    controls.minAzimuthAngle = -Math.PI * 0.18;
     new TWEEN.Tween(camera.position).to({x:0, y:0, z:0}, 800).easing(TWEEN.Easing.Cubic.Out).start();
     new TWEEN.Tween(controls.target).to(node.camLook, 800).easing(TWEEN.Easing.Cubic.Out).start();
     showToast('📸 8K 초고화질 실사 파노라마 투어');
@@ -560,8 +558,8 @@ function setMode(mode) {
     controls.minPolarAngle = Math.PI * 0.15;
     controls.maxAzimuthAngle = Infinity;
     controls.minAzimuthAngle = -Infinity;
-    new TWEEN.Tween(camera.position).to({x:0, y:3.5, z:-2.5}, 900).easing(TWEEN.Easing.Cubic.Out).start();
-    new TWEEN.Tween(controls.target).to({x:0, y:0, z:3.0}, 900).easing(TWEEN.Easing.Cubic.Out).start();
+    new TWEEN.Tween(camera.position).to({x:0, y:6.0, z:-2.0}, 900).easing(TWEEN.Easing.Cubic.Out).start();
+    new TWEEN.Tween(controls.target).to({x:0, y:0, z:8.2}, 900).easing(TWEEN.Easing.Cubic.Out).start();
     showToast('🏠 3D Dollhouse 입체 투시도 모드');
   } else if (mode === 'floor') {
     dollhouseGroup.visible = true;
@@ -570,8 +568,8 @@ function setMode(mode) {
     controls.minPolarAngle = Math.PI * 0.15;
     controls.maxAzimuthAngle = Infinity;
     controls.minAzimuthAngle = -Infinity;
-    new TWEEN.Tween(camera.position).to({x:0, y:6.5, z:3.01}, 900).easing(TWEEN.Easing.Cubic.Out).start();
-    new TWEEN.Tween(controls.target).to({x:0, y:0, z:3.0}, 900).easing(TWEEN.Easing.Cubic.Out).start();
+    new TWEEN.Tween(camera.position).to({x:0, y:14.0, z:8.21}, 900).easing(TWEEN.Easing.Cubic.Out).start();
+    new TWEEN.Tween(controls.target).to({x:0, y:0, z:8.2}, 900).easing(TWEEN.Easing.Cubic.Out).start();
     showToast('🗺️ 2D 부스 평면도 모드');
   }
 }
@@ -684,4 +682,4 @@ document.addEventListener('DOMContentLoaded', initThree);
 </html>`;
 
 fs.writeFileSync(outPath, html, { encoding: 'utf8' });
-console.log('Successfully written clean UTF-8 demo-matterport.html! Size:', fs.statSync(outPath).size);
+console.log('Written demo-matterport.html v4.3! Size:', fs.statSync(outPath).size);
