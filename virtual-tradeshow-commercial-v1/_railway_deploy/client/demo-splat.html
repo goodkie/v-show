@@ -50,6 +50,13 @@ html, body {
   display: block;
 }
 
+/* Hide library's internal blocking spinner */
+.spinnerOuterContainer0, [class*="spinnerOuterContainer"], [class*="spinnerContainer"], [class*="messageContainer"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 /* ══════════════════════════════════════════════
    LOADING SCREEN
 ══════════════════════════════════════════════ */
@@ -946,6 +953,7 @@ async function init() {
     /* ── 뷰어 인스턴스 생성 ── */
     viewer = new GaussianSplats3D.Viewer({
       rootElement:             document.getElementById('splat-host'),
+      showLoadingUI:           false,   // 라이브러리 기본 스피너 비활성화 (커스텀 UI 사용)
       sharedMemoryForWorkers:  false,   // COOP/COEP 헤더 없이도 동작
       dynamicScene:            false,
       webXRMode:               GaussianSplats3D.WebXRMode.None,

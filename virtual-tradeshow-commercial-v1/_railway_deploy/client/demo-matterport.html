@@ -53,6 +53,8 @@ html, body {
 .btn-ui:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.25); color: #fff; }
 .btn-ui.primary { background: #0284c7; border-color: #38bdf8; color: #fff; box-shadow: 0 0 16px rgba(2,132,199,0.4); }
 .btn-ui.primary:hover { background: #0369a1; }
+.btn-ui.download { background: rgba(0,194,255,0.15); border-color: var(--cyan); color: var(--cyan); }
+.btn-ui.download:hover { background: var(--cyan); color: #000; box-shadow: 0 0 16px var(--cyan-glow); }
 
 /* SPATIAL NODES PANEL */
 #node-panel {
@@ -132,24 +134,42 @@ html, body {
 .mode-btn.active { background: var(--cyan); color: #000; box-shadow: 0 0 16px var(--cyan-glow); }
 .toolbar-sep { width: 1px; height: 24px; background: rgba(255,255,255,0.12); }
 
-/* PRODUCT MODAL */
-#product-modal {
+/* MODALS */
+.app-modal {
   display: none; position: fixed; inset: 0; z-index: 900;
-  background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+  background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
   align-items: center; justify-content: center;
 }
-#product-modal.open { display: flex; }
+.app-modal.open { display: flex; }
 .modal-box {
   background: linear-gradient(135deg, #0a0f1e 0%, #0c1424 100%);
   border: 1px solid var(--panel-border); border-radius: 20px;
-  padding: 32px; max-width: 480px; width: 90%; position: relative;
-  box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+  padding: 30px; max-width: 520px; width: 92%; position: relative;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.7);
 }
 .modal-close { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.08); border: none; border-radius: 50%; width: 32px; height: 32px; color: #fff; font-size: 14px; cursor: pointer; }
 .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
 .spec-item { background: rgba(255,255,255,0.04); border: 1px solid var(--panel-border); border-radius: 8px; padding: 10px 12px; }
 .spec-k { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-bottom: 2px; }
 .spec-v { font-size: 13px; color: var(--cyan); font-weight: 700; font-family: var(--mono); }
+
+/* DOWNLOAD CARDS */
+.dl-card {
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(255,255,255,0.04); border: 1px solid var(--panel-border);
+  border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; transition: var(--trans);
+}
+.dl-card:hover { background: rgba(0,194,255,0.08); border-color: var(--cyan); }
+.dl-info { display: flex; flex-direction: column; gap: 2px; }
+.dl-title { font-size: 13px; font-weight: 700; color: #fff; }
+.dl-meta { font-size: 11px; color: var(--text-muted); }
+.dl-btn {
+  background: #0284c7; border: 1px solid #38bdf8; border-radius: 6px;
+  color: #fff; font-size: 11px; font-weight: 700; padding: 6px 14px;
+  text-decoration: none; display: flex; align-items: center; gap: 4px;
+  transition: var(--trans);
+}
+.dl-btn:hover { background: #0369a1; box-shadow: 0 0 12px var(--cyan-glow); }
 
 /* TOAST */
 #toast {
@@ -177,6 +197,7 @@ html, body {
   <div class="top-actions">
     <a href="/demo.html" class="btn-ui">← 3D 쇼룸</a>
     <a href="/demo-splat.html" class="btn-ui">△ 3DGS 뷰어</a>
+    <button class="btn-ui download" onclick="openDownloadModal()">📥 8K 원본 사진 다운로드</button>
     <button class="btn-ui" onclick="toggleFullscreen()">⛶ 전체화면</button>
     <button class="btn-ui primary" onclick="openRFQ()">📋 RFQ 견적 요청</button>
   </div>
@@ -222,7 +243,7 @@ html, body {
 </div>
 
 <!-- Product Detail Modal -->
-<div id="product-modal" onclick="if(event.target===this)closeModal()">
+<div class="app-modal" id="product-modal" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <button class="modal-close" onclick="closeModal()">✕</button>
     <div style="font-size:10px;font-weight:800;color:var(--cyan);letter-spacing:1px;text-transform:uppercase;" id="m-badge">INDUSTRIAL COLLABORATIVE ROBOT</div>
@@ -236,16 +257,58 @@ html, body {
   </div>
 </div>
 
+<!-- 8K Photo Download Modal -->
+<div class="app-modal" id="download-modal" onclick="if(event.target===this)closeDownloadModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeDownloadModal()">✕</button>
+    <div style="font-size:10px;font-weight:800;color:var(--cyan);letter-spacing:1px;text-transform:uppercase;">8K ULTRA-HD ORIGINAL ASSETS</div>
+    <h2 style="font-size:20px;font-weight:800;color:#fff;margin:6px 0 6px;">📸 360° 고화질 원본 사진 다운로드</h2>
+    <p style="font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:16px;">
+      Matterport 3D 투어에 사용된 8K 해상도(8192x4096) Equirectangular 무손실 실사 원본 이미지 3종입니다.
+    </p>
+
+    <div class="dl-card">
+      <div class="dl-info">
+        <div class="dl-title">01. 부스 메인 360° 전경 (Main 360°)</div>
+        <div class="dl-meta">8K Equirectangular JPG · 초고해상도 메인 뷰</div>
+      </div>
+      <a href="/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg" download="DN_a_Booth_Main_360_8K.jpg" class="dl-btn">⬇ 다운로드</a>
+    </div>
+
+    <div class="dl-card">
+      <div class="dl-info">
+        <div class="dl-title">02. 전면 코봇 워크스테이션 (CoBots)</div>
+        <div class="dl-meta">8K Equirectangular JPG · 6축 협동로봇 전시대</div>
+      </div>
+      <a href="/assets/demo/dna-showcase/pano360/node1_360_cobots_8k.jpg" download="DN_a_CoBots_Workstation_360_8K.jpg" class="dl-btn">⬇ 다운로드</a>
+    </div>
+
+    <div class="dl-card">
+      <div class="dl-info">
+        <div class="dl-title">03. AMR 자율주행 물류 존 (AMR AGV)</div>
+        <div class="dl-meta">8K Equirectangular JPG · 물류 로봇 & AI 미디어 월</div>
+      </div>
+      <a href="/assets/demo/dna-showcase/pano360/node2_360_amr_8k.jpg" download="DN_a_AMR_Zone_360_8K.jpg" class="dl-btn">⬇ 다운로드</a>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn-ui primary" style="flex:1;justify-content:center;padding:12px;" onclick="downloadAllPhotos()">📦 3종 전체 다운로드</button>
+      <button class="btn-ui" style="padding:12px;" onclick="closeDownloadModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast">알림</div>
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   MATTERPORT 3D SPATIAL DIGITAL TWIN ENGINE  v5.4
+   MATTERPORT 3D SPATIAL DIGITAL TWIN ENGINE  v5.5
    - True 360° Equirectangular Sphere Panoramic Environment
    - 8K Ultra-HD Photorealistic Texture Mapping
    - Exact 3D Subpixel Coordinate Mattertag Pins
    - Smooth 360° Free Look-Around OrbitControls
    - 3D Floor Navigation Rings with Smooth Transitions
+   - 8K High-Resolution Photo Download Suite
 ═══════════════════════════════════════════════════════════ */
 
 // 1. SPATIAL NODES (True 360° Equirectangular 8K Photoreal Assets)
@@ -601,7 +664,7 @@ function updateMattertags() {
   });
 }
 
-// 12. PRODUCT MODAL
+// 12. MODALS & UTILS
 function openProductModal(idx) {
   const p = MATTERTAGS[idx];
   if (!p) return;
@@ -614,6 +677,24 @@ function openProductModal(idx) {
   document.getElementById('product-modal').classList.add('open');
 }
 function closeModal() { document.getElementById('product-modal').classList.remove('open'); }
+
+function openDownloadModal() { document.getElementById('download-modal').classList.add('open'); }
+function closeDownloadModal() { document.getElementById('download-modal').classList.remove('open'); }
+
+function downloadAllPhotos() {
+  SPATIAL_NODES.forEach((n, idx) => {
+    setTimeout(() => {
+      const a = document.createElement('a');
+      a.href = n.image;
+      a.download = 'DN_a_360_Node_' + idx + '_8K.jpg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }, idx * 600);
+  });
+  showToast('📥 8K 원본 사진 3종 다운로드가 시작되었습니다.');
+}
+
 function openRFQ() { window.open('mailto:sales@dna-robotic.com?subject=RFQ%20from%20Matterport%20Digital%20Twin'); }
 function toggleFullscreen() {
   if (!document.fullscreenElement) document.documentElement.requestFullscreen();
