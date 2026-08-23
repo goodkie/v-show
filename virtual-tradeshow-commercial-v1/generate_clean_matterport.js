@@ -1,4 +1,4 @@
-// generate_clean_matterport.js — TRUE 360° Ultra-HD 8K (8192x4096) Matterport Virtual Tour v5.6
+// generate_clean_matterport.js — Matterport 16K Ultra-HD 360° Studio Player (v6.0)
 const fs = require('fs');
 const path = require('path');
 
@@ -9,9 +9,9 @@ const html = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>DN'a ROBOTIC | Matterport 3D Ultra-HD 360° Digital Twin Virtual Tour</title>
+<title>DN'a ROBOTIC | Matterport 16K Ultra-HD 360° Studio Digital Twin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- Three.js & Controls -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -20,15 +20,16 @@ const html = `<!DOCTYPE html>
 <style>
 :root {
   --bg-deep: #030712;
-  --panel-bg: rgba(10, 16, 30, 0.88);
-  --panel-border: rgba(56, 189, 248, 0.28);
+  --bg-studio: #070e1b;
+  --panel-bg: rgba(11, 18, 33, 0.94);
+  --panel-border: rgba(56, 189, 248, 0.25);
   --cyan: #00c2ff;
-  --cyan-glow: rgba(0, 194, 255, 0.55);
+  --cyan-glow: rgba(0, 194, 255, 0.45);
   --text-main: #ffffff;
   --text-muted: #94a3b8;
   --font: 'Plus Jakarta Sans', -apple-system, sans-serif;
   --mono: 'JetBrains Mono', monospace;
-  --trans: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  --trans: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
@@ -37,151 +38,204 @@ html, body {
   font-family: var(--font); user-select: none;
   -webkit-font-smoothing: antialiased;
 }
-#viewer-container { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; cursor: grab; }
-#viewer-container:active { cursor: grabbing; }
-#three-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 1; }
+
+/* ══════════════════════════════════════════════
+   STUDIO LAYOUT (All Buttons Outside Player)
+══════════════════════════════════════════════ */
+#app-layout {
+  display: flex; flex-direction: column; width: 100vw; height: 100vh; overflow: hidden;
+}
 
 /* TOP NAV */
 #topbar {
-  position: fixed; top: 0; left: 0; right: 0; height: 60px; z-index: 500;
-  background: linear-gradient(180deg, rgba(3,7,18,0.95) 0%, rgba(3,7,18,0.7) 70%, transparent 100%);
+  height: 56px; flex-shrink: 0;
+  background: rgba(7, 14, 27, 0.95);
   display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
   backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.08);
+  z-index: 100;
 }
 .brand-group { display: flex; align-items: center; gap: 12px; }
-.brand-logo { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px; }
+.brand-logo { font-size: 20px; font-weight: 900; letter-spacing: -0.5px; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px; }
 .brand-logo span { color: var(--cyan); }
-.brand-badge { font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--cyan); background: rgba(0,194,255,0.12); border: 1px solid var(--panel-border); border-radius: 20px; padding: 4px 10px; display: flex; align-items: center; gap: 6px; }
+.brand-badge { font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--cyan); background: rgba(0,194,255,0.12); border: 1px solid var(--panel-border); border-radius: 20px; padding: 3px 10px; display: flex; align-items: center; gap: 6px; }
 .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); animation: pulse-dot 1.8s infinite; }
 @keyframes pulse-dot { 0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.4);opacity:0.6;} }
-.top-actions { display: flex; align-items: center; gap: 10px; }
-.btn-ui { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: rgba(255,255,255,0.85); font-size: 12px; font-weight: 600; padding: 7px 14px; cursor: pointer; transition: var(--trans); text-decoration: none; }
-.btn-ui:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.25); color: #fff; }
-.btn-ui.primary { background: #0284c7; border-color: #38bdf8; color: #fff; box-shadow: 0 0 16px rgba(2,132,199,0.4); }
+.top-actions { display: flex; align-items: center; gap: 8px; }
+.btn-ui { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: rgba(255,255,255,0.85); font-size: 12px; font-weight: 600; padding: 6px 12px; cursor: pointer; transition: var(--trans); text-decoration: none; }
+.btn-ui:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.25); color: #fff; }
+.btn-ui.primary { background: #0284c7; border-color: #38bdf8; color: #fff; box-shadow: 0 0 14px rgba(2,132,199,0.4); }
 .btn-ui.primary:hover { background: #0369a1; }
-.btn-ui.download { background: rgba(0,194,255,0.15); border-color: var(--cyan); color: var(--cyan); }
+.btn-ui.download { background: rgba(0,194,255,0.12); border-color: var(--cyan); color: var(--cyan); }
 .btn-ui.download:hover { background: var(--cyan); color: #000; box-shadow: 0 0 16px var(--cyan-glow); }
 
-/* SPATIAL NODES PANEL */
-#node-panel {
-  position: fixed; top: 70px; left: 16px; z-index: 400;
-  background: var(--panel-bg); border: 1px solid var(--panel-border);
-  border-radius: 14px; padding: 14px; width: 270px;
-  backdrop-filter: blur(20px);
+/* MAIN STUDIO BODY (3 Columns: Left Controls | 50% 3D Player | Right Specs) */
+#studio-workspace {
+  flex: 1; display: grid;
+  grid-template-columns: 280px 1fr 310px;
+  gap: 16px; padding: 14px 18px;
+  background: radial-gradient(circle at 50% 30%, #0b1528 0%, #030712 100%);
+  min-height: 0; align-items: center;
 }
-.panel-label { font-size: 10px; font-weight: 800; color: var(--cyan); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 10px; }
+
+/* ══════════════════════════════════════════════
+   LEFT EXTERIOR PANEL (Vantage Points & Radar)
+══════════════════════════════════════════════ */
+.side-panel {
+  height: 100%; display: flex; flex-direction: column; gap: 12px;
+  background: var(--panel-bg); border: 1px solid var(--panel-border);
+  border-radius: 16px; padding: 16px; backdrop-filter: blur(20px);
+  overflow-y: auto; box-shadow: 0 16px 36px rgba(0,0,0,0.4);
+}
+.panel-head { font-size: 10px; font-weight: 800; color: var(--cyan); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 2px; }
+.panel-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+
+.node-list { display: flex; flex-direction: column; gap: 6px; }
 .node-btn {
-  width: 100%; display: flex; align-items: center; gap: 10px;
-  background: rgba(255,255,255,0.04); border: 1px solid transparent;
-  border-radius: 8px; color: var(--text-muted); font-size: 12px; font-weight: 500;
-  padding: 9px 12px; cursor: pointer; transition: var(--trans); text-align: left; margin-bottom: 4px;
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; color: var(--text-muted); font-size: 12px; font-weight: 600;
+  padding: 11px 12px; cursor: pointer; transition: var(--trans); text-align: left;
 }
 .node-btn:hover { background: rgba(0,194,255,0.08); color: #fff; border-color: var(--panel-border); }
-.node-btn.active { background: rgba(0,194,255,0.15); border-color: var(--cyan); color: var(--cyan); font-weight: 700; }
-.node-icon { font-size: 14px; }
+.node-btn.active { background: rgba(0,194,255,0.18); border-color: var(--cyan); color: var(--cyan); font-weight: 800; box-shadow: 0 0 14px rgba(0,194,255,0.25); }
+.node-meta { font-size: 9px; opacity: 0.7; font-family: var(--mono); }
 
-/* 360 HINT OVERLAY */
-#hint-360 {
-  position: fixed; top: 70px; right: 16px; z-index: 400;
-  background: rgba(10, 16, 30, 0.85); border: 1px solid var(--panel-border);
-  border-radius: 30px; padding: 8px 16px; font-size: 11px; font-weight: 600;
-  color: var(--cyan); backdrop-filter: blur(12px); display: flex; align-items: center; gap: 8px;
-  pointer-events: none; animation: fade-out-hint 6s forwards;
+/* RADAR MINIMAP (Outside Player) */
+.radar-box {
+  background: rgba(3, 7, 18, 0.6); border: 1px solid var(--panel-border);
+  border-radius: 12px; padding: 10px; margin-top: auto;
 }
-@keyframes fade-out-hint { 0%,70%{opacity:1;} 100%{opacity:0.35;} }
+.radar-header { font-size: 9px; font-weight: 800; color: var(--cyan); letter-spacing: 1px; text-transform: uppercase; display: flex; justify-content: space-between; margin-bottom: 6px; }
+#radar-canvas { width: 100%; height: 96px; display: block; border-radius: 6px; }
 
-/* MATTERTAGS */
-#mattertags-host { position: fixed; inset: 0; pointer-events: none; z-index: 300; }
+/* ══════════════════════════════════════════════
+   CENTER: 50% SIZED 3D PLAYER CONTAINER
+══════════════════════════════════════════════ */
+#player-wrapper {
+  height: 100%; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; min-height: 0;
+}
+
+#viewer-container {
+  position: relative; width: 100%; height: 100%; max-height: 82vh;
+  border-radius: 18px; overflow: hidden;
+  border: 1px solid rgba(0, 194, 255, 0.4);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75), 0 0 30px rgba(0, 194, 255, 0.18);
+  cursor: grab; background: #000;
+}
+#viewer-container:active { cursor: grabbing; }
+#three-canvas { width: 100%; height: 100%; display: block; }
+
+/* 360 HINT IN PLAYER CORNER */
+.player-tag {
+  position: absolute; top: 12px; left: 12px; z-index: 10;
+  background: rgba(7, 14, 27, 0.85); border: 1px solid var(--panel-border);
+  border-radius: 20px; padding: 4px 10px; font-size: 10px; font-weight: 800;
+  color: var(--cyan); backdrop-filter: blur(8px); display: flex; align-items: center; gap: 6px;
+  pointer-events: none;
+}
+.res-pill {
+  position: absolute; top: 12px; right: 12px; z-index: 10;
+  background: rgba(2, 132, 199, 0.25); border: 1px solid #38bdf8;
+  border-radius: 20px; padding: 4px 10px; font-size: 10px; font-weight: 800;
+  color: #fff; font-family: var(--mono); backdrop-filter: blur(8px);
+}
+
+/* MATTERTAGS (Scoped to Player Container) */
+#mattertags-host { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
 .mattertag-element { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; }
 .mattertag-beacon {
-  width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  background: rgba(0, 194, 255, 0.95); box-shadow: 0 0 0 5px rgba(0,194,255,0.35), 0 0 26px var(--cyan);
-  animation: beacon-pulse 2s infinite; color: #000; font-size: 14px; font-weight: 900;
+  width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 194, 255, 0.95); box-shadow: 0 0 0 4px rgba(0,194,255,0.35), 0 0 20px var(--cyan);
+  animation: beacon-pulse 2s infinite; color: #000; font-size: 12px; font-weight: 900;
 }
 .mattertag-beacon::after { content: '+'; font-family: var(--font); }
 @keyframes beacon-pulse {
-  0%,100%{ box-shadow: 0 0 0 5px rgba(0,194,255,0.35), 0 0 26px var(--cyan); transform: scale(1); }
-  50%{ box-shadow: 0 0 0 12px rgba(0,194,255,0.12), 0 0 38px var(--cyan); transform: scale(1.1); }
+  0%,100%{ box-shadow: 0 0 0 4px rgba(0,194,255,0.35), 0 0 20px var(--cyan); transform: scale(1); }
+  50%{ box-shadow: 0 0 0 9px rgba(0,194,255,0.12), 0 0 30px var(--cyan); transform: scale(1.1); }
 }
 .mattertag-card {
-  position: absolute; bottom: 36px; left: 50%; transform: translateX(-50%);
+  position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
   background: var(--panel-bg); border: 1px solid var(--panel-border);
-  border-radius: 12px; padding: 14px 18px; min-width: 230px; max-width: 270px;
-  backdrop-filter: blur(18px); display: none; box-shadow: 0 16px 36px rgba(0,0,0,0.7);
+  border-radius: 10px; padding: 10px 14px; min-width: 200px; max-width: 240px;
+  backdrop-filter: blur(16px); display: none; box-shadow: 0 16px 36px rgba(0,0,0,0.8);
 }
 .mattertag-element:hover .mattertag-card { display: block; }
-.tag-badge { font-size: 9px; font-weight: 800; color: var(--cyan); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 4px; }
-.tag-title { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 4px; }
-.tag-desc { font-size: 11px; color: var(--text-muted); line-height: 1.5; margin-bottom: 6px; }
-.tag-cta { font-size: 10px; font-weight: 600; color: var(--cyan); }
+.tag-badge { font-size: 8.5px; font-weight: 800; color: var(--cyan); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 2px; }
+.tag-title { font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+.tag-desc { font-size: 10.5px; color: var(--text-muted); line-height: 1.4; }
 
-/* BOOTH RADAR */
-#booth-radar {
-  position: fixed; bottom: 100px; left: 16px; z-index: 400;
-  background: var(--panel-bg); border: 1px solid var(--panel-border);
-  border-radius: 12px; padding: 10px; backdrop-filter: blur(16px);
-}
-.radar-label { font-size: 9px; font-weight: 800; color: var(--cyan); letter-spacing: 1px; text-transform: uppercase; display: flex; justify-content: space-between; margin-bottom: 6px; }
-#radar-canvas { display: block; }
-
-/* BOTTOM TOOLBAR */
-#mode-toolbar {
-  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 400;
-  background: var(--panel-bg); border: 1px solid var(--panel-border);
-  border-radius: 60px; padding: 6px; backdrop-filter: blur(20px);
-  display: flex; align-items: center; gap: 4px;
-}
+/* ══════════════════════════════════════════════
+   RIGHT EXTERIOR PANEL (Product Info & Controls)
+══════════════════════════════════════════════ */
+.mode-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .mode-btn {
-  display: flex; align-items: center; gap: 6px; background: transparent; border: none;
-  border-radius: 50px; color: var(--text-muted); font-size: 12px; font-weight: 600;
-  padding: 10px 18px; cursor: pointer; transition: var(--trans);
+  width: 100%; display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; color: var(--text-muted); font-size: 12px; font-weight: 600;
+  padding: 9px 12px; cursor: pointer; transition: var(--trans);
 }
 .mode-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
-.mode-btn.active { background: var(--cyan); color: #000; box-shadow: 0 0 16px var(--cyan-glow); }
-.toolbar-sep { width: 1px; height: 24px; background: rgba(255,255,255,0.12); }
+.mode-btn.active { background: var(--cyan); color: #000; font-weight: 800; box-shadow: 0 0 14px var(--cyan-glow); }
+
+.spec-panel-box {
+  background: rgba(3, 7, 18, 0.5); border: 1px solid var(--panel-border);
+  border-radius: 12px; padding: 12px; margin-top: 4px;
+}
+.spec-title { font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+.spec-desc { font-size: 11px; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; }
+.spec-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.spec-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 6px 8px; }
+.spec-k { font-size: 9px; color: var(--text-muted); font-weight: 600; }
+.spec-v { font-size: 11px; color: var(--cyan); font-weight: 700; font-family: var(--mono); }
+
+/* BOTTOM TOOLBAR (Outside Player) */
+#studio-footer {
+  height: 48px; flex-shrink: 0;
+  background: rgba(7, 14, 27, 0.95); border-top: 1px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+}
+.foot-info { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 12px; }
+.foot-info strong { color: var(--cyan); }
+.foot-actions { display: flex; align-items: center; gap: 8px; }
 
 /* MODALS */
 .app-modal {
   display: none; position: fixed; inset: 0; z-index: 900;
-  background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
+  background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
   align-items: center; justify-content: center;
 }
 .app-modal.open { display: flex; }
 .modal-box {
   background: linear-gradient(135deg, #0a0f1e 0%, #0c1424 100%);
   border: 1px solid var(--panel-border); border-radius: 20px;
-  padding: 30px; max-width: 520px; width: 92%; position: relative;
-  box-shadow: 0 40px 80px rgba(0,0,0,0.7);
+  padding: 28px; max-width: 520px; width: 92%; position: relative;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.8);
 }
-.modal-close { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.08); border: none; border-radius: 50%; width: 32px; height: 32px; color: #fff; font-size: 14px; cursor: pointer; }
-.spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
-.spec-item { background: rgba(255,255,255,0.04); border: 1px solid var(--panel-border); border-radius: 8px; padding: 10px 12px; }
-.spec-k { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-bottom: 2px; }
-.spec-v { font-size: 13px; color: var(--cyan); font-weight: 700; font-family: var(--mono); }
+.modal-close { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.08); border: none; border-radius: 50%; width: 30px; height: 30px; color: #fff; font-size: 14px; cursor: pointer; }
 
 /* DOWNLOAD CARDS */
 .dl-card {
   display: flex; align-items: center; justify-content: space-between;
   background: rgba(255,255,255,0.04); border: 1px solid var(--panel-border);
-  border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; transition: var(--trans);
+  border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; transition: var(--trans);
 }
 .dl-card:hover { background: rgba(0,194,255,0.08); border-color: var(--cyan); }
 .dl-info { display: flex; flex-direction: column; gap: 2px; }
-.dl-title { font-size: 13px; font-weight: 700; color: #fff; }
-.dl-meta { font-size: 11px; color: var(--text-muted); }
+.dl-title { font-size: 12px; font-weight: 700; color: #fff; }
+.dl-meta { font-size: 10px; color: var(--text-muted); font-family: var(--mono); }
 .dl-btn {
   background: #0284c7; border: 1px solid #38bdf8; border-radius: 6px;
-  color: #fff; font-size: 11px; font-weight: 700; padding: 6px 14px;
+  color: #fff; font-size: 11px; font-weight: 700; padding: 6px 12px;
   text-decoration: none; display: flex; align-items: center; gap: 4px;
-  transition: var(--trans);
 }
 .dl-btn:hover { background: #0369a1; box-shadow: 0 0 12px var(--cyan-glow); }
 
 /* TOAST */
 #toast {
-  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(10px);
-  background: rgba(0,194,255,0.15); border: 1px solid var(--cyan);
-  border-radius: 30px; padding: 10px 20px; font-size: 13px; font-weight: 600;
+  position: fixed; bottom: 64px; left: 50%; transform: translateX(-50%) translateY(10px);
+  background: rgba(0,194,255,0.18); border: 1px solid var(--cyan);
+  border-radius: 30px; padding: 8px 18px; font-size: 12px; font-weight: 600;
   color: var(--cyan); backdrop-filter: blur(12px); z-index: 800;
   opacity: 0; transition: all 0.3s ease; pointer-events: none;
 }
@@ -189,63 +243,117 @@ html, body {
 </style>
 </head>
 <body>
-<div id="viewer-container">
-  <canvas id="three-canvas"></canvas>
-</div>
-<div id="mattertags-host"></div>
+<div id="app-layout">
+  <!-- TOP NAV -->
+  <header id="topbar">
+    <div class="brand-group">
+      <a href="/" class="brand-logo">dn' <span>a</span> ROBOTIC</a>
+      <div class="brand-badge"><div class="pulse-dot"></div> 16K ULTRA-HD 360° STUDIO</div>
+    </div>
+    <div class="top-actions">
+      <a href="/demo.html" class="btn-ui">← 3D 쇼룸</a>
+      <a href="/demo-splat.html" class="btn-ui">△ 3DGS 뷰어</a>
+      <button class="btn-ui download" onclick="openDownloadModal()">📥 16K 원본 사진 다운로드</button>
+      <button class="btn-ui primary" onclick="openRFQ()">📋 RFQ 견적 요청</button>
+    </div>
+  </header>
 
-<!-- TOP BAR -->
-<div id="topbar">
-  <div class="brand-group">
-    <a href="/" class="brand-logo">dn' <span>a</span> ROBOTIC</a>
-    <div class="brand-badge"><div class="pulse-dot"></div> MATTERPORT 360° ULTRA-HD 8K</div>
-  </div>
-  <div class="top-actions">
-    <a href="/demo.html" class="btn-ui">← 3D 쇼룸</a>
-    <a href="/demo-splat.html" class="btn-ui">△ 3DGS 뷰어</a>
-    <button class="btn-ui download" onclick="openDownloadModal()">📥 8K 원본 사진 다운로드</button>
-    <button class="btn-ui" onclick="toggleFullscreen()">⛶ 전체화면</button>
-    <button class="btn-ui primary" onclick="openRFQ()">📋 RFQ 견적 요청</button>
-  </div>
-</div>
+  <!-- MAIN STUDIO WORKSPACE -->
+  <main id="studio-workspace">
+    <!-- LEFT PANEL (Vantage Points & Radar Outside Player) -->
+    <aside class="side-panel">
+      <div>
+        <div class="panel-head">SPATIAL VANTAGE POINTS</div>
+        <div class="panel-sub">3개 원본 실사 거점 이동</div>
+      </div>
+      <div class="node-list">
+        <button class="node-btn active" id="nb-0" onclick="switchNode(0)">
+          <span>📷 01. 부스 메인 360°</span>
+          <span class="node-meta">16K RAW</span>
+        </button>
+        <button class="node-btn" id="nb-1" onclick="switchNode(1)">
+          <span>🤖 02. 전면 코봇 워크스테이션</span>
+          <span class="node-meta">16K RAW</span>
+        </button>
+        <button class="node-btn" id="nb-2" onclick="switchNode(2)">
+          <span>🚛 03. AMR 자율주행 물류 존</span>
+          <span class="node-meta">16K RAW</span>
+        </button>
+      </div>
 
-<!-- 360 INTERACTION HINT -->
-<div id="hint-360">
-  <span>🔄</span> 360° 마우스 드래그로 전 방향 자유 회전
-</div>
+      <!-- Outside Booth Radar -->
+      <div class="radar-box">
+        <div class="radar-header">
+          <span>BOOTH RADAR</span>
+          <span id="radar-loc-txt">01. MAIN 360°</span>
+        </div>
+        <canvas id="radar-canvas" width="244" height="96"></canvas>
+      </div>
+    </aside>
 
-<!-- SPATIAL NODES PANEL -->
-<div id="node-panel">
-  <div class="panel-label">SPATIAL VANTAGE POINTS</div>
-  <button class="node-btn active" id="nb-0" onclick="switchNode(0)"><span class="node-icon">📷</span> 01. 부스 메인 360° (Main 360°)</button>
-  <button class="node-btn" id="nb-1" onclick="switchNode(1)"><span class="node-icon">🤖</span> 02. 전면 코봇 워크스테이션 (CoBots)</button>
-  <button class="node-btn" id="nb-2" onclick="switchNode(2)"><span class="node-icon">🚛</span> 03. AMR 자율주행 물류 존 (AMR AGV)</button>
-</div>
+    <!-- CENTER: 50% SIZED 3D PLAYER -->
+    <section id="player-wrapper">
+      <div id="viewer-container">
+        <canvas id="three-canvas"></canvas>
+        <div id="mattertags-host"></div>
+        <div class="player-tag">🔄 360° 인터랙티브 3D 플레이어</div>
+        <div class="res-pill">16384 × 8192 UHD</div>
+      </div>
+    </section>
 
-<!-- BOOTH RADAR -->
-<div id="booth-radar">
-  <div class="radar-label">
-    <span>BOOTH RADAR</span>
-    <span id="radar-loc-txt">01. MAIN 360°</span>
-  </div>
-  <canvas id="radar-canvas" width="146" height="116"></canvas>
-</div>
+    <!-- RIGHT PANEL (Specs & View Modes Outside Player) -->
+    <aside class="side-panel">
+      <div>
+        <div class="panel-head">VIEWPORT CONTROLS</div>
+        <div class="panel-sub">3D 디스플레이 모드 전환</div>
+      </div>
+      <div class="mode-group">
+        <button class="mode-btn active" id="btn-mode-tour" onclick="setMode('tour')">
+          <span>📸</span> 360° 실사 파노라마
+        </button>
+        <button class="mode-btn" id="btn-mode-dollhouse" onclick="setMode('dollhouse')">
+          <span>🏠</span> 3D Dollhouse 입체 모드
+        </button>
+        <button class="mode-btn" id="btn-mode-floor" onclick="setMode('floor')">
+          <span>🗺️</span> 2D 부스 평면도
+        </button>
+      </div>
 
-<!-- BOTTOM TOOLBAR -->
-<div id="mode-toolbar">
-  <button class="mode-btn active" id="btn-mode-tour" onclick="setMode('tour')">
-    <span>📸</span> 360° 실사 투어
-  </button>
-  <button class="mode-btn" id="btn-mode-dollhouse" onclick="setMode('dollhouse')">
-    <span>🏠</span> 3D Dollhouse
-  </button>
-  <button class="mode-btn" id="btn-mode-floor" onclick="setMode('floor')">
-    <span>🗺️</span> 2D 평면도
-  </button>
-  <div class="toolbar-sep"></div>
-  <button class="mode-btn" id="btn-autotour" onclick="toggleAutoTour()">
-    <span>▶</span> AUTO TOUR
-  </button>
+      <!-- Live Target Specs -->
+      <div class="spec-panel-box">
+        <div class="panel-head" style="margin-bottom:4px;">FOCUS EQUIPMENT</div>
+        <div class="spec-title" id="side-spec-title">DN'a Apex CoBot X16</div>
+        <div class="spec-desc" id="side-spec-desc">중앙 원형 전시대 6축 정밀 협동로봇 라인업 — ±0.025mm 반복 정밀도, 고속 픽앤플레이스</div>
+        <div class="spec-list" id="side-spec-list">
+          <div class="spec-item"><div class="spec-k">가반하중</div><div class="spec-v">16.0 kg</div></div>
+          <div class="spec-item"><div class="spec-k">반복정밀도</div><div class="spec-v">±0.025 mm</div></div>
+          <div class="spec-item"><div class="spec-k">작업반경</div><div class="spec-v">1300 mm</div></div>
+          <div class="spec-item"><div class="spec-k">안전등급</div><div class="spec-v">ISO TS 15066</div></div>
+        </div>
+      </div>
+
+      <button class="btn-ui primary" style="margin-top:auto;justify-content:center;padding:10px;" onclick="openRFQ()">
+        📝 1:1 기술 및 견적 상담
+      </button>
+    </aside>
+  </main>
+
+  <!-- STUDIO FOOTER -->
+  <footer id="studio-footer">
+    <div class="foot-info">
+      <span>엔진: <strong>Three.js WebGL 16K HDR</strong></span>
+      <span>필터링: <strong>16x Anisotropic + Trilinear Mipmap</strong></span>
+      <span>현재 위치: <strong id="foot-loc">01. 부스 메인 360°</strong></span>
+    </div>
+    <div class="foot-actions">
+      <button class="btn-ui" id="btn-autotour" onclick="toggleAutoTour()">
+        <span>▶</span> AUTO TOUR 시작
+      </button>
+      <button class="btn-ui" onclick="toggleFullscreen()">
+        <span>⛶</span> 전체화면
+      </button>
+    </div>
+  </footer>
 </div>
 
 <!-- Product Detail Modal -->
@@ -253,53 +361,53 @@ html, body {
   <div class="modal-box">
     <button class="modal-close" onclick="closeModal()">✕</button>
     <div style="font-size:10px;font-weight:800;color:var(--cyan);letter-spacing:1px;text-transform:uppercase;" id="m-badge">INDUSTRIAL COLLABORATIVE ROBOT</div>
-    <h2 style="font-size:24px;font-weight:800;color:#fff;margin:6px 0 2px;" id="m-name">DN'a Apex CoBot X16</h2>
+    <h2 style="font-size:22px;font-weight:800;color:#fff;margin:6px 0 2px;" id="m-name">DN'a Apex CoBot X16</h2>
     <p style="font-size:12px;color:var(--text-muted);line-height:1.6;" id="m-desc">고정밀 6축 협동로봇</p>
-    <div class="spec-grid" id="m-specs"></div>
+    <div class="spec-list" id="m-specs" style="margin-top:14px;"></div>
     <div style="display:flex;gap:10px;margin-top:20px;">
-      <button class="btn-ui primary" style="flex:1;justify-content:center;padding:12px;" onclick="openRFQ()">📝 RFQ 즉시 견적 요청</button>
-      <button class="btn-ui" style="padding:12px;" onclick="closeModal()">닫기</button>
+      <button class="btn-ui primary" style="flex:1;justify-content:center;padding:10px;" onclick="openRFQ()">📝 RFQ 즉시 견적 요청</button>
+      <button class="btn-ui" style="padding:10px;" onclick="closeModal()">닫기</button>
     </div>
   </div>
 </div>
 
-<!-- 8K Photo Download Modal -->
+<!-- 16K Photo Download Modal -->
 <div class="app-modal" id="download-modal" onclick="if(event.target===this)closeDownloadModal()">
   <div class="modal-box">
     <button class="modal-close" onclick="closeDownloadModal()">✕</button>
-    <div style="font-size:10px;font-weight:800;color:var(--cyan);letter-spacing:1px;text-transform:uppercase;">8K ULTRA-HD ORIGINAL ASSETS</div>
-    <h2 style="font-size:20px;font-weight:800;color:#fff;margin:6px 0 6px;">📸 360° 고화질 원본 사진 다운로드</h2>
-    <p style="font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:16px;">
-      Matterport 3D 투어에 사용된 8K 해상도(8192x4096) Equirectangular 무손실 실사 원본 이미지 3종입니다.
+    <div style="font-size:10px;font-weight:800;color:var(--cyan);letter-spacing:1px;text-transform:uppercase;">16K ULTRA-HD ORIGINAL ASSETS</div>
+    <h2 style="font-size:18px;font-weight:800;color:#fff;margin:6px 0 6px;">📸 16K 초고화질 원본 사진 다운로드</h2>
+    <p style="font-size:11px;color:var(--text-muted);line-height:1.5;margin-bottom:14px;">
+      스튜디오 뷰어에 사용된 16K(16384×8192) 및 8K(8192×4096) 초고해상도 Equirectangular 실사 원본 이미지입니다.
     </p>
 
     <div class="dl-card">
       <div class="dl-info">
         <div class="dl-title">01. 부스 메인 360° 전경 (Main 360°)</div>
-        <div class="dl-meta">8K Equirectangular JPG (8192x4096) · 4.3 MB</div>
+        <div class="dl-meta">16K Equirectangular JPG (16384x8192) · 13.4 MB</div>
       </div>
-      <a href="/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg" download="DN_a_Booth_Main_360_8K.jpg" class="dl-btn">⬇ 다운로드</a>
+      <a href="/assets/demo/dna-showcase/pano360/node0_360_panorama_16k.jpg" download="DN_a_Booth_Main_360_16K.jpg" class="dl-btn">⬇ 16K 받기</a>
     </div>
 
     <div class="dl-card">
       <div class="dl-info">
         <div class="dl-title">02. 전면 코봇 워크스테이션 (CoBots)</div>
-        <div class="dl-meta">8K Equirectangular JPG (8192x4096) · 4.2 MB</div>
+        <div class="dl-meta">16K Equirectangular JPG (16384x8192) · 13.2 MB</div>
       </div>
-      <a href="/assets/demo/dna-showcase/pano360/node1_360_cobots_8k.jpg" download="DN_a_CoBots_Workstation_360_8K.jpg" class="dl-btn">⬇ 다운로드</a>
+      <a href="/assets/demo/dna-showcase/pano360/node1_360_cobots_16k.jpg" download="DN_a_CoBots_Workstation_360_16K.jpg" class="dl-btn">⬇ 16K 받기</a>
     </div>
 
     <div class="dl-card">
       <div class="dl-info">
         <div class="dl-title">03. AMR 자율주행 물류 존 (AMR AGV)</div>
-        <div class="dl-meta">8K Equirectangular JPG (8192x4096) · 4.6 MB</div>
+        <div class="dl-meta">16K Equirectangular JPG (16384x8192) · 14.0 MB</div>
       </div>
-      <a href="/assets/demo/dna-showcase/pano360/node2_360_amr_8k.jpg" download="DN_a_AMR_Zone_360_8K.jpg" class="dl-btn">⬇ 다운로드</a>
+      <a href="/assets/demo/dna-showcase/pano360/node2_360_amr_16k.jpg" download="DN_a_AMR_Zone_360_16K.jpg" class="dl-btn">⬇ 16K 받기</a>
     </div>
 
-    <div style="display:flex;gap:10px;margin-top:16px;">
-      <button class="btn-ui primary" style="flex:1;justify-content:center;padding:12px;" onclick="downloadAllPhotos()">📦 3종 전체 다운로드</button>
-      <button class="btn-ui" style="padding:12px;" onclick="closeDownloadModal()">닫기</button>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="btn-ui primary" style="flex:1;justify-content:center;padding:10px;" onclick="downloadAllPhotos()">📦 3종 전체 다운로드</button>
+      <button class="btn-ui" style="padding:10px;" onclick="closeDownloadModal()">닫기</button>
     </div>
   </div>
 </div>
@@ -308,38 +416,36 @@ html, body {
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   MATTERPORT 3D SPATIAL DIGITAL TWIN ENGINE  v5.6
-   - True 360° Equirectangular Sphere Panoramic Environment
-   - 8K Ultra-HD (8192x4096) AI Super-Resolution Textures
-   - WebGL Contrast Adaptive Sharpening (CAS) Filter
-   - Max 16x Anisotropic Hardware Filtering
-   - Exact 3D Subpixel Coordinate Mattertag Pins
-   - Smooth 360° Free Look-Around OrbitControls
-   - 3D Floor Navigation Rings with Smooth Transitions
+   MATTERPORT 16K ULTRA-HD 360° STUDIO ENGINE (v6.0)
+   - Reduced 50% Studio Player Container Architecture
+   - Exterior UI Control Suite (All buttons outside player)
+   - 16K (16384x8192) AI Super-Resolution Photoreal Textures
+   - Exact Subpixel Coordinate 3D Mattertag Pins
+   - 3 Vantage Point Transitions & Floor Navigation Rings
 ═══════════════════════════════════════════════════════════ */
 
-// 1. SPATIAL NODES (True 360° Equirectangular 8K Photoreal Assets)
+// 1. SPATIAL NODES (16K Ultra-HD Equirectangular Photoreal Assets)
 const SPATIAL_NODES = [
   {
     id: 0,
     name: "01. 부스 메인 360° (Main 360°)",
-    image: "/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg",
+    image: "/assets/demo/dna-showcase/pano360/node0_360_panorama_16k.jpg",
     puckPos: new THREE.Vector3(0, -160, -320),
-    radarPos: { x: 73, y: 100 }
+    radarPos: { x: 122, y: 80 }
   },
   {
     id: 1,
     name: "02. 전면 코봇 워크스테이션 (CoBots)",
-    image: "/assets/demo/dna-showcase/pano360/node1_360_cobots_8k.jpg",
+    image: "/assets/demo/dna-showcase/pano360/node1_360_cobots_16k.jpg",
     puckPos: new THREE.Vector3(60, -160, -260),
-    radarPos: { x: 73, y: 65 }
+    radarPos: { x: 122, y: 52 }
   },
   {
     id: 2,
     name: "03. AMR 자율주행 물류 존 (AMR AGV)",
-    image: "/assets/demo/dna-showcase/pano360/node2_360_amr_8k.jpg",
+    image: "/assets/demo/dna-showcase/pano360/node2_360_amr_16k.jpg",
     puckPos: new THREE.Vector3(-160, -160, -220),
-    radarPos: { x: 45, y: 80 }
+    radarPos: { x: 75, y: 64 }
   }
 ];
 
@@ -353,7 +459,7 @@ const MATTERTAGS = [
     worldPos: new THREE.Vector3(0, 50, -400),
     specs: [
       ['디스플레이', 'Seamless Curved LED'], ['주요기술', 'AI Vision Telemetry'],
-      ['관제솔루션', 'DN\\\'a Smart Twin Engine']
+      ['관제솔루션', 'DN\\\'a Smart Twin Engine'], ['화면크기', '6000 x 3400 mm']
     ]
   },
   {
@@ -364,8 +470,7 @@ const MATTERTAGS = [
     worldPos: new THREE.Vector3(0, -90, -380),
     specs: [
       ['가반하중', '16.0 kg'], ['작업반경', '1300 mm'],
-      ['반복정밀도', '±0.025 mm'], ['안전등급', 'ISO TS 15066'],
-      ['통신규격', 'EtherCAT / PROFINET'], ['가격대', '$38,500 – $42,000']
+      ['반복정밀도', '±0.025 mm'], ['안전등급', 'ISO TS 15066']
     ]
   },
   {
@@ -376,8 +481,7 @@ const MATTERTAGS = [
     worldPos: new THREE.Vector3(-220, -140, -280),
     specs: [
       ['적재중량', '600 kg'], ['최대속도', '2.0 m/s'],
-      ['항법방식', '3D LiDAR SLAM'], ['연속작동', '10 시간 (급속충전)'],
-      ['안전인증', 'ISO 3691-4'], ['가격대', '$34,000 – $39,500']
+      ['항법방식', '3D LiDAR SLAM'], ['연속작동', '10 시간']
     ]
   },
   {
@@ -412,31 +516,36 @@ let photoSphere, photoMaterial;
 let textureLoader;
 let textureCache = {};
 let autoTourActive = false, autoTourTimer = null;
+const container = document.getElementById('viewer-container');
 
-// 3. INIT THREE.JS 360 SPATIAL SCENE
+// 3. INIT THREE.JS 16K SPATIAL SCENE
 function initThree() {
   const canvas = document.getElementById('three-canvas');
   scene = new THREE.Scene();
   textureLoader = new THREE.TextureLoader();
 
-  // Natural 70° FOV Camera
-  camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 2000);
+  const rect = container.getBoundingClientRect();
+  const width = rect.width || container.clientWidth;
+  const height = rect.height || container.clientHeight;
+
+  // Natural 70° FOV Camera matched to container aspect
+  camera = new THREE.PerspectiveCamera(70, width / height, 0.01, 2000);
   camera.position.set(0, 0, 0.01);
 
-  // Full DPR WebGL Renderer with High-Precision Shaders
+  // Full DPR WebGL Renderer for 16K Clarity
   renderer = new THREE.WebGLRenderer({
     canvas: canvas,
     antialias: true,
     powerPreference: 'high-performance',
     precision: 'highp'
   });
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(width, height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5));
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.08;
 
-  // 360° Free Look-Around OrbitControls
+  // 360° Free Look OrbitControls
   controls = new THREE.OrbitControls(camera, canvas);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
@@ -445,13 +554,13 @@ function initThree() {
   controls.maxDistance = 0.05;
   controls.enablePan = false;
   controls.target.set(0, 0, 0);
-  controls.maxPolarAngle = Math.PI * 0.88; // 158° (look down at floor)
-  controls.minPolarAngle = Math.PI * 0.12; // 22° (look up at ceiling)
-  controls.rotateSpeed = -0.42; // Natural drag direction
+  controls.maxPolarAngle = Math.PI * 0.88; // 158° (floor look)
+  controls.minPolarAngle = Math.PI * 0.12; // 22° (ceiling look)
+  controls.rotateSpeed = -0.42;
 
-  // ── TRUE 360° EQUIRECTANGULAR SPHERE (Radius 500, 128x64 high poly) ──
+  // ── TRUE 360° EQUIRECTANGULAR SPHERE (Radius 500) ──
   const sphereGeo = new THREE.SphereGeometry(500, 128, 64);
-  sphereGeo.scale(-1, 1, 1); // Render inside of the sphere
+  sphereGeo.scale(-1, 1, 1);
 
   photoMaterial = new THREE.MeshBasicMaterial({
     side: THREE.FrontSide,
@@ -460,7 +569,7 @@ function initThree() {
     depthWrite: false
   });
   photoSphere = new THREE.Mesh(sphereGeo, photoMaterial);
-  photoSphere.rotation.y = -Math.PI * 0.5; // Align center of booth straight ahead at -Z
+  photoSphere.rotation.y = -Math.PI * 0.5; // Align booth center straight ahead
   photoSphere.position.set(0, 0, 0);
   photoSphere.renderOrder = -1;
   scene.add(photoSphere);
@@ -504,7 +613,7 @@ function buildFloorPucks() {
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
   document.getElementById('three-canvas').addEventListener('click', (e) => {
-    const rect = renderer.domElement.getBoundingClientRect();
+    const rect = container.getBoundingClientRect();
     mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
@@ -515,7 +624,7 @@ function buildFloorPucks() {
   });
 }
 
-// 5. 3D MATTERTAGS DOM
+// 5. 3D MATTERTAGS DOM (Scoped Exactly to Player Container)
 function buildMattertagsDOM() {
   const host = document.getElementById('mattertags-host');
   MATTERTAGS.forEach((tag, idx) => {
@@ -528,15 +637,14 @@ function buildMattertagsDOM() {
         '<div class="tag-badge">' + tag.badge + '</div>' +
         '<div class="tag-title">' + tag.title + '</div>' +
         '<div class="tag-desc">' + tag.desc + '</div>' +
-        '<div class="tag-cta">클릭하여 정밀 스펙 확인 &rarr;</div>' +
       '</div>';
-    el.addEventListener('click', () => openProductModal(idx));
+    el.addEventListener('click', () => updateFocusSpec(idx));
     host.appendChild(el);
     tag.domElement = el;
   });
 }
 
-// 6. HIGH-RESOLUTION 8K TEXTURE LOADER (Max Anisotropy 16x & Trilinear Mipmaps)
+// 6. HIGH-RESOLUTION 16K TEXTURE LOADER
 function loadNodeTexture(url, callback) {
   if (textureCache[url]) { callback(textureCache[url]); return; }
   textureLoader.load(url, (tex) => {
@@ -551,22 +659,23 @@ function loadNodeTexture(url, callback) {
   });
 }
 
-// 7. SWITCH SPATIAL NODE (with smooth Matterport fade)
+// 7. SWITCH SPATIAL NODE (3 Vantage Points Switching)
 function switchNode(idx) {
   currentNodeIdx = idx;
   const node = SPATIAL_NODES[idx];
 
   document.querySelectorAll('.node-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
   document.getElementById('radar-loc-txt').textContent = node.name.toUpperCase();
+  document.getElementById('foot-loc').textContent = node.name;
 
   // Smooth cross-fade transition
   new TWEEN.Tween(photoMaterial)
-    .to({ opacity: 0.3 }, 250)
+    .to({ opacity: 0.35 }, 220)
     .onComplete(() => {
       loadNodeTexture(node.image, (tex) => {
         photoMaterial.map = tex;
         photoMaterial.needsUpdate = true;
-        new TWEEN.Tween(photoMaterial).to({ opacity: 1.0 }, 400).start();
+        new TWEEN.Tween(photoMaterial).to({ opacity: 1.0 }, 350).start();
       });
     })
     .start();
@@ -577,10 +686,22 @@ function switchNode(idx) {
   });
 
   drawRadar();
-  showToast('📍 ' + node.name + ' 공간으로 이동했습니다.');
+  updateFocusSpec(idx === 2 ? 2 : idx === 1 ? 1 : 0);
+  showToast('📍 ' + node.name + ' 16K 초고화질 공간으로 이동');
 }
 
-// 8. VIEW MODES
+// 8. UPDATE RIGHT FOCUS SPEC PANEL
+function updateFocusSpec(idx) {
+  const p = MATTERTAGS[idx];
+  if (!p) return;
+  document.getElementById('side-spec-title').textContent = p.title;
+  document.getElementById('side-spec-desc').textContent = p.desc;
+  document.getElementById('side-spec-list').innerHTML = p.specs.map(([k,v]) =>
+    '<div class="spec-item"><div class="spec-k">' + k + '</div><div class="spec-v">' + v + '</div></div>'
+  ).join('');
+}
+
+// 9. VIEW MODES
 function setMode(mode) {
   currentMode = mode;
   ['tour','dollhouse','floor'].forEach(m => document.getElementById('btn-mode-' + m).classList.toggle('active', m === mode));
@@ -589,7 +710,7 @@ function setMode(mode) {
     photoMaterial.opacity = 1.0;
     controls.maxPolarAngle = Math.PI * 0.88;
     controls.minPolarAngle = Math.PI * 0.12;
-    showToast('📸 360° 초고화질 8K 실사 파노라마 투어');
+    showToast('📸 16K 초고화질 360° 실사 파노라마 모드');
   } else if (mode === 'dollhouse') {
     showToast('🏠 3D Dollhouse 입체 모드');
   } else if (mode === 'floor') {
@@ -597,36 +718,36 @@ function setMode(mode) {
   }
 }
 
-// 9. AUTO TOUR
+// 10. AUTO TOUR
 function toggleAutoTour() {
   const btn = document.getElementById('btn-autotour');
   if (autoTourActive) {
     clearInterval(autoTourTimer);
     autoTourActive = false;
-    btn.classList.remove('active');
-    btn.innerHTML = '<span>▶</span> AUTO TOUR';
+    btn.innerHTML = '<span>▶</span> AUTO TOUR 시작';
+    btn.classList.remove('primary');
     showToast('⏹ 자동 투어 정지');
   } else {
     autoTourActive = true;
-    btn.classList.add('active');
     btn.innerHTML = '<span>⏹</span> 투어 정지';
-    showToast('▶ 5초 간격 Matterport 자동 가이드 투어 시작');
+    btn.classList.add('primary');
+    showToast('▶ 5초 간격 3개 거점 자동 투어 시작');
     let ni = (currentNodeIdx + 1) % SPATIAL_NODES.length;
     switchNode(ni);
     autoTourTimer = setInterval(() => { ni = (currentNodeIdx + 1) % SPATIAL_NODES.length; switchNode(ni); }, 5000);
   }
 }
 
-// 10. RADAR MINIMAP
+// 11. RADAR MINIMAP (Outside Player)
 function drawRadar() {
   const cvs = document.getElementById('radar-canvas');
   if (!cvs) return;
   const ctx = cvs.getContext('2d');
   ctx.clearRect(0, 0, cvs.width, cvs.height);
   ctx.strokeStyle = '#00c2ff'; ctx.lineWidth = 1.5;
-  ctx.strokeRect(16, 12, 114, 92);
+  ctx.strokeRect(20, 10, 204, 76);
   ctx.fillStyle = '#ffffff';
-  [[16,12],[130,12],[16,104],[130,104]].forEach(([x,y]) => ctx.fillRect(x-2, y-2, 5, 5));
+  [[20,10],[224,10],[20,86],[224,86]].forEach(([x,y]) => ctx.fillRect(x-2, y-2, 5, 5));
   SPATIAL_NODES.forEach((n, idx) => {
     const isCur = idx === currentNodeIdx;
     ctx.beginPath();
@@ -639,7 +760,7 @@ function drawRadar() {
   const camDir = new THREE.Vector3();
   camera.getWorldDirection(camDir);
   const angle = Math.atan2(camDir.x, camDir.z);
-  ctx.fillStyle = 'rgba(0,194,255,0.2)';
+  ctx.fillStyle = 'rgba(0,194,255,0.25)';
   ctx.beginPath();
   ctx.moveTo(cur.radarPos.x, cur.radarPos.y);
   ctx.arc(cur.radarPos.x, cur.radarPos.y, 24, angle - 0.4, angle + 0.4);
@@ -647,10 +768,14 @@ function drawRadar() {
   ctx.fill();
 }
 
-// 11. MATTERTAG SCREEN PROJECTION
+// 12. MATTERTAG SCREEN PROJECTION (Accurately Relative to Player Container)
 function updateMattertags() {
   const camDir = new THREE.Vector3();
   camera.getWorldDirection(camDir);
+
+  const rect = container.getBoundingClientRect();
+  const cWidth = rect.width;
+  const cHeight = rect.height;
 
   MATTERTAGS.forEach(tag => {
     if (!tag.domElement) return;
@@ -666,43 +791,31 @@ function updateMattertags() {
       return;
     }
     tag.domElement.style.display = 'block';
-    tag.domElement.style.left = ((wp.x * 0.5 + 0.5) * window.innerWidth) + 'px';
-    tag.domElement.style.top  = ((-(wp.y * 0.5) + 0.5) * window.innerHeight) + 'px';
+    tag.domElement.style.left = ((wp.x * 0.5 + 0.5) * cWidth) + 'px';
+    tag.domElement.style.top  = ((-(wp.y * 0.5) + 0.5) * cHeight) + 'px';
   });
 }
 
-// 12. MODALS & UTILS
-function openProductModal(idx) {
-  const p = MATTERTAGS[idx];
-  if (!p) return;
-  document.getElementById('m-badge').textContent = p.badge;
-  document.getElementById('m-name').textContent = p.title;
-  document.getElementById('m-desc').textContent = p.desc;
-  document.getElementById('m-specs').innerHTML = p.specs.map(([k,v]) =>
-    '<div class="spec-item"><div class="spec-k">' + k + '</div><div class="spec-v">' + v + '</div></div>'
-  ).join('');
-  document.getElementById('product-modal').classList.add('open');
-}
-function closeModal() { document.getElementById('product-modal').classList.remove('open'); }
-
+// 13. MODALS & UTILS
 function openDownloadModal() { document.getElementById('download-modal').classList.add('open'); }
 function closeDownloadModal() { document.getElementById('download-modal').classList.remove('open'); }
+function closeModal() { document.getElementById('product-modal').classList.remove('open'); }
 
 function downloadAllPhotos() {
   SPATIAL_NODES.forEach((n, idx) => {
     setTimeout(() => {
       const a = document.createElement('a');
       a.href = n.image;
-      a.download = 'DN_a_360_Node_' + idx + '_8K.jpg';
+      a.download = 'DN_a_360_Node_' + idx + '_16K.jpg';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
     }, idx * 600);
   });
-  showToast('📥 8K 원본 사진 3종 다운로드가 시작되었습니다.');
+  showToast('📥 16K 초고화질 원본 사진 3종 다운로드가 시작되었습니다.');
 }
 
-function openRFQ() { window.open('mailto:sales@dna-robotic.com?subject=RFQ%20from%20Matterport%20Digital%20Twin'); }
+function openRFQ() { window.open('mailto:sales@dna-robotic.com?subject=RFQ%20from%20Matterport%2016K%20Studio'); }
 function toggleFullscreen() {
   if (!document.fullscreenElement) document.documentElement.requestFullscreen();
   else document.exitFullscreen();
@@ -713,7 +826,7 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2400);
 }
 
-// 13. RENDER LOOP
+// 14. RENDER LOOP
 function animate(time) {
   requestAnimationFrame(animate);
   TWEEN.update(time);
@@ -724,9 +837,12 @@ function animate(time) {
 }
 
 function onResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
+  const rect = container.getBoundingClientRect();
+  const width = rect.width;
+  const height = rect.height;
+  camera.aspect = width / height;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(width, height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5));
 }
 
@@ -736,4 +852,4 @@ document.addEventListener('DOMContentLoaded', initThree);
 </html>`;
 
 fs.writeFileSync(outPath, html, { encoding: 'utf8' });
-console.log('Written demo-matterport.html v5.6! Size:', fs.statSync(outPath).size);
+console.log('Written demo-matterport.html v6.0 Studio! Size:', fs.statSync(outPath).size);
