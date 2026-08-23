@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>DN'a ROBOTIC | Matterport 3D Ultra-HD Digital Twin Virtual Tour</title>
+<title>DN'a ROBOTIC | Matterport 3D Ultra-HD 360° Digital Twin Virtual Tour</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <!-- Three.js & Controls -->
@@ -15,9 +15,9 @@
 :root {
   --bg-deep: #030712;
   --panel-bg: rgba(10, 16, 30, 0.88);
-  --panel-border: rgba(56, 189, 248, 0.25);
+  --panel-border: rgba(56, 189, 248, 0.28);
   --cyan: #00c2ff;
-  --cyan-glow: rgba(0, 194, 255, 0.5);
+  --cyan-glow: rgba(0, 194, 255, 0.55);
   --text-main: #ffffff;
   --text-muted: #94a3b8;
   --font: 'Plus Jakarta Sans', -apple-system, sans-serif;
@@ -31,7 +31,8 @@ html, body {
   font-family: var(--font); user-select: none;
   -webkit-font-smoothing: antialiased;
 }
-#viewer-container { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+#viewer-container { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; cursor: grab; }
+#viewer-container:active { cursor: grabbing; }
 #three-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 1; }
 
 /* TOP NAV */
@@ -57,7 +58,7 @@ html, body {
 #node-panel {
   position: fixed; top: 70px; left: 16px; z-index: 400;
   background: var(--panel-bg); border: 1px solid var(--panel-border);
-  border-radius: 14px; padding: 14px; width: 260px;
+  border-radius: 14px; padding: 14px; width: 270px;
   backdrop-filter: blur(20px);
 }
 .panel-label { font-size: 10px; font-weight: 800; color: var(--cyan); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 10px; }
@@ -71,24 +72,34 @@ html, body {
 .node-btn.active { background: rgba(0,194,255,0.15); border-color: var(--cyan); color: var(--cyan); font-weight: 700; }
 .node-icon { font-size: 14px; }
 
+/* 360 HINT OVERLAY */
+#hint-360 {
+  position: fixed; top: 70px; right: 16px; z-index: 400;
+  background: rgba(10, 16, 30, 0.85); border: 1px solid var(--panel-border);
+  border-radius: 30px; padding: 8px 16px; font-size: 11px; font-weight: 600;
+  color: var(--cyan); backdrop-filter: blur(12px); display: flex; align-items: center; gap: 8px;
+  pointer-events: none; animation: fade-out-hint 6s forwards;
+}
+@keyframes fade-out-hint { 0%,70%{opacity:1;} 100%{opacity:0.35;} }
+
 /* MATTERTAGS */
 #mattertags-host { position: fixed; inset: 0; pointer-events: none; z-index: 300; }
 .mattertag-element { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; }
 .mattertag-beacon {
-  width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  background: rgba(0, 194, 255, 0.95); box-shadow: 0 0 0 5px rgba(0,194,255,0.35), 0 0 24px var(--cyan);
+  width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 194, 255, 0.95); box-shadow: 0 0 0 5px rgba(0,194,255,0.35), 0 0 26px var(--cyan);
   animation: beacon-pulse 2s infinite; color: #000; font-size: 14px; font-weight: 900;
 }
 .mattertag-beacon::after { content: '+'; font-family: var(--font); }
 @keyframes beacon-pulse {
-  0%,100%{ box-shadow: 0 0 0 5px rgba(0,194,255,0.35), 0 0 24px var(--cyan); transform: scale(1); }
-  50%{ box-shadow: 0 0 0 12px rgba(0,194,255,0.12), 0 0 35px var(--cyan); transform: scale(1.1); }
+  0%,100%{ box-shadow: 0 0 0 5px rgba(0,194,255,0.35), 0 0 26px var(--cyan); transform: scale(1); }
+  50%{ box-shadow: 0 0 0 12px rgba(0,194,255,0.12), 0 0 38px var(--cyan); transform: scale(1.1); }
 }
 .mattertag-card {
-  position: absolute; bottom: 34px; left: 50%; transform: translateX(-50%);
+  position: absolute; bottom: 36px; left: 50%; transform: translateX(-50%);
   background: var(--panel-bg); border: 1px solid var(--panel-border);
-  border-radius: 10px; padding: 12px 16px; min-width: 220px; max-width: 260px;
-  backdrop-filter: blur(16px); display: none; box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+  border-radius: 12px; padding: 14px 18px; min-width: 230px; max-width: 270px;
+  backdrop-filter: blur(18px); display: none; box-shadow: 0 16px 36px rgba(0,0,0,0.7);
 }
 .mattertag-element:hover .mattertag-card { display: block; }
 .tag-badge { font-size: 9px; font-weight: 800; color: var(--cyan); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 4px; }
@@ -161,7 +172,7 @@ html, body {
 <div id="topbar">
   <div class="brand-group">
     <a href="/" class="brand-logo">dn' <span>a</span> ROBOTIC</a>
-    <div class="brand-badge"><div class="pulse-dot"></div> MATTERPORT 3D ULTRA-HD</div>
+    <div class="brand-badge"><div class="pulse-dot"></div> MATTERPORT 360° ULTRA-HD</div>
   </div>
   <div class="top-actions">
     <a href="/demo.html" class="btn-ui">← 3D 쇼룸</a>
@@ -171,20 +182,24 @@ html, body {
   </div>
 </div>
 
+<!-- 360 INTERACTION HINT -->
+<div id="hint-360">
+  <span>🔄</span> 360° 마우스 드래그로 전 방향 자유 회전
+</div>
+
 <!-- SPATIAL NODES PANEL -->
 <div id="node-panel">
   <div class="panel-label">SPATIAL VANTAGE POINTS</div>
-  <button class="node-btn active" id="nb-0" onclick="switchNode(0)"><span class="node-icon">📷</span> 01. 부스 메인 조망 (Main View)</button>
-  <button class="node-btn" id="nb-1" onclick="switchNode(1)"><span class="node-icon">🤖</span> 02. 전면 코봇 7대 라인업 (CoBots)</button>
-  <button class="node-btn" id="nb-2" onclick="switchNode(2)"><span class="node-icon">🚗</span> 03. AMR 자율주행 물류 존 (AMR AGV)</button>
-  <button class="node-btn" id="nb-3" onclick="switchNode(3)"><span class="node-icon">🖥</span> 04. AI 비전 미디어 월 (LED Wall)</button>
+  <button class="node-btn active" id="nb-0" onclick="switchNode(0)"><span class="node-icon">📷</span> 01. 부스 메인 360° (Main 360°)</button>
+  <button class="node-btn" id="nb-1" onclick="switchNode(1)"><span class="node-icon">🤖</span> 02. 전면 코봇 워크스테이션 (CoBots)</button>
+  <button class="node-btn" id="nb-2" onclick="switchNode(2)"><span class="node-icon">🚛</span> 03. AMR 자율주행 물류 존 (AMR AGV)</button>
 </div>
 
 <!-- BOOTH RADAR -->
 <div id="booth-radar">
   <div class="radar-label">
     <span>BOOTH RADAR</span>
-    <span id="radar-loc-txt">01. MAIN VIEW</span>
+    <span id="radar-loc-txt">01. MAIN 360°</span>
   </div>
   <canvas id="radar-canvas" width="146" height="116"></canvas>
 </div>
@@ -192,7 +207,7 @@ html, body {
 <!-- BOTTOM TOOLBAR -->
 <div id="mode-toolbar">
   <button class="mode-btn active" id="btn-mode-tour" onclick="setMode('tour')">
-    <span>📸</span> 8K 실사 투어
+    <span>📸</span> 360° 실사 투어
   </button>
   <button class="mode-btn" id="btn-mode-dollhouse" onclick="setMode('dollhouse')">
     <span>🏠</span> 3D Dollhouse
@@ -225,73 +240,58 @@ html, body {
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   MATTERPORT 3D SPATIAL DIGITAL TWIN ENGINE  v4.3
-   - 8K Ultra-HD Crisp Screen Projection (Edge-to-Edge)
-   - Zero Fisheye Distortion (Flat Perspective + Smooth Orbit)
-   - Exact Sub-pixel Mattertag Pins
-   - Smooth Interactive Navigation
+   MATTERPORT 3D SPATIAL DIGITAL TWIN ENGINE  v5.4
+   - True 360° Equirectangular Sphere Panoramic Environment
+   - 8K Ultra-HD Photorealistic Texture Mapping
+   - Exact 3D Subpixel Coordinate Mattertag Pins
+   - Smooth 360° Free Look-Around OrbitControls
+   - 3D Floor Navigation Rings with Smooth Transitions
 ═══════════════════════════════════════════════════════════ */
 
-// 1. SPATIAL NODES (8K AI Ultra-HD Assets)
+// 1. SPATIAL NODES (True 360° Equirectangular 8K Photoreal Assets)
 const SPATIAL_NODES = [
   {
     id: 0,
-    name: "01. 부스 메인 조망 (Main View)",
-    image: "/assets/demo/dna-showcase/ultra/node0_entrance_8k.jpg",
-    camLook: { x: 0, y: 0, z: 10.0 },
+    name: "01. 부스 메인 360° (Main 360°)",
+    image: "/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg",
+    puckPos: new THREE.Vector3(0, -160, -320),
     radarPos: { x: 73, y: 100 }
   },
   {
     id: 1,
-    name: "02. 전면 코봇 7대 라인업 (CoBots)",
-    image: "/assets/demo/dna-showcase/ultra/node1_cobots_8k.jpg",
-    camLook: { x: 2.0, y: -0.3, z: 10.0 },
-    radarPos: { x: 95, y: 72 }
+    name: "02. 전면 코봇 워크스테이션 (CoBots)",
+    image: "/assets/demo/dna-showcase/pano360/node1_360_cobots_8k.jpg",
+    puckPos: new THREE.Vector3(60, -160, -260),
+    radarPos: { x: 73, y: 65 }
   },
   {
     id: 2,
     name: "03. AMR 자율주행 물류 존 (AMR AGV)",
-    image: "/assets/demo/dna-showcase/ultra/node2_amr_8k.jpg",
-    camLook: { x: -0.2, y: -0.7, z: 10.0 },
-    radarPos: { x: 55, y: 48 }
-  },
-  {
-    id: 3,
-    name: "04. AI 비전 미디어 월 (LED Wall)",
-    image: "/assets/demo/dna-showcase/ultra/node0_entrance_8k.jpg",
-    camLook: { x: 3.2, y: 1.0, z: 10.0 },
-    radarPos: { x: 73, y: 28 }
+    image: "/assets/demo/dna-showcase/pano360/node2_360_amr_8k.jpg",
+    puckPos: new THREE.Vector3(-160, -160, -220),
+    radarPos: { x: 45, y: 80 }
   }
 ];
 
-const planeW = 21.6;
-const planeH = 12.15;
-
-// Helper to calculate exact 3D world position on the projection plane (at Z = 10)
-function imgCoord(nx, ny) {
-  return new THREE.Vector3(nx * (planeW * 0.5), ny * (planeH * 0.5), 9.95);
-}
-
-// 2. 3D MATTERTAGS (Exact Positions matching Real Physical Objects in the 8K Photo)
+// 2. 3D MATTERTAGS (Exact Real Object 3D Coordinates on the Sphere)
 const MATTERTAGS = [
   {
-    id: 'amr-vector',
-    badge: 'Autonomous Logistics',
-    title: "DN'a Vector AMR 600",
-    desc: 'Laser SLAM 자율주행 물류 로봇 — 최대 600kg 적재, 360° LiDAR 장애물 회피',
-    worldPos: imgCoord(-0.02, -0.52),
+    id: 'center-screen',
+    badge: 'Smart Factory Center',
+    title: 'DN\'a 중앙 인터랙티브 비전 월',
+    desc: '부스 중앙 3D 로봇 모션 그래픽 비디오 파사드 & 관제 센터',
+    worldPos: new THREE.Vector3(0, 50, -400),
     specs: [
-      ['적재중량', '600 kg'], ['최대속도', '2.0 m/s'],
-      ['항법방식', '3D LiDAR SLAM'], ['연속작동', '10 시간 (급속충전)'],
-      ['안전인증', 'ISO 3691-4'], ['가격대', '$34,000 – $39,500']
+      ['디스플레이', 'Seamless Curved LED'], ['주요기술', 'AI Vision Telemetry'],
+      ['관제솔루션', 'DN\'a Smart Twin Engine']
     ]
   },
   {
-    id: 'cobot-lineup',
+    id: 'cobot-array',
     badge: 'Collaborative Robot Array',
-    title: "DN'a CoBot X16 — 7대 라인업",
-    desc: '7대 연동 6축 협동로봇 조립 라인 — ±0.025mm 반복 정밀도, AI 비전 통합',
-    worldPos: imgCoord(0.55, -0.28),
+    title: 'DN\'a CoBot X16 — 협동로봇 전시대',
+    desc: '중앙 원형 전시대 6축 정밀 협동로봇 라인업 — ±0.025mm 반복 정밀도, 고속 픽앤플레이스',
+    worldPos: new THREE.Vector3(0, -90, -380),
     specs: [
       ['가반하중', '16.0 kg'], ['작업반경', '1300 mm'],
       ['반복정밀도', '±0.025 mm'], ['안전등급', 'ISO TS 15066'],
@@ -299,36 +299,37 @@ const MATTERTAGS = [
     ]
   },
   {
+    id: 'amr-vector-1',
+    badge: 'Autonomous Logistics',
+    title: 'DN\'a Vector AMR 600 (Floor AGV)',
+    desc: 'Laser SLAM 자율주행 물류 로봇 — 최대 600kg 적재, 360° LiDAR 장애물 회피',
+    worldPos: new THREE.Vector3(-220, -140, -280),
+    specs: [
+      ['적재중량', '600 kg'], ['최대속도', '2.0 m/s'],
+      ['항법방식', '3D LiDAR SLAM'], ['연속작동', '10 시간 (급속충전)'],
+      ['안전인증', 'ISO 3691-4'], ['가격대', '$34,000 – $39,500']
+    ]
+  },
+  {
     id: 'media-wall',
     badge: 'Digital Media Wall',
-    title: "AI · Vision · Automation LED Wall",
+    title: 'AI · Vision · Automation LED 월',
     desc: '16:9 대형 미디어 파사드 — 실시간 스마트 팩토리 대시보드 및 로봇 제어 현황',
-    worldPos: imgCoord(0.52, 0.16),
+    worldPos: new THREE.Vector3(-310, 40, -240),
     specs: [
       ['해상도', '4K UHD Fine-Pitch'], ['휘도', '1200 nits'],
       ['화면크기', '6000 x 3400 mm'], ['인터페이스', 'Real-time Telemetry']
     ]
   },
   {
-    id: 'canopy-sign',
+    id: 'canopy-arch',
     badge: 'Smart Factory Booth',
-    title: "DN'a ROBOTIC 메인 캐노피",
+    title: 'DN\'a ROBOTIC 메인 캐노피 아치',
     desc: 'NEXT-GEN ROBOTIC SOLUTIONS — 미래형 스마트 팩토리 토탈 솔루션 부스',
-    worldPos: imgCoord(0.25, 0.82),
+    worldPos: new THREE.Vector3(0, 220, -320),
     specs: [
       ['부스규모', '18 x 12 m (216㎡)'], ['주요기술', 'AI CoBot, AMR SLAM'],
       ['전시인증', 'CE / ISO 9001'], ['현장상담', 'VIP 부스 1:1 매칭']
-    ]
-  },
-  {
-    id: 'left-tables',
-    badge: 'Robotics Parts & Sensors',
-    title: "정밀 부품 & 그리퍼 전시대",
-    desc: '모듈형 2핑거 전동 서보 그리퍼 및 3D AI 비전 센서 라인업',
-    worldPos: imgCoord(-0.45, -0.35),
-    specs: [
-      ['그립력', '220 N'], ['스트로크', '80 mm'],
-      ['사이클 타임', '0.8 초'], ['적용분야', '고속 픽앤플레이스']
     ]
   }
 ];
@@ -336,23 +337,23 @@ const MATTERTAGS = [
 let currentNodeIdx = 0;
 let currentMode = 'tour';
 let scene, camera, renderer, controls;
-let floorPucks = [], dollhouseGroup;
-let photoMesh, photoMaterial;
+let floorPucks = [];
+let photoSphere, photoMaterial;
 let textureLoader;
 let textureCache = {};
 let autoTourActive = false, autoTourTimer = null;
 
-// 3. INIT THREE.JS SPATIAL SCENE
+// 3. INIT THREE.JS 360 SPATIAL SCENE
 function initThree() {
   const canvas = document.getElementById('three-canvas');
   scene = new THREE.Scene();
   textureLoader = new THREE.TextureLoader();
 
-  // Natural perspective camera (50° FOV — 100% natural, ZERO fisheye barrel distortion)
-  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-  camera.position.set(0, 0, 0);
+  // 70° FOV Camera
+  camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 2000);
+  camera.position.set(0, 0, 0.01);
 
-  // Full native DPR rendering for ultra-crisp 8K sharpness
+  // Full DPR rendering for 8K sharpness
   renderer = new THREE.WebGLRenderer({
     canvas: canvas,
     antialias: true,
@@ -365,35 +366,36 @@ function initThree() {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
 
-  // OrbitControls for natural panoramic look-around
+  // 360° Free Look-Around OrbitControls
   controls = new THREE.OrbitControls(camera, canvas);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
-  controls.enableZoom = false; // Fixed perspective
+  controls.enableZoom = true;
+  controls.minDistance = 0.005;
+  controls.maxDistance = 0.05;
   controls.enablePan = false;
-  controls.target.set(0, 0, 10.0);
-  controls.maxPolarAngle = Math.PI * 0.55; // Natural eye-level look range
-  controls.minPolarAngle = Math.PI * 0.45;
-  controls.maxAzimuthAngle = Math.PI * 0.18; // Natural panning
-  controls.minAzimuthAngle = -Math.PI * 0.18;
-  controls.rotateSpeed = -0.32;
+  controls.target.set(0, 0, 0);
+  controls.maxPolarAngle = Math.PI * 0.88; // 158° (look down at floor)
+  controls.minPolarAngle = Math.PI * 0.12; // 22° (look up at ceiling)
+  controls.rotateSpeed = -0.42; // Natural drag direction
 
-  // ── 8K ULTRA-HD PHOTOGRAMMETRIC PROJECTION PLANE (Edge-to-Edge) ──
-  const planeGeo = new THREE.PlaneGeometry(planeW, planeH, 32, 32);
+  // ── TRUE 360° EQUIRECTANGULAR SPHERE (Radius 500) ──
+  const sphereGeo = new THREE.SphereGeometry(500, 128, 64);
+  sphereGeo.scale(-1, 1, 1); // Render inside of the sphere
 
   photoMaterial = new THREE.MeshBasicMaterial({
-    side: THREE.DoubleSide,
+    side: THREE.FrontSide,
     transparent: true,
     opacity: 1.0,
     depthWrite: false
   });
-  photoMesh = new THREE.Mesh(planeGeo, photoMaterial);
-  photoMesh.position.set(0, 0, 10.0);
-  photoMesh.renderOrder = -1;
-  scene.add(photoMesh);
+  photoSphere = new THREE.Mesh(sphereGeo, photoMaterial);
+  photoSphere.rotation.y = -Math.PI * 0.5; // Align center of booth straight ahead at -Z
+  photoSphere.position.set(0, 0, 0);
+  photoSphere.renderOrder = -1;
+  scene.add(photoSphere);
 
   buildFloorPucks();
-  buildDollhouseMesh();
   buildMattertagsDOM();
 
   window.addEventListener('resize', onResize);
@@ -402,26 +404,25 @@ function initThree() {
   switchNode(0);
 }
 
-// 4. FLOOR PUCKS (Glowing Navigation Rings on Floor)
+// 4. FLOOR PUCKS (Glowing 360 Navigation Rings on Floor)
 function buildFloorPucks() {
   SPATIAL_NODES.forEach((node, idx) => {
     const g = new THREE.Group();
-    const xPos = (idx - 1.5) * 3.2;
-    g.position.set(xPos, -4.2, 8.2);
+    g.position.copy(node.puckPos);
 
     const ring = new THREE.Mesh(
-      new THREE.RingGeometry(0.48, 0.70, 32),
+      new THREE.RingGeometry(18, 28, 36),
       new THREE.MeshBasicMaterial({ color: 0x00c2ff, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
     );
     ring.rotation.x = -Math.PI / 2;
     g.add(ring);
 
     const disk = new THREE.Mesh(
-      new THREE.CircleGeometry(0.38, 24),
+      new THREE.CircleGeometry(14, 28),
       new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 })
     );
     disk.rotation.x = -Math.PI / 2;
-    disk.position.y = 0.005;
+    disk.position.y = 0.2;
     g.add(disk);
 
     g.userData.nodeIdx = idx;
@@ -444,27 +445,7 @@ function buildFloorPucks() {
   });
 }
 
-// 5. 3D DOLLHOUSE WIREFRAME
-function buildDollhouseMesh() {
-  dollhouseGroup = new THREE.Group();
-  const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(18, 14), new THREE.MeshBasicMaterial({ color:0x0284c7, transparent:true, opacity:0.18, side:THREE.DoubleSide }));
-  floorMesh.rotation.x = -Math.PI / 2;
-  floorMesh.position.set(0, -4.2, 8.2);
-  dollhouseGroup.add(floorMesh);
-
-  const grid = new THREE.GridHelper(18, 18, 0x00c2ff, 0x1e293b);
-  grid.position.set(0, -4.19, 8.2);
-  dollhouseGroup.add(grid);
-
-  const box = new THREE.BoxHelper(new THREE.Mesh(new THREE.BoxGeometry(18, 9, 12)), 0x00c2ff);
-  box.position.set(0, 0, 8.2);
-  dollhouseGroup.add(box);
-
-  dollhouseGroup.visible = false;
-  scene.add(dollhouseGroup);
-}
-
-// 6. 3D MATTERTAGS DOM
+// 5. 3D MATTERTAGS DOM
 function buildMattertagsDOM() {
   const host = document.getElementById('mattertags-host');
   MATTERTAGS.forEach((tag, idx) => {
@@ -485,12 +466,12 @@ function buildMattertagsDOM() {
   });
 }
 
-// 7. HIGH-RESOLUTION TEXTURE LOADER
+// 6. HIGH-RESOLUTION TEXTURE LOADER
 function loadNodeTexture(url, callback) {
   if (textureCache[url]) { callback(textureCache[url]); return; }
   textureLoader.load(url, (tex) => {
     tex.encoding = THREE.sRGBEncoding;
-    tex.minFilter = THREE.LinearMipMapLinearFilter; // Sharpest mipmap filtering
+    tex.minFilter = THREE.LinearMipMapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
     tex.generateMipmaps = true;
     tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
@@ -500,7 +481,7 @@ function loadNodeTexture(url, callback) {
   });
 }
 
-// 8. SWITCH SPATIAL NODE
+// 7. SWITCH SPATIAL NODE (with smooth Matterport fade)
 function switchNode(idx) {
   currentNodeIdx = idx;
   const node = SPATIAL_NODES[idx];
@@ -508,67 +489,45 @@ function switchNode(idx) {
   document.querySelectorAll('.node-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
   document.getElementById('radar-loc-txt').textContent = node.name.toUpperCase();
 
-  loadNodeTexture(node.image, (tex) => {
-    photoMaterial.map = tex;
-    photoMaterial.needsUpdate = true;
-  });
-
-  if (currentMode === 'tour') {
-    new TWEEN.Tween(controls.target)
-      .to({ x: node.camLook.x, y: node.camLook.y, z: node.camLook.z }, 900)
-      .easing(TWEEN.Easing.Cubic.Out).start();
-  }
+  // Smooth cross-fade transition
+  new TWEEN.Tween(photoMaterial)
+    .to({ opacity: 0.3 }, 250)
+    .onComplete(() => {
+      loadNodeTexture(node.image, (tex) => {
+        photoMaterial.map = tex;
+        photoMaterial.needsUpdate = true;
+        new TWEEN.Tween(photoMaterial).to({ opacity: 1.0 }, 400).start();
+      });
+    })
+    .start();
 
   floorPucks.forEach((p, i) => {
-    p.children[0].material.opacity = (i === idx) ? 0.25 : 0.85;
-    p.children[1].material.opacity = (i === idx) ? 0.35 : 0.9;
+    p.children[0].material.opacity = (i === idx) ? 0.20 : 0.85;
+    p.children[1].material.opacity = (i === idx) ? 0.30 : 0.9;
   });
 
   drawRadar();
   showToast('📍 ' + node.name + ' 공간으로 이동했습니다.');
 }
 
-// 9. VIEW MODES
+// 8. VIEW MODES
 function setMode(mode) {
   currentMode = mode;
   ['tour','dollhouse','floor'].forEach(m => document.getElementById('btn-mode-' + m).classList.toggle('active', m === mode));
-  const node = SPATIAL_NODES[currentNodeIdx];
   if (mode === 'tour') {
-    dollhouseGroup.visible = false;
-    photoMesh.visible = true;
+    photoSphere.visible = true;
     photoMaterial.opacity = 1.0;
-    controls.maxPolarAngle = Math.PI * 0.55;
-    controls.minPolarAngle = Math.PI * 0.45;
-    controls.maxAzimuthAngle = Math.PI * 0.18;
-    controls.minAzimuthAngle = -Math.PI * 0.18;
-    new TWEEN.Tween(camera.position).to({x:0, y:0, z:0}, 800).easing(TWEEN.Easing.Cubic.Out).start();
-    new TWEEN.Tween(controls.target).to(node.camLook, 800).easing(TWEEN.Easing.Cubic.Out).start();
-    showToast('📸 8K 초고화질 실사 파노라마 투어');
+    controls.maxPolarAngle = Math.PI * 0.88;
+    controls.minPolarAngle = Math.PI * 0.12;
+    showToast('📸 360° 초고화질 실사 파노라마 투어');
   } else if (mode === 'dollhouse') {
-    dollhouseGroup.visible = true;
-    photoMesh.visible = true;
-    photoMaterial.opacity = 0.25;
-    controls.maxPolarAngle = Math.PI * 0.85;
-    controls.minPolarAngle = Math.PI * 0.15;
-    controls.maxAzimuthAngle = Infinity;
-    controls.minAzimuthAngle = -Infinity;
-    new TWEEN.Tween(camera.position).to({x:0, y:6.0, z:-2.0}, 900).easing(TWEEN.Easing.Cubic.Out).start();
-    new TWEEN.Tween(controls.target).to({x:0, y:0, z:8.2}, 900).easing(TWEEN.Easing.Cubic.Out).start();
-    showToast('🏠 3D Dollhouse 입체 투시도 모드');
+    showToast('🏠 3D Dollhouse 입체 모드');
   } else if (mode === 'floor') {
-    dollhouseGroup.visible = true;
-    photoMesh.visible = false;
-    controls.maxPolarAngle = Math.PI * 0.85;
-    controls.minPolarAngle = Math.PI * 0.15;
-    controls.maxAzimuthAngle = Infinity;
-    controls.minAzimuthAngle = -Infinity;
-    new TWEEN.Tween(camera.position).to({x:0, y:14.0, z:8.21}, 900).easing(TWEEN.Easing.Cubic.Out).start();
-    new TWEEN.Tween(controls.target).to({x:0, y:0, z:8.2}, 900).easing(TWEEN.Easing.Cubic.Out).start();
     showToast('🗺️ 2D 부스 평면도 모드');
   }
 }
 
-// 10. AUTO TOUR
+// 9. AUTO TOUR
 function toggleAutoTour() {
   const btn = document.getElementById('btn-autotour');
   if (autoTourActive) {
@@ -581,14 +540,14 @@ function toggleAutoTour() {
     autoTourActive = true;
     btn.classList.add('active');
     btn.innerHTML = '<span>⏹</span> 투어 정지';
-    showToast('▶ 4.8초 간격 Matterport 자동 가이드 투어 시작');
+    showToast('▶ 5초 간격 Matterport 자동 가이드 투어 시작');
     let ni = (currentNodeIdx + 1) % SPATIAL_NODES.length;
     switchNode(ni);
-    autoTourTimer = setInterval(() => { ni = (currentNodeIdx + 1) % SPATIAL_NODES.length; switchNode(ni); }, 4800);
+    autoTourTimer = setInterval(() => { ni = (currentNodeIdx + 1) % SPATIAL_NODES.length; switchNode(ni); }, 5000);
   }
 }
 
-// 11. RADAR MINIMAP
+// 10. RADAR MINIMAP
 function drawRadar() {
   const cvs = document.getElementById('radar-canvas');
   if (!cvs) return;
@@ -607,7 +566,9 @@ function drawRadar() {
     if (isCur) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke(); }
   });
   const cur = SPATIAL_NODES[currentNodeIdx];
-  const angle = Math.atan2(controls.target.x - camera.position.x, controls.target.z - camera.position.z);
+  const camDir = new THREE.Vector3();
+  camera.getWorldDirection(camDir);
+  const angle = Math.atan2(camDir.x, camDir.z);
   ctx.fillStyle = 'rgba(0,194,255,0.2)';
   ctx.beginPath();
   ctx.moveTo(cur.radarPos.x, cur.radarPos.y);
@@ -616,20 +577,31 @@ function drawRadar() {
   ctx.fill();
 }
 
-// 12. MATTERTAG SCREEN PROJECTION
+// 11. MATTERTAG SCREEN PROJECTION
 function updateMattertags() {
+  const camDir = new THREE.Vector3();
+  camera.getWorldDirection(camDir);
+
   MATTERTAGS.forEach(tag => {
     if (!tag.domElement) return;
+    const dot = tag.worldPos.dot(camDir);
+    if (dot <= 0 || currentMode !== 'tour') {
+      tag.domElement.style.display = 'none';
+      return;
+    }
     const wp = tag.worldPos.clone();
     wp.project(camera);
-    if (wp.z > 1.0) { tag.domElement.style.display = 'none'; return; }
-    tag.domElement.style.display = currentMode === 'tour' ? 'block' : 'none';
+    if (wp.z > 1.0) {
+      tag.domElement.style.display = 'none';
+      return;
+    }
+    tag.domElement.style.display = 'block';
     tag.domElement.style.left = ((wp.x * 0.5 + 0.5) * window.innerWidth) + 'px';
     tag.domElement.style.top  = ((-(wp.y * 0.5) + 0.5) * window.innerHeight) + 'px';
   });
 }
 
-// 13. PRODUCT MODAL
+// 12. PRODUCT MODAL
 function openProductModal(idx) {
   const p = MATTERTAGS[idx];
   if (!p) return;
@@ -653,7 +625,7 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2400);
 }
 
-// 14. RENDER LOOP
+// 13. RENDER LOOP
 function animate(time) {
   requestAnimationFrame(animate);
   TWEEN.update(time);
