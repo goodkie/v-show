@@ -1,4 +1,10 @@
-<!DOCTYPE html>
+// generate_clean_matterport.js — Ultra-sharp 8K AI Matterport Virtual Tour
+const fs = require('fs');
+const path = require('path');
+
+const outPath = 'E:/vivpr/ai/v-show/virtual-tradeshow-commercial-v1/app_build/client/demo-matterport.html';
+
+const html = `<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -675,4 +681,7 @@ function onResize() {
 document.addEventListener('DOMContentLoaded', initThree);
 </script>
 </body>
-</html>
+</html>`;
+
+fs.writeFileSync(outPath, html, { encoding: 'utf8' });
+console.log('Successfully written clean UTF-8 demo-matterport.html! Size:', fs.statSync(outPath).size);
