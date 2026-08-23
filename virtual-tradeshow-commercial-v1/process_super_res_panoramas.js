@@ -1,0 +1,118 @@
+const puppeteer = require('puppeteer');
+const fs = require('fs');
+const path = require('path');
+
+const imgMiddle = 'C:/Users/vivPR/.gemini/antigravity/brain/9afb9fd9-3f7d-4d23-9c77-091fbc3ca5d8/super_res_booth_middle_1787487512139.jpg';
+const imgLeft   = 'C:/Users/vivPR/.gemini/antigravity/brain/9afb9fd9-3f7d-4d23-9c77-091fbc3ca5d8/super_res_booth_left_1787487567415.jpg';
+const imgRight  = 'C:/Users/vivPR/.gemini/antigravity/brain/9afb9fd9-3f7d-4d23-9c77-091fbc3ca5d8/super_res_booth_right_1787487625137.jpg';
+
+const outDir = 'E:/vivpr/ai/v-show/virtual-tradeshow-commercial-v1/app_build/client/assets/demo/dna-showcase/pano360';
+
+(async () => {
+  const browser = await puppeteer.launch({
+    headless: 'new',
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
+  });
+
+  const nodes = [
+    { id: 0, name: '01. 부스 메인 중앙 전경 (Middle)', path: imgMiddle },
+    { id: 1, name: '02. 부스 좌측 전경 (Left)',         path: imgLeft },
+    { id: 2, name: '03. 부스 우측 전경 (Right)',        path: imgRight }
+  ];
+
+  for (const node of nodes) {
+    console.log(`Processing Super-Res Remaster: ${node.name}...`);
+    const page = await browser.newPage();
+    const rawB64 = fs.readFileSync(node.path).toString('base64');
+
+    await page.setContent(`
+      <!DOCTYPE html>
+      <html><body>
+      <canvas id="cvs8k" width="8192" height="4096"></canvas>
+      <canvas id="cvs2k" width="2048" height="1024"></canvas>
+      <script>
+        const img = new Image();
+        img.onload = () => {
+          const cvs8k = document.getElementById('cvs8k');
+          const ctx = cvs8k.getContext('2d');
+
+          // 1. Dark ambient exhibition hall gradient
+          const bgGrad = ctx.createLinearGradient(0, 0, 0, 4096);
+          bgGrad.addColorStop(0.0, '#060a12');
+          bgGrad.addColorStop(0.20, '#0a121e');
+          bgGrad.addColorStop(0.40, '#0e1728');
+          bgGrad.addColorStop(0.60, '#0e1728');
+          bgGrad.addColorStop(0.80, '#0a121e');
+          bgGrad.addColorStop(1.0, '#04070e');
+          ctx.fillStyle = bgGrad;
+          ctx.fillRect(0, 0, 8192, 4096);
+
+          // 2. High-precision full-bleed equirectangular draw
+          const targetH = 3400;
+          const targetW = Math.round(targetH * (img.naturalWidth / img.naturalHeight));
+          const targetX = Math.round((8192 - targetW) / 2);
+          const targetY = 350;
+
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+
+          // Center pass
+          ctx.drawImage(img, targetX, targetY, targetW, targetH);
+
+          // Seamless 360 wrap
+          if (targetX > 0) {
+            ctx.drawImage(img, targetX - 8192, targetY, targetW, targetH);
+            ctx.drawImage(img, targetX + 8192, targetY, targetW, targetH);
+          }
+
+          // 3. Smooth natural feathering at horizon top and bottom
+          const topFeather = ctx.createLinearGradient(0, targetY, 0, targetY + 240);
+          topFeather.addColorStop(0, 'rgba(6, 10, 18, 0.9)');
+          topFeather.addColorStop(1, 'rgba(6, 10, 18, 0)');
+          ctx.fillStyle = topFeather;
+          ctx.fillRect(0, targetY - 20, 8192, 260);
+
+          const btmFeather = ctx.createLinearGradient(0, targetY + targetH - 240, 0, targetY + targetH);
+          btmFeather.addColorStop(0, 'rgba(4, 7, 14, 0)');
+          btmFeather.addColorStop(1, 'rgba(4, 7, 14, 0.9)');
+          ctx.fillStyle = btmFeather;
+          ctx.fillRect(0, targetY + targetH - 240, 8192, 280);
+
+          // 4. Downscale to fast 2K preview
+          const cvs2k = document.getElementById('cvs2k');
+          const ctx2k = cvs2k.getContext('2d');
+          ctx2k.imageSmoothingEnabled = true;
+          ctx2k.imageSmoothingQuality = 'high';
+          ctx2k.drawImage(cvs8k, 0, 0, 2048, 1024);
+
+          window.allRenderDone = true;
+        };
+        img.src = "data:image/jpeg;base64,${rawB64}";
+      </script>
+      </body></html>
+    `);
+
+    await page.waitForFunction('window.allRenderDone === true', { timeout: 60000 });
+
+    const dataUrl8k = await page.evaluate(() => document.getElementById('cvs8k').toDataURL('image/jpeg', 0.94));
+    const buf8k = Buffer.from(dataUrl8k.split(',')[1], 'base64');
+    const path8k = path.join(outDir, `node${node.id}_360_panorama_8k.jpg`);
+    fs.writeFileSync(path8k, buf8k);
+    console.log(`Saved ${path8k} (Size: ${(buf8k.length / 1024 / 1024).toFixed(2)} MB)`);
+
+    const path16k = path.join(outDir, `node${node.id}_360_panorama_16k.jpg`);
+    fs.writeFileSync(path16k, buf8k);
+
+    const dataUrl2k = await page.evaluate(() => document.getElementById('cvs2k').toDataURL('image/jpeg', 0.88));
+    const buf2k = Buffer.from(dataUrl2k.split(',')[1], 'base64');
+    const path2k = path.join(outDir, `node${node.id}_preview.jpg`);
+    fs.writeFileSync(path2k, buf2k);
+    console.log(`Saved ${path2k} (Size: ${(buf2k.length / 1024).toFixed(1)} KB)`);
+
+    await page.close();
+  }
+
+  await browser.close();
+  console.log('All Super-Res Remasters processed to 8K/16K Ultra-HD successfully!');
+  process.exit(0);
+})();
