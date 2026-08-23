@@ -756,8 +756,8 @@ function initThree() {
   const width = rect.width || container.clientWidth || 1200;
   const height = rect.height || container.clientHeight || 700;
 
-  // Natural wide immersive FOV (58°)
-  camera = new THREE.PerspectiveCamera(58, width / height, 0.01, 2000);
+  // Immersive 65° FOV for complete trade show booth framing
+  camera = new THREE.PerspectiveCamera(65, width / height, 0.01, 2000);
   camera.position.set(0, 0, 0.01);
 
   // High-DPR WebGL Renderer
@@ -813,6 +813,12 @@ function initThree() {
 
   window.addEventListener('resize', onResize);
   requestAnimationFrame(animate);
+
+  // Background preload all nodes for instant 0-latency switching
+  SPATIAL_NODES.forEach(n => {
+    if (n.preview) loadNodeTexture(n.preview);
+    if (n.image8k) loadNodeTexture(n.image8k);
+  });
 
   switchNode(0);
 }
