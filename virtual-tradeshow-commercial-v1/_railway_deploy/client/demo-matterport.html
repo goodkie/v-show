@@ -210,7 +210,7 @@ html, body {
 .foot-actions { display: flex; align-items: center; gap: 8px; }
 
 /* ══════════════════════════════════════════════
-   PRODUCT INSPECTION DRAWER & BACKDROP
+   PRODUCT INSPECTION DRAWER & HIGH-RES VISUALS
 ══════════════════════════════════════════════ */
 #drawer-scrim {
   position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
@@ -220,8 +220,8 @@ html, body {
 
 .drawer {
   position: absolute; z-index: 500; top: 0; right: 0; bottom: 0;
-  width: 440px; max-width: 90vw; background: rgba(7, 14, 26, 0.98);
-  backdrop-filter: blur(24px); border-left: 1px solid var(--panel-border);
+  width: 450px; max-width: 92vw; background: rgba(7, 14, 26, 0.98);
+  backdrop-filter: blur(26px); border-left: 1px solid var(--panel-border);
   transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex; flex-direction: column; box-shadow: -15px 0 50px rgba(0,0,0,0.9);
 }
@@ -239,10 +239,28 @@ html, body {
 .drawer-close:hover { background: rgba(239, 68, 68, 0.2); color: #ef4444; border-color: #ef4444; }
 .drawer-body { flex: 1; overflow-y: auto; padding: 18px; }
 
+/* HIGH-RES PRODUCT HERO IMAGE BOX */
+.drawer-img-box {
+  width: 100%; border-radius: 12px; overflow: hidden;
+  border: 1px solid var(--panel-border); margin: 6px 0 14px;
+  position: relative; background: #000; box-shadow: 0 10px 28px rgba(0,0,0,0.7);
+}
+.drawer-img-box img {
+  width: 100%; height: 210px; object-fit: cover; display: block;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.drawer-img-box:hover img { transform: scale(1.04); }
+.drawer-img-badge {
+  position: absolute; bottom: 9px; right: 9px;
+  background: rgba(5, 11, 22, 0.88); border: 1px solid var(--panel-border);
+  border-radius: 20px; padding: 3px 9px; font-size: 8.5px; font-weight: 800;
+  color: var(--cyan); backdrop-filter: blur(8px); font-family: var(--mono);
+}
+
 .drawer-hero {
   border-radius: 12px; border: 1px solid var(--panel-border);
   background: linear-gradient(135deg, #0b1a2e 0%, #050b16 100%);
-  padding: 15px; margin: 8px 0 14px; display: flex; flex-direction: column; gap: 6px;
+  padding: 14px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 5px;
 }
 .drawer-prod-title { font-size: 18px; font-weight: 800; color: #fff; }
 .drawer-prod-desc { font-size: 11.5px; color: var(--text-muted); line-height: 1.5; }
@@ -377,7 +395,8 @@ html, body {
   .foot-info span:nth-child(1), .foot-info span:nth-child(2) { display: none; }
   .foot-actions .btn-ui { padding: 2px 7px; font-size: 9.5px; }
 
-  .drawer { width: 320px; }
+  .drawer { width: 330px; }
+  .drawer-img-box img { height: 150px; }
   .drawer-body { padding: 12px; }
   .drawer-specs-table td { padding: 5px 3px; font-size: 10.5px; }
 }
@@ -517,7 +536,7 @@ html, body {
   <div id="drawer-scrim" onclick="closeDrawer()"></div>
 
   <!-- ══════════════════════════════════════════════
-       PRODUCT INSPECTION DRAWER
+       PRODUCT INSPECTION DRAWER WITH HIGH-RES HERO VISUALS
   ══════════════════════════════════════════════ -->
   <aside class="drawer" id="product-drawer">
     <div class="drawer-header">
@@ -528,6 +547,12 @@ html, body {
       <button class="drawer-close" onclick="closeDrawer()">✕</button>
     </div>
     <div class="drawer-body">
+      <!-- High-Res Product Hero Photo -->
+      <div class="drawer-img-box" id="drw-img-box">
+        <img id="drw-img" src="/assets/demo/dna-showcase/products/apex_cobot_x16.jpg" alt="Product Visual">
+        <div class="drawer-img-badge">STUDIO PRODUCT HERO 4K</div>
+      </div>
+
       <div class="drawer-hero">
         <h2 class="drawer-prod-title" id="drw-title">Apex Cobot X16</h2>
         <p class="drawer-prod-desc" id="drw-desc">6-axis precision collaborative robot with integrated joint torque sensors and ISO/TS 15066 certified collision detection.</p>
@@ -550,7 +575,7 @@ html, body {
           📝 1:1 맞춤 견적 및 기술 상담 요청 (RFQ)
         </button>
         <button class="btn-ui download" style="justify-content:center;padding:8px;" onclick="openDownloadModal()">
-          📥 해당 구역 64K 초고화질 원본 받기
+          📥 64K 마스터 초고화질 원본 받기
         </button>
         <a href="/demo.html" class="btn-ui" style="justify-content:center;padding:8px;">
           🌐 3D 가상 쇼룸에서 3D 모델로 열기 →
@@ -605,11 +630,12 @@ html, body {
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   MATTERPORT 64K ULTRA-HD MASTER STUDIO ENGINE (v6.8)
+   MATTERPORT 64K ULTRA-HD MASTER STUDIO ENGINE (v6.9)
    - Original Full-Size Viewport with Razor-Sharp Clarity
    - AI Full-Scene Photoreal Regeneration (Zero People)
+   - High-Res Product Hero Images in Sidebar Drawer
    - 16x Anisotropic WebGL Filtering + Trilinear Mipmaps
-   - Instant 2-Stage Progressive Texture Loader (0.05s response)
+   - Instant 2-Stage Progressive Texture Loader & Preloader
    - 3D Floating Product Hotspots & Slide-in Inspection Drawer
 ═══════════════════════════════════════════════════════════ */
 
@@ -644,13 +670,14 @@ const SPATIAL_NODES = [
   }
 ];
 
-// 2. PRODUCTS & 3D FLOATING HOTSPOTS (Calibrated to 64K Scene)
+// 2. PRODUCTS & 3D FLOATING HOTSPOTS WITH STUDIO HERO IMAGES
 const PRODUCTS_DATA = [
   {
     id: 'PROD-01-COBOT',
     name: 'Apex Cobot X16',
     model: 'APX-CB-16',
     category: 'Collaborative Robotics',
+    image: '/assets/demo/dna-showcase/products/apex_cobot_x16.jpg',
     worldPos: new THREE.Vector3(0, -65, -380),
     desc: '중앙 원형 전시대 6축 정밀 협동로봇 — ±0.025mm 반복 정밀도, 내장 토크 센서 기반 협업 안전 인증.',
     specs: [
@@ -672,6 +699,7 @@ const PRODUCTS_DATA = [
     name: 'Vector AMR 600',
     model: 'VCT-AMR-600',
     category: 'Autonomous Intralogistics',
+    image: '/assets/demo/dna-showcase/products/vector_amr_600.jpg',
     worldPos: new THREE.Vector3(-220, -130, -290),
     desc: 'Laser SLAM 자율주행 물류 로봇 — 최대 600kg 적재, 듀얼 360° LiDAR 동적 장애물 회피 및 자동 도킹 충전.',
     specs: [
@@ -693,6 +721,7 @@ const PRODUCTS_DATA = [
     name: 'DN\'a Vision Telemetry LED 월',
     model: 'DN-LED-6034',
     category: 'Smart Control Center',
+    image: '/assets/demo/dna-showcase/products/vision_led_wall.jpg',
     worldPos: new THREE.Vector3(0, 65, -390),
     desc: '부스 중앙 커브드 8K 비디오 파사드 & 로봇 군집 실시간 디지털 트윈 관제 센터.',
     specs: [
@@ -714,6 +743,7 @@ const PRODUCTS_DATA = [
     name: 'VIP Glass Innovation Hub',
     model: 'DNA-VIP-2F',
     category: 'Executive Meeting Architecture',
+    image: '/assets/demo/dna-showcase/products/vip_glass_lounge.jpg',
     worldPos: new THREE.Vector3(260, 60, -320),
     desc: '2층 복층 통유리 VIP 비즈니스 미팅 라운지 및 파노라마 뷰포인트.',
     specs: [
@@ -750,7 +780,7 @@ function initThree() {
   const width = rect.width || container.clientWidth || 1200;
   const height = rect.height || container.clientHeight || 700;
 
-  // Immersive 65° FOV for complete trade show booth framing
+  // Wide 65° FOV for complete trade show booth framing
   camera = new THREE.PerspectiveCamera(65, width / height, 0.01, 2000);
   camera.position.set(0, 0, 0.01);
 
@@ -881,7 +911,7 @@ function buildHotspotsDOM() {
 
 // 6. TWO-STAGE PROGRESSIVE TEXTURE LOADER WITH MAXIMUM ANISOTROPY
 function loadNodeTexture(url, callback) {
-  if (textureCache[url]) { callback(textureCache[url]); return; }
+  if (textureCache[url]) { if (callback) callback(textureCache[url]); return; }
   textureLoader.load(url, (tex) => {
     tex.encoding = THREE.sRGBEncoding;
     tex.minFilter = THREE.LinearMipMapLinearFilter;
@@ -890,7 +920,7 @@ function loadNodeTexture(url, callback) {
     tex.anisotropy = renderer ? renderer.capabilities.getMaxAnisotropy() : 16;
     tex.needsUpdate = true;
     textureCache[url] = tex;
-    callback(tex);
+    if (callback) callback(tex);
   });
 }
 
@@ -946,7 +976,7 @@ function updateFocusSpec(idx) {
   ).join('');
 }
 
-// 9. PRODUCT INSPECTION DRAWER
+// 9. PRODUCT INSPECTION DRAWER (WITH HIGH-RES HERO IMAGE)
 function openProductDrawer(idx) {
   currentSelectedProdIdx = idx;
   const p = PRODUCTS_DATA[idx];
@@ -958,6 +988,16 @@ function openProductDrawer(idx) {
   document.getElementById('drw-model').textContent = p.model;
   document.getElementById('drw-title').textContent = p.name;
   document.getElementById('drw-desc').textContent = p.desc;
+
+  // Product Image
+  const imgEl = document.getElementById('drw-img');
+  const imgBox = document.getElementById('drw-img-box');
+  if (p.image) {
+    imgEl.src = p.image;
+    imgBox.style.display = 'block';
+  } else {
+    imgBox.style.display = 'none';
+  }
 
   const table = document.getElementById('drw-specs-table');
   table.innerHTML = p.specs.map(([k, v]) =>
