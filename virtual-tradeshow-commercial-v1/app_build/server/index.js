@@ -4053,6 +4053,14 @@ app.get('/showcase', (req, res) => {
 app.get('/demo-premium.html', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'client', 'demo.html'));
 });
+// ── Explicit Matterport 3D Digital Twin Route (added 2026-08-22) ──
+app.get(['/demo-matterport.html', '/matterport'], (req, res) => {
+  const filePath = path.join(__dirname, '..', 'client', 'demo-matterport.html');
+  if (fs.existsSync(filePath)) {
+    return res.sendFile(filePath, { headers: { 'Cache-Control': 'no-cache' } });
+  }
+  res.status(404).send('Matterport 3D Digital Twin viewer not yet deployed.');
+});
 
 // ── Explicit 3DGS Virtual Tour Route (added 2026-08-22) ──
 app.get('/demo-splat.html', (req, res) => {
