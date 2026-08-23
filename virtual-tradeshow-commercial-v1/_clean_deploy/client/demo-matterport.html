@@ -15,7 +15,7 @@
 :root {
   --bg-deep: #02050b;
   --bg-studio: #050b16;
-  --panel-bg: rgba(9, 16, 29, 0.92);
+  --panel-bg: rgba(9, 16, 29, 0.94);
   --panel-border: rgba(56, 189, 248, 0.35);
   --cyan: #00c2ff;
   --cyan-glow: rgba(0, 194, 255, 0.55);
@@ -64,57 +64,26 @@ html, body {
 .btn-ui.download { background: rgba(0,194,255,0.12); border-color: var(--cyan); color: var(--cyan); }
 .btn-ui.download:hover { background: var(--cyan); color: #000; box-shadow: 0 0 16px var(--cyan-glow); }
 
-/* MAIN STUDIO WORKSPACE (Original Full Screen 3D Player with Exterior Glass Panels) */
+/* MAIN STUDIO WORKSPACE (Center Player + Right Unified Sidebar) */
 #studio-workspace {
   flex: 1; display: grid;
-  grid-template-columns: 270px 1fr 300px;
+  grid-template-columns: 1fr 340px;
   gap: 14px; padding: 12px 18px;
   background: #02050b;
   min-height: 0; align-items: stretch; position: relative;
 }
 
 /* ══════════════════════════════════════════════
-   LEFT EXTERIOR PANEL (Vantage Points & Radar)
+   CENTER WORKSPACE: 2/3 SIZE 3D PLAYER + BOTTOM PRODUCT SHORTCUT CARDS
 ══════════════════════════════════════════════ */
-.side-panel {
-  height: 100%; display: flex; flex-direction: column; gap: 10px;
-  background: var(--panel-bg); border: 1px solid var(--panel-border);
-  border-radius: 16px; padding: 14px; backdrop-filter: blur(20px);
-  overflow-y: auto; box-shadow: 0 16px 36px rgba(0,0,0,0.6);
-  z-index: 10;
-}
-.panel-head { font-size: 10px; font-weight: 800; color: var(--cyan); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 2px; }
-.panel-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
-
-.node-list { display: flex; flex-direction: column; gap: 6px; }
-.node-btn {
-  width: 100%; display: flex; align-items: center; justify-content: space-between;
-  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 10px; color: var(--text-muted); font-size: 11px; font-weight: 600;
-  padding: 9px 11px; cursor: pointer; transition: var(--trans); text-align: left;
-}
-.node-btn:hover { background: rgba(0,194,255,0.08); color: #fff; border-color: var(--panel-border); }
-.node-btn.active { background: rgba(0,194,255,0.18); border-color: var(--cyan); color: var(--cyan); font-weight: 800; box-shadow: 0 0 14px rgba(0,194,255,0.25); }
-.node-meta { font-size: 8.5px; opacity: 0.7; font-family: var(--mono); }
-
-/* RADAR MINIMAP */
-.radar-box {
-  background: rgba(2, 5, 11, 0.7); border: 1px solid var(--panel-border);
-  border-radius: 12px; padding: 10px; margin-top: auto;
-}
-.radar-header { font-size: 9px; font-weight: 800; color: var(--cyan); letter-spacing: 1px; text-transform: uppercase; display: flex; justify-content: space-between; margin-bottom: 6px; }
-#radar-canvas { width: 100%; height: 85px; display: block; border-radius: 6px; }
-
-/* ══════════════════════════════════════════════
-   CENTER: ORIGINAL FULL-SIZE 3D PLAYER
-══════════════════════════════════════════════ */
-#player-wrapper {
+#player-workspace {
   height: 100%; width: 100%; display: flex; flex-direction: column;
-  min-height: 0; position: relative;
+  gap: 12px; min-height: 0; position: relative;
 }
 
+/* 2/3 SIZE 3D PLAYER */
 #viewer-container {
-  position: relative; width: 100%; height: 100%;
+  position: relative; width: 100%; flex: 1; min-height: 0;
   border-radius: 16px; overflow: hidden;
   border: 1px solid rgba(0, 194, 255, 0.4);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 194, 255, 0.2);
@@ -125,74 +94,139 @@ html, body {
 
 /* 360 HINT IN PLAYER CORNER */
 .player-tag {
-  position: absolute; top: 14px; left: 14px; z-index: 10;
+  position: absolute; top: 12px; left: 12px; z-index: 10;
   background: rgba(5, 11, 22, 0.9); border: 1px solid var(--panel-border);
-  border-radius: 20px; padding: 5px 12px; font-size: 10px; font-weight: 800;
+  border-radius: 20px; padding: 4px 11px; font-size: 9.5px; font-weight: 800;
   color: var(--cyan); backdrop-filter: blur(10px); display: flex; align-items: center; gap: 6px;
   pointer-events: none;
 }
 .res-pill {
-  position: absolute; top: 14px; right: 14px; z-index: 10;
+  position: absolute; top: 12px; right: 12px; z-index: 10;
   background: rgba(2, 132, 199, 0.35); border: 1px solid #38bdf8;
-  border-radius: 20px; padding: 5px 12px; font-size: 10px; font-weight: 800;
+  border-radius: 20px; padding: 4px 11px; font-size: 9.5px; font-weight: 800;
   color: #fff; font-family: var(--mono); backdrop-filter: blur(10px);
 }
 
 /* ══════════════════════════════════════════════
-   3D FLOATING PRODUCT HOTSPOTS
+   BOTTOM PRODUCT SHORTCUT CARDS TRAY
+══════════════════════════════════════════════ */
+#product-cards-tray {
+  height: 125px; flex-shrink: 0;
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 10px; align-items: stretch;
+}
+
+.prod-quick-card {
+  background: var(--panel-bg); border: 1px solid var(--panel-border);
+  border-radius: 12px; padding: 8px 10px; cursor: pointer;
+  display: flex; gap: 10px; align-items: center;
+  transition: var(--trans); position: relative; overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5); backdrop-filter: blur(16px);
+}
+.prod-quick-card:hover {
+  background: rgba(14, 28, 50, 0.98); border-color: var(--cyan);
+  transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0, 194, 255, 0.25);
+}
+.prod-quick-card.active {
+  border-color: var(--cyan); background: rgba(0, 194, 255, 0.14);
+  box-shadow: 0 0 18px rgba(0, 194, 255, 0.35);
+}
+.prod-card-thumb {
+  width: 76px; height: 100%; border-radius: 8px; overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; background: #000;
+}
+.prod-card-thumb img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform 0.3s ease;
+}
+.prod-quick-card:hover .prod-card-thumb img { transform: scale(1.08); }
+.prod-card-body {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 3px;
+}
+.prod-card-cat { font-size: 8.5px; font-weight: 800; color: var(--cyan); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prod-card-title { font-size: 12px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prod-card-spec { font-size: 9.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prod-card-btn {
+  margin-top: 2px; font-size: 9px; font-weight: 700; color: #38bdf8;
+  display: flex; align-items: center; gap: 3px;
+}
+
+/* ══════════════════════════════════════════════
+   3D FLOATING PRODUCT HOTSPOTS (PERMANENT TITLE & THUMBNAIL)
 ══════════════════════════════════════════════ */
 #hotspot-layer { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
 
 .hotspot-tag {
   position: absolute; transform: translate(-50%, -50%);
   pointer-events: auto; cursor: pointer;
-  display: flex; align-items: center; gap: 8px;
-  background: rgba(5, 11, 22, 0.95); backdrop-filter: blur(14px);
-  border: 1.5px solid rgba(56, 189, 248, 0.65); border-radius: 20px; padding: 6px 10px;
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(5, 11, 22, 0.94); backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(56, 189, 248, 0.7); border-radius: 22px; padding: 4px 10px 4px 5px;
   color: #fff; font-size: 11px; font-weight: 700;
-  box-shadow: 0 4px 20px rgba(2, 132, 199, 0.6);
+  box-shadow: 0 6px 22px rgba(2, 132, 199, 0.65);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); white-space: nowrap;
 }
-.hotspot-tag .hotspot-label-text {
-  max-width: 0; opacity: 0; overflow: hidden; transition: all 0.25s ease;
-  font-size: 11px; font-weight: 700; color: #fff;
-}
 .hotspot-tag:hover {
-  background: rgba(2, 132, 199, 0.98); border-color: #38bdf8; padding: 7px 14px;
-  transform: translate(-50%, -50%) scale(1.08); box-shadow: 0 8px 30px rgba(14, 165, 233, 0.85);
+  background: rgba(2, 132, 199, 0.98); border-color: #38bdf8;
+  transform: translate(-50%, -50%) scale(1.08); box-shadow: 0 10px 32px rgba(14, 165, 233, 0.9);
 }
-.hotspot-tag:hover .hotspot-label-text {
-  max-width: 240px; opacity: 1; margin-left: 2px;
+.hotspot-thumb-img {
+  width: 22px; height: 22px; border-radius: 50%; object-fit: cover;
+  border: 1.5px solid var(--cyan); flex-shrink: 0; display: block;
+}
+.hotspot-tag .hotspot-label-text {
+  opacity: 1; display: inline-block; font-size: 11px; font-weight: 700; color: #fff;
 }
 .hotspot-dot {
-  width: 10px; height: 10px; border-radius: 50%; background: #38bdf8;
-  box-shadow: 0 0 10px #38bdf8; flex-shrink: 0; animation: hotspot-pulse 1.8s infinite;
+  width: 7px; height: 7px; border-radius: 50%; background: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8; flex-shrink: 0; animation: hotspot-pulse 1.8s infinite;
 }
 @keyframes hotspot-pulse {
   0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.8); }
-  70% { box-shadow: 0 0 0 12px rgba(56, 189, 248, 0); }
+  70% { box-shadow: 0 0 0 10px rgba(56, 189, 248, 0); }
   100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
 }
 
 /* ══════════════════════════════════════════════
-   RIGHT EXTERIOR PANEL (Product Info & Controls)
+   RIGHT UNIFIED SIDEBAR (Vantage Points + Radar + Equipment Specs)
 ══════════════════════════════════════════════ */
-.mode-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 8px; }
-.mode-btn {
-  width: 100%; display: flex; align-items: center; gap: 8px;
-  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 8px; color: var(--text-muted); font-size: 11px; font-weight: 600;
-  padding: 8px 10px; cursor: pointer; transition: var(--trans);
+.unified-sidebar {
+  height: 100%; display: flex; flex-direction: column; gap: 12px;
+  background: var(--panel-bg); border: 1px solid var(--panel-border);
+  border-radius: 16px; padding: 16px; backdrop-filter: blur(20px);
+  overflow-y: auto; box-shadow: 0 16px 36px rgba(0,0,0,0.6);
+  z-index: 10;
 }
-.mode-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
-.mode-btn.active { background: var(--cyan); color: #000; font-weight: 800; box-shadow: 0 0 14px var(--cyan-glow); }
+.panel-head { font-size: 10px; font-weight: 800; color: var(--cyan); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 2px; }
+.panel-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
 
+/* 1. Vantage Points */
+.node-list { display: flex; flex-direction: column; gap: 6px; }
+.node-btn {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; color: var(--text-muted); font-size: 11px; font-weight: 600;
+  padding: 8px 10px; cursor: pointer; transition: var(--trans); text-align: left;
+}
+.node-btn:hover { background: rgba(0,194,255,0.08); color: #fff; border-color: var(--panel-border); }
+.node-btn.active { background: rgba(0,194,255,0.18); border-color: var(--cyan); color: var(--cyan); font-weight: 800; box-shadow: 0 0 14px rgba(0,194,255,0.25); }
+.node-meta { font-size: 8.5px; opacity: 0.7; font-family: var(--mono); }
+
+/* 2. Radar Minimap */
+.radar-box {
+  background: rgba(2, 5, 11, 0.7); border: 1px solid var(--panel-border);
+  border-radius: 12px; padding: 10px;
+}
+.radar-header { font-size: 9px; font-weight: 800; color: var(--cyan); letter-spacing: 1px; text-transform: uppercase; display: flex; justify-content: space-between; margin-bottom: 6px; }
+#radar-canvas { width: 100%; height: 75px; display: block; border-radius: 6px; }
+
+/* 3. Focus Equipment Specs Box */
 .spec-panel-box {
   background: rgba(2, 5, 11, 0.65); border: 1px solid var(--panel-border);
-  border-radius: 12px; padding: 12px; margin-top: 2px;
+  border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px;
 }
-.spec-title { font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center; }
-.spec-desc { font-size: 10.5px; color: var(--text-muted); line-height: 1.45; margin-bottom: 8px; }
+.spec-title { font-size: 13px; font-weight: 800; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+.spec-desc { font-size: 10.5px; color: var(--text-muted); line-height: 1.45; }
 .spec-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .spec-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 5px 7px; }
 .spec-k { font-size: 8.5px; color: var(--text-muted); font-weight: 600; }
@@ -337,9 +371,12 @@ html, body {
   #studio-workspace {
     display: flex; flex-direction: column; padding: 8px; gap: 8px;
   }
-  .side-panel { display: none; }
-  #player-wrapper { width: 100%; flex: 1; }
-  #viewer-container { width: 100%; height: 100%; }
+  .unified-sidebar { display: none; }
+  #player-workspace { width: 100%; flex: 1; }
+  #viewer-container { width: 100%; }
+  #product-cards-tray { height: 100px; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .prod-card-thumb { width: 50px; }
+  .prod-card-title { font-size: 10.5px; }
 
   #mobile-portrait-bar {
     display: flex !important; gap: 6px; width: 100%; margin-top: 4px;
@@ -365,31 +402,19 @@ html, body {
   .btn-ui { padding: 3px 7px; font-size: 10px; }
 
   #studio-workspace {
-    display: block; position: relative; padding: 0; margin: 0; width: 100%; height: calc(100vh - 72px);
+    grid-template-columns: 1fr 240px; padding: 6px; gap: 8px; height: calc(100vh - 72px);
   }
-  #player-wrapper { position: absolute; inset: 0; width: 100%; height: 100%; }
-  #viewer-container { width: 100%; height: 100%; border-radius: 0; border: none; }
+  #product-cards-tray { height: 75px; gap: 6px; }
+  .prod-card-thumb { width: 45px; }
+  .prod-card-title { font-size: 9.5px; }
+  .prod-card-spec { display: none; }
 
-  .side-panel:first-of-type {
-    position: absolute; top: 8px; left: 8px; bottom: 8px; z-index: 30;
-    width: 190px; height: auto; padding: 8px; gap: 6px;
-    background: rgba(7, 14, 26, 0.90); border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.65);
-  }
+  .unified-sidebar { padding: 8px; gap: 6px; }
   .panel-sub { display: none; }
-  .node-btn { padding: 6px 7px; font-size: 10px; border-radius: 6px; }
+  .node-btn { padding: 5px 6px; font-size: 9.5px; }
   .radar-box { padding: 5px; }
-  #radar-canvas { height: 55px; }
-
-  .side-panel:last-of-type {
-    position: absolute; top: 8px; right: 8px; z-index: 30;
-    width: 175px; height: auto; max-height: calc(100% - 16px);
-    padding: 8px; gap: 6px;
-    background: rgba(7, 14, 26, 0.90); border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.65);
-  }
-  .spec-panel-box { display: none; }
-  .mode-btn { padding: 6px 7px; font-size: 10px; }
+  #radar-canvas { height: 50px; }
+  .spec-panel-box { padding: 6px; }
 
   #studio-footer { height: 34px; padding: 0 10px; font-size: 9.5px; background: rgba(5, 11, 22, 0.92); }
   .foot-info span:nth-child(1), .foot-info span:nth-child(2) { display: none; }
@@ -424,10 +449,79 @@ html, body {
     <span>(탭하여 알림 닫기)</span>
   </div>
 
-  <!-- MAIN STUDIO WORKSPACE -->
+  <!-- MAIN STUDIO WORKSPACE (Center Player + Right Unified Sidebar) -->
   <main id="studio-workspace">
-    <!-- LEFT PANEL (Vantage Points & Radar Outside Player) -->
-    <aside class="side-panel">
+    <!-- CENTER: 2/3 SIZE 3D PLAYER + PRODUCT SHORTCUT CARDS -->
+    <section id="player-workspace">
+      <div id="viewer-container">
+        <canvas id="three-canvas"></canvas>
+        <!-- 3D Hotspot Tags Overlay -->
+        <div id="hotspot-layer"></div>
+        <div class="player-tag">🌐 64K Master Ultra-HD 실사 투어</div>
+        <div class="res-pill" id="res-indicator">65536 × 32768 ULTRA-HD</div>
+      </div>
+
+      <!-- Mobile Portrait Fallback Node Switcher -->
+      <div id="mobile-portrait-bar">
+        <button class="node-btn active" id="mpb-0" onclick="switchNode(0)">📷 01. 중앙</button>
+        <button class="node-btn" id="mpb-1" onclick="switchNode(1)">🤖 02. 코봇</button>
+        <button class="node-btn" id="mpb-2" onclick="switchNode(2)">🚛 03. AMR</button>
+      </div>
+
+      <!-- BOTTOM PRODUCT SHORTCUT CARDS TRAY -->
+      <div id="product-cards-tray">
+        <div class="prod-quick-card active" id="pcard-0" onclick="focusProduct(0)">
+          <div class="prod-card-thumb">
+            <img src="/assets/demo/dna-showcase/products/apex_cobot_x16.jpg" alt="Apex Cobot X16">
+          </div>
+          <div class="prod-card-body">
+            <div class="prod-card-cat">COBOT</div>
+            <div class="prod-card-title">Apex Cobot X16</div>
+            <div class="prod-card-spec">16.0kg Payload · 6축 정밀</div>
+            <div class="prod-card-btn">상세보기 <span>→</span></div>
+          </div>
+        </div>
+
+        <div class="prod-quick-card" id="pcard-1" onclick="focusProduct(1)">
+          <div class="prod-card-thumb">
+            <img src="/assets/demo/dna-showcase/products/vector_amr_600.jpg" alt="Vector AMR 600">
+          </div>
+          <div class="prod-card-body">
+            <div class="prod-card-cat">AMR ROBOT</div>
+            <div class="prod-card-title">Vector AMR 600</div>
+            <div class="prod-card-spec">600kg 적재 · 3D LiDAR SLAM</div>
+            <div class="prod-card-btn">상세보기 <span>→</span></div>
+          </div>
+        </div>
+
+        <div class="prod-quick-card" id="pcard-2" onclick="focusProduct(2)">
+          <div class="prod-card-thumb">
+            <img src="/assets/demo/dna-showcase/products/vision_led_wall.jpg" alt="Vision Telemetry LED">
+          </div>
+          <div class="prod-card-body">
+            <div class="prod-card-cat">SMART ENGINE</div>
+            <div class="prod-card-title">Vision LED 월</div>
+            <div class="prod-card-spec">8K Micro-LED · 실시간 관제</div>
+            <div class="prod-card-btn">상세보기 <span>→</span></div>
+          </div>
+        </div>
+
+        <div class="prod-quick-card" id="pcard-3" onclick="focusProduct(3)">
+          <div class="prod-card-thumb">
+            <img src="/assets/demo/dna-showcase/products/vip_glass_lounge.jpg" alt="VIP Glass Lounge">
+          </div>
+          <div class="prod-card-body">
+            <div class="prod-card-cat">ARCHITECTURE</div>
+            <div class="prod-card-title">VIP Glass Hub</div>
+            <div class="prod-card-spec">2층 복층 통유리 · 45㎡ 라운지</div>
+            <div class="prod-card-btn">상세보기 <span>→</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT UNIFIED SIDEBAR (Vantage Points + Radar + Equipment Specs) -->
+    <aside class="unified-sidebar">
       <div>
         <div class="panel-head">SPATIAL VANTAGE POINTS</div>
         <div class="panel-sub">64K 마스터 실사 3대 시점</div>
@@ -447,55 +541,18 @@ html, body {
         </button>
       </div>
 
-      <!-- Outside Booth Radar -->
+      <!-- Booth Radar Minimap -->
       <div class="radar-box">
         <div class="radar-header">
           <span>BOOTH RADAR</span>
           <span id="radar-loc-txt">01. MAIN 360°</span>
         </div>
-        <canvas id="radar-canvas" width="244" height="85"></canvas>
-      </div>
-    </aside>
-
-    <!-- CENTER: ORIGINAL FULL-SIZE 3D PLAYER -->
-    <section id="player-wrapper">
-      <div id="viewer-container">
-        <canvas id="three-canvas"></canvas>
-        <!-- 3D Hotspot Tags Overlay -->
-        <div id="hotspot-layer"></div>
-        <div class="player-tag">🌐 64K Master Ultra-HD 실사 투어</div>
-        <div class="res-pill" id="res-indicator">65536 × 32768 ULTRA-HD</div>
-      </div>
-
-      <!-- Mobile Portrait Fallback Node Switcher -->
-      <div id="mobile-portrait-bar">
-        <button class="node-btn active" id="mpb-0" onclick="switchNode(0)">📷 01. 중앙</button>
-        <button class="node-btn" id="mpb-1" onclick="switchNode(1)">🤖 02. 코봇</button>
-        <button class="node-btn" id="mpb-2" onclick="switchNode(2)">🚛 03. AMR</button>
-      </div>
-    </section>
-
-    <!-- RIGHT PANEL (Specs & View Modes Outside Player) -->
-    <aside class="side-panel">
-      <div>
-        <div class="panel-head">VIEWPORT CONTROLS</div>
-        <div class="panel-sub">3D 디스플레이 모드 전환</div>
-      </div>
-      <div class="mode-group">
-        <button class="mode-btn active" id="btn-mode-tour" onclick="setMode('tour')">
-          <span>📸</span> 360° 실사 파노라마
-        </button>
-        <button class="mode-btn" id="btn-mode-dollhouse" onclick="setMode('dollhouse')">
-          <span>🏠</span> 3D 입체 투어
-        </button>
-        <button class="mode-btn" id="btn-mode-floor" onclick="setMode('floor')">
-          <span>🗺️</span> 2D 부스 평면도
-        </button>
+        <canvas id="radar-canvas" width="306" height="75"></canvas>
       </div>
 
       <!-- Live Target Specs Box -->
       <div class="spec-panel-box">
-        <div class="panel-head" style="margin-bottom:3px;">FOCUS EQUIPMENT</div>
+        <div class="panel-head" style="margin-bottom:0;">FOCUS EQUIPMENT</div>
         <div class="spec-title">
           <span id="side-spec-title">DN'a Apex CoBot X16</span>
           <button class="btn-ui" style="padding:2px 6px;font-size:9px;" onclick="openCurrentProductDrawer()">상세보기 →</button>
@@ -509,8 +566,8 @@ html, body {
         </div>
       </div>
 
-      <button class="btn-ui primary" style="margin-top:auto;justify-content:center;padding:8px;" onclick="openRFQ()">
-        📝 1:1 기술 및 견적 상담
+      <button class="btn-ui primary" style="margin-top:auto;justify-content:center;padding:9px;" onclick="openRFQ()">
+        📝 1:1 맞춤 견적 및 기술 상담 요청
       </button>
     </aside>
   </main>
@@ -630,13 +687,11 @@ html, body {
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   MATTERPORT 64K ULTRA-HD MASTER STUDIO ENGINE (v6.9)
-   - Original Full-Size Viewport with Razor-Sharp Clarity
-   - AI Full-Scene Photoreal Regeneration (Zero People)
-   - High-Res Product Hero Images in Sidebar Drawer
-   - 16x Anisotropic WebGL Filtering + Trilinear Mipmaps
-   - Instant 2-Stage Progressive Texture Loader & Preloader
-   - 3D Floating Product Hotspots & Slide-in Inspection Drawer
+   MATTERPORT 64K ULTRA-HD MASTER STUDIO ENGINE (v7.0)
+   - 2/3 Height 3D Player + Bottom Product Shortcut Cards Bar
+   - Permanent 3D Floating Capsules with Title & Product Thumbnail
+   - Unified Right Sidebar (Vantage Points, Minimap, Target Specs)
+   - High-Res Product Hero Images & Progressive Texture Preloader
 ═══════════════════════════════════════════════════════════ */
 
 // 1. SPATIAL NODES (64K Master Panoramas - No People)
@@ -648,7 +703,7 @@ const SPATIAL_NODES = [
     image8k: "/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg",
     image16k: "/assets/demo/dna-showcase/pano360/node0_360_panorama_16k.jpg",
     puckPos: new THREE.Vector3(0, -160, -320),
-    radarPos: { x: 122, y: 70 }
+    radarPos: { x: 153, y: 62 }
   },
   {
     id: 1,
@@ -657,7 +712,7 @@ const SPATIAL_NODES = [
     image8k: "/assets/demo/dna-showcase/pano360/node1_360_panorama_8k.jpg",
     image16k: "/assets/demo/dna-showcase/pano360/node1_360_panorama_16k.jpg",
     puckPos: new THREE.Vector3(-150, -160, -250),
-    radarPos: { x: 65, y: 55 }
+    radarPos: { x: 80, y: 48 }
   },
   {
     id: 2,
@@ -666,7 +721,7 @@ const SPATIAL_NODES = [
     image8k: "/assets/demo/dna-showcase/pano360/node2_360_panorama_8k.jpg",
     image16k: "/assets/demo/dna-showcase/pano360/node2_360_panorama_16k.jpg",
     puckPos: new THREE.Vector3(150, -160, -250),
-    radarPos: { x: 178, y: 55 }
+    radarPos: { x: 226, y: 48 }
   }
 ];
 
@@ -679,6 +734,7 @@ const PRODUCTS_DATA = [
     category: 'Collaborative Robotics',
     image: '/assets/demo/dna-showcase/products/apex_cobot_x16.jpg',
     worldPos: new THREE.Vector3(0, -65, -380),
+    nodeIdx: 0,
     desc: '중앙 원형 전시대 6축 정밀 협동로봇 — ±0.025mm 반복 정밀도, 내장 토크 센서 기반 협업 안전 인증.',
     specs: [
       ['가반하중', '16.0 kg Payload'],
@@ -701,6 +757,7 @@ const PRODUCTS_DATA = [
     category: 'Autonomous Intralogistics',
     image: '/assets/demo/dna-showcase/products/vector_amr_600.jpg',
     worldPos: new THREE.Vector3(-220, -130, -290),
+    nodeIdx: 2,
     desc: 'Laser SLAM 자율주행 물류 로봇 — 최대 600kg 적재, 듀얼 360° LiDAR 동적 장애물 회피 및 자동 도킹 충전.',
     specs: [
       ['적재중량', '600 kg Deck Payload'],
@@ -718,11 +775,12 @@ const PRODUCTS_DATA = [
   },
   {
     id: 'PROD-03-VISION',
-    name: 'DN\'a Vision Telemetry LED 월',
+    name: 'Vision LED 월',
     model: 'DN-LED-6034',
     category: 'Smart Control Center',
     image: '/assets/demo/dna-showcase/products/vision_led_wall.jpg',
     worldPos: new THREE.Vector3(0, 65, -390),
+    nodeIdx: 0,
     desc: '부스 중앙 커브드 8K 비디오 파사드 & 로봇 군집 실시간 디지털 트윈 관제 센터.',
     specs: [
       ['디스플레이', 'Seamless Curved Micro-LED'],
@@ -740,11 +798,12 @@ const PRODUCTS_DATA = [
   },
   {
     id: 'PROD-04-LOUNGE',
-    name: 'VIP Glass Innovation Hub',
+    name: 'VIP Glass Hub',
     model: 'DNA-VIP-2F',
     category: 'Executive Meeting Architecture',
     image: '/assets/demo/dna-showcase/products/vip_glass_lounge.jpg',
     worldPos: new THREE.Vector3(260, 60, -320),
+    nodeIdx: 1,
     desc: '2층 복층 통유리 VIP 비즈니스 미팅 라운지 및 파노라마 뷰포인트.',
     specs: [
       ['공간면적', '45 ㎡ VIP Lounge'],
@@ -761,7 +820,6 @@ const PRODUCTS_DATA = [
 
 let currentNodeIdx = 0;
 let currentSelectedProdIdx = 0;
-let currentMode = 'tour';
 let scene, camera, renderer, controls;
 let floorPucks = [];
 let photoSphere, photoMaterial;
@@ -777,10 +835,10 @@ function initThree() {
   textureLoader = new THREE.TextureLoader();
 
   const rect = container.getBoundingClientRect();
-  const width = rect.width || container.clientWidth || 1200;
-  const height = rect.height || container.clientHeight || 700;
+  const width = rect.width || container.clientWidth || 1000;
+  const height = rect.height || container.clientHeight || 550;
 
-  // Wide 65° FOV for complete trade show booth framing
+  // Immersive 65° FOV
   camera = new THREE.PerspectiveCamera(65, width / height, 0.01, 2000);
   camera.position.set(0, 0, 0.01);
 
@@ -838,7 +896,7 @@ function initThree() {
   window.addEventListener('resize', onResize);
   requestAnimationFrame(animate);
 
-  // Background preload all nodes for instant 0-latency switching
+  // Background preload all panoramas
   SPATIAL_NODES.forEach(n => {
     if (n.preview) loadNodeTexture(n.preview);
     if (n.image8k) loadNodeTexture(n.image8k);
@@ -896,7 +954,7 @@ function buildFloorPucks() {
   });
 }
 
-// 5. 3D FLOATING HOTSPOTS
+// 5. 3D FLOATING HOTSPOTS (PERMANENT TITLE + MINI PRODUCT THUMBNAIL)
 function buildHotspotsDOM() {
   const layer = document.getElementById('hotspot-layer');
   layer.innerHTML = '';
@@ -905,19 +963,20 @@ function buildHotspotsDOM() {
     el.className = 'hotspot-tag';
     el.id = 'hotspot-' + prod.id;
     el.innerHTML =
+      '<img src="' + prod.image + '" class="hotspot-thumb-img" alt="' + prod.name + '">' +
       '<span class="hotspot-dot"></span>' +
-      '<span class="hotspot-label-text">' + prod.name + ' • 세부설명 보기 →</span>';
+      '<span class="hotspot-label-text">' + prod.name + '</span>';
     
     el.addEventListener('click', (e) => {
       e.stopPropagation();
-      openProductDrawer(idx);
+      focusProduct(idx);
     });
     layer.appendChild(el);
     prod.domElement = el;
   });
 }
 
-// 6. TWO-STAGE PROGRESSIVE TEXTURE LOADER WITH MAXIMUM ANISOTROPY
+// 6. PROGRESSIVE TEXTURE LOADER
 function loadNodeTexture(url, callback) {
   if (textureCache[url]) { if (callback) callback(textureCache[url]); return; }
   textureLoader.load(url, (tex) => {
@@ -932,7 +991,7 @@ function loadNodeTexture(url, callback) {
   });
 }
 
-// 7. SWITCH SPATIAL NODE (Instant Texture Switch)
+// 7. SWITCH SPATIAL NODE
 function switchNode(idx) {
   currentNodeIdx = idx;
   const node = SPATIAL_NODES[idx];
@@ -968,11 +1027,29 @@ function switchNode(idx) {
   });
 
   drawRadar();
-  updateFocusSpec(idx === 2 ? 1 : idx === 1 ? 0 : 2);
+  updateFocusSpec(idx === 2 ? 1 : idx === 1 ? 3 : 0);
   showToast('📍 ' + node.name + ' 공간으로 이동');
 }
 
-// 8. UPDATE FOCUS SPEC PANEL
+// 8. FOCUS PRODUCT (From bottom cards or hotspots)
+function focusProduct(idx) {
+  currentSelectedProdIdx = idx;
+  const p = PRODUCTS_DATA[idx];
+  if (!p) return;
+
+  // Highlight bottom card
+  document.querySelectorAll('.prod-quick-card').forEach((c, i) => c.classList.toggle('active', i === idx));
+
+  // If product is in a different node, switch node first
+  if (p.nodeIdx !== undefined && p.nodeIdx !== currentNodeIdx) {
+    switchNode(p.nodeIdx);
+  }
+
+  // Open sidebar drawer
+  openProductDrawer(idx);
+}
+
+// 9. UPDATE FOCUS SPEC PANEL
 function updateFocusSpec(idx) {
   currentSelectedProdIdx = idx;
   const p = PRODUCTS_DATA[idx];
@@ -982,9 +1059,11 @@ function updateFocusSpec(idx) {
   document.getElementById('side-spec-list').innerHTML = p.specs.slice(0, 4).map(([k,v]) =>
     '<div class="spec-item"><div class="spec-k">' + k + '</div><div class="spec-v">' + v + '</div></div>'
   ).join('');
+
+  document.querySelectorAll('.prod-quick-card').forEach((c, i) => c.classList.toggle('active', i === idx));
 }
 
-// 9. PRODUCT INSPECTION DRAWER (WITH HIGH-RES HERO IMAGE)
+// 10. PRODUCT INSPECTION DRAWER (WITH HIGH-RES HERO IMAGE)
 function openProductDrawer(idx) {
   currentSelectedProdIdx = idx;
   const p = PRODUCTS_DATA[idx];
@@ -1028,23 +1107,6 @@ function openCurrentProductDrawer() {
 function closeDrawer() {
   document.getElementById('drawer-scrim').classList.remove('open');
   document.getElementById('product-drawer').classList.remove('open');
-}
-
-// 10. VIEW MODES
-function setMode(mode) {
-  currentMode = mode;
-  ['tour','dollhouse','floor'].forEach(m => document.getElementById('btn-mode-' + m).classList.toggle('active', m === mode));
-  if (mode === 'tour') {
-    photoSphere.visible = true;
-    photoMaterial.opacity = 1.0;
-    controls.maxPolarAngle = Math.PI * 0.88;
-    controls.minPolarAngle = Math.PI * 0.12;
-    showToast('📸 64K 마스터 초고화질 실사 파노라마 모드');
-  } else if (mode === 'dollhouse') {
-    showToast('🏠 3D 입체 투어 모드');
-  } else if (mode === 'floor') {
-    showToast('🗺️ 2D 부스 평면도 모드');
-  }
 }
 
 // 11. AUTO TOUR
@@ -1109,7 +1171,7 @@ function updateHotspots() {
   PRODUCTS_DATA.forEach(prod => {
     if (!prod.domElement) return;
     const dot = prod.worldPos.dot(camDir);
-    if (dot <= 0 || currentMode !== 'tour') {
+    if (dot <= 0) {
       prod.domElement.style.display = 'none';
       return;
     }
