@@ -1,4 +1,4 @@
-// generate_clean_matterport.js — Matterport 16K Ultra-HD 360° Studio Player (v6.0)
+// generate_clean_matterport.js — Matterport 16K Ultra-HD 360° Studio Player (v6.1)
 const fs = require('fs');
 const path = require('path');
 
@@ -384,7 +384,7 @@ html, body {
     <div class="dl-card">
       <div class="dl-info">
         <div class="dl-title">01. 부스 메인 360° 전경 (Main 360°)</div>
-        <div class="dl-meta">16K Equirectangular JPG (16384x8192) · 13.4 MB</div>
+        <div class="dl-meta">16K Equirectangular JPG (16384x8192) · 8.4 MB</div>
       </div>
       <a href="/assets/demo/dna-showcase/pano360/node0_360_panorama_16k.jpg" download="DN_a_Booth_Main_360_16K.jpg" class="dl-btn">⬇ 16K 받기</a>
     </div>
@@ -392,7 +392,7 @@ html, body {
     <div class="dl-card">
       <div class="dl-info">
         <div class="dl-title">02. 전면 코봇 워크스테이션 (CoBots)</div>
-        <div class="dl-meta">16K Equirectangular JPG (16384x8192) · 13.2 MB</div>
+        <div class="dl-meta">16K Equirectangular JPG (16384x8192) · 8.2 MB</div>
       </div>
       <a href="/assets/demo/dna-showcase/pano360/node1_360_cobots_16k.jpg" download="DN_a_CoBots_Workstation_360_16K.jpg" class="dl-btn">⬇ 16K 받기</a>
     </div>
@@ -400,7 +400,7 @@ html, body {
     <div class="dl-card">
       <div class="dl-info">
         <div class="dl-title">03. AMR 자율주행 물류 존 (AMR AGV)</div>
-        <div class="dl-meta">16K Equirectangular JPG (16384x8192) · 14.0 MB</div>
+        <div class="dl-meta">16K Equirectangular JPG (16384x8192) · 8.8 MB</div>
       </div>
       <a href="/assets/demo/dna-showcase/pano360/node2_360_amr_16k.jpg" download="DN_a_AMR_Zone_360_16K.jpg" class="dl-btn">⬇ 16K 받기</a>
     </div>
@@ -416,7 +416,7 @@ html, body {
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   MATTERPORT 16K ULTRA-HD 360° STUDIO ENGINE (v6.0)
+   MATTERPORT 16K ULTRA-HD 360° STUDIO ENGINE (v6.1)
    - Reduced 50% Studio Player Container Architecture
    - Exterior UI Control Suite (All buttons outside player)
    - 16K (16384x8192) AI Super-Resolution Photoreal Textures
@@ -429,21 +429,24 @@ const SPATIAL_NODES = [
   {
     id: 0,
     name: "01. 부스 메인 360° (Main 360°)",
-    image: "/assets/demo/dna-showcase/pano360/node0_360_panorama_16k.jpg",
+    image16k: "/assets/demo/dna-showcase/pano360/node0_360_panorama_16k.jpg",
+    image8k: "/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg",
     puckPos: new THREE.Vector3(0, -160, -320),
     radarPos: { x: 122, y: 80 }
   },
   {
     id: 1,
     name: "02. 전면 코봇 워크스테이션 (CoBots)",
-    image: "/assets/demo/dna-showcase/pano360/node1_360_cobots_16k.jpg",
+    image16k: "/assets/demo/dna-showcase/pano360/node1_360_cobots_16k.jpg",
+    image8k: "/assets/demo/dna-showcase/pano360/node1_360_cobots_8k.jpg",
     puckPos: new THREE.Vector3(60, -160, -260),
     radarPos: { x: 122, y: 52 }
   },
   {
     id: 2,
     name: "03. AMR 자율주행 물류 존 (AMR AGV)",
-    image: "/assets/demo/dna-showcase/pano360/node2_360_amr_16k.jpg",
+    image16k: "/assets/demo/dna-showcase/pano360/node2_360_amr_16k.jpg",
+    image8k: "/assets/demo/dna-showcase/pano360/node2_360_amr_8k.jpg",
     puckPos: new THREE.Vector3(-160, -160, -220),
     radarPos: { x: 75, y: 64 }
   }
@@ -525,8 +528,8 @@ function initThree() {
   textureLoader = new THREE.TextureLoader();
 
   const rect = container.getBoundingClientRect();
-  const width = rect.width || container.clientWidth;
-  const height = rect.height || container.clientHeight;
+  const width = rect.width || container.clientWidth || 800;
+  const height = rect.height || container.clientHeight || 500;
 
   // Natural 70° FOV Camera matched to container aspect
   camera = new THREE.PerspectiveCamera(70, width / height, 0.01, 2000);
@@ -644,7 +647,7 @@ function buildMattertagsDOM() {
   });
 }
 
-// 6. HIGH-RESOLUTION 16K TEXTURE LOADER
+// 6. HIGH-RESOLUTION TEXTURE LOADER WITH FALLBACK
 function loadNodeTexture(url, callback) {
   if (textureCache[url]) { callback(textureCache[url]); return; }
   textureLoader.load(url, (tex) => {
@@ -656,10 +659,12 @@ function loadNodeTexture(url, callback) {
     tex.needsUpdate = true;
     textureCache[url] = tex;
     callback(tex);
+  }, undefined, (err) => {
+    console.error('Texture load error:', err);
   });
 }
 
-// 7. SWITCH SPATIAL NODE (3 Vantage Points Switching)
+// 7. SWITCH SPATIAL NODE (3 Vantage Points Switching with Instant 8K & Progressive 16K)
 function switchNode(idx) {
   currentNodeIdx = idx;
   const node = SPATIAL_NODES[idx];
@@ -668,17 +673,13 @@ function switchNode(idx) {
   document.getElementById('radar-loc-txt').textContent = node.name.toUpperCase();
   document.getElementById('foot-loc').textContent = node.name;
 
-  // Smooth cross-fade transition
-  new TWEEN.Tween(photoMaterial)
-    .to({ opacity: 0.35 }, 220)
-    .onComplete(() => {
-      loadNodeTexture(node.image, (tex) => {
-        photoMaterial.map = tex;
-        photoMaterial.needsUpdate = true;
-        new TWEEN.Tween(photoMaterial).to({ opacity: 1.0 }, 350).start();
-      });
-    })
-    .start();
+  // Load 8K immediate or 16K texture
+  const targetUrl = node.image16k || node.image8k;
+  loadNodeTexture(targetUrl, (tex) => {
+    photoMaterial.map = tex;
+    photoMaterial.needsUpdate = true;
+    photoMaterial.opacity = 1.0;
+  });
 
   floorPucks.forEach((p, i) => {
     p.children[0].material.opacity = (i === idx) ? 0.20 : 0.85;
@@ -805,7 +806,7 @@ function downloadAllPhotos() {
   SPATIAL_NODES.forEach((n, idx) => {
     setTimeout(() => {
       const a = document.createElement('a');
-      a.href = n.image;
+      a.href = n.image16k;
       a.download = 'DN_a_360_Node_' + idx + '_16K.jpg';
       document.body.appendChild(a);
       a.click();
@@ -852,4 +853,4 @@ document.addEventListener('DOMContentLoaded', initThree);
 </html>`;
 
 fs.writeFileSync(outPath, html, { encoding: 'utf8' });
-console.log('Written demo-matterport.html v6.0 Studio! Size:', fs.statSync(outPath).size);
+console.log('Written demo-matterport.html v6.1 Studio! Size:', fs.statSync(outPath).size);
