@@ -2782,6 +2782,9 @@ class JSONDatabase {
   // ============================================================
   async getProjectManifest(id) {
     const db = this.read();
+    db.productionProjects = db.productionProjects || [];
+    const p = db.productionProjects.find(x => x.id === id || x.reservationId === id || x.slug === id);
+    if (!p) {
       // Check for Single Photo Showroom demo project
       if (id === 'proj-single-photo-003' || id === 'single-photo') {
         return {
