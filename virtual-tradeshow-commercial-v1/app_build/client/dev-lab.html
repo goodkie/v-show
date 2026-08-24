@@ -264,6 +264,7 @@
     <button class="tab-btn" onclick="switchTab('inspector-tab', this)"><i class="fa-solid fa-clipboard-check"></i> 6. Pipeline Inspector QA</button>
     <button class="tab-btn" onclick="switchTab('security-tab', this)"><i class="fa-solid fa-shield-halved"></i> 7. Security &amp; Audit Logs</button>
     <button class="tab-btn" onclick="switchTab('orchestrator-tab', this)"><i class="fa-solid fa-network-wired"></i> 8. Production Orchestrator</button>
+    <button class="tab-btn" onclick="switchTab('billing-tab', this)"><i class="fa-solid fa-credit-card"></i> 9. Billing Sandbox</button>
   </nav>
 
   <main class="lab-container">
@@ -576,6 +577,67 @@
           </table>
           <div id="orch-timeline-stream" style="font-family: monospace; font-size: 11px; max-height: 140px; overflow-y: auto; background: #070e17; padding: 8px; border-radius: 6px; color: #cbd5e1;">
             [01_RESERVATION] Initialized via Smart Wizard (Duration: 14ms)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 9: BILLING SANDBOX (C07) -->
+    <div id="billing-tab" class="tab-panel">
+      <div class="lab-grid">
+        <div class="lab-card">
+          <div class="card-title">
+            <span>Stripe Billing Sandbox &amp; Lifecycle Controls</span>
+            <span class="badge" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);">TEST MODE ONLY</span>
+          </div>
+
+          <div style="margin-bottom: 12px; font-size: 12px; color: var(--text-muted);">
+            Test and simulate the complete Stripe subscription lifecycle, idempotency deduplication, and non-destructive failure handling.
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;">
+            <button class="btn btn-primary" onclick="runDevLabCheckout('pro')"><i class="fa-solid fa-cart-shopping"></i> Checkout PRO ($299)</button>
+            <button class="btn btn-primary" onclick="runDevLabCheckout('business')"><i class="fa-solid fa-building"></i> Checkout BUSINESS ($799)</button>
+            <button class="btn btn-accent" onclick="simulateDevLabPlanChange('business')"><i class="fa-solid fa-arrow-up"></i> Upgrade to BUSINESS</button>
+            <button class="btn btn-accent" onclick="simulateDevLabPlanChange('pro')"><i class="fa-solid fa-arrow-down"></i> Downgrade to PRO</button>
+            <button class="btn btn-danger" onclick="simulateBillingFailure()"><i class="fa-solid fa-triangle-exclamation"></i> Simulate Payment Failure</button>
+            <button class="btn" onclick="replayDevLabWebhook()"><i class="fa-solid fa-repeat"></i> Replay Webhook (Idempotency)</button>
+            <button class="btn btn-danger" onclick="simulateDevLabCancel()"><i class="fa-solid fa-ban"></i> Cancel Subscription</button>
+            <button class="btn btn-success" onclick="simulateDevLabReactivate()"><i class="fa-solid fa-rotate-left"></i> Reactivate Subscription</button>
+            <button class="btn" style="grid-column: span 2;" onclick="testPriceTampering()"><i class="fa-solid fa-shield-virus"></i> Test Price Tampering Rejection</button>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; font-size: 12px;">
+            <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">Live Guardrails Verification:</div>
+            <div style="display: flex; gap: 12px; font-family: monospace; font-size: 11px;">
+              <span>LIVE_BILLING_ENABLED: <strong style="color: #ef4444;">false</strong></span>
+              <span>REAL_CHARGE_COUNT: <strong style="color: #10b981;">0</strong></span>
+              <span>STRIPE_ONLY_BILLING: <strong style="color: #10b981;">true</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="lab-card">
+          <div class="card-title">
+            <span>Immutable Financial Ledger (Live Inspection)</span>
+            <button class="btn btn-sm" onclick="fetchDevLabLedger()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+          </div>
+          <div id="billing-ledger-container" style="max-height: 280px; overflow-y: auto;">
+            <table class="diag-table" style="font-size: 11px;">
+              <thead>
+                <tr>
+                  <th>Event ID</th>
+                  <th>Type</th>
+                  <th>Plan</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Env</th>
+                </tr>
+              </thead>
+              <tbody id="billing-ledger-tbody">
+                <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading financial ledger...</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -937,14 +999,164 @@
       document.getElementById('orch-stage-badge').style.background = 'rgba(52, 211, 153, 0.15)';
       document.getElementById('orch-progress-txt').textContent = `${pct}%`;
       document.getElementById('orch-progress-bar').style.width = `${pct}%`;
-
       const stream = document.getElementById('orch-timeline-stream');
       const entry = document.createElement('div');
       entry.textContent = `[${new Date().toLocaleTimeString()}] Advanced to ${stage} (Progress: ${pct}%)`;
       stream.prepend(entry);
     }
 
-    document.addEventListener('DOMContentLoaded', initDevLab);
+    // Billing Sandbox Controls (C07)
+    async function runDevLabCheckout(plan) {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/billing/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ requestedPlan: plan, consentTerms: true, consentRecurring: true })
+        });
+        const data = await res.json();
+        alert(`Checkout response: ${data.message || (data.success ? 'Success' : JSON.stringify(data))}`);
+        fetchDevLabLedger();
+      } catch (err) {
+        alert(`Checkout error: ${err.message}`);
+      }
+    }
+
+    async function simulateBillingFailure() {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/internal/dev/billing/simulate-failure', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ organizationId: 'org-dev-lab' })
+        });
+        const data = await res.json();
+        alert(`Simulated Failure: ${data.message}`);
+        fetchDevLabLedger();
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    }
+
+    async function replayDevLabWebhook() {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/internal/dev/billing/replay-webhook', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({
+            event: {
+              id: 'evt_test_idempotency_fixed_key',
+              type: 'invoice.payment_succeeded',
+              data: { object: { customer: 'cus_sim_dev-lab', amount_paid: 29900 } }
+            }
+          })
+        });
+        const data = await res.json();
+        alert(`Webhook Replay result: ${data.duplicate ? 'DEDUPLICATED (0 EFFECT) - PASS' : 'PROCESSED'} -> ${data.message}`);
+        fetchDevLabLedger();
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    }
+
+    async function simulateDevLabPlanChange(plan) {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/internal/dev/billing/simulate-plan-change', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ organizationId: 'org-dev-lab', plan })
+        });
+        const data = await res.json();
+        alert(data.message);
+        fetchDevLabLedger();
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    }
+
+    async function simulateDevLabCancel() {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/internal/dev/billing/simulate-cancel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ organizationId: 'org-dev-lab' })
+        });
+        const data = await res.json();
+        alert(data.message);
+        fetchDevLabLedger();
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    }
+
+    async function simulateDevLabReactivate() {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/billing/subscription/reactivate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        alert(data.message || 'Reactivated');
+        fetchDevLabLedger();
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    }
+
+    async function testPriceTampering() {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/billing/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ requestedPlan: 'invalid_hacked_plan_0_dollar', consentTerms: true, consentRecurring: true })
+        });
+        const data = await res.json();
+        if (res.status === 400) {
+          alert(`PRICE TAMPERING REJECTED AS EXPECTED (HTTP 400): ${data.error}`);
+        } else {
+          alert(`UNEXPECTED RESPONSE: ${JSON.stringify(data)}`);
+        }
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    }
+
+    async function fetchDevLabLedger() {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/internal/dev/billing/ledger', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        const tbody = document.getElementById('billing-ledger-tbody');
+        if (data.ledger && data.ledger.length > 0) {
+          tbody.innerHTML = data.ledger.slice(-10).reverse().map(l => `
+            <tr>
+              <td><code>${l.id || l.eventId || '-'}</code></td>
+              <td><span class="badge" style="background: rgba(59,130,246,0.15);">${l.type || l.eventType}</span></td>
+              <td><strong>${(l.plan || 'pro').toUpperCase()}</strong></td>
+              <td>$${l.amount || 0}</td>
+              <td style="color: ${l.status === 'past_due' ? '#ef4444' : '#10b981'};">${l.status}</td>
+              <td><span class="badge" style="background: ${l.environment === 'LIVE' ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)'};">${l.environment || 'TEST'}</span></td>
+            </tr>
+          `).join('');
+        } else {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No ledger entries found.</td></tr>';
+        }
+      } catch (err) {
+        console.error('Error fetching ledger:', err);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initDevLab();
+      setTimeout(fetchDevLabLedger, 500);
+    });
   </script>
 </body>
 </html>

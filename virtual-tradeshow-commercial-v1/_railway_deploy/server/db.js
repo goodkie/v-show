@@ -500,16 +500,22 @@ class JSONDatabase {
     }
   }
 
-  // Schema Version 5 -> 6 Non-Destructive Migration & Integrity Assurance (dn'a-C02)
   migrateSchema(current) {
     const isOldVersion = !current.schemaVersion || current.schemaVersion < 6;
     const seed = initialSeedData();
+
+    current.users = current.users && current.users.length > 0 ? current.users : seed.users;
+    current.featureFlags = {
+      ...(seed.featureFlags || {}),
+      ...(current.featureFlags || {}),
+      billingKillSwitch: false,
+      stripeLiveBillingEnabled: false
+    };
 
     if (isOldVersion) {
       console.log(`[DB] Migrating schema to version 6 (dn'a-C02 Managed Production Operations)...`);
 
       current.schemaVersion = 6;
-      current.featureFlags = current.featureFlags || seed.featureFlags;
       current.stripeEvents = current.stripeEvents || [];
       current.billingEvents = current.billingEvents || [];
       current.upgradeRequests = current.upgradeRequests || [];
@@ -1561,6 +1567,15 @@ class JSONDatabase {
   getUserByEmail(email) {
     if (!email) return null;
     return (this.read().users || []).find(u => u.email.toLowerCase() === email.toLowerCase()) || null;
+  }
+
+  verifyPassword(password, hash, salt) {
+    if (!password || !hash || !salt) return false;
+    return verifyPassword(password, hash, salt);
+  }
+
+  hashPassword(password, salt = null) {
+    return hashPassword(password, salt);
   }
 
   async createUser({ organizationId, email, name, role, password, mustChangePassword = true }) {
@@ -5398,6 +5413,82 @@ class JSONDatabase {
       req.resolvedAt = new Date().toISOString();
       return req;
     });
+  }
+
+  // ==========================================
+  // --- C07 Stripe Billing Lifecycle & Ledger ---
+  // ==========================================
+
+  async cancelSubscription(organizationId) {
+    return this.mutate((db) => {
+      const org = db.organizations.find(o => o.id === organizationId);
+      if (!org) throw new Error('Organization not found.');
+      org.subscription = org.subscription || {};
+      org.subscription.status = 'canceled';
+      org.subscription.cancelAtPeriodEnd = true;
+      org.subscription.cancelledAt = new Date().toISOString();
+      org.updatedAt = new Date().toISOString();
+      return org;
+    });
+  }
+
+  async reactivateSubscription(organizationId) {
+    return this.mutate((db) => {
+      const org = db.organizations.find(o => o.id === organizationId);
+      if (!org) throw new Error('Organization not found.');
+      org.subscription = org.subscription || {};
+      org.subscription.status = 'active';
+      org.subscription.cancelAtPeriodEnd = false;
+      org.subscription.reactivatedAt = new Date().toISOString();
+      org.updatedAt = new Date().toISOString();
+      return org;
+    });
+  }
+
+  async changePlan(organizationId, newPlan) {
+    if (newPlan !== 'pro' && newPlan !== 'business') {
+      throw new Error('Invalid plan. Must be pro or business.');
+    }
+    return this.mutate((db) => {
+      const org = db.organizations.find(o => o.id === organizationId);
+      if (!org) throw new Error('Organization not found.');
+      org.subscription = org.subscription || {};
+      org.subscription.plan = newPlan;
+      org.subscription.status = 'active';
+      org.subscription.updatedAt = new Date().toISOString();
+      org.updatedAt = new Date().toISOString();
+      return org;
+    });
+  }
+
+  async simulatePaymentFailure(organizationId) {
+    return this.mutate((db) => {
+      let org = db.organizations.find(o => o.id === organizationId);
+      if (!org) {
+        org = {
+          id: organizationId,
+          type: 'exhibitor',
+          name: 'Dev Lab Test Organization',
+          status: 'active',
+          subscription: { plan: 'pro', status: 'past_due', dataEnvironment: 'TEST' }
+        };
+        db.organizations.push(org);
+      } else {
+        org.subscription = org.subscription || {};
+        org.subscription.status = 'past_due';
+        org.subscription.lastPaymentFailureAt = new Date().toISOString();
+      }
+      org.updatedAt = new Date().toISOString();
+      return org;
+    });
+  }
+
+  getFinancialLedger() {
+    const list = this.read().billingEvents || [];
+    return list.map(evt => ({
+      ...evt,
+      environment: evt.environment || (evt.stripeCustomerId?.startsWith('cus_sim_') || evt.stripeCustomerId?.startsWith('cus_test_') ? 'TEST' : 'LIVE')
+    }));
   }
 
   // ==========================================

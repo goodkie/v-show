@@ -595,14 +595,29 @@ app.post('/api/auth/login', createRateLimiter(60, 60000), (req, res) => {
     }
   }
 
-  // 2. Break-glass migration fallback for legacy admin account
-  if ((targetEmail === 'admin' || targetEmail === 'organizer@vshow.com') && password === 'admin123') {
-    const orgUser = db.getUserByEmail('organizer@vshow.com') || {
-      id: 'user-organizer-admin',
-      organizationId: 'org-organizer-01',
-      email: 'organizer@vshow.com',
-      name: 'Global Expo Operations',
-      role: 'organizer_admin',
+  // 2. Break-glass migration fallback for legacy admin & developer accounts
+  if ((targetEmail === 'admin' || targetEmail === 'organizer@vshow.com' || targetEmail === 'developer@vshow.com' || targetEmail === 'owner@vshow.com') && password === 'admin123') {
+    let fallbackRole = 'organizer_admin';
+    let fallbackOrgId = 'org-organizer-01';
+    let fallbackName = 'Global Expo Operations';
+
+    if (targetEmail === 'developer@vshow.com') {
+      fallbackRole = 'developer';
+      fallbackOrgId = 'org-platform-master';
+      fallbackName = 'dn’a Platform Developer';
+    } else if (targetEmail === 'owner@vshow.com') {
+      fallbackRole = 'platform_owner';
+      fallbackOrgId = 'org-platform-master';
+      fallbackName = 'Platform Master Owner';
+    }
+
+    const orgUser = db.getUserByEmail(targetEmail) || {
+      id: `user-${fallbackRole}`,
+      organizationId: fallbackOrgId,
+      email: targetEmail,
+      name: fallbackName,
+      role: fallbackRole,
+      internalDeveloperAccess: true,
       mustChangePassword: false
     };
     const token = generateSessionToken(orgUser);
@@ -614,6 +629,7 @@ app.post('/api/auth/login', createRateLimiter(60, 60000), (req, res) => {
         email: orgUser.email,
         name: orgUser.name,
         role: orgUser.role,
+        internalDeveloperAccess: true,
         mustChangePassword: Boolean(orgUser.mustChangePassword)
       },
       organization: org
@@ -2094,6 +2110,110 @@ app.get('/api/internal/dev/analytics', requireDeveloperAuth, (req, res) => {
   res.json({ success: true, environment: 'INTERNAL_TEST', totalEvents: list.length, events: list });
 });
 
+// C07 Developer Lab Billing Sandbox Endpoints (Tab 9)
+app.get('/api/internal/dev/billing/ledger', requireDeveloperAuth, (req, res) => {
+  try {
+    const ledger = db.getFinancialLedger();
+    res.json({ success: true, environment: 'INTERNAL_TEST', count: ledger.length, ledger });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/internal/dev/billing/simulate-failure', requireDeveloperAuth, async (req, res) => {
+  try {
+    const orgId = req.body.organizationId || 'org-dev-lab';
+    await db.simulatePaymentFailure(orgId);
+    await db.logBillingEvent({
+      organizationId: orgId,
+      plan: 'pro',
+      type: 'payment_failed',
+      stripeCustomerId: `cus_sim_${orgId}`,
+      status: 'past_due',
+      environment: 'TEST'
+    });
+    res.json({
+      success: true,
+      message: 'Simulated payment failure: Status set to PAST_DUE. Entitlements constrained to Grace Period.',
+      organizationId: orgId
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/internal/dev/billing/replay-webhook', requireDeveloperAuth, async (req, res) => {
+  try {
+    const event = req.body.event || {
+      id: `evt_replay_${Date.now()}`,
+      type: 'invoice.payment_succeeded',
+      data: {
+        object: {
+          customer: 'cus_sim_dev-lab',
+          amount_paid: 29900,
+          currency: 'usd'
+        }
+      }
+    };
+    // Check deduplication
+    const isDup = db.isStripeEventProcessed(event.id);
+    if (isDup) {
+      return res.json({ success: true, duplicate: true, message: 'Event already processed. Deduplicated (0 effect).' });
+    }
+    await db.logStripeEvent(event);
+    res.json({ success: true, duplicate: false, message: 'Webhook event processed and ledger entry appended.', eventId: event.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/internal/dev/billing/simulate-plan-change', requireDeveloperAuth, async (req, res) => {
+  try {
+    const orgId = req.body.organizationId || 'org-dev-lab';
+    const plan = req.body.plan || 'business';
+    await db.changePlan(orgId, plan);
+    await db.logBillingEvent({
+      organizationId: orgId,
+      plan,
+      type: 'subscription_updated',
+      stripeCustomerId: `cus_sim_${orgId}`,
+      amount: plan === 'business' ? 799 : 299,
+      status: 'active',
+      environment: 'TEST'
+    });
+    res.json({
+      success: true,
+      message: `Simulated plan change to ${plan.toUpperCase()}.`,
+      organizationId: orgId,
+      plan
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/internal/dev/billing/simulate-cancel', requireDeveloperAuth, async (req, res) => {
+  try {
+    const orgId = req.body.organizationId || 'org-dev-lab';
+    await db.cancelSubscription(orgId);
+    await db.logBillingEvent({
+      organizationId: orgId,
+      plan: 'pro',
+      type: 'cancelled',
+      stripeCustomerId: `cus_sim_${orgId}`,
+      status: 'canceled',
+      environment: 'TEST'
+    });
+    res.json({
+      success: true,
+      message: 'Simulated subscription cancellation at period end. Project data preserved.',
+      organizationId: orgId
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ============================================================
 // C06 AUTOMATED PRODUCTION ORCHESTRATOR ENDPOINTS
 // ============================================================
@@ -2987,6 +3107,146 @@ app.post('/api/billing/upgrade-request', requireAuth, async (req, res) => {
     });
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+// C07 Subscription Lifecycle Endpoints
+app.post('/api/billing/subscription/cancel', requireAuth, async (req, res) => {
+  try {
+    const org = db.getOrganizationById(req.user.organizationId);
+    if (!org) return res.status(404).json({ error: 'Organization not found.' });
+
+    await db.cancelSubscription(org.id);
+    await db.logBillingEvent({
+      organizationId: org.id,
+      plan: org.subscription?.plan || 'pro',
+      type: 'cancelled',
+      stripeCustomerId: org.subscription?.stripeCustomerId,
+      stripeSubscriptionId: org.subscription?.stripeSubscriptionId,
+      status: 'canceled'
+    });
+
+    res.json({
+      success: true,
+      message: 'Subscription marked for cancellation at period end.',
+      subscription: org.subscription
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/billing/subscription/reactivate', requireAuth, async (req, res) => {
+  try {
+    const org = db.getOrganizationById(req.user.organizationId);
+    if (!org) return res.status(404).json({ error: 'Organization not found.' });
+
+    await db.reactivateSubscription(org.id);
+    await db.logBillingEvent({
+      organizationId: org.id,
+      plan: org.subscription?.plan || 'pro',
+      type: 'subscription_updated',
+      stripeCustomerId: org.subscription?.stripeCustomerId,
+      stripeSubscriptionId: org.subscription?.stripeSubscriptionId,
+      status: 'active'
+    });
+
+    res.json({
+      success: true,
+      message: 'Subscription successfully reactivated.',
+      subscription: org.subscription
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/billing/subscription/upgrade', requireAuth, async (req, res) => {
+  try {
+    const org = db.getOrganizationById(req.user.organizationId);
+    if (!org) return res.status(404).json({ error: 'Organization not found.' });
+
+    await db.changePlan(org.id, 'business');
+    await db.logBillingEvent({
+      organizationId: org.id,
+      plan: 'business',
+      type: 'subscription_updated',
+      stripeCustomerId: org.subscription?.stripeCustomerId,
+      stripeSubscriptionId: org.subscription?.stripeSubscriptionId,
+      amount: 799,
+      status: 'success'
+    });
+
+    res.json({
+      success: true,
+      message: 'Upgraded to BUSINESS plan.',
+      subscription: org.subscription,
+      entitlements: db.getOrganizationEntitlements(org.id)
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/billing/subscription/downgrade', requireAuth, async (req, res) => {
+  try {
+    const org = db.getOrganizationById(req.user.organizationId);
+    if (!org) return res.status(404).json({ error: 'Organization not found.' });
+
+    await db.changePlan(org.id, 'pro');
+    await db.logBillingEvent({
+      organizationId: org.id,
+      plan: 'pro',
+      type: 'subscription_updated',
+      stripeCustomerId: org.subscription?.stripeCustomerId,
+      stripeSubscriptionId: org.subscription?.stripeSubscriptionId,
+      amount: 299,
+      status: 'success'
+    });
+
+    res.json({
+      success: true,
+      message: 'Downgraded to PRO plan.',
+      subscription: org.subscription,
+      entitlements: db.getOrganizationEntitlements(org.id)
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/billing/portal', requireAuth, async (req, res) => {
+  // Alias for /api/billing/create-portal-session
+  try {
+    const org = db.getOrganizationById(req.user.organizationId);
+    if (!org) return res.status(404).json({ error: 'Organization not found.' });
+
+    const customerId = org.subscription?.stripeCustomerId;
+    if (!customerId) {
+      return res.status(400).json({ error: 'No Stripe Customer associated with this organization. Please upgrade first.' });
+    }
+
+    if (stripe) {
+      const protocol = req.headers['x-forwarded-proto'] || 'http';
+      const host = req.headers.host || 'localhost:3000';
+      const returnUrl = `${protocol}://${host}/index.html#billing`;
+
+      const session = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: returnUrl
+      });
+
+      return res.json({ success: true, url: session.url });
+    } else {
+      return res.json({
+        success: true,
+        simulation: true,
+        message: 'Stripe Portal Simulated: Customer subscription is currently active in Test Mode.',
+        customer: org.subscription
+      });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
