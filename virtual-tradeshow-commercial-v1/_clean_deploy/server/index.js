@@ -395,6 +395,7 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
       case 'checkout.session.completed': {
         const session = event.data.object;
         const orgId = session.metadata?.organizationId;
+        const projectId = session.metadata?.projectId;
         const requestedPlan = session.metadata?.requestedPlan || 'pro';
         const customerId = session.customer;
         const subscriptionId = session.subscription;
@@ -416,12 +417,25 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             amount: session.amount_total ? session.amount_total / 100 : (requestedPlan === 'pro' ? 299 : 799)
           });
         }
+
+        // C09 Project Commercial State Activation (Zero Data Re-entry)
+        if (projectId) {
+          const newState = requestedPlan === 'business' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
+          await db.updateProjectCommercialState(projectId, newState, requestedPlan);
+        }
         break;
       }
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const sub = event.data.object;
-        const org = db.getOrganizationByStripeCustomerId(sub.customer);
+        let org = db.getOrganizationByStripeCustomerId(sub.customer);
+        if (!org && sub.metadata?.organizationId) {
+          org = db.getOrganizationById(sub.metadata.organizationId);
+        }
+        if (!org && sub.id) {
+          const allOrgs = db.getOrganizations ? db.getOrganizations() : (db.read().organizations || []);
+          org = allOrgs.find(o => o.subscription?.stripeSubscriptionId === sub.id);
+        }
         if (org) {
           const plan = sub.metadata?.requestedPlan || (sub.items?.data[0]?.price?.unit_amount >= 50000 ? 'business' : 'pro');
           await db.updateOrganizationSubscription(org.id, {
@@ -440,6 +454,20 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             stripeSubscriptionId: sub.id,
             status: sub.status
           });
+
+          // Sync linked projects
+          const orgProjects = (db.read().projects || []).filter(p => p.organizationId === org.id);
+          for (const prj of orgProjects) {
+            let prjState = prj.commercialState;
+            if (sub.status === 'active') {
+              prjState = plan === 'business' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
+            } else if (sub.status === 'past_due') {
+              prjState = 'PAST_DUE';
+            } else if (sub.status === 'canceled') {
+              prjState = 'CANCELLED';
+            }
+            await db.updateProjectCommercialState(prj.id, prjState, plan);
+          }
         }
         break;
       }
@@ -909,6 +937,12 @@ app.get('/api/organizations', requireAuth, (req, res) => {
   }
   const org = db.getOrganizationById(req.user.organizationId);
   res.json(org ? [org] : []);
+});
+
+app.get('/api/organizations/:id', requireAuth, (req, res) => {
+  const org = db.getOrganizationById(req.params.id);
+  if (!org) return res.status(404).json({ error: 'Organization not found.' });
+  res.json({ success: true, organization: org });
 });
 
 // --- 5. Booths API (with Multi-Tenant Isolation) ---
@@ -2046,6 +2080,90 @@ app.post('/api/internal/dev/free-funnel/reset', async (req, res) => {
   }
 });
 
+// 8. C09 Anonymous Free Project Account Claim
+app.post('/api/free-funnel/projects/:id/claim-account', async (req, res) => {
+  try {
+    const { email, name, organizationId } = req.body;
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ error: 'INVALID_EMAIL', message: 'Valid email is required to claim booth.' });
+    }
+    const result = await db.claimFreePreviewProject(req.params.id, { email, name, organizationId });
+    res.json({
+      success: true,
+      message: 'Booth successfully claimed and linked to exhibitor account.',
+      project: result.project,
+      org: result.org
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 9. C09 Custom Quote Request (No $0 Fake Stripe Checkout)
+app.post('/api/free-funnel/projects/:id/custom-quote', async (req, res) => {
+  try {
+    const { company, email, tradeShow, showDate, productCount, desiredServices } = req.body;
+    const result = await db.createCustomSalesTicket(req.params.id, {
+      company,
+      email,
+      tradeShow,
+      showDate,
+      productCount,
+      desiredServices
+    });
+    res.status(201).json({
+      success: true,
+      message: 'Custom enterprise quote request submitted to sales queue.',
+      ticket: result.ticket,
+      commercialState: 'CUSTOM_QUOTE_REQUESTED'
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 10. C09 Server-Side Publish Billing Gate
+app.post('/api/projects/:id/publish', async (req, res) => {
+  try {
+    const check = db.canPublishProject(req.params.id);
+    if (!check.allowed) {
+      // Check if developer bypass applies
+      const authHeader = req.headers.authorization;
+      let isDev = false;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const session = activeSessions.get(authHeader.substring(7));
+        if (session && (session.role === 'developer' || session.role === 'platform_owner')) {
+          isDev = true;
+        }
+      }
+      if (!isDev) {
+        return res.status(403).json({
+          error: check.reason,
+          message: check.message
+        });
+      }
+    }
+
+    const project = await db.mutate((d) => {
+      const p = (d.projects || []).find(pr => pr.id === req.params.id);
+      if (p) {
+        p.isPublished = true;
+        p.publishedAt = new Date().toISOString();
+        p.updatedAt = new Date().toISOString();
+      }
+      return p;
+    });
+
+    res.json({
+      success: true,
+      message: 'Virtual booth showroom published successfully to live buyers.',
+      project
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // C05.2 Experience Upgrade Endpoint
 app.post('/api/projects/:id/upgrade-experience', async (req, res) => {
   try {
@@ -3003,9 +3121,20 @@ app.get('/api/analytics/summary', requireAuth, (req, res) => {
 
 app.get('/api/billing/plans', (req, res) => {
   res.json({
-    free: db.getPlanLimits('free'),
     pro: db.getPlanLimits('pro'),
     business: db.getPlanLimits('business'),
+    custom: {
+      planKey: 'CUSTOM',
+      name: 'Custom Enterprise Twin',
+      pricingType: 'QUOTE',
+      monthlyPriceUsd: null,
+      capabilities: {
+        maxSpaces: 50,
+        maxPinpoints: 500,
+        custom3DTwin: true,
+        dedicatedSla: true
+      }
+    },
     billingMode: STRIPE_SECRET_KEY ? 'live' : 'test'
   });
 });
@@ -3181,13 +3310,19 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
         payment_method_types: ['card'],
         line_items: [{ price: priceId, quantity: 1 }],
         mode: 'subscription',
-        success_url: `${origin}/index.html?billing_status=success&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${origin}/index.html?billing_status=cancelled`,
+        success_url: `${origin}/index.html?billing_status=processing&projectId=${req.body.projectId || ''}&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/index.html?billing_status=cancelled&projectId=${req.body.projectId || ''}`,
         metadata: {
           organizationId: org.id,
-          requestedPlan
+          projectId: req.body.projectId || null,
+          requestedPlan,
+          environment: STRIPE_MODE
         }
       });
+
+      if (req.body.projectId) {
+        await db.updateProjectCommercialState(req.body.projectId, 'CHECKOUT_PENDING');
+      }
 
       return res.json({
         success: true,
@@ -3204,6 +3339,11 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
         stripeSubscriptionId: `sub_sim_${crypto.randomBytes(4).toString('hex')}`,
         upgradedAt: new Date().toISOString()
       });
+
+      if (req.body.projectId) {
+        const newState = requestedPlan === 'business' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
+        await db.updateProjectCommercialState(req.body.projectId, newState, requestedPlan);
+      }
 
       await db.logBillingEvent({
         organizationId: org.id,

@@ -5734,6 +5734,101 @@ class JSONDatabase {
     });
   }
 
+  async claimFreePreviewProject(projectId, { email, name, organizationId = null }) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) throw new Error('Project not found.');
+
+      db.organizations = db.organizations || [];
+      let org = null;
+      if (organizationId) {
+        org = db.organizations.find(o => o.id === organizationId);
+      }
+      if (!org && project.organizationId) {
+        org = db.organizations.find(o => o.id === project.organizationId);
+      }
+      if (!org) {
+        org = {
+          id: `org-claimed-${uuidv4().substring(0, 8)}`,
+          type: 'exhibitor',
+          name: name || project.businessName || 'Claimed Exhibitor Org',
+          contactEmail: email.toLowerCase().trim(),
+          status: 'active',
+          subscription: { plan: 'pro', status: 'free_preview', dataEnvironment: 'REAL' },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        db.organizations.push(org);
+      } else {
+        org.contactEmail = email.toLowerCase().trim();
+        org.updatedAt = new Date().toISOString();
+      }
+
+      project.organizationId = org.id;
+      project.contactEmail = email.toLowerCase().trim();
+      project.claimedAt = new Date().toISOString();
+      project.updatedAt = new Date().toISOString();
+
+      return { success: true, project, org };
+    });
+  }
+
+  async createCustomSalesTicket(projectId, { company, email, tradeShow, showDate, productCount, desiredServices }) {
+    return this.mutate((db) => {
+      db.salesTickets = db.salesTickets || [];
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (project) {
+        project.commercialState = 'CUSTOM_QUOTE_REQUESTED';
+        project.planKey = 'custom';
+        project.updatedAt = new Date().toISOString();
+      }
+
+      const ticket = {
+        id: `ticket-custom-${uuidv4().substring(0, 8)}`,
+        projectId: projectId || null,
+        company: company || project?.businessName || 'Unknown Company',
+        email: (email || project?.contactEmail || '').toLowerCase().trim(),
+        tradeShow: tradeShow || 'General Exhibition',
+        showDate: showDate || null,
+        productCount: parseInt(productCount, 10) || 25,
+        desiredServices: desiredServices || '3D Digital Twin & Managed Production',
+        status: 'CUSTOM_QUOTE_REQUESTED',
+        createdAt: new Date().toISOString()
+      };
+      db.salesTickets.push(ticket);
+      return { success: true, ticket, project };
+    });
+  }
+
+  async updateProjectCommercialState(projectId, newState, planKey = null) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) return null;
+      project.commercialState = newState;
+      if (planKey) project.planKey = planKey;
+      if (newState === 'ACTIVE_PRO' || newState === 'ACTIVE_BUSINESS') {
+        project.isPublished = true;
+      }
+      project.updatedAt = new Date().toISOString();
+      return project;
+    });
+  }
+
+  canPublishProject(projectId) {
+    const project = (this.read().projects || []).find(p => p.id === projectId);
+    if (!project) return { allowed: false, reason: 'PROJECT_NOT_FOUND', message: 'Project not found.' };
+
+    const allowedStates = ['ACTIVE_PRO', 'ACTIVE_BUSINESS', 'CUSTOM_APPROVED', 'ACTIVE'];
+    if (allowedStates.includes(project.commercialState)) {
+      return { allowed: true, commercialState: project.commercialState };
+    }
+    return {
+      allowed: false,
+      reason: 'PUBLISH_REQUIRES_ACTIVE_PLAN',
+      message: 'Publishing to live trade show buyers requires an active PRO or BUSINESS subscription.'
+    };
+  }
+
   async resetFreePreviewUsages() {
     return this.mutate((db) => {
       db.freePreviewUsages = [];
