@@ -1,4 +1,17 @@
-<!DOCTYPE html>
+// generate_clean_demo.js — 3D Virtual Showroom (v8.0 Master Release)
+// Perfectly Aligned with Matterport 64K Ultra-HD Studio:
+// 1. 4 Precise Robot Exhibition Stations (Apex Cobot X16, Vector AMR 600, Titan Delta D12, Hyperion SCARA S8)
+// 2. High-Fidelity Detailed Procedural 3D Robot Models & Workstations
+// 3. Permanent 3D Floating Capsules with Live Mini-Thumbnails, Cyan Status Dots & English Titles
+// 4. Integrated 2/3 Showroom + Bottom 4-Robot Shortcut Cards Tray + Unified Right Sidebar & Booth Radar
+// 5. Product Inspection Drawer with 4K Photo & 360° 3D Mini Turntable Player
+// 6. 100% Full English Enterprise Localization
+const fs = require('fs');
+const path = require('path');
+
+const outPath = 'E:/vivpr/ai/v-show/virtual-tradeshow-commercial-v1/app_build/client/demo.html';
+
+const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1427,4 +1440,7 @@ function onResize() {
 document.addEventListener('DOMContentLoaded', initShowroom);
 </script>
 </body>
-</html>
+</html>`;
+
+fs.writeFileSync(outPath, html, { encoding: 'utf8' });
+console.log('Written demo.html v8.0 Master 3D Showroom! Size:', fs.statSync(outPath).size);
