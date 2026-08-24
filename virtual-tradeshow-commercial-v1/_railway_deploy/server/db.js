@@ -5595,7 +5595,7 @@ class JSONDatabase {
         name: `${businessName} Virtual Booth`,
         businessName,
         normalizedBusinessName: norm,
-        experienceType: 'PHOTO_SHOWROOM',
+        experienceType: 'ONE_PHOTO_3D_BOOTH',
         commercialState: 'FREE_PREVIEW',
         sourceAsset: {
           originalUrl: photoUrl,
@@ -5606,10 +5606,10 @@ class JSONDatabase {
         views: [
           {
             viewId: 'view-free-0',
-            name: 'Main Booth Perspective',
+            name: 'Main 3D Perspective',
             previewUrl: photoUrl,
             highResUrl: photoUrl,
-            coordinateSystem: 'NORMALIZED_2D'
+            coordinateSystem: 'WORLD_3D'
           }
         ],
         pinpoints: [],
@@ -5638,7 +5638,7 @@ class JSONDatabase {
     });
   }
 
-  async addFreePreviewProductAndPinpoint(projectId, { productName, imageUrl, description, u, v, actor = 'Customer' }) {
+  async addFreePreviewProductAndPinpoint(projectId, { productName, imageUrl, description, x = 0, y = 1.0, z = -3.0, targetObjectId = 'BoothSurface', u = 0.5, v = 0.5, actor = 'Customer' }) {
     return this.mutate((db) => {
       const project = (db.projects || []).find(p => p.id === projectId);
       if (!project) throw new Error('Project not found.');
@@ -5663,8 +5663,13 @@ class JSONDatabase {
         id: pinpointId,
         productId,
         productName,
+        x: Number(parseFloat(x !== undefined ? x : 0).toFixed(3)),
+        y: Number(parseFloat(y !== undefined ? y : 1.0).toFixed(3)),
+        z: Number(parseFloat(z !== undefined ? z : -3.0).toFixed(3)),
+        targetObjectId: targetObjectId || 'BoothSurface',
         u: Math.max(0, Math.min(1, parseFloat(u) || 0.5)),
         v: Math.max(0, Math.min(1, parseFloat(v) || 0.5)),
+        coordinateSystem: 'WORLD_3D',
         label: productName,
         createdAt: new Date().toISOString()
       };

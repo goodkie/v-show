@@ -1955,12 +1955,12 @@ app.post('/api/free-funnel/preview', upload.single('photo'), async (req, res) =>
 
     res.status(201).json({
       success: true,
-      message: 'YOUR VIRTUAL BOOTH IS READY',
+      message: 'YOUR FREE 3D VIRTUAL BOOTH IS READY',
       projectId: project.id,
       previewUrl: project.sourceAsset?.previewUrl || photoUrl,
       businessName: project.businessName,
-      experienceType: 'PHOTO_SHOWROOM',
-      coordinateSystem: 'NORMALIZED_2D',
+      experienceType: 'ONE_PHOTO_3D_BOOTH',
+      coordinateSystem: 'WORLD_3D',
       project
     });
   } catch (err) {
@@ -1981,10 +1981,10 @@ app.post('/api/free-funnel/preview', upload.single('photo'), async (req, res) =>
   }
 });
 
-// 2. Add First Product & Pinpoint (u, v normalized coordinates)
+// 2. Add First Product & Pinpoint (3D world coordinates with 2D fallback)
 app.post('/api/free-funnel/projects/:id/pinpoints', upload.single('productImage'), async (req, res) => {
   try {
-    const { productName, description, u, v } = req.body;
+    const { productName, description, x, y, z, targetObjectId, u, v } = req.body;
     if (!productName) {
       return res.status(400).json({ error: 'PRODUCT_NAME_REQUIRED', message: 'Product name is required.' });
     }
@@ -1994,6 +1994,10 @@ app.post('/api/free-funnel/projects/:id/pinpoints', upload.single('productImage'
       productName,
       imageUrl,
       description,
+      x: x !== undefined ? parseFloat(x) : 0,
+      y: y !== undefined ? parseFloat(y) : 1.0,
+      z: z !== undefined ? parseFloat(z) : -3.0,
+      targetObjectId: targetObjectId || 'BoothSurface',
       u: parseFloat(u) || 0.5,
       v: parseFloat(v) || 0.5
     });

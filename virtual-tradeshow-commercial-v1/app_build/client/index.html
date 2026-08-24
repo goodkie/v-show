@@ -17,6 +17,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+  <!-- Three.js & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="/booth-engine.js"></script>
+
   <style>
     :root {
       --primary: #0284c7;
@@ -163,26 +168,29 @@
     .studio-banner-title { font-size: 16px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
     .studio-banner-desc { font-size: 13px; color: #cbd5e1; }
     .studio-canvas-box {
-      position: relative; width: 100%; aspect-ratio: 16/9; max-height: 700px;
-      background: #000; border-radius: 16px; overflow: hidden;
-      border: 1px solid rgba(56, 189, 248, 0.3); box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-      cursor: crosshair;
+      position: relative; width: 100%; height: 580px; min-height: 580px;
+      background: #060911; border-radius: 16px; overflow: hidden;
+      border: 1px solid rgba(56, 189, 248, 0.35); box-shadow: 0 20px 60px rgba(0,0,0,0.85);
     }
-    .studio-img { width: 100%; height: 100%; object-fit: contain; display: block; user-select: none; }
     
     .pinpoint-marker {
-      position: absolute; width: 28px; height: 28px; border-radius: 50%;
-      background: rgba(2, 132, 199, 0.35); border: 2px solid #38bdf8;
+      position: absolute; width: 32px; height: 32px; border-radius: 50%;
+      background: radial-gradient(circle, #38bdf8 30%, rgba(2, 132, 199, 0.7) 70%);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.9), 0 0 30px rgba(2, 132, 199, 0.5);
+      border: 2px solid #ffffff;
       display: flex; align-items: center; justify-content: center;
       transform: translate(-50%, -50%); cursor: pointer;
-      animation: marker-pulse 2s infinite; z-index: 10;
+      z-index: 10; pointer-events: auto;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      animation: marker-pulse 2s infinite;
+      color: #fff; font-size: 13px; font-weight: 800;
     }
-    .pinpoint-marker::after {
-      content: ''; width: 8px; height: 8px; border-radius: 50%; background: #38bdf8;
+    .pinpoint-marker:hover {
+      transform: translate(-50%, -50%) scale(1.25);
     }
     @keyframes marker-pulse {
-      0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.6); }
-      70% { box-shadow: 0 0 0 10px rgba(56, 189, 248, 0); }
+      0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
+      70% { box-shadow: 0 0 0 14px rgba(56, 189, 248, 0); }
       100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
     }
 
@@ -320,15 +328,15 @@
     </div>
   </div>
 
-  <!-- Interactive Generated Booth View (Customer Success Moment) -->
+  <!-- Interactive Generated Real 3D Booth View (Customer Success Moment) -->
   <section class="free-studio-section" id="freeStudioSection">
     <div class="studio-banner">
       <div>
         <div class="studio-banner-title">
           <i class="fa-solid fa-circle-check" style="color: var(--success);"></i>
-          YOUR VIRTUAL BOOTH IS READY
+          YOUR FREE 3D VIRTUAL BOOTH IS READY
         </div>
-        <div class="studio-banner-desc">Click any product in your booth photo below to make it interactive with Product Pinpoints.</div>
+        <div class="studio-banner-desc">Drag to rotate • Scroll to zoom • Click any surface to place your first interactive Product Pinpoint.</div>
       </div>
       <div style="display: flex; gap: 10px;">
         <button class="btn-hero btn-hero-secondary" onclick="openSaveEmailModal()" style="padding: 9px 16px; font-size: 13px;">
@@ -340,18 +348,21 @@
       </div>
     </div>
 
-    <!-- Interactive 2D Coordinate Capture Canvas -->
-    <div class="studio-canvas-box" id="studioCanvasBox" onclick="handleCanvasClick(event)">
-      <img id="studioBoothImg" class="studio-img" src="" alt="Virtual Booth Canvas">
-      <div id="pinpointsContainer"></div>
+    <!-- Real 3D WebGL / Three.js Interactive Container -->
+    <div class="studio-canvas-box" id="studioCanvasBox">
+      <div id="freeBooth3DViewer" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;"></div>
+      <div id="pinpointsContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></div>
+      <div class="viewer-hint-badge" style="position: absolute; bottom: 14px; left: 14px; background: rgba(7,14,26,0.88); backdrop-filter: blur(8px); border: 1px solid rgba(56,189,248,0.35); color: #94a3b8; font-size: 11px; padding: 6px 14px; border-radius: 20px; pointer-events: none; z-index: 5;">
+        <i class="fa-solid fa-arrows-up-down-left-right" style="color:#38bdf8;"></i> Drag to Orbit • Scroll to Zoom • Click Surface to Add Product Pinpoint
+      </div>
     </div>
 
     <div style="margin-top: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
       <div style="font-size: 13px; color: var(--text-muted);">
-        <i class="fa-solid fa-location-crosshairs" style="color: #38bdf8;"></i> Tip: Click directly on a product in the booth image to place a pinpoint.
+        <i class="fa-solid fa-location-crosshairs" style="color: #38bdf8;"></i> 3D Raycasting Active: Click directly on backwall, pedestals or floor to anchor product pinpoints.
       </div>
       <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('add_more')" style="padding: 8px 16px; font-size: 12px; border-color: rgba(56,189,248,0.3);">
-        <i class="fa-solid fa-plus"></i> Add Another Product (Unlock Full Booth)
+        <i class="fa-solid fa-plus"></i> Add Another Product (Unlock Full 3D Space)
       </button>
     </div>
   </section>
@@ -642,6 +653,11 @@
       });
     }
 
+    let booth3D = null;
+    let raycastSurfaces = [];
+    let animFrameId = null;
+    let pending3DCoords = null;
+
     async function handleFreeBoothSubmit(e) {
       e.preventDefault();
       const bizName = document.getElementById('business-name-input').value.trim();
@@ -654,7 +670,7 @@
       formData.append('photo', selectedFile);
 
       try {
-        updateProgress(35, 'PREPARING YOUR BOOTH', 'Validating photo resolution and setting up showroom container...');
+        updateProgress(20, 'ANALYZING BOOTH PHOTO', 'Examining visual geometry and dimensions...');
         const token = localStorage.getItem('token');
         const headers = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -678,16 +694,22 @@
           return alert(data.message || 'Generation failed.');
         }
 
-        updateProgress(80, 'BUILDING YOUR PREVIEW', 'Generating high-resolution view layers and pinpoint canvas...');
+        updateProgress(50, 'BUILDING 3D BOOTH FRAMEWORK', 'Constructing modular architectural exhibition geometry...');
         setTimeout(() => {
-          updateProgress(100, 'READY', 'Your virtual booth is ready!');
+          updateProgress(75, 'APPLYING TEXTURES & SIGNAGE', `Mapping booth visuals & illuminating ${bizName} header...`);
           setTimeout(() => {
-            hideProgress();
-            activeProjectId = data.projectId;
-            activeProjectData = data.project;
-            renderStudioBooth(data.previewUrl);
-          }, 600);
-        }, 800);
+            updateProgress(90, 'CREATING 3D ENVIRONMENT', 'Configuring studio lighting and 3D raycasting surfaces...');
+            setTimeout(() => {
+              updateProgress(100, 'YOUR FREE 3D VIRTUAL BOOTH IS READY', 'Interactive 3D showroom initialized!');
+              setTimeout(() => {
+                hideProgress();
+                activeProjectId = data.projectId;
+                activeProjectData = data.project;
+                renderStudioBooth(data.project);
+              }, 400);
+            }, 500);
+          }, 500);
+        }, 500);
 
       } catch (err) {
         hideProgress();
@@ -697,7 +719,7 @@
 
     function showProgress() {
       document.getElementById('progressOverlay').style.display = 'flex';
-      updateProgress(15, 'UPLOADING PHOTO', 'Transferring your booth photo to secure processing engine...');
+      updateProgress(10, 'UPLOADING PHOTO', 'Transferring your booth photo to secure 3D processing engine...');
     }
 
     function updateProgress(pct, stage, detail) {
@@ -710,14 +732,65 @@
       document.getElementById('progressOverlay').style.display = 'none';
     }
 
-    function renderStudioBooth(imgUrl) {
+    function renderStudioBooth(projectData) {
       document.getElementById('hero-funnel').style.display = 'none';
       const studio = document.getElementById('freeStudioSection');
       studio.style.display = 'block';
       studio.scrollIntoView({ behavior: 'smooth' });
 
-      const img = document.getElementById('studioBoothImg');
-      img.src = imgUrl;
+      const container = document.getElementById('freeBooth3DViewer');
+      if (booth3D && booth3D.cleanup) {
+        booth3D.cleanup();
+        if (animFrameId) cancelAnimationFrame(animFrameId);
+      }
+
+      // Initialize Three.js WebGL Scene & OrbitControls
+      booth3D = BoothEngine.initScene(container);
+      window.booth3D = booth3D;
+      raycastSurfaces = BoothEngine.buildOnePhoto3DBooth(booth3D.scene, projectData);
+      window.raycastSurfaces = raycastSurfaces;
+
+      // Start continuous animation and pinpoint projection loop
+      function animate() {
+        animFrameId = requestAnimationFrame(animate);
+        booth3D.controls.update();
+        booth3D.renderer.render(booth3D.scene, booth3D.camera);
+        updatePinpointProjections();
+      }
+      animate();
+
+      // Setup click / raycasting listeners
+      let pointerDownPos = { x: 0, y: 0 };
+      container.onpointerdown = (e) => {
+        pointerDownPos = { x: e.clientX, y: e.clientY };
+      };
+
+      container.onpointerup = (e) => {
+        const dx = Math.abs(e.clientX - pointerDownPos.x);
+        const dy = Math.abs(e.clientY - pointerDownPos.y);
+        // Only trigger if click was not a drag orbit
+        if (dx < 6 && dy < 6) {
+          handle3DClick(e);
+        }
+      };
+
+      renderPinpoints(projectData.pinpoints || []);
+    }
+
+    function handle3DClick(e) {
+      if (!booth3D || !raycastSurfaces.length) return;
+      const container = document.getElementById('freeBooth3DViewer');
+      const hit = BoothEngine.raycastBooth(e, container, booth3D.camera, raycastSurfaces);
+      if (hit) {
+        // Check free limit: 1 product allowed on Free plan
+        if (activeProjectData?.pinpoints && activeProjectData.pinpoints.length >= 1) {
+          openPlanModal('second_product');
+          return;
+        }
+
+        pending3DCoords = hit;
+        openAddProductModal();
+      }
     }
 
     async function loadProjectIntoStudio(projectId) {
@@ -727,27 +800,11 @@
         if (data.project) {
           activeProjectId = data.project.id;
           activeProjectData = data.project;
-          renderStudioBooth(data.project.sourceAsset?.previewUrl);
-          renderPinpoints(data.project.pinpoints || []);
+          renderStudioBooth(data.project);
         }
       } catch (err) {
         console.error('Error loading project:', err);
       }
-    }
-
-    function handleCanvasClick(e) {
-      if (e.target.classList.contains('pinpoint-marker')) return;
-      const box = document.getElementById('studioCanvasBox');
-      const rect = box.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
-      pendingCoords = {
-        u: Math.max(0, Math.min(1, x / rect.width)),
-        v: Math.max(0, Math.min(1, y / rect.height))
-      };
-
-      openAddProductModal();
     }
 
     function openAddProductModal() {
@@ -803,8 +860,12 @@
       const formData = new FormData();
       formData.append('productName', name);
       formData.append('description', desc);
-      formData.append('u', pendingCoords.u);
-      formData.append('v', pendingCoords.v);
+      if (pending3DCoords) {
+        formData.append('x', pending3DCoords.x);
+        formData.append('y', pending3DCoords.y);
+        formData.append('z', pending3DCoords.z);
+        formData.append('targetObjectId', pending3DCoords.targetObjectId || 'BoothSurface');
+      }
       if (imgInput.files && imgInput.files[0]) {
         formData.append('productImage', imgInput.files[0]);
       }
@@ -829,11 +890,11 @@
     function renderPinpoints(pinpoints) {
       const container = document.getElementById('pinpointsContainer');
       container.innerHTML = '';
-      pinpoints.forEach(pin => {
+      (pinpoints || []).forEach((pin, idx) => {
         const marker = document.createElement('div');
         marker.className = 'pinpoint-marker';
-        marker.style.left = `${pin.u * 100}%`;
-        marker.style.top = `${pin.v * 100}%`;
+        marker.id = `pinpoint-marker-${pin.id || idx}`;
+        marker.innerHTML = `<i class="fa-solid fa-cube" style="font-size: 11px;"></i>`;
         marker.title = pin.label || pin.productName;
         marker.onclick = (e) => {
           e.stopPropagation();
@@ -842,11 +903,46 @@
         };
         container.appendChild(marker);
       });
+      updatePinpointProjections();
+    }
+
+    function updatePinpointProjections() {
+      if (!booth3D || !booth3D.camera) return;
+      const container = document.getElementById('freeBooth3DViewer');
+      if (!container) return;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      if (!width || !height) return;
+
+      const pinpoints = activeProjectData?.pinpoints || [];
+      pinpoints.forEach((pin, idx) => {
+        const marker = document.getElementById(`pinpoint-marker-${pin.id || idx}`);
+        if (!marker) return;
+
+        const pos = new THREE.Vector3(
+          pin.x !== undefined ? pin.x : 0,
+          pin.y !== undefined ? pin.y : 1.0,
+          pin.z !== undefined ? pin.z : -3.0
+        );
+
+        pos.project(booth3D.camera);
+
+        // If behind camera, hide marker
+        if (pos.z > 1.0) {
+          marker.style.display = 'none';
+        } else {
+          const screenX = (pos.x * 0.5 + 0.5) * width;
+          const screenY = (-(pos.y * 0.5) + 0.5) * height;
+          marker.style.display = 'flex';
+          marker.style.left = `${screenX}px`;
+          marker.style.top = `${screenY}px`;
+        }
+      });
     }
 
     function openProductDrawer(product) {
       document.getElementById('drawerProdTitle').textContent = product.name;
-      document.getElementById('drawerProdImg').src = product.imageUrl || document.getElementById('studioBoothImg').src;
+      document.getElementById('drawerProdImg').src = product.imageUrl || (activeProjectData?.sourceAsset?.previewUrl || '');
       document.getElementById('drawerProdDesc').textContent = product.description || 'Commercial exhibition product with high-precision engineering and sales presentation.';
       document.getElementById('productDrawerModal').style.display = 'flex';
     }
