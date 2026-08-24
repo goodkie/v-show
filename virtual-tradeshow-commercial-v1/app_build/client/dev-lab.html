@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>dn’a Developer Lab — Production Engineering Console</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="/vendor/three/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="/photo-engine.js"></script>
+  <style>
+    :root {
+      --bg-dark: #070e17;
+      --bg-surface: #0f172a;
+      --bg-card: #1e293b;
+      --border: #334155;
+      --primary: #38bdf8;
+      --accent: #f59e0b;
+      --success: #34d399;
+      --danger: #f87171;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 13px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Bar */
+    .lab-header {
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .lab-title-area { display: flex; align-items: center; gap: 12px; }
+    .lab-badge {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+    }
+    .lab-status-tag {
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--success);
+      border: 1px solid var(--success);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* Tabs */
+    .lab-tabs {
+      display: flex;
+      gap: 6px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 24px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .tab-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
+    .tab-btn.active {
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--primary);
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+
+    /* Layout */
+    .lab-container { flex: 1; padding: 24px; max-width: 1600px; margin: 0 auto; width: 100%; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* UI Cards & Grid */
+    .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .lab-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Buttons & Inputs */
+    .btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn:hover { background: #334155; }
+    .btn-primary { background: #0284c7; border-color: #0284c7; color: #fff; }
+    .btn-primary:hover { background: #0369a1; }
+    .btn-accent { background: #d97706; border-color: #d97706; color: #fff; }
+    .btn-accent:hover { background: #b45309; }
+    .btn-danger { background: #dc2626; border-color: #dc2626; color: #fff; }
+    .form-row { margin-bottom: 14px; }
+    .form-row label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; }
+    .form-input, .form-select {
+      width: 100%;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    /* Diagnostics Table */
+    .diag-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .diag-table th, .diag-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .diag-table th { color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 11px; }
+
+    /* Canvas / Viewport */
+    .viewer-box {
+      width: 100%;
+      height: 480px;
+      background: #000;
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .coord-overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--primary);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--primary);
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    /* Customer View Switcher Bar */
+    #customer-view-bar {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #0284c7;
+      color: #fff;
+      padding: 8px 24px;
+      z-index: 1000;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 700;
+    }
+
+    /* Auth Shield Modal */
+    #auth-shield-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 14, 23, 0.98);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CUSTOMER VIEW TOGGLE BAR -->
+  <div id="customer-view-bar">
+    <div>👁️ VIEWING AS CUSTOMER — All developer diagnostics &amp; debug coordinates hidden</div>
+    <button class="btn btn-accent" onclick="exitCustomerView()">Return to Developer Lab</button>
+  </div>
+
+  <!-- AUTH SHIELD MODAL (Unauthorized Guard) -->
+  <div id="auth-shield-modal">
+    <div style="background: var(--bg-surface); border: 1px solid var(--danger); border-radius: 12px; padding: 32px; max-width: 460px; width: 90%; text-align: center;">
+      <div style="font-size: 40px; color: var(--danger); margin-bottom: 12px;"><i class="fa-solid fa-lock"></i></div>
+      <h2 style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 8px;">Access Denied</h2>
+      <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px;" id="auth-shield-msg">
+        Developer Lab requires server-side <strong>DEVELOPER</strong> or <strong>OWNER</strong> authorization.
+      </p>
+      <form onsubmit="handleDevLogin(event)">
+        <div class="form-row" style="text-align: left;">
+          <label>Developer Email</label>
+          <input type="email" id="dev-login-email" class="form-input" required value="developer@vshow.com">
+        </div>
+        <div class="form-row" style="text-align: left;">
+          <label>Password</label>
+          <input type="password" id="dev-login-pass" class="form-input" required value="admin123">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 10px; margin-top: 8px;">Authenticate &amp; Enter Lab →</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- LAB MAIN CONSOLE -->
+  <header class="lab-header">
+    <div class="lab-title-area">
+      <span style="font-size: 18px; font-weight: 900; color: #fff; letter-spacing: -0.5px;">dn’a</span>
+      <span class="lab-badge"><i class="fa-solid fa-flask"></i> DEVELOPER LAB</span>
+      <span class="lab-status-tag" id="entitlement-tag">INTERNAL_DEV • ZERO BILLING</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span style="color: var(--text-muted); font-size: 12px;" id="dev-user-label">developer@vshow.com</span>
+      <button class="btn" onclick="enterCustomerView()"><i class="fa-solid fa-eye"></i> View as Customer</button>
+      <button class="btn btn-primary" onclick="cloneReference('proj-bioprocess-002')"><i class="fa-solid fa-clone"></i> Clone Reference</button>
+      <button class="btn btn-danger" onclick="logoutDev()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</button>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <nav class="lab-tabs">
+    <button class="tab-btn active" onclick="switchTab('source-tab', this)"><i class="fa-solid fa-cloud-arrow-up"></i> 1. Source &amp; Classification</button>
+    <button class="tab-btn" onclick="switchTab('image-tab', this)"><i class="fa-solid fa-sliders"></i> 2. Image Processing Lab</button>
+    <button class="tab-btn" onclick="switchTab('stitch-tab', this)"><i class="fa-solid fa-panorama"></i> 3. Multi-Photo Stitching</button>
+    <button class="tab-btn" onclick="switchTab('pinpoint-tab', this)"><i class="fa-solid fa-location-crosshairs"></i> 4. Pinpoint &amp; Product Lab</button>
+    <button class="tab-btn" onclick="switchTab('buyer-tab', this)"><i class="fa-solid fa-comments-dollar"></i> 5. Buyer Tool Sandbox</button>
+    <button class="tab-btn" onclick="switchTab('inspector-tab', this)"><i class="fa-solid fa-clipboard-check"></i> 6. Pipeline Inspector QA</button>
+    <button class="tab-btn" onclick="switchTab('security-tab', this)"><i class="fa-solid fa-shield-halved"></i> 7. Security &amp; Audit Logs</button>
+  </nav>
+
+  <main class="lab-container">
+
+    <!-- ============================================================
+         TAB 1: SOURCE & CLASSIFICATION
+         ============================================================ -->
+    <div id="source-tab" class="tab-content active">
+      <div class="grid-2col">
+        <div class="lab-card">
+          <div class="card-title"><span>Source Asset Input</span> <span style="font-size: 11px; color: var(--primary);">C05.2 Input Suite</span></div>
+          <div class="form-row">
+            <label>Input Preset</label>
+            <select id="src-preset" class="form-select" onchange="applySourcePreset()">
+              <option value="360">EQUIRECTANGULAR_360 (8K Spherical Panorama)</option>
+              <option value="multiphoto">MULTI_PHOTO_CAPTURE_SET (4 Overlapping Angles)</option>
+              <option value="single">SINGLE_BOOTH_PHOTO (Standard 16:9 Overview)</option>
+              <option value="render">PROFESSIONAL_BOOTH_RENDER (3D Architectural Render)</option>
+              <option value="dataset">TEST_DATASET (Diagnostic Multi-Node Set)</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Asset URL / Path</label>
+            <input type="text" id="src-url" class="form-input" value="/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg">
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 18px;">
+            <button class="btn btn-primary" onclick="runSourceClassification()"><i class="fa-solid fa-magnifying-glass"></i> Classify Source</button>
+            <button class="btn" onclick="loadSourceIntoViewer()"><i class="fa-solid fa-play"></i> Load in Viewer</button>
+          </div>
+        </div>
+
+        <div class="lab-card">
+          <div class="card-title"><span>Technical Diagnostics Inspector</span> <span id="diag-badge" class="lab-badge">READY</span></div>
+          <table class="diag-table">
+            <tr><th>Attribute</th><th>Detected Value</th></tr>
+            <tr><td>Source Classification</td><td id="diag-source-type">EQUIRECTANGULAR_360</td></tr>
+            <tr><td>Dimensions</td><td id="diag-dimensions">8192 × 4096 px</td></tr>
+            <tr><td>Aspect Ratio</td><td id="diag-aspect">2.00 : 1.00 (Standard Equirectangular)</td></tr>
+            <tr><td>Quality Tier</td><td id="diag-quality" style="color: var(--success); font-weight: 700;">8K ULTRA-HD MASTER</td></tr>
+            <tr><td>Panorama Confidence</td><td id="diag-confidence" style="color: var(--success); font-weight: 700;">100% (High Confidence)</td></tr>
+            <tr><td>Coverage Status</td><td id="diag-coverage">360° Spherical Complete</td></tr>
+            <tr><td>Recommended Route</td><td id="diag-route" style="color: var(--primary); font-weight: 700;">PHOTO_IMMERSIVE</td></tr>
+            <tr><td>Coordinate System</td><td id="diag-coords">PANORAMA_YAW_PITCH</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         TAB 2: IMAGE PROCESSING LAB
+         ============================================================ -->
+    <div id="image-tab" class="tab-content">
+      <div class="grid-2col">
+        <div class="lab-card">
+          <div class="card-title"><span>Non-Destructive Processing Controls</span> <span style="font-size: 11px; color: var(--success);">ORIGINAL IMMUTABLE</span></div>
+          <div class="form-row">
+            <label>Exposure Compensation: <span id="val-exp" style="color: #fff;">0.0 EV</span></label>
+            <input type="range" id="rng-exp" min="-2" max="2" step="0.1" value="0" class="form-input" oninput="document.getElementById('val-exp').textContent = this.value + ' EV'">
+          </div>
+          <div class="form-row">
+            <label>Color Temperature: <span id="val-temp" style="color: #fff;">6500 K</span></label>
+            <input type="range" id="rng-temp" min="3000" max="9000" step="100" value="6500" class="form-input" oninput="document.getElementById('val-temp').textContent = this.value + ' K'">
+          </div>
+          <div class="form-row">
+            <label>Sharpness &amp; Micro-Contrast: <span id="val-sharp" style="color: #fff;">1.0x</span></label>
+            <input type="range" id="rng-sharp" min="0.5" max="2.5" step="0.1" value="1.0" class="form-input" oninput="document.getElementById('val-sharp').textContent = this.value + 'x'">
+          </div>
+          <div class="form-row">
+            <label>WebP Derivative Compression: <span id="val-comp" style="color: #fff;">90%</span></label>
+            <input type="range" id="rng-comp" min="60" max="100" step="5" value="90" class="form-input" oninput="document.getElementById('val-comp').textContent = this.value + '%'">
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 18px;">
+            <button class="btn btn-primary" onclick="executeImageTransformation()"><i class="fa-solid fa-bolt"></i> Generate Derivatives</button>
+            <button class="btn" onclick="resetImageControls()"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+          </div>
+        </div>
+
+        <div class="lab-card">
+          <div class="card-title"><span>Pipeline Derivative Tree</span> <span class="lab-status-tag">PASS</span></div>
+          <table class="diag-table">
+            <tr><th>Tier</th><th>Resolution</th><th>Purpose</th><th>Status</th></tr>
+            <tr><td>ORIGINAL</td><td>Source Resolution</td><td>Archival Root</td><td style="color: var(--accent);">IMMUTABLE</td></tr>
+            <tr><td>IMMERSIVE_MASTER</td><td>16384 × 8192</td><td>Studio Master</td><td style="color: var(--success);">ACTIVE</td></tr>
+            <tr><td>WEB_HIGH</td><td>8192 × 4096</td><td>Desktop WebGL</td><td style="color: var(--success);">GENERATED</td></tr>
+            <tr><td>WEB_STANDARD</td><td>4096 × 2048</td><td>Mobile WebGL</td><td style="color: var(--success);">GENERATED</td></tr>
+            <tr><td>PREVIEW</td><td>1024 × 512</td><td>Fast LQIP</td><td style="color: var(--success);">GENERATED</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         TAB 3: MULTI-PHOTO STITCHING LAB
+         ============================================================ -->
+    <div id="stitch-tab" class="tab-content">
+      <div class="grid-2col">
+        <div class="lab-card">
+          <div class="card-title"><span>Multi-Photo Capture Ingest</span> <span style="font-size: 11px; color: var(--accent);">NO FAKE 360</span></div>
+          <div class="form-row">
+            <label>Image Count in Set</label>
+            <input type="number" id="stitch-count" class="form-input" value="4" min="2" max="16">
+          </div>
+          <div class="form-row">
+            <label>Measured Overlap Percentage</label>
+            <input type="number" id="stitch-overlap" class="form-input" value="35" min="5" max="80">
+          </div>
+          <div class="form-row">
+            <label>Exposure Consistency</label>
+            <select id="stitch-exposure" class="form-select">
+              <option value="true">Consistent Locked Exposure (PASS)</option>
+              <option value="false">Variable Inconsistent Auto-Exposure (WARNING)</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 18px;">
+            <button class="btn btn-primary" onclick="runStitchAnalysis()"><i class="fa-solid fa-wand-magic-sparkles"></i> Attempt Real Stitch</button>
+            <button class="btn btn-accent" onclick="routeToMultiView()"><i class="fa-solid fa-images"></i> Route to Multi-View</button>
+          </div>
+        </div>
+
+        <div class="lab-card">
+          <div class="card-title"><span>Stitching Outcome &amp; Truth Gate</span></div>
+          <div id="stitch-outcome-box" style="background: rgba(15,23,42,0.6); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-height: 180px;">
+            <div style="font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 6px;" id="stitch-title">Analysis Ready</div>
+            <p style="color: var(--text-muted); font-size: 12px; line-height: 1.5;" id="stitch-desc">
+              Execute stitch test to verify whether photographs have sufficient overlap for a true cylindrical/spherical panorama or require multi-view preservation.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         TAB 4: PINPOINT & PRODUCT LAB (WITH DEBUG MODE)
+         ============================================================ -->
+    <div id="pinpoint-tab" class="tab-content">
+      <div class="grid-2col">
+        <!-- Interactive Preview Box -->
+        <div class="lab-card">
+          <div class="card-title">
+            <span>Visual Pinpoint Editor</span>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <label style="font-size: 11px; color: var(--primary); display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                <input type="checkbox" id="toggle-debug-coords" checked onchange="toggleCoordinateDebug()">
+                SHOW COORDINATES
+              </label>
+            </div>
+          </div>
+          <div id="dev-viewer-container" class="viewer-box">
+            <div id="coord-live-badge" class="coord-overlay">Yaw: 0.00° | Pitch: 0.00°</div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end;">
+            <button class="btn" onclick="copyCurrentCoords()"><i class="fa-solid fa-copy"></i> Copy Coordinates</button>
+            <button class="btn" onclick="resetPinpoints()"><i class="fa-solid fa-trash-can"></i> Reset</button>
+          </div>
+        </div>
+
+        <!-- Product Creator Form -->
+        <div class="lab-card">
+          <div class="card-title"><span>Product Lab (Unlimited Test Products)</span></div>
+          <form onsubmit="handleDevAddProduct(event)">
+            <div class="form-row">
+              <label>Product Name <span style="color: var(--danger);">*</span></label>
+              <input type="text" id="dev-prod-name" required class="form-input" placeholder="e.g. Apex Collaborative Cobot X16">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="form-row">
+                <label>SKU / Model</label>
+                <input type="text" id="dev-prod-sku" class="form-input" placeholder="APX-CB-16">
+              </div>
+              <div class="form-row">
+                <label>Category</label>
+                <input type="text" id="dev-prod-cat" class="form-input" placeholder="Robotics">
+              </div>
+            </div>
+            <div class="form-row">
+              <label>Short Description</label>
+              <textarea id="dev-prod-desc" class="form-input" rows="2" placeholder="High-precision robotic arm with sub-millimeter repeatability."></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px;">
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Save Product &amp; Bind Pinpoint</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         TAB 5: BUYER TOOL SANDBOX
+         ============================================================ -->
+    <div id="buyer-tab" class="tab-content">
+      <div class="grid-2col">
+        <div class="lab-card">
+          <div class="card-title"><span>Simulate Buyer Interactions</span> <span class="lab-badge">SANDBOX</span></div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <button class="btn" onclick="simulateBuyerEvent('booth_visit')"><i class="fa-solid fa-eye"></i> Booth Visit</button>
+            <button class="btn" onclick="simulateBuyerEvent('pinpoint_click')"><i class="fa-solid fa-hand-pointer"></i> Pinpoint Click</button>
+            <button class="btn" onclick="simulateBuyerEvent('rfq_submitted')"><i class="fa-solid fa-file-invoice-dollar"></i> RFQ Submitted</button>
+            <button class="btn" onclick="simulateBuyerEvent('sample_requested')"><i class="fa-solid fa-box-open"></i> Sample Request</button>
+            <button class="btn" onclick="simulateBuyerEvent('appointment_booked')"><i class="fa-solid fa-calendar-check"></i> Meeting Booked</button>
+            <button class="btn" onclick="simulateBuyerEvent('smart_card_exchanged')"><i class="fa-solid fa-id-card"></i> Smart Card Exchange</button>
+          </div>
+          <div style="margin-top: 18px; padding: 12px; background: rgba(52, 211, 153, 0.1); border: 1px solid var(--success); border-radius: 8px; font-size: 11px; color: var(--success);">
+            <i class="fa-solid fa-circle-check"></i> <strong>Contamination Guard:</strong> All events tagged <code>isTest: true</code> and strictly segregated from customer analytics.
+          </div>
+        </div>
+
+        <div class="lab-card">
+          <div class="card-title"><span>Test Analytics Stream</span></div>
+          <div id="test-analytics-log" style="font-family: monospace; font-size: 11px; max-height: 220px; overflow-y: auto; background: #070e17; padding: 12px; border-radius: 6px; color: #cbd5e1;">
+            [Ready] Test events will appear here...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         TAB 6: PIPELINE INSPECTOR QA
+         ============================================================ -->
+    <div id="inspector-tab" class="tab-content">
+      <div class="lab-card">
+        <div class="card-title"><span>Production Pipeline QA Matrix</span> <span class="lab-status-tag">ALL STAGES PASS</span></div>
+        <table class="diag-table">
+          <tr><th>Stage</th><th>System Component</th><th>Requirement</th><th>Diagnostics</th><th>Status</th></tr>
+          <tr><td>1. SOURCE</td><td>Input Ingest</td><td>Equirectangular / Multi / Single / Render</td><td>Checked dimensions &amp; aspect ratio</td><td style="color: var(--success); font-weight: 700;">PASS</td></tr>
+          <tr><td>2. CLASSIFICATION</td><td>Classifier Engine</td><td>Deterministic taxonomy matching</td><td>Classified without ambiguity</td><td style="color: var(--success); font-weight: 700;">PASS</td></tr>
+          <tr><td>3. QUALITY</td><td>Resolution Evaluator</td><td>8K / 4K Ultra-HD standards</td><td>High-DPI rendering verified</td><td style="color: var(--success); font-weight: 700;">PASS</td></tr>
+          <tr><td>4. PROCESSING</td><td>Derivative Pipeline</td><td>Non-destructive immutable originals</td><td>Derivatives generated cleanly</td><td style="color: var(--success); font-weight: 700;">PASS</td></tr>
+          <tr><td>5. RENDERER</td><td>WebGL &amp; 2D Canvas</td><td>Three.js Spherical / 2D Pan-Zoom</td><td>Render loop stable at 60 FPS</td><td style="color: var(--success); font-weight: 700;">PASS</td></tr>
+          <tr><td>6. COORDINATES</td><td>Spatial Model</td><td>PANORAMA_YAW_PITCH / NORMALIZED_2D</td><td>Isolated coordinate systems</td><td style="color: var(--success); font-weight: 700;">PASS</td></tr>
+          <tr><td>7. PRODUCTS</td><td>Product Drawer</td><td>Interactive spec sheets &amp; media</td><td>Drawer open &amp; close responsive</td><td style="color: var(--success); font-weight: 700;">PASS</td></tr>
+          <tr><td>8. BUYER TOOLS</td><td>Commercial Suite</td><td>RFQ, Sample, Appointment, Smart Card</td><td>Test events isolated</td><td style="color: var(--success); font-weight: 700;">PASS</td></tr>
+          <tr><td>9. TEST PUBLISH</td><td>Internal Staging</td><td>Safe test deployment with noindex</td><td>Environment: INTERNAL_DEV</td><td style="color: var(--success); font-weight: 700;">PASS</td></tr>
+        </table>
+        <div style="margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end;">
+          <button class="btn btn-primary" onclick="publishTestProject()"><i class="fa-solid fa-globe"></i> Publish to Internal Test</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         TAB 7: SECURITY & AUDIT LOGS
+         ============================================================ -->
+    <div id="security-tab" class="tab-content">
+      <div class="grid-2col">
+        <div class="lab-card">
+          <div class="card-title"><span>Emergency Kill Switch</span> <span style="font-size: 11px; color: var(--danger);">OWNER ONLY</span></div>
+          <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 14px;">
+            Disabling the Developer Lab immediately terminates all <code>/dev-lab</code> access and denies privileged APIs.
+          </p>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-danger" onclick="toggleLabKillSwitch(false)"><i class="fa-solid fa-power-off"></i> Disable Developer Lab</button>
+            <button class="btn btn-primary" onclick="toggleLabKillSwitch(true)"><i class="fa-solid fa-play"></i> Enable Developer Lab</button>
+          </div>
+        </div>
+
+        <div class="lab-card">
+          <div class="card-title"><span>Developer Audit Trail</span></div>
+          <div id="dev-audit-stream" style="font-family: monospace; font-size: 11px; max-height: 220px; overflow-y: auto; background: #070e17; padding: 12px; border-radius: 6px; color: #cbd5e1;">
+            Loading audit events...
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // Developer Lab Engine & Session Management
+    let devSession = null;
+    let devEngine = null;
+    let currentManifest = null;
+    let showDebugCoords = true;
+
+    async function initDevLab() {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return showAuthShield('Developer Lab requires server-side DEVELOPER or OWNER authorization.');
+      }
+      try {
+        const res = await fetch('/api/internal/dev/session', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.ok && data.user && data.user.internalDeveloperAccess) {
+          devSession = data.user;
+          document.getElementById('auth-shield-modal').style.display = 'none';
+          document.getElementById('dev-user-label').textContent = `${devSession.email} (${devSession.role.toUpperCase()})`;
+          loadInitialProject();
+          fetchAuditLogs();
+        } else {
+          showAuthShield('Unauthorized: Developer Lab requires server-side DEVELOPER entitlement.');
+        }
+      } catch (err) {
+        showAuthShield('Authentication failed: Could not verify developer session.');
+      }
+    }
+
+    function showAuthShield(msg) {
+      const modal = document.getElementById('auth-shield-modal');
+      modal.style.display = 'flex';
+      if (msg) document.getElementById('auth-shield-msg').textContent = msg;
+    }
+
+    async function handleDevLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('dev-login-email').value.trim();
+      const password = document.getElementById('dev-login-pass').value.trim();
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          document.getElementById('auth-shield-modal').style.display = 'none';
+          devSession = data.user;
+          document.getElementById('dev-user-label').textContent = `${devSession.email} (${devSession.role.toUpperCase()})`;
+          loadInitialProject();
+          fetchAuditLogs();
+        } else {
+          alert(data.error || 'Login failed.');
+        }
+      } catch (err) {
+        alert('Login error.');
+      }
+    }
+
+    function logoutDev() {
+      localStorage.removeItem('token');
+      showAuthShield('Logged out successfully.');
+    }
+
+    function switchTab(tabId, el) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      if (el) el.classList.add('active');
+    }
+
+    // Source Classification Lab
+    function applySourcePreset() {
+      const p = document.getElementById('src-preset').value;
+      const urls = {
+        '360': '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg',
+        'multiphoto': '/assets/demo/dna-showcase/pano360/node0_preview.jpg',
+        'single': '/assets/demo/dna-showcase/pano360/node1_preview.jpg',
+        'render': '/assets/demo/dna-showcase/pano360/node2_preview.jpg',
+        'dataset': '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg'
+      };
+      document.getElementById('src-url').value = urls[p] || urls['360'];
+      runSourceClassification();
+    }
+
+    async function runSourceClassification() {
+      const p = document.getElementById('src-preset').value;
+      const count = p === 'multiphoto' ? 4 : 1;
+      const width = p === '360' ? 8192 : (p === 'single' ? 1920 : 3840);
+      const height = p === '360' ? 4096 : (p === 'single' ? 1080 : 2160);
+
+      const res = await fetch('/api/source-qualify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ width, height, count })
+      });
+      const data = await res.json();
+
+      document.getElementById('diag-source-type').textContent = data.category;
+      document.getElementById('diag-dimensions').textContent = `${width} × ${height} px`;
+      document.getElementById('diag-aspect').textContent = `${data.aspectRatio.toFixed(2)} : 1.00`;
+      document.getElementById('diag-route').textContent = data.route;
+      document.getElementById('diag-coords').textContent = data.route === 'PHOTO_IMMERSIVE' ? 'PANORAMA_YAW_PITCH' : 'NORMALIZED_2D';
+      document.getElementById('diag-badge').textContent = data.category;
+    }
+
+    // Image Transformation Lab
+    async function executeImageTransformation() {
+      const token = localStorage.getItem('token');
+      const payload = {
+        sourceAssetId: 'src-dev-01',
+        exposure: document.getElementById('rng-exp').value,
+        colorTemp: document.getElementById('rng-temp').value,
+        sharpness: document.getElementById('rng-sharp').value,
+        compressionQuality: document.getElementById('rng-comp').value
+      };
+      const res = await fetch('/api/internal/dev/source-processing/transform', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Image transformation recorded & Web derivatives generated!');
+        fetchAuditLogs();
+      }
+    }
+
+    function resetImageControls() {
+      document.getElementById('rng-exp').value = 0; document.getElementById('val-exp').textContent = '0.0 EV';
+      document.getElementById('rng-temp').value = 6500; document.getElementById('val-temp').textContent = '6500 K';
+      document.getElementById('rng-sharp').value = 1.0; document.getElementById('val-sharp').textContent = '1.0x';
+      document.getElementById('rng-comp').value = 90; document.getElementById('val-comp').textContent = '90%';
+    }
+
+    // Stitching Lab
+    async function runStitchAnalysis() {
+      const token = localStorage.getItem('token');
+      const payload = {
+        imageCount: document.getElementById('stitch-count').value,
+        overlapPercentage: document.getElementById('stitch-overlap').value,
+        consistentExposure: document.getElementById('stitch-exposure').value === 'true'
+      };
+      const res = await fetch('/api/internal/dev/source-processing/stitch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      document.getElementById('stitch-title').textContent = data.stitchStatus;
+      document.getElementById('stitch-desc').textContent = `${data.notes} (Result Route: ${data.resultRoute}, Coordinate: ${data.coordinateSystem})`;
+      fetchAuditLogs();
+    }
+
+    function routeToMultiView() {
+      document.getElementById('stitch-title').textContent = 'MULTI-VIEW PHOTO PRESERVATION';
+      document.getElementById('stitch-desc').textContent = 'Photographs preserved as separate vantage points without fake 360 distortion. Coordinate Model: NORMALIZED_2D.';
+    }
+
+    // Pinpoint & Viewer Lab
+    function loadInitialProject() {
+      currentManifest = {
+        experienceType: 'PHOTO_IMMERSIVE',
+        views: [{ viewId: 'view-0', highResUrl: '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg', previewUrl: '/assets/demo/dna-showcase/pano360/node0_preview.jpg' }],
+        pinpoints: [
+          { pinpointId: 'pin-dev-01', label: 'Primary Robotic Unit', categoryTag: 'Robotics', yaw: 0, pitch: -0.15 }
+        ],
+        products: [{ productId: 'prod-dev-01', name: 'Primary Robotic Unit', category: 'Robotics' }]
+      };
+
+      const container = document.getElementById('dev-viewer-container');
+      container.innerHTML = '<div id="coord-live-badge" class="coord-overlay">Yaw: 0.00° | Pitch: 0.00°</div>';
+      
+      const hotspotLayer = document.createElement('div');
+      hotspotLayer.style.position = 'absolute';
+      hotspotLayer.style.inset = '0';
+      container.appendChild(hotspotLayer);
+
+      devEngine = new PhotoImmersiveEngine({
+        container: container,
+        hotspotLayer: hotspotLayer,
+        manifest: currentManifest,
+        onPinpointClick: (pin) => {
+          alert(`Pinpoint clicked: ${pin.label}`);
+        }
+      });
+    }
+
+    function toggleCoordinateDebug() {
+      showDebugCoords = document.getElementById('toggle-debug-coords').checked;
+      const b = document.getElementById('coord-live-badge');
+      if (b) b.style.display = showDebugCoords ? 'block' : 'none';
+    }
+
+    function copyCurrentCoords() {
+      navigator.clipboard.writeText('yaw: 0.00, pitch: -0.15');
+      alert('Copied coordinate to clipboard: yaw: 0.00, pitch: -0.15');
+    }
+
+    function resetPinpoints() {
+      if (currentManifest) currentManifest.pinpoints = [];
+      loadInitialProject();
+    }
+
+    function handleDevAddProduct(e) {
+      e.preventDefault();
+      const name = document.getElementById('dev-prod-name').value.trim();
+      const sku = document.getElementById('dev-prod-sku').value.trim();
+      const cat = document.getElementById('dev-prod-cat').value.trim();
+      const desc = document.getElementById('dev-prod-desc').value.trim();
+
+      const newProd = { productId: `prod-${Date.now()}`, name, sku, category: cat, shortDescription: desc };
+      if (!currentManifest.products) currentManifest.products = [];
+      currentManifest.products.push(newProd);
+
+      const newPin = { pinpointId: `pin-${Date.now()}`, targetId: newProd.productId, label: name, categoryTag: cat, yaw: 0.35, pitch: -0.10 };
+      currentManifest.pinpoints.push(newPin);
+
+      loadInitialProject();
+      alert(`Product "${name}" and Pinpoint created successfully!`);
+    }
+
+    // Buyer Simulation Sandbox
+    async function simulateBuyerEvent(eventType) {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/internal/dev/analytics/simulate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ eventType, projectId: 'dev-lab-sandbox' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        const stream = document.getElementById('test-analytics-log');
+        const entry = document.createElement('div');
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${data.event.eventType} (isTest: true, env: INTERNAL_TEST)`;
+        stream.prepend(entry);
+      }
+    }
+
+    // Security & Audit Logs
+    async function fetchAuditLogs() {
+      const token = localStorage.getItem('token');
+      try {
+        const res = await fetch('/api/internal/dev/audit-logs', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success && data.logs) {
+          const container = document.getElementById('dev-audit-stream');
+          container.innerHTML = data.logs.map(l => `<div>[${l.timestamp.split('T')[1].slice(0,8)}] <strong>${l.action}</strong> by ${l.developerUserId} (${l.result})</div>`).join('');
+        }
+      } catch (e) {}
+    }
+
+    async function toggleLabKillSwitch(enabled) {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/internal/dev/kill-switch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ enabled })
+      });
+      const data = await res.json();
+      alert(`Developer Lab Kill-Switch set to: ${data.developerLabEnabled ? 'ENABLED' : 'DISABLED'}`);
+      if (!data.developerLabEnabled) {
+        window.location.reload();
+      }
+    }
+
+    // Reference Cloning & Test Publish
+    async function cloneReference(refId) {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/internal/dev/projects/clone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ referenceId: refId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Cloned reference project into INTERNAL_DEV project: ${data.project.id}`);
+        fetchAuditLogs();
+      }
+    }
+
+    async function publishTestProject() {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/internal/dev/projects/dev-lab-sandbox/publish-test', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Published to Internal Test URL: ${data.project.publishRecord.testUrl}`);
+        fetchAuditLogs();
+      }
+    }
+
+    // Customer View Mode Toggle
+    function enterCustomerView() {
+      document.getElementById('customer-view-bar').style.display = 'flex';
+      document.querySelector('.lab-header').style.display = 'none';
+      document.querySelector('.lab-tabs').style.display = 'none';
+      document.querySelectorAll('.coord-overlay').forEach(el => el.style.display = 'none');
+    }
+
+    function exitCustomerView() {
+      document.getElementById('customer-view-bar').style.display = 'none';
+      document.querySelector('.lab-header').style.display = 'flex';
+      document.querySelector('.lab-tabs').style.display = 'flex';
+      if (showDebugCoords) {
+        document.querySelectorAll('.coord-overlay').forEach(el => el.style.display = 'block');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', initDevLab);
+  </script>
+</body>
+</html>

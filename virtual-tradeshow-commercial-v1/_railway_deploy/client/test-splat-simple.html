@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+    "@mkkellogg/gaussian-splats-3d": "https://cdn.jsdelivr.net/npm/@mkkellogg/gaussian-splats-3d@0.4.3/build/gaussian-splats-3d.module.js"
+  }
+}
+</script>
+</head>
+<body style="margin:0;width:100vw;height:100vh;overflow:hidden;background:#000;">
+<div id="splat-root" style="width:100%;height:100%;"></div>
+<script type="module">
+import * as GaussianSplats3D from '@mkkellogg/gaussian-splats-3d';
+
+async function main() {
+  console.log('Init viewer...');
+  const viewer = new GaussianSplats3D.Viewer({
+    rootElement: document.getElementById('splat-root'),
+    showLoadingUI: false,
+    sharedMemoryForWorkers: false,
+    dynamicScene: false,
+    webXRMode: GaussianSplats3D.WebXRMode.None,
+    renderMode: GaussianSplats3D.RenderMode.Always,
+    sceneRevealMode: GaussianSplats3D.SceneRevealMode.Gradual,
+    cameraUp: [0, 1, 0],
+    initialCameraPosition: [0, 2, 5],
+    initialCameraLookAt: [0, 1, 0]
+  });
+
+  viewer.start();
+  console.log('Viewer started. Adding splat scene...');
+  try {
+    await viewer.addSplatScene('/assets/splat/demo_booth.ksplat', {
+      progressiveLoad: true
+    });
+    console.log('Splat scene added successfully!');
+  } catch (e) {
+    console.error('Failed to add splat scene:', e);
+  }
+}
+main();
+</script>
+</body>
+</html>

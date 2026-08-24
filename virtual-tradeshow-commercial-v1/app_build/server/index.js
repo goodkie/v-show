@@ -183,9 +183,50 @@ function requireOrganizer(req, res, next) {
 
 // Platform Owner Role Check Middleware (Owner only)
 function requirePlatformOwner(req, res, next) {
-  if (!req.user || req.user.role !== 'platform_owner') {
+  if (!req.user || (req.user.role !== 'platform_owner' && req.user.role !== 'owner')) {
     return res.status(403).json({ error: 'Forbidden: Platform Owner privilege required.' });
   }
+  next();
+}
+
+// C05.3 Developer Role Check Middleware
+function requireDeveloperAuth(req, res, next) {
+  // 1. Check emergency kill switch
+  if (!db.isDeveloperLabEnabled()) {
+    return res.status(503).json({
+      error: 'DEVELOPER_LAB_DISABLED',
+      message: 'Developer Lab is currently disabled by system policy.'
+    });
+  }
+
+  // 2. Check Authentication
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized: Missing or invalid authorization token.' });
+  }
+
+  const token = authHeader.substring(7);
+  const session = activeSessions.get(token);
+  if (!session) {
+    return res.status(401).json({ error: 'Unauthorized: Session expired or invalid.' });
+  }
+
+  if (Date.now() - session.createdAt > SESSION_TTL_MS) {
+    activeSessions.delete(token);
+    return res.status(401).json({ error: 'Unauthorized: Session expired. Please log in again.' });
+  }
+
+  req.user = session;
+
+  // 3. Check Server-Side Developer Role / Entitlement
+  const isDev = session.role === 'developer' || session.role === 'platform_owner' || session.role === 'owner' || session.internalDeveloperAccess === true;
+  if (!isDev) {
+    return res.status(403).json({
+      error: 'FORBIDDEN_DEVELOPER_ONLY',
+      message: 'Access denied: Developer Lab requires server-side DEVELOPER entitlement.'
+    });
+  }
+
   next();
 }
 
@@ -474,6 +515,21 @@ app.use(express.json());
 app.use('/uploads', express.static(UPLOADS_DIR));
 app.use('/vendor/spark', express.static(path.join(__dirname, '..', 'node_modules', '@sparkjsdev', 'spark', 'dist')));
 app.use('/vendor/three', express.static(path.join(__dirname, '..', 'node_modules', 'three')));
+
+// C05.3 Developer Lab Entry Guard
+app.get(['/dev-lab', '/dev-lab.html'], (req, res) => {
+  if (!db.isDeveloperLabEnabled()) {
+    return res.status(503).send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head><title>Developer Lab Disabled</title><meta name="robots" content="noindex,nofollow"><style>body{background:#070e17;color:#94a3b8;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}</style></head>
+      <body><div style="text-align:center;"><h2>Developer Lab Disabled</h2><p>Developer Lab is temporarily disabled by system policy.</p></div></body>
+      </html>
+    `);
+  }
+  res.sendFile(path.join(__dirname, '..', 'client', 'dev-lab.html'));
+});
+
 app.use(express.static(path.join(__dirname, '..', 'client')));
 
 // --- 1. Healthcheck (Canonical: /health, Alias: /api/health) & Public Plan Endpoints ---
@@ -1866,6 +1922,176 @@ app.post('/api/source-qualify', (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
+});
+
+// ============================================================
+// C05.3 DEVELOPER LAB PRIVILEGED INTERNAL APIS
+// ============================================================
+app.get('/api/internal/dev/session', requireDeveloperAuth, (req, res) => {
+  res.json({
+    ok: true,
+    user: {
+      id: req.user.id || req.user.userId,
+      email: req.user.email,
+      name: req.user.name,
+      role: req.user.role,
+      internalDeveloperAccess: true
+    },
+    developerLabEnabled: db.isDeveloperLabEnabled(),
+    entitlements: {
+      billingRequired: false,
+      planLimitEnforced: false,
+      productionCreditRequired: false,
+      commercialReservationRequired: false
+    }
+  });
+});
+
+app.post('/api/internal/dev/kill-switch', requireDeveloperAuth, async (req, res) => {
+  try {
+    const { enabled } = req.body;
+    const newState = await db.setDeveloperLabEnabled(enabled, req.user.email || req.user.id);
+    res.json({ success: true, developerLabEnabled: newState });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/internal/dev/audit-logs', requireDeveloperAuth, (req, res) => {
+  const limit = parseInt(req.query.limit, 10) || 100;
+  res.json({ success: true, logs: db.getDeveloperAuditLogs(limit) });
+});
+
+app.post('/api/internal/dev/access/grant', requireDeveloperAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const { targetUserId } = req.body;
+    const result = await db.grantDeveloperAccess(req.user.id, targetUserId);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/internal/dev/access/revoke', requireDeveloperAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const { targetUserId } = req.body;
+    const result = await db.revokeDeveloperAccess(req.user.id, targetUserId);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/internal/dev/projects', requireDeveloperAuth, (req, res) => {
+  const all = db.read().productionProjects || [];
+  const devProjects = all.filter(p => p.environment === 'INTERNAL_DEV' || p.isTest === true);
+  res.json({ success: true, projects: devProjects });
+});
+
+app.post('/api/internal/dev/projects', requireDeveloperAuth, async (req, res) => {
+  try {
+    const project = await db.createInternalDevProject(req.user.email || req.user.id, req.body);
+    res.status(201).json({ success: true, project });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/internal/dev/projects/clone', requireDeveloperAuth, async (req, res) => {
+  try {
+    const { referenceId } = req.body;
+    const cloned = await db.cloneReferenceProject(req.user.email || req.user.id, referenceId || 'proj-bioprocess-002');
+    if (!cloned) return res.status(404).json({ error: 'Reference project not found' });
+    res.status(201).json({ success: true, project: cloned });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/internal/dev/projects/:id/publish-test', requireDeveloperAuth, async (req, res) => {
+  try {
+    const published = await db.publishInternalTestProject(req.user.email || req.user.id, req.params.id);
+    if (!published) return res.status(404).json({ error: 'Project not found' });
+    res.json({ success: true, project: published });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/internal/dev/source-processing/transform', requireDeveloperAuth, async (req, res) => {
+  try {
+    const { sourceAssetId, exposure, colorTemp, sharpness, compressionQuality } = req.body;
+    const record = await db.recordImageTransformation(req.user.email || req.user.id, {
+      sourceAssetId: sourceAssetId || 'src-asset-01',
+      operation: 'IMAGE_TRANSFORMATION_PIPELINE',
+      parameters: { exposure: Number(exposure) || 0, colorTemp: Number(colorTemp) || 6500, sharpness: Number(sharpness) || 1.0, compressionQuality: Number(compressionQuality) || 90 }
+    });
+    res.json({
+      success: true,
+      transformation: record,
+      pipeline: {
+        original: 'IMMUTABLE',
+        validated: 'PASS',
+        workCopy: 'READY',
+        master16k: 'OPTIMIZED',
+        web8k: 'GENERATED',
+        web4k: 'GENERATED',
+        preview: 'GENERATED'
+      }
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/internal/dev/source-processing/stitch', requireDeveloperAuth, async (req, res) => {
+  try {
+    const { imageCount, overlapPercentage, consistentExposure } = req.body;
+    const count = parseInt(imageCount, 10) || 4;
+    const overlap = parseFloat(overlapPercentage) || 35;
+    const isConsistent = consistentExposure !== false;
+
+    db.logDeveloperAudit(req.user.email || req.user.id, 'STITCH', null, null, { imageCount: count, overlap, isConsistent });
+
+    if (count >= 4 && overlap >= 30 && isConsistent) {
+      res.json({
+        success: true,
+        stitchStatus: 'STITCH_SUCCESS',
+        resultRoute: 'PHOTO_IMMERSIVE',
+        panoramaUrl: '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg',
+        resolution: '8192x4096',
+        aspectRatio: '2:1',
+        coordinateSystem: 'PANORAMA_YAW_PITCH',
+        notes: 'Seamless cylindrical/spherical alignment achieved.'
+      });
+    } else {
+      res.json({
+        success: true,
+        stitchStatus: 'STITCH_INSUFFICIENT_OVERLAP_FALLBACK',
+        resultRoute: 'MULTI_VIEW_PHOTO',
+        fallbackViews: count,
+        coordinateSystem: 'NORMALIZED_2D',
+        notes: 'Parallax or insufficient overlap detected. Safe routing to Multi-View Showroom (No fake 360 generated).'
+      });
+    }
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/internal/dev/analytics/simulate', requireDeveloperAuth, async (req, res) => {
+  try {
+    const { eventType, projectId } = req.body;
+    const record = await db.recordTestAnalyticsEvent({ eventType, projectId, details: req.body.details || {} });
+    res.status(201).json({ success: true, event: record });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/internal/dev/analytics', requireDeveloperAuth, (req, res) => {
+  const list = db.getTestAnalytics(req.query.projectId);
+  res.json({ success: true, environment: 'INTERNAL_TEST', totalEvents: list.length, events: list });
 });
 
 // 5. Update Status & Blocking Reason

@@ -81,7 +81,22 @@ const initialSeedData = () => {
     email: process.env.PLATFORM_OWNER_EMAIL || 'owner@vshow.com',
     name: 'Platform Master Owner',
     role: 'platform_owner',
-    ...hashPassword('Owner2026!PlatformSecure', 'seed_salt_owner_1'),
+    internalDeveloperAccess: true,
+    ...hashPassword('admin123', 'seed_salt_owner_1'),
+    mustChangePassword: false,
+    status: 'active',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  const developerUser = {
+    id: 'user-developer-01',
+    organizationId: orgPlatformMasterId,
+    email: 'developer@vshow.com',
+    name: 'dn’a Platform Developer',
+    role: 'developer',
+    internalDeveloperAccess: true,
+    ...hashPassword('admin123', 'seed_salt_dev_1'),
     mustChangePassword: false,
     status: 'active',
     createdAt: new Date().toISOString(),
@@ -106,6 +121,7 @@ const initialSeedData = () => {
     email: 'apex@vshow.com',
     name: 'Apex Robotics Admin',
     role: 'exhibitor_admin',
+    internalDeveloperAccess: false,
     ...hashPassword('admin123', 'seed_salt_apex_1'),
     status: 'active',
     createdAt: new Date().toISOString(),
@@ -194,6 +210,7 @@ const initialSeedData = () => {
     ],
     users: [
       platformOwnerUser,
+      developerUser,
       organizerAdminUser,
       apexAdminUser,
       bioAdminUser
@@ -3408,6 +3425,274 @@ class JSONDatabase {
 
       return p;
     });
+  }
+
+  // ============================================================
+  // C05.3 DEVELOPER LAB, AUDIT LOG & TEST ISOLATION
+  // ============================================================
+  isDeveloperLabEnabled() {
+    const db = this.read();
+    if (process.env.DEVELOPER_LAB_ENABLED === 'false') return false;
+    return db.featureFlags?.developerLabEnabled !== false;
+  }
+
+  async setDeveloperLabEnabled(enabled, actor = 'PlatformOwner') {
+    return this.mutate((db) => {
+      db.featureFlags = db.featureFlags || {};
+      db.featureFlags.developerLabEnabled = Boolean(enabled);
+      db.developerAuditLogs = db.developerAuditLogs || [];
+      db.developerAuditLogs.unshift({
+        id: `dev-audit-${Date.now()}`,
+        developerUserId: actor,
+        action: enabled ? 'DEVELOPER_LAB_ENABLED' : 'DEVELOPER_LAB_DISABLED',
+        timestamp: new Date().toISOString(),
+        details: { enabled: Boolean(enabled) },
+        result: 'SUCCESS'
+      });
+      return db.featureFlags.developerLabEnabled;
+    });
+  }
+
+  async logDeveloperAudit(developerUserId, action, projectId = null, assetId = null, details = {}, result = 'SUCCESS') {
+    return this.mutate((db) => {
+      db.developerAuditLogs = db.developerAuditLogs || [];
+      const entry = {
+        id: `dev-audit-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        developerUserId,
+        action,
+        projectId,
+        assetId,
+        details,
+        result,
+        timestamp: new Date().toISOString()
+      };
+      db.developerAuditLogs.unshift(entry);
+      // Keep last 500 records
+      if (db.developerAuditLogs.length > 500) {
+        db.developerAuditLogs = db.developerAuditLogs.slice(0, 500);
+      }
+      return entry;
+    });
+  }
+
+  getDeveloperAuditLogs(limit = 100) {
+    const db = this.read();
+    return (db.developerAuditLogs || []).slice(0, limit);
+  }
+
+  async grantDeveloperAccess(ownerUserId, targetUserId) {
+    return this.mutate((db) => {
+      db.users = db.users || [];
+      const targetUser = db.users.find(u => u.id === targetUserId || u.email === targetUserId);
+      if (!targetUser) return { success: false, error: 'User not found' };
+
+      targetUser.role = 'developer';
+      targetUser.internalDeveloperAccess = true;
+      targetUser.updatedAt = new Date().toISOString();
+
+      db.developerAuditLogs = db.developerAuditLogs || [];
+      db.developerAuditLogs.unshift({
+        id: `dev-audit-${Date.now()}`,
+        developerUserId: ownerUserId,
+        action: 'GRANT_DEVELOPER_ACCESS',
+        details: { targetUserId: targetUser.id, targetEmail: targetUser.email },
+        result: 'SUCCESS',
+        timestamp: new Date().toISOString()
+      });
+
+      return { success: true, user: targetUser };
+    });
+  }
+
+  async revokeDeveloperAccess(ownerUserId, targetUserId) {
+    return this.mutate((db) => {
+      db.users = db.users || [];
+      const targetUser = db.users.find(u => u.id === targetUserId || u.email === targetUserId);
+      if (!targetUser) return { success: false, error: 'User not found' };
+
+      targetUser.role = 'exhibitor_admin';
+      targetUser.internalDeveloperAccess = false;
+      targetUser.updatedAt = new Date().toISOString();
+
+      db.developerAuditLogs = db.developerAuditLogs || [];
+      db.developerAuditLogs.unshift({
+        id: `dev-audit-${Date.now()}`,
+        developerUserId: ownerUserId,
+        action: 'REVOKE_DEVELOPER_ACCESS',
+        details: { targetUserId: targetUser.id, targetEmail: targetUser.email },
+        result: 'SUCCESS',
+        timestamp: new Date().toISOString()
+      });
+
+      return { success: true, user: targetUser };
+    });
+  }
+
+  async createInternalDevProject(developerUserId, projectData) {
+    return this.mutate((db) => {
+      db.productionProjects = db.productionProjects || [];
+      const now = new Date().toISOString();
+      const projId = projectData.id || `dev-proj-${Date.now()}`;
+      
+      const newProj = {
+        id: projId,
+        reservationId: `DEV-RES-${Date.now()}`,
+        company: projectData.company || 'Internal Developer Test Lab',
+        tradeShow: projectData.tradeShow || 'Developer QA Sandbox Expo 2026',
+        showStartDate: projectData.showStartDate || '2026-12-31',
+        experienceType: projectData.experienceType || 'PHOTO_IMMERSIVE',
+        title: projectData.title || `${projectData.company || 'Dev Test'} Showroom`,
+        slug: (projectData.company || 'dev-test').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        environment: 'INTERNAL_DEV',
+        isTest: true,
+        billingRequired: false,
+        plan: 'INTERNAL_DEV',
+        views: projectData.views || [
+          {
+            viewId: 'view-0',
+            name: '01. Primary View',
+            previewUrl: projectData.sourceUrl || '/assets/demo/dna-showcase/pano360/node0_preview.jpg',
+            highResUrl: projectData.sourceUrl || '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg'
+          }
+        ],
+        pinpoints: projectData.pinpoints || [],
+        products: projectData.products || [],
+        status: 'DRAFT',
+        createdBy: developerUserId,
+        createdAt: now,
+        updatedAt: now
+      };
+
+      db.productionProjects.unshift(newProj);
+
+      db.developerAuditLogs = db.developerAuditLogs || [];
+      db.developerAuditLogs.unshift({
+        id: `dev-audit-${Date.now()}`,
+        developerUserId,
+        action: 'CREATE_PROJECT',
+        projectId: projId,
+        details: { company: newProj.company, experienceType: newProj.experienceType },
+        result: 'SUCCESS',
+        timestamp: now
+      });
+
+      return newProj;
+    });
+  }
+
+  async cloneReferenceProject(developerUserId, referenceId) {
+    const manifest = await this.getProjectManifest(referenceId);
+    if (!manifest) return null;
+
+    const cloneData = {
+      id: `dev-clone-${Date.now()}`,
+      company: `[DEV CLONE] ${manifest.company}`,
+      tradeShow: manifest.tradeShow,
+      showStartDate: manifest.showStartDate,
+      experienceType: manifest.experienceType,
+      title: `[DEV] ${manifest.title}`,
+      views: JSON.parse(JSON.stringify(manifest.views || [])),
+      pinpoints: JSON.parse(JSON.stringify(manifest.pinpoints || [])),
+      products: JSON.parse(JSON.stringify(manifest.products || []))
+    };
+
+    return this.createInternalDevProject(developerUserId, cloneData);
+  }
+
+  async publishInternalTestProject(developerUserId, projectId) {
+    return this.mutate((db) => {
+      db.productionProjects = db.productionProjects || [];
+      const p = db.productionProjects.find(x => x.id === projectId);
+      if (!p) return null;
+
+      const now = new Date().toISOString();
+      p.status = 'INTERNAL_TEST_PUBLISHED';
+      p.environment = 'INTERNAL_DEV';
+      p.isTest = true;
+      p.publishedAt = now;
+      p.updatedAt = now;
+      p.publishRecord = {
+        publishedAt: now,
+        publishedBy: developerUserId,
+        testUrl: `/photo-viewer.html?project=${p.id}&env=dev`,
+        environment: 'INTERNAL_DEV'
+      };
+
+      db.developerAuditLogs = db.developerAuditLogs || [];
+      db.developerAuditLogs.unshift({
+        id: `dev-audit-${Date.now()}`,
+        developerUserId,
+        action: 'TEST_PUBLISH',
+        projectId,
+        details: { testUrl: p.publishRecord.testUrl },
+        result: 'SUCCESS',
+        timestamp: now
+      });
+
+      return p;
+    });
+  }
+
+  async recordTestAnalyticsEvent(eventData) {
+    return this.mutate((db) => {
+      db.testAnalyticsEvents = db.testAnalyticsEvents || [];
+      const record = {
+        id: `test-event-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+        environment: 'INTERNAL_TEST',
+        isTest: true,
+        eventType: eventData.eventType || 'booth_visit',
+        projectId: eventData.projectId || 'dev-sandbox',
+        details: eventData.details || {},
+        timestamp: new Date().toISOString()
+      };
+      db.testAnalyticsEvents.unshift(record);
+      if (db.testAnalyticsEvents.length > 500) {
+        db.testAnalyticsEvents = db.testAnalyticsEvents.slice(0, 500);
+      }
+      return record;
+    });
+  }
+
+  getTestAnalytics(projectId = null) {
+    const db = this.read();
+    let list = db.testAnalyticsEvents || [];
+    if (projectId) list = list.filter(e => e.projectId === projectId);
+    return list;
+  }
+
+  async recordImageTransformation(developerUserId, record) {
+    return this.mutate((db) => {
+      db.imageTransformations = db.imageTransformations || [];
+      const entry = {
+        id: `img-tx-${Date.now()}`,
+        sourceAssetId: record.sourceAssetId || 'src-orig-01',
+        outputAssetId: `out-${Date.now()}`,
+        operation: record.operation || 'IMAGE_ENHANCEMENT',
+        parameters: record.parameters || {},
+        pipelineVersion: 'dn’a-C05.3-IMAGE-LAB',
+        operator: developerUserId,
+        timestamp: new Date().toISOString()
+      };
+      db.imageTransformations.unshift(entry);
+
+      db.developerAuditLogs = db.developerAuditLogs || [];
+      db.developerAuditLogs.unshift({
+        id: `dev-audit-${Date.now()}`,
+        developerUserId,
+        action: 'PROCESS',
+        assetId: entry.sourceAssetId,
+        details: { operation: entry.operation, params: entry.parameters },
+        result: 'SUCCESS',
+        timestamp: entry.timestamp
+      });
+
+      return entry;
+    });
+  }
+
+  getImageTransformations(limit = 50) {
+    const db = this.read();
+    return (db.imageTransformations || []).slice(0, limit);
   }
 
   async duplicateProjectForNextShow(id, newShowData = {}, actor = 'Operations') {
