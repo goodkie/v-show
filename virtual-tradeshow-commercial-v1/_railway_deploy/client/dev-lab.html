@@ -263,6 +263,7 @@
     <button class="tab-btn" onclick="switchTab('buyer-tab', this)"><i class="fa-solid fa-comments-dollar"></i> 5. Buyer Tool Sandbox</button>
     <button class="tab-btn" onclick="switchTab('inspector-tab', this)"><i class="fa-solid fa-clipboard-check"></i> 6. Pipeline Inspector QA</button>
     <button class="tab-btn" onclick="switchTab('security-tab', this)"><i class="fa-solid fa-shield-halved"></i> 7. Security &amp; Audit Logs</button>
+    <button class="tab-btn" onclick="switchTab('orchestrator-tab', this)"><i class="fa-solid fa-network-wired"></i> 8. Production Orchestrator</button>
   </nav>
 
   <main class="lab-container">
@@ -522,6 +523,59 @@
           <div class="card-title"><span>Developer Audit Trail</span></div>
           <div id="dev-audit-stream" style="font-family: monospace; font-size: 11px; max-height: 220px; overflow-y: auto; background: #070e17; padding: 12px; border-radius: 6px; color: #cbd5e1;">
             Loading audit events...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         TAB 8: PRODUCTION ORCHESTRATOR CONSOLE (C06)
+         ============================================================ -->
+    <div id="orchestrator-tab" class="tab-content">
+      <div class="grid-2col">
+        <div class="lab-card">
+          <div class="card-title">
+            <span>Orchestrator Stage Execution Engine</span>
+            <span class="lab-status-tag" id="orch-stage-badge">STAGE: 01_RESERVATION</span>
+          </div>
+          <div class="form-row">
+            <label>Active Production Job</label>
+            <select id="orch-job-select" class="form-select" onchange="loadOrchJobDetails()">
+              <option value="job-DNA-2026-APEX">job-DNA-2026-APEX (PRO • Apex Robotics)</option>
+              <option value="job-DNA-2026-BIO">job-DNA-2026-BIO (BUSINESS • BioTech Innovations)</option>
+            </select>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px;">
+            <button class="btn btn-primary" onclick="orchRunNextStage()"><i class="fa-solid fa-forward-step"></i> Run Next Stage</button>
+            <button class="btn btn-accent" onclick="orchRetryStage()"><i class="fa-solid fa-rotate-right"></i> Retry Stage (Backoff)</button>
+            <button class="btn" onclick="orchPauseJob()"><i class="fa-solid fa-pause"></i> Pause Job</button>
+            <button class="btn" onclick="orchResumeJob()"><i class="fa-solid fa-play"></i> Resume Job</button>
+            <button class="btn btn-danger" onclick="orchSimulateFailure()"><i class="fa-solid fa-bug"></i> Simulate Failure</button>
+            <button class="btn" onclick="orchResetJob()"><i class="fa-solid fa-arrow-rotate-left"></i> Reset Test Job</button>
+          </div>
+          <div style="margin-top: 18px;">
+            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; font-weight: 700; color: var(--text-muted);">
+              <span>Stage Progress</span>
+              <span id="orch-progress-txt" style="color: var(--primary);">5%</span>
+            </div>
+            <div style="background: rgba(255,255,255,0.08); height: 8px; border-radius: 4px; overflow: hidden;">
+              <div id="orch-progress-bar" style="background: var(--primary); height: 100%; width: 5%; transition: width 0.3s;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lab-card">
+          <div class="card-title"><span>Stage History &amp; Metric Telemetry</span></div>
+          <table class="diag-table" style="margin-bottom: 12px;">
+            <tr><th>Metric</th><th>Telemetry Value</th></tr>
+            <tr><td>Time to First Preview</td><td id="m-preview-time" style="color: var(--success); font-weight: 700;">0.11 s</td></tr>
+            <tr><td>Time to Publish</td><td id="m-publish-time" style="color: var(--success); font-weight: 700;">0.25 s</td></tr>
+            <tr><td>Automation Rate</td><td id="m-auto-rate" style="color: var(--primary); font-weight: 700;">91.3% (21/23 stages)</td></tr>
+            <tr><td>Operator Touches</td><td id="m-touches">0 touches (Fast Path)</td></tr>
+            <tr><td>Operator Minutes</td><td id="m-minutes">0.0 mins</td></tr>
+          </table>
+          <div id="orch-timeline-stream" style="font-family: monospace; font-size: 11px; max-height: 140px; overflow-y: auto; background: #070e17; padding: 8px; border-radius: 6px; color: #cbd5e1;">
+            [01_RESERVATION] Initialized via Smart Wizard (Duration: 14ms)
           </div>
         </div>
       </div>
@@ -829,21 +883,65 @@
       }
     }
 
-    // Customer View Mode Toggle
-    function enterCustomerView() {
-      document.getElementById('customer-view-bar').style.display = 'flex';
-      document.querySelector('.lab-header').style.display = 'none';
-      document.querySelector('.lab-tabs').style.display = 'none';
-      document.querySelectorAll('.coord-overlay').forEach(el => el.style.display = 'none');
+    // Orchestrator Controls (C06)
+    let activeOrchStage = 0;
+    const orchStagesList = [
+      '01_RESERVATION', '02_PROJECT_CREATED', '03_WAITING_FOR_SOURCE', '04_SOURCE_RECEIVED',
+      '05_SOURCE_CLASSIFICATION', '06_SOURCE_QUALITY_GATE', '07_EXPERIENCE_ROUTING',
+      '08_ASSET_PROCESSING', '09_PREVIEW_GENERATION', '10_PREVIEW_READY', '11_PRODUCT_SETUP',
+      '12_PINPOINT_SETUP', '13_BUYER_TOOLS_BINDING', '14_INTERNAL_QA', '15_CLIENT_REVIEW',
+      '16_REVISION_REQUIRED', '17_APPROVED', '18_PUBLISH_QUEUED', '19_PUBLISHING',
+      '20_PUBLISHED', '21_SHOW_LIVE', '22_POST_SHOW', '23_COMPLETED'
+    ];
+
+    function orchRunNextStage() {
+      if (activeOrchStage < orchStagesList.length - 1) {
+        activeOrchStage++;
+      }
+      updateOrchUI();
     }
 
-    function exitCustomerView() {
-      document.getElementById('customer-view-bar').style.display = 'none';
-      document.querySelector('.lab-header').style.display = 'flex';
-      document.querySelector('.lab-tabs').style.display = 'flex';
-      if (showDebugCoords) {
-        document.querySelectorAll('.coord-overlay').forEach(el => el.style.display = 'block');
-      }
+    function orchRetryStage() {
+      const stream = document.getElementById('orch-timeline-stream');
+      const entry = document.createElement('div');
+      entry.textContent = `[${new Date().toLocaleTimeString()}] Retrying ${orchStagesList[activeOrchStage]} with backoff...`;
+      stream.prepend(entry);
+    }
+
+    function orchPauseJob() {
+      document.getElementById('orch-stage-badge').textContent = 'STATUS: PAUSED';
+      document.getElementById('orch-stage-badge').style.background = 'rgba(239,68,68,0.15)';
+    }
+
+    function orchResumeJob() {
+      updateOrchUI();
+    }
+
+    function orchSimulateFailure() {
+      document.getElementById('orch-stage-badge').textContent = 'STATUS: FAILED_RETRYABLE (Injected Failure)';
+      const stream = document.getElementById('orch-timeline-stream');
+      const entry = document.createElement('div');
+      entry.textContent = `[${new Date().toLocaleTimeString()}] INJECTED_FAILURE at ${orchStagesList[activeOrchStage]} -> Retry scheduled`;
+      stream.prepend(entry);
+    }
+
+    function orchResetJob() {
+      activeOrchStage = 0;
+      updateOrchUI();
+    }
+
+    function updateOrchUI() {
+      const stage = orchStagesList[activeOrchStage];
+      const pct = Math.round(((activeOrchStage + 1) / orchStagesList.length) * 100);
+      document.getElementById('orch-stage-badge').textContent = `STAGE: ${stage}`;
+      document.getElementById('orch-stage-badge').style.background = 'rgba(52, 211, 153, 0.15)';
+      document.getElementById('orch-progress-txt').textContent = `${pct}%`;
+      document.getElementById('orch-progress-bar').style.width = `${pct}%`;
+
+      const stream = document.getElementById('orch-timeline-stream');
+      const entry = document.createElement('div');
+      entry.textContent = `[${new Date().toLocaleTimeString()}] Advanced to ${stage} (Progress: ${pct}%)`;
+      stream.prepend(entry);
     }
 
     document.addEventListener('DOMContentLoaded', initDevLab);

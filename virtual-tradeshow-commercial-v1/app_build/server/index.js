@@ -2094,6 +2094,124 @@ app.get('/api/internal/dev/analytics', requireDeveloperAuth, (req, res) => {
   res.json({ success: true, environment: 'INTERNAL_TEST', totalEvents: list.length, events: list });
 });
 
+// ============================================================
+// C06 AUTOMATED PRODUCTION ORCHESTRATOR ENDPOINTS
+// ============================================================
+
+// 1. List Production Jobs
+app.get('/api/production/jobs', (req, res) => {
+  try {
+    const jobs = db.getProductionJobs(req.query);
+    res.json({ success: true, count: jobs.length, jobs });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. Get Production Job Details
+app.get('/api/production/jobs/:id', async (req, res) => {
+  try {
+    const job = db.getProductionJobById(req.params.id);
+    if (!job) return res.status(404).json({ error: 'Production job not found' });
+    const manifest = await db.getProjectManifest(job.projectId);
+    res.json({ success: true, job, manifest });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. Advance Production Job Stage
+app.post('/api/production/jobs/:id/advance', async (req, res) => {
+  try {
+    const { targetStage, payload, actor } = req.body;
+    if (!targetStage) return res.status(400).json({ error: 'targetStage is required' });
+    const result = await db.advanceJobStage(req.params.id, targetStage, payload || {}, actor || req.user?.email || 'SystemOrchestrator');
+    if (!result.success && result.blocked) {
+      return res.status(422).json(result);
+    }
+    if (!result.success) return res.status(400).json(result);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 4. Retry Production Job
+app.post('/api/production/jobs/:id/retry', async (req, res) => {
+  try {
+    const result = await db.retryProductionJob(req.params.id, req.user?.email || 'Operator');
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 5. Pause Production Job
+app.post('/api/production/jobs/:id/pause', async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const job = await db.pauseProductionJob(req.params.id, reason, req.user?.email || 'Operator');
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    res.json({ success: true, job });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 6. Resume Production Job
+app.post('/api/production/jobs/:id/resume', async (req, res) => {
+  try {
+    const job = await db.resumeProductionJob(req.params.id, req.user?.email || 'Operator');
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    res.json({ success: true, job });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 7. Cancel Production Job
+app.post('/api/production/jobs/:id/cancel', async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const job = await db.cancelProductionJob(req.params.id, reason, req.user?.email || 'Operator');
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    res.json({ success: true, job });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 8. 1-Click DIY -> Managed Handoff
+app.post('/api/production/jobs/:id/handoff-managed', async (req, res) => {
+  try {
+    const result = await db.handoffDiyToManaged(req.params.id, req.user?.email || 'Customer');
+    if (!result) return res.status(404).json({ error: 'Project not found' });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 9. Run Auto-QA Checklist
+app.post('/api/production/jobs/:id/qa', (req, res) => {
+  try {
+    const result = db.runProjectAutoQA(req.params.id, req.user?.email || 'QA Engine');
+    res.json({ success: true, qa: result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 10. System Overview Metrics
+app.get('/api/production/metrics', (req, res) => {
+  try {
+    const metrics = db.getOrchestratorOverviewMetrics();
+    res.json({ success: true, metrics });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 5. Update Status & Blocking Reason
 app.patch('/api/production-projects/:id/status', async (req, res) => {
   try {
