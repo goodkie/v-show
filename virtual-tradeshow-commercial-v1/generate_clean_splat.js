@@ -203,48 +203,48 @@ html, body {
 }
 
 /* ══════════════════════════════════════════════
-   ENLARGED 3D FLOATING PRODUCT CAPSULES (HOTSPOTS)
-   - 48px Large Crystal Clear Thumbnail
-   - Dual-Line Category & Title
+   COMPACT 3D FLOATING PRODUCT CAPSULES (50% SCALE)
+   - 24px Sharp Circular Thumbnail
+   - Dual-Line Micro Tag & Bold Title
 ══════════════════════════════════════════════ */
 #hotspot-layer { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
 
 .hotspot-tag {
   position: absolute; transform: translate(-50%, -50%);
   pointer-events: auto; cursor: pointer;
-  display: flex; align-items: center; gap: 10px;
-  background: rgba(5, 11, 22, 0.95); backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 2px solid rgba(0, 194, 255, 0.75); border-radius: 32px;
-  padding: 6px 16px 6px 6px;
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(5, 11, 22, 0.94); backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(0, 194, 255, 0.75); border-radius: 20px;
+  padding: 3px 9px 3px 3px;
   color: #fff;
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 194, 255, 0.45);
-  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1); white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7), 0 0 12px rgba(0, 194, 255, 0.35);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); white-space: nowrap;
 }
 .hotspot-tag:hover {
   background: rgba(2, 132, 199, 0.98); border-color: #38bdf8;
-  transform: translate(-50%, -50%) scale(1.1);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.9), 0 0 35px rgba(0, 194, 255, 0.85);
+  transform: translate(-50%, -50%) scale(1.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.9), 0 0 22px rgba(0, 194, 255, 0.7);
 }
 .hotspot-thumb-img {
-  width: 48px; height: 48px; border-radius: 50%; object-fit: cover;
-  border: 2px solid var(--cyan); flex-shrink: 0; display: block;
-  box-shadow: 0 0 12px rgba(0, 194, 255, 0.6);
+  width: 24px; height: 24px; border-radius: 50%; object-fit: cover;
+  border: 1.5px solid var(--cyan); flex-shrink: 0; display: block;
+  box-shadow: 0 0 8px rgba(0, 194, 255, 0.5);
   background: #000;
-  transition: transform 0.28s ease;
+  transition: transform 0.25s ease;
 }
 .hotspot-tag:hover .hotspot-thumb-img { transform: scale(1.08); }
-.hotspot-info { display: flex; flex-direction: column; gap: 2px; }
-.hotspot-cat { font-size: 8.5px; font-weight: 800; color: var(--cyan); text-transform: uppercase; letter-spacing: 0.8px; line-height: 1; }
+.hotspot-info { display: flex; flex-direction: column; gap: 1px; }
+.hotspot-cat { font-size: 6.5px; font-weight: 800; color: var(--cyan); text-transform: uppercase; letter-spacing: 0.6px; line-height: 1; }
 .hotspot-tag:hover .hotspot-cat { color: #e0f2fe; }
-.hotspot-label-text { font-size: 13px; font-weight: 800; color: #fff; line-height: 1.2; }
+.hotspot-label-text { font-size: 10px; font-weight: 800; color: #fff; line-height: 1.1; }
 .hotspot-dot {
-  width: 8px; height: 8px; border-radius: 50%; background: #38bdf8;
-  box-shadow: 0 0 10px #38bdf8; flex-shrink: 0; animation: hotspot-pulse 1.8s infinite;
+  width: 5px; height: 5px; border-radius: 50%; background: #38bdf8;
+  box-shadow: 0 0 6px #38bdf8; flex-shrink: 0; animation: hotspot-pulse 1.8s infinite;
 }
 @keyframes hotspot-pulse {
   0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.8); }
-  70% { box-shadow: 0 0 0 10px rgba(56, 189, 248, 0); }
+  70% { box-shadow: 0 0 0 8px rgba(56, 189, 248, 0); }
   100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
 }
 
@@ -339,10 +339,11 @@ html, body {
   width: 100%; border-radius: 12px; overflow: hidden;
   border: 1px solid var(--panel-border); margin: 0 0 14px;
   position: relative; background: #000; box-shadow: 0 10px 28px rgba(0,0,0,0.7);
-  height: 220px;
+  height: 220px; display: flex; align-items: center; justify-content: center;
 }
 .drawer-img-box img {
-  width: 100%; height: 100%; object-fit: cover; display: block;
+  width: 100%; height: 100%; object-fit: contain !important; display: block;
+  background: #000;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .drawer-img-box:hover img { transform: scale(1.04); }
@@ -790,7 +791,7 @@ function init3DGS() {
   controls.minPolarAngle = Math.PI * 0.08;
 
   buildBoothArchitecture();
-  build3DGSPointClouds();
+  buildPedestalHalos();
   buildProductStations();
   buildHotspotsDOM();
   initDrawer3D();
@@ -871,46 +872,17 @@ function buildBoothArchitecture() {
   scene.add(trussRing);
 }
 
-// 4. GAUSSIAN RADIANCE VOLUMETRIC POINT CLOUD FIELD
-function build3DGSPointClouds() {
-  const count = 4800;
-  const geo = new THREE.BufferGeometry();
-  const positions = new Float32Array(count * 3);
-  const colors = new Float32Array(count * 3);
-
-  for (let i = 0; i < count; i++) {
-    const x = (Math.random() - 0.5) * 16;
-    const y = Math.random() * 4.5 + 0.1;
-    const z = (Math.random() - 0.5) * 16;
-
-    positions[i * 3]     = x;
-    positions[i * 3 + 1] = y;
-    positions[i * 3 + 2] = z;
-
-    // Radiance colors: cyan, ice blue, neon accents
-    const rVal = Math.random();
-    if (rVal > 0.6) {
-      colors[i * 3] = 0.0; colors[i * 3 + 1] = 0.76; colors[i * 3 + 2] = 1.0;
-    } else if (rVal > 0.3) {
-      colors[i * 3] = 0.22; colors[i * 3 + 1] = 0.74; colors[i * 3 + 2] = 0.97;
-    } else {
-      colors[i * 3] = 0.95; colors[i * 3 + 1] = 0.98; colors[i * 3 + 2] = 1.0;
-    }
-  }
-
-  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-  const mat = new THREE.PointsMaterial({
-    size: 0.045,
-    vertexColors: true,
-    transparent: true,
-    opacity: 0.75,
-    blending: THREE.AdditiveBlending
+// 4. GAUSSIAN RADIANCE PEDESTAL HALOS
+function buildPedestalHalos() {
+  PRODUCTS_DATA.forEach(p => {
+    const haloRing = new THREE.Mesh(
+      new THREE.RingGeometry(1.6, 1.9, 48),
+      new THREE.MeshBasicMaterial({ color: 0x00c2ff, side: THREE.DoubleSide, transparent: true, opacity: 0.75 })
+    );
+    haloRing.rotation.x = -Math.PI / 2;
+    haloRing.position.set(p.pos3d.x, 0.02, p.pos3d.z);
+    scene.add(haloRing);
   });
-
-  splatCloud = new THREE.Points(geo, mat);
-  scene.add(splatCloud);
 }
 
 // 5. STATIONS & PROCEDURAL 3D ROBOTS
