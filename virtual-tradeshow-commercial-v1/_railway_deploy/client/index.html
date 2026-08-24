@@ -451,14 +451,12 @@
 
   <!-- Navigation -->
   <nav class="nav-bar">
-    <a href="/" class="brand-logo">
-      <svg class="dna-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.5">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-      </svg>
-      dn'a
+    <a href="/" class="brand-logo" title="dn'a Home">
+      <img src="/assets/brand/dna_logo.png" alt="dn'a DIGITAL NETWORKING ADVANTAGE" style="height: 38px; background: #fff; padding: 2px 8px; border-radius: 6px; object-fit: contain; box-shadow: 0 2px 10px rgba(0,0,0,0.4);">
     </a>
     <div class="nav-links">
-      <a href="/demo.html" class="nav-link">3D Showcase</a>
+      <a href="/demo-matterport.html" class="nav-link">🏢 64K Matterport</a>
+      <a href="/demo.html" class="nav-link">🤖 3D Showroom</a>
       <a href="/card.html" class="nav-link">Smart Card</a>
       <a href="/qr.html" class="nav-link">Product QRs</a>
       <a href="/leads.html" class="nav-link">Lead CRM</a>
@@ -479,15 +477,11 @@
     <div class="hero-ctas">
       <a href="/demo-matterport.html" class="btn-hero btn-hero-primary" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border-color: #38bdf8; box-shadow: 0 0 20px rgba(2,132,199,0.5);">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-        🏢 Matterport 3D 실사 투어
+        🏢 Matterport 64K 실사 투어
       </a>
       <a href="/demo.html" class="btn-hero btn-hero-secondary">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        3D 가상 쇼룸
-      </a>
-      <a href="/demo-splat.html" class="btn-hero btn-hero-secondary" style="border-color: rgba(0,194,255,0.55); color: #00C2FF; background: rgba(0,194,255,0.1); position:relative; overflow:hidden;">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2"/></svg>
-        🔬 3DGS 뷰어
+        🤖 3D 인터랙티브 쇼룸
       </a>
       <a href="#catalog" class="btn-hero btn-hero-secondary" onclick="openProductModal('catalog'); return false;">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -499,211 +493,29 @@
       </a>
     </div>
 
-    <!-- Photorealistic Showcase Hero -->
+    <!-- Photorealistic Showcase Hero with Interactive Switcher -->
     <div class="showcase-frame-wrapper">
-      <div class="showcase-label-row">
-        <span class="showcase-label">PHOTOREALISTIC BOOTH SHOWCASE</span>
-        <a href="/demo.html" class="showcase-enter-btn">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Enter Interactive Showroom
+      <div class="showcase-label-row" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+        <!-- Dual Mode Switcher Tabs -->
+        <div class="showcase-switch-tabs" style="display: flex; gap: 6px; background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 12px; padding: 4px; backdrop-filter: blur(12px);">
+          <button class="switch-tab active" id="tab-matterport" onclick="switchShowcaseViewer('matterport')" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4); transition: all 0.25s ease;">
+            🏢 Matterport 64K Ultra-HD Studio
+          </button>
+          <button class="switch-tab" id="tab-showroom" onclick="switchShowcaseViewer('showroom')" style="background: transparent; color: #94a3b8; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.25s ease;">
+            🤖 3D Interactive Showroom
+          </button>
+        </div>
+        <a href="/demo-matterport.html" id="btn-fullscreen-link" class="showcase-enter-btn" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 700; box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4); transition: all 0.2s; text-decoration: none;">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+          Open Fullscreen Experience ↗
         </a>
       </div>
 
-      <div class="showcase-frame" id="showcase-frame-box">
-        <!-- Live Real-Time WebGL 3D Showroom Canvas Engine -->
-        <canvas id="hero-3d-canvas" style="width: 100%; height: 100%; display: block;"></canvas>
-
-        <!-- 3D Live Engine Badge -->
-        <div style="position: absolute; top: 70px; right: 20px; z-index: 15; display: flex; align-items: center; gap: 8px; background: rgba(7, 11, 20, 0.88); border: 1px solid rgba(56,189,248,0.4); border-radius: 20px; padding: 6px 14px; font-size: 11px; font-weight: 700; color: #38bdf8; backdrop-filter: blur(10px); pointer-events: none; box-shadow: 0 4px 16px rgba(2,132,199,0.3);">
-          <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></span>
-          LIVE 3D WEBGL ENGINE • DRAG TO ORBIT
-        </div>
-
-        <!-- Interactive Overlay -->
-        <div class="showcase-overlay" id="showcase-overlay" style="pointer-events: none;">
-
-          <!-- Top Control Bar -->
-          <div class="overlay-top-bar" style="pointer-events: all;">
-            <div class="overlay-brand">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.5">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-              </svg>
-              dn'a
-              <span class="overlay-badge">Designed 3D Showcase Demo</span>
-            </div>
-            <div class="overlay-actions">
-              <a href="/demo.html?view=catalog" class="overlay-btn" onclick="openProductModal('catalog'); return false;">
-                📦 8 Products
-              </a>
-              <a href="/card.html" class="overlay-btn" target="_blank">
-                🪪 Smart Card
-              </a>
-              <a href="/demo.html?view=analytics" class="overlay-btn" onclick="openProductModal('analytics'); return false;">
-                📊 Analytics
-              </a>
-              <a href="/demo.html#rfq" class="overlay-btn overlay-btn-primary">
-                Request RFQ
-              </a>
-            </div>
-          </div>
-
-          <!-- Left Navigation (Live 3D Camera Fly-To) -->
-          <nav class="overlay-left-nav" style="pointer-events: all;">
-            <button class="nav-preset-btn active" onclick="flyCameraPreset('overview'); return false;">
-              <span class="nav-preset-icon">◈</span> Overview
-            </button>
-            <button class="nav-preset-btn" onclick="flyCameraPreset('island'); return false;">
-              <span class="nav-preset-icon">⬡</span> Product Island
-            </button>
-            <button class="nav-preset-btn" onclick="flyCameraPreset('automation'); return false;">
-              <span class="nav-preset-icon">⚙</span> Automation Wall
-            </button>
-            <button class="nav-preset-btn" onclick="flyCameraPreset('robot'); return false;">
-              <span class="nav-preset-icon">🤖</span> Robot Cell
-            </button>
-            <button class="nav-preset-btn" onclick="flyCameraPreset('lounge'); return false;">
-              <span class="nav-preset-icon">🛋</span> Lounge Area
-            </button>
-            <button class="nav-preset-btn" onclick="flyCameraPreset('media'); return false;">
-              <span class="nav-preset-icon">🖥</span> Media Center
-            </button>
-            <button class="nav-preset-btn" id="btn-auto-tour" onclick="toggleAutoTour(); return false;">
-              <span class="nav-preset-icon">▶</span> Auto Tour
-            </button>
-          </nav>
-
-          <!-- Dynamic 3D Projected Product Hotspots Layer -->
-          <div id="hotspots-layer" style="position: absolute; inset: 0; pointer-events: none; overflow: hidden;">
-            <!-- Apex Cobot X16 -->
-            <div id="hotspot-cobot" class="product-hotspot" style="display:none; pointer-events: all;" onclick="openProductModal('cobot')">
-              <div class="hotspot-dot"></div>
-              <div class="hotspot-label">
-                <div class="hotspot-name">Apex Cobot X16</div>
-                <div class="hotspot-cat">Collaborative Robot</div>
-                <div class="hotspot-view">Click to Inspect →</div>
-              </div>
-            </div>
-
-            <!-- Vector AMR 600 -->
-            <div id="hotspot-amr" class="product-hotspot" style="display:none; pointer-events: all;" onclick="openProductModal('amr')">
-              <div class="hotspot-dot"></div>
-              <div class="hotspot-label">
-                <div class="hotspot-name">Vector AMR 600</div>
-                <div class="hotspot-cat">Autonomous Mobile Robot</div>
-                <div class="hotspot-view">Click to Inspect →</div>
-              </div>
-            </div>
-
-            <!-- OptiScan V3 -->
-            <div id="hotspot-optiscan" class="product-hotspot" style="display:none; pointer-events: all;" onclick="openProductModal('optiscan')">
-              <div class="hotspot-dot"></div>
-              <div class="hotspot-label">
-                <div class="hotspot-name">OptiScan V3</div>
-                <div class="hotspot-cat">3D Inspection Camera</div>
-                <div class="hotspot-view">Click to Inspect →</div>
-              </div>
-            </div>
-
-            <!-- FlowDrive P500 -->
-            <div id="hotspot-flowdrive" class="product-hotspot" style="display:none; pointer-events: all;" onclick="openProductModal('flowdrive')">
-              <div class="hotspot-dot"></div>
-              <div class="hotspot-label">
-                <div class="hotspot-name">FlowDrive P500</div>
-                <div class="hotspot-cat">Smart Pump System</div>
-                <div class="hotspot-view">Click to Inspect →</div>
-              </div>
-            </div>
-
-            <!-- EdgeCore IPC -->
-            <div id="hotspot-edgecore" class="product-hotspot" style="display:none; pointer-events: all;" onclick="openProductModal('edgecore')">
-              <div class="hotspot-dot"></div>
-              <div class="hotspot-label">
-                <div class="hotspot-name">EdgeCore IPC</div>
-                <div class="hotspot-cat">Industrial Edge Computer</div>
-                <div class="hotspot-view">Click to Inspect →</div>
-              </div>
-            </div>
-
-            <!-- FlexGrip E80 -->
-            <div id="hotspot-flexgrip" class="product-hotspot" style="display:none; pointer-events: all;" onclick="openProductModal('flexgrip')">
-              <div class="hotspot-dot"></div>
-              <div class="hotspot-label">
-                <div class="hotspot-name">FlexGrip E80</div>
-                <div class="hotspot-cat">Adaptive Servo Gripper</div>
-                <div class="hotspot-view">Click to Inspect →</div>
-              </div>
-            </div>
-
-            <!-- LaserCell LX -->
-            <div id="hotspot-lasercell" class="product-hotspot" style="display:none; pointer-events: all;" onclick="openProductModal('lasercell')">
-              <div class="hotspot-dot"></div>
-              <div class="hotspot-label">
-                <div class="hotspot-name">LaserCell LX</div>
-                <div class="hotspot-cat">Laser Processing Cell</div>
-                <div class="hotspot-view">Click to Inspect →</div>
-              </div>
-            </div>
-          <!-- 30-Angle Volumetric Virtual Tour Controls -->
-          <div style="position: absolute; bottom: 74px; left: 50%; transform: translateX(-50%); z-index: 25; display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: all;">
-            <!-- Elevation Switcher (3 Height Levels) -->
-            <div style="display: flex; gap: 4px; background: rgba(7, 11, 20, 0.88); padding: 3px 8px; border-radius: 20px; border: 1px solid rgba(56,189,248,0.3); backdrop-filter: blur(12px); box-shadow: 0 4px 16px rgba(0,0,0,0.5);">
-              <span style="font-size: 10px; font-weight: 700; color: #94a3b8; display: flex; align-items: center; padding: 0 4px;">HEIGHT:</span>
-              <button id="hero-btn-lvl-floor" class="overlay-btn" style="padding: 2px 8px; font-size: 10px; border-radius: 12px;" onclick="setHeroElevation('floor')">⬇ Floor (0.5m)</button>
-              <button id="hero-btn-lvl-eye" class="overlay-btn active" style="padding: 2px 8px; font-size: 10px; border-radius: 12px;" onclick="setHeroElevation('eye')">👁 Eye (1.6m)</button>
-              <button id="hero-btn-lvl-6ft" class="overlay-btn" style="padding: 2px 8px; font-size: 10px; border-radius: 12px;" onclick="setHeroElevation('6ft')">⬆ 6ft High (2.0m)</button>
-            </div>
-
-            <!-- 360° 10-Angle Orbital Jump Dial -->
-            <div style="display: flex; gap: 3px; background: rgba(7, 11, 20, 0.88); padding: 3px 8px; border-radius: 20px; border: 1px solid rgba(56,189,248,0.3); backdrop-filter: blur(12px); box-shadow: 0 4px 16px rgba(0,0,0,0.5);">
-              <span style="font-size: 10px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; padding-right: 4px;">360° ANGLE:</span>
-              <button id="hero-btn-ang-1" class="overlay-btn active" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(1)">01</button>
-              <button id="hero-btn-ang-2" class="overlay-btn" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(2)">02</button>
-              <button id="hero-btn-ang-3" class="overlay-btn" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(3)">03</button>
-              <button id="hero-btn-ang-4" class="overlay-btn" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(4)">04</button>
-              <button id="hero-btn-ang-5" class="overlay-btn" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(5)">05</button>
-              <button id="hero-btn-ang-6" class="overlay-btn" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(6)">06</button>
-              <button id="hero-btn-ang-7" class="overlay-btn" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(7)">07</button>
-              <button id="hero-btn-ang-8" class="overlay-btn" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(8)">08</button>
-              <button id="hero-btn-ang-9" class="overlay-btn" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(9)">09</button>
-              <button id="hero-btn-ang-10" class="overlay-btn" style="padding: 2px 6px; font-size: 10px; min-width: 22px;" onclick="setHeroAngle(10)">10</button>
-            </div>
-          </div>
-
-          <!-- Bottom Bar — Camera Preset Thumbnails -->
-          <div class="overlay-bottom-bar" style="pointer-events: all;">
-            <button class="preset-thumb active" onclick="flyCameraPreset('overview'); return false;">
-              <div class="preset-img">🏛</div>
-              <span class="preset-name">Overview</span>
-            </button>
-            <button class="preset-thumb" onclick="flyCameraPreset('island'); return false;">
-              <div class="preset-img">⬡</div>
-              <span class="preset-name">Product Island</span>
-            </button>
-            <button class="preset-thumb" onclick="flyCameraPreset('automation'); return false;">
-              <div class="preset-img">⚙</div>
-              <span class="preset-name">Automation Wall</span>
-            </button>
-            <button class="preset-thumb" onclick="flyCameraPreset('robot'); return false;">
-              <div class="preset-img">🤖</div>
-              <span class="preset-name">Robot Cell</span>
-            </button>
-            <button class="preset-thumb" onclick="flyCameraPreset('lounge'); return false;">
-              <div class="preset-img">🛋</div>
-              <span class="preset-name">Lounge Area</span>
-            </button>
-            <button class="preset-thumb" onclick="flyCameraPreset('reset'); return false;">
-              <div class="preset-img" style="font-size:16px;">↺</div>
-              <span class="preset-name">Reset View</span>
-            </button>
-          </div>
-
-          <!-- Briefcase Chip -->
-          <a href="/demo.html#briefcase" class="briefcase-chip" style="pointer-events: all;">
-            🧳 Briefcase <span id="briefcase-count" style="background:#0284c7;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;">0</span>
-          </a>
-        </div><!-- /overlay -->
-      </div><!-- /showcase-frame -->
-    </div><!-- /showcase-frame-wrapper -->
+      <!-- Live Interactive Multi-Engine Showcase Frame -->
+      <div class="showcase-frame" id="showcase-frame-box" style="position: relative; width: 100%; aspect-ratio: 16/9; max-height: 720px; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 16px; overflow: hidden; box-shadow: 0 32px 80px rgba(0,0,0,0.85), 0 0 60px rgba(14, 165, 233, 0.25); background: #050a12;">
+        <iframe id="showcase-live-iframe" src="/demo-matterport.html" style="width: 100%; height: 100%; border: none; display: block;" allow="fullscreen; autoplay; xr-spatial-tracking"></iframe>
+      </div>
+    </div>
   </header>
 
   <!-- From Show Floor to Always-On Showroom -->
@@ -825,7 +637,10 @@
   </section>
 
   <!-- Footer -->
-  <footer>
+  <footer style="text-align: center; padding: 48px 24px; border-top: 1px solid var(--border); background: rgba(5, 9, 17, 0.98);">
+    <div style="margin-bottom: 16px;">
+      <img src="/assets/brand/dna_logo.png" alt="dn'a DIGITAL NETWORKING ADVANTAGE" style="height: 38px; background: #fff; padding: 3px 10px; border-radius: 6px; object-fit: contain; box-shadow: 0 2px 10px rgba(0,0,0,0.4);">
+    </div>
     <p>© 2026 dn'a — Virtual Trade Show Commercial Platform. All rights reserved.</p>
     <p style="font-size:11px;margin-top:6px;color:#64748b;">Enterprise 3D Digital Showrooms • Smart Exhibitor Passes • Realtime Lead Intake</p>
     <p style="font-size:10px;margin-top:10px;color:#475569;">The dn'a Industrial Innovation Showcase shown above is a Designed 3D commercial visualization concept. Not a photograph of a real physical booth.</p>
@@ -961,469 +776,44 @@
       document.getElementById('productModal').classList.remove('open');
     }
 
-    function closeModal(e) {
-      if (e.target === document.getElementById('productModal')) closeProductModal();
-    }
-
-    function goToShowroom(preset) {
-      window.location.href = `/demo.html?preset=${preset}`;
-    }
-
     // Escape key to close modal
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeProductModal(); });
 
     // ══════════════════════════════════════════════════════════════════════
-    // LIVE PHOTOREALISTIC 3D WEBGL ENGINE (THREE.JS R128 + ORBITCONTROLS)
+    // INTERACTIVE SHOWCASE MULTI-VIEWER SWITCHER
     // ══════════════════════════════════════════════════════════════════════
-    function init3DHeroShowroom() {
-      const canvas = document.getElementById('hero-3d-canvas');
-      const frameBox = document.getElementById('showcase-frame-box');
-      if (!canvas || !window.THREE) {
-        console.warn('init3DHeroShowroom: canvas or THREE missing', { canvas: !!canvas, THREE: !!window.THREE });
-        return;
+    function switchShowcaseViewer(mode) {
+      const iframe = document.getElementById('showcase-live-iframe');
+      const tabMatterport = document.getElementById('tab-matterport');
+      const tabShowroom = document.getElementById('tab-showroom');
+      const fullscreenLink = document.getElementById('btn-fullscreen-link');
+      if (!iframe || !tabMatterport || !tabShowroom) return;
+
+      if (mode === 'matterport') {
+        iframe.src = '/demo-matterport.html';
+        if (fullscreenLink) fullscreenLink.href = '/demo-matterport.html';
+        tabMatterport.classList.add('active');
+        tabMatterport.style.background = 'linear-gradient(135deg, #0284c7, #2563eb)';
+        tabMatterport.style.color = '#fff';
+        tabMatterport.style.boxShadow = '0 4px 14px rgba(2, 132, 199, 0.4)';
+
+        tabShowroom.classList.remove('active');
+        tabShowroom.style.background = 'transparent';
+        tabShowroom.style.color = '#94a3b8';
+        tabShowroom.style.boxShadow = 'none';
+      } else {
+        iframe.src = '/demo.html';
+        if (fullscreenLink) fullscreenLink.href = '/demo.html';
+        tabShowroom.classList.add('active');
+        tabShowroom.style.background = 'linear-gradient(135deg, #0284c7, #2563eb)';
+        tabShowroom.style.color = '#fff';
+        tabShowroom.style.boxShadow = '0 4px 14px rgba(2, 132, 199, 0.4)';
+
+        tabMatterport.classList.remove('active');
+        tabMatterport.style.background = 'transparent';
+        tabMatterport.style.color = '#94a3b8';
+        tabMatterport.style.boxShadow = 'none';
       }
-
-      let scene, camera, renderer, controls;
-      let animId;
-      let isTransitioning = false;
-      let targetCamPos = null, targetLookAt = null;
-      let currentLookAt = new THREE.Vector3(0, 1.8, 2);
-      let autoTourActive = false;
-      let autoTourTimer = null;
-      let autoTourIndex = 0;
-
-      // 3D Product Positions for Projected Hotspots inside the real 3D booth
-      const PRODUCT_3D_POS = {
-        cobot: new THREE.Vector3(-6.0, 1.0, -2.0),
-        amr: new THREE.Vector3(-3.5, 1.0, 4.0),
-        optiscan: new THREE.Vector3(-1.0, 1.0, -2.0),
-        flowdrive: new THREE.Vector3(5.5, 1.0, -2.0),
-        edgecore: new THREE.Vector3(0.0, 1.0, 7.0),
-        flexgrip: new THREE.Vector3(2.0, 1.0, -2.0),
-        lasercell: new THREE.Vector3(5.5, 1.0, 7.0)
-      };
-
-      // Camera Presets for Landing Hero 3D Showroom
-      const PRESETS = {
-        overview:   { pos: new THREE.Vector3(0, 3.2, -14), look: new THREE.Vector3(0, 1.8, 2) },
-        island:     { pos: new THREE.Vector3(-4.2, 1.6, -4.5), look: new THREE.Vector3(-6.0, 1.2, -2) },
-        automation: { pos: new THREE.Vector3(0, 1.7, -2.5), look: new THREE.Vector3(0, 2.0, 6) },
-        robot:      { pos: new THREE.Vector3(-4.2, 1.6, -4.5), look: new THREE.Vector3(-6.0, 1.2, -2) },
-        lounge:     { pos: new THREE.Vector3(4.2, 1.6, 5.0), look: new THREE.Vector3(0, 1.2, 9) },
-        media:      { pos: new THREE.Vector3(0, 1.8, 3.5), look: new THREE.Vector3(0, 2.8, 10) },
-        reset:      { pos: new THREE.Vector3(0, 3.2, -14), look: new THREE.Vector3(0, 1.8, 2) }
-      };
-
-      // ── Build 3D Architectural Showroom ──
-      function buildHeroBoothArchitecture() {
-        const texLoader = new THREE.TextureLoader();
-        const heroTex = texLoader.load('/assets/demo/dna-showcase/hero/dna_robotic_hero_master.jpg', (t) => {
-          t.wrapS = THREE.RepeatWrapping;
-          t.repeat.x = -1;
-        });
-
-        // ── Dynamic High-Res DN'a Fascia Signage Texture ──
-        function createFasciaTexture(text = "dn'a ROBOTIC", sub = "ADVANCED AUTOMATION & AI") {
-          const cvs = document.createElement('canvas');
-          cvs.width = 2048; cvs.height = 384;
-          const ctx = cvs.getContext('2d');
-          // Background Gradient (Dark Tech Navy to Royal Blue)
-          const grad = ctx.createLinearGradient(0, 0, 2048, 0);
-          grad.addColorStop(0, '#040d1a');
-          grad.addColorStop(0.5, '#0a1e38');
-          grad.addColorStop(1, '#040d1a');
-          ctx.fillStyle = grad;
-          ctx.fillRect(0, 0, 2048, 384);
-
-          // Top and Bottom Glowing Accent Lines
-          ctx.fillStyle = '#00c2ff';
-          ctx.fillRect(0, 0, 2048, 8);
-          ctx.fillRect(0, 376, 2048, 8);
-
-          // DNA Helix / Tech Icon
-          ctx.strokeStyle = '#00c2ff';
-          ctx.lineWidth = 14;
-          ctx.beginPath();
-          ctx.arc(280, 192, 70, -Math.PI*0.5, Math.PI*0.5);
-          ctx.stroke();
-          ctx.strokeStyle = '#38bdf8';
-          ctx.beginPath();
-          ctx.arc(360, 192, 70, Math.PI*0.5, -Math.PI*0.5);
-          ctx.stroke();
-
-          // Main Typography
-          ctx.fillStyle = '#ffffff';
-          ctx.font = '900 130px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-          ctx.fillText("dn'a", 480, 215);
-
-          ctx.fillStyle = '#00c2ff';
-          ctx.font = '700 96px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-          ctx.fillText("ROBOTIC", 820, 215);
-
-          // Subtitle Badge
-          ctx.fillStyle = 'rgba(56, 189, 248, 0.75)';
-          ctx.font = '600 38px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-          ctx.letterSpacing = '8px';
-          ctx.fillText(sub, 1420, 210);
-
-          const tex = new THREE.CanvasTexture(cvs);
-          tex.wrapS = THREE.ClampToEdgeWrapping;
-          tex.wrapT = THREE.ClampToEdgeWrapping;
-          return tex;
-        }
-
-        const fasciaFrontTex = createFasciaTexture("dn'a ROBOTIC", "SMART FACTORY & COBOTICS");
-        const fasciaSideTex = createFasciaTexture("dn'a", "PRECISION AUTOMATION");
-
-        function mat(color, metal = 0.1, rough = 0.6, emissive = 0x000000, emissInt = 0) {
-          return new THREE.MeshStandardMaterial({ color, metalness: metal, roughness: rough, emissive, emissiveIntensity: emissInt });
-        }
-        function mesh(geo, material, rx=0, ry=0, rz=0, x=0, y=0, z=0) {
-          const m = new THREE.Mesh(geo, material);
-          m.rotation.set(rx, ry, rz);
-          m.position.set(x, y, z);
-          m.castShadow = true; m.receiveShadow = true;
-          scene.add(m); return m;
-        }
-
-        // 1. Exhibition Hall floor (Dark polished concrete)
-        mesh(new THREE.PlaneGeometry(80, 80), mat(0x111722, 0.1, 0.7), -Math.PI/2, 0, 0, 0, -0.01, 10);
-
-        // 2. Booth Carpet (Navy Blue) & Glowing Neon Cyan Edge
-        mesh(new THREE.PlaneGeometry(14, 14), mat(0x0a1c33, 0.05, 0.92), -Math.PI/2, 0, 0, 0, 0.01, 3);
-        const neonCyan = mat(0x00c2ff, 0.8, 0.2, 0x00c2ff, 2.5);
-        [-7, 7].forEach(x => mesh(new THREE.BoxGeometry(0.08, 0.06, 14), neonCyan, 0,0,0, x, 0.03, 3));
-        [-4, 10].forEach(z => mesh(new THREE.BoxGeometry(14, 0.06, 0.08), neonCyan, 0,0,0, 0, 0.03, z));
-
-        // 3. Back Wall & Center LED Video Wall
-        mesh(new THREE.BoxGeometry(14.2, 5.2, 0.3), mat(0xf0f4f8, 0.15, 0.4), 0,0,0, 0, 2.6, 10.15);
-        
-        // Large 16:9 Central Video Wall Display
-        const heroPanel = new THREE.Mesh(
-          new THREE.PlaneGeometry(11.0, 3.4),
-          new THREE.MeshBasicMaterial({ map: heroTex, side: THREE.DoubleSide })
-        );
-        heroPanel.position.set(0, 2.4, 9.95);
-        scene.add(heroPanel);
-
-        // 4. Structural White Pillars (4 columns)
-        const pillarMat = mat(0xffffff, 0.4, 0.25);
-        [[-6.5, 5.2, -3.8], [6.5, 5.2, -3.8], [-6.5, 5.2, 9.8], [6.5, 5.2, 9.8]].forEach(([x, h, z]) => {
-          mesh(new THREE.BoxGeometry(0.35, h, 0.35), pillarMat, 0,0,0, x, h/2, z);
-          // Column LED accent runners
-          mesh(new THREE.BoxGeometry(0.06, h, 0.36), neonCyan, 0,0,0, x + (x < 0 ? 0.18 : -0.18), h/2, z);
-        });
-
-        // 5. Overhead Volumetric Canopy with DN'a ROBOTIC Brand Signage
-        const fasciaBoxMat = mat(0x0c1b30, 0.5, 0.3);
-        const fasciaFrontMeshMat = new THREE.MeshBasicMaterial({ map: fasciaFrontTex, side: THREE.DoubleSide });
-        const fasciaSideMeshMat = new THREE.MeshBasicMaterial({ map: fasciaSideTex, side: THREE.DoubleSide });
-
-        // Front Fascia Box (facing -Z towards audience)
-        mesh(new THREE.BoxGeometry(14.2, 1.2, 0.25), fasciaBoxMat, 0,0,0, 0, 5.2, -3.8);
-        const frontSign = new THREE.Mesh(new THREE.PlaneGeometry(14.0, 1.15), fasciaFrontMeshMat);
-        frontSign.position.set(0, 5.2, -3.94);
-        frontSign.rotation.set(0, Math.PI, 0); // Face viewer
-        scene.add(frontSign);
-
-        // Rear Fascia Box
-        mesh(new THREE.BoxGeometry(14.2, 1.2, 0.25), fasciaBoxMat, 0,0,0, 0, 5.2, 9.8);
-        const rearSign = new THREE.Mesh(new THREE.PlaneGeometry(14.0, 1.15), fasciaFrontMeshMat);
-        rearSign.position.set(0, 5.2, 9.66);
-        rearSign.rotation.set(0, Math.PI, 0); // Face viewer correctly
-        scene.add(rearSign);
-
-        // Left & Right Canopy Sides
-        mesh(new THREE.BoxGeometry(0.25, 1.2, 13.8), fasciaBoxMat, 0,0,0, -6.5, 5.2, 3.0);
-        mesh(new THREE.BoxGeometry(0.25, 1.2, 13.8), fasciaBoxMat, 0,0,0,  6.5, 5.2, 3.0);
-        const rightSign = new THREE.Mesh(new THREE.PlaneGeometry(13.6, 1.15), fasciaSideMeshMat);
-        rightSign.position.set(6.64, 5.2, 3.0);
-        rightSign.rotation.set(0, Math.PI*0.5, 0);
-        scene.add(rightSign);
-
-        // Canopy LED Neon Underglow Lines
-        mesh(new THREE.BoxGeometry(14.0, 0.05, 0.05), neonCyan, 0,0,0, 0, 4.58, -3.8);
-        mesh(new THREE.BoxGeometry(14.0, 0.05, 0.05), neonCyan, 0,0,0, 0, 4.58,  9.8);
-        mesh(new THREE.BoxGeometry(0.05, 0.05, 13.8), neonCyan, 0,0,0, -6.5, 4.58, 3.0);
-        mesh(new THREE.BoxGeometry(0.05, 0.05, 13.8), neonCyan, 0,0,0,  6.5, 4.58, 3.0);
-
-        // 6. Side Acoustic Divider Walls
-        mesh(new THREE.BoxGeometry(0.2, 3.2, 5.5), mat(0x132238, 0.2, 0.5), 0,0,0, -6.9, 1.6, 6.8);
-        mesh(new THREE.BoxGeometry(0.2, 3.2, 5.5), mat(0x132238, 0.2, 0.5), 0,0,0,  6.9, 1.6, 6.8);
-
-        // ── Function to build highly realistic multi-jointed 6-axis robotic arms ──
-        function buildArticulatedCobot(x, y, z, scale=1.0, poseYaw=0, posePitch=0.3, armColor=0xffffff) {
-          const cobotGroup = new THREE.Group();
-          const whiteMat = mat(armColor, 0.3, 0.25);
-          const darkJointMat = mat(0x1e293b, 0.8, 0.2);
-          const jointGlowMat = mat(0x00c2ff, 0.5, 0.3, 0x00c2ff, 2.0);
-          const gripperMat = mat(0x334155, 0.9, 0.15);
-
-          // Base Pedestal
-          const base = new THREE.Mesh(new THREE.CylinderGeometry(0.18*scale, 0.22*scale, 0.15*scale, 24), darkJointMat);
-          base.position.set(0, 0.075*scale, 0);
-          cobotGroup.add(base);
-
-          // Shoulder Swivel
-          const shoulder = new THREE.Mesh(new THREE.CylinderGeometry(0.15*scale, 0.15*scale, 0.2*scale, 20), whiteMat);
-          shoulder.position.set(0, 0.22*scale, 0);
-          cobotGroup.add(shoulder);
-
-          // Joint 1 LED Ring
-          const j1Ring = new THREE.Mesh(new THREE.TorusGeometry(0.152*scale, 0.015*scale, 8, 24), jointGlowMat);
-          j1Ring.rotation.x = Math.PI*0.5;
-          j1Ring.position.set(0, 0.22*scale, 0);
-          cobotGroup.add(j1Ring);
-
-          // Upper Arm Link (Angled)
-          const arm1 = new THREE.Mesh(new THREE.CylinderGeometry(0.11*scale, 0.13*scale, 0.65*scale, 16), whiteMat);
-          arm1.position.set(0.1*scale, 0.55*scale, 0.1*scale);
-          arm1.rotation.set(posePitch, poseYaw, 0.2);
-          cobotGroup.add(arm1);
-
-          // Elbow Joint
-          const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.14*scale, 16, 16), darkJointMat);
-          elbow.position.set(0.18*scale, 0.88*scale, 0.22*scale);
-          cobotGroup.add(elbow);
-
-          // Forearm Link
-          const arm2 = new THREE.Mesh(new THREE.CylinderGeometry(0.09*scale, 0.11*scale, 0.55*scale, 16), whiteMat);
-          arm2.position.set(0.28*scale, 1.15*scale, 0.05*scale);
-          arm2.rotation.set(-0.4, poseYaw, -0.3);
-          cobotGroup.add(arm2);
-
-          // Wrist Unit & Tool Flange
-          const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.08*scale, 0.08*scale, 0.14*scale, 16), darkJointMat);
-          wrist.position.set(0.38*scale, 1.4*scale, -0.1*scale);
-          wrist.rotation.z = Math.PI*0.5;
-          cobotGroup.add(wrist);
-
-          // 2-Finger Industrial Gripper with Workpiece
-          const gripL = new THREE.Mesh(new THREE.BoxGeometry(0.03*scale, 0.1*scale, 0.03*scale), gripperMat);
-          gripL.position.set(0.35*scale, 1.5*scale, -0.12*scale);
-          const gripR = new THREE.Mesh(new THREE.BoxGeometry(0.03*scale, 0.1*scale, 0.03*scale), gripperMat);
-          gripR.position.set(0.41*scale, 1.5*scale, -0.12*scale);
-          cobotGroup.add(gripL); cobotGroup.add(gripR);
-
-          // Golden Sample Component held by gripper
-          const part = new THREE.Mesh(new THREE.CylinderGeometry(0.04*scale, 0.04*scale, 0.08*scale, 16), mat(0xf59e0b, 0.8, 0.2));
-          part.position.set(0.38*scale, 1.5*scale, -0.12*scale);
-          cobotGroup.add(part);
-
-          cobotGroup.position.set(x, y, z);
-          scene.add(cobotGroup);
-          return cobotGroup;
-        }
-
-        // 7. FRONT DEMONSTRATION ISLAND (Long Table with 4 Articulated Robot Arms, as in reference photo)
-        const frontIslandMat = mat(0xf8fafc, 0.2, 0.35);
-        mesh(new THREE.BoxGeometry(5.8, 0.95, 1.4), frontIslandMat, 0,0,0, -3.5, 0.475, -2.0);
-        mesh(new THREE.BoxGeometry(5.84, 0.05, 1.44), neonCyan, 0,0,0, -3.5, 0.03, -2.0);
-        mesh(new THREE.BoxGeometry(5.84, 0.03, 1.44), neonCyan, 0,0,0, -3.5, 0.95, -2.0);
-
-        // Row of 4 synchronized cobot arms on front table
-        buildArticulatedCobot(-5.5, 0.95, -2.0, 1.1, 0.1, 0.4, 0xffffff);
-        buildArticulatedCobot(-4.2, 0.95, -2.0, 1.0, -0.2, 0.2, 0xf0fdf4);
-        buildArticulatedCobot(-2.8, 0.95, -2.0, 1.0, 0.3, 0.5, 0xffffff);
-        buildArticulatedCobot(-1.5, 0.95, -2.0, 0.9, -0.1, 0.3, 0xf8fafc);
-
-        // 8. RIGHT FEATURED ROBOT CELL (White Podium with Active Cobot)
-        mesh(new THREE.BoxGeometry(1.5, 1.0, 1.5), frontIslandMat, 0,0,0, 4.0, 0.5, -2.0);
-        mesh(new THREE.BoxGeometry(1.54, 0.05, 1.54), neonCyan, 0,0,0, 4.0, 0.03, -2.0);
-        mesh(new THREE.BoxGeometry(1.54, 0.03, 1.54), neonCyan, 0,0,0, 4.0, 1.0, -2.0);
-        buildArticulatedCobot(4.0, 1.0, -2.0, 1.35, 0.4, 0.35, 0xffffff);
-
-        // 9. MID & REAR EXHIBITION PODIUMS (AMR, OptiScan, Industrial PC, LaserCell)
-        const plinthMat = mat(0xf5f8ff, 0.25, 0.45);
-
-        // Vector AMR on floor runway
-        const amrPos = PRODUCT_3D_POS.amr;
-        const amrBody = mesh(new THREE.BoxGeometry(0.85, 0.24, 0.65), mat(0x0f172a, 0.7, 0.3), 0,0,0, amrPos.x, 0.12, amrPos.z);
-        mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.08, 16), neonCyan, 0,0,0, amrPos.x, 0.28, amrPos.z);
-        mesh(new THREE.BoxGeometry(0.86, 0.04, 0.04), neonCyan, 0,0,0, amrPos.x, 0.2, amrPos.z+0.32);
-
-        // OptiScan 3D Inspection Station
-        mesh(new THREE.BoxGeometry(1.2, 0.95, 1.2), plinthMat, 0,0,0, 1.2, 0.475, 2.5);
-        mesh(new THREE.BoxGeometry(1.22, 0.04, 1.22), neonCyan, 0,0,0, 1.2, 0.03, 2.5);
-        mesh(new THREE.BoxGeometry(0.38, 0.18, 0.18), mat(0x00c2ff, 0.8, 0.2), 0,0,0, 1.2, 1.05, 2.5);
-
-        // LaserCell LX
-        const laserPos = PRODUCT_3D_POS.lasercell;
-        mesh(new THREE.BoxGeometry(1.8, 1.8, 1.4), mat(0x1e293b, 0.6, 0.4), 0,0,0, laserPos.x, 0.9, laserPos.z);
-        mesh(new THREE.BoxGeometry(1.0, 0.9, 0.05), mat(0xef4444, 0.3, 0.2, 0xef4444, 0.8), 0,0,0, laserPos.x, 1.2, laserPos.z-0.71);
-
-        // Reception Lounge Desk & VIP Chairs
-        mesh(new THREE.BoxGeometry(3.5, 1.1, 0.7), mat(0x0c1b30, 0.4, 0.4), 0,0,0, -4.5, 0.55, 7.5);
-        mesh(new THREE.BoxGeometry(3.54, 0.04, 0.74), neonCyan, 0,0,0, -4.5, 0.03, 7.5);
-      }
-
-      try {
-        // 1. Scene
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0a101d);
-        scene.fog = new THREE.Fog(0x0a101d, 35, 95);
-
-        // 2. Camera
-        const rect = frameBox.getBoundingClientRect();
-        const aspect = rect.width / (rect.height || 560);
-        camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 140);
-        camera.position.set(0, 3.2, -14);
-
-        // 3. Renderer with Photorealistic PBR Tone Mapping
-        renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
-        renderer.setSize(rect.width, rect.height || 560);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0;
-
-        // 4. OrbitControls
-        controls = new THREE.OrbitControls(camera, canvas);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.08;
-        controls.target.set(0, 1.8, 2);
-        controls.minDistance = 1.0;
-        controls.maxDistance = 45;
-        controls.maxPolarAngle = Math.PI * 0.72;
-        controls.minPolarAngle = Math.PI * 0.08;
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.4;
-
-        // Pause auto-rotate on user interaction
-        canvas.addEventListener('pointerdown', () => { controls.autoRotate = false; });
-
-        // 5. Exhibition Lighting System
-        scene.add(new THREE.AmbientLight(0xd8e8ff, 0.65));
-        const keySun = new THREE.DirectionalLight(0xffffff, 1.3);
-        keySun.position.set(0, 14, -8);
-        keySun.castShadow = true;
-        scene.add(keySun);
-        scene.add(new THREE.HemisphereLight(0x90caf9, 0x1e293b, 0.6));
-
-        // 6. Build Booth Architecture
-        buildHeroBoothArchitecture();
-
-        // 7. Render Loop
-        function animate() {
-          animId = requestAnimationFrame(animate);
-
-          // Camera tween interpolation
-          if (isTransitioning && targetCamPos && targetLookAt) {
-            camera.position.lerp(targetCamPos, 0.065);
-            currentLookAt.lerp(targetLookAt, 0.065);
-            controls.target.copy(currentLookAt);
-            if (camera.position.distanceTo(targetCamPos) < 0.08 && currentLookAt.distanceTo(targetLookAt) < 0.08) {
-              camera.position.copy(targetCamPos);
-              currentLookAt.copy(targetLookAt);
-              controls.target.copy(currentLookAt);
-              isTransitioning = false;
-            }
-          }
-
-          controls.update();
-          updateProjectedHotspots();
-          renderer.render(scene, camera);
-        }
-        animate();
-
-        // Window resize listener
-        window.addEventListener('resize', () => {
-          const r = frameBox.getBoundingClientRect();
-          if (r.width > 0 && r.height > 0) {
-            camera.aspect = r.width / r.height;
-            camera.updateProjectionMatrix();
-            renderer.setSize(r.width, r.height);
-          }
-        });
-
-      } catch (e) {
-        console.warn('Hero 3D Showroom WebGL init error:', e);
-      }
-
-      // ── Dynamic 3D Hotspot Screen Space Projection ──
-      function updateProjectedHotspots() {
-        const r = frameBox.getBoundingClientRect();
-        if (r.width === 0 || r.height === 0) return;
-
-        const tempVec = new THREE.Vector3();
-
-        for (const [key, pos3d] of Object.entries(PRODUCT_3D_POS)) {
-          const el = document.getElementById(`hotspot-${key}`);
-          if (!el) continue;
-
-          tempVec.set(pos3d.x, pos3d.y + 1.2, pos3d.z);
-          tempVec.project(camera);
-
-          // Check if product is in front of camera
-          const isBehind = tempVec.z > 1.0;
-
-          if (!isBehind) {
-            const x = (tempVec.x * 0.5 + 0.5) * r.width;
-            const y = (-(tempVec.y * 0.5) + 0.5) * r.height;
-            el.style.display = 'block';
-            el.style.left = `${x.toFixed(1)}px`;
-            el.style.top = `${y.toFixed(1)}px`;
-          } else {
-            el.style.display = 'none';
-          }
-        }
-      }
-
-      // ── Smooth Camera Transition (Fly-To) ──
-      window.flyCameraPreset = function(presetKey, customPos, customLook) {
-        if (customPos && customLook) {
-          controls.autoRotate = false;
-          targetCamPos = customPos.clone();
-          targetLookAt = customLook.clone();
-          isTransitioning = true;
-          return;
-        }
-        const p = PRESETS[presetKey];
-        if (!p) return;
-
-        controls.autoRotate = false;
-        targetCamPos = p.pos.clone();
-        targetLookAt = p.look.clone();
-        isTransitioning = true;
-
-        // Highlight active UI buttons
-        document.querySelectorAll('.nav-preset-btn, .preset-thumb').forEach(b => {
-          const txt = b.textContent.toLowerCase();
-          b.classList.toggle('active', txt.includes(presetKey.toLowerCase()) || (presetKey === 'reset' && txt.includes('reset')));
-        });
-      };
-
-      // ── Auto Tour Controller ──
-      window.toggleAutoTour = function() {
-        autoTourActive = !autoTourActive;
-        const btn = document.getElementById('btn-auto-tour');
-        if (btn) {
-          btn.classList.toggle('active', autoTourActive);
-          btn.innerHTML = autoTourActive ? '<span class="nav-preset-icon">⏸</span> Pause Tour' : '<span class="nav-preset-icon">▶</span> Auto Tour';
-        }
-
-        if (autoTourActive) {
-          const tourSeq = ['overview', 'island', 'automation', 'robot', 'lounge', 'media'];
-          autoTourIndex = 0;
-          flyCameraPreset(tourSeq[autoTourIndex]);
-
-          autoTourTimer = setInterval(() => {
-            if (!autoTourActive) { clearInterval(autoTourTimer); return; }
-            autoTourIndex = (autoTourIndex + 1) % tourSeq.length;
-            flyCameraPreset(tourSeq[autoTourIndex]);
-          }, 4500);
-        } else {
-          if (autoTourTimer) clearInterval(autoTourTimer);
-        }
-      };
-
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init3DHeroShowroom);
-    } else {
-      init3DHeroShowroom();
     }
   </script>
 </body>
