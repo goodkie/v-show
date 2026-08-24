@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>dn’a — Turn One Booth Photo Into a Commercial Virtual Booth Free</title>
-  <meta name="description" content="Upload one booth photo and your business name. dn’a creates your first interactive commercial virtual booth preview free. No credit card required.">
+  <title>dn’a — Turn One Booth Photo Into a Commercial Photo Immersive Booth Free</title>
+  <meta name="description" content="Upload one booth photo and your business name. dn’a creates your first interactive commercial photo immersive booth preview free. No credit card required.">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="dn’a — Turn One Booth Photo Into a Commercial Virtual Booth Free">
-  <meta property="og:description" content="Upload one booth photo. dn’a creates your interactive virtual showroom preview free.">
+  <meta property="og:title" content="dn’a — Turn One Booth Photo Into a Commercial Photo Immersive Booth Free">
+  <meta property="og:description" content="Upload one booth photo. dn’a creates your interactive photo immersive showroom preview free.">
   <meta property="og:image" content="/assets/brand/dna_logo_white.png">
   <meta property="og:type" content="website">
 
@@ -16,11 +16,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-  <!-- Three.js & OrbitControls -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="/booth-engine.js"></script>
 
   <style>
     :root {
@@ -155,7 +150,7 @@
       background: linear-gradient(90deg, #0284c7, #38bdf8); height: 100%; width: 25%; transition: width 0.4s ease;
     }
 
-    /* ── Interactive Free Booth Studio (Generated State) ── */
+    /* ── Interactive Free Booth Studio (Photo Immersive State) ── */
     .free-studio-section {
       display: none; max-width: 1360px; margin: 0 auto 60px; padding: 0 20px;
     }
@@ -167,36 +162,140 @@
     }
     .studio-banner-title { font-size: 16px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
     .studio-banner-desc { font-size: 13px; color: #cbd5e1; }
-    .studio-canvas-box {
+
+    /* ── Photo Immersive Viewport & Pan/Zoom Canvas ── */
+    .photo-immersive-viewport {
       position: relative; width: 100%; height: 580px; min-height: 580px;
-      background: #060911; border-radius: 16px; overflow: hidden;
+      background: #030712; border-radius: 16px; overflow: hidden;
       border: 1px solid rgba(56, 189, 248, 0.35); box-shadow: 0 20px 60px rgba(0,0,0,0.85);
+      touch-action: none; user-select: none;
+    }
+    .photo-immersive-stage {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      transform-origin: center center; cursor: crosshair;
+    }
+    .photo-immersive-img {
+      max-width: 100%; max-height: 100%; object-fit: contain;
+      pointer-events: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+      user-select: none;
     }
     
+    .pinpoint-layer {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+    }
+
     .pinpoint-marker {
-      position: absolute; width: 32px; height: 32px; border-radius: 50%;
-      background: radial-gradient(circle, #38bdf8 30%, rgba(2, 132, 199, 0.7) 70%);
-      box-shadow: 0 0 16px rgba(56, 189, 248, 0.9), 0 0 30px rgba(2, 132, 199, 0.5);
-      border: 2px solid #ffffff;
-      display: flex; align-items: center; justify-content: center;
-      transform: translate(-50%, -50%); cursor: pointer;
-      z-index: 10; pointer-events: auto;
-      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-      animation: marker-pulse 2s infinite;
-      color: #fff; font-size: 13px; font-weight: 800;
+      position: absolute; transform: translate(-50%, -50%);
+      cursor: pointer; pointer-events: auto; z-index: 20;
+      display: flex; align-items: center; gap: 6px;
+      transition: transform 0.15s ease-out;
     }
     .pinpoint-marker:hover {
-      transform: translate(-50%, -50%) scale(1.25);
+      transform: translate(-50%, -50%) scale(1.15);
     }
+
+    .blank-pin-badge {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: radial-gradient(circle, #38bdf8 30%, rgba(2, 132, 199, 0.85) 70%);
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.9), 0 0 32px rgba(2, 132, 199, 0.5);
+      border: 2px solid #ffffff; display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 13px; font-weight: 800; animation: marker-pulse 2s infinite;
+    }
+    .blank-pin-label {
+      background: rgba(15, 23, 42, 0.92); border: 1px solid rgba(56, 189, 248, 0.45);
+      color: #38bdf8; font-size: 11px; font-weight: 700; padding: 3px 10px;
+      border-radius: 12px; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+    }
+
+    .active-pin-badge {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: radial-gradient(circle, #10b981 30%, rgba(5, 150, 105, 0.85) 70%);
+      box-shadow: 0 0 18px rgba(16, 185, 129, 0.9);
+      border: 2px solid #ffffff; display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 13px; font-weight: 800;
+    }
+
     @keyframes marker-pulse {
       0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
       70% { box-shadow: 0 0 0 14px rgba(56, 189, 248, 0); }
       100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
     }
 
-    /* ── Product Drawer & Add Modal ── */
+    .viewer-controls-bar {
+      position: absolute; top: 14px; right: 14px; display: flex; gap: 6px;
+      z-index: 30; background: rgba(7, 14, 26, 0.88); backdrop-filter: blur(8px);
+      border: 1px solid rgba(56, 189, 248, 0.35); padding: 4px 8px; border-radius: 24px;
+    }
+    .viewer-ctrl-btn {
+      background: transparent; border: none; color: #94a3b8; width: 32px; height: 32px;
+      border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; transition: all 0.2s;
+    }
+    .viewer-ctrl-btn:hover { color: #38bdf8; background: rgba(56, 189, 248, 0.15); }
+
+    /* ── Main Next Step Callout Bar ── */
+    .next-step-bar {
+      margin-top: 18px; padding: 16px 22px;
+      background: linear-gradient(135deg, rgba(2, 132, 199, 0.15), rgba(15, 23, 42, 0.8));
+      border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 14px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;
+    }
+
+    /* ── Three Product Cards Section ── */
+    .product-cards-section { margin-top: 36px; }
+    .product-cards-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px; margin-top: 16px;
+    }
+    .blank-product-card {
+      background: #0b1322; border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 16px; padding: 22px; display: flex; flex-direction: column;
+      justify-content: space-between; transition: all 0.2s; position: relative;
+    }
+    .blank-product-card:hover {
+      transform: translateY(-2px); border-color: rgba(56, 189, 248, 0.55);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .product-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .product-card-slot { font-size: 12px; font-weight: 800; color: #38bdf8; letter-spacing: 0.5px; }
+    .product-card-status { font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 10px; }
+    .status-empty { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+    .status-started { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+    .status-complete { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+
+    .product-card-img-box {
+      width: 100%; height: 130px; background: rgba(255, 255, 255, 0.02);
+      border: 1px dashed rgba(56, 189, 248, 0.3); border-radius: 10px;
+      margin-bottom: 14px; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; color: #64748b; font-size: 12px; cursor: pointer;
+      overflow: hidden;
+    }
+    .product-card-img-box img { width: 100%; height: 100%; object-fit: contain; background: #060b14; }
+
+    .product-card-title { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+    .product-card-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px; min-height: 36px; }
+
+    .product-card-progress { background: rgba(255, 255, 255, 0.06); height: 6px; border-radius: 3px; overflow: hidden; margin-bottom: 14px; }
+    .product-card-progress-fill { height: 100%; background: linear-gradient(90deg, #0284c7, #10b981); transition: width 0.3s ease; }
+
+    /* ── Commercial Sales Tool Feature Grid ── */
+    .commercial-tools-section {
+      margin-top: 48px; background: #0b1424; border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 20px; padding: 32px;
+    }
+    .tools-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 20px 0; }
+    .tool-item-card {
+      background: #070e1a; border: 1px solid var(--border); border-radius: 12px; padding: 18px;
+    }
+    .tool-icon { font-size: 20px; color: #38bdf8; margin-bottom: 8px; }
+    .tool-title { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .tool-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+    /* ── Modals & Drawers ── */
     .drawer-modal {
-      position: fixed; inset: 0; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px);
+      position: fixed; inset: 0; background: rgba(3, 7, 18, 0.88); backdrop-filter: blur(8px);
       z-index: 600; display: none; align-items: center; justify-content: center;
     }
     .drawer-card {
@@ -224,6 +323,13 @@
     .plan-price { font-size: 26px; font-weight: 800; color: #fff; margin: 10px 0; }
     .plan-price span { font-size: 13px; color: var(--text-muted); font-weight: 500; }
 
+    .btn-hero {
+      display: inline-flex; align-items: center; gap: 8px; border-radius: 10px;
+      font-weight: 700; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;
+    }
+    .btn-hero-primary { background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; }
+    .btn-hero-secondary { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); color: #f8fafc; }
+
     /* ── Below the fold sections ── */
     .section { padding: 64px 24px; max-width: 1200px; margin: 0 auto; }
     .section-header { text-align: center; margin-bottom: 40px; }
@@ -240,7 +346,10 @@
     .step-text { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
 
     .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-    @media (max-width: 768px) { .demo-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) {
+      .demo-grid { grid-template-columns: 1fr; }
+      .photo-immersive-viewport { height: 420px; min-height: 420px; }
+    }
     .demo-card {
       background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
     }
@@ -248,75 +357,71 @@
     .demo-info { padding: 20px; }
     .demo-title { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 6px; }
 
-    footer {
-      background: #04080f; border-top: 1px solid var(--border);
-      padding: 40px 24px; text-align: center; color: var(--text-muted); font-size: 13px;
-    }
+    .footer { border-top: 1px solid var(--border); padding: 40px 24px; text-align: center; color: var(--text-muted); font-size: 13px; }
   </style>
 </head>
 <body>
 
-  <!-- Clean Brand Navigation -->
+  <!-- Navigation Bar -->
   <nav class="nav-bar">
-    <a href="/" class="brand-logo" title="dn'a Virtual Trade Show">
-      <img src="/assets/brand/dna_logo_white.png" alt="dn'a DIGITAL NETWORKING ADVANTAGE" style="height: 52px; width: auto; object-fit: contain; display: block;">
+    <a href="/" class="brand-logo">
+      <img src="/assets/brand/dna_logo_white.png" alt="dn’a Logo" style="height: 24px;">
+      <span style="font-weight: 800; font-size: 18px; letter-spacing: -0.5px; color: #fff;">dn’a</span>
     </a>
     <div class="nav-links">
       <a href="#how-it-works" class="nav-link">How It Works</a>
-      <a href="#examples" class="nav-link">Examples</a>
+      <a href="#examples" class="nav-link">Showrooms</a>
       <a href="#pricing" class="nav-link">Pricing</a>
-      <a href="/dev-lab.html" class="nav-link" style="color: #64748b; font-size: 12px;"><i class="fa-solid fa-code"></i> Dev Lab</a>
+      <button class="btn-nav-signin" onclick="openSignInModal()">Sign In</button>
     </div>
-    <a href="javascript:void(0)" onclick="openSignInModal()" class="btn-nav-signin">Sign In</a>
   </nav>
 
-  <!-- Hero Section (ONE Conversion Goal: Upload Photo + Business Name) -->
-  <header class="hero-section" id="hero-funnel">
+  <!-- Hero Section (One Action Entry Funnel) -->
+  <div class="hero-section" id="hero-funnel">
     <div class="hero-pill">
-      <i class="fa-solid fa-bolt" style="font-size: 10px;"></i>
-      Free One-Booth Commercial Preview
+      <i class="fa-solid fa-bolt"></i> ONE PHOTO • FREE PHOTO IMMERSIVE BOOTH
     </div>
     <h1 class="hero-title">
-      TURN ONE BOOTH PHOTO<br>
-      <span>INTO A COMMERCIAL VIRTUAL BOOTH — FREE</span>
+      Turn One Booth Photo Into a<br>
+      <span>Commercial Virtual Showroom</span> Free
     </h1>
     <p class="hero-desc">
-      Upload one booth photo and enter your business name. dn’a will create your first interactive commercial booth preview free.
+      Upload your exhibition booth photo and business name. dn’a generates your interactive photo immersive booth preview with interactive product pinpoints in seconds.
     </p>
 
-    <!-- Single Large Premium Upload CTA Frame -->
+    <!-- Upload CTA Frame -->
     <div class="upload-cta-frame">
-      <div class="frame-title">CREATE YOUR FREE VIRTUAL BOOTH</div>
-      <div class="frame-subtitle">Drop one booth photo here or browse to get started</div>
+      <div class="frame-title">Create Your Free Photo Immersive Booth</div>
+      <div class="frame-subtitle">No credit card required • Instant interactive preview • 3 product slots included</div>
 
-      <form id="free-preview-form" onsubmit="handleFreeBoothSubmit(event)">
+      <form id="free-booth-form" onsubmit="handleFreeBoothSubmit(event)">
         <div class="form-group">
-          <label class="form-label">1. Business Name *</label>
-          <input type="text" id="business-name-input" class="form-input" placeholder="e.g. Apex Robotics Inc." required autocomplete="organization">
+          <label class="form-label" for="business-name-input">Business Name *</label>
+          <input type="text" id="business-name-input" class="form-input" placeholder="e.g. Apex Robotics Dynamics" required>
         </div>
 
         <div class="form-group">
-          <label class="form-label">2. Booth Photo *</label>
+          <label class="form-label">Booth Photo *</label>
           <div class="drop-zone" id="booth-drop-zone" onclick="document.getElementById('booth-file-input').click()">
             <div class="drop-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
-            <div class="drop-title" id="drop-filename-txt">Drop your booth photo here or browse</div>
-            <div class="drop-hint">JPG, PNG, or WEBP (Standard photo or 360° panorama)</div>
+            <div class="drop-title" id="drop-title-txt">Drag and drop your booth photo here</div>
+            <div class="drop-hint" id="drop-filename-txt">or click to browse files (JPEG, PNG, WebP)</div>
+            <input type="file" id="booth-file-input" accept="image/*" style="display: none;" onchange="handleFileSelected(this)">
           </div>
-          <input type="file" id="booth-file-input" accept="image/jpeg,image/png,image/webp" style="display: none;" onchange="handleFileSelect(this)">
         </div>
 
-        <button type="submit" id="btn-submit-free" class="btn-create-free">
-          <i class="fa-solid fa-wand-magic-sparkles"></i> CREATE FREE VIRTUAL BOOTH
+        <button type="submit" class="btn-create-free" id="btn-submit-free">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> GENERATE FREE VIRTUAL BOOTH
         </button>
-
-        <div class="frame-footer">
-          <i class="fa-solid fa-shield-halved"></i> No credit card required • One free booth preview per business
-        </div>
       </form>
-    </div>
-  </header>
 
-  <!-- Generating Progress Overlay -->
+      <div class="frame-footer">
+        <i class="fa-solid fa-shield-halved" style="color: #38bdf8;"></i> 1 free commercial booth preview per business • Fully private
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress Modal -->
   <div class="progress-overlay" id="progressOverlay">
     <div class="progress-card">
       <div class="progress-stage" id="progressStageTxt">UPLOADING PHOTO</div>
@@ -328,81 +433,174 @@
     </div>
   </div>
 
-  <!-- Interactive Generated Real 3D Booth View (Customer Success Moment) -->
+  <!-- Interactive Generated Photo Immersive Booth Studio (Customer Success Moment) -->
   <section class="free-studio-section" id="freeStudioSection">
     <div class="studio-banner">
       <div>
         <div class="studio-banner-title">
           <i class="fa-solid fa-circle-check" style="color: var(--success);"></i>
-          YOUR FREE 3D VIRTUAL BOOTH IS READY
+          YOUR FREE PHOTO IMMERSIVE BOOTH IS READY
         </div>
-        <div class="studio-banner-desc">Drag to rotate • Scroll to zoom • Click any surface to place your first interactive Product Pinpoint.</div>
+        <div class="studio-banner-desc" id="studioBannerBizName">Click a blank pin (+1, +2, +3) or select a location on your photo to add interactive products.</div>
       </div>
       <div style="display: flex; gap: 10px;">
         <button class="btn-hero btn-hero-secondary" onclick="openSaveEmailModal()" style="padding: 9px 16px; font-size: 13px;">
           <i class="fa-regular fa-bookmark"></i> Save Booth
         </button>
-        <button class="btn-hero btn-hero-primary" onclick="openPlanModal('upgrade')" style="padding: 9px 18px; font-size: 13px; background: linear-gradient(135deg, #0284c7, #2563eb);">
-          <i class="fa-solid fa-arrow-up-right-from-square"></i> Upgrade to Publish
+        <button class="btn-hero btn-hero-primary" onclick="openPlanModal('upgrade_header')" style="padding: 9px 18px; font-size: 13px;">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Upgrade to Commercial
         </button>
       </div>
     </div>
 
-    <!-- Real 3D WebGL / Three.js Interactive Container -->
-    <div class="studio-canvas-box" id="studioCanvasBox">
-      <div id="freeBooth3DViewer" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;"></div>
-      <div id="pinpointsContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></div>
-      <div class="viewer-hint-badge" style="position: absolute; bottom: 14px; left: 14px; background: rgba(7,14,26,0.88); backdrop-filter: blur(8px); border: 1px solid rgba(56,189,248,0.35); color: #94a3b8; font-size: 11px; padding: 6px 14px; border-radius: 20px; pointer-events: none; z-index: 5;">
-        <i class="fa-solid fa-arrows-up-down-left-right" style="color:#38bdf8;"></i> Drag to Orbit • Scroll to Zoom • Click Surface to Add Product Pinpoint
+    <!-- Photo Immersive High-Res Viewport with Pan & Zoom -->
+    <div class="photo-immersive-viewport" id="photoImmersiveViewport">
+      <div class="photo-immersive-stage" id="photoImmersiveStage" onclick="handleStageClick(event)">
+        <img id="studioBoothImg" class="photo-immersive-img" src="" alt="Photo Immersive Booth" onload="onBoothImageLoaded()">
+        <div class="pinpoint-layer" id="pinpointsContainer"></div>
+      </div>
+
+      <!-- Viewport Navigation Controls Bar -->
+      <div class="viewer-controls-bar">
+        <button class="viewer-ctrl-btn" onclick="zoomView(1.2)" title="Zoom In"><i class="fa-solid fa-plus"></i></button>
+        <button class="viewer-ctrl-btn" onclick="zoomView(0.8)" title="Zoom Out"><i class="fa-solid fa-minus"></i></button>
+        <button class="viewer-ctrl-btn" onclick="resetPanZoom()" title="Reset View"><i class="fa-solid fa-arrows-rotate"></i></button>
+        <button class="viewer-ctrl-btn" onclick="toggleFullscreen()" title="Fullscreen"><i class="fa-solid fa-expand"></i></button>
+      </div>
+
+      <!-- Viewport Bottom Hint Badge -->
+      <div style="position: absolute; bottom: 14px; left: 14px; background: rgba(7,14,26,0.88); backdrop-filter: blur(8px); border: 1px solid rgba(56,189,248,0.35); color: #94a3b8; font-size: 11px; padding: 6px 14px; border-radius: 20px; pointer-events: none; z-index: 30;">
+        <i class="fa-solid fa-hand" style="color:#38bdf8;"></i> Drag to Pan • Scroll/Pinch to Zoom • Click Pin to Set Product
       </div>
     </div>
 
-    <div style="margin-top: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-      <div style="font-size: 13px; color: var(--text-muted);">
-        <i class="fa-solid fa-location-crosshairs" style="color: #38bdf8;"></i> 3D Raycasting Active: Click directly on backwall, pedestals or floor to anchor product pinpoints.
+    <!-- Main Next-Step Callout Bar -->
+    <div class="next-step-bar" id="nextStepBar">
+      <div>
+        <div style="font-size: 14px; font-weight: 800; color: #fff;" id="nextStepTitle">NEXT STEP: ADD YOUR FIRST PRODUCT</div>
+        <div style="font-size: 12px; color: var(--text-muted);" id="nextStepSubtitle">3 interactive product slots ready for commercial presentation.</div>
       </div>
-      <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('add_more')" style="padding: 8px 16px; font-size: 12px; border-color: rgba(56,189,248,0.3);">
-        <i class="fa-solid fa-plus"></i> Add Another Product (Unlock Full 3D Space)
+      <button class="btn-hero btn-hero-primary" id="btnNextStepAction" onclick="handleNextStepCTA()" style="padding: 10px 20px; font-size: 13px;">
+        <i class="fa-solid fa-plus"></i> ADD YOUR FIRST PRODUCT
       </button>
+    </div>
+
+    <!-- Three Product Cards Section -->
+    <div class="product-cards-section">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <div>
+          <div class="section-tag">COMMERCIAL CATALOG SLOTS</div>
+          <h3 style="font-size: 20px; font-weight: 800; color: #fff;">Your Products (3 Slots Available)</h3>
+        </div>
+      </div>
+
+      <div class="product-cards-grid" id="productCardsGrid">
+        <!-- Card 1, Card 2, Card 3 will be rendered by JavaScript -->
+      </div>
+    </div>
+
+    <!-- Commercial Sales Tool Feature Preview Section -->
+    <div class="commercial-tools-section">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div class="section-tag">BUYER CONVERSION ENGINE</div>
+        <h3 style="font-size: 22px; font-weight: 800; color: #fff;">Turn Your Booth Into a 24/7 Sales Tool</h3>
+        <p style="font-size: 13px; color: var(--text-muted); max-width: 580px; margin: 4px auto 0;">
+          Commercial features activate instant wholesale RFQs, sample requests, and direct lead capturing for global trade buyers.
+        </p>
+      </div>
+
+      <div class="tools-grid">
+        <div class="tool-item-card">
+          <div class="tool-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+          <div class="tool-title">Wholesale RFQ Intake <span class="product-card-status status-started">PRO</span></div>
+          <div class="tool-desc">Receive custom quote requests with trade volume &amp; buyer credentials directly into your CRM.</div>
+        </div>
+
+        <div class="tool-item-card">
+          <div class="tool-icon"><i class="fa-solid fa-box-open"></i></div>
+          <div class="tool-title">Sample Distribution <span class="product-card-status status-started">PRO</span></div>
+          <div class="tool-desc">Process and qualify verified international buyer sample requests seamlessly.</div>
+        </div>
+
+        <div class="tool-item-card">
+          <div class="tool-icon"><i class="fa-solid fa-calendar-check"></i></div>
+          <div class="tool-title">1-on-1 Meeting Scheduler <span class="product-card-status status-started">PRO</span></div>
+          <div class="tool-desc">Trade visitors can book video appointments directly with your export sales directors.</div>
+        </div>
+
+        <div class="tool-item-card">
+          <div class="tool-icon"><i class="fa-solid fa-file-pdf"></i></div>
+          <div class="tool-title">Digital Catalog &amp; Linesheet <span class="product-card-status status-started">PRO</span></div>
+          <div class="tool-desc">Distribute high-resolution technical sheets, certifications, and export price lists.</div>
+        </div>
+
+        <div class="tool-item-card">
+          <div class="tool-icon"><i class="fa-solid fa-qrcode"></i></div>
+          <div class="tool-title">Smart QR Expo Sharing <span class="product-card-status status-started">PRO</span></div>
+          <div class="tool-desc">Instant QR code for physical booth banners, business cards, and print marketing.</div>
+        </div>
+
+        <div class="tool-item-card">
+          <div class="tool-icon"><i class="fa-solid fa-chart-line"></i></div>
+          <div class="tool-title">Exhibitor Lead CRM <span class="product-card-status status-started">PRO</span></div>
+          <div class="tool-desc">Real-time visitor heatmaps, product click tracking, and lead qualification analytics.</div>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 14px;">
+        <button class="btn-create-free" onclick="openPlanModal('commercial_features')" style="max-width: 380px; margin: 0 auto;">
+          <i class="fa-solid fa-rocket"></i> ACTIVATE COMMERCIAL FEATURES
+        </button>
+      </div>
     </div>
   </section>
 
-  <!-- Add Product Pinpoint Modal -->
+  <!-- Add Product Pinpoint Modal (5-Step Onboarding) -->
   <div class="drawer-modal" id="addProductModal">
     <div class="drawer-card">
       <button class="close-btn" onclick="closeAddProductModal()">✕</button>
-      <div class="section-tag" style="margin-bottom: 6px;">STEP 2 • PRODUCT PINPOINT</div>
-      <h3 style="font-size: 22px; font-weight: 800; margin-bottom: 18px; color: #fff;">Make This Product Interactive</h3>
+      <div class="section-tag" id="onboardingStepTag">STEP 1 OF 5 • PRODUCT ONBOARDING</div>
+      <h3 style="font-size: 22px; font-weight: 800; margin-bottom: 18px; color: #fff;" id="onboardingModalTitle">Setup Product 01</h3>
 
       <form id="add-product-form" onsubmit="submitProductPinpoint(event)">
+        <input type="hidden" id="target-slot-index" value="1">
+
         <div class="form-group">
-          <label class="form-label">Product Name *</label>
+          <label class="form-label">Step 1: Product Pin Location (Normalized 2D)</label>
+          <div style="display: flex; gap: 10px; font-size: 13px; color: #38bdf8; background: rgba(56,189,248,0.1); padding: 10px 14px; border-radius: 8px; margin-bottom: 6px;">
+            <span><i class="fa-solid fa-location-dot"></i> Coordinates: <span id="coordsDisplay">u: 0.50, v: 0.50</span></span>
+            <span style="color: #94a3b8; font-size: 11px;">(Click anywhere on booth image to move)</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Step 2: Product Image *</label>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="file" id="prod-image-input" accept="image/*" class="form-input" style="padding: 8px;" onchange="previewProdImage(this)">
+          </div>
+          <img id="prod-image-preview" src="" style="max-height: 90px; border-radius: 6px; margin-top: 8px; display: none; object-fit: contain;">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Step 3: Product Name *</label>
           <input type="text" id="prod-name-input" class="form-input" placeholder="e.g. Autonomous Robotic Arm X-1" required>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Product Image *</label>
-          <div style="display: flex; gap: 10px; align-items: center;">
-            <input type="file" id="prod-image-input" accept="image/*" class="form-input" style="padding: 8px;" onchange="previewProdImage(this)">
-          </div>
-          <img id="prod-image-preview" src="" style="max-height: 80px; border-radius: 6px; margin-top: 8px; display: none; object-fit: contain;">
-        </div>
-
-        <div class="form-group">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <label class="form-label" style="margin:0;">Product Description (Optional)</label>
+            <label class="form-label" style="margin:0;">Step 4: Product Description</label>
             <button type="button" class="btn-hero" onclick="generateAIDescription()" style="padding: 4px 10px; font-size: 11px; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3);">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Description
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Description with AI
             </button>
           </div>
-          <textarea id="prod-desc-input" class="form-input" rows="3" placeholder="Brief commercial description or click 'Generate Description' above..."></textarea>
+          <textarea id="prod-desc-input" class="form-input" rows="3" placeholder="Brief commercial overview of this product..."></textarea>
           <div id="ai-draft-notice" style="font-size: 11px; color: #60a5fa; margin-top: 4px; display: none;">
-            <i class="fa-solid fa-info-circle"></i> Suggested Draft — Please review before publishing.
+            <i class="fa-solid fa-info-circle"></i> AI Draft helper active. Technical specs set to 'Needs merchant input' to prevent fabrication.
           </div>
         </div>
 
-        <button type="submit" class="btn-create-free" style="margin-top: 8px;">
-          <i class="fa-solid fa-check"></i> ADD PRODUCT PINPOINT
+        <button type="submit" class="btn-create-free" style="margin-top: 8px;" id="btnSaveProductSlot">
+          <i class="fa-solid fa-check"></i> STEP 5: SAVE PRODUCT &amp; PINPOINT
         </button>
       </form>
     </div>
@@ -415,28 +613,35 @@
       <div class="section-tag" style="color: #10b981; margin-bottom: 4px;">PRODUCT LIVE IN PREVIEW</div>
       <h3 id="drawerProdTitle" style="font-size: 24px; font-weight: 800; margin-bottom: 12px; color: #fff;">Product Name</h3>
       <img id="drawerProdImg" src="" style="width: 100%; max-height: 220px; object-fit: contain; background: #070e1a; border-radius: 10px; margin-bottom: 14px; border: 1px solid var(--border);">
-      <p id="drawerProdDesc" style="font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px;"></p>
+      
+      <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Product Description</div>
+      <p id="drawerProdDesc" style="font-size: 13px; color: #cbd5e1; line-height: 1.6; margin-bottom: 14px;"></p>
+
+      <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px; margin-bottom: 16px;">
+        <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Technical Specifications</div>
+        <div id="drawerProdSpecs" style="font-size: 12px; color: #64748b;">Needs merchant input</div>
+      </div>
 
       <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px; margin-bottom: 20px;">
         <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px;">Buyer Actions (Preview)</div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-          <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('rfq')" style="font-size: 12px; padding: 8px;">
-            <i class="fa-solid fa-envelope"></i> Request RFQ <span class="badge" style="font-size: 8px; background: rgba(56,189,248,0.2); color:#38bdf8;">PRO</span>
+          <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('drawer_rfq')" style="font-size: 12px; padding: 8px;">
+            <i class="fa-solid fa-envelope"></i> Request RFQ <span class="product-card-status status-started" style="font-size: 8px;">PRO</span>
           </button>
-          <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('sample')" style="font-size: 12px; padding: 8px;">
-            <i class="fa-solid fa-box-open"></i> Request Sample <span class="badge" style="font-size: 8px; background: rgba(56,189,248,0.2); color:#38bdf8;">PRO</span>
+          <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('drawer_sample')" style="font-size: 12px; padding: 8px;">
+            <i class="fa-solid fa-box-open"></i> Request Sample <span class="product-card-status status-started" style="font-size: 8px;">PRO</span>
           </button>
-          <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('catalog')" style="font-size: 12px; padding: 8px;">
-            <i class="fa-solid fa-file-pdf"></i> Digital Catalog <span class="badge" style="font-size: 8px; background: rgba(56,189,248,0.2); color:#38bdf8;">PRO</span>
+          <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('drawer_meeting')" style="font-size: 12px; padding: 8px;">
+            <i class="fa-solid fa-calendar"></i> Book Meeting <span class="product-card-status status-started" style="font-size: 8px;">PRO</span>
           </button>
-          <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('analytics')" style="font-size: 12px; padding: 8px;">
-            <i class="fa-solid fa-chart-line"></i> Lead CRM <span class="badge" style="font-size: 8px; background: rgba(56,189,248,0.2); color:#38bdf8;">PRO</span>
+          <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('drawer_catalog')" style="font-size: 12px; padding: 8px;">
+            <i class="fa-solid fa-file-pdf"></i> Digital Catalog <span class="product-card-status status-started" style="font-size: 8px;">PRO</span>
           </button>
         </div>
       </div>
 
       <button class="btn-create-free" onclick="openPlanModal('drawer_upgrade')">
-        <i class="fa-solid fa-rocket"></i> UNLOCK FULL COMMERCIAL BOOTH
+        <i class="fa-solid fa-rocket"></i> ACTIVATE COMMERCIAL BUYER TOOLS
       </button>
     </div>
   </div>
@@ -445,10 +650,10 @@
   <div class="drawer-modal" id="planModal">
     <div class="drawer-card" style="max-width: 820px;">
       <button class="close-btn" onclick="closePlanModal()">✕</button>
-      <div class="section-tag" style="text-align: center; margin-bottom: 6px;">READY TO PUT YOUR BOOTH TO WORK?</div>
-      <h2 style="font-size: 28px; font-weight: 800; text-align: center; color: #fff; margin-bottom: 8px;">Choose a Commercial Plan to Publish</h2>
-      <p style="text-align: center; font-size: 14px; color: var(--text-muted); max-width: 540px; margin: 0 auto 20px;">
-        Publish your booth to global buyers, unlock unlimited pinpoints, and collect wholesale RFQs 365 days a year.
+      <div class="section-tag" style="text-align: center; margin-bottom: 6px;">COMMERCIAL ACTIVATION</div>
+      <h2 style="font-size: 28px; font-weight: 800; text-align: center; color: #fff; margin-bottom: 8px;">YOUR BOOTH IS READY TO GO COMMERCIAL</h2>
+      <p style="text-align: center; font-size: 14px; color: var(--text-muted); max-width: 580px; margin: 0 auto 20px;">
+        Your photo, product information and pinpoints are already saved. Choose a plan to activate your commercial booth.
       </p>
 
       <div class="plan-grid">
@@ -456,16 +661,16 @@
         <div class="plan-card">
           <div style="font-weight: 800; font-size: 18px; color: #fff;">PRO</div>
           <div class="plan-price">$299 <span>/ mo</span></div>
-          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Ideal for single exhibitors &amp; standard booths</p>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Publish commercial booth &amp; activate buyer tools</p>
           <ul style="font-size: 12px; text-align: left; color: #cbd5e1; list-style: none; padding: 0; line-height: 1.8; margin-bottom: 20px;">
-            <li>✓ 1 Published Virtual Booth</li>
+            <li>✓ 1 Published Commercial Booth</li>
             <li>✓ Up to 25 Product Pinpoints</li>
             <li>✓ 24/7 RFQ &amp; Sample Intake</li>
             <li>✓ Digital Catalog &amp; Smart QR</li>
             <li>✓ Exhibitor Lead CRM Dashboard</li>
           </ul>
           <button class="btn-create-free" onclick="handlePlanSelection('pro')" style="padding: 10px; font-size: 13px;">
-            CONTINUE WITH PRO →
+            ACTIVATE PRO →
           </button>
         </div>
 
@@ -482,7 +687,7 @@
             <li>✓ Advanced Analytics &amp; Reporting</li>
           </ul>
           <button class="btn-create-free" onclick="handlePlanSelection('business')" style="padding: 10px; font-size: 13px; background: linear-gradient(135deg, #0284c7, #2563eb);">
-            CONTINUE WITH BUSINESS →
+            UPGRADE TO BUSINESS →
           </button>
         </div>
 
@@ -490,22 +695,22 @@
         <div class="plan-card">
           <div style="font-weight: 800; font-size: 18px; color: #fff;">CUSTOM</div>
           <div class="plan-price">Quote <span>/ project</span></div>
-          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Large custom spaces &amp; 3D digital twins</p>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">High-fidelity 3D, Gaussian Splatting &amp; Digital Twin</p>
           <ul style="font-size: 12px; text-align: left; color: #cbd5e1; list-style: none; padding: 0; line-height: 1.8; margin-bottom: 20px;">
-            <li>✓ 50+ Custom Space Views</li>
-            <li>✓ 500+ Product Linesheets</li>
+            <li>✓ High-Fidelity 3D Reconstruction</li>
+            <li>✓ Gaussian Splatting Studio Twin</li>
             <li>✓ On-site 3D Capture Service</li>
             <li>✓ Custom ERP/CRM Integration</li>
             <li>✓ Dedicated Enterprise SLA</li>
           </ul>
           <button class="btn-hero btn-hero-secondary" onclick="handlePlanSelection('custom')" style="width: 100%; padding: 10px; font-size: 13px; justify-content: center;">
-            REQUEST CUSTOM QUOTE →
+            REQUEST CUSTOM BUILD →
           </button>
         </div>
       </div>
 
       <div style="text-align: center; font-size: 11px; color: #64748b;">
-        <i class="fa-solid fa-lock"></i> All project photos, pinpoints, and descriptions are seamlessly preserved with zero data re-entry.
+        <i class="fa-solid fa-lock"></i> Zero Data Re-entry: All booth photos, pinpoints, and descriptions are seamlessly preserved on upgrade.
       </div>
     </div>
   </div>
@@ -537,56 +742,56 @@
       <div class="step-card">
         <div class="step-num">STEP 01</div>
         <div class="step-title">Upload One Photo</div>
-        <div class="step-text">Take a high-resolution photo of your booth or exhibition stand and enter your business name.</div>
+        <div class="step-text">Take a photo of your booth or exhibition stand and enter your business name.</div>
       </div>
       <div class="step-card">
         <div class="step-num">STEP 02</div>
-        <div class="step-title">Get Your Free Booth</div>
-        <div class="step-text">Our non-destructive engine generates your interactive virtual showroom preview in seconds.</div>
+        <div class="step-title">Get Photo Immersive Booth</div>
+        <div class="step-text">Our non-destructive engine generates your interactive photo immersive showroom preview in seconds.</div>
       </div>
       <div class="step-card">
         <div class="step-num">STEP 03</div>
-        <div class="step-title">Click Products</div>
-        <div class="step-text">Click any product in the booth to place interactive Product Pinpoints and draft AI descriptions.</div>
+        <div class="step-title">Setup 3 Product Pins</div>
+        <div class="step-text">Click the blank pins to anchor products, upload photos, and generate AI descriptions.</div>
       </div>
       <div class="step-card">
         <div class="step-num">STEP 04</div>
         <div class="step-title">Publish &amp; Capture Buyers</div>
-        <div class="step-text">Choose a plan to publish globally and collect RFQs, sample requests, and wholesale buyer leads 24/7.</div>
+        <div class="step-text">Choose a commercial plan to publish globally and collect RFQs, sample requests, and wholesale buyer leads 24/7.</div>
       </div>
     </div>
   </section>
 
-  <!-- Below The Fold: Examples (See What Your Booth Can Become) -->
+  <!-- Below The Fold: Examples -->
   <section class="section" id="examples" style="padding-top: 0;">
     <div class="section-header">
-      <div class="section-tag">Showroom Examples</div>
-      <h2 class="section-title">See What Your Booth Can Become</h2>
-      <p class="section-desc">Experience our sales-grade virtual showroom formats in live interactive demos.</p>
+      <div class="section-tag">Showroom Formats</div>
+      <h2 class="section-title">Explore Our Experience Ladder</h2>
+      <p class="section-desc">From instant single-photo immersive booths to custom high-fidelity 3D digital twins.</p>
     </div>
     <div class="demo-grid">
       <div class="demo-card">
         <iframe class="demo-frame" src="/demo-matterport.html" title="Photo Immersive Booth Demo"></iframe>
         <div class="demo-info">
-          <div class="section-tag" style="font-size: 10px;">FORMAT A</div>
-          <div class="demo-title">PHOTO IMMERSIVE 360° BOOTH</div>
-          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Photorealistic 360° exhibition walkthrough with spatial waypoint navigation.</p>
+          <div class="section-tag" style="font-size: 10px;">FREE &amp; PRO TIER</div>
+          <div class="demo-title">PHOTO IMMERSIVE BOOTH</div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Photorealistic booth presentation with interactive product hotspots and buyer tools.</p>
           <a href="/demo-matterport.html" target="_blank" class="nav-link" style="color: #38bdf8; font-size: 13px; font-weight: 700;">Open Fullscreen Demo →</a>
         </div>
       </div>
       <div class="demo-card">
         <iframe class="demo-frame" src="/demo.html" title="Interactive 3D Showroom Demo"></iframe>
         <div class="demo-info">
-          <div class="section-tag" style="font-size: 10px;">FORMAT B</div>
-          <div class="demo-title">INTERACTIVE 3D SHOWROOM</div>
-          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Full Three.js WebGL 3D architectural twin with dynamic lighting &amp; product inspection.</p>
+          <div class="section-tag" style="font-size: 10px;">CUSTOM TIER</div>
+          <div class="demo-title">HIGH-FIDELITY 3D DIGITAL TWIN</div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Custom 3D Gaussian Splatting &amp; architectural twins for enterprise exhibition pavilions.</p>
           <a href="/demo.html" target="_blank" class="nav-link" style="color: #38bdf8; font-size: 13px; font-weight: 700;">Open Fullscreen Demo →</a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Pricing Section (Anchored) -->
+  <!-- Pricing Section -->
   <section class="section" id="pricing" style="padding-top: 0;">
     <div class="section-header">
       <div class="section-tag">Transparent Commercial Plans</div>
@@ -598,47 +803,63 @@
         <div style="font-weight: 800; font-size: 20px; color: #fff;">PRO</div>
         <div class="plan-price">$299 <span>/ mo</span></div>
         <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">1 Published Space • 25 Products</p>
-        <button class="btn-create-free" onclick="openPlanModal('pricing_pro')" style="padding: 10px; font-size: 13px;">Choose PRO</button>
+        <button class="btn-create-free" onclick="openPlanModal('pricing_section')" style="padding: 10px; font-size: 13px;">CHOOSE PRO</button>
       </div>
       <div class="plan-card popular">
         <div style="font-weight: 800; font-size: 20px; color: #38bdf8;">BUSINESS</div>
         <div class="plan-price">$799 <span>/ mo</span></div>
-        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">10 Space Views • 100 Products • Managed Support</p>
-        <button class="btn-create-free" onclick="openPlanModal('pricing_biz')" style="padding: 10px; font-size: 13px; background: linear-gradient(135deg, #0284c7, #2563eb);">Choose BUSINESS</button>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">10 Multi-View Spaces • 100 Products</p>
+        <button class="btn-create-free" onclick="openPlanModal('pricing_section')" style="padding: 10px; font-size: 13px; background: linear-gradient(135deg, #0284c7, #2563eb);">CHOOSE BUSINESS</button>
       </div>
       <div class="plan-card">
         <div style="font-weight: 800; font-size: 20px; color: #fff;">CUSTOM</div>
-        <div class="plan-price">Quote <span>/ enterprise</span></div>
-        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">50+ Views • 500+ Products • 3D Twin</p>
-        <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('pricing_custom')" style="width:100%; padding: 10px; font-size: 13px; justify-content: center;">Request Quote</button>
+        <div class="plan-price">Quote <span>/ project</span></div>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Gaussian Splatting &amp; Digital Twin</p>
+        <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('pricing_section')" style="width: 100%; padding: 10px; font-size: 13px; justify-content: center;">REQUEST QUOTE</button>
       </div>
     </div>
   </section>
 
-  <!-- Clean Footer -->
-  <footer>
-    <div style="margin-bottom: 16px;">
-      <img src="/assets/brand/dna_logo_white.png" alt="dn'a DIGITAL NETWORKING ADVANTAGE" style="height: 44px; width: auto; object-fit: contain; display: inline-block;">
-    </div>
-    <p>© 2026 dn'a — Virtual Trade Show Commercial Platform. All rights reserved.</p>
-    <p style="font-size: 11px; margin-top: 6px; color: #64748b;">Enterprise Virtual Showrooms • Product Pinpoints • 24/7 B2B Buyer Intake</p>
+  <!-- Footer -->
+  <footer class="footer">
+    <p>© 2026 dn’a Virtual Trade Show Commercial Platform. All rights reserved.</p>
   </footer>
 
-  <!-- Frontend Client Script -->
+  <!-- Client JavaScript Logic -->
   <script>
+    let selectedFile = null;
     let activeProjectId = null;
     let activeProjectData = null;
-    let selectedFile = null;
-    let pendingCoords = { u: 0.5, v: 0.5 };
+    let currentSlotSetting = 1;
+    let pendingCoords = { u: 0.50, v: 0.50 };
 
-    function handleFileSelect(input) {
+    // Pan & Zoom state
+    let panZoom = {
+      scale: 1.0,
+      x: 0,
+      y: 0,
+      isDragging: false,
+      startX: 0,
+      startY: 0
+    };
+
+    function logAnalyticsEvent(eventName, metadata = {}) {
+      if (!activeProjectId) return;
+      fetch('/api/free-funnel/analytics/event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: activeProjectId, eventName, metadata })
+      }).catch(e => console.warn('Analytics event error:', e));
+    }
+
+    function handleFileSelected(input) {
       if (input.files && input.files[0]) {
         selectedFile = input.files[0];
         document.getElementById('drop-filename-txt').textContent = `Selected: ${selectedFile.name} (${Math.round(selectedFile.size / 1024)} KB)`;
+        document.getElementById('drop-title-txt').textContent = 'Photo Ready!';
       }
     }
 
-    // Drag and Drop Handling
     const dropZone = document.getElementById('booth-drop-zone');
     if (dropZone) {
       dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
@@ -649,14 +870,10 @@
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
           selectedFile = e.dataTransfer.files[0];
           document.getElementById('drop-filename-txt').textContent = `Selected: ${selectedFile.name} (${Math.round(selectedFile.size / 1024)} KB)`;
+          document.getElementById('drop-title-txt').textContent = 'Photo Ready!';
         }
       });
     }
-
-    let booth3D = null;
-    let raycastSurfaces = [];
-    let animFrameId = null;
-    let pending3DCoords = null;
 
     async function handleFreeBoothSubmit(e) {
       e.preventDefault();
@@ -665,12 +882,14 @@
       if (!selectedFile) return alert('Please select or drop a booth photo.');
 
       showProgress();
+      logAnalyticsEvent('free_booth_started', { businessName: bizName });
+
       const formData = new FormData();
       formData.append('businessName', bizName);
       formData.append('photo', selectedFile);
 
       try {
-        updateProgress(20, 'ANALYZING BOOTH PHOTO', 'Examining visual geometry and dimensions...');
+        updateProgress(25, 'OPTIMIZING BOOTH PHOTO', 'Validating photo resolution and setting up high-DPI canvas...');
         const token = localStorage.getItem('token');
         const headers = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -694,22 +913,17 @@
           return alert(data.message || 'Generation failed.');
         }
 
-        updateProgress(50, 'BUILDING 3D BOOTH FRAMEWORK', 'Constructing modular architectural exhibition geometry...');
+        updateProgress(70, 'GENERATING IMMERSIVE BOOTH', 'Configuring smooth pan/zoom and 3 blank product slots...');
         setTimeout(() => {
-          updateProgress(75, 'APPLYING TEXTURES & SIGNAGE', `Mapping booth visuals & illuminating ${bizName} header...`);
+          updateProgress(100, 'YOUR FREE PHOTO IMMERSIVE BOOTH IS READY', 'All 3 product slots initialized!');
           setTimeout(() => {
-            updateProgress(90, 'CREATING 3D ENVIRONMENT', 'Configuring studio lighting and 3D raycasting surfaces...');
-            setTimeout(() => {
-              updateProgress(100, 'YOUR FREE 3D VIRTUAL BOOTH IS READY', 'Interactive 3D showroom initialized!');
-              setTimeout(() => {
-                hideProgress();
-                activeProjectId = data.projectId;
-                activeProjectData = data.project;
-                renderStudioBooth(data.project);
-              }, 400);
-            }, 500);
-          }, 500);
-        }, 500);
+            hideProgress();
+            activeProjectId = data.projectId;
+            activeProjectData = data.project;
+            logAnalyticsEvent('free_booth_created', { projectId: activeProjectId });
+            renderStudioBooth(data.project);
+          }, 350);
+        }, 450);
 
       } catch (err) {
         hideProgress();
@@ -719,7 +933,7 @@
 
     function showProgress() {
       document.getElementById('progressOverlay').style.display = 'flex';
-      updateProgress(10, 'UPLOADING PHOTO', 'Transferring your booth photo to secure 3D processing engine...');
+      updateProgress(10, 'UPLOADING PHOTO', 'Transferring your booth photo to secure processing engine...');
     }
 
     function updateProgress(pct, stage, detail) {
@@ -738,59 +952,18 @@
       studio.style.display = 'block';
       studio.scrollIntoView({ behavior: 'smooth' });
 
-      const container = document.getElementById('freeBooth3DViewer');
-      if (booth3D && booth3D.cleanup) {
-        booth3D.cleanup();
-        if (animFrameId) cancelAnimationFrame(animFrameId);
-      }
+      document.getElementById('studioBannerBizName').textContent = `${projectData.businessName || 'Your Business'} — Click a blank pin (+1, +2, +3) or select a location on your photo to add interactive products.`;
 
-      // Initialize Three.js WebGL Scene & OrbitControls
-      booth3D = BoothEngine.initScene(container);
-      window.booth3D = booth3D;
-      raycastSurfaces = BoothEngine.buildOnePhoto3DBooth(booth3D.scene, projectData);
-      window.raycastSurfaces = raycastSurfaces;
+      const img = document.getElementById('studioBoothImg');
+      const photoUrl = projectData.sourceAsset?.previewUrl || projectData.sourceAsset?.originalUrl || '';
+      img.src = photoUrl;
 
-      // Start continuous animation and pinpoint projection loop
-      function animate() {
-        animFrameId = requestAnimationFrame(animate);
-        booth3D.controls.update();
-        booth3D.renderer.render(booth3D.scene, booth3D.camera);
-        updatePinpointProjections();
-      }
-      animate();
-
-      // Setup click / raycasting listeners
-      let pointerDownPos = { x: 0, y: 0 };
-      container.onpointerdown = (e) => {
-        pointerDownPos = { x: e.clientX, y: e.clientY };
-      };
-
-      container.onpointerup = (e) => {
-        const dx = Math.abs(e.clientX - pointerDownPos.x);
-        const dy = Math.abs(e.clientY - pointerDownPos.y);
-        // Only trigger if click was not a drag orbit
-        if (dx < 6 && dy < 6) {
-          handle3DClick(e);
-        }
-      };
-
+      resetPanZoom();
+      setupPanZoomListeners();
       renderPinpoints(projectData.pinpoints || []);
-    }
-
-    function handle3DClick(e) {
-      if (!booth3D || !raycastSurfaces.length) return;
-      const container = document.getElementById('freeBooth3DViewer');
-      const hit = BoothEngine.raycastBooth(e, container, booth3D.camera, raycastSurfaces);
-      if (hit) {
-        // Check free limit: 1 product allowed on Free plan
-        if (activeProjectData?.pinpoints && activeProjectData.pinpoints.length >= 1) {
-          openPlanModal('second_product');
-          return;
-        }
-
-        pending3DCoords = hit;
-        openAddProductModal();
-      }
+      renderProductCards(projectData.products || []);
+      updateNextStepCTA();
+      logAnalyticsEvent('immersive_view_started', { projectId: projectData.id });
     }
 
     async function loadProjectIntoStudio(projectId) {
@@ -805,6 +978,296 @@
       } catch (err) {
         console.error('Error loading project:', err);
       }
+    }
+
+    // ── Pan & Zoom Engine for Photo Immersive Viewer ──
+    function setupPanZoomListeners() {
+      const viewport = document.getElementById('photoImmersiveViewport');
+      const stage = document.getElementById('photoImmersiveStage');
+
+      viewport.onwheel = (e) => {
+        e.preventDefault();
+        const factor = e.deltaY < 0 ? 1.15 : 0.87;
+        zoomView(factor);
+      };
+
+      stage.onpointerdown = (e) => {
+        if (e.target.closest('.pinpoint-marker') || e.target.closest('.viewer-controls-bar')) return;
+        panZoom.isDragging = true;
+        panZoom.startX = e.clientX - panZoom.x;
+        panZoom.startY = e.clientY - panZoom.y;
+        stage.setPointerCapture(e.pointerId);
+      };
+
+      stage.onpointermove = (e) => {
+        if (!panZoom.isDragging) return;
+        panZoom.x = e.clientX - panZoom.startX;
+        panZoom.y = e.clientY - panZoom.startY;
+        applyPanZoomTransform();
+      };
+
+      stage.onpointerup = (e) => {
+        if (panZoom.isDragging) {
+          panZoom.isDragging = false;
+          try { stage.releasePointerCapture(e.pointerId); } catch (err) {}
+        }
+      };
+
+      // Responsive resize repositioning
+      window.addEventListener('resize', () => {
+        updatePinpointsPositions();
+      });
+    }
+
+    function zoomView(factor) {
+      panZoom.scale = Math.max(0.75, Math.min(3.5, panZoom.scale * factor));
+      applyPanZoomTransform();
+    }
+
+    function resetPanZoom() {
+      panZoom.scale = 1.0;
+      panZoom.x = 0;
+      panZoom.y = 0;
+      applyPanZoomTransform();
+    }
+
+    function applyPanZoomTransform() {
+      const stage = document.getElementById('photoImmersiveStage');
+      if (stage) {
+        stage.style.transform = `translate(${panZoom.x}px, ${panZoom.y}px) scale(${panZoom.scale})`;
+      }
+    }
+
+    function toggleFullscreen() {
+      const viewport = document.getElementById('photoImmersiveViewport');
+      if (!document.fullscreenElement) {
+        viewport.requestFullscreen().catch(err => console.warn(err));
+      } else {
+        document.exitFullscreen().catch(err => console.warn(err));
+      }
+    }
+
+    function onBoothImageLoaded() {
+      updatePinpointsPositions();
+    }
+
+    // ── Pinpoint Rendering & Normalized Coordinates ──
+    function renderPinpoints(pinpoints) {
+      const container = document.getElementById('pinpointsContainer');
+      container.innerHTML = '';
+
+      (pinpoints || []).forEach((pin, idx) => {
+        const slot = pin.slotIndex || (idx + 1);
+        const marker = document.createElement('div');
+        marker.className = 'pinpoint-marker';
+        marker.id = `pinpoint-slot-${slot}`;
+        marker.dataset.slotIndex = slot;
+
+        if (pin.isBlank) {
+          marker.innerHTML = `
+            <div class="blank-pin-badge">+${slot}</div>
+            <div class="blank-pin-label">ADD PRODUCT</div>
+          `;
+          marker.onclick = (e) => {
+            e.stopPropagation();
+            logAnalyticsEvent('blank_pin_clicked', { slotIndex: slot });
+            startProductOnboarding(slot, pin.u, pin.v);
+          };
+        } else {
+          marker.innerHTML = `
+            <div class="active-pin-badge"><i class="fa-solid fa-cube"></i></div>
+            <div class="blank-pin-label" style="border-color: #10b981; color: #10b981;">${pin.productName || 'PRODUCT 0' + slot}</div>
+          `;
+          marker.onclick = (e) => {
+            e.stopPropagation();
+            const prod = (activeProjectData?.products || []).find(p => p.slotIndex === slot);
+            if (prod) openProductDrawer(prod);
+          };
+        }
+
+        container.appendChild(marker);
+      });
+
+      updatePinpointsPositions();
+    }
+
+    function updatePinpointsPositions() {
+      const img = document.getElementById('studioBoothImg');
+      const stage = document.getElementById('photoImmersiveStage');
+      if (!img || !stage) return;
+
+      const imgRect = img.getBoundingClientRect();
+      const stageRect = stage.getBoundingClientRect();
+
+      const offsetX = (imgRect.left - stageRect.left) / (panZoom.scale || 1);
+      const offsetY = (imgRect.top - stageRect.top) / (panZoom.scale || 1);
+      const imgW = imgRect.width / (panZoom.scale || 1);
+      const imgH = imgRect.height / (panZoom.scale || 1);
+
+      const pinpoints = activeProjectData?.pinpoints || [];
+      pinpoints.forEach((pin, idx) => {
+        const slot = pin.slotIndex || (idx + 1);
+        const el = document.getElementById(`pinpoint-slot-${slot}`);
+        if (!el) return;
+
+        const u = pin.u !== undefined ? pin.u : 0.5;
+        const v = pin.v !== undefined ? pin.v : 0.5;
+
+        const posX = offsetX + (u * imgW);
+        const posY = offsetY + (v * imgH);
+
+        el.style.left = `${posX}px`;
+        el.style.top = `${posY}px`;
+      });
+    }
+
+    function handleStageClick(e) {
+      if (panZoom.isDragging) return;
+      const img = document.getElementById('studioBoothImg');
+      if (!img) return;
+
+      const imgRect = img.getBoundingClientRect();
+      if (e.clientX < imgRect.left || e.clientX > imgRect.right || e.clientY < imgRect.top || e.clientY > imgRect.bottom) {
+        return;
+      }
+
+      const u = Math.max(0, Math.min(1, (e.clientX - imgRect.left) / imgRect.width));
+      const v = Math.max(0, Math.min(1, (e.clientY - imgRect.top) / imgRect.height));
+      pendingCoords = { u: Number(u.toFixed(4)), v: Number(v.toFixed(4)) };
+      document.getElementById('coordsDisplay').textContent = `u: ${pendingCoords.u}, v: ${pendingCoords.v}`;
+
+      // If clicking directly on photo, find next available blank slot or target slot
+      const blankPin = (activeProjectData?.pinpoints || []).find(p => p.isBlank);
+      const slotToOpen = blankPin ? blankPin.slotIndex : 1;
+      startProductOnboarding(slotToOpen, pendingCoords.u, pendingCoords.v);
+    }
+
+    // ── 3 Product Cards UI Rendering ──
+    function renderProductCards(products) {
+      const grid = document.getElementById('productCardsGrid');
+      grid.innerHTML = '';
+
+      for (let s = 1; s <= 3; s++) {
+        const prod = (products || []).find(p => p.slotIndex === s) || {
+          slotIndex: s,
+          name: '',
+          imageUrl: '',
+          description: '',
+          status: 'EMPTY',
+          completionPct: 0
+        };
+
+        const isFilled = prod.status === 'COMPLETE' || prod.status === 'BASIC' || (prod.name && prod.name.trim());
+        const statusClass = prod.status === 'COMPLETE' ? 'status-complete' : (prod.status === 'BASIC' || prod.status === 'STARTED' ? 'status-started' : 'status-empty');
+        const statusLabel = prod.status === 'COMPLETE' ? 'COMPLETE (100%)' : (prod.completionPct > 0 ? `STARTED (${prod.completionPct}%)` : 'EMPTY (0%)');
+
+        const card = document.createElement('div');
+        card.className = 'blank-product-card';
+        card.innerHTML = `
+          <div>
+            <div class="product-card-header">
+              <span class="product-card-slot">PRODUCT 0${s}</span>
+              <span class="product-card-status ${statusClass}">${statusLabel}</span>
+            </div>
+
+            <div class="product-card-img-box" onclick="startProductOnboarding(${s})">
+              ${prod.imageUrl ? `<img src="${prod.imageUrl}" alt="${prod.name || 'Product'}">` : `<i class="fa-solid fa-camera" style="font-size: 24px; margin-bottom: 6px;"></i><span>+ Add Product Image</span>`}
+            </div>
+
+            <div class="product-card-title">${prod.name || 'Not added yet'}</div>
+            <div class="product-card-desc">${prod.description || 'Add product specifications, commercial details, and AI generated descriptions.'}</div>
+          </div>
+
+          <div>
+            <div class="product-card-progress">
+              <div class="product-card-progress-fill" style="width: ${prod.completionPct || 0}%;"></div>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-hero ${isFilled ? 'btn-hero-secondary' : 'btn-hero-primary'}" onclick="startProductOnboarding(${s})" style="flex: 1; padding: 8px 12px; font-size: 12px; justify-content: center;">
+                <i class="fa-solid ${isFilled ? 'fa-pen-to-square' : 'fa-plus'}"></i> ${isFilled ? 'Edit Product' : 'Add Product'}
+              </button>
+              ${isFilled ? `
+                <button class="btn-hero btn-hero-secondary" onclick="openProductDrawerForSlot(${s})" style="padding: 8px 12px; font-size: 12px;">
+                  <i class="fa-solid fa-eye"></i> Details
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+    }
+
+    function updateNextStepCTA() {
+      const prods = activeProjectData?.products || [];
+      const completedCount = prods.filter(p => p.name && p.name.trim()).length;
+
+      const titleEl = document.getElementById('nextStepTitle');
+      const subEl = document.getElementById('nextStepSubtitle');
+      const btnEl = document.getElementById('btnNextStepAction');
+
+      if (completedCount === 0) {
+        titleEl.textContent = 'NEXT STEP: ADD YOUR FIRST PRODUCT';
+        subEl.textContent = 'Slot 1 is ready. Anchor your first exhibit item to start engaging buyers.';
+        btnEl.innerHTML = '<i class="fa-solid fa-plus"></i> ADD YOUR FIRST PRODUCT';
+        btnEl.onclick = () => startProductOnboarding(1);
+      } else if (completedCount === 1) {
+        titleEl.textContent = 'NEXT STEP: ADD PRODUCT 2';
+        subEl.textContent = 'Product 1 configured! Add your second exhibit product to expand your catalog.';
+        btnEl.innerHTML = '<i class="fa-solid fa-plus"></i> ADD PRODUCT 2';
+        btnEl.onclick = () => startProductOnboarding(2);
+      } else if (completedCount === 2) {
+        titleEl.textContent = 'NEXT STEP: ADD PRODUCT 3';
+        subEl.textContent = 'Almost complete! Add your third exhibit product to complete your preview.';
+        btnEl.innerHTML = '<i class="fa-solid fa-plus"></i> ADD PRODUCT 3';
+        btnEl.onclick = () => startProductOnboarding(3);
+      } else {
+        titleEl.textContent = 'ALL 3 SLOTS COMPLETE — READY TO PUBLISH';
+        subEl.textContent = 'Your photo immersive booth is fully populated. Activate commercial features to publish.';
+        btnEl.innerHTML = '<i class="fa-solid fa-rocket"></i> ACTIVATE COMMERCIAL BOOTH';
+        btnEl.onclick = () => openPlanModal('all_products_completed');
+      }
+    }
+
+    function handleNextStepCTA() {
+      const prods = activeProjectData?.products || [];
+      const completedCount = prods.filter(p => p.name && p.name.trim()).length;
+      if (completedCount < 3) {
+        startProductOnboarding(completedCount + 1);
+      } else {
+        openPlanModal('next_step_cta');
+      }
+    }
+
+    // ── Product Onboarding Flow (5 Steps) ──
+    function startProductOnboarding(slotIndex, u, v) {
+      currentSlotSetting = slotIndex || 1;
+      document.getElementById('target-slot-index').value = currentSlotSetting;
+      document.getElementById('onboardingStepTag').textContent = `SLOT 0${currentSlotSetting} • 5-STEP PRODUCT ONBOARDING`;
+      document.getElementById('onboardingModalTitle').textContent = `Setup Product 0${currentSlotSetting}`;
+
+      const existingPin = (activeProjectData?.pinpoints || []).find(p => p.slotIndex === currentSlotSetting);
+      const existingProd = (activeProjectData?.products || []).find(p => p.slotIndex === currentSlotSetting);
+
+      const targetU = u !== undefined ? u : (existingPin?.u !== undefined ? existingPin.u : (currentSlotSetting === 1 ? 0.28 : (currentSlotSetting === 2 ? 0.50 : 0.72)));
+      const targetV = v !== undefined ? v : (existingPin?.v !== undefined ? existingPin.v : (currentSlotSetting === 2 ? 0.52 : 0.62));
+      pendingCoords = { u: Number(targetU.toFixed(4)), v: Number(targetV.toFixed(4)) };
+      document.getElementById('coordsDisplay').textContent = `u: ${pendingCoords.u}, v: ${pendingCoords.v}`;
+
+      document.getElementById('prod-name-input').value = existingProd?.name || '';
+      document.getElementById('prod-desc-input').value = existingProd?.description || '';
+
+      const imgPrev = document.getElementById('prod-image-preview');
+      if (existingProd?.imageUrl) {
+        imgPrev.src = existingProd.imageUrl;
+        imgPrev.style.display = 'block';
+      } else {
+        imgPrev.style.display = 'none';
+      }
+
+      logAnalyticsEvent(`product_${currentSlotSetting}_started`, { slotIndex: currentSlotSetting });
+      openAddProductModal();
     }
 
     function openAddProductModal() {
@@ -829,7 +1292,7 @@
 
     async function generateAIDescription() {
       const prodName = document.getElementById('prod-name-input').value.trim();
-      const bizName = activeProjectData?.businessName || document.getElementById('business-name-input').value.trim() || 'dn’a';
+      const bizName = activeProjectData?.businessName || document.getElementById('business-name-input').value.trim() || 'Exhibitor';
       if (!prodName) return alert('Please enter a Product Name first.');
 
       try {
@@ -850,6 +1313,7 @@
 
     async function submitProductPinpoint(e) {
       e.preventDefault();
+      const slot = parseInt(document.getElementById('target-slot-index').value, 10) || currentSlotSetting;
       const name = document.getElementById('prod-name-input').value.trim();
       const desc = document.getElementById('prod-desc-input').value.trim();
       const imgInput = document.getElementById('prod-image-input');
@@ -858,14 +1322,11 @@
       if (!activeProjectId) return alert('No active project.');
 
       const formData = new FormData();
+      formData.append('slotIndex', slot);
       formData.append('productName', name);
       formData.append('description', desc);
-      if (pending3DCoords) {
-        formData.append('x', pending3DCoords.x);
-        formData.append('y', pending3DCoords.y);
-        formData.append('z', pending3DCoords.z);
-        formData.append('targetObjectId', pending3DCoords.targetObjectId || 'BoothSurface');
-      }
+      formData.append('u', pendingCoords.u);
+      formData.append('v', pendingCoords.v);
       if (imgInput.files && imgInput.files[0]) {
         formData.append('productImage', imgInput.files[0]);
       }
@@ -876,84 +1337,46 @@
           body: formData
         });
         const data = await res.json();
-        if (!res.ok) return alert(data.message || 'Failed to add product.');
+        if (!res.ok) return alert(data.message || 'Failed to save product.');
 
         closeAddProductModal();
         activeProjectData = data.project;
+        logAnalyticsEvent(`product_${slot}_completed`, { slotIndex: slot, productName: name });
+
         renderPinpoints(data.project.pinpoints || []);
+        renderProductCards(data.project.products || []);
+        updateNextStepCTA();
+
         openProductDrawer(data.product);
       } catch (err) {
         alert('Error saving product: ' + err.message);
       }
     }
 
-    function renderPinpoints(pinpoints) {
-      const container = document.getElementById('pinpointsContainer');
-      container.innerHTML = '';
-      (pinpoints || []).forEach((pin, idx) => {
-        const marker = document.createElement('div');
-        marker.className = 'pinpoint-marker';
-        marker.id = `pinpoint-marker-${pin.id || idx}`;
-        marker.innerHTML = `<i class="fa-solid fa-cube" style="font-size: 11px;"></i>`;
-        marker.title = pin.label || pin.productName;
-        marker.onclick = (e) => {
-          e.stopPropagation();
-          const prod = (activeProjectData?.products || []).find(p => p.id === pin.productId);
-          if (prod) openProductDrawer(prod);
-        };
-        container.appendChild(marker);
-      });
-      updatePinpointProjections();
-    }
-
-    function updatePinpointProjections() {
-      if (!booth3D || !booth3D.camera) return;
-      const container = document.getElementById('freeBooth3DViewer');
-      if (!container) return;
-      const width = container.clientWidth;
-      const height = container.clientHeight;
-      if (!width || !height) return;
-
-      const pinpoints = activeProjectData?.pinpoints || [];
-      pinpoints.forEach((pin, idx) => {
-        const marker = document.getElementById(`pinpoint-marker-${pin.id || idx}`);
-        if (!marker) return;
-
-        const pos = new THREE.Vector3(
-          pin.x !== undefined ? pin.x : 0,
-          pin.y !== undefined ? pin.y : 1.0,
-          pin.z !== undefined ? pin.z : -3.0
-        );
-
-        pos.project(booth3D.camera);
-
-        // If behind camera, hide marker
-        if (pos.z > 1.0) {
-          marker.style.display = 'none';
-        } else {
-          const screenX = (pos.x * 0.5 + 0.5) * width;
-          const screenY = (-(pos.y * 0.5) + 0.5) * height;
-          marker.style.display = 'flex';
-          marker.style.left = `${screenX}px`;
-          marker.style.top = `${screenY}px`;
-        }
-      });
+    // ── Product Drawer (Detail & Buyer Tool Preview) ──
+    function openProductDrawerForSlot(slot) {
+      const prod = (activeProjectData?.products || []).find(p => p.slotIndex === slot);
+      if (prod) openProductDrawer(prod);
     }
 
     function openProductDrawer(product) {
-      document.getElementById('drawerProdTitle').textContent = product.name;
+      document.getElementById('drawerProdTitle').textContent = product.name || 'Product Details';
       document.getElementById('drawerProdImg').src = product.imageUrl || (activeProjectData?.sourceAsset?.previewUrl || '');
       document.getElementById('drawerProdDesc').textContent = product.description || 'Commercial exhibition product with high-precision engineering and sales presentation.';
+      document.getElementById('drawerProdSpecs').textContent = product.specifications || 'Needs merchant input';
       document.getElementById('productDrawerModal').style.display = 'flex';
+      logAnalyticsEvent('buyer_tools_previewed', { productId: product.id });
     }
 
     function closeProductDrawer() {
       document.getElementById('productDrawerModal').style.display = 'none';
     }
 
+    // ── Plan Conversion Modal (C09 Zero Data Re-entry Stripe Link) ──
     function openPlanModal(trigger = '') {
       closeProductDrawer();
       document.getElementById('planModal').style.display = 'flex';
+      logAnalyticsEvent('upgrade_prompt_opened', { trigger });
     }
 
     function closePlanModal() {
@@ -987,12 +1410,14 @@
     }
 
     async function handlePlanSelection(plan) {
+      logAnalyticsEvent('plan_selected', { plan });
       if (plan === 'custom') {
-        alert('Thank you! Our enterprise solutions team will contact you with a custom quote.');
+        alert('Thank you! Our enterprise digital twin & 3D team will contact you with a custom build quote.');
         closePlanModal();
         return;
       }
-      // Upgrade project on backend (Zero Data Re-entry)
+
+      // Convert project on backend preserving all data (Zero Data Re-entry)
       try {
         const token = localStorage.getItem('token');
         if (activeProjectId) {
@@ -1002,7 +1427,9 @@
             body: JSON.stringify({ plan })
           });
         }
-        // Redirect to Stripe Checkout or Billing Modal
+
+        logAnalyticsEvent('stripe_checkout_started', { plan, projectId: activeProjectId });
+
         if (token) {
           const checkRes = await fetch('/api/billing/create-checkout-session', {
             method: 'POST',
@@ -1015,7 +1442,7 @@
             return;
           }
         }
-        alert(`Plan selection: ${plan.toUpperCase()}. Preserving all booth data. Redirecting to billing confirmation...`);
+        alert(`Selected ${plan.toUpperCase()} Plan. All booth photos, 3 product slots, and coordinates are preserved. Redirecting to billing confirmation...`);
         window.location.href = `/pricing.html?plan=${plan}&projectId=${activeProjectId || ''}`;
       } catch (err) {
         alert('Upgrade request error: ' + err.message);
@@ -1023,7 +1450,7 @@
     }
 
     function openSignInModal() {
-      const email = prompt('Enter your exhibitor or developer email:', 'developer@vshow.com');
+      const email = prompt('Enter your exhibitor email:', 'developer@vshow.com');
       if (email) {
         const pass = prompt('Enter password:', 'admin123');
         if (pass) {
@@ -1034,7 +1461,7 @@
           }).then(r => r.json()).then(d => {
             if (d.token) {
               localStorage.setItem('token', d.token);
-              alert(`Signed in as ${d.user.name} (${d.user.role})`);
+              alert(`Signed in as ${d.user.name}`);
             } else {
               alert(d.error || 'Login failed.');
             }

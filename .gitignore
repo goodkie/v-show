@@ -17,6 +17,13 @@ __pycache__/
 virtual-tradeshow-commercial-v1/app_build/data/db.json
 virtual-tradeshow-commercial-v1/app_build/data/db.temp.json
 virtual-tradeshow-commercial-v1/app_build/data/backups/
-virtual-tradeshow-commercial-v1/app_build/data/_restore_drill_sandbox/
-
-
+*.zip
+*.mp4
+sample/
+sc/
+360/
+*.png
+*.JPG
+*.jpg.zip
+*.psd
+V_SHOW_RESTORE_POINT*

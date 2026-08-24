@@ -5588,14 +5588,92 @@ class JSONDatabase {
       };
       db.organizations.push(org);
 
-      // 2. Create Project
+      // 2. Create Project with PHOTO_IMMERSIVE experience and 3 Initial Blank Product Slots
+      const initialProducts = [
+        {
+          id: `prod-slot-1`,
+          slotIndex: 1,
+          name: '',
+          imageUrl: '',
+          description: '',
+          specifications: 'Needs merchant input',
+          status: 'EMPTY',
+          completionPct: 0,
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: `prod-slot-2`,
+          slotIndex: 2,
+          name: '',
+          imageUrl: '',
+          description: '',
+          specifications: 'Needs merchant input',
+          status: 'EMPTY',
+          completionPct: 0,
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: `prod-slot-3`,
+          slotIndex: 3,
+          name: '',
+          imageUrl: '',
+          description: '',
+          specifications: 'Needs merchant input',
+          status: 'EMPTY',
+          completionPct: 0,
+          createdAt: new Date().toISOString()
+        }
+      ];
+
+      const initialPinpoints = [
+        {
+          id: `pin-blank-1`,
+          slotIndex: 1,
+          productId: `prod-slot-1`,
+          productName: 'PRODUCT 01',
+          isBlank: true,
+          u: 0.28,
+          v: 0.62,
+          coordinateSystem: 'NORMALIZED_2D',
+          label: 'ADD PRODUCT 1',
+          status: 'BLANK',
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: `pin-blank-2`,
+          slotIndex: 2,
+          productId: `prod-slot-2`,
+          productName: 'PRODUCT 02',
+          isBlank: true,
+          u: 0.50,
+          v: 0.52,
+          coordinateSystem: 'NORMALIZED_2D',
+          label: 'ADD PRODUCT 2',
+          status: 'BLANK',
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: `pin-blank-3`,
+          slotIndex: 3,
+          productId: `prod-slot-3`,
+          productName: 'PRODUCT 03',
+          isBlank: true,
+          u: 0.72,
+          v: 0.62,
+          coordinateSystem: 'NORMALIZED_2D',
+          label: 'ADD PRODUCT 3',
+          status: 'BLANK',
+          createdAt: new Date().toISOString()
+        }
+      ];
+
       const project = {
         id: projectId,
         organizationId,
         name: `${businessName} Virtual Booth`,
         businessName,
         normalizedBusinessName: norm,
-        experienceType: 'ONE_PHOTO_3D_BOOTH',
+        experienceType: 'PHOTO_IMMERSIVE',
         commercialState: 'FREE_PREVIEW',
         sourceAsset: {
           originalUrl: photoUrl,
@@ -5606,14 +5684,15 @@ class JSONDatabase {
         views: [
           {
             viewId: 'view-free-0',
-            name: 'Main 3D Perspective',
+            name: 'Main Photo Immersive View',
             previewUrl: photoUrl,
             highResUrl: photoUrl,
-            coordinateSystem: 'WORLD_3D'
+            coordinateSystem: 'NORMALIZED_2D'
           }
         ],
-        pinpoints: [],
-        products: [],
+        pinpoints: initialPinpoints,
+        products: initialProducts,
+        analyticsEvents: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -5638,7 +5717,17 @@ class JSONDatabase {
     });
   }
 
-  async addFreePreviewProductAndPinpoint(projectId, { productName, imageUrl, description, x = 0, y = 1.0, z = -3.0, targetObjectId = 'BoothSurface', u = 0.5, v = 0.5, actor = 'Customer' }) {
+  calculateProductCompletion({ name, imageUrl, description, u, v }) {
+    let pct = 0;
+    if (name && name.trim()) pct += 20;
+    if (imageUrl && imageUrl.trim()) pct += 25;
+    if (description && description.trim()) pct += 25;
+    if (u !== undefined && v !== undefined) pct += 20;
+    pct += 10; // Buyer CTA configuration enabled
+    return Math.min(100, pct);
+  }
+
+  async addFreePreviewProductAndPinpoint(projectId, { slotIndex, productName, imageUrl, description, u, v, actor = 'Customer' }) {
     return this.mutate((db) => {
       const project = (db.projects || []).find(p => p.id === projectId);
       if (!project) throw new Error('Project not found.');
@@ -5646,46 +5735,88 @@ class JSONDatabase {
       project.products = project.products || [];
       project.pinpoints = project.pinpoints || [];
 
-      const productId = `prod-fp-${uuidv4().substring(0, 6)}`;
-      const pinpointId = `pin-fp-${uuidv4().substring(0, 6)}`;
+      // Determine target slot (1, 2, 3)
+      let targetSlot = parseInt(slotIndex, 10);
+      if (!targetSlot || targetSlot < 1 || targetSlot > 3) {
+        // Find first empty or blank slot
+        const blankPin = project.pinpoints.find(p => p.isBlank);
+        targetSlot = blankPin ? blankPin.slotIndex : (project.products.length < 3 ? project.products.length + 1 : 1);
+      }
 
-      const product = {
-        id: productId,
-        name: productName,
-        imageUrl: imageUrl || project.sourceAsset?.previewUrl,
-        description: description || '',
-        status: 'active',
-        createdAt: new Date().toISOString()
-      };
-      project.products.push(product);
+      const normU = Math.max(0, Math.min(1, parseFloat(u !== undefined ? u : 0.5)));
+      const normV = Math.max(0, Math.min(1, parseFloat(v !== undefined ? v : 0.5)));
+      const completionPct = this.calculateProductCompletion({ name: productName, imageUrl, description, u: normU, v: normV });
+      const status = completionPct >= 90 ? 'COMPLETE' : (completionPct >= 50 ? 'BASIC' : (completionPct > 0 ? 'STARTED' : 'EMPTY'));
 
-      const pinpoint = {
-        id: pinpointId,
-        productId,
-        productName,
-        x: Number(parseFloat(x !== undefined ? x : 0).toFixed(3)),
-        y: Number(parseFloat(y !== undefined ? y : 1.0).toFixed(3)),
-        z: Number(parseFloat(z !== undefined ? z : -3.0).toFixed(3)),
-        targetObjectId: targetObjectId || 'BoothSurface',
-        u: Math.max(0, Math.min(1, parseFloat(u) || 0.5)),
-        v: Math.max(0, Math.min(1, parseFloat(v) || 0.5)),
-        coordinateSystem: 'WORLD_3D',
-        label: productName,
-        createdAt: new Date().toISOString()
-      };
-      project.pinpoints.push(pinpoint);
+      // Update or create product
+      let product = project.products.find(p => p.slotIndex === targetSlot);
+      if (!product) {
+        product = {
+          id: `prod-slot-${targetSlot}`,
+          slotIndex: targetSlot,
+          createdAt: new Date().toISOString()
+        };
+        project.products.push(product);
+      }
+      product.name = productName;
+      product.imageUrl = imageUrl || project.sourceAsset?.previewUrl;
+      product.description = description || '';
+      product.specifications = 'Needs merchant input';
+      product.status = status;
+      product.completionPct = completionPct;
+      product.updatedAt = new Date().toISOString();
+
+      // Update or create pinpoint
+      let pinpoint = project.pinpoints.find(p => p.slotIndex === targetSlot);
+      if (!pinpoint) {
+        pinpoint = {
+          id: `pin-slot-${targetSlot}`,
+          slotIndex: targetSlot,
+          createdAt: new Date().toISOString()
+        };
+        project.pinpoints.push(pinpoint);
+      }
+      pinpoint.productId = product.id;
+      pinpoint.productName = productName;
+      pinpoint.isBlank = false;
+      pinpoint.u = normU;
+      pinpoint.v = normV;
+      pinpoint.coordinateSystem = 'NORMALIZED_2D';
+      pinpoint.label = productName;
+      pinpoint.status = 'ACTIVE';
+      pinpoint.updatedAt = new Date().toISOString();
 
       project.updatedAt = new Date().toISOString();
-      return { project, product, pinpoint };
+      return { project, product, pinpoint, slotIndex: targetSlot };
+    });
+  }
+
+  async recordFreeFunnelEvent(projectId, eventName, metadata = {}) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      const eventObj = {
+        eventId: `evt-${uuidv4().substring(0, 8)}`,
+        projectId,
+        eventName,
+        metadata,
+        timestamp: new Date().toISOString()
+      };
+      if (project) {
+        project.analyticsEvents = project.analyticsEvents || [];
+        project.analyticsEvents.push(eventObj);
+      }
+      db.analyticsEvents = db.analyticsEvents || [];
+      db.analyticsEvents.push(eventObj);
+      return eventObj;
     });
   }
 
   generateAIDescriptionDraft({ productName, category = '', businessName = '' }) {
-    const cleanProd = (productName || 'Premium Exhibit Product').trim();
-    const cleanBiz = (businessName || 'dn’a Showcase').trim();
+    const cleanProd = (productName || 'Featured Product').trim();
+    const cleanBiz = (businessName || 'Exhibitor').trim();
     const cat = category ? ` in the ${category} category` : '';
 
-    return `Experience the ${cleanProd} presented by ${cleanBiz}${cat}. Engineered with distinctive commercial quality and elegant modern design, this solution delivers reliable performance and seamless integration for global trade buyers. [Suggested Draft — Please review specifications before public release]`;
+    return `Discover the ${cleanProd} presented by ${cleanBiz}${cat}. Designed for commercial trade and high-performance presentation. (Specifications: Needs merchant input | Certifications: Needs merchant input | Pricing: Available upon RFQ)`;
   }
 
   async saveFreePreviewEmail(projectId, email) {

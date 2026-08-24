@@ -396,7 +396,7 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
         const session = event.data.object;
         const orgId = session.metadata?.organizationId;
         const projectId = session.metadata?.projectId;
-        const requestedPlan = session.metadata?.requestedPlan || 'pro';
+        const requestedPlan = session.metadata?.requestedPlan || session.metadata?.targetPlan || 'pro';
         const customerId = session.customer;
         const subscriptionId = session.subscription;
 
@@ -418,7 +418,7 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
           });
         }
 
-        // C09 Project Commercial State Activation (Zero Data Re-entry)
+        // C09/C10 Project Commercial State Activation (Zero Data Re-entry)
         if (projectId) {
           const newState = requestedPlan === 'business' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
           await db.updateProjectCommercialState(projectId, newState, requestedPlan);
@@ -568,12 +568,26 @@ const healthHandler = (req, res) => {
     schemaVersion: 5,
     stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
+    uiVersion: 'dna-C10-R1-PHOTO-IMMERSIVE',
+    clientPath: path.join(__dirname, '..', 'client'),
     timestamp: new Date().toISOString()
   });
 };
 
 app.get('/health', healthHandler);
 app.get('/api/health', healthHandler);
+
+// TEMP DIAGNOSTIC: Read first lines of served index.html
+app.get('/api/debug/client-version', (req, res) => {
+  try {
+    const clientIndexPath = path.join(__dirname, '..', 'client', 'index.html');
+    const content = require('fs').readFileSync(clientIndexPath, 'utf8');
+    const firstLines = content.split('\n').slice(0, 15).join('\n');
+    res.json({ clientIndexPath, firstLines, uiVersion: 'dna-C10-R1-PHOTO-IMMERSIVE' });
+  } catch (err) {
+    res.json({ error: err.message, clientIndexPath: path.join(__dirname, '..', 'client', 'index.html') });
+  }
+});
 
 
 app.get('/api/public/plans', (req, res) => {
@@ -1955,12 +1969,12 @@ app.post('/api/free-funnel/preview', upload.single('photo'), async (req, res) =>
 
     res.status(201).json({
       success: true,
-      message: 'YOUR FREE 3D VIRTUAL BOOTH IS READY',
+      message: 'YOUR FREE PHOTO IMMERSIVE BOOTH IS READY',
       projectId: project.id,
       previewUrl: project.sourceAsset?.previewUrl || photoUrl,
       businessName: project.businessName,
-      experienceType: 'ONE_PHOTO_3D_BOOTH',
-      coordinateSystem: 'WORLD_3D',
+      experienceType: 'PHOTO_IMMERSIVE',
+      coordinateSystem: 'NORMALIZED_2D',
       project
     });
   } catch (err) {
@@ -1981,25 +1995,22 @@ app.post('/api/free-funnel/preview', upload.single('photo'), async (req, res) =>
   }
 });
 
-// 2. Add First Product & Pinpoint (3D world coordinates with 2D fallback)
+// 2. Add / Update Product Slot & Pinpoint (Normalized 2D coordinates)
 app.post('/api/free-funnel/projects/:id/pinpoints', upload.single('productImage'), async (req, res) => {
   try {
-    const { productName, description, x, y, z, targetObjectId, u, v } = req.body;
+    const { slotIndex, productName, description, u, v } = req.body;
     if (!productName) {
       return res.status(400).json({ error: 'PRODUCT_NAME_REQUIRED', message: 'Product name is required.' });
     }
 
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : req.body.imageUrl;
     const result = await db.addFreePreviewProductAndPinpoint(req.params.id, {
+      slotIndex: slotIndex || req.body.slot || 1,
       productName,
       imageUrl,
       description,
-      x: x !== undefined ? parseFloat(x) : 0,
-      y: y !== undefined ? parseFloat(y) : 1.0,
-      z: z !== undefined ? parseFloat(z) : -3.0,
-      targetObjectId: targetObjectId || 'BoothSurface',
-      u: parseFloat(u) || 0.5,
-      v: parseFloat(v) || 0.5
+      u: u !== undefined ? parseFloat(u) : 0.5,
+      v: v !== undefined ? parseFloat(v) : 0.5
     });
 
     res.status(201).json({
@@ -2007,8 +2018,21 @@ app.post('/api/free-funnel/projects/:id/pinpoints', upload.single('productImage'
       message: 'Product pinpoint successfully placed.',
       product: result.product,
       pinpoint: result.pinpoint,
+      slotIndex: result.slotIndex,
       project: result.project
     });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 2b. Funnel Analytics Event Logging
+app.post('/api/free-funnel/analytics/event', async (req, res) => {
+  try {
+    const { projectId, eventName, metadata } = req.body;
+    if (!eventName) return res.status(400).json({ error: 'eventName is required' });
+    const event = await db.recordFreeFunnelEvent(projectId || 'anonymous', eventName, metadata);
+    res.json({ success: true, event });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -2051,12 +2075,18 @@ app.post('/api/free-funnel/projects/:id/save-email', async (req, res) => {
 app.post('/api/free-funnel/projects/:id/convert-plan', async (req, res) => {
   try {
     const { plan } = req.body;
-    const result = await db.convertFreePreviewToPlan(req.params.id, plan || 'pro');
+    const targetPlan = plan || 'pro';
+    const result = await db.convertFreePreviewToPlan(req.params.id, targetPlan);
     res.json({
       success: true,
-      message: `Successfully upgraded booth to ${plan.toUpperCase()}. All project data preserved.`,
+      message: `Successfully upgraded booth to ${targetPlan.toUpperCase()}. All project data preserved.`,
       project: result.project,
-      plan: result.plan
+      plan: result.plan,
+      subscription: {
+        plan: targetPlan,
+        status: 'pending_payment',
+        projectId: req.params.id
+      }
     });
   } catch (err) {
     res.status(400).json({ error: err.message });
