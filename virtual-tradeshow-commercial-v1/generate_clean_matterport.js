@@ -165,34 +165,44 @@ html, body {
 }
 
 /* ══════════════════════════════════════════════
-   3D FLOATING PRODUCT HOTSPOTS (PERMANENT TITLE & MINI THUMBNAIL)
+   ENLARGED 3D FLOATING PRODUCT CAPSULES (HOTSPOTS)
+   - 48px Large Crystal Clear Thumbnail
+   - Dual-Line Category & Title
 ══════════════════════════════════════════════ */
 #hotspot-layer { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
 
 .hotspot-tag {
   position: absolute; transform: translate(-50%, -50%);
   pointer-events: auto; cursor: pointer;
-  display: flex; align-items: center; gap: 7px;
-  background: rgba(5, 11, 22, 0.94); backdrop-filter: blur(16px);
-  border: 1.5px solid rgba(56, 189, 248, 0.7); border-radius: 22px; padding: 4px 10px 4px 5px;
-  color: #fff; font-size: 11px; font-weight: 700;
-  box-shadow: 0 6px 22px rgba(2, 132, 199, 0.65);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); white-space: nowrap;
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(5, 11, 22, 0.95); backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 2px solid rgba(0, 194, 255, 0.75); border-radius: 32px;
+  padding: 6px 16px 6px 6px;
+  color: #fff;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 194, 255, 0.45);
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1); white-space: nowrap;
 }
 .hotspot-tag:hover {
   background: rgba(2, 132, 199, 0.98); border-color: #38bdf8;
-  transform: translate(-50%, -50%) scale(1.08); box-shadow: 0 10px 32px rgba(14, 165, 233, 0.9);
+  transform: translate(-50%, -50%) scale(1.1);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.9), 0 0 35px rgba(0, 194, 255, 0.85);
 }
 .hotspot-thumb-img {
-  width: 22px; height: 22px; border-radius: 50%; object-fit: cover;
-  border: 1.5px solid var(--cyan); flex-shrink: 0; display: block;
+  width: 48px; height: 48px; border-radius: 50%; object-fit: cover;
+  border: 2px solid var(--cyan); flex-shrink: 0; display: block;
+  box-shadow: 0 0 12px rgba(0, 194, 255, 0.6);
+  background: #000;
+  transition: transform 0.28s ease;
 }
-.hotspot-tag .hotspot-label-text {
-  opacity: 1; display: inline-block; font-size: 11px; font-weight: 700; color: #fff;
-}
+.hotspot-tag:hover .hotspot-thumb-img { transform: scale(1.08); }
+.hotspot-info { display: flex; flex-direction: column; gap: 2px; }
+.hotspot-cat { font-size: 8.5px; font-weight: 800; color: var(--cyan); text-transform: uppercase; letter-spacing: 0.8px; line-height: 1; }
+.hotspot-tag:hover .hotspot-cat { color: #e0f2fe; }
+.hotspot-label-text { font-size: 13px; font-weight: 800; color: #fff; line-height: 1.2; }
 .hotspot-dot {
-  width: 7px; height: 7px; border-radius: 50%; background: #38bdf8;
-  box-shadow: 0 0 8px #38bdf8; flex-shrink: 0; animation: hotspot-pulse 1.8s infinite;
+  width: 8px; height: 8px; border-radius: 50%; background: #38bdf8;
+  box-shadow: 0 0 10px #38bdf8; flex-shrink: 0; animation: hotspot-pulse 1.8s infinite;
 }
 @keyframes hotspot-pulse {
   0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.8); }
@@ -971,7 +981,7 @@ function buildFloorPucks() {
   });
 }
 
-// 5. 3D FLOATING HOTSPOTS (PERMANENT TITLE + MINI PRODUCT THUMBNAIL)
+// 5. ENLARGED 3D FLOATING HOTSPOTS (48px Large Thumbnail + Dual-Line Category & Title)
 function buildHotspotsDOM() {
   const layer = document.getElementById('hotspot-layer');
   layer.innerHTML = '';
@@ -982,7 +992,10 @@ function buildHotspotsDOM() {
     el.innerHTML =
       '<img src="' + prod.image + '" class="hotspot-thumb-img" alt="' + prod.name + '">' +
       '<span class="hotspot-dot"></span>' +
-      '<span class="hotspot-label-text">' + prod.name + '</span>';
+      '<div class="hotspot-info">' +
+        '<span class="hotspot-cat">' + (prod.category || 'ROBOTIC SYSTEM') + '</span>' +
+        '<span class="hotspot-label-text">' + prod.name + '</span>' +
+      '</div>';
     
     el.addEventListener('click', (e) => {
       e.stopPropagation();

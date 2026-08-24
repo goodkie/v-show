@@ -1,4 +1,20 @@
-<!DOCTYPE html>
+// generate_clean_splat.js — 3D Gaussian Splatting (3DGS) Radiance Field Viewer (v8.0 Master Release)
+// Powered by 3dgs.mp4:
+// 1. High-Performance Three.js Interactive 360° Radiance Video Engine
+// 2. Real-Time Gaussian Particle Field Simulation Layer
+// 3. Enlarged 3D Floating Product Capsules (48px Thumbnail + Dual-Line Category/Title)
+// 4. 2/3 Player Viewport + Bottom 4-Robot Shortcut Cards Tray
+// 5. Unified Right Sidebar (Booth Radar + Focused Equipment Specs + 1:1 RFQ)
+// 6. Product Inspection Drawer with 4K Photo & 360° 3D Mini Turntable Player
+// 7. Video HUD Controls (Play/Pause, Scrubbing Timeline, Speed, Particle Density)
+// 8. 100% Full English Enterprise Localization
+
+const fs = require('fs');
+const path = require('path');
+
+const outPath = 'E:/vivpr/ai/v-show/virtual-tradeshow-commercial-v1/app_build/client/demo-splat.html';
+
+const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1329,4 +1345,7 @@ function onResize() {
 document.addEventListener('DOMContentLoaded', init3DGS);
 </script>
 </body>
-</html>
+</html>`;
+
+fs.writeFileSync(outPath, html, { encoding: 'utf8' });
+console.log('Written demo-splat.html v8.0 3DGS Video Radiance Engine! Size:', fs.statSync(outPath).size);
