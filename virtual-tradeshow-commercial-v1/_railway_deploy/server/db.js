@@ -2638,6 +2638,18 @@ class JSONDatabase {
       const randomNum = Math.floor(100000 + Math.random() * 900000);
       const ticketId = payload.reservationId || `DNA-2026-${randomNum}`;
 
+      let planKey = (payload.selectedPlan || payload.planId || 'pro').toLowerCase();
+      if (planKey === 'free') {
+        throw new Error('The FREE plan is no longer selectable for new exhibitors. Please select PRO, BUSINESS, or CUSTOM.');
+      }
+      if (!['pro', 'business', 'custom'].includes(planKey)) {
+        planKey = 'pro';
+      }
+
+      const isCustom = planKey === 'custom' || payload.status === 'CUSTOM_QUOTE_REQUESTED';
+      const defaultPlanNames = { pro: 'PRO', business: 'BUSINESS', custom: 'CUSTOM' };
+      const defaultPlanPrices = { pro: '$299 / mo', business: '$799 / mo', custom: 'Custom Pricing' };
+
       const reservation = {
         id: ticketId,
         reservationId: ticketId,
@@ -2647,10 +2659,10 @@ class JSONDatabase {
         tradeShow: (payload.tradeShow || '').trim(),
         showStartDate: (payload.showStartDate || payload.showDate || '').trim(),
         boothNumber: (payload.boothNumber || '').trim(),
-        selectedPlan: (payload.selectedPlan || payload.planId || 'pro').toLowerCase(),
-        planName: payload.planName || 'PRO',
-        planPrice: payload.planPrice || '$299 / mo',
-        status: 'RESERVED_INTAKE_PENDING',
+        selectedPlan: planKey.toUpperCase(),
+        planName: payload.planName || defaultPlanNames[planKey],
+        planPrice: payload.planPrice || defaultPlanPrices[planKey],
+        status: isCustom ? 'CUSTOM_QUOTE_REQUESTED' : (payload.status || 'RESERVED_INTAKE_PENDING'),
         createdAt: now,
         updatedAt: now,
         sourceFunnel: payload.sourceFunnel || 'BUILD_IT_FOR_ME',

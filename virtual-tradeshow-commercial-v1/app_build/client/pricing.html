@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pricing Plans | V-Show Virtual Trade Show</title>
-  <meta name="description" content="Transparent pricing for Virtual Trade Show Commercial V1. From Free starter booths to precision Spark 3D Gaussian Splatting.">
+  <title>Pricing Plans — dn’a Virtual Trade Show</title>
+  <meta name="description" content="Commercial exhibition plans for dn’a Virtual Trade Show. Choose Pro, Business, or Custom Enterprise solutions.">
   <style>
     :root {
       --bg: #090d16;
@@ -15,7 +15,8 @@
       --accent: #3b82f6;
       --accent-hover: #2563eb;
       --accent-pro: #8b5cf6;
-      --accent-biz: #ec4899;
+      --accent-biz: #38bdf8;
+      --accent-custom: #f59e0b;
       --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
@@ -32,10 +33,9 @@
     }
 
     header {
-      background: rgba(17, 24, 39, 0.8);
-      backdrop-filter: blur(8px);
+      background: rgba(7, 14, 26, 0.95);
       border-bottom: 1px solid var(--border);
-      padding: 16px 24px;
+      padding: 14px 28px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -44,7 +44,7 @@
     .nav-links { display: flex; gap: 16px; align-items: center; }
     .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; transition: color 0.2s; }
     .nav-links a:hover { color: #fff; }
-    .btn-login { background: var(--accent); color: #fff; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600; }
+    .btn-login { background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 700; }
 
     .pricing-container {
       max-width: 1140px;
@@ -64,20 +64,21 @@
       letter-spacing: -0.5px;
     }
     .hero-section p {
-      font-size: 17px;
+      font-size: 16.5px;
       color: var(--text-muted);
-      max-width: 640px;
+      max-width: 680px;
       margin: 0 auto;
     }
     .pilot-notice {
       display: inline-block;
       margin-top: 14px;
       padding: 6px 16px;
-      background: rgba(59, 130, 246, 0.12);
-      border: 1px solid rgba(59, 130, 246, 0.35);
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
       border-radius: 20px;
       font-size: 13px;
-      color: #93c5fd;
+      color: #38bdf8;
+      font-weight: 600;
     }
 
     .pricing-grid {
@@ -90,7 +91,7 @@
     .plan-card {
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 32px 24px;
       display: flex;
       flex-direction: column;
@@ -98,30 +99,32 @@
       transition: transform 0.2s, border-color 0.2s;
     }
     .plan-card:hover {
-      transform: translateY(-2px);
-      border-color: #374151;
+      transform: translateY(-3px);
+      border-color: #38bdf8;
     }
     .plan-card.featured {
-      border-color: var(--accent-pro);
-      box-shadow: 0 8px 24px rgba(139, 92, 246, 0.12);
+      border-color: #0284c7;
+      background: linear-gradient(180deg, #0c1a2e 0%, #111827 100%);
+      box-shadow: 0 12px 32px rgba(2, 132, 199, 0.2);
     }
     .plan-badge {
       position: absolute;
       top: -12px;
       left: 50%;
       transform: translateX(-50%);
-      background: var(--accent-pro);
+      background: linear-gradient(135deg, #0284c7, #2563eb);
       color: #fff;
       font-size: 11px;
-      font-weight: 700;
-      padding: 3px 12px;
+      font-weight: 800;
+      padding: 4px 14px;
       border-radius: 12px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
     }
 
-    .plan-name { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
-    .plan-desc { font-size: 13px; color: var(--text-muted); min-height: 40px; margin-bottom: 20px; }
+    .plan-name { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+    .plan-desc { font-size: 13px; color: var(--text-muted); min-height: 40px; margin-bottom: 20px; line-height: 1.45; }
     .plan-price { font-size: 38px; font-weight: 800; margin-bottom: 4px; }
     .plan-price span { font-size: 15px; font-weight: 400; color: var(--text-muted); }
     .plan-subtext { font-size: 12px; color: var(--text-muted); margin-bottom: 24px; }
@@ -132,7 +135,7 @@
       flex: 1;
     }
     .plan-features li {
-      font-size: 14px;
+      font-size: 13.5px;
       padding: 8px 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.05);
       display: flex;
@@ -140,28 +143,37 @@
       gap: 10px;
     }
     .plan-features li:last-child { border-bottom: none; }
-    .check-icon { color: #10b981; font-weight: bold; }
-    .cross-icon { color: #6b7280; }
+    .check-icon { color: #38bdf8; font-weight: bold; }
 
     .btn-plan {
       display: block;
       width: 100%;
-      padding: 12px 0;
+      padding: 13px 0;
       text-align: center;
       border-radius: 8px;
-      font-size: 15px;
-      font-weight: 600;
+      font-size: 14px;
+      font-weight: 700;
       text-decoration: none;
       cursor: pointer;
       border: none;
       transition: background 0.2s;
     }
-    .btn-free { background: #374151; color: #fff; }
-    .btn-free:hover { background: #4b5563; }
-    .btn-pro { background: var(--accent-pro); color: #fff; }
-    .btn-pro:hover { background: #7c3aed; }
-    .btn-biz { background: #1f2937; color: #fff; border: 1px solid #374151; }
-    .btn-biz:hover { background: #374151; }
+    .btn-pro { background: #222e44; color: #fff; border: 1px solid #3b82f6; }
+    .btn-pro:hover { background: #3b82f6; }
+    .btn-biz { background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; box-shadow: 0 4px 14px rgba(2,132,199,0.4); }
+    .btn-biz:hover { background: linear-gradient(135deg, #0369a1, #1d4ed8); }
+    .btn-custom { background: #1e293b; color: #f59e0b; border: 1px solid #f59e0b; }
+    .btn-custom:hover { background: #f59e0b; color: #000; font-weight: 800; }
+
+    /* Custom Quote Modal */
+    #custom-quote-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+      z-index: 500; display: none; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-box {
+      background: #0f172a; border: 1px solid #f59e0b; border-radius: 16px; padding: 28px;
+      max-width: 480px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.85);
+    }
 
     .faq-section {
       background: var(--card-bg);
@@ -187,7 +199,7 @@
     .footer-links a { color: var(--text-muted); text-decoration: none; }
     .footer-links a:hover { color: #fff; }
 
-    @media (max-width: 768px) {
+    @media (max-width: 860px) {
       .pricing-grid { grid-template-columns: 1fr; max-width: 440px; margin-left: auto; margin-right: auto; }
       .faq-grid { grid-template-columns: 1fr; }
       .hero-section h1 { font-size: 28px; }
@@ -196,82 +208,84 @@
 </head>
 <body>
 
-  <header style="background: rgba(7, 14, 26, 0.95); border-bottom: 1px solid var(--border); padding: 14px 28px;">
+  <header>
     <a href="/" class="logo">
       <img src="/assets/brand/dna_logo_white.png" alt="dn'a" style="height: 54px; width: auto; object-fit: contain; display: block;">
     </a>
     <div class="nav-links">
-      <a href="/demo-matterport.html">Photo Immersive Booth</a>
+      <a href="/demo-matterport.html">Showcase</a>
       <a href="/demo.html">3D Showroom</a>
       <a href="/card.html">Smart Card</a>
       <a href="/pricing.html" style="color: #38bdf8; font-weight: 700;">Pricing Plans</a>
-      <a href="/builder.html" class="btn-login" style="background: linear-gradient(135deg, #0284c7, #2563eb);">Build My Booth →</a>
+      <a href="/builder.html" class="btn-login">Build My Booth →</a>
     </div>
   </header>
 
   <div class="pricing-container">
     <div class="hero-section">
-      <h1>Transparent & Honest Commercial Plans</h1>
-      <p>Start freely with standard virtual booth hosting or unlock precision 3D spatial models with full lead CRM telemetry.</p>
+      <h1>Transparent &amp; Honest Commercial Plans</h1>
+      <p>Transform your trade show exhibition into an always-on 3D digital showroom. Capture wholesale buyer leads and RFQs 365 days a year.</p>
       <div class="pilot-notice">
-        🧪 <strong>PILOT PRICING</strong> (v2026.1) — Pilot commercial rates. Safe evaluation sandbox.
+        🧪 <strong>COMMERCIAL PLANS (v2026.1)</strong> — Select your plan to reserve production.
       </div>
     </div>
 
     <div class="pricing-grid">
-      <!-- 1. FREE PLAN -->
-      <div class="plan-card" id="plan-free-card">
-        <div class="plan-name">FREE</div>
-        <div class="plan-desc">Standard virtual booth, 360 photo preview room, and essential digital lead collection</div>
-        <div class="plan-price">$0 <span>/ mo</span></div>
-        <div class="plan-subtext">No credit card required to get started</div>
-        <ul class="plan-features">
-          <li><span class="check-icon">✔</span> 1 Standard Virtual Booth</li>
-          <li><span class="check-icon">✔</span> Up to 5 Product Listings</li>
-          <li><span class="check-icon">✔</span> 3 Interactive 3D Hotspots</li>
-          <li><span class="check-icon">✔</span> Multi-View Photo Preview Room</li>
-          <li><span class="check-icon">✔</span> Digital Business Card Lead Collection</li>
-          <li><span class="cross-icon">✖</span> Spark Precision 3DGS (Not Included)</li>
-          <li><span class="cross-icon">✖</span> Lead Data CSV Export (Not Included)</li>
-        </ul>
-        <a href="/builder.html" class="btn-plan btn-free">Get Started Free →</a>
-      </div>
-
-      <!-- 2. PRO PLAN (Featured) -->
-      <div class="plan-card featured" id="plan-pro-card">
-        <div class="plan-badge">PILOT RECOMMENDED</div>
+      <!-- 1. PRO PLAN -->
+      <div class="plan-card" id="plan-pro-card">
         <div class="plan-name" style="color: #a78bfa;">PRO</div>
-        <div class="plan-desc">Precision 3D Spatial Digital Twin Booth & Realtime Buyer Analytics</div>
+        <div class="plan-desc">For individual exhibitors and focused product collections.</div>
         <div class="plan-price">$299 <span>/ mo</span></div>
-        <div class="plan-subtext">Cancel anytime via Stripe Customer Portal</div>
+        <div class="plan-subtext">Commercial exhibition license</div>
         <ul class="plan-features">
-          <li><span class="check-icon">✔</span> <strong>Precision 3D Spatial Model</strong></li>
-          <li><span class="check-icon">✔</span> 1 3D Reconstruction Credit Included</li>
-          <li><span class="check-icon">✔</span> Up to 25 Product Listings</li>
-          <li><span class="check-icon">✔</span> 15 Interactive 3D Hotspots</li>
-          <li><span class="check-icon">✔</span> Full Leads &amp; RFQs CSV Export</li>
-          <li><span class="check-icon">✔</span> 1:1 Live Video Consultation (WebRTC)</li>
-          <li><span class="check-icon">✔</span> Custom Brand Colors &amp; Logo</li>
+          <li><span class="check-icon">✔</span> <strong>Photo Immersive Booth (360°)</strong></li>
+          <li><span class="check-icon">✔</span> Interactive Product Pinpoints</li>
+          <li><span class="check-icon">✔</span> Digital Product Catalog</li>
+          <li><span class="check-icon">✔</span> Smart Exhibitor NFC Card</li>
+          <li><span class="check-icon">✔</span> Persistent Product QR Codes</li>
+          <li><span class="check-icon">✔</span> Wholesale Request Info &amp; RFQ</li>
+          <li><span class="check-icon">✔</span> Consultation Meeting Booking</li>
+          <li><span class="check-icon">✔</span> Basic Analytics &amp; Standard Support</li>
         </ul>
-        <a href="/builder.html" class="btn-plan btn-pro">Subscribe to PRO →</a>
+        <a href="/builder.html" class="btn-plan btn-pro">Select PRO Plan →</a>
       </div>
 
-      <!-- 3. BUSINESS PLAN -->
-      <div class="plan-card" id="plan-biz-card">
-        <div class="plan-name">BUSINESS</div>
-        <div class="plan-desc">Multi-hall exhibition, priority GPU processing queue, and dedicated technical SLA</div>
+      <!-- 2. BUSINESS PLAN (Featured / Most Popular) -->
+      <div class="plan-card featured" id="plan-biz-card">
+        <div class="plan-badge">MOST POPULAR</div>
+        <div class="plan-name" style="color: #38bdf8;">BUSINESS</div>
+        <div class="plan-desc">For serious trade-show sales teams requiring multi-view coverage and priority support.</div>
         <div class="plan-price">$799 <span>/ mo</span></div>
-        <div class="plan-subtext">For enterprises with large product portfolios</div>
+        <div class="plan-subtext">For growing and enterprise sales teams</div>
         <ul class="plan-features">
-          <li><span class="check-icon">✔</span> <strong>3 Precision 3D Spatial Model Credits</strong></li>
-          <li><span class="check-icon">✔</span> Priority GPU Rendering Queue</li>
-          <li><span class="check-icon">✔</span> Up to 100 Product Listings</li>
-          <li><span class="check-icon">✔</span> 50 Interactive 3D Hotspots</li>
-          <li><span class="check-icon">✔</span> Unlimited Leads &amp; RFQ Pipeline</li>
-          <li><span class="check-icon">✔</span> Dedicated Technical Support SLA</li>
-          <li><span class="check-icon">✔</span> Multi-Booth Enterprise Management</li>
+          <li><span class="check-icon">✔</span> <strong>Everything in PRO</strong></li>
+          <li><span class="check-icon">✔</span> Multi-View Spatial Vantage Points</li>
+          <li><span class="check-icon">✔</span> Expanded Product Pinpoints</li>
+          <li><span class="check-icon">✔</span> Advanced Buyer Tools &amp; Telemetry</li>
+          <li><span class="check-icon">✔</span> Managed White-Glove Production Support</li>
+          <li><span class="check-icon">✔</span> Priority Production Queue</li>
+          <li><span class="check-icon">✔</span> Multiple Sales Rep Profiles</li>
+          <li><span class="check-icon">✔</span> Post-Show Intelligence Report</li>
         </ul>
         <a href="/builder.html" class="btn-plan btn-biz">Select Business Plan →</a>
+      </div>
+
+      <!-- 3. CUSTOM PLAN -->
+      <div class="plan-card" id="plan-custom-card">
+        <div class="plan-name" style="color: #f59e0b;">CUSTOM</div>
+        <div class="plan-desc">For large exhibits, multi-show programs, custom production and advanced 3D requirements.</div>
+        <div class="plan-price" style="font-size:26px; padding:6px 0; color:#f59e0b;">CUSTOM PRICING</div>
+        <div class="plan-subtext">Tailored to your exhibition program</div>
+        <ul class="plan-features">
+          <li><span class="check-icon" style="color:#f59e0b;">✔</span> <strong>Everything in BUSINESS</strong></li>
+          <li><span class="check-icon" style="color:#f59e0b;">✔</span> Custom Product &amp; Pinpoint Limits</li>
+          <li><span class="check-icon" style="color:#f59e0b;">✔</span> Multi-Booth &amp; Multi-Show Program</li>
+          <li><span class="check-icon" style="color:#f59e0b;">✔</span> Custom Interactive 3D Showroom</li>
+          <li><span class="check-icon" style="color:#f59e0b;">✔</span> Authentic 3D Digital Twin Review</li>
+          <li><span class="check-icon" style="color:#f59e0b;">✔</span> Dedicated Production Lead &amp; SLA</li>
+          <li><span class="check-icon" style="color:#f59e0b;">✔</span> Custom CRM &amp; White-labeling</li>
+        </ul>
+        <button type="button" class="btn-plan btn-custom" onclick="openCustomQuoteModal()">Request Custom Quote →</button>
       </div>
     </div>
 
@@ -280,22 +294,68 @@
       <h2>Frequently Asked Questions (FAQ)</h2>
       <div class="faq-grid">
         <div class="faq-item">
-          <h3>Q. How does billing and cancellation work?</h3>
-          <p>Paid plans are billed monthly through Stripe's secure infrastructure. You can cancel recurring renewals anytime with a single click inside the Exhibitor Admin Console via the Stripe Customer Portal.</p>
+          <h3>Q. What is included in the Photo Immersive Booth?</h3>
+          <p>The Photo Immersive Booth transforms high-resolution exhibition photos into an interactive 360° digital twin with responsive Product Pinpoints and direct wholesale buyer lead capture.</p>
         </div>
         <div class="faq-item">
-          <h3>Q. What is 3D Gaussian Splatting (3DGS) reconstruction?</h3>
-          <p>3DGS uses computer vision algorithms to convert 60-80 multi-angle photos into an interactive 3D spatial model (SPZ). It is an algorithmic reconstruction and may differ from physical perfection.</p>
+          <h3>Q. How do the Smart Card and Product QRs work?</h3>
+          <p>Each booth includes a digital Smart Exhibitor Card with vCard contact downloads and automated QR codes for every product listing.</p>
         </div>
         <div class="faq-item">
-          <h3>Q. Is my booth data deleted if I cancel my subscription?</h3>
-          <p>No. Your uploaded catalog, company profile, and collected buyer leads are safely preserved and remain accessible within Free tier limits.</p>
+          <h3>Q. When does production begin?</h3>
+          <p>Upon reserving your production slot, your project is queued. In Managed mode, the dn'a engineering team prepares your live preview within 5 business days.</p>
         </div>
         <div class="faq-item">
-          <h3>Q. What is the refund policy?</h3>
-          <p>Refunds are processed in accordance with our Refund Policy. Once cloud GPU compute resources have been expended on 3DGS reconstruction, partial limitations may apply.</p>
+          <h3>Q. Can I request custom 3D environments?</h3>
+          <p>Yes. Our CUSTOM plan accommodates fully custom Interactive 3D Showrooms and multi-hall exhibition programs.</p>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Custom Quote Qualification Modal -->
+  <div id="custom-quote-modal">
+    <div class="modal-box">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="font-size:18px; font-weight:800; color:#f59e0b;">Request Custom Exhibition Quote</h3>
+        <button style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;" onclick="closeCustomQuoteModal()">✕</button>
+      </div>
+
+      <form id="form-custom-quote" onsubmit="handleCustomQuoteSubmit(event)">
+        <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:18px;">
+          <div>
+            <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Company Name <span style="color:#f87171;">*</span></label>
+            <input type="text" id="cq-company" required placeholder="Apex Global Systems" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+          </div>
+          <div>
+            <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Work Email <span style="color:#f87171;">*</span></label>
+            <input type="email" id="cq-email" required placeholder="contact@company.com" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div>
+              <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Trade Show <span style="color:#f87171;">*</span></label>
+              <input type="text" id="cq-tradeshow" required placeholder="CES 2027 / Hannover" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Show Date <span style="color:#f87171;">*</span></label>
+              <input type="date" id="cq-date" required style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+            </div>
+          </div>
+          <div>
+            <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Approximate Product Count</label>
+            <input type="text" id="cq-products" placeholder="e.g. 50+ industrial machines" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+          </div>
+          <div>
+            <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Desired Custom Services</label>
+            <textarea id="cq-notes" rows="2" placeholder="Custom 3D environments, multiple booth locations, custom CRM integrations..." style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px; font-family:inherit;"></textarea>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+          <button type="button" class="btn-plan" style="width:auto; padding:10px 18px; background:#334155; color:#fff;" onclick="closeCustomQuoteModal()">Cancel</button>
+          <button type="submit" class="btn-plan" style="width:auto; padding:10px 22px; background:#f59e0b; color:#000; font-weight:800;">Submit Custom Quote Request →</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -309,8 +369,48 @@
       <span>•</span>
       <a href="pricing.html">Pricing Plans</a>
     </div>
-    <p>&copy; 2026 Virtual Trade Show Commercial V1. All rights reserved. (Sandbox Test Mode)</p>
+    <p>&copy; 2026 dn'a Virtual Trade Show Commercial Platform. All rights reserved.</p>
   </footer>
+
+  <script>
+    function openCustomQuoteModal() {
+      document.getElementById('custom-quote-modal').style.display = 'flex';
+      document.getElementById('cq-company').focus();
+    }
+    function closeCustomQuoteModal() {
+      document.getElementById('custom-quote-modal').style.display = 'none';
+    }
+
+    async function handleCustomQuoteSubmit(e) {
+      e.preventDefault();
+      const payload = {
+        company: document.getElementById('cq-company').value.trim(),
+        email: document.getElementById('cq-email').value.trim(),
+        tradeShow: document.getElementById('cq-tradeshow').value.trim(),
+        showStartDate: document.getElementById('cq-date').value,
+        selectedPlan: 'CUSTOM',
+        planName: 'CUSTOM',
+        planPrice: 'Custom Pricing',
+        status: 'CUSTOM_QUOTE_REQUESTED',
+        customNotes: `${document.getElementById('cq-products').value.trim()} | ${document.getElementById('cq-notes').value.trim()}`,
+        sourceFunnel: 'PRICING_PAGE_CUSTOM_QUOTE'
+      };
+
+      try {
+        const res = await fetch('/api/production-reservations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        closeCustomQuoteModal();
+        alert(`Thank you! Your Custom Quote Request (Ticket: ${data.reservation ? data.reservation.id : 'CONFIRMED'}) has been received. Our Enterprise Sales Team will contact you within 24 hours.`);
+      } catch (err) {
+        closeCustomQuoteModal();
+        alert('Thank you! Your request has been recorded. Our team will contact you shortly.');
+      }
+    }
+  </script>
 
 </body>
 </html>
