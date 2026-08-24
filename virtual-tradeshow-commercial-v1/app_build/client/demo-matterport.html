@@ -384,63 +384,96 @@ html, body {
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 /* ══════════════════════════════════════════════
-   MOBILE & LANDSCAPE ADAPTIVE CSS
+   MOBILE LANDSCAPE ORIENTATION OVERLAY
 ══════════════════════════════════════════════ */
-@media (max-width: 960px) and (orientation: portrait) {
-  #portrait-tip-bar { display: block; }
-  #topbar { padding: 0 10px; height: 44px; }
-  .brand-badge { display: none; }
-  .btn-ui { padding: 4px 7px; font-size: 10.5px; }
-  
-  #studio-workspace {
-    display: flex; flex-direction: column; padding: 8px; gap: 8px;
+#rotate-landscape-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(4, 8, 18, 0.98);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+@media (max-width: 900px) and (orientation: portrait) {
+  #rotate-landscape-overlay {
+    display: flex !important;
   }
-  .unified-sidebar { display: none; }
-  #player-workspace { width: 100%; flex: 1; }
-  #viewer-container { width: 100%; }
-  #product-cards-tray { height: 100px; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-  .prod-card-thumb { width: 50px; }
-  .prod-card-title { font-size: 10.5px; }
-
-  #studio-footer { padding: 0 10px; font-size: 9.5px; height: 36px; }
-  .foot-info span:not(:last-child) { display: none; }
-  .drawer { width: 100vw; max-width: 100vw; }
+}
+.rotate-icon-anim {
+  font-size: 52px; margin-bottom: 16px;
+  animation: rotate-phone 2.6s ease-in-out infinite;
+}
+@keyframes rotate-phone {
+  0%, 20% { transform: rotate(0deg) scale(1); }
+  50%, 70% { transform: rotate(-90deg) scale(1.1); }
+  90%, 100% { transform: rotate(0deg) scale(1); }
+}
+.rotate-title {
+  font-size: 19px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.3px;
+}
+.rotate-title span { color: var(--cyan); }
+.rotate-desc {
+  font-size: 12.5px; color: var(--text-muted); line-height: 1.6; max-width: 320px;
 }
 
-@media (max-width: 960px) and (orientation: landscape), (max-height: 540px) {
-  #portrait-tip-bar { display: none !important; }
-  
-  #topbar { height: 38px; padding: 0 10px; background: rgba(5, 11, 22, 0.92); }
-  .brand-logo { font-size: 14.5px; }
+/* ══════════════════════════════════════════════
+   MOBILE LANDSCAPE RESPONSIVE RULES
+   - Vertical Left Product Tray
+   - Fullscreen 3D Main Viewport on Right
+══════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  #topbar { height: 42px; padding: 0 10px; }
+  .brand-logo { font-size: 14px; }
   .brand-badge { display: none; }
-  .btn-ui { padding: 3px 7px; font-size: 10px; }
-
+  .btn-ui { padding: 4px 8px; font-size: 10.5px; }
+  
   #studio-workspace {
-    grid-template-columns: 1fr 240px; padding: 6px; gap: 8px; height: calc(100vh - 72px);
+    display: flex; flex-direction: row; padding: 6px; gap: 8px;
   }
-  #product-cards-tray { height: 75px; gap: 6px; }
-  .prod-card-thumb { width: 45px; }
-  .prod-card-title { font-size: 9.5px; }
+  .unified-sidebar { display: none; }
+  
+  #player-workspace {
+    flex-direction: row; gap: 8px; width: 100%; height: 100%;
+  }
+  
+  /* MOVE CARDS TRAY TO LEFT VERTICALLY ON MOBILE */
+  #product-cards-tray {
+    order: -1;
+    width: 160px; height: 100%;
+    display: flex; flex-direction: column; gap: 6px;
+    overflow-y: auto; flex-shrink: 0;
+  }
+  .prod-quick-card {
+    height: calc(25% - 5px); min-height: 58px;
+    padding: 6px; gap: 6px;
+  }
+  .prod-card-thumb { width: 44px; height: 100%; }
+  .prod-card-title { font-size: 10px; }
+  .prod-card-cat { font-size: 7px; }
   .prod-card-spec { display: none; }
-
-  .unified-sidebar { padding: 8px; gap: 6px; }
-  .panel-sub { display: none; }
-  .radar-box { padding: 5px; }
-  #radar-canvas { height: 60px; }
-  .spec-panel-box { padding: 6px; }
-
-  #studio-footer { height: 34px; padding: 0 10px; font-size: 9.5px; background: rgba(5, 11, 22, 0.92); }
-  .foot-info span:nth-child(1), .foot-info span:nth-child(2) { display: none; }
-  .foot-actions .btn-ui { padding: 2px 7px; font-size: 9.5px; }
-
-  .drawer { width: 340px; }
-  .drawer-img-box { height: 160px; }
-  .drawer-body { padding: 12px; }
-  .drawer-specs-table td { padding: 5px 3px; font-size: 10.5px; }
+  .prod-card-btn { font-size: 7.5px; }
+  
+  #viewer-container {
+    flex: 1; height: 100%; min-width: 0;
+  }
+  #studio-footer { height: 34px; padding: 0 10px; font-size: 9.5px; }
+  .foot-info span:not(:last-child) { display: none; }
+  .drawer { width: 100vw; max-width: 100vw; }
 }
 </style>
 </head>
 <body>
+
+<!-- ROTATE TO LANDSCAPE ORIENTATION OVERLAY -->
+<div id="rotate-landscape-overlay">
+  <div class="rotate-icon-anim">📱</div>
+  <div class="rotate-title">Please Rotate to <span>Landscape Mode</span></div>
+  <div class="rotate-desc">DN'a ROBOTIC 3D Digital Twin requires full-screen horizontal viewing for the optimal immersive trade show experience.</div>
+</div>
 <div id="app-layout">
   <!-- TOP NAV -->
   <header id="topbar">

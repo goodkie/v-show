@@ -349,17 +349,97 @@ html, body {
 }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* RESPONSIVE */
-@media (max-width: 960px) {
-  #studio-workspace { display: flex; flex-direction: column; padding: 8px; gap: 8px; }
+/* ══════════════════════════════════════════════
+   MOBILE LANDSCAPE ORIENTATION OVERLAY
+══════════════════════════════════════════════ */
+#rotate-landscape-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(4, 8, 18, 0.98);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+@media (max-width: 900px) and (orientation: portrait) {
+  #rotate-landscape-overlay {
+    display: flex !important;
+  }
+}
+.rotate-icon-anim {
+  font-size: 52px; margin-bottom: 16px;
+  animation: rotate-phone 2.6s ease-in-out infinite;
+}
+@keyframes rotate-phone {
+  0%, 20% { transform: rotate(0deg) scale(1); }
+  50%, 70% { transform: rotate(-90deg) scale(1.1); }
+  90%, 100% { transform: rotate(0deg) scale(1); }
+}
+.rotate-title {
+  font-size: 19px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.3px;
+}
+.rotate-title span { color: var(--cyan); }
+.rotate-desc {
+  font-size: 12.5px; color: var(--text-muted); line-height: 1.6; max-width: 320px;
+}
+
+/* ══════════════════════════════════════════════
+   MOBILE LANDSCAPE RESPONSIVE RULES
+   - Vertical Left Product Tray
+   - Fullscreen 3D Main Viewport on Right
+══════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  #topbar { height: 42px; padding: 0 10px; }
+  .brand-logo { font-size: 14px; }
+  .brand-badge { display: none; }
+  .btn-ui { padding: 4px 8px; font-size: 10.5px; }
+  
+  #studio-workspace {
+    display: flex; flex-direction: row; padding: 6px; gap: 8px;
+  }
   .unified-sidebar { display: none; }
-  #product-cards-tray { height: 100px; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-  .prod-card-thumb { width: 50px; }
+  
+  #player-workspace {
+    flex-direction: row; gap: 8px; width: 100%; height: 100%;
+  }
+  
+  /* MOVE CARDS TRAY TO LEFT VERTICALLY ON MOBILE */
+  #product-cards-tray {
+    order: -1;
+    width: 160px; height: 100%;
+    display: flex; flex-direction: column; gap: 6px;
+    overflow-y: auto; flex-shrink: 0;
+  }
+  .prod-quick-card {
+    height: calc(25% - 5px); min-height: 58px;
+    padding: 6px; gap: 6px;
+  }
+  .prod-card-thumb { width: 44px; height: 100%; }
+  .prod-card-title { font-size: 10px; }
+  .prod-card-cat { font-size: 7px; }
+  .prod-card-spec { display: none; }
+  .prod-card-btn { font-size: 7.5px; }
+  
+  #viewer-container {
+    flex: 1; height: 100%; min-width: 0;
+  }
+  #studio-footer { height: 34px; padding: 0 10px; font-size: 9.5px; }
+  .foot-info span:not(:last-child) { display: none; }
   .drawer { width: 100vw; max-width: 100vw; }
 }
 </style>
 </head>
 <body>
+
+<!-- ROTATE TO LANDSCAPE ORIENTATION OVERLAY -->
+<div id="rotate-landscape-overlay">
+  <div class="rotate-icon-anim">📱</div>
+  <div class="rotate-title">Please Rotate to <span>Landscape Mode</span></div>
+  <div class="rotate-desc">DN'a ROBOTIC 3D Digital Twin requires full-screen horizontal viewing for the optimal immersive trade show experience.</div>
+</div>
 <div id="app-layout">
   <!-- TOP NAV -->
   <header id="topbar">
