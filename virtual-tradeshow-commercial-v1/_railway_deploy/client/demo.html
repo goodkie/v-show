@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- Three.js & Controls -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="/vendor/three.min.js"></script>
+<script src="/vendor/OrbitControls.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
 
 <style>
@@ -62,10 +62,10 @@ html, body {
 .btn-ui:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.25); color: #fff; }
 .btn-ui.primary { background: #0284c7; border-color: #38bdf8; color: #fff; box-shadow: 0 0 14px rgba(2,132,199,0.4); }
 .btn-ui.primary:hover { background: #0369a1; }
-.btn-ui.matterport { background: rgba(0,194,255,0.15); border-color: var(--cyan); color: var(--cyan); }
+.btn-ui.matterport { background: rgba(0,194,255,0.15); border-color: var(--cyan); color: var(--cyan); font-weight: 700; }
 .btn-ui.matterport:hover { background: var(--cyan); color: #000; box-shadow: 0 0 16px var(--cyan-glow); }
 
-/* MAIN SHOWROOM WORKSPACE (3D Viewport + Right Unified Sidebar) */
+/* MAIN SHOWROOM WORKSPACE */
 #studio-workspace {
   flex: 1; display: grid;
   grid-template-columns: 1fr 340px;
@@ -74,9 +74,7 @@ html, body {
   min-height: 0; align-items: stretch; position: relative;
 }
 
-/* ══════════════════════════════════════════════
-   CENTER WORKSPACE: 2/3 3D VIEWPORT + BOTTOM PRODUCT SHORTCUT CARDS
-══════════════════════════════════════════════ */
+/* CENTER WORKSPACE: 2/3 3D VIEWPORT + BOTTOM PRODUCT SHORTCUT CARDS */
 #player-workspace {
   height: 100%; width: 100%; display: flex; flex-direction: column;
   gap: 12px; min-height: 0; position: relative;
@@ -88,12 +86,12 @@ html, body {
   border-radius: 16px; overflow: hidden;
   border: 1px solid rgba(0, 194, 255, 0.4);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 194, 255, 0.2);
-  cursor: grab; background: #070e17;
+  cursor: grab; background: #040812;
 }
 #viewer-container:active { cursor: grabbing; }
 #three-canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 
-/* 3D BADGE IN VIEWPORT CORNER */
+/* 3D BADGES IN VIEWPORT */
 .player-tag {
   position: absolute; top: 12px; left: 12px; z-index: 10;
   background: rgba(5, 11, 22, 0.9); border: 1px solid var(--panel-border);
@@ -153,7 +151,7 @@ html, body {
 }
 
 /* ══════════════════════════════════════════════
-   3D FLOATING PRODUCT HOTSPOTS (MATCHING 64K STUDIO)
+   3D FLOATING PRODUCT HOTSPOTS (PERMANENT 64K STYLE)
 ══════════════════════════════════════════════ */
 #hotspot-layer { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
 
@@ -422,7 +420,7 @@ html, body {
       <div class="radar-box">
         <div class="radar-header">
           <span>BOOTH RADAR MINIMAP</span>
-          <span id="radar-loc-txt">01. MAIN BOOTH</span>
+          <span id="radar-loc-txt">01. MAIN BOOTH CENTER</span>
         </div>
         <canvas id="radar-canvas" width="306" height="95"></canvas>
       </div>
@@ -535,12 +533,7 @@ html, body {
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   3D VIRTUAL SHOWROOM ENGINE (v8.0 Master)
-   - 4 Identical Robotic Stations Aligned with Matterport Studio
-   - Sophisticated Procedural Robot 3D Models & PBR Pedestals
-   - Permanent 3D Floating Capsules with Live Mini-Thumbnails
-   - Interactive 360 Turntable Mini Viewer inside Product Drawer
-   - 100% Full English Localization
+   3D VIRTUAL SHOWROOM ENGINE (v8.0 Master Hyper-Detail)
 ═══════════════════════════════════════════════════════════ */
 
 // 1. PRODUCTS DATA (4 ROBOTS - EXACT MATCH WITH 64K STUDIO)
@@ -551,9 +544,9 @@ const PRODUCTS_DATA = [
     model: 'APX-CB-16',
     category: 'Collaborative Robotics',
     image: '/assets/demo/dna-showcase/products/apex_cobot_x16.jpg',
-    pos3d: new THREE.Vector3(0, 0, -2.2), // Center circular pedestal
-    cameraPos: new THREE.Vector3(0, 2.2, 2.0),
-    cameraLook: new THREE.Vector3(0, 1.2, -2.2),
+    pos3d: new THREE.Vector3(0, 0, -1.8), // Center circular pedestal
+    cameraPos: new THREE.Vector3(0, 2.3, 2.5),
+    cameraLook: new THREE.Vector3(0, 1.3, -1.8),
     radarPos: { x: 153, y: 68 },
     desc: '6-axis precision collaborative robotic arm with ±0.025mm repeatability, smart joint torque sensing, and ISO/TS 15066 safety compliance.',
     specs: [
@@ -577,9 +570,9 @@ const PRODUCTS_DATA = [
     model: 'VCT-AMR-600',
     category: 'Autonomous Intralogistics',
     image: '/assets/demo/dna-showcase/products/vector_amr_600.jpg',
-    pos3d: new THREE.Vector3(-4.6, 0, 1.8), // Left logistics dock
+    pos3d: new THREE.Vector3(-4.8, 0, 1.6), // Left logistics dock
     cameraPos: new THREE.Vector3(-3.2, 1.8, 4.8),
-    cameraLook: new THREE.Vector3(-4.6, 0.5, 1.8),
+    cameraLook: new THREE.Vector3(-4.8, 0.6, 1.6),
     radarPos: { x: 72, y: 48 },
     desc: 'Heavy-duty Laser SLAM autonomous mobile robot with 600kg deck load, dual 360° safety LiDAR, and autonomous inductive docking.',
     specs: [
@@ -603,9 +596,9 @@ const PRODUCTS_DATA = [
     model: 'TTN-DL-12',
     category: 'High-Speed Packaging',
     image: '/assets/demo/dna-showcase/products/delta_d12.jpg',
-    pos3d: new THREE.Vector3(4.6, 0, 1.8), // Right packaging station
-    cameraPos: new THREE.Vector3(3.2, 1.8, 4.8),
-    cameraLook: new THREE.Vector3(4.6, 1.2, 1.8),
+    pos3d: new THREE.Vector3(4.8, 0, 1.6), // Right packaging station
+    cameraPos: new THREE.Vector3(3.2, 1.9, 4.8),
+    cameraLook: new THREE.Vector3(4.8, 1.2, 1.6),
     radarPos: { x: 234, y: 48 },
     desc: 'Ultra-fast parallel Delta robot with 240 picks/min throughput, carbon-fiber kinematic arms, and dynamic AI conveyor tracking.',
     specs: [
@@ -629,9 +622,9 @@ const PRODUCTS_DATA = [
     model: 'HYP-SC-08',
     category: 'Precision Assembly',
     image: '/assets/demo/dna-showcase/products/scara_s8.jpg',
-    pos3d: new THREE.Vector3(-3.2, 0, -4.8), // Upper precision cell
-    cameraPos: new THREE.Vector3(-1.8, 1.8, -2.0),
-    cameraLook: new THREE.Vector3(-3.2, 1.0, -4.8),
+    pos3d: new THREE.Vector3(-3.4, 0, -4.8), // Upper precision cell
+    cameraPos: new THREE.Vector3(-1.8, 1.9, -2.0),
+    cameraLook: new THREE.Vector3(-3.4, 1.1, -4.8),
     radarPos: { x: 92, y: 82 },
     desc: 'Sub-micron 4-axis SCARA robot for high-precision semiconductor, PCB wafer handling, and micro-component cleanroom assembly.',
     specs: [
@@ -668,8 +661,8 @@ function initShowroom() {
   const width = rect.width || container.clientWidth || 1000;
   const height = rect.height || container.clientHeight || 550;
 
-  camera = new THREE.PerspectiveCamera(55, width / height, 0.1, 150);
-  camera.position.set(0, 3.8, 9.0);
+  camera = new THREE.PerspectiveCamera(52, width / height, 0.1, 150);
+  camera.position.set(0, 3.8, 8.8);
 
   renderer = new THREE.WebGLRenderer({
     canvas: canvas,
@@ -687,10 +680,10 @@ function initShowroom() {
   controls = new THREE.OrbitControls(camera, canvas);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
-  controls.target.set(0, 1.2, -1.0);
+  controls.target.set(0, 1.2, -0.8);
   controls.minDistance = 1.5;
   controls.maxDistance = 35.0;
-  controls.maxPolarAngle = Math.PI * 0.48; // Prevent going under floor
+  controls.maxPolarAngle = Math.PI * 0.48;
   controls.minPolarAngle = Math.PI * 0.08;
 
   buildBoothArchitecture();
@@ -707,31 +700,39 @@ function initShowroom() {
 // 3. BOOTH ARCHITECTURE & LIGHTING
 function buildBoothArchitecture() {
   // Ambient & Directional Sun
-  scene.add(new THREE.AmbientLight(0xd0e2ff, 0.7));
-  const keySun = new THREE.DirectionalLight(0xffffff, 1.4);
-  keySun.position.set(5, 14, 8);
+  scene.add(new THREE.AmbientLight(0xd0e2ff, 0.75));
+  const keySun = new THREE.DirectionalLight(0xffffff, 1.3);
+  keySun.position.set(6, 14, 8);
   keySun.castShadow = true;
   keySun.shadow.mapSize.set(1024, 1024);
   scene.add(keySun);
 
-  const skyLight = new THREE.HemisphereLight(0x38bdf8, 0x050b16, 0.6);
+  const skyLight = new THREE.HemisphereLight(0x38bdf8, 0x050b16, 0.65);
   scene.add(skyLight);
 
+  // Spotlights for 4 stations
+  PRODUCTS_DATA.forEach(p => {
+    const spot = new THREE.SpotLight(0x00c2ff, 1.8, 14, Math.PI / 4, 0.4, 1.2);
+    spot.position.set(p.pos3d.x, 6.0, p.pos3d.z);
+    spot.target.position.set(p.pos3d.x, 0.8, p.pos3d.z);
+    scene.add(spot);
+    scene.add(spot.target);
+  });
+
   // Reflective Floor
-  const floorGeo = new THREE.PlaneGeometry(60, 60);
   const floorMat = new THREE.MeshStandardMaterial({
     color: 0x070e1c,
-    roughness: 0.25,
+    roughness: 0.22,
     metalness: 0.6
   });
-  const floor = new THREE.Mesh(floorGeo, floorMat);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(70, 70), floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = -0.01;
   floor.receiveShadow = true;
   scene.add(floor);
 
-  // Booth Carpet & Cyan Perimeter Glow
-  const carpetMat = new THREE.MeshStandardMaterial({ color: 0x0b172a, roughness: 0.8, metalness: 0.2 });
+  // Booth Carpet & Glowing Neon Cyan Edge
+  const carpetMat = new THREE.MeshStandardMaterial({ color: 0x0b172a, roughness: 0.75, metalness: 0.25 });
   const carpet = new THREE.Mesh(new THREE.PlaneGeometry(18, 18), carpetMat);
   carpet.rotation.x = -Math.PI / 2;
   carpet.position.y = 0.01;
@@ -752,184 +753,217 @@ function buildBoothArchitecture() {
 
   // Background Curved 8K LED Wall Facade
   const ledWallTex = new THREE.TextureLoader().load('/assets/demo/dna-showcase/products/vision_led_wall.jpg');
-  const ledWallGeo = new THREE.CylinderGeometry(14, 14, 5.2, 32, 1, true, -Math.PI * 0.35, Math.PI * 0.7);
+  const ledWallGeo = new THREE.CylinderGeometry(14, 14, 5.5, 48, 1, true, -Math.PI * 0.38, Math.PI * 0.76);
   const ledWallMat = new THREE.MeshBasicMaterial({ map: ledWallTex, side: THREE.BackSide });
   const ledWall = new THREE.Mesh(ledWallGeo, ledWallMat);
-  ledWall.position.set(0, 2.6, -7.5);
+  ledWall.position.set(0, 2.75, -7.5);
   scene.add(ledWall);
 
   // VIP Glass Innovation Hub in background corner
   const vipTex = new THREE.TextureLoader().load('/assets/demo/dna-showcase/products/vip_glass_lounge.jpg');
-  const vipGeo = new THREE.PlaneGeometry(6.5, 4.2);
+  const vipGeo = new THREE.PlaneGeometry(7.0, 4.4);
   const vipMat = new THREE.MeshBasicMaterial({ map: vipTex, side: THREE.DoubleSide });
   const vipLounge = new THREE.Mesh(vipGeo, vipMat);
-  vipLounge.position.set(6.8, 2.2, -6.8);
+  vipLounge.position.set(7.0, 2.2, -6.8);
   vipLounge.rotation.y = -Math.PI * 0.25;
   scene.add(vipLounge);
 
-  // Overhead Truss Lighting Ring
+  // Overhead Circular Lighting Truss Rig
   const trussRing = new THREE.Mesh(
-    new THREE.TorusGeometry(8.5, 0.08, 8, 32),
+    new THREE.TorusGeometry(8.5, 0.08, 8, 36),
     new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.3 })
   );
   trussRing.rotation.x = Math.PI / 2;
-  trussRing.position.y = 5.6;
+  trussRing.position.y = 5.8;
   scene.add(trussRing);
 }
 
 // 4. SOPHISTICATED PRODUCT STATIONS & PROCEDURAL 3D ROBOTS
 function buildProductStations() {
-  const matWhite = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.25, metalness: 0.15 });
-  const matMetal = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.35, metalness: 0.85 });
-  const matCyan = new THREE.MeshStandardMaterial({ color: 0x00c2ff, emissive: 0x00c2ff, emissiveIntensity: 0.7, roughness: 0.1 });
-  const matGold = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.2, metalness: 0.8 });
+  const matWhite = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.22, metalness: 0.15 });
+  const matMetal = new THREE.MeshStandardMaterial({ color: 0x223044, roughness: 0.3, metalness: 0.85 });
+  const matCyan = new THREE.MeshStandardMaterial({ color: 0x00c2ff, emissive: 0x00c2ff, emissiveIntensity: 0.8, roughness: 0.1 });
+  const matGold = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.2, metalness: 0.85 });
+  const matDark = new THREE.MeshStandardMaterial({ color: 0x0d1522, roughness: 0.4, metalness: 0.7 });
 
-  PRODUCTS_DATA.forEach((prod, idx) => {
+  PRODUCTS_DATA.forEach((prod) => {
     const stationGroup = new THREE.Group();
     stationGroup.position.copy(prod.pos3d);
 
     if (prod.robotType === 'cobot') {
-      // ── Station 0: Center Circular Pedestal with Apex Cobot X16 ──
-      const plinthBase = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.8, 0.45, 36), matMetal);
+      // ── Station 0: Center Pedestal with Apex Cobot X16 ──
+      const plinthBase = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.85, 0.45, 48), matDark);
       plinthBase.position.y = 0.225;
-      plinthBase.receiveShadow = true;
-      plinthBase.castShadow = true;
       stationGroup.add(plinthBase);
 
-      const plinthRing = new THREE.Mesh(new THREE.TorusGeometry(1.62, 0.025, 12, 36), matCyan);
+      const plinthTopPlate = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.05, 48), matMetal);
+      plinthTopPlate.position.y = 0.475;
+      stationGroup.add(plinthTopPlate);
+
+      const plinthRing = new THREE.Mesh(new THREE.TorusGeometry(1.52, 0.025, 12, 48), matCyan);
       plinthRing.rotation.x = Math.PI / 2;
-      plinthRing.position.y = 0.44;
+      plinthRing.position.y = 0.46;
       stationGroup.add(plinthRing);
 
-      // Cobot 6-Axis Arm
-      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.42, 0.25, 24), matMetal);
-      base.position.y = 0.57;
+      // Cobot 6-Axis Arm Body
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.38, 0.26, 32), matMetal);
+      base.position.y = 0.63;
       stationGroup.add(base);
 
-      const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.24, 20, 20), matCyan);
-      shoulder.position.y = 0.8;
+      const j1Ring = new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.015, 8, 32), matCyan);
+      j1Ring.rotation.x = Math.PI / 2;
+      j1Ring.position.y = 0.65;
+      stationGroup.add(j1Ring);
+
+      const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.24, 24, 24), matMetal);
+      shoulder.position.y = 0.88;
       stationGroup.add(shoulder);
 
-      const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.17, 0.9, 20), matWhite);
-      upperArm.position.set(0.18, 1.25, 0.1);
+      const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.17, 0.95, 24), matWhite);
+      upperArm.position.set(0.18, 1.35, 0.1);
       upperArm.rotation.set(0.35, 0, 0.25);
       stationGroup.add(upperArm);
 
-      const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.2, 20, 20), matMetal);
-      elbow.position.set(0.3, 1.68, 0.2);
+      const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.2, 24, 24), matCyan);
+      elbow.position.set(0.32, 1.8, 0.22);
       stationGroup.add(elbow);
 
-      const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.75, 20), matWhite);
-      forearm.position.set(0.12, 2.0, 0.05);
+      const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.8, 24), matWhite);
+      forearm.position.set(0.14, 2.15, 0.05);
       forearm.rotation.set(-0.45, 0, -0.3);
       stationGroup.add(forearm);
 
-      const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.2, 16), matCyan);
-      wrist.position.set(-0.08, 2.3, -0.1);
+      const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, 0.22, 20), matMetal);
+      wrist.position.set(-0.06, 2.48, -0.1);
       stationGroup.add(wrist);
 
-      const gripperL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.18, 0.04), matMetal);
-      gripperL.position.set(-0.14, 2.45, -0.1);
-      const gripperR = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.18, 0.04), matMetal);
-      gripperR.position.set(-0.02, 2.45, -0.1);
-      const workpiece = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.1, 16), matGold);
-      workpiece.position.set(-0.08, 2.45, -0.1);
-      stationGroup.add(gripperL, gripperR, workpiece);
+      // Gripper & Workpiece
+      const gripBase = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.06, 0.12), matMetal);
+      gripBase.position.set(-0.06, 2.6, -0.1);
+      const gripperL = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.18, 0.04), matWhite);
+      gripperL.position.set(-0.13, 2.7, -0.1);
+      const gripperR = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.18, 0.04), matWhite);
+      gripperR.position.set(0.01, 2.7, -0.1);
+      const workpiece = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.1, 20), matGold);
+      workpiece.position.set(-0.06, 2.7, -0.1);
+      stationGroup.add(gripBase, gripperL, gripperR, workpiece);
 
     } else if (prod.robotType === 'amr') {
       // ── Station 1: Vector AMR 600 Logistics Dock ──
-      const dockPad = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.06, 1.8), matMetal);
+      const dockPad = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.06, 1.8), matDark);
       dockPad.position.y = 0.03;
       stationGroup.add(dockPad);
 
-      const chargeStrip = new THREE.Mesh(new THREE.BoxGeometry(2.44, 0.02, 0.1), matCyan);
+      const chargeStrip = new THREE.Mesh(new THREE.BoxGeometry(2.44, 0.02, 0.12), matCyan);
       chargeStrip.position.set(0, 0.07, 0.85);
       stationGroup.add(chargeStrip);
 
-      const amrBody = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.42, 1.1), matWhite);
-      amrBody.position.y = 0.32;
+      const amrBody = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.44, 1.15), matWhite);
+      amrBody.position.y = 0.35;
       stationGroup.add(amrBody);
 
-      const amrGlow = new THREE.Mesh(new THREE.BoxGeometry(1.64, 0.04, 1.14), matCyan);
-      amrGlow.position.y = 0.3;
+      const amrSkirt = new THREE.Mesh(new THREE.BoxGeometry(1.68, 0.12, 1.18), matMetal);
+      amrSkirt.position.y = 0.15;
+      stationGroup.add(amrSkirt);
+
+      const amrGlow = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.035, 1.2), matCyan);
+      amrGlow.position.y = 0.32;
       stationGroup.add(amrGlow);
 
-      const lidar = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.16, 20), matCyan);
-      lidar.position.set(0.65, 0.6, 0.4);
-      stationGroup.add(lidar);
+      const lidarF = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.16, 20), matCyan);
+      lidarF.position.set(0.68, 0.62, 0.42);
+      const lidarR = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.16, 20), matCyan);
+      lidarR.position.set(-0.68, 0.62, -0.42);
+      stationGroup.add(lidarF, lidarR);
 
+      // Roller deck
       for (let i = -0.55; i <= 0.55; i += 0.22) {
-        const roller = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.9, 12), matMetal);
+        const roller = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.95, 16), matMetal);
         roller.rotation.z = Math.PI / 2;
-        roller.position.set(0, 0.58, i);
+        roller.position.set(0, 0.6, i);
         stationGroup.add(roller);
       }
 
     } else if (prod.robotType === 'delta') {
       // ── Station 2: Titan Delta D12 High-Speed Station ──
-      const table = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.8, 1.6), matMetal);
-      table.position.y = 0.4;
+      const table = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.85, 1.6), matDark);
+      table.position.y = 0.425;
       stationGroup.add(table);
 
-      const conveyor = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.1, 0.6), matWhite);
-      conveyor.position.set(0, 0.85, 0);
+      const conveyor = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.1, 0.65), matMetal);
+      conveyor.position.set(0, 0.9, 0);
       stationGroup.add(conveyor);
 
+      const belt = new THREE.Mesh(new THREE.BoxGeometry(2.48, 0.02, 0.55), matCyan);
+      belt.position.set(0, 0.96, 0);
+      stationGroup.add(belt);
+
       // Delta Top Frame
-      const topFrame = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.15, 6), matMetal);
-      topFrame.position.y = 2.4;
+      const topFrame = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.16, 6), matMetal);
+      topFrame.position.y = 2.45;
       stationGroup.add(topFrame);
 
-      const deltaPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.08, 6), matCyan);
-      deltaPlate.position.y = 1.35;
+      const deltaPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.08, 6), matCyan);
+      deltaPlate.position.y = 1.38;
       stationGroup.add(deltaPlate);
 
       // 3 Carbon Struts
       for (let i = 0; i < 3; i++) {
         const ang = (i * Math.PI * 2) / 3;
-        const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.15, 8), matWhite);
-        strut.position.set(Math.cos(ang) * 0.45, 1.85, Math.sin(ang) * 0.45);
-        stationGroup.add(strut);
+        const bX = Math.cos(ang) * 0.5;
+        const bZ = Math.sin(ang) * 0.5;
+        const mX = Math.cos(ang) * 0.2;
+        const mZ = Math.sin(ang) * 0.2;
+
+        const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.25, 16), matWhite);
+        motor.position.set(bX, 2.35, bZ);
+        stationGroup.add(motor);
+
+        const strut1 = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.15, 8), matWhite);
+        strut1.position.set((bX + mX) * 0.6 - 0.04, 1.85, (bZ + mZ) * 0.6);
+        const strut2 = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.15, 8), matWhite);
+        strut2.position.set((bX + mX) * 0.6 + 0.04, 1.85, (bZ + mZ) * 0.6);
+        stationGroup.add(strut1, strut2);
       }
 
-      const suction = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.18, 16), matCyan);
+      const suction = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.2, 16), matCyan);
       suction.rotation.x = Math.PI;
-      suction.position.y = 1.2;
+      suction.position.y = 1.25;
       stationGroup.add(suction);
 
     } else if (prod.robotType === 'scara') {
       // ── Station 3: Hyperion SCARA S8 Precision Workstation ──
-      const bench = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.85, 1.4), matMetal);
+      const bench = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.85, 1.5), matDark);
       bench.position.y = 0.425;
       stationGroup.add(bench);
 
-      const esdMat = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.2), matCyan);
+      const esdMat = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.3), matCyan);
       esdMat.rotation.x = -Math.PI / 2;
       esdMat.position.set(0, 0.86, 0);
       stationGroup.add(esdMat);
 
-      const scaraCol = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.35, 0.9, 24), matWhite);
-      scaraCol.position.set(-0.4, 1.3, 0);
+      const scaraCol = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.38, 0.95, 24), matWhite);
+      scaraCol.position.set(-0.45, 1.35, 0);
       stationGroup.add(scaraCol);
 
-      const arm1 = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.18, 0.26), matWhite);
-      arm1.position.set(-0.1, 1.8, 0);
+      const arm1 = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.2, 0.28), matWhite);
+      arm1.position.set(-0.12, 1.85, 0);
       stationGroup.add(arm1);
 
-      const joint2 = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.24, 20), matCyan);
-      joint2.position.set(0.2, 1.82, 0);
+      const joint2 = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.26, 20), matCyan);
+      joint2.position.set(0.22, 1.88, 0);
       stationGroup.add(joint2);
 
-      const arm2 = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.15, 0.22), matWhite);
-      arm2.position.set(0.45, 1.85, 0);
+      const arm2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.16, 0.24), matWhite);
+      arm2.position.set(0.5, 1.9, 0);
       stationGroup.add(arm2);
 
-      const zShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.7, 16), matMetal);
-      zShaft.position.set(0.7, 1.7, 0);
+      const zShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.8, 16), matMetal);
+      zShaft.position.set(0.78, 1.7, 0);
       stationGroup.add(zShaft);
 
-      const microWafer = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.02, 20), matGold);
-      microWafer.position.set(0.7, 1.3, 0);
+      const microWafer = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.02, 24), matGold);
+      microWafer.position.set(0.78, 1.25, 0);
       stationGroup.add(microWafer);
     }
 
