@@ -2782,9 +2782,104 @@ class JSONDatabase {
   // ============================================================
   async getProjectManifest(id) {
     const db = this.read();
-    db.productionProjects = db.productionProjects || [];
-    const p = db.productionProjects.find(x => x.id === id || x.reservationId === id || x.slug === id);
-    if (!p) {
+      // Check for Single Photo Showroom demo project
+      if (id === 'proj-single-photo-003' || id === 'single-photo') {
+        return {
+          projectId: 'proj-single-photo-003',
+          reservationId: 'DNA-2026-334102',
+          company: 'Delta Robotics GmbH',
+          tradeShow: 'SPS Smart Production Solutions 2026',
+          showStartDate: '2026-11-24',
+          experienceType: 'PHOTO_SHOWROOM',
+          title: 'Delta Robotics GmbH Showroom',
+          slug: 'delta-robotics',
+          heroViewId: 'view-0',
+          views: [
+            {
+              viewId: 'view-0',
+              name: 'Main Booth Front Overview',
+              previewUrl: '/assets/demo/dna-showcase/pano360/node1_preview.jpg',
+              highResUrl: '/assets/demo/dna-showcase/pano360/node1_preview.jpg'
+            }
+          ],
+          pinpoints: [
+            {
+              pinpointId: 'pin-single-01',
+              viewId: 'view-0',
+              targetId: 'prod-delta-scara',
+              label: 'Delta High-Speed SCARA',
+              categoryTag: 'Precision Assembly',
+              coordinateSystem: 'NORMALIZED_2D',
+              u: 0.52,
+              v: 0.58
+            }
+          ],
+          products: [
+            {
+              productId: 'prod-delta-scara',
+              name: 'Delta High-Speed SCARA',
+              category: 'Robotics',
+              heroImage: '/assets/demo/dna-showcase/products/apex_cobot_x16.jpg',
+              shortDescription: 'Ultra-fast SCARA robot for electronics assembly.',
+              specs: [['Repeatability', '±0.01mm'], ['Payload', '6kg']]
+            }
+          ],
+          status: 'PUBLISHED'
+        };
+      }
+
+      // Check for Multi-View Showroom demo project
+      if (id === 'proj-multiview-004' || id === 'multiview') {
+        return {
+          projectId: 'proj-multiview-004',
+          reservationId: 'DNA-2026-448203',
+          company: 'Matrix Automation Ltd.',
+          tradeShow: 'Automate 2026',
+          showStartDate: '2026-05-18',
+          experienceType: 'MULTI_VIEW_PHOTO',
+          title: 'Matrix Automation Multi-View Showroom',
+          slug: 'matrix-automation',
+          heroViewId: 'view-0',
+          views: [
+            {
+              viewId: 'view-0',
+              name: '01. Front Aisle Overview',
+              previewUrl: '/assets/demo/dna-showcase/pano360/node0_preview.jpg',
+              highResUrl: '/assets/demo/dna-showcase/pano360/node0_preview.jpg'
+            },
+            {
+              viewId: 'view-1',
+              name: '02. Inspection & Quality Cell',
+              previewUrl: '/assets/demo/dna-showcase/pano360/node2_preview.jpg',
+              highResUrl: '/assets/demo/dna-showcase/pano360/node2_preview.jpg'
+            }
+          ],
+          pinpoints: [
+            {
+              pinpointId: 'pin-multi-01',
+              viewId: 'view-0',
+              targetId: 'prod-matrix-vision',
+              label: 'Matrix 3D Vision Cell',
+              categoryTag: 'Optical Inspection',
+              coordinateSystem: 'NORMALIZED_2D',
+              u: 0.48,
+              v: 0.62
+            }
+          ],
+          products: [
+            {
+              productId: 'prod-matrix-vision',
+              name: 'Matrix 3D Vision Cell',
+              category: 'Inspection',
+              heroImage: '/assets/demo/dna-showcase/products/vector_amr_600.jpg',
+              shortDescription: 'Automated 3D optical inspection cell with sub-micron defect telemetry.',
+              specs: [['Resolution', '0.5 micron'], ['Scan Speed', '300 fps']]
+            }
+          ],
+          status: 'PUBLISHED'
+        };
+      }
+
       // Check for Second Customer demo project
       if (id === 'proj-bioprocess-002' || id === 'DNA-2026-778901' || id === 'bioprocess') {
         return {

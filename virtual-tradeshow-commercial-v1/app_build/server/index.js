@@ -1797,6 +1797,77 @@ app.post('/api/projects/:id/products/quick', async (req, res) => {
   }
 });
 
+// C05.2 Experience Upgrade Endpoint
+app.post('/api/projects/:id/upgrade-experience', async (req, res) => {
+  try {
+    const { targetExperience, panoramaUrl } = req.body;
+    const project = await db.getProjectManifest(req.params.id);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+
+    project.experienceType = targetExperience || 'PHOTO_IMMERSIVE';
+    if (panoramaUrl) {
+      project.views = [
+        {
+          viewId: 'view-0',
+          name: '01. Main 360 Panorama View',
+          previewUrl: panoramaUrl,
+          highResUrl: panoramaUrl
+        }
+      ];
+    }
+    res.json({ success: true, message: 'Project successfully upgraded to 360° Photo Immersive Booth.', project });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// C05.2 Capture Request Endpoint
+app.post('/api/capture-requests', async (req, res) => {
+  try {
+    const { company, email, tradeShow, showStartDate } = req.body;
+    const ticketId = `CAP-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+    const record = { id: ticketId, company, email, tradeShow, showStartDate, status: 'CAPTURE_REQUESTED', createdAt: new Date().toISOString() };
+    res.status(201).json({ success: true, captureRequest: record });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// C05.2 Smart Source Qualification Endpoint
+app.post('/api/source-qualify', (req, res) => {
+  try {
+    const { width, height, mimeType, count } = req.body;
+    const imgCount = parseInt(count, 10) || 1;
+    const w = parseFloat(width) || 0;
+    const h = parseFloat(height) || 0;
+    const aspectRatio = h > 0 ? w / h : 0;
+
+    let category = 'UNKNOWN';
+    let confidence = 'LOW';
+    let route = 'PHOTO_SHOWROOM';
+
+    if (imgCount === 1) {
+      if (Math.abs(aspectRatio - 2.0) < 0.15 && w >= 3840) {
+        category = 'EQUIRECTANGULAR_360';
+        confidence = 'HIGH';
+        route = 'PHOTO_IMMERSIVE';
+      } else {
+        category = 'SINGLE_BOOTH_PHOTO';
+        confidence = 'HIGH';
+        route = 'PHOTO_SHOWROOM';
+      }
+    } else if (imgCount > 1) {
+      category = 'MULTI_PHOTO_CAPTURE_SET';
+      confidence = 'HIGH';
+      route = 'MULTI_VIEW_PHOTO';
+    }
+
+    res.json({ success: true, category, confidence, route, aspectRatio });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // 5. Update Status & Blocking Reason
 app.patch('/api/production-projects/:id/status', async (req, res) => {
   try {

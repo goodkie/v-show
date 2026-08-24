@@ -1,16 +1,29 @@
 /* ============================================================
-   dn’a Virtual Trade Show — Photo Immersive Master Engine (v1.1)
-   Hardened Spherical Coordinate Model (PANORAMA_YAW_PITCH)
+   dn’a Virtual Trade Show — Master Photo Engine (v2.0)
+   Unified Multi-Experience Renderer:
+   1. PHOTO_IMMERSIVE (360° Sphere, PANORAMA_YAW_PITCH)
+   2. PHOTO_SHOWROOM / MULTI_VIEW_PHOTO (High-DPI 2D Pan/Zoom, NORMALIZED_2D)
+   3. DESIGNED_SHOWROOM (Designed Render Canvas, NORMALIZED_2D)
 ============================================================ */
 
 class PhotoImmersiveEngine {
   constructor(options = {}) {
     this.container = options.container;
     this.manifest = options.manifest || {};
+    this.experienceType = this.manifest.experienceType || 'PHOTO_IMMERSIVE';
     this.isEditorMode = !!options.isEditorMode;
     this.onPinpointCreated = options.onPinpointCreated || null;
     this.onProductSelected = options.onProductSelected || null;
 
+    this.currentNodeIdx = 0;
+    this.views = this.manifest.views || [];
+    this.pinpoints = this.manifest.pinpoints || [];
+    this.products = this.manifest.products || [];
+
+    this.hotspotLayer = options.hotspotLayer || null;
+    this.sphereRadius = 500;
+
+    // Three.js 360 properties
     this.scene = null;
     this.camera = null;
     this.renderer = null;
@@ -19,22 +32,17 @@ class PhotoImmersiveEngine {
     this.photoMaterial = null;
     this.textureLoader = null;
     this.textureCache = {};
-
-    this.currentNodeIdx = 0;
-    this.views = this.manifest.views || [];
-    this.pinpoints = this.manifest.pinpoints || [];
-    this.products = this.manifest.products || [];
-
-    this.hotspotLayer = options.hotspotLayer || null;
     this.raycaster = new THREE.Raycaster();
-    this.mouse = new THREE.Vector2();
 
-    this.sphereRadius = 500;
+    // 2D Photo Showroom properties
+    this.img2DElement = null;
+    this.img2DContainer = null;
+    this.panZoom = { scale: 1.0, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
 
     this.init();
   }
 
-  // Spherical coordinate conversions
+  // Spherical coordinate conversions for 360
   static yawPitchToVector3(yaw, pitch, radius = 500) {
     const cosPitch = Math.cos(pitch);
     const x = -radius * cosPitch * Math.sin(yaw);
@@ -52,6 +60,23 @@ class PhotoImmersiveEngine {
 
   init() {
     if (!this.container) return;
+    this.container.innerHTML = '';
+
+    if (this.experienceType === 'PHOTO_IMMERSIVE') {
+      this.init360Sphere();
+    } else {
+      // 2D Photo Showroom / Multi-View Photo / Designed Showroom
+      this.init2DPhotoShowroom();
+    }
+
+    this.renderPinpointMarkers();
+    window.addEventListener('resize', () => this.handleResize());
+  }
+
+  // ============================================================
+  // 360° EQUIRECTANGULAR SPHERE PIPELINE
+  // ============================================================
+  init360Sphere() {
     const width = this.container.clientWidth || 1000;
     const height = this.container.clientHeight || 550;
 
@@ -73,7 +98,6 @@ class PhotoImmersiveEngine {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.18;
 
-    this.container.innerHTML = '';
     this.container.appendChild(this.renderer.domElement);
 
     this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
@@ -88,7 +112,6 @@ class PhotoImmersiveEngine {
     this.controls.minPolarAngle = Math.PI * 0.12;
     this.controls.rotateSpeed = -0.42;
 
-    // True Equirectangular Inverted Sphere
     const sphereGeo = new THREE.SphereGeometry(this.sphereRadius, 128, 64);
     sphereGeo.scale(-1, 1, 1);
 
@@ -103,51 +126,194 @@ class PhotoImmersiveEngine {
     this.photoSphere.position.set(0, 0, 0);
     this.scene.add(this.photoSphere);
 
-    // Initial View Texture Load
     if (this.views.length > 0) {
       this.switchNode(0);
     }
 
-    // Render Pinpoint Markers
-    this.renderPinpointMarkers();
-
-    // Editor Click Handler for Instant Pinpoint Visual Creation
-    this.renderer.domElement.addEventListener('click', (e) => this.handleCanvasClick(e));
-    window.addEventListener('resize', () => this.handleResize());
-
-    this.animate();
+    this.renderer.domElement.addEventListener('click', (e) => this.handleCanvasClick360(e));
+    this.animate360();
   }
 
+  animate360() {
+    if (this.experienceType !== 'PHOTO_IMMERSIVE') return;
+    requestAnimationFrame(() => this.animate360());
+    if (this.controls) this.controls.update();
+    this.updatePinpointsProjection360();
+    if (this.renderer && this.scene && this.camera) {
+      this.renderer.render(this.scene, this.camera);
+    }
+  }
+
+  handleCanvasClick360(event) {
+    const rect = this.container.getBoundingClientRect();
+    const mouseX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    const mouseY = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    this.raycaster.setFromCamera(new THREE.Vector2(mouseX, mouseY), this.camera);
+    const intersects = this.raycaster.intersectObject(this.photoSphere);
+
+    if (intersects.length > 0 && this.onPinpointCreated) {
+      const hit = intersects[0].point;
+      const { yaw, pitch } = PhotoImmersiveEngine.vector3ToYawPitch(hit.x, hit.y, hit.z);
+
+      this.onPinpointCreated({
+        yaw: Number(yaw.toFixed(4)),
+        pitch: Number(pitch.toFixed(4)),
+        coordinateSystem: 'PANORAMA_YAW_PITCH',
+        viewId: this.views[this.currentNodeIdx] ? this.views[this.currentNodeIdx].viewId : 'view-0'
+      });
+    }
+  }
+
+  updatePinpointsProjection360() {
+    if (!this.hotspotLayer) return;
+    const currentView = this.views[this.currentNodeIdx];
+    const currentViewId = currentView ? currentView.viewId : 'view-0';
+    const activePinpoints = this.pinpoints.filter(p => !p.viewId || p.viewId === currentViewId || p.viewId === `view-${this.currentNodeIdx}`);
+
+    const rect = this.container.getBoundingClientRect();
+    const halfW = rect.width / 2;
+    const halfH = rect.height / 2;
+
+    activePinpoints.forEach(pin => {
+      const el = this.hotspotLayer.querySelector(`[data-pin-id="${pin.pinpointId}"]`);
+      if (!el) return;
+
+      let pos;
+      if (pin.yaw !== undefined && pin.pitch !== undefined) {
+        pos = PhotoImmersiveEngine.yawPitchToVector3(Number(pin.yaw), Number(pin.pitch), this.sphereRadius);
+      } else {
+        pos = new THREE.Vector3(pin.x || 0, pin.y || 0, pin.z || -300);
+      }
+
+      const projected = pos.clone().project(this.camera);
+
+      if (projected.z > 1.0) {
+        el.style.display = 'none';
+      } else {
+        el.style.display = 'flex';
+        const screenX = (projected.x * halfW) + halfW;
+        const screenY = -(projected.y * halfH) + halfH;
+        el.style.transform = `translate(-50%, -50%) translate(${screenX}px, ${screenY}px)`;
+      }
+    });
+  }
+
+  // ============================================================
+  // 2D PHOTO SHOWROOM / MULTI-VIEW PIPELINE (NORMALIZED_2D)
+  // ============================================================
+  init2DPhotoShowroom() {
+    this.container.style.position = 'relative';
+    this.container.style.overflow = 'hidden';
+    this.container.style.display = 'flex';
+    this.container.style.alignItems = 'center';
+    this.container.style.justifyContent = 'center';
+    this.container.style.background = '#030712';
+
+    const wrap = document.createElement('div');
+    wrap.style.position = 'relative';
+    wrap.style.width = '100%';
+    wrap.style.height = '100%';
+    wrap.style.display = 'flex';
+    wrap.style.alignItems = 'center';
+    wrap.style.justifyContent = 'center';
+    wrap.style.cursor = 'crosshair';
+
+    this.img2DElement = document.createElement('img');
+    const currentView = this.views[this.currentNodeIdx] || {};
+    this.img2DElement.src = currentView.highResUrl || currentView.previewUrl || currentView.url || '/assets/demo/dna-showcase/pano360/node0_preview.jpg';
+    this.img2DElement.style.maxWidth = '100%';
+    this.img2DElement.style.maxHeight = '100%';
+    this.img2DElement.style.objectFit = 'contain';
+    this.img2DElement.style.userSelect = 'none';
+    this.img2DElement.style.pointerEvents = 'auto';
+
+    wrap.appendChild(this.img2DElement);
+    this.container.appendChild(wrap);
+    this.img2DContainer = wrap;
+
+    this.img2DElement.addEventListener('click', (e) => this.handleCanvasClick2D(e));
+    this.img2DElement.addEventListener('load', () => this.updatePinpointsProjection2D());
+  }
+
+  handleCanvasClick2D(event) {
+    if (!this.onPinpointCreated || !this.img2DElement) return;
+    const rect = this.img2DElement.getBoundingClientRect();
+    const u = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    const v = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
+
+    this.onPinpointCreated({
+      u: Number(u.toFixed(4)),
+      v: Number(v.toFixed(4)),
+      coordinateSystem: 'NORMALIZED_2D',
+      viewId: this.views[this.currentNodeIdx] ? this.views[this.currentNodeIdx].viewId : 'view-0'
+    });
+  }
+
+  updatePinpointsProjection2D() {
+    if (!this.hotspotLayer || !this.img2DElement) return;
+    const currentView = this.views[this.currentNodeIdx];
+    const currentViewId = currentView ? currentView.viewId : 'view-0';
+    const activePinpoints = this.pinpoints.filter(p => !p.viewId || p.viewId === currentViewId || p.viewId === `view-${this.currentNodeIdx}`);
+
+    const rect = this.img2DElement.getBoundingClientRect();
+    const containerRect = this.container.getBoundingClientRect();
+
+    const offsetX = rect.left - containerRect.left;
+    const offsetY = rect.top - containerRect.top;
+
+    activePinpoints.forEach(pin => {
+      const el = this.hotspotLayer.querySelector(`[data-pin-id="${pin.pinpointId}"]`);
+      if (!el) return;
+
+      const u = pin.u !== undefined ? pin.u : 0.5;
+      const v = pin.v !== undefined ? pin.v : 0.5;
+
+      const screenX = offsetX + (u * rect.width);
+      const screenY = offsetY + (v * rect.height);
+
+      el.style.display = 'flex';
+      el.style.transform = `translate(-50%, -50%) translate(${screenX}px, ${screenY}px)`;
+    });
+  }
+
+  // ============================================================
+  // COMMON CONTROLS & PINPOINTS
+  // ============================================================
   switchNode(index) {
     if (!this.views[index]) return;
     this.currentNodeIdx = index;
     const view = this.views[index];
-    const previewUrl = view.previewUrl;
-    const highResUrl = view.highResUrl || view.previewUrl;
 
-    if (this.textureCache[highResUrl]) {
-      this.photoMaterial.map = this.textureCache[highResUrl];
-      this.photoMaterial.needsUpdate = true;
-    } else {
-      // Load 2K preview texture first for instant feedback
-      if (previewUrl && !this.textureCache[previewUrl]) {
-        this.textureLoader.load(previewUrl, (tex) => {
+    if (this.experienceType === 'PHOTO_IMMERSIVE') {
+      const previewUrl = view.previewUrl;
+      const highResUrl = view.highResUrl || view.previewUrl;
+
+      if (this.textureCache[highResUrl]) {
+        this.photoMaterial.map = this.textureCache[highResUrl];
+        this.photoMaterial.needsUpdate = true;
+      } else {
+        if (previewUrl && !this.textureCache[previewUrl]) {
+          this.textureLoader.load(previewUrl, (tex) => {
+            if (THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
+            this.textureCache[previewUrl] = tex;
+            if (!this.textureCache[highResUrl]) {
+              this.photoMaterial.map = tex;
+              this.photoMaterial.needsUpdate = true;
+            }
+          });
+        }
+        this.textureLoader.load(highResUrl, (tex) => {
           if (THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
-          this.textureCache[previewUrl] = tex;
-          if (!this.textureCache[highResUrl]) {
-            this.photoMaterial.map = tex;
-            this.photoMaterial.needsUpdate = true;
-          }
+          this.textureCache[highResUrl] = tex;
+          this.photoMaterial.map = tex;
+          this.photoMaterial.needsUpdate = true;
         });
       }
-
-      // Progressively load 8K/16K master texture
-      this.textureLoader.load(highResUrl, (tex) => {
-        if (THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
-        this.textureCache[highResUrl] = tex;
-        this.photoMaterial.map = tex;
-        this.photoMaterial.needsUpdate = true;
-      });
+    } else {
+      if (this.img2DElement) {
+        this.img2DElement.src = view.highResUrl || view.previewUrl || view.url;
+      }
     }
 
     this.renderPinpointMarkers();
@@ -159,7 +325,6 @@ class PhotoImmersiveEngine {
 
     const currentView = this.views[this.currentNodeIdx];
     const currentViewId = currentView ? currentView.viewId : 'view-0';
-
     const activePinpoints = this.pinpoints.filter(p => !p.viewId || p.viewId === currentViewId || p.viewId === `view-${this.currentNodeIdx}`);
 
     activePinpoints.forEach(pin => {
@@ -182,66 +347,9 @@ class PhotoImmersiveEngine {
 
       this.hotspotLayer.appendChild(el);
     });
-  }
 
-  updatePinpointsProjection() {
-    if (!this.hotspotLayer) return;
-    const currentView = this.views[this.currentNodeIdx];
-    const currentViewId = currentView ? currentView.viewId : 'view-0';
-    const activePinpoints = this.pinpoints.filter(p => !p.viewId || p.viewId === currentViewId || p.viewId === `view-${this.currentNodeIdx}`);
-
-    const rect = this.container.getBoundingClientRect();
-    const halfW = rect.width / 2;
-    const halfH = rect.height / 2;
-
-    activePinpoints.forEach(pin => {
-      const el = this.hotspotLayer.querySelector(`[data-pin-id="${pin.pinpointId}"]`);
-      if (!el) return;
-
-      let pos;
-      if (pin.yaw !== undefined && pin.pitch !== undefined) {
-        // Native spherical coordinates (PANORAMA_YAW_PITCH)
-        pos = PhotoImmersiveEngine.yawPitchToVector3(Number(pin.yaw), Number(pin.pitch), this.sphereRadius);
-      } else {
-        // Fallback / legacy 3D vector
-        pos = new THREE.Vector3(pin.x || 0, pin.y || 0, pin.z || -300);
-      }
-
-      const projected = pos.clone().project(this.camera);
-
-      // Check if marker is in front of camera
-      if (projected.z > 1.0) {
-        el.style.display = 'none';
-      } else {
-        el.style.display = 'flex';
-        const screenX = (projected.x * halfW) + halfW;
-        const screenY = -(projected.y * halfH) + halfH;
-        el.style.transform = `translate(-50%, -50%) translate(${screenX}px, ${screenY}px)`;
-      }
-    });
-  }
-
-  handleCanvasClick(event) {
-    const rect = this.container.getBoundingClientRect();
-    const mouseX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    const mouseY = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-    this.raycaster.setFromCamera(new THREE.Vector2(mouseX, mouseY), this.camera);
-    const intersects = this.raycaster.intersectObject(this.photoSphere);
-
-    if (intersects.length > 0 && this.onPinpointCreated) {
-      const hit = intersects[0].point;
-      const { yaw, pitch } = PhotoImmersiveEngine.vector3ToYawPitch(hit.x, hit.y, hit.z);
-
-      this.onPinpointCreated({
-        yaw: Number(yaw.toFixed(4)),
-        pitch: Number(pitch.toFixed(4)),
-        coordinateSystem: 'PANORAMA_YAW_PITCH',
-        x: Math.round(hit.x),
-        y: Math.round(hit.y),
-        z: Math.round(hit.z),
-        viewId: this.views[this.currentNodeIdx] ? this.views[this.currentNodeIdx].viewId : 'view-0'
-      });
+    if (this.experienceType !== 'PHOTO_IMMERSIVE') {
+      setTimeout(() => this.updatePinpointsProjection2D(), 50);
     }
   }
 
@@ -262,39 +370,47 @@ class PhotoImmersiveEngine {
   }
 
   handleResize() {
-    if (!this.container || !this.renderer) return;
-    const rect = this.container.getBoundingClientRect();
-    const width = rect.width || this.container.clientWidth || 1000;
-    const height = rect.height || this.container.clientHeight || 550;
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize(width, height);
+    if (this.experienceType === 'PHOTO_IMMERSIVE') {
+      if (!this.container || !this.renderer) return;
+      const rect = this.container.getBoundingClientRect();
+      const width = rect.width || this.container.clientWidth || 1000;
+      const height = rect.height || this.container.clientHeight || 550;
+      this.camera.aspect = width / height;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(width, height);
+    } else {
+      this.updatePinpointsProjection2D();
+    }
   }
 
   getPinpointScreenPosition(pinpointId) {
     const pin = this.pinpoints.find(p => p.pinpointId === pinpointId);
     if (!pin) return null;
-    let pos;
-    if (pin.yaw !== undefined && pin.pitch !== undefined) {
-      pos = PhotoImmersiveEngine.yawPitchToVector3(Number(pin.yaw), Number(pin.pitch), this.sphereRadius);
-    } else {
-      pos = new THREE.Vector3(pin.x || 0, pin.y || 0, pin.z || -300);
-    }
-    const rect = this.container.getBoundingClientRect();
-    const projected = pos.clone().project(this.camera);
-    return {
-      screenX: (projected.x * (rect.width / 2)) + (rect.width / 2),
-      screenY: -(projected.y * (rect.height / 2)) + (rect.height / 2),
-      visible: projected.z <= 1.0
-    };
-  }
 
-  animate() {
-    requestAnimationFrame(() => this.animate());
-    if (this.controls) this.controls.update();
-    this.updatePinpointsProjection();
-    if (this.renderer && this.scene && this.camera) {
-      this.renderer.render(this.scene, this.camera);
+    if (this.experienceType === 'PHOTO_IMMERSIVE') {
+      let pos;
+      if (pin.yaw !== undefined && pin.pitch !== undefined) {
+        pos = PhotoImmersiveEngine.yawPitchToVector3(Number(pin.yaw), Number(pin.pitch), this.sphereRadius);
+      } else {
+        pos = new THREE.Vector3(pin.x || 0, pin.y || 0, pin.z || -300);
+      }
+      const rect = this.container.getBoundingClientRect();
+      const projected = pos.clone().project(this.camera);
+      return {
+        screenX: (projected.x * (rect.width / 2)) + (rect.width / 2),
+        screenY: -(projected.y * (rect.height / 2)) + (rect.height / 2),
+        visible: projected.z <= 1.0
+      };
+    } else {
+      if (!this.img2DElement) return null;
+      const rect = this.img2DElement.getBoundingClientRect();
+      const u = pin.u !== undefined ? pin.u : 0.5;
+      const v = pin.v !== undefined ? pin.v : 0.5;
+      return {
+        screenX: rect.left + (u * rect.width),
+        screenY: rect.top + (v * rect.height),
+        visible: true
+      };
     }
   }
 }

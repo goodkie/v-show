@@ -566,6 +566,37 @@
       animation: fadeIn 0.2s ease;
     }
 
+    /* Source Choice Cards */
+    .source-choice-card {
+      background: #070e17;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 16px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .source-choice-card:hover {
+      border-color: #38bdf8;
+      background: rgba(2, 132, 199, 0.08);
+      transform: translateY(-2px);
+    }
+    .source-choice-card.selected {
+      border-color: #0284c7;
+      background: rgba(2, 132, 199, 0.2);
+      box-shadow: 0 4px 16px rgba(2, 132, 199, 0.3);
+    }
+
+    /* Modal Overlays */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+      z-index: 500; display: none; align-items: center; justify-content: center; padding: 20px;
+    }
+    .creator-box {
+      background: #0f172a; border: 1px solid #38bdf8; border-radius: 16px; padding: 24px;
+      max-width: 520px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.85);
+    }
+
     /* Responsive */
     @media (max-width: 860px) {
       .path-cards-grid { grid-template-columns: 1fr; }
@@ -860,42 +891,94 @@
     </section>
 
     <!-- ============================================================
-         DIY PATH — STEP D1 & D2: MINIMAL ASSETS QUICK START
+         DIY PATH — STEP D1 & D2: SMART SOURCE QUALIFICATION GATE
          ============================================================ -->
     <section id="view-diy-step1" class="wizard-view">
       <div class="view-header">
-        <div class="view-badge">Self-Service Builder — Quick Start</div>
-        <h1 class="view-title">Generate Your First Booth Preview</h1>
-        <p class="view-desc">Tell us what assets you already have and generate an instant preview.</p>
+        <div class="view-badge">Smart Source-to-Immersive Gate</div>
+        <h1 class="view-title">Upload Your Booth Assets</h1>
+        <p class="view-desc">Select what visual assets you have. Our smart qualification engine will route you to the best showroom experience.</p>
       </div>
 
-      <div class="box-card">
+      <div class="box-card" style="max-width: 840px;">
         <form id="form-diy-quick" onsubmit="handleDiyQuickSubmit(event)">
-          <div class="form-group" style="margin-bottom: 20px;">
+          <div class="form-group" style="margin-bottom: 24px;">
             <label class="form-label" for="d-company">Company / Brand Name <span class="req">*</span></label>
             <input type="text" id="d-company" class="form-input" required placeholder="e.g. Apex Industrial Automation">
           </div>
 
-          <label class="form-label">What do you already have? (Select all that apply)</label>
-          <div class="asset-choice-grid">
-            <div class="asset-choice-item selected" onclick="toggleAssetChoice(this, 'booth_photos')">📷 Booth Photos</div>
-            <div class="asset-choice-item selected" onclick="toggleAssetChoice(this, 'product_photos')">📦 Product Photos</div>
-            <div class="asset-choice-item" onclick="toggleAssetChoice(this, 'booth_render')">🎨 3D Render</div>
-            <div class="asset-choice-item selected" onclick="toggleAssetChoice(this, 'website')">🌐 Website</div>
-            <div class="asset-choice-item" onclick="toggleAssetChoice(this, 'catalog_pdf')">📄 Catalog PDF</div>
+          <label class="form-label" style="font-size:14px; margin-bottom:12px;">What do you have? <span class="req">*</span></label>
+          <div class="source-cards-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin-bottom:24px;">
+            <!-- 1. 360 BOOTH PHOTO -->
+            <div class="source-choice-card selected" id="sc-360" onclick="selectSourceCategory('EQUIRECTANGULAR_360', this)">
+              <div style="font-size:24px; margin-bottom:6px;">🌐</div>
+              <div style="font-size:13px; font-weight:800; color:#fff;">360° BOOTH PHOTO</div>
+              <div style="font-size:11px; color:#94a3b8; margin-top:4px;">Full 360° Panorama</div>
+            </div>
+
+            <!-- 2. BOOTH PHOTOS -->
+            <div class="source-choice-card" id="sc-multi" onclick="selectSourceCategory('MULTI_PHOTO_CAPTURE_SET', this)">
+              <div style="font-size:24px; margin-bottom:6px;">📸</div>
+              <div style="font-size:13px; font-weight:800; color:#fff;">BOOTH PHOTOS</div>
+              <div style="font-size:11px; color:#94a3b8; margin-top:4px;">Multiple Angles</div>
+            </div>
+
+            <!-- 3. ONE BOOTH PHOTO -->
+            <div class="source-choice-card" id="sc-single" onclick="selectSourceCategory('SINGLE_BOOTH_PHOTO', this)">
+              <div style="font-size:24px; margin-bottom:6px;">🖼️</div>
+              <div style="font-size:13px; font-weight:800; color:#fff;">ONE BOOTH PHOTO</div>
+              <div style="font-size:11px; color:#94a3b8; margin-top:4px;">Single Overview</div>
+            </div>
+
+            <!-- 4. PROFESSIONAL RENDER -->
+            <div class="source-choice-card" id="sc-render" onclick="selectSourceCategory('PROFESSIONAL_BOOTH_RENDER', this)">
+              <div style="font-size:24px; margin-bottom:6px;">🎨</div>
+              <div style="font-size:13px; font-weight:800; color:#fff;">BOOTH RENDER</div>
+              <div style="font-size:11px; color:#94a3b8; margin-top:4px;">3D CAD / Render</div>
+            </div>
+
+            <!-- 5. NOT SURE -->
+            <div class="source-choice-card" id="sc-notsure" onclick="selectSourceCategory('UNKNOWN', this)">
+              <div style="font-size:24px; margin-bottom:6px;">❓</div>
+              <div style="font-size:13px; font-weight:800; color:#fff;">NOT SURE</div>
+              <div style="font-size:11px; color:#94a3b8; margin-top:4px;">Need Guidance</div>
+            </div>
           </div>
 
-          <div class="form-group" style="margin-bottom: 20px;">
-            <label class="form-label">Select Visual Presentation Style</label>
-            <select id="d-style" class="form-select">
-              <option value="photorealistic">Photo Immersive Booth (Ultra-HD 360°)</option>
-              <option value="showroom">3D Interactive Showroom (PBR Robotics Twin)</option>
-            </select>
+          <!-- SMART QUALIFICATION OUTCOME BOX -->
+          <div id="qualification-outcome-box" style="background:rgba(2,132,199,0.12); border:1px solid #0284c7; border-radius:12px; padding:16px 20px; margin-bottom:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span id="qual-badge" style="font-size:11px; font-weight:800; color:#38bdf8; background:rgba(56,189,248,0.2); padding:3px 10px; border-radius:12px; text-transform:uppercase;">
+                READY FOR IMMERSIVE
+              </span>
+              <span id="qual-confidence" style="font-size:11px; color:#94a3b8;">Confidence: HIGH</span>
+            </div>
+            <div id="qual-title" style="font-size:14px; font-weight:800; color:#fff; margin-bottom:4px;">
+              Great — Your 360° source is ready for an Ultra-HD Photo Immersive Booth.
+            </div>
+            <div id="qual-desc" style="font-size:12.5px; color:#cbd5e1; line-height:1.5;">
+              We will generate a 360° spherical digital twin with interactive product pinpoints and buyer RFQ tools.
+            </div>
+          </div>
+
+          <!-- ASSET URL / UPLOAD -->
+          <div class="form-group" style="margin-bottom: 24px;">
+            <label class="form-label" for="d-source-url">Source Asset Image URL</label>
+            <input type="url" id="d-source-url" class="form-input" value="/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg" placeholder="https://your-domain.com/booth-image.jpg">
+          </div>
+
+          <!-- HELPFUL CAPTURE LINKS -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; padding:12px 16px; background:rgba(15,23,42,0.6); border:1px solid var(--border); border-radius:10px;">
+            <span style="font-size:13px; color:#cbd5e1;">Need help capturing your exhibition stand?</span>
+            <div style="display:flex; gap:10px;">
+              <button type="button" class="btn-ui" onclick="openCaptureGuideModal()">📸 Capture Guide</button>
+              <button type="button" class="btn-ui upgrade" onclick="openCaptureServiceModal()">⚡ Request On-Site Capture</button>
+            </div>
           </div>
 
           <div class="form-actions-row">
             <button type="button" class="btn-back-link" onclick="goToView('view-path-selection')">← Back</button>
-            <button type="submit" class="btn-submit-main">Generate First Preview →</button>
+            <button type="submit" class="btn-submit-main" id="btn-diy-generate">Generate First Preview →</button>
           </div>
         </form>
       </div>
@@ -953,6 +1036,69 @@
 
   </main>
 
+  <!-- CAPTURE GUIDE MODAL -->
+  <div id="capture-guide-modal" class="modal-overlay">
+    <div class="creator-box">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="font-size:18px; font-weight:800; color:#38bdf8;">📸 How to Photograph Your Booth</h3>
+        <button style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;" onclick="closeCaptureGuideModal()">✕</button>
+      </div>
+      <div style="font-size:13px; color:#cbd5e1; line-height:1.6; display:flex; flex-direction:column; gap:12px; margin-bottom:20px;">
+        <div>
+          <strong style="color:#38bdf8;">Option 1: BEST &amp; FASTEST — 360° Camera</strong>
+          <p style="color:#94a3b8; font-size:12px;">Use Insta360, Ricoh Theta, or Matterport. Stand in the center of the booth aisle at eye level (1.5m) and take 1–3 panoramas.</p>
+        </div>
+        <div>
+          <strong style="color:#34d399;">Option 2: ACCESSIBLE — Smartphone / Camera</strong>
+          <p style="color:#94a3b8; font-size:12px;">Take a clear horizontal overview shot from 3–5m away, plus close-ups of major machinery and counters. Generates a crisp Multi-View Showroom.</p>
+        </div>
+        <div>
+          <strong style="color:#f59e0b;">Option 3: WHITE-GLOVE — Let dn'a Capture It</strong>
+          <p style="color:#94a3b8; font-size:12px;">Our engineering team conducts on-site 8K HDR 360° photography and pinpoint setup for your trade show stand.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end;">
+        <button type="button" class="btn-ui primary" onclick="closeCaptureGuideModal()">Got It →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CAPTURE SERVICE MODAL -->
+  <div id="capture-service-modal" class="modal-overlay">
+    <div class="creator-box" style="border-color:#f59e0b;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="font-size:18px; font-weight:800; color:#f59e0b;">⚡ Request dn'a On-Site Capture</h3>
+        <button style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;" onclick="closeCaptureServiceModal()">✕</button>
+      </div>
+      <form onsubmit="handleCaptureServiceSubmit(event)">
+        <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:18px;">
+          <div>
+            <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Company Name <span style="color:#f87171;">*</span></label>
+            <input type="text" id="cs-company" required placeholder="Apex Industrial Automation" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+          </div>
+          <div>
+            <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Work Email <span style="color:#f87171;">*</span></label>
+            <input type="email" id="cs-email" required placeholder="contact@company.com" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div>
+              <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Trade Show <span style="color:#f87171;">*</span></label>
+              <input type="text" id="cs-tradeshow" required placeholder="Hannover Messe 2026" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Show Date <span style="color:#f87171;">*</span></label>
+              <input type="date" id="cs-date" required style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+          <button type="button" class="btn-ui" onclick="closeCaptureServiceModal()">Cancel</button>
+          <button type="submit" class="btn-ui upgrade">Submit Capture Request →</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast Element -->
   <div id="wizard-toast"></div>
 
@@ -970,6 +1116,8 @@
       selectedPlan: 'pro',
       planName: 'PRO',
       planPrice: '$299 / mo',
+      sourceCategory: 'EQUIRECTANGULAR_360',
+      sourceUrl: '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg',
       reservationTicket: null,
       diyAssets: ['booth_photos', 'product_photos', 'website'],
       previewEngine: null
@@ -1024,7 +1172,87 @@
       }
     }
 
-    // Managed Flow — Step 1 Submit
+    // Source Selection & Smart Qualification Gate
+    function selectSourceCategory(cat, el) {
+      WizardState.sourceCategory = cat;
+      document.querySelectorAll('.source-choice-card').forEach(c => c.classList.remove('selected'));
+      if (el) el.classList.add('selected');
+
+      const outcomeData = {
+        EQUIRECTANGULAR_360: {
+          badge: 'READY FOR IMMERSIVE',
+          confidence: 'HIGH',
+          title: 'Great — Your 360° source is ready for an Ultra-HD Photo Immersive Booth.',
+          desc: 'We will generate a 360° spherical digital twin with interactive product pinpoints and buyer RFQ tools.',
+          url: '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg'
+        },
+        MULTI_PHOTO_CAPTURE_SET: {
+          badge: 'READY FOR MULTI-VIEW',
+          confidence: 'HIGH',
+          title: 'Multiple Photos Detected — Ready for Multi-View Photo Showroom.',
+          desc: 'Your photos will be organized into spatial vantage points with interactive product drawers.',
+          url: '/assets/demo/dna-showcase/pano360/node0_preview.jpg'
+        },
+        SINGLE_BOOTH_PHOTO: {
+          badge: 'READY FOR PHOTO SHOWROOM',
+          confidence: 'HIGH',
+          title: 'One Photo is Enough to Start — Interactive 2D Photo Showroom.',
+          desc: 'Visitors can zoom, inspect equipment, click Product Pinpoints, and send RFQs.',
+          url: '/assets/demo/dna-showcase/pano360/node1_preview.jpg'
+        },
+        PROFESSIONAL_BOOTH_RENDER: {
+          badge: 'DESIGNED SHOWROOM READY',
+          confidence: 'HIGH',
+          title: '3D Render Detected — Ready for Designed Visual Showroom.',
+          desc: 'Presents your architectural 3D render with high-definition lighting and wholesale buyer tools.',
+          url: '/assets/demo/dna-showcase/pano360/node2_preview.jpg'
+        },
+        UNKNOWN: {
+          badge: 'MORE COVERAGE RECOMMENDED',
+          confidence: 'LOW',
+          title: 'Need guidance? View our capture guide or let dn’a handle photography.',
+          desc: 'We recommend taking a horizontal wide shot or using a 360° camera for optimal results.',
+          url: '/assets/demo/dna-showcase/pano360/node0_preview.jpg'
+        }
+      };
+
+      const out = outcomeData[cat] || outcomeData.UNKNOWN;
+      document.getElementById('qual-badge').textContent = out.badge;
+      document.getElementById('qual-confidence').textContent = `Confidence: ${out.confidence}`;
+      document.getElementById('qual-title').textContent = out.title;
+      document.getElementById('qual-desc').textContent = out.desc;
+      document.getElementById('d-source-url').value = out.url;
+      WizardState.sourceUrl = out.url;
+
+      trackFunnelEvent('source_category_selected', { category: cat });
+    }
+
+    // Modal Helpers
+    function openCaptureGuideModal() { document.getElementById('capture-guide-modal').style.display = 'flex'; }
+    function closeCaptureGuideModal() { document.getElementById('capture-guide-modal').style.display = 'none'; }
+    function openCaptureServiceModal() { document.getElementById('capture-service-modal').style.display = 'flex'; }
+    function closeCaptureServiceModal() { document.getElementById('capture-service-modal').style.display = 'none'; }
+
+    async function handleCaptureServiceSubmit(e) {
+      e.preventDefault();
+      const payload = {
+        company: document.getElementById('cs-company').value.trim(),
+        email: document.getElementById('cs-email').value.trim(),
+        tradeShow: document.getElementById('cs-tradeshow').value.trim(),
+        showStartDate: document.getElementById('cs-date').value
+      };
+      try {
+        await fetch('/api/capture-requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (err) {}
+      closeCaptureServiceModal();
+      alert('Capture Request Received! Our production team will contact you within 24 hours.');
+    }
+
+    // Managed Flow Handlers
     function handleManagedStep1Submit(e) {
       e.preventDefault();
       WizardState.company = document.getElementById('m-company').value.trim();
@@ -1034,16 +1262,10 @@
       WizardState.boothNumber = document.getElementById('m-booth').value.trim();
       WizardState.contact = document.getElementById('m-contact').value.trim();
 
-      trackFunnelEvent('minimal_intake_completed', {
-        company: WizardState.company,
-        tradeShow: WizardState.tradeShow
-      });
-
-      trackFunnelEvent('plan_viewed');
+      trackFunnelEvent('minimal_intake_completed', { company: WizardState.company, tradeShow: WizardState.tradeShow });
       goToView('view-managed-step2');
     }
 
-    // Managed Flow — Select Plan
     function selectManagedPlan(planId, planName, planPrice) {
       WizardState.selectedPlan = planId;
       WizardState.planName = planName;
@@ -1063,7 +1285,6 @@
       trackFunnelEvent('plan_selected', { planId, planName, planPrice });
     }
 
-    // Managed Flow — Confirm Reservation
     async function confirmManagedReservation() {
       const payload = {
         company: WizardState.company,
@@ -1100,7 +1321,6 @@
           goToView('view-managed-step3');
           showToast(WizardState.selectedPlan === 'custom' ? `Custom Quote Ticket ${data.reservation.id} Created!` : `Reservation Ticket ${data.reservation.id} Created!`);
         } else {
-          // Fallback client ticket if offline
           const fallbackId = `DNA-2026-${Math.floor(100000 + Math.random() * 900000)}`;
           document.getElementById('res-ticket-id').textContent = fallbackId;
           document.getElementById('res-ticket-company').textContent = WizardState.company;
@@ -1109,7 +1329,6 @@
           goToView('view-managed-step3');
         }
       } catch (err) {
-        console.error('Reservation API error, using fallback:', err);
         const fallbackId = `DNA-2026-${Math.floor(100000 + Math.random() * 900000)}`;
         document.getElementById('res-ticket-id').textContent = fallbackId;
         document.getElementById('res-ticket-company').textContent = WizardState.company;
@@ -1119,7 +1338,6 @@
       }
     }
 
-    // Managed Flow — Post-Reservation Intake Submit
     async function handleManagedIntakeSubmit(e) {
       e.preventDefault();
       const ticketId = WizardState.reservationTicket ? WizardState.reservationTicket.id : null;
@@ -1139,9 +1357,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(intakeData)
           });
-        } catch (err) {
-          console.warn('Failed to update intake details:', err);
-        }
+        } catch (err) {}
       }
 
       trackFunnelEvent('detailed_intake_completed', { ticketId });
@@ -1149,101 +1365,119 @@
       setTimeout(() => { window.location.href = '/'; }, 1500);
     }
 
-    // DIY Flow — Toggle Asset Choices
-    function toggleAssetChoice(el, assetKey) {
-      el.classList.toggle('selected');
-      if (el.classList.contains('selected')) {
-        if (!WizardState.diyAssets.includes(assetKey)) WizardState.diyAssets.push(assetKey);
-      } else {
-        WizardState.diyAssets = WizardState.diyAssets.filter(k => k !== assetKey);
-      }
-    }
-
-    // DIY Flow — Quick Submit to Fast First Preview
+    // DIY Flow Handlers
     function handleDiyQuickSubmit(e) {
       e.preventDefault();
       WizardState.company = document.getElementById('d-company').value.trim();
-      document.getElementById('diy-preview-title').textContent = `${WizardState.company} — First 3D Booth Preview`;
+      WizardState.sourceUrl = document.getElementById('d-source-url').value.trim();
 
-      trackFunnelEvent('diy_assets_uploaded', { company: WizardState.company, assets: WizardState.diyAssets });
+      const titles = {
+        EQUIRECTANGULAR_360: `${WizardState.company} — 360° Photo Immersive Booth Preview`,
+        MULTI_PHOTO_CAPTURE_SET: `${WizardState.company} — Multi-View Photo Showroom Preview`,
+        SINGLE_BOOTH_PHOTO: `${WizardState.company} — Photo Showroom Preview`,
+        PROFESSIONAL_BOOTH_RENDER: `${WizardState.company} — Designed Visual Showroom Preview`,
+        UNKNOWN: `${WizardState.company} — Booth Showroom Preview`
+      };
+
+      document.getElementById('diy-preview-title').textContent = titles[WizardState.sourceCategory] || `${WizardState.company} — Booth Preview`;
+
+      trackFunnelEvent('diy_source_uploaded', { company: WizardState.company, sourceCategory: WizardState.sourceCategory });
       goToView('view-diy-preview');
       initDiyLivePreview();
       trackFunnelEvent('first_preview_created');
     }
 
-    // Initialize DIY Live Three.js Preview
+    // Dynamic Live Preview Initialization
     function initDiyLivePreview() {
       const container = document.getElementById('diy-canvas-container');
       if (!container) return;
       container.innerHTML = '';
 
-      const width = container.clientWidth || 600;
-      const height = container.clientHeight || 450;
+      if (WizardState.sourceCategory === 'EQUIRECTANGULAR_360') {
+        // 360 Spherical Photo Preview
+        const previewManifest = {
+          experienceType: 'PHOTO_IMMERSIVE',
+          views: [{ viewId: 'view-0', highResUrl: WizardState.sourceUrl, previewUrl: WizardState.sourceUrl }],
+          pinpoints: [
+            { pinpointId: 'pin-demo', label: 'Primary Product Unit', categoryTag: 'FEATURED', yaw: 0, pitch: -0.15 }
+          ],
+          products: [{ productId: 'prod-demo', name: 'Primary Product Unit', category: 'Equipment' }]
+        };
 
-      const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x070e17);
+        const hotspotLayer = document.createElement('div');
+        hotspotLayer.style.position = 'absolute';
+        hotspotLayer.style.inset = '0';
+        hotspotLayer.style.pointerEvents = 'none';
+        container.appendChild(hotspotLayer);
 
-      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-      camera.position.set(0, 1.8, 5.0);
+        WizardState.previewEngine = new PhotoImmersiveEngine({
+          container: container,
+          hotspotLayer: hotspotLayer,
+          manifest: previewManifest
+        });
+      } else if (WizardState.sourceCategory === 'SINGLE_BOOTH_PHOTO' || WizardState.sourceCategory === 'MULTI_PHOTO_CAPTURE_SET') {
+        // 2D Photo Showroom Preview
+        const previewManifest = {
+          experienceType: 'PHOTO_SHOWROOM',
+          views: [{ viewId: 'view-0', highResUrl: WizardState.sourceUrl, previewUrl: WizardState.sourceUrl }],
+          pinpoints: [
+            { pinpointId: 'pin-demo', label: 'Primary Product Unit', categoryTag: 'FEATURED', u: 0.5, v: 0.6 }
+          ],
+          products: [{ productId: 'prod-demo', name: 'Primary Product Unit', category: 'Equipment' }]
+        };
 
-      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-      renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      container.appendChild(renderer.domElement);
+        const hotspotLayer = document.createElement('div');
+        hotspotLayer.style.position = 'absolute';
+        hotspotLayer.style.inset = '0';
+        hotspotLayer.style.pointerEvents = 'none';
+        container.appendChild(hotspotLayer);
 
-      const controls = new THREE.OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.05;
-      controls.target.set(0, 0.8, 0);
+        WizardState.previewEngine = new PhotoImmersiveEngine({
+          container: container,
+          hotspotLayer: hotspotLayer,
+          manifest: previewManifest
+        });
+      } else {
+        // 3D Visual Showroom Preview (Three.js)
+        const width = container.clientWidth || 600;
+        const height = container.clientHeight || 450;
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x070e17);
+        const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+        camera.position.set(0, 1.8, 5.0);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
 
-      // Studio Lighting
-      const ambient = new THREE.AmbientLight(0xffffff, 0.8);
-      scene.add(ambient);
-      const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
-      dirLight.position.set(3, 5, 4);
-      scene.add(dirLight);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 0.8, 0);
 
-      // Floor Grid
-      const grid = new THREE.GridHelper(10, 20, 0x0284c7, 0x1e293b);
-      grid.position.y = 0;
-      scene.add(grid);
+        const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambient);
+        const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
+        dirLight.position.set(3, 5, 4);
+        scene.add(dirLight);
 
-      // Showcase Pedestal with Company Sign
-      const pedGeo = new THREE.CylinderGeometry(1.2, 1.3, 0.4, 32);
-      const pedMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.7 });
-      const pedestal = new THREE.Mesh(pedGeo, pedMat);
-      pedestal.position.set(0, 0.2, 0);
-      scene.add(pedestal);
+        const grid = new THREE.GridHelper(10, 20, 0x0284c7, 0x1e293b);
+        scene.add(grid);
 
-      // Decorative Robotic Arm Proxy
-      const armGeo = new THREE.BoxGeometry(0.3, 0.8, 0.3);
-      const armMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.2, metalness: 0.8 });
-      const arm = new THREE.Mesh(armGeo, armMat);
-      arm.position.set(0, 0.8, 0);
-      scene.add(arm);
+        const armGeo = new THREE.BoxGeometry(0.5, 0.9, 0.5);
+        const armMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.2, metalness: 0.8 });
+        const arm = new THREE.Mesh(armGeo, armMat);
+        arm.position.set(0, 0.8, 0);
+        scene.add(arm);
 
-      // Glowing Halo Ring
-      const ringGeo = new THREE.RingGeometry(1.35, 1.45, 32);
-      const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide });
-      const ring = new THREE.Mesh(ringGeo, ringMat);
-      ring.rotation.x = Math.PI / 2;
-      ring.position.y = 0.02;
-      scene.add(ring);
-
-      function animate() {
-        requestAnimationFrame(animate);
-        arm.rotation.y += 0.008;
-        controls.update();
-        renderer.render(scene, camera);
+        function animate() {
+          requestAnimationFrame(animate);
+          arm.rotation.y += 0.008;
+          controls.update();
+          renderer.render(scene, camera);
+        }
+        animate();
       }
-      animate();
-
-      window.addEventListener('resize', () => {
-        if (!container.clientWidth) return;
-        camera.aspect = container.clientWidth / container.clientHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(container.clientWidth, container.clientHeight);
-      });
     }
 
     // Zero-Loss DIY to Managed Handoff
@@ -1254,7 +1488,6 @@
       showToast('Preserved your company name and assets. Starting Managed reservation.');
     }
 
-    // Auto-init on page load
     document.addEventListener('DOMContentLoaded', () => {
       trackFunnelEvent('wizard_opened');
     });

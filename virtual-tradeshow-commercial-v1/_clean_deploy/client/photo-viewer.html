@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Photo Immersive Booth — dn’a Virtual Trade Show</title>
+  <title>Photo Booth Viewer — dn’a Virtual Trade Show</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -37,7 +37,7 @@
       position: relative;
     }
 
-    /* TOP NAV WITH 2X OFFICIAL LOGO */
+    /* TOP NAV */
     #topbar {
       height: 58px; flex-shrink: 0;
       background: rgba(5, 11, 22, 0.98);
@@ -63,6 +63,7 @@
     }
     .btn-ui:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.25); color: #fff; }
     .btn-ui.primary { background: linear-gradient(135deg, #0284c7, #2563eb); border-color: #38bdf8; color: #fff; font-weight: 800; }
+    .btn-ui.upgrade { background: linear-gradient(135deg, #d97706, #b45309); border-color: #f59e0b; color: #fff; font-weight: 800; }
 
     /* WORKSPACE */
     #studio-workspace {
@@ -73,7 +74,7 @@
       position: relative; width: 100%; height: 100%; border-radius: 16px; overflow: hidden;
       border: 1px solid var(--panel-border); background: #030712;
     }
-    #three-canvas-box { width: 100%; height: 100%; }
+    #three-canvas-box { width: 100%; height: 100%; position: relative; }
     #hotspot-layer { position: absolute; inset: 0; pointer-events: none; }
 
     /* PINPOINT STYLES */
@@ -130,20 +131,14 @@
     .drawer-specs-table td:first-child { color: #94a3b8; width: 40%; }
     .drawer-actions { display: flex; flex-direction: column; gap: 8px; padding: 18px 20px; border-top: 1px solid rgba(255,255,255,0.08); }
 
-    /* IN-VIEWER PINPOINT CREATOR MODAL */
-    #pinpoint-creator-modal {
+    /* MODALS */
+    .modal-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
       z-index: 300; display: none; align-items: center; justify-content: center; padding: 20px;
     }
     .creator-box {
       background: #0f172a; border: 1px solid #38bdf8; border-radius: 16px; padding: 24px;
       max-width: 440px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-    }
-
-    /* BUYER TOOL INQUIRY MODAL */
-    #buyer-inquiry-modal {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
-      z-index: 350; display: none; align-items: center; justify-content: center; padding: 20px;
     }
 
     @media (max-width: 860px) {
@@ -156,18 +151,19 @@
 <body>
 
   <div id="app-layout">
-    <!-- TOPBAR WITH 2X LOGO -->
+    <!-- TOPBAR -->
     <header id="topbar">
       <div class="brand-group">
         <a href="/" class="brand-logo" title="dn'a Home">
-          <img src="/assets/brand/dna_logo_white.png" alt="dn'a DIGITAL NETWORKING ADVANTAGE">
+          <img src="/assets/brand/dna_logo_white.png" alt="dn'a">
         </a>
-        <div class="brand-badge">
+        <div class="brand-badge" id="header-experience-badge">
           <div class="pulse-dot"></div>
-          PHOTO IMMERSIVE BOOTH
+          <span id="badge-text">PHOTO IMMERSIVE BOOTH</span>
         </div>
       </div>
       <div class="top-actions">
+        <button id="btn-upgrade-topbar" class="btn-ui upgrade" style="display:none;" onclick="openUpgradeModal()">⚡ Upgrade to 360° Immersive</button>
         <a href="/builder.html" class="btn-ui primary">BUILD A BOOTH LIKE THIS →</a>
         <button class="btn-ui" onclick="openBuyerInquiry('REQUEST_QUOTE')">REQUEST RFQ</button>
       </div>
@@ -175,12 +171,12 @@
 
     <!-- MAIN STUDIO WORKSPACE -->
     <main id="studio-workspace">
-      <!-- 3D PHOTO IMMERSIVE CONTAINER -->
+      <!-- VIEWER CONTAINER -->
       <div id="viewer-container">
         <div id="three-canvas-box"></div>
         <div id="hotspot-layer"></div>
 
-        <div style="position: absolute; top: 14px; left: 14px; background: rgba(15,23,42,0.85); padding: 5px 12px; border-radius: 8px; border: 1px solid var(--panel-border); font-size: 11px; font-weight: 700; color: #38bdf8;">
+        <div id="viewer-mode-tag" style="position: absolute; top: 14px; left: 14px; background: rgba(15,23,42,0.85); padding: 5px 12px; border-radius: 8px; border: 1px solid var(--panel-border); font-size: 11px; font-weight: 700; color: #38bdf8;">
           PHOTO IMMERSIVE TOUR — 360° EXPLORATION
         </div>
 
@@ -189,22 +185,24 @@
         </div>
       </div>
 
-      <!-- RIGHT SIDEBAR (VANTAGE POINTS & BOOTH INFO) -->
+      <!-- RIGHT SIDEBAR -->
       <aside id="sidebar-workspace">
         <div>
           <div class="sidebar-sec-title">Spatial Vantage Points</div>
-          <div class="booth-views-list" id="views-buttons-tray">
-            <button class="view-btn active" onclick="switchActiveView(0)">01. Main Booth Center</button>
-            <button class="view-btn" onclick="switchActiveView(1)">02. Cobot Workstation</button>
-            <button class="view-btn" onclick="switchActiveView(2)">03. AMR &amp; Automation Cell</button>
-          </div>
+          <div class="booth-views-list" id="views-buttons-tray"></div>
 
           <div class="sidebar-sec-title">Exhibitor Profile</div>
-          <div style="font-size: 13px; color: #fff; font-weight: 700;" id="sidebar-company-name">Apex Industrial Automation</div>
-          <div style="font-size: 11.5px; color: #94a3b8; margin-top: 2px;" id="sidebar-show-name">Hannover Messe 2026</div>
+          <div style="font-size: 13px; color: #fff; font-weight: 700;" id="sidebar-company-name">Exhibitor</div>
+          <div style="font-size: 11.5px; color: #94a3b8; margin-top: 2px;" id="sidebar-show-name">Virtual Trade Show 2026</div>
         </div>
 
         <div>
+          <div id="sidebar-upgrade-card" style="display:none; background:rgba(217,119,6,0.15); border:1px solid #f59e0b; border-radius:10px; padding:12px; margin-bottom:12px;">
+            <div style="font-size:11px; font-weight:800; color:#f59e0b; margin-bottom:4px;">UPGRADE AVAILABLE</div>
+            <div style="font-size:12px; color:#cbd5e1; margin-bottom:8px;">Have a 360° photo? Convert this booth to a full 360° Immersive Twin.</div>
+            <button class="btn-ui upgrade" style="width:100%; justify-content:center; padding:8px;" onclick="openUpgradeModal()">Convert to 360° Booth →</button>
+          </div>
+
           <a href="/card.html" target="_blank" class="btn-ui" style="width: 100%; justify-content: center; margin-bottom: 8px;">
             🪪 Smart Exhibitor Card
           </a>
@@ -241,7 +239,7 @@
     </div>
 
     <!-- IN-VIEWER VISUAL PINPOINT CREATOR MODAL -->
-    <div id="pinpoint-creator-modal">
+    <div id="pinpoint-creator-modal" class="modal-overlay">
       <div class="creator-box">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
           <h3 style="font-size: 16px; font-weight: 800; color: #fff;">Add Product Pinpoint</h3>
@@ -272,8 +270,36 @@
       </div>
     </div>
 
-    <!-- BUYER INQUIRY MODAL (RFQ / INFO / SAMPLE) -->
-    <div id="buyer-inquiry-modal">
+    <!-- EXPERIENCE UPGRADE MODAL -->
+    <div id="upgrade-experience-modal" class="modal-overlay">
+      <div class="creator-box" style="border-color:#f59e0b;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="font-size: 16px; font-weight: 800; color: #f59e0b;">Upgrade to 360° Photo Immersive</h3>
+          <button style="background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer;" onclick="closeUpgradeModal()">✕</button>
+        </div>
+
+        <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 16px; line-height: 1.5;">
+          All your registered products, catalog, Smart Card, and collected buyer leads will be <strong>100% preserved</strong>!
+        </p>
+
+        <form onsubmit="handleUpgradeSubmit(event)">
+          <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px;">
+            <div>
+              <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">360° Panorama Image URL (2:1 Equirectangular) <span style="color:#f87171;">*</span></label>
+              <input type="url" id="upg-pano-url" required value="/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button type="button" class="btn-ui" onclick="closeUpgradeModal()">Cancel</button>
+            <button type="submit" class="btn-ui upgrade">Upgrade Booth Now →</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- BUYER INQUIRY MODAL -->
+    <div id="buyer-inquiry-modal" class="modal-overlay">
       <div class="creator-box">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
           <h3 style="font-size: 16px; font-weight: 800; color: #fff;" id="buyer-modal-title">Wholesale Inquiry</h3>
@@ -314,21 +340,21 @@
     let photoEngine = null;
     let pendingPinpointCoord = null;
     let activeProjectId = 'demo-apex';
+    let currentManifest = null;
 
-    // Parse URL params
     const urlParams = new URLSearchParams(window.location.search);
-    const projectQuery = urlParams.get('project') || 'demo-apex';
-    activeProjectId = projectQuery;
+    activeProjectId = urlParams.get('project') || 'demo-apex';
 
     async function loadProject() {
       try {
         const res = await fetch(`/api/projects/${activeProjectId}/manifest`);
         const data = await res.json();
-        const manifest = (data.success && data.manifest) ? data.manifest : getFallbackManifest();
-        initEngine(manifest);
+        currentManifest = (data.success && data.manifest) ? data.manifest : getFallbackManifest();
+        initEngine(currentManifest);
       } catch (err) {
         console.warn('Using fallback manifest:', err);
-        initEngine(getFallbackManifest());
+        currentManifest = getFallbackManifest();
+        initEngine(currentManifest);
       }
     }
 
@@ -337,6 +363,7 @@
         projectId: activeProjectId,
         company: 'Apex Industrial Automation',
         tradeShow: 'Hannover Messe 2026',
+        experienceType: 'PHOTO_IMMERSIVE',
         views: [
           {
             viewId: 'view-0',
@@ -364,7 +391,7 @@
             targetId: 'prod-apex-cobot-x16',
             label: 'Apex Cobot X16',
             categoryTag: 'Collaborative Robotics',
-            x: 0, y: -65, z: -380
+            yaw: 0, pitch: -0.17
           },
           {
             pinpointId: 'pin-02',
@@ -372,7 +399,7 @@
             targetId: 'prod-vector-amr-600',
             label: 'Vector AMR 600',
             categoryTag: 'Autonomous Intralogistics',
-            x: -240, y: -110, z: -320
+            yaw: -0.64, pitch: -0.29
           },
           {
             pinpointId: 'pin-03',
@@ -380,7 +407,7 @@
             targetId: 'prod-titan-delta-d12',
             label: 'Titan Delta D12',
             categoryTag: 'High-Speed Packaging',
-            x: 230, y: -30, z: -320
+            yaw: 0.62, pitch: -0.08
           },
           {
             pinpointId: 'pin-04',
@@ -388,7 +415,7 @@
             targetId: 'prod-hyperion-scara-s8',
             label: 'Hyperion SCARA S8',
             categoryTag: 'Precision Assembly',
-            x: -180, y: 40, z: -330
+            yaw: -0.49, pitch: 0.11
           }
         ],
         products: (typeof DNA_CANONICAL_PRODUCTS !== 'undefined') ? Object.values(DNA_CANONICAL_PRODUCTS) : []
@@ -396,8 +423,43 @@
     }
 
     function initEngine(manifest) {
+      const expType = manifest.experienceType || 'PHOTO_IMMERSIVE';
+      
+      const badgeTextMap = {
+        PHOTO_IMMERSIVE: 'PHOTO IMMERSIVE BOOTH',
+        PHOTO_SHOWROOM: 'PHOTO SHOWROOM',
+        MULTI_VIEW_PHOTO: 'MULTI-VIEW PHOTO BOOTH',
+        DESIGNED_SHOWROOM: 'DESIGNED VISUAL SHOWROOM'
+      };
+
+      const tagTextMap = {
+        PHOTO_IMMERSIVE: 'PHOTO IMMERSIVE TOUR — 360° EXPLORATION',
+        PHOTO_SHOWROOM: 'PHOTO SHOWROOM — INTERACTIVE 2D PAN / ZOOM',
+        MULTI_VIEW_PHOTO: 'MULTI-VIEW PHOTO BOOTH — SPATIAL VANTAGE POINTS',
+        DESIGNED_SHOWROOM: 'DESIGNED VISUAL SHOWROOM — ARCHITECTURAL VIEW'
+      };
+
+      document.getElementById('badge-text').textContent = badgeTextMap[expType] || 'PHOTO IMMERSIVE BOOTH';
+      document.getElementById('viewer-mode-tag').textContent = tagTextMap[expType] || 'PHOTO BOOTH';
+
+      // Upgrade controls
+      const isUpgradable = expType === 'PHOTO_SHOWROOM' || expType === 'MULTI_VIEW_PHOTO';
+      document.getElementById('btn-upgrade-topbar').style.display = isUpgradable ? 'flex' : 'none';
+      document.getElementById('sidebar-upgrade-card').style.display = isUpgradable ? 'block' : 'none';
+
       document.getElementById('sidebar-company-name').textContent = manifest.company || 'Exhibitor';
       document.getElementById('sidebar-show-name').textContent = manifest.tradeShow || 'Virtual Trade Show 2026';
+
+      // Build views buttons
+      const viewsTray = document.getElementById('views-buttons-tray');
+      viewsTray.innerHTML = '';
+      (manifest.views || []).forEach((v, i) => {
+        const b = document.createElement('button');
+        b.className = `view-btn ${i === 0 ? 'active' : ''}`;
+        b.textContent = v.name || `View 0${i + 1}`;
+        b.onclick = () => switchActiveView(i);
+        viewsTray.appendChild(b);
+      });
 
       photoEngine = new PhotoImmersiveEngine({
         container: document.getElementById('three-canvas-box'),
@@ -451,6 +513,37 @@
       document.getElementById('pinpoint-creator-modal').style.display = 'none';
     }
 
+    function openUpgradeModal() {
+      document.getElementById('upgrade-experience-modal').style.display = 'flex';
+    }
+
+    function closeUpgradeModal() {
+      document.getElementById('upgrade-experience-modal').style.display = 'none';
+    }
+
+    async function handleUpgradeSubmit(e) {
+      e.preventDefault();
+      const panoUrl = document.getElementById('upg-pano-url').value.trim();
+
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/upgrade-experience`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            targetExperience: 'PHOTO_IMMERSIVE',
+            panoramaUrl: panoUrl
+          })
+        });
+        const data = await res.json();
+        closeUpgradeModal();
+        alert('Upgrade Successful! Converting booth to 360° Photo Immersive...');
+        window.location.reload();
+      } catch (err) {
+        alert('Upgrade recorded. Reloading view.');
+        window.location.reload();
+      }
+    }
+
     async function handleQuickPinpointSubmit(e) {
       e.preventDefault();
       const prodName = document.getElementById('quick-prod-name').value.trim();
@@ -465,18 +558,19 @@
         category: 'New Equipment'
       };
 
+      const coordSys = pendingPinpointCoord && pendingPinpointCoord.coordinateSystem ? pendingPinpointCoord.coordinateSystem : (currentManifest.experienceType === 'PHOTO_IMMERSIVE' ? 'PANORAMA_YAW_PITCH' : 'NORMALIZED_2D');
+
       const newPin = {
         pinpointId: `pin-${Date.now()}`,
         targetId: newProd.productId,
         label: prodName,
         categoryTag: 'NEW PRODUCT',
+        coordinateSystem: coordSys,
+        viewId: pendingPinpointCoord ? pendingPinpointCoord.viewId : 'view-0',
         yaw: pendingPinpointCoord ? pendingPinpointCoord.yaw : 0,
         pitch: pendingPinpointCoord ? pendingPinpointCoord.pitch : 0,
-        coordinateSystem: 'PANORAMA_YAW_PITCH',
-        x: pendingPinpointCoord ? pendingPinpointCoord.x : 0,
-        y: pendingPinpointCoord ? pendingPinpointCoord.y : 0,
-        z: pendingPinpointCoord ? pendingPinpointCoord.z : -300,
-        viewId: pendingPinpointCoord ? pendingPinpointCoord.viewId : 'view-0'
+        u: pendingPinpointCoord ? pendingPinpointCoord.u : 0.5,
+        v: pendingPinpointCoord ? pendingPinpointCoord.v : 0.5
       };
 
       if (photoEngine) {
