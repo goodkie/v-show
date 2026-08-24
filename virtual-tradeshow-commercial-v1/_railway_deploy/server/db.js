@@ -2773,7 +2773,90 @@ class JSONDatabase {
     db.productionProjects = db.productionProjects || [];
     const p = db.productionProjects.find(x => x.id === id || x.reservationId === id || x.slug === id);
     if (!p) {
-      // Fallback default manifest for demo or unseeded projects
+      // Check for Second Customer demo project
+      if (id === 'proj-bioprocess-002' || id === 'DNA-2026-778901' || id === 'bioprocess') {
+        return {
+          projectId: 'proj-bioprocess-002',
+          reservationId: 'DNA-2026-778901',
+          company: 'BioProcess Automation Corp.',
+          tradeShow: 'BioProcess International Expo 2026',
+          showStartDate: '2026-11-04',
+          experienceType: 'PHOTO_IMMERSIVE',
+          title: 'BioProcess Automation Corp. Showroom',
+          slug: 'bioprocess-automation',
+          heroViewId: 'view-0',
+          views: [
+            {
+              viewId: 'view-0',
+              name: '01. Bioreactor Main Suite',
+              previewUrl: '/assets/demo/dna-showcase/pano360/node0_preview.jpg',
+              highResUrl: '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg',
+              master16kUrl: '/assets/demo/dna-showcase/pano360/node0_360_panorama_16k.jpg'
+            }
+          ],
+          pinpoints: [
+            {
+              pinpointId: 'pin-bio-01',
+              viewId: 'view-0',
+              targetId: 'prod-bio-br500',
+              label: 'Bioreactor System BR-500',
+              shortLabel: 'Bioreactor',
+              categoryTag: 'Bioprocessing',
+              yaw: -0.32,
+              pitch: -0.15,
+              coordinateSystem: 'PANORAMA_YAW_PITCH',
+              x: 150, y: -75, z: -350
+            },
+            {
+              pinpointId: 'pin-bio-02',
+              viewId: 'view-0',
+              targetId: 'prod-bio-c800',
+              label: 'Centrifuge System C-800',
+              shortLabel: 'Centrifuge',
+              categoryTag: 'Harvesting',
+              yaw: 0.45,
+              pitch: -0.08,
+              coordinateSystem: 'PANORAMA_YAW_PITCH',
+              x: -200, y: -40, z: -330
+            }
+          ],
+          products: [
+            {
+              productId: 'prod-bio-br500',
+              name: 'Bioreactor System BR-500',
+              model: 'BPA-BR-500',
+              category: 'Bioprocessing Systems',
+              heroImage: '/assets/demo/dna-showcase/products/apex_cobot_x16.jpg',
+              shortDescription: 'High-throughput single-use continuous stirred-tank bioreactor with digital sensor telemetry.',
+              specs: [
+                ['Working Volume', '500 L Max'],
+                ['Impeller Speed', '20 - 350 RPM'],
+                ['pH / DO Sensors', 'Optical Non-Invasive Patch']
+              ],
+              completionLevel: 'COMPLETE'
+            },
+            {
+              productId: 'prod-bio-c800',
+              name: 'Centrifuge System C-800',
+              model: 'BPA-CF-800',
+              category: 'Cell Harvesting',
+              heroImage: '/assets/demo/dna-showcase/products/vector_amr_600.jpg',
+              shortDescription: 'Automated continuous cell harvesting centrifuge system with disposable flow path.',
+              specs: [
+                ['Max G-Force', '12,000 × g'],
+                ['Throughput', '250 L/hr Continuous'],
+                ['Enclosure', 'Hermetically Sealed Stainless Steel']
+              ],
+              completionLevel: 'COMPLETE'
+            }
+          ],
+          draftRevision: 1,
+          publishedRevision: 1,
+          status: 'PUBLISHED'
+        };
+      }
+
+      // Fallback default manifest for Apex demo
       return {
         projectId: id,
         company: 'Apex Industrial Automation',
@@ -2820,10 +2903,12 @@ class JSONDatabase {
             label: 'Apex Cobot X16',
             shortLabel: 'Collaborative Robotics',
             categoryTag: 'Collaborative Robotics',
+            yaw: 0,
+            pitch: -0.17,
+            coordinateSystem: 'PANORAMA_YAW_PITCH',
             x: 0,
             y: -65,
-            z: -380,
-            coordinateSystem: 'WORLD_3D'
+            z: -380
           },
           {
             pinpointId: 'pin-02',
@@ -2832,10 +2917,12 @@ class JSONDatabase {
             label: 'Vector AMR 600',
             shortLabel: 'Autonomous Logistics',
             categoryTag: 'Autonomous Intralogistics',
+            yaw: -0.64,
+            pitch: -0.27,
+            coordinateSystem: 'PANORAMA_YAW_PITCH',
             x: -240,
             y: -110,
-            z: -320,
-            coordinateSystem: 'WORLD_3D'
+            z: -320
           },
           {
             pinpointId: 'pin-03',
@@ -2844,10 +2931,12 @@ class JSONDatabase {
             label: 'Titan Delta D12',
             shortLabel: 'High-Speed Packaging',
             categoryTag: 'High-Speed Packaging',
+            yaw: 0.62,
+            pitch: -0.07,
+            coordinateSystem: 'PANORAMA_YAW_PITCH',
             x: 230,
             y: -30,
-            z: -320,
-            coordinateSystem: 'WORLD_3D'
+            z: -320
           },
           {
             pinpointId: 'pin-04',
@@ -2856,10 +2945,12 @@ class JSONDatabase {
             label: 'Hyperion SCARA S8',
             shortLabel: 'Precision Assembly',
             categoryTag: 'Precision Assembly',
+            yaw: -0.49,
+            pitch: 0.10,
+            coordinateSystem: 'PANORAMA_YAW_PITCH',
             x: -180,
             y: 40,
-            z: -330,
-            coordinateSystem: 'WORLD_3D'
+            z: -330
           }
         ],
         products: [
@@ -2981,10 +3072,12 @@ class JSONDatabase {
         label: pinpointData.label || 'New Product Pinpoint',
         shortLabel: pinpointData.shortLabel || pinpointData.label || 'Product',
         categoryTag: pinpointData.categoryTag || 'Product',
+        yaw: pinpointData.yaw !== undefined ? Number(pinpointData.yaw) : 0,
+        pitch: pinpointData.pitch !== undefined ? Number(pinpointData.pitch) : 0,
+        coordinateSystem: pinpointData.coordinateSystem || 'PANORAMA_YAW_PITCH',
         x: Number(pinpointData.x) || 0,
         y: Number(pinpointData.y) || 0,
         z: pinpointData.z !== undefined ? Number(pinpointData.z) : -300,
-        coordinateSystem: pinpointData.coordinateSystem || 'WORLD_3D',
         displayOrder: p.pinpoints.length,
         isVisible: true,
         createdBy: actor,

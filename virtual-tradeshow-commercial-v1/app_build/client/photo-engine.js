@@ -1,6 +1,6 @@
 /* ============================================================
-   dn’a Virtual Trade Show — Photo Immersive Master Engine (v1.0)
-   Standard Data-Driven Equirectangular Sphere, Pinpoints & Buyer Tools
+   dn’a Virtual Trade Show — Photo Immersive Master Engine (v1.1)
+   Hardened Spherical Coordinate Model (PANORAMA_YAW_PITCH)
 ============================================================ */
 
 class PhotoImmersiveEngine {
@@ -29,7 +29,25 @@ class PhotoImmersiveEngine {
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
 
+    this.sphereRadius = 500;
+
     this.init();
+  }
+
+  // Spherical coordinate conversions
+  static yawPitchToVector3(yaw, pitch, radius = 500) {
+    const cosPitch = Math.cos(pitch);
+    const x = -radius * cosPitch * Math.sin(yaw);
+    const y = radius * Math.sin(pitch);
+    const z = -radius * cosPitch * Math.cos(yaw);
+    return new THREE.Vector3(x, y, z);
+  }
+
+  static vector3ToYawPitch(x, y, z) {
+    const radius = Math.sqrt(x * x + y * y + z * z) || 1;
+    const yaw = Math.atan2(-x, -z);
+    const pitch = Math.asin(Math.max(-1, Math.min(1, y / radius)));
+    return { yaw, pitch, radius };
   }
 
   init() {
@@ -71,7 +89,7 @@ class PhotoImmersiveEngine {
     this.controls.rotateSpeed = -0.42;
 
     // True Equirectangular Inverted Sphere
-    const sphereGeo = new THREE.SphereGeometry(500, 128, 64);
+    const sphereGeo = new THREE.SphereGeometry(this.sphereRadius, 128, 64);
     sphereGeo.scale(-1, 1, 1);
 
     this.photoMaterial = new THREE.MeshBasicMaterial({
@@ -180,7 +198,15 @@ class PhotoImmersiveEngine {
       const el = this.hotspotLayer.querySelector(`[data-pin-id="${pin.pinpointId}"]`);
       if (!el) return;
 
-      const pos = new THREE.Vector3(pin.x || 0, pin.y || 0, pin.z || -300);
+      let pos;
+      if (pin.yaw !== undefined && pin.pitch !== undefined) {
+        // Native spherical coordinates (PANORAMA_YAW_PITCH)
+        pos = PhotoImmersiveEngine.yawPitchToVector3(Number(pin.yaw), Number(pin.pitch), this.sphereRadius);
+      } else {
+        // Fallback / legacy 3D vector
+        pos = new THREE.Vector3(pin.x || 0, pin.y || 0, pin.z || -300);
+      }
+
       const projected = pos.clone().project(this.camera);
 
       // Check if marker is in front of camera
@@ -205,7 +231,12 @@ class PhotoImmersiveEngine {
 
     if (intersects.length > 0 && this.onPinpointCreated) {
       const hit = intersects[0].point;
+      const { yaw, pitch } = PhotoImmersiveEngine.vector3ToYawPitch(hit.x, hit.y, hit.z);
+
       this.onPinpointCreated({
+        yaw: Number(yaw.toFixed(4)),
+        pitch: Number(pitch.toFixed(4)),
+        coordinateSystem: 'PANORAMA_YAW_PITCH',
         x: Math.round(hit.x),
         y: Math.round(hit.y),
         z: Math.round(hit.z),
@@ -238,6 +269,24 @@ class PhotoImmersiveEngine {
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height);
+  }
+
+  getPinpointScreenPosition(pinpointId) {
+    const pin = this.pinpoints.find(p => p.pinpointId === pinpointId);
+    if (!pin) return null;
+    let pos;
+    if (pin.yaw !== undefined && pin.pitch !== undefined) {
+      pos = PhotoImmersiveEngine.yawPitchToVector3(Number(pin.yaw), Number(pin.pitch), this.sphereRadius);
+    } else {
+      pos = new THREE.Vector3(pin.x || 0, pin.y || 0, pin.z || -300);
+    }
+    const rect = this.container.getBoundingClientRect();
+    const projected = pos.clone().project(this.camera);
+    return {
+      screenX: (projected.x * (rect.width / 2)) + (rect.width / 2),
+      screenY: -(projected.y * (rect.height / 2)) + (rect.height / 2),
+      visible: projected.z <= 1.0
+    };
   }
 
   animate() {
