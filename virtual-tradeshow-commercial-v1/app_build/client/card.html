@@ -179,26 +179,30 @@
       <div class="rep-company">dn’a Industrial Automation Corp.</div>
     </div>
 
-    <div class="card-body">
+      <!-- Smart Card & NFC Stand Showcase Banner -->
+      <div style="width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.5); background: #000;">
+        <img src="/assets/brand/smart_card_exhibit.jpg" alt="DN'a Smart Card & NFC Stand" style="width: 100%; height: auto; display: block;">
+      </div>
+
       <!-- 1-Click Save Contact -->
       <button class="btn-primary-card" onclick="downloadVCard()">
         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         Save Contact to Phone (.vcf)
       </button>
 
-      <!-- Communication Actions -->
+      <!-- Communication Actions (No Emojis) -->
       <div class="action-grid">
         <a href="tel:+13365550142" class="btn-card-action">
-          📞 Direct Call
+          Direct Call
         </a>
         <a href="mailto:julian.vance@havenoak.example?subject=Inquiry%20from%20Trade%20Show" class="btn-card-action">
-          ✉ Send Email
+          Send Email
         </a>
         <a href="/demo.html" class="btn-card-action" style="background:#0f2847; border-color:#0284c7; color:#38bdf8;">
-          🌐 3D Booth
+          3D Showroom
         </a>
-        <a href="/qr.html" class="btn-card-action">
-          ▦ Product QRs
+        <a href="/pricing.html" class="btn-card-action" style="background:#0c1d33; border-color:#38bdf8; color:#fff;">
+          Pricing Plans
         </a>
       </div>
 
@@ -217,8 +221,8 @@
           <span class="info-val">Interhall Stand W-412</span>
         </div>
         <div class="info-row">
-          <span class="info-label">Show Dates</span>
-          <span class="info-val">Oct 17 – 21, 2026</span>
+          <span class="info-label">Hardware Pass</span>
+          <span class="info-val" style="color: #38bdf8;">NFC Tap & QR Line Sheet</span>
         </div>
       </div>
 
@@ -243,8 +247,15 @@
         </a>
       </div>
 
-      <div style="text-align: center; margin-top: 24px;">
-        <a href="/demo.html" style="color: var(--text-muted); font-size: 12px; text-decoration: none;">
+      <!-- Pricing Plans Link Card -->
+      <div style="margin-top: 18px; text-align: center;">
+        <a href="/pricing.html" style="display: block; padding: 12px; border-radius: 10px; background: linear-gradient(135deg, rgba(2, 132, 199, 0.2), rgba(37, 99, 235, 0.2)); border: 1px solid #38bdf8; color: #38bdf8; font-size: 13px; font-weight: 700; text-decoration: none;">
+          View Smart Booth & Card Pricing Plans →
+        </a>
+      </div>
+
+      <div style="text-align: center; margin-top: 20px;">
+        <a href="/" style="color: var(--text-muted); font-size: 12px; text-decoration: none;">
           Powered by <b>dn’a Virtual Trade Show Commercial Platform</b>
         </a>
       </div>

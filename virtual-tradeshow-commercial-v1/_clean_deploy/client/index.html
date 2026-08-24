@@ -452,13 +452,14 @@
   <!-- Navigation -->
   <nav class="nav-bar">
     <a href="/" class="brand-logo" title="dn'a Home">
-      <img src="/assets/brand/dna_logo.png" alt="dn'a DIGITAL NETWORKING ADVANTAGE" style="height: 38px; background: #fff; padding: 2px 8px; border-radius: 6px; object-fit: contain; box-shadow: 0 2px 10px rgba(0,0,0,0.4);">
+      <img src="/assets/brand/dna_logo_white.png" alt="dn'a DIGITAL NETWORKING ADVANTAGE" style="height: 48px; width: auto; object-fit: contain; display: block;">
     </a>
     <div class="nav-links">
-      <a href="/demo-matterport.html" class="nav-link">🏢 64K Matterport</a>
-      <a href="/demo.html" class="nav-link">🤖 3D Showroom</a>
-      <a href="/card.html" class="nav-link">Smart Card</a>
+      <a href="/demo-matterport.html" class="nav-link">64K Matterport</a>
+      <a href="/demo.html" class="nav-link">3D Showroom</a>
+      <a href="javascript:void(0)" onclick="openSmartCardModal()" class="nav-link">Smart Card</a>
       <a href="/qr.html" class="nav-link">Product QRs</a>
+      <a href="/pricing.html" class="nav-link">Pricing Plans</a>
       <a href="/leads.html" class="nav-link">Lead CRM</a>
       <a href="/builder.html" class="nav-link">Booth Builder</a>
     </div>
@@ -476,19 +477,18 @@
 
     <div class="hero-ctas">
       <a href="/demo-matterport.html" class="btn-hero btn-hero-primary" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border-color: #38bdf8; box-shadow: 0 0 20px rgba(2,132,199,0.5);">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-        🏢 Matterport 64K 실사 투어
+        Matterport 64K Master Studio
       </a>
       <a href="/demo.html" class="btn-hero btn-hero-secondary">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        🤖 3D 인터랙티브 쇼룸
+        3D Interactive Showroom
       </a>
-      <a href="#catalog" class="btn-hero btn-hero-secondary" onclick="openProductModal('catalog'); return false;">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-        View Products
+      <a href="javascript:void(0)" onclick="openSmartCardModal()" class="btn-hero btn-hero-secondary">
+        Smart NFC Card Pass
       </a>
-      <a href="/start.html" class="btn-hero btn-hero-secondary" style="border-color: rgba(56,189,248,0.4); color: #38bdf8;">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      <a href="/pricing.html" class="btn-hero btn-hero-secondary" style="border-color: rgba(56,189,248,0.4); color: #38bdf8;">
+        Pricing Plans
+      </a>
+      <a href="/start.html" class="btn-hero btn-hero-secondary">
         Start My Booth
       </a>
     </div>
@@ -496,18 +496,17 @@
     <!-- Photorealistic Showcase Hero with Interactive Switcher -->
     <div class="showcase-frame-wrapper">
       <div class="showcase-label-row" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
-        <!-- Dual Mode Switcher Tabs -->
+        <!-- Dual Mode Switcher Tabs (No emojis) -->
         <div class="showcase-switch-tabs" style="display: flex; gap: 6px; background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 12px; padding: 4px; backdrop-filter: blur(12px);">
-          <button class="switch-tab active" id="tab-matterport" onclick="switchShowcaseViewer('matterport')" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4); transition: all 0.25s ease;">
-            🏢 Matterport 64K Ultra-HD Studio
+          <button class="switch-tab active" id="tab-matterport" onclick="switchShowcaseViewer('matterport')" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4); transition: all 0.25s ease;">
+            Matterport 64K Ultra-HD Studio
           </button>
-          <button class="switch-tab" id="tab-showroom" onclick="switchShowcaseViewer('showroom')" style="background: transparent; color: #94a3b8; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.25s ease;">
-            🤖 3D Interactive Showroom
+          <button class="switch-tab" id="tab-showroom" onclick="switchShowcaseViewer('showroom')" style="background: transparent; color: #94a3b8; border: none; border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; transition: all 0.25s ease;">
+            3D Interactive Showroom
           </button>
         </div>
         <a href="/demo-matterport.html" id="btn-fullscreen-link" class="showcase-enter-btn" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 700; box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4); transition: all 0.2s; text-decoration: none;">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-          Open Fullscreen Experience ↗
+          Open Fullscreen Experience →
         </a>
       </div>
 
@@ -639,12 +638,51 @@
   <!-- Footer -->
   <footer style="text-align: center; padding: 48px 24px; border-top: 1px solid var(--border); background: rgba(5, 9, 17, 0.98);">
     <div style="margin-bottom: 16px;">
-      <img src="/assets/brand/dna_logo.png" alt="dn'a DIGITAL NETWORKING ADVANTAGE" style="height: 38px; background: #fff; padding: 3px 10px; border-radius: 6px; object-fit: contain; box-shadow: 0 2px 10px rgba(0,0,0,0.4);">
+      <img src="/assets/brand/dna_logo_white.png" alt="dn'a DIGITAL NETWORKING ADVANTAGE" style="height: 44px; width: auto; object-fit: contain; display: inline-block;">
     </div>
     <p>© 2026 dn'a — Virtual Trade Show Commercial Platform. All rights reserved.</p>
     <p style="font-size:11px;margin-top:6px;color:#64748b;">Enterprise 3D Digital Showrooms • Smart Exhibitor Passes • Realtime Lead Intake</p>
     <p style="font-size:10px;margin-top:10px;color:#475569;">The dn'a Industrial Innovation Showcase shown above is a Designed 3D commercial visualization concept. Not a photograph of a real physical booth.</p>
   </footer>
+
+  <!-- Smart Card NFC & QR Pass Modal -->
+  <div class="product-modal-overlay" id="smartCardModal" onclick="closeSmartCardModal(event)">
+    <div class="product-modal" id="smartCardModalContent" style="max-width: 680px; padding: 26px; background: #0b1526; border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 20px; box-shadow: 0 30px 80px rgba(0,0,0,0.9); position: relative;">
+      <button class="modal-close" onclick="closeSmartCardModalDirect()" style="position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+      
+      <div style="font-size: 10px; font-weight: 800; color: #38bdf8; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px;">PHYSICAL-TO-DIGITAL BOOTH HARDWARE</div>
+      <div style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 14px;">Smart Exhibitor NFC &amp; QR Pass System</div>
+      
+      <!-- Uploaded High-Res Smart Card & Acrylic Stand Photo -->
+      <div style="width: 100%; border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,0.12); margin-bottom: 18px; box-shadow: 0 12px 30px rgba(0,0,0,0.6); background: #000;">
+        <img src="/assets/brand/smart_card_exhibit.jpg" alt="DN'a Smart Card &amp; NFC Stand" style="width: 100%; height: auto; display: block; object-fit: cover;">
+      </div>
+      
+      <p style="font-size: 13.5px; color: #cbd5e1; line-height: 1.6; margin-bottom: 16px;">
+        Empower physical booth visitors to connect seamlessly with your 3D digital twin. Attendees simply tap with NFC or scan the precision QR pass on your exhibition table stands to instantly launch product linesheets and save catalog data to their mobile briefcase.
+      </p>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px;">
+        <div style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px;">
+          <div style="font-size: 12px; font-weight: 800; color: #38bdf8; margin-bottom: 4px;">Tap &amp; Go NFC Pairing</div>
+          <div style="font-size: 11px; color: #94a3b8;">Instant mobile sync without app installation. Compatible with all iOS and Android devices.</div>
+        </div>
+        <div style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px;">
+          <div style="font-size: 12px; font-weight: 800; color: #10b981; margin-bottom: 4px;">Real-Time Lead CRM</div>
+          <div style="font-size: 11px; color: #94a3b8;">Capture attendee badge contacts, download analytics, and direct RFQ quotation telemetry.</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+        <a href="/card.html" target="_blank" style="padding: 11px 20px; border-radius: 8px; background: rgba(30,41,59,0.8); border: 1px solid #334155; color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center;">
+          Test Live Smart Card →
+        </a>
+        <a href="/pricing.html" style="padding: 11px 22px; border-radius: 8px; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; box-shadow: 0 4px 14px rgba(2,132,199,0.4);">
+          View Pricing Plans →
+        </a>
+      </div>
+    </div>
+  </div>
 
   <!-- Product Detail Modal -->
   <div class="product-modal-overlay" id="productModal" onclick="closeModal(event)">
@@ -655,6 +693,21 @@
   </div>
 
   <script>
+    // Smart Card Modal Controls
+    function openSmartCardModal() {
+      const modal = document.getElementById('smartCardModal');
+      if (modal) modal.classList.add('open');
+    }
+    function closeSmartCardModal(e) {
+      if (e.target === document.getElementById('smartCardModal')) {
+        document.getElementById('smartCardModal').classList.remove('open');
+      }
+    }
+    function closeSmartCardModalDirect() {
+      const modal = document.getElementById('smartCardModal');
+      if (modal) modal.classList.remove('open');
+    }
+
     // Product data for modals
     const PRODUCTS = {
       cobot: {
@@ -723,28 +776,6 @@
         cta: 'Request Evaluation Unit',
         pdf: '/assets/specs/OptiScan-V3-Datasheet.pdf'
       },
-      synchrodrive: {
-        name: 'SynchroDrive VFD', model: 'SNC-VFD-90', cat: 'Variable Frequency Drive',
-        desc: 'Ultra-efficient industrial variable frequency drive with embedded functional safety (STO/SS1/SLS) and real-time EtherCAT interface. Engineered for precise servo-class motor control.',
-        specs: [
-          ['Power Range', '0.75 – 90 kW'], ['Efficiency', '98.9%'], ['Safety', 'SIL 2 / PLd'],
-          ['Bus', 'EtherCAT / PROFINET'], ['Display', 'OLED Parameter Panel'], ['Protection', 'IP20/IP55'],
-          ['Ambient', '-10 to 50 °C'], ['Price Range', '$1,850 – $2,600']
-        ],
-        cta: 'Request Evaluation Unit',
-        pdf: '/assets/specs/Vector-AMR-600-Datasheet.pdf'
-      },
-      lasercell: {
-        name: 'LaserCell LX', model: 'LSR-CEL-LX', cat: 'Laser Processing Cell',
-        desc: 'Fully enclosed Class-1 laser processing cell with 3 kW fiber source, dual-rotary indexing table, and integrated fume extraction. Supports cutting, welding, and marking in a single compact footprint.',
-        specs: [
-          ['Laser Power', '3,000 W'], ['Wavelength', '1,064 nm Fiber'], ['Work Area', '800 × 600 mm'],
-          ['Indexing', 'Dual Rotary'], ['Fume Extraction', 'Integrated HEPA'], ['Safety', 'Class 1 Enclosure'],
-          ['Control', 'CNC + G-Code'], ['Price Range', '$128,000 – $155,000']
-        ],
-        cta: 'Request Technical Consultation',
-        pdf: '/assets/specs/FlexGrip-E80-Datasheet.pdf'
-      },
       catalog: { _redirect: '/demo.html?view=catalog' },
       analytics: { _redirect: '/demo.html?view=analytics' }
     };
@@ -763,11 +794,11 @@
         <table class="spec-table"><tbody>${specs}</tbody></table>
         <div class="modal-actions">
           <a href="/demo.html?product=${id}" class="modal-btn modal-btn-primary">
-            ▶ Enter 3D Showroom
+            Enter 3D Showroom →
           </a>
-          <a href="${p.pdf}" download class="modal-btn modal-btn-outline">⬇ Download Spec PDF</a>
-          <a href="/demo.html#rfq?product=${p.name}" class="modal-btn modal-btn-outline">📝 Request RFQ</a>
-          <a href="/demo.html#meeting" class="modal-btn modal-btn-outline">📅 Book Meeting</a>
+          <a href="${p.pdf}" download class="modal-btn modal-btn-outline">Download Spec PDF</a>
+          <a href="/demo.html#rfq?product=${p.name}" class="modal-btn modal-btn-outline">Request RFQ</a>
+          <a href="/demo.html#meeting" class="modal-btn modal-btn-outline">Book Meeting</a>
         </div>`;
       document.getElementById('productModal').classList.add('open');
     }
@@ -776,8 +807,17 @@
       document.getElementById('productModal').classList.remove('open');
     }
 
+    function closeModal(e) {
+      if (e.target === document.getElementById('productModal')) closeProductModal();
+    }
+
     // Escape key to close modal
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeProductModal(); });
+    document.addEventListener('keydown', e => { 
+      if (e.key === 'Escape') {
+        closeProductModal();
+        closeSmartCardModalDirect();
+      }
+    });
 
     // ══════════════════════════════════════════════════════════════════════
     // INTERACTIVE SHOWCASE MULTI-VIEWER SWITCHER
