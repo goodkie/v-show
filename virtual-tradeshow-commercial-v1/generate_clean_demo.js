@@ -445,11 +445,12 @@ html, body {
   <!-- TOP NAV -->
   <header id="topbar">
     <div class="brand-group">
-      <a href="/" class="brand-logo" title="dn'a Home"><img src="/assets/brand/dna_logo_white.png" alt="dn'a DIGITAL NETWORKING ADVANTAGE" style="height: 38px; width: auto; object-fit: contain; vertical-align: middle; display: block;"></a>
+      <a href="/" class="brand-logo" title="dn'a Home"><img src="/assets/brand/dna_logo_white.png" alt="dn'a DIGITAL NETWORKING ADVANTAGE" style="height: 52px; width: auto; object-fit: contain; vertical-align: middle; display: block;"></a>
       <div class="brand-badge"><div class="pulse-dot"></div> 3D INTERACTIVE SHOWROOM</div>
     </div>
     <div class="top-actions">
-      <a href="/demo-matterport.html" class="btn-ui matterport">64K MATTERPORT STUDIO</a>
+      <a href="/builder.html" class="btn-ui primary" style="background: linear-gradient(135deg, #0284c7, #2563eb); border-color: #38bdf8; box-shadow: 0 4px 14px rgba(2,132,199,0.5); font-weight: 800;">BUILD A BOOTH LIKE THIS →</a>
+      <a href="/demo-matterport.html" class="btn-ui matterport">64K IMMERSIVE STUDIO</a>
       <button class="btn-ui primary" onclick="openRFQ()">REQUEST RFQ</button>
     </div>
   </header>

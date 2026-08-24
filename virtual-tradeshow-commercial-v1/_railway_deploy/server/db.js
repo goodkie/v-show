@@ -2629,6 +2629,142 @@ class JSONDatabase {
     });
   }
 
+  // --- dn’a-C04 Smart Wizard Production Reservations ---
+  async createProductionReservation(payload, actor = 'SmartWizard') {
+    return this.mutate((db) => {
+      db.productionReservations = db.productionReservations || [];
+      db.productionProjects = db.productionProjects || [];
+      const now = new Date().toISOString();
+      const randomNum = Math.floor(100000 + Math.random() * 900000);
+      const ticketId = payload.reservationId || `DNA-2026-${randomNum}`;
+
+      const reservation = {
+        id: ticketId,
+        reservationId: ticketId,
+        company: (payload.company || payload.companyName || '').trim(),
+        email: (payload.email || '').trim(),
+        contact: (payload.contact || payload.contactName || '').trim(),
+        tradeShow: (payload.tradeShow || '').trim(),
+        showStartDate: (payload.showStartDate || payload.showDate || '').trim(),
+        boothNumber: (payload.boothNumber || '').trim(),
+        selectedPlan: (payload.selectedPlan || payload.planId || 'pro').toLowerCase(),
+        planName: payload.planName || 'PRO',
+        planPrice: payload.planPrice || '$299 / mo',
+        status: 'RESERVED_INTAKE_PENDING',
+        createdAt: now,
+        updatedAt: now,
+        sourceFunnel: payload.sourceFunnel || 'BUILD_IT_FOR_ME',
+        diyDataPreserved: payload.diyDataPreserved || null,
+        intake: {
+          logo: payload.logo || null,
+          website: payload.website || null,
+          catalogUrl: payload.catalogUrl || null,
+          productPhotosCount: parseInt(payload.productPhotosCount, 10) || 0,
+          repName: payload.repName || null,
+          repEmail: payload.repEmail || null,
+          repPhone: payload.repPhone || null,
+          customNotes: payload.customNotes || null,
+          completed: false
+        }
+      };
+
+      db.productionReservations.unshift(reservation);
+
+      // Automatically create a linked Production Project in the operations queue
+      const prio = this.calculateShowDatePriority(reservation.showStartDate, '');
+      const project = {
+        id: `proj-${ticketId}`,
+        reservationId: ticketId,
+        company: reservation.company,
+        contact: reservation.contact || reservation.company,
+        email: reservation.email,
+        phone: reservation.intake.repPhone || '',
+        website: reservation.intake.website || '',
+        tradeShow: reservation.tradeShow,
+        showStartDate: reservation.showStartDate,
+        showEndDate: '',
+        daysUntilShow: prio.daysUntilShow,
+        city: '',
+        venue: '',
+        boothNumber: reservation.boothNumber,
+        industry: 'Commercial Robotics & Automation',
+        numberOfProducts: reservation.selectedPlan === 'business' ? 100 : (reservation.selectedPlan === 'pro' ? 25 : 5),
+        serviceSelections: ['3d_showroom', 'smart_card_qr', 'managed_production', 'lead_crm'],
+        assignedProducer: 'Elena Rostova (Lead 3D Producer)',
+        assignedReviewer: 'Marcus Vance (QA Director)',
+        status: 'RESERVED_INTAKE_PENDING',
+        priority: prio.priority,
+        blockingReason: 'NONE',
+        createdAt: now,
+        updatedAt: now,
+        dueAt: '',
+        publishedAt: null,
+        internalNotes: [{ id: `n-${Date.now()}`, text: `Smart Wizard reservation ticket ${ticketId} created with plan ${reservation.planName}.`, author: actor, createdAt: now }],
+        clientVisibleNotes: [{ id: `cn-${Date.now()}`, text: 'Your production slot is reserved. Intake details pending.', author: 'dn’a Production Lead', createdAt: now }],
+        assets: this.generateStandardAssetsChecklist(['3d_showroom', 'smart_card_qr']),
+        tasks: this.generateServiceAwareTasks(['3d_showroom', 'smart_card_qr'], { numberOfProducts: 8, assignedProducer: 'Elena Rostova (Lead 3D Producer)' }),
+        qaChecklist: {
+          status: 'PENDING',
+          reviewer: null,
+          reviewedAt: null,
+          checks: {
+            correctCompany: false, correctLogo: false, correctBooth: false, correctProducts: false,
+            noBrokenImages: false, noBrokenCatalog: false, qrWorks: false, rfqWorks: false,
+            sampleWorks: false, appointmentWorks: false, mobileWorks: false, truthful3DState: false
+          }
+        },
+        revisions: [],
+        clientFeedback: [],
+        publishRecord: null,
+        activityHistory: [
+          { timestamp: now, action: 'RESERVATION_CREATED', actor, details: `Reservation ticket ${ticketId} created with plan ${reservation.planName}` }
+        ]
+      };
+
+      db.productionProjects.unshift(project);
+      return reservation;
+    });
+  }
+
+  getProductionReservations() {
+    return this.data.productionReservations || [];
+  }
+
+  getProductionReservationById(id) {
+    const list = this.data.productionReservations || [];
+    return list.find(r => r.id === id || r.reservationId === id) || null;
+  }
+
+  async updateProductionReservationIntake(id, intakeData, actor = 'SmartWizard') {
+    return this.mutate((db) => {
+      db.productionReservations = db.productionReservations || [];
+      const res = db.productionReservations.find(r => r.id === id || r.reservationId === id);
+      if (!res) return null;
+
+      res.intake = { ...(res.intake || {}), ...(intakeData || {}) };
+      res.updatedAt = new Date().toISOString();
+
+      // Update linked project if found
+      db.productionProjects = db.productionProjects || [];
+      const proj = db.productionProjects.find(p => p.reservationId === res.reservationId || p.id === `proj-${res.reservationId}`);
+      if (proj) {
+        if (intakeData.website) proj.website = intakeData.website;
+        if (intakeData.repPhone) proj.phone = intakeData.repPhone;
+        if (intakeData.repName) proj.contact = intakeData.repName;
+        proj.updatedAt = res.updatedAt;
+        proj.activityHistory = proj.activityHistory || [];
+        proj.activityHistory.unshift({
+          timestamp: res.updatedAt,
+          action: 'INTAKE_UPDATED',
+          actor,
+          details: `Client submitted post-reservation intake details.`
+        });
+      }
+
+      return res;
+    });
+  }
+
   async submitProjectQA(id, qaData, actor = 'QA Director') {
     return this.mutate((db) => {
       db.productionProjects = db.productionProjects || [];

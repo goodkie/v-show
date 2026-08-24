@@ -1724,6 +1724,51 @@ app.post('/api/production-projects/qualify-request', async (req, res) => {
   }
 });
 
+// --- 8.7 dn’a-C04 Smart Booth Wizard Reservation Endpoints ---
+app.post('/api/production-reservations', createRateLimiter(40, 60000), async (req, res) => {
+  try {
+    const { company, email, tradeShow } = req.body;
+    if (!company && !req.body.companyName) {
+      return res.status(400).json({ error: 'Company name is required.' });
+    }
+    if (!email) {
+      return res.status(400).json({ error: 'Contact email is required.' });
+    }
+    const reservation = await db.createProductionReservation(req.body, req.body.actor || 'SmartWizard');
+    res.status(201).json({
+      success: true,
+      message: 'Production slot reserved successfully.',
+      reservation
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/production-reservations', (req, res) => {
+  res.json(db.getProductionReservations());
+});
+
+app.get('/api/production-reservations/:id', (req, res) => {
+  const reservation = db.getProductionReservationById(req.params.id);
+  if (!reservation) return res.status(404).json({ error: 'Reservation ticket not found.' });
+  res.json(reservation);
+});
+
+app.put('/api/production-reservations/:id/intake', createRateLimiter(40, 60000), async (req, res) => {
+  try {
+    const updated = await db.updateProductionReservationIntake(req.params.id, req.body, req.body.actor || 'SmartWizard');
+    if (!updated) return res.status(404).json({ error: 'Reservation ticket not found.' });
+    res.json({
+      success: true,
+      message: 'Reservation intake details updated successfully.',
+      reservation: updated
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // 5. Update Status & Blocking Reason
 app.patch('/api/production-projects/:id/status', async (req, res) => {
   try {

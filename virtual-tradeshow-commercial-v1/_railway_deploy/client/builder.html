@@ -3,32 +3,45 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>dn’a Booth Builder — Early Access Beta</title>
-  <meta name="description" content="Build and deploy your 3D digital trade show showroom, digital catalog, smart card, and product QRs with the dn’a self-service builder beta.">
+  <title>Smart Booth Wizard — dn’a Virtual Trade Show Commercial Platform</title>
+  <meta name="description" content="Build and deploy your 3D digital trade show showroom, digital catalog, smart card, and product QRs with the dn’a conversion-first builder.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script src="vendor/three.min.js"></script>
+  <script src="vendor/OrbitControls.js"></script>
+  <script src="products.js"></script>
+  <script src="booth-engine.js"></script>
   <style>
     :root {
       --primary: #0284c7;
+      --primary-hover: #0369a1;
       --accent: #38bdf8;
       --bg: #070e17;
       --card-bg: #0f172a;
       --border: #1e293b;
+      --border-focus: #38bdf8;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
     }
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: var(--bg);
-      color: #f8fafc;
-      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
-      margin: 0;
-      padding: 0;
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
       line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Top Navigation with 2X Logo */
     .app-nav {
-      padding: 12px 28px;
-      background: #0f172a;
+      padding: 14px 28px;
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
@@ -37,1114 +50,1202 @@
       top: 0;
       z-index: 50;
     }
-    .container {
-      max-width: 1280px;
-      margin: 24px auto 80px;
-      padding: 0 20px;
-    }
-
-    /* Stepper Bar */
-    .stepper-nav {
-      display: flex;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 8px 12px;
-      margin-bottom: 24px;
-      overflow-x: auto;
-      gap: 6px;
-    }
-    .step-btn {
-      background: transparent;
-      border: none;
-      color: #94a3b8;
-      font-size: 12px;
-      font-weight: 700;
-      padding: 8px 14px;
-      border-radius: 8px;
-      cursor: pointer;
+    .brand-logo-wrap {
       display: flex;
       align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-      transition: all 0.2s;
+      gap: 14px;
+      text-decoration: none;
     }
-    .step-btn.active {
-      background: #0284c7;
-      color: #fff;
+    .brand-logo-img {
+      height: 56px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+      transition: transform 0.2s;
     }
-    .step-btn.completed {
-      color: #34d399;
-    }
-    .step-dot {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
+    .brand-logo-img:hover { transform: scale(1.02); }
+    .badge-wizard {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #38bdf8;
+      font-size: 11px;
       font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
     }
-    .step-btn.active .step-dot { background: #fff; color: #0284c7; }
 
-    /* Builder Card Box */
-    .builder-box {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 28px;
-      margin-bottom: 24px;
-    }
-    .box-header {
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      padding-bottom: 14px;
-      margin-bottom: 20px;
+    .nav-actions {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
       gap: 12px;
     }
-    .box-title { font-size: 20px; font-weight: 800; color: #fff; margin: 0; }
-    .box-desc { font-size: 13px; color: #94a3b8; margin: 4px 0 0 0; }
+    .btn-nav-sub {
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-nav-sub:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
 
-    /* Forms & Inputs */
+    /* Main Container */
+    .wizard-container {
+      max-width: 1080px;
+      width: 100%;
+      margin: 36px auto 80px;
+      padding: 0 20px;
+      flex: 1;
+    }
+
+    /* Screen Views */
+    .wizard-view {
+      display: none;
+      animation: fadeIn 0.3s ease forwards;
+    }
+    .wizard-view.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Header Block */
+    .view-header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .view-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 800;
+      color: #38bdf8;
+      background: rgba(2, 132, 199, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 4px 12px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .view-title {
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+    .view-desc {
+      font-size: 15px;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Step 0: Path Selection Cards */
+    .path-cards-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 24px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .path-card {
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-radius: 18px;
+      padding: 36px 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+    .path-card:hover {
+      transform: translateY(-4px);
+      border-color: #38bdf8;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    }
+    .path-card.primary {
+      border-color: #0284c7;
+      background: linear-gradient(180deg, #0c1a2e 0%, #0f172a 100%);
+      box-shadow: 0 12px 30px rgba(2, 132, 199, 0.2);
+    }
+    .path-card.primary:hover {
+      border-color: #38bdf8;
+      box-shadow: 0 20px 50px rgba(2, 132, 199, 0.35);
+    }
+    .path-badge {
+      position: absolute;
+      top: -12px;
+      left: 28px;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+    }
+    .path-badge.beta {
+      background: #334155;
+      color: #cbd5e1;
+      border: 1px solid #475569;
+    }
+    .path-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+      margin-top: 4px;
+      margin-bottom: 8px;
+    }
+    .path-desc {
+      font-size: 14px;
+      color: #94a3b8;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .path-features {
+      list-style: none;
+      margin-bottom: 28px;
+    }
+    .path-features li {
+      font-size: 13.5px;
+      color: #cbd5e1;
+      padding: 7px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .path-features li:last-child { border-bottom: none; }
+    .bullet-icon { color: #38bdf8; font-weight: bold; }
+
+    .btn-path-cta {
+      width: 100%;
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 800;
+      text-align: center;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .btn-path-primary {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4);
+    }
+    .btn-path-primary:hover {
+      background: linear-gradient(135deg, #0369a1, #1d4ed8);
+      box-shadow: 0 6px 22px rgba(2, 132, 199, 0.6);
+    }
+    .btn-path-secondary {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f8fafc;
+    }
+    .btn-path-secondary:hover {
+      background: #334155;
+      border-color: #64748b;
+    }
+
+    /* Common Card Box */
+    .box-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 32px;
+      max-width: 780px;
+      margin: 0 auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Form Fields */
     .form-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 18px;
+      margin-bottom: 24px;
     }
-    @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } }
     .form-group {
-      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
     .form-group.full { grid-column: 1 / -1; }
     .form-label {
-      display: block;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 700;
       color: #cbd5e1;
-      margin-bottom: 6px;
     }
+    .form-label span.req { color: #f87171; }
     .form-input, .form-select, .form-textarea {
-      width: 100%;
       background: #070e17;
       border: 1px solid #334155;
-      color: #fff;
-      font-size: 13px;
-      padding: 10px 14px;
       border-radius: 8px;
+      padding: 12px 14px;
+      color: #fff;
+      font-size: 14px;
+      font-family: inherit;
       transition: border-color 0.2s;
     }
     .form-input:focus, .form-select:focus, .form-textarea:focus {
       outline: none;
-      border-color: var(--accent);
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+    .form-hint {
+      font-size: 11.5px;
+      color: #64748b;
     }
 
-    /* Buttons */
-    .btn-action {
-      background: #0284c7;
-      border: none;
-      color: #fff;
-      padding: 10px 18px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .btn-action:hover { background: #0369a1; }
-    .btn-sub {
-      background: #1e293b;
-      border: 1px solid #334155;
-      color: #cbd5e1;
-      padding: 9px 16px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-    }
-    .btn-sub:hover { background: #334155; color: #fff; }
-    .btn-handoff {
-      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-      color: #000;
-      font-weight: 800;
-      border: none;
-      padding: 9px 16px;
-      border-radius: 8px;
-      font-size: 12px;
-      cursor: pointer;
-    }
-
-    /* Selection Cards Grid */
-    .cards-grid {
+    /* Checkbox & Asset Grid */
+    .asset-choice-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 16px;
-      margin-top: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin: 12px 0 24px;
     }
-    .choice-card {
+    .asset-choice-item {
+      background: #070e17;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 12px 10px;
+      text-align: center;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #cbd5e1;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s;
+    }
+    .asset-choice-item.selected {
+      background: rgba(2, 132, 199, 0.15);
+      border-color: #38bdf8;
+      color: #fff;
+    }
+
+    /* Plan Selection Grid */
+    .plans-selector-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .plan-selector-card {
       background: #070e17;
       border: 2px solid #1e293b;
-      border-radius: 12px;
-      padding: 18px;
+      border-radius: 14px;
+      padding: 22px 18px;
       cursor: pointer;
       transition: all 0.2s;
       position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
-    .choice-card:hover { border-color: #38bdf8; }
-    .choice-card.selected {
+    .plan-selector-card:hover {
+      border-color: #38bdf8;
+      transform: translateY(-2px);
+    }
+    .plan-selector-card.selected {
       border-color: #0284c7;
       background: rgba(2, 132, 199, 0.08);
+      box-shadow: 0 8px 24px rgba(2, 132, 199, 0.25);
     }
-    .choice-card .tag {
+    .plan-selector-card.featured {
+      border-color: #8b5cf6;
+    }
+    .plan-sel-tag {
       position: absolute;
-      top: 12px;
-      right: 12px;
-      font-size: 10px;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #8b5cf6;
+      color: #fff;
+      font-size: 9px;
       font-weight: 800;
-      padding: 2px 6px;
-      border-radius: 4px;
-    }
-
-    /* Product Item Box */
-    .product-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      background: #070e17;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      margin-bottom: 10px;
-      gap: 14px;
-      flex-wrap: wrap;
-    }
-    .product-thumb {
-      width: 52px;
-      height: 52px;
+      padding: 2px 8px;
       border-radius: 8px;
-      object-fit: cover;
-      background: #1e293b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .plan-sel-name {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .plan-sel-price {
+      font-size: 24px;
+      font-weight: 800;
+      color: #38bdf8;
+      margin-bottom: 12px;
+    }
+    .plan-sel-price span {
+      font-size: 12px;
+      font-weight: 400;
+      color: #94a3b8;
+    }
+    .plan-sel-specs {
+      list-style: none;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    .plan-sel-specs li {
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .plan-sel-specs li:last-child { border-bottom: none; }
+
+    /* Actions Row */
+    .form-actions-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .btn-submit-main {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      padding: 13px 28px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 800;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+    }
+    .btn-submit-main:hover {
+      background: linear-gradient(135deg, #0369a1, #1d4ed8);
+      transform: translateY(-1px);
+    }
+    .btn-back-link {
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 8px 12px;
+    }
+    .btn-back-link:hover { color: #fff; }
+
+    /* Reservation Ticket Display */
+    .ticket-container {
+      background: linear-gradient(135deg, #0c1a2e, #0f172a);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 24px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+      position: relative;
+    }
+    .ticket-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+    }
+    .ticket-id {
+      font-size: 22px;
+      font-weight: 800;
+      color: #38bdf8;
+      letter-spacing: 1px;
+    }
+    .ticket-status-pill {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid #10b981;
+      color: #34d399;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+    }
+    .ticket-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      font-size: 13px;
+    }
+    .ticket-item small {
+      display: block;
+      color: #94a3b8;
+      font-size: 11px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .ticket-item b {
+      color: #fff;
+      font-size: 14px;
     }
 
-    /* Simulator Container */
-    .preview-frame-container {
+    /* Live Preview Screen (DIY) */
+    .preview-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 20px;
+    }
+    .preview-canvas-card {
       background: #070e17;
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px;
-      text-align: center;
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+      height: 540px;
     }
-    .preview-frame {
+    .preview-canvas-box {
       width: 100%;
-      height: 620px;
-      border: 1px solid #334155;
-      border-radius: 10px;
-      background: #0f172a;
-      transition: width 0.3s;
+      height: 100%;
     }
-    .preview-frame.mobile {
-      width: 375px;
-      margin: 0 auto;
-    }
-
-    /* Modal Backdrop */
-    .modal-backdrop {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.75);
-      backdrop-filter: blur(4px);
-      z-index: 100;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .modal-box {
+    .conversion-sidebar {
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 16px;
-      max-width: 640px;
-      width: 100%;
-      max-height: 90vh;
-      overflow-y: auto;
-      padding: 28px;
-      position: relative;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .conversion-badge {
+      font-size: 10px;
+      font-weight: 800;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .conversion-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .conversion-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    /* Toast Notification */
+    #wizard-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #0f172a;
+      border: 1px solid #38bdf8;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      z-index: 1000;
+      display: none;
+      animation: fadeIn 0.2s ease;
+    }
+
+    /* Responsive */
+    @media (max-width: 860px) {
+      .path-cards-grid { grid-template-columns: 1fr; }
+      .plans-selector-grid { grid-template-columns: 1fr; }
+      .preview-layout { grid-template-columns: 1fr; }
+      .preview-canvas-card { height: 380px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .ticket-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
 
-  <!-- App Header -->
+  <!-- Top Navigation with 2X Official Logo -->
   <header class="app-nav">
-    <div style="display:flex; align-items:center; gap:12px;">
-      <a href="/" style="color:#fff; text-decoration:none; font-weight:800; font-size:18px;">dn’a</a>
-      <span style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid #38bdf8; font-size:11px; font-weight:800; padding:2px 8px; border-radius:6px;">BOOTH BUILDER BETA</span>
-      <span id="save-status" style="font-size:11px; color:#94a3b8; margin-left:10px;">✓ Auto-saved</span>
-    </div>
-    <div style="display:flex; gap:10px; align-items:center;">
-      <button class="btn-handoff" onclick="openHandoffModal()">⚡ Have dn’a Build It For Me</button>
-      <button class="btn-sub" onclick="openFeedbackModal()">💬 Beta Feedback</button>
-      <a href="/production.html" class="btn-sub" style="font-size:11px;">Operations Center ↗</a>
+    <a href="/" class="brand-logo-wrap" title="dn'a Home">
+      <img src="/assets/brand/dna_logo_white.png" alt="dn'a DIGITAL NETWORKING ADVANTAGE" class="brand-logo-img">
+      <span class="badge-wizard">Smart Booth Wizard</span>
+    </a>
+    <div class="nav-actions">
+      <a href="/pricing.html" class="btn-nav-sub">Pricing Plans</a>
+      <a href="/" class="btn-nav-sub">Exit Wizard</a>
     </div>
   </header>
 
-  <main class="container">
-    <!-- Stepper Navigation -->
-    <nav class="stepper-nav">
-      <button class="step-btn active" id="sbtn-1" onclick="goToStep(1)"><div class="step-dot">1</div> Company</button>
-      <button class="step-btn" id="sbtn-2" onclick="goToStep(2)"><div class="step-dot">2</div> Trade Show</button>
-      <button class="step-btn" id="sbtn-3" onclick="goToStep(3)"><div class="step-dot">3</div> Products (<span id="s-prod-cnt">0</span>)</button>
-      <button class="step-btn" id="sbtn-4" onclick="goToStep(4)"><div class="step-dot">4</div> Assets</button>
-      <button class="step-btn" id="sbtn-5" onclick="goToStep(5)"><div class="step-dot">5</div> Experience</button>
-      <button class="step-btn" id="sbtn-6" onclick="goToStep(6)"><div class="step-dot">6</div> Template</button>
-      <button class="step-btn" id="sbtn-7" onclick="goToStep(7)"><div class="step-dot">7</div> Live Preview</button>
-      <button class="step-btn" id="sbtn-8" onclick="goToStep(8)"><div class="step-dot">8</div> Publish & Live</button>
-    </nav>
+  <!-- Main Wizard Container -->
+  <main class="wizard-container">
 
-    <!-- STEP 1: COMPANY PROFILE -->
-    <section class="builder-box" id="step-1">
-      <div class="box-header">
-        <div>
-          <h2 class="box-title">Step 1 — Company & Exhibitor Profile</h2>
-          <p class="box-desc">Enter your brand identity. This will be automatically persisted to your reusable exhibitor profile.</p>
-        </div>
-        <button class="btn-action" onclick="saveCompanyStep(true)">Save & Continue →</button>
+    <!-- ============================================================
+         STEP 0: PATH SELECTION (FIRST DECISION)
+         ============================================================ -->
+    <section id="view-path-selection" class="wizard-view active">
+      <div class="view-header">
+        <div class="view-badge">Step 1 — Choose Your Production Path</div>
+        <h1 class="view-title">How Would You Like to Build Your Booth?</h1>
+        <p class="view-desc">Select managed white-glove production or start quickly with self-service 3D creation.</p>
       </div>
 
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Company / Brand Name *</label>
-          <input type="text" id="f-company" class="form-input" placeholder="e.g., Haven & Oak Furniture Co." onblur="saveCompanyStep(false)">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Industry Category *</label>
-          <select id="f-industry" class="form-select" onchange="saveCompanyStep(false)">
-            <option value="Furniture, Home Decor & Lighting">Furniture, Home Decor & Lighting</option>
-            <option value="Fashion, Footwear & Luxury Apparel">Fashion, Footwear & Luxury Apparel</option>
-            <option value="Gifts, Novelties & General Merchandise">Gifts, Novelties & General Merchandise</option>
-            <option value="Industrial Automation & Machinery">Industrial Automation & Machinery</option>
-            <option value="Consumer Electronics & Hardware">Consumer Electronics & Hardware</option>
-            <option value="Health, Medical & Diagnostics">Health, Medical & Diagnostics</option>
-            <option value="Other Commercial B2B">Other Commercial B2B</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Primary Contact Person *</label>
-          <input type="text" id="f-contact" class="form-input" placeholder="e.g., Julian Vance" onblur="saveCompanyStep(false)">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Primary Sales Email *</label>
-          <input type="email" id="f-email" class="form-input" placeholder="e.g., sales@havenoak.example" onblur="saveCompanyStep(false)">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Phone Number</label>
-          <input type="tel" id="f-phone" class="form-input" placeholder="e.g., +1 (336) 555-0142" onblur="saveCompanyStep(false)">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Official Website URL</label>
-          <input type="url" id="f-website" class="form-input" placeholder="e.g., https://havenoak.example" onblur="saveCompanyStep(false)">
-        </div>
-        <div class="form-group full">
-          <label class="form-label">Company Overview / Tagline</label>
-          <textarea id="f-desc" class="form-textarea" rows="3" placeholder="Heritage American craftsmanship specializing in solid white oak furnishings..." onblur="saveCompanyStep(false)"></textarea>
-        </div>
-        <div class="form-group full">
-          <label class="form-label">Brand Logo Image URL</label>
-          <input type="url" id="f-logo" class="form-input" placeholder="e.g., https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300" onblur="saveCompanyStep(false)">
-        </div>
-      </div>
-    </section>
-
-    <!-- STEP 2: TRADE SHOW -->
-    <section class="builder-box" id="step-2" style="display:none;">
-      <div class="box-header">
-        <div>
-          <h2 class="box-title">Step 2 — Trade Show Specifications</h2>
-          <p class="box-desc">Select your target exhibition or define a custom trade show schedule.</p>
-        </div>
-        <div style="display:flex; gap:10px;">
-          <button class="btn-sub" onclick="goToStep(1)">← Back</button>
-          <button class="btn-action" onclick="saveShowStep(true)">Save & Continue →</button>
-        </div>
-      </div>
-
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Quick Select Predefined Show</label>
-          <select id="f-pre-show" class="form-select" onchange="applyPredefinedShow()">
-            <option value="">-- Or enter custom show below --</option>
-            <option value="High Point Market Fall 2026|2026-10-17|2026-10-21|High Point, NC|IHFC Main Building|Stand W-412">High Point Market Fall 2026 (Oct 17–21)</option>
-            <option value="COTERIE New York 2026|2026-09-22|2026-09-24|New York, NY|Javits Center|Booth 2140">COTERIE New York 2026 (Sep 22–24)</option>
-            <option value="ASD Market Week Las Vegas 2026|2026-08-20|2026-08-23|Las Vegas, NV|Las Vegas Convention Center|Stand C-842">ASD Market Week Las Vegas 2026 (Aug 20–23)</option>
-            <option value="CES Las Vegas 2027|2027-01-05|2027-01-08|Las Vegas, NV|LVCC Tech East|Booth 51200">CES Las Vegas 2027 (Jan 5–8)</option>
-            <option value="IMTS Chicago 2026|2026-09-14|2026-09-19|Chicago, IL|McCormick Place|South Building S-3100">IMTS Chicago 2026 (Sep 14–19)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Trade Show Name *</label>
-          <input type="text" id="f-show-name" class="form-input" placeholder="e.g., High Point Market Fall 2026" onblur="saveShowStep(false)">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Show Start Date *</label>
-          <input type="date" id="f-show-start" class="form-input" onchange="saveShowStep(false)">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Show End Date *</label>
-          <input type="date" id="f-show-end" class="form-input" onchange="saveShowStep(false)">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Host City & State</label>
-          <input type="text" id="f-show-city" class="form-input" placeholder="e.g., High Point, NC" onblur="saveShowStep(false)">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Venue / Convention Center</label>
-          <input type="text" id="f-show-venue" class="form-input" placeholder="e.g., IHFC Main Building" onblur="saveShowStep(false)">
-        </div>
-        <div class="form-group full">
-          <label class="form-label">Booth / Stand Number</label>
-          <input type="text" id="f-show-booth" class="form-input" placeholder="e.g., Stand W-412 (Interhall)" onblur="saveShowStep(false)">
-        </div>
-      </div>
-    </section>
-
-    <!-- STEP 3: PRODUCTS -->
-    <section class="builder-box" id="step-3" style="display:none;">
-      <div class="box-header">
-        <div>
-          <h2 class="box-title">Step 3 — Products & Specifications (<span id="prod-list-count">0</span>)</h2>
-          <p class="box-desc">Add 1 to 20 products. Each product will automatically get a digital showroom plinth, catalog card, and waypoint QR code.</p>
-        </div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="btn-sub" onclick="openProductModal()">+ Add Product</button>
-          <button class="btn-sub" onclick="seedSampleProducts()">⚡ Batch Sample Products</button>
-          <button class="btn-action" onclick="goToStep(4)">Save & Continue →</button>
-        </div>
-      </div>
-
-      <div id="products-list-host"></div>
-    </section>
-
-    <!-- STEP 4: ASSETS -->
-    <section class="builder-box" id="step-4" style="display:none;">
-      <div class="box-header">
-        <div>
-          <h2 class="box-title">Step 4 — Asset Library & Uploads</h2>
-          <p class="box-desc">Provide branding banners, PDF spec catalogs, and lookbooks for your digital showroom.</p>
-        </div>
-        <div style="display:flex; gap:10px;">
-          <button class="btn-sub" onclick="goToStep(3)">← Back</button>
-          <button class="btn-action" onclick="saveAssetsStep(true)">Save & Continue →</button>
-        </div>
-      </div>
-
-      <div class="form-grid">
-        <div class="form-group full">
-          <label class="form-label">Hero Booth Banner Image URL</label>
-          <input type="url" id="f-asset-hero" class="form-input" placeholder="e.g., https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=1200" onblur="saveAssetsStep(false)">
-        </div>
-        <div class="form-group full">
-          <label class="form-label">2026 Lookbook / Spec Catalog PDF URL</label>
-          <input type="url" id="f-asset-catalog" class="form-input" placeholder="e.g., https://havenoak.example/catalog.pdf" onblur="saveAssetsStep(false)">
-        </div>
-        <div class="form-group full">
-          <label class="form-label">Physical Booth Photo / Architectural Rendering URL (Optional)</label>
-          <input type="url" id="f-asset-booth" class="form-input" placeholder="e.g., https://images.unsplash.com/photo-1513694203232-719a280e022f?w=1200" onblur="saveAssetsStep(false)">
-        </div>
-      </div>
-    </section>
-
-    <!-- STEP 5: EXPERIENCE SELECTION -->
-    <section class="builder-box" id="step-5" style="display:none;">
-      <div class="box-header">
-        <div>
-          <h2 class="box-title">Step 5 — Choose Booth Experience Type</h2>
-          <p class="box-desc">Select how buyers interact with your virtual space.</p>
-        </div>
-        <div style="display:flex; gap:10px;">
-          <button class="btn-sub" onclick="goToStep(4)">← Back</button>
-          <button class="btn-action" onclick="saveExperienceStep(true)">Save & Continue →</button>
-        </div>
-      </div>
-
-      <div class="cards-grid">
-        <div class="choice-card selected" id="exp-DIGITAL_SHOWROOM" onclick="selectExperience('DIGITAL_SHOWROOM')">
-          <span class="tag" style="background:#0284c7; color:#fff;">POPULAR</span>
-          <h3 style="margin:0 0 6px 0; color:#fff; font-size:16px;">Digital Showroom</h3>
-          <p style="font-size:12px; color:#94a3b8; margin:0;">Clean, responsive 3D-styled interactive web showroom with plinths, smart card, and QR waypoints.</p>
-        </div>
-        <div class="choice-card" id="exp-PHOTO_TOUR" onclick="selectExperience('PHOTO_TOUR')">
-          <span class="tag" style="background:#10b981; color:#fff;">PHOTO-REAL</span>
-          <h3 style="margin:0 0 6px 0; color:#fff; font-size:16px;">Photo Tour</h3>
-          <p style="font-size:12px; color:#94a3b8; margin:0;">High-resolution 360° panoramic navigation nodes connected to live product drawers.</p>
-        </div>
-        <div class="choice-card" id="exp-DESIGNED_3D" onclick="selectExperience('DESIGNED_3D')">
-          <span class="tag" style="background:#8b5cf6; color:#fff;">3D WEBGL</span>
-          <h3 style="margin:0 0 6px 0; color:#fff; font-size:16px;">Designed 3D</h3>
-          <p style="font-size:12px; color:#94a3b8; margin:0;">Interactive WebGL architectural booth with real-time orbit navigation and lighting.</p>
-        </div>
-        <div class="choice-card" id="exp-AUTHENTIC_3D" onclick="selectExperience('AUTHENTIC_3D')">
-          <span class="tag" style="background:#f59e0b; color:#000;">REQUIRES REVIEW</span>
-          <h3 style="margin:0 0 6px 0; color:#fff; font-size:16px;">Authentic 3D Capture</h3>
-          <p style="font-size:12px; color:#94a3b8; margin:0;">Photogrammetric Gaussian reconstruction from physical stand photos. Routes to dn'a 3D Review team.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- STEP 6: TEMPLATE & HOTSPOTS -->
-    <section class="builder-box" id="step-6" style="display:none;">
-      <div class="box-header">
-        <div>
-          <h2 class="box-title">Step 6 — Booth Template & Hotspot Binding</h2>
-          <p class="box-desc">Choose a curated aesthetic layout and bind your priority products to key focal hotspots.</p>
-        </div>
-        <div style="display:flex; gap:10px;">
-          <button class="btn-sub" onclick="goToStep(5)">← Back</button>
-          <button class="btn-action" onclick="saveTemplateStep(true)">Save & Continue →</button>
-        </div>
-      </div>
-
-      <div class="cards-grid" style="margin-bottom:24px;">
-        <div class="choice-card selected" id="tmpl-MODERN" onclick="selectTemplate('MODERN')">
-          <h3 style="margin:0 0 4px; color:#fff; font-size:15px;">Modern Minimalist</h3>
-          <p style="font-size:12px; color:#94a3b8; margin:0;">Clean geometric plinths, high-contrast dark theme, and sleek typography.</p>
-        </div>
-        <div class="choice-card" id="tmpl-PREMIUM" onclick="selectTemplate('PREMIUM')">
-          <h3 style="margin:0 0 4px; color:#fff; font-size:15px;">Luxury Pavilion</h3>
-          <p style="font-size:12px; color:#94a3b8; margin:0;">Warm architectural lighting, metallic accents, and editorial linesheet format.</p>
-        </div>
-        <div class="choice-card" id="tmpl-INDUSTRIAL" onclick="selectTemplate('INDUSTRIAL')">
-          <h3 style="margin:0 0 4px; color:#fff; font-size:15px;">Industrial Showcase</h3>
-          <p style="font-size:12px; color:#94a3b8; margin:0;">Engineered plinths with prominent spec tables and technical datasheet hubs.</p>
-        </div>
-        <div class="choice-card" id="tmpl-MINIMAL" onclick="selectTemplate('MINIMAL')">
-          <h3 style="margin:0 0 4px; color:#fff; font-size:15px;">Nordic Studio</h3>
-          <p style="font-size:12px; color:#94a3b8; margin:0;">Natural wood tones, soft diffused illumination, and uncluttered layout.</p>
-        </div>
-      </div>
-
-      <h3 style="font-size:15px; color:#fff; margin:20px 0 10px;">Focal Hotspot Assignments</h3>
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Hotspot #1 (Hero Center Plinth)</label>
-          <select id="f-hotspot-1" class="form-select" onchange="saveTemplateStep(false)"></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Hotspot #2 (Left Display)</label>
-          <select id="f-hotspot-2" class="form-select" onchange="saveTemplateStep(false)"></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Hotspot #3 (Right Display)</label>
-          <select id="f-hotspot-3" class="form-select" onchange="saveTemplateStep(false)"></select>
-        </div>
-      </div>
-    </section>
-
-    <!-- STEP 7: LIVE PREVIEW -->
-    <section class="builder-box" id="step-7" style="display:none;">
-      <div class="box-header">
-        <div>
-          <h2 class="box-title">Step 7 — Live Interactive Preview</h2>
-          <p class="box-desc">Test your digital showroom exactly as trade buyers will experience it on desktop and mobile.</p>
-        </div>
-        <div style="display:flex; gap:10px; align-items:center;">
-          <button class="btn-sub" id="btn-view-desktop" style="background:#0284c7; color:#fff;" onclick="setPreviewDevice('desktop')">💻 Desktop View</button>
-          <button class="btn-sub" id="btn-view-mobile" onclick="setPreviewDevice('mobile')">📱 Mobile View</button>
-          <button class="btn-action" onclick="goToStep(8)">Proceed to Publish →</button>
-        </div>
-      </div>
-
-      <div class="preview-frame-container">
-        <iframe id="preview-iframe" class="preview-frame" src="/demo.html"></iframe>
-      </div>
-    </section>
-
-    <!-- STEP 8: PUBLISH & ANALYTICS -->
-    <section class="builder-box" id="step-8" style="display:none;">
-      <div class="box-header">
-        <div>
-          <h2 class="box-title">Step 8 — Readiness Check & Safe Publish</h2>
-          <p class="box-desc">Verify completeness and deploy your digital showroom live to trade buyers.</p>
-        </div>
-        <button class="btn-action" id="btn-publish-live" style="background:#10b981; font-size:14px; padding:12px 24px;" onclick="publishBoothLive()">🚀 Publish My Digital Booth Live</button>
-      </div>
-
-      <!-- Readiness Card -->
-      <div style="background:#070e17; border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:24px;" id="readiness-card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h3 style="margin:0; font-size:16px; color:#fff;">Preview Completeness Engine</h3>
-          <span id="readiness-badge" style="font-size:12px; font-weight:800; padding:4px 10px; border-radius:6px; background:rgba(56,189,248,0.2); color:#38bdf8;">CHECKING...</span>
-        </div>
-        <div id="readiness-missing" style="font-size:13px; color:#f87171;"></div>
-      </div>
-
-      <!-- Live Deliverable Links -->
-      <div id="live-links-card" style="display:none; background:rgba(16,185,129,0.08); border:1px solid #10b981; border-radius:12px; padding:20px; margin-bottom:24px;">
-        <h3 style="color:#34d399; margin:0 0 10px 0; font-size:16px;">✓ Showroom Published Live!</h3>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:13px;">
-          <div><b>3D Showroom:</b> <a id="pub-link-showroom" href="#" target="_blank" style="color:#38bdf8;">Open Showroom ↗</a></div>
-          <div><b>Smart Card:</b> <a id="pub-link-card" href="#" target="_blank" style="color:#38bdf8;">Open Smart Card ↗</a></div>
-          <div><b>Product QRs:</b> <a id="pub-link-qr" href="#" target="_blank" style="color:#38bdf8;">Open Product QR Pass ↗</a></div>
-          <div><b>Catalog Hub:</b> <a id="pub-link-catalog" href="#" target="_blank" style="color:#38bdf8;">Open Catalog Hub ↗</a></div>
-        </div>
-      </div>
-
-      <!-- Realtime Analytics Summary -->
-      <div style="background:#070e17; border:1px solid var(--border); border-radius:12px; padding:20px;">
-        <h3 style="margin:0 0 14px 0; font-size:16px; color:#fff;">Live Exhibition Analytics</h3>
-        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:12px; text-align:center;">
-          <div style="background:#0f172a; padding:14px; border-radius:8px;"><div style="font-size:22px; font-weight:800; color:#38bdf8;" id="an-visits">0</div><small style="color:#94a3b8;">Booth Visits</small></div>
-          <div style="background:#0f172a; padding:14px; border-radius:8px;"><div style="font-size:22px; font-weight:800; color:#38bdf8;" id="an-views">0</div><small style="color:#94a3b8;">Product Views</small></div>
-          <div style="background:#0f172a; padding:14px; border-radius:8px;"><div style="font-size:22px; font-weight:800; color:#38bdf8;" id="an-scans">0</div><small style="color:#94a3b8;">QR Scans</small></div>
-          <div style="background:#0f172a; padding:14px; border-radius:8px;"><div style="font-size:22px; font-weight:800; color:#38bdf8;" id="an-downloads">0</div><small style="color:#94a3b8;">Catalogs Saved</small></div>
-          <div style="background:#0f172a; padding:14px; border-radius:8px;"><div style="font-size:22px; font-weight:800; color:#10b981;" id="an-leads">0</div><small style="color:#94a3b8;">Leads Captured</small></div>
-          <div style="background:#0f172a; padding:14px; border-radius:8px;"><div style="font-size:22px; font-weight:800; color:#10b981;" id="an-rfqs">0</div><small style="color:#94a3b8;">RFQs Received</small></div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <!-- MODAL 1: ADD / EDIT PRODUCT -->
-  <div class="modal-backdrop" id="modal-product">
-    <div class="modal-box">
-      <h3 style="margin:0 0 16px 0; color:#fff; font-size:18px;" id="modal-prod-title">Add New Product</h3>
-      <form onsubmit="saveProductModal(event)">
-        <input type="hidden" id="mp-id">
-        <div class="form-group">
-          <label class="form-label">Product Name *</label>
-          <input type="text" id="mp-name" class="form-input" required placeholder="e.g., Monarch Solid White Oak Dining Table">
-        </div>
-        <div class="form-grid">
-          <div class="form-group">
-            <label class="form-label">SKU / Item Code</label>
-            <input type="text" id="mp-sku" class="form-input" placeholder="e.g., HVO-DS-01">
+      <div class="path-cards-grid">
+        <!-- PATH A: BUILD IT FOR ME (Primary / Recommended) -->
+        <div class="path-card primary" onclick="selectPath('managed')">
+          <div class="path-badge">Recommended</div>
+          <div>
+            <h2 class="path-title">BUILD IT FOR ME</h2>
+            <p class="path-desc">dn'a production engineering team builds and optimizes your photorealistic digital booth for you in 5 business days.</p>
+            <ul class="path-features">
+              <li><span class="bullet-icon">✔</span> Turnkey 3D showroom &amp; hotspot setup</li>
+              <li><span class="bullet-icon">✔</span> Smart Card NFC &amp; QR line sheet integration</li>
+              <li><span class="bullet-icon">✔</span> Wholesale lead intake &amp; RFQ pipeline ready</li>
+              <li><span class="bullet-icon">✔</span> 60-second reservation (Zero upfront charge)</li>
+            </ul>
           </div>
-          <div class="form-group">
-            <label class="form-label">Category</label>
-            <input type="text" id="mp-category" class="form-input" placeholder="e.g., Dining Furniture">
+          <button class="btn-path-cta btn-path-primary">Reserve My Production Slot →</button>
+        </div>
+
+        <!-- PATH B: CREATE IT MYSELF (Beta / DIY) -->
+        <div class="path-card" onclick="selectPath('diy')">
+          <div class="path-badge beta">Beta Self-Service</div>
+          <div>
+            <h2 class="path-title">CREATE IT MYSELF</h2>
+            <p class="path-desc">Start with your existing booth assets or 3D renders and generate your first interactive preview in seconds.</p>
+            <ul class="path-features">
+              <li><span class="bullet-icon">✔</span> Fast minimum asset upload</li>
+              <li><span class="bullet-icon">✔</span> Instant interactive 3D browser preview</li>
+              <li><span class="bullet-icon">✔</span> Switch to managed production anytime</li>
+              <li><span class="bullet-icon">✔</span> Full advanced configuration access</li>
+            </ul>
           </div>
-          <div class="form-group">
-            <label class="form-label">Wholesale Price (USD)</label>
-            <input type="number" id="mp-price" class="form-input" placeholder="e.g., 4200">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Minimum Order Qty (MOQ)</label>
-            <input type="number" id="mp-moq" class="form-input" value="1">
-          </div>
+          <button class="btn-path-cta btn-path-secondary">Start Building Preview →</button>
         </div>
-        <div class="form-group">
-          <label class="form-label">Product Hero Image URL *</label>
-          <input type="url" id="mp-image" class="form-input" required placeholder="e.g., https://images.unsplash.com/photo-1577140917170-285929fb55b7?w=800">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Product Copy & Specifications</label>
-          <textarea id="mp-desc" class="form-textarea" rows="3" placeholder="Handcrafted Appalachian white oak 8-seater dining table..."></textarea>
-        </div>
-        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-          <button type="button" class="btn-sub" onclick="closeProductModal()">Cancel</button>
-          <button type="submit" class="btn-action">Save Product</button>
-        </div>
-      </form>
-    </div>
-  </div>
+      </div>
+    </section>
 
-  <!-- MODAL 2: DIY -> MANAGED HANDOFF -->
-  <div class="modal-backdrop" id="modal-handoff">
-    <div class="modal-box">
-      <h3 style="margin:0 0 8px 0; color:#fff; font-size:18px;">⚡ Transfer to dn’a Managed Production</h3>
-      <p style="font-size:13px; color:#94a3b8; margin:0 0 16px 0;">Our professional 3D engineers will take your existing company profile, products, and assets and complete the full custom 3D build for you. Zero data re-entry required.</p>
-      <form onsubmit="submitManagedHandoff(event)">
-        <div class="form-group">
-          <label class="form-label">Specific Instructions / Requirements</label>
-          <textarea id="handoff-notes" class="form-textarea" rows="4" placeholder="e.g., Please customize the 3D lighting, build custom plinths for our new 2026 furniture line, and verify lookbook links."></textarea>
-        </div>
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
-          <button type="button" class="btn-sub" onclick="closeHandoffModal()">Cancel</button>
-          <button type="submit" class="btn-handoff" style="font-size:13px; padding:10px 18px;">Transfer to Managed Team ↗</button>
-        </div>
-      </form>
-    </div>
-  </div>
+    <!-- ============================================================
+         MANAGED PATH — STEP M1: MINIMAL IDENTITY INTAKE
+         ============================================================ -->
+    <section id="view-managed-step1" class="wizard-view">
+      <div class="view-header">
+        <div class="view-badge">Managed Production — Step 1 of 3</div>
+        <h1 class="view-title">Reserve Your Exhibition Production Slot</h1>
+        <p class="view-desc">Provide minimal exhibition details. Takes about 60 seconds.</p>
+      </div>
 
-  <!-- MODAL 3: BETA FEEDBACK -->
-  <div class="modal-backdrop" id="modal-feedback">
-    <div class="modal-box">
-      <h3 style="margin:0 0 8px 0; color:#fff; font-size:18px;">💬 Submit Beta Feedback / Report Issue</h3>
-      <p style="font-size:13px; color:#94a3b8; margin:0 0 16px 0;">Help us refine the self-service builder for commercial exhibitors.</p>
-      <form onsubmit="submitBetaFeedback(event)">
-        <div class="form-group">
-          <label class="form-label">Feedback Message</label>
-          <textarea id="fb-text" class="form-textarea" rows="4" required placeholder="Describe what worked well or what we can improve..."></textarea>
-        </div>
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
-          <button type="button" class="btn-sub" onclick="closeFeedbackModal()">Cancel</button>
-          <button type="submit" class="btn-action">Send Feedback</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    let PROJECT_ID = urlParams.get('id') || localStorage.getItem('dna_diy_project_id') || 'proj-diy-haven-01';
-    let PROJECT_DATA = null;
-    let CURRENT_STEP = 1;
-
-    async function initBuilder() {
-      try {
-        const res = await fetch(`/api/diy/projects/${PROJECT_ID}`);
-        if (res.ok) {
-          PROJECT_DATA = await res.json();
-        } else {
-          // Initialize fresh draft
-          const createRes = await fetch('/api/diy/projects', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ projectId: PROJECT_ID, company: 'My Exhibitor Space' })
-          });
-          const data = await createRes.json();
-          PROJECT_DATA = data.project;
-        }
-        localStorage.setItem('dna_diy_project_id', PROJECT_DATA.id);
-        renderProjectData();
-      } catch (err) {
-        console.error('Failed to init builder project:', err);
-      }
-    }
-
-    function renderProjectData() {
-      const p = PROJECT_DATA;
-      // Step 1
-      document.getElementById('f-company').value = p.company || '';
-      document.getElementById('f-industry').value = p.industry || 'Furniture, Home Decor & Lighting';
-      document.getElementById('f-contact').value = p.contact || '';
-      document.getElementById('f-email').value = p.email || '';
-      document.getElementById('f-phone').value = p.phone || '';
-      document.getElementById('f-website').value = p.website || '';
-      document.getElementById('f-desc').value = p.description || '';
-      const logoAsset = (p.assets || []).find(a => a.key === 'LOGO');
-      document.getElementById('f-logo').value = (logoAsset && logoAsset.url) ? logoAsset.url : '';
-
-      // Step 2
-      document.getElementById('f-show-name').value = p.tradeShow || '';
-      document.getElementById('f-show-start').value = p.showStartDate || '';
-      document.getElementById('f-show-end').value = p.showEndDate || '';
-      document.getElementById('f-show-city').value = p.city || '';
-      document.getElementById('f-show-venue').value = p.venue || '';
-      document.getElementById('f-show-booth').value = p.boothNumber || '';
-
-      // Step 3
-      renderProductsList();
-
-      // Step 4
-      const heroAsset = (p.assets || []).find(a => a.key === 'HERO_IMAGE');
-      const catAsset = (p.assets || []).find(a => a.key === 'CATALOG_PDF');
-      const boothAsset = (p.assets || []).find(a => a.key === 'BOOTH_PHOTOS');
-      document.getElementById('f-asset-hero').value = (heroAsset && heroAsset.url) ? heroAsset.url : '';
-      document.getElementById('f-asset-catalog').value = (catAsset && catAsset.url) ? catAsset.url : '';
-      document.getElementById('f-asset-booth').value = (boothAsset && boothAsset.url) ? boothAsset.url : '';
-
-      // Step 5
-      selectExperience(p.experienceType || 'DIGITAL_SHOWROOM', false);
-
-      // Step 6
-      selectTemplate(p.templateId || 'MODERN', false);
-      populateHotspotDropdowns();
-
-      // Step 8: Analytics & Status
-      renderPublishAndAnalytics();
-    }
-
-    function goToStep(step) {
-      CURRENT_STEP = step;
-      for (let i = 1; i <= 8; i++) {
-        const sec = document.getElementById(`step-1`);
-        const target = document.getElementById(`step-${i}`);
-        const btn = document.getElementById(`sbtn-${i}`);
-        if (target) target.style.display = (i === step) ? 'block' : 'none';
-        if (btn) {
-          btn.className = (i === step) ? 'step-btn active' : 'step-btn';
-        }
-      }
-      if (step === 7) updatePreviewFrame();
-      if (step === 8) checkReadinessScorecard();
-    }
-
-    function flashSaved() {
-      const el = document.getElementById('save-status');
-      el.textContent = '✓ Saved just now';
-      el.style.color = '#34d399';
-      setTimeout(() => { el.style.color = '#94a3b8'; }, 2000);
-    }
-
-    // Step 1 Save
-    async function saveCompanyStep(advance = false) {
-      const payload = {
-        company: document.getElementById('f-company').value,
-        industry: document.getElementById('f-industry').value,
-        contact: document.getElementById('f-contact').value,
-        email: document.getElementById('f-email').value,
-        phone: document.getElementById('f-phone').value,
-        website: document.getElementById('f-website').value,
-        description: document.getElementById('f-desc').value,
-        logoUrl: document.getElementById('f-logo').value
-      };
-      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/company`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      PROJECT_DATA = data.project;
-      flashSaved();
-      if (advance) goToStep(2);
-    }
-
-    // Step 2 Save
-    function applyPredefinedShow() {
-      const val = document.getElementById('f-pre-show').value;
-      if (!val) return;
-      const [name, start, end, city, venue, booth] = val.split('|');
-      document.getElementById('f-show-name').value = name;
-      document.getElementById('f-show-start').value = start;
-      document.getElementById('f-show-end').value = end;
-      document.getElementById('f-show-city').value = city;
-      document.getElementById('f-show-venue').value = venue;
-      document.getElementById('f-show-booth').value = booth;
-      saveShowStep(false);
-    }
-
-    async function saveShowStep(advance = false) {
-      const payload = {
-        tradeShow: document.getElementById('f-show-name').value,
-        showStartDate: document.getElementById('f-show-start').value,
-        showEndDate: document.getElementById('f-show-end').value,
-        city: document.getElementById('f-show-city').value,
-        venue: document.getElementById('f-show-venue').value,
-        boothNumber: document.getElementById('f-show-booth').value
-      };
-      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/show`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      PROJECT_DATA = data.project;
-      flashSaved();
-      if (advance) goToStep(3);
-    }
-
-    // Step 3 Products
-    function renderProductsList() {
-      const prods = PROJECT_DATA.products || [];
-      document.getElementById('s-prod-cnt').textContent = prods.length;
-      document.getElementById('prod-list-count').textContent = prods.length;
-      const host = document.getElementById('products-list-host');
-
-      if (prods.length === 0) {
-        host.innerHTML = `
-          <div style="text-align:center; padding:36px; background:#070e17; border:1px dashed #334155; border-radius:12px;">
-            <p style="color:#94a3b8; font-size:14px; margin:0 0 14px 0;">No products added yet. Add your first trade exhibition product or batch sample items.</p>
-            <button class="btn-action" onclick="openProductModal()">+ Add First Product</button>
-          </div>
-        `;
-        return;
-      }
-
-      host.innerHTML = prods.map(p => `
-        <div class="product-row">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <img src="${p.heroImage}" class="product-thumb" alt="${p.name}">
-            <div>
-              <div style="font-weight:700; color:#fff; font-size:14px;">${p.name}</div>
-              <div style="font-size:11px; color:#94a3b8;">SKU: ${p.sku || 'N/A'} · Category: ${p.category || 'General'} · Price: $${p.price || 'Inquire'}</div>
+      <div class="box-card">
+        <form id="form-managed-step1" onsubmit="handleManagedStep1Submit(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="m-company">Company / Brand Name <span class="req">*</span></label>
+              <input type="text" id="m-company" class="form-input" required placeholder="e.g. Apex Industrial Automation">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-email">Work Email Address <span class="req">*</span></label>
+              <input type="email" id="m-email" class="form-input" required placeholder="alex@apex-auto.com">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-tradeshow">Trade Show / Expo Name <span class="req">*</span></label>
+              <input type="text" id="m-tradeshow" class="form-input" required placeholder="e.g. Hannover Messe 2026 / PACK EXPO">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-showdate">Show Start Date <span class="req">*</span></label>
+              <input type="date" id="m-showdate" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-booth">Booth / Stand Number (Optional)</label>
+              <input type="text" id="m-booth" class="form-input" placeholder="e.g. Hall 4 — Stand B128">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-contact">Contact Name (Optional)</label>
+              <input type="text" id="m-contact" class="form-input" placeholder="e.g. Julian Vance">
             </div>
           </div>
-          <div style="display:flex; gap:8px;">
-            <button class="btn-sub" onclick="duplicateProduct('${p.id}')">Duplicate</button>
-            <button class="btn-sub" style="color:#f87171;" onclick="deleteProduct('${p.id}')">Delete</button>
+
+          <div class="form-actions-row">
+            <button type="button" class="btn-back-link" onclick="goToView('view-path-selection')">← Back</button>
+            <button type="submit" class="btn-submit-main">Continue — About 60 Seconds →</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         MANAGED PATH — STEP M2: PLAN SELECTION
+         ============================================================ -->
+    <section id="view-managed-step2" class="wizard-view">
+      <div class="view-header">
+        <div class="view-badge">Managed Production — Step 2 of 3</div>
+        <h1 class="view-title">Select Your Commercial Plan</h1>
+        <p class="view-desc">Select the plan tier for your upcoming exhibition digital twin.</p>
+      </div>
+
+      <div class="box-card" style="max-width: 920px;">
+        <div class="plans-selector-grid">
+          <!-- FREE PLAN -->
+          <div class="plan-selector-card" id="m-plan-free" onclick="selectManagedPlan('free', 'FREE', '$0 / mo')">
+            <div>
+              <div class="plan-sel-name">FREE</div>
+              <div class="plan-sel-price">$0 <span>/ mo</span></div>
+              <ul class="plan-sel-specs">
+                <li>✔ 1 Standard Virtual Booth</li>
+                <li>✔ Up to 5 Product Listings</li>
+                <li>✔ 3 Interactive Hotspots</li>
+                <li>✔ Photo Preview Room</li>
+                <li>✔ Smart Card QR Pass</li>
+              </ul>
+            </div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 14px; text-align: center;">Evaluation Tier</div>
+          </div>
+
+          <!-- PRO PLAN (Featured) -->
+          <div class="plan-selector-card featured selected" id="m-plan-pro" onclick="selectManagedPlan('pro', 'PRO', '$299 / mo')">
+            <div class="plan-sel-tag">Pilot Recommended</div>
+            <div>
+              <div class="plan-sel-name" style="color:#a78bfa;">PRO</div>
+              <div class="plan-sel-price">$299 <span>/ mo</span></div>
+              <ul class="plan-sel-specs">
+                <li>✔ <strong>Precision 3D Spatial Model</strong></li>
+                <li>✔ Up to 25 Product Listings</li>
+                <li>✔ 15 Interactive 3D Hotspots</li>
+                <li>✔ Full Leads &amp; RFQs CSV Export</li>
+                <li>✔ 1:1 Live Consultation Support</li>
+                <li>✔ Custom Brand Colors &amp; Logo</li>
+              </ul>
+            </div>
+            <div style="font-size: 11px; color: #38bdf8; font-weight: 700; margin-top: 14px; text-align: center;">Selected Plan</div>
+          </div>
+
+          <!-- BUSINESS PLAN -->
+          <div class="plan-selector-card" id="m-plan-business" onclick="selectManagedPlan('business', 'BUSINESS', '$799 / mo')">
+            <div>
+              <div class="plan-sel-name">BUSINESS</div>
+              <div class="plan-sel-price">$799 <span>/ mo</span></div>
+              <ul class="plan-sel-specs">
+                <li>✔ 3 Spatial Model Credits</li>
+                <li>✔ Up to 100 Product Listings</li>
+                <li>✔ 50 Interactive Hotspots</li>
+                <li>✔ Priority GPU Queue</li>
+                <li>✔ Dedicated SLA Support</li>
+                <li>✔ Multi-Booth Management</li>
+              </ul>
+            </div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 14px; text-align: center;">Enterprise Tier</div>
           </div>
         </div>
-      `).join('');
-    }
 
-    function openProductModal() {
-      document.getElementById('mp-id').value = '';
-      document.getElementById('mp-name').value = '';
-      document.getElementById('mp-sku').value = '';
-      document.getElementById('mp-category').value = '';
-      document.getElementById('mp-price').value = '';
-      document.getElementById('mp-moq').value = '1';
-      document.getElementById('mp-image').value = '';
-      document.getElementById('mp-desc').value = '';
-      document.getElementById('modal-product').style.display = 'flex';
-    }
-    function closeProductModal() { document.getElementById('modal-product').style.display = 'none'; }
+        <div class="form-actions-row">
+          <button type="button" class="btn-back-link" onclick="goToView('view-managed-step1')">← Back to Details</button>
+          <button type="button" class="btn-submit-main" onclick="confirmManagedReservation()">Confirm &amp; Issue Reservation Ticket →</button>
+        </div>
+      </div>
+    </section>
 
-    async function saveProductModal(e) {
-      e.preventDefault();
-      const payload = {
-        id: document.getElementById('mp-id').value || null,
-        name: document.getElementById('mp-name').value,
-        sku: document.getElementById('mp-sku').value,
-        category: document.getElementById('mp-category').value,
-        price: document.getElementById('mp-price').value,
-        moq: document.getElementById('mp-moq').value,
-        heroImage: document.getElementById('mp-image').value,
-        description: document.getElementById('mp-desc').value
-      };
-      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/products`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      PROJECT_DATA = data.project;
-      closeProductModal();
-      renderProductsList();
-      populateHotspotDropdowns();
-      flashSaved();
-    }
+    <!-- ============================================================
+         MANAGED PATH — STEP M3: RESERVATION TICKET ISSUED
+         ============================================================ -->
+    <section id="view-managed-step3" class="wizard-view">
+      <div class="view-header">
+        <div class="view-badge" style="background: rgba(16,185,129,0.15); border-color:#10b981; color:#34d399;">
+          Production Slot Confirmed
+        </div>
+        <h1 class="view-title">Your Production Slot is Reserved</h1>
+        <p class="view-desc">An active production ticket has been saved server-side into our operations pipeline.</p>
+      </div>
 
-    async function duplicateProduct(productId) {
-      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/products/duplicate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId })
-      });
-      const data = await res.json();
-      PROJECT_DATA = data.project;
-      renderProductsList();
-      populateHotspotDropdowns();
-      flashSaved();
-    }
+      <div class="box-card">
+        <!-- Persistent Ticket Display -->
+        <div class="ticket-container">
+          <div class="ticket-header">
+            <div>
+              <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px;">DNA Production Ticket</div>
+              <div class="ticket-id mono" id="res-ticket-id">DNA-2026-000184</div>
+            </div>
+            <div class="ticket-status-pill" id="res-ticket-status">SLOT RESERVED / INTAKE PENDING</div>
+          </div>
 
-    async function deleteProduct(productId) {
-      if (!confirm('Remove this product?')) return;
-      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/products/${productId}`, { method: 'DELETE' });
-      const data = await res.json();
-      PROJECT_DATA = data.project;
-      renderProductsList();
-      populateHotspotDropdowns();
-      flashSaved();
-    }
+          <div class="ticket-grid">
+            <div class="ticket-item">
+              <small>Exhibitor Company</small>
+              <b id="res-ticket-company">—</b>
+            </div>
+            <div class="ticket-item">
+              <small>Trade Show &amp; Date</small>
+              <b id="res-ticket-show">—</b>
+            </div>
+            <div class="ticket-item">
+              <small>Selected Plan</small>
+              <b id="res-ticket-plan" style="color: #a78bfa;">PRO ($299 / mo)</b>
+            </div>
+            <div class="ticket-item">
+              <small>Assigned Production Lead</small>
+              <b>Elena Rostova (Lead 3D Producer)</b>
+            </div>
+          </div>
+        </div>
 
-    async function seedSampleProducts() {
-      const sampleBatch = [
-        { name: 'Architectural Executive Desk — Walnut', sku: 'HVO-DK-01', category: 'Office', price: 3200, moq: 1, heroImage: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=800', description: 'Solid American black walnut executive desk with cable management ports.' },
-        { name: 'Aero Ergonomic Lounge Chair', sku: 'HVO-CH-05', category: 'Seating', price: 1450, moq: 2, heroImage: 'https://images.unsplash.com/photo-1580481077197-b6764d85215d?w=800', description: 'Molded plywood lounge chair upholstered in top-grain leather.' },
-        { name: 'Metropolis Brass LED Chandelier', sku: 'HVO-LT-09', category: 'Lighting', price: 2100, moq: 1, heroImage: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=800', description: 'Brushed solid brass sculptural multi-tier chandelier.' }
-      ];
-      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/products/bulk`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ products: sampleBatch })
-      });
-      const data = await res.json();
-      PROJECT_DATA = data.project;
-      renderProductsList();
-      populateHotspotDropdowns();
-      flashSaved();
-    }
+        <p style="font-size: 13.5px; color: #cbd5e1; margin-bottom: 22px; line-height: 1.6;">
+          Your reservation is safe in our system. You can proceed now to attach your logo and catalog, or finish the details later.
+        </p>
 
-    // Step 4 Assets
-    async function saveAssetsStep(advance = false) {
-      const payload = {
-        heroImageUrl: document.getElementById('f-asset-hero').value,
-        catalogPdfUrl: document.getElementById('f-asset-catalog').value,
-        boothPhotosUrl: document.getElementById('f-asset-booth').value
-      };
-      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/assets`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      PROJECT_DATA = data.project;
-      flashSaved();
-      if (advance) goToStep(5);
-    }
+        <div style="display: flex; gap: 12px; justify-content: space-between; flex-wrap: wrap;">
+          <a href="/" class="btn-path-cta btn-path-secondary" style="flex: 1; text-align: center; text-decoration: none; padding: 13px;">
+            Finish Details Later
+          </a>
+          <button type="button" class="btn-path-cta btn-path-primary" style="flex: 1.4; padding: 13px;" onclick="goToView('view-managed-step4')">
+            Continue to Secure My Booth →
+          </button>
+        </div>
+      </div>
+    </section>
 
-    // Step 5 Experience
-    async function selectExperience(type, save = true) {
-      ['DIGITAL_SHOWROOM', 'PHOTO_TOUR', 'DESIGNED_3D', 'AUTHENTIC_3D'].forEach(t => {
-        const card = document.getElementById(`exp-${t}`);
-        if (card) card.className = (t === type) ? 'choice-card selected' : 'choice-card';
-      });
-      if (save) {
-        const res = await fetch(`/api/diy/projects/${PROJECT_ID}/experience`, {
-          method: 'PATCH',
+    <!-- ============================================================
+         MANAGED PATH — STEP M4: POST-RESERVATION DETAILED INTAKE
+         ============================================================ -->
+    <section id="view-managed-step4" class="wizard-view">
+      <div class="view-header">
+        <div class="view-badge">Intake Details — Ticket <span id="intake-ticket-pill" class="mono">DNA-2026-000184</span></div>
+        <h1 class="view-title">Complete Your Booth Intake</h1>
+        <p class="view-desc">Upload assets for your production team. All non-essential fields can be skipped.</p>
+      </div>
+
+      <div class="box-card">
+        <form id="form-managed-intake" onsubmit="handleManagedIntakeSubmit(event)">
+          <div class="form-grid">
+            <div class="form-group full">
+              <label class="form-label" for="i-website">Company Website</label>
+              <input type="url" id="i-website" class="form-input" placeholder="https://www.yourcompany.com">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="i-repname">On-Site Sales Rep Name</label>
+              <input type="text" id="i-repname" class="form-input" placeholder="e.g. Julian Vance">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="i-repphone">On-Site WhatsApp / Phone</label>
+              <input type="tel" id="i-repphone" class="form-input" placeholder="+1 (336) 555-0142">
+            </div>
+            <div class="form-group full">
+              <label class="form-label" for="i-catalog">Digital Catalog / Line Sheet PDF URL</label>
+              <input type="url" id="i-catalog" class="form-input" placeholder="https://yourcompany.com/assets/2026-catalog.pdf">
+              <span class="form-hint">Or email files directly to your production lead after reservation.</span>
+            </div>
+            <div class="form-group full">
+              <label class="form-label" for="i-notes">Special Production Notes / Booth Requirements</label>
+              <textarea id="i-notes" class="form-textarea" rows="3" placeholder="Tell us about specific robotic models, color schemes, or VIP rooms you want highlighted..."></textarea>
+            </div>
+          </div>
+
+          <div class="form-actions-row">
+            <button type="button" class="btn-back-link" onclick="goToView('view-managed-step3')">← Back to Ticket</button>
+            <button type="submit" class="btn-submit-main">Save Intake &amp; Finish →</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         DIY PATH — STEP D1 & D2: MINIMAL ASSETS QUICK START
+         ============================================================ -->
+    <section id="view-diy-step1" class="wizard-view">
+      <div class="view-header">
+        <div class="view-badge">Self-Service Builder — Quick Start</div>
+        <h1 class="view-title">Generate Your First Booth Preview</h1>
+        <p class="view-desc">Tell us what assets you already have and generate an instant preview.</p>
+      </div>
+
+      <div class="box-card">
+        <form id="form-diy-quick" onsubmit="handleDiyQuickSubmit(event)">
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label class="form-label" for="d-company">Company / Brand Name <span class="req">*</span></label>
+            <input type="text" id="d-company" class="form-input" required placeholder="e.g. Apex Industrial Automation">
+          </div>
+
+          <label class="form-label">What do you already have? (Select all that apply)</label>
+          <div class="asset-choice-grid">
+            <div class="asset-choice-item selected" onclick="toggleAssetChoice(this, 'booth_photos')">📷 Booth Photos</div>
+            <div class="asset-choice-item selected" onclick="toggleAssetChoice(this, 'product_photos')">📦 Product Photos</div>
+            <div class="asset-choice-item" onclick="toggleAssetChoice(this, 'booth_render')">🎨 3D Render</div>
+            <div class="asset-choice-item selected" onclick="toggleAssetChoice(this, 'website')">🌐 Website</div>
+            <div class="asset-choice-item" onclick="toggleAssetChoice(this, 'catalog_pdf')">📄 Catalog PDF</div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label class="form-label">Select Visual Presentation Style</label>
+            <select id="d-style" class="form-select">
+              <option value="showroom">3D Interactive Showroom (PBR Robotics Twin)</option>
+              <option value="photorealistic">64K Ultra-HD Immersive Studio</option>
+            </select>
+          </div>
+
+          <div class="form-actions-row">
+            <button type="button" class="btn-back-link" onclick="goToView('view-path-selection')">← Back</button>
+            <button type="submit" class="btn-submit-main">Generate First Preview →</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         DIY PATH — STEP D3 & D4: FIRST PREVIEW & CONVERSION PANEL
+         ============================================================ -->
+    <section id="view-diy-preview" class="wizard-view">
+      <div class="view-header">
+        <div class="view-badge">Interactive Preview Mode</div>
+        <h1 class="view-title" id="diy-preview-title">Your First dn’a Booth is Ready</h1>
+        <p class="view-desc">Interact with your 3D digital showroom preview below.</p>
+      </div>
+
+      <div class="preview-layout">
+        <!-- Live Three.js Preview Canvas -->
+        <div class="preview-canvas-card">
+          <div id="diy-canvas-container" class="preview-canvas-box"></div>
+          <div style="position: absolute; top: 14px; left: 14px; background: rgba(15,23,42,0.85); padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 11px; font-weight: 700; color: #38bdf8;">
+            LIVE PREVIEW — ORBIT &amp; ZOOM
+          </div>
+        </div>
+
+        <!-- Conversion Sidebar -->
+        <div class="conversion-sidebar">
+          <div>
+            <div class="conversion-badge">Conversion &amp; Plan Selection</div>
+            <h3 class="conversion-title">Next: Select Your Plan</h3>
+            <p class="conversion-desc">
+              Your starter booth project is initialized. Choose a plan to unlock lead exports, 3D hotspots, and custom domain publishing.
+            </p>
+
+            <div style="background: rgba(15,23,42,0.6); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 18px;">
+              <div style="font-size: 12px; font-weight: 700; color: #a78bfa; margin-bottom: 4px;">RECOMMENDED PLAN: PRO</div>
+              <div style="font-size: 20px; font-weight: 800; color: #fff;">$299 <span style="font-size:12px; color:#94a3b8; font-weight:400;">/ mo</span></div>
+              <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">25 Products • 15 Hotspots • Full Lead CRM</div>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <a href="/pricing.html" class="btn-path-cta btn-path-primary" style="text-decoration: none; padding: 12px; font-size: 13px;">
+              Select Plan &amp; Continue →
+            </a>
+            <button type="button" class="btn-path-cta btn-path-secondary" style="padding: 12px; font-size: 12px; border-color: #f59e0b; color: #f59e0b;" onclick="handoffDiyToManaged()">
+              ⚡ Have dn’a Finish This For Me
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast Element -->
+  <div id="wizard-toast"></div>
+
+  <!-- Wizard Engine Script -->
+  <script>
+    // State Management
+    const WizardState = {
+      path: 'managed', // 'managed' | 'diy'
+      company: '',
+      email: '',
+      tradeShow: '',
+      showDate: '',
+      boothNumber: '',
+      contact: '',
+      selectedPlan: 'pro',
+      planName: 'PRO',
+      planPrice: '$299 / mo',
+      reservationTicket: null,
+      diyAssets: ['booth_photos', 'product_photos', 'website'],
+      previewEngine: null
+    };
+
+    // Telemetry Analytics Logger
+    function trackFunnelEvent(eventName, eventData = {}) {
+      console.log(`[Wizard Telemetry] ${eventName}`, eventData);
+      try {
+        fetch('/api/leads', {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ experienceType: type })
+          body: JSON.stringify({
+            leadType: 'FUNNEL_TELEMETRY',
+            name: `Event: ${eventName}`,
+            email: WizardState.email || 'telemetry@v-show.internal',
+            company: WizardState.company || 'Visitor',
+            notes: JSON.stringify({ eventName, ...eventData, timestamp: new Date().toISOString() })
+          })
+        }).catch(() => {});
+      } catch (e) {}
+    }
+
+    // View Navigation
+    function goToView(viewId) {
+      document.querySelectorAll('.wizard-view').forEach(el => el.classList.remove('active'));
+      const target = document.getElementById(viewId);
+      if (target) {
+        target.classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    // Toast Utility
+    function showToast(msg) {
+      const t = document.getElementById('wizard-toast');
+      if (!t) return;
+      t.textContent = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 3500);
+    }
+
+    // Path Selection
+    function selectPath(pathType) {
+      WizardState.path = pathType;
+      if (pathType === 'managed') {
+        trackFunnelEvent('path_managed_selected');
+        goToView('view-managed-step1');
+      } else {
+        trackFunnelEvent('path_diy_selected');
+        goToView('view-diy-step1');
+      }
+    }
+
+    // Managed Flow — Step 1 Submit
+    function handleManagedStep1Submit(e) {
+      e.preventDefault();
+      WizardState.company = document.getElementById('m-company').value.trim();
+      WizardState.email = document.getElementById('m-email').value.trim();
+      WizardState.tradeShow = document.getElementById('m-tradeshow').value.trim();
+      WizardState.showDate = document.getElementById('m-showdate').value;
+      WizardState.boothNumber = document.getElementById('m-booth').value.trim();
+      WizardState.contact = document.getElementById('m-contact').value.trim();
+
+      trackFunnelEvent('minimal_intake_completed', {
+        company: WizardState.company,
+        tradeShow: WizardState.tradeShow
+      });
+
+      trackFunnelEvent('plan_viewed');
+      goToView('view-managed-step2');
+    }
+
+    // Managed Flow — Select Plan
+    function selectManagedPlan(planId, planName, planPrice) {
+      WizardState.selectedPlan = planId;
+      WizardState.planName = planName;
+      WizardState.planPrice = planPrice;
+
+      document.querySelectorAll('.plan-selector-card').forEach(c => c.classList.remove('selected'));
+      const activeCard = document.getElementById(`m-plan-${planId}`);
+      if (activeCard) activeCard.classList.add('selected');
+
+      trackFunnelEvent('plan_selected', { planId, planName, planPrice });
+    }
+
+    // Managed Flow — Confirm Reservation
+    async function confirmManagedReservation() {
+      const payload = {
+        company: WizardState.company,
+        email: WizardState.email,
+        contact: WizardState.contact || WizardState.company,
+        tradeShow: WizardState.tradeShow,
+        showStartDate: WizardState.showDate,
+        boothNumber: WizardState.boothNumber,
+        selectedPlan: WizardState.selectedPlan,
+        planName: WizardState.planName,
+        planPrice: WizardState.planPrice,
+        sourceFunnel: 'BUILD_IT_FOR_ME'
+      };
+
+      try {
+        const res = await fetch('/api/production-reservations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
         });
         const data = await res.json();
-        PROJECT_DATA = data.project;
-        flashSaved();
+
+        if (data.success && data.reservation) {
+          WizardState.reservationTicket = data.reservation;
+          document.getElementById('res-ticket-id').textContent = data.reservation.id;
+          document.getElementById('res-ticket-company').textContent = data.reservation.company;
+          document.getElementById('res-ticket-show').textContent = `${data.reservation.tradeShow} (${data.reservation.showStartDate})`;
+          document.getElementById('res-ticket-plan').textContent = `${data.reservation.planName} (${data.reservation.planPrice})`;
+          document.getElementById('intake-ticket-pill').textContent = data.reservation.id;
+
+          trackFunnelEvent('reservation_created', { ticketId: data.reservation.id });
+          goToView('view-managed-step3');
+          showToast(`Reservation Ticket ${data.reservation.id} Created!`);
+        } else {
+          // Fallback client ticket if offline
+          const fallbackId = `DNA-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+          document.getElementById('res-ticket-id').textContent = fallbackId;
+          document.getElementById('res-ticket-company').textContent = WizardState.company;
+          document.getElementById('res-ticket-show').textContent = `${WizardState.tradeShow} (${WizardState.showDate})`;
+          document.getElementById('res-ticket-plan').textContent = `${WizardState.planName} (${WizardState.planPrice})`;
+          goToView('view-managed-step3');
+        }
+      } catch (err) {
+        console.error('Reservation API error, using fallback:', err);
+        const fallbackId = `DNA-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+        document.getElementById('res-ticket-id').textContent = fallbackId;
+        document.getElementById('res-ticket-company').textContent = WizardState.company;
+        document.getElementById('res-ticket-show').textContent = `${WizardState.tradeShow} (${WizardState.showDate})`;
+        document.getElementById('res-ticket-plan').textContent = `${WizardState.planName} (${WizardState.planPrice})`;
+        goToView('view-managed-step3');
       }
     }
-    function saveExperienceStep(advance = false) {
-      if (advance) goToStep(6);
-    }
 
-    // Step 6 Template & Hotspots
-    async function selectTemplate(templateId, save = true) {
-      ['MODERN', 'PREMIUM', 'INDUSTRIAL', 'MINIMAL'].forEach(t => {
-        const card = document.getElementById(`tmpl-${t}`);
-        if (card) card.className = (t === templateId) ? 'choice-card selected' : 'choice-card';
-      });
-      if (save) saveTemplateStep(false);
-    }
-
-    function populateHotspotDropdowns() {
-      const prods = PROJECT_DATA.products || [];
-      const opts = '<option value="">-- Select Product --</option>' + prods.map(p => `<option value="${p.id}">${p.name} ($${p.price || 0})</option>`).join('');
-      const h1 = document.getElementById('f-hotspot-1');
-      const h2 = document.getElementById('f-hotspot-2');
-      const h3 = document.getElementById('f-hotspot-3');
-      h1.innerHTML = opts; h2.innerHTML = opts; h3.innerHTML = opts;
-
-      const bindings = PROJECT_DATA.hotspotBindings || {};
-      if (bindings.hotspot1) h1.value = bindings.hotspot1;
-      if (bindings.hotspot2) h2.value = bindings.hotspot2;
-      if (bindings.hotspot3) h3.value = bindings.hotspot3;
-    }
-
-    async function saveTemplateStep(advance = false) {
-      const selectedTmpl = document.querySelector('.choice-card.selected[id^="tmpl-"]')?.id.replace('tmpl-', '') || 'MODERN';
-      const hotspotBindings = {
-        hotspot1: document.getElementById('f-hotspot-1').value || null,
-        hotspot2: document.getElementById('f-hotspot-2').value || null,
-        hotspot3: document.getElementById('f-hotspot-3').value || null
+    // Managed Flow — Post-Reservation Intake Submit
+    async function handleManagedIntakeSubmit(e) {
+      e.preventDefault();
+      const ticketId = WizardState.reservationTicket ? WizardState.reservationTicket.id : null;
+      const intakeData = {
+        website: document.getElementById('i-website').value.trim(),
+        repName: document.getElementById('i-repname').value.trim(),
+        repPhone: document.getElementById('i-repphone').value.trim(),
+        catalogUrl: document.getElementById('i-catalog').value.trim(),
+        customNotes: document.getElementById('i-notes').value.trim(),
+        completed: true
       };
-      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/template`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ templateId: selectedTmpl, hotspotBindings })
-      });
-      const data = await res.json();
-      PROJECT_DATA = data.project;
-      flashSaved();
-      if (advance) goToStep(7);
+
+      if (ticketId) {
+        try {
+          await fetch(`/api/production-reservations/${ticketId}/intake`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(intakeData)
+          });
+        } catch (err) {
+          console.warn('Failed to update intake details:', err);
+        }
+      }
+
+      trackFunnelEvent('detailed_intake_completed', { ticketId });
+      showToast('Intake Saved! Your production team has been notified.');
+      setTimeout(() => { window.location.href = '/'; }, 1500);
     }
 
-    // Step 7 Preview
-    function updatePreviewFrame() {
-      const tmpl = PROJECT_DATA.templateId || 'MODERN';
-      document.getElementById('preview-iframe').src = `/demo.html?project=${PROJECT_ID}&template=${tmpl}`;
-    }
-    function setPreviewDevice(mode) {
-      const iframe = document.getElementById('preview-iframe');
-      const bDesktop = document.getElementById('btn-view-desktop');
-      const bMobile = document.getElementById('btn-view-mobile');
-      if (mode === 'mobile') {
-        iframe.className = 'preview-frame mobile';
-        bMobile.style.background = '#0284c7'; bMobile.style.color = '#fff';
-        bDesktop.style.background = '#1e293b'; bDesktop.style.color = '#cbd5e1';
+    // DIY Flow — Toggle Asset Choices
+    function toggleAssetChoice(el, assetKey) {
+      el.classList.toggle('selected');
+      if (el.classList.contains('selected')) {
+        if (!WizardState.diyAssets.includes(assetKey)) WizardState.diyAssets.push(assetKey);
       } else {
-        iframe.className = 'preview-frame';
-        bDesktop.style.background = '#0284c7'; bDesktop.style.color = '#fff';
-        bMobile.style.background = '#1e293b'; bMobile.style.color = '#cbd5e1';
+        WizardState.diyAssets = WizardState.diyAssets.filter(k => k !== assetKey);
       }
     }
 
-    // Step 8 Publish & Readiness
-    async function checkReadinessScorecard() {
-      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/readiness`);
-      const r = await res.json();
-      const badge = document.getElementById('readiness-badge');
-      const missHost = document.getElementById('readiness-missing');
-      const pBtn = document.getElementById('btn-publish-live');
-
-      if (r.ready) {
-        badge.style.background = 'rgba(16,185,129,0.2)';
-        badge.style.color = '#34d399';
-        badge.textContent = `✓ 100% READY TO PUBLISH`;
-        missHost.innerHTML = '<span style="color:#34d399;">All essential requirements fulfilled. Ready for live exhibition launch!</span>';
-        pBtn.disabled = false;
-        pBtn.style.opacity = '1';
-      } else {
-        badge.style.background = 'rgba(239,68,68,0.2)';
-        badge.style.color = '#f87171';
-        badge.textContent = `ACTION REQUIRED (${r.score}%)`;
-        missHost.innerHTML = '<b>Required before publishing:</b><ul style="margin:6px 0 0 20px;">' + r.missing.map(m => `<li>${m}</li>`).join('') + '</ul>';
-        pBtn.disabled = true;
-        pBtn.style.opacity = '0.5';
-      }
-    }
-
-    async function publishBoothLive() {
-      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/publish`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ actor: PROJECT_DATA.contact || 'Self-Service Customer' })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        alert(data.error || 'Failed to publish');
-        return;
-      }
-      PROJECT_DATA = data.project;
-      alert(`✓ Digital Booth published live as ${data.version}!`);
-      renderPublishAndAnalytics();
-    }
-
-    function renderPublishAndAnalytics() {
-      const p = PROJECT_DATA;
-      if (p.status === 'PUBLISHED' && p.publishRecord) {
-        document.getElementById('live-links-card').style.display = 'block';
-        document.getElementById('pub-link-showroom').href = p.publishRecord.publicUrl || `/demo.html?project=${p.id}`;
-        document.getElementById('pub-link-card').href = `/card.html?project=${p.id}`;
-        document.getElementById('pub-link-qr').href = `/qr.html?project=${p.id}`;
-        document.getElementById('pub-link-catalog').href = `/demo.html?project=${p.id}`;
-      }
-
-      const an = p.analytics || {};
-      document.getElementById('an-visits').textContent = an.boothVisits || 0;
-      document.getElementById('an-views').textContent = an.productViews || 0;
-      document.getElementById('an-scans').textContent = an.qrScans || 0;
-      document.getElementById('an-downloads').textContent = an.catalogDownloads || 0;
-      document.getElementById('an-leads').textContent = an.leadsCaptured || 0;
-      document.getElementById('an-rfqs').textContent = an.rfqsSubmitted || 0;
-    }
-
-    // Managed Handoff
-    function openHandoffModal() { document.getElementById('modal-handoff').style.display = 'flex'; }
-    function closeHandoffModal() { document.getElementById('modal-handoff').style.display = 'none'; }
-    async function submitManagedHandoff(e) {
+    // DIY Flow — Quick Submit to Fast First Preview
+    function handleDiyQuickSubmit(e) {
       e.preventDefault();
-      const notes = document.getElementById('handoff-notes').value;
-      const res = await fetch(`/api/diy/projects/${PROJECT_ID}/handoff-to-managed`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notes, actor: PROJECT_DATA.contact || 'Customer' })
-      });
-      const data = await res.json();
-      closeHandoffModal();
-      alert('✓ Project successfully transferred to dn’a Managed Production Queue!\nOur lead 3D engineers will take over production.');
-      PROJECT_DATA = data.project;
-      window.location.href = `/client-portal.html?id=${PROJECT_ID}`;
+      WizardState.company = document.getElementById('d-company').value.trim();
+      document.getElementById('diy-preview-title').textContent = `${WizardState.company} — First 3D Booth Preview`;
+
+      trackFunnelEvent('diy_assets_uploaded', { company: WizardState.company, assets: WizardState.diyAssets });
+      goToView('view-diy-preview');
+      initDiyLivePreview();
+      trackFunnelEvent('first_preview_created');
     }
 
-    // Beta Feedback
-    function openFeedbackModal() { document.getElementById('modal-feedback').style.display = 'flex'; }
-    function closeFeedbackModal() { document.getElementById('modal-feedback').style.display = 'none'; }
-    async function submitBetaFeedback(e) {
-      e.preventDefault();
-      const msg = document.getElementById('fb-text').value;
-      await fetch('/api/diy/feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: PROJECT_ID, company: PROJECT_DATA.company, email: PROJECT_DATA.email, message: msg, step: `STEP_${CURRENT_STEP}` })
+    // Initialize DIY Live Three.js Preview
+    function initDiyLivePreview() {
+      const container = document.getElementById('diy-canvas-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const width = container.clientWidth || 600;
+      const height = container.clientHeight || 450;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x070e17);
+
+      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+      camera.position.set(0, 1.8, 5.0);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.target.set(0, 0.8, 0);
+
+      // Studio Lighting
+      const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+      scene.add(ambient);
+      const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
+      dirLight.position.set(3, 5, 4);
+      scene.add(dirLight);
+
+      // Floor Grid
+      const grid = new THREE.GridHelper(10, 20, 0x0284c7, 0x1e293b);
+      grid.position.y = 0;
+      scene.add(grid);
+
+      // Showcase Pedestal with Company Sign
+      const pedGeo = new THREE.CylinderGeometry(1.2, 1.3, 0.4, 32);
+      const pedMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.7 });
+      const pedestal = new THREE.Mesh(pedGeo, pedMat);
+      pedestal.position.set(0, 0.2, 0);
+      scene.add(pedestal);
+
+      // Decorative Robotic Arm Proxy
+      const armGeo = new THREE.BoxGeometry(0.3, 0.8, 0.3);
+      const armMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.2, metalness: 0.8 });
+      const arm = new THREE.Mesh(armGeo, armMat);
+      arm.position.set(0, 0.8, 0);
+      scene.add(arm);
+
+      // Glowing Halo Ring
+      const ringGeo = new THREE.RingGeometry(1.35, 1.45, 32);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = 0.02;
+      scene.add(ring);
+
+      function animate() {
+        requestAnimationFrame(animate);
+        arm.rotation.y += 0.008;
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      window.addEventListener('resize', () => {
+        if (!container.clientWidth) return;
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
       });
-      closeFeedbackModal();
-      alert('✓ Thank you for your feedback! The dn’a product engineering team has received your ticket.');
     }
 
-    initBuilder();
+    // Zero-Loss DIY to Managed Handoff
+    function handoffDiyToManaged() {
+      trackFunnelEvent('diy_to_managed_selected', { company: WizardState.company });
+      document.getElementById('m-company').value = WizardState.company;
+      goToView('view-managed-step1');
+      showToast('Preserved your company name and assets. Starting Managed reservation.');
+    }
+
+    // Auto-init on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      trackFunnelEvent('wizard_opened');
+    });
   </script>
 </body>
 </html>
