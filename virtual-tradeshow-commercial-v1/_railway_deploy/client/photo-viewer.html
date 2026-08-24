@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Photo Immersive Booth — dn’a Virtual Trade Show</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="vendor/three.min.js"></script>
+  <script src="vendor/OrbitControls.js"></script>
+  <script src="products.js"></script>
+  <script src="photo-engine.js"></script>
+  <style>
+    :root {
+      --bg-deep: #02050b;
+      --bg-studio: #050b16;
+      --panel-bg: rgba(9, 16, 29, 0.94);
+      --panel-border: rgba(56, 189, 248, 0.35);
+      --cyan: #00c2ff;
+      --cyan-glow: rgba(0, 194, 255, 0.55);
+      --text-main: #ffffff;
+      --text-muted: #94a3b8;
+      --font: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: var(--bg-deep); color: var(--text-main);
+      font-family: var(--font); user-select: none;
+    }
+    .mono { font-family: var(--mono); }
+
+    #app-layout {
+      display: flex; flex-direction: column; width: 100vw; height: 100vh; overflow: hidden;
+      position: relative;
+    }
+
+    /* TOP NAV WITH 2X OFFICIAL LOGO */
+    #topbar {
+      height: 58px; flex-shrink: 0;
+      background: rgba(5, 11, 22, 0.98);
+      display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+      backdrop-filter: blur(14px); border-bottom: 1px solid rgba(255,255,255,0.08);
+      z-index: 100;
+    }
+    .brand-group { display: flex; align-items: center; gap: 14px; }
+    .brand-logo img { height: 50px; width: auto; object-fit: contain; display: block; }
+    .brand-badge {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase;
+      color: #38bdf8; background: rgba(2, 132, 199, 0.15); border: 1px solid var(--panel-border);
+      border-radius: 20px; padding: 4px 10px; display: flex; align-items: center; gap: 6px;
+    }
+    .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 8px #38bdf8; }
+
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+    .btn-ui {
+      display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: rgba(255,255,255,0.9);
+      font-size: 12px; font-weight: 600; padding: 7px 13px; cursor: pointer; transition: all 0.2s;
+      text-decoration: none; white-space: nowrap;
+    }
+    .btn-ui:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.25); color: #fff; }
+    .btn-ui.primary { background: linear-gradient(135deg, #0284c7, #2563eb); border-color: #38bdf8; color: #fff; font-weight: 800; }
+
+    /* WORKSPACE */
+    #studio-workspace {
+      flex: 1; display: grid; grid-template-columns: 1fr 340px; gap: 14px; padding: 12px 18px;
+      min-height: 0; position: relative;
+    }
+    #viewer-container {
+      position: relative; width: 100%; height: 100%; border-radius: 16px; overflow: hidden;
+      border: 1px solid var(--panel-border); background: #030712;
+    }
+    #three-canvas-box { width: 100%; height: 100%; }
+    #hotspot-layer { position: absolute; inset: 0; pointer-events: none; }
+
+    /* PINPOINT STYLES */
+    .dn-pinpoint-marker {
+      position: absolute; top: 0; left: 0; pointer-events: auto; cursor: pointer;
+      display: flex; align-items: center; gap: 8px; z-index: 20;
+      transition: transform 0.1s ease-out;
+    }
+    .dn-pinpoint-marker .pin-pulse {
+      width: 14px; height: 14px; border-radius: 50%; background: #38bdf8;
+      border: 2px solid #fff; box-shadow: 0 0 12px #38bdf8;
+      animation: pin-pulse 1.8s infinite;
+    }
+    @keyframes pin-pulse { 0%,100%{transform:scale(1);}50%{transform:scale(1.3);box-shadow:0 0 18px #38bdf8;} }
+    .dn-pinpoint-marker .pin-capsule {
+      background: rgba(15, 23, 42, 0.92); border: 1px solid rgba(56, 189, 248, 0.4);
+      padding: 4px 10px; border-radius: 14px; backdrop-filter: blur(8px);
+      display: flex; flex-direction: column; white-space: nowrap;
+    }
+    .pin-category { font-size: 8.5px; font-weight: 800; color: #38bdf8; text-transform: uppercase; }
+    .pin-title { font-size: 11.5px; font-weight: 700; color: #fff; }
+
+    /* RIGHT SIDEBAR */
+    #sidebar-workspace {
+      background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 16px;
+      padding: 18px; display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .sidebar-sec-title { font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; margin-bottom: 8px; }
+    .booth-views-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .view-btn {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+      padding: 10px 12px; font-size: 12px; font-weight: 700; color: #cbd5e1; text-align: left;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .view-btn.active { background: rgba(2, 132, 199, 0.25); border-color: #38bdf8; color: #fff; }
+
+    /* PRODUCT INSPECTION DRAWER */
+    #product-drawer {
+      position: absolute; top: 0; right: 0; bottom: 0; width: 440px; max-width: 90vw;
+      background: #09101d; border-left: 1px solid var(--panel-border); z-index: 200;
+      transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex; flex-direction: column; box-shadow: -10px 0 40px rgba(0,0,0,0.8);
+    }
+    #product-drawer.open { transform: translateX(0); }
+    .drawer-header {
+      padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .drawer-close-btn { background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; }
+    .drawer-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+    .drawer-img { width: 100%; max-height: 220px; object-fit: contain; background: #02050b; border-radius: 12px; }
+    .drawer-specs-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+    .drawer-specs-table td { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: #cbd5e1; }
+    .drawer-specs-table td:first-child { color: #94a3b8; width: 40%; }
+    .drawer-actions { display: flex; flex-direction: column; gap: 8px; padding: 18px 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+
+    /* IN-VIEWER PINPOINT CREATOR MODAL */
+    #pinpoint-creator-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
+      z-index: 300; display: none; align-items: center; justify-content: center; padding: 20px;
+    }
+    .creator-box {
+      background: #0f172a; border: 1px solid #38bdf8; border-radius: 16px; padding: 24px;
+      max-width: 440px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    }
+
+    /* BUYER TOOL INQUIRY MODAL */
+    #buyer-inquiry-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
+      z-index: 350; display: none; align-items: center; justify-content: center; padding: 20px;
+    }
+
+    @media (max-width: 860px) {
+      #studio-workspace { grid-template-columns: 1fr; }
+      #sidebar-workspace { display: none; }
+      #product-drawer { width: 100vw; max-width: 100vw; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="app-layout">
+    <!-- TOPBAR WITH 2X LOGO -->
+    <header id="topbar">
+      <div class="brand-group">
+        <a href="/" class="brand-logo" title="dn'a Home">
+          <img src="/assets/brand/dna_logo_white.png" alt="dn'a DIGITAL NETWORKING ADVANTAGE">
+        </a>
+        <div class="brand-badge">
+          <div class="pulse-dot"></div>
+          PHOTO IMMERSIVE BOOTH
+        </div>
+      </div>
+      <div class="top-actions">
+        <a href="/builder.html" class="btn-ui primary">BUILD A BOOTH LIKE THIS →</a>
+        <button class="btn-ui" onclick="openBuyerInquiry('REQUEST_QUOTE')">REQUEST RFQ</button>
+      </div>
+    </header>
+
+    <!-- MAIN STUDIO WORKSPACE -->
+    <main id="studio-workspace">
+      <!-- 3D PHOTO IMMERSIVE CONTAINER -->
+      <div id="viewer-container">
+        <div id="three-canvas-box"></div>
+        <div id="hotspot-layer"></div>
+
+        <div style="position: absolute; top: 14px; left: 14px; background: rgba(15,23,42,0.85); padding: 5px 12px; border-radius: 8px; border: 1px solid var(--panel-border); font-size: 11px; font-weight: 700; color: #38bdf8;">
+          PHOTO IMMERSIVE TOUR — 360° EXPLORATION
+        </div>
+
+        <div style="position: absolute; bottom: 14px; left: 14px; background: rgba(15,23,42,0.85); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-size: 11.5px; color: #cbd5e1;">
+          💡 <strong>Tip:</strong> Click anywhere on equipment in the booth to add product tags or inspect details.
+        </div>
+      </div>
+
+      <!-- RIGHT SIDEBAR (VANTAGE POINTS & BOOTH INFO) -->
+      <aside id="sidebar-workspace">
+        <div>
+          <div class="sidebar-sec-title">Spatial Vantage Points</div>
+          <div class="booth-views-list" id="views-buttons-tray">
+            <button class="view-btn active" onclick="switchActiveView(0)">01. Main Booth Center</button>
+            <button class="view-btn" onclick="switchActiveView(1)">02. Cobot Workstation</button>
+            <button class="view-btn" onclick="switchActiveView(2)">03. AMR &amp; Automation Cell</button>
+          </div>
+
+          <div class="sidebar-sec-title">Exhibitor Profile</div>
+          <div style="font-size: 13px; color: #fff; font-weight: 700;" id="sidebar-company-name">Apex Industrial Automation</div>
+          <div style="font-size: 11.5px; color: #94a3b8; margin-top: 2px;" id="sidebar-show-name">Hannover Messe 2026</div>
+        </div>
+
+        <div>
+          <a href="/card.html" target="_blank" class="btn-ui" style="width: 100%; justify-content: center; margin-bottom: 8px;">
+            🪪 Smart Exhibitor Card
+          </a>
+          <button class="btn-ui primary" style="width: 100%; justify-content: center;" onclick="openBuyerInquiry('REQUEST_INFO')">
+            Contact Sales Team
+          </button>
+        </div>
+      </aside>
+    </main>
+
+    <!-- PRODUCT INSPECTION DRAWER -->
+    <div id="product-drawer">
+      <div class="drawer-header">
+        <div>
+          <div style="font-size: 10px; font-weight: 800; color: #38bdf8; text-transform: uppercase;" id="drawer-prod-cat">PRODUCT</div>
+          <div style="font-size: 16px; font-weight: 800; color: #fff;" id="drawer-prod-title">Product Name</div>
+        </div>
+        <button class="drawer-close-btn" onclick="closeProductDrawer()">✕</button>
+      </div>
+      <div class="drawer-body">
+        <img id="drawer-prod-img" class="drawer-img" src="" alt="Product Image">
+        <p style="font-size: 13px; color: #cbd5e1; line-height: 1.5;" id="drawer-prod-desc"></p>
+
+        <div>
+          <div class="sidebar-sec-title">Technical Specifications</div>
+          <table class="drawer-specs-table" id="drawer-specs-tbody"></table>
+        </div>
+      </div>
+      <div class="drawer-actions">
+        <button class="btn-ui primary" style="justify-content: center;" onclick="openBuyerInquiry('REQUEST_QUOTE')">Request Quote (RFQ)</button>
+        <button class="btn-ui" style="justify-content: center;" onclick="openBuyerInquiry('REQUEST_SAMPLE')">Request Physical Sample</button>
+        <button class="btn-ui" style="justify-content: center;" onclick="openBuyerInquiry('MEETING_REQUEST')">Book Consultation Meeting</button>
+      </div>
+    </div>
+
+    <!-- IN-VIEWER VISUAL PINPOINT CREATOR MODAL -->
+    <div id="pinpoint-creator-modal">
+      <div class="creator-box">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="font-size: 16px; font-weight: 800; color: #fff;">Add Product Pinpoint</h3>
+          <button style="background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer;" onclick="closePinpointCreator()">✕</button>
+        </div>
+
+        <form id="form-quick-pinpoint" onsubmit="handleQuickPinpointSubmit(event)">
+          <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px;">
+            <div>
+              <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Product Name <span style="color:#f87171;">*</span></label>
+              <input type="text" id="quick-prod-name" required placeholder="e.g. Apex Cobot X16" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Product Image URL <span style="color:#f87171;">*</span></label>
+              <input type="url" id="quick-prod-img" required value="/assets/demo/dna-showcase/products/apex_cobot_x16.jpg" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Short Description (Optional)</label>
+              <input type="text" id="quick-prod-desc" placeholder="High-precision collaborative arm" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button type="button" class="btn-ui" onclick="closePinpointCreator()">Cancel</button>
+            <button type="submit" class="btn-ui primary">Add Product Pinpoint →</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- BUYER INQUIRY MODAL (RFQ / INFO / SAMPLE) -->
+    <div id="buyer-inquiry-modal">
+      <div class="creator-box">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="font-size: 16px; font-weight: 800; color: #fff;" id="buyer-modal-title">Wholesale Inquiry</h3>
+          <button style="background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer;" onclick="closeBuyerInquiry()">✕</button>
+        </div>
+
+        <form onsubmit="handleBuyerInquirySubmit(event)">
+          <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px;">
+            <div>
+              <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Your Name <span style="color:#f87171;">*</span></label>
+              <input type="text" id="buyer-name" required placeholder="Julian Vance" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Work Email <span style="color:#f87171;">*</span></label>
+              <input type="email" id="buyer-email" required placeholder="buyer@enterprise.com" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Company / Organization</label>
+              <input type="text" id="buyer-company" placeholder="Global Logistics Corp." style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Inquiry / Specifications</label>
+              <textarea id="buyer-notes" rows="2" placeholder="Required quantity, delivery timeline..." style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px; font-family:inherit;"></textarea>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button type="button" class="btn-ui" onclick="closeBuyerInquiry()">Cancel</button>
+            <button type="submit" class="btn-ui primary">Submit Request →</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let photoEngine = null;
+    let pendingPinpointCoord = null;
+    let activeProjectId = 'demo-apex';
+
+    // Parse URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectQuery = urlParams.get('project') || 'demo-apex';
+    activeProjectId = projectQuery;
+
+    async function loadProject() {
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/manifest`);
+        const data = await res.json();
+        const manifest = (data.success && data.manifest) ? data.manifest : getFallbackManifest();
+        initEngine(manifest);
+      } catch (err) {
+        console.warn('Using fallback manifest:', err);
+        initEngine(getFallbackManifest());
+      }
+    }
+
+    function getFallbackManifest() {
+      return {
+        projectId: activeProjectId,
+        company: 'Apex Industrial Automation',
+        tradeShow: 'Hannover Messe 2026',
+        views: [
+          {
+            viewId: 'view-0',
+            name: '01. Main Booth Center',
+            previewUrl: '/assets/demo/dna-showcase/pano360/node0_preview.jpg',
+            highResUrl: '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg'
+          },
+          {
+            viewId: 'view-1',
+            name: '02. Cobot Workstation',
+            previewUrl: '/assets/demo/dna-showcase/pano360/node1_preview.jpg',
+            highResUrl: '/assets/demo/dna-showcase/pano360/node1_360_panorama_8k.jpg'
+          },
+          {
+            viewId: 'view-2',
+            name: '03. AMR & Automation Cell',
+            previewUrl: '/assets/demo/dna-showcase/pano360/node2_preview.jpg',
+            highResUrl: '/assets/demo/dna-showcase/pano360/node2_360_panorama_8k.jpg'
+          }
+        ],
+        pinpoints: [
+          {
+            pinpointId: 'pin-01',
+            viewId: 'view-0',
+            targetId: 'prod-apex-cobot-x16',
+            label: 'Apex Cobot X16',
+            categoryTag: 'Collaborative Robotics',
+            x: 0, y: -65, z: -380
+          },
+          {
+            pinpointId: 'pin-02',
+            viewId: 'view-0',
+            targetId: 'prod-vector-amr-600',
+            label: 'Vector AMR 600',
+            categoryTag: 'Autonomous Intralogistics',
+            x: -240, y: -110, z: -320
+          },
+          {
+            pinpointId: 'pin-03',
+            viewId: 'view-0',
+            targetId: 'prod-titan-delta-d12',
+            label: 'Titan Delta D12',
+            categoryTag: 'High-Speed Packaging',
+            x: 230, y: -30, z: -320
+          },
+          {
+            pinpointId: 'pin-04',
+            viewId: 'view-0',
+            targetId: 'prod-hyperion-scara-s8',
+            label: 'Hyperion SCARA S8',
+            categoryTag: 'Precision Assembly',
+            x: -180, y: 40, z: -330
+          }
+        ],
+        products: (typeof DNA_CANONICAL_PRODUCTS !== 'undefined') ? Object.values(DNA_CANONICAL_PRODUCTS) : []
+      };
+    }
+
+    function initEngine(manifest) {
+      document.getElementById('sidebar-company-name').textContent = manifest.company || 'Exhibitor';
+      document.getElementById('sidebar-show-name').textContent = manifest.tradeShow || 'Virtual Trade Show 2026';
+
+      photoEngine = new PhotoImmersiveEngine({
+        container: document.getElementById('three-canvas-box'),
+        hotspotLayer: document.getElementById('hotspot-layer'),
+        manifest: manifest,
+        onPinpointCreated: (coord) => {
+          pendingPinpointCoord = coord;
+          openPinpointCreator();
+        },
+        onProductSelected: (prod) => {
+          showProductDrawer(prod);
+        }
+      });
+    }
+
+    function switchActiveView(idx) {
+      document.querySelectorAll('.view-btn').forEach((b, i) => {
+        b.classList.toggle('active', i === idx);
+      });
+      if (photoEngine) photoEngine.switchNode(idx);
+    }
+
+    function showProductDrawer(prod) {
+      document.getElementById('drawer-prod-title').textContent = prod.name;
+      document.getElementById('drawer-prod-cat').textContent = prod.category || 'PRODUCT';
+      document.getElementById('drawer-prod-img').src = prod.heroImage || prod.image || '';
+      document.getElementById('drawer-prod-desc').textContent = prod.shortDescription || prod.desc || '';
+
+      const tbody = document.getElementById('drawer-specs-tbody');
+      tbody.innerHTML = '';
+      const specs = prod.specs || [];
+      specs.forEach(([k, v]) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${k}</td><td><strong>${v}</strong></td>`;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('product-drawer').classList.add('open');
+    }
+
+    function closeProductDrawer() {
+      document.getElementById('product-drawer').classList.remove('open');
+    }
+
+    function openPinpointCreator() {
+      document.getElementById('pinpoint-creator-modal').style.display = 'flex';
+      document.getElementById('quick-prod-name').focus();
+    }
+
+    function closePinpointCreator() {
+      document.getElementById('pinpoint-creator-modal').style.display = 'none';
+    }
+
+    async function handleQuickPinpointSubmit(e) {
+      e.preventDefault();
+      const prodName = document.getElementById('quick-prod-name').value.trim();
+      const prodImg = document.getElementById('quick-prod-img').value.trim();
+      const prodDesc = document.getElementById('quick-prod-desc').value.trim();
+
+      const newProd = {
+        productId: `prod-${Date.now()}`,
+        name: prodName,
+        heroImage: prodImg,
+        shortDescription: prodDesc,
+        category: 'New Equipment'
+      };
+
+      const newPin = {
+        pinpointId: `pin-${Date.now()}`,
+        targetId: newProd.productId,
+        label: prodName,
+        categoryTag: 'NEW PRODUCT',
+        x: pendingPinpointCoord ? pendingPinpointCoord.x : 0,
+        y: pendingPinpointCoord ? pendingPinpointCoord.y : 0,
+        z: pendingPinpointCoord ? pendingPinpointCoord.z : -300,
+        viewId: pendingPinpointCoord ? pendingPinpointCoord.viewId : 'view-0'
+      };
+
+      if (photoEngine) {
+        photoEngine.addProduct(newProd);
+        photoEngine.addPinpoint(newPin);
+      }
+
+      // Persist to server
+      try {
+        await fetch(`/api/projects/${activeProjectId}/products/quick`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newProd)
+        });
+        await fetch(`/api/projects/${activeProjectId}/pinpoints`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newPin)
+        });
+      } catch (err) {}
+
+      closePinpointCreator();
+      showProductDrawer(newProd);
+    }
+
+    function openBuyerInquiry(type) {
+      const titles = {
+        REQUEST_INFO: 'Request Product Information',
+        REQUEST_QUOTE: 'Request Quotation (RFQ)',
+        REQUEST_SAMPLE: 'Request Physical Sample',
+        MEETING_REQUEST: 'Book Consultation Meeting'
+      };
+      document.getElementById('buyer-modal-title').textContent = titles[type] || 'Wholesale Inquiry';
+      document.getElementById('buyer-inquiry-modal').style.display = 'flex';
+    }
+
+    function closeBuyerInquiry() {
+      document.getElementById('buyer-inquiry-modal').style.display = 'none';
+    }
+
+    async function handleBuyerInquirySubmit(e) {
+      e.preventDefault();
+      const lead = {
+        leadType: 'BUYER_ACTION',
+        name: document.getElementById('buyer-name').value.trim(),
+        email: document.getElementById('buyer-email').value.trim(),
+        company: document.getElementById('buyer-company').value.trim(),
+        notes: document.getElementById('buyer-notes').value.trim()
+      };
+
+      try {
+        await fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(lead)
+        });
+      } catch (err) {}
+
+      closeBuyerInquiry();
+      alert('Your inquiry has been sent to the exhibitor sales team!');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => loadProject());
+  </script>
+</body>
+</html>

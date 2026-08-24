@@ -1769,6 +1769,34 @@ app.put('/api/production-reservations/:id/intake', createRateLimiter(40, 60000),
   }
 });
 
+// C05 Photo Immersive Manifest & Dynamic Pinpoints
+app.get('/api/projects/:id/manifest', async (req, res) => {
+  try {
+    const manifest = await db.getProjectManifest(req.params.id);
+    res.json({ success: true, manifest });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/projects/:id/pinpoints', async (req, res) => {
+  try {
+    const pinpoint = await db.addProjectPinpoint(req.params.id, req.body, req.body.actor || 'ClientVisualEditor');
+    res.status(201).json({ success: true, pinpoint });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/projects/:id/products/quick', async (req, res) => {
+  try {
+    const product = await db.addProjectProductQuick(req.params.id, req.body, req.body.actor || 'ClientVisualEditor');
+    res.status(201).json({ success: true, product });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // 5. Update Status & Blocking Reason
 app.patch('/api/production-projects/:id/status', async (req, res) => {
   try {

@@ -2765,6 +2765,274 @@ class JSONDatabase {
     });
   }
 
+  // ============================================================
+  // C05 PHOTO IMMERSIVE MANIFEST, PINPOINTS & PROGRESSIVE PRODUCTS
+  // ============================================================
+  async getProjectManifest(id) {
+    const db = this.read();
+    db.productionProjects = db.productionProjects || [];
+    const p = db.productionProjects.find(x => x.id === id || x.reservationId === id || x.slug === id);
+    if (!p) {
+      // Fallback default manifest for demo or unseeded projects
+      return {
+        projectId: id,
+        company: 'Apex Industrial Automation',
+        tradeShow: 'Hannover Messe 2026',
+        showStartDate: '2026-10-15',
+        experienceType: 'PHOTO_IMMERSIVE',
+        title: 'Apex Industrial Automation Showroom',
+        slug: 'apex-industrial-automation',
+        heroViewId: 'view-0',
+        views: [
+          {
+            viewId: 'view-0',
+            name: '01. Main Booth Center (Middle Master)',
+            previewUrl: '/assets/demo/dna-showcase/pano360/node0_preview.jpg',
+            highResUrl: '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg',
+            master16kUrl: '/assets/demo/dna-showcase/pano360/node0_360_panorama_16k.jpg',
+            puckPosition: { x: 0, y: -160, z: -320 },
+            radarPosition: { x: 153, y: 72 }
+          },
+          {
+            viewId: 'view-1',
+            name: '02. Cobot Workstation (Left Master)',
+            previewUrl: '/assets/demo/dna-showcase/pano360/node1_preview.jpg',
+            highResUrl: '/assets/demo/dna-showcase/pano360/node1_360_panorama_8k.jpg',
+            master16kUrl: '/assets/demo/dna-showcase/pano360/node1_360_cobots_16k.jpg',
+            puckPosition: { x: -150, y: -160, z: -250 },
+            radarPosition: { x: 75, y: 55 }
+          },
+          {
+            viewId: 'view-2',
+            name: '03. AMR & Automation Cell (Right Master)',
+            previewUrl: '/assets/demo/dna-showcase/pano360/node2_preview.jpg',
+            highResUrl: '/assets/demo/dna-showcase/pano360/node2_360_panorama_8k.jpg',
+            master16kUrl: '/assets/demo/dna-showcase/pano360/node2_360_amr_16k.jpg',
+            puckPosition: { x: 150, y: -160, z: -250 },
+            radarPosition: { x: 231, y: 55 }
+          }
+        ],
+        pinpoints: [
+          {
+            pinpointId: 'pin-01',
+            viewId: 'view-0',
+            targetId: 'prod-apex-cobot-x16',
+            label: 'Apex Cobot X16',
+            shortLabel: 'Collaborative Robotics',
+            categoryTag: 'Collaborative Robotics',
+            x: 0,
+            y: -65,
+            z: -380,
+            coordinateSystem: 'WORLD_3D'
+          },
+          {
+            pinpointId: 'pin-02',
+            viewId: 'view-0',
+            targetId: 'prod-vector-amr-600',
+            label: 'Vector AMR 600',
+            shortLabel: 'Autonomous Logistics',
+            categoryTag: 'Autonomous Intralogistics',
+            x: -240,
+            y: -110,
+            z: -320,
+            coordinateSystem: 'WORLD_3D'
+          },
+          {
+            pinpointId: 'pin-03',
+            viewId: 'view-0',
+            targetId: 'prod-titan-delta-d12',
+            label: 'Titan Delta D12',
+            shortLabel: 'High-Speed Packaging',
+            categoryTag: 'High-Speed Packaging',
+            x: 230,
+            y: -30,
+            z: -320,
+            coordinateSystem: 'WORLD_3D'
+          },
+          {
+            pinpointId: 'pin-04',
+            viewId: 'view-0',
+            targetId: 'prod-hyperion-scara-s8',
+            label: 'Hyperion SCARA S8',
+            shortLabel: 'Precision Assembly',
+            categoryTag: 'Precision Assembly',
+            x: -180,
+            y: 40,
+            z: -330,
+            coordinateSystem: 'WORLD_3D'
+          }
+        ],
+        products: [
+          {
+            productId: 'prod-apex-cobot-x16',
+            name: 'Apex Cobot X16',
+            model: 'APX-CB-16',
+            category: 'Collaborative Robotics',
+            heroImage: '/assets/demo/dna-showcase/products/apex_cobot_x16.jpg',
+            shortDescription: '6-axis precision collaborative robotic arm with ±0.025mm repeatability and ISO/TS 15066 safety compliance.',
+            specs: [
+              ['Payload Capacity', '16.0 kg Payload'],
+              ['Working Radius', '1,300 mm Reach'],
+              ['Repeatability', '±0.025 mm Repeatability'],
+              ['Drive Power', '48V DC / 650W Max']
+            ],
+            completionLevel: 'COMPLETE'
+          },
+          {
+            productId: 'prod-vector-amr-600',
+            name: 'Vector AMR 600',
+            model: 'VCT-AMR-600',
+            category: 'Autonomous Intralogistics',
+            heroImage: '/assets/demo/dna-showcase/products/vector_amr_600.jpg',
+            shortDescription: 'Autonomous mobile robot with 600kg payload capacity, 3D LiDAR SLAM, and dynamic fleet routing.',
+            specs: [
+              ['Payload Capacity', '600.0 kg Payload'],
+              ['Navigation', '3D LiDAR SLAM + Visual Inpainting'],
+              ['Top Speed', '1.8 m/s (6.48 km/h)'],
+              ['Battery Runtime', '8.5 Hours Continuous']
+            ],
+            completionLevel: 'COMPLETE'
+          },
+          {
+            productId: 'prod-titan-delta-d12',
+            name: 'Titan Delta D12',
+            model: 'TTN-DLT-12',
+            category: 'High-Speed Packaging',
+            heroImage: '/assets/demo/dna-showcase/products/titan_delta_d12.jpg',
+            shortDescription: 'Ultra-high-speed parallel delta robot engineered for primary packaging and precision sortation.',
+            specs: [
+              ['Cycle Rate', '240 Picks/min (Standard Cycle)'],
+              ['Working Diameter', '1,200 mm Cylindrical Envelope'],
+              ['Positional Accuracy', '±0.010 mm Dynamic Acc.'],
+              ['Payload Capacity', '3.0 kg Continuous']
+            ],
+            completionLevel: 'COMPLETE'
+          },
+          {
+            productId: 'prod-hyperion-scara-s8',
+            name: 'Hyperion SCARA S8',
+            model: 'HYP-SCR-08',
+            category: 'Precision Assembly',
+            heroImage: '/assets/demo/dna-showcase/products/hyperion_scara_s8.jpg',
+            shortDescription: '4-axis high-speed SCARA robot optimized for electronics assembly, screw fastening, and dispensing.',
+            specs: [
+              ['Standard Cycle Time', '0.32 seconds (25-300-25mm)'],
+              ['Reach Radius', '800 mm Total Span'],
+              ['Repeatability', '±0.010 mm (X, Y Axes)'],
+              ['Z-Axis Stroke', '200 mm Z-Travel']
+            ],
+            completionLevel: 'COMPLETE'
+          }
+        ],
+        draftRevision: 1,
+        publishedRevision: 1,
+        status: 'PUBLISHED'
+      };
+    }
+
+    // Build dynamic manifest from stored project
+    return {
+      projectId: p.id,
+      reservationId: p.reservationId || p.id,
+      company: p.company || p.title || 'Exhibitor',
+      tradeShow: p.tradeShow || 'Virtual Expo 2026',
+      showStartDate: p.showStartDate || '2026-10-15',
+      experienceType: 'PHOTO_IMMERSIVE',
+      title: `${p.company || p.title} Showroom`,
+      slug: (p.company || 'booth').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      heroViewId: (p.views && p.views[0]) ? p.views[0].viewId : 'view-0',
+      views: p.views || [
+        {
+          viewId: 'view-0',
+          name: '01. Main Booth Center',
+          previewUrl: '/assets/demo/dna-showcase/pano360/node0_preview.jpg',
+          highResUrl: '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg'
+        }
+      ],
+      pinpoints: p.pinpoints || [],
+      products: p.products || [],
+      draftRevision: p.draftRevision || 1,
+      publishedRevision: p.publishedRevision || 1,
+      status: p.status || 'DRAFT'
+    };
+  }
+
+  async addProjectPinpoint(projectId, pinpointData, actor = 'Operator') {
+    return this.mutate((db) => {
+      db.productionProjects = db.productionProjects || [];
+      let p = db.productionProjects.find(x => x.id === projectId || x.reservationId === projectId);
+      if (!p) {
+        p = {
+          id: projectId,
+          company: 'Exhibitor Project',
+          pinpoints: [],
+          products: [],
+          updatedAt: new Date().toISOString()
+        };
+        db.productionProjects.push(p);
+      }
+
+      p.pinpoints = p.pinpoints || [];
+      const newPinpoint = {
+        pinpointId: pinpointData.pinpointId || `pin-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+        projectId: p.id,
+        viewId: pinpointData.viewId || 'view-0',
+        targetId: pinpointData.targetId || `prod-${Date.now()}`,
+        label: pinpointData.label || 'New Product Pinpoint',
+        shortLabel: pinpointData.shortLabel || pinpointData.label || 'Product',
+        categoryTag: pinpointData.categoryTag || 'Product',
+        x: Number(pinpointData.x) || 0,
+        y: Number(pinpointData.y) || 0,
+        z: pinpointData.z !== undefined ? Number(pinpointData.z) : -300,
+        coordinateSystem: pinpointData.coordinateSystem || 'WORLD_3D',
+        displayOrder: p.pinpoints.length,
+        isVisible: true,
+        createdBy: actor,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      p.pinpoints.push(newPinpoint);
+      p.updatedAt = new Date().toISOString();
+      return newPinpoint;
+    });
+  }
+
+  async addProjectProductQuick(projectId, productData, actor = 'Operator') {
+    return this.mutate((db) => {
+      db.productionProjects = db.productionProjects || [];
+      let p = db.productionProjects.find(x => x.id === projectId || x.reservationId === projectId);
+      if (!p) {
+        p = {
+          id: projectId,
+          company: 'Exhibitor Project',
+          pinpoints: [],
+          products: [],
+          updatedAt: new Date().toISOString()
+        };
+        db.productionProjects.push(p);
+      }
+
+      p.products = p.products || [];
+      const prodId = productData.productId || `prod-${Date.now()}`;
+      const newProduct = {
+        productId: prodId,
+        projectId: p.id,
+        name: productData.name || 'New Product',
+        heroImage: productData.heroImage || '/assets/demo/dna-showcase/products/apex_cobot_x16.jpg',
+        shortDescription: productData.shortDescription || '',
+        category: productData.category || 'Standard Product',
+        specs: productData.specs || [],
+        completionLevel: (productData.name && productData.heroImage) ? (productData.shortDescription ? 'STANDARD' : 'BASIC') : 'BASIC',
+        createdAt: new Date().toISOString()
+      };
+
+      p.products.push(newProduct);
+      p.updatedAt = new Date().toISOString();
+      return newProduct;
+    });
+  }
+
   async submitProjectQA(id, qaData, actor = 'QA Director') {
     return this.mutate((db) => {
       db.productionProjects = db.productionProjects || [];
