@@ -3,24 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>dn’a / dn'a — Virtual Trade Show Commercial Platform</title>
-  <meta name="description" content="Your trade show booth doesn't have to end when the show ends. Transform physical exhibits into sales-grade 3D digital showrooms with dn’a that capture B2B wholesale leads, RFQs, and sample requests 24/7.">
+  <title>dn’a — Turn One Booth Photo Into a Commercial Virtual Booth Free</title>
+  <meta name="description" content="Upload one booth photo and your business name. dn’a creates your first interactive commercial virtual booth preview free. No credit card required.">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="dn'a — Virtual Trade Show Commercial Platform">
-  <meta property="og:description" content="Sales-grade 3D digital showrooms for B2B trade shows. Built to convert buyers 365 days a year.">
-  <meta property="og:image" content="/assets/demo/dna-showcase/hero/dna_showcase_photoreal_hero.jpg">
+  <meta property="og:title" content="dn’a — Turn One Booth Photo Into a Commercial Virtual Booth Free">
+  <meta property="og:description" content="Upload one booth photo. dn’a creates your interactive virtual showroom preview free.">
+  <meta property="og:image" content="/assets/brand/dna_logo_white.png">
   <meta property="og:type" content="website">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:image" content="/assets/demo/dna-showcase/hero/dna_showcase_photoreal_hero.jpg">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-
-  <!-- Three.js & OrbitControls WebGL 3D Engine — self-hosted for reliability -->
-  <script src="/vendor/three.min.js"></script>
-  <script src="/vendor/OrbitControls.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <style>
     :root {
@@ -48,36 +43,34 @@
     /* ── Navigation ── */
     .nav-bar {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 14px 36px; background: rgba(7, 11, 20, 0.95); backdrop-filter: blur(16px);
+      padding: 16px 40px; background: rgba(7, 11, 20, 0.95); backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 200;
     }
     .brand-logo {
-      font-weight: 800; font-size: 22px; color: #fff;
-      display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px;
+      display: flex; align-items: center; gap: 10px;
     }
-    .dna-icon { color: #38bdf8; }
-    .nav-links { display: flex; gap: 24px; align-items: center; }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
     .nav-link { color: #94a3b8; font-size: 14px; font-weight: 600; transition: color 0.2s; }
     .nav-link:hover { color: #38bdf8; }
-    .btn-nav-primary {
-      background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff;
-      padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 700;
-      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4); transition: all 0.2s;
+    .btn-nav-signin {
+      background: rgba(30, 41, 59, 0.8); border: 1px solid var(--border); color: #f8fafc;
+      padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      transition: all 0.2s;
     }
-    .btn-nav-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-nav-signin:hover { border-color: #38bdf8; color: #38bdf8; }
 
-    /* ── Hero Section ── */
+    /* ── Hero Section (ONE Action) ── */
     .hero-section {
-      padding: 72px 24px 48px; max-width: 1400px; margin: 0 auto; text-align: center;
+      padding: 64px 24px 60px; max-width: 1200px; margin: 0 auto; text-align: center;
     }
     .hero-pill {
       display: inline-flex; align-items: center; gap: 8px;
       background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.3);
       border-radius: 30px; padding: 6px 16px; font-size: 11px; font-weight: 700;
-      color: #38bdf8; margin-bottom: 22px; text-transform: uppercase; letter-spacing: 0.5px;
+      color: #38bdf8; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.5px;
     }
     .hero-title {
-      font-size: clamp(32px, 4vw, 54px); font-weight: 800; line-height: 1.12;
+      font-size: clamp(34px, 4.5vw, 56px); font-weight: 800; line-height: 1.15;
       letter-spacing: -1.5px; margin-bottom: 18px;
     }
     .hero-title span {
@@ -85,773 +78,872 @@
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
     .hero-desc {
-      font-size: 17px; color: var(--text-muted); max-width: 680px;
-      margin: 0 auto 32px; line-height: 1.65;
-    }
-    .hero-ctas {
-      display: flex; gap: 14px; justify-content: center; margin-bottom: 44px; flex-wrap: wrap;
-    }
-    .btn-hero {
-      padding: 14px 28px; border-radius: 10px; font-size: 15px; font-weight: 700;
-      cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;
-      text-decoration: none; border: none;
-    }
-    .btn-hero-primary {
-      background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff;
-      box-shadow: 0 8px 25px rgba(2, 132, 199, 0.45);
-    }
-    .btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(2, 132, 199, 0.6); }
-    .btn-hero-secondary {
-      background: rgba(30, 41, 59, 0.7); border: 1px solid var(--border); color: #fff;
-    }
-    .btn-hero-secondary:hover { background: #1e293b; border-color: #38bdf8; }
-
-    /* ── Photorealistic Hero Frame ── */
-    .showcase-frame-wrapper {
-      width: 100%; max-width: 1340px; margin: 0 auto 80px;
-      position: relative;
-    }
-    .showcase-label-row {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 10px; padding: 0 4px;
-    }
-    .showcase-label {
-      font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-      color: #38bdf8; background: rgba(14, 165, 233, 0.1);
-      border: 1px solid rgba(14, 165, 233, 0.25); border-radius: 20px; padding: 4px 12px;
-      display: flex; align-items: center; gap: 6px;
-    }
-    .showcase-label::before {
-      content: ''; display: block; width: 6px; height: 6px; border-radius: 50%;
-      background: #38bdf8; animation: pulse-dot 2s infinite;
-    }
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
-    }
-    .showcase-enter-btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff;
-      padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 700;
-      box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4); transition: all 0.2s;
-      text-decoration: none;
-    }
-    .showcase-enter-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(2, 132, 199, 0.6); }
-
-    .showcase-frame {
-      width: 100%; aspect-ratio: 16/9; max-height: 720px;
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      border-radius: 16px; overflow: hidden;
-      box-shadow: 0 32px 80px rgba(0,0,0,0.85), 0 0 60px rgba(14, 165, 233, 0.18);
-      position: relative; background: #050a12;
-    }
-    #hero-3d-canvas {
-      width: 100%; height: 100%; display: block;
-      cursor: grab;
-    }
-    #hero-3d-canvas:active {
-      cursor: grabbing;
+      font-size: 18px; color: var(--text-muted); max-width: 680px;
+      margin: 0 auto 36px; line-height: 1.6;
     }
 
-    /* ── Interactive Overlay Controls (on Hero Image) ── */
-    .showcase-overlay {
-      position: absolute; inset: 0;
-      pointer-events: none;
+    /* ── Free Upload CTA Component ── */
+    .upload-cta-frame {
+      max-width: 720px; margin: 0 auto;
+      background: #0b1526; border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 24px; padding: 36px 32px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(14, 165, 233, 0.12);
+      text-align: left;
+    }
+    .frame-title {
+      font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 4px; text-align: center;
+    }
+    .frame-subtitle {
+      font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 24px;
+    }
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-size: 12px; font-weight: 700; color: #cbd5e1; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-input {
+      width: 100%; padding: 14px 16px; background: #070e1a;
+      border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 10px;
+      color: #fff; font-size: 15px; font-family: inherit; transition: border-color 0.2s;
+    }
+    .form-input:focus { outline: none; border-color: #38bdf8; box-shadow: 0 0 12px rgba(56,189,248,0.25); }
+
+    .drop-zone {
+      border: 2px dashed rgba(56, 189, 248, 0.35); border-radius: 14px;
+      padding: 32px 20px; text-align: center; background: rgba(7, 14, 26, 0.6);
+      cursor: pointer; transition: all 0.2s; margin-bottom: 22px;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: #38bdf8; background: rgba(14, 165, 233, 0.08); transform: translateY(-1px);
+    }
+    .drop-icon { font-size: 32px; color: #38bdf8; margin-bottom: 10px; }
+    .drop-title { font-size: 15px; font-weight: 700; color: #f8fafc; margin-bottom: 4px; }
+    .drop-hint { font-size: 12px; color: var(--text-muted); }
+
+    .btn-create-free {
+      width: 100%; padding: 16px; font-size: 16px; font-weight: 800;
+      color: #fff; background: linear-gradient(135deg, #0284c7, #2563eb);
+      border: none; border-radius: 12px; cursor: pointer;
+      box-shadow: 0 8px 24px rgba(2, 132, 199, 0.45); transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-create-free:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(2, 132, 199, 0.6); }
+    .btn-create-free:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .frame-footer {
+      text-align: center; margin-top: 14px; font-size: 12px; color: #64748b;
     }
 
-    /* Top Control Bar */
-    .overlay-top-bar {
-      position: absolute; top: 0; left: 0; right: 0;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 20px;
-      background: linear-gradient(180deg, rgba(5,10,18,0.92) 0%, transparent 100%);
-      pointer-events: all;
+    /* ── Progress Modal ── */
+    .progress-overlay {
+      position: fixed; inset: 0; background: rgba(3, 7, 18, 0.92);
+      backdrop-filter: blur(12px); z-index: 1000;
+      display: none; align-items: center; justify-content: center;
     }
-    .overlay-brand {
-      display: flex; align-items: center; gap: 10px; color: #fff;
-      font-weight: 800; font-size: 16px;
+    .progress-card {
+      background: #0b1526; border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 20px; padding: 36px; max-width: 480px; width: 90%; text-align: center;
     }
-    .overlay-badge {
-      font-size: 9px; font-weight: 700; color: #38bdf8;
-      border: 1px solid rgba(56,189,248,0.4); border-radius: 20px; padding: 3px 9px;
-      letter-spacing: 0.5px; text-transform: uppercase;
+    .progress-stage { font-size: 13px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    .progress-title { font-size: 22px; font-weight: 800; margin-bottom: 20px; color: #fff; }
+    .progress-bar-wrap {
+      background: rgba(255,255,255,0.08); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 16px;
     }
-    .overlay-actions {
-      display: flex; align-items: center; gap: 8px;
+    .progress-bar-fill {
+      background: linear-gradient(90deg, #0284c7, #38bdf8); height: 100%; width: 25%; transition: width 0.4s ease;
     }
-    .overlay-btn {
-      display: flex; align-items: center; gap: 6px;
-      background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255,255,255,0.15);
-      color: #f8fafc; padding: 7px 14px; border-radius: 7px;
-      font-size: 12px; font-weight: 600; cursor: pointer;
-      transition: all 0.2s; text-decoration: none;
-      backdrop-filter: blur(8px);
-    }
-    .overlay-btn:hover { background: rgba(30,41,59,0.9); border-color: #38bdf8; color: #38bdf8; }
-    .overlay-btn-primary {
-      background: linear-gradient(135deg, #0284c7, #2563eb);
-      border-color: transparent; color: #fff;
-      box-shadow: 0 4px 14px rgba(2,132,199,0.4);
-    }
-    .overlay-btn-primary:hover { opacity: 0.9; transform: translateY(-1px); color: #fff; }
 
-    /* Left Navigation */
-    .overlay-left-nav {
-      position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
-      display: flex; flex-direction: column; gap: 4px;
-      pointer-events: all;
+    /* ── Interactive Free Booth Studio (Generated State) ── */
+    .free-studio-section {
+      display: none; max-width: 1360px; margin: 0 auto 60px; padding: 0 20px;
     }
-    .nav-preset-btn {
-      display: flex; align-items: center; gap: 10px;
-      background: rgba(10, 16, 28, 0.88); border: 1px solid rgba(255,255,255,0.1);
-      color: #cbd5e1; padding: 8px 14px; border-radius: 8px;
-      font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s;
-      backdrop-filter: blur(8px); text-decoration: none; white-space: nowrap;
+    .studio-banner {
+      background: linear-gradient(135deg, rgba(2, 132, 199, 0.2), rgba(16, 185, 129, 0.15));
+      border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 16px;
+      padding: 16px 24px; margin-bottom: 16px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
     }
-    .nav-preset-btn:hover, .nav-preset-btn.active {
-      background: rgba(2, 132, 199, 0.2); border-color: #38bdf8; color: #38bdf8;
+    .studio-banner-title { font-size: 16px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .studio-banner-desc { font-size: 13px; color: #cbd5e1; }
+    .studio-canvas-box {
+      position: relative; width: 100%; aspect-ratio: 16/9; max-height: 700px;
+      background: #000; border-radius: 16px; overflow: hidden;
+      border: 1px solid rgba(56, 189, 248, 0.3); box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+      cursor: crosshair;
     }
-    .nav-preset-icon { font-size: 13px; opacity: 0.8; width: 16px; text-align: center; }
-
-    /* Product Hotspots */
-    .product-hotspot {
-      position: absolute; pointer-events: all; cursor: pointer;
-      transform: translate(-50%, -50%);
-    }
-    .hotspot-dot {
-      width: 28px; height: 28px; border-radius: 50%;
-      background: rgba(2, 132, 199, 0.25); border: 2px solid #38bdf8;
+    .studio-img { width: 100%; height: 100%; object-fit: contain; display: block; user-select: none; }
+    
+    .pinpoint-marker {
+      position: absolute; width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(2, 132, 199, 0.35); border: 2px solid #38bdf8;
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.4);
-      animation: hotspot-pulse 2.5s infinite;
-      transition: all 0.2s;
+      transform: translate(-50%, -50%); cursor: pointer;
+      animation: marker-pulse 2s infinite; z-index: 10;
     }
-    .hotspot-dot::after {
+    .pinpoint-marker::after {
       content: ''; width: 8px; height: 8px; border-radius: 50%; background: #38bdf8;
     }
-    .product-hotspot:hover .hotspot-dot {
-      background: rgba(2, 132, 199, 0.5); transform: scale(1.15);
-    }
-    @keyframes hotspot-pulse {
-      0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.5); }
+    @keyframes marker-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.6); }
       70% { box-shadow: 0 0 0 10px rgba(56, 189, 248, 0); }
       100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
     }
-    .hotspot-label {
-      position: absolute; left: 36px; top: 50%; transform: translateY(-50%);
-      background: rgba(7, 11, 20, 0.92); border: 1px solid rgba(56, 189, 248, 0.35);
-      border-radius: 8px; padding: 7px 12px; min-width: 150px;
-      backdrop-filter: blur(8px); transition: all 0.2s; pointer-events: none;
-      white-space: nowrap;
-    }
-    .product-hotspot:hover .hotspot-label { border-color: #38bdf8; background: rgba(2,15,30,0.95); }
-    .hotspot-name { font-size: 11px; font-weight: 700; color: #f8fafc; line-height: 1.2; }
-    .hotspot-cat { font-size: 9px; color: #38bdf8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
-    .hotspot-view { font-size: 9px; color: #64748b; margin-top: 4px; font-weight: 600; }
 
-    /* Bottom Presets Strip */
-    .overlay-bottom-bar {
-      position: absolute; bottom: 0; left: 0; right: 0;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 12px 20px;
-      background: linear-gradient(0deg, rgba(5,10,18,0.95) 0%, transparent 100%);
-      pointer-events: all;
+    /* ── Product Drawer & Add Modal ── */
+    .drawer-modal {
+      position: fixed; inset: 0; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px);
+      z-index: 600; display: none; align-items: center; justify-content: center;
     }
-    .preset-thumb {
-      display: flex; flex-direction: column; align-items: center; gap: 4px;
-      cursor: pointer; transition: all 0.2s; text-decoration: none;
+    .drawer-card {
+      background: #0d1726; border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 20px; width: 90%; max-width: 580px; max-height: 85vh; overflow-y: auto;
+      padding: 30px; position: relative;
     }
-    .preset-img {
-      width: 72px; height: 46px; border-radius: 6px; overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.12); background: #0d1726;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 10px; color: #38bdf8; transition: all 0.2s;
+    .close-btn {
+      position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15); color: #fff; width: 32px; height: 32px;
+      border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;
     }
-    .preset-thumb:hover .preset-img, .preset-thumb.active .preset-img {
-      border-color: #38bdf8; box-shadow: 0 0 12px rgba(56,189,248,0.3);
-    }
-    .preset-name {
-      font-size: 8px; font-weight: 700; color: #64748b;
-      text-transform: uppercase; letter-spacing: 0.5px;
-      transition: color 0.2s;
-    }
-    .preset-thumb:hover .preset-name, .preset-thumb.active .preset-name { color: #38bdf8; }
-    .briefcase-chip {
-      position: absolute; right: 16px; bottom: 58px;
-      background: rgba(10, 16, 28, 0.92); border: 1px solid rgba(56,189,248,0.3);
-      border-radius: 20px; padding: 6px 14px;
-      display: flex; align-items: center; gap: 8px;
-      font-size: 12px; font-weight: 700; color: #f8fafc;
-      cursor: pointer; backdrop-filter: blur(8px); transition: all 0.2s;
-      pointer-events: all; text-decoration: none;
-    }
-    .briefcase-chip:hover { border-color: #38bdf8; color: #38bdf8; }
 
-    /* ── Section Styling ── */
-    .section { padding: 60px 24px; max-width: 1200px; margin: 0 auto; }
-    .section-header { text-align: center; margin-bottom: 48px; }
+    /* ── Plan Conversion Modal ── */
+    .plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 24px 0; }
+    .plan-card {
+      background: #070e1a; border: 1px solid var(--border); border-radius: 14px; padding: 22px; text-align: center;
+      transition: all 0.2s; position: relative;
+    }
+    .plan-card.popular { border-color: #38bdf8; background: rgba(2, 132, 199, 0.08); }
+    .plan-card.popular::before {
+      content: 'RECOMMENDED'; position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+      background: #0284c7; color: #fff; font-size: 9px; font-weight: 800; padding: 2px 10px; border-radius: 10px;
+    }
+    .plan-price { font-size: 26px; font-weight: 800; color: #fff; margin: 10px 0; }
+    .plan-price span { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+
+    /* ── Below the fold sections ── */
+    .section { padding: 64px 24px; max-width: 1200px; margin: 0 auto; }
+    .section-header { text-align: center; margin-bottom: 40px; }
     .section-tag { font-size: 11px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px; }
-    .section-title { font-size: 32px; font-weight: 800; margin: 8px 0 12px; letter-spacing: -0.5px; }
-    .section-desc { color: var(--text-muted); font-size: 15px; max-width: 600px; margin: 0 auto; }
+    .section-title { font-size: 32px; font-weight: 800; margin: 8px 0 10px; }
+    .section-desc { color: var(--text-muted); font-size: 15px; max-width: 620px; margin: 0 auto; }
 
-    /* From Show Floor Section */
-    .always-on-section {
-      background: linear-gradient(135deg, #080f1f, #0a1428);
-      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
-      padding: 60px 24px;
+    .step-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+    .step-card {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 26px;
     }
-    .always-on-inner { max-width: 1140px; margin: 0 auto; }
-    .always-on-title { font-size: clamp(24px, 3vw, 40px); font-weight: 800; letter-spacing: -0.5px; margin-bottom: 12px; }
-    .always-on-subtitle { color: var(--text-muted); font-size: 16px; max-width: 660px; margin-bottom: 40px; line-height: 1.65; }
-    .capability-chips { display: flex; flex-wrap: wrap; gap: 10px; }
-    .cap-chip {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: rgba(2, 132, 199, 0.08); border: 1px solid rgba(56, 189, 248, 0.2);
-      border-radius: 8px; padding: 10px 18px;
-      font-size: 13px; font-weight: 700; color: #cbd5e1;
-      transition: all 0.2s; cursor: default;
-    }
-    .cap-chip:hover { background: rgba(2, 132, 199, 0.18); border-color: #38bdf8; color: #fff; }
-    .cap-icon { font-size: 15px; }
+    .step-num { font-size: 12px; font-weight: 800; color: #38bdf8; margin-bottom: 10px; }
+    .step-title { font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+    .step-text { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
 
-    /* Feature Grid */
-    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
-    .feature-card {
-      background: var(--card-bg); border: 1px solid var(--border);
-      border-radius: 16px; padding: 28px; transition: all 0.2s;
+    .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 768px) { .demo-grid { grid-template-columns: 1fr; } }
+    .demo-card {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
     }
-    .feature-card:hover { border-color: #38bdf8; transform: translateY(-3px); }
-    .card-icon {
-      width: 48px; height: 48px; border-radius: 12px; background: rgba(14, 165, 233, 0.12);
-      display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 18px;
-    }
-    .card-title { font-size: 17px; font-weight: 800; margin-bottom: 8px; }
-    .card-text { font-size: 13px; color: var(--text-muted); line-height: 1.65; }
+    .demo-frame { width: 100%; aspect-ratio: 16/9; border: none; background: #000; }
+    .demo-info { padding: 20px; }
+    .demo-title { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 6px; }
 
-    /* CTA Split */
-    .cta-split {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
-      max-width: 900px; margin: 40px auto 0;
-    }
-    @media (max-width: 640px) { .cta-split { grid-template-columns: 1fr; } }
-    .cta-card {
-      background: var(--card-bg); border: 1px solid var(--border);
-      border-radius: 20px; padding: 36px; text-align: center; transition: all 0.2s;
-    }
-    .cta-card.primary-cta { border-color: rgba(2, 132, 199, 0.4); background: rgba(2, 132, 199, 0.05); }
-    .cta-card:hover { transform: translateY(-3px); }
-    .cta-card.primary-cta:hover { border-color: #0284c7; }
-    .cta-label { font-size: 10px; font-weight: 700; color: #38bdf8; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
-    .cta-title { font-size: 24px; font-weight: 800; margin-bottom: 10px; }
-    .cta-desc { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.6; }
-    .btn-cta {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 13px 24px; border-radius: 10px; font-size: 14px; font-weight: 700;
-      cursor: pointer; transition: all 0.2s; text-decoration: none; width: 100%;
-    }
-    .btn-cta-primary {
-      background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff;
-      box-shadow: 0 6px 20px rgba(2, 132, 199, 0.4);
-    }
-    .btn-cta-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(2, 132, 199, 0.55); }
-    .btn-cta-secondary { background: rgba(30, 41, 59, 0.8); border: 1px solid var(--border); color: #fff; }
-    .btn-cta-secondary:hover { background: #1e293b; border-color: #38bdf8; }
-
-    /* AI Catalog Compare */
-    .compare-container {
-      background: var(--card-bg); border: 1px solid var(--border-accent);
-      border-radius: 20px; padding: 32px; margin-top: 30px;
-    }
-    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center; }
-    @media (max-width: 640px) { .compare-grid { grid-template-columns: 1fr; } }
-    .compare-box {
-      background: #09121d; border: 1px solid var(--border);
-      border-radius: 12px; padding: 16px; text-align: center;
-    }
-    .compare-img { width: 100%; height: 200px; object-fit: cover; border-radius: 8px; }
-    .compare-badge {
-      display: inline-block; padding: 4px 10px; border-radius: 6px;
-      font-size: 11px; font-weight: 800; margin-bottom: 10px;
-    }
-
-    /* Post-Show Section */
-    .post-show-banner {
-      background: linear-gradient(135deg, #0f2438, #09121d);
-      border: 1px solid var(--border-accent); border-radius: 24px;
-      padding: 48px 36px; text-align: center; margin: 40px auto;
-    }
-
-    /* Product Drawer Modal */
-    .product-modal-overlay {
-      position: fixed; inset: 0; z-index: 500;
-      background: rgba(4, 8, 16, 0.88); backdrop-filter: blur(8px);
-      display: flex; align-items: center; justify-content: center;
-      opacity: 0; pointer-events: none; transition: opacity 0.3s;
-    }
-    .product-modal-overlay.open { opacity: 1; pointer-events: all; }
-    .product-modal {
-      background: #0d1726; border: 1px solid rgba(56, 189, 248, 0.25);
-      border-radius: 20px; width: 90%; max-width: 680px;
-      max-height: 85vh; overflow-y: auto; padding: 32px;
-      transform: scale(0.94); transition: transform 0.3s;
-      position: relative;
-    }
-    .product-modal-overlay.open .product-modal { transform: scale(1); }
-    .modal-close {
-      position: absolute; top: 16px; right: 16px;
-      background: rgba(30,41,59,0.8); border: 1px solid var(--border);
-      color: #94a3b8; width: 32px; height: 32px; border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; font-size: 16px; transition: all 0.2s;
-    }
-    .modal-close:hover { background: rgba(239,68,68,0.2); color: #f87171; border-color: #f87171; }
-    .modal-badge { font-size: 9px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-    .modal-title { font-size: 26px; font-weight: 800; margin-bottom: 4px; }
-    .modal-model { font-size: 12px; color: #64748b; margin-bottom: 16px; font-family: 'JetBrains Mono', monospace; }
-    .modal-desc { font-size: 14px; color: #94a3b8; line-height: 1.7; margin-bottom: 24px; }
-    .spec-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-    .spec-table tr { border-bottom: 1px solid rgba(255,255,255,0.06); }
-    .spec-table tr:last-child { border-bottom: none; }
-    .spec-table td { padding: 8px 0; font-size: 13px; }
-    .spec-table td:first-child { color: #64748b; width: 40%; }
-    .spec-table td:last-child { color: #f8fafc; font-weight: 600; }
-    .modal-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-    .modal-btn {
-      padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 700;
-      cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 7px;
-      text-decoration: none; border: none;
-    }
-    .modal-btn-primary { background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; }
-    .modal-btn-primary:hover { transform: translateY(-1px); }
-    .modal-btn-outline { background: transparent; border: 1px solid var(--border); color: #cbd5e1; }
-    .modal-btn-outline:hover { border-color: #38bdf8; color: #38bdf8; }
-
-    /* Footer */
     footer {
       background: #04080f; border-top: 1px solid var(--border);
       padding: 40px 24px; text-align: center; color: var(--text-muted); font-size: 13px;
-    }
-
-    /* Responsive */
-    @media (max-width: 900px) {
-      .overlay-left-nav { display: none; }
-      .hotspot-label { display: none; }
-      .overlay-top-bar { padding: 8px 12px; }
-      .overlay-btn { padding: 6px 10px; font-size: 11px; }
-      .nav-bar { padding: 12px 16px; }
-      .nav-links { display: none; }
-    }
-    @media (max-width: 640px) {
-      .overlay-bottom-bar { gap: 4px; }
-      .preset-img { width: 52px; height: 34px; }
-      .preset-name { font-size: 7px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Navigation with 2X Official Logo -->
+  <!-- Clean Brand Navigation -->
   <nav class="nav-bar">
-    <a href="/" class="brand-logo" title="dn'a Home">
-      <img src="/assets/brand/dna_logo_white.png" alt="dn'a DIGITAL NETWORKING ADVANTAGE" style="height: 58px; width: auto; object-fit: contain; display: block;">
+    <a href="/" class="brand-logo" title="dn'a Virtual Trade Show">
+      <img src="/assets/brand/dna_logo_white.png" alt="dn'a DIGITAL NETWORKING ADVANTAGE" style="height: 52px; width: auto; object-fit: contain; display: block;">
     </a>
     <div class="nav-links">
-      <a href="/demo-matterport.html" class="nav-link">Showcase</a>
-      <a href="#solutions" class="nav-link">Solutions</a>
       <a href="#how-it-works" class="nav-link">How It Works</a>
-      <a href="/pricing.html" class="nav-link">Pricing</a>
-      <a href="javascript:void(0)" onclick="openSmartCardModal()" class="nav-link">Smart Card</a>
+      <a href="#examples" class="nav-link">Examples</a>
+      <a href="#pricing" class="nav-link">Pricing</a>
+      <a href="/dev-lab.html" class="nav-link" style="color: #64748b; font-size: 12px;"><i class="fa-solid fa-code"></i> Dev Lab</a>
     </div>
-    <a href="/builder.html" class="btn-nav-primary">Build My Booth →</a>
+    <a href="javascript:void(0)" onclick="openSignInModal()" class="btn-nav-signin">Sign In</a>
   </nav>
 
-  <!-- Hero Section -->
-  <header class="hero-section">
+  <!-- Hero Section (ONE Conversion Goal: Upload Photo + Business Name) -->
+  <header class="hero-section" id="hero-funnel">
     <div class="hero-pill">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="#38bdf8"><circle cx="12" cy="12" r="10"/></svg>
-      Next-Generation Virtual Trade Show Platform
+      <i class="fa-solid fa-bolt" style="font-size: 10px;"></i>
+      Free One-Booth Commercial Preview
     </div>
-    <h1 class="hero-title">Turn Your Real Booth Photos<br><span>Into an Interactive Digital Showroom.</span></h1>
-    <p class="hero-desc">Transform your trade show exhibition stand into an always-on 3D digital showroom. Enable wholesale buyers to explore products, tap Product Pinpoints, and request RFQs 365 days a year.</p>
+    <h1 class="hero-title">
+      TURN ONE BOOTH PHOTO<br>
+      <span>INTO A COMMERCIAL VIRTUAL BOOTH — FREE</span>
+    </h1>
+    <p class="hero-desc">
+      Upload one booth photo and enter your business name. dn’a will create your first interactive commercial booth preview free.
+    </p>
 
-    <!-- Commercial Primary & Secondary CTAs -->
-    <div class="hero-ctas">
-      <a href="/builder.html" class="btn-hero btn-hero-primary" style="background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%); border-color: #38bdf8; box-shadow: 0 0 24px rgba(2,132,199,0.5);">
-        Start My Booth →
-      </a>
-      <a href="/demo-matterport.html" class="btn-hero btn-hero-secondary">
-        Photo Immersive Booth
-      </a>
-      <a href="/demo.html" class="btn-hero btn-hero-secondary">
-        Interactive 3D Showroom
-      </a>
-      <a href="javascript:void(0)" onclick="openSmartCardModal()" class="btn-hero btn-hero-secondary">
-        Smart Exhibitor Card
-      </a>
-      <a href="/pricing.html" class="btn-hero btn-hero-secondary" style="border-color: rgba(56,189,248,0.4); color: #38bdf8;">
-        Pricing Plans
-      </a>
-    </div>
+    <!-- Single Large Premium Upload CTA Frame -->
+    <div class="upload-cta-frame">
+      <div class="frame-title">CREATE YOUR FREE VIRTUAL BOOTH</div>
+      <div class="frame-subtitle">Drop one booth photo here or browse to get started</div>
 
-    <!-- Photorealistic Showcase Hero with Interactive Switcher -->
-    <div class="showcase-frame-wrapper" id="showcase">
-      <div class="showcase-label-row" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
-        <!-- Dual Mode Switcher Tabs (Canonical C05 Experience Names) -->
-        <div class="showcase-switch-tabs" style="display: flex; gap: 6px; background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 12px; padding: 4px; backdrop-filter: blur(12px);">
-          <button class="switch-tab active" id="tab-matterport" onclick="switchShowcaseViewer('matterport')" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4); transition: all 0.25s ease;">
-            PHOTO IMMERSIVE BOOTH
-          </button>
-          <button class="switch-tab" id="tab-showroom" onclick="switchShowcaseViewer('showroom')" style="background: transparent; color: #94a3b8; border: none; border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; transition: all 0.25s ease;">
-            INTERACTIVE 3D SHOWROOM
-          </button>
+      <form id="free-preview-form" onsubmit="handleFreeBoothSubmit(event)">
+        <div class="form-group">
+          <label class="form-label">1. Business Name *</label>
+          <input type="text" id="business-name-input" class="form-input" placeholder="e.g. Apex Robotics Inc." required autocomplete="organization">
         </div>
-        <a href="/demo-matterport.html" id="btn-fullscreen-link" class="showcase-enter-btn" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 700; box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4); transition: all 0.2s; text-decoration: none;">
-          Open Fullscreen Experience →
-        </a>
-      </div>
 
-      <!-- Live Interactive Multi-Engine Showcase Frame -->
-      <div class="showcase-frame" id="showcase-frame-box" style="position: relative; width: 100%; aspect-ratio: 16/9; max-height: 720px; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 16px; overflow: hidden; box-shadow: 0 32px 80px rgba(0,0,0,0.85), 0 0 60px rgba(14, 165, 233, 0.25); background: #050a12;">
-        <iframe id="showcase-live-iframe" src="/demo-matterport.html" style="width: 100%; height: 100%; border: none; display: block;" allow="fullscreen; autoplay; xr-spatial-tracking"></iframe>
-      </div>
+        <div class="form-group">
+          <label class="form-label">2. Booth Photo *</label>
+          <div class="drop-zone" id="booth-drop-zone" onclick="document.getElementById('booth-file-input').click()">
+            <div class="drop-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+            <div class="drop-title" id="drop-filename-txt">Drop your booth photo here or browse</div>
+            <div class="drop-hint">JPG, PNG, or WEBP (Standard photo or 360° panorama)</div>
+          </div>
+          <input type="file" id="booth-file-input" accept="image/jpeg,image/png,image/webp" style="display: none;" onchange="handleFileSelect(this)">
+        </div>
+
+        <button type="submit" id="btn-submit-free" class="btn-create-free">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> CREATE FREE VIRTUAL BOOTH
+        </button>
+
+        <div class="frame-footer">
+          <i class="fa-solid fa-shield-halved"></i> No credit card required • One free booth preview per business
+        </div>
+      </form>
     </div>
   </header>
 
-  <!-- From Show Floor to Always-On Showroom -->
-  <div class="always-on-section">
-    <div class="always-on-inner">
-      <div class="section-tag" style="margin-bottom:12px;">Always-On Digital Showroom</div>
-      <h2 class="always-on-title">From Show Floor to<br><span style="color:#38bdf8;">Always-On Showroom</span></h2>
-      <p class="always-on-subtitle">Your physical booth may close after a few days. Your dn'a showroom keeps your products, catalogs, and sales team available to buyers long after the event — capturing demand 24/7.</p>
-      <div class="capability-chips">
-        <span class="cap-chip"><span class="cap-icon">📦</span> Products</span>
-        <span class="cap-chip"><span class="cap-icon">📋</span> Catalog</span>
-        <span class="cap-chip"><span class="cap-icon">📱</span> Smart QR</span>
-        <span class="cap-chip"><span class="cap-icon">📥</span> Leads</span>
-        <span class="cap-chip"><span class="cap-icon">📝</span> RFQ</span>
-        <span class="cap-chip"><span class="cap-icon">📅</span> Meetings</span>
-        <span class="cap-chip"><span class="cap-icon">📊</span> Analytics</span>
+  <!-- Generating Progress Overlay -->
+  <div class="progress-overlay" id="progressOverlay">
+    <div class="progress-card">
+      <div class="progress-stage" id="progressStageTxt">UPLOADING PHOTO</div>
+      <div class="progress-title" id="progressTitleTxt">Preparing Your Virtual Booth...</div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressBarFill"></div>
+      </div>
+      <div style="font-size: 12px; color: var(--text-muted);" id="progressDetailTxt">Validating image dimensions &amp; generating interactive preview...</div>
+    </div>
+  </div>
+
+  <!-- Interactive Generated Booth View (Customer Success Moment) -->
+  <section class="free-studio-section" id="freeStudioSection">
+    <div class="studio-banner">
+      <div>
+        <div class="studio-banner-title">
+          <i class="fa-solid fa-circle-check" style="color: var(--success);"></i>
+          YOUR VIRTUAL BOOTH IS READY
+        </div>
+        <div class="studio-banner-desc">Click any product in your booth photo below to make it interactive with Product Pinpoints.</div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-hero btn-hero-secondary" onclick="openSaveEmailModal()" style="padding: 9px 16px; font-size: 13px;">
+          <i class="fa-regular fa-bookmark"></i> Save Booth
+        </button>
+        <button class="btn-hero btn-hero-primary" onclick="openPlanModal('upgrade')" style="padding: 9px 18px; font-size: 13px; background: linear-gradient(135deg, #0284c7, #2563eb);">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Upgrade to Publish
+        </button>
+      </div>
+    </div>
+
+    <!-- Interactive 2D Coordinate Capture Canvas -->
+    <div class="studio-canvas-box" id="studioCanvasBox" onclick="handleCanvasClick(event)">
+      <img id="studioBoothImg" class="studio-img" src="" alt="Virtual Booth Canvas">
+      <div id="pinpointsContainer"></div>
+    </div>
+
+    <div style="margin-top: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <div style="font-size: 13px; color: var(--text-muted);">
+        <i class="fa-solid fa-location-crosshairs" style="color: #38bdf8;"></i> Tip: Click directly on a product in the booth image to place a pinpoint.
+      </div>
+      <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('add_more')" style="padding: 8px 16px; font-size: 12px; border-color: rgba(56,189,248,0.3);">
+        <i class="fa-solid fa-plus"></i> Add Another Product (Unlock Full Booth)
+      </button>
+    </div>
+  </section>
+
+  <!-- Add Product Pinpoint Modal -->
+  <div class="drawer-modal" id="addProductModal">
+    <div class="drawer-card">
+      <button class="close-btn" onclick="closeAddProductModal()">✕</button>
+      <div class="section-tag" style="margin-bottom: 6px;">STEP 2 • PRODUCT PINPOINT</div>
+      <h3 style="font-size: 22px; font-weight: 800; margin-bottom: 18px; color: #fff;">Make This Product Interactive</h3>
+
+      <form id="add-product-form" onsubmit="submitProductPinpoint(event)">
+        <div class="form-group">
+          <label class="form-label">Product Name *</label>
+          <input type="text" id="prod-name-input" class="form-input" placeholder="e.g. Autonomous Robotic Arm X-1" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Product Image *</label>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="file" id="prod-image-input" accept="image/*" class="form-input" style="padding: 8px;" onchange="previewProdImage(this)">
+          </div>
+          <img id="prod-image-preview" src="" style="max-height: 80px; border-radius: 6px; margin-top: 8px; display: none; object-fit: contain;">
+        </div>
+
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" style="margin:0;">Product Description (Optional)</label>
+            <button type="button" class="btn-hero" onclick="generateAIDescription()" style="padding: 4px 10px; font-size: 11px; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3);">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Description
+            </button>
+          </div>
+          <textarea id="prod-desc-input" class="form-input" rows="3" placeholder="Brief commercial description or click 'Generate Description' above..."></textarea>
+          <div id="ai-draft-notice" style="font-size: 11px; color: #60a5fa; margin-top: 4px; display: none;">
+            <i class="fa-solid fa-info-circle"></i> Suggested Draft — Please review before publishing.
+          </div>
+        </div>
+
+        <button type="submit" class="btn-create-free" style="margin-top: 8px;">
+          <i class="fa-solid fa-check"></i> ADD PRODUCT PINPOINT
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Product Drawer (View Added Product & Preview Buyer Tools) -->
+  <div class="drawer-modal" id="productDrawerModal">
+    <div class="drawer-card">
+      <button class="close-btn" onclick="closeProductDrawer()">✕</button>
+      <div class="section-tag" style="color: #10b981; margin-bottom: 4px;">PRODUCT LIVE IN PREVIEW</div>
+      <h3 id="drawerProdTitle" style="font-size: 24px; font-weight: 800; margin-bottom: 12px; color: #fff;">Product Name</h3>
+      <img id="drawerProdImg" src="" style="width: 100%; max-height: 220px; object-fit: contain; background: #070e1a; border-radius: 10px; margin-bottom: 14px; border: 1px solid var(--border);">
+      <p id="drawerProdDesc" style="font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px;"></p>
+
+      <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px; margin-bottom: 20px;">
+        <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px;">Buyer Actions (Preview)</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('rfq')" style="font-size: 12px; padding: 8px;">
+            <i class="fa-solid fa-envelope"></i> Request RFQ <span class="badge" style="font-size: 8px; background: rgba(56,189,248,0.2); color:#38bdf8;">PRO</span>
+          </button>
+          <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('sample')" style="font-size: 12px; padding: 8px;">
+            <i class="fa-solid fa-box-open"></i> Request Sample <span class="badge" style="font-size: 8px; background: rgba(56,189,248,0.2); color:#38bdf8;">PRO</span>
+          </button>
+          <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('catalog')" style="font-size: 12px; padding: 8px;">
+            <i class="fa-solid fa-file-pdf"></i> Digital Catalog <span class="badge" style="font-size: 8px; background: rgba(56,189,248,0.2); color:#38bdf8;">PRO</span>
+          </button>
+          <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('analytics')" style="font-size: 12px; padding: 8px;">
+            <i class="fa-solid fa-chart-line"></i> Lead CRM <span class="badge" style="font-size: 8px; background: rgba(56,189,248,0.2); color:#38bdf8;">PRO</span>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn-create-free" onclick="openPlanModal('drawer_upgrade')">
+        <i class="fa-solid fa-rocket"></i> UNLOCK FULL COMMERCIAL BOOTH
+      </button>
+    </div>
+  </div>
+
+  <!-- Plan Conversion Modal (PRO / BUSINESS / CUSTOM) -->
+  <div class="drawer-modal" id="planModal">
+    <div class="drawer-card" style="max-width: 820px;">
+      <button class="close-btn" onclick="closePlanModal()">✕</button>
+      <div class="section-tag" style="text-align: center; margin-bottom: 6px;">READY TO PUT YOUR BOOTH TO WORK?</div>
+      <h2 style="font-size: 28px; font-weight: 800; text-align: center; color: #fff; margin-bottom: 8px;">Choose a Commercial Plan to Publish</h2>
+      <p style="text-align: center; font-size: 14px; color: var(--text-muted); max-width: 540px; margin: 0 auto 20px;">
+        Publish your booth to global buyers, unlock unlimited pinpoints, and collect wholesale RFQs 365 days a year.
+      </p>
+
+      <div class="plan-grid">
+        <!-- PRO -->
+        <div class="plan-card">
+          <div style="font-weight: 800; font-size: 18px; color: #fff;">PRO</div>
+          <div class="plan-price">$299 <span>/ mo</span></div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Ideal for single exhibitors &amp; standard booths</p>
+          <ul style="font-size: 12px; text-align: left; color: #cbd5e1; list-style: none; padding: 0; line-height: 1.8; margin-bottom: 20px;">
+            <li>✓ 1 Published Virtual Booth</li>
+            <li>✓ Up to 25 Product Pinpoints</li>
+            <li>✓ 24/7 RFQ &amp; Sample Intake</li>
+            <li>✓ Digital Catalog &amp; Smart QR</li>
+            <li>✓ Exhibitor Lead CRM Dashboard</li>
+          </ul>
+          <button class="btn-create-free" onclick="handlePlanSelection('pro')" style="padding: 10px; font-size: 13px;">
+            CONTINUE WITH PRO →
+          </button>
+        </div>
+
+        <!-- BUSINESS (Recommended) -->
+        <div class="plan-card popular">
+          <div style="font-weight: 800; font-size: 18px; color: #38bdf8;">BUSINESS</div>
+          <div class="plan-price">$799 <span>/ mo</span></div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Multi-view booths &amp; high-volume catalogs</p>
+          <ul style="font-size: 12px; text-align: left; color: #cbd5e1; list-style: none; padding: 0; line-height: 1.8; margin-bottom: 20px;">
+            <li>✓ Everything in PRO</li>
+            <li>✓ 10 Multi-View Angle Spaces</li>
+            <li>✓ Up to 100 Product Pinpoints</li>
+            <li>✓ Managed Production Support</li>
+            <li>✓ Advanced Analytics &amp; Reporting</li>
+          </ul>
+          <button class="btn-create-free" onclick="handlePlanSelection('business')" style="padding: 10px; font-size: 13px; background: linear-gradient(135deg, #0284c7, #2563eb);">
+            CONTINUE WITH BUSINESS →
+          </button>
+        </div>
+
+        <!-- CUSTOM -->
+        <div class="plan-card">
+          <div style="font-weight: 800; font-size: 18px; color: #fff;">CUSTOM</div>
+          <div class="plan-price">Quote <span>/ project</span></div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Large custom spaces &amp; 3D digital twins</p>
+          <ul style="font-size: 12px; text-align: left; color: #cbd5e1; list-style: none; padding: 0; line-height: 1.8; margin-bottom: 20px;">
+            <li>✓ 50+ Custom Space Views</li>
+            <li>✓ 500+ Product Linesheets</li>
+            <li>✓ On-site 3D Capture Service</li>
+            <li>✓ Custom ERP/CRM Integration</li>
+            <li>✓ Dedicated Enterprise SLA</li>
+          </ul>
+          <button class="btn-hero btn-hero-secondary" onclick="handlePlanSelection('custom')" style="width: 100%; padding: 10px; font-size: 13px; justify-content: center;">
+            REQUEST CUSTOM QUOTE →
+          </button>
+        </div>
+      </div>
+
+      <div style="text-align: center; font-size: 11px; color: #64748b;">
+        <i class="fa-solid fa-lock"></i> All project photos, pinpoints, and descriptions are seamlessly preserved with zero data re-entry.
       </div>
     </div>
   </div>
 
-  <!-- What Buyers Can Do -->
-  <section class="section">
-    <div class="section-header">
-      <div class="section-tag">Frictionless Buyer Experience</div>
-      <h2 class="section-title">What Trade Buyers Can Do in Your Booth</h2>
-      <p class="section-desc">Designed for commercial wholesale buyers, architects, and procurement managers.</p>
+  <!-- Save Email Modal -->
+  <div class="drawer-modal" id="saveEmailModal">
+    <div class="drawer-card" style="max-width: 440px; text-align: center;">
+      <button class="close-btn" onclick="closeSaveEmailModal()">✕</button>
+      <div class="section-tag" style="margin-bottom: 6px;">SAVE YOUR BOOTH</div>
+      <h3 style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px;">Save Your Free Booth</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Enter your work email so you can return and resume your virtual booth anytime.</p>
+      <form onsubmit="submitSaveEmail(event)">
+        <input type="email" id="save-email-input" class="form-input" placeholder="work@yourcompany.com" required style="margin-bottom: 14px;">
+        <button type="submit" class="btn-create-free">
+          <i class="fa-solid fa-bookmark"></i> SAVE &amp; CONTINUE
+        </button>
+      </form>
     </div>
-    <div class="feature-grid">
-      <div class="feature-card">
-        <div class="card-icon">◈</div>
-        <h3 class="card-title">Inspect 3D Products</h3>
-        <p class="card-text">Orbit, zoom, and inspect engineering assemblies, materials, dimensions, and specifications directly in the browser.</p>
+  </div>
+
+  <!-- Below The Fold: How It Works -->
+  <section class="section" id="how-it-works">
+    <div class="section-header">
+      <div class="section-tag">Frictionless Process</div>
+      <h2 class="section-title">How dn’a Works in 4 Simple Steps</h2>
+      <p class="section-desc">Turn your trade show exhibition stand into an active digital showroom without complicated 3D modeling tools.</p>
+    </div>
+    <div class="step-grid">
+      <div class="step-card">
+        <div class="step-num">STEP 01</div>
+        <div class="step-title">Upload One Photo</div>
+        <div class="step-text">Take a high-resolution photo of your booth or exhibition stand and enter your business name.</div>
       </div>
-      <div class="feature-card">
-        <div class="card-icon">▤</div>
-        <h3 class="card-title">Download Spec Sheets</h3>
-        <p class="card-text">Instant PDF datasheet access without lugging heavy printed exhibition catalogs around convention centers.</p>
+      <div class="step-card">
+        <div class="step-num">STEP 02</div>
+        <div class="step-title">Get Your Free Booth</div>
+        <div class="step-text">Our non-destructive engine generates your interactive virtual showroom preview in seconds.</div>
       </div>
-      <div class="feature-card">
-        <div class="card-icon">▦</div>
-        <h3 class="card-title">Scan Floor QR Passes</h3>
-        <p class="card-text">Scan physical waypoint cards on the show floor to open exact product linesheets and save them to a mobile briefcase.</p>
+      <div class="step-card">
+        <div class="step-num">STEP 03</div>
+        <div class="step-title">Click Products</div>
+        <div class="step-text">Click any product in the booth to place interactive Product Pinpoints and draft AI descriptions.</div>
       </div>
-      <div class="feature-card">
-        <div class="card-icon">✉</div>
-        <h3 class="card-title">Request 24/7 RFQ</h3>
-        <p class="card-text">Direct wholesale quotation intake with quantity tiers, project timelines, and persistent CRM intake.</p>
+      <div class="step-card">
+        <div class="step-num">STEP 04</div>
+        <div class="step-title">Publish &amp; Capture Buyers</div>
+        <div class="step-text">Choose a plan to publish globally and collect RFQs, sample requests, and wholesale buyer leads 24/7.</div>
       </div>
     </div>
   </section>
 
-  <!-- BUILD IT FOR ME / CREATE IT MYSELF -->
-  <section class="section" style="padding-top:0;">
+  <!-- Below The Fold: Examples (See What Your Booth Can Become) -->
+  <section class="section" id="examples" style="padding-top: 0;">
     <div class="section-header">
-      <div class="section-tag">Choose Your Path</div>
-      <h2 class="section-title">Ready to Build Your Digital Showroom?</h2>
-      <p class="section-desc">Whether you need full-service production or prefer to build it yourself, dn'a has a path for you.</p>
+      <div class="section-tag">Showroom Examples</div>
+      <h2 class="section-title">See What Your Booth Can Become</h2>
+      <p class="section-desc">Experience our sales-grade virtual showroom formats in live interactive demos.</p>
     </div>
-    <div class="cta-split">
-      <div class="cta-card primary-cta">
-        <div class="cta-label">🏆 Recommended</div>
-        <h3 class="cta-title">BUILD IT FOR ME</h3>
-        <div class="cta-label" style="color:#10b981;">Managed Production — Available Now</div>
-        <p class="cta-desc">Our team handles 3D production, media services, content setup, and publishing. You get a sales-grade showroom without lifting a finger.</p>
-        <a href="/production.html" class="btn-cta btn-cta-primary">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          Request Managed Production
-        </a>
-      </div>
-      <div class="cta-card">
-        <div class="cta-label">🛠 DIY</div>
-        <h3 class="cta-title">CREATE IT MYSELF</h3>
-        <div class="cta-label" style="color:#f59e0b;">DIY Booth Builder — Beta</div>
-        <p class="cta-desc">Use our self-service wizard to upload your products, configure your booth, and publish your digital showroom at your own pace.</p>
-        <a href="/builder.html" class="btn-cta btn-cta-secondary">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
-          Start Building (Beta)
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- AI Catalog Conversion -->
-  <section class="section" style="padding-top:0;">
-    <div class="section-header">
-      <div class="section-tag">Media Services</div>
-      <h2 class="section-title">AI Catalog Conversion &amp; Image Cleanup</h2>
-      <p class="section-desc">Demonstration of our background cleanup and studio catalog presentation service.</p>
-    </div>
-    <div class="compare-container">
-      <div class="compare-grid">
-        <div class="compare-box">
-          <span class="compare-badge" style="background:rgba(239,68,68,0.15);color:#fca5a5;">BEFORE — RAW BOOTH CAPTURE</span>
-          <img src="https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=600" alt="Raw trade show capture" class="compare-img">
-          <p style="font-size:12px;color:var(--text-muted);margin-top:10px;">Distracting trade show background, convention ceiling lights, and crowded aisles.</p>
+    <div class="demo-grid">
+      <div class="demo-card">
+        <iframe class="demo-frame" src="/demo-matterport.html" title="Photo Immersive Booth Demo"></iframe>
+        <div class="demo-info">
+          <div class="section-tag" style="font-size: 10px;">FORMAT A</div>
+          <div class="demo-title">PHOTO IMMERSIVE 360° BOOTH</div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Photorealistic 360° exhibition walkthrough with spatial waypoint navigation.</p>
+          <a href="/demo-matterport.html" target="_blank" class="nav-link" style="color: #38bdf8; font-size: 13px; font-weight: 700;">Open Fullscreen Demo →</a>
         </div>
-        <div class="compare-box">
-          <span class="compare-badge" style="background:rgba(16,185,129,0.15);color:#6ee7b7;">AFTER — CLEAN STUDIO LINESHEET</span>
-          <img src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600" alt="Clean studio product" class="compare-img">
-          <p style="font-size:12px;color:var(--text-muted);margin-top:10px;">Isolated commercial product with clean studio lighting, ready for digital lookbooks and RFQ sheets.</p>
+      </div>
+      <div class="demo-card">
+        <iframe class="demo-frame" src="/demo.html" title="Interactive 3D Showroom Demo"></iframe>
+        <div class="demo-info">
+          <div class="section-tag" style="font-size: 10px;">FORMAT B</div>
+          <div class="demo-title">INTERACTIVE 3D SHOWROOM</div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Full Three.js WebGL 3D architectural twin with dynamic lighting &amp; product inspection.</p>
+          <a href="/demo.html" target="_blank" class="nav-link" style="color: #38bdf8; font-size: 13px; font-weight: 700;">Open Fullscreen Demo →</a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Post-Show ROI Section -->
-  <section class="section" style="padding-top:0;">
-    <div class="post-show-banner">
-      <div class="section-tag" style="color:#6ee7b7;">POST-SHOW ROI ENGINE</div>
-      <h2 style="font-size:clamp(24px,3vw,36px);font-weight:800;margin:10px 0 16px;">THE SHOW IS OVER.<br><span style="color:#38bdf8;">YOUR SHOWROOM ISN'T.</span></h2>
-      <p style="color:var(--text-muted);max-width:640px;margin:0 auto 28px;font-size:16px;line-height:1.65;">
-        Trade shows last 4 days. dn'a keeps your digital booth open to buyers worldwide for 365 days, continuing to capture leads and close orders long after physical tear-down.
-      </p>
-      <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
-        <a href="/leads.html" class="btn-hero btn-hero-primary">View Exhibitor Lead CRM →</a>
-        <a href="/demo.html" class="btn-hero btn-hero-secondary">Explore the 3D Showroom</a>
+  <!-- Pricing Section (Anchored) -->
+  <section class="section" id="pricing" style="padding-top: 0;">
+    <div class="section-header">
+      <div class="section-tag">Transparent Commercial Plans</div>
+      <h2 class="section-title">Simple Plans to Power Your Showroom</h2>
+      <p class="section-desc">Every plan includes your always-on showroom, product pinpoints, and real-time CRM lead intake.</p>
+    </div>
+    <div class="plan-grid" style="max-width: 960px; margin: 0 auto;">
+      <div class="plan-card">
+        <div style="font-weight: 800; font-size: 20px; color: #fff;">PRO</div>
+        <div class="plan-price">$299 <span>/ mo</span></div>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">1 Published Space • 25 Products</p>
+        <button class="btn-create-free" onclick="openPlanModal('pricing_pro')" style="padding: 10px; font-size: 13px;">Choose PRO</button>
+      </div>
+      <div class="plan-card popular">
+        <div style="font-weight: 800; font-size: 20px; color: #38bdf8;">BUSINESS</div>
+        <div class="plan-price">$799 <span>/ mo</span></div>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">10 Space Views • 100 Products • Managed Support</p>
+        <button class="btn-create-free" onclick="openPlanModal('pricing_biz')" style="padding: 10px; font-size: 13px; background: linear-gradient(135deg, #0284c7, #2563eb);">Choose BUSINESS</button>
+      </div>
+      <div class="plan-card">
+        <div style="font-weight: 800; font-size: 20px; color: #fff;">CUSTOM</div>
+        <div class="plan-price">Quote <span>/ enterprise</span></div>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">50+ Views • 500+ Products • 3D Twin</p>
+        <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('pricing_custom')" style="width:100%; padding: 10px; font-size: 13px; justify-content: center;">Request Quote</button>
       </div>
     </div>
   </section>
 
-  <!-- Footer -->
-  <footer style="text-align: center; padding: 48px 24px; border-top: 1px solid var(--border); background: rgba(5, 9, 17, 0.98);">
+  <!-- Clean Footer -->
+  <footer>
     <div style="margin-bottom: 16px;">
       <img src="/assets/brand/dna_logo_white.png" alt="dn'a DIGITAL NETWORKING ADVANTAGE" style="height: 44px; width: auto; object-fit: contain; display: inline-block;">
     </div>
     <p>© 2026 dn'a — Virtual Trade Show Commercial Platform. All rights reserved.</p>
-    <p style="font-size:11px;margin-top:6px;color:#64748b;">Enterprise 3D Digital Showrooms • Smart Exhibitor Passes • Realtime Lead Intake</p>
-    <p style="font-size:10px;margin-top:10px;color:#475569;">The dn'a Industrial Innovation Showcase shown above is a Designed 3D commercial visualization concept. Not a photograph of a real physical booth.</p>
+    <p style="font-size: 11px; margin-top: 6px; color: #64748b;">Enterprise Virtual Showrooms • Product Pinpoints • 24/7 B2B Buyer Intake</p>
   </footer>
 
-  <!-- Smart Card NFC & QR Pass Modal -->
-  <div class="product-modal-overlay" id="smartCardModal" onclick="closeSmartCardModal(event)">
-    <div class="product-modal" id="smartCardModalContent" style="max-width: 680px; padding: 26px; background: #0b1526; border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 20px; box-shadow: 0 30px 80px rgba(0,0,0,0.9); position: relative;">
-      <button class="modal-close" onclick="closeSmartCardModalDirect()" style="position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
-      
-      <div style="font-size: 10px; font-weight: 800; color: #38bdf8; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px;">PHYSICAL-TO-DIGITAL BOOTH HARDWARE</div>
-      <div style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 14px;">Smart Exhibitor NFC &amp; QR Pass System</div>
-      
-      <!-- Uploaded High-Res Smart Card & Acrylic Stand Photo -->
-      <div style="width: 100%; border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,0.12); margin-bottom: 18px; box-shadow: 0 12px 30px rgba(0,0,0,0.6); background: #000;">
-        <img src="/assets/brand/smart_card_exhibit.jpg" alt="DN'a Smart Card &amp; NFC Stand" style="width: 100%; height: auto; display: block; object-fit: cover;">
-      </div>
-      
-      <p style="font-size: 13.5px; color: #cbd5e1; line-height: 1.6; margin-bottom: 16px;">
-        Empower physical booth visitors to connect seamlessly with your 3D digital twin. Attendees simply tap with NFC or scan the precision QR pass on your exhibition table stands to instantly launch product linesheets and save catalog data to their mobile briefcase.
-      </p>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px;">
-        <div style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px;">
-          <div style="font-size: 12px; font-weight: 800; color: #38bdf8; margin-bottom: 4px;">Tap &amp; Go NFC Pairing</div>
-          <div style="font-size: 11px; color: #94a3b8;">Instant mobile sync without app installation. Compatible with all iOS and Android devices.</div>
-        </div>
-        <div style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px;">
-          <div style="font-size: 12px; font-weight: 800; color: #10b981; margin-bottom: 4px;">Real-Time Lead CRM</div>
-          <div style="font-size: 11px; color: #94a3b8;">Capture attendee badge contacts, download analytics, and direct RFQ quotation telemetry.</div>
-        </div>
-      </div>
-
-      <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
-        <a href="/card.html" target="_blank" style="padding: 11px 20px; border-radius: 8px; background: rgba(30,41,59,0.8); border: 1px solid #334155; color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center;">
-          Test Live Smart Card →
-        </a>
-        <a href="/pricing.html" style="padding: 11px 22px; border-radius: 8px; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; box-shadow: 0 4px 14px rgba(2,132,199,0.4);">
-          View Pricing Plans →
-        </a>
-      </div>
-    </div>
-  </div>
-
-  <!-- Product Detail Modal -->
-  <div class="product-modal-overlay" id="productModal" onclick="closeModal(event)">
-    <div class="product-modal" id="productModalContent">
-      <button class="modal-close" onclick="closeProductModal()">✕</button>
-      <div id="modalBody"></div>
-    </div>
-  </div>
-
+  <!-- Frontend Client Script -->
   <script>
-    // Smart Card Modal Controls
-    function openSmartCardModal() {
-      const modal = document.getElementById('smartCardModal');
-      if (modal) modal.classList.add('open');
-    }
-    function closeSmartCardModal(e) {
-      if (e.target === document.getElementById('smartCardModal')) {
-        document.getElementById('smartCardModal').classList.remove('open');
+    let activeProjectId = null;
+    let activeProjectData = null;
+    let selectedFile = null;
+    let pendingCoords = { u: 0.5, v: 0.5 };
+
+    function handleFileSelect(input) {
+      if (input.files && input.files[0]) {
+        selectedFile = input.files[0];
+        document.getElementById('drop-filename-txt').textContent = `Selected: ${selectedFile.name} (${Math.round(selectedFile.size / 1024)} KB)`;
       }
     }
-    function closeSmartCardModalDirect() {
-      const modal = document.getElementById('smartCardModal');
-      if (modal) modal.classList.remove('open');
+
+    // Drag and Drop Handling
+    const dropZone = document.getElementById('booth-drop-zone');
+    if (dropZone) {
+      dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+      dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          selectedFile = e.dataTransfer.files[0];
+          document.getElementById('drop-filename-txt').textContent = `Selected: ${selectedFile.name} (${Math.round(selectedFile.size / 1024)} KB)`;
+        }
+      });
     }
 
-    // Product data for modals
-    const PRODUCTS = {
-      cobot: {
-        name: 'Apex Cobot X16', model: 'APX-CB-16', cat: 'Collaborative Robot',
-        desc: 'A 6-axis collaborative robot arm engineered for precision assembly, pick-and-place, and machine-tending tasks in shared human-robot workspaces. Features integrated force-torque sensing and ISO TS 15066 compliance.',
-        specs: [
-          ['Payload', '16.0 kg'], ['Reach', '1300 mm'], ['Repeatability', '±0.025 mm'],
-          ['Axes', '6'], ['IP Rating', 'IP67'], ['Power', '480 W'],
-          ['Controller', 'EtherCAT / PROFINET'], ['Price Range', '$38,500 – $42,000']
-        ],
-        cta: 'Book Application Review',
-        pdf: '/assets/specs/Apex-Cobot-X16-Datasheet.pdf'
-      },
-      amr: {
-        name: 'Vector AMR 600', model: 'VCT-AMR-600', cat: 'Autonomous Mobile Robot',
-        desc: 'Fleet-ready autonomous mobile robot platform with multi-layer SLAM navigation, 360° obstacle detection, and on-board fleet management. Designed for warehouse logistics and intralogistics in dynamic environments.',
-        specs: [
-          ['Payload', '600 kg'], ['Max Speed', '2.0 m/s'], ['Navigation', 'Laser SLAM'],
-          ['Runtime', '10 hrs'], ['Charging', 'Auto-dock'], ['Safety', 'ISO 3691-4'],
-          ['Comm', 'Wi-Fi 6 / 5G ready'], ['Price Range', '$34,000 – $39,500']
-        ],
-        cta: 'Request Technical Consultation',
-        pdf: '/assets/specs/Vector-AMR-600-Datasheet.pdf'
-      },
-      optiscan: {
-        name: 'OptiScan V3', model: 'OPT-SCN-V3', cat: '3D Inspection Camera',
-        desc: 'Ultra-high-precision blue LED structured light 3D scanner for inline quality inspection. Captures full-field surface data at 140 fps for real-time defect detection and dimensional measurement.',
-        specs: [
-          ['Accuracy', '±3.5 μm'], ['Frame Rate', '140 fps'], ['Light', 'Blue LED Structured'],
-          ['Field of View', '120 × 90 mm'], ['Resolution', '3.2 MP'], ['Interface', 'GigE Vision'],
-          ['Temp Range', '0 – 45 °C'], ['Price Range', '$19,800 – $24,500']
-        ],
-        cta: 'Request In-Line Evaluation',
-        pdf: '/assets/specs/OptiScan-V3-Datasheet.pdf'
-      },
-      flexgrip: {
-        name: 'FlexGrip E80', model: 'FLX-GRP-80', cat: 'Adaptive Servo Gripper',
-        desc: 'Electrically-actuated adaptive 2-finger gripper with programmable stroke and grip force. Compatible with all major robot brands via universal flange. Ideal for variable-geometry parts handling.',
-        specs: [
-          ['Max Grip Force', '220 N'], ['Stroke', '80 mm'], ['Finger Speed', '150 mm/s'],
-          ['Repeatability', '±0.02 mm'], ['Bus', 'EtherCAT / IO-Link'], ['Weight', '0.85 kg'],
-          ['Flange', 'ISO 9409-1 compatible'], ['Price Range', '$3,400 – $4,200']
-        ],
-        cta: 'Request Sample Unit',
-        pdf: '/assets/specs/FlexGrip-E80-Datasheet.pdf'
-      },
-      flowdrive: {
-        name: 'FlowDrive P500', model: 'FLW-DRV-500', cat: 'Smart Pump System',
-        desc: 'Intelligent centrifugal pump system with integrated variable-speed drive, IoT connectivity, and predictive maintenance. Optimizes energy consumption across HVAC, process cooling, and water treatment applications.',
-        specs: [
-          ['Flow Rate', '280 m³/h'], ['Max Pressure', '16 bar'], ['Motor', 'IE4 Efficiency'],
-          ['Drive', 'Integrated VFD'], ['Protocol', 'MODBUS / BACnet'], ['Display', '4" Touch HMI'],
-          ['Ambient', '-15 to 55 °C'], ['Price Range', '$16,500 – $21,000']
-        ],
-        cta: 'Request Engineering Consultation',
-        pdf: '/assets/specs/Apex-Cobot-X16-Datasheet.pdf'
-      },
-      edgecore: {
-        name: 'EdgeCore IPC', model: 'EDG-IPC-30', cat: 'Industrial Edge Computer',
-        desc: 'Fanless ruggedized industrial PC with integrated AI accelerator NPU for real-time machine vision and predictive analytics at the edge. Designed for 24/7 operation in harsh factory environments.',
-        specs: [
-          ['CPU', '12-Core Industrial i7'], ['NPU', '32 TOPS'], ['RAM', '64 GB ECC'],
-          ['Storage', '2× M.2 NVMe RAID'], ['Temp', '-25 to 70 °C'], ['I/O', '4× GigE, 8× USB 3.2'],
-          ['Ingress', 'IP65'], ['Price Range', '$2,400 – $3,100']
-        ],
-        cta: 'Request Evaluation Unit',
-        pdf: '/assets/specs/OptiScan-V3-Datasheet.pdf'
-      },
-      catalog: { _redirect: '/demo.html?view=catalog' },
-      analytics: { _redirect: '/demo.html?view=analytics' }
-    };
+    async function handleFreeBoothSubmit(e) {
+      e.preventDefault();
+      const bizName = document.getElementById('business-name-input').value.trim();
+      if (!bizName) return alert('Please enter your business name.');
+      if (!selectedFile) return alert('Please select or drop a booth photo.');
 
-    function openProductModal(id) {
-      const p = PRODUCTS[id];
-      if (!p) return;
-      if (p._redirect) { window.location.href = p._redirect; return; }
+      showProgress();
+      const formData = new FormData();
+      formData.append('businessName', bizName);
+      formData.append('photo', selectedFile);
 
-      const specs = p.specs.map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
-      document.getElementById('modalBody').innerHTML = `
-        <div class="modal-badge">DEMO PRODUCT — ${p.cat}</div>
-        <div class="modal-title">${p.name}</div>
-        <div class="modal-model">${p.model}</div>
-        <p class="modal-desc">${p.desc}</p>
-        <table class="spec-table"><tbody>${specs}</tbody></table>
-        <div class="modal-actions">
-          <a href="/demo.html?product=${id}" class="modal-btn modal-btn-primary">
-            Enter 3D Showroom →
-          </a>
-          <a href="${p.pdf}" download class="modal-btn modal-btn-outline">Download Spec PDF</a>
-          <a href="/demo.html#rfq?product=${p.name}" class="modal-btn modal-btn-outline">Request RFQ</a>
-          <a href="/demo.html#meeting" class="modal-btn modal-btn-outline">Book Meeting</a>
-        </div>`;
-      document.getElementById('productModal').classList.add('open');
-    }
+      try {
+        updateProgress(35, 'PREPARING YOUR BOOTH', 'Validating photo resolution and setting up showroom container...');
+        const token = localStorage.getItem('token');
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    function closeProductModal() {
-      document.getElementById('productModal').classList.remove('open');
-    }
+        const res = await fetch('/api/free-funnel/preview', {
+          method: 'POST',
+          headers,
+          body: formData
+        });
 
-    function closeModal(e) {
-      if (e.target === document.getElementById('productModal')) closeProductModal();
-    }
+        const data = await res.json();
+        if (!res.ok) {
+          hideProgress();
+          if (res.status === 409) {
+            alert(`Your free booth has already been created for ${bizName}.`);
+            if (data.existingProjectId) {
+              loadProjectIntoStudio(data.existingProjectId);
+            }
+            return;
+          }
+          return alert(data.message || 'Generation failed.');
+        }
 
-    // Escape key to close modal
-    document.addEventListener('keydown', e => { 
-      if (e.key === 'Escape') {
-        closeProductModal();
-        closeSmartCardModalDirect();
+        updateProgress(80, 'BUILDING YOUR PREVIEW', 'Generating high-resolution view layers and pinpoint canvas...');
+        setTimeout(() => {
+          updateProgress(100, 'READY', 'Your virtual booth is ready!');
+          setTimeout(() => {
+            hideProgress();
+            activeProjectId = data.projectId;
+            activeProjectData = data.project;
+            renderStudioBooth(data.previewUrl);
+          }, 600);
+        }, 800);
+
+      } catch (err) {
+        hideProgress();
+        alert('Network error while generating booth: ' + err.message);
       }
-    });
+    }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // INTERACTIVE SHOWCASE MULTI-VIEWER SWITCHER
-    // ══════════════════════════════════════════════════════════════════════
-    function switchShowcaseViewer(mode) {
-      const iframe = document.getElementById('showcase-live-iframe');
-      const tabMatterport = document.getElementById('tab-matterport');
-      const tabShowroom = document.getElementById('tab-showroom');
-      const fullscreenLink = document.getElementById('btn-fullscreen-link');
-      if (!iframe || !tabMatterport || !tabShowroom) return;
+    function showProgress() {
+      document.getElementById('progressOverlay').style.display = 'flex';
+      updateProgress(15, 'UPLOADING PHOTO', 'Transferring your booth photo to secure processing engine...');
+    }
 
-      if (mode === 'matterport') {
-        iframe.src = '/demo-matterport.html';
-        if (fullscreenLink) fullscreenLink.href = '/demo-matterport.html';
-        tabMatterport.classList.add('active');
-        tabMatterport.style.background = 'linear-gradient(135deg, #0284c7, #2563eb)';
-        tabMatterport.style.color = '#fff';
-        tabMatterport.style.boxShadow = '0 4px 14px rgba(2, 132, 199, 0.4)';
+    function updateProgress(pct, stage, detail) {
+      document.getElementById('progressBarFill').style.width = `${pct}%`;
+      document.getElementById('progressStageTxt').textContent = stage;
+      document.getElementById('progressDetailTxt').textContent = detail;
+    }
 
-        tabShowroom.classList.remove('active');
-        tabShowroom.style.background = 'transparent';
-        tabShowroom.style.color = '#94a3b8';
-        tabShowroom.style.boxShadow = 'none';
-      } else {
-        iframe.src = '/demo.html';
-        if (fullscreenLink) fullscreenLink.href = '/demo.html';
-        tabShowroom.classList.add('active');
-        tabShowroom.style.background = 'linear-gradient(135deg, #0284c7, #2563eb)';
-        tabShowroom.style.color = '#fff';
-        tabShowroom.style.boxShadow = '0 4px 14px rgba(2, 132, 199, 0.4)';
+    function hideProgress() {
+      document.getElementById('progressOverlay').style.display = 'none';
+    }
 
-        tabMatterport.classList.remove('active');
-        tabMatterport.style.background = 'transparent';
-        tabMatterport.style.color = '#94a3b8';
-        tabMatterport.style.boxShadow = 'none';
+    function renderStudioBooth(imgUrl) {
+      document.getElementById('hero-funnel').style.display = 'none';
+      const studio = document.getElementById('freeStudioSection');
+      studio.style.display = 'block';
+      studio.scrollIntoView({ behavior: 'smooth' });
+
+      const img = document.getElementById('studioBoothImg');
+      img.src = imgUrl;
+    }
+
+    async function loadProjectIntoStudio(projectId) {
+      try {
+        const res = await fetch(`/api/free-funnel/projects/${projectId}`);
+        const data = await res.json();
+        if (data.project) {
+          activeProjectId = data.project.id;
+          activeProjectData = data.project;
+          renderStudioBooth(data.project.sourceAsset?.previewUrl);
+          renderPinpoints(data.project.pinpoints || []);
+        }
+      } catch (err) {
+        console.error('Error loading project:', err);
+      }
+    }
+
+    function handleCanvasClick(e) {
+      if (e.target.classList.contains('pinpoint-marker')) return;
+      const box = document.getElementById('studioCanvasBox');
+      const rect = box.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      pendingCoords = {
+        u: Math.max(0, Math.min(1, x / rect.width)),
+        v: Math.max(0, Math.min(1, y / rect.height))
+      };
+
+      openAddProductModal();
+    }
+
+    function openAddProductModal() {
+      document.getElementById('addProductModal').style.display = 'flex';
+    }
+
+    function closeAddProductModal() {
+      document.getElementById('addProductModal').style.display = 'none';
+    }
+
+    function previewProdImage(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = document.getElementById('prod-image-preview');
+          img.src = e.target.result;
+          img.style.display = 'block';
+        }
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    async function generateAIDescription() {
+      const prodName = document.getElementById('prod-name-input').value.trim();
+      const bizName = activeProjectData?.businessName || document.getElementById('business-name-input').value.trim() || 'dn’a';
+      if (!prodName) return alert('Please enter a Product Name first.');
+
+      try {
+        const res = await fetch('/api/free-funnel/ai/suggest-description', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productName: prodName, businessName: bizName })
+        });
+        const data = await res.json();
+        if (data.suggestedDescription) {
+          document.getElementById('prod-desc-input').value = data.suggestedDescription;
+          document.getElementById('ai-draft-notice').style.display = 'block';
+        }
+      } catch (err) {
+        alert('AI draft assist error: ' + err.message);
+      }
+    }
+
+    async function submitProductPinpoint(e) {
+      e.preventDefault();
+      const name = document.getElementById('prod-name-input').value.trim();
+      const desc = document.getElementById('prod-desc-input').value.trim();
+      const imgInput = document.getElementById('prod-image-input');
+
+      if (!name) return alert('Product Name is required.');
+      if (!activeProjectId) return alert('No active project.');
+
+      const formData = new FormData();
+      formData.append('productName', name);
+      formData.append('description', desc);
+      formData.append('u', pendingCoords.u);
+      formData.append('v', pendingCoords.v);
+      if (imgInput.files && imgInput.files[0]) {
+        formData.append('productImage', imgInput.files[0]);
+      }
+
+      try {
+        const res = await fetch(`/api/free-funnel/projects/${activeProjectId}/pinpoints`, {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) return alert(data.message || 'Failed to add product.');
+
+        closeAddProductModal();
+        activeProjectData = data.project;
+        renderPinpoints(data.project.pinpoints || []);
+        openProductDrawer(data.product);
+      } catch (err) {
+        alert('Error saving product: ' + err.message);
+      }
+    }
+
+    function renderPinpoints(pinpoints) {
+      const container = document.getElementById('pinpointsContainer');
+      container.innerHTML = '';
+      pinpoints.forEach(pin => {
+        const marker = document.createElement('div');
+        marker.className = 'pinpoint-marker';
+        marker.style.left = `${pin.u * 100}%`;
+        marker.style.top = `${pin.v * 100}%`;
+        marker.title = pin.label || pin.productName;
+        marker.onclick = (e) => {
+          e.stopPropagation();
+          const prod = (activeProjectData?.products || []).find(p => p.id === pin.productId);
+          if (prod) openProductDrawer(prod);
+        };
+        container.appendChild(marker);
+      });
+    }
+
+    function openProductDrawer(product) {
+      document.getElementById('drawerProdTitle').textContent = product.name;
+      document.getElementById('drawerProdImg').src = product.imageUrl || document.getElementById('studioBoothImg').src;
+      document.getElementById('drawerProdDesc').textContent = product.description || 'Commercial exhibition product with high-precision engineering and sales presentation.';
+      document.getElementById('productDrawerModal').style.display = 'flex';
+    }
+
+    function closeProductDrawer() {
+      document.getElementById('productDrawerModal').style.display = 'none';
+    }
+
+    function openPlanModal(trigger = '') {
+      closeProductDrawer();
+      document.getElementById('planModal').style.display = 'flex';
+    }
+
+    function closePlanModal() {
+      document.getElementById('planModal').style.display = 'none';
+    }
+
+    function openSaveEmailModal() {
+      document.getElementById('saveEmailModal').style.display = 'flex';
+    }
+
+    function closeSaveEmailModal() {
+      document.getElementById('saveEmailModal').style.display = 'none';
+    }
+
+    async function submitSaveEmail(e) {
+      e.preventDefault();
+      const email = document.getElementById('save-email-input').value.trim();
+      if (!email) return;
+      try {
+        const res = await fetch(`/api/free-funnel/projects/${activeProjectId}/save-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        alert('Your booth has been saved! You can resume editing anytime.');
+        closeSaveEmailModal();
+      } catch (err) {
+        alert('Error saving booth email: ' + err.message);
+      }
+    }
+
+    async function handlePlanSelection(plan) {
+      if (plan === 'custom') {
+        alert('Thank you! Our enterprise solutions team will contact you with a custom quote.');
+        closePlanModal();
+        return;
+      }
+      // Upgrade project on backend (Zero Data Re-entry)
+      try {
+        const token = localStorage.getItem('token');
+        if (activeProjectId) {
+          await fetch(`/api/free-funnel/projects/${activeProjectId}/convert-plan`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ plan })
+          });
+        }
+        // Redirect to Stripe Checkout or Billing Modal
+        if (token) {
+          const checkRes = await fetch('/api/billing/create-checkout-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ requestedPlan: plan, consentTerms: true, consentRecurring: true })
+          });
+          const checkData = await checkRes.json();
+          if (checkData.checkoutUrl) {
+            window.location.href = checkData.checkoutUrl;
+            return;
+          }
+        }
+        alert(`Plan selection: ${plan.toUpperCase()}. Preserving all booth data. Redirecting to billing confirmation...`);
+        window.location.href = `/pricing.html?plan=${plan}&projectId=${activeProjectId || ''}`;
+      } catch (err) {
+        alert('Upgrade request error: ' + err.message);
+      }
+    }
+
+    function openSignInModal() {
+      const email = prompt('Enter your exhibitor or developer email:', 'developer@vshow.com');
+      if (email) {
+        const pass = prompt('Enter password:', 'admin123');
+        if (pass) {
+          fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password: pass })
+          }).then(r => r.json()).then(d => {
+            if (d.token) {
+              localStorage.setItem('token', d.token);
+              alert(`Signed in as ${d.user.name} (${d.user.role})`);
+            } else {
+              alert(d.error || 'Login failed.');
+            }
+          });
+        }
       }
     }
   </script>

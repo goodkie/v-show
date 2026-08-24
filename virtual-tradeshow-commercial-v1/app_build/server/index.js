@@ -1869,6 +1869,183 @@ app.post('/api/projects/:id/products/quick', async (req, res) => {
   }
 });
 
+// ============================================================
+// --- C08 ONE-PHOTO FREE VIRTUAL BOOTH FUNNEL APIs ---
+// ============================================================
+
+// 1. Free Preview Generation (1 Photo + Business Name)
+app.post('/api/free-funnel/preview', upload.single('photo'), async (req, res) => {
+  try {
+    const businessName = (req.body.businessName || '').trim();
+    if (!businessName) {
+      return res.status(400).json({
+        error: 'BUSINESS_NAME_REQUIRED',
+        message: 'Please enter your business name.'
+      });
+    }
+
+    // Photo quality and presence validation
+    if (!req.file) {
+      // Check if photoUrl was passed directly as string
+      if (!req.body.photoUrl) {
+        return res.status(400).json({
+          error: 'BAD_IMAGE_QUALITY',
+          message: 'THIS PHOTO IS TOO SMALL OR BLURRY. Please upload another photo.'
+        });
+      }
+    }
+
+    // Determine developer bypass
+    let isBypass = false;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const session = activeSessions.get(authHeader.substring(7));
+      if (session && (session.role === 'developer' || session.role === 'platform_owner' || session.role === 'owner' || session.internalDeveloperAccess)) {
+        isBypass = true;
+      }
+    }
+    if (req.headers['x-dev-lab-bypass'] === 'true') {
+      isBypass = true;
+    }
+
+    const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1';
+    const photoUrl = req.file ? `/uploads/${req.file.filename}` : req.body.photoUrl;
+
+    const project = await db.createFreePreviewProject({
+      businessName,
+      photoUrl,
+      ip: clientIp,
+      deviceId: req.body.deviceId || null,
+      bypass: isBypass
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'YOUR VIRTUAL BOOTH IS READY',
+      projectId: project.id,
+      previewUrl: project.sourceAsset?.previewUrl || photoUrl,
+      businessName: project.businessName,
+      experienceType: 'PHOTO_SHOWROOM',
+      coordinateSystem: 'NORMALIZED_2D',
+      project
+    });
+  } catch (err) {
+    if (err.code === 'BUSINESS_ALREADY_EXISTS') {
+      return res.status(409).json({
+        error: 'BUSINESS_ALREADY_EXISTS',
+        message: 'YOUR FREE BOOTH HAS ALREADY BEEN CREATED.',
+        existingProjectId: err.existingProjectId
+      });
+    }
+    if (err.code === 'IP_RATE_LIMIT_EXCEEDED') {
+      return res.status(429).json({
+        error: 'IP_RATE_LIMIT_EXCEEDED',
+        message: err.message
+      });
+    }
+    res.status(400).json({ error: err.code || 'GENERATION_FAILED', message: err.message });
+  }
+});
+
+// 2. Add First Product & Pinpoint (u, v normalized coordinates)
+app.post('/api/free-funnel/projects/:id/pinpoints', upload.single('productImage'), async (req, res) => {
+  try {
+    const { productName, description, u, v } = req.body;
+    if (!productName) {
+      return res.status(400).json({ error: 'PRODUCT_NAME_REQUIRED', message: 'Product name is required.' });
+    }
+
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : req.body.imageUrl;
+    const result = await db.addFreePreviewProductAndPinpoint(req.params.id, {
+      productName,
+      imageUrl,
+      description,
+      u: parseFloat(u) || 0.5,
+      v: parseFloat(v) || 0.5
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Product pinpoint successfully placed.',
+      product: result.product,
+      pinpoint: result.pinpoint,
+      project: result.project
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 3. AI Product Description Assist Draft Generator
+app.post('/api/free-funnel/ai/suggest-description', (req, res) => {
+  try {
+    const { productName, category, businessName } = req.body;
+    if (!productName) {
+      return res.status(400).json({ error: 'productName is required' });
+    }
+    const suggestedDescription = db.generateAIDescriptionDraft({ productName, category, businessName });
+    res.json({
+      success: true,
+      suggestedDescription,
+      status: 'DRAFT',
+      notice: 'Suggested Draft — Review before publishing'
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 4. Save Booth With Contact Email
+app.post('/api/free-funnel/projects/:id/save-email', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ error: 'Valid work email is required.' });
+    }
+    const result = await db.saveFreePreviewEmail(req.params.id, email);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 5. Convert Free Preview to Paid Commercial Plan (Zero Data Re-entry)
+app.post('/api/free-funnel/projects/:id/convert-plan', async (req, res) => {
+  try {
+    const { plan } = req.body;
+    const result = await db.convertFreePreviewToPlan(req.params.id, plan || 'pro');
+    res.json({
+      success: true,
+      message: `Successfully upgraded booth to ${plan.toUpperCase()}. All project data preserved.`,
+      project: result.project,
+      plan: result.plan
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 6. Get Free Preview Project Manifest
+app.get('/api/free-funnel/projects/:id', async (req, res) => {
+  try {
+    const project = (db.read().projects || []).find(p => p.id === req.params.id);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    res.json({ success: true, project });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 7. Developer Lab Free Preview Usage Reset
+app.post('/api/internal/dev/free-funnel/reset', async (req, res) => {
+  try {
+    const result = await db.resetFreePreviewUsages();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // C05.2 Experience Upgrade Endpoint
 app.post('/api/projects/:id/upgrade-experience', async (req, res) => {
   try {

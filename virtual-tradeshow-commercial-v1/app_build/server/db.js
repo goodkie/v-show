@@ -5492,6 +5492,260 @@ class JSONDatabase {
   }
 
   // ==========================================
+  // --- C08 ONE-PHOTO FREE VIRTUAL BOOTH FUNNEL ---
+  // ==========================================
+
+  normalizeBusinessName(name) {
+    if (!name || typeof name !== 'string') return '';
+    let clean = name.toLowerCase().trim();
+    clean = clean.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '');
+    clean = clean.replace(/\s+/g, ' ');
+    const suffixes = ['inc', 'incorporated', 'llc', 'corp', 'corporation', 'ltd', 'limited', 'co', 'company', 'gmbh', 'sa'];
+    const words = clean.split(' ');
+    if (words.length > 1 && suffixes.includes(words[words.length - 1])) {
+      words.pop();
+      clean = words.join(' ');
+    }
+    return clean.trim();
+  }
+
+  hashIpAddress(ip) {
+    const secret = process.env.HMAC_SECRET || 'dna_internal_free_funnel_hmac_secret_2026';
+    const normalizedIp = (ip || '127.0.0.1').replace(/^::ffff:/, '').trim();
+    return crypto.createHmac('sha256', secret).update(normalizedIp).digest('hex').substring(0, 32);
+  }
+
+  checkFreePreviewEligibility(businessName, ip, bypass = false) {
+    if (bypass) {
+      return { eligible: true, bypass: true, reason: 'DEVELOPER_OR_OWNER_BYPASS' };
+    }
+    const norm = this.normalizeBusinessName(businessName);
+    if (!norm) {
+      return { eligible: false, reason: 'INVALID_BUSINESS_NAME', message: 'Business name is required.' };
+    }
+    const ipHash = this.hashIpAddress(ip);
+    const usages = this.read().freePreviewUsages || [];
+
+    // Check by normalized business name (Primary)
+    const existingBiz = usages.find(u => u.normalizedBusinessName === norm && u.generationStatus === 'SUCCESS');
+    if (existingBiz) {
+      return {
+        eligible: false,
+        reason: 'BUSINESS_ALREADY_EXISTS',
+        message: 'Your free booth has already been created.',
+        existingProjectId: existingBiz.projectId
+      };
+    }
+
+    // IP Rate Limit: maximum 5 creations per hour per IP hash
+    const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+    const recentIpUsages = usages.filter(u => u.ipHash === ipHash && u.createdAt > oneHourAgo);
+    if (recentIpUsages.length >= 5) {
+      return {
+        eligible: false,
+        reason: 'IP_RATE_LIMIT_EXCEEDED',
+        message: 'Hourly free preview limit reached from this network. Please try again later.'
+      };
+    }
+
+    return { eligible: true, normalizedBusinessName: norm, ipHash };
+  }
+
+  async createFreePreviewProject({ businessName, photoUrl, ip, deviceId = null, bypass = false }) {
+    const eligibility = this.checkFreePreviewEligibility(businessName, ip, bypass);
+    if (!eligibility.eligible && !bypass) {
+      const err = new Error(eligibility.message || 'Free preview limit reached.');
+      err.code = eligibility.reason;
+      err.existingProjectId = eligibility.existingProjectId;
+      throw err;
+    }
+
+    const norm = this.normalizeBusinessName(businessName);
+    const ipHash = this.hashIpAddress(ip);
+    const projectId = `prj-free-${uuidv4().substring(0, 8)}`;
+    const organizationId = `org-free-${uuidv4().substring(0, 8)}`;
+
+    return this.mutate((db) => {
+      db.projects = db.projects || [];
+      db.freePreviewUsages = db.freePreviewUsages || [];
+      db.organizations = db.organizations || [];
+
+      // 1. Create Organization stub for free preview
+      const org = {
+        id: organizationId,
+        type: 'exhibitor',
+        name: businessName,
+        slug: norm.replace(/\s+/g, '-'),
+        status: 'active',
+        subscription: {
+          plan: 'pro', // Target default capability model
+          status: 'free_preview',
+          dataEnvironment: 'REAL',
+          updatedAt: new Date().toISOString()
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      db.organizations.push(org);
+
+      // 2. Create Project
+      const project = {
+        id: projectId,
+        organizationId,
+        name: `${businessName} Virtual Booth`,
+        businessName,
+        normalizedBusinessName: norm,
+        experienceType: 'PHOTO_SHOWROOM',
+        commercialState: 'FREE_PREVIEW',
+        sourceAsset: {
+          originalUrl: photoUrl,
+          previewUrl: photoUrl,
+          processedUrl: photoUrl,
+          uploadedAt: new Date().toISOString()
+        },
+        views: [
+          {
+            viewId: 'view-free-0',
+            name: 'Main Booth Perspective',
+            previewUrl: photoUrl,
+            highResUrl: photoUrl,
+            coordinateSystem: 'NORMALIZED_2D'
+          }
+        ],
+        pinpoints: [],
+        products: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      db.projects.push(project);
+
+      // 3. Record Free Usage
+      if (!bypass) {
+        db.freePreviewUsages.push({
+          usageId: `use-${uuidv4().substring(0, 8)}`,
+          normalizedBusinessName: norm,
+          ipHash,
+          deviceIdHash: deviceId ? crypto.createHash('sha256').update(deviceId).digest('hex').substring(0, 16) : null,
+          projectId,
+          generationStatus: 'SUCCESS',
+          generationCount: 1,
+          createdAt: new Date().toISOString(),
+          lastAttemptAt: new Date().toISOString()
+        });
+      }
+
+      return project;
+    });
+  }
+
+  async addFreePreviewProductAndPinpoint(projectId, { productName, imageUrl, description, u, v, actor = 'Customer' }) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) throw new Error('Project not found.');
+
+      project.products = project.products || [];
+      project.pinpoints = project.pinpoints || [];
+
+      const productId = `prod-fp-${uuidv4().substring(0, 6)}`;
+      const pinpointId = `pin-fp-${uuidv4().substring(0, 6)}`;
+
+      const product = {
+        id: productId,
+        name: productName,
+        imageUrl: imageUrl || project.sourceAsset?.previewUrl,
+        description: description || '',
+        status: 'active',
+        createdAt: new Date().toISOString()
+      };
+      project.products.push(product);
+
+      const pinpoint = {
+        id: pinpointId,
+        productId,
+        productName,
+        u: Math.max(0, Math.min(1, parseFloat(u) || 0.5)),
+        v: Math.max(0, Math.min(1, parseFloat(v) || 0.5)),
+        label: productName,
+        createdAt: new Date().toISOString()
+      };
+      project.pinpoints.push(pinpoint);
+
+      project.updatedAt = new Date().toISOString();
+      return { project, product, pinpoint };
+    });
+  }
+
+  generateAIDescriptionDraft({ productName, category = '', businessName = '' }) {
+    const cleanProd = (productName || 'Premium Exhibit Product').trim();
+    const cleanBiz = (businessName || 'dn’a Showcase').trim();
+    const cat = category ? ` in the ${category} category` : '';
+
+    return `Experience the ${cleanProd} presented by ${cleanBiz}${cat}. Engineered with distinctive commercial quality and elegant modern design, this solution delivers reliable performance and seamless integration for global trade buyers. [Suggested Draft — Please review specifications before public release]`;
+  }
+
+  async saveFreePreviewEmail(projectId, email) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) throw new Error('Project not found.');
+      project.contactEmail = email.toLowerCase().trim();
+      project.savedAt = new Date().toISOString();
+      project.updatedAt = new Date().toISOString();
+
+      const org = (db.organizations || []).find(o => o.id === project.organizationId);
+      if (org) {
+        org.contactEmail = email.toLowerCase().trim();
+        org.updatedAt = new Date().toISOString();
+      }
+      return { success: true, projectId, email };
+    });
+  }
+
+  async convertFreePreviewToPlan(projectId, targetPlan) {
+    if (targetPlan !== 'pro' && targetPlan !== 'business' && targetPlan !== 'custom') {
+      throw new Error('Invalid plan selection.');
+    }
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) throw new Error('Project not found.');
+
+      project.commercialState = targetPlan.toUpperCase();
+      project.planKey = targetPlan;
+      project.convertedAt = new Date().toISOString();
+      project.updatedAt = new Date().toISOString();
+
+      const org = (db.organizations || []).find(o => o.id === project.organizationId);
+      if (org) {
+        org.subscription = {
+          plan: targetPlan,
+          status: 'active',
+          dataEnvironment: 'REAL',
+          upgradedAt: new Date().toISOString()
+        };
+        org.updatedAt = new Date().toISOString();
+      }
+
+      // Update free usage record status
+      const usage = (db.freePreviewUsages || []).find(u => u.projectId === projectId);
+      if (usage) {
+        usage.generationStatus = 'UPGRADED';
+      }
+
+      return { success: true, project, org, plan: targetPlan };
+    });
+  }
+
+  async resetFreePreviewUsages() {
+    return this.mutate((db) => {
+      db.freePreviewUsages = [];
+      return { success: true, message: 'Free preview usages reset.' };
+    });
+  }
+
+  getFreePreviewUsages() {
+    return this.read().freePreviewUsages || [];
+  }
+
+  // ==========================================
   // --- 11. Phase 9.5 Platform Communications ---
   // ==========================================
 
