@@ -5503,7 +5503,8 @@ class JSONDatabase {
   isSpecialDeveloperEmail(email) {
     const norm = this.normalizeEmail(email);
     if (!norm) return false;
-    const specialEnv = process.env.DNA_SPECIAL_DEVELOPER_EMAILS || 'lead-dev@internal.vshow.com,architect@dn-a.com,goodkie.com@gmail.com';
+    const specialEnv = process.env.DNA_SPECIAL_DEVELOPER_EMAILS || '';
+    if (!specialEnv.trim()) return false;
     const specialList = specialEnv.split(',').map(e => this.normalizeEmail(e)).filter(Boolean);
     return specialList.includes(norm);
   }
@@ -5547,18 +5548,46 @@ class JSONDatabase {
 
     const ipHash = this.hashIpAddress(ip);
     const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const fiveSecondsAgo = new Date(Date.now() - 5 * 1000).toISOString();
 
     return this.mutate((db) => {
       db.emailVerifications = db.emailVerifications || [];
+
+      // Rate limit check
       const recentSends = db.emailVerifications.filter(v => 
         (v.normalizedEmail === normEmail || v.ipHash === ipHash) && 
-        v.createdAt > fifteenMinAgo
+        v.createdAt > fifteenMinAgo &&
+        v.status !== 'INVALIDATED'
       );
-      if (recentSends.length >= 5) {
+      if (recentSends.length >= 8) {
         const err = new Error('Verification code rate limit exceeded. Please wait a few minutes.');
         err.code = 'VERIFICATION_RATE_LIMIT';
         throw err;
       }
+
+      // Idempotency: Check if an active code was issued within the last 5 seconds (prevent accidental double click)
+      const lastActive = db.emailVerifications.slice().reverse().find(v =>
+        v.normalizedEmail === normEmail &&
+        v.createdAt > fiveSecondsAgo &&
+        v.status === 'VERIFICATION_SENT'
+      );
+      if (lastActive && lastActive._rawCode) {
+        return {
+          success: true,
+          verificationSent: true,
+          email: normEmail,
+          _rawCode: lastActive._rawCode,
+          _rawMagicToken: lastActive._rawMagicToken,
+          verifyUrl: `/verify-email?token=${lastActive._rawMagicToken}&email=${encodeURIComponent(normEmail)}`
+        };
+      }
+
+      // Explicitly invalidate all previous pending OTPs for this email upon new send
+      db.emailVerifications.forEach(v => {
+        if (v.normalizedEmail === normEmail && v.status === 'VERIFICATION_SENT') {
+          v.status = 'INVALIDATED';
+        }
+      });
 
       // 6-digit cryptographically random OTP + 32-byte secure magic token
       const code = crypto.randomInt(100000, 999999).toString();
@@ -5573,9 +5602,9 @@ class JSONDatabase {
         normalizedEmail: normEmail,
         businessName: businessName || '',
         codeHash,
-        code, // kept for sandbox/testing
         magicTokenHash,
-        magicToken, // kept for sandbox/testing
+        _rawCode: code, // ephemeral for mailer dispatcher in same process
+        _rawMagicToken: magicToken,
         ipHash,
         attemptCount: 0,
         status: 'VERIFICATION_SENT',
@@ -5588,8 +5617,8 @@ class JSONDatabase {
         success: true,
         verificationSent: true,
         email: normEmail,
-        code: process.env.NODE_ENV !== 'production' ? code : undefined,
-        magicToken: process.env.NODE_ENV !== 'production' ? magicToken : undefined,
+        _rawCode: code,
+        _rawMagicToken: magicToken,
         verifyUrl: `/verify-email?token=${magicToken}&email=${encodeURIComponent(normEmail)}`
       };
     });

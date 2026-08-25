@@ -1,8 +1,34 @@
-const https = require('https');
+﻿const https = require('https');
 
 class EmailService {
   constructor() {
     this.sentEmails = [];
+  }
+
+  isDeliveryReady() {
+    return Boolean(process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY);
+  }
+
+  getProviderInfo() {
+    if (process.env.RESEND_API_KEY) {
+      return {
+        provider: 'RESEND',
+        fromDomain: (process.env.EMAIL_FROM || 'verify@dn-a.com').split('@')[1] || 'dn-a.com',
+        ready: true
+      };
+    }
+    if (process.env.SENDGRID_API_KEY) {
+      return {
+        provider: 'SENDGRID',
+        fromDomain: (process.env.EMAIL_FROM || 'verify@dn-a.com').split('@')[1] || 'dn-a.com',
+        ready: true
+      };
+    }
+    return {
+      provider: 'NONE',
+      fromDomain: (process.env.EMAIL_FROM || 'verify@dn-a.com').split('@')[1] || 'dn-a.com',
+      ready: false
+    };
   }
 
   async sendVerificationEmail({ to, businessName, code, magicToken, verifyUrl }) {
@@ -10,52 +36,57 @@ class EmailService {
       ? verifyUrl 
       : `${process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : 'https://v-show-commercial-v1-production.up.railway.app'}${verifyUrl}`;
 
-    const emailRecord = {
-      to,
-      businessName,
-      code,
-      magicToken,
-      verifyUrl: fullVerifyUrl,
-      sentAt: new Date().toISOString()
-    };
+    // Check if any real outbound provider is configured
+    if (!this.isDeliveryReady()) {
+      const err = new Error("WE COULDN'T SEND YOUR CONFIRMATION EMAIL. Please try again.");
+      err.code = 'EMAIL_PROVIDER_NOT_CONFIGURED';
+      err.deliveryReady = false;
+      throw err;
+    }
 
-    this.sentEmails.push(emailRecord);
-    if (this.sentEmails.length > 50) this.sentEmails.shift();
-
-    console.log('\n===============================================================');
-    console.log(`[EMAIL DISPATCHER] To: ${to}`);
-    console.log(`[EMAIL DISPATCHER] Business: ${businessName}`);
-    console.log(`[EMAIL DISPATCHER] 6-Digit Code: ${code}`);
-    console.log(`[EMAIL DISPATCHER] 1-Click Link: ${fullVerifyUrl}`);
-    console.log('===============================================================\n');
-
-    // 1. If RESEND_API_KEY is configured
+    // 1. Try Resend if configured
     if (process.env.RESEND_API_KEY) {
       try {
-        await this.sendViaResend({ to, fullVerifyUrl, code, businessName });
-        return { success: true, provider: 'RESEND', verifyUrl: fullVerifyUrl, code };
+        const result = await this.sendViaResend({ to, fullVerifyUrl, code, businessName });
+        return {
+          success: true,
+          provider: 'RESEND',
+          messageId: result?.id || `resend_${Date.now()}`,
+          verifyUrl: fullVerifyUrl
+        };
       } catch (err) {
-        console.error('Resend delivery failed:', err.message);
+        console.error('[EMAIL DISPATCHER ERROR] Resend provider delivery rejected:', err.message);
+        const deliverErr = new Error("WE COULDN'T SEND YOUR CONFIRMATION EMAIL. Please try again.");
+        deliverErr.code = 'EMAIL_DELIVERY_REJECTED';
+        deliverErr.provider = 'RESEND';
+        deliverErr.details = err.message;
+        throw deliverErr;
       }
     }
 
-    // 2. If SENDGRID_API_KEY is configured
+    // 2. Try SendGrid if configured
     if (process.env.SENDGRID_API_KEY) {
       try {
-        await this.sendViaSendGrid({ to, fullVerifyUrl, code, businessName });
-        return { success: true, provider: 'SENDGRID', verifyUrl: fullVerifyUrl, code };
+        const result = await this.sendViaSendGrid({ to, fullVerifyUrl, code, businessName });
+        return {
+          success: true,
+          provider: 'SENDGRID',
+          messageId: result?.messageId || `sendgrid_${Date.now()}`,
+          verifyUrl: fullVerifyUrl
+        };
       } catch (err) {
-        console.error('SendGrid delivery failed:', err.message);
+        console.error('[EMAIL DISPATCHER ERROR] SendGrid provider delivery rejected:', err.message);
+        const deliverErr = new Error("WE COULDN'T SEND YOUR CONFIRMATION EMAIL. Please try again.");
+        deliverErr.code = 'EMAIL_DELIVERY_REJECTED';
+        deliverErr.provider = 'SENDGRID';
+        deliverErr.details = err.message;
+        throw deliverErr;
       }
     }
 
-    // 3. Fallback / Sandbox mode
-    return {
-      success: true,
-      provider: 'SANDBOX_SIMULATED',
-      verifyUrl: fullVerifyUrl,
-      code
-    };
+    const err = new Error("WE COULDN'T SEND YOUR CONFIRMATION EMAIL. Please try again.");
+    err.code = 'EMAIL_DELIVERY_FAILED';
+    throw err;
   }
 
   sendViaResend({ to, fullVerifyUrl, code, businessName }) {
@@ -69,22 +100,23 @@ class EmailService {
             <div style="font-size: 24px; font-weight: 800; color: #38bdf8; margin-bottom: 8px;">dn’a Virtual Showroom</div>
             <h1 style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 16px;">Confirm Your Work Email</h1>
             <p style="font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 24px;">
-              Click the button below to instantly verify your email address and activate your interactive 3D virtual booth preview for <b>${businessName || 'your business'}</b>.
+              Your 6-digit confirmation code for <b>${businessName || 'your business'}</b> is:
             </p>
-            <div style="text-align: center; margin: 28px 0;">
-              <a href="${fullVerifyUrl}" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #ffffff; padding: 14px 28px; border-radius: 10px; font-weight: 800; text-decoration: none; display: inline-block; font-size: 15px; box-shadow: 0 6px 20px rgba(2,132,199,0.4);">
-                CONFIRM MY EMAIL & ACTIVATE BOOTH
-              </a>
-            </div>
-            <div style="border-top: 1px solid #1e293b; padding-top: 20px; margin-top: 24px; font-size: 13px; color: #94a3b8;">
-              <p style="margin-bottom: 8px;">Or enter this 6-digit security code on the website:</p>
-              <div style="font-family: monospace; font-size: 22px; font-weight: 800; letter-spacing: 6px; color: #38bdf8; background: #0f172a; padding: 10px 16px; border-radius: 8px; display: inline-block;">
+            <div style="text-align: center; margin: 24px 0;">
+              <div style="font-family: monospace; font-size: 28px; font-weight: 800; letter-spacing: 8px; color: #38bdf8; background: #0f172a; padding: 14px 24px; border-radius: 10px; display: inline-block; border: 1px solid rgba(56,189,248,0.4);">
                 ${code}
               </div>
             </div>
-            <p style="font-size: 11px; color: #64748b; margin-top: 24px; line-height: 1.4;">
-              If the button doesn't work, copy and paste this URL into your browser:<br>
-              <a href="${fullVerifyUrl}" style="color: #38bdf8; word-break: break-all;">${fullVerifyUrl}</a>
+            <p style="font-size: 13px; color: #94a3b8; line-height: 1.6; margin-bottom: 24px; text-align: center;">
+              This code will expire in 10 minutes.
+            </p>
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="${fullVerifyUrl}" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 14px;">
+                OR CLICK HERE TO VERIFY IN 1-CLICK
+              </a>
+            </div>
+            <p style="font-size: 11px; color: #64748b; margin-top: 24px; line-height: 1.4; border-top: 1px solid #1e293b; padding-top: 16px;">
+              If you did not request this free booth creation, you can safely ignore this email.
             </p>
           </div>
         `
@@ -105,8 +137,15 @@ class EmailService {
         let body = '';
         res.on('data', chunk => body += chunk);
         res.on('end', () => {
-          if (res.statusCode >= 200 && res.statusCode < 300) resolve(JSON.parse(body));
-          else reject(new Error(`Resend HTTP ${res.statusCode}: ${body}`));
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            try {
+              resolve(JSON.parse(body));
+            } catch (e) {
+              resolve({ id: `resend_${Date.now()}` });
+            }
+          } else {
+            reject(new Error(`Resend HTTP ${res.statusCode}: ${body}`));
+          }
         });
       });
 
@@ -127,9 +166,9 @@ class EmailService {
           value: `
             <div style="background: #070b14; color: #fff; padding: 30px; font-family: sans-serif;">
               <h2>Confirm Your Work Email</h2>
-              <p>Click below to verify and activate your virtual booth:</p>
-              <p><a href="${fullVerifyUrl}" style="background: #0284c7; color: #fff; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">CONFIRM EMAIL</a></p>
-              <p>6-Digit Code: <b>${code}</b></p>
+              <p>Your 6-digit confirmation code: <b style="font-size: 20px; color: #38bdf8;">${code}</b></p>
+              <p>Code expires in 10 minutes.</p>
+              <p><a href="${fullVerifyUrl}" style="background: #0284c7; color: #fff; padding: 10px 18px; text-decoration: none; border-radius: 6px; font-weight: bold;">1-Click Confirm</a></p>
             </div>
           `
         }]
@@ -147,19 +186,19 @@ class EmailService {
       };
 
       const req = https.request(options, (res) => {
-        if (res.statusCode >= 200 && res.statusCode < 300) resolve();
-        else reject(new Error(`SendGrid HTTP ${res.statusCode}`));
+        let body = '';
+        res.on('data', chunk => body += chunk);
+        res.on('end', () => {
+          const messageId = res.headers['x-message-id'] || `sg_${Date.now()}`;
+          if (res.statusCode >= 200 && res.statusCode < 300) resolve({ messageId });
+          else reject(new Error(`SendGrid HTTP ${res.statusCode}: ${body}`));
+        });
       });
 
       req.on('error', reject);
       req.write(data);
       req.end();
     });
-  }
-
-  getLatestEmail(email) {
-    const norm = (email || '').trim().toLowerCase();
-    return this.sentEmails.slice().reverse().find(e => e.to.toLowerCase() === norm) || null;
   }
 }
 
