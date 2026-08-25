@@ -486,6 +486,24 @@
         </div>
 
         <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label class="form-label" for="work-email-input">Work Email *</label>
+            <span id="dev-mode-badge" style="display: none; font-size: 11px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 2px 8px; border-radius: 10px; font-weight: 700;">
+              <i class="fa-solid fa-code"></i> INTERNAL DEV BYPASS
+            </span>
+          </div>
+          <input type="email" id="work-email-input" class="form-input" placeholder="e.g. name@company.com" oninput="onWorkEmailInput()" required>
+        </div>
+
+        <div class="form-group" id="confirm-email-group">
+          <label class="form-label" for="confirm-email-input">Confirm Email *</label>
+          <input type="email" id="confirm-email-input" class="form-input" placeholder="Confirm your work email">
+          <div id="email-match-error" style="color: #f87171; font-size: 12px; margin-top: 5px; display: none;">
+            <i class="fa-solid fa-triangle-exclamation"></i> The email addresses do not match.
+          </div>
+        </div>
+
+        <div class="form-group">
           <label class="form-label">Booth Photo *</label>
           <div class="drop-zone" id="booth-drop-zone" onclick="document.getElementById('booth-file-input').click()">
             <div class="drop-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
@@ -496,12 +514,12 @@
         </div>
 
         <button type="submit" class="btn-create-free" id="btn-submit-free">
-          <i class="fa-solid fa-wand-magic-sparkles"></i> GENERATE FREE VIRTUAL BOOTH
+          <i class="fa-solid fa-wand-magic-sparkles"></i> CREATE MY FREE VIRTUAL BOOTH
         </button>
       </form>
 
       <div class="frame-footer">
-        <i class="fa-solid fa-shield-halved" style="color: #38bdf8;"></i> 1 free commercial booth preview per business • Fully private
+        <i class="fa-solid fa-shield-halved" style="color: #38bdf8;"></i> No credit card required. One free booth preview per business and verified email.
       </div>
     </div>
   </div>
@@ -530,6 +548,61 @@
       </div>
 
       <div class="progress-detail" id="progressDetailTxt">Validating booth image geometry &amp; initializing 3 blank product pins...</div>
+    </div>
+  </div>
+
+  <!-- Email Verification OTP Modal (Normal Customer) -->
+  <div class="drawer-modal" id="emailVerifyModal">
+    <div class="drawer-card" style="max-width: 440px;">
+      <button class="close-btn" onclick="closeEmailVerifyModal()">✕</button>
+      <div class="section-tag"><i class="fa-solid fa-envelope-circle-check"></i> EMAIL OWNERSHIP VERIFICATION</div>
+      <h3 style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px;">Verify Your Work Email</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.5;">
+        We sent a 6-digit security code to <b id="verifyTargetEmailTxt" style="color: #38bdf8;">your email</b>. Please enter it below to claim your free booth.
+      </p>
+
+      <form id="verify-code-form" onsubmit="handleVerifyCodeSubmit(event)">
+        <div class="form-group">
+          <label class="form-label" style="text-align: center; display: block;">6-DIGIT VERIFICATION CODE</label>
+          <input type="text" id="email-otp-input" class="form-input" placeholder="• • • • • •" maxlength="6" style="font-family: 'JetBrains Mono', monospace; font-size: 24px; letter-spacing: 8px; text-align: center; font-weight: 700; color: #38bdf8;" required>
+        </div>
+
+        <div id="verify-error-msg" style="color: #f87171; font-size: 12px; margin-bottom: 12px; text-align: center; display: none;"></div>
+
+        <button type="submit" class="btn-create-free" id="btnVerifyCodeSubmit">
+          <i class="fa-solid fa-check"></i> VERIFY &amp; CREATE MY BOOTH
+        </button>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font-size: 12px;">
+          <button type="button" class="btn-ui" onclick="resendVerificationCode()" id="btnResendCode" style="font-size: 11px;">
+            <i class="fa-solid fa-rotate-right"></i> Resend Code
+          </button>
+          <button type="button" class="btn-ui" onclick="closeEmailVerifyModal()" style="font-size: 11px; color: var(--text-muted);">
+            Change Email
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Duplicate Booth Recovery Modal -->
+  <div class="drawer-modal" id="duplicateBoothModal">
+    <div class="drawer-card" style="max-width: 480px;">
+      <button class="close-btn" onclick="closeDuplicateModal()">✕</button>
+      <div class="section-tag" style="color: #f59e0b;"><i class="fa-solid fa-circle-exclamation"></i> EXISTING BOOTH FOUND</div>
+      <h3 id="duplicateModalTitle" style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px;">We Found Your Existing Booth</h3>
+      <p id="duplicateModalDesc" style="font-size: 13px; color: var(--text-muted); margin-bottom: 22px; line-height: 1.5;">
+        A free photo immersive booth preview has already been created for this business or email.
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <button class="btn-hero btn-hero-primary" id="btnDuplicateContinue" onclick="handleDuplicateContinue()" style="width: 100%; justify-content: center; padding: 13px; font-size: 14px;">
+          <i class="fa-solid fa-arrow-right"></i> CONTINUE MY BOOTH
+        </button>
+        <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('duplicate_modal')" style="width: 100%; justify-content: center; padding: 13px; font-size: 14px;">
+          <i class="fa-solid fa-rocket"></i> CHOOSE A COMMERCIAL PLAN
+        </button>
+      </div>
     </div>
   </div>
 
@@ -975,17 +1048,238 @@
       });
     }
 
+    let isDeveloperBypass = false;
+    let verifiedEmailToken = null;
+    let verifiedEmailAddress = null;
+    let existingDuplicateProjectId = null;
+
+    async function onWorkEmailInput() {
+      const email = document.getElementById('work-email-input').value.trim();
+      const matchErr = document.getElementById('email-match-error');
+      if (matchErr) matchErr.style.display = 'none';
+
+      if (!email || !email.includes('@')) {
+        isDeveloperBypass = false;
+        setDeveloperModeBadge(false);
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/free-funnel/check-special-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (data.developerBypass) {
+          isDeveloperBypass = true;
+          setDeveloperModeBadge(true);
+        } else {
+          isDeveloperBypass = false;
+          setDeveloperModeBadge(false);
+        }
+      } catch (e) {
+        console.warn('Special email check error:', e);
+      }
+    }
+
+    function setDeveloperModeBadge(isDev) {
+      const confirmGroup = document.getElementById('confirm-email-group');
+      const devBadge = document.getElementById('dev-mode-badge');
+      if (isDev) {
+        if (confirmGroup) confirmGroup.style.display = 'none';
+        if (devBadge) devBadge.style.display = 'inline-flex';
+      } else {
+        if (confirmGroup) confirmGroup.style.display = 'block';
+        if (devBadge) devBadge.style.display = 'none';
+      }
+    }
+
     async function handleFreeBoothSubmit(e) {
       e.preventDefault();
       const bizName = document.getElementById('business-name-input').value.trim();
+      const workEmail = document.getElementById('work-email-input').value.trim();
+      const confirmEmail = document.getElementById('confirm-email-input')?.value?.trim() || '';
+
       if (!bizName) return alert('Please enter your business name.');
+      if (!workEmail) return alert('Please enter your work email address.');
       if (!selectedFile) return alert('Please select or drop a booth photo.');
+
+      const matchErr = document.getElementById('email-match-error');
+
+      // Normal customer checks
+      if (!isDeveloperBypass) {
+        if (workEmail.toLowerCase() !== confirmEmail.toLowerCase()) {
+          if (matchErr) {
+            matchErr.style.display = 'block';
+            matchErr.textContent = 'The email addresses do not match.';
+          }
+          return;
+        } else {
+          if (matchErr) matchErr.style.display = 'none';
+        }
+
+        // If not yet verified for this email, initiate OTP verification
+        if (!verifiedEmailToken || verifiedEmailAddress !== workEmail.toLowerCase()) {
+          await initiateEmailVerification(workEmail, bizName);
+          return;
+        }
+      }
+
+      // Execute booth generation
+      executeBoothGeneration();
+    }
+
+    async function initiateEmailVerification(email, businessName) {
+      try {
+        const btnSubmit = document.getElementById('btn-submit-free');
+        if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.textContent = 'SENDING VERIFICATION CODE...'; }
+
+        const res = await fetch('/api/free-funnel/email/send-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, businessName })
+        });
+
+        const data = await res.json();
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CREATE MY FREE VIRTUAL BOOTH';
+        }
+
+        if (!res.ok) {
+          return alert(data.message || 'Failed to send verification code.');
+        }
+
+        if (data.developerBypass) {
+          isDeveloperBypass = true;
+          executeBoothGeneration();
+          return;
+        }
+
+        openEmailVerifyModal(email);
+      } catch (err) {
+        alert('Network error sending verification code: ' + err.message);
+      }
+    }
+
+    function openEmailVerifyModal(email) {
+      document.getElementById('verifyTargetEmailTxt').textContent = email;
+      document.getElementById('email-otp-input').value = '';
+      document.getElementById('verify-error-msg').style.display = 'none';
+      document.getElementById('emailVerifyModal').style.display = 'flex';
+      setTimeout(() => document.getElementById('email-otp-input').focus(), 150);
+    }
+
+    function closeEmailVerifyModal() {
+      document.getElementById('emailVerifyModal').style.display = 'none';
+    }
+
+    async function handleVerifyCodeSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('work-email-input').value.trim();
+      const code = document.getElementById('email-otp-input').value.trim();
+      const errEl = document.getElementById('verify-error-msg');
+      errEl.style.display = 'none';
+
+      if (!code || code.length < 6) {
+        errEl.textContent = 'Please enter the 6-digit verification code.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      try {
+        const btn = document.getElementById('btnVerifyCodeSubmit');
+        btn.disabled = true;
+        btn.textContent = 'VERIFYING...';
+
+        const res = await fetch('/api/free-funnel/email/verify-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, code })
+        });
+
+        const data = await res.json();
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> VERIFY &amp; CREATE MY BOOTH';
+
+        if (!res.ok) {
+          errEl.textContent = data.message || 'Invalid verification code.';
+          errEl.style.display = 'block';
+          return;
+        }
+
+        verifiedEmailToken = data.verificationToken;
+        verifiedEmailAddress = email.toLowerCase();
+        closeEmailVerifyModal();
+        executeBoothGeneration();
+
+      } catch (err) {
+        errEl.textContent = 'Network error verifying code: ' + err.message;
+        errEl.style.display = 'block';
+      }
+    }
+
+    async function resendVerificationCode() {
+      const email = document.getElementById('work-email-input').value.trim();
+      const bizName = document.getElementById('business-name-input').value.trim();
+      const resendBtn = document.getElementById('btnResendCode');
+      resendBtn.disabled = true;
+      resendBtn.textContent = 'Sending...';
+
+      try {
+        const res = await fetch('/api/free-funnel/email/send-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, businessName: bizName })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`A new verification code was sent to ${email}.`);
+        } else {
+          alert(data.message || 'Failed to resend code.');
+        }
+      } catch (e) {
+        alert('Network error resending code: ' + e.message);
+      } finally {
+        resendBtn.disabled = false;
+        resendBtn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Resend Code';
+      }
+    }
+
+    function openDuplicateModal(title, desc, existingProjectId) {
+      existingDuplicateProjectId = existingProjectId;
+      document.getElementById('duplicateModalTitle').textContent = title || 'We Found Your Existing Booth';
+      document.getElementById('duplicateModalDesc').textContent = desc || 'A free photo immersive booth preview has already been created.';
+      document.getElementById('duplicateBoothModal').style.display = 'flex';
+    }
+
+    function closeDuplicateModal() {
+      document.getElementById('duplicateBoothModal').style.display = 'none';
+    }
+
+    function handleDuplicateContinue() {
+      closeDuplicateModal();
+      if (existingDuplicateProjectId) {
+        loadProjectIntoStudio(existingDuplicateProjectId);
+      }
+    }
+
+    async function executeBoothGeneration() {
+      const bizName = document.getElementById('business-name-input').value.trim();
+      const workEmail = document.getElementById('work-email-input').value.trim();
+      const confirmEmail = document.getElementById('confirm-email-input')?.value?.trim() || '';
 
       showProgress();
       logAnalyticsEvent('free_booth_started', { businessName: bizName });
 
       const formData = new FormData();
       formData.append('businessName', bizName);
+      formData.append('email', workEmail);
+      formData.append('confirmEmail', confirmEmail);
+      if (verifiedEmailToken) {
+        formData.append('verificationToken', verifiedEmailToken);
+      }
       formData.append('photo', selectedFile);
 
       // Start dynamic realistic progress animation
@@ -1026,10 +1320,11 @@
         if (!res.ok) {
           hideProgress();
           if (res.status === 409) {
-            alert(`Your free booth has already been created for ${bizName}.`);
-            if (data.existingProjectId) {
-              loadProjectIntoStudio(data.existingProjectId);
-            }
+            openDuplicateModal(
+              data.error === 'BUSINESS_ALREADY_EXISTS' ? 'Business Free Booth Already Created' : 'Email Already Used',
+              data.message || 'Your free photo immersive booth preview has already been created.',
+              data.existingProjectId
+            );
             return;
           }
           return alert(data.message || 'Generation failed.');

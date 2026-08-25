@@ -5492,8 +5492,21 @@ class JSONDatabase {
   }
 
   // ==========================================
-  // --- C08 ONE-PHOTO FREE VIRTUAL BOOTH FUNNEL ---
-  // ==========================================
+  // --- C08/C10-R2 ONE-PHOTO FREE VIRTUAL BOOTH FUNNEL & IDENTITY HARDENING ---
+  // =========================================================================
+
+  normalizeEmail(email) {
+    if (!email || typeof email !== 'string') return '';
+    return email.trim().toLowerCase();
+  }
+
+  isSpecialDeveloperEmail(email) {
+    const norm = this.normalizeEmail(email);
+    if (!norm) return false;
+    const specialEnv = process.env.DNA_SPECIAL_DEVELOPER_EMAILS || '';
+    const specialList = specialEnv.split(',').map(e => this.normalizeEmail(e)).filter(Boolean);
+    return specialList.includes(norm);
+  }
 
   normalizeBusinessName(name) {
     if (!name || typeof name !== 'string') return '';
@@ -5510,36 +5523,228 @@ class JSONDatabase {
   }
 
   hashIpAddress(ip) {
-    const secret = process.env.HMAC_SECRET || 'dna_internal_free_funnel_hmac_secret_2026';
+    const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET;
+    if (!secret && process.env.NODE_ENV === 'production') {
+      throw new Error('PRODUCTION_HMAC_SECRET_REQUIRED: FREE_PREVIEW_HMAC_SECRET must be configured in production.');
+    }
+    const key = secret || 'ephemeral_dev_hmac_secret_key_2026';
     const normalizedIp = (ip || '127.0.0.1').replace(/^::ffff:/, '').trim();
-    return crypto.createHmac('sha256', secret).update(normalizedIp).digest('hex').substring(0, 32);
+    return crypto.createHmac('sha256', key).update(normalizedIp).digest('hex').substring(0, 32);
   }
 
-  checkFreePreviewEligibility(businessName, ip, bypass = false) {
-    if (bypass) {
-      return { eligible: true, bypass: true, reason: 'DEVELOPER_OR_OWNER_BYPASS' };
+  issueEmailVerificationCode(email, businessName, ip) {
+    const normEmail = this.normalizeEmail(email);
+    if (!normEmail || !normEmail.includes('@')) {
+      const err = new Error('Please enter a valid work email address.');
+      err.code = 'INVALID_EMAIL';
+      throw err;
     }
-    const norm = this.normalizeBusinessName(businessName);
-    if (!norm) {
+
+    if (this.isSpecialDeveloperEmail(normEmail)) {
+      return {
+        success: true,
+        developerBypass: true,
+        verificationRequired: false,
+        email: normEmail
+      };
+    }
+
+    const ipHash = this.hashIpAddress(ip);
+    const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+
+    return this.mutate((db) => {
+      db.emailVerifications = db.emailVerifications || [];
+      const recentSends = db.emailVerifications.filter(v => 
+        (v.normalizedEmail === normEmail || v.ipHash === ipHash) && 
+        v.createdAt > fifteenMinAgo
+      );
+      if (recentSends.length >= 5) {
+        const err = new Error('Verification code rate limit exceeded. Please wait a few minutes.');
+        err.code = 'VERIFICATION_RATE_LIMIT';
+        throw err;
+      }
+
+      // 6-digit cryptographically random OTP
+      const code = crypto.randomInt(100000, 999999).toString();
+      const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET || 'ephemeral_dev_hmac_secret_key_2026';
+      const codeHash = crypto.createHmac('sha256', secret).update(`${normEmail}:${code}`).digest('hex');
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+      const entry = {
+        id: `ev-${uuidv4().substring(0, 8)}`,
+        normalizedEmail: normEmail,
+        businessName: businessName || '',
+        codeHash,
+        code, // kept for sandbox/testing
+        ipHash,
+        attemptCount: 0,
+        status: 'VERIFICATION_SENT',
+        expiresAt,
+        createdAt: new Date().toISOString()
+      };
+      db.emailVerifications.push(entry);
+
+      return {
+        success: true,
+        verificationSent: true,
+        email: normEmail,
+        code: process.env.NODE_ENV !== 'production' ? code : undefined
+      };
+    });
+  }
+
+  verifyEmailCode(email, code) {
+    const normEmail = this.normalizeEmail(email);
+    if (!normEmail || !code) {
+      const err = new Error('Email and verification code are required.');
+      err.code = 'INVALID_INPUT';
+      throw err;
+    }
+
+    if (this.isSpecialDeveloperEmail(normEmail)) {
+      return {
+        success: true,
+        verified: true,
+        developerBypass: true,
+        email: normEmail,
+        verificationToken: `dev_bypass_token_${Date.now()}`
+      };
+    }
+
+    return this.mutate((db) => {
+      db.emailVerifications = db.emailVerifications || [];
+      const entry = db.emailVerifications.slice().reverse().find(v => v.normalizedEmail === normEmail && v.status === 'VERIFICATION_SENT');
+      if (!entry) {
+        const err = new Error('No pending verification found for this email. Please request a new code.');
+        err.code = 'VERIFICATION_NOT_FOUND';
+        throw err;
+      }
+
+      if (new Date() > new Date(entry.expiresAt)) {
+        entry.status = 'EXPIRED';
+        const err = new Error('Verification code has expired. Please request a new code.');
+        err.code = 'VERIFICATION_EXPIRED';
+        throw err;
+      }
+
+      entry.attemptCount = (entry.attemptCount || 0) + 1;
+      if (entry.attemptCount > 5) {
+        entry.status = 'FAILED';
+        const err = new Error('Maximum verification attempts exceeded. Please request a new code.');
+        err.code = 'VERIFICATION_MAX_ATTEMPTS';
+        throw err;
+      }
+
+      const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET || 'ephemeral_dev_hmac_secret_key_2026';
+      const expectedHash = crypto.createHmac('sha256', secret).update(`${normEmail}:${code.toString().trim()}`).digest('hex');
+
+      if (entry.codeHash !== expectedHash && entry.code !== code.toString().trim()) {
+        const err = new Error('Invalid verification code. Please check and try again.');
+        err.code = 'INVALID_CODE';
+        throw err;
+      }
+
+      entry.status = 'VERIFIED';
+      entry.verifiedAt = new Date().toISOString();
+
+      // Issue signed verification token (valid 30 minutes)
+      const tokenPayload = `${normEmail}:${entry.verifiedAt}:${entry.id}`;
+      const tokenSignature = crypto.createHmac('sha256', secret).update(tokenPayload).digest('hex');
+      const verificationToken = Buffer.from(JSON.stringify({
+        email: normEmail,
+        verifiedAt: entry.verifiedAt,
+        id: entry.id,
+        sig: tokenSignature
+      })).toString('base64');
+
+      return {
+        success: true,
+        verified: true,
+        email: normEmail,
+        verificationToken
+      };
+    });
+  }
+
+  validateVerificationToken(email, token) {
+    const normEmail = this.normalizeEmail(email);
+    if (!normEmail || !token) return false;
+    if (this.isSpecialDeveloperEmail(normEmail) && token.startsWith('dev_bypass_token_')) return true;
+
+    try {
+      const parsed = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
+      if (parsed.email !== normEmail) return false;
+      const verifiedTime = new Date(parsed.verifiedAt).getTime();
+      if (Date.now() - verifiedTime > 30 * 60 * 1000) return false;
+
+      const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET || 'ephemeral_dev_hmac_secret_key_2026';
+      const tokenPayload = `${parsed.email}:${parsed.verifiedAt}:${parsed.id}`;
+      const expectedSig = crypto.createHmac('sha256', secret).update(tokenPayload).digest('hex');
+      return expectedSig === parsed.sig;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  checkFreePreviewEligibility({ businessName, email, ip, isVerified = false, bypass = false, bypassType = 'NONE' }) {
+    const normBiz = this.normalizeBusinessName(businessName);
+    const normEmail = this.normalizeEmail(email);
+    const isSpecialDev = this.isSpecialDeveloperEmail(normEmail);
+
+    if (isSpecialDev || bypass) {
+      return {
+        eligible: true,
+        bypass: true,
+        bypassType: isSpecialDev ? 'SPECIAL_DEVELOPER_EMAIL' : (bypassType || 'AUTHENTICATED_DEVELOPER'),
+        normalizedBusinessName: normBiz,
+        normalizedEmail: normEmail
+      };
+    }
+
+    if (!normBiz) {
       return { eligible: false, reason: 'INVALID_BUSINESS_NAME', message: 'Business name is required.' };
     }
+    if (!normEmail) {
+      return { eligible: false, reason: 'INVALID_EMAIL', message: 'Work email is required.' };
+    }
+    if (!isVerified) {
+      return { eligible: false, reason: 'EMAIL_NOT_VERIFIED', message: 'Please verify your work email address before generating your booth.' };
+    }
+
     const ipHash = this.hashIpAddress(ip);
     const usages = this.read().freePreviewUsages || [];
 
-    // Check by normalized business name (Primary)
-    const existingBiz = usages.find(u => u.normalizedBusinessName === norm && u.generationStatus === 'SUCCESS');
+    // 1. Business duplicate check
+    const existingBiz = usages.find(u => 
+      u.normalizedBusinessName === normBiz && 
+      (u.generationStatus === 'SUCCESS' || (u.generationStatus === 'PENDING' && (Date.now() - new Date(u.createdAt).getTime()) < 120000))
+    );
     if (existingBiz) {
       return {
         eligible: false,
         reason: 'BUSINESS_ALREADY_EXISTS',
-        message: 'Your free booth has already been created.',
+        message: 'A free booth already exists for this business.',
         existingProjectId: existingBiz.projectId
       };
     }
 
-    // IP Rate Limit: maximum 5 creations per hour per IP hash
+    // 2. Email duplicate check
+    const existingEmail = usages.find(u => 
+      u.normalizedEmail === normEmail && 
+      (u.generationStatus === 'SUCCESS' || (u.generationStatus === 'PENDING' && (Date.now() - new Date(u.createdAt).getTime()) < 120000))
+    );
+    if (existingEmail) {
+      return {
+        eligible: false,
+        reason: 'FREE_PREVIEW_EMAIL_ALREADY_USED',
+        message: 'We found your existing booth created with this email.',
+        existingProjectId: existingEmail.projectId
+      };
+    }
+
+    // 3. IP Rate Limit: maximum 5 creations per hour per IP hash (allows different businesses/emails from same IP up to 5)
     const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
-    const recentIpUsages = usages.filter(u => u.ipHash === ipHash && u.createdAt > oneHourAgo);
+    const recentIpUsages = usages.filter(u => u.ipHash === ipHash && u.createdAt > oneHourAgo && u.generationStatus === 'SUCCESS');
     if (recentIpUsages.length >= 5) {
       return {
         eligible: false,
@@ -5548,39 +5753,82 @@ class JSONDatabase {
       };
     }
 
-    return { eligible: true, normalizedBusinessName: norm, ipHash };
+    return {
+      eligible: true,
+      normalizedBusinessName: normBiz,
+      normalizedEmail: normEmail,
+      ipHash
+    };
   }
 
-  async createFreePreviewProject({ businessName, photoUrl, ip, deviceId = null, bypass = false }) {
-    const eligibility = this.checkFreePreviewEligibility(businessName, ip, bypass);
-    if (!eligibility.eligible && !bypass) {
+  async createFreePreviewProject({ businessName, email, photoUrl, ip, verificationToken = null, deviceId = null, bypass = false, bypassType = 'NONE' }) {
+    const normEmail = this.normalizeEmail(email);
+    const isSpecialDev = this.isSpecialDeveloperEmail(normEmail);
+    const isVerified = isSpecialDev || (verificationToken && this.validateVerificationToken(email, verificationToken));
+
+    const eligibility = this.checkFreePreviewEligibility({
+      businessName,
+      email,
+      ip,
+      isVerified,
+      bypass: bypass || isSpecialDev,
+      bypassType: isSpecialDev ? 'SPECIAL_DEVELOPER_EMAIL' : bypassType
+    });
+
+    if (!eligibility.eligible && !bypass && !isSpecialDev) {
       const err = new Error(eligibility.message || 'Free preview limit reached.');
       err.code = eligibility.reason;
       err.existingProjectId = eligibility.existingProjectId;
       throw err;
     }
 
-    const norm = this.normalizeBusinessName(businessName);
+    const normBiz = this.normalizeBusinessName(businessName);
     const ipHash = this.hashIpAddress(ip);
     const projectId = `prj-free-${uuidv4().substring(0, 8)}`;
     const organizationId = `org-free-${uuidv4().substring(0, 8)}`;
+    const isDevProject = isSpecialDev || bypass;
 
     return this.mutate((db) => {
       db.projects = db.projects || [];
       db.freePreviewUsages = db.freePreviewUsages || [];
       db.organizations = db.organizations || [];
 
+      // Concurrency lock: check again atomically inside mutation
+      if (!isDevProject) {
+        const raceBiz = db.freePreviewUsages.find(u => 
+          u.normalizedBusinessName === normBiz && 
+          (u.generationStatus === 'SUCCESS' || (u.generationStatus === 'PENDING' && (Date.now() - new Date(u.createdAt).getTime()) < 120000))
+        );
+        if (raceBiz) {
+          const err = new Error('A free booth already exists for this business.');
+          err.code = 'BUSINESS_ALREADY_EXISTS';
+          err.existingProjectId = raceBiz.projectId;
+          throw err;
+        }
+
+        const raceEmail = db.freePreviewUsages.find(u => 
+          u.normalizedEmail === normEmail && 
+          (u.generationStatus === 'SUCCESS' || (u.generationStatus === 'PENDING' && (Date.now() - new Date(u.createdAt).getTime()) < 120000))
+        );
+        if (raceEmail) {
+          const err = new Error('This email has already been used for a free booth.');
+          err.code = 'FREE_PREVIEW_EMAIL_ALREADY_USED';
+          err.existingProjectId = raceEmail.projectId;
+          throw err;
+        }
+      }
+
       // 1. Create Organization stub for free preview
       const org = {
         id: organizationId,
         type: 'exhibitor',
         name: businessName,
-        slug: norm.replace(/\s+/g, '-'),
+        slug: normBiz.replace(/\s+/g, '-'),
         status: 'active',
         subscription: {
-          plan: 'pro', // Target default capability model
+          plan: 'pro',
           status: 'free_preview',
-          dataEnvironment: 'REAL',
+          dataEnvironment: isDevProject ? 'TEST' : 'REAL',
           updatedAt: new Date().toISOString()
         },
         createdAt: new Date().toISOString(),
@@ -5672,9 +5920,14 @@ class JSONDatabase {
         organizationId,
         name: `${businessName} Virtual Booth`,
         businessName,
-        normalizedBusinessName: norm,
+        normalizedBusinessName: normBiz,
+        customerEmail: normEmail || null,
         experienceType: 'PHOTO_IMMERSIVE',
         commercialState: 'FREE_PREVIEW',
+        environment: isDevProject ? 'INTERNAL_DEV' : 'PRODUCTION',
+        isTest: isDevProject,
+        internalDeveloperBypass: isDevProject,
+        bypassType: isDevProject ? (isSpecialDev ? 'SPECIAL_DEVELOPER_EMAIL' : 'AUTHENTICATED_DEVELOPER') : 'NONE',
         sourceAsset: {
           originalUrl: photoUrl,
           previewUrl: photoUrl,
@@ -5698,20 +5951,24 @@ class JSONDatabase {
       };
       db.projects.push(project);
 
-      // 3. Record Free Usage
-      if (!bypass) {
-        db.freePreviewUsages.push({
-          usageId: `use-${uuidv4().substring(0, 8)}`,
-          normalizedBusinessName: norm,
-          ipHash,
-          deviceIdHash: deviceId ? crypto.createHash('sha256').update(deviceId).digest('hex').substring(0, 16) : null,
-          projectId,
-          generationStatus: 'SUCCESS',
-          generationCount: 1,
-          createdAt: new Date().toISOString(),
-          lastAttemptAt: new Date().toISOString()
-        });
-      }
+      // 3. Record Free Usage (Isolated for developer testing)
+      const usageRow = {
+        usageId: `use-${uuidv4().substring(0, 8)}`,
+        businessName,
+        normalizedBusinessName: normBiz,
+        email: normEmail,
+        normalizedEmail: normEmail,
+        emailVerifiedAt: isVerified ? new Date().toISOString() : null,
+        ipHash,
+        deviceIdHash: deviceId ? crypto.createHash('sha256').update(deviceId).digest('hex').substring(0, 16) : null,
+        projectId,
+        generationStatus: isDevProject ? 'INTERNAL_DEV' : 'SUCCESS',
+        bypassType: isDevProject ? (isSpecialDev ? 'SPECIAL_DEVELOPER_EMAIL' : 'AUTHENTICATED_DEVELOPER') : 'NONE',
+        environment: isDevProject ? 'INTERNAL_DEV' : 'PRODUCTION',
+        createdAt: new Date().toISOString(),
+        lastAttemptAt: new Date().toISOString()
+      };
+      db.freePreviewUsages.push(usageRow);
 
       return project;
     });

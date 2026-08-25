@@ -11,8 +11,13 @@ const db = require('./db');
 
 
 const app = express();
+app.set('trust proxy', 1); // Enable Railway reverse proxy trust
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
+
+function getClientIp(req) {
+  return req.ip || req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || '127.0.0.1';
+}
 
 const PORT = process.env.PORT || 3000;
 const SESSION_SECRET = process.env.SESSION_SECRET || 'commercial-beta-session-secret-2026';
@@ -1918,13 +1923,79 @@ app.post('/api/projects/:id/products/quick', async (req, res) => {
 });
 
 // ============================================================
-// --- C08 ONE-PHOTO FREE VIRTUAL BOOTH FUNNEL APIs ---
+// --- C08/C10-R2 ONE-PHOTO FREE VIRTUAL BOOTH FUNNEL APIs ---
 // ============================================================
 
-// 1. Free Preview Generation (1 Photo + Business Name)
+// 0a. Check Special Developer Email (Server-Side Only)
+app.post('/api/free-funnel/check-special-email', (req, res) => {
+  const email = (req.body.email || '').trim();
+  const isSpecial = db.isSpecialDeveloperEmail(email);
+  res.json({
+    eligible: true,
+    developerBypass: isSpecial,
+    verificationRequired: !isSpecial
+  });
+});
+
+// 0b. Send Email Verification Code
+app.post('/api/free-funnel/email/send-code', (req, res) => {
+  try {
+    const { email, businessName } = req.body;
+    const clientIp = getClientIp(req);
+    const result = db.issueEmailVerificationCode(email, businessName, clientIp);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.code || 'VERIFICATION_ERROR', message: err.message });
+  }
+});
+
+// 0c. Verify Email Code
+app.post('/api/free-funnel/email/verify-code', (req, res) => {
+  try {
+    const { email, code } = req.body;
+    const result = db.verifyEmailCode(email, code);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.code || 'VERIFY_FAILED', message: err.message });
+  }
+});
+
+// 0d. Internal Dev IP Diagnostics Endpoint (Protected)
+app.get('/api/internal/dev/free-preview/ip-diagnostics', (req, res) => {
+  try {
+    const clientIp = getClientIp(req);
+    const ipHash = db.hashIpAddress(clientIp);
+    const xff = req.headers['x-forwarded-for'] || '';
+    const chain = xff ? xff.split(',').map(s => s.trim()) : [];
+    const usages = db.read().freePreviewUsages || [];
+    const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+    const recentHourlyCount = usages.filter(u => u.ipHash === ipHash && u.createdAt > oneHourAgo && u.generationStatus === 'SUCCESS').length;
+
+    res.json({
+      resolvedIpHash: ipHash,
+      forwardedChainLength: chain.length,
+      proxyResolutionStatus: 'ACTIVE',
+      trustProxyStatus: app.get('trust proxy') ? 'ENABLED' : 'DISABLED',
+      rateLimitStatus: {
+        hourlyCount: recentHourlyCount,
+        hourlyLimit: 5,
+        remaining: Math.max(0, 5 - recentHourlyCount)
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 1. Free Preview Generation (1 Photo + Business Name + Verified Email)
 app.post('/api/free-funnel/preview', upload.single('photo'), async (req, res) => {
   try {
     const businessName = (req.body.businessName || '').trim();
+    const email = (req.body.email || req.body.workEmail || '').trim();
+    const confirmEmail = (req.body.confirmEmail || '').trim();
+    const verificationToken = req.body.verificationToken || null;
+
     if (!businessName) {
       return res.status(400).json({
         error: 'BUSINESS_NAME_REQUIRED',
@@ -1932,39 +2003,68 @@ app.post('/api/free-funnel/preview', upload.single('photo'), async (req, res) =>
       });
     }
 
-    // Photo quality and presence validation
-    if (!req.file) {
-      // Check if photoUrl was passed directly as string
-      if (!req.body.photoUrl) {
+    if (!email) {
+      return res.status(400).json({
+        error: 'EMAIL_REQUIRED',
+        message: 'Please enter your work email address.'
+      });
+    }
+
+    const isSpecialDev = db.isSpecialDeveloperEmail(email);
+
+    // Normal customer validation
+    if (!isSpecialDev) {
+      if (confirmEmail && db.normalizeEmail(email) !== db.normalizeEmail(confirmEmail)) {
         return res.status(400).json({
-          error: 'BAD_IMAGE_QUALITY',
-          message: 'THIS PHOTO IS TOO SMALL OR BLURRY. Please upload another photo.'
+          error: 'EMAILS_DO_NOT_MATCH',
+          message: 'The email addresses do not match.'
+        });
+      }
+      if (!verificationToken || !db.validateVerificationToken(email, verificationToken)) {
+        return res.status(400).json({
+          error: 'EMAIL_NOT_VERIFIED',
+          message: 'Please verify your work email address before creating your booth.'
         });
       }
     }
 
+    // Photo quality and presence validation
+    if (!req.file && !req.body.photoUrl) {
+      return res.status(400).json({
+        error: 'BAD_IMAGE_QUALITY',
+        message: 'THIS PHOTO IS TOO SMALL OR BLURRY. Please upload another photo.'
+      });
+    }
+
     // Determine developer bypass
-    let isBypass = false;
+    let isBypass = isSpecialDev;
+    let bypassType = isSpecialDev ? 'SPECIAL_DEVELOPER_EMAIL' : 'NONE';
+
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const session = activeSessions.get(authHeader.substring(7));
       if (session && (session.role === 'developer' || session.role === 'platform_owner' || session.role === 'owner' || session.internalDeveloperAccess)) {
         isBypass = true;
+        bypassType = 'AUTHENTICATED_DEVELOPER';
       }
     }
     if (req.headers['x-dev-lab-bypass'] === 'true') {
       isBypass = true;
+      bypassType = 'AUTHENTICATED_DEVELOPER';
     }
 
-    const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1';
+    const clientIp = getClientIp(req);
     const photoUrl = req.file ? `/uploads/${req.file.filename}` : req.body.photoUrl;
 
     const project = await db.createFreePreviewProject({
       businessName,
+      email,
       photoUrl,
       ip: clientIp,
+      verificationToken,
       deviceId: req.body.deviceId || null,
-      bypass: isBypass
+      bypass: isBypass,
+      bypassType
     });
 
     res.status(201).json({
@@ -1973,21 +2073,37 @@ app.post('/api/free-funnel/preview', upload.single('photo'), async (req, res) =>
       projectId: project.id,
       previewUrl: project.sourceAsset?.previewUrl || photoUrl,
       businessName: project.businessName,
+      customerEmail: project.customerEmail,
       experienceType: 'PHOTO_IMMERSIVE',
       coordinateSystem: 'NORMALIZED_2D',
+      environment: project.environment,
+      isTest: project.isTest,
       project
     });
   } catch (err) {
     if (err.code === 'BUSINESS_ALREADY_EXISTS') {
       return res.status(409).json({
         error: 'BUSINESS_ALREADY_EXISTS',
-        message: 'YOUR FREE BOOTH HAS ALREADY BEEN CREATED.',
+        message: 'A free booth already exists for this business.',
+        existingProjectId: err.existingProjectId
+      });
+    }
+    if (err.code === 'FREE_PREVIEW_EMAIL_ALREADY_USED') {
+      return res.status(409).json({
+        error: 'FREE_PREVIEW_EMAIL_ALREADY_USED',
+        message: 'We found your existing booth created with this email.',
         existingProjectId: err.existingProjectId
       });
     }
     if (err.code === 'IP_RATE_LIMIT_EXCEEDED') {
       return res.status(429).json({
         error: 'IP_RATE_LIMIT_EXCEEDED',
+        message: err.message
+      });
+    }
+    if (err.code === 'EMAIL_NOT_VERIFIED') {
+      return res.status(400).json({
+        error: 'EMAIL_NOT_VERIFIED',
         message: err.message
       });
     }
