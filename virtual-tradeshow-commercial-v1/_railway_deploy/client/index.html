@@ -1580,6 +1580,7 @@
         document.getElementById('form-initial-view').style.display = 'none';
         const panel = document.getElementById('inline-verify-panel');
         panel.style.display = 'block';
+        panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
         document.getElementById('verify-target-email').textContent = data.maskedEmail || email;
 
         clearOtpInputs();
