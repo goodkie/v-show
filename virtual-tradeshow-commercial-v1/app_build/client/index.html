@@ -1879,7 +1879,7 @@
           depthWrite: false
         });
         photoSphere = new THREE.Mesh(sphereGeo, photoMaterial);
-        photoSphere.rotation.y = -Math.PI * 0.5;
+        photoSphere.rotation.y = -0.45;
         photoSphere.position.set(0, 0, 0);
         photoSphere.renderOrder = -1;
         scene.add(photoSphere);
@@ -2556,7 +2556,7 @@
 
     function openProductDrawer(product) {
       document.getElementById('drawerProdTitle').textContent = product.name || 'Product Details';
-      document.getElementById('drawerProdImg').src = product.imageUrl || (activeProjectData?.sourceAsset?.previewUrl || '');
+      document.getElementById('drawerProdImg').src = product.imageUrl || '/assets/product-placeholder.jpg';
       document.getElementById('drawerProdDesc').textContent = product.description || 'Commercial exhibition product with high-precision engineering and sales presentation.';
       document.getElementById('drawerProdSpecs').textContent = product.specifications || 'Needs merchant input';
       document.getElementById('productDrawerModal').style.display = 'flex';
