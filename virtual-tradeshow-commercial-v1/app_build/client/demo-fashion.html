@@ -484,7 +484,6 @@ html, body {
     </div>
     <div class="top-actions">
       <a href="/builder.html" class="btn-ui primary" style="background: linear-gradient(135deg, #0284c7, #2563eb); border-color: #38bdf8; box-shadow: 0 4px 14px rgba(2,132,199,0.5); font-weight: 800;">BUILD A BOOTH LIKE THIS →</a>
-      <a href="/demo.html" class="btn-ui">3D SHOWROOM</a>
       <button class="btn-ui download" onclick="openDownloadModal()">DOWNLOAD LOOKBOOK</button>
       <button class="btn-ui primary" onclick="openRFQ()">REQUEST WHOLESALE</button>
     </div>
@@ -631,29 +630,9 @@ html, body {
       <button class="drawer-close" onclick="closeDrawer()">✕</button>
     </div>
     <div class="drawer-body">
-      <!-- Media Mode Switcher Tabs -->
-      <div class="drawer-media-tabs">
-        <button class="media-tab-btn active" id="tab-photo" onclick="setDrawerMediaMode('photo')">
-          🖼 4K STUDIO PHOTO
-        </button>
-        <button class="media-tab-btn" id="tab-3d" onclick="setDrawerMediaMode('3d')">
-          🔄 360° 3D VIEWER
-        </button>
-      </div>
-
-      <!-- High-Res Product Hero Photo & 360 3D Mini View -->
+      <!-- High-Res Product Hero Photo -->
       <div class="drawer-img-box" id="drw-img-box">
-        <img id="drw-img" src="/assets/demo/dna-showcase/products/apex_cobot_x16.jpg" alt="Product Visual">
-        
-        <!-- Embedded Mini 3D Turntable View -->
-        <div id="drawer-3d-view">
-          <canvas id="drawer-3d-canvas"></canvas>
-          <div class="mini-3d-controls">
-            <button class="mini-3d-pill" onclick="toggleDrawer3dAutoRotate()" id="btn-3d-autorot">🔄 Auto-Rotate: ON</button>
-            <button class="mini-3d-pill" onclick="toggleDrawer3dWireframe()" id="btn-3d-wire">⚡ Wireframe: OFF</button>
-            <button class="mini-3d-pill" onclick="resetDrawer3dCamera()">🎯 Reset View</button>
-          </div>
-        </div>
+        <img id="drw-img" src="/assets/demo/vantelle-showcase/products/scarlet_wrap_set.jpg" alt="Product Visual">
       </div>
 
       <div class="drawer-hero">
