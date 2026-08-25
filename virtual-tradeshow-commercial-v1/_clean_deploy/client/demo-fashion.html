@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>STUDIO BERRY | Photo Immersive Fashion Booth — Demo</title>
+<title>VANTÉLLE PARIS | Haute Couture &amp; Ready-to-Wear Showroom — Master Demo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- Three.js & Controls -->
@@ -16,9 +16,9 @@
   --bg-deep: #02050b;
   --bg-studio: #050b16;
   --panel-bg: rgba(9, 16, 29, 0.94);
-  --panel-border: rgba(232, 160, 180, 0.35);
-  --cyan: #e8a0b4;
-  --cyan-glow: rgba(232, 160, 180, 0.55);
+  --panel-border: rgba(225, 29, 72, 0.35);
+  --cyan: #e11d48;
+  --cyan-glow: rgba(225, 29, 72, 0.55);
   --text-main: #ffffff;
   --text-muted: #94a3b8;
   --font: 'Plus Jakarta Sans', -apple-system, sans-serif;
@@ -112,7 +112,7 @@ html, body {
 ══════════════════════════════════════════════ */
 #product-cards-tray {
   height: 125px; flex-shrink: 0;
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  display: grid; grid-template-columns: repeat(4, 1fr);
   gap: 10px; align-items: stretch;
 }
 
@@ -473,13 +473,13 @@ html, body {
 <div id="rotate-landscape-overlay">
   <div class="rotate-icon-anim">📱</div>
   <div class="rotate-title">Please Rotate to <span>Landscape Mode</span></div>
-  <div class="rotate-desc">Studio Berry 3D Digital Twin requires full-screen horizontal viewing for the optimal immersive trade show experience.</div>
+  <div class="rotate-desc">DN'a ROBOTIC 3D Digital Twin requires full-screen horizontal viewing for the optimal immersive trade show experience.</div>
 </div>
 <div id="app-layout">
   <!-- TOP NAV -->
   <header id="topbar">
     <div class="brand-group">
-      <a href="/" class="brand-logo" title="dn'a Home"><img src="/assets/brand/dna_logo_white.png" alt="STUDIO BERRY" style="height: 52px; width: auto; object-fit: contain; vertical-align: middle; display: block;"></a>
+      <a href="/" class="brand-logo" title="dn'a Home"><img src="/assets/brand/dna_logo_white.png" alt="dn'a DIGITAL NETWORKING ADVANTAGE" style="height: 52px; width: auto; object-fit: contain; vertical-align: middle; display: block;"></a>
       <div class="brand-badge"><div class="pulse-dot"></div> PHOTO IMMERSIVE BOOTH</div>
     </div>
     <div class="top-actions">
@@ -512,36 +512,48 @@ html, body {
       <div id="product-cards-tray">
         <div class="prod-quick-card active" id="pcard-0" onclick="focusProduct(0)">
           <div class="prod-card-thumb">
-            <img src="/assets/demo/berry-showcase/products/noir_leather.jpg" alt="Midnight Noir Tailored Suit">
+            <img src="/assets/demo/vantelle-showcase/products/scarlet_wrap_set.jpg" alt="Scarlet Cashmere Wrap Set">
           </div>
           <div class="prod-card-body">
-            <div class="prod-card-cat">HAUTE COUTURE</div>
-            <div class="prod-card-title">Midnight Noir Suit</div>
-            <div class="prod-card-spec">Super 150s Merino Wool</div>
+            <div class="prod-card-cat" style="color:#fb7185;">RUNWAY CAPSULE</div>
+            <div class="prod-card-title">Scarlet Wrap Set</div>
+            <div class="prod-card-spec">Cashmere &amp; Silk · SS25</div>
             <div class="prod-card-btn">Inspect Specs <span>→</span></div>
           </div>
         </div>
 
         <div class="prod-quick-card" id="pcard-1" onclick="focusProduct(1)">
           <div class="prod-card-thumb">
-            <img src="/assets/demo/berry-showcase/products/ivory_silk.jpg" alt="Vantelle Paris Leather Satchel">
+            <img src="/assets/demo/vantelle-showcase/products/ivory_silk_suit.jpg" alt="Ivory Structured Silk Blouse Set">
           </div>
           <div class="prod-card-body">
-            <div class="prod-card-cat">LEATHER GOODS</div>
-            <div class="prod-card-title">Vantelle Paris Satchel</div>
-            <div class="prod-card-spec">Full-Grain Box Calfskin</div>
+            <div class="prod-card-cat" style="color:#fb7185;">TAILORED SUITING</div>
+            <div class="prod-card-title">Ivory Silk Suit</div>
+            <div class="prod-card-spec">26mm Silk Twill &amp; Wool</div>
             <div class="prod-card-btn">Inspect Specs <span>→</span></div>
           </div>
         </div>
 
         <div class="prod-quick-card" id="pcard-2" onclick="focusProduct(2)">
           <div class="prod-card-thumb">
-            <img src="/assets/demo/berry-showcase/products/crimson_blazer.jpg" alt="Scarlet Paris Power Blazer">
+            <img src="/assets/demo/vantelle-showcase/products/midnight_noir_leather.jpg" alt="Midnight Noir Leather Ensemble">
           </div>
           <div class="prod-card-body">
-            <div class="prod-card-cat">SIGNATURE OUTERWEAR</div>
-            <div class="prod-card-title">Scarlet Power Blazer</div>
-            <div class="prod-card-spec">Double-Faced Italian Wool</div>
+            <div class="prod-card-cat" style="color:#fb7185;">HAUTE LEATHER</div>
+            <div class="prod-card-title">Midnight Noir Suit</div>
+            <div class="prod-card-spec">Italian Lambskin Nappa</div>
+            <div class="prod-card-btn">Inspect Specs <span>→</span></div>
+          </div>
+        </div>
+
+        <div class="prod-quick-card" id="pcard-3" onclick="focusProduct(3)">
+          <div class="prod-card-thumb">
+            <img src="/assets/demo/vantelle-showcase/products/vantelle_satchel.jpg" alt="Vantelle Signature Paris Satchel">
+          </div>
+          <div class="prod-card-body">
+            <div class="prod-card-cat" style="color:#fb7185;">LEATHER GOODS</div>
+            <div class="prod-card-title">Paris Satchel Bag</div>
+            <div class="prod-card-spec">Box Calfskin · 24k Gold</div>
             <div class="prod-card-btn">Inspect Specs <span>→</span></div>
           </div>
         </div>
@@ -561,22 +573,28 @@ html, body {
 
       <!-- 2. Live Target Specs Box -->
       <div class="spec-panel-box">
-        <div class="panel-head" style="margin-bottom:0;">FEATURED COLLECTION ITEM</div>
+        <div class="panel-head" style="margin-bottom:0;">SS25 RUNWAY FEATURED ITEM</div>
         <div class="spec-title">
-          <span id="side-spec-title">Midnight Noir Tailored Suit</span>
+          <span id="side-spec-title">Scarlet Cashmere Wrap Set</span>
           <button class="btn-ui" style="padding:2px 6px;font-size:9px;" onclick="openCurrentProductDrawer()">Details →</button>
         </div>
-        <div class="spec-desc" id="side-spec-desc">Precision-tailored single-breasted wool blazer with satin peak lapels and structured Italian shoulders.</div>
-        <div class="spec-list" id="side-spec-list">
-          <div class="spec-item"><div class="spec-k">FABRIC</div><div class="spec-v">100% Merino Wool</div></div>
-          <div class="spec-item"><div class="spec-k">LINING</div><div class="spec-v">Mulberry Silk</div></div>
-          <div class="spec-item"><div class="spec-k">SILHOUETTE</div><div class="spec-v">Structured Tailored</div></div>
-          <div class="spec-item"><div class="spec-k">MOQ</div><div class="spec-v">10 Units Wholesale</div></div>
+        <div class="spec-desc" id="side-spec-desc">Vibrant scarlet red hooded cashmere cardigan paired with high-waisted pleated ivory culottes.</div>
+        
+    <div class="spec-list" id="side-spec-list">
+      <div class="spec-item"><div class="spec-k">MATERIAL</div><div class="spec-v">Cashmere &amp; Silk</div></div>
+      <div class="spec-item"><div class="spec-k">SEASON</div><div class="spec-v">SS25 Paris Runway</div></div>
+      <div class="spec-item"><div class="spec-k">ORIGIN</div><div class="spec-v">Atelier Paris</div></div>
+      <div class="spec-item"><div class="spec-k">WHOLESALE</div><div class="spec-v">8 Sets MOQ</div></div>
+    </div>
+  <div class="spec-v">16.0 kg</div></div>
+          <div class="spec-item"><div class="spec-k">REPEATABILITY</div><div class="spec-v">±0.025 mm</div></div>
+          <div class="spec-item"><div class="spec-k">REACH</div><div class="spec-v">1300 mm</div></div>
+          <div class="spec-item"><div class="spec-k">SAFETY</div><div class="spec-v">ISO TS 15066</div></div>
         </div>
       </div>
 
       <button class="btn-ui primary" style="margin-top:auto;justify-content:center;padding:11px;font-size:12px;" onclick="openRFQ()">
-        📝 Request Wholesale Pricing
+        📝 Request Wholesale Quote
       </button>
     </aside>
   </main>
@@ -586,7 +604,7 @@ html, body {
     <div class="foot-info">
       <span>Engine: <strong>Three.js WebGL Photo Immersive</strong></span>
       <span>Filtering: <strong>16x Anisotropic + ACES Filmic HDR</strong></span>
-      <span>Vantage: <strong id="foot-loc">01. Main Showroom Floor</strong></span>
+      <span>Vantage: <strong id="foot-loc">01. Vantelle Paris Central Pavilion</strong></span>
     </div>
     <div class="foot-actions">
       <button class="btn-ui" id="btn-autotour" onclick="toggleAutoTour()">
@@ -625,7 +643,7 @@ html, body {
 
       <!-- High-Res Product Hero Photo & 360 3D Mini View -->
       <div class="drawer-img-box" id="drw-img-box">
-        <img id="drw-img" src="/assets/demo/berry-showcase/products/crimson_blazer.jpg" alt="Product Visual">
+        <img id="drw-img" src="/assets/demo/dna-showcase/products/apex_cobot_x16.jpg" alt="Product Visual">
         
         <!-- Embedded Mini 3D Turntable View -->
         <div id="drawer-3d-view">
@@ -655,7 +673,7 @@ html, body {
 
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px;">
         <button class="btn-ui primary" style="justify-content:center;padding:10px;font-size:12px;" onclick="openRFQ()">
-          📝 Request Wholesale Quote
+          📝 Request 1:1 Custom RFQ
         </button>
         <button class="btn-ui download" style="justify-content:center;padding:8px;" onclick="openDownloadModal()">
           📥 Download 64K Master Original Assets
@@ -672,38 +690,38 @@ html, body {
 <div class="app-modal" id="download-modal" onclick="if(event.target===this)closeDownloadModal()">
   <div class="modal-box">
     <button class="modal-close" onclick="closeDownloadModal()">✕</button>
-    <div style="font-size:10px;font-weight:800;color:var(--cyan);letter-spacing:1px;text-transform:uppercase;">HD MASTER ORIGINAL ASSETS</div>
-    <h2 style="font-size:17px;font-weight:800;color:#fff;margin:6px 0 6px;">📸 Master HD Photo Download</h2>
+    <div style="font-size:10px;font-weight:800;color:var(--cyan);letter-spacing:1px;text-transform:uppercase;">64K MASTER ULTRA-HD ORIGINAL ASSETS</div>
+    <h2 style="font-size:17px;font-weight:800;color:#fff;margin:6px 0 6px;">📸 64K Master Ultra-HD Download</h2>
     <p style="font-size:11px;color:var(--text-muted);line-height:1.5;margin-bottom:14px;">
-      Direct download links for Studio Berry showroom panorama master photography assets.
+      Direct download links for 64K (65,536 × 32,768) uncompressed equirectangular panorama master photography assets.
     </p>
 
     <div class="dl-card">
       <div class="dl-info">
-        <div class="dl-title">01. Main Showroom Floor (Center Stage)</div>
-        <div class="dl-meta">HD Equirectangular JPG · Fashion Showroom Master</div>
+        <div class="dl-title">01. Main Booth Central Panorama (Middle Master)</div>
+        <div class="dl-meta">Ultra-HD Equirectangular JPG (64K Master) · 3.7 MB</div>
       </div>
-      <a href="/assets/demo/berry-showcase/pano360/node0_360_panorama_8k.jpg" download="Studio_Berry_Main_Showroom.jpg" class="dl-btn">⬇ Download</a>
+      <a href="/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg" download="DN_a_Booth_Main_64K.jpg" class="dl-btn">⬇ Download</a>
     </div>
 
     <div class="dl-card">
       <div class="dl-info">
-        <div class="dl-title">01. Main Showroom Floor (Center Stage)</div>
-        <div class="dl-meta">HD Equirectangular JPG · Fashion Showroom Master</div>
+        <div class="dl-title">02. Cobot Workstation Area (Left Master)</div>
+        <div class="dl-meta">Ultra-HD Equirectangular JPG (64K Master) · 3.5 MB</div>
       </div>
-      <a href="/assets/demo/berry-showcase/pano360/node0_360_panorama_8k.jpg" download="Studio_Berry_Main_Showroom.jpg" class="dl-btn">⬇ Download</a>
+      <a href="/assets/demo/dna-showcase/pano360/node1_360_panorama_8k.jpg" download="DN_a_Cobot_Station_64K.jpg" class="dl-btn">⬇ Download</a>
     </div>
 
     <div class="dl-card">
       <div class="dl-info">
         <div class="dl-title">03. AMR & Media Cell Area (Right Master)</div>
-        <div class="dl-meta">HD Equirectangular JPG · Fashion Showroom Master</div>
+        <div class="dl-meta">Ultra-HD Equirectangular JPG (64K Master) · 4.0 MB</div>
       </div>
-      <a href="/assets/demo/berry-showcase/pano360/node0_360_panorama_8k.jpg" download="Studio_Berry_Main_Showroom.jpg" class="dl-btn">⬇ Download</a>
+      <a href="/assets/demo/dna-showcase/pano360/node2_360_panorama_8k.jpg" download="DN_a_AMR_Cell_64K.jpg" class="dl-btn">⬇ Download</a>
     </div>
 
     <div style="display:flex;gap:10px;margin-top:14px;">
-      <button class="btn-ui primary" style="flex:1;justify-content:center;padding:10px;" onclick="downloadAllPhotos()">📦 Download Showroom View</button>
+      <button class="btn-ui primary" style="flex:1;justify-content:center;padding:10px;" onclick="downloadAllPhotos()">📦 Download All 3 Master Views</button>
       <button class="btn-ui" style="padding:10px;" onclick="closeDownloadModal()">Close</button>
     </div>
   </div>
@@ -726,88 +744,112 @@ html, body {
 const SPATIAL_NODES = [
   {
     id: 0,
-    name: "01. Main Showroom Floor (Center Stage)",
-    preview: "/assets/demo/berry-showcase/pano360/node0_preview.jpg",
-    image8k: "/assets/demo/berry-showcase/pano360/node0_360_panorama_8k.jpg",
-    image16k: "/assets/demo/berry-showcase/pano360/node0_360_panorama_8k.jpg",
+    name: "01. Vantelle Paris Central Pavilion",
+    preview: "/assets/demo/vantelle-showcase/pano360/node0_preview.jpg",
+    image8k: "/assets/demo/vantelle-showcase/pano360/node0_360_panorama_8k.jpg",
+    image16k: "/assets/demo/vantelle-showcase/pano360/node0_360_panorama_8k.jpg",
     puckPos: new THREE.Vector3(0, -160, -320),
     radarPos: { x: 153, y: 72 }
   }
 ];
 
-// 2. FASHION COLLECTION PRODUCTS — STUDIO BERRY
+// 2. FOUR DISTINCT INDUSTRIAL ROBOT PRODUCTS
 const PRODUCTS_DATA = [
   {
-    id: 'PROD-01-SUIT',
-    name: 'Midnight Noir Tailored Suit',
-    model: 'SB-STS-NR-24W',
-    category: 'Haute Couture & Tailoring',
-    image: '/assets/demo/berry-showcase/products/noir_leather.jpg',
-    worldPos: new THREE.Vector3(-220, -30, -320),
+    id: 'PROD-01-SCARLET-WRAP',
+    name: 'Scarlet Cashmere Wrap & Culottes',
+    model: 'VP-SS25-SW01',
+    category: 'Runway Capsule',
+    image: '/assets/demo/vantelle-showcase/products/scarlet_wrap_set.jpg',
+    worldPos: new THREE.Vector3(-240, -40, -320),
     nodeIdx: 0,
-    desc: 'Precision-tailored single-breasted wool blazer with satin peak lapels and structured Italian shoulders. Crafted for contemporary high-fashion elegance.',
+    desc: 'Vibrant scarlet red hooded cashmere cardigan paired with high-waisted pleated ivory culottes. Tailored with architectural drape for the SS25 Paris runway.',
     specs: [
-      ['Fabric Composition', '100% Super 150s Australian Merino Wool'],
-      ['Lining Material', 'Cupro Bemberg Jacquard Signature Weave'],
-      ['Lapel & Closure', 'Single Horn Button · Satin Peak Lapel'],
-      ['Silhouette & Fit', 'Architectural Structured Tailored Cut'],
+      ['Knit Composition', '70% Mongolian Cashmere · 30% Mulberry Silk'],
+      ['Trousers Fabric', '100% Crisp Italian Wool Gabardine'],
+      ['Closure & Details', 'Concealed Magnetic Horn Fastener'],
+      ['Silhouette', 'Relaxed Hooded Top + Wide-Leg Tailored Culotte'],
       ['Care Instructions', 'Specialist Luxury Dry Clean Only'],
-      ['Wholesale MOQ', '10 Units / Assorted Sizing Run']
+      ['Wholesale MOQ', '8 Sets / Sizing Matrix (XS–XL)']
     ],
     highlights: [
-      'Full floating canvas chest piece ensures lifetime drape and sculptural posture',
-      'Hand-finished pick stitching across lapels, vents, and interior ticket pockets',
-      'Available in Midnight Noir, Graphite, and Deep Navy with express 10-day wholesale delivery'
+      'Hand-loomed 12-gauge Mongolian cashmere offers featherlight warmth with liquid drape',
+      'High-waisted culottes feature signature internal silk waistband support',
+      'Full SS25 Lookbook editorial and runway video assets provided with wholesale orders'
     ],
     robotType: 'cobot'
   },
   {
-    id: 'PROD-02-HANDBAG',
-    name: 'Vantelle Paris Leather Satchel',
-    model: 'SB-BAG-VT-24F',
-    category: 'Luxury Leather Goods',
-    image: '/assets/demo/berry-showcase/products/ivory_silk.jpg',
-    worldPos: new THREE.Vector3(-45, -70, -350),
+    id: 'PROD-02-IVORY-SILK',
+    name: 'Ivory Structured Silk Blouse Set',
+    model: 'VP-SS25-IV02',
+    category: 'Tailored Suiting',
+    image: '/assets/demo/vantelle-showcase/products/ivory_silk_suit.jpg',
+    worldPos: new THREE.Vector3(-130, -30, -340),
     nodeIdx: 0,
-    desc: 'Handcrafted calfskin top-handle handbag featuring palladium-finish lock clasp, dual internal gusset compartments, and detachable shoulder strap.',
+    desc: 'Pure ivory silk twill structured blouse featuring contrast dark buttons and tailored wide-leg midnight trousers. The epitome of modern executive elegance.',
     specs: [
-      ['Leather Grade', 'Full-Grain Box Calfskin · 1.2mm Thickness'],
-      ['Hardware & Clasp', 'Palladium-Plated Solid Brass Lock Clasp'],
-      ['Dimensions', '28cm (W) x 20cm (H) x 11cm (D)'],
-      ['Interior Lining', 'Supple Lambskin Nappa in Ruby Red'],
-      ['Origin & Workshop', 'Master Atelier Florence & Paris'],
-      ['Wholesale MOQ', '5 Units / Style Minimum Order']
+      ['Blouse Material', '100% Heavy Silk Twill (26mm)'],
+      ['Pants Fabric', 'Super 160s Virgin Wool Crepe'],
+      ['Buttons & Hardware', 'Custom Carved Buffalo Horn with Gold Inlay'],
+      ['Fit & Silhouette', 'Structured Shoulder · High-Waist Wide Leg'],
+      ['Certification', 'GOTS & OEKO-TEX Standard 100 Certified'],
+      ['Wholesale MOQ', '10 Units / Style / Colorway']
     ],
     highlights: [
-      'Hand-waxed edge painting and saddlery saddle-stitch detailing for maximum durability',
-      'Internal RFID-shielded zip pocket and custom numbered artisan authenticity plaque',
-      'Includes protective velvet dust bag and custom branded retail gift packaging'
+      'Double-faced silk front placket prevents transparency while maintaining breathability',
+      'Tailored with 4cm interior hem allowances for seamless boutique bespoke alterations',
+      'Available in Ivory/Noir, Champagne/Espresso, and Monochromatic Chalk'
     ],
     robotType: 'amr'
   },
   {
-    id: 'PROD-03-CRIMSON',
-    name: 'Scarlet Paris Power Blazer',
-    model: 'SB-BLZ-RD-24W',
-    category: 'Signature Outerwear',
-    image: '/assets/demo/berry-showcase/products/crimson_blazer.jpg',
-    worldPos: new THREE.Vector3(85, -25, -340),
+    id: 'PROD-03-MIDNIGHT-LEATHER',
+    name: 'Midnight Noir Leather Ensemble',
+    model: 'VP-SS25-MN03',
+    category: 'Haute Leather',
+    image: '/assets/demo/vantelle-showcase/products/midnight_noir_leather.jpg',
+    worldPos: new THREE.Vector3(-20, -90, -340),
     nodeIdx: 0,
-    desc: 'Iconic crimson-red fitted blazer in double-faced Italian wool crêpe. Features notched collar, waist-cinching architectural silhouette, and matching cuff buttons.',
+    desc: 'Supple Italian lambskin leather single-breasted blazer and matching cigarette trousers in midnight noir. Hand-burnished by Florentine artisans.',
     specs: [
-      ['Fabric Quality', 'Italian Wool Crêpe (94% Wool, 6% Elastane)'],
-      ['Lining Material', '100% Mulberry Silk Stretch Satin'],
-      ['Cuff & Buttons', 'Enamelled Gold-Trimmed Custom Shank Buttons'],
-      ['Colorway', 'Scarlet Crimson / Bordeaux / Pure Chalk'],
-      ['Craftsmanship', 'Hand-Stitched Lapel & Precision Darts'],
-      ['Wholesale MOQ', '12 Units / Style Sizing Matrix']
+      ['Leather Grade', 'Full-Grain Italian Lambskin Nappa (0.7mm)'],
+      ['Lining Material', '100% Cupro Bemberg Jacquard Signature Monogram'],
+      ['Lapel & Style', 'Slim Notch Lapel · Single Button Stance'],
+      ['Hardware', 'Hand-Polished Gunmetal Finish'],
+      ['Treatment', 'Nanotech Water & Stain Resistant Shield'],
+      ['Wholesale MOQ', '6 Sets / Handcrafted Batch']
     ],
     highlights: [
-      'Contoured waistline tailoring accentuates silhouette while retaining all-day ease of movement',
-      'Wrinkle-resistant double-faced weave ideal for high-profile runway and VIP client showcases',
-      'Compliant with Global Organic Textile Standard (GOTS) and OEKO-TEX Standard 100'
+      'Unsurpassed softness with structured interior chest canvas for perpetual silhouette retention',
+      'Artisan glove-tanned leather patinas gracefully with age and wear',
+      'Packaged in breathable cotton garment bag with custom wooden cedar hanger'
     ],
     robotType: 'delta'
+  },
+  {
+    id: 'PROD-04-VANTELLE-SATCHEL',
+    name: 'Vantelle Signature Paris Satchel',
+    model: 'VP-ACC-BG04',
+    category: 'Leather Goods & Bags',
+    image: '/assets/demo/vantelle-showcase/products/vantelle_satchel.jpg',
+    worldPos: new THREE.Vector3(110, -40, -340),
+    nodeIdx: 0,
+    desc: 'Iconic top-handle structured satchel in box calf leather with signature gold-finish lock clasp and detachable crossbody strap. Includes retail presentation box.',
+    specs: [
+      ['Leather Exterior', 'Full-Grain French Box Calfskin'],
+      ['Interior Lining', 'Burgundy French Chevre Goat Leather'],
+      ['Hardware & Lock', '24k Gold-Electroplated Solid Brass Clasp'],
+      ['Dimensions', '26.5cm (W) x 19.0cm (H) x 10.5cm (D)'],
+      ['Origin & Atelier', 'Handcrafted in 8e Arrondissement, Paris'],
+      ['Wholesale MOQ', '5 Pieces / Minimum Order']
+    ],
+    highlights: [
+      'Traditional saddlery hand-stitched handle and beeswax-burnished edges',
+      'Dual accordion compartments with center zipper partition and discrete mirror pocket',
+      'Supplied with magnetic-closure luxury gift box, velvet pouch, and certificate of authenticity'
+    ],
+    robotType: 'scara'
   }
 ];
 
@@ -877,7 +919,7 @@ function initThree() {
     depthWrite: false
   });
   photoSphere = new THREE.Mesh(sphereGeo, photoMaterial);
-  photoSphere.rotation.y = 0;
+  photoSphere.rotation.y = -0.92;
   photoSphere.position.set(0, 0, 0);
   photoSphere.renderOrder = -1;
   scene.add(photoSphere);
@@ -1508,5 +1550,3 @@ document.addEventListener('DOMContentLoaded', initThree);
 </script>
 </body>
 </html>
-
-
