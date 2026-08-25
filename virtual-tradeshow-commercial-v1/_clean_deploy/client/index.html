@@ -131,23 +131,108 @@
       text-align: center; margin-top: 14px; font-size: 12px; color: #64748b;
     }
 
-    /* ── Progress Modal ── */
+    /* ── High-Tech Dynamic Progress Modal & Animated % Counter ── */
     .progress-overlay {
-      position: fixed; inset: 0; background: rgba(3, 7, 18, 0.92);
-      backdrop-filter: blur(12px); z-index: 1000;
+      position: fixed; inset: 0; background: radial-gradient(circle at center, rgba(7, 14, 26, 0.96) 0%, rgba(2, 6, 12, 0.98) 100%);
+      backdrop-filter: blur(16px); z-index: 1000;
       display: none; align-items: center; justify-content: center;
+      animation: fadeIn 0.3s ease-out;
     }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
     .progress-card {
-      background: #0b1526; border: 1px solid rgba(56, 189, 248, 0.35);
-      border-radius: 20px; padding: 36px; max-width: 480px; width: 90%; text-align: center;
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(7, 11, 20, 0.98));
+      border: 1.5px solid rgba(56, 189, 248, 0.5);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(2, 132, 199, 0.35);
+      border-radius: 24px; padding: 40px 36px; max-width: 520px; width: 92%; text-align: center;
+      position: relative; overflow: hidden;
     }
-    .progress-stage { font-size: 13px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
-    .progress-title { font-size: 22px; font-weight: 800; margin-bottom: 20px; color: #fff; }
+    .progress-card::before {
+      content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 60%);
+      animation: rotateBg 8s linear infinite; pointer-events: none;
+    }
+    @keyframes rotateBg { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    /* Holographic Scanner Ring */
+    .progress-scanner-wrap {
+      width: 76px; height: 76px; margin: 0 auto 20px; position: relative;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .scanner-outer-ring {
+      position: absolute; inset: 0; border-radius: 50%;
+      border: 2px dashed rgba(56, 189, 248, 0.4);
+      animation: spinClockwise 6s linear infinite;
+    }
+    .scanner-inner-ring {
+      position: absolute; inset: 6px; border-radius: 50%;
+      border: 2px solid transparent; border-top-color: #38bdf8; border-bottom-color: #00f2fe;
+      animation: spinCounter 2s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.5);
+    }
+    .scanner-core-icon {
+      font-size: 26px; color: #38bdf8; z-index: 2;
+      animation: corePulse 1.8s ease-in-out infinite;
+    }
+    @keyframes spinClockwise { to { transform: rotate(360deg); } }
+    @keyframes spinCounter { to { transform: rotate(-360deg); } }
+    @keyframes corePulse {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px #38bdf8); }
+      50% { transform: scale(1.15); filter: drop-shadow(0 0 14px #00f2fe); }
+    }
+
+    /* Giant % Counter Display */
+    .progress-pct-huge {
+      font-family: 'JetBrains Mono', monospace; font-size: 46px; font-weight: 900;
+      color: #fff; line-height: 1; margin-bottom: 6px;
+      background: linear-gradient(135deg, #ffffff 30%, #38bdf8 70%, #00f2fe 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      letter-spacing: -1px; text-shadow: 0 0 30px rgba(56, 189, 248, 0.6);
+      display: flex; align-items: center; justify-content: center; gap: 2px;
+    }
+    .progress-pct-sign {
+      font-size: 24px; font-weight: 700; color: #38bdf8; -webkit-text-fill-color: #38bdf8;
+    }
+
+    .progress-stage {
+      font-size: 11px; font-weight: 800; color: #38bdf8;
+      text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 4px 12px; border-radius: 20px;
+    }
+    .progress-title {
+      font-size: 19px; font-weight: 800; margin-bottom: 18px; color: #f8fafc;
+      letter-spacing: -0.3px; min-height: 26px;
+    }
+
+    /* Dynamic High-Tech Progress Bar */
     .progress-bar-wrap {
-      background: rgba(255,255,255,0.08); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 16px;
+      background: rgba(255, 255, 255, 0.08); height: 10px; border-radius: 6px;
+      overflow: hidden; margin-bottom: 16px; position: relative;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
     }
     .progress-bar-fill {
-      background: linear-gradient(90deg, #0284c7, #38bdf8); height: 100%; width: 25%; transition: width 0.4s ease;
+      background: linear-gradient(90deg, #0284c7 0%, #38bdf8 30%, #00f2fe 60%, #38bdf8 85%, #0284c7 100%);
+      background-size: 200% 100%;
+      height: 100%; width: 0%; transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.9), 0 0 30px rgba(0, 242, 254, 0.6);
+      animation: shimmerBar 1.6s linear infinite;
+      position: relative;
+    }
+    @keyframes shimmerBar {
+      0% { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
+    }
+    .progress-bar-fill::after {
+      content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 6px;
+      background: #ffffff; box-shadow: 0 0 10px #ffffff;
+      border-radius: 3px;
+    }
+
+    .progress-detail {
+      font-size: 12.5px; color: #94a3b8; line-height: 1.5; min-height: 20px;
     }
 
     /* ── Interactive Free Booth Studio (Photo Immersive State) ── */
@@ -421,15 +506,30 @@
     </div>
   </div>
 
-  <!-- Progress Modal -->
+  <!-- Dynamic High-Tech Progress Modal with Animated % Counter -->
   <div class="progress-overlay" id="progressOverlay">
     <div class="progress-card">
-      <div class="progress-stage" id="progressStageTxt">UPLOADING PHOTO</div>
-      <div class="progress-title" id="progressTitleTxt">Preparing Your Virtual Booth...</div>
+      <div class="progress-scanner-wrap">
+        <div class="scanner-outer-ring"></div>
+        <div class="scanner-inner-ring"></div>
+        <i class="fa-solid fa-wand-magic-sparkles scanner-core-icon"></i>
+      </div>
+
+      <div class="progress-pct-huge">
+        <span id="progressPctNumber">0</span><span class="progress-pct-sign">%</span>
+      </div>
+
+      <div class="progress-stage" id="progressStageTxt">
+        <i class="fa-solid fa-bolt" style="color: #00f2fe;"></i> INITIALIZING PIPELINE
+      </div>
+
+      <div class="progress-title" id="progressTitleTxt">Creating Photo Immersive Booth...</div>
+
       <div class="progress-bar-wrap">
         <div class="progress-bar-fill" id="progressBarFill"></div>
       </div>
-      <div style="font-size: 12px; color: var(--text-muted);" id="progressDetailTxt">Validating image dimensions &amp; generating interactive preview...</div>
+
+      <div class="progress-detail" id="progressDetailTxt">Validating booth image geometry &amp; initializing 3 blank product pins...</div>
     </div>
   </div>
 
@@ -888,8 +988,28 @@
       formData.append('businessName', bizName);
       formData.append('photo', selectedFile);
 
+      // Start dynamic realistic progress animation
+      let currentPercent = 5;
+      updateProgressDisplay(currentPercent, 'UPLOADING PHOTO', 'Processing Booth Photography', 'Transferring high-resolution photo to image canvas engine...');
+
+      const progressInterval = setInterval(() => {
+        if (currentPercent < 85) {
+          currentPercent += Math.floor(Math.random() * 8) + 3;
+          if (currentPercent > 85) currentPercent = 85;
+
+          if (currentPercent < 25) {
+            updateProgressDisplay(currentPercent, 'ANALYZING GEOMETRY', 'Analyzing Spatial Dimensions', 'Validating photo resolution, aspect ratio, and lighting balance...');
+          } else if (currentPercent < 55) {
+            updateProgressDisplay(currentPercent, 'MAPPING 2D UV COORDINATES', 'Configuring Photo Immersive Stage', 'Setting up ultra-responsive pan/zoom viewport and gesture controls...');
+          } else if (currentPercent < 75) {
+            updateProgressDisplay(currentPercent, 'INITIALIZING BLANK PINS', 'Placing 3 Commercial Pinpoints', 'Configuring Blank Product Pins (+1, +2, +3) and catalog slots...');
+          } else {
+            updateProgressDisplay(currentPercent, 'PREPARING STUDIO', 'Finalizing Commercial Studio', 'Synthesizing AI product detail schemas and buyer action buttons...');
+          }
+        }
+      }, 180);
+
       try {
-        updateProgress(25, 'OPTIMIZING BOOTH PHOTO', 'Validating photo resolution and setting up high-DPI canvas...');
         const token = localStorage.getItem('token');
         const headers = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -901,6 +1021,8 @@
         });
 
         const data = await res.json();
+        clearInterval(progressInterval);
+
         if (!res.ok) {
           hideProgress();
           if (res.status === 409) {
@@ -913,19 +1035,23 @@
           return alert(data.message || 'Generation failed.');
         }
 
-        updateProgress(70, 'GENERATING IMMERSIVE BOOTH', 'Configuring smooth pan/zoom and 3 blank product slots...');
+        // Final rapid transition to 100%
+        updateProgressDisplay(95, 'FINALIZING BOOTH', 'Connecting Buyer Tools', 'Activating 1-click RFQ, Sample Request, and Meeting scheduler...');
+        
         setTimeout(() => {
-          updateProgress(100, 'YOUR FREE PHOTO IMMERSIVE BOOTH IS READY', 'All 3 product slots initialized!');
+          updateProgressDisplay(100, 'YOUR FREE BOOTH IS READY', 'Photo Immersive Studio Ready!', '3 Blank Product Pins and Catalog Cards Initialized!');
+          
           setTimeout(() => {
             hideProgress();
             activeProjectId = data.projectId;
             activeProjectData = data.project;
             logAnalyticsEvent('free_booth_created', { projectId: activeProjectId });
             renderStudioBooth(data.project);
-          }, 350);
-        }, 450);
+          }, 450);
+        }, 300);
 
       } catch (err) {
+        clearInterval(progressInterval);
         hideProgress();
         alert('Network error while generating booth: ' + err.message);
       }
@@ -933,13 +1059,21 @@
 
     function showProgress() {
       document.getElementById('progressOverlay').style.display = 'flex';
-      updateProgress(10, 'UPLOADING PHOTO', 'Transferring your booth photo to secure processing engine...');
+      updateProgressDisplay(0, 'STARTING PIPELINE', 'Initializing Engine', 'Establishing secure trade show booth creation session...');
     }
 
-    function updateProgress(pct, stage, detail) {
-      document.getElementById('progressBarFill').style.width = `${pct}%`;
-      document.getElementById('progressStageTxt').textContent = stage;
-      document.getElementById('progressDetailTxt').textContent = detail;
+    function updateProgressDisplay(pct, stage, title, detail) {
+      const fillEl = document.getElementById('progressBarFill');
+      const numEl = document.getElementById('progressPctNumber');
+      const stageEl = document.getElementById('progressStageTxt');
+      const titleEl = document.getElementById('progressTitleTxt');
+      const detailEl = document.getElementById('progressDetailTxt');
+
+      if (fillEl) fillEl.style.width = `${pct}%`;
+      if (numEl) numEl.textContent = Math.round(pct);
+      if (stageEl && stage) stageEl.innerHTML = `<i class="fa-solid fa-bolt" style="color:#00f2fe;"></i> ${stage}`;
+      if (titleEl && title) titleEl.textContent = title;
+      if (detailEl && detail) detailEl.textContent = detail;
     }
 
     function hideProgress() {
