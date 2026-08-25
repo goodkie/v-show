@@ -17,6 +17,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+  <!-- Three.js & Controls for 3D Photo Immersive Studio Engine -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+
   <style>
     :root {
       --primary: #0284c7;
@@ -269,65 +274,234 @@
     .studio-banner-title { font-size: 16px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
     .studio-banner-desc { font-size: 13px; color: #cbd5e1; }
 
-    /* ── Photo Immersive Viewport & Pan/Zoom Canvas ── */
-    .photo-immersive-viewport {
-      position: relative; width: 100%; height: 580px; min-height: 580px;
-      background: #030712; border-radius: 16px; overflow: hidden;
-      border: 1px solid rgba(56, 189, 248, 0.35); box-shadow: 0 20px 60px rgba(0,0,0,0.85);
-      touch-action: none; user-select: none;
+    /* ── 3D Photo Immersive Studio Layout (Matterport-Engine Baseline) ── */
+    #studio-workspace {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 14px;
+      margin-bottom: 24px;
+      min-height: 560px;
+      align-items: stretch;
+      position: relative;
     }
-    .photo-immersive-stage {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      display: flex; align-items: center; justify-content: center;
-      transform-origin: center center; cursor: crosshair;
+    @media (max-width: 1024px) {
+      #studio-workspace { grid-template-columns: 1fr; }
+      .unified-sidebar { display: none; }
     }
-    .photo-immersive-img {
-      max-width: 100%; max-height: 100%; object-fit: contain;
-      pointer-events: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-      user-select: none;
+
+    #player-workspace {
+      display: flex; flex-direction: column;
+      gap: 12px; min-height: 0; position: relative;
     }
-    
-    .pinpoint-layer {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+
+    /* 3D WebGL Player Viewport */
+    #viewer-container {
+      position: relative; width: 100%; height: 500px; min-height: 500px;
+      border-radius: 16px; overflow: hidden;
+      border: 1px solid rgba(0, 194, 255, 0.4);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 194, 255, 0.2);
+      cursor: grab; background: #000;
+    }
+    #viewer-container:active { cursor: grabbing; }
+    #three-canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+
+    .player-tag {
+      position: absolute; top: 12px; left: 12px; z-index: 10;
+      background: rgba(5, 11, 22, 0.9); border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 20px; padding: 4px 11px; font-size: 9.5px; font-weight: 800;
+      color: #00c2ff; backdrop-filter: blur(10px); display: flex; align-items: center; gap: 6px;
       pointer-events: none;
     }
+    .res-pill {
+      position: absolute; top: 12px; right: 12px; z-index: 10;
+      background: rgba(2, 132, 199, 0.35); border: 1px solid #38bdf8;
+      border-radius: 20px; padding: 4px 11px; font-size: 9.5px; font-weight: 800;
+      color: #fff; font-family: 'JetBrains Mono', monospace; backdrop-filter: blur(10px);
+    }
 
-    .pinpoint-marker {
+    /* 3D Floating Hotspots Layer */
+    #hotspot-layer { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
+
+    .hotspot-tag {
       position: absolute; transform: translate(-50%, -50%);
-      cursor: pointer; pointer-events: auto; z-index: 20;
+      pointer-events: auto; cursor: pointer;
       display: flex; align-items: center; gap: 6px;
-      transition: transform 0.15s ease-out;
+      background: rgba(5, 11, 22, 0.94); backdrop-filter: blur(16px);
+      border: 1.5px solid rgba(0, 194, 255, 0.75); border-radius: 20px;
+      padding: 3px 9px 3px 3px;
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7), 0 0 12px rgba(0, 194, 255, 0.35);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); white-space: nowrap;
     }
-    .pinpoint-marker:hover {
-      transform: translate(-50%, -50%) scale(1.15);
+    .hotspot-tag:hover {
+      background: rgba(2, 132, 199, 0.98); border-color: #38bdf8;
+      transform: translate(-50%, -50%) scale(1.08);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.9), 0 0 22px rgba(0, 194, 255, 0.7);
     }
-
-    .blank-pin-badge {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: radial-gradient(circle, #38bdf8 30%, rgba(2, 132, 199, 0.85) 70%);
-      box-shadow: 0 0 18px rgba(56, 189, 248, 0.9), 0 0 32px rgba(2, 132, 199, 0.5);
-      border: 2px solid #ffffff; display: flex; align-items: center; justify-content: center;
-      color: #fff; font-size: 13px; font-weight: 800; animation: marker-pulse 2s infinite;
+    .hotspot-thumb-img {
+      width: 24px; height: 24px; border-radius: 50%; object-fit: cover;
+      border: 1.5px solid #00c2ff; flex-shrink: 0; display: block;
+      box-shadow: 0 0 8px rgba(0, 194, 255, 0.5); background: #000;
     }
-    .blank-pin-label {
-      background: rgba(15, 23, 42, 0.92); border: 1px solid rgba(56, 189, 248, 0.45);
-      color: #38bdf8; font-size: 11px; font-weight: 700; padding: 3px 10px;
-      border-radius: 12px; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+    .hotspot-info { display: flex; flex-direction: column; gap: 1px; }
+    .hotspot-cat { font-size: 7px; font-weight: 800; color: #00c2ff; text-transform: uppercase; letter-spacing: 0.6px; line-height: 1; }
+    .hotspot-label-text { font-size: 10px; font-weight: 800; color: #fff; line-height: 1.1; }
+    .hotspot-dot {
+      width: 5px; height: 5px; border-radius: 50%; background: #38bdf8;
+      box-shadow: 0 0 6px #38bdf8; flex-shrink: 0; animation: hotspot-pulse 1.8s infinite;
     }
-
-    .active-pin-badge {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: radial-gradient(circle, #10b981 30%, rgba(5, 150, 105, 0.85) 70%);
-      box-shadow: 0 0 18px rgba(16, 185, 129, 0.9);
-      border: 2px solid #ffffff; display: flex; align-items: center; justify-content: center;
-      color: #fff; font-size: 13px; font-weight: 800;
-    }
-
-    @keyframes marker-pulse {
-      0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
-      70% { box-shadow: 0 0 0 14px rgba(56, 189, 248, 0); }
+    @keyframes hotspot-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.8); }
+      70% { box-shadow: 0 0 0 8px rgba(56, 189, 248, 0); }
       100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
     }
+
+    /* Product Shortcut Cards Tray (3 Slots) */
+    #product-cards-tray {
+      height: 110px; flex-shrink: 0;
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 10px; align-items: stretch;
+    }
+    @media (max-width: 768px) {
+      #product-cards-tray { grid-template-columns: 1fr; height: auto; }
+    }
+    .prod-quick-card {
+      background: rgba(9, 16, 29, 0.94); border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 12px; padding: 8px 10px; cursor: pointer;
+      display: flex; gap: 10px; align-items: center;
+      transition: all 0.25s; position: relative; overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5); backdrop-filter: blur(16px);
+    }
+    .prod-quick-card:hover {
+      background: rgba(14, 28, 50, 0.98); border-color: #00c2ff;
+      transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0, 194, 255, 0.25);
+    }
+    .prod-quick-card.active {
+      border-color: #00c2ff; background: rgba(0, 194, 255, 0.14);
+      box-shadow: 0 0 18px rgba(0, 194, 255, 0.35);
+    }
+    .prod-card-thumb {
+      width: 70px; height: 100%; border-radius: 8px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; background: #000;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .prod-card-thumb img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .prod-card-body {
+      flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px;
+    }
+    .prod-card-cat { font-size: 8px; font-weight: 800; color: #00c2ff; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .prod-card-title { font-size: 11.5px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .prod-card-spec { font-size: 9px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .prod-card-btn {
+      margin-top: 2px; font-size: 9px; font-weight: 700; color: #38bdf8;
+      display: flex; align-items: center; gap: 3px;
+    }
+
+    /* Right Unified Sidebar */
+    .unified-sidebar {
+      display: flex; flex-direction: column; gap: 14px;
+      background: rgba(9, 16, 29, 0.94); border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 16px; padding: 16px; backdrop-filter: blur(20px);
+      box-shadow: 0 16px 36px rgba(0,0,0,0.6); z-index: 10;
+    }
+    .radar-box {
+      background: rgba(2, 5, 11, 0.7); border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 12px; padding: 12px;
+    }
+    .radar-header { font-size: 9.5px; font-weight: 800; color: #00c2ff; letter-spacing: 1px; text-transform: uppercase; display: flex; justify-content: space-between; margin-bottom: 8px; }
+    #radar-canvas { width: 100%; height: 90px; display: block; border-radius: 6px; }
+
+    .spec-panel-box {
+      background: rgba(2, 5, 11, 0.65); border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .spec-title { font-size: 13.5px; font-weight: 800; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+    .spec-desc { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+    .spec-list { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 4px; }
+    .spec-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 6px 8px; }
+    .spec-k { font-size: 8.5px; color: var(--text-muted); font-weight: 600; }
+    .spec-v { font-size: 11px; color: #00c2ff; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+
+    /* Product Inspection Drawer */
+    #drawer-scrim {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+      z-index: 700; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+    }
+    #drawer-scrim.open { opacity: 1; pointer-events: auto; }
+
+    .drawer {
+      position: fixed; z-index: 750; top: 0; right: 0; bottom: 0;
+      width: 460px; max-width: 94vw; background: rgba(7, 14, 26, 0.98);
+      backdrop-filter: blur(26px); border-left: 1px solid rgba(56, 189, 248, 0.35);
+      transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex; flex-direction: column; box-shadow: -15px 0 50px rgba(0,0,0,0.9);
+    }
+    .drawer.open { transform: translateX(0); }
+    .drawer-header {
+      padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .drawer-badge { font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #00c2ff; }
+    .drawer-close {
+      width: 30px; height: 30px; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.35);
+      background: rgba(255,255,255,0.05); color: var(--text-muted); font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    }
+    .drawer-close:hover { background: rgba(239, 68, 68, 0.2); color: #ef4444; border-color: #ef4444; }
+    .drawer-body { flex: 1; overflow-y: auto; padding: 18px; }
+
+    .drawer-media-tabs { display: flex; gap: 6px; margin: 4px 0 8px; }
+    .media-tab-btn {
+      flex: 1; padding: 6px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px; color: var(--text-muted); cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+    }
+    .media-tab-btn:hover { background: rgba(0,194,255,0.08); color: #fff; border-color: rgba(56, 189, 248, 0.35); }
+    .media-tab-btn.active {
+      background: rgba(0,194,255,0.2); border-color: #00c2ff; color: #00c2ff;
+      box-shadow: 0 0 12px rgba(0,194,255,0.3);
+    }
+
+    .drawer-img-box {
+      width: 100%; border-radius: 12px; overflow: hidden;
+      border: 1px solid rgba(56, 189, 248, 0.35); margin: 0 0 14px;
+      position: relative; background: #000; box-shadow: 0 10px 28px rgba(0,0,0,0.7);
+      height: 220px; display: flex; align-items: center; justify-content: center;
+    }
+    .drawer-img-box img {
+      width: 100%; height: 100%; object-fit: contain !important; display: block; background: #000;
+    }
+    #drawer-3d-view {
+      width: 100%; height: 100%; position: absolute; inset: 0; display: none;
+      background: radial-gradient(circle at center, #0a192f 0%, #02050b 100%);
+    }
+    #drawer-3d-canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+    #drawer-3d-canvas:active { cursor: grabbing; }
+    .mini-3d-controls {
+      position: absolute; bottom: 8px; left: 8px; right: 8px; display: flex; justify-content: space-between; align-items: center; pointer-events: none;
+    }
+    .mini-3d-pill {
+      pointer-events: auto; background: rgba(5, 11, 22, 0.88); border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 20px; padding: 3px 8px; font-size: 8.5px; font-weight: 800;
+      color: #00c2ff; backdrop-filter: blur(8px); font-family: 'JetBrains Mono', monospace; cursor: pointer;
+    }
+    .mini-3d-pill:hover { background: #00c2ff; color: #000; }
+
+    .drawer-hero {
+      border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.35);
+      background: linear-gradient(135deg, #0b1a2e 0%, #050b16 100%);
+      padding: 14px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 5px;
+    }
+    .drawer-prod-title { font-size: 18px; font-weight: 800; color: #fff; }
+    .drawer-prod-desc { font-size: 11.5px; color: var(--text-muted); line-height: 1.5; }
+    .drawer-specs-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 11.5px; }
+    .drawer-specs-table tr { border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .drawer-specs-table td { padding: 7px 5px; }
+    .drawer-specs-table td:first-child { color: var(--text-muted); font-weight: 600; width: 42%; }
+    .drawer-specs-table td:last-child { color: #00c2ff; font-weight: 700; text-align: right; font-family: 'JetBrains Mono', monospace; }
 
     .viewer-controls-bar {
       position: absolute; top: 14px; right: 14px; display: flex; gap: 6px;
@@ -653,9 +827,9 @@
       <div>
         <div class="studio-banner-title">
           <i class="fa-solid fa-circle-check" style="color: var(--success);"></i>
-          YOUR FREE PHOTO IMMERSIVE BOOTH IS READY
+          YOUR FREE PHOTO IMMERSIVE 360° BOOTH IS READY
         </div>
-        <div class="studio-banner-desc" id="studioBannerBizName">Click a blank pin (+1, +2, +3) or select a location on your photo to add interactive products.</div>
+        <div class="studio-banner-desc" id="studioBannerBizName">Experience your photo as an interactive 3D studio. Drag to look around in 360°, or click pins to inspect products.</div>
       </div>
       <div style="display: flex; gap: 10px;">
         <button class="btn-hero btn-hero-secondary" onclick="openSaveEmailModal()" style="padding: 9px 16px; font-size: 13px;">
@@ -667,26 +841,127 @@
       </div>
     </div>
 
-    <!-- Photo Immersive High-Res Viewport with Pan & Zoom -->
-    <div class="photo-immersive-viewport" id="photoImmersiveViewport">
-      <div class="photo-immersive-stage" id="photoImmersiveStage" onclick="handleStageClick(event)">
-        <img id="studioBoothImg" class="photo-immersive-img" src="" alt="Photo Immersive Booth" onload="onBoothImageLoaded()">
-        <div class="pinpoint-layer" id="pinpointsContainer"></div>
+    <!-- MAIN 3D STUDIO WORKSPACE (Center 3D Player + Right Unified Sidebar) -->
+    <div id="studio-workspace">
+      <!-- CENTER: 3D PLAYER + PRODUCT SHORTCUT CARDS -->
+      <div id="player-workspace">
+        <div id="viewer-container">
+          <canvas id="three-canvas"></canvas>
+          <!-- 3D Hotspot Tags Overlay -->
+          <div id="hotspot-layer"></div>
+          <div class="player-tag">🌐 Photo Immersive 360° Studio</div>
+          <div class="res-pill" id="res-indicator">ULTRA-HD MASTER STUDIO</div>
+
+          <!-- Viewport Navigation Controls Bar -->
+          <div class="viewer-controls-bar">
+            <button class="viewer-ctrl-btn" onclick="zoomView(1.2)" title="Zoom In"><i class="fa-solid fa-plus"></i></button>
+            <button class="viewer-ctrl-btn" onclick="zoomView(0.8)" title="Zoom Out"><i class="fa-solid fa-minus"></i></button>
+            <button class="viewer-ctrl-btn" onclick="resetPanZoom()" title="Reset View"><i class="fa-solid fa-arrows-rotate"></i></button>
+            <button class="viewer-ctrl-btn" onclick="toggleFullscreen()" title="Fullscreen"><i class="fa-solid fa-expand"></i></button>
+          </div>
+
+          <div style="position: absolute; bottom: 14px; left: 14px; background: rgba(7,14,26,0.88); backdrop-filter: blur(8px); border: 1px solid rgba(56,189,248,0.35); color: #94a3b8; font-size: 11px; padding: 6px 14px; border-radius: 20px; pointer-events: none; z-index: 30;">
+            <i class="fa-solid fa-hand" style="color:#38bdf8;"></i> Drag to Look Around 360° • Scroll/Pinch to Zoom • Click Hotspots to Inspect
+          </div>
+        </div>
+
+        <!-- BOTTOM PRODUCT SHORTCUT CARDS TRAY (3 SLOTS) -->
+        <div id="product-cards-tray">
+          <!-- Populated dynamically via JS -->
+        </div>
       </div>
 
-      <!-- Viewport Navigation Controls Bar -->
-      <div class="viewer-controls-bar">
-        <button class="viewer-ctrl-btn" onclick="zoomView(1.2)" title="Zoom In"><i class="fa-solid fa-plus"></i></button>
-        <button class="viewer-ctrl-btn" onclick="zoomView(0.8)" title="Zoom Out"><i class="fa-solid fa-minus"></i></button>
-        <button class="viewer-ctrl-btn" onclick="resetPanZoom()" title="Reset View"><i class="fa-solid fa-arrows-rotate"></i></button>
-        <button class="viewer-ctrl-btn" onclick="toggleFullscreen()" title="Fullscreen"><i class="fa-solid fa-expand"></i></button>
-      </div>
+      <!-- RIGHT UNIFIED SIDEBAR (Booth Radar & Focused System Specs) -->
+      <aside class="unified-sidebar">
+        <!-- 1. Booth Radar Minimap -->
+        <div class="radar-box">
+          <div class="radar-header">
+            <span>BOOTH RADAR MINIMAP</span>
+            <span id="radar-loc-txt">01. MAIN BOOTH</span>
+          </div>
+          <canvas id="radar-canvas" width="306" height="90"></canvas>
+        </div>
 
-      <!-- Viewport Bottom Hint Badge -->
-      <div style="position: absolute; bottom: 14px; left: 14px; background: rgba(7,14,26,0.88); backdrop-filter: blur(8px); border: 1px solid rgba(56,189,248,0.35); color: #94a3b8; font-size: 11px; padding: 6px 14px; border-radius: 20px; pointer-events: none; z-index: 30;">
-        <i class="fa-solid fa-hand" style="color:#38bdf8;"></i> Drag to Pan • Scroll/Pinch to Zoom • Click Pin to Set Product
-      </div>
+        <!-- 2. Live Target Specs Box -->
+        <div class="spec-panel-box">
+          <div class="panel-head" style="margin-bottom:0;font-size:10px;font-weight:800;color:#00c2ff;letter-spacing:1px;text-transform:uppercase;">FOCUSED PRODUCT SPECIFICATION</div>
+          <div class="spec-title">
+            <span id="side-spec-title">Product Slot 1</span>
+            <button class="btn-ui" style="padding:2px 8px;font-size:10px;background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);border-radius:6px;cursor:pointer;" onclick="openProductDrawer(currentSelectedProdIdx)">Details →</button>
+          </div>
+          <div class="spec-desc" id="side-spec-desc">Click a pin or shortcut card below to inspect technical specifications and interactive 3D views.</div>
+          <div class="spec-list" id="side-spec-list">
+            <!-- Injected dynamically -->
+          </div>
+        </div>
+
+        <button class="btn-hero btn-hero-primary" style="margin-top:auto;justify-content:center;padding:12px;font-size:13px;width:100%;" onclick="openPlanModal('sidebar_rfq')">
+          📝 Upgrade to Commercial / RFQ Engine
+        </button>
+      </aside>
     </div>
+
+    <!-- PRODUCT INSPECTION DRAWER -->
+    <div id="drawer-scrim" onclick="closeDrawer()"></div>
+    <aside class="drawer" id="product-drawer">
+      <div class="drawer-header">
+        <div>
+          <div class="drawer-badge" id="drw-badge">COMMERCIAL PRODUCT</div>
+          <div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono', monospace;" id="drw-model">SLOT-01</div>
+        </div>
+        <button class="drawer-close" onclick="closeDrawer()">✕</button>
+      </div>
+      <div class="drawer-body">
+        <!-- Media Mode Switcher Tabs -->
+        <div class="drawer-media-tabs">
+          <button class="media-tab-btn active" id="tab-photo" onclick="setDrawerMediaMode('photo')">
+            🖼 4K STUDIO PHOTO
+          </button>
+          <button class="media-tab-btn" id="tab-3d" onclick="setDrawerMediaMode('3d')">
+            🔄 360° 3D VIEWER
+          </button>
+        </div>
+
+        <!-- High-Res Product Hero Photo & 360 3D Mini View -->
+        <div class="drawer-img-box" id="drw-img-box">
+          <img id="drw-img" src="" alt="Product Visual">
+          
+          <!-- Embedded Mini 3D Turntable View -->
+          <div id="drawer-3d-view">
+            <canvas id="drawer-3d-canvas"></canvas>
+            <div class="mini-3d-controls">
+              <button class="mini-3d-pill" onclick="toggleDrawer3dAutoRotate()" id="btn-3d-autorot">🔄 Auto-Rotate: ON</button>
+              <button class="mini-3d-pill" onclick="toggleDrawer3dWireframe()" id="btn-3d-wire">⚡ Wireframe: OFF</button>
+              <button class="mini-3d-pill" onclick="resetDrawer3dCamera()">🎯 Reset View</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="drawer-hero">
+          <h2 class="drawer-prod-title" id="drw-title">Product Name</h2>
+          <p class="drawer-prod-desc" id="drw-desc">Product description...</p>
+        </div>
+
+        <div class="panel-head" style="margin-bottom:6px;font-size:10px;font-weight:800;color:#00c2ff;letter-spacing:1px;text-transform:uppercase;">TECHNICAL SPECIFICATIONS</div>
+        <table class="drawer-specs-table" id="drw-specs-table">
+          <!-- Injected via JS -->
+        </table>
+
+        <div class="panel-head" style="margin:14px 0 6px;font-size:10px;font-weight:800;color:#00c2ff;letter-spacing:1px;text-transform:uppercase;">KEY HIGHLIGHTS</div>
+        <div style="font-size:11.5px;color:var(--text-muted);line-height:1.6;" id="drw-highlights">
+          <!-- Injected via JS -->
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:20px;">
+          <button class="btn-hero btn-hero-primary" style="justify-content:center;padding:11px;font-size:13px;" onclick="openEditProductModal(currentSelectedProdIdx)">
+            ✏️ Edit Product &amp; AI Assist
+          </button>
+          <button class="btn-hero btn-hero-secondary" style="justify-content:center;padding:10px;font-size:12px;" onclick="openPlanModal('drawer_commercial')">
+            🚀 Activate Wholesale RFQ for this Product
+          </button>
+        </div>
+      </div>
+    </aside>
 
     <!-- Main Next-Step Callout Bar -->
     <div class="next-step-bar" id="nextStepBar">
@@ -1518,24 +1793,509 @@
       document.getElementById('progressOverlay').style.display = 'none';
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // THREE.JS WEBGL PHOTO IMMERSIVE 360° MASTER STUDIO ENGINE
+    // ═══════════════════════════════════════════════════════════
+    let scene, camera, renderer, controls;
+    let photoSphere, photoMaterial, textureLoader;
+    let currentSelectedProdIdx = 0;
+    let isThreeInitialized = false;
+    let studioProducts = [];
+    let drawer3dScene, drawer3dCamera, drawer3dRenderer, drawer3dControls;
+    let drawer3dModelGroup = null;
+    let drawer3dAutoRotate = true;
+    let drawer3dWireframe = false;
+    let currentMediaMode = 'photo'; // 'photo' | '3d'
+
     function renderStudioBooth(projectData) {
       document.getElementById('hero-funnel').style.display = 'none';
       const studio = document.getElementById('freeStudioSection');
       studio.style.display = 'block';
       studio.scrollIntoView({ behavior: 'smooth' });
 
-      document.getElementById('studioBannerBizName').textContent = `${projectData.businessName || 'Your Business'} — Click a blank pin (+1, +2, +3) or select a location on your photo to add interactive products.`;
+      document.getElementById('studioBannerBizName').textContent = `${projectData.businessName || 'Your Business'} — Drag to look around in 360°, click floating pins to inspect or configure products.`;
 
-      const img = document.getElementById('studioBoothImg');
       const photoUrl = projectData.sourceAsset?.previewUrl || projectData.sourceAsset?.originalUrl || '';
-      img.src = photoUrl;
 
-      resetPanZoom();
-      setupPanZoomListeners();
-      renderPinpoints(projectData.pinpoints || []);
+      // Initialize Three.js WebGL Studio Engine
+      initPhotoImmersiveThree(photoUrl, projectData);
+      renderProductCardsTray(projectData.products || []);
       renderProductCards(projectData.products || []);
       updateNextStepCTA();
       logAnalyticsEvent('immersive_view_started', { projectId: projectData.id });
+    }
+
+    function initPhotoImmersiveThree(photoUrl, projectData) {
+      const container = document.getElementById('viewer-container');
+      const canvas = document.getElementById('three-canvas');
+      if (!container || !canvas) return;
+
+      const rect = container.getBoundingClientRect();
+      const width = rect.width || container.clientWidth || 900;
+      const height = rect.height || container.clientHeight || 500;
+
+      if (!isThreeInitialized) {
+        scene = new THREE.Scene();
+        textureLoader = new THREE.TextureLoader();
+
+        // 65° Immersive Field of View
+        camera = new THREE.PerspectiveCamera(65, width / height, 0.01, 2000);
+        camera.position.set(0, 0, 0.01);
+
+        // High-DPR WebGL Renderer with ACES Filmic Tone Mapping
+        renderer = new THREE.WebGLRenderer({
+          canvas: canvas,
+          antialias: true,
+          powerPreference: 'high-performance',
+          precision: 'highp'
+        });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5));
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.18;
+
+        // OrbitControls for interior 360° lookaround
+        controls = new THREE.OrbitControls(camera, canvas);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.enableZoom = true;
+        controls.minDistance = 0.005;
+        controls.maxDistance = 0.05;
+        controls.enablePan = false;
+        controls.target.set(0, 0, 0);
+        controls.maxPolarAngle = Math.PI * 0.88;
+        controls.minPolarAngle = Math.PI * 0.12;
+        controls.rotateSpeed = -0.42;
+
+        // 360° Interior Equirectangular Sphere Mesh
+        const sphereGeo = new THREE.SphereGeometry(500, 128, 64);
+        sphereGeo.scale(-1, 1, 1);
+
+        photoMaterial = new THREE.MeshBasicMaterial({
+          side: THREE.FrontSide,
+          transparent: true,
+          opacity: 1.0,
+          depthWrite: false
+        });
+        photoSphere = new THREE.Mesh(sphereGeo, photoMaterial);
+        photoSphere.rotation.y = -Math.PI * 0.5;
+        photoSphere.position.set(0, 0, 0);
+        photoSphere.renderOrder = -1;
+        scene.add(photoSphere);
+
+        window.addEventListener('resize', onStudioResize);
+        initDrawer3D();
+        isThreeInitialized = true;
+        requestAnimationFrame(studioAnimate);
+      } else {
+        if (renderer) {
+          renderer.setSize(width, height);
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+        }
+      }
+
+      // Load booth photo into 360° texture
+      if (photoUrl && textureLoader) {
+        textureLoader.load(photoUrl, (tex) => {
+          tex.encoding = THREE.sRGBEncoding;
+          tex.minFilter = THREE.LinearMipMapLinearFilter;
+          tex.magFilter = THREE.LinearFilter;
+          tex.generateMipmaps = true;
+          tex.anisotropy = renderer ? renderer.capabilities.getMaxAnisotropy() : 16;
+          tex.needsUpdate = true;
+          photoMaterial.map = tex;
+          photoMaterial.needsUpdate = true;
+        });
+      }
+
+      setupStudioProducts(projectData);
+    }
+
+    function onStudioResize() {
+      const container = document.getElementById('viewer-container');
+      if (!container || !renderer || !camera) return;
+      const rect = container.getBoundingClientRect();
+      const width = rect.width || container.clientWidth;
+      const height = rect.height || container.clientHeight;
+      if (width && height) {
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height);
+      }
+    }
+
+    function setupStudioProducts(projectData) {
+      const rawProducts = projectData?.products || [];
+      const defaultPositions = [
+        new THREE.Vector3(-170, -25, -340), // Slot 1 Left
+        new THREE.Vector3(0, -10, -380),    // Slot 2 Center
+        new THREE.Vector3(170, -25, -340)   // Slot 3 Right
+      ];
+
+      studioProducts = [1, 2, 3].map((slot, idx) => {
+        const prod = rawProducts.find(p => p.slotIndex === slot) || {};
+        return {
+          slotIndex: slot,
+          name: prod.name || `Product Slot ${slot}`,
+          category: prod.category || `COMMERCIAL SLOT ${slot}`,
+          imageUrl: prod.imageUrl || (idx === 0 ? '/assets/demo/dna-showcase/products/apex_cobot_x16.jpg' : idx === 1 ? '/assets/demo/dna-showcase/products/vector_amr_600.jpg' : '/assets/demo/dna-showcase/products/delta_d12.jpg'),
+          worldPos: defaultPositions[idx],
+          desc: prod.description || `Interactive exhibit item for ${projectData.businessName || 'your brand'}. Click to configure specifications and commercial options.`,
+          specs: [
+            ['Catalog Slot', `Slot 0${slot}`],
+            ['Presentation', 'Photo Immersive 3D'],
+            ['Inquiry Engine', '1-Click Wholesale RFQ'],
+            ['Status', prod.name ? 'Active' : 'Slot Available']
+          ],
+          highlights: [
+            'Interactive 3D Floating Capsule pinpoint anchor on exhibition booth photo',
+            'Full commercial specification sheet and digital line sheet integration',
+            'Direct buyer engagement, sample ordering, and export meeting scheduler'
+          ],
+          robotType: idx === 0 ? 'cobot' : idx === 1 ? 'amr' : 'delta',
+          isConfigured: !!(prod.name && prod.name.trim())
+        };
+      });
+
+      buildHotspotsDOM();
+      renderProductCardsTray(projectData.products || []);
+      updateFocusSpec(0);
+    }
+
+    function buildHotspotsDOM() {
+      const layer = document.getElementById('hotspot-layer');
+      if (!layer) return;
+      layer.innerHTML = '';
+
+      studioProducts.forEach((prod, idx) => {
+        const el = document.createElement('div');
+        el.className = 'hotspot-tag';
+        el.id = 'hotspot-slot-' + prod.slotIndex;
+        el.innerHTML = `
+          <img src="${prod.imageUrl}" class="hotspot-thumb-img" alt="${prod.name}">
+          <span class="hotspot-dot"></span>
+          <div class="hotspot-info">
+            <span class="hotspot-cat">${prod.category}</span>
+            <span class="hotspot-label-text">${prod.name}</span>
+          </div>
+        `;
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          focusProduct(idx);
+        });
+        layer.appendChild(el);
+        prod.domElement = el;
+      });
+    }
+
+    function updateHotspots() {
+      if (!camera) return;
+      const container = document.getElementById('viewer-container');
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const cWidth = rect.width;
+      const cHeight = rect.height;
+
+      const camDir = new THREE.Vector3();
+      camera.getWorldDirection(camDir);
+
+      studioProducts.forEach(prod => {
+        if (!prod.domElement) return;
+        const dot = prod.worldPos.dot(camDir);
+        if (dot <= 0) {
+          prod.domElement.style.display = 'none';
+          return;
+        }
+        const wp = prod.worldPos.clone();
+        wp.project(camera);
+        if (wp.z > 1.0) {
+          prod.domElement.style.display = 'none';
+          return;
+        }
+        prod.domElement.style.display = 'flex';
+        prod.domElement.style.left = ((wp.x * 0.5 + 0.5) * cWidth) + 'px';
+        prod.domElement.style.top  = ((-(wp.y * 0.5) + 0.5) * cHeight) + 'px';
+      });
+    }
+
+    function renderProductCardsTray(products) {
+      const tray = document.getElementById('product-cards-tray');
+      if (!tray) return;
+      tray.innerHTML = '';
+
+      studioProducts.forEach((prod, idx) => {
+        const card = document.createElement('div');
+        card.className = `prod-quick-card ${idx === currentSelectedProdIdx ? 'active' : ''}`;
+        card.id = `pcard-${idx}`;
+        card.onclick = () => focusProduct(idx);
+        card.innerHTML = `
+          <div class="prod-card-thumb">
+            <img src="${prod.imageUrl}" alt="${prod.name}">
+          </div>
+          <div class="prod-card-body">
+            <div class="prod-card-cat">${prod.category}</div>
+            <div class="prod-card-title">${prod.name}</div>
+            <div class="prod-card-spec">${prod.desc}</div>
+            <div class="prod-card-btn">Inspect Specs <span>→</span></div>
+          </div>
+        `;
+        tray.appendChild(card);
+      });
+    }
+
+    function focusProduct(idx) {
+      currentSelectedProdIdx = idx;
+      const p = studioProducts[idx];
+      if (!p) return;
+
+      document.querySelectorAll('.prod-quick-card').forEach((c, i) => c.classList.toggle('active', i === idx));
+      updateFocusSpec(idx);
+      openProductDrawer(idx);
+    }
+
+    function updateFocusSpec(idx) {
+      currentSelectedProdIdx = idx;
+      const p = studioProducts[idx];
+      if (!p) return;
+
+      const titleEl = document.getElementById('side-spec-title');
+      const descEl = document.getElementById('side-spec-desc');
+      const listEl = document.getElementById('side-spec-list');
+
+      if (titleEl) titleEl.textContent = p.name;
+      if (descEl) descEl.textContent = p.desc;
+      if (listEl) {
+        listEl.innerHTML = p.specs.map(([k,v]) =>
+          `<div class="spec-item"><div class="spec-k">${k}</div><div class="spec-v">${v}</div></div>`
+        ).join('');
+      }
+      document.querySelectorAll('.prod-quick-card').forEach((c, i) => c.classList.toggle('active', i === idx));
+    }
+
+    function drawRadar() {
+      const cvs = document.getElementById('radar-canvas');
+      if (!cvs || !camera) return;
+      const ctx = cvs.getContext('2d');
+      ctx.clearRect(0, 0, cvs.width, cvs.height);
+      ctx.strokeStyle = '#00c2ff'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(16, 8, cvs.width - 32, cvs.height - 16);
+      ctx.fillStyle = '#ffffff';
+      [[16,8],[cvs.width-16,8],[16,cvs.height-8],[cvs.width-16,cvs.height-8]].forEach(([x,y]) => ctx.fillRect(x-2, y-2, 4, 4));
+
+      // Draw 3 product hotspot points
+      const radarPositions = [{ x: 75, y: 45 }, { x: 153, y: 35 }, { x: 231, y: 45 }];
+      radarPositions.forEach((pos, idx) => {
+        const isCur = idx === currentSelectedProdIdx;
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, isCur ? 5.5 : 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = isCur ? '#00c2ff' : 'rgba(255,255,255,0.5)';
+        ctx.fill();
+        if (isCur) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke(); }
+      });
+
+      // Draw camera vantage viewing cone
+      const camDir = new THREE.Vector3();
+      camera.getWorldDirection(camDir);
+      const angle = Math.atan2(camDir.x, camDir.z);
+      ctx.fillStyle = 'rgba(0,194,255,0.25)';
+      ctx.beginPath();
+      ctx.moveTo(153, 75);
+      ctx.arc(153, 75, 30, angle - 0.45, angle + 0.45);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function studioAnimate(time) {
+      requestAnimationFrame(studioAnimate);
+      if (controls) controls.update();
+      updateHotspots();
+      drawRadar();
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+    }
+
+    // ── Inspection Drawer & Mini 3D Turntable ──
+    function initDrawer3D() {
+      const canvas = document.getElementById('drawer-3d-canvas');
+      if (!canvas) return;
+
+      drawer3dScene = new THREE.Scene();
+      drawer3dCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+      drawer3dCamera.position.set(0, 2.2, 4.5);
+
+      drawer3dRenderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: true,
+        alpha: true,
+        powerPreference: 'high-performance'
+      });
+      drawer3dRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      drawer3dRenderer.outputEncoding = THREE.sRGBEncoding;
+
+      drawer3dControls = new THREE.OrbitControls(drawer3dCamera, canvas);
+      drawer3dControls.enableDamping = true;
+      drawer3dControls.dampingFactor = 0.08;
+      drawer3dControls.autoRotate = true;
+      drawer3dControls.autoRotateSpeed = 2.0;
+      drawer3dControls.minDistance = 2.0;
+      drawer3dControls.maxDistance = 8.0;
+      drawer3dControls.target.set(0, 0.6, 0);
+
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x051122, 1.2);
+      drawer3dScene.add(hemiLight);
+
+      const dirLight1 = new THREE.DirectionalLight(0x00c2ff, 1.5);
+      dirLight1.position.set(5, 8, 5);
+      drawer3dScene.add(dirLight1);
+
+      const grid = new THREE.GridHelper(3.6, 16, 0x00c2ff, 0x1e293b);
+      grid.position.y = 0;
+      drawer3dScene.add(grid);
+
+      renderDrawer3DLoop();
+    }
+
+    function renderDrawer3DLoop() {
+      requestAnimationFrame(renderDrawer3DLoop);
+      if (currentMediaMode === '3d' && drawer3dRenderer && drawer3dScene && drawer3dCamera) {
+        drawer3dControls.update();
+        drawer3dRenderer.render(drawer3dScene, drawer3dCamera);
+      }
+    }
+
+    function buildProceduralRobotModel(type) {
+      if (drawer3dModelGroup) {
+        drawer3dScene.remove(drawer3dModelGroup);
+        drawer3dModelGroup.traverse(c => {
+          if (c.geometry) c.geometry.dispose();
+          if (c.material) {
+            if (Array.isArray(c.material)) c.material.forEach(m => m.dispose());
+            else c.material.dispose();
+          }
+        });
+      }
+
+      drawer3dModelGroup = new THREE.Group();
+      const matWhite = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.25, metalness: 0.15, wireframe: drawer3dWireframe });
+      const matMetal = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.35, metalness: 0.85, wireframe: drawer3dWireframe });
+      const matCyan = new THREE.MeshStandardMaterial({ color: 0x00c2ff, emissive: 0x00c2ff, emissiveIntensity: 0.6, roughness: 0.1, wireframe: drawer3dWireframe });
+
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 0.3, 32), matMetal);
+      base.position.y = 0.15;
+      drawer3dModelGroup.add(base);
+
+      const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.32, 24, 24), matCyan);
+      shoulder.position.y = 0.45;
+      drawer3dModelGroup.add(shoulder);
+
+      const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 1.1, 24), matWhite);
+      upperArm.position.set(0.2, 0.95, 0);
+      upperArm.rotation.z = -0.35;
+      drawer3dModelGroup.add(upperArm);
+
+      const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.26, 24, 24), matMetal);
+      elbow.position.set(0.4, 1.45, 0);
+      drawer3dModelGroup.add(elbow);
+
+      const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.9, 24), matWhite);
+      forearm.position.set(0.15, 1.8, 0);
+      forearm.rotation.z = 0.45;
+      drawer3dModelGroup.add(forearm);
+
+      drawer3dScene.add(drawer3dModelGroup);
+    }
+
+    function setDrawerMediaMode(mode) {
+      currentMediaMode = mode;
+      const tabPhoto = document.getElementById('tab-photo');
+      const tab3d = document.getElementById('tab-3d');
+      const imgEl = document.getElementById('drw-img');
+      const view3d = document.getElementById('drawer-3d-view');
+
+      if (mode === '3d') {
+        if (tabPhoto) tabPhoto.classList.remove('active');
+        if (tab3d) tab3d.classList.add('active');
+        if (imgEl) imgEl.style.display = 'none';
+        if (view3d) view3d.style.display = 'block';
+
+        const p = studioProducts[currentSelectedProdIdx];
+        buildProceduralRobotModel(p?.robotType || 'cobot');
+
+        const rect = document.getElementById('drw-img-box')?.getBoundingClientRect();
+        if (drawer3dRenderer && drawer3dCamera && rect) {
+          drawer3dCamera.aspect = rect.width / rect.height;
+          drawer3dCamera.updateProjectionMatrix();
+          drawer3dRenderer.setSize(rect.width, rect.height);
+        }
+      } else {
+        if (tabPhoto) tabPhoto.classList.add('active');
+        if (tab3d) tab3d.classList.remove('active');
+        if (imgEl) imgEl.style.display = 'block';
+        if (view3d) view3d.style.display = 'none';
+      }
+    }
+
+    function toggleDrawer3dAutoRotate() {
+      drawer3dAutoRotate = !drawer3dAutoRotate;
+      if (drawer3dControls) drawer3dControls.autoRotate = drawer3dAutoRotate;
+      const btn = document.getElementById('btn-3d-autorot');
+      if (btn) btn.textContent = '🔄 Auto-Rotate: ' + (drawer3dAutoRotate ? 'ON' : 'OFF');
+    }
+
+    function toggleDrawer3dWireframe() {
+      drawer3dWireframe = !drawer3dWireframe;
+      const p = studioProducts[currentSelectedProdIdx];
+      buildProceduralRobotModel(p?.robotType || 'cobot');
+      const btn = document.getElementById('btn-3d-wire');
+      if (btn) btn.textContent = '⚡ Wireframe: ' + (drawer3dWireframe ? 'ON' : 'OFF');
+    }
+
+    function resetDrawer3dCamera() {
+      if (drawer3dCamera && drawer3dControls) {
+        drawer3dCamera.position.set(0, 2.2, 4.5);
+        drawer3dControls.target.set(0, 0.6, 0);
+      }
+    }
+
+    function openProductDrawer(idx) {
+      currentSelectedProdIdx = idx;
+      const p = studioProducts[idx];
+      if (!p) return;
+
+      document.getElementById('drw-badge').textContent = p.category;
+      document.getElementById('drw-model').textContent = `SLOT-0${p.slotIndex}`;
+      document.getElementById('drw-title').textContent = p.name;
+      document.getElementById('drw-desc').textContent = p.desc;
+      document.getElementById('drw-img').src = p.imageUrl;
+
+      const tbl = document.getElementById('drw-specs-table');
+      if (tbl) {
+        tbl.innerHTML = p.specs.map(([k,v]) =>
+          `<tr><td>${k}</td><td>${v}</td></tr>`
+        ).join('');
+      }
+
+      const hl = document.getElementById('drw-highlights');
+      if (hl) {
+        hl.innerHTML = p.highlights.map(h => `<div style="margin-bottom:4px;">• ${h}</div>`).join('');
+      }
+
+      setDrawerMediaMode('photo');
+      document.getElementById('product-drawer').classList.add('open');
+      document.getElementById('drawer-scrim').classList.add('open');
+    }
+
+    function closeDrawer() {
+      document.getElementById('product-drawer').classList.remove('open');
+      document.getElementById('drawer-scrim').classList.remove('open');
+    }
+
+    function openEditProductModal(slotIdx) {
+      closeDrawer();
+      startProductOnboarding(studioProducts[slotIdx]?.slotIndex || (slotIdx + 1));
     }
 
     async function loadProjectIntoStudio(projectId) {
@@ -1552,171 +2312,35 @@
       }
     }
 
-    // ── Pan & Zoom Engine for Photo Immersive Viewer ──
-    function setupPanZoomListeners() {
-      const viewport = document.getElementById('photoImmersiveViewport');
-      const stage = document.getElementById('photoImmersiveStage');
-
-      viewport.onwheel = (e) => {
-        e.preventDefault();
-        const factor = e.deltaY < 0 ? 1.15 : 0.87;
-        zoomView(factor);
-      };
-
-      stage.onpointerdown = (e) => {
-        if (e.target.closest('.pinpoint-marker') || e.target.closest('.viewer-controls-bar')) return;
-        panZoom.isDragging = true;
-        panZoom.startX = e.clientX - panZoom.x;
-        panZoom.startY = e.clientY - panZoom.y;
-        stage.setPointerCapture(e.pointerId);
-      };
-
-      stage.onpointermove = (e) => {
-        if (!panZoom.isDragging) return;
-        panZoom.x = e.clientX - panZoom.startX;
-        panZoom.y = e.clientY - panZoom.startY;
-        applyPanZoomTransform();
-      };
-
-      stage.onpointerup = (e) => {
-        if (panZoom.isDragging) {
-          panZoom.isDragging = false;
-          try { stage.releasePointerCapture(e.pointerId); } catch (err) {}
-        }
-      };
-
-      // Responsive resize repositioning
-      window.addEventListener('resize', () => {
-        updatePinpointsPositions();
-      });
-    }
-
     function zoomView(factor) {
-      panZoom.scale = Math.max(0.75, Math.min(3.5, panZoom.scale * factor));
-      applyPanZoomTransform();
+      if (camera) {
+        camera.fov = Math.max(30, Math.min(90, camera.fov / factor));
+        camera.updateProjectionMatrix();
+      }
     }
 
     function resetPanZoom() {
-      panZoom.scale = 1.0;
-      panZoom.x = 0;
-      panZoom.y = 0;
-      applyPanZoomTransform();
-    }
-
-    function applyPanZoomTransform() {
-      const stage = document.getElementById('photoImmersiveStage');
-      if (stage) {
-        stage.style.transform = `translate(${panZoom.x}px, ${panZoom.y}px) scale(${panZoom.scale})`;
+      if (camera && controls) {
+        camera.fov = 65;
+        camera.updateProjectionMatrix();
+        controls.target.set(0, 0, 0);
+        camera.position.set(0, 0, 0.01);
       }
     }
 
     function toggleFullscreen() {
-      const viewport = document.getElementById('photoImmersiveViewport');
+      const container = document.getElementById('viewer-container');
       if (!document.fullscreenElement) {
-        viewport.requestFullscreen().catch(err => console.warn(err));
+        if (container) container.requestFullscreen().catch(err => console.warn(err));
       } else {
         document.exitFullscreen().catch(err => console.warn(err));
       }
     }
 
-    function onBoothImageLoaded() {
-      updatePinpointsPositions();
-    }
-
-    // ── Pinpoint Rendering & Normalized Coordinates ──
-    function renderPinpoints(pinpoints) {
-      const container = document.getElementById('pinpointsContainer');
-      container.innerHTML = '';
-
-      (pinpoints || []).forEach((pin, idx) => {
-        const slot = pin.slotIndex || (idx + 1);
-        const marker = document.createElement('div');
-        marker.className = 'pinpoint-marker';
-        marker.id = `pinpoint-slot-${slot}`;
-        marker.dataset.slotIndex = slot;
-
-        if (pin.isBlank) {
-          marker.innerHTML = `
-            <div class="blank-pin-badge">+${slot}</div>
-            <div class="blank-pin-label">ADD PRODUCT</div>
-          `;
-          marker.onclick = (e) => {
-            e.stopPropagation();
-            logAnalyticsEvent('blank_pin_clicked', { slotIndex: slot });
-            startProductOnboarding(slot, pin.u, pin.v);
-          };
-        } else {
-          marker.innerHTML = `
-            <div class="active-pin-badge"><i class="fa-solid fa-cube"></i></div>
-            <div class="blank-pin-label" style="border-color: #10b981; color: #10b981;">${pin.productName || 'PRODUCT 0' + slot}</div>
-          `;
-          marker.onclick = (e) => {
-            e.stopPropagation();
-            const prod = (activeProjectData?.products || []).find(p => p.slotIndex === slot);
-            if (prod) openProductDrawer(prod);
-          };
-        }
-
-        container.appendChild(marker);
-      });
-
-      updatePinpointsPositions();
-    }
-
-    function updatePinpointsPositions() {
-      const img = document.getElementById('studioBoothImg');
-      const stage = document.getElementById('photoImmersiveStage');
-      if (!img || !stage) return;
-
-      const imgRect = img.getBoundingClientRect();
-      const stageRect = stage.getBoundingClientRect();
-
-      const offsetX = (imgRect.left - stageRect.left) / (panZoom.scale || 1);
-      const offsetY = (imgRect.top - stageRect.top) / (panZoom.scale || 1);
-      const imgW = imgRect.width / (panZoom.scale || 1);
-      const imgH = imgRect.height / (panZoom.scale || 1);
-
-      const pinpoints = activeProjectData?.pinpoints || [];
-      pinpoints.forEach((pin, idx) => {
-        const slot = pin.slotIndex || (idx + 1);
-        const el = document.getElementById(`pinpoint-slot-${slot}`);
-        if (!el) return;
-
-        const u = pin.u !== undefined ? pin.u : 0.5;
-        const v = pin.v !== undefined ? pin.v : 0.5;
-
-        const posX = offsetX + (u * imgW);
-        const posY = offsetY + (v * imgH);
-
-        el.style.left = `${posX}px`;
-        el.style.top = `${posY}px`;
-      });
-    }
-
-    function handleStageClick(e) {
-      if (panZoom.isDragging) return;
-      const img = document.getElementById('studioBoothImg');
-      if (!img) return;
-
-      const imgRect = img.getBoundingClientRect();
-      if (e.clientX < imgRect.left || e.clientX > imgRect.right || e.clientY < imgRect.top || e.clientY > imgRect.bottom) {
-        return;
-      }
-
-      const u = Math.max(0, Math.min(1, (e.clientX - imgRect.left) / imgRect.width));
-      const v = Math.max(0, Math.min(1, (e.clientY - imgRect.top) / imgRect.height));
-      pendingCoords = { u: Number(u.toFixed(4)), v: Number(v.toFixed(4)) };
-      document.getElementById('coordsDisplay').textContent = `u: ${pendingCoords.u}, v: ${pendingCoords.v}`;
-
-      // If clicking directly on photo, find next available blank slot or target slot
-      const blankPin = (activeProjectData?.pinpoints || []).find(p => p.isBlank);
-      const slotToOpen = blankPin ? blankPin.slotIndex : 1;
-      startProductOnboarding(slotToOpen, pendingCoords.u, pendingCoords.v);
-    }
-
     // ── 3 Product Cards UI Rendering ──
     function renderProductCards(products) {
       const grid = document.getElementById('productCardsGrid');
+      if (!grid) return;
       grid.innerHTML = '';
 
       for (let s = 1; s <= 3; s++) {
@@ -1746,24 +2370,22 @@
               ${prod.imageUrl ? `<img src="${prod.imageUrl}" alt="${prod.name || 'Product'}">` : `<i class="fa-solid fa-camera" style="font-size: 24px; margin-bottom: 6px;"></i><span>+ Add Product Image</span>`}
             </div>
 
-            <div class="product-card-title">${prod.name || 'Not added yet'}</div>
+            <div class="product-card-title">${prod.name || `Product Slot 0${s}`}</div>
             <div class="product-card-desc">${prod.description || 'Add product specifications, commercial details, and AI generated descriptions.'}</div>
           </div>
 
           <div>
             <div class="product-card-progress">
-              <div class="product-card-progress-fill" style="width: ${prod.completionPct || 0}%;"></div>
+              <div class="product-card-progress-fill" style="width: ${prod.completionPct || (isFilled ? 100 : 0)}%;"></div>
             </div>
 
             <div style="display: flex; gap: 8px;">
               <button class="btn-hero ${isFilled ? 'btn-hero-secondary' : 'btn-hero-primary'}" onclick="startProductOnboarding(${s})" style="flex: 1; padding: 8px 12px; font-size: 12px; justify-content: center;">
                 <i class="fa-solid ${isFilled ? 'fa-pen-to-square' : 'fa-plus'}"></i> ${isFilled ? 'Edit Product' : 'Add Product'}
               </button>
-              ${isFilled ? `
-                <button class="btn-hero btn-hero-secondary" onclick="openProductDrawerForSlot(${s})" style="padding: 8px 12px; font-size: 12px;">
-                  <i class="fa-solid fa-eye"></i> Details
-                </button>
-              ` : ''}
+              <button class="btn-hero btn-hero-secondary" onclick="focusProduct(${s - 1})" style="padding: 8px 12px; font-size: 12px;">
+                <i class="fa-solid fa-eye"></i> Details
+              </button>
             </div>
           </div>
         `;
@@ -1915,11 +2537,11 @@
         activeProjectData = data.project;
         logAnalyticsEvent(`product_${slot}_completed`, { slotIndex: slot, productName: name });
 
-        renderPinpoints(data.project.pinpoints || []);
+        setupStudioProducts(data.project);
         renderProductCards(data.project.products || []);
         updateNextStepCTA();
 
-        openProductDrawer(data.product);
+        focusProduct(slot - 1);
       } catch (err) {
         alert('Error saving product: ' + err.message);
       }

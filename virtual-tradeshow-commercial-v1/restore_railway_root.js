@@ -1,6 +1,11 @@
 const https = require('https');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
-const token = 'eN5OiTxpb8l6M2H7v895ihuzSHVw2M3bBNitN4pda50';
+const configPath = path.join(os.homedir(), '.railway', 'config.json');
+const railwayConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+const token = railwayConfig.user?.accessToken;
 const serviceId = '8e807076-c4bf-4f0a-8bdc-e56d9ecb2016';
 const environmentId = '1241ff56-1c40-48a3-8831-eb4b1f913f13';
 
