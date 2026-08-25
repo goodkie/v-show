@@ -625,8 +625,8 @@
     .step-title { font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 8px; }
     .step-text { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
 
-    .demo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px; }
-    @media (max-width: 768px) {
+    .demo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px; }
+    @media (max-width: 900px) {
       .demo-grid { grid-template-columns: 1fr; }
       .photo-immersive-viewport { height: 420px; min-height: 420px; }
     }
@@ -1262,10 +1262,9 @@
       <div class="demo-card">
         <iframe class="demo-frame" src="/demo-matterport.html" title="Photo Immersive Booth Demo"></iframe>
         <div class="demo-info">
-          <div class="section-tag" style="font-size: 10px;">INDUSTRIAL TECH</div>
+          <div class="section-tag" style="font-size: 10px; color: #38bdf8;">INDUSTRIAL TECH</div>
           <div class="demo-title">DN'A ROBOTIC — SMART BOOTH</div>
-          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Next-gen industrial robotics with 360° multi-node floor roaming and real-time ROS telemetry.</p>
-          <a href="/demo-matterport.html" target="_blank" class="nav-link" style="color: #38bdf8; font-size: 13px; font-weight: 700;">Open Fullscreen Demo →</a>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 0;">Next-gen industrial robotics with 360° multi-node floor roaming, real-time ROS telemetry, and 3D equipment inspection.</p>
         </div>
       </div>
       <div class="demo-card">
@@ -1273,8 +1272,7 @@
         <div class="demo-info">
           <div class="section-tag" style="font-size: 10px; color: #fb7185;">LUXURY FASHION</div>
           <div class="demo-title">VANTÉLLE PARIS — RUNWAY BOOTH</div>
-          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Paris SS25 runway collection with precision 3D pins, lookbook downloads, and wholesale RFQ.</p>
-          <a href="/demo-fashion.html" target="_blank" class="nav-link" style="color: #fb7185; font-size: 13px; font-weight: 700;">Open Fullscreen Demo →</a>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 0;">Paris SS25 runway collection with precision 3D pins, lookbook downloads, and wholesale boutique RFQ engine.</p>
         </div>
       </div>
       <div class="demo-card">
@@ -1282,8 +1280,15 @@
         <div class="demo-info">
           <div class="section-tag" style="font-size: 10px; color: #e2c974;">CLINICAL COSMETICS</div>
           <div class="demo-title">LUMIÈRE — BEAUTY PAVILION</div>
-          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Botanical bio-cellular skincare showcase with active ingredient inspection and OEM inquiry.</p>
-          <a href="/demo-cosmetic.html" target="_blank" class="nav-link" style="color: #e2c974; font-size: 13px; font-weight: 700;">Open Fullscreen Demo →</a>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 0;">Botanical bio-cellular skincare showcase with active ingredient inspection, clinical trial specs, and OEM inquiry.</p>
+        </div>
+      </div>
+      <div class="demo-card">
+        <iframe class="demo-frame" src="/demo-furniture.html" title="Nova Living Scandinavian Designer Furniture Demo"></iframe>
+        <div class="demo-info">
+          <div class="section-tag" style="font-size: 10px; color: #f59e0b;">DESIGNER FURNITURE</div>
+          <div class="demo-title">NOVA LIVING — FURNITURE BOOTH</div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 0;">Scandinavian minimalist living &amp; dining suites with Belgian linen, solid oak, BIFMA testing, and trade pricing.</p>
         </div>
       </div>
     </div>

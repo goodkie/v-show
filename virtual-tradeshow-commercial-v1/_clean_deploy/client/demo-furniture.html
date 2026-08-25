@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>NOVA LIVING | Scandinavian Designer Furniture Showroom — Master Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Three.js & Controls -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+
+<style>
+:root {
+  --bg-deep: #02050b;
+  --bg-studio: #050b16;
+  --panel-bg: rgba(9, 16, 29, 0.94);
+  --panel-border: rgba(245, 158, 11, 0.35);
+  --cyan: #f59e0b;
+  --cyan-glow: rgba(245, 158, 11, 0.55);
+  --text-main: #ffffff;
+  --text-muted: #94a3b8;
+  --font: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --trans: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: var(--bg-deep); color: var(--text-main);
+  font-family: var(--font); user-select: none;
+  -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;
+}
+
+/* ══════════════════════════════════════════════
+   STUDIO LAYOUT
+══════════════════════════════════════════════ */
+#app-layout {
+  display: flex; flex-direction: column; width: 100vw; height: 100vh; overflow: hidden;
+  position: relative;
+}
+
+/* TOP NAV */
+#topbar {
+  height: 50px; flex-shrink: 0;
+  background: rgba(5, 11, 22, 0.98);
+  display: flex; align-items: center; justify-content: space-between; padding: 0 18px;
+  backdrop-filter: blur(14px); border-bottom: 1px solid rgba(255,255,255,0.08);
+  z-index: 100;
+}
+.brand-group { display: flex; align-items: center; gap: 10px; }
+.brand-logo { font-size: 17px; font-weight: 900; letter-spacing: -0.5px; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px; }
+.brand-logo span { color: var(--cyan); }
+.brand-badge { font-size: 9px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: var(--cyan); background: rgba(0,194,255,0.12); border: 1px solid var(--panel-border); border-radius: 20px; padding: 3px 9px; display: flex; align-items: center; gap: 6px; }
+.pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); animation: pulse-dot 1.8s infinite; }
+@keyframes pulse-dot { 0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.4);opacity:0.6;} }
+.top-actions { display: flex; align-items: center; gap: 8px; }
+.btn-ui { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: rgba(255,255,255,0.9); font-size: 11.5px; font-weight: 600; padding: 5px 11px; cursor: pointer; transition: var(--trans); text-decoration: none; white-space: nowrap; }
+.btn-ui:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.25); color: #fff; }
+.btn-ui.primary { background: #0284c7; border-color: #38bdf8; color: #fff; box-shadow: 0 0 14px rgba(2,132,199,0.4); }
+.btn-ui.primary:hover { background: #0369a1; }
+.btn-ui.download { background: rgba(0,194,255,0.12); border-color: var(--cyan); color: var(--cyan); }
+.btn-ui.download:hover { background: var(--cyan); color: #000; box-shadow: 0 0 16px var(--cyan-glow); }
+
+/* MAIN STUDIO WORKSPACE (Center Player + Right Unified Sidebar) */
+#studio-workspace {
+  flex: 1; display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 14px; padding: 12px 18px;
+  background: #02050b;
+  min-height: 0; align-items: stretch; position: relative;
+}
+
+/* ══════════════════════════════════════════════
+   CENTER WORKSPACE: 2/3 SIZE 3D PLAYER + BOTTOM PRODUCT SHORTCUT CARDS
+══════════════════════════════════════════════ */
+#player-workspace {
+  height: 100%; width: 100%; display: flex; flex-direction: column;
+  gap: 12px; min-height: 0; position: relative;
+}
+
+/* 2/3 SIZE 3D PLAYER */
+#viewer-container {
+  position: relative; width: 100%; flex: 1; min-height: 0;
+  border-radius: 16px; overflow: hidden;
+  border: 1px solid rgba(0, 194, 255, 0.4);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 194, 255, 0.2);
+  cursor: grab; background: #000;
+}
+#viewer-container:active { cursor: grabbing; }
+#three-canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+
+/* 360 HINT IN PLAYER CORNER */
+.player-tag {
+  position: absolute; top: 12px; left: 12px; z-index: 10;
+  background: rgba(5, 11, 22, 0.9); border: 1px solid var(--panel-border);
+  border-radius: 20px; padding: 4px 11px; font-size: 9.5px; font-weight: 800;
+  color: var(--cyan); backdrop-filter: blur(10px); display: flex; align-items: center; gap: 6px;
+  pointer-events: none;
+}
+.res-pill {
+  position: absolute; top: 12px; right: 12px; z-index: 10;
+  background: rgba(2, 132, 199, 0.35); border: 1px solid #38bdf8;
+  border-radius: 20px; padding: 4px 11px; font-size: 9.5px; font-weight: 800;
+  color: #fff; font-family: var(--mono); backdrop-filter: blur(10px);
+}
+
+/* ══════════════════════════════════════════════
+   BOTTOM PRODUCT SHORTCUT CARDS TRAY (4 ROBOTS)
+══════════════════════════════════════════════ */
+#product-cards-tray {
+  height: 125px; flex-shrink: 0;
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 10px; align-items: stretch;
+}
+
+.prod-quick-card {
+  background: var(--panel-bg); border: 1px solid var(--panel-border);
+  border-radius: 12px; padding: 8px 10px; cursor: pointer;
+  display: flex; gap: 10px; align-items: center;
+  transition: var(--trans); position: relative; overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5); backdrop-filter: blur(16px);
+}
+.prod-quick-card:hover {
+  background: rgba(14, 28, 50, 0.98); border-color: var(--cyan);
+  transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0, 194, 255, 0.25);
+}
+.prod-quick-card.active {
+  border-color: var(--cyan); background: rgba(0, 194, 255, 0.14);
+  box-shadow: 0 0 18px rgba(0, 194, 255, 0.35);
+}
+.prod-card-thumb {
+  width: 76px; height: 100%; border-radius: 8px; overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; background: #000;
+}
+.prod-card-thumb img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform 0.3s ease;
+}
+.prod-quick-card:hover .prod-card-thumb img { transform: scale(1.08); }
+.prod-card-body {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 3px;
+}
+.prod-card-cat { font-size: 8.5px; font-weight: 800; color: var(--cyan); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prod-card-title { font-size: 12px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prod-card-spec { font-size: 9.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prod-card-btn {
+  margin-top: 2px; font-size: 9px; font-weight: 700; color: #38bdf8;
+  display: flex; align-items: center; gap: 3px;
+}
+
+/* ══════════════════════════════════════════════
+   COMPACT 3D FLOATING PRODUCT CAPSULES (50% SCALE)
+   - 24px Sharp Circular Thumbnail
+   - Dual-Line Micro Tag & Bold Title
+══════════════════════════════════════════════ */
+#hotspot-layer { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
+
+.hotspot-tag {
+  position: absolute; transform: translate(-50%, -50%);
+  pointer-events: auto; cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(5, 11, 22, 0.94); backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(0, 194, 255, 0.75); border-radius: 20px;
+  padding: 3px 9px 3px 3px;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7), 0 0 12px rgba(0, 194, 255, 0.35);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); white-space: nowrap;
+}
+.hotspot-tag:hover {
+  background: rgba(2, 132, 199, 0.98); border-color: #38bdf8;
+  transform: translate(-50%, -50%) scale(1.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.9), 0 0 22px rgba(0, 194, 255, 0.7);
+}
+.hotspot-thumb-img {
+  width: 24px; height: 24px; border-radius: 50%; object-fit: cover;
+  border: 1.5px solid var(--cyan); flex-shrink: 0; display: block;
+  box-shadow: 0 0 8px rgba(0, 194, 255, 0.5);
+  background: #000;
+  transition: transform 0.25s ease;
+}
+.hotspot-tag:hover .hotspot-thumb-img { transform: scale(1.08); }
+.hotspot-info { display: flex; flex-direction: column; gap: 1px; }
+.hotspot-cat { font-size: 6.5px; font-weight: 800; color: #ffffff; text-transform: uppercase; letter-spacing: 0.6px; line-height: 1; opacity: 0.85; }
+.hotspot-tag:hover .hotspot-cat { color: #ffffff; opacity: 1; }
+.hotspot-label-text { font-size: 10px; font-weight: 800; color: #ffffff; line-height: 1.1; }
+.hotspot-dot {
+  width: 5px; height: 5px; border-radius: 50%; background: #38bdf8;
+  box-shadow: 0 0 6px #38bdf8; flex-shrink: 0; animation: hotspot-pulse 1.8s infinite;
+}
+@keyframes hotspot-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.8); }
+  70% { box-shadow: 0 0 0 8px rgba(56, 189, 248, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+}
+
+/* ══════════════════════════════════════════════
+   RIGHT UNIFIED SIDEBAR (Radar + Equipment Specs)
+══════════════════════════════════════════════ */
+.unified-sidebar {
+  height: 100%; display: flex; flex-direction: column; gap: 14px;
+  background: var(--panel-bg); border: 1px solid var(--panel-border);
+  border-radius: 16px; padding: 16px; backdrop-filter: blur(20px);
+  overflow-y: auto; box-shadow: 0 16px 36px rgba(0,0,0,0.6);
+  z-index: 10;
+}
+.panel-head { font-size: 10px; font-weight: 800; color: var(--cyan); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 2px; }
+.panel-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+
+/* 1. Radar Minimap */
+.radar-box {
+  background: rgba(2, 5, 11, 0.7); border: 1px solid var(--panel-border);
+  border-radius: 12px; padding: 12px;
+}
+.radar-header { font-size: 9.5px; font-weight: 800; color: var(--cyan); letter-spacing: 1px; text-transform: uppercase; display: flex; justify-content: space-between; margin-bottom: 8px; }
+#radar-canvas { width: 100%; height: 95px; display: block; border-radius: 6px; }
+
+/* 2. Focus Equipment Specs Box */
+.spec-panel-box {
+  background: rgba(2, 5, 11, 0.65); border: 1px solid var(--panel-border);
+  border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px;
+}
+.spec-title { font-size: 13.5px; font-weight: 800; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+.spec-desc { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+.spec-list { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 4px; }
+.spec-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 6px 8px; }
+.spec-k { font-size: 8.5px; color: var(--text-muted); font-weight: 600; }
+.spec-v { font-size: 11px; color: var(--cyan); font-weight: 700; font-family: var(--mono); }
+
+/* BOTTOM TOOLBAR */
+#studio-footer {
+  height: 42px; flex-shrink: 0;
+  background: rgba(5, 11, 22, 0.98); border-top: 1px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; justify-content: space-between; padding: 0 18px;
+  z-index: 50;
+}
+.foot-info { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 14px; }
+.foot-info strong { color: var(--cyan); }
+.foot-actions { display: flex; align-items: center; gap: 8px; }
+
+/* ══════════════════════════════════════════════
+   PRODUCT INSPECTION DRAWER & 360° 3D MINI PLAYER
+══════════════════════════════════════════════ */
+#drawer-scrim {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+  z-index: 400; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+}
+#drawer-scrim.open { opacity: 1; pointer-events: auto; }
+
+.drawer {
+  position: absolute; z-index: 500; top: 0; right: 0; bottom: 0;
+  width: 460px; max-width: 94vw; background: rgba(7, 14, 26, 0.98);
+  backdrop-filter: blur(26px); border-left: 1px solid var(--panel-border);
+  transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex; flex-direction: column; box-shadow: -15px 0 50px rgba(0,0,0,0.9);
+}
+.drawer.open { transform: translateX(0); }
+.drawer-header {
+  padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.drawer-badge { font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--cyan); }
+.drawer-close {
+  width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--panel-border);
+  background: rgba(255,255,255,0.05); color: var(--text-muted); font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: var(--trans);
+}
+.drawer-close:hover { background: rgba(239, 68, 68, 0.2); color: #ef4444; border-color: #ef4444; }
+.drawer-body { flex: 1; overflow-y: auto; padding: 18px; }
+
+/* MEDIA CONTAINER (4K PHOTO VS 360° 3D MINI PLAYER) */
+.drawer-media-tabs {
+  display: flex; gap: 6px; margin: 4px 0 8px;
+}
+.media-tab-btn {
+  flex: 1; padding: 6px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; color: var(--text-muted); cursor: pointer; transition: var(--trans);
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.media-tab-btn:hover { background: rgba(0,194,255,0.08); color: #fff; border-color: var(--panel-border); }
+.media-tab-btn.active {
+  background: rgba(0,194,255,0.2); border-color: var(--cyan); color: var(--cyan);
+  box-shadow: 0 0 12px rgba(0,194,255,0.3);
+}
+
+.drawer-img-box {
+  width: 100%; border-radius: 12px; overflow: hidden;
+  border: 1px solid var(--panel-border); margin: 0 0 14px;
+  position: relative; background: #000; box-shadow: 0 10px 28px rgba(0,0,0,0.7);
+  height: 220px; display: flex; align-items: center; justify-content: center;
+}
+.drawer-img-box img {
+  width: 100%; height: 100%; object-fit: contain !important; display: block;
+  background: #000;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.drawer-img-box:hover img { transform: scale(1.04); }
+
+/* MINI 3D TURNTABLE CONTAINER */
+#drawer-3d-view {
+  width: 100%; height: 100%; position: absolute; inset: 0; display: none; background: radial-gradient(circle at center, #0a192f 0%, #02050b 100%);
+}
+#drawer-3d-canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+#drawer-3d-canvas:active { cursor: grabbing; }
+.mini-3d-controls {
+  position: absolute; bottom: 8px; left: 8px; right: 8px; display: flex; justify-content: space-between; align-items: center; pointer-events: none;
+}
+.mini-3d-pill {
+  pointer-events: auto; background: rgba(5, 11, 22, 0.88); border: 1px solid var(--panel-border);
+  border-radius: 20px; padding: 3px 8px; font-size: 8.5px; font-weight: 800;
+  color: var(--cyan); backdrop-filter: blur(8px); font-family: var(--mono); cursor: pointer;
+}
+.mini-3d-pill:hover { background: var(--cyan); color: #000; }
+
+.drawer-hero {
+  border-radius: 12px; border: 1px solid var(--panel-border);
+  background: linear-gradient(135deg, #0b1a2e 0%, #050b16 100%);
+  padding: 14px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 5px;
+}
+.drawer-prod-title { font-size: 18px; font-weight: 800; color: #fff; }
+.drawer-prod-desc { font-size: 11.5px; color: var(--text-muted); line-height: 1.5; }
+
+.drawer-specs-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 11.5px; }
+.drawer-specs-table tr { border-bottom: 1px solid rgba(255,255,255,0.06); }
+.drawer-specs-table td { padding: 7px 5px; }
+.drawer-specs-table td:first-child { color: var(--text-muted); font-weight: 600; width: 42%; }
+.drawer-specs-table td:last-child { color: #fff; font-weight: 700; text-align: right; font-family: var(--mono); color: var(--cyan); }
+
+/* ROTATE TO LANDSCAPE BANNER FOR MOBILE PORTRAIT */
+#portrait-tip-bar {
+  display: none; position: absolute; top: 54px; left: 10px; right: 10px; z-index: 150;
+  background: linear-gradient(135deg, rgba(2,132,199,0.95), rgba(14,165,233,0.95));
+  border: 1px solid #38bdf8; border-radius: 12px; padding: 9px 12px;
+  color: #fff; font-size: 11px; font-weight: 700; text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5); backdrop-filter: blur(10px);
+  animation: float-tip 2.5s infinite ease-in-out;
+}
+@keyframes float-tip { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-3px);} }
+#portrait-tip-bar span { opacity: 0.85; font-size: 9.5px; display: block; font-weight: 500; margin-top: 2px; }
+
+/* MODALS */
+.app-modal {
+  display: none; position: fixed; inset: 0; z-index: 900;
+  background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+  align-items: center; justify-content: center;
+}
+.app-modal.open { display: flex; }
+.modal-box {
+  background: linear-gradient(135deg, #070c18 0%, #0a1222 100%);
+  border: 1px solid var(--panel-border); border-radius: 20px;
+  padding: 22px; max-width: 480px; width: 92%; position: relative;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.85);
+}
+.modal-close { position: absolute; top: 14px; right: 14px; background: rgba(255,255,255,0.08); border: none; border-radius: 50%; width: 28px; height: 28px; color: #fff; font-size: 13px; cursor: pointer; }
+
+/* DOWNLOAD CARDS */
+.dl-card {
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(255,255,255,0.04); border: 1px solid var(--panel-border);
+  border-radius: 10px; padding: 9px 12px; margin-bottom: 8px; transition: var(--trans);
+}
+.dl-card:hover { background: rgba(0,194,255,0.08); border-color: var(--cyan); }
+.dl-info { display: flex; flex-direction: column; gap: 2px; }
+.dl-title { font-size: 11px; font-weight: 700; color: #fff; }
+.dl-meta { font-size: 9px; color: var(--text-muted); font-family: var(--mono); }
+.dl-btn {
+  background: #0284c7; border: 1px solid #38bdf8; border-radius: 6px;
+  color: #fff; font-size: 10.5px; font-weight: 700; padding: 5px 10px;
+  text-decoration: none; display: flex; align-items: center; gap: 4px;
+}
+.dl-btn:hover { background: #0369a1; box-shadow: 0 0 12px var(--cyan-glow); }
+
+/* TOAST */
+#toast {
+  position: fixed; bottom: 52px; left: 50%; transform: translateX(-50%) translateY(10px);
+  background: rgba(0,194,255,0.2); border: 1px solid var(--cyan);
+  border-radius: 30px; padding: 7px 16px; font-size: 11.5px; font-weight: 600;
+  color: var(--cyan); backdrop-filter: blur(12px); z-index: 800;
+  opacity: 0; transition: all 0.3s ease; pointer-events: none;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ══════════════════════════════════════════════
+   MOBILE LANDSCAPE ORIENTATION OVERLAY
+══════════════════════════════════════════════ */
+#rotate-landscape-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(4, 8, 18, 0.98);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+@media (max-width: 900px) and (orientation: portrait) {
+  #rotate-landscape-overlay {
+    display: flex !important;
+  }
+}
+.rotate-icon-anim {
+  font-size: 52px; margin-bottom: 16px;
+  animation: rotate-phone 2.6s ease-in-out infinite;
+}
+@keyframes rotate-phone {
+  0%, 20% { transform: rotate(0deg) scale(1); }
+  50%, 70% { transform: rotate(-90deg) scale(1.1); }
+  90%, 100% { transform: rotate(0deg) scale(1); }
+}
+.rotate-title {
+  font-size: 19px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.3px;
+}
+.rotate-title span { color: var(--cyan); }
+.rotate-desc {
+  font-size: 12.5px; color: var(--text-muted); line-height: 1.6; max-width: 320px;
+}
+
+/* ══════════════════════════════════════════════
+   MOBILE LANDSCAPE RESPONSIVE RULES
+   - Vertical Left Product Tray
+   - Fullscreen 3D Main Viewport on Right
+══════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  #topbar { height: 42px; padding: 0 10px; }
+  .brand-logo { font-size: 14px; }
+  .brand-badge { display: none; }
+  .btn-ui { padding: 4px 8px; font-size: 10.5px; }
+  
+  #studio-workspace {
+    display: flex; flex-direction: row; padding: 6px; gap: 8px;
+  }
+  .unified-sidebar { display: none; }
+  
+  #player-workspace {
+    flex-direction: row; gap: 8px; width: 100%; height: 100%;
+  }
+  
+  /* MOVE CARDS TRAY TO LEFT VERTICALLY ON MOBILE */
+  #product-cards-tray {
+    order: -1;
+    width: 160px; height: 100%;
+    display: flex; flex-direction: column; gap: 6px;
+    overflow-y: auto; flex-shrink: 0;
+  }
+  .prod-quick-card {
+    height: calc(25% - 5px); min-height: 58px;
+    padding: 6px; gap: 6px;
+  }
+  .prod-card-thumb { width: 44px; height: 100%; }
+  .prod-card-title { font-size: 10px; }
+  .prod-card-cat { font-size: 7px; }
+  .prod-card-spec { display: none; }
+  .prod-card-btn { font-size: 7.5px; }
+  
+  #viewer-container {
+    flex: 1; height: 100%; min-width: 0;
+  }
+  #studio-footer { height: 34px; padding: 0 10px; font-size: 9.5px; }
+  .foot-info span:not(:last-child) { display: none; }
+  .drawer { width: 100vw; max-width: 100vw; }
+}
+</style>
+</head>
+<body>
+
+<!-- ROTATE TO LANDSCAPE ORIENTATION OVERLAY -->
+<div id="rotate-landscape-overlay">
+  <div class="rotate-icon-anim">📱</div>
+  <div class="rotate-title">Please Rotate to <span>Landscape Mode</span></div>
+  <div class="rotate-desc">DN'a ROBOTIC 3D Digital Twin requires full-screen horizontal viewing for the optimal immersive trade show experience.</div>
+</div>
+<div id="app-layout">
+  <!-- TOP NAV -->
+  <header id="topbar">
+    <div class="brand-group">
+      <a href="/" class="brand-logo" title="dn'a Home"><img src="/assets/brand/dna_logo_white.png" alt="dn'a DIGITAL NETWORKING ADVANTAGE" style="height: 52px; width: auto; object-fit: contain; vertical-align: middle; display: block;"></a>
+      <div class="brand-badge"><div class="pulse-dot"></div> PHOTO IMMERSIVE BOOTH</div>
+    </div>
+    <div class="top-actions">
+      <a href="/builder.html" class="btn-ui primary" style="background: linear-gradient(135deg, #0284c7, #2563eb); border-color: #38bdf8; box-shadow: 0 4px 14px rgba(2,132,199,0.5); font-weight: 800;">BUILD A BOOTH LIKE THIS →</a>
+      <a href="/demo.html" class="btn-ui">3D SHOWROOM</a>
+      <button class="btn-ui download" onclick="openDownloadModal()">DOWNLOAD CATALOG</button>
+      <button class="btn-ui primary" onclick="openRFQ()">REQUEST TRADE / WHOLESALE</button>
+    </div>
+  </header>
+
+  <!-- MOBILE PORTRAIT TIP BANNER -->
+  <div id="portrait-tip-bar" onclick="this.style.display='none'">
+    📱 Rotate your phone to <strong>[Landscape Mode]</strong> for the optimal ultra-wide studio experience!
+    <span>(Tap to dismiss)</span>
+  </div>
+
+  <!-- MAIN STUDIO WORKSPACE (Center Player + Right Unified Sidebar) -->
+  <main id="studio-workspace">
+    <!-- CENTER: 2/3 SIZE 3D PLAYER + PRODUCT SHORTCUT CARDS -->
+    <section id="player-workspace">
+      <div id="viewer-container">
+        <canvas id="three-canvas"></canvas>
+        <!-- 3D Hotspot Tags Overlay -->
+        <div id="hotspot-layer"></div>
+        <div class="player-tag">🌐 Photo Immersive 360° Studio</div>
+        <div class="res-pill" id="res-indicator">ULTRA-HD MASTER STUDIO</div>
+      </div>
+
+      <!-- BOTTOM PRODUCT SHORTCUT CARDS TRAY (4 ROBOTS) -->
+      <div id="product-cards-tray">
+        <div class="prod-quick-card active" id="pcard-0" onclick="focusProduct(0)">
+          <div class="prod-card-thumb">
+            <img src="/assets/demo/furniture-showcase/products/linen_sofa.jpg" alt="Nordic Organic Linen Sofa">
+          </div>
+          <div class="prod-card-body">
+            <div class="prod-card-cat" style="color:#ffffff;">LIVING ROOM SUITE</div>
+            <div class="prod-card-title">Nordic Linen 3-Seater</div>
+            <div class="prod-card-spec">Belgian Linen &amp; Solid Oak</div>
+            <div class="prod-card-btn">Inspect Specs <span>→</span></div>
+          </div>
+        </div>
+
+        <div class="prod-quick-card" id="pcard-1" onclick="focusProduct(1)">
+          <div class="prod-card-thumb">
+            <img src="/assets/demo/furniture-showcase/products/lounge_chair.jpg" alt="Artisan Walnut Lounge Chair">
+          </div>
+          <div class="prod-card-body">
+            <div class="prod-card-cat" style="color:#ffffff;">ACCENT SEATING</div>
+            <div class="prod-card-title">Walnut Lounge Chair</div>
+            <div class="prod-card-spec">American Walnut &amp; Leather</div>
+            <div class="prod-card-btn">Inspect Specs <span>→</span></div>
+          </div>
+        </div>
+
+        <div class="prod-quick-card" id="pcard-2" onclick="focusProduct(2)">
+          <div class="prod-card-thumb">
+            <img src="/assets/demo/furniture-showcase/products/dining_table.jpg" alt="Stockholm Solid Oak Dining Table">
+          </div>
+          <div class="prod-card-body">
+            <div class="prod-card-cat" style="color:#ffffff;">DINING PAVILION</div>
+            <div class="prod-card-title">Stockholm Dining Set</div>
+            <div class="prod-card-spec">Solid Oak &amp; Carbon Steel</div>
+            <div class="prod-card-btn">Inspect Specs <span>→</span></div>
+          </div>
+        </div>
+
+        <div class="prod-quick-card" id="pcard-3" onclick="focusProduct(3)">
+          <div class="prod-card-thumb">
+            <img src="/assets/demo/furniture-showcase/products/leather_sofa.jpg" alt="Espresso Leather Sectional">
+          </div>
+          <div class="prod-card-body">
+            <div class="prod-card-cat" style="color:#ffffff;">EXECUTIVE LOUNGE</div>
+            <div class="prod-card-title">Espresso Leather Sofa</div>
+            <div class="prod-card-spec">Italian Semi-Aniline Leather</div>
+            <div class="prod-card-btn">Inspect Specs <span>→</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT UNIFIED SIDEBAR (Booth Radar & Focused Equipment Specs) -->
+    <aside class="unified-sidebar">
+      <!-- 1. Booth Radar Minimap -->
+      <div class="radar-box">
+        <div class="radar-header">
+          <span>BOOTH RADAR MINIMAP</span>
+          <span id="radar-loc-txt">01. MAIN BOOTH</span>
+        </div>
+        <canvas id="radar-canvas" width="306" height="95"></canvas>
+      </div>
+
+      <!-- 2. Live Target Specs Box -->
+      <div class="spec-panel-box">
+        <div class="panel-head" style="margin-bottom:0;">FEATURED DESIGNER PIECE</div>
+        <div class="spec-title">
+          <span id="side-spec-title">Nordic Organic Linen 3-Seater</span>
+          <button class="btn-ui" style="padding:2px 6px;font-size:9px;" onclick="openCurrentProductDrawer()">Details →</button>
+        </div>
+        <div class="spec-desc" id="side-spec-desc">Contemporary minimalist 3-seater sofa upholstered in Belgian organic linen with solid oak tapered legs.</div>
+        
+    
+    <div class="spec-list" id="side-spec-list">
+      <div class="spec-item"><div class="spec-k">TIMBER</div><div class="spec-v">FSC Solid Oak</div></div>
+      <div class="spec-item"><div class="spec-k">FABRIC</div><div class="spec-v">Belgian Linen 450g</div></div>
+      <div class="spec-item"><div class="spec-k">STANDARD</div><div class="spec-v">BIFMA Commercial</div></div>
+      <div class="spec-item"><div class="spec-k">TRADE MOQ</div><div class="spec-v">4 Units / Custom</div></div>
+    </div>
+  <div class="spec-v">Cashmere &amp; Silk</div></div>
+      <div class="spec-item"><div class="spec-k">SEASON</div><div class="spec-v">SS25 Paris Runway</div></div>
+      <div class="spec-item"><div class="spec-k">ORIGIN</div><div class="spec-v">Atelier Paris</div></div>
+      <div class="spec-item"><div class="spec-k">WHOLESALE</div><div class="spec-v">8 Sets MOQ</div></div>
+    </div>
+  <div class="spec-v">16.0 kg</div></div>
+          <div class="spec-item"><div class="spec-k">REPEATABILITY</div><div class="spec-v">±0.025 mm</div></div>
+          <div class="spec-item"><div class="spec-k">REACH</div><div class="spec-v">1300 mm</div></div>
+          <div class="spec-item"><div class="spec-k">SAFETY</div><div class="spec-v">ISO TS 15066</div></div>
+        </div>
+      </div>
+
+      <button class="btn-ui primary" style="margin-top:auto;justify-content:center;padding:11px;font-size:12px;" onclick="openRFQ()">
+        📝 Request Trade / Wholesale Quote
+      </button>
+    </aside>
+  </main>
+
+  <!-- STUDIO FOOTER -->
+  <footer id="studio-footer">
+    <div class="foot-info">
+      <span>Engine: <strong>Three.js WebGL Photo Immersive</strong></span>
+      <span>Filtering: <strong>16x Anisotropic + ACES Filmic HDR</strong></span>
+      <span>Vantage: <strong id="foot-loc">01. Nova Living Designer Pavilion</strong></span>
+    </div>
+    <div class="foot-actions">
+      <button class="btn-ui" id="btn-autotour" onclick="toggleAutoTour()">
+        <span>▶</span> START AUTO TOUR
+      </button>
+      <button class="btn-ui" onclick="toggleFullscreen()">
+        <span>⛶</span> FULLSCREEN
+      </button>
+    </div>
+  </footer>
+
+  <!-- DRAWER BACKDROP SCRIM -->
+  <div id="drawer-scrim" onclick="closeDrawer()"></div>
+
+  <!-- ══════════════════════════════════════════════
+       PRODUCT INSPECTION DRAWER WITH HIGH-RES HERO VISUALS & 360° 3D MINI PLAYER
+  ══════════════════════════════════════════════ -->
+  <aside class="drawer" id="product-drawer">
+    <div class="drawer-header">
+      <div>
+        <div class="drawer-badge" id="drw-badge">COLLABORATIVE ROBOTICS</div>
+        <div style="font-size:11px;color:var(--text-muted);font-family:var(--mono);" id="drw-model">APX-CB-16</div>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <!-- Media Mode Switcher Tabs -->
+      <div class="drawer-media-tabs">
+        <button class="media-tab-btn active" id="tab-photo" onclick="setDrawerMediaMode('photo')">
+          🖼 4K STUDIO PHOTO
+        </button>
+        <button class="media-tab-btn" id="tab-3d" onclick="setDrawerMediaMode('3d')">
+          🔄 360° 3D VIEWER
+        </button>
+      </div>
+
+      <!-- High-Res Product Hero Photo & 360 3D Mini View -->
+      <div class="drawer-img-box" id="drw-img-box">
+        <img id="drw-img" src="/assets/demo/dna-showcase/products/apex_cobot_x16.jpg" alt="Product Visual">
+        
+        <!-- Embedded Mini 3D Turntable View -->
+        <div id="drawer-3d-view">
+          <canvas id="drawer-3d-canvas"></canvas>
+          <div class="mini-3d-controls">
+            <button class="mini-3d-pill" onclick="toggleDrawer3dAutoRotate()" id="btn-3d-autorot">🔄 Auto-Rotate: ON</button>
+            <button class="mini-3d-pill" onclick="toggleDrawer3dWireframe()" id="btn-3d-wire">⚡ Wireframe: OFF</button>
+            <button class="mini-3d-pill" onclick="resetDrawer3dCamera()">🎯 Reset View</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="drawer-hero">
+        <h2 class="drawer-prod-title" id="drw-title">Apex Cobot X16</h2>
+        <p class="drawer-prod-desc" id="drw-desc">6-axis precision collaborative robot with integrated joint torque sensors and ISO/TS 15066 certified collision detection.</p>
+      </div>
+
+      <div class="panel-head" style="margin-bottom:6px;">TECHNICAL SPECIFICATIONS</div>
+      <table class="drawer-specs-table" id="drw-specs-table">
+        <!-- Injected via JS -->
+      </table>
+
+      <div class="panel-head" style="margin:14px 0 6px;">KEY HIGHLIGHTS</div>
+      <div style="font-size:11px;color:var(--text-muted);line-height:1.6;" id="drw-highlights">
+        <!-- Injected via JS -->
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px;">
+        <button class="btn-ui primary" style="justify-content:center;padding:10px;font-size:12px;" onclick="openRFQ()">
+          📝 Request 1:1 Custom RFQ
+        </button>
+        <button class="btn-ui download" style="justify-content:center;padding:8px;" onclick="openDownloadModal()">
+          📥 Download 64K Master Original Assets
+        </button>
+        <a href="/demo.html" class="btn-ui" style="justify-content:center;padding:8px;">
+          🌐 Open in Virtual 3D Showroom →
+        </a>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- 64K Photo Download Modal -->
+<div class="app-modal" id="download-modal" onclick="if(event.target===this)closeDownloadModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeDownloadModal()">✕</button>
+    <div style="font-size:10px;font-weight:800;color:var(--cyan);letter-spacing:1px;text-transform:uppercase;">64K MASTER ULTRA-HD ORIGINAL ASSETS</div>
+    <h2 style="font-size:17px;font-weight:800;color:#fff;margin:6px 0 6px;">📸 64K Master Ultra-HD Download</h2>
+    <p style="font-size:11px;color:var(--text-muted);line-height:1.5;margin-bottom:14px;">
+      Direct download links for 64K (65,536 × 32,768) uncompressed equirectangular panorama master photography assets.
+    </p>
+
+    <div class="dl-card">
+      <div class="dl-info">
+        <div class="dl-title">01. Main Booth Central Panorama (Middle Master)</div>
+        <div class="dl-meta">Ultra-HD Equirectangular JPG (64K Master) · 3.7 MB</div>
+      </div>
+      <a href="/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg" download="DN_a_Booth_Main_64K.jpg" class="dl-btn">⬇ Download</a>
+    </div>
+
+    <div class="dl-card">
+      <div class="dl-info">
+        <div class="dl-title">02. Cobot Workstation Area (Left Master)</div>
+        <div class="dl-meta">Ultra-HD Equirectangular JPG (64K Master) · 3.5 MB</div>
+      </div>
+      <a href="/assets/demo/dna-showcase/pano360/node1_360_panorama_8k.jpg" download="DN_a_Cobot_Station_64K.jpg" class="dl-btn">⬇ Download</a>
+    </div>
+
+    <div class="dl-card">
+      <div class="dl-info">
+        <div class="dl-title">03. AMR & Media Cell Area (Right Master)</div>
+        <div class="dl-meta">Ultra-HD Equirectangular JPG (64K Master) · 4.0 MB</div>
+      </div>
+      <a href="/assets/demo/dna-showcase/pano360/node2_360_panorama_8k.jpg" download="DN_a_AMR_Cell_64K.jpg" class="dl-btn">⬇ Download</a>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="btn-ui primary" style="flex:1;justify-content:center;padding:10px;" onclick="downloadAllPhotos()">📦 Download All 3 Master Views</button>
+      <button class="btn-ui" style="padding:10px;" onclick="closeDownloadModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast">Notification</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   MATTERPORT 64K ULTRA-HD MASTER STUDIO ENGINE (v8.0)
+   - 4 Industrial Robotic Dummy Systems
+   - 2/3 Height 3D Main Player + Bottom 4-Product Tray
+   - Permanent 3D Floating Capsules with Thumbnails & English Titles
+   - Right Unified Sidebar (Radar Minimap + Focused Robot Specs)
+   - Product Inspection Drawer: 4K Photo & Interactive 360° 3D Mini Player
+   - 100% Full English Localization
+═══════════════════════════════════════════════════════════ */
+
+// 1. SPATIAL NODES (64K Master Panoramas - No People)
+const SPATIAL_NODES = [
+  {
+    id: 0,
+    name: "01. Nova Living Designer Pavilion",
+    preview: "/assets/demo/furniture-showcase/pano360/node0_preview.jpg",
+    image8k: "/assets/demo/furniture-showcase/pano360/node0_360_panorama_8k.jpg",
+    image16k: "/assets/demo/furniture-showcase/pano360/node0_360_panorama_8k.jpg",
+    puckPos: new THREE.Vector3(0, -160, -320),
+    radarPos: { x: 153, y: 72 }
+  }
+];
+
+// 2. FOUR DISTINCT INDUSTRIAL ROBOT PRODUCTS
+const PRODUCTS_DATA = [
+  {
+    id: 'PROD-01-LINEN-SOFA',
+    name: 'Nordic Organic Linen 3-Seater Sofa',
+    model: 'NL-LIV-SF03',
+    category: 'Living Room Suite',
+    image: '/assets/demo/furniture-showcase/products/linen_sofa.jpg',
+    worldPos: new THREE.Vector3(-220, -50, -320),
+    nodeIdx: 0,
+    desc: 'Contemporary minimalist 3-seater sofa upholstered in Belgian organic linen with solid oak tapered legs and high-resilience feather-down blend cushions.',
+    specs: [
+      ['Frame & Legs', 'FSC-Certified Solid Kiln-Dried European Oak'],
+      ['Upholstery Material', '100% Belgian Organic Linen (450g/m²)'],
+      ['Cushion Core', 'High-Density Bio-Foam + Goose Feather Layer'],
+      ['Dimensions', '220cm (W) x 92cm (D) x 82cm (H)'],
+      ['Abrasion Resistance', 'Martindale 45,000 Rubs · Stain-Shield'],
+      ['Wholesale / Trade MOQ', '4 Units / Hospitality Grade Finish']
+    ],
+    highlights: [
+      'Removable and washable slipcovers with concealed YKK invisible zippers',
+      'Ergonomically angled backrest engineered for long-duration residential and lounge comfort',
+      'Available in Sand Beige, Charcoal, Forest Green, and Warm Oat'
+    ],
+    robotType: 'cobot'
+  },
+  {
+    id: 'PROD-02-WALNUT-CHAIR',
+    name: 'Artisan Walnut Lounge Armchair',
+    model: 'NL-LIV-AC01',
+    category: 'Accent Seating',
+    image: '/assets/demo/furniture-showcase/products/lounge_chair.jpg',
+    worldPos: new THREE.Vector3(-105, -60, -340),
+    nodeIdx: 0,
+    desc: 'Mid-century modern accent lounge chair handcrafted from American black walnut with top-grain saddle leather tufted backrest and brass nailhead trim.',
+    specs: [
+      ['Wood Structure', 'Solid American Black Walnut · Oil Wax Finish'],
+      ['Leather Grade', 'Full-Grain Pull-Up Aniline Cowhide (1.4mm)'],
+      ['Joinery Technique', 'Traditional Mortise & Tenon Wood Joinery'],
+      ['Dimensions', '78cm (W) x 85cm (D) x 76cm (H)'],
+      ['Weight Capacity', 'Tested to 200kg BIFMA Standards'],
+      ['Wholesale MOQ', '6 Pieces / Assorted Finishes']
+    ],
+    highlights: [
+      'Sculpted organic armrests hand-sanded to a silky matte tactile finish',
+      'Leather ages into a rich vintage patina with enhanced character over decades',
+      'Flat-pack modular assembly option available for efficient international export container shipping'
+    ],
+    robotType: 'amr'
+  },
+  {
+    id: 'PROD-03-DINING-TABLE',
+    name: 'Stockholm Solid Oak Dining Table Set',
+    model: 'NL-DIN-TB08',
+    category: 'Dining Pavilion',
+    image: '/assets/demo/furniture-showcase/products/dining_table.jpg',
+    worldPos: new THREE.Vector3(-15, -45, -350),
+    nodeIdx: 0,
+    desc: 'Expansive 8-seater dining table with curved organic corners, matching ergonomic upholstered dining chairs, and matte black steel cantilever trestle base.',
+    specs: [
+      ['Tabletop Timber', 'Solid White Oak Edge-Glued Planks (38mm)'],
+      ['Base Structure', 'Powder-Coated Matte Carbon Steel Trestle'],
+      ['Seating Capacity', '6 to 8 Persons Comfortably'],
+      ['Table Dimensions', '240cm (L) x 100cm (W) x 75cm (H)'],
+      ['Surface Treatment', 'UV-Cured Ceramic Clear Hardcoat (Scratch/Heat Proof)'],
+      ['Wholesale MOQ', '2 Sets (Table + 6/8 Chairs Package)']
+    ],
+    highlights: [
+      'Commercial grade surface coat withstands up to 120°C hot tableware and liquid spills',
+      'Matching chairs feature curved oak backrests with high-density stain-resistant boucle upholstery',
+      'Includes leveling floor glides for perfect stability on hardwood and marble flooring'
+    ],
+    robotType: 'delta'
+  },
+  {
+    id: 'PROD-04-LEATHER-SOFA',
+    name: 'Espresso Top-Grain Leather Sectional',
+    model: 'NL-LIV-LS04',
+    category: 'Executive Lounge',
+    image: '/assets/demo/furniture-showcase/products/leather_sofa.jpg',
+    worldPos: new THREE.Vector3(260, -45, -310),
+    nodeIdx: 0,
+    desc: 'Deep-seat luxury modular sofa in rich espresso Italian top-grain leather with matching walnut coffee table and storage ottoman bench.',
+    specs: [
+      ['Leather Spec', 'Italian Semi-Aniline Top-Grain Leather'],
+      ['Internal Framing', 'Corner-Blocked Heavy Duty Hardwood Frame'],
+      ['Suspension System', '8-Way Hand-Tied Coil Spring Suspension'],
+      ['Suite Dimensions', '280cm (W) x 105cm (D) x 80cm (H)'],
+      ['Ottoman Size', '90cm x 60cm with Hidden Storage Space'],
+      ['Wholesale MOQ', '3 Suites / Project Custom Spec']
+    ],
+    highlights: [
+      'Supple hand-finished leather with water-repellent protective microporous coating',
+      'Includes dual matching kidney bolster pillows and solid walnut coffee table companion',
+      'Exceeds CAL 117 flammability safety and ISO 9001 environmental production standards'
+    ],
+    robotType: 'scara'
+  }
+];
+
+let currentNodeIdx = 0;
+let currentSelectedProdIdx = 0;
+let scene, camera, renderer, controls;
+let floorPucks = [];
+let photoSphere, photoMaterial;
+let textureLoader;
+let textureCache = {};
+let autoTourActive = false, autoTourTimer = null;
+const container = document.getElementById('viewer-container');
+
+// 3. INIT MAIN THREE.JS ENGINE
+function initThree() {
+  const canvas = document.getElementById('three-canvas');
+  scene = new THREE.Scene();
+  textureLoader = new THREE.TextureLoader();
+
+  const rect = container.getBoundingClientRect();
+  const width = rect.width || container.clientWidth || 1000;
+  const height = rect.height || container.clientHeight || 550;
+
+  // Immersive 65° FOV
+  camera = new THREE.PerspectiveCamera(65, width / height, 0.01, 2000);
+  camera.position.set(0, 0, 0.01);
+
+  // High-DPR WebGL Renderer
+  renderer = new THREE.WebGLRenderer({
+    canvas: canvas,
+    antialias: true,
+    powerPreference: 'high-performance',
+    precision: 'highp'
+  });
+  renderer.setSize(width, height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.18;
+
+  const resPill = document.getElementById('res-indicator');
+  if (resPill) {
+    resPill.textContent = 'ULTRA-HD MASTER STUDIO';
+  }
+
+  // OrbitControls
+  controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.enableZoom = true;
+  controls.minDistance = 0.005;
+  controls.maxDistance = 0.05;
+  controls.enablePan = false;
+  controls.target.set(0, 0, 0);
+  controls.maxPolarAngle = Math.PI * 0.88;
+  controls.minPolarAngle = Math.PI * 0.12;
+  controls.rotateSpeed = -0.42;
+
+  // ── TRUE 360° EQUIRECTANGULAR SPHERE ──
+  const sphereGeo = new THREE.SphereGeometry(500, 128, 64);
+  sphereGeo.scale(-1, 1, 1);
+
+  photoMaterial = new THREE.MeshBasicMaterial({
+    side: THREE.FrontSide,
+    transparent: true,
+    opacity: 1.0,
+    depthWrite: false
+  });
+  photoSphere = new THREE.Mesh(sphereGeo, photoMaterial);
+  photoSphere.rotation.y = -1.57;
+  photoSphere.position.set(0, 0, 0);
+  photoSphere.renderOrder = -1;
+  scene.add(photoSphere);
+
+  buildFloorPucks();
+  buildHotspotsDOM();
+
+  window.addEventListener('resize', onResize);
+  requestAnimationFrame(animate);
+
+  // Background preload all panoramas
+  SPATIAL_NODES.forEach(n => {
+    if (n.preview) loadNodeTexture(n.preview);
+    if (n.image8k) loadNodeTexture(n.image8k);
+  });
+
+  // Preload product hero images
+  PRODUCTS_DATA.forEach(p => {
+    if (p.image) {
+      const im = new Image();
+      im.src = p.image;
+    }
+  });
+
+  initDrawer3D();
+  switchNode(0);
+}
+
+// 4. FLOOR PUCKS
+function buildFloorPucks() {
+  SPATIAL_NODES.forEach((node, idx) => {
+    const g = new THREE.Group();
+    g.position.copy(node.puckPos);
+
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(18, 28, 36),
+      new THREE.MeshBasicMaterial({ color: 0x00c2ff, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    g.add(ring);
+
+    const disk = new THREE.Mesh(
+      new THREE.CircleGeometry(14, 28),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 })
+    );
+    disk.rotation.x = -Math.PI / 2;
+    disk.position.y = 0.2;
+    g.add(disk);
+
+    g.userData.nodeIdx = idx;
+    g.traverse(c => { if (c.isMesh) c.userData.nodeIdx = idx; });
+    scene.add(g);
+    floorPucks.push(g);
+  });
+
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  document.getElementById('three-canvas').addEventListener('click', (e) => {
+    const rect = container.getBoundingClientRect();
+    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const hits = raycaster.intersectObjects(floorPucks.flatMap(g => g.children));
+    if (hits.length > 0 && hits[0].object.userData.nodeIdx !== undefined) {
+      switchNode(hits[0].object.userData.nodeIdx);
+    }
+  });
+}
+
+// 5. ENLARGED 3D FLOATING HOTSPOTS (48px Large Thumbnail + Dual-Line Category & Title)
+function buildHotspotsDOM() {
+  const layer = document.getElementById('hotspot-layer');
+  layer.innerHTML = '';
+  PRODUCTS_DATA.forEach((prod, idx) => {
+    const el = document.createElement('div');
+    el.className = 'hotspot-tag';
+    el.id = 'hotspot-' + prod.id;
+    el.innerHTML =
+      '<img src="' + prod.image + '" class="hotspot-thumb-img" alt="' + prod.name + '">' +
+      '<span class="hotspot-dot"></span>' +
+      '<div class="hotspot-info">' +
+        '<span class="hotspot-cat">' + (prod.category || 'ROBOTIC SYSTEM') + '</span>' +
+        '<span class="hotspot-label-text">' + prod.name + '</span>' +
+      '</div>';
+    
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      focusProduct(idx);
+    });
+    layer.appendChild(el);
+    prod.domElement = el;
+  });
+}
+
+// 6. PROGRESSIVE TEXTURE LOADER
+function loadNodeTexture(url, callback) {
+  if (textureCache[url]) { if (callback) callback(textureCache[url]); return; }
+  textureLoader.load(url, (tex) => {
+    tex.encoding = THREE.sRGBEncoding;
+    tex.minFilter = THREE.LinearMipMapLinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = true;
+    tex.anisotropy = renderer ? renderer.capabilities.getMaxAnisotropy() : 16;
+    tex.needsUpdate = true;
+    textureCache[url] = tex;
+    if (callback) callback(tex);
+  });
+}
+
+// 7. SWITCH SPATIAL NODE
+function switchNode(idx) {
+  currentNodeIdx = idx;
+  const node = SPATIAL_NODES[idx];
+
+  document.getElementById('radar-loc-txt').textContent = node.name.toUpperCase();
+  document.getElementById('foot-loc').textContent = node.name;
+
+  const maxTex = renderer ? renderer.capabilities.maxTextureSize : 8192;
+  const hdTargetUrl = (maxTex >= 16384 && node.image16k) ? node.image16k : (node.image8k || node.image16k);
+
+  // 1. Immediate fast preview
+  if (node.preview) {
+    loadNodeTexture(node.preview, (prevTex) => {
+      if (currentNodeIdx === idx) {
+        photoMaterial.map = prevTex;
+        photoMaterial.needsUpdate = true;
+      }
+    });
+  }
+
+  // 2. HD Ultra-Res Master update
+  loadNodeTexture(hdTargetUrl, (hdTex) => {
+    if (currentNodeIdx === idx) {
+      photoMaterial.map = hdTex;
+      photoMaterial.needsUpdate = true;
+    }
+  });
+
+  floorPucks.forEach((p, i) => {
+    p.children[0].material.opacity = (i === idx) ? 0.20 : 0.85;
+    p.children[1].material.opacity = (i === idx) ? 0.30 : 0.9;
+  });
+
+  drawRadar();
+  updateFocusSpec(idx === 2 ? 1 : idx === 1 ? 3 : 0);
+  showToast('📍 Navigated to ' + node.name);
+}
+
+// 8. FOCUS PRODUCT (From bottom cards or hotspots)
+function focusProduct(idx) {
+  currentSelectedProdIdx = idx;
+  const p = PRODUCTS_DATA[idx];
+  if (!p) return;
+
+  // Highlight bottom card
+  document.querySelectorAll('.prod-quick-card').forEach((c, i) => c.classList.toggle('active', i === idx));
+
+  // If product is in a different node, switch node first
+  if (p.nodeIdx !== undefined && p.nodeIdx !== currentNodeIdx) {
+    switchNode(p.nodeIdx);
+  }
+
+  // Open sidebar drawer
+  openProductDrawer(idx);
+}
+
+// 9. UPDATE FOCUS SPEC PANEL
+function updateFocusSpec(idx) {
+  currentSelectedProdIdx = idx;
+  const p = PRODUCTS_DATA[idx];
+  if (!p) return;
+  document.getElementById('side-spec-title').textContent = p.name;
+  document.getElementById('side-spec-desc').textContent = p.desc;
+  document.getElementById('side-spec-list').innerHTML = p.specs.slice(0, 4).map(([k,v]) =>
+    '<div class="spec-item"><div class="spec-k">' + k + '</div><div class="spec-v">' + v + '</div></div>'
+  ).join('');
+
+  document.querySelectorAll('.prod-quick-card').forEach((c, i) => c.classList.toggle('active', i === idx));
+}
+
+// 10. PRODUCT INSPECTION DRAWER (WITH HIGH-RES HERO IMAGE & 360° 3D MINI PLAYER)
+let drawer3dScene, drawer3dCamera, drawer3dRenderer, drawer3dControls;
+let drawer3dModelGroup = null;
+let drawer3dAutoRotate = true;
+let drawer3dWireframe = false;
+let currentMediaMode = 'photo'; // 'photo' | '3d'
+
+function initDrawer3D() {
+  const canvas = document.getElementById('drawer-3d-canvas');
+  if (!canvas) return;
+
+  drawer3dScene = new THREE.Scene();
+  drawer3dCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+  drawer3dCamera.position.set(0, 2.2, 4.5);
+
+  drawer3dRenderer = new THREE.WebGLRenderer({
+    canvas: canvas,
+    antialias: true,
+    alpha: true,
+    powerPreference: 'high-performance'
+  });
+  drawer3dRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  drawer3dRenderer.outputEncoding = THREE.sRGBEncoding;
+
+  drawer3dControls = new THREE.OrbitControls(drawer3dCamera, canvas);
+  drawer3dControls.enableDamping = true;
+  drawer3dControls.dampingFactor = 0.08;
+  drawer3dControls.autoRotate = true;
+  drawer3dControls.autoRotateSpeed = 2.0;
+  drawer3dControls.minDistance = 2.0;
+  drawer3dControls.maxDistance = 8.0;
+  drawer3dControls.target.set(0, 0.6, 0);
+
+  // Lighting for studio turntable
+  const hemiLight = new THREE.HemisphereLight(0xffffff, 0x051122, 1.2);
+  drawer3dScene.add(hemiLight);
+
+  const dirLight1 = new THREE.DirectionalLight(0x00c2ff, 1.5);
+  dirLight1.position.set(5, 8, 5);
+  drawer3dScene.add(dirLight1);
+
+  const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 1.0);
+  dirLight2.position.set(-5, 4, -4);
+  drawer3dScene.add(dirLight2);
+
+  // Studio Turntable Platform
+  const baseRing = new THREE.Mesh(
+    new THREE.RingGeometry(1.6, 1.8, 48),
+    new THREE.MeshBasicMaterial({ color: 0x00c2ff, side: THREE.DoubleSide, transparent: true, opacity: 0.6 })
+  );
+  baseRing.rotation.x = -Math.PI / 2;
+  baseRing.position.y = -0.01;
+  drawer3dScene.add(baseRing);
+
+  const grid = new THREE.GridHelper(3.6, 16, 0x00c2ff, 0x1e293b);
+  grid.position.y = 0;
+  drawer3dScene.add(grid);
+
+  renderDrawer3DLoop();
+}
+
+function renderDrawer3DLoop() {
+  requestAnimationFrame(renderDrawer3DLoop);
+  if (currentMediaMode === '3d' && drawer3dRenderer && drawer3dScene && drawer3dCamera) {
+    drawer3dControls.update();
+    drawer3dRenderer.render(drawer3dScene, drawer3dCamera);
+  }
+}
+
+function buildProceduralRobotModel(type) {
+  if (drawer3dModelGroup) {
+    drawer3dScene.remove(drawer3dModelGroup);
+    drawer3dModelGroup.traverse(c => {
+      if (c.geometry) c.geometry.dispose();
+      if (c.material) {
+        if (Array.isArray(c.material)) c.material.forEach(m => m.dispose());
+        else c.material.dispose();
+      }
+    });
+  }
+
+  drawer3dModelGroup = new THREE.Group();
+  const matWhite = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.25, metalness: 0.15, wireframe: drawer3dWireframe });
+  const matMetal = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.35, metalness: 0.85, wireframe: drawer3dWireframe });
+  const matCyan = new THREE.MeshStandardMaterial({ color: 0x00c2ff, emissive: 0x00c2ff, emissiveIntensity: 0.6, roughness: 0.1, wireframe: drawer3dWireframe });
+
+  if (type === 'cobot') {
+    // 6-Axis Cobot
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 0.3, 32), matMetal);
+    base.position.y = 0.15;
+    drawer3dModelGroup.add(base);
+
+    const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.32, 24, 24), matCyan);
+    shoulder.position.y = 0.45;
+    drawer3dModelGroup.add(shoulder);
+
+    const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 1.1, 24), matWhite);
+    upperArm.position.set(0.2, 0.95, 0);
+    upperArm.rotation.z = -0.35;
+    drawer3dModelGroup.add(upperArm);
+
+    const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.26, 24, 24), matMetal);
+    elbow.position.set(0.4, 1.45, 0);
+    drawer3dModelGroup.add(elbow);
+
+    const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.9, 24), matWhite);
+    forearm.position.set(0.15, 1.8, 0);
+    forearm.rotation.z = 0.45;
+    drawer3dModelGroup.add(forearm);
+
+    const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.25, 20), matCyan);
+    wrist.position.set(-0.1, 2.15, 0);
+    drawer3dModelGroup.add(wrist);
+
+    // Gripper
+    const gripBase = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.08, 0.15), matMetal);
+    gripBase.position.set(-0.1, 2.3, 0);
+    drawer3dModelGroup.add(gripBase);
+
+    const finger1 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.2, 0.08), matWhite);
+    finger1.position.set(-0.18, 2.42, 0);
+    const finger2 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.2, 0.08), matWhite);
+    finger2.position.set(-0.02, 2.42, 0);
+    drawer3dModelGroup.add(finger1, finger2);
+  } else if (type === 'amr') {
+    // Vector AMR 600
+    const chassis = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.45, 1.1), matWhite);
+    chassis.position.y = 0.35;
+    drawer3dModelGroup.add(chassis);
+
+    const lowerTrim = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.12, 1.15), matMetal);
+    lowerTrim.position.y = 0.15;
+    drawer3dModelGroup.add(lowerTrim);
+
+    const lightStrip = new THREE.Mesh(new THREE.BoxGeometry(1.66, 0.04, 1.16), matCyan);
+    lightStrip.position.y = 0.32;
+    drawer3dModelGroup.add(lightStrip);
+
+    // 360 LiDAR puck
+    const lidar = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.18, 24), matCyan);
+    lidar.position.set(0.65, 0.65, 0.4);
+    drawer3dModelGroup.add(lidar);
+
+    // Roller deck
+    for (let i = -0.55; i <= 0.55; i += 0.25) {
+      const roller = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.9, 16), matMetal);
+      roller.rotation.z = Math.PI / 2;
+      roller.position.set(0, 0.62, i);
+      drawer3dModelGroup.add(roller);
+    }
+  } else if (type === 'delta') {
+    // Titan Delta D12
+    const topPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.15, 6), matMetal);
+    topPlate.position.y = 2.1;
+    drawer3dModelGroup.add(topPlate);
+
+    const movingPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.08, 6), matCyan);
+    movingPlate.position.y = 0.65;
+    drawer3dModelGroup.add(movingPlate);
+
+    // 3 pairs of parallel carbon fiber struts
+    for (let i = 0; i < 3; i++) {
+      const ang = (i * Math.PI * 2) / 3;
+      const bX = Math.cos(ang) * 0.6;
+      const bZ = Math.sin(ang) * 0.6;
+      const mX = Math.cos(ang) * 0.22;
+      const mZ = Math.sin(ang) * 0.22;
+
+      const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.3, 16), matWhite);
+      motor.position.set(bX, 2.0, bZ);
+      drawer3dModelGroup.add(motor);
+
+      const upperStrut = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.75, 12), matMetal);
+      upperStrut.position.set(bX * 1.15, 1.6, bZ * 1.15);
+      drawer3dModelGroup.add(upperStrut);
+
+      const strut1 = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.1, 12), matWhite);
+      strut1.position.set((bX + mX) * 0.65 - 0.06, 1.1, (bZ + mZ) * 0.65);
+      const strut2 = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.1, 12), matWhite);
+      strut2.position.set((bX + mX) * 0.65 + 0.06, 1.1, (bZ + mZ) * 0.65);
+      drawer3dModelGroup.add(strut1, strut2);
+    }
+
+    const suctionCup = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.22, 20), matCyan);
+    suctionCup.rotation.x = Math.PI;
+    suctionCup.position.y = 0.5;
+    drawer3dModelGroup.add(suctionCup);
+  } else if (type === 'scara') {
+    // Hyperion SCARA S8
+    const baseCol = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 1.1, 32), matWhite);
+    baseCol.position.y = 0.55;
+    drawer3dModelGroup.add(baseCol);
+
+    const joint1 = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.3, 24), matMetal);
+    joint1.position.y = 1.15;
+    drawer3dModelGroup.add(joint1);
+
+    const arm1 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.24, 0.35), matWhite);
+    arm1.position.set(0.4, 1.25, 0);
+    drawer3dModelGroup.add(arm1);
+
+    const joint2 = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.35, 24), matCyan);
+    joint2.position.set(0.8, 1.28, 0);
+    drawer3dModelGroup.add(joint2);
+
+    const arm2 = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.2, 0.28), matWhite);
+    arm2.position.set(1.15, 1.3, 0);
+    drawer3dModelGroup.add(arm2);
+
+    // Z-Axis vertical ball screw & micro tool
+    const zShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.95, 20), matMetal);
+    zShaft.position.set(1.45, 1.1, 0);
+    drawer3dModelGroup.add(zShaft);
+
+    const microTool = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.04, 0.2, 16), matCyan);
+    microTool.position.set(1.45, 0.55, 0);
+    drawer3dModelGroup.add(microTool);
+  }
+
+  drawer3dScene.add(drawer3dModelGroup);
+}
+
+function setDrawerMediaMode(mode) {
+  currentMediaMode = mode;
+  const tabPhoto = document.getElementById('tab-photo');
+  const tab3d = document.getElementById('tab-3d');
+  const imgEl = document.getElementById('drw-img');
+  const view3d = document.getElementById('drawer-3d-view');
+
+  if (mode === '3d') {
+    tabPhoto.classList.remove('active');
+    tab3d.classList.add('active');
+    imgEl.style.display = 'none';
+    view3d.style.display = 'block';
+
+    const p = PRODUCTS_DATA[currentSelectedProdIdx];
+    buildProceduralRobotModel(p.robotType || 'cobot');
+
+    const rect = document.getElementById('drw-img-box').getBoundingClientRect();
+    if (drawer3dRenderer && drawer3dCamera) {
+      drawer3dCamera.aspect = rect.width / rect.height;
+      drawer3dCamera.updateProjectionMatrix();
+      drawer3dRenderer.setSize(rect.width, rect.height);
+    }
+    showToast('🔄 360° Interactive 3D Turntable Activated');
+  } else {
+    tabPhoto.classList.add('active');
+    tab3d.classList.remove('active');
+    imgEl.style.display = 'block';
+    view3d.style.display = 'none';
+  }
+}
+
+function toggleDrawer3dAutoRotate() {
+  drawer3dAutoRotate = !drawer3dAutoRotate;
+  if (drawer3dControls) drawer3dControls.autoRotate = drawer3dAutoRotate;
+  document.getElementById('btn-3d-autorot').textContent = '🔄 Auto-Rotate: ' + (drawer3dAutoRotate ? 'ON' : 'OFF');
+}
+
+function toggleDrawer3dWireframe() {
+  drawer3dWireframe = !drawer3dWireframe;
+  const p = PRODUCTS_DATA[currentSelectedProdIdx];
+  buildProceduralRobotModel(p.robotType || 'cobot');
+  document.getElementById('btn-3d-wire').textContent = '⚡ Wireframe: ' + (drawer3dWireframe ? 'ON' : 'OFF');
+}
+
+function resetDrawer3dCamera() {
+  if (drawer3dCamera && drawer3dControls) {
+    drawer3dCamera.position.set(0, 2.2, 4.5);
+    drawer3dControls.target.set(0, 0.6, 0);
+  }
+}
+
+function openProductDrawer(idx) {
+  currentSelectedProdIdx = idx;
+  const p = PRODUCTS_DATA[idx];
+  if (!p) return;
+
+  updateFocusSpec(idx);
+
+  document.getElementById('drw-badge').textContent = p.category;
+  document.getElementById('drw-model').textContent = p.model;
+  document.getElementById('drw-title').textContent = p.name;
+  document.getElementById('drw-desc').textContent = p.desc;
+
+  // Product Image
+  const imgEl = document.getElementById('drw-img');
+  if (p.image) {
+    imgEl.src = p.image;
+  }
+
+  // Update 3D model if already in 3D mode
+  if (currentMediaMode === '3d') {
+    buildProceduralRobotModel(p.robotType || 'cobot');
+  }
+
+  const table = document.getElementById('drw-specs-table');
+  table.innerHTML = p.specs.map(([k, v]) =>
+    '<tr><td>' + k + '</td><td>' + v + '</td></tr>'
+  ).join('');
+
+  if (p.highlights) {
+    document.getElementById('drw-highlights').innerHTML = p.highlights.map(h => '• ' + h).join('<br>');
+  }
+
+  document.getElementById('drawer-scrim').classList.add('open');
+  document.getElementById('product-drawer').classList.add('open');
+  showToast('🔍 Inspecting ' + p.name);
+}
+
+function openCurrentProductDrawer() {
+  openProductDrawer(currentSelectedProdIdx);
+}
+
+function closeDrawer() {
+  document.getElementById('drawer-scrim').classList.remove('open');
+  document.getElementById('product-drawer').classList.remove('open');
+}
+
+// 11. AUTO TOUR
+function toggleAutoTour() {
+  const btn = document.getElementById('btn-autotour');
+  if (autoTourActive) {
+    clearInterval(autoTourTimer);
+    autoTourActive = false;
+    btn.innerHTML = '<span>▶</span> START AUTO TOUR';
+    btn.classList.remove('primary');
+    showToast('⏹ Auto tour stopped');
+  } else {
+    autoTourActive = true;
+    btn.innerHTML = '<span>⏹</span> STOP AUTO TOUR';
+    btn.classList.add('primary');
+    showToast('▶ 5s Interval Automated 360° Studio Tour Started');
+    let ni = (currentNodeIdx + 1) % SPATIAL_NODES.length;
+    switchNode(ni);
+    autoTourTimer = setInterval(() => { ni = (currentNodeIdx + 1) % SPATIAL_NODES.length; switchNode(ni); }, 5000);
+  }
+}
+
+// 12. RADAR MINIMAP
+function drawRadar() {
+  const cvs = document.getElementById('radar-canvas');
+  if (!cvs) return;
+  const ctx = cvs.getContext('2d');
+  ctx.clearRect(0, 0, cvs.width, cvs.height);
+  ctx.strokeStyle = '#00c2ff'; ctx.lineWidth = 1.5;
+  ctx.strokeRect(16, 8, cvs.width - 32, cvs.height - 16);
+  ctx.fillStyle = '#ffffff';
+  [[16,8],[cvs.width-16,8],[16,cvs.height-8],[cvs.width-16,cvs.height-8]].forEach(([x,y]) => ctx.fillRect(x-2, y-2, 4, 4));
+  SPATIAL_NODES.forEach((n, idx) => {
+    const isCur = idx === currentNodeIdx;
+    ctx.beginPath();
+    ctx.arc(n.radarPos.x, n.radarPos.y, isCur ? 5.5 : 3, 0, Math.PI * 2);
+    ctx.fillStyle = isCur ? '#00c2ff' : 'rgba(255,255,255,0.4)';
+    ctx.fill();
+    if (isCur) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke(); }
+  });
+  const cur = SPATIAL_NODES[currentNodeIdx];
+  const camDir = new THREE.Vector3();
+  camera.getWorldDirection(camDir);
+  const angle = Math.atan2(camDir.x, camDir.z);
+  ctx.fillStyle = 'rgba(0,194,255,0.25)';
+  ctx.beginPath();
+  ctx.moveTo(cur.radarPos.x, cur.radarPos.y);
+  ctx.arc(cur.radarPos.x, cur.radarPos.y, 24, angle - 0.4, angle + 0.4);
+  ctx.closePath();
+  ctx.fill();
+}
+
+// 13. HOTSPOT SCREEN PROJECTION
+function updateHotspots() {
+  const camDir = new THREE.Vector3();
+  camera.getWorldDirection(camDir);
+
+  const rect = container.getBoundingClientRect();
+  const cWidth = rect.width;
+  const cHeight = rect.height;
+
+  PRODUCTS_DATA.forEach(prod => {
+    if (!prod.domElement) return;
+    const dot = prod.worldPos.dot(camDir);
+    if (dot <= 0) {
+      prod.domElement.style.display = 'none';
+      return;
+    }
+    const wp = prod.worldPos.clone();
+    wp.project(camera);
+    if (wp.z > 1.0) {
+      prod.domElement.style.display = 'none';
+      return;
+    }
+    prod.domElement.style.display = 'flex';
+    prod.domElement.style.left = ((wp.x * 0.5 + 0.5) * cWidth) + 'px';
+    prod.domElement.style.top  = ((-(wp.y * 0.5) + 0.5) * cHeight) + 'px';
+  });
+}
+
+// 14. MODALS & UTILS
+function openDownloadModal() { document.getElementById('download-modal').classList.add('open'); }
+function closeDownloadModal() { document.getElementById('download-modal').classList.remove('open'); }
+
+function downloadAllPhotos() {
+  SPATIAL_NODES.forEach((n, idx) => {
+    setTimeout(() => {
+      const a = document.createElement('a');
+      a.href = n.image8k;
+      a.download = 'DN_a_Master_View_' + idx + '_64K.jpg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }, idx * 600);
+  });
+  showToast('📥 64K Master Ultra-HD photos download started.');
+}
+
+function openRFQ() { window.open('mailto:sales@dna-robotic.com?subject=RFQ%20from%20Matterport%2064K%20Studio'); }
+function toggleFullscreen() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// 15. RENDER LOOP
+function animate(time) {
+  requestAnimationFrame(animate);
+  TWEEN.update(time);
+  controls.update();
+  updateHotspots();
+  drawRadar();
+  renderer.render(scene, camera);
+}
+
+function onResize() {
+  const rect = container.getBoundingClientRect();
+  const width = rect.width || window.innerWidth;
+  const height = rect.height || window.innerHeight;
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5));
+}
+
+document.addEventListener('DOMContentLoaded', initThree);
+</script>
+</body>
+</html>
