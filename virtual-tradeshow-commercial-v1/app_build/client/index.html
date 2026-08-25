@@ -587,9 +587,16 @@
       </p>
 
       <!-- Live Link Click Radar -->
-      <div style="background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.35); border-radius: 12px; padding: 12px 16px; margin-bottom: 18px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+      <div style="background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.35); border-radius: 12px; padding: 12px 16px; margin-bottom: 14px; display: flex; align-items: center; justify-content: center; gap: 10px;">
         <div style="width: 14px; height: 14px; border: 2px solid rgba(56,189,248,0.3); border-top-color: #38bdf8; border-radius: 50%; animation: spin 1s linear infinite;"></div>
         <span style="font-size: 12px; font-weight: 700; color: #38bdf8; letter-spacing: 0.3px;">Auto-detecting email link click...</span>
+      </div>
+
+      <!-- Direct Instant Test / Fallback Link Button -->
+      <div style="margin-bottom: 16px;">
+        <a id="btnDirectVerifyLink" href="#" target="_blank" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; box-sizing: border-box; padding: 11px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 13px; transition: all 0.2s;">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open 1-Click Link Directly
+        </a>
       </div>
 
       <div style="font-size: 11px; color: #64748b; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 800;">
@@ -1245,16 +1252,28 @@
           return;
         }
 
-        openEmailVerifyModal(email);
+        openEmailVerifyModal(email, data.verifyUrl, data.code);
       } catch (err) {
         alert('Network error sending confirmation link: ' + err.message);
       }
     }
 
-    function openEmailVerifyModal(email) {
+    function openEmailVerifyModal(email, verifyUrl, code) {
       document.getElementById('verifyTargetEmailTxt').textContent = email;
+      const directBtn = document.getElementById('btnDirectVerifyLink');
+      if (directBtn) {
+        if (verifyUrl) {
+          directBtn.href = verifyUrl;
+          directBtn.style.display = 'inline-flex';
+        } else {
+          directBtn.href = `/verify-email?email=${encodeURIComponent(email)}`;
+        }
+      }
+
       const otpInput = document.getElementById('email-otp-input');
-      if (otpInput) otpInput.value = '';
+      if (otpInput) {
+        otpInput.value = code || '';
+      }
       const errEl = document.getElementById('verify-error-msg');
       if (errEl) errEl.style.display = 'none';
       document.getElementById('emailVerifyModal').style.display = 'flex';

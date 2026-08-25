@@ -8,6 +8,7 @@ const cors = require('cors');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const db = require('./db');
+const mailer = require('./mailer');
 
 
 const app = express();
@@ -1937,15 +1938,47 @@ app.post('/api/free-funnel/check-special-email', (req, res) => {
   });
 });
 
-// 0b. Send Email Verification Code
-app.post('/api/free-funnel/email/send-code', (req, res) => {
+// 0b. Send Email Verification Code with Outbound Email Dispatcher
+app.post('/api/free-funnel/email/send-code', async (req, res) => {
   try {
     const { email, businessName } = req.body;
     const clientIp = getClientIp(req);
     const result = db.issueEmailVerificationCode(email, businessName, clientIp);
-    res.json(result);
+
+    let emailDispatchResult = null;
+    if (!result.developerBypass) {
+      emailDispatchResult = await mailer.sendVerificationEmail({
+        to: email,
+        businessName,
+        code: result.code,
+        magicToken: result.magicToken,
+        verifyUrl: result.verifyUrl
+      });
+    }
+
+    res.json({
+      ...result,
+      emailDispatched: true,
+      provider: emailDispatchResult?.provider || 'LOCAL_SANDBOX',
+      verifyUrl: emailDispatchResult?.verifyUrl || result.verifyUrl
+    });
   } catch (err) {
     res.status(400).json({ error: err.code || 'VERIFICATION_ERROR', message: err.message });
+  }
+});
+
+// 0b-2. Retrieve Latest Sent Link (For Sandbox Testing / Instant Link Preview)
+app.get('/api/free-funnel/email/latest-link', (req, res) => {
+  try {
+    const email = (req.query.email || '').trim();
+    const latest = mailer.getLatestEmail(email);
+    if (latest) {
+      res.json({ success: true, verifyUrl: latest.verifyUrl, code: latest.code, to: latest.to });
+    } else {
+      res.status(404).json({ error: 'NO_EMAIL_FOUND' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

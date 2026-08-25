@@ -25,8 +25,8 @@
         "status": "active",
         "dataEnvironment": "REAL"
       },
-      "createdAt": "2026-08-25T02:35:49.444Z",
-      "updatedAt": "2026-08-25T02:35:49.444Z"
+      "createdAt": "2026-08-25T02:45:58.940Z",
+      "updatedAt": "2026-08-25T02:45:58.940Z"
     },
     {
       "id": "org-organizer-01",
@@ -39,8 +39,8 @@
         "status": "active",
         "dataEnvironment": "REAL"
       },
-      "createdAt": "2026-08-25T02:35:49.444Z",
-      "updatedAt": "2026-08-25T02:35:49.444Z"
+      "createdAt": "2026-08-25T02:45:58.940Z",
+      "updatedAt": "2026-08-25T02:45:58.940Z"
     },
     {
       "id": "org-exhibitor-apex",
@@ -54,8 +54,8 @@
         "status": "active",
         "dataEnvironment": "REAL"
       },
-      "createdAt": "2026-08-25T02:35:49.444Z",
-      "updatedAt": "2026-08-25T02:35:49.444Z"
+      "createdAt": "2026-08-25T02:45:58.940Z",
+      "updatedAt": "2026-08-25T02:45:58.940Z"
     },
     {
       "id": "org-exhibitor-bio",
@@ -64,11 +64,11 @@
       "slug": "biotech-innovations",
       "category": "BioTech & HealthTech",
       "status": "active",
-      "createdAt": "2026-08-25T02:35:49.444Z",
-      "updatedAt": "2026-08-25T02:35:49.444Z"
+      "createdAt": "2026-08-25T02:45:58.940Z",
+      "updatedAt": "2026-08-25T02:45:58.940Z"
     },
     {
-      "id": "org-free-1e0e5e3e",
+      "id": "org-free-ca997caf",
       "type": "exhibitor",
       "name": "Aerodyn Systems LLC",
       "slug": "aerodyn-systems",
@@ -77,13 +77,13 @@
         "plan": "pro",
         "status": "free_preview",
         "dataEnvironment": "REAL",
-        "updatedAt": "2026-08-25T02:35:51.070Z"
+        "updatedAt": "2026-08-25T02:46:00.718Z"
       },
-      "createdAt": "2026-08-25T02:35:51.070Z",
-      "updatedAt": "2026-08-25T02:35:51.070Z"
+      "createdAt": "2026-08-25T02:46:00.718Z",
+      "updatedAt": "2026-08-25T02:46:00.718Z"
     },
     {
-      "id": "org-free-dc057c9e",
+      "id": "org-free-d8c50dbc",
       "type": "exhibitor",
       "name": "Internal Dev Innovation Stand",
       "slug": "internal-dev-innovation-stand",
@@ -92,10 +92,10 @@
         "plan": "pro",
         "status": "free_preview",
         "dataEnvironment": "TEST",
-        "updatedAt": "2026-08-25T02:35:51.180Z"
+        "updatedAt": "2026-08-25T02:46:00.831Z"
       },
-      "createdAt": "2026-08-25T02:35:51.180Z",
-      "updatedAt": "2026-08-25T02:35:51.180Z"
+      "createdAt": "2026-08-25T02:46:00.831Z",
+      "updatedAt": "2026-08-25T02:46:00.831Z"
     }
   ],
   "users": [
@@ -110,8 +110,8 @@
       "salt": "seed_salt_owner_1",
       "mustChangePassword": false,
       "status": "active",
-      "createdAt": "2026-08-25T02:35:49.247Z",
-      "updatedAt": "2026-08-25T02:35:49.248Z"
+      "createdAt": "2026-08-25T02:45:58.743Z",
+      "updatedAt": "2026-08-25T02:45:58.744Z"
     },
     {
       "id": "user-developer-01",
@@ -124,8 +124,8 @@
       "salt": "seed_salt_dev_1",
       "mustChangePassword": false,
       "status": "active",
-      "createdAt": "2026-08-25T02:35:49.296Z",
-      "updatedAt": "2026-08-25T02:35:49.296Z"
+      "createdAt": "2026-08-25T02:45:58.797Z",
+      "updatedAt": "2026-08-25T02:45:58.797Z"
     },
     {
       "id": "user-organizer-admin",
@@ -136,8 +136,8 @@
       "hash": "3321174586df9531d1f3ce03e0b1b4a747cce6f1ac1130274bd4e7b8b9693ced48464de8de97e2ea253b3784c6b9e97755b87e6861e18be4e6634b5c91f324de",
       "salt": "seed_salt_org_1",
       "status": "active",
-      "createdAt": "2026-08-25T02:35:49.345Z",
-      "updatedAt": "2026-08-25T02:35:49.345Z"
+      "createdAt": "2026-08-25T02:45:58.849Z",
+      "updatedAt": "2026-08-25T02:45:58.849Z"
     },
     {
       "id": "user-apex-admin",
@@ -149,8 +149,8 @@
       "hash": "59da13281012743d3113ae8dc30983901b1507bfadc820fb570504f9344c0c59ebe3b3836bcedf519016887b38524cd28c24a8964e189f900b81ef450e74f78c",
       "salt": "seed_salt_apex_1",
       "status": "active",
-      "createdAt": "2026-08-25T02:35:49.395Z",
-      "updatedAt": "2026-08-25T02:35:49.395Z"
+      "createdAt": "2026-08-25T02:45:58.895Z",
+      "updatedAt": "2026-08-25T02:45:58.895Z"
     },
     {
       "id": "user-bio-admin",
@@ -161,8 +161,8 @@
       "hash": "9ed5acfc9cb8025a0f4d94b84d07013732c5fdc69249c516de1e6b6dbd53df45ef2782f4b28b5cc719fd17ec5f5e58df4099347698c51cf1f1520325eee3d973",
       "salt": "seed_salt_bio_1",
       "status": "active",
-      "createdAt": "2026-08-25T02:35:49.444Z",
-      "updatedAt": "2026-08-25T02:35:49.444Z"
+      "createdAt": "2026-08-25T02:45:58.940Z",
+      "updatedAt": "2026-08-25T02:45:58.940Z"
     }
   ],
   "events": [
@@ -176,8 +176,8 @@
       "startsAt": "2026-09-01T09:00:00Z",
       "endsAt": "2026-09-30T18:00:00Z",
       "status": "published",
-      "createdAt": "2026-08-25T02:35:49.444Z",
-      "updatedAt": "2026-08-25T02:35:49.444Z"
+      "createdAt": "2026-08-25T02:45:58.940Z",
+      "updatedAt": "2026-08-25T02:45:58.940Z"
     }
   ],
   "eventExhibitors": [
@@ -189,7 +189,7 @@
       "category": "Robotics & Automation",
       "boothNumber": "A-101",
       "status": "active",
-      "joinedAt": "2026-08-25T02:35:49.444Z"
+      "joinedAt": "2026-08-25T02:45:58.940Z"
     },
     {
       "id": "ee-bio-01",
@@ -199,7 +199,7 @@
       "category": "BioTech & Healthcare",
       "boothNumber": "B-205",
       "status": "active",
-      "joinedAt": "2026-08-25T02:35:49.444Z"
+      "joinedAt": "2026-08-25T02:45:58.940Z"
     }
   ],
   "booths": [
@@ -239,8 +239,8 @@
           "scale": 1
         }
       },
-      "createdAt": "2026-08-25T02:35:49.444Z",
-      "updatedAt": "2026-08-25T02:35:49.444Z"
+      "createdAt": "2026-08-25T02:45:58.940Z",
+      "updatedAt": "2026-08-25T02:45:58.940Z"
     },
     {
       "id": "booth-bio-01",
@@ -262,8 +262,8 @@
         "type": "photo_preview",
         "environmentLayout": "hexagon_booth"
       },
-      "createdAt": "2026-08-25T02:35:49.444Z",
-      "updatedAt": "2026-08-25T02:35:49.444Z"
+      "createdAt": "2026-08-25T02:45:58.940Z",
+      "updatedAt": "2026-08-25T02:45:58.940Z"
     }
   ],
   "products": [
@@ -291,7 +291,7 @@
         "IP Rating": "IP65 Water/Dust Resistant"
       },
       "inventoryStatus": "in_stock",
-      "createdAt": "2026-08-25T02:35:49.444Z"
+      "createdAt": "2026-08-25T02:45:58.940Z"
     },
     {
       "id": "prod-02",
@@ -314,7 +314,7 @@
         "Battery Life": "12 hours continuous"
       },
       "inventoryStatus": "in_stock",
-      "createdAt": "2026-08-25T02:35:49.444Z"
+      "createdAt": "2026-08-25T02:45:58.940Z"
     },
     {
       "id": "prod-bio-01",
@@ -337,7 +337,7 @@
         "Compliance": "CE-IVD / FDA Class II"
       },
       "inventoryStatus": "in_stock",
-      "createdAt": "2026-08-25T02:35:49.444Z"
+      "createdAt": "2026-08-25T02:45:58.940Z"
     }
   ],
   "hotspots": [
@@ -352,7 +352,7 @@
         "z": -2.2
       },
       "label": "Apex-Arm X9 Cobot",
-      "createdAt": "2026-08-25T02:35:49.444Z"
+      "createdAt": "2026-08-25T02:45:58.940Z"
     },
     {
       "id": "hs-02",
@@ -365,7 +365,7 @@
         "z": -2
       },
       "label": "Apex-Nav AGV Transport",
-      "createdAt": "2026-08-25T02:35:49.444Z"
+      "createdAt": "2026-08-25T02:45:58.940Z"
     }
   ],
   "leads": [],
@@ -387,8 +387,8 @@
       "approvalStatus": "approved",
       "progress": 100,
       "currentStage": "completed",
-      "createdAt": "2026-08-25T02:35:49.444Z",
-      "completedAt": "2026-08-25T02:35:49.444Z",
+      "createdAt": "2026-08-25T02:45:58.940Z",
+      "completedAt": "2026-08-25T02:45:58.940Z",
       "output": {
         "type": "gaussian_splat",
         "url": "/uploads/models/REAL-RECON-PILOT-01_splat.ply",
@@ -415,55 +415,55 @@
   "ownerNotes": [],
   "emailVerifications": [
     {
-      "id": "ev-5411410a",
+      "id": "ev-cfe7f839",
       "normalizedEmail": "founder@aerodyn.example.com",
       "businessName": "Aerodyn Systems LLC",
-      "codeHash": "596ffb20ba419349d8061372af648ac17fc78ff97d143f7ac5ef591756267300",
-      "code": "286266",
-      "magicTokenHash": "5561eb25a6044b3a027b691d1e33f408a5a8e471e27838993205cb2aa076edd7",
-      "magicToken": "cdd87c75e81a318a9b73f352e8776923857cdac85bc1e4d7f73bf81cfcd84328",
+      "codeHash": "3ed2ca01b92eb687ae0ce91f1f789cc4ce01a9f58565bf7fdff5ea6a3cc32fe5",
+      "code": "938069",
+      "magicTokenHash": "c7c7209af403bbe96f0ab3606db0e1506d639f688d76ffa630a3857360137ce3",
+      "magicToken": "32fb340394276ad1774d53bc7af8e9bbe2f0c4d7f04393db3f24d5b0cf53a53b",
       "ipHash": "a7446a7a0e3d1cde08acd90d85999c88",
       "attemptCount": 0,
       "status": "VERIFIED",
-      "expiresAt": "2026-08-25T02:45:50.994Z",
-      "createdAt": "2026-08-25T02:35:50.994Z",
-      "verifiedAt": "2026-08-25T02:35:51.018Z"
+      "expiresAt": "2026-08-25T02:56:00.643Z",
+      "createdAt": "2026-08-25T02:46:00.643Z",
+      "verifiedAt": "2026-08-25T02:46:00.670Z"
     },
     {
-      "id": "ev-c2f81e6e",
+      "id": "ev-19fd8e81",
       "normalizedEmail": "co-founder@aerodyn.example.com",
       "businessName": "Another Project",
-      "codeHash": "12f264cc230f4057f4ca9a1d48f2bc243e065d0c21e5f205b1a0d5d115e941cf",
-      "code": "882273",
-      "magicTokenHash": "c8f8371790abb2435cea500c9f9e41bb6d86e398f3641ab3dbc6e961f95d59f9",
-      "magicToken": "d55e59075bc4a421c897bb0b6ca75228b58958f20a9e0d644527ec5650be4920",
+      "codeHash": "efb5d37d99a12f919b5cd398cfdf5ab41f75188f41f7cd4a3c08b9d1646de7f6",
+      "code": "648731",
+      "magicTokenHash": "9f89d1bb7416e3297576629e3746691e3c1ba61966497ed2907da7cc74ff78be",
+      "magicToken": "7939b2cda93dd5d9e0132f0d796ca2000db79da2d23df7ad4f3eb926c97eaab2",
       "ipHash": "a7446a7a0e3d1cde08acd90d85999c88",
       "attemptCount": 0,
       "status": "VERIFIED",
-      "expiresAt": "2026-08-25T02:45:51.092Z",
-      "createdAt": "2026-08-25T02:35:51.092Z",
-      "verifiedAt": "2026-08-25T02:35:51.112Z"
+      "expiresAt": "2026-08-25T02:56:00.748Z",
+      "createdAt": "2026-08-25T02:46:00.748Z",
+      "verifiedAt": "2026-08-25T02:46:00.768Z"
     },
     {
-      "id": "ev-95892f19",
+      "id": "ev-7653acb0",
       "normalizedEmail": "client-otp@retailcorp.com",
       "businessName": "Retail Corp",
-      "codeHash": "fdfd8a741a10c2af1d2278ed2cf09bb4a00f54826188e0babba1fddd398fe541",
-      "code": "232775",
-      "magicTokenHash": "fcdc608ec471608580ba0713a376f14536d97016720100a491832449bde75ef9",
-      "magicToken": "ad0f12d18494815928b823a2bec59dcbbdf2a6b3ed6649094502c531064e40a7",
+      "codeHash": "7b856aaae2bf1eba150aa43c4d638f521aca138703bdd8faac9684bbf3d208e8",
+      "code": "151057",
+      "magicTokenHash": "27bc887a61d522e7406a480490e383da2d4e9e0c1691becccb80d8c65060caeb",
+      "magicToken": "fe42e80b3f877183c08025f3b8697e8b7cd3ed8b0e27aa507f1a5562751b4e5f",
       "ipHash": "a7446a7a0e3d1cde08acd90d85999c88",
       "attemptCount": 1,
       "status": "VERIFIED",
-      "expiresAt": "2026-08-25T02:45:51.138Z",
-      "createdAt": "2026-08-25T02:35:51.138Z",
-      "verifiedAt": "2026-08-25T02:35:51.159Z"
+      "expiresAt": "2026-08-25T02:56:00.790Z",
+      "createdAt": "2026-08-25T02:46:00.790Z",
+      "verifiedAt": "2026-08-25T02:46:00.812Z"
     }
   ],
   "projects": [
     {
-      "id": "prj-free-e6f35f67",
-      "organizationId": "org-free-1e0e5e3e",
+      "id": "prj-free-9bd1b766",
+      "organizationId": "org-free-ca997caf",
       "name": "Aerodyn Systems LLC Virtual Booth",
       "businessName": "Aerodyn Systems LLC",
       "normalizedBusinessName": "aerodyn systems",
@@ -475,17 +475,17 @@
       "internalDeveloperBypass": false,
       "bypassType": "NONE",
       "sourceAsset": {
-        "originalUrl": "/uploads/capture-1787625351065-908775913.png",
-        "previewUrl": "/uploads/capture-1787625351065-908775913.png",
-        "processedUrl": "/uploads/capture-1787625351065-908775913.png",
-        "uploadedAt": "2026-08-25T02:35:51.070Z"
+        "originalUrl": "/uploads/capture-1787625960713-698943323.png",
+        "previewUrl": "/uploads/capture-1787625960713-698943323.png",
+        "processedUrl": "/uploads/capture-1787625960713-698943323.png",
+        "uploadedAt": "2026-08-25T02:46:00.718Z"
       },
       "views": [
         {
           "viewId": "view-free-0",
           "name": "Main Photo Immersive View",
-          "previewUrl": "/uploads/capture-1787625351065-908775913.png",
-          "highResUrl": "/uploads/capture-1787625351065-908775913.png",
+          "previewUrl": "/uploads/capture-1787625960713-698943323.png",
+          "highResUrl": "/uploads/capture-1787625960713-698943323.png",
           "coordinateSystem": "NORMALIZED_2D"
         }
       ],
@@ -501,7 +501,7 @@
           "coordinateSystem": "NORMALIZED_2D",
           "label": "ADD PRODUCT 1",
           "status": "BLANK",
-          "createdAt": "2026-08-25T02:35:51.070Z"
+          "createdAt": "2026-08-25T02:46:00.718Z"
         },
         {
           "id": "pin-blank-2",
@@ -514,7 +514,7 @@
           "coordinateSystem": "NORMALIZED_2D",
           "label": "ADD PRODUCT 2",
           "status": "BLANK",
-          "createdAt": "2026-08-25T02:35:51.070Z"
+          "createdAt": "2026-08-25T02:46:00.718Z"
         },
         {
           "id": "pin-blank-3",
@@ -527,7 +527,7 @@
           "coordinateSystem": "NORMALIZED_2D",
           "label": "ADD PRODUCT 3",
           "status": "BLANK",
-          "createdAt": "2026-08-25T02:35:51.070Z"
+          "createdAt": "2026-08-25T02:46:00.718Z"
         }
       ],
       "products": [
@@ -540,7 +540,7 @@
           "specifications": "Needs merchant input",
           "status": "EMPTY",
           "completionPct": 0,
-          "createdAt": "2026-08-25T02:35:51.070Z"
+          "createdAt": "2026-08-25T02:46:00.718Z"
         },
         {
           "id": "prod-slot-2",
@@ -551,7 +551,7 @@
           "specifications": "Needs merchant input",
           "status": "EMPTY",
           "completionPct": 0,
-          "createdAt": "2026-08-25T02:35:51.070Z"
+          "createdAt": "2026-08-25T02:46:00.718Z"
         },
         {
           "id": "prod-slot-3",
@@ -562,16 +562,16 @@
           "specifications": "Needs merchant input",
           "status": "EMPTY",
           "completionPct": 0,
-          "createdAt": "2026-08-25T02:35:51.070Z"
+          "createdAt": "2026-08-25T02:46:00.718Z"
         }
       ],
       "analyticsEvents": [],
-      "createdAt": "2026-08-25T02:35:51.070Z",
-      "updatedAt": "2026-08-25T02:35:51.070Z"
+      "createdAt": "2026-08-25T02:46:00.719Z",
+      "updatedAt": "2026-08-25T02:46:00.719Z"
     },
     {
-      "id": "prj-free-ee70f8e5",
-      "organizationId": "org-free-dc057c9e",
+      "id": "prj-free-8bbe3d96",
+      "organizationId": "org-free-d8c50dbc",
       "name": "Internal Dev Innovation Stand Virtual Booth",
       "businessName": "Internal Dev Innovation Stand",
       "normalizedBusinessName": "internal dev innovation stand",
@@ -583,17 +583,17 @@
       "internalDeveloperBypass": true,
       "bypassType": "SPECIAL_DEVELOPER_EMAIL",
       "sourceAsset": {
-        "originalUrl": "/uploads/capture-1787625351177-454820291.png",
-        "previewUrl": "/uploads/capture-1787625351177-454820291.png",
-        "processedUrl": "/uploads/capture-1787625351177-454820291.png",
-        "uploadedAt": "2026-08-25T02:35:51.180Z"
+        "originalUrl": "/uploads/capture-1787625960829-398323677.png",
+        "previewUrl": "/uploads/capture-1787625960829-398323677.png",
+        "processedUrl": "/uploads/capture-1787625960829-398323677.png",
+        "uploadedAt": "2026-08-25T02:46:00.831Z"
       },
       "views": [
         {
           "viewId": "view-free-0",
           "name": "Main Photo Immersive View",
-          "previewUrl": "/uploads/capture-1787625351177-454820291.png",
-          "highResUrl": "/uploads/capture-1787625351177-454820291.png",
+          "previewUrl": "/uploads/capture-1787625960829-398323677.png",
+          "highResUrl": "/uploads/capture-1787625960829-398323677.png",
           "coordinateSystem": "NORMALIZED_2D"
         }
       ],
@@ -609,7 +609,7 @@
           "coordinateSystem": "NORMALIZED_2D",
           "label": "ADD PRODUCT 1",
           "status": "BLANK",
-          "createdAt": "2026-08-25T02:35:51.180Z"
+          "createdAt": "2026-08-25T02:46:00.831Z"
         },
         {
           "id": "pin-blank-2",
@@ -622,7 +622,7 @@
           "coordinateSystem": "NORMALIZED_2D",
           "label": "ADD PRODUCT 2",
           "status": "BLANK",
-          "createdAt": "2026-08-25T02:35:51.180Z"
+          "createdAt": "2026-08-25T02:46:00.831Z"
         },
         {
           "id": "pin-blank-3",
@@ -635,7 +635,7 @@
           "coordinateSystem": "NORMALIZED_2D",
           "label": "ADD PRODUCT 3",
           "status": "BLANK",
-          "createdAt": "2026-08-25T02:35:51.180Z"
+          "createdAt": "2026-08-25T02:46:00.831Z"
         }
       ],
       "products": [
@@ -648,7 +648,7 @@
           "specifications": "Needs merchant input",
           "status": "EMPTY",
           "completionPct": 0,
-          "createdAt": "2026-08-25T02:35:51.180Z"
+          "createdAt": "2026-08-25T02:46:00.831Z"
         },
         {
           "id": "prod-slot-2",
@@ -659,7 +659,7 @@
           "specifications": "Needs merchant input",
           "status": "EMPTY",
           "completionPct": 0,
-          "createdAt": "2026-08-25T02:35:51.180Z"
+          "createdAt": "2026-08-25T02:46:00.831Z"
         },
         {
           "id": "prod-slot-3",
@@ -670,46 +670,46 @@
           "specifications": "Needs merchant input",
           "status": "EMPTY",
           "completionPct": 0,
-          "createdAt": "2026-08-25T02:35:51.180Z"
+          "createdAt": "2026-08-25T02:46:00.831Z"
         }
       ],
       "analyticsEvents": [],
-      "createdAt": "2026-08-25T02:35:51.180Z",
-      "updatedAt": "2026-08-25T02:35:51.180Z"
+      "createdAt": "2026-08-25T02:46:00.831Z",
+      "updatedAt": "2026-08-25T02:46:00.831Z"
     }
   ],
   "freePreviewUsages": [
     {
-      "usageId": "use-831df157",
+      "usageId": "use-2e0d94ae",
       "businessName": "Aerodyn Systems LLC",
       "normalizedBusinessName": "aerodyn systems",
       "email": "founder@aerodyn.example.com",
       "normalizedEmail": "founder@aerodyn.example.com",
-      "emailVerifiedAt": "2026-08-25T02:35:51.070Z",
+      "emailVerifiedAt": "2026-08-25T02:46:00.719Z",
       "ipHash": "a7446a7a0e3d1cde08acd90d85999c88",
       "deviceIdHash": null,
-      "projectId": "prj-free-e6f35f67",
+      "projectId": "prj-free-9bd1b766",
       "generationStatus": "SUCCESS",
       "bypassType": "NONE",
       "environment": "PRODUCTION",
-      "createdAt": "2026-08-25T02:35:51.070Z",
-      "lastAttemptAt": "2026-08-25T02:35:51.070Z"
+      "createdAt": "2026-08-25T02:46:00.719Z",
+      "lastAttemptAt": "2026-08-25T02:46:00.719Z"
     },
     {
-      "usageId": "use-4da4f773",
+      "usageId": "use-5d9956f1",
       "businessName": "Internal Dev Innovation Stand",
       "normalizedBusinessName": "internal dev innovation stand",
       "email": "lead-dev@internal.vshow.com",
       "normalizedEmail": "lead-dev@internal.vshow.com",
-      "emailVerifiedAt": "2026-08-25T02:35:51.180Z",
+      "emailVerifiedAt": "2026-08-25T02:46:00.831Z",
       "ipHash": "a7446a7a0e3d1cde08acd90d85999c88",
       "deviceIdHash": null,
-      "projectId": "prj-free-ee70f8e5",
+      "projectId": "prj-free-8bbe3d96",
       "generationStatus": "INTERNAL_DEV",
       "bypassType": "SPECIAL_DEVELOPER_EMAIL",
       "environment": "INTERNAL_DEV",
-      "createdAt": "2026-08-25T02:35:51.180Z",
-      "lastAttemptAt": "2026-08-25T02:35:51.180Z"
+      "createdAt": "2026-08-25T02:46:00.831Z",
+      "lastAttemptAt": "2026-08-25T02:46:00.831Z"
     }
   ]
 }
