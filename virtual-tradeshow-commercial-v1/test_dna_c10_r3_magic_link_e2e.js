@@ -88,13 +88,13 @@ function createMultipartFormData(fields, fileField = null) {
   fs.mkdirSync(TEST_ENV.DATA_DIR, { recursive: true });
 
   console.log('[1/12] Starting Isolated Backend Server on port ' + TEST_PORT + '...');
-  serverProcess = spawn('node', ['app_build/server/index.js'], {
+  serverProcess = spawn('node', ['server/index.js'], {
     env: TEST_ENV,
-    cwd: __dirname,
+    cwd: path.join(__dirname, 'app_build'),
     stdio: 'pipe'
   });
 
-  await sleep(2500);
+  await sleep(3500);
 
   let passed = 0;
   let total = 0;
