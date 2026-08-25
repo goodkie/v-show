@@ -127,6 +127,27 @@
     .btn-create-free:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(2, 132, 199, 0.6); }
     .btn-create-free:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
+    .btn-email-confirm {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff; border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: 10px; padding: 0 18px; font-size: 12px; font-weight: 800;
+      cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
+      transition: all 0.2s; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+      letter-spacing: 0.3px;
+    }
+    .btn-email-confirm:hover {
+      background: linear-gradient(135deg, #0369a1, #1d4ed8);
+      transform: translateY(-1px); box-shadow: 0 6px 18px rgba(2, 132, 199, 0.5);
+    }
+    .btn-email-confirm.verified {
+      background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.5);
+      color: #10b981; cursor: default; box-shadow: none; pointer-events: none;
+    }
+    .btn-email-confirm.dev-bypass {
+      background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.5);
+      color: #38bdf8; cursor: default; box-shadow: none; pointer-events: none;
+    }
+
     .frame-footer {
       text-align: center; margin-top: 14px; font-size: 12px; color: #64748b;
     }
@@ -486,13 +507,24 @@
         </div>
 
         <div class="form-group">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <label class="form-label" for="work-email-input">Work Email *</label>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" for="work-email-input" style="margin-bottom: 0;">Work Email *</label>
             <span id="dev-mode-badge" style="display: none; font-size: 11px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 2px 8px; border-radius: 10px; font-weight: 700;">
               <i class="fa-solid fa-code"></i> INTERNAL DEV BYPASS
             </span>
+            <span id="email-verified-badge" style="display: none; font-size: 11px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); padding: 2px 8px; border-radius: 10px; font-weight: 700;">
+              <i class="fa-solid fa-circle-check"></i> VERIFIED
+            </span>
           </div>
-          <input type="email" id="work-email-input" class="form-input" placeholder="e.g. name@company.com" oninput="onWorkEmailInput()" required>
+          <div style="display: flex; gap: 8px;">
+            <input type="email" id="work-email-input" class="form-input" placeholder="e.g. name@company.com" oninput="onWorkEmailInput()" style="flex: 1;" required>
+            <button type="button" id="btn-email-confirm" class="btn-email-confirm" onclick="handleEmailConfirmButtonClick()">
+              <i class="fa-solid fa-envelope-circle-check"></i> CONFIRM EMAIL
+            </button>
+          </div>
+          <div id="email-confirm-hint" style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+            <i class="fa-solid fa-circle-info" style="color: #38bdf8;"></i> Click <b>Confirm Email</b> to receive a 1-click confirmation link in your inbox.
+          </div>
         </div>
 
         <div class="form-group">
@@ -1059,6 +1091,19 @@
     async function onWorkEmailInput() {
       const email = document.getElementById('work-email-input').value.trim();
 
+      // Reset verification if email changed
+      if (verifiedEmailAddress && verifiedEmailAddress !== email.toLowerCase()) {
+        verifiedEmailToken = null;
+        verifiedEmailAddress = null;
+        const verifiedBadge = document.getElementById('email-verified-badge');
+        if (verifiedBadge) verifiedBadge.style.display = 'none';
+        const confirmBtn = document.getElementById('btn-email-confirm');
+        if (confirmBtn) {
+          confirmBtn.className = 'btn-email-confirm';
+          confirmBtn.innerHTML = '<i class="fa-solid fa-envelope-circle-check"></i> CONFIRM EMAIL';
+        }
+      }
+
       if (!email || !email.includes('@')) {
         isDeveloperBypass = false;
         setDeveloperModeBadge(false);
@@ -1086,9 +1131,64 @@
 
     function setDeveloperModeBadge(isDev) {
       const devBadge = document.getElementById('dev-mode-badge');
-      if (devBadge) {
-        devBadge.style.display = isDev ? 'inline-flex' : 'none';
+      const verifiedBadge = document.getElementById('email-verified-badge');
+      const confirmBtn = document.getElementById('btn-email-confirm');
+      const hint = document.getElementById('email-confirm-hint');
+
+      if (devBadge) devBadge.style.display = isDev ? 'inline-flex' : 'none';
+
+      if (isDev) {
+        if (verifiedBadge) verifiedBadge.style.display = 'none';
+        if (confirmBtn) {
+          confirmBtn.className = 'btn-email-confirm dev-bypass';
+          confirmBtn.innerHTML = '<i class="fa-solid fa-code"></i> DEV BYPASS';
+        }
+        if (hint) {
+          hint.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #38bdf8;"></i> <b>Special Developer Email Recognized</b> — email confirmation is bypassed.';
+        }
+      } else {
+        if (confirmBtn && !verifiedEmailToken) {
+          confirmBtn.className = 'btn-email-confirm';
+          confirmBtn.innerHTML = '<i class="fa-solid fa-envelope-circle-check"></i> CONFIRM EMAIL';
+        }
+        if (hint && !verifiedEmailToken) {
+          hint.innerHTML = '<i class="fa-solid fa-circle-info" style="color: #38bdf8;"></i> Click <b>Confirm Email</b> to receive a 1-click confirmation link in your inbox.';
+        }
       }
+    }
+
+    function markEmailAsVerified(email) {
+      const verifiedBadge = document.getElementById('email-verified-badge');
+      const confirmBtn = document.getElementById('btn-email-confirm');
+      const hint = document.getElementById('email-confirm-hint');
+
+      if (verifiedBadge) verifiedBadge.style.display = 'inline-flex';
+      if (confirmBtn) {
+        confirmBtn.className = 'btn-email-confirm verified';
+        confirmBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> VERIFIED';
+      }
+      if (hint) {
+        hint.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #10b981;"></i> <b>Email Verified!</b> Your free booth preview is ready to create.';
+      }
+    }
+
+    async function handleEmailConfirmButtonClick() {
+      const email = document.getElementById('work-email-input').value.trim();
+      const bizName = document.getElementById('business-name-input').value.trim() || 'My Business';
+
+      if (!email || !email.includes('@')) {
+        return alert('Please enter a valid work email address first.');
+      }
+
+      if (isDeveloperBypass) {
+        return alert('Special Developer Email recognized. Email confirmation is bypassed.');
+      }
+
+      if (verifiedEmailToken && verifiedEmailAddress === email.toLowerCase()) {
+        return alert('This email address is already verified!');
+      }
+
+      await initiateEmailVerification(email, bizName);
     }
 
     async function handleFreeBoothSubmit(e) {
@@ -1114,7 +1214,9 @@
 
     async function initiateEmailVerification(email, businessName) {
       try {
+        const btnConfirm = document.getElementById('btn-email-confirm');
         const btnSubmit = document.getElementById('btn-submit-free');
+        if (btnConfirm) { btnConfirm.disabled = true; btnConfirm.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> SENDING...'; }
         if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.textContent = 'SENDING CONFIRMATION LINK...'; }
 
         const res = await fetch('/api/free-funnel/email/send-code', {
@@ -1124,6 +1226,7 @@
         });
 
         const data = await res.json();
+        if (btnConfirm) { btnConfirm.disabled = false; btnConfirm.innerHTML = '<i class="fa-solid fa-envelope-circle-check"></i> CONFIRM EMAIL'; }
         if (btnSubmit) {
           btnSubmit.disabled = false;
           btnSubmit.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CREATE MY FREE VIRTUAL BOOTH';
@@ -1135,7 +1238,10 @@
 
         if (data.developerBypass) {
           isDeveloperBypass = true;
-          executeBoothGeneration();
+          setDeveloperModeBadge(true);
+          if (selectedFile && document.getElementById('business-name-input').value.trim()) {
+            executeBoothGeneration();
+          }
           return;
         }
 
@@ -1175,8 +1281,11 @@
             emailPollInterval = null;
             verifiedEmailToken = data.verificationToken;
             verifiedEmailAddress = email.toLowerCase();
+            markEmailAsVerified(email);
             closeEmailVerifyModal();
-            executeBoothGeneration();
+            if (selectedFile && document.getElementById('business-name-input').value.trim()) {
+              executeBoothGeneration();
+            }
           }
         } catch (e) {
           // Silent polling retry
@@ -1225,8 +1334,11 @@
 
         verifiedEmailToken = data.verificationToken;
         verifiedEmailAddress = email.toLowerCase();
+        markEmailAsVerified(email);
         closeEmailVerifyModal();
-        executeBoothGeneration();
+        if (selectedFile && document.getElementById('business-name-input').value.trim()) {
+          executeBoothGeneration();
+        }
 
       } catch (err) {
         errEl.textContent = 'Network error verifying code: ' + err.message;

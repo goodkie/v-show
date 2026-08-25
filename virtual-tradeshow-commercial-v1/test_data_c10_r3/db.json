@@ -1,0 +1,715 @@
+{
+  "schemaVersion": 6,
+  "featureFlags": {
+    "stripeLiveBillingEnabled": false,
+    "billingKillSwitch": true,
+    "reconstructionKillSwitch": false,
+    "maintenanceMode": false,
+    "legalReviewStatus": "pending",
+    "pricingStatus": "approved_for_pilot",
+    "pricingVersion": "pilot-2026.1",
+    "liveBillingApprovedByOwner": false,
+    "pastDueGraceDays": 7,
+    "livePilotMaxCustomers": 1,
+    "liveBillingAllowedOrgs": []
+  },
+  "organizations": [
+    {
+      "id": "org-platform-master",
+      "type": "platform",
+      "name": "V-Show Platform Headquarters",
+      "slug": "vshow-platform",
+      "status": "active",
+      "subscription": {
+        "plan": "business",
+        "status": "active",
+        "dataEnvironment": "REAL"
+      },
+      "createdAt": "2026-08-25T02:35:49.444Z",
+      "updatedAt": "2026-08-25T02:35:49.444Z"
+    },
+    {
+      "id": "org-organizer-01",
+      "type": "organizer",
+      "name": "Global Trade Show Group",
+      "slug": "global-trade-show-group",
+      "status": "active",
+      "subscription": {
+        "plan": "business",
+        "status": "active",
+        "dataEnvironment": "REAL"
+      },
+      "createdAt": "2026-08-25T02:35:49.444Z",
+      "updatedAt": "2026-08-25T02:35:49.444Z"
+    },
+    {
+      "id": "org-exhibitor-apex",
+      "type": "exhibitor",
+      "name": "Apex Robotics Global Innovation",
+      "slug": "apex-robotics",
+      "category": "Industrial Automation & Robotics",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "active",
+        "dataEnvironment": "REAL"
+      },
+      "createdAt": "2026-08-25T02:35:49.444Z",
+      "updatedAt": "2026-08-25T02:35:49.444Z"
+    },
+    {
+      "id": "org-exhibitor-bio",
+      "type": "exhibitor",
+      "name": "BioTech Innovations Corp",
+      "slug": "biotech-innovations",
+      "category": "BioTech & HealthTech",
+      "status": "active",
+      "createdAt": "2026-08-25T02:35:49.444Z",
+      "updatedAt": "2026-08-25T02:35:49.444Z"
+    },
+    {
+      "id": "org-free-1e0e5e3e",
+      "type": "exhibitor",
+      "name": "Aerodyn Systems LLC",
+      "slug": "aerodyn-systems",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-25T02:35:51.070Z"
+      },
+      "createdAt": "2026-08-25T02:35:51.070Z",
+      "updatedAt": "2026-08-25T02:35:51.070Z"
+    },
+    {
+      "id": "org-free-dc057c9e",
+      "type": "exhibitor",
+      "name": "Internal Dev Innovation Stand",
+      "slug": "internal-dev-innovation-stand",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "TEST",
+        "updatedAt": "2026-08-25T02:35:51.180Z"
+      },
+      "createdAt": "2026-08-25T02:35:51.180Z",
+      "updatedAt": "2026-08-25T02:35:51.180Z"
+    }
+  ],
+  "users": [
+    {
+      "id": "user-platform-owner",
+      "organizationId": "org-platform-master",
+      "email": "owner@vshow.com",
+      "name": "Platform Master Owner",
+      "role": "platform_owner",
+      "internalDeveloperAccess": true,
+      "hash": "671c31ae4e44bc8972f6cef6bbb161d0db64495d4d5255036691efaa4ad7a90329fd7d1d3618735bbe09515b8df6a4baf2dbec1165f191efabc264dbc27162f8",
+      "salt": "seed_salt_owner_1",
+      "mustChangePassword": false,
+      "status": "active",
+      "createdAt": "2026-08-25T02:35:49.247Z",
+      "updatedAt": "2026-08-25T02:35:49.248Z"
+    },
+    {
+      "id": "user-developer-01",
+      "organizationId": "org-platform-master",
+      "email": "developer@vshow.com",
+      "name": "dn’a Platform Developer",
+      "role": "developer",
+      "internalDeveloperAccess": true,
+      "hash": "6838d7064212a5f2757b924421d2918ca1c99d450fd71e97f79c63b3d8ccbfa0dcdf6265841d21be35636ada4de02b5cd3fd9fde320243a80ea6f9296237418a",
+      "salt": "seed_salt_dev_1",
+      "mustChangePassword": false,
+      "status": "active",
+      "createdAt": "2026-08-25T02:35:49.296Z",
+      "updatedAt": "2026-08-25T02:35:49.296Z"
+    },
+    {
+      "id": "user-organizer-admin",
+      "organizationId": "org-organizer-01",
+      "email": "organizer@vshow.com",
+      "name": "Global Expo Operations",
+      "role": "organizer_admin",
+      "hash": "3321174586df9531d1f3ce03e0b1b4a747cce6f1ac1130274bd4e7b8b9693ced48464de8de97e2ea253b3784c6b9e97755b87e6861e18be4e6634b5c91f324de",
+      "salt": "seed_salt_org_1",
+      "status": "active",
+      "createdAt": "2026-08-25T02:35:49.345Z",
+      "updatedAt": "2026-08-25T02:35:49.345Z"
+    },
+    {
+      "id": "user-apex-admin",
+      "organizationId": "org-exhibitor-apex",
+      "email": "apex@vshow.com",
+      "name": "Apex Robotics Admin",
+      "role": "exhibitor_admin",
+      "internalDeveloperAccess": false,
+      "hash": "59da13281012743d3113ae8dc30983901b1507bfadc820fb570504f9344c0c59ebe3b3836bcedf519016887b38524cd28c24a8964e189f900b81ef450e74f78c",
+      "salt": "seed_salt_apex_1",
+      "status": "active",
+      "createdAt": "2026-08-25T02:35:49.395Z",
+      "updatedAt": "2026-08-25T02:35:49.395Z"
+    },
+    {
+      "id": "user-bio-admin",
+      "organizationId": "org-exhibitor-bio",
+      "email": "bio@vshow.com",
+      "name": "BioTech Innovations Admin",
+      "role": "exhibitor_admin",
+      "hash": "9ed5acfc9cb8025a0f4d94b84d07013732c5fdc69249c516de1e6b6dbd53df45ef2782f4b28b5cc719fd17ec5f5e58df4099347698c51cf1f1520325eee3d973",
+      "salt": "seed_salt_bio_1",
+      "status": "active",
+      "createdAt": "2026-08-25T02:35:49.444Z",
+      "updatedAt": "2026-08-25T02:35:49.444Z"
+    }
+  ],
+  "events": [
+    {
+      "id": "event-global-tech-2026",
+      "organizerOrganizationId": "org-organizer-01",
+      "name": "Global Tech & Industrial Automation Expo 2026",
+      "slug": "global-tech-2026",
+      "description": "Premier international commercial beta virtual trade show featuring next-generation robotics, spatial 3D showcases, and AI solutions.",
+      "bannerImage": "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1600&q=80",
+      "startsAt": "2026-09-01T09:00:00Z",
+      "endsAt": "2026-09-30T18:00:00Z",
+      "status": "published",
+      "createdAt": "2026-08-25T02:35:49.444Z",
+      "updatedAt": "2026-08-25T02:35:49.444Z"
+    }
+  ],
+  "eventExhibitors": [
+    {
+      "id": "ee-apex-01",
+      "eventId": "event-global-tech-2026",
+      "exhibitorOrganizationId": "org-exhibitor-apex",
+      "boothId": "booth-demo-01",
+      "category": "Robotics & Automation",
+      "boothNumber": "A-101",
+      "status": "active",
+      "joinedAt": "2026-08-25T02:35:49.444Z"
+    },
+    {
+      "id": "ee-bio-01",
+      "eventId": "event-global-tech-2026",
+      "exhibitorOrganizationId": "org-exhibitor-bio",
+      "boothId": "booth-bio-01",
+      "category": "BioTech & Healthcare",
+      "boothNumber": "B-205",
+      "status": "active",
+      "joinedAt": "2026-08-25T02:35:49.444Z"
+    }
+  ],
+  "booths": [
+    {
+      "id": "booth-demo-01",
+      "organizationId": "org-exhibitor-apex",
+      "eventId": "event-global-tech-2026",
+      "exhibitorId": "user-apex-admin",
+      "name": "Apex Robotics Global Innovation",
+      "description": "Next-generation industrial automation, collaborative robotics, and precision logistics solutions for smart factories.",
+      "themeColor": "#0f766e",
+      "status": "published",
+      "reconstructionStatus": "verified",
+      "reconstructionJobId": "recon-job-apex-verified",
+      "photos": [
+        "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80"
+      ],
+      "spatialModel": {
+        "type": "gaussian_splat",
+        "assetUrl": "/uploads/models/REAL-RECON-PILOT-01_splat.ply",
+        "format": "ply",
+        "splatCount": 245070,
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": 1
+        }
+      },
+      "createdAt": "2026-08-25T02:35:49.444Z",
+      "updatedAt": "2026-08-25T02:35:49.444Z"
+    },
+    {
+      "id": "booth-bio-01",
+      "organizationId": "org-exhibitor-bio",
+      "eventId": "event-global-tech-2026",
+      "exhibitorId": "user-bio-admin",
+      "name": "BioTech Innovations Corp",
+      "description": "Advanced molecular diagnostic equipment, automated laboratory liquid handlers, and sterile cell culture bioprocessors.",
+      "themeColor": "#2563eb",
+      "status": "published",
+      "reconstructionStatus": "photo_preview",
+      "reconstructionJobId": null,
+      "photos": [
+        "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80"
+      ],
+      "spatialModel": {
+        "type": "photo_preview",
+        "environmentLayout": "hexagon_booth"
+      },
+      "createdAt": "2026-08-25T02:35:49.444Z",
+      "updatedAt": "2026-08-25T02:35:49.444Z"
+    }
+  ],
+  "products": [
+    {
+      "id": "prod-01",
+      "organizationId": "org-exhibitor-apex",
+      "boothId": "booth-demo-01",
+      "name": "Apex-Arm X9 Modular Industrial Cobot",
+      "sku": "APX-ROB-X9",
+      "category": "Robotics",
+      "moq": 2,
+      "price": 24500,
+      "contactForPrice": false,
+      "currency": "USD",
+      "description": "High-precision 6-axis collaborative robotic arm with 15kg payload and sub-millimeter positioning repeatability.",
+      "images": [
+        "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80"
+      ],
+      "specs": {
+        "Payload Capacity": "15 kg",
+        "Reach Radius": "1300 mm",
+        "Repeatability": "±0.02 mm",
+        "Weight": "38 kg",
+        "IP Rating": "IP65 Water/Dust Resistant"
+      },
+      "inventoryStatus": "in_stock",
+      "createdAt": "2026-08-25T02:35:49.444Z"
+    },
+    {
+      "id": "prod-02",
+      "organizationId": "org-exhibitor-apex",
+      "boothId": "booth-demo-01",
+      "name": "Apex-Nav AGV Autonomous Mobile Robot",
+      "sku": "APX-AGV-200",
+      "category": "Logistics Automation",
+      "moq": 1,
+      "price": 18000,
+      "contactForPrice": false,
+      "currency": "USD",
+      "description": "LiDAR-guided smart warehouse transport robot with 500kg towing capacity and fleet management integration.",
+      "images": [
+        "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+      ],
+      "specs": {
+        "Towing Load": "500 kg",
+        "Navigation": "SLAM LiDAR + Visual Odometry",
+        "Battery Life": "12 hours continuous"
+      },
+      "inventoryStatus": "in_stock",
+      "createdAt": "2026-08-25T02:35:49.444Z"
+    },
+    {
+      "id": "prod-bio-01",
+      "organizationId": "org-exhibitor-bio",
+      "boothId": "booth-bio-01",
+      "name": "BioScan Micro-Array Fast Analyzer",
+      "sku": "BIO-SCAN-M1",
+      "category": "Diagnostics",
+      "moq": 1,
+      "price": 32000,
+      "contactForPrice": false,
+      "currency": "USD",
+      "description": "Automated 96-well fluorescent plate reader for rapid biomolecular diagnostic screening.",
+      "images": [
+        "https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=800&q=80"
+      ],
+      "specs": {
+        "Throughput": "96 samples in 4 mins",
+        "Detection": "Fluorescence / Absorbance",
+        "Compliance": "CE-IVD / FDA Class II"
+      },
+      "inventoryStatus": "in_stock",
+      "createdAt": "2026-08-25T02:35:49.444Z"
+    }
+  ],
+  "hotspots": [
+    {
+      "id": "hs-01",
+      "organizationId": "org-exhibitor-apex",
+      "boothId": "booth-demo-01",
+      "productId": "prod-01",
+      "position": {
+        "x": -1.8,
+        "y": 0.9,
+        "z": -2.2
+      },
+      "label": "Apex-Arm X9 Cobot",
+      "createdAt": "2026-08-25T02:35:49.444Z"
+    },
+    {
+      "id": "hs-02",
+      "organizationId": "org-exhibitor-apex",
+      "boothId": "booth-demo-01",
+      "productId": "prod-02",
+      "position": {
+        "x": 1.8,
+        "y": 0.7,
+        "z": -2
+      },
+      "label": "Apex-Nav AGV Transport",
+      "createdAt": "2026-08-25T02:35:49.444Z"
+    }
+  ],
+  "leads": [],
+  "rfqs": [],
+  "samples": [],
+  "appointments": [],
+  "productionRequests": [],
+  "productionProjects": [],
+  "exhibitorProfiles": [],
+  "tradeShows": [],
+  "analyticsEvents": [],
+  "reconstructionJobs": [
+    {
+      "id": "recon-job-apex-verified",
+      "organizationId": "org-exhibitor-apex",
+      "eventId": "event-global-tech-2026",
+      "boothId": "booth-demo-01",
+      "status": "verified",
+      "approvalStatus": "approved",
+      "progress": 100,
+      "currentStage": "completed",
+      "createdAt": "2026-08-25T02:35:49.444Z",
+      "completedAt": "2026-08-25T02:35:49.444Z",
+      "output": {
+        "type": "gaussian_splat",
+        "url": "/uploads/models/REAL-RECON-PILOT-01_splat.ply",
+        "format": "ply",
+        "sizeBytes": 60778917,
+        "splatCount": 245070
+      }
+    }
+  ],
+  "auditLogs": [],
+  "showhosts": [
+    {
+      "id": "sh-apex-01",
+      "organizationId": "org-exhibitor-apex",
+      "boothId": "booth-demo-01",
+      "displayName": "Apex Technical Lead Host",
+      "status": "available"
+    }
+  ],
+  "stripeEvents": [],
+  "billingEvents": [],
+  "upgradeRequests": [],
+  "platformMessages": [],
+  "ownerNotes": [],
+  "emailVerifications": [
+    {
+      "id": "ev-5411410a",
+      "normalizedEmail": "founder@aerodyn.example.com",
+      "businessName": "Aerodyn Systems LLC",
+      "codeHash": "596ffb20ba419349d8061372af648ac17fc78ff97d143f7ac5ef591756267300",
+      "code": "286266",
+      "magicTokenHash": "5561eb25a6044b3a027b691d1e33f408a5a8e471e27838993205cb2aa076edd7",
+      "magicToken": "cdd87c75e81a318a9b73f352e8776923857cdac85bc1e4d7f73bf81cfcd84328",
+      "ipHash": "a7446a7a0e3d1cde08acd90d85999c88",
+      "attemptCount": 0,
+      "status": "VERIFIED",
+      "expiresAt": "2026-08-25T02:45:50.994Z",
+      "createdAt": "2026-08-25T02:35:50.994Z",
+      "verifiedAt": "2026-08-25T02:35:51.018Z"
+    },
+    {
+      "id": "ev-c2f81e6e",
+      "normalizedEmail": "co-founder@aerodyn.example.com",
+      "businessName": "Another Project",
+      "codeHash": "12f264cc230f4057f4ca9a1d48f2bc243e065d0c21e5f205b1a0d5d115e941cf",
+      "code": "882273",
+      "magicTokenHash": "c8f8371790abb2435cea500c9f9e41bb6d86e398f3641ab3dbc6e961f95d59f9",
+      "magicToken": "d55e59075bc4a421c897bb0b6ca75228b58958f20a9e0d644527ec5650be4920",
+      "ipHash": "a7446a7a0e3d1cde08acd90d85999c88",
+      "attemptCount": 0,
+      "status": "VERIFIED",
+      "expiresAt": "2026-08-25T02:45:51.092Z",
+      "createdAt": "2026-08-25T02:35:51.092Z",
+      "verifiedAt": "2026-08-25T02:35:51.112Z"
+    },
+    {
+      "id": "ev-95892f19",
+      "normalizedEmail": "client-otp@retailcorp.com",
+      "businessName": "Retail Corp",
+      "codeHash": "fdfd8a741a10c2af1d2278ed2cf09bb4a00f54826188e0babba1fddd398fe541",
+      "code": "232775",
+      "magicTokenHash": "fcdc608ec471608580ba0713a376f14536d97016720100a491832449bde75ef9",
+      "magicToken": "ad0f12d18494815928b823a2bec59dcbbdf2a6b3ed6649094502c531064e40a7",
+      "ipHash": "a7446a7a0e3d1cde08acd90d85999c88",
+      "attemptCount": 1,
+      "status": "VERIFIED",
+      "expiresAt": "2026-08-25T02:45:51.138Z",
+      "createdAt": "2026-08-25T02:35:51.138Z",
+      "verifiedAt": "2026-08-25T02:35:51.159Z"
+    }
+  ],
+  "projects": [
+    {
+      "id": "prj-free-e6f35f67",
+      "organizationId": "org-free-1e0e5e3e",
+      "name": "Aerodyn Systems LLC Virtual Booth",
+      "businessName": "Aerodyn Systems LLC",
+      "normalizedBusinessName": "aerodyn systems",
+      "customerEmail": "founder@aerodyn.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1787625351065-908775913.png",
+        "previewUrl": "/uploads/capture-1787625351065-908775913.png",
+        "processedUrl": "/uploads/capture-1787625351065-908775913.png",
+        "uploadedAt": "2026-08-25T02:35:51.070Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1787625351065-908775913.png",
+          "highResUrl": "/uploads/capture-1787625351065-908775913.png",
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "PRODUCT 01",
+          "isBlank": true,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 1",
+          "status": "BLANK",
+          "createdAt": "2026-08-25T02:35:51.070Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "PRODUCT 02",
+          "isBlank": true,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 2",
+          "status": "BLANK",
+          "createdAt": "2026-08-25T02:35:51.070Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-25T02:35:51.070Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-25T02:35:51.070Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-25T02:35:51.070Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-25T02:35:51.070Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-25T02:35:51.070Z",
+      "updatedAt": "2026-08-25T02:35:51.070Z"
+    },
+    {
+      "id": "prj-free-ee70f8e5",
+      "organizationId": "org-free-dc057c9e",
+      "name": "Internal Dev Innovation Stand Virtual Booth",
+      "businessName": "Internal Dev Innovation Stand",
+      "normalizedBusinessName": "internal dev innovation stand",
+      "customerEmail": "lead-dev@internal.vshow.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "INTERNAL_DEV",
+      "isTest": true,
+      "internalDeveloperBypass": true,
+      "bypassType": "SPECIAL_DEVELOPER_EMAIL",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1787625351177-454820291.png",
+        "previewUrl": "/uploads/capture-1787625351177-454820291.png",
+        "processedUrl": "/uploads/capture-1787625351177-454820291.png",
+        "uploadedAt": "2026-08-25T02:35:51.180Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1787625351177-454820291.png",
+          "highResUrl": "/uploads/capture-1787625351177-454820291.png",
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "PRODUCT 01",
+          "isBlank": true,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 1",
+          "status": "BLANK",
+          "createdAt": "2026-08-25T02:35:51.180Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "PRODUCT 02",
+          "isBlank": true,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 2",
+          "status": "BLANK",
+          "createdAt": "2026-08-25T02:35:51.180Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-25T02:35:51.180Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-25T02:35:51.180Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-25T02:35:51.180Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-25T02:35:51.180Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-25T02:35:51.180Z",
+      "updatedAt": "2026-08-25T02:35:51.180Z"
+    }
+  ],
+  "freePreviewUsages": [
+    {
+      "usageId": "use-831df157",
+      "businessName": "Aerodyn Systems LLC",
+      "normalizedBusinessName": "aerodyn systems",
+      "email": "founder@aerodyn.example.com",
+      "normalizedEmail": "founder@aerodyn.example.com",
+      "emailVerifiedAt": "2026-08-25T02:35:51.070Z",
+      "ipHash": "a7446a7a0e3d1cde08acd90d85999c88",
+      "deviceIdHash": null,
+      "projectId": "prj-free-e6f35f67",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-25T02:35:51.070Z",
+      "lastAttemptAt": "2026-08-25T02:35:51.070Z"
+    },
+    {
+      "usageId": "use-4da4f773",
+      "businessName": "Internal Dev Innovation Stand",
+      "normalizedBusinessName": "internal dev innovation stand",
+      "email": "lead-dev@internal.vshow.com",
+      "normalizedEmail": "lead-dev@internal.vshow.com",
+      "emailVerifiedAt": "2026-08-25T02:35:51.180Z",
+      "ipHash": "a7446a7a0e3d1cde08acd90d85999c88",
+      "deviceIdHash": null,
+      "projectId": "prj-free-ee70f8e5",
+      "generationStatus": "INTERNAL_DEV",
+      "bypassType": "SPECIAL_DEVELOPER_EMAIL",
+      "environment": "INTERNAL_DEV",
+      "createdAt": "2026-08-25T02:35:51.180Z",
+      "lastAttemptAt": "2026-08-25T02:35:51.180Z"
+    }
+  ]
+}
