@@ -495,14 +495,6 @@
           <input type="email" id="work-email-input" class="form-input" placeholder="e.g. name@company.com" oninput="onWorkEmailInput()" required>
         </div>
 
-        <div class="form-group" id="confirm-email-group">
-          <label class="form-label" for="confirm-email-input">Confirm Email *</label>
-          <input type="email" id="confirm-email-input" class="form-input" placeholder="Confirm your work email">
-          <div id="email-match-error" style="color: #f87171; font-size: 12px; margin-top: 5px; display: none;">
-            <i class="fa-solid fa-triangle-exclamation"></i> The email addresses do not match.
-          </div>
-        </div>
-
         <div class="form-group">
           <label class="form-label">Booth Photo *</label>
           <div class="drop-zone" id="booth-drop-zone" onclick="document.getElementById('booth-file-input').click()">
@@ -551,31 +543,41 @@
     </div>
   </div>
 
-  <!-- Email Verification OTP Modal (Normal Customer) -->
+  <!-- Email Verification Modal (1-Click Confirmation Link + OTP Backup) -->
   <div class="drawer-modal" id="emailVerifyModal">
-    <div class="drawer-card" style="max-width: 440px;">
+    <div class="drawer-card" style="max-width: 460px; text-align: center;">
       <button class="close-btn" onclick="closeEmailVerifyModal()">✕</button>
-      <div class="section-tag"><i class="fa-solid fa-envelope-circle-check"></i> EMAIL OWNERSHIP VERIFICATION</div>
-      <h3 style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px;">Verify Your Work Email</h3>
-      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.5;">
-        We sent a 6-digit security code to <b id="verifyTargetEmailTxt" style="color: #38bdf8;">your email</b>. Please enter it below to claim your free booth.
+      <div class="section-tag" style="justify-content: center; display: inline-flex;"><i class="fa-solid fa-envelope-circle-check"></i> 1-CLICK EMAIL CONFIRMATION</div>
+      <h3 style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px;">Check Your Inbox</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+        We sent a confirmation link to <b id="verifyTargetEmailTxt" style="color: #38bdf8;">your email</b>.<br>
+        <span style="color: #f8fafc; font-weight: 600;">Click the link in your email</span> to instantly activate your booth.
       </p>
 
+      <!-- Live Link Click Radar -->
+      <div style="background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.35); border-radius: 12px; padding: 12px 16px; margin-bottom: 18px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <div style="width: 14px; height: 14px; border: 2px solid rgba(56,189,248,0.3); border-top-color: #38bdf8; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <span style="font-size: 12px; font-weight: 700; color: #38bdf8; letter-spacing: 0.3px;">Auto-detecting email link click...</span>
+      </div>
+
+      <div style="font-size: 11px; color: #64748b; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 800;">
+        — OR ENTER 6-DIGIT CODE BELOW —
+      </div>
+
       <form id="verify-code-form" onsubmit="handleVerifyCodeSubmit(event)">
-        <div class="form-group">
-          <label class="form-label" style="text-align: center; display: block;">6-DIGIT VERIFICATION CODE</label>
-          <input type="text" id="email-otp-input" class="form-input" placeholder="• • • • • •" maxlength="6" style="font-family: 'JetBrains Mono', monospace; font-size: 24px; letter-spacing: 8px; text-align: center; font-weight: 700; color: #38bdf8;" required>
+        <div class="form-group" style="margin-bottom: 14px;">
+          <input type="text" id="email-otp-input" class="form-input" placeholder="• • • • • •" maxlength="6" style="font-family: 'JetBrains Mono', monospace; font-size: 22px; letter-spacing: 6px; text-align: center; font-weight: 700; color: #38bdf8;">
         </div>
 
         <div id="verify-error-msg" style="color: #f87171; font-size: 12px; margin-bottom: 12px; text-align: center; display: none;"></div>
 
         <button type="submit" class="btn-create-free" id="btnVerifyCodeSubmit">
-          <i class="fa-solid fa-check"></i> VERIFY &amp; CREATE MY BOOTH
+          <i class="fa-solid fa-check"></i> VERIFY CODE &amp; CREATE BOOTH
         </button>
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font-size: 12px;">
           <button type="button" class="btn-ui" onclick="resendVerificationCode()" id="btnResendCode" style="font-size: 11px;">
-            <i class="fa-solid fa-rotate-right"></i> Resend Code
+            <i class="fa-solid fa-rotate-right"></i> Resend Email Link
           </button>
           <button type="button" class="btn-ui" onclick="closeEmailVerifyModal()" style="font-size: 11px; color: var(--text-muted);">
             Change Email
@@ -1052,11 +1054,10 @@
     let verifiedEmailToken = null;
     let verifiedEmailAddress = null;
     let existingDuplicateProjectId = null;
+    let emailPollInterval = null;
 
     async function onWorkEmailInput() {
       const email = document.getElementById('work-email-input').value.trim();
-      const matchErr = document.getElementById('email-match-error');
-      if (matchErr) matchErr.style.display = 'none';
 
       if (!email || !email.includes('@')) {
         isDeveloperBypass = false;
@@ -1084,14 +1085,9 @@
     }
 
     function setDeveloperModeBadge(isDev) {
-      const confirmGroup = document.getElementById('confirm-email-group');
       const devBadge = document.getElementById('dev-mode-badge');
-      if (isDev) {
-        if (confirmGroup) confirmGroup.style.display = 'none';
-        if (devBadge) devBadge.style.display = 'inline-flex';
-      } else {
-        if (confirmGroup) confirmGroup.style.display = 'block';
-        if (devBadge) devBadge.style.display = 'none';
+      if (devBadge) {
+        devBadge.style.display = isDev ? 'inline-flex' : 'none';
       }
     }
 
@@ -1099,27 +1095,13 @@
       e.preventDefault();
       const bizName = document.getElementById('business-name-input').value.trim();
       const workEmail = document.getElementById('work-email-input').value.trim();
-      const confirmEmail = document.getElementById('confirm-email-input')?.value?.trim() || '';
 
       if (!bizName) return alert('Please enter your business name.');
       if (!workEmail) return alert('Please enter your work email address.');
       if (!selectedFile) return alert('Please select or drop a booth photo.');
 
-      const matchErr = document.getElementById('email-match-error');
-
-      // Normal customer checks
+      // Check if already verified in this session or via local token
       if (!isDeveloperBypass) {
-        if (workEmail.toLowerCase() !== confirmEmail.toLowerCase()) {
-          if (matchErr) {
-            matchErr.style.display = 'block';
-            matchErr.textContent = 'The email addresses do not match.';
-          }
-          return;
-        } else {
-          if (matchErr) matchErr.style.display = 'none';
-        }
-
-        // If not yet verified for this email, initiate OTP verification
         if (!verifiedEmailToken || verifiedEmailAddress !== workEmail.toLowerCase()) {
           await initiateEmailVerification(workEmail, bizName);
           return;
@@ -1133,7 +1115,7 @@
     async function initiateEmailVerification(email, businessName) {
       try {
         const btnSubmit = document.getElementById('btn-submit-free');
-        if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.textContent = 'SENDING VERIFICATION CODE...'; }
+        if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.textContent = 'SENDING CONFIRMATION LINK...'; }
 
         const res = await fetch('/api/free-funnel/email/send-code', {
           method: 'POST',
@@ -1148,7 +1130,7 @@
         }
 
         if (!res.ok) {
-          return alert(data.message || 'Failed to send verification code.');
+          return alert(data.message || 'Failed to send confirmation link.');
         }
 
         if (data.developerBypass) {
@@ -1159,20 +1141,47 @@
 
         openEmailVerifyModal(email);
       } catch (err) {
-        alert('Network error sending verification code: ' + err.message);
+        alert('Network error sending confirmation link: ' + err.message);
       }
     }
 
     function openEmailVerifyModal(email) {
       document.getElementById('verifyTargetEmailTxt').textContent = email;
-      document.getElementById('email-otp-input').value = '';
-      document.getElementById('verify-error-msg').style.display = 'none';
+      const otpInput = document.getElementById('email-otp-input');
+      if (otpInput) otpInput.value = '';
+      const errEl = document.getElementById('verify-error-msg');
+      if (errEl) errEl.style.display = 'none';
       document.getElementById('emailVerifyModal').style.display = 'flex';
-      setTimeout(() => document.getElementById('email-otp-input').focus(), 150);
+
+      startVerificationPolling(email);
     }
 
     function closeEmailVerifyModal() {
+      if (emailPollInterval) {
+        clearInterval(emailPollInterval);
+        emailPollInterval = null;
+      }
       document.getElementById('emailVerifyModal').style.display = 'none';
+    }
+
+    function startVerificationPolling(email) {
+      if (emailPollInterval) clearInterval(emailPollInterval);
+      emailPollInterval = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/free-funnel/email/poll-status?email=${encodeURIComponent(email)}`);
+          const data = await res.json();
+          if (data.verified && data.verificationToken) {
+            clearInterval(emailPollInterval);
+            emailPollInterval = null;
+            verifiedEmailToken = data.verificationToken;
+            verifiedEmailAddress = email.toLowerCase();
+            closeEmailVerifyModal();
+            executeBoothGeneration();
+          }
+        } catch (e) {
+          // Silent polling retry
+        }
+      }, 2000);
     }
 
     async function handleVerifyCodeSubmit(e) {
@@ -1183,7 +1192,7 @@
       errEl.style.display = 'none';
 
       if (!code || code.length < 6) {
-        errEl.textContent = 'Please enter the 6-digit verification code.';
+        errEl.textContent = 'Please enter the 6-digit verification code or click the confirmation link in your email.';
         errEl.style.display = 'block';
         return;
       }
@@ -1201,12 +1210,17 @@
 
         const data = await res.json();
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> VERIFY &amp; CREATE MY BOOTH';
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> VERIFY CODE &amp; CREATE BOOTH';
 
         if (!res.ok) {
           errEl.textContent = data.message || 'Invalid verification code.';
           errEl.style.display = 'block';
           return;
+        }
+
+        if (emailPollInterval) {
+          clearInterval(emailPollInterval);
+          emailPollInterval = null;
         }
 
         verifiedEmailToken = data.verificationToken;
@@ -1235,15 +1249,15 @@
         });
         const data = await res.json();
         if (res.ok) {
-          alert(`A new verification code was sent to ${email}.`);
+          alert(`A new confirmation email was sent to ${email}.`);
         } else {
-          alert(data.message || 'Failed to resend code.');
+          alert(data.message || 'Failed to resend confirmation email.');
         }
       } catch (e) {
-        alert('Network error resending code: ' + e.message);
+        alert('Network error resending confirmation email: ' + e.message);
       } finally {
         resendBtn.disabled = false;
-        resendBtn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Resend Code';
+        resendBtn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Resend Email Link';
       }
     }
 
@@ -1268,7 +1282,6 @@
     async function executeBoothGeneration() {
       const bizName = document.getElementById('business-name-input').value.trim();
       const workEmail = document.getElementById('work-email-input').value.trim();
-      const confirmEmail = document.getElementById('confirm-email-input')?.value?.trim() || '';
 
       showProgress();
       logAnalyticsEvent('free_booth_started', { businessName: bizName });
@@ -1276,7 +1289,6 @@
       const formData = new FormData();
       formData.append('businessName', bizName);
       formData.append('email', workEmail);
-      formData.append('confirmEmail', confirmEmail);
       if (verifiedEmailToken) {
         formData.append('verificationToken', verifiedEmailToken);
       }

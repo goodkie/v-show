@@ -1949,7 +1949,7 @@ app.post('/api/free-funnel/email/send-code', (req, res) => {
   }
 });
 
-// 0c. Verify Email Code
+// 0c. Verify Email Code (OTP 6-digit)
 app.post('/api/free-funnel/email/verify-code', (req, res) => {
   try {
     const { email, code } = req.body;
@@ -1958,6 +1958,99 @@ app.post('/api/free-funnel/email/verify-code', (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.code || 'VERIFY_FAILED', message: err.message });
   }
+});
+
+// 0d. Verify Magic Confirmation Link
+app.get('/api/free-funnel/email/verify-link', (req, res) => {
+  try {
+    const email = (req.query.email || '').trim();
+    const token = (req.query.token || '').trim();
+    const result = db.verifyEmailMagicToken(email, token);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.code || 'MAGIC_VERIFY_FAILED', message: err.message });
+  }
+});
+
+// 0e. Poll Email Verification Status (For Real-time Instant Activation on Original Tab)
+app.get('/api/free-funnel/email/poll-status', (req, res) => {
+  try {
+    const email = (req.query.email || '').trim();
+    const result = db.checkEmailVerificationStatus(email);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: 'POLL_FAILED', message: err.message });
+  }
+});
+
+// 0f. User-Facing Magic Link Landing Page
+app.get('/verify-email', (req, res) => {
+  const email = (req.query.email || '').trim();
+  const token = (req.query.token || '').trim();
+  let verified = false;
+  let verificationToken = '';
+  let errorMsg = '';
+
+  try {
+    const result = db.verifyEmailMagicToken(email, token);
+    verified = result.verified;
+    verificationToken = result.verificationToken || '';
+  } catch (err) {
+    errorMsg = err.message;
+  }
+
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Verification — dn’a Virtual Trade Show</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body {
+      background: #070b14; color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; padding: 20px;
+    }
+    .card {
+      background: #0b1526; border: 1px solid ${verified ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'};
+      border-radius: 20px; padding: 40px 32px; max-width: 480px; width: 100%; text-align: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+    }
+    .icon-badge {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: ${verified ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'};
+      color: ${verified ? '#10b981' : '#ef4444'};
+      display: inline-flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 20px;
+      border: 2px solid ${verified ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'};
+    }
+    h1 { font-size: 24px; font-weight: 800; margin-bottom: 12px; }
+    p { color: #94a3b8; font-size: 14px; line-height: 1.6; margin-bottom: 28px; }
+    .btn {
+      display: inline-block; width: 100%; padding: 14px; border-radius: 12px; font-weight: 700;
+      background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; text-decoration: none;
+      box-shadow: 0 8px 24px rgba(2, 132, 199, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon-badge">
+      <i class="fa-solid ${verified ? 'fa-check-circle' : 'fa-triangle-exclamation'}"></i>
+    </div>
+    <h1>${verified ? 'Email Verified Successfully!' : 'Verification Link Error'}</h1>
+    <p>${verified ? `Your email (<b>${email}</b>) has been confirmed. Your booth creation is activated.<br>You can return to your original tab or continue below.` : errorMsg || 'This confirmation link is invalid or has expired.'}</p>
+    <a href="/" class="btn">${verified ? 'Continue to Booth Studio' : 'Return to Home'}</a>
+  </div>
+  ${verified ? `<script>
+    try {
+      localStorage.setItem('dna_email_verified', 'true');
+      localStorage.setItem('dna_verified_email', ${JSON.stringify(email)});
+      localStorage.setItem('dna_verification_token', ${JSON.stringify(verificationToken)});
+    } catch(e) {}
+  </script>` : ''}
+</body>
+</html>`);
 });
 
 // 0d. Internal Dev IP Diagnostics Endpoint (Protected)

@@ -5564,10 +5564,12 @@ class JSONDatabase {
         throw err;
       }
 
-      // 6-digit cryptographically random OTP
+      // 6-digit cryptographically random OTP + 32-byte secure magic token
       const code = crypto.randomInt(100000, 999999).toString();
+      const magicToken = crypto.randomBytes(32).toString('hex');
       const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET || 'ephemeral_dev_hmac_secret_key_2026';
       const codeHash = crypto.createHmac('sha256', secret).update(`${normEmail}:${code}`).digest('hex');
+      const magicTokenHash = crypto.createHmac('sha256', secret).update(`${normEmail}:${magicToken}`).digest('hex');
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
       const entry = {
@@ -5576,6 +5578,8 @@ class JSONDatabase {
         businessName: businessName || '',
         codeHash,
         code, // kept for sandbox/testing
+        magicTokenHash,
+        magicToken, // kept for sandbox/testing
         ipHash,
         attemptCount: 0,
         status: 'VERIFICATION_SENT',
@@ -5588,9 +5592,139 @@ class JSONDatabase {
         success: true,
         verificationSent: true,
         email: normEmail,
-        code: process.env.NODE_ENV !== 'production' ? code : undefined
+        code: process.env.NODE_ENV !== 'production' ? code : undefined,
+        magicToken: process.env.NODE_ENV !== 'production' ? magicToken : undefined,
+        verifyUrl: `/verify-email?token=${magicToken}&email=${encodeURIComponent(normEmail)}`
       };
     });
+  }
+
+  verifyEmailMagicToken(email, magicToken) {
+    const normEmail = this.normalizeEmail(email);
+    if (!normEmail || !magicToken) {
+      const err = new Error('Email and magic token are required.');
+      err.code = 'INVALID_INPUT';
+      throw err;
+    }
+
+    if (this.isSpecialDeveloperEmail(normEmail)) {
+      return {
+        success: true,
+        verified: true,
+        developerBypass: true,
+        email: normEmail,
+        verificationToken: `dev_bypass_token_${Date.now()}`
+      };
+    }
+
+    return this.mutate((db) => {
+      db.emailVerifications = db.emailVerifications || [];
+      const entry = db.emailVerifications.slice().reverse().find(v => v.normalizedEmail === normEmail && (v.status === 'VERIFICATION_SENT' || v.status === 'VERIFIED'));
+      if (!entry) {
+        const err = new Error('No pending verification found for this email. Please request a new confirmation link.');
+        err.code = 'VERIFICATION_NOT_FOUND';
+        throw err;
+      }
+
+      if (entry.status === 'VERIFIED' && entry.verifiedAt) {
+        // Already verified, re-issue valid verification token
+        const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET || 'ephemeral_dev_hmac_secret_key_2026';
+        const tokenPayload = `${normEmail}:${entry.verifiedAt}:${entry.id}`;
+        const tokenSignature = crypto.createHmac('sha256', secret).update(tokenPayload).digest('hex');
+        const verificationToken = Buffer.from(JSON.stringify({
+          email: normEmail,
+          verifiedAt: entry.verifiedAt,
+          id: entry.id,
+          sig: tokenSignature
+        })).toString('base64');
+
+        return {
+          success: true,
+          verified: true,
+          email: normEmail,
+          verificationToken
+        };
+      }
+
+      if (new Date() > new Date(entry.expiresAt)) {
+        entry.status = 'EXPIRED';
+        const err = new Error('Confirmation link has expired. Please request a new link.');
+        err.code = 'VERIFICATION_EXPIRED';
+        throw err;
+      }
+
+      const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET || 'ephemeral_dev_hmac_secret_key_2026';
+      const expectedMagicHash = crypto.createHmac('sha256', secret).update(`${normEmail}:${magicToken.toString().trim()}`).digest('hex');
+
+      if (entry.magicTokenHash !== expectedMagicHash && entry.magicToken !== magicToken.toString().trim()) {
+        const err = new Error('Invalid confirmation link. Please check your email and try again.');
+        err.code = 'INVALID_MAGIC_TOKEN';
+        throw err;
+      }
+
+      entry.status = 'VERIFIED';
+      entry.verifiedAt = new Date().toISOString();
+
+      // Issue signed verification token (valid 30 minutes)
+      const tokenPayload = `${normEmail}:${entry.verifiedAt}:${entry.id}`;
+      const tokenSignature = crypto.createHmac('sha256', secret).update(tokenPayload).digest('hex');
+      const verificationToken = Buffer.from(JSON.stringify({
+        email: normEmail,
+        verifiedAt: entry.verifiedAt,
+        id: entry.id,
+        sig: tokenSignature
+      })).toString('base64');
+
+      return {
+        success: true,
+        verified: true,
+        email: normEmail,
+        verificationToken
+      };
+    });
+  }
+
+  checkEmailVerificationStatus(email) {
+    const normEmail = this.normalizeEmail(email);
+    if (!normEmail) return { success: false, verified: false };
+    if (this.isSpecialDeveloperEmail(normEmail)) {
+      return {
+        success: true,
+        verified: true,
+        developerBypass: true,
+        email: normEmail,
+        verificationToken: `dev_bypass_token_${Date.now()}`
+      };
+    }
+
+    const db = this.read();
+    db.emailVerifications = db.emailVerifications || [];
+    const entry = db.emailVerifications.slice().reverse().find(v => v.normalizedEmail === normEmail && v.status === 'VERIFIED');
+    if (!entry || !entry.verifiedAt) {
+      return { success: true, verified: false, status: 'PENDING', email: normEmail };
+    }
+
+    const verifiedTime = new Date(entry.verifiedAt).getTime();
+    if (Date.now() - verifiedTime > 30 * 60 * 1000) {
+      return { success: true, verified: false, status: 'EXPIRED', email: normEmail };
+    }
+
+    const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET || 'ephemeral_dev_hmac_secret_key_2026';
+    const tokenPayload = `${normEmail}:${entry.verifiedAt}:${entry.id}`;
+    const tokenSignature = crypto.createHmac('sha256', secret).update(tokenPayload).digest('hex');
+    const verificationToken = Buffer.from(JSON.stringify({
+      email: normEmail,
+      verifiedAt: entry.verifiedAt,
+      id: entry.id,
+      sig: tokenSignature
+    })).toString('base64');
+
+    return {
+      success: true,
+      verified: true,
+      email: normEmail,
+      verificationToken
+    };
   }
 
   verifyEmailCode(email, code) {
