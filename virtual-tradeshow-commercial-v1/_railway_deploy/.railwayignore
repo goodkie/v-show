@@ -5,7 +5,9 @@ node_modules
 *.ply
 *.splat
 *.spz
-*.ksplat
 data
-client/assets/demo/wilo/
-client/assets/splat/
+virtual-tradeshow-commercial-v1
+client/assets/demo/wilo/models/*.ply
+client/assets/demo/wilo/models/*.splat
+client/assets/demo/wilo/diagnostics/
+client/assets/demo/wilo/experimental/

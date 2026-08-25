@@ -638,15 +638,159 @@
     .demo-title { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 6px; }
 
     .footer { border-top: 1px solid var(--border); padding: 40px 24px; text-align: center; color: var(--text-muted); font-size: 13px; }
+  
+    /* Global Scrollbar Elimination */
+    html, body {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    ::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+    .demo-frame {
+      border: none;
+      overflow: hidden;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    /* Mobile Responsive Precision Tuning */
+    @media (max-width: 768px) {
+      .nav-bar {
+        padding: 12px 16px;
+      }
+      .brand-logo img {
+        height: 32px !important;
+      }
+      .hero-section {
+        padding: 36px 14px 50px 14px;
+      }
+      .hero-pill {
+        font-size: 10px;
+        padding: 5px 12px;
+        margin-bottom: 16px;
+      }
+      .hero-title {
+        font-size: 27px;
+        line-height: 1.25;
+        letter-spacing: -0.8px;
+        margin-bottom: 12px;
+      }
+      .hero-desc {
+        font-size: 13.5px;
+        line-height: 1.55;
+        margin-bottom: 22px;
+        padding: 0 4px;
+      }
+      .upload-cta-frame {
+        padding: 20px 16px;
+        border-radius: 16px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+      }
+      .frame-title {
+        font-size: 18px;
+        letter-spacing: -0.4px;
+      }
+      .frame-subtitle {
+        font-size: 12px;
+        margin-bottom: 16px;
+      }
+      .form-group {
+        margin-bottom: 12px;
+      }
+      .form-label {
+        font-size: 12px;
+        margin-bottom: 5px;
+      }
+      .form-input {
+        height: 44px;
+        font-size: 15px;
+        padding: 0 12px;
+        border-radius: 9px;
+      }
+      .drop-zone {
+        padding: 18px 12px;
+        border-radius: 10px;
+      }
+      .drop-icon {
+        font-size: 26px;
+        margin-bottom: 6px;
+      }
+      .drop-title {
+        font-size: 13.5px;
+      }
+      .drop-hint {
+        font-size: 11px;
+      }
+      .btn-create-free {
+        height: 48px;
+        font-size: 13.5px;
+        border-radius: 10px;
+        margin-top: 4px;
+      }
+      .frame-footer {
+        font-size: 11px;
+        margin-top: 14px;
+        line-height: 1.4;
+      }
+
+      /* Clean Inline OTP Inputs on Mobile */
+      .otp-digit {
+        width: 40px !important;
+        height: 46px !important;
+        font-size: 20px !important;
+        border-radius: 8px !important;
+      }
+
+      .demo-section {
+        padding: 40px 12px 60px 12px;
+      }
+      .section-title {
+        font-size: 24px;
+        margin-bottom: 8px;
+      }
+      .section-subtitle {
+        font-size: 13px;
+        margin-bottom: 24px;
+      }
+      .demo-card {
+        border-radius: 14px;
+      }
+      .demo-info {
+        padding: 14px 12px;
+      }
+      .demo-title {
+        font-size: 16px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero-title {
+        font-size: 23px;
+      }
+      .upload-cta-frame {
+        padding: 16px 12px;
+      }
+      .frame-title {
+        font-size: 16.5px;
+      }
+      .otp-digit {
+        width: 36px !important;
+        height: 42px !important;
+        font-size: 18px !important;
+      }
+    }
+
   </style>
 </head>
 <body>
 
   <!-- Navigation Bar -->
   <nav class="nav-bar">
-    <a href="/" class="brand-logo">
-      <img src="/assets/brand/dna_logo_white.png" alt="dn’a Logo" style="height: 24px;">
-      <span style="font-weight: 800; font-size: 18px; letter-spacing: -0.5px; color: #fff;">dn’a</span>
+    <a href="/" class="brand-logo" title="3D na Home">
+      <img src="/assets/brand/dna_logo_white.png" alt="3D na Logo" style="height: 38px; width: auto; object-fit: contain; display: block;">
     </a>
     <div class="nav-links">
       <a href="#how-it-works" class="nav-link">How It Works</a>
@@ -659,11 +803,11 @@
   <!-- Hero Section (One Action Entry Funnel) -->
   <div class="hero-section" id="hero-funnel">
     <div class="hero-pill">
-      <i class="fa-solid fa-bolt"></i> ONE PHOTO • FREE PHOTO IMMERSIVE BOOTH
+      <i class="fa-solid fa-bolt"></i> ONE PHOTO • PHOTO IMMERSIVE BOOTH
     </div>
     <h1 class="hero-title">
       Turn One Booth Photo Into a<br>
-      <span>Commercial Virtual Showroom</span> Free
+      <span>Commercial Virtual Showroom</span>
     </h1>
     <p class="hero-desc">
       Upload your exhibition booth photo and business name. dn’a generates your interactive photo immersive booth preview with interactive product pinpoints in seconds.
@@ -672,7 +816,7 @@
     <!-- Upload CTA Frame -->
     <div class="upload-cta-frame">
       <div class="frame-title">Create Your Free Photo Immersive Booth</div>
-      <div class="frame-subtitle">No credit card required • Instant interactive preview • 3 product slots included</div>
+      <div class="frame-subtitle">Instant interactive 3D preview • 3 product slots included</div>
 
       <form id="free-booth-form" onsubmit="handleFreeBoothSubmit(event)">
         <!-- Initial Inputs View -->
@@ -708,7 +852,7 @@
           </div>
 
           <button type="submit" class="btn-create-free" id="btn-submit-free">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> CREATE MY FREE PHOTO IMMERSIVE BOOTH
+            <i class="fa-solid fa-wand-magic-sparkles"></i> CREATE PHOTO IMMERSIVE BOOTH
           </button>
         </div>
 
@@ -758,7 +902,7 @@
       </form>
 
       <div class="frame-footer">
-        <i class="fa-solid fa-shield-halved" style="color: #38bdf8;"></i> No credit card required. One free booth preview per business and verified email.
+        <i class="fa-solid fa-shield-halved" style="color: #38bdf8;"></i> Instant generation for verified business email • 3 interactive product pins included.
       </div>
     </div>
   </div>
@@ -1301,7 +1445,7 @@
     </div>
     <div class="demo-grid">
       <div class="demo-card">
-        <iframe class="demo-frame" src="/demo-matterport.html" title="Photo Immersive Booth Demo"></iframe>
+        <iframe class="demo-frame" scrolling="no" src="/demo-matterport.html" title="Photo Immersive Booth Demo"></iframe>
         <div class="demo-info">
           <div class="section-tag" style="font-size: 10px; color: #38bdf8;">INDUSTRIAL TECH</div>
           <div class="demo-title">DN'A ROBOTIC — SMART BOOTH</div>
@@ -1309,7 +1453,7 @@
         </div>
       </div>
       <div class="demo-card">
-        <iframe class="demo-frame" src="/demo-fashion.html" title="Vantelle Paris Luxury Fashion Showroom Demo"></iframe>
+        <iframe class="demo-frame" scrolling="no" src="/demo-fashion.html" title="Vantelle Paris Luxury Fashion Showroom Demo"></iframe>
         <div class="demo-info">
           <div class="section-tag" style="font-size: 10px; color: #fb7185;">LUXURY FASHION</div>
           <div class="demo-title">VANTÉLLE PARIS — RUNWAY BOOTH</div>
@@ -1317,7 +1461,7 @@
         </div>
       </div>
       <div class="demo-card">
-        <iframe class="demo-frame" src="/demo-cosmetic.html" title="Lumiere Skincare Botanical Bio-Cellular Pavilion Demo"></iframe>
+        <iframe class="demo-frame" scrolling="no" src="/demo-cosmetic.html" title="Lumiere Skincare Botanical Bio-Cellular Pavilion Demo"></iframe>
         <div class="demo-info">
           <div class="section-tag" style="font-size: 10px; color: #e2c974;">CLINICAL COSMETICS</div>
           <div class="demo-title">LUMIÈRE — BEAUTY PAVILION</div>
@@ -1325,7 +1469,7 @@
         </div>
       </div>
       <div class="demo-card">
-        <iframe class="demo-frame" src="/demo-furniture.html" title="Nova Living Scandinavian Designer Furniture Demo"></iframe>
+        <iframe class="demo-frame" scrolling="no" src="/demo-furniture.html" title="Nova Living Scandinavian Designer Furniture Demo"></iframe>
         <div class="demo-info">
           <div class="section-tag" style="font-size: 10px; color: #f59e0b;">DESIGNER FURNITURE</div>
           <div class="demo-title">NOVA LIVING — FURNITURE BOOTH</div>
@@ -1561,7 +1705,7 @@
         const data = await res.json();
         if (btnSubmit) {
           btnSubmit.disabled = false;
-          btnSubmit.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CREATE MY FREE PHOTO IMMERSIVE BOOTH';
+          btnSubmit.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CREATE PHOTO IMMERSIVE BOOTH';
         }
 
         // Server-Side Developer Bypass Match (Completely silent to public user)
@@ -1591,7 +1735,7 @@
       } catch (err) {
         if (btnSubmit) {
           btnSubmit.disabled = false;
-          btnSubmit.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CREATE MY FREE PHOTO IMMERSIVE BOOTH';
+          btnSubmit.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CREATE PHOTO IMMERSIVE BOOTH';
         }
         showFormInlineError("WE COULDN'T SEND YOUR CONFIRMATION EMAIL. Please try again.");
       }

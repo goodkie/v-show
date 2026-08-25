@@ -1,0 +1,96 @@
+{
+  "tenantId": "org-wilo-golden-demo",
+  "boothId": "booth-wilo-golden-demo",
+  "sourceType": "AUTHENTIC_CAMERA_CAPTURE",
+  "synthetic": false,
+  "totalIncomingImages": 71,
+  "totalAcceptedImages": 71,
+  "photoTourViewsCount": 12,
+  "createdAt": "2026-08-18T23:45:08.176Z",
+  "views": [
+    {
+      "id": "view_01_front_hero",
+      "title": "01. Front Hero View",
+      "sourceFile": "booth01_a1_1787070019183.jpg",
+      "publicUrl": "/assets/demo/wilo/authentic-booth/view_01.jpg",
+      "bytes": 721779
+    },
+    {
+      "id": "view_02_front_elevation",
+      "title": "02. Front Center Elevation",
+      "sourceFile": "booth02_a1_1787070070691.jpg",
+      "publicUrl": "/assets/demo/wilo/authentic-booth/view_02.jpg",
+      "bytes": 721476
+    },
+    {
+      "id": "view_03_left_perspective",
+      "title": "03. Left Perspective Angle",
+      "sourceFile": "booth03_a1_1787070141591.jpg",
+      "publicUrl": "/assets/demo/wilo/authentic-booth/view_03.jpg",
+      "bytes": 684875
+    },
+    {
+      "id": "view_04_left_flank",
+      "title": "04. Left Flank & Reception",
+      "sourceFile": "booth04_a1_1787070866680.jpg",
+      "publicUrl": "/assets/demo/wilo/authentic-booth/view_04.jpg",
+      "bytes": 802436
+    },
+    {
+      "id": "view_05_interior_entrance",
+      "title": "05. Interior Aisle Entrance",
+      "sourceFile": "booth05_a1_1787070942987.jpg",
+      "publicUrl": "/assets/demo/wilo/authentic-booth/view_05.jpg",
+      "bytes": 740169
+    },
+    {
+      "id": "view_06_central_products",
+      "title": "06. Central Hydronic Pump Island",
+      "sourceFile": "booth06_a1_1787071684860.jpg",
+      "publicUrl": "/assets/demo/wilo/authentic-booth/view_06.jpg",
+      "bytes": 661556
+    },
+    {
+      "id": "view_07_rear_presentation",
+      "title": "07. Digital Presentation Wall",
+      "sourceFile": "booth07_a1_1787071736522.jpg",
+      "publicUrl": "/assets/demo/wilo/authentic-booth/view_07.jpg",
+      "bytes": 704057
+    },
+    {
+      "id": "view_08_meeting_lounge",
+      "title": "08. Executive Consultation Lounge",
+      "sourceFile": "booth03_a2_1787070152139.jpg",
+      "publicUrl": "/assets/demo/wilo/authentic-booth/view_08.jpg",
+      "bytes": 806350
+    },
+    {
+      "id": "view_09_right_rear",
+      "title": "09. Right Rear Perspective",
+      "sourceFile": "booth03_a3_1787070825035.jpg",
+      "publicUrl": "/assets/demo/wilo/authentic-booth/view_09.jpg",
+      "bytes": 646402
+    },
+    {
+      "id": "view_10_right_flank",
+      "title": "10. Right Flank & Smart Systems",
+      "sourceFile": "booth04_a1_1787070866680.jpg",
+      "publicUrl": "/assets/demo/wilo/authentic-booth/view_10.jpg",
+      "bytes": 802436
+    },
+    {
+      "id": "view_11_overhead_truss",
+      "title": "11. Overhead Lighting & Branding",
+      "sourceFile": "booth04_a2_1787070881705.jpg",
+      "publicUrl": "/assets/demo/wilo/authentic-booth/view_11.jpg",
+      "bytes": 868513
+    },
+    {
+      "id": "view_12_hall_overview",
+      "title": "12. Panoramic Hall Overview",
+      "sourceFile": "booth04_a3_1787070900478.jpg",
+      "publicUrl": "/assets/demo/wilo/authentic-booth/view_12.jpg",
+      "bytes": 610862
+    }
+  ]
+}
