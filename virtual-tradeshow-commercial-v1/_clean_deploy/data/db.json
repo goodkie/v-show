@@ -13938,6 +13938,20 @@
           "createdAt": "2026-08-26T17:21:07.311Z"
         }
       ]
+    },
+    {
+      "consultationId": "3DNA-VMA-19NIK2",
+      "serviceType": "AI Virtual Makeup Artist",
+      "businessName": "Lumière Paris Cosmetics",
+      "contactName": "Camille Laurent",
+      "email": "camille@lumierecosmetics.com",
+      "productCount": "50+ items",
+      "timeline": "Immediate (1-2 weeks)",
+      "message": "Bespoke virtual shade finder integration for Spring rollout.",
+      "source": "LANDING_VIRTUAL_MAKEUP_ARTIST",
+      "status": "NEW",
+      "createdAt": "2026-08-26T21:02:23.486Z",
+      "internalNotes": []
     }
   ]
 }
