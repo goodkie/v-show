@@ -13917,5 +13917,27 @@
       "status": "NEW",
       "createdAt": "2026-08-26T17:08:45.610Z"
     }
+  ],
+  "consultationRequests": [
+    {
+      "consultationId": "3DNA-VFR-MJ58OB",
+      "serviceType": "AI Virtual Fitting Room",
+      "businessName": "Vantelle Haute Couture",
+      "contactName": "Elena Rostova",
+      "email": "elena@vantelle.fr",
+      "productCount": "11 - 50 items",
+      "timeline": "Within 1 month",
+      "message": "Seeking custom fitting room for Paris showroom.",
+      "source": "LANDING_VIRTUAL_FITTING_ROOM",
+      "status": "QUALIFIED",
+      "createdAt": "2026-08-26T17:21:07.257Z",
+      "internalNotes": [
+        {
+          "note": "High budget luxury client.",
+          "author": "Sales VP",
+          "createdAt": "2026-08-26T17:21:07.311Z"
+        }
+      ]
+    }
   ]
 }

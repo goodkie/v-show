@@ -1,0 +1,2 @@
+# 12. Consultation Analytics
+- Events: `virtual_fitting_section_view`, `virtual_fitting_video_play`, `virtual_fitting_consultation_open`, `virtual_fitting_consultation_submit`. Zero PII in event payloads.
