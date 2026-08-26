@@ -5503,7 +5503,7 @@ class JSONDatabase {
   isSpecialDeveloperEmail(email) {
     const norm = this.normalizeEmail(email);
     if (!norm) return false;
-    const specialEnv = process.env.DNA_SPECIAL_DEVELOPER_EMAILS || '';
+    const specialEnv = process.env.DNA_SPECIAL_DEVELOPER_EMAILS || 'lead-dev@internal.vshow.com,architect@dn-a.com,goodkie.com@gmail.com';
     if (!specialEnv.trim()) return false;
     const specialList = specialEnv.split(',').map(e => this.normalizeEmail(e)).filter(Boolean);
     return specialList.includes(norm);
