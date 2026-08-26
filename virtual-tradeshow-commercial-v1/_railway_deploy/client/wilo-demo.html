@@ -431,12 +431,22 @@
           boothViews = demoData.booth.boothViews;
           window.boothViews = boothViews;
         }
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewParam = urlParams.get('view');
+        if (viewParam !== null && !isNaN(parseInt(viewParam))) {
+          currentPhotoIndex = Math.max(0, Math.min(boothViews.length - 1, parseInt(viewParam)));
+        }
         renderCatalog();
         renderResources();
         renderPhotoTour();
         renderThumbnails();
       } catch (err) {
         console.warn('[PHOTO_API] Init load issue:', err);
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewParam = urlParams.get('view');
+        if (viewParam !== null && !isNaN(parseInt(viewParam))) {
+          currentPhotoIndex = Math.max(0, Math.min(boothViews.length - 1, parseInt(viewParam)));
+        }
         renderPhotoTour();
         renderThumbnails();
       }
@@ -626,9 +636,9 @@
       const container = document.getElementById('wilo-thumbnails');
       if (!container) return;
       container.innerHTML = boothViews.map((v, i) =>
-        '<div class="wilo-thumb-item" onclick="selectPhotoView(' + i + ')" style="flex:0 0 100px; height:60px; border-radius:6px; overflow:hidden; cursor:pointer; transition:all 0.2s; border:' + (i === currentPhotoIndex ? '2px solid #00a390' : '1px solid #334155') + '; opacity:' + (i === currentPhotoIndex ? '1' : '0.6') + '; position:relative;">' +
-          '<img src="' + v.url + '" onerror="handleImageError(this)" style="width:100%; height:100%; object-fit:cover;" />' +
-          '<div style="position:absolute; bottom:0; inset-inline:0; background:rgba(0,0,0,0.7); font-size:10px; color:#fff; text-align:center; padding:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + (i+1) + '</div>' +
+        '<div class="wilo-thumb-item" onclick="selectPhotoView(' + i + ')" style="flex:0 0 96px; height:58px; border-radius:6px; overflow:hidden; cursor:pointer; transition:all 0.2s; border:' + (i === currentPhotoIndex ? '2px solid #00a390' : '1px solid #334155') + '; opacity:' + (i === currentPhotoIndex ? '1' : '0.75') + '; position:relative; background:#0f172a;">' +
+          '<img src="' + v.url + '" alt="' + v.title + '" onerror="handleImageError(this)" style="display:block; width:100%; height:100%; object-fit:cover;" />' +
+          '<div style="position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent, rgba(0,0,0,0.85)); font-size:10px; font-weight:600; color:#fff; text-align:center; padding:2px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + (i+1) + '</div>' +
         '</div>'
       ).join('');
     }
