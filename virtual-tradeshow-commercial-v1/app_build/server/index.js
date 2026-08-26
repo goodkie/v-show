@@ -399,6 +399,27 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
+
+          // C11 Free Funnel Project Upgrade Handler
+          if (session.metadata && session.metadata.projectId) {
+            const pid = session.metadata.projectId;
+            const reqPlan = (session.metadata.requestedPlan || 'PRO').toUpperCase();
+            const dbData = db.read();
+            const proj = (dbData.freePreviewProjects || []).find(p => p.id === pid);
+            if (proj) {
+              proj.entitlementState = reqPlan === 'BUSINESS' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
+              proj.plan = reqPlan;
+              proj.stripeCustomerId = customerId;
+              proj.stripeSubscriptionId = subscriptionId;
+              proj.stripeSessionId = session.id;
+              proj.paymentCorrelationId = session.metadata.paymentCorrelationId || 'pay_corr_webhook';
+              proj.activatedAt = new Date().toISOString();
+              proj.publishStatus = 'APPROVED';
+              db.write(dbData);
+              console.log(`✅ C11 Project ${pid} upgraded to ${proj.entitlementState} via Stripe Webhook`);
+            }
+          }
+
         const session = event.data.object;
         const orgId = session.metadata?.organizationId;
         const projectId = session.metadata?.projectId;

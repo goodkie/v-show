@@ -13883,5 +13883,39 @@
       "createdAt": "2026-08-25T01:16:36.805Z",
       "verifiedAt": "2026-08-25T01:16:36.825Z"
     }
+  ],
+  "freePreviewProjects": [
+    {
+      "id": "proj_c11_test_1787764125536",
+      "businessName": "Vantelle High-End Audio",
+      "email": "audio@vantelle.com",
+      "photoUrl": "/assets/demo/lumiere-showcase/pano360/node0_360_panorama_8k.jpg",
+      "entitlementState": "ACTIVE_PRO",
+      "products": [
+        {
+          "id": "PROD-01",
+          "name": "Audiophile Tube Amp",
+          "description": "Handcrafted Class-A Valve Amplifier",
+          "price": 4200
+        }
+      ],
+      "createdAt": "2026-08-26T17:08:45.537Z",
+      "requestedPlan": "BUSINESS",
+      "activatedAt": "2026-08-26T17:08:45.585Z",
+      "publishStatus": "PUBLISHED",
+      "publicUrl": "https://v-show-commercial-v1-production.up.railway.app/booth/proj_c11_test_1787764125536"
+    }
+  ],
+  "buyerLeads": [
+    {
+      "id": "rfq_c11_test_01",
+      "projectId": "proj_c11_test_1787764125536",
+      "buyerName": "David Sterling",
+      "buyerCompany": "Nordic Sound Labs",
+      "buyerEmail": "david@nordicsound.no",
+      "message": "Requesting wholesale quote for 20 units.",
+      "status": "NEW",
+      "createdAt": "2026-08-26T17:08:45.610Z"
+    }
   ]
 }
