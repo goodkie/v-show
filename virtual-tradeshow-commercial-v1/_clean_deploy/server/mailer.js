@@ -92,12 +92,12 @@ class EmailService {
   sendViaResend({ to, fullVerifyUrl, code, businessName }) {
     return new Promise((resolve, reject) => {
       const data = JSON.stringify({
-        from: process.env.EMAIL_FROM || 'dn’a Virtual Showroom <verify@dn-a.com>',
+        from: process.env.EMAIL_FROM || 'dn’a Photo Immersive Booth <verify@dn-a.com>',
         to: [to],
         subject: `Confirm your email to activate your ${businessName || ''} free virtual booth`,
         html: `
           <div style="background: #070b14; color: #f8fafc; padding: 40px 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 540px; margin: 0 auto; border-radius: 16px; border: 1px solid rgba(56,189,248,0.3);">
-            <div style="font-size: 24px; font-weight: 800; color: #38bdf8; margin-bottom: 8px;">dn’a Virtual Showroom</div>
+            <div style="font-size: 24px; font-weight: 800; color: #38bdf8; margin-bottom: 8px;">dn’a Photo Immersive Booth</div>
             <h1 style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 16px;">Confirm Your Work Email</h1>
             <p style="font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 24px;">
               Your 6-digit confirmation code for <b>${businessName || 'your business'}</b> is:
@@ -159,7 +159,7 @@ class EmailService {
     return new Promise((resolve, reject) => {
       const data = JSON.stringify({
         personalizations: [{ to: [{ email: to }] }],
-        from: { email: process.env.EMAIL_FROM || 'verify@dn-a.com', name: 'dn’a Virtual Showroom' },
+        from: { email: process.env.EMAIL_FROM || 'verify@dn-a.com', name: 'dn’a Photo Immersive Booth' },
         subject: `Confirm your email to activate your ${businessName || ''} free virtual booth`,
         content: [{
           type: 'text/html',

@@ -5503,7 +5503,7 @@ class JSONDatabase {
   isSpecialDeveloperEmail(email) {
     const norm = this.normalizeEmail(email);
     if (!norm) return false;
-    const specialEnv = process.env.DNA_SPECIAL_DEVELOPER_EMAILS || 'lead-dev@internal.vshow.com,architect@dn-a.com,goodkie.com@gmail.com';
+    const specialEnv = process.env.DNA_SPECIAL_DEVELOPER_EMAILS || '';
     if (!specialEnv.trim()) return false;
     const specialList = specialEnv.split(',').map(e => this.normalizeEmail(e)).filter(Boolean);
     return specialList.includes(norm);
@@ -5592,7 +5592,7 @@ class JSONDatabase {
       // 6-digit cryptographically random OTP + 32-byte secure magic token
       const code = crypto.randomInt(100000, 999999).toString();
       const magicToken = crypto.randomBytes(32).toString('hex');
-      const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET || 'ephemeral_dev_hmac_secret_key_2026';
+      const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET; if (!secret) throw new Error('PRODUCTION_HMAC_SECRET_REQUIRED: FREE_PREVIEW_HMAC_SECRET env var is missing');
       const codeHash = crypto.createHmac('sha256', secret).update(`${normEmail}:${code}`).digest('hex');
       const magicTokenHash = crypto.createHmac('sha256', secret).update(`${normEmail}:${magicToken}`).digest('hex');
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
@@ -5653,7 +5653,7 @@ class JSONDatabase {
 
       if (entry.status === 'VERIFIED' && entry.verifiedAt) {
         // Already verified, re-issue valid verification token
-        const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET || 'ephemeral_dev_hmac_secret_key_2026';
+        const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET; if (!secret) throw new Error('PRODUCTION_HMAC_SECRET_REQUIRED: FREE_PREVIEW_HMAC_SECRET env var is missing');
         const tokenPayload = `${normEmail}:${entry.verifiedAt}:${entry.id}`;
         const tokenSignature = crypto.createHmac('sha256', secret).update(tokenPayload).digest('hex');
         const verificationToken = Buffer.from(JSON.stringify({
@@ -5678,7 +5678,7 @@ class JSONDatabase {
         throw err;
       }
 
-      const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET || 'ephemeral_dev_hmac_secret_key_2026';
+      const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET; if (!secret) throw new Error('PRODUCTION_HMAC_SECRET_REQUIRED: FREE_PREVIEW_HMAC_SECRET env var is missing');
       const expectedMagicHash = crypto.createHmac('sha256', secret).update(`${normEmail}:${magicToken.toString().trim()}`).digest('hex');
 
       if (entry.magicTokenHash !== expectedMagicHash && entry.magicToken !== magicToken.toString().trim()) {
@@ -5734,7 +5734,7 @@ class JSONDatabase {
       return { success: true, verified: false, status: 'EXPIRED', email: normEmail };
     }
 
-    const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET || 'ephemeral_dev_hmac_secret_key_2026';
+    const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET; if (!secret) throw new Error('PRODUCTION_HMAC_SECRET_REQUIRED: FREE_PREVIEW_HMAC_SECRET env var is missing');
     const tokenPayload = `${normEmail}:${entry.verifiedAt}:${entry.id}`;
     const tokenSignature = crypto.createHmac('sha256', secret).update(tokenPayload).digest('hex');
     const verificationToken = Buffer.from(JSON.stringify({
@@ -5794,7 +5794,7 @@ class JSONDatabase {
         throw err;
       }
 
-      const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET || 'ephemeral_dev_hmac_secret_key_2026';
+      const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET; if (!secret) throw new Error('PRODUCTION_HMAC_SECRET_REQUIRED: FREE_PREVIEW_HMAC_SECRET env var is missing');
       const expectedHash = crypto.createHmac('sha256', secret).update(`${normEmail}:${code.toString().trim()}`).digest('hex');
 
       if (entry.codeHash !== expectedHash && entry.code !== code.toString().trim()) {
@@ -5836,7 +5836,7 @@ class JSONDatabase {
       const verifiedTime = new Date(parsed.verifiedAt).getTime();
       if (Date.now() - verifiedTime > 30 * 60 * 1000) return false;
 
-      const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET || 'ephemeral_dev_hmac_secret_key_2026';
+      const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET; if (!secret) throw new Error('PRODUCTION_HMAC_SECRET_REQUIRED: FREE_PREVIEW_HMAC_SECRET env var is missing');
       const tokenPayload = `${parsed.email}:${parsed.verifiedAt}:${parsed.id}`;
       const expectedSig = crypto.createHmac('sha256', secret).update(tokenPayload).digest('hex');
       return expectedSig === parsed.sig;
