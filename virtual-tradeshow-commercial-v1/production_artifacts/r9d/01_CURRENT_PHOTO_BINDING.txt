@@ -1,25 +1,31 @@
-CURRENT PHOTO BINDING INVESTIGATION REPORT (PHASE 10.7N-R9D)
-Date: 2026-08-18
+﻿============================================================
+PHASE 10.7N-R9D STEP 2 — CURRENT PHOTO BINDING ANALYSIS
+============================================================
 
-1. CURRENT REQUESTED URLS in wilo-demo.html:
-   - /assets/demo/wilo/booth/01_front_hero.jpg
-   - /assets/demo/wilo/booth/02_front_center.jpg
-   - /assets/demo/wilo/booth/03_left_angle.jpg
-   - /assets/demo/wilo/booth/04_right_angle.jpg
-   - /assets/demo/wilo/booth/05_left_side.jpg
-   - /assets/demo/wilo/booth/06_right_side.jpg
-   - /assets/demo/wilo/booth/07_interior_view.jpg
-   - /assets/demo/wilo/booth/08_product_island.jpg
-   - /assets/demo/wilo/booth/09_meeting_area.jpg
-   - /assets/demo/wilo/booth/10_display_screen.jpg
-   - /assets/demo/wilo/booth/11_overhead_sign.jpg
-   - /assets/demo/wilo/booth/12_wide_overview.jpg
+1. Main <img> Element in wilo-demo.html:
+   Tag: <img id="wilo-photo-image" src="/assets/demo/wilo/authentic-booth/view_01.jpg" alt="Wilo Exhibition Booth" onerror="handleImageError(this)" ... />
+   URL requested on initial load: /assets/demo/wilo/authentic-booth/view_01.jpg
 
-2. DISK MAPPING & ASSET INTEGRITY:
-   - Location: app_build/client/assets/demo/wilo/booth/
-   - Status: Files exist on disk but contain historical placeholder/synthetic images rather than the 71 authentic incoming capture photographs placed in data/capture-ingest/wilo/incoming/.
-   - Furthermore, the incoming capture dataset (71 photos) was not yet accepted, ingested, or bound to the public runtime directory.
+2. Thumbnails generated dynamically in renderThumbnails():
+   Code: img.src = v.url;
+   URLs requested:
+     - /assets/demo/wilo/authentic-booth/view_01.jpg
+     - /assets/demo/wilo/authentic-booth/view_02.jpg
+     ...
+     - /assets/demo/wilo/authentic-booth/view_12.jpg
 
-3. ROOT CAUSE DETERMINATION:
-   ROOT_CAUSE=AUTHENTIC_DATASET_NOT_INGESTED_AND_UI_BOUND_TO_LEGACY_SYNTHETIC_PATHS
-   (The 71 authentic incoming Wilo booth photographs in data/capture-ingest/wilo/incoming/ have not been processed into the canonical accepted dataset, published to the static public asset directory, or bound via the dynamic AUTHENTIC_PHOTO_TOUR_MANIFEST.json).
+3. Disk mapping:
+   Server static root: app_build/client (via express.static(path.join(__dirname, '..', 'client')))
+   Disk folder: app_build/client/assets/demo/wilo/authentic-booth/
+   Files on disk: view_01.jpg through view_12.jpg exist.
+
+4. API State (/api/public/wilo-demo):
+   Server routes /api/public/wilo-demo to return wilo booth from db.js.
+   db.js was previously configured with /assets/demo/wilo/booth/01_front_hero.jpg etc.
+   wilo-demo.html fallback array boothViews had /assets/demo/wilo/authentic-booth/view_01.jpg.
+
+5. Root Cause of production breakage:
+   - In production (Railway), previous build deployments stalled in INITIALIZING because:
+     a) Massive 3D files (REAL_WILO_GAUSSIAN_FINAL.ply 124MB, .spz 106MB) and uploads (521MB) stalled the build pipeline.
+     b) Production server was serving the old state where photoTour was disabled or files were missing.
+   - Also, the images in authentic-booth/ were not properly traced to the canonical incoming/ dataset via manifest.
