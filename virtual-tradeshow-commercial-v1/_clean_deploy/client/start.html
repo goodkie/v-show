@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Request Managed Production — ³DNa Virtual Trade Show Showroom</title>
+  <meta name="description" content="Request turnkey 3D digital trade show showroom production for your upcoming expo. Turn physical exhibits into 24/7 lead and RFQ generating assets.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    :root {
+      --primary: #0284c7;
+      --accent: #38bdf8;
+      --bg: #070e17;
+      --card-bg: #0f172a;
+      --border: #1e293b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: #f8fafc;
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+    }
+    .app-nav {
+      padding: 16px 32px;
+      background: #0f172a;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .form-container {
+      max-width: 680px;
+      margin: 40px auto 80px;
+      padding: 36px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    }
+    .section-title {
+      font-size: 15px;
+      color: #38bdf8;
+      font-weight: 700;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      margin: 24px 0 16px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 11px 14px;
+      background: #0d1b2a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      outline: none;
+      border-color: #38bdf8;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .checkbox-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #e2e8f0;
+      background: rgba(255,255,255,0.03);
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      cursor: pointer;
+    }
+    .checkbox-item input { width: auto; }
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      padding: 15px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 24px;
+      box-shadow: 0 6px 20px rgba(2, 132, 199, 0.4);
+      transition: all 0.2s;
+    }
+    .btn-submit:hover { opacity: 0.95; transform: translateY(-1px); }
+
+    .result-box {
+      margin-top: 24px;
+      padding: 20px;
+      border-radius: 12px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid #10b981;
+      color: #34d399;
+      line-height: 1.6;
+    }
+    @media (max-width: 600px) {
+      .form-container { padding: 24px 16px; margin: 20px auto; }
+      .grid-2, .checkbox-grid { grid-template-columns: 1fr; }
+    }
+  
+      html, body { scrollbar-width: none; -ms-overflow-style: none; }
+      ::-webkit-scrollbar { display: none; width: 0; height: 0; }
+      </style>
+</head>
+<body>
+
+  <nav class="app-nav">
+    <a href="/"><img src="/assets/brand/dna_logo_white.png" alt="³DNa" style="height: 52px; width: auto; object-fit: contain; display: block;"></a>
+    <a href="/" style="color: #94a3b8; text-decoration: none; font-size: 14px; font-weight: 600;">← Back to Home</a>
+  </nav>
+
+  <main class="form-container">
+    <div style="font-size: 12px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
+      Managed Turnkey Production
+    </div>
+    <h1 style="font-size: 28px; font-weight: 800; margin: 0 0 8px; color: #fff; letter-spacing: -0.5px;">
+      Request Your 3D Virtual Showroom
+    </h1>
+    <p style="color: #94a3b8; font-size: 14px; margin: 0 0 24px;">
+      Our production engineering team will transform your trade show exhibit into an interactive 24/7 digital showroom in <b>5 business days</b>. No payment required to initiate review.
+    </p>
+
+    <form id="production-order-form" onsubmit="submitProductionOrder(event)">
+      <!-- Step 1: Exhibitor Info -->
+      <div class="section-title">1. Exhibitor Information</div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="companyName">Company Name *</label>
+          <input type="text" id="companyName" required placeholder="e.g. Apex Industrial Automation">
+        </div>
+        <div class="form-group">
+          <label for="contactName">Contact Full Name *</label>
+          <input type="text" id="contactName" required placeholder="e.g. Alex Vance">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="email">Work Email Address *</label>
+          <input type="email" id="email" required placeholder="alex@apex-auto.com">
+        </div>
+        <div class="form-group">
+          <label for="phone">Phone / WhatsApp</label>
+          <input type="tel" id="phone" placeholder="+1 (555) 019-2834">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="website">Company Website</label>
+        <input type="url" id="website" placeholder="https://www.apex-auto.com">
+      </div>
+
+      <!-- Step 2: Trade Show & Show Date (First-Class Field) -->
+      <div class="section-title">2. Trade Show & Timeline</div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="tradeShow">Trade Show / Expo Name *</label>
+          <input type="text" id="tradeShow" required placeholder="e.g. Hannover Messe 2026 / ISH Frankfurt">
+        </div>
+        <div class="form-group">
+          <label for="showDate">Show Start Date (First-Class SLA) *</label>
+          <input type="date" id="showDate" required>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="city">Exhibition City / Country</label>
+          <input type="text" id="city" placeholder="e.g. Frankfurt, Germany">
+        </div>
+        <div class="form-group">
+          <label for="boothNumber">Booth / Stand Number</label>
+          <input type="text" id="boothNumber" placeholder="e.g. Hall 4 — Stand B128">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="industry">Industry Sector</label>
+          <select id="industry">
+            <option>Industrial Automation & Robotics</option>
+            <option>HVAC, Pumps & Fluidics</option>
+            <option>Electronics & IoT Hardware</option>
+            <option>Energy & Sustainability</option>
+            <option>Healthcare & Medical Devices</option>
+            <option>Other B2B Sector</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="productCount">Number of Featured Products</label>
+          <select id="productCount">
+            <option value="4">Up to 4 Products</option>
+            <option value="8" selected>4 to 8 Products</option>
+            <option value="12">8 to 12 Products</option>
+            <option value="20">12+ Products</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Step 3: Services Scope -->
+      <div class="section-title">3. Services & Features Required</div>
+      <div class="checkbox-grid">
+        <label class="checkbox-item"><input type="checkbox" name="services" value="3D_BOOTH_DESIGN" checked> 3D Booth Design</label>
+        <label class="checkbox-item"><input type="checkbox" name="services" value="PHOTO_TOUR" checked> Interactive Photo Tour</label>
+        <label class="checkbox-item"><input type="checkbox" name="services" value="SMART_CARD" checked> Smart Exhibitor Cards</label>
+        <label class="checkbox-item"><input type="checkbox" name="services" value="PRODUCT_QR" checked> Product QR Waypoints</label>
+        <label class="checkbox-item"><input type="checkbox" name="services" value="DIGITAL_CATALOG" checked> Digital Catalog Hub</label>
+        <label class="checkbox-item"><input type="checkbox" name="services" value="RFQ_LEAD_CAPTURE" checked> 24/7 RFQ & Lead Intake</label>
+        <label class="checkbox-item"><input type="checkbox" name="services" value="SAMPLE_REQUEST"> Sample Evaluation Requests</label>
+        <label class="checkbox-item"><input type="checkbox" name="services" value="LIVE_ANALYTICS" checked> Buyer Analytics & Telemetry</label>
+      </div>
+
+      <!-- Step 4: Notes & Submission -->
+      <div class="section-title">4. Project Notes & Asset Availability</div>
+      <div class="form-group">
+        <label for="notes">Existing Assets (Photos, CAD, brochures, or special requests)</label>
+        <textarea id="notes" rows="3" placeholder="Tell us if you have high-res booth photography, CAD drawings, or specific brand guidelines"></textarea>
+      </div>
+
+      <button type="submit" class="btn-submit" id="btn-submit-order">
+        <span>🚀 Submit Managed Production Request</span>
+      </button>
+    </form>
+
+    <div id="order-result"></div>
+  </main>
+
+  <script>
+    async function submitProductionOrder(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-submit-order');
+      const resEl = document.getElementById('order-result');
+      btn.disabled = true;
+      btn.innerHTML = 'Submitting Request...';
+      resEl.innerHTML = '';
+
+      const serviceCheckboxes = document.querySelectorAll('input[name="services"]:checked');
+      const selectedServices = Array.from(serviceCheckboxes).map(cb => cb.value);
+
+      const payload = {
+        companyName: document.getElementById('companyName').value,
+        contactName: document.getElementById('contactName').value,
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
+        website: document.getElementById('website').value,
+        tradeShow: document.getElementById('tradeShow').value,
+        showDate: document.getElementById('showDate').value,
+        city: document.getElementById('city').value,
+        boothNumber: document.getElementById('boothNumber').value,
+        industry: document.getElementById('industry').value,
+        productCount: document.getElementById('productCount').value,
+        services: selectedServices,
+        notes: document.getElementById('notes').value
+      };
+
+      try {
+        const res = await fetch('/api/production-requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          const req = data.request;
+          resEl.innerHTML = `
+            <div class="result-box">
+              <h3 style="margin: 0 0 8px 0; color: #34d399; font-size: 18px;">✓ Production Request Confirmed!</h3>
+              <div><b>Request ID:</b> <code>${req.id}</code></div>
+              <div><b>Company:</b> ${req.companyName}</div>
+              <div><b>Trade Show:</b> ${req.tradeShow} (Show Date: ${req.showDate})</div>
+              <div><b>Days Until Show:</b> <span style="font-weight:700; color:#38bdf8;">${req.daysUntilShow !== null ? req.daysUntilShow + ' Days' : 'Flexible'}</span></div>
+              <div><b>Initial Status:</b> <code style="background:#064e3b; color:#a7f3d0; padding:2px 6px; border-radius:4px;">${req.status}</code></div>
+              <p style="margin: 12px 0 0 0; font-size: 13px; color: #cbd5e1;">
+                Our production team has received your order and initialized a production ticket. You will receive an onboarding confirmation email at <b>${req.email}</b> within 4 business hours.
+              </p>
+            </div>
+          `;
+          document.getElementById('production-order-form').reset();
+        } else {
+          resEl.innerHTML = `<div style="color: #ef4444; margin-top: 16px;">${data.error || 'Submission failed.'}</div>`;
+        }
+      } catch (err) {
+        resEl.innerHTML = `<div style="color: #ef4444; margin-top: 16px;">Network error: ${err.message}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🚀 Submit Managed Production Request</span>';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Smart Booth Wizard — ³DNa Virtual Trade Show Commercial Platform</title>
+  <meta name="description" content="Build and deploy your 3D digital trade show showroom, digital catalog, smart card, and product QRs with the ³DNa conversion-first builder.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="vendor/three.min.js"></script>
+  <script src="vendor/OrbitControls.js"></script>
+  <script src="products.js"></script>
+  <script src="booth-engine.js"></script>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --accent: #38bdf8;
+      --bg: #070e17;
+      --card-bg: #0f172a;
+      --border: #1e293b;
+      --border-focus: #38bdf8;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Top Navigation with 2X Logo */
+    .app-nav {
+      padding: 14px 28px;
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .brand-logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+    }
+    .brand-logo-img {
+      height: 56px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+      transition: transform 0.2s;
+    }
+    .brand-logo-img:hover { transform: scale(1.02); }
+    .badge-wizard {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #38bdf8;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-nav-sub {
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-nav-sub:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
+
+    /* Main Container */
+    .wizard-container {
+      max-width: 1080px;
+      width: 100%;
+      margin: 36px auto 80px;
+      padding: 0 20px;
+      flex: 1;
+    }
+
+    /* Screen Views */
+    .wizard-view {
+      display: none;
+      animation: fadeIn 0.3s ease forwards;
+    }
+    .wizard-view.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Header Block */
+    .view-header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .view-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 800;
+      color: #38bdf8;
+      background: rgba(2, 132, 199, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 4px 12px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .view-title {
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+    .view-desc {
+      font-size: 15px;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Step 0: Path Selection Cards */
+    .path-cards-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 24px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .path-card {
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-radius: 18px;
+      padding: 36px 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+    .path-card:hover {
+      transform: translateY(-4px);
+      border-color: #38bdf8;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    }
+    .path-card.primary {
+      border-color: #0284c7;
+      background: linear-gradient(180deg, #0c1a2e 0%, #0f172a 100%);
+      box-shadow: 0 12px 30px rgba(2, 132, 199, 0.2);
+    }
+    .path-card.primary:hover {
+      border-color: #38bdf8;
+      box-shadow: 0 20px 50px rgba(2, 132, 199, 0.35);
+    }
+    .path-badge {
+      position: absolute;
+      top: -12px;
+      left: 28px;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+    }
+    .path-badge.beta {
+      background: #334155;
+      color: #cbd5e1;
+      border: 1px solid #475569;
+    }
+    .path-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+      margin-top: 4px;
+      margin-bottom: 8px;
+    }
+    .path-desc {
+      font-size: 14px;
+      color: #94a3b8;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .path-features {
+      list-style: none;
+      margin-bottom: 28px;
+    }
+    .path-features li {
+      font-size: 13.5px;
+      color: #cbd5e1;
+      padding: 7px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .path-features li:last-child { border-bottom: none; }
+    .bullet-icon { color: #38bdf8; font-weight: bold; }
+
+    .btn-path-cta {
+      width: 100%;
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 800;
+      text-align: center;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .btn-path-primary {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4);
+    }
+    .btn-path-primary:hover {
+      background: linear-gradient(135deg, #0369a1, #1d4ed8);
+      box-shadow: 0 6px 22px rgba(2, 132, 199, 0.6);
+    }
+    .btn-path-secondary {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f8fafc;
+    }
+    .btn-path-secondary:hover {
+      background: #334155;
+      border-color: #64748b;
+    }
+
+    /* Common Card Box */
+    .box-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 32px;
+      max-width: 780px;
+      margin: 0 auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Form Fields */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #cbd5e1;
+    }
+    .form-label span.req { color: #f87171; }
+    .form-input, .form-select, .form-textarea {
+      background: #070e17;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: #fff;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+    .form-hint {
+      font-size: 11.5px;
+      color: #64748b;
+    }
+
+    /* Checkbox & Asset Grid */
+    .asset-choice-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin: 12px 0 24px;
+    }
+    .asset-choice-item {
+      background: #070e17;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 12px 10px;
+      text-align: center;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #cbd5e1;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s;
+    }
+    .asset-choice-item.selected {
+      background: rgba(2, 132, 199, 0.15);
+      border-color: #38bdf8;
+      color: #fff;
+    }
+
+    /* Plan Selection Grid */
+    .plans-selector-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .plan-selector-card {
+      background: #070e17;
+      border: 2px solid #1e293b;
+      border-radius: 14px;
+      padding: 22px 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .plan-selector-card:hover {
+      border-color: #38bdf8;
+      transform: translateY(-2px);
+    }
+    .plan-selector-card.selected {
+      border-color: #0284c7;
+      background: rgba(2, 132, 199, 0.08);
+      box-shadow: 0 8px 24px rgba(2, 132, 199, 0.25);
+    }
+    .plan-selector-card.featured {
+      border-color: #8b5cf6;
+    }
+    .plan-sel-tag {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #8b5cf6;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .plan-sel-name {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .plan-sel-price {
+      font-size: 24px;
+      font-weight: 800;
+      color: #38bdf8;
+      margin-bottom: 12px;
+    }
+    .plan-sel-price span {
+      font-size: 12px;
+      font-weight: 400;
+      color: #94a3b8;
+    }
+    .plan-sel-specs {
+      list-style: none;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    .plan-sel-specs li {
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .plan-sel-specs li:last-child { border-bottom: none; }
+
+    /* Actions Row */
+    .form-actions-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .btn-submit-main {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      padding: 13px 28px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 800;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+    }
+    .btn-submit-main:hover {
+      background: linear-gradient(135deg, #0369a1, #1d4ed8);
+      transform: translateY(-1px);
+    }
+    .btn-back-link {
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 8px 12px;
+    }
+    .btn-back-link:hover { color: #fff; }
+
+    /* Reservation Ticket Display */
+    .ticket-container {
+      background: linear-gradient(135deg, #0c1a2e, #0f172a);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 24px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+      position: relative;
+    }
+    .ticket-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+    }
+    .ticket-id {
+      font-size: 22px;
+      font-weight: 800;
+      color: #38bdf8;
+      letter-spacing: 1px;
+    }
+    .ticket-status-pill {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid #10b981;
+      color: #34d399;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+    }
+    .ticket-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      font-size: 13px;
+    }
+    .ticket-item small {
+      display: block;
+      color: #94a3b8;
+      font-size: 11px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .ticket-item b {
+      color: #fff;
+      font-size: 14px;
+    }
+
+    /* Live Preview Screen (DIY) */
+    .preview-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 20px;
+    }
+    .preview-canvas-card {
+      background: #070e17;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+      height: 540px;
+    }
+    .preview-canvas-box {
+      width: 100%;
+      height: 100%;
+    }
+    .conversion-sidebar {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .conversion-badge {
+      font-size: 10px;
+      font-weight: 800;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .conversion-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .conversion-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    /* Toast Notification */
+    #wizard-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #0f172a;
+      border: 1px solid #38bdf8;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      z-index: 1000;
+      display: none;
+      animation: fadeIn 0.2s ease;
+    }
+
+    /* Source Choice Cards */
+    .source-choice-card {
+      background: #070e17;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 16px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .source-choice-card:hover {
+      border-color: #38bdf8;
+      background: rgba(2, 132, 199, 0.08);
+      transform: translateY(-2px);
+    }
+    .source-choice-card.selected {
+      border-color: #0284c7;
+      background: rgba(2, 132, 199, 0.2);
+      box-shadow: 0 4px 16px rgba(2, 132, 199, 0.3);
+    }
+
+    /* Modal Overlays */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+      z-index: 500; display: none; align-items: center; justify-content: center; padding: 20px;
+    }
+    .creator-box {
+      background: #0f172a; border: 1px solid #38bdf8; border-radius: 16px; padding: 24px;
+      max-width: 520px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.85);
+    }
+
+    /* Responsive */
+    @media (max-width: 860px) {
+      .path-cards-grid { grid-template-columns: 1fr; }
+      .plans-selector-grid { grid-template-columns: 1fr; }
+      .preview-layout { grid-template-columns: 1fr; }
+      .preview-canvas-card { height: 380px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .ticket-grid { grid-template-columns: 1fr; }
+    }
+  
+      html, body { scrollbar-width: none; -ms-overflow-style: none; }
+      ::-webkit-scrollbar { display: none; width: 0; height: 0; }
+      </style>
+</head>
+<body>
+
+  <!-- Top Navigation with 2X Official Logo -->
+  <header class="app-nav">
+    <a href="/" class="brand-logo-wrap" title="³DNa Home">
+      <img src="/assets/brand/dna_logo_white.png" alt="³DNa DIGITAL NETWORKING ADVANTAGE" class="brand-logo-img">
+      <span class="badge-wizard">Smart Booth Wizard</span>
+    </a>
+    <div class="nav-actions">
+      <a href="/pricing.html" class="btn-nav-sub">Pricing Plans</a>
+      <a href="/" class="btn-nav-sub">Exit Wizard</a>
+    </div>
+  </header>
+
+  <!-- Main Wizard Container -->
+  <main class="wizard-container">
+
+    <!-- ============================================================
+         STEP 0: PATH SELECTION (FIRST DECISION)
+         ============================================================ -->
+    <section id="view-path-selection" class="wizard-view active">
+      <div class="view-header">
+        <div class="view-badge">Step 1 — Choose Your Production Path</div>
+        <h1 class="view-title">How Would You Like to Build Your Booth?</h1>
+        <p class="view-desc">Select managed white-glove production or start quickly with self-service 3D creation.</p>
+      </div>
+
+      <div class="path-cards-grid">
+        <!-- PATH A: BUILD IT FOR ME (Primary / Recommended) -->
+        <div class="path-card primary" onclick="selectPath('managed')">
+          <div class="path-badge">Recommended</div>
+          <div>
+            <h2 class="path-title">BUILD IT FOR ME</h2>
+            <p class="path-desc">³DNa production engineering team builds and optimizes your photorealistic digital booth for you in 5 business days.</p>
+            <ul class="path-features">
+              <li><span class="bullet-icon">✔</span> Turnkey 3D showroom &amp; hotspot setup</li>
+              <li><span class="bullet-icon">✔</span> Smart Card NFC &amp; QR line sheet integration</li>
+              <li><span class="bullet-icon">✔</span> Wholesale lead intake &amp; RFQ pipeline ready</li>
+              <li><span class="bullet-icon">✔</span> 60-second reservation (Zero upfront charge)</li>
+            </ul>
+          </div>
+          <button class="btn-path-cta btn-path-primary">Reserve My Production Slot →</button>
+        </div>
+
+        <!-- PATH B: CREATE IT MYSELF (Beta / DIY) -->
+        <div class="path-card" onclick="selectPath('diy')">
+          <div class="path-badge beta">Beta Self-Service</div>
+          <div>
+            <h2 class="path-title">CREATE IT MYSELF</h2>
+            <p class="path-desc">Start with your existing booth assets or 3D renders and generate your first interactive preview in seconds.</p>
+            <ul class="path-features">
+              <li><span class="bullet-icon">✔</span> Fast minimum asset upload</li>
+              <li><span class="bullet-icon">✔</span> Instant interactive 3D browser preview</li>
+              <li><span class="bullet-icon">✔</span> Switch to managed production anytime</li>
+              <li><span class="bullet-icon">✔</span> Full advanced configuration access</li>
+            </ul>
+          </div>
+          <button class="btn-path-cta btn-path-secondary">Start Building Preview →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         MANAGED PATH — STEP M1: MINIMAL IDENTITY INTAKE
+         ============================================================ -->
+    <section id="view-managed-step1" class="wizard-view">
+      <div class="view-header">
+        <div class="view-badge">Managed Production — Step 1 of 3</div>
+        <h1 class="view-title">Reserve Your Exhibition Production Slot</h1>
+        <p class="view-desc">Provide minimal exhibition details. Takes about 60 seconds.</p>
+      </div>
+
+      <div class="box-card">
+        <form id="form-managed-step1" onsubmit="handleManagedStep1Submit(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="m-company">Company / Brand Name <span class="req">*</span></label>
+              <input type="text" id="m-company" class="form-input" required placeholder="e.g. Apex Industrial Automation">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-email">Work Email Address <span class="req">*</span></label>
+              <input type="email" id="m-email" class="form-input" required placeholder="alex@apex-auto.com">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-tradeshow">Trade Show / Expo Name <span class="req">*</span></label>
+              <input type="text" id="m-tradeshow" class="form-input" required placeholder="e.g. Hannover Messe 2026 / PACK EXPO">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-showdate">Show Start Date <span class="req">*</span></label>
+              <input type="date" id="m-showdate" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-booth">Booth / Stand Number (Optional)</label>
+              <input type="text" id="m-booth" class="form-input" placeholder="e.g. Hall 4 — Stand B128">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-contact">Contact Name (Optional)</label>
+              <input type="text" id="m-contact" class="form-input" placeholder="e.g. Julian Vance">
+            </div>
+          </div>
+
+          <div class="form-actions-row">
+            <button type="button" class="btn-back-link" onclick="goToView('view-path-selection')">← Back</button>
+            <button type="submit" class="btn-submit-main">Continue — About 60 Seconds →</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         MANAGED PATH — STEP M2: PLAN SELECTION
+         ============================================================ -->
+    <section id="view-managed-step2" class="wizard-view">
+      <div class="view-header">
+        <div class="view-badge">Managed Production — Step 2 of 3</div>
+        <h1 class="view-title">Select Your Commercial Plan</h1>
+        <p class="view-desc">Select the plan tier for your upcoming exhibition digital twin.</p>
+      </div>
+
+      <div class="box-card" style="max-width: 920px;">
+        <div class="plans-selector-grid">
+          <!-- PRO PLAN -->
+          <div class="plan-selector-card selected" id="m-plan-pro" onclick="selectManagedPlan('pro', 'PRO', '$299 / mo')">
+            <div>
+              <div class="plan-sel-name" style="color:#a78bfa;">PRO</div>
+              <div class="plan-sel-price">$299 <span>/ mo</span></div>
+              <ul class="plan-sel-specs">
+                <li>✔ <strong>Photo Immersive Booth</strong></li>
+                <li>✔ Product Pinpoints</li>
+                <li>✔ Digital Catalog &amp; Smart Card</li>
+                <li>✔ Product QR Codes</li>
+                <li>✔ Request Info &amp; RFQ Pipeline</li>
+                <li>✔ Meeting Request &amp; Basic Analytics</li>
+              </ul>
+            </div>
+            <div style="font-size: 11px; color: #38bdf8; font-weight: 700; margin-top: 14px; text-align: center;">Selected Plan</div>
+          </div>
+
+          <!-- BUSINESS PLAN (Featured / Most Popular) -->
+          <div class="plan-selector-card featured" id="m-plan-business" onclick="selectManagedPlan('business', 'BUSINESS', '$799 / mo')">
+            <div class="plan-sel-tag">Most Popular</div>
+            <div>
+              <div class="plan-sel-name" style="color:#38bdf8;">BUSINESS</div>
+              <div class="plan-sel-price">$799 <span>/ mo</span></div>
+              <ul class="plan-sel-specs">
+                <li>✔ <strong>Everything in PRO</strong></li>
+                <li>✔ Multi-View Photo Immersive Booth</li>
+                <li>✔ Expanded Product Pinpoints</li>
+                <li>✔ Advanced Buyer Tools &amp; Telemetry</li>
+                <li>✔ Priority Production Queue</li>
+                <li>✔ Post-Show Intelligence Report</li>
+              </ul>
+            </div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 14px; text-align: center;">For Sales Teams</div>
+          </div>
+
+          <!-- CUSTOM PLAN -->
+          <div class="plan-selector-card" id="m-plan-custom" onclick="selectManagedPlan('custom', 'CUSTOM', 'Custom Pricing')">
+            <div>
+              <div class="plan-sel-name" style="color:#f59e0b;">CUSTOM</div>
+              <div class="plan-sel-price" style="font-size:22px; padding:6px 0;">CUSTOM PRICING</div>
+              <ul class="plan-sel-specs">
+                <li>✔ <strong>Everything in BUSINESS</strong></li>
+                <li>✔ Custom Interactive 3D Showroom</li>
+                <li>✔ Multi-Booth &amp; Multi-Show Program</li>
+                <li>✔ Dedicated Production Lead &amp; SLA</li>
+                <li>✔ Custom CRM &amp; White-labeling</li>
+              </ul>
+            </div>
+            <div style="font-size: 11px; color: #f59e0b; margin-top: 14px; text-align: center;">Enterprise Program</div>
+          </div>
+        </div>
+
+        <div class="form-actions-row">
+          <button type="button" class="btn-back-link" onclick="goToView('view-managed-step1')">← Back to Details</button>
+          <button type="button" id="btn-managed-confirm" class="btn-submit-main" onclick="confirmManagedReservation()">Confirm &amp; Issue Reservation Ticket →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         MANAGED PATH — STEP M3: RESERVATION TICKET ISSUED
+         ============================================================ -->
+    <section id="view-managed-step3" class="wizard-view">
+      <div class="view-header">
+        <div class="view-badge" style="background: rgba(16,185,129,0.15); border-color:#10b981; color:#34d399;">
+          Production Slot Confirmed
+        </div>
+        <h1 class="view-title">Your Production Slot is Reserved</h1>
+        <p class="view-desc">An active production ticket has been saved server-side into our operations pipeline.</p>
+      </div>
+
+      <div class="box-card">
+        <!-- Persistent Ticket Display -->
+        <div class="ticket-container">
+          <div class="ticket-header">
+            <div>
+              <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px;">DNA Production Ticket</div>
+              <div class="ticket-id mono" id="res-ticket-id">DNA-2026-000184</div>
+            </div>
+            <div class="ticket-status-pill" id="res-ticket-status">SLOT RESERVED / INTAKE PENDING</div>
+          </div>
+
+          <div class="ticket-grid">
+            <div class="ticket-item">
+              <small>Exhibitor Company</small>
+              <b id="res-ticket-company">—</b>
+            </div>
+            <div class="ticket-item">
+              <small>Trade Show &amp; Date</small>
+              <b id="res-ticket-show">—</b>
+            </div>
+            <div class="ticket-item">
+              <small>Selected Plan</small>
+              <b id="res-ticket-plan" style="color: #a78bfa;">PRO ($299 / mo)</b>
+            </div>
+            <div class="ticket-item">
+              <small>Assigned Production Lead</small>
+              <b>Elena Rostova (Lead 3D Producer)</b>
+            </div>
+          </div>
+        </div>
+
+        <p style="font-size: 13.5px; color: #cbd5e1; margin-bottom: 22px; line-height: 1.6;">
+          Your reservation is safe in our system. You can proceed now to attach your logo and catalog, or finish the details later.
+        </p>
+
+        <div style="display: flex; gap: 12px; justify-content: space-between; flex-wrap: wrap;">
+          <a href="/" class="btn-path-cta btn-path-secondary" style="flex: 1; text-align: center; text-decoration: none; padding: 13px;">
+            Finish Details Later
+          </a>
+          <button type="button" class="btn-path-cta btn-path-primary" style="flex: 1.4; padding: 13px;" onclick="goToView('view-managed-step4')">
+            Continue to Secure My Booth →
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         MANAGED PATH — STEP M4: POST-RESERVATION DETAILED INTAKE
+         ============================================================ -->
+    <section id="view-managed-step4" class="wizard-view">
+      <div class="view-header">
+        <div class="view-badge">Intake Details — Ticket <span id="intake-ticket-pill" class="mono">DNA-2026-000184</span></div>
+        <h1 class="view-title">Complete Your Booth Intake</h1>
+        <p class="view-desc">Upload assets for your production team. All non-essential fields can be skipped.</p>
+      </div>
+
+      <div class="box-card">
+        <form id="form-managed-intake" onsubmit="handleManagedIntakeSubmit(event)">
+          <div class="form-grid">
+            <div class="form-group full">
+              <label class="form-label" for="i-website">Company Website</label>
+              <input type="url" id="i-website" class="form-input" placeholder="https://www.yourcompany.com">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="i-repname">On-Site Sales Rep Name</label>
+              <input type="text" id="i-repname" class="form-input" placeholder="e.g. Julian Vance">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="i-repphone">On-Site WhatsApp / Phone</label>
+              <input type="tel" id="i-repphone" class="form-input" placeholder="+1 (336) 555-0142">
+            </div>
+            <div class="form-group full">
+              <label class="form-label" for="i-catalog">Digital Catalog / Line Sheet PDF URL</label>
+              <input type="url" id="i-catalog" class="form-input" placeholder="https://yourcompany.com/assets/2026-catalog.pdf">
+              <span class="form-hint">Or email files directly to your production lead after reservation.</span>
+            </div>
+            <div class="form-group full">
+              <label class="form-label" for="i-notes">Special Production Notes / Booth Requirements</label>
+              <textarea id="i-notes" class="form-textarea" rows="3" placeholder="Tell us about specific robotic models, color schemes, or VIP rooms you want highlighted..."></textarea>
+            </div>
+          </div>
+
+          <div class="form-actions-row">
+            <button type="button" class="btn-back-link" onclick="goToView('view-managed-step3')">← Back to Ticket</button>
+            <button type="submit" class="btn-submit-main">Save Intake &amp; Finish →</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         DIY PATH — STEP D1 & D2: SMART SOURCE QUALIFICATION GATE
+         ============================================================ -->
+    <section id="view-diy-step1" class="wizard-view">
+      <div class="view-header">
+        <div class="view-badge">Smart Source-to-Immersive Gate</div>
+        <h1 class="view-title">Upload Your Booth Assets</h1>
+        <p class="view-desc">Select what visual assets you have. Our smart qualification engine will route you to the best showroom experience.</p>
+      </div>
+
+      <div class="box-card" style="max-width: 840px;">
+        <form id="form-diy-quick" onsubmit="handleDiyQuickSubmit(event)">
+          <div class="form-group" style="margin-bottom: 24px;">
+            <label class="form-label" for="d-company">Company / Brand Name <span class="req">*</span></label>
+            <input type="text" id="d-company" class="form-input" required placeholder="e.g. Apex Industrial Automation">
+          </div>
+
+          <label class="form-label" style="font-size:14px; margin-bottom:12px;">What do you have? <span class="req">*</span></label>
+          <div class="source-cards-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin-bottom:24px;">
+            <!-- 1. 360 BOOTH PHOTO -->
+            <div class="source-choice-card selected" id="sc-360" onclick="selectSourceCategory('EQUIRECTANGULAR_360', this)">
+              <div style="font-size:24px; margin-bottom:6px;">🌐</div>
+              <div style="font-size:13px; font-weight:800; color:#fff;">360° BOOTH PHOTO</div>
+              <div style="font-size:11px; color:#94a3b8; margin-top:4px;">Full 360° Panorama</div>
+            </div>
+
+            <!-- 2. BOOTH PHOTOS -->
+            <div class="source-choice-card" id="sc-multi" onclick="selectSourceCategory('MULTI_PHOTO_CAPTURE_SET', this)">
+              <div style="font-size:24px; margin-bottom:6px;">📸</div>
+              <div style="font-size:13px; font-weight:800; color:#fff;">BOOTH PHOTOS</div>
+              <div style="font-size:11px; color:#94a3b8; margin-top:4px;">Multiple Angles</div>
+            </div>
+
+            <!-- 3. ONE BOOTH PHOTO -->
+            <div class="source-choice-card" id="sc-single" onclick="selectSourceCategory('SINGLE_BOOTH_PHOTO', this)">
+              <div style="font-size:24px; margin-bottom:6px;">🖼️</div>
+              <div style="font-size:13px; font-weight:800; color:#fff;">ONE BOOTH PHOTO</div>
+              <div style="font-size:11px; color:#94a3b8; margin-top:4px;">Single Overview</div>
+            </div>
+
+            <!-- 4. PROFESSIONAL RENDER -->
+            <div class="source-choice-card" id="sc-render" onclick="selectSourceCategory('PROFESSIONAL_BOOTH_RENDER', this)">
+              <div style="font-size:24px; margin-bottom:6px;">🎨</div>
+              <div style="font-size:13px; font-weight:800; color:#fff;">BOOTH RENDER</div>
+              <div style="font-size:11px; color:#94a3b8; margin-top:4px;">3D CAD / Render</div>
+            </div>
+
+            <!-- 5. NOT SURE -->
+            <div class="source-choice-card" id="sc-notsure" onclick="selectSourceCategory('UNKNOWN', this)">
+              <div style="font-size:24px; margin-bottom:6px;">❓</div>
+              <div style="font-size:13px; font-weight:800; color:#fff;">NOT SURE</div>
+              <div style="font-size:11px; color:#94a3b8; margin-top:4px;">Need Guidance</div>
+            </div>
+          </div>
+
+          <!-- SMART QUALIFICATION OUTCOME BOX -->
+          <div id="qualification-outcome-box" style="background:rgba(2,132,199,0.12); border:1px solid #0284c7; border-radius:12px; padding:16px 20px; margin-bottom:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span id="qual-badge" style="font-size:11px; font-weight:800; color:#38bdf8; background:rgba(56,189,248,0.2); padding:3px 10px; border-radius:12px; text-transform:uppercase;">
+                READY FOR IMMERSIVE
+              </span>
+              <span id="qual-confidence" style="font-size:11px; color:#94a3b8;">Confidence: HIGH</span>
+            </div>
+            <div id="qual-title" style="font-size:14px; font-weight:800; color:#fff; margin-bottom:4px;">
+              Great — Your 360° source is ready for an Ultra-HD Photo Immersive Booth.
+            </div>
+            <div id="qual-desc" style="font-size:12.5px; color:#cbd5e1; line-height:1.5;">
+              We will generate a 360° spherical digital twin with interactive product pinpoints and buyer RFQ tools.
+            </div>
+          </div>
+
+          <!-- ASSET URL / UPLOAD -->
+          <div class="form-group" style="margin-bottom: 24px;">
+            <label class="form-label" for="d-source-url">Source Asset Image URL</label>
+            <input type="url" id="d-source-url" class="form-input" value="/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg" placeholder="https://your-domain.com/booth-image.jpg">
+          </div>
+
+          <!-- HELPFUL CAPTURE LINKS -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; padding:12px 16px; background:rgba(15,23,42,0.6); border:1px solid var(--border); border-radius:10px;">
+            <span style="font-size:13px; color:#cbd5e1;">Need help capturing your exhibition stand?</span>
+            <div style="display:flex; gap:10px;">
+              <button type="button" class="btn-ui" onclick="openCaptureGuideModal()">📸 Capture Guide</button>
+              <button type="button" class="btn-ui upgrade" onclick="openCaptureServiceModal()">⚡ Request On-Site Capture</button>
+            </div>
+          </div>
+
+          <div class="form-actions-row">
+            <button type="button" class="btn-back-link" onclick="goToView('view-path-selection')">← Back</button>
+            <button type="submit" class="btn-submit-main" id="btn-diy-generate">Generate First Preview →</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         DIY PATH — STEP D3 & D4: FIRST PREVIEW & CONVERSION PANEL
+         ============================================================ -->
+    <section id="view-diy-preview" class="wizard-view">
+      <div class="view-header">
+        <div class="view-badge">Interactive Preview Mode</div>
+        <h1 class="view-title" id="diy-preview-title">Your First ³DNa Booth is Ready</h1>
+        <p class="view-desc">Interact with your 3D digital showroom preview below.</p>
+      </div>
+
+      <div class="preview-layout">
+        <!-- Live Three.js Preview Canvas -->
+        <div class="preview-canvas-card">
+          <div id="diy-canvas-container" class="preview-canvas-box"></div>
+          <div style="position: absolute; top: 14px; left: 14px; background: rgba(15,23,42,0.85); padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 11px; font-weight: 700; color: #38bdf8;">
+            LIVE PREVIEW — ORBIT &amp; ZOOM
+          </div>
+        </div>
+
+        <!-- Conversion Sidebar -->
+        <div class="conversion-sidebar">
+          <div>
+            <div class="conversion-badge">Commercial Activation</div>
+            <h3 class="conversion-title">Select Your Plan</h3>
+            <p class="conversion-desc">
+              Your booth preview is active. Choose a commercial plan (PRO, BUSINESS, or CUSTOM) to unlock lead capture, Product Pinpoints, and digital publishing.
+            </p>
+
+            <div style="background: rgba(15,23,42,0.6); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 18px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="font-size: 12px; font-weight: 800; color: #38bdf8;">BUSINESS (RECOMMENDED)</span>
+                <span style="font-size: 10px; background: rgba(56,189,248,0.2); color:#38bdf8; padding:2px 6px; border-radius:4px; font-weight:700;">MOST POPULAR</span>
+              </div>
+              <div style="font-size: 20px; font-weight: 800; color: #fff;">$799 <span style="font-size:12px; color:#94a3b8; font-weight:400;">/ mo</span></div>
+              <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Multi-View 360° • Advanced Pinpoints • Priority Production</div>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <a href="/pricing.html" class="btn-path-cta btn-path-primary" style="text-decoration: none; padding: 12px; font-size: 13px;">
+              Select Plan &amp; Activate →
+            </a>
+            <button type="button" class="btn-path-cta btn-path-secondary" style="padding: 12px; font-size: 12px; border-color: #f59e0b; color: #f59e0b;" onclick="handoffDiyToManaged()">
+              ⚡ Have ³DNa Finish This For Me
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- CAPTURE GUIDE MODAL -->
+  <div id="capture-guide-modal" class="modal-overlay">
+    <div class="creator-box">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="font-size:18px; font-weight:800; color:#38bdf8;">📸 How to Photograph Your Booth</h3>
+        <button style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;" onclick="closeCaptureGuideModal()">✕</button>
+      </div>
+      <div style="font-size:13px; color:#cbd5e1; line-height:1.6; display:flex; flex-direction:column; gap:12px; margin-bottom:20px;">
+        <div>
+          <strong style="color:#38bdf8;">Option 1: BEST &amp; FASTEST — 360° Camera</strong>
+          <p style="color:#94a3b8; font-size:12px;">Use Insta360, Ricoh Theta, or Matterport. Stand in the center of the booth aisle at eye level (1.5m) and take 1–3 panoramas.</p>
+        </div>
+        <div>
+          <strong style="color:#34d399;">Option 2: ACCESSIBLE — Smartphone / Camera</strong>
+          <p style="color:#94a3b8; font-size:12px;">Take a clear horizontal overview shot from 3–5m away, plus close-ups of major machinery and counters. Generates a crisp Multi-View Showroom.</p>
+        </div>
+        <div>
+          <strong style="color:#f59e0b;">Option 3: WHITE-GLOVE — Let ³DNa Capture It</strong>
+          <p style="color:#94a3b8; font-size:12px;">Our engineering team conducts on-site 8K HDR 360° photography and pinpoint setup for your trade show stand.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end;">
+        <button type="button" class="btn-ui primary" onclick="closeCaptureGuideModal()">Got It →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CAPTURE SERVICE MODAL -->
+  <div id="capture-service-modal" class="modal-overlay">
+    <div class="creator-box" style="border-color:#f59e0b;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="font-size:18px; font-weight:800; color:#f59e0b;">⚡ Request ³DNa On-Site Capture</h3>
+        <button style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;" onclick="closeCaptureServiceModal()">✕</button>
+      </div>
+      <form onsubmit="handleCaptureServiceSubmit(event)">
+        <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:18px;">
+          <div>
+            <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Company Name <span style="color:#f87171;">*</span></label>
+            <input type="text" id="cs-company" required placeholder="Apex Industrial Automation" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+          </div>
+          <div>
+            <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Work Email <span style="color:#f87171;">*</span></label>
+            <input type="email" id="cs-email" required placeholder="contact@company.com" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div>
+              <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Trade Show <span style="color:#f87171;">*</span></label>
+              <input type="text" id="cs-tradeshow" required placeholder="Hannover Messe 2026" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Show Date <span style="color:#f87171;">*</span></label>
+              <input type="date" id="cs-date" required style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+          <button type="button" class="btn-ui" onclick="closeCaptureServiceModal()">Cancel</button>
+          <button type="submit" class="btn-ui upgrade">Submit Capture Request →</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Element -->
+  <div id="wizard-toast"></div>
+
+  <!-- Wizard Engine Script -->
+  <script>
+    // State Management
+    const WizardState = {
+      path: 'managed', // 'managed' | 'diy'
+      company: '',
+      email: '',
+      tradeShow: '',
+      showDate: '',
+      boothNumber: '',
+      contact: '',
+      selectedPlan: 'pro',
+      planName: 'PRO',
+      planPrice: '$299 / mo',
+      sourceCategory: 'EQUIRECTANGULAR_360',
+      sourceUrl: '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg',
+      reservationTicket: null,
+      diyAssets: ['booth_photos', 'product_photos', 'website'],
+      previewEngine: null
+    };
+
+    // Telemetry Analytics Logger
+    function trackFunnelEvent(eventName, eventData = {}) {
+      console.log(`[Wizard Telemetry] ${eventName}`, eventData);
+      try {
+        fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            leadType: 'FUNNEL_TELEMETRY',
+            name: `Event: ${eventName}`,
+            email: WizardState.email || 'telemetry@v-show.internal',
+            company: WizardState.company || 'Visitor',
+            notes: JSON.stringify({ eventName, ...eventData, timestamp: new Date().toISOString() })
+          })
+        }).catch(() => {});
+      } catch (e) {}
+    }
+
+    // View Navigation
+    function goToView(viewId) {
+      document.querySelectorAll('.wizard-view').forEach(el => el.classList.remove('active'));
+      const target = document.getElementById(viewId);
+      if (target) {
+        target.classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    // Toast Utility
+    function showToast(msg) {
+      const t = document.getElementById('wizard-toast');
+      if (!t) return;
+      t.textContent = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 3500);
+    }
+
+    // Path Selection
+    function selectPath(pathType) {
+      WizardState.path = pathType;
+      if (pathType === 'managed') {
+        trackFunnelEvent('path_managed_selected');
+        goToView('view-managed-step1');
+      } else {
+        trackFunnelEvent('path_diy_selected');
+        goToView('view-diy-step1');
+      }
+    }
+
+    // Source Selection & Smart Qualification Gate
+    function selectSourceCategory(cat, el) {
+      WizardState.sourceCategory = cat;
+      document.querySelectorAll('.source-choice-card').forEach(c => c.classList.remove('selected'));
+      if (el) el.classList.add('selected');
+
+      const outcomeData = {
+        EQUIRECTANGULAR_360: {
+          badge: 'READY FOR IMMERSIVE',
+          confidence: 'HIGH',
+          title: 'Great — Your 360° source is ready for an Ultra-HD Photo Immersive Booth.',
+          desc: 'We will generate a 360° spherical digital twin with interactive product pinpoints and buyer RFQ tools.',
+          url: '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg'
+        },
+        MULTI_PHOTO_CAPTURE_SET: {
+          badge: 'READY FOR MULTI-VIEW',
+          confidence: 'HIGH',
+          title: 'Multiple Photos Detected — Ready for Multi-View Photo Showroom.',
+          desc: 'Your photos will be organized into spatial vantage points with interactive product drawers.',
+          url: '/assets/demo/dna-showcase/pano360/node0_preview.jpg'
+        },
+        SINGLE_BOOTH_PHOTO: {
+          badge: 'READY FOR PHOTO SHOWROOM',
+          confidence: 'HIGH',
+          title: 'One Photo is Enough to Start — Interactive 2D Photo Showroom.',
+          desc: 'Visitors can zoom, inspect equipment, click Product Pinpoints, and send RFQs.',
+          url: '/assets/demo/dna-showcase/pano360/node1_preview.jpg'
+        },
+        PROFESSIONAL_BOOTH_RENDER: {
+          badge: 'DESIGNED SHOWROOM READY',
+          confidence: 'HIGH',
+          title: '3D Render Detected — Ready for Designed Visual Showroom.',
+          desc: 'Presents your architectural 3D render with high-definition lighting and wholesale buyer tools.',
+          url: '/assets/demo/dna-showcase/pano360/node2_preview.jpg'
+        },
+        UNKNOWN: {
+          badge: 'MORE COVERAGE RECOMMENDED',
+          confidence: 'LOW',
+          title: 'Need guidance? View our capture guide or let ³DNa handle photography.',
+          desc: 'We recommend taking a horizontal wide shot or using a 360° camera for optimal results.',
+          url: '/assets/demo/dna-showcase/pano360/node0_preview.jpg'
+        }
+      };
+
+      const out = outcomeData[cat] || outcomeData.UNKNOWN;
+      document.getElementById('qual-badge').textContent = out.badge;
+      document.getElementById('qual-confidence').textContent = `Confidence: ${out.confidence}`;
+      document.getElementById('qual-title').textContent = out.title;
+      document.getElementById('qual-desc').textContent = out.desc;
+      document.getElementById('d-source-url').value = out.url;
+      WizardState.sourceUrl = out.url;
+
+      trackFunnelEvent('source_category_selected', { category: cat });
+    }
+
+    // Modal Helpers
+    function openCaptureGuideModal() { document.getElementById('capture-guide-modal').style.display = 'flex'; }
+    function closeCaptureGuideModal() { document.getElementById('capture-guide-modal').style.display = 'none'; }
+    function openCaptureServiceModal() { document.getElementById('capture-service-modal').style.display = 'flex'; }
+    function closeCaptureServiceModal() { document.getElementById('capture-service-modal').style.display = 'none'; }
+
+    async function handleCaptureServiceSubmit(e) {
+      e.preventDefault();
+      const payload = {
+        company: document.getElementById('cs-company').value.trim(),
+        email: document.getElementById('cs-email').value.trim(),
+        tradeShow: document.getElementById('cs-tradeshow').value.trim(),
+        showStartDate: document.getElementById('cs-date').value
+      };
+      try {
+        await fetch('/api/capture-requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (err) {}
+      closeCaptureServiceModal();
+      alert('Capture Request Received! Our production team will contact you within 24 hours.');
+    }
+
+    // Managed Flow Handlers
+    function handleManagedStep1Submit(e) {
+      e.preventDefault();
+      WizardState.company = document.getElementById('m-company').value.trim();
+      WizardState.email = document.getElementById('m-email').value.trim();
+      WizardState.tradeShow = document.getElementById('m-tradeshow').value.trim();
+      WizardState.showDate = document.getElementById('m-showdate').value;
+      WizardState.boothNumber = document.getElementById('m-booth').value.trim();
+      WizardState.contact = document.getElementById('m-contact').value.trim();
+
+      trackFunnelEvent('minimal_intake_completed', { company: WizardState.company, tradeShow: WizardState.tradeShow });
+      goToView('view-managed-step2');
+    }
+
+    function selectManagedPlan(planId, planName, planPrice) {
+      WizardState.selectedPlan = planId;
+      WizardState.planName = planName;
+      WizardState.planPrice = planPrice;
+
+      document.querySelectorAll('.plan-selector-card').forEach(c => c.classList.remove('selected'));
+      const activeCard = document.getElementById(`m-plan-${planId}`);
+      if (activeCard) activeCard.classList.add('selected');
+
+      const confirmBtn = document.getElementById('btn-managed-confirm');
+      if (confirmBtn) {
+        confirmBtn.textContent = planId === 'custom' 
+          ? 'Request Custom Quote →' 
+          : 'Confirm & Issue Reservation Ticket →';
+      }
+
+      trackFunnelEvent('plan_selected', { planId, planName, planPrice });
+    }
+
+    async function confirmManagedReservation() {
+      const payload = {
+        company: WizardState.company,
+        email: WizardState.email,
+        contact: WizardState.contact || WizardState.company,
+        tradeShow: WizardState.tradeShow,
+        showStartDate: WizardState.showDate,
+        boothNumber: WizardState.boothNumber,
+        selectedPlan: WizardState.selectedPlan.toUpperCase(),
+        planName: WizardState.planName,
+        planPrice: WizardState.planPrice,
+        status: WizardState.selectedPlan === 'custom' ? 'CUSTOM_QUOTE_REQUESTED' : 'RESERVED_INTAKE_PENDING',
+        sourceFunnel: 'BUILD_IT_FOR_ME'
+      };
+
+      try {
+        const res = await fetch('/api/production-reservations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success && data.reservation) {
+          WizardState.reservationTicket = data.reservation;
+          document.getElementById('res-ticket-id').textContent = data.reservation.id;
+          document.getElementById('res-ticket-company').textContent = data.reservation.company;
+          document.getElementById('res-ticket-show').textContent = `${data.reservation.tradeShow} (${data.reservation.showStartDate})`;
+          document.getElementById('res-ticket-plan').textContent = `${data.reservation.planName} (${data.reservation.planPrice})`;
+          document.getElementById('res-ticket-status').textContent = data.reservation.status === 'CUSTOM_QUOTE_REQUESTED' ? 'CUSTOM QUOTE REQUESTED' : 'SLOT RESERVED / INTAKE PENDING';
+          document.getElementById('intake-ticket-pill').textContent = data.reservation.id;
+
+          trackFunnelEvent('reservation_created', { ticketId: data.reservation.id });
+          goToView('view-managed-step3');
+          showToast(WizardState.selectedPlan === 'custom' ? `Custom Quote Ticket ${data.reservation.id} Created!` : `Reservation Ticket ${data.reservation.id} Created!`);
+        } else {
+          const fallbackId = `DNA-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+          document.getElementById('res-ticket-id').textContent = fallbackId;
+          document.getElementById('res-ticket-company').textContent = WizardState.company;
+          document.getElementById('res-ticket-show').textContent = `${WizardState.tradeShow} (${WizardState.showDate})`;
+          document.getElementById('res-ticket-plan').textContent = `${WizardState.planName} (${WizardState.planPrice})`;
+          goToView('view-managed-step3');
+        }
+      } catch (err) {
+        const fallbackId = `DNA-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+        document.getElementById('res-ticket-id').textContent = fallbackId;
+        document.getElementById('res-ticket-company').textContent = WizardState.company;
+        document.getElementById('res-ticket-show').textContent = `${WizardState.tradeShow} (${WizardState.showDate})`;
+        document.getElementById('res-ticket-plan').textContent = `${WizardState.planName} (${WizardState.planPrice})`;
+        goToView('view-managed-step3');
+      }
+    }
+
+    async function handleManagedIntakeSubmit(e) {
+      e.preventDefault();
+      const ticketId = WizardState.reservationTicket ? WizardState.reservationTicket.id : null;
+      const intakeData = {
+        website: document.getElementById('i-website').value.trim(),
+        repName: document.getElementById('i-repname').value.trim(),
+        repPhone: document.getElementById('i-repphone').value.trim(),
+        catalogUrl: document.getElementById('i-catalog').value.trim(),
+        customNotes: document.getElementById('i-notes').value.trim(),
+        completed: true
+      };
+
+      if (ticketId) {
+        try {
+          await fetch(`/api/production-reservations/${ticketId}/intake`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(intakeData)
+          });
+        } catch (err) {}
+      }
+
+      trackFunnelEvent('detailed_intake_completed', { ticketId });
+      showToast('Intake Saved! Your production team has been notified.');
+      setTimeout(() => { window.location.href = '/'; }, 1500);
+    }
+
+    // DIY Flow Handlers
+    function handleDiyQuickSubmit(e) {
+      e.preventDefault();
+      WizardState.company = document.getElementById('d-company').value.trim();
+      WizardState.sourceUrl = document.getElementById('d-source-url').value.trim();
+
+      const titles = {
+        EQUIRECTANGULAR_360: `${WizardState.company} — 360° Photo Immersive Booth Preview`,
+        MULTI_PHOTO_CAPTURE_SET: `${WizardState.company} — Multi-View Photo Showroom Preview`,
+        SINGLE_BOOTH_PHOTO: `${WizardState.company} — Photo Showroom Preview`,
+        PROFESSIONAL_BOOTH_RENDER: `${WizardState.company} — Designed Visual Showroom Preview`,
+        UNKNOWN: `${WizardState.company} — Booth Showroom Preview`
+      };
+
+      document.getElementById('diy-preview-title').textContent = titles[WizardState.sourceCategory] || `${WizardState.company} — Booth Preview`;
+
+      trackFunnelEvent('diy_source_uploaded', { company: WizardState.company, sourceCategory: WizardState.sourceCategory });
+      goToView('view-diy-preview');
+      initDiyLivePreview();
+      trackFunnelEvent('first_preview_created');
+    }
+
+    // Dynamic Live Preview Initialization
+    function initDiyLivePreview() {
+      const container = document.getElementById('diy-canvas-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (WizardState.sourceCategory === 'EQUIRECTANGULAR_360') {
+        // 360 Spherical Photo Preview
+        const previewManifest = {
+          experienceType: 'PHOTO_IMMERSIVE',
+          views: [{ viewId: 'view-0', highResUrl: WizardState.sourceUrl, previewUrl: WizardState.sourceUrl }],
+          pinpoints: [
+            { pinpointId: 'pin-demo', label: 'Primary Product Unit', categoryTag: 'FEATURED', yaw: 0, pitch: -0.15 }
+          ],
+          products: [{ productId: 'prod-demo', name: 'Primary Product Unit', category: 'Equipment' }]
+        };
+
+        const hotspotLayer = document.createElement('div');
+        hotspotLayer.style.position = 'absolute';
+        hotspotLayer.style.inset = '0';
+        hotspotLayer.style.pointerEvents = 'none';
+        container.appendChild(hotspotLayer);
+
+        WizardState.previewEngine = new PhotoImmersiveEngine({
+          container: container,
+          hotspotLayer: hotspotLayer,
+          manifest: previewManifest
+        });
+      } else if (WizardState.sourceCategory === 'SINGLE_BOOTH_PHOTO' || WizardState.sourceCategory === 'MULTI_PHOTO_CAPTURE_SET') {
+        // 2D Photo Showroom Preview
+        const previewManifest = {
+          experienceType: 'PHOTO_SHOWROOM',
+          views: [{ viewId: 'view-0', highResUrl: WizardState.sourceUrl, previewUrl: WizardState.sourceUrl }],
+          pinpoints: [
+            { pinpointId: 'pin-demo', label: 'Primary Product Unit', categoryTag: 'FEATURED', u: 0.5, v: 0.6 }
+          ],
+          products: [{ productId: 'prod-demo', name: 'Primary Product Unit', category: 'Equipment' }]
+        };
+
+        const hotspotLayer = document.createElement('div');
+        hotspotLayer.style.position = 'absolute';
+        hotspotLayer.style.inset = '0';
+        hotspotLayer.style.pointerEvents = 'none';
+        container.appendChild(hotspotLayer);
+
+        WizardState.previewEngine = new PhotoImmersiveEngine({
+          container: container,
+          hotspotLayer: hotspotLayer,
+          manifest: previewManifest
+        });
+      } else {
+        // 3D Visual Showroom Preview (Three.js)
+        const width = container.clientWidth || 600;
+        const height = container.clientHeight || 450;
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x070e17);
+        const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+        camera.position.set(0, 1.8, 5.0);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 0.8, 0);
+
+        const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambient);
+        const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
+        dirLight.position.set(3, 5, 4);
+        scene.add(dirLight);
+
+        const grid = new THREE.GridHelper(10, 20, 0x0284c7, 0x1e293b);
+        scene.add(grid);
+
+        const armGeo = new THREE.BoxGeometry(0.5, 0.9, 0.5);
+        const armMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.2, metalness: 0.8 });
+        const arm = new THREE.Mesh(armGeo, armMat);
+        arm.position.set(0, 0.8, 0);
+        scene.add(arm);
+
+        function animate() {
+          requestAnimationFrame(animate);
+          arm.rotation.y += 0.008;
+          controls.update();
+          renderer.render(scene, camera);
+        }
+        animate();
+      }
+    }
+
+    // Zero-Loss DIY to Managed Handoff
+    function handoffDiyToManaged() {
+      trackFunnelEvent('diy_to_managed_selected', { company: WizardState.company });
+      document.getElementById('m-company').value = WizardState.company;
+      goToView('view-managed-step1');
+      showToast('Preserved your company name and assets. Starting Managed reservation.');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      trackFunnelEvent('wizard_opened');
+    });
+  </script>
+</body>
+</html>

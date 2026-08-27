@@ -1566,10 +1566,7 @@
 
           <!-- Video Container -->
           <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-            <video id="vfr-video-player" playsinline muted loop controls preload="metadata" poster="/assets/demo/virtual-fitting-room/fashion-poster-last-frame.jpg" style="width: 100%; height: 100%; object-fit: cover;">
-      <source src="/assets/demo/virtual-fitting-room/fashion.mp4" type="video/mp4">
-      Your browser does not support HTML5 video.
-    </video>
+            <video id="vfr-video-player" src="/assets/demo/virtual-fitting-room/fashion.mp4" playsinline muted loop controls preload="metadata" poster="/assets/demo/virtual-fitting-room/fashion-poster-last-frame.jpg" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;"></video>
     <div id="vfr-play-btn" style="position: absolute; width: 64px; height: 64px; background: rgba(56, 189, 248, 0.85); backdrop-filter: blur(8px); border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); pointer-events: none; transition: transform 0.2s;">
       <i class="fa-solid fa-play" style="margin-left: 3px;"></i>
     </div>
@@ -1660,10 +1657,7 @@
 
           <!-- Video Container with Custom Play Overlay -->
           <div class="video-player-container" style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer;" onclick="togglePlayVideo('vma-video-player', 'vma-play-btn')">
-            <video id="vma-video-player" playsinline muted loop controls preload="metadata" poster="/assets/demo/virtual-makeup-artist/makeup-poster-last-frame.jpg" style="width: 100%; height: 100%; object-fit: cover;">
-              <source src="/assets/demo/virtual-makeup-artist/makeup.mp4" type="video/mp4">
-              Your browser does not support HTML5 video.
-            </video>
+            <video id="vma-video-player" src="/assets/demo/virtual-makeup-artist/makeup.mp4" playsinline muted loop controls preload="metadata" poster="/assets/demo/virtual-makeup-artist/makeup-poster-last-frame.jpg" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;"></video>
             <div id="vma-play-btn" style="position: absolute; width: 64px; height: 64px; background: rgba(244, 63, 94, 0.85); backdrop-filter: blur(8px); border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); pointer-events: none; transition: transform 0.2s;">
               <i class="fa-solid fa-play" style="margin-left: 3px;"></i>
             </div>

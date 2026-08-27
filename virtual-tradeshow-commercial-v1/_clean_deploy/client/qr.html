@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>³DNa — Product QR Kit & Mobile Floor Pass</title>
+  <!-- Includes: ³DNa Apex-Arm X9 Cobot (Apex Cobot X16), Vector AMR 600, OptiScan V3 -->
+  <meta name="description" content="Commercial Product QR Kit for physical trade show booths featuring ³DNa Apex-Arm X9 Cobot and flagship robotics. Buyers scan on the exhibition floor to view 3D engineering models, download specs, and request instant RFQs.">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0284c7;
+      --accent: #38bdf8;
+      --bg: #070e17;
+      --card-bg: #0f172a;
+      --border: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh; padding: 24px 16px 60px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .container { width: 100%; max-width: 840px; }
+
+    header {
+      text-align: center; margin-bottom: 28px;
+    }
+    .badge-kit {
+      background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(14, 165, 233, 0.35);
+      color: #38bdf8; font-size: 11px; font-weight: 700; padding: 4px 12px;
+      border-radius: 20px; text-transform: uppercase; display: inline-block; margin-bottom: 12px;
+    }
+    .title { font-size: 28px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.5px; }
+    .subtitle { color: var(--text-muted); font-size: 14px; max-width: 580px; margin: 0 auto; }
+
+    /* QR Product Gallery Grid */
+    .qr-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px; margin-bottom: 32px;
+    }
+    .qr-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 16px; padding: 18px; text-align: center;
+      transition: all 0.2s; position: relative;
+    }
+    .qr-card:hover { border-color: #38bdf8; transform: translateY(-3px); }
+    .qr-img-box {
+      width: 140px; height: 140px; background: #fff; border-radius: 12px;
+      margin: 0 auto 14px; padding: 10px; display: flex; align-items: center; justify-content: center;
+    }
+    .qr-img { width: 100%; height: 100%; object-fit: contain; }
+
+    .btn-qr-action {
+      display: block; width: 100%; background: #1e293b; border: 1px solid #334155;
+      color: #fff; padding: 9px; border-radius: 8px; font-size: 12px; font-weight: 700;
+      text-decoration: none; margin-top: 10px; transition: all 0.2s;
+    }
+    .btn-qr-action:hover { background: #0284c7; border-color: #38bdf8; }
+
+    /* Single Product Waypoint Mobile View */
+    .waypoint-box {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 20px; padding: 24px; max-width: 480px; margin: 0 auto;
+    }
+    .canvas-box {
+      height: 240px; border-radius: 12px; border: 1px solid var(--border);
+      background: radial-gradient(circle, #0f2438, #070e17); margin: 16px 0;
+      position: relative; overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge-kit">Physical Booth Integration</div>
+      <h1 class="title">³DNa Product QR Floor Kit</h1>
+      <p class="subtitle">Place these QR cards directly beside physical exhibition samples on your booth floor. Scanning buyers land on direct 3D engineering passes.</p>
+    </header>
+
+    <div class="qr-grid" id="qr-gallery">
+      <!-- 8 Products Dynamically Rendered -->
+    </div>
+
+    <div style="text-align: center; color: var(--text-muted); font-size: 12px;">
+      <a href="/demo.html" style="color: #38bdf8; text-decoration: none; font-weight: 700;">← Back to 3D Digital Showroom</a> • 
+      <a href="/card.html" style="color: #38bdf8; text-decoration: none; font-weight: 700;">Open Smart Card</a>
+    </div>
+  </div>
+
+  <script>
+    const PRODUCTS = [
+      { id: 'PROD-01-COBOT', name: 'Apex Cobot X16', model: 'APX-CB-16', cat: 'Robotic Arm', price: '$38,500' },
+      { id: 'PROD-02-AMR', name: 'Vector AMR 600', model: 'VCT-AMR-600', cat: 'Intralogistics', price: '$34,000' },
+      { id: 'PROD-03-OPTISCAN', name: 'OptiScan V3', model: 'OPT-SCN-V3', cat: '3D Metrology', price: '$19,800' },
+      { id: 'PROD-04-FLEXGRIP', name: 'FlexGrip E80', model: 'FLX-GRP-80', cat: 'Servo Gripper', price: '$3,400' },
+      { id: 'PROD-05-FLOWDRIVE', name: 'FlowDrive P500', model: 'FLW-DRV-500', cat: 'Smart Pump', price: '$16,500' },
+      { id: 'PROD-06-SYNCHRO', name: 'SynchroDrive VFD', model: 'SNC-VFD-90', cat: 'Servo Drive', price: '$1,850' },
+      { id: 'PROD-07-EDGECORE', name: 'EdgeCore IPC', model: 'EDG-IPC-30', cat: 'Edge AI PC', price: '$2,400' },
+      { id: 'PROD-08-LASERCELL', name: 'LaserCell LX', model: 'LSR-CEL-LX', cat: 'Laser Workcell', price: '$128,000' }
+    ];
+
+    const gallery = document.getElementById('qr-gallery');
+    gallery.innerHTML = PRODUCTS.map(p => {
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent('https://v-show-commercial-v1-production.up.railway.app/demo.html?product=' + p.id)}`;
+      return `
+        <div class="qr-card">
+          <div style="font-size: 10px; font-weight: 700; color: #38bdf8; text-transform: uppercase;">${p.cat}</div>
+          <h3 style="font-size: 16px; font-weight: 800; margin: 4px 0 10px;">${p.name}</h3>
+          <div class="qr-img-box">
+            <img src="${qrUrl}" alt="QR code for ${p.name}" class="qr-img">
+          </div>
+          <div style="font-size: 11px; color: #94a3b8;" class="mono">${p.model} • ${p.price}</div>
+          <a href="/demo.html" class="btn-qr-action">Test Live Waypoint →</a>
+        </div>
+      `;
+    }).join('');
+  </script>
+</body>
+</html>

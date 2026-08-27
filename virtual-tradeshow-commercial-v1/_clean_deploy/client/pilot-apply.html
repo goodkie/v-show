@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Apply for Free Virtual Booth Pilot — vivPR V-Show</title>
+  <meta name="description" content="Apply for the vivPR V-Show free commercial trade show virtual showroom pilot. Turn your real physical exhibit into an interactive 3D online showroom.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background: #090d16;
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+    }
+    .app-nav {
+      padding: 16px 32px;
+      background: #0f172a;
+      border-bottom: 1px solid #1e293b;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .form-container {
+      max-width: 680px;
+      margin: 40px auto 80px;
+      padding: 36px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .section-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #60a5fa;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 6px;
+      margin: 24px 0 16px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #cbd5e1;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    .btn-submit {
+      width: 100%;
+      background: #2563eb;
+      color: #fff;
+      padding: 14px;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-submit:hover {
+      background: #1d4ed8;
+    }
+    .consent-box {
+      font-size: 12px;
+      color: #94a3b8;
+      margin: 20px 0;
+      line-height: 1.5;
+    }
+    .success-panel {
+      display: none;
+      background: #064e3b;
+      border: 1px solid #059669;
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      color: #ecfdf5;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="app-nav">
+    <a href="/" style="color: #fff; text-decoration: none; font-weight: 700; font-size: 16px;">vivPR V-Show</a>
+    <a href="/" style="color: #94a3b8; text-decoration: none; font-size: 14px;">← Back to Home</a>
+  </nav>
+
+  <main class="form-container">
+    <div id="form-content">
+      <h1 style="font-size: 26px; margin: 0 0 8px; color: #fff;">Apply for Free Virtual Booth Pilot</h1>
+      <p style="color: #94a3b8; font-size: 14px; margin: 0 0 24px;">
+        100% Free Pilot. No credit card required. Extend your trade show ROI with an interactive virtual showroom.
+      </p>
+
+      <form id="pilot-application-form">
+        <!-- 1. Company & Contact -->
+        <div class="section-title" style="margin-top: 0;">1. Company & Contact Details</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="companyName">Company Name *</label>
+            <input type="text" id="companyName" required placeholder="e.g. Apex Motion Dynamics">
+          </div>
+          <div class="form-group">
+            <label for="companyWebsite">Company Website</label>
+            <input type="url" id="companyWebsite" placeholder="https://apexmotion.test">
+          </div>
+          <div class="form-group">
+            <label for="contactName">Contact Name *</label>
+            <input type="text" id="contactName" required placeholder="e.g. Alex Morgan">
+          </div>
+          <div class="form-group">
+            <label for="workEmail">Business Email *</label>
+            <input type="email" id="workEmail" required placeholder="alex@apexmotion.test">
+          </div>
+          <div class="form-group">
+            <label for="phone">Phone Number (Optional)</label>
+            <input type="tel" id="phone" placeholder="+1 (555) 019-2834">
+          </div>
+          <div class="form-group">
+            <label for="country">Country</label>
+            <input type="text" id="country" value="United States" placeholder="Country">
+          </div>
+          <div class="form-group full">
+            <label for="industry">Industry / Sector</label>
+            <input type="text" id="industry" placeholder="e.g. Industrial Automation, Robotics, Medical Devices">
+          </div>
+        </div>
+
+        <!-- 2. Trade Show Event Details -->
+        <div class="section-title">2. Trade Show Event Details</div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label for="eventName">Event / Trade Show Name *</label>
+            <input type="text" id="eventName" required placeholder="e.g. Automate 2026 Chicago / IMTS">
+          </div>
+          <div class="form-group">
+            <label for="eventDate">Event Date</label>
+            <input type="date" id="eventDate">
+          </div>
+          <div class="form-group">
+            <label for="boothNumber">Booth Number / Hall</label>
+            <input type="text" id="boothNumber" placeholder="e.g. Hall B, Booth #B-304">
+          </div>
+        </div>
+
+        <!-- 3. Booth Scope & Photography Readiness -->
+        <div class="section-title">3. Booth Scope & Photography Readiness</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="approximateProductCount">Approximate Product Count</label>
+            <select id="approximateProductCount">
+              <option value="1-5" selected>1–5 Products (Free Tier)</option>
+              <option value="6-25">6–25 Products (PRO Tier)</option>
+              <option value="26-100">26–100 Products (Business Tier)</option>
+              <option value="100+">100+ Enterprise Catalog</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="expectedBuyerAudience">Expected Buyer Audience</label>
+            <input type="text" id="expectedBuyerAudience" placeholder="e.g. System Integrators, Plant Managers">
+          </div>
+          <div class="form-group">
+            <label for="boothPhotosAvailable">Do you have booth photos ready?</label>
+            <select id="boothPhotosAvailable">
+              <option value="60_plus">Yes — 60+ multi-angle photos (Best for 3D)</option>
+              <option value="fewer_60">Yes — fewer than 60 photos</option>
+              <option value="not_yet" selected>Not yet / Upcoming event setup</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="estimatedLaunchDate">Estimated Launch Date</label>
+            <input type="date" id="estimatedLaunchDate">
+          </div>
+          <div class="form-group full">
+            <label for="notes">Additional Requirements or Questions</label>
+            <textarea id="notes" rows="3" placeholder="Tell us about your flagship products or specific trade show goals..."></textarea>
+          </div>
+        </div>
+
+        <!-- Consent & Agreement -->
+        <div class="consent-box">
+          <label style="display: flex; gap: 8px; align-items: flex-start; cursor: pointer;">
+            <input type="checkbox" id="contactConsent" required style="width: auto; margin-top: 3px;">
+            <span>I agree to be contacted by vivPR regarding the Virtual Booth Pilot and acknowledge the <a href="/privacy.html" target="_blank" style="color: #60a5fa;">Privacy Policy</a>. *</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submit-btn">Submit Pilot Application →</button>
+      </form>
+    </div>
+
+    <!-- Success Message Panel -->
+    <div id="success-panel" class="success-panel">
+      <div style="font-size: 36px; margin-bottom: 12px;">🎉</div>
+      <h2 style="font-size: 22px; margin: 0 0 8px;">Application Received!</h2>
+      <p style="margin: 0 0 16px; color: #a7f3d0; font-size: 14px;">
+        Thank you for applying. Your application has been logged into our commercial operations system.
+      </p>
+      <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-bottom: 20px; font-family: monospace; font-size: 14px;">
+        Reference ID: <strong id="ref-id-display" style="color: #34d399;">REF-000000</strong>
+      </div>
+      <p style="font-size: 13px; color: #cbd5e1; margin: 0 0 20px;">
+        A vivPR Commercial Specialist will review your booth specifications and reach out within 1 business day.
+      </p>
+      <a href="/" style="background: #2563eb; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 600;">Return to Homepage</a>
+    </div>
+  </main>
+
+  <script>
+    document.getElementById('pilot-application-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('submit-btn');
+
+      const payload = {
+        companyName: document.getElementById('companyName').value,
+        companyWebsite: document.getElementById('companyWebsite').value,
+        contactName: document.getElementById('contactName').value,
+        workEmail: document.getElementById('workEmail').value,
+        phone: document.getElementById('phone').value,
+        country: document.getElementById('country').value,
+        industry: document.getElementById('industry').value,
+        eventName: document.getElementById('eventName').value,
+        eventDate: document.getElementById('eventDate').value,
+        boothNumber: document.getElementById('boothNumber').value,
+        approximateProductCount: document.getElementById('approximateProductCount').value,
+        expectedBuyerAudience: document.getElementById('expectedBuyerAudience').value,
+        boothPhotosAvailable: document.getElementById('boothPhotosAvailable').value,
+        estimatedLaunchDate: document.getElementById('estimatedLaunchDate').value,
+        notes: document.getElementById('notes').value,
+        consent: document.getElementById('contactConsent').checked,
+        source: 'pilot_apply_page',
+        environment: 'REAL'
+      };
+
+      try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting Application...';
+
+        const res = await fetch('/api/public/acquisition-leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          document.getElementById('form-content').style.display = 'none';
+          const successPanel = document.getElementById('success-panel');
+          successPanel.style.display = 'block';
+          document.getElementById('ref-id-display').textContent = data.lead?.referenceId || data.lead?.id || 'REF-CONFIRMED';
+        } else {
+          alert(`Submission failed: ${data.error || 'Please check form fields'}`);
+        }
+      } catch (err) {
+        alert('Network error. Please try again or email info@vivpr.pro.');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Pilot Application →';
+      }
+    });
+  </script>
+</body>
+</html>
