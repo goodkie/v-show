@@ -592,12 +592,13 @@ app.get(['/dev-lab', '/dev-lab.html'], (req, res) => {
 app.get(['/assets/demo/*', '*.mp4'], (req, res, next) => {
   if (!req.path.endsWith('.mp4')) return next();
 
-  // client 폴더 내의 실제 파일 절대 경로 계산
+  // OS 독립적 경로 계산: 앞의 슬래시를 제거하여 client 디렉토리 하위로 정확히 매핑
+  const relativePath = req.path.replace(/^[/\\]+/, '');
   const clientDir = path.resolve(__dirname, '..', 'client');
-  const filePath = path.join(clientDir, req.path);
+  const filePath = path.join(clientDir, relativePath);
 
   if (!fs.existsSync(filePath)) {
-    console.error('[VIDEO 404] File not found:', filePath);
+    console.error('[VIDEO 404] File not found at resolved path:', filePath);
     return res.status(404).send('Video file not found');
   }
 
@@ -611,6 +612,26 @@ app.get(['/assets/demo/*', '*.mp4'], (req, res, next) => {
     const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
     const chunksize = (end - start) + 1;
     const file = fs.createReadStream(filePath, { start, end });
+    const head = {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': chunksize,
+      'Content-Type': 'video/mp4',
+      'Cache-Control': 'public, max-age=31536000, immutable'
+    };
+    res.writeHead(206, head);
+    file.pipe(res);
+  } else {
+    const head = {
+      'Content-Length': fileSize,
+      'Accept-Ranges': 'bytes',
+      'Content-Type': 'video/mp4',
+      'Cache-Control': 'public, max-age=31536000, immutable'
+    };
+    res.writeHead(200, head);
+    fs.createReadStream(filePath).pipe(res);
+  }
+});
     const head = {
       'Content-Range': `bytes ${start}-${end}/${fileSize}`,
       'Accept-Ranges': 'bytes',
