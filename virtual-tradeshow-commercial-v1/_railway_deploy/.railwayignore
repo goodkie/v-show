@@ -1,13 +1,3 @@
-node_modules
-.git
-*.zip
-*.mp4
-*.ply
-*.splat
-*.spz
-data
-virtual-tradeshow-commercial-v1
-client/assets/demo/wilo/models/*.ply
-client/assets/demo/wilo/models/*.splat
-client/assets/demo/wilo/diagnostics/
-client/assets/demo/wilo/experimental/
+node_modules/
+.git/
+*.log

@@ -634,6 +634,24 @@ app.get(['/assets/demo/*', '*.mp4'], (req, res, next) => {
 });
 
 
+
+app.get('/api/debug/video-assets', (req, res) => {
+  const root = path.resolve(__dirname, '..');
+  const clientDir = path.resolve(__dirname, '..', 'client');
+  const scan = (dir) => {
+    if (!fs.existsSync(dir)) return [];
+    return fs.readdirSync(dir, { recursive: true });
+  };
+  res.json({
+    __dirname,
+    root,
+    clientDir,
+    clientExists: fs.existsSync(clientDir),
+    clientFiles: scan(clientDir).filter(f => f.endsWith('.mp4') || f.endsWith('.jpg'))
+  });
+});
+
+
 app.use(express.static(path.join(__dirname, '..', 'client')));
 
 // --- 1. Healthcheck (Canonical: /health, Alias: /api/health) & Public Plan Endpoints ---
