@@ -801,6 +801,131 @@
       .brand-logo img {
         height: 34px !important;
       }
+
+      /* AI 쇼케이스 섹션 모바일 최적화 */
+      #virtual-fitting-room,
+      #virtual-makeup-artist {
+        padding: 50px 14px !important;
+      }
+
+      /* 쇼케이스 섹션 헤더 뱃지 */
+      #virtual-fitting-room > div:first-child > div:first-child,
+      #virtual-makeup-artist > div:first-child > div:first-child {
+        font-size: 10px !important;
+        padding: 5px 12px !important;
+      }
+
+      /* 쇼케이스 섹션 h2 */
+      #virtual-fitting-room h2,
+      #virtual-makeup-artist h2 {
+        font-size: 26px !important;
+        letter-spacing: -0.5px !important;
+        margin-bottom: 10px !important;
+      }
+
+      /* 쇼케이스 섹션 description */
+      #virtual-fitting-room > div:first-child > p,
+      #virtual-makeup-artist > div:first-child > p {
+        font-size: 13.5px !important;
+        line-height: 1.55 !important;
+      }
+
+      /* 쇼케이스 카드 컨테이너 - 패딩 축소 */
+      #virtual-fitting-room > div:last-child,
+      #virtual-makeup-artist > div:last-child {
+        padding: 16px !important;
+        border-radius: 18px !important;
+        gap: 20px !important;
+      }
+
+      /* 비디오 플레이어 플레이 버튼 크기 축소 */
+      #vfr-play-btn,
+      #vma-play-btn {
+        width: 52px !important;
+        height: 52px !important;
+        font-size: 18px !important;
+      }
+
+      /* 카피 영역 h3 */
+      #virtual-fitting-room h3,
+      #virtual-makeup-artist h3 {
+        font-size: 19px !important;
+        margin-bottom: 10px !important;
+      }
+
+      /* 카피 영역 description */
+      #virtual-fitting-room > div:last-child > div:last-child > p,
+      #virtual-makeup-artist > div:last-child > div:last-child > p {
+        font-size: 13px !important;
+        margin-bottom: 14px !important;
+      }
+
+      /* 체크리스트 텍스트 */
+      #virtual-fitting-room strong,
+      #virtual-makeup-artist strong {
+        font-size: 12.5px !important;
+      }
+
+      #virtual-fitting-room span[style*="font-size: 12.5px"],
+      #virtual-makeup-artist span[style*="font-size: 12.5px"] {
+        font-size: 11.5px !important;
+      }
+
+      /* CTA 버튼 영역 */
+      #virtual-fitting-room div[style*="display: flex; align-items: center; gap: 16px"],
+      #virtual-makeup-artist div[style*="display: flex; align-items: center; gap: 16px"] {
+        gap: 12px !important;
+        flex-wrap: wrap !important;
+      }
+
+      /* REQUEST 버튼 크기 */
+      #virtual-fitting-room button[onclick*="openConsultationModal"],
+      #virtual-makeup-artist button[onclick*="openConsultationModal"] {
+        font-size: 13px !important;
+        padding: 12px 18px !important;
+        border-radius: 10px !important;
+      }
+
+      /* Consultation 모달 최적화 */
+      .modal-card {
+        padding: 20px 16px !important;
+        border-radius: 16px !important;
+        max-height: 95vh !important;
+      }
+
+      #consultation-form-view form div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+      }
+
+      /* 룩 버튼 바 */
+      div[class*="look-btn"],
+      button[class*="vfr-look-btn"],
+      button[class*="vma-look-btn"] {
+        font-size: 10px !important;
+        padding: 5px 9px !important;
+      }
+
+      /* demo-grid 카드 - 모바일 타이틀/뱃지 */
+      .demo-info .section-tag {
+        font-size: 9px !important;
+      }
+      .demo-title {
+        font-size: 14px !important;
+      }
+      .demo-info p {
+        font-size: 12px !important;
+      }
+
+      /* 플랜 카드 */
+      .plan-grid {
+        gap: 14px !important;
+      }
+      .plan-card {
+        padding: 18px 16px !important;
+      }
+      .plan-price {
+        font-size: 28px !important;
+      }
     }
 
   </style>
@@ -1471,7 +1596,7 @@
     </div>
     <div class="demo-grid">
       <div class="demo-card">
-        <iframe class="demo-frame" scrolling="no" src="/demo-matterport.html" title="Photo Immersive Booth Demo"></iframe>
+        <iframe class="demo-frame" scrolling="no" src="/demo-matterport.html" title="Photo Immersive Booth Demo" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-top-navigation-by-user-activation" loading="lazy"></iframe></iframe>
         <div class="demo-info">
           <div class="section-tag" style="font-size: 10px; color: #38bdf8;">INDUSTRIAL TECH</div>
           <div class="demo-title">³DNa ROBOTIC — SMART BOOTH</div>
@@ -1479,7 +1604,7 @@
         </div>
       </div>
       <div class="demo-card">
-        <iframe class="demo-frame" scrolling="no" src="/demo-fashion.html" title="Vantelle Paris Luxury Fashion Showroom Demo"></iframe>
+        <iframe class="demo-frame" scrolling="no" src="/demo-fashion.html" title="Vantelle Paris Luxury Fashion Showroom Demo" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-top-navigation-by-user-activation" loading="lazy"></iframe></iframe>
         <div class="demo-info">
           <div class="section-tag" style="font-size: 10px; color: #fb7185;">LUXURY FASHION</div>
           <div class="demo-title">VANTÉLLE PARIS — RUNWAY BOOTH</div>
@@ -1487,7 +1612,7 @@
         </div>
       </div>
       <div class="demo-card">
-        <iframe class="demo-frame" scrolling="no" src="/demo-cosmetic.html" title="Lumiere Skincare Botanical Bio-Cellular Pavilion Demo"></iframe>
+        <iframe class="demo-frame" scrolling="no" src="/demo-cosmetic.html" title="Lumiere Skincare Botanical Bio-Cellular Pavilion Demo" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-top-navigation-by-user-activation" loading="lazy"></iframe></iframe>
         <div class="demo-info">
           <div class="section-tag" style="font-size: 10px; color: #e2c974;">CLINICAL COSMETICS</div>
           <div class="demo-title">LUMIÈRE — BEAUTY PAVILION</div>
@@ -1495,7 +1620,7 @@
         </div>
       </div>
       <div class="demo-card">
-        <iframe class="demo-frame" scrolling="no" src="/demo-furniture.html" title="Nova Living Scandinavian Designer Furniture Demo"></iframe>
+        <iframe class="demo-frame" scrolling="no" src="/demo-furniture.html" title="Nova Living Scandinavian Designer Furniture Demo" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-top-navigation-by-user-activation" loading="lazy"></iframe></iframe>
         <div class="demo-info">
           <div class="section-tag" style="font-size: 10px; color: #f59e0b;">DESIGNER FURNITURE</div>
           <div class="demo-title">NOVA LIVING — FURNITURE BOOTH</div>
@@ -1565,11 +1690,11 @@
           </div>
 
           <!-- Video Container -->
-          <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-            <video id="vfr-video-player" src="/assets/demo/virtual-fitting-room/fashion.mp4" playsinline muted loop controls preload="metadata" poster="/assets/demo/virtual-fitting-room/fashion-poster-last-frame.jpg" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;"></video>
-    <div id="vfr-play-btn" style="position: absolute; width: 64px; height: 64px; background: rgba(56, 189, 248, 0.85); backdrop-filter: blur(8px); border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); pointer-events: none; transition: transform 0.2s;">
-      <i class="fa-solid fa-play" style="margin-left: 3px;"></i>
-    </div>
+          <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer;" onclick="togglePlayVideo('vfr-video-player', 'vfr-play-btn')">
+            <video id="vfr-video-player" src="/assets/demo/virtual-fitting-room/fashion.mp4" playsinline muted loop preload="metadata" poster="/assets/demo/virtual-fitting-room/fashion-poster-last-frame.jpg" style="width: 100%; height: 100%; object-fit: cover; pointer-events: none;"></video>
+            <div id="vfr-play-btn" style="position: absolute; width: 64px; height: 64px; background: rgba(56, 189, 248, 0.85); backdrop-filter: blur(8px); border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); pointer-events: none; transition: opacity 0.25s, transform 0.2s;">
+              <i class="fa-solid fa-play" style="margin-left: 3px;"></i>
+            </div>
           </div>
 
           <!-- Bottom Dummy Controls / Looks Bar -->
@@ -1657,8 +1782,8 @@
 
           <!-- Video Container with Custom Play Overlay -->
           <div class="video-player-container" style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer;" onclick="togglePlayVideo('vma-video-player', 'vma-play-btn')">
-            <video id="vma-video-player" src="/assets/demo/virtual-makeup-artist/makeup.mp4" playsinline muted loop controls preload="metadata" poster="/assets/demo/virtual-makeup-artist/makeup-poster-last-frame.jpg" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;"></video>
-            <div id="vma-play-btn" style="position: absolute; width: 64px; height: 64px; background: rgba(244, 63, 94, 0.85); backdrop-filter: blur(8px); border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); pointer-events: none; transition: transform 0.2s;">
+            <video id="vma-video-player" src="/assets/demo/virtual-makeup-artist/makeup.mp4" playsinline muted loop preload="metadata" poster="/assets/demo/virtual-makeup-artist/makeup-poster-last-frame.jpg" style="width: 100%; height: 100%; object-fit: cover; pointer-events: none;"></video>
+            <div id="vma-play-btn" style="position: absolute; width: 64px; height: 64px; background: rgba(244, 63, 94, 0.85); backdrop-filter: blur(8px); border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); pointer-events: none; transition: opacity 0.25s, transform 0.2s;">
               <i class="fa-solid fa-play" style="margin-left: 3px;"></i>
             </div>
           </div>
@@ -3069,6 +3194,63 @@ function toggleIframeFullscreen(iframeId, fallbackUrl) {
   } else {
     window.open(fallbackUrl, '_blank');
   }
+}
+
+
+// ── Video Play Toggle & Robust State Binding ─────────────────────────
+function togglePlayVideo(videoId, btnId) {
+  const video = document.getElementById(videoId);
+  const btn = document.getElementById(btnId);
+  if (!video) return;
+  if (video.paused) {
+    video.play().catch(err => console.log('Playback error:', err));
+  } else {
+    video.pause();
+  }
+}
+
+// 모든 비디오 상태 변경 이벤트(play, playing, pause, ended)에 대한 UI 자동 동기화
+function initVideoPlayerSync() {
+  const players = [
+    { videoId: 'vfr-video-player', btnId: 'vfr-play-btn' },
+    { videoId: 'vma-video-player', btnId: 'vma-play-btn' }
+  ];
+
+  players.forEach(({ videoId, btnId }) => {
+    const video = document.getElementById(videoId);
+    const btn = document.getElementById(btnId);
+    if (!video || !btn) return;
+
+    const hideBtn = () => {
+      btn.style.opacity = '0';
+      btn.style.transform = 'scale(0.85)';
+      btn.style.pointerEvents = 'none';
+    };
+
+    const showBtn = () => {
+      btn.style.opacity = '1';
+      btn.style.transform = 'scale(1)';
+      btn.style.pointerEvents = 'none';
+    };
+
+    video.addEventListener('play', hideBtn);
+    video.addEventListener('playing', hideBtn);
+    video.addEventListener('pause', showBtn);
+    video.addEventListener('ended', showBtn);
+
+    // 초기 상태 체크
+    if (!video.paused) {
+      hideBtn();
+    } else {
+      showBtn();
+    }
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initVideoPlayerSync);
+} else {
+  initVideoPlayerSync();
 }
 
 </script>
