@@ -632,26 +632,6 @@ app.get(['/assets/demo/*', '*.mp4'], (req, res, next) => {
     fs.createReadStream(filePath).pipe(res);
   }
 });
-    const head = {
-      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-      'Accept-Ranges': 'bytes',
-      'Content-Length': chunksize,
-      'Content-Type': 'video/mp4',
-      'Cache-Control': 'public, max-age=31536000, immutable'
-    };
-    res.writeHead(206, head);
-    file.pipe(res);
-  } else {
-    const head = {
-      'Content-Length': fileSize,
-      'Accept-Ranges': 'bytes',
-      'Content-Type': 'video/mp4',
-      'Cache-Control': 'public, max-age=31536000, immutable'
-    };
-    res.writeHead(200, head);
-    fs.createReadStream(filePath).pipe(res);
-  }
-});
 
 
 app.use(express.static(path.join(__dirname, '..', 'client')));
