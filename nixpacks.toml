@@ -1,0 +1,5 @@
+[phases.install]
+cmds = ["npm install"]
+
+[start]
+cmd = "node virtual-tradeshow-commercial-v1/app_build/server/index.js"
