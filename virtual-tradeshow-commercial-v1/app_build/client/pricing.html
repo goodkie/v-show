@@ -7,356 +7,1196 @@
   <meta name="description" content="Commercial exhibition plans for ³DNa Virtual Trade Show. Choose Pro, Business, or Custom Enterprise solutions.">
   <style>
     :root {
-      --bg: #090d16;
-      --card-bg: #111827;
-      --border: #1f2937;
-      --text: #f9fafb;
-      --text-muted: #9ca3af;
-      --accent: #3b82f6;
-      --accent-hover: #2563eb;
-      --accent-pro: #8b5cf6;
-      --accent-biz: #38bdf8;
+      --bg: #070b14;
+      --bg-surface: #0e1526;
+      --card-bg: #111a2e;
+      --card-highlight: #14223f;
+      --border: #1e293b;
+      --border-accent: #38bdf8;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --accent: #38bdf8;
+      --accent-pro: #a855f7;
+      --accent-biz: #0284c7;
       --accent-custom: #f59e0b;
-      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background-color: var(--bg);
       color: var(--text);
-      font-family: var(--font-family);
+      font-family: var(--font);
       line-height: 1.6;
-      padding: 0;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
 
     header {
-      background: rgba(7, 14, 26, 0.95);
+      background: rgba(7, 11, 20, 0.95);
       border-bottom: 1px solid var(--border);
       padding: 14px 28px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
     }
-    .logo { font-size: 18px; font-weight: 700; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 8px; }
-    .nav-links { display: flex; gap: 16px; align-items: center; }
-    .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; transition: color 0.2s; }
+    .logo { display: flex; align-items: center; text-decoration: none; }
+    .logo img { height: 48px; width: auto; object-fit: contain; }
+    .nav-links { display: flex; gap: 18px; align-items: center; }
+    .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
     .nav-links a:hover { color: #fff; }
-    .btn-login { background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 700; }
-
-    .pricing-container {
-      max-width: 1140px;
-      margin: 40px auto;
-      padding: 0 20px;
-      flex: 1;
+    .nav-links a.active { color: var(--accent); font-weight: 700; }
+    .btn-nav-action {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff !important;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
     }
 
-    .hero-section {
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      flex: 1;
+      width: 100%;
+    }
+
+    /* Hero Section */
+    .hero {
       text-align: center;
       margin-bottom: 48px;
     }
-    .hero-section h1 {
-      font-size: 36px;
-      font-weight: 800;
-      margin-bottom: 12px;
-      letter-spacing: -0.5px;
-    }
-    .hero-section p {
-      font-size: 16.5px;
-      color: var(--text-muted);
-      max-width: 680px;
-      margin: 0 auto;
-    }
-    .pilot-notice {
-      display: inline-block;
-      margin-top: 14px;
-      padding: 6px 16px;
-      background: rgba(56, 189, 248, 0.12);
-      border: 1px solid rgba(56, 189, 248, 0.35);
-      border-radius: 20px;
-      font-size: 13px;
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
       color: #38bdf8;
-      font-weight: 600;
+      padding: 6px 16px;
+      border-radius: 30px;
+      font-size: 12.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 18px;
     }
+    .hero h1 {
+      font-size: 40px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 14px;
+      background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: 17px;
+      color: var(--text-muted);
+      max-width: 720px;
+      margin: 0 auto 24px;
+      line-height: 1.55;
+    }
+    .hero-actions {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .btn-secondary {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid #334155;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { background: #334155; color: #fff; }
 
+    /* Pricing Grid (3 Cards) */
     .pricing-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
-      margin-bottom: 56px;
+      gap: 28px;
+      margin-bottom: 64px;
+      align-items: stretch;
     }
 
     .plan-card {
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 32px 24px;
+      border-radius: 18px;
+      padding: 36px 28px;
       display: flex;
       flex-direction: column;
       position: relative;
-      transition: transform 0.2s, border-color 0.2s;
+      transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
     }
     .plan-card:hover {
-      transform: translateY(-3px);
-      border-color: #38bdf8;
+      transform: translateY(-4px);
+      border-color: rgba(56, 189, 248, 0.6);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
     }
     .plan-card.featured {
-      border-color: #0284c7;
-      background: linear-gradient(180deg, #0c1a2e 0%, #111827 100%);
-      box-shadow: 0 12px 32px rgba(2, 132, 199, 0.2);
+      background: linear-gradient(180deg, #10213d 0%, #0e172a 100%);
+      border: 2px solid #0284c7;
+      box-shadow: 0 12px 40px rgba(2, 132, 199, 0.25);
     }
-    .plan-badge {
+    .plan-card.featured:hover {
+      box-shadow: 0 20px 50px rgba(2, 132, 199, 0.38);
+    }
+
+    .popular-badge {
       position: absolute;
-      top: -12px;
+      top: -14px;
       left: 50%;
       transform: translateX(-50%);
-      background: linear-gradient(135deg, #0284c7, #2563eb);
-      color: #fff;
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      color: #041226;
       font-size: 11px;
-      font-weight: 800;
-      padding: 4px 14px;
-      border-radius: 12px;
+      font-weight: 900;
+      padding: 5px 16px;
+      border-radius: 20px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+      letter-spacing: 0.8px;
+      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.5);
     }
 
-    .plan-name { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
-    .plan-desc { font-size: 13px; color: var(--text-muted); min-height: 40px; margin-bottom: 20px; line-height: 1.45; }
-    .plan-price { font-size: 38px; font-weight: 800; margin-bottom: 4px; }
-    .plan-price span { font-size: 15px; font-weight: 400; color: var(--text-muted); }
-    .plan-subtext { font-size: 12px; color: var(--text-muted); margin-bottom: 24px; }
+    .card-header { margin-bottom: 24px; }
+    .card-tier-name {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.01em;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tier-pro-color { color: #c084fc; }
+    .tier-biz-color { color: #38bdf8; }
+    .tier-custom-color { color: #fbbf24; }
 
-    .plan-features {
+    .card-tagline {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      min-height: 42px;
+      line-height: 1.45;
+    }
+
+    .card-price-box {
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .price-value {
+      font-size: 42px;
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .price-interval {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+    .price-subtext {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    .card-features-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-dim);
+      margin-bottom: 14px;
+    }
+    .card-features-list {
       list-style: none;
       margin-bottom: 32px;
       flex: 1;
     }
-    .plan-features li {
-      font-size: 13.5px;
-      padding: 8px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    .card-features-list li {
+      font-size: 14px;
+      padding: 7px 0;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 10px;
+      line-height: 1.45;
     }
-    .plan-features li:last-child { border-bottom: none; }
-    .check-icon { color: #38bdf8; font-weight: bold; }
+    .check-icon {
+      color: #38bdf8;
+      font-weight: 900;
+      font-size: 15px;
+      line-height: 1.2;
+      flex-shrink: 0;
+    }
+    .check-icon.custom-icon { color: #fbbf24; }
 
-    .btn-plan {
+    .btn-card-cta {
       display: block;
       width: 100%;
-      padding: 13px 0;
+      padding: 14px 0;
       text-align: center;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 700;
+      border-radius: 10px;
+      font-size: 14.5px;
+      font-weight: 800;
       text-decoration: none;
       cursor: pointer;
       border: none;
-      transition: background 0.2s;
+      transition: all 0.2s ease;
     }
-    .btn-pro { background: #222e44; color: #fff; border: 1px solid #3b82f6; }
-    .btn-pro:hover { background: #3b82f6; }
-    .btn-biz { background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; box-shadow: 0 4px 14px rgba(2,132,199,0.4); }
-    .btn-biz:hover { background: linear-gradient(135deg, #0369a1, #1d4ed8); }
-    .btn-custom { background: #1e293b; color: #f59e0b; border: 1px solid #f59e0b; }
-    .btn-custom:hover { background: #f59e0b; color: #000; font-weight: 800; }
+    .btn-cta-pro {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #a855f7;
+    }
+    .btn-cta-pro:hover {
+      background: #a855f7;
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(168, 85, 247, 0.4);
+    }
+    .btn-cta-biz {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      box-shadow: 0 6px 20px rgba(2, 132, 199, 0.45);
+    }
+    .btn-cta-biz:hover {
+      background: linear-gradient(135deg, #0369a1, #1d4ed8);
+      box-shadow: 0 8px 24px rgba(2, 132, 199, 0.6);
+    }
+    .btn-cta-custom {
+      background: #1e293b;
+      color: #fbbf24;
+      border: 1px solid #fbbf24;
+    }
+    .btn-cta-custom:hover {
+      background: #fbbf24;
+      color: #090d16;
+      box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4);
+    }
+    .cta-subnote {
+      font-size: 11.5px;
+      text-align: center;
+      color: var(--text-dim);
+      margin-top: 10px;
+    }
 
-    /* Custom Quote Modal */
-    #custom-quote-modal {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
-      z-index: 500; display: none; align-items: center; justify-content: center; padding: 20px;
-    }
-    .modal-box {
-      background: #0f172a; border: 1px solid #f59e0b; border-radius: 16px; padding: 28px;
-      max-width: 480px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.85);
-    }
-
-    .faq-section {
-      background: var(--card-bg);
+    /* AI Virtual Experience Modules Section */
+    .modules-section {
+      background: var(--bg-surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 36px 32px;
-      margin-bottom: 48px;
+      border-radius: 20px;
+      padding: 44px 36px;
+      margin-bottom: 64px;
     }
-    .faq-section h2 { font-size: 22px; font-weight: 700; margin-bottom: 20px; text-align: center; }
-    .faq-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
-    .faq-item h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; color: #e5e7eb; }
-    .faq-item p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+    .section-header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .section-header h2 {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+    .section-header p {
+      font-size: 15px;
+      color: var(--text-muted);
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+    .module-card {
+      background: #111a2e;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: border-color 0.2s;
+    }
+    .module-card:hover { border-color: rgba(56, 189, 248, 0.5); }
+    .module-top { margin-bottom: 16px; }
+    .module-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .module-category {
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #38bdf8;
+    }
+    .status-badge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .badge-consultation {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+    .badge-comingsoon {
+      background: rgba(148, 163, 184, 0.15);
+      color: #94a3b8;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+    .module-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+    .module-desc { font-size: 13.5px; color: var(--text-muted); line-height: 1.5; }
+    .btn-module-cta {
+      display: inline-block;
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .btn-consult-active {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+    }
+    .btn-consult-active:hover {
+      background: #0284c7;
+      color: #fff;
+    }
+    .btn-coming-disabled {
+      background: #1e293b;
+      color: #64748b;
+      border: 1px solid #334155;
+      cursor: not-allowed;
+    }
+
+    /* Comparison Matrix Section */
+    .comparison-section {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 44px 36px;
+      margin-bottom: 64px;
+    }
+
+    /* Mobile Plan Selector Tabs */
+    .mobile-plan-tabs {
+      display: none;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .plan-tab-btn {
+      background: #1e293b;
+      color: var(--text-muted);
+      border: 1px solid #334155;
+      padding: 10px 0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+    }
+    .plan-tab-btn.active {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      border-color: #38bdf8;
+    }
+
+    .matrix-table-wrap {
+      overflow-x: auto;
+      margin-top: 24px;
+    }
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13.5px;
+    }
+    .matrix-table th, .matrix-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .matrix-table th {
+      background: #090f1d;
+      font-weight: 800;
+      color: var(--text);
+      position: sticky;
+      top: 76px;
+      z-index: 10;
+    }
+    .matrix-table th:first-child { width: 38%; border-top-left-radius: 8px; }
+    .matrix-table th:nth-child(2) { width: 20%; color: #c084fc; text-align: center; }
+    .matrix-table th:nth-child(3) { width: 22%; color: #38bdf8; background: #0c1a30; text-align: center; }
+    .matrix-table th:nth-child(4) { width: 20%; color: #fbbf24; text-align: center; border-top-right-radius: 8px; }
+
+    .matrix-category-row td {
+      background: #090e1a;
+      font-weight: 800;
+      font-size: 13.5px;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      padding: 16px;
+      border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+    }
+    .matrix-feature-name {
+      font-weight: 600;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .matrix-cell-pro { text-align: center; color: #cbd5e1; }
+    .matrix-cell-biz { text-align: center; font-weight: 700; color: #f8fafc; background: rgba(2, 132, 199, 0.05); }
+    .matrix-cell-custom { text-align: center; color: #cbd5e1; }
+
+    /* Tooltip */
+    .tooltip-trigger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #334155;
+      color: #94a3b8;
+      font-size: 10px;
+      font-weight: 800;
+      cursor: help;
+      position: relative;
+    }
+    .tooltip-trigger:hover .tooltip-bubble {
+      visibility: visible;
+      opacity: 1;
+    }
+    .tooltip-bubble {
+      visibility: hidden;
+      opacity: 0;
+      width: 240px;
+      background: #0f172a;
+      color: #e2e8f0;
+      text-align: left;
+      border-radius: 8px;
+      padding: 8px 12px;
+      position: absolute;
+      z-index: 50;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11.5px;
+      line-height: 1.4;
+      border: 1px solid #38bdf8;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.7);
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+      font-weight: normal;
+    }
+
+    /* FAQ Section */
+    .faq-section {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 44px 36px;
+      margin-bottom: 64px;
+    }
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 28px;
+    }
+    .faq-item h3 { font-size: 16px; font-weight: 700; color: #f8fafc; margin-bottom: 8px; }
+    .faq-item p { font-size: 13.5px; color: var(--text-muted); line-height: 1.55; }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(4, 8, 16, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 18px;
+      padding: 32px;
+      max-width: 520px;
+      width: 100%;
+      box-shadow: 0 24px 70px rgba(0,0,0,0.9);
+      position: relative;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .modal-header h3 { font-size: 20px; font-weight: 800; }
+    .modal-close-btn {
+      background: none; border: none;
+      color: #94a3b8; font-size: 22px;
+      cursor: pointer; padding: 4px;
+    }
+    .modal-close-btn:hover { color: #fff; }
+
+    .form-group { margin-bottom: 14px; }
+    .form-group label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #cbd5e1;
+      margin-bottom: 5px;
+    }
+    .form-control {
+      width: 100%;
+      background: #070e17;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 13.5px;
+      font-family: inherit;
+    }
+    .form-control:focus {
+      outline: none;
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
 
     footer {
-      background: #0b0f19;
+      background: #060911;
       border-top: 1px solid var(--border);
-      padding: 24px;
+      padding: 32px 24px;
       text-align: center;
       font-size: 13px;
       color: var(--text-muted);
     }
-    .footer-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 12px; }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 14px;
+    }
     .footer-links a { color: var(--text-muted); text-decoration: none; }
     .footer-links a:hover { color: #fff; }
 
-    @media (max-width: 860px) {
-      .pricing-grid { grid-template-columns: 1fr; max-width: 440px; margin-left: auto; margin-right: auto; }
+    @media (max-width: 960px) {
+      .pricing-grid { grid-template-columns: 1fr; max-width: 480px; margin-left: auto; margin-right: auto; }
+      .modules-grid { grid-template-columns: 1fr; }
       .faq-grid { grid-template-columns: 1fr; }
-      .hero-section h1 { font-size: 28px; }
+      .hero h1 { font-size: 32px; }
     }
-  
-      html, body { scrollbar-width: none; -ms-overflow-style: none; }
-      ::-webkit-scrollbar { display: none; width: 0; height: 0; }
-      </style>
+
+    @media (max-width: 768px) {
+      .mobile-plan-tabs { display: grid; }
+      .matrix-table th:nth-child(2), .matrix-table td:nth-child(2),
+      .matrix-table th:nth-child(3), .matrix-table td:nth-child(3),
+      .matrix-table th:nth-child(4), .matrix-table td:nth-child(4) {
+        display: none;
+      }
+      .matrix-table.show-pro th:nth-child(2), .matrix-table.show-pro td:nth-child(2),
+      .matrix-table.show-biz th:nth-child(3), .matrix-table.show-biz td:nth-child(3),
+      .matrix-table.show-custom th:nth-child(4), .matrix-table.show-custom td:nth-child(4) {
+        display: table-cell;
+      }
+    }
+  </style>
 </head>
 <body>
 
   <header>
     <a href="/" class="logo">
-      <img src="/assets/brand/dna_logo_white.png" alt="³DNa" style="height: 54px; width: auto; object-fit: contain; display: block;">
+      <img src="/assets/brand/dna_logo_white.png" alt="³DNa">
     </a>
     <div class="nav-links">
       <a href="/demo-matterport.html">Showcase</a>
       <a href="/demo.html">3D Showroom</a>
       <a href="/card.html">Smart Card</a>
-      <a href="/pricing.html" style="color: #38bdf8; font-weight: 700;">Pricing Plans</a>
-      <a href="/builder.html" class="btn-login">Build My Booth →</a>
+      <a href="/pricing.html" class="active">Pricing Plans</a>
+      <a href="/builder.html" class="btn-nav-action">Build My Booth →</a>
     </div>
   </header>
 
-  <div class="pricing-container">
-    <div class="hero-section">
-      <h1>Transparent &amp; Honest Commercial Plans</h1>
-      <p>Transform your trade show exhibition into an always-on 3D digital showroom. Capture wholesale buyer leads and RFQs 365 days a year.</p>
-      <div class="pilot-notice">
-        🧪 <strong>COMMERCIAL PLANS (v2026.1)</strong> — Select your plan to reserve production.
+  <div class="container">
+    <!-- Hero Section -->
+    <div class="hero">
+      <div class="hero-badge">⚡ COMMERCIAL PRICING &amp; ENTITLEMENTS (v2026.1)</div>
+      <h1>Predictable, Transparent Trade Show Plans</h1>
+      <p>Convert your physical exhibition into a 24/7 high-converting digital showroom. Empower international buyers to browse products, request RFQs, and order samples anytime.</p>
+      <div class="hero-actions">
+        <a href="#comparison-matrix" class="btn-secondary">Explore Feature Comparison Matrix ↓</a>
+        <a href="#ai-modules" class="btn-secondary">View AI Experience Modules ↓</a>
       </div>
     </div>
 
+    <!-- 3 Plan Cards Grid -->
     <div class="pricing-grid">
       <!-- 1. PRO PLAN -->
-      <div class="plan-card" id="plan-pro-card">
-        <div class="plan-name" style="color: #a78bfa;">PRO</div>
-        <div class="plan-desc">For individual exhibitors and focused product collections.</div>
-        <div class="plan-price">$299 <span>/ mo</span></div>
-        <div class="plan-subtext">Commercial exhibition license</div>
-        <ul class="plan-features">
-          <li><span class="check-icon">✔</span> <strong>Photo Immersive Booth (360°)</strong></li>
-          <li><span class="check-icon">✔</span> Interactive Product Pinpoints</li>
-          <li><span class="check-icon">✔</span> Digital Product Catalog</li>
-          <li><span class="check-icon">✔</span> Smart Exhibitor NFC Card</li>
-          <li><span class="check-icon">✔</span> Persistent Product QR Codes</li>
-          <li><span class="check-icon">✔</span> Wholesale Request Info &amp; RFQ</li>
-          <li><span class="check-icon">✔</span> Consultation Meeting Booking</li>
-          <li><span class="check-icon">✔</span> Basic Analytics &amp; Standard Support</li>
+      <div class="plan-card" id="card-pro">
+        <div class="card-header">
+          <div class="card-tier-name tier-pro-color">PRO</div>
+          <div class="card-tagline">Everything an exhibitor needs to turn a physical booth into an interactive digital sales experience.</div>
+        </div>
+        <div class="card-price-box">
+          <div class="price-value">$299 <span class="price-interval">/ month</span></div>
+          <div class="price-subtext">For individual exhibitors and focused collections</div>
+        </div>
+        <div class="card-features-title">Plan Features &amp; Limits:</div>
+        <ul class="card-features-list">
+          <li><span class="check-icon">✓</span> <span><strong>Photo Immersive Booth</strong> — up to 3 source views</span></li>
+          <li><span class="check-icon">✓</span> <span><strong>Up to 30 Interactive Products</strong></span></li>
+          <li><span class="check-icon">✓</span> <span>Digital Product Catalog &amp; PDF spec sheets</span></li>
+          <li><span class="check-icon">✓</span> <span>Smart Exhibitor NFC Card capability</span></li>
+          <li><span class="check-icon">✓</span> <span>Persistent Product QR Codes</span></li>
+          <li><span class="check-icon">✓</span> <span>Wholesale Info &amp; RFQ Engine</span></li>
+          <li><span class="check-icon">✓</span> <span>Consultation / Meeting Booking</span></li>
+          <li><span class="check-icon">✓</span> <span>Basic Analytics Dashboard</span></li>
+          <li><span class="check-icon">✓</span> <span>Standard Production Support</span></li>
         </ul>
-        <a href="/builder.html" class="btn-plan btn-pro">Select PRO Plan →</a>
+        <a href="/builder.html?plan=pro" class="btn-card-cta btn-cta-pro">START WITH PRO →</a>
+        <div class="cta-subnote">Best for smaller exhibitors and focused product collections.</div>
       </div>
 
       <!-- 2. BUSINESS PLAN (Featured / Most Popular) -->
-      <div class="plan-card featured" id="plan-biz-card">
-        <div class="plan-badge">MOST POPULAR</div>
-        <div class="plan-name" style="color: #38bdf8;">BUSINESS</div>
-        <div class="plan-desc">For serious trade-show sales teams requiring multi-view coverage and priority support.</div>
-        <div class="plan-price">$799 <span>/ mo</span></div>
-        <div class="plan-subtext">For growing and enterprise sales teams</div>
-        <ul class="plan-features">
-          <li><span class="check-icon">✔</span> <strong>Everything in PRO</strong></li>
-          <li><span class="check-icon">✔</span> Multi-View Spatial Vantage Points</li>
-          <li><span class="check-icon">✔</span> Expanded Product Pinpoints</li>
-          <li><span class="check-icon">✔</span> Advanced Buyer Tools &amp; Telemetry</li>
-          <li><span class="check-icon">✔</span> Managed White-Glove Production Support</li>
-          <li><span class="check-icon">✔</span> Priority Production Queue</li>
-          <li><span class="check-icon">✔</span> Multiple Sales Rep Profiles</li>
-          <li><span class="check-icon">✔</span> Post-Show Intelligence Report</li>
+      <div class="plan-card featured" id="card-business">
+        <div class="popular-badge">MOST POPULAR</div>
+        <div class="card-header">
+          <div class="card-tier-name tier-biz-color">BUSINESS</div>
+          <div class="card-tagline">For companies using trade shows as an active buyer-acquisition and sales channel.</div>
+        </div>
+        <div class="card-price-box">
+          <div class="price-value">$799 <span class="price-interval">/ month</span></div>
+          <div class="price-subtext">For active B2B sales teams &amp; higher volume</div>
+        </div>
+        <div class="card-features-title">Everything in PRO, plus:</div>
+        <ul class="card-features-list">
+          <li><span class="check-icon">✓</span> <span><strong>Up to 60 Approved Source Images</strong></span></li>
+          <li><span class="check-icon">✓</span> <span><strong>Multi-View Spatial Experience</strong></span></li>
+          <li><span class="check-icon">✓</span> <span><strong>Up to 100 Interactive Products</strong></span></li>
+          <li><span class="check-icon">✓</span> <span><strong>30 Advanced Product 3D / 360 Media Assets</strong></span></li>
+          <li><span class="check-icon">✓</span> <span>Advanced Buyer Tools &amp; Sample Intake</span></li>
+          <li><span class="check-icon">✓</span> <span>Advanced Analytics &amp; Telemetry Data</span></li>
+          <li><span class="check-icon">✓</span> <span>Multiple Sales Representatives</span></li>
+          <li><span class="check-icon">✓</span> <span>Managed White-Glove Production Support</span></li>
+          <li><span class="check-icon">✓</span> <span>Virtual Experience Modules (Eligible)</span></li>
+          <li><span class="check-icon">✓</span> <span>Post-Show Intelligence Report</span></li>
+          <li><span class="check-icon">✓</span> <span>Priority Production Pipeline</span></li>
         </ul>
-        <a href="/builder.html" class="btn-plan btn-biz">Select Business Plan →</a>
+        <a href="/builder.html?plan=business" class="btn-card-cta btn-cta-biz">CHOOSE BUSINESS →</a>
+        <div class="cta-subnote">Best for active B2B sales teams and higher-volume exhibitors.</div>
       </div>
 
-      <!-- 3. CUSTOM PLAN -->
-      <div class="plan-card" id="plan-custom-card">
-        <div class="plan-name" style="color: #f59e0b;">CUSTOM</div>
-        <div class="plan-desc">For large exhibits, multi-show programs, custom production and advanced 3D requirements.</div>
-        <div class="plan-price" style="font-size:26px; padding:6px 0; color:#f59e0b;">CUSTOM PRICING</div>
-        <div class="plan-subtext">Tailored to your exhibition program</div>
-        <ul class="plan-features">
-          <li><span class="check-icon" style="color:#f59e0b;">✔</span> <strong>Everything in BUSINESS</strong></li>
-          <li><span class="check-icon" style="color:#f59e0b;">✔</span> Custom Product &amp; Pinpoint Limits</li>
-          <li><span class="check-icon" style="color:#f59e0b;">✔</span> Multi-Booth &amp; Multi-Show Program</li>
-          <li><span class="check-icon" style="color:#f59e0b;">✔</span> Custom Interactive 3D Showroom</li>
-          <li><span class="check-icon" style="color:#f59e0b;">✔</span> Authentic 3D Digital Twin Review</li>
-          <li><span class="check-icon" style="color:#f59e0b;">✔</span> Dedicated Production Lead &amp; SLA</li>
-          <li><span class="check-icon" style="color:#f59e0b;">✔</span> Custom CRM &amp; White-labeling</li>
+      <!-- 3. CUSTOM ENTERPRISE PLAN -->
+      <div class="plan-card" id="card-custom">
+        <div class="card-header">
+          <div class="card-tier-name tier-custom-color">CUSTOM</div>
+          <div class="card-tagline">Enterprise virtual-exhibition programs tailored to your brand, events and technology stack.</div>
+        </div>
+        <div class="card-price-box">
+          <div class="price-value" style="color: #fbbf24; font-size: 32px;">Custom Quote</div>
+          <div class="price-subtext">Tailored enterprise contract &amp; multi-event SLA</div>
+        </div>
+        <div class="card-features-title">Everything in BUSINESS, plus:</div>
+        <ul class="card-features-list">
+          <li><span class="check-icon custom-icon">✓</span> <span>Custom Product &amp; Pinpoint Limits</span></li>
+          <li><span class="check-icon custom-icon">✓</span> <span>Multi-Booth &amp; Multi-Show Programs</span></li>
+          <li><span class="check-icon custom-icon">✓</span> <span>Custom Interactive 3D Showrooms</span></li>
+          <li><span class="check-icon custom-icon">✓</span> <span>Authentic 3D Digital Twin Review</span></li>
+          <li><span class="check-icon custom-icon">✓</span> <span>Dedicated Production Lead</span></li>
+          <li><span class="check-icon custom-icon">✓</span> <span>Contractual SLA &amp; Support</span></li>
+          <li><span class="check-icon custom-icon">✓</span> <span>Custom CRM / API Integration &amp; Webhooks</span></li>
+          <li><span class="check-icon custom-icon">✓</span> <span>Full White-Label Experience &amp; Domain</span></li>
+          <li><span class="check-icon custom-icon">✓</span> <span>Enterprise Virtual Experience Integration</span></li>
         </ul>
-        <button type="button" class="btn-plan btn-custom" onclick="openCustomQuoteModal()">Request Custom Quote →</button>
+        <button type="button" class="btn-card-cta btn-cta-custom" onclick="openCustomQuoteModal()">REQUEST CUSTOM QUOTE →</button>
+        <div class="cta-subnote">Tailored for enterprise brand programs and multi-event campaigns.</div>
       </div>
     </div>
 
-    <!-- FAQ & Commercial Disclosures -->
+    <!-- AI Virtual Experience Modules Section -->
+    <div class="modules-section" id="ai-modules">
+      <div class="section-header">
+        <h2>³DNa AI Virtual Experience Modules</h2>
+        <p>Enhance your digital booth with specialized vertical experiences for fashion collections, clinical beauty demonstrations, eyewear fitting, and room staging.</p>
+      </div>
+      <div class="modules-grid">
+        <!-- Module 1: Fashion -->
+        <div class="module-card">
+          <div class="module-top">
+            <div class="module-meta">
+              <span class="module-category">Apparel &amp; Fashion</span>
+              <span class="status-badge badge-consultation">Consultation (Eligible)</span>
+            </div>
+            <div class="module-title">AI Virtual Fitting Room</div>
+            <div class="module-desc">Turn apparel collections into an interactive digital shopping experience for fashion brands, showrooms, and global trade show buyers.</div>
+          </div>
+          <div>
+            <button type="button" class="btn-module-cta btn-consult-active" onclick="openConsultationModal('AI Virtual Fitting Room')">Request Consultation →</button>
+          </div>
+        </div>
+
+        <!-- Module 2: Cosmetics -->
+        <div class="module-card">
+          <div class="module-top">
+            <div class="module-meta">
+              <span class="module-category">Beauty &amp; Cosmetics</span>
+              <span class="status-badge badge-consultation">Consultation (Eligible)</span>
+            </div>
+            <div class="module-title">AI Virtual Makeup Artist</div>
+            <div class="module-desc">Turn clinical cosmetics, beauty pavilions, and skincare lines into interactive digital demonstrations with shade matching and product testing.</div>
+          </div>
+          <div>
+            <button type="button" class="btn-module-cta btn-consult-active" onclick="openConsultationModal('AI Virtual Makeup Artist')">Request Consultation →</button>
+          </div>
+        </div>
+
+        <!-- Module 3: Eyewear -->
+        <div class="module-card">
+          <div class="module-top">
+            <div class="module-meta">
+              <span class="module-category">Accessories &amp; Optical</span>
+              <span class="status-badge badge-comingsoon">Coming Soon</span>
+            </div>
+            <div class="module-title">Virtual Eyewear Try-On</div>
+            <div class="module-desc">Precision spatial geometry and optical frame fitting for luxury eyewear brands and optical trade show exhibitions.</div>
+          </div>
+          <div>
+            <button type="button" class="btn-module-cta btn-coming-disabled" disabled>Coming Soon</button>
+          </div>
+        </div>
+
+        <!-- Module 4: Furniture -->
+        <div class="module-card">
+          <div class="module-top">
+            <div class="module-meta">
+              <span class="module-category">Home &amp; Living</span>
+              <span class="status-badge badge-comingsoon">Coming Soon</span>
+            </div>
+            <div class="module-title">Virtual Furniture Placement</div>
+            <div class="module-desc">True-scale spatial dimension placement and room staging for designer furniture manufacturers and interior showrooms.</div>
+          </div>
+          <div>
+            <button type="button" class="btn-module-cta btn-coming-disabled" disabled>Coming Soon</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comprehensive Feature Comparison Matrix -->
+    <div class="comparison-section" id="comparison-matrix">
+      <div class="section-header">
+        <h2>Expanded Feature Matrix &amp; Limits</h2>
+        <p>Transparent technical comparison across all ³DNa commercial tiers.</p>
+      </div>
+
+      <!-- Mobile Tabs -->
+      <div class="mobile-plan-tabs">
+        <button type="button" class="plan-tab-btn" onclick="setMobileMatrixTab('pro')">PRO ($299)</button>
+        <button type="button" class="plan-tab-btn active" onclick="setMobileMatrixTab('biz')">BUSINESS ($799)</button>
+        <button type="button" class="plan-tab-btn" onclick="setMobileMatrixTab('custom')">CUSTOM</button>
+      </div>
+
+      <div class="matrix-table-wrap">
+        <table class="matrix-table show-biz" id="full-matrix-table">
+          <thead>
+            <tr>
+              <th>Feature Capability</th>
+              <th>PRO ($299/mo)</th>
+              <th>BUSINESS ($799/mo)</th>
+              <th>CUSTOM</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Category 1 -->
+            <tr class="matrix-category-row"><td colspan="4">1. Virtual Booth &amp; Spatial Environment</td></tr>
+            <tr>
+              <td>
+                <div class="matrix-feature-name">
+                  Photo Immersive Booth
+                  <span class="tooltip-trigger">?
+                    <span class="tooltip-bubble">Transform high-resolution approved booth photos into an interactive digital presentation with responsive product pinpoints.</span>
+                  </span>
+                </div>
+              </td>
+              <td class="matrix-cell-pro">Up to 3 source views</td>
+              <td class="matrix-cell-biz">Up to 60 images / Multi-View</td>
+              <td class="matrix-cell-custom">Custom capture / advanced spatial</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="matrix-feature-name">
+                  Multi-View Spatial Experience
+                  <span class="tooltip-trigger">?
+                    <span class="tooltip-bubble">Multi-node spatial roaming across diverse vantage points in your physical booth.</span>
+                  </span>
+                </div>
+              </td>
+              <td class="matrix-cell-pro">Limited source views (up to 3)</td>
+              <td class="matrix-cell-biz">Included — up to 60 images</td>
+              <td class="matrix-cell-custom">Advanced / Custom</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="matrix-feature-name">
+                  Custom Interactive 3D Showroom
+                  <span class="tooltip-trigger">?
+                    <span class="tooltip-bubble">Bespoke 3D architecture, lighting, and environmental design for enterprise brand storytelling.</span>
+                  </span>
+                </div>
+              </td>
+              <td class="matrix-cell-pro">—</td>
+              <td class="matrix-cell-biz">—</td>
+              <td class="matrix-cell-custom">Included by scope</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="matrix-feature-name">
+                  Authentic 3D Digital Twin Review
+                  <span class="tooltip-trigger">?
+                    <span class="tooltip-bubble">Rigorous photogrammetric &amp; Gaussian splatting reconstruction review from qualified authentic capture data.</span>
+                  </span>
+                </div>
+              </td>
+              <td class="matrix-cell-pro">—</td>
+              <td class="matrix-cell-biz">Review / Add-On if offered</td>
+              <td class="matrix-cell-custom">Included by approved scope</td>
+            </tr>
+            <tr>
+              <td><div class="matrix-feature-name">Multiple Booths / Shows</div></td>
+              <td class="matrix-cell-pro">—</td>
+              <td class="matrix-cell-biz">Single program scope</td>
+              <td class="matrix-cell-custom">Included by contract</td>
+            </tr>
+
+            <!-- Category 2 -->
+            <tr class="matrix-category-row"><td colspan="4">2. Products &amp; Digital Catalog</td></tr>
+            <tr>
+              <td>
+                <div class="matrix-feature-name">
+                  Interactive Connected Products
+                  <span class="tooltip-trigger">?
+                    <span class="tooltip-bubble">Products anchored in the 3D booth with specs, photos, PDF catalogs, and buyer inquiry CTAs.</span>
+                  </span>
+                </div>
+              </td>
+              <td class="matrix-cell-pro">Up to 30</td>
+              <td class="matrix-cell-biz">Up to 100</td>
+              <td class="matrix-cell-custom">Custom Limits</td>
+            </tr>
+            <tr>
+              <td><div class="matrix-feature-name">Digital Product Catalog &amp; Lookbook</div></td>
+              <td class="matrix-cell-pro">Included</td>
+              <td class="matrix-cell-biz">Included</td>
+              <td class="matrix-cell-custom">Included</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="matrix-feature-name">
+                  Advanced Product 3D / 360 Media Assets
+                  <span class="tooltip-trigger">?
+                    <span class="tooltip-bubble">High-definition 360° product turntables, multi-angle view sets, and verified 3D assets.</span>
+                  </span>
+                </div>
+              </td>
+              <td class="matrix-cell-pro">Optional Add-On</td>
+              <td class="matrix-cell-biz">30 Included</td>
+              <td class="matrix-cell-custom">Custom Allowance</td>
+            </tr>
+            <tr>
+              <td><div class="matrix-feature-name">Additional Product 3D Media</div></td>
+              <td class="matrix-cell-pro">Add-On</td>
+              <td class="matrix-cell-biz">Add-On after 30 included</td>
+              <td class="matrix-cell-custom">Contractual</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="matrix-feature-name">
+                  Smart Exhibitor NFC Card
+                  <span class="tooltip-trigger">?
+                    <span class="tooltip-bubble">Digital card capability included. Physical NFC cards and tabletop stands available separately.</span>
+                  </span>
+                </div>
+              </td>
+              <td class="matrix-cell-pro">Supported (Hardware separate)</td>
+              <td class="matrix-cell-biz">Supported (Hardware separate)</td>
+              <td class="matrix-cell-custom">Custom Program</td>
+            </tr>
+            <tr>
+              <td><div class="matrix-feature-name">Persistent Product QR Codes</div></td>
+              <td class="matrix-cell-pro">Included</td>
+              <td class="matrix-cell-biz">Included</td>
+              <td class="matrix-cell-custom">Included</td>
+            </tr>
+
+            <!-- Category 3 -->
+            <tr class="matrix-category-row"><td colspan="4">3. Buyer Engagement &amp; RFQ Tools</td></tr>
+            <tr>
+              <td><div class="matrix-feature-name">Wholesale Inquiry &amp; RFQ Engine</div></td>
+              <td class="matrix-cell-pro">Included</td>
+              <td class="matrix-cell-biz">Advanced</td>
+              <td class="matrix-cell-custom">Custom Workflow</td>
+            </tr>
+            <tr>
+              <td><div class="matrix-feature-name">Sample Request Intake</div></td>
+              <td class="matrix-cell-pro">Basic</td>
+              <td class="matrix-cell-biz">Included</td>
+              <td class="matrix-cell-custom">Custom Workflow</td>
+            </tr>
+            <tr>
+              <td><div class="matrix-feature-name">Consultation &amp; Meeting Booking</div></td>
+              <td class="matrix-cell-pro">Included</td>
+              <td class="matrix-cell-biz">Included</td>
+              <td class="matrix-cell-custom">Custom Integration</td>
+            </tr>
+            <tr>
+              <td><div class="matrix-feature-name">Lead Capture &amp; CRM Management</div></td>
+              <td class="matrix-cell-pro">Included</td>
+              <td class="matrix-cell-biz">Advanced</td>
+              <td class="matrix-cell-custom">Custom</td>
+            </tr>
+            <tr>
+              <td><div class="matrix-feature-name">Lead / CRM Data Export</div></td>
+              <td class="matrix-cell-pro">Basic Export</td>
+              <td class="matrix-cell-biz">Advanced Export</td>
+              <td class="matrix-cell-custom">Custom Integration</td>
+            </tr>
+
+            <!-- Category 4 -->
+            <tr class="matrix-category-row"><td colspan="4">4. Analytics, Telemetry &amp; Intelligence</td></tr>
+            <tr>
+              <td>
+                <div class="matrix-feature-name">
+                  Buyer Engagement Analytics
+                  <span class="tooltip-trigger">?
+                    <span class="tooltip-bubble">Real-time tracking of booth visits, product views, pinpoint clicks, and QR activity.</span>
+                  </span>
+                </div>
+              </td>
+              <td class="matrix-cell-pro">Basic Analytics</td>
+              <td class="matrix-cell-biz">Advanced Telemetry</td>
+              <td class="matrix-cell-custom">Custom / Enterprise</td>
+            </tr>
+            <tr>
+              <td><div class="matrix-feature-name">Post-Show Intelligence Report</div></td>
+              <td class="matrix-cell-pro">—</td>
+              <td class="matrix-cell-biz">Included</td>
+              <td class="matrix-cell-custom">Custom Executive Report</td>
+            </tr>
+
+            <!-- Category 5 -->
+            <tr class="matrix-category-row"><td colspan="4">5. AI Virtual Experience Modules</td></tr>
+            <tr>
+              <td><div class="matrix-feature-name">AI Virtual Fitting Room</div></td>
+              <td class="matrix-cell-pro">—</td>
+              <td class="matrix-cell-biz">Consultation / Eligible</td>
+              <td class="matrix-cell-custom">Custom Integration</td>
+            </tr>
+            <tr>
+              <td><div class="matrix-feature-name">AI Virtual Makeup Artist</div></td>
+              <td class="matrix-cell-pro">—</td>
+              <td class="matrix-cell-biz">Consultation / Eligible</td>
+              <td class="matrix-cell-custom">Custom Integration</td>
+            </tr>
+            <tr>
+              <td><div class="matrix-feature-name">Virtual Eyewear Try-On</div></td>
+              <td class="matrix-cell-pro">—</td>
+              <td class="matrix-cell-biz">Coming Soon</td>
+              <td class="matrix-cell-custom">Custom Integration</td>
+            </tr>
+            <tr>
+              <td><div class="matrix-feature-name">Virtual Furniture Placement</div></td>
+              <td class="matrix-cell-pro">—</td>
+              <td class="matrix-cell-biz">Coming Soon</td>
+              <td class="matrix-cell-custom">Custom Integration</td>
+            </tr>
+
+            <!-- Category 6 -->
+            <tr class="matrix-category-row"><td colspan="4">6. Production, Team &amp; Enterprise Integration</td></tr>
+            <tr>
+              <td><div class="matrix-feature-name">Sales Representatives / Seats</div></td>
+              <td class="matrix-cell-pro">Single Account</td>
+              <td class="matrix-cell-biz">Multiple Reps</td>
+              <td class="matrix-cell-custom">Custom Teams</td>
+            </tr>
+            <tr>
+              <td><div class="matrix-feature-name">Managed White-Glove Production</div></td>
+              <td class="matrix-cell-pro">Standard Support</td>
+              <td class="matrix-cell-biz">Included within scope</td>
+              <td class="matrix-cell-custom">Dedicated Lead</td>
+            </tr>
+            <tr>
+              <td><div class="matrix-feature-name">Production Queue Priority</div></td>
+              <td class="matrix-cell-pro">Standard</td>
+              <td class="matrix-cell-biz">Priority Production</td>
+              <td class="matrix-cell-custom">Dedicated SLA</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="matrix-feature-name">
+                  White-Label &amp; Custom Branding
+                  <span class="tooltip-trigger">?
+                    <span class="tooltip-bubble">Custom customer domain, custom brand styling, and removal of platform marks.</span>
+                  </span>
+                </div>
+              </td>
+              <td class="matrix-cell-pro">³DNa Standard</td>
+              <td class="matrix-cell-biz">Enhanced Brand</td>
+              <td class="matrix-cell-custom">White-Label Available</td>
+            </tr>
+            <tr>
+              <td><div class="matrix-feature-name">Contractual SLA &amp; Support</div></td>
+              <td class="matrix-cell-pro">Standard Support</td>
+              <td class="matrix-cell-biz">Priority Support</td>
+              <td class="matrix-cell-custom">Contractual SLA</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- FAQ & Disclosures -->
     <div class="faq-section">
-      <h2>Frequently Asked Questions (FAQ)</h2>
+      <div class="section-header">
+        <h2>Frequently Asked Questions &amp; Technical Disclosures</h2>
+        <p>Clear facts on 3D reconstruction feasibility, hardware options, and commercial terms.</p>
+      </div>
       <div class="faq-grid">
         <div class="faq-item">
-          <h3>Q. What is included in the Photo Immersive Booth?</h3>
-          <p>The Photo Immersive Booth transforms high-resolution exhibition photos into an interactive 360° digital twin with responsive Product Pinpoints and direct wholesale buyer lead capture.</p>
+          <h3>Q. How does Photo Immersive Booth differ from 3D Digital Twins?</h3>
+          <p>Photo Immersive uses verified booth photography to construct a smooth interactive panoramic viewer with anchored product pinpoints. True 3D digital twins (Gaussian splatting / photogrammetry) require specialized dense multi-angle camera passes and feasibility qualification under our Custom program.</p>
         </div>
         <div class="faq-item">
-          <h3>Q. How do the Smart Card and Product QRs work?</h3>
-          <p>Each booth includes a digital Smart Exhibitor Card with vCard contact downloads and automated QR codes for every product listing.</p>
+          <h3>Q. What are Advanced Product 3D / 360 Media Assets?</h3>
+          <p>These assets include 360° product turntables, multi-angle view sets, and verified 3D models. The BUSINESS plan includes 30 advanced media assets. Additional items can be added as production add-ons.</p>
         </div>
         <div class="faq-item">
-          <h3>Q. When does production begin?</h3>
-          <p>Upon reserving your production slot, your project is queued. In Managed mode, the ³DNa engineering team prepares your live preview within 5 business days.</p>
+          <h3>Q. Is physical Smart Card hardware included?</h3>
+          <p>Digital Smart Card functionality (vCard contact exchange, mobile responsive booth link) is included in all plans. High-durability laser-engraved NFC physical cards and acrylic tabletop stands are available to order separately.</p>
         </div>
         <div class="faq-item">
-          <h3>Q. Can I request custom 3D environments?</h3>
-          <p>Yes. Our CUSTOM plan accommodates fully custom Interactive 3D Showrooms and multi-hall exhibition programs.</p>
+          <h3>Q. Can I upgrade or request custom enterprise integrations?</h3>
+          <p>Yes. Exhibitors can seamlessly upgrade from PRO to BUSINESS as their product catalog expands, or request a CUSTOM quote for multi-hall trade show circuits and custom CRM webhooks.</p>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Custom Quote Qualification Modal -->
-  <div id="custom-quote-modal">
-    <div class="modal-box">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-        <h3 style="font-size:18px; font-weight:800; color:#f59e0b;">Request Custom Exhibition Quote</h3>
-        <button style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;" onclick="closeCustomQuoteModal()">✕</button>
+  <div class="modal-overlay" id="modal-custom-quote">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="color: #fbbf24;">Request Custom Enterprise Quote</h3>
+        <button type="button" class="modal-close-btn" onclick="closeCustomQuoteModal()">✕</button>
       </div>
-
       <form id="form-custom-quote" onsubmit="handleCustomQuoteSubmit(event)">
-        <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:18px;">
-          <div>
-            <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Company Name <span style="color:#f87171;">*</span></label>
-            <input type="text" id="cq-company" required placeholder="Apex Global Systems" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
+        <div class="form-group">
+          <label>Company / Brand Name <span style="color:#f87171;">*</span></label>
+          <input type="text" id="cq-company" class="form-control" required placeholder="e.g. Apex Global Industries">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Contact Name <span style="color:#f87171;">*</span></label>
+            <input type="text" id="cq-name" class="form-control" required placeholder="Jane Doe">
           </div>
-          <div>
-            <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Work Email <span style="color:#f87171;">*</span></label>
-            <input type="email" id="cq-email" required placeholder="contact@company.com" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
-          </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-            <div>
-              <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Trade Show <span style="color:#f87171;">*</span></label>
-              <input type="text" id="cq-tradeshow" required placeholder="CES 2027 / Hannover" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
-            </div>
-            <div>
-              <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Show Date <span style="color:#f87171;">*</span></label>
-              <input type="date" id="cq-date" required style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
-            </div>
-          </div>
-          <div>
-            <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Approximate Product Count</label>
-            <input type="text" id="cq-products" placeholder="e.g. 50+ industrial machines" style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px;">
-          </div>
-          <div>
-            <label style="display:block; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Desired Custom Services</label>
-            <textarea id="cq-notes" rows="2" placeholder="Custom 3D environments, multiple booth locations, custom CRM integrations..." style="width:100%; background:#070e17; border:1px solid #334155; border-radius:8px; padding:10px 12px; color:#fff; font-size:13px; font-family:inherit;"></textarea>
+          <div class="form-group">
+            <label>Work Email <span style="color:#f87171;">*</span></label>
+            <input type="email" id="cq-email" class="form-control" required placeholder="jane@company.com">
           </div>
         </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Trade Show / Event Name</label>
+            <input type="text" id="cq-tradeshow" class="form-control" placeholder="e.g. CES 2027">
+          </div>
+          <div class="form-group">
+            <label>Estimated Products</label>
+            <input type="text" id="cq-products" class="form-control" placeholder="e.g. 150+ products">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Enterprise Requirements</label>
+          <textarea id="cq-notes" class="form-control" rows="3" placeholder="Custom 3D showrooms, multiple booth locations, CRM integrations, SLA terms..."></textarea>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+          <button type="button" class="btn-secondary" onclick="closeCustomQuoteModal()">Cancel</button>
+          <button type="submit" class="btn-card-cta btn-cta-custom" style="width:auto; padding:10px 24px;">Submit Quote Request →</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-        <div style="display:flex; gap:10px; justify-content:flex-end;">
-          <button type="button" class="btn-plan" style="width:auto; padding:10px 18px; background:#334155; color:#fff;" onclick="closeCustomQuoteModal()">Cancel</button>
-          <button type="submit" class="btn-plan" style="width:auto; padding:10px 22px; background:#f59e0b; color:#000; font-weight:800;">Submit Custom Quote Request →</button>
+  <!-- AI Experience Consultation Modal -->
+  <div class="modal-overlay" id="modal-consultation">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="consult-modal-title" style="color: #38bdf8;">Request Module Consultation</h3>
+        <button type="button" class="modal-close-btn" onclick="closeConsultationModal()">✕</button>
+      </div>
+      <form id="form-consultation" onsubmit="handleConsultationSubmit(event)">
+        <input type="hidden" id="consult-service-type" value="AI Virtual Fitting Room">
+        <div class="form-group">
+          <label>Company / Brand Name <span style="color:#f87171;">*</span></label>
+          <input type="text" id="cs-company" class="form-control" required placeholder="e.g. Maison de Mode">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Contact Name <span style="color:#f87171;">*</span></label>
+            <input type="text" id="cs-name" class="form-control" required placeholder="Alex Smith">
+          </div>
+          <div class="form-group">
+            <label>Work Email <span style="color:#f87171;">*</span></label>
+            <input type="email" id="cs-email" class="form-control" required placeholder="alex@brand.com">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Brand Website / Lookbook URL</label>
+          <input type="url" id="cs-website" class="form-control" placeholder="https://brand.com">
+        </div>
+        <div class="form-group">
+          <label>Project Scope / Timeline</label>
+          <textarea id="cs-notes" class="form-control" rows="2" placeholder="Describe your collection, trade show schedule, and visual requirements..."></textarea>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+          <button type="button" class="btn-secondary" onclick="closeConsultationModal()">Cancel</button>
+          <button type="submit" class="btn-card-cta btn-cta-biz" style="width:auto; padding:10px 24px;">Request Consultation →</button>
         </div>
       </form>
     </div>
@@ -376,44 +1216,98 @@
   </footer>
 
   <script>
+    function setMobileMatrixTab(tab) {
+      const table = document.getElementById('full-matrix-table');
+      const buttons = document.querySelectorAll('.plan-tab-btn');
+      buttons.forEach(b => b.classList.remove('active'));
+      
+      table.classList.remove('show-pro', 'show-biz', 'show-custom');
+      
+      if (tab === 'pro') {
+        table.classList.add('show-pro');
+        buttons[0].classList.add('active');
+      } else if (tab === 'biz') {
+        table.classList.add('show-biz');
+        buttons[1].classList.add('active');
+      } else {
+        table.classList.add('show-custom');
+        buttons[2].classList.add('active');
+      }
+    }
+
     function openCustomQuoteModal() {
-      document.getElementById('custom-quote-modal').style.display = 'flex';
+      document.getElementById('modal-custom-quote').style.display = 'flex';
       document.getElementById('cq-company').focus();
     }
     function closeCustomQuoteModal() {
-      document.getElementById('custom-quote-modal').style.display = 'none';
+      document.getElementById('modal-custom-quote').style.display = 'none';
+    }
+
+    function openConsultationModal(serviceType) {
+      document.getElementById('consult-service-type').value = serviceType;
+      document.getElementById('consult-modal-title').textContent = 'Consultation: ' + serviceType;
+      document.getElementById('modal-consultation').style.display = 'flex';
+      document.getElementById('cs-company').focus();
+    }
+    function closeConsultationModal() {
+      document.getElementById('modal-consultation').style.display = 'none';
     }
 
     async function handleCustomQuoteSubmit(e) {
       e.preventDefault();
       const payload = {
         company: document.getElementById('cq-company').value.trim(),
+        contactName: document.getElementById('cq-name').value.trim(),
         email: document.getElementById('cq-email').value.trim(),
         tradeShow: document.getElementById('cq-tradeshow').value.trim(),
-        showStartDate: document.getElementById('cq-date').value,
+        productCount: document.getElementById('cq-products').value.trim(),
+        message: document.getElementById('cq-notes').value.trim(),
+        serviceType: 'CUSTOM_ENTERPRISE_PLAN',
         selectedPlan: 'CUSTOM',
-        planName: 'CUSTOM',
-        planPrice: 'Custom Pricing',
-        status: 'CUSTOM_QUOTE_REQUESTED',
-        customNotes: `${document.getElementById('cq-products').value.trim()} | ${document.getElementById('cq-notes').value.trim()}`,
         sourceFunnel: 'PRICING_PAGE_CUSTOM_QUOTE'
       };
 
       try {
-        const res = await fetch('/api/production-reservations', {
+        const res = await fetch('/api/consultation-requests', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
         const data = await res.json();
         closeCustomQuoteModal();
-        alert(`Thank you! Your Custom Quote Request (Ticket: ${data.reservation ? data.reservation.id : 'CONFIRMED'}) has been received. Our Enterprise Sales Team will contact you within 24 hours.`);
+        alert('Thank you! Your Custom Enterprise Quote Request (Ticket: ' + (data.consultationId || '3DNA-CUSTOM-CONFIRMED') + ') has been recorded. Our Enterprise Solutions Lead will contact you within 24 hours.');
       } catch (err) {
         closeCustomQuoteModal();
-        alert('Thank you! Your request has been recorded. Our team will contact you shortly.');
+        alert('Thank you! Your custom quote request has been received.');
+      }
+    }
+
+    async function handleConsultationSubmit(e) {
+      e.preventDefault();
+      const payload = {
+        serviceType: document.getElementById('consult-service-type').value,
+        company: document.getElementById('cs-company').value.trim(),
+        contactName: document.getElementById('cs-name').value.trim(),
+        email: document.getElementById('cs-email').value.trim(),
+        website: document.getElementById('cs-website').value.trim(),
+        message: document.getElementById('cs-notes').value.trim(),
+        sourceFunnel: 'PRICING_PAGE_AI_MODULE_CONSULTATION'
+      };
+
+      try {
+        const res = await fetch('/api/consultation-requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        closeConsultationModal();
+        alert('Thank you! Your Consultation Request (Ticket: ' + (data.consultationId || 'CONFIRMED') + ') has been submitted. An Experience Specialist will contact you shortly.');
+      } catch (err) {
+        closeConsultationModal();
+        alert('Thank you! Your consultation request has been received.');
       }
     }
   </script>
-
 </body>
 </html>

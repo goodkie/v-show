@@ -1,12 +1,3 @@
 ﻿node_modules/
 .git/
 *.log
-data/uploads/models/
-data/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/models/
-client/assets/demo/wilo/models/
-client/assets/demo/wilo/experimental/
-client/assets/demo/wilo/diagnostics/
-client/assets/demo/dna-showcase/pano360/*_16k.jpg
-client/assets/demo/furniture-showcase/pano360/*_16k.jpg
-client/assets/demo/lumiere-showcase/pano360/*_16k.jpg
-client/assets/demo/vantelle-showcase/pano360/*_16k.jpg

@@ -2021,6 +2021,27 @@ class JSONDatabase {
 
   async createProduct(prodData) {
     return this.mutate((db) => {
+      const orgId = prodData.organizationId || 'org-exhibitor-apex';
+      const org = (db.organizations || []).find(o => o.id === orgId);
+      const plan = (org?.subscription?.plan || 'pro').toLowerCase();
+      const existingProds = (db.products || []).filter(p => p.organizationId === orgId || (prodData.boothId && p.boothId === prodData.boothId));
+
+      if (plan === 'pro' && existingProds.length >= 30) {
+        const err = new Error("YOU'VE REACHED YOUR PRO PRODUCT LIMIT (30). Upgrade to BUSINESS to support up to 100 products.");
+        err.code = 'PRODUCT_LIMIT_REACHED';
+        err.limit = 30;
+        err.plan = 'PRO';
+        err.nextPlan = 'BUSINESS';
+        throw err;
+      } else if (plan === 'business' && existingProds.length >= 100) {
+        const err = new Error("NEED MORE THAN 100 PRODUCTS? Request a Custom Enterprise Plan.");
+        err.code = 'PRODUCT_LIMIT_REACHED';
+        err.limit = 100;
+        err.plan = 'BUSINESS';
+        err.nextPlan = 'CUSTOM';
+        throw err;
+      }
+
       const newProd = {
         id: `prod-${uuidv4().substring(0, 8)}`,
         organizationId: prodData.organizationId || 'org-exhibitor-apex',
@@ -4336,6 +4357,26 @@ class JSONDatabase {
       const now = new Date().toISOString();
 
       p.products = p.products || [];
+      const plan = (p.selectedPlan || p.plan || 'pro').toLowerCase();
+      const isNew = !productData.id || !p.products.some(x => x.id === productData.id);
+      if (isNew) {
+        if (plan === 'pro' && p.products.length >= 30) {
+          const err = new Error("YOU'VE REACHED YOUR PRO PRODUCT LIMIT (30). Upgrade to BUSINESS to support up to 100 products.");
+          err.code = 'PRODUCT_LIMIT_REACHED';
+          err.limit = 30;
+          err.plan = 'PRO';
+          err.nextPlan = 'BUSINESS';
+          throw err;
+        } else if (plan === 'business' && p.products.length >= 100) {
+          const err = new Error("NEED MORE THAN 100 PRODUCTS? Request a Custom Enterprise Plan.");
+          err.code = 'PRODUCT_LIMIT_REACHED';
+          err.limit = 100;
+          err.plan = 'BUSINESS';
+          err.nextPlan = 'CUSTOM';
+          throw err;
+        }
+      }
+
       const prodId = productData.id || `prod-diy-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 5)}`;
 
       const prodRecord = {
@@ -4410,6 +4451,17 @@ class JSONDatabase {
       if (!prod) throw new Error(`Product ${productId} not found`);
       const now = new Date().toISOString();
 
+      const plan = (p.selectedPlan || p.plan || 'pro').toLowerCase();
+      if (plan === 'pro' && p.products.length >= 30) {
+        const err = new Error("YOU'VE REACHED YOUR PRO PRODUCT LIMIT (30). Upgrade to BUSINESS to support up to 100 products.");
+        err.code = 'PRODUCT_LIMIT_REACHED';
+        throw err;
+      } else if (plan === 'business' && p.products.length >= 100) {
+        const err = new Error("NEED MORE THAN 100 PRODUCTS? Request a Custom Enterprise Plan.");
+        err.code = 'PRODUCT_LIMIT_REACHED';
+        throw err;
+      }
+
       const dupId = `prod-diy-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 5)}`;
       const duplicated = {
         ...prod,
@@ -4439,6 +4491,17 @@ class JSONDatabase {
 
       if (!Array.isArray(productsList)) throw new Error('productsList must be an array');
       p.products = p.products || [];
+
+      const plan = (p.selectedPlan || p.plan || 'pro').toLowerCase();
+      const maxAllowed = plan === 'pro' ? 30 : (plan === 'business' ? 100 : 500);
+      if (p.products.length + productsList.length > maxAllowed) {
+        const msg = plan === 'pro' 
+          ? "YOU'VE REACHED YOUR PRO PRODUCT LIMIT (30). Upgrade to BUSINESS to support up to 100 products."
+          : "NEED MORE THAN 100 PRODUCTS? Request a Custom Enterprise Plan.";
+        const err = new Error(msg);
+        err.code = 'PRODUCT_LIMIT_REACHED';
+        throw err;
+      }
 
       productsList.forEach((item, i) => {
         const prodId = item.id || `prod-diy-${Date.now().toString(36)}-${i}`;
@@ -5022,112 +5085,473 @@ class JSONDatabase {
       if (db.analyticsEvents.length > 5000) {
         db.analyticsEvents.shift();
       }
-      return event;
+return event;
     });
   }
 
-  // ==========================================
-  // --- 10. Phase 9.5 & 10 Stripe Billing, Plan Config & Launch Readiness ---
-  // ==========================================
-
+  // =====================================================================
+  // ³DNa-C11.3 Canonical Commercial Plan Registry & Entitlements
+  // =====================================================================
   getPlanConfig() {
     const proMonthly = Number(process.env.PLAN_PRO_MONTHLY_USD) || 299;
     const bizMonthly = Number(process.env.PLAN_BUSINESS_MONTHLY_USD) || 799;
 
     return {
-      free: {
-        plan: 'free',
-        name: 'FREE Tier',
-        monthlyPriceUsd: 0,
-        currency: 'USD',
-        billingInterval: 'month',
-        maxProducts: 5,
-        maxHotspots: 3,
-        maxPhotos: 5,
-        precision3D: false,
-        reconstructionCredits: 0,
-        customBranding: false,
-        analyticsExport: false,
-        liveConsultations: false,
-        dedicatedSupport: false,
-        leadLimitVisible: 10,
-        description: '기본 가상 부스 및 사진 프리뷰'
-      },
       pro: {
+        planKey: 'PRO',
         plan: 'pro',
-        name: 'PRO Tier',
+        name: 'PRO',
+        title: 'PRO',
+        isCommercial: true,
         monthlyPriceUsd: proMonthly,
+        priceUsd: proMonthly,
+        price: proMonthly * 100, // 29900 cents
+        priceCents: proMonthly * 100,
         currency: 'USD',
-        billingInterval: 'month',
+        billingInterval: 'MONTH',
+        sourceImageLimit: 3,
+        maxPhotos: 3,
+        productLimit: 30,
+        maxProducts: 30,
+        maxHotspots: 30,
+        advancedProductMediaIncluded: 0,
+        analyticsTier: 'BASIC',
+        managedProduction: false,
+        postShowReport: false,
+        multiSalesRep: false,
+        productionPriority: 'STANDARD',
+        photoImmersive: true,
+        digitalCatalog: true,
+        smartNfcCard: true,
+        persistentQr: true,
+        wholesaleRfq: true,
+        meetingBooking: true,
+        basicAnalytics: true,
+        standardSupport: true,
+        virtualExperienceModules: false,
+        tagline: 'Everything an exhibitor needs to turn a physical booth into an interactive digital sales experience.',
+        targetAudience: 'Small and growing exhibitors, independent exhibitors, single-booth exhibitors, and focused product collections.',
+        cardFeatures: [
+          'Photo Immersive Booth — up to 3 source views',
+          'Up to 30 Interactive Products',
+          'Digital Product Catalog',
+          'Smart Exhibitor NFC Card capability',
+          'Persistent Product QR Codes',
+          'Wholesale Info & RFQ',
+          'Meeting Booking',
+          'Basic Analytics',
+          'Standard Support'
+        ],
+        ctaText: 'START WITH PRO',
+        ctaSubtext: 'Best for smaller exhibitors and focused product collections.',
         stripePriceEnv: process.env.STRIPE_PRICE_PRO_MONTHLY || 'price_pro_monthly_test',
-        maxProducts: 25,
-        maxHotspots: 15,
-        maxPhotos: 60,
-        precision3D: true,
-        reconstructionCredits: 1,
-        customBranding: true,
-        analyticsExport: true,
-        liveConsultations: true,
-        dedicatedSupport: false,
-        leadLimitVisible: 1000,
-        description: 'Spark 정밀 3DGS 가상 부스 & 바이어 분석 데이터'
+        description: 'Everything an exhibitor needs to turn a physical booth into an interactive digital sales experience.'
       },
       business: {
+        planKey: 'BUSINESS',
         plan: 'business',
-        name: 'BUSINESS Tier',
+        name: 'BUSINESS',
+        title: 'BUSINESS',
+        isCommercial: true,
+        badge: 'MOST POPULAR',
+        popular: true,
         monthlyPriceUsd: bizMonthly,
+        priceUsd: bizMonthly,
+        price: bizMonthly * 100, // 79900 cents
+        priceCents: bizMonthly * 100,
         currency: 'USD',
-        billingInterval: 'month',
-        stripePriceEnv: process.env.STRIPE_PRICE_BUSINESS_MONTHLY || 'price_biz_monthly_test',
+        billingInterval: 'MONTH',
+        sourceImageLimit: 60,
+        maxPhotos: 60,
+        productLimit: 100,
         maxProducts: 100,
-        maxHotspots: 50,
-        maxPhotos: 120,
-        precision3D: true,
-        reconstructionCredits: 3,
-        customBranding: true,
-        analyticsExport: true,
-        liveConsultations: true,
-        dedicatedSupport: true,
-        leadLimitVisible: 10000,
-        description: '대형 전시관 전용 우선 GPU 처리 & 전담 기술 지원'
+        maxHotspots: 100,
+        advancedProductMediaIncluded: 30,
+        analyticsTier: 'ADVANCED',
+        managedProduction: true,
+        postShowReport: true,
+        multiSalesRep: true,
+        salesRepLimit: Number(process.env.BUSINESS_SALES_REP_LIMIT) || 5,
+        productionPriority: 'PRIORITY',
+        multiViewSpatial: true,
+        photoImmersive: true,
+        digitalCatalog: true,
+        smartNfcCard: true,
+        persistentQr: true,
+        wholesaleRfq: true,
+        meetingBooking: true,
+        advancedBuyerTools: true,
+        advancedAnalytics: true,
+        virtualExperienceModules: true,
+        tagline: 'For companies using trade shows as an active buyer-acquisition and sales channel.',
+        targetAudience: 'Exhibitors and sales teams focused on active buyer acquisition and higher-volume trade show sales.',
+        cardFeatures: [
+          'Up to 60 Source Images',
+          'Multi-View Spatial Experience',
+          'Up to 100 Interactive Products',
+          '30 Advanced Product 3D / 360 Media Assets',
+          'Advanced Buyer Tools',
+          'Advanced Analytics & Telemetry',
+          'Multiple Sales Representatives',
+          'Managed Production Support',
+          'Virtual Experience Modules',
+          'Post-Show Intelligence Report',
+          'Priority Production'
+        ],
+        ctaText: 'CHOOSE BUSINESS',
+        ctaSubtext: 'Best for active B2B sales teams and higher-volume exhibitors.',
+        stripePriceEnv: process.env.STRIPE_PRICE_BUSINESS_MONTHLY || 'price_biz_monthly_test',
+        description: 'For companies using trade shows as an active buyer-acquisition and sales channel.'
+      },
+      custom: {
+        planKey: 'CUSTOM',
+        plan: 'custom',
+        name: 'CUSTOM',
+        title: 'CUSTOM',
+        isCommercial: true,
+        monthlyPriceUsd: null,
+        priceUsd: null,
+        price: null,
+        priceCents: null,
+        quoteRequired: true,
+        currency: 'USD',
+        billingInterval: 'CUSTOM',
+        sourceImageLimit: 'CUSTOM',
+        maxPhotos: 500,
+        productLimit: 'CUSTOM',
+        maxProducts: 500,
+        maxHotspots: 500,
+        advancedProductMediaIncluded: 'CUSTOM',
+        analyticsTier: 'CUSTOM',
+        managedProduction: true,
+        dedicatedProductionLead: true,
+        contractualSla: true,
+        whiteLabel: true,
+        crmIntegration: 'CUSTOM',
+        multiBooth: true,
+        multiShow: true,
+        customShowroom: true,
+        authenticDigitalTwinReview: true,
+        enterpriseVirtualExperience: true,
+        tagline: 'Enterprise virtual-exhibition programs tailored to your brand, events and technology stack.',
+        targetAudience: 'Enterprise exhibitors, multi-show programs, custom 3D showrooms, and bespoke digital experiences.',
+        cardFeatures: [
+          'Custom Product & Pinpoint Limits',
+          'Multi-Booth & Multi-Show Programs',
+          'Custom Interactive 3D Showrooms',
+          'Authentic 3D Digital Twin Review',
+          'Dedicated Production Lead',
+          'Contractual SLA',
+          'Custom CRM / API Integration',
+          'White-Label Experience',
+          'Enterprise Virtual Experience Integration'
+        ],
+        ctaText: 'REQUEST CUSTOM QUOTE',
+        ctaSubtext: 'Tailored for enterprise brand programs and multi-event campaigns.',
+        description: 'Enterprise virtual-exhibition programs tailored to your brand, events and technology stack.'
       }
     };
   }
 
-  getPlanLimits(plan = 'free') {
-    const p = (plan || 'free').toLowerCase();
+  getVirtualExperienceModules() {
+    return {
+      AI_VIRTUAL_FITTING_ROOM: {
+        key: 'AI_VIRTUAL_FITTING_ROOM',
+        name: 'AI Virtual Fitting Room',
+        category: 'Apparel & Fashion',
+        status: 'CONSULTATION',
+        businessEligible: true,
+        customEligible: true,
+        description: 'Turn apparel collections into an interactive digital shopping experience for fashion brands, showrooms, and global trade show buyers.',
+        cta: 'REQUEST CONSULTATION',
+        serviceType: 'AI Virtual Fitting Room'
+      },
+      AI_VIRTUAL_MAKEUP_ARTIST: {
+        key: 'AI_VIRTUAL_MAKEUP_ARTIST',
+        name: 'AI Virtual Makeup Artist',
+        category: 'Beauty & Cosmetics',
+        status: 'CONSULTATION',
+        businessEligible: true,
+        customEligible: true,
+        description: 'Turn clinical cosmetics, beauty pavilions, and skincare lines into interactive digital demonstrations.',
+        cta: 'REQUEST CONSULTATION',
+        serviceType: 'AI Virtual Makeup Artist'
+      },
+      VIRTUAL_EYEWEAR: {
+        key: 'VIRTUAL_EYEWEAR',
+        name: 'Virtual Eyewear Try-On',
+        category: 'Accessories & Optical',
+        status: 'COMING_SOON',
+        businessEligible: false,
+        customEligible: true,
+        description: 'Precision spatial geometry and optical frame fitting for luxury eyewear brands.',
+        cta: 'JOIN WAITLIST',
+        serviceType: 'Virtual Eyewear Try-On'
+      },
+      VIRTUAL_FURNITURE_PLACEMENT: {
+        key: 'VIRTUAL_FURNITURE_PLACEMENT',
+        name: 'Virtual Furniture Placement',
+        category: 'Home & Living',
+        status: 'COMING_SOON',
+        businessEligible: false,
+        customEligible: true,
+        description: 'True-scale spatial dimension placement and room staging for designer furniture manufacturers.',
+        cta: 'JOIN WAITLIST',
+        serviceType: 'Virtual Furniture Placement'
+      }
+    };
+  }
+
+  getComparisonMatrix() {
+    return [
+      {
+        category: 'Virtual Booth & Spatial Environment',
+        features: [
+          {
+            name: 'Photo Immersive Booth',
+            tooltip: 'Transform high-resolution approved booth photos into an interactive digital presentation with responsive product pinpoints.',
+            pro: 'Up to 3 source views',
+            business: 'Up to 60 source images / Multi-View',
+            custom: 'Custom capture / advanced spatial'
+          },
+          {
+            name: 'Multi-View Spatial Experience',
+            tooltip: 'Multi-node spatial roaming across diverse vantage points in your physical booth.',
+            pro: 'Limited source views (up to 3)',
+            business: 'Included — up to 60 images',
+            custom: 'Advanced / Custom'
+          },
+          {
+            name: 'Custom Interactive 3D Showroom',
+            tooltip: 'Bespoke 3D architecture, lighting, and environmental design for enterprise brand storytelling.',
+            pro: '—',
+            business: '—',
+            custom: 'Included by scope'
+          },
+          {
+            name: 'Authentic 3D Digital Twin Review',
+            tooltip: 'Rigorous photogrammetric & Gaussian splatting reconstruction review from qualified authentic capture data.',
+            pro: '—',
+            business: 'Review / Add-On if offered',
+            custom: 'Included by approved scope'
+          },
+          {
+            name: 'Multiple Booths / Shows',
+            tooltip: 'Manage multiple exhibition stands or annual trade show circuits under a single unified platform.',
+            pro: '—',
+            business: 'Single program scope',
+            custom: 'Included by contract'
+          }
+        ]
+      },
+      {
+        category: 'Products & Digital Catalog',
+        features: [
+          {
+            name: 'Interactive Connected Products',
+            tooltip: 'Products anchored in the 3D booth with specs, photos, PDF catalogs, and buyer inquiry CTAs.',
+            pro: 'Up to 30',
+            business: 'Up to 100',
+            custom: 'Custom Limits'
+          },
+          {
+            name: 'Digital Product Catalog & Lookbook',
+            tooltip: 'Downloadable PDF spec sheets, product brochures, and interactive detail pages.',
+            pro: 'Included',
+            business: 'Included',
+            custom: 'Included'
+          },
+          {
+            name: 'Advanced Product 3D / 360 Media Assets',
+            tooltip: 'High-definition 360° product turntables, multi-angle view sets, and verified 3D assets.',
+            pro: 'Optional Add-On',
+            business: '30 Included',
+            custom: 'Custom Allowance'
+          },
+          {
+            name: 'Additional Product 3D Media',
+            tooltip: 'Produce additional 360° turntables or 3D product models beyond plan allowances.',
+            pro: 'Add-On',
+            business: 'Add-On after 30 included',
+            custom: 'Contractual'
+          },
+          {
+            name: 'Smart Exhibitor NFC Card',
+            tooltip: 'Digital card capability included. Physical NFC cards and tabletop stands available separately.',
+            pro: 'Supported / Hardware available separately',
+            business: 'Supported / Hardware available separately',
+            custom: 'Custom Program'
+          },
+          {
+            name: 'Persistent Product QR Codes',
+            tooltip: 'Permanent product-level QR destinations that remain active post-show.',
+            pro: 'Included',
+            business: 'Included',
+            custom: 'Included'
+          }
+        ]
+      },
+      {
+        category: 'Buyer Engagement & RFQ Tools',
+        features: [
+          {
+            name: 'Wholesale Inquiry & RFQ Engine',
+            tooltip: 'Direct buyer quote submission with product, booth, event, and timestamp binding.',
+            pro: 'Included',
+            business: 'Advanced',
+            custom: 'Custom Workflow'
+          },
+          {
+            name: 'Sample Request Intake',
+            tooltip: 'Allow verified wholesale buyers to order trade evaluation product samples.',
+            pro: 'Basic',
+            business: 'Included',
+            custom: 'Custom Workflow'
+          },
+          {
+            name: 'Consultation & Meeting Booking',
+            tooltip: 'Integrated appointment scheduling pipeline for sales rep discussions.',
+            pro: 'Included',
+            business: 'Included',
+            custom: 'Custom Integration'
+          },
+          {
+            name: 'Lead Capture & CRM Management',
+            tooltip: 'Real-time capture and contact validation of inbound trade show buyers.',
+            pro: 'Included',
+            business: 'Advanced',
+            custom: 'Custom'
+          },
+          {
+            name: 'Lead / CRM Data Export',
+            tooltip: 'Export buyer leads, RFQs, and interaction histories in CSV/Excel or via webhook.',
+            pro: 'Basic Export',
+            business: 'Advanced Export',
+            custom: 'Custom Integration'
+          }
+        ]
+      },
+      {
+        category: 'Analytics, Telemetry & Intelligence',
+        features: [
+          {
+            name: 'Buyer Engagement Analytics',
+            tooltip: 'Real-time tracking of booth visits, product views, pinpoint clicks, and QR activity.',
+            pro: 'Basic Analytics',
+            business: 'Advanced Telemetry',
+            custom: 'Custom / Enterprise'
+          },
+          {
+            name: 'Post-Show Intelligence Report',
+            tooltip: 'Comprehensive executive debrief covering visitor traffic, top products, RFQs, and buyer interest trends.',
+            pro: '—',
+            business: 'Included',
+            custom: 'Custom Executive Report'
+          }
+        ]
+      },
+      {
+        category: 'AI Virtual Experience Modules',
+        features: [
+          {
+            name: 'AI Virtual Fitting Room',
+            tooltip: 'Interactive AI garment visualization and digital apparel collection try-on.',
+            pro: '—',
+            business: 'Consultation / Eligible',
+            custom: 'Custom Integration'
+          },
+          {
+            name: 'AI Virtual Makeup Artist',
+            tooltip: 'High-definition digital cosmetic shades, lip color testing, and clinical skincare display.',
+            pro: '—',
+            business: 'Consultation / Eligible',
+            custom: 'Custom Integration'
+          },
+          {
+            name: 'Virtual Eyewear Try-On',
+            tooltip: 'Spatial face geometry and optical frame fitting for luxury eyewear brands.',
+            pro: '—',
+            business: 'Coming Soon',
+            custom: 'Custom Integration'
+          },
+          {
+            name: 'Virtual Furniture Placement',
+            tooltip: 'True-scale spatial dimension placement and room staging for designer furniture manufacturers.',
+            pro: '—',
+            business: 'Coming Soon',
+            custom: 'Custom Integration'
+          }
+        ]
+      },
+      {
+        category: 'Production, Team & Enterprise Integration',
+        features: [
+          {
+            name: 'Sales Representatives / Team Seats',
+            tooltip: 'Multiple sales representative profiles and team workspace collaboration.',
+            pro: 'Single Account',
+            business: 'Multiple Reps',
+            custom: 'Custom Teams'
+          },
+          {
+            name: 'Managed White-Glove Production',
+            tooltip: 'Assistance with photo intake, asset preparation, catalog setup, pinpoint QA, and publishing.',
+            pro: 'Standard Support',
+            business: 'Included within scope',
+            custom: 'Dedicated Lead'
+          },
+          {
+            name: 'Production Queue Priority',
+            tooltip: 'Accelerated production pipeline processing for upcoming trade show deadlines.',
+            pro: 'Standard',
+            business: 'Priority Production',
+            custom: 'Dedicated SLA'
+          },
+          {
+            name: 'White-Label & Custom Branding',
+            tooltip: 'Custom customer domain, custom brand styling, and removal of platform marks.',
+            pro: '³DNa Standard',
+            business: 'Enhanced Brand',
+            custom: 'White-Label Available'
+          },
+          {
+            name: 'Contractual SLA & Support',
+            tooltip: 'Guaranteed response time and dedicated account management under enterprise contract.',
+            pro: 'Standard Support',
+            business: 'Priority Support',
+            custom: 'Contractual SLA'
+          }
+        ]
+      }
+    ];
+  }
+
+  getPlanLimits(plan = 'pro') {
+    const p = (plan || 'pro').toLowerCase();
     const config = this.getPlanConfig();
-    return config[p] || config.free;
+    return config[p] || config.pro;
   }
 
   getPublicPlanConfig() {
     const config = this.getPlanConfig();
     const flags = this.getFeatureFlags();
-    const safe = {};
-    for (const key of Object.keys(config)) {
-      const p = config[key];
-      safe[key] = {
-        plan: p.plan,
-        name: p.name,
-        monthlyPriceUsd: p.monthlyPriceUsd,
-        currency: p.currency,
-        billingInterval: p.billingInterval,
-        maxProducts: p.maxProducts,
-        maxHotspots: p.maxHotspots,
-        maxPhotos: p.maxPhotos,
-        precision3D: p.precision3D,
-        reconstructionCredits: p.reconstructionCredits,
-        customBranding: p.customBranding,
-        analyticsExport: p.analyticsExport,
-        liveConsultations: p.liveConsultations,
-        dedicatedSupport: p.dedicatedSupport,
-        description: p.description
-      };
-    }
+    const modules = this.getVirtualExperienceModules();
+    const matrix = this.getComparisonMatrix();
     return {
       businessIdentity: this.getBusinessIdentity(),
-      plans: safe,
-      pricingVersion: 'pilot-2026.1',
+      publicPlanCount: 3,
+      planFree: false,
+      plans: {
+        pro: config.pro,
+        business: config.business,
+        custom: config.custom
+      },
+      pro: config.pro,
+      business: config.business,
+      custom: config.custom,
+      virtualExperienceModules: modules,
+      comparisonMatrix: matrix,
+      pricingVersion: '2026.1-commercial',
       pricingStatus: flags.pricingStatus || 'approved_for_pilot',
       stripeMode: process.env.STRIPE_SECRET_KEY && process.env.STRIPE_MODE === 'live' ? 'live' : 'test',
       billingKillSwitch: Boolean(flags.billingKillSwitch),
@@ -5163,6 +5587,84 @@ class JSONDatabase {
   }
 
 
+
+  createProject(userId, data = {}) {
+    return this.mutate((db) => {
+      db.productionProjects = db.productionProjects || [];
+      const id = data.id || `proj-test-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+      const p = {
+        id,
+        company: data.title || 'Test Space',
+        email: data.email || `${userId}@test.com`,
+        selectedPlan: data.plan || 'pro',
+        plan: data.plan || 'pro',
+        products: [],
+        status: 'DRAFT',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      db.productionProjects.unshift(p);
+      return p;
+    });
+  }
+
+  getDiyProducts(projectId) {
+    const p = (this.read().productionProjects || []).find(x => x.id === projectId);
+    return p ? (p.products || []) : [];
+  }
+
+  createConsultationRequest(data) {
+    return this.mutate((db) => {
+      db.consultationRequests = db.consultationRequests || [];
+      const service = data.serviceType || 'General Consultation';
+      let prefix = '3DNA-PTN-';
+      if (service.includes('Fitting Room') || service.includes('VFR')) prefix = '3DNA-VFR-';
+      else if (service.includes('Makeup') || service.includes('VMA') || service.includes('Beauty')) prefix = '3DNA-VMA-';
+      else if (service.includes('CUSTOM') || (data.selectedPlan && data.selectedPlan.toUpperCase() === 'CUSTOM')) prefix = '3DNA-CUSTOM-';
+
+      // duplicate suppression (same email + service within 60s)
+      const existing = db.consultationRequests.find(r => 
+        r.email === data.email && 
+        r.serviceType === data.serviceType &&
+        (Date.now() - new Date(r.createdAt).getTime() < 60000)
+      );
+      if (existing) return existing;
+
+      const randomSuffix = Math.floor(100000 + Math.random() * 900000);
+      const consultation = {
+        id: `${prefix}${randomSuffix}`,
+        company: data.company || '',
+        contactName: data.contactName || '',
+        email: data.email || '',
+        serviceType: service,
+        selectedPlan: data.selectedPlan || null,
+        productCount: data.productCount || null,
+        tradeShow: data.tradeShow || null,
+        message: data.message || '',
+        status: 'NEW',
+        createdAt: new Date().toISOString()
+      };
+      db.consultationRequests.unshift(consultation);
+      return consultation;
+    });
+  }
+
+  getConsultationRequests() {
+    return this.read().consultationRequests || [];
+  }
+
+  updateConsultationRequestStatus(id, status, notes = '') {
+    return this.mutate((db) => {
+      db.consultationRequests = db.consultationRequests || [];
+      const req = db.consultationRequests.find(r => r.id === id);
+      if (req) {
+        req.status = status;
+        if (notes) req.adminNotes = notes;
+        req.updatedAt = new Date().toISOString();
+      }
+      return req;
+    });
+  }
 
   getCommercialGovernance() {
     const flags = this.getFeatureFlags();

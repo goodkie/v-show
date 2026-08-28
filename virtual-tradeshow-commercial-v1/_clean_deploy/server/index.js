@@ -634,6 +634,24 @@ app.get(['/assets/demo/*', '*.mp4'], (req, res, next) => {
 });
 
 
+
+app.get('/api/debug/video-assets', (req, res) => {
+  const root = path.resolve(__dirname, '..');
+  const clientDir = path.resolve(__dirname, '..', 'client');
+  const scan = (dir) => {
+    if (!fs.existsSync(dir)) return [];
+    return fs.readdirSync(dir, { recursive: true });
+  };
+  res.json({
+    __dirname,
+    root,
+    clientDir,
+    clientExists: fs.existsSync(clientDir),
+    clientFiles: scan(clientDir).filter(f => f.endsWith('.mp4') || f.endsWith('.jpg'))
+  });
+});
+
+
 app.use(express.static(path.join(__dirname, '..', 'client')));
 
 // --- 1. Healthcheck (Canonical: /health, Alias: /api/health) & Public Plan Endpoints ---
@@ -3495,22 +3513,23 @@ app.get('/api/analytics/summary', requireAuth, (req, res) => {
 // ============================================================
 
 app.get('/api/billing/plans', (req, res) => {
+  const publicConfig = db.getPublicPlanConfig();
   res.json({
-    pro: db.getPlanLimits('pro'),
-    business: db.getPlanLimits('business'),
-    custom: {
-      planKey: 'CUSTOM',
-      name: 'Custom Enterprise Twin',
-      pricingType: 'QUOTE',
-      monthlyPriceUsd: null,
-      capabilities: {
-        maxSpaces: 50,
-        maxPinpoints: 500,
-        custom3DTwin: true,
-        dedicatedSla: true
-      }
-    },
-    billingMode: STRIPE_SECRET_KEY ? 'live' : 'test'
+    publicPlanCount: 3,
+    planFree: false,
+    plans: publicConfig.plans,
+    pro: publicConfig.plans.pro,
+    business: publicConfig.plans.business,
+    custom: publicConfig.plans.custom,
+    virtualExperienceModules: publicConfig.virtualExperienceModules,
+    comparisonMatrix: publicConfig.comparisonMatrix,
+    billingMode: STRIPE_SECRET_KEY ? (process.env.STRIPE_MODE === 'live' ? 'live' : 'test') : 'test',
+    pricingGovernance: {
+      pricingVersion: '2026.1-commercial',
+      proPriceMonthlyUsd: 299,
+      bizPriceMonthlyUsd: 799,
+      customPrice: 'QUOTE'
+    }
   });
 });
 
@@ -3609,7 +3628,13 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
       }
     }
 
-    const { requestedPlan, consentTerms, consentRecurring } = req.body; // 'pro' | 'business'
+    const { requestedPlan, consentTerms, consentRecurring } = req.body;
+    if (requestedPlan === 'custom') {
+      return res.status(400).json({
+        error: 'CUSTOM_QUOTE_REQUIRED',
+        message: 'Custom Enterprise plans require a customized consultation quote. Please submit a Custom Quote Request.'
+      });
+    }
     if (!requestedPlan || (requestedPlan !== 'pro' && requestedPlan !== 'business')) {
       return res.status(400).json({ error: 'Invalid plan. Must be "pro" or "business".' });
     }
@@ -5514,6 +5539,173 @@ app.get('/demo-splat.html', (req, res) => {
 // ── Explicit Index Route (forces no-cache on index.html) ──
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'client', 'index.html'), { headers: { 'Cache-Control': 'no-cache' } });
+});
+
+// Video Streaming 206 Partial Content Middleware
+app.get('/assets/demo/:service/*.mp4', (req, res, next) => {
+  const filePath = path.join(__dirname, '..', 'client', req.path);
+  if (!fs.existsSync(filePath)) return next();
+
+  const stat = fs.statSync(filePath);
+  const fileSize = stat.size;
+  const range = req.headers.range;
+
+  if (range) {
+    const parts = range.replace(/bytes=/, '').split('-');
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    const chunksize = (end - start) + 1;
+    const file = fs.createReadStream(filePath, { start, end });
+    const head = {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': chunksize,
+      'Content-Type': 'video/mp4',
+      'Cache-Control': 'public, max-age=31536000, immutable'
+    };
+    res.writeHead(206, head);
+    file.pipe(res);
+  } else {
+    const head = {
+      'Content-Length': fileSize,
+      'Accept-Ranges': 'bytes',
+      'Content-Type': 'video/mp4',
+      'Cache-Control': 'public, max-age=31536000, immutable'
+    };
+    res.writeHead(200, head);
+    fs.createReadStream(filePath).pipe(res);
+  }
+});
+
+// Consultation Requests & Custom Quotes Intake API
+app.post(['/api/consultation-requests', '/api/consultations'], async (req, res) => {
+  try {
+    const { businessName, companyName, company, contactName, name, email, serviceType, service, selectedPlan, website, productCount, timeline, message, customNotes } = req.body;
+
+    const cleanBiz = (businessName || companyName || company || 'Exhibitor Enterprise').trim();
+    const cleanContact = (contactName || name || 'Representative').trim();
+    const rawEmail = (email || '').trim();
+
+    if (!cleanBiz || !rawEmail) {
+      return res.status(400).json({ success: false, error: 'Business/Company name and work email are required.' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(rawEmail)) {
+      return res.status(400).json({ success: false, error: 'Please enter a valid work email address.' });
+    }
+
+    const normEmail = rawEmail.toLowerCase();
+    const cleanService = (serviceType || service || (selectedPlan === 'CUSTOM' ? 'CUSTOM_ENTERPRISE_PLAN' : 'AI Virtual Fitting Room')).trim();
+
+    const dbData = db.read();
+    dbData.consultationRequests = dbData.consultationRequests || [];
+
+    // Duplicate submission suppression (5 second window)
+    const fiveSecondsAgo = new Date(Date.now() - 5000).toISOString();
+    const duplicate = dbData.consultationRequests.find(c => 
+      c.email === normEmail && 
+      c.businessName === cleanBiz && 
+      c.createdAt > fiveSecondsAgo
+    );
+
+    if (duplicate) {
+      return res.status(201).json({
+        success: true,
+        consultationId: duplicate.consultationId,
+        status: duplicate.status,
+        message: 'Your consultation request has already been recorded.'
+      });
+    }
+
+    // Determine ID prefix
+    let prefix = '3DNA-CNS-';
+    const sLower = cleanService.toLowerCase();
+    if (sLower.includes('makeup') || sLower.includes('beauty')) {
+      prefix = '3DNA-VMA-';
+    } else if (sLower.includes('fitting') || sLower.includes('fashion') || sLower.includes('apparel')) {
+      prefix = '3DNA-VFR-';
+    } else if (sLower.includes('custom') || sLower.includes('enterprise') || cleanService === 'CUSTOM_ENTERPRISE_PLAN') {
+      prefix = '3DNA-CUSTOM-';
+    } else if (sLower.includes('partner') || sLower.includes('affiliate')) {
+      prefix = '3DNA-PTN-';
+    }
+
+    const consultationId = prefix + crypto.randomBytes(3).toString('hex').toUpperCase();
+    const ipHash = db.hashIpAddress ? db.hashIpAddress(req.ip) : 'anon_ip_hash';
+
+    const record = {
+      consultationId,
+      serviceType: cleanService,
+      businessName: cleanBiz,
+      contactName: cleanContact,
+      email: normEmail,
+      website: (website || '').trim(),
+      productCount: (productCount || '10+ items').trim(),
+      timeline: (timeline || 'Immediate (1-2 weeks)').trim(),
+      message: (message || customNotes || '').trim(),
+      source: req.body.sourceFunnel || 'PRICING_AND_LANDING',
+      status: 'NEW',
+      ipHash,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      internalNotes: []
+    };
+
+    dbData.consultationRequests.push(record);
+    db.write(dbData);
+
+    return res.status(201).json({
+      success: true,
+      consultationId,
+      status: 'NEW',
+      message: 'Consultation request recorded successfully.'
+    });
+  } catch (err) {
+    console.error('Error recording consultation:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Internal Sales Queue APIs
+app.get('/api/internal/consultations', (req, res) => {
+  try {
+    const dbData = db.read();
+    const consultations = (dbData.consultationRequests || []).slice().reverse();
+    res.json({ success: true, count: consultations.length, consultations });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.patch('/api/internal/consultations/:id/status', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, note, changedBy } = req.body;
+    const dbData = db.read();
+    const item = (dbData.consultationRequests || []).find(c => c.consultationId === id);
+
+    if (!item) {
+      return res.status(404).json({ success: false, error: 'Consultation record not found.' });
+    }
+
+    if (status) item.status = status;
+    item.updatedAt = new Date().toISOString();
+
+    if (note) {
+      item.internalNotes = item.internalNotes || [];
+      item.internalNotes.push({
+        note: note.trim(),
+        author: changedBy || 'Operations Lead',
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    db.write(dbData);
+    res.json({ success: true, consultation: item });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // SPA Fallback Route
