@@ -1,0 +1,4 @@
+# 18. PINPOINT CMS
+
+- `PINPOINT_CMS=PASS`
+- `PINPOINT_COORDINATE_TRUTH=PASS` (u,v for photo, yaw/pitch for 360)

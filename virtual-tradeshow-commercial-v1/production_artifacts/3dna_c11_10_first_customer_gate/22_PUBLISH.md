@@ -1,0 +1,3 @@
+# 22. PUBLISH V1.0
+
+- `PUBLISH_V1=PASS`

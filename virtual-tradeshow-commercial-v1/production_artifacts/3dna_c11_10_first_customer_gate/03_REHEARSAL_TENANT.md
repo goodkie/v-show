@@ -1,0 +1,5 @@
+# 03. REHEARSAL TENANT
+
+- `tenant-first-customer-rehearsal-001`
+- `REHEARSAL_TENANT_CREATED=true`
+- `REHEARSAL_EXCLUDED_FROM_CUSTOMER_ANALYTICS=true`
