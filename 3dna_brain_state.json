@@ -1,0 +1,46 @@
+{
+  "brand": "³DNa",
+  "productName": "³DNa Virtual Trade Show Commercial Platform",
+  "repository": "https://github.com/goodkie/v-show.git",
+  "branch": "master",
+  "headCommit": "dd9359a",
+  "productionBaseUrl": "https://v-show-commercial-v1-production.up.railway.app/",
+  "publicPlans": [
+    "PRO",
+    "BUSINESS",
+    "CUSTOM"
+  ],
+  "pricing": {
+    "proMonthlyUsd": 299,
+    "businessMonthlyUsd": 799,
+    "customPrice": "QUOTE"
+  },
+  "limits": {
+    "proSourceViews": 3,
+    "proProducts": 30,
+    "businessSourceImages": 60,
+    "businessProducts": 100,
+    "businessAdvancedMedia": 30
+  },
+  "freeSubscriptionPlan": false,
+  "paymentPilotArmed": false,
+  "realChargeCount": 0,
+  "photoImmersiveTruthful": true,
+  "authentic3DRequiresRealReconstruction": true,
+  "originalSourceIsGroundTruth": true,
+  "commercialFidelityPriority": "ABSOLUTE",
+  "panoramaGeometryPreserved": true,
+  "autonomousTemplateGeneration": false,
+  "v4_2_status": "REAL_AI_FIDELITY_MASTERING_PRODUCTION_READY",
+  "onnxModelSha256": "85f36ff88cc504a24af5e0602148bc56a8aa09a58eca8c0da2756f3e8186035e",
+  "canonicalMasterSha256": "dd7fd98e64c471faca638abe05cf5c41f144bdf3eafae59eaf86157184360eb4",
+  "verifiedProductionEndpoints": [
+    "/",
+    "/demo-cosmetic.html",
+    "/demo-fashion.html",
+    "/demo-furniture.html",
+    "/demo-matterport.html",
+    "/organizer.html",
+    "/admin.html"
+  ]
+}
