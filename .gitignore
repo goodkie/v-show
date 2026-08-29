@@ -50,3 +50,6 @@ offsite_dr_namespace/
 offsite_dr_restore_isolated_test/
 virtual-tradeshow-commercial-v1/offsite_dr_namespace/
 virtual-tradeshow-commercial-v1/offsite_dr_restore_isolated_test/
+
+offsite_r2_restore_drill_isolated/
+virtual-tradeshow-commercial-v1/offsite_r2_restore_drill_isolated/
