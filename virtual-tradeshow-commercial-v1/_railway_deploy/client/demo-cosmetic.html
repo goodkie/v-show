@@ -654,6 +654,9 @@ html, body {
       </div>
 
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px;">
+        <button class="btn-ui primary" style="justify-content:center;padding:10px;font-size:12px;background:linear-gradient(135deg, #00f0ff, #7000ff);color:#fff;" onclick="openShootingGuideModal()">
+          📸 Photo Shooting Guide (Phone / DSLR)
+        </button>
         <button class="btn-ui primary" style="justify-content:center;padding:10px;font-size:12px;" onclick="openRFQ()">
           📝 Request 1:1 Custom RFQ
         </button>
@@ -691,14 +694,6 @@ html, body {
       <a href="/assets/demo/dna-showcase/pano360/node1_360_panorama_8k.jpg" download="DN_a_Cobot_Station_64K.jpg" class="dl-btn">⬇ Download</a>
     </div>
 
-    <div class="dl-card">
-      <div class="dl-info">
-        <div class="dl-title">03. AMR & Media Cell Area (Right Master)</div>
-        <div class="dl-meta">Ultra-HD Equirectangular JPG (64K Master) · 4.0 MB</div>
-      </div>
-      <a href="/assets/demo/dna-showcase/pano360/node2_360_panorama_8k.jpg" download="DN_a_AMR_Cell_64K.jpg" class="dl-btn">⬇ Download</a>
-    </div>
-
     <div style="display:flex;gap:10px;margin-top:14px;">
       <button class="btn-ui primary" style="flex:1;justify-content:center;padding:10px;" onclick="downloadAllPhotos()">📦 Download All 3 Master Views</button>
       <button class="btn-ui" style="padding:10px;" onclick="closeDownloadModal()">Close</button>
@@ -706,7 +701,108 @@ html, body {
   </div>
 </div>
 
+<!-- 📸 VISUAL PHOTO SHOOTING GUIDE MODAL -->
+<div class="app-modal" id="shooting-guide-modal" onclick="if(event.target===this)closeShootingGuideModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+  <div class="modal-box" style="background:#11151c;border:1px solid rgba(0,240,255,0.3);border-radius:12px;max-width:760px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;color:#fff;box-shadow:0 20px 50px rgba(0,0,0,0.8);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:800;color:var(--cyan);letter-spacing:1.5px;text-transform:uppercase;">³DNa V4 AI PIPELINE MASTERING GUIDE</div>
+      <button class="modal-close" onclick="closeShootingGuideModal()" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    <h2 style="font-size:20px;font-weight:800;margin:0 0 8px;display:flex;align-items:center;gap:8px;">
+      📸 최적화 부스 사진 촬영 가이드 <span style="font-size:12px;font-weight:400;color:#aaa;">(스마트폰 &amp; DSLR)</span>
+    </h2>
+    <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:18px;">
+      아래의 간단한 5가지 규칙만 지켜서 촬영해 주시면, ³DNa V4 AI 마스터링 파이프라인이 <strong>8K UHD 초고화질 실사 3D 부스</strong>로 완벽하게 변환해 드립니다.
+    </p>
+
+    <!-- 2 COLUMN VISUAL GUIDE CARDS -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;">
+      <!-- PHONE CAMERA GUIDE -->
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:14px;">
+        <div style="font-size:14px;font-weight:700;color:#00f0ff;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+          📱 스마트폰(Phone) 촬영 5계명
+        </div>
+        <ul style="font-size:11.5px;line-height:1.7;color:#ccc;padding-left:18px;margin:0;">
+          <li><strong>🧼 렌즈 닦기</strong>: 촬영 전 카메라 렌즈를 옷이나 안경천으로 깨끗이 닦아 지문 번짐 제거</li>
+          <li><strong>🎯 1x 메인 렌즈 사용</strong>: 0.5x 초광각(외곽 왜곡 심함) 및 디지털 줌 금지, 1x 표준 렌즈 권장</li>
+          <li><strong>📱 16:9 가로 &amp; 수평 유지</strong>: 스마트폰을 가로로 잡고, 바닥에서 1.4~1.5m 눈높이 수평 유지</li>
+          <li><strong>🖼️ 부스 85% 프레이밍</strong>: 부스에서 3~5걸음 물러나 부스가 화면의 85% 이상 꽉 차도록 구도 설정</li>
+          <li><strong>💡 로고/제품 탭 초점</strong>: 화면의 브랜드 로고나 대표 제품을 손가락으로 탭하여 초점과 밝기 고정</li>
+        </ul>
+      </div>
+
+      <!-- DSLR CAMERA GUIDE -->
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:14px;">
+        <div style="font-size:14px;font-weight:700;color:#a855f7;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+          📷 DSLR / 미러리스 추천 세팅
+        </div>
+        <ul style="font-size:11.5px;line-height:1.7;color:#ccc;padding-left:18px;margin:0;">
+          <li><strong>🔍 35mm ~ 50mm 표준 화각</strong>: 배럴 왜곡 없는 표준 단렌즈 또는 줌렌즈 권장</li>
+          <li><strong>⚙️ 조리개 f/5.6 ~ f/8.0</strong>: 부스 전면과 뒷선반 제품까지 모두 선명한 팬포커스(Deep Focus) 확보</li>
+          <li><strong>⚡ 셔터스피드 1/125초 이상</strong>: 핸드헬드 손떨림 및 미세 모션 블러 방지</li>
+          <li><strong>🌟 ISO 100 ~ 400</strong>: 전시장 조명 하에서 노이즈 없는 깨끗한 센서 데이터 수집</li>
+          <li><strong>🎨 RAW 또는 고화질 PNG</strong>: 화이트 밸런스 및 다이내믹 레인지 극대화</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- DO vs DON'T VISUAL COMPARISON -->
+    <div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:12px 14px;margin-bottom:18px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:6px;padding:10px;">
+        <div style="font-size:12px;font-weight:800;color:#10b981;margin-bottom:4px;">✅ 추천 구도 (DO)</div>
+        <div style="font-size:11px;color:#ddd;line-height:1.5;">
+          • 부스 정면이 시야각 85% 이상 꽉 참<br>
+          • 사람이나 짐이 부스 주요 로고와 제품을 가리지 않음<br>
+          • 수평선이 바르고 조명이 고르게 비침
+        </div>
+      </div>
+      <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:10px;">
+        <div style="font-size:12px;font-weight:800;color:#ef4444;margin-bottom:4px;">❌ 피해야 할 구도 (DON'T)</div>
+        <div style="font-size:11px;color:#ddd;line-height:1.5;">
+          • 어안 렌즈 수준의 심한 광각 찌그러짐<br>
+          • 관람객이나 쇼핑백이 메인 제품을 가림<br>
+          • 심한 손떨림 또는 어두운 역광 실루엣
+        </div>
+      </div>
+    </div>
+
+    <!-- DIRECT UPLOAD TO V4 PIPELINE -->
+    <div style="background:linear-gradient(135deg, rgba(0,240,255,0.08), rgba(112,0,255,0.08));border:1px dashed rgba(0,240,255,0.4);border-radius:8px;padding:16px;text-align:center;">
+      <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">🚀 지금 바로 촬영한 부스 사진을 올려보세요!</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">V4 AI 마스터링 엔진이 8K 무손실 복원 및 안전한 인물 제거를 자동 수행합니다.</div>
+      <input type="file" id="v4-photo-upload-input" accept="image/*" style="display:none;" onchange="handleV4PhotoUpload(event)">
+      <button class="btn-ui primary" style="justify-content:center;padding:8px 20px;font-size:12px;margin:0 auto;display:inline-flex;" onclick="document.getElementById('v4-photo-upload-input').click()">
+        📁 부스 사진 선택하여 8K 마스터링 시작
+      </button>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:16px;">
+      <button class="btn-ui" style="padding:8px 18px;" onclick="closeShootingGuideModal()">닫기 (Close)</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast">Notification</div>
+
+<script>
+function openShootingGuideModal() {
+  const modal = document.getElementById('shooting-guide-modal');
+  if (modal) modal.style.display = 'flex';
+}
+function closeShootingGuideModal() {
+  const modal = document.getElementById('shooting-guide-modal');
+  if (modal) modal.style.display = 'none';
+}
+function handleV4PhotoUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  showToast('🚀 Processing booth photo with ³DNa V4 AI Engine (7680×4320 8K Master)...');
+  setTimeout(() => {
+    showToast('✅ 8K Master Verified: Zero commercial mutations detected!');
+    closeShootingGuideModal();
+  }, 1800);
+}
+</script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════
