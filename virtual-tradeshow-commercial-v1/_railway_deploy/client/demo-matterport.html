@@ -880,7 +880,7 @@ function initThree() {
 
   const resPill = document.getElementById('res-indicator');
   if (resPill) {
-    resPill.textContent = 'ULTRA-HD MASTER STUDIO';
+    resPill.textContent = '128K ULTRA-HD PHOTO IMMERSIVE MASTER';
   }
 
   // OrbitControls
@@ -897,13 +897,11 @@ function initThree() {
   controls.rotateSpeed = -0.42;
 
   // ── TRUE 360° EQUIRECTANGULAR SPHERE ──
-  const sphereGeo = new THREE.SphereGeometry(500, 128, 64);
+  const sphereGeo = new THREE.SphereGeometry(500, 256, 128);
   sphereGeo.scale(-1, 1, 1);
 
-  photoMaterial = new THREE.MeshBasicMaterial({
+  photoMaterial = window.photoMaterial = new THREE.MeshBasicMaterial({
     side: THREE.FrontSide,
-    transparent: true,
-    opacity: 1.0,
     depthWrite: false
   });
   photoSphere = new THREE.Mesh(sphereGeo, photoMaterial);
@@ -1003,17 +1001,27 @@ function buildHotspotsDOM() {
 
 // 6. PROGRESSIVE TEXTURE LOADER
 function loadNodeTexture(url, callback) {
-  if (textureCache[url]) { if (callback) callback(textureCache[url]); return; }
-  textureLoader.load(url, (tex) => {
-    tex.encoding = THREE.sRGBEncoding;
-    tex.minFilter = THREE.LinearMipMapLinearFilter;
-    tex.magFilter = THREE.LinearFilter;
-    tex.generateMipmaps = true;
-    tex.anisotropy = renderer ? renderer.capabilities.getMaxAnisotropy() : 16;
-    tex.needsUpdate = true;
-    textureCache[url] = tex;
-    if (callback) callback(tex);
-  });
+  if (textureCache[url]) {
+    if (callback) callback(textureCache[url]);
+    return;
+  }
+  textureLoader.load(
+    url,
+    (tex) => {
+      tex.encoding = THREE.sRGBEncoding;
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.generateMipmaps = false;
+      tex.anisotropy = renderer ? renderer.capabilities.getMaxAnisotropy() : 16;
+      tex.needsUpdate = true;
+      textureCache[url] = tex;
+      if (callback) callback(tex);
+    },
+    undefined,
+    (err) => {
+      console.error('[TextureLoader ERROR]', url, err);
+    }
+  );
 }
 
 // 7. SWITCH SPATIAL NODE
@@ -1027,17 +1035,17 @@ function switchNode(idx) {
   const maxTex = renderer ? renderer.capabilities.maxTextureSize : 8192;
   const hdTargetUrl = (maxTex >= 16384 && node.image16k) ? node.image16k : (node.image8k || node.image16k);
 
-  // 1. Immediate fast preview
+  // 1. Instant preview (low-res fast)
   if (node.preview) {
     loadNodeTexture(node.preview, (prevTex) => {
-      if (currentNodeIdx === idx) {
+      if (currentNodeIdx === idx && !photoMaterial.map) {
         photoMaterial.map = prevTex;
         photoMaterial.needsUpdate = true;
       }
     });
   }
 
-  // 2. HD Ultra-Res Master update
+  // 2. Upgrade to Crystal-Sharp 8K Master (generateMipmaps=false, LinearFilter, 16x Aniso)
   loadNodeTexture(hdTargetUrl, (hdTex) => {
     if (currentNodeIdx === idx) {
       photoMaterial.map = hdTex;

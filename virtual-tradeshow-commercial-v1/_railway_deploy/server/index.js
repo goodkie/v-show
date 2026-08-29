@@ -587,18 +587,105 @@ app.get(['/dev-lab', '/dev-lab.html'], (req, res) => {
 
 
 // =====================================================================
-// ³DNa High-Performance Robust Video Streaming Middleware
+// ³DNa In-Memory + Filesystem Universal Bulletproof Asset Streaming
+// =====================================================================
+let inMemoryDemoBundle = {};
+try {
+  inMemoryDemoBundle = require('./demo_asset_bundle');
+  console.log(`[ASSET BUNDLE] Loaded ${Object.keys(inMemoryDemoBundle).length} bundled demo assets in memory.`);
+} catch (e) {
+  console.warn('[ASSET BUNDLE] In-memory bundle not loaded:', e.message);
+}
+
+// Explicit direct routes for showcase HTML demos
+['demo-fashion.html', 'demo-cosmetic.html', 'demo-furniture.html', 'demo-matterport.html', 'demo.html', 'demo-splat.html'].forEach(page => {
+  app.get(`/${page}`, (req, res) => {
+    const file = path.join(__dirname, '..', 'client', page);
+    if (fs.existsSync(file)) return res.sendFile(file);
+    res.status(404).send(`${page} not found`);
+  });
+});
+
+app.use('/assets', (req, res, next) => {
+  const rel = req.path.replace(/^[/\\]+/, '').replace(/\\/g, '/');
+
+  // 1. Check in-memory bundle first for ultra-fast 100% reliable streaming
+  if (inMemoryDemoBundle[rel]) {
+    const item = inMemoryDemoBundle[rel];
+    const buf = Buffer.from(item.base64, 'base64');
+    const fileSize = buf.length;
+    const range = req.headers.range;
+
+    if (item.contentType.startsWith('video/') && range) {
+      const parts = range.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      const chunksize = (end - start) + 1;
+      const chunk = buf.slice(start, end + 1);
+
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': chunksize,
+        'Content-Type': item.contentType,
+        'Cache-Control': 'public, max-age=31536000, immutable'
+      });
+      return res.end(chunk);
+    }
+
+    res.writeHead(200, {
+      'Content-Type': item.contentType,
+      'Content-Length': fileSize,
+      'Accept-Ranges': 'bytes',
+      'Cache-Control': 'public, max-age=31536000, immutable'
+    });
+    return res.end(buf);
+  }
+
+  // 2. Fallback to filesystem lookup
+  const searchDirs = [
+    path.join(__dirname, '..', 'client', 'assets'),
+    path.join(__dirname, '..', 'assets'),
+    path.join(process.cwd(), 'client', 'assets'),
+    path.join(process.cwd(), 'assets'),
+    path.join(process.cwd(), 'app_build', 'client', 'assets')
+  ];
+
+  for (const dir of searchDirs) {
+    const full = path.join(dir, rel);
+    if (fs.existsSync(full) && fs.statSync(full).isFile()) {
+      return res.sendFile(full);
+    }
+  }
+  next();
+});
+
+// =====================================================================
+// ³DNa High-Performance Robust Video Streaming Middleware (Filesystem Fallback)
 // =====================================================================
 app.get(['/assets/demo/*', '*.mp4'], (req, res, next) => {
   if (!req.path.endsWith('.mp4')) return next();
 
-  // OS 독립적 경로 계산: 앞의 슬래시를 제거하여 client 디렉토리 하위로 정확히 매핑
-  const relativePath = req.path.replace(/^[/\\]+/, '');
-  const clientDir = path.resolve(__dirname, '..', 'client');
-  const filePath = path.join(clientDir, relativePath);
+  const rel = req.path.replace(/^[/\\]+/, '').replace(/^assets[/\\]+/, '').replace(/\\/g, '/');
+  const searchDirs = [
+    path.join(__dirname, '..', 'client', 'assets'),
+    path.join(__dirname, '..', 'assets'),
+    path.join(process.cwd(), 'client', 'assets'),
+    path.join(process.cwd(), 'assets'),
+    path.join(process.cwd(), 'app_build', 'client', 'assets')
+  ];
 
-  if (!fs.existsSync(filePath)) {
-    console.error('[VIDEO 404] File not found at resolved path:', filePath);
+  let filePath = null;
+  for (const dir of searchDirs) {
+    const full = path.join(dir, rel);
+    if (fs.existsSync(full) && fs.statSync(full).isFile()) {
+      filePath = full;
+      break;
+    }
+  }
+
+  if (!filePath) {
+    console.error('[VIDEO 404] File not found for rel:', rel);
     return res.status(404).send('Video file not found');
   }
 
@@ -635,6 +722,44 @@ app.get(['/assets/demo/*', '*.mp4'], (req, res, next) => {
 
 
 
+app.get('/api/debug/test-asset', (req, res) => {
+  const rel = (req.query.path || '').replace(/^[/\\]+/, '');
+  const searchDirs = [
+    path.join(__dirname, '..', 'client', 'assets'),
+    path.join(__dirname, '..', 'assets'),
+    path.join(process.cwd(), 'client', 'assets'),
+    path.join(process.cwd(), 'assets'),
+    path.join(process.cwd(), 'app_build', 'client', 'assets')
+  ];
+  const checks = searchDirs.map(d => {
+    const full = path.join(d, rel);
+    return {
+      dir: d,
+      fullPath: full,
+      exists: fs.existsSync(full),
+      isFile: fs.existsSync(full) ? fs.statSync(full).isFile() : false
+    };
+  });
+  res.json({ rel, checks });
+});
+
+app.get('/api/debug/assets-scan', (req, res) => {
+  const scan = (d) => {
+    if (!fs.existsSync(d)) return ['NOT_EXISTS: ' + d];
+    try {
+      return fs.readdirSync(d, { recursive: true });
+    } catch(e) {
+      return ['ERROR: ' + e.message];
+    }
+  };
+  res.json({
+    cwd: process.cwd(),
+    dirname: __dirname,
+    clientAssets: scan(path.join(__dirname, '..', 'client', 'assets')),
+    rootAssets: scan(path.join(__dirname, '..', 'assets'))
+  });
+});
+
 app.get('/api/debug/video-assets', (req, res) => {
   const root = path.resolve(__dirname, '..');
   const clientDir = path.resolve(__dirname, '..', 'client');
@@ -652,7 +777,10 @@ app.get('/api/debug/video-assets', (req, res) => {
 });
 
 
+app.use('/assets', express.static(path.join(__dirname, '..', 'client', 'assets')));
+app.use('/assets', express.static(path.join(__dirname, '..', 'assets')));
 app.use(express.static(path.join(__dirname, '..', 'client')));
+app.use(express.static(path.join(__dirname, '..')));
 
 // --- 1. Healthcheck (Canonical: /health, Alias: /api/health) & Public Plan Endpoints ---
 const healthHandler = (req, res) => {
@@ -1109,6 +1237,65 @@ app.post('/api/booths', requireAuth, async (req, res) => {
     db.logAudit(req.user.userId, targetOrgId, 'booth.create', 'booth', booth.id);
     res.status(201).json(booth);
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Direct Guest Payment Pipeline Endpoint (No prior login required)
+app.post('/api/billing/guest-checkout', async (req, res) => {
+  try {
+    const { requestedPlan, projectId, email, businessName } = req.body;
+    const targetPlan = requestedPlan === 'business' ? 'business' : 'pro';
+
+    if (projectId) {
+      await db.convertFreePreviewToPlan(projectId, targetPlan);
+    }
+
+    if (stripe) {
+      const priceId = targetPlan === 'pro'
+        ? (process.env.STRIPE_PRICE_PRO_MONTHLY || 'price_test_pro_monthly')
+        : (process.env.STRIPE_PRICE_BUSINESS_MONTHLY || 'price_test_biz_monthly');
+
+      const protocol = req.headers['x-forwarded-proto'] || 'http';
+      const host = req.headers.host || 'localhost:3000';
+      const origin = `${protocol}://${host}`;
+
+      const session = await stripe.checkout.sessions.create({
+        customer_email: email || undefined,
+        payment_method_types: ['card'],
+        line_items: [{ price: priceId, quantity: 1 }],
+        mode: 'subscription',
+        success_url: `${origin}/builder.html?projectId=${projectId || ''}&billing_status=success&plan=${targetPlan}`,
+        cancel_url: `${origin}/index.html?billing_status=cancelled&projectId=${projectId || ''}`,
+        metadata: {
+          projectId: projectId || null,
+          requestedPlan: targetPlan,
+          businessName: businessName || null
+        }
+      });
+
+      return res.json({
+        success: true,
+        checkoutUrl: session.url,
+        mode: 'stripe_hosted'
+      });
+    }
+
+    // Direct Instant Pipeline Activation (Embedded / Simulated Gateway)
+    if (projectId) {
+      const newState = targetPlan === 'business' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
+      await db.updateProjectCommercialState(projectId, newState, targetPlan);
+    }
+
+    return res.json({
+      success: true,
+      mode: 'direct_pipeline',
+      plan: targetPlan,
+      amountUsd: targetPlan === 'pro' ? 299 : 799,
+      redirectUrl: `/builder.html?projectId=${projectId || ''}&billing_status=success&plan=${targetPlan}`
+    });
+  } catch (err) {
+    console.error('Guest checkout error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -5710,7 +5897,7 @@ app.patch('/api/internal/consultations/:id/status', (req, res) => {
 
 // SPA Fallback Route
 app.get('*', (req, res) => {
-  if (req.path.startsWith('/uploads/') || req.path.startsWith('/api/')) {
+  if (req.path.startsWith('/uploads/') || req.path.startsWith('/api/') || req.path.startsWith('/assets/')) {
     return res.status(404).json({ error: 'Not Found' });
   }
   if (req.path.startsWith('/organizer')) {

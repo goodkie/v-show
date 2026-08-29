@@ -1594,7 +1594,7 @@
             <li>✓ Wholesale Info &amp; RFQ Engine</li>
             <li>✓ Basic Analytics &amp; Standard Support</li>
           </ul>
-          <button class="btn-create-free" onclick="handlePlanSelection('pro')" style="padding: 10px; font-size: 13px;">
+          <button class="btn-create-free" onclick="handlePlanSelection('pro', this)" style="padding: 10px; font-size: 13px;">
             ACTIVATE PRO →
           </button>
         </div>
@@ -1614,7 +1614,7 @@
             <li>✓ Virtual Experience Modules (Eligible)</li>
             <li>✓ Post-Show Intelligence Report &amp; Priority Queue</li>
           </ul>
-          <button class="btn-create-free" onclick="handlePlanSelection('business')" style="padding: 10px; font-size: 13px; background: linear-gradient(135deg, #0284c7, #2563eb);">
+          <button class="btn-create-free" onclick="handlePlanSelection('business', this)" style="padding: 10px; font-size: 13px; background: linear-gradient(135deg, #0284c7, #2563eb);">
             UPGRADE TO BUSINESS →
           </button>
         </div>
@@ -1633,7 +1633,7 @@
             <li>✓ Dedicated Production Lead &amp; Contract SLA</li>
             <li>✓ Custom CRM / API Integration &amp; White-Label</li>
           </ul>
-          <button class="btn-hero btn-hero-secondary" onclick="handlePlanSelection('custom')" style="width: 100%; padding: 10px; font-size: 13px; justify-content: center; border-color: #fbbf24; color: #fbbf24;">
+          <button class="btn-hero btn-hero-secondary" onclick="handlePlanSelection('custom', this)" style="width: 100%; padding: 10px; font-size: 13px; justify-content: center; border-color: #fbbf24; color: #fbbf24;">
             REQUEST CUSTOM QUOTE →
           </button>
         </div>
@@ -1701,7 +1701,7 @@
     </div>
     <div class="demo-grid">
       <div class="demo-card">
-        <iframe class="demo-frame" scrolling="no" src="/demo-matterport.html" title="Photo Immersive Booth Demo" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-top-navigation-by-user-activation" loading="lazy"></iframe></iframe>
+        <iframe class="demo-frame" scrolling="no" src="/demo-matterport.html" title="Photo Immersive Booth Demo" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-top-navigation-by-user-activation" loading="eager"></iframe>
         <div class="demo-info">
           <div class="section-tag" style="font-size: 10px; color: #38bdf8;">INDUSTRIAL TECH</div>
           <div class="demo-title">³DNa ROBOTIC — SMART BOOTH</div>
@@ -1709,7 +1709,7 @@
         </div>
       </div>
       <div class="demo-card">
-        <iframe class="demo-frame" scrolling="no" src="/demo-fashion.html" title="Vantelle Paris Luxury Fashion Showroom Demo" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-top-navigation-by-user-activation" loading="lazy"></iframe></iframe>
+        <iframe class="demo-frame" scrolling="no" src="/demo-fashion.html" title="Vantelle Paris Luxury Fashion Showroom Demo" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-top-navigation-by-user-activation" loading="eager"></iframe>
         <div class="demo-info">
           <div class="section-tag" style="font-size: 10px; color: #fb7185;">LUXURY FASHION</div>
           <div class="demo-title">VANTÉLLE PARIS — RUNWAY BOOTH</div>
@@ -1717,7 +1717,7 @@
         </div>
       </div>
       <div class="demo-card">
-        <iframe class="demo-frame" scrolling="no" src="/demo-cosmetic.html" title="Lumiere Skincare Botanical Bio-Cellular Pavilion Demo" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-top-navigation-by-user-activation" loading="lazy"></iframe></iframe>
+        <iframe class="demo-frame" scrolling="no" src="/demo-cosmetic.html" title="Lumiere Skincare Botanical Bio-Cellular Pavilion Demo" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-top-navigation-by-user-activation" loading="eager"></iframe>
         <div class="demo-info">
           <div class="section-tag" style="font-size: 10px; color: #e2c974;">CLINICAL COSMETICS</div>
           <div class="demo-title">LUMIÈRE — BEAUTY PAVILION</div>
@@ -1725,7 +1725,7 @@
         </div>
       </div>
       <div class="demo-card">
-        <iframe class="demo-frame" scrolling="no" src="/demo-furniture.html" title="Nova Living Scandinavian Designer Furniture Demo" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-top-navigation-by-user-activation" loading="lazy"></iframe></iframe>
+        <iframe class="demo-frame" scrolling="no" src="/demo-furniture.html" title="Nova Living Scandinavian Designer Furniture Demo" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-top-navigation-by-user-activation" loading="eager"></iframe>
         <div class="demo-info">
           <div class="section-tag" style="font-size: 10px; color: #f59e0b;">DESIGNER FURNITURE</div>
           <div class="demo-title">NOVA LIVING — FURNITURE BOOTH</div>
@@ -3244,17 +3244,33 @@
       }
     }
 
-    async function handlePlanSelection(plan) {
+    async function handlePlanSelection(plan, btnEl) {
       logAnalyticsEvent('plan_selected', { plan });
+
       if (plan === 'custom') {
-        alert('Thank you! Our enterprise digital twin & 3D team will contact you with a custom build quote.');
         closePlanModal();
+        if (typeof window.openConsultationModal === 'function') {
+          window.openConsultationModal('Custom Enterprise 3D Solution');
+        } else {
+          window.location.href = '/pricing.html#custom-quote';
+        }
         return;
       }
 
-      // Convert project on backend preserving all data (Zero Data Re-entry)
+      const originalText = btnEl ? btnEl.innerHTML : '';
+      if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.innerHTML = '<i class="fa-solid fa-bolt fa-spin" style="margin-right: 6px;"></i> Entering Payment Pipeline...';
+      }
+
       try {
         const token = localStorage.getItem('token');
+        const emailEl = document.getElementById('email') || document.getElementById('save-email-input') || document.getElementById('verifyTargetEmailTxt');
+        const email = emailEl ? (emailEl.value || emailEl.textContent || '').trim() : '';
+        const bizEl = document.getElementById('businessName');
+        const businessName = bizEl ? bizEl.value.trim() : '';
+
+        // Convert project on backend preserving all data (Zero Data Re-entry)
         if (activeProjectId) {
           await fetch(`/api/free-funnel/projects/${activeProjectId}/convert-plan`, {
             method: 'POST',
@@ -3265,22 +3281,53 @@
 
         logAnalyticsEvent('stripe_checkout_started', { plan, projectId: activeProjectId });
 
+        let checkoutUrl = null;
+
         if (token) {
           const checkRes = await fetch('/api/billing/create-checkout-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ requestedPlan: plan, consentTerms: true, consentRecurring: true })
+            body: JSON.stringify({ requestedPlan: plan, consentTerms: true, consentRecurring: true, projectId: activeProjectId })
           });
           const checkData = await checkRes.json();
           if (checkData.checkoutUrl) {
-            window.location.href = checkData.checkoutUrl;
-            return;
+            checkoutUrl = checkData.checkoutUrl;
+          }
+        } else {
+          // Direct Guest Checkout Session
+          const guestRes = await fetch('/api/billing/guest-checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              requestedPlan: plan,
+              projectId: activeProjectId,
+              email: email,
+              businessName: businessName
+            })
+          });
+          const guestData = await guestRes.json();
+          if (guestData.checkoutUrl) {
+            checkoutUrl = guestData.checkoutUrl;
+          } else if (guestData.redirectUrl) {
+            checkoutUrl = guestData.redirectUrl;
           }
         }
-        alert(`Selected ${plan.toUpperCase()} Plan. All booth photos, 3 product slots, and coordinates are preserved. Redirecting to billing confirmation...`);
-        window.location.href = `/pricing.html?plan=${plan}&projectId=${activeProjectId || ''}`;
+
+        if (checkoutUrl) {
+          window.location.href = checkoutUrl;
+          return;
+        }
+
+        // Direct fallback to pricing payment gateway
+        window.location.href = `/pricing.html?plan=${plan}&projectId=${activeProjectId || ''}&direct_checkout=1`;
       } catch (err) {
-        alert('Upgrade request error: ' + err.message);
+        console.error('Payment pipeline error:', err);
+        window.location.href = `/pricing.html?plan=${plan}&projectId=${activeProjectId || ''}&direct_checkout=1`;
+      } finally {
+        if (btnEl) {
+          btnEl.disabled = false;
+          btnEl.innerHTML = originalText;
+        }
       }
     }
 
