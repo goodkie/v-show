@@ -44,8 +44,8 @@
     "/admin.html"
   ],
   "c11_6_status": "FULL_COMMERCIAL_FLOW_PRODUCTION_READY",
-  "lastVerifiedMilestone": "C11.9.2",
-  "verifiedAt": "2026-08-29T12:38:18.849Z",
+  "lastVerifiedMilestone": "C11.9.3",
+  "verifiedAt": "2026-08-29T12:45:56.857Z",
   "c11_7_status": "OWNER_READY_FOR_CONTROLLED_COMMERCIAL_LAUNCH",
   "livePaymentPreconditions": "READY_FOR_OWNER_CONFIGURATION",
   "backupState": "SNAPSHOT_PERSISTENCE_ACTIVE",
@@ -67,11 +67,14 @@
   "c11_9_1_status": "OWNER_OFFSITE_STORAGE_CONFIGURATION_REQUIRED",
   "offsiteDrArchitectureReady": true,
   "offsiteDrRemoteActivated": true,
-  "firstRealCustomerDataProtectionReady": true,
+  "firstRealCustomerDataProtectionReady": false,
   "ownerConfigurationRequired": true,
   "c11_9_2_status": "REAL_R2_OFFSITE_DR_ACTIVATED_AND_RESTORE_PROVEN",
-  "offsiteBackupReady": true,
+  "offsiteBackupReady": false,
   "offsiteProvider": "Cloudflare R2 (S3-Compatible)",
   "offsiteBucket": "3dna-production-offsite-backup",
-  "threeWayHashVerified": true
+  "threeWayHashVerified": true,
+  "c11_9_3_status": "OWNER_R2_CREDENTIAL_ROTATION_REQUIRED",
+  "previousR2CredentialRotatedDueToDisclosure": true,
+  "newR2CredentialPresent": false
 }

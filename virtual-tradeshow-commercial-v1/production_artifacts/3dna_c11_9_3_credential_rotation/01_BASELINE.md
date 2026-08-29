@@ -1,0 +1,10 @@
+# 01. C11.9.3 ROTATION GATE BASELINE
+
+## 1. Baseline Scope
+- **BASELINE_COMMIT**: `ebcd320`
+- **BASELINE_TAG**: `v11.9.2-r2-dr-proven-pre-customer`
+- **SECURITY_STATUS**: `ROTATION_REQUIRED`
+- **PAYMENT_GATE**:
+  - `PAYMENT_PILOT_ARMED=false`
+  - `REAL_CHARGE_COUNT=0`
+  - `STRIPE_LIVE_MODE_CONFIGURED=false`

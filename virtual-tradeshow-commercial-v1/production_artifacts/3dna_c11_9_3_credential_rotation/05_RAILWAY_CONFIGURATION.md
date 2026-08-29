@@ -1,0 +1,6 @@
+# 05. RAILWAY CONFIGURATION INSTRUCTIONS
+
+## 1. Variables to Update
+In Railway Project Settings -> Variables:
+- `OFFSITE_STORAGE_KEY` = `<NEW_ACCESS_KEY_ID>`
+- `OFFSITE_STORAGE_SECRET` = `<NEW_SECRET_ACCESS_KEY>`
