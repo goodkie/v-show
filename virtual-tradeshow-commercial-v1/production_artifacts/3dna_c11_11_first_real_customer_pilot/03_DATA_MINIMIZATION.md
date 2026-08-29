@@ -1,0 +1,3 @@
+# 03. CUSTOMER DATA MINIMIZATION
+
+- `REAL_CUSTOMER_DATA_MINIMIZATION=PASS` (Strict policy against unnecessary PII storage)

@@ -44,8 +44,8 @@
     "/admin.html"
   ],
   "c11_6_status": "FULL_COMMERCIAL_FLOW_PRODUCTION_READY",
-  "lastVerifiedMilestone": "C11.10",
-  "verifiedAt": "2026-08-29T13:14:36.904Z",
+  "lastVerifiedMilestone": "C11.11",
+  "verifiedAt": "2026-08-29T13:22:51.669Z",
   "c11_7_status": "OWNER_READY_FOR_CONTROLLED_COMMERCIAL_LAUNCH",
   "livePaymentPreconditions": "READY_FOR_OWNER_CONFIGURATION",
   "backupState": "SNAPSHOT_PERSISTENCE_ACTIVE",
@@ -83,5 +83,8 @@
   "preCustomerTechnicalReleaseGate": "PASS",
   "c11_10_status": "FIRST_REAL_CUSTOMER_PRE_ONBOARDING_READY",
   "firstRealCustomerPreOnboardingReady": true,
-  "stripeLiveModeConfigured": false
+  "stripeLiveModeConfigured": false,
+  "c11_11_status": "OWNER_REAL_CUSTOMER_SELECTION_REQUIRED",
+  "realCustomerPilotCustomerAvailable": false,
+  "firstRealCustomerPilotOperationallyValidated": false
 }
