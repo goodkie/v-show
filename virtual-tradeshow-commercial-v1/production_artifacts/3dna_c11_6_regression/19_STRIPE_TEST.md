@@ -1,0 +1,7 @@
+# 19. STRIPE TEST MODE & CHARGE AMOUNTS
+
+## 1. Commercial Pricing Cents
+- **PRO_PRICE_CENTS**: `29900` ($299.00 USD)
+- **BUSINESS_PRICE_CENTS**: `79900` ($799.00 USD)
+- **STRIPE_MODE**: `test`
+- **PAYMENT_PILOT_ARMED**: `false`

@@ -42,5 +42,8 @@
     "/demo-matterport.html",
     "/organizer.html",
     "/admin.html"
-  ]
+  ],
+  "c11_6_status": "FULL_COMMERCIAL_FLOW_PRODUCTION_READY",
+  "lastVerifiedMilestone": "C11.6",
+  "verifiedAt": "2026-08-29T11:52:05.195Z"
 }
