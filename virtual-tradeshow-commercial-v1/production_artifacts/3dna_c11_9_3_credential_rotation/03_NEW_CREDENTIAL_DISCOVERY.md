@@ -1,6 +1,8 @@
-# 03. REPLACEMENT CREDENTIAL DISCOVERY
+# 03. REPLACEMENT CREDENTIAL STATUS
 
-## 1. Discovery Results
-- **NEW_R2_CREDENTIAL_PRESENT**: `false`
-- **STATUS**: `OWNER_R2_CREDENTIAL_ROTATION_REQUIRED`
-- Zero fake replacement keys generated; awaiting Owner configuration in Railway.
+## 1. Status
+- **NEW_R2_CREDENTIAL_PRESENT**: `true`
+- **OFFSITE_STORAGE_PROVIDER**: `R2`
+- **OFFSITE_STORAGE_BUCKET**: `3dna-production-offsite-backup`
+- **OFFSITE_STORAGE_REGION**: `auto`
+- **OFFSITE_STORAGE_ENDPOINT**: Configured

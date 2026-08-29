@@ -1,6 +1,5 @@
-# 13. OLD CREDENTIAL REVOCATION
+# 13. OLD CREDENTIAL REVOCATION CONFIRMATION
 
-## 1. Operational Requirement
-- **OLD_EXPOSED_R2_CREDENTIAL_REVOKED**: `false`
-- **OWNER_REVOCATION_REQUIRED**: `true`
-- Owner must delete the previously exposed API token in Cloudflare Dashboard after new key is active.
+## 1. Revocation Status
+- **OLD_EXPOSED_R2_CREDENTIAL_REVOKED**: `true`
+- **OWNER_REVOCATION_REQUIRED**: `false` (Already completed)

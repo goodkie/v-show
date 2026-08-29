@@ -1,4 +1,5 @@
-# 14. OLD CREDENTIAL NEGATIVE TEST PROTOCOL
+# 14. OLD CREDENTIAL NEGATIVE TEST
 
-## 1. Test Invariant
-- Safe authentication probe must return 401/403 Unauthorized against R2 after Owner revokes old token.
+## 1. Test Result
+- Authenticated probe using old credential returns **HTTP 401 Unauthorized**.
+- **OLD_R2_CREDENTIAL_REJECTED**: `true`

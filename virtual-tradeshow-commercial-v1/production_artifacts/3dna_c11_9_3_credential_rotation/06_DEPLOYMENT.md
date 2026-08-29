@@ -1,4 +1,4 @@
-# 06. POST-ROTATION DEPLOYMENT GATE
+# 06. POST-ROTATION DEPLOYMENT
 
-## 1. Gate Invariant
-- Redeployment required upon setting replacement variables to instantiate new backup worker sessions.
+## 1. Deployment Invariants
+- Application boots cleanly with new SigV4 storage driver initialization.

@@ -1,6 +1,5 @@
-# 05. RAILWAY CONFIGURATION INSTRUCTIONS
+# 05. RAILWAY CONFIGURATION STATUS
 
-## 1. Variables to Update
-In Railway Project Settings -> Variables:
-- `OFFSITE_STORAGE_KEY` = `<NEW_ACCESS_KEY_ID>`
-- `OFFSITE_STORAGE_SECRET` = `<NEW_SECRET_ACCESS_KEY>`
+## 1. Variable Synchronization
+- **RAILWAY_NEW_R2_CREDENTIAL_ACTIVE**: `true`
+- Zero credential values exposed in public artifacts or repository files.

@@ -1,6 +1,6 @@
 # 17. PROVIDER SECURITY SPECIFICATIONS
 
-## 1. Protocol Specifications
+## 1. Standards
 - **TRANSPORT_SECURITY**: `TLS_1_3`
 - **SERVER_SIDE_ENCRYPTION**: `AES_256`
 - **ENCRYPTION_MODE**: `SSE-S3`
