@@ -44,8 +44,8 @@
     "/admin.html"
   ],
   "c11_6_status": "FULL_COMMERCIAL_FLOW_PRODUCTION_READY",
-  "lastVerifiedMilestone": "C11.9",
-  "verifiedAt": "2026-08-29T12:03:27.532Z",
+  "lastVerifiedMilestone": "C11.9.1",
+  "verifiedAt": "2026-08-29T12:12:07.336Z",
   "c11_7_status": "OWNER_READY_FOR_CONTROLLED_COMMERCIAL_LAUNCH",
   "livePaymentPreconditions": "READY_FOR_OWNER_CONFIGURATION",
   "backupState": "SNAPSHOT_PERSISTENCE_ACTIVE",
@@ -63,5 +63,10 @@
   "commercialBaselineTag": "v11.9-pre-customer-commercial-baseline",
   "firstCustomerFeatureFreeze": true,
   "firstCustomerDataProtectionReady": "ARCHITECTURE_READY_AWAITING_OWNER_STORAGE_KEYS",
-  "canonicalSafeDailyCapacity": 600
+  "canonicalSafeDailyCapacity": 600,
+  "c11_9_1_status": "OWNER_OFFSITE_STORAGE_CONFIGURATION_REQUIRED",
+  "offsiteDrArchitectureReady": true,
+  "offsiteDrRemoteActivated": false,
+  "firstRealCustomerDataProtectionReady": false,
+  "ownerConfigurationRequired": true
 }

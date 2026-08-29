@@ -1,0 +1,5 @@
+# 12. ENCRYPTION PROTOCOLS
+
+## 1. Standards
+- **TRANSPORT_SECURITY**: `TLS_1_3`
+- **SERVER_SIDE_ENCRYPTION**: `AES_256 / SSE-S3` (Provider standard)
