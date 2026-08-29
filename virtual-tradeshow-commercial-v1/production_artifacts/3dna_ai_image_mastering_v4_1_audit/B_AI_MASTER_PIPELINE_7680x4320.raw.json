@@ -1,0 +1,17 @@
+{
+  "mode": "3DNA_V4_MASTER_PIPELINE",
+  "targetResolution": "7680x4320",
+  "method": "3DNa V4 Pipeline (Crop 16:9 + Denoise + Unsharp Masking + Commercial Content Lock)",
+  "sourceFile": "phototune.ai_1787945656.png",
+  "sourceDimensions": "7096x3548",
+  "cropBounds": {
+    "x": 0,
+    "y": 0,
+    "width": 7096,
+    "height": 3548
+  },
+  "generatedAt": "2026-08-29T10:03:10.799Z",
+  "sourceSha256": "263fc2e1197afa984238dc0c1697d35407898b713b6f9c6929c3f75a00e92c41",
+  "clarityScoreLaplacian": 197.9,
+  "clarityGain": "+38.6%"
+}

@@ -1,0 +1,10 @@
+{
+  "mode": "CONTROL_SIMPLE_RESIZE",
+  "targetResolution": "7680x4320",
+  "method": "Bicubic Interpolation",
+  "sourceFile": "phototune.ai_1787945656.png",
+  "sourceDimensions": "7096x3548",
+  "generatedAt": "2026-08-29T10:03:10.593Z",
+  "sourceSha256": "263fc2e1197afa984238dc0c1697d35407898b713b6f9c6929c3f75a00e92c41",
+  "clarityScoreLaplacian": 142.8
+}

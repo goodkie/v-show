@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ³DNa AI BOOTH IMAGE MASTERING V4 — MASTER PIPELINE ORCHESTRATOR
  * Module: pipeline_orchestrator.js
  * Directive: Section 3 (Source Lineage), Section 55 (Fail-Closed Enhancement), Section 66 (Async Orchestration), Section 74 (Final Acceptance)
@@ -75,7 +75,7 @@ class PipelineOrchestrator {
       logStage('AI_RESTORATION', { engine: restorationResult.restorationEngine, model: restorationResult.restorationModel });
 
       // ── STAGE 7: REAL AI SUPER-RESOLUTION ──
-      const srResult = RealAISuperResolution.upscale(sourceInfo, cropInfo, 7680, 4320);
+      const srResult = await RealAISuperResolution.upscale(sourceInfo, cropInfo, 7680, 4320);
       logStage('AI_SUPER_RESOLUTION', { engine: srResult.aiSrEngine, scale: srResult.aiSrScaleFactor, tier: srResult.aiSrTier });
 
       // ── STAGE 8: DETAIL RECOVERY & COLOR ENHANCEMENT ──
