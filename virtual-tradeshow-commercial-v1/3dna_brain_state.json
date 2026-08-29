@@ -44,8 +44,8 @@
     "/admin.html"
   ],
   "c11_6_status": "FULL_COMMERCIAL_FLOW_PRODUCTION_READY",
-  "lastVerifiedMilestone": "C11.8",
-  "verifiedAt": "2026-08-29T12:00:17.555Z",
+  "lastVerifiedMilestone": "C11.9",
+  "verifiedAt": "2026-08-29T12:03:27.532Z",
   "c11_7_status": "OWNER_READY_FOR_CONTROLLED_COMMERCIAL_LAUNCH",
   "livePaymentPreconditions": "READY_FOR_OWNER_CONFIGURATION",
   "backupState": "SNAPSHOT_PERSISTENCE_ACTIVE",
@@ -58,5 +58,10 @@
   "wallClockJobP95Sec": 3.74,
   "recommendedSafeDailyCapacity": 600,
   "backupClassification": "DURABLE_PLATFORM_VOLUME_BACKUP",
-  "observedRestoreTimeSec": 1.2
+  "observedRestoreTimeSec": 1.2,
+  "c11_9_status": "OFFSITE_DR_ARCHITECTURE_READY_OWNER_CONFIGURATION_REQUIRED",
+  "commercialBaselineTag": "v11.9-pre-customer-commercial-baseline",
+  "firstCustomerFeatureFreeze": true,
+  "firstCustomerDataProtectionReady": "ARCHITECTURE_READY_AWAITING_OWNER_STORAGE_KEYS",
+  "canonicalSafeDailyCapacity": 600
 }

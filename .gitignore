@@ -44,3 +44,9 @@ production_artifacts/3d_*
 !virtual-tradeshow-commercial-v1/Procfile
 !digital_twin_capture_guide.md
 !logo*.png
+
+# Offsite DR Test Temp Dirs
+offsite_dr_namespace/
+offsite_dr_restore_isolated_test/
+virtual-tradeshow-commercial-v1/offsite_dr_namespace/
+virtual-tradeshow-commercial-v1/offsite_dr_restore_isolated_test/

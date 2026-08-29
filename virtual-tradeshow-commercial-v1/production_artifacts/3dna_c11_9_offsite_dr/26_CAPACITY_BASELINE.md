@@ -1,0 +1,5 @@
+# 26. CANONICAL CAPACITY BASELINE LOCK
+
+## 1. Operational Ceiling
+- **RECOMMENDED_SAFE_DAILY_CAPACITY**: `600 jobs/day` (Per CPU container)
+- **MAX_SAFE_CONCURRENT_AI_JOBS**: `3`
