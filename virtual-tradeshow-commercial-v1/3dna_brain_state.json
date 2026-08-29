@@ -44,6 +44,11 @@
     "/admin.html"
   ],
   "c11_6_status": "FULL_COMMERCIAL_FLOW_PRODUCTION_READY",
-  "lastVerifiedMilestone": "C11.6",
-  "verifiedAt": "2026-08-29T11:52:05.195Z"
+  "lastVerifiedMilestone": "C11.7",
+  "verifiedAt": "2026-08-29T11:56:22.745Z",
+  "c11_7_status": "OWNER_READY_FOR_CONTROLLED_COMMERCIAL_LAUNCH",
+  "livePaymentPreconditions": "READY_FOR_OWNER_CONFIGURATION",
+  "backupState": "SNAPSHOT_PERSISTENCE_ACTIVE",
+  "restoreDrillVerified": true,
+  "maxSafeConcurrentAiJobs": 3
 }
