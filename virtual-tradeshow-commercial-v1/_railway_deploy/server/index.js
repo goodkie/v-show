@@ -2341,7 +2341,7 @@ app.get('/verify-email', (req, res) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Email Verification — 3DZ 3D Booth</title>
+  <title>Email Verification — ³D₂ 3D Booth</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
@@ -2379,7 +2379,7 @@ app.get('/verify-email', (req, res) => {
       <i class="fa-solid ${verified ? 'fa-check-circle' : 'fa-triangle-exclamation'}"></i>
     </div>
     <h1>${verified ? 'Email Verified Successfully!' : 'Verification Link Error'}</h1>
-    <p>${verified ? `Your email has been confirmed. Your 3D Booth creation is now activated on 3dz.site.<br>You can return to your original tab or continue below.` : errorMsg || 'This confirmation link is invalid or has expired.'}</p>
+    <p>${verified ? `Your email has been confirmed. Your 3D Booth creation is now activated on 3dx.site.<br>You can return to your original tab or continue below.` : errorMsg || 'This confirmation link is invalid or has expired.'}</p>
     <a href="/" class="btn">${verified ? 'Continue to Booth Studio' : 'Return to Home'}</a>
   </div>
 </body>

@@ -109,7 +109,7 @@ async function run3DZSuite() {
   console.log(' - Frame Heading:', frameHeading);
   console.log(' - Primary CTA:', ctaBtnText);
 
-  if (!title.includes('3DZ') || !title.includes('3D Booth')) throw new Error('Invalid title branding: ' + title);
+  if (!title.includes('³D₂') || !title.includes('3D Booth')) throw new Error('Invalid title branding: ' + title);
   if (frameHeading !== 'Create Your Free 3D Booth') throw new Error('Invalid frame heading: ' + frameHeading);
   if (ctaBtnText !== 'CREATE 3D BOOTH') throw new Error('Invalid CTA button text: ' + ctaBtnText);
 

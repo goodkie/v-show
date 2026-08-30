@@ -11,8 +11,8 @@ class EmailService {
 
   getProviderInfo() {
     if (process.env.RESEND_API_KEY) {
-      const from = process.env.EMAIL_FROM || '3DZ 3D Booth <verify@mail.3dz.site>';
-      const domain = from.includes('@') ? from.split('@')[1].replace('>', '').trim() : 'mail.3dz.site';
+      const from = process.env.EMAIL_FROM || '³D₂ 3D Booth <verify@mail.3dx.site>';
+      const domain = from.includes('@') ? from.split('@')[1].replace('>', '').trim() : 'mail.3dx.site';
       return {
         provider: 'RESEND',
         fromDomain: domain,
@@ -22,13 +22,13 @@ class EmailService {
     if (process.env.SENDGRID_API_KEY) {
       return {
         provider: 'SENDGRID',
-        fromDomain: 'mail.3dz.site',
+        fromDomain: 'mail.3dx.site',
         ready: true
       };
     }
     return {
       provider: 'DEV_SANDBOX',
-      fromDomain: 'mail.3dz.site',
+      fromDomain: 'mail.3dx.site',
       ready: false
     };
   }
@@ -66,7 +66,7 @@ class EmailService {
           verifyUrl: fullVerifyUrl
         };
       } catch (err) {
-        console.error('[3DZ EMAIL DISPATCHER ERROR] Resend delivery rejected:', err.message);
+        console.error('[³D₂ EMAIL DISPATCHER ERROR] Resend delivery rejected:', err.message);
         if (process.env.NODE_ENV !== 'production') {
           return {
             success: true,
@@ -94,7 +94,7 @@ class EmailService {
           verifyUrl: fullVerifyUrl
         };
       } catch (err) {
-        console.error('[3DZ EMAIL DISPATCHER ERROR] SendGrid delivery rejected:', err.message);
+        console.error('[³D₂ EMAIL DISPATCHER ERROR] SendGrid delivery rejected:', err.message);
         if (process.env.NODE_ENV !== 'production') {
           return {
             success: true,
@@ -129,11 +129,11 @@ class EmailService {
 
   sendViaResend({ to, fullVerifyUrl, code, businessName }) {
     return new Promise((resolve, reject) => {
-      const fromAddress = process.env.EMAIL_FROM || '3DZ 3D Booth <verify@mail.3dz.site>';
+      const fromAddress = process.env.EMAIL_FROM || '³D₂ 3D Booth <verify@mail.3dx.site>';
       const data = JSON.stringify({
         from: fromAddress,
         to: [to],
-        subject: `Verify your email to create your free 3D Booth — ${businessName || '3DZ'}`,
+        subject: `Verify your email to create your free 3D Booth — ${businessName || '³D₂'}`,
         html: `
           <div style="background: #070b14; color: #f8fafc; padding: 40px 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 540px; margin: 0 auto; border-radius: 16px; border: 1px solid rgba(56,189,248,0.35); box-shadow: 0 20px 50px rgba(0,0,0,0.8);">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
@@ -170,8 +170,8 @@ class EmailService {
             </p>
 
             <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 18px; font-size: 11px; color: #64748b; line-height: 1.5;">
-              <p style="margin-bottom: 4px;">Security Note: If you did not request this free 3D virtual booth on 3dz.site, please disregard this email.</p>
-              <p>© 2026 3DZ (3dz.site) • Spatial Virtual Showrooms</p>
+              <p style="margin-bottom: 4px;">Security Note: If you did not request this free 3D virtual booth on 3dx.site, please disregard this email.</p>
+              <p>© 2026 ³D₂ (3dx.site) • Spatial Virtual Showrooms</p>
             </div>
           </div>
         `
@@ -214,13 +214,13 @@ class EmailService {
     return new Promise((resolve, reject) => {
       const data = JSON.stringify({
         personalizations: [{ to: [{ email: to }] }],
-        from: { email: process.env.EMAIL_FROM || 'verify@mail.3dz.site', name: '3DZ 3D Booth' },
-        subject: `Verify your email to create your free 3D Booth — ${businessName || '3DZ'}`,
+        from: { email: process.env.EMAIL_FROM || 'verify@mail.3dx.site', name: '³D₂ 3D Booth' },
+        subject: `Verify your email to create your free 3D Booth — ${businessName || '³D₂'}`,
         content: [{
           type: 'text/html',
           value: `
             <div style="background: #070b14; color: #fff; padding: 30px; font-family: sans-serif;">
-              <h2>3DZ — Confirm Your Work Email</h2>
+              <h2>³D₂ — Confirm Your Work Email</h2>
               <p>Your 6-digit confirmation code: <b style="font-size: 20px; color: #38bdf8;">${code}</b></p>
               <p>Code expires in 10 minutes.</p>
               <p><a href="${fullVerifyUrl}" style="background: #0284c7; color: #fff; padding: 10px 18px; text-decoration: none; border-radius: 6px; font-weight: bold;">VERIFY EMAIL</a></p>

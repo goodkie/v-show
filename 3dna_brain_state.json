@@ -1,6 +1,6 @@
 {
-  "brand": "3DZ",
-  "productName": "3DZ Spatial Virtual Showrooms & 3D Booths",
+  "brand": "³D₂",
+  "productName": "³D₂ Spatial Virtual Showrooms & 3D Booths",
   "repository": "https://github.com/goodkie/v-show.git",
   "branch": "master",
   "headCommit": "dd9359a",
@@ -45,7 +45,7 @@
   ],
   "c11_6_status": "FULL_COMMERCIAL_FLOW_PRODUCTION_READY",
   "lastVerifiedMilestone": "3DZ-P0-FUNNEL-VERIFIED",
-  "verifiedAt": "2026-08-30T15:40:11.783Z",
+  "verifiedAt": "2026-08-30T15:59:27.975Z",
   "c11_7_status": "OWNER_READY_FOR_CONTROLLED_COMMERCIAL_LAUNCH",
   "livePaymentPreconditions": "READY_FOR_OWNER_CONFIGURATION",
   "backupState": "SNAPSHOT_PERSISTENCE_ACTIVE",
@@ -107,9 +107,9 @@
   "singlePhotoAuthentic3dClaim": 0,
   "ownerPathNoop": 0,
   "uncaughtJsErrors": 0,
-  "customerFacingBrand": "3DZ",
-  "customerFacingDomain": "3dz.site",
-  "emailSender": "3DZ 3D Booth <verify@mail.3dz.site>",
+  "customerFacingBrand": "³D₂",
+  "customerFacingDomain": "3dx.site",
+  "emailSender": "³D₂ 3D Booth <verify@mail.3dx.site>",
   "free3dBoothFunnel": {
     "status": "REPAIRED_AND_VERIFIED",
     "stateMachine": "10_STATES_DETERMINISTIC",
@@ -117,7 +117,7 @@
     "r2Tier0BackupActive": true,
     "productSlotsIncluded": 3,
     "emailProvider": "RESEND",
-    "senderDomain": "mail.3dz.site",
+    "senderDomain": "mail.3dx.site",
     "humanInboxReceiptGate": "OWNER_EXTERNAL_MAILBOX_RECEIPT_REQUIRED"
   }
 }
