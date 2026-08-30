@@ -11,8 +11,8 @@ class EmailService {
 
   getProviderInfo() {
     if (process.env.RESEND_API_KEY) {
-      const from = process.env.EMAIL_FROM || '³D₂ 3D Booth <verify@mail.3dx.site>';
-      const domain = from.includes('@') ? from.split('@')[1].replace('>', '').trim() : 'mail.3dx.site';
+      const from = process.env.EMAIL_FROM || '³D₂ 3D Booth <verify@mail.3dz.site>';
+      const domain = from.includes('@') ? from.split('@')[1].replace('>', '').trim() : 'mail.3dz.site';
       return {
         provider: 'RESEND',
         fromDomain: domain,
@@ -22,13 +22,13 @@ class EmailService {
     if (process.env.SENDGRID_API_KEY) {
       return {
         provider: 'SENDGRID',
-        fromDomain: 'mail.3dx.site',
+        fromDomain: 'mail.3dz.site',
         ready: true
       };
     }
     return {
       provider: 'DEV_SANDBOX',
-      fromDomain: 'mail.3dx.site',
+      fromDomain: 'mail.3dz.site',
       ready: false
     };
   }
@@ -129,7 +129,7 @@ class EmailService {
 
   sendViaResend({ to, fullVerifyUrl, code, businessName }) {
     return new Promise((resolve, reject) => {
-      const fromAddress = process.env.EMAIL_FROM || '³D₂ 3D Booth <verify@mail.3dx.site>';
+      const fromAddress = process.env.EMAIL_FROM || '³D₂ 3D Booth <verify@mail.3dz.site>';
       const data = JSON.stringify({
         from: fromAddress,
         to: [to],
@@ -170,8 +170,8 @@ class EmailService {
             </p>
 
             <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 18px; font-size: 11px; color: #64748b; line-height: 1.5;">
-              <p style="margin-bottom: 4px;">Security Note: If you did not request this free 3D virtual booth on 3dx.site, please disregard this email.</p>
-              <p>© 2026 ³D₂ (3dx.site) • Spatial Virtual Showrooms</p>
+              <p style="margin-bottom: 4px;">Security Note: If you did not request this free 3D virtual booth on 3dz.site, please disregard this email.</p>
+              <p>© 2026 ³D₂ (3dz.site) • Spatial Virtual Showrooms</p>
             </div>
           </div>
         `
@@ -214,7 +214,7 @@ class EmailService {
     return new Promise((resolve, reject) => {
       const data = JSON.stringify({
         personalizations: [{ to: [{ email: to }] }],
-        from: { email: process.env.EMAIL_FROM || 'verify@mail.3dx.site', name: '³D₂ 3D Booth' },
+        from: { email: process.env.EMAIL_FROM || 'verify@mail.3dz.site', name: '³D₂ 3D Booth' },
         subject: `Verify your email to create your free 3D Booth — ${businessName || '³D₂'}`,
         content: [{
           type: 'text/html',

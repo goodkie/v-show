@@ -2379,7 +2379,7 @@ app.get('/verify-email', (req, res) => {
       <i class="fa-solid ${verified ? 'fa-check-circle' : 'fa-triangle-exclamation'}"></i>
     </div>
     <h1>${verified ? 'Email Verified Successfully!' : 'Verification Link Error'}</h1>
-    <p>${verified ? `Your email has been confirmed. Your 3D Booth creation is now activated on 3dx.site.<br>You can return to your original tab or continue below.` : errorMsg || 'This confirmation link is invalid or has expired.'}</p>
+    <p>${verified ? `Your email has been confirmed. Your 3D Booth creation is now activated on 3dz.site.<br>You can return to your original tab or continue below.` : errorMsg || 'This confirmation link is invalid or has expired.'}</p>
     <a href="/" class="btn">${verified ? 'Continue to Booth Studio' : 'Return to Home'}</a>
   </div>
 </body>
