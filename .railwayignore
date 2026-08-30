@@ -1,8 +1,5 @@
-*.zip
+﻿*.zip
 *.mp4
-*.JPG
-*.jpg
-*.png
 *.psd
 backups
 sample*
@@ -16,3 +13,5 @@ node_modules
 *.ply
 *.spz
 *.splat
+!virtual-tradeshow-commercial-v1/app_build/client/assets/**
+!virtual-tradeshow-commercial-v1/_railway_deploy/client/assets/**
