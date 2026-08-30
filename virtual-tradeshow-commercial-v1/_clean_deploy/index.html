@@ -2553,11 +2553,18 @@
           setTimeout(() => {
             hideProgress();
             activeProjectId = data.projectId;
-            activeProjectData = data.project;
             try {
+              const safeProject = {
+                id: activeProjectData?.id || activeProjectId,
+                businessName: activeProjectData?.businessName || '',
+                sourceAsset: activeProjectData?.sourceAsset || { previewUrl: data.previewUrl },
+                products: activeProjectData?.products || [],
+                pinpoints: activeProjectData?.pinpoints || [],
+                experienceType: activeProjectData?.experienceType || 'PHOTO_IMMERSIVE'
+              };
               localStorage.setItem('dna_free_booth_session', JSON.stringify({
                 projectId: activeProjectId,
-                project: activeProjectData,
+                project: safeProject,
                 savedAt: new Date().toISOString()
               }));
             } catch(e) {}
