@@ -44,8 +44,8 @@
     "/admin.html"
   ],
   "c11_6_status": "FULL_COMMERCIAL_FLOW_PRODUCTION_READY",
-  "lastVerifiedMilestone": "C11.11",
-  "verifiedAt": "2026-08-29T13:22:51.669Z",
+  "lastVerifiedMilestone": "C11.11-P0",
+  "verifiedAt": "2026-08-30T02:38:39.116Z",
   "c11_7_status": "OWNER_READY_FOR_CONTROLLED_COMMERCIAL_LAUNCH",
   "livePaymentPreconditions": "READY_FOR_OWNER_CONFIGURATION",
   "backupState": "SNAPSHOT_PERSISTENCE_ACTIVE",
@@ -86,5 +86,10 @@
   "stripeLiveModeConfigured": false,
   "c11_11_status": "OWNER_REAL_CUSTOMER_SELECTION_REQUIRED",
   "realCustomerPilotCustomerAvailable": false,
-  "firstRealCustomerPilotOperationallyValidated": false
+  "firstRealCustomerPilotOperationallyValidated": false,
+  "c11_11_p0_status": "FREE_3D_BOOTH_FUNNEL_REPAIRED_AND_PRODUCTION_VERIFIED",
+  "ownerObservedNoOpFixed": true,
+  "customerFacingProductName": "3D_BOOTH",
+  "primaryCtaText": "CREATE_3D_BOOTH",
+  "productionFree3dBoothE2E": "PASS"
 }

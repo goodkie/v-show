@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>³DNa — Turn One Booth Photo Into a Commercial Photo Immersive Booth Free</title>
-  <meta name="description" content="Upload one booth photo and your business name. ³DNa creates your first interactive commercial photo immersive booth preview free. No credit card required.">
+  <title>³DNa — Turn One Booth Photo Into an Interactive 3D Booth Free</title>
+  <meta name="description" content="Upload your exhibition booth photo and business name. ³DNa generates your interactive 3D virtual booth preview with 3 product slots in seconds.">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="³DNa — Turn One Booth Photo Into a Commercial Photo Immersive Booth Free">
+  <meta property="og:title" content="³DNa — Turn One Booth Photo Into an Interactive 3D Booth Free">
   <meta property="og:description" content="Upload one booth photo. ³DNa creates your interactive photo immersive showroom preview free.">
   <meta property="og:image" content="/assets/brand/dna_logo_white.png">
   <meta property="og:type" content="website">
@@ -36,7 +36,8 @@
       --success: #10b981;
       --cyan: #06b6d4;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; max-width: 100%; }
+    html, body { max-width: 100vw; overflow-x: hidden !important; }
     body {
       background: var(--bg); color: var(--text);
       font-family: 'Plus Jakarta Sans', sans-serif;
@@ -273,6 +274,32 @@
     }
     .studio-banner-title { font-size: 16px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
     .studio-banner-desc { font-size: 13px; color: #cbd5e1; }
+
+    
+    @media (max-width: 768px) {
+      .free-studio-section {
+        padding: 14px 8px !important;
+        overflow-x: hidden !important;
+      }
+      #viewer-container {
+        height: 380px !important;
+        min-height: 300px !important;
+        width: 100% !important;
+      }
+      .studio-banner {
+        padding: 12px 14px !important;
+      }
+      .viewer-controls-bar {
+        bottom: 8px !important;
+        right: 8px !important;
+        padding: 3px 6px !important;
+      }
+      .viewer-ctrl-btn {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 11px !important;
+      }
+    }
 
     /* ── 3D Photo Immersive Studio Layout (Matterport-Engine Baseline) ── */
     #studio-workspace {
@@ -1050,16 +1077,16 @@
       <i class="fa-solid fa-bolt"></i> YOUR BOOTH, BEYOND THE SHOW.
     </div>
     <h1 class="hero-title">
-      Turn One Booth Photo Into a<br>
-      <span>Commercial Virtual Showroom</span>
+      Turn One Booth Photo Into an<br>
+      <span>Interactive 3D Virtual Booth</span>
     </h1>
     <p class="hero-desc">
-      Upload your exhibition booth photo and business name. ³DNa generates your interactive photo immersive booth preview with interactive product pinpoints in seconds.
+      Upload your exhibition booth photo and business name. ³DNa generates your interactive 3D virtual booth preview with interactive product pinpoints in seconds.
     </p>
 
     <!-- Upload CTA Frame -->
     <div class="upload-cta-frame">
-      <div class="frame-title">Create Your Free Photo Immersive Booth</div>
+      <div class="frame-title">Create Your Free 3D Booth</div>
       <div class="frame-subtitle">Instant interactive 3D preview • 3 product slots included</div>
 
       <form id="free-booth-form" onsubmit="handleFreeBoothSubmit(event)">
@@ -1093,7 +1120,7 @@
           </div>
 
           <button type="submit" class="btn-create-free" id="btn-submit-free">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> CREATE PHOTO IMMERSIVE BOOTH
+            <i class="fa-solid fa-wand-magic-sparkles"></i> CREATE 3D BOOTH
           </button>
         </div>
 
@@ -1103,17 +1130,14 @@
             <i class="fa-solid fa-envelope-open-text"></i>
           </div>
           <div style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: -0.5px;">CHECK YOUR EMAIL</div>
-   <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px;">
-     We sent a 6-digit confirmation code to:<br>
-     <span id="verify-target-email" style="color: #38bdf8; font-weight: 700; font-size: 14px;"></span>
-   </p>
-   <div id="otp-loading-status" style="display: none; color: #38bdf8; font-size: 13px; font-weight: 700; margin-bottom: 12px;">
-     <i class="fa-solid fa-spinner fa-spin"></i> Verifying code & creating booth...
-   </div>
-          <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 20px;">
-            We sent a 6-digit confirmation code to:<br>
+          <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px;">
+            We sent a 6-digit confirmation code &amp; 1-click link to:<br>
             <span id="verify-target-email" style="color: #38bdf8; font-weight: 700; font-size: 14px;"></span>
           </p>
+
+          <div id="otp-loading-status" style="display: none; color: #38bdf8; font-size: 13px; font-weight: 700; margin-bottom: 12px;">
+            <i class="fa-solid fa-spinner fa-spin"></i> Verifying code &amp; creating 3D booth...
+          </div>
 
           <!-- 6-Digit OTP Inputs -->
           <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 16px;">
@@ -1130,13 +1154,24 @@
             <i class="fa-solid fa-circle-exclamation"></i> <span id="otp-error-txt">Invalid confirmation code.</span>
           </div>
 
-          
+          <!-- OTP Status Msg -->
+          <div id="otp-status-msg" style="display: none; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; padding: 8px 12px; border-radius: 8px; font-size: 12px; margin-bottom: 14px; font-weight: 600;">
+            <i class="fa-solid fa-circle-info"></i> <span id="otp-status-txt"></span>
+          </div>
 
-          <div style="margin-top: 14px; font-size: 12px; color: var(--text-muted);">
+          <button type="button" class="btn-create-free" id="btn-verify-otp" onclick="handleVerifyOtpClick()" style="width: 100%; margin-bottom: 10px;">
+            <i class="fa-solid fa-check"></i> VERIFY &amp; CREATE MY 3D BOOTH
+          </button>
+
+          <button type="button" class="btn-hero btn-hero-secondary" id="btn-check-verify-status" onclick="handleCheckVerificationStatus()" style="width: 100%; justify-content: center; padding: 11px 14px; font-size: 13px; margin-bottom: 14px; border: 1px solid rgba(56,189,248,0.3); background: rgba(56,189,248,0.06); color: #38bdf8;">
+            <i class="fa-solid fa-arrows-rotate"></i> I'VE VERIFIED MY EMAIL / CHECK STATUS
+          </button>
+
+          <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">
             <i class="fa-regular fa-clock" style="color: #38bdf8;"></i> Code expires in <span id="otp-countdown" style="font-weight: 700; color: #fff;">10:00</span>
           </div>
 
-          <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
             <button type="button" id="btn-resend-otp" onclick="handleResendOtp()" style="background: none; border: none; color: #38bdf8; font-weight: 700; cursor: pointer; padding: 4px 8px; border-radius: 6px;">
               <i class="fa-solid fa-rotate-right"></i> RESEND CODE
             </button>
@@ -1170,7 +1205,7 @@
         <i class="fa-solid fa-bolt" style="color: #00f2fe;"></i> INITIALIZING PIPELINE
       </div>
 
-      <div class="progress-title" id="progressTitleTxt">Creating Photo Immersive Booth...</div>
+      <div class="progress-title" id="progressTitleTxt">Creating Your 3D Booth...</div>
 
       <div class="progress-bar-wrap">
         <div class="progress-bar-fill" id="progressBarFill"></div>
@@ -1238,7 +1273,7 @@
       <div class="section-tag" style="color: #f59e0b;"><i class="fa-solid fa-circle-exclamation"></i> EXISTING BOOTH FOUND</div>
       <h3 id="duplicateModalTitle" style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px;">We Found Your Existing Booth</h3>
       <p id="duplicateModalDesc" style="font-size: 13px; color: var(--text-muted); margin-bottom: 22px; line-height: 1.5;">
-        A free photo immersive booth preview has already been created for this business or email.
+        A free 3D virtual booth preview has already been created for this business or email.
       </p>
 
       <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -1258,9 +1293,9 @@
       <div>
         <div class="studio-banner-title">
           <i class="fa-solid fa-circle-check" style="color: var(--success);"></i>
-          YOUR FREE PHOTO IMMERSIVE 360° BOOTH IS READY
+          YOUR FREE 3D BOOTH IS READY
         </div>
-        <div class="studio-banner-desc" id="studioBannerBizName">Experience your photo as an interactive 3D studio. Drag to look around in 360°, or click pins to inspect products.</div>
+        <div class="studio-banner-desc" id="studioBannerBizName">Experience your photo as an interactive 3D virtual booth. Drag to look around in 360°, or click pins to inspect products.</div>
       </div>
       <div style="display: flex; gap: 10px;">
         <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('save_booth')" style="padding: 9px 16px; font-size: 13px;">
@@ -1676,7 +1711,7 @@
       </div>
       <div class="step-card">
         <div class="step-num">STEP 02</div>
-        <div class="step-title">Get Photo Immersive Booth</div>
+        <div class="step-title">Get 3D Booth</div>
         <div class="step-text">Our non-destructive engine generates your interactive photo immersive showroom preview in seconds.</div>
       </div>
       <div class="step-card">
@@ -2008,6 +2043,46 @@
       }
     }
 
+    // ══════════════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
+    // C11.11-P0 COMPLETE FUNCTIONAL FREE 3D BOOTH FUNNEL ENGINE
+    // ══════════════════════════════════════════════════════════════
+    let verifiedEmailToken = null;
+    let verifiedEmailAddress = null;
+    let currentPendingEmail = null;
+    let existingDuplicateProjectId = null;
+    let otpTimerInterval = null;
+    let resendCooldownInterval = null;
+    let statusPollInterval = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setupOtpInputHandlers();
+      recoverExistingBoothSession();
+    });
+
+    function recoverExistingBoothSession() {
+      try {
+        const saved = localStorage.getItem('dna_free_booth_session');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.project && parsed.project.id) {
+            console.log('Recovered existing 3D booth session:', parsed.project.id);
+          }
+        }
+      } catch(e) {}
+    }
+
+    function handleFileSelected(input) {
+      if (input.files && input.files[0]) {
+        selectedFile = input.files[0];
+        const sz = Math.round(selectedFile.size / 1024);
+        const name = selectedFile.name;
+        document.getElementById('drop-filename-txt').textContent = 'Selected: ' + name + ' (' + sz + ' KB)';
+        document.getElementById('drop-title-txt').innerHTML = '<i class="fa-solid fa-circle-check" style="color: #4ade80;"></i> Photo Ready!';
+        hideFormInlineError();
+      }
+    }
+
     const dropZone = document.getElementById('booth-drop-zone');
     if (dropZone) {
       dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
@@ -2017,25 +2092,14 @@
         dropZone.classList.remove('dragover');
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
           selectedFile = e.dataTransfer.files[0];
-          document.getElementById('drop-filename-txt').textContent = `Selected: ${selectedFile.name} (${Math.round(selectedFile.size / 1024)} KB)`;
-          document.getElementById('drop-title-txt').textContent = 'Photo Ready!';
+          const sz = Math.round(selectedFile.size / 1024);
+          const name = selectedFile.name;
+          document.getElementById('drop-filename-txt').textContent = 'Selected: ' + name + ' (' + sz + ' KB)';
+          document.getElementById('drop-title-txt').innerHTML = '<i class="fa-solid fa-circle-check" style="color: #4ade80;"></i> Photo Ready!';
+          hideFormInlineError();
         }
       });
     }
-
-    // ══════════════════════════════════════════════════════════════
-    // C10-R3 CLEAN EMAIL & 6-DIGIT OTP VERIFICATION ENGINE
-    // ══════════════════════════════════════════════════════════════
-    let verifiedEmailToken = null;
-    let verifiedEmailAddress = null;
-    let currentPendingEmail = null;
-    let existingDuplicateProjectId = null;
-    let otpTimerInterval = null;
-    let resendCooldownInterval = null;
-
-    document.addEventListener('DOMContentLoaded', () => {
-      setupOtpInputHandlers();
-    });
 
     function setupOtpInputHandlers() {
       const inputs = document.querySelectorAll('.otp-digit');
@@ -2057,6 +2121,10 @@
         input.addEventListener('keydown', (e) => {
           if (e.key === 'Backspace' && !e.target.value && index > 0) {
             inputs[index - 1].focus();
+          }
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleVerifyOtpClick();
           }
         });
 
@@ -2111,6 +2179,8 @@
         errTxt.textContent = msg;
         errBox.style.display = 'block';
       }
+      const statBox = document.getElementById('otp-status-msg');
+      if (statBox) statBox.style.display = 'none';
     }
 
     function hideOtpInlineError() {
@@ -2118,21 +2188,34 @@
       if (errBox) errBox.style.display = 'none';
     }
 
+    function showOtpStatusMsg(msg) {
+      const statBox = document.getElementById('otp-status-msg');
+      const statTxt = document.getElementById('otp-status-txt');
+      if (statBox && statTxt) {
+        statTxt.textContent = msg;
+        statBox.style.display = 'block';
+      }
+      hideOtpInlineError();
+    }
+
     async function handleFreeBoothSubmit(e) {
       e.preventDefault();
       hideFormInlineError();
 
-      const bizName = document.getElementById('business-name-input').value.trim();
-      const workEmail = document.getElementById('work-email-input').value.trim();
-      const confirmEmail = document.getElementById('confirm-email-input').value.trim();
+      const bizInput = document.getElementById('business-name-input');
+      const emailInput = document.getElementById('work-email-input');
 
-      if (!bizName) return showFormInlineError('Please enter your business name.');
-      if (!workEmail) return showFormInlineError('Please enter your work email address.');
-      if (!confirmEmail) return showFormInlineError('Please confirm your work email address.');
+      const bizName = bizInput ? bizInput.value.trim() : '';
+      const workEmail = emailInput ? emailInput.value.trim() : '';
 
-      // Validate email matching
-      if (workEmail.toLowerCase() !== confirmEmail.toLowerCase()) {
-        return showFormInlineError('The email addresses do not match.');
+      if (!bizName) {
+        if (bizInput) bizInput.focus();
+        return showFormInlineError('Please enter your business name.');
+      }
+
+      if (!workEmail || !workEmail.includes('@') || !workEmail.includes('.')) {
+        if (emailInput) emailInput.focus();
+        return showFormInlineError('Please enter a valid work email address.');
       }
 
       if (!selectedFile) {
@@ -2165,10 +2248,10 @@
         const data = await res.json();
         if (btnSubmit) {
           btnSubmit.disabled = false;
-          btnSubmit.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CREATE PHOTO IMMERSIVE BOOTH';
+          btnSubmit.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CREATE 3D BOOTH';
         }
 
-        // Server-Side Developer Bypass Match (Completely silent to public user)
+        // Server-Side Developer Bypass Match
         if (data.developerBypass) {
           verifiedEmailToken = 'internal_dev_pass';
           verifiedEmailAddress = email.toLowerCase();
@@ -2176,7 +2259,7 @@
         }
 
         if (!res.ok) {
-          return showFormInlineError(data.message || "WE COULDN'T SEND YOUR CONFIRMATION EMAIL. Please try again.");
+          return showFormInlineError(data.message || "We couldn't send your confirmation email. Please try again.");
         }
 
         // Switch to Clean Inline Verification Panel
@@ -2191,14 +2274,41 @@
         hideOtpInlineError();
         startOtpCountdown(data.expiresInSeconds || 600);
         startResendCooldown(60);
+        startVerificationStatusPolling(email);
 
       } catch (err) {
         if (btnSubmit) {
           btnSubmit.disabled = false;
-          btnSubmit.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CREATE PHOTO IMMERSIVE BOOTH';
+          btnSubmit.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CREATE 3D BOOTH';
         }
-        showFormInlineError("WE COULDN'T SEND YOUR CONFIRMATION EMAIL. Please try again.");
+        showFormInlineError("We couldn't send your confirmation email. Please check your connection and try again.");
       }
+    }
+
+    function startVerificationStatusPolling(email) {
+      if (statusPollInterval) clearInterval(statusPollInterval);
+      statusPollInterval = setInterval(async () => {
+        if (!currentPendingEmail || currentPendingEmail.toLowerCase() !== email.toLowerCase()) {
+          return clearInterval(statusPollInterval);
+        }
+        try {
+          const res = await fetch('/api/free-funnel/email/poll-status?email=' + encodeURIComponent(email));
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.verified && data.verificationToken) {
+              clearInterval(statusPollInterval);
+              if (otpTimerInterval) clearInterval(otpTimerInterval);
+              if (resendCooldownInterval) clearInterval(resendCooldownInterval);
+              verifiedEmailToken = data.verificationToken;
+              verifiedEmailAddress = email.toLowerCase();
+              showOtpStatusMsg('Email verified successfully! Creating your 3D booth...');
+              setTimeout(() => {
+                executeBoothGeneration();
+              }, 400);
+            }
+          }
+        } catch(e) {}
+      }, 3000);
     }
 
     function startOtpCountdown(seconds) {
@@ -2224,6 +2334,7 @@
       if (resendCooldownInterval) clearInterval(resendCooldownInterval);
       let remain = seconds;
       const btn = document.getElementById('btn-resend-otp');
+      if (!btn) return;
       btn.disabled = true;
 
       function update() {
@@ -2246,7 +2357,8 @@
 
     async function handleResendOtp() {
       if (!currentPendingEmail) return;
-      const bizName = document.getElementById('business-name-input').value.trim() || 'My Business';
+      const bizInput = document.getElementById('business-name-input');
+      const bizName = bizInput ? bizInput.value.trim() : 'My Business';
       const btn = document.getElementById('btn-resend-otp');
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> RESENDING...';
       btn.disabled = true;
@@ -2261,39 +2373,79 @@
         if (!res.ok) {
           btn.disabled = false;
           btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> RESEND CODE';
-          return showOtpInlineError(data.message || "WE COULDN'T SEND YOUR CONFIRMATION EMAIL. Please try again.");
+          return showOtpInlineError(data.message || "We couldn't resend your confirmation email. Please try again.");
         }
 
         clearOtpInputs();
         hideOtpInlineError();
+        showOtpStatusMsg('New confirmation code sent to your email.');
         startOtpCountdown(data.expiresInSeconds || 600);
         startResendCooldown(60);
       } catch (err) {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> RESEND CODE';
-        showOtpInlineError("WE COULDN'T SEND YOUR CONFIRMATION EMAIL. Please try again.");
+        showOtpInlineError("Network error resending email. Please check your connection.");
+      }
+    }
+
+    async function handleCheckVerificationStatus() {
+      if (!currentPendingEmail) return;
+      const btn = document.getElementById('btn-check-verify-status');
+      const originalText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> CHECKING STATUS...';
+      }
+
+      try {
+        const res = await fetch('/api/free-funnel/email/poll-status?email=' + encodeURIComponent(currentPendingEmail));
+        const data = await res.json();
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+
+        if (data && data.verified && data.verificationToken) {
+          if (statusPollInterval) clearInterval(statusPollInterval);
+          if (otpTimerInterval) clearInterval(otpTimerInterval);
+          verifiedEmailToken = data.verificationToken;
+          verifiedEmailAddress = currentPendingEmail.toLowerCase();
+          showOtpStatusMsg('Email verified! Creating your 3D booth now...');
+          setTimeout(() => {
+            executeBoothGeneration();
+          }, 300);
+        } else {
+          showOtpStatusMsg('Verification pending. Please enter the 6-digit code or click the link in your email.');
+        }
+      } catch (err) {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+        showOtpInlineError('Could not connect to server. Please try again.');
       }
     }
 
     function handleChangeEmail() {
       if (otpTimerInterval) clearInterval(otpTimerInterval);
       if (resendCooldownInterval) clearInterval(resendCooldownInterval);
+      if (statusPollInterval) clearInterval(statusPollInterval);
       document.getElementById('inline-verify-panel').style.display = 'none';
       document.getElementById('form-initial-view').style.display = 'block';
       hideFormInlineError();
     }
 
     async function handleVerifyOtpClick() {
-    const statusEl = document.getElementById('otp-loading-status');
-    if (statusEl) statusEl.style.display = 'block';
       const code = getEnteredOtp();
       if (code.length < 6) {
         return showOtpInlineError('Please enter all 6 digits of your confirmation code.');
       }
 
       const btn = document.getElementById('btn-verify-otp');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> VERIFYING...';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> VERIFYING...';
+      }
 
       try {
         const res = await fetch('/api/free-funnel/email/verify-code', {
@@ -2303,12 +2455,17 @@
         });
 
         const data = await res.json();
-        btn.disabled = false;
-        btn.textContent = 'VERIFY & CREATE MY BOOTH';
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-check"></i> VERIFY &amp; CREATE MY 3D BOOTH';
+        }
 
         if (!res.ok || !data.verified) {
           return showOtpInlineError(data.message || 'Invalid or expired confirmation code. Please try again.');
         }
+
+        if (statusPollInterval) clearInterval(statusPollInterval);
+        if (otpTimerInterval) clearInterval(otpTimerInterval);
 
         verifiedEmailToken = data.verificationToken;
         verifiedEmailAddress = currentPendingEmail.toLowerCase();
@@ -2316,15 +2473,17 @@
         executeBoothGeneration();
 
       } catch (err) {
-        btn.disabled = false;
-        btn.textContent = 'VERIFY & CREATE MY BOOTH';
-        showOtpInlineError('Network error verifying code. Please try again.');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-check"></i> VERIFY &amp; CREATE MY 3D BOOTH';
+        }
+        showOtpInlineError('Network error verifying code. Please check your connection.');
       }
     }
 
     async function executeBoothGeneration() {
-      const bizName = document.getElementById('business-name-input').value.trim();
-      const workEmail = document.getElementById('work-email-input').value.trim();
+      const bizName = (document.getElementById('business-name-input')?.value || '').trim();
+      const workEmail = (document.getElementById('work-email-input')?.value || '').trim();
 
       showProgress();
       logAnalyticsEvent('free_booth_started', { businessName: bizName });
@@ -2332,39 +2491,36 @@
       const formData = new FormData();
       formData.append('businessName', bizName);
       formData.append('email', workEmail);
-      const confirmEmail = document.getElementById('confirm-email-input').value.trim();
-      if (confirmEmail) formData.append('confirmEmail', confirmEmail);
-      if (verifiedEmailToken) formData.append('verificationToken', verifiedEmailToken);
       if (verifiedEmailToken) {
         formData.append('verificationToken', verifiedEmailToken);
       }
       formData.append('photo', selectedFile);
 
-      // Start dynamic realistic progress animation
-      let currentPercent = 5;
-      updateProgressDisplay(currentPercent, 'UPLOADING PHOTO', 'Processing Booth Photography', 'Transferring high-resolution photo to image canvas engine...');
+      // Start realistic stage progress animation
+      let currentPercent = 10;
+      updateProgressDisplay(currentPercent, 'UPLOADING PHOTO', 'Transferring Booth Photography', 'Transferring high-resolution photo to image canvas engine...');
 
       const progressInterval = setInterval(() => {
-        if (currentPercent < 85) {
-          currentPercent += Math.floor(Math.random() * 8) + 3;
-          if (currentPercent > 85) currentPercent = 85;
+        if (currentPercent < 88) {
+          currentPercent += Math.floor(Math.random() * 6) + 3;
+          if (currentPercent > 88) currentPercent = 88;
 
-          if (currentPercent < 25) {
-            updateProgressDisplay(currentPercent, 'ANALYZING GEOMETRY', 'Analyzing Spatial Dimensions', 'Validating photo resolution, aspect ratio, and lighting balance...');
-          } else if (currentPercent < 55) {
-            updateProgressDisplay(currentPercent, 'MAPPING 2D UV COORDINATES', 'Configuring Photo Immersive Stage', 'Setting up ultra-responsive pan/zoom viewport and gesture controls...');
-          } else if (currentPercent < 75) {
-            updateProgressDisplay(currentPercent, 'INITIALIZING BLANK PINS', 'Placing 3 Commercial Pinpoints', 'Configuring Blank Product Pins (+1, +2, +3) and catalog slots...');
+          if (currentPercent < 28) {
+            updateProgressDisplay(currentPercent, 'SECURING ORIGINAL (R2)', 'Protecting Master Asset', 'Backing up Tier 0 master image to Cloudflare R2 offsite storage...');
+          } else if (currentPercent < 60) {
+            updateProgressDisplay(currentPercent, 'AI IMAGE MASTERING', 'Super-Resolution Engine', 'Executing ONNX neural super-resolution & visual clarity filtering...');
+          } else if (currentPercent < 80) {
+            updateProgressDisplay(currentPercent, 'GENERATING 3D BOOTH', 'Creating Virtual Showroom', 'Synthesizing interactive 3D spatial viewport and 3 product slots...');
           } else {
-            updateProgressDisplay(currentPercent, 'PREPARING STUDIO', 'Finalizing Commercial Studio', 'Synthesizing AI product detail schemas and buyer action buttons...');
+            updateProgressDisplay(currentPercent, 'FINALIZING PREVIEW', 'Connecting Buyer Tools', 'Configuring 1-click RFQ, Sample Request, and Meeting scheduler...');
           }
         }
-      }, 180);
+      }, 160);
 
       try {
         const token = localStorage.getItem('token');
         const headers = {};
-        if (token) headers['Authorization'] = `Bearer ${token}`;
+        if (token) headers['Authorization'] = 'Bearer ' + token;
 
         const res = await fetch('/api/free-funnel/preview', {
           method: 'POST',
@@ -2379,34 +2535,41 @@
           hideProgress();
           if (res.status === 409) {
             openDuplicateModal(
-              data.error === 'BUSINESS_ALREADY_EXISTS' ? 'Business Free Booth Already Created' : 'Email Already Used',
-              data.message || 'Your free photo immersive booth preview has already been created.',
+              data.error === 'BUSINESS_ALREADY_EXISTS' ? 'Business Free 3D Booth Already Created' : 'Email Already Used',
+              data.message || 'Your free 3D virtual booth preview has already been created.',
               data.existingProjectId
             );
             return;
           }
-          return alert(data.message || 'Generation failed.');
+          return alert(data.message || 'Booth generation failed. Please try again.');
         }
 
-        // Final rapid transition to 100%
-        updateProgressDisplay(95, 'FINALIZING BOOTH', 'Connecting Buyer Tools', 'Activating 1-click RFQ, Sample Request, and Meeting scheduler...');
+        // Final transition to 100%
+        updateProgressDisplay(95, 'FINALIZING 3D BOOTH', 'Connecting Tools', 'Activating 1-click RFQ, Sample Request, and Meeting scheduler...');
         
         setTimeout(() => {
-          updateProgressDisplay(100, 'YOUR FREE BOOTH IS READY', 'Photo Immersive Studio Ready!', '3 Blank Product Pins and Catalog Cards Initialized!');
+          updateProgressDisplay(100, 'YOUR 3D BOOTH IS READY', '3D Virtual Booth Ready!', '3 Product Pinpoint Slots Initialized!');
           
           setTimeout(() => {
             hideProgress();
             activeProjectId = data.projectId;
             activeProjectData = data.project;
+            try {
+              localStorage.setItem('dna_free_booth_session', JSON.stringify({
+                projectId: activeProjectId,
+                project: activeProjectData,
+                savedAt: new Date().toISOString()
+              }));
+            } catch(e) {}
             logAnalyticsEvent('free_booth_created', { projectId: activeProjectId });
             renderStudioBooth(data.project);
-          }, 450);
-        }, 300);
+          }, 350);
+        }, 250);
 
       } catch (err) {
         clearInterval(progressInterval);
         hideProgress();
-        alert('Network error while generating booth: ' + err.message);
+        alert('Network error while creating 3D booth: ' + err.message);
       }
     }
 
@@ -3059,7 +3222,7 @@
         btnEl.onclick = () => startProductOnboarding(3);
       } else {
         titleEl.textContent = 'ALL 3 SLOTS COMPLETE — READY TO PUBLISH';
-        subEl.textContent = 'Your photo immersive booth is fully populated. Activate commercial features to publish.';
+        subEl.textContent = 'Your 3D booth is fully populated. Activate commercial features to publish.';
         btnEl.innerHTML = '<i class="fa-solid fa-rocket"></i> ACTIVATE COMMERCIAL BOOTH';
         btnEl.onclick = () => openPlanModal('all_products_completed');
       }
