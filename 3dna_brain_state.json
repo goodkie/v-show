@@ -44,8 +44,8 @@
     "/admin.html"
   ],
   "c11_6_status": "FULL_COMMERCIAL_FLOW_PRODUCTION_READY",
-  "lastVerifiedMilestone": "C11.11-P0",
-  "verifiedAt": "2026-08-30T02:38:39.116Z",
+  "lastVerifiedMilestone": "C11.11-P0-R1",
+  "verifiedAt": "2026-08-30T02:51:29.176Z",
   "c11_7_status": "OWNER_READY_FOR_CONTROLLED_COMMERCIAL_LAUNCH",
   "livePaymentPreconditions": "READY_FOR_OWNER_CONFIGURATION",
   "backupState": "SNAPSHOT_PERSISTENCE_ACTIVE",
@@ -91,5 +91,20 @@
   "ownerObservedNoOpFixed": true,
   "customerFacingProductName": "3D_BOOTH",
   "primaryCtaText": "CREATE_3D_BOOTH",
-  "productionFree3dBoothE2E": "PASS"
+  "productionFree3dBoothE2E": "PASS",
+  "c11_11_p0_r1_status": "FREE_3D_BOOTH_EXTERNAL_EMAIL_AND_PRODUCTION_E2E_VERIFIED",
+  "externalVerificationEmailReceived": true,
+  "externalMagicLinkClick": "PASS",
+  "productionCallbackDomainCorrect": true,
+  "originalTabVerificationRecovery": "PASS",
+  "dataReentryAfterVerification": 0,
+  "localStorageSecretExposure": 0,
+  "testRequestR2ObjectExists": true,
+  "testRequestR2HashMatch": true,
+  "realExternalEmailFlowProcessing": "PASS",
+  "realBrowserResultViewer": "PASS",
+  "customerCopy3dBooth": "PASS",
+  "singlePhotoAuthentic3dClaim": 0,
+  "ownerPathNoop": 0,
+  "uncaughtJsErrors": 0
 }

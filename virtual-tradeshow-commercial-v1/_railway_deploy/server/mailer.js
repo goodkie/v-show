@@ -13,7 +13,7 @@ class EmailService {
     if (process.env.RESEND_API_KEY) {
       return {
         provider: 'RESEND',
-        fromDomain: (process.env.EMAIL_FROM || 'verify@dn-a.com').split('@')[1] || 'dn-a.com',
+        fromDomain: (process.env.EMAIL_FROM || 'onboarding@resend.dev').split('@')[1] || 'resend.dev',
         ready: true
       };
     }
@@ -63,20 +63,32 @@ class EmailService {
           verifyUrl: fullVerifyUrl
         };
       } catch (err) {
-        console.error('[EMAIL DISPATCHER ERROR] Resend provider delivery rejected:', err.message);
-        if (process.env.NODE_ENV !== 'production') {
+        console.error('[EMAIL DISPATCHER] Resend primary from rejected:', err.message);
+        // Fallback to verified onboarding@resend.dev sender if custom domain isn't DNS-verified
+        try {
+          const fallbackRes = await this.sendViaResend({ to, fullVerifyUrl, code, businessName }, '³DNa 3D Booth <onboarding@resend.dev>');
           return {
             success: true,
-            provider: 'DEV_SANDBOX',
-            messageId: `sandbox_${Date.now()}`,
+            provider: 'RESEND_ONBOARDING',
+            messageId: fallbackRes?.id || `resend_ob_${Date.now()}`,
             verifyUrl: fullVerifyUrl
           };
+        } catch (obErr) {
+          console.error('[EMAIL DISPATCHER] Resend fallback rejected:', obErr.message);
+          if (process.env.NODE_ENV !== 'production') {
+            return {
+              success: true,
+              provider: 'DEV_SANDBOX',
+              messageId: `sandbox_${Date.now()}`,
+              verifyUrl: fullVerifyUrl
+            };
+          }
+          const deliverErr = new Error("WE COULDN'T SEND YOUR CONFIRMATION EMAIL. Please try again.");
+          deliverErr.code = 'EMAIL_DELIVERY_REJECTED';
+          deliverErr.provider = 'RESEND';
+          deliverErr.details = obErr.message;
+          throw deliverErr;
         }
-        const deliverErr = new Error("WE COULDN'T SEND YOUR CONFIRMATION EMAIL. Please try again.");
-        deliverErr.code = 'EMAIL_DELIVERY_REJECTED';
-        deliverErr.provider = 'RESEND';
-        deliverErr.details = err.message;
-        throw deliverErr;
       }
     }
 
@@ -117,10 +129,11 @@ class EmailService {
     };
   }
 
-  sendViaResend({ to, fullVerifyUrl, code, businessName }) {
+  sendViaResend({ to, fullVerifyUrl, code, businessName }, customFrom = null) {
     return new Promise((resolve, reject) => {
+      const fromAddress = customFrom || process.env.EMAIL_FROM || '³DNa 3D Booth <onboarding@resend.dev>';
       const data = JSON.stringify({
-        from: process.env.EMAIL_FROM || '³DNa 3D Booth <verify@dn-a.com>',
+        from: fromAddress,
         to: [to],
         subject: `Confirm your email to activate your ${businessName || ''} free 3D virtual booth`,
         html: `

@@ -790,7 +790,7 @@ const healthHandler = (req, res) => {
     schemaVersion: 5,
     stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
-    uiVersion: 'dna-C10-R1-PHOTO-IMMERSIVE',
+    uiVersion: 'dna-C11.11-P0-3D-BOOTH',
     clientPath: path.join(__dirname, '..', 'client'),
     timestamp: new Date().toISOString()
   });
@@ -2497,9 +2497,34 @@ app.post('/api/free-funnel/preview', upload.single('photo'), async (req, res) =>
       bypassType
     });
 
+    // Real R2 Tier 0 Master Ingestion
+    let r2BackupInfo = null;
+    if (req.file && fs.existsSync(req.file.path)) {
+      try {
+        const { BackupManager } = require('./offsite_backup/backup_manager');
+        const bm = new BackupManager();
+        const r2Res = await bm.backupTier0Original(project.id, `src_${Date.now()}`, req.file.path, {
+          'x-3dna-project-id': project.id,
+          'x-3dna-business': businessName
+        });
+        if (r2Res && r2Res.status === 'VERIFIED') {
+          r2BackupInfo = {
+            status: 'VERIFIED',
+            key: r2Res.key,
+            primarySha256: r2Res.primarySha256,
+            offsiteSha256: r2Res.offsiteSha256,
+            size: r2Res.size
+          };
+        }
+      } catch (r2Err) {
+        console.warn('[R2 TIER0 FREE FUNNEL WARN]', r2Err.message);
+      }
+    }
+
     res.status(201).json({
       success: true,
-      message: 'YOUR FREE PHOTO IMMERSIVE BOOTH IS READY',
+      message: 'YOUR FREE 3D BOOTH IS READY',
+      r2Backup: r2BackupInfo,
       projectId: project.id,
       previewUrl: project.sourceAsset?.previewUrl || photoUrl,
       businessName: project.businessName,
