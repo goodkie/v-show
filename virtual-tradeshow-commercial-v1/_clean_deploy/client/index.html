@@ -3393,6 +3393,51 @@
       document.getElementById('planModal').style.display = 'none';
     }
 
+    function closeEmailVerifyModal() {
+      const modal = document.getElementById('emailVerifyModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function openDuplicateModal(title, desc, existingProjectId) {
+      existingDuplicateProjectId = existingProjectId || null;
+      const modal = document.getElementById('duplicateBoothModal');
+      const titleEl = document.getElementById('duplicateModalTitle');
+      const descEl = document.getElementById('duplicateModalDesc');
+      if (titleEl) titleEl.textContent = title || 'We Found Your Existing Booth';
+      if (descEl) descEl.textContent = desc || 'A free 3D virtual booth preview has already been created for this business or email.';
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeDuplicateModal() {
+      const modal = document.getElementById('duplicateBoothModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function handleDuplicateContinue() {
+      closeDuplicateModal();
+      if (existingDuplicateProjectId) {
+        showProgress();
+        updateProgressDisplay(50, 'LOADING EXISTING 3D BOOTH', 'Loading Your 3D Booth', 'Retrieving your interactive 3D virtual booth preview...');
+        try {
+          const res = await fetch('/api/projects/' + existingDuplicateProjectId);
+          if (res.ok) {
+            const data = await res.json();
+            updateProgressDisplay(100, 'YOUR 3D BOOTH IS READY', '3D Virtual Booth Ready!', '3 Product Pinpoint Slots Initialized!');
+            setTimeout(() => {
+              hideProgress();
+              activeProjectId = existingDuplicateProjectId;
+              activeProjectData = data.project || data;
+              renderStudioBooth(activeProjectData);
+            }, 300);
+            return;
+          }
+        } catch(e) {}
+        hideProgress();
+      }
+      const studio = document.getElementById('freeStudioSection');
+      if (studio) studio.scrollIntoView({ behavior: 'smooth' });
+    }
+
     function openSaveEmailModal() {
       openPlanModal('save_booth');
     }
