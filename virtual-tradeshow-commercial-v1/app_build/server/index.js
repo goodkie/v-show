@@ -777,6 +777,14 @@ app.get('/api/debug/video-assets', (req, res) => {
 });
 
 
+// ── Explicit Root Route with strict no-cache headers ──
+app.get(['/', '/index.html'], (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
+});
+
 app.use('/assets', express.static(path.join(__dirname, '..', 'client', 'assets')));
 app.use('/assets', express.static(path.join(__dirname, '..', 'assets')));
 app.use(express.static(path.join(__dirname, '..', 'client')));
@@ -790,7 +798,7 @@ const healthHandler = (req, res) => {
     schemaVersion: 5,
     stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
-    uiVersion: 'dna-C11.11-P0-3D-BOOTH',
+    uiVersion: '3D2-V11.11-P0-3D-BOOTH',
     clientPath: path.join(__dirname, '..', 'client'),
     timestamp: new Date().toISOString()
   });
