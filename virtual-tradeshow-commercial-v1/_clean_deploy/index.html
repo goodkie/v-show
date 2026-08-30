@@ -1999,7 +1999,7 @@
       </div>
     </div>
     <div style="max-width: 1200px; margin: 20px auto 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 12.5px; color: #64748b;">
-      <p style="margin: 0;">© 2026 ³D₂ Virtual Trade Show Commercial Platform. All rights reserved.</p>
+      <p style="margin: 0;">© 2026 ³D₂ (3dz.site) Virtual Trade Show Commercial Platform. All rights reserved.</p>
       <div style="display: flex; gap: 16px;">
         <span>Non-Destructive Digital Twin</span>
         <span>•</span>
@@ -2683,7 +2683,7 @@
       studio.style.display = 'block';
       studio.scrollIntoView({ behavior: 'smooth' });
 
-      document.getElementById('studioBannerBizName').textContent = `${projectData.businessName || 'Your Business'} — Drag to look around in 360°, click floating pins to inspect or configure products.`;
+      document.getElementById('studioBannerBizName').textContent = `${projectData.businessName || 'Your Business'} — Interactive Ultra-HD 3D Studio Showcase (Pan, zoom & inspect product pins)`;
 
       const photoUrl = projectData.sourceAsset?.previewUrl || projectData.sourceAsset?.originalUrl || '';
 
@@ -2693,6 +2693,36 @@
       renderProductCards(projectData.products || []);
       updateNextStepCTA();
       logAnalyticsEvent('immersive_view_started', { projectId: projectData.id });
+    }
+
+    let curvedScreenMesh = null;
+    let curvedScreenMeta = null;
+
+    function createCurvedScreenMesh(aspectRatio, material) {
+      const is360 = (aspectRatio >= 1.9);
+      const radius = 450;
+      // Span an IMAX-style ~75°-85° arc for standard photos, or 360° for equirectangular
+      const thetaLength = is360 ? Math.PI * 2 : Math.min(Math.PI * 0.85, 1.40 * Math.min(1.8, Math.max(0.8, aspectRatio / 1.33)));
+      const thetaStart = Math.PI - (thetaLength / 2);
+      const arcLength = radius * thetaLength;
+      const height = arcLength / Math.max(0.5, aspectRatio);
+
+      const cylinderGeo = new THREE.CylinderGeometry(
+        radius,
+        radius,
+        height,
+        128,
+        32,
+        true,
+        thetaStart,
+        thetaLength
+      );
+      cylinderGeo.scale(-1, 1, 1);
+
+      const mesh = new THREE.Mesh(cylinderGeo, material);
+      mesh.position.set(0, 0, 0);
+      mesh.renderOrder = -1;
+      return { mesh, radius, height, thetaLength, thetaStart, is360 };
     }
 
     function initPhotoImmersiveThree(photoUrl, projectData) {
@@ -2708,11 +2738,11 @@
         scene = new THREE.Scene();
         textureLoader = new THREE.TextureLoader();
 
-        // 65° Immersive Field of View
-        camera = new THREE.PerspectiveCamera(65, width / height, 0.01, 2000);
+        // 60° Immersive Distortion-Free Field of View
+        camera = new THREE.PerspectiveCamera(60, width / height, 0.01, 2000);
         camera.position.set(0, 0, 0.01);
 
-        // High-DPR WebGL Renderer with ACES Filmic Tone Mapping
+        // High-DPR WebGL Renderer with ACES Filmic Tone Mapping & High Precision
         renderer = new THREE.WebGLRenderer({
           canvas: canvas,
           antialias: true,
@@ -2723,36 +2753,32 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5));
         renderer.outputEncoding = THREE.sRGBEncoding;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.18;
+        renderer.toneMappingExposure = 1.15;
 
-        // OrbitControls for interior 360° lookaround
+        // OrbitControls for smooth curved lookaround & detail zoom
         controls = new THREE.OrbitControls(camera, canvas);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.08;
+        controls.dampingFactor = 0.07;
         controls.enableZoom = true;
         controls.minDistance = 0.005;
-        controls.maxDistance = 0.05;
+        controls.maxDistance = 0.08;
         controls.enablePan = false;
         controls.target.set(0, 0, 0);
-        controls.maxPolarAngle = Math.PI * 0.88;
-        controls.minPolarAngle = Math.PI * 0.12;
-        controls.rotateSpeed = -0.42;
-
-        // 360° Interior Equirectangular Sphere Mesh
-        const sphereGeo = new THREE.SphereGeometry(500, 128, 64);
-        sphereGeo.scale(-1, 1, 1);
+        controls.maxPolarAngle = Math.PI * 0.62;
+        controls.minPolarAngle = Math.PI * 0.38;
+        controls.rotateSpeed = -0.32;
 
         photoMaterial = new THREE.MeshBasicMaterial({
           side: THREE.FrontSide,
-          transparent: true,
+          transparent: false,
           opacity: 1.0,
           depthWrite: false
         });
-        photoSphere = new THREE.Mesh(sphereGeo, photoMaterial);
-        photoSphere.rotation.y = -0.45;
-        photoSphere.position.set(0, 0, 0);
-        photoSphere.renderOrder = -1;
-        scene.add(photoSphere);
+
+        // Initialize default curved screen geometry
+        curvedScreenMeta = createCurvedScreenMesh(16 / 9, photoMaterial);
+        curvedScreenMesh = curvedScreenMeta.mesh;
+        scene.add(curvedScreenMesh);
 
         window.addEventListener('resize', onStudioResize);
         initDrawer3D();
@@ -2766,7 +2792,7 @@
         }
       }
 
-      // Load booth photo into 360° texture
+      // Load booth photo with 1:1 Aspect Ratio Matching & Anisotropic Filtering
       if (photoUrl && textureLoader) {
         textureLoader.load(photoUrl, (tex) => {
           tex.encoding = THREE.sRGBEncoding;
@@ -2775,12 +2801,69 @@
           tex.generateMipmaps = true;
           tex.anisotropy = renderer ? renderer.capabilities.getMaxAnisotropy() : 16;
           tex.needsUpdate = true;
+
+          const imgW = tex.image ? tex.image.width : 1920;
+          const imgH = tex.image ? tex.image.height : 1080;
+          const aspect = imgW / Math.max(1, imgH);
+
+          if (curvedScreenMesh) {
+            scene.remove(curvedScreenMesh);
+            if (curvedScreenMesh.geometry) curvedScreenMesh.geometry.dispose();
+          }
+
+          curvedScreenMeta = createCurvedScreenMesh(aspect, photoMaterial);
+          curvedScreenMesh = curvedScreenMeta.mesh;
+          scene.add(curvedScreenMesh);
+
           photoMaterial.map = tex;
           photoMaterial.needsUpdate = true;
+
+          if (controls) {
+            if (!curvedScreenMeta.is360) {
+              controls.minAzimuthAngle = -curvedScreenMeta.thetaLength * 0.46;
+              controls.maxAzimuthAngle = curvedScreenMeta.thetaLength * 0.46;
+              controls.minPolarAngle = Math.PI * 0.38;
+              controls.maxPolarAngle = Math.PI * 0.62;
+              controls.rotateSpeed = -0.32;
+            } else {
+              controls.minAzimuthAngle = -Infinity;
+              controls.maxAzimuthAngle = Infinity;
+              controls.minPolarAngle = Math.PI * 0.12;
+              controls.maxPolarAngle = Math.PI * 0.88;
+              controls.rotateSpeed = -0.42;
+            }
+            controls.update();
+          }
+
+          recalculatePinpointPositions(projectData);
         });
       }
 
       setupStudioProducts(projectData);
+    }
+
+    function recalculatePinpointPositions(projectData) {
+      if (!curvedScreenMeta || !studioProducts) return;
+      const rawPinpoints = projectData?.pinpoints || [];
+      const defaultUVs = [
+        { u: 0.28, v: 0.62 },
+        { u: 0.50, v: 0.55 },
+        { u: 0.72, v: 0.60 }
+      ];
+
+      studioProducts.forEach((prod, idx) => {
+        const pin = rawPinpoints.find(p => p.slotIndex === prod.slotIndex) || defaultUVs[idx];
+        const u = typeof pin.u === 'number' ? pin.u : defaultUVs[idx].u;
+        const v = typeof pin.v === 'number' ? pin.v : defaultUVs[idx].v;
+
+        const angle = curvedScreenMeta.thetaStart + (u * curvedScreenMeta.thetaLength);
+        const r = curvedScreenMeta.radius * 0.96;
+        const x = -r * Math.sin(angle);
+        const y = (0.5 - v) * curvedScreenMeta.height;
+        const z = r * Math.cos(angle);
+
+        prod.worldPos = new THREE.Vector3(x, y, z);
+      });
     }
 
     function onStudioResize() {
@@ -2799,9 +2882,9 @@
     function setupStudioProducts(projectData) {
       const rawProducts = projectData?.products || [];
       const defaultPositions = [
-        new THREE.Vector3(-170, -25, -340), // Slot 1 Left
-        new THREE.Vector3(0, -10, -380),    // Slot 2 Center
-        new THREE.Vector3(170, -25, -340)   // Slot 3 Right
+        new THREE.Vector3(-140, -20, -380), // Slot 1 Left
+        new THREE.Vector3(0, -10, -420),    // Slot 2 Center
+        new THREE.Vector3(140, -20, -380)   // Slot 3 Right
       ];
 
       studioProducts = [1, 2, 3].map((slot, idx) => {
