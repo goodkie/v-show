@@ -2341,7 +2341,7 @@ app.get('/verify-email', (req, res) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Email Verification — dn’a Virtual Trade Show</title>
+  <title>Email Verification — 3DZ 3D Booth</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
@@ -2372,20 +2372,16 @@ app.get('/verify-email', (req, res) => {
 </head>
 <body>
   <div class="card">
+    <div style="font-size: 26px; font-weight: 900; letter-spacing: -0.5px; color: #fff; margin-bottom: 16px;">
+      3D<span style="color: #38bdf8;">Z</span>
+    </div>
     <div class="icon-badge">
       <i class="fa-solid ${verified ? 'fa-check-circle' : 'fa-triangle-exclamation'}"></i>
     </div>
     <h1>${verified ? 'Email Verified Successfully!' : 'Verification Link Error'}</h1>
-    <p>${verified ? `Your email (<b>${email}</b>) has been confirmed. Your booth creation is activated.<br>You can return to your original tab or continue below.` : errorMsg || 'This confirmation link is invalid or has expired.'}</p>
+    <p>${verified ? `Your email has been confirmed. Your 3D Booth creation is now activated on 3dz.site.<br>You can return to your original tab or continue below.` : errorMsg || 'This confirmation link is invalid or has expired.'}</p>
     <a href="/" class="btn">${verified ? 'Continue to Booth Studio' : 'Return to Home'}</a>
   </div>
-  ${verified ? `<script>
-    try {
-      localStorage.setItem('dna_email_verified', 'true');
-      localStorage.setItem('dna_verified_email', ${JSON.stringify(email)});
-      localStorage.setItem('dna_verification_token', ${JSON.stringify(verificationToken)});
-    } catch(e) {}
-  </script>` : ''}
 </body>
 </html>`);
 });
