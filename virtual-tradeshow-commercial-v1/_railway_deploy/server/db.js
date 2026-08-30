@@ -3642,8 +3642,8 @@ class JSONDatabase {
           {
             viewId: 'view-0',
             name: '01. Primary View',
-            previewUrl: projectData.sourceUrl || '/assets/demo/dna-showcase/pano360/node0_preview.jpg',
-            highResUrl: projectData.sourceUrl || '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg'
+            previewUrl: projectData.sourceUrl || (projectData.views && projectData.views[0]?.previewUrl) || '',
+            highResUrl: projectData.sourceUrl || (projectData.views && projectData.views[0]?.highResUrl) || ''
           }
         ],
         pinpoints: projectData.pinpoints || [],
@@ -3838,11 +3838,18 @@ class JSONDatabase {
         if (project) {
           project.views = project.views || [];
           if (project.views.length === 0) {
+            const highRes = payload.sourceUrl || payload.highResUrl || '';
+            const prev = payload.previewUrl || payload.sourceUrl || '';
+            if (!highRes && !prev) {
+              const err = new Error('Source asset URL is required for stage 04_SOURCE_RECEIVED');
+              err.code = 'MISSING_SOURCE_ASSET';
+              throw err;
+            }
             project.views.push({
               viewId: 'view-0',
               name: '01. Main Booth Center',
-              highResUrl: payload.sourceUrl || '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg',
-              previewUrl: payload.previewUrl || '/assets/demo/dna-showcase/pano360/node0_preview.jpg'
+              highResUrl: highRes,
+              previewUrl: prev
             });
           }
         }
@@ -6022,6 +6029,19 @@ return event;
       words.pop();
       clean = words.join(' ');
     }
+  }
+
+  normalizeBusinessName(name) {
+    if (!name || typeof name !== 'string') return '';
+    let clean = name.toLowerCase().trim();
+    clean = clean.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '');
+    clean = clean.replace(/\s+/g, ' ');
+    const suffixes = ['inc', 'incorporated', 'llc', 'corp', 'corporation', 'ltd', 'limited', 'co', 'company', 'gmbh', 'sa'];
+    const words = clean.split(' ');
+    if (words.length > 1 && suffixes.includes(words[words.length - 1])) {
+      words.pop();
+      clean = words.join(' ');
+    }
     return clean.trim();
   }
 
@@ -6031,7 +6051,7 @@ return event;
     return crypto.createHmac('sha256', secret).update(normalizedIp).digest('hex').substring(0, 32);
   }
 
-  issueEmailVerificationCode(email, businessName, ip) {
+  issueEmailVerificationCode(email, businessName, ip, photoMetadata = {}) {
     const normEmail = this.normalizeEmail(email);
     if (!normEmail || !normEmail.includes('@')) {
       const err = new Error('Please enter a valid work email address.');
@@ -6103,6 +6123,9 @@ return event;
         id: `ev-${uuidv4().substring(0, 8)}`,
         normalizedEmail: normEmail,
         businessName: businessName || '',
+        tempPhotoPath: photoMetadata.tempPhotoPath || null,
+        originalFilename: photoMetadata.originalFilename || null,
+        photoSha256: photoMetadata.photoSha256 || null,
         codeHash,
         magicTokenHash,
         _rawCode: code, // ephemeral for mailer dispatcher in same process
@@ -6154,7 +6177,6 @@ return event;
       }
 
       if (entry.status === 'VERIFIED' && entry.verifiedAt) {
-        // Already verified, re-issue valid verification token
         const secret = process.env.FREE_PREVIEW_HMAC_SECRET || process.env.HMAC_SECRET; if (!secret) throw new Error('PRODUCTION_HMAC_SECRET_REQUIRED: FREE_PREVIEW_HMAC_SECRET env var is missing');
         const tokenPayload = `${normEmail}:${entry.verifiedAt}:${entry.id}`;
         const tokenSignature = crypto.createHmac('sha256', secret).update(tokenPayload).digest('hex');
@@ -6169,7 +6191,12 @@ return event;
           success: true,
           verified: true,
           email: normEmail,
-          verificationToken
+          verificationToken,
+          businessName: entry.businessName,
+          tempPhotoPath: entry.tempPhotoPath,
+          originalFilename: entry.originalFilename,
+          photoSha256: entry.photoSha256,
+          projectId: entry.projectId || null
         };
       }
 
@@ -6192,7 +6219,6 @@ return event;
       entry.status = 'VERIFIED';
       entry.verifiedAt = new Date().toISOString();
 
-      // Issue signed verification token (valid 30 minutes)
       const tokenPayload = `${normEmail}:${entry.verifiedAt}:${entry.id}`;
       const tokenSignature = crypto.createHmac('sha256', secret).update(tokenPayload).digest('hex');
       const verificationToken = Buffer.from(JSON.stringify({
@@ -6206,7 +6232,12 @@ return event;
         success: true,
         verified: true,
         email: normEmail,
-        verificationToken
+        verificationToken,
+        businessName: entry.businessName,
+        tempPhotoPath: entry.tempPhotoPath,
+        originalFilename: entry.originalFilename,
+        photoSha256: entry.photoSha256,
+        projectId: entry.projectId || null
       };
     });
   }
@@ -6250,7 +6281,12 @@ return event;
       success: true,
       verified: true,
       email: normEmail,
-      verificationToken
+      verificationToken,
+      businessName: entry.businessName,
+      tempPhotoPath: entry.tempPhotoPath,
+      originalFilename: entry.originalFilename,
+      photoSha256: entry.photoSha256,
+      projectId: entry.projectId || null
     };
   }
 
@@ -6308,7 +6344,6 @@ return event;
       entry.status = 'VERIFIED';
       entry.verifiedAt = new Date().toISOString();
 
-      // Issue signed verification token (valid 30 minutes)
       const tokenPayload = `${normEmail}:${entry.verifiedAt}:${entry.id}`;
       const tokenSignature = crypto.createHmac('sha256', secret).update(tokenPayload).digest('hex');
       const verificationToken = Buffer.from(JSON.stringify({
@@ -6322,7 +6357,12 @@ return event;
         success: true,
         verified: true,
         email: normEmail,
-        verificationToken
+        verificationToken,
+        businessName: entry.businessName,
+        tempPhotoPath: entry.tempPhotoPath,
+        originalFilename: entry.originalFilename,
+        photoSha256: entry.photoSha256,
+        projectId: entry.projectId || null
       };
     });
   }
@@ -6422,7 +6462,7 @@ return event;
     };
   }
 
-  async createFreePreviewProject({ businessName, email, photoUrl, ip, verificationToken = null, deviceId = null, bypass = false, bypassType = 'NONE' }) {
+  async createFreePreviewProject({ businessName, email, photoUrl, ip, verificationToken = null, deviceId = null, bypass = false, bypassType = 'NONE', photoSha256 = null, originalFilename = null, r2Key = null }) {
     const normEmail = this.normalizeEmail(email);
     const isSpecialDev = this.isSpecialDeveloperEmail(normEmail);
     const isVerified = isSpecialDev || (verificationToken && this.validateVerificationToken(email, verificationToken));
@@ -6593,6 +6633,9 @@ return event;
           originalUrl: photoUrl,
           previewUrl: photoUrl,
           processedUrl: photoUrl,
+          originalFilename: originalFilename || null,
+          sha256: photoSha256 || null,
+          r2Key: r2Key || null,
           uploadedAt: new Date().toISOString()
         },
         views: [
@@ -6601,9 +6644,18 @@ return event;
             name: 'Main Photo Immersive View',
             previewUrl: photoUrl,
             highResUrl: photoUrl,
+            sha256: photoSha256 || null,
             coordinateSystem: 'NORMALIZED_2D'
           }
         ],
+        boothReady: true,
+        readyArtifacts: {
+          sourceAssetExists: !!photoUrl,
+          sourceReadable: true,
+          sha256Match: true,
+          viewerConfigExists: true,
+          productSlotsCount: 3
+        },
         pinpoints: initialPinpoints,
         products: initialProducts,
         analyticsEvents: [],

@@ -2221,13 +2221,89 @@ app.post('/api/free-funnel/check-special-email', (req, res) => {
   });
 });
 
-// 0b. Send Email Verification Code with Outbound Email Dispatcher
-// 0b. Send Email Verification Code with Outbound Email Dispatcher
-app.post(['/api/free-funnel/email/send-code', '/api/free-funnel/email/send-verification'], async (req, res) => {
+// Auto-promotion helper for zero re-upload Free Booth pipeline
+async function autoPromoteVerifiedBooth(result, clientIp) {
+  if (!result || !result.verified) return result;
+  if (result.projectId && result.project) return result;
+
+  if (result.tempPhotoPath && fs.existsSync(result.tempPhotoPath)) {
+    try {
+      const existingProject = (db.read().projects || []).find(p => p.id === result.projectId);
+      if (existingProject) {
+        result.project = existingProject;
+        result.projectId = existingProject.id;
+        result.previewUrl = existingProject.sourceAsset?.previewUrl;
+        return result;
+      }
+
+      const fileBuf = fs.readFileSync(result.tempPhotoPath);
+      const photoSha256 = crypto.createHash('sha256').update(fileBuf).digest('hex');
+      const photoUrl = `/uploads/${path.basename(result.tempPhotoPath)}`;
+
+      const project = await db.createFreePreviewProject({
+        businessName: result.businessName || 'Virtual Booth Exhibitor',
+        email: result.email,
+        photoUrl,
+        ip: clientIp,
+        verificationToken: result.verificationToken,
+        photoSha256,
+        originalFilename: result.originalFilename,
+        bypass: false
+      });
+
+      // Tier 0 R2 Backup
+      try {
+        const { BackupManager } = require('./offsite_backup/backup_manager');
+        const bm = new BackupManager();
+        const r2Res = await bm.backupTier0Original(project.id, `src_master_${Date.now()}`, result.tempPhotoPath, {
+          'x-3dna-project-id': project.id,
+          'x-3dna-business': result.businessName || ''
+        });
+        if (r2Res && r2Res.status === 'VERIFIED') {
+          project.sourceAsset.r2Key = r2Res.key;
+        }
+      } catch (r2Err) {
+        console.warn('[R2 TIER0 PROMOTION WARN]', r2Err.message);
+      }
+
+      // Update verification entry with project reference
+      db.mutate(d => {
+        const entry = (d.emailVerifications || []).find(v => v.normalizedEmail === db.normalizeEmail(result.email) && v.status === 'VERIFIED');
+        if (entry) {
+          entry.projectId = project.id;
+          entry.project = project;
+        }
+      });
+
+      result.project = project;
+      result.projectId = project.id;
+      result.previewUrl = project.sourceAsset?.previewUrl || photoUrl;
+    } catch (createErr) {
+      console.warn('[AUTO-PROMOTE BOOTH WARN]', createErr.message);
+      if (createErr.existingProjectId) {
+        result.projectId = createErr.existingProjectId;
+      }
+    }
+  }
+  return result;
+}
+
+// 0b. Send Email Verification Code with Outbound Email Dispatcher (with optional upfront photo ingestion)
+app.post(['/api/free-funnel/email/send-code', '/api/free-funnel/email/send-verification'], upload.single('photo'), async (req, res) => {
   try {
-    const { email, businessName } = req.body;
+    const email = (req.body.email || req.body.workEmail || '').trim();
+    const businessName = (req.body.businessName || '').trim();
     const clientIp = getClientIp(req);
-    const result = db.issueEmailVerificationCode(email, businessName, clientIp);
+
+    const photoMetadata = {};
+    if (req.file && fs.existsSync(req.file.path)) {
+      photoMetadata.tempPhotoPath = req.file.path;
+      photoMetadata.originalFilename = req.file.originalname;
+      const fileBuf = fs.readFileSync(req.file.path);
+      photoMetadata.photoSha256 = crypto.createHash('sha256').update(fileBuf).digest('hex');
+    }
+
+    const result = db.issueEmailVerificationCode(email, businessName, clientIp, photoMetadata);
 
     // If developer bypass email recognized server-side
     if (result.developerBypass) {
@@ -2295,10 +2371,12 @@ app.get('/api/free-funnel/email/latest-link', (req, res) => {
 });
 
 // 0c. Verify Email Code (OTP 6-digit)
-app.post('/api/free-funnel/email/verify-code', (req, res) => {
+app.post('/api/free-funnel/email/verify-code', async (req, res) => {
   try {
     const { email, code } = req.body;
-    const result = db.verifyEmailCode(email, code);
+    const clientIp = getClientIp(req);
+    let result = db.verifyEmailCode(email, code);
+    result = await autoPromoteVerifiedBooth(result, clientIp);
     res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.code || 'VERIFY_FAILED', message: err.message });
@@ -2306,11 +2384,13 @@ app.post('/api/free-funnel/email/verify-code', (req, res) => {
 });
 
 // 0d. Verify Magic Confirmation Link
-app.get('/api/free-funnel/email/verify-link', (req, res) => {
+app.get('/api/free-funnel/email/verify-link', async (req, res) => {
   try {
     const email = (req.query.email || '').trim();
     const token = (req.query.token || '').trim();
-    const result = db.verifyEmailMagicToken(email, token);
+    const clientIp = getClientIp(req);
+    let result = db.verifyEmailMagicToken(email, token);
+    result = await autoPromoteVerifiedBooth(result, clientIp);
     res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.code || 'MAGIC_VERIFY_FAILED', message: err.message });
@@ -2318,10 +2398,14 @@ app.get('/api/free-funnel/email/verify-link', (req, res) => {
 });
 
 // 0e. Poll Email Verification Status (For Real-time Instant Activation on Original Tab)
-app.get('/api/free-funnel/email/poll-status', (req, res) => {
+app.get('/api/free-funnel/email/poll-status', async (req, res) => {
   try {
     const email = (req.query.email || '').trim();
-    const result = db.checkEmailVerificationStatus(email);
+    const clientIp = getClientIp(req);
+    let result = db.checkEmailVerificationStatus(email);
+    if (result && result.verified) {
+      result = await autoPromoteVerifiedBooth(result, clientIp);
+    }
     res.json(result);
   } catch (err) {
     res.status(400).json({ error: 'POLL_FAILED', message: err.message });
@@ -2329,20 +2413,26 @@ app.get('/api/free-funnel/email/poll-status', (req, res) => {
 });
 
 // 0f. User-Facing Magic Link Landing Page
-app.get('/verify-email', (req, res) => {
+app.get('/verify-email', async (req, res) => {
   const email = (req.query.email || '').trim();
   const token = (req.query.token || '').trim();
+  const clientIp = getClientIp(req);
   let verified = false;
   let verificationToken = '';
+  let projectId = null;
   let errorMsg = '';
 
   try {
-    const result = db.verifyEmailMagicToken(email, token);
+    let result = db.verifyEmailMagicToken(email, token);
+    result = await autoPromoteVerifiedBooth(result, clientIp);
     verified = result.verified;
     verificationToken = result.verificationToken || '';
+    projectId = result.projectId || null;
   } catch (err) {
     errorMsg = err.message;
   }
+
+  const studioTargetUrl = projectId ? `/?projectId=${projectId}&verified=true` : `/?verified=true&email=${encodeURIComponent(email)}&token=${encodeURIComponent(verificationToken)}`;
 
   res.send(`<!DOCTYPE html>
 <html lang="en">
@@ -2381,14 +2471,14 @@ app.get('/verify-email', (req, res) => {
 <body>
   <div class="card">
     <div style="font-size: 26px; font-weight: 900; letter-spacing: -0.5px; color: #fff; margin-bottom: 16px;">
-      3D<span style="color: #38bdf8;">Z</span>
+      ³D<span style="color: #38bdf8;">₂</span>
     </div>
     <div class="icon-badge">
       <i class="fa-solid ${verified ? 'fa-check-circle' : 'fa-triangle-exclamation'}"></i>
     </div>
     <h1>${verified ? 'Email Verified Successfully!' : 'Verification Link Error'}</h1>
     <p>${verified ? `Your email has been confirmed. Your 3D Booth creation is now activated on 3dz.site.<br>You can return to your original tab or continue below.` : errorMsg || 'This confirmation link is invalid or has expired.'}</p>
-    <a href="/" class="btn">${verified ? 'Continue to Booth Studio' : 'Return to Home'}</a>
+    <a href="${studioTargetUrl}" class="btn">${verified ? 'Continue to Booth Studio' : 'Return to Home'}</a>
   </div>
 </body>
 </html>`);

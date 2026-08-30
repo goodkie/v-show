@@ -642,6 +642,21 @@
       },
       "createdAt": "2026-08-25T01:16:36.852Z",
       "updatedAt": "2026-08-25T01:16:36.852Z"
+    },
+    {
+      "id": "org-free-0af765ce",
+      "type": "exhibitor",
+      "name": "Quantum Robotics Inc 0504",
+      "slug": "quantum-robotics-inc-0504",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-30T23:06:30.555Z"
+      },
+      "createdAt": "2026-08-30T23:06:30.555Z",
+      "updatedAt": "2026-08-30T23:06:30.555Z"
     }
   ],
   "users": [
@@ -16338,6 +16353,22 @@
       "ipHash": "35d5e96c861ffb534a6bc8bb277ea6bf",
       "generationStatus": "SUCCESS",
       "createdAt": "2026-08-26T07:46:46.851Z"
+    },
+    {
+      "usageId": "use-dd040553",
+      "businessName": "Quantum Robotics Inc 0504",
+      "normalizedBusinessName": "quantum robotics inc 0504",
+      "email": "test_owner_1788131190504@example.com",
+      "normalizedEmail": "test_owner_1788131190504@example.com",
+      "emailVerifiedAt": "2026-08-30T23:06:30.555Z",
+      "ipHash": "51543451051e28691db5efe98bae508a",
+      "deviceIdHash": null,
+      "projectId": "prj-free-1218d20c",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-30T23:06:30.555Z",
+      "lastAttemptAt": "2026-08-30T23:06:30.555Z"
     }
   ],
   "projects": [
@@ -19294,6 +19325,126 @@
       "analyticsEvents": [],
       "createdAt": "2026-08-25T01:16:36.852Z",
       "updatedAt": "2026-08-25T01:16:36.852Z"
+    },
+    {
+      "id": "prj-free-1218d20c",
+      "organizationId": "org-free-0af765ce",
+      "name": "Quantum Robotics Inc 0504 Virtual Booth",
+      "businessName": "Quantum Robotics Inc 0504",
+      "normalizedBusinessName": "quantum robotics inc 0504",
+      "customerEmail": "test_owner_1788131190504@example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/test_customer_booth_1788131190302.jpg",
+        "previewUrl": "/uploads/test_customer_booth_1788131190302.jpg",
+        "processedUrl": "/uploads/test_customer_booth_1788131190302.jpg",
+        "originalFilename": "booth_display_main.jpg",
+        "sha256": "55af5571a8981d81197a4b281d7e67570e10422d6e076e8a5bbb37c30fb90ce2",
+        "r2Key": null,
+        "uploadedAt": "2026-08-30T23:06:30.555Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/test_customer_booth_1788131190302.jpg",
+          "highResUrl": "/uploads/test_customer_booth_1788131190302.jpg",
+          "sha256": "55af5571a8981d81197a4b281d7e67570e10422d6e076e8a5bbb37c30fb90ce2",
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "PRODUCT 01",
+          "isBlank": true,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 1",
+          "status": "BLANK",
+          "createdAt": "2026-08-30T23:06:30.555Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "PRODUCT 02",
+          "isBlank": true,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 2",
+          "status": "BLANK",
+          "createdAt": "2026-08-30T23:06:30.555Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-30T23:06:30.555Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-30T23:06:30.555Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-30T23:06:30.555Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-30T23:06:30.555Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-30T23:06:30.555Z",
+      "updatedAt": "2026-08-30T23:06:30.555Z"
     }
   ],
   "salesTickets": [
@@ -19387,6 +19538,24 @@
       "expiresAt": "2026-08-25T01:26:36.805Z",
       "createdAt": "2026-08-25T01:16:36.805Z",
       "verifiedAt": "2026-08-25T01:16:36.825Z"
+    },
+    {
+      "id": "ev-3cafa351",
+      "normalizedEmail": "test_owner_1788131190504@example.com",
+      "businessName": "Quantum Robotics Inc 0504",
+      "tempPhotoPath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\test_customer_booth_1788131190302.jpg",
+      "originalFilename": "booth_display_main.jpg",
+      "photoSha256": "55af5571a8981d81197a4b281d7e67570e10422d6e076e8a5bbb37c30fb90ce2",
+      "codeHash": "7f9f4efb05b08844cc000f11798d24fc1ac6a41e7824c66b3fab5a2d978a3ca8",
+      "magicTokenHash": "67172084b93904a3212938bb640e31f5483e9db5dd17a879a7091e852617ba61",
+      "_rawCode": "486049",
+      "_rawMagicToken": "a7b2037225effffc8e8767627fc332d14842da9afe9d9d7a14ee135529bcd993",
+      "ipHash": "51543451051e28691db5efe98bae508a",
+      "attemptCount": 1,
+      "status": "VERIFIED",
+      "expiresAt": "2026-08-30T23:16:30.505Z",
+      "createdAt": "2026-08-30T23:06:30.506Z",
+      "verifiedAt": "2026-08-30T23:06:30.529Z"
     }
   ],
   "freePreviewProjects": [

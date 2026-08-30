@@ -2055,8 +2055,30 @@
     let resendCooldownInterval = null;
     let statusPollInterval = null;
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       setupOtpInputHandlers();
+      
+      // 1. Check URL parameters for direct projectId handoff (e.g. from magic link or session)
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlProjectId = urlParams.get('projectId');
+      if (urlProjectId) {
+        try {
+          const res = await fetch(`/api/free-funnel/projects/${urlProjectId}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.project) {
+              activeProjectId = data.project.id;
+              activeProjectData = data.project;
+              renderStudioBooth(data.project);
+              return;
+            }
+          }
+        } catch(e) {
+          console.warn('[Direct Booth Restore Warn]', e.message);
+        }
+      }
+
+      // 2. Recover local storage session
       recoverExistingBoothSession();
     });
 
@@ -2065,8 +2087,20 @@
         const saved = localStorage.getItem('dna_free_booth_session');
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (parsed && parsed.project && parsed.project.id) {
+          if (parsed && parsed.project && parsed.project.id && !activeProjectId) {
             console.log('Recovered existing 3D booth session:', parsed.project.id);
+            const banner = document.createElement('div');
+            banner.id = 'resume-booth-banner';
+            banner.style.cssText = 'position:fixed; bottom:20px; right:20px; z-index:9999; background:#0b1526; border:1px solid #38bdf8; border-radius:12px; padding:14px 20px; box-shadow:0 10px 30px rgba(0,0,0,0.8); display:flex; align-items:center; gap:12px; color:#fff; font-family:"Plus Jakarta Sans",sans-serif;';
+            banner.innerHTML = `
+              <i class="fa-solid fa-cube" style="color:#38bdf8; font-size:18px;"></i>
+              <div style="font-size:13px;">
+                <span style="font-weight:700;">Resume Your 3D Booth:</span> ${parsed.project.businessName || 'Exhibitor Booth'}
+              </div>
+              <button class="btn-ui upgrade" style="padding:6px 14px; font-size:12px; margin-left:8px; cursor:pointer;" onclick="renderStudioBooth(JSON.parse(localStorage.getItem('dna_free_booth_session')).project)">Open Studio →</button>
+              <button style="background:none; border:none; color:#94a3b8; font-size:16px; cursor:pointer; padding:0 4px;" onclick="document.getElementById('resume-booth-banner').remove()">×</button>
+            `;
+            document.body.appendChild(banner);
           }
         }
       } catch(e) {}
@@ -2239,10 +2273,16 @@
       }
 
       try {
+        const formData = new FormData();
+        formData.append('email', email);
+        formData.append('businessName', businessName);
+        if (selectedFile) {
+          formData.append('photo', selectedFile);
+        }
+
         const res = await fetch('/api/free-funnel/email/send-verification', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, businessName })
+          body: formData
         });
 
         const data = await res.json();
@@ -2285,6 +2325,40 @@
       }
     }
 
+    function onVerificationSuccess(data) {
+      if (statusPollInterval) clearInterval(statusPollInterval);
+      if (otpTimerInterval) clearInterval(otpTimerInterval);
+      if (resendCooldownInterval) clearInterval(resendCooldownInterval);
+      if (data.verificationToken) verifiedEmailToken = data.verificationToken;
+      if (currentPendingEmail) verifiedEmailAddress = currentPendingEmail.toLowerCase();
+
+      if (data.project) {
+        showProgress();
+        updateProgressDisplay(30, 'SECURING ORIGINAL (R2)', 'Protecting Master Asset', 'Tier 0 master backed up...');
+        setTimeout(() => {
+          updateProgressDisplay(70, 'GENERATING 3D BOOTH', 'Creating Virtual Showroom', 'Synthesizing 3D spatial viewport...');
+          setTimeout(() => {
+            updateProgressDisplay(100, 'YOUR 3D BOOTH IS READY', '3D Virtual Booth Ready!', '3 Product Pinpoint Slots Initialized!');
+            setTimeout(() => {
+              hideProgress();
+              activeProjectId = data.projectId || data.project.id;
+              activeProjectData = data.project;
+              try {
+                localStorage.setItem('dna_free_booth_session', JSON.stringify({
+                  projectId: activeProjectId,
+                  project: data.project,
+                  savedAt: new Date().toISOString()
+                }));
+              } catch(e) {}
+              renderStudioBooth(data.project);
+            }, 350);
+          }, 250);
+        }, 250);
+      } else {
+        executeBoothGeneration();
+      }
+    }
+
     function startVerificationStatusPolling(email) {
       if (statusPollInterval) clearInterval(statusPollInterval);
       statusPollInterval = setInterval(async () => {
@@ -2295,20 +2369,12 @@
           const res = await fetch('/api/free-funnel/email/poll-status?email=' + encodeURIComponent(email));
           if (res.ok) {
             const data = await res.json();
-            if (data && data.verified && data.verificationToken) {
-              clearInterval(statusPollInterval);
-              if (otpTimerInterval) clearInterval(otpTimerInterval);
-              if (resendCooldownInterval) clearInterval(resendCooldownInterval);
-              verifiedEmailToken = data.verificationToken;
-              verifiedEmailAddress = email.toLowerCase();
-              showOtpStatusMsg('Email verified successfully! Creating your 3D booth...');
-              setTimeout(() => {
-                executeBoothGeneration();
-              }, 400);
+            if (data && data.verified && (data.verificationToken || data.project)) {
+              onVerificationSuccess(data);
             }
           }
         } catch(e) {}
-      }, 3000);
+      }, 2500);
     }
 
     function startOtpCountdown(seconds) {
@@ -2364,10 +2430,14 @@
       btn.disabled = true;
 
       try {
+        const formData = new FormData();
+        formData.append('email', currentPendingEmail);
+        formData.append('businessName', bizName);
+        if (selectedFile) formData.append('photo', selectedFile);
+
         const res = await fetch('/api/free-funnel/email/send-verification', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: currentPendingEmail, businessName: bizName })
+          body: formData
         });
         const data = await res.json();
         if (!res.ok) {
@@ -2405,15 +2475,8 @@
           btn.innerHTML = originalText;
         }
 
-        if (data && data.verified && data.verificationToken) {
-          if (statusPollInterval) clearInterval(statusPollInterval);
-          if (otpTimerInterval) clearInterval(otpTimerInterval);
-          verifiedEmailToken = data.verificationToken;
-          verifiedEmailAddress = currentPendingEmail.toLowerCase();
-          showOtpStatusMsg('Email verified! Creating your 3D booth now...');
-          setTimeout(() => {
-            executeBoothGeneration();
-          }, 300);
+        if (data && data.verified && (data.verificationToken || data.project)) {
+          onVerificationSuccess(data);
         } else {
           showOtpStatusMsg('Verification pending. Please enter the 6-digit code or click the link in your email.');
         }
@@ -2464,13 +2527,7 @@
           return showOtpInlineError(data.message || 'Invalid or expired confirmation code. Please try again.');
         }
 
-        if (statusPollInterval) clearInterval(statusPollInterval);
-        if (otpTimerInterval) clearInterval(otpTimerInterval);
-
-        verifiedEmailToken = data.verificationToken;
-        verifiedEmailAddress = currentPendingEmail.toLowerCase();
-
-        executeBoothGeneration();
+        onVerificationSuccess(data);
 
       } catch (err) {
         if (btn) {
@@ -2494,7 +2551,9 @@
       if (verifiedEmailToken) {
         formData.append('verificationToken', verifiedEmailToken);
       }
-      formData.append('photo', selectedFile);
+      if (selectedFile) {
+        formData.append('photo', selectedFile);
+      }
 
       // Start realistic stage progress animation
       let currentPercent = 10;

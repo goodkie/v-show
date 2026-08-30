@@ -967,8 +967,8 @@
 
           <!-- ASSET URL / UPLOAD -->
           <div class="form-group" style="margin-bottom: 24px;">
-            <label class="form-label" for="d-source-url">Source Asset Image URL</label>
-            <input type="url" id="d-source-url" class="form-input" value="/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg" placeholder="https://your-domain.com/booth-image.jpg">
+            <label class="form-label" for="d-source-url">Booth Photo / Image URL</label>
+            <input type="url" id="d-source-url" class="form-input" value="" placeholder="Enter image URL or select a project">
           </div>
 
           <!-- HELPFUL CAPTURE LINKS -->
@@ -1187,36 +1187,31 @@
           badge: 'READY FOR IMMERSIVE',
           confidence: 'HIGH',
           title: 'Great — Your 360° source is ready for an Ultra-HD Photo Immersive Booth.',
-          desc: 'We will generate a 360° spherical digital twin with interactive product pinpoints and buyer RFQ tools.',
-          url: '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg'
+          desc: 'We will generate a 360° spherical digital twin with interactive product pinpoints and buyer RFQ tools.'
         },
         MULTI_PHOTO_CAPTURE_SET: {
           badge: 'READY FOR MULTI-VIEW',
           confidence: 'HIGH',
           title: 'Multiple Photos Detected — Ready for Multi-View Photo Showroom.',
-          desc: 'Your photos will be organized into spatial vantage points with interactive product drawers.',
-          url: '/assets/demo/dna-showcase/pano360/node0_preview.jpg'
+          desc: 'Your photos will be organized into spatial vantage points with interactive product drawers.'
         },
         SINGLE_BOOTH_PHOTO: {
           badge: 'READY FOR PHOTO SHOWROOM',
           confidence: 'HIGH',
           title: 'One Photo is Enough to Start — Interactive 2D Photo Showroom.',
-          desc: 'Visitors can zoom, inspect equipment, click Product Pinpoints, and send RFQs.',
-          url: '/assets/demo/dna-showcase/pano360/node1_preview.jpg'
+          desc: 'Visitors can zoom, inspect equipment, click Product Pinpoints, and send RFQs.'
         },
         PROFESSIONAL_BOOTH_RENDER: {
           badge: 'DESIGNED SHOWROOM READY',
           confidence: 'HIGH',
           title: '3D Render Detected — Ready for Designed Visual Showroom.',
-          desc: 'Presents your architectural 3D render with high-definition lighting and wholesale buyer tools.',
-          url: '/assets/demo/dna-showcase/pano360/node2_preview.jpg'
+          desc: 'Presents your architectural 3D render with high-definition lighting and wholesale buyer tools.'
         },
         UNKNOWN: {
           badge: 'MORE COVERAGE RECOMMENDED',
           confidence: 'LOW',
           title: 'Need guidance? View our capture guide or let ³D₂ handle photography.',
-          desc: 'We recommend taking a horizontal wide shot or using a 360° camera for optimal results.',
-          url: '/assets/demo/dna-showcase/pano360/node0_preview.jpg'
+          desc: 'We recommend taking a horizontal wide shot or using a 360° camera for optimal results.'
         }
       };
 
@@ -1225,8 +1220,6 @@
       document.getElementById('qual-confidence').textContent = `Confidence: ${out.confidence}`;
       document.getElementById('qual-title').textContent = out.title;
       document.getElementById('qual-desc').textContent = out.desc;
-      document.getElementById('d-source-url').value = out.url;
-      WizardState.sourceUrl = out.url;
 
       trackFunnelEvent('source_category_selected', { category: cat });
     }

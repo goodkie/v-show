@@ -221,7 +221,11 @@ class PhotoImmersiveEngine {
 
     this.img2DElement = document.createElement('img');
     const currentView = this.views[this.currentNodeIdx] || {};
-    this.img2DElement.src = currentView.highResUrl || currentView.previewUrl || currentView.url || '/assets/demo/dna-showcase/pano360/node0_preview.jpg';
+    const srcUrl = currentView.highResUrl || currentView.previewUrl || currentView.url || '';
+    if (!srcUrl) {
+      console.error('[PhotoEngine] No image source URL configured for view', currentView);
+    }
+    this.img2DElement.src = srcUrl;
     this.img2DElement.style.maxWidth = '100%';
     this.img2DElement.style.maxHeight = '100%';
     this.img2DElement.style.objectFit = 'contain';
