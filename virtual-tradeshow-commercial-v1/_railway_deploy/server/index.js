@@ -6956,6 +6956,60 @@ app.get('/api/operator/export/:accountId', (req, res) => {
   }
 });
 
+// 8. Pilot Management Routes (C11.16 Owner-Controlled Commercial Pilot)
+app.post('/api/operator/pilots', async (req, res) => {
+  try {
+    const { businessName, primaryEmail, contactName, selectedEntitlement, selectedBy, environment, isTest } = req.body;
+    const result = await db.registerCustomerPilot({
+      businessName,
+      primaryEmail,
+      contactName,
+      selectedEntitlement: selectedEntitlement || 'BUSINESS',
+      selectedBy: selectedBy || 'OWNER',
+      environment: environment || 'PRODUCTION',
+      isTest: Boolean(isTest)
+    });
+    res.status(201).json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/operator/pilots', (req, res) => {
+  try {
+    const pilots = db.listCustomerPilots();
+    res.json({ success: true, totalCount: pilots.length, pilots });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/operator/pilots/:pilotId', (req, res) => {
+  try {
+    const pilot = db.getCustomerPilot(req.params.pilotId);
+    if (!pilot) return res.status(404).json({ error: 'Pilot record not found.', code: 'NOT_FOUND' });
+    res.json({ success: true, pilot });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/operator/pilots/:pilotId/state', async (req, res) => {
+  try {
+    const { pilotStatus, notes, sourceUploaded, previewApproved, published } = req.body;
+    const result = await db.updateCustomerPilot(req.params.pilotId, {
+      pilotStatus,
+      notes,
+      sourceUploaded,
+      previewApproved,
+      published
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 app.get(['/portal', '/my-booths', '/account', '/leads', '/analytics'], (req, res) => {
   const portalFile = path.join(__dirname, '..', 'client', 'portal.html');
   if (fs.existsSync(portalFile)) {

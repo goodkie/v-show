@@ -1300,16 +1300,24 @@
           const badge = document.getElementById('accEntitlementBadge');
           const sub = document.getElementById('accEntitlementSub');
           if (badge) {
-            badge.innerText = ent.planDisplayName || ent.planCode;
+            const planTitle = ent.planDisplayName || ent.planCode;
+            badge.innerText = (ent.isPilot || ent.billingState === 'PILOT_NOT_BILLED') ? `${planTitle} — PILOT` : planTitle;
             if (ent.planCode === 'PRO') badge.style.borderColor = 'rgba(96,165,250,0.5)';
             if (ent.planCode === 'BUSINESS') badge.style.borderColor = 'rgba(56,189,248,0.5)';
             if (ent.planCode === 'CUSTOM') badge.style.borderColor = 'rgba(251,191,36,0.5)';
           }
           if (sub) {
-            if (ent.planCode === 'FREE_BOOTH') sub.innerText = '• Free Acquisition Tier (Max 3 Products)';
-            else if (ent.planCode === 'PRO') sub.innerText = '• $299/mo (Max 30 Products • 3 Sources)';
-            else if (ent.planCode === 'BUSINESS') sub.innerText = '• $799/mo (Max 100 Products • 60 Sources • 30 Media)';
-            else if (ent.planCode === 'CUSTOM') sub.innerText = '• Enterprise Custom Contract';
+            if (ent.isPilot || ent.billingState === 'PILOT_NOT_BILLED') {
+              sub.innerText = '• Commercial Pilot (Max 100 Products • 60 Sources • 30 Media • Not Billed)';
+            } else if (ent.planCode === 'FREE_BOOTH') {
+              sub.innerText = '• Free Acquisition Tier (Max 3 Products)';
+            } else if (ent.planCode === 'PRO') {
+              sub.innerText = '• $299/mo (Max 30 Products • 3 Sources)';
+            } else if (ent.planCode === 'BUSINESS') {
+              sub.innerText = '• $799/mo (Max 100 Products • 60 Sources • 30 Media)';
+            } else if (ent.planCode === 'CUSTOM') {
+              sub.innerText = '• Enterprise Custom Contract';
+            }
           }
 
           // Update Usage Meters

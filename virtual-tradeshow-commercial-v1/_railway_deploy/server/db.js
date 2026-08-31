@@ -9912,6 +9912,22 @@ return event;
         }
       });
 
+      // Check if a pilot record exists for this email
+      d.customerPilots = d.customerPilots || [];
+      const pilot = d.customerPilots.find(p => this.normalizeEmail(p.primaryEmail) === emailNorm);
+      if (pilot) {
+        pilot.accountId = account.id;
+        account.pilotId = pilot.pilotId;
+        account.pilotState = pilot.pilotStatus;
+        account.isPilot = true;
+        account.billingState = pilot.billingState || 'PILOT_NOT_BILLED';
+        if (pilot.selectedEntitlement === 'BUSINESS') {
+          account.planCode = 'BUSINESS';
+          account.entitlement = 'BUSINESS';
+          account.billingStatus = 'pilot';
+        }
+      }
+
       return account;
     });
   }
@@ -10270,12 +10286,15 @@ return event;
         }
       },
       features: planDef.features,
+      isPilot: Boolean(account.isPilot || account.pilotId),
+      pilotId: account.pilotId || null,
+      billingState: account.billingState || (account.isPilot ? 'PILOT_NOT_BILLED' : (planDef.isBillingPlan ? 'BILLED' : 'FREE_TIER')),
       billing: {
         provider: account.billingProvider || null,
         customerId: account.billingCustomerId || null,
         subscriptionId: account.billingSubscriptionId || null,
         priceId: account.billingPriceId || null,
-        status: account.billingStatus || null
+        status: account.billingStatus || (account.isPilot ? 'pilot' : null)
       }
     };
   }
@@ -10683,6 +10702,180 @@ return event;
         notes
       }
     };
+  }
+
+
+  // ============================================================
+  // --- C11.16 FIRST REAL CUSTOMER PILOT MANAGEMENT METHODS ---
+  // ============================================================
+
+  async registerCustomerPilot({ businessName, primaryEmail, contactName, selectedEntitlement = 'BUSINESS', selectedBy = 'OWNER', environment = 'PRODUCTION', isTest = false }) {
+    if (!businessName || !businessName.trim()) throw new Error('Business name is required.');
+    if (!primaryEmail || !primaryEmail.includes('@')) throw new Error('Valid primary customer email is required.');
+
+    const normEmail = this.normalizeEmail(primaryEmail);
+
+    return this.mutate((db) => {
+      const d = db;
+      d.customerPilots = d.customerPilots || [];
+
+      let pilot = d.customerPilots.find(p => this.normalizeEmail(p.primaryEmail) === normEmail);
+      if (pilot) {
+        pilot.businessName = businessName.trim();
+        pilot.contactName = contactName ? contactName.trim() : pilot.contactName;
+        pilot.selectedEntitlement = selectedEntitlement;
+        pilot.selectedBy = selectedBy;
+        pilot.environment = environment;
+        pilot.isTest = Boolean(isTest);
+        pilot.updatedAt = new Date().toISOString();
+      } else {
+        const slug = this.generateSlug(businessName);
+        const pilotId = `pilot-${slug}-${uuidv4().substring(0, 4)}`;
+        pilot = {
+          pilotId,
+          accountId: null,
+          businessName: businessName.trim(),
+          primaryEmail: normEmail,
+          normalizedEmail: normEmail,
+          contactName: contactName ? contactName.trim() : '',
+          selectedEntitlement,
+          selectedBy,
+          selectedAt: new Date().toISOString(),
+          pilotStatus: 'SELECTED', // 'SELECTED' | 'ONBOARDING' | 'ACTIVE_PILOT' | 'PAUSED' | 'COMPLETED'
+          billingState: 'PILOT_NOT_BILLED',
+          environment,
+          isTest: Boolean(isTest),
+          sourceUploaded: false,
+          previewApproved: false,
+          published: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        d.customerPilots.push(pilot);
+      }
+
+      // Check if matching account already exists and link
+      const account = (d.accounts || []).find(a => this.normalizeEmail(a.emailNormalized) === normEmail);
+      if (account) {
+        pilot.accountId = account.id;
+        account.pilotId = pilot.pilotId;
+        account.pilotState = pilot.pilotStatus;
+        account.isPilot = true;
+        account.billingState = 'PILOT_NOT_BILLED';
+      }
+
+      d.customerTimelineEvents = d.customerTimelineEvents || [];
+      d.customerTimelineEvents.push({
+        id: `tl-${uuidv4().substring(0, 8)}`,
+        accountId: pilot.accountId || null,
+        eventType: 'PILOT_SELECTED',
+        details: {
+          pilotId: pilot.pilotId,
+          businessName: pilot.businessName,
+          primaryEmail: pilot.primaryEmail,
+          selectedEntitlement: pilot.selectedEntitlement,
+          selectedBy: pilot.selectedBy,
+          billingState: pilot.billingState
+        },
+        timestamp: new Date().toISOString()
+      });
+
+      return { success: true, pilot };
+    });
+  }
+
+  getCustomerPilot(pilotIdOrEmail) {
+    if (!pilotIdOrEmail) return null;
+    const d = this.memoryData;
+    const norm = this.normalizeEmail(pilotIdOrEmail);
+    return (d.customerPilots || []).find(p => p.pilotId === pilotIdOrEmail || this.normalizeEmail(p.primaryEmail) === norm) || null;
+  }
+
+  listCustomerPilots() {
+    const d = this.memoryData;
+    return (d.customerPilots || []).slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  async updateCustomerPilot(pilotId, updates = {}) {
+    return this.mutate((db) => {
+      const d = db;
+      const pilot = (d.customerPilots || []).find(p => p.pilotId === pilotId);
+      if (!pilot) throw new Error('Pilot record not found.');
+
+      if (updates.pilotStatus !== undefined) pilot.pilotStatus = updates.pilotStatus;
+      if (updates.sourceUploaded !== undefined) pilot.sourceUploaded = Boolean(updates.sourceUploaded);
+      if (updates.previewApproved !== undefined) pilot.previewApproved = Boolean(updates.previewApproved);
+      if (updates.published !== undefined) pilot.published = Boolean(updates.published);
+      if (updates.notes !== undefined) pilot.notes = updates.notes;
+      if (updates.accountId !== undefined) pilot.accountId = updates.accountId;
+      pilot.updatedAt = new Date().toISOString();
+
+      // Sync with account if linked
+      if (pilot.accountId) {
+        const account = (d.accounts || []).find(a => a.id === pilot.accountId);
+        if (account) {
+          account.pilotState = pilot.pilotStatus;
+          account.isPilot = true;
+          account.billingState = pilot.billingState || 'PILOT_NOT_BILLED';
+        }
+      }
+
+      d.customerTimelineEvents = d.customerTimelineEvents || [];
+      d.customerTimelineEvents.push({
+        id: `tl-${uuidv4().substring(0, 8)}`,
+        accountId: pilot.accountId || null,
+        eventType: 'PILOT_STATE_CHANGED',
+        details: { pilotId, updates },
+        timestamp: new Date().toISOString()
+      });
+
+      return { success: true, pilot };
+    });
+  }
+
+  async assignPilotBusinessEntitlement(accountId, pilotId = null, actor = 'OWNER') {
+    return this.mutate((db) => {
+      const d = db;
+      const account = (d.accounts || []).find(a => a.id === accountId);
+      if (!account) throw new Error('Account not found.');
+
+      const prevPlan = account.planCode || account.entitlement || 'FREE_BOOTH';
+      account.planCode = 'BUSINESS';
+      account.entitlement = 'BUSINESS';
+      account.entitlementStatus = 'ACTIVE';
+      account.billingProvider = 'none';
+      account.billingStatus = 'pilot';
+      account.billingState = 'PILOT_NOT_BILLED';
+      account.isPilot = true;
+      if (pilotId) account.pilotId = pilotId;
+      account.updatedAt = new Date().toISOString();
+
+      // Log Entitlement Audit
+      d.entitlementAuditLogs = d.entitlementAuditLogs || [];
+      const auditEntry = {
+        id: `ent-log-${uuidv4().substring(0, 8)}`,
+        accountId: account.id,
+        email: account.emailNormalized,
+        fromPlan: prevPlan,
+        toPlan: 'BUSINESS',
+        action: 'ENTITLEMENT_ASSIGNED',
+        reason: 'Owner-authorized commercial pilot (Not billed)',
+        actor: `${actor}_PILOT`,
+        timestamp: new Date().toISOString()
+      };
+      d.entitlementAuditLogs.push(auditEntry);
+
+      d.customerTimelineEvents = d.customerTimelineEvents || [];
+      d.customerTimelineEvents.push({
+        id: `tl-${uuidv4().substring(0, 8)}`,
+        accountId: account.id,
+        eventType: 'ENTITLEMENT_CHANGED',
+        details: { fromPlan: prevPlan, toPlan: 'BUSINESS', source: 'OWNER_PILOT', billingState: 'PILOT_NOT_BILLED' },
+        timestamp: new Date().toISOString()
+      });
+
+      return { success: true, account, auditEntry };
+    });
   }
 
 }
