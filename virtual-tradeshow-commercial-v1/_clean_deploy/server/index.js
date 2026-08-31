@@ -2832,8 +2832,6 @@ app.post('/api/projects/:id/publish', async (req, res) => {
     res.status(err.status || 500).json({ error: err.message, code: err.code });
   }
 });
-  }
-});
 
 // C05.2 Experience Upgrade Endpoint
 app.post('/api/projects/:id/upgrade-experience', async (req, res) => {
