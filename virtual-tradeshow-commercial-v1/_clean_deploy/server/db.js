@@ -10056,17 +10056,25 @@ return event;
     const account = (d.accounts || []).find(a => a.id === accountId);
     let plan = 'pro';
     if (account) {
+      // Try pilot.tier first (explicit tier on pilot record)
       if (account.pilotId) {
         const pilot = (d.customerPilots || []).find(p => p.pilotId === account.pilotId);
         if (pilot && pilot.tier) {
           plan = pilot.tier.toLowerCase();
+        } else if (pilot && pilot.selectedEntitlement) {
+          // pilot.tier not set — use selectedEntitlement (e.g. 'BUSINESS')
+          plan = pilot.selectedEntitlement.toLowerCase();
         }
-      } else if (account.planCode) {
-        plan = account.planCode.toLowerCase();
-      } else if (account.entitlement) {
-        plan = account.entitlement.toLowerCase();
-      } else if (account.plan) {
-        plan = account.plan.toLowerCase();
+      }
+      // If plan still unresolved from pilot (or no pilotId), try account fields
+      if (plan === 'pro' || !plan) {
+        if (account.planCode) {
+          plan = account.planCode.toLowerCase();
+        } else if (account.entitlement) {
+          plan = account.entitlement.toLowerCase();
+        } else if (account.plan) {
+          plan = account.plan.toLowerCase();
+        }
       }
     }
     const config = this.getPlanConfig();
