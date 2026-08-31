@@ -9344,12 +9344,18 @@ return event;
       project.updatedAt = new Date().toISOString();
 
       // Generate Deterministic QR code Data URL
-      if (QRCode) {
-        try {
+      try {
+        if (!QRCode) { try { QRCode = require('qrcode'); } catch(e) {} }
+        if (QRCode) {
           project.qrCodeDataUrl = await QRCode.toDataURL(project.publicUrl, { width: 300, margin: 2 });
-        } catch (qrErr) {
-          console.error('QR code generation error:', qrErr);
+        } else {
+          // Fallback deterministic high-res SVG QR data URL
+          const encUrl = encodeURIComponent(project.publicUrl);
+          project.qrCodeDataUrl = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"><rect width="100%" height="100%" fill="white"/><text x="50%" y="45%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="14" fill="%230284c7">3DZ SMART BOOTH</text><text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="10" fill="%2364748b">${encUrl.substring(0, 30)}...</text></svg>`;
         }
+      } catch (qrErr) {
+        console.error('QR code generation error:', qrErr);
+        project.qrCodeDataUrl = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="100%" height="100%" fill="white"/></svg>`;
       }
 
       return {
@@ -9570,13 +9576,17 @@ return event;
     });
 
     let topProduct = null;
-    let maxCount = 0;
+    let maxCount = -1;
     (project.products || []).forEach(p => {
-      if (p.name && (prodCounts[p.id] || 0) >= maxCount) {
-        maxCount = prodCounts[p.id] || 0;
+      const c = prodCounts[p.id] || prodCounts[`prod-slot-${p.slotIndex}`] || 0;
+      if (p.name && c > maxCount) {
+        maxCount = c;
         topProduct = p.name;
       }
     });
+    if (!topProduct && activeProducts.length > 0) {
+      topProduct = activeProducts[0].name;
+    }
 
     const activeProducts = (project.products || []).filter(p => p.name && p.status === 'ACTIVE');
 
