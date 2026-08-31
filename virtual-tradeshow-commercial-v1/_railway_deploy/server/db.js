@@ -10082,10 +10082,10 @@ return event;
       d.customerPilots = d.customerPilots || [];
 
       const norm = this.normalizeEmail(identifier);
-      const account = d.accounts.find(a => a.id === identifier || this.normalizeEmail(a.emailNormalized || a.email) === norm);
+      const account = d.accounts.find(a => a.id === identifier || (a.emailNormalized && a.emailNormalized === norm) || (a.email && this.normalizeEmail(a.email) === norm));
       if (!account) return { success: false, error: 'Account not found' };
 
-      const pilot = d.customerPilots.find(p => p.accountId === account.id || this.normalizeEmail(p.primaryEmail) === norm);
+      const pilot = d.customerPilots.find(p => p.accountId === account.id || this.normalizeEmail(p.primaryEmail) === norm || (account.emailNormalized && this.normalizeEmail(p.primaryEmail) === account.emailNormalized));
 
       if (pilot) {
         pilot.accountId = account.id;
