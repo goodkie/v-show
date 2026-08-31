@@ -6236,6 +6236,286 @@ app.get('/api/booth-mastering/v4/jobs/:id/diagnostic', (req, res) => {
   });
 });
 
+
+// ============================================================
+// --- C11.12 EXHIBITOR PUBLISHING, PRODUCTS & LEAD SYSTEM ---
+// ============================================================
+
+function extractAuthToken(req) {
+  return req.headers['x-booth-edit-token'] || 
+         req.headers['authorization']?.replace(/^Bearer\s+/i, '') || 
+         req.query.token || 
+         req.body?.token;
+}
+
+// 1. Get Project Detail with Auth Verification (403 on tenant mismatch)
+app.get('/api/projects/:id', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const project = await db.getProjectWithAuth(req.params.id, token);
+    res.json({ success: true, project });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+// 2. Update Company Profile
+app.put('/api/projects/:id/company', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const result = await db.updateCompanyProfile(req.params.id, req.body, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+// 3. Upload Company Logo
+app.post('/api/projects/:id/logo', upload.single('logo'), async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    if (!req.file) {
+      return res.status(400).json({ error: 'No logo file provided.' });
+    }
+    const fileExt = path.extname(req.file.originalname).toLowerCase();
+    if (!['.png', '.jpg', '.jpeg', '.webp'].includes(fileExt)) {
+      return res.status(400).json({ error: 'Invalid logo format. Only PNG, JPEG, and WebP are supported.' });
+    }
+    const logoUrl = `/uploads/${req.file.filename}`;
+    const result = await db.updateProjectLogo(req.params.id, {
+      url: logoUrl,
+      filename: req.file.originalname
+    }, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+// 4. Save Product Slot (Slot 1, 2, 3)
+app.post('/api/projects/:id/products', upload.single('productImage'), async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const prodData = { ...req.body };
+    if (req.file) {
+      prodData.imageUrl = `/uploads/${req.file.filename}`;
+    }
+    const slotIndex = prodData.slotIndex || 1;
+    const result = await db.saveProductSlot(req.params.id, slotIndex, prodData, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+app.put('/api/projects/:id/products/:slotIndex', upload.single('productImage'), async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const prodData = { ...req.body };
+    if (req.file) {
+      prodData.imageUrl = `/uploads/${req.file.filename}`;
+    }
+    const result = await db.saveProductSlot(req.params.id, req.params.slotIndex, prodData, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+app.delete('/api/projects/:id/products/:slotIndex', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const result = await db.clearProductSlot(req.params.id, req.params.slotIndex, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+// 5. Pinpoints Placement
+app.put('/api/projects/:id/pinpoints', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const pinpoints = Array.isArray(req.body) ? req.body : req.body.pinpoints;
+    const result = await db.savePinpoints(req.params.id, pinpoints, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+// 6. Buyer Actions Configuration
+app.put('/api/projects/:id/buyer-actions', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const result = await db.updateBuyerActions(req.params.id, req.body, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+// 7. Publishing & Unpublishing
+app.post('/api/projects/:id/publish', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const result = await db.publishBooth(req.params.id, token, baseUrl);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+app.post('/api/projects/:id/unpublish', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const result = await db.unpublishBooth(req.params.id, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+app.post('/api/projects/:id/republish', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const result = await db.republishBooth(req.params.id, token, baseUrl);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+// 8. Exhibitor Dashboard & Leads
+app.get('/api/projects/:id/dashboard', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const result = db.getProjectDashboard(req.params.id, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+app.get('/api/projects/:id/leads', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const leads = db.getProjectLeads(req.params.id, token);
+    res.json({ success: true, leads });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+app.patch('/api/projects/:id/leads/:leadId/status', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const result = await db.updateLeadStatus(req.params.id, req.params.leadId, req.body.status, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+// ============================================================
+// --- PUBLIC BOOTH VIEW & LEAD SUBMISSION ROUTES ---
+// ============================================================
+
+// Public Booth HTML Page
+app.get('/booth/:slug', (req, res) => {
+  const publicBoothFile = path.join(__dirname, '..', 'client', 'public-booth.html');
+  if (fs.existsSync(publicBoothFile)) {
+    res.sendFile(publicBoothFile);
+  } else {
+    res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
+  }
+});
+
+// Public Booth JSON Data (No auth needed)
+app.get('/api/public/booth/:slug', (req, res) => {
+  const data = db.getPublicBoothData(req.params.slug);
+  if (!data) {
+    return res.status(404).json({ error: 'Booth not found.', available: false });
+  }
+  res.json({ success: true, booth: data });
+});
+
+// Public Lead Submissions
+app.post('/api/public/booth/:slug/rfq', async (req, res) => {
+  try {
+    const lead = await db.createLead({
+      publicSlug: req.params.slug,
+      leadType: 'RFQ',
+      ...req.body
+    });
+    res.status(201).json({
+      success: true,
+      message: 'Your quote request has been submitted to the exhibitor.',
+      leadId: lead.leadId
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/public/booth/:slug/sample-request', async (req, res) => {
+  try {
+    const lead = await db.createLead({
+      publicSlug: req.params.slug,
+      leadType: 'SAMPLE_REQUEST',
+      ...req.body
+    });
+    res.status(201).json({
+      success: true,
+      message: 'Your sample request has been submitted to the exhibitor.',
+      leadId: lead.leadId
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/public/booth/:slug/meeting-request', async (req, res) => {
+  try {
+    const lead = await db.createLead({
+      publicSlug: req.params.slug,
+      leadType: 'MEETING_REQUEST',
+      ...req.body
+    });
+    res.status(201).json({
+      success: true,
+      message: 'Meeting request sent to exhibitor.',
+      leadId: lead.leadId
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/public/booth/:slug/analytics', async (req, res) => {
+  try {
+    const project = (db.memoryData.projects || []).find(p => p.publicSlug === req.params.slug);
+    if (project) {
+      await db.mutate((d) => {
+        d.analyticsEvents = d.analyticsEvents || [];
+        d.analyticsEvents.push({
+          eventId: `evt-${uuidv4().substring(0, 8)}`,
+          projectId: project.id,
+          productId: req.body.productId || null,
+          eventType: req.body.eventType || 'BOOTH_VIEW',
+          isTest: project.isTest || false,
+          timestamp: new Date().toISOString()
+        });
+      });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // SPA Fallback Route
 app.get('*', (req, res) => {
   if (req.path.startsWith('/uploads/') || req.path.startsWith('/api/') || req.path.startsWith('/assets/')) {
