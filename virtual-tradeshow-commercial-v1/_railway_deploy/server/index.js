@@ -6828,6 +6828,75 @@ app.put('/api/customer/account', requireCustomerAuth, async (req, res) => {
   }
 });
 
+// 8.1 Upload / Replace Company Logo
+app.post('/api/customer/logo', requireCustomerAuth, (req, res) => {
+  upload.single('logo')(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ error: err.message, code: 'UPLOAD_ERROR' });
+    }
+
+    try {
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ error: 'No logo image file provided.', code: 'FILE_REQUIRED' });
+      }
+
+      const filepath = file.path;
+      const magic = validateImageMagicBytes(filepath);
+      if (!magic.valid) {
+        fs.unlink(filepath, () => {});
+        return res.status(400).json({
+          error: `File validation failed: ${magic.reason}. Only genuine PNG, JPG, and WebP images are allowed.`,
+          code: 'INVALID_IMAGE_FILE'
+        });
+      }
+
+      const fileBuf = fs.readFileSync(filepath);
+      const sha256 = crypto.createHash('sha256').update(fileBuf).digest('hex');
+      const relativeUrl = `/uploads/${file.filename}`;
+
+      // Extract PNG / JPEG dimensions safely if possible
+      let width = null;
+      let height = null;
+      try {
+        if (magic.mime === 'image/png' && fileBuf.length >= 24) {
+          width = fileBuf.readUInt32BE(16);
+          height = fileBuf.readUInt32BE(20);
+        }
+      } catch (dimErr) {}
+
+      const result = await db.saveCustomerLogo(req.customer.id, {
+        url: relativeUrl,
+        mimeType: magic.mime,
+        size: file.size,
+        width,
+        height,
+        sha256,
+        originalFilename: file.originalname
+      });
+
+      res.json({
+        success: true,
+        message: 'Company logo uploaded and updated successfully.',
+        logoUrl: result.logoUrl,
+        logoAsset: result.logoAsset
+      });
+    } catch (routeErr) {
+      res.status(500).json({ error: routeErr.message });
+    }
+  });
+});
+
+// 8.2 Remove Company Logo
+app.delete('/api/customer/logo', requireCustomerAuth, async (req, res) => {
+  try {
+    const result = await db.removeCustomerLogo(req.customer.id);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 9. Claim Existing Booth to Customer Account
 app.post('/api/customer/booths/claim', requireCustomerAuth, async (req, res) => {
   try {

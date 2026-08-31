@@ -10007,8 +10007,16 @@ return event;
     const realProducts = (project.products || []).filter(prod => prod && prod.name && prod.name.trim() !== '');
     const hasRealProducts = realProducts.length > 0;
     
+    // Strict real company logo check
+    const hasRealLogo = Boolean(
+      project.logoUrl && 
+      !project.logoUrl.includes('placeholder') && 
+      !project.logoUrl.includes('default') && 
+      !project.logoUrl.includes('demo') && 
+      !project.logoUrl.includes('platform')
+    );
+
     // Product Pins predicate:
-    // Only complete if at least 1 real product exists AND pinpoints have valid product associations
     const hasRealPins = hasRealProducts && (project.pinpoints || []).some(pin => {
       if (pin.productId) return realProducts.some(p => p.id === pin.productId);
       if (pin.slotIndex) return realProducts[pin.slotIndex - 1] && realProducts[pin.slotIndex - 1].name;
@@ -10016,12 +10024,12 @@ return event;
     });
 
     const tasks = [
-      { id: 'create_booth', label: 'Create 3D Booth', done: true },
-      { id: 'company_logo', label: 'Add Company Logo', done: Boolean(project.logoUrl && !project.logoUrl.includes('placeholder') && !project.logoUrl.includes('default')) },
-      { id: 'add_product', label: 'Add First Product', done: hasRealProducts },
-      { id: 'pinpoints', label: 'Place Product Pins', done: hasRealPins },
-      { id: 'publish', label: 'Publish Booth', done: Boolean(project.publishStatus === 'PUBLISHED' || project.isPublished) },
-      { id: 'qr_share', label: 'Share QR Code', done: Boolean((project.publishStatus === 'PUBLISHED' || project.isPublished) && project.qrCodeDataUrl) }
+      { id: 'create_booth', label: 'Create 3D Booth', done: true, action: 'booth' },
+      { id: 'company_logo', label: 'Add Company Logo', done: hasRealLogo, action: 'logo' },
+      { id: 'add_product', label: 'Add First Product', done: hasRealProducts, action: 'product' },
+      { id: 'pinpoints', label: 'Place Product Pins', done: hasRealPins, action: 'pinpoints' },
+      { id: 'publish', label: 'Publish Booth', done: Boolean(project.publishStatus === 'PUBLISHED' || project.isPublished), action: 'publish' },
+      { id: 'qr_share', label: 'Share QR Code', done: Boolean((project.publishStatus === 'PUBLISHED' || project.isPublished) && project.qrCodeDataUrl), action: 'qr' }
     ];
 
     const completedCount = tasks.filter(t => t.done).length;
@@ -10236,10 +10244,26 @@ return event;
       const account = d.accounts.find(a => a.id === accountId);
       if (!account) throw new Error('Account not found.');
 
-      if (updates.displayName !== undefined) account.displayName = updates.displayName;
-      if (updates.businessName !== undefined) account.businessName = updates.businessName;
-      if (updates.phone !== undefined) account.phone = updates.phone;
-      if (updates.website !== undefined) account.website = updates.website;
+      if (updates.displayName !== undefined) account.displayName = String(updates.displayName || '').trim();
+      if (updates.contactName !== undefined) account.contactName = String(updates.contactName || '').trim();
+      if (updates.businessName !== undefined) account.businessName = String(updates.businessName || '').trim();
+      if (updates.phone !== undefined) account.phone = String(updates.phone || '').trim();
+      if (updates.website !== undefined) account.website = String(updates.website || '').trim();
+      if (updates.description !== undefined) account.description = String(updates.description || '').trim();
+      if (updates.industry !== undefined) account.industry = String(updates.industry || '').trim();
+      if (updates.location !== undefined) account.location = String(updates.location || '').trim();
+      if (updates.country !== undefined) account.country = String(updates.country || '').trim();
+
+      // Sync businessName to owned projects
+      if (updates.businessName) {
+        const norm = this.normalizeEmail(account.emailNormalized);
+        (d.projects || []).forEach(p => {
+          if (p.accountId === account.id || (norm && this.normalizeEmail(p.contactEmail || p.customerEmail || p.email) === norm)) {
+            p.businessName = account.businessName;
+            p.brandName = account.businessName;
+          }
+        });
+      }
 
       account.updatedAt = new Date().toISOString();
       db.customerTimelineEvents = db.customerTimelineEvents || [];
@@ -10251,6 +10275,94 @@ return event;
         timestamp: new Date().toISOString()
       });
       return { success: true, account };
+    });
+  }
+
+  async saveCustomerLogo(accountId, logoData) {
+    return this.mutate((db) => {
+      const d = db;
+      d.accounts = d.accounts || [];
+      const account = d.accounts.find(a => a.id === accountId);
+      if (!account) throw new Error('Account not found.');
+
+      const norm = this.normalizeEmail(account.emailNormalized);
+      const ownedProjects = (d.projects || []).filter(
+        p => p.accountId === accountId || (norm && this.normalizeEmail(p.contactEmail || p.customerEmail || p.email) === norm)
+      );
+
+      const primaryProject = ownedProjects[0] || null;
+      const assetId = `ast-logo-${uuidv4().substring(0, 8)}`;
+
+      const logoAsset = {
+        assetId,
+        accountId: account.id,
+        projectId: primaryProject ? primaryProject.id : null,
+        url: logoData.url,
+        mimeType: logoData.mimeType,
+        size: logoData.size,
+        width: logoData.width || null,
+        height: logoData.height || null,
+        sha256: logoData.sha256 || null,
+        originalFilename: logoData.originalFilename || null,
+        storageRef: logoData.url,
+        createdAt: new Date().toISOString()
+      };
+
+      account.logoUrl = logoData.url;
+      account.logoAsset = logoAsset;
+      account.updatedAt = new Date().toISOString();
+
+      ownedProjects.forEach(p => {
+        p.logoUrl = logoData.url;
+        p.logoAsset = logoAsset;
+        p.updatedAt = new Date().toISOString();
+      });
+
+      db.customerTimelineEvents = db.customerTimelineEvents || [];
+      db.customerTimelineEvents.push({
+        id: `tl-${uuidv4().substring(0, 8)}`,
+        accountId: account.id,
+        eventType: 'LOGO_UPDATED',
+        details: { assetId, logoUrl: logoData.url },
+        timestamp: new Date().toISOString()
+      });
+
+      return { success: true, logoUrl: logoData.url, logoAsset };
+    });
+  }
+
+  async removeCustomerLogo(accountId) {
+    return this.mutate((db) => {
+      const d = db;
+      d.accounts = d.accounts || [];
+      const account = d.accounts.find(a => a.id === accountId);
+      if (!account) throw new Error('Account not found.');
+
+      const norm = this.normalizeEmail(account.emailNormalized);
+      const ownedProjects = (d.projects || []).filter(
+        p => p.accountId === accountId || (norm && this.normalizeEmail(p.contactEmail || p.customerEmail || p.email) === norm)
+      );
+
+      account.logoUrl = null;
+      account.logoAsset = null;
+      account.updatedAt = new Date().toISOString();
+
+      ownedProjects.forEach(p => {
+        p.logoUrl = null;
+        p.logoAsset = null;
+        p.updatedAt = new Date().toISOString();
+      });
+
+      db.customerTimelineEvents = db.customerTimelineEvents || [];
+      db.customerTimelineEvents.push({
+        id: `tl-${uuidv4().substring(0, 8)}`,
+        accountId: account.id,
+        eventType: 'LOGO_REMOVED',
+        details: {},
+        timestamp: new Date().toISOString()
+      });
+
+      return { success: true, message: 'Company logo removed successfully.' };
     });
   }
 

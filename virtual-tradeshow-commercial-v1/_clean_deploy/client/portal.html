@@ -195,6 +195,16 @@
       font-size: 13px;
       font-weight: 600;
       color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      position: relative;
+    }
+    .checklist-item:hover {
+      border-color: var(--border-accent);
+      background: rgba(56, 189, 248, 0.08);
+      color: #fff;
+      transform: translateY(-1px);
     }
     .checklist-item.done {
       color: #f8fafc;
@@ -752,15 +762,16 @@
     <!-- TAB 4: ACCOUNT SETTINGS                                      -->
     <!-- ============================================================ -->
     <section class="tab-section" id="secAccount">
-      <h2 style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 20px;">Account &amp; Exhibitor Profile</h2>
+      <h2 style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 4px;">Account &amp; Exhibitor Profile</h2>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Manage the company information shown to trade buyers.</p>
 
       <div class="account-card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 12px;">
           <div>
             <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Account Entitlement</span>
             <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
-              <span class="brand-badge" style="font-size: 13px;" id="accEntitlementBadge">FREE BOOTH</span>
-              <span style="font-size: 12px; color: #38bdf8; font-weight: 600;" id="accEntitlementSub">• Acquisition Entitlement</span>
+              <span class="brand-badge" style="font-size: 13px;" id="accEntitlementBadge">BUSINESS — PILOT</span>
+              <span style="font-size: 12px; color: #38bdf8; font-weight: 600;" id="accEntitlementSub">• Commercial Pilot (Not Billed)</span>
             </div>
           </div>
           <button type="button" onclick="openUpgradeModal()" class="btn-action primary" style="padding: 9px 18px; font-size: 13px;">
@@ -773,7 +784,7 @@
           <div class="usage-card">
             <div class="usage-header">
               <span>Products</span>
-              <span class="usage-value" id="usageProductsVal">0 / 3</span>
+              <span class="usage-value" id="usageProductsVal">0 / 100</span>
             </div>
             <div class="usage-bar-bg">
               <div class="usage-bar-fill" id="usageProductsBar" style="width: 0%;"></div>
@@ -783,17 +794,17 @@
           <div class="usage-card">
             <div class="usage-header">
               <span>Sources</span>
-              <span class="usage-value" id="usageSourcesVal">0 / 1</span>
+              <span class="usage-value" id="usageSourcesVal">1 / 60</span>
             </div>
             <div class="usage-bar-bg">
-              <div class="usage-bar-fill" id="usageSourcesBar" style="width: 0%;"></div>
+              <div class="usage-bar-fill" id="usageSourcesBar" style="width: 2%;"></div>
             </div>
           </div>
 
           <div class="usage-card">
             <div class="usage-header">
               <span>Advanced Media</span>
-              <span class="usage-value" id="usageMediaVal">0 / 0</span>
+              <span class="usage-value" id="usageMediaVal">0 / 30</span>
             </div>
             <div class="usage-bar-bg">
               <div class="usage-bar-fill" id="usageMediaBar" style="width: 0%;"></div>
@@ -811,38 +822,88 @@
           </div>
         </div>
 
+        <!-- C11.16 Canonical Company Logo Management -->
+        <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);" id="accountLogoSection">
+          <label class="form-label" style="font-size: 13px; font-weight: 700; margin-bottom: 4px;">Company Logo</label>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Displayed on your virtual booth banner, exhibitor directory, and trade lead inquiries (PNG, JPG, WebP up to 5MB).</p>
+          
+          <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+            <div id="logoPreviewContainer" style="width: 160px; height: 90px; border-radius: 8px; border: 1px dashed var(--border); background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 6px;">
+              <img id="logoPreviewImg" src="" alt="Company Logo Preview" style="max-height: 100%; max-width: 100%; object-fit: contain; display: none;">
+              <div id="noLogoPlaceholder" style="color: var(--text-muted); font-size: 11px; text-align: center;">
+                <i class="fa-solid fa-image" style="font-size: 22px; display: block; margin-bottom: 4px; opacity: 0.6;"></i>
+                <span>No company logo uploaded</span>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <input type="file" id="logoFileInput" accept=".png, .jpg, .jpeg, .webp, image/png, image/jpeg, image/webp" style="display: none;" onchange="handleLogoUpload(event)">
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button type="button" class="btn-action primary" id="btnUploadLogo" onclick="document.getElementById('logoFileInput').click()" style="padding: 9px 18px; font-size: 13px;">
+                  <i class="fa-solid fa-cloud-arrow-up"></i> <span id="btnLogoText">Upload Logo</span>
+                </button>
+                <button type="button" class="btn-action danger" id="btnRemoveLogo" onclick="handleRemoveLogo()" style="padding: 9px 18px; font-size: 13px; display: none;">
+                  <i class="fa-solid fa-trash-can"></i> Remove Logo
+                </button>
+              </div>
+              <span id="logoStatusMsg" style="font-size: 12px; font-weight: 600; color: #4ade80; display: none;"></span>
+            </div>
+          </div>
+        </div>
+
         <form onsubmit="handleAccountUpdate(event)">
           <div class="form-group">
             <label class="form-label">Verified Work Email (Read-Only Identity)</label>
             <input type="email" id="accEmail" class="form-input" readonly>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Contact / Representative Name</label>
-            <input type="text" id="accDisplayName" class="form-input">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">Contact / Representative Name</label>
+              <input type="text" id="accDisplayName" class="form-input" placeholder="e.g. Ian Park">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Company / Business Name</label>
+              <input type="text" id="accBusinessName" class="form-input" placeholder="e.g. Studio Berry">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">Phone / WhatsApp (Optional)</label>
+              <input type="text" id="accPhone" class="form-input" placeholder="+1-555-0199">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Official Website (Optional)</label>
+              <input type="url" id="accWebsite" class="form-input" placeholder="https://example.com">
+            </div>
           </div>
 
           <div class="form-group">
-            <label class="form-label">Company / Business Name</label>
-            <input type="text" id="accBusinessName" class="form-input">
+            <label class="form-label">Company Description (Optional)</label>
+            <textarea id="accDescription" rows="3" class="form-input" placeholder="Brief overview of your company, product lines, and export capabilities shown to buyers..."></textarea>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Phone / WhatsApp</label>
-            <input type="text" id="accPhone" class="form-input" placeholder="+1-555-0199">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">Industry / Category (Optional)</label>
+              <input type="text" id="accIndustry" class="form-input" placeholder="e.g. Consumer Goods, Design, Robotics">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Country / Location (Optional)</label>
+              <input type="text" id="accLocation" class="form-input" placeholder="e.g. Seoul, South Korea">
+            </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Official Website</label>
-            <input type="url" id="accWebsite" class="form-input" placeholder="https://example.com">
-          </div>
-
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 28px;">
-            <button type="submit" class="btn-action primary" style="padding: 10px 22px; font-size: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 28px; flex-wrap: wrap; gap: 12px;">
+            <button type="submit" class="btn-action primary" style="padding: 10px 24px; font-size: 14px;">
               <i class="fa-solid fa-floppy-disk"></i> Save Profile
             </button>
             <span id="accountSaveMsg" style="font-size: 13px; font-weight: 700; color: #4ade80; display: none;">
-              <i class="fa-solid fa-check"></i> Changes saved!
+              <i class="fa-solid fa-check"></i> Profile saved!
             </span>
           </div>
         </form>
@@ -1160,7 +1221,7 @@
       window.location.reload();
     }
 
-    function switchPortalTab(tabName) {
+    function switchPortalTab(tabName, scrollTargetId = null) {
       ['booths', 'leads', 'analytics', 'account'].forEach(t => {
         const cap = t.charAt(0).toUpperCase() + t.slice(1);
         const btn = document.getElementById('navBtn' + cap);
@@ -1179,6 +1240,13 @@
       if (tabName === 'leads') loadCustomerLeads();
       if (tabName === 'analytics') loadCustomerAnalytics();
       if (tabName === 'account') { loadAccountProfile(); loadAccountEntitlement(); }
+
+      if (scrollTargetId) {
+        setTimeout(() => {
+          const el = document.getElementById(scrollTargetId);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
     }
 
     async function loadCustomerBooths() {
@@ -1236,12 +1304,30 @@
           document.getElementById('onboardingProgressBar').style.width = `${ob.progressPercent}%`;
 
           const grid = document.getElementById('onboardingChecklistGrid');
-          grid.innerHTML = ob.tasks.map(t => `
-            <div class="checklist-item ${t.done ? 'done' : ''}">
-              <i class="fa-solid ${t.done ? 'fa-circle-check' : 'fa-circle'}"></i>
-              <span>${t.label}</span>
-            </div>
-          `).join('');
+          grid.innerHTML = ob.tasks.map(t => {
+            let clickAttr = '';
+            if (t.id === 'company_logo') {
+              clickAttr = `onclick="switchPortalTab('account', 'accountLogoSection')" title="Click to upload or manage company logo"`;
+            } else if (t.id === 'add_product') {
+              clickAttr = `onclick="window.location.href='/?projectId=${encodeURIComponent(firstBooth.id)}#products'" title="Click to add products in booth editor"`;
+            } else if (t.id === 'create_booth') {
+              clickAttr = `onclick="window.location.href='/'" title="3D Booth generation"`;
+            } else if (t.id === 'pinpoints') {
+              clickAttr = `onclick="window.location.href='/?projectId=${encodeURIComponent(firstBooth.id)}#pins'" title="Click to place spatial pinpoints in booth editor"`;
+            } else if (t.id === 'publish') {
+              clickAttr = `onclick="window.location.href='/?projectId=${encodeURIComponent(firstBooth.id)}#publish'" title="Click to review and publish booth"`;
+            } else if (t.id === 'qr_share') {
+              clickAttr = `onclick="window.location.href='/?projectId=${encodeURIComponent(firstBooth.id)}#qr'" title="Click to view and share QR code"`;
+            }
+
+            return `
+              <div class="checklist-item ${t.done ? 'done' : ''}" ${clickAttr}>
+                <i class="fa-solid ${t.done ? 'fa-circle-check' : 'fa-circle'}"></i>
+                <span style="flex: 1;">${t.label}</span>
+                <i class="fa-solid fa-arrow-right" style="font-size: 11px; opacity: 0.6;"></i>
+              </div>
+            `;
+          }).join('');
         }
 
         // Render Booth Cards
@@ -1391,12 +1477,120 @@
 
     function loadAccountProfile() {
       if (!currentAccount) return;
-      document.getElementById('accEmail').value = currentAccount.email;
-      document.getElementById('accDisplayName').value = currentAccount.displayName || '';
+      document.getElementById('accEmail').value = currentAccount.email || '';
+      document.getElementById('accDisplayName').value = currentAccount.displayName || currentAccount.contactName || '';
       document.getElementById('accBusinessName').value = currentAccount.businessName || '';
       document.getElementById('accPhone').value = currentAccount.phone || '';
       document.getElementById('accWebsite').value = currentAccount.website || '';
-      document.getElementById('accEntitlementBadge').innerText = currentAccount.entitlement || 'FREE BOOTH';
+      document.getElementById('accDescription').value = currentAccount.description || '';
+      document.getElementById('accIndustry').value = currentAccount.industry || '';
+      document.getElementById('accLocation').value = currentAccount.location || currentAccount.country || '';
+      document.getElementById('accEntitlementBadge').innerText = currentAccount.entitlement || 'BUSINESS — PILOT';
+
+      // Company Logo State
+      const logoImg = document.getElementById('logoPreviewImg');
+      const noLogo = document.getElementById('noLogoPlaceholder');
+      const btnRemove = document.getElementById('btnRemoveLogo');
+      const btnText = document.getElementById('btnLogoText');
+
+      if (currentAccount.logoUrl) {
+        logoImg.src = currentAccount.logoUrl;
+        logoImg.style.display = 'block';
+        noLogo.style.display = 'none';
+        btnRemove.style.display = 'inline-flex';
+        btnText.innerText = 'Replace Logo';
+      } else {
+        logoImg.src = '';
+        logoImg.style.display = 'none';
+        noLogo.style.display = 'block';
+        btnRemove.style.display = 'none';
+        btnText.innerText = 'Upload Logo';
+      }
+    }
+
+    async function handleLogoUpload(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file || !customerToken) return;
+
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+      if (!allowedTypes.includes(file.type.toLowerCase())) {
+        alert('Invalid file format. Please upload a PNG, JPG/JPEG, or WebP image.');
+        e.target.value = '';
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Logo file size exceeds 5MB limit. Please upload a smaller image.');
+        e.target.value = '';
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('logo', file);
+
+      const statusMsg = document.getElementById('logoStatusMsg');
+      const btnText = document.getElementById('btnLogoText');
+      const origText = btnText.innerText;
+      btnText.innerText = 'Uploading...';
+
+      try {
+        const res = await fetch('/api/customer/logo', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + customerToken },
+          body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (currentAccount) currentAccount.logoUrl = data.logoUrl;
+          loadAccountProfile();
+          statusMsg.style.color = '#4ade80';
+          statusMsg.innerHTML = '<i class="fa-solid fa-check"></i> Logo saved successfully!';
+          statusMsg.style.display = 'inline-block';
+          setTimeout(() => { statusMsg.style.display = 'none'; }, 4000);
+          loadCustomerBooths(); // Refresh checklist!
+        } else {
+          statusMsg.style.color = '#ef4444';
+          statusMsg.innerText = data.error || 'Failed to upload logo.';
+          statusMsg.style.display = 'inline-block';
+        }
+      } catch (err) {
+        statusMsg.style.color = '#ef4444';
+        statusMsg.innerText = 'Network error while uploading logo.';
+        statusMsg.style.display = 'inline-block';
+      } finally {
+        btnText.innerText = currentAccount?.logoUrl ? 'Replace Logo' : 'Upload Logo';
+        e.target.value = '';
+      }
+    }
+
+    async function handleRemoveLogo() {
+      if (!customerToken || !confirm('Are you sure you want to remove your company logo?')) return;
+
+      const statusMsg = document.getElementById('logoStatusMsg');
+      try {
+        const res = await fetch('/api/customer/logo', {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + customerToken }
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (currentAccount) currentAccount.logoUrl = null;
+          loadAccountProfile();
+          statusMsg.style.color = '#4ade80';
+          statusMsg.innerHTML = '<i class="fa-solid fa-check"></i> Logo removed.';
+          statusMsg.style.display = 'inline-block';
+          setTimeout(() => { statusMsg.style.display = 'none'; }, 4000);
+          loadCustomerBooths(); // Refresh checklist!
+        } else {
+          statusMsg.style.color = '#ef4444';
+          statusMsg.innerText = data.error || 'Failed to remove logo.';
+          statusMsg.style.display = 'inline-block';
+        }
+      } catch (err) {
+        statusMsg.style.color = '#ef4444';
+        statusMsg.innerText = 'Network error while removing logo.';
+        statusMsg.style.display = 'inline-block';
+      }
     }
 
     async function handleAccountUpdate(e) {
@@ -1406,6 +1600,11 @@
       const businessName = document.getElementById('accBusinessName').value.trim();
       const phone = document.getElementById('accPhone').value.trim();
       const website = document.getElementById('accWebsite').value.trim();
+      const description = document.getElementById('accDescription').value.trim();
+      const industry = document.getElementById('accIndustry').value.trim();
+      const location = document.getElementById('accLocation').value.trim();
+
+      const saveMsg = document.getElementById('accountSaveMsg');
 
       try {
         const res = await fetch('/api/customer/account', {
@@ -1414,17 +1613,29 @@
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + customerToken
           },
-          body: JSON.stringify({ displayName, businessName, phone, website })
+          body: JSON.stringify({ displayName, businessName, phone, website, description, industry, location })
         });
         const data = await res.json();
         if (data.success) {
-          currentAccount = data.account;
-          document.getElementById('userGreeting').innerText = currentAccount.displayName || currentAccount.email;
-          const msg = document.getElementById('accountSaveMsg');
-          msg.style.display = 'inline-block';
-          setTimeout(() => { msg.style.display = 'none'; }, 3000);
+          if (currentAccount) {
+            Object.assign(currentAccount, { displayName, businessName, phone, website, description, industry, location });
+          }
+          saveMsg.style.color = '#4ade80';
+          saveMsg.innerHTML = '<i class="fa-solid fa-check"></i> Profile saved!';
+          saveMsg.style.display = 'inline-block';
+          setTimeout(() => { saveMsg.style.display = 'none'; }, 4000);
+          loadCustomerBooths();
+        } else {
+          saveMsg.style.color = '#ef4444';
+          saveMsg.innerText = data.error || 'Failed to save profile.';
+          saveMsg.style.display = 'inline-block';
         }
       } catch (err) {
+        saveMsg.style.color = '#ef4444';
+        saveMsg.innerText = 'Error saving profile.';
+        saveMsg.style.display = 'inline-block';
+      }
+    } catch (err) {
         alert('Failed to save account profile.');
       }
     }
