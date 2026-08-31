@@ -1,4 +1,4 @@
-﻿const https = require('https');
+const https = require('https');
 
 class EmailService {
   constructor() {
@@ -38,13 +38,14 @@ class EmailService {
     return this.sentEmails.slice().reverse().find(e => e.to.toLowerCase() === norm) || null;
   }
 
-  async sendVerificationEmail({ to, businessName, code, magicToken, verifyUrl }) {
+  async sendVerificationEmail({ to, businessName, code, magicToken, verifyUrl, verificationRequestId }) {
     const canonicalBase = process.env.PUBLIC_APP_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : 'https://v-show-commercial-v1-production.up.railway.app');
     const fullVerifyUrl = verifyUrl.startsWith('http') 
       ? verifyUrl 
       : `${canonicalBase}${verifyUrl}`;
 
     const record = {
+      verificationRequestId: verificationRequestId || `req-${Date.now()}`,
       to,
       businessName,
       code,
@@ -61,8 +62,11 @@ class EmailService {
         const result = await this.sendViaResend({ to, fullVerifyUrl, code, businessName });
         return {
           success: true,
+          verificationRequestId: record.verificationRequestId,
           provider: 'RESEND',
+          providerEmailId: result?.id || null,
           messageId: result?.id || `resend_${Date.now()}`,
+          deliveryStatus: 'PROVIDER_ACCEPTED',
           verifyUrl: fullVerifyUrl
         };
       } catch (err) {
@@ -70,8 +74,11 @@ class EmailService {
         if (process.env.NODE_ENV !== 'production') {
           return {
             success: true,
+            verificationRequestId: record.verificationRequestId,
             provider: 'DEV_SANDBOX',
+            providerEmailId: `sandbox_${Date.now()}`,
             messageId: `sandbox_${Date.now()}`,
+            deliveryStatus: 'PROVIDER_ACCEPTED',
             verifyUrl: fullVerifyUrl
           };
         }
@@ -89,8 +96,11 @@ class EmailService {
         const result = await this.sendViaSendGrid({ to, fullVerifyUrl, code, businessName });
         return {
           success: true,
+          verificationRequestId: record.verificationRequestId,
           provider: 'SENDGRID',
+          providerEmailId: result?.messageId || null,
           messageId: result?.messageId || `sendgrid_${Date.now()}`,
+          deliveryStatus: 'PROVIDER_ACCEPTED',
           verifyUrl: fullVerifyUrl
         };
       } catch (err) {
@@ -98,8 +108,11 @@ class EmailService {
         if (process.env.NODE_ENV !== 'production') {
           return {
             success: true,
+            verificationRequestId: record.verificationRequestId,
             provider: 'DEV_SANDBOX',
+            providerEmailId: `sandbox_${Date.now()}`,
             messageId: `sandbox_${Date.now()}`,
+            deliveryStatus: 'PROVIDER_ACCEPTED',
             verifyUrl: fullVerifyUrl
           };
         }
@@ -121,15 +134,18 @@ class EmailService {
 
     return {
       success: true,
+      verificationRequestId: record.verificationRequestId,
       provider: 'DEV_SANDBOX',
+      providerEmailId: `sandbox_${Date.now()}`,
       messageId: `sandbox_${Date.now()}`,
+      deliveryStatus: 'PROVIDER_ACCEPTED',
       verifyUrl: fullVerifyUrl
     };
   }
 
   sendViaResend({ to, fullVerifyUrl, code, businessName }) {
     return new Promise((resolve, reject) => {
-      const fromAddress = process.env.EMAIL_FROM || '³D₂ 3D Booth <verify@mail.3dz.site>';
+      const fromAddress = process.env.EMAIL_FROM || '3DZ 3D Booth <verify@mail.3dz.site>';
       const data = JSON.stringify({
         from: fromAddress,
         to: [to],

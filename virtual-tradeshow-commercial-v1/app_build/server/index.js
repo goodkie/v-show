@@ -10,6 +10,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const db = require('./db');
 const mailer = require('./mailer');
+const emailService = mailer;
 
 
 const app = express();
@@ -6579,34 +6580,132 @@ app.post('/api/customer/auth/send-otp', async (req, res) => {
       return res.status(400).json({ error: 'Valid business email is required.' });
     }
     const emailNorm = db.normalizeEmail(email);
+
+    // Resend Cooldown Protection (60s)
+    const existing = customerLoginOtps.get(emailNorm);
+    const now = Date.now();
+    if (existing && existing.lastRequestedAt && (now - existing.lastRequestedAt < 60000)) {
+      const cooldownRemaining = Math.ceil((60000 - (now - existing.lastRequestedAt)) / 1000);
+      return res.status(429).json({
+        error: `Please wait ${cooldownRemaining}s before requesting a new code.`,
+        code: 'COOLDOWN_ACTIVE',
+        cooldownRemaining
+      });
+    }
+
     const code = crypto.randomInt(100000, 999999).toString();
     const magicToken = crypto.randomBytes(24).toString('hex');
-    const expiresAt = Date.now() + 15 * 60 * 1000; // 15 mins
+    const expiresAt = now + 10 * 60 * 1000; // 10 mins expiration per spec
+    const verificationRequestId = `req-${uuidv4().substring(0, 8)}`;
 
-    customerLoginOtps.set(emailNorm, { code, magicToken, expiresAt });
+    customerLoginOtps.set(emailNorm, {
+      code,
+      magicToken,
+      expiresAt,
+      verificationRequestId,
+      lastRequestedAt: now
+    });
 
-    // Send via production EmailService
-    let deliveryInfo = { provider: 'DEV_SANDBOX' };
+    // Send via production EmailService (Resend / SendGrid)
+    let deliveryInfo = { provider: 'DEV_SANDBOX', deliveryStatus: 'PROVIDER_ACCEPTED', providerEmailId: null };
     try {
-      deliveryInfo = await emailService.sendVerificationEmail({
+      deliveryInfo = await mailer.sendVerificationEmail({
         to: emailNorm,
         businessName: 'Exhibitor Portal',
         code,
         magicToken,
-        verifyUrl: `/portal?token=${magicToken}&email=${encodeURIComponent(emailNorm)}`
+        verifyUrl: `/portal?token=${magicToken}&email=${encodeURIComponent(emailNorm)}`,
+        verificationRequestId
       });
     } catch (mailErr) {
       console.warn('[Customer Auth OTP Email Warning]:', mailErr.message);
+      if (process.env.NODE_ENV === 'production' && !process.env.DEV_SANDBOX_ALLOW) {
+        return res.status(502).json({
+          error: "We couldn't deliver the verification email. Please try again or check domain settings.",
+          code: 'EMAIL_DISPATCH_FAILED',
+          details: mailErr.message
+        });
+      }
     }
+
+    // Persist safe delivery telemetry in DB
+    await db.recordEmailDeliveryTelemetry({
+      verificationRequestId,
+      email: emailNorm,
+      provider: deliveryInfo.provider,
+      providerEmailId: deliveryInfo.providerEmailId || null,
+      deliveryStatus: deliveryInfo.deliveryStatus || 'PROVIDER_ACCEPTED',
+      requestedAt: new Date(now).toISOString(),
+      providerAcceptedAt: new Date().toISOString()
+    });
 
     res.json({
       success: true,
-      message: 'Sign-in code sent to your email.',
+      message: 'Verification email sent. Check your inbox and spam folder.',
+      verificationRequestId,
       email: emailNorm,
+      maskedEmail: db.maskEmail(emailNorm),
       provider: deliveryInfo.provider,
-      // For fast developer testing if internal dev pass is used
-      isDevBypass: emailNorm === 'goodkie.com@gmail.com'
+      deliveryStatus: deliveryInfo.deliveryStatus || 'PROVIDER_ACCEPTED',
+      providerEmailId: deliveryInfo.providerEmailId || null,
+      expiresInSeconds: 600,
+      isDevBypass: false
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 1.1 Email Delivery Status Telemetry Endpoint
+app.get('/api/customer/auth/email-status', (req, res) => {
+  try {
+    const { requestId, email } = req.query;
+    const statusRecord = db.getEmailDeliveryStatus(requestId || email);
+    if (!statusRecord) {
+      return res.status(404).json({ error: 'Delivery record not found.', code: 'NOT_FOUND' });
+    }
+    res.json({
+      success: true,
+      verificationRequestId: statusRecord.verificationRequestId,
+      maskedEmail: statusRecord.maskedEmail,
+      provider: statusRecord.provider,
+      providerEmailId: statusRecord.providerEmailId,
+      deliveryStatus: statusRecord.deliveryStatus,
+      requestedAt: statusRecord.requestedAt,
+      providerAcceptedAt: statusRecord.providerAcceptedAt,
+      deliveredAt: statusRecord.deliveredAt,
+      failureCategory: statusRecord.failureCategory
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 1.2 Resend Webhook Ingestion Endpoint
+app.post('/api/webhooks/resend', async (req, res) => {
+  try {
+    const payload = req.body || {};
+    const eventType = payload.type;
+    const emailData = payload.data || {};
+    const providerEmailId = emailData.email_id || emailData.id;
+
+    if (providerEmailId && eventType) {
+      let status = 'UNKNOWN';
+      if (eventType === 'email.delivered') status = 'DELIVERED';
+      else if (eventType === 'email.sent') status = 'SENT';
+      else if (eventType === 'email.delivery_delayed') status = 'DELIVERY_DELAYED';
+      else if (eventType === 'email.bounced') status = 'BOUNCED';
+      else if (eventType === 'email.failed') status = 'FAILED';
+      else if (eventType === 'email.complained') status = 'SUPPRESSED';
+
+      await db.updateEmailDeliveryByProviderId(providerEmailId, {
+        deliveryStatus: status,
+        deliveredAt: status === 'DELIVERED' ? new Date().toISOString() : null,
+        failureCategory: emailData.bounce_class || emailData.reason || null
+      });
+    }
+
+    res.status(200).json({ received: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

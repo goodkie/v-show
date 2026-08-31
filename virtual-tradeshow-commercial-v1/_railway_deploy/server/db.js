@@ -10878,6 +10878,66 @@ return event;
     });
   }
 
+
+  // ============================================================
+  // --- C11.16-P0 EMAIL DELIVERY TELEMETRY & LIFECYCLE ---
+  // ============================================================
+
+  maskEmail(email) {
+    if (!email || !email.includes('@')) return '***@***.***';
+    const [user, domain] = email.split('@');
+    if (user.length <= 2) {
+      return `${user[0]}***@${domain}`;
+    }
+    return `${user[0]}***${user[user.length - 1]}@${domain}`;
+  }
+
+  async recordEmailDeliveryTelemetry(telemetry) {
+    return this.mutate((db) => {
+      const d = db;
+      d.emailDeliveryTelemetry = d.emailDeliveryTelemetry || [];
+      const entry = {
+        verificationRequestId: telemetry.verificationRequestId || `req-${uuidv4().substring(0, 8)}`,
+        maskedEmail: this.maskEmail(telemetry.email),
+        emailNormalized: this.normalizeEmail(telemetry.email),
+        provider: telemetry.provider || 'RESEND',
+        providerEmailId: telemetry.providerEmailId || null,
+        requestedAt: telemetry.requestedAt || new Date().toISOString(),
+        providerAcceptedAt: telemetry.providerAcceptedAt || new Date().toISOString(),
+        deliveryStatus: telemetry.deliveryStatus || 'PROVIDER_ACCEPTED',
+        deliveredAt: telemetry.deliveredAt || null,
+        failureCategory: telemetry.failureCategory || null,
+        updatedAt: new Date().toISOString()
+      };
+      d.emailDeliveryTelemetry.push(entry);
+      if (d.emailDeliveryTelemetry.length > 500) d.emailDeliveryTelemetry.shift();
+      return entry;
+    });
+  }
+
+  getEmailDeliveryStatus(reqIdOrEmail) {
+    const d = this.memoryData;
+    const records = d.emailDeliveryTelemetry || [];
+    if (!reqIdOrEmail) return null;
+    const norm = this.normalizeEmail(reqIdOrEmail);
+    return records.slice().reverse().find(r => r.verificationRequestId === reqIdOrEmail || r.emailNormalized === norm || r.providerEmailId === reqIdOrEmail) || null;
+  }
+
+  async updateEmailDeliveryByProviderId(providerEmailId, updateData = {}) {
+    return this.mutate((db) => {
+      const d = db;
+      d.emailDeliveryTelemetry = d.emailDeliveryTelemetry || [];
+      const record = d.emailDeliveryTelemetry.find(r => r.providerEmailId === providerEmailId);
+      if (record) {
+        if (updateData.deliveryStatus) record.deliveryStatus = updateData.deliveryStatus;
+        if (updateData.deliveredAt) record.deliveredAt = updateData.deliveredAt;
+        if (updateData.failureCategory) record.failureCategory = updateData.failureCategory;
+        record.updatedAt = new Date().toISOString();
+      }
+      return record || null;
+    });
+  }
+
 }
 
 module.exports = new JSONDatabase();

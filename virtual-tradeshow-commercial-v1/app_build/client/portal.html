@@ -858,7 +858,9 @@
     <div class="auth-card">
       <div style="font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 6px;">³D₂</div>
       <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px;" id="authModalTitle">Sign In to Exhibitor Portal</h3>
-      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;" id="authModalDesc">Enter your work email to access your 3D booths and buyer leads.</p>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px;" id="authModalDesc">Enter your work email to access your 3D booths and buyer leads.</p>
+      
+      <div id="authStatusBanner" style="display: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; font-weight: 600;"></div>
 
       <!-- Step 1: Request OTP -->
       <form id="formSendOtp" onsubmit="handleSendOtp(event)">
@@ -872,15 +874,28 @@
 
       <!-- Step 2: Verify OTP -->
       <form id="formVerifyOtp" onsubmit="handleVerifyOtp(event)" style="display: none;">
+        <div id="authModalEmailTarget" style="font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 12px; word-break: break-all;"></div>
+        
         <div class="form-group">
-          <input type="text" id="authCodeInput" class="form-input" placeholder="6-digit code (e.g. 123456)" required maxlength="24" style="text-align: center; font-size: 18px; letter-spacing: 0.15em; font-weight: 800; padding: 12px;">
+          <input type="text" id="authCodeInput" class="form-input" placeholder="6-digit code" required maxlength="12" style="text-align: center; font-size: 20px; letter-spacing: 0.2em; font-weight: 800; padding: 12px;">
         </div>
+
+        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 16px;">
+          <i class="fa-regular fa-clock"></i> Code expires in 10 minutes.
+        </div>
+
         <button type="submit" class="btn-action primary" id="btnVerifyOtp" style="width: 100%; padding: 12px; font-size: 14px; justify-content: center;">
           <i class="fa-solid fa-check"></i> Verify &amp; Open Portal
         </button>
-        <button type="button" class="btn-action" style="width: 100%; margin-top: 10px; justify-content: center; background: transparent; border: none; color: var(--text-muted);" onclick="resetAuthForm()">
-          ← Use different email
-        </button>
+
+        <div style="display: flex; gap: 8px; margin-top: 12px;">
+          <button type="button" class="btn-action" id="btnResendOtp" style="flex: 1; padding: 10px; font-size: 12px; justify-content: center; background: rgba(255,255,255,0.06);" onclick="handleResendOtp()">
+            <i class="fa-solid fa-rotate-right"></i> Resend Code
+          </button>
+          <button type="button" class="btn-action" id="btnChangeEmail" style="flex: 1; padding: 10px; font-size: 12px; justify-content: center; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);" onclick="resetAuthForm()">
+            Use Different Email
+          </button>
+        </div>
       </form>
     </div>
   </div>
@@ -949,18 +964,79 @@
       document.getElementById('formVerifyOtp').style.display = 'none';
     }
 
+    let resendCooldownInterval = null;
+    let resendCooldownSeconds = 0;
+
+    function showAuthBanner(msg, type = 'info') {
+      const banner = document.getElementById('authStatusBanner');
+      if (!banner) return;
+      banner.style.display = 'block';
+      banner.innerText = msg;
+      if (type === 'error') {
+        banner.style.background = 'rgba(239, 68, 68, 0.15)';
+        banner.style.color = '#fca5a5';
+        banner.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+      } else if (type === 'success') {
+        banner.style.background = 'rgba(34, 197, 94, 0.15)';
+        banner.style.color = '#86efac';
+        banner.style.border = '1px solid rgba(34, 197, 94, 0.3)';
+      } else {
+        banner.style.background = 'rgba(56, 189, 248, 0.15)';
+        banner.style.color = '#7dd3fc';
+        banner.style.border = '1px solid rgba(56, 189, 248, 0.3)';
+      }
+    }
+
+    function hideAuthBanner() {
+      const banner = document.getElementById('authStatusBanner');
+      if (banner) banner.style.display = 'none';
+    }
+
+    function startResendCooldown(seconds = 60) {
+      resendCooldownSeconds = seconds;
+      const btn = document.getElementById('btnResendOtp');
+      if (resendCooldownInterval) clearInterval(resendCooldownInterval);
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-rotate-right"></i> Resend in ${resendCooldownSeconds}s`;
+      }
+
+      resendCooldownInterval = setInterval(() => {
+        resendCooldownSeconds--;
+        if (resendCooldownSeconds <= 0) {
+          clearInterval(resendCooldownInterval);
+          resendCooldownInterval = null;
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Resend Code';
+          }
+        } else {
+          if (btn) {
+            btn.innerHTML = `<i class="fa-solid fa-rotate-right"></i> Resend in ${resendCooldownSeconds}s`;
+          }
+        }
+      }, 1000);
+    }
+
     function resetAuthForm() {
+      if (resendCooldownInterval) clearInterval(resendCooldownInterval);
       document.getElementById('formSendOtp').style.display = 'block';
       document.getElementById('formVerifyOtp').style.display = 'none';
       document.getElementById('authCodeInput').value = '';
+      document.getElementById('authModalDesc').innerText = 'Enter your work email to access your 3D booths and buyer leads.';
+      hideAuthBanner();
     }
 
     async function handleSendOtp(e) {
-      e.preventDefault();
+      if (e) e.preventDefault();
       const email = document.getElementById('authEmailInput').value.trim();
       const btn = document.getElementById('btnSendOtp');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending code...';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending code...';
+      }
+      hideAuthBanner();
 
       try {
         const res = await fetch('/api/customer/auth/send-otp', {
@@ -969,21 +1045,63 @@
           body: JSON.stringify({ email })
         });
         const data = await res.json();
-        if (data.success) {
+        if (res.ok && data.success) {
           document.getElementById('formSendOtp').style.display = 'none';
           document.getElementById('formVerifyOtp').style.display = 'block';
-          document.getElementById('authModalDesc').innerText = 'Enter the 6-digit code sent to ' + email;
-          if (data.isDevBypass) {
-            document.getElementById('authCodeInput').value = '123456';
-          }
+          document.getElementById('authModalDesc').innerText = 'Verification email sent. Check your inbox and spam folder.';
+          document.getElementById('authModalEmailTarget').innerText = email;
+          startResendCooldown(60);
+          showAuthBanner('Verification code sent to your email. Please check your inbox and spam folder.', 'success');
+        } else if (res.status === 429) {
+          startResendCooldown(data.cooldownRemaining || 60);
+          showAuthBanner(data.error || 'Please wait before requesting a new code.', 'error');
         } else {
-          alert(data.error || 'Failed to send code.');
+          showAuthBanner(data.error || 'Failed to send verification email. Please try again.', 'error');
         }
       } catch (err) {
-        alert('Network error sending verification code.');
+        showAuthBanner('Network error sending verification code.', 'error');
       } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Verification Code';
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Verification Code';
+        }
+      }
+    }
+
+    async function handleResendOtp() {
+      if (resendCooldownSeconds > 0) return;
+      const email = document.getElementById('authEmailInput').value.trim();
+      if (!email) {
+        resetAuthForm();
+        return;
+      }
+      const btn = document.getElementById('btnResendOtp');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Resending...';
+      }
+      hideAuthBanner();
+
+      try {
+        const res = await fetch('/api/customer/auth/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          startResendCooldown(60);
+          showAuthBanner('A fresh verification code was sent to your email.', 'success');
+        } else if (res.status === 429) {
+          startResendCooldown(data.cooldownRemaining || 60);
+          showAuthBanner(data.error || 'Please wait before requesting a new code.', 'error');
+        } else {
+          showAuthBanner(data.error || 'Could not resend email. Please try again.', 'error');
+          if (btn) btn.disabled = false;
+        }
+      } catch (err) {
+        showAuthBanner('Network error resending code.', 'error');
+        if (btn) btn.disabled = false;
       }
     }
 
@@ -994,6 +1112,7 @@
       const btn = document.getElementById('btnVerifyOtp');
       btn.disabled = true;
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
+      hideAuthBanner();
 
       try {
         const res = await fetch('/api/customer/auth/verify-otp', {
@@ -1002,7 +1121,8 @@
           body: JSON.stringify({ email, code })
         });
         const data = await res.json();
-        if (data.success && data.token) {
+        if (res.ok && data.success && data.token) {
+          if (resendCooldownInterval) clearInterval(resendCooldownInterval);
           customerToken = data.token;
           localStorage.setItem('3d2_customer_token', customerToken);
           currentAccount = data.account;
@@ -1011,10 +1131,14 @@
           loadCustomerBooths();
           loadCustomerAnalytics();
         } else {
-          alert(data.error || 'Invalid code.');
+          if (data.code === 'OTP_EXPIRED') {
+            showAuthBanner('This code has expired. Please click "Resend Code" to receive a fresh verification code.', 'error');
+          } else {
+            showAuthBanner(data.error || 'Invalid verification code. Please check your email and try again.', 'error');
+          }
         }
       } catch (err) {
-        alert('Network error verifying code.');
+        showAuthBanner('Network error verifying code.', 'error');
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-check"></i> Verify &amp; Open Portal';
