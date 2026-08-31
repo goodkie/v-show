@@ -10042,6 +10042,29 @@ return event;
     return { tasks, completedCount, totalTasks: tasks.length, progressPercent };
   }
 
+  
+  getAccountPlanLimits(accountId) {
+    const d = this.memoryData;
+    const account = (d.accounts || []).find(a => a.id === accountId);
+    let plan = 'pro';
+    if (account) {
+      if (account.pilotId) {
+        const pilot = (d.customerPilots || []).find(p => p.pilotId === account.pilotId);
+        if (pilot && pilot.tier) {
+          plan = pilot.tier.toLowerCase();
+        }
+      } else if (account.planCode) {
+        plan = account.planCode.toLowerCase();
+      } else if (account.entitlement) {
+        plan = account.entitlement.toLowerCase();
+      } else if (account.plan) {
+        plan = account.plan.toLowerCase();
+      }
+    }
+    const config = this.getPlanConfig();
+    return config[plan] || config.pro;
+  }
+
   getCustomerBooths(accountId, emailNormalized) {
     const d = this.memoryData;
     const norm = this.normalizeEmail(emailNormalized);
