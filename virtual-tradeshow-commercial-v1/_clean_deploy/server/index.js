@@ -2821,45 +2821,17 @@ app.post('/api/free-funnel/projects/:id/custom-quote', async (req, res) => {
   }
 });
 
-// 10. C09 Server-Side Publish Billing Gate
+// 10. C11.12 Exhibitor Publish Handler
 app.post('/api/projects/:id/publish', async (req, res) => {
   try {
-    const check = db.canPublishProject(req.params.id);
-    if (!check.allowed) {
-      // Check if developer bypass applies
-      const authHeader = req.headers.authorization;
-      let isDev = false;
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        const session = activeSessions.get(authHeader.substring(7));
-        if (session && (session.role === 'developer' || session.role === 'platform_owner')) {
-          isDev = true;
-        }
-      }
-      if (!isDev) {
-        return res.status(403).json({
-          error: check.reason,
-          message: check.message
-        });
-      }
-    }
-
-    const project = await db.mutate((d) => {
-      const p = (d.projects || []).find(pr => pr.id === req.params.id);
-      if (p) {
-        p.isPublished = true;
-        p.publishedAt = new Date().toISOString();
-        p.updatedAt = new Date().toISOString();
-      }
-      return p;
-    });
-
-    res.json({
-      success: true,
-      message: 'Virtual booth showroom published successfully to live buyers.',
-      project
-    });
+    const token = extractAuthToken(req);
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const result = await db.publishBooth(req.params.id, token, baseUrl);
+    res.json(result);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
   }
 });
 
