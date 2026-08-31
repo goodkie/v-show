@@ -1497,26 +1497,41 @@
     </div>
 
     <!-- Multi-Angle 3D Spatial Walkthrough Upgrade Banner (Conversion Booster) -->
+        <!-- Multi-Angle 3D Spatial Walkthrough Upgrade Banner (Conversion Booster) -->
     <div class="multi-angle-upgrade-card">
       <div class="upgrade-card-content">
         <div class="upgrade-badge">
           <i class="fa-solid fa-cube"></i> MULTI-ANGLE 3D SPATIAL DIGITAL TWIN
         </div>
-        <h3 class="upgrade-card-title">더 입체적인 3D 워크스루 부스를 원하시나요?</h3>
+        <h3 class="upgrade-card-title">Looking for a True 3D Walkthrough Virtual Booth?</h3>
         <p class="upgrade-card-desc">
-          현재 화면은 <strong>1장의 일반 사진으로 생성된 2.5D 곡면 프리뷰</strong>입니다.<br>
-          부스의 <strong>여러 각도 사진(3~10장 이상)</strong>을 업로드하시면 <strong>진짜 360도 공간 전체를 걸어다니는 완전한 3D 가우시안 스플래팅(3D Gaussian Splatting) 디지털 트윈</strong>으로 업그레이드할 수 있습니다!
+          This preview was generated from <strong>a single 2D photo into an interactive 360° virtual preview</strong>.<br>
+          Upload <strong>multi-angle booth photos (3–10+ photos)</strong> to reconstruct a <strong>full 3D Gaussian Splatting digital twin with 6-DoF walk-in exploration!</strong>
         </p>
         <div class="upgrade-comparison-row">
           <div class="comp-box current">
-            <div class="comp-title current"><i class="fa-regular fa-image"></i> 현재: 1장 사진 프리뷰 (Free)</div>
-            <div>• 2.5D 곡면 파노라마 시차 뷰포트<br>• 정면 시선 기준 3개 상품 핀포인트<br>• 단 1장의 사진으로 3초 만에 생성</div>
+            <div class="comp-title current"><i class="fa-regular fa-image"></i> Current: 1-Photo Preview (Free)</div>
+            <div>• 360° Spherical panoramic viewpoint<br>• 3 Front-facing commercial product pins<br>• Generated in seconds from 1 photo</div>
           </div>
           <div class="comp-box multi">
-            <div class="comp-title multi"><i class="fa-solid fa-cube"></i> 업그레이드: 다각도 3D 공간 복원 (PRO)</div>
-            <div>• <strong>완전한 3D 가우시안 스플래팅 공간 워크스루</strong><br>• <strong>부스 안팎을 자유롭게 걸어다니는 6-DoF 시점</strong><br>• <strong>바이어 체류 시간 및 견적 문의 3.4배 상승</strong></div>
+            <div class="comp-title multi"><i class="fa-solid fa-cube"></i> Upgrade: Multi-Angle 3D Digital Twin (PRO)</div>
+            <div>• <strong>Full 3D Gaussian Splatting walk-in space</strong><br>• <strong>Free 6-DoF navigation inside &amp; outside the booth</strong><br>• <strong>3.4x higher buyer engagement &amp; inquiry conversion</strong></div>
           </div>
         </div>
+        <div class="upgrade-feature-pills">
+          <span class="feat-pill"><i class="fa-solid fa-camera-rotate"></i> 3–10+ Multi-Angle Capture</span>
+          <span class="feat-pill"><i class="fa-solid fa-person-walking"></i> 6-DoF Walk-In Exploration</span>
+          <span class="feat-pill"><i class="fa-solid fa-cube"></i> 3D Gaussian Splatting Modeling</span>
+          <span class="feat-pill"><i class="fa-solid fa-share-nodes"></i> Photorealistic Digital Twin Sharing</span>
+        </div>
+      </div>
+      <div class="upgrade-card-action" style="display: flex; flex-direction: column; gap: 10px; align-items: stretch;">
+        <button class="btn-upgrade-multi" onclick="openMultiAngleUpgradeModal()">
+          <i class="fa-solid fa-camera-rotate"></i> Upload Multi-Angle Photos &amp; Upgrade →
+        </button>
+        <span style="font-size: 11px; color: #64748b; text-align: center;">AI Multi-Angle Mesh &amp; Spatial Reconstruction</span>
+      </div>
+    </div>
         <div class="upgrade-feature-pills">
           <span class="feat-pill"><i class="fa-solid fa-camera-rotate"></i> 3~10+ 다각도 촬영 지원</span>
           <span class="feat-pill"><i class="fa-solid fa-person-walking"></i> 공간 내부 워크인(Walk-In) 탐색</span>
@@ -1766,6 +1781,84 @@
       <button class="btn-create-free" onclick="openPlanModal('drawer_upgrade')">
         <i class="fa-solid fa-rocket"></i> ACTIVATE COMMERCIAL BUYER TOOLS
       </button>
+    </div>
+  </div>
+
+    <!-- Multi-Angle 3D Digital Twin Upgrade Modal -->
+  <div class="drawer-modal" id="multiAngleUpgradeModal" style="display: none; align-items: center; justify-content: center; z-index: 99999;">
+    <div class="drawer-card" style="max-width: 760px; width: 92%; max-height: 90vh; overflow-y: auto; background: #070e1b; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 20px; padding: 32px; box-shadow: 0 25px 60px rgba(0,0,0,0.8); position: relative;">
+      <button class="close-btn" onclick="closeMultiAngleUpgradeModal()" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #cbd5e1; border-radius: 50%; width: 34px; height: 34px; font-size: 16px; cursor: pointer;">✕</button>
+
+      <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 6px 14px; font-size: 11.5px; font-weight: 800; color: #38bdf8; text-transform: uppercase; margin-bottom: 14px;">
+        <i class="fa-solid fa-cube"></i> 3D Gaussian Splatting Spatial Digital Twin
+      </div>
+
+      <h2 style="font-size: 24px; font-weight: 900; color: #fff; margin-bottom: 8px; line-height: 1.3;">
+        Upgrade to a True 3D Walkthrough Virtual Booth
+      </h2>
+      <p style="font-size: 13.5px; color: #94a3b8; line-height: 1.6; margin-bottom: 24px;">
+        Upload <strong>3 to 10+ photos</strong> of your exhibition booth from multiple vantage points (Front, Left 45°, Right 45°, Counter &amp; Key Details). Our AI Spatial Engine reconstructs an authentic 3D Gaussian Splatting walk-in digital twin.
+      </p>
+
+      <!-- 4-Angle Photography Guide -->
+      <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 18px; margin-bottom: 24px;">
+        <div style="font-size: 12px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-camera"></i> Recommended Capture Angles for Best 3D Reconstruction
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px;">
+          <div style="background: #030712; border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; padding: 12px; text-align: center;">
+            <div style="font-size: 20px; color: #38bdf8; margin-bottom: 6px;">📐 1</div>
+            <strong style="color: #fff; font-size: 12px; display: block; margin-bottom: 4px;">Front Elevation</strong>
+            <span style="color: #64748b; font-size: 11px; line-height: 1.3; display: block;">Full booth frontal view</span>
+          </div>
+          <div style="background: #030712; border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; padding: 12px; text-align: center;">
+            <div style="font-size: 20px; color: #38bdf8; margin-bottom: 6px;">📐 2</div>
+            <strong style="color: #fff; font-size: 12px; display: block; margin-bottom: 4px;">45° Left Corner</strong>
+            <span style="color: #64748b; font-size: 11px; line-height: 1.3; display: block;">Left side &amp; depth perspective</span>
+          </div>
+          <div style="background: #030712; border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; padding: 12px; text-align: center;">
+            <div style="font-size: 20px; color: #38bdf8; margin-bottom: 6px;">📐 3</div>
+            <strong style="color: #fff; font-size: 12px; display: block; margin-bottom: 4px;">45° Right Corner</strong>
+            <span style="color: #64748b; font-size: 11px; line-height: 1.3; display: block;">Right side &amp; interior angles</span>
+          </div>
+          <div style="background: #030712; border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; padding: 12px; text-align: center;">
+            <div style="font-size: 20px; color: #38bdf8; margin-bottom: 6px;">📐 4</div>
+            <strong style="color: #fff; font-size: 12px; display: block; margin-bottom: 4px;">Product Close-ups</strong>
+            <span style="color: #64748b; font-size: 11px; line-height: 1.3; display: block;">Key showcases &amp; counters</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Multi-File Dropzone Area -->
+      <div id="multi-dropzone" onclick="document.getElementById('multi-booth-files').click()" style="border: 2px dashed rgba(56, 189, 248, 0.4); border-radius: 14px; padding: 32px 20px; text-align: center; background: rgba(56, 189, 248, 0.03); cursor: pointer; transition: all 0.2s; margin-bottom: 18px;">
+        <input type="file" id="multi-booth-files" multiple accept="image/*" onchange="handleMultiPhotosSelected(this)" style="display: none;">
+        <div style="width: 52px; height: 52px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; color: #38bdf8; font-size: 20px;">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+        </div>
+        <div style="font-size: 15px; font-weight: 800; color: #fff; margin-bottom: 6px;">
+          Click to Browse or Drag Multi-Angle Photos Here
+        </div>
+        <div style="font-size: 12.5px; color: #64748b;">
+          Supports JPG, PNG, WebP, HEIC (Select 3 to 10+ photos)
+        </div>
+      </div>
+
+      <!-- Selected Photos Status & Thumbnails Preview -->
+      <div id="multi-photos-selected-status" style="display: none; background: rgba(74, 222, 128, 0.1); border: 1px solid rgba(74, 222, 128, 0.3); border-radius: 10px; padding: 12px 16px; font-size: 13px; font-weight: 700; color: #4ade80; margin-bottom: 18px;">
+      </div>
+
+      <div id="multi-photos-preview-grid" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px;"></div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <button type="button" onclick="closeMultiAngleUpgradeModal()" style="background: rgba(255,255,255,0.05); border: 1px solid #334155; color: #94a3b8; font-weight: 700; font-size: 13.5px; padding: 12px 20px; border-radius: 10px; cursor: pointer;">
+          Cancel
+        </button>
+        <button type="button" onclick="submitMultiAngleUpgrade()" style="background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; color: #fff; font-weight: 800; font-size: 14px; padding: 12px 26px; border-radius: 10px; cursor: pointer; box-shadow: 0 10px 25px rgba(2, 132, 199, 0.4); display: inline-flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Proceed with 3D Spatial Reconstruction →
+        </button>
+      </div>
+
     </div>
   </div>
 
@@ -2957,14 +3050,14 @@
       setupStudioProducts(projectData);
     }
 
-    function openMultiAngleUpgradeModal() {
+        function openMultiAngleUpgradeModal() {
       const modal = document.getElementById('multiAngleUpgradeModal');
-      if (modal) modal.classList.add('active');
+      if (modal) modal.style.display = 'flex';
     }
 
     function closeMultiAngleUpgradeModal() {
       const modal = document.getElementById('multiAngleUpgradeModal');
-      if (modal) modal.classList.remove('active');
+      if (modal) modal.style.display = 'none';
     }
 
     let selectedMultiFiles = [];
@@ -2973,17 +3066,44 @@
       if (input.files && input.files.length > 0) {
         selectedMultiFiles = Array.from(input.files);
         const statusEl = document.getElementById('multi-photos-selected-status');
+        const gridEl = document.getElementById('multi-photos-preview-grid');
+
         if (statusEl) {
           statusEl.style.display = 'block';
-          statusEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${selectedMultiFiles.length}장의 사진이 선택되었습니다 (3D 가우시안 공간 복원 준비 완료)`;
+          statusEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${selectedMultiFiles.length} multi-angle photo(s) selected for 3D Gaussian Splatting reconstruction.`;
+        }
+
+        if (gridEl) {
+          gridEl.innerHTML = '';
+          selectedMultiFiles.slice(0, 10).forEach(file => {
+            const thumb = document.createElement('div');
+            thumb.style.width = '54px';
+            thumb.style.height = '54px';
+            thumb.style.borderRadius = '8px';
+            thumb.style.overflow = 'hidden';
+            thumb.style.border = '1px solid rgba(56, 189, 248, 0.4)';
+            thumb.style.background = '#000';
+            const img = document.createElement('img');
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            img.src = URL.createObjectURL(file);
+            thumb.appendChild(img);
+            gridEl.appendChild(thumb);
+          });
         }
       }
     }
 
     function submitMultiAngleUpgrade() {
       if (selectedMultiFiles.length < 2) {
-        alert('다각도 3D 공간 복원을 위해 부스 사진을 최소 2장 이상 (3~10장 권장) 선택해 주세요.');
-        return;
+        if (selectedMultiFiles.length === 0) {
+          const fileInput = document.getElementById('multi-booth-files');
+          if (fileInput) {
+            fileInput.click();
+            return;
+          }
+        }
       }
       closeMultiAngleUpgradeModal();
       openPlanModal('multi_angle_upgrade');
