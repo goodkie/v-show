@@ -994,6 +994,247 @@
       },
       "createdAt": "2026-08-31T09:27:34.136Z",
       "updatedAt": "2026-08-31T09:27:34.136Z"
+    },
+    {
+      "id": "org-free-c0536a3c",
+      "type": "exhibitor",
+      "name": "Synthaeron Robotics Corp 9532",
+      "slug": "synthaeron-robotics-corp-9532",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T10:01:09.616Z"
+      },
+      "createdAt": "2026-08-31T10:01:09.616Z",
+      "updatedAt": "2026-08-31T10:01:09.616Z"
+    },
+    {
+      "id": "org-free-a2a55814",
+      "type": "exhibitor",
+      "name": "Competitor Labs 9532",
+      "slug": "competitor-labs-9532",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T10:01:15.396Z"
+      },
+      "createdAt": "2026-08-31T10:01:15.396Z",
+      "updatedAt": "2026-08-31T10:01:15.396Z"
+    },
+    {
+      "id": "org-free-a0bc5964",
+      "type": "exhibitor",
+      "name": "Synthaeron Robotics Corp 3438",
+      "slug": "synthaeron-robotics-corp-3438",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T10:02:53.518Z"
+      },
+      "createdAt": "2026-08-31T10:02:53.518Z",
+      "updatedAt": "2026-08-31T10:02:53.518Z"
+    },
+    {
+      "id": "org-free-22fd4222",
+      "type": "exhibitor",
+      "name": "Competitor Labs 3438",
+      "slug": "competitor-labs-3438",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T10:02:54.439Z"
+      },
+      "createdAt": "2026-08-31T10:02:54.439Z",
+      "updatedAt": "2026-08-31T10:02:54.439Z"
+    },
+    {
+      "id": "org-free-4955eb23",
+      "type": "exhibitor",
+      "name": "Synthaeron Robotics Corp 1257",
+      "slug": "synthaeron-robotics-corp-1257",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T10:04:11.336Z"
+      },
+      "createdAt": "2026-08-31T10:04:11.336Z",
+      "updatedAt": "2026-08-31T10:04:11.336Z"
+    },
+    {
+      "id": "org-free-97a6bee2",
+      "type": "exhibitor",
+      "name": "Competitor Labs 1257",
+      "slug": "competitor-labs-1257",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T10:04:12.964Z"
+      },
+      "createdAt": "2026-08-31T10:04:12.964Z",
+      "updatedAt": "2026-08-31T10:04:12.964Z"
+    },
+    {
+      "id": "org-free-79c2ba10",
+      "type": "exhibitor",
+      "name": "Synthaeron Robotics Corp 9008",
+      "slug": "synthaeron-robotics-corp-9008",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T10:05:19.085Z"
+      },
+      "createdAt": "2026-08-31T10:05:19.085Z",
+      "updatedAt": "2026-08-31T10:05:19.085Z"
+    },
+    {
+      "id": "org-free-c8c794a9",
+      "type": "exhibitor",
+      "name": "Competitor Labs 9008",
+      "slug": "competitor-labs-9008",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T10:05:22.023Z"
+      },
+      "createdAt": "2026-08-31T10:05:22.023Z",
+      "updatedAt": "2026-08-31T10:05:22.023Z"
+    },
+    {
+      "id": "org-free-454503bc",
+      "type": "exhibitor",
+      "name": "Synthaeron Robotics Corp 9229",
+      "slug": "synthaeron-robotics-corp-9229",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T10:05:59.298Z"
+      },
+      "createdAt": "2026-08-31T10:05:59.298Z",
+      "updatedAt": "2026-08-31T10:05:59.298Z"
+    },
+    {
+      "id": "org-free-5264c11b",
+      "type": "exhibitor",
+      "name": "Competitor Labs 9229",
+      "slug": "competitor-labs-9229",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T10:06:00.257Z"
+      },
+      "createdAt": "2026-08-31T10:06:00.257Z",
+      "updatedAt": "2026-08-31T10:06:00.258Z"
+    },
+    {
+      "id": "org-free-f2c461d1",
+      "type": "exhibitor",
+      "name": "Apex Enterprise Global 3873",
+      "slug": "apex-enterprise-global-3873",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T10:06:03.922Z"
+      },
+      "createdAt": "2026-08-31T10:06:03.922Z",
+      "updatedAt": "2026-08-31T10:06:03.922Z"
+    },
+    {
+      "id": "org-free-86129b2d",
+      "type": "exhibitor",
+      "name": "Tenant B Global 3873",
+      "slug": "tenant-b-global-3873",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T10:06:04.505Z"
+      },
+      "createdAt": "2026-08-31T10:06:04.505Z",
+      "updatedAt": "2026-08-31T10:06:04.505Z"
+    },
+    {
+      "id": "org-free-22d42145",
+      "type": "exhibitor",
+      "name": "Apex Enterprise Global 9129",
+      "slug": "apex-enterprise-global-9129",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T10:06:39.315Z"
+      },
+      "createdAt": "2026-08-31T10:06:39.315Z",
+      "updatedAt": "2026-08-31T10:06:39.315Z"
+    },
+    {
+      "id": "org-free-68abb518",
+      "type": "exhibitor",
+      "name": "Tenant B Global 9129",
+      "slug": "tenant-b-global-9129",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T10:06:40.852Z"
+      },
+      "createdAt": "2026-08-31T10:06:40.852Z",
+      "updatedAt": "2026-08-31T10:06:40.852Z"
+    },
+    {
+      "id": "org-free-7cbbac6e",
+      "type": "exhibitor",
+      "name": "Apex Robotics Global Corp 5041",
+      "slug": "apex-robotics-global-corp-5041",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T10:06:45.077Z"
+      },
+      "createdAt": "2026-08-31T10:06:45.077Z",
+      "updatedAt": "2026-08-31T10:06:46.702Z",
+      "contactEmail": "sarah.connor.c1113.5041@apexrobotics.example.com"
+    },
+    {
+      "id": "org-free-d4c478f8",
+      "type": "exhibitor",
+      "name": "Intruder CyberCorp 5041",
+      "slug": "intruder-cybercorp-5041",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T10:06:47.106Z"
+      },
+      "createdAt": "2026-08-31T10:06:47.106Z",
+      "updatedAt": "2026-08-31T10:06:47.106Z"
     }
   ],
   "users": [
@@ -2504,6 +2745,414 @@
       "notificationStatus": "PENDING",
       "createdAt": "2026-08-31T09:27:34.040Z",
       "updatedAt": "2026-08-31T09:27:34.040Z"
+    },
+    {
+      "leadId": "lead-65b60367",
+      "leadType": "RFQ",
+      "boothId": "prj-free-abafe6c8",
+      "projectId": "prj-free-abafe6c8",
+      "productId": "prod-1",
+      "productName": null,
+      "visitorName": "",
+      "visitorCompany": "",
+      "visitorEmail": "",
+      "visitorPhone": "",
+      "quantity": "50 units",
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T10:01:14.173Z",
+      "updatedAt": "2026-08-31T10:01:14.173Z"
+    },
+    {
+      "leadId": "lead-2464581f",
+      "leadType": "SAMPLE_REQUEST",
+      "boothId": "prj-free-abafe6c8",
+      "projectId": "prj-free-abafe6c8",
+      "productId": "prod-3",
+      "productName": null,
+      "visitorName": "",
+      "visitorCompany": "",
+      "visitorEmail": "",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T10:01:14.301Z",
+      "updatedAt": "2026-08-31T10:01:14.301Z"
+    },
+    {
+      "leadId": "lead-f8723f50",
+      "leadType": "MEETING_REQUEST",
+      "boothId": "prj-free-abafe6c8",
+      "projectId": "prj-free-abafe6c8",
+      "productId": null,
+      "productName": null,
+      "visitorName": "",
+      "visitorCompany": "",
+      "visitorEmail": "",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T10:01:14.447Z",
+      "updatedAt": "2026-08-31T10:01:14.447Z"
+    },
+    {
+      "leadId": "lead-176db1c7",
+      "leadType": "RFQ",
+      "boothId": "prj-free-8982213f",
+      "projectId": "prj-free-8982213f",
+      "productId": "prod-slot-1",
+      "productName": "Synthaeron Autonomous Arm A-1",
+      "visitorName": "",
+      "visitorCompany": "EuroTech Procurement GmbH",
+      "visitorEmail": "",
+      "visitorPhone": "",
+      "quantity": 50,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "CONTACTED",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T10:02:54.003Z",
+      "updatedAt": "2026-08-31T10:02:54.097Z"
+    },
+    {
+      "leadId": "lead-7316c051",
+      "leadType": "SAMPLE_REQUEST",
+      "boothId": "prj-free-8982213f",
+      "projectId": "prj-free-8982213f",
+      "productId": "prod-slot-3",
+      "productName": "Synthaeron Vision LiDAR Sensor V-3",
+      "visitorName": "",
+      "visitorCompany": "Tokyo Industrial Distributors",
+      "visitorEmail": "",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T10:02:54.031Z",
+      "updatedAt": "2026-08-31T10:02:54.031Z"
+    },
+    {
+      "leadId": "lead-40b88247",
+      "leadType": "MEETING_REQUEST",
+      "boothId": "prj-free-8982213f",
+      "projectId": "prj-free-8982213f",
+      "productId": null,
+      "productName": null,
+      "visitorName": "",
+      "visitorCompany": "Singapore Logistics Automation",
+      "visitorEmail": "",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T10:02:54.061Z",
+      "updatedAt": "2026-08-31T10:02:54.061Z"
+    },
+    {
+      "leadId": "lead-0f93c677",
+      "leadType": "RFQ",
+      "productId": "prod-slot-1",
+      "productName": "Synthaeron Autonomous Arm A-1",
+      "visitorName": "",
+      "visitorCompany": "EuroTech Procurement GmbH",
+      "visitorEmail": "",
+      "visitorPhone": "",
+      "quantity": 50,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T10:04:12.785Z",
+      "updatedAt": "2026-08-31T10:04:12.785Z"
+    },
+    {
+      "leadId": "lead-7ce81b4d",
+      "leadType": "SAMPLE_REQUEST",
+      "productId": "prod-slot-3",
+      "productName": "Synthaeron Vision LiDAR Sensor V-3",
+      "visitorName": "",
+      "visitorCompany": "Tokyo Industrial Distributors",
+      "visitorEmail": "",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T10:04:12.813Z",
+      "updatedAt": "2026-08-31T10:04:12.813Z"
+    },
+    {
+      "leadId": "lead-a06a9b9a",
+      "leadType": "MEETING_REQUEST",
+      "productId": null,
+      "productName": null,
+      "visitorName": "",
+      "visitorCompany": "Singapore Logistics Automation",
+      "visitorEmail": "",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T10:04:12.847Z",
+      "updatedAt": "2026-08-31T10:04:12.847Z"
+    },
+    {
+      "leadId": "lead-cf5fd18c",
+      "leadType": "RFQ",
+      "boothId": "prj-free-5d542ffa",
+      "projectId": "prj-free-5d542ffa",
+      "productId": "prod-slot-1",
+      "productName": "Synthaeron Autonomous Arm A-1",
+      "visitorName": "",
+      "visitorCompany": "EuroTech Procurement GmbH",
+      "visitorEmail": "",
+      "visitorPhone": "",
+      "quantity": 50,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "CONTACTED",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T10:05:21.083Z",
+      "updatedAt": "2026-08-31T10:05:21.467Z"
+    },
+    {
+      "leadId": "lead-e5a78b77",
+      "leadType": "SAMPLE_REQUEST",
+      "boothId": "prj-free-5d542ffa",
+      "projectId": "prj-free-5d542ffa",
+      "productId": "prod-slot-3",
+      "productName": "Synthaeron Vision LiDAR Sensor V-3",
+      "visitorName": "",
+      "visitorCompany": "Tokyo Industrial Distributors",
+      "visitorEmail": "",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T10:05:21.208Z",
+      "updatedAt": "2026-08-31T10:05:21.208Z"
+    },
+    {
+      "leadId": "lead-ca6e4978",
+      "leadType": "MEETING_REQUEST",
+      "boothId": "prj-free-5d542ffa",
+      "projectId": "prj-free-5d542ffa",
+      "productId": null,
+      "productName": null,
+      "visitorName": "",
+      "visitorCompany": "Singapore Logistics Automation",
+      "visitorEmail": "",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T10:05:21.324Z",
+      "updatedAt": "2026-08-31T10:05:21.324Z"
+    },
+    {
+      "leadId": "lead-3687e462",
+      "leadType": "RFQ",
+      "boothId": "prj-free-ab6344e8",
+      "projectId": "prj-free-ab6344e8",
+      "productId": "prod-slot-1",
+      "productName": "Synthaeron Autonomous Arm A-1",
+      "visitorName": "",
+      "visitorCompany": "EuroTech Procurement GmbH",
+      "visitorEmail": "",
+      "visitorPhone": "",
+      "quantity": 50,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "CONTACTED",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T10:05:59.834Z",
+      "updatedAt": "2026-08-31T10:05:59.924Z"
+    },
+    {
+      "leadId": "lead-8db72030",
+      "leadType": "SAMPLE_REQUEST",
+      "boothId": "prj-free-ab6344e8",
+      "projectId": "prj-free-ab6344e8",
+      "productId": "prod-slot-3",
+      "productName": "Synthaeron Vision LiDAR Sensor V-3",
+      "visitorName": "",
+      "visitorCompany": "Tokyo Industrial Distributors",
+      "visitorEmail": "",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T10:05:59.863Z",
+      "updatedAt": "2026-08-31T10:05:59.863Z"
+    },
+    {
+      "leadId": "lead-a46ca84a",
+      "leadType": "MEETING_REQUEST",
+      "boothId": "prj-free-ab6344e8",
+      "projectId": "prj-free-ab6344e8",
+      "productId": null,
+      "productName": null,
+      "visitorName": "",
+      "visitorCompany": "Singapore Logistics Automation",
+      "visitorEmail": "",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T10:05:59.891Z",
+      "updatedAt": "2026-08-31T10:05:59.891Z"
+    },
+    {
+      "leadId": "lead-3bd0ef97",
+      "leadType": "RFQ",
+      "boothId": "prj-free-1d7511cc",
+      "projectId": "prj-free-1d7511cc",
+      "productId": "prod-slot-1",
+      "productName": "Apex Cobot Arm X-16",
+      "visitorName": "David Miller",
+      "visitorCompany": "MegaCorp Logistics GmbH",
+      "visitorEmail": "david.miller@megacorp-logistics.com",
+      "visitorPhone": "",
+      "quantity": 50,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "CONTACTED",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T10:06:46.930Z",
+      "updatedAt": "2026-08-31T10:06:47.031Z"
+    },
+    {
+      "leadId": "lead-1b6ed630",
+      "leadType": "SAMPLE_REQUEST",
+      "boothId": "prj-free-1d7511cc",
+      "projectId": "prj-free-1d7511cc",
+      "productId": "prod-slot-3",
+      "productName": "Apex 3D Vision Sensor Kit V4",
+      "visitorName": "Elena Rostova",
+      "visitorCompany": "SmartFactory Labs",
+      "visitorEmail": "elena.rostova@smartfactory.io",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T10:06:46.960Z",
+      "updatedAt": "2026-08-31T10:06:46.960Z"
+    },
+    {
+      "leadId": "lead-f4f2ba23",
+      "leadType": "MEETING_REQUEST",
+      "boothId": "prj-free-1d7511cc",
+      "projectId": "prj-free-1d7511cc",
+      "productId": "prod-slot-2",
+      "productName": "Apex Autonomous Mobile Rover R2",
+      "visitorName": "Hiroshi Tanaka",
+      "visitorCompany": "Tokyo Robotics Industrial",
+      "visitorEmail": "tanaka.hiroshi@tokyobotics.co.jp",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T10:06:46.996Z",
+      "updatedAt": "2026-08-31T10:06:46.996Z"
     }
   ],
   "rfqs": [
@@ -16667,6 +17316,147 @@
       "eventType": "MEETING_REQUEST_SUBMIT",
       "isTest": false,
       "timestamp": "2026-08-31T09:27:34.040Z"
+    },
+    {
+      "eventId": "evt-fd262a36",
+      "projectId": "prj-free-abafe6c8",
+      "productId": "prod-1",
+      "eventType": "RFQ_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T10:01:14.173Z"
+    },
+    {
+      "eventId": "evt-bb699650",
+      "projectId": "prj-free-abafe6c8",
+      "productId": "prod-3",
+      "eventType": "SAMPLE_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T10:01:14.301Z"
+    },
+    {
+      "eventId": "evt-77b12de5",
+      "projectId": "prj-free-abafe6c8",
+      "productId": null,
+      "eventType": "MEETING_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T10:01:14.447Z"
+    },
+    {
+      "eventId": "evt-d831fe53",
+      "projectId": "prj-free-8982213f",
+      "productId": "prod-slot-1",
+      "eventType": "RFQ_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T10:02:54.003Z"
+    },
+    {
+      "eventId": "evt-2728afaa",
+      "projectId": "prj-free-8982213f",
+      "productId": "prod-slot-3",
+      "eventType": "SAMPLE_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T10:02:54.031Z"
+    },
+    {
+      "eventId": "evt-333f78d2",
+      "projectId": "prj-free-8982213f",
+      "productId": null,
+      "eventType": "MEETING_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T10:02:54.061Z"
+    },
+    {
+      "eventId": "evt-9090387f",
+      "productId": "prod-slot-1",
+      "eventType": "RFQ_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T10:04:12.785Z"
+    },
+    {
+      "eventId": "evt-9c24b7aa",
+      "productId": "prod-slot-3",
+      "eventType": "SAMPLE_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T10:04:12.813Z"
+    },
+    {
+      "eventId": "evt-a498ea15",
+      "productId": null,
+      "eventType": "MEETING_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T10:04:12.847Z"
+    },
+    {
+      "eventId": "evt-5b2991e8",
+      "projectId": "prj-free-5d542ffa",
+      "productId": "prod-slot-1",
+      "eventType": "RFQ_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T10:05:21.083Z"
+    },
+    {
+      "eventId": "evt-13fd8fd0",
+      "projectId": "prj-free-5d542ffa",
+      "productId": "prod-slot-3",
+      "eventType": "SAMPLE_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T10:05:21.208Z"
+    },
+    {
+      "eventId": "evt-1107d87f",
+      "projectId": "prj-free-5d542ffa",
+      "productId": null,
+      "eventType": "MEETING_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T10:05:21.324Z"
+    },
+    {
+      "eventId": "evt-d2ae168d",
+      "projectId": "prj-free-ab6344e8",
+      "productId": "prod-slot-1",
+      "eventType": "RFQ_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T10:05:59.834Z"
+    },
+    {
+      "eventId": "evt-d0f299a9",
+      "projectId": "prj-free-ab6344e8",
+      "productId": "prod-slot-3",
+      "eventType": "SAMPLE_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T10:05:59.863Z"
+    },
+    {
+      "eventId": "evt-98bee5cc",
+      "projectId": "prj-free-ab6344e8",
+      "productId": null,
+      "eventType": "MEETING_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T10:05:59.891Z"
+    },
+    {
+      "eventId": "evt-61327754",
+      "projectId": "prj-free-1d7511cc",
+      "productId": "prod-slot-1",
+      "eventType": "RFQ_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T10:06:46.930Z"
+    },
+    {
+      "eventId": "evt-54f9c478",
+      "projectId": "prj-free-1d7511cc",
+      "productId": "prod-slot-3",
+      "eventType": "SAMPLE_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T10:06:46.960Z"
+    },
+    {
+      "eventId": "evt-2a7062d7",
+      "projectId": "prj-free-1d7511cc",
+      "productId": "prod-slot-2",
+      "eventType": "MEETING_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T10:06:46.996Z"
     }
   ],
   "reconstructionJobs": [
@@ -17527,19 +18317,83 @@
   ],
   "upgradeRequests": [
     {
-      "requestId": "upg-req-4776df80",
-      "accountId": "acc-ee249dc2",
-      "email": "exhibitor.c1114.7863@apexenterprise.example.com",
-      "businessName": "Apex Enterprise Global 7863",
-      "contactName": "exhibitor.c1114.7863",
+      "requestId": "upg-req-801840b3",
+      "accountId": "acc-bee1a31a",
+      "email": "rehearsal.customer.9229@synthaeron.example.com",
+      "businessName": "Synthaeron Robotics Corp 9229 Global",
+      "contactName": "Dr. Elena Rostova",
+      "currentPlan": "FREE_BOOTH",
+      "requestedPlan": "BUSINESS",
+      "status": "CONTACTED",
+      "requirements": "Expanding to 45 products for Chicago Autumn Expo.",
+      "phone": "+1-555-0199",
+      "eventDate": "",
+      "createdAt": "2026-08-31T10:05:59.964Z",
+      "updatedAt": "2026-08-31T10:06:00.050Z",
+      "operatorNotes": "Reached out to confirm Chicago show dates."
+    },
+    {
+      "requestId": "upg-req-4b4a138c",
+      "accountId": "acc-cc05648b",
+      "email": "rehearsal.customer.9008@synthaeron.example.com",
+      "businessName": "Synthaeron Robotics Corp 9008 Global",
+      "contactName": "Dr. Elena Rostova",
+      "currentPlan": "FREE_BOOTH",
+      "requestedPlan": "BUSINESS",
+      "status": "CONTACTED",
+      "requirements": "Expanding to 45 products for Chicago Autumn Expo.",
+      "phone": "+1-555-0199",
+      "eventDate": "",
+      "createdAt": "2026-08-31T10:05:21.660Z",
+      "updatedAt": "2026-08-31T10:05:21.772Z",
+      "operatorNotes": "Reached out to confirm Chicago show dates."
+    },
+    {
+      "requestId": "upg-req-8668183c",
+      "accountId": "acc-757c12a7",
+      "email": "rehearsal.customer.3438@synthaeron.example.com",
+      "businessName": "Synthaeron Robotics Corp 3438 Global",
+      "contactName": "Dr. Elena Rostova",
+      "currentPlan": "FREE_BOOTH",
+      "requestedPlan": "BUSINESS",
+      "status": "CONTACTED",
+      "requirements": "Expanding to 45 products for Chicago Autumn Expo.",
+      "phone": "+1-555-0199",
+      "eventDate": "",
+      "createdAt": "2026-08-31T10:02:54.134Z",
+      "updatedAt": "2026-08-31T10:02:54.219Z",
+      "operatorNotes": "Reached out to confirm Chicago show dates."
+    },
+    {
+      "requestId": "upg-req-ec011cbf",
+      "accountId": "acc-596c5a32",
+      "email": "rehearsal.customer.9532@synthaeron.example.com",
+      "businessName": "Synthaeron Robotics Corp 9532 Global",
+      "contactName": "Dr. Elena Rostova",
+      "currentPlan": "FREE_BOOTH",
+      "requestedPlan": "BUSINESS",
+      "status": "CONTACTED",
+      "requirements": "Expanding to 45 products for Chicago Autumn Expo.",
+      "phone": "+1-555-0199",
+      "eventDate": "",
+      "createdAt": "2026-08-31T10:01:14.598Z",
+      "updatedAt": "2026-08-31T10:01:14.849Z",
+      "operatorNotes": "Reached out to confirm Chicago show dates."
+    },
+    {
+      "requestId": "upg-req-7e4c27b4",
+      "accountId": "acc-650c9852",
+      "email": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "businessName": "Apex Enterprise Global 1058",
+      "contactName": "exhibitor.c1114.1058",
       "currentPlan": "BUSINESS",
       "requestedPlan": "CUSTOM",
       "status": "PENDING_CUSTOM_QUOTE",
       "requirements": "Need 10 multi-hall booths across Europe & Japan with custom ERP webhook integration.",
       "phone": "",
       "eventDate": "",
-      "createdAt": "2026-08-31T09:25:48.601Z",
-      "updatedAt": "2026-08-31T09:25:48.601Z"
+      "createdAt": "2026-08-31T09:27:11.760Z",
+      "updatedAt": "2026-08-31T09:27:11.760Z"
     },
     {
       "requestId": "upg-req-74a0e146",
@@ -17557,19 +18411,49 @@
       "updatedAt": "2026-08-31T09:26:53.465Z"
     },
     {
-      "requestId": "upg-req-7e4c27b4",
-      "accountId": "acc-650c9852",
-      "email": "exhibitor.c1114.1058@apexenterprise.example.com",
-      "businessName": "Apex Enterprise Global 1058",
-      "contactName": "exhibitor.c1114.1058",
+      "requestId": "upg-req-4776df80",
+      "accountId": "acc-ee249dc2",
+      "email": "exhibitor.c1114.7863@apexenterprise.example.com",
+      "businessName": "Apex Enterprise Global 7863",
+      "contactName": "exhibitor.c1114.7863",
       "currentPlan": "BUSINESS",
       "requestedPlan": "CUSTOM",
       "status": "PENDING_CUSTOM_QUOTE",
       "requirements": "Need 10 multi-hall booths across Europe & Japan with custom ERP webhook integration.",
       "phone": "",
       "eventDate": "",
-      "createdAt": "2026-08-31T09:27:11.760Z",
-      "updatedAt": "2026-08-31T09:27:11.760Z"
+      "createdAt": "2026-08-31T09:25:48.601Z",
+      "updatedAt": "2026-08-31T09:25:48.601Z"
+    },
+    {
+      "requestId": "upg-req-dd6ceaa6",
+      "accountId": "acc-bbf44de0",
+      "email": "exhibitor.c1114.3873@apexenterprise.example.com",
+      "businessName": "Apex Enterprise Global 3873",
+      "contactName": "exhibitor.c1114.3873",
+      "currentPlan": "BUSINESS",
+      "requestedPlan": "CUSTOM",
+      "status": "PENDING_CUSTOM_QUOTE",
+      "requirements": "Need 10 multi-hall booths across Europe & Japan with custom ERP webhook integration.",
+      "phone": "",
+      "eventDate": "",
+      "createdAt": "2026-08-31T10:06:04.379Z",
+      "updatedAt": "2026-08-31T10:06:04.379Z"
+    },
+    {
+      "requestId": "upg-req-bfccec45",
+      "accountId": "acc-a727bba8",
+      "email": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "businessName": "Apex Enterprise Global 9129",
+      "contactName": "exhibitor.c1114.9129",
+      "currentPlan": "BUSINESS",
+      "requestedPlan": "CUSTOM",
+      "status": "PENDING_CUSTOM_QUOTE",
+      "requirements": "Need 10 multi-hall booths across Europe & Japan with custom ERP webhook integration.",
+      "phone": "",
+      "eventDate": "",
+      "createdAt": "2026-08-31T10:06:40.689Z",
+      "updatedAt": "2026-08-31T10:06:40.689Z"
     }
   ],
   "platformMessages": [],
@@ -18193,6 +19077,262 @@
       "environment": "PRODUCTION",
       "createdAt": "2026-08-31T09:27:34.136Z",
       "lastAttemptAt": "2026-08-31T09:27:34.136Z"
+    },
+    {
+      "usageId": "use-fcd273b9",
+      "businessName": "Synthaeron Robotics Corp 9532",
+      "normalizedBusinessName": "synthaeron robotics corp 9532",
+      "email": "rehearsal.customer.9532@synthaeron.example.com",
+      "normalizedEmail": "rehearsal.customer.9532@synthaeron.example.com",
+      "emailVerifiedAt": "2026-08-31T10:01:09.616Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-abafe6c8",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T10:01:09.617Z",
+      "lastAttemptAt": "2026-08-31T10:01:09.617Z"
+    },
+    {
+      "usageId": "use-2b71245a",
+      "businessName": "Competitor Labs 9532",
+      "normalizedBusinessName": "competitor labs 9532",
+      "email": "tenant.b.9532@competitor.example.com",
+      "normalizedEmail": "tenant.b.9532@competitor.example.com",
+      "emailVerifiedAt": "2026-08-31T10:01:15.396Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-a46d91e2",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T10:01:15.396Z",
+      "lastAttemptAt": "2026-08-31T10:01:15.396Z"
+    },
+    {
+      "usageId": "use-8afbb8c2",
+      "businessName": "Synthaeron Robotics Corp 3438",
+      "normalizedBusinessName": "synthaeron robotics corp 3438",
+      "email": "rehearsal.customer.3438@synthaeron.example.com",
+      "normalizedEmail": "rehearsal.customer.3438@synthaeron.example.com",
+      "emailVerifiedAt": "2026-08-31T10:02:53.518Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-8982213f",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T10:02:53.518Z",
+      "lastAttemptAt": "2026-08-31T10:02:53.518Z"
+    },
+    {
+      "usageId": "use-88cb94fc",
+      "businessName": "Competitor Labs 3438",
+      "normalizedBusinessName": "competitor labs 3438",
+      "email": "tenant.b.3438@competitor.example.com",
+      "normalizedEmail": "tenant.b.3438@competitor.example.com",
+      "emailVerifiedAt": "2026-08-31T10:02:54.440Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-d86cd7fa",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T10:02:54.440Z",
+      "lastAttemptAt": "2026-08-31T10:02:54.440Z"
+    },
+    {
+      "usageId": "use-dfea1384",
+      "businessName": "Synthaeron Robotics Corp 1257",
+      "normalizedBusinessName": "synthaeron robotics corp 1257",
+      "email": "rehearsal.customer.1257@synthaeron.example.com",
+      "normalizedEmail": "rehearsal.customer.1257@synthaeron.example.com",
+      "emailVerifiedAt": "2026-08-31T10:04:11.336Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-316c432f",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T10:04:11.336Z",
+      "lastAttemptAt": "2026-08-31T10:04:11.336Z"
+    },
+    {
+      "usageId": "use-469320f6",
+      "businessName": "Competitor Labs 1257",
+      "normalizedBusinessName": "competitor labs 1257",
+      "email": "tenant.b.1257@competitor.example.com",
+      "normalizedEmail": "tenant.b.1257@competitor.example.com",
+      "emailVerifiedAt": "2026-08-31T10:04:12.965Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-7619a829",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T10:04:12.965Z",
+      "lastAttemptAt": "2026-08-31T10:04:12.965Z"
+    },
+    {
+      "usageId": "use-0ce7d308",
+      "businessName": "Synthaeron Robotics Corp 9008",
+      "normalizedBusinessName": "synthaeron robotics corp 9008",
+      "email": "rehearsal.customer.9008@synthaeron.example.com",
+      "normalizedEmail": "rehearsal.customer.9008@synthaeron.example.com",
+      "emailVerifiedAt": "2026-08-31T10:05:19.085Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-5d542ffa",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T10:05:19.085Z",
+      "lastAttemptAt": "2026-08-31T10:05:19.085Z"
+    },
+    {
+      "usageId": "use-9af24ec9",
+      "businessName": "Competitor Labs 9008",
+      "normalizedBusinessName": "competitor labs 9008",
+      "email": "tenant.b.9008@competitor.example.com",
+      "normalizedEmail": "tenant.b.9008@competitor.example.com",
+      "emailVerifiedAt": "2026-08-31T10:05:22.023Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-b00b708a",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T10:05:22.023Z",
+      "lastAttemptAt": "2026-08-31T10:05:22.023Z"
+    },
+    {
+      "usageId": "use-0622b14e",
+      "businessName": "Synthaeron Robotics Corp 9229",
+      "normalizedBusinessName": "synthaeron robotics corp 9229",
+      "email": "rehearsal.customer.9229@synthaeron.example.com",
+      "normalizedEmail": "rehearsal.customer.9229@synthaeron.example.com",
+      "emailVerifiedAt": "2026-08-31T10:05:59.298Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-ab6344e8",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T10:05:59.298Z",
+      "lastAttemptAt": "2026-08-31T10:05:59.298Z"
+    },
+    {
+      "usageId": "use-018678d1",
+      "businessName": "Competitor Labs 9229",
+      "normalizedBusinessName": "competitor labs 9229",
+      "email": "tenant.b.9229@competitor.example.com",
+      "normalizedEmail": "tenant.b.9229@competitor.example.com",
+      "emailVerifiedAt": "2026-08-31T10:06:00.258Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-a163d26e",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T10:06:00.258Z",
+      "lastAttemptAt": "2026-08-31T10:06:00.258Z"
+    },
+    {
+      "usageId": "use-1d0a6c97",
+      "businessName": "Apex Enterprise Global 3873",
+      "normalizedBusinessName": "apex enterprise global 3873",
+      "email": "exhibitor.c1114.3873@apexenterprise.example.com",
+      "normalizedEmail": "exhibitor.c1114.3873@apexenterprise.example.com",
+      "emailVerifiedAt": "2026-08-31T10:06:03.922Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-30148af3",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T10:06:03.922Z",
+      "lastAttemptAt": "2026-08-31T10:06:03.922Z"
+    },
+    {
+      "usageId": "use-7e65a4c0",
+      "businessName": "Tenant B Global 3873",
+      "normalizedBusinessName": "tenant b global 3873",
+      "email": "exhibitor.tenantb.3873@othercorp.example.com",
+      "normalizedEmail": "exhibitor.tenantb.3873@othercorp.example.com",
+      "emailVerifiedAt": "2026-08-31T10:06:04.505Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-2435f4ab",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T10:06:04.505Z",
+      "lastAttemptAt": "2026-08-31T10:06:04.505Z"
+    },
+    {
+      "usageId": "use-5b338dff",
+      "businessName": "Apex Enterprise Global 9129",
+      "normalizedBusinessName": "apex enterprise global 9129",
+      "email": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "normalizedEmail": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "emailVerifiedAt": "2026-08-31T10:06:39.315Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-6d0ad314",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T10:06:39.315Z",
+      "lastAttemptAt": "2026-08-31T10:06:39.315Z"
+    },
+    {
+      "usageId": "use-4d790548",
+      "businessName": "Tenant B Global 9129",
+      "normalizedBusinessName": "tenant b global 9129",
+      "email": "exhibitor.tenantb.9129@othercorp.example.com",
+      "normalizedEmail": "exhibitor.tenantb.9129@othercorp.example.com",
+      "emailVerifiedAt": "2026-08-31T10:06:40.853Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-1845ea17",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T10:06:40.853Z",
+      "lastAttemptAt": "2026-08-31T10:06:40.853Z"
+    },
+    {
+      "usageId": "use-f6bbea1c",
+      "businessName": "Apex Robotics Global Corp 5041",
+      "normalizedBusinessName": "apex robotics global corp 5041",
+      "email": "sarah.connor.c1113.5041@apexrobotics.example.com",
+      "normalizedEmail": "sarah.connor.c1113.5041@apexrobotics.example.com",
+      "emailVerifiedAt": "2026-08-31T10:06:45.077Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-1d7511cc",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T10:06:45.077Z",
+      "lastAttemptAt": "2026-08-31T10:06:45.077Z"
+    },
+    {
+      "usageId": "use-b0dbbf60",
+      "businessName": "Intruder CyberCorp 5041",
+      "normalizedBusinessName": "intruder cybercorp 5041",
+      "email": "intruder.c1113.5041@hacker.example.com",
+      "normalizedEmail": "intruder.c1113.5041@hacker.example.com",
+      "emailVerifiedAt": "2026-08-31T10:06:47.106Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-3ba356d0",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T10:06:47.106Z",
+      "lastAttemptAt": "2026-08-31T10:06:47.106Z"
     }
   ],
   "projects": [
@@ -24429,6 +25569,2244 @@
       "updatedAt": "2026-08-31T09:27:34.280Z",
       "accountId": "acc-15a0d844",
       "role": "OWNER"
+    },
+    {
+      "id": "prj-free-abafe6c8",
+      "editToken": "tok-084124d58b34cdc665598d605a294d30",
+      "publishStatus": "PUBLISHED",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-c0536a3c",
+      "name": "Synthaeron Robotics Corp 9532 Virtual Booth",
+      "businessName": "Synthaeron Robotics Corp 9532",
+      "normalizedBusinessName": "synthaeron robotics corp 9532",
+      "customerEmail": "rehearsal.customer.9532@synthaeron.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788170469608-23260944.jpg",
+        "previewUrl": "/uploads/capture-1788170469608-23260944.jpg",
+        "processedUrl": "/uploads/capture-1788170469608-23260944.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T10:01:09.616Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788170469608-23260944.jpg",
+          "highResUrl": "/uploads/capture-1788170469608-23260944.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "Product 1",
+          "u": 0.5,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Arm Station",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:01:12.138Z"
+        },
+        {
+          "id": "pin-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "Product 2",
+          "u": 0.5,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Carrier Dock",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:01:12.138Z"
+        },
+        {
+          "id": "pin-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "Product 3",
+          "u": 0.5,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Sensor Tower",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:01:12.138Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "Synthaeron Autonomous Arm A-1",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:01:09.616Z",
+          "sku": "SYN-A1",
+          "price": "$18,500",
+          "updatedAt": "2026-08-31T10:01:11.932Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "Synthaeron Mobile Carrier M-2",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:01:09.616Z",
+          "sku": "SYN-M2",
+          "price": "$32,000",
+          "updatedAt": "2026-08-31T10:01:12.062Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "Synthaeron Vision LiDAR Sensor V-3",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:01:09.616Z",
+          "sku": "SYN-V3",
+          "price": "$4,800",
+          "updatedAt": "2026-08-31T10:01:12.096Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T10:01:09.616Z",
+      "updatedAt": "2026-08-31T10:01:15.340Z",
+      "accountId": "acc-596c5a32",
+      "role": "OWNER",
+      "publicSlug": "synthaeron-robotics-corp-9532",
+      "publicUrl": "http://localhost:4500/booth/synthaeron-robotics-corp-9532",
+      "publishedAt": "2026-08-31T10:01:15.340Z",
+      "qrCodeDataUrl": "data:image/png;base64,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"
+    },
+    {
+      "id": "prj-free-a46d91e2",
+      "editToken": "tok-ce2b09434e95c713a5eb99a5277ae3d2",
+      "publishStatus": "DRAFT",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-a2a55814",
+      "name": "Competitor Labs 9532 Virtual Booth",
+      "businessName": "Competitor Labs 9532",
+      "normalizedBusinessName": "competitor labs 9532",
+      "customerEmail": "tenant.b.9532@competitor.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788170475392-184460965.jpg",
+        "previewUrl": "/uploads/capture-1788170475392-184460965.jpg",
+        "processedUrl": "/uploads/capture-1788170475392-184460965.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T10:01:15.396Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788170475392-184460965.jpg",
+          "highResUrl": "/uploads/capture-1788170475392-184460965.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "PRODUCT 01",
+          "isBlank": true,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 1",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:01:15.396Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "PRODUCT 02",
+          "isBlank": true,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 2",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:01:15.396Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:01:15.396Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:01:15.396Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:01:15.396Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:01:15.396Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T10:01:15.396Z",
+      "updatedAt": "2026-08-31T10:01:15.478Z",
+      "accountId": "acc-b1aca4c9",
+      "role": "OWNER"
+    },
+    {
+      "id": "prj-free-8982213f",
+      "editToken": "tok-5ee1d596bab10c301eaf269bdc9c5d3a",
+      "publishStatus": "PUBLISHED",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-a0bc5964",
+      "name": "Synthaeron Robotics Corp 3438 Virtual Booth",
+      "businessName": "Synthaeron Robotics Corp 3438",
+      "normalizedBusinessName": "synthaeron robotics corp 3438",
+      "customerEmail": "rehearsal.customer.3438@synthaeron.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788170573509-708824848.jpg",
+        "previewUrl": "/uploads/capture-1788170573509-708824848.jpg",
+        "processedUrl": "/uploads/capture-1788170573509-708824848.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T10:02:53.518Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788170573509-708824848.jpg",
+          "highResUrl": "/uploads/capture-1788170573509-708824848.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "Product 1",
+          "u": 0.5,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Arm Station",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:02:53.789Z"
+        },
+        {
+          "id": "pin-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "Product 2",
+          "u": 0.5,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Carrier Dock",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:02:53.789Z"
+        },
+        {
+          "id": "pin-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "Product 3",
+          "u": 0.5,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Sensor Tower",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:02:53.789Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "Synthaeron Autonomous Arm A-1",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:02:53.518Z",
+          "sku": "SYN-A1",
+          "price": "$18,500",
+          "updatedAt": "2026-08-31T10:02:53.773Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "Synthaeron Mobile Carrier M-2",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:02:53.518Z",
+          "sku": "SYN-M2",
+          "price": "$32,000",
+          "updatedAt": "2026-08-31T10:02:53.775Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "Synthaeron Vision LiDAR Sensor V-3",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:02:53.518Z",
+          "sku": "SYN-V3",
+          "price": "$4,800",
+          "updatedAt": "2026-08-31T10:02:53.780Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T10:02:53.518Z",
+      "updatedAt": "2026-08-31T10:02:54.380Z",
+      "accountId": "acc-757c12a7",
+      "role": "OWNER",
+      "publicSlug": "synthaeron-robotics-corp-3438",
+      "publicUrl": "http://localhost:4500/booth/synthaeron-robotics-corp-3438",
+      "publishedAt": "2026-08-31T10:02:54.380Z",
+      "qrCodeDataUrl": "data:image/png;base64,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"
+    },
+    {
+      "id": "prj-free-d86cd7fa",
+      "editToken": "tok-98f244dbc46b925610369d0f9d7efe89",
+      "publishStatus": "DRAFT",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-22fd4222",
+      "name": "Competitor Labs 3438 Virtual Booth",
+      "businessName": "Competitor Labs 3438",
+      "normalizedBusinessName": "competitor labs 3438",
+      "customerEmail": "tenant.b.3438@competitor.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788170574432-736596498.jpg",
+        "previewUrl": "/uploads/capture-1788170574432-736596498.jpg",
+        "processedUrl": "/uploads/capture-1788170574432-736596498.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T10:02:54.440Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788170574432-736596498.jpg",
+          "highResUrl": "/uploads/capture-1788170574432-736596498.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "PRODUCT 01",
+          "isBlank": true,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 1",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:02:54.440Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "PRODUCT 02",
+          "isBlank": true,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 2",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:02:54.440Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:02:54.440Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:02:54.439Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:02:54.439Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:02:54.439Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T10:02:54.440Z",
+      "updatedAt": "2026-08-31T10:02:54.512Z",
+      "accountId": "acc-e8fc0595",
+      "role": "OWNER"
+    },
+    {
+      "id": "prj-free-316c432f",
+      "editToken": "tok-40aaf35bf78d6a152b5ceee4bd842dd5",
+      "publishStatus": "DRAFT",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-4955eb23",
+      "name": "Synthaeron Robotics Corp 1257 Virtual Booth",
+      "businessName": "Synthaeron Robotics Corp 1257",
+      "normalizedBusinessName": "synthaeron robotics corp 1257",
+      "customerEmail": "rehearsal.customer.1257@synthaeron.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788170651328-902565292.jpg",
+        "previewUrl": "/uploads/capture-1788170651328-902565292.jpg",
+        "processedUrl": "/uploads/capture-1788170651328-902565292.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T10:04:11.336Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788170651328-902565292.jpg",
+          "highResUrl": "/uploads/capture-1788170651328-902565292.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "PRODUCT 01",
+          "isBlank": true,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 1",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:04:11.336Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "PRODUCT 02",
+          "isBlank": true,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 2",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:04:11.336Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:04:11.336Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:04:11.336Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:04:11.336Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:04:11.336Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T10:04:11.336Z",
+      "updatedAt": "2026-08-31T10:04:11.336Z"
+    },
+    {
+      "id": "prj-free-7619a829",
+      "editToken": "tok-5753714546bb953f53d10af637123190",
+      "publishStatus": "DRAFT",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-97a6bee2",
+      "name": "Competitor Labs 1257 Virtual Booth",
+      "businessName": "Competitor Labs 1257",
+      "normalizedBusinessName": "competitor labs 1257",
+      "customerEmail": "tenant.b.1257@competitor.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788170652962-875654593.jpg",
+        "previewUrl": "/uploads/capture-1788170652962-875654593.jpg",
+        "processedUrl": "/uploads/capture-1788170652962-875654593.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T10:04:12.965Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788170652962-875654593.jpg",
+          "highResUrl": "/uploads/capture-1788170652962-875654593.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "PRODUCT 01",
+          "isBlank": true,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 1",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:04:12.965Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "PRODUCT 02",
+          "isBlank": true,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 2",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:04:12.965Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:04:12.965Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:04:12.965Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:04:12.965Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:04:12.965Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T10:04:12.965Z",
+      "updatedAt": "2026-08-31T10:04:12.965Z"
+    },
+    {
+      "id": "prj-free-5d542ffa",
+      "editToken": "tok-4b592365ce20bd56f0f91b747f2e7f0f",
+      "publishStatus": "PUBLISHED",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-79c2ba10",
+      "name": "Synthaeron Robotics Corp 9008 Virtual Booth",
+      "businessName": "Synthaeron Robotics Corp 9008",
+      "normalizedBusinessName": "synthaeron robotics corp 9008",
+      "customerEmail": "rehearsal.customer.9008@synthaeron.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788170719067-568340581.jpg",
+        "previewUrl": "/uploads/capture-1788170719067-568340581.jpg",
+        "processedUrl": "/uploads/capture-1788170719067-568340581.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T10:05:19.085Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788170719067-568340581.jpg",
+          "highResUrl": "/uploads/capture-1788170719067-568340581.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "Product 1",
+          "u": 0.5,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Arm Station",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:05:20.683Z"
+        },
+        {
+          "id": "pin-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "Product 2",
+          "u": 0.5,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Carrier Dock",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:05:20.683Z"
+        },
+        {
+          "id": "pin-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "Product 3",
+          "u": 0.5,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Sensor Tower",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:05:20.683Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "Synthaeron Autonomous Arm A-1",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:05:19.085Z",
+          "sku": "SYN-A1",
+          "price": "$18,500",
+          "updatedAt": "2026-08-31T10:05:20.255Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "Synthaeron Mobile Carrier M-2",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:05:19.085Z",
+          "sku": "SYN-M2",
+          "price": "$32,000",
+          "updatedAt": "2026-08-31T10:05:20.389Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "Synthaeron Vision LiDAR Sensor V-3",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:05:19.085Z",
+          "sku": "SYN-V3",
+          "price": "$4,800",
+          "updatedAt": "2026-08-31T10:05:20.500Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T10:05:19.085Z",
+      "updatedAt": "2026-08-31T10:05:21.962Z",
+      "accountId": "acc-cc05648b",
+      "role": "OWNER",
+      "publicSlug": "synthaeron-robotics-corp-9008",
+      "publicUrl": "http://localhost:4500/booth/synthaeron-robotics-corp-9008",
+      "publishedAt": "2026-08-31T10:05:21.962Z",
+      "qrCodeDataUrl": "data:image/png;base64,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"
+    },
+    {
+      "id": "prj-free-b00b708a",
+      "editToken": "tok-efaf62b86ccbe7b6e69832d6e4e5a0bc",
+      "publishStatus": "DRAFT",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-c8c794a9",
+      "name": "Competitor Labs 9008 Virtual Booth",
+      "businessName": "Competitor Labs 9008",
+      "normalizedBusinessName": "competitor labs 9008",
+      "customerEmail": "tenant.b.9008@competitor.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788170722020-837013431.jpg",
+        "previewUrl": "/uploads/capture-1788170722020-837013431.jpg",
+        "processedUrl": "/uploads/capture-1788170722020-837013431.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T10:05:22.023Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788170722020-837013431.jpg",
+          "highResUrl": "/uploads/capture-1788170722020-837013431.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "PRODUCT 01",
+          "isBlank": true,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 1",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:05:22.023Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "PRODUCT 02",
+          "isBlank": true,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 2",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:05:22.023Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:05:22.023Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:05:22.023Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:05:22.023Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:05:22.023Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T10:05:22.023Z",
+      "updatedAt": "2026-08-31T10:05:22.108Z",
+      "accountId": "acc-ee45eeef",
+      "role": "OWNER"
+    },
+    {
+      "id": "prj-free-ab6344e8",
+      "editToken": "tok-bab2d2c42ab9e34ca1a09fa5b9414ccb",
+      "publishStatus": "PUBLISHED",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-454503bc",
+      "name": "Synthaeron Robotics Corp 9229 Virtual Booth",
+      "businessName": "Synthaeron Robotics Corp 9229",
+      "normalizedBusinessName": "synthaeron robotics corp 9229",
+      "customerEmail": "rehearsal.customer.9229@synthaeron.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788170759291-285963246.jpg",
+        "previewUrl": "/uploads/capture-1788170759291-285963246.jpg",
+        "processedUrl": "/uploads/capture-1788170759291-285963246.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T10:05:59.298Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788170759291-285963246.jpg",
+          "highResUrl": "/uploads/capture-1788170759291-285963246.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "Product 1",
+          "u": 0.5,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Arm Station",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:05:59.625Z"
+        },
+        {
+          "id": "pin-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "Product 2",
+          "u": 0.5,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Carrier Dock",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:05:59.625Z"
+        },
+        {
+          "id": "pin-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "Product 3",
+          "u": 0.5,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Sensor Tower",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:05:59.625Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "Synthaeron Autonomous Arm A-1",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:05:59.298Z",
+          "sku": "SYN-A1",
+          "price": "$18,500",
+          "updatedAt": "2026-08-31T10:05:59.526Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "Synthaeron Mobile Carrier M-2",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:05:59.298Z",
+          "sku": "SYN-M2",
+          "price": "$32,000",
+          "updatedAt": "2026-08-31T10:05:59.557Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "Synthaeron Vision LiDAR Sensor V-3",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:05:59.298Z",
+          "sku": "SYN-V3",
+          "price": "$4,800",
+          "updatedAt": "2026-08-31T10:05:59.588Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T10:05:59.298Z",
+      "updatedAt": "2026-08-31T10:06:00.209Z",
+      "accountId": "acc-bee1a31a",
+      "role": "OWNER",
+      "publicSlug": "synthaeron-robotics-corp-9229",
+      "publicUrl": "http://localhost:4500/booth/synthaeron-robotics-corp-9229",
+      "publishedAt": "2026-08-31T10:06:00.209Z",
+      "qrCodeDataUrl": "data:image/png;base64,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"
+    },
+    {
+      "id": "prj-free-a163d26e",
+      "editToken": "tok-a33479dfa256b5f8497f36dc81455771",
+      "publishStatus": "DRAFT",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-5264c11b",
+      "name": "Competitor Labs 9229 Virtual Booth",
+      "businessName": "Competitor Labs 9229",
+      "normalizedBusinessName": "competitor labs 9229",
+      "customerEmail": "tenant.b.9229@competitor.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788170760256-558843707.jpg",
+        "previewUrl": "/uploads/capture-1788170760256-558843707.jpg",
+        "processedUrl": "/uploads/capture-1788170760256-558843707.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T10:06:00.258Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788170760256-558843707.jpg",
+          "highResUrl": "/uploads/capture-1788170760256-558843707.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "PRODUCT 01",
+          "isBlank": true,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 1",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:06:00.258Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "PRODUCT 02",
+          "isBlank": true,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 2",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:06:00.258Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:06:00.258Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:00.258Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:00.258Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:00.258Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T10:06:00.258Z",
+      "updatedAt": "2026-08-31T10:06:00.384Z",
+      "accountId": "acc-4758612b",
+      "role": "OWNER"
+    },
+    {
+      "id": "prj-free-30148af3",
+      "editToken": "tok-f3381625b2627f1f28e163b5d36c0c4c",
+      "publishStatus": "PUBLISHED",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-f2c461d1",
+      "name": "Apex Enterprise Global 3873 Virtual Booth",
+      "businessName": "Apex Enterprise Global 3873",
+      "normalizedBusinessName": "apex enterprise global 3873",
+      "customerEmail": "exhibitor.c1114.3873@apexenterprise.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788170763915-18469424.jpg",
+        "previewUrl": "/uploads/capture-1788170763915-18469424.jpg",
+        "processedUrl": "/uploads/capture-1788170763915-18469424.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T10:06:03.922Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788170763915-18469424.jpg",
+          "highResUrl": "/uploads/capture-1788170763915-18469424.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "Apex Cobot Arm X-1",
+          "isBlank": false,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "Apex Cobot Arm X-1",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T10:06:03.922Z",
+          "updatedAt": "2026-08-31T10:06:04.169Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "Apex Mobile AGV R-2",
+          "isBlank": false,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "Apex Mobile AGV R-2",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T10:06:03.922Z",
+          "updatedAt": "2026-08-31T10:06:04.198Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "Apex 3D Sensor V-3",
+          "isBlank": false,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "Apex 3D Sensor V-3",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T10:06:03.922Z",
+          "updatedAt": "2026-08-31T10:06:04.226Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "Apex Cobot Arm X-1",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:03.922Z",
+          "sku": "APX-1",
+          "price": "$12,000",
+          "updatedAt": "2026-08-31T10:06:04.169Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "Apex Mobile AGV R-2",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:03.922Z",
+          "sku": "APX-2",
+          "price": "$24,000",
+          "updatedAt": "2026-08-31T10:06:04.198Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "Apex 3D Sensor V-3",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:03.922Z",
+          "sku": "APX-3",
+          "price": "$3,500",
+          "updatedAt": "2026-08-31T10:06:04.226Z"
+        },
+        {
+          "id": "prod-slot-4",
+          "slotIndex": 4,
+          "createdAt": "2026-08-31T10:06:04.274Z",
+          "name": "Apex Vision Module 4",
+          "sku": "APX-4",
+          "price": "$5,000",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:06:04.274Z"
+        },
+        {
+          "id": "prod-slot-30",
+          "slotIndex": 30,
+          "createdAt": "2026-08-31T10:06:04.305Z",
+          "name": "Apex Top Tier Product 30",
+          "sku": "APX-30",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:06:04.305Z"
+        },
+        {
+          "id": "prod-slot-100",
+          "slotIndex": 100,
+          "createdAt": "2026-08-31T10:06:04.344Z",
+          "name": "Apex Maximum Business Product 100",
+          "sku": "APX-100",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:06:04.344Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T10:06:03.922Z",
+      "updatedAt": "2026-08-31T10:06:04.344Z",
+      "accountId": "acc-bbf44de0",
+      "role": "OWNER",
+      "publicSlug": "apex-enterprise-global-3873",
+      "publicUrl": "http://localhost:4500/booth/apex-enterprise-global-3873",
+      "publishedAt": "2026-08-31T10:06:04.108Z",
+      "qrCodeDataUrl": "data:image/png;base64,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"
+    },
+    {
+      "id": "prj-free-2435f4ab",
+      "editToken": "tok-74983e30fc1b07f6d47d5b948df60eb7",
+      "publishStatus": "DRAFT",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-86129b2d",
+      "name": "Tenant B Global 3873 Virtual Booth",
+      "businessName": "Tenant B Global 3873",
+      "normalizedBusinessName": "tenant b global 3873",
+      "customerEmail": "exhibitor.tenantb.3873@othercorp.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788170764504-724674871.jpg",
+        "previewUrl": "/uploads/capture-1788170764504-724674871.jpg",
+        "processedUrl": "/uploads/capture-1788170764504-724674871.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T10:06:04.505Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788170764504-724674871.jpg",
+          "highResUrl": "/uploads/capture-1788170764504-724674871.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "PRODUCT 01",
+          "isBlank": true,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 1",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:06:04.505Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "PRODUCT 02",
+          "isBlank": true,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 2",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:06:04.505Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:06:04.505Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:04.505Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:04.505Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:04.505Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T10:06:04.505Z",
+      "updatedAt": "2026-08-31T10:06:04.585Z",
+      "accountId": "acc-9f2ae52a",
+      "role": "OWNER"
+    },
+    {
+      "id": "prj-free-6d0ad314",
+      "editToken": "tok-1cd340893ef251620660670b25c73a7c",
+      "publishStatus": "PUBLISHED",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-22d42145",
+      "name": "Apex Enterprise Global 9129 Virtual Booth",
+      "businessName": "Apex Enterprise Global 9129",
+      "normalizedBusinessName": "apex enterprise global 9129",
+      "customerEmail": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788170799206-126726257.jpg",
+        "previewUrl": "/uploads/capture-1788170799206-126726257.jpg",
+        "processedUrl": "/uploads/capture-1788170799206-126726257.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T10:06:39.315Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788170799206-126726257.jpg",
+          "highResUrl": "/uploads/capture-1788170799206-126726257.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "Apex Cobot Arm X-1",
+          "isBlank": false,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "Apex Cobot Arm X-1",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T10:06:39.315Z",
+          "updatedAt": "2026-08-31T10:06:40.241Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "Apex Mobile AGV R-2",
+          "isBlank": false,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "Apex Mobile AGV R-2",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T10:06:39.315Z",
+          "updatedAt": "2026-08-31T10:06:40.398Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "Apex 3D Sensor V-3",
+          "isBlank": false,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "Apex 3D Sensor V-3",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T10:06:39.315Z",
+          "updatedAt": "2026-08-31T10:06:40.434Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "Apex Cobot Arm X-1",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:39.315Z",
+          "sku": "APX-1",
+          "price": "$12,000",
+          "updatedAt": "2026-08-31T10:06:40.241Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "Apex Mobile AGV R-2",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:39.315Z",
+          "sku": "APX-2",
+          "price": "$24,000",
+          "updatedAt": "2026-08-31T10:06:40.398Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "Apex 3D Sensor V-3",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:39.315Z",
+          "sku": "APX-3",
+          "price": "$3,500",
+          "updatedAt": "2026-08-31T10:06:40.434Z"
+        },
+        {
+          "id": "prod-slot-4",
+          "slotIndex": 4,
+          "createdAt": "2026-08-31T10:06:40.522Z",
+          "name": "Apex Vision Module 4",
+          "sku": "APX-4",
+          "price": "$5,000",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:06:40.522Z"
+        },
+        {
+          "id": "prod-slot-30",
+          "slotIndex": 30,
+          "createdAt": "2026-08-31T10:06:40.567Z",
+          "name": "Apex Top Tier Product 30",
+          "sku": "APX-30",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:06:40.567Z"
+        },
+        {
+          "id": "prod-slot-100",
+          "slotIndex": 100,
+          "createdAt": "2026-08-31T10:06:40.653Z",
+          "name": "Apex Maximum Business Product 100",
+          "sku": "APX-100",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:06:40.653Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T10:06:39.315Z",
+      "updatedAt": "2026-08-31T10:06:40.653Z",
+      "accountId": "acc-a727bba8",
+      "role": "OWNER",
+      "publicSlug": "apex-enterprise-global-9129",
+      "publicUrl": "http://localhost:4500/booth/apex-enterprise-global-9129",
+      "publishedAt": "2026-08-31T10:06:40.138Z",
+      "qrCodeDataUrl": "data:image/png;base64,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"
+    },
+    {
+      "id": "prj-free-1845ea17",
+      "editToken": "tok-4e4a9a87f8349909cc7ef10680484cca",
+      "publishStatus": "DRAFT",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-68abb518",
+      "name": "Tenant B Global 9129 Virtual Booth",
+      "businessName": "Tenant B Global 9129",
+      "normalizedBusinessName": "tenant b global 9129",
+      "customerEmail": "exhibitor.tenantb.9129@othercorp.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788170800850-728207302.jpg",
+        "previewUrl": "/uploads/capture-1788170800850-728207302.jpg",
+        "processedUrl": "/uploads/capture-1788170800850-728207302.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T10:06:40.853Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788170800850-728207302.jpg",
+          "highResUrl": "/uploads/capture-1788170800850-728207302.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "PRODUCT 01",
+          "isBlank": true,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 1",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:06:40.853Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "PRODUCT 02",
+          "isBlank": true,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 2",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:06:40.853Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:06:40.853Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:40.852Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:40.853Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:40.853Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T10:06:40.853Z",
+      "updatedAt": "2026-08-31T10:06:40.926Z",
+      "accountId": "acc-cfaf246b",
+      "role": "OWNER"
+    },
+    {
+      "id": "prj-free-1d7511cc",
+      "editToken": "tok-beb46dd8c9051dca62c43d945f48e5f3",
+      "publishStatus": "PUBLISHED",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-7cbbac6e",
+      "name": "Apex Robotics Global Corp 5041 Virtual Booth",
+      "businessName": "Apex Robotics Global Corp 5041",
+      "normalizedBusinessName": "apex robotics global corp 5041",
+      "customerEmail": "sarah.connor.c1113.5041@apexrobotics.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788170805075-688531132.jpg",
+        "previewUrl": "/uploads/capture-1788170805075-688531132.jpg",
+        "processedUrl": "/uploads/capture-1788170805075-688531132.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T10:06:45.077Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788170805075-688531132.jpg",
+          "highResUrl": "/uploads/capture-1788170805075-688531132.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "Product 1",
+          "u": 0.25,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Apex Cobot Arm X-16",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:06:46.828Z"
+        },
+        {
+          "id": "pin-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "Product 2",
+          "u": 0.5,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Apex Autonomous Rover R2",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:06:46.828Z"
+        },
+        {
+          "id": "pin-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "Product 3",
+          "u": 0.75,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Apex 3D Vision Kit V4",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T10:06:46.828Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "Apex Cobot Arm X-16",
+          "imageUrl": "",
+          "description": "6-axis precision cobot with 16kg payload capacity.",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:45.077Z",
+          "sku": "APX-X16-IND",
+          "category": "Robotics & Automation",
+          "price": "$14,500 / unit",
+          "updatedAt": "2026-08-31T10:06:46.733Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "Apex Autonomous Mobile Rover R2",
+          "imageUrl": "",
+          "description": "SLAM LiDAR guided warehouse transport robot.",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:45.077Z",
+          "sku": "APX-AMR-R2",
+          "category": "Logistics AGV",
+          "price": "$28,000 / unit",
+          "updatedAt": "2026-08-31T10:06:46.764Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "Apex 3D Vision Sensor Kit V4",
+          "imageUrl": "",
+          "description": "Stereo RGB-D depth camera for robotic pick-and-place.",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:45.077Z",
+          "sku": "APX-VS4-3D",
+          "category": "Computer Vision",
+          "price": "$4,200 / kit",
+          "updatedAt": "2026-08-31T10:06:46.793Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T10:06:45.077Z",
+      "updatedAt": "2026-08-31T10:06:46.862Z",
+      "accountId": "acc-b88acedd",
+      "role": "OWNER",
+      "brandName": "³D₂ Apex Robotics",
+      "description": "Global manufacturer of advanced industrial cobot arms.",
+      "website": "https://apexrobotics.example.com",
+      "contactName": "Sarah Connor",
+      "contactEmail": "sarah.connor.c1113.5041@apexrobotics.example.com",
+      "publicSlug": "apex-robotics-global-corp-5041",
+      "publicUrl": "http://localhost:4500/booth/apex-robotics-global-corp-5041",
+      "publishedAt": "2026-08-31T10:06:46.862Z",
+      "qrCodeDataUrl": "data:image/png;base64,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"
+    },
+    {
+      "id": "prj-free-3ba356d0",
+      "editToken": "tok-aa122c116455aeffc462bce8248393f5",
+      "publishStatus": "DRAFT",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-d4c478f8",
+      "name": "Intruder CyberCorp 5041 Virtual Booth",
+      "businessName": "Intruder CyberCorp 5041",
+      "normalizedBusinessName": "intruder cybercorp 5041",
+      "customerEmail": "intruder.c1113.5041@hacker.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788170807104-42870880.jpg",
+        "previewUrl": "/uploads/capture-1788170807104-42870880.jpg",
+        "processedUrl": "/uploads/capture-1788170807104-42870880.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T10:06:47.106Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788170807104-42870880.jpg",
+          "highResUrl": "/uploads/capture-1788170807104-42870880.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "PRODUCT 01",
+          "isBlank": true,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 1",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:06:47.106Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "PRODUCT 02",
+          "isBlank": true,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 2",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:06:47.106Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T10:06:47.106Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:47.106Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:47.106Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T10:06:47.106Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T10:06:47.106Z",
+      "updatedAt": "2026-08-31T10:06:47.180Z",
+      "accountId": "acc-3fc0f88f",
+      "role": "OWNER"
     }
   ],
   "salesTickets": [
@@ -24998,6 +28376,132 @@
       "businessName": "Apex Robotics International",
       "createdAt": "2026-08-31T09:27:44.884Z",
       "expiresAt": "2026-09-30T09:27:44.884Z"
+    },
+    {
+      "token": "cust-sess-77faa7e0f15b5a3815c64e0b126af62edee98484d759c9c9",
+      "accountId": "acc-596c5a32",
+      "email": "rehearsal.customer.9532@synthaeron.example.com",
+      "displayName": "Dr. Elena Rostova",
+      "businessName": "Synthaeron Robotics Corp 9532 Global",
+      "createdAt": "2026-08-31T10:01:15.260Z",
+      "expiresAt": "2026-09-30T10:01:15.260Z"
+    },
+    {
+      "token": "cust-sess-2b2408105f74e1e6b50a5903300184bb50d24fa55df47153",
+      "accountId": "acc-b1aca4c9",
+      "email": "tenant.b.9532@competitor.example.com",
+      "displayName": "tenant.b.9532",
+      "businessName": "Competitor Labs 9532",
+      "createdAt": "2026-08-31T10:01:15.508Z",
+      "expiresAt": "2026-09-30T10:01:15.508Z"
+    },
+    {
+      "token": "cust-sess-fad67aab15b9c659fabb34ba7141e2edd640a0182b6bc1ef",
+      "accountId": "acc-757c12a7",
+      "email": "rehearsal.customer.3438@synthaeron.example.com",
+      "displayName": "Dr. Elena Rostova",
+      "businessName": "Synthaeron Robotics Corp 3438 Global",
+      "createdAt": "2026-08-31T10:02:54.305Z",
+      "expiresAt": "2026-09-30T10:02:54.305Z"
+    },
+    {
+      "token": "cust-sess-df32e3a0173d346c7bf83b26511aae1f2c18adf9a2ed9c46",
+      "accountId": "acc-e8fc0595",
+      "email": "tenant.b.3438@competitor.example.com",
+      "displayName": "tenant.b.3438",
+      "businessName": "Competitor Labs 3438",
+      "createdAt": "2026-08-31T10:02:54.537Z",
+      "expiresAt": "2026-09-30T10:02:54.537Z"
+    },
+    {
+      "token": "cust-sess-aeaf40bbb8b1659a8bc237d6dc235bbf96b10832976c6cd9",
+      "accountId": "acc-cc05648b",
+      "email": "rehearsal.customer.9008@synthaeron.example.com",
+      "displayName": "Dr. Elena Rostova",
+      "businessName": "Synthaeron Robotics Corp 9008 Global",
+      "createdAt": "2026-08-31T10:05:21.881Z",
+      "expiresAt": "2026-09-30T10:05:21.881Z"
+    },
+    {
+      "token": "cust-sess-796e1dee58c4c8e67878e0659ab15f5ed5d1b193cc73d064",
+      "accountId": "acc-ee45eeef",
+      "email": "tenant.b.9008@competitor.example.com",
+      "displayName": "tenant.b.9008",
+      "businessName": "Competitor Labs 9008",
+      "createdAt": "2026-08-31T10:05:22.137Z",
+      "expiresAt": "2026-09-30T10:05:22.137Z"
+    },
+    {
+      "token": "cust-sess-967bef8ae6f75ca051f8ce6d30253ced0b85a8ea88373b3f",
+      "accountId": "acc-bee1a31a",
+      "email": "rehearsal.customer.9229@synthaeron.example.com",
+      "displayName": "Dr. Elena Rostova",
+      "businessName": "Synthaeron Robotics Corp 9229 Global",
+      "createdAt": "2026-08-31T10:06:00.138Z",
+      "expiresAt": "2026-09-30T10:06:00.138Z"
+    },
+    {
+      "token": "cust-sess-7c9110223f84d6c48e2ba50c0e9d75f7db22ac874eddac0e",
+      "accountId": "acc-4758612b",
+      "email": "tenant.b.9229@competitor.example.com",
+      "displayName": "tenant.b.9229",
+      "businessName": "Competitor Labs 9229",
+      "createdAt": "2026-08-31T10:06:00.409Z",
+      "expiresAt": "2026-09-30T10:06:00.409Z"
+    },
+    {
+      "token": "cust-sess-dd9deeac3d2b39749b46f18e39282d0c1c75dd2a95eed997",
+      "accountId": "acc-bbf44de0",
+      "email": "exhibitor.c1114.3873@apexenterprise.example.com",
+      "displayName": "exhibitor.c1114.3873",
+      "businessName": "Apex Enterprise Global 3873",
+      "createdAt": "2026-08-31T10:06:04.470Z",
+      "expiresAt": "2026-09-30T10:06:04.470Z"
+    },
+    {
+      "token": "cust-sess-05b2050e2b71353624cc2b51f57d80afea40699af5e35150",
+      "accountId": "acc-9f2ae52a",
+      "email": "exhibitor.tenantb.3873@othercorp.example.com",
+      "displayName": "exhibitor.tenantb.3873",
+      "businessName": "Tenant B Global 3873",
+      "createdAt": "2026-08-31T10:06:04.610Z",
+      "expiresAt": "2026-09-30T10:06:04.610Z"
+    },
+    {
+      "token": "cust-sess-c622e3b643afbca39c495e0574837d91f83340c1409c9fc9",
+      "accountId": "acc-a727bba8",
+      "email": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "displayName": "exhibitor.c1114.9129",
+      "businessName": "Apex Enterprise Global 9129",
+      "createdAt": "2026-08-31T10:06:40.807Z",
+      "expiresAt": "2026-09-30T10:06:40.807Z"
+    },
+    {
+      "token": "cust-sess-fd4cad2198036bb717aab448fd9d30ed135c380a442db5c7",
+      "accountId": "acc-cfaf246b",
+      "email": "exhibitor.tenantb.9129@othercorp.example.com",
+      "displayName": "exhibitor.tenantb.9129",
+      "businessName": "Tenant B Global 9129",
+      "createdAt": "2026-08-31T10:06:40.960Z",
+      "expiresAt": "2026-09-30T10:06:40.960Z"
+    },
+    {
+      "token": "cust-sess-848191b0d21885da7195b6bfe0d05e934bf4dc217f9d883d",
+      "accountId": "acc-3fc0f88f",
+      "email": "intruder.c1113.5041@hacker.example.com",
+      "displayName": "intruder.c1113.5041",
+      "businessName": "Intruder CyberCorp 5041",
+      "createdAt": "2026-08-31T10:06:47.208Z",
+      "expiresAt": "2026-09-30T10:06:47.208Z"
+    },
+    {
+      "token": "cust-sess-e5c617d96a5b2cb83ef61c856f4f08d75651f763d4306a71",
+      "accountId": "acc-b88acedd",
+      "email": "sarah.connor.c1113.5041@apexrobotics.example.com",
+      "displayName": "Sarah Connor CEO",
+      "businessName": "Apex Robotics Global Corp 5041",
+      "createdAt": "2026-08-31T10:06:47.327Z",
+      "expiresAt": "2026-09-30T10:06:47.327Z"
     }
   ],
   "accounts": [
@@ -25335,6 +28839,226 @@
       "createdAt": "2026-08-31T09:27:34.280Z",
       "updatedAt": "2026-08-31T09:27:34.280Z",
       "lastLoginAt": "2026-08-31T09:27:34.280Z"
+    },
+    {
+      "id": "acc-596c5a32",
+      "email": "rehearsal.customer.9532@synthaeron.example.com",
+      "emailNormalized": "rehearsal.customer.9532@synthaeron.example.com",
+      "displayName": "Dr. Elena Rostova",
+      "businessName": "Synthaeron Robotics Corp 9532 Global",
+      "phone": "+1-555-0199",
+      "website": "https://synthaeron-robotics.example.com",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T10:01:10.217Z",
+      "updatedAt": "2026-08-31T10:01:15.136Z",
+      "lastLoginAt": "2026-08-31T10:01:15.136Z"
+    },
+    {
+      "id": "acc-b1aca4c9",
+      "email": "tenant.b.9532@competitor.example.com",
+      "emailNormalized": "tenant.b.9532@competitor.example.com",
+      "displayName": "tenant.b.9532",
+      "businessName": "Competitor Labs 9532",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T10:01:15.478Z",
+      "updatedAt": "2026-08-31T10:01:15.478Z",
+      "lastLoginAt": "2026-08-31T10:01:15.478Z"
+    },
+    {
+      "id": "acc-757c12a7",
+      "email": "rehearsal.customer.3438@synthaeron.example.com",
+      "emailNormalized": "rehearsal.customer.3438@synthaeron.example.com",
+      "displayName": "Dr. Elena Rostova",
+      "businessName": "Synthaeron Robotics Corp 3438 Global",
+      "phone": "+1-555-0199",
+      "website": "https://synthaeron-robotics.example.com",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T10:02:53.625Z",
+      "updatedAt": "2026-08-31T10:02:54.279Z",
+      "lastLoginAt": "2026-08-31T10:02:54.279Z"
+    },
+    {
+      "id": "acc-e8fc0595",
+      "email": "tenant.b.3438@competitor.example.com",
+      "emailNormalized": "tenant.b.3438@competitor.example.com",
+      "displayName": "tenant.b.3438",
+      "businessName": "Competitor Labs 3438",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T10:02:54.512Z",
+      "updatedAt": "2026-08-31T10:02:54.512Z",
+      "lastLoginAt": "2026-08-31T10:02:54.512Z"
+    },
+    {
+      "id": "acc-cc05648b",
+      "email": "rehearsal.customer.9008@synthaeron.example.com",
+      "emailNormalized": "rehearsal.customer.9008@synthaeron.example.com",
+      "displayName": "Dr. Elena Rostova",
+      "businessName": "Synthaeron Robotics Corp 9008 Global",
+      "phone": "+1-555-0199",
+      "website": "https://synthaeron-robotics.example.com",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T10:05:20.016Z",
+      "updatedAt": "2026-08-31T10:05:21.848Z",
+      "lastLoginAt": "2026-08-31T10:05:21.848Z"
+    },
+    {
+      "id": "acc-ee45eeef",
+      "email": "tenant.b.9008@competitor.example.com",
+      "emailNormalized": "tenant.b.9008@competitor.example.com",
+      "displayName": "tenant.b.9008",
+      "businessName": "Competitor Labs 9008",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T10:05:22.108Z",
+      "updatedAt": "2026-08-31T10:05:22.108Z",
+      "lastLoginAt": "2026-08-31T10:05:22.108Z"
+    },
+    {
+      "id": "acc-bee1a31a",
+      "email": "rehearsal.customer.9229@synthaeron.example.com",
+      "emailNormalized": "rehearsal.customer.9229@synthaeron.example.com",
+      "displayName": "Dr. Elena Rostova",
+      "businessName": "Synthaeron Robotics Corp 9229 Global",
+      "phone": "+1-555-0199",
+      "website": "https://synthaeron-robotics.example.com",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T10:05:59.402Z",
+      "updatedAt": "2026-08-31T10:06:00.111Z",
+      "lastLoginAt": "2026-08-31T10:06:00.110Z"
+    },
+    {
+      "id": "acc-4758612b",
+      "email": "tenant.b.9229@competitor.example.com",
+      "emailNormalized": "tenant.b.9229@competitor.example.com",
+      "displayName": "tenant.b.9229",
+      "businessName": "Competitor Labs 9229",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T10:06:00.384Z",
+      "updatedAt": "2026-08-31T10:06:00.384Z",
+      "lastLoginAt": "2026-08-31T10:06:00.384Z"
+    },
+    {
+      "id": "acc-bbf44de0",
+      "email": "exhibitor.c1114.3873@apexenterprise.example.com",
+      "emailNormalized": "exhibitor.c1114.3873@apexenterprise.example.com",
+      "displayName": "exhibitor.c1114.3873",
+      "businessName": "Apex Enterprise Global 3873",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "BUSINESS",
+      "createdAt": "2026-08-31T10:06:04.042Z",
+      "updatedAt": "2026-08-31T10:06:04.441Z",
+      "lastLoginAt": "2026-08-31T10:06:04.441Z",
+      "planCode": "BUSINESS",
+      "entitlementStatus": "ACTIVE",
+      "billingProvider": "stripe",
+      "billingStatus": "active",
+      "billingPriceId": "STRIPE_PRICE_BUSINESS_MONTHLY"
+    },
+    {
+      "id": "acc-9f2ae52a",
+      "email": "exhibitor.tenantb.3873@othercorp.example.com",
+      "emailNormalized": "exhibitor.tenantb.3873@othercorp.example.com",
+      "displayName": "exhibitor.tenantb.3873",
+      "businessName": "Tenant B Global 3873",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T10:06:04.585Z",
+      "updatedAt": "2026-08-31T10:06:04.585Z",
+      "lastLoginAt": "2026-08-31T10:06:04.585Z"
+    },
+    {
+      "id": "acc-a727bba8",
+      "email": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "emailNormalized": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "displayName": "exhibitor.c1114.9129",
+      "businessName": "Apex Enterprise Global 9129",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "BUSINESS",
+      "createdAt": "2026-08-31T10:06:39.781Z",
+      "updatedAt": "2026-08-31T10:06:41.138Z",
+      "lastLoginAt": "2026-08-31T10:06:40.775Z",
+      "planCode": "BUSINESS",
+      "entitlementStatus": "ACTIVE",
+      "billingProvider": "stripe",
+      "billingStatus": "active",
+      "billingPriceId": "STRIPE_PRICE_BUSINESS_MONTHLY"
+    },
+    {
+      "id": "acc-cfaf246b",
+      "email": "exhibitor.tenantb.9129@othercorp.example.com",
+      "emailNormalized": "exhibitor.tenantb.9129@othercorp.example.com",
+      "displayName": "exhibitor.tenantb.9129",
+      "businessName": "Tenant B Global 9129",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T10:06:40.926Z",
+      "updatedAt": "2026-08-31T10:06:40.926Z",
+      "lastLoginAt": "2026-08-31T10:06:40.926Z"
+    },
+    {
+      "id": "acc-b88acedd",
+      "email": "sarah.connor.c1113.5041@apexrobotics.example.com",
+      "emailNormalized": "sarah.connor.c1113.5041@apexrobotics.example.com",
+      "displayName": "Sarah Connor CEO",
+      "businessName": "Apex Robotics Global Corp 5041",
+      "phone": "+1-555-8821",
+      "website": "https://apexrobotics.example.com",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T10:06:46.630Z",
+      "updatedAt": "2026-08-31T10:06:47.298Z",
+      "lastLoginAt": "2026-08-31T10:06:47.298Z"
+    },
+    {
+      "id": "acc-3fc0f88f",
+      "email": "intruder.c1113.5041@hacker.example.com",
+      "emailNormalized": "intruder.c1113.5041@hacker.example.com",
+      "displayName": "intruder.c1113.5041",
+      "businessName": "Intruder CyberCorp 5041",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T10:06:47.180Z",
+      "updatedAt": "2026-08-31T10:06:47.180Z",
+      "lastLoginAt": "2026-08-31T10:06:47.180Z"
     }
   ],
   "accountAuditLogs": [
@@ -25820,6 +29544,300 @@
       "email": "goodkie.com@gmail.com",
       "action": "LOGIN",
       "timestamp": "2026-08-31T09:27:44.884Z"
+    },
+    {
+      "id": "log-03150957",
+      "accountId": "acc-596c5a32",
+      "email": "rehearsal.customer.9532@synthaeron.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T10:01:10.217Z"
+    },
+    {
+      "id": "log-b2e4ac88",
+      "accountId": "acc-596c5a32",
+      "email": "rehearsal.customer.9532@synthaeron.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:01:10.250Z"
+    },
+    {
+      "id": "log-28b8df81",
+      "accountId": "acc-596c5a32",
+      "email": "rehearsal.customer.9532@synthaeron.example.com",
+      "action": "LOGOUT",
+      "timestamp": "2026-08-31T10:01:15.013Z"
+    },
+    {
+      "id": "log-5228e7da",
+      "accountId": "acc-596c5a32",
+      "email": "rehearsal.customer.9532@synthaeron.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:01:15.260Z"
+    },
+    {
+      "id": "log-bd581b66",
+      "accountId": "acc-b1aca4c9",
+      "email": "tenant.b.9532@competitor.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T10:01:15.478Z"
+    },
+    {
+      "id": "log-29e3459f",
+      "accountId": "acc-b1aca4c9",
+      "email": "tenant.b.9532@competitor.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:01:15.508Z"
+    },
+    {
+      "id": "log-889d3d1a",
+      "accountId": "acc-757c12a7",
+      "email": "rehearsal.customer.3438@synthaeron.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T10:02:53.625Z"
+    },
+    {
+      "id": "log-66c7af2c",
+      "accountId": "acc-757c12a7",
+      "email": "rehearsal.customer.3438@synthaeron.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:02:53.657Z"
+    },
+    {
+      "id": "log-04797a44",
+      "accountId": "acc-757c12a7",
+      "email": "rehearsal.customer.3438@synthaeron.example.com",
+      "action": "LOGOUT",
+      "timestamp": "2026-08-31T10:02:54.250Z"
+    },
+    {
+      "id": "log-bb67237c",
+      "accountId": "acc-757c12a7",
+      "email": "rehearsal.customer.3438@synthaeron.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:02:54.305Z"
+    },
+    {
+      "id": "log-c158c2e4",
+      "accountId": "acc-e8fc0595",
+      "email": "tenant.b.3438@competitor.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T10:02:54.512Z"
+    },
+    {
+      "id": "log-31e4965f",
+      "accountId": "acc-e8fc0595",
+      "email": "tenant.b.3438@competitor.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:02:54.537Z"
+    },
+    {
+      "id": "log-abe3fab5",
+      "accountId": "acc-cc05648b",
+      "email": "rehearsal.customer.9008@synthaeron.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T10:05:20.016Z"
+    },
+    {
+      "id": "log-ef8a1f3a",
+      "accountId": "acc-cc05648b",
+      "email": "rehearsal.customer.9008@synthaeron.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:05:20.042Z"
+    },
+    {
+      "id": "log-7a1e278b",
+      "accountId": "acc-cc05648b",
+      "email": "rehearsal.customer.9008@synthaeron.example.com",
+      "action": "LOGOUT",
+      "timestamp": "2026-08-31T10:05:21.808Z"
+    },
+    {
+      "id": "log-3c27e9df",
+      "accountId": "acc-cc05648b",
+      "email": "rehearsal.customer.9008@synthaeron.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:05:21.881Z"
+    },
+    {
+      "id": "log-52be3615",
+      "accountId": "acc-ee45eeef",
+      "email": "tenant.b.9008@competitor.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T10:05:22.108Z"
+    },
+    {
+      "id": "log-de829455",
+      "accountId": "acc-ee45eeef",
+      "email": "tenant.b.9008@competitor.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:05:22.137Z"
+    },
+    {
+      "id": "log-6aaa7965",
+      "accountId": "acc-bee1a31a",
+      "email": "rehearsal.customer.9229@synthaeron.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T10:05:59.402Z"
+    },
+    {
+      "id": "log-dc108061",
+      "accountId": "acc-bee1a31a",
+      "email": "rehearsal.customer.9229@synthaeron.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:05:59.427Z"
+    },
+    {
+      "id": "log-531e95ee",
+      "accountId": "acc-bee1a31a",
+      "email": "rehearsal.customer.9229@synthaeron.example.com",
+      "action": "LOGOUT",
+      "timestamp": "2026-08-31T10:06:00.082Z"
+    },
+    {
+      "id": "log-86c8d3b3",
+      "accountId": "acc-bee1a31a",
+      "email": "rehearsal.customer.9229@synthaeron.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:06:00.138Z"
+    },
+    {
+      "id": "log-cecb666c",
+      "accountId": "acc-4758612b",
+      "email": "tenant.b.9229@competitor.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T10:06:00.384Z"
+    },
+    {
+      "id": "log-526b2a24",
+      "accountId": "acc-4758612b",
+      "email": "tenant.b.9229@competitor.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:06:00.409Z"
+    },
+    {
+      "id": "log-9d6a7bbd",
+      "accountId": "acc-bbf44de0",
+      "email": "exhibitor.c1114.3873@apexenterprise.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T10:06:04.042Z"
+    },
+    {
+      "id": "log-a0c565c2",
+      "accountId": "acc-bbf44de0",
+      "email": "exhibitor.c1114.3873@apexenterprise.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:06:04.080Z"
+    },
+    {
+      "id": "log-fef1c6f0",
+      "accountId": "acc-bbf44de0",
+      "email": "exhibitor.c1114.3873@apexenterprise.example.com",
+      "action": "LOGOUT",
+      "timestamp": "2026-08-31T10:06:04.412Z"
+    },
+    {
+      "id": "log-2272e199",
+      "accountId": "acc-bbf44de0",
+      "email": "exhibitor.c1114.3873@apexenterprise.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:06:04.470Z"
+    },
+    {
+      "id": "log-985a924b",
+      "accountId": "acc-9f2ae52a",
+      "email": "exhibitor.tenantb.3873@othercorp.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T10:06:04.585Z"
+    },
+    {
+      "id": "log-feb4a82d",
+      "accountId": "acc-9f2ae52a",
+      "email": "exhibitor.tenantb.3873@othercorp.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:06:04.610Z"
+    },
+    {
+      "id": "log-fdbc0c5d",
+      "accountId": "acc-a727bba8",
+      "email": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T10:06:39.781Z"
+    },
+    {
+      "id": "log-08641770",
+      "accountId": "acc-a727bba8",
+      "email": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:06:39.956Z"
+    },
+    {
+      "id": "log-cd3cbc61",
+      "accountId": "acc-a727bba8",
+      "email": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "action": "LOGOUT",
+      "timestamp": "2026-08-31T10:06:40.722Z"
+    },
+    {
+      "id": "log-f68a84a2",
+      "accountId": "acc-a727bba8",
+      "email": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:06:40.807Z"
+    },
+    {
+      "id": "log-98952cde",
+      "accountId": "acc-cfaf246b",
+      "email": "exhibitor.tenantb.9129@othercorp.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T10:06:40.926Z"
+    },
+    {
+      "id": "log-0b377449",
+      "accountId": "acc-cfaf246b",
+      "email": "exhibitor.tenantb.9129@othercorp.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:06:40.960Z"
+    },
+    {
+      "id": "log-fa79b41d",
+      "accountId": "acc-b88acedd",
+      "email": "sarah.connor.c1113.5041@apexrobotics.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T10:06:46.630Z"
+    },
+    {
+      "id": "log-171cd62c",
+      "accountId": "acc-b88acedd",
+      "email": "sarah.connor.c1113.5041@apexrobotics.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:06:46.657Z"
+    },
+    {
+      "id": "log-fa3a1e1d",
+      "accountId": "acc-3fc0f88f",
+      "email": "intruder.c1113.5041@hacker.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T10:06:47.180Z"
+    },
+    {
+      "id": "log-40f170a4",
+      "accountId": "acc-3fc0f88f",
+      "email": "intruder.c1113.5041@hacker.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:06:47.208Z"
+    },
+    {
+      "id": "log-e3c3d800",
+      "accountId": "acc-b88acedd",
+      "email": "sarah.connor.c1113.5041@apexrobotics.example.com",
+      "action": "LOGOUT",
+      "timestamp": "2026-08-31T10:06:47.252Z"
+    },
+    {
+      "id": "log-3ac82a97",
+      "accountId": "acc-b88acedd",
+      "email": "sarah.connor.c1113.5041@apexrobotics.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T10:06:47.327Z"
     }
   ],
   "entitlementAuditLogs": [
@@ -25965,6 +29983,72 @@
       "reason": "CUSTOMER_PORTAL_TEST_SIMULATION",
       "actor": "goodkie.com@gmail.com",
       "timestamp": "2026-08-31T09:27:57.184Z"
+    },
+    {
+      "id": "ent-log-891c87d4",
+      "accountId": "acc-bbf44de0",
+      "email": "exhibitor.c1114.3873@apexenterprise.example.com",
+      "fromPlan": "FREE_BOOTH",
+      "toPlan": "PRO",
+      "action": "ENTITLEMENT_UPGRADED",
+      "reason": "E2E_AUTOMATED_TEST_FREE_TO_PRO",
+      "actor": "exhibitor.c1114.3873@apexenterprise.example.com",
+      "timestamp": "2026-08-31T10:06:04.271Z"
+    },
+    {
+      "id": "ent-log-92dadffb",
+      "accountId": "acc-bbf44de0",
+      "email": "exhibitor.c1114.3873@apexenterprise.example.com",
+      "fromPlan": "PRO",
+      "toPlan": "BUSINESS",
+      "action": "ENTITLEMENT_UPGRADED",
+      "reason": "E2E_AUTOMATED_TEST_PRO_TO_BIZ",
+      "actor": "exhibitor.c1114.3873@apexenterprise.example.com",
+      "timestamp": "2026-08-31T10:06:04.337Z"
+    },
+    {
+      "id": "ent-log-17abddcd",
+      "accountId": "acc-a727bba8",
+      "email": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "fromPlan": "FREE_BOOTH",
+      "toPlan": "PRO",
+      "action": "ENTITLEMENT_UPGRADED",
+      "reason": "E2E_AUTOMATED_TEST_FREE_TO_PRO",
+      "actor": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "timestamp": "2026-08-31T10:06:40.482Z"
+    },
+    {
+      "id": "ent-log-ab03ca83",
+      "accountId": "acc-a727bba8",
+      "email": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "fromPlan": "PRO",
+      "toPlan": "BUSINESS",
+      "action": "ENTITLEMENT_UPGRADED",
+      "reason": "E2E_AUTOMATED_TEST_PRO_TO_BIZ",
+      "actor": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "timestamp": "2026-08-31T10:06:40.609Z"
+    },
+    {
+      "id": "ent-log-0e57797a",
+      "accountId": "acc-a727bba8",
+      "email": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "fromPlan": "BUSINESS",
+      "toPlan": "FREE_BOOTH",
+      "action": "ENTITLEMENT_SUSPENDED",
+      "reason": "E2E_AUTOMATED_TEST_SUSPENSION",
+      "actor": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "timestamp": "2026-08-31T10:06:40.999Z"
+    },
+    {
+      "id": "ent-log-e3828df5",
+      "accountId": "acc-a727bba8",
+      "email": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "fromPlan": "FREE_BOOTH",
+      "toPlan": "BUSINESS",
+      "action": "ENTITLEMENT_UPGRADED",
+      "reason": "E2E_AUTOMATED_TEST_RESTORE",
+      "actor": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "timestamp": "2026-08-31T10:06:41.138Z"
     }
   ],
   "consultations": [
@@ -26000,6 +30084,826 @@
       "notes": "Need 10 multi-hall booths across Europe & Japan with custom ERP webhook integration.",
       "accountId": "acc-650c9852",
       "createdAt": "2026-08-31T09:27:11.760Z"
+    },
+    {
+      "id": "cons-4996fe6c",
+      "serviceType": "CUSTOM_PLAN",
+      "name": "Dr. Elena Rostova",
+      "email": "rehearsal.customer.9532@synthaeron.example.com",
+      "company": "Synthaeron Robotics Corp 9532 Global",
+      "phone": "+1-555-0199",
+      "notes": "Expanding to 45 products for Chicago Autumn Expo.",
+      "accountId": "acc-596c5a32",
+      "createdAt": "2026-08-31T10:01:14.598Z"
+    },
+    {
+      "id": "cons-be090f5b",
+      "serviceType": "CUSTOM_PLAN",
+      "name": "Dr. Elena Rostova",
+      "email": "rehearsal.customer.3438@synthaeron.example.com",
+      "company": "Synthaeron Robotics Corp 3438 Global",
+      "phone": "+1-555-0199",
+      "notes": "Expanding to 45 products for Chicago Autumn Expo.",
+      "accountId": "acc-757c12a7",
+      "createdAt": "2026-08-31T10:02:54.134Z"
+    },
+    {
+      "id": "cons-85534eb5",
+      "serviceType": "CUSTOM_PLAN",
+      "name": "Dr. Elena Rostova",
+      "email": "rehearsal.customer.9008@synthaeron.example.com",
+      "company": "Synthaeron Robotics Corp 9008 Global",
+      "phone": "+1-555-0199",
+      "notes": "Expanding to 45 products for Chicago Autumn Expo.",
+      "accountId": "acc-cc05648b",
+      "createdAt": "2026-08-31T10:05:21.660Z"
+    },
+    {
+      "id": "cons-56aecfb2",
+      "serviceType": "CUSTOM_PLAN",
+      "name": "Dr. Elena Rostova",
+      "email": "rehearsal.customer.9229@synthaeron.example.com",
+      "company": "Synthaeron Robotics Corp 9229 Global",
+      "phone": "+1-555-0199",
+      "notes": "Expanding to 45 products for Chicago Autumn Expo.",
+      "accountId": "acc-bee1a31a",
+      "createdAt": "2026-08-31T10:05:59.964Z"
+    },
+    {
+      "id": "cons-963ed7ba",
+      "serviceType": "CUSTOM_PLAN",
+      "name": "exhibitor.c1114.3873",
+      "email": "exhibitor.c1114.3873@apexenterprise.example.com",
+      "company": "Apex Enterprise Global 3873",
+      "phone": "",
+      "notes": "Need 10 multi-hall booths across Europe & Japan with custom ERP webhook integration.",
+      "accountId": "acc-bbf44de0",
+      "createdAt": "2026-08-31T10:06:04.379Z"
+    },
+    {
+      "id": "cons-f3d08c58",
+      "serviceType": "CUSTOM_PLAN",
+      "name": "exhibitor.c1114.9129",
+      "email": "exhibitor.c1114.9129@apexenterprise.example.com",
+      "company": "Apex Enterprise Global 9129",
+      "phone": "",
+      "notes": "Need 10 multi-hall booths across Europe & Japan with custom ERP webhook integration.",
+      "accountId": "acc-a727bba8",
+      "createdAt": "2026-08-31T10:06:40.689Z"
+    }
+  ],
+  "customerTimelineEvents": [
+    {
+      "id": "tl-2bafa4f5",
+      "accountId": "acc-596c5a32",
+      "eventType": "PROFILE_UPDATED",
+      "details": {
+        "businessName": "Synthaeron Robotics Corp 9532 Global",
+        "displayName": "Dr. Elena Rostova"
+      },
+      "timestamp": "2026-08-31T10:01:11.785Z"
+    },
+    {
+      "id": "tl-08a5d105",
+      "accountId": "acc-596c5a32",
+      "eventType": "UPGRADE_REQUESTED",
+      "details": {
+        "requestId": "upg-req-ec011cbf",
+        "requestedPlan": "BUSINESS"
+      },
+      "timestamp": "2026-08-31T10:01:14.598Z"
+    },
+    {
+      "id": "tl-d59c2e58",
+      "accountId": "acc-757c12a7",
+      "eventType": "PROFILE_UPDATED",
+      "details": {
+        "businessName": "Synthaeron Robotics Corp 3438 Global",
+        "displayName": "Dr. Elena Rostova"
+      },
+      "timestamp": "2026-08-31T10:02:53.738Z"
+    },
+    {
+      "id": "tl-b1981dc0",
+      "accountId": "acc-757c12a7",
+      "eventType": "UPGRADE_REQUESTED",
+      "details": {
+        "requestId": "upg-req-8668183c",
+        "requestedPlan": "BUSINESS"
+      },
+      "timestamp": "2026-08-31T10:02:54.134Z"
+    },
+    {
+      "id": "tl-82d7a1a2",
+      "accountId": null,
+      "eventType": "BOOTH_CREATED",
+      "details": {
+        "projectId": "prj-free-316c432f",
+        "businessName": "Synthaeron Robotics Corp 1257"
+      },
+      "timestamp": "2026-08-31T10:04:11.336Z"
+    },
+    {
+      "id": "tl-cfa1cc71",
+      "accountId": null,
+      "eventType": "RFQ_RECEIVED",
+      "details": {
+        "leadId": "lead-0f93c677",
+        "leadType": "RFQ",
+        "buyerCompany": "EuroTech Procurement GmbH"
+      },
+      "timestamp": "2026-08-31T10:04:12.785Z"
+    },
+    {
+      "id": "tl-e07f201d",
+      "accountId": null,
+      "eventType": "SAMPLE_REQUEST_RECEIVED",
+      "details": {
+        "leadId": "lead-7ce81b4d",
+        "leadType": "SAMPLE_REQUEST",
+        "buyerCompany": "Tokyo Industrial Distributors"
+      },
+      "timestamp": "2026-08-31T10:04:12.813Z"
+    },
+    {
+      "id": "tl-0a32b455",
+      "accountId": null,
+      "eventType": "MEETING_REQUEST_RECEIVED",
+      "details": {
+        "leadId": "lead-a06a9b9a",
+        "leadType": "MEETING_REQUEST",
+        "buyerCompany": "Singapore Logistics Automation"
+      },
+      "timestamp": "2026-08-31T10:04:12.847Z"
+    },
+    {
+      "id": "tl-119d5d02",
+      "accountId": null,
+      "eventType": "BOOTH_CREATED",
+      "details": {
+        "projectId": "prj-free-7619a829",
+        "businessName": "Competitor Labs 1257"
+      },
+      "timestamp": "2026-08-31T10:04:12.965Z"
+    },
+    {
+      "id": "tl-b731734c",
+      "accountId": null,
+      "eventType": "BOOTH_CREATED",
+      "details": {
+        "projectId": "prj-free-5d542ffa",
+        "businessName": "Synthaeron Robotics Corp 9008"
+      },
+      "timestamp": "2026-08-31T10:05:19.085Z"
+    },
+    {
+      "id": "tl-0dfeac4b",
+      "accountId": "acc-cc05648b",
+      "eventType": "PROFILE_UPDATED",
+      "details": {
+        "businessName": "Synthaeron Robotics Corp 9008 Global",
+        "displayName": "Dr. Elena Rostova"
+      },
+      "timestamp": "2026-08-31T10:05:20.115Z"
+    },
+    {
+      "id": "tl-466b8f8a",
+      "accountId": "acc-cc05648b",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-5d542ffa",
+        "slotIndex": 1,
+        "productName": "Synthaeron Autonomous Arm A-1"
+      },
+      "timestamp": "2026-08-31T10:05:20.255Z"
+    },
+    {
+      "id": "tl-3c7022b3",
+      "accountId": "acc-cc05648b",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-5d542ffa",
+        "slotIndex": 2,
+        "productName": "Synthaeron Mobile Carrier M-2"
+      },
+      "timestamp": "2026-08-31T10:05:20.389Z"
+    },
+    {
+      "id": "tl-a00e25e3",
+      "accountId": "acc-cc05648b",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-5d542ffa",
+        "slotIndex": 3,
+        "productName": "Synthaeron Vision LiDAR Sensor V-3"
+      },
+      "timestamp": "2026-08-31T10:05:20.500Z"
+    },
+    {
+      "id": "tl-c9c2599e",
+      "accountId": "acc-cc05648b",
+      "eventType": "PINPOINT_UPDATED",
+      "details": {
+        "projectId": "prj-free-5d542ffa",
+        "pinpointsCount": 3
+      },
+      "timestamp": "2026-08-31T10:05:20.683Z"
+    },
+    {
+      "id": "tl-2bbc16c9",
+      "accountId": "acc-cc05648b",
+      "eventType": "RFQ_RECEIVED",
+      "details": {
+        "leadId": "lead-cf5fd18c",
+        "projectId": "prj-free-5d542ffa",
+        "leadType": "RFQ",
+        "buyerCompany": "EuroTech Procurement GmbH"
+      },
+      "timestamp": "2026-08-31T10:05:21.083Z"
+    },
+    {
+      "id": "tl-70408658",
+      "accountId": "acc-cc05648b",
+      "eventType": "SAMPLE_REQUEST_RECEIVED",
+      "details": {
+        "leadId": "lead-e5a78b77",
+        "projectId": "prj-free-5d542ffa",
+        "leadType": "SAMPLE_REQUEST",
+        "buyerCompany": "Tokyo Industrial Distributors"
+      },
+      "timestamp": "2026-08-31T10:05:21.208Z"
+    },
+    {
+      "id": "tl-e634d55b",
+      "accountId": "acc-cc05648b",
+      "eventType": "MEETING_REQUEST_RECEIVED",
+      "details": {
+        "leadId": "lead-ca6e4978",
+        "projectId": "prj-free-5d542ffa",
+        "leadType": "MEETING_REQUEST",
+        "buyerCompany": "Singapore Logistics Automation"
+      },
+      "timestamp": "2026-08-31T10:05:21.324Z"
+    },
+    {
+      "id": "tl-b21b404c",
+      "accountId": "acc-cc05648b",
+      "eventType": "UPGRADE_REQUESTED",
+      "details": {
+        "requestId": "upg-req-4b4a138c",
+        "requestedPlan": "BUSINESS"
+      },
+      "timestamp": "2026-08-31T10:05:21.660Z"
+    },
+    {
+      "id": "tl-ea0fe005",
+      "accountId": null,
+      "eventType": "BOOTH_CREATED",
+      "details": {
+        "projectId": "prj-free-b00b708a",
+        "businessName": "Competitor Labs 9008"
+      },
+      "timestamp": "2026-08-31T10:05:22.023Z"
+    },
+    {
+      "id": "tl-20f6a360",
+      "accountId": null,
+      "eventType": "BOOTH_CREATED",
+      "details": {
+        "projectId": "prj-free-ab6344e8",
+        "businessName": "Synthaeron Robotics Corp 9229"
+      },
+      "timestamp": "2026-08-31T10:05:59.298Z"
+    },
+    {
+      "id": "tl-4b5e0b39",
+      "accountId": "acc-bee1a31a",
+      "eventType": "PROFILE_UPDATED",
+      "details": {
+        "businessName": "Synthaeron Robotics Corp 9229 Global",
+        "displayName": "Dr. Elena Rostova"
+      },
+      "timestamp": "2026-08-31T10:05:59.496Z"
+    },
+    {
+      "id": "tl-336f84df",
+      "accountId": "acc-bee1a31a",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-ab6344e8",
+        "slotIndex": 1,
+        "productName": "Synthaeron Autonomous Arm A-1"
+      },
+      "timestamp": "2026-08-31T10:05:59.526Z"
+    },
+    {
+      "id": "tl-44da2b87",
+      "accountId": "acc-bee1a31a",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-ab6344e8",
+        "slotIndex": 2,
+        "productName": "Synthaeron Mobile Carrier M-2"
+      },
+      "timestamp": "2026-08-31T10:05:59.557Z"
+    },
+    {
+      "id": "tl-867abeab",
+      "accountId": "acc-bee1a31a",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-ab6344e8",
+        "slotIndex": 3,
+        "productName": "Synthaeron Vision LiDAR Sensor V-3"
+      },
+      "timestamp": "2026-08-31T10:05:59.588Z"
+    },
+    {
+      "id": "tl-dfc9ad64",
+      "accountId": "acc-bee1a31a",
+      "eventType": "PINPOINT_UPDATED",
+      "details": {
+        "projectId": "prj-free-ab6344e8",
+        "pinpointsCount": 3
+      },
+      "timestamp": "2026-08-31T10:05:59.625Z"
+    },
+    {
+      "id": "tl-432fad25",
+      "accountId": "acc-bee1a31a",
+      "eventType": "BOOTH_PUBLISHED",
+      "details": {
+        "projectId": "prj-free-ab6344e8",
+        "publicSlug": "synthaeron-robotics-corp-9229"
+      },
+      "timestamp": "2026-08-31T10:05:59.826Z"
+    },
+    {
+      "id": "tl-6edb1da7",
+      "accountId": "acc-bee1a31a",
+      "eventType": "RFQ_RECEIVED",
+      "details": {
+        "leadId": "lead-3687e462",
+        "projectId": "prj-free-ab6344e8",
+        "leadType": "RFQ",
+        "buyerCompany": "EuroTech Procurement GmbH"
+      },
+      "timestamp": "2026-08-31T10:05:59.834Z"
+    },
+    {
+      "id": "tl-af75b818",
+      "accountId": "acc-bee1a31a",
+      "eventType": "SAMPLE_REQUEST_RECEIVED",
+      "details": {
+        "leadId": "lead-8db72030",
+        "projectId": "prj-free-ab6344e8",
+        "leadType": "SAMPLE_REQUEST",
+        "buyerCompany": "Tokyo Industrial Distributors"
+      },
+      "timestamp": "2026-08-31T10:05:59.863Z"
+    },
+    {
+      "id": "tl-05deea8e",
+      "accountId": "acc-bee1a31a",
+      "eventType": "MEETING_REQUEST_RECEIVED",
+      "details": {
+        "leadId": "lead-a46ca84a",
+        "projectId": "prj-free-ab6344e8",
+        "leadType": "MEETING_REQUEST",
+        "buyerCompany": "Singapore Logistics Automation"
+      },
+      "timestamp": "2026-08-31T10:05:59.891Z"
+    },
+    {
+      "id": "tl-3c8d7019",
+      "accountId": "acc-bee1a31a",
+      "eventType": "UPGRADE_REQUESTED",
+      "details": {
+        "requestId": "upg-req-801840b3",
+        "requestedPlan": "BUSINESS"
+      },
+      "timestamp": "2026-08-31T10:05:59.964Z"
+    },
+    {
+      "id": "tl-9f342747",
+      "accountId": "acc-bee1a31a",
+      "eventType": "BOOTH_PUBLISHED",
+      "details": {
+        "projectId": "prj-free-ab6344e8",
+        "publicSlug": "synthaeron-robotics-corp-9229"
+      },
+      "timestamp": "2026-08-31T10:06:00.253Z"
+    },
+    {
+      "id": "tl-9f21429a",
+      "accountId": null,
+      "eventType": "BOOTH_CREATED",
+      "details": {
+        "projectId": "prj-free-a163d26e",
+        "businessName": "Competitor Labs 9229"
+      },
+      "timestamp": "2026-08-31T10:06:00.258Z"
+    },
+    {
+      "id": "tl-3bbe4414",
+      "accountId": null,
+      "eventType": "BOOTH_CREATED",
+      "details": {
+        "projectId": "prj-free-30148af3",
+        "businessName": "Apex Enterprise Global 3873"
+      },
+      "timestamp": "2026-08-31T10:06:03.922Z"
+    },
+    {
+      "id": "tl-1c90271b",
+      "accountId": "acc-bbf44de0",
+      "eventType": "BOOTH_PUBLISHED",
+      "details": {
+        "projectId": "prj-free-30148af3",
+        "publicSlug": "apex-enterprise-global-3873"
+      },
+      "timestamp": "2026-08-31T10:06:04.163Z"
+    },
+    {
+      "id": "tl-8fb8d4a7",
+      "accountId": "acc-bbf44de0",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-30148af3",
+        "slotIndex": 1,
+        "productName": "Apex Cobot Arm X-1"
+      },
+      "timestamp": "2026-08-31T10:06:04.169Z"
+    },
+    {
+      "id": "tl-a20925a1",
+      "accountId": "acc-bbf44de0",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-30148af3",
+        "slotIndex": 2,
+        "productName": "Apex Mobile AGV R-2"
+      },
+      "timestamp": "2026-08-31T10:06:04.198Z"
+    },
+    {
+      "id": "tl-71b18f0e",
+      "accountId": "acc-bbf44de0",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-30148af3",
+        "slotIndex": 3,
+        "productName": "Apex 3D Sensor V-3"
+      },
+      "timestamp": "2026-08-31T10:06:04.226Z"
+    },
+    {
+      "id": "tl-cb9fc6ee",
+      "accountId": "acc-bbf44de0",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-30148af3",
+        "slotIndex": 4,
+        "productName": "Apex Vision Module 4"
+      },
+      "timestamp": "2026-08-31T10:06:04.274Z"
+    },
+    {
+      "id": "tl-ef41e8df",
+      "accountId": "acc-bbf44de0",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-30148af3",
+        "slotIndex": 30,
+        "productName": "Apex Top Tier Product 30"
+      },
+      "timestamp": "2026-08-31T10:06:04.305Z"
+    },
+    {
+      "id": "tl-dd97a39f",
+      "accountId": "acc-bbf44de0",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-30148af3",
+        "slotIndex": 100,
+        "productName": "Apex Maximum Business Product 100"
+      },
+      "timestamp": "2026-08-31T10:06:04.344Z"
+    },
+    {
+      "id": "tl-65762ea0",
+      "accountId": "acc-bbf44de0",
+      "eventType": "UPGRADE_REQUESTED",
+      "details": {
+        "requestId": "upg-req-dd6ceaa6",
+        "requestedPlan": "CUSTOM"
+      },
+      "timestamp": "2026-08-31T10:06:04.379Z"
+    },
+    {
+      "id": "tl-7879e936",
+      "accountId": null,
+      "eventType": "BOOTH_CREATED",
+      "details": {
+        "projectId": "prj-free-2435f4ab",
+        "businessName": "Tenant B Global 3873"
+      },
+      "timestamp": "2026-08-31T10:06:04.505Z"
+    },
+    {
+      "id": "tl-e8a5f5b1",
+      "accountId": null,
+      "eventType": "BOOTH_CREATED",
+      "details": {
+        "projectId": "prj-free-6d0ad314",
+        "businessName": "Apex Enterprise Global 9129"
+      },
+      "timestamp": "2026-08-31T10:06:39.315Z"
+    },
+    {
+      "id": "tl-b9216f2d",
+      "accountId": "acc-a727bba8",
+      "eventType": "BOOTH_PUBLISHED",
+      "details": {
+        "projectId": "prj-free-6d0ad314",
+        "publicSlug": "apex-enterprise-global-9129"
+      },
+      "timestamp": "2026-08-31T10:06:40.230Z"
+    },
+    {
+      "id": "tl-2783cbf4",
+      "accountId": "acc-a727bba8",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-6d0ad314",
+        "slotIndex": 1,
+        "productName": "Apex Cobot Arm X-1"
+      },
+      "timestamp": "2026-08-31T10:06:40.241Z"
+    },
+    {
+      "id": "tl-8bf46b69",
+      "accountId": "acc-a727bba8",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-6d0ad314",
+        "slotIndex": 2,
+        "productName": "Apex Mobile AGV R-2"
+      },
+      "timestamp": "2026-08-31T10:06:40.398Z"
+    },
+    {
+      "id": "tl-8b99163e",
+      "accountId": "acc-a727bba8",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-6d0ad314",
+        "slotIndex": 3,
+        "productName": "Apex 3D Sensor V-3"
+      },
+      "timestamp": "2026-08-31T10:06:40.434Z"
+    },
+    {
+      "id": "tl-d287e17d",
+      "accountId": "acc-a727bba8",
+      "eventType": "ENTITLEMENT_CHANGED",
+      "details": {
+        "fromPlan": "FREE_BOOTH",
+        "toPlan": "PRO"
+      },
+      "timestamp": "2026-08-31T10:06:40.482Z"
+    },
+    {
+      "id": "tl-b7d7f9cc",
+      "accountId": "acc-a727bba8",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-6d0ad314",
+        "slotIndex": 4,
+        "productName": "Apex Vision Module 4"
+      },
+      "timestamp": "2026-08-31T10:06:40.522Z"
+    },
+    {
+      "id": "tl-77fb839b",
+      "accountId": "acc-a727bba8",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-6d0ad314",
+        "slotIndex": 30,
+        "productName": "Apex Top Tier Product 30"
+      },
+      "timestamp": "2026-08-31T10:06:40.567Z"
+    },
+    {
+      "id": "tl-257c8438",
+      "accountId": "acc-a727bba8",
+      "eventType": "ENTITLEMENT_CHANGED",
+      "details": {
+        "fromPlan": "PRO",
+        "toPlan": "BUSINESS"
+      },
+      "timestamp": "2026-08-31T10:06:40.609Z"
+    },
+    {
+      "id": "tl-eeaf08b0",
+      "accountId": "acc-a727bba8",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-6d0ad314",
+        "slotIndex": 100,
+        "productName": "Apex Maximum Business Product 100"
+      },
+      "timestamp": "2026-08-31T10:06:40.653Z"
+    },
+    {
+      "id": "tl-612b43de",
+      "accountId": "acc-a727bba8",
+      "eventType": "UPGRADE_REQUESTED",
+      "details": {
+        "requestId": "upg-req-bfccec45",
+        "requestedPlan": "CUSTOM"
+      },
+      "timestamp": "2026-08-31T10:06:40.689Z"
+    },
+    {
+      "id": "tl-9c1e6575",
+      "accountId": null,
+      "eventType": "BOOTH_CREATED",
+      "details": {
+        "projectId": "prj-free-1845ea17",
+        "businessName": "Tenant B Global 9129"
+      },
+      "timestamp": "2026-08-31T10:06:40.853Z"
+    },
+    {
+      "id": "tl-7d236a37",
+      "accountId": "acc-a727bba8",
+      "eventType": "ENTITLEMENT_CHANGED",
+      "details": {
+        "fromPlan": "BUSINESS",
+        "toPlan": "FREE_BOOTH"
+      },
+      "timestamp": "2026-08-31T10:06:40.999Z"
+    },
+    {
+      "id": "tl-271f2f62",
+      "accountId": "acc-a727bba8",
+      "eventType": "ENTITLEMENT_CHANGED",
+      "details": {
+        "fromPlan": "FREE_BOOTH",
+        "toPlan": "BUSINESS"
+      },
+      "timestamp": "2026-08-31T10:06:41.138Z"
+    },
+    {
+      "id": "tl-4dfd61f4",
+      "accountId": null,
+      "eventType": "BOOTH_CREATED",
+      "details": {
+        "projectId": "prj-free-1d7511cc",
+        "businessName": "Apex Robotics Global Corp 5041"
+      },
+      "timestamp": "2026-08-31T10:06:45.077Z"
+    },
+    {
+      "id": "tl-91a84a2a",
+      "accountId": "acc-b88acedd",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-1d7511cc",
+        "slotIndex": 1,
+        "productName": "Apex Cobot Arm X-16"
+      },
+      "timestamp": "2026-08-31T10:06:46.733Z"
+    },
+    {
+      "id": "tl-32afc480",
+      "accountId": "acc-b88acedd",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-1d7511cc",
+        "slotIndex": 2,
+        "productName": "Apex Autonomous Mobile Rover R2"
+      },
+      "timestamp": "2026-08-31T10:06:46.764Z"
+    },
+    {
+      "id": "tl-d3ccee6a",
+      "accountId": "acc-b88acedd",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-1d7511cc",
+        "slotIndex": 3,
+        "productName": "Apex 3D Vision Sensor Kit V4"
+      },
+      "timestamp": "2026-08-31T10:06:46.793Z"
+    },
+    {
+      "id": "tl-c829d1e1",
+      "accountId": "acc-b88acedd",
+      "eventType": "PINPOINT_UPDATED",
+      "details": {
+        "projectId": "prj-free-1d7511cc",
+        "pinpointsCount": 3
+      },
+      "timestamp": "2026-08-31T10:06:46.828Z"
+    },
+    {
+      "id": "tl-5af83698",
+      "accountId": "acc-b88acedd",
+      "eventType": "BOOTH_PUBLISHED",
+      "details": {
+        "projectId": "prj-free-1d7511cc",
+        "publicSlug": "apex-robotics-global-corp-5041"
+      },
+      "timestamp": "2026-08-31T10:06:46.914Z"
+    },
+    {
+      "id": "tl-d9ce2cd7",
+      "accountId": "acc-b88acedd",
+      "eventType": "RFQ_RECEIVED",
+      "details": {
+        "leadId": "lead-3bd0ef97",
+        "projectId": "prj-free-1d7511cc",
+        "leadType": "RFQ",
+        "buyerCompany": "MegaCorp Logistics GmbH"
+      },
+      "timestamp": "2026-08-31T10:06:46.930Z"
+    },
+    {
+      "id": "tl-ef33551d",
+      "accountId": "acc-b88acedd",
+      "eventType": "SAMPLE_REQUEST_RECEIVED",
+      "details": {
+        "leadId": "lead-1b6ed630",
+        "projectId": "prj-free-1d7511cc",
+        "leadType": "SAMPLE_REQUEST",
+        "buyerCompany": "SmartFactory Labs"
+      },
+      "timestamp": "2026-08-31T10:06:46.960Z"
+    },
+    {
+      "id": "tl-37993092",
+      "accountId": "acc-b88acedd",
+      "eventType": "MEETING_REQUEST_RECEIVED",
+      "details": {
+        "leadId": "lead-f4f2ba23",
+        "projectId": "prj-free-1d7511cc",
+        "leadType": "MEETING_REQUEST",
+        "buyerCompany": "Tokyo Robotics Industrial"
+      },
+      "timestamp": "2026-08-31T10:06:46.996Z"
+    },
+    {
+      "id": "tl-b44aa6c5",
+      "accountId": "acc-b88acedd",
+      "eventType": "PROFILE_UPDATED",
+      "details": {
+        "businessName": "Apex Robotics Global Corp 5041",
+        "displayName": "Sarah Connor CEO"
+      },
+      "timestamp": "2026-08-31T10:06:47.069Z"
+    },
+    {
+      "id": "tl-1b480093",
+      "accountId": null,
+      "eventType": "BOOTH_CREATED",
+      "details": {
+        "projectId": "prj-free-3ba356d0",
+        "businessName": "Intruder CyberCorp 5041"
+      },
+      "timestamp": "2026-08-31T10:06:47.106Z"
+    }
+  ],
+  "operatorNotes": [
+    {
+      "id": "note-3bb925cf",
+      "accountId": "acc-596c5a32",
+      "note": "Rehearsal test verified. Customer requested Chicago Autumn Expo setup.",
+      "author": "Operator Lead Marcus",
+      "createdAt": "2026-08-31T10:01:14.745Z"
+    },
+    {
+      "id": "note-3f40da59",
+      "accountId": "acc-757c12a7",
+      "note": "Rehearsal test verified. Customer requested Chicago Autumn Expo setup.",
+      "author": "Operator Lead Marcus",
+      "createdAt": "2026-08-31T10:02:54.185Z"
+    },
+    {
+      "id": "note-86d915f7",
+      "accountId": "acc-cc05648b",
+      "note": "Rehearsal test verified. Customer requested Chicago Autumn Expo setup.",
+      "author": "Operator Lead Marcus",
+      "createdAt": "2026-08-31T10:05:21.721Z"
+    },
+    {
+      "id": "note-178743fe",
+      "accountId": "acc-bee1a31a",
+      "note": "Rehearsal test verified. Customer requested Chicago Autumn Expo setup.",
+      "author": "Operator Lead Marcus",
+      "createdAt": "2026-08-31T10:06:00.011Z"
     }
   ]
 }

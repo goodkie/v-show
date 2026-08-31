@@ -1502,6 +1502,7 @@ class JSONDatabase {
   // --- Audit Log ---
   logAudit(userId, organizationId, action, resourceType, resourceId, details = {}) {
     return this.mutate((db) => {
+      const d = db;
       db.auditLogs = db.auditLogs || [];
       const entry = {
         id: `audit-${uuidv4().substring(0, 8)}`,
@@ -1537,6 +1538,7 @@ class JSONDatabase {
 
   async createOrganization({ type, name, slug, category }) {
     return this.mutate((db) => {
+      const d = db;
       const org = {
         id: `org-${type}-${uuidv4().substring(0, 8)}`,
         type: type || 'exhibitor',
@@ -1587,6 +1589,7 @@ class JSONDatabase {
       throw err;
     }
     return this.mutate((db) => {
+      const d = db;
       const existing = (db.users || []).find(u => u.email.toLowerCase() === email.toLowerCase());
       if (existing) throw new Error('A user with this email address already exists.');
 
@@ -1616,6 +1619,7 @@ class JSONDatabase {
       throw new Error(check.message);
     }
     return this.mutate((db) => {
+      const d = db;
       const user = (db.users || []).find(u => u.id === userId);
       if (!user) throw new Error('User not found.');
       const { hash, salt } = hashPassword(newPassword);
@@ -1635,6 +1639,7 @@ class JSONDatabase {
 
   logIncident({ category, severity, message, organizationId = null, boothId = null, metadata = {} }) {
     return this.mutate((db) => {
+      const d = db;
       db.incidents = db.incidents || [];
       const entry = {
         id: `inc-${uuidv4().substring(0, 8)}`,
@@ -1678,6 +1683,7 @@ class JSONDatabase {
 
   logCostEntry({ category, provider, estimatedUsd, actualUsd = 0.0, notes = '', freeCreditUsed = false }) {
     return this.mutate((db) => {
+      const d = db;
       db.costLedger = db.costLedger || [];
       const entry = {
         id: `cost-${uuidv4().substring(0, 8)}`,
@@ -1715,6 +1721,7 @@ class JSONDatabase {
 
   async createEvent({ organizerOrganizationId, name, slug, description, bannerImage, startsAt, endsAt }) {
     return this.mutate((db) => {
+      const d = db;
       const event = {
         id: `event-${uuidv4().substring(0, 8)}`,
         organizerOrganizationId,
@@ -1740,6 +1747,7 @@ class JSONDatabase {
 
   async addEventExhibitor({ eventId, exhibitorOrganizationId, boothId, category, boothNumber }) {
     return this.mutate((db) => {
+      const d = db;
       db.eventExhibitors = db.eventExhibitors || [];
       const entry = {
         id: `ee-${uuidv4().substring(0, 8)}`,
@@ -1780,6 +1788,7 @@ class JSONDatabase {
 
   async createBooth(boothData) {
     return this.mutate((db) => {
+      const d = db;
       const newBooth = {
         id: boothData.id || `booth-${uuidv4().substring(0, 8)}`,
         organizationId: boothData.organizationId || 'org-exhibitor-apex',
@@ -1806,6 +1815,7 @@ class JSONDatabase {
 
   async updateBooth(id, boothData) {
     return this.mutate((db) => {
+      const d = db;
       const idx = (db.booths || []).findIndex(b => b.id === id);
       if (idx === -1) return null;
       db.booths[idx] = {
@@ -1840,6 +1850,7 @@ class JSONDatabase {
 
   async createReconstructionJob(boothId, options = {}) {
     return this.mutate((db) => {
+      const d = db;
       const booth = (db.booths || []).find(b => b.id === boothId);
       if (!booth) throw new Error('Booth not found');
 
@@ -1898,6 +1909,7 @@ class JSONDatabase {
 
   async approveReconstructionJob(jobId) {
     return this.mutate((db) => {
+      const d = db;
       const job = (db.reconstructionJobs || []).find(j => j.id === jobId);
       if (!job) throw new Error('Job not found');
       job.approvalStatus = 'approved';
@@ -1910,6 +1922,7 @@ class JSONDatabase {
 
   async claimNextPendingJob(workerId) {
     return this.mutate((db) => {
+      const d = db;
       db.reconstructionJobs = db.reconstructionJobs || [];
       const job = db.reconstructionJobs.find(j => j.status === 'pending' && j.approvalStatus === 'approved');
       if (!job) return null;
@@ -1933,6 +1946,7 @@ class JSONDatabase {
 
   async updateJobProgress(jobId, progress, currentStage, diagnostics = null) {
     return this.mutate((db) => {
+      const d = db;
       const job = (db.reconstructionJobs || []).find(j => j.id === jobId);
       if (!job) throw new Error('Job not found');
       job.progress = Math.min(Math.max(Number(progress) || 0, 0), 99);
@@ -1947,6 +1961,7 @@ class JSONDatabase {
 
   async completeJob(jobId, output, diagnostics = null) {
     return this.mutate((db) => {
+      const d = db;
       const job = (db.reconstructionJobs || []).find(j => j.id === jobId);
       if (!job) throw new Error('Job not found');
       if (job.status !== 'processing') {
@@ -1984,6 +1999,7 @@ class JSONDatabase {
 
   async verifyJob(jobId, alignment = null) {
     return this.mutate((db) => {
+      const d = db;
       const job = (db.reconstructionJobs || []).find(j => j.id === jobId);
       if (!job) throw new Error('Job not found');
 
@@ -2022,6 +2038,7 @@ class JSONDatabase {
 
   async createProduct(prodData) {
     return this.mutate((db) => {
+      const d = db;
       const orgId = prodData.organizationId || 'org-exhibitor-apex';
       const org = (db.organizations || []).find(o => o.id === orgId);
       const plan = (org?.subscription?.plan || 'pro').toLowerCase();
@@ -2072,6 +2089,7 @@ class JSONDatabase {
 
   async createHotspot(data) {
     return this.mutate((db) => {
+      const d = db;
       const hs = {
         id: `hs-${uuidv4().substring(0, 8)}`,
         organizationId: data.organizationId || 'org-exhibitor-apex',
@@ -2096,6 +2114,7 @@ class JSONDatabase {
 
   async createLead(data) {
     return this.mutate((db) => {
+      const d = db;
       const item = {
         id: `lead-${uuidv4().substring(0, 8)}`,
         organizationId: data.organizationId,
@@ -2124,6 +2143,7 @@ class JSONDatabase {
 
   async createRfq(data) {
     return this.mutate((db) => {
+      const d = db;
       const item = {
         id: `rfq-${uuidv4().substring(0, 8)}`,
         organizationId: data.organizationId,
@@ -2154,6 +2174,7 @@ class JSONDatabase {
 
   async createSample(data) {
     return this.mutate((db) => {
+      const d = db;
       const item = {
         id: `sample-${uuidv4().substring(0, 8)}`,
         organizationId: data.organizationId,
@@ -2182,6 +2203,7 @@ class JSONDatabase {
 
   async createAppointment(data) {
     return this.mutate((db) => {
+      const d = db;
       const item = {
         id: `apt-${uuidv4().substring(0, 8)}`,
         organizationId: data.organizationId,
@@ -2209,6 +2231,7 @@ class JSONDatabase {
 
   async createProductionRequest(payload) {
     return this.mutate((db) => {
+      const d = db;
       db.productionRequests = db.productionRequests || [];
       const id = `req-${Date.now()}-${uuidv4().substring(0, 6)}`;
       const now = new Date().toISOString();
@@ -2251,6 +2274,7 @@ class JSONDatabase {
 
   async updateProductionRequestStatus(id, newStatus, internalNotes = '') {
     return this.mutate((db) => {
+      const d = db;
       db.productionRequests = db.productionRequests || [];
       const req = db.productionRequests.find(r => r.id === id);
       if (!req) return null;
@@ -2451,6 +2475,7 @@ class JSONDatabase {
 
   async createProductionProject(payload, actor = 'Operations') {
     return this.mutate((db) => {
+      const d = db;
       db.productionProjects = db.productionProjects || [];
       const now = new Date().toISOString();
       const id = payload.id || `proj-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
@@ -2516,6 +2541,7 @@ class JSONDatabase {
 
   async qualifyRequestAndCreateProject(requestId, overrideData = {}, actor = 'Operations') {
     return this.mutate((db) => {
+      const d = db;
       db.productionRequests = db.productionRequests || [];
       db.productionProjects = db.productionProjects || [];
       const req = db.productionRequests.find(r => r.id === requestId);
@@ -2603,6 +2629,7 @@ class JSONDatabase {
 
   async updateProjectStatus(id, newStatus, reason = '', actor = 'Operations') {
     return this.mutate((db) => {
+      const d = db;
       db.productionProjects = db.productionProjects || [];
       const p = db.productionProjects.find(x => x.id === id);
       if (!p) return null;
@@ -2627,6 +2654,7 @@ class JSONDatabase {
 
   async updateProjectAsset(id, assetKey, assetStatus, notes = '', actor = 'Operations') {
     return this.mutate((db) => {
+      const d = db;
       db.productionProjects = db.productionProjects || [];
       const p = db.productionProjects.find(x => x.id === id);
       if (!p) return null;
@@ -2656,6 +2684,7 @@ class JSONDatabase {
 
   async updateProjectTask(id, taskId, taskStatus, notes = '', actor = 'Operations') {
     return this.mutate((db) => {
+      const d = db;
       db.productionProjects = db.productionProjects || [];
       const p = db.productionProjects.find(x => x.id === id);
       if (!p) return null;
@@ -2686,6 +2715,7 @@ class JSONDatabase {
   // --- dn’a-C04 Smart Wizard Production Reservations ---
   async createProductionReservation(payload, actor = 'SmartWizard') {
     return this.mutate((db) => {
+      const d = db;
       db.productionReservations = db.productionReservations || [];
       db.productionProjects = db.productionProjects || [];
       const now = new Date().toISOString();
@@ -2858,6 +2888,7 @@ class JSONDatabase {
 
   async updateProductionReservationIntake(id, intakeData, actor = 'SmartWizard') {
     return this.mutate((db) => {
+      const d = db;
       db.productionReservations = db.productionReservations || [];
       const res = db.productionReservations.find(r => r.id === id || r.reservationId === id);
       if (!res) return null;
@@ -3269,6 +3300,7 @@ class JSONDatabase {
 
   async addProjectPinpoint(projectId, pinpointData, actor = 'Operator') {
     return this.mutate((db) => {
+      const d = db;
       db.productionProjects = db.productionProjects || [];
       let p = db.productionProjects.find(x => x.id === projectId || x.reservationId === projectId);
       if (!p) {
@@ -3312,6 +3344,7 @@ class JSONDatabase {
 
   async addProjectProductQuick(projectId, productData, actor = 'Operator') {
     return this.mutate((db) => {
+      const d = db;
       db.productionProjects = db.productionProjects || [];
       let p = db.productionProjects.find(x => x.id === projectId || x.reservationId === projectId);
       if (!p) {
@@ -3347,6 +3380,7 @@ class JSONDatabase {
 
   async submitProjectQA(id, qaData, actor = 'QA Director') {
     return this.mutate((db) => {
+      const d = db;
       db.productionProjects = db.productionProjects || [];
       const p = db.productionProjects.find(x => x.id === id);
       if (!p) return null;
@@ -3383,6 +3417,7 @@ class JSONDatabase {
 
   async submitClientFeedback(id, feedbackData) {
     return this.mutate((db) => {
+      const d = db;
       db.productionProjects = db.productionProjects || [];
       const p = db.productionProjects.find(x => x.id === id);
       if (!p) return null;
@@ -3423,6 +3458,7 @@ class JSONDatabase {
 
   async publishProject(id, publishData = {}, actor = 'Production Manager') {
     return this.mutate((db) => {
+      const d = db;
       db.productionProjects = db.productionProjects || [];
       const p = db.productionProjects.find(x => x.id === id);
       if (!p) return null;
@@ -3453,6 +3489,7 @@ class JSONDatabase {
 
   async addProjectNote(id, noteText, isClientVisible = false, author = 'Operations') {
     return this.mutate((db) => {
+      const d = db;
       db.productionProjects = db.productionProjects || [];
       const p = db.productionProjects.find(x => x.id === id);
       if (!p) return null;
@@ -3488,6 +3525,7 @@ class JSONDatabase {
 
   async generatePostShowReport(id, actor = 'Analytics Engine') {
     return this.mutate((db) => {
+      const d = db;
       db.productionProjects = db.productionProjects || [];
       const p = db.productionProjects.find(x => x.id === id);
       if (!p) return null;
@@ -3530,6 +3568,7 @@ class JSONDatabase {
 
   async setDeveloperLabEnabled(enabled, actor = 'PlatformOwner') {
     return this.mutate((db) => {
+      const d = db;
       db.featureFlags = db.featureFlags || {};
       db.featureFlags.developerLabEnabled = Boolean(enabled);
       db.developerAuditLogs = db.developerAuditLogs || [];
@@ -3547,6 +3586,7 @@ class JSONDatabase {
 
   async logDeveloperAudit(developerUserId, action, projectId = null, assetId = null, details = {}, result = 'SUCCESS') {
     return this.mutate((db) => {
+      const d = db;
       db.developerAuditLogs = db.developerAuditLogs || [];
       const entry = {
         id: `dev-audit-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -3574,6 +3614,7 @@ class JSONDatabase {
 
   async grantDeveloperAccess(ownerUserId, targetUserId) {
     return this.mutate((db) => {
+      const d = db;
       db.users = db.users || [];
       const targetUser = db.users.find(u => u.id === targetUserId || u.email === targetUserId);
       if (!targetUser) return { success: false, error: 'User not found' };
@@ -3598,6 +3639,7 @@ class JSONDatabase {
 
   async revokeDeveloperAccess(ownerUserId, targetUserId) {
     return this.mutate((db) => {
+      const d = db;
       db.users = db.users || [];
       const targetUser = db.users.find(u => u.id === targetUserId || u.email === targetUserId);
       if (!targetUser) return { success: false, error: 'User not found' };
@@ -3622,6 +3664,7 @@ class JSONDatabase {
 
   async createInternalDevProject(developerUserId, projectData) {
     return this.mutate((db) => {
+      const d = db;
       db.productionProjects = db.productionProjects || [];
       const now = new Date().toISOString();
       const projId = projectData.id || `dev-proj-${Date.now()}`;
@@ -3693,6 +3736,7 @@ class JSONDatabase {
 
   async publishInternalTestProject(developerUserId, projectId) {
     return this.mutate((db) => {
+      const d = db;
       db.productionProjects = db.productionProjects || [];
       const p = db.productionProjects.find(x => x.id === projectId);
       if (!p) return null;
@@ -3727,6 +3771,7 @@ class JSONDatabase {
 
   async recordTestAnalyticsEvent(eventData) {
     return this.mutate((db) => {
+      const d = db;
       db.testAnalyticsEvents = db.testAnalyticsEvents || [];
       const record = {
         id: `test-event-${Date.now()}-${Math.floor(Math.random()*1000)}`,
@@ -3754,6 +3799,7 @@ class JSONDatabase {
 
   async recordImageTransformation(developerUserId, record) {
     return this.mutate((db) => {
+      const d = db;
       db.imageTransformations = db.imageTransformations || [];
       const entry = {
         id: `img-tx-${Date.now()}`,
@@ -3809,6 +3855,7 @@ class JSONDatabase {
 
   async advanceJobStage(jobId, targetStage, payload = {}, actor = 'SystemOrchestrator') {
     return this.mutate((db) => {
+      const d = db;
       db.productionJobs = db.productionJobs || [];
       db.productionProjects = db.productionProjects || [];
       const job = db.productionJobs.find(j => j.jobId === jobId || j.projectId === jobId);
@@ -3980,6 +4027,7 @@ class JSONDatabase {
 
   async retryProductionJob(jobId, actor = 'Operator') {
     return this.mutate((db) => {
+      const d = db;
       db.productionJobs = db.productionJobs || [];
       const job = db.productionJobs.find(j => j.jobId === jobId || j.projectId === jobId);
       if (!job) return { success: false, error: 'Job not found' };
@@ -4014,6 +4062,7 @@ class JSONDatabase {
 
   async pauseProductionJob(jobId, reason = 'Operator hold', actor = 'Operator') {
     return this.mutate((db) => {
+      const d = db;
       db.productionJobs = db.productionJobs || [];
       const job = db.productionJobs.find(j => j.jobId === jobId);
       if (!job) return null;
@@ -4027,6 +4076,7 @@ class JSONDatabase {
 
   async resumeProductionJob(jobId, actor = 'Operator') {
     return this.mutate((db) => {
+      const d = db;
       db.productionJobs = db.productionJobs || [];
       const job = db.productionJobs.find(j => j.jobId === jobId);
       if (!job) return null;
@@ -4038,6 +4088,7 @@ class JSONDatabase {
 
   async cancelProductionJob(jobId, reason = 'Customer request', actor = 'Operator') {
     return this.mutate((db) => {
+      const d = db;
       db.productionJobs = db.productionJobs || [];
       const job = db.productionJobs.find(j => j.jobId === jobId);
       if (!job) return null;
@@ -4051,6 +4102,7 @@ class JSONDatabase {
 
   async handoffDiyToManaged(projectId, actor = 'Customer') {
     return this.mutate((db) => {
+      const d = db;
       db.productionProjects = db.productionProjects || [];
       db.productionJobs = db.productionJobs || [];
       const project = db.productionProjects.find(p => p.id === projectId);
@@ -4136,6 +4188,7 @@ class JSONDatabase {
 
   async duplicateProjectForNextShow(id, newShowData = {}, actor = 'Operations') {
     return this.mutate((db) => {
+      const d = db;
       db.productionProjects = db.productionProjects || [];
       const source = db.productionProjects.find(x => x.id === id);
       if (!source) return null;
@@ -4210,6 +4263,7 @@ class JSONDatabase {
 
   async createOrGetDiyDraft(projectId = null, exhibitorEmail = null, initialData = {}) {
     return this.mutate((db) => {
+      const d = db;
       db.productionProjects = db.productionProjects || [];
       const now = new Date().toISOString();
 
@@ -4301,6 +4355,7 @@ class JSONDatabase {
 
   async updateDiyCompany(projectId, companyData) {
     return this.mutate((db) => {
+      const d = db;
       const p = (db.productionProjects || []).find(x => x.id === projectId);
       if (!p) throw new Error(`Project ${projectId} not found`);
       const now = new Date().toISOString();
@@ -4335,6 +4390,7 @@ class JSONDatabase {
 
   async updateDiyShow(projectId, showData) {
     return this.mutate((db) => {
+      const d = db;
       const p = (db.productionProjects || []).find(x => x.id === projectId);
       if (!p) throw new Error(`Project ${projectId} not found`);
       const now = new Date().toISOString();
@@ -4360,6 +4416,7 @@ class JSONDatabase {
 
   async addOrUpdateDiyProduct(projectId, productData) {
     return this.mutate((db) => {
+      const d = db;
       const p = (db.productionProjects || []).find(x => x.id === projectId);
       if (!p) throw new Error(`Project ${projectId} not found`);
       const now = new Date().toISOString();
@@ -4429,6 +4486,7 @@ class JSONDatabase {
 
   async deleteDiyProduct(projectId, productId) {
     return this.mutate((db) => {
+      const d = db;
       const p = (db.productionProjects || []).find(x => x.id === projectId);
       if (!p) throw new Error(`Project ${projectId} not found`);
       const now = new Date().toISOString();
@@ -4453,6 +4511,7 @@ class JSONDatabase {
 
   async duplicateDiyProduct(projectId, productId) {
     return this.mutate((db) => {
+      const d = db;
       const p = (db.productionProjects || []).find(x => x.id === projectId);
       if (!p) throw new Error(`Project ${projectId} not found`);
       const prod = (p.products || []).find(x => x.id === productId);
@@ -4493,6 +4552,7 @@ class JSONDatabase {
 
   async bulkAddDiyProducts(projectId, productsList) {
     return this.mutate((db) => {
+      const d = db;
       const p = (db.productionProjects || []).find(x => x.id === projectId);
       if (!p) throw new Error(`Project ${projectId} not found`);
       const now = new Date().toISOString();
@@ -4544,6 +4604,7 @@ class JSONDatabase {
 
   async updateDiyAssets(projectId, assetUpdates) {
     return this.mutate((db) => {
+      const d = db;
       const p = (db.productionProjects || []).find(x => x.id === projectId);
       if (!p) throw new Error(`Project ${projectId} not found`);
       const now = new Date().toISOString();
@@ -4588,6 +4649,7 @@ class JSONDatabase {
 
   async updateDiyExperience(projectId, experienceType) {
     return this.mutate((db) => {
+      const d = db;
       const p = (db.productionProjects || []).find(x => x.id === projectId);
       if (!p) throw new Error(`Project ${projectId} not found`);
       const now = new Date().toISOString();
@@ -4611,6 +4673,7 @@ class JSONDatabase {
 
   async updateDiyTemplate(projectId, templateId, hotspotBindings = {}) {
     return this.mutate((db) => {
+      const d = db;
       const p = (db.productionProjects || []).find(x => x.id === projectId);
       if (!p) throw new Error(`Project ${projectId} not found`);
       const now = new Date().toISOString();
@@ -4629,6 +4692,7 @@ class JSONDatabase {
 
   async updateDiySettings(projectId, settingsData) {
     return this.mutate((db) => {
+      const d = db;
       const p = (db.productionProjects || []).find(x => x.id === projectId);
       if (!p) throw new Error(`Project ${projectId} not found`);
       const now = new Date().toISOString();
@@ -4679,6 +4743,7 @@ class JSONDatabase {
 
   async publishDiyProject(projectId, actor = 'Self-Service Customer') {
     return this.mutate((db) => {
+      const d = db;
       const p = (db.productionProjects || []).find(x => x.id === projectId);
       if (!p) throw new Error(`Project ${projectId} not found`);
       const readiness = this.calculateDiyReadiness(p);
@@ -4723,6 +4788,7 @@ class JSONDatabase {
 
   async handoffDiyToManaged(projectId, notes = '', actor = 'Customer') {
     return this.mutate((db) => {
+      const d = db;
       const p = (db.productionProjects || []).find(x => x.id === projectId);
       if (!p) throw new Error(`Project ${projectId} not found`);
       const now = new Date().toISOString();
@@ -4788,6 +4854,7 @@ class JSONDatabase {
 
   async submitDiyFeedback(payload) {
     return this.mutate((db) => {
+      const d = db;
       db.platformMessages = db.platformMessages || [];
       const now = new Date().toISOString();
       const fb = {
@@ -4824,6 +4891,7 @@ class JSONDatabase {
 
   async recordDiyAnalyticsEvent(projectId, eventType, metadata = {}) {
     return this.mutate((db) => {
+      const d = db;
       const p = (db.productionProjects || []).find(x => x.id === projectId);
       if (!p) return null;
 
@@ -4871,6 +4939,7 @@ class JSONDatabase {
 
   async updateLeadStatus(projectId, leadId, status, note = '', actor = 'Exhibitor') {
     return this.mutate((db) => {
+      const d = db;
       const p = (db.productionProjects || []).find(x => x.id === projectId);
       if (!p) throw new Error(`Project ${projectId} not found`);
       const lead = (p.leads || []).find(l => l.id === leadId);
@@ -4904,6 +4973,7 @@ class JSONDatabase {
 
   async createBuyerLead(projectId, leadData) {
     return this.mutate((db) => {
+      const d = db;
       const p = (db.productionProjects || []).find(x => x.id === projectId);
       if (!p) throw new Error(`Project ${projectId} not found`);
       const now = new Date().toISOString();
@@ -4979,6 +5049,7 @@ class JSONDatabase {
 
   async generateExhibitorPostShowReport(projectId) {
     return this.mutate((db) => {
+      const d = db;
       const p = (db.productionProjects || []).find(x => x.id === projectId);
       if (!p) throw new Error(`Project ${projectId} not found`);
       const now = new Date().toISOString();
@@ -5011,6 +5082,7 @@ class JSONDatabase {
 
   async recordPilotFeedback(feedbackData) {
     return this.mutate((db) => {
+      const d = db;
       db.pilotFeedback = db.pilotFeedback || [];
       const now = new Date().toISOString();
       const fb = {
@@ -5077,6 +5149,7 @@ class JSONDatabase {
 
   async trackAnalyticsEvent(eventData) {
     return this.mutate((db) => {
+      const d = db;
       const event = {
         id: `evt-${uuidv4().substring(0, 8)}`,
         eventType: eventData.eventType,
@@ -5598,6 +5671,7 @@ return event;
 
   createProject(userId, data = {}) {
     return this.mutate((db) => {
+      const d = db;
       db.productionProjects = db.productionProjects || [];
       const id = data.id || `proj-test-${Date.now()}-${Math.floor(Math.random()*1000)}`;
       const p = {
@@ -5623,6 +5697,7 @@ return event;
 
   createConsultationRequest(data) {
     return this.mutate((db) => {
+      const d = db;
       db.consultationRequests = db.consultationRequests || [];
       const service = data.serviceType || 'General Consultation';
       let prefix = '3DNA-PTN-';
@@ -5663,6 +5738,7 @@ return event;
 
   updateConsultationRequestStatus(id, status, notes = '') {
     return this.mutate((db) => {
+      const d = db;
       db.consultationRequests = db.consultationRequests || [];
       const req = db.consultationRequests.find(r => r.id === id);
       if (req) {
@@ -5819,6 +5895,7 @@ return event;
 
   async updateOrganizationSubscription(organizationId, subscriptionData) {
     return this.mutate((db) => {
+      const d = db;
       const org = db.organizations.find(o => o.id === organizationId);
       if (!org) throw new Error('Organization not found.');
 
@@ -5839,6 +5916,7 @@ return event;
 
   async logStripeEvent(eventData) {
     return this.mutate((db) => {
+      const d = db;
       db.stripeEvents = db.stripeEvents || [];
       const entry = {
         id: `str-evt-${uuidv4().substring(0, 8)}`,
@@ -5856,6 +5934,7 @@ return event;
 
   async logBillingEvent(data) {
     return this.mutate((db) => {
+      const d = db;
       db.billingEvents = db.billingEvents || [];
       const entry = {
         id: `bil-${uuidv4().substring(0, 8)}`,
@@ -5888,6 +5967,7 @@ return event;
 
   async createUpgradeRequest(data) {
     return this.mutate((db) => {
+      const d = db;
       db.upgradeRequests = db.upgradeRequests || [];
       const req = {
         id: `upg-${uuidv4().substring(0, 8)}`,
@@ -5914,6 +5994,7 @@ return event;
 
   async resolveUpgradeRequest(requestId, status, resolutionNotes = '', authorUserId = null) {
     return this.mutate((db) => {
+      const d = db;
       db.upgradeRequests = db.upgradeRequests || [];
       const req = db.upgradeRequests.find(u => u.id === requestId);
       if (!req) throw new Error('Upgrade request not found.');
@@ -5931,6 +6012,7 @@ return event;
 
   async cancelSubscription(organizationId) {
     return this.mutate((db) => {
+      const d = db;
       const org = db.organizations.find(o => o.id === organizationId);
       if (!org) throw new Error('Organization not found.');
       org.subscription = org.subscription || {};
@@ -5944,6 +6026,7 @@ return event;
 
   async reactivateSubscription(organizationId) {
     return this.mutate((db) => {
+      const d = db;
       const org = db.organizations.find(o => o.id === organizationId);
       if (!org) throw new Error('Organization not found.');
       org.subscription = org.subscription || {};
@@ -5960,6 +6043,7 @@ return event;
       throw new Error('Invalid plan. Must be pro or business.');
     }
     return this.mutate((db) => {
+      const d = db;
       const org = db.organizations.find(o => o.id === organizationId);
       if (!org) throw new Error('Organization not found.');
       org.subscription = org.subscription || {};
@@ -5973,6 +6057,7 @@ return event;
 
   async simulatePaymentFailure(organizationId) {
     return this.mutate((db) => {
+      const d = db;
       let org = db.organizations.find(o => o.id === organizationId);
       if (!org) {
         org = {
@@ -6076,6 +6161,7 @@ return event;
     const fiveSecondsAgo = new Date(Date.now() - 5 * 1000).toISOString();
 
     return this.mutate((db) => {
+      const d = db;
       db.emailVerifications = db.emailVerifications || [];
 
       // Rate limit check
@@ -6171,6 +6257,7 @@ return event;
     }
 
     return this.mutate((db) => {
+      const d = db;
       db.emailVerifications = db.emailVerifications || [];
       const entry = db.emailVerifications.slice().reverse().find(v => v.normalizedEmail === normEmail && (v.status === 'VERIFICATION_SENT' || v.status === 'VERIFIED'));
       if (!entry) {
@@ -6312,6 +6399,7 @@ return event;
     }
 
     return this.mutate((db) => {
+      const d = db;
       db.emailVerifications = db.emailVerifications || [];
       const entry = db.emailVerifications.slice().reverse().find(v => v.normalizedEmail === normEmail && v.status === 'VERIFICATION_SENT');
       if (!entry) {
@@ -6494,6 +6582,7 @@ return event;
     const isDevProject = isSpecialDev || bypass;
 
     return this.mutate((db) => {
+      const d = db;
       db.projects = db.projects || [];
       db.freePreviewUsages = db.freePreviewUsages || [];
       db.organizations = db.organizations || [];
@@ -6678,6 +6767,15 @@ return event;
       };
       db.projects.push(project);
 
+      db.customerTimelineEvents = db.customerTimelineEvents || [];
+      db.customerTimelineEvents.push({
+        id: `tl-${uuidv4().substring(0, 8)}`,
+        accountId: project.accountId || null,
+        eventType: 'BOOTH_CREATED',
+        details: { projectId: project.id, businessName: project.businessName },
+        timestamp: new Date().toISOString()
+      });
+
       // 3. Record Free Usage (Isolated for developer testing)
       const usageRow = {
         usageId: `use-${uuidv4().substring(0, 8)}`,
@@ -6713,6 +6811,7 @@ return event;
 
   async addFreePreviewProductAndPinpoint(projectId, { slotIndex, productName, imageUrl, description, u, v, actor = 'Customer' }) {
     return this.mutate((db) => {
+      const d = db;
       const project = (db.projects || []).find(p => p.id === projectId);
       if (!project) throw new Error('Project not found.');
 
@@ -6777,6 +6876,7 @@ return event;
 
   async recordFreeFunnelEvent(projectId, eventName, metadata = {}) {
     return this.mutate((db) => {
+      const d = db;
       const project = (db.projects || []).find(p => p.id === projectId);
       const eventObj = {
         eventId: `evt-${uuidv4().substring(0, 8)}`,
@@ -6805,6 +6905,7 @@ return event;
 
   async saveFreePreviewEmail(projectId, email) {
     return this.mutate((db) => {
+      const d = db;
       const project = (db.projects || []).find(p => p.id === projectId);
       if (!project) throw new Error('Project not found.');
       project.contactEmail = email.toLowerCase().trim();
@@ -6825,6 +6926,7 @@ return event;
       throw new Error('Invalid plan selection.');
     }
     return this.mutate((db) => {
+      const d = db;
       const project = (db.projects || []).find(p => p.id === projectId);
       if (!project) throw new Error('Project not found.');
 
@@ -6856,6 +6958,7 @@ return event;
 
   async claimFreePreviewProject(projectId, { email, name, organizationId = null }) {
     return this.mutate((db) => {
+      const d = db;
       const project = (db.projects || []).find(p => p.id === projectId);
       if (!project) throw new Error('Project not found.');
 
@@ -6895,6 +6998,7 @@ return event;
 
   async createCustomSalesTicket(projectId, { company, email, tradeShow, showDate, productCount, desiredServices }) {
     return this.mutate((db) => {
+      const d = db;
       db.salesTickets = db.salesTickets || [];
       const project = (db.projects || []).find(p => p.id === projectId);
       if (project) {
@@ -6922,6 +7026,7 @@ return event;
 
   async updateProjectCommercialState(projectId, newState, planKey = null) {
     return this.mutate((db) => {
+      const d = db;
       const project = (db.projects || []).find(p => p.id === projectId);
       if (!project) return null;
       project.commercialState = newState;
@@ -6951,6 +7056,7 @@ return event;
 
   async resetFreePreviewUsages() {
     return this.mutate((db) => {
+      const d = db;
       db.freePreviewUsages = [];
       return { success: true, message: 'Free preview usages reset.' };
     });
@@ -6966,6 +7072,7 @@ return event;
 
   async createPlatformMessage(data) {
     return this.mutate((db) => {
+      const d = db;
       db.platformMessages = db.platformMessages || [];
       const msg = {
         id: `msg-${uuidv4().substring(0, 8)}`,
@@ -7007,6 +7114,7 @@ return event;
 
   async markMessageRead(messageId, userId, organizationId) {
     return this.mutate((db) => {
+      const d = db;
       db.platformMessages = db.platformMessages || [];
       const msg = db.platformMessages.find(m => m.id === messageId);
       if (!msg) throw new Error('Message not found.');
@@ -7020,6 +7128,7 @@ return event;
 
   async replyToPlatformMessage(messageId, replyData) {
     return this.mutate((db) => {
+      const d = db;
       db.platformMessages = db.platformMessages || [];
       const msg = db.platformMessages.find(m => m.id === messageId);
       if (!msg) throw new Error('Message not found.');
@@ -7160,6 +7269,7 @@ return event;
 
   async overrideOrganizationPlan(organizationId, newPlan, source = 'manual_beta', notes = '', authorUserId = null) {
     return this.mutate((db) => {
+      const d = db;
       const org = db.organizations.find(o => o.id === organizationId);
       if (!org) throw new Error('Organization not found.');
 
@@ -7193,6 +7303,7 @@ return event;
 
   async suspendOrganization(organizationId, reason = '', authorUserId = null) {
     return this.mutate((db) => {
+      const d = db;
       const org = db.organizations.find(o => o.id === organizationId);
       if (!org) throw new Error('Organization not found.');
       org.status = 'suspended';
@@ -7217,6 +7328,7 @@ return event;
 
   async unsuspendOrganization(organizationId, authorUserId = null) {
     return this.mutate((db) => {
+      const d = db;
       const org = db.organizations.find(o => o.id === organizationId);
       if (!org) throw new Error('Organization not found.');
       org.status = 'active';
@@ -7239,6 +7351,7 @@ return event;
 
   async addOwnerNote(organizationId, authorUserId, noteText, category = 'general') {
     return this.mutate((db) => {
+      const d = db;
       db.ownerNotes = db.ownerNotes || [];
       const note = {
         id: `note-${uuidv4().substring(0, 8)}`,
@@ -7289,6 +7402,7 @@ return event;
 
   async updateFeatureFlags(flags, authorUserId = null) {
     return this.mutate((db) => {
+      const d = db;
       db.featureFlags = {
         ...(db.featureFlags || {}),
         ...flags
@@ -7340,6 +7454,7 @@ return event;
     const tempPassword = generateSecureTempPassword(16);
 
     return this.mutate((db) => {
+      const d = db;
       // 1. Create Organization with strict REAL classification
       const orgId = `org-real-${uuidv4().substring(0, 8)}`;
       const org = {
@@ -7554,6 +7669,7 @@ return event;
 
   async recordLegalApproval(docType, { status, approvedBy, reviewNotes }, authorUserId = null) {
     return this.mutate((db) => {
+      const d = db;
       db.featureFlags = db.featureFlags || {};
       const keyStatus = `${docType}LegalApproval`;
       const keyBy = `${docType}LegalApprovalBy`;
@@ -7593,6 +7709,7 @@ return event;
 
   async recordTaxReview({ status, reviewedBy, notes, answers = {} }, authorUserId = null) {
     return this.mutate((db) => {
+      const d = db;
       db.featureFlags = db.featureFlags || {};
       db.featureFlags.taxReviewStatus = status || 'review_required';
       db.featureFlags.taxReviewedBy = reviewedBy || '';
@@ -7707,6 +7824,7 @@ return event;
 
   async createCaptureDataset(boothId, options = {}) {
     return this.mutate((db) => {
+      const d = db;
       db.captures = db.captures || [];
       const booth = (db.booths || []).find(b => b.id === boothId);
       if (!booth) throw new Error('Booth not found');
@@ -7733,6 +7851,7 @@ return event;
 
   async addImagesToCapture(captureId, newImages = []) {
     return this.mutate((db) => {
+      const d = db;
       db.captures = db.captures || [];
       const c = db.captures.find(x => x.id === captureId);
       if (!c) throw new Error('Capture dataset not found');
@@ -7776,6 +7895,7 @@ return event;
 
   async saveBooth3DSettings(boothId, settings = {}) {
     return this.mutate((db) => {
+      const d = db;
       const booth = (db.booths || []).find(b => b.id === boothId);
       if (!booth) throw new Error('Booth not found');
 
@@ -7792,6 +7912,7 @@ return event;
   // --- Product 3D Model API ---
   async updateProduct3DModel(productId, modelData = {}) {
     return this.mutate((db) => {
+      const d = db;
       const p = (db.products || []).find(x => x.id === productId);
       if (!p) throw new Error('Product not found');
 
@@ -8002,6 +8123,7 @@ return event;
     const sanitize = (str) => typeof str === 'string' ? str.replace(/<[^>]*>/g, '').trim() : '';
 
     return this.mutate((db) => {
+      const d = db;
       db.acquisitionLeads = db.acquisitionLeads || [];
       const leadId = `acq-${uuidv4().substring(0, 8)}`;
       const lead = {
@@ -8076,6 +8198,7 @@ return event;
 
   async updateAcquisitionLeadStage(leadId, { stage, notes, nextAction, followUpDate }, authorUserId = null) {
     return this.mutate((db) => {
+      const d = db;
       db.acquisitionLeads = db.acquisitionLeads || [];
       const lead = db.acquisitionLeads.find(l => l.id === leadId);
       if (!lead) throw new Error('Acquisition lead not found');
@@ -8131,6 +8254,7 @@ return event;
   // --- Value Milestone Engine ---
   async recordValueMilestone(data) {
     return this.mutate((db) => {
+      const d = db;
       db.valueMilestones = db.valueMilestones || [];
       // Deduplicate one-time milestones for same org
       const exists = db.valueMilestones.find(
@@ -8211,6 +8335,7 @@ return event;
 
   async recordCustomerFeedback(data) {
     return this.mutate((db) => {
+      const d = db;
       db.customerFeedback = db.customerFeedback || [];
       const entry = {
         id: `fb-${uuidv4().substring(0, 8)}`,
@@ -8265,6 +8390,7 @@ return event;
     }
 
     return this.mutate((db) => {
+      const d = db;
       db.upgradeIntents = db.upgradeIntents || [];
       const intent = {
         id: `upg-${uuidv4().substring(0, 8)}`,
@@ -8307,6 +8433,7 @@ return event;
     const sanitize = (str) => typeof str === 'string' ? str.replace(/<[^>]*>/g, '').trim() : '';
 
     return this.mutate((db) => {
+      const d = db;
       db.outreachProspects = db.outreachProspects || [];
       const currentRealCount = db.outreachProspects.filter(p => p.dataEnvironment === 'REAL').length;
       const imported = [];
@@ -8426,6 +8553,7 @@ return event;
 
   async updateProspectOutreach(prospectId, actionData, authorUserId = null) {
     return this.mutate((db) => {
+      const d = db;
       const p = (db.outreachProspects || []).find(x => x.id === prospectId);
       if (!p) throw new Error('Prospect not found');
 
@@ -8475,6 +8603,7 @@ return event;
 
   async setProspectDoNotContact(prospectId, reason = 'Customer request', authorUserId = null) {
     return this.mutate((db) => {
+      const d = db;
       const p = (db.outreachProspects || []).find(x => x.id === prospectId);
       if (!p) throw new Error('Prospect not found');
 
@@ -8582,6 +8711,7 @@ return event;
   // --- Phase 10.7N Wilo Golden Demo Engine ---
   ensureWiloGoldenDemo() {
     return this.mutate((db) => {
+      const d = db;
       db.organizations = db.organizations || [];
       db.booths = db.booths || [];
       db.products = db.products || [];
@@ -8925,6 +9055,7 @@ return event;
     const sanitize = (str) => typeof str === 'string' ? str.replace(/<[^>]*>/g, '').trim() : '';
 
     return this.mutate((db) => {
+      const d = db;
       db.demoFeedbacks = db.demoFeedbacks || [];
       const item = {
         id: `fb-${uuidv4().substring(0, 8)}`,
@@ -8953,6 +9084,7 @@ return event;
     const sanitize = (str) => typeof str === 'string' ? str.replace(/<[^>]*>/g, '').trim() : '';
 
     return this.mutate((db) => {
+      const d = db;
       db.consultationTickets = db.consultationTickets || [];
       const ticket = {
         id: `ticket-${uuidv4().substring(0, 8)}`,
@@ -8999,6 +9131,7 @@ return event;
 
   async updateConsultationTicket(ticketId, updateData, authorUserId = null) {
     return this.mutate((db) => {
+      const d = db;
       const t = (db.consultationTickets || []).find(x => x.id === ticketId);
       if (!t) throw new Error('Consultation ticket not found');
 
@@ -9093,6 +9226,7 @@ return event;
 
   async updateCompanyProfile(projectId, data, token) {
     return this.mutate((db) => {
+      const d = db;
       const project = (db.projects || []).find(p => p.id === projectId);
       if (!project) {
         const err = new Error('Project not found.');
@@ -9132,6 +9266,7 @@ return event;
 
   async updateProjectLogo(projectId, logoData, token) {
     return this.mutate((db) => {
+      const d = db;
       const project = (db.projects || []).find(p => p.id === projectId);
       if (!project) {
         const err = new Error('Project not found.');
@@ -9160,6 +9295,7 @@ return event;
     if (isNaN(slot) || slot < 1) slot = 1;
 
     return this.mutate((db) => {
+      const d = db;
       const project = (db.projects || []).find(p => p.id === projectId);
       if (!project) {
         const err = new Error('Project not found.');
@@ -9231,6 +9367,14 @@ return event;
       }
 
       project.updatedAt = new Date().toISOString();
+      db.customerTimelineEvents = db.customerTimelineEvents || [];
+      db.customerTimelineEvents.push({
+        id: `tl-${uuidv4().substring(0, 8)}`,
+        accountId: project.accountId || account?.id,
+        eventType: 'PRODUCT_ADDED',
+        details: { projectId: project.id, slotIndex: slot, productName: product.name },
+        timestamp: new Date().toISOString()
+      });
       return { success: true, product, project };
     });
   }
@@ -9238,6 +9382,7 @@ return event;
   async clearProductSlot(projectId, slotIndex, token) {
     const slot = parseInt(slotIndex, 10);
     return this.mutate((db) => {
+      const d = db;
       const project = (db.projects || []).find(p => p.id === projectId);
       if (!project) {
         const err = new Error('Project not found.');
@@ -9283,6 +9428,7 @@ return event;
 
   async savePinpoints(projectId, pinpointsArray, token) {
     return this.mutate((db) => {
+      const d = db;
       const project = (db.projects || []).find(p => p.id === projectId);
       if (!project) {
         const err = new Error('Project not found.');
@@ -9311,12 +9457,21 @@ return event;
       }
 
       project.updatedAt = new Date().toISOString();
+      db.customerTimelineEvents = db.customerTimelineEvents || [];
+      db.customerTimelineEvents.push({
+        id: `tl-${uuidv4().substring(0, 8)}`,
+        accountId: project.accountId,
+        eventType: 'PINPOINT_UPDATED',
+        details: { projectId: project.id, pinpointsCount: (pinpointsArray || []).length },
+        timestamp: new Date().toISOString()
+      });
       return { success: true, pinpoints: project.pinpoints, project };
     });
   }
 
   async updateBuyerActions(projectId, actions, token) {
     return this.mutate((db) => {
+      const d = db;
       const project = (db.projects || []).find(p => p.id === projectId);
       if (!project) {
         const err = new Error('Project not found.');
@@ -9346,6 +9501,7 @@ return event;
     try { QRCode = require('qrcode'); } catch(e) {}
 
     return this.mutate(async (db) => {
+      const d = db;
       const project = (db.projects || []).find(p => p.id === projectId);
       if (!project) {
         const err = new Error('Project not found.');
@@ -9389,6 +9545,15 @@ return event;
         project.qrCodeDataUrl = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="100%" height="100%" fill="white"/></svg>`;
       }
 
+      db.customerTimelineEvents = db.customerTimelineEvents || [];
+      db.customerTimelineEvents.push({
+        id: `tl-${uuidv4().substring(0, 8)}`,
+        accountId: project.accountId || null,
+        eventType: 'BOOTH_PUBLISHED',
+        details: { projectId: project.id, publicSlug: project.publicSlug },
+        timestamp: new Date().toISOString()
+      });
+
       return {
         success: true,
         publishStatus: project.publishStatus,
@@ -9402,6 +9567,7 @@ return event;
 
   async unpublishBooth(projectId, token) {
     return this.mutate((db) => {
+      const d = db;
       const project = (db.projects || []).find(p => p.id === projectId);
       if (!project) {
         const err = new Error('Project not found.');
@@ -9467,6 +9633,7 @@ return event;
 
   async createLead(leadInput) {
     return this.mutate(async (db) => {
+      const d = db;
       db.leads = db.leads || [];
 
       const project = (db.projects || []).find(p => p.id === leadInput.projectId || p.publicSlug === leadInput.publicSlug);
@@ -9514,6 +9681,17 @@ return event;
       db.analyticsEvents = db.analyticsEvents || [];
       db.analyticsEvents.push(evt);
 
+      db.customerTimelineEvents = db.customerTimelineEvents || [];
+      const tlType = lead.leadType === 'SAMPLE_REQUEST' ? 'SAMPLE_REQUEST_RECEIVED' :
+                     lead.leadType === 'MEETING_REQUEST' ? 'MEETING_REQUEST_RECEIVED' : 'RFQ_RECEIVED';
+      db.customerTimelineEvents.push({
+        id: `tl-${uuidv4().substring(0, 8)}`,
+        accountId: project ? project.accountId : null,
+        eventType: tlType,
+        details: { leadId: lead.leadId, projectId, leadType: lead.leadType, buyerCompany: lead.visitorCompany },
+        timestamp: new Date().toISOString()
+      });
+
       return lead;
     });
   }
@@ -9544,6 +9722,7 @@ return event;
     }
 
     return this.mutate((db) => {
+      const d = db;
       const project = (db.projects || []).find(p => p.id === projectId);
       if (!project) {
         const err = new Error('Project not found.');
@@ -9678,7 +9857,8 @@ return event;
       throw new Error('Valid email address is required.');
     }
 
-    return this.mutate((d) => {
+    return this.mutate((db) => {
+      const d = db;
       d.accounts = d.accounts || [];
       let account = d.accounts.find(a => a.emailNormalized === emailNorm);
 
@@ -9740,7 +9920,8 @@ return event;
     const sessionToken = `cust-sess-${crypto.randomBytes(24).toString('hex')}`;
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days
 
-    return this.mutate((d) => {
+    return this.mutate((db) => {
+      const d = db;
       d.customerSessions = d.customerSessions || [];
       const session = {
         token: sessionToken,
@@ -9785,7 +9966,8 @@ return event;
   }
 
   async invalidateCustomerSession(token) {
-    return this.mutate((d) => {
+    return this.mutate((db) => {
+      const d = db;
       d.customerSessions = d.customerSessions || [];
       const idx = d.customerSessions.findIndex(s => s.token === token);
       if (idx !== -1) {
@@ -9960,7 +10142,8 @@ return event;
   }
 
   async updateCustomerAccount(accountId, updates = {}) {
-    return this.mutate((d) => {
+    return this.mutate((db) => {
+      const d = db;
       d.accounts = d.accounts || [];
       const account = d.accounts.find(a => a.id === accountId);
       if (!account) throw new Error('Account not found.');
@@ -9971,12 +10154,21 @@ return event;
       if (updates.website !== undefined) account.website = updates.website;
 
       account.updatedAt = new Date().toISOString();
+      db.customerTimelineEvents = db.customerTimelineEvents || [];
+      db.customerTimelineEvents.push({
+        id: `tl-${uuidv4().substring(0, 8)}`,
+        accountId: account.id,
+        eventType: 'PROFILE_UPDATED',
+        details: { businessName: account.businessName, displayName: account.displayName },
+        timestamp: new Date().toISOString()
+      });
       return { success: true, account };
     });
   }
 
   async claimBoothToAccount(projectId, accountId, token = null) {
-    return this.mutate((d) => {
+    return this.mutate((db) => {
+      const d = db;
       const project = (d.projects || []).find(p => p.id === projectId);
       if (!project) throw new Error('Project not found.');
 
@@ -10091,7 +10283,8 @@ return event;
   async upgradeEntitlementSimulate(accountId, targetPlanCode, reason = 'DEV_SIMULATION', actor = 'SYSTEM') {
     const targetPlan = plans.normalizePlanCode(targetPlanCode);
 
-    return this.mutate((d) => {
+    return this.mutate((db) => {
+      const d = db;
       d.accounts = d.accounts || [];
       const account = d.accounts.find(a => a.id === accountId);
       if (!account) {
@@ -10128,7 +10321,14 @@ return event;
         timestamp: new Date().toISOString()
       };
       d.entitlementAuditLogs.push(auditEntry);
-
+      db.customerTimelineEvents = db.customerTimelineEvents || [];
+      db.customerTimelineEvents.push({
+        id: `tl-${uuidv4().substring(0, 8)}`,
+        accountId: account.id,
+        eventType: 'ENTITLEMENT_CHANGED',
+        details: { fromPlan: prevPlan, toPlan: planDef.code },
+        timestamp: new Date().toISOString()
+      });
       return {
         success: true,
         account,
@@ -10140,7 +10340,8 @@ return event;
   }
 
   async createUpgradeRequest(accountId, requestData) {
-    return this.mutate((d) => {
+    return this.mutate((db) => {
+      const d = db;
       d.accounts = d.accounts || [];
       const account = d.accounts.find(a => a.id === accountId);
       const email = account ? account.emailNormalized : this.normalizeEmail(requestData.email);
@@ -10165,7 +10366,16 @@ return event;
 
       d.upgradeRequests = d.upgradeRequests || [];
       d.upgradeRequests.push(reqRecord);
-
+      if (reqRecord.accountId) {
+        db.customerTimelineEvents = db.customerTimelineEvents || [];
+        db.customerTimelineEvents.push({
+          id: `tl-${uuidv4().substring(0, 8)}`,
+          accountId: reqRecord.accountId,
+          eventType: 'UPGRADE_REQUESTED',
+          details: { requestId: reqRecord.requestId, requestedPlan: reqRecord.requestedPlan },
+          timestamp: new Date().toISOString()
+        });
+      }
       // Record in consultations for CRM consistency
       d.consultations = d.consultations || [];
       d.consultations.push({
@@ -10184,7 +10394,299 @@ return event;
     });
   }
 
+  // ============================================================
+  // --- C11.15 OPERATOR TOOLS, TIMELINE & FIRST CUSTOMER GATE ---
+  // ============================================================
+
+  async logCustomerTimelineEvent(accountId, eventType, details = {}, metadata = {}) {
+    return this.mutate((db) => {
+      const d = db;
+      db.customerTimelineEvents = db.customerTimelineEvents || [];
+      const event = {
+        id: `tl-${uuidv4().substring(0, 8)}`,
+        accountId,
+        eventType,
+        details,
+        metadata,
+        timestamp: new Date().toISOString()
+      };
+      db.customerTimelineEvents.push(event);
+      return event;
+    });
+  }
+
+    getCustomerTimeline(accountId) {
+    const db = this.memoryData;
+    const account = (db.accounts || []).find(a => a.id === accountId);
+    if (!account) return [];
+    const norm = this.normalizeEmail(account.emailNormalized);
+    const ownedProjects = (db.projects || []).filter(p => 
+      p.accountId === accountId || (norm && this.normalizeEmail(p.contactEmail || p.customerEmail || p.email) === norm)
+    );
+    const ownedProjectIds = ownedProjects.map(p => p.id);
+
+    const events = (db.customerTimelineEvents || []).filter(e => 
+      e.accountId === accountId || (e.details && e.details.projectId && ownedProjectIds.includes(e.details.projectId))
+    );
+    return events.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  }
+
+  searchCustomers(query = '') {
+    const d = this.memoryData;
+    const qNorm = (query || '').toLowerCase().trim();
+    const accounts = d.accounts || [];
+
+    const matched = accounts.filter(acc => {
+      if (!qNorm) return true;
+      const accId = (acc.id || '').toLowerCase();
+      const email = (acc.emailNormalized || '').toLowerCase();
+      const bizName = (acc.businessName || '').toLowerCase();
+      const dispName = (acc.displayName || '').toLowerCase();
+      
+      if (accId.includes(qNorm) || email.includes(qNorm) || bizName.includes(qNorm) || dispName.includes(qNorm)) {
+        return true;
+      }
+
+      // Match by owned projects/booths/slugs
+      const ownedProjects = (d.projects || []).filter(p => p.accountId === acc.id || p.contactEmail === acc.emailNormalized);
+      return ownedProjects.some(p => 
+        (p.id || '').toLowerCase().includes(qNorm) ||
+        (p.publicSlug || '').toLowerCase().includes(qNorm) ||
+        (p.businessName || '').toLowerCase().includes(qNorm) ||
+        (p.name || '').toLowerCase().includes(qNorm)
+      );
+    });
+
+    return matched.map(acc => {
+      const ownedProjects = (d.projects || []).filter(p => p.accountId === acc.id || p.contactEmail === acc.emailNormalized);
+      const ownedProjectIds = ownedProjects.map(p => p.id);
+      const ownedLeads = (d.leads || []).filter(l => ownedProjectIds.includes(l.projectId) || l.accountId === acc.id);
+      
+      let totalProducts = 0;
+      ownedProjects.forEach(p => {
+        totalProducts += (p.products || []).filter(pr => pr.name && pr.status !== 'DELETED').length;
+      });
+
+      const upgradeReqs = (d.upgradeRequests || []).filter(u => u.accountId === acc.id || u.email === acc.emailNormalized);
+      const latestUpg = upgradeReqs[upgradeReqs.length - 1];
+
+      return {
+        accountId: acc.id,
+        email: acc.emailNormalized,
+        businessName: acc.businessName || 'Exhibitor Company',
+        displayName: acc.displayName || '',
+        phone: acc.phone || '',
+        website: acc.website || '',
+        entitlement: acc.planCode || acc.entitlement || 'FREE_BOOTH',
+        entitlementStatus: acc.entitlementStatus || 'ACTIVE',
+        pilotState: acc.pilotState || (acc.isTest ? 'INTERNAL_REHEARSAL' : 'NOT_SELECTED'),
+        boothsCount: ownedProjects.length,
+        productsCount: totalProducts,
+        leadsCount: ownedLeads.length,
+        upgradeRequestStatus: latestUpg ? latestUpg.status : 'NONE',
+        isTest: Boolean(acc.isTest),
+        createdAt: acc.createdAt,
+        updatedAt: acc.updatedAt,
+        lastLoginAt: acc.lastLoginAt || acc.updatedAt
+      };
+    });
+  }
+
+  getCustomerSupportContext(accountId) {
+    const d = this.memoryData;
+    const account = (d.accounts || []).find(a => a.id === accountId);
+    if (!account) return null;
+
+    const norm = this.normalizeEmail(account.emailNormalized);
+    const ownedProjects = (d.projects || []).filter(p => 
+      p.accountId === accountId || (norm && this.normalizeEmail(p.contactEmail || p.customerEmail || p.email) === norm)
+    );
+    const ownedProjectIds = ownedProjects.map(p => p.id);
+    const ownedLeads = (d.leads || []).filter(l => ownedProjectIds.includes(l.projectId) || l.accountId === accountId);
+    const upgradeRequests = (d.upgradeRequests || []).filter(u => u.accountId === accountId || u.email === norm);
+    const notes = (d.operatorNotes || []).filter(n => n.accountId === accountId);
+    const timeline = this.getCustomerTimeline(accountId);
+    const usage = this.getAccountUsage(accountId);
+
+    return {
+      account: {
+        accountId: account.id,
+        email: account.emailNormalized,
+        businessName: account.businessName || 'Exhibitor Company',
+        displayName: account.displayName || '',
+        phone: account.phone || '',
+        website: account.website || '',
+        entitlement: account.planCode || account.entitlement || 'FREE_BOOTH',
+        entitlementStatus: account.entitlementStatus || 'ACTIVE',
+        pilotState: account.pilotState || (account.isTest ? 'INTERNAL_REHEARSAL' : 'NOT_SELECTED'),
+        isTest: Boolean(account.isTest),
+        createdAt: account.createdAt,
+        updatedAt: account.updatedAt,
+        lastLoginAt: account.lastLoginAt || account.updatedAt
+      },
+      entitlement: usage,
+      booths: ownedProjects.map(p => ({
+        projectId: p.id,
+        boothId: p.boothId || p.id,
+        name: p.name || p.businessName,
+        businessName: p.businessName,
+        status: p.status || 'DRAFT',
+        publicSlug: p.publicSlug || null,
+        productsCount: (p.products || []).filter(pr => pr.name && pr.status !== 'DELETED').length,
+        pinpointsCount: (p.pinpoints || []).length,
+        sourceAsset: p.sourceAsset || null,
+        updatedAt: p.updatedAt
+      })),
+      leads: ownedLeads.map(l => ({
+        leadId: l.leadId || l.id,
+        projectId: l.projectId,
+        publicSlug: l.publicSlug,
+        leadType: l.leadType,
+        buyerName: l.buyerName,
+        buyerEmail: l.buyerEmail,
+        buyerCompany: l.buyerCompany,
+        status: l.status || 'NEW',
+        createdAt: l.createdAt
+      })),
+      upgradeRequests: upgradeRequests.map(u => ({
+        requestId: u.requestId,
+        currentPlan: u.currentPlan,
+        requestedPlan: u.requestedPlan,
+        status: u.status,
+        requirements: u.requirements,
+        createdAt: u.createdAt,
+        updatedAt: u.updatedAt
+      })),
+      notes: notes.map(n => ({
+        id: n.id,
+        note: n.note,
+        author: n.author,
+        createdAt: n.createdAt
+      })),
+      timeline
+    };
+  }
+
+  async addOperatorNote(accountId, noteText, author = 'OPERATOR') {
+    if (!noteText || !noteText.trim()) throw new Error('Note text is required.');
+    return this.mutate((db) => {
+      const d = db;
+      d.operatorNotes = d.operatorNotes || [];
+      const noteRecord = {
+        id: `note-${uuidv4().substring(0, 8)}`,
+        accountId,
+        note: noteText.trim(),
+        author: author || 'OPERATOR',
+        createdAt: new Date().toISOString()
+      };
+      d.operatorNotes.push(noteRecord);
+      return { success: true, note: noteRecord };
+    });
+  }
+
+  async updateCustomerPilotState(accountId, pilotState, reason = '', updatedBy = 'OWNER') {
+    const validStates = ['NOT_SELECTED', 'SELECTED', 'ONBOARDING', 'ACTIVE_PILOT', 'PAUSED', 'COMPLETED', 'BLOCKED', 'INTERNAL_REHEARSAL'];
+    if (!validStates.includes(pilotState)) {
+      throw new Error(`Invalid pilotState. Allowed: ${validStates.join(', ')}`);
+    }
+
+    return this.mutate((db) => {
+      const d = db;
+      const account = (d.accounts || []).find(a => a.id === accountId);
+      if (!account) throw new Error('Account not found.');
+
+      const prevState = account.pilotState || 'NOT_SELECTED';
+      account.pilotState = pilotState;
+      account.updatedAt = new Date().toISOString();
+
+      db.customerTimelineEvents = db.customerTimelineEvents || [];
+      db.customerTimelineEvents.push({
+        id: `tl-${uuidv4().substring(0, 8)}`,
+        accountId,
+        eventType: 'PILOT_STATE_CHANGED',
+        details: { prevState, newState: pilotState, reason, updatedBy },
+        timestamp: new Date().toISOString()
+      });
+
+      return { success: true, accountId, prevState, pilotState };
+    });
+  }
+
+  getOperatorUpgradeRequests(statusFilter = null) {
+    const d = this.memoryData;
+    let reqs = d.upgradeRequests || [];
+    if (statusFilter) {
+      reqs = reqs.filter(r => r.status === statusFilter);
+    }
+    return reqs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  async updateUpgradeRequestStatus(requestId, newStatus, notes = '') {
+    const validStatuses = ['REQUESTED', 'CONTACTED', 'APPROVED', 'DECLINED', 'COMPLETED'];
+    if (!validStatuses.includes(newStatus)) {
+      throw new Error(`Invalid status. Allowed: ${validStatuses.join(', ')}`);
+    }
+
+    return this.mutate((db) => {
+      const d = db;
+      const req = (d.upgradeRequests || []).find(r => r.requestId === requestId);
+      if (!req) throw new Error('Upgrade request not found.');
+
+      const prevStatus = req.status;
+      req.status = newStatus;
+      req.operatorNotes = notes || req.operatorNotes;
+      req.updatedAt = new Date().toISOString();
+
+      return { success: true, requestId, prevStatus, currentStatus: newStatus };
+    });
+  }
+
+  resolveCustomerDataGraph(accountId) {
+    const d = this.memoryData;
+    const account = (d.accounts || []).find(a => a.id === accountId);
+    if (!account) return null;
+
+    const norm = this.normalizeEmail(account.emailNormalized);
+    const ownedProjects = (d.projects || []).filter(p => 
+      p.accountId === accountId || (norm && this.normalizeEmail(p.contactEmail || p.customerEmail || p.email) === norm)
+    );
+    const ownedProjectIds = ownedProjects.map(p => p.id);
+    const ownedLeads = (d.leads || []).filter(l => ownedProjectIds.includes(l.projectId) || l.accountId === accountId);
+    const analytics = (d.analyticsEvents || []).filter(e => ownedProjectIds.includes(e.projectId));
+    const upgradeRequests = (d.upgradeRequests || []).filter(u => u.accountId === accountId || u.email === norm);
+    const timeline = this.getCustomerTimeline(accountId);
+    const notes = (d.operatorNotes || []).filter(n => n.accountId === accountId);
+
+    return {
+      success: true,
+      accountId,
+      accountDataGraph: {
+        account: {
+          id: account.id,
+          email: account.emailNormalized,
+          businessName: account.businessName,
+          displayName: account.displayName,
+          planCode: account.planCode || account.entitlement,
+          pilotState: account.pilotState,
+          isTest: Boolean(account.isTest)
+        },
+        projectsCount: ownedProjects.length,
+        projects: ownedProjects,
+        leadsCount: ownedLeads.length,
+        leads: ownedLeads,
+        analyticsCount: analytics.length,
+        upgradeRequestsCount: upgradeRequests.length,
+        upgradeRequests,
+        timelineCount: timeline.length,
+        timeline,
+        notesCount: notes.length,
+        notes
+      }
+    };
+  }
+
 }
+
 module.exports = new JSONDatabase();
 module.exports.verifyPassword = verifyPassword;
 module.exports.hashPassword = hashPassword;

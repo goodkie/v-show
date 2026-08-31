@@ -6858,6 +6858,104 @@ app.get('/api/customer/analytics/advanced', requireCustomerAuth, (req, res) => {
   }
 });
 
+
+// ============================================================
+// --- C11.15 OPERATOR CUSTOMER OPERATIONS & MANAGEMENT ROUTES ---
+// ============================================================
+
+// 1. Search and List Customers (Operator Safe View)
+app.get('/api/operator/customers', (req, res) => {
+  try {
+    const q = req.query.q || req.query.search || '';
+    const customers = db.searchCustomers(q);
+    res.json({
+      success: true,
+      totalCount: customers.length,
+      query: q,
+      customers
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. 360-Degree Customer Support Context
+app.get('/api/operator/customers/:accountId', (req, res) => {
+  try {
+    const context = db.getCustomerSupportContext(req.params.accountId);
+    if (!context) {
+      return res.status(404).json({ error: 'Customer account not found.', code: 'NOT_FOUND' });
+    }
+    res.json({
+      success: true,
+      ...context
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. Add Internal Operator Note
+app.post('/api/operator/customers/:accountId/notes', async (req, res) => {
+  try {
+    const { note, author } = req.body;
+    const result = await db.addOperatorNote(req.params.accountId, note, author || 'OPERATOR');
+    res.status(201).json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 4. Update Customer Pilot State (Owner Controlled)
+app.put('/api/operator/customers/:accountId/pilot-state', async (req, res) => {
+  try {
+    const { pilotState, reason, updatedBy } = req.body;
+    const result = await db.updateCustomerPilotState(req.params.accountId, pilotState, reason, updatedBy);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 5. Upgrade Request Queue
+app.get('/api/operator/upgrade-requests', (req, res) => {
+  try {
+    const status = req.query.status || null;
+    const requests = db.getOperatorUpgradeRequests(status);
+    res.json({
+      success: true,
+      totalCount: requests.length,
+      upgradeRequests: requests
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 6. Update Upgrade Request Status
+app.put('/api/operator/upgrade-requests/:requestId/status', async (req, res) => {
+  try {
+    const { status, notes } = req.body;
+    const result = await db.updateUpgradeRequestStatus(req.params.requestId, status, notes);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 7. Customer Data Graph Resolver & Export Endpoint
+app.get('/api/operator/export/:accountId', (req, res) => {
+  try {
+    const result = db.resolveCustomerDataGraph(req.params.accountId);
+    if (!result) {
+      return res.status(404).json({ error: 'Account not found.', code: 'NOT_FOUND' });
+    }
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get(['/portal', '/my-booths', '/account', '/leads', '/analytics'], (req, res) => {
   const portalFile = path.join(__dirname, '..', 'client', 'portal.html');
   if (fs.existsSync(portalFile)) {
