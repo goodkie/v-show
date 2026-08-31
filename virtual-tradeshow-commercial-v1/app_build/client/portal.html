@@ -660,7 +660,7 @@
       <!-- Booths Grid -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2 style="font-size: 22px; font-weight: 800; color: #fff;">My 3D Virtual Booths</h2>
-        <a href="/" class="btn-action primary" style="padding: 10px 18px; font-size: 13px;">
+        <a href="/" class="btn-action primary" id="btnCreateNewBooth" style="padding: 10px 18px; font-size: 13px;">
           <i class="fa-solid fa-plus"></i> Create New Booth
         </a>
       </div>
@@ -1191,6 +1191,27 @@
         const booths = data.booths || [];
         const container = document.getElementById('boothsGridContainer');
 
+        // Manage Create New Booth safety & plan limit
+        const btnCreate = document.getElementById('btnCreateNewBooth');
+        if (btnCreate) {
+          const maxBooths = (booths[0] && booths[0].maxBooths) || data.maxBooths || 1;
+          if (booths.length >= maxBooths) {
+            btnCreate.style.opacity = '0.6';
+            btnCreate.style.cursor = 'not-allowed';
+            btnCreate.href = 'javascript:void(0)';
+            btnCreate.onclick = function() {
+              alert(`Your current plan includes ${maxBooths} active 3D virtual booth. For multi-booth enterprise packages, please contact sales or upgrade.`);
+            };
+            btnCreate.innerHTML = `<i class="fa-solid fa-lock"></i> Booth Limit Reached (${booths.length}/${maxBooths})`;
+          } else {
+            btnCreate.style.opacity = '1';
+            btnCreate.style.cursor = 'pointer';
+            btnCreate.href = '/';
+            btnCreate.onclick = null;
+            btnCreate.innerHTML = '<i class="fa-solid fa-plus"></i> Create New Booth';
+          }
+        }
+
         if (booths.length === 0) {
           container.innerHTML = `
             <div class="empty-state" style="grid-column: 1 / -1;">
@@ -1246,7 +1267,7 @@
                 <div class="stat-mini-lbl">Leads</div>
               </div>
               <div>
-                <div class="stat-mini-val">${b.productsCount} / 3</div>
+                <div class="stat-mini-val">${b.productsCount} / ${b.maxProducts || 100}</div>
                 <div class="stat-mini-lbl">Products</div>
               </div>
               <div>
@@ -1256,7 +1277,7 @@
             </div>
 
             <div class="booth-card-actions">
-              <a href="/?projectId=${b.id}&token=${b.editToken}" class="btn-action primary">
+              <a href="/?projectId=${b.id}" class="btn-action primary">
                 <i class="fa-solid fa-pen-to-square"></i> Open Editor
               </a>
               ${b.publicSlug ? `

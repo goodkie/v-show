@@ -7049,6 +7049,16 @@ app.get('/api/operator/export/:accountId', (req, res) => {
     if (!result) {
       return res.status(404).json({ error: 'Account not found.', code: 'NOT_FOUND' });
     }
+
+// 7.1 Normalize Customer Account & Booth
+app.post('/api/operator/customers/:accountId/normalize', async (req, res) => {
+  try {
+    const result = await db.normalizeCustomerAccountAndProject(req.params.accountId);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });

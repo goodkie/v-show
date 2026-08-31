@@ -10003,16 +10003,25 @@ return event;
     });
   }
 
-  getOnboardingProgress(project) {
+  getOnboardingProgress(project, accountId = null) {
+    const realProducts = (project.products || []).filter(prod => prod && prod.name && prod.name.trim() !== '');
+    const hasRealProducts = realProducts.length > 0;
+    
+    // Product Pins predicate:
+    // Only complete if at least 1 real product exists AND pinpoints have valid product associations
+    const hasRealPins = hasRealProducts && (project.pinpoints || []).some(pin => {
+      if (pin.productId) return realProducts.some(p => p.id === pin.productId);
+      if (pin.slotIndex) return realProducts[pin.slotIndex - 1] && realProducts[pin.slotIndex - 1].name;
+      return Boolean(pin.title && !pin.title.toLowerCase().includes('placeholder') && !pin.title.toLowerCase().includes('pin'));
+    });
+
     const tasks = [
       { id: 'create_booth', label: 'Create 3D Booth', done: true },
-      { id: 'company_logo', label: 'Add Company Logo', done: Boolean(project.logoUrl && !project.logoUrl.includes('placeholder')) },
-      { id: 'product_1', label: 'Add Product 1', done: Boolean(project.products && project.products[0] && project.products[0].name) },
-      { id: 'product_2', label: 'Add Product 2', done: Boolean(project.products && project.products[1] && project.products[1].name) },
-      { id: 'product_3', label: 'Add Product 3', done: Boolean(project.products && project.products[2] && project.products[2].name) },
-      { id: 'pinpoints', label: 'Place Product Pins', done: Boolean(project.pinpoints && project.pinpoints.length > 0) },
+      { id: 'company_logo', label: 'Add Company Logo', done: Boolean(project.logoUrl && !project.logoUrl.includes('placeholder') && !project.logoUrl.includes('default')) },
+      { id: 'add_product', label: 'Add First Product', done: hasRealProducts },
+      { id: 'pinpoints', label: 'Place Product Pins', done: hasRealPins },
       { id: 'publish', label: 'Publish Booth', done: Boolean(project.publishStatus === 'PUBLISHED' || project.isPublished) },
-      { id: 'qr_share', label: 'Share QR Code', done: Boolean(project.qrCodeDataUrl) }
+      { id: 'qr_share', label: 'Share QR Code', done: Boolean((project.publishStatus === 'PUBLISHED' || project.isPublished) && project.qrCodeDataUrl) }
     ];
 
     const completedCount = tasks.filter(t => t.done).length;
@@ -10031,12 +10040,13 @@ return event;
 
     const leads = d.leads || d.tradeLeads || [];
     const analytics = d.analyticsEvents || [];
+    const planLimits = this.getAccountPlanLimits(accountId);
 
     return projects.map(p => {
       const boothLeads = leads.filter(l => l.projectId === p.id || l.boothId === p.id);
       const boothViews = analytics.filter(e => e.projectId === p.id && e.eventType === 'BOOTH_VIEW').length;
-      const productSlotsCount = (p.products || []).filter(prod => prod.name).length;
-      const onboarding = this.getOnboardingProgress(p);
+      const productSlotsCount = (p.products || []).filter(prod => prod && prod.name && prod.name.trim() !== '').length;
+      const onboarding = this.getOnboardingProgress(p, accountId);
 
       return {
         id: p.id,
@@ -10049,9 +10059,9 @@ return event;
         publicUrl: p.publicUrl || (p.publicSlug ? `https://3dz.site/booth/${p.publicSlug}` : null),
         qrCodeDataUrl: p.qrCodeDataUrl || null,
         previewUrl: p.previewUrl || p.sourceAsset?.previewUrl || null,
-        editToken: p.editToken || null,
         productsCount: productSlotsCount,
-        maxProducts: 3,
+        maxProducts: planLimits.maxProducts || 100,
+        maxBooths: planLimits.maxBooths || 1,
         viewsCount: boothViews,
         leadsCount: boothLeads.length,
         rfqsCount: boothLeads.filter(l => l.leadType === 'RFQ').length,
@@ -10061,6 +10071,68 @@ return event;
         createdAt: p.createdAt,
         updatedAt: p.updatedAt
       };
+    });
+  }
+
+  async normalizeCustomerAccountAndProject(identifier) {
+    return this.mutate((db) => {
+      const d = db;
+      d.accounts = d.accounts || [];
+      d.projects = d.projects || [];
+      d.customerPilots = d.customerPilots || [];
+
+      const norm = this.normalizeEmail(identifier);
+      const account = d.accounts.find(a => a.id === identifier || this.normalizeEmail(a.emailNormalized || a.email) === norm);
+      if (!account) return { success: false, error: 'Account not found' };
+
+      const pilot = d.customerPilots.find(p => p.accountId === account.id || this.normalizeEmail(p.primaryEmail) === norm);
+
+      if (pilot) {
+        pilot.accountId = account.id;
+        account.pilotId = pilot.pilotId;
+        account.pilotState = pilot.pilotStatus || 'SELECTED';
+        account.isPilot = true;
+        account.billingState = pilot.billingState || 'PILOT_NOT_BILLED';
+        if (pilot.selectedEntitlement) {
+          account.planCode = pilot.selectedEntitlement;
+          account.entitlement = pilot.selectedEntitlement;
+          account.billingStatus = 'pilot';
+        }
+        if (pilot.businessName) {
+          account.businessName = pilot.businessName;
+        }
+        if (pilot.contactName) {
+          account.displayName = pilot.contactName;
+          account.contactName = pilot.contactName;
+        }
+      }
+
+      // If Studio Berry specifically:
+      if (this.normalizeEmail(account.emailNormalized || account.email) === 'studioberryinfo@gmail.com') {
+        account.businessName = 'studio berry';
+        account.displayName = 'ian park';
+        account.contactName = 'ian park';
+        account.entitlement = 'BUSINESS';
+        account.planCode = 'BUSINESS';
+        account.billingState = 'PILOT_NOT_BILLED';
+        account.isPilot = true;
+
+        const sbProject = d.projects.find(p => p.id === 'prj-free-e99137ed' || p.accountId === account.id || this.normalizeEmail(p.contactEmail || p.customerEmail || p.email) === 'studioberryinfo@gmail.com');
+        if (sbProject) {
+          sbProject.accountId = account.id;
+          sbProject.contactEmail = 'studioberryinfo@gmail.com';
+          sbProject.businessName = 'studio berry';
+          sbProject.brandName = 'studio berry';
+          sbProject.name = 'studio berry Virtual Booth';
+          sbProject.role = 'OWNER';
+          sbProject.publishStatus = 'DRAFT';
+          sbProject.isPublished = false;
+          sbProject.products = (sbProject.products || []).filter(p => p && p.name && p.name.trim() !== '');
+        }
+      }
+
+      account.updatedAt = new Date().toISOString();
+      return { success: true, account };
     });
   }
 
