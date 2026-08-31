@@ -766,6 +766,82 @@
       },
       "createdAt": "2026-08-31T08:51:39.408Z",
       "updatedAt": "2026-08-31T08:51:39.408Z"
+    },
+    {
+      "id": "org-free-7ff46351",
+      "type": "exhibitor",
+      "name": "Apex Robotics International",
+      "slug": "apex-robotics-international",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T09:10:05.267Z"
+      },
+      "createdAt": "2026-08-31T09:10:05.267Z",
+      "updatedAt": "2026-08-31T09:10:05.267Z"
+    },
+    {
+      "id": "org-free-e81149d7",
+      "type": "exhibitor",
+      "name": "Apex Robotics International",
+      "slug": "apex-robotics-international",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "TEST",
+        "updatedAt": "2026-08-31T09:11:50.889Z"
+      },
+      "createdAt": "2026-08-31T09:11:50.889Z",
+      "updatedAt": "2026-08-31T09:11:50.889Z"
+    },
+    {
+      "id": "org-free-7e2167a8",
+      "type": "exhibitor",
+      "name": "Apex Robotics International",
+      "slug": "apex-robotics-international",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "TEST",
+        "updatedAt": "2026-08-31T09:12:37.934Z"
+      },
+      "createdAt": "2026-08-31T09:12:37.934Z",
+      "updatedAt": "2026-08-31T09:12:37.934Z"
+    },
+    {
+      "id": "org-free-e0655d01",
+      "type": "exhibitor",
+      "name": "Apex Robotics Global Corp 1433",
+      "slug": "apex-robotics-global-corp-1433",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T09:14:31.473Z"
+      },
+      "createdAt": "2026-08-31T09:14:31.473Z",
+      "updatedAt": "2026-08-31T09:14:31.894Z",
+      "contactEmail": "sarah.connor.c1113.1433@apexrobotics.example.com"
+    },
+    {
+      "id": "org-free-0feefeb7",
+      "type": "exhibitor",
+      "name": "Intruder CyberCorp 1433",
+      "slug": "intruder-cybercorp-1433",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T09:14:32.219Z"
+      },
+      "createdAt": "2026-08-31T09:14:32.219Z",
+      "updatedAt": "2026-08-31T09:14:32.219Z"
     }
   ],
   "users": [
@@ -1931,6 +2007,213 @@
       "notificationStatus": "PENDING",
       "createdAt": "2026-08-31T08:51:39.166Z",
       "updatedAt": "2026-08-31T08:51:39.166Z"
+    },
+    {
+      "leadId": "lead-d1526b42",
+      "leadType": "RFQ",
+      "boothId": "prj-free-f4ed8d33",
+      "projectId": "prj-free-f4ed8d33",
+      "productId": "prod-slot-0",
+      "productName": "Apex-Arm 7000 Dual Robot",
+      "visitorName": "Marcus Sterling",
+      "visitorCompany": "Global Fabrication GmbH",
+      "visitorEmail": "m.sterling@globalfab.de",
+      "visitorPhone": "",
+      "quantity": 10,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T09:12:38.435Z",
+      "updatedAt": "2026-08-31T09:12:38.435Z"
+    },
+    {
+      "leadId": "lead-a22c29f8",
+      "leadType": "SAMPLE_REQUEST",
+      "boothId": "prj-free-f4ed8d33",
+      "projectId": "prj-free-f4ed8d33",
+      "productId": "prod-slot-1",
+      "productName": "OmniDrive Autonomous Tug",
+      "visitorName": "Elena Rostova",
+      "visitorCompany": "NovaTech Systems",
+      "visitorEmail": "elena@novatech.co.uk",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T09:12:38.460Z",
+      "updatedAt": "2026-08-31T09:12:38.460Z"
+    },
+    {
+      "leadId": "lead-d11373e3",
+      "leadType": "MEETING_REQUEST",
+      "boothId": "prj-free-f4ed8d33",
+      "projectId": "prj-free-f4ed8d33",
+      "productId": "prod-slot-2",
+      "productName": "VisionCore 3D Inspection Unit",
+      "visitorName": "Kenji Takahashi",
+      "visitorCompany": "Osaka Heavy Industries",
+      "visitorEmail": "kenji.t@osakaindustries.jp",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T09:12:38.486Z",
+      "updatedAt": "2026-08-31T09:12:38.486Z"
+    },
+    {
+      "leadId": "lead-f847b7d9",
+      "leadType": "RFQ",
+      "boothId": "prj-free-384906b7",
+      "projectId": "prj-free-384906b7",
+      "productId": "prod-slot-0",
+      "productName": "Apex-Arm 7000 Dual Robot",
+      "visitorName": "Marcus Sterling",
+      "visitorCompany": "Global Fabrication GmbH",
+      "visitorEmail": "m.sterling@globalfab.de",
+      "visitorPhone": "",
+      "quantity": 10,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T09:13:26.184Z",
+      "updatedAt": "2026-08-31T09:13:26.184Z"
+    },
+    {
+      "leadId": "lead-9b841556",
+      "leadType": "SAMPLE_REQUEST",
+      "boothId": "prj-free-384906b7",
+      "projectId": "prj-free-384906b7",
+      "productId": "prod-slot-1",
+      "productName": "OmniDrive Autonomous Tug",
+      "visitorName": "Elena Rostova",
+      "visitorCompany": "NovaTech Systems",
+      "visitorEmail": "elena@novatech.co.uk",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T09:13:29.820Z",
+      "updatedAt": "2026-08-31T09:13:29.820Z"
+    },
+    {
+      "leadId": "lead-29cd35e7",
+      "leadType": "MEETING_REQUEST",
+      "boothId": "prj-free-384906b7",
+      "projectId": "prj-free-384906b7",
+      "productId": "prod-slot-2",
+      "productName": "VisionCore 3D Inspection Unit",
+      "visitorName": "Kenji Takahashi",
+      "visitorCompany": "Osaka Heavy Industries",
+      "visitorEmail": "kenji.t@osakaindustries.jp",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T09:13:29.933Z",
+      "updatedAt": "2026-08-31T09:13:29.933Z"
+    },
+    {
+      "leadId": "lead-e148b1fb",
+      "leadType": "RFQ",
+      "boothId": "prj-free-4a3efa24",
+      "projectId": "prj-free-4a3efa24",
+      "productId": "prod-slot-1",
+      "productName": "Apex Cobot Arm X-16",
+      "visitorName": "David Miller",
+      "visitorCompany": "MegaCorp Logistics GmbH",
+      "visitorEmail": "david.miller@megacorp-logistics.com",
+      "visitorPhone": "",
+      "quantity": 50,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "CONTACTED",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T09:14:32.077Z",
+      "updatedAt": "2026-08-31T09:14:32.160Z"
+    },
+    {
+      "leadId": "lead-f9224f54",
+      "leadType": "SAMPLE_REQUEST",
+      "boothId": "prj-free-4a3efa24",
+      "projectId": "prj-free-4a3efa24",
+      "productId": "prod-slot-3",
+      "productName": "Apex 3D Vision Sensor Kit V4",
+      "visitorName": "Elena Rostova",
+      "visitorCompany": "SmartFactory Labs",
+      "visitorEmail": "elena.rostova@smartfactory.io",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T09:14:32.104Z",
+      "updatedAt": "2026-08-31T09:14:32.104Z"
+    },
+    {
+      "leadId": "lead-8055a6a8",
+      "leadType": "MEETING_REQUEST",
+      "boothId": "prj-free-4a3efa24",
+      "projectId": "prj-free-4a3efa24",
+      "productId": "prod-slot-2",
+      "productName": "Apex Autonomous Mobile Rover R2",
+      "visitorName": "Hiroshi Tanaka",
+      "visitorCompany": "Tokyo Robotics Industrial",
+      "visitorEmail": "tanaka.hiroshi@tokyobotics.co.jp",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T09:14:32.132Z",
+      "updatedAt": "2026-08-31T09:14:32.132Z"
     }
   ],
   "rfqs": [
@@ -15974,6 +16257,78 @@
       "eventType": "MEETING_REQUEST_SUBMIT",
       "isTest": false,
       "timestamp": "2026-08-31T08:51:39.166Z"
+    },
+    {
+      "eventId": "evt-d2847474",
+      "projectId": "prj-free-f4ed8d33",
+      "productId": "prod-slot-0",
+      "eventType": "RFQ_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T09:12:38.435Z"
+    },
+    {
+      "eventId": "evt-b860e4c9",
+      "projectId": "prj-free-f4ed8d33",
+      "productId": "prod-slot-1",
+      "eventType": "SAMPLE_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T09:12:38.460Z"
+    },
+    {
+      "eventId": "evt-09ac7bb1",
+      "projectId": "prj-free-f4ed8d33",
+      "productId": "prod-slot-2",
+      "eventType": "MEETING_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T09:12:38.486Z"
+    },
+    {
+      "eventId": "evt-0cf723d5",
+      "projectId": "prj-free-384906b7",
+      "productId": "prod-slot-0",
+      "eventType": "RFQ_SUBMIT",
+      "isTest": true,
+      "timestamp": "2026-08-31T09:13:26.184Z"
+    },
+    {
+      "eventId": "evt-88d9739c",
+      "projectId": "prj-free-384906b7",
+      "productId": "prod-slot-1",
+      "eventType": "SAMPLE_REQUEST_SUBMIT",
+      "isTest": true,
+      "timestamp": "2026-08-31T09:13:29.820Z"
+    },
+    {
+      "eventId": "evt-7c6daa20",
+      "projectId": "prj-free-384906b7",
+      "productId": "prod-slot-2",
+      "eventType": "MEETING_REQUEST_SUBMIT",
+      "isTest": true,
+      "timestamp": "2026-08-31T09:13:29.933Z"
+    },
+    {
+      "eventId": "evt-f2ff5f58",
+      "projectId": "prj-free-4a3efa24",
+      "productId": "prod-slot-1",
+      "eventType": "RFQ_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T09:14:32.077Z"
+    },
+    {
+      "eventId": "evt-510e967f",
+      "projectId": "prj-free-4a3efa24",
+      "productId": "prod-slot-3",
+      "eventType": "SAMPLE_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T09:14:32.104Z"
+    },
+    {
+      "eventId": "evt-a55c23ab",
+      "projectId": "prj-free-4a3efa24",
+      "productId": "prod-slot-2",
+      "eventType": "MEETING_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T09:14:32.132Z"
     }
   ],
   "reconstructionJobs": [
@@ -17214,6 +17569,86 @@
       "environment": "PRODUCTION",
       "createdAt": "2026-08-31T08:51:39.408Z",
       "lastAttemptAt": "2026-08-31T08:51:39.408Z"
+    },
+    {
+      "usageId": "use-9160dbd5",
+      "businessName": "Apex Robotics International",
+      "normalizedBusinessName": "apex robotics international",
+      "email": "sarah.connor@apexrobotics.com",
+      "normalizedEmail": "sarah.connor@apexrobotics.com",
+      "emailVerifiedAt": "2026-08-31T09:10:05.268Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-f4ed8d33",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T09:10:05.268Z",
+      "lastAttemptAt": "2026-08-31T09:10:05.268Z"
+    },
+    {
+      "usageId": "use-8fe0ad85",
+      "businessName": "Apex Robotics International",
+      "normalizedBusinessName": "apex robotics international",
+      "email": "goodkie.com@gmail.com",
+      "normalizedEmail": "goodkie.com@gmail.com",
+      "emailVerifiedAt": "2026-08-31T09:11:50.890Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-d8477bd0",
+      "generationStatus": "INTERNAL_DEV",
+      "bypassType": "SPECIAL_DEVELOPER_EMAIL",
+      "environment": "INTERNAL_DEV",
+      "createdAt": "2026-08-31T09:11:50.890Z",
+      "lastAttemptAt": "2026-08-31T09:11:50.890Z"
+    },
+    {
+      "usageId": "use-399c638a",
+      "businessName": "Apex Robotics International",
+      "normalizedBusinessName": "apex robotics international",
+      "email": "goodkie.com@gmail.com",
+      "normalizedEmail": "goodkie.com@gmail.com",
+      "emailVerifiedAt": "2026-08-31T09:12:37.934Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-384906b7",
+      "generationStatus": "INTERNAL_DEV",
+      "bypassType": "SPECIAL_DEVELOPER_EMAIL",
+      "environment": "INTERNAL_DEV",
+      "createdAt": "2026-08-31T09:12:37.934Z",
+      "lastAttemptAt": "2026-08-31T09:12:37.934Z"
+    },
+    {
+      "usageId": "use-b06f3161",
+      "businessName": "Apex Robotics Global Corp 1433",
+      "normalizedBusinessName": "apex robotics global corp 1433",
+      "email": "sarah.connor.c1113.1433@apexrobotics.example.com",
+      "normalizedEmail": "sarah.connor.c1113.1433@apexrobotics.example.com",
+      "emailVerifiedAt": "2026-08-31T09:14:31.473Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-4a3efa24",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T09:14:31.473Z",
+      "lastAttemptAt": "2026-08-31T09:14:31.473Z"
+    },
+    {
+      "usageId": "use-d463c6e8",
+      "businessName": "Intruder CyberCorp 1433",
+      "normalizedBusinessName": "intruder cybercorp 1433",
+      "email": "intruder.c1113.1433@hacker.example.com",
+      "normalizedEmail": "intruder.c1113.1433@hacker.example.com",
+      "emailVerifiedAt": "2026-08-31T09:14:32.219Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-185fd339",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T09:14:32.219Z",
+      "lastAttemptAt": "2026-08-31T09:14:32.219Z"
     }
   ],
   "projects": [
@@ -21277,6 +21712,709 @@
       "updatedAt": "2026-08-31T08:51:39.924Z",
       "accountId": "acc-b5d0f7ac",
       "role": "OWNER"
+    },
+    {
+      "id": "prj-free-f4ed8d33",
+      "editToken": "tok-6406d7ac28543b95f22711e95761ba73",
+      "publishStatus": "PUBLISHED",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-7ff46351",
+      "name": "Apex Robotics International Virtual Booth",
+      "businessName": "Apex Robotics International",
+      "normalizedBusinessName": "apex robotics international",
+      "customerEmail": "sarah.connor@apexrobotics.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788167405259-301655133.jpg",
+        "previewUrl": "/uploads/capture-1788167405259-301655133.jpg",
+        "processedUrl": "/uploads/capture-1788167405259-301655133.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T09:10:05.268Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788167405259-301655133.jpg",
+          "highResUrl": "/uploads/capture-1788167405259-301655133.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "OmniDrive Autonomous Tug",
+          "isBlank": false,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "OmniDrive Autonomous Tug",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T09:10:05.267Z",
+          "updatedAt": "2026-08-31T09:10:05.692Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "VisionCore 3D Inspection Unit",
+          "isBlank": false,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "VisionCore 3D Inspection Unit",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T09:10:05.267Z",
+          "updatedAt": "2026-08-31T09:10:05.716Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:10:05.267Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "OmniDrive Autonomous Tug",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:10:05.267Z",
+          "price": "$32,000 USD",
+          "updatedAt": "2026-08-31T09:10:05.692Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "VisionCore 3D Inspection Unit",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:10:05.267Z",
+          "price": "$14,500 USD",
+          "updatedAt": "2026-08-31T09:10:05.716Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:10:05.267Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T09:10:05.268Z",
+      "updatedAt": "2026-08-31T09:10:05.741Z",
+      "accountId": "acc-c0dc746c",
+      "role": "OWNER",
+      "publicSlug": "apex-robotics-international",
+      "publicUrl": "http://localhost:4500/booth/apex-robotics-international",
+      "publishedAt": "2026-08-31T09:10:05.741Z",
+      "qrCodeDataUrl": "data:image/png;base64,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"
+    },
+    {
+      "id": "prj-free-d8477bd0",
+      "editToken": "tok-60183738ed99cc0deb394c7510cd8c98",
+      "publishStatus": "PUBLISHED",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-e81149d7",
+      "name": "Apex Robotics International Virtual Booth",
+      "businessName": "Apex Robotics International",
+      "normalizedBusinessName": "apex robotics international",
+      "customerEmail": "goodkie.com@gmail.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "INTERNAL_DEV",
+      "isTest": true,
+      "internalDeveloperBypass": true,
+      "bypassType": "SPECIAL_DEVELOPER_EMAIL",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788167510884-167464584.jpg",
+        "previewUrl": "/uploads/capture-1788167510884-167464584.jpg",
+        "processedUrl": "/uploads/capture-1788167510884-167464584.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T09:11:50.890Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788167510884-167464584.jpg",
+          "highResUrl": "/uploads/capture-1788167510884-167464584.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "OmniDrive Autonomous Tug",
+          "isBlank": false,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "OmniDrive Autonomous Tug",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T09:11:50.889Z",
+          "updatedAt": "2026-08-31T09:11:51.986Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "VisionCore 3D Inspection Unit",
+          "isBlank": false,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "VisionCore 3D Inspection Unit",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T09:11:50.889Z",
+          "updatedAt": "2026-08-31T09:11:52.013Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:11:50.889Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "OmniDrive Autonomous Tug",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:11:50.889Z",
+          "price": "$32,000 USD",
+          "updatedAt": "2026-08-31T09:11:51.986Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "VisionCore 3D Inspection Unit",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:11:50.889Z",
+          "price": "$14,500 USD",
+          "updatedAt": "2026-08-31T09:11:52.013Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:11:50.889Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T09:11:50.890Z",
+      "updatedAt": "2026-08-31T09:11:52.036Z",
+      "accountId": "acc-e2fbab00",
+      "role": "OWNER",
+      "publicSlug": "apex-robotics-international-2",
+      "publicUrl": "http://localhost:4500/booth/apex-robotics-international-2",
+      "publishedAt": "2026-08-31T09:11:52.036Z",
+      "qrCodeDataUrl": "data:image/png;base64,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"
+    },
+    {
+      "id": "prj-free-384906b7",
+      "editToken": "tok-c54a6ac3e74edc61cf54ef162ff3590c",
+      "publishStatus": "PUBLISHED",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-7e2167a8",
+      "name": "Apex Robotics International Virtual Booth",
+      "businessName": "Apex Robotics International",
+      "normalizedBusinessName": "apex robotics international",
+      "customerEmail": "goodkie.com@gmail.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "INTERNAL_DEV",
+      "isTest": true,
+      "internalDeveloperBypass": true,
+      "bypassType": "SPECIAL_DEVELOPER_EMAIL",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788167557929-671420377.jpg",
+        "previewUrl": "/uploads/capture-1788167557929-671420377.jpg",
+        "processedUrl": "/uploads/capture-1788167557929-671420377.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T09:12:37.934Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788167557929-671420377.jpg",
+          "highResUrl": "/uploads/capture-1788167557929-671420377.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "OmniDrive Autonomous Tug",
+          "isBlank": false,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "OmniDrive Autonomous Tug",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T09:12:37.934Z",
+          "updatedAt": "2026-08-31T09:12:38.348Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "VisionCore 3D Inspection Unit",
+          "isBlank": false,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "VisionCore 3D Inspection Unit",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T09:12:37.934Z",
+          "updatedAt": "2026-08-31T09:12:38.373Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:12:37.934Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "OmniDrive Autonomous Tug",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:12:37.934Z",
+          "price": "$32,000 USD",
+          "updatedAt": "2026-08-31T09:12:38.348Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "VisionCore 3D Inspection Unit",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:12:37.934Z",
+          "price": "$14,500 USD",
+          "updatedAt": "2026-08-31T09:12:38.373Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:12:37.934Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T09:12:37.934Z",
+      "updatedAt": "2026-08-31T09:12:38.398Z",
+      "accountId": "acc-e2fbab00",
+      "role": "OWNER",
+      "publicSlug": "apex-robotics-international-3",
+      "publicUrl": "http://localhost:4500/booth/apex-robotics-international-3",
+      "publishedAt": "2026-08-31T09:12:38.398Z",
+      "qrCodeDataUrl": "data:image/png;base64,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"
+    },
+    {
+      "id": "prj-free-4a3efa24",
+      "editToken": "tok-baa64c3ea7b3521bd85264526878e2a3",
+      "publishStatus": "PUBLISHED",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-e0655d01",
+      "name": "Apex Robotics Global Corp 1433 Virtual Booth",
+      "businessName": "Apex Robotics Global Corp 1433",
+      "normalizedBusinessName": "apex robotics global corp 1433",
+      "customerEmail": "sarah.connor.c1113.1433@apexrobotics.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788167671464-251783103.jpg",
+        "previewUrl": "/uploads/capture-1788167671464-251783103.jpg",
+        "processedUrl": "/uploads/capture-1788167671464-251783103.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T09:14:31.473Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788167671464-251783103.jpg",
+          "highResUrl": "/uploads/capture-1788167671464-251783103.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "Product 1",
+          "u": 0.25,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Apex Cobot Arm X-16",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T09:14:32.002Z"
+        },
+        {
+          "id": "pin-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "Product 2",
+          "u": 0.5,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Apex Autonomous Rover R2",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T09:14:32.002Z"
+        },
+        {
+          "id": "pin-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "Product 3",
+          "u": 0.75,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Apex 3D Vision Kit V4",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T09:14:32.002Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "Apex Cobot Arm X-16",
+          "imageUrl": "",
+          "description": "6-axis precision cobot with 16kg payload capacity.",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:14:31.473Z",
+          "sku": "APX-X16-IND",
+          "category": "Robotics & Automation",
+          "price": "$14,500 / unit",
+          "updatedAt": "2026-08-31T09:14:31.919Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "Apex Autonomous Mobile Rover R2",
+          "imageUrl": "",
+          "description": "SLAM LiDAR guided warehouse transport robot.",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:14:31.473Z",
+          "sku": "APX-AMR-R2",
+          "category": "Logistics AGV",
+          "price": "$28,000 / unit",
+          "updatedAt": "2026-08-31T09:14:31.946Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "Apex 3D Vision Sensor Kit V4",
+          "imageUrl": "",
+          "description": "Stereo RGB-D depth camera for robotic pick-and-place.",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:14:31.473Z",
+          "sku": "APX-VS4-3D",
+          "category": "Computer Vision",
+          "price": "$4,200 / kit",
+          "updatedAt": "2026-08-31T09:14:31.972Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T09:14:31.473Z",
+      "updatedAt": "2026-08-31T09:14:32.029Z",
+      "accountId": "acc-043eac8b",
+      "role": "OWNER",
+      "brandName": "³D₂ Apex Robotics",
+      "description": "Global manufacturer of advanced industrial cobot arms.",
+      "website": "https://apexrobotics.example.com",
+      "contactName": "Sarah Connor",
+      "contactEmail": "sarah.connor.c1113.1433@apexrobotics.example.com",
+      "publicSlug": "apex-robotics-global-corp-1433",
+      "publicUrl": "http://localhost:4500/booth/apex-robotics-global-corp-1433",
+      "publishedAt": "2026-08-31T09:14:32.029Z",
+      "qrCodeDataUrl": "data:image/png;base64,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"
+    },
+    {
+      "id": "prj-free-185fd339",
+      "editToken": "tok-3d4fba0d6150c29615ec76e9c5815e85",
+      "publishStatus": "DRAFT",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-0feefeb7",
+      "name": "Intruder CyberCorp 1433 Virtual Booth",
+      "businessName": "Intruder CyberCorp 1433",
+      "normalizedBusinessName": "intruder cybercorp 1433",
+      "customerEmail": "intruder.c1113.1433@hacker.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788167672218-300099928.jpg",
+        "previewUrl": "/uploads/capture-1788167672218-300099928.jpg",
+        "processedUrl": "/uploads/capture-1788167672218-300099928.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T09:14:32.219Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788167672218-300099928.jpg",
+          "highResUrl": "/uploads/capture-1788167672218-300099928.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "PRODUCT 01",
+          "isBlank": true,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 1",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:14:32.219Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "PRODUCT 02",
+          "isBlank": true,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 2",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:14:32.219Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:14:32.219Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:14:32.219Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:14:32.219Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:14:32.219Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T09:14:32.219Z",
+      "updatedAt": "2026-08-31T09:14:32.284Z",
+      "accountId": "acc-52f1e536",
+      "role": "OWNER"
     }
   ],
   "salesTickets": [
@@ -21657,6 +22795,105 @@
       "businessName": "Apex Robotics Global Corp 7457",
       "createdAt": "2026-08-31T08:51:40.320Z",
       "expiresAt": "2026-09-30T08:51:40.320Z"
+    },
+    {
+      "token": "cust-sess-0f4a5a11cded5aeedbeb72381dd7bba91d48006ab5d80c27",
+      "accountId": "acc-c0dc746c",
+      "email": "sarah.connor@apexrobotics.com",
+      "displayName": "sarah.connor",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-08-31T09:10:05.661Z",
+      "expiresAt": "2026-09-30T09:10:05.661Z"
+    },
+    {
+      "token": "cust-sess-baa93472488f5cf7253488ed7147838be06c5c80bba447a2",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "My Exhibition Company",
+      "createdAt": "2026-08-31T09:11:25.245Z",
+      "expiresAt": "2026-09-30T09:11:25.245Z"
+    },
+    {
+      "token": "cust-sess-aa46b44819748319b1d972db14cebbd3e7b038b1d6711fc0",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-08-31T09:11:51.953Z",
+      "expiresAt": "2026-09-30T09:11:51.953Z"
+    },
+    {
+      "token": "cust-sess-1bf56fc81d3f6e6c83c5b8fab790f56b9ac00f399cdb0339",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-08-31T09:12:38.317Z",
+      "expiresAt": "2026-09-30T09:12:38.317Z"
+    },
+    {
+      "token": "cust-sess-f47facfb8fb562b9e647eb850a6ec7d57944a811bd86983e",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-08-31T09:13:17.938Z",
+      "expiresAt": "2026-09-30T09:13:17.937Z"
+    },
+    {
+      "token": "cust-sess-c3703123a283ee6c5139e55a5e4803dba373aeaa0213e105",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-08-31T09:13:22.109Z",
+      "expiresAt": "2026-09-30T09:13:22.109Z"
+    },
+    {
+      "token": "cust-sess-2358aeb0a1bc7b60902e4fea52e582f412c8808f4f1a6ffb",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-08-31T09:13:33.533Z",
+      "expiresAt": "2026-09-30T09:13:33.533Z"
+    },
+    {
+      "token": "cust-sess-1941d325d514e4251ccd45a6b34d09b42473b68f4ee4ef8d",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-08-31T09:13:37.269Z",
+      "expiresAt": "2026-09-30T09:13:37.269Z"
+    },
+    {
+      "token": "cust-sess-5774919c4a438dfb37ef92e1cf6b505e05f445ce661122d7",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-08-31T09:13:51.146Z",
+      "expiresAt": "2026-09-30T09:13:51.146Z"
+    },
+    {
+      "token": "cust-sess-7a24ae8d7c20b1f52304f1867045c804f0a372dbe45afd36",
+      "accountId": "acc-52f1e536",
+      "email": "intruder.c1113.1433@hacker.example.com",
+      "displayName": "intruder.c1113.1433",
+      "businessName": "Intruder CyberCorp 1433",
+      "createdAt": "2026-08-31T09:14:32.307Z",
+      "expiresAt": "2026-09-30T09:14:32.307Z"
+    },
+    {
+      "token": "cust-sess-2c88328c4a48516a60c25bc1d3d480a43f64dd07a8c0cbc2",
+      "accountId": "acc-043eac8b",
+      "email": "sarah.connor.c1113.1433@apexrobotics.example.com",
+      "displayName": "Sarah Connor CEO",
+      "businessName": "Apex Robotics Global Corp 1433",
+      "createdAt": "2026-08-31T09:14:32.401Z",
+      "expiresAt": "2026-09-30T09:14:32.401Z"
     }
   ],
   "accounts": [
@@ -21764,6 +23001,66 @@
       "createdAt": "2026-08-31T08:51:39.923Z",
       "updatedAt": "2026-08-31T08:51:39.923Z",
       "lastLoginAt": "2026-08-31T08:51:39.923Z"
+    },
+    {
+      "id": "acc-c0dc746c",
+      "email": "sarah.connor@apexrobotics.com",
+      "emailNormalized": "sarah.connor@apexrobotics.com",
+      "displayName": "sarah.connor",
+      "businessName": "Apex Robotics International",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T09:10:05.638Z",
+      "updatedAt": "2026-08-31T09:10:05.638Z",
+      "lastLoginAt": "2026-08-31T09:10:05.638Z"
+    },
+    {
+      "id": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "emailNormalized": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T09:11:25.217Z",
+      "updatedAt": "2026-08-31T09:13:51.120Z",
+      "lastLoginAt": "2026-08-31T09:13:51.120Z"
+    },
+    {
+      "id": "acc-043eac8b",
+      "email": "sarah.connor.c1113.1433@apexrobotics.example.com",
+      "emailNormalized": "sarah.connor.c1113.1433@apexrobotics.example.com",
+      "displayName": "Sarah Connor CEO",
+      "businessName": "Apex Robotics Global Corp 1433",
+      "phone": "+1-555-8821",
+      "website": "https://apexrobotics.example.com",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T09:14:31.835Z",
+      "updatedAt": "2026-08-31T09:14:32.376Z",
+      "lastLoginAt": "2026-08-31T09:14:32.376Z"
+    },
+    {
+      "id": "acc-52f1e536",
+      "email": "intruder.c1113.1433@hacker.example.com",
+      "emailNormalized": "intruder.c1113.1433@hacker.example.com",
+      "displayName": "intruder.c1113.1433",
+      "businessName": "Intruder CyberCorp 1433",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T09:14:32.284Z",
+      "updatedAt": "2026-08-31T09:14:32.284Z",
+      "lastLoginAt": "2026-08-31T09:14:32.284Z"
     }
   ],
   "accountAuditLogs": [
@@ -21920,6 +23217,125 @@
       "email": "sarah.connor.c1113.7457@apexrobotics.example.com",
       "action": "LOGIN",
       "timestamp": "2026-08-31T08:51:40.320Z"
+    },
+    {
+      "id": "log-2b7924a0",
+      "accountId": "acc-c0dc746c",
+      "email": "sarah.connor@apexrobotics.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T09:10:05.638Z"
+    },
+    {
+      "id": "log-3a75383a",
+      "accountId": "acc-c0dc746c",
+      "email": "sarah.connor@apexrobotics.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:10:05.661Z"
+    },
+    {
+      "id": "log-aa37644e",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T09:11:25.217Z"
+    },
+    {
+      "id": "log-665c2dbe",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:11:25.245Z"
+    },
+    {
+      "id": "log-ac32987f",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:11:51.953Z"
+    },
+    {
+      "id": "log-7b57595f",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:12:38.317Z"
+    },
+    {
+      "id": "log-60131742",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:13:17.938Z"
+    },
+    {
+      "id": "log-8d5c624b",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:13:22.109Z"
+    },
+    {
+      "id": "log-1ac4300e",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:13:33.533Z"
+    },
+    {
+      "id": "log-6d9bb5af",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:13:37.269Z"
+    },
+    {
+      "id": "log-754dc125",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:13:51.146Z"
+    },
+    {
+      "id": "log-fac259a6",
+      "accountId": "acc-043eac8b",
+      "email": "sarah.connor.c1113.1433@apexrobotics.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T09:14:31.835Z"
+    },
+    {
+      "id": "log-f25af2e9",
+      "accountId": "acc-043eac8b",
+      "email": "sarah.connor.c1113.1433@apexrobotics.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:14:31.858Z"
+    },
+    {
+      "id": "log-c9aa72e3",
+      "accountId": "acc-52f1e536",
+      "email": "intruder.c1113.1433@hacker.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T09:14:32.284Z"
+    },
+    {
+      "id": "log-60beddd4",
+      "accountId": "acc-52f1e536",
+      "email": "intruder.c1113.1433@hacker.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:14:32.307Z"
+    },
+    {
+      "id": "log-3b80e207",
+      "accountId": "acc-043eac8b",
+      "email": "sarah.connor.c1113.1433@apexrobotics.example.com",
+      "action": "LOGOUT",
+      "timestamp": "2026-08-31T09:14:32.344Z"
+    },
+    {
+      "id": "log-fed7f3b5",
+      "accountId": "acc-043eac8b",
+      "email": "sarah.connor.c1113.1433@apexrobotics.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:14:32.401Z"
     }
   ]
 }
