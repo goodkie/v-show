@@ -10004,16 +10004,20 @@ return event;
   }
 
   getOnboardingProgress(project, accountId = null) {
+    const d = this.memoryData;
+    const account = accountId ? (d.accounts || []).find(a => a.id === accountId) : null;
+    const logoUrl = project.logoUrl || account?.logoUrl;
+
     const realProducts = (project.products || []).filter(prod => prod && prod.name && prod.name.trim() !== '');
     const hasRealProducts = realProducts.length > 0;
     
     // Strict real company logo check
     const hasRealLogo = Boolean(
-      project.logoUrl && 
-      !project.logoUrl.includes('placeholder') && 
-      !project.logoUrl.includes('default') && 
-      !project.logoUrl.includes('demo') && 
-      !project.logoUrl.includes('platform')
+      logoUrl && 
+      !logoUrl.includes('placeholder') && 
+      !logoUrl.includes('default') && 
+      !logoUrl.includes('demo') && 
+      !logoUrl.includes('platform')
     );
 
     // Product Pins predicate:
