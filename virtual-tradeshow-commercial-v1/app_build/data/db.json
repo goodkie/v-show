@@ -842,6 +842,158 @@
       },
       "createdAt": "2026-08-31T09:14:32.219Z",
       "updatedAt": "2026-08-31T09:14:32.219Z"
+    },
+    {
+      "id": "org-free-41fb6993",
+      "type": "exhibitor",
+      "name": "Apex Enterprise Global 7863",
+      "slug": "apex-enterprise-global-7863",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T09:25:47.915Z"
+      },
+      "createdAt": "2026-08-31T09:25:47.915Z",
+      "updatedAt": "2026-08-31T09:25:47.915Z"
+    },
+    {
+      "id": "org-free-0452f2c7",
+      "type": "exhibitor",
+      "name": "Tenant B Global 7863",
+      "slug": "tenant-b-global-7863",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T09:25:48.790Z"
+      },
+      "createdAt": "2026-08-31T09:25:48.790Z",
+      "updatedAt": "2026-08-31T09:25:48.790Z"
+    },
+    {
+      "id": "org-free-23d53040",
+      "type": "exhibitor",
+      "name": "Apex Enterprise Global 9497",
+      "slug": "apex-enterprise-global-9497",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T09:26:49.560Z"
+      },
+      "createdAt": "2026-08-31T09:26:49.560Z",
+      "updatedAt": "2026-08-31T09:26:49.560Z"
+    },
+    {
+      "id": "org-free-191b7223",
+      "type": "exhibitor",
+      "name": "Tenant B Global 9497",
+      "slug": "tenant-b-global-9497",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T09:26:53.576Z"
+      },
+      "createdAt": "2026-08-31T09:26:53.576Z",
+      "updatedAt": "2026-08-31T09:26:53.576Z"
+    },
+    {
+      "id": "org-free-e737b99c",
+      "type": "exhibitor",
+      "name": "Apex Enterprise Global 1058",
+      "slug": "apex-enterprise-global-1058",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T09:27:11.097Z"
+      },
+      "createdAt": "2026-08-31T09:27:11.097Z",
+      "updatedAt": "2026-08-31T09:27:11.097Z"
+    },
+    {
+      "id": "org-free-2915281a",
+      "type": "exhibitor",
+      "name": "Tenant B Global 1058",
+      "slug": "tenant-b-global-1058",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T09:27:11.918Z"
+      },
+      "createdAt": "2026-08-31T09:27:11.918Z",
+      "updatedAt": "2026-08-31T09:27:11.918Z"
+    },
+    {
+      "id": "org-free-ba51d135",
+      "type": "exhibitor",
+      "name": "Apex Robotics Global Corp 4474",
+      "slug": "apex-robotics-global-corp-4474",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T09:27:24.502Z"
+      },
+      "createdAt": "2026-08-31T09:27:24.502Z",
+      "updatedAt": "2026-08-31T09:27:24.664Z",
+      "contactEmail": "sarah.connor.c1113.4474@apexrobotics.example.com"
+    },
+    {
+      "id": "org-free-0de09935",
+      "type": "exhibitor",
+      "name": "Intruder CyberCorp 4474",
+      "slug": "intruder-cybercorp-4474",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T09:27:25.021Z"
+      },
+      "createdAt": "2026-08-31T09:27:25.021Z",
+      "updatedAt": "2026-08-31T09:27:25.021Z"
+    },
+    {
+      "id": "org-free-37ca82f6",
+      "type": "exhibitor",
+      "name": "Apex Robotics Global Corp 3594",
+      "slug": "apex-robotics-global-corp-3594",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T09:27:33.625Z"
+      },
+      "createdAt": "2026-08-31T09:27:33.625Z",
+      "updatedAt": "2026-08-31T09:27:33.785Z",
+      "contactEmail": "sarah.connor.c1113.3594@apexrobotics.example.com"
+    },
+    {
+      "id": "org-free-6f9c0c0a",
+      "type": "exhibitor",
+      "name": "Intruder CyberCorp 3594",
+      "slug": "intruder-cybercorp-3594",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "free_preview",
+        "dataEnvironment": "REAL",
+        "updatedAt": "2026-08-31T09:27:34.136Z"
+      },
+      "createdAt": "2026-08-31T09:27:34.136Z",
+      "updatedAt": "2026-08-31T09:27:34.136Z"
     }
   ],
   "users": [
@@ -2214,6 +2366,144 @@
       "notificationStatus": "PENDING",
       "createdAt": "2026-08-31T09:14:32.132Z",
       "updatedAt": "2026-08-31T09:14:32.132Z"
+    },
+    {
+      "leadId": "lead-1552dbea",
+      "leadType": "RFQ",
+      "boothId": "prj-free-8d495612",
+      "projectId": "prj-free-8d495612",
+      "productId": "prod-slot-1",
+      "productName": "Apex Cobot Arm X-16",
+      "visitorName": "David Miller",
+      "visitorCompany": "MegaCorp Logistics GmbH",
+      "visitorEmail": "david.miller@megacorp-logistics.com",
+      "visitorPhone": "",
+      "quantity": 50,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "CONTACTED",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T09:27:24.875Z",
+      "updatedAt": "2026-08-31T09:27:24.961Z"
+    },
+    {
+      "leadId": "lead-996f8073",
+      "leadType": "SAMPLE_REQUEST",
+      "boothId": "prj-free-8d495612",
+      "projectId": "prj-free-8d495612",
+      "productId": "prod-slot-3",
+      "productName": "Apex 3D Vision Sensor Kit V4",
+      "visitorName": "Elena Rostova",
+      "visitorCompany": "SmartFactory Labs",
+      "visitorEmail": "elena.rostova@smartfactory.io",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T09:27:24.902Z",
+      "updatedAt": "2026-08-31T09:27:24.902Z"
+    },
+    {
+      "leadId": "lead-241154f0",
+      "leadType": "MEETING_REQUEST",
+      "boothId": "prj-free-8d495612",
+      "projectId": "prj-free-8d495612",
+      "productId": "prod-slot-2",
+      "productName": "Apex Autonomous Mobile Rover R2",
+      "visitorName": "Hiroshi Tanaka",
+      "visitorCompany": "Tokyo Robotics Industrial",
+      "visitorEmail": "tanaka.hiroshi@tokyobotics.co.jp",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T09:27:24.929Z",
+      "updatedAt": "2026-08-31T09:27:24.929Z"
+    },
+    {
+      "leadId": "lead-6d416781",
+      "leadType": "RFQ",
+      "boothId": "prj-free-a12139ee",
+      "projectId": "prj-free-a12139ee",
+      "productId": "prod-slot-1",
+      "productName": "Apex Cobot Arm X-16",
+      "visitorName": "David Miller",
+      "visitorCompany": "MegaCorp Logistics GmbH",
+      "visitorEmail": "david.miller@megacorp-logistics.com",
+      "visitorPhone": "",
+      "quantity": 50,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "CONTACTED",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T09:27:33.987Z",
+      "updatedAt": "2026-08-31T09:27:34.072Z"
+    },
+    {
+      "leadId": "lead-1133cdc3",
+      "leadType": "SAMPLE_REQUEST",
+      "boothId": "prj-free-a12139ee",
+      "projectId": "prj-free-a12139ee",
+      "productId": "prod-slot-3",
+      "productName": "Apex 3D Vision Sensor Kit V4",
+      "visitorName": "Elena Rostova",
+      "visitorCompany": "SmartFactory Labs",
+      "visitorEmail": "elena.rostova@smartfactory.io",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T09:27:34.014Z",
+      "updatedAt": "2026-08-31T09:27:34.014Z"
+    },
+    {
+      "leadId": "lead-0cb37699",
+      "leadType": "MEETING_REQUEST",
+      "boothId": "prj-free-a12139ee",
+      "projectId": "prj-free-a12139ee",
+      "productId": "prod-slot-2",
+      "productName": "Apex Autonomous Mobile Rover R2",
+      "visitorName": "Hiroshi Tanaka",
+      "visitorCompany": "Tokyo Robotics Industrial",
+      "visitorEmail": "tanaka.hiroshi@tokyobotics.co.jp",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-08-31T09:27:34.040Z",
+      "updatedAt": "2026-08-31T09:27:34.040Z"
     }
   ],
   "rfqs": [
@@ -16329,6 +16619,54 @@
       "eventType": "MEETING_REQUEST_SUBMIT",
       "isTest": false,
       "timestamp": "2026-08-31T09:14:32.132Z"
+    },
+    {
+      "eventId": "evt-716b1872",
+      "projectId": "prj-free-8d495612",
+      "productId": "prod-slot-1",
+      "eventType": "RFQ_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T09:27:24.875Z"
+    },
+    {
+      "eventId": "evt-68f8f27b",
+      "projectId": "prj-free-8d495612",
+      "productId": "prod-slot-3",
+      "eventType": "SAMPLE_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T09:27:24.902Z"
+    },
+    {
+      "eventId": "evt-cbab1059",
+      "projectId": "prj-free-8d495612",
+      "productId": "prod-slot-2",
+      "eventType": "MEETING_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T09:27:24.929Z"
+    },
+    {
+      "eventId": "evt-9abd8d6b",
+      "projectId": "prj-free-a12139ee",
+      "productId": "prod-slot-1",
+      "eventType": "RFQ_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T09:27:33.987Z"
+    },
+    {
+      "eventId": "evt-c1f501a2",
+      "projectId": "prj-free-a12139ee",
+      "productId": "prod-slot-3",
+      "eventType": "SAMPLE_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T09:27:34.014Z"
+    },
+    {
+      "eventId": "evt-525ae742",
+      "projectId": "prj-free-a12139ee",
+      "productId": "prod-slot-2",
+      "eventType": "MEETING_REQUEST_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-08-31T09:27:34.040Z"
     }
   ],
   "reconstructionJobs": [
@@ -17187,7 +17525,53 @@
       "createdAt": "2026-08-25T00:47:05.245Z"
     }
   ],
-  "upgradeRequests": [],
+  "upgradeRequests": [
+    {
+      "requestId": "upg-req-4776df80",
+      "accountId": "acc-ee249dc2",
+      "email": "exhibitor.c1114.7863@apexenterprise.example.com",
+      "businessName": "Apex Enterprise Global 7863",
+      "contactName": "exhibitor.c1114.7863",
+      "currentPlan": "BUSINESS",
+      "requestedPlan": "CUSTOM",
+      "status": "PENDING_CUSTOM_QUOTE",
+      "requirements": "Need 10 multi-hall booths across Europe & Japan with custom ERP webhook integration.",
+      "phone": "",
+      "eventDate": "",
+      "createdAt": "2026-08-31T09:25:48.601Z",
+      "updatedAt": "2026-08-31T09:25:48.601Z"
+    },
+    {
+      "requestId": "upg-req-74a0e146",
+      "accountId": "acc-460317a4",
+      "email": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "businessName": "Apex Enterprise Global 9497",
+      "contactName": "exhibitor.c1114.9497",
+      "currentPlan": "BUSINESS",
+      "requestedPlan": "CUSTOM",
+      "status": "PENDING_CUSTOM_QUOTE",
+      "requirements": "Need 10 multi-hall booths across Europe & Japan with custom ERP webhook integration.",
+      "phone": "",
+      "eventDate": "",
+      "createdAt": "2026-08-31T09:26:53.465Z",
+      "updatedAt": "2026-08-31T09:26:53.465Z"
+    },
+    {
+      "requestId": "upg-req-7e4c27b4",
+      "accountId": "acc-650c9852",
+      "email": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "businessName": "Apex Enterprise Global 1058",
+      "contactName": "exhibitor.c1114.1058",
+      "currentPlan": "BUSINESS",
+      "requestedPlan": "CUSTOM",
+      "status": "PENDING_CUSTOM_QUOTE",
+      "requirements": "Need 10 multi-hall booths across Europe & Japan with custom ERP webhook integration.",
+      "phone": "",
+      "eventDate": "",
+      "createdAt": "2026-08-31T09:27:11.760Z",
+      "updatedAt": "2026-08-31T09:27:11.760Z"
+    }
+  ],
   "platformMessages": [],
   "ownerNotes": [],
   "pilotFeedback": [
@@ -17649,6 +18033,166 @@
       "environment": "PRODUCTION",
       "createdAt": "2026-08-31T09:14:32.219Z",
       "lastAttemptAt": "2026-08-31T09:14:32.219Z"
+    },
+    {
+      "usageId": "use-6b209185",
+      "businessName": "Apex Enterprise Global 7863",
+      "normalizedBusinessName": "apex enterprise global 7863",
+      "email": "exhibitor.c1114.7863@apexenterprise.example.com",
+      "normalizedEmail": "exhibitor.c1114.7863@apexenterprise.example.com",
+      "emailVerifiedAt": "2026-08-31T09:25:47.915Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-bb7143e4",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T09:25:47.915Z",
+      "lastAttemptAt": "2026-08-31T09:25:47.915Z"
+    },
+    {
+      "usageId": "use-40b5562d",
+      "businessName": "Tenant B Global 7863",
+      "normalizedBusinessName": "tenant b global 7863",
+      "email": "exhibitor.tenantb.7863@othercorp.example.com",
+      "normalizedEmail": "exhibitor.tenantb.7863@othercorp.example.com",
+      "emailVerifiedAt": "2026-08-31T09:25:48.790Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-4c6c70b9",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T09:25:48.790Z",
+      "lastAttemptAt": "2026-08-31T09:25:48.790Z"
+    },
+    {
+      "usageId": "use-11a1df73",
+      "businessName": "Apex Enterprise Global 9497",
+      "normalizedBusinessName": "apex enterprise global 9497",
+      "email": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "normalizedEmail": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "emailVerifiedAt": "2026-08-31T09:26:49.560Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-3cb3cc52",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T09:26:49.560Z",
+      "lastAttemptAt": "2026-08-31T09:26:49.560Z"
+    },
+    {
+      "usageId": "use-b360101c",
+      "businessName": "Tenant B Global 9497",
+      "normalizedBusinessName": "tenant b global 9497",
+      "email": "exhibitor.tenantb.9497@othercorp.example.com",
+      "normalizedEmail": "exhibitor.tenantb.9497@othercorp.example.com",
+      "emailVerifiedAt": "2026-08-31T09:26:53.576Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-883b5742",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T09:26:53.576Z",
+      "lastAttemptAt": "2026-08-31T09:26:53.576Z"
+    },
+    {
+      "usageId": "use-7ffa98b0",
+      "businessName": "Apex Enterprise Global 1058",
+      "normalizedBusinessName": "apex enterprise global 1058",
+      "email": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "normalizedEmail": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "emailVerifiedAt": "2026-08-31T09:27:11.097Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-84b82637",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T09:27:11.097Z",
+      "lastAttemptAt": "2026-08-31T09:27:11.097Z"
+    },
+    {
+      "usageId": "use-f32908a4",
+      "businessName": "Tenant B Global 1058",
+      "normalizedBusinessName": "tenant b global 1058",
+      "email": "exhibitor.tenantb.1058@othercorp.example.com",
+      "normalizedEmail": "exhibitor.tenantb.1058@othercorp.example.com",
+      "emailVerifiedAt": "2026-08-31T09:27:11.918Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-971330f3",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T09:27:11.918Z",
+      "lastAttemptAt": "2026-08-31T09:27:11.918Z"
+    },
+    {
+      "usageId": "use-bda4dd98",
+      "businessName": "Apex Robotics Global Corp 4474",
+      "normalizedBusinessName": "apex robotics global corp 4474",
+      "email": "sarah.connor.c1113.4474@apexrobotics.example.com",
+      "normalizedEmail": "sarah.connor.c1113.4474@apexrobotics.example.com",
+      "emailVerifiedAt": "2026-08-31T09:27:24.502Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-8d495612",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T09:27:24.502Z",
+      "lastAttemptAt": "2026-08-31T09:27:24.502Z"
+    },
+    {
+      "usageId": "use-4692b6c1",
+      "businessName": "Intruder CyberCorp 4474",
+      "normalizedBusinessName": "intruder cybercorp 4474",
+      "email": "intruder.c1113.4474@hacker.example.com",
+      "normalizedEmail": "intruder.c1113.4474@hacker.example.com",
+      "emailVerifiedAt": "2026-08-31T09:27:25.021Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-90df02ac",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T09:27:25.021Z",
+      "lastAttemptAt": "2026-08-31T09:27:25.021Z"
+    },
+    {
+      "usageId": "use-21fe0431",
+      "businessName": "Apex Robotics Global Corp 3594",
+      "normalizedBusinessName": "apex robotics global corp 3594",
+      "email": "sarah.connor.c1113.3594@apexrobotics.example.com",
+      "normalizedEmail": "sarah.connor.c1113.3594@apexrobotics.example.com",
+      "emailVerifiedAt": "2026-08-31T09:27:33.625Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-a12139ee",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T09:27:33.625Z",
+      "lastAttemptAt": "2026-08-31T09:27:33.625Z"
+    },
+    {
+      "usageId": "use-8fe3023c",
+      "businessName": "Intruder CyberCorp 3594",
+      "normalizedBusinessName": "intruder cybercorp 3594",
+      "email": "intruder.c1113.3594@hacker.example.com",
+      "normalizedEmail": "intruder.c1113.3594@hacker.example.com",
+      "emailVerifiedAt": "2026-08-31T09:27:34.136Z",
+      "ipHash": "6d740209afa11b266e5f60d887ad67c2",
+      "deviceIdHash": null,
+      "projectId": "prj-free-2afd9ceb",
+      "generationStatus": "SUCCESS",
+      "bypassType": "NONE",
+      "environment": "PRODUCTION",
+      "createdAt": "2026-08-31T09:27:34.136Z",
+      "lastAttemptAt": "2026-08-31T09:27:34.136Z"
     }
   ],
   "projects": [
@@ -22415,6 +22959,1476 @@
       "updatedAt": "2026-08-31T09:14:32.284Z",
       "accountId": "acc-52f1e536",
       "role": "OWNER"
+    },
+    {
+      "id": "prj-free-bb7143e4",
+      "editToken": "tok-9ff53ab92c9ede047f5e9fe9e374f0fe",
+      "publishStatus": "DRAFT",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-41fb6993",
+      "name": "Apex Enterprise Global 7863 Virtual Booth",
+      "businessName": "Apex Enterprise Global 7863",
+      "normalizedBusinessName": "apex enterprise global 7863",
+      "customerEmail": "exhibitor.c1114.7863@apexenterprise.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788168347910-396442459.jpg",
+        "previewUrl": "/uploads/capture-1788168347910-396442459.jpg",
+        "processedUrl": "/uploads/capture-1788168347910-396442459.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T09:25:47.915Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788168347910-396442459.jpg",
+          "highResUrl": "/uploads/capture-1788168347910-396442459.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "Apex Cobot Arm X-1",
+          "isBlank": false,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "Apex Cobot Arm X-1",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T09:25:47.915Z",
+          "updatedAt": "2026-08-31T09:25:48.352Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "Apex Mobile AGV R-2",
+          "isBlank": false,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "Apex Mobile AGV R-2",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T09:25:47.915Z",
+          "updatedAt": "2026-08-31T09:25:48.379Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "Apex 3D Sensor V-3",
+          "isBlank": false,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "Apex 3D Sensor V-3",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T09:25:47.915Z",
+          "updatedAt": "2026-08-31T09:25:48.407Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "Apex Cobot Arm X-1",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:25:47.915Z",
+          "sku": "APX-1",
+          "price": "$12,000",
+          "updatedAt": "2026-08-31T09:25:48.352Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "Apex Mobile AGV R-2",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:25:47.915Z",
+          "sku": "APX-2",
+          "price": "$24,000",
+          "updatedAt": "2026-08-31T09:25:48.379Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "Apex 3D Sensor V-3",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:25:47.915Z",
+          "sku": "APX-3",
+          "price": "$3,500",
+          "updatedAt": "2026-08-31T09:25:48.407Z"
+        },
+        {
+          "id": "prod-slot-4",
+          "slotIndex": 4,
+          "createdAt": "2026-08-31T09:25:48.478Z",
+          "name": "Apex Vision Module 4",
+          "sku": "APX-4",
+          "price": "$5,000",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T09:25:48.478Z"
+        },
+        {
+          "id": "prod-slot-30",
+          "slotIndex": 30,
+          "createdAt": "2026-08-31T09:25:48.505Z",
+          "name": "Apex Top Tier Product 30",
+          "sku": "APX-30",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T09:25:48.505Z"
+        },
+        {
+          "id": "prod-slot-100",
+          "slotIndex": 100,
+          "createdAt": "2026-08-31T09:25:48.570Z",
+          "name": "Apex Maximum Business Product 100",
+          "sku": "APX-100",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T09:25:48.570Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T09:25:47.915Z",
+      "updatedAt": "2026-08-31T09:25:48.570Z",
+      "accountId": "acc-ee249dc2",
+      "role": "OWNER"
+    },
+    {
+      "id": "prj-free-4c6c70b9",
+      "editToken": "tok-420ebef9d35fd0e06936efddbf5a36cf",
+      "publishStatus": "DRAFT",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-0452f2c7",
+      "name": "Tenant B Global 7863 Virtual Booth",
+      "businessName": "Tenant B Global 7863",
+      "normalizedBusinessName": "tenant b global 7863",
+      "customerEmail": "exhibitor.tenantb.7863@othercorp.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788168348677-653437029.jpg",
+        "previewUrl": "/uploads/capture-1788168348677-653437029.jpg",
+        "processedUrl": "/uploads/capture-1788168348677-653437029.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T09:25:48.790Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788168348677-653437029.jpg",
+          "highResUrl": "/uploads/capture-1788168348677-653437029.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "PRODUCT 01",
+          "isBlank": true,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 1",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:25:48.790Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "PRODUCT 02",
+          "isBlank": true,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 2",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:25:48.790Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:25:48.790Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:25:48.790Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:25:48.790Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:25:48.790Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T09:25:48.790Z",
+      "updatedAt": "2026-08-31T09:25:49.060Z",
+      "accountId": "acc-46bdb80a",
+      "role": "OWNER"
+    },
+    {
+      "id": "prj-free-3cb3cc52",
+      "editToken": "tok-a9201653be7b9e987743ddad18213616",
+      "publishStatus": "DRAFT",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-23d53040",
+      "name": "Apex Enterprise Global 9497 Virtual Booth",
+      "businessName": "Apex Enterprise Global 9497",
+      "normalizedBusinessName": "apex enterprise global 9497",
+      "customerEmail": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788168409554-889254362.jpg",
+        "previewUrl": "/uploads/capture-1788168409554-889254362.jpg",
+        "processedUrl": "/uploads/capture-1788168409554-889254362.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T09:26:49.560Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788168409554-889254362.jpg",
+          "highResUrl": "/uploads/capture-1788168409554-889254362.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "Apex Cobot Arm X-1",
+          "isBlank": false,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "Apex Cobot Arm X-1",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T09:26:49.560Z",
+          "updatedAt": "2026-08-31T09:26:53.223Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "Apex Mobile AGV R-2",
+          "isBlank": false,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "Apex Mobile AGV R-2",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T09:26:49.560Z",
+          "updatedAt": "2026-08-31T09:26:53.250Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "Apex 3D Sensor V-3",
+          "isBlank": false,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "Apex 3D Sensor V-3",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T09:26:49.560Z",
+          "updatedAt": "2026-08-31T09:26:53.276Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "Apex Cobot Arm X-1",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:26:49.560Z",
+          "sku": "APX-1",
+          "price": "$12,000",
+          "updatedAt": "2026-08-31T09:26:53.223Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "Apex Mobile AGV R-2",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:26:49.560Z",
+          "sku": "APX-2",
+          "price": "$24,000",
+          "updatedAt": "2026-08-31T09:26:53.250Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "Apex 3D Sensor V-3",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:26:49.560Z",
+          "sku": "APX-3",
+          "price": "$3,500",
+          "updatedAt": "2026-08-31T09:26:53.276Z"
+        },
+        {
+          "id": "prod-slot-4",
+          "slotIndex": 4,
+          "createdAt": "2026-08-31T09:26:53.347Z",
+          "name": "Apex Vision Module 4",
+          "sku": "APX-4",
+          "price": "$5,000",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T09:26:53.347Z"
+        },
+        {
+          "id": "prod-slot-30",
+          "slotIndex": 30,
+          "createdAt": "2026-08-31T09:26:53.374Z",
+          "name": "Apex Top Tier Product 30",
+          "sku": "APX-30",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T09:26:53.374Z"
+        },
+        {
+          "id": "prod-slot-100",
+          "slotIndex": 100,
+          "createdAt": "2026-08-31T09:26:53.434Z",
+          "name": "Apex Maximum Business Product 100",
+          "sku": "APX-100",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T09:26:53.434Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T09:26:49.560Z",
+      "updatedAt": "2026-08-31T09:26:53.434Z",
+      "accountId": "acc-460317a4",
+      "role": "OWNER"
+    },
+    {
+      "id": "prj-free-883b5742",
+      "editToken": "tok-0c3d1db9d338dcb729871e1df9a65c5a",
+      "publishStatus": "DRAFT",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-191b7223",
+      "name": "Tenant B Global 9497 Virtual Booth",
+      "businessName": "Tenant B Global 9497",
+      "normalizedBusinessName": "tenant b global 9497",
+      "customerEmail": "exhibitor.tenantb.9497@othercorp.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788168413575-301867443.jpg",
+        "previewUrl": "/uploads/capture-1788168413575-301867443.jpg",
+        "processedUrl": "/uploads/capture-1788168413575-301867443.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T09:26:53.576Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788168413575-301867443.jpg",
+          "highResUrl": "/uploads/capture-1788168413575-301867443.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "PRODUCT 01",
+          "isBlank": true,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 1",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:26:53.576Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "PRODUCT 02",
+          "isBlank": true,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 2",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:26:53.576Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:26:53.576Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:26:53.576Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:26:53.576Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:26:53.576Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T09:26:53.576Z",
+      "updatedAt": "2026-08-31T09:26:54.337Z",
+      "accountId": "acc-5c35200c",
+      "role": "OWNER"
+    },
+    {
+      "id": "prj-free-84b82637",
+      "editToken": "tok-9ee08205bbc79605052102db85d870d6",
+      "publishStatus": "PUBLISHED",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-e737b99c",
+      "name": "Apex Enterprise Global 1058 Virtual Booth",
+      "businessName": "Apex Enterprise Global 1058",
+      "normalizedBusinessName": "apex enterprise global 1058",
+      "customerEmail": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788168431095-785268199.jpg",
+        "previewUrl": "/uploads/capture-1788168431095-785268199.jpg",
+        "processedUrl": "/uploads/capture-1788168431095-785268199.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T09:27:11.097Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788168431095-785268199.jpg",
+          "highResUrl": "/uploads/capture-1788168431095-785268199.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "Apex Cobot Arm X-1",
+          "isBlank": false,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "Apex Cobot Arm X-1",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T09:27:11.097Z",
+          "updatedAt": "2026-08-31T09:27:11.463Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "Apex Mobile AGV R-2",
+          "isBlank": false,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "Apex Mobile AGV R-2",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T09:27:11.097Z",
+          "updatedAt": "2026-08-31T09:27:11.491Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "Apex 3D Sensor V-3",
+          "isBlank": false,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "Apex 3D Sensor V-3",
+          "status": "ACTIVE",
+          "createdAt": "2026-08-31T09:27:11.097Z",
+          "updatedAt": "2026-08-31T09:27:11.520Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "Apex Cobot Arm X-1",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:27:11.097Z",
+          "sku": "APX-1",
+          "price": "$12,000",
+          "updatedAt": "2026-08-31T09:27:11.463Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "Apex Mobile AGV R-2",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:27:11.097Z",
+          "sku": "APX-2",
+          "price": "$24,000",
+          "updatedAt": "2026-08-31T09:27:11.491Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "Apex 3D Sensor V-3",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:27:11.097Z",
+          "sku": "APX-3",
+          "price": "$3,500",
+          "updatedAt": "2026-08-31T09:27:11.520Z"
+        },
+        {
+          "id": "prod-slot-4",
+          "slotIndex": 4,
+          "createdAt": "2026-08-31T09:27:11.595Z",
+          "name": "Apex Vision Module 4",
+          "sku": "APX-4",
+          "price": "$5,000",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T09:27:11.595Z"
+        },
+        {
+          "id": "prod-slot-30",
+          "slotIndex": 30,
+          "createdAt": "2026-08-31T09:27:11.651Z",
+          "name": "Apex Top Tier Product 30",
+          "sku": "APX-30",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T09:27:11.651Z"
+        },
+        {
+          "id": "prod-slot-100",
+          "slotIndex": 100,
+          "createdAt": "2026-08-31T09:27:11.721Z",
+          "name": "Apex Maximum Business Product 100",
+          "sku": "APX-100",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T09:27:11.721Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T09:27:11.097Z",
+      "updatedAt": "2026-08-31T09:27:11.721Z",
+      "accountId": "acc-650c9852",
+      "role": "OWNER",
+      "publicSlug": "apex-enterprise-global-1058",
+      "publicUrl": "http://localhost:4500/booth/apex-enterprise-global-1058",
+      "publishedAt": "2026-08-31T09:27:11.394Z",
+      "qrCodeDataUrl": "data:image/png;base64,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"
+    },
+    {
+      "id": "prj-free-971330f3",
+      "editToken": "tok-12b7a2ae38877725b5c1895eb6de10c9",
+      "publishStatus": "DRAFT",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-2915281a",
+      "name": "Tenant B Global 1058 Virtual Booth",
+      "businessName": "Tenant B Global 1058",
+      "normalizedBusinessName": "tenant b global 1058",
+      "customerEmail": "exhibitor.tenantb.1058@othercorp.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788168431912-348761268.jpg",
+        "previewUrl": "/uploads/capture-1788168431912-348761268.jpg",
+        "processedUrl": "/uploads/capture-1788168431912-348761268.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T09:27:11.918Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788168431912-348761268.jpg",
+          "highResUrl": "/uploads/capture-1788168431912-348761268.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "PRODUCT 01",
+          "isBlank": true,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 1",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:27:11.918Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "PRODUCT 02",
+          "isBlank": true,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 2",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:27:11.918Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:27:11.918Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:27:11.918Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:27:11.918Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:27:11.918Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T09:27:11.918Z",
+      "updatedAt": "2026-08-31T09:27:12.559Z",
+      "accountId": "acc-1b80e55e",
+      "role": "OWNER"
+    },
+    {
+      "id": "prj-free-8d495612",
+      "editToken": "tok-10c939cbcf95f6be5ca48d138d8536dc",
+      "publishStatus": "PUBLISHED",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-ba51d135",
+      "name": "Apex Robotics Global Corp 4474 Virtual Booth",
+      "businessName": "Apex Robotics Global Corp 4474",
+      "normalizedBusinessName": "apex robotics global corp 4474",
+      "customerEmail": "sarah.connor.c1113.4474@apexrobotics.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788168444500-357350434.jpg",
+        "previewUrl": "/uploads/capture-1788168444500-357350434.jpg",
+        "processedUrl": "/uploads/capture-1788168444500-357350434.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T09:27:24.502Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788168444500-357350434.jpg",
+          "highResUrl": "/uploads/capture-1788168444500-357350434.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "Product 1",
+          "u": 0.25,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Apex Cobot Arm X-16",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T09:27:24.782Z"
+        },
+        {
+          "id": "pin-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "Product 2",
+          "u": 0.5,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Apex Autonomous Rover R2",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T09:27:24.782Z"
+        },
+        {
+          "id": "pin-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "Product 3",
+          "u": 0.75,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Apex 3D Vision Kit V4",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T09:27:24.782Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "Apex Cobot Arm X-16",
+          "imageUrl": "",
+          "description": "6-axis precision cobot with 16kg payload capacity.",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:27:24.502Z",
+          "sku": "APX-X16-IND",
+          "category": "Robotics & Automation",
+          "price": "$14,500 / unit",
+          "updatedAt": "2026-08-31T09:27:24.693Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "Apex Autonomous Mobile Rover R2",
+          "imageUrl": "",
+          "description": "SLAM LiDAR guided warehouse transport robot.",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:27:24.502Z",
+          "sku": "APX-AMR-R2",
+          "category": "Logistics AGV",
+          "price": "$28,000 / unit",
+          "updatedAt": "2026-08-31T09:27:24.724Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "Apex 3D Vision Sensor Kit V4",
+          "imageUrl": "",
+          "description": "Stereo RGB-D depth camera for robotic pick-and-place.",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:27:24.502Z",
+          "sku": "APX-VS4-3D",
+          "category": "Computer Vision",
+          "price": "$4,200 / kit",
+          "updatedAt": "2026-08-31T09:27:24.750Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T09:27:24.502Z",
+      "updatedAt": "2026-08-31T09:27:24.809Z",
+      "accountId": "acc-00e0eebf",
+      "role": "OWNER",
+      "brandName": "³D₂ Apex Robotics",
+      "description": "Global manufacturer of advanced industrial cobot arms.",
+      "website": "https://apexrobotics.example.com",
+      "contactName": "Sarah Connor",
+      "contactEmail": "sarah.connor.c1113.4474@apexrobotics.example.com",
+      "publicSlug": "apex-robotics-global-corp-4474",
+      "publicUrl": "http://localhost:4500/booth/apex-robotics-global-corp-4474",
+      "publishedAt": "2026-08-31T09:27:24.809Z",
+      "qrCodeDataUrl": "data:image/png;base64,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"
+    },
+    {
+      "id": "prj-free-90df02ac",
+      "editToken": "tok-effe96f213376c257725ebc70fe150ed",
+      "publishStatus": "DRAFT",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-0de09935",
+      "name": "Intruder CyberCorp 4474 Virtual Booth",
+      "businessName": "Intruder CyberCorp 4474",
+      "normalizedBusinessName": "intruder cybercorp 4474",
+      "customerEmail": "intruder.c1113.4474@hacker.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788168445019-5275370.jpg",
+        "previewUrl": "/uploads/capture-1788168445019-5275370.jpg",
+        "processedUrl": "/uploads/capture-1788168445019-5275370.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T09:27:25.021Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788168445019-5275370.jpg",
+          "highResUrl": "/uploads/capture-1788168445019-5275370.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "PRODUCT 01",
+          "isBlank": true,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 1",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:27:25.021Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "PRODUCT 02",
+          "isBlank": true,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 2",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:27:25.021Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:27:25.021Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:27:25.021Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:27:25.021Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:27:25.021Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T09:27:25.021Z",
+      "updatedAt": "2026-08-31T09:27:25.124Z",
+      "accountId": "acc-6214f2ff",
+      "role": "OWNER"
+    },
+    {
+      "id": "prj-free-a12139ee",
+      "editToken": "tok-299de1c15129f18a13d9eeae11c2867f",
+      "publishStatus": "PUBLISHED",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-37ca82f6",
+      "name": "Apex Robotics Global Corp 3594 Virtual Booth",
+      "businessName": "Apex Robotics Global Corp 3594",
+      "normalizedBusinessName": "apex robotics global corp 3594",
+      "customerEmail": "sarah.connor.c1113.3594@apexrobotics.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788168453623-397831947.jpg",
+        "previewUrl": "/uploads/capture-1788168453623-397831947.jpg",
+        "processedUrl": "/uploads/capture-1788168453623-397831947.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T09:27:33.625Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788168453623-397831947.jpg",
+          "highResUrl": "/uploads/capture-1788168453623-397831947.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "Product 1",
+          "u": 0.25,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Apex Cobot Arm X-16",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T09:27:33.900Z"
+        },
+        {
+          "id": "pin-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "Product 2",
+          "u": 0.5,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Apex Autonomous Rover R2",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T09:27:33.900Z"
+        },
+        {
+          "id": "pin-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "Product 3",
+          "u": 0.75,
+          "v": 0.5,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Apex 3D Vision Kit V4",
+          "status": "ACTIVE",
+          "updatedAt": "2026-08-31T09:27:33.900Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "Apex Cobot Arm X-16",
+          "imageUrl": "",
+          "description": "6-axis precision cobot with 16kg payload capacity.",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:27:33.625Z",
+          "sku": "APX-X16-IND",
+          "category": "Robotics & Automation",
+          "price": "$14,500 / unit",
+          "updatedAt": "2026-08-31T09:27:33.813Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "Apex Autonomous Mobile Rover R2",
+          "imageUrl": "",
+          "description": "SLAM LiDAR guided warehouse transport robot.",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:27:33.625Z",
+          "sku": "APX-AMR-R2",
+          "category": "Logistics AGV",
+          "price": "$28,000 / unit",
+          "updatedAt": "2026-08-31T09:27:33.844Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "Apex 3D Vision Sensor Kit V4",
+          "imageUrl": "",
+          "description": "Stereo RGB-D depth camera for robotic pick-and-place.",
+          "specifications": "Needs merchant input",
+          "status": "ACTIVE",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:27:33.625Z",
+          "sku": "APX-VS4-3D",
+          "category": "Computer Vision",
+          "price": "$4,200 / kit",
+          "updatedAt": "2026-08-31T09:27:33.870Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T09:27:33.625Z",
+      "updatedAt": "2026-08-31T09:27:33.928Z",
+      "accountId": "acc-0dcaaa26",
+      "role": "OWNER",
+      "brandName": "³D₂ Apex Robotics",
+      "description": "Global manufacturer of advanced industrial cobot arms.",
+      "website": "https://apexrobotics.example.com",
+      "contactName": "Sarah Connor",
+      "contactEmail": "sarah.connor.c1113.3594@apexrobotics.example.com",
+      "publicSlug": "apex-robotics-global-corp-3594",
+      "publicUrl": "http://localhost:4500/booth/apex-robotics-global-corp-3594",
+      "publishedAt": "2026-08-31T09:27:33.928Z",
+      "qrCodeDataUrl": "data:image/png;base64,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"
+    },
+    {
+      "id": "prj-free-2afd9ceb",
+      "editToken": "tok-acf61796dfba7aa6e8f0a382cbe8baf7",
+      "publishStatus": "DRAFT",
+      "buyerActions": {
+        "enableRfq": true,
+        "enableSample": true,
+        "enableMeeting": true,
+        "showWebsite": true,
+        "showContact": true
+      },
+      "organizationId": "org-free-6f9c0c0a",
+      "name": "Intruder CyberCorp 3594 Virtual Booth",
+      "businessName": "Intruder CyberCorp 3594",
+      "normalizedBusinessName": "intruder cybercorp 3594",
+      "customerEmail": "intruder.c1113.3594@hacker.example.com",
+      "experienceType": "PHOTO_IMMERSIVE",
+      "commercialState": "FREE_PREVIEW",
+      "environment": "PRODUCTION",
+      "isTest": false,
+      "internalDeveloperBypass": false,
+      "bypassType": "NONE",
+      "sourceAsset": {
+        "originalUrl": "/uploads/capture-1788168454133-767197445.jpg",
+        "previewUrl": "/uploads/capture-1788168454133-767197445.jpg",
+        "processedUrl": "/uploads/capture-1788168454133-767197445.jpg",
+        "originalFilename": null,
+        "sha256": null,
+        "r2Key": null,
+        "uploadedAt": "2026-08-31T09:27:34.136Z"
+      },
+      "views": [
+        {
+          "viewId": "view-free-0",
+          "name": "Main Photo Immersive View",
+          "previewUrl": "/uploads/capture-1788168454133-767197445.jpg",
+          "highResUrl": "/uploads/capture-1788168454133-767197445.jpg",
+          "sha256": null,
+          "coordinateSystem": "NORMALIZED_2D"
+        }
+      ],
+      "boothReady": true,
+      "readyArtifacts": {
+        "sourceAssetExists": true,
+        "sourceReadable": true,
+        "sha256Match": true,
+        "viewerConfigExists": true,
+        "productSlotsCount": 3
+      },
+      "pinpoints": [
+        {
+          "id": "pin-blank-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "PRODUCT 01",
+          "isBlank": true,
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 1",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:27:34.136Z"
+        },
+        {
+          "id": "pin-blank-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "PRODUCT 02",
+          "isBlank": true,
+          "u": 0.5,
+          "v": 0.52,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 2",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:27:34.136Z"
+        },
+        {
+          "id": "pin-blank-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "PRODUCT 03",
+          "isBlank": true,
+          "u": 0.72,
+          "v": 0.62,
+          "coordinateSystem": "NORMALIZED_2D",
+          "label": "ADD PRODUCT 3",
+          "status": "BLANK",
+          "createdAt": "2026-08-31T09:27:34.136Z"
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:27:34.136Z"
+        },
+        {
+          "id": "prod-slot-2",
+          "slotIndex": 2,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:27:34.136Z"
+        },
+        {
+          "id": "prod-slot-3",
+          "slotIndex": 3,
+          "name": "",
+          "imageUrl": "",
+          "description": "",
+          "specifications": "Needs merchant input",
+          "status": "EMPTY",
+          "completionPct": 0,
+          "createdAt": "2026-08-31T09:27:34.136Z"
+        }
+      ],
+      "analyticsEvents": [],
+      "createdAt": "2026-08-31T09:27:34.136Z",
+      "updatedAt": "2026-08-31T09:27:34.280Z",
+      "accountId": "acc-15a0d844",
+      "role": "OWNER"
     }
   ],
   "salesTickets": [
@@ -22894,6 +24908,96 @@
       "businessName": "Apex Robotics Global Corp 1433",
       "createdAt": "2026-08-31T09:14:32.401Z",
       "expiresAt": "2026-09-30T09:14:32.401Z"
+    },
+    {
+      "token": "cust-sess-065c608873e2293f10957184785bca5ec8c1a28faeca6c6f",
+      "accountId": "acc-46bdb80a",
+      "email": "exhibitor.tenantb.7863@othercorp.example.com",
+      "displayName": "exhibitor.tenantb.7863",
+      "businessName": "Tenant B Global 7863",
+      "createdAt": "2026-08-31T09:25:49.083Z",
+      "expiresAt": "2026-09-30T09:25:49.083Z"
+    },
+    {
+      "token": "cust-sess-895741ba5829f4b2fa7081fb580372f44283f36ea6ab80ea",
+      "accountId": "acc-460317a4",
+      "email": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "displayName": "exhibitor.c1114.9497",
+      "businessName": "Apex Enterprise Global 9497",
+      "createdAt": "2026-08-31T09:26:53.543Z",
+      "expiresAt": "2026-09-30T09:26:53.543Z"
+    },
+    {
+      "token": "cust-sess-5e543e04c35878697bc5fccc87dbf7267470bcacd7b5f49d",
+      "accountId": "acc-5c35200c",
+      "email": "exhibitor.tenantb.9497@othercorp.example.com",
+      "displayName": "exhibitor.tenantb.9497",
+      "businessName": "Tenant B Global 9497",
+      "createdAt": "2026-08-31T09:26:54.360Z",
+      "expiresAt": "2026-09-30T09:26:54.360Z"
+    },
+    {
+      "token": "cust-sess-50f3dae87aeec5ba80ad5be14ae393eed3d8863faeaf78db",
+      "accountId": "acc-650c9852",
+      "email": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "displayName": "exhibitor.c1114.1058",
+      "businessName": "Apex Enterprise Global 1058",
+      "createdAt": "2026-08-31T09:27:11.858Z",
+      "expiresAt": "2026-09-30T09:27:11.858Z"
+    },
+    {
+      "token": "cust-sess-74f7a5adf1b67134a481916b9e4b19dca49007d3153a4476",
+      "accountId": "acc-1b80e55e",
+      "email": "exhibitor.tenantb.1058@othercorp.example.com",
+      "displayName": "exhibitor.tenantb.1058",
+      "businessName": "Tenant B Global 1058",
+      "createdAt": "2026-08-31T09:27:12.717Z",
+      "expiresAt": "2026-09-30T09:27:12.717Z"
+    },
+    {
+      "token": "cust-sess-0357d372b0cbe953b5669c61a636422473972dd6fd5bd5a3",
+      "accountId": "acc-6214f2ff",
+      "email": "intruder.c1113.4474@hacker.example.com",
+      "displayName": "intruder.c1113.4474",
+      "businessName": "Intruder CyberCorp 4474",
+      "createdAt": "2026-08-31T09:27:25.149Z",
+      "expiresAt": "2026-09-30T09:27:25.149Z"
+    },
+    {
+      "token": "cust-sess-26c1275495b3f88f4984446e52462d22b409b408d127179f",
+      "accountId": "acc-00e0eebf",
+      "email": "sarah.connor.c1113.4474@apexrobotics.example.com",
+      "displayName": "Sarah Connor CEO",
+      "businessName": "Apex Robotics Global Corp 4474",
+      "createdAt": "2026-08-31T09:27:25.260Z",
+      "expiresAt": "2026-09-30T09:27:25.260Z"
+    },
+    {
+      "token": "cust-sess-c1e382bd9c667a919133e33fd253a07d67489a7198dc92f4",
+      "accountId": "acc-15a0d844",
+      "email": "intruder.c1113.3594@hacker.example.com",
+      "displayName": "intruder.c1113.3594",
+      "businessName": "Intruder CyberCorp 3594",
+      "createdAt": "2026-08-31T09:27:34.303Z",
+      "expiresAt": "2026-09-30T09:27:34.303Z"
+    },
+    {
+      "token": "cust-sess-d62d04e0cde6778ee3e7168101dff3a19e945333b21291c7",
+      "accountId": "acc-0dcaaa26",
+      "email": "sarah.connor.c1113.3594@apexrobotics.example.com",
+      "displayName": "Sarah Connor CEO",
+      "businessName": "Apex Robotics Global Corp 3594",
+      "createdAt": "2026-08-31T09:27:34.434Z",
+      "expiresAt": "2026-09-30T09:27:34.434Z"
+    },
+    {
+      "token": "cust-sess-2ce0e2bb7b068af074433ee5889d9efaea20fcabd8a80d51",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-08-31T09:27:44.884Z",
+      "expiresAt": "2026-09-30T09:27:44.884Z"
     }
   ],
   "accounts": [
@@ -23027,10 +25131,15 @@
       "website": "",
       "status": "ACTIVE",
       "emailVerified": true,
-      "entitlement": "FREE BOOTH",
+      "entitlement": "BUSINESS",
       "createdAt": "2026-08-31T09:11:25.217Z",
-      "updatedAt": "2026-08-31T09:13:51.120Z",
-      "lastLoginAt": "2026-08-31T09:13:51.120Z"
+      "updatedAt": "2026-08-31T09:27:57.184Z",
+      "lastLoginAt": "2026-08-31T09:27:44.860Z",
+      "planCode": "BUSINESS",
+      "entitlementStatus": "ACTIVE",
+      "billingProvider": "stripe",
+      "billingStatus": "active",
+      "billingPriceId": "STRIPE_PRICE_BUSINESS_MONTHLY"
     },
     {
       "id": "acc-043eac8b",
@@ -23061,6 +25170,171 @@
       "createdAt": "2026-08-31T09:14:32.284Z",
       "updatedAt": "2026-08-31T09:14:32.284Z",
       "lastLoginAt": "2026-08-31T09:14:32.284Z"
+    },
+    {
+      "id": "acc-ee249dc2",
+      "email": "exhibitor.c1114.7863@apexenterprise.example.com",
+      "emailNormalized": "exhibitor.c1114.7863@apexenterprise.example.com",
+      "displayName": "exhibitor.c1114.7863",
+      "businessName": "Apex Enterprise Global 7863",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "BUSINESS",
+      "createdAt": "2026-08-31T09:25:48.274Z",
+      "updatedAt": "2026-08-31T09:25:48.538Z",
+      "lastLoginAt": "2026-08-31T09:25:48.274Z",
+      "planCode": "BUSINESS",
+      "entitlementStatus": "ACTIVE",
+      "billingProvider": "stripe",
+      "billingStatus": "active",
+      "billingPriceId": "STRIPE_PRICE_BUSINESS_MONTHLY"
+    },
+    {
+      "id": "acc-46bdb80a",
+      "email": "exhibitor.tenantb.7863@othercorp.example.com",
+      "emailNormalized": "exhibitor.tenantb.7863@othercorp.example.com",
+      "displayName": "exhibitor.tenantb.7863",
+      "businessName": "Tenant B Global 7863",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T09:25:49.060Z",
+      "updatedAt": "2026-08-31T09:25:49.060Z",
+      "lastLoginAt": "2026-08-31T09:25:49.060Z"
+    },
+    {
+      "id": "acc-460317a4",
+      "email": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "emailNormalized": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "displayName": "exhibitor.c1114.9497",
+      "businessName": "Apex Enterprise Global 9497",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "BUSINESS",
+      "createdAt": "2026-08-31T09:26:53.148Z",
+      "updatedAt": "2026-08-31T09:26:54.423Z",
+      "lastLoginAt": "2026-08-31T09:26:53.518Z",
+      "planCode": "BUSINESS",
+      "entitlementStatus": "ACTIVE",
+      "billingProvider": "stripe",
+      "billingStatus": "active",
+      "billingPriceId": "STRIPE_PRICE_BUSINESS_MONTHLY"
+    },
+    {
+      "id": "acc-5c35200c",
+      "email": "exhibitor.tenantb.9497@othercorp.example.com",
+      "emailNormalized": "exhibitor.tenantb.9497@othercorp.example.com",
+      "displayName": "exhibitor.tenantb.9497",
+      "businessName": "Tenant B Global 9497",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T09:26:54.337Z",
+      "updatedAt": "2026-08-31T09:26:54.337Z",
+      "lastLoginAt": "2026-08-31T09:26:54.337Z"
+    },
+    {
+      "id": "acc-650c9852",
+      "email": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "emailNormalized": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "displayName": "exhibitor.c1114.1058",
+      "businessName": "Apex Enterprise Global 1058",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "BUSINESS",
+      "createdAt": "2026-08-31T09:27:11.250Z",
+      "updatedAt": "2026-08-31T09:27:12.803Z",
+      "lastLoginAt": "2026-08-31T09:27:11.831Z",
+      "planCode": "BUSINESS",
+      "entitlementStatus": "ACTIVE",
+      "billingProvider": "stripe",
+      "billingStatus": "active",
+      "billingPriceId": "STRIPE_PRICE_BUSINESS_MONTHLY"
+    },
+    {
+      "id": "acc-1b80e55e",
+      "email": "exhibitor.tenantb.1058@othercorp.example.com",
+      "emailNormalized": "exhibitor.tenantb.1058@othercorp.example.com",
+      "displayName": "exhibitor.tenantb.1058",
+      "businessName": "Tenant B Global 1058",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T09:27:12.559Z",
+      "updatedAt": "2026-08-31T09:27:12.559Z",
+      "lastLoginAt": "2026-08-31T09:27:12.559Z"
+    },
+    {
+      "id": "acc-00e0eebf",
+      "email": "sarah.connor.c1113.4474@apexrobotics.example.com",
+      "emailNormalized": "sarah.connor.c1113.4474@apexrobotics.example.com",
+      "displayName": "Sarah Connor CEO",
+      "businessName": "Apex Robotics Global Corp 4474",
+      "phone": "+1-555-8821",
+      "website": "https://apexrobotics.example.com",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T09:27:24.603Z",
+      "updatedAt": "2026-08-31T09:27:25.232Z",
+      "lastLoginAt": "2026-08-31T09:27:25.232Z"
+    },
+    {
+      "id": "acc-6214f2ff",
+      "email": "intruder.c1113.4474@hacker.example.com",
+      "emailNormalized": "intruder.c1113.4474@hacker.example.com",
+      "displayName": "intruder.c1113.4474",
+      "businessName": "Intruder CyberCorp 4474",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T09:27:25.124Z",
+      "updatedAt": "2026-08-31T09:27:25.124Z",
+      "lastLoginAt": "2026-08-31T09:27:25.124Z"
+    },
+    {
+      "id": "acc-0dcaaa26",
+      "email": "sarah.connor.c1113.3594@apexrobotics.example.com",
+      "emailNormalized": "sarah.connor.c1113.3594@apexrobotics.example.com",
+      "displayName": "Sarah Connor CEO",
+      "businessName": "Apex Robotics Global Corp 3594",
+      "phone": "+1-555-8821",
+      "website": "https://apexrobotics.example.com",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T09:27:33.725Z",
+      "updatedAt": "2026-08-31T09:27:34.393Z",
+      "lastLoginAt": "2026-08-31T09:27:34.393Z"
+    },
+    {
+      "id": "acc-15a0d844",
+      "email": "intruder.c1113.3594@hacker.example.com",
+      "emailNormalized": "intruder.c1113.3594@hacker.example.com",
+      "displayName": "intruder.c1113.3594",
+      "businessName": "Intruder CyberCorp 3594",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "FREE BOOTH",
+      "createdAt": "2026-08-31T09:27:34.280Z",
+      "updatedAt": "2026-08-31T09:27:34.280Z",
+      "lastLoginAt": "2026-08-31T09:27:34.280Z"
     }
   ],
   "accountAuditLogs": [
@@ -23336,6 +25610,396 @@
       "email": "sarah.connor.c1113.1433@apexrobotics.example.com",
       "action": "LOGIN",
       "timestamp": "2026-08-31T09:14:32.401Z"
+    },
+    {
+      "id": "log-df80a9d4",
+      "accountId": "acc-ee249dc2",
+      "email": "exhibitor.c1114.7863@apexenterprise.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T09:25:48.274Z"
+    },
+    {
+      "id": "log-a2e36a01",
+      "accountId": "acc-ee249dc2",
+      "email": "exhibitor.c1114.7863@apexenterprise.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:25:48.300Z"
+    },
+    {
+      "id": "log-d1a16211",
+      "accountId": "acc-ee249dc2",
+      "email": "exhibitor.c1114.7863@apexenterprise.example.com",
+      "action": "LOGOUT",
+      "timestamp": "2026-08-31T09:25:48.629Z"
+    },
+    {
+      "id": "log-c7834d82",
+      "accountId": "acc-46bdb80a",
+      "email": "exhibitor.tenantb.7863@othercorp.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T09:25:49.060Z"
+    },
+    {
+      "id": "log-d48a7d87",
+      "accountId": "acc-46bdb80a",
+      "email": "exhibitor.tenantb.7863@othercorp.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:25:49.084Z"
+    },
+    {
+      "id": "log-24147f65",
+      "accountId": "acc-460317a4",
+      "email": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T09:26:53.148Z"
+    },
+    {
+      "id": "log-82291d91",
+      "accountId": "acc-460317a4",
+      "email": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:26:53.172Z"
+    },
+    {
+      "id": "log-be02ef2f",
+      "accountId": "acc-460317a4",
+      "email": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "action": "LOGOUT",
+      "timestamp": "2026-08-31T09:26:53.492Z"
+    },
+    {
+      "id": "log-30ef506c",
+      "accountId": "acc-460317a4",
+      "email": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:26:53.543Z"
+    },
+    {
+      "id": "log-51022936",
+      "accountId": "acc-5c35200c",
+      "email": "exhibitor.tenantb.9497@othercorp.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T09:26:54.337Z"
+    },
+    {
+      "id": "log-737a695d",
+      "accountId": "acc-5c35200c",
+      "email": "exhibitor.tenantb.9497@othercorp.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:26:54.360Z"
+    },
+    {
+      "id": "log-54e70387",
+      "accountId": "acc-650c9852",
+      "email": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T09:27:11.250Z"
+    },
+    {
+      "id": "log-3dce3441",
+      "accountId": "acc-650c9852",
+      "email": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:27:11.274Z"
+    },
+    {
+      "id": "log-0be60fcb",
+      "accountId": "acc-650c9852",
+      "email": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "action": "LOGOUT",
+      "timestamp": "2026-08-31T09:27:11.802Z"
+    },
+    {
+      "id": "log-2c0e6048",
+      "accountId": "acc-650c9852",
+      "email": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:27:11.858Z"
+    },
+    {
+      "id": "log-9341aa0e",
+      "accountId": "acc-1b80e55e",
+      "email": "exhibitor.tenantb.1058@othercorp.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T09:27:12.559Z"
+    },
+    {
+      "id": "log-44887d91",
+      "accountId": "acc-1b80e55e",
+      "email": "exhibitor.tenantb.1058@othercorp.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:27:12.717Z"
+    },
+    {
+      "id": "log-9d637831",
+      "accountId": "acc-00e0eebf",
+      "email": "sarah.connor.c1113.4474@apexrobotics.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T09:27:24.603Z"
+    },
+    {
+      "id": "log-34ce06f7",
+      "accountId": "acc-00e0eebf",
+      "email": "sarah.connor.c1113.4474@apexrobotics.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:27:24.627Z"
+    },
+    {
+      "id": "log-d5a5de95",
+      "accountId": "acc-6214f2ff",
+      "email": "intruder.c1113.4474@hacker.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T09:27:25.124Z"
+    },
+    {
+      "id": "log-1ec346fc",
+      "accountId": "acc-6214f2ff",
+      "email": "intruder.c1113.4474@hacker.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:27:25.149Z"
+    },
+    {
+      "id": "log-6e28e8eb",
+      "accountId": "acc-00e0eebf",
+      "email": "sarah.connor.c1113.4474@apexrobotics.example.com",
+      "action": "LOGOUT",
+      "timestamp": "2026-08-31T09:27:25.191Z"
+    },
+    {
+      "id": "log-c64fd5f8",
+      "accountId": "acc-00e0eebf",
+      "email": "sarah.connor.c1113.4474@apexrobotics.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:27:25.260Z"
+    },
+    {
+      "id": "log-2b2a6607",
+      "accountId": "acc-0dcaaa26",
+      "email": "sarah.connor.c1113.3594@apexrobotics.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T09:27:33.725Z"
+    },
+    {
+      "id": "log-864ffb1b",
+      "accountId": "acc-0dcaaa26",
+      "email": "sarah.connor.c1113.3594@apexrobotics.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:27:33.749Z"
+    },
+    {
+      "id": "log-1ac3f4a1",
+      "accountId": "acc-15a0d844",
+      "email": "intruder.c1113.3594@hacker.example.com",
+      "action": "ACCOUNT_CREATED",
+      "timestamp": "2026-08-31T09:27:34.280Z"
+    },
+    {
+      "id": "log-623900cc",
+      "accountId": "acc-15a0d844",
+      "email": "intruder.c1113.3594@hacker.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:27:34.303Z"
+    },
+    {
+      "id": "log-c6fa924c",
+      "accountId": "acc-0dcaaa26",
+      "email": "sarah.connor.c1113.3594@apexrobotics.example.com",
+      "action": "LOGOUT",
+      "timestamp": "2026-08-31T09:27:34.337Z"
+    },
+    {
+      "id": "log-848cdc2c",
+      "accountId": "acc-0dcaaa26",
+      "email": "sarah.connor.c1113.3594@apexrobotics.example.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:27:34.434Z"
+    },
+    {
+      "id": "log-a85d4dcc",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-08-31T09:27:44.884Z"
+    }
+  ],
+  "entitlementAuditLogs": [
+    {
+      "id": "ent-log-153e8998",
+      "accountId": "acc-ee249dc2",
+      "email": "exhibitor.c1114.7863@apexenterprise.example.com",
+      "fromPlan": "FREE BOOTH",
+      "toPlan": "PRO",
+      "action": "ENTITLEMENT_UPGRADED",
+      "reason": "E2E_AUTOMATED_TEST_FREE_TO_PRO",
+      "actor": "exhibitor.c1114.7863@apexenterprise.example.com",
+      "timestamp": "2026-08-31T09:25:48.448Z"
+    },
+    {
+      "id": "ent-log-7dcc10a1",
+      "accountId": "acc-ee249dc2",
+      "email": "exhibitor.c1114.7863@apexenterprise.example.com",
+      "fromPlan": "PRO",
+      "toPlan": "BUSINESS",
+      "action": "ENTITLEMENT_UPGRADED",
+      "reason": "E2E_AUTOMATED_TEST_PRO_TO_BIZ",
+      "actor": "exhibitor.c1114.7863@apexenterprise.example.com",
+      "timestamp": "2026-08-31T09:25:48.538Z"
+    },
+    {
+      "id": "ent-log-e329a26a",
+      "accountId": "acc-460317a4",
+      "email": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "fromPlan": "FREE_BOOTH",
+      "toPlan": "PRO",
+      "action": "ENTITLEMENT_UPGRADED",
+      "reason": "E2E_AUTOMATED_TEST_FREE_TO_PRO",
+      "actor": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "timestamp": "2026-08-31T09:26:53.317Z"
+    },
+    {
+      "id": "ent-log-7937180d",
+      "accountId": "acc-460317a4",
+      "email": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "fromPlan": "PRO",
+      "toPlan": "BUSINESS",
+      "action": "ENTITLEMENT_UPGRADED",
+      "reason": "E2E_AUTOMATED_TEST_PRO_TO_BIZ",
+      "actor": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "timestamp": "2026-08-31T09:26:53.403Z"
+    },
+    {
+      "id": "ent-log-dba755f4",
+      "accountId": "acc-460317a4",
+      "email": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "fromPlan": "BUSINESS",
+      "toPlan": "FREE_BOOTH",
+      "action": "ENTITLEMENT_SUSPENDED",
+      "reason": "E2E_AUTOMATED_TEST_SUSPENSION",
+      "actor": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "timestamp": "2026-08-31T09:26:54.393Z"
+    },
+    {
+      "id": "ent-log-7fefbc45",
+      "accountId": "acc-460317a4",
+      "email": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "fromPlan": "FREE_BOOTH",
+      "toPlan": "BUSINESS",
+      "action": "ENTITLEMENT_UPGRADED",
+      "reason": "E2E_AUTOMATED_TEST_RESTORE",
+      "actor": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "timestamp": "2026-08-31T09:26:54.423Z"
+    },
+    {
+      "id": "ent-log-c0feee97",
+      "accountId": "acc-650c9852",
+      "email": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "fromPlan": "FREE_BOOTH",
+      "toPlan": "PRO",
+      "action": "ENTITLEMENT_UPGRADED",
+      "reason": "E2E_AUTOMATED_TEST_FREE_TO_PRO",
+      "actor": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "timestamp": "2026-08-31T09:27:11.562Z"
+    },
+    {
+      "id": "ent-log-79dbc66f",
+      "accountId": "acc-650c9852",
+      "email": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "fromPlan": "PRO",
+      "toPlan": "BUSINESS",
+      "action": "ENTITLEMENT_UPGRADED",
+      "reason": "E2E_AUTOMATED_TEST_PRO_TO_BIZ",
+      "actor": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "timestamp": "2026-08-31T09:27:11.682Z"
+    },
+    {
+      "id": "ent-log-d55f31fb",
+      "accountId": "acc-650c9852",
+      "email": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "fromPlan": "BUSINESS",
+      "toPlan": "FREE_BOOTH",
+      "action": "ENTITLEMENT_SUSPENDED",
+      "reason": "E2E_AUTOMATED_TEST_SUSPENSION",
+      "actor": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "timestamp": "2026-08-31T09:27:12.759Z"
+    },
+    {
+      "id": "ent-log-9c2b70ea",
+      "accountId": "acc-650c9852",
+      "email": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "fromPlan": "FREE_BOOTH",
+      "toPlan": "BUSINESS",
+      "action": "ENTITLEMENT_UPGRADED",
+      "reason": "E2E_AUTOMATED_TEST_RESTORE",
+      "actor": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "timestamp": "2026-08-31T09:27:12.803Z"
+    },
+    {
+      "id": "ent-log-9aef2173",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "fromPlan": "FREE_BOOTH",
+      "toPlan": "FREE_BOOTH",
+      "action": "ENTITLEMENT_ASSIGNED",
+      "reason": "CUSTOMER_PORTAL_TEST_SIMULATION",
+      "actor": "goodkie.com@gmail.com",
+      "timestamp": "2026-08-31T09:27:44.915Z"
+    },
+    {
+      "id": "ent-log-f13ab04a",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "fromPlan": "FREE_BOOTH",
+      "toPlan": "PRO",
+      "action": "ENTITLEMENT_UPGRADED",
+      "reason": "CUSTOMER_PORTAL_TEST_SIMULATION",
+      "actor": "goodkie.com@gmail.com",
+      "timestamp": "2026-08-31T09:27:53.827Z"
+    },
+    {
+      "id": "ent-log-f34f02a5",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "fromPlan": "PRO",
+      "toPlan": "BUSINESS",
+      "action": "ENTITLEMENT_UPGRADED",
+      "reason": "CUSTOMER_PORTAL_TEST_SIMULATION",
+      "actor": "goodkie.com@gmail.com",
+      "timestamp": "2026-08-31T09:27:57.184Z"
+    }
+  ],
+  "consultations": [
+    {
+      "id": "cons-4e2f3f93",
+      "serviceType": "CUSTOM_PLAN",
+      "name": "exhibitor.c1114.7863",
+      "email": "exhibitor.c1114.7863@apexenterprise.example.com",
+      "company": "Apex Enterprise Global 7863",
+      "phone": "",
+      "notes": "Need 10 multi-hall booths across Europe & Japan with custom ERP webhook integration.",
+      "accountId": "acc-ee249dc2",
+      "createdAt": "2026-08-31T09:25:48.601Z"
+    },
+    {
+      "id": "cons-151c2053",
+      "serviceType": "CUSTOM_PLAN",
+      "name": "exhibitor.c1114.9497",
+      "email": "exhibitor.c1114.9497@apexenterprise.example.com",
+      "company": "Apex Enterprise Global 9497",
+      "phone": "",
+      "notes": "Need 10 multi-hall booths across Europe & Japan with custom ERP webhook integration.",
+      "accountId": "acc-460317a4",
+      "createdAt": "2026-08-31T09:26:53.465Z"
+    },
+    {
+      "id": "cons-e9732f8f",
+      "serviceType": "CUSTOM_PLAN",
+      "name": "exhibitor.c1114.1058",
+      "email": "exhibitor.c1114.1058@apexenterprise.example.com",
+      "company": "Apex Enterprise Global 1058",
+      "phone": "",
+      "notes": "Need 10 multi-hall booths across Europe & Japan with custom ERP webhook integration.",
+      "accountId": "acc-650c9852",
+      "createdAt": "2026-08-31T09:27:11.760Z"
     }
   ]
 }

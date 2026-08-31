@@ -1,3 +1,4 @@
+const plans = require('./plans');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -9155,13 +9156,8 @@ return event;
   }
 
   async saveProductSlot(projectId, slotIndex, prodData, token) {
-    const slot = parseInt(slotIndex, 10);
-    if (!slot || slot < 1 || slot > 3) {
-      const err = new Error('Free Booth allows up to 3 product slots. Please upgrade to add more products.');
-      err.status = 400;
-      err.code = 'PRODUCT_SLOT_LIMIT_EXCEEDED';
-      throw err;
-    }
+    let slot = parseInt(slotIndex, 10);
+    if (isNaN(slot) || slot < 1) slot = 1;
 
     return this.mutate((db) => {
       const project = (db.projects || []).find(p => p.id === projectId);
@@ -9173,6 +9169,26 @@ return event;
       if (!this.verifyEditAccess(project, token)) {
         const err = new Error('Cross-tenant access forbidden.');
         err.status = 403;
+        throw err;
+      }
+
+      // Resolve owning account
+      const account = (db.accounts || []).find(a => 
+        (project.accountId && a.id === project.accountId) ||
+        (project.contactEmail && a.emailNormalized === this.normalizeEmail(project.contactEmail))
+      ) || { planCode: 'FREE_BOOTH', entitlement: 'FREE BOOTH' };
+
+      const limitCheck = plans.checkProductLimit(account, (project.products || []).filter(p => p.name).length, slot);
+      if (!limitCheck.allowed) {
+        const err = new Error(limitCheck.message);
+        err.status = 403;
+        err.code = limitCheck.code;
+        err.requiredPlan = limitCheck.requiredPlan;
+        err.currentPlan = limitCheck.currentPlan;
+        err.currentLimit = limitCheck.currentLimit;
+        err.requestedSlot = limitCheck.requestedSlot;
+        err.feature = 'MAX_PRODUCTS';
+        err.upgradeAvailable = true;
         throw err;
       }
 
@@ -9992,6 +10008,179 @@ return event;
       });
 
       return { success: true, project, account };
+    });
+  }
+
+
+
+  // ============================================================
+  // --- C11.14 COMMERCIAL ENTITLEMENT & LIFECYCLE METHODS ---
+  // ============================================================
+
+  getAccountUsage(accountId) {
+    const d = this.memoryData;
+    const account = (d.accounts || []).find(a => a.id === accountId);
+    if (!account) return null;
+
+    const norm = this.normalizeEmail(account.emailNormalized);
+    const ownedProjects = (d.projects || []).filter(p => 
+      p.accountId === accountId || (norm && this.normalizeEmail(p.contactEmail || p.customerEmail || p.email) === norm)
+    );
+
+    let totalProducts = 0;
+    let totalSources = 0;
+    let totalAdvancedMedia = 0;
+
+    ownedProjects.forEach(p => {
+      const activeProds = (p.products || []).filter(prod => prod.name && prod.status !== 'DELETED' && prod.status !== 'EMPTY');
+      totalProducts += activeProds.length;
+
+      // Sources count (e.g. 360 photo, additional viewpoints)
+      const srcCount = (p.sourceImages && Array.isArray(p.sourceImages)) ? p.sourceImages.length : (p.sourceAsset?.previewUrl || p.previewUrl ? 1 : 0);
+      totalSources += srcCount;
+
+      // Advanced media (turntables, 3D models)
+      const mediaCount = (p.advancedMedia && Array.isArray(p.advancedMedia)) ? p.advancedMedia.length : 0;
+      totalAdvancedMedia += mediaCount;
+    });
+
+    const planCode = account.planCode || account.entitlement || 'FREE_BOOTH';
+    const planLimits = plans.getPlanLimits(planCode, account.customLimits);
+    const planDef = plans.getPlan(planCode);
+
+    return {
+      accountId: account.id,
+      planCode: planDef.code,
+      planDisplayName: planDef.displayName,
+      isBillingPlan: planDef.isBillingPlan,
+      priceMonthlyUsd: planDef.priceMonthlyUsd,
+      entitlementStatus: account.entitlementStatus || 'ACTIVE',
+      usage: {
+        products: {
+          current: totalProducts,
+          limit: planLimits.maxProducts,
+          percent: Math.min(100, Math.round((totalProducts / planLimits.maxProducts) * 100))
+        },
+        sources: {
+          current: totalSources,
+          limit: planLimits.maxSources,
+          percent: Math.min(100, Math.round((totalSources / planLimits.maxSources) * 100))
+        },
+        advancedMedia: {
+          current: totalAdvancedMedia,
+          limit: planLimits.maxAdvancedMedia,
+          percent: planLimits.maxAdvancedMedia > 0 ? Math.min(100, Math.round((totalAdvancedMedia / planLimits.maxAdvancedMedia) * 100)) : 0
+        },
+        booths: {
+          current: ownedProjects.length,
+          limit: planLimits.maxBooths,
+          percent: Math.min(100, Math.round((ownedProjects.length / planLimits.maxBooths) * 100))
+        }
+      },
+      features: planDef.features,
+      billing: {
+        provider: account.billingProvider || null,
+        customerId: account.billingCustomerId || null,
+        subscriptionId: account.billingSubscriptionId || null,
+        priceId: account.billingPriceId || null,
+        status: account.billingStatus || null
+      }
+    };
+  }
+
+  async upgradeEntitlementSimulate(accountId, targetPlanCode, reason = 'DEV_SIMULATION', actor = 'SYSTEM') {
+    const targetPlan = plans.normalizePlanCode(targetPlanCode);
+
+    return this.mutate((d) => {
+      d.accounts = d.accounts || [];
+      const account = d.accounts.find(a => a.id === accountId);
+      if (!account) {
+        const err = new Error('Account not found.');
+        err.status = 404;
+        throw err;
+      }
+
+      const prevPlan = plans.normalizePlanCode(account.planCode || account.entitlement || 'FREE_BOOTH');
+      const planDef = plans.getPlan(targetPlan);
+
+      account.planCode = planDef.code;
+      account.entitlement = planDef.code === 'FREE_BOOTH' ? 'FREE BOOTH' : planDef.code;
+      account.entitlementStatus = targetPlanCode === 'SUSPENDED' ? 'SUSPENDED' : 'ACTIVE';
+      account.updatedAt = new Date().toISOString();
+
+      if (planDef.isBillingPlan) {
+        account.billingProvider = 'stripe';
+        account.billingStatus = 'active';
+        account.billingPriceId = planDef.stripePriceEnv || 'price_test_simulated';
+      }
+
+      // Log to Entitlement Audit Trail
+      d.entitlementAuditLogs = d.entitlementAuditLogs || [];
+      const auditEntry = {
+        id: `ent-log-${uuidv4().substring(0, 8)}`,
+        accountId: account.id,
+        email: account.emailNormalized,
+        fromPlan: prevPlan,
+        toPlan: planDef.code,
+        action: prevPlan === planDef.code ? 'ENTITLEMENT_ASSIGNED' : (targetPlanCode === 'SUSPENDED' ? 'ENTITLEMENT_SUSPENDED' : 'ENTITLEMENT_UPGRADED'),
+        reason,
+        actor,
+        timestamp: new Date().toISOString()
+      };
+      d.entitlementAuditLogs.push(auditEntry);
+
+      return {
+        success: true,
+        account,
+        prevPlan,
+        currentPlan: planDef.code,
+        auditEntry
+      };
+    });
+  }
+
+  async createUpgradeRequest(accountId, requestData) {
+    return this.mutate((d) => {
+      d.accounts = d.accounts || [];
+      const account = d.accounts.find(a => a.id === accountId);
+      const email = account ? account.emailNormalized : this.normalizeEmail(requestData.email);
+      const bizName = account?.businessName || requestData.businessName || 'Exhibitor Enterprise';
+
+      const requestedPlan = plans.normalizePlanCode(requestData.requestedPlan || 'CUSTOM');
+      const reqRecord = {
+        requestId: `upg-req-${uuidv4().substring(0, 8)}`,
+        accountId: account?.id || accountId,
+        email,
+        businessName: bizName,
+        contactName: account?.displayName || requestData.contactName || '',
+        currentPlan: account?.planCode || 'FREE_BOOTH',
+        requestedPlan,
+        status: requestedPlan === 'CUSTOM' ? 'PENDING_CUSTOM_QUOTE' : 'REQUESTED',
+        requirements: requestData.requirements || requestData.notes || '',
+        phone: requestData.phone || account?.phone || '',
+        eventDate: requestData.eventDate || '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      d.upgradeRequests = d.upgradeRequests || [];
+      d.upgradeRequests.push(reqRecord);
+
+      // Record in consultations for CRM consistency
+      d.consultations = d.consultations || [];
+      d.consultations.push({
+        id: `cons-${uuidv4().substring(0, 8)}`,
+        serviceType: 'CUSTOM_PLAN',
+        name: reqRecord.contactName || bizName,
+        email,
+        company: bizName,
+        phone: reqRecord.phone,
+        notes: reqRecord.requirements,
+        accountId: reqRecord.accountId,
+        createdAt: reqRecord.createdAt
+      });
+
+      return { success: true, upgradeRequest: reqRecord };
     });
   }
 
