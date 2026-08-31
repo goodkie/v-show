@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Exhibitor Portal — ³D₂</title>
+  <meta name="description" content="Manage your 3D exhibition booths, products, trade leads, and real-time visitor analytics.">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --accent: #38bdf8;
+      --bg: #030712;
+      --card-bg: #0b132b;
+      --card-inner: #0f172a;
+      --border: #1e293b;
+      --border-accent: rgba(56, 189, 248, 0.3);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Navbar */
+    .portal-nav {
+      background: rgba(11, 19, 43, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .brand-logo {
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .brand-badge {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid var(--border-accent);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .portal-links {
+      display: flex;
+      gap: 8px;
+    }
+    .portal-nav-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .portal-nav-btn:hover {
+      color: #fff;
+      background: rgba(255,255,255,0.05);
+    }
+    .portal-nav-btn.active {
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid var(--border-accent);
+    }
+    .user-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .user-greeting {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .btn-signout {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #f87171;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-signout:hover {
+      background: rgba(239, 68, 68, 0.2);
+    }
+
+    /* Main Container */
+    .portal-container {
+      max-width: 1280px;
+      width: 100%;
+      margin: 32px auto;
+      padding: 0 24px 60px;
+      flex: 1;
+    }
+
+    /* Section Tabs */
+    .tab-section {
+      display: none;
+    }
+    .tab-section.active {
+      display: block;
+      animation: fadeIn 0.25s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Onboarding Checklist Card */
+    .onboarding-card {
+      background: linear-gradient(135deg, #0b132b 0%, #082f49 100%);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 32px;
+      box-shadow: 0 10px 30px rgba(2, 132, 199, 0.12);
+    }
+    .onboarding-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .onboarding-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .progress-bar-bg {
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 999px;
+      height: 8px;
+      width: 200px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .progress-bar-fill {
+      background: linear-gradient(90deg, #0284c7, #38bdf8);
+      height: 100%;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+    .checklist-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .checklist-item {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .checklist-item.done {
+      color: #f8fafc;
+      border-color: rgba(34, 197, 94, 0.3);
+      background: rgba(34, 197, 94, 0.08);
+    }
+    .checklist-item.done i {
+      color: #4ade80;
+    }
+
+    /* Booth Cards Grid */
+    .booths-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 24px;
+    }
+    .booth-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .booth-card:hover {
+      border-color: var(--border-accent);
+      transform: translateY(-2px);
+    }
+    .booth-card-header {
+      padding: 20px 24px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .booth-biz-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .booth-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .status-badge.published {
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #4ade80;
+    }
+    .status-badge.draft {
+      background: rgba(234, 179, 8, 0.15);
+      border: 1px solid rgba(234, 179, 8, 0.3);
+      color: #fde047;
+    }
+
+    .booth-stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      padding: 16px 20px;
+      background: rgba(15, 23, 42, 0.5);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      text-align: center;
+    }
+    .stat-mini-val {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .stat-mini-lbl {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .booth-card-actions {
+      padding: 16px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: auto;
+    }
+    .btn-action {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f8fafc;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-action:hover {
+      background: #334155;
+      color: #fff;
+    }
+    .btn-action.primary {
+      background: var(--primary);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .btn-action.primary:hover {
+      background: var(--primary-hover);
+    }
+
+    /* Leads Table & Analytics Styles */
+    .leads-table-container {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-top: 20px;
+    }
+    .leads-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    .leads-table th {
+      background: #0f172a;
+      padding: 14px 18px;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border);
+    }
+    .leads-table td {
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-size: 13px;
+    }
+    .leads-table tr:hover td {
+      background: rgba(255,255,255,0.02);
+    }
+
+    /* KPI Summary Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px 24px;
+    }
+    .kpi-val {
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .kpi-lbl {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Account Form */
+    .account-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 680px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%;
+      background: #030712;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .form-input[readonly] {
+      background: #090f1e;
+      color: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    /* Sign In Modal / Screen */
+    .auth-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(3, 7, 18, 0.92);
+      backdrop-filter: blur(16px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .auth-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-accent);
+      border-radius: 20px;
+      padding: 36px 32px;
+      max-width: 440px;
+      width: 90%;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+      text-align: center;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      background: var(--card-bg);
+      border: 1px dashed var(--border);
+      border-radius: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <header class="portal-nav">
+    <div class="brand-group">
+      <a href="/" class="brand-logo">
+        <span>³D₂</span>
+      </a>
+      <span class="brand-badge">Customer Portal</span>
+    </div>
+
+    <nav class="portal-links">
+      <button class="portal-nav-btn active" id="navBtnBooths" onclick="switchPortalTab('booths')">
+        <i class="fa-solid fa-store"></i> My Booths
+      </button>
+      <button class="portal-nav-btn" id="navBtnLeads" onclick="switchPortalTab('leads')">
+        <i class="fa-solid fa-inbox"></i> Leads
+      </button>
+      <button class="portal-nav-btn" id="navBtnAnalytics" onclick="switchPortalTab('analytics')">
+        <i class="fa-solid fa-chart-pie"></i> Analytics
+      </button>
+      <button class="portal-nav-btn" id="navBtnAccount" onclick="switchPortalTab('account')">
+        <i class="fa-solid fa-user-gear"></i> Account
+      </button>
+    </nav>
+
+    <div class="user-actions">
+      <span class="user-greeting" id="userGreeting">Exhibitor</span>
+      <button class="btn-signout" onclick="handleCustomerSignOut()">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Portal Content -->
+  <main class="portal-container">
+
+    <!-- ============================================================ -->
+    <!-- TAB 1: MY BOOTHS                                             -->
+    <!-- ============================================================ -->
+    <section class="tab-section active" id="secBooths">
+      <!-- Onboarding Checklist -->
+      <div class="onboarding-card" id="onboardingContainer" style="display: none;">
+        <div class="onboarding-head">
+          <div>
+            <div class="onboarding-title"><i class="fa-solid fa-list-check" style="color:var(--accent);"></i> Exhibitor Launch Checklist</div>
+            <p style="font-size:13px; color:var(--text-muted); margin-top:2px;">Complete these steps to optimize your booth for trade buyers</p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span id="onboardingProgressText" style="font-size: 13px; font-weight: 800; color: var(--accent);">0 / 8 Complete</span>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="onboardingProgressBar"></div>
+            </div>
+          </div>
+        </div>
+        <div class="checklist-grid" id="onboardingChecklistGrid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Booths Grid -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="font-size: 22px; font-weight: 800; color: #fff;">My 3D Virtual Booths</h2>
+        <a href="/" class="btn-action primary" style="padding: 10px 18px; font-size: 13px;">
+          <i class="fa-solid fa-plus"></i> Create New Booth
+        </a>
+      </div>
+
+      <div class="booths-grid" id="boothsGridContainer">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- TAB 2: LEADS AGGREGATION                                     -->
+    <!-- ============================================================ -->
+    <section class="tab-section" id="secLeads">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 14px;">
+        <h2 style="font-size: 22px; font-weight: 800; color: #fff;">Trade Leads &amp; Buyer Inquiries</h2>
+        
+        <!-- Filters -->
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <select id="filterLeadType" class="form-input" style="width: auto; padding: 8px 12px; font-size: 13px;" onchange="loadCustomerLeads()">
+            <option value="">All Inquiry Types</option>
+            <option value="RFQ">Wholesale RFQ</option>
+            <option value="SAMPLE_REQUEST">Sample Requests</option>
+            <option value="MEETING_REQUEST">1-on-1 Meetings</option>
+          </select>
+          <select id="filterLeadStatus" class="form-input" style="width: auto; padding: 8px 12px; font-size: 13px;" onchange="loadCustomerLeads()">
+            <option value="">All Statuses</option>
+            <option value="NEW">NEW</option>
+            <option value="CONTACTED">CONTACTED</option>
+            <option value="QUALIFIED">QUALIFIED</option>
+            <option value="CLOSED">CLOSED</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="leads-table-container">
+        <table class="leads-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Buyer &amp; Company</th>
+              <th>Product / Request</th>
+              <th>Contact Details</th>
+              <th>Received</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="portalLeadsTableBody">
+            <!-- Populated by JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- TAB 3: ANALYTICS                                             -->
+    <!-- ============================================================ -->
+    <section class="tab-section" id="secAnalytics">
+      <h2 style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 20px;">Exhibitor Analytics Overview</h2>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-val" id="kpiTotalViews">0</div>
+          <div class="kpi-lbl">Total Booth Views</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" id="kpiProductClicks">0</div>
+          <div class="kpi-lbl">Product Interactions</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" id="kpiRfqs" style="color: #60a5fa;">0</div>
+          <div class="kpi-lbl">Wholesale RFQs</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" id="kpiSamples" style="color: #c084fc;">0</div>
+          <div class="kpi-lbl">Sample Requests</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" id="kpiMeetings" style="color: #4ade80;">0</div>
+          <div class="kpi-lbl">Meeting Bookings</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" id="kpiTopProduct" style="font-size: 18px; line-height: 1.3; color: var(--accent);">—</div>
+          <div class="kpi-lbl">Top Performing Product</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- TAB 4: ACCOUNT SETTINGS                                      -->
+    <!-- ============================================================ -->
+    <section class="tab-section" id="secAccount">
+      <h2 style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 20px;">Account &amp; Exhibitor Profile</h2>
+
+      <div class="account-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border);">
+          <div>
+            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Account Entitlement</span>
+            <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+              <span class="brand-badge" style="font-size: 13px;" id="accEntitlementBadge">FREE BOOTH</span>
+              <span style="font-size: 12px; color: var(--text-muted);">• Max 3 Products / Booth</span>
+            </div>
+          </div>
+          <a href="/pricing.html" class="btn-action primary">
+            <i class="fa-solid fa-arrow-up-right-dots"></i> Upgrade Plan
+          </a>
+        </div>
+
+        <form onsubmit="handleAccountUpdate(event)">
+          <div class="form-group">
+            <label class="form-label">Verified Work Email (Read-Only Identity)</label>
+            <input type="email" id="accEmail" class="form-input" readonly>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Contact / Representative Name</label>
+            <input type="text" id="accDisplayName" class="form-input">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Company / Business Name</label>
+            <input type="text" id="accBusinessName" class="form-input">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Phone / WhatsApp</label>
+            <input type="text" id="accPhone" class="form-input" placeholder="+1-555-0199">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Official Website</label>
+            <input type="url" id="accWebsite" class="form-input" placeholder="https://example.com">
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 28px;">
+            <button type="submit" class="btn-action primary" style="padding: 10px 22px; font-size: 14px;">
+              <i class="fa-solid fa-floppy-disk"></i> Save Profile
+            </button>
+            <span id="accountSaveMsg" style="font-size: 13px; font-weight: 700; color: #4ade80; display: none;">
+              <i class="fa-solid fa-check"></i> Changes saved!
+            </span>
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================================ -->
+  <!-- SIGN IN / OTP VERIFICATION MODAL                             -->
+  <!-- ============================================================ -->
+  <div class="auth-overlay" id="authModal" style="display: none;">
+    <div class="auth-card">
+      <div style="font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 6px;">³D₂</div>
+      <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px;" id="authModalTitle">Sign In to Exhibitor Portal</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;" id="authModalDesc">Enter your work email to access your 3D booths and buyer leads.</p>
+
+      <!-- Step 1: Request OTP -->
+      <form id="formSendOtp" onsubmit="handleSendOtp(event)">
+        <div class="form-group">
+          <input type="email" id="authEmailInput" class="form-input" placeholder="name@company.com" required style="text-align: center; font-size: 15px; padding: 12px;">
+        </div>
+        <button type="submit" class="btn-action primary" id="btnSendOtp" style="width: 100%; padding: 12px; font-size: 14px; justify-content: center;">
+          <i class="fa-solid fa-paper-plane"></i> Send Verification Code
+        </button>
+      </form>
+
+      <!-- Step 2: Verify OTP -->
+      <form id="formVerifyOtp" onsubmit="handleVerifyOtp(event)" style="display: none;">
+        <div class="form-group">
+          <input type="text" id="authCodeInput" class="form-input" placeholder="6-digit code (e.g. 123456)" required maxlength="24" style="text-align: center; font-size: 18px; letter-spacing: 0.15em; font-weight: 800; padding: 12px;">
+        </div>
+        <button type="submit" class="btn-action primary" id="btnVerifyOtp" style="width: 100%; padding: 12px; font-size: 14px; justify-content: center;">
+          <i class="fa-solid fa-check"></i> Verify &amp; Open Portal
+        </button>
+        <button type="button" class="btn-action" style="width: 100%; margin-top: 10px; justify-content: center; background: transparent; border: none; color: var(--text-muted);" onclick="resetAuthForm()">
+          ← Use different email
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Portal Controller State
+    let currentAccount = null;
+    let customerToken = localStorage.getItem('3d2_customer_token') || null;
+
+    async function initPortal() {
+      // Check query parameter magic token
+      const urlParams = new URLSearchParams(window.location.search);
+      const magicToken = urlParams.get('token');
+      const emailParam = urlParams.get('email');
+
+      if (magicToken && emailParam) {
+        try {
+          const res = await fetch('/api/customer/auth/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: emailParam, magicToken })
+          });
+          const data = await res.json();
+          if (data.success && data.token) {
+            customerToken = data.token;
+            localStorage.setItem('3d2_customer_token', customerToken);
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } catch (e) {
+          console.error('Magic link auth error:', e);
+        }
+      }
+
+      if (!customerToken) {
+        showAuthModal();
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/customer/auth/me', {
+          headers: { 'Authorization': 'Bearer ' + customerToken }
+        });
+        if (!res.ok) {
+          localStorage.removeItem('3d2_customer_token');
+          customerToken = null;
+          showAuthModal();
+          return;
+        }
+        const data = await res.json();
+        currentAccount = data.account;
+        document.getElementById('userGreeting').innerText = currentAccount.displayName || currentAccount.email;
+        document.getElementById('authModal').style.display = 'none';
+
+        // Load initial tab
+        loadCustomerBooths();
+        loadCustomerAnalytics();
+      } catch (err) {
+        console.error('Portal init error:', err);
+        showAuthModal();
+      }
+    }
+
+    function showAuthModal() {
+      document.getElementById('authModal').style.display = 'flex';
+      document.getElementById('formSendOtp').style.display = 'block';
+      document.getElementById('formVerifyOtp').style.display = 'none';
+    }
+
+    function resetAuthForm() {
+      document.getElementById('formSendOtp').style.display = 'block';
+      document.getElementById('formVerifyOtp').style.display = 'none';
+      document.getElementById('authCodeInput').value = '';
+    }
+
+    async function handleSendOtp(e) {
+      e.preventDefault();
+      const email = document.getElementById('authEmailInput').value.trim();
+      const btn = document.getElementById('btnSendOtp');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending code...';
+
+      try {
+        const res = await fetch('/api/customer/auth/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('formSendOtp').style.display = 'none';
+          document.getElementById('formVerifyOtp').style.display = 'block';
+          document.getElementById('authModalDesc').innerText = 'Enter the 6-digit code sent to ' + email;
+          if (data.isDevBypass) {
+            document.getElementById('authCodeInput').value = '123456';
+          }
+        } else {
+          alert(data.error || 'Failed to send code.');
+        }
+      } catch (err) {
+        alert('Network error sending verification code.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Verification Code';
+      }
+    }
+
+    async function handleVerifyOtp(e) {
+      e.preventDefault();
+      const email = document.getElementById('authEmailInput').value.trim();
+      const code = document.getElementById('authCodeInput').value.trim();
+      const btn = document.getElementById('btnVerifyOtp');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
+
+      try {
+        const res = await fetch('/api/customer/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, code })
+        });
+        const data = await res.json();
+        if (data.success && data.token) {
+          customerToken = data.token;
+          localStorage.setItem('3d2_customer_token', customerToken);
+          currentAccount = data.account;
+          document.getElementById('authModal').style.display = 'none';
+          document.getElementById('userGreeting').innerText = currentAccount.displayName || currentAccount.email;
+          loadCustomerBooths();
+          loadCustomerAnalytics();
+        } else {
+          alert(data.error || 'Invalid code.');
+        }
+      } catch (err) {
+        alert('Network error verifying code.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Verify &amp; Open Portal';
+      }
+    }
+
+    async function handleCustomerSignOut() {
+      if (customerToken) {
+        try {
+          await fetch('/api/customer/auth/logout', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + customerToken }
+          });
+        } catch (e) {}
+      }
+      localStorage.removeItem('3d2_customer_token');
+      customerToken = null;
+      currentAccount = null;
+      window.location.reload();
+    }
+
+    function switchPortalTab(tabName) {
+      ['booths', 'leads', 'analytics', 'account'].forEach(t => {
+        const cap = t.charAt(0).toUpperCase() + t.slice(1);
+        const btn = document.getElementById('navBtn' + cap);
+        const sec = document.getElementById('sec' + cap);
+        if (btn) btn.classList.remove('active');
+        if (sec) sec.classList.remove('active');
+      });
+
+      const capTarget = tabName.charAt(0).toUpperCase() + tabName.slice(1);
+      const activeBtn = document.getElementById('navBtn' + capTarget);
+      const activeSec = document.getElementById('sec' + capTarget);
+      if (activeBtn) activeBtn.classList.add('active');
+      if (activeSec) activeSec.classList.add('active');
+
+      if (tabName === 'booths') loadCustomerBooths();
+      if (tabName === 'leads') loadCustomerLeads();
+      if (tabName === 'analytics') loadCustomerAnalytics();
+      if (tabName === 'account') loadAccountProfile();
+    }
+
+    async function loadCustomerBooths() {
+      if (!customerToken) return;
+      try {
+        const res = await fetch('/api/customer/booths', {
+          headers: { 'Authorization': 'Bearer ' + customerToken }
+        });
+        const data = await res.json();
+        const booths = data.booths || [];
+        const container = document.getElementById('boothsGridContainer');
+
+        if (booths.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1;">
+              <i class="fa-solid fa-store" style="font-size: 40px; color: var(--text-muted); margin-bottom: 14px;"></i>
+              <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 6px;">Create Your First 3D Booth</h3>
+              <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Upload a single photo of your physical trade show booth to generate your interactive virtual showroom.</p>
+              <a href="/" class="btn-action primary" style="padding: 10px 20px; font-size: 14px;">
+                <i class="fa-solid fa-sparkles"></i> Generate Free 3D Booth
+              </a>
+            </div>
+          `;
+          document.getElementById('onboardingContainer').style.display = 'none';
+          return;
+        }
+
+        // Render Onboarding Checklist for latest booth
+        const firstBooth = booths[0];
+        if (firstBooth && firstBooth.onboarding) {
+          const ob = firstBooth.onboarding;
+          document.getElementById('onboardingContainer').style.display = 'block';
+          document.getElementById('onboardingProgressText').innerText = `${ob.completedCount} / ${ob.totalTasks} Complete`;
+          document.getElementById('onboardingProgressBar').style.width = `${ob.progressPercent}%`;
+
+          const grid = document.getElementById('onboardingChecklistGrid');
+          grid.innerHTML = ob.tasks.map(t => `
+            <div class="checklist-item ${t.done ? 'done' : ''}">
+              <i class="fa-solid ${t.done ? 'fa-circle-check' : 'fa-circle'}"></i>
+              <span>${t.label}</span>
+            </div>
+          `).join('');
+        }
+
+        // Render Booth Cards
+        container.innerHTML = booths.map(b => `
+          <div class="booth-card">
+            <div class="booth-card-header">
+              <div>
+                <div class="booth-biz-title">${b.businessName}</div>
+                <div class="booth-sub">${b.brandName || b.businessName}</div>
+              </div>
+              <span class="status-badge ${b.isPublished ? 'published' : 'draft'}">
+                ${b.status}
+              </span>
+            </div>
+
+            <div class="booth-stats-row">
+              <div>
+                <div class="stat-mini-val">${b.viewsCount}</div>
+                <div class="stat-mini-lbl">Views</div>
+              </div>
+              <div>
+                <div class="stat-mini-val">${b.leadsCount}</div>
+                <div class="stat-mini-lbl">Leads</div>
+              </div>
+              <div>
+                <div class="stat-mini-val">${b.productsCount} / 3</div>
+                <div class="stat-mini-lbl">Products</div>
+              </div>
+              <div>
+                <div class="stat-mini-val" style="color: #60a5fa;">${b.rfqsCount}</div>
+                <div class="stat-mini-lbl">RFQs</div>
+              </div>
+            </div>
+
+            <div class="booth-card-actions">
+              <a href="/?projectId=${b.id}&token=${b.editToken}" class="btn-action primary">
+                <i class="fa-solid fa-pen-to-square"></i> Open Editor
+              </a>
+              ${b.publicSlug ? `
+                <a href="/booth/${b.publicSlug}" target="_blank" class="btn-action">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i> Public View
+                </a>
+              ` : ''}
+              <button onclick="switchPortalTab('leads')" class="btn-action">
+                <i class="fa-solid fa-inbox"></i> Leads (${b.leadsCount})
+              </button>
+            </div>
+          </div>
+        `).join('');
+
+      } catch (err) {
+        console.error('Error loading customer booths:', err);
+      }
+    }
+
+    async function loadCustomerLeads() {
+      if (!customerToken) return;
+      const leadType = document.getElementById('filterLeadType').value;
+      const status = document.getElementById('filterLeadStatus').value;
+
+      let q = [];
+      if (leadType) q.push('leadType=' + encodeURIComponent(leadType));
+      if (status) q.push('status=' + encodeURIComponent(status));
+      const url = '/api/customer/leads' + (q.length ? '?' + q.join('&') : '');
+
+      try {
+        const res = await fetch(url, {
+          headers: { 'Authorization': 'Bearer ' + customerToken }
+        });
+        const data = await res.json();
+        const leads = data.leads || [];
+        const tbody = document.getElementById('portalLeadsTableBody');
+
+        if (leads.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted);">No trade leads matching current filters.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = leads.map(l => {
+          let typeColor = 'rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3)';
+          let typeLabel = 'RFQ';
+          if (l.leadType === 'SAMPLE_REQUEST') {
+            typeColor = 'rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.3)';
+            typeLabel = 'SAMPLE';
+          } else if (l.leadType === 'MEETING_REQUEST') {
+            typeColor = 'rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3)';
+            typeLabel = 'MEETING';
+          }
+
+          return `
+            <tr>
+              <td><span style="background:${typeColor};padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;">${typeLabel}</span></td>
+              <td><strong style="color:#fff;">${l.name || 'Anonymous Buyer'}</strong><br><span style="color:var(--text-muted);font-size:12px;">${l.company || 'Private Buyer'}</span></td>
+              <td>${l.productName || 'General Inquiry'}<br><span style="color:var(--text-muted);font-size:12px;">${l.message || ''}</span></td>
+              <td style="color:var(--text-muted);font-size:12px;">${l.email}<br>${l.phone || ''}</td>
+              <td style="color:var(--text-muted);font-size:12px;">${new Date(l.createdAt).toLocaleDateString()}</td>
+              <td>
+                <select class="form-input" style="padding: 4px 8px; font-size: 11px; font-weight: 700; width: auto;" onchange="updateLeadStatus('${l.projectId}', '${l.leadId}', this.value)">
+                  <option value="NEW" ${l.status === 'NEW' ? 'selected' : ''}>NEW</option>
+                  <option value="CONTACTED" ${l.status === 'CONTACTED' ? 'selected' : ''}>CONTACTED</option>
+                  <option value="QUALIFIED" ${l.status === 'QUALIFIED' ? 'selected' : ''}>QUALIFIED</option>
+                  <option value="CLOSED" ${l.status === 'CLOSED' ? 'selected' : ''}>CLOSED</option>
+                </select>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Error loading leads:', err);
+      }
+    }
+
+    async function updateLeadStatus(projectId, leadId, status) {
+      if (!customerToken) return;
+      try {
+        await fetch(`/api/projects/${projectId}/leads/${leadId}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + customerToken
+          },
+          body: JSON.stringify({ status })
+        });
+      } catch (err) {
+        console.error('Error updating lead status:', err);
+      }
+    }
+
+    async function loadCustomerAnalytics() {
+      if (!customerToken) return;
+      try {
+        const res = await fetch('/api/customer/analytics', {
+          headers: { 'Authorization': 'Bearer ' + customerToken }
+        });
+        const data = await res.json();
+        const a = data.analytics || {};
+        document.getElementById('kpiTotalViews').innerText = a.totalViews || 0;
+        document.getElementById('kpiProductClicks').innerText = a.productClicks || 0;
+        document.getElementById('kpiRfqs').innerText = a.rfqs || 0;
+        document.getElementById('kpiSamples').innerText = a.samples || 0;
+        document.getElementById('kpiMeetings').innerText = a.meetings || 0;
+        document.getElementById('kpiTopProduct').innerText = a.topProduct || '—';
+      } catch (err) {
+        console.error('Error loading analytics:', err);
+      }
+    }
+
+    function loadAccountProfile() {
+      if (!currentAccount) return;
+      document.getElementById('accEmail').value = currentAccount.email;
+      document.getElementById('accDisplayName').value = currentAccount.displayName || '';
+      document.getElementById('accBusinessName').value = currentAccount.businessName || '';
+      document.getElementById('accPhone').value = currentAccount.phone || '';
+      document.getElementById('accWebsite').value = currentAccount.website || '';
+      document.getElementById('accEntitlementBadge').innerText = currentAccount.entitlement || 'FREE BOOTH';
+    }
+
+    async function handleAccountUpdate(e) {
+      e.preventDefault();
+      if (!customerToken) return;
+      const displayName = document.getElementById('accDisplayName').value.trim();
+      const businessName = document.getElementById('accBusinessName').value.trim();
+      const phone = document.getElementById('accPhone').value.trim();
+      const website = document.getElementById('accWebsite').value.trim();
+
+      try {
+        const res = await fetch('/api/customer/account', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + customerToken
+          },
+          body: JSON.stringify({ displayName, businessName, phone, website })
+        });
+        const data = await res.json();
+        if (data.success) {
+          currentAccount = data.account;
+          document.getElementById('userGreeting').innerText = currentAccount.displayName || currentAccount.email;
+          const msg = document.getElementById('accountSaveMsg');
+          msg.style.display = 'inline-block';
+          setTimeout(() => { msg.style.display = 'none'; }, 3000);
+        }
+      } catch (err) {
+        alert('Failed to save account profile.');
+      }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', initPortal);
+  </script>
+</body>
+</html>

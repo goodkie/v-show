@@ -1648,7 +1648,7 @@
       <a href="#how-it-works" class="nav-link">How It Works</a>
       <a href="#examples" class="nav-link">Showrooms</a>
       <a href="#pricing" class="nav-link">Pricing</a>
-      <button class="btn-nav-signin" onclick="openSignInModal()">Sign In</button>
+      <a href="/portal" class="btn-nav-signin" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;"><i class="fa-solid fa-store"></i> My Booths / Sign In</a>
     </div>
   </nav>
 
@@ -1888,6 +1888,9 @@
         <button class="btn-hero btn-hero-secondary" onclick="openBoothEditor('publish')" style="padding: 9px 16px; font-size: 13px;">
           <i class="fa-solid fa-share-nodes"></i> Publish &amp; QR
         </button>
+        <a href="/portal" class="btn-hero btn-hero-secondary" style="padding: 9px 16px; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-store"></i> My Booths
+        </a>
       </div>
     </div>
 
@@ -3391,6 +3394,9 @@
               hideProgress();
               activeProjectId = data.projectId || data.project.id;
               activeProjectData = data.project;
+              if (data.customerToken) {
+                try { localStorage.setItem('3d2_customer_token', data.customerToken); } catch(e) {}
+              }
               try {
                 localStorage.setItem('dna_free_booth_session', JSON.stringify({
                   projectId: activeProjectId,
