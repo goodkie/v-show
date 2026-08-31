@@ -1,7 +1,3 @@
 ﻿node_modules/
 .git/
 *.log
-*.ply
-*.spz
-*.ksplat
-client/assets/splat/

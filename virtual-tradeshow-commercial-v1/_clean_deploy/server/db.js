@@ -9891,6 +9891,10 @@ return event;
         });
       } else {
         account.lastLoginAt = new Date().toISOString();
+        // Normalize status: pilot-provisioned accounts may not have had 'ACTIVE' set
+        if (!account.status || account.status === 'active') {
+          account.status = 'ACTIVE';
+        }
         if (profileData.businessName && (!account.businessName || account.businessName === 'My Exhibition Company')) {
           account.businessName = profileData.businessName;
         }
@@ -9976,7 +9980,11 @@ return event;
     }
 
     const account = (d.accounts || []).find(a => a.id === sess.accountId);
-    if (!account || account.status !== 'ACTIVE') return null;
+    // Accept 'ACTIVE', 'active', or missing/undefined status (backward compat with accounts
+    // created before the status convention — e.g. pilot-provisioned accounts).
+    if (!account) return null;
+    const acctStatus = (account.status || 'ACTIVE').toUpperCase();
+    if (acctStatus === 'SUSPENDED' || acctStatus === 'BANNED' || acctStatus === 'DELETED') return null;
 
     return { session: sess, account };
   }

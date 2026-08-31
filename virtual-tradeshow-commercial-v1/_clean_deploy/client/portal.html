@@ -1255,7 +1255,23 @@
         const res = await fetch('/api/customer/booths', {
           headers: { 'Authorization': 'Bearer ' + customerToken }
         });
+
+        // Fail-closed: if session is rejected by server, clear stale token and show sign-in.
+        // This prevents the pseudo-authenticated empty-booth state (Section 12).
+        if (res.status === 401 || res.status === 403) {
+          console.warn('[Portal] Session rejected by server (' + res.status + '). Clearing stale token.');
+          customerToken = null;
+          localStorage.removeItem('3d2_customer_token');
+          document.getElementById('authModal').style.display = 'flex';
+          document.getElementById('portalContent').style.display = 'none';
+          return;
+        }
+
         const data = await res.json();
+        if (!res.ok) {
+          console.error('[Portal] /api/customer/booths error:', res.status, data);
+          return;
+        }
         const booths = data.booths || [];
         const container = document.getElementById('boothsGridContainer');
 
