@@ -2840,7 +2840,7 @@
     // THREE.JS WEBGL PHOTO IMMERSIVE 360° MASTER STUDIO ENGINE
     // ═══════════════════════════════════════════════════════════
     let scene, camera, renderer, controls;
-    let photoSphere, photoMaterial, textureLoader;
+        let photoSphere, photoMaterial, textureLoader;
     let currentSelectedProdIdx = 0;
     let isThreeInitialized = false;
     let studioProducts = [];
@@ -2856,7 +2856,7 @@
       studio.style.display = 'block';
       studio.scrollIntoView({ behavior: 'smooth' });
 
-      document.getElementById('studioBannerBizName').textContent = `${projectData.businessName || 'Your Business'} — Interactive Ultra-HD 3D Studio Showcase (Pan, zoom & inspect product pins)`;
+      document.getElementById('studioBannerBizName').textContent = `${projectData.businessName || 'Your Business'} — Drag to look around in 360°, click floating pins to inspect or configure products.`;
 
       const photoUrl = projectData.sourceAsset?.previewUrl || projectData.sourceAsset?.originalUrl || '';
 
@@ -2868,37 +2868,6 @@
       logAnalyticsEvent('immersive_view_started', { projectId: projectData.id });
     }
 
-    let curvedScreenMesh = null;
-    let curvedScreenMeta = null;
-
-    function createCurvedScreenMesh(aspectRatio, material) {
-      const is360 = (aspectRatio >= 1.9);
-      const radius = 380;
-      // Calculate vertical height to perfectly fill camera vertical field of view with 0 black padding
-      const targetCameraFov = 48;
-      const height = 2 * radius * Math.tan((targetCameraFov * Math.PI / 180) / 2) * 1.06;
-      const arcLength = height * Math.max(0.5, aspectRatio);
-      const thetaLength = is360 ? Math.PI * 2 : Math.min(Math.PI * 0.95, arcLength / radius);
-      const thetaStart = Math.PI - (thetaLength / 2);
-
-      const cylinderGeo = new THREE.CylinderGeometry(
-        radius,
-        radius,
-        height,
-        128,
-        32,
-        true,
-        thetaStart,
-        thetaLength
-      );
-      cylinderGeo.scale(-1, 1, 1);
-
-      const mesh = new THREE.Mesh(cylinderGeo, material);
-      mesh.position.set(0, 0, 0);
-      mesh.renderOrder = -1;
-      return { mesh, radius, height, thetaLength, thetaStart, is360 };
-    }
-
     function initPhotoImmersiveThree(photoUrl, projectData) {
       const container = document.getElementById('viewer-container');
       const canvas = document.getElementById('three-canvas');
@@ -2906,17 +2875,17 @@
 
       const rect = container.getBoundingClientRect();
       const width = rect.width || container.clientWidth || 900;
-      const height = rect.height || container.clientHeight || 540;
+      const height = rect.height || container.clientHeight || 500;
 
       if (!isThreeInitialized) {
         scene = new THREE.Scene();
         textureLoader = new THREE.TextureLoader();
 
-        // 48° Immersive Edge-to-Edge Field of View (0% Black Margin)
-        camera = new THREE.PerspectiveCamera(48, width / height, 0.01, 2000);
+        // 65° Immersive Field of View
+        camera = new THREE.PerspectiveCamera(65, width / height, 0.01, 2000);
         camera.position.set(0, 0, 0.01);
 
-        // High-DPR WebGL Renderer with ACES Filmic Tone Mapping & High Precision
+        // High-DPR WebGL Renderer with ACES Filmic Tone Mapping
         renderer = new THREE.WebGLRenderer({
           canvas: canvas,
           antialias: true,
@@ -2927,39 +2896,36 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5));
         renderer.outputEncoding = THREE.sRGBEncoding;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.16;
+        renderer.toneMappingExposure = 1.18;
 
-        // Volumetric 3D Scene Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.1);
-        scene.add(ambientLight);
-        const pointLight = new THREE.PointLight(0x38bdf8, 0.65, 800);
-        pointLight.position.set(0, -20, -150);
-        scene.add(pointLight);
-
-        // OrbitControls for smooth curved lookaround & detail zoom
+        // OrbitControls for interior 360° lookaround
         controls = new THREE.OrbitControls(camera, canvas);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.07;
+        controls.dampingFactor = 0.08;
         controls.enableZoom = true;
         controls.minDistance = 0.005;
-        controls.maxDistance = 0.08;
+        controls.maxDistance = 0.05;
         controls.enablePan = false;
         controls.target.set(0, 0, 0);
-        controls.maxPolarAngle = Math.PI * 0.62;
-        controls.minPolarAngle = Math.PI * 0.38;
-        controls.rotateSpeed = -0.32;
+        controls.maxPolarAngle = Math.PI * 0.88;
+        controls.minPolarAngle = Math.PI * 0.12;
+        controls.rotateSpeed = -0.42;
+
+        // 360° Interior Equirectangular Sphere Mesh
+        const sphereGeo = new THREE.SphereGeometry(500, 128, 64);
+        sphereGeo.scale(-1, 1, 1);
 
         photoMaterial = new THREE.MeshBasicMaterial({
           side: THREE.FrontSide,
-          transparent: false,
+          transparent: true,
           opacity: 1.0,
           depthWrite: false
         });
-
-        // Initialize default curved screen geometry
-        curvedScreenMeta = createCurvedScreenMesh(16 / 9, photoMaterial);
-        curvedScreenMesh = curvedScreenMeta.mesh;
-        scene.add(curvedScreenMesh);
+        photoSphere = new THREE.Mesh(sphereGeo, photoMaterial);
+        photoSphere.rotation.y = -0.45;
+        photoSphere.position.set(0, 0, 0);
+        photoSphere.renderOrder = -1;
+        scene.add(photoSphere);
 
         window.addEventListener('resize', onStudioResize);
         initDrawer3D();
@@ -2973,7 +2939,7 @@
         }
       }
 
-      // Load booth photo with 1:1 Aspect Ratio Matching & Anisotropic Filtering
+      // Load booth photo into 360° texture
       if (photoUrl && textureLoader) {
         textureLoader.load(photoUrl, (tex) => {
           tex.encoding = THREE.sRGBEncoding;
@@ -2982,40 +2948,8 @@
           tex.generateMipmaps = true;
           tex.anisotropy = renderer ? renderer.capabilities.getMaxAnisotropy() : 16;
           tex.needsUpdate = true;
-
-          const imgW = tex.image ? tex.image.width : 1920;
-          const imgH = tex.image ? tex.image.height : 1080;
-          const aspect = imgW / Math.max(1, imgH);
-
-          if (curvedScreenMesh) {
-            scene.remove(curvedScreenMesh);
-            if (curvedScreenMesh.geometry) curvedScreenMesh.geometry.dispose();
-          }
-
-          curvedScreenMeta = createCurvedScreenMesh(aspect, photoMaterial);
-          curvedScreenMesh = curvedScreenMeta.mesh;
-          scene.add(curvedScreenMesh);
-
           photoMaterial.map = tex;
           photoMaterial.needsUpdate = true;
-
-          if (controls) {
-            if (!curvedScreenMeta.is360) {
-              controls.minAzimuthAngle = -curvedScreenMeta.thetaLength * 0.46;
-              controls.maxAzimuthAngle = curvedScreenMeta.thetaLength * 0.46;
-              controls.minPolarAngle = Math.PI * 0.38;
-              controls.maxPolarAngle = Math.PI * 0.62;
-              controls.rotateSpeed = -0.32;
-            } else {
-              controls.minAzimuthAngle = -Infinity;
-              controls.maxAzimuthAngle = Infinity;
-              controls.minPolarAngle = Math.PI * 0.12;
-              controls.maxPolarAngle = Math.PI * 0.88;
-              controls.rotateSpeed = -0.42;
-            }
-            controls.update();
-          }
-
           recalculatePinpointPositions(projectData);
         });
       }
@@ -3055,8 +2989,8 @@
       openPlanModal('multi_angle_upgrade');
     }
 
-    function recalculatePinpointPositions(projectData) {
-      if (!curvedScreenMeta || !studioProducts) return;
+                                        function recalculatePinpointPositions(projectData) {
+      if (!studioProducts) return;
       const rawPinpoints = projectData?.pinpoints || [];
       const defaultUVs = [
         { u: 0.28, v: 0.62 },
@@ -3069,11 +3003,14 @@
         const u = typeof pin.u === 'number' ? pin.u : defaultUVs[idx].u;
         const v = typeof pin.v === 'number' ? pin.v : defaultUVs[idx].v;
 
-        const angle = curvedScreenMeta.thetaStart + (u * curvedScreenMeta.thetaLength);
-        const r = curvedScreenMeta.radius * 0.96;
-        const x = -r * Math.sin(angle);
-        const y = (0.5 - v) * curvedScreenMeta.height;
-        const z = r * Math.cos(angle);
+        // Spherical coordinate mapping for equirectangular 360 photo
+        const phi = (1 - v) * Math.PI;
+        const theta = (u * 2 * Math.PI) - Math.PI - 0.45; // match photoSphere.rotation.y
+        const r = 450;
+
+        const x = -r * Math.sin(phi) * Math.cos(theta);
+        const y = r * Math.cos(phi);
+        const z = r * Math.sin(phi) * Math.sin(theta);
 
         prod.worldPos = new THREE.Vector3(x, y, z);
       });
@@ -3274,11 +3211,12 @@
       ctx.fill();
     }
 
-    function studioAnimate(time) {
+            function studioAnimate(time) {
       requestAnimationFrame(studioAnimate);
       if (controls) controls.update();
       updateHotspots();
       drawRadar();
+
       if (renderer && scene && camera) {
         renderer.render(scene, camera);
       }
