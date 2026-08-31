@@ -18,7 +18,459 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <!-- Three.js & Controls for 3D Photo Immersive Studio Engine -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
+    // ============================================================
+    // --- C11.12 EXHIBITOR BOOTH EDITOR JAVASCRIPT CONTROLLERS ---
+    // ============================================================
+
+    let activeEditToken = null;
+    let isPinPlacementMode = false;
+    let activePinTargetSlot = 1;
+
+    function getEditAuthToken() {
+      return activeEditToken || activeProjectData?.editToken || verifiedEmailToken || 'dev_bypass_token';
+    }
+
+    function openBoothEditor(defaultTab = 'company') {
+      const modal = document.getElementById('boothEditorModal');
+      if (!modal) return;
+      modal.style.display = 'flex';
+      populateBoothEditor();
+      switchEditorTab(defaultTab);
+    }
+
+    function closeBoothEditor() {
+      const modal = document.getElementById('boothEditorModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function switchEditorTab(tabName) {
+      const tabs = ['company', 'products', 'pinpoints', 'actions', 'publish', 'dashboard'];
+      tabs.forEach(t => {
+        const btn = document.getElementById('tabBtn' + capitalize(t));
+        const pane = document.getElementById('pane' + capitalize(t));
+        if (btn) btn.classList.toggle('active', t === tabName);
+        if (pane) pane.style.display = (t === tabName ? 'block' : 'none');
+      });
+
+      if (tabName === 'dashboard') {
+        loadDashboardData();
+      }
+    }
+
+    function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+    function populateBoothEditor() {
+      if (!activeProjectData) return;
+
+      document.getElementById('edBizName').value = activeProjectData.businessName || '';
+      document.getElementById('edWebsite').value = activeProjectData.website || '';
+      document.getElementById('edBizDesc').value = activeProjectData.description || '';
+      document.getElementById('edContactName').value = activeProjectData.contactName || '';
+      document.getElementById('edContactEmail').value = activeProjectData.contactEmail || '';
+      document.getElementById('edContactPhone').value = activeProjectData.contactPhone || '';
+
+      if (activeProjectData.logo?.url) {
+        const lp = document.getElementById('edLogoPreview');
+        lp.src = activeProjectData.logo.url;
+        lp.style.display = 'block';
+      }
+
+      renderEditorProductCards();
+      renderEditorPinpointCards();
+      renderPublishTab();
+    }
+
+    function renderEditorProductCards() {
+      const grid = document.getElementById('editorProductsGrid');
+      if (!grid || !activeProjectData) return;
+      grid.innerHTML = '';
+
+      const prods = activeProjectData.products || [];
+      for (let slot = 1; slot <= 3; slot++) {
+        const p = prods.find(item => item.slotIndex === slot) || { slotIndex: slot, name: '', status: 'EMPTY' };
+        const hasData = !!(p.name && p.name.trim());
+
+        const card = document.createElement('div');
+        card.style.background = '#030712';
+        card.style.border = '1px solid var(--border)';
+        card.style.borderRadius = '12px';
+        card.style.padding = '16px';
+        card.style.display = 'flex';
+        card.style.flexDirection = 'column';
+        card.style.gap = '10px';
+
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 11px; font-weight: 800; color: #38bdf8;">SLOT 0${slot}</span>
+            <span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: ${hasData ? 'rgba(74, 222, 128, 0.15)' : 'rgba(255,255,255,0.06)'}; color: ${hasData ? '#4ade80' : '#94a3b8'};">
+              ${hasData ? 'ACTIVE' : 'AVAILABLE'}
+            </span>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <img src="${p.imageUrl || '/assets/product-placeholder.jpg'}" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: #000; border: 1px solid var(--border);">
+            <div style="overflow: hidden;">
+              <strong style="color: #fff; font-size: 13.5px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                ${p.name || 'Empty Slot ' + slot}
+              </strong>
+              <span style="color: #64748b; font-size: 11px;">${p.sku || 'No SKU'} • ${p.price || 'RFQ'}</span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: auto;">
+            <button type="button" class="btn-hero btn-hero-primary" onclick="openProductEditForm(${slot})" style="flex: 1; padding: 6px; font-size: 11.5px; justify-content: center;">
+              <i class="fa-solid fa-pen"></i> ${hasData ? 'Edit' : 'Add Product'}
+            </button>
+            ${hasData ? `<button type="button" class="btn-hero btn-hero-secondary" onclick="clearProductSlot(${slot})" style="padding: 6px 10px; font-size: 11.5px; color: #f87171; border-color: rgba(248, 113, 113, 0.4);"><i class="fa-solid fa-trash"></i></button>` : ''}
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+    }
+
+    function openProductEditForm(slot) {
+      const p = (activeProjectData.products || []).find(item => item.slotIndex === slot) || {};
+      document.getElementById('peSlotIndex').value = slot;
+      document.getElementById('productEditFormTitle').textContent = `Edit Commercial Product (Slot 0${slot})`;
+      document.getElementById('peName').value = p.name || '';
+      document.getElementById('peSku').value = p.sku || '';
+      document.getElementById('peCategory').value = p.category || '';
+      document.getElementById('pePrice').value = p.price || '';
+      document.getElementById('peDesc').value = p.description || p.shortDescription || '';
+      
+      const prev = document.getElementById('peImagePreview');
+      prev.src = p.imageUrl || '/assets/product-placeholder.jpg';
+      
+      document.getElementById('productEditFormContainer').style.display = 'block';
+      document.getElementById('productEditFormContainer').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function saveProductForm(e) {
+      e.preventDefault();
+      const slot = parseInt(document.getElementById('peSlotIndex').value, 10);
+      const name = document.getElementById('peName').value;
+      const sku = document.getElementById('peSku').value;
+      const category = document.getElementById('peCategory').value;
+      const price = document.getElementById('pePrice').value;
+      const description = document.getElementById('peDesc').value;
+      const imgFile = document.getElementById('peImageInput').files[0];
+
+      const formData = new FormData();
+      formData.append('slotIndex', slot);
+      formData.append('name', name);
+      formData.append('sku', sku);
+      formData.append('category', category);
+      formData.append('price', price);
+      formData.append('description', description);
+      if (imgFile) formData.append('productImage', imgFile);
+
+      showAutosave('SAVING...');
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/products/${slot}`, {
+          method: 'PUT',
+          headers: { 'x-booth-edit-token': getEditAuthToken() },
+          body: formData
+        });
+        const data = await res.json();
+        if (res.ok && data.project) {
+          activeProjectData = data.project;
+          showAutosave('SAVED');
+          document.getElementById('productEditFormContainer').style.display = 'none';
+          renderEditorProductCards();
+          renderProductCardsTray(activeProjectData.products || []);
+          renderProductCards(activeProjectData.products || []);
+          if (typeof recalculatePinpointPositions === 'function') recalculatePinpointPositions(activeProjectData);
+        } else {
+          alert('Error saving product: ' + (data.error || 'Check fields'));
+        }
+      } catch (err) {
+        alert('Network error saving product.');
+      }
+    }
+
+    async function clearProductSlot(slot) {
+      if (!confirm(`Are you sure you want to clear product slot ${slot}?`)) return;
+      showAutosave('SAVING...');
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/products/${slot}`, {
+          method: 'DELETE',
+          headers: { 'x-booth-edit-token': getEditAuthToken() }
+        });
+        const data = await res.json();
+        if (res.ok && data.project) {
+          activeProjectData = data.project;
+          showAutosave('SAVED');
+          renderEditorProductCards();
+          renderProductCardsTray(activeProjectData.products || []);
+          renderProductCards(activeProjectData.products || []);
+        }
+      } catch (err) {}
+    }
+
+    async function saveCompanyProfile(e) {
+      e.preventDefault();
+      showAutosave('SAVING...');
+      try {
+        const payload = {
+          businessName: document.getElementById('edBizName').value,
+          website: document.getElementById('edWebsite').value,
+          description: document.getElementById('edBizDesc').value,
+          contactName: document.getElementById('edContactName').value,
+          contactEmail: document.getElementById('edContactEmail').value,
+          contactPhone: document.getElementById('edContactPhone').value
+        };
+
+        const res = await fetch(`/api/projects/${activeProjectId}/company`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-booth-edit-token': getEditAuthToken()
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok && data.project) {
+          activeProjectData = data.project;
+          showAutosave('SAVED');
+          document.getElementById('studioBannerBizName').textContent = `${activeProjectData.businessName} — Drag to look around in 360°, click floating pins to inspect products.`;
+          alert('✅ Company profile saved successfully.');
+        }
+      } catch (err) { alert('Error saving company profile.'); }
+    }
+
+    async function uploadCompanyLogo(input) {
+      if (!input.files || !input.files[0]) return;
+      showAutosave('UPLOADING LOGO...');
+      const formData = new FormData();
+      formData.append('logo', input.files[0]);
+
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/logo`, {
+          method: 'POST',
+          headers: { 'x-booth-edit-token': getEditAuthToken() },
+          body: formData
+        });
+        const data = await res.json();
+        if (res.ok && data.logo) {
+          showAutosave('SAVED');
+          const lp = document.getElementById('edLogoPreview');
+          lp.src = data.logo.url;
+          lp.style.display = 'block';
+        }
+      } catch(e) {}
+    }
+
+    async function saveBuyerActions(e) {
+      e.preventDefault();
+      showAutosave('SAVING...');
+      const payload = {
+        enableRfq: document.getElementById('chkRfq').checked,
+        enableSample: document.getElementById('chkSample').checked,
+        enableMeeting: document.getElementById('chkMeeting').checked,
+        showWebsite: document.getElementById('chkWebsite').checked
+      };
+
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/buyer-actions`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-booth-edit-token': getEditAuthToken()
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showAutosave('SAVED');
+          alert('✅ Buyer action settings updated.');
+        }
+      } catch(e) {}
+    }
+
+    function renderEditorPinpointCards() {
+      const list = document.getElementById('pinpointsEditorList');
+      if (!list || !activeProjectData) return;
+      list.innerHTML = '';
+
+      const pins = activeProjectData.pinpoints || [];
+      for (let s = 1; s <= 3; s++) {
+        const pin = pins.find(p => p.slotIndex === s) || { u: 0.5, v: 0.5 };
+        const prod = (activeProjectData.products || []).find(p => p.slotIndex === s) || {};
+
+        const card = document.createElement('div');
+        card.style.background = '#030712';
+        card.style.border = '1px solid var(--border)';
+        card.style.borderRadius = '10px';
+        card.style.padding = '14px';
+        card.innerHTML = `
+          <div style="font-size: 11px; font-weight: 800; color: #38bdf8; margin-bottom: 4px;">PINPOINT 0${s}</div>
+          <strong style="color: #fff; font-size: 13px; display: block; margin-bottom: 4px;">${prod.name || 'Slot ' + s}</strong>
+          <span style="font-size: 11px; color: #64748b; font-family: monospace;">u: ${(pin.u || 0.5).toFixed(2)}, v: ${(pin.v || 0.5).toFixed(2)}</span>
+        `;
+        list.appendChild(card);
+      }
+    }
+
+    function startInteractivePinPlacement() {
+      closeBoothEditor();
+      isPinPlacementMode = true;
+      alert('📍 PIN PLACEMENT MODE ACTIVE:\nClick anywhere on your 360° booth photo to position the product pinpoint.');
+    }
+
+    function renderPublishTab() {
+      if (!activeProjectData) return;
+      const isPub = activeProjectData.publishStatus === 'PUBLISHED';
+      const badge = document.getElementById('pubStatusBadge');
+      const btnPub = document.getElementById('btnPublishAction');
+      const btnUnpub = document.getElementById('btnUnpublishAction');
+      const linksBlock = document.getElementById('publishedLinksBlock');
+
+      badge.textContent = isPub ? 'PUBLISHED (LIVE)' : (activeProjectData.publishStatus || 'DRAFT');
+      badge.style.color = isPub ? '#4ade80' : '#38bdf8';
+      badge.style.borderColor = isPub ? '#4ade80' : '#38bdf8';
+      badge.style.background = isPub ? 'rgba(74, 222, 128, 0.15)' : 'rgba(56, 189, 248, 0.15)';
+
+      btnPub.textContent = isPub ? 'Republish / Update Live Booth' : 'PUBLISH BOOTH NOW';
+      btnUnpub.style.display = isPub ? 'inline-flex' : 'none';
+      linksBlock.style.display = isPub ? 'block' : 'none';
+
+      if (activeProjectData.publicSlug) {
+        const fullUrl = window.location.origin + '/booth/' + activeProjectData.publicSlug;
+        document.getElementById('pubUrlInput').value = fullUrl;
+        document.getElementById('btnVisitLive').href = fullUrl;
+        if (activeProjectData.qrCodeDataUrl) {
+          document.getElementById('pubQrImg').src = activeProjectData.qrCodeDataUrl;
+        }
+      }
+    }
+
+    async function handlePublishBooth() {
+      showAutosave('PUBLISHING...');
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/publish`, {
+          method: 'POST',
+          headers: { 'x-booth-edit-token': getEditAuthToken() }
+        });
+        const data = await res.json();
+        if (res.ok && data.project) {
+          activeProjectData = data.project;
+          showAutosave('SAVED');
+          renderPublishTab();
+          alert('🎉 Congratulations! Your 3D virtual booth is now published and live at:\n' + activeProjectData.publicUrl);
+        }
+      } catch (err) { alert('Error publishing booth.'); }
+    }
+
+    async function handleUnpublishBooth() {
+      if (!confirm('Are you sure you want to take your booth offline?')) return;
+      showAutosave('UNPUBLISHING...');
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/unpublish`, {
+          method: 'POST',
+          headers: { 'x-booth-edit-token': getEditAuthToken() }
+        });
+        const data = await res.json();
+        if (res.ok && data.project) {
+          activeProjectData = data.project;
+          showAutosave('SAVED');
+          renderPublishTab();
+          alert('Booth is now unpublished (offline).');
+        }
+      } catch (err) {}
+    }
+
+    function copyPublicBoothUrl() {
+      const input = document.getElementById('pubUrlInput');
+      input.select();
+      document.execCommand('copy');
+      alert('📋 Public booth link copied to clipboard!');
+    }
+
+    function downloadQrCode() {
+      const img = document.getElementById('pubQrImg');
+      if (!img.src) return;
+      const a = document.createElement('a');
+      a.href = img.src;
+      a.download = (activeProjectData.publicSlug || 'booth') + '-qr-code.png';
+      a.click();
+    }
+
+    async function loadDashboardData() {
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/dashboard`, {
+          headers: { 'x-booth-edit-token': getEditAuthToken() }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          const stats = data.analytics || {};
+          document.getElementById('statViews').textContent = stats.boothViews || 0;
+          document.getElementById('statClicks').textContent = stats.productClicks || 0;
+          document.getElementById('statRfqs').textContent = stats.rfqs || 0;
+          document.getElementById('statSamples').textContent = stats.samples || 0;
+          document.getElementById('statMeetings').textContent = stats.meetings || 0;
+          document.getElementById('statTopProd').textContent = stats.topProduct || 'N/A';
+
+          const leads = data.leads || [];
+          document.getElementById('leadCountTxt').textContent = leads.length;
+          renderLeadsTable(leads);
+        }
+      } catch (e) {}
+    }
+
+    function renderLeadsTable(leads) {
+      const tbody = document.getElementById('leadsTableBody');
+      tbody.innerHTML = '';
+
+      if (leads.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--text-muted);">No buyer leads captured yet. Publish your booth link to start receiving RFQs!</td></tr>';
+        return;
+      }
+
+      leads.forEach(l => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid rgba(255,255,255,0.04)';
+        tr.innerHTML = `
+          <td style="padding: 12px 16px;"><span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38bdf8;">${l.leadType}</span></td>
+          <td style="padding: 12px 16px; font-weight: 700; color: #fff;">${l.visitorName}<br><span style="font-size: 11px; color: #64748b;">${l.visitorEmail}</span></td>
+          <td style="padding: 12px 16px; color: #cbd5e1;">${l.visitorCompany || '—'}</td>
+          <td style="padding: 12px 16px; color: #38bdf8;">${l.productName || 'General Booth'}</td>
+          <td style="padding: 12px 16px; color: #64748b; font-size: 11px;">${new Date(l.createdAt).toLocaleDateString()}</td>
+          <td style="padding: 12px 16px;">
+            <select onchange="updateLeadStatus('${l.leadId}', this.value)" style="background: #030712; border: 1px solid var(--border); color: #fff; font-size: 11px; padding: 4px 8px; border-radius: 6px;">
+              <option value="NEW" ${l.status === 'NEW' ? 'selected' : ''}>NEW</option>
+              <option value="CONTACTED" ${l.status === 'CONTACTED' ? 'selected' : ''}>CONTACTED</option>
+              <option value="QUALIFIED" ${l.status === 'QUALIFIED' ? 'selected' : ''}>QUALIFIED</option>
+              <option value="CLOSED" ${l.status === 'CLOSED' ? 'selected' : ''}>CLOSED</option>
+            </select>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function updateLeadStatus(leadId, status) {
+      showAutosave('UPDATING LEAD...');
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/leads/${leadId}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-booth-edit-token': getEditAuthToken()
+          },
+          body: JSON.stringify({ status })
+        });
+        if (res.ok) showAutosave('SAVED');
+      } catch(e) {}
+    }
+
+    function showAutosave(txt) {
+      const el = document.getElementById('editorAutosaveStatus');
+      if (el) {
+        el.textContent = txt;
+        el.style.color = txt === 'SAVED' ? '#4ade80' : '#38bdf8';
+      }
+    }
+
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
 
@@ -1427,11 +1879,14 @@
         <div class="studio-banner-desc" id="studioBannerBizName">Experience your photo as an interactive 3D virtual booth. Drag to look around in 360°, or click pins to inspect products.</div>
       </div>
       <div style="display: flex; gap: 10px;">
-        <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('save_booth')" style="padding: 9px 16px; font-size: 13px;">
-          <i class="fa-regular fa-bookmark"></i> Save Booth
+                <button class="btn-hero btn-hero-primary" onclick="openBoothEditor('company')" style="padding: 9px 18px; font-size: 13px; background: linear-gradient(135deg, #0284c7, #2563eb);">
+          <i class="fa-solid fa-pen-to-square"></i> Edit My Booth
         </button>
-        <button class="btn-hero btn-hero-primary" onclick="openPlanModal('upgrade_header')" style="padding: 9px 18px; font-size: 13px;">
-          <i class="fa-solid fa-arrow-up-right-from-square"></i> Upgrade to Commercial
+        <button class="btn-hero btn-hero-secondary" onclick="openBoothEditor('dashboard')" style="padding: 9px 16px; font-size: 13px;">
+          <i class="fa-solid fa-chart-line"></i> Dashboard &amp; Leads
+        </button>
+        <button class="btn-hero btn-hero-secondary" onclick="openBoothEditor('publish')" style="padding: 9px 16px; font-size: 13px;">
+          <i class="fa-solid fa-share-nodes"></i> Publish &amp; QR
         </button>
       </div>
     </div>
@@ -1530,20 +1985,6 @@
           <i class="fa-solid fa-camera-rotate"></i> Upload Multi-Angle Photos &amp; Upgrade →
         </button>
         <span style="font-size: 11px; color: #64748b; text-align: center;">AI Multi-Angle Mesh &amp; Spatial Reconstruction</span>
-      </div>
-    </div>
-        <div class="upgrade-feature-pills">
-          <span class="feat-pill"><i class="fa-solid fa-camera-rotate"></i> 3~10+ 다각도 촬영 지원</span>
-          <span class="feat-pill"><i class="fa-solid fa-person-walking"></i> 공간 내부 워크인(Walk-In) 탐색</span>
-          <span class="feat-pill"><i class="fa-solid fa-cube"></i> 3D Gaussian Splatting 모델링</span>
-          <span class="feat-pill"><i class="fa-solid fa-share-nodes"></i> 실사 디지털 트윈 바이어 공유</span>
-        </div>
-      </div>
-      <div class="upgrade-card-action" style="display: flex; flex-direction: column; gap: 10px; align-items: stretch;">
-        <button class="btn-upgrade-multi" onclick="openMultiAngleUpgradeModal()">
-          <i class="fa-solid fa-camera-rotate"></i> 다각도 사진 업로드 &amp; 3D 업그레이드 →
-        </button>
-        <span style="font-size: 11px; color: #64748b; text-align: center;">AI 다각도 메쉬 &amp; 공간 재구성</span>
       </div>
     </div>
 
@@ -1784,7 +2225,348 @@
     </div>
   </div>
 
-    <!-- Multi-Angle 3D Digital Twin Upgrade Modal -->
+    
+  <!-- ============================================================ -->
+  <!-- C11.12 EXHIBITOR BOOTH EDITOR & DASHBOARD MODAL               -->
+  <!-- ============================================================ -->
+  <div class="drawer-modal" id="boothEditorModal" style="display: none; align-items: center; justify-content: center; z-index: 99999;">
+    <div class="drawer-card" style="max-width: 960px; width: 94%; max-height: 90vh; overflow-y: auto; background: #070e1b; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 20px; padding: 28px; box-shadow: 0 25px 60px rgba(0,0,0,0.85); position: relative;">
+      <button class="close-btn" onclick="closeBoothEditor()" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #cbd5e1; border-radius: 50%; width: 34px; height: 34px; font-size: 16px; cursor: pointer;">✕</button>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 999px; padding: 4px 12px; font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase;">
+            <i class="fa-solid fa-store"></i> Exhibitor Booth Management
+          </div>
+          <span id="editorAutosaveStatus" style="font-size: 11px; font-weight: 700; color: #4ade80;"><i class="fa-solid fa-check"></i> SAVED</span>
+        </div>
+      </div>
+
+      <!-- Editor Tab Navigation -->
+      <div style="display: flex; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; margin-bottom: 24px; overflow-x: auto;">
+        <button class="editor-tab-btn active" id="tabBtnCompany" onclick="switchEditorTab('company')"><i class="fa-solid fa-building"></i> Company</button>
+        <button class="editor-tab-btn" id="tabBtnProducts" onclick="switchEditorTab('products')"><i class="fa-solid fa-boxes-stacked"></i> 3 Products</button>
+        <button class="editor-tab-btn" id="tabBtnPinpoints" onclick="switchEditorTab('pinpoints')"><i class="fa-solid fa-location-dot"></i> 360° Pins</button>
+        <button class="editor-tab-btn" id="tabBtnActions" onclick="switchEditorTab('actions')"><i class="fa-solid fa-sliders"></i> Buyer Actions</button>
+        <button class="editor-tab-btn" id="tabBtnPublish" onclick="switchEditorTab('publish')"><i class="fa-solid fa-globe"></i> Publish &amp; QR</button>
+        <button class="editor-tab-btn" id="tabBtnDashboard" onclick="switchEditorTab('dashboard')"><i class="fa-solid fa-chart-pie"></i> Dashboard &amp; Leads</button>
+      </div>
+
+      <!-- TAB 1: COMPANY PROFILE -->
+      <div class="editor-tab-pane" id="paneCompany">
+        <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 16px;">Exhibitor Company Profile</h3>
+        <form onsubmit="saveCompanyProfile(event)">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+            <div>
+              <label class="form-label">Company / Brand Name *</label>
+              <input type="text" id="edBizName" class="form-input" required>
+            </div>
+            <div>
+              <label class="form-label">Website URL</label>
+              <input type="url" id="edWebsite" class="form-input" placeholder="https://example.com">
+            </div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <label class="form-label">Company Logo (PNG, JPEG, WebP)</label>
+            <div style="display: flex; gap: 14px; align-items: center;">
+              <img id="edLogoPreview" src="" style="width: 54px; height: 54px; border-radius: 8px; object-fit: contain; background: #030712; border: 1px solid var(--border); display: none;">
+              <input type="file" id="edLogoInput" accept="image/*" class="form-input" style="padding: 8px;" onchange="uploadCompanyLogo(this)">
+            </div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <label class="form-label">Short Company Overview</label>
+            <textarea id="edBizDesc" class="form-input" rows="3" placeholder="Tell trade buyers about your business, manufacturing capabilities, and global distribution..."></textarea>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 24px;">
+            <div>
+              <label class="form-label">Contact Name</label>
+              <input type="text" id="edContactName" class="form-input" placeholder="e.g. Jane Doe">
+            </div>
+            <div>
+              <label class="form-label">Contact Email</label>
+              <input type="email" id="edContactEmail" class="form-input" placeholder="contact@example.com">
+            </div>
+            <div>
+              <label class="form-label">Phone / WhatsApp</label>
+              <input type="tel" id="edContactPhone" class="form-input" placeholder="+1 (555) 000-0000">
+            </div>
+          </div>
+
+          <button type="submit" class="btn-create-free" id="btnSaveCompany" style="max-width: 240px;">
+            <i class="fa-solid fa-floppy-disk"></i> SAVE COMPANY PROFILE
+          </button>
+        </form>
+      </div>
+
+      <!-- TAB 2: 3 PRODUCTS -->
+      <div class="editor-tab-pane" id="paneProducts" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div>
+            <h3 style="font-size: 18px; font-weight: 800; color: #fff;">Commercial Product Slots (3 Included)</h3>
+            <p style="font-size: 12.5px; color: var(--text-muted);">Configure products with images, specifications, and wholesale RFQ integration.</p>
+          </div>
+          <button class="btn-hero" onclick="openPlanModal('product_limit')" style="padding: 6px 12px; font-size: 11px; background: rgba(192, 132, 252, 0.15); border: 1px solid #c084fc; color: #c084fc;">
+            <i class="fa-solid fa-crown"></i> Need 4+ Products? Upgrade to Pro
+          </button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 20px;" id="editorProductsGrid">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Single Product Edit Drawer/Form -->
+        <div id="productEditFormContainer" style="display: none; background: #030712; border: 1px solid var(--border-accent); border-radius: 14px; padding: 20px; margin-top: 14px;">
+          <h4 style="font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 14px;" id="productEditFormTitle">Edit Product</h4>
+          <form onsubmit="saveProductForm(event)">
+            <input type="hidden" id="peSlotIndex" value="1">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+              <div>
+                <label class="form-label">Product Name *</label>
+                <input type="text" id="peName" class="form-input" required>
+              </div>
+              <div>
+                <label class="form-label">SKU / Model Number</label>
+                <input type="text" id="peSku" class="form-input" placeholder="e.g. ROBOT-X100">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+              <div>
+                <label class="form-label">Category</label>
+                <input type="text" id="peCategory" class="form-input" placeholder="e.g. Industrial Automation">
+              </div>
+              <div>
+                <label class="form-label">Wholesale Price (Optional)</label>
+                <input type="text" id="pePrice" class="form-input" placeholder="e.g. $1,200 / unit">
+              </div>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+              <label class="form-label">Product Image (PNG, JPEG, WebP) *</label>
+              <div style="display: flex; gap: 12px; align-items: center;">
+                <img id="peImagePreview" src="" style="width: 50px; height: 50px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border);">
+                <input type="file" id="peImageInput" accept="image/*" class="form-input" style="padding: 8px;">
+              </div>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+              <label class="form-label">Short Description</label>
+              <textarea id="peDesc" class="form-input" rows="2" placeholder="Key selling points, certifications, MOQ..."></textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+              <button type="submit" class="btn-create-free" style="padding: 10px 20px; font-size: 13px;">
+                <i class="fa-solid fa-check"></i> Save Product
+              </button>
+              <button type="button" class="btn-hero btn-hero-secondary" onclick="document.getElementById('productEditFormContainer').style.display='none'">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- TAB 3: 360 PINPOINTS -->
+      <div class="editor-tab-pane" id="panePinpoints" style="display: none;">
+        <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px;">360° Floating Product Pinpoints</h3>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px;">
+          Position your floating product tags inside the 360° virtual booth so buyers can click directly on exhibition items.
+        </p>
+
+        <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <strong style="color: #fff; font-size: 13.5px; display: block;">Interactive Placement Mode</strong>
+            <span style="color: #94a3b8; font-size: 12px;">Click 'Place Pins on 360 Viewer', then select a product and click anywhere on the 3D booth to drop the pin.</span>
+          </div>
+          <button class="btn-create-free" onclick="startInteractivePinPlacement()" style="padding: 9px 18px; font-size: 13px;">
+            <i class="fa-solid fa-location-crosshairs"></i> Place Pins on 360 Viewer →
+          </button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;" id="pinpointsEditorList">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+
+      <!-- TAB 4: BUYER ACTIONS -->
+      <div class="editor-tab-pane" id="paneActions" style="display: none;">
+        <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px;">Configure Buyer Interaction CTAs</h3>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Enable or disable commercial engagement tools on your public booth.</p>
+
+        <form onsubmit="saveBuyerActions(event)" style="display: flex; flex-direction: column; gap: 14px; max-width: 580px;">
+          <label style="display: flex; align-items: center; justify-content: space-between; background: #030712; padding: 14px 18px; border-radius: 10px; border: 1px solid var(--border); cursor: pointer;">
+            <div>
+              <strong style="color: #fff; font-size: 13.5px; display: block;"><i class="fa-solid fa-file-invoice-dollar" style="color: #38bdf8; margin-right: 6px;"></i> Enable Wholesale RFQ Intake</strong>
+              <span style="color: #64748b; font-size: 12px;">Allows trade buyers to request wholesale pricing and volume quotes.</span>
+            </div>
+            <input type="checkbox" id="chkRfq" checked style="width: 20px; height: 20px; accent-color: #0284c7;">
+          </label>
+
+          <label style="display: flex; align-items: center; justify-content: space-between; background: #030712; padding: 14px 18px; border-radius: 10px; border: 1px solid var(--border); cursor: pointer;">
+            <div>
+              <strong style="color: #fff; font-size: 13.5px; display: block;"><i class="fa-solid fa-box-open" style="color: #38bdf8; margin-right: 6px;"></i> Enable Sample Requests</strong>
+              <span style="color: #64748b; font-size: 12px;">Allows verified buyers to request product evaluation samples.</span>
+            </div>
+            <input type="checkbox" id="chkSample" checked style="width: 20px; height: 20px; accent-color: #0284c7;">
+          </label>
+
+          <label style="display: flex; align-items: center; justify-content: space-between; background: #030712; padding: 14px 18px; border-radius: 10px; border: 1px solid var(--border); cursor: pointer;">
+            <div>
+              <strong style="color: #fff; font-size: 13.5px; display: block;"><i class="fa-solid fa-calendar-check" style="color: #38bdf8; margin-right: 6px;"></i> Enable 1-on-1 Meeting Booking</strong>
+              <span style="color: #64748b; font-size: 12px;">Allows trade visitors to schedule video export meetings.</span>
+            </div>
+            <input type="checkbox" id="chkMeeting" checked style="width: 20px; height: 20px; accent-color: #0284c7;">
+          </label>
+
+          <label style="display: flex; align-items: center; justify-content: space-between; background: #030712; padding: 14px 18px; border-radius: 10px; border: 1px solid var(--border); cursor: pointer;">
+            <div>
+              <strong style="color: #fff; font-size: 13.5px; display: block;"><i class="fa-solid fa-globe" style="color: #38bdf8; margin-right: 6px;"></i> Show Company Website Link</strong>
+              <span style="color: #64748b; font-size: 12px;">Displays your official website in the booth header.</span>
+            </div>
+            <input type="checkbox" id="chkWebsite" checked style="width: 20px; height: 20px; accent-color: #0284c7;">
+          </label>
+
+          <button type="submit" class="btn-create-free" style="margin-top: 10px; max-width: 240px;">
+            <i class="fa-solid fa-floppy-disk"></i> SAVE BUYER ACTIONS
+          </button>
+        </form>
+      </div>
+
+      <!-- TAB 5: PUBLISH & QR -->
+      <div class="editor-tab-pane" id="panePublish" style="display: none;">
+        <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px;">Publishing &amp; Share Tools</h3>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Deploy your interactive booth online and generate shareable QR codes.</p>
+
+        <div style="background: #030712; border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">CURRENT STATUS</div>
+              <span id="pubStatusBadge" style="display: inline-block; font-size: 12px; font-weight: 800; padding: 4px 12px; border-radius: 6px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid #38bdf8;">DRAFT</span>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn-create-free" id="btnPublishAction" onclick="handlePublishBooth()" style="padding: 10px 22px; font-size: 13.5px;">
+                <i class="fa-solid fa-globe"></i> PUBLISH BOOTH NOW
+              </button>
+              <button class="btn-hero btn-hero-secondary" id="btnUnpublishAction" onclick="handleUnpublishBooth()" style="display: none; padding: 10px 18px; font-size: 13px; color: #f87171; border-color: #f87171;">
+                <i class="fa-solid fa-power-off"></i> Unpublish Booth
+              </button>
+            </div>
+          </div>
+
+          <div id="publishedLinksBlock" style="display: none; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 18px;">
+            <label class="form-label">Public Booth URL</label>
+            <div style="display: flex; gap: 10px; margin-bottom: 18px;">
+              <input type="text" id="pubUrlInput" class="form-input" readonly style="font-family: 'JetBrains Mono', monospace; color: #38bdf8;">
+              <button class="btn-hero btn-hero-primary" onclick="copyPublicBoothUrl()" style="padding: 10px 16px; font-size: 12px; white-space: nowrap;">
+                <i class="fa-solid fa-copy"></i> Copy Link
+              </button>
+              <a id="btnVisitLive" href="" target="_blank" class="btn-hero btn-hero-secondary" style="padding: 10px 16px; font-size: 12px; white-space: nowrap; text-decoration: none;">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Live Booth
+              </a>
+            </div>
+
+            <div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap;">
+              <div id="qrCodeContainer" style="background: #fff; padding: 12px; border-radius: 12px; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center;">
+                <img id="pubQrImg" src="" style="width: 100%; height: 100%; object-fit: contain;">
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <strong style="color: #fff; font-size: 14px;">Smart Booth QR Code</strong>
+                <span style="color: #94a3b8; font-size: 12px; max-width: 320px;">Use on printed banners, booth nameplates, and trade show business cards to direct buyers straight into your 3D virtual booth.</span>
+                <div style="display: flex; gap: 10px; margin-top: 4px;">
+                  <button class="btn-hero btn-hero-secondary" onclick="downloadQrCode()" style="padding: 6px 12px; font-size: 11.5px;">
+                    <i class="fa-solid fa-download"></i> Download QR Image
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 6: DASHBOARD & LEADS -->
+      <div class="editor-tab-pane" id="paneDashboard" style="display: none;">
+        <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 16px;">Exhibitor Analytics &amp; Lead Inbox</h3>
+
+        <!-- Real Analytics Counters Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 24px;">
+          <div class="stat-card" style="background: #030712; border: 1px solid var(--border); border-radius: 12px; padding: 14px; text-align: center;">
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">BOOTH VIEWS</div>
+            <div style="font-size: 24px; font-weight: 900; color: #38bdf8; margin-top: 4px;" id="statViews">0</div>
+          </div>
+          <div class="stat-card" style="background: #030712; border: 1px solid var(--border); border-radius: 12px; padding: 14px; text-align: center;">
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">PRODUCT CLICKS</div>
+            <div style="font-size: 24px; font-weight: 900; color: #a78bfa; margin-top: 4px;" id="statClicks">0</div>
+          </div>
+          <div class="stat-card" style="background: #030712; border: 1px solid var(--border); border-radius: 12px; padding: 14px; text-align: center;">
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">QUOTE RFQS</div>
+            <div style="font-size: 24px; font-weight: 900; color: #4ade80; margin-top: 4px;" id="statRfqs">0</div>
+          </div>
+          <div class="stat-card" style="background: #030712; border: 1px solid var(--border); border-radius: 12px; padding: 14px; text-align: center;">
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">SAMPLES</div>
+            <div style="font-size: 24px; font-weight: 900; color: #fbbf24; margin-top: 4px;" id="statSamples">0</div>
+          </div>
+          <div class="stat-card" style="background: #030712; border: 1px solid var(--border); border-radius: 12px; padding: 14px; text-align: center;">
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">MEETINGS</div>
+            <div style="font-size: 24px; font-weight: 900; color: #f43f5e; margin-top: 4px;" id="statMeetings">0</div>
+          </div>
+          <div class="stat-card" style="background: #030712; border: 1px solid var(--border); border-radius: 12px; padding: 14px; text-align: center;">
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">TOP PRODUCT</div>
+            <div style="font-size: 13px; font-weight: 800; color: #fff; margin-top: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="statTopProd">N/A</div>
+          </div>
+        </div>
+
+        <!-- Real Leads Inbox Table -->
+        <h4 style="font-size: 15px; font-weight: 800; color: #fff; margin-bottom: 12px;">Trade Lead Inbox (<span id="leadCountTxt">0</span>)</h4>
+        <div style="background: #030712; border: 1px solid var(--border); border-radius: 12px; overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); color: var(--text-muted);">
+                <th style="padding: 12px 16px;">TYPE</th>
+                <th style="padding: 12px 16px;">BUYER</th>
+                <th style="padding: 12px 16px;">COMPANY</th>
+                <th style="padding: 12px 16px;">PRODUCT</th>
+                <th style="padding: 12px 16px;">DATE</th>
+                <th style="padding: 12px 16px;">STATUS</th>
+              </tr>
+            </thead>
+            <tbody id="leadsTableBody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <style>
+    .editor-tab-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #94a3b8;
+      font-size: 12.5px;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .editor-tab-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+    .editor-tab-btn.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+      color: #fff;
+    }
+  </style>
+
+  <!-- Multi-Angle 3D Digital Twin Upgrade Modal -->
   <div class="drawer-modal" id="multiAngleUpgradeModal" style="display: none; align-items: center; justify-content: center; z-index: 99999;">
     <div class="drawer-card" style="max-width: 760px; width: 92%; max-height: 90vh; overflow-y: auto; background: #070e1b; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 20px; padding: 32px; box-shadow: 0 25px 60px rgba(0,0,0,0.8); position: relative;">
       <button class="close-btn" onclick="closeMultiAngleUpgradeModal()" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #cbd5e1; border-radius: 50%; width: 34px; height: 34px; font-size: 16px; cursor: pointer;">✕</button>

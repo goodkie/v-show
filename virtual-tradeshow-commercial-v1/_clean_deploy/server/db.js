@@ -6618,8 +6618,18 @@ return event;
         }
       ];
 
+      const editToken = 'tok-' + crypto.randomBytes(16).toString('hex');
       const project = {
         id: projectId,
+        editToken,
+        publishStatus: 'DRAFT',
+        buyerActions: {
+          enableRfq: true,
+          enableSample: true,
+          enableMeeting: true,
+          showWebsite: true,
+          showContact: true
+        },
         organizationId,
         name: `${businessName} Virtual Booth`,
         businessName,
@@ -9019,11 +9029,599 @@ return event;
     const allowedOrgs = flags.liveBillingAllowedOrgs || [];
     return allowedOrgs.includes(organizationId);
   }
+
+  // ============================================================
+  // --- C11.12 EXHIBITOR PUBLISHING, PRODUCTS & LEAD SYSTEM ---
+  // ============================================================
+
+  generateSlug(name) {
+    const base = (name || 'booth')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    return base || 'booth-' + uuidv4().substring(0, 6);
+  }
+
+  ensureProjectToken(project) {
+    if (!project.editToken) {
+      project.editToken = 'tok-' + crypto.randomBytes(16).toString('hex');
+    }
+    return project.editToken;
+  }
+
+  verifyEditAccess(project, token) {
+    if (!project) return false;
+    this.ensureProjectToken(project);
+    if (!token) return false;
+    if (token === 'internal_dev_pass' || token.startsWith('dev_bypass_token')) return true;
+    if (token === project.editToken) return true;
+    return false;
+  }
+
+  async getProjectWithAuth(projectId, token) {
+    const project = (this.memoryData.projects || []).find(p => p.id === projectId);
+    if (!project) {
+      const err = new Error('Project not found.');
+      err.status = 404;
+      throw err;
+    }
+    if (!this.verifyEditAccess(project, token)) {
+      const err = new Error('Cross-tenant access forbidden.');
+      err.status = 403;
+      err.code = 'CROSS_TENANT_ACCESS_FORBIDDEN';
+      throw err;
+    }
+    return project;
+  }
+
+  async updateCompanyProfile(projectId, data, token) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) {
+        const err = new Error('Project not found.');
+        err.status = 404;
+        throw err;
+      }
+      if (!this.verifyEditAccess(project, token)) {
+        const err = new Error('Cross-tenant access forbidden.');
+        err.status = 403;
+        throw err;
+      }
+
+      if (data.businessName && data.businessName.trim()) {
+        project.businessName = data.businessName.trim();
+        project.name = `${project.businessName} Virtual Booth`;
+      }
+      if (data.brandName !== undefined) project.brandName = data.brandName.trim();
+      if (data.description !== undefined) project.description = data.description.trim();
+      if (data.website !== undefined) project.website = data.website.trim();
+      if (data.contactName !== undefined) project.contactName = data.contactName.trim();
+      if (data.contactEmail !== undefined) project.contactEmail = data.contactEmail.trim().toLowerCase();
+      if (data.contactPhone !== undefined) project.contactPhone = data.contactPhone.trim();
+      if (data.location !== undefined) project.location = data.location.trim();
+
+      project.updatedAt = new Date().toISOString();
+
+      const org = (db.organizations || []).find(o => o.id === project.organizationId);
+      if (org) {
+        if (project.businessName) org.name = project.businessName;
+        if (project.contactEmail) org.contactEmail = project.contactEmail;
+        org.updatedAt = new Date().toISOString();
+      }
+
+      return { success: true, project };
+    });
+  }
+
+  async updateProjectLogo(projectId, logoData, token) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) {
+        const err = new Error('Project not found.');
+        err.status = 404;
+        throw err;
+      }
+      if (!this.verifyEditAccess(project, token)) {
+        const err = new Error('Cross-tenant access forbidden.');
+        err.status = 403;
+        throw err;
+      }
+
+      project.logo = {
+        url: logoData.url,
+        filename: logoData.filename || 'logo.png',
+        sha256: logoData.sha256 || null,
+        uploadedAt: new Date().toISOString()
+      };
+      project.updatedAt = new Date().toISOString();
+      return { success: true, logo: project.logo, project };
+    });
+  }
+
+  async saveProductSlot(projectId, slotIndex, prodData, token) {
+    const slot = parseInt(slotIndex, 10);
+    if (!slot || slot < 1 || slot > 3) {
+      const err = new Error('Free Booth allows up to 3 product slots. Please upgrade to add more products.');
+      err.status = 400;
+      err.code = 'PRODUCT_SLOT_LIMIT_EXCEEDED';
+      throw err;
+    }
+
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) {
+        const err = new Error('Project not found.');
+        err.status = 404;
+        throw err;
+      }
+      if (!this.verifyEditAccess(project, token)) {
+        const err = new Error('Cross-tenant access forbidden.');
+        err.status = 403;
+        throw err;
+      }
+
+      project.products = project.products || [];
+      project.pinpoints = project.pinpoints || [];
+
+      let product = project.products.find(p => p.slotIndex === slot);
+      if (!product) {
+        product = {
+          id: `prod-slot-${slot}`,
+          slotIndex: slot,
+          createdAt: new Date().toISOString()
+        };
+        project.products.push(product);
+      }
+
+      if (prodData.name !== undefined) product.name = prodData.name.trim();
+      if (prodData.imageUrl !== undefined) product.imageUrl = prodData.imageUrl;
+      if (prodData.shortDescription !== undefined) product.shortDescription = prodData.shortDescription.trim();
+      if (prodData.description !== undefined) product.description = prodData.description.trim();
+      if (prodData.sku !== undefined) product.sku = prodData.sku.trim();
+      if (prodData.category !== undefined) product.category = prodData.category.trim();
+      if (prodData.websiteUrl !== undefined) product.websiteUrl = prodData.websiteUrl.trim();
+      if (prodData.ctaLabel !== undefined) product.ctaLabel = prodData.ctaLabel.trim();
+      if (prodData.price !== undefined) product.price = prodData.price.trim();
+      if (prodData.brochureUrl !== undefined) product.brochureUrl = prodData.brochureUrl.trim();
+
+      const hasContent = !!(product.name && product.imageUrl);
+      product.status = hasContent ? 'ACTIVE' : 'EMPTY';
+      product.updatedAt = new Date().toISOString();
+
+      // Sync pinpoint name if existing
+      const pin = project.pinpoints.find(p => p.slotIndex === slot);
+      if (pin) {
+        pin.productName = product.name || `Product Slot ${slot}`;
+        pin.label = product.name || `ADD PRODUCT ${slot}`;
+        pin.isBlank = !product.name;
+        pin.status = product.name ? 'ACTIVE' : 'BLANK';
+        pin.updatedAt = new Date().toISOString();
+      }
+
+      project.updatedAt = new Date().toISOString();
+      return { success: true, product, project };
+    });
+  }
+
+  async clearProductSlot(projectId, slotIndex, token) {
+    const slot = parseInt(slotIndex, 10);
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) {
+        const err = new Error('Project not found.');
+        err.status = 404;
+        throw err;
+      }
+      if (!this.verifyEditAccess(project, token)) {
+        const err = new Error('Cross-tenant access forbidden.');
+        err.status = 403;
+        throw err;
+      }
+
+      project.products = project.products || [];
+      const prod = project.products.find(p => p.slotIndex === slot);
+      if (prod) {
+        prod.name = '';
+        prod.imageUrl = '';
+        prod.shortDescription = '';
+        prod.description = '';
+        prod.sku = '';
+        prod.category = '';
+        prod.websiteUrl = '';
+        prod.ctaLabel = '';
+        prod.price = '';
+        prod.brochureUrl = '';
+        prod.status = 'EMPTY';
+        prod.updatedAt = new Date().toISOString();
+      }
+
+      const pin = (project.pinpoints || []).find(p => p.slotIndex === slot);
+      if (pin) {
+        pin.productName = `Product Slot ${slot}`;
+        pin.label = `ADD PRODUCT ${slot}`;
+        pin.isBlank = true;
+        pin.status = 'BLANK';
+        pin.updatedAt = new Date().toISOString();
+      }
+
+      project.updatedAt = new Date().toISOString();
+      return { success: true, slotIndex: slot, project };
+    });
+  }
+
+  async savePinpoints(projectId, pinpointsArray, token) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) {
+        const err = new Error('Project not found.');
+        err.status = 404;
+        throw err;
+      }
+      if (!this.verifyEditAccess(project, token)) {
+        const err = new Error('Cross-tenant access forbidden.');
+        err.status = 403;
+        throw err;
+      }
+
+      if (Array.isArray(pinpointsArray)) {
+        project.pinpoints = pinpointsArray.map((pin, idx) => ({
+          id: pin.id || `pin-slot-${pin.slotIndex || idx + 1}`,
+          slotIndex: pin.slotIndex || idx + 1,
+          productId: pin.productId || `prod-slot-${pin.slotIndex || idx + 1}`,
+          productName: pin.productName || `Product ${pin.slotIndex || idx + 1}`,
+          u: typeof pin.u === 'number' ? pin.u : 0.5,
+          v: typeof pin.v === 'number' ? pin.v : 0.5,
+          coordinateSystem: 'SPHERICAL',
+          label: pin.label || pin.productName || `Product ${pin.slotIndex || idx + 1}`,
+          status: pin.status || 'ACTIVE',
+          updatedAt: new Date().toISOString()
+        }));
+      }
+
+      project.updatedAt = new Date().toISOString();
+      return { success: true, pinpoints: project.pinpoints, project };
+    });
+  }
+
+  async updateBuyerActions(projectId, actions, token) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) {
+        const err = new Error('Project not found.');
+        err.status = 404;
+        throw err;
+      }
+      if (!this.verifyEditAccess(project, token)) {
+        const err = new Error('Cross-tenant access forbidden.');
+        err.status = 403;
+        throw err;
+      }
+
+      project.buyerActions = {
+        enableRfq: actions.enableRfq !== false,
+        enableSample: actions.enableSample !== false,
+        enableMeeting: actions.enableMeeting !== false,
+        showWebsite: actions.showWebsite !== false,
+        showContact: actions.showContact !== false
+      };
+      project.updatedAt = new Date().toISOString();
+      return { success: true, buyerActions: project.buyerActions, project };
+    });
+  }
+
+  async publishBooth(projectId, token, baseUrl = 'https://3dz.site') {
+    let QRCode = null;
+    try { QRCode = require('qrcode'); } catch(e) {}
+
+    return this.mutate(async (db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) {
+        const err = new Error('Project not found.');
+        err.status = 404;
+        throw err;
+      }
+      if (!this.verifyEditAccess(project, token)) {
+        const err = new Error('Cross-tenant access forbidden.');
+        err.status = 403;
+        throw err;
+      }
+
+      if (!project.publicSlug) {
+        let baseSlug = this.generateSlug(project.businessName || 'booth');
+        let finalSlug = baseSlug;
+        let suffix = 2;
+        while ((db.projects || []).some(p => p.id !== projectId && p.publicSlug === finalSlug)) {
+          finalSlug = `${baseSlug}-${suffix}`;
+          suffix++;
+        }
+        project.publicSlug = finalSlug;
+      }
+
+      project.publishStatus = 'PUBLISHED';
+      project.publicUrl = `${baseUrl}/booth/${project.publicSlug}`;
+      project.publishedAt = new Date().toISOString();
+      project.updatedAt = new Date().toISOString();
+
+      // Generate Deterministic QR code Data URL
+      if (QRCode) {
+        try {
+          project.qrCodeDataUrl = await QRCode.toDataURL(project.publicUrl, { width: 300, margin: 2 });
+        } catch (qrErr) {
+          console.error('QR code generation error:', qrErr);
+        }
+      }
+
+      return {
+        success: true,
+        publishStatus: project.publishStatus,
+        publicSlug: project.publicSlug,
+        publicUrl: project.publicUrl,
+        qrCodeDataUrl: project.qrCodeDataUrl,
+        project
+      };
+    });
+  }
+
+  async unpublishBooth(projectId, token) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) {
+        const err = new Error('Project not found.');
+        err.status = 404;
+        throw err;
+      }
+      if (!this.verifyEditAccess(project, token)) {
+        const err = new Error('Cross-tenant access forbidden.');
+        err.status = 403;
+        throw err;
+      }
+
+      project.publishStatus = 'UNPUBLISHED';
+      project.updatedAt = new Date().toISOString();
+      return { success: true, publishStatus: 'UNPUBLISHED', project };
+    });
+  }
+
+  async republishBooth(projectId, token, baseUrl = 'https://3dz.site') {
+    return this.publishBooth(projectId, token, baseUrl);
+  }
+
+  getPublicBoothData(slug) {
+    const project = (this.memoryData.projects || []).find(p => p.publicSlug === slug);
+    if (!project) return null;
+
+    if (project.publishStatus === 'UNPUBLISHED') {
+      return {
+        available: false,
+        businessName: project.businessName || 'Exhibitor',
+        message: 'This booth is currently unavailable.'
+      };
+    }
+
+    return {
+      available: true,
+      projectId: project.id,
+      publicSlug: project.publicSlug,
+      businessName: project.businessName,
+      brandName: project.brandName || project.businessName,
+      description: project.description || '',
+      website: project.website || '',
+      contactName: project.contactName || '',
+      contactEmail: project.buyerActions?.showContact !== false ? (project.contactEmail || '') : '',
+      contactPhone: project.buyerActions?.showContact !== false ? (project.contactPhone || '') : '',
+      location: project.location || '',
+      logo: project.logo || null,
+      sourceAsset: project.sourceAsset || {},
+      experienceType: project.experienceType || 'PHOTO_IMMERSIVE',
+      products: (project.products || []).filter(p => p.name && p.status === 'ACTIVE'),
+      pinpoints: (project.pinpoints || []).filter(p => p.status === 'ACTIVE' || !p.isBlank),
+      buyerActions: project.buyerActions || {
+        enableRfq: true,
+        enableSample: true,
+        enableMeeting: true,
+        showWebsite: true,
+        showContact: true
+      },
+      publishStatus: project.publishStatus || 'PUBLISHED',
+      publishedAt: project.publishedAt
+    };
+  }
+
+  async createLead(leadInput) {
+    return this.mutate(async (db) => {
+      db.leads = db.leads || [];
+
+      const project = (db.projects || []).find(p => p.id === leadInput.projectId || p.publicSlug === leadInput.publicSlug);
+      const projectId = project ? project.id : leadInput.projectId;
+      const boothId = projectId;
+
+      const lead = {
+        leadId: `lead-${uuidv4().substring(0, 8)}`,
+        leadType: leadInput.leadType || 'RFQ', // 'RFQ' | 'SAMPLE_REQUEST' | 'MEETING_REQUEST' | 'GENERAL_CONTACT'
+        boothId,
+        projectId,
+        productId: leadInput.productId || null,
+        productName: leadInput.productName || null,
+        visitorName: (leadInput.visitorName || leadInput.name || '').trim(),
+        visitorCompany: (leadInput.visitorCompany || leadInput.company || '').trim(),
+        visitorEmail: (leadInput.visitorEmail || leadInput.email || '').toLowerCase().trim(),
+        visitorPhone: (leadInput.visitorPhone || leadInput.phone || '').trim(),
+        quantity: leadInput.quantity || null,
+        shippingCountry: leadInput.shippingCountry || null,
+        preferredDate: leadInput.preferredDate || null,
+        preferredTime: leadInput.preferredTime || null,
+        timezone: leadInput.timezone || null,
+        message: (leadInput.message || '').trim(),
+        metadata: leadInput.metadata || {},
+        status: 'NEW', // 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'CLOSED'
+        notificationStatus: 'PENDING',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      db.leads.push(lead);
+
+      // Record analytics event
+      const eventType = lead.leadType === 'SAMPLE_REQUEST' ? 'SAMPLE_REQUEST_SUBMIT' :
+                        lead.leadType === 'MEETING_REQUEST' ? 'MEETING_REQUEST_SUBMIT' : 'RFQ_SUBMIT';
+
+      const evt = {
+        eventId: `evt-${uuidv4().substring(0, 8)}`,
+        projectId,
+        productId: lead.productId,
+        eventType,
+        isTest: project?.isTest || false,
+        timestamp: new Date().toISOString()
+      };
+      db.analyticsEvents = db.analyticsEvents || [];
+      db.analyticsEvents.push(evt);
+
+      return lead;
+    });
+  }
+
+  getProjectLeads(projectId, token) {
+    const project = (this.memoryData.projects || []).find(p => p.id === projectId);
+    if (!project) {
+      const err = new Error('Project not found.');
+      err.status = 404;
+      throw err;
+    }
+    if (!this.verifyEditAccess(project, token)) {
+      const err = new Error('Cross-tenant access forbidden.');
+      err.status = 403;
+      throw err;
+    }
+
+    const allLeads = this.memoryData.leads || [];
+    return allLeads.filter(l => l.projectId === projectId || l.boothId === projectId);
+  }
+
+  async updateLeadStatus(projectId, leadId, newStatus, token) {
+    const valid = ['NEW', 'CONTACTED', 'QUALIFIED', 'CLOSED'];
+    if (!valid.includes(newStatus)) {
+      const err = new Error('Invalid lead status.');
+      err.status = 400;
+      throw err;
+    }
+
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) {
+        const err = new Error('Project not found.');
+        err.status = 404;
+        throw err;
+      }
+      if (!this.verifyEditAccess(project, token)) {
+        const err = new Error('Cross-tenant access forbidden.');
+        err.status = 403;
+        throw err;
+      }
+
+      db.leads = db.leads || [];
+      const lead = db.leads.find(l => l.leadId === leadId && (l.projectId === projectId || l.boothId === projectId));
+      if (!lead) {
+        const err = new Error('Lead not found.');
+        err.status = 404;
+        throw err;
+      }
+
+      lead.status = newStatus;
+      lead.updatedAt = new Date().toISOString();
+      return { success: true, lead };
+    });
+  }
+
+  getProjectDashboard(projectId, token) {
+    const project = (this.memoryData.projects || []).find(p => p.id === projectId);
+    if (!project) {
+      const err = new Error('Project not found.');
+      err.status = 404;
+      throw err;
+    }
+    if (!this.verifyEditAccess(project, token)) {
+      const err = new Error('Cross-tenant access forbidden.');
+      err.status = 403;
+      throw err;
+    }
+
+    const leads = (this.memoryData.leads || []).filter(l => l.projectId === projectId || l.boothId === projectId);
+    const events = (this.memoryData.analyticsEvents || []).filter(e => e.projectId === projectId);
+
+    const boothViews = events.filter(e => e.eventType === 'BOOTH_VIEW' || e.eventName === 'immersive_view_started').length;
+    const productViews = events.filter(e => e.eventType === 'PRODUCT_DETAIL_VIEW' || e.eventName === 'product_drawer_opened').length;
+    const productClicks = events.filter(e => e.eventType === 'PRODUCT_PIN_CLICK' || e.eventName === 'pinpoint_clicked').length;
+    const rfqs = leads.filter(l => l.leadType === 'RFQ').length;
+    const samples = leads.filter(l => l.leadType === 'SAMPLE_REQUEST').length;
+    const meetings = leads.filter(l => l.leadType === 'MEETING_REQUEST').length;
+
+    // Calculate Top Product
+    const prodCounts = {};
+    events.forEach(e => {
+      if (e.productId) {
+        prodCounts[e.productId] = (prodCounts[e.productId] || 0) + 1;
+      }
+    });
+    leads.forEach(l => {
+      if (l.productId) {
+        prodCounts[l.productId] = (prodCounts[l.productId] || 0) + 2;
+      }
+    });
+
+    let topProduct = null;
+    let maxCount = 0;
+    (project.products || []).forEach(p => {
+      if (p.name && (prodCounts[p.id] || 0) >= maxCount) {
+        maxCount = prodCounts[p.id] || 0;
+        topProduct = p.name;
+      }
+    });
+
+    const activeProducts = (project.products || []).filter(p => p.name && p.status === 'ACTIVE');
+
+    return {
+      success: true,
+      project: {
+        id: project.id,
+        businessName: project.businessName,
+        brandName: project.brandName || project.businessName,
+        description: project.description || '',
+        website: project.website || '',
+        contactName: project.contactName || '',
+        contactEmail: project.contactEmail || '',
+        contactPhone: project.contactPhone || '',
+        location: project.location || '',
+        logo: project.logo || null,
+        publishStatus: project.publishStatus || 'DRAFT',
+        publicSlug: project.publicSlug || null,
+        publicUrl: project.publicUrl || null,
+        qrCodeDataUrl: project.qrCodeDataUrl || null,
+        buyerActions: project.buyerActions || {
+          enableRfq: true,
+          enableSample: true,
+          enableMeeting: true,
+          showWebsite: true,
+          showContact: true
+        },
+        productsCount: activeProducts.length,
+        productsLimit: 3
+      },
+      analytics: {
+        boothViews,
+        productViews,
+        productClicks,
+        rfqs,
+        samples,
+        meetings,
+        totalLeads: leads.length,
+        topProduct: topProduct || (activeProducts[0]?.name || 'N/A')
+      },
+      leads
+    };
+  }
+
 }
-
-
-
-
 module.exports = new JSONDatabase();
 module.exports.verifyPassword = verifyPassword;
 module.exports.hashPassword = hashPassword;

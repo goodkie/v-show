@@ -1,6 +1,6 @@
-﻿const https = require('https');
+const https = require('https');
 const token = '8bed6af7-cd5d-4d2b-a652-acfba822a9d7';
-const deploymentId = '4ddbd101-e184-4787-b2e8-39f1a24cbfb9';
+const deploymentId = '3ee1609e-720b-438b-b8d1-1a1d5f1917cc';
 
 const query = `query { buildLogs(deploymentId: "${deploymentId}") { message } }`;
 const req = https.request('https://backboard.railway.com/graphql/v2', {

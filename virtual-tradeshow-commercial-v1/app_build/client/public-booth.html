@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Interactive 3D Virtual Booth — ³D₂</title>
+  <meta name="description" content="Explore this interactive 3D virtual trade show booth, inspect commercial products, and request wholesale RFQs. Powered by ³D₂ (3dz.site).">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="/vendor/three.min.js"></script>
+  <script src="/vendor/OrbitControls.js"></script>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --accent: #38bdf8;
+      --bg: #030712;
+      --surface: #070e1b;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(56, 189, 248, 0.35);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .public-nav {
+      height: 64px;
+      padding: 0 24px;
+      background: rgba(3, 7, 18, 0.94);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .brand-wrap { display: flex; align-items: center; gap: 12px; }
+    .company-logo { height: 32px; width: auto; max-width: 140px; object-fit: contain; }
+    .company-name { font-size: 16px; font-weight: 800; color: #fff; }
+    .powered-by { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+    .powered-by strong { color: var(--accent); }
+
+    /* Viewer Container */
+    .viewer-section {
+      position: relative;
+      width: 100%;
+      height: calc(100vh - 64px);
+      background: #000;
+      overflow: hidden;
+    }
+    #three-canvas { width: 100%; height: 100%; display: block; }
+    #hotspot-layer { position: absolute; inset: 0; pointer-events: none; }
+
+    .hotspot-tag {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      pointer-events: auto;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(7, 14, 27, 0.88);
+      backdrop-filter: blur(10px);
+      border: 1px solid #38bdf8;
+      border-radius: 999px;
+      padding: 4px 12px 4px 4px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.7), 0 0 16px rgba(56,189,248,0.3);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 20;
+    }
+    .hotspot-tag:hover {
+      transform: translate(-50%, -50%) scale(1.08);
+      border-color: #fff;
+      box-shadow: 0 12px 30px rgba(56,189,248,0.5);
+    }
+    .hotspot-thumb { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; border: 1px solid #38bdf8; background: #000; }
+    .hotspot-dot { width: 8px; height: 8px; border-radius: 50%; background: #38bdf8; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(56,189,248,0.7); } 70% { box-shadow: 0 0 0 8px rgba(56,189,248,0); } 100% { box-shadow: 0 0 0 0 rgba(56,189,248,0); } }
+    .hotspot-label { font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; }
+
+    /* Overlay Controls */
+    .viewer-hint {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: rgba(7, 14, 27, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-accent);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: #cbd5e1;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .products-tray {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+      max-width: 60%;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .product-pill {
+      background: rgba(7, 14, 27, 0.9);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .product-pill:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .product-pill img { width: 32px; height: 32px; border-radius: 6px; object-fit: cover; }
+    .product-pill-name { font-size: 12.5px; font-weight: 700; color: #fff; }
+
+    /* Product Drawer */
+    .drawer-scrim {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 90;
+    }
+    .drawer-scrim.active { opacity: 1; pointer-events: auto; }
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: -480px;
+      width: 100%;
+      max-width: 460px;
+      height: 100vh;
+      background: #070e1b;
+      border-left: 1px solid var(--border-accent);
+      z-index: 100;
+      transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      box-shadow: -15px 0 50px rgba(0,0,0,0.8);
+      overflow-y: auto;
+    }
+    .drawer.active { right: 0; }
+    .drawer-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .drawer-close { background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; }
+    .drawer-body { padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+    .drawer-img { width: 100%; max-height: 240px; object-fit: contain; background: #030712; border-radius: 12px; border: 1px solid var(--border); }
+    .drawer-title { font-size: 22px; font-weight: 800; color: #fff; line-height: 1.3; }
+    .drawer-desc { font-size: 13.5px; color: #cbd5e1; line-height: 1.6; }
+    .drawer-specs { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+    .drawer-specs-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 12px; }
+    .drawer-specs-row:last-child { border-bottom: none; }
+    .spec-k { color: var(--text-muted); }
+    .spec-v { color: #fff; font-weight: 600; }
+
+    .btn-action {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      font-size: 13.5px;
+      font-weight: 800;
+      padding: 13px;
+      border-radius: 10px;
+      border: 1px solid var(--accent);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      box-shadow: 0 8px 20px rgba(2, 132, 199, 0.4);
+      transition: transform 0.15s;
+    }
+    .btn-action:hover { transform: translateY(-1px); }
+    .btn-action-sec {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: #cbd5e1;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 11px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+    }
+    .btn-action-sec:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+
+    /* Modals for RFQ / Sample / Meeting */
+    .modal-scrim {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      padding: 20px;
+    }
+    .modal-card {
+      background: #070e1b;
+      border: 1px solid var(--border-accent);
+      border-radius: 20px;
+      padding: 28px;
+      max-width: 520px;
+      width: 100%;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+      position: relative;
+    }
+    .modal-card h3 { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    .modal-card p { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; }
+    .form-group { margin-bottom: 14px; }
+    .form-label { display: block; font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 6px; text-transform: uppercase; }
+    .form-input {
+      width: 100%;
+      background: #030712;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus { border-color: var(--accent); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* Unavailable Screen */
+    .unavailable-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .unavailable-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 48px 32px;
+      max-width: 480px;
+    }
+
+    @media (max-width: 768px) {
+      .products-tray { max-width: 100%; right: 10px; left: 10px; bottom: 10px; }
+      .viewer-hint { display: none; }
+      .drawer { max-width: 100%; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="public-nav">
+    <div class="brand-wrap">
+      <img id="companyLogo" class="company-logo" src="" alt="Logo" style="display: none;">
+      <span id="companyName" class="company-name">Exhibitor Booth</span>
+    </div>
+    <div class="powered-by">
+      <span>Powered by</span>
+      <strong>³D₂</strong>
+      <a href="https://3dz.site" target="_blank" style="color: var(--accent); text-decoration: none; margin-left: 4px;">3dz.site</a>
+    </div>
+  </header>
+
+  <main id="mainContainer" style="display: flex; flex-direction: column; flex: 1;">
+    <!-- Active Viewer Section -->
+    <div id="activeViewerSection" class="viewer-section">
+      <canvas id="three-canvas"></canvas>
+      <div id="hotspot-layer"></div>
+
+      <div class="viewer-hint">
+        <i class="fa-solid fa-hand" style="color:#38bdf8;"></i> Drag to Look Around in 360° • Click Product Pins to Inspect
+      </div>
+
+      <div class="products-tray" id="productsTray"></div>
+    </div>
+
+    <!-- Unavailable Fallback Screen -->
+    <div id="unavailableSection" class="unavailable-screen" style="display: none;">
+      <div class="unavailable-box">
+        <div style="font-size: 42px; color: #f59e0b; margin-bottom: 16px;"><i class="fa-solid fa-store-slash"></i></div>
+        <h2 style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px;" id="unavailBizName">Booth Unavailable</h2>
+        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 24px;">This virtual booth is currently offline or unpublished by the exhibitor.</p>
+        <a href="https://3dz.site" style="background: var(--primary); color: #fff; font-size: 13px; font-weight: 700; padding: 10px 20px; border-radius: 8px; text-decoration: none;">
+          Explore ³D₂ Showrooms
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Canonical Product Detail Drawer -->
+  <div class="drawer-scrim" id="drawerScrim" onclick="closeProductDrawer()"></div>
+  <aside class="drawer" id="productDrawer">
+    <div class="drawer-header">
+      <span style="font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase;">PRODUCT SPECIFICATIONS</span>
+      <button class="drawer-close" onclick="closeProductDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <img id="drawerImg" class="drawer-img" src="" alt="Product">
+      <h2 id="drawerTitle" class="drawer-title">Product Name</h2>
+      <p id="drawerDesc" class="drawer-desc"></p>
+      
+      <div class="drawer-specs">
+        <div class="drawer-specs-row"><span class="spec-k">SKU / Model</span><span class="spec-v" id="drawerSku">—</span></div>
+        <div class="drawer-specs-row"><span class="spec-k">Category</span><span class="spec-v" id="drawerCategory">—</span></div>
+        <div class="drawer-specs-row" id="rowPrice"><span class="spec-k">Wholesale Price</span><span class="spec-v" id="drawerPrice">Available on RFQ</span></div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+        <button id="btnDrawerRfq" class="btn-action" onclick="openRfqModal()">
+          <i class="fa-solid fa-file-invoice-dollar"></i> REQUEST WHOLESALE RFQ
+        </button>
+        <button id="btnDrawerSample" class="btn-action-sec" onclick="openSampleModal()">
+          <i class="fa-solid fa-box-open"></i> Request Product Sample
+        </button>
+        <button id="btnDrawerMeeting" class="btn-action-sec" onclick="openMeetingModal()">
+          <i class="fa-solid fa-calendar-check"></i> Book 1-on-1 Meeting
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- RFQ Modal -->
+  <div class="modal-scrim" id="rfqModal">
+    <div class="modal-card">
+      <button onclick="closeModals()" style="position:absolute;top:20px;right:20px;background:none;border:none;color:#94a3b8;font-size:18px;cursor:pointer;">✕</button>
+      <h3>Request Wholesale Quote (RFQ)</h3>
+      <p>Direct wholesale inquiry for <strong id="rfqTargetProd" style="color:#fff;">Product</strong></p>
+      <form onsubmit="submitRfq(event)">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Full Name *</label><input type="text" id="rfqName" class="form-input" required></div>
+          <div class="form-group"><label class="form-label">Company Name *</label><input type="text" id="rfqCompany" class="form-input" required></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Work Email *</label><input type="email" id="rfqEmail" class="form-input" required></div>
+          <div class="form-group"><label class="form-label">Phone</label><input type="tel" id="rfqPhone" class="form-input"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Target Quantity / Units</label><input type="text" id="rfqQty" class="form-input" placeholder="e.g. 500 units"></div>
+        <div class="form-group"><label class="form-label">Requirements / Message</label><textarea id="rfqMsg" class="form-input" rows="3" placeholder="Tell the exhibitor about your project timeline, target market, etc."></textarea></div>
+        <button type="submit" class="btn-action" id="btnSubmitRfq"><i class="fa-solid fa-paper-plane"></i> SUBMIT QUOTE REQUEST</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Sample Modal -->
+  <div class="modal-scrim" id="sampleModal">
+    <div class="modal-card">
+      <button onclick="closeModals()" style="position:absolute;top:20px;right:20px;background:none;border:none;color:#94a3b8;font-size:18px;cursor:pointer;">✕</button>
+      <h3>Request Product Sample</h3>
+      <p>Order an evaluation sample for <strong id="sampleTargetProd" style="color:#fff;">Product</strong></p>
+      <form onsubmit="submitSample(event)">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Full Name *</label><input type="text" id="sampleName" class="form-input" required></div>
+          <div class="form-group"><label class="form-label">Company Name *</label><input type="text" id="sampleCompany" class="form-input" required></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Work Email *</label><input type="email" id="sampleEmail" class="form-input" required></div>
+          <div class="form-group"><label class="form-label">Shipping Country *</label><input type="text" id="sampleCountry" class="form-input" required></div>
+        </div>
+        <div class="form-group"><label class="form-label">Evaluation Purpose / Notes</label><textarea id="sampleMsg" class="form-input" rows="2"></textarea></div>
+        <button type="submit" class="btn-action" id="btnSubmitSample"><i class="fa-solid fa-box-open"></i> REQUEST SAMPLE</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Meeting Modal -->
+  <div class="modal-scrim" id="meetingModal">
+    <div class="modal-card">
+      <button onclick="closeModals()" style="position:absolute;top:20px;right:20px;background:none;border:none;color:#94a3b8;font-size:18px;cursor:pointer;">✕</button>
+      <h3>Book a Meeting</h3>
+      <p>Schedule a 1-on-1 export consultation with the exhibitor</p>
+      <form onsubmit="submitMeeting(event)">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Full Name *</label><input type="text" id="meetName" class="form-input" required></div>
+          <div class="form-group"><label class="form-label">Company Name *</label><input type="text" id="meetCompany" class="form-input" required></div>
+        </div>
+        <div class="form-group"><label class="form-label">Work Email *</label><input type="email" id="meetEmail" class="form-input" required></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Preferred Date *</label><input type="date" id="meetDate" class="form-input" required></div>
+          <div class="form-group"><label class="form-label">Preferred Time *</label><input type="time" id="meetTime" class="form-input" required></div>
+        </div>
+        <div class="form-group"><label class="form-label">Topics / Agenda</label><textarea id="meetMsg" class="form-input" rows="2"></textarea></div>
+        <button type="submit" class="btn-action" id="btnSubmitMeet"><i class="fa-solid fa-calendar-check"></i> CONFIRM MEETING REQUEST</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const pathParts = window.location.pathname.split('/');
+    const publicSlug = pathParts[pathParts.length - 1] || 'default';
+
+    let boothData = null;
+    let scene, camera, renderer, controls, photoMaterial, photoSphere;
+    let currentSelectedProduct = null;
+
+    async function loadPublicBooth() {
+      try {
+        const res = await fetch('/api/public/booth/' + publicSlug);
+        const data = await res.json();
+
+        if (!res.ok || !data.booth || data.booth.available === false) {
+          showUnavailable(data.booth?.businessName || 'Exhibitor');
+          return;
+        }
+
+        boothData = data.booth;
+        renderPublicBooth(boothData);
+        trackAnalytics('BOOTH_VIEW');
+      } catch (err) {
+        showUnavailable();
+      }
+    }
+
+    function showUnavailable(bizName) {
+      document.getElementById('activeViewerSection').style.display = 'none';
+      document.getElementById('unavailableSection').style.display = 'flex';
+      if (bizName) document.getElementById('unavailBizName').textContent = bizName + ' (Unavailable)';
+    }
+
+    function renderPublicBooth(booth) {
+      document.title = (booth.businessName || 'Exhibitor') + ' — 3D Virtual Booth | ³D₂';
+      document.getElementById('companyName').textContent = booth.businessName || 'Exhibitor Booth';
+
+      if (booth.logo?.url) {
+        const logoImg = document.getElementById('companyLogo');
+        logoImg.src = booth.logo.url;
+        logoImg.style.display = 'block';
+      }
+
+      initThreeViewer(booth.sourceAsset?.previewUrl || booth.sourceAsset?.originalUrl);
+      renderProductPills(booth.products || []);
+    }
+
+    function initThreeViewer(photoUrl) {
+      const container = document.getElementById('activeViewerSection');
+      const canvas = document.getElementById('three-canvas');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(65, width / height, 0.01, 2000);
+      camera.position.set(0, 0, 0.01);
+
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.outputEncoding = THREE.sRGBEncoding;
+
+      controls = new THREE.OrbitControls(camera, canvas);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.rotateSpeed = -0.42;
+
+      const sphereGeo = new THREE.SphereGeometry(500, 128, 64);
+      sphereGeo.scale(-1, 1, 1);
+
+      photoMaterial = new THREE.MeshBasicMaterial({ side: THREE.FrontSide });
+      photoSphere = new THREE.Mesh(sphereGeo, photoMaterial);
+      photoSphere.rotation.y = -0.45;
+      scene.add(photoSphere);
+
+      if (photoUrl) {
+        new THREE.TextureLoader().load(photoUrl, (tex) => {
+          tex.encoding = THREE.sRGBEncoding;
+          photoMaterial.map = tex;
+          photoMaterial.needsUpdate = true;
+          buildPins();
+        });
+      } else {
+        buildPins();
+      }
+
+      window.addEventListener('resize', onResize);
+      requestAnimationFrame(animate);
+    }
+
+    function buildPins() {
+      const layer = document.getElementById('hotspot-layer');
+      layer.innerHTML = '';
+      if (!boothData?.products) return;
+
+      boothData.products.forEach((prod, idx) => {
+        const pin = (boothData.pinpoints || []).find(p => p.slotIndex === prod.slotIndex) || { u: 0.28 + idx * 0.22, v: 0.60 };
+        const phi = (1 - (pin.v || 0.6)) * Math.PI;
+        const theta = ((pin.u || 0.5) * 2 * Math.PI) - Math.PI - 0.45;
+        const r = 450;
+
+        prod.worldPos = new THREE.Vector3(
+          -r * Math.sin(phi) * Math.cos(theta),
+          r * Math.cos(phi),
+          r * Math.sin(phi) * Math.sin(theta)
+        );
+
+        const el = document.createElement('div');
+        el.className = 'hotspot-tag';
+        el.innerHTML = `
+          <img src="${prod.imageUrl || '/assets/product-placeholder.jpg'}" class="hotspot-thumb">
+          <span class="hotspot-dot"></span>
+          <span class="hotspot-label">${prod.name}</span>
+        `;
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openProductDrawer(prod);
+          trackAnalytics('PRODUCT_PIN_CLICK', prod.id);
+        });
+        layer.appendChild(el);
+        prod.domEl = el;
+      });
+    }
+
+    function renderProductPills(products) {
+      const tray = document.getElementById('productsTray');
+      tray.innerHTML = '';
+      products.forEach(prod => {
+        const pill = document.createElement('div');
+        pill.className = 'product-pill';
+        pill.innerHTML = `
+          <img src="${prod.imageUrl || '/assets/product-placeholder.jpg'}">
+          <span class="product-pill-name">${prod.name}</span>
+        `;
+        pill.onclick = () => {
+          openProductDrawer(prod);
+          trackAnalytics('PRODUCT_PIN_CLICK', prod.id);
+        };
+        tray.appendChild(pill);
+      });
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (controls) controls.update();
+      updateHotspotPositions();
+      if (renderer && scene && camera) renderer.render(scene, camera);
+    }
+
+    function updateHotspotPositions() {
+      if (!camera || !boothData?.products) return;
+      const container = document.getElementById('activeViewerSection');
+      const cWidth = container.clientWidth;
+      const cHeight = container.clientHeight;
+
+      const camDir = new THREE.Vector3();
+      camera.getWorldDirection(camDir);
+
+      boothData.products.forEach(prod => {
+        if (!prod.domEl || !prod.worldPos) return;
+        if (prod.worldPos.dot(camDir) <= 0) {
+          prod.domEl.style.display = 'none';
+          return;
+        }
+        prod.domEl.style.display = 'flex';
+        const v = prod.worldPos.clone().project(camera);
+        const x = (v.x * 0.5 + 0.5) * cWidth;
+        const y = (-(v.y * 0.5) + 0.5) * cHeight;
+        prod.domEl.style.left = x + 'px';
+        prod.domEl.style.top = y + 'px';
+      });
+    }
+
+    function onResize() {
+      const container = document.getElementById('activeViewerSection');
+      if (!container || !renderer || !camera) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    // Product Drawer Logic
+    function openProductDrawer(prod) {
+      currentSelectedProduct = prod;
+      document.getElementById('drawerImg').src = prod.imageUrl || '/assets/product-placeholder.jpg';
+      document.getElementById('drawerTitle').textContent = prod.name;
+      document.getElementById('drawerDesc').textContent = prod.description || prod.shortDescription || 'Commercial product offered by ' + (boothData.businessName || 'Exhibitor');
+      document.getElementById('drawerSku').textContent = prod.sku || 'SLOT-0' + prod.slotIndex;
+      document.getElementById('drawerCategory').textContent = prod.category || 'COMMERCIAL PRODUCT';
+      document.getElementById('drawerPrice').textContent = prod.price || 'Available on RFQ';
+
+      const actions = boothData.buyerActions || {};
+      document.getElementById('btnDrawerRfq').style.display = actions.enableRfq !== false ? 'flex' : 'none';
+      document.getElementById('btnDrawerSample').style.display = actions.enableSample !== false ? 'flex' : 'none';
+      document.getElementById('btnDrawerMeeting').style.display = actions.enableMeeting !== false ? 'flex' : 'none';
+
+      document.getElementById('drawerScrim').classList.add('active');
+      document.getElementById('productDrawer').classList.add('active');
+      trackAnalytics('PRODUCT_DETAIL_VIEW', prod.id);
+    }
+
+    function closeProductDrawer() {
+      document.getElementById('drawerScrim').classList.remove('active');
+      document.getElementById('productDrawer').classList.remove('active');
+    }
+
+    function openRfqModal() {
+      document.getElementById('rfqTargetProd').textContent = currentSelectedProduct ? currentSelectedProduct.name : boothData.businessName;
+      document.getElementById('rfqModal').style.display = 'flex';
+      trackAnalytics('RFQ_OPEN', currentSelectedProduct?.id);
+    }
+
+    function openSampleModal() {
+      document.getElementById('sampleTargetProd').textContent = currentSelectedProduct ? currentSelectedProduct.name : boothData.businessName;
+      document.getElementById('sampleModal').style.display = 'flex';
+    }
+
+    function openMeetingModal() {
+      document.getElementById('meetingModal').style.display = 'flex';
+    }
+
+    function closeModals() {
+      document.querySelectorAll('.modal-scrim').forEach(m => m.style.display = 'none');
+    }
+
+    async function submitRfq(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmitRfq');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> SUBMITTING...';
+
+      try {
+        const payload = {
+          productId: currentSelectedProduct?.id,
+          productName: currentSelectedProduct?.name,
+          name: document.getElementById('rfqName').value,
+          company: document.getElementById('rfqCompany').value,
+          email: document.getElementById('rfqEmail').value,
+          phone: document.getElementById('rfqPhone').value,
+          quantity: document.getElementById('rfqQty').value,
+          message: document.getElementById('rfqMsg').value
+        };
+
+        const res = await fetch(`/api/public/booth/${publicSlug}/rfq`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          alert('✅ Thank you! Your RFQ has been delivered directly to the exhibitor.');
+          closeModals();
+          closeProductDrawer();
+        } else {
+          alert('Submission failed. Please check your information and try again.');
+        }
+      } catch (err) {
+        alert('Network error. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> SUBMIT QUOTE REQUEST';
+      }
+    }
+
+    async function submitSample(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmitSample');
+      btn.disabled = true;
+      try {
+        const payload = {
+          productId: currentSelectedProduct?.id,
+          productName: currentSelectedProduct?.name,
+          name: document.getElementById('sampleName').value,
+          company: document.getElementById('sampleCompany').value,
+          email: document.getElementById('sampleEmail').value,
+          shippingCountry: document.getElementById('sampleCountry').value,
+          message: document.getElementById('sampleMsg').value
+        };
+        const res = await fetch(`/api/public/booth/${publicSlug}/sample-request`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          alert('✅ Sample request submitted! The exhibitor will contact you regarding shipping details.');
+          closeModals();
+          closeProductDrawer();
+        }
+      } catch (err) { alert('Error submitting sample request.'); }
+      finally { btn.disabled = false; }
+    }
+
+    async function submitMeeting(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmitMeet');
+      btn.disabled = true;
+      try {
+        const payload = {
+          name: document.getElementById('meetName').value,
+          company: document.getElementById('meetCompany').value,
+          email: document.getElementById('meetEmail').value,
+          preferredDate: document.getElementById('meetDate').value,
+          preferredTime: document.getElementById('meetTime').value,
+          message: document.getElementById('meetMsg').value
+        };
+        const res = await fetch(`/api/public/booth/${publicSlug}/meeting-request`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          alert('✅ Meeting request sent! The exhibitor will confirm the appointment shortly.');
+          closeModals();
+        }
+      } catch (err) { alert('Error scheduling meeting.'); }
+      finally { btn.disabled = false; }
+    }
+
+    function trackAnalytics(eventType, productId = null) {
+      try {
+        fetch(`/api/public/booth/${publicSlug}/analytics`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventType, productId })
+        });
+      } catch (e) {}
+    }
+
+    loadPublicBooth();
+  </script>
+</body>
+</html>
