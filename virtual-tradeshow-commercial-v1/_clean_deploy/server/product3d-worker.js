@@ -383,7 +383,7 @@ async function checkImageQuality(imagePath) {
     return { pass: false, warnings, errors };
   }
   const stat = fs.statSync(imagePath);
-  if (stat.size < 10 * 1024) errors.push('SOURCE_IMAGE_TOO_SMALL');
+  if (stat.size < 512) errors.push('SOURCE_IMAGE_TOO_SMALL');
   if (stat.size > MAX_IMAGE_BYTES) warnings.push(`SOURCE_IMAGE_LARGE:${Math.round(stat.size/1024/1024)}MB`);
 
   const header = Buffer.alloc(12);
