@@ -9446,6 +9446,15 @@ return event;
         pin.updatedAt = new Date().toISOString();
       }
 
+      // Clean catalog product membership references safely
+      if (Array.isArray(project.catalogs)) {
+        project.catalogs.forEach(cat => {
+          if (Array.isArray(cat.productIds)) {
+            cat.productIds = cat.productIds.filter(pid => pid !== (prod?.id) && pid !== String(slot) && pid !== slot);
+          }
+        });
+      }
+
       project.updatedAt = new Date().toISOString();
       return { success: true, slotIndex: slot, project };
     });
