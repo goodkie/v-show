@@ -169,10 +169,12 @@ class ReplicateProvider extends Product3DProvider {
     const slatGuidance = prof.slatGuidanceStrength || 3.0;
 
     const isMultiView = Array.isArray(additionalImages) && additionalImages.length > 0;
+    const imageList = [imageUrl, ...(additionalImages || []).map(img => img.url)].filter(Boolean);
+
     const inputPayload = {
+      images: imageList,
       seed: 42,
       generate_model: true,
-      generate_color_video: false,
       mesh_simplify: meshSimplify,
       texture_size: textureSize,
       ss_sampling_steps: ssSteps,
@@ -180,12 +182,6 @@ class ReplicateProvider extends Product3DProvider {
       ss_guidance_strength: ssGuidance,
       slat_guidance_strength: slatGuidance
     };
-
-    if (isMultiView) {
-      inputPayload.multi_images = [imageUrl, ...additionalImages.map(img => img.url)];
-    } else {
-      inputPayload.image = imageUrl;
-    }
 
     console.log(`[Replicate] Dispatching prediction firtoz/trellis (Tier: ${qualityTier}, MultiView: ${isMultiView}, Steps: ${ssSteps}/${slatSteps})`);
 
