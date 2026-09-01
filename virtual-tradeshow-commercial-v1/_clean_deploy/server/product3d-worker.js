@@ -189,16 +189,31 @@ class ReplicateProvider extends Product3DProvider {
 
     console.log(`[Replicate] Dispatching prediction firtoz/trellis (Tier: ${qualityTier}, MultiView: ${isMultiView}, Steps: ${ssSteps}/${slatSteps})`);
 
-    const createRes = await httpRequest({
-      hostname: 'api.replicate.com',
-      path: '/v1/models/firtoz/trellis/predictions',
-      method: 'POST',
-      headers: {
-        'Authorization': `Token ${REPLICATE_API_TOKEN}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'wait'
+    const TRELLIS_VERSION_ID = 'e8f6c45206993f297372f5436b90350817bd9b4a0d52d2a76df50c1c8afa2b3c';
+    let createRes = null;
+    for (let attempt = 1; attempt <= 6; attempt++) {
+      createRes = await httpRequest({
+        hostname: 'api.replicate.com',
+        path: '/v1/predictions',
+        method: 'POST',
+        headers: {
+          'Authorization': `Token ${REPLICATE_API_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      }, JSON.stringify({
+        version: TRELLIS_VERSION_ID,
+        input: inputPayload
+      }));
+
+      if (createRes.status === 429) {
+        const retrySec = createRes.body?.retry_after || (attempt * 2 + 2);
+        const waitMs = (retrySec * 1000) + 1500;
+        console.log(`[Replicate] Rate limit 429 encountered (retry_after: ${retrySec}s). Waiting ${waitMs}ms before attempt ${attempt + 1}...`);
+        await new Promise(r => setTimeout(r, waitMs));
+        continue;
       }
-    }, JSON.stringify({ input: inputPayload }));
+      break;
+    }
 
     if (createRes.status !== 201 && createRes.status !== 200) {
       throw new Error(`Replicate create failed (${createRes.status}): ${JSON.stringify(createRes.body)}`);
