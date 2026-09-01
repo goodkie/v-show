@@ -1,4 +1,4 @@
-﻿const plans = require('./plans');
+const plans = require('./plans');
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
@@ -6551,7 +6551,7 @@ app.put('/api/projects/:id/catalogs/:catalogId/membership', async (req, res) => 
 // 5b-P3.7: TOKEN LEDGER & PRODUCT 3D API
 // ============================================================
 
-// GET /api/account/3d-tokens — returns balance, policy, cost config
+// GET /api/account/3d-tokens — returns balance, quality policy, cost config
 app.get('/api/account/3d-tokens', requireAuth, async (req, res) => {
   try {
     const account = req.user?.account || db.getAccountForToken(extractAuthToken(req));
@@ -6574,9 +6574,13 @@ app.get('/api/account/3d-tokens', requireAuth, async (req, res) => {
       success: true,
       accountId: account.id,
       plan: effectivePlan,
+      isDev,
       access: accessCheck,
       ledger,
       costConfig,
+      qualityPolicy: plans.PRODUCT_3D_QUALITY_POLICY,
+      defaultQuality: plans.DEFAULT_BUSINESS_QUALITY,
+      multiViewPolicy: plans.MULTIVIEW_TOKEN_MODIFIER_POLICY,
       transactions: db.getTokenTransactions(account.id, 20)
     });
   } catch (err) {
@@ -6590,6 +6594,9 @@ app.get('/api/account/3d-token-policy', async (req, res) => {
   res.json({
     success: true,
     costConfig,
+    qualityPolicy: plans.PRODUCT_3D_QUALITY_POLICY,
+    defaultQuality: plans.DEFAULT_BUSINESS_QUALITY,
+    multiViewPolicy: plans.MULTIVIEW_TOKEN_MODIFIER_POLICY,
     requiredPlan: 'BUSINESS',
     feature: 'product3dConversion'
   });
@@ -6638,7 +6645,7 @@ app.post('/api/projects/:id/products/:slot/3d/generate', requireAuth, async (req
     if (!product) return res.status(404).json({ error: `Product slot ${slotIndex} not found` });
     if (!product.imageUrl) return res.status(400).json({ error: 'Product has no source image. Upload a product image first.', code: 'NO_SOURCE_IMAGE' });
 
-    // Check for existing active job
+    // Check for existing active job (Double-click / race guard)
     const existingJobs = db.listProduct3dJobs(projectId);
     const activeJob = existingJobs.find(j =>
       String(j.productSlotIndex) === String(slotIndex) &&
@@ -6648,29 +6655,52 @@ app.post('/api/projects/:id/products/:slot/3d/generate', requireAuth, async (req
       return res.status(409).json({ error: 'A 3D conversion job is already in progress for this product.', code: 'JOB_ALREADY_ACTIVE', jobId: activeJob.id, status: activeJob.status });
     }
 
-    // Token cost & ledger
-    const costConfig = db.getTokenCostConfig();
-    const tokenCost = costConfig.PRODUCT_3D_SINGLE_IMAGE_TOKEN_COST;
+    // Quality Tier & Source Mode
+    const requestedQuality = String(req.body.qualityTier || plans.DEFAULT_BUSINESS_QUALITY).toUpperCase().trim();
+    const qualityTier = ['STANDARD', 'HIGH', 'ULTRA'].includes(requestedQuality) ? requestedQuality : plans.DEFAULT_BUSINESS_QUALITY;
 
-    // Ensure ledger exists
-    let ledger = db.getTokenLedger(account.id, { isTestAccount: isDev });
-    if (!ledger) {
-      // Provision a zero-balance ledger (or high-balance for dev)
-      await db.initTokenLedger(account.id, { initialTokens: isDev ? 9999 : 0, isTestAccount: isDev });
-      ledger = db.getTokenLedger(account.id, { isTestAccount: isDev });
+    const additionalCount = (product.additionalSourceImages || []).length;
+    const sourceCount = 1 + additionalCount;
+    const sourceMode = sourceCount > 1 ? 'MULTI_VIEW' : 'SINGLE_IMAGE_GENERATED_3D';
+
+    // Server-Authoritative Token Calculation (Never trust client-supplied cost)
+    const nominalTokenCost = plans.calculateProduct3dTokenCost(qualityTier, sourceMode, sourceCount);
+    const isQaBypass = Boolean(isDev || effectiveAccount.planCode === 'INTERNAL_FULL_ACCESS');
+
+    // Internal QA Concurrency Guard (MAX_ACTIVE_PRODUCT_3D_QA_JOBS = 2)
+    if (isQaBypass) {
+      const activeQaJobs = db.countActiveProduct3dQaJobs(account.id);
+      if (activeQaJobs >= 2) {
+        return res.status(429).json({
+          error: 'Maximum active QA 3D jobs limit (2) reached. Please wait for previous jobs to finish.',
+          code: 'MAX_ACTIVE_QA_JOBS_EXCEEDED'
+        });
+      }
     }
 
-    if (!isDev && ledger.availableTokens < tokenCost) {
-      return res.status(402).json({
-        error: `Insufficient token balance. Available: ${ledger.availableTokens}, Required: ${tokenCost}`,
-        code: 'INSUFFICIENT_TOKEN_BALANCE',
-        available: ledger.availableTokens,
-        required: tokenCost
-      });
-    }
+    let commercialTokensToReserve = isQaBypass ? 0 : nominalTokenCost;
 
-    // Reserve tokens atomically
-    await db.reserveTokens(account.id, tokenCost, null, 'JOB_RESERVE');
+    if (!isQaBypass) {
+      let ledger = db.getTokenLedger(account.id, { isTestAccount: false });
+      if (!ledger) {
+        await db.initTokenLedger(account.id, { initialTokens: 0, isTestAccount: false });
+        ledger = db.getTokenLedger(account.id, { isTestAccount: false });
+      }
+
+      if (ledger.availableTokens < commercialTokensToReserve) {
+        return res.status(402).json({
+          error: `Insufficient token balance. Available: ${ledger.availableTokens}, Required: ${commercialTokensToReserve}`,
+          code: 'INSUFFICIENT_TOKEN_BALANCE',
+          available: ledger.availableTokens,
+          required: commercialTokensToReserve,
+          qualityTier,
+          nominalTokenCost
+        });
+      }
+
+      // Reserve tokens atomically
+      await db.reserveTokens(account.id, commercialTokensToReserve, null, `JOB_RESERVE_${qualityTier}`);
+    }
 
     // Create job record
     const job = await db.createProduct3dJob({
@@ -6679,13 +6709,20 @@ app.post('/api/projects/:id/products/:slot/3d/generate', requireAuth, async (req
       productSlotIndex: slotIndex,
       productId: product.id || `prod-slot-${slotIndex}`,
       sourceImageUrl: product.imageUrl,
-      reservedTokens: tokenCost,
+      qualityTier,
+      sourceMode,
+      nominalTokenCost,
+      reservedTokens: commercialTokensToReserve,
+      isQaBypass,
+      isTest: isDev,
+      environment: isDev ? 'INTERNAL_DEV' : 'PRODUCTION',
       isRegen: false,
       previousGlbUrl: product.product3d?.glbUrl || null
     });
 
-    // Update token reserve to link jobId
-    await db.reserveTokens(account.id, 0, job.id, 'JOB_LINKED'); // zero-amount, just links jobId
+    if (!isQaBypass && commercialTokensToReserve > 0) {
+      await db.reserveTokens(account.id, 0, job.id, 'JOB_LINKED');
+    }
 
     // 202 Accepted — fire off background job
     res.status(202).json({
@@ -6693,8 +6730,12 @@ app.post('/api/projects/:id/products/:slot/3d/generate', requireAuth, async (req
       jobId: job.id,
       status: 'QUEUED',
       productSlotIndex: slotIndex,
-      tokenCost,
-      message: 'Product 3D conversion queued. Poll /3d/job for status.'
+      qualityTier,
+      sourceMode,
+      nominalTokenCost,
+      commercialTokensReserved: commercialTokensToReserve,
+      isQaBypass,
+      message: `Product 3D (${qualityTier}) conversion queued.`
     });
 
     // Run async (non-blocking)
@@ -6741,22 +6782,78 @@ app.post('/api/projects/:id/products/:slot/3d/regenerate', requireAuth, async (r
     const activeJob = existingJobs.find(j => String(j.productSlotIndex) === String(slotIndex) && ['QUEUED','PROCESSING','VALIDATING'].includes(j.status));
     if (activeJob) return res.status(409).json({ error: 'A 3D conversion is already in progress.', code: 'JOB_ALREADY_ACTIVE', jobId: activeJob.id });
 
-    const costConfig = db.getTokenCostConfig();
-    const tokenCost = costConfig.PRODUCT_3D_REGEN_TOKEN_COST;
-    let ledger = db.getTokenLedger(account.id, { isTestAccount: isDev });
-    if (!ledger) { await db.initTokenLedger(account.id, { initialTokens: isDev ? 9999 : 0, isTestAccount: isDev }); ledger = db.getTokenLedger(account.id, { isTestAccount: isDev }); }
-    if (!isDev && ledger.availableTokens < tokenCost) {
-      return res.status(402).json({ error: `Insufficient tokens. Available: ${ledger.availableTokens}, Required: ${tokenCost}`, code: 'INSUFFICIENT_TOKEN_BALANCE', available: ledger.availableTokens, required: tokenCost });
+    // Quality Tier & Source Mode
+    const requestedQuality = String(req.body.qualityTier || product.product3d?.qualityTier || plans.DEFAULT_BUSINESS_QUALITY).toUpperCase().trim();
+    const qualityTier = ['STANDARD', 'HIGH', 'ULTRA'].includes(requestedQuality) ? requestedQuality : plans.DEFAULT_BUSINESS_QUALITY;
+
+    const additionalCount = (product.additionalSourceImages || []).length;
+    const sourceCount = 1 + additionalCount;
+    const sourceMode = sourceCount > 1 ? 'MULTI_VIEW' : 'SINGLE_IMAGE_GENERATED_3D';
+
+    const nominalTokenCost = plans.calculateProduct3dTokenCost(qualityTier, sourceMode, sourceCount);
+    const isQaBypass = Boolean(isDev || effectiveAccount.planCode === 'INTERNAL_FULL_ACCESS');
+
+    if (isQaBypass) {
+      const activeQaJobs = db.countActiveProduct3dQaJobs(account.id);
+      if (activeQaJobs >= 2) {
+        return res.status(429).json({
+          error: 'Maximum active QA 3D jobs limit (2) reached. Please wait for previous jobs to finish.',
+          code: 'MAX_ACTIVE_QA_JOBS_EXCEEDED'
+        });
+      }
     }
 
-    await db.reserveTokens(account.id, tokenCost, null, 'REGEN_RESERVE');
+    let commercialTokensToReserve = isQaBypass ? 0 : nominalTokenCost;
+
+    if (!isQaBypass) {
+      let ledger = db.getTokenLedger(account.id, { isTestAccount: false });
+      if (!ledger) {
+        await db.initTokenLedger(account.id, { initialTokens: 0, isTestAccount: false });
+        ledger = db.getTokenLedger(account.id, { isTestAccount: false });
+      }
+      if (ledger.availableTokens < commercialTokensToReserve) {
+        return res.status(402).json({
+          error: `Insufficient tokens. Available: ${ledger.availableTokens}, Required: ${commercialTokensToReserve}`,
+          code: 'INSUFFICIENT_TOKEN_BALANCE',
+          available: ledger.availableTokens,
+          required: commercialTokensToReserve,
+          qualityTier,
+          nominalTokenCost
+        });
+      }
+      await db.reserveTokens(account.id, commercialTokensToReserve, null, `REGEN_RESERVE_${qualityTier}`);
+    }
+
     const job = await db.createProduct3dJob({
-      accountId: account.id, projectId, productSlotIndex: slotIndex,
-      productId: product.id || `prod-slot-${slotIndex}`, sourceImageUrl: product.imageUrl,
-      reservedTokens: tokenCost, isRegen: true, previousGlbUrl: product.product3d?.glbUrl || null
+      accountId: account.id,
+      projectId,
+      productSlotIndex: slotIndex,
+      productId: product.id || `prod-slot-${slotIndex}`,
+      sourceImageUrl: product.imageUrl,
+      qualityTier,
+      sourceMode,
+      nominalTokenCost,
+      reservedTokens: commercialTokensToReserve,
+      isQaBypass,
+      isTest: isDev,
+      environment: isDev ? 'INTERNAL_DEV' : 'PRODUCTION',
+      isRegen: true,
+      previousGlbUrl: product.product3d?.glbUrl || null
     });
 
-    res.status(202).json({ success: true, jobId: job.id, status: 'QUEUED', productSlotIndex: slotIndex, tokenCost, isRegen: true, message: '3D Regeneration queued.' });
+    res.status(202).json({
+      success: true,
+      jobId: job.id,
+      status: 'QUEUED',
+      productSlotIndex: slotIndex,
+      qualityTier,
+      sourceMode,
+      nominalTokenCost,
+      commercialTokensReserved: commercialTokensToReserve,
+      isRegen: true,
+      isQaBypass,
+      message: `3D Regeneration (${qualityTier}) queued.`
+    });
 
     const serverBaseUrl = `${req.protocol}://${req.get('host')}`;
     setImmediate(() => { runProduct3dJob(job.id, db, UPLOADS_DIR, serverBaseUrl).catch(e => console.error(`[Product3D] regen uncaught: ${e.message}`)); });
@@ -6782,7 +6879,13 @@ app.get('/api/projects/:id/products/:slot/3d/job', requireAuth, async (req, res)
 
     // Also return current product3d state
     const product = (project.products || []).find(p => String(p.slotIndex) === String(slotIndex));
-    res.json({ success: true, job: latestJob, status: latestJob.status, product3d: product?.product3d || null });
+    res.json({
+      success: true,
+      job: latestJob,
+      status: latestJob.status,
+      product3d: product?.product3d || null,
+      additionalSourceImages: product?.additionalSourceImages || []
+    });
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });
   }
@@ -6797,7 +6900,8 @@ app.get('/api/projects/:id/products/:slot/3d/jobs', requireAuth, async (req, res
     if (!project) return res.status(404).json({ error: 'Project not found' });
     if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Forbidden' });
     const jobs = db.listProduct3dJobs(projectId).filter(j => String(j.productSlotIndex) === String(req.params.slot));
-    res.json({ success: true, jobs });
+    const product = (project.products || []).find(p => String(p.slotIndex) === String(req.params.slot));
+    res.json({ success: true, jobs, product3dHistory: product?.product3dHistory || [] });
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });
   }
@@ -6812,6 +6916,35 @@ app.delete('/api/projects/:id/products/:slot/3d', requireAuth, async (req, res) 
     if (isNaN(slotIndex)) return res.status(400).json({ error: 'Invalid slot index' });
     const result = await db.clearProduct3d(projectId, slotIndex, token);
     res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+// POST /api/projects/:id/products/:slot/views — add additional source image
+app.post('/api/projects/:id/products/:slot/views', requireAuth, async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const projectId = req.params.id;
+    const slotIndex = parseInt(req.params.slot, 10);
+    const { url, role, sha256 } = req.body;
+    if (!url) return res.status(400).json({ error: 'Image URL is required' });
+    const result = await db.addProductAdditionalSourceImage(projectId, slotIndex, { url, role, sha256 }, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+// DELETE /api/projects/:id/products/:slot/views/:viewId — remove additional source image
+app.delete('/api/projects/:id/products/:slot/views/:viewId', requireAuth, async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const projectId = req.params.id;
+    const slotIndex = parseInt(req.params.slot, 10);
+    const viewId = req.params.viewId;
+    const result = await db.removeProductAdditionalSourceImage(projectId, slotIndex, viewId, token);
+    res.json(result);
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message, code: err.code });
   }

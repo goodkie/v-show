@@ -211,11 +211,86 @@ const CANONICAL_PLANS = {
       nfcSupported: true,
       aiFittingConsultation: 'ACTIVE',
       aiMakeupConsultation: 'ACTIVE',
-      product3dConversion: true
+      product3dConversion: true,
+      product3dTokenBypass: true,
+      product3dQualityAccess: ['STANDARD', 'HIGH', 'ULTRA'],
+      product3dMultiView: true
     },
     cta: 'INTERNAL QA'
   }
 };
+
+/**
+ * ============================================================
+ * CANONICAL PRODUCT 3D QUALITY POLICY & TOKEN WEIGHTS
+ * ============================================================
+ * Server-authoritative registry for 3D quality tiers & weights.
+ * Technical weights (STANDARD=1, HIGH=3, ULTRA=6) are policy
+ * configuration and not fixed public pricing.
+ */
+const PRODUCT_3D_QUALITY_POLICY = {
+  STANDARD: {
+    code: 'STANDARD',
+    tokenCost: 1,
+    qualityRank: 1,
+    label: 'Standard 3D',
+    description: 'Fast conversion · Good for simple products',
+    badge: 'Fast',
+    isRecommended: false
+  },
+  HIGH: {
+    code: 'HIGH',
+    tokenCost: 3,
+    qualityRank: 2,
+    label: 'High Quality 3D',
+    description: 'More geometry and texture detail · Best balance for most products',
+    badge: 'Recommended',
+    isRecommended: true
+  },
+  ULTRA: {
+    code: 'ULTRA',
+    tokenCost: 6,
+    qualityRank: 3,
+    label: 'Ultra 3D',
+    description: 'Maximum available detail · Best for important and complex products',
+    badge: 'Maximum Quality',
+    isRecommended: false
+  }
+};
+
+const DEFAULT_BUSINESS_QUALITY = 'HIGH';
+
+/**
+ * Multi-view token modifier policy (Config-driven)
+ */
+const MULTIVIEW_TOKEN_MODIFIER_POLICY = {
+  mode: 'CONFIG_DRIVEN',
+  // Modifiers applied on top of base quality tier cost when multi-view sources are provided
+  modifiers: {
+    SINGLE_IMAGE: 0,
+    MULTI_VIEW_2_TO_3: 0, // Initial technical trial: no extra surcharge
+    MULTI_VIEW_4_PLUS: 1  // +1 token for heavy 4+ view reconstruction
+  }
+};
+
+/**
+ * Server is the sole token cost authority.
+ * Calculates authoritative token cost for requested quality tier and source mode.
+ */
+function calculateProduct3dTokenCost(qualityTier = 'HIGH', sourceMode = 'SINGLE_IMAGE', sourceCount = 1) {
+  const normQuality = String(qualityTier || 'HIGH').toUpperCase().trim();
+  const tierConfig = PRODUCT_3D_QUALITY_POLICY[normQuality] || PRODUCT_3D_QUALITY_POLICY.HIGH;
+  let cost = tierConfig.tokenCost;
+
+  if (sourceMode === 'MULTI_VIEW' || sourceCount > 1) {
+    if (sourceCount >= 4) {
+      cost += MULTIVIEW_TOKEN_MODIFIER_POLICY.modifiers.MULTI_VIEW_4_PLUS;
+    } else {
+      cost += MULTIVIEW_TOKEN_MODIFIER_POLICY.modifiers.MULTI_VIEW_2_TO_3;
+    }
+  }
+  return cost;
+}
 
 /**
  * Normalizes plan code string (e.g. 'pro', 'business', 'FREE_BOOTH')
@@ -439,17 +514,39 @@ function checkViewpointLimit(account, currentViewpointsCount, newCount = 1) {
  * Internal QA accounts always allowed (isDev flag expected to be pre-computed by caller).
  */
 function checkProduct3dConversionAccess(account) {
+  const isInternal = account?.planCode === 'INTERNAL_FULL_ACCESS' || account?.entitlement === 'INTERNAL_FULL_ACCESS' || account?.accountPurpose === 'INTERNAL_FULL_FEATURE_QA' || account?.isTest === true && account?.environment === 'INTERNAL_DEV';
   const isPilot = account?.isPilot || account?.billingState === 'PILOT_NOT_BILLED';
-  const planCode = isPilot
-    ? normalizePlanCode(account?.entitlement || 'BUSINESS')
-    : normalizePlanCode(account?.planCode || account?.entitlement || 'FREE_BOOTH');
+  const planCode = isInternal
+    ? 'INTERNAL_FULL_ACCESS'
+    : (isPilot
+        ? normalizePlanCode(account?.entitlement || 'BUSINESS')
+        : normalizePlanCode(account?.planCode || account?.entitlement || 'FREE_BOOTH'));
+
   const plan = getPlan(planCode);
   const allowed = plan.features.product3dConversion === true;
-  if (allowed) return { allowed: true, plan: planCode, feature: 'product3dConversion' };
+  const tokenBypass = plan.features.product3dTokenBypass === true || isInternal;
+  const qualityAccess = plan.features.product3dQualityAccess || (allowed ? ['STANDARD', 'HIGH', 'ULTRA'] : []);
+  const multiView = plan.features.product3dMultiView === true || isInternal;
+
+  if (allowed) {
+    return {
+      allowed: true,
+      plan: planCode,
+      feature: 'product3dConversion',
+      tokenBypass,
+      qualityAccess,
+      multiView,
+      defaultQuality: DEFAULT_BUSINESS_QUALITY
+    };
+  }
+
   return {
     allowed: false,
     plan: planCode,
     feature: 'product3dConversion',
+    tokenBypass: false,
+    qualityAccess: [],
+    multiView: false,
     requiredPlan: 'BUSINESS',
     code: 'ENTITLEMENT_UPGRADE_REQUIRED',
     message: 'Product 3D Conversion requires the BUSINESS plan or higher.'
@@ -536,6 +633,10 @@ function getFullPlanRegistry() {
 
 module.exports = {
   CANONICAL_PLANS,
+  PRODUCT_3D_QUALITY_POLICY,
+  DEFAULT_BUSINESS_QUALITY,
+  MULTIVIEW_TOKEN_MODIFIER_POLICY,
+  calculateProduct3dTokenCost,
   normalizePlanCode,
   getPlan,
   getPlanLimits,

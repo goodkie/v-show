@@ -12159,6 +12159,49 @@ return event;
       .slice(-limit));
   }
 
+  /**
+   * Records an INTERNAL_QA_BYPASS audit transaction for internal QA accounts.
+   * Commercial tokens charged/reserved = 0, but nominal tokens and actual provider cost are tracked.
+   */
+  async recordQaBypassTransaction(data) {
+    return this.mutate((db) => {
+      db.tokenTransactions = db.tokenTransactions || [];
+      const txn = {
+        id: `txn-qa-${uuidv4().substring(0, 8)}`,
+        accountId: data.accountId,
+        projectId: data.projectId,
+        productId: data.productId,
+        jobId: data.jobId || null,
+        type: 'INTERNAL_QA_BYPASS',
+        qualityTier: data.qualityTier || 'HIGH',
+        nominalTokenCost: data.nominalTokenCost || 0,
+        commercialTokensReserved: 0,
+        commercialTokensConsumed: 0,
+        provider: data.provider || 'local_stub',
+        model: data.model || 'stub',
+        actualProviderCost: Number(data.actualProviderCost) || 0.0,
+        environment: data.environment || 'INTERNAL_DEV',
+        isTest: data.isTest !== false,
+        timestamp: new Date().toISOString()
+      };
+      db.tokenTransactions.push(txn);
+      if (db.tokenTransactions.length > 10000) db.tokenTransactions.shift();
+      return txn;
+    });
+  }
+
+  /**
+   * Count active Product 3D conversion jobs for an internal QA account.
+   * Used to enforce MAX_ACTIVE_PRODUCT_3D_QA_JOBS concurrency safety.
+   */
+  countActiveProduct3dQaJobs(accountId) {
+    const data = this.memoryData;
+    return (data.product3dJobs || []).filter(j =>
+      j.accountId === accountId &&
+      ['QUEUED', 'PROCESSING', 'VALIDATING'].includes(j.status)
+    ).length;
+  }
+
   // ============================================================
   // ─── P3.7: PRODUCT 3D JOB QUEUE ──────────────────────────────
   // ============================================================
@@ -12173,13 +12216,22 @@ return event;
         productSlotIndex: jobData.productSlotIndex,
         productId:        jobData.productId || null,
         sourceImageUrl:   jobData.sourceImageUrl || null,
+        qualityTier:      jobData.qualityTier || 'HIGH',
+        sourceMode:       jobData.sourceMode || 'SINGLE_IMAGE_GENERATED_3D',
+        nominalTokenCost: jobData.nominalTokenCost || jobData.reservedTokens || 0,
+        reservedTokens:   jobData.reservedTokens || 0,
+        reservedCommercialTokens: jobData.isQaBypass ? 0 : (jobData.reservedTokens || 0),
+        consumedTokens:   0,
+        isQaBypass:       Boolean(jobData.isQaBypass),
+        isTest:           Boolean(jobData.isTest),
+        environment:      jobData.environment || 'PRODUCTION',
+        isRegen:          jobData.isRegen === true,
+        previousGlbUrl:   jobData.previousGlbUrl || null,
         status:           'QUEUED',
         provider:         null,
         generatorVersion: null,
-        reservedTokens:   jobData.reservedTokens || 0,
-        consumedTokens:   0,
-        isRegen:          jobData.isRegen === true,
-        previousGlbUrl:   jobData.previousGlbUrl || null,
+        model:            null,
+        estimatedProviderCost: 0,
         createdAt:        new Date().toISOString(),
         startedAt:        null,
         completedAt:      null,
@@ -12220,12 +12272,12 @@ return event;
   }
 
   // ============================================================
-  // ─── P3.7: PRODUCT 3D ASSET (product.product3d) ─────────────
+  // ─── P3.7: PRODUCT 3D ASSET (product.product3d + History) ───
   // ============================================================
 
   /**
    * Update product.product3d on the project's products array.
-   * Called by the job runner on success.
+   * Preserves previous generation history in product.product3dHistory.
    */
   async setProduct3d(projectId, productSlotIndex, product3dData) {
     return this.mutate((db) => {
@@ -12235,20 +12287,40 @@ return event;
         String(p.slotIndex) === String(productSlotIndex)
       );
       if (!product) throw new Error(`Product slot ${productSlotIndex} not found`);
+
+      // Preserve previous READY or generated 3D in history
+      if (product.product3d && product.product3d.glbUrl) {
+        product.product3dHistory = product.product3dHistory || [];
+        product.product3dHistory.push({
+          ...product.product3d,
+          archivedAt: new Date().toISOString()
+        });
+        if (product.product3dHistory.length > 20) product.product3dHistory.shift();
+      }
+
       product.product3d = {
         status:             product3dData.status || 'NOT_GENERATED',
+        qualityTier:        product3dData.qualityTier || 'HIGH',
+        sourceMode:         product3dData.sourceMode || 'SINGLE_IMAGE_GENERATED_3D',
+        sourceCount:        product3dData.sourceCount || 1,
         glbUrl:             product3dData.glbUrl || null,
         previewImageUrl:    product3dData.previewImageUrl || null,
         sourceImageSha256:  product3dData.sourceImageSha256 || null,
-        sourceMode:         product3dData.sourceMode || 'SINGLE_IMAGE_GENERATED_3D',
+        additionalSourceSha256s: product3dData.additionalSourceSha256s || [],
         generatedAt:        product3dData.generatedAt || new Date().toISOString(),
         generator:          product3dData.generator || null,
         generatorVersion:   product3dData.generatorVersion || null,
-        tokenCost:          product3dData.tokenCost || 0,
+        model:              product3dData.model || null,
+        tokenCostAtGeneration: product3dData.tokenCostAtGeneration || product3dData.tokenCost || 0,
+        nominalTokenCost:   product3dData.nominalTokenCost || 0,
+        providerCost:       product3dData.providerCost || 0.0,
         assetId:            product3dData.assetId || null,
         meshStats:          product3dData.meshStats || {},
         glbSha256:          product3dData.glbSha256 || null,
-        validation:         product3dData.validation || {}
+        validation:         product3dData.validation || {},
+        contentLock:        product3dData.contentLock || null,
+        inferredUnseenRegion: product3dData.inferredUnseenRegion !== false,
+        exactDigitalTwin:   false
       };
       product.updatedAt = new Date().toISOString();
       project.updatedAt = new Date().toISOString();
@@ -12270,10 +12342,72 @@ return event;
         String(p.slotIndex) === String(productSlotIndex)
       );
       if (!product) throw new Error('Product slot not found');
+
+      // Preserve in history before clearing active association
+      if (product.product3d && product.product3d.glbUrl) {
+        product.product3dHistory = product.product3dHistory || [];
+        product.product3dHistory.push({
+          ...product.product3d,
+          archivedAt: new Date().toISOString(),
+          removalReason: 'OWNER_REMOVED'
+        });
+      }
+
       product.product3d = null;
       product.updatedAt = new Date().toISOString();
       project.updatedAt = new Date().toISOString();
       return { success: true, product };
+    });
+  }
+
+  /**
+   * Additional Source Images for Multi-View 3D reconstruction.
+   */
+  async addProductAdditionalSourceImage(projectId, productSlotIndex, imageData, token) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) throw new Error('Project not found');
+      if (!this.verifyEditAccess(project, token)) {
+        const err = new Error('Cross-tenant access forbidden.'); err.status = 403; throw err;
+      }
+      const product = (project.products || []).find(p =>
+        String(p.slotIndex) === String(productSlotIndex)
+      );
+      if (!product) throw new Error('Product slot not found');
+
+      product.additionalSourceImages = product.additionalSourceImages || [];
+      const imageEntry = {
+        id: `img-${uuidv4().substring(0, 8)}`,
+        url: imageData.url,
+        role: imageData.role || 'DETAIL',
+        sha256: imageData.sha256 || null,
+        bytes: imageData.bytes || null,
+        mime: imageData.mime || 'image/jpeg',
+        createdAt: new Date().toISOString()
+      };
+      product.additionalSourceImages.push(imageEntry);
+      product.updatedAt = new Date().toISOString();
+      project.updatedAt = new Date().toISOString();
+      return { success: true, image: imageEntry, totalSources: 1 + product.additionalSourceImages.length };
+    });
+  }
+
+  async removeProductAdditionalSourceImage(projectId, productSlotIndex, imageId, token) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) throw new Error('Project not found');
+      if (!this.verifyEditAccess(project, token)) {
+        const err = new Error('Cross-tenant access forbidden.'); err.status = 403; throw err;
+      }
+      const product = (project.products || []).find(p =>
+        String(p.slotIndex) === String(productSlotIndex)
+      );
+      if (!product) throw new Error('Product slot not found');
+
+      product.additionalSourceImages = (product.additionalSourceImages || []).filter(img => img.id !== imageId);
+      product.updatedAt = new Date().toISOString();
+      project.updatedAt = new Date().toISOString();
+      return { success: true, remainingSources: 1 + (product.additionalSourceImages || []).length };
     });
   }
 

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -2420,9 +2420,36 @@
             <textarea id="opeDesc" class="form-input" rows="3" placeholder="Enter technical specifications" style="width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 13px;"></textarea>
           </div>
 
-          <!-- Catalog Membership Selector -->
+          <!-- Additional Source Images (Multi-View Quality Mode) -->
+          <div class="form-group" id="opeAdditionalViewsSection" style="margin-bottom: 16px;">
+            <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-weight: 700; font-size: 12px; color: #a5b4fc;"><i class="fa-solid fa-images"></i> Additional Source Views (Multi-View 3D)</span>
+              <span style="font-size: 11px; color: #64748b;">Optional · Recommended for High/Ultra</span>
+            </label>
+            <div id="opeAdditionalViewsContainer" style="background: rgba(15,23,42,0.6); border: 1px dashed rgba(99,102,241,0.3); border-radius: 10px; padding: 10px;">
+              <div id="opeAdditionalViewsList" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+                <!-- Dynamically populated thumbnails of extra angles -->
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <input type="file" id="opeAdditionalViewInput" accept="image/png, image/jpeg, image/webp" style="display: none;" onchange="handleAdditionalViewUpload(this)">
+                <select id="opeAdditionalViewRole" style="background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 5px 8px; color: #cbd5e1; font-size: 11.5px;">
+                  <option value="BACK">Back View</option>
+                  <option value="LEFT">Left Side</option>
+                  <option value="RIGHT">Right Side</option>
+                  <option value="TOP">Top View</option>
+                  <option value="BOTTOM">Bottom View</option>
+                  <option value="45_DEGREE">45° Angle</option>
+                  <option value="DETAIL">Detail / Logo</option>
+                </select>
+                <button type="button" class="btn-ui" onclick="document.getElementById('opeAdditionalViewInput').click()" style="padding: 5px 12px; font-size: 11.5px; font-weight: 700; background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.4); border-radius: 6px; cursor: pointer;">
+                  <i class="fa-solid fa-plus"></i> Add View
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- ── Product 3D Conversion Section (P3.7) ── -->
-          <div class="form-group" id="opeProduct3dSection" style="margin-bottom: 10px; margin-top: 14px;">
+          <div class="form-group" id="opeProduct3dSection" style="margin-bottom: 14px; margin-top: 14px;">
             <div style="background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.3); border-radius: 12px; padding: 14px;">
               <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                 <label style="font-weight: 800; font-size: 12px; color: #a5b4fc; display: flex; align-items: center; gap: 6px; margin: 0;">
@@ -2431,17 +2458,64 @@
                 </label>
                 <span id="p3dTokenBalance" style="font-size: 11px; color: #64748b;"></span>
               </div>
+              
+              <div id="p3dQaBanner" style="display: none; background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.35); border-radius: 8px; padding: 6px 10px; font-size: 11px; color: #d8b4fe; margin-bottom: 10px;">
+                <i class="fa-solid fa-shield-halved"></i> <strong>Internal QA Mode:</strong> Unlimited test conversions active (0 commercial tokens charged).
+              </div>
+
+              <!-- Quality Selection Cards -->
+              <div id="p3dQualitySelectorContainer" style="margin-bottom: 12px;">
+                <div style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Select 3D Quality Tier</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px;" id="p3dQualityCardsGrid">
+                  
+                  <!-- Standard Card -->
+                  <div class="p3d-quality-card" id="p3dCardSTANDARD" onclick="selectP3dQuality('STANDARD')" style="background: rgba(15,23,42,0.8); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 10px; cursor: pointer; transition: all 0.2s ease;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <span style="font-size: 12px; font-weight: 800; color: #fff;">Standard 3D</span>
+                      <span style="font-size: 9px; font-weight: 800; background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; color: #94a3b8;">1 Token*</span>
+                    </div>
+                    <div style="font-size: 10.5px; color: #94a3b8; line-height: 1.3;">Fast conversion for simple products</div>
+                  </div>
+
+                  <!-- High Quality Card (Recommended) -->
+                  <div class="p3d-quality-card" id="p3dCardHIGH" onclick="selectP3dQuality('HIGH')" style="background: rgba(99,102,241,0.15); border: 1.5px solid #6366f1; border-radius: 10px; padding: 10px; cursor: pointer; transition: all 0.2s ease;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <span style="font-size: 12px; font-weight: 800; color: #a5b4fc;">High Quality 3D</span>
+                      <span style="font-size: 9px; font-weight: 800; background: rgba(99,102,241,0.3); padding: 2px 6px; border-radius: 4px; color: #c7d2fe;">3 Tokens*</span>
+                    </div>
+                    <div style="font-size: 10.5px; color: #cbd5e1; line-height: 1.3;">Best detail & geometry · <strong style="color: #38bdf8;">Recommended</strong></div>
+                  </div>
+
+                  <!-- Ultra Card -->
+                  <div class="p3d-quality-card" id="p3dCardULTRA" onclick="selectP3dQuality('ULTRA')" style="background: rgba(15,23,42,0.8); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 10px; cursor: pointer; transition: all 0.2s ease;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <span style="font-size: 12px; font-weight: 800; color: #fff;">Ultra 3D</span>
+                      <span style="font-size: 9px; font-weight: 800; background: rgba(245,158,11,0.2); padding: 2px 6px; border-radius: 4px; color: #fbbf24;">6 Tokens*</span>
+                    </div>
+                    <div style="font-size: 10.5px; color: #94a3b8; line-height: 1.3;">Maximum practical fidelity</div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- Live Cost Calculation & Policy Summary -->
+              <div id="p3dLiveCostBox" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 10px; font-size: 11.5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                <span id="p3dLiveCostSummary" style="color: #cbd5e1;">Cost: 3 tokens</span>
+                <span id="p3dLiveBalanceSummary" style="color: #64748b;">Available: --</span>
+              </div>
+
               <div id="p3dStatusLine" style="font-size: 12px; color: #94a3b8; margin-bottom: 8px; display: none;"></div>
               <div id="p3dWarningBanner" style="display: none; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 8px; padding: 8px 10px; font-size: 11.5px; color: #fbbf24; margin-bottom: 8px;"></div>
+              
               <!-- Buttons row -->
-              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <button type="button" id="p3dBtnGenerate" onclick="product3dGenerate()" style="display:none; padding: 7px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg,rgba(99,102,241,0.35),rgba(139,92,246,0.35)); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.55); border-radius: 8px; cursor: pointer;">
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                <button type="button" id="p3dBtnGenerate" onclick="product3dGenerate()" style="display:none; padding: 7px 16px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; border: 1px solid #a5b4fc; border-radius: 8px; cursor: pointer;">
                   <i class="fa-solid fa-wand-magic-sparkles"></i> Convert to 3D
                 </button>
                 <button type="button" id="p3dBtnView" onclick="product3dOpenViewer()" style="display:none; padding: 7px 14px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 8px; cursor: pointer;">
                   <i class="fa-solid fa-rotate-3d"></i> View 3D
                 </button>
-                <button type="button" id="p3dBtnRegen" onclick="product3dRegenerate()" style="display:none; padding: 7px 14px; font-size: 12px; font-weight: 700; background: rgba(99,102,241,0.12); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); border-radius: 8px; cursor: pointer;">
+                <button type="button" id="p3dBtnRegen" onclick="product3dRegenerate()" style="display:none; padding: 7px 14px; font-size: 12px; font-weight: 700; background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.35); border-radius: 8px; cursor: pointer;">
                   <i class="fa-solid fa-arrows-rotate"></i> Regenerate 3D
                 </button>
                 <button type="button" id="p3dBtnRemove" onclick="product3dRemove()" style="display:none; padding: 7px 14px; font-size: 12px; font-weight: 700; background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; cursor: pointer;">
@@ -2452,6 +2526,7 @@
                   <i class="fa-solid fa-lock" style="color:#f59e0b;"></i> 3D Product Preview requires <strong style="color:#f59e0b;">BUSINESS</strong> plan.
                 </div>
               </div>
+              
               <!-- Poll progress bar -->
               <div id="p3dProgressBar" style="display:none; margin-top: 10px;">
                 <div style="height: 4px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
@@ -2461,10 +2536,17 @@
               </div>
             </div>
           </div>
-<div class="form-group" style="margin-bottom: 10px;" id="opeCatalogMembershipSection">
-            <label class="form-label" style="font-weight: 700; font-size: 12px; color: #38bdf8; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-              <i class="fa-solid fa-book-open"></i> Catalog Membership
-            </label>
+
+          <!-- Catalog Membership Selector -->
+          <div class="form-group" style="margin-bottom: 10px;" id="opeCatalogMembershipSection">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label class="form-label" style="font-weight: 700; font-size: 12px; color: #38bdf8; display: flex; align-items: center; gap: 6px; margin: 0;">
+                <i class="fa-solid fa-book-open"></i> Catalog Membership
+              </label>
+              <button type="button" onclick="openInlineCatalogCreateFromProduct()" style="background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; cursor: pointer;">
+                <i class="fa-solid fa-plus"></i> Create Catalog
+              </button>
+            </div>
             <div id="opeCatalogCheckboxes" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; max-height: 100px; overflow-y: auto;">
               <!-- Dynamic checkboxes for catalogs -->
             </div>
@@ -7252,23 +7334,32 @@ if (document.readyState === 'loading') {
 
 // ── State ────────────────────────────────────────────────────
 window._p3dState = {
-  currentSlot: null,          // slot index being edited
+  currentSlot: null,
   currentProjectId: null,
+  currentProductName: 'Product 3D',
   tokenBalance: null,
-  tokenCost: 1,
-  product3d: null,            // current product's product3d object
-  pollTimer: null,            // setInterval for job polling
-  viewerRenderer: null,       // Three.js renderer
+  tokenCost: 3,
+  currentQuality: 'HIGH',
+  qualityPolicy: {
+    STANDARD: { tokenCost: 1, label: 'Standard 3D', description: 'Fast conversion · Good for simple products' },
+    HIGH: { tokenCost: 3, label: 'High Quality 3D', description: 'Best detail & geometry · Recommended' },
+    ULTRA: { tokenCost: 6, label: 'Ultra 3D', description: 'Maximum practical fidelity' }
+  },
+  multiViewModifiers: { SINGLE_IMAGE: 0, MULTI_VIEW_2_TO_3: 0, MULTI_VIEW_4_PLUS: 1 },
+  additionalSourceImages: [],
+  product3d: null,
+  pollTimer: null,
+  viewerRenderer: null,
   viewerScene: null,
   viewerCamera: null,
   viewerControls: null,
   viewerAnimationId: null,
   viewerCurrentGlbUrl: null,
-  confirmPendingAction: null,  // 'generate' | 'regenerate'
+  confirmPendingAction: null,
   isDev: false
 };
 
-// ── Fetch token balance for current project ───────────────────
+// ── Fetch token balance & quality policy ──────────────────────
 async function p3dLoadTokenBalance() {
   try {
     const token = window.authToken || window._authToken || null;
@@ -7279,12 +7370,168 @@ async function p3dLoadTokenBalance() {
     if (!resp.ok) return;
     const data = await resp.json();
     window._p3dState.tokenBalance = data.ledger?.availableTokens ?? null;
-    window._p3dState.tokenCost = data.costConfig?.PRODUCT_3D_SINGLE_IMAGE_TOKEN_COST ?? 1;
-    window._p3dState.isDev = data.plan === 'INTERNAL_FULL_ACCESS';
+    window._p3dState.isDev = Boolean(data.isDev || data.plan === 'INTERNAL_FULL_ACCESS' || data.access?.tokenBypass);
+    if (data.qualityPolicy) window._p3dState.qualityPolicy = data.qualityPolicy;
+    if (data.multiViewPolicy?.modifiers) window._p3dState.multiViewModifiers = data.multiViewPolicy.modifiers;
     return data;
   } catch (e) {
     console.warn('[P3D] Token balance load error:', e.message);
   }
+}
+
+// ── Select Quality Tier ───────────────────────────────────────
+function selectP3dQuality(tier) {
+  const norm = String(tier || 'HIGH').toUpperCase().trim();
+  window._p3dState.currentQuality = ['STANDARD', 'HIGH', 'ULTRA'].includes(norm) ? norm : 'HIGH';
+  
+  // Update card visual state
+  ['STANDARD', 'HIGH', 'ULTRA'].forEach(t => {
+    const card = document.getElementById('p3dCard' + t);
+    if (!card) return;
+    if (t === window._p3dState.currentQuality) {
+      card.style.background = 'rgba(99,102,241,0.22)';
+      card.style.borderColor = '#6366f1';
+      card.style.boxShadow = '0 0 12px rgba(99,102,241,0.3)';
+    } else {
+      card.style.background = 'rgba(15,23,42,0.8)';
+      card.style.borderColor = 'rgba(255,255,255,0.12)';
+      card.style.boxShadow = 'none';
+    }
+  });
+
+  updateP3dLiveCostSummary();
+}
+
+// ── Calculate Live Token Cost ─────────────────────────────────
+function calculateCurrentP3dCost() {
+  const quality = window._p3dState.currentQuality || 'HIGH';
+  const baseCost = window._p3dState.qualityPolicy[quality]?.tokenCost || 3;
+  const extraViews = window._p3dState.additionalSourceImages?.length || 0;
+  let modifier = 0;
+  if (extraViews >= 3) {
+    modifier = window._p3dState.multiViewModifiers?.MULTI_VIEW_4_PLUS || 1;
+  }
+  return baseCost + modifier;
+}
+
+function updateP3dLiveCostSummary() {
+  const cost = calculateCurrentP3dCost();
+  window._p3dState.tokenCost = cost;
+  const isDev = window._p3dState.isDev;
+  const balance = window._p3dState.tokenBalance;
+  
+  const costEl = document.getElementById('p3dLiveCostSummary');
+  const balEl = document.getElementById('p3dLiveBalanceSummary');
+  
+  if (costEl) {
+    const qualityLabel = window._p3dState.qualityPolicy[window._p3dState.currentQuality]?.label || window._p3dState.currentQuality;
+    const viewCount = 1 + (window._p3dState.additionalSourceImages?.length || 0);
+    const viewStr = viewCount > 1 ? ' (' + viewCount + ' views)' : '';
+    costEl.innerHTML = '<strong style="color:#a5b4fc;">' + qualityLabel + viewStr + ':</strong> ' + cost + ' Token' + (cost !== 1 ? 's' : '');
+  }
+  
+  if (balEl) {
+    if (isDev) {
+      balEl.innerHTML = '<span style="color:#d8b4fe; font-weight:700;"><i class="fa-solid fa-shield-halved"></i> QA Unlimited Mode (0 Tokens Charged)</span>';
+    } else {
+      const avail = balance !== null ? balance : '?';
+      const after = balance !== null ? (balance - cost) : '?';
+      const color = (balance !== null && balance < cost) ? '#f87171' : '#4ade80';
+      balEl.innerHTML = 'Available: <strong>' + avail + '</strong> → After: <strong style="color:' + color + '">' + after + '</strong>';
+    }
+  }
+}
+
+// ── Multi-View Image Upload & Management ──────────────────────
+async function handleAdditionalViewUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const slot = window._p3dState.currentSlot;
+  const pid = window._p3dState.currentProjectId;
+  const role = document.getElementById('opeAdditionalViewRole')?.value || 'DETAIL';
+  const token = window.authToken || window._authToken;
+
+  if (!slot || !pid) return alert('Open a product first');
+
+  const formData = new FormData();
+  formData.append('image', file);
+  formData.append('role', role);
+
+  try {
+    const uploadResp = await fetch('/api/upload', {
+      method: 'POST',
+      headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+      body: formData
+    });
+    if (!uploadResp.ok) throw new Error('Image upload failed');
+    const uploadData = await uploadResp.json();
+
+    const addResp = await fetch('/api/projects/' + pid + '/products/' + slot + '/views', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ url: uploadData.url, role, sha256: uploadData.sha256 })
+    });
+    if (!addResp.ok) throw new Error('Failed to register additional view');
+    const result = await addResp.json();
+    
+    window._p3dState.additionalSourceImages.push(result.image);
+    renderAdditionalViewsList();
+    updateP3dLiveCostSummary();
+    input.value = '';
+  } catch (err) {
+    alert('Upload error: ' + err.message);
+  }
+}
+
+async function removeAdditionalView(viewId) {
+  const slot = window._p3dState.currentSlot;
+  const pid = window._p3dState.currentProjectId;
+  const token = window.authToken || window._authToken;
+  if (!confirm('Remove this source view?')) return;
+
+  try {
+    const resp = await fetch('/api/projects/' + pid + '/products/' + slot + '/views/' + viewId, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!resp.ok) throw new Error('Failed to delete view');
+    window._p3dState.additionalSourceImages = window._p3dState.additionalSourceImages.filter(v => v.id !== viewId);
+    renderAdditionalViewsList();
+    updateP3dLiveCostSummary();
+  } catch (err) {
+    alert('Error removing view: ' + err.message);
+  }
+}
+
+function renderAdditionalViewsList() {
+  const container = document.getElementById('opeAdditionalViewsList');
+  if (!container) return;
+  const views = window._p3dState.additionalSourceImages || [];
+  if (views.length === 0) {
+    container.innerHTML = '<span style="font-size:11px; color:#64748b; font-style:italic;">No additional angles uploaded yet.</span>';
+    return;
+  }
+  container.innerHTML = views.map(v => `
+    <div style="position:relative; width:52px; height:52px; border-radius:6px; overflow:hidden; border:1px solid rgba(255,255,255,0.15); background:#030712;">
+      <img src="${v.url}" style="width:100%; height:100%; object-fit:cover;" title="${v.role}">
+      <span style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.7); font-size:8px; color:#cbd5e1; text-align:center; padding:1px 0;">${v.role}</span>
+      <button type="button" onclick="removeAdditionalView('${v.id}')" style="position:absolute; top:2px; right:2px; background:rgba(239,68,68,0.85); color:#fff; border:none; border-radius:50%; width:14px; height:14px; font-size:8px; line-height:14px; text-align:center; cursor:pointer; padding:0;">✕</button>
+    </div>
+  `).join('');
+}
+
+// ── Inline Catalog Creation Helpers ───────────────────────────
+function openInlineCatalogCreateFromProduct() {
+  window._returnToProductEditorAfterCatalog = true;
+  if (typeof openCatalogEditor === 'function') openCatalogEditor();
+}
+
+function openInlineCatalogCreateFromPin() {
+  window._returnToPinEditorAfterCatalog = true;
+  if (typeof openCatalogEditor === 'function') openCatalogEditor();
 }
 
 // ── Render 3D section in owner product editor ─────────────────
@@ -7295,26 +7542,35 @@ async function renderProduct3dSection(slot, product) {
   window._p3dState.currentSlot = slot;
   window._p3dState.currentProjectId = window.activeProjectData?.id || null;
   window._p3dState.product3d = product?.product3d || null;
+  window._p3dState.additionalSourceImages = product?.additionalSourceImages || [];
 
-  // Load balance
+  // Load balance & quality policy
   const tokenData = await p3dLoadTokenBalance();
   const isEntitled = tokenData?.access?.allowed || window._p3dState.isDev || false;
   const balance = window._p3dState.tokenBalance;
-  const cost = window._p3dState.tokenCost;
   const p3d = product?.product3d;
   const status = p3d?.status || 'NOT_GENERATED';
   const hasImage = !!(product?.imageUrl);
+
+  // QA banner
+  const qaBanner = document.getElementById('p3dQaBanner');
+  if (qaBanner) qaBanner.style.display = window._p3dState.isDev ? 'block' : 'none';
 
   // Token balance display
   const balanceEl = document.getElementById('p3dTokenBalance');
   if (balanceEl) {
     if (isEntitled) {
-      balanceEl.textContent = window._p3dState.isDev ? '∞ tokens (QA)' : `${balance ?? '?'} tokens available`;
+      balanceEl.textContent = window._p3dState.isDev ? '∞ (Internal QA)' : (balance !== null ? balance + ' tokens available' : '');
       balanceEl.style.color = '#64748b';
     } else {
       balanceEl.textContent = '';
     }
   }
+
+  // Preselect saved quality tier if exists
+  const initialTier = p3d?.qualityTier || 'HIGH';
+  selectP3dQuality(initialTier);
+  renderAdditionalViewsList();
 
   // Status badge
   const badge = document.getElementById('p3dStatusBadge');
@@ -7329,8 +7585,8 @@ async function renderProduct3dSection(slot, product) {
       FAILED: 'background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.4)',
       NOT_GENERATED: ''
     };
-    badge.style.cssText = `display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 800; ${badgeColors[status] || ''}`;
-    badge.textContent = status.replace(/_/g,' ');
+    badge.style.cssText = 'display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 800; ' + (badgeColors[status] || '');
+    badge.textContent = status.replace(/_/g,' ') + ' · ' + (p3d?.qualityTier || '3D');
   }
 
   // Status line
@@ -7338,7 +7594,8 @@ async function renderProduct3dSection(slot, product) {
   if (statusLine) {
     if (p3d?.generatedAt) {
       const d = new Date(p3d.generatedAt).toLocaleDateString();
-      statusLine.textContent = `Generated ${d} · ${p3d.generator || 'AI'} · ${(p3d.meshStats?.bytes/1024).toFixed(0)} KB`;
+      const kb = p3d.meshStats?.bytes ? (p3d.meshStats.bytes/1024).toFixed(0) + ' KB' : 'GLB';
+      statusLine.textContent = 'Generated ' + d + ' · ' + (p3d.qualityTier || 'HIGH') + ' Tier · ' + (p3d.generator || 'AI') + ' · ' + kb;
       statusLine.style.display = 'block';
     } else {
       statusLine.style.display = 'none';
@@ -7350,219 +7607,272 @@ async function renderProduct3dSection(slot, product) {
   if (warning) {
     if (!hasImage && isEntitled) {
       warning.style.display = 'block';
-      warning.textContent = '⚠ Upload a product image first before converting to 3D.';
+      warning.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Upload a primary product image above before converting to 3D.';
     } else {
       warning.style.display = 'none';
     }
   }
-
-  // Progress bar
-  const isActive = ['QUEUED','PROCESSING','VALIDATING'].includes(status);
-  const progBar = document.getElementById('p3dProgressBar');
-  const progFill = document.getElementById('p3dProgressFill');
-  const progLabel = document.getElementById('p3dProgressLabel');
-  if (progBar) progBar.style.display = isActive ? 'block' : 'none';
-  if (isActive && progFill) {
-    progFill.style.width = status === 'QUEUED' ? '20%' : status === 'PROCESSING' ? '55%' : '80%';
-  }
-  if (isActive && progLabel) progLabel.textContent = status === 'QUEUED' ? 'Queued…' : status === 'PROCESSING' ? 'Generating 3D…' : 'Validating…';
 
   // Button visibility
   const btnGen    = document.getElementById('p3dBtnGenerate');
   const btnView   = document.getElementById('p3dBtnView');
   const btnRegen  = document.getElementById('p3dBtnRegen');
   const btnRemove = document.getElementById('p3dBtnRemove');
-  const upgradeCta = document.getElementById('p3dUpgradeCta');
+  const upgCta    = document.getElementById('p3dUpgradeCta');
 
   if (!isEntitled) {
-    // Not entitled — show upgrade CTA only
-    if (btnGen) btnGen.style.display = 'none';
-    if (btnView) btnView.style.display = 'none';
-    if (btnRegen) btnRegen.style.display = 'none';
+    if (btnGen)    btnGen.style.display = 'none';
+    if (btnView)   btnView.style.display = 'none';
+    if (btnRegen)  btnRegen.style.display = 'none';
     if (btnRemove) btnRemove.style.display = 'none';
-    if (upgradeCta) upgradeCta.style.display = 'block';
+    if (upgCta)    upgCta.style.display = 'block';
     return;
   }
-  if (upgradeCta) upgradeCta.style.display = 'none';
 
-  if (btnGen) btnGen.style.display  = (status === 'NOT_GENERATED' || status === 'FAILED') && hasImage && !isActive ? 'inline-flex' : 'none';
-  if (btnView) btnView.style.display = (status === 'READY' || status === 'NEEDS_REVIEW') ? 'inline-flex' : 'none';
-  if (btnRegen) btnRegen.style.display = (status === 'READY' || status === 'NEEDS_REVIEW' || status === 'FAILED') && hasImage ? 'inline-flex' : 'none';
-  if (btnRemove) btnRemove.style.display = (status !== 'NOT_GENERATED') ? 'inline-flex' : 'none';
+  if (upgCta) upgCta.style.display = 'none';
 
-  // Start/continue polling if active job
-  if (isActive) p3dStartPolling(slot);
-  else p3dStopPolling();
+  const isReady = (status === 'READY' || status === 'NEEDS_REVIEW') && !!(p3d?.glbUrl);
+  const isBusy  = ['QUEUED','PROCESSING','VALIDATING'].includes(status);
+
+  if (btnGen) {
+    btnGen.style.display = (!isReady && !isBusy && hasImage) ? 'inline-flex' : 'none';
+  }
+  if (btnView) {
+    btnView.style.display = isReady ? 'inline-flex' : 'none';
+  }
+  if (btnRegen) {
+    btnRegen.style.display = (isReady && !isBusy && hasImage) ? 'inline-flex' : 'none';
+  }
+  if (btnRemove) {
+    btnRemove.style.display = isReady ? 'inline-flex' : 'none';
+  }
+
+  if (isBusy) {
+    p3dStartPolling(slot);
+  }
 }
 
-// ── Polling ───────────────────────────────────────────────────
+// ── Polling Loop ──────────────────────────────────────────────
 function p3dStartPolling(slot) {
-  p3dStopPolling();
-  window._p3dState.pollTimer = setInterval(() => p3dPollJob(slot), 4000);
-}
-function p3dStopPolling() {
-  if (window._p3dState.pollTimer) {
-    clearInterval(window._p3dState.pollTimer);
-    window._p3dState.pollTimer = null;
-  }
-}
-async function p3dPollJob(slot) {
-  try {
+  if (window._p3dState.pollTimer) clearInterval(window._p3dState.pollTimer);
+  const pbar = document.getElementById('p3dProgressBar');
+  const plabel = document.getElementById('p3dProgressLabel');
+  const pfill = document.getElementById('p3dProgressFill');
+  if (pbar) pbar.style.display = 'block';
+
+  let step = 0;
+  const steps = [
+    { pct: '20%', txt: 'Analyzing geometry & texture…' },
+    { pct: '50%', txt: 'Synthesizing neural 3D mesh…' },
+    { pct: '80%', txt: 'Generating PBR materials…' },
+    { pct: '95%', txt: 'Validating GLB asset…' }
+  ];
+
+  window._p3dState.pollTimer = setInterval(async () => {
     const pid = window._p3dState.currentProjectId;
-    if (!pid) return;
     const token = window.authToken || window._authToken;
-    const resp = await fetch(`/api/projects/${pid}/products/${slot}/3d/job`, {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-    const data = await resp.json();
-    if (!data.success || !data.job) return;
+    if (!pid || !slot) { clearInterval(window._p3dState.pollTimer); return; }
 
-    const status = data.job.status;
-    const isActive = ['QUEUED','PROCESSING','VALIDATING'].includes(status);
-    if (!isActive) {
-      p3dStopPolling();
-      // Refresh product in activeProjectData
-      if (data.product3d) {
-        const prod = (window.activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slot));
-        if (prod) prod.product3d = data.product3d;
-        window._p3dState.product3d = data.product3d;
-      }
-      // Re-render section
-      const prod = (window.activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slot));
-      await renderProduct3dSection(slot, prod);
+    step = (step + 1) % steps.length;
+    if (pfill) pfill.style.width = steps[step].pct;
+    if (plabel) plabel.textContent = steps[step].txt;
 
-      if (status === 'READY') {
-        showToast('✓ 3D Product Preview ready!', 'success');
-        // Refresh the 3D hotspot if visible
-        if (typeof rebuildHotspots === 'function') rebuildHotspots();
-      } else if (status === 'NEEDS_REVIEW') {
-        showToast('3D generated (stub mode — review needed).', 'info');
+    try {
+      const resp = await fetch('/api/projects/' + pid + '/products/' + slot + '/3d/job', {
+        headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+      });
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const status = data.job?.status || data.status;
+
+      if (status === 'READY' || status === 'NEEDS_REVIEW') {
+        clearInterval(window._p3dState.pollTimer);
+        window._p3dState.pollTimer = null;
+        if (pbar) pbar.style.display = 'none';
+
+        if (window.activeProjectData?.products) {
+          const prod = window.activeProjectData.products.find(p => String(p.slotIndex) === String(slot));
+          if (prod) prod.product3d = data.product3d;
+        }
+
+        renderProduct3dSection(slot, { ...window.activeProjectData?.products?.find(p => String(p.slotIndex) === String(slot)), product3d: data.product3d });
+        if (window.showToast) window.showToast('✅ 3D Product model ready!', 'success');
       } else if (status === 'FAILED') {
-        showToast('3D conversion failed: ' + (data.job.error || 'unknown'), 'error');
+        clearInterval(window._p3dState.pollTimer);
+        window._p3dState.pollTimer = null;
+        if (pbar) pbar.style.display = 'none';
+        renderProduct3dSection(slot, window.activeProjectData?.products?.find(p => String(p.slotIndex) === String(slot)));
+        if (window.showToast) window.showToast('⚠️ 3D Generation failed: ' + (data.job?.error || 'Unknown error'), 'error');
       }
+    } catch (e) {
+      console.warn('[P3D] Poll error:', e.message);
     }
-  } catch (e) {
-    console.warn('[P3D] Poll error:', e.message);
-  }
+  }, 4000);
 }
 
-// ── Confirm modal helpers ─────────────────────────────────────
-function openP3dConfirmModal(action, msg) {
-  window._p3dState.confirmPendingAction = action;
-  const msgEl = document.getElementById('p3dConfirmMsg');
-  if (msgEl) msgEl.textContent = msg;
-  const modal = document.getElementById('p3dConfirmModal');
-  if (modal) modal.style.display = 'flex';
+// ── Action Handlers ───────────────────────────────────────────
+function product3dGenerate() {
+  const quality = window._p3dState.currentQuality || 'HIGH';
+  const cost = calculateCurrentP3dCost();
+  const isDev = window._p3dState.isDev;
+  const qualityName = window._p3dState.qualityPolicy[quality]?.label || quality;
+  const balance = window._p3dState.tokenBalance;
+  
+  const balanceStr = isDev ? '∞ (QA Bypass)' : ('' + balance);
+  const afterStr = isDev ? '∞ (QA Bypass)' : ('' + ((balance || 0) - cost));
+  
+  const msg = isDev
+    ? 'Generate <strong>' + qualityName + '</strong> 3D?<br><br><span style="color:#d8b4fe;"><i class="fa-solid fa-shield-halved"></i> Internal QA Mode: <strong>0 Commercial Tokens Charged</strong> (Nominal cost: ' + cost + ' tokens).</span>'
+    : 'Generate <strong>' + qualityName + '</strong> 3D?<br><br>Token Cost: <strong>' + cost + ' Token' + (cost !== 1 ? 's' : '') + '</strong><br>Current Balance: <strong>' + balanceStr + '</strong> → After: <strong>' + afterStr + '</strong>';
+  
+  openP3dConfirmModal('generate', msg);
 }
+
+function product3dRegenerate() {
+  const quality = window._p3dState.currentQuality || 'HIGH';
+  const cost = calculateCurrentP3dCost();
+  const isDev = window._p3dState.isDev;
+  const qualityName = window._p3dState.qualityPolicy[quality]?.label || quality;
+  const balance = window._p3dState.tokenBalance;
+  
+  const balanceStr = isDev ? '∞ (QA Bypass)' : ('' + balance);
+  const afterStr = isDev ? '∞ (QA Bypass)' : ('' + ((balance || 0) - cost));
+  
+  const msg = isDev
+    ? 'Regenerate as <strong>' + qualityName + '</strong> 3D?<br><br><span style="color:#d8b4fe;"><i class="fa-solid fa-shield-halved"></i> Internal QA: 0 Commercial Tokens Charged. Previous 3D remains active during processing.</span>'
+    : 'Regenerate as <strong>' + qualityName + '</strong> 3D?<br><br>Token Cost: <strong>' + cost + ' Token' + (cost !== 1 ? 's' : '') + '</strong><br>Balance: <strong>' + balanceStr + '</strong> → <strong>' + afterStr + '</strong><br><span style="font-size:11px; color:#94a3b8;">(Your existing 3D model remains visible until the new one is accepted).</span>';
+  
+  openP3dConfirmModal('regenerate', msg);
+}
+
+function openP3dConfirmModal(action, message) {
+  window._p3dState.confirmPendingAction = action;
+  let modal = document.getElementById('p3dConfirmModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'p3dConfirmModal';
+    modal.className = 'viewport-modal';
+    modal.style.cssText = 'display:flex; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.75); align-items:center; justify-content:center;';
+    modal.innerHTML = `
+      <div style="background:#0f172a; border:1px solid rgba(99,102,241,0.4); border-radius:14px; padding:24px; max-width:440px; width:90%; color:#fff; box-shadow:0 20px 40px rgba(0,0,0,0.8);">
+        <h4 style="margin:0 0 12px; font-size:16px; font-weight:800; color:#a5b4fc; display:flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-cube"></i> Confirm 3D Conversion
+        </h4>
+        <div id="p3dConfirmMessage" style="font-size:13.5px; color:#cbd5e1; line-height:1.5; margin-bottom:20px;"></div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" onclick="closeP3dConfirmModal()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#94a3b8; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer;">Cancel</button>
+          <button type="button" id="p3dConfirmOkBtn" onclick="p3dConfirmExecute()" style="background:linear-gradient(135deg,#4f46e5,#7c3aed); border:1px solid #a5b4fc; color:#fff; padding:8px 20px; border-radius:8px; font-weight:800; cursor:pointer;">Confirm</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  document.getElementById('p3dConfirmMessage').innerHTML = message;
+  modal.style.display = 'flex';
+}
+
 function closeP3dConfirmModal() {
   const modal = document.getElementById('p3dConfirmModal');
   if (modal) modal.style.display = 'none';
   window._p3dState.confirmPendingAction = null;
 }
-async function product3dConfirmExecute() {
-  closeP3dConfirmModal();
+
+async function p3dConfirmExecute() {
   const action = window._p3dState.confirmPendingAction;
+  closeP3dConfirmModal();
   if (action === 'generate') await _p3dExecuteGenerate(false);
   else if (action === 'regenerate') await _p3dExecuteGenerate(true);
 }
 
-// ── Generate / Regenerate ─────────────────────────────────────
-function product3dGenerate() {
-  const balance = window._p3dState.tokenBalance;
-  const cost = window._p3dState.tokenCost;
-  const isDev = window._p3dState.isDev;
-  const balanceStr = isDev ? '∞' : `${balance}`;
-  const afterStr = isDev ? '∞' : `${(balance || 0) - cost}`;
-  openP3dConfirmModal('generate',
-    `Convert this product image to a 3D AI preview? Cost: ${cost} token${cost !== 1 ? 's' : ''}. Balance: ${balanceStr} → ${afterStr}.`);
-}
-function product3dRegenerate() {
-  const balance = window._p3dState.tokenBalance;
-  const cost = window._p3dState.tokenCost;
-  const isDev = window._p3dState.isDev;
-  const balanceStr = isDev ? '∞' : `${balance}`;
-  const afterStr = isDev ? '∞' : `${(balance || 0) - cost}`;
-  openP3dConfirmModal('regenerate',
-    `Regenerate 3D? This uses ${cost} token${cost !== 1 ? 's' : ''}. The previous 3D remains active until the new one is accepted. Balance: ${balanceStr} → ${afterStr}.`);
-}
 async function _p3dExecuteGenerate(isRegen) {
   const slot = window._p3dState.currentSlot;
   const pid = window._p3dState.currentProjectId;
+  const qualityTier = window._p3dState.currentQuality || 'HIGH';
   if (!slot || !pid) return;
+
   const token = window.authToken || window._authToken;
-  const endpoint = `/api/projects/${pid}/products/${slot}/3d/${isRegen ? 'regenerate' : 'generate'}`;
+  const endpoint = '/api/projects/' + pid + '/products/' + slot + '/3d/' + (isRegen ? 'regenerate' : 'generate');
+
   try {
     const resp = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
+      body: JSON.stringify({ qualityTier })
     });
     const data = await resp.json();
     if (!resp.ok) {
-      showToast((data.error || 'Failed to start 3D conversion') + (data.code ? ` [${data.code}]` : ''), 'error');
+      if (resp.status === 402) {
+        alert('Insufficient 3D tokens. Please recharge your token balance.');
+      } else {
+        alert('Error: ' + (data.error || 'Failed to start 3D conversion'));
+      }
       return;
     }
-    showToast('3D conversion queued — generating…', 'info');
-    // Optimistically update state
-    const prod = (window.activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slot));
-    if (prod) { prod.product3d = { status: 'QUEUED' }; }
-    await renderProduct3dSection(slot, prod);
+
+    if (window.showToast) window.showToast('🚀 ' + qualityTier + ' 3D conversion started!', 'info');
     p3dStartPolling(slot);
+
+    const prod = window.activeProjectData?.products?.find(p => String(p.slotIndex) === String(slot));
+    renderProduct3dSection(slot, { ...prod, product3d: { status: 'QUEUED', qualityTier } });
+
   } catch (e) {
-    showToast('Error: ' + e.message, 'error');
+    alert('Request failed: ' + e.message);
   }
 }
+
 async function product3dRemove() {
   const slot = window._p3dState.currentSlot;
   const pid = window._p3dState.currentProjectId;
   if (!slot || !pid) return;
-  if (!confirm('Remove the 3D model for this product? (Does NOT delete the product.)')) return;
+  if (!confirm('Remove 3D model from this product? The 2D product and images will not be deleted.')) return;
+
   const token = window.authToken || window._authToken;
   try {
-    const resp = await fetch(`/api/projects/${pid}/products/${slot}/3d`, {
+    const resp = await fetch('/api/projects/' + pid + '/products/' + slot + '/3d', {
       method: 'DELETE',
       headers: { 'Authorization': 'Bearer ' + token }
     });
-    const data = await resp.json();
-    if (!resp.ok) { showToast(data.error || 'Failed to remove 3D', 'error'); return; }
-    const prod = (window.activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slot));
-    if (prod) prod.product3d = null;
-    window._p3dState.product3d = null;
-    await renderProduct3dSection(slot, prod);
-    showToast('3D model removed.', 'success');
+    if (!resp.ok) throw new Error('Failed to remove 3D model');
+
+    if (window.activeProjectData?.products) {
+      const prod = window.activeProjectData.products.find(p => String(p.slotIndex) === String(slot));
+      if (prod) prod.product3d = null;
+    }
+
+    renderProduct3dSection(slot, window.activeProjectData?.products?.find(p => String(p.slotIndex) === String(slot)));
+    if (window.showToast) window.showToast('3D model removed', 'info');
   } catch (e) {
-    showToast('Error: ' + e.message, 'error');
+    alert('Error: ' + e.message);
   }
 }
 
-// ── 3D Viewer (Three.js) ──────────────────────────────────────
+// ── 3D Viewer Logic ──────────────────────────────────────────
 function product3dOpenViewer() {
   const p3d = window._p3dState.product3d;
   if (!p3d?.glbUrl) return;
   _p3dOpenViewerWithUrl(p3d.glbUrl, window._p3dState.currentProductName || 'Product 3D');
 }
+
 function publicOpenProduct3dViewer() {
   const p3d = window._currentPublicProduct3d;
   if (!p3d?.glbUrl) return;
   _p3dOpenViewerWithUrl(p3d.glbUrl, window._currentPublicProductName || 'Product 3D');
 }
+
 function _p3dOpenViewerWithUrl(glbUrl, title) {
   const modal = document.getElementById('product3dViewerModal');
   if (!modal) return;
   modal.style.display = 'flex';
-  document.getElementById('p3dViewerTitle').textContent = title;
-  document.getElementById('p3dViewerLoading').style.display = 'flex';
-  document.getElementById('p3dViewerError').style.display = 'none';
+  const titleEl = document.getElementById('p3dViewerTitle');
+  if (titleEl) titleEl.textContent = title;
+  const loadEl = document.getElementById('p3dViewerLoading');
+  if (loadEl) loadEl.style.display = 'flex';
+  const errEl = document.getElementById('p3dViewerError');
+  if (errEl) errEl.style.display = 'none';
 
-  // Lazy-load Three.js viewer
-  if (window._p3dState.viewerCurrentGlbUrl === glbUrl && window._p3dState.viewerRenderer) {
-    document.getElementById('p3dViewerLoading').style.display = 'none';
-    _p3dStartAnimationLoop();
-    return;
-  }
   _p3dDisposeViewer();
   _p3dInitViewer(glbUrl);
 }
+
 function _p3dInitViewer(glbUrl) {
   const canvas = document.getElementById('p3dViewerCanvas');
   if (!canvas) return;
@@ -7570,84 +7880,82 @@ function _p3dInitViewer(glbUrl) {
   const W = container.clientWidth || 800;
   const H = container.clientHeight || 500;
 
-  // Three.js scene
   const THREE = window.THREE;
   if (!THREE) {
-    console.error('[P3D] THREE not loaded');
-    document.getElementById('p3dViewerError').style.display = 'flex';
-    document.getElementById('p3dViewerLoading').style.display = 'none';
+    _p3dLoadThreeJs(() => _p3dInitViewer(glbUrl));
     return;
   }
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x060c1a);
-  const camera = new THREE.PerspectiveCamera(45, W / H, 0.01, 1000);
-  camera.position.set(0, 0.5, 2);
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setSize(W, H);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(W, H, false);
   renderer.outputEncoding = THREE.sRGBEncoding;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
 
-  // Lighting
-  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-  const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-  dirLight.position.set(1, 2, 3);
-  scene.add(dirLight);
-  const fill = new THREE.DirectionalLight(0x8888ff, 0.4);
-  fill.position.set(-2, -1, -2);
-  scene.add(fill);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 1000);
+  camera.position.set(0, 0.5, 3);
 
-  // OrbitControls
+  scene.add(new THREE.AmbientLight(0xffffff, 1.4));
+  const dir1 = new THREE.DirectionalLight(0xffffff, 1.6);
+  dir1.position.set(2, 4, 3);
+  scene.add(dir1);
+  const dir2 = new THREE.DirectionalLight(0x818cf8, 0.8);
+  dir2.position.set(-2, -2, -2);
+  scene.add(dir2);
+
   let controls = null;
-  if (window.THREE && window.THREE.OrbitControls) {
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
+  if (THREE.OrbitControls) {
+    controls = new THREE.OrbitControls(camera, canvas);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.07;
+    controls.dampingFactor = 0.05;
     controls.autoRotate = true;
-    controls.autoRotateSpeed = 1.2;
-    controls.enablePan = false;
-    controls.minDistance = 0.3;
-    controls.maxDistance = 10;
+    controls.autoRotateSpeed = 1.5;
+
+    // AUTOROTATE_PAUSES_ON_INTERACTION = true
+    controls.addEventListener('start', () => {
+      controls.autoRotate = false;
+    });
   }
 
-  window._p3dState.viewerScene = scene;
-  window._p3dState.viewerCamera = camera;
   window._p3dState.viewerRenderer = renderer;
+  window._p3dState.viewerScene    = scene;
+  window._p3dState.viewerCamera   = camera;
   window._p3dState.viewerControls = controls;
   window._p3dState.viewerCurrentGlbUrl = glbUrl;
 
-  // Load GLB
-  if (!window.THREE?.GLTFLoader) {
-    // Try loading GLTFLoader from CDN dynamically
-    _p3dLoadGLTFLoader(() => _p3dDoLoad(glbUrl, scene, camera, controls, renderer));
-  } else {
-    _p3dDoLoad(glbUrl, scene, camera, controls, renderer);
-  }
+  _p3dDoLoad(glbUrl, scene, camera, controls, renderer);
 }
-function _p3dLoadGLTFLoader(cb) {
-  if (document.querySelector('script[src*="GLTFLoader"]')) { cb(); return; }
+
+function _p3dLoadThreeJs(callback) {
+  if (window.THREE) { if (callback) callback(); return; }
   const s = document.createElement('script');
-  s.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js';
-  s.onload = cb;
-  s.onerror = () => {
-    document.getElementById('p3dViewerError').style.display = 'flex';
-    document.getElementById('p3dViewerLoading').style.display = 'none';
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  s.onload = () => {
+    const s2 = document.createElement('script');
+    s2.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js';
+    s2.onload = () => {
+      const s3 = document.createElement('script');
+      s3.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js';
+      s3.onload = () => { if (callback) callback(); };
+      document.head.appendChild(s3);
+    };
+    document.head.appendChild(s2);
   };
   document.head.appendChild(s);
 }
+
 function _p3dDoLoad(glbUrl, scene, camera, controls, renderer) {
   const THREE = window.THREE;
   if (!THREE?.GLTFLoader) {
-    document.getElementById('p3dViewerError').style.display = 'flex';
-    document.getElementById('p3dViewerLoading').style.display = 'none';
+    const errEl = document.getElementById('p3dViewerError');
+    if (errEl) errEl.style.display = 'flex';
+    const loadEl = document.getElementById('p3dViewerLoading');
+    if (loadEl) loadEl.style.display = 'none';
     return;
   }
   const loader = new THREE.GLTFLoader();
   loader.load(glbUrl, (gltf) => {
     const model = gltf.scene;
-    // Auto-center and scale
     const box = new THREE.Box3().setFromObject(model);
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
@@ -7658,14 +7966,18 @@ function _p3dDoLoad(glbUrl, scene, camera, controls, renderer) {
     scene.add(model);
     camera.position.set(0, 0, maxDim * scale * 2.5);
     if (controls) controls.target.set(0, 0, 0);
-    document.getElementById('p3dViewerLoading').style.display = 'none';
+    const loadEl = document.getElementById('p3dViewerLoading');
+    if (loadEl) loadEl.style.display = 'none';
     _p3dStartAnimationLoop();
   }, undefined, (err) => {
     console.error('[P3D] GLB load error:', err);
-    document.getElementById('p3dViewerError').style.display = 'flex';
-    document.getElementById('p3dViewerLoading').style.display = 'none';
+    const errEl = document.getElementById('p3dViewerError');
+    if (errEl) errEl.style.display = 'flex';
+    const loadEl = document.getElementById('p3dViewerLoading');
+    if (loadEl) loadEl.style.display = 'none';
   });
 }
+
 function _p3dStartAnimationLoop() {
   _p3dStopAnimationLoop();
   const s = window._p3dState;
@@ -7678,29 +7990,50 @@ function _p3dStartAnimationLoop() {
   }
   loop();
 }
+
 function _p3dStopAnimationLoop() {
   if (window._p3dState.viewerAnimationId) {
     cancelAnimationFrame(window._p3dState.viewerAnimationId);
     window._p3dState.viewerAnimationId = null;
   }
 }
+
+// WEBGL_RESOURCE_DISPOSAL = PASS
 function _p3dDisposeViewer() {
   _p3dStopAnimationLoop();
   const s = window._p3dState;
+  if (s.viewerControls) {
+    if (typeof s.viewerControls.dispose === 'function') s.viewerControls.dispose();
+    s.viewerControls = null;
+  }
+  if (s.viewerScene) {
+    s.viewerScene.traverse(obj => {
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) {
+        if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+        else obj.material.dispose();
+      }
+    });
+    s.viewerScene = null;
+  }
   if (s.viewerRenderer) {
     s.viewerRenderer.dispose();
     s.viewerRenderer = null;
   }
-  s.viewerScene = null;
   s.viewerCamera = null;
-  s.viewerControls = null;
   s.viewerCurrentGlbUrl = null;
 }
+
 function closeProduct3dViewer() {
   const modal = document.getElementById('product3dViewerModal');
   if (modal) modal.style.display = 'none';
-  _p3dStopAnimationLoop();
+  _p3dDisposeViewer();
 }
+
+function p3dDisposeThreeJsResources() {
+  _p3dDisposeViewer();
+}
+
 function product3dViewerReset() {
   const s = window._p3dState;
   if (s.viewerControls) {
@@ -7712,7 +8045,6 @@ function product3dViewerReset() {
 window._currentPublicProduct3d = null;
 window._currentPublicProductName = null;
 
-// Hook into openPublicProductDetail to show/hide View in 3D button
 const _origOpenPublicProductDetail = window.openPublicProductDetail;
 window.openPublicProductDetail = function(product, fromCatalog) {
   window._currentPublicProduct3d = product?.product3d || null;
@@ -7727,13 +8059,11 @@ window.openPublicProductDetail = function(product, fromCatalog) {
   }
 };
 
-// ── Hook into openOwnerProductEditor to render P3D section ────
 const _origOpenOwnerProductEditor = window.openOwnerProductEditor;
 window.openOwnerProductEditor = function(slot) {
   if (typeof _origOpenOwnerProductEditor === 'function') {
     _origOpenOwnerProductEditor(slot);
   }
-  // After original opens, populate P3D section
   setTimeout(async () => {
     const prod = (window.activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slot));
     window._p3dState.currentProductName = prod?.name || 'Product';
@@ -7741,7 +8071,6 @@ window.openOwnerProductEditor = function(slot) {
   }, 80);
 };
 
-// ── Escape key closes viewer ──────────────────────────────────
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (document.getElementById('product3dViewerModal')?.style.display === 'flex') closeProduct3dViewer();
@@ -7749,7 +8078,6 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ── Catalog Editor: Move Up / Move Down for product reorder ──
 function catalogProductMoveUp(catalogId, productIndex) {
   _catalogProductReorder(catalogId, productIndex, -1);
 }
@@ -7768,44 +8096,41 @@ async function _catalogProductReorder(catalogId, productIndex, direction) {
   catalog.productIds = ids;
   try {
     const token = window.authToken || window._authToken;
-    await fetch(`/api/projects/${project.id}/catalogs/${catalogId}/membership`, {
+    await fetch('/api/projects/' + project.id + '/catalogs/' + catalogId + '/membership', {
       method: 'PUT',
       headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
       body: JSON.stringify({ productIds: ids })
     });
-    // Re-render catalog editor if open
     if (typeof renderCatalogEditorProducts === 'function') renderCatalogEditorProducts(catalogId);
   } catch (e) {
     console.warn('[P3D] reorder error:', e.message);
   }
 }
 
-// ── showToast helper (if not already defined) ─────────────────
 if (typeof window.showToast !== 'function') {
   window.showToast = function(msg, type) {
     const el = document.createElement('div');
     const bg = type === 'success' ? '#22c55e' : type === 'error' ? '#ef4444' : '#6366f1';
-    el.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:99999;background:${bg};color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;box-shadow:0 4px 20px rgba(0,0,0,0.4);max-width:340px;`;
+    el.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:99999;background:' + bg + ';color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;box-shadow:0 4px 20px rgba(0,0,0,0.4);max-width:340px;';
     el.textContent = msg;
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 4000);
   };
 }
 
-// ── Catalog product cards: show 3D badge ──────────────────────
-// This is handled inline when rendering catalog product cards (see renderCatalogProductCards).
-// We expose a helper to generate a 3D badge snippet.
 window.p3dBadgeHtml = function(product) {
   const p3d = product?.product3d;
   if (!p3d || (p3d.status !== 'READY' && p3d.status !== 'NEEDS_REVIEW')) return '';
-  return `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.4);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;color:#a5b4fc;margin-left:6px;"><i class="fa-solid fa-rotate-3d"></i> 3D</span>`;
+  return '<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.4);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;color:#a5b4fc;margin-left:6px;"><i class="fa-solid fa-rotate-3d"></i> 3D</span>';
 };
+
 window.p3dViewBtn = function(product) {
   const p3d = product?.product3d;
   if (!p3d || (p3d.status !== 'READY' && p3d.status !== 'NEEDS_REVIEW')) return '';
   const encoded = encodeURIComponent(JSON.stringify({ glbUrl: p3d.glbUrl, name: product.name || 'Product' }));
-  return `<button type="button" onclick="publicOpenProduct3dViewerFromCatalog('${encoded}')" style="margin-top:6px;width:100%;padding:6px;font-size:11px;font-weight:700;background:rgba(99,102,241,0.2);color:#a5b4fc;border:1px solid rgba(99,102,241,0.4);border-radius:7px;cursor:pointer;"><i class="fa-solid fa-rotate-3d"></i> View in 3D</button>`;
+  return '<button type="button" onclick="publicOpenProduct3dViewerFromCatalog(\'' + encoded + '\')" style="margin-top:6px;width:100%;padding:6px;font-size:11px;font-weight:700;background:rgba(99,102,241,0.2);color:#a5b4fc;border:1px solid rgba(99,102,241,0.4);border-radius:7px;cursor:pointer;"><i class="fa-solid fa-rotate-3d"></i> View in 3D</button>';
 };
+
 window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
   try {
     const data = JSON.parse(decodeURIComponent(encoded));

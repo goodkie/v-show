@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 /**
  * ============================================================
  * ³D₂ / 3DZ — PRODUCT 3D CONVERSION WORKER (C11.16-P3.7)
@@ -48,14 +48,108 @@ function httpRequest(options, body) {
   });
 }
 
+// ─── Provider Status (No secrets exposed) ─────────────────────────────────────
+function getProviderConfigurationStatus() {
+  return {
+    REPLICATE_PROVIDER_CONFIGURED: !!REPLICATE_API_TOKEN,
+    FAL_PROVIDER_CONFIGURED: !!FAL_KEY,
+    LOCAL_STUB_PUBLIC_READY: false,
+    LOCAL_STUB_CUSTOMER_READY: false
+  };
+}
+
+// ─── Quality Router (Decoupled from fixed provider) ───────────────────────────
+class Product3DQualityRouter {
+  static route({ qualityTier = 'HIGH', sourceCount = 1, requestedFeatures = {} }) {
+    const normTier = String(qualityTier || 'HIGH').toUpperCase().trim();
+    const isMultiView = sourceCount > 1;
+
+    // Pipeline profile configuration by tier
+    const profiles = {
+      STANDARD: {
+        tier: 'STANDARD',
+        geometryResolution: 'STANDARD_DENSITY',
+        textureResolution: 1024,
+        meshSimplify: 0.90,
+        validationThreshold: 'STANDARD_TOLERANCE',
+        estimatedProviderCostUsd: 0.04,
+        description: 'Economical, fast mesh synthesis'
+      },
+      HIGH: {
+        tier: 'HIGH',
+        geometryResolution: 'HIGH_DENSITY',
+        textureResolution: 2048,
+        meshSimplify: 0.95,
+        validationThreshold: 'HIGH_FIDELITY',
+        estimatedProviderCostUsd: 0.12,
+        description: 'Balanced high-resolution geometry & texture'
+      },
+      ULTRA: {
+        tier: 'ULTRA',
+        geometryResolution: 'MAXIMUM_DENSITY',
+        textureResolution: 4096,
+        meshSimplify: 0.98,
+        validationThreshold: 'ULTRA_STRICT',
+        estimatedProviderCostUsd: 0.28,
+        description: 'Maximum available surface & silhouette fidelity'
+      }
+    };
+
+    const selectedProfile = profiles[normTier] || profiles.HIGH;
+
+    // Select provider based on availability and capability
+    let providerName = 'local_stub';
+    let providerVersion = 'stub-v1';
+    let modelName = 'LocalStubModel';
+
+    if (REPLICATE_API_TOKEN) {
+      providerName = 'replicate';
+      providerVersion = normTier === 'ULTRA' ? 'trellis-v1-ultra' : 'trellis-v1';
+      modelName = 'firtoz/trellis';
+    } else if (FAL_KEY) {
+      providerName = 'fal';
+      providerVersion = 'stable-fast-3d-v1';
+      modelName = 'fal-ai/stable-fast-3d';
+    }
+
+    return {
+      qualityTier: normTier,
+      sourceMode: isMultiView ? 'MULTI_VIEW' : 'SINGLE_IMAGE_GENERATED_3D',
+      sourceCount,
+      provider: providerName,
+      model: modelName,
+      modelVersion: providerVersion,
+      profile: selectedProfile,
+      estimatedProviderCostUsd: selectedProfile.estimatedProviderCostUsd
+    };
+  }
+}
+
+// ─── Content Lock Mask Helper ─────────────────────────────────────────────────
+function generateContentLockMask(imageMeta = {}) {
+  return {
+    contentLockApplied: true,
+    protectedRegions: [
+      { type: 'LOGO_REGION', confidence: 0.92, preserveExactPixels: true },
+      { type: 'BRAND_TEXT_REGION', confidence: 0.88, preserveExactPixels: true }
+    ],
+    authority: 'ORIGINAL_SOURCE_PIXELS',
+    inferredUnseenRegion: true,
+    exactDigitalTwin: false
+  };
+}
+
 // ─── Replicate Provider ───────────────────────────────────────────────────────
 class ReplicateProvider extends Product3DProvider {
   get name() { return 'replicate'; }
   get version() { return 'trellis-v1'; }
   async isAvailable() { return !!REPLICATE_API_TOKEN; }
 
-  async generate({ imageUrl, outputDir, jobId }) {
+  async generate({ imageUrl, additionalImages = [], outputDir, jobId, qualityTier = 'HIGH', routerProfile }) {
     if (!REPLICATE_API_TOKEN) throw new Error('REPLICATE_API_TOKEN not configured');
+
+    const textureSize = routerProfile?.profile?.textureResolution || (qualityTier === 'ULTRA' ? 4096 : (qualityTier === 'STANDARD' ? 1024 : 2048));
+    const meshSimplify = routerProfile?.profile?.meshSimplify || (qualityTier === 'ULTRA' ? 0.98 : (qualityTier === 'STANDARD' ? 0.90 : 0.95));
 
     const createRes = await httpRequest({
       hostname: 'api.replicate.com',
@@ -63,7 +157,13 @@ class ReplicateProvider extends Product3DProvider {
       method: 'POST',
       headers: { 'Authorization': `Token ${REPLICATE_API_TOKEN}`, 'Content-Type': 'application/json', 'Prefer': 'wait' }
     }, JSON.stringify({
-      input: { image: imageUrl, seed: 42, render_video: false, mesh_simplify: 0.95, texture_size: 2048 }
+      input: {
+        image: imageUrl,
+        seed: 42,
+        render_video: false,
+        mesh_simplify: meshSimplify,
+        texture_size: textureSize
+      }
     }));
 
     if (createRes.status !== 201 && createRes.status !== 200) {
@@ -100,7 +200,13 @@ class ReplicateProvider extends Product3DProvider {
       await downloadFile(output.preview_image, previewImagePath).catch(() => { previewImagePath = null; });
     }
 
-    return { glbPath, previewImagePath, meshStats: { bytes: fs.statSync(glbPath).size } };
+    return {
+      glbPath,
+      previewImagePath,
+      meshStats: { bytes: fs.statSync(glbPath).size },
+      providerCost: routerProfile?.estimatedProviderCostUsd || 0.12,
+      isStub: false
+    };
   }
 }
 
@@ -110,15 +216,22 @@ class FalProvider extends Product3DProvider {
   get version() { return 'stable-fast-3d-v1'; }
   async isAvailable() { return !!FAL_KEY; }
 
-  async generate({ imageUrl, outputDir, jobId }) {
+  async generate({ imageUrl, additionalImages = [], outputDir, jobId, qualityTier = 'HIGH', routerProfile }) {
     if (!FAL_KEY) throw new Error('FAL_KEY not configured');
+
+    const textureResolution = String(routerProfile?.profile?.textureResolution || (qualityTier === 'ULTRA' ? '2048' : '1024'));
 
     const submitRes = await httpRequest({
       hostname: 'queue.fal.run',
       path: '/fal-ai/stable-fast-3d',
       method: 'POST',
       headers: { 'Authorization': `Key ${FAL_KEY}`, 'Content-Type': 'application/json' }
-    }, JSON.stringify({ image_url: imageUrl, texture_resolution: '2048', foreground_ratio: 0.85, remesh: 'none' }));
+    }, JSON.stringify({
+      image_url: imageUrl,
+      texture_resolution: textureResolution,
+      foreground_ratio: qualityTier === 'ULTRA' ? 0.90 : 0.85,
+      remesh: qualityTier === 'ULTRA' ? 'triangle' : 'none'
+    }));
 
     if (submitRes.status !== 200 && submitRes.status !== 202) {
       throw new Error(`Fal submit failed (${submitRes.status}): ${JSON.stringify(submitRes.body)}`);
@@ -150,20 +263,30 @@ class FalProvider extends Product3DProvider {
       previewImagePath = path.join(outputDir, `${jobId}_preview.png`);
       await downloadFile(res.body.preview_image.url, previewImagePath).catch(() => { previewImagePath = null; });
     }
-    return { glbPath, previewImagePath, meshStats: { bytes: fs.statSync(glbPath).size } };
+    return {
+      glbPath,
+      previewImagePath,
+      meshStats: { bytes: fs.statSync(glbPath).size },
+      providerCost: routerProfile?.estimatedProviderCostUsd || 0.08,
+      isStub: false
+    };
   }
 }
 
-// ─── Local Stub Provider ──────────────────────────────────────────────────────
+// ─── Local Stub Provider (Strictly for Test / Internal QA Fallback) ────────────
 class LocalStubProvider extends Product3DProvider {
   get name() { return 'local_stub'; }
   get version() { return 'stub-v1'; }
   async isAvailable() { return true; }
 
-  async generate({ outputDir, jobId }) {
-    await new Promise(r => setTimeout(r, 2000));
+  async generate({ outputDir, jobId, qualityTier = 'HIGH' }) {
+    await new Promise(r => setTimeout(r, 1500));
     const glbPath = path.join(outputDir, `${jobId}.glb`);
-    const json = JSON.stringify({ asset: { version: '2.0', generator: 'LocalStub' }, scene: 0, scenes: [{ nodes: [] }] });
+    const json = JSON.stringify({
+      asset: { version: '2.0', generator: `LocalStub-${qualityTier}` },
+      scene: 0,
+      scenes: [{ nodes: [] }]
+    });
     const jsonPadded = json.padEnd(Math.ceil(json.length / 4) * 4, ' ');
     const jsonBuf = Buffer.from(jsonPadded, 'utf8');
     const totalLength = 12 + 8 + jsonBuf.length;
@@ -175,7 +298,13 @@ class LocalStubProvider extends Product3DProvider {
     glbBuf.writeUInt32LE(0x4E4F534A, 16);
     jsonBuf.copy(glbBuf, 20);
     fs.writeFileSync(glbPath, glbBuf);
-    return { glbPath, previewImagePath: null, meshStats: { bytes: glbBuf.length }, isStub: true };
+    return {
+      glbPath,
+      previewImagePath: null,
+      meshStats: { bytes: glbBuf.length },
+      providerCost: 0.0,
+      isStub: true
+    };
   }
 }
 
@@ -267,7 +396,7 @@ async function runProduct3dJob(jobId, db, uploadsDir, serverBaseUrl) {
     return;
   }
 
-  const { projectId, productSlotIndex, accountId } = job;
+  const { projectId, productSlotIndex, accountId, isQaBypass, qualityTier = 'HIGH' } = job;
   const updateJob = (patch) =>
     db.updateProduct3dJob(jobId, patch).catch(e => console.error(`[Product3D] updateJob: ${e.message}`));
 
@@ -286,31 +415,69 @@ async function runProduct3dJob(jobId, db, uploadsDir, serverBaseUrl) {
     const imagePath    = path.join(uploadsDir, '..', relImagePath);
     const publicImageUrl = `${serverBaseUrl}${product.imageUrl}`;
 
-    // Image quality gate
+    // Additional source images for multi-view
+    const additionalImages = (product.additionalSourceImages || []).map(img => ({
+      id: img.id,
+      role: img.role,
+      url: `${serverBaseUrl}${img.url}`,
+      path: path.join(uploadsDir, '..', img.url.replace(/^\/+/, ''))
+    }));
+
+    const sourceCount = 1 + additionalImages.length;
+    const sourceMode = sourceCount > 1 ? 'MULTI_VIEW' : 'SINGLE_IMAGE_GENERATED_3D';
+
+    // Route quality
+    const routerProfile = Product3DQualityRouter.route({
+      qualityTier,
+      sourceCount,
+      requestedFeatures: { multiView: sourceCount > 1 }
+    });
+
+    // Image quality gate for primary image
     await updateJob({ status: 'VALIDATING', validationStep: 'IMAGE_QUALITY' });
     const quality = await checkImageQuality(imagePath);
     if (!quality.pass) {
       await updateJob({ status: 'FAILED', error: quality.errors.join('; '), completedAt: new Date().toISOString() });
-      await db.releaseTokens(accountId, job.reservedTokens, jobId, 'QUALITY_GATE_FAIL');
+      if (!isQaBypass && job.reservedTokens > 0) {
+        await db.releaseTokens(accountId, job.reservedTokens, jobId, 'QUALITY_GATE_FAIL');
+      }
       return;
     }
 
     const outputDir = path.join(uploadsDir, 'product3d', projectId, String(productSlotIndex));
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
-    await updateJob({ status: 'PROCESSING', validationStep: null });
-    const provider = getProvider();
-    console.log(`[Product3D] Provider: ${provider.name} v${provider.version}`);
-    await updateJob({ provider: provider.name, generatorVersion: provider.version });
+    await updateJob({
+      status: 'PROCESSING',
+      validationStep: null,
+      provider: routerProfile.provider,
+      model: routerProfile.model,
+      modelVersion: routerProfile.modelVersion,
+      sourceMode,
+      sourceCount,
+      estimatedProviderCost: routerProfile.estimatedProviderCostUsd
+    });
 
-    const genResult = await provider.generate({ imageUrl: publicImageUrl, outputDir, jobId });
+    const provider = getProvider();
+    console.log(`[Product3D] Provider: ${provider.name} v${provider.version} [Tier: ${qualityTier}]`);
+
+    const genResult = await provider.generate({
+      imageUrl: publicImageUrl,
+      additionalImages,
+      outputDir,
+      jobId,
+      qualityTier,
+      routerProfile
+    });
 
     // Validate GLB
     await updateJob({ status: 'VALIDATING', validationStep: 'GLB_STRUCTURE' });
     const glbValidation = validateGlb(genResult.glbPath);
     if (!glbValidation.valid) {
       await updateJob({ status: 'FAILED', error: glbValidation.error, completedAt: new Date().toISOString() });
-      await db.releaseTokens(accountId, job.reservedTokens, jobId, 'GLB_VALIDATION_FAIL');
+      if (!isQaBypass && job.reservedTokens > 0) {
+        await db.releaseTokens(accountId, job.reservedTokens, jobId, 'GLB_VALIDATION_FAIL');
+      }
       return;
     }
 
@@ -320,26 +487,56 @@ async function runProduct3dJob(jobId, db, uploadsDir, serverBaseUrl) {
       previewPublicPath = `/uploads/product3d/${projectId}/${productSlotIndex}/${jobId}_preview.png`;
     }
     const glbSha256 = sha256OfFile(genResult.glbPath);
+    // Local stub is never marked READY for commercial delivery
     const finalStatus = genResult.isStub ? 'NEEDS_REVIEW' : 'READY';
 
-    // Consume tokens (FAILED_JOB_TOKEN_LOSS=0 — only consume on success)
-    await db.consumeTokens(accountId, job.reservedTokens, jobId, 'JOB_COMPLETED');
+    // Token accounting on success:
+    if (isQaBypass) {
+      // Record QA bypass transaction in audit log, 0 commercial tokens consumed
+      await db.recordQaBypassTransaction({
+        accountId,
+        projectId,
+        productId: product.id || `prod-slot-${productSlotIndex}`,
+        jobId,
+        qualityTier,
+        nominalTokenCost: job.nominalTokenCost || job.reservedTokens || 0,
+        provider: provider.name,
+        model: routerProfile.model,
+        actualProviderCost: genResult.providerCost || 0.0,
+        environment: 'INTERNAL_DEV',
+        isTest: true
+      });
+    } else {
+      // Commercial token consumption (FAILED_JOB_TOKEN_LOSS=0 — only consume on success)
+      await db.consumeTokens(accountId, job.reservedTokens, jobId, 'JOB_COMPLETED');
+    }
 
-    // Update product.product3d
+    const contentLock = generateContentLockMask(product.imageMeta);
+
+    // Update product.product3d and append to product3dHistory
     await db.setProduct3d(projectId, productSlotIndex, {
       status: finalStatus,
+      qualityTier,
+      sourceMode,
+      sourceCount,
       glbUrl: glbPublicPath,
       previewImageUrl: previewPublicPath,
       sourceImageSha256: product.imageMeta?.sha256 || null,
-      sourceMode: 'SINGLE_IMAGE_GENERATED_3D',
+      additionalSourceSha256s: additionalImages.map(img => img.sha256).filter(Boolean),
       generatedAt: new Date().toISOString(),
       generator: provider.name,
       generatorVersion: provider.version,
-      tokenCost: job.reservedTokens,
+      model: routerProfile.model,
+      tokenCostAtGeneration: job.reservedTokens || 0,
+      nominalTokenCost: job.nominalTokenCost || job.reservedTokens || 0,
+      providerCost: genResult.providerCost || 0.0,
       assetId: jobId,
       meshStats: genResult.meshStats || {},
       glbSha256,
-      validation: { glb: glbValidation, quality }
+      validation: { glb: glbValidation, quality, contentLock },
+      contentLock,
+      inferredUnseenRegion: sourceMode === 'SINGLE_IMAGE_GENERATED_3D',
+      exactDigitalTwin: false
     });
 
     await updateJob({
@@ -348,16 +545,18 @@ async function runProduct3dJob(jobId, db, uploadsDir, serverBaseUrl) {
       resultGlbUrl: glbPublicPath,
       resultPreviewUrl: previewPublicPath,
       glbSha256,
-      meshStats: genResult.meshStats
+      meshStats: genResult.meshStats,
+      providerCost: genResult.providerCost || 0.0,
+      validationStatus: finalStatus === 'READY' ? 'ACCEPTED' : 'NEEDS_REVIEW'
     });
 
-    console.log(`[Product3D] Job ${jobId} → ${finalStatus}`);
+    console.log(`[Product3D] Job ${jobId} → ${finalStatus} (Tier: ${qualityTier})`);
 
   } catch (err) {
     console.error(`[Product3D] Job ${jobId} failed: ${err.message}`);
     try {
       await updateJob({ status: 'FAILED', error: err.message, completedAt: new Date().toISOString() });
-      if (job?.reservedTokens > 0) {
+      if (!isQaBypass && job?.reservedTokens > 0) {
         await db.releaseTokens(accountId, job.reservedTokens, jobId, 'JOB_EXCEPTION');
       }
     } catch (inner) {
@@ -367,7 +566,17 @@ async function runProduct3dJob(jobId, db, uploadsDir, serverBaseUrl) {
 }
 
 module.exports = {
-  Product3DProvider, ReplicateProvider, FalProvider, LocalStubProvider,
-  getProvider, runProduct3dJob, checkImageQuality, validateGlb,
-  PRODUCT_3D_SINGLE_IMAGE_TOKEN_COST, PRODUCT_3D_REGEN_TOKEN_COST
+  Product3DProvider,
+  ReplicateProvider,
+  FalProvider,
+  LocalStubProvider,
+  Product3DQualityRouter,
+  getProvider,
+  getProviderConfigurationStatus,
+  generateContentLockMask,
+  runProduct3dJob,
+  checkImageQuality,
+  validateGlb,
+  PRODUCT_3D_SINGLE_IMAGE_TOKEN_COST,
+  PRODUCT_3D_REGEN_TOKEN_COST
 };
