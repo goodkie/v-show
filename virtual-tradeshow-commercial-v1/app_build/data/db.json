@@ -17851,6 +17851,15 @@
       "eventType": "RFQ_SUBMIT",
       "isTest": false,
       "timestamp": "2026-09-01T09:03:23.306Z"
+    },
+    {
+      "eventId": "evt-e4c27d61",
+      "projectId": "prj-free-d8477bd0",
+      "eventName": "immersive_view_started",
+      "metadata": {
+        "projectId": "prj-free-d8477bd0"
+      },
+      "timestamp": "2026-09-01T14:21:07.594Z"
     }
   ],
   "reconstructionJobs": [
@@ -24337,7 +24346,17 @@
           "createdAt": "2026-08-31T09:11:50.889Z"
         }
       ],
-      "analyticsEvents": [],
+      "analyticsEvents": [
+        {
+          "eventId": "evt-e4c27d61",
+          "projectId": "prj-free-d8477bd0",
+          "eventName": "immersive_view_started",
+          "metadata": {
+            "projectId": "prj-free-d8477bd0"
+          },
+          "timestamp": "2026-09-01T14:21:07.594Z"
+        }
+      ],
       "createdAt": "2026-08-31T09:11:50.890Z",
       "updatedAt": "2026-09-01T14:06:05.023Z",
       "accountId": "acc-e2fbab00",
@@ -29769,6 +29788,24 @@
       "businessName": "Apex Robotics International",
       "createdAt": "2026-09-01T14:06:04.751Z",
       "expiresAt": "2026-10-01T14:06:04.751Z"
+    },
+    {
+      "token": "cust-sess-4f36d318bca28cb0c84956f07a2c368a634218a20891494a",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T14:19:29.764Z",
+      "expiresAt": "2026-10-01T14:19:29.764Z"
+    },
+    {
+      "token": "cust-sess-8d491ea6408b79712ca1e1ef0cb61c6f653295c19935f6e0",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T14:20:52.520Z",
+      "expiresAt": "2026-10-01T14:20:52.519Z"
     }
   ],
   "accounts": [
@@ -29923,8 +29960,8 @@
       "emailVerified": true,
       "entitlement": "INTERNAL_FULL_ACCESS",
       "createdAt": "2026-08-31T09:11:25.217Z",
-      "updatedAt": "2026-09-01T14:06:04.718Z",
-      "lastLoginAt": "2026-09-01T14:06:04.718Z",
+      "updatedAt": "2026-09-01T14:20:52.463Z",
+      "lastLoginAt": "2026-09-01T14:20:52.463Z",
       "planCode": "INTERNAL_FULL_ACCESS",
       "entitlementStatus": "ACTIVE",
       "billingProvider": "stripe",
@@ -31461,6 +31498,20 @@
       "email": "goodkie.com@gmail.com",
       "action": "LOGIN",
       "timestamp": "2026-09-01T14:06:04.751Z"
+    },
+    {
+      "id": "log-c5645b8d",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T14:19:29.764Z"
+    },
+    {
+      "id": "log-de292d0a",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T14:20:52.520Z"
     }
   ],
   "entitlementAuditLogs": [
