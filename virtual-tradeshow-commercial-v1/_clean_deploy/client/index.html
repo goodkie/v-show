@@ -905,6 +905,25 @@
       flex: 1 1 auto;
       min-height: 0;
       -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(100, 116, 139, 0.45) rgba(15, 23, 42, 0.4);
+    }
+    .viewport-modal-body::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .viewport-modal-body::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.4);
+      border-radius: 8px;
+    }
+    .viewport-modal-body::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.45);
+      border-radius: 8px;
+      transition: background 0.2s ease;
+    }
+    .viewport-modal-body::-webkit-scrollbar-thumb:hover {
+      background: rgba(56, 189, 248, 0.8);
+      box-shadow: 0 0 6px rgba(56, 189, 248, 0.5);
     }
     .viewport-modal-footer {
       padding: 14px 20px;
@@ -2355,9 +2374,12 @@
         
         <div class="viewport-modal-body">
           <!-- Image Upload Area (Clearly visible at top) -->
-          <div class="form-group" style="margin-bottom: 16px;">
+          <div class="form-group" style="margin-bottom: 16px; position: relative;">
             <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span style="font-weight: 700; font-size: 13px; color: #cbd5e1;">Product Image (PNG, JPG, WebP)</span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-weight: 700; font-size: 13px; color: #cbd5e1;">Product Image (PNG, JPG, WebP)</span>
+                <span style="background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); border-radius: 999px; padding: 2px 8px; font-size: 10px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-cube"></i> 3D Ready</span>
+              </div>
               <span style="font-size: 11px; color: #64748b;">Max 10 MB</span>
             </label>
             <div id="opeImageUploadBox" style="background: #030712; border: 1.5px dashed rgba(56,189,248,0.35); border-radius: 12px; padding: 16px; text-align: center; position: relative;">
@@ -2370,6 +2392,33 @@
                 <button type="button" id="opeBtnRemoveImg" class="btn-ui" onclick="removeOwnerProductImage()" style="display: none; padding: 8px 14px; font-size: 12.5px; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.35); border-radius: 8px; cursor: pointer;">
                   <i class="fa-solid fa-trash"></i> Remove Image
                 </button>
+              </div>
+              
+              <!-- 3D Hint & Popover trigger -->
+              <div style="font-size: 11.5px; color: #94a3b8; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;">
+                <span>This image can be converted into an interactive 3D model.</span>
+                <button type="button" onclick="toggle3dConversionPopover(event)" style="background: none; border: none; color: #38bdf8; font-size: 11.5px; font-weight: 700; text-decoration: underline; cursor: pointer; padding: 0; display: inline-flex; align-items: center; gap: 4px;">
+                  <i class="fa-solid fa-circle-question"></i> Learn about 3D conversion
+                </button>
+              </div>
+
+              <!-- 3D Conversion Popover Modal/Card -->
+              <div id="p3dConversionPopover" style="display: none; position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); width: min(92vw, 380px); background: #0b1329; border: 1px solid rgba(56,189,248,0.45); border-radius: 12px; padding: 14px 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.85), 0 0 25px rgba(56,189,248,0.2); z-index: 50; text-align: left;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px;">
+                  <span style="font-weight: 800; font-size: 12.5px; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-cube"></i> AI 3D Conversion
+                  </span>
+                  <button type="button" onclick="close3dConversionPopover(event)" style="background: none; border: none; color: #94a3b8; font-size: 13px; cursor: pointer; padding: 0 4px;">✕</button>
+                </div>
+                <ul style="margin: 0 0 10px 0; padding-left: 18px; font-size: 11.5px; color: #cbd5e1; line-height: 1.5;">
+                  <li>Upload a clear product image with the full product visible.</li>
+                  <li>Add side or back views for better geometry.</li>
+                  <li>Choose Standard, High, or Ultra quality.</li>
+                  <li>Generate an interactive 3D model.</li>
+                </ul>
+                <div style="background: rgba(56,189,248,0.08); border-left: 3px solid #38bdf8; border-radius: 4px; padding: 6px 8px; font-size: 11px; color: #94a3b8; line-height: 1.4;">
+                  <i class="fa-solid fa-circle-info" style="color: #38bdf8;"></i> <strong>Note:</strong> Single-image 3D may infer surfaces that are not visible in the original photo.
+                </div>
               </div>
             </div>
           </div>
@@ -2424,7 +2473,7 @@
           <div class="form-group" id="opeAdditionalViewsSection" style="margin-bottom: 16px;">
             <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
               <span style="font-weight: 700; font-size: 12px; color: #a5b4fc;"><i class="fa-solid fa-images"></i> Additional Source Views (Multi-View 3D)</span>
-              <span style="font-size: 11px; color: #64748b;">Optional · Recommended for High/Ultra</span>
+              <span style="font-size: 11px; color: #64748b;">Optional. Add side, back, or detail views for more accurate 3D geometry. Recommended for High and Ultra.</span>
             </label>
             <div id="opeAdditionalViewsContainer" style="background: rgba(15,23,42,0.6); border: 1px dashed rgba(99,102,241,0.3); border-radius: 10px; padding: 10px;">
               <div id="opeAdditionalViewsList" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
@@ -2449,90 +2498,96 @@
           </div>
 
           <!-- ── Product 3D Conversion Section (P3.7) ── -->
-          <div class="form-group" id="opeProduct3dSection" style="margin-bottom: 14px; margin-top: 14px;">
-            <div style="background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.3); border-radius: 12px; padding: 14px;">
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                <label style="font-weight: 800; font-size: 12px; color: #a5b4fc; display: flex; align-items: center; gap: 6px; margin: 0;">
+          <div class="form-group" id="opeProduct3dSection" style="margin-bottom: 16px; margin-top: 16px;">
+            <div style="background: rgba(15,23,42,0.7); border: 1px solid rgba(56,189,248,0.3); border-radius: 14px; padding: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <label style="font-weight: 800; font-size: 13px; color: #38bdf8; display: flex; align-items: center; gap: 8px; margin: 0;">
                   <i class="fa-solid fa-cube"></i> AI 3D PRODUCT PREVIEW
                   <span id="p3dStatusBadge" style="display: none;"></span>
                 </label>
-                <span id="p3dTokenBalance" style="font-size: 11px; color: #64748b;"></span>
+                <span id="p3dTokenBalance" style="font-size: 11px; color: #94a3b8;"></span>
               </div>
               
-              <div id="p3dQaBanner" style="display: none; background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.35); border-radius: 8px; padding: 6px 10px; font-size: 11px; color: #d8b4fe; margin-bottom: 10px;">
-                <i class="fa-solid fa-shield-halved"></i> <strong>Internal QA Mode:</strong> Unlimited test conversions active (0 commercial tokens charged).
+              <div id="p3dQaBanner" style="display: none; background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.35); border-radius: 8px; padding: 7px 12px; font-size: 11.5px; color: #d8b4fe; margin-bottom: 12px;">
+                <i class="fa-solid fa-shield-halved"></i> <strong>Internal QA:</strong> Unlimited Test Conversions (0 commercial tokens charged).
               </div>
 
               <!-- Quality Selection Cards -->
               <div id="p3dQualitySelectorContainer" style="margin-bottom: 12px;">
-                <div style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Select 3D Quality Tier</div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px;" id="p3dQualityCardsGrid">
+                <div style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Select 3D Quality Tier</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;" id="p3dQualityCardsGrid">
                   
                   <!-- Standard Card -->
-                  <div class="p3d-quality-card" id="p3dCardSTANDARD" onclick="selectP3dQuality('STANDARD')" style="background: rgba(15,23,42,0.8); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 10px; cursor: pointer; transition: all 0.2s ease;">
+                  <div class="p3d-quality-card" id="p3dCardSTANDARD" onclick="selectP3dQuality('STANDARD')" style="background: rgba(15,23,42,0.9); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.2s ease;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                      <span style="font-size: 12px; font-weight: 800; color: #fff;">Standard 3D</span>
-                      <span style="font-size: 9px; font-weight: 800; background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; color: #94a3b8;">1 Token*</span>
+                      <span style="font-size: 12.5px; font-weight: 800; color: #fff;">Standard 3D</span>
+                      <span id="p3dBadgeSTANDARD" style="font-size: 9.5px; font-weight: 800; background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; color: #94a3b8;">1 Token</span>
                     </div>
-                    <div style="font-size: 10.5px; color: #94a3b8; line-height: 1.3;">Fast conversion for simple products</div>
+                    <div style="font-size: 11px; color: #94a3b8; line-height: 1.35;">Fast conversion for simple products</div>
                   </div>
 
                   <!-- High Quality Card (Recommended) -->
-                  <div class="p3d-quality-card" id="p3dCardHIGH" onclick="selectP3dQuality('HIGH')" style="background: rgba(99,102,241,0.15); border: 1.5px solid #6366f1; border-radius: 10px; padding: 10px; cursor: pointer; transition: all 0.2s ease;">
+                  <div class="p3d-quality-card" id="p3dCardHIGH" onclick="selectP3dQuality('HIGH')" style="background: rgba(56,189,248,0.12); border: 1.5px solid #38bdf8; border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.2s ease;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                      <span style="font-size: 12px; font-weight: 800; color: #a5b4fc;">High Quality 3D</span>
-                      <span style="font-size: 9px; font-weight: 800; background: rgba(99,102,241,0.3); padding: 2px 6px; border-radius: 4px; color: #c7d2fe;">3 Tokens*</span>
+                      <span style="font-size: 12.5px; font-weight: 800; color: #38bdf8;">High Quality 3D</span>
+                      <span id="p3dBadgeHIGH" style="font-size: 9.5px; font-weight: 800; background: rgba(56,189,248,0.25); padding: 2px 6px; border-radius: 4px; color: #bae6fd;">3 Tokens</span>
                     </div>
-                    <div style="font-size: 10.5px; color: #cbd5e1; line-height: 1.3;">Best detail & geometry · <strong style="color: #38bdf8;">Recommended</strong></div>
+                    <div style="font-size: 11px; color: #cbd5e1; line-height: 1.35;">Best detail & geometry · <strong style="color: #38bdf8;">Recommended</strong></div>
                   </div>
 
                   <!-- Ultra Card -->
-                  <div class="p3d-quality-card" id="p3dCardULTRA" onclick="selectP3dQuality('ULTRA')" style="background: rgba(15,23,42,0.8); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 10px; cursor: pointer; transition: all 0.2s ease;">
+                  <div class="p3d-quality-card" id="p3dCardULTRA" onclick="selectP3dQuality('ULTRA')" style="background: rgba(15,23,42,0.9); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.2s ease;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                      <span style="font-size: 12px; font-weight: 800; color: #fff;">Ultra 3D</span>
-                      <span style="font-size: 9px; font-weight: 800; background: rgba(245,158,11,0.2); padding: 2px 6px; border-radius: 4px; color: #fbbf24;">6 Tokens*</span>
+                      <span style="font-size: 12.5px; font-weight: 800; color: #fff;">Ultra 3D</span>
+                      <span id="p3dBadgeULTRA" style="font-size: 9.5px; font-weight: 800; background: rgba(245,158,11,0.2); padding: 2px 6px; border-radius: 4px; color: #fbbf24;">6 Tokens</span>
                     </div>
-                    <div style="font-size: 10.5px; color: #94a3b8; line-height: 1.3;">Maximum practical fidelity</div>
+                    <div style="font-size: 11px; color: #94a3b8; line-height: 1.35;">Maximum practical fidelity</div>
                   </div>
 
                 </div>
               </div>
 
-              <!-- Live Cost Calculation & Policy Summary -->
-              <div id="p3dLiveCostBox" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 10px; font-size: 11.5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-                <span id="p3dLiveCostSummary" style="color: #cbd5e1;">Cost: 3 tokens</span>
-                <span id="p3dLiveBalanceSummary" style="color: #64748b;">Available: --</span>
+              <!-- Live Cost Calculation & Balance Summary -->
+              <div id="p3dLiveCostBox" style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 12px; font-size: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <span id="p3dLiveCostSummary" style="color: #cbd5e1; font-weight: 600;">High Quality · 3 Tokens</span>
+                <span id="p3dLiveBalanceSummary" style="color: #94a3b8;">Available: --</span>
               </div>
 
-              <div id="p3dStatusLine" style="font-size: 12px; color: #94a3b8; margin-bottom: 8px; display: none;"></div>
-              <div id="p3dWarningBanner" style="display: none; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 8px; padding: 8px 10px; font-size: 11.5px; color: #fbbf24; margin-bottom: 8px;"></div>
+              <div id="p3dStatusLine" style="font-size: 12px; color: #94a3b8; margin-bottom: 10px; display: none;"></div>
+              <div id="p3dWarningBanner" style="display: none; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #fbbf24; margin-bottom: 12px;"></div>
               
-              <!-- Buttons row -->
-              <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                <button type="button" id="p3dBtnGenerate" onclick="product3dGenerate()" style="display:none; padding: 7px 16px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; border: 1px solid #a5b4fc; border-radius: 8px; cursor: pointer;">
-                  <i class="fa-solid fa-wand-magic-sparkles"></i> Convert to 3D
+              <!-- ── Primary Product 3D Conversion CTA Button & Actions ── -->
+              <div id="p3dCtaContainer" style="display: flex; flex-direction: column; gap: 10px; margin-top: 4px;">
+                <!-- Main Action Button -->
+                <button type="button" id="p3dMainCtaBtn" onclick="handleP3dMainCtaClick()" style="width: 100%; padding: 12px 20px; font-size: 13.5px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(2,132,199,0.35); transition: all 0.2s ease;">
+                  <i class="fa-solid fa-cube"></i> <span id="p3dMainCtaText">Generate 3D Model</span>
                 </button>
-                <button type="button" id="p3dBtnView" onclick="product3dOpenViewer()" style="display:none; padding: 7px 14px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 8px; cursor: pointer;">
-                  <i class="fa-solid fa-rotate-3d"></i> View 3D
-                </button>
-                <button type="button" id="p3dBtnRegen" onclick="product3dRegenerate()" style="display:none; padding: 7px 14px; font-size: 12px; font-weight: 700; background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.35); border-radius: 8px; cursor: pointer;">
-                  <i class="fa-solid fa-arrows-rotate"></i> Regenerate 3D
-                </button>
-                <button type="button" id="p3dBtnRemove" onclick="product3dRemove()" style="display:none; padding: 7px 14px; font-size: 12px; font-weight: 700; background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; cursor: pointer;">
-                  <i class="fa-solid fa-trash"></i> Remove 3D
-                </button>
+
+                <!-- Secondary Actions Row (When 3D Model exists) -->
+                <div id="p3dSecondaryActionsRow" style="display: none; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: flex-end;">
+                  <button type="button" id="p3dBtnRegen" onclick="product3dRegenerate()" style="padding: 7px 14px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-arrows-rotate"></i> Regenerate
+                  </button>
+                  <button type="button" id="p3dBtnRemove" onclick="product3dRemove()" style="padding: 7px 14px; font-size: 12px; font-weight: 700; background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-trash"></i> Remove 3D
+                  </button>
+                </div>
+
                 <!-- Upgrade CTA (shown for PRO/FREE) -->
-                <div id="p3dUpgradeCta" style="display:none; font-size: 11.5px; color: #94a3b8;">
+                <div id="p3dUpgradeCta" style="display:none; font-size: 12px; color: #94a3b8; text-align: center; padding: 6px 0;">
                   <i class="fa-solid fa-lock" style="color:#f59e0b;"></i> 3D Product Preview requires <strong style="color:#f59e0b;">BUSINESS</strong> plan.
                 </div>
               </div>
               
-              <!-- Poll progress bar -->
-              <div id="p3dProgressBar" style="display:none; margin-top: 10px;">
-                <div style="height: 4px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
-                  <div id="p3dProgressFill" style="height: 100%; width: 30%; background: linear-gradient(90deg,#6366f1,#8b5cf6); border-radius: 4px; transition: width 1s ease;"></div>
+              <!-- Live Activity & Progress Bar -->
+              <div id="p3dProgressBar" style="display:none; margin-top: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.06);">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: #cbd5e1; margin-bottom: 6px;">
+                  <span id="p3dProgressLabel" style="display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-circle-notch fa-spin" style="color: #38bdf8;"></i> Generating 3D…</span>
+                  <span id="p3dProgressTimer" style="color: #94a3b8; font-variant-numeric: tabular-nums;">0s</span>
                 </div>
-                <div id="p3dProgressLabel" style="font-size: 11px; color: #64748b; margin-top: 4px; text-align: center;">Processing…</div>
+                <div style="height: 4px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
+                  <div id="p3dProgressFill" style="height: 100%; width: 100%; background: linear-gradient(90deg, #0284c7, #38bdf8, #818cf8); border-radius: 4px;"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -7535,6 +7590,79 @@ function openInlineCatalogCreateFromPin() {
 }
 
 // ── Render 3D section in owner product editor ─────────────────
+
+// ── 3D Conversion Popover Controls ────────────────────────────
+function toggle3dConversionPopover(event) {
+  if (event) { event.preventDefault(); event.stopPropagation(); }
+  const pop = document.getElementById('p3dConversionPopover');
+  if (!pop) return;
+  const isHidden = pop.style.display === 'none' || !pop.style.display;
+  pop.style.display = isHidden ? 'block' : 'none';
+  if (isHidden) {
+    const handleOutsideClick = (e) => {
+      if (!pop.contains(e.target) && e.target !== event?.target) {
+        pop.style.display = 'none';
+        document.removeEventListener('click', handleOutsideClick);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', handleOutsideClick), 10);
+  }
+}
+
+function close3dConversionPopover(event) {
+  if (event) { event.preventDefault(); event.stopPropagation(); }
+  const pop = document.getElementById('p3dConversionPopover');
+  if (pop) pop.style.display = 'none';
+}
+
+
+function updateP3dLiveCostSummary() {
+  const quality = window._p3dState.currentQuality || 'HIGH';
+  const isDev = window._p3dState.isDev || false;
+  const cost = calculateCurrentP3dCost();
+  const balance = window._p3dState.tokenBalance;
+
+  const costEl = document.getElementById('p3dLiveCostSummary');
+  const balEl = document.getElementById('p3dLiveBalanceSummary');
+  const ctaBtn = document.getElementById('p3dMainCtaBtn');
+
+  const tierNames = { STANDARD: 'Standard 3D', HIGH: 'High Quality 3D', ULTRA: 'Ultra 3D' };
+  const tierNominals = { STANDARD: '1 Token', HIGH: '3 Tokens', ULTRA: '6 Tokens' };
+
+  if (costEl) {
+    if (isDev) {
+      costEl.innerHTML = '<span style="color:#e2e8f0; font-weight:700;">' + (tierNames[quality] || quality) + '</span> · <span style="color:#a5b4fc;">' + (tierNominals[quality] || (cost + ' Tokens')) + '</span>';
+    } else {
+      costEl.innerHTML = '<span style="color:#e2e8f0; font-weight:700;">Cost: ' + cost + ' Token' + (cost !== 1 ? 's' : '') + '</span>';
+    }
+  }
+
+  if (balEl) {
+    if (isDev) {
+      balEl.innerHTML = '<span style="color:#d8b4fe; font-weight:700;"><i class="fa-solid fa-shield-halved"></i> Internal QA · Unlimited Test Conversions</span>';
+    } else if (balance !== null && balance !== undefined) {
+      const remaining = balance - cost;
+      if (balance < cost) {
+        balEl.innerHTML = '<span style="color:#f87171; font-weight:700;"><i class="fa-solid fa-circle-exclamation"></i> Not enough 3D tokens.</span> <span style="color:#94a3b8;">(Available: ' + balance + ')</span>';
+        if (ctaBtn && (!window._p3dState.product3d || window._p3dState.product3d.status !== 'READY')) {
+          ctaBtn.disabled = true;
+          ctaBtn.style.opacity = '0.6';
+          ctaBtn.style.cursor = 'not-allowed';
+        }
+      } else {
+        balEl.innerHTML = '<span style="color:#94a3b8;">Available: <strong style="color:#38bdf8;">' + balance + '</strong> · After: <strong style="color:#cbd5e1;">' + remaining + '</strong></span>';
+        if (ctaBtn) {
+          ctaBtn.disabled = false;
+          ctaBtn.style.opacity = '1';
+          ctaBtn.style.cursor = 'pointer';
+        }
+      }
+    } else {
+      balEl.textContent = '';
+    }
+  }
+}
+
 async function renderProduct3dSection(slot, product) {
   const section = document.getElementById('opeProduct3dSection');
   if (!section) return;
@@ -7544,31 +7672,34 @@ async function renderProduct3dSection(slot, product) {
   window._p3dState.product3d = product?.product3d || null;
   window._p3dState.additionalSourceImages = product?.additionalSourceImages || [];
 
-  // Load balance & quality policy
+  // Load balance & policy
   const tokenData = await p3dLoadTokenBalance();
-  const isEntitled = tokenData?.access?.allowed || window._p3dState.isDev || false;
+  const isDev = window._p3dState.isDev || false;
+  const isEntitled = tokenData?.access?.allowed || isDev || false;
+  window._p3dState.isEntitled = isEntitled;
   const balance = window._p3dState.tokenBalance;
   const p3d = product?.product3d;
   const status = p3d?.status || 'NOT_GENERATED';
-  const hasImage = !!(product?.imageUrl);
+  const hasImage = !!(product?.imageUrl || document.getElementById('opeImagePreview')?.src?.startsWith('data:') || document.getElementById('opeImagePreview')?.src?.startsWith('http'));
 
   // QA banner
   const qaBanner = document.getElementById('p3dQaBanner');
-  if (qaBanner) qaBanner.style.display = window._p3dState.isDev ? 'block' : 'none';
+  if (qaBanner) qaBanner.style.display = isDev ? 'block' : 'none';
 
-  // Token balance display
+  // Token balance header display
   const balanceEl = document.getElementById('p3dTokenBalance');
   if (balanceEl) {
-    if (isEntitled) {
-      balanceEl.textContent = window._p3dState.isDev ? '∞ (Internal QA)' : (balance !== null ? balance + ' tokens available' : '');
-      balanceEl.style.color = '#64748b';
+    if (isDev) {
+      balanceEl.innerHTML = '<span style="color:#d8b4fe; font-weight:700;"><i class="fa-solid fa-shield-halved"></i> Internal QA Mode</span>';
+    } else if (isEntitled && balance !== null) {
+      balanceEl.textContent = balance + ' tokens available';
     } else {
       balanceEl.textContent = '';
     }
   }
 
   // Preselect saved quality tier if exists
-  const initialTier = p3d?.qualityTier || 'HIGH';
+  const initialTier = p3d?.qualityTier || window._p3dState.currentQuality || 'HIGH';
   selectP3dQuality(initialTier);
   renderAdditionalViewsList();
 
@@ -7579,103 +7710,155 @@ async function renderProduct3dSection(slot, product) {
     const badgeColors = {
       READY: 'background:rgba(34,197,94,0.2);color:#4ade80;border:1px solid rgba(34,197,94,0.4)',
       NEEDS_REVIEW: 'background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.4)',
-      QUEUED: 'background:rgba(99,102,241,0.2);color:#a5b4fc;border:1px solid rgba(99,102,241,0.4)',
-      PROCESSING: 'background:rgba(99,102,241,0.2);color:#a5b4fc;border:1px solid rgba(99,102,241,0.4)',
-      VALIDATING: 'background:rgba(99,102,241,0.2);color:#a5b4fc;border:1px solid rgba(99,102,241,0.4)',
+      QUEUED: 'background:rgba(56,189,248,0.2);color:#38bdf8;border:1px solid rgba(56,189,248,0.4)',
+      PROCESSING: 'background:rgba(56,189,248,0.2);color:#38bdf8;border:1px solid rgba(56,189,248,0.4)',
+      VALIDATING: 'background:rgba(168,85,247,0.2);color:#c084fc;border:1px solid rgba(168,85,247,0.4)',
       FAILED: 'background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.4)',
       NOT_GENERATED: ''
     };
     badge.style.cssText = 'display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 800; ' + (badgeColors[status] || '');
-    badge.textContent = status.replace(/_/g,' ') + ' · ' + (p3d?.qualityTier || '3D');
+    badge.textContent = status.replace(/_/g,' ') + (p3d?.qualityTier ? (' · ' + p3d.qualityTier) : '');
   }
 
-  // Status line
+  // Status line & quality provenance
   const statusLine = document.getElementById('p3dStatusLine');
   if (statusLine) {
     if (p3d?.generatedAt) {
       const d = new Date(p3d.generatedAt).toLocaleDateString();
       const kb = p3d.meshStats?.bytes ? (p3d.meshStats.bytes/1024).toFixed(0) + ' KB' : 'GLB';
-      statusLine.textContent = 'Generated ' + d + ' · ' + (p3d.qualityTier || 'HIGH') + ' Tier · ' + (p3d.generator || 'AI') + ' · ' + kb;
+      statusLine.innerHTML = '<span style="color:#38bdf8; font-weight:700;">Current Quality: ' + (p3d.qualityTier || 'HIGH') + '</span> · Generated ' + d + ' · ' + kb;
       statusLine.style.display = 'block';
     } else {
       statusLine.style.display = 'none';
     }
   }
 
-  // Warning if no source image
+  // Warning if no source image or error
   const warning = document.getElementById('p3dWarningBanner');
   if (warning) {
     if (!hasImage && isEntitled) {
       warning.style.display = 'block';
       warning.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Upload a primary product image above before converting to 3D.';
+    } else if (status === 'FAILED' && p3d?.error) {
+      warning.style.display = 'block';
+      warning.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Generation error: ' + p3d.error;
     } else {
       warning.style.display = 'none';
     }
   }
 
-  // Button visibility
-  const btnGen    = document.getElementById('p3dBtnGenerate');
-  const btnView   = document.getElementById('p3dBtnView');
-  const btnRegen  = document.getElementById('p3dBtnRegen');
-  const btnRemove = document.getElementById('p3dBtnRemove');
-  const upgCta    = document.getElementById('p3dUpgradeCta');
+  // Primary CTA and secondary actions
+  const mainCtaBtn = document.getElementById('p3dMainCtaBtn');
+  const mainCtaText = document.getElementById('p3dMainCtaText');
+  const secondaryRow = document.getElementById('p3dSecondaryActionsRow');
+  const upgCta = document.getElementById('p3dUpgradeCta');
 
   if (!isEntitled) {
-    if (btnGen)    btnGen.style.display = 'none';
-    if (btnView)   btnView.style.display = 'none';
-    if (btnRegen)  btnRegen.style.display = 'none';
-    if (btnRemove) btnRemove.style.display = 'none';
-    if (upgCta)    upgCta.style.display = 'block';
+    if (mainCtaBtn) mainCtaBtn.style.display = 'none';
+    if (secondaryRow) secondaryRow.style.display = 'none';
+    if (upgCta) upgCta.style.display = 'block';
     return;
   }
 
   if (upgCta) upgCta.style.display = 'none';
 
   const isReady = (status === 'READY' || status === 'NEEDS_REVIEW') && !!(p3d?.glbUrl);
-  const isBusy  = ['QUEUED','PROCESSING','VALIDATING'].includes(status);
+  const isBusy  = ['QUEUED','PROCESSING','VALIDATING'].includes(status) || window._p3dState.isSubmitting;
+  const isFailed = status === 'FAILED';
 
-  if (btnGen) {
-    btnGen.style.display = (!isReady && !isBusy && hasImage) ? 'inline-flex' : 'none';
-  }
-  if (btnView) {
-    btnView.style.display = isReady ? 'inline-flex' : 'none';
-  }
-  if (btnRegen) {
-    btnRegen.style.display = (isReady && !isBusy && hasImage) ? 'inline-flex' : 'none';
-  }
-  if (btnRemove) {
-    btnRemove.style.display = isReady ? 'inline-flex' : 'none';
+  if (mainCtaBtn && mainCtaText) {
+    mainCtaBtn.style.display = 'flex';
+    
+    if (isReady) {
+      mainCtaBtn.disabled = false;
+      mainCtaBtn.style.opacity = '1';
+      mainCtaBtn.style.cursor = 'pointer';
+      mainCtaBtn.style.background = 'linear-gradient(135deg, #0284c7, #2563eb)';
+      mainCtaBtn.style.border = '1px solid #38bdf8';
+      mainCtaBtn.innerHTML = '<i class="fa-solid fa-rotate-3d"></i> <span>View in 3D</span>';
+      if (secondaryRow) secondaryRow.style.display = 'flex';
+    } else if (isBusy) {
+      mainCtaBtn.disabled = true;
+      mainCtaBtn.style.opacity = '0.75';
+      mainCtaBtn.style.cursor = 'wait';
+      mainCtaBtn.style.background = 'rgba(15, 23, 42, 0.9)';
+      mainCtaBtn.style.border = '1px solid rgba(56, 189, 248, 0.4)';
+      const elapsed = window._p3dState.elapsedSeconds || 0;
+      const elapsedStr = elapsed > 0 ? (' (' + elapsed + 's)') : '';
+      if (status === 'VALIDATING') {
+        mainCtaBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color:#38bdf8;"></i> <span>Validating 3D…' + elapsedStr + '</span>';
+      } else if (window._p3dState.isSubmitting) {
+        mainCtaBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color:#38bdf8;"></i> <span>Preparing…</span>';
+      } else {
+        mainCtaBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color:#38bdf8;"></i> <span>Generating 3D…' + elapsedStr + '</span>';
+      }
+      if (secondaryRow) secondaryRow.style.display = 'none';
+    } else if (isFailed) {
+      mainCtaBtn.disabled = !hasImage;
+      mainCtaBtn.style.opacity = hasImage ? '1' : '0.6';
+      mainCtaBtn.style.cursor = hasImage ? 'pointer' : 'not-allowed';
+      mainCtaBtn.style.background = 'linear-gradient(135deg, #b91c1c, #dc2626)';
+      mainCtaBtn.style.border = '1px solid #f87171';
+      mainCtaBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> <span>Generation Failed — Try Again</span>';
+      if (secondaryRow) secondaryRow.style.display = 'none';
+    } else {
+      // Default: Generate 3D Model
+      mainCtaBtn.disabled = !hasImage;
+      mainCtaBtn.style.opacity = hasImage ? '1' : '0.6';
+      mainCtaBtn.style.cursor = hasImage ? 'pointer' : 'not-allowed';
+      mainCtaBtn.style.background = 'linear-gradient(135deg, #0284c7, #2563eb)';
+      mainCtaBtn.style.border = '1px solid #38bdf8';
+      mainCtaBtn.innerHTML = '<i class="fa-solid fa-cube"></i> <span>Generate 3D Model</span>';
+      if (secondaryRow) secondaryRow.style.display = 'none';
+    }
   }
 
-  if (isBusy) {
+  updateP3dLiveCostSummary();
+
+  if (isBusy && !window._p3dState.pollTimer) {
     p3dStartPolling(slot);
   }
 }
 
-// ── Polling Loop ──────────────────────────────────────────────
+// ── Polling & Activity Loop ───────────────────────────────────
 function p3dStartPolling(slot) {
   if (window._p3dState.pollTimer) clearInterval(window._p3dState.pollTimer);
+  if (window._p3dState.elapsedTimer) clearInterval(window._p3dState.elapsedTimer);
+
   const pbar = document.getElementById('p3dProgressBar');
   const plabel = document.getElementById('p3dProgressLabel');
-  const pfill = document.getElementById('p3dProgressFill');
+  const ptimer = document.getElementById('p3dProgressTimer');
   if (pbar) pbar.style.display = 'block';
 
-  let step = 0;
-  const steps = [
-    { pct: '20%', txt: 'Analyzing geometry & texture…' },
-    { pct: '50%', txt: 'Synthesizing neural 3D mesh…' },
-    { pct: '80%', txt: 'Generating PBR materials…' },
-    { pct: '95%', txt: 'Validating GLB asset…' }
-  ];
+  window._p3dState.elapsedSeconds = window._p3dState.elapsedSeconds || 0;
+  
+  // Elapsed timer ticker every 1s
+  window._p3dState.elapsedTimer = setInterval(() => {
+    window._p3dState.elapsedSeconds = (window._p3dState.elapsedSeconds || 0) + 1;
+    if (ptimer) ptimer.textContent = window._p3dState.elapsedSeconds + 's';
+    
+    // Update button text with timer if busy
+    const mainCtaBtn = document.getElementById('p3dMainCtaBtn');
+    const status = window._p3dState.product3d?.status || 'PROCESSING';
+    if (mainCtaBtn && ['QUEUED','PROCESSING','VALIDATING'].includes(status)) {
+      const elapsedStr = ' (' + window._p3dState.elapsedSeconds + 's)';
+      if (status === 'VALIDATING') {
+        mainCtaBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color:#38bdf8;"></i> <span>Validating 3D…' + elapsedStr + '</span>';
+      } else {
+        mainCtaBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color:#38bdf8;"></i> <span>Generating 3D…' + elapsedStr + '</span>';
+      }
+    }
+  }, 1000);
 
+  // Status poller every 3.5s
   window._p3dState.pollTimer = setInterval(async () => {
     const pid = window._p3dState.currentProjectId;
     const token = window.authToken || window._authToken;
-    if (!pid || !slot) { clearInterval(window._p3dState.pollTimer); return; }
-
-    step = (step + 1) % steps.length;
-    if (pfill) pfill.style.width = steps[step].pct;
-    if (plabel) plabel.textContent = steps[step].txt;
+    if (!pid || !slot) {
+      clearInterval(window._p3dState.pollTimer);
+      clearInterval(window._p3dState.elapsedTimer);
+      return;
+    }
 
     try {
       const resp = await fetch('/api/projects/' + pid + '/products/' + slot + '/3d/job', {
@@ -7685,9 +7868,20 @@ function p3dStartPolling(slot) {
       const data = await resp.json();
       const status = data.job?.status || data.status;
 
+      if (plabel) {
+        if (status === 'VALIDATING') {
+          plabel.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color: #c084fc;"></i> Validating 3D GLB Structure…';
+        } else {
+          plabel.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color: #38bdf8;"></i> Generating 3D with Neural AI…';
+        }
+      }
+
       if (status === 'READY' || status === 'NEEDS_REVIEW') {
         clearInterval(window._p3dState.pollTimer);
+        clearInterval(window._p3dState.elapsedTimer);
         window._p3dState.pollTimer = null;
+        window._p3dState.elapsedTimer = null;
+        window._p3dState.isSubmitting = false;
         if (pbar) pbar.style.display = 'none';
 
         if (window.activeProjectData?.products) {
@@ -7699,19 +7893,40 @@ function p3dStartPolling(slot) {
         if (window.showToast) window.showToast('✅ 3D Product model ready!', 'success');
       } else if (status === 'FAILED') {
         clearInterval(window._p3dState.pollTimer);
+        clearInterval(window._p3dState.elapsedTimer);
         window._p3dState.pollTimer = null;
+        window._p3dState.elapsedTimer = null;
+        window._p3dState.isSubmitting = false;
         if (pbar) pbar.style.display = 'none';
-        renderProduct3dSection(slot, window.activeProjectData?.products?.find(p => String(p.slotIndex) === String(slot)));
+        
+        const prod = window.activeProjectData?.products?.find(p => String(p.slotIndex) === String(slot));
+        if (prod) prod.product3d = { status: 'FAILED', error: data.job?.error };
+        renderProduct3dSection(slot, prod);
         if (window.showToast) window.showToast('⚠️ 3D Generation failed: ' + (data.job?.error || 'Unknown error'), 'error');
       }
     } catch (e) {
       console.warn('[P3D] Poll error:', e.message);
     }
-  }, 4000);
+  }, 3500);
+}
+
+// ── Primary Action Click Router ───────────────────────────────
+function handleP3dMainCtaClick() {
+  if (window._p3dState.isSubmitting) return;
+  const p3d = window._p3dState.product3d;
+  const status = p3d?.status || 'NOT_GENERATED';
+  const isReady = (status === 'READY' || status === 'NEEDS_REVIEW') && !!(p3d?.glbUrl);
+  
+  if (isReady) {
+    product3dOpenViewer();
+  } else {
+    product3dGenerate();
+  }
 }
 
 // ── Action Handlers ───────────────────────────────────────────
 function product3dGenerate() {
+  if (window._p3dState.isSubmitting) return;
   const quality = window._p3dState.currentQuality || 'HIGH';
   const cost = calculateCurrentP3dCost();
   const isDev = window._p3dState.isDev;
@@ -7729,6 +7944,7 @@ function product3dGenerate() {
 }
 
 function product3dRegenerate() {
+  if (window._p3dState.isSubmitting) return;
   const quality = window._p3dState.currentQuality || 'HIGH';
   const cost = calculateCurrentP3dCost();
   const isDev = window._p3dState.isDev;
@@ -7754,14 +7970,14 @@ function openP3dConfirmModal(action, message) {
     modal.className = 'viewport-modal';
     modal.style.cssText = 'display:flex; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.75); align-items:center; justify-content:center;';
     modal.innerHTML = `
-      <div style="background:#0f172a; border:1px solid rgba(99,102,241,0.4); border-radius:14px; padding:24px; max-width:440px; width:90%; color:#fff; box-shadow:0 20px 40px rgba(0,0,0,0.8);">
-        <h4 style="margin:0 0 12px; font-size:16px; font-weight:800; color:#a5b4fc; display:flex; align-items:center; gap:8px;">
+      <div style="background:#0f172a; border:1px solid rgba(56,189,248,0.4); border-radius:14px; padding:24px; max-width:440px; width:90%; color:#fff; box-shadow:0 20px 40px rgba(0,0,0,0.8);">
+        <h4 style="margin:0 0 12px; font-size:16px; font-weight:800; color:#38bdf8; display:flex; align-items:center; gap:8px;">
           <i class="fa-solid fa-cube"></i> Confirm 3D Conversion
         </h4>
         <div id="p3dConfirmMessage" style="font-size:13.5px; color:#cbd5e1; line-height:1.5; margin-bottom:20px;"></div>
         <div style="display:flex; justify-content:flex-end; gap:10px;">
           <button type="button" onclick="closeP3dConfirmModal()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#94a3b8; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer;">Cancel</button>
-          <button type="button" id="p3dConfirmOkBtn" onclick="p3dConfirmExecute()" style="background:linear-gradient(135deg,#4f46e5,#7c3aed); border:1px solid #a5b4fc; color:#fff; padding:8px 20px; border-radius:8px; font-weight:800; cursor:pointer;">Confirm</button>
+          <button type="button" id="p3dConfirmOkBtn" onclick="p3dConfirmExecute()" style="background:linear-gradient(135deg,#0284c7,#2563eb); border:1px solid #38bdf8; color:#fff; padding:8px 20px; border-radius:8px; font-weight:800; cursor:pointer;">Confirm</button>
         </div>
       </div>`;
     document.body.appendChild(modal);
@@ -7784,10 +8000,20 @@ async function p3dConfirmExecute() {
 }
 
 async function _p3dExecuteGenerate(isRegen) {
+  if (window._p3dState.isSubmitting) return;
   const slot = window._p3dState.currentSlot;
   const pid = window._p3dState.currentProjectId;
   const qualityTier = window._p3dState.currentQuality || 'HIGH';
   if (!slot || !pid) return;
+
+  window._p3dState.isSubmitting = true;
+  window._p3dState.elapsedSeconds = 0;
+
+  const mainCtaBtn = document.getElementById('p3dMainCtaBtn');
+  if (mainCtaBtn) {
+    mainCtaBtn.disabled = true;
+    mainCtaBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color:#38bdf8;"></i> <span>Preparing…</span>';
+  }
 
   const token = window.authToken || window._authToken;
   const endpoint = '/api/projects/' + pid + '/products/' + slot + '/3d/' + (isRegen ? 'regenerate' : 'generate');
@@ -7800,11 +8026,13 @@ async function _p3dExecuteGenerate(isRegen) {
     });
     const data = await resp.json();
     if (!resp.ok) {
+      window._p3dState.isSubmitting = false;
       if (resp.status === 402) {
         alert('Insufficient 3D tokens. Please recharge your token balance.');
       } else {
         alert('Error: ' + (data.error || 'Failed to start 3D conversion'));
       }
+      renderProduct3dSection(slot, window.activeProjectData?.products?.find(p => String(p.slotIndex) === String(slot)));
       return;
     }
 
@@ -7815,7 +8043,9 @@ async function _p3dExecuteGenerate(isRegen) {
     renderProduct3dSection(slot, { ...prod, product3d: { status: 'QUEUED', qualityTier } });
 
   } catch (e) {
+    window._p3dState.isSubmitting = false;
     alert('Request failed: ' + e.message);
+    renderProduct3dSection(slot, window.activeProjectData?.products?.find(p => String(p.slotIndex) === String(slot)));
   }
 }
 
@@ -7844,6 +8074,7 @@ async function product3dRemove() {
     alert('Error: ' + e.message);
   }
 }
+
 
 // ── 3D Viewer Logic ──────────────────────────────────────────
 function product3dOpenViewer() {
