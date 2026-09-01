@@ -6611,6 +6611,74 @@ function resolveAccountForProject(project, token) {
   ) || { planCode: 'FREE_BOOTH', entitlement: 'FREE BOOTH' };
 }
 
+// GET /api/internal/replicate-model-schema (QA & Diagnostic schema inspection)
+app.get('/api/internal/replicate-model-schema', async (req, res) => {
+  try {
+    const token = process.env.REPLICATE_API_TOKEN;
+    if (!token) {
+      return res.json({
+        configured: false,
+        authenticated: false,
+        error: 'REPLICATE_API_TOKEN is not configured in process.env'
+      });
+    }
+
+    const testModels = ['firtoz/trellis', 'cjwbw/trellis', 'tencent/hunyuan3d-1', 'camenduru/trellis', 'stability-ai/triposr'];
+    const results = {};
+
+    for (const m of testModels) {
+      try {
+        const reqPromise = new Promise((resolve, reject) => {
+          const https = require('https');
+          const r = https.request({
+            hostname: 'api.replicate.com',
+            path: `/v1/models/${m}`,
+            method: 'GET',
+            headers: {
+              'Authorization': `Token ${token}`,
+              'User-Agent': 'v-show-replicate-probe/1.0'
+            }
+          }, (resp) => {
+            let data = '';
+            resp.on('data', c => data += c);
+            resp.on('end', () => {
+              try { resolve({ status: resp.statusCode, body: JSON.parse(data) }); }
+              catch(e) { resolve({ status: resp.statusCode, body: data }); }
+            });
+          });
+          r.on('error', reject);
+          r.end();
+        });
+
+        const resp = await reqPromise;
+        if (resp.status === 200) {
+          const modelData = resp.body;
+          results[m] = {
+            status: 200,
+            owner: modelData.owner,
+            name: modelData.name,
+            description: modelData.description,
+            latest_version_id: modelData.latest_version?.id,
+            openapi_schema: modelData.latest_version?.openapi_schema
+          };
+        } else {
+          results[m] = { status: resp.status, error: resp.body?.detail || resp.body };
+        }
+      } catch (err) {
+        results[m] = { status: 500, error: err.message };
+      }
+    }
+
+    res.json({
+      configured: true,
+      authenticated: true,
+      models: results
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // POST /api/projects/:id/products/:slot/3d/generate
 app.post('/api/projects/:id/products/:slot/3d/generate', requireAuth, async (req, res) => {
   try {
