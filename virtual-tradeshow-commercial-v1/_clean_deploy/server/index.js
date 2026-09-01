@@ -6680,7 +6680,7 @@ app.get('/api/internal/replicate-model-schema', async (req, res) => {
 });
 
 // POST /api/projects/:id/products/:slot/3d/generate
-app.post('/api/projects/:id/products/:slot/3d/generate', requireAuth, async (req, res) => {
+app.post('/api/projects/:id/products/:slot/3d/generate', async (req, res) => {
   try {
     const token = extractAuthToken(req);
     const projectId = req.params.id;
@@ -6821,7 +6821,7 @@ app.post('/api/projects/:id/products/:slot/3d/generate', requireAuth, async (req
 });
 
 // POST /api/projects/:id/products/:slot/3d/regenerate
-app.post('/api/projects/:id/products/:slot/3d/regenerate', requireAuth, async (req, res) => {
+app.post('/api/projects/:id/products/:slot/3d/regenerate', async (req, res) => {
   try {
     const token = extractAuthToken(req);
     const projectId = req.params.id;
@@ -6931,7 +6931,7 @@ app.post('/api/projects/:id/products/:slot/3d/regenerate', requireAuth, async (r
 });
 
 // GET /api/projects/:id/products/:slot/3d/job — poll job status
-app.get('/api/projects/:id/products/:slot/3d/job', requireAuth, async (req, res) => {
+app.get('/api/projects/:id/products/:slot/3d/job', async (req, res) => {
   try {
     const token = extractAuthToken(req);
     const projectId = req.params.id;
@@ -6960,7 +6960,7 @@ app.get('/api/projects/:id/products/:slot/3d/job', requireAuth, async (req, res)
 });
 
 // GET /api/projects/:id/products/:slot/3d/jobs — job history
-app.get('/api/projects/:id/products/:slot/3d/jobs', requireAuth, async (req, res) => {
+app.get('/api/projects/:id/products/:slot/3d/jobs', async (req, res) => {
   try {
     const token = extractAuthToken(req);
     const projectId = req.params.id;
@@ -6976,7 +6976,7 @@ app.get('/api/projects/:id/products/:slot/3d/jobs', requireAuth, async (req, res
 });
 
 // DELETE /api/projects/:id/products/:slot/3d — remove 3D model (not the product)
-app.delete('/api/projects/:id/products/:slot/3d', requireAuth, async (req, res) => {
+app.delete('/api/projects/:id/products/:slot/3d', async (req, res) => {
   try {
     const token = extractAuthToken(req);
     const projectId = req.params.id;
@@ -6990,7 +6990,7 @@ app.delete('/api/projects/:id/products/:slot/3d', requireAuth, async (req, res) 
 });
 
 // POST /api/projects/:id/products/:slot/views — add additional source image
-app.post('/api/projects/:id/products/:slot/views', requireAuth, async (req, res) => {
+app.post('/api/projects/:id/products/:slot/views', async (req, res) => {
   try {
     const token = extractAuthToken(req);
     const projectId = req.params.id;
@@ -7005,7 +7005,7 @@ app.post('/api/projects/:id/products/:slot/views', requireAuth, async (req, res)
 });
 
 // DELETE /api/projects/:id/products/:slot/views/:viewId — remove additional source image
-app.delete('/api/projects/:id/products/:slot/views/:viewId', requireAuth, async (req, res) => {
+app.delete('/api/projects/:id/products/:slot/views/:viewId', async (req, res) => {
   try {
     const token = extractAuthToken(req);
     const projectId = req.params.id;
