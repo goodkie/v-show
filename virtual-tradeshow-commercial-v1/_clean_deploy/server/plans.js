@@ -24,6 +24,9 @@ const CANONICAL_PLANS = {
     limits: {
       maxBooths: 1,
       maxProducts: 3,
+      maxCatalogs: 1,
+      maxPins: 3,
+      maxViewpoints: 5,
       maxSources: 1,
       maxAdvancedMedia: 0
     },
@@ -61,6 +64,9 @@ const CANONICAL_PLANS = {
     limits: {
       maxBooths: 1,
       maxProducts: 30,
+      maxCatalogs: 10,
+      maxPins: 30,
+      maxViewpoints: 20,
       maxSources: 3,
       maxAdvancedMedia: 0
     },
@@ -98,6 +104,9 @@ const CANONICAL_PLANS = {
     limits: {
       maxBooths: 1,
       maxProducts: 100,
+      maxCatalogs: 50,
+      maxPins: 100,
+      maxViewpoints: 50,
       maxSources: 60,
       maxAdvancedMedia: 30
     },
@@ -135,6 +144,9 @@ const CANONICAL_PLANS = {
     limits: {
       maxBooths: 10,
       maxProducts: 500,
+      maxCatalogs: 200,
+      maxPins: 500,
+      maxViewpoints: 100,
       maxSources: 300,
       maxAdvancedMedia: 100
     },
@@ -157,6 +169,46 @@ const CANONICAL_PLANS = {
       aiMakeupConsultation: 'CONSULTATION'
     },
     cta: 'CONTACT SALES'
+  },
+
+  INTERNAL_FULL_ACCESS: {
+    code: 'INTERNAL_FULL_ACCESS',
+    displayName: 'INTERNAL FULL ACCESS QA',
+    isBillingPlan: false,
+    isPublicPaidPlan: false,
+    isMostPopular: false,
+    hasFixedPrice: false,
+    priceMonthlyUsd: 0,
+    stripePriceCents: 0,
+    billingInterval: 'none',
+    limits: {
+      maxBooths: 100,
+      maxProducts: 500,
+      maxCatalogs: 200,
+      maxPins: 500,
+      maxViewpoints: 100,
+      maxSources: 300,
+      maxAdvancedMedia: 100
+    },
+    features: {
+      publicBooth: true,
+      qr: true,
+      rfq: true,
+      sampleRequest: true,
+      meetingRequest: true,
+      basicAnalytics: true,
+      advancedAnalytics: true,
+      multiView: true,
+      multiSalesRep: true,
+      whiteLabel: true,
+      integrations: true,
+      managedSupport: true,
+      custom3DReview: true,
+      nfcSupported: true,
+      aiFittingConsultation: 'ACTIVE',
+      aiMakeupConsultation: 'ACTIVE'
+    },
+    cta: 'INTERNAL QA'
   }
 };
 
@@ -165,7 +217,8 @@ const CANONICAL_PLANS = {
  */
 function normalizePlanCode(code) {
   if (!code) return 'FREE_BOOTH';
-  const clean = String(code).toUpperCase().trim().replace(/[\\s-]+/g, '_');
+  const clean = String(code).toUpperCase().trim().replace(/[\s-]+/g, '_');
+  if (clean === 'INTERNAL_FULL_ACCESS' || clean === 'INTERNAL_DEV' || clean === 'INTERNAL_QA' || clean === 'INTERNAL' || clean === 'DEVELOPER') return 'INTERNAL_FULL_ACCESS';
   if (clean === 'FREE' || clean === 'FREE_PLAN' || clean === 'FREE_BOOTH') return 'FREE_BOOTH';
   if (clean === 'PRO') return 'PRO';
   if (clean === 'BUSINESS' || clean === 'BIZ') return 'BUSINESS';
@@ -235,7 +288,8 @@ function checkFeatureEntitlement(account, featureKey) {
  * Validates product slot creation/updating against account plan limit
  */
 function checkProductLimit(account, currentProductsCount, requestedSlotNumber) {
-  const planCode = account?.planCode || account?.entitlement || 'FREE_BOOTH';
+  const isPilot = account?.isPilot || account?.billingState === 'PILOT_NOT_BILLED';
+  const planCode = isPilot ? (account?.entitlement || 'BUSINESS') : (account?.planCode || account?.entitlement || 'FREE_BOOTH');
   const limits = getPlanLimits(planCode, account?.customLimits);
   const slot = parseInt(requestedSlotNumber, 10);
 
@@ -265,7 +319,8 @@ function checkProductLimit(account, currentProductsCount, requestedSlotNumber) {
  * Validates source asset count against account plan limit
  */
 function checkSourceLimit(account, currentSourcesCount, newCount = 1) {
-  const planCode = account?.planCode || account?.entitlement || 'FREE_BOOTH';
+  const isPilot = account?.isPilot || account?.billingState === 'PILOT_NOT_BILLED';
+  const planCode = isPilot ? (account?.entitlement || 'BUSINESS') : (account?.planCode || account?.entitlement || 'FREE_BOOTH');
   const limits = getPlanLimits(planCode, account?.customLimits);
   const total = currentSourcesCount + newCount;
 
@@ -289,6 +344,87 @@ function checkSourceLimit(account, currentSourcesCount, newCount = 1) {
   }
 
   return { allowed: true, currentPlan: planCode, limit: limits.maxSources };
+}
+
+/**
+ * Validates catalog count against account plan limit
+ */
+function checkCatalogLimit(account, currentCatalogsCount, newCount = 1) {
+  const isPilot = account?.isPilot || account?.billingState === 'PILOT_NOT_BILLED';
+  const planCode = isPilot ? (account?.entitlement || 'BUSINESS') : (account?.planCode || account?.entitlement || 'FREE_BOOTH');
+  const limits = getPlanLimits(planCode, account?.customLimits);
+  const maxCatalogs = limits.maxCatalogs || 50;
+  const total = currentCatalogsCount + newCount;
+
+  if (total > maxCatalogs) {
+    return {
+      allowed: false,
+      currentPlan: planCode,
+      currentLimit: maxCatalogs,
+      requestedCount: total,
+      requiredPlan: 'BUSINESS',
+      upgradeAvailable: true,
+      error: 'ENTITLEMENT_REQUIRED',
+      code: 'CATALOG_LIMIT_EXCEEDED',
+      message: `Your current ${planCode} plan allows up to ${maxCatalogs} catalogs. Upgrade your plan to create more catalogs.`
+    };
+  }
+
+  return { allowed: true, currentPlan: planCode, limit: maxCatalogs };
+}
+
+/**
+ * Validates pin count against account plan limit
+ */
+function checkPinLimit(account, currentPinsCount, newCount = 1) {
+  const isPilot = account?.isPilot || account?.billingState === 'PILOT_NOT_BILLED';
+  const planCode = isPilot ? (account?.entitlement || 'BUSINESS') : (account?.planCode || account?.entitlement || 'FREE_BOOTH');
+  const limits = getPlanLimits(planCode, account?.customLimits);
+  const maxPins = limits.maxPins || 100;
+  const total = currentPinsCount + newCount;
+
+  if (total > maxPins) {
+    return {
+      allowed: false,
+      currentPlan: planCode,
+      currentLimit: maxPins,
+      requestedCount: total,
+      requiredPlan: 'BUSINESS',
+      upgradeAvailable: true,
+      error: 'ENTITLEMENT_REQUIRED',
+      code: 'PIN_LIMIT_EXCEEDED',
+      message: `Your current ${planCode} plan allows up to ${maxPins} 3D pins. Upgrade your plan to place more pins.`
+    };
+  }
+
+  return { allowed: true, currentPlan: planCode, limit: maxPins };
+}
+
+/**
+ * Validates viewpoint count against account plan limit
+ */
+function checkViewpointLimit(account, currentViewpointsCount, newCount = 1) {
+  const isPilot = account?.isPilot || account?.billingState === 'PILOT_NOT_BILLED';
+  const planCode = isPilot ? (account?.entitlement || 'BUSINESS') : (account?.planCode || account?.entitlement || 'FREE_BOOTH');
+  const limits = getPlanLimits(planCode, account?.customLimits);
+  const maxViewpoints = limits.maxViewpoints || 50;
+  const total = currentViewpointsCount + newCount;
+
+  if (total > maxViewpoints) {
+    return {
+      allowed: false,
+      currentPlan: planCode,
+      currentLimit: maxViewpoints,
+      requestedCount: total,
+      requiredPlan: 'BUSINESS',
+      upgradeAvailable: true,
+      error: 'ENTITLEMENT_REQUIRED',
+      code: 'VIEWPOINT_LIMIT_EXCEEDED',
+      message: `Your current ${planCode} plan allows up to ${maxViewpoints} viewpoints. Upgrade your plan to capture more viewpoints.`
+    };
+  }
+
+  return { allowed: true, currentPlan: planCode, limit: maxViewpoints };
 }
 
 /**
@@ -377,6 +513,9 @@ module.exports = {
   checkFeatureEntitlement,
   checkProductLimit,
   checkSourceLimit,
+  checkCatalogLimit,
+  checkPinLimit,
+  checkViewpointLimit,
   getPublicPlans,
   getFullPlanRegistry
 };

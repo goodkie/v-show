@@ -1265,6 +1265,45 @@
       },
       "createdAt": "2026-08-31T18:33:47.699Z",
       "updatedAt": "2026-08-31T18:33:47.699Z"
+    },
+    {
+      "id": "org-real-a77fafab",
+      "type": "exhibitor",
+      "name": "OmniDrive Robotics Inc",
+      "slug": "omnidrive-robotics-inc",
+      "website": "",
+      "industry": "Industrial Motion Control",
+      "country": "United States",
+      "stateRegion": "New Jersey",
+      "status": "active",
+      "subscription": {
+        "plan": "pro",
+        "status": "not_activated",
+        "dataEnvironment": "REAL",
+        "commercialStatus": "pre_activation",
+        "billingStatus": "not_activated",
+        "pilotCustomer": true,
+        "pricingVersion": "pilot-2026.1",
+        "liveBillingAllowed": false,
+        "preApprovedForBilling": false,
+        "stripeCustomerId": null,
+        "stripeSubscriptionId": null,
+        "isRealPaidCustomer": false,
+        "createdAt": "2026-09-01T09:03:22.871Z",
+        "updatedAt": "2026-09-01T09:03:22.871Z"
+      },
+      "createdAt": "2026-09-01T09:03:22.871Z",
+      "updatedAt": "2026-09-01T09:03:22.871Z"
+    },
+    {
+      "id": "org-exhibitor-184a9d87",
+      "type": "exhibitor",
+      "name": "Northstar Synthetic",
+      "slug": "northstar-synthetic",
+      "category": "General",
+      "status": "active",
+      "createdAt": "2026-09-01T09:03:23.277Z",
+      "updatedAt": "2026-09-01T09:03:23.277Z"
     }
   ],
   "users": [
@@ -1316,6 +1355,19 @@
       "status": "active",
       "createdAt": "2026-08-22T06:19:58.037Z",
       "updatedAt": "2026-08-22T06:19:58.037Z"
+    },
+    {
+      "id": "user-695a1036",
+      "organizationId": "org-real-a77fafab",
+      "email": "marketing@omnidrive-robotics.test",
+      "name": "OmniDrive Robotics Inc Admin",
+      "role": "exhibitor_admin",
+      "hash": "86347f06f89dde8109ad19dbb41a198f0e155f4625458f41860f591a7692880b06321ceb5a78323127c5684f1d85c69f9ec46128d0a65a9c8dba4cabe324f32e",
+      "salt": "bd92ba92dc875113ee62e6adaef823db",
+      "mustChangePassword": false,
+      "status": "active",
+      "createdAt": "2026-09-01T09:03:22.972Z",
+      "updatedAt": "2026-09-01T09:03:23.381Z"
     }
   ],
   "events": [
@@ -1331,6 +1383,18 @@
       "status": "published",
       "createdAt": "2026-08-22T06:19:58.037Z",
       "updatedAt": "2026-08-22T06:19:58.037Z"
+    },
+    {
+      "id": "event-real-fdbca8c8",
+      "name": "IMTS 2026 Chicago",
+      "slug": "imts-2026-chicago",
+      "description": "Commercial B2B virtual exhibition for OmniDrive Robotics Inc",
+      "dataEnvironment": "REAL",
+      "startsAt": "2026-09-01T09:03:22.972Z",
+      "endsAt": "2026-10-01T09:03:22.972Z",
+      "status": "active",
+      "createdAt": "2026-09-01T09:03:22.972Z",
+      "updatedAt": "2026-09-01T09:03:22.972Z"
     }
   ],
   "eventExhibitors": [
@@ -1525,6 +1589,26 @@
       ],
       "createdAt": "2026-08-24T18:45:10.520Z",
       "updatedAt": "2026-08-24T18:45:10.520Z"
+    },
+    {
+      "id": "booth-real-cb01448a",
+      "organizationId": "org-real-a77fafab",
+      "eventId": "event-real-fdbca8c8",
+      "exhibitorId": "user-695a1036",
+      "name": "OmniDrive Robotics Inc",
+      "boothNumber": "Booth #East-4210",
+      "category": "Industrial Motion Control",
+      "dataEnvironment": "REAL",
+      "status": "draft",
+      "reconstructionStatus": "none",
+      "intakeStatus": "NO_DATA",
+      "expectedProductCount": 5,
+      "expectedHotspotCount": 3,
+      "expectedSourcePhotoCount": 75,
+      "photoDatasetPath": null,
+      "photos": [],
+      "createdAt": "2026-09-01T09:03:22.972Z",
+      "updatedAt": "2026-09-01T09:03:22.972Z"
     }
   ],
   "products": [
@@ -1783,6 +1867,23 @@
       "requestSampleEnabled": false,
       "consultationEnabled": true,
       "appointmentEnabled": true
+    },
+    {
+      "id": "prod-0aeed0d4",
+      "organizationId": "org-real-a77fafab",
+      "boothId": "booth-real-cb01448a",
+      "name": "Servo Actuator X1",
+      "sku": "",
+      "category": "General",
+      "moq": 1,
+      "price": 1200,
+      "contactForPrice": false,
+      "currency": "USD",
+      "description": "",
+      "images": [],
+      "specs": {},
+      "inventoryStatus": "in_stock",
+      "createdAt": "2026-09-01T09:03:23.181Z"
     }
   ],
   "hotspots": [
@@ -3252,6 +3353,52 @@
       "notificationStatus": "PENDING",
       "createdAt": "2026-08-31T18:33:47.307Z",
       "updatedAt": "2026-08-31T18:33:47.307Z"
+    },
+    {
+      "leadId": "lead-0c99a130",
+      "leadType": "RFQ",
+      "boothId": "prj-free-b0c6f3ea",
+      "projectId": "prj-free-b0c6f3ea",
+      "productId": null,
+      "productName": null,
+      "visitorName": "Buyer John",
+      "visitorCompany": "",
+      "visitorEmail": "john@buyer.test",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-09-01T09:03:23.217Z",
+      "updatedAt": "2026-09-01T09:03:23.217Z"
+    },
+    {
+      "leadId": "lead-16ae06ed",
+      "leadType": "RFQ",
+      "boothId": "prj-free-b0c6f3ea",
+      "projectId": "prj-free-b0c6f3ea",
+      "productId": null,
+      "productName": null,
+      "visitorName": "Synthetic Buyer",
+      "visitorCompany": "",
+      "visitorEmail": "synth@buyer.test",
+      "visitorPhone": "",
+      "quantity": null,
+      "shippingCountry": null,
+      "preferredDate": null,
+      "preferredTime": null,
+      "timezone": null,
+      "message": "",
+      "metadata": {},
+      "status": "NEW",
+      "notificationStatus": "PENDING",
+      "createdAt": "2026-09-01T09:03:23.306Z",
+      "updatedAt": "2026-09-01T09:03:23.306Z"
     }
   ],
   "rfqs": [
@@ -16934,6 +17081,114 @@
           "date": "2026-08-22T03:10:00.000Z"
         }
       ]
+    },
+    {
+      "id": "prj-free-b0c6f3ea",
+      "company": "Exhibitor Project",
+      "pinpoints": [
+        {
+          "pinpointId": "pin-1788255641070-285",
+          "projectId": "prj-free-b0c6f3ea",
+          "viewId": "view-0",
+          "targetId": "cat-1ec88ae4",
+          "label": "Spring Collection 2026",
+          "shortLabel": "Spring Collection 2026",
+          "categoryTag": "Product",
+          "yaw": 0,
+          "pitch": 0,
+          "coordinateSystem": "PANORAMA_YAW_PITCH",
+          "x": 0,
+          "y": 0,
+          "z": -300,
+          "displayOrder": 0,
+          "isVisible": true,
+          "createdBy": "ClientVisualEditor",
+          "createdAt": "2026-09-01T09:40:41.070Z",
+          "updatedAt": "2026-09-01T09:40:41.070Z"
+        },
+        {
+          "pinpointId": "pin-1788255796767-830",
+          "projectId": "prj-free-b0c6f3ea",
+          "viewId": "view-0",
+          "targetId": "cat-33d6f273",
+          "label": "Spring Collection 2026",
+          "shortLabel": "Spring Collection 2026",
+          "categoryTag": "Product",
+          "yaw": 0,
+          "pitch": 0,
+          "coordinateSystem": "PANORAMA_YAW_PITCH",
+          "x": 0,
+          "y": 0,
+          "z": -300,
+          "displayOrder": 1,
+          "isVisible": true,
+          "createdBy": "ClientVisualEditor",
+          "createdAt": "2026-09-01T09:43:16.767Z",
+          "updatedAt": "2026-09-01T09:43:16.767Z"
+        },
+        {
+          "pinpointId": "pin-1788255920114-941",
+          "projectId": "prj-free-b0c6f3ea",
+          "viewId": "view-0",
+          "targetId": "cat-427ff110",
+          "label": "Spring Collection 2026",
+          "shortLabel": "Spring Collection 2026",
+          "categoryTag": "Product",
+          "yaw": 0,
+          "pitch": 0,
+          "coordinateSystem": "PANORAMA_YAW_PITCH",
+          "x": 0,
+          "y": 0,
+          "z": -300,
+          "displayOrder": 2,
+          "isVisible": true,
+          "createdBy": "ClientVisualEditor",
+          "createdAt": "2026-09-01T09:45:20.114Z",
+          "updatedAt": "2026-09-01T09:45:20.114Z"
+        },
+        {
+          "pinpointId": "pin-1788256065157-537",
+          "projectId": "prj-free-b0c6f3ea",
+          "viewId": "view-0",
+          "targetId": "cat-764324ba",
+          "label": "Spring Collection 2026",
+          "shortLabel": "Spring Collection 2026",
+          "categoryTag": "Product",
+          "yaw": 0,
+          "pitch": 0,
+          "coordinateSystem": "PANORAMA_YAW_PITCH",
+          "x": 0,
+          "y": 0,
+          "z": -300,
+          "displayOrder": 3,
+          "isVisible": true,
+          "createdBy": "ClientVisualEditor",
+          "createdAt": "2026-09-01T09:47:45.157Z",
+          "updatedAt": "2026-09-01T09:47:45.157Z"
+        },
+        {
+          "pinpointId": "pin-1788256099537-551",
+          "projectId": "prj-free-b0c6f3ea",
+          "viewId": "view-0",
+          "targetId": "cat-dd1868f9",
+          "label": "Spring Collection 2026",
+          "shortLabel": "Spring Collection 2026",
+          "categoryTag": "Product",
+          "yaw": 0,
+          "pitch": 0,
+          "coordinateSystem": "PANORAMA_YAW_PITCH",
+          "x": 0,
+          "y": 0,
+          "z": -300,
+          "displayOrder": 4,
+          "isVisible": true,
+          "createdBy": "ClientVisualEditor",
+          "createdAt": "2026-09-01T09:48:19.537Z",
+          "updatedAt": "2026-09-01T09:48:19.537Z"
+        }
+      ],
+      "products": [],
+      "updatedAt": "2026-09-01T09:48:19.537Z"
     }
   ],
   "exhibitorProfiles": [],
@@ -17580,6 +17835,22 @@
       "eventType": "MEETING_REQUEST_SUBMIT",
       "isTest": false,
       "timestamp": "2026-08-31T18:33:47.307Z"
+    },
+    {
+      "eventId": "evt-8dedd395",
+      "projectId": "prj-free-b0c6f3ea",
+      "productId": null,
+      "eventType": "RFQ_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-09-01T09:03:23.217Z"
+    },
+    {
+      "eventId": "evt-1b70c193",
+      "projectId": "prj-free-b0c6f3ea",
+      "productId": null,
+      "eventType": "RFQ_SUBMIT",
+      "isTest": false,
+      "timestamp": "2026-09-01T09:03:23.306Z"
     }
   ],
   "reconstructionJobs": [
@@ -17615,6 +17886,122 @@
         "email": "organizer@vshow.com"
       },
       "timestamp": "2026-08-24T18:07:36.947Z"
+    },
+    {
+      "id": "aud-8908574c",
+      "userId": "system-public",
+      "organizationId": "org-platform-master",
+      "action": "acquisition.lead_submitted",
+      "targetType": "acquisition_lead",
+      "targetId": "acq-680aafa5",
+      "details": {
+        "companyName": "OmniDrive Robotics Inc",
+        "email": "marketing@omnidrive-robotics.test",
+        "environment": "REAL",
+        "score": 90,
+        "tier": "HIGH_INTENT"
+      },
+      "timestamp": "2026-09-01T09:03:22.681Z"
+    },
+    {
+      "id": "aud-54ba80aa",
+      "userId": "user-platform-owner",
+      "organizationId": "org-platform-master",
+      "action": "acquisition.lead_stage_updated",
+      "targetType": "acquisition_lead",
+      "targetId": "acq-680aafa5",
+      "details": {
+        "oldStage": "NEW",
+        "newStage": "QUALIFIED",
+        "nextAction": "Deliver customized 3D demo & offer pilot"
+      },
+      "timestamp": "2026-09-01T09:03:22.713Z"
+    },
+    {
+      "id": "aud-c4fbc69b",
+      "userId": "user-platform-owner",
+      "organizationId": "org-platform-master",
+      "action": "acquisition.lead_stage_updated",
+      "targetType": "acquisition_lead",
+      "targetId": "acq-680aafa5",
+      "details": {
+        "oldStage": "QUALIFIED",
+        "newStage": "DEMO_SCHEDULED",
+        "nextAction": "Deliver customized 3D demo & offer pilot"
+      },
+      "timestamp": "2026-09-01T09:03:22.741Z"
+    },
+    {
+      "id": "aud-f03a8934",
+      "userId": "user-platform-owner",
+      "organizationId": "org-platform-master",
+      "action": "acquisition.lead_stage_updated",
+      "targetType": "acquisition_lead",
+      "targetId": "acq-680aafa5",
+      "details": {
+        "oldStage": "DEMO_SCHEDULED",
+        "newStage": "DEMO_COMPLETED",
+        "nextAction": "Deliver customized 3D demo & offer pilot"
+      },
+      "timestamp": "2026-09-01T09:03:22.769Z"
+    },
+    {
+      "id": "aud-d4637d00",
+      "userId": "user-platform-owner",
+      "organizationId": "org-platform-master",
+      "action": "acquisition.lead_stage_updated",
+      "targetType": "acquisition_lead",
+      "targetId": "acq-680aafa5",
+      "details": {
+        "oldStage": "DEMO_COMPLETED",
+        "newStage": "PILOT_OFFERED",
+        "nextAction": "Deliver customized 3D demo & offer pilot"
+      },
+      "timestamp": "2026-09-01T09:03:22.800Z"
+    },
+    {
+      "id": "audit-8ecdc973",
+      "userId": "user-platform-owner",
+      "organizationId": "org-real-a77fafab",
+      "action": "platform.customer_pre_activation",
+      "targetType": "organization",
+      "targetId": "org-real-a77fafab",
+      "details": {
+        "companyName": "OmniDrive Robotics Inc",
+        "plan": "pro",
+        "dataEnvironment": "REAL"
+      },
+      "timestamp": "2026-09-01T09:03:22.973Z"
+    },
+    {
+      "id": "aud-c73b02a3",
+      "userId": "user-platform-owner",
+      "organizationId": "org-platform-master",
+      "action": "acquisition.lead_stage_updated",
+      "targetType": "acquisition_lead",
+      "targetId": "acq-680aafa5",
+      "details": {
+        "oldStage": "PILOT_OFFERED",
+        "newStage": "PRE_ACTIVATION",
+        "nextAction": "Deliver onboarding credentials & assist capture upload"
+      },
+      "timestamp": "2026-09-01T09:03:23.003Z"
+    },
+    {
+      "id": "aud-d18ea954",
+      "userId": "system-public",
+      "organizationId": "org-platform-master",
+      "action": "acquisition.lead_submitted",
+      "targetType": "acquisition_lead",
+      "targetId": "acq-33633f0e",
+      "details": {
+        "companyName": "Secondary Systems LLC",
+        "email": "contact@secondary.test",
+        "environment": "REAL",
+        "score": 20,
+        "tier": "EARLY"
+      },
+      "timestamp": "2026-09-01T09:03:23.029Z"
     }
   ],
   "showhosts": [
@@ -19539,6 +19926,48 @@
           "v": 0.65,
           "label": "Apex Industrial Robotic Arm X-1",
           "createdAt": "2026-08-24T20:39:01.302Z"
+        },
+        {
+          "id": "pin-3f33eb8f",
+          "pinId": "pin-3f33eb8f",
+          "projectId": "prj-free-b0c6f3ea",
+          "sourceId": "src-default",
+          "pinType": "CATALOG_PIN",
+          "targetId": "cat-36f3769c",
+          "productId": null,
+          "catalogId": "cat-36f3769c",
+          "slotIndex": null,
+          "u": 0.72,
+          "v": 0.45,
+          "yaw": 0,
+          "pitch": 0,
+          "coordinateSystem": "SPHERICAL",
+          "label": "QA 3D Catalog Pin",
+          "status": "ACTIVE",
+          "isBlank": false,
+          "createdAt": "2026-09-01T10:28:46.644Z",
+          "updatedAt": "2026-09-01T10:28:46.644Z"
+        },
+        {
+          "id": "pin-987d3441",
+          "pinId": "pin-987d3441",
+          "projectId": "prj-free-b0c6f3ea",
+          "sourceId": "src-default",
+          "pinType": "CATALOG_PIN",
+          "targetId": "cat-6d7d10be",
+          "productId": null,
+          "catalogId": "cat-6d7d10be",
+          "slotIndex": null,
+          "u": 0.72,
+          "v": 0.45,
+          "yaw": 0,
+          "pitch": 0,
+          "coordinateSystem": "SPHERICAL",
+          "label": "QA 3D Catalog Pin",
+          "status": "ACTIVE",
+          "isBlank": false,
+          "createdAt": "2026-09-01T10:31:39.968Z",
+          "updatedAt": "2026-09-01T10:31:39.968Z"
         }
       ],
       "products": [
@@ -19549,14 +19978,58 @@
           "description": "Experience the Apex Industrial Robotic Arm X-1 presented by Apex Robotics in the Industrial Automation category. Engineered with distinctive commercial quality and elegant modern design, this solution delivers reliable performance and seamless integration for global trade buyers. [Suggested Draft — Please review specifications before public release]",
           "status": "active",
           "createdAt": "2026-08-24T20:39:01.302Z"
+        },
+        {
+          "id": "prod-slot-1",
+          "slotIndex": 1,
+          "createdAt": "2026-09-01T09:39:22.958Z",
+          "name": "Automated QA Velvet Matte Lip Tint",
+          "shortDescription": "Long-lasting hydration lip tint",
+          "description": "Detailed specs for wholesale export.",
+          "sku": "LIP-QA-01",
+          "category": "COSMETICS",
+          "price": "$24.00",
+          "status": "ACTIVE",
+          "updatedAt": "2026-09-01T10:33:37.316Z"
         }
       ],
       "createdAt": "2026-08-24T20:39:01.246Z",
-      "updatedAt": "2026-08-24T20:39:01.349Z",
+      "updatedAt": "2026-09-01T10:33:37.539Z",
       "contactEmail": "sarah.lin@apexrobotics.example",
       "savedAt": "2026-08-24T20:39:01.327Z",
       "planKey": "pro",
-      "convertedAt": "2026-08-24T20:39:01.349Z"
+      "convertedAt": "2026-08-24T20:39:01.349Z",
+      "editToken": "tok-a8ceef9a2c54623fa381e473536d6ea2",
+      "catalogs": [
+        {
+          "catalogId": "cat-36f3769c",
+          "id": "cat-36f3769c",
+          "projectId": "prj-free-b0c6f3ea",
+          "name": "Catalog 1",
+          "description": "Testing full catalog access",
+          "coverImageUrl": "/assets/demo/dna-showcase/hero/dna_showcase_photoreal_hero.jpg",
+          "productIds": [
+            "prod-fp-4cbd43"
+          ],
+          "status": "ACTIVE",
+          "createdAt": "2026-09-01T10:28:46.567Z",
+          "updatedAt": "2026-09-01T10:28:46.567Z"
+        },
+        {
+          "catalogId": "cat-6d7d10be",
+          "id": "cat-6d7d10be",
+          "projectId": "prj-free-b0c6f3ea",
+          "name": "Catalog 2",
+          "description": "Testing full catalog access",
+          "coverImageUrl": "/assets/demo/dna-showcase/hero/dna_showcase_photoreal_hero.jpg",
+          "productIds": [
+            "prod-fp-4cbd43"
+          ],
+          "status": "ACTIVE",
+          "createdAt": "2026-09-01T10:31:39.929Z",
+          "updatedAt": "2026-09-01T10:31:39.929Z"
+        }
+      ]
     },
     {
       "id": "prj-free-aeb87eb4",
@@ -28250,6 +28723,73 @@
       "updatedAt": "2026-08-31T18:33:47.773Z",
       "accountId": "acc-2ffb4df9",
       "role": "OWNER"
+    },
+    {
+      "id": "prj-free-e99137ed",
+      "businessName": "studio berry",
+      "contactEmail": "studioberryinfo@gmail.com",
+      "customerEmail": "studioberryinfo@gmail.com",
+      "accountId": "acc-31079d78",
+      "pilotId": "pilot-studio-berry-a81e",
+      "entitlement": "BUSINESS",
+      "billingState": "PILOT_NOT_BILLED",
+      "isPilot": true,
+      "sourceAsset": {
+        "originalUrl": "/assets/sample-booth-equirectangular.jpg",
+        "previewUrl": "/assets/sample-booth-equirectangular.jpg"
+      },
+      "products": [],
+      "pinpoints": [
+        {
+          "id": "pin-slot-1",
+          "slotIndex": 1,
+          "productId": "prod-slot-1",
+          "productName": "Product Slot 1",
+          "u": 0.28,
+          "v": 0.62,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Product Slot 1",
+          "status": "BLANK",
+          "isBlank": true
+        },
+        {
+          "id": "pin-slot-2",
+          "slotIndex": 2,
+          "productId": "prod-slot-2",
+          "productName": "Product Slot 2",
+          "u": 0.5,
+          "v": 0.55,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Product Slot 2",
+          "status": "BLANK",
+          "isBlank": true
+        },
+        {
+          "id": "pin-slot-3",
+          "slotIndex": 3,
+          "productId": "prod-slot-3",
+          "productName": "Product Slot 3",
+          "u": 0.72,
+          "v": 0.6,
+          "coordinateSystem": "SPHERICAL",
+          "label": "Product Slot 3",
+          "status": "BLANK",
+          "isBlank": true
+        }
+      ],
+      "viewpoints": [],
+      "editToken": "tok-61b01ae5614b88bc6e212a7b2db4d62a",
+      "updatedAt": "2026-09-01T08:32:21.065Z"
+    },
+    {
+      "id": "proj_test_free_tier",
+      "businessName": "Unpaid Free Exhibitor",
+      "contactEmail": "free@example.com",
+      "entitlement": "FREE_BOOTH",
+      "isPilot": false,
+      "editToken": "free_token_123",
+      "products": [],
+      "pinpoints": []
     }
   ],
   "salesTickets": [
@@ -28981,9 +29521,190 @@
       "businessName": "My Exhibition Company",
       "createdAt": "2026-08-31T18:57:19.601Z",
       "expiresAt": "2026-09-30T18:57:19.601Z"
+    },
+    {
+      "token": "cust-sess-2abde8132a1ec8adce5b35e6033364dbfd2e5e275b78ef95",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T09:37:10.193Z",
+      "expiresAt": "2026-10-01T09:37:10.192Z"
+    },
+    {
+      "token": "cust-sess-edaa95069ab1ac8781a760183f66135e9b8e5ac59515f60b",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T09:38:03.289Z",
+      "expiresAt": "2026-10-01T09:38:03.289Z"
+    },
+    {
+      "token": "cust-sess-8c9599f3ebf3ac1ce55967ccc0b823aac9cb5e79db3519e2",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T09:39:22.910Z",
+      "expiresAt": "2026-10-01T09:39:22.910Z"
+    },
+    {
+      "token": "cust-sess-44bfb158124e7d2a2aa292d639ee899e9a72903088d4bc65",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T09:40:40.844Z",
+      "expiresAt": "2026-10-01T09:40:40.844Z"
+    },
+    {
+      "token": "cust-sess-3a595dc0dc53a0030a58525ac2df15c17176c2212f3826fa",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T09:43:16.563Z",
+      "expiresAt": "2026-10-01T09:43:16.563Z"
+    },
+    {
+      "token": "cust-sess-c3416542a165bdb76cb3fbcc4dc134cf3bad566fcb6a8851",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T09:45:19.913Z",
+      "expiresAt": "2026-10-01T09:45:19.913Z"
+    },
+    {
+      "token": "cust-sess-58cb90d554e0e4fd4ad89849788e52e7bb45e00f28108314",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T09:47:44.957Z",
+      "expiresAt": "2026-10-01T09:47:44.957Z"
+    },
+    {
+      "token": "cust-sess-f07062b00577fc83805147335a1f67c47da858be3b6e1087",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T09:48:19.387Z",
+      "expiresAt": "2026-10-01T09:48:19.387Z"
+    },
+    {
+      "token": "cust-sess-f10fe06abad9a26aeb1638071837b747bdfc3e8590db23dc",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T09:49:50.355Z",
+      "expiresAt": "2026-10-01T09:49:50.355Z"
+    },
+    {
+      "token": "cust-sess-c5693b6458e6624ed7860a4f6760d23851057d8038dccd02",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T09:50:31.197Z",
+      "expiresAt": "2026-10-01T09:50:31.197Z"
+    },
+    {
+      "token": "cust-sess-45a1898cde48d9042c57105c61f9d53c590f1e15c312cc91",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T10:28:46.143Z",
+      "expiresAt": "2026-10-01T10:28:46.143Z"
+    },
+    {
+      "token": "cust-sess-4af06e8c0a93779401e6705e17b74276bbc5661bb4d47945",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T10:28:46.206Z",
+      "expiresAt": "2026-10-01T10:28:46.206Z"
+    },
+    {
+      "token": "cust-sess-c2e997a7a23383b2f64089f146880fdac0e3f978fbb2fd2b",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T10:28:46.473Z",
+      "expiresAt": "2026-10-01T10:28:46.473Z"
+    },
+    {
+      "token": "cust-sess-29bc632f26e69178832defd8335bb874c75b5a23cac926d9",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T10:31:39.520Z",
+      "expiresAt": "2026-10-01T10:31:39.520Z"
+    },
+    {
+      "token": "cust-sess-ea9a698d8ddb012735e60f86009129256a59a0e318571cf4",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T10:31:39.584Z",
+      "expiresAt": "2026-10-01T10:31:39.584Z"
+    },
+    {
+      "token": "cust-sess-86172c1aade224702b7f47a895b1e14920990cae77e3b21b",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T10:31:39.850Z",
+      "expiresAt": "2026-10-01T10:31:39.850Z"
+    },
+    {
+      "token": "cust-sess-534c297b9be8a1c2e4b20691a1a19baeb44841ad2b66d4ac",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T10:33:37.120Z",
+      "expiresAt": "2026-10-01T10:33:37.119Z"
+    },
+    {
+      "token": "cust-sess-b15f64bf7ada00155bc80efe678e19d95c56f2b9e0cd2134",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T10:33:37.220Z",
+      "expiresAt": "2026-10-01T10:33:37.220Z"
     }
   ],
   "accounts": [
+    {
+      "id": "acc-31079d78",
+      "email": "studioberryinfo@gmail.com",
+      "emailNormalized": "studioberryinfo@gmail.com",
+      "displayName": "studio berry",
+      "businessName": "studio berry",
+      "phone": "",
+      "website": "",
+      "status": "ACTIVE",
+      "emailVerified": true,
+      "entitlement": "BUSINESS",
+      "planCode": "BUSINESS",
+      "isPilot": true,
+      "pilotId": "pilot-studio-berry-a81e",
+      "billingState": "PILOT_NOT_BILLED",
+      "createdAt": "2026-08-31T08:48:00.000Z",
+      "updatedAt": "2026-09-01T08:00:00.000Z",
+      "lastLoginAt": "2026-09-01T08:00:00.000Z"
+    },
     {
       "id": "acc-a818a560",
       "email": "sarah.connor.c1113.9357@apexrobotics.example.com",
@@ -29114,15 +29835,19 @@
       "website": "",
       "status": "ACTIVE",
       "emailVerified": true,
-      "entitlement": "BUSINESS",
+      "entitlement": "INTERNAL_FULL_ACCESS",
       "createdAt": "2026-08-31T09:11:25.217Z",
-      "updatedAt": "2026-08-31T09:27:57.184Z",
-      "lastLoginAt": "2026-08-31T09:27:44.860Z",
-      "planCode": "BUSINESS",
+      "updatedAt": "2026-09-01T10:33:37.184Z",
+      "lastLoginAt": "2026-09-01T10:33:37.184Z",
+      "planCode": "INTERNAL_FULL_ACCESS",
       "entitlementStatus": "ACTIVE",
       "billingProvider": "stripe",
       "billingStatus": "active",
-      "billingPriceId": "STRIPE_PRICE_BUSINESS_MONTHLY"
+      "billingPriceId": "STRIPE_PRICE_BUSINESS_MONTHLY",
+      "environment": "INTERNAL_DEV",
+      "accountPurpose": "INTERNAL_FULL_FEATURE_QA",
+      "isTest": true,
+      "customerAnalyticsExcluded": true
     },
     {
       "id": "acc-043eac8b",
@@ -30447,6 +31172,160 @@
       "email": "tenant.b.1843@example.com",
       "action": "LOGIN",
       "timestamp": "2026-08-31T18:57:19.601Z"
+    },
+    {
+      "id": "log-39e702d7",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T09:37:10.193Z"
+    },
+    {
+      "id": "log-3daede75",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T09:38:03.289Z"
+    },
+    {
+      "id": "log-a2d46762",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T09:39:22.910Z"
+    },
+    {
+      "id": "log-d9a6e503",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T09:40:40.844Z"
+    },
+    {
+      "id": "log-014fda43",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T09:43:16.563Z"
+    },
+    {
+      "id": "log-4761ec1c",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T09:45:19.913Z"
+    },
+    {
+      "id": "log-c30e74b7",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T09:47:44.957Z"
+    },
+    {
+      "id": "log-d717d8e7",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T09:48:19.387Z"
+    },
+    {
+      "id": "log-be230959",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T09:49:50.355Z"
+    },
+    {
+      "id": "log-6ce590dd",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T09:50:31.197Z"
+    },
+    {
+      "id": "log-14871fa8",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T10:28:46.061Z"
+    },
+    {
+      "id": "log-0c7a8fc3",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T10:28:46.143Z"
+    },
+    {
+      "id": "log-6b677f62",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T10:28:46.206Z"
+    },
+    {
+      "id": "log-a1ee520e",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGOUT",
+      "timestamp": "2026-09-01T10:28:46.405Z"
+    },
+    {
+      "id": "log-1e2461e6",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T10:28:46.473Z"
+    },
+    {
+      "id": "log-4e6645d9",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T10:31:39.449Z"
+    },
+    {
+      "id": "log-5409a079",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T10:31:39.520Z"
+    },
+    {
+      "id": "log-b7d7c07e",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T10:31:39.584Z"
+    },
+    {
+      "id": "log-184bf9d3",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGOUT",
+      "timestamp": "2026-09-01T10:31:39.774Z"
+    },
+    {
+      "id": "log-1fc1efb6",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T10:31:39.850Z"
+    },
+    {
+      "id": "log-6f5b4022",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T10:33:37.120Z"
+    },
+    {
+      "id": "log-ca5305dc",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T10:33:37.220Z"
     }
   ],
   "entitlementAuditLogs": [
@@ -31643,6 +32522,156 @@
         "displayName": "Updated Contact 1843"
       },
       "timestamp": "2026-08-31T18:57:19.539Z"
+    },
+    {
+      "id": "tl-f45938b7",
+      "eventType": "PINPOINT_UPDATED",
+      "details": {
+        "projectId": "proj_test_studio_berry",
+        "pinpointsCount": 3
+      },
+      "timestamp": "2026-09-01T08:31:26.126Z"
+    },
+    {
+      "id": "tl-6ded9a9b",
+      "eventType": "PINPOINT_UPDATED",
+      "details": {
+        "projectId": "proj_test_studio_berry",
+        "pinpointsCount": 3
+      },
+      "timestamp": "2026-09-01T08:32:20.324Z"
+    },
+    {
+      "id": "tl-c4d406d6",
+      "eventType": "RFQ_RECEIVED",
+      "details": {
+        "leadId": "lead-0c99a130",
+        "projectId": "prj-free-b0c6f3ea",
+        "leadType": "RFQ",
+        "buyerCompany": ""
+      },
+      "timestamp": "2026-09-01T09:03:23.217Z"
+    },
+    {
+      "id": "tl-461006be",
+      "eventType": "RFQ_RECEIVED",
+      "details": {
+        "leadId": "lead-16ae06ed",
+        "projectId": "prj-free-b0c6f3ea",
+        "leadType": "RFQ",
+        "buyerCompany": ""
+      },
+      "timestamp": "2026-09-01T09:03:23.306Z"
+    },
+    {
+      "id": "tl-6ae8b36d",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 1,
+        "productName": "Automated QA Velvet Matte Lip Tint"
+      },
+      "timestamp": "2026-09-01T09:39:22.958Z"
+    },
+    {
+      "id": "tl-e7620aa1",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 1,
+        "productName": "Automated QA Velvet Matte Lip Tint"
+      },
+      "timestamp": "2026-09-01T09:40:40.914Z"
+    },
+    {
+      "id": "tl-9c802ef9",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 1,
+        "productName": "Automated QA Velvet Matte Lip Tint"
+      },
+      "timestamp": "2026-09-01T09:43:16.631Z"
+    },
+    {
+      "id": "tl-7207b8b4",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 1,
+        "productName": "Automated QA Velvet Matte Lip Tint"
+      },
+      "timestamp": "2026-09-01T09:45:19.988Z"
+    },
+    {
+      "id": "tl-d89a4af3",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 1,
+        "productName": "Automated QA Velvet Matte Lip Tint"
+      },
+      "timestamp": "2026-09-01T09:47:45.063Z"
+    },
+    {
+      "id": "tl-bbef9fb2",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 1,
+        "productName": "Automated QA Velvet Matte Lip Tint"
+      },
+      "timestamp": "2026-09-01T09:48:19.435Z"
+    },
+    {
+      "id": "tl-ab98af24",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 1,
+        "productName": "Automated QA Velvet Matte Lip Tint"
+      },
+      "timestamp": "2026-09-01T09:49:50.417Z"
+    },
+    {
+      "id": "tl-d0df16ca",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 1,
+        "productName": "Automated QA Velvet Matte Lip Tint"
+      },
+      "timestamp": "2026-09-01T09:50:31.258Z"
+    },
+    {
+      "id": "tl-6199a208",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 1,
+        "productName": "QA Test Product 500"
+      },
+      "timestamp": "2026-09-01T10:28:46.526Z"
+    },
+    {
+      "id": "tl-7489dc14",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 1,
+        "productName": "QA Test Product 500"
+      },
+      "timestamp": "2026-09-01T10:31:39.892Z"
+    },
+    {
+      "id": "tl-29eb42d8",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 1,
+        "productName": "Automated QA Velvet Matte Lip Tint"
+      },
+      "timestamp": "2026-09-01T10:33:37.316Z"
     }
   ],
   "operatorNotes": [
@@ -31680,6 +32709,390 @@
       "note": "Rehearsal test verified. Customer requested Chicago Autumn Expo setup.",
       "author": "Operator Lead Marcus",
       "createdAt": "2026-08-31T18:33:47.418Z"
+    }
+  ],
+  "customerPilots": [
+    {
+      "pilotId": "pilot-studio-berry-a81e",
+      "accountId": "acc-31079d78",
+      "businessName": "studio berry",
+      "primaryEmail": "studioberryinfo@gmail.com",
+      "normalizedEmail": "studioberryinfo@gmail.com",
+      "selectedEntitlement": "BUSINESS",
+      "pilotStatus": "ACTIVE_PILOT",
+      "billingState": "PILOT_NOT_BILLED",
+      "createdAt": "2026-08-31T08:48:00.000Z",
+      "updatedAt": "2026-09-01T08:00:00.000Z"
+    }
+  ],
+  "acquisitionLeads": [
+    {
+      "id": "acq-680aafa5",
+      "referenceId": "REF-372011",
+      "companyName": "OmniDrive Robotics Inc",
+      "companyWebsite": "https://omnidrive-robotics.test",
+      "contactName": "",
+      "workEmail": "marketing@omnidrive-robotics.test",
+      "phone": "",
+      "country": "United States",
+      "industry": "Industrial Motion Control",
+      "eventName": "IMTS 2026 Chicago",
+      "eventDate": "",
+      "boothNumber": "Booth #East-4210",
+      "approximateProductCount": "6-25",
+      "expectedBuyerAudience": "B2B Trade Buyers",
+      "boothAssetsAvailable": false,
+      "boothPhotosAvailable": "60_plus",
+      "photoReadiness": "60_plus",
+      "precision3dInterest": true,
+      "estimatedLaunchDate": "",
+      "primaryGoal": "Generate leads",
+      "source": "pilot_application_page",
+      "utmSource": null,
+      "utmMedium": null,
+      "utmCampaign": null,
+      "privacyVersion": "2026.1-draft",
+      "consentTimestamp": "2026-09-01T09:03:22.681Z",
+      "consent": true,
+      "marketingConsent": true,
+      "environment": "REAL",
+      "recordType": "ACQUISITION_LEAD",
+      "stage": "PRE_ACTIVATION",
+      "qualificationScore": 90,
+      "qualificationTier": "HIGH_INTENT",
+      "notes": "[2026-09-01T09:03:22.713Z] Prospect confirmed 75 booth photos and 12 products ready for showcase.\n[2026-09-01T09:03:23.003Z] Converted to Real Customer Pre-Activation (Org ID: org-real-a77fafab)",
+      "nextAction": "Deliver onboarding credentials & assist capture upload",
+      "nextActionAt": "2026-09-02T09:03:22.681Z",
+      "followUpDate": "2026-09-02T09:03:22.681Z",
+      "assignedOwner": "vivPR Commercial Operations",
+      "timeline": [
+        {
+          "action": "application_submitted",
+          "timestamp": "2026-09-01T09:03:22.681Z",
+          "details": "Applied via web"
+        }
+      ],
+      "createdAt": "2026-09-01T09:03:22.681Z",
+      "updatedAt": "2026-09-01T09:03:23.003Z"
+    },
+    {
+      "id": "acq-33633f0e",
+      "referenceId": "REF-220193",
+      "companyName": "Secondary Systems LLC",
+      "companyWebsite": "",
+      "contactName": "",
+      "workEmail": "contact@secondary.test",
+      "phone": "",
+      "country": "United States",
+      "industry": "General Industry",
+      "eventName": "",
+      "eventDate": "",
+      "boothNumber": "",
+      "approximateProductCount": "1-5",
+      "expectedBuyerAudience": "B2B Trade Buyers",
+      "boothAssetsAvailable": false,
+      "boothPhotosAvailable": "not_yet",
+      "photoReadiness": "not_yet",
+      "precision3dInterest": true,
+      "estimatedLaunchDate": "",
+      "primaryGoal": "Generate leads",
+      "source": "pilot_application_page",
+      "utmSource": null,
+      "utmMedium": null,
+      "utmCampaign": null,
+      "privacyVersion": "2026.1-draft",
+      "consentTimestamp": "2026-09-01T09:03:23.029Z",
+      "consent": true,
+      "marketingConsent": false,
+      "environment": "REAL",
+      "recordType": "ACQUISITION_LEAD",
+      "stage": "NEW",
+      "qualificationScore": 20,
+      "qualificationTier": "EARLY",
+      "notes": "",
+      "nextAction": "Initial qualification & demo outreach",
+      "nextActionAt": "2026-09-02T09:03:23.029Z",
+      "followUpDate": "2026-09-02T09:03:23.029Z",
+      "assignedOwner": "vivPR Commercial Operations",
+      "timeline": [
+        {
+          "action": "application_submitted",
+          "timestamp": "2026-09-01T09:03:23.029Z",
+          "details": "Applied via web"
+        }
+      ],
+      "createdAt": "2026-09-01T09:03:23.029Z",
+      "updatedAt": "2026-09-01T09:03:23.029Z"
+    }
+  ],
+  "invitations": [
+    {
+      "id": "inv-fd1d1ff1",
+      "organizationId": "org-real-a77fafab",
+      "userId": "user-695a1036",
+      "companyName": "OmniDrive Robotics Inc",
+      "adminEmail": "marketing@omnidrive-robotics.test",
+      "temporaryCredentialGenerated": true,
+      "mustChangePassword": true,
+      "invitationStatus": "pending",
+      "createdAt": "2026-09-01T09:03:22.973Z"
+    }
+  ],
+  "valueMilestones": [
+    {
+      "id": "mil-0b0aa70a",
+      "organizationId": "org-real-a77fafab",
+      "boothId": "booth-real-cb01448a",
+      "milestoneType": "booth_created",
+      "metadata": {
+        "boothNumber": "Booth #East-4210"
+      },
+      "occurredAt": "2026-09-01T09:03:23.057Z"
+    },
+    {
+      "id": "mil-2c0e720f",
+      "organizationId": "org-real-a77fafab",
+      "boothId": "booth-real-cb01448a",
+      "milestoneType": "first_buyer_view",
+      "metadata": {
+        "visitorIpHash": "anon_123"
+      },
+      "occurredAt": "2026-09-01T09:03:23.087Z"
+    }
+  ],
+  "customerFeedback": [
+    {
+      "id": "fb-5c687d37",
+      "organizationId": "org-real-a77fafab",
+      "userId": "user-695a1036",
+      "rating": 5,
+      "improvements": "Navigation is fast and responsive on mobile.",
+      "futureEventInterest": "Yes",
+      "isPublicTestimonial": false,
+      "submittedAt": "2026-09-01T09:03:23.244Z"
+    }
+  ],
+  "emailDeliveryTelemetry": [
+    {
+      "verificationRequestId": "req-bae53d47",
+      "maskedEmail": "g***m@gmail.com",
+      "emailNormalized": "goodkie.com@gmail.com",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788255483220",
+      "requestedAt": "2026-09-01T09:38:03.219Z",
+      "providerAcceptedAt": "2026-09-01T09:38:03.220Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T09:38:03.220Z"
+    },
+    {
+      "verificationRequestId": "req-91775d12",
+      "maskedEmail": "g***m@gmail.com",
+      "emailNormalized": "goodkie.com@gmail.com",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788255562820",
+      "requestedAt": "2026-09-01T09:39:22.819Z",
+      "providerAcceptedAt": "2026-09-01T09:39:22.821Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T09:39:22.822Z"
+    },
+    {
+      "verificationRequestId": "req-a6d354a8",
+      "maskedEmail": "g***m@gmail.com",
+      "emailNormalized": "goodkie.com@gmail.com",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788255640504",
+      "requestedAt": "2026-09-01T09:40:40.503Z",
+      "providerAcceptedAt": "2026-09-01T09:40:40.506Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T09:40:40.506Z"
+    },
+    {
+      "verificationRequestId": "req-569f245e",
+      "maskedEmail": "g***m@gmail.com",
+      "emailNormalized": "goodkie.com@gmail.com",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788255796474",
+      "requestedAt": "2026-09-01T09:43:16.473Z",
+      "providerAcceptedAt": "2026-09-01T09:43:16.476Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T09:43:16.476Z"
+    },
+    {
+      "verificationRequestId": "req-c62f657c",
+      "maskedEmail": "g***m@gmail.com",
+      "emailNormalized": "goodkie.com@gmail.com",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788255919818",
+      "requestedAt": "2026-09-01T09:45:19.817Z",
+      "providerAcceptedAt": "2026-09-01T09:45:19.820Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T09:45:19.820Z"
+    },
+    {
+      "verificationRequestId": "req-c86361c2",
+      "maskedEmail": "g***m@gmail.com",
+      "emailNormalized": "goodkie.com@gmail.com",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788256064883",
+      "requestedAt": "2026-09-01T09:47:44.883Z",
+      "providerAcceptedAt": "2026-09-01T09:47:44.884Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T09:47:44.884Z"
+    },
+    {
+      "verificationRequestId": "req-70b20bed",
+      "maskedEmail": "g***m@gmail.com",
+      "emailNormalized": "goodkie.com@gmail.com",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788256099318",
+      "requestedAt": "2026-09-01T09:48:19.318Z",
+      "providerAcceptedAt": "2026-09-01T09:48:19.319Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T09:48:19.319Z"
+    },
+    {
+      "verificationRequestId": "req-22da2abc",
+      "maskedEmail": "g***m@gmail.com",
+      "emailNormalized": "goodkie.com@gmail.com",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788256190265",
+      "requestedAt": "2026-09-01T09:49:50.264Z",
+      "providerAcceptedAt": "2026-09-01T09:49:50.266Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T09:49:50.267Z"
+    },
+    {
+      "verificationRequestId": "req-b80bc6f6",
+      "maskedEmail": "g***m@gmail.com",
+      "emailNormalized": "goodkie.com@gmail.com",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788256231076",
+      "requestedAt": "2026-09-01T09:50:31.076Z",
+      "providerAcceptedAt": "2026-09-01T09:50:31.077Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T09:50:31.078Z"
+    },
+    {
+      "verificationRequestId": "req-f1a8c1ed",
+      "maskedEmail": "g***t@gmail.com",
+      "emailNormalized": "goodkie.com+test@gmail.com",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788258526243",
+      "requestedAt": "2026-09-01T10:28:46.242Z",
+      "providerAcceptedAt": "2026-09-01T10:28:46.243Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T10:28:46.243Z"
+    },
+    {
+      "verificationRequestId": "req-2ee9f637",
+      "maskedEmail": "g***m@gmail.co",
+      "emailNormalized": "goodkie.com@gmail.co",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788258526279",
+      "requestedAt": "2026-09-01T10:28:46.279Z",
+      "providerAcceptedAt": "2026-09-01T10:28:46.279Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T10:28:46.279Z"
+    },
+    {
+      "verificationRequestId": "req-3ffbd177",
+      "maskedEmail": "g***m@gmail.com.evil.example",
+      "emailNormalized": "goodkie.com@gmail.com.evil.example",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788258526321",
+      "requestedAt": "2026-09-01T10:28:46.321Z",
+      "providerAcceptedAt": "2026-09-01T10:28:46.321Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T10:28:46.321Z"
+    },
+    {
+      "verificationRequestId": "req-25cd5236",
+      "maskedEmail": "s***o@gmail.com",
+      "emailNormalized": "studioberryinfo@gmail.com",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788258526356",
+      "requestedAt": "2026-09-01T10:28:46.356Z",
+      "providerAcceptedAt": "2026-09-01T10:28:46.357Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T10:28:46.357Z"
+    },
+    {
+      "verificationRequestId": "req-1f44e18d",
+      "maskedEmail": "g***t@gmail.com",
+      "emailNormalized": "goodkie.com+test@gmail.com",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788258699617",
+      "requestedAt": "2026-09-01T10:31:39.616Z",
+      "providerAcceptedAt": "2026-09-01T10:31:39.617Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T10:31:39.617Z"
+    },
+    {
+      "verificationRequestId": "req-c484228c",
+      "maskedEmail": "g***m@gmail.co",
+      "emailNormalized": "goodkie.com@gmail.co",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788258699649",
+      "requestedAt": "2026-09-01T10:31:39.649Z",
+      "providerAcceptedAt": "2026-09-01T10:31:39.649Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T10:31:39.649Z"
+    },
+    {
+      "verificationRequestId": "req-b4093d48",
+      "maskedEmail": "g***m@gmail.com.evil.example",
+      "emailNormalized": "goodkie.com@gmail.com.evil.example",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788258699680",
+      "requestedAt": "2026-09-01T10:31:39.680Z",
+      "providerAcceptedAt": "2026-09-01T10:31:39.680Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T10:31:39.680Z"
+    },
+    {
+      "verificationRequestId": "req-b4db55c3",
+      "maskedEmail": "s***o@gmail.com",
+      "emailNormalized": "studioberryinfo@gmail.com",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788258699719",
+      "requestedAt": "2026-09-01T10:31:39.719Z",
+      "providerAcceptedAt": "2026-09-01T10:31:39.719Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T10:31:39.719Z"
     }
   ]
 }

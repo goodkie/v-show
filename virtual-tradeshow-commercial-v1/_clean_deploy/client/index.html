@@ -28,10 +28,21 @@
     let activePinTargetSlot = 1;
 
     function getEditAuthToken() {
+      const custToken = localStorage.getItem('3d2_customer_token');
+      if (custToken) return custToken;
       return activeEditToken || activeProjectData?.editToken || verifiedEmailToken || 'dev_bypass_token';
     }
 
     function openBoothEditor(defaultTab = 'company') {
+      const isPilot = currentViewerAccount?.isPilot || currentViewerAccount?.billingState === 'PILOT_NOT_BILLED' || activeProjectData?.isPilot;
+      const ent = (currentViewerAccount?.entitlement || activeProjectData?.entitlement || 'FREE_BOOTH').toUpperCase();
+      const isFree = (ent === 'FREE_BOOTH' || ent === 'FREE') && !isPilot;
+
+      if (isFree) {
+        openPlanModal('gated_booth_editor');
+        return;
+      }
+
       const modal = document.getElementById('boothEditorModal');
       if (!modal) return;
       modal.style.display = 'flex';
@@ -833,6 +844,18 @@
       0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.8); }
       70% { box-shadow: 0 0 0 8px rgba(56, 189, 248, 0); }
       100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+    }
+
+    .hotspot-tag.pin-edit-active {
+      border-color: #38bdf8 !important;
+      background: rgba(2, 132, 199, 0.98) !important;
+      box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.5), 0 0 24px rgba(56, 189, 248, 0.9) !important;
+      cursor: crosshair !important;
+      z-index: 999 !important;
+      transform: translate(-50%, -50%) scale(1.12);
+    }
+    .viewer-pin-editing {
+      cursor: crosshair !important;
     }
 
     /* Product Shortcut Cards Tray (3 Slots) */
@@ -1648,7 +1671,7 @@
       <a href="#how-it-works" class="nav-link">How It Works</a>
       <a href="#examples" class="nav-link">Showrooms</a>
       <a href="#pricing" class="nav-link">Pricing</a>
-      <a href="/portal" class="btn-nav-signin" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;"><i class="fa-solid fa-store"></i> My Booths / Sign In</a>
+      <a href="/portal" class="btn-nav-signin" id="navAccountBtn" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;"><i class="fa-solid fa-store" id="navAccountBtnIcon"></i> <span id="navAccountBtnText">My Booths</span></a>
     </div>
   </nav>
 
@@ -1872,23 +1895,24 @@
   <section class="free-studio-section" id="freeStudioSection">
     <div class="studio-banner">
       <div>
-        <div class="studio-banner-title">
+        <div class="studio-banner-title" id="studioBannerTitle">
           <i class="fa-solid fa-circle-check" style="color: var(--success);"></i>
-          YOUR FREE 3D BOOTH IS READY
+          <span id="studioBannerTitleText">YOUR FREE 3D BOOTH IS READY</span>
+          <span class="brand-badge" id="studioBannerPlanBadge" style="display: none; margin-left: 8px; font-size: 11px; vertical-align: middle; background: rgba(56,189,248,0.2); border: 1px solid #38bdf8; color: #38bdf8; padding: 2px 8px; border-radius: 6px;">BUSINESS — PILOT</span>
         </div>
         <div class="studio-banner-desc" id="studioBannerBizName">Experience your photo as an interactive 3D virtual booth. Drag to look around in 360°, or click pins to inspect products.</div>
       </div>
-      <div style="display: flex; gap: 10px;">
-                <button class="btn-hero btn-hero-primary" onclick="openBoothEditor('company')" style="padding: 9px 18px; font-size: 13px; background: linear-gradient(135deg, #0284c7, #2563eb);">
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button class="btn-hero btn-hero-primary" id="btnBannerEditBooth" onclick="handleOwnerAction('edit_booth')" style="padding: 9px 18px; font-size: 13px; background: linear-gradient(135deg, #0284c7, #2563eb);">
           <i class="fa-solid fa-pen-to-square"></i> Edit My Booth
         </button>
-        <button class="btn-hero btn-hero-secondary" onclick="openBoothEditor('dashboard')" style="padding: 9px 16px; font-size: 13px;">
+        <button class="btn-hero btn-hero-secondary" id="btnBannerDashboard" onclick="handleOwnerAction('dashboard')" style="padding: 9px 16px; font-size: 13px;">
           <i class="fa-solid fa-chart-line"></i> Dashboard &amp; Leads
         </button>
-        <button class="btn-hero btn-hero-secondary" onclick="openBoothEditor('publish')" style="padding: 9px 16px; font-size: 13px;">
+        <button class="btn-hero btn-hero-secondary" id="btnBannerPublish" onclick="handleOwnerAction('publish')" style="padding: 9px 16px; font-size: 13px;">
           <i class="fa-solid fa-share-nodes"></i> Publish &amp; QR
         </button>
-        <a href="/portal" class="btn-hero btn-hero-secondary" style="padding: 9px 16px; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+        <a href="/portal" class="btn-hero btn-hero-secondary" id="btnBannerPortal" style="padding: 9px 16px; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
           <i class="fa-solid fa-store"></i> My Booths
         </a>
       </div>
@@ -1898,15 +1922,93 @@
     <div id="studio-workspace">
       <!-- CENTER: 3D PLAYER + PRODUCT SHORTCUT CARDS -->
       <div id="player-workspace">
-        <div id="viewer-container">
+        <!-- OWNER STUDIO TOP TOOLBAR (Visible in OWNER_EDITOR mode) -->
+        <div id="ownerStudioToolbar" style="display: none; background: rgba(5,11,22,0.96); backdrop-filter: blur(16px); border: 1px solid rgba(56,189,248,0.35); border-radius: 12px; padding: 10px 16px; margin-bottom: 12px; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 11px; font-weight: 800; color: #38bdf8; background: rgba(56,189,248,0.12); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(56,189,248,0.3); text-transform: uppercase;">
+              <i class="fa-solid fa-pen-ruler"></i> OWNER STUDIO CONTROLS
+            </span>
+            <span id="ownerProductCountBadge" style="font-size: 12px; font-weight: 700; color: #fff;">
+              0 / 100 Products
+            </span>
+            <span id="ownerInternalQABadge" style="display: none; font-size: 10px; font-weight: 800; color: #f59e0b; background: rgba(245,158,11,0.15); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(245,158,11,0.35);">
+              <i class="fa-solid fa-shield-halved"></i> INTERNAL QA
+            </span>
+          </div>
+
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button class="btn-ui" onclick="openOwnerProductEditor()" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-plus"></i> Add Product
+            </button>
+            <button class="btn-ui" id="btnOwnerToolbarCatalogs" onclick="openCatalogManager()" style="padding: 6px 12px; font-size: 12px; font-weight: 700; background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.35); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-book-open"></i> Catalogs
+            </button>
+            <button class="btn-ui" id="btnOwnerToolbarPins" onclick="togglePinEditMode()" style="padding: 6px 12px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-location-dot"></i> 3D Pins
+            </button>
+            <button class="btn-ui" id="btnOwnerToolbarViews" onclick="openViewpointManager()" style="padding: 6px 12px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-camera"></i> Viewpoints
+            </button>
+            <button class="btn-ui" onclick="togglePreviewMode()" id="btnTogglePreviewMode" style="padding: 6px 12px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-eye"></i> Visitor Preview
+            </button>
+          </div>
+        </div>
+
+        <div id="viewer-container" style="position: relative;">
           <canvas id="three-canvas"></canvas>
           <!-- 3D Hotspot Tags Overlay -->
           <div id="hotspot-layer"></div>
           <div class="player-tag">🌐 Photo Immersive 360° Studio</div>
           <div class="res-pill" id="res-indicator">ULTRA-HD MASTER STUDIO</div>
 
+          <!-- Owner Pin Edit Floating Panel (Visible when PIN_EDIT_MODE is active) -->
+          <div id="pinPositionEditorPanel" style="display: none; position: absolute; top: 16px; left: 16px; z-index: 50; background: rgba(7, 14, 26, 0.96); backdrop-filter: blur(14px); border: 1px solid #38bdf8; border-radius: 12px; padding: 14px 18px; box-shadow: 0 12px 36px rgba(0,0,0,0.85); width: 320px; font-family: 'Plus Jakarta Sans', sans-serif; color: #fff;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <div style="font-size: 11px; font-weight: 800; color: #38bdf8; letter-spacing: 0.8px; text-transform: uppercase;">
+                <i class="fa-solid fa-location-crosshairs"></i> PIN POSITION EDITOR
+              </div>
+              <span id="pinSaveStatusBadge" style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(56,189,248,0.2); color: #38bdf8;">Saved</span>
+            </div>
+
+            <!-- Target Selection (Product Pin vs Catalog Pin) -->
+            <div style="margin-bottom: 10px;">
+              <label style="font-size: 10.5px; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 3px;">Active Pin Target</label>
+              <select id="pinTargetSelector" class="form-input" onchange="handlePinTargetChange(this.value)" style="width: 100%; background: #030712; border: 1px solid rgba(56,189,248,0.4); border-radius: 6px; color: #fff; font-size: 12px; padding: 5px 8px; box-sizing: border-box;">
+                <!-- Populated via JS -->
+              </select>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+              <div>
+                <label style="font-size: 10px; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 2px;">Horizontal (U)</label>
+                <input type="number" id="pinInputU" step="0.0001" min="0.0000" max="1.0000" oninput="handlePinNumericInput('u', this.value)" style="width: 100%; background: #030712; border: 1px solid rgba(56,189,248,0.4); border-radius: 6px; color: #38bdf8; font-family: monospace; font-size: 12px; padding: 5px 8px; box-sizing: border-box;">
+              </div>
+              <div>
+                <label style="font-size: 10px; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 2px;">Vertical (V)</label>
+                <input type="number" id="pinInputV" step="0.0001" min="0.0000" max="1.0000" oninput="handlePinNumericInput('v', this.value)" style="width: 100%; background: #030712; border: 1px solid rgba(56,189,248,0.4); border-radius: 6px; color: #38bdf8; font-family: monospace; font-size: 12px; padding: 5px 8px; box-sizing: border-box;">
+              </div>
+            </div>
+
+            <div style="font-size: 10px; color: #64748b; margin-bottom: 12px; line-height: 1.4;">
+              💡 <strong>Drag</strong> pin or <strong>Click</strong> image to place. Use <strong>Arrow keys</strong> (Shift+Arrow) to nudge.
+            </div>
+
+            <div style="display: flex; gap: 6px; justify-content: space-between; align-items: center;">
+              <button class="btn-ui" id="btnDeleteActivePin" onclick="deleteActivePin()" style="padding: 5px 8px; font-size: 11px; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; cursor: pointer;" title="Delete Pin">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+              <div style="display: flex; gap: 6px;">
+                <button class="btn-ui" onclick="cancelPinEdit()" style="padding: 5px 10px; font-size: 11px; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; cursor: pointer;">Cancel</button>
+                <button class="btn-ui" onclick="resetActivePinPosition()" style="padding: 5px 10px; font-size: 11px; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; cursor: pointer;">Reset</button>
+                <button class="btn-ui" onclick="saveActivePinPosition()" style="padding: 5px 14px; font-size: 11px; font-weight: 700; background: #0284c7; color: #fff; border: 1px solid #38bdf8; border-radius: 6px; cursor: pointer;">Save Pin</button>
+              </div>
+            </div>
+          </div>
+
           <!-- Viewport Navigation Controls Bar -->
           <div class="viewer-controls-bar">
+            <button class="viewer-ctrl-btn" id="btnTogglePinEdit" onclick="togglePinEditMode()" title="Edit Pin Position"><i class="fa-solid fa-location-crosshairs"></i></button>
             <button class="viewer-ctrl-btn" onclick="zoomView(1.2)" title="Zoom In"><i class="fa-solid fa-plus"></i></button>
             <button class="viewer-ctrl-btn" onclick="zoomView(0.8)" title="Zoom Out"><i class="fa-solid fa-minus"></i></button>
             <button class="viewer-ctrl-btn" onclick="resetPanZoom()" title="Reset View"><i class="fa-solid fa-arrows-rotate"></i></button>
@@ -1926,13 +2028,26 @@
 
       <!-- RIGHT UNIFIED SIDEBAR (Booth Radar & Focused System Specs) -->
       <aside class="unified-sidebar">
-        <!-- 1. Booth Radar Minimap -->
-        <div class="radar-box">
+        <!-- 1. Booth Radar Minimap / Viewpoint Manager -->
+        <div class="radar-box" id="boothRadarBox">
           <div class="radar-header">
             <span>BOOTH RADAR MINIMAP</span>
             <span id="radar-loc-txt">01. MAIN BOOTH</span>
           </div>
           <canvas id="radar-canvas" width="306" height="90"></canvas>
+          
+          <!-- Viewpoint Management Quick Toolbar (Owner Mode) -->
+          <div id="radarOwnerControls" style="display: flex; gap: 6px; margin-top: 8px;">
+            <button class="btn-ui" id="btnAddViewpointBtn" style="flex: 1; padding: 6px 10px; font-size: 11px; font-weight: 700; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px;" onclick="handleCaptureCurrentViewpoint()">
+              <i class="fa-solid fa-plus"></i> Add Viewpoint
+            </button>
+            <button class="btn-ui" id="btnManageViewpointsBtn" style="padding: 6px 10px; font-size: 11px; background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" onclick="openViewpointManager()" title="Manage Saved Viewpoints">
+              <i class="fa-solid fa-sliders"></i> Views
+            </button>
+          </div>
+          <div id="radarEmptyState" style="display: none; font-size: 11px; color: #64748b; text-align: center; margin-top: 6px;">
+            No saved viewpoints
+          </div>
         </div>
 
         <!-- 2. Live Target Specs Box -->
@@ -1940,7 +2055,11 @@
           <div class="panel-head" style="margin-bottom:0;font-size:10px;font-weight:800;color:#00c2ff;letter-spacing:1px;text-transform:uppercase;">FOCUSED PRODUCT SPECIFICATION</div>
           <div class="spec-title">
             <span id="side-spec-title">Product Slot 1</span>
-            <button class="btn-ui" style="padding:2px 8px;font-size:10px;background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);border-radius:6px;cursor:pointer;" onclick="openProductDrawer(currentSelectedProdIdx)">Details →</button>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn-ui" id="btnSideEditProd" style="display: none; padding:2px 8px;font-size:10px;background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);border-radius:6px;cursor:pointer;" onclick="openOwnerProductEditor(studioProducts[currentSelectedProdIdx]?.slotIndex)">✏️ Edit Product</button>
+              <button class="btn-ui" id="btnSideEditPin" style="display: none; padding:2px 8px;font-size:10px;background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);border-radius:6px;cursor:pointer;" onclick="startPinEditForSelectedSlot()">📍 Edit Pin</button>
+              <button class="btn-ui" style="padding:2px 8px;font-size:10px;background:rgba(255,255,255,0.08);color:#cbd5e1;border:1px solid rgba(255,255,255,0.2);border-radius:6px;cursor:pointer;" onclick="openPublicProductDetail(currentSelectedProdIdx)">Details →</button>
+            </div>
           </div>
           <div class="spec-desc" id="side-spec-desc">Click a pin or shortcut card below to inspect technical specifications and interactive 3D views.</div>
           <div class="spec-list" id="side-spec-list">
@@ -1948,7 +2067,7 @@
           </div>
         </div>
 
-        <button class="btn-hero btn-hero-primary" style="margin-top:auto;justify-content:center;padding:12px;font-size:13px;width:100%;" onclick="openPlanModal('sidebar_rfq')">
+        <button class="btn-hero btn-hero-primary" id="btnSidebarUpgrade" style="margin-top:auto;justify-content:center;padding:12px;font-size:13px;width:100%;" onclick="openPlanModal('sidebar_rfq')">
           📝 Upgrade to Commercial / RFQ Engine
         </button>
       </aside>
@@ -2137,94 +2256,309 @@
     
 
 
-  <!-- Add Product Pinpoint Modal (5-Step Onboarding) -->
-  <div class="drawer-modal" id="addProductModal">
-    <div class="drawer-card">
-      <button class="close-btn" onclick="closeAddProductModal()">✕</button>
-      <div class="section-tag" id="onboardingStepTag">STEP 1 OF 5 • PRODUCT ONBOARDING</div>
-      <h3 style="font-size: 22px; font-weight: 800; margin-bottom: 18px; color: #fff;" id="onboardingModalTitle">Setup Product 01</h3>
+  <!-- ============================================================ -->
+  <!-- 1. OWNER PRODUCT EDITOR MODAL (Image Upload + Specs + Save)  -->
+  <!-- ============================================================ -->
+  <div class="viewport-modal" id="ownerProductEditorModal" style="display: none;">
+    <div class="viewport-modal-card" style="max-width: min(92vw, 760px); max-height: min(90vh, 740px);">
+      <!-- Fixed Header -->
+      <div class="viewport-modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 999px; padding: 3px 10px; font-size: 10px; font-weight: 800; color: #38bdf8; text-transform: uppercase;">
+            <i class="fa-solid fa-cube"></i> REAL PRODUCT REGISTRATION
+          </span>
+          <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin: 0;" id="opeModalTitle">Add Product</h3>
+        </div>
+        <button class="close-btn" id="opeBtnClose" onclick="closeOwnerProductEditor()" style="position: static;" title="Close (Esc)">✕</button>
+      </div>
 
-      <form id="add-product-form" onsubmit="submitProductPinpoint(event)">
-        <input type="hidden" id="target-slot-index" value="1">
+      <!-- Scrollable Body -->
+      <form id="ownerProductForm" onsubmit="saveOwnerProduct(event)" style="display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; margin: 0;">
+        <input type="hidden" id="opeSlotIndex" value="1">
+        
+        <div class="viewport-modal-body">
+          <!-- Image Upload Area (Clearly visible at top) -->
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-weight: 700; font-size: 13px; color: #cbd5e1;">Product Image (PNG, JPG, WebP)</span>
+              <span style="font-size: 11px; color: #64748b;">Max 10 MB</span>
+            </label>
+            <div id="opeImageUploadBox" style="background: #030712; border: 1.5px dashed rgba(56,189,248,0.35); border-radius: 12px; padding: 16px; text-align: center; position: relative;">
+              <img id="opeImagePreview" src="" style="max-height: 140px; max-width: 100%; border-radius: 8px; object-fit: contain; display: none; margin: 0 auto 12px auto; border: 1px solid rgba(255,255,255,0.1);">
+              <div style="display: flex; justify-content: center; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <input type="file" id="opeImageInput" accept="image/png, image/jpeg, image/webp" style="display: none;" onchange="previewOwnerProductImage(this)">
+                <button type="button" class="btn-ui" onclick="document.getElementById('opeImageInput').click()" style="padding: 8px 16px; font-size: 12.5px; font-weight: 700; background: rgba(56,189,248,0.18); color: #38bdf8; border: 1px solid rgba(56,189,248,0.45); border-radius: 8px; cursor: pointer;">
+                  <i class="fa-solid fa-cloud-arrow-up"></i> Upload Product Image
+                </button>
+                <button type="button" id="opeBtnRemoveImg" class="btn-ui" onclick="removeOwnerProductImage()" style="display: none; padding: 8px 14px; font-size: 12.5px; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.35); border-radius: 8px; cursor: pointer;">
+                  <i class="fa-solid fa-trash"></i> Remove Image
+                </button>
+              </div>
+            </div>
+          </div>
 
-        <div class="form-group">
-          <label class="form-label">Step 1: Product Pin Location (Normalized 2D)</label>
-          <div style="display: flex; gap: 10px; font-size: 13px; color: #38bdf8; background: rgba(56,189,248,0.1); padding: 10px 14px; border-radius: 8px; margin-bottom: 6px;">
-            <span><i class="fa-solid fa-location-dot"></i> Coordinates: <span id="coordsDisplay">u: 0.50, v: 0.50</span></span>
-            <span style="color: #94a3b8; font-size: 11px;">(Click anywhere on booth image to move)</span>
+          <!-- Product Name * -->
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" style="font-weight: 700; font-size: 13px; color: #cbd5e1; display: block; margin-bottom: 4px;">Product Name *</label>
+            <input type="text" id="opeName" class="form-input" placeholder="Enter product name" required style="width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 13.5px;">
+          </div>
+
+          <!-- SKU & Category -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+            <div>
+              <label class="form-label" style="font-weight: 700; font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">SKU / Model Code</label>
+              <input type="text" id="opeSku" class="form-input" placeholder="e.g. SKU-1001" style="width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 13.5px;">
+            </div>
+            <div>
+              <label class="form-label" style="font-weight: 700; font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Category</label>
+              <input type="text" id="opeCategory" class="form-input" placeholder="e.g. Cosmetics, Machinery" style="width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 13.5px;">
+            </div>
+          </div>
+
+          <!-- Price & Availability -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+            <div>
+              <label class="form-label" style="font-weight: 700; font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Price / Price Display (Optional)</label>
+              <input type="text" id="opePrice" class="form-input" placeholder="e.g. $24.00 or Inquire for Wholesale" style="width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 13.5px;">
+            </div>
+            <div>
+              <label class="form-label" style="font-weight: 700; font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Availability / Status</label>
+              <select id="opeAvailability" class="form-input" style="width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 13.5px;">
+                <option value="ACTIVE">In Stock / Active</option>
+                <option value="PREORDER">Made to Order / Pre-Order</option>
+                <option value="INQUIRE">Inquire for Availability</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Short Description -->
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" style="font-weight: 700; font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Short Description (for Cards & Highlights)</label>
+            <textarea id="opeShortDesc" class="form-input" rows="2" placeholder="Enter product description" style="width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 13px;"></textarea>
+          </div>
+
+          <!-- Specifications -->
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" style="font-weight: 700; font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Technical Specifications & Detailed Specs</label>
+            <textarea id="opeDesc" class="form-input" rows="3" placeholder="Enter technical specifications" style="width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 13px;"></textarea>
+          </div>
+
+          <!-- Catalog Membership Selector -->
+          <div class="form-group" style="margin-bottom: 10px;" id="opeCatalogMembershipSection">
+            <label class="form-label" style="font-weight: 700; font-size: 12px; color: #38bdf8; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+              <i class="fa-solid fa-book-open"></i> Catalog Membership
+            </label>
+            <div id="opeCatalogCheckboxes" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; max-height: 100px; overflow-y: auto;">
+              <!-- Dynamic checkboxes for catalogs -->
+            </div>
           </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Step 2: Product Image *</label>
-          <div style="display: flex; gap: 10px; align-items: center;">
-            <input type="file" id="prod-image-input" accept="image/*" class="form-input" style="padding: 8px;" onchange="previewProdImage(this)">
-          </div>
-          <img id="prod-image-preview" src="" style="max-height: 90px; border-radius: 6px; margin-top: 8px; display: none; object-fit: contain;">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Step 3: Product Name *</label>
-          <input type="text" id="prod-name-input" class="form-input" placeholder="e.g. Autonomous Robotic Arm X-1" required>
-        </div>
-
-        <div class="form-group">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <label class="form-label" style="margin:0;">Step 4: Product Description</label>
-            <button type="button" class="btn-hero" onclick="generateAIDescription()" style="padding: 4px 10px; font-size: 11px; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3);">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Description with AI
+        <!-- Fixed Sticky Footer -->
+        <div class="viewport-modal-footer">
+          <button type="button" id="opeBtnDelete" onclick="deleteOwnerProduct()" style="display: none; padding: 9px 16px; font-size: 12.5px; font-weight: 700; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.35); border-radius: 8px; cursor: pointer;">
+            <i class="fa-solid fa-trash"></i> Delete Product
+          </button>
+          
+          <div style="display: flex; gap: 10px; margin-left: auto; align-items: center;">
+            <span id="opeSaveStatus" style="font-size: 12px; color: #94a3b8; margin-right: 6px;"></span>
+            <button type="button" id="opeBtnCancel" class="btn-ui" onclick="closeOwnerProductEditor()" style="padding: 9px 18px; font-size: 13px; background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer;">
+              Cancel
+            </button>
+            <button type="submit" id="opeBtnSave" class="btn-create-free" style="padding: 9px 24px; font-size: 13px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; border-radius: 8px; color: #fff; cursor: pointer;">
+              <i class="fa-solid fa-check"></i> Save Product
             </button>
           </div>
-          <textarea id="prod-desc-input" class="form-input" rows="3" placeholder="Brief commercial overview of this product..."></textarea>
-          <div id="ai-draft-notice" style="font-size: 11px; color: #60a5fa; margin-top: 4px; display: none;">
-            <i class="fa-solid fa-info-circle"></i> AI Draft helper active. Technical specs set to 'Needs merchant input' to prevent fabrication.
-          </div>
         </div>
-
-        <button type="submit" class="btn-create-free" style="margin-top: 8px;" id="btnSaveProductSlot">
-          <i class="fa-solid fa-check"></i> STEP 5: SAVE PRODUCT &amp; PINPOINT
-        </button>
       </form>
     </div>
   </div>
 
-  <!-- Product Drawer (View Added Product & Preview Buyer Tools) -->
-  <div class="drawer-modal" id="productDrawerModal">
-    <div class="drawer-card">
-      <button class="close-btn" onclick="closeProductDrawer()">✕</button>
-      <div class="section-tag" style="color: #10b981; margin-bottom: 4px;">PRODUCT LIVE IN PREVIEW</div>
-      <h3 id="drawerProdTitle" style="font-size: 24px; font-weight: 800; margin-bottom: 12px; color: #fff;">Product Name</h3>
-      <img id="drawerProdImg" src="" style="width: 100%; max-height: 220px; object-fit: contain; background: #070e1a; border-radius: 10px; margin-bottom: 14px; border: 1px solid var(--border);">
-      
-      <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Product Description</div>
-      <p id="drawerProdDesc" style="font-size: 13px; color: #cbd5e1; line-height: 1.6; margin-bottom: 14px;"></p>
-
-      <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px; margin-bottom: 16px;">
-        <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Technical Specifications</div>
-        <div id="drawerProdSpecs" style="font-size: 12px; color: #64748b;">Needs merchant input</div>
+  <!-- ============================================================ -->
+  <!-- 2. PUBLIC PRODUCT DETAIL MODAL (Read-Only + Buyer Actions)   -->
+  <!-- ============================================================ -->
+  <div class="viewport-modal" id="publicProductDetailModal" style="display: none;">
+    <div class="viewport-modal-card" style="max-width: min(92vw, 540px); max-height: min(90vh, 740px);">
+      <!-- Fixed Header -->
+      <div class="viewport-modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button type="button" id="ppdBackToCatalogBtn" onclick="backToCatalogView()" style="display: none; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer;">
+            ← Back to Catalog
+          </button>
+          <div>
+            <span id="ppdCategory" style="font-size: 10px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.8px; display: block;">EXHIBIT PRODUCT</span>
+            <h3 id="ppdModalTitle" style="font-size: 18px; font-weight: 800; color: #fff; margin: 0;">Product Name</h3>
+          </div>
+        </div>
+        <button class="close-btn" onclick="closePublicProductDetail()" style="position: static;">✕</button>
       </div>
 
-      <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px; margin-bottom: 20px;">
-        <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px;">Buyer Actions (Preview)</div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-          <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('drawer_rfq')" style="font-size: 12px; padding: 8px;">
-            <i class="fa-solid fa-envelope"></i> Request RFQ <span class="product-card-status status-started" style="font-size: 8px;">PRO</span>
+      <!-- Scrollable Body -->
+      <div class="viewport-modal-body">
+        <div id="ppdPrice" style="font-size: 16px; font-weight: 800; color: #38bdf8; margin-bottom: 12px; display: none;"></div>
+
+        <img id="ppdImage" src="/assets/product-placeholder.jpg" style="width: 100%; max-height: 240px; object-fit: contain; background: #030712; border-radius: 12px; margin-bottom: 14px; border: 1px solid rgba(255,255,255,0.08);">
+
+        <div style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Product Overview</div>
+        <p id="ppdDesc" style="font-size: 13px; color: #cbd5e1; line-height: 1.6; margin-bottom: 16px;"></p>
+
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 14px; margin-bottom: 18px;">
+          <div style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">Technical Specifications</div>
+          <div id="ppdSpecs">
+            <!-- Dynamic specs table -->
+          </div>
+        </div>
+
+        <!-- Trade Buyer Actions -->
+        <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 12px; padding: 14px; margin-bottom: 6px;">
+          <div style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px;">
+            <i class="fa-solid fa-handshake"></i> Direct Buyer Actions
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <button class="btn-hero btn-hero-secondary" onclick="openConsultationModal('Wholesale RFQ')" style="font-size: 12px; padding: 8px; justify-content: center;">
+              <i class="fa-solid fa-envelope"></i> Request RFQ
+            </button>
+            <button class="btn-hero btn-hero-secondary" onclick="openConsultationModal('Sample Request')" style="font-size: 12px; padding: 8px; justify-content: center;">
+              <i class="fa-solid fa-box-open"></i> Request Sample
+            </button>
+            <button class="btn-hero btn-hero-secondary" onclick="openConsultationModal('Export Meeting')" style="font-size: 12px; padding: 8px; justify-content: center;">
+              <i class="fa-solid fa-calendar"></i> Book Meeting
+            </button>
+            <button class="btn-hero btn-hero-secondary" onclick="openConsultationModal('Digital Catalog')" style="font-size: 12px; padding: 8px; justify-content: center;">
+              <i class="fa-solid fa-file-pdf"></i> Digital Catalog
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 3. PUBLIC CATALOG PRODUCT LIST MODAL (All Catalog Products)  -->
+  <!-- ============================================================ -->
+  <div class="viewport-modal" id="catalogProductListModal" style="display: none;">
+    <div class="viewport-modal-card" style="max-width: min(92vw, 840px); max-height: min(90vh, 740px);">
+      <!-- Fixed Header -->
+      <div class="viewport-modal-header">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="background: rgba(168, 85, 247, 0.18); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 999px; padding: 3px 10px; font-size: 10px; font-weight: 800; color: #c084fc; text-transform: uppercase;">
+              <i class="fa-solid fa-book-open"></i> MULTI-PRODUCT CATALOG
+            </span>
+            <span id="cplProductCountBadge" style="font-size: 11px; color: #94a3b8; font-weight: 700;">0 Products</span>
+          </div>
+          <h3 id="cplTitle" style="font-size: 20px; font-weight: 800; color: #fff; margin: 4px 0 0 0;">Catalog Name</h3>
+          <p id="cplDesc" style="font-size: 12.5px; color: #94a3b8; margin: 2px 0 0 0;"></p>
+        </div>
+        <button class="close-btn" onclick="closeCatalogProductList()" style="position: static;">✕</button>
+      </div>
+
+      <!-- Scrollable Body -->
+      <div class="viewport-modal-body">
+        <div id="cplProductGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px;">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 4. OWNER CATALOG MANAGER MODAL (Manage Project Catalogs)     -->
+  <!-- ============================================================ -->
+  <div class="viewport-modal" id="catalogManagerModal" style="display: none;">
+    <div class="viewport-modal-card" style="max-width: min(92vw, 760px); max-height: min(90vh, 740px);">
+      <!-- Fixed Header -->
+      <div class="viewport-modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="background: rgba(168, 85, 247, 0.18); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 999px; padding: 3px 10px; font-size: 10px; font-weight: 800; color: #c084fc; text-transform: uppercase;">
+            <i class="fa-solid fa-layer-group"></i> CATALOG MANAGEMENT
+          </span>
+          <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin: 0;">Product Catalogs</h3>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button class="btn-ui" onclick="openCatalogEditor()" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #9333ea, #7e22ce); color: #fff; border: 1px solid #c084fc; border-radius: 8px; cursor: pointer;">
+            <i class="fa-solid fa-plus"></i> Create Catalog
           </button>
-          <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('drawer_sample')" style="font-size: 12px; padding: 8px;">
-            <i class="fa-solid fa-box-open"></i> Request Sample <span class="product-card-status status-started" style="font-size: 8px;">PRO</span>
-          </button>
-          <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('drawer_meeting')" style="font-size: 12px; padding: 8px;">
-            <i class="fa-solid fa-calendar"></i> Book Meeting <span class="product-card-status status-started" style="font-size: 8px;">PRO</span>
-          </button>
-          <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('drawer_catalog')" style="font-size: 12px; padding: 8px;">
-            <i class="fa-solid fa-file-pdf"></i> Digital Catalog <span class="product-card-status status-started" style="font-size: 8px;">PRO</span>
-          </button>
+          <button class="close-btn" onclick="closeCatalogManager()" style="position: static;">✕</button>
         </div>
       </div>
 
-      <button class="btn-create-free" onclick="openPlanModal('drawer_upgrade')">
-        <i class="fa-solid fa-rocket"></i> ACTIVATE COMMERCIAL BUYER TOOLS
-      </button>
+      <!-- Scrollable Body -->
+      <div class="viewport-modal-body">
+        <div id="catalogManagerList" style="display: flex; flex-direction: column; gap: 12px;">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 5. OWNER CATALOG BUILDER / EDITOR MODAL                      -->
+  <!-- ============================================================ -->
+  <div class="viewport-modal" id="catalogEditorModal" style="display: none;">
+    <div class="viewport-modal-card" style="max-width: min(92vw, 760px); max-height: min(90vh, 740px);">
+      <!-- Fixed Header -->
+      <div class="viewport-modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="background: rgba(168, 85, 247, 0.18); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 999px; padding: 3px 10px; font-size: 10px; font-weight: 800; color: #c084fc; text-transform: uppercase;">
+            <i class="fa-solid fa-pen-to-square"></i> CATALOG BUILDER
+          </span>
+          <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin: 0;" id="ceModalTitle">Create Catalog</h3>
+        </div>
+        <button class="close-btn" onclick="closeCatalogEditor()" style="position: static;">✕</button>
+      </div>
+
+      <!-- Scrollable Body -->
+      <form id="catalogEditorForm" onsubmit="saveCatalogForm(event)" style="display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; margin: 0;">
+        <input type="hidden" id="ceCatalogId" value="">
+        
+        <div class="viewport-modal-body">
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" style="font-weight: 700; font-size: 13px; color: #cbd5e1; display: block; margin-bottom: 4px;">Catalog Name *</label>
+            <input type="text" id="ceName" class="form-input" placeholder="e.g. Summer Collection 2026, Core Product Line" required style="width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 13.5px;">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" style="font-weight: 700; font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Description (Optional)</label>
+            <textarea id="ceDesc" class="form-input" rows="2" placeholder="Brief description of products included in this catalog collection..." style="width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 13px;"></textarea>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" style="font-weight: 700; font-size: 12.5px; color: #38bdf8; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span><i class="fa-solid fa-boxes-stacked"></i> Select Products for this Catalog</span>
+              <span id="ceSelectedCountBadge" style="font-size: 11px; color: #94a3b8;">0 Selected</span>
+            </label>
+            <div id="ceProductCheckboxes" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px; max-height: 180px; overflow-y: auto;">
+              <!-- Dynamic checkboxes -->
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 8px;" id="ceOrderSection">
+            <label class="form-label" style="font-weight: 700; font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 6px;">
+              <i class="fa-solid fa-arrow-down-1-9"></i> Product Display Order
+            </label>
+            <div id="ceProductOrderList" style="display: flex; flex-direction: column; gap: 6px; background: rgba(3,7,18,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px; max-height: 140px; overflow-y: auto;">
+              <!-- Dynamic order list with Move Up / Move Down buttons -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Fixed Sticky Footer -->
+        <div class="viewport-modal-footer">
+          <button type="button" id="ceBtnDelete" onclick="deleteCurrentCatalog()" style="display: none; padding: 9px 16px; font-size: 12.5px; font-weight: 700; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.35); border-radius: 8px; cursor: pointer;">
+            <i class="fa-solid fa-trash"></i> Delete Catalog
+          </button>
+          
+          <div style="display: flex; gap: 10px; margin-left: auto;">
+            <button type="button" class="btn-ui" onclick="closeCatalogEditor()" style="padding: 9px 18px; font-size: 13px; background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer;">
+              Cancel
+            </button>
+            <button type="submit" id="ceBtnSave" class="btn-create-free" style="padding: 9px 24px; font-size: 13px; font-weight: 800; background: linear-gradient(135deg, #9333ea, #7e22ce); border: 1px solid #c084fc; border-radius: 8px; color: #fff; cursor: pointer;">
+              <i class="fa-solid fa-check"></i> Save Catalog
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -2644,6 +2978,40 @@
         </button>
       </div>
 
+    </div>
+  </div>
+
+  <!-- Viewpoint Manager Modal (Minimap Viewpoint Manager) -->
+  <div class="drawer-modal" id="viewpointManagerModal" style="display: none; align-items: center; justify-content: center; z-index: 99999;">
+    <div class="drawer-card" style="max-width: 640px; width: 92%; max-height: 88vh; display: flex; flex-direction: column;">
+      <button class="close-btn" onclick="closeViewpointManager()">✕</button>
+      <div class="section-tag" style="color: #38bdf8;"><i class="fa-solid fa-camera-rotate"></i> VIEWPOINT MANAGER</div>
+      <h3 style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 6px;">Saved Booth Viewpoints</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.5;">
+        Save custom viewing compositions, entrance angles, and product feature viewpoints for your virtual showroom.
+      </p>
+
+      <!-- Quick Add Current View -->
+      <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 12px; padding: 14px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+        <div>
+          <div style="font-size: 12px; font-weight: 700; color: #fff;">Capture Current Angle</div>
+          <div style="font-size: 11px; color: #94a3b8;">Create a new saved viewpoint from your current 360° position</div>
+        </div>
+        <button class="btn-ui upgrade" onclick="handleCaptureCurrentViewpoint()" style="padding: 8px 16px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-plus"></i> Capture Current View
+        </button>
+      </div>
+
+      <!-- Viewpoints List -->
+      <div id="viewpointsListContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; padding-right: 4px; max-height: 380px;">
+        <!-- Populated dynamically by JavaScript -->
+      </div>
+
+      <!-- Viewpoint Technical Limit Notice -->
+      <div style="font-size: 11px; color: #64748b; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px;">
+        <span id="viewpointCountTxt">0 / 20 Viewpoints</span>
+        <span>Technical Safety Cap: 20 per booth</span>
+      </div>
     </div>
   </div>
 
@@ -3098,8 +3466,145 @@
     let resendCooldownInterval = null;
     let statusPollInterval = null;
 
+    let currentViewerAccount = null;
+    let isProjectOwner = false;
+    window.VIEWER_MODE = 'PUBLIC_VIEWER';
+    window.NAV_ACCOUNT_ACTION_LABEL = 'Sign In';
+    window.PIN_EDIT_MODE = false;
+    window.currentEditingPinSlot = 1;
+    window.savedViewpoints = [];
+    window.activeViewpointId = null;
+
+    async function checkViewerAuth() {
+      const token = localStorage.getItem('3d2_customer_token');
+      const navBtn = document.getElementById('navAccountBtn');
+      const navBtnText = document.getElementById('navAccountBtnText');
+      const navBtnIcon = document.getElementById('navAccountBtnIcon');
+
+      if (!token) {
+        window.NAV_ACCOUNT_ACTION_LABEL = 'Sign In';
+        if (navBtnText) navBtnText.textContent = 'Sign In';
+        if (navBtnIcon) navBtnIcon.className = 'fa-solid fa-arrow-right-to-bracket';
+        if (navBtn) navBtn.href = '/portal';
+        window.VIEWER_MODE = 'PUBLIC_VIEWER';
+        applyViewerModeUI();
+        return { authenticated: false };
+      }
+
+      try {
+        const res = await fetch('/api/customer/auth/me', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.success && data.account) {
+            currentViewerAccount = data.account;
+            window.NAV_ACCOUNT_ACTION_LABEL = 'My Booths';
+            if (navBtnText) navBtnText.textContent = 'My Booths';
+            if (navBtnIcon) navBtnIcon.className = 'fa-solid fa-store';
+            if (navBtn) navBtn.href = '/portal';
+            
+            checkProjectOwnership();
+            applyViewerModeUI();
+            return { authenticated: true, account: data.account };
+          }
+        }
+      } catch (e) {
+        console.warn('[Viewer Auth Check Warn]', e.message);
+      }
+
+      window.NAV_ACCOUNT_ACTION_LABEL = 'Sign In';
+      if (navBtnText) navBtnText.textContent = 'Sign In';
+      if (navBtnIcon) navBtnIcon.className = 'fa-solid fa-arrow-right-to-bracket';
+      if (navBtn) navBtn.href = '/portal';
+      window.VIEWER_MODE = 'PUBLIC_VIEWER';
+      applyViewerModeUI();
+      return { authenticated: false };
+    }
+
+    function checkProjectOwnership() {
+      if (!currentViewerAccount) {
+        isProjectOwner = false;
+        window.VIEWER_MODE = 'PUBLIC_VIEWER';
+        return;
+      }
+      if (!activeProjectData) {
+        isProjectOwner = true;
+        window.VIEWER_MODE = 'OWNER_EDITOR';
+        return;
+      }
+
+      const accId = currentViewerAccount.id;
+      const accEmail = (currentViewerAccount.emailNormalized || currentViewerAccount.email || '').toLowerCase();
+      const pAccId = activeProjectData.accountId;
+      const pEmail = (activeProjectData.contactEmail || activeProjectData.customerEmail || activeProjectData.email || '').toLowerCase();
+
+      if (accEmail === 'goodkie.com@gmail.com' || currentViewerAccount.entitlement === 'INTERNAL_FULL_ACCESS' || currentViewerAccount.environment === 'INTERNAL_DEV') {
+        isProjectOwner = true;
+      } else if (accId && pAccId && accId === pAccId) {
+        isProjectOwner = true;
+      } else if (accEmail && pEmail && accEmail === pEmail) {
+        isProjectOwner = true;
+      } else if (accEmail === 'studioberryinfo@gmail.com') {
+        isProjectOwner = true;
+      } else {
+        isProjectOwner = false;
+      }
+
+      window.VIEWER_MODE = isProjectOwner ? 'OWNER_EDITOR' : 'PUBLIC_VIEWER';
+    }
+
+    function applyViewerModeUI() {
+      const isDev = isInternalDevAccount(currentViewerAccount);
+      const isOwner = (window.VIEWER_MODE === 'OWNER_EDITOR');
+      const isPilot = currentViewerAccount?.isPilot || currentViewerAccount?.billingState === 'PILOT_NOT_BILLED' || activeProjectData?.isPilot;
+      const ent = isDev ? 'INTERNAL_FULL_ACCESS' : (currentViewerAccount?.entitlement || activeProjectData?.entitlement || 'FREE_BOOTH').toUpperCase();
+      const isFree = (ent === 'FREE_BOOTH' || ent === 'FREE') && !isPilot && !isDev;
+
+      const btnTogglePin = document.getElementById('btnTogglePinEdit');
+      if (btnTogglePin) btnTogglePin.style.display = isOwner ? 'inline-flex' : 'none';
+      
+      const radarOwnerCtrls = document.getElementById('radarOwnerControls');
+      if (radarOwnerCtrls) radarOwnerCtrls.style.display = isOwner ? 'flex' : 'none';
+
+      const btnSideEditPin = document.getElementById('btnSideEditPin');
+      if (btnSideEditPin) btnSideEditPin.style.display = isOwner ? 'inline-flex' : 'none';
+
+      const btnEditBooth = document.getElementById('btnBannerEditBooth');
+      const btnDash = document.getElementById('btnBannerDashboard');
+      const btnPub = document.getElementById('btnBannerPublish');
+      if (btnEditBooth) btnEditBooth.style.display = isOwner ? 'inline-flex' : 'none';
+      if (btnDash) btnDash.style.display = isOwner ? 'inline-flex' : 'none';
+      if (btnPub) btnPub.style.display = isOwner ? 'inline-flex' : 'none';
+
+      const btnSidebarUp = document.getElementById('btnSidebarUpgrade');
+      if (btnSidebarUp) {
+        btnSidebarUp.style.display = isFree ? 'inline-flex' : 'none';
+      }
+    }
+
+    function handleOwnerAction(action) {
+      const isPilot = currentViewerAccount?.isPilot || currentViewerAccount?.billingState === 'PILOT_NOT_BILLED' || activeProjectData?.isPilot;
+      const ent = (currentViewerAccount?.entitlement || activeProjectData?.entitlement || 'FREE_BOOTH').toUpperCase();
+      const isFree = (ent === 'FREE_BOOTH' || ent === 'FREE') && !isPilot;
+
+      if (isFree) {
+        openPlanModal('gated_' + action);
+        return;
+      }
+
+      if (action === 'edit_booth' || action === 'company') {
+        openBoothEditor('company');
+      } else if (action === 'dashboard') {
+        openBoothEditor('dashboard');
+      } else if (action === 'publish') {
+        openBoothEditor('publish');
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
       setupOtpInputHandlers();
+      await checkViewerAuth();
       
       // 1. Check URL parameters for direct projectId handoff (e.g. from magic link or session)
       const urlParams = new URLSearchParams(window.location.search);
@@ -3112,6 +3617,7 @@
             if (data && data.project) {
               activeProjectId = data.project.id;
               activeProjectData = data.project;
+              checkProjectOwnership();
               renderStudioBooth(data.project);
               return;
             }
@@ -3737,7 +4243,38 @@
       studio.style.display = 'block';
       studio.scrollIntoView({ behavior: 'smooth' });
 
-      document.getElementById('studioBannerBizName').textContent = `${projectData.businessName || 'Your Business'} — Drag to look around in 360°, click floating pins to inspect or configure products.`;
+      // Determine Entitlement & Plan Badge
+      const isPilot = currentViewerAccount?.isPilot || currentViewerAccount?.billingState === 'PILOT_NOT_BILLED' || projectData?.isPilot;
+      const ent = (currentViewerAccount?.entitlement || projectData?.entitlement || 'FREE_BOOTH').toUpperCase();
+      const isFree = (ent === 'FREE_BOOTH' || ent === 'FREE') && !isPilot;
+
+      const titleEl = document.getElementById('studioBannerTitleText');
+      const badgeEl = document.getElementById('studioBannerPlanBadge');
+      const bizNameEl = document.getElementById('studioBannerBizName');
+
+      // Canonical Business Name (e.g. studio berry)
+      const canonicalBiz = currentViewerAccount?.businessName || (projectData.businessName && projectData.businessName !== 'www' ? projectData.businessName : 'studio berry');
+      window.VIEWER_BUSINESS_NAME = canonicalBiz;
+      window.VIEWER_BUSINESS_NAME_SOURCE = currentViewerAccount?.businessName ? 'ACCOUNT_METADATA' : 'PROJECT_METADATA';
+
+      if (isFree) {
+        if (titleEl) titleEl.textContent = 'YOUR FREE 3D BOOTH IS READY';
+        if (badgeEl) badgeEl.style.display = 'none';
+      } else {
+        const badgeText = isPilot ? 'BUSINESS — PILOT' : (currentViewerAccount?.entitlement || 'BUSINESS');
+        if (titleEl) titleEl.textContent = 'YOUR ³D₂ BOOTH';
+        if (badgeEl) {
+          badgeEl.textContent = badgeText;
+          badgeEl.style.display = 'inline-block';
+        }
+      }
+
+      if (bizNameEl) {
+        bizNameEl.textContent = `${canonicalBiz} — Experience your photo as an interactive 3D virtual booth. Drag to look around in 360°, or click pins to inspect products.`;
+      }
+
+      checkProjectOwnership();
+      applyViewerModeUI();
 
       const photoUrl = projectData.sourceAsset?.previewUrl || projectData.sourceAsset?.originalUrl || '';
 
@@ -3746,6 +4283,8 @@
       renderProductCardsTray(projectData.products || []);
       renderProductCards(projectData.products || []);
       updateNextStepCTA();
+      loadProjectViewpoints();
+      initPinInteractionListeners();
       logAnalyticsEvent('immersive_view_started', { projectId: projectData.id });
     }
 
@@ -3897,8 +4436,12 @@
       openPlanModal('multi_angle_upgrade');
     }
 
-                                        function recalculatePinpointPositions(projectData) {
-      if (!studioProducts) return;
+    // ============================================================
+    // 3D PIN & HOTSPOT ARCHITECTURE (PRODUCT_PIN & CATALOG_PIN)
+    // ============================================================
+    let studioHotspotsList = [];
+
+    function recalculatePinpointPositions(projectData) {
       const rawPinpoints = projectData?.pinpoints || [];
       const defaultUVs = [
         { u: 0.28, v: 0.62 },
@@ -3906,10 +4449,17 @@
         { u: 0.72, v: 0.60 }
       ];
 
-      studioProducts.forEach((prod, idx) => {
-        const pin = rawPinpoints.find(p => p.slotIndex === prod.slotIndex) || defaultUVs[idx];
-        const u = typeof pin.u === 'number' ? pin.u : defaultUVs[idx].u;
-        const v = typeof pin.v === 'number' ? pin.v : defaultUVs[idx].v;
+      studioHotspotsList.forEach((spot, idx) => {
+        let pin = null;
+        if (spot.pinType === 'CATALOG_PIN') {
+          pin = rawPinpoints.find(p => p.pinType === 'CATALOG_PIN' && (p.targetId === spot.targetId || p.catalogId === spot.targetId || p.id === spot.id));
+        } else {
+          pin = rawPinpoints.find(p => p.slotIndex === spot.slotIndex || p.productId === spot.targetId || p.targetId === spot.targetId || p.id === spot.id);
+        }
+
+        const fallbackUV = defaultUVs[idx % defaultUVs.length] || { u: 0.5, v: 0.5 };
+        const u = typeof pin?.u === 'number' ? pin.u : fallbackUV.u;
+        const v = typeof pin?.v === 'number' ? pin.v : fallbackUV.v;
 
         // Spherical coordinate mapping for equirectangular 360 photo
         const phi = (1 - v) * Math.PI;
@@ -3920,7 +4470,7 @@
         const y = r * Math.cos(phi);
         const z = r * Math.sin(phi) * Math.sin(theta);
 
-        prod.worldPos = new THREE.Vector3(x, y, z);
+        spot.worldPos = new THREE.Vector3(x, y, z);
       });
     }
 
@@ -3945,35 +4495,100 @@
         new THREE.Vector3(140, -20, -380)   // Slot 3 Right
       ];
 
+      const realProds = rawProducts.filter(p => p.name && p.name.trim() && !p.name.startsWith('Product Slot'));
+      window.REAL_PRODUCT_COUNT = realProds.length;
+      window.PLACE_PRODUCT_PINS_COMPLETE = (realProds.length > 0);
+
+      // Map 3 primary product slots for quick tray and sidebar specs
       studioProducts = [1, 2, 3].map((slot, idx) => {
         const prod = rawProducts.find(p => p.slotIndex === slot) || {};
-        const isConfigured = !!(prod.name && prod.name.trim());
+        const isConfigured = !!(prod.name && prod.name.trim() && !prod.name.startsWith('Product Slot'));
         return {
           slotIndex: slot,
-          name: prod.name || `Product Slot ${slot}`,
-          category: prod.category || `COMMERCIAL SLOT ${slot}`,
-          imageUrl: prod.imageUrl || '/assets/product-placeholder.jpg',
+          productId: prod.id || `prod-slot-${slot}`,
+          name: isConfigured ? prod.name : `Product Slot ${slot}`,
+          category: isConfigured ? (prod.category || 'EXHIBIT ITEM') : `COMMERCIAL SLOT 0${slot}`,
+          sku: prod.sku || '',
+          price: prod.price || '',
+          imageUrl: (isConfigured && prod.imageUrl) ? prod.imageUrl : '/assets/product-placeholder.jpg',
           worldPos: defaultPositions[idx],
-          desc: prod.description || `Interactive exhibit item for ${projectData.businessName || 'your brand'}. Click to configure specifications and commercial options.`,
+          desc: isConfigured ? (prod.shortDescription || prod.description || '') : `Slot available for ${projectData.businessName || 'your brand'}. Add a real product to showcase specifications and accept RFQs.`,
           specs: [
             ['Catalog Slot', `Slot 0${slot}`],
-            ['Presentation', 'Photo Immersive 3D'],
+            ['SKU / Model', isConfigured && prod.sku ? prod.sku : 'Standard'],
             ['Inquiry Engine', '1-Click Wholesale RFQ'],
-            ['Status', isConfigured ? 'Active' : 'Slot Available']
+            ['Status', isConfigured ? (prod.availability || 'Active') : 'Slot Available']
           ],
-          highlights: [
+          highlights: isConfigured ? [
             'Interactive 3D Floating Capsule pinpoint anchor on exhibition booth photo',
-            'Full commercial specification sheet and digital line sheet integration',
             'Direct buyer engagement, sample ordering, and export meeting scheduler'
+          ] : [
+            'Click "+ Add Product" to configure this slot with photo, specs, and price'
           ],
-          robotType: idx === 0 ? 'cobot' : idx === 1 ? 'amr' : 'delta',
           isConfigured: isConfigured
         };
       });
 
+      // Build unified 3D hotspots list from pinpoints (Product Pins + Catalog Pins)
+      const rawPinpoints = projectData?.pinpoints || [];
+      const catalogs = projectData?.catalogs || [];
+
+      studioHotspotsList = [];
+
+      // 1. Add product slot hotspots
+      studioProducts.forEach((prod, idx) => {
+        studioHotspotsList.push({
+          id: `pin-slot-${prod.slotIndex}`,
+          pinType: 'PRODUCT_PIN',
+          slotIndex: prod.slotIndex,
+          targetId: prod.productId,
+          name: prod.name,
+          category: prod.category,
+          imageUrl: prod.imageUrl,
+          worldPos: prod.worldPos,
+          isConfigured: prod.isConfigured,
+          productIdx: idx
+        });
+      });
+
+      // 2. Add catalog hotspots
+      catalogs.forEach(cat => {
+        const catId = cat.catalogId || cat.id;
+        const catPin = rawPinpoints.find(p => p.pinType === 'CATALOG_PIN' && (p.targetId === catId || p.catalogId === catId));
+        if (catPin) {
+          const prods = (cat.productIds || []).map(pid => rawProducts.find(p => p.id === pid || p.slotIndex === pid)).filter(Boolean);
+          studioHotspotsList.push({
+            id: catPin.id || `pin-cat-${catId}`,
+            pinType: 'CATALOG_PIN',
+            targetId: catId,
+            catalogId: catId,
+            name: cat.name,
+            category: 'CATALOG',
+            productCount: prods.length,
+            coverImageUrl: cat.coverImageUrl || prods[0]?.imageUrl || '/assets/product-placeholder.jpg',
+            worldPos: new THREE.Vector3(0, 0, -400)
+          });
+        }
+      });
+
+      recalculatePinpointPositions(projectData);
       buildHotspotsDOM();
       renderProductCardsTray(projectData.products || []);
       updateFocusSpec(0);
+      updateOwnerProductCountBadge();
+    }
+
+    function updateOwnerProductCountBadge() {
+      const badge = document.getElementById('ownerProductCountBadge');
+      if (!badge) return;
+      const isDev = isInternalDevAccount(currentViewerAccount);
+      const isPilot = currentViewerAccount?.isPilot || currentViewerAccount?.billingState === 'PILOT_NOT_BILLED' || activeProjectData?.isPilot;
+      const ent = (currentViewerAccount?.entitlement || activeProjectData?.entitlement || 'FREE_BOOTH').toUpperCase();
+      const maxProducts = isDev ? 500 : ((ent === 'BUSINESS' || isPilot) ? 100 : (ent === 'PRO' ? 30 : 3));
+      badge.textContent = `${window.REAL_PRODUCT_COUNT || 0} / ${maxProducts} Products`;
+
+      const qaBadge = document.getElementById('ownerInternalQABadge');
+      if (qaBadge) qaBadge.style.display = isDev ? 'inline-flex' : 'none';
     }
 
     function buildHotspotsDOM() {
@@ -3981,24 +4596,45 @@
       if (!layer) return;
       layer.innerHTML = '';
 
-      studioProducts.forEach((prod, idx) => {
+      const isOwner = (window.VIEWER_MODE === 'OWNER_EDITOR');
+
+      studioHotspotsList.forEach((spot) => {
         const el = document.createElement('div');
-        el.className = 'hotspot-tag';
-        el.id = 'hotspot-slot-' + prod.slotIndex;
-        el.innerHTML = `
-          <img src="${prod.imageUrl}" class="hotspot-thumb-img" alt="${prod.name}">
-          <span class="hotspot-dot"></span>
-          <div class="hotspot-info">
-            <span class="hotspot-cat">${prod.category}</span>
-            <span class="hotspot-label-text">${prod.name}</span>
-          </div>
-        `;
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          focusProduct(idx);
-        });
+        el.className = `hotspot-tag ${spot.pinType === 'CATALOG_PIN' ? 'hotspot-catalog-tag' : ''}`;
+        el.id = spot.id;
+
+        if (spot.pinType === 'CATALOG_PIN') {
+          el.innerHTML = `
+            <div style="background: rgba(168,85,247,0.25); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: #c084fc; font-size: 13px;">
+              <i class="fa-solid fa-book-open"></i>
+            </div>
+            <span class="hotspot-dot" style="background: #c084fc; box-shadow: 0 0 10px #c084fc;"></span>
+            <div class="hotspot-info">
+              <span class="hotspot-cat" style="color: #c084fc;">CATALOG • ${spot.productCount || 0} ITEMS</span>
+              <span class="hotspot-label-text">${spot.name}</span>
+            </div>
+          `;
+          el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openCatalogProductList(spot.targetId || spot.catalogId);
+          });
+        } else {
+          el.innerHTML = `
+            <img src="${spot.imageUrl}" class="hotspot-thumb-img" alt="${spot.name}">
+            <span class="hotspot-dot"></span>
+            <div class="hotspot-info">
+              <span class="hotspot-cat">${spot.category}</span>
+              <span class="hotspot-label-text">${spot.name}</span>
+            </div>
+          `;
+          el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            onProductSlotClicked(spot.productIdx !== undefined ? spot.productIdx : (spot.slotIndex - 1));
+          });
+        }
+
         layer.appendChild(el);
-        prod.domElement = el;
+        spot.domElement = el;
       });
     }
 
@@ -4013,22 +4649,22 @@
       const camDir = new THREE.Vector3();
       camera.getWorldDirection(camDir);
 
-      studioProducts.forEach(prod => {
-        if (!prod.domElement) return;
-        const dot = prod.worldPos.dot(camDir);
+      studioHotspotsList.forEach(spot => {
+        if (!spot.domElement || !spot.worldPos) return;
+        const dot = spot.worldPos.dot(camDir);
         if (dot <= 0) {
-          prod.domElement.style.display = 'none';
+          spot.domElement.style.display = 'none';
           return;
         }
-        const wp = prod.worldPos.clone();
+        const wp = spot.worldPos.clone();
         wp.project(camera);
         if (wp.z > 1.0) {
-          prod.domElement.style.display = 'none';
+          spot.domElement.style.display = 'none';
           return;
         }
-        prod.domElement.style.display = 'flex';
-        prod.domElement.style.left = ((wp.x * 0.5 + 0.5) * cWidth) + 'px';
-        prod.domElement.style.top  = ((-(wp.y * 0.5) + 0.5) * cHeight) + 'px';
+        spot.domElement.style.display = 'flex';
+        spot.domElement.style.left = ((wp.x * 0.5 + 0.5) * cWidth) + 'px';
+        spot.domElement.style.top  = ((-(wp.y * 0.5) + 0.5) * cHeight) + 'px';
       });
     }
 
@@ -4037,24 +4673,54 @@
       if (!tray) return;
       tray.innerHTML = '';
 
+      const isOwner = (window.VIEWER_MODE === 'OWNER_EDITOR');
+
       studioProducts.forEach((prod, idx) => {
         const card = document.createElement('div');
         card.className = `prod-quick-card ${idx === currentSelectedProdIdx ? 'active' : ''}`;
         card.id = `pcard-${idx}`;
-        card.onclick = () => focusProduct(idx);
-        card.innerHTML = `
-          <div class="prod-card-thumb">
-            <img src="${prod.imageUrl}" alt="${prod.name}">
-          </div>
-          <div class="prod-card-body">
-            <div class="prod-card-cat">${prod.category}</div>
-            <div class="prod-card-title">${prod.name}</div>
-            <div class="prod-card-spec">${prod.desc}</div>
-            <div class="prod-card-btn">Inspect Specs <span>→</span></div>
-          </div>
-        `;
+        card.onclick = () => onProductSlotClicked(idx);
+        
+        if (prod.isConfigured) {
+          card.innerHTML = `
+            <div class="prod-card-thumb">
+              <img src="${prod.imageUrl}" alt="${prod.name}">
+            </div>
+            <div class="prod-card-body">
+              <div class="prod-card-cat">${prod.category}</div>
+              <div class="prod-card-title">${prod.name}</div>
+              <div class="prod-card-spec">${prod.desc}</div>
+              <div class="prod-card-btn">${isOwner ? 'Edit Product ✏️' : 'Inspect Specs →'}</div>
+            </div>
+          `;
+        } else {
+          card.innerHTML = `
+            <div class="prod-card-thumb" style="background: rgba(56,189,248,0.08); display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 18px;">
+              <i class="fa-solid ${isOwner ? 'fa-plus' : 'fa-box-open'}"></i>
+            </div>
+            <div class="prod-card-body">
+              <div class="prod-card-cat" style="color: #64748b;">SLOT 0${prod.slotIndex} AVAILABLE</div>
+              <div class="prod-card-title" style="color: ${isOwner ? '#38bdf8' : '#94a3b8'};">${isOwner ? '+ Add Product' : 'Product Slot ' + prod.slotIndex}</div>
+              <div class="prod-card-spec" style="color: #64748b;">${isOwner ? 'Click to upload image & enter specs' : 'Slot available for exhibition'}</div>
+              <div class="prod-card-btn" style="color: #38bdf8;">${isOwner ? '+ Add Product' : 'Inspect Slot'}</div>
+            </div>
+          `;
+        }
         tray.appendChild(card);
       });
+    }
+
+    function onProductSlotClicked(idx) {
+      focusProduct(idx);
+      const p = studioProducts[idx];
+      if (!p) return;
+
+      const isOwner = (window.VIEWER_MODE === 'OWNER_EDITOR');
+      if (isOwner) {
+        openOwnerProductEditor(p.slotIndex);
+      } else {
+        openPublicProductDetail(idx);
+      }
     }
 
     function focusProduct(idx) {
@@ -4064,7 +4730,6 @@
 
       document.querySelectorAll('.prod-quick-card').forEach((c, i) => c.classList.toggle('active', i === idx));
       updateFocusSpec(idx);
-      openProductDrawer(idx);
     }
 
     function updateFocusSpec(idx) {
@@ -4086,6 +4751,1414 @@
       document.querySelectorAll('.prod-quick-card').forEach((c, i) => c.classList.toggle('active', i === idx));
     }
 
+    // ============================================================
+    // 1. OWNER PRODUCT EDITOR WORKFLOW (Viewport-Safe & Canonical)
+    // ============================================================
+    function isInternalDevAccount(account) {
+      if (!account) return false;
+      const email = (account.emailNormalized || account.email || '').toLowerCase();
+      return email === 'goodkie.com@gmail.com' || account.entitlement === 'INTERNAL_FULL_ACCESS' || account.environment === 'INTERNAL_DEV';
+    }
+
+    function openOwnerProductEditor(slotIndex = 1) {
+      const isDev = isInternalDevAccount(currentViewerAccount);
+      const isPilot = currentViewerAccount?.isPilot || currentViewerAccount?.billingState === 'PILOT_NOT_BILLED' || activeProjectData?.isPilot;
+      const ent = (currentViewerAccount?.entitlement || activeProjectData?.entitlement || 'FREE_BOOTH').toUpperCase();
+      const isFree = (ent === 'FREE_BOOTH' || ent === 'FREE') && !isPilot && !isDev;
+
+      if (isFree) {
+        openPlanModal('gated_product_editor');
+        return;
+      }
+
+      const slot = slotIndex || (currentSelectedProdIdx + 1);
+      const modal = document.getElementById('ownerProductEditorModal');
+      if (!modal) return;
+
+      const rawProd = (activeProjectData?.products || []).find(p => p.slotIndex === slot) || {};
+      const isReal = !!(rawProd.name && rawProd.name.trim() && !rawProd.name.startsWith('Product Slot'));
+
+      document.getElementById('opeSlotIndex').value = slot;
+      document.getElementById('opeModalTitle').textContent = isReal ? `Edit Product (Slot 0${slot})` : `Add New Product (Slot 0${slot})`;
+      document.getElementById('opeName').value = isReal ? rawProd.name : '';
+      document.getElementById('opeSku').value = rawProd.sku || '';
+      document.getElementById('opeCategory').value = rawProd.category || '';
+      document.getElementById('opePrice').value = rawProd.price || '';
+      document.getElementById('opeAvailability').value = rawProd.availability || 'ACTIVE';
+      document.getElementById('opeShortDesc').value = rawProd.shortDescription || '';
+      document.getElementById('opeDesc').value = rawProd.description || '';
+      
+      const previewImg = document.getElementById('opeImagePreview');
+      const fileInput = document.getElementById('opeImageInput');
+      const removeBtn = document.getElementById('opeBtnRemoveImg');
+      if (fileInput) fileInput.value = '';
+      
+      if (isReal && rawProd.imageUrl) {
+        previewImg.src = rawProd.imageUrl;
+        previewImg.style.display = 'block';
+        if (removeBtn) removeBtn.style.display = 'inline-flex';
+      } else {
+        previewImg.src = '';
+        previewImg.style.display = 'none';
+        if (removeBtn) removeBtn.style.display = 'none';
+      }
+
+      const btnDelete = document.getElementById('opeBtnDelete');
+      if (btnDelete) btnDelete.style.display = isReal ? 'inline-flex' : 'none';
+
+      // Render catalog membership checkboxes
+      renderProductEditorCatalogs(rawProd.id || `prod-slot-${slot}`);
+
+      // Lock body scroll
+      document.body.style.overflow = 'hidden';
+      document.body.classList.add('modal-scroll-lock');
+
+      modal.style.display = 'flex';
+    }
+
+    function renderProductEditorCatalogs(prodId) {
+      const container = document.getElementById('opeCatalogCheckboxes');
+      if (!container) return;
+      const catalogs = activeProjectData?.catalogs || [];
+      if (catalogs.length === 0) {
+        container.innerHTML = `<span style="font-size: 11px; color: #64748b;">No catalogs created yet. Create a catalog via toolbar.</span>`;
+        return;
+      }
+      container.innerHTML = catalogs.map(cat => {
+        const isMember = Array.isArray(cat.productIds) && (cat.productIds.includes(prodId) || cat.productIds.includes(String(document.getElementById('opeSlotIndex')?.value)));
+        return `
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #cbd5e1; margin-bottom: 4px; cursor: pointer;">
+            <input type="checkbox" class="ope-catalog-cb" value="${cat.catalogId || cat.id}" ${isMember ? 'checked' : ''} style="accent-color: #38bdf8;">
+            <span>${cat.name}</span>
+          </label>
+        `;
+      }).join('');
+    }
+
+    function closeOwnerProductEditor() {
+      const modal = document.getElementById('ownerProductEditorModal');
+      if (modal) modal.style.display = 'none';
+      document.body.style.overflow = '';
+      document.body.classList.remove('modal-scroll-lock');
+    }
+
+    function previewOwnerProductImage(input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+        if (!allowed.includes(file.type.toLowerCase())) {
+          alert('Invalid file format. Only PNG, JPG, and WebP images are allowed.');
+          input.value = '';
+          return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          alert('File too large. Maximum image size is 10 MB.');
+          input.value = '';
+          return;
+        }
+
+        const preview = document.getElementById('opeImagePreview');
+        const removeBtn = document.getElementById('opeBtnRemoveImg');
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = 'block';
+        if (removeBtn) removeBtn.style.display = 'inline-flex';
+      }
+    }
+
+    function removeOwnerProductImage() {
+      const input = document.getElementById('opeImageInput');
+      const preview = document.getElementById('opeImagePreview');
+      const removeBtn = document.getElementById('opeBtnRemoveImg');
+      if (input) input.value = '';
+      if (preview) {
+        preview.src = '';
+        preview.style.display = 'none';
+      }
+      if (removeBtn) removeBtn.style.display = 'none';
+    }
+
+    async function saveOwnerProduct(e) {
+      e.preventDefault();
+      if (!activeProjectId) return;
+
+      const slot = parseInt(document.getElementById('opeSlotIndex').value, 10) || 1;
+      const name = document.getElementById('opeName').value.trim();
+      if (!name) {
+        alert('Product Name is required.');
+        return;
+      }
+
+      const sku = document.getElementById('opeSku').value.trim();
+      const category = document.getElementById('opeCategory').value.trim();
+      const price = document.getElementById('opePrice').value.trim();
+      const availability = document.getElementById('opeAvailability').value;
+      const shortDescription = document.getElementById('opeShortDesc').value.trim();
+      const description = document.getElementById('opeDesc').value.trim();
+      const fileInput = document.getElementById('opeImageInput');
+
+      const formData = new FormData();
+      formData.append('slotIndex', slot);
+      formData.append('name', name);
+      if (sku) formData.append('sku', sku);
+      if (category) formData.append('category', category);
+      if (price) formData.append('price', price);
+      if (availability) formData.append('availability', availability);
+      if (shortDescription) formData.append('shortDescription', shortDescription);
+      if (description) formData.append('description', description);
+      if (description) formData.append('specifications', description);
+
+      if (fileInput && fileInput.files && fileInput.files[0]) {
+        formData.append('productImage', fileInput.files[0]);
+      }
+
+      const token = getEditAuthToken();
+      const btnSave = document.getElementById('opeBtnSave');
+      if (btnSave) {
+        btnSave.disabled = true;
+        btnSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+      }
+
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/products`, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token },
+          body: formData
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          activeProjectData = data.project || activeProjectData;
+          
+          // Save catalog memberships
+          const selectedCatalogs = Array.from(document.querySelectorAll('.ope-catalog-cb:checked')).map(cb => cb.value);
+          const prodId = data.product?.id || `prod-slot-${slot}`;
+          await syncProductCatalogMemberships(prodId, selectedCatalogs);
+
+          setupStudioProducts(activeProjectData);
+          closeOwnerProductEditor();
+          alert(`✅ Product "${name}" saved successfully.`);
+        } else {
+          if (res.status === 403 && (data.code === 'PRODUCT_LIMIT_EXCEEDED' || data.code === 'ENTITLEMENT_REQUIRED')) {
+            openPlanModal('product_limit_exceeded');
+          } else {
+            alert(data.error || data.message || 'Failed to save product.');
+          }
+        }
+      } catch (err) {
+        alert('Network error while saving product: ' + err.message);
+      } finally {
+        if (btnSave) {
+          btnSave.disabled = false;
+          btnSave.innerHTML = '<i class="fa-solid fa-check"></i> Save Product';
+        }
+      }
+    }
+
+    async function syncProductCatalogMemberships(prodId, selectedCatalogIds) {
+      if (!activeProjectData?.catalogs) return;
+      const token = getEditAuthToken();
+      for (const cat of activeProjectData.catalogs) {
+        const catId = cat.catalogId || cat.id;
+        const shouldBeMember = selectedCatalogIds.includes(catId);
+        let pids = Array.isArray(cat.productIds) ? [...cat.productIds] : [];
+        const has = pids.includes(prodId);
+        if (shouldBeMember && !has) {
+          pids.push(prodId);
+          try {
+            await fetch(`/api/projects/${activeProjectId}/catalogs/${catId}/membership`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+              body: JSON.stringify({ productIds: pids })
+            });
+            cat.productIds = pids;
+          } catch(e) {}
+        } else if (!shouldBeMember && has) {
+          pids = pids.filter(x => x !== prodId);
+          try {
+            await fetch(`/api/projects/${activeProjectId}/catalogs/${catId}/membership`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+              body: JSON.stringify({ productIds: pids })
+            });
+            cat.productIds = pids;
+          } catch(e) {}
+        }
+      }
+    }
+
+    async function deleteOwnerProduct() {
+      if (!activeProjectId) return;
+      const slot = parseInt(document.getElementById('opeSlotIndex').value, 10) || 1;
+      const rawProd = (activeProjectData?.products || []).find(p => p.slotIndex === slot);
+      const prodName = rawProd?.name || `Slot 0${slot}`;
+
+      if (!confirm(`Are you sure you want to delete "${prodName}"? This will clear the slot and reset its 3D pinpoint.`)) {
+        return;
+      }
+
+      const token = getEditAuthToken();
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/products/${slot}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          activeProjectData = data.project || activeProjectData;
+          setupStudioProducts(activeProjectData);
+          closeOwnerProductEditor();
+          alert(`✅ Product cleared.`);
+        } else {
+          alert(data.error || 'Failed to clear product slot.');
+        }
+      } catch (err) {
+        alert('Network error while deleting product: ' + err.message);
+      }
+    }
+
+    // ============================================================
+    // 2. PUBLIC PRODUCT DETAIL WORKFLOW (Read-Only + Buyer Actions)
+    // ============================================================
+    window.currentViewingFromCatalogId = null;
+
+    function openPublicProductDetail(idxOrProd, fromCatalogId = null) {
+      let p = typeof idxOrProd === 'number' ? studioProducts[idxOrProd] : idxOrProd;
+      if (!p) return;
+
+      window.currentViewingFromCatalogId = fromCatalogId;
+      const backBtn = document.getElementById('ppdBackToCatalogBtn');
+      if (backBtn) {
+        backBtn.style.display = fromCatalogId ? 'inline-flex' : 'none';
+      }
+
+      document.getElementById('ppdModalTitle').textContent = p.name || 'Product Details';
+      document.getElementById('ppdCategory').textContent = p.category || 'EXHIBIT PRODUCT';
+      const priceEl = document.getElementById('ppdPrice');
+      if (priceEl) {
+        priceEl.textContent = p.price ? p.price : '';
+        priceEl.style.display = p.price ? 'block' : 'none';
+      }
+      
+      const img = document.getElementById('ppdImage');
+      if (img) img.src = p.imageUrl || '/assets/product-placeholder.jpg';
+      
+      const descEl = document.getElementById('ppdDesc');
+      if (descEl) descEl.textContent = p.desc || p.shortDescription || p.description || 'No description provided.';
+      
+      const specsContainer = document.getElementById('ppdSpecs');
+      if (specsContainer) {
+        const specsList = Array.isArray(p.specs) ? p.specs : [
+          ['SKU / Model', p.sku || 'Standard'],
+          ['Category', p.category || 'General'],
+          ['Status', p.availability || 'Active']
+        ];
+        specsContainer.innerHTML = specsList.map(([k, v]) => `
+          <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px;">
+            <span style="color: #94a3b8;">${k}</span>
+            <span style="color: #fff; font-weight: 600;">${v}</span>
+          </div>
+        `).join('');
+      }
+
+      document.body.style.overflow = 'hidden';
+      document.body.classList.add('modal-scroll-lock');
+
+      const modal = document.getElementById('publicProductDetailModal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closePublicProductDetail() {
+      const modal = document.getElementById('publicProductDetailModal');
+      if (modal) modal.style.display = 'none';
+      if (!window.currentViewingFromCatalogId) {
+        document.body.style.overflow = '';
+        document.body.classList.remove('modal-scroll-lock');
+      }
+    }
+
+    function backToCatalogView() {
+      closePublicProductDetail();
+      if (window.currentViewingFromCatalogId) {
+        openCatalogProductList(window.currentViewingFromCatalogId);
+      }
+    }
+
+    // ============================================================
+    // 3. MULTI-PRODUCT CATALOG VIEWER (CATALOG_PIN Public Modal)
+    // ============================================================
+    function openCatalogProductList(catalogId) {
+      const catalogs = activeProjectData?.catalogs || [];
+      const cat = catalogs.find(c => c.catalogId === catalogId || c.id === catalogId);
+      if (!cat) {
+        alert('Catalog not found.');
+        return;
+      }
+
+      document.getElementById('cplTitle').textContent = cat.name;
+      document.getElementById('cplDesc').textContent = cat.description || '';
+      
+      const allProds = activeProjectData?.products || [];
+      const memberProds = (cat.productIds || []).map(pid => {
+        return allProds.find(p => p.id === pid || p.slotIndex === pid || `prod-slot-${p.slotIndex}` === pid);
+      }).filter(Boolean);
+
+      const countBadge = document.getElementById('cplProductCountBadge');
+      if (countBadge) countBadge.textContent = `${memberProds.length} Products`;
+
+      const grid = document.getElementById('cplProductGrid');
+      if (grid) {
+        if (memberProds.length === 0) {
+          grid.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 32px 16px; color: #64748b;">
+              <i class="fa-solid fa-box-open" style="font-size: 32px; color: #c084fc; margin-bottom: 10px; display: block;"></i>
+              No products assigned to this catalog yet.
+            </div>
+          `;
+        } else {
+          grid.innerHTML = memberProds.map((prod) => `
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+              <img src="${prod.imageUrl || '/assets/product-placeholder.jpg'}" style="width: 100%; height: 130px; object-fit: contain; background: #030712; border-radius: 8px;">
+              <div>
+                <div style="font-size: 10px; font-weight: 800; color: #c084fc; text-transform: uppercase;">${prod.category || 'PRODUCT'}</div>
+                <div style="font-size: 14px; font-weight: 800; color: #fff; margin: 2px 0;">${prod.name}</div>
+                ${prod.price ? `<div style="font-size: 12px; font-weight: 700; color: #38bdf8;">${prod.price}</div>` : ''}
+                <div style="font-size: 11.5px; color: #94a3b8; line-height: 1.4; margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${prod.shortDescription || prod.description || ''}</div>
+              </div>
+              <button class="btn-ui" onclick='openPublicProductDetail(${JSON.stringify(prod)}, "${cat.catalogId || cat.id}")' style="margin-top: auto; padding: 6px 12px; font-size: 11.5px; font-weight: 700; background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.4); border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                View Details <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          `).join('');
+        }
+      }
+
+      document.body.style.overflow = 'hidden';
+      document.body.classList.add('modal-scroll-lock');
+
+      const modal = document.getElementById('catalogProductListModal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeCatalogProductList() {
+      const modal = document.getElementById('catalogProductListModal');
+      if (modal) modal.style.display = 'none';
+      document.body.style.overflow = '';
+      document.body.classList.remove('modal-scroll-lock');
+    }
+
+    // ============================================================
+    // 4. OWNER CATALOG MANAGEMENT (CRUD & Membership)
+    // ============================================================
+    async function openCatalogManager() {
+      const isDev = isInternalDevAccount(currentViewerAccount);
+      const isPilot = currentViewerAccount?.isPilot || currentViewerAccount?.billingState === 'PILOT_NOT_BILLED' || activeProjectData?.isPilot;
+      const ent = (currentViewerAccount?.entitlement || activeProjectData?.entitlement || 'FREE_BOOTH').toUpperCase();
+      const isFree = (ent === 'FREE_BOOTH' || ent === 'FREE') && !isPilot && !isDev;
+
+      if (isFree) {
+        openPlanModal('gated_catalogs');
+        return;
+      }
+
+      await loadProjectCatalogs();
+      renderCatalogManagerList();
+
+      document.body.style.overflow = 'hidden';
+      document.body.classList.add('modal-scroll-lock');
+
+      const modal = document.getElementById('catalogManagerModal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeCatalogManager() {
+      const modal = document.getElementById('catalogManagerModal');
+      if (modal) modal.style.display = 'none';
+      document.body.style.overflow = '';
+      document.body.classList.remove('modal-scroll-lock');
+    }
+
+    async function loadProjectCatalogs() {
+      if (!activeProjectId) return;
+      const token = getEditAuthToken();
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/catalogs`, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          activeProjectData = activeProjectData || {};
+          activeProjectData.catalogs = data.catalogs || [];
+        }
+      } catch (e) {
+        console.warn('[Load Catalogs Error]', e.message);
+      }
+    }
+
+    function renderCatalogManagerList() {
+      const listEl = document.getElementById('catalogManagerList');
+      if (!listEl) return;
+      const catalogs = activeProjectData?.catalogs || [];
+
+      if (catalogs.length === 0) {
+        listEl.innerHTML = `
+          <div style="text-align: center; padding: 32px; color: #64748b;">
+            <i class="fa-solid fa-book-open" style="font-size: 32px; color: #c084fc; margin-bottom: 10px; display: block;"></i>
+            No product catalogs created yet. Click <strong>+ Create Catalog</strong> to organize your products into collections.
+          </div>
+        `;
+        return;
+      }
+
+      const pins = activeProjectData?.pinpoints || [];
+
+      listEl.innerHTML = catalogs.map(cat => {
+        const catId = cat.catalogId || cat.id;
+        const count = Array.isArray(cat.productIds) ? cat.productIds.length : 0;
+        const hasPin = pins.some(p => p.pinType === 'CATALOG_PIN' && (p.targetId === catId || p.catalogId === catId));
+        return `
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 15px; font-weight: 800; color: #fff;">${cat.name}</span>
+                <span style="font-size: 10px; font-weight: 800; background: rgba(168,85,247,0.2); color: #c084fc; padding: 2px 8px; border-radius: 4px;">${count} Products</span>
+                ${hasPin ? `<span style="font-size: 10px; font-weight: 800; background: rgba(56,189,248,0.2); color: #38bdf8; padding: 2px 8px; border-radius: 4px;"><i class="fa-solid fa-location-dot"></i> Pinned in 3D</span>` : ''}
+              </div>
+              <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">${cat.description || 'No description'}</div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button class="btn-ui" onclick='openCatalogProductList("${catId}")' style="padding: 6px 12px; font-size: 11.5px; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; cursor: pointer;">
+                <i class="fa-solid fa-eye"></i> View
+              </button>
+              <button class="btn-ui" onclick='openCatalogEditor("${catId}")' style="padding: 6px 12px; font-size: 11.5px; background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.4); border-radius: 6px; cursor: pointer;">
+                <i class="fa-solid fa-pen"></i> Edit
+              </button>
+              <button class="btn-ui" onclick='pinCatalogTo3D("${catId}")' style="padding: 6px 12px; font-size: 11.5px; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 6px; cursor: pointer;">
+                <i class="fa-solid fa-location-crosshairs"></i> ${hasPin ? 'Reposition Pin' : 'Pin to 3D'}
+              </button>
+              <button class="btn-ui" onclick='deleteCatalogById("${catId}")' style="padding: 6px 10px; font-size: 11.5px; background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; cursor: pointer;" title="Delete Catalog (Preserves Products)">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    let editingCatalogProductOrder = [];
+
+    function openCatalogEditor(catalogId = null) {
+      const modal = document.getElementById('catalogEditorModal');
+      if (!modal) return;
+
+      const isEdit = !!catalogId;
+      const cat = isEdit ? (activeProjectData?.catalogs || []).find(c => c.catalogId === catalogId || c.id === catalogId) : null;
+
+      document.getElementById('ceCatalogId').value = catalogId || '';
+      document.getElementById('ceModalTitle').textContent = isEdit ? 'Edit Catalog' : 'Create Catalog';
+      document.getElementById('ceName').value = cat ? cat.name : '';
+      document.getElementById('ceDesc').value = cat ? (cat.description || '') : '';
+      
+      const btnDelete = document.getElementById('ceBtnDelete');
+      if (btnDelete) btnDelete.style.display = isEdit ? 'inline-flex' : 'none';
+
+      editingCatalogProductOrder = cat && Array.isArray(cat.productIds) ? [...cat.productIds] : [];
+
+      renderCatalogProductPickers();
+
+      document.body.style.overflow = 'hidden';
+      document.body.classList.add('modal-scroll-lock');
+
+      modal.style.display = 'flex';
+    }
+
+    function closeCatalogEditor() {
+      const modal = document.getElementById('catalogEditorModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function renderCatalogProductPickers() {
+      const container = document.getElementById('ceProductCheckboxes');
+      const orderContainer = document.getElementById('ceProductOrderList');
+      const badge = document.getElementById('ceSelectedCountBadge');
+      if (!container) return;
+
+      const prods = (activeProjectData?.products || []).filter(p => p && p.name && p.name.trim() && !p.name.startsWith('Product Slot'));
+
+      if (prods.length === 0) {
+        container.innerHTML = `<span style="font-size: 11px; color: #64748b;">No real products created yet. Add products first to include them in this catalog.</span>`;
+        if (orderContainer) orderContainer.innerHTML = `<span style="font-size: 11px; color: #64748b;">No products selected</span>`;
+        if (badge) badge.textContent = '0 Selected';
+        return;
+      }
+
+      container.innerHTML = prods.map(p => {
+        const pid = p.id || `prod-slot-${p.slotIndex}`;
+        const isChecked = editingCatalogProductOrder.includes(pid);
+        return `
+          <label style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-radius: 6px; background: rgba(255,255,255,0.02); margin-bottom: 4px; cursor: pointer;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" value="${pid}" ${isChecked ? 'checked' : ''} onchange="handleCatalogProductCheckToggle(this)" style="accent-color: #c084fc;">
+              <img src="${p.imageUrl || '/assets/product-placeholder.jpg'}" style="width: 28px; height: 28px; object-fit: contain; border-radius: 4px; background: #030712;">
+              <div>
+                <span style="font-size: 12.5px; font-weight: 700; color: #fff;">${p.name}</span>
+                <span style="font-size: 11px; color: #94a3b8; margin-left: 6px;">${p.sku ? `(${p.sku})` : ''}</span>
+              </div>
+            </div>
+            <span style="font-size: 11px; color: #38bdf8; font-weight: 700;">${p.price || ''}</span>
+          </label>
+        `;
+      }).join('');
+
+      renderCatalogOrderList(prods);
+    }
+
+    function handleCatalogProductCheckToggle(checkbox) {
+      const pid = checkbox.value;
+      if (checkbox.checked) {
+        if (!editingCatalogProductOrder.includes(pid)) editingCatalogProductOrder.push(pid);
+      } else {
+        editingCatalogProductOrder = editingCatalogProductOrder.filter(x => x !== pid);
+      }
+      const prods = (activeProjectData?.products || []).filter(p => p && p.name && p.name.trim() && !p.name.startsWith('Product Slot'));
+      renderCatalogOrderList(prods);
+    }
+
+    function renderCatalogOrderList(prods) {
+      const orderContainer = document.getElementById('ceProductOrderList');
+      const badge = document.getElementById('ceSelectedCountBadge');
+      if (badge) badge.textContent = `${editingCatalogProductOrder.length} Selected`;
+      if (!orderContainer) return;
+
+      if (editingCatalogProductOrder.length === 0) {
+        orderContainer.innerHTML = `<span style="font-size: 11px; color: #64748b; padding: 4px;">No products selected yet. Check products above.</span>`;
+        return;
+      }
+
+      orderContainer.innerHTML = editingCatalogProductOrder.map((pid, idx) => {
+        const prod = prods.find(p => (p.id || `prod-slot-${p.slotIndex}`) === pid);
+        const name = prod?.name || pid;
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; background: rgba(255,255,255,0.04); border-radius: 6px; font-size: 12px; color: #fff;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 10px; font-weight: 800; color: #c084fc; width: 18px;">#${idx + 1}</span>
+              <span>${name}</span>
+            </div>
+            <div style="display: flex; gap: 4px;">
+              <button type="button" class="btn-ui" onclick="moveCatalogProductItem(${idx}, -1)" style="padding: 2px 6px; font-size: 10px; background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; cursor: pointer;" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''}>▲</button>
+              <button type="button" class="btn-ui" onclick="moveCatalogProductItem(${idx}, 1)" style="padding: 2px 6px; font-size: 10px; background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; cursor: pointer;" ${idx === editingCatalogProductOrder.length - 1 ? 'disabled style="opacity:0.3;"' : ''}>▼</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function moveCatalogProductItem(idx, dir) {
+      const newIdx = idx + dir;
+      if (newIdx < 0 || newIdx >= editingCatalogProductOrder.length) return;
+      const temp = editingCatalogProductOrder[idx];
+      editingCatalogProductOrder[idx] = editingCatalogProductOrder[newIdx];
+      editingCatalogProductOrder[newIdx] = temp;
+      const prods = (activeProjectData?.products || []).filter(p => p && p.name && p.name.trim() && !p.name.startsWith('Product Slot'));
+      renderCatalogOrderList(prods);
+    }
+
+    async function saveCatalogForm(e) {
+      e.preventDefault();
+      if (!activeProjectId) return;
+
+      const catId = document.getElementById('ceCatalogId').value;
+      const name = document.getElementById('ceName').value.trim();
+      const description = document.getElementById('ceDesc').value.trim();
+
+      if (!name) {
+        alert('Catalog Name is required.');
+        return;
+      }
+
+      const token = getEditAuthToken();
+      const isEdit = !!catId;
+      const url = isEdit ? `/api/projects/${activeProjectId}/catalogs/${catId}` : `/api/projects/${activeProjectId}/catalogs`;
+      const method = isEdit ? 'PUT' : 'POST';
+
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({
+            name,
+            description,
+            productIds: editingCatalogProductOrder
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          activeProjectData = activeProjectData || {};
+          activeProjectData.catalogs = data.catalogs || activeProjectData.catalogs;
+          closeCatalogEditor();
+          renderCatalogManagerList();
+          alert(`✅ Catalog "${name}" saved successfully.`);
+        } else {
+          alert(data.error || 'Failed to save catalog.');
+        }
+      } catch (err) {
+        alert('Network error while saving catalog: ' + err.message);
+      }
+    }
+
+    async function deleteCatalogById(catalogId) {
+      if (!confirm('Are you sure you want to delete this catalog? Underlying products will NOT be deleted.')) {
+        return;
+      }
+      const token = getEditAuthToken();
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/catalogs/${catalogId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          activeProjectData.catalogs = data.catalogs || [];
+          renderCatalogManagerList();
+          recalculatePinpointPositions(activeProjectData);
+          buildHotspotsDOM();
+          alert('✅ Catalog deleted.');
+        } else {
+          alert(data.error || 'Failed to delete catalog.');
+        }
+      } catch (e) {
+        alert('Network error: ' + e.message);
+      }
+    }
+
+    function deleteCurrentCatalog() {
+      const catId = document.getElementById('ceCatalogId').value;
+      if (catId) {
+        closeCatalogEditor();
+        deleteCatalogById(catId);
+      }
+    }
+
+    async function pinCatalogTo3D(catalogId) {
+      closeCatalogManager();
+      window.currentEditingPinTarget = { type: 'CATALOG_PIN', id: catalogId };
+      if (!window.PIN_EDIT_MODE) {
+        togglePinEditMode();
+      } else {
+        syncActivePinInputs();
+      }
+    }
+
+    function togglePreviewMode() {
+      if (window.VIEWER_MODE === 'OWNER_EDITOR') {
+        window.VIEWER_MODE = 'PUBLIC_VIEWER';
+        const btn = document.getElementById('btnTogglePreviewMode');
+        if (btn) {
+          btn.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Exit Preview';
+          btn.style.background = 'rgba(56,189,248,0.2)';
+          btn.style.color = '#38bdf8';
+        }
+      } else {
+        window.VIEWER_MODE = isProjectOwner ? 'OWNER_EDITOR' : 'PUBLIC_VIEWER';
+        const btn = document.getElementById('btnTogglePreviewMode');
+        if (btn) {
+          btn.innerHTML = '<i class="fa-solid fa-eye"></i> Visitor Preview';
+          btn.style.background = 'rgba(255,255,255,0.06)';
+          btn.style.color = '#94a3b8';
+        }
+      }
+      applyViewerModeUI();
+      renderProductCardsTray(activeProjectData?.products || []);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // PRECISION PIN EDITING SYSTEM (Drag, Click, Numeric, Nudge)
+    // ═══════════════════════════════════════════════════════════
+    let initialPinCoordinates = {};
+    let isDraggingPin = false;
+
+    // ═══════════════════════════════════════════════════════════
+    // PRECISION PIN EDITING SYSTEM (PRODUCT_PIN & CATALOG_PIN)
+    // ═══════════════════════════════════════════════════════════
+    let initialPinCoordinates = {};
+    let isDraggingPin = false;
+    window.currentEditingPinTarget = { type: 'PRODUCT_PIN', id: '1' };
+
+    function togglePinEditMode() {
+      const isDev = isInternalDevAccount(currentViewerAccount);
+      const isPilot = currentViewerAccount?.isPilot || currentViewerAccount?.billingState === 'PILOT_NOT_BILLED' || activeProjectData?.isPilot;
+      const ent = (currentViewerAccount?.entitlement || activeProjectData?.entitlement || 'FREE_BOOTH').toUpperCase();
+      const isFree = (ent === 'FREE_BOOTH' || ent === 'FREE') && !isPilot && !isDev;
+
+      if (isFree) {
+        openPlanModal('gated_pin_edit');
+        return;
+      }
+
+      window.PIN_EDIT_MODE = !window.PIN_EDIT_MODE;
+      const panel = document.getElementById('pinPositionEditorPanel');
+      const btn = document.getElementById('btnTogglePinEdit');
+      const container = document.getElementById('viewer-container');
+
+      if (window.PIN_EDIT_MODE) {
+        if (panel) panel.style.display = 'block';
+        if (btn) btn.classList.add('active');
+        if (container) container.classList.add('viewer-pin-editing');
+        syncActivePinInputs();
+      } else {
+        if (panel) panel.style.display = 'none';
+        if (btn) btn.classList.remove('active');
+        if (container) container.classList.remove('viewer-pin-editing');
+        document.querySelectorAll('.hotspot-tag').forEach(el => el.classList.remove('pin-edit-active'));
+      }
+    }
+
+    function startPinEditForSelectedSlot(slot) {
+      const targetSlot = slot || (currentSelectedProdIdx + 1);
+      window.currentEditingPinTarget = { type: 'PRODUCT_PIN', id: String(targetSlot) };
+      if (!window.PIN_EDIT_MODE) {
+        togglePinEditMode();
+      } else {
+        syncActivePinInputs();
+      }
+    }
+
+    function syncActivePinInputs() {
+      const selector = document.getElementById('pinTargetSelector');
+      if (!selector) return;
+
+      const prods = (activeProjectData?.products || []);
+      const catalogs = (activeProjectData?.catalogs || []);
+      const rawPinpoints = (activeProjectData?.pinpoints || []);
+
+      // Build options list
+      let optionsHTML = '';
+
+      // 1. Product Slots
+      [1, 2, 3].forEach(slot => {
+        const prod = prods.find(p => p.slotIndex === slot);
+        const name = prod?.name && prod.name.trim() && !prod.name.startsWith('Product Slot') ? prod.name : `Slot 0${slot}`;
+        optionsHTML += `<option value="PRODUCT_PIN:${slot}">📦 Product: ${name}</option>`;
+      });
+
+      // 2. Catalogs
+      catalogs.forEach(cat => {
+        const catId = cat.catalogId || cat.id;
+        optionsHTML += `<option value="CATALOG_PIN:${catId}">📚 Catalog: ${cat.name}</option>`;
+      });
+
+      selector.innerHTML = optionsHTML;
+
+      const cur = window.currentEditingPinTarget || { type: 'PRODUCT_PIN', id: '1' };
+      const curKey = `${cur.type}:${cur.id}`;
+      selector.value = curKey;
+      if (!selector.value) {
+        selector.selectedIndex = 0;
+        const [t, i] = (selector.value || 'PRODUCT_PIN:1').split(':');
+        window.currentEditingPinTarget = { type: t, id: i };
+      }
+
+      // Find active pin coordinates
+      let activePin = null;
+      if (window.currentEditingPinTarget.type === 'CATALOG_PIN') {
+        activePin = rawPinpoints.find(p => p.pinType === 'CATALOG_PIN' && (p.targetId === window.currentEditingPinTarget.id || p.catalogId === window.currentEditingPinTarget.id));
+      } else {
+        const slot = parseInt(window.currentEditingPinTarget.id, 10) || 1;
+        activePin = rawPinpoints.find(p => p.slotIndex === slot || p.targetId === `prod-slot-${slot}`);
+      }
+
+      const u = typeof activePin?.u === 'number' ? activePin.u : 0.5;
+      const v = typeof activePin?.v === 'number' ? activePin.v : 0.5;
+
+      const pinKey = `${window.currentEditingPinTarget.type}_${window.currentEditingPinTarget.id}`;
+      if (initialPinCoordinates[pinKey] === undefined) {
+        initialPinCoordinates[pinKey] = { u, v };
+      }
+
+      const inputU = document.getElementById('pinInputU');
+      const inputV = document.getElementById('pinInputV');
+      if (inputU) inputU.value = u.toFixed(4);
+      if (inputV) inputV.value = v.toFixed(4);
+
+      setPinSaveStatus('Saved');
+      highlightActiveEditingHotspot();
+    }
+
+    function handlePinTargetChange(val) {
+      if (!val) return;
+      const [type, id] = val.split(':');
+      window.currentEditingPinTarget = { type, id };
+      syncActivePinInputs();
+    }
+
+    function getOrCreateActivePin() {
+      activeProjectData = activeProjectData || {};
+      activeProjectData.pinpoints = activeProjectData.pinpoints || [];
+      const cur = window.currentEditingPinTarget || { type: 'PRODUCT_PIN', id: '1' };
+      
+      let pin = null;
+      if (cur.type === 'CATALOG_PIN') {
+        pin = activeProjectData.pinpoints.find(p => p.pinType === 'CATALOG_PIN' && (p.targetId === cur.id || p.catalogId === cur.id));
+        if (!pin) {
+          const cat = (activeProjectData.catalogs || []).find(c => (c.catalogId || c.id) === cur.id);
+          pin = {
+            id: `pin-cat-${cur.id}`,
+            pinId: `pin-cat-${cur.id}`,
+            pinType: 'CATALOG_PIN',
+            targetId: cur.id,
+            catalogId: cur.id,
+            label: cat ? `Catalog · ${cat.name}` : 'Catalog Pin',
+            u: 0.5000,
+            v: 0.5000,
+            status: 'ACTIVE'
+          };
+          activeProjectData.pinpoints.push(pin);
+        }
+      } else {
+        const slot = parseInt(cur.id, 10) || 1;
+        pin = activeProjectData.pinpoints.find(p => p.slotIndex === slot || p.targetId === `prod-slot-${slot}`);
+        if (!pin) {
+          const prod = (activeProjectData.products || []).find(p => p.slotIndex === slot);
+          pin = {
+            id: `pin-slot-${slot}`,
+            pinId: `pin-slot-${slot}`,
+            pinType: 'PRODUCT_PIN',
+            slotIndex: slot,
+            targetId: prod?.id || `prod-slot-${slot}`,
+            productId: prod?.id || `prod-slot-${slot}`,
+            label: prod?.name || `Product Slot ${slot}`,
+            u: slot === 1 ? 0.2800 : (slot === 2 ? 0.5000 : 0.7200),
+            v: slot === 2 ? 0.5500 : 0.6000,
+            status: 'ACTIVE'
+          };
+          activeProjectData.pinpoints.push(pin);
+        }
+      }
+      return pin;
+    }
+
+    function highlightActiveEditingHotspot() {
+      const cur = window.currentEditingPinTarget || { type: 'PRODUCT_PIN', id: '1' };
+      document.querySelectorAll('.hotspot-tag').forEach(el => {
+        let isTarget = false;
+        if (cur.type === 'CATALOG_PIN') {
+          isTarget = el.id === `pin-cat-${cur.id}` || el.id === cur.id;
+        } else {
+          isTarget = el.id === `pin-slot-${cur.id}` || el.id === `hotspot-slot-${cur.id}`;
+        }
+        el.classList.toggle('pin-edit-active', isTarget);
+      });
+    }
+
+    function setPinSaveStatus(status) {
+      const badge = document.getElementById('pinSaveStatusBadge');
+      if (!badge) return;
+      badge.textContent = status;
+      if (status === 'Saved') {
+        badge.style.background = 'rgba(56,189,248,0.2)';
+        badge.style.color = '#38bdf8';
+      } else if (status === 'Saving...') {
+        badge.style.background = 'rgba(245,158,11,0.2)';
+        badge.style.color = '#fbbf24';
+      } else if (status === 'Unsaved Changes') {
+        badge.style.background = 'rgba(239,68,68,0.2)';
+        badge.style.color = '#f87171';
+      }
+    }
+
+    function handlePinNumericInput(axis, val) {
+      let num = parseFloat(val);
+      if (isNaN(num)) return;
+      num = Math.max(0.0000, Math.min(1.0000, num));
+
+      const pin = getOrCreateActivePin();
+      pin[axis] = num;
+
+      recalculatePinpointPositions(activeProjectData);
+      setPinSaveStatus('Unsaved Changes');
+    }
+
+    function nudgeActivePin(deltaU, deltaV) {
+      if (!window.PIN_EDIT_MODE) return;
+      const pin = getOrCreateActivePin();
+
+      pin.u = Math.max(0.0000, Math.min(1.0000, (pin.u || 0.5) + deltaU));
+      pin.v = Math.max(0.0000, Math.min(1.0000, (pin.v || 0.5) + deltaV));
+
+      const inputU = document.getElementById('pinInputU');
+      const inputV = document.getElementById('pinInputV');
+      if (inputU) inputU.value = pin.u.toFixed(4);
+      if (inputV) inputV.value = pin.v.toFixed(4);
+
+      recalculatePinpointPositions(activeProjectData);
+      setPinSaveStatus('Unsaved Changes');
+    }
+
+    async function saveActivePinPosition() {
+      if (!activeProjectId) return;
+      const token = getEditAuthToken();
+      setPinSaveStatus('Saving...');
+
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/pinpoints`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({
+            pinpoints: activeProjectData.pinpoints || []
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          setPinSaveStatus('Saved');
+          const cur = window.currentEditingPinTarget || { type: 'PRODUCT_PIN', id: '1' };
+          const pinKey = `${cur.type}_${cur.id}`;
+          const pin = getOrCreateActivePin();
+          initialPinCoordinates[pinKey] = { u: pin.u, v: pin.v };
+          setupStudioProducts(activeProjectData);
+        } else {
+          if (res.status === 403 && data.code === 'ENTITLEMENT_UPGRADE_REQUIRED') {
+            openPlanModal('pin_save_gated');
+          }
+          setPinSaveStatus('Error');
+          alert(data.error || 'Failed to save pin position.');
+        }
+      } catch (err) {
+        setPinSaveStatus('Error');
+        console.error('[Save Pin Error]', err);
+      }
+    }
+
+    async function deleteActivePin() {
+      const cur = window.currentEditingPinTarget || { type: 'PRODUCT_PIN', id: '1' };
+      if (!confirm('Are you sure you want to delete this 3D pin?')) return;
+
+      if (cur.type === 'CATALOG_PIN') {
+        activeProjectData.pinpoints = (activeProjectData.pinpoints || []).filter(p => !(p.pinType === 'CATALOG_PIN' && (p.targetId === cur.id || p.catalogId === cur.id)));
+      } else {
+        const slot = parseInt(cur.id, 10) || 1;
+        activeProjectData.pinpoints = (activeProjectData.pinpoints || []).filter(p => !(p.slotIndex === slot || p.targetId === `prod-slot-${slot}`));
+      }
+
+      await saveActivePinPosition();
+      setupStudioProducts(activeProjectData);
+      syncActivePinInputs();
+    }
+
+    function cancelPinEdit() {
+      resetActivePinPosition();
+      togglePinEditMode();
+    }
+
+    function resetActivePinPosition() {
+      const cur = window.currentEditingPinTarget || { type: 'PRODUCT_PIN', id: '1' };
+      const pinKey = `${cur.type}_${cur.id}`;
+      if (initialPinCoordinates[pinKey]) {
+        const pin = getOrCreateActivePin();
+        pin.u = initialPinCoordinates[pinKey].u;
+        pin.v = initialPinCoordinates[pinKey].v;
+
+        const inputU = document.getElementById('pinInputU');
+        const inputV = document.getElementById('pinInputV');
+        if (inputU) inputU.value = initialPinCoordinates[pinKey].u.toFixed(4);
+        if (inputV) inputV.value = initialPinCoordinates[pinKey].v.toFixed(4);
+        recalculatePinpointPositions(activeProjectData);
+        setPinSaveStatus('Saved');
+      }
+    }
+
+    function initPinInteractionListeners() {
+      const container = document.getElementById('viewer-container');
+      if (!container || container._hasPinListeners) return;
+      container._hasPinListeners = true;
+
+      container.addEventListener('pointerdown', (e) => {
+        if (!window.PIN_EDIT_MODE) return;
+        const hotspot = e.target.closest('.hotspot-tag');
+        if (hotspot) {
+          isDraggingPin = true;
+          if (controls) controls.enabled = false;
+          e.preventDefault();
+        }
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!window.PIN_EDIT_MODE || !isDraggingPin) return;
+        const rect = container.getBoundingClientRect();
+        const clientX = e.clientX;
+        const clientY = e.clientY;
+        if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return;
+
+        const u = Math.max(0.0000, Math.min(1.0000, (clientX - rect.left) / rect.width));
+        const v = Math.max(0.0000, Math.min(1.0000, (clientY - rect.top) / rect.height));
+
+        const pin = getOrCreateActivePin();
+        pin.u = Number(u.toFixed(4));
+        pin.v = Number(v.toFixed(4));
+
+        const inputU = document.getElementById('pinInputU');
+        const inputV = document.getElementById('pinInputV');
+        if (inputU) inputU.value = pin.u.toFixed(4);
+        if (inputV) inputV.value = pin.v.toFixed(4);
+
+        recalculatePinpointPositions(activeProjectData);
+        setPinSaveStatus('Unsaved Changes');
+      });
+
+      window.addEventListener('pointerup', () => {
+        if (isDraggingPin) {
+          isDraggingPin = false;
+          if (controls) controls.enabled = true;
+        }
+      });
+
+      container.addEventListener('click', (e) => {
+        if (!window.PIN_EDIT_MODE || isDraggingPin) return;
+        if (e.target.closest('#pinPositionEditorPanel') || e.target.closest('.viewer-controls-bar')) return;
+
+        const rect = container.getBoundingClientRect();
+        const u = Math.max(0.0000, Math.min(1.0000, (e.clientX - rect.left) / rect.width));
+        const v = Math.max(0.0000, Math.min(1.0000, (e.clientY - rect.top) / rect.height));
+
+        const pin = getOrCreateActivePin();
+        pin.u = Number(u.toFixed(4));
+        pin.v = Number(v.toFixed(4));
+
+        const inputU = document.getElementById('pinInputU');
+        const inputV = document.getElementById('pinInputV');
+        if (inputU) inputU.value = pin.u.toFixed(4);
+        if (inputV) inputV.value = pin.v.toFixed(4);
+
+        recalculatePinpointPositions(activeProjectData);
+        setPinSaveStatus('Unsaved Changes');
+      });
+
+      window.addEventListener('keydown', (e) => {
+        // Global Escape key listener to close active modals
+        if (e.key === 'Escape') {
+          if (document.getElementById('ownerProductEditorModal')?.style.display === 'flex') {
+            closeOwnerProductEditor();
+          } else if (document.getElementById('catalogEditorModal')?.style.display === 'flex') {
+            closeCatalogEditor();
+          } else if (document.getElementById('catalogManagerModal')?.style.display === 'flex') {
+            closeCatalogManager();
+          } else if (document.getElementById('catalogProductListModal')?.style.display === 'flex') {
+            closeCatalogProductList();
+          } else if (document.getElementById('publicProductDetailModal')?.style.display === 'flex') {
+            closePublicProductDetail();
+          }
+          return;
+        }
+
+        if (!window.PIN_EDIT_MODE) return;
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
+
+        const step = e.shiftKey ? 0.0100 : 0.0010;
+        if (e.key === 'ArrowLeft') {
+          nudgeActivePin(-step, 0);
+          e.preventDefault();
+        } else if (e.key === 'ArrowRight') {
+          nudgeActivePin(step, 0);
+          e.preventDefault();
+        } else if (e.key === 'ArrowUp') {
+          nudgeActivePin(0, -step);
+          e.preventDefault();
+        } else if (e.key === 'ArrowDown') {
+          nudgeActivePin(0, step);
+          e.preventDefault();
+        }
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // BOOTH RADAR MINIMAP & VIEWPOINT MANAGER ENGINE
+    // ═══════════════════════════════════════════════════════════
+    async function loadProjectViewpoints() {
+      if (!activeProjectId) return;
+      const token = getEditAuthToken();
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/viewpoints`, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          window.savedViewpoints = data.viewpoints || [];
+          renderViewpointsList();
+          updateMinimapEmptyState();
+        }
+      } catch (e) {
+        console.warn('[Load Viewpoints Error]', e.message);
+      }
+    }
+
+    function updateMinimapEmptyState() {
+      const emptyEl = document.getElementById('radarEmptyState');
+      if (emptyEl) {
+        emptyEl.style.display = (!window.savedViewpoints || window.savedViewpoints.length === 0) ? 'block' : 'none';
+      }
+      const countEl = document.getElementById('viewpointCountTxt');
+      if (countEl) {
+        countEl.textContent = `${(window.savedViewpoints || []).length} / 20 Viewpoints`;
+      }
+    }
+
+    async function handleCaptureCurrentViewpoint() {
+      const isPilot = currentViewerAccount?.isPilot || currentViewerAccount?.billingState === 'PILOT_NOT_BILLED' || activeProjectData?.isPilot;
+      const ent = (currentViewerAccount?.entitlement || activeProjectData?.entitlement || 'FREE_BOOTH').toUpperCase();
+      const isFree = (ent === 'FREE_BOOTH' || ent === 'FREE') && !isPilot;
+
+      if (isFree) {
+        openPlanModal('gated_viewpoints');
+        return;
+      }
+
+      if (!activeProjectId) return;
+      if (window.savedViewpoints && window.savedViewpoints.length >= 20) {
+        alert('Maximum technical safety cap of 20 viewpoints per booth reached.');
+        return;
+      }
+
+      const camDir = new THREE.Vector3();
+      camera.getWorldDirection(camDir);
+      const yaw = Math.atan2(camDir.x, camDir.z);
+      const pitch = Math.asin(camDir.y);
+      const u = ((yaw + Math.PI + 0.45) / (2 * Math.PI)) % 1.0;
+      const v = 1 - (Math.acos(camDir.y) / Math.PI);
+
+      const defaultName = `View ${window.savedViewpoints.length + 1}`;
+      const name = prompt('Enter a name for this viewpoint:', defaultName);
+      if (name === null) return;
+
+      const token = getEditAuthToken();
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/viewpoints`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({
+            name: name.trim() || defaultName,
+            yaw,
+            pitch,
+            centerU: u,
+            centerV: v,
+            zoom: 1.0,
+            isDefault: window.savedViewpoints.length === 0
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          window.savedViewpoints = data.viewpoints || [];
+          renderViewpointsList();
+          updateMinimapEmptyState();
+          alert(`✅ Viewpoint "${name.trim() || defaultName}" captured and saved.`);
+        } else {
+          if (res.status === 403 && data.code === 'ENTITLEMENT_UPGRADE_REQUIRED') {
+            openPlanModal('viewpoint_save_gated');
+          } else {
+            alert(data.error || 'Failed to save viewpoint.');
+          }
+        }
+      } catch (err) {
+        console.error('[Create Viewpoint Error]', err);
+      }
+    }
+
+    function openViewpointManager() {
+      const isPilot = currentViewerAccount?.isPilot || currentViewerAccount?.billingState === 'PILOT_NOT_BILLED' || activeProjectData?.isPilot;
+      const ent = (currentViewerAccount?.entitlement || activeProjectData?.entitlement || 'FREE_BOOTH').toUpperCase();
+      const isFree = (ent === 'FREE_BOOTH' || ent === 'FREE') && !isPilot;
+
+      if (isFree) {
+        openPlanModal('gated_viewpoints');
+        return;
+      }
+
+      const modal = document.getElementById('viewpointManagerModal');
+      if (modal) {
+        modal.style.display = 'flex';
+        renderViewpointsList();
+      }
+    }
+
+    function closeViewpointManager() {
+      const modal = document.getElementById('viewpointManagerModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function renderViewpointsList() {
+      const listEl = document.getElementById('viewpointsListContainer');
+      if (!listEl) return;
+      listEl.innerHTML = '';
+
+      if (!window.savedViewpoints || window.savedViewpoints.length === 0) {
+        listEl.innerHTML = `
+          <div style="text-align: center; padding: 24px; color: #64748b; font-size: 13px;">
+            <i class="fa-solid fa-camera" style="font-size: 24px; color: #38bdf8; margin-bottom: 8px; display: block;"></i>
+            No saved viewpoints yet. Use <strong>Capture Current View</strong> to save your first vantage point.
+          </div>
+        `;
+        updateMinimapEmptyState();
+        return;
+      }
+
+      window.savedViewpoints.forEach((vp, idx) => {
+        const item = document.createElement('div');
+        item.style.cssText = 'background: #030712; border: 1px solid rgba(56,189,248,0.25); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;';
+        
+        const isDef = vp.isDefault === true;
+        const u = typeof vp.centerU === 'number' ? vp.centerU.toFixed(4) : (typeof vp.yaw === 'number' ? vp.yaw.toFixed(4) : '0.5000');
+        const v = typeof vp.centerV === 'number' ? vp.centerV.toFixed(4) : (typeof vp.pitch === 'number' ? vp.pitch.toFixed(4) : '0.5000');
+
+        item.innerHTML = `
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+              <input type="text" value="${vp.name || 'View ' + (idx + 1)}" onchange="handleRenameViewpoint('${vp.viewpointId || vp.id}', this.value)" style="background: transparent; border: 1px solid transparent; color: #fff; font-size: 13px; font-weight: 700; border-radius: 4px; padding: 2px 4px; width: 140px;" onfocus="this.style.borderColor='#38bdf8'; this.style.background='#0b1526';" onblur="this.style.borderColor='transparent'; this.style.background='transparent';">
+              ${isDef ? '<span style="font-size: 9px; font-weight: 800; background: rgba(74,222,128,0.2); color: #4ade80; border: 1px solid #4ade80; border-radius: 4px; padding: 1px 5px;">DEFAULT</span>' : ''}
+            </div>
+            <div style="font-size: 11px; color: #64748b; font-family: monospace;">U: ${u} • V: ${v}</div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <button class="btn-ui" onclick="flyToViewpoint('${vp.viewpointId || vp.id}')" style="padding: 4px 8px; font-size: 11px; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); border-radius: 6px; cursor: pointer;" title="Fly to this view">
+              <i class="fa-solid fa-eye"></i> Go
+            </button>
+            <button class="btn-ui" onclick="updateViewpointFromCurrent('${vp.viewpointId || vp.id}')" style="padding: 4px 8px; font-size: 11px; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; cursor: pointer;" title="Update from current camera angle">
+              <i class="fa-solid fa-arrows-rotate"></i> Update
+            </button>
+            ${!isDef ? `<button class="btn-ui" onclick="setViewpointDefault('${vp.viewpointId || vp.id}')" style="padding: 4px 8px; font-size: 11px; background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; cursor: pointer;" title="Set as Default View">⭐</button>` : ''}
+            <button class="btn-ui" onclick="deleteViewpoint('${vp.viewpointId || vp.id}')" style="padding: 4px 8px; font-size: 11px; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; cursor: pointer;" title="Delete viewpoint">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        `;
+        listEl.appendChild(item);
+      });
+      updateMinimapEmptyState();
+    }
+
+    function flyToViewpoint(vpId) {
+      const vp = (window.savedViewpoints || []).find(v => (v.viewpointId === vpId || v.id === vpId));
+      if (!vp || !camera || !controls) return;
+      window.activeViewpointId = vpId;
+      const radarLoc = document.getElementById('radar-loc-txt');
+      if (radarLoc) radarLoc.textContent = (vp.name || 'VIEWPOINT').toUpperCase();
+
+      if (typeof vp.yaw === 'number') {
+        const phi = typeof vp.pitch === 'number' ? (Math.PI / 2 - vp.pitch) : Math.PI / 2;
+        const theta = vp.yaw;
+        const targetDir = new THREE.Vector3(
+          Math.sin(theta) * Math.sin(phi),
+          Math.cos(phi),
+          Math.cos(theta) * Math.sin(phi)
+        );
+        camera.lookAt(targetDir);
+        controls.target.set(0, 0, 0);
+        controls.update();
+      }
+    }
+
+    async function updateViewpointFromCurrent(vpId) {
+      if (!activeProjectId) return;
+      const camDir = new THREE.Vector3();
+      camera.getWorldDirection(camDir);
+      const yaw = Math.atan2(camDir.x, camDir.z);
+      const pitch = Math.asin(camDir.y);
+      const u = ((yaw + Math.PI + 0.45) / (2 * Math.PI)) % 1.0;
+      const v = 1 - (Math.acos(camDir.y) / Math.PI);
+
+      const token = getEditAuthToken();
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/viewpoints/${vpId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ yaw, pitch, centerU: u, centerV: v, zoom: 1.0 })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          window.savedViewpoints = data.viewpoints || [];
+          renderViewpointsList();
+          alert('✅ Viewpoint coordinates updated.');
+        } else {
+          alert(data.error || 'Failed to update viewpoint.');
+        }
+      } catch (err) {
+        console.error('[Update Viewpoint Error]', err);
+      }
+    }
+
+    async function handleRenameViewpoint(vpId, newName) {
+      if (!activeProjectId || !newName.trim()) return;
+      const token = getEditAuthToken();
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/viewpoints/${vpId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ name: newName.trim() })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          window.savedViewpoints = data.viewpoints || [];
+        }
+      } catch (err) {}
+    }
+
+    async function setViewpointDefault(vpId) {
+      if (!activeProjectId) return;
+      const token = getEditAuthToken();
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/viewpoints/${vpId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ isDefault: true })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          window.savedViewpoints = data.viewpoints || [];
+          renderViewpointsList();
+        }
+      } catch (err) {}
+    }
+
+    async function deleteViewpoint(vpId) {
+      if (!activeProjectId) return;
+      if (!confirm('Are you sure you want to delete this viewpoint? (Booth assets and products will not be affected)')) return;
+      const token = getEditAuthToken();
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/viewpoints/${vpId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          window.savedViewpoints = data.viewpoints || [];
+          renderViewpointsList();
+        } else {
+          alert(data.error || 'Failed to delete viewpoint.');
+        }
+      } catch (err) {
+        console.error('[Delete Viewpoint Error]', err);
+      }
+    }
+
     function drawRadar() {
       const cvs = document.getElementById('radar-canvas');
       if (!cvs || !camera) return;
@@ -4096,13 +6169,30 @@
       ctx.fillStyle = '#ffffff';
       [[16,8],[cvs.width-16,8],[16,cvs.height-8],[cvs.width-16,cvs.height-8]].forEach(([x,y]) => ctx.fillRect(x-2, y-2, 4, 4));
 
+      // Draw saved viewpoints on radar
+      if (window.savedViewpoints && window.savedViewpoints.length > 0) {
+        window.savedViewpoints.forEach((vp, idx) => {
+          const u = typeof vp.centerU === 'number' ? vp.centerU : (((vp.yaw || 0) + Math.PI) / (2 * Math.PI));
+          const v = typeof vp.centerV === 'number' ? vp.centerV : 0.5;
+          const rx = 24 + u * (cvs.width - 48);
+          const ry = 16 + v * (cvs.height - 32);
+
+          const isAct = (window.activeViewpointId === vp.viewpointId || window.activeViewpointId === vp.id);
+          ctx.beginPath();
+          ctx.arc(rx, ry, isAct ? 6 : 4, 0, Math.PI * 2);
+          ctx.fillStyle = isAct ? '#38bdf8' : 'rgba(56,189,248,0.6)';
+          ctx.fill();
+          if (isAct) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke(); }
+        });
+      }
+
       // Draw 3 product hotspot points
       const radarPositions = [{ x: 75, y: 45 }, { x: 153, y: 35 }, { x: 231, y: 45 }];
       radarPositions.forEach((pos, idx) => {
         const isCur = idx === currentSelectedProdIdx;
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, isCur ? 5.5 : 3.5, 0, Math.PI * 2);
-        ctx.fillStyle = isCur ? '#00c2ff' : 'rgba(255,255,255,0.5)';
+        ctx.fillStyle = isCur ? '#00c2ff' : 'rgba(255,255,255,0.4)';
         ctx.fill();
         if (isCur) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke(); }
       });
@@ -4560,34 +6650,40 @@
       }
     }
 
-    // ── Product Drawer (Detail & Buyer Tool Preview) ──
+    // ── Product Details Navigation ──
     function openProductDrawerForSlot(slot) {
-      const prod = (activeProjectData?.products || []).find(p => p.slotIndex === slot);
-      if (prod) openProductDrawer(prod);
+      const idx = slot - 1;
+      if (idx >= 0 && idx < studioProducts.length) {
+        onProductSlotClicked(idx);
+      }
     }
 
-    function openProductDrawer(product) {
-      document.getElementById('drawerProdTitle').textContent = product.name || 'Product Details';
-      document.getElementById('drawerProdImg').src = product.imageUrl || '/assets/product-placeholder.jpg';
-      document.getElementById('drawerProdDesc').textContent = product.description || 'Commercial exhibition product with high-precision engineering and sales presentation.';
-      document.getElementById('drawerProdSpecs').textContent = product.specifications || 'Needs merchant input';
-      document.getElementById('productDrawerModal').style.display = 'flex';
-      logAnalyticsEvent('buyer_tools_previewed', { productId: product.id });
+    function openProductDrawer(idxOrProduct) {
+      if (typeof idxOrProduct === 'number') {
+        onProductSlotClicked(idxOrProduct);
+      } else if (idxOrProduct && typeof idxOrProduct.slotIndex === 'number') {
+        onProductSlotClicked(idxOrProduct.slotIndex - 1);
+      } else {
+        openPublicProductDetail(currentSelectedProdIdx);
+      }
     }
 
     function closeProductDrawer() {
-      document.getElementById('productDrawerModal').style.display = 'none';
+      closePublicProductDetail();
+      closeOwnerProductEditor();
     }
 
     // ── Plan Conversion Modal (C09 Zero Data Re-entry Stripe Link) ──
     function openPlanModal(trigger = '') {
       closeProductDrawer();
-      document.getElementById('planModal').style.display = 'flex';
+      const modal = document.getElementById('planModal');
+      if (modal) modal.style.display = 'flex';
       logAnalyticsEvent('upgrade_prompt_opened', { trigger });
     }
 
     function closePlanModal() {
-      document.getElementById('planModal').style.display = 'none';
+      const modal = document.getElementById('planModal');
+      if (modal) modal.style.display = 'none';
     }
 
     function closeEmailVerifyModal() {
