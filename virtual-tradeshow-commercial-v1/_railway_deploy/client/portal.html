@@ -1267,6 +1267,19 @@
         });
         const data = await res.json();
         if (res.ok && data.success) {
+          if (data.authenticated && data.token) {
+            // Direct authenticated session (Internal QA Bypass)
+            if (resendCooldownInterval) clearInterval(resendCooldownInterval);
+            customerToken = data.token;
+            localStorage.setItem('3d2_customer_token', customerToken);
+            currentAccount = data.account;
+            setAuthState(AUTH_STATE_AUTHENTICATED);
+            loadCustomerBooths();
+            loadCustomerAnalytics();
+            const authModal = document.getElementById('authModal');
+            if (authModal) authModal.style.display = 'none';
+            return;
+          }
           document.getElementById('formSendOtp').style.display = 'none';
           document.getElementById('formVerifyOtp').style.display = 'block';
           document.getElementById('authModalDesc').innerText = 'Enter the 6-digit code sent to your email.';
@@ -1901,14 +1914,24 @@
           const planTitle = ent.planDisplayName || ent.planCode;
           const isPilot = Boolean(ent.isPilot || ent.billingState === 'PILOT_NOT_BILLED');
 
+          const isDev = ent.planCode === 'INTERNAL_FULL_ACCESS' || ent.environment === 'INTERNAL_DEV';
           if (badge) {
-            badge.innerText = isPilot ? `${planTitle} — PILOT` : planTitle;
-            if (ent.planCode === 'PRO') badge.style.borderColor = 'rgba(96,165,250,0.5)';
-            if (ent.planCode === 'BUSINESS') badge.style.borderColor = 'rgba(56,189,248,0.5)';
-            if (ent.planCode === 'CUSTOM') badge.style.borderColor = 'rgba(251,191,36,0.5)';
+            if (isDev) {
+              badge.innerHTML = '<i class="fa-solid fa-shield-halved"></i> INTERNAL QA';
+              badge.style.borderColor = 'rgba(168,85,247,0.8)';
+              badge.style.background = 'rgba(168,85,247,0.15)';
+              badge.style.color = '#d8b4fe';
+            } else {
+              badge.innerText = isPilot ? `${planTitle} — PILOT` : planTitle;
+              if (ent.planCode === 'PRO') badge.style.borderColor = 'rgba(96,165,250,0.5)';
+              if (ent.planCode === 'BUSINESS') badge.style.borderColor = 'rgba(56,189,248,0.5)';
+              if (ent.planCode === 'CUSTOM') badge.style.borderColor = 'rgba(251,191,36,0.5)';
+            }
           }
           if (sub) {
-            if (isPilot) {
+            if (isDev) {
+              sub.innerText = '• Internal Developer QA Account (Max 500 Products • All Commercial Features Unlocked)';
+            } else if (isPilot) {
               sub.innerText = '• Commercial Pilot (Max 100 Products • 60 Sources • 30 Media • Not Billed)';
             } else if (ent.planCode === 'FREE_BOOTH') {
               sub.innerText = '• Free Acquisition Tier (Max 3 Products)';
@@ -1925,7 +1948,14 @@
           const bPlanBadge = document.getElementById('boothPlanBadge');
           const bBillingBadge = document.getElementById('boothBillingBadge');
           if (bPlanBadge) {
-            bPlanBadge.innerText = isPilot ? `${planTitle} — PILOT` : planTitle;
+            if (isDev) {
+              bPlanBadge.innerHTML = '<i class="fa-solid fa-shield-halved"></i> INTERNAL QA';
+              bPlanBadge.style.borderColor = 'rgba(168,85,247,0.8)';
+              bPlanBadge.style.background = 'rgba(168,85,247,0.15)';
+              bPlanBadge.style.color = '#d8b4fe';
+            } else {
+              bPlanBadge.innerText = isPilot ? `${planTitle} — PILOT` : planTitle;
+            }
           }
           if (bBillingBadge) {
             bBillingBadge.innerText = isPilot ? 'Pilot · Not Billed' : (ent.billingState || 'Active');

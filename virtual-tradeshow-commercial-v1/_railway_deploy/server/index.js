@@ -2216,10 +2216,11 @@ app.get('/api/projects/:id/manifest', async (req, res) => {
 
 app.post('/api/projects/:id/pinpoints', async (req, res) => {
   try {
-    const pinpoint = await db.addProjectPinpoint(req.params.id, req.body, req.body.actor || 'ClientVisualEditor');
-    res.status(201).json({ success: true, pinpoint });
+    const token = extractAuthToken(req);
+    const result = await db.createPin(req.params.id, req.body, token);
+    res.status(201).json(result);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(err.status || 400).json({ error: err.message, code: err.code });
   }
 });
 
@@ -6274,7 +6275,8 @@ app.get('/api/projects/:id', async (req, res) => {
       if (!project) return res.status(404).json({ error: 'Project not found' });
       const norm = db.normalizeEmail(custAuth.account.emailNormalized);
       const pEmail = db.normalizeEmail(project.contactEmail || project.customerEmail || project.email);
-      if (project.accountId !== custAuth.account.id && pEmail !== norm && token !== 'internal_dev_pass' && token !== project.editToken) {
+      const isDev = norm === 'goodkie.com@gmail.com' || custAuth.account.entitlement === 'INTERNAL_FULL_ACCESS' || custAuth.account.environment === 'INTERNAL_DEV';
+      if (!isDev && project.accountId !== custAuth.account.id && pEmail !== norm && token !== 'internal_dev_pass' && token !== project.editToken) {
         return res.status(403).json({ error: 'Forbidden: You do not have permission to view this project.' });
       }
     } else {
@@ -6319,18 +6321,55 @@ app.post('/api/projects/:id/logo', upload.single('logo'), async (req, res) => {
   }
 });
 
-// 4. Save Product Slot (Slot 1, 2, 3)
+// 4. Products Management
+app.get('/api/projects/:id/products', async (req, res) => {
+  try {
+    const project = (db.read().projects || []).find(p => p.id === req.params.id);
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found.' });
+    }
+    res.json({ success: true, products: project.products || [] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/projects/:id/products', upload.single('productImage'), async (req, res) => {
+  let uploadedFilePath = null;
   try {
     const token = extractAuthToken(req);
     const prodData = { ...req.body };
     if (req.file) {
+      uploadedFilePath = req.file.path;
+      const magic = validateImageMagicBytes(req.file.path);
+      if (!magic.valid) {
+        try { fs.unlinkSync(req.file.path); } catch(e) {}
+        return res.status(400).json({ error: 'Security validation failed: Invalid image file magic bytes. Only genuine PNG, JPG, and WebP images are allowed.' });
+      }
+      
+      const fileBuf = fs.readFileSync(req.file.path);
+      const sha256 = crypto.createHash('sha256').update(fileBuf).digest('hex');
+      const assetId = `ast-prod-${uuidv4().substring(0, 8)}`;
+      
       prodData.imageUrl = `/uploads/${req.file.filename}`;
+      prodData.assetId = assetId;
+      prodData.imageMeta = {
+        assetId,
+        mimeType: magic.mime,
+        byteSize: req.file.size,
+        sha256,
+        storageRef: `/uploads/${req.file.filename}`,
+        createdAt: new Date().toISOString()
+      };
     }
+
     const slotIndex = prodData.slotIndex || 1;
     const result = await db.saveProductSlot(req.params.id, slotIndex, prodData, token);
     res.json(result);
   } catch (err) {
+    if (uploadedFilePath) {
+      try { fs.unlinkSync(uploadedFilePath); } catch(e) {}
+    }
     res.status(err.status || 500).json({
       error: err.code === 'PRODUCT_LIMIT_EXCEEDED' || err.code === 'ENTITLEMENT_REQUIRED' ? 'ENTITLEMENT_REQUIRED' : err.message,
       message: err.message,
@@ -6346,15 +6385,40 @@ app.post('/api/projects/:id/products', upload.single('productImage'), async (req
 });
 
 app.put('/api/projects/:id/products/:slotIndex', upload.single('productImage'), async (req, res) => {
+  let uploadedFilePath = null;
   try {
     const token = extractAuthToken(req);
     const prodData = { ...req.body };
     if (req.file) {
+      uploadedFilePath = req.file.path;
+      const magic = validateImageMagicBytes(req.file.path);
+      if (!magic.valid) {
+        try { fs.unlinkSync(req.file.path); } catch(e) {}
+        return res.status(400).json({ error: 'Security validation failed: Invalid image file magic bytes. Only genuine PNG, JPG, and WebP images are allowed.' });
+      }
+
+      const fileBuf = fs.readFileSync(req.file.path);
+      const sha256 = crypto.createHash('sha256').update(fileBuf).digest('hex');
+      const assetId = `ast-prod-${uuidv4().substring(0, 8)}`;
+      
       prodData.imageUrl = `/uploads/${req.file.filename}`;
+      prodData.assetId = assetId;
+      prodData.imageMeta = {
+        assetId,
+        mimeType: magic.mime,
+        byteSize: req.file.size,
+        sha256,
+        storageRef: `/uploads/${req.file.filename}`,
+        createdAt: new Date().toISOString()
+      };
     }
+
     const result = await db.saveProductSlot(req.params.id, req.params.slotIndex, prodData, token);
     res.json(result);
   } catch (err) {
+    if (uploadedFilePath) {
+      try { fs.unlinkSync(uploadedFilePath); } catch(e) {}
+    }
     res.status(err.status || 500).json({
       error: err.code === 'PRODUCT_LIMIT_EXCEEDED' || err.code === 'ENTITLEMENT_REQUIRED' ? 'ENTITLEMENT_REQUIRED' : err.message,
       message: err.message,
@@ -6379,12 +6443,145 @@ app.delete('/api/projects/:id/products/:slotIndex', async (req, res) => {
   }
 });
 
-// 5. Pinpoints Placement
-app.put('/api/projects/:id/pinpoints', async (req, res) => {
+// 5. Pinpoints Placement & 3D Hotspot Management
+app.get(['/api/projects/:id/pins', '/api/projects/:id/pinpoints'], async (req, res) => {
   try {
     const token = extractAuthToken(req);
-    const pinpoints = Array.isArray(req.body) ? req.body : req.body.pinpoints;
+    const result = await db.getPins(req.params.id, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+app.post(['/api/projects/:id/pins', '/api/projects/:id/pinpoints'], async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const result = await db.createPin(req.params.id, req.body, token);
+    res.status(201).json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+app.put(['/api/projects/:id/pins/:pinId', '/api/projects/:id/pinpoints/:pinId'], async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const result = await db.updatePin(req.params.id, req.params.pinId, req.body, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+app.delete(['/api/projects/:id/pins/:pinId', '/api/projects/:id/pinpoints/:pinId'], async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const result = await db.deletePin(req.params.id, req.params.pinId, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+app.put(['/api/projects/:id/pinpoints/bulk', '/api/projects/:id/pinpoints', '/api/projects/:id/pins/bulk'], async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const pinpoints = Array.isArray(req.body) ? req.body : (req.body.pinpoints || req.body.pins);
     const result = await db.savePinpoints(req.params.id, pinpoints, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+// 5a. Catalog Management
+app.get('/api/projects/:id/catalogs', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const result = await db.getCatalogs(req.params.id, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+app.post('/api/projects/:id/catalogs', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const result = await db.createCatalog(req.params.id, req.body, token);
+    res.status(201).json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+app.put('/api/projects/:id/catalogs/:catalogId', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const result = await db.updateCatalog(req.params.id, req.params.catalogId, req.body, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+app.delete('/api/projects/:id/catalogs/:catalogId', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const result = await db.deleteCatalog(req.params.id, req.params.catalogId, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+app.put('/api/projects/:id/catalogs/:catalogId/membership', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const productIds = req.body.productIds || req.body;
+    const result = await db.updateCatalogMembership(req.params.id, req.params.catalogId, productIds, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+// 5b. Viewpoints Management (Minimap & Camera Viewpoints)
+app.get('/api/projects/:id/viewpoints', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const result = await db.getViewpoints(req.params.id, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+app.post('/api/projects/:id/viewpoints', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const result = await db.createViewpoint(req.params.id, req.body, token);
+    res.status(201).json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+app.put('/api/projects/:id/viewpoints/:viewpointId', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const result = await db.updateViewpoint(req.params.id, req.params.viewpointId, req.body, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+app.delete('/api/projects/:id/viewpoints/:viewpointId', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const result = await db.deleteViewpoint(req.params.id, req.params.viewpointId, token);
     res.json(result);
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message, code: err.code });
@@ -6605,6 +6802,34 @@ app.post('/api/customer/auth/send-otp', async (req, res) => {
     }
     const emailNorm = db.normalizeEmail(email);
 
+    // ============================================================
+    // INTERNAL DEV QA AUTH BYPASS (C11.16-P3.3)
+    // Canonical Server-Side Allowlist Check (goodkie.com@gmail.com)
+    // NO OTP generation, NO Resend request, NO email delivery.
+    // Issues normal authenticated customer session directly.
+    // ============================================================
+    if (db.isInternalQaEmail(emailNorm)) {
+      const account = await db.findOrCreateAccountByEmail(emailNorm, {
+        displayName: 'goodkie.com',
+        businessName: 'Apex Robotics International',
+        source: 'INTERNAL_QA_BYPASS'
+      });
+      const { sessionToken, session } = await db.createCustomerSession(account);
+
+      console.log(`[AUTH] Canonical Internal QA login for ${emailNorm} (ID: ${account.id}) - OTP bypassed, direct session issued.`);
+
+      return res.json({
+        success: true,
+        authenticated: true,
+        internalQa: true,
+        otpRequired: false,
+        token: sessionToken,
+        account,
+        session,
+        message: 'Successfully authenticated as Internal QA Developer.'
+      });
+    }
+
     // Resend Cooldown Protection (60s)
     const existing = customerLoginOtps.get(emailNorm);
     const now = Date.now();
@@ -6665,6 +6890,9 @@ app.post('/api/customer/auth/send-otp', async (req, res) => {
 
     res.json({
       success: true,
+      authenticated: false,
+      internalQa: false,
+      otpRequired: true,
       message: 'Verification email sent. Check your inbox and spam folder.',
       verificationRequestId,
       email: emailNorm,
@@ -7249,7 +7477,6 @@ app.get(['/portal', '/my-booths', '/account', '/leads', '/analytics'], (req, res
   }
 });
 
-// SPA Fallback Route
 app.get('*', (req, res) => {
   if (req.path.startsWith('/uploads/') || req.path.startsWith('/api/') || req.path.startsWith('/assets/')) {
     return res.status(404).json({ error: 'Not Found' });
@@ -7275,3 +7502,5 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(` Exhibitor Admin: http://localhost:${PORT}/admin.html`);
   console.log(`=======================================================`);
 });
+
+module.exports = { app, server };
