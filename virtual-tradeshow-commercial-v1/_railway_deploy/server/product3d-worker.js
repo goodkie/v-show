@@ -64,47 +64,58 @@ class Product3DQualityRouter {
     const normTier = String(qualityTier || 'HIGH').toUpperCase().trim();
     const isMultiView = sourceCount > 1;
 
-    // Pipeline profile configuration by tier
+    // Real parameter profiles mapped to Replicate firtoz/trellis OpenAPI schema
     const profiles = {
       STANDARD: {
         tier: 'STANDARD',
         geometryResolution: 'STANDARD_DENSITY',
         textureResolution: 1024,
         meshSimplify: 0.90,
+        ssSamplingSteps: 12,
+        slatSamplingSteps: 12,
+        ssGuidanceStrength: 7.5,
+        slatGuidanceStrength: 3.0,
         validationThreshold: 'STANDARD_TOLERANCE',
-        estimatedProviderCostUsd: 0.04,
-        description: 'Economical, fast mesh synthesis'
+        estimatedProviderCostUsd: 0.045,
+        description: 'Fast synthesis · 1024px textures · 12 sampling steps · 90% mesh simplify'
       },
       HIGH: {
         tier: 'HIGH',
         geometryResolution: 'HIGH_DENSITY',
         textureResolution: 2048,
         meshSimplify: 0.95,
+        ssSamplingSteps: 20,
+        slatSamplingSteps: 20,
+        ssGuidanceStrength: 7.5,
+        slatGuidanceStrength: 3.0,
         validationThreshold: 'HIGH_FIDELITY',
-        estimatedProviderCostUsd: 0.12,
-        description: 'Balanced high-resolution geometry & texture'
+        estimatedProviderCostUsd: 0.085,
+        description: 'Recommended · 2048px textures · 20 sampling steps · 95% mesh simplify'
       },
       ULTRA: {
         tier: 'ULTRA',
         geometryResolution: 'MAXIMUM_DENSITY',
-        textureResolution: 4096,
+        textureResolution: 2048,
         meshSimplify: 0.98,
+        ssSamplingSteps: 36,
+        slatSamplingSteps: 36,
+        ssGuidanceStrength: 8.5,
+        slatGuidanceStrength: 4.0,
         validationThreshold: 'ULTRA_STRICT',
-        estimatedProviderCostUsd: 0.28,
-        description: 'Maximum available surface & silhouette fidelity'
+        estimatedProviderCostUsd: 0.165,
+        description: 'Maximum density · 2048px textures · 36 sampling steps · 98% mesh simplify'
       }
     };
 
     const selectedProfile = profiles[normTier] || profiles.HIGH;
 
-    // Select provider based on availability and capability
     let providerName = 'local_stub';
     let providerVersion = 'stub-v1';
     let modelName = 'LocalStubModel';
 
     if (REPLICATE_API_TOKEN) {
       providerName = 'replicate';
-      providerVersion = normTier === 'ULTRA' ? 'trellis-v1-ultra' : 'trellis-v1';
+      providerVersion = normTier === 'ULTRA' ? 'firtoz/trellis-ultra' : (normTier === 'STANDARD' ? 'firtoz/trellis-standard' : 'firtoz/trellis-high');
       modelName = 'firtoz/trellis';
     } else if (FAL_KEY) {
       providerName = 'fal';
@@ -142,29 +153,52 @@ function generateContentLockMask(imageMeta = {}) {
 // ─── Replicate Provider ───────────────────────────────────────────────────────
 class ReplicateProvider extends Product3DProvider {
   get name() { return 'replicate'; }
-  get version() { return 'trellis-v1'; }
+  get version() { return 'firtoz/trellis'; }
   async isAvailable() { return !!REPLICATE_API_TOKEN; }
 
   async generate({ imageUrl, additionalImages = [], outputDir, jobId, qualityTier = 'HIGH', routerProfile }) {
     if (!REPLICATE_API_TOKEN) throw new Error('REPLICATE_API_TOKEN not configured');
 
-    const textureSize = routerProfile?.profile?.textureResolution || (qualityTier === 'ULTRA' ? 4096 : (qualityTier === 'STANDARD' ? 1024 : 2048));
-    const meshSimplify = routerProfile?.profile?.meshSimplify || (qualityTier === 'ULTRA' ? 0.98 : (qualityTier === 'STANDARD' ? 0.90 : 0.95));
+    const startTime = Date.now();
+    const prof = routerProfile?.profile || {};
+    const textureSize = prof.textureResolution || 2048;
+    const meshSimplify = prof.meshSimplify || 0.95;
+    const ssSteps = prof.ssSamplingSteps || 20;
+    const slatSteps = prof.slatSamplingSteps || 20;
+    const ssGuidance = prof.ssGuidanceStrength || 7.5;
+    const slatGuidance = prof.slatGuidanceStrength || 3.0;
+
+    const isMultiView = Array.isArray(additionalImages) && additionalImages.length > 0;
+    const inputPayload = {
+      seed: 42,
+      generate_model: true,
+      generate_color_video: false,
+      mesh_simplify: meshSimplify,
+      texture_size: textureSize,
+      ss_sampling_steps: ssSteps,
+      slat_sampling_steps: slatSteps,
+      ss_guidance_strength: ssGuidance,
+      slat_guidance_strength: slatGuidance
+    };
+
+    if (isMultiView) {
+      inputPayload.multi_images = [imageUrl, ...additionalImages.map(img => img.url)];
+    } else {
+      inputPayload.image = imageUrl;
+    }
+
+    console.log(`[Replicate] Dispatching prediction firtoz/trellis (Tier: ${qualityTier}, MultiView: ${isMultiView}, Steps: ${ssSteps}/${slatSteps})`);
 
     const createRes = await httpRequest({
       hostname: 'api.replicate.com',
       path: '/v1/models/firtoz/trellis/predictions',
       method: 'POST',
-      headers: { 'Authorization': `Token ${REPLICATE_API_TOKEN}`, 'Content-Type': 'application/json', 'Prefer': 'wait' }
-    }, JSON.stringify({
-      input: {
-        image: imageUrl,
-        seed: 42,
-        render_video: false,
-        mesh_simplify: meshSimplify,
-        texture_size: textureSize
+      headers: {
+        'Authorization': `Token ${REPLICATE_API_TOKEN}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'wait'
       }
-    }));
+    }, JSON.stringify({ input: inputPayload }));
 
     if (createRes.status !== 201 && createRes.status !== 200) {
       throw new Error(`Replicate create failed (${createRes.status}): ${JSON.stringify(createRes.body)}`);
@@ -172,10 +206,11 @@ class ReplicateProvider extends Product3DProvider {
 
     let pred = createRes.body;
     const predId = pred.id;
+    console.log(`[Replicate] Prediction created: ${predId} (initial status: ${pred.status})`);
 
-    // Poll if not immediate
+    // Poll if still processing
     for (let i = 0; i < 120 && (pred.status !== 'succeeded' && pred.status !== 'failed' && pred.status !== 'canceled'); i++) {
-      await new Promise(r => setTimeout(r, 5000));
+      await new Promise(r => setTimeout(r, 4000));
       const pollRes = await httpRequest({
         hostname: 'api.replicate.com',
         path: `/v1/predictions/${predId}`,
@@ -183,28 +218,33 @@ class ReplicateProvider extends Product3DProvider {
         headers: { 'Authorization': `Token ${REPLICATE_API_TOKEN}` }
       });
       pred = pollRes.body;
+      console.log(`[Replicate] Prediction ${predId} poll status: ${pred.status}`);
     }
 
-    if (pred.status !== 'succeeded') throw new Error(`Replicate job ${predId} ${pred.status}: ${pred.error || 'timeout'}`);
+    if (pred.status !== 'succeeded') {
+      throw new Error(`Replicate job ${predId} ${pred.status}: ${pred.error || 'Timed out'}`);
+    }
 
+    const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
     const output = pred.output || {};
     const glbUrl = output.model_file || (Array.isArray(pred.output) ? pred.output[0] : null);
-    if (!glbUrl) throw new Error('Replicate result missing model_file');
+    if (!glbUrl) throw new Error('Replicate result missing model_file output');
 
+    console.log(`[Replicate] Downloading real GLB from ${glbUrl.substring(0, 50)}...`);
     const glbPath = path.join(outputDir, `${jobId}.glb`);
     await downloadFile(glbUrl, glbPath);
 
-    let previewImagePath;
-    if (output.preview_image) {
-      previewImagePath = path.join(outputDir, `${jobId}_preview.png`);
-      await downloadFile(output.preview_image, previewImagePath).catch(() => { previewImagePath = null; });
-    }
+    const stat = fs.statSync(glbPath);
+    console.log(`[Replicate] Real GLB downloaded successfully (${stat.size} bytes) in ${durationSec}s`);
 
     return {
       glbPath,
-      previewImagePath,
-      meshStats: { bytes: fs.statSync(glbPath).size },
-      providerCost: routerProfile?.estimatedProviderCostUsd || 0.12,
+      previewImagePath: null,
+      meshStats: { bytes: stat.size, durationSeconds: parseFloat(durationSec) },
+      providerCost: prof.estimatedProviderCostUsd || 0.085,
+      providerPredictionId: predId,
+      actualModel: 'firtoz/trellis',
+      actualModelVersion: pred.version || 'latest',
       isStub: false
     };
   }
