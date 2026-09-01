@@ -1147,6 +1147,10 @@
       }
 
       if (!customerToken) {
+        customerToken = localStorage.getItem('3d2_customer_token');
+      }
+
+      if (!customerToken) {
         setAuthState(AUTH_STATE_UNAUTHENTICATED);
         return;
       }
@@ -1436,6 +1440,9 @@
     }
 
     async function loadCustomerBooths() {
+      if (!customerToken) {
+        customerToken = localStorage.getItem('3d2_customer_token');
+      }
       if (!customerToken) return;
       try {
         const res = await fetch('/api/customer/booths', {
