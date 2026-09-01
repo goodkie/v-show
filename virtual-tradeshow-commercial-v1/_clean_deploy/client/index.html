@@ -841,8 +841,7 @@
       transform: translate(-50%, -50%) scale(1.08);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.9), 0 0 22px rgba(0, 194, 255, 0.7);
     }
-    .hotspot-thumb-img {
-      width: 24px; height: 24px; border-radius: 50%; object-fit: cover;
+    .hotspot-thumb-img { width: 24px; height: 24px; border-radius: 50%; object-fit: contain !important; object-position: center; background: rgba(0,0,0,0.5);
       border: 1.5px solid #00c2ff; flex-shrink: 0; display: block;
       box-shadow: 0 0 8px rgba(0, 194, 255, 0.5); background: #000;
     }
@@ -975,8 +974,7 @@
       border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; background: #000;
       display: flex; align-items: center; justify-content: center;
     }
-    .prod-card-thumb img {
-      width: 100%; height: 100%; object-fit: cover; display: block;
+    .prod-card-thumb img { width: 100%; height: 100%; object-fit: contain !important; object-position: center; background: rgba(0,0,0,0.5); display: block;
     }
     .prod-card-body {
       flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px;
@@ -1646,7 +1644,45 @@
       }
     }
 
-  </style>
+  
+    /* Product Uncropped Fit Rules */
+    .prod-card-thumb img,
+    .spec-panel-box img,
+    #side-spec-img,
+    #opeImagePreview,
+    .catalog-prod-card img,
+    .group-pin-prod-card img,
+    .product-group-card img,
+    #publicProductImage,
+    .drawer-img-box img {
+      object-fit: contain !important;
+      object-position: center !important;
+    }
+    .prod-card-thumb,
+    .spec-panel-box .thumb-box,
+    .group-pin-img-box,
+    .catalog-img-box {
+      background: rgba(2, 6, 18, 0.75) !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    /* Group Pin Marker */
+    .hotspot-group-tag {
+      border-color: rgba(56, 189, 248, 0.8) !important;
+      background: rgba(4, 13, 31, 0.95) !important;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.35) !important;
+    }
+    .hotspot-group-tag:hover {
+      box-shadow: 0 0 24px rgba(56, 189, 248, 0.6) !important;
+      transform: scale(1.04);
+    }
+    /* Place Pin Cursor */
+    .placing-pin-cursor #three-canvas {
+      cursor: crosshair !important;
+    }
+  
+</style>
 
   <script>
     window.openPartnershipModal = function() {
@@ -2031,7 +2067,7 @@
             <button class="btn-ui" id="btnOwnerToolbarCatalogs" onclick="openCatalogManager()" style="padding: 6px 12px; font-size: 12px; font-weight: 700; background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.35); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
               <i class="fa-solid fa-book-open"></i> Catalogs
             </button>
-            <button class="btn-ui" id="btnOwnerToolbarPins" onclick="togglePinEditMode()" style="padding: 6px 12px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+            <button class="btn-ui" id="btnOwnerToolbarPins" onclick="openPinManagerModal()" style="padding: 6px 12px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
               <i class="fa-solid fa-location-dot"></i> 3D Pins
             </button>
             <button class="btn-ui" id="btnOwnerToolbarViews" onclick="openViewpointManager()" style="padding: 6px 12px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
@@ -2044,6 +2080,12 @@
         </div>
 
         <div id="viewer-container" style="position: relative;">
+          <!-- Place Product Pin Floating Instruction Banner -->
+          <div id="placePinBanner" style="display: none; position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 60; background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(14px); border: 1px solid #38bdf8; border-radius: 30px; padding: 8px 20px; font-size: 12px; font-weight: 800; color: #38bdf8; box-shadow: 0 8px 30px rgba(0, 194, 255, 0.4); display: flex; align-items: center; gap: 14px;">
+            <span><i class="fa-solid fa-crosshairs fa-spin"></i> Click anywhere on the booth to place the product pin.</span>
+            <button onclick="cancelPlaceProductPinMode()" style="background: rgba(239,68,68,0.2); border: 1px solid #ef4444; color: #ef4444; border-radius: 20px; padding: 3px 12px; font-size: 11px; font-weight: 700; cursor: pointer;">Cancel (Esc)</button>
+          </div>
+  
           <canvas id="three-canvas"></canvas>
           <!-- 3D Hotspot Tags Overlay -->
           <div id="hotspot-layer"></div>
@@ -2355,6 +2397,142 @@
   <!-- ============================================================ -->
   <!-- 1. OWNER PRODUCT EDITOR MODAL (Image Upload + Specs + Save)  -->
   <!-- ============================================================ -->
+  
+  <!-- ============================================================ -->
+  <!-- MODAL: PRODUCT PIN TARGET SELECTOR (SINGLE & MULTI-PRODUCT PIN) -->
+  <!-- ============================================================ -->
+  <div class="viewport-modal" id="productPinSelectorModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="viewport-modal-card" style="max-width: 560px; width: 94vw; max-height: 90vh; background: #070d1b; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.9);">
+      <div class="viewport-modal-header" style="padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: linear-gradient(135deg, rgba(2, 132, 199, 0.2), rgba(37, 99, 235, 0.05)); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 14px;">
+            <i class="fa-solid fa-map-pin"></i>
+          </div>
+          <div>
+            <h3 class="viewport-modal-title" id="pinSelectorModalTitle" style="font-size: 15px; font-weight: 800; color: #fff; margin: 0;">Product Pin</h3>
+            <p class="viewport-modal-subtitle" style="font-size: 11px; color: #94a3b8; margin: 2px 0 0;">Select one or multiple products to attach to this pin location.</p>
+          </div>
+        </div>
+        <button class="viewport-modal-close" onclick="closeProductPinSelectorModal()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">&times;</button>
+      </div>
+
+      <div class="viewport-modal-body" style="padding: 16px 20px; overflow-y: auto; flex: 1;">
+        <!-- Search & Filter -->
+        <div style="margin-bottom: 12px; position: relative;">
+          <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 11px; color: #64748b; font-size: 12px;"></i>
+          <input type="text" id="pinProductSearchInput" placeholder="Search products by name, category, or SKU..." oninput="filterPinProductList(this.value)" style="width: 100%; background: #030712; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; color: #fff; font-size: 12px; padding: 8px 12px 8px 34px; box-sizing: border-box;">
+        </div>
+
+        <!-- Selection Summary Banner -->
+        <div id="pinSelectionSummary" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span id="pinTypeBadge" style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: #0284c7; color: #fff; text-transform: uppercase;">PRODUCT PIN</span>
+            <span id="pinSelectedCountText" style="font-size: 12px; font-weight: 700; color: #fff;">0 Products Selected</span>
+          </div>
+          <span style="font-size: 11px; color: #94a3b8;">Max 20 Products</span>
+        </div>
+
+        <!-- Multi-Product Group Title Input (Shown when 2+ selected) -->
+        <div id="pinGroupTitleSection" style="display: none; margin-bottom: 14px; background: rgba(2, 6, 23, 0.6); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px;">
+          <label style="font-size: 11px; font-weight: 700; color: #38bdf8; display: block; margin-bottom: 6px;">
+            <i class="fa-solid fa-tag"></i> Collection Title (Public Facing)
+          </label>
+          <input type="text" id="pinGroupTitleInput" value="Featured Products" placeholder="e.g. Featured Products, Complete the Look..." style="width: 100%; background: #030712; border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 6px; color: #fff; font-size: 12px; padding: 6px 10px; box-sizing: border-box; margin-bottom: 8px;">
+          <!-- Quick Preset Title Chips -->
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" onclick="setPinGroupTitlePreset('Featured Products')" style="font-size: 10px; padding: 3px 8px; border-radius: 4px; background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.3); color: #38bdf8; cursor: pointer;">Featured Products</button>
+            <button type="button" onclick="setPinGroupTitlePreset('Complete the Look')" style="font-size: 10px; padding: 3px 8px; border-radius: 4px; background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.3); color: #38bdf8; cursor: pointer;">Complete the Look</button>
+            <button type="button" onclick="setPinGroupTitlePreset('Shop This Display')" style="font-size: 10px; padding: 3px 8px; border-radius: 4px; background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.3); color: #38bdf8; cursor: pointer;">Shop This Display</button>
+            <button type="button" onclick="setPinGroupTitlePreset('Related Products')" style="font-size: 10px; padding: 3px 8px; border-radius: 4px; background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.3); color: #38bdf8; cursor: pointer;">Related Products</button>
+          </div>
+        </div>
+
+        <!-- Product List with Checkboxes and Order Buttons -->
+        <div id="pinProductSelectList" style="max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <div class="viewport-modal-footer" style="padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.08); background: #030712; display: flex; justify-content: space-between; align-items: center;">
+        <button type="button" id="btnDeletePinSelector" onclick="deleteCurrentEditingPin()" style="display: none; padding: 7px 14px; font-size: 12px; font-weight: 700; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444; border-radius: 8px; cursor: pointer;">
+          <i class="fa-solid fa-trash-can"></i> Delete Pin
+        </button>
+        <div style="display: flex; gap: 8px; margin-left: auto;">
+          <button type="button" class="btn-hero btn-hero-secondary" onclick="closeProductPinSelectorModal()" style="padding: 7px 16px; font-size: 12px; cursor: pointer;">Cancel</button>
+          <button type="button" id="btnSavePinSelector" class="btn-hero btn-hero-primary" onclick="saveProductPinSelection()" style="padding: 7px 20px; font-size: 12px; background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; cursor: pointer;">
+            <i class="fa-solid fa-check"></i> Save Pin
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: PUBLIC PRODUCT GROUP / PRODUCT COLLECTION (VIEWER) -->
+  <!-- ============================================================ -->
+  <div class="viewport-modal" id="productGroupModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="viewport-modal-card" style="max-width: 680px; width: 94vw; max-height: 90vh; background: #070d1b; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.9);">
+      <div class="viewport-modal-header" style="padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: linear-gradient(135deg, rgba(2, 132, 199, 0.25), rgba(37, 99, 235, 0.08)); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 34px; height: 34px; border-radius: 8px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 15px;">
+            <i class="fa-solid fa-layer-group"></i>
+          </div>
+          <div>
+            <h3 class="viewport-modal-title" id="productGroupModalTitle" style="font-size: 16px; font-weight: 800; color: #fff; margin: 0;">Featured Products</h3>
+            <p class="viewport-modal-subtitle" id="productGroupModalSubtitle" style="font-size: 11.5px; color: #38bdf8; font-weight: 700; margin: 2px 0 0;">3 Products in this display</p>
+          </div>
+        </div>
+        <button class="viewport-modal-close" onclick="closeProductGroupModal()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">&times;</button>
+      </div>
+
+      <div class="viewport-modal-body" style="padding: 18px 20px; overflow-y: auto; flex: 1;">
+        <div id="productGroupGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px;">
+          <!-- Dynamically populated product cards with uncropped images -->
+        </div>
+      </div>
+
+      <div class="viewport-modal-footer" style="padding: 12px 20px; border-top: 1px solid rgba(255,255,255,0.08); background: #030712; display: flex; justify-content: flex-end;">
+        <button type="button" class="btn-hero btn-hero-secondary" onclick="closeProductGroupModal()" style="padding: 7px 18px; font-size: 12px; cursor: pointer;">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: PIN MANAGER (PRODUCT PINS & CATALOG PINS LIST) -->
+  <!-- ============================================================ -->
+  <div class="viewport-modal" id="pinManagerModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="viewport-modal-card" style="max-width: 620px; width: 94vw; max-height: 88vh; background: #070d1b; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.9);">
+      <div class="viewport-modal-header" style="padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: linear-gradient(135deg, rgba(2, 132, 199, 0.2), rgba(37, 99, 235, 0.05)); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 14px;">
+            <i class="fa-solid fa-location-dot"></i>
+          </div>
+          <div>
+            <h3 class="viewport-modal-title" style="font-size: 15px; font-weight: 800; color: #fff; margin: 0;">Pins Manager</h3>
+            <p class="viewport-modal-subtitle" style="font-size: 11px; color: #94a3b8; margin: 2px 0 0;">Manage, edit coordinates, or remove product and catalog pins on your booth.</p>
+          </div>
+        </div>
+        <button class="viewport-modal-close" onclick="closePinManagerModal()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">&times;</button>
+      </div>
+
+      <div class="viewport-modal-body" style="padding: 16px 20px; overflow-y: auto; flex: 1;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span id="pinManagerCountText" style="font-size: 12px; font-weight: 700; color: #fff;">0 Pins Placed</span>
+          <button type="button" onclick="closePinManagerModal(); startPlaceProductPinMode();" style="padding: 6px 14px; font-size: 11px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+            <i class="fa-solid fa-plus"></i> Add New Pin
+          </button>
+        </div>
+        <div id="pinManagerList" style="display: flex; flex-direction: column; gap: 8px; max-height: 380px; overflow-y: auto;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <div class="viewport-modal-footer" style="padding: 12px 20px; border-top: 1px solid rgba(255,255,255,0.08); background: #030712; display: flex; justify-content: flex-end;">
+        <button type="button" class="btn-hero btn-hero-secondary" onclick="closePinManagerModal()" style="padding: 7px 18px; font-size: 12px; cursor: pointer;">Done</button>
+      </div>
+    </div>
+  </div>
+
   <div class="viewport-modal" id="ownerProductEditorModal" style="display: none;">
     <div class="viewport-modal-card" style="max-width: min(92vw, 760px); max-height: min(90vh, 740px);">
       <!-- Fixed Header -->
@@ -4853,6 +5031,477 @@
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
         renderer.setSize(width, height);
+      }
+    }
+
+    
+    // ============================================================
+    // VISUAL PRODUCT PIN & MULTI-PRODUCT PIN ENGINE (C11.16-P3.8)
+    // ============================================================
+    window.isPlacingProductPin = false;
+    window.currentEditingPin = null;
+    window.pinSelectorSelectedProductIds = [];
+    window.lastPlacedPinCoords = null;
+
+    // 1. Enter Interactive Placement Mode
+    function startPlaceProductPinMode() {
+      window.isPlacingProductPin = true;
+      const banner = document.getElementById('placePinBanner');
+      if (banner) banner.style.display = 'flex';
+      const container = document.getElementById('viewer-container');
+      if (container) container.classList.add('placing-pin-cursor');
+      if (window.showToast) window.showToast('📍 Click anywhere on the booth photo to place the pin.', 'info');
+    }
+
+    function cancelPlaceProductPinMode() {
+      window.isPlacingProductPin = false;
+      const banner = document.getElementById('placePinBanner');
+      if (banner) banner.style.display = 'none';
+      const container = document.getElementById('viewer-container');
+      if (container) container.classList.remove('placing-pin-cursor');
+    }
+
+    // Handle Escape key to cancel placement
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && window.isPlacingProductPin) {
+        cancelPlaceProductPinMode();
+      }
+    });
+
+    // 2. Open Product Pin Target Selector Modal
+    function openProductPinSelectorModal(pinDataOrCoords) {
+      cancelPlaceProductPinMode();
+      const modal = document.getElementById('productPinSelectorModal');
+      if (!modal) return;
+
+      const isEdit = !!(pinDataOrCoords && (pinDataOrCoords.id || pinDataOrCoords.pinId));
+      window.currentEditingPin = isEdit ? pinDataOrCoords : null;
+      window.lastPlacedPinCoords = isEdit ? { u: pinDataOrCoords.u, v: pinDataOrCoords.v, yaw: pinDataOrCoords.yaw, pitch: pinDataOrCoords.pitch } : (pinDataOrCoords || { u: 0.5, v: 0.5 });
+
+      document.getElementById('pinSelectorModalTitle').textContent = isEdit ? 'Edit Product Pin' : 'Add Product Pin';
+      document.getElementById('btnDeletePinSelector').style.display = isEdit ? 'inline-block' : 'none';
+
+      // Pre-select products
+      if (isEdit) {
+        if (pinDataOrCoords.pinType === 'PRODUCT_GROUP_PIN' && Array.isArray(pinDataOrCoords.productIds)) {
+          window.pinSelectorSelectedProductIds = [...pinDataOrCoords.productIds];
+        } else if (pinDataOrCoords.targetId || pinDataOrCoords.productId) {
+          window.pinSelectorSelectedProductIds = [pinDataOrCoords.targetId || pinDataOrCoords.productId];
+        } else {
+          window.pinSelectorSelectedProductIds = [];
+        }
+        document.getElementById('pinGroupTitleInput').value = pinDataOrCoords.title || pinDataOrCoords.label || 'Featured Products';
+      } else {
+        window.pinSelectorSelectedProductIds = [];
+        document.getElementById('pinGroupTitleInput').value = 'Featured Products';
+      }
+
+      const searchInput = document.getElementById('pinProductSearchInput');
+      if (searchInput) searchInput.value = '';
+
+      renderPinProductSelectList();
+      updatePinSelectionSummary();
+      modal.style.display = 'flex';
+    }
+
+    function closeProductPinSelectorModal() {
+      const modal = document.getElementById('productPinSelectorModal');
+      if (modal) modal.style.display = 'none';
+      window.currentEditingPin = null;
+    }
+
+    function setPinGroupTitlePreset(presetText) {
+      const input = document.getElementById('pinGroupTitleInput');
+      if (input) input.value = presetText;
+    }
+
+    function filterPinProductList(query) {
+      renderPinProductSelectList(query);
+    }
+
+    function renderPinProductSelectList(query = '') {
+      const listContainer = document.getElementById('pinProductSelectList');
+      if (!listContainer) return;
+
+      const allProducts = window.activeProjectData?.products || [];
+      const q = (query || '').toLowerCase().trim();
+
+      const filtered = allProducts.filter(p => {
+        if (!p.name || p.name.trim() === '') return false;
+        if (!q) return true;
+        const nameMatch = (p.name || '').toLowerCase().includes(q);
+        const catMatch = (p.category || '').toLowerCase().includes(q);
+        const skuMatch = (p.sku || '').toLowerCase().includes(q);
+        return nameMatch || catMatch || skuMatch;
+      });
+
+      if (filtered.length === 0) {
+        listContainer.innerHTML = `
+          <div style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px dashed rgba(255,255,255,0.1);">
+            <i class="fa-solid fa-box-open" style="font-size: 24px; color: #64748b; margin-bottom: 8px; display: block;"></i>
+            ${allProducts.length === 0 ? 'No products registered yet. Click "Add Product" in the toolbar first.' : 'No matching products found.'}
+          </div>
+        `;
+        return;
+      }
+
+      listContainer.innerHTML = filtered.map(prod => {
+        const pId = prod.id || `prod-slot-${prod.slotIndex}`;
+        const isSelected = window.pinSelectorSelectedProductIds.includes(pId) || window.pinSelectorSelectedProductIds.includes(prod.slotIndex);
+        const orderIdx = window.pinSelectorSelectedProductIds.indexOf(pId);
+        const is3dReady = prod.product3d?.status === 'READY' && !!prod.product3d?.glbUrl;
+        const thumbUrl = prod.imageUrl || '/assets/product-placeholder.jpg';
+
+        return `
+          <div style="background: ${isSelected ? 'rgba(56, 189, 248, 0.12)' : 'rgba(255,255,255,0.03)'}; border: 1px solid ${isSelected ? '#38bdf8' : 'rgba(255,255,255,0.08)'}; border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: all 0.2s;">
+            <label style="display: flex; align-items: center; gap: 10px; flex: 1; cursor: pointer; min-width: 0;">
+              <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="togglePinProductSelection('${pId}')" style="width: 16px; height: 16px; accent-color: #0284c7; cursor: pointer;">
+              <div style="width: 42px; height: 42px; border-radius: 6px; overflow: hidden; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                <img src="${thumbUrl}" alt="${prod.name}" style="width: 100%; height: 100%; object-fit: contain !important; object-position: center;">
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${prod.name}</span>
+                  ${is3dReady ? '<span style="font-size: 8.5px; font-weight: 800; background: rgba(56,189,248,0.2); color: #38bdf8; border: 1px solid #38bdf8; padding: 1px 4px; border-radius: 3px;">3D</span>' : ''}
+                </div>
+                <div style="font-size: 10px; color: #94a3b8; display: flex; gap: 8px;">
+                  <span>${prod.category || 'Product'}</span>
+                  ${prod.price ? `<span>• ${prod.price}</span>` : ''}
+                </div>
+              </div>
+            </label>
+
+            ${isSelected && window.pinSelectorSelectedProductIds.length > 1 ? `
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <button type="button" onclick="movePinProductOrder(${orderIdx}, -1)" ${orderIdx === 0 ? 'disabled' : ''} style="width: 24px; height: 24px; border-radius: 4px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 10px; cursor: ${orderIdx === 0 ? 'default' : 'pointer'}; opacity: ${orderIdx === 0 ? 0.3 : 1}; display: flex; align-items: center; justify-content: center;">
+                  <i class="fa-solid fa-arrow-up"></i>
+                </button>
+                <button type="button" onclick="movePinProductOrder(${orderIdx}, 1)" ${orderIdx === window.pinSelectorSelectedProductIds.length - 1 ? 'disabled' : ''} style="width: 24px; height: 24px; border-radius: 4px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 10px; cursor: ${orderIdx === window.pinSelectorSelectedProductIds.length - 1 ? 'default' : 'pointer'}; opacity: ${orderIdx === window.pinSelectorSelectedProductIds.length - 1 ? 0.3 : 1}; display: flex; align-items: center; justify-content: center;">
+                  <i class="fa-solid fa-arrow-down"></i>
+                </button>
+                <span style="font-size: 10px; font-weight: 800; color: #38bdf8; min-width: 16px; text-align: center;">#${orderIdx + 1}</span>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function togglePinProductSelection(pId) {
+      const idx = window.pinSelectorSelectedProductIds.indexOf(pId);
+      if (idx >= 0) {
+        window.pinSelectorSelectedProductIds.splice(idx, 1);
+      } else {
+        if (window.pinSelectorSelectedProductIds.length >= 20) {
+          if (window.showToast) window.showToast('Maximum 20 products per pin.', 'warning');
+          return;
+        }
+        window.pinSelectorSelectedProductIds.push(pId);
+      }
+      renderPinProductSelectList(document.getElementById('pinProductSearchInput')?.value || '');
+      updatePinSelectionSummary();
+    }
+
+    function movePinProductOrder(currentIdx, delta) {
+      const targetIdx = currentIdx + delta;
+      if (targetIdx < 0 || targetIdx >= window.pinSelectorSelectedProductIds.length) return;
+      const item = window.pinSelectorSelectedProductIds.splice(currentIdx, 1)[0];
+      window.pinSelectorSelectedProductIds.splice(targetIdx, 0, item);
+      renderPinProductSelectList(document.getElementById('pinProductSearchInput')?.value || '');
+    }
+
+    function updatePinSelectionSummary() {
+      const count = window.pinSelectorSelectedProductIds.length;
+      const countText = document.getElementById('pinSelectedCountText');
+      const typeBadge = document.getElementById('pinTypeBadge');
+      const groupTitleSection = document.getElementById('pinGroupTitleSection');
+      const btnSave = document.getElementById('btnSavePinSelector');
+
+      if (countText) countText.textContent = `${count} Product${count === 1 ? '' : 's'} Selected`;
+
+      if (count === 0) {
+        if (typeBadge) {
+          typeBadge.textContent = 'NO SELECTION';
+          typeBadge.style.background = '#64748b';
+        }
+        if (groupTitleSection) groupTitleSection.style.display = 'none';
+        if (btnSave) btnSave.disabled = true;
+      } else if (count === 1) {
+        if (typeBadge) {
+          typeBadge.textContent = 'SINGLE PRODUCT PIN';
+          typeBadge.style.background = '#0284c7';
+        }
+        if (groupTitleSection) groupTitleSection.style.display = 'none';
+        if (btnSave) btnSave.disabled = false;
+      } else {
+        if (typeBadge) {
+          typeBadge.textContent = `PRODUCT COLLECTION (${count})`;
+          typeBadge.style.background = 'linear-gradient(135deg, #0284c7, #7c3aed)';
+        }
+        if (groupTitleSection) groupTitleSection.style.display = 'block';
+        if (btnSave) btnSave.disabled = false;
+      }
+    }
+
+    // 3. Save Single or Multi-Product Pin
+    async function saveProductPinSelection() {
+      if (window.pinSelectorSelectedProductIds.length === 0) {
+        alert('Please select at least one product for this pin.');
+        return;
+      }
+
+      const pid = activeProjectId || window.activeProjectData?.id;
+      const token = p3dGetAuthToken();
+      const isEdit = !!(window.currentEditingPin && (window.currentEditingPin.id || window.currentEditingPin.pinId));
+      const pinId = isEdit ? (window.currentEditingPin.id || window.currentEditingPin.pinId) : null;
+
+      const isGroup = window.pinSelectorSelectedProductIds.length >= 2;
+      const pinType = isGroup ? 'PRODUCT_GROUP_PIN' : 'PRODUCT_PIN';
+      const title = isGroup ? (document.getElementById('pinGroupTitleInput')?.value || 'Featured Products').trim() : '';
+      const targetId = isGroup ? null : window.pinSelectorSelectedProductIds[0];
+
+      const coords = window.lastPlacedPinCoords || { u: 0.5, v: 0.5, yaw: 0, pitch: 0 };
+
+      const payload = {
+        pinType,
+        targetId,
+        productId: targetId,
+        productIds: isGroup ? window.pinSelectorSelectedProductIds : [],
+        title: isGroup ? title : undefined,
+        label: isGroup ? title : undefined,
+        u: coords.u,
+        v: coords.v,
+        yaw: coords.yaw,
+        pitch: coords.pitch
+      };
+
+      try {
+        const url = isEdit ? `/api/projects/${pid}/pins/${pinId}` : `/api/projects/${pid}/pins`;
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+            'x-booth-edit-token': token
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          alert('Failed to save pin: ' + (data.error || 'Unknown error'));
+          return;
+        }
+
+        if (data.pins) window.activeProjectData.pinpoints = data.pins;
+        else if (data.pin) {
+          if (!window.activeProjectData.pinpoints) window.activeProjectData.pinpoints = [];
+          if (isEdit) {
+            const idx = window.activeProjectData.pinpoints.findIndex(p => p.id === pinId || p.pinId === pinId);
+            if (idx >= 0) window.activeProjectData.pinpoints[idx] = data.pin;
+          } else {
+            window.activeProjectData.pinpoints.push(data.pin);
+          }
+        }
+
+        closeProductPinSelectorModal();
+        setupStudioProducts(window.activeProjectData);
+        if (window.showToast) window.showToast(`✅ ${isGroup ? 'Product Collection Pin' : 'Product Pin'} saved!`, 'success');
+
+      } catch (err) {
+        alert('Save pin request failed: ' + err.message);
+      }
+    }
+
+    // 4. Delete Pin
+    async function deleteCurrentEditingPin() {
+      if (!window.currentEditingPin) return;
+      if (!confirm('Are you sure you want to remove this pin?')) return;
+
+      const pid = activeProjectId || window.activeProjectData?.id;
+      const pinId = window.currentEditingPin.id || window.currentEditingPin.pinId;
+      const token = p3dGetAuthToken();
+
+      try {
+        const res = await fetch(`/api/projects/${pid}/pins/${pinId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'x-booth-edit-token': token
+          }
+        });
+        const data = await res.json();
+        if (data.pins) window.activeProjectData.pinpoints = data.pins;
+        else {
+          window.activeProjectData.pinpoints = (window.activeProjectData.pinpoints || []).filter(p => p.id !== pinId && p.pinId !== pinId);
+        }
+
+        closeProductPinSelectorModal();
+        setupStudioProducts(window.activeProjectData);
+        if (window.showToast) window.showToast('Pin removed.', 'info');
+      } catch (err) {
+        alert('Delete pin failed: ' + err.message);
+      }
+    }
+
+    // 5. Public Product Group Modal (Viewer)
+    function openProductGroupModal(groupPinId) {
+      const pinpoints = window.activeProjectData?.pinpoints || [];
+      const pin = pinpoints.find(p => p.id === groupPinId || p.pinId === groupPinId);
+      if (!pin) return;
+
+      const allProducts = window.activeProjectData?.products || [];
+      const groupProducts = (pin.productIds || []).map(pid =>
+        allProducts.find(p => p.id === pid || p.slotIndex === pid || `prod-slot-${p.slotIndex}` === pid)
+      ).filter(Boolean);
+
+      const titleEl = document.getElementById('productGroupModalTitle');
+      const subEl = document.getElementById('productGroupModalSubtitle');
+      const grid = document.getElementById('productGroupGrid');
+
+      if (titleEl) titleEl.textContent = pin.title || pin.label || 'Featured Products';
+      if (subEl) subEl.textContent = `${groupProducts.length} Product${groupProducts.length === 1 ? '' : 's'} in this display`;
+
+      if (grid) {
+        grid.innerHTML = groupProducts.map((prod, idx) => {
+          const is3dReady = prod.product3d?.status === 'READY' && !!prod.product3d?.glbUrl;
+          const thumbUrl = prod.imageUrl || '/assets/product-placeholder.jpg';
+
+          return `
+            <div class="product-group-card" style="background: rgba(4, 13, 31, 0.9); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
+              <div class="group-pin-img-box" style="width: 100%; height: 160px; border-radius: 8px; overflow: hidden; background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; position: relative;">
+                <img src="${thumbUrl}" alt="${prod.name}" style="width: 100%; height: 100%; object-fit: contain !important; object-position: center;">
+                ${is3dReady ? '<span style="position: absolute; top: 8px; right: 8px; background: rgba(2, 132, 199, 0.85); color: #fff; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 4px; border: 1px solid #38bdf8;"><i class="fa-solid fa-cube"></i> 3D READY</span>' : ''}
+              </div>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                <span style="font-size: 8.5px; font-weight: 800; color: #00c2ff; text-transform: uppercase;">${prod.category || 'EXHIBIT ITEM'}</span>
+                <span style="font-size: 13px; font-weight: 800; color: #fff;">${prod.name}</span>
+                ${prod.price ? `<span style="font-size: 11px; font-weight: 700; color: #38bdf8;">${prod.price}</span>` : ''}
+                <p style="font-size: 10.5px; color: #94a3b8; line-height: 1.4; margin: 2px 0 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${prod.shortDescription || prod.description || ''}</p>
+              </div>
+              <div style="display: flex; gap: 6px; margin-top: auto;">
+                <button type="button" onclick="closeProductGroupModal(); openPublicProductDetailFromGroup(${prod.slotIndex || idx + 1}, '${groupPinId}')" style="flex: 1; padding: 6px 10px; font-size: 11px; font-weight: 700; background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.4); color: #38bdf8; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                  <i class="fa-solid fa-circle-info"></i> View Product
+                </button>
+                ${is3dReady ? `
+                  <button type="button" onclick="closeProductGroupModal(); openP3dViewerModal('${prod.product3d.glbUrl}', '${prod.name}')" style="flex: 1; padding: 6px 10px; font-size: 11px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; color: #fff; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                    <i class="fa-solid fa-cube"></i> View in 3D
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      document.getElementById('productGroupModal').style.display = 'flex';
+    }
+
+    function closeProductGroupModal() {
+      const modal = document.getElementById('productGroupModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function openPublicProductDetailFromGroup(slotIdx, groupPinId) {
+      onProductSlotClicked(slotIdx - 1);
+      // Add Back to Collection button inside drawer
+      const drawerBody = document.querySelector('#drawer-prod-inspect .drawer-body');
+      if (drawerBody) {
+        let backBtn = document.getElementById('btnBackToGroupPin');
+        if (!backBtn) {
+          backBtn = document.createElement('div');
+          backBtn.id = 'btnBackToGroupPin';
+          backBtn.style.marginBottom = '12px';
+          drawerBody.prepend(backBtn);
+        }
+        backBtn.innerHTML = `
+          <button type="button" onclick="closeProductDrawer(); openProductGroupModal('${groupPinId}')" style="padding: 6px 12px; font-size: 11px; font-weight: 700; background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.35); color: #38bdf8; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Featured Products
+          </button>
+        `;
+      }
+    }
+
+    // 6. Pins Manager Modal
+    function openPinManagerModal() {
+      const modal = document.getElementById('pinManagerModal');
+      if (!modal) return;
+
+      const pinpoints = window.activeProjectData?.pinpoints || [];
+      const countEl = document.getElementById('pinManagerCountText');
+      if (countEl) countEl.textContent = `${pinpoints.length} Pin${pinpoints.length === 1 ? '' : 's'} Placed`;
+
+      const listEl = document.getElementById('pinManagerList');
+      if (listEl) {
+        if (pinpoints.length === 0) {
+          listEl.innerHTML = '<div style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12px;">No pins placed on this booth yet. Click "Add New Pin" to create one.</div>';
+        } else {
+          listEl.innerHTML = pinpoints.map(pin => {
+            const isGroup = pin.pinType === 'PRODUCT_GROUP_PIN';
+            const isCat = pin.pinType === 'CATALOG_PIN';
+            const typeName = isGroup ? 'Product Collection' : (isCat ? 'Catalog' : 'Product Pin');
+            const icon = isGroup ? 'fa-layer-group' : (isCat ? 'fa-book-open' : 'fa-box');
+            const color = isGroup ? '#38bdf8' : (isCat ? '#c084fc' : '#38bdf8');
+            const title = pin.title || pin.label || (isGroup ? 'Featured Products' : 'Product Pin');
+            const countInfo = isGroup ? `${(pin.productIds || []).length} Products` : (isCat ? 'Catalog Collection' : '1 Product');
+
+            return `
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div style="width: 32px; height: 32px; border-radius: 6px; background: rgba(56,189,248,0.1); border: 1px solid ${color}; display: flex; align-items: center; justify-content: center; color: ${color}; font-size: 13px;">
+                    <i class="fa-solid ${icon}"></i>
+                  </div>
+                  <div>
+                    <div style="font-size: 12.5px; font-weight: 700; color: #fff;">${title}</div>
+                    <div style="font-size: 10px; color: #94a3b8;">${typeName} • ${countInfo} (u: ${(pin.u||0.5).toFixed(2)}, v: ${(pin.v||0.5).toFixed(2)})</div>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                  <button type="button" onclick="closePinManagerModal(); openProductPinSelectorModal(window.activeProjectData.pinpoints.find(p=>p.id==='${pin.id}'||p.pinId==='${pin.id}'))" style="padding: 5px 10px; font-size: 11px; font-weight: 700; background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3); color: #38bdf8; border-radius: 6px; cursor: pointer;">
+                    <i class="fa-solid fa-pen"></i> Edit
+                  </button>
+                  <button type="button" onclick="deletePinFromManager('${pin.id || pin.pinId}')" style="padding: 5px 10px; font-size: 11px; font-weight: 700; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; border-radius: 6px; cursor: pointer;">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      modal.style.display = 'flex';
+    }
+
+    function closePinManagerModal() {
+      const modal = document.getElementById('pinManagerModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function deletePinFromManager(pinId) {
+      if (!confirm('Are you sure you want to delete this pin?')) return;
+      const pid = activeProjectId || window.activeProjectData?.id;
+      const token = p3dGetAuthToken();
+
+      try {
+        const res = await fetch(`/api/projects/${pid}/pins/${pinId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'x-booth-edit-token': token
+          }
+        });
+        const data = await res.json();
+        if (data.pins) window.activeProjectData.pinpoints = data.pins;
+        else {
+          window.activeProjectData.pinpoints = (window.activeProjectData.pinpoints || []).filter(p => p.id !== pinId && p.pinId !== pinId);
+        }
+        openPinManagerModal();
+        setupStudioProducts(window.activeProjectData);
+      } catch (err) {
+        alert('Delete failed: ' + err.message);
       }
     }
 

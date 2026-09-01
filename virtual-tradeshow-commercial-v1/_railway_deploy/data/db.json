@@ -29105,7 +29105,7 @@
       "lastLoginAt": "2026-08-31T09:10:05.638Z"
     },
     {
-      "id": "acc-e2fbab00",
+      "id": "acc-b5c5819f",
       "email": "goodkie.com@gmail.com",
       "emailNormalized": "goodkie.com@gmail.com",
       "displayName": "goodkie.com",
@@ -29114,15 +29114,18 @@
       "website": "",
       "status": "ACTIVE",
       "emailVerified": true,
-      "entitlement": "BUSINESS",
+      "entitlement": "INTERNAL_FULL_ACCESS",
       "createdAt": "2026-08-31T09:11:25.217Z",
       "updatedAt": "2026-08-31T09:27:57.184Z",
       "lastLoginAt": "2026-08-31T09:27:44.860Z",
-      "planCode": "BUSINESS",
+      "planCode": "INTERNAL_FULL_ACCESS",
       "entitlementStatus": "ACTIVE",
       "billingProvider": "stripe",
       "billingStatus": "active",
-      "billingPriceId": "STRIPE_PRICE_BUSINESS_MONTHLY"
+      "billingPriceId": "STRIPE_PRICE_BUSINESS_MONTHLY",
+      "accountPurpose": "INTERNAL_FULL_FEATURE_QA",
+      "environment": "INTERNAL_DEV",
+      "isTest": true
     },
     {
       "id": "acc-043eac8b",

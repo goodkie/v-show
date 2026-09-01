@@ -9407,6 +9407,8 @@ return event;
     });
   }
 
+  async deleteProductSlot(projectId, slotIndex, token) { return this.clearProductSlot(projectId, slotIndex, token); }
+
   async clearProductSlot(projectId, slotIndex, token) {
     const slot = parseInt(slotIndex, 10);
     return this.mutate((db) => {
@@ -9440,13 +9442,25 @@ return event;
         prod.updatedAt = new Date().toISOString();
       }
 
-      const pin = (project.pinpoints || []).find(p => p.slotIndex === slot);
-      if (pin) {
-        pin.productName = `Product Slot ${slot}`;
-        pin.label = `ADD PRODUCT ${slot}`;
-        pin.isBlank = true;
-        pin.status = 'BLANK';
-        pin.updatedAt = new Date().toISOString();
+      // Cascade to pinpoints (Orphan Pin Protection)
+      if (Array.isArray(project.pinpoints)) {
+        const prodId = prod?.id || `prod-slot-${slot}`;
+        project.pinpoints = project.pinpoints.filter(pin => {
+          if (pin.pinType === 'PRODUCT_PIN' && (pin.productId === prodId || pin.targetId === prodId || pin.slotIndex === slot)) {
+            return false;
+          }
+          if (pin.pinType === 'PRODUCT_GROUP_PIN' && Array.isArray(pin.productIds)) {
+            pin.productIds = pin.productIds.filter(pid => pid !== prodId && pid !== `prod-slot-${slot}` && pid !== slot);
+            if (pin.productIds.length === 0) return false;
+            if (pin.productIds.length === 1) {
+              pin.pinType = 'PRODUCT_PIN';
+              pin.targetId = pin.productIds[0];
+              pin.productId = pin.productIds[0];
+              pin.productIds = [];
+            }
+          }
+          return true;
+        });
       }
 
       // Clean catalog product membership references safely
@@ -9965,17 +9979,37 @@ return event;
       }
 
       project.pinpoints = project.pinpoints || [];
-      const pinType = pinData.pinType === 'CATALOG_PIN' ? 'CATALOG_PIN' : 'PRODUCT_PIN';
-      const pinId = `pin-${uuidv4().substring(0, 8)}`;
-      let label = pinData.label || '';
-      let targetId = pinData.targetId || pinData.productId || pinData.catalogId || null;
+      // Determine Pin Type & Normalization
+      let pinType = pinData.pinType || 'PRODUCT_PIN';
+      const rawProductIds = Array.isArray(pinData.productIds) ? pinData.productIds : (pinData.productId ? [pinData.productId] : (pinData.targetId && pinType === 'PRODUCT_PIN' ? [pinData.targetId] : []));
+      
+      // Server-side product validation (Reject cross-project products, normalize duplicates, cap at 20)
+      const validProjectProductIds = (project.products || []).map(p => p.id || `prod-slot-${p.slotIndex}`);
+      const cleanProductIds = Array.from(new Set(rawProductIds))
+        .filter(pid => validProjectProductIds.includes(pid) || (project.products || []).some(p => String(p.slotIndex) === String(pid)))
+        .slice(0, 20);
 
-      if (pinType === 'PRODUCT_PIN') {
+      if (pinType !== 'CATALOG_PIN') {
+        if (cleanProductIds.length >= 2) {
+          pinType = 'PRODUCT_GROUP_PIN';
+        } else if (cleanProductIds.length === 1) {
+          pinType = 'PRODUCT_PIN';
+        }
+      }
+
+      const pinId = `pin-${uuidv4().substring(0, 8)}`;
+      let label = (pinData.label || pinData.title || '').trim();
+      let targetId = pinData.targetId || (cleanProductIds.length === 1 ? cleanProductIds[0] : null) || pinData.catalogId || null;
+
+      if (pinType === 'PRODUCT_GROUP_PIN') {
+        label = label || 'Featured Products';
+      } else if (pinType === 'PRODUCT_PIN') {
         const prod = (project.products || []).find(p => p.id === targetId || p.slotIndex === targetId || `prod-slot-${p.slotIndex}` === targetId);
-        label = pinData.label || prod?.name || `Product Pin`;
+        label = label || prod?.name || 'Product Pin';
+        targetId = prod?.id || targetId || `prod-slot-${prod?.slotIndex || 1}`;
       } else {
         const cat = (project.catalogs || []).find(c => c.catalogId === targetId || c.id === targetId);
-        label = pinData.label || `Catalog · ${cat?.name || 'Collection'}`;
+        label = label || `Catalog · ${cat?.name || 'Collection'}`;
       }
 
       const newPin = {
@@ -9984,16 +10018,18 @@ return event;
         projectId: project.id,
         sourceId: pinData.sourceId || project.sourceAsset?.id || 'src-default',
         pinType,
-        targetId,
+        targetId: pinType === 'PRODUCT_PIN' ? targetId : (pinType === 'CATALOG_PIN' ? targetId : null),
         productId: pinType === 'PRODUCT_PIN' ? targetId : null,
         catalogId: pinType === 'CATALOG_PIN' ? targetId : null,
+        productIds: pinType === 'PRODUCT_GROUP_PIN' ? cleanProductIds : [],
+        title: label,
+        label,
         slotIndex: pinData.slotIndex || null,
         u: typeof pinData.u === 'number' ? Math.max(0.0000, Math.min(1.0000, Number(pinData.u.toFixed(4)))) : 0.5000,
         v: typeof pinData.v === 'number' ? Math.max(0.0000, Math.min(1.0000, Number(pinData.v.toFixed(4)))) : 0.5000,
         yaw: typeof pinData.yaw === 'number' ? Number(pinData.yaw.toFixed(4)) : 0.0,
         pitch: typeof pinData.pitch === 'number' ? Number(pinData.pitch.toFixed(4)) : 0.0,
         coordinateSystem: 'SPHERICAL',
-        label,
         status: 'ACTIVE',
         isBlank: false,
         createdAt: new Date().toISOString(),
@@ -10029,6 +10065,29 @@ return event;
         throw err;
       }
 
+      // Product validation & Normalization for update
+      if (pinData.productIds !== undefined || pinData.productId !== undefined || pinData.targetId !== undefined) {
+        const rawProductIds = Array.isArray(pinData.productIds) ? pinData.productIds : (pinData.productId ? [pinData.productId] : (pinData.targetId && pinData.pinType !== 'CATALOG_PIN' ? [pinData.targetId] : (pin.productIds || [])));
+        const validProjectProductIds = (project.products || []).map(p => p.id || `prod-slot-${p.slotIndex}`);
+        const cleanProductIds = Array.from(new Set(rawProductIds))
+          .filter(pid => validProjectProductIds.includes(pid) || (project.products || []).some(p => String(p.slotIndex) === String(pid)))
+          .slice(0, 20);
+
+        if (pin.pinType !== 'CATALOG_PIN' && pinData.pinType !== 'CATALOG_PIN') {
+          if (cleanProductIds.length >= 2) {
+            pin.pinType = 'PRODUCT_GROUP_PIN';
+            pin.productIds = cleanProductIds;
+            pin.productId = null;
+            pin.targetId = null;
+          } else if (cleanProductIds.length === 1) {
+            pin.pinType = 'PRODUCT_PIN';
+            pin.productId = cleanProductIds[0];
+            pin.targetId = cleanProductIds[0];
+            pin.productIds = [];
+          }
+        }
+      }
+
       if (pinData.pinType !== undefined) pin.pinType = pinData.pinType;
       if (pinData.targetId !== undefined) {
         pin.targetId = pinData.targetId;
@@ -10039,7 +10098,11 @@ return event;
       if (typeof pinData.v === 'number') pin.v = Math.max(0.0000, Math.min(1.0000, Number(pinData.v.toFixed(4))));
       if (typeof pinData.yaw === 'number') pin.yaw = Number(pinData.yaw.toFixed(4));
       if (typeof pinData.pitch === 'number') pin.pitch = Number(pinData.pitch.toFixed(4));
-      if (pinData.label !== undefined) pin.label = pinData.label.trim();
+      if (pinData.label !== undefined || pinData.title !== undefined) {
+        const titleText = (pinData.title || pinData.label || '').trim();
+        pin.label = titleText;
+        pin.title = titleText;
+      }
       if (pinData.status !== undefined) pin.status = pinData.status;
 
       pin.updatedAt = new Date().toISOString();
