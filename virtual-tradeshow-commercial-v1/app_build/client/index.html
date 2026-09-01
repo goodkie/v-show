@@ -3538,14 +3538,13 @@
       const accEmail = (currentViewerAccount.emailNormalized || currentViewerAccount.email || '').toLowerCase();
       const pAccId = activeProjectData.accountId;
       const pEmail = (activeProjectData.contactEmail || activeProjectData.customerEmail || activeProjectData.email || '').toLowerCase();
+      const isTestProject = Boolean(activeProjectData.isTest || activeProjectData.environment === 'INTERNAL_DEV');
 
-      if (accEmail === 'goodkie.com@gmail.com' || currentViewerAccount.entitlement === 'INTERNAL_FULL_ACCESS' || currentViewerAccount.environment === 'INTERNAL_DEV') {
-        isProjectOwner = true;
-      } else if (accId && pAccId && accId === pAccId) {
+      if (accId && pAccId && accId === pAccId) {
         isProjectOwner = true;
       } else if (accEmail && pEmail && accEmail === pEmail) {
         isProjectOwner = true;
-      } else if (accEmail === 'studioberryinfo@gmail.com') {
+      } else if (isInternalDevAccount(currentViewerAccount) && isTestProject) {
         isProjectOwner = true;
       } else {
         isProjectOwner = false;
@@ -5474,12 +5473,6 @@
       applyViewerModeUI();
       renderProductCardsTray(activeProjectData?.products || []);
     }
-
-    // ═══════════════════════════════════════════════════════════
-    // PRECISION PIN EDITING SYSTEM (Drag, Click, Numeric, Nudge)
-    // ═══════════════════════════════════════════════════════════
-    let initialPinCoordinates = {};
-    let isDraggingPin = false;
 
     // ═══════════════════════════════════════════════════════════
     // PRECISION PIN EDITING SYSTEM (PRODUCT_PIN & CATALOG_PIN)

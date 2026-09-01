@@ -9218,11 +9218,13 @@ return event;
       const sessData = this.verifyCustomerSession(cleanToken);
       if (sessData && sessData.account) {
         const norm = this.normalizeEmail(sessData.account.emailNormalized || sessData.account.email);
-        if (this.isInternalQaEmail(norm) || sessData.account.entitlement === 'INTERNAL_FULL_ACCESS' || sessData.account.environment === 'INTERNAL_DEV') {
-          return true;
-        }
         const pEmail = this.normalizeEmail(project.contactEmail || project.customerEmail || project.email);
-        if (project.accountId === sessData.account.id || (pEmail && pEmail === norm)) {
+        const isOwner = (project.accountId && project.accountId === sessData.account.id) || (pEmail && pEmail === norm);
+        if (isOwner) return true;
+
+        const isDev = this.isInternalQaEmail(norm) || sessData.account.entitlement === 'INTERNAL_FULL_ACCESS' || sessData.account.environment === 'INTERNAL_DEV';
+        const isTestProject = Boolean(project.isTest || project.environment === 'INTERNAL_DEV' || project.id === 'prj-qa-goodkie-dev');
+        if (isDev && isTestProject) {
           return true;
         }
       }
@@ -10569,6 +10571,55 @@ return event;
           account.isTest = true;
           account.customerAnalyticsExcluded = true;
           account.emailVerified = true;
+
+          // Ensure Canonical QA Project is provisioned and assigned to this account
+          d.projects = d.projects || [];
+          let qaPrj = d.projects.find(p => p.id === 'prj-qa-goodkie-dev' || (p.accountId === account.id && (p.environment === 'INTERNAL_DEV' || p.isTest)));
+          if (!qaPrj) {
+            qaPrj = {
+              id: 'prj-qa-goodkie-dev',
+              accountId: account.id,
+              contactEmail: 'goodkie.com@gmail.com',
+              customerEmail: 'goodkie.com@gmail.com',
+              email: 'goodkie.com@gmail.com',
+              businessName: '³D₂ Internal QA Studio',
+              brandName: '³D₂ QA Demo',
+              name: '³D₂ Internal QA Demo Booth',
+              role: 'OWNER',
+              publishStatus: 'DRAFT',
+              isPublished: false,
+              environment: 'INTERNAL_DEV',
+              isTest: true,
+              accountPurpose: 'INTERNAL_FULL_FEATURE_QA',
+              entitlement: 'INTERNAL_FULL_ACCESS',
+              sourceAsset: {
+                previewUrl: '/models/booth_demo.jpg',
+                originalUrl: '/models/booth_demo.jpg'
+              },
+              products: [
+                {
+                  id: 'prod-qa-slot-1',
+                  slotIndex: 1,
+                  name: 'QA Autonomous Robot Pro',
+                  category: 'Robotics',
+                  price: '$12,500',
+                  isAvailable: true,
+                  description: 'Internal QA High-Performance Robotics Demonstration Unit'
+                }
+              ],
+              catalogs: [],
+              pins: [],
+              viewpoints: [],
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+            d.projects.push(qaPrj);
+          } else {
+            qaPrj.accountId = account.id;
+            qaPrj.environment = 'INTERNAL_DEV';
+            qaPrj.isTest = true;
+            qaPrj.role = 'OWNER';
+          }
         }
         // Normalize status: pilot-provisioned accounts may not have had 'ACTIVE' set
         if (!account.status || account.status === 'active') {
@@ -10778,7 +10829,10 @@ return event;
     const isDev = this.isInternalQaEmail(norm);
     const projects = (d.projects || []).filter(p => {
       const pEmail = this.normalizeEmail(p.contactEmail || p.customerEmail || p.email);
-      return isDev || p.accountId === accountId || (norm && pEmail === norm);
+      if (isDev) {
+        return (p.accountId === accountId || pEmail === norm || p.id === 'prj-qa-goodkie-dev') && (p.environment === 'INTERNAL_DEV' || p.isTest);
+      }
+      return p.accountId === accountId || (norm && pEmail === norm);
     });
 
     const leads = d.leads || d.tradeLeads || [];

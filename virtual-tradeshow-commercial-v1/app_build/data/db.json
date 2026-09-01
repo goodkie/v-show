@@ -24236,15 +24236,15 @@
           "id": "pin-blank-1",
           "slotIndex": 1,
           "productId": "prod-slot-1",
-          "productName": "OmniDrive Autonomous Tug",
+          "productName": "Automated QA Velvet Matte Lip Tint",
           "isBlank": false,
           "u": 0.28,
           "v": 0.62,
           "coordinateSystem": "NORMALIZED_2D",
-          "label": "OmniDrive Autonomous Tug",
+          "label": "Automated QA Velvet Matte Lip Tint",
           "status": "ACTIVE",
           "createdAt": "2026-08-31T09:11:50.889Z",
-          "updatedAt": "2026-08-31T09:11:51.986Z"
+          "updatedAt": "2026-09-01T14:06:04.836Z"
         },
         {
           "id": "pin-blank-2",
@@ -24272,21 +24272,45 @@
           "label": "ADD PRODUCT 3",
           "status": "BLANK",
           "createdAt": "2026-08-31T09:11:50.889Z"
+        },
+        {
+          "id": "pin-531664d5",
+          "pinId": "pin-531664d5",
+          "projectId": "prj-free-d8477bd0",
+          "sourceId": "src-default",
+          "pinType": "CATALOG_PIN",
+          "targetId": "cat-cca81bac",
+          "productId": null,
+          "catalogId": "cat-cca81bac",
+          "slotIndex": null,
+          "u": 0.72,
+          "v": 0.45,
+          "yaw": 0,
+          "pitch": 0,
+          "coordinateSystem": "SPHERICAL",
+          "label": "QA 3D Catalog Pin",
+          "status": "ACTIVE",
+          "isBlank": false,
+          "createdAt": "2026-09-01T14:04:02.676Z",
+          "updatedAt": "2026-09-01T14:04:02.676Z"
         }
       ],
       "products": [
         {
           "id": "prod-slot-1",
           "slotIndex": 1,
-          "name": "OmniDrive Autonomous Tug",
+          "name": "Automated QA Velvet Matte Lip Tint",
           "imageUrl": "",
-          "description": "",
+          "description": "Detailed specs for wholesale export.",
           "specifications": "Needs merchant input",
           "status": "ACTIVE",
           "completionPct": 0,
           "createdAt": "2026-08-31T09:11:50.889Z",
-          "price": "$32,000 USD",
-          "updatedAt": "2026-08-31T09:11:51.986Z"
+          "price": "$24.00",
+          "updatedAt": "2026-09-01T14:06:04.836Z",
+          "category": "COSMETICS",
+          "shortDescription": "Long-lasting hydration lip tint",
+          "sku": "LIP-QA-01"
         },
         {
           "id": "prod-slot-2",
@@ -24315,13 +24339,30 @@
       ],
       "analyticsEvents": [],
       "createdAt": "2026-08-31T09:11:50.890Z",
-      "updatedAt": "2026-08-31T09:11:52.036Z",
+      "updatedAt": "2026-09-01T14:06:05.023Z",
       "accountId": "acc-e2fbab00",
       "role": "OWNER",
       "publicSlug": "apex-robotics-international-2",
       "publicUrl": "http://localhost:4500/booth/apex-robotics-international-2",
       "publishedAt": "2026-08-31T09:11:52.036Z",
-      "qrCodeDataUrl": "data:image/png;base64,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"
+      "qrCodeDataUrl": "data:image/png;base64,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",
+      "catalogs": [
+        {
+          "catalogId": "cat-cca81bac",
+          "id": "cat-cca81bac",
+          "projectId": "prj-free-d8477bd0",
+          "accountId": "acc-e2fbab00",
+          "name": "Catalog 1",
+          "description": "Testing full catalog access",
+          "coverImageUrl": "",
+          "productIds": [
+            "prod-fp-4cbd43"
+          ],
+          "status": "ACTIVE",
+          "createdAt": "2026-09-01T14:04:02.643Z",
+          "updatedAt": "2026-09-01T14:04:02.643Z"
+        }
+      ]
     },
     {
       "id": "prj-free-384906b7",
@@ -29683,6 +29724,51 @@
       "businessName": "Apex Robotics International",
       "createdAt": "2026-09-01T10:33:37.220Z",
       "expiresAt": "2026-10-01T10:33:37.220Z"
+    },
+    {
+      "token": "cust-sess-c275055372537ff0a9e71b305ce1fb29ae5843b6354f8fcb",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T14:04:02.292Z",
+      "expiresAt": "2026-10-01T14:04:02.292Z"
+    },
+    {
+      "token": "cust-sess-72b6faa060e4c6ddc46272ea74d8134b9fd5387a6a197249",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T14:04:02.350Z",
+      "expiresAt": "2026-10-01T14:04:02.350Z"
+    },
+    {
+      "token": "cust-sess-7413f5c91a6371354a6f7455a03833609c444c344aeefef8",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T14:04:02.578Z",
+      "expiresAt": "2026-10-01T14:04:02.578Z"
+    },
+    {
+      "token": "cust-sess-eba2f7b9fedf3fc3253468aabdc609302464651ea9ad92d7",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T14:06:04.667Z",
+      "expiresAt": "2026-10-01T14:06:04.667Z"
+    },
+    {
+      "token": "cust-sess-8287fc50f83e4243af0f767f4ff412437cd2c827a9b3a089",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "displayName": "goodkie.com",
+      "businessName": "Apex Robotics International",
+      "createdAt": "2026-09-01T14:06:04.751Z",
+      "expiresAt": "2026-10-01T14:06:04.751Z"
     }
   ],
   "accounts": [
@@ -29837,8 +29923,8 @@
       "emailVerified": true,
       "entitlement": "INTERNAL_FULL_ACCESS",
       "createdAt": "2026-08-31T09:11:25.217Z",
-      "updatedAt": "2026-09-01T10:33:37.184Z",
-      "lastLoginAt": "2026-09-01T10:33:37.184Z",
+      "updatedAt": "2026-09-01T14:06:04.718Z",
+      "lastLoginAt": "2026-09-01T14:06:04.718Z",
       "planCode": "INTERNAL_FULL_ACCESS",
       "entitlementStatus": "ACTIVE",
       "billingProvider": "stripe",
@@ -31326,6 +31412,55 @@
       "email": "goodkie.com@gmail.com",
       "action": "LOGIN",
       "timestamp": "2026-09-01T10:33:37.220Z"
+    },
+    {
+      "id": "log-bffa0124",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T14:04:02.223Z"
+    },
+    {
+      "id": "log-852e4d9b",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T14:04:02.292Z"
+    },
+    {
+      "id": "log-b6245c76",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T14:04:02.350Z"
+    },
+    {
+      "id": "log-a64d0308",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGOUT",
+      "timestamp": "2026-09-01T14:04:02.517Z"
+    },
+    {
+      "id": "log-1083fb48",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T14:04:02.578Z"
+    },
+    {
+      "id": "log-0c959f7c",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T14:06:04.667Z"
+    },
+    {
+      "id": "log-da9fa3d9",
+      "accountId": "acc-e2fbab00",
+      "email": "goodkie.com@gmail.com",
+      "action": "LOGIN",
+      "timestamp": "2026-09-01T14:06:04.751Z"
     }
   ],
   "entitlementAuditLogs": [
@@ -32672,6 +32807,28 @@
         "productName": "Automated QA Velvet Matte Lip Tint"
       },
       "timestamp": "2026-09-01T10:33:37.316Z"
+    },
+    {
+      "id": "tl-267cab20",
+      "accountId": "acc-e2fbab00",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-d8477bd0",
+        "slotIndex": 1,
+        "productName": "QA Test Product 500"
+      },
+      "timestamp": "2026-09-01T14:04:02.613Z"
+    },
+    {
+      "id": "tl-9f7316a5",
+      "accountId": "acc-e2fbab00",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-d8477bd0",
+        "slotIndex": 1,
+        "productName": "Automated QA Velvet Matte Lip Tint"
+      },
+      "timestamp": "2026-09-01T14:06:04.836Z"
     }
   ],
   "operatorNotes": [
@@ -33093,6 +33250,58 @@
       "deliveredAt": null,
       "failureCategory": null,
       "updatedAt": "2026-09-01T10:31:39.719Z"
+    },
+    {
+      "verificationRequestId": "req-1915e945",
+      "maskedEmail": "g***t@gmail.com",
+      "emailNormalized": "goodkie.com+test@gmail.com",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788271442380",
+      "requestedAt": "2026-09-01T14:04:02.379Z",
+      "providerAcceptedAt": "2026-09-01T14:04:02.380Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T14:04:02.380Z"
+    },
+    {
+      "verificationRequestId": "req-40143520",
+      "maskedEmail": "g***m@gmail.co",
+      "emailNormalized": "goodkie.com@gmail.co",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788271442410",
+      "requestedAt": "2026-09-01T14:04:02.410Z",
+      "providerAcceptedAt": "2026-09-01T14:04:02.410Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T14:04:02.410Z"
+    },
+    {
+      "verificationRequestId": "req-10c20342",
+      "maskedEmail": "g***m@gmail.com.evil.example",
+      "emailNormalized": "goodkie.com@gmail.com.evil.example",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788271442444",
+      "requestedAt": "2026-09-01T14:04:02.444Z",
+      "providerAcceptedAt": "2026-09-01T14:04:02.444Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T14:04:02.444Z"
+    },
+    {
+      "verificationRequestId": "req-479b0681",
+      "maskedEmail": "s***o@gmail.com",
+      "emailNormalized": "studioberryinfo@gmail.com",
+      "provider": "DEV_SANDBOX",
+      "providerEmailId": "sandbox_1788271442475",
+      "requestedAt": "2026-09-01T14:04:02.475Z",
+      "providerAcceptedAt": "2026-09-01T14:04:02.475Z",
+      "deliveryStatus": "PROVIDER_ACCEPTED",
+      "deliveredAt": null,
+      "failureCategory": null,
+      "updatedAt": "2026-09-01T14:04:02.475Z"
     }
   ]
 }
