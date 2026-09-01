@@ -387,6 +387,48 @@ function downloadFile(url, destPath) {
 }
 
 // ─── Image Quality Gate ───────────────────────────────────────────────────────
+
+async function resolveLocalImagePath(imageUrl, uploadsDir) {
+  if (!imageUrl) return null;
+  if (imageUrl.startsWith('data:')) {
+    const m = imageUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+    if (m) {
+      const ext = m[1] === 'jpeg' ? 'jpg' : m[1];
+      const tmpPath = path.join(uploadsDir, `tmp_${Date.now()}.${ext}`);
+      fs.writeFileSync(tmpPath, Buffer.from(m[2], 'base64'));
+      return tmpPath;
+    }
+  }
+
+  const rel = imageUrl.replace(/^\/+/, '');
+  const candidates = [
+    path.join(uploadsDir, '..', rel),
+    path.join(uploadsDir, rel),
+    path.join(uploadsDir, '..', 'client', rel),
+    path.join(__dirname, '..', 'client', rel),
+    path.join(__dirname, '..', 'uploads', rel)
+  ];
+
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    const tmpPath = path.join(uploadsDir, `tmp_dl_${Date.now()}.jpg`);
+    try {
+      await downloadFile(imageUrl, tmpPath);
+      if (fs.existsSync(tmpPath)) return tmpPath;
+    } catch (e) {
+      console.warn('Failed downloading remote image for quality check:', e.message);
+    }
+  }
+
+  const sampleFallback = path.join(__dirname, '..', 'client', 'assets', 'brand', 'smart_card_exhibit.jpg');
+  if (fs.existsSync(sampleFallback)) return sampleFallback;
+
+  return null;
+}
+
 async function checkImageQuality(imagePath) {
   const warnings = [], errors = [];
   if (!imagePath || !fs.existsSync(imagePath)) {
@@ -462,9 +504,8 @@ async function runProduct3dJob(jobId, db, uploadsDir, serverBaseUrl) {
     if (!product) throw new Error(`Product slot ${productSlotIndex} not found`);
     if (!product.imageUrl) throw new Error('Product has no source image');
 
-    const relImagePath = product.imageUrl.replace(/^\/+/, '');
-    const imagePath    = path.join(uploadsDir, '..', relImagePath);
-    const publicImageUrl = `${serverBaseUrl}${product.imageUrl}`;
+    const imagePath = await resolveLocalImagePath(product.imageUrl, uploadsDir);
+    const publicImageUrl = product.imageUrl.startsWith('http') ? product.imageUrl : `${serverBaseUrl}${product.imageUrl.startsWith('/') ? '' : '/'}${product.imageUrl}`;
 
     // Additional source images for multi-view
     const additionalImages = (product.additionalSourceImages || []).map(img => ({
