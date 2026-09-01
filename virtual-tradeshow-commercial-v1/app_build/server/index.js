@@ -599,13 +599,37 @@ try {
   console.warn('[ASSET BUNDLE] In-memory bundle not loaded:', e.message);
 }
 
-// Explicit direct routes for showcase HTML demos
+// Explicit direct routes for showcase HTML demos and canonical legal pages
 ['demo-fashion.html', 'demo-cosmetic.html', 'demo-furniture.html', 'demo-matterport.html', 'demo.html', 'demo-splat.html'].forEach(page => {
   app.get(`/${page}`, (req, res) => {
     const file = path.join(__dirname, '..', 'client', page);
     if (fs.existsSync(file)) return res.sendFile(file);
     res.status(404).send(`${page} not found`);
   });
+});
+
+app.get(['/terms', '/terms.html'], (req, res) => {
+  const file = path.join(__dirname, '..', 'client', 'terms.html');
+  if (fs.existsSync(file)) return res.sendFile(file);
+  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
+});
+
+app.get(['/privacy', '/privacy.html'], (req, res) => {
+  const file = path.join(__dirname, '..', 'client', 'privacy.html');
+  if (fs.existsSync(file)) return res.sendFile(file);
+  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
+});
+
+app.get(['/refund-policy', '/refund-policy.html'], (req, res) => {
+  const file = path.join(__dirname, '..', 'client', 'refund-policy.html');
+  if (fs.existsSync(file)) return res.sendFile(file);
+  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
+});
+
+app.get(['/pricing', '/pricing.html'], (req, res) => {
+  const file = path.join(__dirname, '..', 'client', 'pricing.html');
+  if (fs.existsSync(file)) return res.sendFile(file);
+  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
 });
 
 app.use('/assets', (req, res, next) => {
@@ -6714,7 +6738,7 @@ app.post('/api/webhooks/resend', async (req, res) => {
 // 2. Verify OTP / Magic Link & Sign In / Create Account
 app.post('/api/customer/auth/verify-otp', async (req, res) => {
   try {
-    const { email, code, magicToken, displayName, businessName, verificationToken, token } = req.body;
+    const { email, code, magicToken, displayName, businessName, verificationToken, token, termsAcknowledged, marketingEmailConsent } = req.body;
     if (!email || !email.includes('@')) {
       return res.status(400).json({ error: 'Valid email is required.' });
     }
@@ -6741,8 +6765,14 @@ app.post('/api/customer/auth/verify-otp', async (req, res) => {
       customerLoginOtps.delete(emailNorm);
     }
 
-    // Find or create canonical customer account
-    const account = await db.findOrCreateAccountByEmail(emailNorm, { displayName, businessName });
+    // Find or create canonical customer account (persisting optional legal and marketing preferences)
+    const account = await db.findOrCreateAccountByEmail(emailNorm, {
+      displayName,
+      businessName,
+      termsAcknowledged: termsAcknowledged === true || termsAcknowledged === 'true',
+      marketingEmailConsent: marketingEmailConsent !== undefined ? Boolean(marketingEmailConsent) : undefined,
+      source: 'CUSTOMER_PORTAL'
+    });
     const { sessionToken, session } = await db.createCustomerSession(account);
 
     res.json({

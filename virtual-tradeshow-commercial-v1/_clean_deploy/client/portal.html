@@ -686,8 +686,27 @@
           <input type="text" id="authCodeInput" class="form-input" placeholder="123456" required maxlength="12" style="text-align: center; font-size: 22px; letter-spacing: 0.25em; font-weight: 800; padding: 12px; width: 100%;">
         </div>
 
-        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 16px;">
+        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 14px;">
           <i class="fa-regular fa-clock"></i> Code expires in 10 minutes.
+        </div>
+
+        <!-- Optional Legal Terms & Marketing Consent Section -->
+        <div style="text-align: left; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 12px;">
+          <div style="color: var(--text-muted); margin-bottom: 8px; line-height: 1.4;">
+            By signing in, you access the ³D₂ Exhibitor Portal. Review our
+            <a href="/terms" target="_blank" rel="noopener noreferrer" style="color: var(--accent); text-decoration: underline; font-weight: 600;">Terms of Service</a> and
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" style="color: var(--accent); text-decoration: underline; font-weight: 600;">Privacy Policy</a>.
+          </div>
+          
+          <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; color: #cbd5e1; margin-bottom: 6px; font-size: 11.5px; line-height: 1.4;">
+            <input type="checkbox" id="authTermsAckCheckbox" style="margin-top: 2px; accent-color: var(--accent); cursor: pointer;">
+            <span>I acknowledge that I have reviewed the Terms of Service and Privacy Policy. <small style="color: var(--text-muted);">(Optional)</small></span>
+          </label>
+
+          <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; color: #cbd5e1; font-size: 11.5px; line-height: 1.4;">
+            <input type="checkbox" id="authMarketingCheckbox" style="margin-top: 2px; accent-color: var(--accent); cursor: pointer;">
+            <span>Send me product updates, event news, and promotional emails from ³D₂. I can unsubscribe at any time. <small style="color: var(--text-muted);">(Optional)</small></span>
+          </label>
         </div>
 
         <button type="submit" class="btn-action primary" id="btnVerifyOtp" style="width: 100%; padding: 12px; font-size: 14px; justify-content: center;">
@@ -727,6 +746,31 @@
     <!-- TAB 1: MY BOOTHS                                             -->
     <!-- ============================================================ -->
     <section class="tab-section active" id="secBooths">
+
+      <!-- Compact Subscription / Plan Summary Card -->
+      <div class="account-card" id="myBoothsPlanSummary" style="margin-bottom: 20px; padding: 14px 18px; background: rgba(11, 19, 43, 0.7); border: 1px solid var(--border); border-radius: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Current Plan</span>
+              <span class="brand-badge" id="boothPlanBadge" style="font-size: 11px; padding: 2px 8px;">BUSINESS — PILOT</span>
+              <span id="boothBillingBadge" style="font-size: 11px; font-weight: 600; color: #38bdf8; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.3); padding: 2px 8px; border-radius: 999px;">Pilot · Not Billed</span>
+            </div>
+            <div style="display: flex; gap: 16px; margin-top: 8px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted);">
+              <div><strong style="color: #fff;" id="meterProductsVal">0</strong> / <span id="meterProductsLimit">100</span> Products</div>
+              <div><strong style="color: #fff;" id="meterSourcesVal">1</strong> / <span id="meterSourcesLimit">60</span> Sources</div>
+              <div><strong style="color: #fff;" id="meterMediaVal">0</strong> / <span id="meterMediaLimit">30</span> Advanced Media</div>
+              <div><strong style="color: #fff;" id="meterBoothsVal">1</strong> / <span id="meterBoothsLimit">1</span> Booth</div>
+            </div>
+          </div>
+          <div>
+            <button type="button" onclick="openUpgradeModal()" class="btn-action primary" style="padding: 7px 14px; font-size: 12px;">
+              <i class="fa-solid fa-arrow-up-right-dots"></i> Upgrade / Change Plan
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Onboarding Checklist -->
       <div class="onboarding-card" id="onboardingContainer" style="display: none;">
         <div class="onboarding-head">
@@ -986,6 +1030,30 @@
             </span>
           </div>
         </form>
+
+        <!-- Email Preferences Section (Section 8) -->
+        <div style="margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border);" id="accountEmailPrefsSection">
+          <label class="form-label" style="font-size: 14px; font-weight: 700; margin-bottom: 4px;">
+            <i class="fa-solid fa-envelope" style="color: var(--accent); margin-right: 6px;"></i> Email Preferences
+          </label>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Control your marketing and promotional email communication settings. Critical service and transactional notifications (such as OTP logins, trade leads, RFQ inquiries, and security alerts) will continue to be delivered.</p>
+
+          <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <div style="font-size: 13px; font-weight: 700; color: #fff;">Marketing &amp; Promotional Emails</div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Receive product updates, event news, and promotional emails from ³D₂.</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                <input type="checkbox" id="accMarketingEmailConsent" onchange="handleMarketingPreferenceChange(event)" style="width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer;">
+                <span id="accMarketingStatusLabel" style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Disabled</span>
+              </label>
+              <span id="marketingSaveMsg" style="font-size: 12px; font-weight: 600; color: #4ade80; display: none;">
+                <i class="fa-solid fa-check"></i> Saved!
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -1169,9 +1237,13 @@
       const formVerify = document.getElementById('formVerifyOtp');
       const codeInput = document.getElementById('authCodeInput');
       const desc = document.getElementById('authModalDesc');
+      const termsBox = document.getElementById('authTermsAckCheckbox');
+      const mktBox = document.getElementById('authMarketingCheckbox');
       if (formSend) formSend.style.display = 'block';
       if (formVerify) formVerify.style.display = 'none';
       if (codeInput) codeInput.value = '';
+      if (termsBox) termsBox.checked = false;
+      if (mktBox) mktBox.checked = false;
       if (desc) desc.innerText = 'Enter your verified work email to receive a one-time code.';
       hideAuthBanner();
     }
@@ -1259,8 +1331,13 @@
       if (e) e.preventDefault();
       const emailInput = document.getElementById('authEmailInput');
       const codeInput = document.getElementById('authCodeInput');
+      const termsBox = document.getElementById('authTermsAckCheckbox');
+      const mktBox = document.getElementById('authMarketingCheckbox');
       const email = emailInput ? emailInput.value.trim() : '';
       const code = codeInput ? codeInput.value.trim() : '';
+      const termsAcknowledged = Boolean(termsBox && termsBox.checked);
+      const marketingEmailConsent = Boolean(mktBox && mktBox.checked);
+
       const btn = document.getElementById('btnVerifyOtp');
       if (btn) {
         btn.disabled = true;
@@ -1272,7 +1349,12 @@
         const res = await fetch('/api/customer/auth/verify-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, code })
+          body: JSON.stringify({
+            email,
+            code,
+            termsAcknowledged,
+            marketingEmailConsent
+          })
         });
         const data = await res.json();
         if (res.ok && data.success && data.token) {
@@ -1612,6 +1694,12 @@
       document.getElementById('accLocation').value = currentAccount.location || currentAccount.country || '';
       document.getElementById('accEntitlementBadge').innerText = currentAccount.entitlement || 'BUSINESS — PILOT';
 
+      // Marketing Email Consent State
+      const mktCheckbox = document.getElementById('accMarketingEmailConsent');
+      const mktStatus = document.getElementById('accMarketingStatusLabel');
+      if (mktCheckbox) mktCheckbox.checked = Boolean(currentAccount.marketingEmailConsent);
+      if (mktStatus) mktStatus.innerText = currentAccount.marketingEmailConsent ? 'Enabled' : 'Disabled';
+
       // Company Logo State
       const logoImg = document.getElementById('logoPreviewImg');
       const noLogo = document.getElementById('noLogoPlaceholder');
@@ -1762,6 +1850,35 @@
       }
     }
 
+    async function handleMarketingPreferenceChange(e) {
+      if (!customerToken) return;
+      const consent = Boolean(e.target.checked);
+      const statusLabel = document.getElementById('accMarketingStatusLabel');
+      const saveMsg = document.getElementById('marketingSaveMsg');
+      if (statusLabel) statusLabel.innerText = consent ? 'Enabled' : 'Disabled';
+
+      try {
+        const res = await fetch('/api/customer/account', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + customerToken
+          },
+          body: JSON.stringify({ marketingEmailConsent: consent })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (currentAccount) currentAccount.marketingEmailConsent = consent;
+          if (saveMsg) {
+            saveMsg.style.display = 'inline-block';
+            setTimeout(() => { saveMsg.style.display = 'none'; }, 3000);
+          }
+        }
+      } catch (err) {
+        console.error('Error updating marketing preferences:', err);
+      }
+    }
+
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', initPortal);
   
@@ -1781,15 +1898,17 @@
           const ent = data.entitlement;
           const badge = document.getElementById('accEntitlementBadge');
           const sub = document.getElementById('accEntitlementSub');
+          const planTitle = ent.planDisplayName || ent.planCode;
+          const isPilot = Boolean(ent.isPilot || ent.billingState === 'PILOT_NOT_BILLED');
+
           if (badge) {
-            const planTitle = ent.planDisplayName || ent.planCode;
-            badge.innerText = (ent.isPilot || ent.billingState === 'PILOT_NOT_BILLED') ? `${planTitle} — PILOT` : planTitle;
+            badge.innerText = isPilot ? `${planTitle} — PILOT` : planTitle;
             if (ent.planCode === 'PRO') badge.style.borderColor = 'rgba(96,165,250,0.5)';
             if (ent.planCode === 'BUSINESS') badge.style.borderColor = 'rgba(56,189,248,0.5)';
             if (ent.planCode === 'CUSTOM') badge.style.borderColor = 'rgba(251,191,36,0.5)';
           }
           if (sub) {
-            if (ent.isPilot || ent.billingState === 'PILOT_NOT_BILLED') {
+            if (isPilot) {
               sub.innerText = '• Commercial Pilot (Max 100 Products • 60 Sources • 30 Media • Not Billed)';
             } else if (ent.planCode === 'FREE_BOOTH') {
               sub.innerText = '• Free Acquisition Tier (Max 3 Products)';
@@ -1800,6 +1919,16 @@
             } else if (ent.planCode === 'CUSTOM') {
               sub.innerText = '• Enterprise Custom Contract';
             }
+          }
+
+          // Update My Booths Compact Plan Summary Bar
+          const bPlanBadge = document.getElementById('boothPlanBadge');
+          const bBillingBadge = document.getElementById('boothBillingBadge');
+          if (bPlanBadge) {
+            bPlanBadge.innerText = isPilot ? `${planTitle} — PILOT` : planTitle;
+          }
+          if (bBillingBadge) {
+            bBillingBadge.innerText = isPilot ? 'Pilot · Not Billed' : (ent.billingState || 'Active');
           }
 
           // Update Usage Meters
@@ -1821,6 +1950,16 @@
               document.getElementById('usageBoothsVal').innerText = u.booths.current + ' / ' + u.booths.limit;
               document.getElementById('usageBoothsBar').style.width = u.booths.percent + '%';
             }
+
+            // Sync My Booths bar meters
+            if (document.getElementById('meterProductsVal')) document.getElementById('meterProductsVal').innerText = u.products.current;
+            if (document.getElementById('meterProductsLimit')) document.getElementById('meterProductsLimit').innerText = u.products.limit;
+            if (document.getElementById('meterSourcesVal')) document.getElementById('meterSourcesVal').innerText = u.sources.current;
+            if (document.getElementById('meterSourcesLimit')) document.getElementById('meterSourcesLimit').innerText = u.sources.limit;
+            if (document.getElementById('meterMediaVal')) document.getElementById('meterMediaVal').innerText = u.advancedMedia.current;
+            if (document.getElementById('meterMediaLimit')) document.getElementById('meterMediaLimit').innerText = u.advancedMedia.limit;
+            if (document.getElementById('meterBoothsVal')) document.getElementById('meterBoothsVal').innerText = u.booths.current;
+            if (document.getElementById('meterBoothsLimit')) document.getElementById('meterBoothsLimit').innerText = u.booths.limit;
           }
         }
       } catch (err) {
@@ -1829,7 +1968,54 @@
     }
 
     function openUpgradeModal() {
-      document.getElementById('upgradeModal').style.display = 'flex';
+      const modal = document.getElementById('upgradeModal');
+      if (!modal) return;
+      modal.style.display = 'flex';
+
+      const currentEnt = (currentAccount?.entitlement || '').toUpperCase();
+      const isBusiness = currentEnt.includes('BUSINESS');
+      const isPro = currentEnt.includes('PRO') && !isBusiness;
+
+      const btnPro = document.querySelector('#modalPlanPro button');
+      const btnBiz = document.querySelector('#modalPlanBusiness button');
+
+      if (btnBiz) {
+        if (isBusiness) {
+          btnBiz.innerText = 'Current Plan';
+          btnBiz.disabled = true;
+          btnBiz.style.opacity = '0.75';
+          btnBiz.style.cursor = 'default';
+          btnBiz.onclick = null;
+        } else {
+          btnBiz.innerText = 'Upgrade to BUSINESS ($799)';
+          btnBiz.disabled = false;
+          btnBiz.style.opacity = '1';
+          btnBiz.style.cursor = 'pointer';
+          btnBiz.onclick = () => handlePlanChangeRequest('BUSINESS');
+        }
+      }
+
+      if (btnPro) {
+        if (isPro) {
+          btnPro.innerText = 'Current Plan';
+          btnPro.disabled = true;
+          btnPro.style.opacity = '0.75';
+          btnPro.style.cursor = 'default';
+          btnPro.onclick = null;
+        } else if (isBusiness) {
+          btnPro.innerText = 'Plan Change / Contact Sales';
+          btnPro.disabled = false;
+          btnPro.style.opacity = '1';
+          btnPro.style.cursor = 'pointer';
+          btnPro.onclick = () => handlePlanChangeRequest('PRO');
+        } else {
+          btnPro.innerText = 'Upgrade to PRO ($299)';
+          btnPro.disabled = false;
+          btnPro.style.opacity = '1';
+          btnPro.style.cursor = 'pointer';
+          btnPro.onclick = () => handlePlanChangeRequest('PRO');
+        }
+      }
     }
 
     function closeUpgradeModal() {
@@ -1849,29 +2035,31 @@
       document.getElementById('customQuoteModal').style.display = 'none';
     }
 
-    async function simulateUpgradeTo(targetPlan) {
+    async function handlePlanChangeRequest(targetPlan) {
       if (!customerToken) return;
       try {
-        const res = await fetch('/api/customer/entitlement/upgrade-simulate', {
+        const res = await fetch('/api/customer/upgrade-request', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + customerToken
           },
-          body: JSON.stringify({ targetPlan, isTest: true })
+          body: JSON.stringify({
+            requestedPlan: targetPlan,
+            currentEntitlement: currentAccount?.entitlement,
+            source: 'CUSTOMER_PORTAL'
+          })
         });
         const data = await res.json();
-        if (data.success) {
-          closeUpgradeModal();
-          await loadAccountProfile();
-          await loadAccountEntitlement();
-          alert('Plan successfully updated to ' + targetPlan + '! All existing booths and leads are preserved.');
-        } else {
-          alert(data.error || 'Failed to update plan.');
-        }
+        closeUpgradeModal();
+        alert('Your plan request for ' + targetPlan + ' has been submitted. Online payment activation is not yet enabled for this account — our enterprise team will assist you shortly.');
       } catch (err) {
-        alert('Network error upgrading plan.');
+        alert('Network error submitting plan change request.');
       }
+    }
+
+    async function simulateUpgradeTo(targetPlan) {
+      return handlePlanChangeRequest(targetPlan);
     }
 
     async function handleCustomQuoteSubmit(e) {

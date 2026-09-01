@@ -9874,6 +9874,14 @@ return event;
           status: 'ACTIVE',
           emailVerified: true,
           entitlement: 'FREE BOOTH',
+          termsAcknowledged: profileData.termsAcknowledged === true,
+          termsVersion: profileData.termsAcknowledged === true ? '2026-v1' : null,
+          privacyVersion: profileData.termsAcknowledged === true ? '2026-v1' : null,
+          termsAcknowledgedAt: profileData.termsAcknowledged === true ? new Date().toISOString() : null,
+          termsSource: profileData.termsAcknowledged === true ? (profileData.source || 'CUSTOMER_PORTAL') : null,
+          marketingEmailConsent: profileData.marketingEmailConsent !== undefined ? Boolean(profileData.marketingEmailConsent) : false,
+          marketingConsentChangedAt: profileData.marketingEmailConsent !== undefined ? new Date().toISOString() : null,
+          marketingConsentSource: profileData.marketingEmailConsent !== undefined ? (profileData.source || 'CUSTOMER_PORTAL') : null,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           lastLoginAt: new Date().toISOString()
@@ -9900,6 +9908,18 @@ return event;
         }
         if (profileData.displayName && !account.displayName) {
           account.displayName = profileData.displayName;
+        }
+        if (profileData.termsAcknowledged === true && !account.termsAcknowledged) {
+          account.termsAcknowledged = true;
+          account.termsVersion = '2026-v1';
+          account.privacyVersion = '2026-v1';
+          account.termsAcknowledgedAt = new Date().toISOString();
+          account.termsSource = profileData.source || 'CUSTOMER_PORTAL';
+        }
+        if (profileData.marketingEmailConsent !== undefined) {
+          account.marketingEmailConsent = Boolean(profileData.marketingEmailConsent);
+          account.marketingConsentChangedAt = new Date().toISOString();
+          account.marketingConsentSource = profileData.source || 'CUSTOMER_PORTAL';
         }
         account.updatedAt = new Date().toISOString();
       }
@@ -10296,6 +10316,18 @@ return event;
       if (updates.industry !== undefined) account.industry = String(updates.industry || '').trim();
       if (updates.location !== undefined) account.location = String(updates.location || '').trim();
       if (updates.country !== undefined) account.country = String(updates.country || '').trim();
+      if (updates.marketingEmailConsent !== undefined) {
+        account.marketingEmailConsent = Boolean(updates.marketingEmailConsent);
+        account.marketingConsentChangedAt = new Date().toISOString();
+        account.marketingConsentSource = updates.marketingConsentSource || 'CUSTOMER_PORTAL';
+      }
+      if (updates.termsAcknowledged !== undefined && updates.termsAcknowledged === true) {
+        account.termsAcknowledged = true;
+        account.termsVersion = updates.termsVersion || '2026-v1';
+        account.privacyVersion = updates.privacyVersion || '2026-v1';
+        account.termsAcknowledgedAt = new Date().toISOString();
+        account.termsSource = updates.termsSource || 'CUSTOMER_PORTAL';
+      }
 
       // Sync businessName to owned projects
       if (updates.businessName) {
