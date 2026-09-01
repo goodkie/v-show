@@ -613,7 +613,8 @@
   <header class="portal-nav">
     <div class="brand-group">
       <a href="/" class="brand-logo">
-        <span>³D₂</span>
+        <img src="/assets/brand/3dz_logo.png" alt="³D₂" style="height:30px;width:auto;object-fit:contain;display:block;" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';">
+        <span style="display:none;">³D₂</span>
       </a>
       <span class="brand-badge">Customer Portal</span>
     </div>
@@ -634,7 +635,7 @@
     </nav>
 
     <div class="user-actions">
-      <span class="user-greeting" id="userGreeting">Exhibitor</span>
+      <span class="user-greeting" id="userGreeting"></span>
       <button class="btn-signout" onclick="handleCustomerSignOut()">
         <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
       </button>
@@ -669,7 +670,7 @@
 
       <!-- Booths Grid -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="font-size: 22px; font-weight: 800; color: #fff;">My 3D Virtual Booths</h2>
+        <h2 style="font-size: 22px; font-weight: 800; color: #fff;">My ³D₂ Booths</h2>
         <a href="/" class="btn-action primary" id="btnCreateNewBooth" style="padding: 10px 18px; font-size: 13px;">
           <i class="fa-solid fa-plus"></i> Create New Booth
         </a>
@@ -1007,7 +1008,8 @@
         }
         const data = await res.json();
         currentAccount = data.account;
-        document.getElementById('userGreeting').innerText = currentAccount.displayName || currentAccount.email;
+        document.getElementById('userGreeting').innerText =
+          currentAccount.contactName || currentAccount.businessName || currentAccount.displayName || currentAccount.email || 'Exhibitor';
         document.getElementById('authModal').style.display = 'none';
 
         // Load initial tab
@@ -1188,7 +1190,8 @@
           localStorage.setItem('3d2_customer_token', customerToken);
           currentAccount = data.account;
           document.getElementById('authModal').style.display = 'none';
-          document.getElementById('userGreeting').innerText = currentAccount.displayName || currentAccount.email;
+          document.getElementById('userGreeting').innerText =
+            currentAccount.contactName || currentAccount.businessName || currentAccount.displayName || currentAccount.email || 'Exhibitor';
           loadCustomerBooths();
           loadCustomerAnalytics();
         } else {
@@ -1396,6 +1399,20 @@
 
       } catch (err) {
         console.error('Error loading customer booths:', err);
+        const container = document.getElementById('boothsGridContainer');
+        if (container) {
+          container.innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1;">
+              <i class="fa-solid fa-triangle-exclamation" style="font-size: 32px; color: #f59e0b; margin-bottom: 14px;"></i>
+              <h3 style="font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 6px;">Couldn't Load Your Booths</h3>
+              <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px;">There was a problem loading your booth data. Please try again.</p>
+              <button onclick="loadCustomerBooths()" class="btn-action primary" style="padding: 9px 18px; font-size: 13px;">
+                <i class="fa-solid fa-rotate-right"></i> Retry
+              </button>
+            </div>
+          `;
+          document.getElementById('onboardingContainer').style.display = 'none';
+        }
       }
     }
 

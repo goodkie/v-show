@@ -6909,6 +6909,28 @@ app.post('/api/customer/booths/claim', requireCustomerAuth, async (req, res) => 
   }
 });
 
+// 9.1 Create New Booth — Server-Side Entitlement Limit Enforcement
+app.post('/api/customer/booths/create', requireCustomerAuth, (req, res) => {
+  try {
+    const planLimits = db.getAccountPlanLimits(req.customer.id);
+    const existingBooths = db.getCustomerBooths(req.customer.id, req.customer.emailNormalized);
+    const maxBooths = planLimits.maxBooths || 1;
+    if (existingBooths.length >= maxBooths) {
+      return res.status(403).json({
+        error: `Your current plan allows ${maxBooths} active booth${maxBooths !== 1 ? 's' : ''}. You have reached your limit.`,
+        code: 'BOOTH_LIMIT_REACHED',
+        currentCount: existingBooths.length,
+        limit: maxBooths,
+        upgradeAvailable: true
+      });
+    }
+    // If under limit, redirect to booth creation flow
+    res.json({ success: true, message: 'Booth creation allowed.', redirectUrl: '/' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 10. Customer Portal HTML Entry
 
 // ============================================================
