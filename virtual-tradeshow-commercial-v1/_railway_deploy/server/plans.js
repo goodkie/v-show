@@ -46,7 +46,8 @@ const CANONICAL_PLANS = {
       custom3DReview: false,
       nfcSupported: false,
       aiFittingConsultation: 'CONSULTATION',
-      aiMakeupConsultation: 'CONSULTATION'
+      aiMakeupConsultation: 'CONSULTATION',
+      product3dConversion: false
     },
     cta: 'START FREE'
   },
@@ -86,7 +87,8 @@ const CANONICAL_PLANS = {
       custom3DReview: false,
       nfcSupported: true,
       aiFittingConsultation: 'CONSULTATION',
-      aiMakeupConsultation: 'CONSULTATION'
+      aiMakeupConsultation: 'CONSULTATION',
+      product3dConversion: false
     },
     cta: 'CHOOSE PRO'
   },
@@ -126,7 +128,8 @@ const CANONICAL_PLANS = {
       custom3DReview: false,
       nfcSupported: true,
       aiFittingConsultation: 'CONSULTATION',
-      aiMakeupConsultation: 'CONSULTATION'
+      aiMakeupConsultation: 'CONSULTATION',
+      product3dConversion: true
     },
     cta: 'CHOOSE BUSINESS'
   },
@@ -166,7 +169,8 @@ const CANONICAL_PLANS = {
       custom3DReview: true,
       nfcSupported: true,
       aiFittingConsultation: 'CONSULTATION',
-      aiMakeupConsultation: 'CONSULTATION'
+      aiMakeupConsultation: 'CONSULTATION',
+      product3dConversion: true
     },
     cta: 'CONTACT SALES'
   },
@@ -206,7 +210,8 @@ const CANONICAL_PLANS = {
       custom3DReview: true,
       nfcSupported: true,
       aiFittingConsultation: 'ACTIVE',
-      aiMakeupConsultation: 'ACTIVE'
+      aiMakeupConsultation: 'ACTIVE',
+      product3dConversion: true
     },
     cta: 'INTERNAL QA'
   }
@@ -428,6 +433,30 @@ function checkViewpointLimit(account, currentViewpointsCount, newCount = 1) {
 }
 
 /**
+ * Checks whether an account may use the Product 3D Conversion feature.
+ * BUSINESS, CUSTOM, INTERNAL_FULL_ACCESS → allowed.
+ * PRO, FREE_BOOTH → denied with requiredPlan = BUSINESS.
+ * Internal QA accounts always allowed (isDev flag expected to be pre-computed by caller).
+ */
+function checkProduct3dConversionAccess(account) {
+  const isPilot = account?.isPilot || account?.billingState === 'PILOT_NOT_BILLED';
+  const planCode = isPilot
+    ? normalizePlanCode(account?.entitlement || 'BUSINESS')
+    : normalizePlanCode(account?.planCode || account?.entitlement || 'FREE_BOOTH');
+  const plan = getPlan(planCode);
+  const allowed = plan.features.product3dConversion === true;
+  if (allowed) return { allowed: true, plan: planCode, feature: 'product3dConversion' };
+  return {
+    allowed: false,
+    plan: planCode,
+    feature: 'product3dConversion',
+    requiredPlan: 'BUSINESS',
+    code: 'ENTITLEMENT_UPGRADE_REQUIRED',
+    message: 'Product 3D Conversion requires the BUSINESS plan or higher.'
+  };
+}
+
+/**
  * Returns clean public paid plans array for frontend pricing components
  */
 function getPublicPlans() {
@@ -516,6 +545,7 @@ module.exports = {
   checkCatalogLimit,
   checkPinLimit,
   checkViewpointLimit,
+  checkProduct3dConversionAccess,
   getPublicPlans,
   getFullPlanRegistry
 };

@@ -11935,6 +11935,348 @@ return event;
     });
   }
 
+  // ============================================================
+  // ─── P3.7: getProjectById helper ─────────────────────────────
+  // ============================================================
+  async getProjectById(projectId) {
+    const data = this.memoryData;
+    return (data.projects || []).find(p => p.id === projectId) || null;
+  }
+
+  // ============================================================
+  // ─── P3.7: TOKEN LEDGER ──────────────────────────────────────
+  // ============================================================
+
+  // Token cost config — driven by env vars, not hardcoded plan prices
+  getTokenCostConfig() {
+    return {
+      PRODUCT_3D_SINGLE_IMAGE_TOKEN_COST: parseInt(process.env.PRODUCT_3D_SINGLE_IMAGE_TOKEN_COST || '1', 10),
+      PRODUCT_3D_REGEN_TOKEN_COST:        parseInt(process.env.PRODUCT_3D_REGEN_TOKEN_COST || '1', 10),
+      TOKEN_COMMERCIAL_POLICY: process.env.TOKEN_COMMERCIAL_POLICY || 'CONFIG_DRIVEN',
+      configured: true
+    };
+  }
+
+  /** Initialize a token ledger for an account if it doesn't exist. */
+  async initTokenLedger(accountId, { initialTokens = 0, isTestAccount = false } = {}) {
+    return this.mutate((db) => {
+      db.tokenLedgers = db.tokenLedgers || [];
+      let ledger = db.tokenLedgers.find(l => l.accountId === accountId);
+      if (!ledger) {
+        ledger = {
+          accountId,
+          availableTokens: initialTokens,
+          reservedTokens: 0,
+          consumedTokens: 0,
+          isTestAccount,
+          createdAt: new Date().toISOString(),
+          lastUpdated: new Date().toISOString()
+        };
+        db.tokenLedgers.push(ledger);
+      }
+      return ledger;
+    });
+  }
+
+  /** Get token ledger for account. Auto-initializes for INTERNAL_DEV accounts. */
+  getTokenLedger(accountId, { isTestAccount = false } = {}) {
+    const data = this.memoryData;
+    data.tokenLedgers = data.tokenLedgers || [];
+    let ledger = data.tokenLedgers.find(l => l.accountId === accountId);
+    if (!ledger && isTestAccount) {
+      // Auto-provision synthetic balance for INTERNAL_DEV (effectively unlimited)
+      ledger = {
+        accountId,
+        availableTokens: 9999,
+        reservedTokens: 0,
+        consumedTokens: 0,
+        isTestAccount: true,
+        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
+      };
+      data.tokenLedgers.push(ledger);
+    }
+    return ledger || null;
+  }
+
+  /**
+   * Atomically reserve tokens for a pending job.
+   * Fails if balance insufficient (TOKEN_OVERSPEND_TEST = PASS).
+   */
+  async reserveTokens(accountId, amount, jobId, reason = 'JOB_RESERVE') {
+    return this.mutate((db) => {
+      db.tokenLedgers = db.tokenLedgers || [];
+      let ledger = db.tokenLedgers.find(l => l.accountId === accountId);
+      if (!ledger) {
+        const err = new Error('Token ledger not found for account.');
+        err.code = 'TOKEN_LEDGER_NOT_FOUND';
+        err.status = 400;
+        throw err;
+      }
+      if (ledger.availableTokens < amount) {
+        const err = new Error(`Insufficient token balance. Available: ${ledger.availableTokens}, Required: ${amount}`);
+        err.code = 'INSUFFICIENT_TOKEN_BALANCE';
+        err.status = 402;
+        err.available = ledger.availableTokens;
+        err.required = amount;
+        throw err;
+      }
+      ledger.availableTokens -= amount;
+      ledger.reservedTokens  += amount;
+      ledger.lastUpdated = new Date().toISOString();
+
+      // Audit log
+      db.tokenTransactions = db.tokenTransactions || [];
+      db.tokenTransactions.push({
+        id: `txn-${uuidv4().substring(0, 8)}`,
+        accountId,
+        jobId: jobId || null,
+        type: 'TOKEN_RESERVE',
+        amount,
+        reason,
+        balanceAfter: ledger.availableTokens,
+        timestamp: new Date().toISOString()
+      });
+      if (db.tokenTransactions.length > 10000) db.tokenTransactions.shift();
+
+      return { success: true, ledger: { ...ledger }, reserved: amount };
+    });
+  }
+
+  /**
+   * Consume reserved tokens when job succeeds.
+   * FAILED_JOB_TOKEN_LOSS=0: do NOT call this on failure; call releaseTokens instead.
+   */
+  async consumeTokens(accountId, amount, jobId, reason = 'JOB_COMPLETED') {
+    return this.mutate((db) => {
+      db.tokenLedgers = db.tokenLedgers || [];
+      const ledger = db.tokenLedgers.find(l => l.accountId === accountId);
+      if (!ledger) return { success: false, error: 'LEDGER_NOT_FOUND' };
+      const actual = Math.min(amount, ledger.reservedTokens);
+      ledger.reservedTokens  -= actual;
+      ledger.consumedTokens  += actual;
+      ledger.lastUpdated = new Date().toISOString();
+
+      db.tokenTransactions = db.tokenTransactions || [];
+      db.tokenTransactions.push({
+        id: `txn-${uuidv4().substring(0, 8)}`,
+        accountId,
+        jobId: jobId || null,
+        type: 'TOKEN_CONSUME',
+        amount: actual,
+        reason,
+        balanceAfter: ledger.availableTokens,
+        timestamp: new Date().toISOString()
+      });
+      if (db.tokenTransactions.length > 10000) db.tokenTransactions.shift();
+
+      return { success: true, ledger: { ...ledger }, consumed: actual };
+    });
+  }
+
+  /**
+   * Release reserved tokens back to available (on failure — FAILED_JOB_TOKEN_LOSS=0).
+   */
+  async releaseTokens(accountId, amount, jobId, reason = 'JOB_RELEASE') {
+    return this.mutate((db) => {
+      db.tokenLedgers = db.tokenLedgers || [];
+      const ledger = db.tokenLedgers.find(l => l.accountId === accountId);
+      if (!ledger) return { success: false, error: 'LEDGER_NOT_FOUND' };
+      const actual = Math.min(amount, ledger.reservedTokens);
+      ledger.reservedTokens  -= actual;
+      ledger.availableTokens += actual;
+      ledger.lastUpdated = new Date().toISOString();
+
+      db.tokenTransactions = db.tokenTransactions || [];
+      db.tokenTransactions.push({
+        id: `txn-${uuidv4().substring(0, 8)}`,
+        accountId,
+        jobId: jobId || null,
+        type: 'TOKEN_RELEASE',
+        amount: actual,
+        reason,
+        balanceAfter: ledger.availableTokens,
+        timestamp: new Date().toISOString()
+      });
+      if (db.tokenTransactions.length > 10000) db.tokenTransactions.shift();
+
+      return { success: true, ledger: { ...ledger }, released: actual };
+    });
+  }
+
+  /** Refund tokens post-consume (e.g., manual override). */
+  async refundTokens(accountId, amount, jobId, reason = 'TOKEN_REFUND') {
+    return this.mutate((db) => {
+      db.tokenLedgers = db.tokenLedgers || [];
+      const ledger = db.tokenLedgers.find(l => l.accountId === accountId);
+      if (!ledger) return { success: false, error: 'LEDGER_NOT_FOUND' };
+      ledger.consumedTokens  = Math.max(0, ledger.consumedTokens - amount);
+      ledger.availableTokens += amount;
+      ledger.lastUpdated = new Date().toISOString();
+
+      db.tokenTransactions = db.tokenTransactions || [];
+      db.tokenTransactions.push({
+        id: `txn-${uuidv4().substring(0, 8)}`,
+        accountId, jobId: jobId || null,
+        type: 'TOKEN_REFUND', amount, reason,
+        balanceAfter: ledger.availableTokens,
+        timestamp: new Date().toISOString()
+      });
+
+      return { success: true, ledger: { ...ledger }, refunded: amount };
+    });
+  }
+
+  /** Grant tokens to an account (admin / test seeding). */
+  async grantTokens(accountId, amount, reason = 'TOKEN_GRANT') {
+    return this.mutate((db) => {
+      db.tokenLedgers = db.tokenLedgers || [];
+      let ledger = db.tokenLedgers.find(l => l.accountId === accountId);
+      if (!ledger) {
+        ledger = { accountId, availableTokens: 0, reservedTokens: 0, consumedTokens: 0, isTestAccount: false, createdAt: new Date().toISOString(), lastUpdated: new Date().toISOString() };
+        db.tokenLedgers.push(ledger);
+      }
+      ledger.availableTokens += amount;
+      ledger.lastUpdated = new Date().toISOString();
+
+      db.tokenTransactions = db.tokenTransactions || [];
+      db.tokenTransactions.push({
+        id: `txn-${uuidv4().substring(0, 8)}`,
+        accountId, jobId: null,
+        type: 'TOKEN_GRANT', amount, reason,
+        balanceAfter: ledger.availableTokens,
+        timestamp: new Date().toISOString()
+      });
+
+      return { success: true, ledger: { ...ledger }, granted: amount };
+    });
+  }
+
+  getTokenTransactions(accountId, limit = 50) {
+    const data = this.memoryData;
+    return ((data.tokenTransactions || [])
+      .filter(t => t.accountId === accountId)
+      .slice(-limit));
+  }
+
+  // ============================================================
+  // ─── P3.7: PRODUCT 3D JOB QUEUE ──────────────────────────────
+  // ============================================================
+
+  async createProduct3dJob(jobData) {
+    return this.mutate((db) => {
+      db.product3dJobs = db.product3dJobs || [];
+      const job = {
+        id: `p3dj-${uuidv4().substring(0, 8)}`,
+        accountId:        jobData.accountId,
+        projectId:        jobData.projectId,
+        productSlotIndex: jobData.productSlotIndex,
+        productId:        jobData.productId || null,
+        sourceImageUrl:   jobData.sourceImageUrl || null,
+        status:           'QUEUED',
+        provider:         null,
+        generatorVersion: null,
+        reservedTokens:   jobData.reservedTokens || 0,
+        consumedTokens:   0,
+        isRegen:          jobData.isRegen === true,
+        previousGlbUrl:   jobData.previousGlbUrl || null,
+        createdAt:        new Date().toISOString(),
+        startedAt:        null,
+        completedAt:      null,
+        error:            null,
+        validationStep:   null,
+        resultGlbUrl:     null,
+        resultPreviewUrl: null,
+        glbSha256:        null,
+        meshStats:        null
+      };
+      db.product3dJobs.push(job);
+      if (db.product3dJobs.length > 5000) db.product3dJobs.shift();
+      return job;
+    });
+  }
+
+  async getProduct3dJob(jobId) {
+    const data = this.memoryData;
+    return (data.product3dJobs || []).find(j => j.id === jobId) || null;
+  }
+
+  async updateProduct3dJob(jobId, patch) {
+    return this.mutate((db) => {
+      db.product3dJobs = db.product3dJobs || [];
+      const job = db.product3dJobs.find(j => j.id === jobId);
+      if (!job) return null;
+      Object.assign(job, patch, { updatedAt: new Date().toISOString() });
+      return job;
+    });
+  }
+
+  listProduct3dJobs(projectId, { limit = 20 } = {}) {
+    const data = this.memoryData;
+    return ((data.product3dJobs || [])
+      .filter(j => j.projectId === projectId)
+      .slice(-limit)
+      .reverse());
+  }
+
+  // ============================================================
+  // ─── P3.7: PRODUCT 3D ASSET (product.product3d) ─────────────
+  // ============================================================
+
+  /**
+   * Update product.product3d on the project's products array.
+   * Called by the job runner on success.
+   */
+  async setProduct3d(projectId, productSlotIndex, product3dData) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) throw new Error(`Project ${projectId} not found`);
+      const product = (project.products || []).find(p =>
+        String(p.slotIndex) === String(productSlotIndex)
+      );
+      if (!product) throw new Error(`Product slot ${productSlotIndex} not found`);
+      product.product3d = {
+        status:             product3dData.status || 'NOT_GENERATED',
+        glbUrl:             product3dData.glbUrl || null,
+        previewImageUrl:    product3dData.previewImageUrl || null,
+        sourceImageSha256:  product3dData.sourceImageSha256 || null,
+        sourceMode:         product3dData.sourceMode || 'SINGLE_IMAGE_GENERATED_3D',
+        generatedAt:        product3dData.generatedAt || new Date().toISOString(),
+        generator:          product3dData.generator || null,
+        generatorVersion:   product3dData.generatorVersion || null,
+        tokenCost:          product3dData.tokenCost || 0,
+        assetId:            product3dData.assetId || null,
+        meshStats:          product3dData.meshStats || {},
+        glbSha256:          product3dData.glbSha256 || null,
+        validation:         product3dData.validation || {}
+      };
+      product.updatedAt = new Date().toISOString();
+      project.updatedAt = new Date().toISOString();
+      return product;
+    });
+  }
+
+  /**
+   * Clear product.product3d (owner removes 3D model — does NOT remove product).
+   */
+  async clearProduct3d(projectId, productSlotIndex, token) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) throw new Error('Project not found');
+      if (!this.verifyEditAccess(project, token)) {
+        const err = new Error('Cross-tenant access forbidden.'); err.status = 403; throw err;
+      }
+      const product = (project.products || []).find(p =>
+        String(p.slotIndex) === String(productSlotIndex)
+      );
+      if (!product) throw new Error('Product slot not found');
+      product.product3d = null;
+      product.updatedAt = new Date().toISOString();
+      project.updatedAt = new Date().toISOString();
+      return { success: true, product };
+    });
+  }
+
 }
 
 module.exports = new JSONDatabase();
@@ -11942,7 +12284,3 @@ module.exports.verifyPassword = verifyPassword;
 module.exports.hashPassword = hashPassword;
 module.exports.validatePasswordStrength = validatePasswordStrength;
 module.exports.generateSecureTempPassword = generateSecureTempPassword;
-
-
-
-

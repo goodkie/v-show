@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -2421,7 +2421,47 @@
           </div>
 
           <!-- Catalog Membership Selector -->
-          <div class="form-group" style="margin-bottom: 10px;" id="opeCatalogMembershipSection">
+          <!-- ── Product 3D Conversion Section (P3.7) ── -->
+          <div class="form-group" id="opeProduct3dSection" style="margin-bottom: 10px; margin-top: 14px;">
+            <div style="background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.3); border-radius: 12px; padding: 14px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <label style="font-weight: 800; font-size: 12px; color: #a5b4fc; display: flex; align-items: center; gap: 6px; margin: 0;">
+                  <i class="fa-solid fa-cube"></i> AI 3D PRODUCT PREVIEW
+                  <span id="p3dStatusBadge" style="display: none;"></span>
+                </label>
+                <span id="p3dTokenBalance" style="font-size: 11px; color: #64748b;"></span>
+              </div>
+              <div id="p3dStatusLine" style="font-size: 12px; color: #94a3b8; margin-bottom: 8px; display: none;"></div>
+              <div id="p3dWarningBanner" style="display: none; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 8px; padding: 8px 10px; font-size: 11.5px; color: #fbbf24; margin-bottom: 8px;"></div>
+              <!-- Buttons row -->
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" id="p3dBtnGenerate" onclick="product3dGenerate()" style="display:none; padding: 7px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg,rgba(99,102,241,0.35),rgba(139,92,246,0.35)); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.55); border-radius: 8px; cursor: pointer;">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> Convert to 3D
+                </button>
+                <button type="button" id="p3dBtnView" onclick="product3dOpenViewer()" style="display:none; padding: 7px 14px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 8px; cursor: pointer;">
+                  <i class="fa-solid fa-rotate-3d"></i> View 3D
+                </button>
+                <button type="button" id="p3dBtnRegen" onclick="product3dRegenerate()" style="display:none; padding: 7px 14px; font-size: 12px; font-weight: 700; background: rgba(99,102,241,0.12); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); border-radius: 8px; cursor: pointer;">
+                  <i class="fa-solid fa-arrows-rotate"></i> Regenerate 3D
+                </button>
+                <button type="button" id="p3dBtnRemove" onclick="product3dRemove()" style="display:none; padding: 7px 14px; font-size: 12px; font-weight: 700; background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; cursor: pointer;">
+                  <i class="fa-solid fa-trash"></i> Remove 3D
+                </button>
+                <!-- Upgrade CTA (shown for PRO/FREE) -->
+                <div id="p3dUpgradeCta" style="display:none; font-size: 11.5px; color: #94a3b8;">
+                  <i class="fa-solid fa-lock" style="color:#f59e0b;"></i> 3D Product Preview requires <strong style="color:#f59e0b;">BUSINESS</strong> plan.
+                </div>
+              </div>
+              <!-- Poll progress bar -->
+              <div id="p3dProgressBar" style="display:none; margin-top: 10px;">
+                <div style="height: 4px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
+                  <div id="p3dProgressFill" style="height: 100%; width: 30%; background: linear-gradient(90deg,#6366f1,#8b5cf6); border-radius: 4px; transition: width 1s ease;"></div>
+                </div>
+                <div id="p3dProgressLabel" style="font-size: 11px; color: #64748b; margin-top: 4px; text-align: center;">Processing…</div>
+              </div>
+            </div>
+          </div>
+<div class="form-group" style="margin-bottom: 10px;" id="opeCatalogMembershipSection">
             <label class="form-label" style="font-weight: 700; font-size: 12px; color: #38bdf8; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
               <i class="fa-solid fa-book-open"></i> Catalog Membership
             </label>
@@ -2486,6 +2526,13 @@
           </div>
         </div>
 
+        <!-- View in 3D (shown when product3d.status === READY) -->
+        <div id="ppdView3dRow" style="display: none; margin-bottom: 12px;">
+          <button type="button" onclick="publicOpenProduct3dViewer()" style="width: 100%; padding: 10px; font-size: 13px; font-weight: 800; background: linear-gradient(135deg,rgba(99,102,241,0.3),rgba(139,92,246,0.3)); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.55); border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fa-solid fa-rotate-3d"></i> View in 3D
+          </button>
+        </div>
+
         <!-- Trade Buyer Actions -->
         <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 12px; padding: 14px; margin-bottom: 6px;">
           <div style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px;">
@@ -2509,6 +2556,48 @@
       </div>
     </div>
   </div>
+  <!-- ============================================================ -->
+  <!-- P3.7: PRODUCT 3D VIEWER MODAL                                -->
+  <!-- ============================================================ -->
+  <div class="viewport-modal" id="product3dViewerModal" style="display: none; z-index: 9999;" role="dialog" aria-modal="true" aria-label="3D Product Viewer">
+    <div class="viewport-modal-card" style="max-width: min(96vw, 900px); max-height: min(94vh, 800px); display: flex; flex-direction: column;">
+      <div class="viewport-modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="background: rgba(99,102,241,0.18); border: 1px solid rgba(99,102,241,0.4); border-radius: 999px; padding: 3px 10px; font-size: 10px; font-weight: 800; color: #a5b4fc; text-transform: uppercase;"><i class="fa-solid fa-rotate-3d"></i> 3D PRODUCT VIEWER</span>
+          <h3 id="p3dViewerTitle" style="font-size: 16px; font-weight: 800; color: #fff; margin: 0;">Product</h3>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button type="button" onclick="product3dViewerReset()" style="padding: 5px 12px; font-size: 11px; font-weight: 700; background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; cursor: pointer;"><i class="fa-solid fa-arrows-to-circle"></i> Reset</button>
+          <button class="close-btn" onclick="closeProduct3dViewer()" style="position: static;" title="Close (Esc)">&#x2715;</button>
+        </div>
+      </div>
+      <div style="flex: 1 1 auto; min-height: 0; position: relative; background: #060c1a; border-radius: 0 0 16px 16px; overflow: hidden;">
+        <canvas id="p3dViewerCanvas" style="width: 100%; height: 100%; display: block; touch-action: none;"></canvas>
+        <div id="p3dViewerLoading" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(6,12,26,0.92); z-index: 10;">
+          <div style="font-size: 36px; animation: spin 1.2s linear infinite;"><i class="fa-solid fa-rotate-3d" style="color: #6366f1;"></i></div>
+          <div style="margin-top: 12px; font-size: 13px; color: #94a3b8;">Loading 3D model…</div>
+        </div>
+        <div id="p3dViewerError" style="display: none; position: absolute; inset: 0; align-items: center; justify-content: center; flex-direction: column; background: rgba(6,12,26,0.94); z-index: 10;">
+          <i class="fa-solid fa-triangle-exclamation" style="font-size: 32px; color: #f87171;"></i>
+          <div style="margin-top: 10px; font-size: 13px; color: #f87171;">Failed to load 3D model.</div>
+        </div>
+        <div style="position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 11px; color: rgba(148,163,184,0.7); pointer-events: none; white-space: nowrap;"><i class="fa-solid fa-hand"></i> Drag to rotate &nbsp;&middot;&nbsp; Pinch/Scroll to zoom</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P3.7: 3D Conversion Confirm Modal -->
+  <div class="viewport-modal" id="p3dConfirmModal" style="display: none; z-index: 10000;">
+    <div class="viewport-modal-card" style="max-width: 440px; padding: 24px;">
+      <h3 style="color: #fff; margin: 0 0 8px 0; font-size: 17px;"><i class="fa-solid fa-wand-magic-sparkles" style="color:#a5b4fc;"></i> Confirm 3D Conversion</h3>
+      <p id="p3dConfirmMsg" style="color: #94a3b8; font-size: 13px; line-height: 1.6; margin-bottom: 18px;">This will use tokens to generate a 3D AI product preview.</p>
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button onclick="closeP3dConfirmModal()" style="padding: 9px 18px; background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; font-size: 13px; cursor: pointer;">Cancel</button>
+        <button id="p3dConfirmBtn" onclick="product3dConfirmExecute()" style="padding: 9px 22px; background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 800; cursor: pointer;"><i class="fa-solid fa-wand-magic-sparkles"></i> Convert</button>
+      </div>
+    </div>
+  </div>
+
 
   <!-- ============================================================ -->
   <!-- 3. PUBLIC CATALOG PRODUCT LIST MODAL (All Catalog Products)  -->
@@ -7156,6 +7245,577 @@ if (document.readyState === 'loading') {
   initVideoPlayerSync();
 }
 
+
+// ============================================================
+// P3.7 — PRODUCT 3D CONVERSION & VIEWER SYSTEM
+// ============================================================
+
+// ── State ────────────────────────────────────────────────────
+window._p3dState = {
+  currentSlot: null,          // slot index being edited
+  currentProjectId: null,
+  tokenBalance: null,
+  tokenCost: 1,
+  product3d: null,            // current product's product3d object
+  pollTimer: null,            // setInterval for job polling
+  viewerRenderer: null,       // Three.js renderer
+  viewerScene: null,
+  viewerCamera: null,
+  viewerControls: null,
+  viewerAnimationId: null,
+  viewerCurrentGlbUrl: null,
+  confirmPendingAction: null,  // 'generate' | 'regenerate'
+  isDev: false
+};
+
+// ── Fetch token balance for current project ───────────────────
+async function p3dLoadTokenBalance() {
+  try {
+    const token = window.authToken || window._authToken || null;
+    if (!token) return;
+    const resp = await fetch('/api/account/3d-tokens', {
+      headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+    });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    window._p3dState.tokenBalance = data.ledger?.availableTokens ?? null;
+    window._p3dState.tokenCost = data.costConfig?.PRODUCT_3D_SINGLE_IMAGE_TOKEN_COST ?? 1;
+    window._p3dState.isDev = data.plan === 'INTERNAL_FULL_ACCESS';
+    return data;
+  } catch (e) {
+    console.warn('[P3D] Token balance load error:', e.message);
+  }
+}
+
+// ── Render 3D section in owner product editor ─────────────────
+async function renderProduct3dSection(slot, product) {
+  const section = document.getElementById('opeProduct3dSection');
+  if (!section) return;
+
+  window._p3dState.currentSlot = slot;
+  window._p3dState.currentProjectId = window.activeProjectData?.id || null;
+  window._p3dState.product3d = product?.product3d || null;
+
+  // Load balance
+  const tokenData = await p3dLoadTokenBalance();
+  const isEntitled = tokenData?.access?.allowed || window._p3dState.isDev || false;
+  const balance = window._p3dState.tokenBalance;
+  const cost = window._p3dState.tokenCost;
+  const p3d = product?.product3d;
+  const status = p3d?.status || 'NOT_GENERATED';
+  const hasImage = !!(product?.imageUrl);
+
+  // Token balance display
+  const balanceEl = document.getElementById('p3dTokenBalance');
+  if (balanceEl) {
+    if (isEntitled) {
+      balanceEl.textContent = window._p3dState.isDev ? '∞ tokens (QA)' : `${balance ?? '?'} tokens available`;
+      balanceEl.style.color = '#64748b';
+    } else {
+      balanceEl.textContent = '';
+    }
+  }
+
+  // Status badge
+  const badge = document.getElementById('p3dStatusBadge');
+  if (badge) {
+    badge.style.display = p3d ? 'inline-flex' : 'none';
+    const badgeColors = {
+      READY: 'background:rgba(34,197,94,0.2);color:#4ade80;border:1px solid rgba(34,197,94,0.4)',
+      NEEDS_REVIEW: 'background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.4)',
+      QUEUED: 'background:rgba(99,102,241,0.2);color:#a5b4fc;border:1px solid rgba(99,102,241,0.4)',
+      PROCESSING: 'background:rgba(99,102,241,0.2);color:#a5b4fc;border:1px solid rgba(99,102,241,0.4)',
+      VALIDATING: 'background:rgba(99,102,241,0.2);color:#a5b4fc;border:1px solid rgba(99,102,241,0.4)',
+      FAILED: 'background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.4)',
+      NOT_GENERATED: ''
+    };
+    badge.style.cssText = `display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 800; ${badgeColors[status] || ''}`;
+    badge.textContent = status.replace(/_/g,' ');
+  }
+
+  // Status line
+  const statusLine = document.getElementById('p3dStatusLine');
+  if (statusLine) {
+    if (p3d?.generatedAt) {
+      const d = new Date(p3d.generatedAt).toLocaleDateString();
+      statusLine.textContent = `Generated ${d} · ${p3d.generator || 'AI'} · ${(p3d.meshStats?.bytes/1024).toFixed(0)} KB`;
+      statusLine.style.display = 'block';
+    } else {
+      statusLine.style.display = 'none';
+    }
+  }
+
+  // Warning if no source image
+  const warning = document.getElementById('p3dWarningBanner');
+  if (warning) {
+    if (!hasImage && isEntitled) {
+      warning.style.display = 'block';
+      warning.textContent = '⚠ Upload a product image first before converting to 3D.';
+    } else {
+      warning.style.display = 'none';
+    }
+  }
+
+  // Progress bar
+  const isActive = ['QUEUED','PROCESSING','VALIDATING'].includes(status);
+  const progBar = document.getElementById('p3dProgressBar');
+  const progFill = document.getElementById('p3dProgressFill');
+  const progLabel = document.getElementById('p3dProgressLabel');
+  if (progBar) progBar.style.display = isActive ? 'block' : 'none';
+  if (isActive && progFill) {
+    progFill.style.width = status === 'QUEUED' ? '20%' : status === 'PROCESSING' ? '55%' : '80%';
+  }
+  if (isActive && progLabel) progLabel.textContent = status === 'QUEUED' ? 'Queued…' : status === 'PROCESSING' ? 'Generating 3D…' : 'Validating…';
+
+  // Button visibility
+  const btnGen    = document.getElementById('p3dBtnGenerate');
+  const btnView   = document.getElementById('p3dBtnView');
+  const btnRegen  = document.getElementById('p3dBtnRegen');
+  const btnRemove = document.getElementById('p3dBtnRemove');
+  const upgradeCta = document.getElementById('p3dUpgradeCta');
+
+  if (!isEntitled) {
+    // Not entitled — show upgrade CTA only
+    if (btnGen) btnGen.style.display = 'none';
+    if (btnView) btnView.style.display = 'none';
+    if (btnRegen) btnRegen.style.display = 'none';
+    if (btnRemove) btnRemove.style.display = 'none';
+    if (upgradeCta) upgradeCta.style.display = 'block';
+    return;
+  }
+  if (upgradeCta) upgradeCta.style.display = 'none';
+
+  if (btnGen) btnGen.style.display  = (status === 'NOT_GENERATED' || status === 'FAILED') && hasImage && !isActive ? 'inline-flex' : 'none';
+  if (btnView) btnView.style.display = (status === 'READY' || status === 'NEEDS_REVIEW') ? 'inline-flex' : 'none';
+  if (btnRegen) btnRegen.style.display = (status === 'READY' || status === 'NEEDS_REVIEW' || status === 'FAILED') && hasImage ? 'inline-flex' : 'none';
+  if (btnRemove) btnRemove.style.display = (status !== 'NOT_GENERATED') ? 'inline-flex' : 'none';
+
+  // Start/continue polling if active job
+  if (isActive) p3dStartPolling(slot);
+  else p3dStopPolling();
+}
+
+// ── Polling ───────────────────────────────────────────────────
+function p3dStartPolling(slot) {
+  p3dStopPolling();
+  window._p3dState.pollTimer = setInterval(() => p3dPollJob(slot), 4000);
+}
+function p3dStopPolling() {
+  if (window._p3dState.pollTimer) {
+    clearInterval(window._p3dState.pollTimer);
+    window._p3dState.pollTimer = null;
+  }
+}
+async function p3dPollJob(slot) {
+  try {
+    const pid = window._p3dState.currentProjectId;
+    if (!pid) return;
+    const token = window.authToken || window._authToken;
+    const resp = await fetch(`/api/projects/${pid}/products/${slot}/3d/job`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const data = await resp.json();
+    if (!data.success || !data.job) return;
+
+    const status = data.job.status;
+    const isActive = ['QUEUED','PROCESSING','VALIDATING'].includes(status);
+    if (!isActive) {
+      p3dStopPolling();
+      // Refresh product in activeProjectData
+      if (data.product3d) {
+        const prod = (window.activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slot));
+        if (prod) prod.product3d = data.product3d;
+        window._p3dState.product3d = data.product3d;
+      }
+      // Re-render section
+      const prod = (window.activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slot));
+      await renderProduct3dSection(slot, prod);
+
+      if (status === 'READY') {
+        showToast('✓ 3D Product Preview ready!', 'success');
+        // Refresh the 3D hotspot if visible
+        if (typeof rebuildHotspots === 'function') rebuildHotspots();
+      } else if (status === 'NEEDS_REVIEW') {
+        showToast('3D generated (stub mode — review needed).', 'info');
+      } else if (status === 'FAILED') {
+        showToast('3D conversion failed: ' + (data.job.error || 'unknown'), 'error');
+      }
+    }
+  } catch (e) {
+    console.warn('[P3D] Poll error:', e.message);
+  }
+}
+
+// ── Confirm modal helpers ─────────────────────────────────────
+function openP3dConfirmModal(action, msg) {
+  window._p3dState.confirmPendingAction = action;
+  const msgEl = document.getElementById('p3dConfirmMsg');
+  if (msgEl) msgEl.textContent = msg;
+  const modal = document.getElementById('p3dConfirmModal');
+  if (modal) modal.style.display = 'flex';
+}
+function closeP3dConfirmModal() {
+  const modal = document.getElementById('p3dConfirmModal');
+  if (modal) modal.style.display = 'none';
+  window._p3dState.confirmPendingAction = null;
+}
+async function product3dConfirmExecute() {
+  closeP3dConfirmModal();
+  const action = window._p3dState.confirmPendingAction;
+  if (action === 'generate') await _p3dExecuteGenerate(false);
+  else if (action === 'regenerate') await _p3dExecuteGenerate(true);
+}
+
+// ── Generate / Regenerate ─────────────────────────────────────
+function product3dGenerate() {
+  const balance = window._p3dState.tokenBalance;
+  const cost = window._p3dState.tokenCost;
+  const isDev = window._p3dState.isDev;
+  const balanceStr = isDev ? '∞' : `${balance}`;
+  const afterStr = isDev ? '∞' : `${(balance || 0) - cost}`;
+  openP3dConfirmModal('generate',
+    `Convert this product image to a 3D AI preview? Cost: ${cost} token${cost !== 1 ? 's' : ''}. Balance: ${balanceStr} → ${afterStr}.`);
+}
+function product3dRegenerate() {
+  const balance = window._p3dState.tokenBalance;
+  const cost = window._p3dState.tokenCost;
+  const isDev = window._p3dState.isDev;
+  const balanceStr = isDev ? '∞' : `${balance}`;
+  const afterStr = isDev ? '∞' : `${(balance || 0) - cost}`;
+  openP3dConfirmModal('regenerate',
+    `Regenerate 3D? This uses ${cost} token${cost !== 1 ? 's' : ''}. The previous 3D remains active until the new one is accepted. Balance: ${balanceStr} → ${afterStr}.`);
+}
+async function _p3dExecuteGenerate(isRegen) {
+  const slot = window._p3dState.currentSlot;
+  const pid = window._p3dState.currentProjectId;
+  if (!slot || !pid) return;
+  const token = window.authToken || window._authToken;
+  const endpoint = `/api/projects/${pid}/products/${slot}/3d/${isRegen ? 'regenerate' : 'generate'}`;
+  try {
+    const resp = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      showToast((data.error || 'Failed to start 3D conversion') + (data.code ? ` [${data.code}]` : ''), 'error');
+      return;
+    }
+    showToast('3D conversion queued — generating…', 'info');
+    // Optimistically update state
+    const prod = (window.activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slot));
+    if (prod) { prod.product3d = { status: 'QUEUED' }; }
+    await renderProduct3dSection(slot, prod);
+    p3dStartPolling(slot);
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+async function product3dRemove() {
+  const slot = window._p3dState.currentSlot;
+  const pid = window._p3dState.currentProjectId;
+  if (!slot || !pid) return;
+  if (!confirm('Remove the 3D model for this product? (Does NOT delete the product.)')) return;
+  const token = window.authToken || window._authToken;
+  try {
+    const resp = await fetch(`/api/projects/${pid}/products/${slot}/3d`, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const data = await resp.json();
+    if (!resp.ok) { showToast(data.error || 'Failed to remove 3D', 'error'); return; }
+    const prod = (window.activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slot));
+    if (prod) prod.product3d = null;
+    window._p3dState.product3d = null;
+    await renderProduct3dSection(slot, prod);
+    showToast('3D model removed.', 'success');
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+// ── 3D Viewer (Three.js) ──────────────────────────────────────
+function product3dOpenViewer() {
+  const p3d = window._p3dState.product3d;
+  if (!p3d?.glbUrl) return;
+  _p3dOpenViewerWithUrl(p3d.glbUrl, window._p3dState.currentProductName || 'Product 3D');
+}
+function publicOpenProduct3dViewer() {
+  const p3d = window._currentPublicProduct3d;
+  if (!p3d?.glbUrl) return;
+  _p3dOpenViewerWithUrl(p3d.glbUrl, window._currentPublicProductName || 'Product 3D');
+}
+function _p3dOpenViewerWithUrl(glbUrl, title) {
+  const modal = document.getElementById('product3dViewerModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  document.getElementById('p3dViewerTitle').textContent = title;
+  document.getElementById('p3dViewerLoading').style.display = 'flex';
+  document.getElementById('p3dViewerError').style.display = 'none';
+
+  // Lazy-load Three.js viewer
+  if (window._p3dState.viewerCurrentGlbUrl === glbUrl && window._p3dState.viewerRenderer) {
+    document.getElementById('p3dViewerLoading').style.display = 'none';
+    _p3dStartAnimationLoop();
+    return;
+  }
+  _p3dDisposeViewer();
+  _p3dInitViewer(glbUrl);
+}
+function _p3dInitViewer(glbUrl) {
+  const canvas = document.getElementById('p3dViewerCanvas');
+  if (!canvas) return;
+  const container = canvas.parentElement;
+  const W = container.clientWidth || 800;
+  const H = container.clientHeight || 500;
+
+  // Three.js scene
+  const THREE = window.THREE;
+  if (!THREE) {
+    console.error('[P3D] THREE not loaded');
+    document.getElementById('p3dViewerError').style.display = 'flex';
+    document.getElementById('p3dViewerLoading').style.display = 'none';
+    return;
+  }
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x060c1a);
+  const camera = new THREE.PerspectiveCamera(45, W / H, 0.01, 1000);
+  camera.position.set(0, 0.5, 2);
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(W, H, false);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+
+  // Lighting
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  dirLight.position.set(1, 2, 3);
+  scene.add(dirLight);
+  const fill = new THREE.DirectionalLight(0x8888ff, 0.4);
+  fill.position.set(-2, -1, -2);
+  scene.add(fill);
+
+  // OrbitControls
+  let controls = null;
+  if (window.THREE && window.THREE.OrbitControls) {
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.07;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 1.2;
+    controls.enablePan = false;
+    controls.minDistance = 0.3;
+    controls.maxDistance = 10;
+  }
+
+  window._p3dState.viewerScene = scene;
+  window._p3dState.viewerCamera = camera;
+  window._p3dState.viewerRenderer = renderer;
+  window._p3dState.viewerControls = controls;
+  window._p3dState.viewerCurrentGlbUrl = glbUrl;
+
+  // Load GLB
+  if (!window.THREE?.GLTFLoader) {
+    // Try loading GLTFLoader from CDN dynamically
+    _p3dLoadGLTFLoader(() => _p3dDoLoad(glbUrl, scene, camera, controls, renderer));
+  } else {
+    _p3dDoLoad(glbUrl, scene, camera, controls, renderer);
+  }
+}
+function _p3dLoadGLTFLoader(cb) {
+  if (document.querySelector('script[src*="GLTFLoader"]')) { cb(); return; }
+  const s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js';
+  s.onload = cb;
+  s.onerror = () => {
+    document.getElementById('p3dViewerError').style.display = 'flex';
+    document.getElementById('p3dViewerLoading').style.display = 'none';
+  };
+  document.head.appendChild(s);
+}
+function _p3dDoLoad(glbUrl, scene, camera, controls, renderer) {
+  const THREE = window.THREE;
+  if (!THREE?.GLTFLoader) {
+    document.getElementById('p3dViewerError').style.display = 'flex';
+    document.getElementById('p3dViewerLoading').style.display = 'none';
+    return;
+  }
+  const loader = new THREE.GLTFLoader();
+  loader.load(glbUrl, (gltf) => {
+    const model = gltf.scene;
+    // Auto-center and scale
+    const box = new THREE.Box3().setFromObject(model);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const scale = 1.5 / (maxDim || 1);
+    model.scale.setScalar(scale);
+    model.position.sub(center.multiplyScalar(scale));
+    scene.add(model);
+    camera.position.set(0, 0, maxDim * scale * 2.5);
+    if (controls) controls.target.set(0, 0, 0);
+    document.getElementById('p3dViewerLoading').style.display = 'none';
+    _p3dStartAnimationLoop();
+  }, undefined, (err) => {
+    console.error('[P3D] GLB load error:', err);
+    document.getElementById('p3dViewerError').style.display = 'flex';
+    document.getElementById('p3dViewerLoading').style.display = 'none';
+  });
+}
+function _p3dStartAnimationLoop() {
+  _p3dStopAnimationLoop();
+  const s = window._p3dState;
+  function loop() {
+    s.viewerAnimationId = requestAnimationFrame(loop);
+    if (s.viewerControls) s.viewerControls.update();
+    if (s.viewerRenderer && s.viewerScene && s.viewerCamera) {
+      s.viewerRenderer.render(s.viewerScene, s.viewerCamera);
+    }
+  }
+  loop();
+}
+function _p3dStopAnimationLoop() {
+  if (window._p3dState.viewerAnimationId) {
+    cancelAnimationFrame(window._p3dState.viewerAnimationId);
+    window._p3dState.viewerAnimationId = null;
+  }
+}
+function _p3dDisposeViewer() {
+  _p3dStopAnimationLoop();
+  const s = window._p3dState;
+  if (s.viewerRenderer) {
+    s.viewerRenderer.dispose();
+    s.viewerRenderer = null;
+  }
+  s.viewerScene = null;
+  s.viewerCamera = null;
+  s.viewerControls = null;
+  s.viewerCurrentGlbUrl = null;
+}
+function closeProduct3dViewer() {
+  const modal = document.getElementById('product3dViewerModal');
+  if (modal) modal.style.display = 'none';
+  _p3dStopAnimationLoop();
+}
+function product3dViewerReset() {
+  const s = window._p3dState;
+  if (s.viewerControls) {
+    s.viewerControls.reset();
+  }
+}
+
+// ── Public product detail integration ─────────────────────────
+window._currentPublicProduct3d = null;
+window._currentPublicProductName = null;
+
+// Hook into openPublicProductDetail to show/hide View in 3D button
+const _origOpenPublicProductDetail = window.openPublicProductDetail;
+window.openPublicProductDetail = function(product, fromCatalog) {
+  window._currentPublicProduct3d = product?.product3d || null;
+  window._currentPublicProductName = product?.name || 'Product';
+  const view3dRow = document.getElementById('ppdView3dRow');
+  if (view3dRow) {
+    const show = (product?.product3d?.status === 'READY' || product?.product3d?.status === 'NEEDS_REVIEW');
+    view3dRow.style.display = show ? 'block' : 'none';
+  }
+  if (typeof _origOpenPublicProductDetail === 'function') {
+    _origOpenPublicProductDetail(product, fromCatalog);
+  }
+};
+
+// ── Hook into openOwnerProductEditor to render P3D section ────
+const _origOpenOwnerProductEditor = window.openOwnerProductEditor;
+window.openOwnerProductEditor = function(slot) {
+  if (typeof _origOpenOwnerProductEditor === 'function') {
+    _origOpenOwnerProductEditor(slot);
+  }
+  // After original opens, populate P3D section
+  setTimeout(async () => {
+    const prod = (window.activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slot));
+    window._p3dState.currentProductName = prod?.name || 'Product';
+    await renderProduct3dSection(slot, prod);
+  }, 80);
+};
+
+// ── Escape key closes viewer ──────────────────────────────────
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('product3dViewerModal')?.style.display === 'flex') closeProduct3dViewer();
+    if (document.getElementById('p3dConfirmModal')?.style.display === 'flex') closeP3dConfirmModal();
+  }
+});
+
+// ── Catalog Editor: Move Up / Move Down for product reorder ──
+function catalogProductMoveUp(catalogId, productIndex) {
+  _catalogProductReorder(catalogId, productIndex, -1);
+}
+function catalogProductMoveDown(catalogId, productIndex) {
+  _catalogProductReorder(catalogId, productIndex, 1);
+}
+async function _catalogProductReorder(catalogId, productIndex, direction) {
+  const project = window.activeProjectData;
+  if (!project) return;
+  const catalog = (project.catalogs || []).find(c => c.id === catalogId || c.catalogId === catalogId);
+  if (!catalog) return;
+  const ids = [...(catalog.productIds || [])];
+  const newIdx = productIndex + direction;
+  if (newIdx < 0 || newIdx >= ids.length) return;
+  [ids[productIndex], ids[newIdx]] = [ids[newIdx], ids[productIndex]];
+  catalog.productIds = ids;
+  try {
+    const token = window.authToken || window._authToken;
+    await fetch(`/api/projects/${project.id}/catalogs/${catalogId}/membership`, {
+      method: 'PUT',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productIds: ids })
+    });
+    // Re-render catalog editor if open
+    if (typeof renderCatalogEditorProducts === 'function') renderCatalogEditorProducts(catalogId);
+  } catch (e) {
+    console.warn('[P3D] reorder error:', e.message);
+  }
+}
+
+// ── showToast helper (if not already defined) ─────────────────
+if (typeof window.showToast !== 'function') {
+  window.showToast = function(msg, type) {
+    const el = document.createElement('div');
+    const bg = type === 'success' ? '#22c55e' : type === 'error' ? '#ef4444' : '#6366f1';
+    el.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:99999;background:${bg};color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;box-shadow:0 4px 20px rgba(0,0,0,0.4);max-width:340px;`;
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+  };
+}
+
+// ── Catalog product cards: show 3D badge ──────────────────────
+// This is handled inline when rendering catalog product cards (see renderCatalogProductCards).
+// We expose a helper to generate a 3D badge snippet.
+window.p3dBadgeHtml = function(product) {
+  const p3d = product?.product3d;
+  if (!p3d || (p3d.status !== 'READY' && p3d.status !== 'NEEDS_REVIEW')) return '';
+  return `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.4);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;color:#a5b4fc;margin-left:6px;"><i class="fa-solid fa-rotate-3d"></i> 3D</span>`;
+};
+window.p3dViewBtn = function(product) {
+  const p3d = product?.product3d;
+  if (!p3d || (p3d.status !== 'READY' && p3d.status !== 'NEEDS_REVIEW')) return '';
+  const encoded = encodeURIComponent(JSON.stringify({ glbUrl: p3d.glbUrl, name: product.name || 'Product' }));
+  return `<button type="button" onclick="publicOpenProduct3dViewerFromCatalog('${encoded}')" style="margin-top:6px;width:100%;padding:6px;font-size:11px;font-weight:700;background:rgba(99,102,241,0.2);color:#a5b4fc;border:1px solid rgba(99,102,241,0.4);border-radius:7px;cursor:pointer;"><i class="fa-solid fa-rotate-3d"></i> View in 3D</button>`;
+};
+window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
+  try {
+    const data = JSON.parse(decodeURIComponent(encoded));
+    window._currentPublicProduct3d = { glbUrl: data.glbUrl, status: 'READY' };
+    window._currentPublicProductName = data.name;
+    _p3dOpenViewerWithUrl(data.glbUrl, data.name);
+  } catch (e) { console.warn('[P3D] catalog viewer open error:', e.message); }
+};
+
+// End P3.7 Product 3D System
 </script>
 
   <!-- Virtual Fitting Room Consultation Modal -->
