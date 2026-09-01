@@ -9486,14 +9486,17 @@ return event;
 
       if (Array.isArray(pinpointsArray)) {
         project.pinpoints = pinpointsArray.map((pin, idx) => ({
-          id: pin.id || `pin-slot-${pin.slotIndex || idx + 1}`,
-          slotIndex: pin.slotIndex || idx + 1,
-          productId: pin.productId || `prod-slot-${pin.slotIndex || idx + 1}`,
-          productName: pin.productName || `Product ${pin.slotIndex || idx + 1}`,
+          id: pin.id || (pin.pinType === 'CATALOG_PIN' ? `pin-cat-${pin.catalogId || pin.targetId || idx + 1}` : `pin-slot-${pin.slotIndex || idx + 1}`),
+          pinType: pin.pinType || (pin.catalogId ? 'CATALOG_PIN' : 'PRODUCT_PIN'),
+          catalogId: pin.catalogId || (pin.pinType === 'CATALOG_PIN' ? pin.targetId : undefined),
+          slotIndex: pin.slotIndex || (pin.pinType === 'PRODUCT_PIN' ? (idx + 1) : undefined),
+          targetId: pin.targetId || (pin.pinType === 'CATALOG_PIN' ? (pin.catalogId || pin.id) : (pin.productId || `prod-slot-${pin.slotIndex || idx + 1}`)),
+          productId: pin.productId || (pin.pinType === 'PRODUCT_PIN' ? `prod-slot-${pin.slotIndex || idx + 1}` : undefined),
+          productName: pin.productName || pin.label || `Pin ${idx + 1}`,
           u: typeof pin.u === 'number' ? Math.max(0.0000, Math.min(1.0000, Number(pin.u.toFixed(4)))) : 0.5000,
           v: typeof pin.v === 'number' ? Math.max(0.0000, Math.min(1.0000, Number(pin.v.toFixed(4)))) : 0.5000,
           coordinateSystem: 'SPHERICAL',
-          label: pin.label || pin.productName || `Product ${pin.slotIndex || idx + 1}`,
+          label: pin.label || pin.productName || `Pin ${idx + 1}`,
           status: pin.status || 'ACTIVE',
           updatedAt: new Date().toISOString()
         }));

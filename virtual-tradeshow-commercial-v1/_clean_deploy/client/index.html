@@ -822,7 +822,19 @@
       padding: 3px 9px 3px 3px;
       color: #fff;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7), 0 0 12px rgba(0, 194, 255, 0.35);
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); white-space: nowrap;
+      transition: transform 0.15s ease, box-shadow 0.15s ease; white-space: nowrap;
+      touch-action: none; user-select: none; -webkit-user-select: none;
+    }
+    .hotspot-tag.pin-owner-draggable {
+      cursor: grab !important;
+    }
+    .hotspot-tag.pin-dragging {
+      cursor: grabbing !important;
+      z-index: 9999 !important;
+      transform: translate(-50%, -50%) scale(1.1) !important;
+      border-color: #38bdf8 !important;
+      box-shadow: 0 0 0 3px #38bdf8, 0 0 24px rgba(56, 189, 248, 0.9) !important;
+      transition: none !important;
     }
     .hotspot-tag:hover {
       background: rgba(2, 132, 199, 0.98); border-color: #38bdf8;
@@ -1972,37 +1984,45 @@
               <span id="pinSaveStatusBadge" style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(56,189,248,0.2); color: #38bdf8;">Saved</span>
             </div>
 
+            <!-- Primary UX Instruction -->
+            <div style="background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.25); border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; font-size: 11px; color: #cbd5e1; line-height: 1.4;">
+              <strong style="color:#38bdf8;"><i class="fa-solid fa-hand"></i> Direct Drag:</strong> Grab any pin directly in the 3D viewer to move it. Drag empty background to rotate camera.
+            </div>
+
             <!-- Target Selection (Product Pin vs Catalog Pin) -->
             <div style="margin-bottom: 10px;">
-              <label style="font-size: 10.5px; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 3px;">Active Pin Target</label>
+              <label style="font-size: 10.5px; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 3px;">Selected Pin</label>
               <select id="pinTargetSelector" class="form-input" onchange="handlePinTargetChange(this.value)" style="width: 100%; background: #030712; border: 1px solid rgba(56,189,248,0.4); border-radius: 6px; color: #fff; font-size: 12px; padding: 5px 8px; box-sizing: border-box;">
                 <!-- Populated via JS -->
               </select>
             </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
-              <div>
-                <label style="font-size: 10px; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 2px;">Horizontal (U)</label>
-                <input type="number" id="pinInputU" step="0.0001" min="0.0000" max="1.0000" oninput="handlePinNumericInput('u', this.value)" style="width: 100%; background: #030712; border: 1px solid rgba(56,189,248,0.4); border-radius: 6px; color: #38bdf8; font-family: monospace; font-size: 12px; padding: 5px 8px; box-sizing: border-box;">
-              </div>
-              <div>
-                <label style="font-size: 10px; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 2px;">Vertical (V)</label>
-                <input type="number" id="pinInputV" step="0.0001" min="0.0000" max="1.0000" oninput="handlePinNumericInput('v', this.value)" style="width: 100%; background: #030712; border: 1px solid rgba(56,189,248,0.4); border-radius: 6px; color: #38bdf8; font-family: monospace; font-size: 12px; padding: 5px 8px; box-sizing: border-box;">
+            <!-- Secondary Precision Coordinates (Fine Position) -->
+            <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 10px; margin-bottom: 10px;">
+              <div style="font-size: 10px; font-weight: 700; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Fine Position (Precision Coordinates)</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div>
+                  <label style="font-size: 9.5px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">U (Horizontal)</label>
+                  <input type="number" id="pinInputU" step="0.0001" min="0.0000" max="1.0000" oninput="handlePinNumericInput('u', this.value)" style="width: 100%; background: #030712; border: 1px solid rgba(56,189,248,0.3); border-radius: 6px; color: #38bdf8; font-family: monospace; font-size: 12px; padding: 4px 6px; box-sizing: border-box;">
+                </div>
+                <div>
+                  <label style="font-size: 9.5px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">V (Vertical)</label>
+                  <input type="number" id="pinInputV" step="0.0001" min="0.0000" max="1.0000" oninput="handlePinNumericInput('v', this.value)" style="width: 100%; background: #030712; border: 1px solid rgba(56,189,248,0.3); border-radius: 6px; color: #38bdf8; font-family: monospace; font-size: 12px; padding: 4px 6px; box-sizing: border-box;">
+                </div>
               </div>
             </div>
 
             <div style="font-size: 10px; color: #64748b; margin-bottom: 12px; line-height: 1.4;">
-              💡 <strong>Drag</strong> pin or <strong>Click</strong> image to place. Use <strong>Arrow keys</strong> (Shift+Arrow) to nudge.
+              ⌨️ <strong>Arrow keys</strong>: nudge 0.001 (Shift: 0.010) • <strong>ESC</strong>: cancel drag
             </div>
 
             <div style="display: flex; gap: 6px; justify-content: space-between; align-items: center;">
               <button class="btn-ui" id="btnDeleteActivePin" onclick="deleteActivePin()" style="padding: 5px 8px; font-size: 11px; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; cursor: pointer;" title="Delete Pin">
-                <i class="fa-solid fa-trash"></i>
+                <i class="fa-solid fa-trash"></i> Delete
               </button>
               <div style="display: flex; gap: 6px;">
-                <button class="btn-ui" onclick="cancelPinEdit()" style="padding: 5px 10px; font-size: 11px; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; cursor: pointer;">Cancel</button>
-                <button class="btn-ui" onclick="resetActivePinPosition()" style="padding: 5px 10px; font-size: 11px; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; cursor: pointer;">Reset</button>
-                <button class="btn-ui" onclick="saveActivePinPosition()" style="padding: 5px 14px; font-size: 11px; font-weight: 700; background: #0284c7; color: #fff; border: 1px solid #38bdf8; border-radius: 6px; cursor: pointer;">Save Pin</button>
+                <button class="btn-ui" onclick="cancelPinEdit()" style="padding: 5px 10px; font-size: 11px; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; cursor: pointer;">Close</button>
+                <button class="btn-ui" id="btnSavePinManual" onclick="saveActivePinPosition()" style="padding: 5px 14px; font-size: 11px; font-weight: 700; background: #0284c7; color: #fff; border: 1px solid #38bdf8; border-radius: 6px; cursor: pointer;">Saved</button>
               </div>
             </div>
           </div>
@@ -4591,6 +4611,11 @@
       if (qaBadge) qaBadge.style.display = isDev ? 'inline-flex' : 'none';
     }
 
+    let activeDragPinElement = null;
+    let pointerDownStartPos = null;
+    let hasDraggedPinMoved = false;
+    let preDragCoords = null;
+
     function buildHotspotsDOM() {
       const layer = document.getElementById('hotspot-layer');
       if (!layer) return;
@@ -4600,7 +4625,7 @@
 
       studioHotspotsList.forEach((spot) => {
         const el = document.createElement('div');
-        el.className = `hotspot-tag ${spot.pinType === 'CATALOG_PIN' ? 'hotspot-catalog-tag' : ''}`;
+        el.className = `hotspot-tag ${spot.pinType === 'CATALOG_PIN' ? 'hotspot-catalog-tag' : ''} ${isOwner ? 'pin-owner-draggable' : ''}`;
         el.id = spot.id;
 
         if (spot.pinType === 'CATALOG_PIN') {
@@ -4614,10 +4639,6 @@
               <span class="hotspot-label-text">${spot.name}</span>
             </div>
           `;
-          el.addEventListener('click', (e) => {
-            e.stopPropagation();
-            openCatalogProductList(spot.targetId || spot.catalogId);
-          });
         } else {
           el.innerHTML = `
             <img src="${spot.imageUrl}" class="hotspot-thumb-img" alt="${spot.name}">
@@ -4627,11 +4648,105 @@
               <span class="hotspot-label-text">${spot.name}</span>
             </div>
           `;
-          el.addEventListener('click', (e) => {
-            e.stopPropagation();
-            onProductSlotClicked(spot.productIdx !== undefined ? spot.productIdx : (spot.slotIndex - 1));
-          });
         }
+
+        // Direct Pointer Manipulation Listeners (Pointer Capture & Event Routing)
+        el.addEventListener('pointerdown', (e) => {
+          const owner = (window.VIEWER_MODE === 'OWNER_EDITOR');
+          if (!owner) return; // In public mode, do not enter drag
+
+          e.stopPropagation();
+          pointerDownStartPos = { x: e.clientX, y: e.clientY };
+          hasDraggedPinMoved = false;
+          isDraggingPin = true;
+          activeDragPinElement = el;
+
+          // Select this pin
+          window.currentEditingPinTarget = {
+            type: spot.pinType || 'PRODUCT_PIN',
+            id: spot.pinType === 'CATALOG_PIN' ? (spot.targetId || spot.catalogId) : String(spot.slotIndex || 1)
+          };
+
+          const pin = getOrCreateActivePin();
+          preDragCoords = { u: pin.u, v: pin.v };
+
+          try { el.setPointerCapture(e.pointerId); } catch(err) {}
+          if (controls) controls.enabled = false;
+
+          el.classList.add('pin-dragging');
+          highlightActiveEditingHotspot();
+          syncActivePinInputs();
+        });
+
+        el.addEventListener('pointermove', (e) => {
+          if (!isDraggingPin || activeDragPinElement !== el) return;
+          e.stopPropagation();
+
+          if (pointerDownStartPos) {
+            const dist = Math.hypot(e.clientX - pointerDownStartPos.x, e.clientY - pointerDownStartPos.y);
+            if (dist > 3) hasDraggedPinMoved = true;
+          }
+
+          handlePinDirectDrag(e.clientX, e.clientY);
+        });
+
+        el.addEventListener('pointerup', async (e) => {
+          const owner = (window.VIEWER_MODE === 'OWNER_EDITOR');
+          if (!isDraggingPin && !owner) {
+            // Public click
+            e.stopPropagation();
+            if (spot.pinType === 'CATALOG_PIN') {
+              openCatalogProductList(spot.targetId || spot.catalogId);
+            } else {
+              onProductSlotClicked(spot.productIdx !== undefined ? spot.productIdx : (spot.slotIndex - 1));
+            }
+            return;
+          }
+
+          if (isDraggingPin && activeDragPinElement === el) {
+            e.stopPropagation();
+            isDraggingPin = false;
+            el.classList.remove('pin-dragging');
+            try { el.releasePointerCapture(e.pointerId); } catch(err) {}
+            activeDragPinElement = null;
+            if (controls) controls.enabled = true;
+
+            if (hasDraggedPinMoved) {
+              // Direct drag completed -> Auto-save coordinates!
+              await saveActivePinPosition();
+            } else {
+              // Simple click on pin in Owner mode -> toggle pin position panel & select
+              syncActivePinInputs();
+              const panel = document.getElementById('pinPositionEditorPanel');
+              if (panel && panel.style.display === 'none') {
+                togglePinEditMode();
+              }
+            }
+          }
+        });
+
+        el.addEventListener('pointercancel', (e) => {
+          if (isDraggingPin && activeDragPinElement === el) {
+            isDraggingPin = false;
+            el.classList.remove('pin-dragging');
+            try { el.releasePointerCapture(e.pointerId); } catch(err) {}
+            activeDragPinElement = null;
+            if (controls) controls.enabled = true;
+          }
+        });
+
+        // Click handler fallback for public viewer
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const owner = (window.VIEWER_MODE === 'OWNER_EDITOR');
+          if (!owner) {
+            if (spot.pinType === 'CATALOG_PIN') {
+              openCatalogProductList(spot.targetId || spot.catalogId);
+            } else {
+              onProductSlotClicked(spot.productIdx !== undefined ? spot.productIdx : (spot.slotIndex - 1));
+            }
+          }
+        });
 
         layer.appendChild(el);
         spot.domElement = el;
@@ -5476,10 +5591,11 @@
     }
 
     // ═══════════════════════════════════════════════════════════
-    // PRECISION PIN EDITING SYSTEM (PRODUCT_PIN & CATALOG_PIN)
+    // DIRECT MANIPULATION PIN POSITION EDITOR (C11.16-P3.5)
     // ═══════════════════════════════════════════════════════════
     let initialPinCoordinates = {};
     let isDraggingPin = false;
+    let pinAutosaveDebounce = null;
     window.currentEditingPinTarget = { type: 'PRODUCT_PIN', id: '1' };
 
     function togglePinEditMode() {
@@ -5501,14 +5617,62 @@
       if (window.PIN_EDIT_MODE) {
         if (panel) panel.style.display = 'block';
         if (btn) btn.classList.add('active');
-        if (container) container.classList.add('viewer-pin-editing');
         syncActivePinInputs();
       } else {
         if (panel) panel.style.display = 'none';
         if (btn) btn.classList.remove('active');
-        if (container) container.classList.remove('viewer-pin-editing');
         document.querySelectorAll('.hotspot-tag').forEach(el => el.classList.remove('pin-edit-active'));
       }
+    }
+
+    function handlePinDirectDrag(clientX, clientY) {
+      const container = document.getElementById('viewer-container');
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+
+      // Clamp pointer to valid interactive viewer container boundaries
+      const clampedX = Math.max(rect.left, Math.min(rect.right, clientX));
+      const clampedY = Math.max(rect.top, Math.min(rect.bottom, clientY));
+
+      let u, v;
+      if (camera && renderer && typeof THREE !== 'undefined') {
+        // 3D Spherical Raycasting for exact spatial placement
+        const mouse = new THREE.Vector2(
+          ((clampedX - rect.left) / rect.width) * 2 - 1,
+          -((clampedY - rect.top) / rect.height) * 2 + 1
+        );
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, camera);
+        const dir = raycaster.ray.direction.clone().normalize();
+
+        const phi = Math.acos(Math.max(-1, Math.min(1, dir.y)));
+        v = 1 - (phi / Math.PI);
+        const theta = Math.atan2(dir.z, -dir.x);
+        u = (theta + Math.PI + 0.45) / (2 * Math.PI);
+        u = ((u % 1) + 1) % 1; // Normalize to 0..1
+        v = Math.max(0.0001, Math.min(0.9999, v));
+      } else {
+        // 2D Normalized container fallback
+        u = (clampedX - rect.left) / rect.width;
+        v = (clampedY - rect.top) / rect.height;
+        u = Math.max(0.0000, Math.min(1.0000, u));
+        v = Math.max(0.0000, Math.min(1.0000, v));
+      }
+
+      const pin = getOrCreateActivePin();
+      pin.u = Number(u.toFixed(4));
+      pin.v = Number(v.toFixed(4));
+
+      // Update Fine Position numerical display live
+      const inputU = document.getElementById('pinInputU');
+      const inputV = document.getElementById('pinInputV');
+      if (inputU) inputU.value = pin.u.toFixed(4);
+      if (inputV) inputV.value = pin.v.toFixed(4);
+
+      // Recompute 3D position and render under cursor immediately
+      recalculatePinpointPositions(activeProjectData);
+      updateHotspots();
+      setPinSaveStatus('Saving...');
     }
 
     function startPinEditForSelectedSlot(slot) {
@@ -5650,17 +5814,25 @@
 
     function setPinSaveStatus(status) {
       const badge = document.getElementById('pinSaveStatusBadge');
-      if (!badge) return;
-      badge.textContent = status;
-      if (status === 'Saved') {
-        badge.style.background = 'rgba(56,189,248,0.2)';
-        badge.style.color = '#38bdf8';
-      } else if (status === 'Saving...') {
-        badge.style.background = 'rgba(245,158,11,0.2)';
-        badge.style.color = '#fbbf24';
-      } else if (status === 'Unsaved Changes') {
-        badge.style.background = 'rgba(239,68,68,0.2)';
-        badge.style.color = '#f87171';
+      const btnManual = document.getElementById('btnSavePinManual');
+      if (badge) {
+        badge.textContent = status;
+        if (status === 'Saved') {
+          badge.style.background = 'rgba(34,197,94,0.2)';
+          badge.style.color = '#4ade80';
+        } else if (status === 'Saving...') {
+          badge.style.background = 'rgba(245,158,11,0.2)';
+          badge.style.color = '#fbbf24';
+        } else if (status === 'Unsaved Changes') {
+          badge.style.background = 'rgba(56,189,248,0.2)';
+          badge.style.color = '#38bdf8';
+        } else if (status.includes('Error') || status.includes('Couldn')) {
+          badge.style.background = 'rgba(239,68,68,0.2)';
+          badge.style.color = '#f87171';
+        }
+      }
+      if (btnManual) {
+        btnManual.textContent = status === 'Saving...' ? 'Saving...' : (status === 'Saved' ? 'Saved' : 'Save Position');
       }
     }
 
@@ -5677,7 +5849,8 @@
     }
 
     function nudgeActivePin(deltaU, deltaV) {
-      if (!window.PIN_EDIT_MODE) return;
+      const isOwner = (window.VIEWER_MODE === 'OWNER_EDITOR');
+      if (!isOwner) return;
       const pin = getOrCreateActivePin();
 
       pin.u = Math.max(0.0000, Math.min(1.0000, (pin.u || 0.5) + deltaU));
@@ -5689,6 +5862,7 @@
       if (inputV) inputV.value = pin.v.toFixed(4);
 
       recalculatePinpointPositions(activeProjectData);
+      updateHotspots();
       setPinSaveStatus('Unsaved Changes');
     }
 
@@ -5702,7 +5876,8 @@
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
+            'Authorization': 'Bearer ' + token,
+            'x-booth-edit-token': token
           },
           body: JSON.stringify({
             pinpoints: activeProjectData.pinpoints || []
@@ -5716,16 +5891,18 @@
           const pinKey = `${cur.type}_${cur.id}`;
           const pin = getOrCreateActivePin();
           initialPinCoordinates[pinKey] = { u: pin.u, v: pin.v };
-          setupStudioProducts(activeProjectData);
+          preDragCoords = { u: pin.u, v: pin.v };
+          recalculatePinpointPositions(activeProjectData);
+          updateHotspots();
         } else {
           if (res.status === 403 && data.code === 'ENTITLEMENT_UPGRADE_REQUIRED') {
             openPlanModal('pin_save_gated');
           }
-          setPinSaveStatus('Error');
-          alert(data.error || 'Failed to save pin position.');
+          setPinSaveStatus("Couldn't save position");
+          console.warn('[Save Pin Warning]', data.error);
         }
       } catch (err) {
-        setPinSaveStatus('Error');
+        setPinSaveStatus("Couldn't save position");
         console.error('[Save Pin Error]', err);
       }
     }
