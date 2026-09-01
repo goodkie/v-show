@@ -6322,6 +6322,59 @@ app.post('/api/projects/:id/logo', upload.single('logo'), async (req, res) => {
 });
 
 // 4. Products Management
+
+// ── GET /api/projects/:id/entitlements (Server Entitlement Authority) ──────
+app.get('/api/projects/:id/entitlements', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const project = await db.getProjectById(req.params.id);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    
+    const account = resolveAccountForProject(project, token);
+    const activeProducts = (project.products || []).filter(p => p.name && p.name.trim());
+    const ent = plans.getAccountProductEntitlement(account, activeProducts.length);
+    res.json({ success: true, ...ent });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/account/entitlements ──────────────────────────────────────────
+app.get('/api/account/entitlements', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const account = resolveAccountForProject(null, token);
+    const ent = plans.getAccountProductEntitlement(account, 0);
+    res.json({ success: true, ...ent });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/projects/:id/pins/:pinId/products ────────────────────────────
+app.post('/api/projects/:id/pins/:pinId/products', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const { productId } = req.body;
+    if (!productId) return res.status(400).json({ error: 'productId is required' });
+    const result = await db.addProductToPin(req.params.id, req.params.pinId, productId, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+// ── DELETE /api/projects/:id/pins/:pinId/products/:productId ───────────────
+app.delete('/api/projects/:id/pins/:pinId/products/:productId', async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const result = await db.removeProductFromPin(req.params.id, req.params.pinId, req.params.productId, token);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
 app.get('/api/projects/:id/products', async (req, res) => {
   try {
     const project = (db.read().projects || []).find(p => p.id === req.params.id);

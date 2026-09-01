@@ -367,7 +367,74 @@ function checkFeatureEntitlement(account, featureKey) {
 /**
  * Validates product slot creation/updating against account plan limit
  */
-function checkProductLimit(account, currentProductsCount, requestedSlotNumber) {
+function getAccountProductEntitlement(account, currentProductsCount = 0) {
+  const isPilot = account?.isPilot || account?.billingState === 'PILOT_NOT_BILLED';
+  const planCode = isPilot ? (account?.entitlement || 'BUSINESS') : (account?.planCode || account?.entitlement || 'FREE_BOOTH');
+  const norm = normalizePlanCode(planCode);
+
+  if (norm === 'INTERNAL_FULL_ACCESS') {
+    return {
+      entitlement: 'INTERNAL_FULL_ACCESS',
+      plan: 'INTERNAL_FULL_ACCESS',
+      productCount: currentProductsCount,
+      productLimit: null,
+      productRemaining: null,
+      canCreateProduct: true
+    };
+  }
+
+  const limits = getPlanLimits(norm, account?.customLimits);
+  const max = limits.maxProducts || 3;
+  const count = currentProductsCount || 0;
+  const remaining = Math.max(0, max - count);
+
+  return {
+    entitlement: norm,
+    plan: norm,
+    productCount: count,
+    productLimit: max,
+    productRemaining: remaining,
+    canCreateProduct: count < max
+  };
+}
+
+function checkProductLimit(account, currentProductsCount, requestedSlotNumber = null, isNewProduct = false) {
+  const ent = getAccountProductEntitlement(account, currentProductsCount);
+  if (ent.entitlement === 'INTERNAL_FULL_ACCESS') {
+    return { allowed: true, ...ent };
+  }
+
+  const max = ent.productLimit;
+  const slot = requestedSlotNumber ? parseInt(requestedSlotNumber, 10) : null;
+
+  if ((slot && slot > max) || (isNewProduct && currentProductsCount >= max)) {
+    let nextPlan = 'PRO';
+    if (max === 3) nextPlan = 'PRO';
+    else if (max === 30) nextPlan = 'BUSINESS';
+    else if (max >= 100) nextPlan = 'CUSTOM';
+
+    return {
+      allowed: false,
+      currentPlan: ent.plan,
+      entitlement: ent.entitlement,
+      currentLimit: max,
+      productLimit: max,
+      productCount: currentProductsCount,
+      productRemaining: ent.productRemaining,
+      canCreateProduct: false,
+      requestedSlot: slot,
+      requiredPlan: nextPlan,
+      upgradeAvailable: true,
+      error: 'ENTITLEMENT_REQUIRED',
+      code: 'PRODUCT_LIMIT_EXCEEDED',
+      message: `Product limit reached. Your current ${ent.entitlement} plan allows up to ${max} products. Upgrade to ${nextPlan} to create more products.`
+    };
+  }
+
+  return { allowed: true, ...ent };
+}
+
+function _old_checkProductLimit_deprecated(account, currentProductsCount, requestedSlotNumber) {
   const isPilot = account?.isPilot || account?.billingState === 'PILOT_NOT_BILLED';
   const planCode = isPilot ? (account?.entitlement || 'BUSINESS') : (account?.planCode || account?.entitlement || 'FREE_BOOTH');
   const limits = getPlanLimits(planCode, account?.customLimits);
@@ -643,6 +710,7 @@ module.exports = {
   getPlanLimits,
   checkFeatureEntitlement,
   checkProductLimit,
+  getAccountProductEntitlement,
   checkSourceLimit,
   checkCatalogLimit,
   checkPinLimit,

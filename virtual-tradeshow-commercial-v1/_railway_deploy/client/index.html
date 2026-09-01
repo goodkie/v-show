@@ -20,6 +20,209 @@
   <!-- Three.js & Controls for 3D Photo Immersive Studio Engine -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
+    
+    // ============================================================
+    // SERVER ENTITLEMENT AUTHORITY & PIN-FIRST ENGINE (P3.9)
+    // ============================================================
+    window.pinFirstPendingCoords = null;
+    window.pinFirstActivePinId = null;
+    window.activeEntitlements = null;
+
+    // 1. Fetch & Update Server Authoritative Entitlement Limits
+    async function fetchProjectEntitlements(projectId) {
+      const pid = projectId || window.activeProjectId || window.activeProjectData?.id;
+      const token = p3dGetAuthToken();
+      if (!pid) return null;
+
+      try {
+        const res = await fetch(`/api/projects/${pid}/entitlements`, {
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'x-booth-edit-token': token
+          }
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        window.activeEntitlements = data;
+        updateProductLimitUI(data);
+        return data;
+      } catch (e) {
+        console.warn('fetchProjectEntitlements error:', e.message);
+        return null;
+      }
+    }
+
+    function updateProductLimitUI(ent) {
+      if (!ent) return;
+      const count = ent.productCount || 0;
+      const isQa = ent.entitlement === 'INTERNAL_FULL_ACCESS';
+      const limit = ent.productLimit;
+
+      // Update Toolbar Product Badge
+      const toolbarBadge = document.getElementById('ownerProductCountBadge');
+      if (toolbarBadge) {
+        if (isQa) {
+          toolbarBadge.textContent = `${count} Products · Internal QA`;
+          toolbarBadge.style.color = '#38bdf8';
+        } else if (limit !== null && limit !== undefined) {
+          toolbarBadge.textContent = `${count} / ${limit} Products`;
+          toolbarBadge.style.color = ent.canCreateProduct ? '#fff' : '#f87171';
+        } else {
+          toolbarBadge.textContent = `${count} Products`;
+        }
+      }
+
+      // Update Section Header Counter Badge
+      const headerCounter = document.getElementById('productHeaderCounterBadge');
+      if (headerCounter) {
+        if (isQa) {
+          headerCounter.textContent = `${count} Products · Internal QA`;
+        } else if (limit !== null && limit !== undefined) {
+          headerCounter.textContent = `${count} / ${limit} Products`;
+        } else {
+          headerCounter.textContent = `${count} Products`;
+        }
+      }
+
+      // Gate standalone Add Product Button
+      const btnAddProd = document.getElementById('btnOwnerToolbarAddProduct');
+      if (btnAddProd) {
+        if (!ent.canCreateProduct) {
+          btnAddProd.setAttribute('title', `Product limit reached (${count} of ${limit}).`);
+          btnAddProd.style.opacity = '0.6';
+        } else {
+          btnAddProd.removeAttribute('title');
+          btnAddProd.style.opacity = '1';
+        }
+      }
+    }
+
+    // 2. Pin-First Placement Interceptor
+    function onSpherePinClicked(coords) {
+      window.pinFirstPendingCoords = coords;
+      window.lastPlacedPinCoords = coords;
+      cancelPlaceProductPinMode();
+
+      const choiceModal = document.getElementById('pinFirstChoiceModal');
+      const subtitle = document.getElementById('pinFirstCoordsSubtitle');
+      const limitBadge = document.getElementById('pinFirstNewProductLimitBadge');
+      const btnAddNew = document.getElementById('btnPinFirstAddNewProduct');
+
+      if (subtitle) subtitle.textContent = `Location: (u: ${coords.u.toFixed(2)}, v: ${coords.v.toFixed(2)})`;
+
+      const ent = window.activeEntitlements || window.activeProjectData?.entitlements;
+      if (ent && !ent.canCreateProduct) {
+        if (btnAddNew) {
+          btnAddNew.style.opacity = '0.5';
+          btnAddNew.disabled = true;
+        }
+        if (limitBadge) {
+          limitBadge.textContent = 'LIMIT REACHED';
+          limitBadge.style.background = 'rgba(239,68,68,0.2)';
+          limitBadge.style.color = '#ef4444';
+        }
+      } else {
+        if (btnAddNew) {
+          btnAddNew.style.opacity = '1';
+          btnAddNew.disabled = false;
+        }
+        if (limitBadge) {
+          limitBadge.textContent = 'RECOMMENDED';
+          limitBadge.style.background = 'rgba(56,189,248,0.15)';
+          limitBadge.style.color = '#38bdf8';
+        }
+      }
+
+      if (choiceModal) choiceModal.style.display = 'flex';
+      else openProductPinSelectorModal(coords);
+    }
+
+    function closePinFirstChoiceModal() {
+      const modal = document.getElementById('pinFirstChoiceModal');
+      if (modal) modal.style.display = 'none';
+      window.pinFirstPendingCoords = null;
+    }
+
+    function handlePinModalAddNewProduct() {
+      const pinId = window.currentEditingPin ? (window.currentEditingPin.id || window.currentEditingPin.pinId) : null;
+      closeProductPinSelectorModal();
+      openOwnerProductEditor(null, { pinId, pinCoords: window.lastPlacedPinCoords });
+    }
+
+    function handlePinFirstAddNewProduct() {
+      closePinFirstChoiceModal();
+      // Open Product Editor with pin coords attached
+      openOwnerProductEditor(null, { pinCoords: window.pinFirstPendingCoords });
+    }
+
+    function handlePinFirstSelectExistingProduct() {
+      const coords = window.pinFirstPendingCoords;
+      closePinFirstChoiceModal();
+      openProductPinSelectorModal(coords);
+    }
+
+    // 3. Continuous Add UX Helpers
+    function showPinContinuousAddModal(pinId, prodName) {
+      window.pinFirstActivePinId = pinId;
+      const modal = document.getElementById('pinContinuousAddModal');
+      const desc = document.getElementById('pinContinuousAddDesc');
+      if (desc) desc.textContent = `"${prodName || 'Product'}" is now linked to your booth pin. Would you like to add another product to create a collection?`;
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closePinContinuousAddModal() {
+      const modal = document.getElementById('pinContinuousAddModal');
+      if (modal) modal.style.display = 'none';
+      window.pinFirstActivePinId = null;
+      window.pinFirstPendingCoords = null;
+    }
+
+    function handlePinContinuousAddAnother() {
+      const pinId = window.pinFirstActivePinId;
+      closePinContinuousAddModal();
+      if (pinId) {
+        const pin = (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId);
+        openProductPinSelectorModal(pin || { pinId });
+      }
+    }
+
+    // 4. Remove Product From Pin (No Product Deletion)
+    async function removeProductFromPin(pinId, productId) {
+      const pid = activeProjectId || window.activeProjectData?.id;
+      const token = p3dGetAuthToken();
+
+      try {
+        const res = await fetch(`/api/projects/${pid}/pins/${pinId}/products/${productId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'x-booth-edit-token': token
+          }
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert('Failed to remove product from pin: ' + (data.error || 'Unknown error'));
+          return;
+        }
+
+        if (data.pins) window.activeProjectData.pinpoints = data.pins;
+        else if (data.deletedPinId) {
+          window.activeProjectData.pinpoints = (window.activeProjectData.pinpoints || []).filter(p => p.id !== pinId && p.pinId !== pinId);
+        }
+
+        setupStudioProducts(window.activeProjectData);
+        if (window.showToast) window.showToast('Product removed from pin.', 'info');
+
+        // Refresh selector modal if open
+        const updatedPin = (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId);
+        if (updatedPin) openProductPinSelectorModal(updatedPin);
+        else closeProductPinSelectorModal();
+
+      } catch (err) {
+        alert('Remove product from pin request failed: ' + err.message);
+      }
+    }
+
     // ============================================================
     // --- C11.12 EXHIBITOR BOOTH EDITOR JAVASCRIPT CONTROLLERS ---
     // ============================================================
@@ -2325,8 +2528,8 @@
     <div class="product-cards-section">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <div>
-          <div class="section-tag">COMMERCIAL CATALOG SLOTS</div>
-          <h3 style="font-size: 20px; font-weight: 800; color: #fff;">Your Products (3 Slots Available)</h3>
+          <div class="section-tag">COMMERCIAL CATALOG</div>
+          <div style="display: flex; align-items: baseline; gap: 10px;"><h3 style="font-size: 20px; font-weight: 800; color: #fff; margin: 0;">Your Products</h3><span id="productHeaderCounterBadge" style="font-size: 13px; font-weight: 700; color: #38bdf8;"></span></div>
         </div>
       </div>
 
@@ -2401,6 +2604,81 @@
   <!-- ============================================================ -->
   <!-- MODAL: PRODUCT PIN TARGET SELECTOR (SINGLE & MULTI-PRODUCT PIN) -->
   <!-- ============================================================ -->
+  
+  <!-- ============================================================ -->
+  <!-- MODAL: PIN-FIRST CREATION CHOICE (ADD NEW OR SELECT EXISTING) -->
+  <!-- ============================================================ -->
+  <div class="viewport-modal" id="pinFirstChoiceModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="viewport-modal-card" style="max-width: 520px; width: 94vw; background: #070d1b; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.9);">
+      <div class="viewport-modal-header" style="padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: linear-gradient(135deg, rgba(2, 132, 199, 0.2), rgba(37, 99, 235, 0.05)); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 14px;">
+            <i class="fa-solid fa-location-dot"></i>
+          </div>
+          <div>
+            <h3 class="viewport-modal-title" style="font-size: 15px; font-weight: 800; color: #fff; margin: 0;">Add Product Pin</h3>
+            <p class="viewport-modal-subtitle" id="pinFirstCoordsSubtitle" style="font-size: 11px; color: #94a3b8; margin: 2px 0 0;">Pin placed on booth</p>
+          </div>
+        </div>
+        <button class="viewport-modal-close" onclick="closePinFirstChoiceModal()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">&times;</button>
+      </div>
+
+      <div class="viewport-modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+        <!-- Choice 1: Add New Product -->
+        <button type="button" id="btnPinFirstAddNewProduct" onclick="handlePinFirstAddNewProduct()" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; text-align: left; cursor: pointer; transition: all 0.2s;">
+          <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #0284c7, #2563eb); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; flex-shrink: 0;">
+            <i class="fa-solid fa-plus"></i>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 6px;">
+              Add New Product
+              <span id="pinFirstNewProductLimitBadge" style="font-size: 10px; font-weight: 700; color: #38bdf8; background: rgba(56,189,248,0.15); padding: 1px 6px; border-radius: 4px;"></span>
+            </div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Create a new product now and automatically attach it to this pin location.</div>
+          </div>
+          <i class="fa-solid fa-chevron-right" style="color: #64748b; font-size: 12px;"></i>
+        </button>
+
+        <!-- Choice 2: Select Existing Product -->
+        <button type="button" onclick="handlePinFirstSelectExistingProduct()" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; text-align: left; cursor: pointer; transition: all 0.2s;">
+          <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; color: #cbd5e1; font-size: 16px; flex-shrink: 0;">
+            <i class="fa-solid fa-boxes-stacked"></i>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 800; color: #fff;">Select Existing Product</div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Attach one or more products already registered in your booth catalog.</div>
+          </div>
+          <i class="fa-solid fa-chevron-right" style="color: #64748b; font-size: 12px;"></i>
+        </button>
+      </div>
+
+      <div class="viewport-modal-footer" style="padding: 12px 20px; border-top: 1px solid rgba(255,255,255,0.08); background: #030712; display: flex; justify-content: flex-end;">
+        <button type="button" class="btn-hero btn-hero-secondary" onclick="closePinFirstChoiceModal()" style="padding: 7px 18px; font-size: 12px; cursor: pointer;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: PIN CONTINUOUS ADD CONFIRMATION BANNER -->
+  <!-- ============================================================ -->
+  <div class="viewport-modal" id="pinContinuousAddModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="viewport-modal-card" style="max-width: 460px; width: 92vw; background: #070d1b; border: 1px solid #38bdf8; border-radius: 16px; overflow: hidden; padding: 24px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.9);">
+      <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(56, 189, 248, 0.2); border: 1px solid #38bdf8; display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 22px; margin: 0 auto 14px;">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <h3 style="font-size: 16px; font-weight: 800; color: #fff; margin: 0 0 6px;">Product Added to Pin!</h3>
+      <p id="pinContinuousAddDesc" style="font-size: 12px; color: #94a3b8; margin: 0 0 20px;">This product is now linked to your booth pin. Would you like to add another product to create a collection?</p>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button type="button" onclick="handlePinContinuousAddAnother()" style="padding: 8px 18px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.15); border: 1px solid #38bdf8; color: #38bdf8; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-plus"></i> + Add Another Product
+        </button>
+        <button type="button" class="btn-hero btn-hero-primary" onclick="closePinContinuousAddModal()" style="padding: 8px 22px; font-size: 12px; background: linear-gradient(135deg, #0284c7, #2563eb);">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="viewport-modal" id="productPinSelectorModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center;">
     <div class="viewport-modal-card" style="max-width: 560px; width: 94vw; max-height: 90vh; background: #070d1b; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.9);">
       <div class="viewport-modal-header" style="padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: linear-gradient(135deg, rgba(2, 132, 199, 0.2), rgba(37, 99, 235, 0.05)); display: flex; justify-content: space-between; align-items: center;">
@@ -2418,9 +2696,14 @@
 
       <div class="viewport-modal-body" style="padding: 16px 20px; overflow-y: auto; flex: 1;">
         <!-- Search & Filter -->
-        <div style="margin-bottom: 12px; position: relative;">
-          <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 11px; color: #64748b; font-size: 12px;"></i>
-          <input type="text" id="pinProductSearchInput" placeholder="Search products by name, category, or SKU..." oninput="filterPinProductList(this.value)" style="width: 100%; background: #030712; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; color: #fff; font-size: 12px; padding: 8px 12px 8px 34px; box-sizing: border-box;">
+        <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center;">
+          <div style="flex: 1; position: relative;">
+            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 11px; color: #64748b; font-size: 12px;"></i>
+            <input type="text" id="pinProductSearchInput" placeholder="Search products..." oninput="filterPinProductList(this.value)" style="width: 100%; background: #030712; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; color: #fff; font-size: 12px; padding: 8px 12px 8px 34px; box-sizing: border-box;">
+          </div>
+          <button type="button" onclick="handlePinModalAddNewProduct()" style="padding: 8px 12px; font-size: 11px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; color: #fff; border-radius: 8px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;">
+            <i class="fa-solid fa-plus"></i> Add New Product
+          </button>
         </div>
 
         <!-- Selection Summary Banner -->
@@ -5171,15 +5454,22 @@
               </div>
             </label>
 
-            ${isSelected && window.pinSelectorSelectedProductIds.length > 1 ? `
+            ${isSelected ? `
               <div style="display: flex; gap: 4px; align-items: center;">
-                <button type="button" onclick="movePinProductOrder(${orderIdx}, -1)" ${orderIdx === 0 ? 'disabled' : ''} style="width: 24px; height: 24px; border-radius: 4px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 10px; cursor: ${orderIdx === 0 ? 'default' : 'pointer'}; opacity: ${orderIdx === 0 ? 0.3 : 1}; display: flex; align-items: center; justify-content: center;">
-                  <i class="fa-solid fa-arrow-up"></i>
-                </button>
-                <button type="button" onclick="movePinProductOrder(${orderIdx}, 1)" ${orderIdx === window.pinSelectorSelectedProductIds.length - 1 ? 'disabled' : ''} style="width: 24px; height: 24px; border-radius: 4px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 10px; cursor: ${orderIdx === window.pinSelectorSelectedProductIds.length - 1 ? 'default' : 'pointer'}; opacity: ${orderIdx === window.pinSelectorSelectedProductIds.length - 1 ? 0.3 : 1}; display: flex; align-items: center; justify-content: center;">
-                  <i class="fa-solid fa-arrow-down"></i>
-                </button>
-                <span style="font-size: 10px; font-weight: 800; color: #38bdf8; min-width: 16px; text-align: center;">#${orderIdx + 1}</span>
+                ${window.pinSelectorSelectedProductIds.length > 1 ? `
+                  <button type="button" onclick="movePinProductOrder(${orderIdx}, -1)" ${orderIdx === 0 ? 'disabled' : ''} style="width: 24px; height: 24px; border-radius: 4px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 10px; cursor: ${orderIdx === 0 ? 'default' : 'pointer'}; opacity: ${orderIdx === 0 ? 0.3 : 1}; display: flex; align-items: center; justify-content: center;" title="Move Up">
+                    <i class="fa-solid fa-arrow-up"></i>
+                  </button>
+                  <button type="button" onclick="movePinProductOrder(${orderIdx}, 1)" ${orderIdx === window.pinSelectorSelectedProductIds.length - 1 ? 'disabled' : ''} style="width: 24px; height: 24px; border-radius: 4px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 10px; cursor: ${orderIdx === window.pinSelectorSelectedProductIds.length - 1 ? 'default' : 'pointer'}; opacity: ${orderIdx === window.pinSelectorSelectedProductIds.length - 1 ? 0.3 : 1}; display: flex; align-items: center; justify-content: center;" title="Move Down">
+                    <i class="fa-solid fa-arrow-down"></i>
+                  </button>
+                  <span style="font-size: 10px; font-weight: 800; color: #38bdf8; min-width: 16px; text-align: center;">#${orderIdx + 1}</span>
+                ` : ''}
+                ${window.currentEditingPin ? `
+                  <button type="button" onclick="removeProductFromPin('${window.currentEditingPin.id || window.currentEditingPin.pinId}', '${pId}')" style="width: 24px; height: 24px; border-radius: 4px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Remove from this Pin (Keeps Product in Catalog)">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                ` : ''}
               </div>
             ` : ''}
           </div>
@@ -5506,6 +5796,8 @@
     }
 
     function setupStudioProducts(projectData) {
+      if (projectData?.entitlements) updateProductLimitUI(projectData.entitlements);
+      else if (projectData?.id) fetchProjectEntitlements(projectData.id);
       const rawProducts = projectData?.products || [];
       const defaultPositions = [
         new THREE.Vector3(-140, -20, -380), // Slot 1 Left
@@ -5884,7 +6176,7 @@
       const isReal = !!(rawProd.name && rawProd.name.trim() && !rawProd.name.startsWith('Product Slot'));
 
       document.getElementById('opeSlotIndex').value = slot;
-      document.getElementById('opeModalTitle').textContent = isReal ? `Edit Product (Slot 0${slot})` : `Add Product (Slot 0${slot})`;
+      document.getElementById('opeModalTitle').textContent = isReal ? 'Edit Product' : 'Add New Product';
       document.getElementById('opeName').value = isReal ? rawProd.name : '';
       document.getElementById('opeSku').value = isReal ? (rawProd.sku || '') : '';
       document.getElementById('opeCategory').value = isReal ? (rawProd.category || '') : '';
