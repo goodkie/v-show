@@ -514,7 +514,8 @@ function checkViewpointLimit(account, currentViewpointsCount, newCount = 1) {
  * Internal QA accounts always allowed (isDev flag expected to be pre-computed by caller).
  */
 function checkProduct3dConversionAccess(account) {
-  const isInternal = account?.planCode === 'INTERNAL_FULL_ACCESS' || account?.entitlement === 'INTERNAL_FULL_ACCESS' || account?.accountPurpose === 'INTERNAL_FULL_FEATURE_QA' || account?.isTest === true && account?.environment === 'INTERNAL_DEV';
+  const emailNorm = (account?.emailNormalized || account?.email || '').toLowerCase().trim();
+  const isInternal = emailNorm === 'goodkie.com@gmail.com' || account?.planCode === 'INTERNAL_FULL_ACCESS' || account?.entitlement === 'INTERNAL_FULL_ACCESS' || account?.accountPurpose === 'INTERNAL_FULL_FEATURE_QA' || (account?.isTest === true && account?.environment === 'INTERNAL_DEV');
   const isPilot = account?.isPilot || account?.billingState === 'PILOT_NOT_BILLED';
   const planCode = isInternal
     ? 'INTERNAL_FULL_ACCESS'

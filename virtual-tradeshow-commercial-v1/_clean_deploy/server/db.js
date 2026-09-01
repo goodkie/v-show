@@ -9376,6 +9376,9 @@ return event;
       if (prodData.ctaLabel !== undefined) product.ctaLabel = prodData.ctaLabel.trim();
       if (prodData.price !== undefined) product.price = prodData.price.trim();
       if (prodData.brochureUrl !== undefined) product.brochureUrl = prodData.brochureUrl.trim();
+      if (prodData.productMediaMode !== undefined) {
+        product.productMediaMode = ['IMAGE', 'THREE_D'].includes(prodData.productMediaMode) ? prodData.productMediaMode : 'IMAGE';
+      }
 
       const hasContent = !!(product.name);
       product.status = hasContent ? 'ACTIVE' : 'EMPTY';
