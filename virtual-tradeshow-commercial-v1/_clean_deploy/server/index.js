@@ -6561,7 +6561,8 @@ app.get(['/api/account/3d-tokens', '/api/customer/3d-tokens'], async (req, res) 
     let account = custAuth?.account || (adminSession ? db.getAccountForToken(token) : null);
     
     if (!account && token) {
-      const sess = db.getCustomerSession(token);
+      const cleanTok = typeof token === "string" ? token.replace(/^Bearer\s+/i, "").trim() : "";
+      const sess = db.verifyCustomerSession ? db.verifyCustomerSession(cleanTok) : null;
       if (sess && sess.accountId) {
         account = (db.read().accounts || []).find(a => a.id === sess.accountId);
       }
@@ -6691,15 +6692,19 @@ app.get('/api/account/3d-token-policy', async (req, res) => {
 
 // ── Helper to resolve account for project request ─────────────────────────────
 function resolveAccountForProject(project, token) {
-  const allAccounts = db.memoryData.accounts || [];
+  const allAccounts = db.memoryData.accounts || db.read().accounts || [];
   
   if (token) {
-    const custSess = db.getCustomerSession(token);
+    const cleanToken = typeof token === 'string' ? token.replace(/^Bearer\s+/i, '').trim() : '';
+    const custSess = db.verifyCustomerSession ? db.verifyCustomerSession(cleanToken) : (db.getCustomerSession ? db.getCustomerSession(cleanToken) : null);
+    if (custSess && custSess.account) {
+      return custSess.account;
+    }
     if (custSess && custSess.accountId) {
       const acc = allAccounts.find(a => a.id === custSess.accountId);
       if (acc) return acc;
     }
-    const adminAcc = db.getAccountForToken(token);
+    const adminAcc = db.getAccountForToken ? db.getAccountForToken(token) : null;
     if (adminAcc) return adminAcc;
   }
 

@@ -10788,6 +10788,8 @@ return event;
     });
   }
 
+  getCustomerSession(token) { return this.verifyCustomerSession(token); }
+
   verifyCustomerSession(token) {
     if (!token) return null;
     const d = this.memoryData;
