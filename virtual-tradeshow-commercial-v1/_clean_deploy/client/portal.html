@@ -619,7 +619,7 @@
       <span class="brand-badge">Customer Portal</span>
     </div>
 
-    <nav class="portal-links">
+    <nav class="portal-links" id="portalNavLinks" style="display: none;">
       <button class="portal-nav-btn active" id="navBtnBooths" onclick="switchPortalTab('booths')">
         <i class="fa-solid fa-store"></i> My Booths
       </button>
@@ -634,16 +634,94 @@
       </button>
     </nav>
 
-    <div class="user-actions">
+    <div class="user-actions" id="portalUserActions" style="display: none;">
       <span class="user-greeting" id="userGreeting"></span>
-      <button class="btn-signout" onclick="handleCustomerSignOut()">
+      <button class="btn-signout" id="btnSignOut" onclick="handleCustomerSignOut()">
         <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
       </button>
     </div>
   </header>
 
-  <!-- Main Portal Content -->
-  <main class="portal-container">
+  <!-- ============================================================ -->
+  <!-- 1. LOADING VIEW                                              -->
+  <!-- ============================================================ -->
+  <div id="portalLoadingView" style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; min-height: 60vh; text-align: center; padding: 40px 20px;">
+    <i class="fa-solid fa-spinner fa-spin" style="font-size: 36px; color: var(--accent); margin-bottom: 16px;"></i>
+    <div style="font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 6px;">Loading Exhibitor Portal...</div>
+    <p style="font-size: 13px; color: var(--text-muted);">Verifying your session...</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 2. UNAUTHENTICATED SIGN IN VIEW                              -->
+  <!-- ============================================================ -->
+  <div class="auth-overlay" id="authModal" style="display: none;">
+    <div class="auth-card" style="margin: 0 auto; width: 100%; max-width: 440px;">
+      <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 16px;">
+        <img src="/assets/brand/3dz_logo.png" alt="³D₂" style="height: 34px; width: auto; object-fit: contain;" onerror="this.style.display='none';">
+        <span style="font-size: 26px; font-weight: 800; color: #fff;">³D₂</span>
+        <span class="brand-badge">CUSTOMER PORTAL</span>
+      </div>
+      <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 8px;" id="authModalTitle">Sign in to your account</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;" id="authModalDesc">Enter your verified work email to receive a one-time code.</p>
+      
+      <div id="authStatusBanner" style="display: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; font-weight: 600; text-align: left;"></div>
+
+      <!-- Step 1: Request OTP -->
+      <form id="formSendOtp" onsubmit="handleSendOtp(event)">
+        <div class="form-group" style="text-align: left; margin-bottom: 16px;">
+          <label style="display: block; font-size: 12px; font-weight: 700; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;">Work Email</label>
+          <input type="email" id="authEmailInput" class="form-input" placeholder="name@company.com" required style="font-size: 15px; padding: 12px 14px; width: 100%;">
+        </div>
+        <button type="submit" class="btn-action primary" id="btnSendOtp" style="width: 100%; padding: 12px; font-size: 14px; justify-content: center;">
+          <i class="fa-solid fa-paper-plane"></i> Send Code
+        </button>
+      </form>
+
+      <!-- Step 2: Verify OTP -->
+      <form id="formVerifyOtp" onsubmit="handleVerifyOtp(event)" style="display: none;">
+        <div id="authModalEmailTarget" style="font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 14px; word-break: break-all; text-align: center;"></div>
+        
+        <div class="form-group" style="text-align: left; margin-bottom: 14px;">
+          <label style="display: block; font-size: 12px; font-weight: 700; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;">6-Digit Verification Code</label>
+          <input type="text" id="authCodeInput" class="form-input" placeholder="123456" required maxlength="12" style="text-align: center; font-size: 22px; letter-spacing: 0.25em; font-weight: 800; padding: 12px; width: 100%;">
+        </div>
+
+        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 16px;">
+          <i class="fa-regular fa-clock"></i> Code expires in 10 minutes.
+        </div>
+
+        <button type="submit" class="btn-action primary" id="btnVerifyOtp" style="width: 100%; padding: 12px; font-size: 14px; justify-content: center;">
+          <i class="fa-solid fa-check"></i> Verify &amp; Sign In
+        </button>
+
+        <div style="display: flex; gap: 8px; margin-top: 12px;">
+          <button type="button" class="btn-action" id="btnResendOtp" style="flex: 1; padding: 10px; font-size: 12px; justify-content: center; background: rgba(255,255,255,0.06);" onclick="handleResendOtp()">
+            <i class="fa-solid fa-rotate-right"></i> Resend Code
+          </button>
+          <button type="button" class="btn-action" id="btnChangeEmail" style="flex: 1; padding: 10px; font-size: 12px; justify-content: center; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);" onclick="resetAuthForm()">
+            Use Different Email
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 3. ERROR VIEW                                                -->
+  <!-- ============================================================ -->
+  <div id="portalErrorView" style="display: none; flex-direction: column; align-items: center; justify-content: center; flex: 1; min-height: 60vh; text-align: center; padding: 40px 20px;">
+    <i class="fa-solid fa-triangle-exclamation" style="font-size: 40px; color: #f59e0b; margin-bottom: 16px;"></i>
+    <div style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 6px;">Unable to load portal</div>
+    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;" id="portalErrorMsg">There was an issue connecting to the server. Please try again.</p>
+    <button onclick="initPortal()" class="btn-action primary" style="padding: 10px 20px; font-size: 14px;">
+      <i class="fa-solid fa-rotate-right"></i> Retry
+    </button>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 4. AUTHENTICATED PORTAL CONTENT                             -->
+  <!-- ============================================================ -->
+  <main class="portal-container" id="portalMainView" style="display: none;">
 
     <!-- ============================================================ -->
     <!-- TAB 1: MY BOOTHS                                             -->
@@ -913,61 +991,70 @@
 
   </main>
 
-  <!-- ============================================================ -->
-  <!-- SIGN IN / OTP VERIFICATION MODAL                             -->
-  <!-- ============================================================ -->
-  <div class="auth-overlay" id="authModal" style="display: none;">
-    <div class="auth-card">
-      <div style="font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 6px;">³D₂</div>
-      <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px;" id="authModalTitle">Sign In to Exhibitor Portal</h3>
-      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px;" id="authModalDesc">Enter your work email to access your 3D booths and buyer leads.</p>
-      
-      <div id="authStatusBanner" style="display: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; font-weight: 600;"></div>
-
-      <!-- Step 1: Request OTP -->
-      <form id="formSendOtp" onsubmit="handleSendOtp(event)">
-        <div class="form-group">
-          <input type="email" id="authEmailInput" class="form-input" placeholder="name@company.com" required style="text-align: center; font-size: 15px; padding: 12px;">
-        </div>
-        <button type="submit" class="btn-action primary" id="btnSendOtp" style="width: 100%; padding: 12px; font-size: 14px; justify-content: center;">
-          <i class="fa-solid fa-paper-plane"></i> Send Verification Code
-        </button>
-      </form>
-
-      <!-- Step 2: Verify OTP -->
-      <form id="formVerifyOtp" onsubmit="handleVerifyOtp(event)" style="display: none;">
-        <div id="authModalEmailTarget" style="font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 12px; word-break: break-all;"></div>
-        
-        <div class="form-group">
-          <input type="text" id="authCodeInput" class="form-input" placeholder="6-digit code" required maxlength="12" style="text-align: center; font-size: 20px; letter-spacing: 0.2em; font-weight: 800; padding: 12px;">
-        </div>
-
-        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 16px;">
-          <i class="fa-regular fa-clock"></i> Code expires in 10 minutes.
-        </div>
-
-        <button type="submit" class="btn-action primary" id="btnVerifyOtp" style="width: 100%; padding: 12px; font-size: 14px; justify-content: center;">
-          <i class="fa-solid fa-check"></i> Verify &amp; Open Portal
-        </button>
-
-        <div style="display: flex; gap: 8px; margin-top: 12px;">
-          <button type="button" class="btn-action" id="btnResendOtp" style="flex: 1; padding: 10px; font-size: 12px; justify-content: center; background: rgba(255,255,255,0.06);" onclick="handleResendOtp()">
-            <i class="fa-solid fa-rotate-right"></i> Resend Code
-          </button>
-          <button type="button" class="btn-action" id="btnChangeEmail" style="flex: 1; padding: 10px; font-size: 12px; justify-content: center; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);" onclick="resetAuthForm()">
-            Use Different Email
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <script>
-    // Portal Controller State
+    // Canonical Runtime Auth States
+    const AUTH_STATE_LOADING = 'LOADING';
+    const AUTH_STATE_AUTHENTICATED = 'AUTHENTICATED';
+    const AUTH_STATE_UNAUTHENTICATED = 'UNAUTHENTICATED';
+    const AUTH_STATE_ERROR = 'ERROR';
+
+    let currentAuthState = AUTH_STATE_LOADING;
     let currentAccount = null;
     let customerToken = localStorage.getItem('3d2_customer_token') || null;
 
+    function setAuthState(state, errorMsg = null) {
+      currentAuthState = state;
+      const loadingView = document.getElementById('portalLoadingView');
+      const authModal = document.getElementById('authModal');
+      const mainView = document.getElementById('portalMainView');
+      const errorView = document.getElementById('portalErrorView');
+      const navLinks = document.getElementById('portalNavLinks');
+      const userActions = document.getElementById('portalUserActions');
+      const userGreeting = document.getElementById('userGreeting');
+
+      // Hide all main view containers first
+      if (loadingView) loadingView.style.display = 'none';
+      if (authModal) authModal.style.display = 'none';
+      if (mainView) mainView.style.display = 'none';
+      if (errorView) errorView.style.display = 'none';
+
+      if (state === AUTH_STATE_LOADING) {
+        if (navLinks) navLinks.style.display = 'none';
+        if (userActions) userActions.style.display = 'none';
+        if (loadingView) loadingView.style.display = 'flex';
+      } else if (state === AUTH_STATE_AUTHENTICATED) {
+        if (navLinks) navLinks.style.display = 'flex';
+        if (userActions) userActions.style.display = 'flex';
+        if (userGreeting && currentAccount) {
+          userGreeting.innerText = currentAccount.contactName || currentAccount.businessName || currentAccount.displayName || currentAccount.email || 'Exhibitor';
+        }
+        if (mainView) mainView.style.display = 'block';
+      } else if (state === AUTH_STATE_UNAUTHENTICATED) {
+        if (navLinks) navLinks.style.display = 'none';
+        if (userActions) userActions.style.display = 'none';
+        if (userGreeting) userGreeting.innerText = '';
+        if (authModal) authModal.style.display = 'flex';
+        resetAuthForm();
+      } else if (state === AUTH_STATE_ERROR) {
+        if (navLinks) navLinks.style.display = 'none';
+        if (userActions) userActions.style.display = 'none';
+        if (errorView) errorView.style.display = 'flex';
+        if (errorMsg && document.getElementById('portalErrorMsg')) {
+          document.getElementById('portalErrorMsg').innerText = errorMsg;
+        }
+      }
+    }
+
+    function handleAuthRejection() {
+      localStorage.removeItem('3d2_customer_token');
+      customerToken = null;
+      currentAccount = null;
+      setAuthState(AUTH_STATE_UNAUTHENTICATED);
+    }
+
     async function initPortal() {
+      setAuthState(AUTH_STATE_LOADING);
+
       // Check query parameter magic token
       const urlParams = new URLSearchParams(window.location.search);
       const magicToken = urlParams.get('token');
@@ -992,7 +1079,7 @@
       }
 
       if (!customerToken) {
-        showAuthModal();
+        setAuthState(AUTH_STATE_UNAUTHENTICATED);
         return;
       }
 
@@ -1001,30 +1088,24 @@
           headers: { 'Authorization': 'Bearer ' + customerToken }
         });
         if (!res.ok) {
-          localStorage.removeItem('3d2_customer_token');
-          customerToken = null;
-          showAuthModal();
+          handleAuthRejection();
           return;
         }
         const data = await res.json();
-        currentAccount = data.account;
-        document.getElementById('userGreeting').innerText =
-          currentAccount.contactName || currentAccount.businessName || currentAccount.displayName || currentAccount.email || 'Exhibitor';
-        document.getElementById('authModal').style.display = 'none';
+        if (data.success && data.account) {
+          currentAccount = data.account;
+          setAuthState(AUTH_STATE_AUTHENTICATED);
 
-        // Load initial tab
-        loadCustomerBooths();
-        loadCustomerAnalytics();
+          // Load initial tab
+          loadCustomerBooths();
+          loadCustomerAnalytics();
+        } else {
+          handleAuthRejection();
+        }
       } catch (err) {
-        console.error('Portal init error:', err);
-        showAuthModal();
+        console.error('Portal session validation error:', err);
+        setAuthState(AUTH_STATE_ERROR, 'There was an issue connecting to the server. Please try again.');
       }
-    }
-
-    function showAuthModal() {
-      document.getElementById('authModal').style.display = 'flex';
-      document.getElementById('formSendOtp').style.display = 'block';
-      document.getElementById('formVerifyOtp').style.display = 'none';
     }
 
     let resendCooldownInterval = null;
@@ -1084,16 +1165,21 @@
 
     function resetAuthForm() {
       if (resendCooldownInterval) clearInterval(resendCooldownInterval);
-      document.getElementById('formSendOtp').style.display = 'block';
-      document.getElementById('formVerifyOtp').style.display = 'none';
-      document.getElementById('authCodeInput').value = '';
-      document.getElementById('authModalDesc').innerText = 'Enter your work email to access your 3D booths and buyer leads.';
+      const formSend = document.getElementById('formSendOtp');
+      const formVerify = document.getElementById('formVerifyOtp');
+      const codeInput = document.getElementById('authCodeInput');
+      const desc = document.getElementById('authModalDesc');
+      if (formSend) formSend.style.display = 'block';
+      if (formVerify) formVerify.style.display = 'none';
+      if (codeInput) codeInput.value = '';
+      if (desc) desc.innerText = 'Enter your verified work email to receive a one-time code.';
       hideAuthBanner();
     }
 
     async function handleSendOtp(e) {
       if (e) e.preventDefault();
-      const email = document.getElementById('authEmailInput').value.trim();
+      const emailInput = document.getElementById('authEmailInput');
+      const email = emailInput ? emailInput.value.trim() : '';
       const btn = document.getElementById('btnSendOtp');
       if (btn) {
         btn.disabled = true;
@@ -1111,7 +1197,7 @@
         if (res.ok && data.success) {
           document.getElementById('formSendOtp').style.display = 'none';
           document.getElementById('formVerifyOtp').style.display = 'block';
-          document.getElementById('authModalDesc').innerText = 'Verification email sent. Check your inbox and spam folder.';
+          document.getElementById('authModalDesc').innerText = 'Enter the 6-digit code sent to your email.';
           document.getElementById('authModalEmailTarget').innerText = email;
           startResendCooldown(60);
           showAuthBanner('Verification code sent to your email. Please check your inbox and spam folder.', 'success');
@@ -1126,14 +1212,15 @@
       } finally {
         if (btn) {
           btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Verification Code';
+          btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Code';
         }
       }
     }
 
     async function handleResendOtp() {
       if (resendCooldownSeconds > 0) return;
-      const email = document.getElementById('authEmailInput').value.trim();
+      const emailInput = document.getElementById('authEmailInput');
+      const email = emailInput ? emailInput.value.trim() : '';
       if (!email) {
         resetAuthForm();
         return;
@@ -1169,12 +1256,16 @@
     }
 
     async function handleVerifyOtp(e) {
-      e.preventDefault();
-      const email = document.getElementById('authEmailInput').value.trim();
-      const code = document.getElementById('authCodeInput').value.trim();
+      if (e) e.preventDefault();
+      const emailInput = document.getElementById('authEmailInput');
+      const codeInput = document.getElementById('authCodeInput');
+      const email = emailInput ? emailInput.value.trim() : '';
+      const code = codeInput ? codeInput.value.trim() : '';
       const btn = document.getElementById('btnVerifyOtp');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
+      }
       hideAuthBanner();
 
       try {
@@ -1189,9 +1280,7 @@
           customerToken = data.token;
           localStorage.setItem('3d2_customer_token', customerToken);
           currentAccount = data.account;
-          document.getElementById('authModal').style.display = 'none';
-          document.getElementById('userGreeting').innerText =
-            currentAccount.contactName || currentAccount.businessName || currentAccount.displayName || currentAccount.email || 'Exhibitor';
+          setAuthState(AUTH_STATE_AUTHENTICATED);
           loadCustomerBooths();
           loadCustomerAnalytics();
         } else {
@@ -1204,8 +1293,10 @@
       } catch (err) {
         showAuthBanner('Network error verifying code.', 'error');
       } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> Verify &amp; Open Portal';
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-check"></i> Verify &amp; Sign In';
+        }
       }
     }
 
@@ -1218,10 +1309,7 @@
           });
         } catch (e) {}
       }
-      localStorage.removeItem('3d2_customer_token');
-      customerToken = null;
-      currentAccount = null;
-      window.location.reload();
+      handleAuthRejection();
     }
 
     function switchPortalTab(tabName, scrollTargetId = null) {
@@ -1260,13 +1348,9 @@
         });
 
         // Fail-closed: if session is rejected by server, clear stale token and show sign-in.
-        // This prevents the pseudo-authenticated empty-booth state (Section 12).
         if (res.status === 401 || res.status === 403) {
           console.warn('[Portal] Session rejected by server (' + res.status + '). Clearing stale token.');
-          customerToken = null;
-          localStorage.removeItem('3d2_customer_token');
-          document.getElementById('authModal').style.display = 'flex';
-          document.getElementById('portalContent').style.display = 'none';
+          handleAuthRejection();
           return;
         }
 
@@ -1430,6 +1514,10 @@
         const res = await fetch(url, {
           headers: { 'Authorization': 'Bearer ' + customerToken }
         });
+        if (res.status === 401 || res.status === 403) {
+          handleAuthRejection();
+          return;
+        }
         const data = await res.json();
         const leads = data.leads || [];
         const tbody = document.getElementById('portalLeadsTableBody');
@@ -1495,6 +1583,10 @@
         const res = await fetch('/api/customer/analytics', {
           headers: { 'Authorization': 'Bearer ' + customerToken }
         });
+        if (res.status === 401 || res.status === 403) {
+          handleAuthRejection();
+          return;
+        }
         const data = await res.json();
         const a = data.analytics || {};
         document.getElementById('kpiTotalViews').innerText = a.totalViews || 0;
@@ -1668,9 +1760,6 @@
         saveMsg.innerText = 'Error saving profile.';
         saveMsg.style.display = 'inline-block';
       }
-    } catch (err) {
-        alert('Failed to save account profile.');
-      }
     }
 
     // Initialize on page load
@@ -1683,6 +1772,10 @@
         const res = await fetch('/api/customer/entitlement', {
           headers: { 'Authorization': 'Bearer ' + customerToken }
         });
+        if (res.status === 401 || res.status === 403) {
+          handleAuthRejection();
+          return;
+        }
         const data = await res.json();
         if (data.success && data.entitlement) {
           const ent = data.entitlement;
