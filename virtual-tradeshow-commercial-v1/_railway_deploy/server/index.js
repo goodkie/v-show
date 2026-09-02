@@ -571,11 +571,11 @@ app.use(express.json());
 // Static File Routes
 app.use('/uploads', express.static(UPLOADS_DIR));
 
-// ── C11.16-P3.15-R2: Runtime Build Info Endpoint ────────────────
+// ── C11.16-P3.15-R3: Runtime Build Info Endpoint ────────────────
 const P315_BUILD_INFO = {
-  gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'C11.16-P3.15-R2',
+  gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'C11.16-P3.15-R3',
   buildTimestamp: new Date().toISOString(),
-  releaseId: "C11.16-P3.15-R2"
+  releaseId: "C11.16-P3.15-R3"
 };
 
 app.get('/api/build-info', (req, res) => {
@@ -6406,7 +6406,7 @@ app.get('/api/projects/:id/products', async (req, res) => {
 });
 
 
-// ── C11.16-P3.15-R2: Canonical Project Media Upload Endpoint ────
+// ── C11.16-P3.15-R3: Canonical Project Media Upload Endpoint ────
 app.post(['/api/projects/:id/media', '/api/projects/:id/upload'], upload.single('image'), async (req, res) => {
   let uploadedFilePath = null;
   try {
@@ -6476,7 +6476,7 @@ app.post('/api/projects/:id/products', upload.single('productImage'), async (req
   try {
     const token = extractAuthToken(req);
     const prodData = { ...req.body };
-    // C11.16-P3.15-R2: Preserve pre-uploaded media reference if provided in body
+    // C11.16-P3.15-R3: Preserve pre-uploaded media reference if provided in body
     if (req.body.imageUrl && !req.file) {
       prodData.imageUrl = req.body.imageUrl;
       prodData.assetId = req.body.assetId || `ast-prod-${uuidv4().substring(0, 8)}`;

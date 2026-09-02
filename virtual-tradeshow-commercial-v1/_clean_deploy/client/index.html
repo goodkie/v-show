@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <script>
-  window.__3DZ_BUILD_INFO__ = { gitCommit: "92174ce", releaseId: "C11.16-P3.15-R2" };
+  window.__3DZ_BUILD_INFO__ = { gitCommit: "eb58eca", releaseId: "C11.16-P3.15-R3" };
   fetch('/api/build-info').then(function(r){return r.json();}).then(function(d){if(d&&d.gitCommit)window.__3DZ_BUILD_INFO__.gitCommit=d.gitCommit;}).catch(function(){});
   </script>
 
@@ -3531,7 +3531,7 @@
   </div>
 
   <!-- P3.7: 3D Conversion Confirm Modal -->
-  <div class="viewport-modal" id="p3dConfirmModal" style="display: none; z-index: 10000;">
+  <div class="viewport-modal" id="p3dConfirmModal" style="display: none; position: fixed; inset: 0; z-index: 10200; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); align-items: center; justify-content: center;">
     <div class="viewport-modal-card" style="max-width: 440px; padding: 24px;">
       <h3 style="color: #fff; margin: 0 0 8px 0; font-size: 17px;"><i class="fa-solid fa-wand-magic-sparkles" style="color:#a5b4fc;"></i> Confirm 3D Conversion</h3>
       <p id="p3dConfirmMsg" style="color: #94a3b8; font-size: 13px; line-height: 1.6; margin-bottom: 18px;">This will use tokens to generate a 3D AI product preview.</p>
@@ -5891,7 +5891,7 @@
       const pin = (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId);
       const coords = pin ? { u: pin.u, v: pin.v } : (window.lastPlacedPinCoords || { u: 0.5, v: 0.5 });
       
-      // C11.16-P3.15-R2: Store stable pendingProductCreationContext
+      // C11.16-P3.15-R3: Store stable pendingProductCreationContext
       window.pendingProductCreationContext = {
         projectId: activeProjectId || window.activeProjectData?.id,
         pinId: pinId,
@@ -5921,46 +5921,18 @@
     }
 
     // ── 3D Tab Direct Source Image Handlers ────────────────────────
-    function handleP3dTabSourceUpload(event) {
+    async function handleP3dTabSourceUpload(event) {
       const file = event.target.files?.[0];
       if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target.result;
-        
-        // Update 3D tab preview
-        const previewImg = document.getElementById('p3dTabSourceImgPreview');
-        const emptyBox = document.getElementById('p3dTabSourceEmptyBox');
-        const filledBox = document.getElementById('p3dTabSourceFilledBox');
-        if (previewImg) previewImg.src = dataUrl;
-        if (emptyBox) emptyBox.style.display = 'none';
-        if (filledBox) filledBox.style.display = 'flex';
-
-        // Synchronize canonical Product Image
-        const opeImgPreview = document.getElementById('opeImagePreview');
-        const opeRemoveBtn = document.getElementById('opeBtnRemoveImg');
-        if (opeImgPreview) {
-          opeImgPreview.src = dataUrl;
-          opeImgPreview.style.display = 'block';
-        }
-        if (opeRemoveBtn) opeRemoveBtn.style.display = 'inline-flex';
-
-        // Transfer file to opeImageInput for multipart upload
-        try {
-          const dt = new DataTransfer();
-          dt.items.add(file);
-          const opeInput = document.getElementById('opeImageInput');
-          if (opeInput) opeInput.files = dt.files;
-        } catch(err) {}
-
-        // Enable Generate CTA
-        const ctaBtn = document.getElementById('p3dMainCtaBtn');
-        const ctaText = document.getElementById('p3dMainCtaText');
-        if (ctaBtn) ctaBtn.disabled = false;
-        if (ctaText) ctaText.textContent = 'Generate 3D Model';
-      };
-      reader.readAsDataURL(file);
+      try {
+        await uploadProductMedia(file, 'UPLOAD');
+      } catch(err) {
+        console.error('[handleP3dTabSourceUpload]', err);
+        alert("Couldn't upload this image. Please try again: " + err.message);
+      } finally {
+        event.target.value = ''; // Reset so selecting the same file again triggers change event
+      }
     }
 
     
@@ -6496,6 +6468,15 @@
       const modal = document.getElementById('ownerProductEditorModal');
       if (!modal) return;
 
+      // C11.16-P3.15-R3: Cleanly reset transient 3D state on open to prevent cross-session leakage
+      if (window._p3dState) {
+        window._p3dState.primarySourceImageUrl = null;
+        window._p3dState.sourceImageUrl = null;
+        window._p3dState.additionalSourceImages = [];
+        window._p3dState.isSubmitting = false;
+        window._p3dState.isConfirmOpen = false;
+        window._p3dState.confirmPendingAction = null;
+      }
       const prods = window.activeProjectData?.products || [];
       let prod = null;
       let slot = 1;
@@ -6527,23 +6508,24 @@
         window.pendingProductCreationContext = null;
       }
 
-      // C11.16-P3.15-R2: One Canonical Product Draft Store
+      // C11.16-P3.15-R3: One Canonical Product Draft Store
       const draftId = 'draft-' + Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 5);
       const origPinId = options.pinId || window.pendingProductCreationContext?.pinId || window.currentEditingPinId || window.currentEditingContentPin?.id || null;
 
+      const hasRealExistingImage = Boolean(prod?.imageUrl && !prod.imageUrl.includes('product-placeholder') && !prod.imageUrl.startsWith('blob:'));
       window.productDraft = {
         draftId: draftId,
         projectId: activeProjectId || window.activeProjectData?.id,
         productId: prod ? (prod.id || ('prod-slot-' + slot)) : ('prod-slot-' + slot),
         slotIndex: slot,
         originatingPinId: origPinId,
-        state: prod?.imageUrl ? 'MEDIA_READY' : 'NEW_PRODUCT_DRAFT',
-        primaryMedia: prod?.imageUrl ? {
+        state: hasRealExistingImage ? 'MEDIA_READY' : 'NEW_PRODUCT_DRAFT',
+        primaryMedia: hasRealExistingImage ? {
           mediaId: prod.assetId || null,
           url: prod.imageUrl,
           sourceType: 'EXISTING'
         } : null,
-        product3dSources: prod?.imageUrl ? [{
+        product3dSources: hasRealExistingImage ? [{
           mediaId: prod.assetId || null,
           url: prod.imageUrl,
           viewLabel: 'Front View',
@@ -6618,6 +6600,7 @@
       }
 
       if (typeof setProductMediaMode === 'function') setProductMediaMode('IMAGE');
+      if (typeof renderProduct3dSourceState === 'function') renderProduct3dSourceState();
       modal.style.display = 'flex';
     }
 
@@ -7991,7 +7974,7 @@
     }
 
     // ═══════════════════════════════════════════════════════════
-    // CANONICAL PRODUCT MEDIA UPLOAD & PERSISTENCE (C11.16-P3.15-R2)
+    // CANONICAL PRODUCT MEDIA UPLOAD & PERSISTENCE (C11.16-P3.15-R3)
     // Shared between File Upload and Camera Capture
     // ═══════════════════════════════════════════════════════════
     async function uploadProductMedia(fileOrBlob, sourceType = 'UPLOAD') {
@@ -8037,7 +8020,7 @@
           throw new Error(data.error || 'Server rejected media upload');
         }
 
-        // Canonical server persistence confirmed (C11.16-P3.15-R2)
+        // Canonical server persistence confirmed (C11.16-P3.15-R3)
         window.productDraft = window.productDraft || {};
         const mediaObj = {
           mediaId: data.mediaId || data.assetId,
@@ -10506,7 +10489,8 @@ function openProductCameraCapture(viewLabel = 'Front View') {
 }
 
 // ════════════════════════════════════════════════════════════
-// C11.16-P3.15-R2: Canonical 3D Readiness & Media Sync Store
+// ════════════════════════════════════════════════════════════
+// C11.16-P3.15-R3: Canonical 3D Readiness & Media Sync Store
 // ════════════════════════════════════════════════════════════
 const PRODUCT_3D_MIN_VIEWS_STANDARD = 1;
 const PRODUCT_3D_MIN_VIEWS_HIGH = 3;
@@ -10520,15 +10504,12 @@ function getProduct3dReadiness(draft = window.productDraft) {
   const sources = [];
   const seenUrls = new Set();
 
-  const primaryUrl = draft?.primaryMedia?.url 
-    || window._p3dState?.primarySourceImageUrl 
-    || window._p3dState?.sourceImageUrl 
-    || document.getElementById('opeImagePreview')?.src;
-
+  // DERIVE PRIMARY SOURCE SOLELY FROM productDraft.primaryMedia
+  const primaryUrl = draft?.primaryMedia?.url;
   const hasPrimary = Boolean(primaryUrl && !primaryUrl.startsWith('blob:') && !primaryUrl.includes('product-placeholder'));
   if (hasPrimary) {
     sources.push({
-      mediaId: draft?.primaryMedia?.mediaId || null,
+      mediaId: draft.primaryMedia.mediaId || null,
       url: primaryUrl,
       viewLabel: 'Front View',
       isPrimary: true
@@ -10536,7 +10517,7 @@ function getProduct3dReadiness(draft = window.productDraft) {
     seenUrls.add(primaryUrl);
   }
 
-  const addl = window._p3dState?.additionalSourceImages || draft?.product3dSources?.filter(s => !s.isPrimary) || [];
+  const addl = draft?.product3dSources?.filter(s => !s.isPrimary) || window._p3dState?.additionalSourceImages || [];
   addl.forEach(item => {
     const u = typeof item === 'string' ? item : item.url;
     if (u && !seenUrls.has(u)) {
@@ -10562,25 +10543,48 @@ function getProduct3dReadiness(draft = window.productDraft) {
 }
 window.getProduct3dReadiness = getProduct3dReadiness;
 
-function syncProduct3dSourceUI() {
-  const readiness = getProduct3dReadiness();
-  const primaryUrl = window.productDraft?.primaryMedia?.url 
-    || window._p3dState?.primarySourceImageUrl 
-    || window._p3dState?.sourceImageUrl;
+function renderProduct3dSourceState(draft = window.productDraft) {
+  const readiness = getProduct3dReadiness(draft);
+  const { qualityTier, uniqueSourceCount, requiredSourceCount, missingSourceCount, canGenerate, hasPrimary } = readiness;
+  const tokenCost = qualityTier === 'STANDARD' ? 1 : (qualityTier === 'ULTRA' ? 6 : 3);
+  const isDev = window._p3dState?.isDev || Boolean(window.INTERNAL_DEV_BYPASS || window.IS_QA_INTERNAL);
 
+  const primaryUrl = draft?.primaryMedia?.url;
+
+  // DOM elements in 3D Tab
   const filledBox = document.getElementById('p3dTabSourceFilledBox');
   const emptyBox = document.getElementById('p3dTabSourceEmptyBox');
   const imgPreview = document.getElementById('p3dTabSourceImgPreview');
 
-  if (primaryUrl && !primaryUrl.includes('product-placeholder')) {
+  // DOM elements in Product Image Tab
+  const opePreview = document.getElementById('opeImagePreview');
+  const opeRemoveBtn = document.getElementById('opeBtnRemoveImg');
+  const opeUploadBtn = document.getElementById('opeBtnUploadImg');
+  const opeTakeBtn = document.getElementById('opeBtnTakePhoto');
+  const opeBadge = document.getElementById('opeUploadedBadge');
+
+  if (hasPrimary && primaryUrl) {
     if (imgPreview) {
       imgPreview.src = primaryUrl;
       imgPreview.style.display = 'block';
+      imgPreview.style.maxHeight = '160px';
+      imgPreview.style.maxWidth = '100%';
       imgPreview.style.objectFit = 'contain';
       imgPreview.style.objectPosition = 'center';
     }
     if (filledBox) filledBox.style.display = 'flex';
     if (emptyBox) emptyBox.style.display = 'none';
+
+    if (opePreview) {
+      opePreview.src = primaryUrl;
+      opePreview.style.display = 'block';
+      opePreview.style.objectFit = 'contain';
+      opePreview.style.objectPosition = 'center';
+    }
+    if (opeRemoveBtn) opeRemoveBtn.style.display = 'inline-flex';
+    if (opeBadge) opeBadge.style.display = 'inline-flex';
+    if (opeUploadBtn) opeUploadBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Replace Image';
+    if (opeTakeBtn) opeTakeBtn.innerHTML = '<i class="fa-solid fa-camera-rotate"></i> Retake Photo';
   } else {
     if (imgPreview) {
       imgPreview.src = '';
@@ -10588,39 +10592,23 @@ function syncProduct3dSourceUI() {
     }
     if (filledBox) filledBox.style.display = 'none';
     if (emptyBox) emptyBox.style.display = 'flex';
+
+    if (opePreview) {
+      opePreview.src = '';
+      opePreview.style.display = 'none';
+    }
+    if (opeRemoveBtn) opeRemoveBtn.style.display = 'none';
+    if (opeBadge) opeBadge.style.display = 'none';
+    if (opeUploadBtn) opeUploadBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Upload Product Image';
+    if (opeTakeBtn) opeTakeBtn.innerHTML = '<i class="fa-solid fa-camera"></i> Take Photo';
   }
 
-  updateP3dMultiViewReadiness();
-}
-window.syncProduct3dSourceUI = syncProduct3dSourceUI;
-
-function updateP3dMultiViewReadiness() {
-  const readiness = getProduct3dReadiness();
-  const { qualityTier, uniqueSourceCount, requiredSourceCount, missingSourceCount, canGenerate, hasPrimary } = readiness;
-  const tokenCost = qualityTier === 'STANDARD' ? 1 : (qualityTier === 'ULTRA' ? 6 : 3);
-  const isDev = window._p3dState?.isDev || Boolean(window.INTERNAL_DEV_BYPASS || window.IS_QA_INTERNAL);
-
+  // Update Readiness Badges & Summary
   const badge = document.getElementById('p3dMultiViewReadinessBadge');
   const costEl = document.getElementById('p3dLiveCostSummary');
   const ctaBtn = document.getElementById('p3dMainCtaBtn');
   const ctaText = document.getElementById('p3dMainCtaText');
   const warn = document.getElementById('p3dWarningBanner');
-
-  // Strict DOM holder synchronization
-  const filledBox = document.getElementById('p3dTabSourceFilledBox');
-  const emptyBox = document.getElementById('p3dTabSourceEmptyBox');
-  const imgPreview = document.getElementById('p3dTabSourceImgPreview');
-  if (hasPrimary) {
-    if (filledBox) filledBox.style.display = 'flex';
-    if (emptyBox) emptyBox.style.display = 'none';
-    if (imgPreview && !imgPreview.src) {
-      imgPreview.src = window.productDraft?.primaryMedia?.url || window._p3dState?.primarySourceImageUrl || '';
-      imgPreview.style.display = 'block';
-    }
-  } else {
-    if (filledBox) filledBox.style.display = 'none';
-    if (emptyBox) emptyBox.style.display = 'flex';
-  }
 
   if (badge) {
     badge.innerHTML = canGenerate 
@@ -10673,6 +10661,9 @@ function updateP3dMultiViewReadiness() {
     }
   }
 }
+window.renderProduct3dSourceState = renderProduct3dSourceState;
+window.updateP3dMultiViewReadiness = renderProduct3dSourceState;
+window.syncProduct3dSourceUI = renderProduct3dSourceState;
 
 function selectP3dQuality(tier) {
   const norm = String(tier || 'HIGH').toUpperCase().trim();
@@ -10857,7 +10848,7 @@ async function renderProduct3dSection(slot, product) {
     selectP3dQuality(initialTier);
     renderAdditionalViewsList();
 
-    // C11.16-P3.15-R2: Delegated to updateP3dMultiViewReadiness for deterministic gating
+    // C11.16-P3.15-R3: Delegated to updateP3dMultiViewReadiness for deterministic gating
     updateP3dMultiViewReadiness();
 
     const warn = document.getElementById('p3dWarningBanner');
@@ -11101,7 +11092,7 @@ window.retakeProductCameraPhoto = retakeProductCameraPhoto;
 window.useProductCameraPhoto = useProductCameraPhoto;
 window.closeCameraModal = closeCameraModal;
 
-// ── C11.16-P3.15-R2: Single Canonical Generate Router (P3D_GENERATE_ROUTER_COUNT = 1) ──
+// ── C11.16-P3.15-R3: Single Canonical Generate Router (P3D_GENERATE_ROUTER_COUNT = 1) ──
 function handleProduct3dGenerateRequest() {
   if (window._p3dState.isSubmitting) return;
   const p3d = window._p3dState.product3d;
@@ -11139,7 +11130,7 @@ function handleProduct3dGenerateRequest() {
 window.handleProduct3dGenerateRequest = handleProduct3dGenerateRequest;
 window.handleP3dMainCtaClick = handleProduct3dGenerateRequest;
 
-// ── C11.16-P3.15-R2: Single Canonical Convert Router (P3D_CONVERT_ROUTER_COUNT = 1) ──
+// ── C11.16-P3.15-R3: Single Canonical Convert Router (P3D_CONVERT_ROUTER_COUNT = 1) ──
 async function handleProduct3dConvertRequest() {
   await p3dConfirmExecute();
 }
@@ -11210,48 +11201,108 @@ function removeP3dTabSourceImage() {
 }
 window.removeP3dTabSourceImage = removeP3dTabSourceImage;
 
+// ── C11.16-P3.15-R3: Robust Modal Lock & Topmost Confirm Architecture ──
+function lockUnderlyingModal() {
+  const edCard = document.querySelector('#ownerProductEditorModal .viewport-modal-card');
+  if (edCard) edCard.setAttribute('aria-hidden', 'true');
+}
+
+function unlockUnderlyingModal() {
+  const edModal = document.getElementById('ownerProductEditorModal');
+  if (edModal) {
+    edModal.style.pointerEvents = '';
+    edModal.removeAttribute('aria-hidden');
+  }
+  const edCard = document.querySelector('#ownerProductEditorModal .viewport-modal-card');
+  if (edCard) edCard.removeAttribute('aria-hidden');
+  document.body.style.pointerEvents = '';
+  if (window._p3dState) {
+    window._p3dState.isConfirmOpen = false;
+  }
+}
+window.lockUnderlyingModal = lockUnderlyingModal;
+window.unlockUnderlyingModal = unlockUnderlyingModal;
+
 function openP3dConfirmModal(action, message) {
-  window._p3dState.confirmPendingAction = action;
   let modal = document.getElementById('p3dConfirmModal');
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'p3dConfirmModal';
     modal.className = 'viewport-modal';
-    modal.style.cssText = 'display:flex; position:fixed; inset:0; z-index:10200; background:rgba(0,0,0,0.75); align-items:center; justify-content:center;';
-    modal.innerHTML = '<div style="background:#0f172a; border:1px solid rgba(56,189,248,0.4); border-radius:14px; padding:24px; max-width:440px; width:90%; color:#fff; box-shadow:0 20px 40px rgba(0,0,0,0.8);"><h4 style="margin:0 0 12px; font-size:16px; font-weight:800; color:#38bdf8; display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-cube"></i> Confirm 3D Conversion</h4><div id="p3dConfirmMessage" style="font-size:13.5px; color:#cbd5e1; line-height:1.5; margin-bottom:20px;"></div><div style="display:flex; justify-content:flex-end; gap:10px;"><button type="button" onclick="closeP3dConfirmModal()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#94a3b8; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer;">Cancel</button><button type="button" id="p3dConfirmOkBtn" onclick="p3dConfirmExecute()" style="background:linear-gradient(135deg,#0284c7,#2563eb); border:1px solid #38bdf8; color:#fff; padding:8px 20px; border-radius:8px; font-weight:800; cursor:pointer;">Confirm</button></div></div>';
-    const _modalRoot = document.getElementById('appModalRoot') || document.body;
-    _modalRoot.appendChild(modal);
   }
-  // Block editor while confirm open
-  const _edModal = document.getElementById('ownerProductEditorModal');
-  if (_edModal) _edModal.style.pointerEvents = 'none';
-  const msgEl = document.getElementById('p3dConfirmMessage') || document.getElementById('p3dConfirmMsg');
+
+  // Ensure mounted in #appModalRoot above ownerProductEditorModal
+  const root = document.getElementById('appModalRoot') || document.body;
+  if (modal.parentElement !== root) {
+    root.appendChild(modal);
+  }
+
+  modal.style.cssText = 'display: flex !important; position: fixed !important; inset: 0 !important; z-index: 10200 !important; background: rgba(0,0,0,0.75) !important; backdrop-filter: blur(8px) !important; align-items: center !important; justify-content: center !important;';
+
+  const msgEl = document.getElementById('p3dConfirmMsg') || document.getElementById('p3dConfirmMessage');
   if (msgEl) msgEl.innerHTML = message;
 
-  const cBtn = document.getElementById('p3dConfirmBtn') || document.getElementById('p3dConfirmOkBtn');
-  if (cBtn) {
-    cBtn.onclick = (e) => {
+  const okBtn = document.getElementById('p3dConfirmOkBtn') || document.getElementById('p3dConfirmBtn');
+  if (okBtn) {
+    okBtn.onclick = (e) => {
       e.preventDefault();
-      p3dConfirmExecute();
+      handleProduct3dConvertRequest();
     };
   }
+
+  window._p3dState.confirmPendingAction = action;
+  window._p3dState.isConfirmOpen = true;
+
+  lockUnderlyingModal();
   modal.style.display = 'flex';
 }
+window.openP3dConfirmModal = openP3dConfirmModal;
 
 function closeP3dConfirmModal() {
-  const modal = document.getElementById('p3dConfirmModal');
-  if (modal) modal.style.display = 'none';
-  window._p3dState.confirmPendingAction = null;
-  const _edModal2 = document.getElementById('ownerProductEditorModal');
-  if (_edModal2) _edModal2.style.pointerEvents = '';
+  try {
+    const modal = document.getElementById('p3dConfirmModal');
+    if (modal) modal.style.display = 'none';
+    if (window._p3dState) {
+      window._p3dState.confirmPendingAction = null;
+      window._p3dState.isConfirmOpen = false;
+    }
+  } finally {
+    unlockUnderlyingModal();
+  }
 }
+window.closeP3dConfirmModal = closeP3dConfirmModal;
 
 async function p3dConfirmExecute() {
-  const action = window._p3dState.confirmPendingAction;
+  const action = window._p3dState?.confirmPendingAction;
   closeP3dConfirmModal();
   if (action === 'generate') await _p3dExecuteGenerate(false);
   else if (action === 'regenerate') await _p3dExecuteGenerate(true);
 }
+window.p3dConfirmExecute = p3dConfirmExecute;
+
+// Global Escape Key Listener
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' || e.key === 'Esc') {
+    const p3dModal = document.getElementById('p3dConfirmModal');
+    if (p3dModal && p3dModal.style.display !== 'none' && getComputedStyle(p3dModal).display !== 'none') {
+      e.stopPropagation();
+      e.preventDefault();
+      closeP3dConfirmModal();
+    }
+  }
+});
+
+// Defensive UI Lock Watchdog (Sec. 30)
+setInterval(function() {
+  const p3dModal = document.getElementById('p3dConfirmModal');
+  const isConfirmVisible = p3dModal && p3dModal.style.display !== 'none' && getComputedStyle(p3dModal).display !== 'none';
+  if (!isConfirmVisible) {
+    const edModal = document.getElementById('ownerProductEditorModal');
+    if (edModal && edModal.style.pointerEvents === 'none') {
+      edModal.style.pointerEvents = '';
+    }
+  }
+}, 500);
 
 // ── Execute Generate with Auto-Draft Persistence (UX2) ────────
 async function _p3dExecuteGenerate(isRegen) {
@@ -11261,7 +11312,6 @@ async function _p3dExecuteGenerate(isRegen) {
   const qualityTier = window._p3dState.currentQuality || 'HIGH';
   if (!slot || !pid) return;
 
-  const fileInput = document.getElementById('opeImageInput');
   const prodName = (document.getElementById('opeName')?.value || '').trim() || ('Product Slot ' + slot);
   let prod = (window.activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slot));
 
@@ -11271,45 +11321,18 @@ async function _p3dExecuteGenerate(isRegen) {
   renderProduct3dSection(slot, { ...prod, product3d: { status: 'QUEUED', qualityTier, previousGlbUrl: prod?.product3d?.glbUrl } });
 
   const token = p3dGetAuthToken();
-
-  // If new file chosen in browser preview, upload to slot first
-  if (fileInput && fileInput.files && fileInput.files[0]) {
-    const formData = new FormData();
-    formData.append('slotIndex', slot);
-    formData.append('name', prodName);
-    formData.append('productMediaMode', 'THREE_D');
-    formData.append('productImage', fileInput.files[0]);
-
-    try {
-      const upRes = await fetch('/api/projects/' + pid + '/products/' + slot, {
-        method: 'PUT',
-        headers: { 'Authorization': 'Bearer ' + token, 'x-booth-edit-token': token },
-        body: formData
-      });
-      const upData = await upRes.json();
-      if (upRes.ok && upData.product) {
-        if (!window.activeProjectData.products) window.activeProjectData.products = [];
-        const existingIdx = window.activeProjectData.products.findIndex(p => String(p.slotIndex) === String(slot));
-        if (existingIdx >= 0) window.activeProjectData.products[existingIdx] = upData.product;
-        else window.activeProjectData.products.push(upData.product);
-        prod = upData.product;
-      }
-    } catch (err) {
-      console.warn('[P3D] Auto-upload source image warning:', err.message);
-    }
-  }
-
   const endpoint = '/api/projects/' + pid + '/products/' + slot + '/3d/' + (isRegen ? 'regenerate' : 'generate');
+
+  const imageUrl = window.productDraft?.primaryMedia?.url || window._p3dState?.primarySourceImageUrl || prod?.imageUrl;
 
   try {
     const resp = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + token, 'x-booth-edit-token': token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ qualityTier, name: prodName, imageUrl: (window.productDraft?.primaryMedia?.url || window._p3dState?.primarySourceImageUrl || prod?.imageUrl) })
+      body: JSON.stringify({ qualityTier, name: prodName, imageUrl })
     });
     const data = await resp.json();
     if (!resp.ok) {
-      window._p3dState.isSubmitting = false;
       if (resp.status === 402) {
         alert('Insufficient 3D tokens. Please recharge your token balance.');
       } else {
@@ -11323,9 +11346,12 @@ async function _p3dExecuteGenerate(isRegen) {
     p3dStartPolling(slot);
 
   } catch (e) {
-    window._p3dState.isSubmitting = false;
     alert('Request failed: ' + e.message);
     renderProduct3dSection(slot, window.activeProjectData?.products?.find(p => String(p.slotIndex) === String(slot)));
+  } finally {
+    // ALWAYS release submission lock after HTTP request acknowledgment (Sec. 22 & 40)
+    window._p3dState.isSubmitting = false;
+    unlockUnderlyingModal();
   }
 }
 
