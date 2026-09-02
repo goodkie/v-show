@@ -5343,42 +5343,13 @@
       ];
 
       studioHotspotsList.forEach((spot, idx) => {
-        let pin = null;
-        
-        if (spot.pinType === 'BLANK_PIN' || spot.isDraft) {
-          el.className = 'hotspot-tag hotspot-blank-tag pin-owner-draggable';
-          el.innerHTML = `
-            <div style="background: rgba(56,189,248,0.25); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 13px;">
-              <i class="fa-solid fa-map-pin"></i>
-            </div>
-            <span class="hotspot-dot" style="background: #38bdf8; box-shadow: 0 0 10px #38bdf8;"></span>
-            <div class="hotspot-info">
-              <span class="hotspot-cat" style="color: #38bdf8;">EMPTY PRODUCT PIN</span>
-              <span class="hotspot-label-text" style="color: #cbd5e1; font-size: 11px;">No products yet</span>
-              <div style="margin-top: 5px; display: flex; gap: 5px; align-items: center;">
-                <button type="button" onclick="event.stopPropagation(); openPinChooserModal('${spot.id}')" style="background: linear-gradient(135deg,#0284c7,#2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 5px; padding: 3px 8px; font-size: 10px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                  <i class="fa-solid fa-plus"></i> Add Product
-                </button>
-                <button type="button" onclick="event.stopPropagation(); removeBlankPin('${spot.id}')" style="background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); border-radius: 5px; padding: 3px 6px; font-size: 10px; cursor: pointer;" title="Remove Pin">
-                  <i class="fa-solid fa-trash"></i>
-                </button>
-              </div>
-            </div>
-          `;
-        } else if (spot.pinType === 'CATALOG_PIN') {
-  
-          pin = rawPinpoints.find(p => p.pinType === 'CATALOG_PIN' && (p.targetId === spot.targetId || p.catalogId === spot.targetId || p.id === spot.id));
-        } else {
-          pin = rawPinpoints.find(p => p.slotIndex === spot.slotIndex || p.productId === spot.targetId || p.targetId === spot.targetId || p.id === spot.id);
-        }
-
+        let pin = rawPinpoints.find(p => p.id === spot.id || p.pinId === spot.id || p.targetId === spot.targetId || p.slotIndex === spot.slotIndex);
         const fallbackUV = defaultUVs[idx % defaultUVs.length] || { u: 0.5, v: 0.5 };
-        const u = typeof pin?.u === 'number' ? pin.u : fallbackUV.u;
-        const v = typeof pin?.v === 'number' ? pin.v : fallbackUV.v;
+        const u = typeof pin?.u === 'number' ? pin.u : (typeof spot.u === 'number' ? spot.u : fallbackUV.u);
+        const v = typeof pin?.v === 'number' ? pin.v : (typeof spot.v === 'number' ? spot.v : fallbackUV.v);
 
-        // Spherical coordinate mapping for equirectangular 360 photo
         const phi = (1 - v) * Math.PI;
-        const theta = (u * 2 * Math.PI) - Math.PI - 0.45; // match photoSphere.rotation.y
+        const theta = (u * 2 * Math.PI) - Math.PI - 0.45;
         const r = 450;
 
         const x = -r * Math.sin(phi) * Math.cos(theta);
@@ -8943,6 +8914,20 @@ function selectP3dQuality(tier) {
   updateP3dLiveCostSummary();
 }
 
+
+    function updateP3dLiveCostSummary() {
+      const costEl = document.getElementById('p3dCostSummary') || document.getElementById('p3dLiveCostSummary');
+      if (costEl) {
+        const quality = window._p3dState?.currentQuality || 'HIGH';
+        const cost = quality === 'STANDARD' ? 1 : (quality === 'ULTRA' ? 6 : 3);
+        const isDev = window._p3dState?.isDev;
+        costEl.textContent = isDev ? '0 Commercial Tokens (QA Mode)' : (cost + ' Tokens');
+      }
+    }
+    const _p3dDisposeViewer = function() {
+      if (typeof _p3dDisposeInlineViewer === 'function') _p3dDisposeInlineViewer();
+    };
+  
 // ── Render Product 3D Section Deterministic UI (P3.9-R3) ─────
 async function renderProduct3dSection(slot, product) {
   const section = document.getElementById('opeProduct3dSection');

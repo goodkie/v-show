@@ -78,7 +78,7 @@ async function runVerification() {
   // Step 3: Click Booth Surface → Instant Blank Pin
   console.log('[3/8] Clicking booth surface to place Instant Blank Pin...');
   const canvasRect = await page.evaluate(() => {
-    const c = document.getElementById('three-canvas');
+    const c = document.getElementById('three-canvas') || document.querySelector('#viewer-container canvas') || document.getElementById('viewer-container');
     const r = c.getBoundingClientRect();
     return { x: r.left + r.width * 0.45, y: r.top + r.height * 0.55 };
   });
