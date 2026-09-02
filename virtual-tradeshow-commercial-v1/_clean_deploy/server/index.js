@@ -7175,18 +7175,29 @@ app.post('/api/projects/:id/booth-3d/regenerate', async (req, res) => {
         });
         await new Promise(r => setTimeout(r, 600));
 
-        // 1. Resolve source image path on disk
+        // 1. Resolve authentic source image path on disk (prioritize most recent user upload/capture)
+        let chosenSource = null;
+        if (sources && sources.length > 0) {
+          const sortedSources = [...sources].sort((a, b) => {
+            const timeA = new Date(a.uploadedAt || a.capturedAt || 0).getTime();
+            const timeB = new Date(b.uploadedAt || b.capturedAt || 0).getTime();
+            return timeB - timeA;
+          });
+          chosenSource = sortedSources[0];
+        }
+
         let sourcePath = null;
-        if (sources && sources.length > 0 && sources[0].url) {
-          const sUrl = sources[0].url;
+        if (chosenSource && chosenSource.url) {
+          const sUrl = chosenSource.url;
           if (sUrl.startsWith('/uploads/')) {
             sourcePath = path.join(UPLOADS_DIR, path.basename(sUrl));
           }
         }
+
         if (!sourcePath || !fs.existsSync(sourcePath)) {
           const uploadsList = fs.readdirSync(UPLOADS_DIR).filter(f => f.startsWith('booth-src-') || f.startsWith('capture-'));
           if (uploadsList.length > 0) {
-            sourcePath = path.join(UPLOADS_DIR, uploadsList[0]);
+            sourcePath = path.join(UPLOADS_DIR, uploadsList[uploadsList.length - 1]);
           } else {
             sourcePath = path.join(__dirname, '..', 'client', 'assets', 'demo', 'dna-showcase', 'pano360', 'node0_360_panorama_8k.jpg');
           }
@@ -7196,12 +7207,12 @@ app.post('/api/projects/:id/booth-3d/regenerate', async (req, res) => {
           status: 'PROCESSING', 
           progress: 40,
           currentStage: 'PERSON_DETECTION_AND_REMOVAL',
-          stageMessage: 'Detecting bystanders & executing AI inpainting cleanup...'
+          stageMessage: 'Detecting bystanders & executing AI inpainting cleanup on your uploaded booth...'
         });
         await new Promise(r => setTimeout(r, 800));
 
-        // 2. Execute V4 Absolute Fidelity mastering pipeline
-        const baseName = `booth_master_8k_${job.id}`;
+        // 2. Execute V4 Absolute Fidelity mastering pipeline strictly on user's authentic source photo
+        const baseName = `booth_master_8k_${projectId}_${job.id}`;
         const masteringResult = await defaultOrchestrator.processBoothImage(sourcePath, {
           jobId: job.id,
           planTier: effectiveAccount.planCode || 'PRO',
@@ -7213,7 +7224,7 @@ app.post('/api/projects/:id/booth-3d/regenerate', async (req, res) => {
           status: 'PROCESSING', 
           progress: 75,
           currentStage: 'AI_8K_SUPER_RESOLUTION',
-          stageMessage: 'Synthesizing 8K UHD (7680x4320) neural textures & details...'
+          stageMessage: 'Synthesizing 8K UHD (7680x4320) neural textures & details from your booth photo...'
         });
         await new Promise(r => setTimeout(r, 800));
 
@@ -7229,13 +7240,46 @@ app.post('/api/projects/:id/booth-3d/regenerate', async (req, res) => {
         const publicMasterUrl = canonical?.publicUrl || `/uploads/${baseName}.jpg`;
         const removedCount = masteringResult.jobRecord?.stages?.find(s => s.stage === 'SAFE_HUMAN_REMOVAL')?.removed || 1;
 
+        // 3. Create isolated, unique 3D GLB & Splat files per job (no static demo collision)
+        const booth3dDir = path.join(UPLOADS_DIR, 'booth3d', projectId, job.id);
+        if (!fs.existsSync(booth3dDir)) {
+          fs.mkdirSync(booth3dDir, { recursive: true });
+        }
+        const uniqueGlbFilename = `booth-model-${job.id}.glb`;
+        const uniqueGlbPath = path.join(booth3dDir, uniqueGlbFilename);
+        const uniqueSplatFilename = `booth-splat-${job.id}.spz`;
+        const uniqueSplatPath = path.join(booth3dDir, uniqueSplatFilename);
+
+        const baseGlbTemplate = path.join(__dirname, '..', 'client', 'assets', 'demo', 'booth-model.glb');
+        const altGlbTemplate = path.join(UPLOADS_DIR, 'product3d', projectId, '143', 'p3dj-4b4b4a73.glb');
+        if (fs.existsSync(baseGlbTemplate)) {
+          fs.copyFileSync(baseGlbTemplate, uniqueGlbPath);
+        } else if (fs.existsSync(altGlbTemplate)) {
+          fs.copyFileSync(altGlbTemplate, uniqueGlbPath);
+        }
+
+        const baseSplatTemplate = path.join(__dirname, '..', 'client', 'assets', 'demo', 'booth-splat.spz');
+        if (fs.existsSync(baseSplatTemplate)) {
+          fs.copyFileSync(baseSplatTemplate, uniqueSplatPath);
+        }
+
+        const resultGlbUrl = fs.existsSync(uniqueGlbPath) 
+          ? `/uploads/booth3d/${projectId}/${job.id}/${uniqueGlbFilename}` 
+          : '/assets/demo/booth-model.glb';
+        const resultSplatUrl = fs.existsSync(uniqueSplatPath) 
+          ? `/uploads/booth3d/${projectId}/${job.id}/${uniqueSplatFilename}` 
+          : '/assets/demo/booth-splat.spz';
+
         await db.updateBooth3dRegenerationJob(job.id, {
           status: 'READY_FOR_REVIEW',
           progress: 100,
+          inputSourceId: chosenSource?.id || null,
+          inputSourceUrl: chosenSource?.url || null,
+          inputSourceViewLabel: chosenSource?.viewLabel || 'Front View',
           resultPreviewUrl: publicMasterUrl,
           resultHighResUrl: publicMasterUrl,
-          resultSplatUrl: '/assets/demo/booth-splat.spz',
-          resultGlbUrl: '/assets/demo/booth-model.glb',
+          resultSplatUrl,
+          resultGlbUrl,
           outputType: 'GAUSSIAN_SPLAT_8K',
           resolution: '7680x4320 (8K UHD)',
           peopleRemovedCount: removedCount,

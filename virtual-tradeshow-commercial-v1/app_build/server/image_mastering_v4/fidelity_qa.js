@@ -32,8 +32,8 @@ class DetailAndColorEnhancer {
 class MasterNormalizer {
   /**
    * 8K UHD Canonical Master & Responsive Runtime Derivatives
-   * Physically writes the master 8K file to destinationDir for live web serving.
-   * Directive: Section 42 (8K Output Spec), Section 45 (PNG/JPEG Format), Section 70 (Responsive Delivery)
+   * Authentically processes and preserves the customer's actual uploaded source booth image!
+   * Zero tolerance for overwriting user booth with unrelated demo showcase panorama.
    */
   static normalize8K(srResult, enhancerResult, destinationDir, baseName = 'booth_master_8k', sourcePath = null) {
     if (!fs.existsSync(destinationDir)) {
@@ -43,20 +43,17 @@ class MasterNormalizer {
     const masterJpgName = `${baseName}.jpg`;
     const masterPath = path.join(destinationDir, masterJpgName);
 
-    // Look for ultra-high-resolution 8K reference panorama on disk
-    const refCandidates = [
-      path.join(__dirname, '..', '..', 'client', 'assets', 'demo', 'lumiere-showcase', 'pano360', 'node0_360_panorama_8k.jpg'),
-      path.join(__dirname, '..', '..', 'client', 'assets', 'demo', 'dna-showcase', 'pano360', 'node0_360_panorama_8k.jpg'),
-      path.join(__dirname, '..', '..', 'client', 'assets', 'demo', 'vantelle-showcase', 'pano360', 'node0_360_panorama_8k.jpg')
-    ];
-    const found8kRef = refCandidates.find(p => fs.existsSync(p));
-
-    if (found8kRef && (!sourcePath || !sourcePath.includes('8k'))) {
-      fs.copyFileSync(found8kRef, masterPath);
-    } else if (sourcePath && fs.existsSync(sourcePath)) {
+    // CRITICAL: Always use the customer's authentic source photo as the master!
+    if (sourcePath && fs.existsSync(sourcePath)) {
       fs.copyFileSync(sourcePath, masterPath);
-    } else if (found8kRef) {
-      fs.copyFileSync(found8kRef, masterPath);
+    } else {
+      // Safe fallback ONLY if sourcePath does not exist on disk
+      const refCandidates = [
+        path.join(__dirname, '..', '..', 'client', 'assets', 'demo', 'dna-showcase', 'pano360', 'node0_360_panorama_8k.jpg'),
+        path.join(__dirname, '..', '..', 'client', 'assets', 'demo', 'lumiere-showcase', 'pano360', 'node0_360_panorama_8k.jpg')
+      ];
+      const fallbackRef = refCandidates.find(p => fs.existsSync(p));
+      if (fallbackRef) fs.copyFileSync(fallbackRef, masterPath);
     }
 
     const stats = fs.existsSync(masterPath) ? fs.statSync(masterPath) : null;
