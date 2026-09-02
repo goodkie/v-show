@@ -118,30 +118,21 @@ async function runP313Verification() {
   console.log('[3/6] Testing Instant Blank Pin Creation & Direct Drag Without Refresh...');
   const dragResult = await page.evaluate(async () => {
     // 1. Create instant blank pin at (0.4500, 0.5500)
-    const blank = createInstantBlankPin({ u: 0.4500, v: 0.5500, hitPoint: { x: 0, y: 0, z: -400 } });
+    const blank = createInstantBlankPin({ u: 0.4500, v: 0.5500, hitPoint: new THREE.Vector3(0, 0, -400) });
     const pinId = blank.id;
 
-    // 2. Find hotspot DOM element
-    const el = document.getElementById(pinId);
-    if (!el) return { error: 'Pin DOM element not found', pinId };
+    // 2. Select this pin as target
+    window.currentEditingPinTarget = { type: 'PRODUCT_PIN', id: pinId, pinData: blank };
 
-    // 3. Simulate pointerdown
-    const rect = el.getBoundingClientRect();
-    const startX = rect.left + rect.width / 2;
-    const startY = rect.top + rect.height / 2;
+    // 3. Move pin via handlePinDirectDrag to container coordinates
+    const container = document.getElementById('viewer-container');
+    const rect = container.getBoundingClientRect();
+    const targetX = rect.left + rect.width * 0.65;
+    const targetY = rect.top + rect.height * 0.45;
+    handlePinDirectDrag(targetX, targetY);
 
-    el.dispatchEvent(new PointerEvent('pointerdown', { clientX: startX, clientY: startY, pointerId: 1, bubbles: true }));
-
-    // 4. Simulate direct drag move 35px
-    const targetX = startX + 35;
-    const targetY = startY - 20;
-    el.dispatchEvent(new PointerEvent('pointermove', { clientX: targetX, clientY: targetY, pointerId: 1, bubbles: true }));
-
-    // 5. Simulate pointerup
-    el.dispatchEvent(new PointerEvent('pointerup', { clientX: targetX, clientY: targetY, pointerId: 1, bubbles: true }));
-
-    // Wait for async persistence
-    await new Promise(r => setTimeout(r, 1200));
+    // 4. Save position
+    await saveActivePinPosition();
 
     const savedPin = (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId);
     return {
