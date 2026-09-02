@@ -12771,7 +12771,7 @@ return event;
   }
 
   listBoothSources(projectId) {
-    const data = this.memoryData;
+    const data = this.read();
     const project = (data.projects || []).find(p => p.id === projectId);
     return (project?.boothSources || []);
   }
