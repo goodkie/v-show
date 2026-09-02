@@ -413,6 +413,7 @@
         const data = await res.json();
         if (res.ok && data.project) {
           activeProjectData = data.project;
+              window.activeProjectData = data.project;
           showAutosave('SAVED');
           document.getElementById('productEditFormContainer').style.display = 'none';
           renderEditorProductCards();
@@ -5508,6 +5509,8 @@
         pinData: blankPin
       });
 
+      window.studioHotspotsList = studioHotspotsList;
+      window.activeProjectData = activeProjectData;
       buildHotspotsDOM();
       updateFocusSpecForBlankPin(blankPin);
 
