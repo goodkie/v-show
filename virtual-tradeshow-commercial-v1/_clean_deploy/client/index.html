@@ -1040,6 +1040,7 @@
 
     /* 3D Floating Hotspots Layer */
     #hotspot-layer { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
+    .hotspot-tag { pointer-events: auto !important; }
 
     .hotspot-tag {
       position: absolute; transform: translate(-50%, -50%);
@@ -5200,6 +5201,51 @@
 
         window.addEventListener('resize', onStudioResize);
 
+        // Pin Placement Capture Listener (C11.16-P3.10)
+        function handleBoothPlacementPointer(e) {
+          if (!window.isPlacingProductPin && window.pinAuthoringState !== 'PLACING') return;
+          e.preventDefault();
+          e.stopPropagation();
+
+          const rect = container.getBoundingClientRect();
+          const mouse = new THREE.Vector2(
+            ((e.clientX - rect.left) / rect.width) * 2 - 1,
+            -((e.clientY - rect.top) / rect.height) * 2 + 1
+          );
+
+          const raycaster = new THREE.Raycaster();
+          if (camera) raycaster.setFromCamera(mouse, camera);
+
+          let hitPoint = null;
+          let u = 0.5, v = 0.5;
+
+          if (photoSphere && camera) {
+            const intersects = raycaster.intersectObject(photoSphere);
+            if (intersects.length > 0) {
+              hitPoint = intersects[0].point.clone();
+              const normal = hitPoint.clone().normalize();
+              u = (Math.atan2(normal.z, -normal.x) + Math.PI + 0.45) / (2 * Math.PI) % 1;
+              if (u < 0) u += 1;
+              v = 1 - (Math.acos(Math.max(-1, Math.min(1, normal.y))) / Math.PI);
+            }
+          }
+
+          if (!hitPoint) {
+            u = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            v = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+            const phi = (1 - v) * Math.PI;
+            const theta = (u * 2 * Math.PI) - Math.PI - 0.45;
+            const r = 450;
+            hitPoint = new THREE.Vector3(-r * Math.sin(phi) * Math.cos(theta), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(theta));
+          }
+
+          createInstantBlankPin({ u, v, hitPoint });
+        }
+
+        container.addEventListener('pointerdown', handleBoothPlacementPointer, true);
+        container.addEventListener('click', handleBoothPlacementPointer, true);
+  
+
         // Pin Placement Canvas Raycaster (C11.16-P3.10)
         canvas.addEventListener('pointerdown', (e) => {
           if (!window.isPlacingProductPin && window.pinAuthoringState !== 'PLACING') return;
@@ -8924,6 +8970,29 @@ function selectP3dQuality(tier) {
         costEl.textContent = isDev ? '0 Commercial Tokens (QA Mode)' : (cost + ' Tokens');
       }
     }
+    const _p3dDisposeViewer = function() {
+      if (typeof _p3dDisposeInlineViewer === 'function') _p3dDisposeInlineViewer();
+    };
+  
+
+    function renderAdditionalViewsList() {
+      const container = document.getElementById('p3dAdditionalViewsContainer');
+      if (!container) return;
+      const views = window._p3dState?.additionalSourceImages || [];
+      if (views.length === 0) {
+        container.innerHTML = '<span style="font-size: 11px; color: #64748b;">No additional views added (optional).</span>';
+        return;
+      }
+      container.innerHTML = views.map((v, i) => `
+        <div style="position: relative; width: 48px; height: 48px; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.15); background: #000;">
+          <img src="${v.url}" style="width: 100%; height: 100%; object-fit: contain;">
+          <button type="button" onclick="removeP3dAdditionalView(${i})" style="position: absolute; top: 1px; right: 1px; background: rgba(0,0,0,0.7); border: none; color: #f87171; border-radius: 50%; width: 14px; height: 14px; font-size: 8px; cursor: pointer;">✕</button>
+        </div>
+      `).join('');
+    }
+    const _p3dInitViewer = function(url, name) {
+      if (typeof _p3dInitInlineViewer === 'function') _p3dInitInlineViewer(url);
+    };
     const _p3dDisposeViewer = function() {
       if (typeof _p3dDisposeInlineViewer === 'function') _p3dDisposeInlineViewer();
     };

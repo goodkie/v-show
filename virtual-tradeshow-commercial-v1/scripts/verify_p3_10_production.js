@@ -157,31 +157,40 @@ async function runVerification() {
   console.log(`PIN_PRODUCT_COUNT: ${groupPinCheck.productCount} (Expected: 2)`);
   await page.screenshot({ path: path.join(ARTIFACT_DIR, '05_PRODUCT_COLLECTION_PIN_SAVED.png') });
 
-  // Step 6: Product Editor Direct 3D Source Upload
-  console.log('[6/8] Opening Product Editor for Slot 1 and checking 3D Source Upload...');
+  // Step 6: Product Editor Direct 3D Source Upload (Slot 2)
+  console.log('[6/8] Opening Product Editor for Slot 2 to verify 3D Tab Direct Source Upload...');
   await page.evaluate(() => {
-    if (typeof window.openOwnerProductEditor === 'function') window.openOwnerProductEditor(1);
+    if (typeof window.openOwnerProductEditor === 'function') window.openOwnerProductEditor(2);
   });
-  await new Promise(r => setTimeout(r, 3000));
+  await new Promise(r => setTimeout(r, 2000));
+  await page.click('#tabProductMedia3D');
+  await new Promise(r => setTimeout(r, 1500));
 
   const sourceBoxCheck = await page.evaluate(() => {
     const emptyBox = document.getElementById('p3dTabSourceEmptyBox');
     const filledBox = document.getElementById('p3dTabSourceFilledBox');
     const previewImg = document.getElementById('p3dTabSourceImgPreview');
+    const ctaBtn = document.getElementById('p3dMainCtaBtn');
     return {
-      emptyBoxExists: !!emptyBox,
-      filledBoxExists: !!filledBox,
-      hasPreviewUrl: !!(previewImg && previewImg.src && !previewImg.src.endsWith('/'))
+      emptyBoxExists: emptyBox && window.getComputedStyle(emptyBox).display !== 'none',
+      filledBoxExists: filledBox && window.getComputedStyle(filledBox).display !== 'none',
+      hasPreviewUrl: !!(previewImg && previewImg.src && !previewImg.src.endsWith('/')),
+      ctaBtnVisible: ctaBtn && window.getComputedStyle(ctaBtn).display !== 'none'
     };
   });
 
   console.log('--- STEP 6: 3D TAB SOURCE IMAGE UPLOAD ---');
   console.log(`THREE_D_TAB_IMAGE_UPLOAD_VISIBLE: ${sourceBoxCheck.emptyBoxExists || sourceBoxCheck.filledBoxExists} (Expected: true)`);
   console.log(`THREE_D_TAB_SOURCE_PREVIEW: ${sourceBoxCheck.hasPreviewUrl} (Expected: true)`);
+  console.log(`GENERATE_3D_BUTTON_VISIBLE: ${sourceBoxCheck.ctaBtnVisible} (Expected: true)`);
   await page.screenshot({ path: path.join(ARTIFACT_DIR, '06_3D_TAB_SOURCE_UPLOAD_SECTION.png') });
 
-  // Step 7: Confirm Modal & 3D Result Holder
-  console.log('[7/8] Verifying Visual 3D Result Holder on Slot 1...');
+  // Step 7: Visual 3D Result Holder on Slot 1
+  console.log('[7/8] Opening Product Editor for Slot 1 to verify Visual 3D Result Holder & WebGL Preview...');
+  await page.evaluate(() => {
+    if (typeof window.openOwnerProductEditor === 'function') window.openOwnerProductEditor(1);
+  });
+  await new Promise(r => setTimeout(r, 2500));
   const resultHolderCheck = await page.evaluate(() => {
     const holder = document.getElementById('p3dResultHolderContainer');
     const tierBadge = document.getElementById('p3dResultTierBadge')?.textContent;
