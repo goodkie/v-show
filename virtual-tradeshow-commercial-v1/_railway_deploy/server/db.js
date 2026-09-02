@@ -12561,7 +12561,7 @@ return event;
     });
   }
 
-  async getProduct3dJob(jobId) {
+  getProduct3dJob(jobId) {
     const data = this.read();
     return (data.product3dJobs || []).find(j => j.id === jobId) || null;
   }

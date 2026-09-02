@@ -7447,7 +7447,7 @@ app.post('/api/projects/:id/products/:slot/3d/generate', async (req, res) => {
     });
 
     // Read-After-Write Verification (Section 6)
-    const verifiedJob = db.getProduct3dJob(job.id);
+    const verifiedJob = await db.getProduct3dJob(job.id);
     if (!verifiedJob || verifiedJob.status !== 'QUEUED') {
       throw new Error(`Failed to persist and verify Product 3D job ${job.id}`);
     }

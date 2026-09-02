@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const commit = 'cc6bde6';
+const commit = '021b1d9';
 const files = [
   'e:/vivpr/ai/v-show/virtual-tradeshow-commercial-v1/_clean_deploy/client/index.html',
   'e:/vivpr/ai/v-show/virtual-tradeshow-commercial-v1/_railway_deploy/client/index.html',
