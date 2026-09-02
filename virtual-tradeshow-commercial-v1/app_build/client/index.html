@@ -24,6 +24,29 @@
   <script>
     
     // ============================================================
+    
+    // Canonical Product 3D Confirm & Missing Inline Handler Aliases (P3.9-R2)
+    function executeProduct3dConversion() {
+      if (typeof p3dConfirmExecute === 'function') return p3dConfirmExecute();
+    }
+    window.executeProduct3dConversion = executeProduct3dConversion;
+    window.product3dConfirmExecute = executeProduct3dConversion;
+    window.p3dConfirmExecute = executeProduct3dConversion;
+    window.openP3dViewerModal = function(url, name) {
+      if (typeof _p3dOpenViewerWithUrl === 'function') _p3dOpenViewerWithUrl(url, name);
+      else if (typeof product3dOpenViewer === 'function') product3dOpenViewer();
+    };
+    window.openInlineCatalogCreateFromProduct = function() {
+      if (typeof openCatalogEditor === 'function') openCatalogEditor(null);
+    };
+    window.resendVerificationCode = function() {
+      if (typeof handleResendOtp === 'function') handleResendOtp();
+    };
+    window.handleVerifyCodeSubmit = function(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      if (typeof handleVerifyOtpClick === 'function') handleVerifyOtpClick();
+    };
+  
     // SERVER ENTITLEMENT AUTHORITY & PIN-FIRST ENGINE (P3.9)
     // ============================================================
     window.pinFirstPendingCoords = null;
@@ -3265,7 +3288,7 @@
       <p id="p3dConfirmMsg" style="color: #94a3b8; font-size: 13px; line-height: 1.6; margin-bottom: 18px;">This will use tokens to generate a 3D AI product preview.</p>
       <div style="display: flex; gap: 10px; justify-content: flex-end;">
         <button onclick="closeP3dConfirmModal()" style="padding: 9px 18px; background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; font-size: 13px; cursor: pointer;">Cancel</button>
-        <button id="p3dConfirmBtn" onclick="product3dConfirmExecute()" style="padding: 9px 22px; background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 800; cursor: pointer;"><i class="fa-solid fa-wand-magic-sparkles"></i> Convert</button>
+        <button id="p3dConfirmBtn" style="padding: 9px 22px; background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 800; cursor: pointer;"><i class="fa-solid fa-wand-magic-sparkles"></i> Convert</button>
       </div>
     </div>
   </div>
@@ -5339,6 +5362,7 @@
     // 1. Enter Interactive Placement Mode
     function startPlaceProductPinMode() {
       window.isPlacingProductPin = true;
+      if (typeof controls !== 'undefined' && controls) controls.enabled = false;
       const banner = document.getElementById('placePinBanner');
       if (banner) banner.style.display = 'flex';
       const container = document.getElementById('viewer-container');
@@ -5348,6 +5372,7 @@
 
     function cancelPlaceProductPinMode() {
       window.isPlacingProductPin = false;
+      if (typeof controls !== 'undefined' && controls) controls.enabled = true;
       const banner = document.getElementById('placePinBanner');
       if (banner) banner.style.display = 'none';
       const container = document.getElementById('viewer-container');
@@ -9080,6 +9105,17 @@ function product3dRegenerate() {
 }
 
 function openP3dConfirmModal(action, message) {
+  setTimeout(() => {
+    const cBtn = document.getElementById('p3dConfirmBtn') || document.getElementById('p3dConfirmOkBtn');
+    if (cBtn && !cBtn._hasBound) {
+      cBtn._hasBound = true;
+      cBtn.onclick = null;
+      cBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        executeProduct3dConversion();
+      });
+    }
+  }, 10);
   window._p3dState.confirmPendingAction = action;
   let modal = document.getElementById('p3dConfirmModal');
   if (!modal) {
