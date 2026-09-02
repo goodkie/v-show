@@ -1177,20 +1177,26 @@
 
     /* Product Shortcut Cards Tray (3 Slots) */
     #product-cards-tray {
-      height: 110px; flex-shrink: 0;
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 10px; align-items: stretch;
+      display: flex; flex-direction: row; overflow-x: auto; overflow-y: hidden;
+      gap: 12px; padding: 10px 14px; height: auto;
+      align-items: stretch; flex-shrink: 0;
+      scroll-snap-type: x proximity;
+      scrollbar-width: thin; scrollbar-color: #334155 rgba(3,7,18,0.6);
     }
-    @media (max-width: 768px) {
-      #product-cards-tray { grid-template-columns: 1fr; height: auto; }
-    }
+    #product-cards-tray::-webkit-scrollbar { height: 5px; }
+    #product-cards-tray::-webkit-scrollbar-track { background: rgba(3,7,18,0.6); border-radius: 3px; }
+    #product-cards-tray::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    #product-cards-tray::-webkit-scrollbar-thumb:hover { background: #38bdf8; }
     .prod-quick-card {
+      flex: 0 0 210px; width: 210px; aspect-ratio: 3/4;
       background: rgba(9, 16, 29, 0.94); border: 1px solid rgba(56, 189, 248, 0.35);
-      border-radius: 12px; padding: 8px 10px; cursor: pointer;
-      display: flex; gap: 10px; align-items: center;
-      transition: all 0.25s; position: relative; overflow: hidden;
+      border-radius: 12px; cursor: pointer;
+      display: flex; flex-direction: column; padding: 0; overflow: hidden;
+      transition: all 0.25s; position: relative;
       box-shadow: 0 8px 20px rgba(0,0,0,0.5); backdrop-filter: blur(16px);
+      scroll-snap-align: start;
     }
+    @media (max-width: 768px) { .prod-quick-card { flex: 0 0 72vw; width: 72vw; } }
     .prod-quick-card:hover {
       background: rgba(14, 28, 50, 0.98); border-color: #00c2ff;
       transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0, 194, 255, 0.25);
@@ -1200,21 +1206,27 @@
       box-shadow: 0 0 18px rgba(0, 194, 255, 0.35);
     }
     .prod-card-thumb {
-      width: 70px; height: 100%; border-radius: 8px; overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; background: #000;
-      display: flex; align-items: center; justify-content: center;
+      flex: 0 0 58%; width: 100%; border-radius: 0; overflow: hidden;
+      border: none; border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: #000; display: flex; align-items: center; justify-content: center;
     }
-    .prod-card-thumb img { width: 100%; height: 100%; object-fit: contain !important; object-position: center; background: rgba(0,0,0,0.5); display: block;
-    }
+    .prod-card-thumb img { width: 100%; height: 100%; object-fit: contain !important; object-position: center; background: rgba(0,0,0,0.5); display: block; }
     .prod-card-body {
-      flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px;
+      flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: flex-start;
+      gap: 4px; padding: 10px 12px; overflow: hidden;
     }
-    .prod-card-cat { font-size: 8px; font-weight: 800; color: #00c2ff; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .prod-card-title { font-size: 11.5px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .prod-card-spec { font-size: 9px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .prod-card-cat { font-size: 8.5px; font-weight: 800; color: #00c2ff; text-transform: uppercase; letter-spacing: 0.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .prod-card-title {
+      font-size: 12.5px; font-weight: 800; color: #fff;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3;
+    }
+    .prod-card-spec {
+      font-size: 10px; color: var(--text-muted);
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;
+    }
     .prod-card-btn {
-      margin-top: 2px; font-size: 9px; font-weight: 700; color: #38bdf8;
-      display: flex; align-items: center; gap: 3px;
+      margin-top: auto; font-size: 9.5px; font-weight: 700; color: #38bdf8;
+      display: flex; align-items: center; gap: 3px; padding-top: 4px;
     }
 
     /* Right Unified Sidebar */
@@ -3059,6 +3071,9 @@
                   </button>
                   <button type="button" id="opeBtnRemoveImg" class="btn-ui" onclick="removeOwnerProductImage()" style="display: none; padding: 8px 14px; font-size: 12.5px; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.35); border-radius: 8px; cursor: pointer;">
                     <i class="fa-solid fa-trash"></i> Remove Image
+                  </button>
+                  <button type="button" id="opeBtnTakePhoto" class="btn-ui" onclick="openProductCameraCapture('Primary')" style="padding: 8px 16px; font-size: 12.5px; font-weight: 700; background: rgba(168,85,247,0.18); color: #c084fc; border: 1px solid rgba(168,85,247,0.45); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-camera"></i> Take Photo
                   </button>
                 </div>
                 <div style="font-size: 11.5px; color: #94a3b8; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 6px;">
@@ -6753,7 +6768,7 @@
       else window.activeProjectData.pinpoints.push(pin);
 
       try {
-        await fetch(`/api/projects/${pid}/pins/${pinId}`, {
+        const _putRes = await fetch(`/api/projects/${pid}/pins/${pinId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -6762,7 +6777,24 @@
           },
           body: JSON.stringify(pin)
         });
-      } catch(e) {}
+        if (!_putRes.ok) {
+          const _putBody = await _putRes.json().catch(() => ({}));
+          if (_putRes.status === 404) {
+            // Pin not on server yet — POST first
+            await fetch(`/api/projects/${pid}/pins`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'x-booth-edit-token': token },
+              body: JSON.stringify(pin)
+            });
+          } else {
+            throw new Error(_putBody.error || 'Server error ' + _putRes.status);
+          }
+        }
+      } catch(savePinErr) {
+        console.error('[saveProductPinSelection]', savePinErr);
+        if (window.showToast) window.showToast('⚠️ Save failed: ' + savePinErr.message + ' — please retry.', 'error');
+        return;
+      }
 
       setupStudioProducts(window.activeProjectData);
       closeProductPinSelectorModal();
@@ -7093,6 +7125,11 @@
       if (typeof updateHotspots === 'function') updateHotspots();
       if (typeof renderProductCardsTray === 'function') renderProductCardsTray(projectData?.products || []);
       if (typeof renderProductCards === 'function') renderProductCards(projectData?.products || []);
+
+      // P3.15-T6: Re-initialize canonical pin drag router (reset guard so listener is always current)
+      const _hl = document.getElementById('hotspot-layer');
+      if (_hl) _hl.dataset.dragInitialized = '';
+      if (typeof initHotspotLayerDragDelegation === 'function') initHotspotLayerDragDelegation();
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -10594,6 +10631,105 @@ window._p3dExecuteGenerate = _p3dExecuteGenerate;
     }
     window.calculateCurrentP3dCost = calculateCurrentP3dCost;
   
+
+// P3.15-T1B: Product Camera Capture — CAMERA_AUTO_START=false
+var _cameraStream = null;
+function _stopCameraStream() {
+  if (_cameraStream) { _cameraStream.getTracks().forEach(function(t){t.stop();}); _cameraStream = null; }
+}
+async function openProductCameraCapture(viewLabel) {
+  viewLabel = viewLabel || "Primary";
+  var camModal = document.getElementById("productCameraModal");
+  if (!camModal) {
+    camModal = document.createElement("div");
+    camModal.id = "productCameraModal";
+    camModal.style.cssText = "display:none;position:fixed;inset:0;z-index:10300;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;";
+    var html = "";
+    html += "<div style=\"position:relative;width:min(480px,96vw);background:#09101d;border:1px solid rgba(56,189,248,0.4);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;\">";
+    html += "<div style=\"display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.08);\">";
+    html += "<span style=\"font-size:13px;font-weight:800;color:#c084fc;\"><i class=\"fa-solid fa-camera\"></i> Capture Product Photo</span>";
+    html += "<button type=\"button\" onclick=\"closeCameraModal()\" style=\"background:none;border:none;color:#94a3b8;cursor:pointer;font-size:18px;\">×</button></div>";
+    html += "<div id=\"camLiveView\" style=\"position:relative;background:#000;width:100%;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;overflow:hidden;\">";
+    html += "<video id=\"camVideoEl\" autoplay playsinline muted style=\"width:100%;height:100%;object-fit:cover;display:block;\"></video>";
+    html += "<canvas id=\"camCaptureCanvas\" style=\"display:none;width:100%;height:100%;object-fit:cover;\"></canvas>";
+    html += "<div id=\"camLoadingMsg\" style=\"position:absolute;color:#94a3b8;font-size:13px;\"><i class=\"fa-solid fa-circle-notch fa-spin\"></i> Starting camera…</div></div>";
+    html += "<div id=\"camLiveControls\" style=\"display:flex;gap:10px;justify-content:center;padding:14px;\">";
+    html += "<button type=\"button\" onclick=\"captureProductCameraFrame()\" style=\"padding:10px 28px;font-size:13px;font-weight:800;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:1px solid #a78bfa;border-radius:10px;cursor:pointer;\"><i class=\"fa-solid fa-circle-dot\"></i> Capture</button>";
+    html += "<button type=\"button\" onclick=\"closeCameraModal()\" style=\"padding:10px 18px;font-size:13px;font-weight:700;background:rgba(255,255,255,0.08);color:#94a3b8;border:1px solid rgba(255,255,255,0.15);border-radius:10px;cursor:pointer;\">Cancel</button></div>";
+    html += "<div id=\"camStillControls\" style=\"display:none;gap:10px;justify-content:center;padding:14px;flex-wrap:wrap;\">";
+    html += "<button type=\"button\" onclick=\"retakeProductCameraPhoto()\" style=\"padding:10px 18px;font-size:13px;font-weight:700;background:rgba(255,255,255,0.08);color:#94a3b8;border:1px solid rgba(255,255,255,0.15);border-radius:10px;cursor:pointer;\"><i class=\"fa-solid fa-rotate-left\"></i> Retake</button>";
+    html += "<button type=\"button\" onclick=\"useProductCameraPhoto()\" style=\"padding:10px 24px;font-size:13px;font-weight:800;background:linear-gradient(135deg,#0284c7,#2563eb);color:#fff;border:1px solid #38bdf8;border-radius:10px;cursor:pointer;\"><i class=\"fa-solid fa-check\"></i> Use Photo</button></div></div>";
+    camModal.innerHTML = html;
+    var mr = document.getElementById("appModalRoot") || document.body;
+    mr.appendChild(camModal);
+  }
+  window._cameraViewLabel = viewLabel;
+  camModal.style.display = "flex";
+  var video = document.getElementById("camVideoEl");
+  var canvas = document.getElementById("camCaptureCanvas");
+  var liveCtrl = document.getElementById("camLiveControls");
+  var stillCtrl = document.getElementById("camStillControls");
+  var loadMsg = document.getElementById("camLoadingMsg");
+  if (video) video.style.display = "block";
+  if (canvas) canvas.style.display = "none";
+  if (liveCtrl) liveCtrl.style.display = "flex";
+  if (stillCtrl) stillCtrl.style.display = "none";
+  if (loadMsg) loadMsg.style.display = "block";
+  try {
+    _cameraStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:960}},audio:false});
+    if (video) { video.srcObject = _cameraStream; video.onloadedmetadata = function(){ if(loadMsg) loadMsg.style.display="none"; }; }
+  } catch(err) {
+    if (loadMsg) loadMsg.innerHTML = "<i class=\"fa-solid fa-triangle-exclamation\" style=\"color:#f87171\"></i> Camera unavailable.";
+    console.warn("[Camera] getUserMedia failed:", err);
+  }
+}
+function captureProductCameraFrame() {
+  var video = document.getElementById("camVideoEl");
+  var canvas = document.getElementById("camCaptureCanvas");
+  if (!video || !canvas) return;
+  canvas.width = video.videoWidth || 640; canvas.height = video.videoHeight || 480;
+  canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+  video.style.display = "none"; canvas.style.display = "block";
+  var lc = document.getElementById("camLiveControls"), sc = document.getElementById("camStillControls");
+  if (lc) lc.style.display = "none"; if (sc) sc.style.display = "flex";
+  _stopCameraStream();
+}
+function retakeProductCameraPhoto() {
+  var video = document.getElementById("camVideoEl"), canvas = document.getElementById("camCaptureCanvas");
+  var lc = document.getElementById("camLiveControls"), sc = document.getElementById("camStillControls"), lm = document.getElementById("camLoadingMsg");
+  if (video) video.style.display = "block"; if (canvas) canvas.style.display = "none";
+  if (lc) lc.style.display = "flex"; if (sc) sc.style.display = "none"; if (lm) lm.style.display = "block";
+  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false})
+    .then(function(stream){ _cameraStream=stream; if(video){ video.srcObject=stream; video.onloadedmetadata=function(){ if(lm) lm.style.display="none"; }; } })
+    .catch(function(){ if(lm) lm.innerHTML="Camera error."; });
+}
+function useProductCameraPhoto() {
+  var canvas = document.getElementById("camCaptureCanvas");
+  if (!canvas) { closeCameraModal(); return; }
+  canvas.toBlob(function(blob) {
+    if (!blob) { closeCameraModal(); return; }
+    var file = new File([blob], "camera_"+Date.now()+".jpg", {type:"image/jpeg"});
+    var dt = new DataTransfer(); dt.items.add(file);
+    var fi = document.getElementById("opeImageInput");
+    if (fi) {
+      Object.defineProperty(fi, "files", {value: dt.files, configurable: true});
+      if (typeof previewOwnerProductImage === "function") previewOwnerProductImage(fi);
+    }
+    closeCameraModal();
+    if (window.showToast) window.showToast("\uD83D\uDCF8 Photo captured!", "success");
+  }, "image/jpeg", 0.92);
+}
+function closeCameraModal() {
+  _stopCameraStream();
+  var m = document.getElementById("productCameraModal"); if (m) m.style.display = "none";
+}
+window.addEventListener("beforeunload", _stopCameraStream);
+window.openProductCameraCapture = openProductCameraCapture;
+window.captureProductCameraFrame = captureProductCameraFrame;
+window.retakeProductCameraPhoto = retakeProductCameraPhoto;
+window.useProductCameraPhoto = useProductCameraPhoto;
+window.closeCameraModal = closeCameraModal;
+
 // ── Primary Action Click Router ───────────────────────────────
 function handleP3dMainCtaClick() {
   if (window._p3dState.isSubmitting) return;
@@ -10645,6 +10781,33 @@ function product3dRegenerate() {
   openP3dConfirmModal('regenerate', msg);
 }
 
+// P3.15-T2: Remove P3D Tab Source Image
+function removeP3dTabSourceImage() {
+  const primaryUrl = (window._p3dState && (window._p3dState.primarySourceImageUrl || window._p3dState.currentImageUrl)) || '';
+  const previewEl = document.getElementById('opeImagePreview');
+  const productImageUrl = (previewEl && previewEl.src) ? previewEl.src : '';
+  const isSamePrimary = primaryUrl && productImageUrl && (productImageUrl === primaryUrl || productImageUrl.includes(primaryUrl.split('/').pop()));
+
+  if (isSamePrimary) {
+    const ok = confirm('This is also the primary Product image.\n\nOK = Remove from 3D Sources only (keep product image)\nCancel = Keep both');
+    if (!ok) return;
+  } else {
+    if (!confirm('Remove this 3D source image?')) return;
+  }
+  if (window._p3dState) { window._p3dState.primarySourceImageUrl = null; window._p3dState.currentImageUrl = null; }
+  const filled = document.getElementById('p3dTabSourceFilledBox');
+  const empty = document.getElementById('p3dTabSourceEmptyBox');
+  const preview = document.getElementById('p3dTabSourceImgPreview');
+  const hiddenUrl = document.getElementById('p3dSourceImageUrl');
+  if (filled) filled.style.display = 'none';
+  if (empty) empty.style.display = 'flex';
+  if (preview) { preview.src = ''; preview.style.display = 'none'; }
+  if (hiddenUrl) hiddenUrl.value = '';
+  if (typeof updateP3dMultiViewReadiness === 'function') updateP3dMultiViewReadiness();
+  if (window.showToast) window.showToast('3D source image removed.', 'info');
+}
+window.removeP3dTabSourceImage = removeP3dTabSourceImage;
+
 function openP3dConfirmModal(action, message) {
   window._p3dState.confirmPendingAction = action;
   let modal = document.getElementById('p3dConfirmModal');
@@ -10652,10 +10815,14 @@ function openP3dConfirmModal(action, message) {
     modal = document.createElement('div');
     modal.id = 'p3dConfirmModal';
     modal.className = 'viewport-modal';
-    modal.style.cssText = 'display:flex; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.75); align-items:center; justify-content:center;';
+    modal.style.cssText = 'display:flex; position:fixed; inset:0; z-index:10200; background:rgba(0,0,0,0.75); align-items:center; justify-content:center;';
     modal.innerHTML = '<div style="background:#0f172a; border:1px solid rgba(56,189,248,0.4); border-radius:14px; padding:24px; max-width:440px; width:90%; color:#fff; box-shadow:0 20px 40px rgba(0,0,0,0.8);"><h4 style="margin:0 0 12px; font-size:16px; font-weight:800; color:#38bdf8; display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-cube"></i> Confirm 3D Conversion</h4><div id="p3dConfirmMessage" style="font-size:13.5px; color:#cbd5e1; line-height:1.5; margin-bottom:20px;"></div><div style="display:flex; justify-content:flex-end; gap:10px;"><button type="button" onclick="closeP3dConfirmModal()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#94a3b8; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer;">Cancel</button><button type="button" id="p3dConfirmOkBtn" onclick="p3dConfirmExecute()" style="background:linear-gradient(135deg,#0284c7,#2563eb); border:1px solid #38bdf8; color:#fff; padding:8px 20px; border-radius:8px; font-weight:800; cursor:pointer;">Confirm</button></div></div>';
-    document.body.appendChild(modal);
+    const _modalRoot = document.getElementById('appModalRoot') || document.body;
+    _modalRoot.appendChild(modal);
   }
+  // Block editor while confirm open
+  const _edModal = document.getElementById('ownerProductEditorModal');
+  if (_edModal) _edModal.style.pointerEvents = 'none';
   const msgEl = document.getElementById('p3dConfirmMessage') || document.getElementById('p3dConfirmMsg');
   if (msgEl) msgEl.innerHTML = message;
 
@@ -10673,6 +10840,8 @@ function closeP3dConfirmModal() {
   const modal = document.getElementById('p3dConfirmModal');
   if (modal) modal.style.display = 'none';
   window._p3dState.confirmPendingAction = null;
+  const _edModal2 = document.getElementById('ownerProductEditorModal');
+  if (_edModal2) _edModal2.style.pointerEvents = '';
 }
 
 async function p3dConfirmExecute() {
@@ -11408,5 +11577,6 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
     </div>
   </div>
 
+  <div id="appModalRoot" style="position:relative;z-index:auto;"></div>
 </body>
 </html>

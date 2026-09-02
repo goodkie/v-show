@@ -6520,7 +6520,17 @@ app.post(['/api/projects/:id/pins', '/api/projects/:id/pinpoints'], async (req, 
 app.put(['/api/projects/:id/pins/:pinId', '/api/projects/:id/pinpoints/:pinId'], async (req, res) => {
   try {
     const token = extractAuthToken(req);
-    const result = await db.updatePin(req.params.id, req.params.pinId, req.body, token);
+    // P3.15-T5B: Upsert - if pin not found on server, create it first
+    let result;
+    try {
+      result = await db.updatePin(req.params.id, req.params.pinId, req.body, token);
+    } catch (updateErr) {
+      if (updateErr.status === 404 || (updateErr.message && updateErr.message.toLowerCase().includes('not found'))) {
+        result = await db.createPin(req.params.id, { ...req.body, id: req.params.pinId, pinId: req.params.pinId }, token);
+      } else {
+        throw updateErr;
+      }
+    }
     res.json(result);
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message, code: err.code });
@@ -7192,7 +7202,7 @@ app.post('/api/projects/:id/products/:slot/sources', async (req, res) => {
 
     product.additionalSourceImages.push(newSource);
     if (!product.imageUrl) product.imageUrl = finalUrl;
-    await db.save();
+    db.write();
 
     res.json({
       success: true,
@@ -7248,10 +7258,10 @@ app.post('/api/projects/:id/products/:slot/3d/generate', async (req, res) => {
         createdAt: new Date().toISOString()
       };
       project.products.push(product);
-      db.save();
+      db.write();
     } else if (req.body.imageUrl && !product.imageUrl) {
       product.imageUrl = req.body.imageUrl;
-      db.save();
+      db.write();
     }
     if (!product.imageUrl) return res.status(400).json({ error: 'Product has no source image. Upload a product image first.', code: 'NO_SOURCE_IMAGE' });
 
