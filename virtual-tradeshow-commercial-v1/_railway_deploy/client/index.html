@@ -2708,6 +2708,36 @@
     </div>
   </div>
 
+  
+  <!-- Pin Chooser Modal (C11.16-P3.10) -->
+  <div class="viewport-modal" id="pinChooserModal" style="display: none; position: fixed; inset: 0; z-index: 10005; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); align-items: center; justify-content: center;" role="dialog" aria-modal="true" aria-label="Add Product to Pin">
+    <div style="background: #0f172a; border: 1px solid rgba(56,189,248,0.4); border-radius: 14px; padding: 22px; max-width: 420px; width: 90%; color: #fff; box-shadow: 0 20px 40px rgba(0,0,0,0.8);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h4 style="margin: 0; font-size: 15px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-map-pin"></i> Add Product to Pin
+        </h4>
+        <button type="button" onclick="closePinChooserModal()" style="background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;">✕</button>
+      </div>
+      <p style="font-size: 12px; color: #94a3b8; margin-bottom: 16px; line-height: 1.5;">Choose how you want to add product(s) to this pin:</p>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <button type="button" id="btnPinChooserAddNew" onclick="pinChooserActionAddNew()" style="background: linear-gradient(135deg,#0284c7,#2563eb); border: 1px solid #38bdf8; border-radius: 10px; padding: 12px 16px; color: #fff; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+          <i class="fa-solid fa-circle-plus" style="font-size: 22px; color: #bae6fd;"></i>
+          <div>
+            <div style="font-size: 13px; font-weight: 800;">Add New Product</div>
+            <div style="font-size: 11px; color: #bae6fd;">Create product specs, photo & 3D model</div>
+          </div>
+        </button>
+        <button type="button" id="btnPinChooserSelectExisting" onclick="pinChooserActionSelectExisting()" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px 16px; color: #fff; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+          <i class="fa-solid fa-list-check" style="font-size: 22px; color: #38bdf8;"></i>
+          <div>
+            <div style="font-size: 13px; font-weight: 800;">Select Existing Product(s)</div>
+            <div style="font-size: 11px; color: #94a3b8;">Attach 1 or multiple products from catalog</div>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="viewport-modal" id="productPinSelectorModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center;">
     <div class="viewport-modal-card" style="max-width: 560px; width: 94vw; max-height: 90vh; background: #070d1b; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.9);">
       <div class="viewport-modal-header" style="padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: linear-gradient(135deg, rgba(2, 132, 199, 0.2), rgba(37, 99, 235, 0.05)); display: flex; justify-content: space-between; align-items: center;">
