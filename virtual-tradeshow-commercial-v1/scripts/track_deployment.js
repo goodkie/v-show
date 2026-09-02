@@ -1,9 +1,9 @@
 const https = require('https');
 const token = '8bed6af7-cd5d-4d2b-a652-acfba822a9d7';
-const deploymentId = 'ccf1ea28-5e88-4c29-92cc-76be96b7704e';
+const deploymentId = '32abb749-b7f7-4f39-89ab-262c8d76f438';
 
 let count = 0;
-const max = 30;
+const max = 60;
 
 function checkDeployment() {
   count++;

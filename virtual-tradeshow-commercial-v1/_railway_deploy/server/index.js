@@ -6995,6 +6995,95 @@ app.get('/api/projects/:id/booth-3d/sources', async (req, res) => {
   try {
     const projectId = req.params.id;
     const sources = db.listBoothSources(projectId);
+    res.json({ success: true, sources });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/projects/:id/booth-3d/sources
+app.post('/api/projects/:id/booth-3d/sources', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const token = extractAuthToken(req);
+    const project = db.getProject(projectId);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
+
+    let { dataUrl, url, viewLabel, sourceType, width, height } = req.body || {};
+    let finalUrl = url;
+
+    // If dataUrl provided (e.g. from live camera capture), save to disk
+    if (dataUrl && dataUrl.startsWith('data:image/')) {
+      const crypto = require('crypto');
+      const matches = dataUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+      if (matches) {
+        const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+        const hash = crypto.createHash('sha256').update(buffer).digest('hex');
+        const filename = `booth-src-${Date.now()}-${hash.substring(0, 8)}.${ext}`;
+        const filepath = path.join(UPLOADS_DIR, filename);
+        fs.writeFileSync(filepath, buffer);
+        finalUrl = `/uploads/${filename}`;
+        req.body.hash = hash;
+      }
+    }
+
+    if (!finalUrl) {
+      return res.status(400).json({ error: 'No image data or URL provided' });
+    }
+
+    const sourceRecord = await db.saveBoothSource(projectId, {
+      url: finalUrl,
+      viewLabel: viewLabel || 'Booth View',
+      sourceType: sourceType || 'FILE_UPLOAD',
+      width: width || 1920,
+      height: height || 1080,
+      hash: req.body.hash || null,
+      capturedAt: req.body.capturedAt || (sourceType === 'CAMERA_CAPTURE' ? new Date().toISOString() : null)
+    });
+
+    const allSources = db.listBoothSources(projectId);
+    res.json({ success: true, source: sourceRecord, sources: allSources, allSources });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/projects/:id/booth-3d/sources/:sourceId
+app.delete('/api/projects/:id/booth-3d/sources/:sourceId', async (req, res) => {
+  try {
+    const { id: projectId, sourceId } = req.params;
+    const token = extractAuthToken(req);
+    const project = db.getProject(projectId);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
+
+    const deleted = await db.deleteBoothSource(projectId, sourceId);
+    res.json({ success: deleted, allSources: db.listBoothSources(projectId) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/projects/:id/booth-3d/regenerate
+app.post('/api/projects/:id/booth-3d/regenerate', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const token = extractAuthToken(req);
+    const project = db.getProject(projectId);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
+
+    const account = resolveAccountForProject(project, token);
+    const isDev = db.isInternalDev(token, account);
+    const isPilot = account.isPilot || account.billingState === 'PILOT_NOT_BILLED';
+    const effectiveAccount = isDev ? { ...account, planCode: 'INTERNAL_FULL_ACCESS' } : (isPilot ? { ...account, planCode: account.entitlement || 'BUSINESS' } : account);
+
+    const qualityTier = String(req.body.qualityTier || 'BOOTH_HIGH').toUpperCase().trim();
+    const minRequired = qualityTier === 'BOOTH_ULTRA' ? 60 : (qualityTier === 'BOOTH_STANDARD' ? 12 : 30);
+
+    const sources = db.listBoothSources(projectId);
     const seenHashes = new Set();
     const uniqueSources = (sources || []).filter(s => {
       const k = s.hash || s.url || s.id;
@@ -7004,10 +7093,18 @@ app.get('/api/projects/:id/booth-3d/sources', async (req, res) => {
     });
     if (uniqueSources.length < minRequired) {
       return res.status(422).json({
-        error: `Insufficient unique source photos. ${qualityTier} requires at least ${minRequired} photos (Current unique: ${uniqueSources.length}).`,
+        error: 'Insufficient unique source photos.',
         code: 'INSUFFICIENT_SOURCE_PHOTOS',
         required: minRequired,
         received: uniqueSources.length
+      });
+    }
+    if (false) {
+      return res.status(400).json({
+        error: `Insufficient source photos. ${qualityTier} requires at least ${minRequired} photos (Current: ${sources.length}).`,
+        code: 'INSUFFICIENT_SOURCE_PHOTOS',
+        required: minRequired,
+        current: sources.length
       });
     }
 
