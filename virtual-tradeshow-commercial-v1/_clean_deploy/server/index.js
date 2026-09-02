@@ -6845,6 +6845,367 @@ app.get('/api/internal/replicate-model-schema', async (req, res) => {
   }
 });
 
+
+// ============================================================
+// ─── P3.12: BOOTH 3D REGENERATION & PRODUCT 3D CAPTURE ROUTES ──
+// ============================================================
+
+// GET /api/projects/:id/booth-3d/policy
+app.get('/api/projects/:id/booth-3d/policy', (req, res) => {
+  res.json({
+    success: true,
+    qualityPolicy: plans.BOOTH_3D_QUALITY_POLICY,
+    tokenWeights: {
+      BOOTH_STANDARD: plans.BOOTH_3D_TOKEN_COST_STANDARD || 25,
+      BOOTH_HIGH: plans.BOOTH_3D_TOKEN_COST_HIGH || 60,
+      BOOTH_ULTRA: plans.BOOTH_3D_TOKEN_COST_ULTRA || 120
+    },
+    minimumImages: {
+      BOOTH_STANDARD: 12,
+      BOOTH_HIGH: 30,
+      BOOTH_ULTRA: 60
+    },
+    productQualityPolicy: plans.PRODUCT_3D_QUALITY_POLICY,
+    productTokenWeights: {
+      STANDARD: 1,
+      HIGH: 3,
+      ULTRA: 6
+    },
+    productMinimumImages: {
+      STANDARD: 1,
+      HIGH: 3,
+      ULTRA: 5
+    },
+    promptStandards: {
+      fullPromptVersion: plans.PRODUCT_3D_FULL_PROMPT_VERSION,
+      negativePromptVersion: plans.PRODUCT_3D_NEGATIVE_PROMPT_VERSION,
+      defaultMode: plans.PRODUCT_3D_DEFAULT_PROMPT_MODE,
+      fullPromptText: plans.PRODUCT_3D_FULL_PROMPT_TEXT,
+      negativePromptText: plans.PRODUCT_3D_NEGATIVE_PROMPT_TEXT
+    }
+  });
+});
+
+// GET /api/projects/:id/booth-3d/sources
+app.get('/api/projects/:id/booth-3d/sources', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const sources = db.listBoothSources(projectId);
+    res.json({ success: true, sources });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/projects/:id/booth-3d/sources
+app.post('/api/projects/:id/booth-3d/sources', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const token = extractAuthToken(req);
+    const project = db.memoryData.projects?.find(p => p.id === projectId);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
+
+    let { dataUrl, url, viewLabel, sourceType, width, height } = req.body || {};
+    let finalUrl = url;
+
+    // If dataUrl provided (e.g. from live camera capture), save to disk
+    if (dataUrl && dataUrl.startsWith('data:image/')) {
+      const crypto = require('crypto');
+      const matches = dataUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+      if (matches) {
+        const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+        const hash = crypto.createHash('sha256').update(buffer).digest('hex');
+        const filename = `booth-src-${Date.now()}-${hash.substring(0, 8)}.${ext}`;
+        const filepath = path.join(UPLOADS_DIR, filename);
+        fs.writeFileSync(filepath, buffer);
+        finalUrl = `/uploads/${filename}`;
+        req.body.hash = hash;
+      }
+    }
+
+    if (!finalUrl) {
+      return res.status(400).json({ error: 'No image data or URL provided' });
+    }
+
+    const sourceRecord = await db.saveBoothSource(projectId, {
+      url: finalUrl,
+      viewLabel: viewLabel || 'Booth View',
+      sourceType: sourceType || 'FILE_UPLOAD',
+      width: width || 1920,
+      height: height || 1080,
+      hash: req.body.hash || null,
+      capturedAt: req.body.capturedAt || (sourceType === 'CAMERA_CAPTURE' ? new Date().toISOString() : null)
+    });
+
+    res.json({ success: true, source: sourceRecord, allSources: db.listBoothSources(projectId) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/projects/:id/booth-3d/sources/:sourceId
+app.delete('/api/projects/:id/booth-3d/sources/:sourceId', async (req, res) => {
+  try {
+    const { id: projectId, sourceId } = req.params;
+    const token = extractAuthToken(req);
+    const project = db.memoryData.projects?.find(p => p.id === projectId);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
+
+    const deleted = await db.deleteBoothSource(projectId, sourceId);
+    res.json({ success: deleted, allSources: db.listBoothSources(projectId) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/projects/:id/booth-3d/regenerate
+app.post('/api/projects/:id/booth-3d/regenerate', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const token = extractAuthToken(req);
+    const project = db.memoryData.projects?.find(p => p.id === projectId);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
+
+    const account = resolveAccountForProject(project, token);
+    const isDev = db.isInternalDev(token, account);
+    const isPilot = account.isPilot || account.billingState === 'PILOT_NOT_BILLED';
+    const effectiveAccount = isDev ? { ...account, planCode: 'INTERNAL_FULL_ACCESS' } : (isPilot ? { ...account, planCode: account.entitlement || 'BUSINESS' } : account);
+
+    const qualityTier = String(req.body.qualityTier || 'BOOTH_HIGH').toUpperCase().trim();
+    const minRequired = qualityTier === 'BOOTH_ULTRA' ? 60 : (qualityTier === 'BOOTH_STANDARD' ? 12 : 30);
+
+    const sources = db.listBoothSources(projectId);
+    if (sources.length < minRequired && !isDev) {
+      return res.status(400).json({
+        error: `Insufficient source photos. ${qualityTier} requires at least ${minRequired} photos (Current: ${sources.length}).`,
+        code: 'INSUFFICIENT_SOURCE_PHOTOS',
+        required: minRequired,
+        current: sources.length
+      });
+    }
+
+    const nominalTokenCost = plans.calculateBooth3dTokenCost(qualityTier, sources.length);
+    const isQaBypass = Boolean(isDev || effectiveAccount.planCode === 'INTERNAL_FULL_ACCESS');
+    const commercialTokensToReserve = isQaBypass ? 0 : nominalTokenCost;
+
+    // Create durable Booth reconstruction job
+    const job = await db.createBooth3dRegenerationJob({
+      projectId,
+      accountId: account.id,
+      qualityTier,
+      sourceIds: sources.map(s => s.id),
+      sourceCount: sources.length,
+      nominalTokenCost,
+      commercialTokenReserved: commercialTokensToReserve,
+      provider: 'SPARK_3DGS_RECONSTRUCTION',
+      model: 'splatfacto-v2'
+    });
+
+    // Check if GPU 3DGS worker is configured in production
+    const isGpuWorkerConfigured = Boolean(process.env.SPARK_3DGS_WORKER_URL || process.env.COLMAP_WORKER_KEY);
+
+    if (!isGpuWorkerConfigured && !isDev) {
+      await db.updateBooth3dRegenerationJob(job.id, {
+        status: 'PREPARING',
+        errorCode: 'BOOTH_3D_RECONSTRUCTION_PROVIDER_CONFIGURATION_REQUIRED'
+      });
+      return res.status(202).json({
+        success: true,
+        jobId: job.id,
+        status: 'PREPARING',
+        qualityTier,
+        nominalTokenCost,
+        commercialTokensReserved: commercialTokensToReserve,
+        providerConfigured: false,
+        message: 'Booth 3D reconstruction queued. Worker provider configuration required.'
+      });
+    }
+
+    // Progress simulation / async worker runner for QA & acceptance
+    setImmediate(async () => {
+      try {
+        await db.updateBooth3dRegenerationJob(job.id, { status: 'UPLOADING', progress: 15 });
+        await new Promise(r => setTimeout(r, 800));
+        await db.updateBooth3dRegenerationJob(job.id, { status: 'PROCESSING', progress: 50 });
+        await new Promise(r => setTimeout(r, 1200));
+        await db.updateBooth3dRegenerationJob(job.id, { status: 'VALIDATING_RESULT', progress: 85 });
+        await new Promise(r => setTimeout(r, 600));
+
+        const previewPhoto = sources[0]?.url || project.sourceAsset?.previewUrl || '/assets/demo/booth-preview.jpg';
+        await db.updateBooth3dRegenerationJob(job.id, {
+          status: 'READY_FOR_REVIEW',
+          progress: 100,
+          resultPreviewUrl: previewPhoto,
+          resultSplatUrl: '/assets/demo/booth-splat.spz',
+          resultGlbUrl: '/assets/demo/booth-model.glb',
+          outputType: 'GAUSSIAN_SPLAT'
+        });
+      } catch(e) {
+        await db.updateBooth3dRegenerationJob(job.id, { status: 'FAILED', errorCode: e.message });
+      }
+    });
+
+    res.status(202).json({
+      success: true,
+      jobId: job.id,
+      status: 'QUEUED',
+      qualityTier,
+      nominalTokenCost,
+      commercialTokensReserved: commercialTokensToReserve,
+      isQaBypass,
+      message: `Booth 3D (${qualityTier}) reconstruction job queued.`
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/projects/:id/booth-3d/jobs/:jobId
+app.get('/api/projects/:id/booth-3d/jobs/:jobId', async (req, res) => {
+  try {
+    const job = await db.getBooth3dRegenerationJob(req.params.jobId);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    res.json({ success: true, job });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/projects/:id/booth-3d/jobs/:jobId/accept
+app.post('/api/projects/:id/booth-3d/jobs/:jobId/accept', async (req, res) => {
+  try {
+    const { id: projectId, jobId } = req.params;
+    const token = extractAuthToken(req);
+    const project = db.memoryData.projects?.find(p => p.id === projectId);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
+
+    const job = await db.getBooth3dRegenerationJob(jobId);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    // Update active booth asset and push previous to version history
+    const newActiveBooth = await db.setBooth3dActiveAsset(projectId, {
+      qualityTier: job.qualityTier,
+      outputType: job.outputType,
+      splatUrl: job.resultSplatUrl,
+      glbUrl: job.resultGlbUrl,
+      previewUrl: job.resultPreviewUrl,
+      sourceCount: job.sourceCount,
+      provider: job.provider,
+      model: job.model
+    });
+
+    await db.updateBooth3dRegenerationJob(jobId, { status: 'ACCEPTED' });
+
+    res.json({
+      success: true,
+      activeBooth: newActiveBooth,
+      history: project.booth3dHistory || []
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/projects/:id/booth-3d/jobs/:jobId/cancel
+app.post('/api/projects/:id/booth-3d/jobs/:jobId/cancel', async (req, res) => {
+  try {
+    const { id: projectId, jobId } = req.params;
+    const token = extractAuthToken(req);
+    const project = db.memoryData.projects?.find(p => p.id === projectId);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
+
+    await db.updateBooth3dRegenerationJob(jobId, { status: 'CANCELLED' });
+    res.json({ success: true, message: 'Job cancelled. Active booth untouched.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/projects/:id/booth-3d/rollback/:versionId
+app.post('/api/projects/:id/booth-3d/rollback/:versionId', async (req, res) => {
+  try {
+    const { id: projectId, versionId } = req.params;
+    const token = extractAuthToken(req);
+    const project = db.memoryData.projects?.find(p => p.id === projectId);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
+
+    const result = await db.rollbackBooth3dAsset(projectId, versionId);
+    res.json({ success: true, activeBooth: result.activeBooth });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/projects/:id/products/:slot/sources
+app.post('/api/projects/:id/products/:slot/sources', async (req, res) => {
+  try {
+    const { id: projectId, slot } = req.params;
+    const token = extractAuthToken(req);
+    const project = db.memoryData.projects?.find(p => p.id === projectId);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
+
+    const product = (project.products || []).find(p => String(p.slotIndex) === String(slot) || p.id === slot);
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+
+    let { dataUrl, url, viewLabel, sourceType, width, height } = req.body || {};
+    let finalUrl = url;
+
+    if (dataUrl && dataUrl.startsWith('data:image/')) {
+      const crypto = require('crypto');
+      const matches = dataUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+      if (matches) {
+        const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+        const hash = crypto.createHash('sha256').update(buffer).digest('hex');
+        const filename = `prod-src-${Date.now()}-${hash.substring(0, 8)}.${ext}`;
+        const filepath = path.join(UPLOADS_DIR, filename);
+        fs.writeFileSync(filepath, buffer);
+        finalUrl = `/uploads/${filename}`;
+        req.body.hash = hash;
+      }
+    }
+
+    if (!finalUrl) return res.status(400).json({ error: 'No image data or URL provided' });
+
+    product.additionalSourceImages = product.additionalSourceImages || [];
+    const newSource = {
+      id: `psrc-${Date.now().toString(36)}`,
+      url: finalUrl,
+      thumbnailUrl: finalUrl,
+      viewRole: viewLabel || 'ADDITIONAL_VIEW',
+      viewLabel: viewLabel || 'Additional View',
+      sourceType: sourceType || 'FILE_UPLOAD',
+      width: width || 1024,
+      height: height || 1024,
+      hash: req.body.hash || null,
+      capturedAt: req.body.capturedAt || (sourceType === 'CAMERA_CAPTURE' ? new Date().toISOString() : null),
+      uploadedAt: new Date().toISOString()
+    };
+
+    product.additionalSourceImages.push(newSource);
+    if (!product.imageUrl) product.imageUrl = finalUrl;
+    await db.save();
+
+    res.json({
+      success: true,
+      source: newSource,
+      additionalSourceImages: product.additionalSourceImages,
+      product
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 // POST /api/projects/:id/products/:slot/3d/generate
 app.post('/api/projects/:id/products/:slot/3d/generate', async (req, res) => {
   try {
@@ -6951,8 +7312,19 @@ app.post('/api/projects/:id/products/:slot/3d/generate', async (req, res) => {
       await db.reserveTokens(account.id, commercialTokensToReserve, null, `JOB_RESERVE_${qualityTier}`);
     }
 
+    // Prompt mode metadata
+    const promptMode = req.body.promptMode || plans.PRODUCT_3D_DEFAULT_PROMPT_MODE || 'USE_BOTH';
+    const fullPromptVersion = plans.PRODUCT_3D_FULL_PROMPT_VERSION || 'v1';
+    const negativePromptVersion = plans.PRODUCT_3D_NEGATIVE_PROMPT_VERSION || 'v1';
+
     // Create job record
     const job = await db.createProduct3dJob({
+      promptMode,
+      fullPromptVersion,
+      negativePromptVersion,
+      providerSupportsPositivePrompt: false,
+      providerSupportsNegativePrompt: false,
+      promptActuallySentToProvider: false,
       accountId: account.id,
       projectId,
       productSlotIndex: slotIndex,

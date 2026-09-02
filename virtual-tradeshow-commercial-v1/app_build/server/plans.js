@@ -232,64 +232,113 @@ const PRODUCT_3D_QUALITY_POLICY = {
   STANDARD: {
     code: 'STANDARD',
     tokenCost: 1,
+    minImages: 1,
     qualityRank: 1,
     label: 'Standard 3D',
-    description: 'Fast conversion · Good for simple products',
+    description: '1 minimum image · Fast conversion for simple products',
+    recommendedViews: ['Front / Front 45°'],
     badge: 'Fast',
     isRecommended: false
   },
   HIGH: {
     code: 'HIGH',
     tokenCost: 3,
+    minImages: 3,
     qualityRank: 2,
     label: 'High Quality 3D',
-    description: 'More geometry and texture detail · Best balance for most products',
+    description: '3 minimum images · Best geometry & texture detail',
+    recommendedViews: ['Front', 'Left / 45°', 'Right / 45° or Back'],
     badge: 'Recommended',
     isRecommended: true
   },
   ULTRA: {
     code: 'ULTRA',
     tokenCost: 6,
+    minImages: 5,
     qualityRank: 3,
     label: 'Ultra 3D',
-    description: 'Maximum available detail · Best for important and complex products',
-    badge: 'Maximum Quality',
+    description: '5 minimum images · Maximum practical fidelity',
+    recommendedViews: ['Front', 'Back', 'Left', 'Right', 'Top / Detail'],
+    badge: 'Maximum Fidelity',
     isRecommended: false
   }
 };
 
 const DEFAULT_BUSINESS_QUALITY = 'HIGH';
 
-/**
- * Multi-view token modifier policy (Config-driven)
- */
 const MULTIVIEW_TOKEN_MODIFIER_POLICY = {
   mode: 'CONFIG_DRIVEN',
-  // Modifiers applied on top of base quality tier cost when multi-view sources are provided
   modifiers: {
     SINGLE_IMAGE: 0,
-    MULTI_VIEW_2_TO_3: 0, // Initial technical trial: no extra surcharge
-    MULTI_VIEW_4_PLUS: 1  // +1 token for heavy 4+ view reconstruction
+    MULTI_VIEW_2_TO_3: 0,
+    MULTI_VIEW_4_PLUS: 0
   }
 };
 
 /**
- * Server is the sole token cost authority.
- * Calculates authoritative token cost for requested quality tier and source mode.
+ * ============================================================
+ * CANONICAL BOOTH 3D QUALITY POLICY & TOKEN WEIGHTS (C11.16-P3.12)
+ * ============================================================
  */
+const BOOTH_3D_TOKEN_COST_STANDARD = 25;
+const BOOTH_3D_TOKEN_COST_HIGH = 60;
+const BOOTH_3D_TOKEN_COST_ULTRA = 120;
+
+const BOOTH_3D_QUALITY_POLICY = {
+  BOOTH_STANDARD: {
+    code: 'BOOTH_STANDARD',
+    tokenCost: 25,
+    minImages: 12,
+    qualityRank: 1,
+    label: 'Standard 3D Booth',
+    description: '12 minimum photos · 25 Tokens',
+    badge: 'Standard',
+    isRecommended: false
+  },
+  BOOTH_HIGH: {
+    code: 'BOOTH_HIGH',
+    tokenCost: 60,
+    minImages: 30,
+    qualityRank: 2,
+    label: 'High Quality 3D Booth',
+    description: '30 minimum photos · 60 Tokens',
+    badge: 'Recommended',
+    isRecommended: true
+  },
+  BOOTH_ULTRA: {
+    code: 'BOOTH_ULTRA',
+    tokenCost: 120,
+    minImages: 60,
+    qualityRank: 3,
+    label: 'Ultra 3D Booth',
+    description: '60 minimum photos · 120 Tokens',
+    badge: 'Maximum Fidelity',
+    isRecommended: false
+  }
+};
+
+/**
+ * Canonical Product 3D Prompt System Constants (v1)
+ */
+const PRODUCT_3D_FULL_PROMPT_VERSION = 'v1';
+const PRODUCT_3D_NEGATIVE_PROMPT_VERSION = 'v1';
+const PRODUCT_3D_DEFAULT_PROMPT_MODE = 'USE_BOTH';
+const PRODUCT_3D_FULL_PROMPT_TEXT = "Create an ultra-photorealistic, highly faithful 3D reconstruction / 360-degree viewable representation of the product shown in the reference image.\n\nPRIMARY OBJECTIVE:\nReproduce the original product as accurately as technically possible. The reference image is the absolute source of truth. This is a reconstruction task, NOT a redesign, enhancement, interpretation, or creative generation task.\n\nIDENTITY PRESERVATION:\nThe resulting product must remain visually identical to the reference product.\n\nStrictly preserve:\n\n- exact product shape\n- exact proportions and dimensions\n- exact silhouette\n- exact geometry\n- exact colors and color distribution\n- exact material appearance\n- exact surface texture\n- exact glossiness, roughness, transparency, reflectivity, and metallic properties\n- exact seams, stitching, folds, edges, corners, openings, buttons, zippers, hardware, packaging details, and structural features that are visibly present\n- exact logo\n- exact brand marks\n- exact typography\n- exact printed text\n- exact labels\n- exact graphics\n- exact patterns\n- exact artwork placement\n- exact relative size and position of every visible feature\n\nLOGO AND TEXT PRESERVATION:\nLogos, lettering, numbers, symbols, labels, packaging graphics, and typography are critical identity features.\n\nThey must be reproduced exactly as visible in the reference image.\n\nDo NOT:\n\n- rewrite text\n- reinterpret text\n- replace fonts\n- approximate logos\n- simplify logos\n- alter letter spacing\n- change logo proportions\n- invent missing letters\n- generate alternative branding\n- add decorative graphics\n\nNO HALLUCINATION / NO REDESIGN:\nDo not add, remove, redesign, beautify, stylize, repair, simplify, exaggerate, or creatively reinterpret any visible product feature.\n\nDo not introduce:\n\n- new details\n- new textures\n- new seams\n- new patterns\n- new accessories\n- new logos\n- new text\n- new openings\n- new buttons\n- new hardware\n- new decorations\n- artificial wear\n- additional reflections\n- decorative geometry\n\nDo not make the product look more premium, cleaner, newer, more symmetrical, or more aesthetically pleasing than the reference.\n\nREFERENCE-LOCKED RECONSTRUCTION:\nTreat every clearly visible pixel of the reference image as factual product information.\n\nVisible reference information must override model priors.\n\nDo not replace unusual or imperfect features with what the model assumes the product would normally look like.\n\nIf a feature is uncertain or not visible in the reference image, prefer the simplest geometrically consistent continuation rather than inventing a new design.\n\nDo not hallucinate hidden branding, text, graphics, patterns, hardware, or decorative features on unseen surfaces.\n\n360-DEGREE CONSISTENCY:\nGenerate a spatially coherent representation suitable for viewing the product from approximately 360 degrees.\n\nMaintain consistent:\n\n- geometry\n- scale\n- materials\n- texture placement\n- logo placement\n- graphic placement\n- product identity\n\nacross all viewing angles.\n\nThe object must not morph, deform, change color, change material, or change design when the camera rotates around it.\n\nTEXTURE QUALITY:\nPrioritize high visual fidelity over unnecessary polygon density.\n\nUse high-quality texture information to preserve the appearance of the original product while keeping the geometry reasonably lightweight.\n\nWhere possible, encode fine visual details through texture maps and material maps rather than excessive geometry.\n\nWEB OPTIMIZATION:\nThe final representation is intended for interactive viewing on a website.\n\nPrefer:\n\n- lightweight geometry\n- optimized topology\n- efficient texture resolution\n- minimal unnecessary polygons\n- compact asset size\n- fast loading\n- smooth mobile and desktop rendering\n\nwhile preserving the maximum possible visual similarity to the reference image.\n\nTARGET OUTPUT:\nA photorealistic, web-optimized 3D or 360-degree product representation that allows users to rotate around and inspect the product from multiple angles while remaining visually faithful to the original reference.\n\nPriority order:\n\n1. Product identity preservation\n2. Exact shape and proportions\n3. Exact logo, text, labels, and graphics\n4. Exact colors\n5. Exact materials and textures\n6. Multi-view / 360-degree consistency\n7. Photorealism\n8. Small file size and web performance\n\nNever sacrifice product identity or reference accuracy for creativity, aesthetics, completeness, or additional detail.";
+const PRODUCT_3D_NEGATIVE_PROMPT_TEXT = "redesign, reinterpretation, hallucinated details, invented details, additional details, extra objects, modified product, altered shape, incorrect proportions, incorrect geometry, distorted geometry, deformation, asymmetry, changed colors, color shift, oversaturation, changed material, fake texture, artificial texture, incorrect texture, incorrect logo, altered logo, fake logo, reconstructed logo, misspelled text, incorrect text, changed typography, fake lettering, additional lettering, invented labels, invented graphics, additional patterns, decorative elements, additional seams, additional buttons, additional hardware, additional accessories, excessive smoothing, beautification, stylization, cartoon, illustration, CGI look, plastic appearance, game asset appearance, low-detail texture, blurry texture, texture stretching, texture seams, inconsistent texture, inconsistent geometry between views, morphing between views, changing product design between angles, artificial reflections, dramatic lighting, excessive shadows, creative interpretation";
+
 function calculateProduct3dTokenCost(qualityTier = 'HIGH', sourceMode = 'SINGLE_IMAGE', sourceCount = 1) {
   const normQuality = String(qualityTier || 'HIGH').toUpperCase().trim();
   const tierConfig = PRODUCT_3D_QUALITY_POLICY[normQuality] || PRODUCT_3D_QUALITY_POLICY.HIGH;
-  let cost = tierConfig.tokenCost;
+  return tierConfig.tokenCost;
+}
 
-  if (sourceMode === 'MULTI_VIEW' || sourceCount > 1) {
-    if (sourceCount >= 4) {
-      cost += MULTIVIEW_TOKEN_MODIFIER_POLICY.modifiers.MULTI_VIEW_4_PLUS;
-    } else {
-      cost += MULTIVIEW_TOKEN_MODIFIER_POLICY.modifiers.MULTI_VIEW_2_TO_3;
-    }
-  }
-  return cost;
+function calculateBooth3dTokenCost(qualityTier = 'BOOTH_HIGH', sourceCount = 30) {
+  let norm = String(qualityTier || 'BOOTH_HIGH').toUpperCase().trim();
+  if (norm === 'STANDARD') norm = 'BOOTH_STANDARD';
+  if (norm === 'HIGH') norm = 'BOOTH_HIGH';
+  if (norm === 'ULTRA') norm = 'BOOTH_ULTRA';
+  const tierConfig = BOOTH_3D_QUALITY_POLICY[norm] || BOOTH_3D_QUALITY_POLICY.BOOTH_HIGH;
+  return tierConfig.tokenCost;
 }
 
 /**
@@ -700,6 +749,16 @@ function getFullPlanRegistry() {
 }
 
 module.exports = {
+  BOOTH_3D_QUALITY_POLICY,
+  BOOTH_3D_TOKEN_COST_STANDARD,
+  BOOTH_3D_TOKEN_COST_HIGH,
+  BOOTH_3D_TOKEN_COST_ULTRA,
+  calculateBooth3dTokenCost,
+  PRODUCT_3D_FULL_PROMPT_VERSION,
+  PRODUCT_3D_NEGATIVE_PROMPT_VERSION,
+  PRODUCT_3D_DEFAULT_PROMPT_MODE,
+  PRODUCT_3D_FULL_PROMPT_TEXT,
+  PRODUCT_3D_NEGATIVE_PROMPT_TEXT,
   CANONICAL_PLANS,
   PRODUCT_3D_QUALITY_POLICY,
   DEFAULT_BUSINESS_QUALITY,

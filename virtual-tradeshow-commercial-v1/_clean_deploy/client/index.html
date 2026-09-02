@@ -2293,6 +2293,7 @@
           </div>
 
           <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button class="btn-ui" id="btnOwnerToolbarRegenerateBooth" onclick="openBooth3dRegenerationModal()" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: 1px solid #34d399; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Regenerate 3D Booth with multi-view photos and high-fidelity neural reconstruction"><i class="fa-solid fa-arrows-rotate"></i> Regenerate 3D Booth</button>
             <button class="btn-ui" id="btnOwnerToolbarAddPin" onclick="startPlaceProductPinMode()" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Click anywhere on the booth to place a single or multi-product pin">
               <i class="fa-solid fa-map-pin"></i> + Add Product Pin
             </button>
@@ -3146,24 +3147,33 @@
 
                 <div id="p3dTabSourceEmptyBox" style="display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px dashed rgba(56,189,248,0.3); border-radius: 8px; padding: 20px 14px; background: rgba(56,189,248,0.02); text-align: center;">
                   <i class="fa-solid fa-cloud-arrow-up" style="font-size: 26px; color: #38bdf8; margin-bottom: 8px;"></i>
-                  <button type="button" onclick="document.getElementById('p3dTabSourceInput').click()" style="padding: 7px 16px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-                    <i class="fa-solid fa-upload"></i> Upload Product Image
-                  </button>
-                  <div style="font-size: 11px; color: #94a3b8;">Start with a clear image showing the full product.</div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 6px;">
+                    <button type="button" onclick="document.getElementById('p3dTabSourceInput').click()" style="padding: 7px 14px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                      <i class="fa-solid fa-upload"></i> Upload Photo
+                    </button>
+                    <button type="button" onclick="openProductCameraCapture('Front View')" style="padding: 7px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                      <i class="fa-solid fa-camera"></i> Take Photo
+                    </button>
+                  </div>
+                  <div style="font-size: 11px; color: #94a3b8;">Upload or snap a clear photo showing the product.</div>
                 </div>
 
                 <div id="p3dTabSourceFilledBox" style="display: none; flex-direction: column; align-items: center; justify-content: center;">
                   <div style="width: 100%; max-height: 180px; min-height: 120px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 8px; margin-bottom: 10px;">
                     <img id="p3dTabSourceImgPreview" src="" alt="3D Source Preview" style="max-height: 160px; max-width: 100%; object-fit: contain !important; object-position: center; border-radius: 6px;">
                   </div>
-                  <div style="display: flex; gap: 8px; width: 100%; justify-content: center;">
+                  <div style="display: flex; gap: 8px; width: 100%; justify-content: center; flex-wrap: wrap;">
                     <button type="button" onclick="document.getElementById('p3dTabSourceInput').click()" style="padding: 5px 12px; font-size: 11px; font-weight: 700; background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
-                      <i class="fa-solid fa-arrows-rotate"></i> Replace Image
+                      <i class="fa-solid fa-upload"></i> Replace
+                    </button>
+                    <button type="button" onclick="openProductCameraCapture('Replace Front View')" style="padding: 5px 12px; font-size: 11px; font-weight: 700; background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+                      <i class="fa-solid fa-camera"></i> Retake Photo
                     </button>
                     <button type="button" onclick="removeP3dTabSourceImage()" style="padding: 5px 12px; font-size: 11px; font-weight: 700; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.25); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
                       <i class="fa-solid fa-trash"></i> Remove
                     </button>
                   </div>
+                </div>
                 </div>
               </div>
 
@@ -3207,30 +3217,57 @@
               </div>
 
               <!-- Additional Views (Multi-View) -->
+              <!-- Additional Views (Multi-View Required for High & Ultra) -->
               <div class="form-group" id="opeAdditionalViewsSection" style="display: block; margin-bottom: 12px;">
-                <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <span style="font-weight: 700; font-size: 12px; color: #a5b4fc;"><i class="fa-solid fa-images"></i> Additional Views (Optional)</span>
-                  <span style="font-size: 10.5px; color: #64748b;">Side & Back views</span>
-                </label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span style="font-weight: 700; font-size: 12px; color: #a5b4fc;"><i class="fa-solid fa-images"></i> Multi-View Sources</span>
+                  <span id="p3dMultiViewReadinessBadge" style="font-size: 10.5px; font-weight: 700; color: #fbbf24; background: rgba(245,158,11,0.15); padding: 2px 6px; border-radius: 4px;">
+                    1 / 3 required views ready
+                  </span>
+                </div>
                 <div id="opeAdditionalViewsContainer" style="background: rgba(15,23,42,0.6); border: 1px dashed rgba(99,102,241,0.3); border-radius: 10px; padding: 10px;">
-                  <div id="opeAdditionalViewsList" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px;"></div>
+                  <div id="opeAdditionalViewsList" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;"></div>
                   <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                     <input type="file" id="opeAdditionalViewInput" accept="image/png, image/jpeg, image/webp" style="display: none;" onchange="handleAdditionalViewUpload(this)">
                     <select id="opeAdditionalViewRole" style="background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 5px 8px; color: #cbd5e1; font-size: 11.5px;">
-                      <option value="FRONT">Front View</option>
-                      <option value="BACK">Back View</option>
-                      <option value="LEFT">Left Side</option>
-                      <option value="RIGHT">Right Side</option>
-                      <option value="TOP">Top View</option>
-                      <option value="BOTTOM">Bottom View</option>
-                      <option value="45_DEGREE">45° View</option>
-                      <option value="DETAIL">Detail / Logo</option>
+                      <option value="Front">Front View</option>
+                      <option value="Left 45°">Left / 45°</option>
+                      <option value="Right 45°">Right / 45°</option>
+                      <option value="Back">Back View</option>
+                      <option value="Left">Left Side</option>
+                      <option value="Right">Right Side</option>
+                      <option value="Top">Top View</option>
+                      <option value="Detail">Detail / Logo</option>
                     </select>
                     <button type="button" class="btn-ui" onclick="document.getElementById('opeAdditionalViewInput').click()" style="padding: 5px 12px; font-size: 11.5px; font-weight: 700; background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.4); border-radius: 6px; cursor: pointer;">
-                      <i class="fa-solid fa-plus"></i> Add View
+                      <i class="fa-solid fa-plus"></i> Upload View
+                    </button>
+                    <button type="button" class="btn-ui" onclick="openProductCameraCapture(document.getElementById('opeAdditionalViewRole').value)" style="padding: 5px 12px; font-size: 11.5px; font-weight: 700; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 6px; cursor: pointer;">
+                      <i class="fa-solid fa-camera"></i> Capture View
                     </button>
                   </div>
                 </div>
+              </div>
+
+              <!-- Reconstruction Guidance & Prompt Mode Settings (P3.12) -->
+              <div style="margin-bottom: 12px; background: rgba(15,23,42,0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 10px 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span style="font-weight: 700; font-size: 11.5px; color: #cbd5e1;"><i class="fa-solid fa-sliders"></i> RECONSTRUCTION GUIDANCE</span>
+                  <span style="font-size: 10px; color: #4ade80; font-weight: 700;">Faithful Reconstruction [Recommended]</span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
+                  <label style="font-size: 11px; color: #94a3b8; width: 80px;">Prompt Mode:</label>
+                  <select id="p3dPromptModeSelector" style="flex: 1; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 4px 8px; color: #fff; font-size: 11px;">
+                    <option value="USE_BOTH" selected>Use Both (Full Fidelity + Negative Constraints) [Default]</option>
+                    <option value="FULL_PROMPT_ONLY">Full Fidelity Prompt Only (v1)</option>
+                    <option value="NEGATIVE_PROMPT_ONLY">Compact Negative Constraints Only (v1)</option>
+                    <option value="FAITHFUL_RECONSTRUCTION">Faithful Reconstruction Mode</option>
+                  </select>
+                </div>
+                <div style="font-size: 10px; color: #64748b; line-height: 1.35;">
+                  Reference image is absolute ground truth. Text, logos, proportions, and materials are locked.
+                </div>
+              </div>
               </div>
 
               <!-- Cost & Balance Summary -->
@@ -7122,6 +7159,438 @@
       return email === 'goodkie.com@gmail.com' || account.entitlement === 'INTERNAL_FULL_ACCESS' || account.environment === 'INTERNAL_DEV';
     }
 
+    
+    // ============================================================
+    // ─── P3.12: LIVE CAMERA CAPTURE ENGINE ──────────────────────
+    // ============================================================
+    let activeCameraStream = null;
+    let currentCameraCaptureTarget = null; // { type: 'PRODUCT' | 'BOOTH', slotIndex, viewLabel }
+    let lastCapturedDataUrl = null;
+
+    async function openCameraCaptureModal(target = { type: 'PRODUCT', slotIndex: 1, viewLabel: 'Front View' }) {
+      currentCameraCaptureTarget = target;
+      const modal = document.getElementById('cameraCaptureModal');
+      const angleText = document.getElementById('cameraTargetAngleText');
+      const titleText = document.getElementById('cameraModalTitle');
+      const errorEl = document.getElementById('cameraErrorMsg');
+
+      if (titleText) titleText.textContent = target.type === 'BOOTH' ? 'Booth 3D Live Camera Capture' : 'Product 3D Live Camera Capture';
+      if (angleText) angleText.textContent = target.viewLabel || 'Front View';
+      if (errorEl) errorEl.style.display = 'none';
+
+      // Reset preview controls
+      document.getElementById('cameraLiveControls').style.display = 'flex';
+      document.getElementById('cameraPreviewControls').style.display = 'none';
+      document.getElementById('cameraCaptureVideo').style.display = 'block';
+      document.getElementById('cameraCapturedPreviewImg').style.display = 'none';
+
+      if (modal) modal.style.display = 'flex';
+
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('Camera API not supported in this browser. Please use photo upload.');
+        }
+
+        const constraints = {
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          },
+          audio: false
+        };
+
+        activeCameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+        const videoEl = document.getElementById('cameraCaptureVideo');
+        if (videoEl) {
+          videoEl.srcObject = activeCameraStream;
+          videoEl.play();
+        }
+      } catch (err) {
+        console.error('[Camera Access Error]', err);
+        if (errorEl) {
+          errorEl.style.display = 'block';
+          errorEl.textContent = 'Camera unavailable or permission denied (' + err.message + '). Please use file upload.';
+        }
+      }
+    }
+
+    function closeCameraCaptureModal() {
+      // Immediate track shutdown for privacy and battery
+      if (activeCameraStream) {
+        activeCameraStream.getTracks().forEach(t => t.stop());
+        activeCameraStream = null;
+      }
+      const modal = document.getElementById('cameraCaptureModal');
+      if (modal) modal.style.display = 'none';
+      currentCameraCaptureTarget = null;
+      lastCapturedDataUrl = null;
+    }
+
+    function takeCameraSnapshot() {
+      const videoEl = document.getElementById('cameraCaptureVideo');
+      const canvasEl = document.getElementById('cameraCaptureCanvas');
+      const previewImg = document.getElementById('cameraCapturedPreviewImg');
+      if (!videoEl || !canvasEl) return;
+
+      canvasEl.width = videoEl.videoWidth || 1280;
+      canvasEl.height = videoEl.videoHeight || 720;
+      const ctx = canvasEl.getContext('2d');
+      ctx.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
+
+      lastCapturedDataUrl = canvasEl.toDataURL('image/jpeg', 0.92);
+
+      if (previewImg) {
+        previewImg.src = lastCapturedDataUrl;
+        previewImg.style.display = 'block';
+      }
+      videoEl.style.display = 'none';
+
+      document.getElementById('cameraLiveControls').style.display = 'none';
+      document.getElementById('cameraPreviewControls').style.display = 'flex';
+    }
+
+    function retakeCameraSnapshot() {
+      lastCapturedDataUrl = null;
+      const videoEl = document.getElementById('cameraCaptureVideo');
+      const previewImg = document.getElementById('cameraCapturedPreviewImg');
+      if (previewImg) previewImg.style.display = 'none';
+      if (videoEl) videoEl.style.display = 'block';
+
+      document.getElementById('cameraLiveControls').style.display = 'flex';
+      document.getElementById('cameraPreviewControls').style.display = 'none';
+    }
+
+    async function acceptCapturedPhoto() {
+      if (!lastCapturedDataUrl || !currentCameraCaptureTarget) {
+        closeCameraCaptureModal();
+        return;
+      }
+
+      const token = p3dGetAuthToken();
+      const pid = activeProjectId || window.activeProjectData?.id;
+      const target = currentCameraCaptureTarget;
+
+      try {
+        if (target.type === 'BOOTH') {
+          const res = await fetch(`/api/projects/${pid}/booth-3d/sources`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token,
+              'x-booth-edit-token': token
+            },
+            body: JSON.stringify({
+              dataUrl: lastCapturedDataUrl,
+              viewLabel: target.viewLabel || 'Camera View',
+              sourceType: 'CAMERA_CAPTURE',
+              capturedAt: new Date().toISOString()
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            renderBoothSourceGrid(data.allSources || []);
+            if (window.showToast) window.showToast('✅ Camera photo added to Booth sources!', 'success');
+          }
+        } else if (target.type === 'PRODUCT') {
+          const slot = target.slotIndex || 1;
+          const res = await fetch(`/api/projects/${pid}/products/${slot}/sources`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token,
+              'x-booth-edit-token': token
+            },
+            body: JSON.stringify({
+              dataUrl: lastCapturedDataUrl,
+              viewLabel: target.viewLabel || 'Camera View',
+              sourceType: 'CAMERA_CAPTURE',
+              capturedAt: new Date().toISOString()
+            })
+          });
+          const data = await res.json();
+          if (data.success && data.product) {
+            // Update UI preview
+            const filledBox = document.getElementById('p3dTabSourceFilledBox');
+            const emptyBox = document.getElementById('p3dTabSourceEmptyBox');
+            const imgPreview = document.getElementById('p3dTabSourceImgPreview');
+            if (imgPreview) imgPreview.src = data.source.url;
+            if (filledBox) filledBox.style.display = 'flex';
+            if (emptyBox) emptyBox.style.display = 'none';
+            if (window.showToast) window.showToast('✅ Camera photo set as product source!', 'success');
+          }
+        }
+      } catch (e) {
+        console.error('[Capture Save Error]', e);
+        alert('Could not save captured photo: ' + e.message);
+      } finally {
+        closeCameraCaptureModal();
+      }
+    }
+
+    // ============================================================
+    // ─── P3.12: BOOTH 3D REGENERATION ENGINE ────────────────────
+    // ============================================================
+    let currentSelectedBoothQuality = 'BOOTH_HIGH';
+    let currentBoothSourcesList = [];
+    let currentActiveBoothJobId = null;
+    let boothJobPollInterval = null;
+
+    async function openBooth3dRegenerationModal() {
+      const modal = document.getElementById('booth3dRegenerationModal');
+      if (modal) modal.style.display = 'flex';
+
+      // Load policy & current sources
+      const pid = activeProjectId || window.activeProjectData?.id;
+      try {
+        const res = await fetch(`/api/projects/${pid}/booth-3d/sources`);
+        const data = await res.json();
+        if (data.success) {
+          currentBoothSourcesList = data.sources || [];
+          renderBoothSourceGrid(currentBoothSourcesList);
+        }
+      } catch (e) {
+        console.warn('Error fetching booth sources:', e.message);
+      }
+      selectBoothQualityTier('BOOTH_HIGH');
+    }
+
+    function closeBooth3dRegenerationModal() {
+      const modal = document.getElementById('booth3dRegenerationModal');
+      if (modal) modal.style.display = 'none';
+      if (boothJobPollInterval) {
+        clearInterval(boothJobPollInterval);
+        boothJobPollInterval = null;
+      }
+    }
+
+    function selectBoothQualityTier(tier) {
+      currentSelectedBoothQuality = tier;
+      const cards = ['bqcStandard', 'bqcHigh', 'bqcUltra'];
+      cards.forEach(c => {
+        const el = document.getElementById(c);
+        if (el) {
+          el.style.border = '1.5px solid rgba(255,255,255,0.12)';
+          el.style.background = 'rgba(15,23,42,0.8)';
+        }
+      });
+
+      const activeEl = document.getElementById(tier === 'BOOTH_STANDARD' ? 'bqcStandard' : (tier === 'BOOTH_ULTRA' ? 'bqcUltra' : 'bqcHigh'));
+      if (activeEl) {
+        activeEl.style.border = '1.5px solid #38bdf8';
+        activeEl.style.background = 'rgba(56,189,248,0.12)';
+      }
+
+      updateBoothSourceValidationUI();
+    }
+
+    function updateBoothSourceValidationUI() {
+      const tier = currentSelectedBoothQuality;
+      const minRequired = tier === 'BOOTH_ULTRA' ? 60 : (tier === 'BOOTH_STANDARD' ? 12 : 30);
+      const tokenCost = tier === 'BOOTH_ULTRA' ? 120 : (tier === 'BOOTH_STANDARD' ? 25 : 60);
+      const count = currentBoothSourcesList.length;
+
+      const badge = document.getElementById('boothSourceCountBadge');
+      const costLabel = document.getElementById('boothCostLabel');
+      const btn = document.getElementById('btnTriggerBoothRegeneration');
+      const btnText = document.getElementById('btnTriggerBoothRegenText');
+
+      if (badge) {
+        const isMet = count >= minRequired;
+        badge.innerHTML = isMet
+          ? `<i class="fa-solid fa-check"></i> ${count} / ${minRequired} minimum photos (Ready)`
+          : `${count} / ${minRequired} minimum photos (Need ${minRequired - count} more)`;
+        badge.style.color = isMet ? '#4ade80' : '#fbbf24';
+        badge.style.background = isMet ? 'rgba(74,222,128,0.12)' : 'rgba(245,158,11,0.12)';
+      }
+
+      if (costLabel) {
+        const name = tier === 'BOOTH_ULTRA' ? 'Ultra 3D Booth' : (tier === 'BOOTH_STANDARD' ? 'Standard 3D Booth' : 'High Quality 3D Booth');
+        costLabel.textContent = `${name} · ${tokenCost} Nominal Tokens`;
+      }
+
+      if (btn && btnText) {
+        const isDev = isInternalDevAccount(currentViewerAccount);
+        const canRun = count >= minRequired || isDev;
+        btn.disabled = !canRun;
+        btn.style.opacity = canRun ? '1' : '0.5';
+        btnText.textContent = canRun ? 'Generate 3D Booth' : `Add ${minRequired - count} More Photos to Generate`;
+      }
+    }
+
+    function renderBoothSourceGrid(sources) {
+      currentBoothSourcesList = sources || [];
+      const grid = document.getElementById('boothSourceGrid');
+      if (!grid) return;
+
+      if (sources.length === 0) {
+        grid.innerHTML = `<div id="boothSourceEmptyPlaceholder" style="grid-column: 1 / -1; text-align: center; padding: 30px 10px; color: #64748b; font-size: 12px;">No source photos added yet. Upload files or snap photos using live camera.</div>`;
+      } else {
+        grid.innerHTML = sources.map((s, idx) => `
+          <div style="position: relative; background: #0b1526; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; overflow: hidden; height: 90px;">
+            <img src="${s.url}" alt="${s.viewLabel}" style="width: 100%; height: 100%; object-fit: cover;">
+            <span style="position: absolute; bottom: 2px; left: 2px; font-size: 8.5px; font-weight: 700; background: rgba(0,0,0,0.7); color: #bae6fd; padding: 1px 4px; border-radius: 3px;">
+              ${s.sourceType === 'CAMERA_CAPTURE' ? '📷 ' : ''}#${idx + 1} ${s.viewLabel || ''}
+            </span>
+            <button type="button" onclick="deleteBoothSourceItem('${s.id}')" style="position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; background: rgba(239,68,68,0.85); color: #fff; border: none; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Remove Photo">&times;</button>
+          </div>
+        `).join('');
+      }
+
+      updateBoothSourceValidationUI();
+    }
+
+    async function handleBoothMultiFilesUploaded(input) {
+      if (!input.files || input.files.length === 0) return;
+      const pid = activeProjectId || window.activeProjectData?.id;
+      const token = p3dGetAuthToken();
+
+      for (const file of Array.from(input.files)) {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const res = await fetch(`/api/projects/${pid}/booth-3d/sources`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+              body: JSON.stringify({
+                dataUrl: e.target.result,
+                viewLabel: file.name.replace(/\.[^/.]+$/, ''),
+                sourceType: 'FILE_UPLOAD'
+              })
+            });
+            const data = await res.json();
+            if (data.success) {
+              renderBoothSourceGrid(data.allSources || []);
+            }
+          } catch(err) {
+            console.error('Upload source error:', err);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+      input.value = '';
+    }
+
+    function openBoothCameraCapture() {
+      const count = currentBoothSourcesList.length + 1;
+      const defaultLabels = ['Front', 'Front-Left', 'Left', 'Rear-Left', 'Rear', 'Rear-Right', 'Right', 'Front-Right', 'Signage / Logo', 'Upper Details', 'Display Shelf'];
+      const viewLabel = defaultLabels[(count - 1) % defaultLabels.length] || `View #${count}`;
+      openCameraCaptureModal({ type: 'BOOTH', viewLabel });
+    }
+
+    async function deleteBoothSourceItem(sourceId) {
+      const pid = activeProjectId || window.activeProjectData?.id;
+      const token = p3dGetAuthToken();
+      try {
+        const res = await fetch(`/api/projects/${pid}/booth-3d/sources/${sourceId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (data.success) renderBoothSourceGrid(data.allSources || []);
+      } catch(e) {
+        console.error('Delete source error:', e);
+      }
+    }
+
+    async function triggerBooth3dRegeneration() {
+      const pid = activeProjectId || window.activeProjectData?.id;
+      const token = p3dGetAuthToken();
+      const btn = document.getElementById('btnTriggerBoothRegeneration');
+      const progressContainer = document.getElementById('boothProgressContainer');
+      const stepText = document.getElementById('boothProgressStepText');
+      const percentText = document.getElementById('boothProgressPercent');
+      const bar = document.getElementById('boothProgressBar');
+
+      if (btn) btn.disabled = true;
+      if (progressContainer) progressContainer.style.display = 'block';
+
+      try {
+        const res = await fetch(`/api/projects/${pid}/booth-3d/regenerate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({
+            qualityTier: currentSelectedBoothQuality
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok && !data.jobId) {
+          alert('Could not start booth regeneration: ' + (data.error || 'Server error'));
+          if (btn) btn.disabled = false;
+          return;
+        }
+
+        currentActiveBoothJobId = data.jobId;
+        if (window.showToast) window.showToast('🚀 Booth 3D reconstruction queued!', 'success');
+
+        // Poll job progress
+        boothJobPollInterval = setInterval(async () => {
+          try {
+            const jobRes = await fetch(`/api/projects/${pid}/booth-3d/jobs/${currentActiveBoothJobId}`);
+            const jobData = await jobRes.json();
+            if (jobData.success && jobData.job) {
+              const job = jobData.job;
+              if (percentText) percentText.textContent = `${job.progress || 0}%`;
+              if (bar) bar.style.width = `${job.progress || 0}%`;
+              if (stepText) stepText.textContent = job.status === 'READY_FOR_REVIEW' ? 'Reconstruction Complete!' : `Status: ${job.status} (${job.progress}%)`;
+
+              if (job.status === 'READY_FOR_REVIEW') {
+                clearInterval(boothJobPollInterval);
+                boothJobPollInterval = null;
+                document.getElementById('boothOwnerAcceptanceSection').style.display = 'block';
+                if (btn) btn.style.display = 'none';
+              } else if (job.status === 'FAILED') {
+                clearInterval(boothJobPollInterval);
+                boothJobPollInterval = null;
+                alert('Reconstruction failed: ' + (job.errorCode || 'Worker error'));
+                if (btn) btn.disabled = false;
+              }
+            }
+          } catch(e) {}
+        }, 1000);
+
+      } catch (err) {
+        console.error('Trigger regeneration error:', err);
+        alert('Network error: ' + err.message);
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function acceptNewBoothAsset() {
+      if (!currentActiveBoothJobId) return;
+      const pid = activeProjectId || window.activeProjectData?.id;
+      const token = p3dGetAuthToken();
+
+      try {
+        const res = await fetch(`/api/projects/${pid}/booth-3d/jobs/${currentActiveBoothJobId}/accept`, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (window.showToast) window.showToast('🎉 New 3D Booth accepted and activated!', 'success');
+          closeBooth3dRegenerationModal();
+        }
+      } catch(e) {
+        alert('Error accepting booth: ' + e.message);
+      }
+    }
+
+    function rejectAndKeepCurrentBooth() {
+      if (confirm('Keep current active booth and dismiss new reconstruction?')) {
+        closeBooth3dRegenerationModal();
+      }
+    }
+
+    function openBoothRollbackList() {
+      alert('Version Rollback: Your current booth and previous accepted reconstructions are preserved in the version history.');
+    }
+
+
     function openOwnerProductEditor(slotIndex = 1) {
       window.openOwnerProductEditor = openOwnerProductEditor;
       const slot = parseInt(slotIndex, 10) || (currentSelectedProdIdx + 1) || 1;
@@ -9514,6 +9983,58 @@ function setProductMediaMode(mode, isInitial = false) {
 }
 
 // ── Select Quality Tier ───────────────────────────────────────
+
+function openProductCameraCapture(viewLabel = 'Front View') {
+  const slot = window._p3dState?.currentSlot || 1;
+  openCameraCaptureModal({ type: 'PRODUCT', slotIndex: slot, viewLabel: viewLabel || 'Product View' });
+}
+
+function updateP3dMultiViewReadiness() {
+  const tier = window._p3dState?.currentQuality || 'HIGH';
+  const minRequired = tier === 'ULTRA' ? 5 : (tier === 'STANDARD' ? 1 : 3);
+  const tokenCost = tier === 'ULTRA' ? 6 : (tier === 'STANDARD' ? 1 : 3);
+  
+  const hasPrimary = Boolean(window._p3dState?.sourceImageUrl || document.getElementById('p3dTabSourceImgPreview')?.src);
+  const addlCount = (window._p3dState?.additionalSourceImages || []).length;
+  const totalCount = (hasPrimary ? 1 : 0) + addlCount;
+
+  const badge = document.getElementById('p3dMultiViewReadinessBadge');
+  const costEl = document.getElementById('p3dLiveCostSummary');
+  const ctaBtn = document.getElementById('p3dMainCtaBtn');
+  const ctaText = document.getElementById('p3dMainCtaText');
+
+  if (badge) {
+    const isMet = totalCount >= minRequired;
+    badge.innerHTML = isMet 
+      ? `<i class="fa-solid fa-check"></i> ${totalCount} / ${minRequired} views ready` 
+      : `${totalCount} / ${minRequired} views ready (Need ${minRequired - totalCount} more)`;
+    badge.style.color = isMet ? '#4ade80' : '#fbbf24';
+    badge.style.background = isMet ? 'rgba(74,222,128,0.15)' : 'rgba(245,158,11,0.15)';
+  }
+
+  if (costEl) {
+    const isDev = window._p3dState?.isDev;
+    costEl.textContent = isDev 
+      ? `${tier} · ${tokenCost} Nominal Tokens (QA Mode · Charge: 0)`
+      : `${tier} · ${tokenCost} Tokens`;
+  }
+
+  if (ctaBtn && ctaText) {
+    const isDev = window._p3dState?.isDev;
+    const canGenerate = (totalCount >= minRequired || isDev) && hasPrimary;
+    ctaBtn.disabled = !canGenerate;
+    ctaBtn.style.opacity = canGenerate ? '1' : '0.5';
+    if (!hasPrimary) {
+      ctaText.textContent = 'Upload or Snap Product Photo First';
+    } else if (totalCount < minRequired && !isDev) {
+      ctaText.textContent = `Add ${minRequired - totalCount} More Views to Generate (${tier})`;
+    } else {
+      ctaText.textContent = `Generate 3D Model (${tokenCost} Tokens)`;
+    }
+  }
+}
+
+
 function selectP3dQuality(tier) {
   const norm = String(tier || 'HIGH').toUpperCase().trim();
   window._p3dState.currentQuality = ['STANDARD', 'HIGH', 'ULTRA'].includes(norm) ? norm : 'HIGH';
@@ -9533,6 +10054,7 @@ function selectP3dQuality(tier) {
   });
 
   updateP3dLiveCostSummary();
+  updateP3dMultiViewReadiness();
 }
 
 
@@ -10420,6 +10942,215 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         </div>
       </div>
 
+    </div>
+  </div>
+
+
+  <!-- ============================================================ -->
+  <!-- LIVE CAMERA CAPTURE MODAL (P3.12: PRODUCT & BOOTH CAMERA)    -->
+  <!-- ============================================================ -->
+  <div id="cameraCaptureModal" style="display: none; position: fixed; inset: 0; background: rgba(3, 7, 18, 0.88); backdrop-filter: blur(8px); z-index: 99999; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #0b1526; border: 1px solid rgba(56,189,248,0.3); border-radius: 16px; max-width: 580px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8); overflow: hidden; display: flex; flex-direction: column;">
+      <div style="padding: 14px 20px; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-camera" style="color: #38bdf8;"></i>
+          <span style="font-weight: 800; font-size: 14px; color: #fff;" id="cameraModalTitle">Live Camera Capture</span>
+        </div>
+        <button type="button" onclick="closeCameraCaptureModal()" style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer; padding: 4px;">&times;</button>
+      </div>
+
+      <div style="padding: 16px 20px; display: flex; flex-direction: column; align-items: center;">
+        <div id="cameraTargetGuideBanner" style="width: 100%; padding: 8px 12px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.25); border-radius: 8px; font-size: 12px; color: #bae6fd; margin-bottom: 12px; text-align: center; font-weight: 600;">
+          Target Angle: <span id="cameraTargetAngleText" style="color: #fff; font-weight: 800;">Front View</span>
+        </div>
+
+        <div style="position: relative; width: 100%; height: 320px; background: #000; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;">
+          <video id="cameraCaptureVideo" autoplay playsinline style="width: 100%; height: 100%; object-fit: contain;"></video>
+          <img id="cameraCapturedPreviewImg" src="" alt="Captured Frame" style="display: none; width: 100%; height: 100%; object-fit: contain;">
+          <canvas id="cameraCaptureCanvas" style="display: none;"></canvas>
+
+          <!-- Framing guide overlay -->
+          <div id="cameraFramingGuide" style="position: absolute; inset: 20px; border: 1.5px dashed rgba(56,189,248,0.5); border-radius: 12px; pointer-events: none; display: flex; align-items: center; justify-content: center;">
+            <span style="color: rgba(255,255,255,0.4); font-size: 11px; font-weight: 600; background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 6px;">Frame subject clearly</span>
+          </div>
+        </div>
+
+        <div id="cameraErrorMsg" style="display: none; color: #f87171; font-size: 12px; margin-top: 10px; text-align: center;"></div>
+      </div>
+
+      <div style="padding: 14px 20px; background: rgba(255,255,255,0.02); border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center;">
+        <button type="button" onclick="closeCameraCaptureModal()" style="padding: 8px 16px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer;">
+          Cancel
+        </button>
+
+        <div style="display: flex; gap: 10px;" id="cameraLiveControls">
+          <button type="button" id="btnSnapPhoto" onclick="takeCameraSnapshot()" style="padding: 8px 20px; font-size: 12.5px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-camera"></i> Snap Photo
+          </button>
+        </div>
+
+        <div style="display: none; gap: 10px;" id="cameraPreviewControls">
+          <button type="button" onclick="retakeCameraSnapshot()" style="padding: 8px 16px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-arrows-rotate"></i> Retake
+          </button>
+          <button type="button" id="btnUseCapturedPhoto" onclick="acceptCapturedPhoto()" style="padding: 8px 20px; font-size: 12.5px; font-weight: 800; background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: 1px solid #34d399; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-check"></i> Use Photo
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ============================================================ -->
+  <!-- BOOTH 3D REGENERATION MODAL (P3.12: BOOTH RECONSTRUCTION)    -->
+  <!-- ============================================================ -->
+  <div id="booth3dRegenerationModal" style="display: none; position: fixed; inset: 0; background: rgba(3, 7, 18, 0.9); backdrop-filter: blur(10px); z-index: 99990; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #0b1526; border: 1px solid rgba(56,189,248,0.35); border-radius: 18px; max-width: 780px; width: 100%; max-height: 90vh; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.85); overflow: hidden; display: flex; flex-direction: column;">
+      
+      <!-- Modal Header -->
+      <div style="padding: 16px 24px; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-size: 16px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-arrows-rotate" style="color: #38bdf8;"></i> REGENERATE 3D BOOTH
+          </div>
+          <div style="font-size: 11.5px; color: #94a3b8; margin-top: 2px;">
+            Authentic multi-view neural reconstruction · Preserves current active booth until accepted
+          </div>
+        </div>
+        <button type="button" onclick="closeBooth3dRegenerationModal()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; padding: 4px;">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div style="padding: 20px 24px; overflow-y: auto; flex: 1;">
+        
+        <!-- Step 1: Quality Selection -->
+        <div style="margin-bottom: 20px;">
+          <label style="font-weight: 800; font-size: 13px; color: #38bdf8; display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
+            <i class="fa-solid fa-layer-group"></i> 1. SELECT RECONSTRUCTION QUALITY
+          </label>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px;">
+            <!-- Standard Booth Card -->
+            <div class="booth-quality-card" id="bqcStandard" onclick="selectBoothQualityTier('BOOTH_STANDARD')" style="background: rgba(15,23,42,0.8); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s ease;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 13.5px; font-weight: 800; color: #fff;">Standard 3D Booth</span>
+                <span style="font-size: 10px; font-weight: 800; background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; color: #94a3b8;">25 Tokens</span>
+              </div>
+              <div style="font-size: 11.5px; color: #94a3b8; line-height: 1.35;">Minimum 12 source photos · Fast spatial reconstruction</div>
+            </div>
+
+            <!-- High Quality Booth Card -->
+            <div class="booth-quality-card" id="bqcHigh" onclick="selectBoothQualityTier('BOOTH_HIGH')" style="background: rgba(56,189,248,0.12); border: 1.5px solid #38bdf8; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s ease;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 13.5px; font-weight: 800; color: #38bdf8;">High Quality 3D Booth</span>
+                <span style="font-size: 10px; font-weight: 800; background: rgba(56,189,248,0.25); padding: 2px 6px; border-radius: 4px; color: #bae6fd;">60 Tokens</span>
+              </div>
+              <div style="font-size: 11.5px; color: #cbd5e1; line-height: 1.35;">Minimum 30 source photos · <strong style="color: #38bdf8;">Recommended</strong> for complete booth fidelity</div>
+            </div>
+
+            <!-- Ultra Booth Card -->
+            <div class="booth-quality-card" id="bqcUltra" onclick="selectBoothQualityTier('BOOTH_ULTRA')" style="background: rgba(15,23,42,0.8); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s ease;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 13.5px; font-weight: 800; color: #fff;">Ultra 3D Booth</span>
+                <span style="font-size: 10px; font-weight: 800; background: rgba(245,158,11,0.2); padding: 2px 6px; border-radius: 4px; color: #fbbf24;">120 Tokens</span>
+              </div>
+              <div style="font-size: 11.5px; color: #94a3b8; line-height: 1.35;">Minimum 60 source photos · Maximum practical fidelity & dense 3DGS</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Multi-View Source Collection & Guided Checklist -->
+        <div style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <label style="font-weight: 800; font-size: 13px; color: #38bdf8; display: flex; align-items: center; gap: 6px; margin: 0;">
+              <i class="fa-solid fa-camera-rotate"></i> 2. MULTI-VIEW SOURCE PHOTOS
+            </label>
+            <div id="boothSourceCountBadge" style="font-size: 11.5px; font-weight: 700; color: #fbbf24; background: rgba(245,158,11,0.12); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(245,158,11,0.25);">
+              0 / 30 minimum photos
+            </div>
+          </div>
+
+          <!-- Capture Guidance Banner -->
+          <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px; margin-bottom: 12px; font-size: 11.5px; color: #94a3b8; line-height: 1.4;">
+            <div style="font-weight: 700; color: #cbd5e1; margin-bottom: 4px;"><i class="fa-solid fa-circle-info" style="color: #38bdf8;"></i> Guided 360° Walkaround Coverage:</div>
+            Walk around the booth taking overlapping photos: Front &bull; Front-Left &bull; Left &bull; Rear-Left &bull; Rear &bull; Rear-Right &bull; Right &bull; Front-Right &bull; Signs & product displays.
+          </div>
+
+          <!-- Action buttons for upload and camera -->
+          <div style="display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;">
+            <input type="file" id="boothMultiFileInput" multiple accept="image/png, image/jpeg, image/webp" style="display: none;" onchange="handleBoothMultiFilesUploaded(this)">
+            <button type="button" onclick="document.getElementById('boothMultiFileInput').click()" style="padding: 8px 16px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-upload"></i> Upload Photos
+            </button>
+            <button type="button" onclick="openBoothCameraCapture()" style="padding: 8px 16px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-camera"></i> Take Photos (Live Camera)
+            </button>
+          </div>
+
+          <!-- Source Grid -->
+          <div id="boothSourceGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; max-height: 200px; overflow-y: auto; background: #030712; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px;">
+            <div id="boothSourceEmptyPlaceholder" style="grid-column: 1 / -1; text-align: center; padding: 30px 10px; color: #64748b; font-size: 12px;">
+              No source photos added yet. Upload files or snap photos using live camera.
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Token Accounting & Safe Regeneration Execution -->
+        <div id="boothRegenExecutionSection" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+            <div style="font-size: 12px; color: #cbd5e1;">
+              <span id="boothCostLabel">High Quality · 60 Nominal Tokens</span>
+              <span id="boothQaBypassBadge" style="margin-left: 8px; font-size: 10px; font-weight: 800; color: #f59e0b; background: rgba(245,158,11,0.15); padding: 2px 6px; border-radius: 4px;">Internal QA (Charge: 0)</span>
+            </div>
+            <div id="boothTokenBalanceSummary" style="font-size: 11.5px; color: #94a3b8;">
+              Active Booth Preserved: <strong>Yes</strong>
+            </div>
+          </div>
+
+          <!-- Progress bar (hidden during setup) -->
+          <div id="boothProgressContainer" style="display: none; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; font-size: 11.5px; color: #38bdf8; font-weight: 700; margin-bottom: 4px;">
+              <span id="boothProgressStepText">Reconstructing 3D Gaussian Splats...</span>
+              <span id="boothProgressPercent">45%</span>
+            </div>
+            <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+              <div id="boothProgressBar" style="width: 45%; height: 100%; background: linear-gradient(90deg, #38bdf8, #10b981); transition: width 0.3s ease;"></div>
+            </div>
+          </div>
+
+          <!-- CTA Buttons -->
+          <button type="button" id="btnTriggerBoothRegeneration" onclick="triggerBooth3dRegeneration()" style="width: 100%; padding: 12px 20px; font-size: 13.5px; font-weight: 800; background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: 1px solid #34d399; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(16,185,129,0.35);">
+            <i class="fa-solid fa-rocket"></i> <span id="btnTriggerBoothRegenText">Generate 3D Booth</span>
+          </button>
+        </div>
+
+        <!-- Owner Acceptance / Review Section (When result is READY_FOR_REVIEW) -->
+        <div id="boothOwnerAcceptanceSection" style="display: none; background: rgba(16,185,129,0.08); border: 1px solid rgba(52,211,153,0.3); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+          <div style="font-weight: 800; font-size: 13px; color: #34d399; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-circle-check"></i> 3D Booth Reconstruction Ready For Review
+          </div>
+          <p style="font-size: 11.5px; color: #cbd5e1; margin-bottom: 12px;">
+            Review your new 3D booth model. Your current active booth remains live until you click <strong>Use New Booth</strong>.
+          </p>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="rejectAndKeepCurrentBooth()" style="flex: 1; padding: 9px 14px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer;">
+              Keep Current Booth
+            </button>
+            <button type="button" onclick="acceptNewBoothAsset()" style="flex: 1; padding: 9px 14px; font-size: 12px; font-weight: 800; background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: 1px solid #34d399; border-radius: 8px; cursor: pointer;">
+              ✅ Use New Booth
+            </button>
+          </div>
+        </div>
+
+        <!-- Rollback History Section -->
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: #64748b; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);">
+          <span>Version Rollback Support: Enabled</span>
+          <button type="button" onclick="openBoothRollbackList()" style="background: none; border: none; color: #38bdf8; font-size: 11.5px; cursor: pointer; text-decoration: underline;">
+            View Previous Versions
+          </button>
+        </div>
+
+      </div>
     </div>
   </div>
 
