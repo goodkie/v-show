@@ -84,7 +84,7 @@ class PipelineOrchestrator {
 
       // ── STAGE 9: 8K UHD PNG NORMALIZATION & DERIVATIVES ──
       const outputDir = options.outputDir || path.dirname(sourcePath);
-      const masterData = MasterNormalizer.normalize8K(srResult, enhancerResult, outputDir, options.baseName || `booth_master_v4_${jobId}`);
+      const masterData = MasterNormalizer.normalize8K(srResult, enhancerResult, outputDir, options.baseName || `booth_master_v4_${jobId}`, sourcePath);
       logStage('8K_MASTER_NORMALIZATION', { masterResolution: `${masterData.masterWidth}x${masterData.masterHeight}`, format: masterData.masterFormat });
 
       // ── STAGE 10: FORENSIC FIDELITY QA & BENCHMARK AUDIT ──

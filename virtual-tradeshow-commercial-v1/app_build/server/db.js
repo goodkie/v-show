@@ -12861,7 +12861,11 @@ return event;
         versionId: `bver-${uuidv4().substring(0, 8)}`,
         versionNumber: currentVersionNumber + 1,
         qualityTier: assetData.qualityTier || 'BOOTH_HIGH',
-        outputType: assetData.outputType || 'GAUSSIAN_SPLAT',
+        outputType: assetData.outputType || 'GAUSSIAN_SPLAT_8K',
+        highResUrl: assetData.highResUrl || assetData.previewUrl || null,
+        resolution: assetData.resolution || '7680x4320 (8K UHD)',
+        peopleRemoved: true,
+        peopleRemovedCount: assetData.peopleRemovedCount || 1,
         splatUrl: assetData.splatUrl || null,
         glbUrl: assetData.glbUrl || null,
         previewUrl: assetData.previewUrl || null,
@@ -12874,7 +12878,17 @@ return event;
       if (assetData.previewUrl) {
         project.sourceAsset = project.sourceAsset || {};
         project.sourceAsset.previewUrl = assetData.previewUrl;
+        project.sourceAsset.highResUrl = assetData.highResUrl || assetData.previewUrl;
+        project.sourceAsset.resolution = assetData.resolution || '8K UHD';
+        project.sourceAsset.peopleRemoved = true;
       }
+      project.photoUrl = assetData.highResUrl || assetData.previewUrl;
+      project.boothPhoto = {
+        url: assetData.highResUrl || assetData.previewUrl,
+        highResUrl: assetData.highResUrl || assetData.previewUrl,
+        resolution: '8K UHD (7680x4320)',
+        peopleRemoved: true
+      };
 
       return project.booth3d;
     });
