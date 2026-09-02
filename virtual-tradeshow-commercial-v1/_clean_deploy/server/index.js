@@ -7362,9 +7362,11 @@ app.post('/api/projects/:id/products/:slot/3d/generate', async (req, res) => {
 
     // Check for existing active job (Double-click / race guard)
     const existingJobs = db.listProduct3dJobs(projectId);
+    const tenMinsAgo = Date.now() - 10 * 60 * 1000;
     const activeJob = existingJobs.find(j =>
       String(j.productSlotIndex) === String(slotIndex) &&
-      ['QUEUED', 'PROCESSING', 'VALIDATING'].includes(j.status)
+      ['QUEUED', 'PROCESSING', 'VALIDATING'].includes(j.status) &&
+      new Date(j.createdAt).getTime() > tenMinsAgo
     );
     if (activeJob) {
       return res.status(409).json({ error: 'A 3D conversion job is already in progress for this product.', code: 'JOB_ALREADY_ACTIVE', jobId: activeJob.id, status: activeJob.status });
@@ -8623,6 +8625,20 @@ app.get('*', (req, res) => {
   }
   res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
 });
+
+// Startup cleanup for stale Product 3D jobs from previous process restarts
+try {
+  const staleJobs = (db.read().product3dJobs || []).filter(j =>
+    ['QUEUED', 'PROCESSING', 'VALIDATING'].includes(j.status) &&
+    (Date.now() - new Date(j.createdAt).getTime() > 10 * 60 * 1000)
+  );
+  staleJobs.forEach(j => {
+    db.updateProduct3dJob(j.id, { status: 'FAILED', error: 'JOB_TIMED_OUT_ACROSS_RESTART' });
+  });
+  if (staleJobs.length > 0) console.log(`[Product3D] Cleaned up ${staleJobs.length} stale uncompleted jobs on startup.`);
+} catch (e) {
+  console.error('[Product3D] Startup stale job check error:', e.message);
+}
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`=======================================================`);

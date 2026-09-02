@@ -12509,9 +12509,11 @@ return event;
    */
   countActiveProduct3dQaJobs(accountId) {
     const data = this.read();
+    const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
     return (data.product3dJobs || []).filter(j =>
       j.accountId === accountId &&
-      ['QUEUED', 'PROCESSING', 'VALIDATING'].includes(j.status)
+      ['QUEUED', 'PROCESSING', 'VALIDATING'].includes(j.status) &&
+      new Date(j.createdAt).getTime() > tenMinutesAgo
     ).length;
   }
 

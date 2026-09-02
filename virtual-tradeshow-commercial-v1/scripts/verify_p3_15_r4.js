@@ -114,7 +114,7 @@ async function runVerification() {
 
   // ── Step 3: Product Creation with Originating Pin ───────────
   console.log('\n[3/8] Testing Product Creation & Originating Pin Attach...');
-  const testSlot = 42;
+  const testSlot = Math.floor(Math.random() * 800) + 100;
   const testProductName = `P315-R4 QA PRODUCT ${Date.now().toString(36).toUpperCase()}`;
   const testPinId = `pin-qa-r4-${Date.now().toString(36)}`;
 
