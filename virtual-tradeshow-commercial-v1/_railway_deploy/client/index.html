@@ -6206,7 +6206,7 @@
       const modal = document.getElementById('ownerProductEditorModal');
       if (!modal) return;
 
-      const rawProd = (activeProjectData?.products || []).find(p => p.slotIndex === slot) || {};
+      const rawProd = (activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slot)) || {};
       const isReal = !!(rawProd.name && rawProd.name.trim() && !rawProd.name.startsWith('Product Slot'));
 
       document.getElementById('opeSlotIndex').value = slot;

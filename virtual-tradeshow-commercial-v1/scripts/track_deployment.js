@@ -1,9 +1,9 @@
-﻿const https = require('https');
+const https = require('https');
 const token = '8bed6af7-cd5d-4d2b-a652-acfba822a9d7';
-const deploymentId = '6ce6f617-d5cf-4fa3-993c-2755e3e33ab2';
+const deploymentId = 'd87243ea-4551-4c6e-bb51-fd4897e11d23';
 
 let count = 0;
-const max = 30;
+const max = 40;
 
 function checkDeployment() {
   count++;
@@ -21,7 +21,7 @@ function checkDeployment() {
         console.log(`[Deploy Status Poll ${count}] Status: ${status}`);
 
         if (status === 'SUCCESS') {
-          console.log('🎉 Deployment succeeded! Railway is now serving the latest 3D2 container!');
+          console.log('🎉 Deployment succeeded! Railway is now serving the latest P3.9-R3 build!');
           process.exit(0);
         } else if (status === 'FAILED' || status === 'CRASHED') {
           console.error('❌ Deployment failed with status:', status);
@@ -29,13 +29,13 @@ function checkDeployment() {
         }
       } catch(e) { console.log('Error parsing response:', b); }
 
-      if (count < max) setTimeout(checkDeployment, 5000);
+      if (count < max) setTimeout(checkDeployment, 4000);
       else process.exit(1);
     });
   });
   req.on('error', (err) => {
     console.error('Request error:', err.message);
-    if (count < max) setTimeout(checkDeployment, 5000);
+    if (count < max) setTimeout(checkDeployment, 4000);
   });
   req.write(JSON.stringify({ query }));
   req.end();
