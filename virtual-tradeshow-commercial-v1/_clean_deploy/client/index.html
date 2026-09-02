@@ -5705,6 +5705,16 @@
       reader.readAsDataURL(file);
     }
 
+    
+    window.openPinChooserModal = openPinChooserModal;
+    window.closePinChooserModal = closePinChooserModal;
+    window.pinChooserActionAddNew = pinChooserActionAddNew;
+    window.pinChooserActionSelectExisting = pinChooserActionSelectExisting;
+    window.handleP3dTabSourceUpload = handleP3dTabSourceUpload;
+    window.removeP3dTabSourceImage = removeP3dTabSourceImage;
+    window.createInstantBlankPin = createInstantBlankPin;
+    window.removeBlankPin = removeBlankPin;
+
     function removeP3dTabSourceImage() {
       const emptyBox = document.getElementById('p3dTabSourceEmptyBox');
       const filledBox = document.getElementById('p3dTabSourceFilledBox');
