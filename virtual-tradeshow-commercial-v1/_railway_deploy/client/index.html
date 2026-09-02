@@ -7164,6 +7164,8 @@
     // ─── P3.12: LIVE CAMERA CAPTURE ENGINE ──────────────────────
     // ============================================================
     let activeCameraStream = null;
+      window.activeCameraStream = null;
+    window.activeCameraStream = null;
     let currentCameraCaptureTarget = null; // { type: 'PRODUCT' | 'BOOTH', slotIndex, viewLabel }
     let lastCapturedDataUrl = null;
 
@@ -7201,6 +7203,7 @@
         };
 
         activeCameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+        window.activeCameraStream = activeCameraStream;
         const videoEl = document.getElementById('cameraCaptureVideo');
         if (videoEl) {
           videoEl.srcObject = activeCameraStream;

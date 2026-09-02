@@ -12657,6 +12657,177 @@ return event;
     });
   }
 
+
+  // ============================================================
+  // ─── P3.12: BOOTH 3D REGENERATION & SOURCE MANAGEMENT ───────
+  // ============================================================
+
+  async saveBoothSource(projectId, sourceData) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) throw new Error(`Project ${projectId} not found`);
+      project.boothSources = project.boothSources || [];
+      
+      const sourceRecord = {
+        id: sourceData.id || `bsrc-${uuidv4().substring(0, 8)}`,
+        projectId,
+        url: sourceData.url,
+        thumbnailUrl: sourceData.thumbnailUrl || sourceData.url,
+        viewLabel: sourceData.viewLabel || 'General View',
+        sourceType: sourceData.sourceType || 'FILE_UPLOAD', // 'FILE_UPLOAD' | 'CAMERA_CAPTURE'
+        width: sourceData.width || 1920,
+        height: sourceData.height || 1080,
+        hash: sourceData.hash || null,
+        capturedAt: sourceData.capturedAt || (sourceData.sourceType === 'CAMERA_CAPTURE' ? new Date().toISOString() : null),
+        uploadedAt: sourceData.uploadedAt || new Date().toISOString()
+      };
+
+      project.boothSources.push(sourceRecord);
+      return sourceRecord;
+    });
+  }
+
+  async deleteBoothSource(projectId, sourceId) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) throw new Error(`Project ${projectId} not found`);
+      project.boothSources = project.boothSources || [];
+      const idx = project.boothSources.findIndex(s => s.id === sourceId);
+      if (idx >= 0) {
+        project.boothSources.splice(idx, 1);
+        return true;
+      }
+      return false;
+    });
+  }
+
+  listBoothSources(projectId) {
+    const data = this.memoryData;
+    const project = (data.projects || []).find(p => p.id === projectId);
+    return (project?.boothSources || []);
+  }
+
+  async createBooth3dRegenerationJob(jobData) {
+    return this.mutate((db) => {
+      db.booth3dJobs = db.booth3dJobs || [];
+      const job = {
+        id: `b3dj-${uuidv4().substring(0, 8)}`,
+        projectId: jobData.projectId,
+        accountId: jobData.accountId,
+        qualityTier: jobData.qualityTier || 'BOOTH_HIGH',
+        sourceIds: jobData.sourceIds || [],
+        sourceCount: jobData.sourceCount || (jobData.sourceIds ? jobData.sourceIds.length : 0),
+        nominalTokenCost: jobData.nominalTokenCost || 60,
+        commercialTokenReserved: jobData.commercialTokenReserved || 0,
+        commercialTokenConsumed: 0,
+        provider: jobData.provider || 'SPARK_3DGS_RECONSTRUCTION',
+        model: jobData.model || 'splatfacto-v2',
+        modelVersion: 'v1.0',
+        status: 'PREPARING',
+        progress: 0,
+        outputType: 'GAUSSIAN_SPLAT', // GAUSSIAN_SPLAT, SPZ, PLY, GLB, OTHER
+        resultAssetId: null,
+        resultPreviewUrl: null,
+        resultSplatUrl: null,
+        resultGlbUrl: null,
+        activeBoothPreserved: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        errorCode: null
+      };
+
+      db.booth3dJobs.push(job);
+      if (db.booth3dJobs.length > 2000) db.booth3dJobs.shift();
+      return job;
+    });
+  }
+
+  async getBooth3dRegenerationJob(jobId) {
+    const data = this.memoryData;
+    return (data.booth3dJobs || []).find(j => j.id === jobId) || null;
+  }
+
+  async updateBooth3dRegenerationJob(jobId, patch) {
+    return this.mutate((db) => {
+      db.booth3dJobs = db.booth3dJobs || [];
+      const job = db.booth3dJobs.find(j => j.id === jobId);
+      if (!job) return null;
+      Object.assign(job, patch, { updatedAt: new Date().toISOString() });
+      return job;
+    });
+  }
+
+  listBooth3dRegenerationJobs(projectId, { limit = 20 } = {}) {
+    const data = this.memoryData;
+    return ((data.booth3dJobs || [])
+      .filter(j => j.projectId === projectId)
+      .slice(-limit)
+      .reverse());
+  }
+
+  async setBooth3dActiveAsset(projectId, assetData) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) throw new Error(`Project ${projectId} not found`);
+      
+      // Preserve current active booth in history for versioning & rollback
+      project.booth3dHistory = project.booth3dHistory || [];
+      const currentVersionNumber = project.booth3dHistory.length + 1;
+      
+      const previousVersion = {
+        versionId: `bver-${uuidv4().substring(0, 8)}`,
+        versionNumber: currentVersionNumber,
+        label: `Booth Version ${currentVersionNumber}`,
+        sourceAsset: project.sourceAsset ? { ...project.sourceAsset } : null,
+        booth3d: project.booth3d ? { ...project.booth3d } : null,
+        qualityTier: project.booth3d?.qualityTier || 'STANDARD',
+        archivedAt: new Date().toISOString()
+      };
+      project.booth3dHistory.push(previousVersion);
+      if (project.booth3dHistory.length > 30) project.booth3dHistory.shift();
+
+      // Set new active booth asset
+      project.booth3d = {
+        status: 'READY',
+        versionId: `bver-${uuidv4().substring(0, 8)}`,
+        versionNumber: currentVersionNumber + 1,
+        qualityTier: assetData.qualityTier || 'BOOTH_HIGH',
+        outputType: assetData.outputType || 'GAUSSIAN_SPLAT',
+        splatUrl: assetData.splatUrl || null,
+        glbUrl: assetData.glbUrl || null,
+        previewUrl: assetData.previewUrl || null,
+        sourceCount: assetData.sourceCount || 0,
+        provider: assetData.provider || 'SPARK_3DGS_RECONSTRUCTION',
+        model: assetData.model || 'splatfacto-v2',
+        updatedAt: new Date().toISOString()
+      };
+
+      if (assetData.previewUrl) {
+        project.sourceAsset = project.sourceAsset || {};
+        project.sourceAsset.previewUrl = assetData.previewUrl;
+      }
+
+      return project.booth3d;
+    });
+  }
+
+  async rollbackBooth3dAsset(projectId, versionId) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) throw new Error(`Project ${projectId} not found`);
+      project.booth3dHistory = project.booth3dHistory || [];
+      
+      const historyItem = project.booth3dHistory.find(v => v.versionId === versionId);
+      if (!historyItem) throw new Error(`Booth version ${versionId} not found in history`);
+
+      if (historyItem.sourceAsset) project.sourceAsset = { ...historyItem.sourceAsset };
+      if (historyItem.booth3d) project.booth3d = { ...historyItem.booth3d };
+
+      return { success: true, activeBooth: project.booth3d };
+    });
+  }
+
+
 }
 
 module.exports = new JSONDatabase();
