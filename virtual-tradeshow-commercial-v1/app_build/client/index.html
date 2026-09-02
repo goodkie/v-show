@@ -8970,11 +8970,6 @@ function selectP3dQuality(tier) {
         costEl.textContent = isDev ? '0 Commercial Tokens (QA Mode)' : (cost + ' Tokens');
       }
     }
-    const _p3dDisposeViewer = function() {
-      if (typeof _p3dDisposeInlineViewer === 'function') _p3dDisposeInlineViewer();
-    };
-  
-
     function renderAdditionalViewsList() {
       const container = document.getElementById('p3dAdditionalViewsContainer');
       if (!container) return;
