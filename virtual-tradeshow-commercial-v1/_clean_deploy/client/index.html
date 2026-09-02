@@ -5716,15 +5716,20 @@
     });
 
     // ── Instant Blank Pin Creator ─────────────────────────────────
-    function createInstantBlankPin(coords) {
-      cancelPlaceProductPinMode();
+    function createInstantBlankPin(coords = { u: 0.5, v: 0.5 }) {
+      if (typeof cancelPlaceProductPinMode === 'function') cancelPlaceProductPinMode();
       window.pinAuthoringState = 'BLANK_PIN';
+
+      const c = coords || { u: 0.5, v: 0.5 };
+      const u = typeof c.u === 'number' ? c.u : 0.5;
+      const v = typeof c.v === 'number' ? c.v : 0.5;
 
       const draftId = 'pin-blank-' + Date.now().toString(36);
       window.currentBlankPinId = draftId;
 
       const blankPin = {
         id: draftId,
+        pinId: draftId,
         pinType: 'PRODUCT_PIN',
         isDraft: true,
         status: 'DRAFT',
@@ -5732,9 +5737,9 @@
         productIds: [],
         productId: null,
         targetId: null,
-        u: coords.u,
-        v: coords.v,
-        worldPos: coords.hitPoint,
+        u: u,
+        v: v,
+        worldPos: c.hitPoint || null,
         createdAt: new Date().toISOString()
       };
 
@@ -5750,9 +5755,9 @@
         targetId: draftId,
         name: 'Empty Product Pin',
         category: 'PRODUCT PIN',
-        worldPos: coords.hitPoint,
-        u: coords.u,
-        v: coords.v,
+        worldPos: c.hitPoint || null,
+        u: u,
+        v: v,
         pinData: blankPin
       });
 
@@ -8713,8 +8718,11 @@
       }
 
       // 3. Slot Number lookup / creation (only if cur.id is pure integer 1..9)
-      const slotNum = /^[0-9]+$/.test(String(cur.id)) ? parseInt(cur.id, 10) : null;
-      if (slotNum !== null) {
+      let slotNum = /^[0-9]+$/.test(String(cur.id)) ? parseInt(cur.id, 10) : null;
+      if (slotNum === null && String(cur.id).startsWith('pin-slot-')) {
+        slotNum = parseInt(String(cur.id).replace('pin-slot-', ''), 10);
+      }
+      if (slotNum !== null && !isNaN(slotNum)) {
         pin = activeProjectData.pinpoints.find(p => p.slotIndex === slotNum || p.targetId === `prod-slot-${slotNum}`);
         if (!pin) {
           const prod = (activeProjectData.products || []).find(p => p.slotIndex === slotNum);
