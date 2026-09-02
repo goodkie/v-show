@@ -1,6 +1,6 @@
 const https = require('https');
 const token = '8bed6af7-cd5d-4d2b-a652-acfba822a9d7';
-const deploymentId = '6e9356dc-2cd0-45fd-9bb7-80d873e63250';
+const deploymentId = '9e96b3c9-b0d4-4879-a130-1085e26bac2b';
 
 let count = 0;
 const max = 40;

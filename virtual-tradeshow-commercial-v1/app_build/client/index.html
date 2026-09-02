@@ -6340,21 +6340,37 @@ function buildHotspotsDOM() {
       camera.getWorldDirection(camDir);
 
       studioHotspotsList.forEach(spot => {
-        if (!spot.domElement || !spot.worldPos) return;
-        const dot = spot.worldPos.dot(camDir);
+        if (!spot.domElement) return;
+        
+        let wp = spot.worldPos;
+        if (!(wp instanceof THREE.Vector3)) {
+          if (wp && typeof wp.x === 'number') {
+            wp = new THREE.Vector3(wp.x, wp.y, wp.z);
+          } else {
+            const u = typeof spot.u === 'number' ? spot.u : 0.5;
+            const v = typeof spot.v === 'number' ? spot.v : 0.5;
+            const phi = (1 - v) * Math.PI;
+            const theta = (u * 2 * Math.PI) - Math.PI - 0.45;
+            const r = 450;
+            wp = new THREE.Vector3(-r * Math.sin(phi) * Math.cos(theta), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(theta));
+          }
+          spot.worldPos = wp;
+        }
+
+        const dot = wp.dot(camDir);
         if (dot <= 0) {
           spot.domElement.style.display = 'none';
           return;
         }
-        const wp = spot.worldPos.clone();
-        wp.project(camera);
-        if (wp.z > 1.0) {
+        const proj = wp.clone();
+        proj.project(camera);
+        if (proj.z > 1.0) {
           spot.domElement.style.display = 'none';
           return;
         }
         spot.domElement.style.display = 'flex';
-        spot.domElement.style.left = ((wp.x * 0.5 + 0.5) * cWidth) + 'px';
-        spot.domElement.style.top  = ((-(wp.y * 0.5) + 0.5) * cHeight) + 'px';
+        spot.domElement.style.left = ((proj.x * 0.5 + 0.5) * cWidth) + 'px';
+        spot.domElement.style.top  = ((-(proj.y * 0.5) + 0.5) * cHeight) + 'px';
       });
     }
 
@@ -8709,11 +8725,12 @@ function buildHotspotsDOM() {
 
     // ── Canonical Product Cards UI Rendering (Synchronized with Owner Editor) ──
     function renderProductCards(products) {
-      const grid = document.getElementById('productCardsGrid');
+      const grid = document.getElementById('productCardsGrid') || document.getElementById('productsGrid');
       if (!grid) return;
       grid.innerHTML = '';
 
       const isOwner = (window.VIEWER_MODE === 'OWNER_EDITOR');
+      const allPins = (activeProjectData?.pinpoints || []);
 
       for (let s = 1; s <= 3; s++) {
         const prod = (products || []).find(p => p.slotIndex === s) || {
@@ -8729,6 +8746,18 @@ function buildHotspotsDOM() {
         const statusClass = isFilled ? 'status-complete' : 'status-empty';
         const statusLabel = isFilled ? 'ACTIVE (100%)' : 'EMPTY (0%)';
 
+        // Calculate attached pin membership
+        const matchingPins = allPins.filter(p => {
+          if (p.slotIndex === s) return true;
+          if (prod.id && (p.productId === prod.id || p.targetId === prod.id)) return true;
+          if (Array.isArray(p.productIds) && (p.productIds.includes(String(s)) || (prod.id && p.productIds.includes(prod.id)))) return true;
+          return false;
+        });
+
+        const pinBadgeHTML = (isOwner && matchingPins.length > 0)
+          ? `<span class="product-pin-membership-badge" onclick="event.stopPropagation(); locatePinForProduct('${prod.id || s}')" style="display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 800; color: #38bdf8; background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.4); padding: 2px 7px; border-radius: 4px; cursor: pointer;" title="Attached to ${matchingPins.length} Pin(s). Click to locate pin in 3D scene">📍 ${matchingPins.length === 1 ? '1 Pin' : matchingPins.length + ' Pins'}</span>`
+          : '';
+
         const card = document.createElement('div');
         card.className = `blank-product-card ${isFilled ? 'filled-card' : ''}`;
         card.onclick = () => {
@@ -8741,9 +8770,12 @@ function buildHotspotsDOM() {
 
         card.innerHTML = `
           <div>
-            <div class="product-card-header">
+            <div class="product-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
               <span class="product-card-slot">PRODUCT 0${s}</span>
-              <span class="product-card-status ${statusClass}">${statusLabel}</span>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                ${pinBadgeHTML}
+                <span class="product-card-status ${statusClass}">${statusLabel}</span>
+              </div>
             </div>
 
             <div class="product-card-img-box">

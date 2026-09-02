@@ -123,7 +123,7 @@ async function runP313Verification() {
 
     el.dispatchEvent(new PointerEvent('pointerdown', { clientX: startX, clientY: startY, pointerId: 1, bubbles: true }));
 
-    // 4. Simulate direct drag move 30px to right
+    // 4. Simulate direct drag move 35px
     const targetX = startX + 35;
     const targetY = startY - 20;
     el.dispatchEvent(new PointerEvent('pointermove', { clientX: targetX, clientY: targetY, pointerId: 1, bubbles: true }));
@@ -170,7 +170,6 @@ async function runP313Verification() {
   });
   await new Promise(r => setTimeout(r, 800));
 
-  // Trigger simulated ready state if needed or inspect review section
   await page.evaluate(() => {
     window.currentActiveBoothJobId = 'b3dj-test-p313';
     window.currentCandidateBoothAsset = {
@@ -218,7 +217,7 @@ async function runP313Verification() {
   console.log(`BOOTH_REGENERATE_JOB_ID: ${jobId}`);
 
   if (jobId) {
-    await new Promise(r => setTimeout(r, 3500)); // Wait for processing
+    await new Promise(r => setTimeout(r, 3500));
 
     // Apply Candidate
     const applyRes = await httpPost(`${BASE_URL}/api/projects/${PROJECT_ID}/booth-3d/jobs/${jobId}/accept`, {}, {
