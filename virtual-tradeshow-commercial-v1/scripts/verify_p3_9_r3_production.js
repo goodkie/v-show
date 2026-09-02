@@ -9,8 +9,7 @@ if (!fs.existsSync(ARTIFACT_DIR)) {
 
 const BASE_URL = 'https://v-show-commercial-v1-production.up.railway.app';
 const PROJECT_ID = 'prj-free-14e56240';
-const EDIT_TOKEN = 'eb12cb696ca30058b76df479b183fd58d0426f8d0a6aa260a927c3f3f5087a32';
-const TARGET_URL = `${BASE_URL}/?project=${PROJECT_ID}&editToken=${EDIT_TOKEN}`;
+const TARGET_URL = `${BASE_URL}/?projectId=${PROJECT_ID}`;
 
 async function runVerification() {
   console.log('🚀 Launching Chrome for P3.9-R3 Live Production Verification...');
@@ -28,34 +27,10 @@ async function runVerification() {
     await dialog.accept();
   });
 
-  // Login as goodkie.com@gmail.com to establish owner session
-  console.log('[0/7] Setting up owner session...');
-  await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
-  await page.evaluate(async () => {
-    try {
-      const resp = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'goodkie.com@gmail.com', password: 'password123' })
-      });
-      const data = await resp.json();
-      if (data.token) {
-        localStorage.setItem('auth_token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
-    } catch(e) {}
-  });
-
   console.log(`[1/7] Navigating to target booth: ${TARGET_URL}`);
   await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForSelector('#viewer-container', { timeout: 15000 });
-  await new Promise(r => setTimeout(r, 4000));
-
-  // Ensure owner studio toolbar is visible
-  await page.evaluate(() => {
-    const tb = document.getElementById('ownerStudioToolbar');
-    if (tb) tb.style.display = 'flex';
-  });
+  await new Promise(r => setTimeout(r, 4500));
 
   // 1. Initial Booth Load Verification
   const initialBannerVisible = await page.evaluate(() => {
@@ -129,6 +104,7 @@ async function runVerification() {
     return el && window.getComputedStyle(el).display !== 'none';
   });
 
+  const prodName = await page.evaluate(() => document.getElementById('opeName')?.value);
   const p3dTierText = await page.evaluate(() => document.getElementById('p3dResultTierBadge')?.textContent);
   const p3dProvText = await page.evaluate(() => document.getElementById('p3dResultProvenanceText')?.textContent);
   const isGeneratingVisible = await page.evaluate(() => {
@@ -137,6 +113,7 @@ async function runVerification() {
   });
 
   console.log('--- FINDING B: PRODUCT 3D TERMINAL STATE & HOLDER ---');
+  console.log(`EDITING_PRODUCT_NAME: ${prodName}`);
   console.log(`VISUAL_3D_RESULT_HOLDER_VISIBLE: ${p3dResultVisible} (Expected: true)`);
   console.log(`PRODUCT_3D_QUALITY_TIER: ${p3dTierText}`);
   console.log(`PRODUCT_3D_PROVENANCE: ${p3dProvText}`);

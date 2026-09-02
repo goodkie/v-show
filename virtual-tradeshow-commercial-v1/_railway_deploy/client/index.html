@@ -2318,11 +2318,6 @@
             <span><i class="fa-solid fa-crosshairs fa-spin"></i> Click anywhere on the booth to place the product pin.</span>
             <button onclick="cancelPlaceProductPinMode()" style="background: rgba(239,68,68,0.2); border: 1px solid #ef4444; color: #ef4444; border-radius: 20px; padding: 3px 12px; font-size: 11px; font-weight: 700; cursor: pointer;">Cancel (Esc)</button>
           </div>
-  
-          <canvas id="three-canvas"></canvas>
-          <!-- 3D Hotspot Tags Overlay -->
-          <div id="hotspot-layer"></div>
-          <div class="player-tag">🌐 Photo Immersive 360° Studio</div>
           <div class="res-pill" id="res-indicator">ULTRA-HD MASTER STUDIO</div>
 
           <!-- Owner Pin Edit Floating Panel (Visible when PIN_EDIT_MODE is active) -->
@@ -5202,6 +5197,48 @@
         scene.add(photoSphere);
 
         window.addEventListener('resize', onStudioResize);
+
+        // Pin Placement Canvas Raycaster (C11.16-P3.10)
+        canvas.addEventListener('pointerdown', (e) => {
+          if (!window.isPlacingProductPin && window.pinAuthoringState !== 'PLACING') return;
+          e.preventDefault();
+          e.stopPropagation();
+
+          const rect = canvas.getBoundingClientRect();
+          const mouse = new THREE.Vector2(
+            ((e.clientX - rect.left) / rect.width) * 2 - 1,
+            -((e.clientY - rect.top) / rect.height) * 2 + 1
+          );
+
+          const raycaster = new THREE.Raycaster();
+          raycaster.setFromCamera(mouse, camera);
+
+          let hitPoint = null;
+          let u = 0.5, v = 0.5;
+
+          if (photoSphere) {
+            const intersects = raycaster.intersectObject(photoSphere);
+            if (intersects.length > 0) {
+              hitPoint = intersects[0].point.clone();
+              const normal = hitPoint.clone().normalize();
+              u = (Math.atan2(normal.z, -normal.x) + Math.PI + 0.45) / (2 * Math.PI) % 1;
+              if (u < 0) u += 1;
+              v = 1 - (Math.acos(Math.max(-1, Math.min(1, normal.y))) / Math.PI);
+            }
+          }
+
+          if (!hitPoint) {
+            u = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            v = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+            const phi = (1 - v) * Math.PI;
+            const theta = (u * 2 * Math.PI) - Math.PI - 0.45;
+            const r = 450;
+            hitPoint = new THREE.Vector3(-r * Math.sin(phi) * Math.cos(theta), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(theta));
+          }
+
+          createInstantBlankPin({ u, v, hitPoint });
+        });
+  
         initDrawer3D();
         isThreeInitialized = true;
         requestAnimationFrame(studioAnimate);
@@ -5305,7 +5342,29 @@
 
       studioHotspotsList.forEach((spot, idx) => {
         let pin = null;
-        if (spot.pinType === 'CATALOG_PIN') {
+        
+        if (spot.pinType === 'BLANK_PIN' || spot.isDraft) {
+          el.className = 'hotspot-tag hotspot-blank-tag pin-owner-draggable';
+          el.innerHTML = `
+            <div style="background: rgba(56,189,248,0.25); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 13px;">
+              <i class="fa-solid fa-map-pin"></i>
+            </div>
+            <span class="hotspot-dot" style="background: #38bdf8; box-shadow: 0 0 10px #38bdf8;"></span>
+            <div class="hotspot-info">
+              <span class="hotspot-cat" style="color: #38bdf8;">EMPTY PRODUCT PIN</span>
+              <span class="hotspot-label-text" style="color: #cbd5e1; font-size: 11px;">No products yet</span>
+              <div style="margin-top: 5px; display: flex; gap: 5px; align-items: center;">
+                <button type="button" onclick="event.stopPropagation(); openPinChooserModal('${spot.id}')" style="background: linear-gradient(135deg,#0284c7,#2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 5px; padding: 3px 8px; font-size: 10px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                  <i class="fa-solid fa-plus"></i> Add Product
+                </button>
+                <button type="button" onclick="event.stopPropagation(); removeBlankPin('${spot.id}')" style="background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); border-radius: 5px; padding: 3px 6px; font-size: 10px; cursor: pointer;" title="Remove Pin">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        } else if (spot.pinType === 'CATALOG_PIN') {
+  
           pin = rawPinpoints.find(p => p.pinType === 'CATALOG_PIN' && (p.targetId === spot.targetId || p.catalogId === spot.targetId || p.id === spot.id));
         } else {
           pin = rawPinpoints.find(p => p.slotIndex === spot.slotIndex || p.productId === spot.targetId || p.targetId === spot.targetId || p.id === spot.id);
@@ -5349,6 +5408,273 @@
     window.currentEditingPin = null;
     window.pinSelectorSelectedProductIds = [];
     window.lastPlacedPinCoords = null;
+
+    
+    // ============================================================
+    // CANONICAL INSTANT BLANK PIN & PRODUCT ACCUMULATION (C11.16-P3.10)
+    // ============================================================
+    window.isPlacingProductPin = false;
+    window.pinAuthoringState = 'IDLE'; // IDLE | PLACING | BLANK_PIN | ADDING_PRODUCTS | ACTIVE_PIN
+    window.currentEditingPin = null;
+    window.currentBlankPinId = null;
+    window.pendingPinAttachment = null;
+    window.pinSelectorSelectedProductIds = [];
+    window.lastPlacedPinCoords = null;
+
+    function startPlaceProductPinMode() {
+      window.pinAuthoringState = 'PLACING';
+      window.isPlacingProductPin = true;
+      if (typeof controls !== 'undefined' && controls) controls.enabled = false;
+      const banner = document.getElementById('placePinBanner');
+      if (banner) banner.style.display = 'flex';
+      const container = document.getElementById('viewer-container');
+      if (container) container.classList.add('placing-pin-cursor');
+    }
+
+    function cancelPlaceProductPinMode() {
+      window.pinAuthoringState = 'IDLE';
+      window.isPlacingProductPin = false;
+      if (typeof controls !== 'undefined' && controls) controls.enabled = true;
+      const banner = document.getElementById('placePinBanner');
+      if (banner) banner.style.display = 'none';
+      const container = document.getElementById('viewer-container');
+      if (container) container.classList.remove('placing-pin-cursor');
+    }
+
+    // Escape listener
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && (window.isPlacingProductPin || window.pinAuthoringState === 'PLACING')) {
+        cancelPlaceProductPinMode();
+      }
+    });
+
+    // ── Instant Blank Pin Creator ─────────────────────────────────
+    function createInstantBlankPin(coords) {
+      cancelPlaceProductPinMode();
+      window.pinAuthoringState = 'BLANK_PIN';
+
+      const draftId = 'pin-blank-' + Date.now().toString(36);
+      window.currentBlankPinId = draftId;
+
+      const blankPin = {
+        id: draftId,
+        pinType: 'PRODUCT_PIN',
+        isDraft: true,
+        status: 'DRAFT',
+        publicVisible: false,
+        productIds: [],
+        productId: null,
+        targetId: null,
+        u: coords.u,
+        v: coords.v,
+        worldPos: coords.hitPoint,
+        createdAt: new Date().toISOString()
+      };
+
+      if (!window.activeProjectData) window.activeProjectData = {};
+      if (!window.activeProjectData.pinpoints) window.activeProjectData.pinpoints = [];
+      window.activeProjectData.pinpoints.push(blankPin);
+
+      // Add to studioHotspotsList
+      studioHotspotsList.push({
+        id: draftId,
+        pinType: 'BLANK_PIN',
+        isDraft: true,
+        targetId: draftId,
+        name: 'Empty Product Pin',
+        category: 'PRODUCT PIN',
+        worldPos: coords.hitPoint,
+        u: coords.u,
+        v: coords.v,
+        pinData: blankPin
+      });
+
+      buildHotspotsDOM();
+      updateFocusSpecForBlankPin(blankPin);
+
+      // Async server persistence
+      persistDraftPinToServer(blankPin);
+
+      if (window.showToast) window.showToast('📍 Blank pin placed! Click "+ Add Product" to attach items.', 'info');
+      return blankPin;
+    }
+
+    async function persistDraftPinToServer(blankPin) {
+      const pid = activeProjectId || window.activeProjectData?.id;
+      const token = p3dGetAuthToken();
+      if (!pid) return;
+
+      try {
+        const res = await fetch(`/api/projects/${pid}/pins`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+            'x-booth-edit-token': token
+          },
+          body: JSON.stringify({
+            id: blankPin.id,
+            pinType: 'PRODUCT_PIN',
+            status: 'DRAFT',
+            publicVisible: false,
+            productIds: [],
+            u: blankPin.u,
+            v: blankPin.v
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.pin?.id && data.pin.id !== blankPin.id) {
+            blankPin.id = data.pin.id;
+          }
+        }
+      } catch (err) {
+        console.warn('[Draft Pin Persistence Warn]', err.message);
+      }
+    }
+
+    async function removeBlankPin(pinId) {
+      if (!confirm('Remove this product pin?')) return;
+
+      // Local teardown
+      if (window.activeProjectData?.pinpoints) {
+        window.activeProjectData.pinpoints = window.activeProjectData.pinpoints.filter(p => p.id !== pinId && p.pinId !== pinId);
+      }
+      studioHotspotsList = studioHotspotsList.filter(s => s.id !== pinId);
+      buildHotspotsDOM();
+
+      const pid = activeProjectId || window.activeProjectData?.id;
+      const token = p3dGetAuthToken();
+      if (pid && pinId) {
+        try {
+          await fetch(`/api/projects/${pid}/pins/${pinId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token, 'x-booth-edit-token': token }
+          });
+        } catch(e) {}
+      }
+      if (window.showToast) window.showToast('Pin removed.', 'info');
+    }
+
+    function updateFocusSpecForBlankPin(pin) {
+      const titleEl = document.getElementById('focus-prod-title');
+      const catEl = document.getElementById('focus-prod-cat');
+      const descEl = document.getElementById('focus-prod-desc');
+      const actionBtn = document.getElementById('focus-prod-action');
+      const removeBtn = document.getElementById('focus-prod-remove-pin');
+
+      if (titleEl) titleEl.textContent = 'Empty Product Pin';
+      if (catEl) catEl.textContent = 'PRODUCT PIN (NO PRODUCTS)';
+      if (descEl) descEl.textContent = 'This pin has no products attached yet. Click "+ Add Product" to link a product or create a new one.';
+      if (actionBtn) {
+        actionBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Product';
+        actionBtn.onclick = () => openPinChooserModal(pin.id);
+        actionBtn.style.display = 'inline-flex';
+      }
+    }
+
+    // ── Pin Chooser Modal Actions ─────────────────────────────────
+    function openPinChooserModal(pinId) {
+      window.currentEditingPinId = pinId;
+      const modal = document.getElementById('pinChooserModal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closePinChooserModal() {
+      const modal = document.getElementById('pinChooserModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function pinChooserActionAddNew() {
+      const pinId = window.currentEditingPinId;
+      closePinChooserModal();
+      
+      const pin = (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId);
+      window.pendingPinAttachment = {
+        pinId: pinId,
+        coords: pin ? { u: pin.u, v: pin.v } : (window.lastPlacedPinCoords || { u: 0.5, v: 0.5 })
+      };
+
+      // Determine next product slot index
+      const prods = window.activeProjectData?.products || [];
+      const nextSlot = prods.length + 1;
+      openOwnerProductEditor(nextSlot);
+    }
+
+    function pinChooserActionSelectExisting() {
+      const pinId = window.currentEditingPinId;
+      closePinChooserModal();
+      const pin = (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId);
+      openProductPinSelectorModal(pin || { id: pinId, ...(window.lastPlacedPinCoords || { u: 0.5, v: 0.5 }) });
+    }
+
+    // ── 3D Tab Direct Source Image Handlers ────────────────────────
+    function handleP3dTabSourceUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target.result;
+        
+        // Update 3D tab preview
+        const previewImg = document.getElementById('p3dTabSourceImgPreview');
+        const emptyBox = document.getElementById('p3dTabSourceEmptyBox');
+        const filledBox = document.getElementById('p3dTabSourceFilledBox');
+        if (previewImg) previewImg.src = dataUrl;
+        if (emptyBox) emptyBox.style.display = 'none';
+        if (filledBox) filledBox.style.display = 'flex';
+
+        // Synchronize canonical Product Image
+        const opeImgPreview = document.getElementById('opeImagePreview');
+        const opeRemoveBtn = document.getElementById('opeBtnRemoveImg');
+        if (opeImgPreview) {
+          opeImgPreview.src = dataUrl;
+          opeImgPreview.style.display = 'block';
+        }
+        if (opeRemoveBtn) opeRemoveBtn.style.display = 'inline-flex';
+
+        // Transfer file to opeImageInput for multipart upload
+        try {
+          const dt = new DataTransfer();
+          dt.items.add(file);
+          const opeInput = document.getElementById('opeImageInput');
+          if (opeInput) opeInput.files = dt.files;
+        } catch(err) {}
+
+        // Enable Generate CTA
+        const ctaBtn = document.getElementById('p3dMainCtaBtn');
+        const ctaText = document.getElementById('p3dMainCtaText');
+        if (ctaBtn) ctaBtn.disabled = false;
+        if (ctaText) ctaText.textContent = 'Generate 3D Model';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeP3dTabSourceImage() {
+      const emptyBox = document.getElementById('p3dTabSourceEmptyBox');
+      const filledBox = document.getElementById('p3dTabSourceFilledBox');
+      const previewImg = document.getElementById('p3dTabSourceImgPreview');
+      const sourceInput = document.getElementById('p3dTabSourceInput');
+      if (previewImg) previewImg.src = '';
+      if (sourceInput) sourceInput.value = '';
+      if (emptyBox) emptyBox.style.display = 'flex';
+      if (filledBox) filledBox.style.display = 'none';
+
+      // Clear canonical Product Image
+      const opeImgPreview = document.getElementById('opeImagePreview');
+      const opeInput = document.getElementById('opeImageInput');
+      const opeRemoveBtn = document.getElementById('opeBtnRemoveImg');
+      if (opeImgPreview) { opeImgPreview.src = ''; opeImgPreview.style.display = 'none'; }
+      if (opeInput) opeInput.value = '';
+      if (opeRemoveBtn) opeRemoveBtn.style.display = 'none';
+
+      // Disable Generate CTA
+      const ctaBtn = document.getElementById('p3dMainCtaBtn');
+      const ctaText = document.getElementById('p3dMainCtaText');
+      if (ctaBtn) ctaBtn.disabled = true;
+      if (ctaText) ctaText.textContent = 'Upload a product image first';
+    }
 
     // 1. Canonical Pin Authoring State Engine (C11.16-P3.9-R3)
     window.pinAuthoringState = 'IDLE'; // IDLE | PLACING | SELECTING_PRODUCTS | SAVING
@@ -6383,6 +6709,32 @@
           const selectedCatalogs = Array.from(document.querySelectorAll('.ope-catalog-cb:checked')).map(cb => cb.value);
           const prodId = data.product?.id || `prod-slot-${slot}`;
           await syncProductCatalogMemberships(prodId, selectedCatalogs);
+
+          // Attach product to pending pin if creating from blank pin (C11.16-P3.10)
+          if (window.pendingPinAttachment && window.pendingPinAttachment.pinId) {
+            const pinId = window.pendingPinAttachment.pinId;
+            const pin = (activeProjectData.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId);
+            if (pin) {
+              pin.isDraft = false;
+              pin.status = 'ACTIVE';
+              pin.publicVisible = true;
+              if (!Array.isArray(pin.productIds)) pin.productIds = [];
+              if (!pin.productIds.includes(prodId)) pin.productIds.push(prodId);
+              pin.productId = pin.productIds[0];
+              pin.targetId = pin.productId;
+              pin.pinType = pin.productIds.length > 1 ? 'PRODUCT_GROUP_PIN' : 'PRODUCT_PIN';
+
+              try {
+                await fetch(`/api/projects/${activeProjectId}/pins/${pinId}`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'x-booth-edit-token': token },
+                  body: JSON.stringify(pin)
+                });
+              } catch(e) {}
+            }
+            window.pendingPinAttachment = null;
+          }
+  
 
           setupStudioProducts(activeProjectData);
           closeOwnerProductEditor();
@@ -8813,6 +9165,7 @@ function p3dStartPolling(slot) {
           if (prod) prod.product3d = updatedProd3d;
         }
 
+        if (typeof setProductMediaMode === 'function') setProductMediaMode('THREE_D', true);
         const currentProd = (window.activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slot));
         await renderProduct3dSection(slot, { ...currentProd, product3d: updatedProd3d });
         if (window.showToast) window.showToast('✅ 3D Model Ready!', 'success');
@@ -8907,17 +9260,6 @@ function product3dRegenerate() {
 }
 
 function openP3dConfirmModal(action, message) {
-  setTimeout(() => {
-    const cBtn = document.getElementById('p3dConfirmBtn') || document.getElementById('p3dConfirmOkBtn');
-    if (cBtn && !cBtn._hasBound) {
-      cBtn._hasBound = true;
-      cBtn.onclick = null;
-      cBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        executeProduct3dConversion();
-      });
-    }
-  }, 10);
   window._p3dState.confirmPendingAction = action;
   let modal = document.getElementById('p3dConfirmModal');
   if (!modal) {
@@ -8930,6 +9272,14 @@ function openP3dConfirmModal(action, message) {
   }
   const msgEl = document.getElementById('p3dConfirmMessage') || document.getElementById('p3dConfirmMsg');
   if (msgEl) msgEl.innerHTML = message;
+
+  const cBtn = document.getElementById('p3dConfirmBtn') || document.getElementById('p3dConfirmOkBtn');
+  if (cBtn) {
+    cBtn.onclick = (e) => {
+      e.preventDefault();
+      p3dConfirmExecute();
+    };
+  }
   modal.style.display = 'flex';
 }
 
