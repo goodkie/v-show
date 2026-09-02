@@ -6173,750 +6173,45 @@
       if (pin) {
         window.currentEditingPinTarget = {
           type: pin.pinType || 'PRODUCT_PIN',
-          id: pin.id || pin.pinId || '1'
+          id: pin.id || pin.targetId || (pin.slotIndex ? String(pin.slotIndex) : String(pin.id || 1)),
+          pinData: pin
         };
-        syncActivePinInputs();
-        const panel = document.getElementById('pinPositionEditorPanel');
-        if (panel) panel.style.display = 'block';
+        if (!window.PIN_EDIT_MODE) togglePinEditMode();
       }
     }
 
-    function openPinChooserModalFromContentEditor() {
-      const pin = window.currentEditingContentPin;
-      const pinId = pin?.id || pin?.pinId || window.currentEditingPinId;
-      closeProductPinContentEditorModal();
-      openPinChooserModal(pinId);
-    }
-
-    function ppceManageCatalogProducts() {
-      closeProductPinContentEditorModal();
-      if (typeof openCatalogManager === 'function') openCatalogManager();
-    }
-
-    window.openProductPinContentEditorModal = openProductPinContentEditorModal;
-    window.closeProductPinContentEditorModal = closeProductPinContentEditorModal;
-    window.renderProductPinContentEditor = renderProductPinContentEditor;
-    window.saveProductPinContentEditorChanges = saveProductPinContentEditorChanges;
-    window.ppceRemoveProductFromPin = ppceRemoveProductFromPin;
-    window.ppceRemoveCurrentPin = ppceRemoveCurrentPin;
-    window.ppceOpenPositionEditor = ppceOpenPositionEditor;
-    window.openPinChooserModalFromContentEditor = openPinChooserModalFromContentEditor;
-    window.ppceManageCatalogProducts = ppceManageCatalogProducts;
-
-    window.openPinChooserModal = openPinChooserModal;
-    window.closePinChooserModal = closePinChooserModal;
-    window.pinChooserActionAddNew = pinChooserActionAddNew;
-    window.pinChooserActionSelectExisting = pinChooserActionSelectExisting;
-    window.handleP3dTabSourceUpload = handleP3dTabSourceUpload;
-    window.removeP3dTabSourceImage = removeP3dTabSourceImage;
-    window.createInstantBlankPin = createInstantBlankPin;
-    window.removeBlankPin = removeBlankPin;
-
-    function removeP3dTabSourceImage() {
-      const emptyBox = document.getElementById('p3dTabSourceEmptyBox');
-      const filledBox = document.getElementById('p3dTabSourceFilledBox');
-      const previewImg = document.getElementById('p3dTabSourceImgPreview');
-      const sourceInput = document.getElementById('p3dTabSourceInput');
-      if (previewImg) previewImg.src = '';
-      if (sourceInput) sourceInput.value = '';
-      if (emptyBox) emptyBox.style.display = 'flex';
-      if (filledBox) filledBox.style.display = 'none';
-
-      // Clear canonical Product Image
-      const opeImgPreview = document.getElementById('opeImagePreview');
-      const opeInput = document.getElementById('opeImageInput');
-      const opeRemoveBtn = document.getElementById('opeBtnRemoveImg');
-      if (opeImgPreview) { opeImgPreview.src = ''; opeImgPreview.style.display = 'none'; }
-      if (opeInput) opeInput.value = '';
-      if (opeRemoveBtn) opeRemoveBtn.style.display = 'none';
-
-      // Disable Generate CTA
-      const ctaBtn = document.getElementById('p3dMainCtaBtn');
-      const ctaText = document.getElementById('p3dMainCtaText');
-      if (ctaBtn) ctaBtn.disabled = true;
-      if (ctaText) ctaText.textContent = 'Upload a product image first';
-    }
-
-    // 1. Canonical Pin Authoring State Engine (C11.16-P3.9-R3)
-    window.pinAuthoringState = 'IDLE'; // IDLE | PLACING | SELECTING_PRODUCTS | SAVING
-    window.isPlacingProductPin = false;
-    window.currentEditingPin = null;
-    window.pinSelectorSelectedProductIds = [];
-    window.lastPlacedPinCoords = null;
-
-    function startPlaceProductPinMode() {
-      window.pinAuthoringState = 'PLACING';
-      window.isPlacingProductPin = true;
-      if (typeof controls !== 'undefined' && controls) controls.enabled = false;
-      const banner = document.getElementById('placePinBanner');
-      if (banner) banner.style.display = 'flex';
-      const container = document.getElementById('viewer-container');
-      if (container) container.classList.add('placing-pin-cursor');
-    }
-
-    function cancelPlaceProductPinMode() {
-      window.pinAuthoringState = 'IDLE';
-      window.isPlacingProductPin = false;
-      if (typeof controls !== 'undefined' && controls) controls.enabled = true;
-      const banner = document.getElementById('placePinBanner');
-      if (banner) banner.style.display = 'none';
-      const container = document.getElementById('viewer-container');
-      if (container) container.classList.remove('placing-pin-cursor');
-      window.pinFirstPendingCoords = null;
-    }
-
-    // Handle Escape key to cancel placement
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && (window.isPlacingProductPin || window.pinAuthoringState === 'PLACING')) {
-        cancelPlaceProductPinMode();
-      }
-    });
-
-    // 2. Open Product Pin Target Selector Modal
-    function openProductPinSelectorModal(pinDataOrCoords) {
-      cancelPlaceProductPinMode();
-      const modal = document.getElementById('productPinSelectorModal');
-      if (!modal) return;
-
-      const isEdit = !!(pinDataOrCoords && (pinDataOrCoords.id || pinDataOrCoords.pinId));
-      window.currentEditingPin = isEdit ? pinDataOrCoords : null;
-      window.lastPlacedPinCoords = isEdit ? { u: pinDataOrCoords.u, v: pinDataOrCoords.v, yaw: pinDataOrCoords.yaw, pitch: pinDataOrCoords.pitch } : (pinDataOrCoords || { u: 0.5, v: 0.5 });
-
-      document.getElementById('pinSelectorModalTitle').textContent = isEdit ? 'Edit Product Pin' : 'Add Product Pin';
-      document.getElementById('btnDeletePinSelector').style.display = isEdit ? 'inline-block' : 'none';
-
-      // Pre-select products
-      if (isEdit) {
-        if (pinDataOrCoords.pinType === 'PRODUCT_GROUP_PIN' && Array.isArray(pinDataOrCoords.productIds)) {
-          window.pinSelectorSelectedProductIds = [...pinDataOrCoords.productIds];
-        } else if (pinDataOrCoords.targetId || pinDataOrCoords.productId) {
-          window.pinSelectorSelectedProductIds = [pinDataOrCoords.targetId || pinDataOrCoords.productId];
-        } else {
-          window.pinSelectorSelectedProductIds = [];
-        }
-        document.getElementById('pinGroupTitleInput').value = pinDataOrCoords.title || pinDataOrCoords.label || 'Featured Products';
-      } else {
-        window.pinSelectorSelectedProductIds = [];
-        document.getElementById('pinGroupTitleInput').value = 'Featured Products';
-      }
-
-      const searchInput = document.getElementById('pinProductSearchInput');
-      if (searchInput) searchInput.value = '';
-
-      renderPinProductSelectList();
-      updatePinSelectionSummary();
-      modal.style.display = 'flex';
-    }
-
-    function closeProductPinSelectorModal() {
-      const modal = document.getElementById('productPinSelectorModal');
-      if (modal) modal.style.display = 'none';
-      window.currentEditingPin = null;
-    }
-
-    function setPinGroupTitlePreset(presetText) {
-      const input = document.getElementById('pinGroupTitleInput');
-      if (input) input.value = presetText;
-    }
-
-    function filterPinProductList(query) {
-      renderPinProductSelectList(query);
-    }
-
-    function renderPinProductSelectList(query = '') {
-      const listContainer = document.getElementById('pinProductSelectList');
-      if (!listContainer) return;
-
-      const allProducts = window.activeProjectData?.products || [];
-      const q = (query || '').toLowerCase().trim();
-
-      const filtered = allProducts.filter(p => {
-        if (!p.name || p.name.trim() === '') return false;
-        if (!q) return true;
-        const nameMatch = (p.name || '').toLowerCase().includes(q);
-        const catMatch = (p.category || '').toLowerCase().includes(q);
-        const skuMatch = (p.sku || '').toLowerCase().includes(q);
-        return nameMatch || catMatch || skuMatch;
-      });
-
-      if (filtered.length === 0) {
-        listContainer.innerHTML = `
-          <div style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px dashed rgba(255,255,255,0.1);">
-            <i class="fa-solid fa-box-open" style="font-size: 24px; color: #64748b; margin-bottom: 8px; display: block;"></i>
-            ${allProducts.length === 0 ? 'No products registered yet. Click "Add Product" in the toolbar first.' : 'No matching products found.'}
-          </div>
-        `;
-        return;
-      }
-
-      listContainer.innerHTML = filtered.map(prod => {
-        const pId = prod.id || `prod-slot-${prod.slotIndex}`;
-        const isSelected = window.pinSelectorSelectedProductIds.includes(pId) || window.pinSelectorSelectedProductIds.includes(prod.slotIndex);
-        const orderIdx = window.pinSelectorSelectedProductIds.indexOf(pId);
-        const is3dReady = prod.product3d?.status === 'READY' && !!prod.product3d?.glbUrl;
-        const thumbUrl = prod.imageUrl || '/assets/product-placeholder.jpg';
-
-        return `
-          <div style="background: ${isSelected ? 'rgba(56, 189, 248, 0.12)' : 'rgba(255,255,255,0.03)'}; border: 1px solid ${isSelected ? '#38bdf8' : 'rgba(255,255,255,0.08)'}; border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: all 0.2s;">
-            <label style="display: flex; align-items: center; gap: 10px; flex: 1; cursor: pointer; min-width: 0;">
-              <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="togglePinProductSelection('${pId}')" style="width: 16px; height: 16px; accent-color: #0284c7; cursor: pointer;">
-              <div style="width: 42px; height: 42px; border-radius: 6px; overflow: hidden; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-                <img src="${thumbUrl}" alt="${prod.name}" style="width: 100%; height: 100%; object-fit: contain !important; object-position: center;">
-              </div>
-              <div style="flex: 1; min-width: 0;">
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <span style="font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${prod.name}</span>
-                  ${is3dReady ? '<span style="font-size: 8.5px; font-weight: 800; background: rgba(56,189,248,0.2); color: #38bdf8; border: 1px solid #38bdf8; padding: 1px 4px; border-radius: 3px;">3D</span>' : ''}
-                </div>
-                <div style="font-size: 10px; color: #94a3b8; display: flex; gap: 8px;">
-                  <span>${prod.category || 'Product'}</span>
-                  ${prod.price ? `<span>• ${prod.price}</span>` : ''}
-                </div>
-              </div>
-            </label>
-
-            ${isSelected ? `
-              <div style="display: flex; gap: 4px; align-items: center;">
-                ${window.pinSelectorSelectedProductIds.length > 1 ? `
-                  <button type="button" onclick="movePinProductOrder(${orderIdx}, -1)" ${orderIdx === 0 ? 'disabled' : ''} style="width: 24px; height: 24px; border-radius: 4px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 10px; cursor: ${orderIdx === 0 ? 'default' : 'pointer'}; opacity: ${orderIdx === 0 ? 0.3 : 1}; display: flex; align-items: center; justify-content: center;" title="Move Up">
-                    <i class="fa-solid fa-arrow-up"></i>
-                  </button>
-                  <button type="button" onclick="movePinProductOrder(${orderIdx}, 1)" ${orderIdx === window.pinSelectorSelectedProductIds.length - 1 ? 'disabled' : ''} style="width: 24px; height: 24px; border-radius: 4px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 10px; cursor: ${orderIdx === window.pinSelectorSelectedProductIds.length - 1 ? 'default' : 'pointer'}; opacity: ${orderIdx === window.pinSelectorSelectedProductIds.length - 1 ? 0.3 : 1}; display: flex; align-items: center; justify-content: center;" title="Move Down">
-                    <i class="fa-solid fa-arrow-down"></i>
-                  </button>
-                  <span style="font-size: 10px; font-weight: 800; color: #38bdf8; min-width: 16px; text-align: center;">#${orderIdx + 1}</span>
-                ` : ''}
-                ${window.currentEditingPin ? `
-                  <button type="button" onclick="removeProductFromPin('${window.currentEditingPin.id || window.currentEditingPin.pinId}', '${pId}')" style="width: 24px; height: 24px; border-radius: 4px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Remove from this Pin (Keeps Product in Catalog)">
-                    <i class="fa-solid fa-trash-can"></i>
-                  </button>
-                ` : ''}
-              </div>
-            ` : ''}
-          </div>
-        `;
-      }).join('');
-    }
-
-    function togglePinProductSelection(pId) {
-      const idx = window.pinSelectorSelectedProductIds.indexOf(pId);
-      if (idx >= 0) {
-        window.pinSelectorSelectedProductIds.splice(idx, 1);
-      } else {
-        if (window.pinSelectorSelectedProductIds.length >= 20) {
-          if (window.showToast) window.showToast('Maximum 20 products per pin.', 'warning');
-          return;
-        }
-        window.pinSelectorSelectedProductIds.push(pId);
-      }
-      renderPinProductSelectList(document.getElementById('pinProductSearchInput')?.value || '');
-      updatePinSelectionSummary();
-    }
-
-    function movePinProductOrder(currentIdx, delta) {
-      const targetIdx = currentIdx + delta;
-      if (targetIdx < 0 || targetIdx >= window.pinSelectorSelectedProductIds.length) return;
-      const item = window.pinSelectorSelectedProductIds.splice(currentIdx, 1)[0];
-      window.pinSelectorSelectedProductIds.splice(targetIdx, 0, item);
-      renderPinProductSelectList(document.getElementById('pinProductSearchInput')?.value || '');
-    }
-
-    function updatePinSelectionSummary() {
-      const count = window.pinSelectorSelectedProductIds.length;
-      const countText = document.getElementById('pinSelectedCountText');
-      const typeBadge = document.getElementById('pinTypeBadge');
-      const groupTitleSection = document.getElementById('pinGroupTitleSection');
-      const btnSave = document.getElementById('btnSavePinSelector');
-
-      if (countText) countText.textContent = `${count} Product${count === 1 ? '' : 's'} Selected`;
-
-      if (count === 0) {
-        if (typeBadge) {
-          typeBadge.textContent = 'NO SELECTION';
-          typeBadge.style.background = '#64748b';
-        }
-        if (groupTitleSection) groupTitleSection.style.display = 'none';
-        if (btnSave) btnSave.disabled = true;
-      } else if (count === 1) {
-        if (typeBadge) {
-          typeBadge.textContent = 'SINGLE PRODUCT PIN';
-          typeBadge.style.background = '#0284c7';
-        }
-        if (groupTitleSection) groupTitleSection.style.display = 'none';
-        if (btnSave) btnSave.disabled = false;
-      } else {
-        if (typeBadge) {
-          typeBadge.textContent = `PRODUCT COLLECTION (${count})`;
-          typeBadge.style.background = 'linear-gradient(135deg, #0284c7, #7c3aed)';
-        }
-        if (groupTitleSection) groupTitleSection.style.display = 'block';
-        if (btnSave) btnSave.disabled = false;
-      }
-    }
-
-    
-    window.openProductPinSelectorModal = openProductPinSelectorModal;
-    window.closeProductPinSelectorModal = closeProductPinSelectorModal;
-    window.togglePinProductSelection = togglePinProductSelection;
-    window.saveProductPinSelection = saveProductPinSelection;
-
-// 3. Save Single or Multi-Product Pin
-    async function saveProductPinSelection() {
-      if (window.pinSelectorSelectedProductIds.length === 0) {
-        alert('Please select at least one product for this pin.');
-        return;
-      }
-
-      const pid = activeProjectId || window.activeProjectData?.id;
-      const token = p3dGetAuthToken();
-      const isEdit = !!(window.currentEditingPin && (window.currentEditingPin.id || window.currentEditingPin.pinId));
-      const pinId = isEdit ? (window.currentEditingPin.id || window.currentEditingPin.pinId) : null;
-
-      const isGroup = window.pinSelectorSelectedProductIds.length >= 2;
-      const pinType = isGroup ? 'PRODUCT_GROUP_PIN' : 'PRODUCT_PIN';
-      const title = isGroup ? (document.getElementById('pinGroupTitleInput')?.value || 'Featured Products').trim() : '';
-      const targetId = isGroup ? null : window.pinSelectorSelectedProductIds[0];
-
-      const coords = window.lastPlacedPinCoords || { u: 0.5, v: 0.5, yaw: 0, pitch: 0 };
-
-      const payload = {
-        pinType,
-        targetId,
-        productId: targetId,
-        productIds: isGroup ? window.pinSelectorSelectedProductIds : [],
-        title: isGroup ? title : undefined,
-        label: isGroup ? title : undefined,
-        u: coords.u,
-        v: coords.v,
-        yaw: coords.yaw,
-        pitch: coords.pitch
-      };
-
-      try {
-        let url = isEdit ? `/api/projects/${pid}/pins/${pinId}` : `/api/projects/${pid}/pins`;
-        let method = isEdit ? 'PUT' : 'POST';
-
-        let res = await fetch(url, {
-          method,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token,
-            'x-booth-edit-token': token
-          },
-          body: JSON.stringify(payload)
-        });
-
-        if (method === 'PUT' && (res.status === 404 || !res.ok)) {
-          res = await fetch(`/api/projects/${pid}/pins`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + token,
-              'x-booth-edit-token': token
-            },
-            body: JSON.stringify({ ...payload, id: pinId })
-          });
-        }
-
-        const data = await res.json();
-        if (!res.ok) {
-          alert('Failed to save pin: ' + (data.error || 'Unknown error'));
-          return;
-        }
-
-        if (data.pins) window.activeProjectData.pinpoints = data.pins;
-        else if (data.pin) {
-          if (!window.activeProjectData.pinpoints) window.activeProjectData.pinpoints = [];
-          const idx = window.activeProjectData.pinpoints.findIndex(p => p.id === pinId || p.pinId === pinId || p.id === data.pin.id);
-          if (idx >= 0) window.activeProjectData.pinpoints[idx] = data.pin;
-          else window.activeProjectData.pinpoints.push(data.pin);
-        }
-        else if (data.pin) {
-          if (!window.activeProjectData.pinpoints) window.activeProjectData.pinpoints = [];
-          if (isEdit) {
-            const idx = window.activeProjectData.pinpoints.findIndex(p => p.id === pinId || p.pinId === pinId);
-            if (idx >= 0) window.activeProjectData.pinpoints[idx] = data.pin;
-          } else {
-            window.activeProjectData.pinpoints.push(data.pin);
-          }
-        }
-
-        closeProductPinSelectorModal();
-        setupStudioProducts(window.activeProjectData);
-        if (window.showToast) window.showToast(`✅ ${isGroup ? 'Product Collection Pin' : 'Product Pin'} saved!`, 'success');
-
-      } catch (err) {
-        alert('Save pin request failed: ' + err.message);
-      }
-    }
-
-    // 4. Delete Pin
-    async function deleteCurrentEditingPin() {
-      if (!window.currentEditingPin) return;
-      if (!confirm('Are you sure you want to remove this pin?')) return;
-
-      const pid = activeProjectId || window.activeProjectData?.id;
-      const pinId = window.currentEditingPin.id || window.currentEditingPin.pinId;
-      const token = p3dGetAuthToken();
-
-      try {
-        const res = await fetch(`/api/projects/${pid}/pins/${pinId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': 'Bearer ' + token,
-            'x-booth-edit-token': token
-          }
-        });
-        const data = await res.json();
-        if (data.pins) window.activeProjectData.pinpoints = data.pins;
-        else {
-          window.activeProjectData.pinpoints = (window.activeProjectData.pinpoints || []).filter(p => p.id !== pinId && p.pinId !== pinId);
-        }
-
-        closeProductPinSelectorModal();
-        setupStudioProducts(window.activeProjectData);
-        if (window.showToast) window.showToast('Pin removed.', 'info');
-      } catch (err) {
-        alert('Delete pin failed: ' + err.message);
-      }
-    }
-
-    // 5. Public Product Group Modal (Viewer)
-    function openProductGroupModal(groupPinId) {
-      const pinpoints = window.activeProjectData?.pinpoints || [];
-      const pin = pinpoints.find(p => p.id === groupPinId || p.pinId === groupPinId);
-      if (!pin) return;
-
-      const allProducts = window.activeProjectData?.products || [];
-      const groupProducts = (pin.productIds || []).map(pid =>
-        allProducts.find(p => p.id === pid || p.slotIndex === pid || `prod-slot-${p.slotIndex}` === pid)
-      ).filter(Boolean);
-
-      const titleEl = document.getElementById('productGroupModalTitle');
-      const subEl = document.getElementById('productGroupModalSubtitle');
-      const grid = document.getElementById('productGroupGrid');
-
-      if (titleEl) titleEl.textContent = pin.title || pin.label || 'Featured Products';
-      if (subEl) subEl.textContent = `${groupProducts.length} Product${groupProducts.length === 1 ? '' : 's'} in this display`;
-
-      if (grid) {
-        grid.innerHTML = groupProducts.map((prod, idx) => {
-          const is3dReady = prod.product3d?.status === 'READY' && !!prod.product3d?.glbUrl;
-          const thumbUrl = prod.imageUrl || '/assets/product-placeholder.jpg';
-
-          return `
-            <div class="product-group-card" style="background: rgba(4, 13, 31, 0.9); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
-              <div class="group-pin-img-box" style="width: 100%; height: 160px; border-radius: 8px; overflow: hidden; background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; position: relative;">
-                <img src="${thumbUrl}" alt="${prod.name}" style="width: 100%; height: 100%; object-fit: contain !important; object-position: center;">
-                ${is3dReady ? '<span style="position: absolute; top: 8px; right: 8px; background: rgba(2, 132, 199, 0.85); color: #fff; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 4px; border: 1px solid #38bdf8;"><i class="fa-solid fa-cube"></i> 3D READY</span>' : ''}
-              </div>
-              <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
-                <span style="font-size: 8.5px; font-weight: 800; color: #00c2ff; text-transform: uppercase;">${prod.category || 'EXHIBIT ITEM'}</span>
-                <span style="font-size: 13px; font-weight: 800; color: #fff;">${prod.name}</span>
-                ${prod.price ? `<span style="font-size: 11px; font-weight: 700; color: #38bdf8;">${prod.price}</span>` : ''}
-                <p style="font-size: 10.5px; color: #94a3b8; line-height: 1.4; margin: 2px 0 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${prod.shortDescription || prod.description || ''}</p>
-              </div>
-              <div style="display: flex; gap: 6px; margin-top: auto;">
-                <button type="button" onclick="closeProductGroupModal(); openPublicProductDetailFromGroup(${prod.slotIndex || idx + 1}, '${groupPinId}')" style="flex: 1; padding: 6px 10px; font-size: 11px; font-weight: 700; background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.4); color: #38bdf8; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
-                  <i class="fa-solid fa-circle-info"></i> View Product
-                </button>
-                ${is3dReady ? `
-                  <button type="button" onclick="closeProductGroupModal(); openP3dViewerModal('${prod.product3d.glbUrl}', '${prod.name}')" style="flex: 1; padding: 6px 10px; font-size: 11px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; color: #fff; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
-                    <i class="fa-solid fa-cube"></i> View in 3D
-                  </button>
-                ` : ''}
-              </div>
-            </div>
-          `;
-        }).join('');
-      }
-
-      document.getElementById('productGroupModal').style.display = 'flex';
-    }
-
-    function closeProductGroupModal() {
-      const modal = document.getElementById('productGroupModal');
-      if (modal) modal.style.display = 'none';
-    }
-
-    function openPublicProductDetailFromGroup(slotIdx, groupPinId) {
-      onProductSlotClicked(slotIdx - 1);
-      // Add Back to Collection button inside drawer
-      const drawerBody = document.querySelector('#drawer-prod-inspect .drawer-body');
-      if (drawerBody) {
-        let backBtn = document.getElementById('btnBackToGroupPin');
-        if (!backBtn) {
-          backBtn = document.createElement('div');
-          backBtn.id = 'btnBackToGroupPin';
-          backBtn.style.marginBottom = '12px';
-          drawerBody.prepend(backBtn);
-        }
-        backBtn.innerHTML = `
-          <button type="button" onclick="closeProductDrawer(); openProductGroupModal('${groupPinId}')" style="padding: 6px 12px; font-size: 11px; font-weight: 700; background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.35); color: #38bdf8; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
-            <i class="fa-solid fa-arrow-left"></i> Back to Featured Products
-          </button>
-        `;
-      }
-    }
-
-    // 6. Pins Manager Modal
-    function openPinManagerModal() {
-      const modal = document.getElementById('pinManagerModal');
-      if (!modal) return;
-
-      const pinpoints = window.activeProjectData?.pinpoints || [];
-      const countEl = document.getElementById('pinManagerCountText');
-      if (countEl) countEl.textContent = `${pinpoints.length} Pin${pinpoints.length === 1 ? '' : 's'} Placed`;
-
-      const listEl = document.getElementById('pinManagerList');
-      if (listEl) {
-        if (pinpoints.length === 0) {
-          listEl.innerHTML = '<div style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12px;">No pins placed on this booth yet. Click "Add New Pin" to create one.</div>';
-        } else {
-          listEl.innerHTML = pinpoints.map(pin => {
-            const isGroup = pin.pinType === 'PRODUCT_GROUP_PIN';
-            const isCat = pin.pinType === 'CATALOG_PIN';
-            const typeName = isGroup ? 'Product Collection' : (isCat ? 'Catalog' : 'Product Pin');
-            const icon = isGroup ? 'fa-layer-group' : (isCat ? 'fa-book-open' : 'fa-box');
-            const color = isGroup ? '#38bdf8' : (isCat ? '#c084fc' : '#38bdf8');
-            const title = pin.title || pin.label || (isGroup ? 'Featured Products' : 'Product Pin');
-            const countInfo = isGroup ? `${(pin.productIds || []).length} Products` : (isCat ? 'Catalog Collection' : '1 Product');
-
-            return `
-              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <div style="width: 32px; height: 32px; border-radius: 6px; background: rgba(56,189,248,0.1); border: 1px solid ${color}; display: flex; align-items: center; justify-content: center; color: ${color}; font-size: 13px;">
-                    <i class="fa-solid ${icon}"></i>
-                  </div>
-                  <div>
-                    <div style="font-size: 12.5px; font-weight: 700; color: #fff;">${title}</div>
-                    <div style="font-size: 10px; color: #94a3b8;">${typeName} • ${countInfo} (u: ${(pin.u||0.5).toFixed(2)}, v: ${(pin.v||0.5).toFixed(2)})</div>
-                  </div>
-                </div>
-                <div style="display: flex; gap: 6px;">
-                  <button type="button" onclick="closePinManagerModal(); openProductPinSelectorModal(window.activeProjectData.pinpoints.find(p=>p.id==='${pin.id}'||p.pinId==='${pin.id}'))" style="padding: 5px 10px; font-size: 11px; font-weight: 700; background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3); color: #38bdf8; border-radius: 6px; cursor: pointer;">
-                    <i class="fa-solid fa-pen"></i> Edit
-                  </button>
-                  <button type="button" onclick="deletePinFromManager('${pin.id || pin.pinId}')" style="padding: 5px 10px; font-size: 11px; font-weight: 700; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; border-radius: 6px; cursor: pointer;">
-                    <i class="fa-solid fa-trash-can"></i>
-                  </button>
-                </div>
-              </div>
-            `;
-          }).join('');
-        }
-      }
-
-      modal.style.display = 'flex';
-    }
-
-    function closePinManagerModal() {
-      const modal = document.getElementById('pinManagerModal');
-      if (modal) modal.style.display = 'none';
-    }
-
-    async function deletePinFromManager(pinId) {
-      if (!confirm('Are you sure you want to delete this pin?')) return;
-      const pid = activeProjectId || window.activeProjectData?.id;
-      const token = p3dGetAuthToken();
-
-      try {
-        const res = await fetch(`/api/projects/${pid}/pins/${pinId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': 'Bearer ' + token,
-            'x-booth-edit-token': token
-          }
-        });
-        const data = await res.json();
-        if (data.pins) window.activeProjectData.pinpoints = data.pins;
-        else {
-          window.activeProjectData.pinpoints = (window.activeProjectData.pinpoints || []).filter(p => p.id !== pinId && p.pinId !== pinId);
-        }
-        openPinManagerModal();
-        setupStudioProducts(window.activeProjectData);
-      } catch (err) {
-        alert('Delete failed: ' + err.message);
-      }
-    }
-
-    function setupStudioProducts(projectData) {
-      if (projectData?.entitlements) updateProductLimitUI(projectData.entitlements);
-      else if (projectData?.id) fetchProjectEntitlements(projectData.id);
-      const rawProducts = projectData?.products || [];
-      const defaultPositions = [
-        new THREE.Vector3(-140, -20, -380), // Slot 1 Left
-        new THREE.Vector3(0, -10, -420),    // Slot 2 Center
-        new THREE.Vector3(140, -20, -380)   // Slot 3 Right
-      ];
-
-      const realProds = rawProducts.filter(p => p.name && p.name.trim() && !p.name.startsWith('Product Slot'));
-      window.REAL_PRODUCT_COUNT = realProds.length;
-      window.PLACE_PRODUCT_PINS_COMPLETE = (realProds.length > 0);
-
-      // Map 3 primary product slots for quick tray and sidebar specs
-      studioProducts = [1, 2, 3].map((slot, idx) => {
-        const prod = rawProducts.find(p => p.slotIndex === slot) || {};
-        const isConfigured = !!(prod.name && prod.name.trim() && !prod.name.startsWith('Product Slot'));
-        return {
-          slotIndex: slot,
-          productId: prod.id || `prod-slot-${slot}`,
-          name: isConfigured ? prod.name : `Product Slot ${slot}`,
-          category: isConfigured ? (prod.category || 'EXHIBIT ITEM') : 'UNCONFIGURED',
-          sku: prod.sku || '',
-          price: prod.price || '',
-          imageUrl: (isConfigured && prod.imageUrl) ? prod.imageUrl : '/assets/product-placeholder.jpg',
-          worldPos: defaultPositions[idx],
-          desc: isConfigured ? (prod.shortDescription || prod.description || '') : `Showcase product for ${projectData.businessName || 'your brand'}. Add a real product to showcase specifications and accept RFQs.`,
-          specs: [
-            ['Category', isConfigured ? (prod.category || 'General') : 'Not Configured'],
-            ['SKU / Model', isConfigured && prod.sku ? prod.sku : 'Standard'],
-            ['Inquiry Engine', '1-Click Wholesale RFQ'],
-            ['Status', isConfigured ? (prod.availability || 'Active') : 'Available']
-          ],
-          highlights: isConfigured ? [
-            'Interactive 3D Floating Capsule pinpoint anchor on exhibition booth photo',
-            'Direct buyer engagement, sample ordering, and export meeting scheduler'
-          ] : [
-            'Click "+ Add Product" to configure photo, specs, and price'
-          ],
-          isConfigured: isConfigured
-        };
-      });
-
-      // Build unified 3D hotspots list from pinpoints (Product Pins + Catalog Pins)
-      const rawPinpoints = projectData?.pinpoints || [];
-      const catalogs = projectData?.catalogs || [];
-
-      studioHotspotsList = [];
-
-      // 1. Add product slot hotspots
-      studioProducts.forEach((prod, idx) => {
-        studioHotspotsList.push({
-          id: `pin-slot-${prod.slotIndex}`,
-          pinType: 'PRODUCT_PIN',
-          slotIndex: prod.slotIndex,
-          targetId: prod.productId,
-          name: prod.name,
-          category: prod.category,
-          imageUrl: prod.imageUrl,
-          worldPos: prod.worldPos,
-          isConfigured: prod.isConfigured,
-          productIdx: idx
-        });
-      });
-
-      // 2. Add catalog hotspots
-      catalogs.forEach(cat => {
-        const catId = cat.catalogId || cat.id;
-        const catPin = rawPinpoints.find(p => p.pinType === 'CATALOG_PIN' && (p.targetId === catId || p.catalogId === catId));
-        if (catPin) {
-          const prods = (cat.productIds || []).map(pid => rawProducts.find(p => p.id === pid || p.slotIndex === pid)).filter(Boolean);
-          studioHotspotsList.push({
-            id: catPin.id || `pin-cat-${catId}`,
-            pinType: 'CATALOG_PIN',
-            targetId: catId,
-            catalogId: catId,
-            name: cat.name,
-            category: 'CATALOG',
-            productCount: prods.length,
-            coverImageUrl: cat.coverImageUrl || prods[0]?.imageUrl || '/assets/product-placeholder.jpg',
-            worldPos: new THREE.Vector3(0, 0, -400)
-          });
-        }
-      });
-
-            // 3. Add custom & floating pins (Product Pins, Group Pins, Blank Pins)
-      rawPinpoints.forEach((pin, pIdx) => {
-        const pinId = pin.id || pin.pinId;
-        if (!pinId) return;
-
-        // If it matches a standard slot pin or catalog pin, sync its attributes
-        const existingSpot = studioHotspotsList.find(s => s.id === pinId || (pin.slotIndex && s.slotIndex === pin.slotIndex));
-        if (existingSpot) {
-          if (pin.title || pin.label) existingSpot.name = pin.title || pin.label;
-          if (typeof pin.u === 'number') existingSpot.u = pin.u;
-          if (typeof pin.v === 'number') existingSpot.v = pin.v;
-          existingSpot.pinData = pin;
-          if (pin.productIds) existingSpot.productIds = pin.productIds;
-          if (pin.description || pin.note) existingSpot.description = pin.description || pin.note;
-          return;
-        }
-
-        const pIds = Array.isArray(pin.productIds) ? pin.productIds : (pin.productId ? [pin.productId] : (pin.targetId ? [pin.targetId] : []));
-        const attachedProds = pIds.map(pid => rawProducts.find(p => String(p.id) === String(pid) || String(p.slotIndex) === String(pid))).filter(Boolean);
-        const isBlank = attachedProds.length === 0 && (pin.pinType === 'BLANK_PIN' || pin.isDraft);
-        const isGroup = attachedProds.length >= 2 || pin.pinType === 'PRODUCT_GROUP_PIN';
-        
-        const spotName = pin.title || pin.label || (attachedProds[0]?.name) || (isBlank ? 'Empty Product Pin' : 'Product Pin');
-        const spotCat = isBlank ? 'DRAFT' : (attachedProds[0]?.category || (isGroup ? 'COLLECTION' : 'PRODUCT'));
-        const spotImg = attachedProds[0]?.imageUrl || '/assets/product-placeholder.jpg';
-
-        studioHotspotsList.push({
-          id: pinId,
-          pinType: pin.pinType || (isBlank ? 'BLANK_PIN' : (isGroup ? 'PRODUCT_GROUP_PIN' : 'PRODUCT_PIN')),
-          targetId: pin.targetId || (attachedProds[0]?.id || null),
-          name: spotName,
-          title: spotName,
-          category: spotCat,
-          imageUrl: spotImg,
-          productCount: attachedProds.length,
-          productIds: pIds,
-          isDraft: isBlank,
-          isConfigured: !isBlank,
-          pinData: pin,
-          u: typeof pin.u === 'number' ? pin.u : 0.5,
-          v: typeof pin.v === 'number' ? pin.v : 0.5,
-          worldPos: new THREE.Vector3(0, 0, -400)
-        });
-      });
-
-      window.studioHotspotsList = studioHotspotsList;
-      window.activeProjectData = projectData;
-      recalculatePinpointPositions(projectData);
-      buildHotspotsDOM();
-      renderProductCardsTray(projectData.products || []);
-      renderProductCards(projectData.products || []);
-      updateNextStepCTA();
-      updateFocusSpec(0);
-      updateOwnerProductCountBadge();
-    }
-
-    function updateOwnerProductCountBadge() {
-      const badge = document.getElementById('ownerProductCountBadge');
-      if (!badge) return;
-      const isDev = isInternalDevAccount(currentViewerAccount);
-      const isPilot = currentViewerAccount?.isPilot || currentViewerAccount?.billingState === 'PILOT_NOT_BILLED' || activeProjectData?.isPilot;
-      const ent = (currentViewerAccount?.entitlement || activeProjectData?.entitlement || 'FREE_BOOTH').toUpperCase();
-      const maxProducts = isDev ? 500 : ((ent === 'BUSINESS' || isPilot) ? 100 : (ent === 'PRO' ? 30 : 3));
-      badge.textContent = `${window.REAL_PRODUCT_COUNT || 0} / ${maxProducts} Products`;
-
-      const qaBadge = document.getElementById('ownerInternalQABadge');
-      if (qaBadge) qaBadge.style.display = isDev ? 'inline-flex' : 'none';
-    }
-
-    let activeDragPinElement = null;
-    let pointerDownStartPos = null;
-    let hasDraggedPinMoved = false;
-    let preDragCoords = null;
-
-    function buildHotspotsDOM() {
+function buildHotspotsDOM() {
       const layer = document.getElementById('hotspot-layer');
       if (!layer) return;
       layer.innerHTML = '';
 
-      const isOwner = (window.VIEWER_MODE === 'OWNER_EDITOR');
-
-      studioHotspotsList.forEach((spot) => {
+      studioHotspotsList.forEach((spot, idx) => {
         const el = document.createElement('div');
-        el.className = `hotspot-tag ${spot.pinType === 'CATALOG_PIN' ? 'hotspot-catalog-tag' : ''} ${isOwner ? 'pin-owner-draggable' : ''}`;
-        el.id = spot.id;
+        el.className = 'hotspot-tag';
+        if (spot.pinType === 'CATALOG_PIN') el.classList.add('hotspot-catalog');
+        else if (spot.pinType === 'PRODUCT_GROUP_PIN') el.classList.add('hotspot-group');
+        else if (spot.pinType === 'BLANK_PIN') el.classList.add('hotspot-blank');
+        
+        el.id = spot.id || `hotspot-${spot.pinType}-${spot.targetId || idx}`;
 
-        if (spot.pinType === 'CATALOG_PIN') {
+        if (spot.pinType === 'BLANK_PIN') {
           el.innerHTML = `
-            <div style="background: rgba(168,85,247,0.25); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: #c084fc; font-size: 13px;">
-              <i class="fa-solid fa-book-open"></i>
+            <span class="hotspot-dot" style="background: #38bdf8; box-shadow: 0 0 10px #38bdf8;"></span>
+            <div class="hotspot-info">
+              <span class="hotspot-cat" style="color: #38bdf8;">EMPTY PIN</span>
+              <span class="hotspot-label-text">${spot.name || 'Click to Add Product'}</span>
             </div>
+          `;
+        } else if (spot.pinType === 'PRODUCT_GROUP_PIN') {
+          el.innerHTML = `
+            <span class="hotspot-dot" style="background: #34d399; box-shadow: 0 0 10px #34d399;"></span>
+            <div class="hotspot-info">
+              <span class="hotspot-cat" style="color: #34d399;">COLLECTION</span>
+              <span class="hotspot-label-text">${spot.name || 'Featured Products'}</span>
+            </div>
+          `;
+        } else if (spot.pinType === 'CATALOG_PIN') {
+          el.innerHTML = `
             <span class="hotspot-dot" style="background: #c084fc; box-shadow: 0 0 10px #c084fc;"></span>
             <div class="hotspot-info">
               <span class="hotspot-cat" style="color: #c084fc;">CATALOG • ${spot.productCount || 0} ITEMS</span>
@@ -6925,11 +6220,11 @@
           `;
         } else {
           el.innerHTML = `
-            <img src="${spot.imageUrl}" class="hotspot-thumb-img" alt="${spot.name}">
+            <img src="${spot.imageUrl || '/assets/product-placeholder.jpg'}" class="hotspot-thumb-img" alt="${spot.name}">
             <span class="hotspot-dot"></span>
             <div class="hotspot-info">
-              <span class="hotspot-cat">${spot.category}</span>
-              <span class="hotspot-label-text">${spot.name}</span>
+              <span class="hotspot-cat">${spot.category || 'PRODUCT'}</span>
+              <span class="hotspot-label-text">${spot.name || 'Product Pin'}</span>
             </div>
           `;
         }
@@ -6937,7 +6232,7 @@
         // Direct Pointer Manipulation Listeners (Pointer Capture & Event Routing)
         el.addEventListener('pointerdown', (e) => {
           const owner = (window.VIEWER_MODE === 'OWNER_EDITOR');
-          if (!owner) return; // In public mode, do not enter drag
+          if (!owner) return;
 
           e.stopPropagation();
           pointerDownStartPos = { x: e.clientX, y: e.clientY };
@@ -6945,10 +6240,10 @@
           isDraggingPin = true;
           activeDragPinElement = el;
 
-          // Select this pin
           window.currentEditingPinTarget = {
             type: spot.pinType || 'PRODUCT_PIN',
-            id: spot.pinType === 'CATALOG_PIN' ? (spot.targetId || spot.catalogId) : String(spot.slotIndex || 1)
+            id: spot.id || spot.targetId || (spot.slotIndex ? String(spot.slotIndex) : String(spot.pinData?.id || '1')),
+            pinData: spot.pinData || spot
           };
 
           const pin = getOrCreateActivePin();
@@ -6977,7 +6272,6 @@
         el.addEventListener('pointerup', async (e) => {
           const owner = (window.VIEWER_MODE === 'OWNER_EDITOR');
           if (!isDraggingPin && !owner) {
-            // Public click
             e.stopPropagation();
             if (spot.pinType === 'CATALOG_PIN') {
               openCatalogProductList(spot.targetId || spot.catalogId);
@@ -6996,10 +6290,8 @@
             if (controls) controls.enabled = true;
 
             if (hasDraggedPinMoved) {
-              // Direct drag completed -> Auto-save coordinates!
               await saveActivePinPosition();
             } else {
-              // Simple click on pin in Owner mode -> PRIMARY ACTION: Open Product Pin Content Editor!
               if (spot.pinType === 'CATALOG_PIN') {
                 if (typeof openCatalogManager === 'function') openCatalogManager();
               } else {
@@ -7019,7 +6311,6 @@
           }
         });
 
-        // Click handler fallback for public viewer
         el.addEventListener('click', (e) => {
           e.stopPropagation();
           const owner = (window.VIEWER_MODE === 'OWNER_EDITOR');
@@ -7545,6 +6836,21 @@
                 clearInterval(boothJobPollInterval);
                 boothJobPollInterval = null;
                 document.getElementById('boothOwnerAcceptanceSection').style.display = 'block';
+                currentCandidateBoothAsset = {
+                  previewUrl: job.resultPreviewUrl || '/assets/demo/booth-preview.jpg',
+                  qualityTier: job.qualityTier,
+                  outputType: job.outputType,
+                  sourceCount: job.sourceCount
+                };
+                const img = document.getElementById('boothReviewPreviewImg');
+                if (img) img.src = currentCandidateBoothAsset.previewUrl;
+                const brmQ = document.getElementById('brmQuality');
+                const brmS = document.getElementById('brmSources');
+                const brmF = document.getElementById('brmFormat');
+                if (brmQ) brmQ.textContent = job.qualityTier;
+                if (brmS) brmS.textContent = `${job.sourceCount || 30} Photos`;
+                if (brmF) brmF.textContent = job.outputType || 'Gaussian Splat';
+                switchBoothReviewTab('NEW_PREVIEW');
                 if (btn) btn.style.display = 'none';
               } else if (job.status === 'FAILED') {
                 clearInterval(boothJobPollInterval);
@@ -7563,148 +6869,164 @@
       }
     }
 
+    let currentReviewTab = 'NEW_PREVIEW';
+    let currentCandidateBoothAsset = null;
+
+    function switchBoothReviewTab(tab) {
+      currentReviewTab = tab;
+      const btnCurrent = document.getElementById('tabBtnCurrentBooth');
+      const btnNew = document.getElementById('tabBtnNewBoothPreview');
+      const img = document.getElementById('boothReviewPreviewImg');
+      const label = document.getElementById('boothReviewViewerLabel');
+
+      if (tab === 'CURRENT') {
+        if (btnCurrent) {
+          btnCurrent.style.background = 'rgba(56,189,248,0.15)';
+          btnCurrent.style.borderColor = '#38bdf8';
+          btnCurrent.style.color = '#38bdf8';
+        }
+        if (btnNew) {
+          btnNew.style.background = 'rgba(255,255,255,0.06)';
+          btnNew.style.borderColor = 'rgba(255,255,255,0.15)';
+          btnNew.style.color = '#cbd5e1';
+        }
+        if (img) img.src = window.activeProjectData?.sourceAsset?.previewUrl || '/assets/demo/booth-preview.jpg';
+        if (label) label.textContent = 'Active Booth (Current Live Asset)';
+      } else {
+        if (btnNew) {
+          btnNew.style.background = 'rgba(56,189,248,0.15)';
+          btnNew.style.borderColor = '#38bdf8';
+          btnNew.style.color = '#38bdf8';
+        }
+        if (btnCurrent) {
+          btnCurrent.style.background = 'rgba(255,255,255,0.06)';
+          btnCurrent.style.borderColor = 'rgba(255,255,255,0.15)';
+          btnCurrent.style.color = '#cbd5e1';
+        }
+        if (img) img.src = currentCandidateBoothAsset?.previewUrl || '/assets/demo/booth-preview.jpg';
+        if (label) label.textContent = 'New 3D Reconstruction Candidate';
+      }
+    }
+
+    function switchActiveBoothTexture(newPhotoUrl, projectData) {
+      if (photoMaterial && textureLoader && newPhotoUrl) {
+        textureLoader.load(newPhotoUrl, (tex) => {
+          tex.encoding = THREE.sRGBEncoding;
+          tex.minFilter = THREE.LinearMipMapLinearFilter;
+          tex.magFilter = THREE.LinearFilter;
+          tex.generateMipmaps = true;
+          tex.anisotropy = renderer ? renderer.capabilities.getMaxAnisotropy() : 16;
+          tex.needsUpdate = true;
+          photoMaterial.map = tex;
+          photoMaterial.needsUpdate = true;
+          recalculatePinpointPositions(projectData || window.activeProjectData);
+          updateHotspots();
+        });
+      }
+    }
+
+    async function confirmApplyNewBooth() {
+      if (!confirm('Apply this reconstructed Booth? The current Booth will be preserved in Version History and can be restored later.')) {
+        return;
+      }
+      await acceptNewBoothAsset();
+    }
+
     async function acceptNewBoothAsset() {
       if (!currentActiveBoothJobId) return;
       const pid = activeProjectId || window.activeProjectData?.id;
       const token = p3dGetAuthToken();
+      const btn = document.getElementById('btnApplyNewBooth');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Applying Booth...';
+      }
 
       try {
         const res = await fetch(`/api/projects/${pid}/booth-3d/jobs/${currentActiveBoothJobId}/accept`, {
           method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + token }
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+            'x-booth-edit-token': token
+          }
         });
         const data = await res.json();
-        if (data.success) {
-          if (window.showToast) window.showToast('🎉 New 3D Booth accepted and activated!', 'success');
+        if (data.success && data.activeBooth) {
+          // Update project state
+          if (window.activeProjectData) {
+            window.activeProjectData.booth3d = data.activeBooth;
+            if (data.activeBooth.previewUrl) {
+              window.activeProjectData.sourceAsset = window.activeProjectData.sourceAsset || {};
+              window.activeProjectData.sourceAsset.previewUrl = data.activeBooth.previewUrl;
+            }
+            if (data.history) window.activeProjectData.booth3dHistory = data.history;
+          }
+
+          // Switch main 3D scene visual texture immediately
+          switchActiveBoothTexture(data.activeBooth.previewUrl, window.activeProjectData);
+
+          if (window.showToast) window.showToast('🎉 New 3D Booth applied and activated!', 'success');
           closeBooth3dRegenerationModal();
+        } else {
+          alert('Error applying booth: ' + (data.error || 'Server error'));
         }
       } catch(e) {
-        alert('Error accepting booth: ' + e.message);
-      }
-    }
-
-    function rejectAndKeepCurrentBooth() {
-      if (confirm('Keep current active booth and dismiss new reconstruction?')) {
-        closeBooth3dRegenerationModal();
+        console.error('Apply booth error:', e);
+        alert('Could not apply booth: ' + e.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Apply New Booth';
+        }
       }
     }
 
     function openBoothRollbackList() {
-      alert('Version Rollback: Your current booth and previous accepted reconstructions are preserved in the version history.');
-    }
-
-
-    function openOwnerProductEditor(slotIndex = 1) {
-      window.openOwnerProductEditor = openOwnerProductEditor;
-      const slot = parseInt(slotIndex, 10) || (currentSelectedProdIdx + 1) || 1;
-      const modal = document.getElementById('ownerProductEditorModal');
-      if (!modal) return;
-
-      const rawProd = (activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slot)) || {};
-      const isReal = !!(rawProd.name && rawProd.name.trim() && !rawProd.name.startsWith('Product Slot'));
-
-      document.getElementById('opeSlotIndex').value = slot;
-      document.getElementById('opeModalTitle').textContent = isReal ? 'Edit Product' : 'Add New Product';
-      document.getElementById('opeName').value = isReal ? rawProd.name : '';
-      document.getElementById('opeSku').value = isReal ? (rawProd.sku || '') : '';
-      document.getElementById('opeCategory').value = isReal ? (rawProd.category || '') : '';
-      document.getElementById('opePrice').value = isReal ? (rawProd.price || '') : '';
-      document.getElementById('opeAvailability').value = isReal ? (rawProd.availability || 'ACTIVE') : 'ACTIVE';
-      document.getElementById('opeShortDesc').value = isReal ? (rawProd.shortDescription || '') : '';
-      document.getElementById('opeDesc').value = isReal ? (rawProd.description || '') : '';
-      
-      const previewImg = document.getElementById('opeImagePreview');
-      const fileInput = document.getElementById('opeImageInput');
-      const removeBtn = document.getElementById('opeBtnRemoveImg');
-      const saveStatus = document.getElementById('opeSaveStatus');
-      if (fileInput) fileInput.value = '';
-      if (saveStatus) saveStatus.textContent = '';
-      
-      if (isReal && rawProd.imageUrl) {
-        previewImg.src = rawProd.imageUrl;
-        previewImg.style.display = 'block';
-        if (removeBtn) removeBtn.style.display = 'inline-flex';
-      } else {
-        previewImg.src = '';
-        previewImg.style.display = 'none';
-        if (removeBtn) removeBtn.style.display = 'none';
-      }
-
-      const btnDelete = document.getElementById('opeBtnDelete');
-      if (btnDelete) btnDelete.style.display = isReal ? 'inline-flex' : 'none';
-
-      const btnSave = document.getElementById('opeBtnSave');
-      if (btnSave) {
-        btnSave.disabled = false;
-        btnSave.innerHTML = `<i class="fa-solid fa-check"></i> ${isReal ? 'Save Changes' : 'Save Product'}`;
-      }
-
-      // Render catalog membership checkboxes
-      renderProductEditorCatalogs(rawProd.id || `prod-slot-${slot}`);
-
-      // Initialize Product Media Mode & 3D Section (UX2)
-      const initialMode = (rawProd.product3d?.status === 'READY' || rawProd.productMediaMode === 'THREE_D') ? 'THREE_D' : 'IMAGE';
-      if (typeof setProductMediaMode === 'function') {
-        setProductMediaMode(initialMode, true);
-      }
-      if (typeof renderProduct3dSection === 'function') {
-        renderProduct3dSection(slot, rawProd);
-      }
-
-      // Lock body scroll
-      document.body.style.overflow = 'hidden';
-      document.body.classList.add('modal-scroll-lock');
-
-      modal.style.display = 'flex';
-    }
-
-    function renderProductEditorCatalogs(prodId) {
-      const container = document.getElementById('opeCatalogCheckboxes');
-      if (!container) return;
-      const catalogs = activeProjectData?.catalogs || [];
-      if (catalogs.length === 0) {
-        container.innerHTML = `<span style="font-size: 11px; color: #64748b;">No catalogs created yet. Create a catalog via toolbar.</span>`;
+      const history = window.activeProjectData?.booth3dHistory || [];
+      if (history.length === 0) {
+        alert('Version History: You are on Booth Version 1. Previous versions will appear here when new reconstructions are applied.');
         return;
       }
-      container.innerHTML = catalogs.map(cat => {
-        const isMember = Array.isArray(cat.productIds) && (cat.productIds.includes(prodId) || cat.productIds.includes(String(document.getElementById('opeSlotIndex')?.value)));
-        return `
-          <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #cbd5e1; margin-bottom: 4px; cursor: pointer;">
-            <input type="checkbox" class="ope-catalog-cb" value="${cat.catalogId || cat.id}" ${isMember ? 'checked' : ''} style="accent-color: #38bdf8;">
-            <span>${cat.name}</span>
-          </label>
-        `;
-      }).join('');
+
+      const versionListText = history.map((v, i) => `${i + 1}. ${v.label || 'Booth Version'} (${v.qualityTier || 'Standard'}) - ${new Date(v.archivedAt).toLocaleString()}`).join('\n');
+      const choice = prompt(`Version History & Rollback:\n\n${versionListText}\n\nEnter version number (1 - ${history.length}) to restore:`);
+      if (choice) {
+        const idx = parseInt(choice, 10) - 1;
+        if (idx >= 0 && idx < history.length) {
+          rollbackToVersion(history[idx].versionId);
+        }
+      }
     }
 
-    function closeOwnerProductEditor() {
-      _p3dDisposeInlineViewer();
-      const modal = document.getElementById('ownerProductEditorModal');
-      if (modal) modal.style.display = 'none';
-      document.body.style.overflow = '';
-      document.body.classList.remove('modal-scroll-lock');
-    }
+    async function rollbackToVersion(versionId) {
+      if (!confirm('Restore this previous Booth version?')) return;
+      const pid = activeProjectId || window.activeProjectData?.id;
+      const token = p3dGetAuthToken();
 
-    function previewOwnerProductImage(input) {
-      if (input.files && input.files[0]) {
-        const file = input.files[0];
-        const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
-        if (!allowed.includes(file.type.toLowerCase())) {
-          alert('Invalid file format. Only PNG, JPG, and WebP images are allowed.');
-          input.value = '';
-          return;
+      try {
+        const res = await fetch(`/api/projects/${pid}/booth-3d/rollback/${versionId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+            'x-booth-edit-token': token
+          }
+        });
+        const data = await res.json();
+        if (data.success && data.activeBooth) {
+          if (window.activeProjectData) {
+            window.activeProjectData.booth3d = data.activeBooth;
+            if (data.activeBooth.previewUrl) {
+              window.activeProjectData.sourceAsset = window.activeProjectData.sourceAsset || {};
+              window.activeProjectData.sourceAsset.previewUrl = data.activeBooth.previewUrl;
+            }
+          }
+          switchActiveBoothTexture(data.activeBooth.previewUrl, window.activeProjectData);
+          if (window.showToast) window.showToast('⏪ Restored previous Booth version!', 'success');
         }
-        if (file.size > 10 * 1024 * 1024) {
-          alert('File too large. Maximum image size is 10 MB.');
-          input.value = '';
-          return;
-        }
-
-        const preview = document.getElementById('opeImagePreview');
-        const removeBtn = document.getElementById('opeBtnRemoveImg');
-        preview.src = URL.createObjectURL(file);
-        preview.style.display = 'block';
-        if (removeBtn) removeBtn.style.display = 'inline-flex';
+      } catch(e) {
+        alert('Rollback error: ' + e.message);
       }
     }
 
@@ -8509,7 +7831,14 @@
       activeProjectData.pinpoints = activeProjectData.pinpoints || [];
       const cur = window.currentEditingPinTarget || { type: 'PRODUCT_PIN', id: '1' };
       
-      let pin = null;
+      // 1. Check if pinpoint exists by exact ID, targetId, or pinData reference
+      let pin = activeProjectData.pinpoints.find(p => 
+        (cur.id && (p.id === cur.id || p.pinId === cur.id || p.targetId === cur.id)) ||
+        (cur.pinData && (p.id === cur.pinData.id || p.pinId === cur.pinData.id))
+      );
+      if (pin) return pin;
+
+      // 2. Catalog Pin lookup / creation
       if (cur.type === 'CATALOG_PIN') {
         pin = activeProjectData.pinpoints.find(p => p.pinType === 'CATALOG_PIN' && (p.targetId === cur.id || p.catalogId === cur.id));
         if (!pin) {
@@ -8527,26 +7856,42 @@
           };
           activeProjectData.pinpoints.push(pin);
         }
-      } else {
-        const slot = parseInt(cur.id, 10) || 1;
-        pin = activeProjectData.pinpoints.find(p => p.slotIndex === slot || p.targetId === `prod-slot-${slot}`);
+        return pin;
+      }
+
+      // 3. Slot Number lookup / creation (only if cur.id is pure integer 1..9)
+      const slotNum = /^[0-9]+$/.test(String(cur.id)) ? parseInt(cur.id, 10) : null;
+      if (slotNum !== null) {
+        pin = activeProjectData.pinpoints.find(p => p.slotIndex === slotNum || p.targetId === `prod-slot-${slotNum}`);
         if (!pin) {
-          const prod = (activeProjectData.products || []).find(p => p.slotIndex === slot);
+          const prod = (activeProjectData.products || []).find(p => p.slotIndex === slotNum);
           pin = {
-            id: `pin-slot-${slot}`,
-            pinId: `pin-slot-${slot}`,
+            id: `pin-slot-${slotNum}`,
+            pinId: `pin-slot-${slotNum}`,
             pinType: 'PRODUCT_PIN',
-            slotIndex: slot,
-            targetId: prod?.id || `prod-slot-${slot}`,
-            productId: prod?.id || `prod-slot-${slot}`,
-            label: prod?.name || `Product Slot ${slot}`,
-            u: slot === 1 ? 0.2800 : (slot === 2 ? 0.5000 : 0.7200),
-            v: slot === 2 ? 0.5500 : 0.6000,
+            slotIndex: slotNum,
+            targetId: prod?.id || `prod-slot-${slotNum}`,
+            productId: prod?.id || `prod-slot-${slotNum}`,
+            label: prod?.name || `Product Slot ${slotNum}`,
+            u: slotNum === 1 ? 0.2800 : (slotNum === 2 ? 0.5000 : 0.7200),
+            v: slotNum === 2 ? 0.5500 : 0.6000,
             status: 'ACTIVE'
           };
           activeProjectData.pinpoints.push(pin);
         }
+        return pin;
       }
+
+      // 4. Custom / Blank Pin fallback
+      pin = {
+        id: cur.id || `pin-${Date.now().toString(36)}`,
+        pinType: cur.type || 'PRODUCT_PIN',
+        targetId: cur.id || null,
+        u: 0.5000,
+        v: 0.5000,
+        status: 'ACTIVE'
+      };
+      activeProjectData.pinpoints.push(pin);
       return pin;
     }
 
@@ -11128,19 +10473,51 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         </div>
 
         <!-- Owner Acceptance / Review Section (When result is READY_FOR_REVIEW) -->
-        <div id="boothOwnerAcceptanceSection" style="display: none; background: rgba(16,185,129,0.08); border: 1px solid rgba(52,211,153,0.3); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
-          <div style="font-weight: 800; font-size: 13px; color: #34d399; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-circle-check"></i> 3D Booth Reconstruction Ready For Review
+        <!-- Owner Acceptance / Review Section (When result is READY_FOR_REVIEW) -->
+        <div id="boothOwnerAcceptanceSection" style="display: none; background: #0b1526; border: 1.5px solid rgba(52,211,153,0.4); border-radius: 14px; padding: 18px; margin-bottom: 16px;">
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div style="font-weight: 800; font-size: 14px; color: #34d399; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-circle-check"></i> 3D BOOTH RECONSTRUCTION — READY FOR REVIEW
+            </div>
+            <span id="boothReviewCandidateBadge" style="font-size: 11px; font-weight: 700; color: #bae6fd; background: rgba(56,189,248,0.15); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(56,189,248,0.3);">
+              Candidate Version
+            </span>
           </div>
-          <p style="font-size: 11.5px; color: #cbd5e1; margin-bottom: 12px;">
-            Review your new 3D booth model. Your current active booth remains live until you click <strong>Use New Booth</strong>.
-          </p>
-          <div style="display: flex; gap: 10px;">
-            <button type="button" onclick="rejectAndKeepCurrentBooth()" style="flex: 1; padding: 9px 14px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer;">
+
+          <!-- Review Tabs: [ CURRENT BOOTH ] vs [ NEW BOOTH PREVIEW ] -->
+          <div style="display: flex; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px;">
+            <button type="button" id="tabBtnCurrentBooth" onclick="switchBoothReviewTab('CURRENT')" style="padding: 6px 14px; font-size: 12px; font-weight: 700; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: #cbd5e1; cursor: pointer;">
+              <i class="fa-solid fa-store"></i> CURRENT BOOTH
+            </button>
+            <button type="button" id="tabBtnNewBoothPreview" onclick="switchBoothReviewTab('NEW_PREVIEW')" style="padding: 6px 14px; font-size: 12px; font-weight: 800; border-radius: 6px; border: 1.5px solid #38bdf8; background: rgba(56,189,248,0.15); color: #38bdf8; cursor: pointer;">
+              <i class="fa-solid fa-cube"></i> NEW BOOTH PREVIEW
+            </button>
+          </div>
+
+          <!-- Interactive Review Viewer Container -->
+          <div id="boothReviewViewerContainer" style="position: relative; width: 100%; height: 260px; background: #000; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.12); margin-bottom: 12px;">
+            <img id="boothReviewPreviewImg" src="/assets/demo/booth-preview.jpg" alt="Booth Preview" style="width: 100%; height: 100%; object-fit: contain;">
+            <div id="boothReviewViewerOverlay" style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.75); padding: 4px 10px; border-radius: 6px; font-size: 11px; color: #cbd5e1;">
+              <span id="boothReviewViewerLabel">New 3D Reconstruction Asset</span>
+            </div>
+          </div>
+
+          <!-- Review Metadata Details -->
+          <div id="boothReviewMetadataPanel" style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; font-size: 11.5px;">
+            <div><span style="color: #64748b;">Quality:</span> <strong style="color: #fff;" id="brmQuality">High Quality (60 Tokens)</strong></div>
+            <div><span style="color: #64748b;">Source Photos:</span> <strong style="color: #fff;" id="brmSources">30 Photos</strong></div>
+            <div><span style="color: #64748b;">Format:</span> <strong style="color: #38bdf8;" id="brmFormat">Gaussian Splat</strong></div>
+            <div><span style="color: #64748b;">QA Charge:</span> <strong style="color: #4ade80;" id="brmCharge">0 Tokens (Internal QA)</strong></div>
+          </div>
+
+          <!-- Actions: Keep Current vs Apply New Booth -->
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button type="button" onclick="rejectAndKeepCurrentBooth()" style="flex: 1; padding: 10px 16px; font-size: 12.5px; font-weight: 700; background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer;">
               Keep Current Booth
             </button>
-            <button type="button" onclick="acceptNewBoothAsset()" style="flex: 1; padding: 9px 14px; font-size: 12px; font-weight: 800; background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: 1px solid #34d399; border-radius: 8px; cursor: pointer;">
-              ✅ Use New Booth
+            <button type="button" id="btnApplyNewBooth" onclick="confirmApplyNewBooth()" style="flex: 1.5; padding: 10px 20px; font-size: 13px; font-weight: 800; background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: 1px solid #34d399; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(16,185,129,0.35);">
+              <i class="fa-solid fa-check-double"></i> Apply New Booth
             </button>
           </div>
         </div>
