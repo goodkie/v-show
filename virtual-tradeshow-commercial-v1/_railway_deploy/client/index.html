@@ -6747,9 +6747,11 @@
         card.id = `pcard-${pinId}`;
 
         // Click on Pin Card -> Locate Pin in 3D viewer & Open Content Editor
-        card.onclick = () => {
-          locateAndEditPin(pinId);
-        };
+        card.addEventListener('click', (e) => {
+          if (!e.target.closest('button')) {
+            locateAndEditPin(pinId);
+          }
+        });
 
         if (isCatalog) {
           const cat = (window.activeProjectData?.catalogs || []).find(c => (c.catalogId || c.id) === (pin.targetId || pin.catalogId));

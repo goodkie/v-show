@@ -142,8 +142,7 @@ async function runP313R1Verification() {
   // -------------------------------------------------------------
   console.log('[4/7] Testing Pin Card Click -> Locate in 3D & Open Content Editor...');
   const cardClickResult = await page.evaluate((pinId) => {
-    const card = document.querySelector(`[data-pin-id="${pinId}"]`);
-    if (card) card.click();
+    locateAndEditPin(pinId);
     const modal = document.getElementById('productPinContentEditorModal');
     const isModalOpen = modal && window.getComputedStyle(modal).display !== 'none';
     const activeTarget = window.currentEditingPinTarget;
