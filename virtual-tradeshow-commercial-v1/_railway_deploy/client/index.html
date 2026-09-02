@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <script>
-  window.__3DZ_BUILD_INFO__ = { gitCommit: "27c3a47", releaseId: "C11.16-P3.15-R4" };
+  window.__3DZ_BUILD_INFO__ = { gitCommit: "6383c23", releaseId: "C11.16-P3.15-R4" };
   fetch('/api/build-info').then(function(r){return r.json();}).then(function(d){if(d&&d.gitCommit)window.__3DZ_BUILD_INFO__.gitCommit=d.gitCommit;}).catch(function(){});
   </script>
 
@@ -2274,6 +2274,9 @@
         <div class="studio-banner-desc" id="studioBannerBizName">Experience your photo as an interactive 3D virtual booth. Drag to look around in 360°, or click pins to inspect products.</div>
       </div>
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button type="button" class="btn-hero" id="btnBannerRemovePeople" onclick="triggerQuickPersonRemoval()" style="display: none; padding: 9px 16px; font-size: 13px; background: rgba(239,68,68,0.18); color: #fca5a5; border: 1.5px solid rgba(239,68,68,0.4); border-radius: 8px; cursor: pointer; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-user-slash"></i> AI 사람 지우기
+        </button>
         <button class="btn-hero btn-hero-primary" id="btnBannerEditBooth" onclick="handleOwnerAction('edit_booth')" style="padding: 9px 18px; font-size: 13px; background: linear-gradient(135deg, #0284c7, #2563eb);">
           <i class="fa-solid fa-pen-to-square"></i> Edit My Booth
         </button>
