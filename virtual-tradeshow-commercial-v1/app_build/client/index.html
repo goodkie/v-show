@@ -6047,6 +6047,17 @@
           else window.activeProjectData.pinpoints.push({ ...payload, ...(data.pin || {}) });
         }
 
+        const spot = (window.studioHotspotsList || []).find(s => s.id === pinId || s.targetId === pinId || s.pinData?.id === pinId);
+        if (spot) {
+          spot.name = title || (isGroup ? 'Featured Products' : (spot.name || 'Product Pin'));
+          spot.title = title;
+          if (spot.pinData) {
+            spot.pinData.title = title;
+            spot.pinData.description = description;
+            spot.pinData.productIds = productIds;
+            spot.pinData.pinType = pinType;
+          }
+        }
         if (typeof setupStudioProducts === 'function') setupStudioProducts(window.activeProjectData);
         if (window.showToast) window.showToast('✅ Pin updated successfully!', 'success');
         closeProductPinContentEditorModal();
@@ -9766,6 +9777,13 @@ window.closeP3dConfirmModal = closeP3dConfirmModal;
 window.p3dConfirmExecute = p3dConfirmExecute;
 window._p3dExecuteGenerate = _p3dExecuteGenerate;
 
+
+    function calculateCurrentP3dCost() {
+      const quality = window._p3dState?.currentQuality || 'HIGH';
+      return quality === 'STANDARD' ? 1 : (quality === 'ULTRA' ? 6 : 3);
+    }
+    window.calculateCurrentP3dCost = calculateCurrentP3dCost;
+  
 // ── Primary Action Click Router ───────────────────────────────
 function handleP3dMainCtaClick() {
   if (window._p3dState.isSubmitting) return;
