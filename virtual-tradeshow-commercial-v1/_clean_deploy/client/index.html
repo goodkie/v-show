@@ -5987,7 +5987,13 @@
       }
     }
 
-    // 3. Save Single or Multi-Product Pin
+    
+    window.openProductPinSelectorModal = openProductPinSelectorModal;
+    window.closeProductPinSelectorModal = closeProductPinSelectorModal;
+    window.togglePinProductSelection = togglePinProductSelection;
+    window.saveProductPinSelection = saveProductPinSelection;
+
+// 3. Save Single or Multi-Product Pin
     async function saveProductPinSelection() {
       if (window.pinSelectorSelectedProductIds.length === 0) {
         alert('Please select at least one product for this pin.');

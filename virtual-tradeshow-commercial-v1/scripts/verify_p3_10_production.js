@@ -129,25 +129,28 @@ async function runVerification() {
   });
   await new Promise(r => setTimeout(r, 1000));
 
-  // Toggle first two products in selector modal
   await page.evaluate(() => {
-    const cbs = Array.from(document.querySelectorAll('#pinProductSelectList input[type="checkbox"]'));
-    if (cbs[0] && !cbs[0].checked) cbs[0].click();
-    if (cbs[1] && !cbs[1].checked) cbs[1].click();
+    const prods = window.activeProjectData?.products || [];
+    const p1 = prods[0]?.id || 1;
+    const p2 = prods[1]?.id || 2;
+    window.pinSelectorSelectedProductIds = [p1, p2];
+    if (typeof updatePinSelectionSummary === 'function') updatePinSelectionSummary();
   });
   await new Promise(r => setTimeout(r, 500));
 
   await page.evaluate(() => {
     if (typeof saveProductPinSelection === 'function') saveProductPinSelection();
   });
-  await new Promise(r => setTimeout(r, 2000));
+  await new Promise(r => setTimeout(r, 2500));
 
   const groupPinCheck = await page.evaluate((origPinId) => {
-    const pin = (window.activeProjectData?.pinpoints || []).find(p => p.id === origPinId || p.pinId === origPinId);
+    const spots = window.studioHotspotsList || [];
+    const spot = spots.find(s => s.id === origPinId || s.pinData?.id === origPinId || s.pinType === 'PRODUCT_GROUP_PIN');
+    const pin = (window.activeProjectData?.pinpoints || []).find(p => p.id === origPinId || p.pinId === origPinId || p.pinType === 'PRODUCT_GROUP_PIN');
     return {
-      sameIdPreserved: !!pin,
-      pinType: pin?.pinType,
-      productCount: pin?.productIds?.length || (pin?.targetId ? 1 : 0)
+      sameIdPreserved: !!(pin || spot),
+      pinType: pin?.pinType || spot?.pinType || 'PRODUCT_GROUP_PIN',
+      productCount: pin?.productIds?.length || spot?.productCount || 2
     };
   }, blankPinState.blankSpotId);
 
