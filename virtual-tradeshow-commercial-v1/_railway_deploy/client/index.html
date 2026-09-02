@@ -5483,7 +5483,7 @@
 
     let selectedMultiFiles = [];
 
-    function handleMultiPhotosSelected(input) {
+        function handleMultiPhotosSelected(input) {
       if (input.files && input.files.length > 0) {
         selectedMultiFiles = Array.from(input.files);
         const statusEl = document.getElementById('multi-photos-selected-status');
@@ -5534,8 +5534,9 @@
     // 3D PIN & HOTSPOT ARCHITECTURE (PRODUCT_PIN & CATALOG_PIN)
     // ============================================================
     let studioHotspotsList = [];
-      window.studioHotspotsList = studioHotspotsList;
-      window.activeProjectData = projectData;
+    window.studioHotspotsList = studioHotspotsList;
+    let isDraggingPin = false;
+    window.isDraggingPin = false;
 
     function recalculatePinpointPositions(projectData) {
       const rawPinpoints = projectData?.pinpoints || [];
@@ -7863,7 +7864,6 @@
     // DIRECT MANIPULATION PIN POSITION EDITOR (C11.16-P3.5)
     // ═══════════════════════════════════════════════════════════
     let initialPinCoordinates = {};
-    let isDraggingPin = false;
     let pinAutosaveDebounce = null;
     window.currentEditingPinTarget = { type: 'PRODUCT_PIN', id: '1' };
 
