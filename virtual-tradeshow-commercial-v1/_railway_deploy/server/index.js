@@ -570,6 +570,24 @@ app.use(express.json());
 
 // Static File Routes
 app.use('/uploads', express.static(UPLOADS_DIR));
+
+// ── C11.16-P3.15-R1: Runtime Build Info Endpoint ────────────────
+const P315_BUILD_INFO = {
+  gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'C11.16-P3.15-R1',
+  buildTimestamp: new Date().toISOString(),
+  releaseId: "C11.16-P3.15-R1"
+};
+
+app.get('/api/build-info', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.json({
+    gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || P315_BUILD_INFO.gitCommit,
+    buildTimestamp: P315_BUILD_INFO.buildTimestamp,
+    releaseId: P315_BUILD_INFO.releaseId
+  });
+});
+
+
 app.use('/vendor/spark', express.static(path.join(__dirname, '..', 'node_modules', '@sparkjsdev', 'spark', 'dist')));
 app.use('/vendor/three', express.static(path.join(__dirname, '..', 'node_modules', 'three')));
 
@@ -6387,11 +6405,87 @@ app.get('/api/projects/:id/products', async (req, res) => {
   }
 });
 
+
+// ── C11.16-P3.15-R1: Canonical Project Media Upload Endpoint ────
+app.post(['/api/projects/:id/media', '/api/projects/:id/upload'], upload.single('image'), async (req, res) => {
+  let uploadedFilePath = null;
+  try {
+    const token = extractAuthToken(req);
+    const project = (db.read().projects || []).find(p => p.id === req.params.id);
+    if (!project) return res.status(404).json({ error: 'Project not found.' });
+    if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
+
+    let finalUrl = null;
+    let byteSize = 0;
+    let mimeType = 'image/jpeg';
+    let sha256 = null;
+    const assetId = `ast-prod-${uuidv4().substring(0, 8)}`;
+
+    if (req.file) {
+      uploadedFilePath = req.file.path;
+      const magic = validateImageMagicBytes(req.file.path);
+      if (!magic.valid) {
+        try { fs.unlinkSync(req.file.path); } catch(e) {}
+        return res.status(400).json({ error: 'Security validation failed: Invalid image file magic bytes. Only genuine PNG, JPG, and WebP images are allowed.' });
+      }
+      const fileBuf = fs.readFileSync(req.file.path);
+      sha256 = crypto.createHash('sha256').update(fileBuf).digest('hex');
+      byteSize = req.file.size;
+      mimeType = magic.mime;
+      finalUrl = `/uploads/${req.file.filename}`;
+    } else if (req.body && req.body.dataUrl && req.body.dataUrl.startsWith('data:image/')) {
+      const matches = req.body.dataUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+      if (matches) {
+        const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+        sha256 = crypto.createHash('sha256').update(buffer).digest('hex');
+        byteSize = buffer.length;
+        mimeType = `image/${matches[1]}`;
+        const filename = `capture-${Date.now()}-${uuidv4().substring(0, 8)}.${ext}`;
+        const filepath = path.join(UPLOADS_DIR, filename);
+        fs.writeFileSync(filepath, buffer);
+        finalUrl = `/uploads/${filename}`;
+      }
+    }
+
+    if (!finalUrl) {
+      return res.status(400).json({ error: 'No image file or dataUrl provided.' });
+    }
+
+    res.json({
+      success: true,
+      mediaId: assetId,
+      assetId,
+      url: finalUrl,
+      imageUrl: finalUrl,
+      byteSize,
+      mimeType,
+      sha256,
+      sourceType: req.body?.sourceType || (req.file ? 'FILE_UPLOAD' : 'CAMERA_CAPTURE')
+    });
+  } catch (err) {
+    if (uploadedFilePath) {
+      try { fs.unlinkSync(uploadedFilePath); } catch(e) {}
+    }
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/projects/:id/products', upload.single('productImage'), async (req, res) => {
   let uploadedFilePath = null;
   try {
     const token = extractAuthToken(req);
     const prodData = { ...req.body };
+    // C11.16-P3.15-R1: Preserve pre-uploaded media reference if provided in body
+    if (req.body.imageUrl && !req.file) {
+      prodData.imageUrl = req.body.imageUrl;
+      prodData.assetId = req.body.assetId || `ast-prod-${uuidv4().substring(0, 8)}`;
+      prodData.imageMeta = req.body.imageMeta || {
+        assetId: prodData.assetId,
+        storageRef: req.body.imageUrl,
+        createdAt: new Date().toISOString()
+      };
+    }
     if (req.file) {
       uploadedFilePath = req.file.path;
       const magic = validateImageMagicBytes(req.file.path);
