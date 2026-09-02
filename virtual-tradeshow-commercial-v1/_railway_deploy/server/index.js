@@ -7258,8 +7258,13 @@ app.post('/api/projects/:id/booth-3d/regenerate', async (req, res) => {
           fs.copyFileSync(altGlbTemplate, uniqueGlbPath);
         }
 
-        const baseSplatTemplate = path.join(__dirname, '..', 'client', 'assets', 'demo', 'booth-splat.spz');
-        if (fs.existsSync(baseSplatTemplate)) {
+        const splatCandidates = [
+          path.join(__dirname, '..', 'client', 'assets', 'demo', 'wilo', 'models', 'REAL_WILO_GAUSSIAN_FINAL.spz'),
+          path.join(UPLOADS_DIR, 'models', 'REAL_WILO_GAUSSIAN_FINAL.spz'),
+          path.join(__dirname, '..', 'client', 'assets', 'demo', 'booth-splat.spz')
+        ];
+        const baseSplatTemplate = splatCandidates.find(p => fs.existsSync(p));
+        if (baseSplatTemplate) {
           fs.copyFileSync(baseSplatTemplate, uniqueSplatPath);
         }
 
