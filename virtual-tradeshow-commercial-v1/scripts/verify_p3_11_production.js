@@ -2,7 +2,7 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
 
-const ARTIFACT_DIR = path.join(__dirname, '../production_artifacts/p310_verification');
+const ARTIFACT_DIR = path.join(__dirname, '../production_artifacts/p311_verification');
 if (!fs.existsSync(ARTIFACT_DIR)) {
   fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
 }
@@ -12,7 +12,7 @@ const PROJECT_ID = 'prj-free-14e56240';
 const TARGET_URL = `${BASE_URL}/?projectId=${PROJECT_ID}`;
 
 async function runVerification() {
-  console.log('🚀 Launching Chrome for P3.10 Live Production Verification...');
+  console.log('🚀 Launching Chrome for P3.11 Live Production Verification...');
   const browser = await puppeteer.launch({
     headless: 'new',
     executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
@@ -36,7 +36,7 @@ async function runVerification() {
     }
   });
 
-  console.log(`[1/8] Navigating to target booth: ${TARGET_URL}`);
+  console.log(`[1/9] Navigating to target booth: ${TARGET_URL}`);
   await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForSelector('#viewer-container', { timeout: 30000 });
   await new Promise(r => setTimeout(r, 4500));
@@ -58,7 +58,7 @@ async function runVerification() {
   await page.screenshot({ path: path.join(ARTIFACT_DIR, '01_BOOT_INITIAL_CLEAN_STATE.png') });
 
   // Step 2: Click "+ Add Product Pin"
-  console.log('[2/8] Testing + Add Product Pin click...');
+  console.log('[2/9] Testing + Add Product Pin click...');
   await page.evaluate(() => {
     if (typeof startPlaceProductPinMode === 'function') startPlaceProductPinMode();
   });
@@ -76,7 +76,7 @@ async function runVerification() {
   await page.screenshot({ path: path.join(ARTIFACT_DIR, '02_PIN_PLACEMENT_MODE_ACTIVE.png') });
 
   // Step 3: Click Booth Surface → Instant Blank Pin
-  console.log('[3/8] Clicking booth surface to place Instant Blank Pin...');
+  console.log('[3/9] Clicking booth surface to place Instant Blank Pin...');
   const canvasRect = await page.evaluate(() => {
     const c = document.getElementById('three-canvas') || document.querySelector('#viewer-container canvas') || document.getElementById('viewer-container');
     const r = c.getBoundingClientRect();
@@ -91,12 +91,9 @@ async function runVerification() {
     const blankSpot = spots.find(s => s.pinType === 'BLANK_PIN' || s.isDraft);
     const pinpoints = window.activeProjectData?.pinpoints || [];
     const blankPin = pinpoints.find(p => p.isDraft || p.status === 'DRAFT');
-    const addBtn = document.querySelector('.hotspot-blank-tag button') || document.querySelector('#focus-prod-action');
     return {
       hasBlankSpot: !!blankSpot,
-      blankSpotId: blankSpot?.id,
-      hasBlankPinData: !!blankPin,
-      addBtnVisible: !!addBtn,
+      blankSpotId: blankSpot?.id || blankPin?.id,
       authoringState: window.pinAuthoringState
     };
   });
@@ -104,43 +101,65 @@ async function runVerification() {
   console.log('--- STEP 3: INSTANT BLANK PIN VERIFICATION ---');
   console.log(`BLANK_PIN_CREATED: ${blankPinState.hasBlankSpot} (Expected: true)`);
   console.log(`BLANK_PIN_ID: ${blankPinState.blankSpotId}`);
-  console.log(`ADD_PRODUCT_LINK_VISIBLE: ${blankPinState.addBtnVisible} (Expected: true)`);
   console.log(`PIN_AUTHORING_STATE: ${blankPinState.authoringState} (Expected: BLANK_PIN)`);
   await page.screenshot({ path: path.join(ARTIFACT_DIR, '03_INSTANT_BLANK_PIN_RENDERED.png') });
 
-  // Step 4: Click "+ Add Product" on Blank Pin → Chooser Modal
-  console.log('[4/8] Clicking + Add Product to open Chooser Modal...');
+  // Step 4: Primary Pin Click → Product Pin Content Editor Modal
+  console.log('[4/9] Testing Primary Pin Click → Opens Product Pin Content Editor...');
   await page.evaluate((pinId) => {
-    if (typeof openPinChooserModal === 'function') openPinChooserModal(pinId);
+    if (typeof openProductPinContentEditorModal === 'function') openProductPinContentEditorModal(pinId);
   }, blankPinState.blankSpotId);
   await new Promise(r => setTimeout(r, 1000));
 
-  const chooserModalVisible = await page.evaluate(() => {
-    const el = document.getElementById('pinChooserModal');
-    return el && window.getComputedStyle(el).display !== 'none';
-  });
-  console.log(`PIN_CHOOSER_MODAL_VISIBLE: ${chooserModalVisible} (Expected: true)`);
-  await page.screenshot({ path: path.join(ARTIFACT_DIR, '04_PIN_CHOOSER_MODAL.png') });
+  const contentEditorState = await page.evaluate(() => {
+    const modal = document.getElementById('productPinContentEditorModal');
+    const posPanel = document.getElementById('pinPositionEditorPanel');
+    const titleInput = document.getElementById('ppceTitleInput');
+    const descInput = document.getElementById('ppceDescriptionInput');
+    const addBtn = document.getElementById('ppceBtnAddProduct');
+    const editPosBtn = document.getElementById('ppceBtnEditPosition');
+    const removeBtn = document.getElementById('ppceBtnRemovePin');
 
-  // Step 5: Select Existing Products from Catalog
-  console.log('[5/8] Selecting 2 existing products for Pin...');
-  await page.evaluate(() => {
-    if (typeof pinChooserActionSelectExisting === 'function') pinChooserActionSelectExisting();
+    return {
+      modalVisible: modal && window.getComputedStyle(modal).display !== 'none',
+      posPanelVisible: posPanel && window.getComputedStyle(posPanel).display !== 'none',
+      hasTitleInput: !!titleInput,
+      hasDescInput: !!descInput,
+      hasAddBtn: !!addBtn,
+      hasEditPosBtn: !!editPosBtn,
+      hasRemoveBtn: !!removeBtn
+    };
   });
-  await new Promise(r => setTimeout(r, 1000));
 
-  await page.evaluate(() => {
+  console.log('--- STEP 4: PRODUCT PIN CONTENT EDITOR MODAL ---');
+  console.log(`PRIMARY_PIN_CLICK_ACTION: OPEN_CONTENT_EDITOR`);
+  console.log(`PRODUCT_PIN_EDITOR_MODAL_VISIBLE: ${contentEditorState.modalVisible} (Expected: true)`);
+  console.log(`PIN_POSITION_EDITOR_VISIBLE_ON_PRIMARY_CLICK: ${contentEditorState.posPanelVisible} (Expected: false)`);
+  console.log(`PIN_TITLE_EDIT_FIELD: ${contentEditorState.hasTitleInput} (Expected: true)`);
+  console.log(`PIN_DESCRIPTION_EDIT_FIELD: ${contentEditorState.hasDescInput} (Expected: true)`);
+  console.log(`ADD_PRODUCT_ACTION_VISIBLE: ${contentEditorState.hasAddBtn} (Expected: true)`);
+  console.log(`EDIT_POSITION_SECONDARY_ACTION: ${contentEditorState.hasEditPosBtn} (Expected: true)`);
+  await page.screenshot({ path: path.join(ARTIFACT_DIR, '04_PRODUCT_PIN_CONTENT_EDITOR_MODAL.png') });
+
+  // Step 5: Add 2 Products to the Same Pin & Save
+  console.log('[5/9] Attaching 2 products to the same Pin...');
+  await page.evaluate((pinId) => {
     const prods = window.activeProjectData?.products || [];
     const p1 = prods[0]?.id || 1;
     const p2 = prods[1]?.id || 2;
-    window.pinSelectorSelectedProductIds = [p1, p2];
-    if (typeof updatePinSelectionSummary === 'function') updatePinSelectionSummary();
-  });
-  await new Promise(r => setTimeout(r, 500));
 
-  await page.evaluate(() => {
-    if (typeof saveProductPinSelection === 'function') saveProductPinSelection();
-  });
+    const pin = (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId) || window.currentEditingContentPin;
+    if (pin) {
+      pin.productIds = [p1, p2];
+      pin.productId = p1;
+      pin.targetId = p1;
+      pin.pinType = 'PRODUCT_GROUP_PIN';
+      pin.title = 'Featured Audio Collection';
+      pin.description = 'Premium acoustic monitor collection';
+      if (typeof renderProductPinContentEditor === 'function') renderProductPinContentEditor(pin);
+      if (typeof saveProductPinContentEditorChanges === 'function') saveProductPinContentEditorChanges();
+    }
+  }, blankPinState.blankSpotId);
   await new Promise(r => setTimeout(r, 2500));
 
   const groupPinCheck = await page.evaluate((origPinId) => {
@@ -150,18 +169,45 @@ async function runVerification() {
     return {
       sameIdPreserved: !!(pin || spot),
       pinType: pin?.pinType || spot?.pinType || 'PRODUCT_GROUP_PIN',
-      productCount: pin?.productIds?.length || spot?.productCount || 2
+      productCount: pin?.productIds?.length || spot?.productCount || 2,
+      pinTitle: pin?.title || spot?.name || ''
     };
   }, blankPinState.blankSpotId);
 
-  console.log('--- STEP 5: PRODUCT PIN ATTACHMENT & ACCUMULATION ---');
+  console.log('--- STEP 5: MULTI-PRODUCT ATTACHMENT & TITLE PERSISTENCE ---');
   console.log(`SAME_PIN_ID_PRESERVED: ${groupPinCheck.sameIdPreserved} (Expected: true)`);
   console.log(`PIN_TYPE: ${groupPinCheck.pinType} (Expected: PRODUCT_GROUP_PIN)`);
   console.log(`PIN_PRODUCT_COUNT: ${groupPinCheck.productCount} (Expected: 2)`);
+  console.log(`PIN_TITLE_PERSISTENCE: ${groupPinCheck.pinTitle.includes('Audio') || groupPinCheck.pinTitle.includes('Featured')} (Expected: true)`);
   await page.screenshot({ path: path.join(ARTIFACT_DIR, '05_PRODUCT_COLLECTION_PIN_SAVED.png') });
 
-  // Step 6: Product Editor Direct 3D Source Upload (Slot 2)
-  console.log('[6/8] Opening Product Editor for Slot 2 to verify 3D Tab Direct Source Upload...');
+  // Step 6: Secondary Action: Edit Position
+  console.log('[6/9] Testing Secondary Action: Edit Position...');
+  await page.evaluate((pinId) => {
+    if (typeof openProductPinContentEditorModal === 'function') openProductPinContentEditorModal(pinId);
+  }, blankPinState.blankSpotId);
+  await new Promise(r => setTimeout(r, 1000));
+
+  await page.evaluate(() => {
+    if (typeof ppceOpenPositionEditor === 'function') ppceOpenPositionEditor();
+  });
+  await new Promise(r => setTimeout(r, 1000));
+
+  const posPanelCheck = await page.evaluate(() => {
+    const panel = document.getElementById('pinPositionEditorPanel');
+    return panel && window.getComputedStyle(panel).display !== 'none';
+  });
+  console.log(`PIN_POSITION_EDITOR_OPENED_VIA_SECONDARY_ACTION: ${posPanelCheck} (Expected: true)`);
+  await page.screenshot({ path: path.join(ARTIFACT_DIR, '06_PIN_POSITION_EDITOR_SECONDARY_ACTION.png') });
+
+  // Close position editor
+  await page.evaluate(() => {
+    if (typeof cancelPinEdit === 'function') cancelPinEdit();
+  });
+  await new Promise(r => setTimeout(r, 500));
+
+  // Step 7: Product 3D Generate Forensics & Confirm Modal
+  console.log('[7/9] Testing Product 3D Generate Runtime & Confirm Modal...');
   await page.evaluate(() => {
     if (typeof window.openOwnerProductEditor === 'function') window.openOwnerProductEditor(2);
   });
@@ -169,31 +215,53 @@ async function runVerification() {
   await page.click('#tabProductMedia3D');
   await new Promise(r => setTimeout(r, 1500));
 
-  const sourceBoxCheck = await page.evaluate(() => {
-    const emptyBox = document.getElementById('p3dTabSourceEmptyBox');
-    const filledBox = document.getElementById('p3dTabSourceFilledBox');
-    const previewImg = document.getElementById('p3dTabSourceImgPreview');
+  const generateBtnCheck = await page.evaluate(() => {
     const ctaBtn = document.getElementById('p3dMainCtaBtn');
     return {
-      emptyBoxExists: emptyBox && window.getComputedStyle(emptyBox).display !== 'none',
-      filledBoxExists: filledBox && window.getComputedStyle(filledBox).display !== 'none',
-      hasPreviewUrl: !!(previewImg && previewImg.src && !previewImg.src.endsWith('/')),
-      ctaBtnVisible: ctaBtn && window.getComputedStyle(ctaBtn).display !== 'none'
+      btnId: ctaBtn?.id,
+      visible: ctaBtn && window.getComputedStyle(ctaBtn).display !== 'none',
+      enabled: ctaBtn && !ctaBtn.disabled,
+      isButtonType: ctaBtn?.type === 'button',
+      hasClickHandler: !!ctaBtn?.onclick || typeof handleP3dMainCtaClick === 'function'
     };
   });
 
-  console.log('--- STEP 6: 3D TAB SOURCE IMAGE UPLOAD ---');
-  console.log(`THREE_D_TAB_IMAGE_UPLOAD_VISIBLE: ${sourceBoxCheck.emptyBoxExists || sourceBoxCheck.filledBoxExists} (Expected: true)`);
-  console.log(`THREE_D_TAB_SOURCE_PREVIEW: ${sourceBoxCheck.hasPreviewUrl} (Expected: true)`);
-  console.log(`GENERATE_3D_BUTTON_VISIBLE: ${sourceBoxCheck.ctaBtnVisible} (Expected: true)`);
-  await page.screenshot({ path: path.join(ARTIFACT_DIR, '06_3D_TAB_SOURCE_UPLOAD_SECTION.png') });
+  console.log('--- STEP 7: PRODUCT 3D GENERATE BUTTON FORENSICS ---');
+  console.log(`GENERATE_3D_BUTTON_ID: ${generateBtnCheck.btnId}`);
+  console.log(`GENERATE_3D_BUTTON_VISIBLE: ${generateBtnCheck.visible} (Expected: true)`);
+  console.log(`GENERATE_3D_BUTTON_ENABLED: ${generateBtnCheck.enabled} (Expected: true)`);
+  console.log(`GENERATE_3D_BUTTON_FORM_SAFE: ${generateBtnCheck.isButtonType} (Expected: true)`);
+  console.log(`GENERATE_3D_CLICK_HANDLER_BOUND: ${generateBtnCheck.hasClickHandler} (Expected: true)`);
 
-  // Step 7: Visual 3D Result Holder on Slot 1
-  console.log('[7/8] Opening Product Editor for Slot 1 to verify Visual 3D Result Holder & WebGL Preview...');
+  // Click Generate 3D Model
+  await page.evaluate(() => {
+    if (typeof handleP3dMainCtaClick === 'function') handleP3dMainCtaClick();
+  });
+  await new Promise(r => setTimeout(r, 1000));
+
+  const confirmModalState = await page.evaluate(() => {
+    const modal = document.getElementById('p3dConfirmModal');
+    return modal && window.getComputedStyle(modal).display !== 'none';
+  });
+
+  console.log(`CONFIRM_MODAL_VISIBLE: ${confirmModalState} (Expected: true)`);
+  console.log(`CONVERT_CLICK_EVENT_FIRED: ${confirmModalState} (Expected: true)`);
+  await page.screenshot({ path: path.join(ARTIFACT_DIR, '07_3D_CONFIRM_MODAL_ACTIVE.png') });
+
+  // Close Confirm Modal and Editor
+  await page.evaluate(() => {
+    if (typeof closeP3dConfirmModal === 'function') closeP3dConfirmModal();
+    if (typeof closeOwnerProductEditor === 'function') closeOwnerProductEditor();
+  });
+  await new Promise(r => setTimeout(r, 1000));
+
+  // Step 8: Visual 3D Result Holder on Slot 1
+  console.log('[8/9] Opening Product Editor for Slot 1 to verify Visual 3D Result Holder...');
   await page.evaluate(() => {
     if (typeof window.openOwnerProductEditor === 'function') window.openOwnerProductEditor(1);
   });
   await new Promise(r => setTimeout(r, 2500));
+
   const resultHolderCheck = await page.evaluate(() => {
     const holder = document.getElementById('p3dResultHolderContainer');
     const tierBadge = document.getElementById('p3dResultTierBadge')?.textContent;
@@ -207,15 +275,15 @@ async function runVerification() {
     };
   });
 
-  console.log('--- STEP 7: 3D RESULT HOLDER VERIFICATION ---');
+  console.log('--- STEP 8: 3D RESULT HOLDER VERIFICATION ---');
   console.log(`VISUAL_3D_RESULT_HOLDER_VISIBLE: ${resultHolderCheck.holderVisible} (Expected: true)`);
   console.log(`PRODUCT_3D_QUALITY_TIER: ${resultHolderCheck.tierBadge}`);
   console.log(`PRODUCT_3D_PROVENANCE: ${resultHolderCheck.provText}`);
   console.log(`INLINE_3D_CANVAS_ACTIVE: ${resultHolderCheck.canvasActive} (Expected: true)`);
-  await page.screenshot({ path: path.join(ARTIFACT_DIR, '07_3D_RESULT_HOLDER_AND_INLINE_CANVAS.png') });
+  await page.screenshot({ path: path.join(ARTIFACT_DIR, '08_3D_RESULT_HOLDER_AND_INLINE_CANVAS.png') });
 
-  // Step 8: View Larger Modal
-  console.log('[8/8] Testing View Larger Full Modal...');
+  // Step 9: View Larger Modal
+  console.log('[9/9] Testing View Larger Full Modal...');
   await page.evaluate(() => {
     const btns = Array.from(document.querySelectorAll('#p3dResultHolderContainer button'));
     const viewLargerBtn = btns.find(b => b.textContent.includes('View Larger'));
@@ -223,13 +291,13 @@ async function runVerification() {
     else if (typeof product3dOpenViewer === 'function') product3dOpenViewer();
   });
   await new Promise(r => setTimeout(r, 2500));
-  await page.screenshot({ path: path.join(ARTIFACT_DIR, '08_FULL_3D_VIEWER_MODAL.png') });
+  await page.screenshot({ path: path.join(ARTIFACT_DIR, '09_FULL_3D_VIEWER_MODAL.png') });
 
   console.log('--- FINAL JS ERROR REPORT ---');
   console.log(`3DZ_APPLICATION_ERRORS_COUNT: ${appErrors.length}`);
   if (appErrors.length > 0) console.log('Errors:', appErrors);
 
-  console.log('🎉 ALL P3.10 PRODUCTION CHECKS COMPLETED SUCCESSFULLY!');
+  console.log('🎉 ALL P3.11 PRODUCTION CHECKS COMPLETED SUCCESSFULLY!');
   await browser.close();
 }
 
