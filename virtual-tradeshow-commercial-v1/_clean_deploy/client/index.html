@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <script>
-  window.__3DZ_BUILD_INFO__ = { gitCommit: "eb58eca", releaseId: "C11.16-P3.15-R3" };
+  window.__3DZ_BUILD_INFO__ = { gitCommit: "96fba32", releaseId: "C11.16-P3.15-R4" };
   fetch('/api/build-info').then(function(r){return r.json();}).then(function(d){if(d&&d.gitCommit)window.__3DZ_BUILD_INFO__.gitCommit=d.gitCommit;}).catch(function(){});
   </script>
 
@@ -5891,7 +5891,7 @@
       const pin = (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId);
       const coords = pin ? { u: pin.u, v: pin.v } : (window.lastPlacedPinCoords || { u: 0.5, v: 0.5 });
       
-      // C11.16-P3.15-R3: Store stable pendingProductCreationContext
+      // C11.16-P3.15-R4: Store stable pendingProductCreationContext
       window.pendingProductCreationContext = {
         projectId: activeProjectId || window.activeProjectData?.id,
         pinId: pinId,
@@ -6468,7 +6468,7 @@
       const modal = document.getElementById('ownerProductEditorModal');
       if (!modal) return;
 
-      // C11.16-P3.15-R3: Cleanly reset transient 3D state on open to prevent cross-session leakage
+      // C11.16-P3.15-R4: Cleanly reset transient 3D state on open to prevent cross-session leakage
       if (window._p3dState) {
         window._p3dState.primarySourceImageUrl = null;
         window._p3dState.sourceImageUrl = null;
@@ -6508,7 +6508,7 @@
         window.pendingProductCreationContext = null;
       }
 
-      // C11.16-P3.15-R3: One Canonical Product Draft Store
+      // C11.16-P3.15-R4: One Canonical Product Draft Store
       const draftId = 'draft-' + Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 5);
       const origPinId = options.pinId || window.pendingProductCreationContext?.pinId || window.currentEditingPinId || window.currentEditingContentPin?.id || null;
 
@@ -7974,7 +7974,7 @@
     }
 
     // ═══════════════════════════════════════════════════════════
-    // CANONICAL PRODUCT MEDIA UPLOAD & PERSISTENCE (C11.16-P3.15-R3)
+    // CANONICAL PRODUCT MEDIA UPLOAD & PERSISTENCE (C11.16-P3.15-R4)
     // Shared between File Upload and Camera Capture
     // ═══════════════════════════════════════════════════════════
     async function uploadProductMedia(fileOrBlob, sourceType = 'UPLOAD') {
@@ -8020,7 +8020,7 @@
           throw new Error(data.error || 'Server rejected media upload');
         }
 
-        // Canonical server persistence confirmed (C11.16-P3.15-R3)
+        // Canonical server persistence confirmed (C11.16-P3.15-R4)
         window.productDraft = window.productDraft || {};
         const mediaObj = {
           mediaId: data.mediaId || data.assetId,
@@ -10490,7 +10490,7 @@ function openProductCameraCapture(viewLabel = 'Front View') {
 
 // ════════════════════════════════════════════════════════════
 // ════════════════════════════════════════════════════════════
-// C11.16-P3.15-R3: Canonical 3D Readiness & Media Sync Store
+// C11.16-P3.15-R4: Canonical 3D Readiness & Media Sync Store
 // ════════════════════════════════════════════════════════════
 const PRODUCT_3D_MIN_VIEWS_STANDARD = 1;
 const PRODUCT_3D_MIN_VIEWS_HIGH = 3;
@@ -10848,7 +10848,7 @@ async function renderProduct3dSection(slot, product) {
     selectP3dQuality(initialTier);
     renderAdditionalViewsList();
 
-    // C11.16-P3.15-R3: Delegated to updateP3dMultiViewReadiness for deterministic gating
+    // C11.16-P3.15-R4: Delegated to updateP3dMultiViewReadiness for deterministic gating
     updateP3dMultiViewReadiness();
 
     const warn = document.getElementById('p3dWarningBanner');
@@ -11092,7 +11092,7 @@ window.retakeProductCameraPhoto = retakeProductCameraPhoto;
 window.useProductCameraPhoto = useProductCameraPhoto;
 window.closeCameraModal = closeCameraModal;
 
-// ── C11.16-P3.15-R3: Single Canonical Generate Router (P3D_GENERATE_ROUTER_COUNT = 1) ──
+// ── C11.16-P3.15-R4: Single Canonical Generate Router (P3D_GENERATE_ROUTER_COUNT = 1) ──
 function handleProduct3dGenerateRequest() {
   if (window._p3dState.isSubmitting) return;
   const p3d = window._p3dState.product3d;
@@ -11130,7 +11130,7 @@ function handleProduct3dGenerateRequest() {
 window.handleProduct3dGenerateRequest = handleProduct3dGenerateRequest;
 window.handleP3dMainCtaClick = handleProduct3dGenerateRequest;
 
-// ── C11.16-P3.15-R3: Single Canonical Convert Router (P3D_CONVERT_ROUTER_COUNT = 1) ──
+// ── C11.16-P3.15-R4: Single Canonical Convert Router (P3D_CONVERT_ROUTER_COUNT = 1) ──
 async function handleProduct3dConvertRequest() {
   await p3dConfirmExecute();
 }
@@ -11201,7 +11201,7 @@ function removeP3dTabSourceImage() {
 }
 window.removeP3dTabSourceImage = removeP3dTabSourceImage;
 
-// ── C11.16-P3.15-R3: Robust Modal Lock & Topmost Confirm Architecture ──
+// ── C11.16-P3.15-R4: Robust Modal Lock & Topmost Confirm Architecture ──
 function lockUnderlyingModal() {
   const edCard = document.querySelector('#ownerProductEditorModal .viewport-modal-card');
   if (edCard) edCard.setAttribute('aria-hidden', 'true');
@@ -11346,12 +11346,15 @@ async function _p3dExecuteGenerate(isRegen) {
     p3dStartPolling(slot);
 
   } catch (e) {
-    alert('Request failed: ' + e.message);
+    alert('Conversion Error: ' + e.message);
     renderProduct3dSection(slot, window.activeProjectData?.products?.find(p => String(p.slotIndex) === String(slot)));
   } finally {
-    // ALWAYS release submission lock after HTTP request acknowledgment (Sec. 22 & 40)
+    // ALWAYS release submission lock after HTTP request acknowledgment (Sec. 9, 22, 40)
     window._p3dState.isSubmitting = false;
     unlockUnderlyingModal();
+    if (typeof renderProduct3dSourceState === 'function') {
+      renderProduct3dSourceState();
+    }
   }
 }
 

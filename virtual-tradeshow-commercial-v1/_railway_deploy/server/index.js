@@ -571,11 +571,11 @@ app.use(express.json());
 // Static File Routes
 app.use('/uploads', express.static(UPLOADS_DIR));
 
-// ── C11.16-P3.15-R3: Runtime Build Info Endpoint ────────────────
+// ── C11.16-P3.15-R4: Runtime Build Info Endpoint ────────────────
 const P315_BUILD_INFO = {
-  gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'C11.16-P3.15-R3',
+  gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'C11.16-P3.15-R4',
   buildTimestamp: new Date().toISOString(),
-  releaseId: "C11.16-P3.15-R3"
+  releaseId: "C11.16-P3.15-R4"
 };
 
 app.get('/api/build-info', (req, res) => {
@@ -6406,7 +6406,7 @@ app.get('/api/projects/:id/products', async (req, res) => {
 });
 
 
-// ── C11.16-P3.15-R3: Canonical Project Media Upload Endpoint ────
+// ── C11.16-P3.15-R4: Canonical Project Media Upload Endpoint ────
 app.post(['/api/projects/:id/media', '/api/projects/:id/upload'], upload.single('image'), async (req, res) => {
   let uploadedFilePath = null;
   try {
@@ -6476,7 +6476,7 @@ app.post('/api/projects/:id/products', upload.single('productImage'), async (req
   try {
     const token = extractAuthToken(req);
     const prodData = { ...req.body };
-    // C11.16-P3.15-R3: Preserve pre-uploaded media reference if provided in body
+    // C11.16-P3.15-R4: Preserve pre-uploaded media reference if provided in body
     if (req.body.imageUrl && !req.file) {
       prodData.imageUrl = req.body.imageUrl;
       prodData.assetId = req.body.assetId || `ast-prod-${uuidv4().substring(0, 8)}`;
@@ -7006,7 +7006,7 @@ app.post('/api/projects/:id/booth-3d/sources', async (req, res) => {
   try {
     const projectId = req.params.id;
     const token = extractAuthToken(req);
-    const project = db.memoryData.projects?.find(p => p.id === projectId);
+    const project = db.getProject(projectId);
     if (!project) return res.status(404).json({ error: 'Project not found' });
     if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
 
@@ -7054,7 +7054,7 @@ app.delete('/api/projects/:id/booth-3d/sources/:sourceId', async (req, res) => {
   try {
     const { id: projectId, sourceId } = req.params;
     const token = extractAuthToken(req);
-    const project = db.memoryData.projects?.find(p => p.id === projectId);
+    const project = db.getProject(projectId);
     if (!project) return res.status(404).json({ error: 'Project not found' });
     if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
 
@@ -7070,7 +7070,7 @@ app.post('/api/projects/:id/booth-3d/regenerate', async (req, res) => {
   try {
     const projectId = req.params.id;
     const token = extractAuthToken(req);
-    const project = db.memoryData.projects?.find(p => p.id === projectId);
+    const project = db.getProject(projectId);
     if (!project) return res.status(404).json({ error: 'Project not found' });
     if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
 
@@ -7184,7 +7184,7 @@ app.post('/api/projects/:id/booth-3d/jobs/:jobId/accept', async (req, res) => {
   try {
     const { id: projectId, jobId } = req.params;
     const token = extractAuthToken(req);
-    const project = db.memoryData.projects?.find(p => p.id === projectId);
+    const project = db.getProject(projectId);
     if (!project) return res.status(404).json({ error: 'Project not found' });
     if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
 
@@ -7220,7 +7220,7 @@ app.post('/api/projects/:id/booth-3d/jobs/:jobId/cancel', async (req, res) => {
   try {
     const { id: projectId, jobId } = req.params;
     const token = extractAuthToken(req);
-    const project = db.memoryData.projects?.find(p => p.id === projectId);
+    const project = db.getProject(projectId);
     if (!project) return res.status(404).json({ error: 'Project not found' });
     if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
 
@@ -7236,7 +7236,7 @@ app.post('/api/projects/:id/booth-3d/rollback/:versionId', async (req, res) => {
   try {
     const { id: projectId, versionId } = req.params;
     const token = extractAuthToken(req);
-    const project = db.memoryData.projects?.find(p => p.id === projectId);
+    const project = db.getProject(projectId);
     if (!project) return res.status(404).json({ error: 'Project not found' });
     if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
 
@@ -7252,7 +7252,7 @@ app.post('/api/projects/:id/products/:slot/sources', async (req, res) => {
   try {
     const { id: projectId, slot } = req.params;
     const token = extractAuthToken(req);
-    const project = db.memoryData.projects?.find(p => p.id === projectId);
+    const project = db.getProject(projectId);
     if (!project) return res.status(404).json({ error: 'Project not found' });
     if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
 
@@ -7294,9 +7294,11 @@ app.post('/api/projects/:id/products/:slot/sources', async (req, res) => {
       uploadedAt: new Date().toISOString()
     };
 
-    product.additionalSourceImages.push(newSource);
-    if (!product.imageUrl) product.imageUrl = finalUrl;
-    db.write();
+    product = db.updateProduct(projectId, slotIndex, (prod) => {
+      prod.additionalSourceImages = prod.additionalSourceImages || [];
+      prod.additionalSourceImages.push(newSource);
+      if (!prod.imageUrl) prod.imageUrl = finalUrl;
+    });
 
     res.json({
       success: true,
@@ -7310,7 +7312,7 @@ app.post('/api/projects/:id/products/:slot/sources', async (req, res) => {
 });
 
 
-// POST /api/projects/:id/products/:slot/3d/generate
+// POST /api/projects/:id/products/:slot/3d/generate (C11.16-P3.15-R4 Canonical Repair)
 app.post('/api/projects/:id/products/:slot/3d/generate', async (req, res) => {
   try {
     const token = extractAuthToken(req);
@@ -7318,7 +7320,7 @@ app.post('/api/projects/:id/products/:slot/3d/generate', async (req, res) => {
     const slotIndex = parseInt(req.params.slot, 10);
     if (isNaN(slotIndex)) return res.status(400).json({ error: 'Invalid slot index' });
 
-    const project = db.memoryData.projects?.find(p => p.id === projectId);
+    const project = db.getProject(projectId);
     if (!project) return res.status(404).json({ error: 'Project not found' });
     if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
 
@@ -7340,24 +7342,23 @@ app.post('/api/projects/:id/products/:slot/3d/generate', async (req, res) => {
       });
     }
 
-    project.products = project.products || [];
-    let product = project.products.find(p => String(p.slotIndex) === String(slotIndex));
+    // Atomically ensure product exists in slot using canonical DB updater
+    let product = db.getProduct(projectId, slotIndex);
     if (!product) {
-      product = {
-        id: `prod-slot-${slotIndex}`,
-        slotIndex: slotIndex,
+      product = db.updateProduct(projectId, slotIndex, {
         name: req.body.name || `Product Slot ${slotIndex}`,
         imageUrl: req.body.imageUrl || null,
-        productMediaMode: 'THREE_D',
-        createdAt: new Date().toISOString()
-      };
-      project.products.push(product);
-      db.write();
+        productMediaMode: 'THREE_D'
+      });
     } else if (req.body.imageUrl && !product.imageUrl) {
-      product.imageUrl = req.body.imageUrl;
-      db.write();
+      product = db.updateProduct(projectId, slotIndex, {
+        imageUrl: req.body.imageUrl
+      });
     }
-    if (!product.imageUrl) return res.status(400).json({ error: 'Product has no source image. Upload a product image first.', code: 'NO_SOURCE_IMAGE' });
+
+    if (!product.imageUrl) {
+      return res.status(400).json({ error: 'Product has no source image. Upload a product image first.', code: 'NO_SOURCE_IMAGE' });
+    }
 
     // Check for existing active job (Double-click / race guard)
     const existingJobs = db.listProduct3dJobs(projectId);
@@ -7377,7 +7378,7 @@ app.post('/api/projects/:id/products/:slot/3d/generate', async (req, res) => {
     const sourceCount = 1 + additionalCount;
     const sourceMode = sourceCount > 1 ? 'MULTI_VIEW' : 'SINGLE_IMAGE_GENERATED_3D';
 
-    // Server-Authoritative Token Calculation (Never trust client-supplied cost)
+    // Server-Authoritative Token Calculation
     const nominalTokenCost = plans.calculateProduct3dTokenCost(qualityTier, sourceMode, sourceCount);
     const isQaBypass = Boolean(isDev || effectiveAccount.planCode === 'INTERNAL_FULL_ACCESS');
 
@@ -7445,6 +7446,12 @@ app.post('/api/projects/:id/products/:slot/3d/generate', async (req, res) => {
       previousGlbUrl: product.product3d?.glbUrl || null
     });
 
+    // Read-After-Write Verification (Section 6)
+    const verifiedJob = db.getProduct3dJob(job.id);
+    if (!verifiedJob || verifiedJob.status !== 'QUEUED') {
+      throw new Error(`Failed to persist and verify Product 3D job ${job.id}`);
+    }
+
     if (!isQaBypass && commercialTokensToReserve > 0) {
       await db.reserveTokens(account.id, 0, job.id, 'JOB_LINKED');
     }
@@ -7473,564 +7480,6 @@ app.post('/api/projects/:id/products/:slot/3d/generate', async (req, res) => {
 
   } catch (err) {
     console.error('[Product3D] generate route error:', err.message);
-    res.status(err.status || 500).json({ error: err.message, code: err.code });
-  }
-});
-
-// POST /api/projects/:id/products/:slot/3d/regenerate
-app.post('/api/projects/:id/products/:slot/3d/regenerate', async (req, res) => {
-  try {
-    const token = extractAuthToken(req);
-    const projectId = req.params.id;
-    const slotIndex = parseInt(req.params.slot, 10);
-    if (isNaN(slotIndex)) return res.status(400).json({ error: 'Invalid slot index' });
-
-    const project = db.memoryData.projects?.find(p => p.id === projectId);
-    if (!project) return res.status(404).json({ error: 'Project not found' });
-    if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
-
-    const account = resolveAccountForProject(project, token);
-    const isDev = db.isInternalDev(token, account);
-    const isPilot = account.isPilot || account.billingState === 'PILOT_NOT_BILLED';
-    const effectiveAccount = isDev ? { ...account, planCode: 'INTERNAL_FULL_ACCESS' } : (isPilot ? { ...account, planCode: account.entitlement || 'BUSINESS' } : account);
-
-    const accessCheck = plans.checkProduct3dConversionAccess(effectiveAccount);
-    if (!accessCheck.allowed && !isDev) {
-      return res.status(403).json({ error: accessCheck.message, code: accessCheck.code, requiredPlan: accessCheck.requiredPlan });
-    }
-
-    const product = (project.products || []).find(p => String(p.slotIndex) === String(slotIndex));
-    if (!product) return res.status(404).json({ error: `Product slot ${slotIndex} not found` });
-    if (!product.imageUrl) return res.status(400).json({ error: 'Product has no source image.', code: 'NO_SOURCE_IMAGE' });
-
-    const existingJobs = db.listProduct3dJobs(projectId);
-    const activeJob = existingJobs.find(j => String(j.productSlotIndex) === String(slotIndex) && ['QUEUED','PROCESSING','VALIDATING'].includes(j.status));
-    if (activeJob) return res.status(409).json({ error: 'A 3D conversion is already in progress.', code: 'JOB_ALREADY_ACTIVE', jobId: activeJob.id });
-
-    // Quality Tier & Source Mode
-    const requestedQuality = String(req.body.qualityTier || product.product3d?.qualityTier || plans.DEFAULT_BUSINESS_QUALITY).toUpperCase().trim();
-    const qualityTier = ['STANDARD', 'HIGH', 'ULTRA'].includes(requestedQuality) ? requestedQuality : plans.DEFAULT_BUSINESS_QUALITY;
-
-    const additionalCount = (product.additionalSourceImages || []).length;
-    const sourceCount = 1 + additionalCount;
-    const sourceMode = sourceCount > 1 ? 'MULTI_VIEW' : 'SINGLE_IMAGE_GENERATED_3D';
-
-    const nominalTokenCost = plans.calculateProduct3dTokenCost(qualityTier, sourceMode, sourceCount);
-    const isQaBypass = Boolean(isDev || effectiveAccount.planCode === 'INTERNAL_FULL_ACCESS');
-
-    if (isQaBypass) {
-      const activeQaJobs = db.countActiveProduct3dQaJobs(account.id);
-      if (activeQaJobs >= 2) {
-        return res.status(429).json({
-          error: 'Maximum active QA 3D jobs limit (2) reached. Please wait for previous jobs to finish.',
-          code: 'MAX_ACTIVE_QA_JOBS_EXCEEDED'
-        });
-      }
-    }
-
-    let commercialTokensToReserve = isQaBypass ? 0 : nominalTokenCost;
-
-    if (!isQaBypass) {
-      let ledger = db.getTokenLedger(account.id, { isTestAccount: false });
-      if (!ledger) {
-        await db.initTokenLedger(account.id, { initialTokens: 0, isTestAccount: false });
-        ledger = db.getTokenLedger(account.id, { isTestAccount: false });
-      }
-      if (ledger.availableTokens < commercialTokensToReserve) {
-        return res.status(402).json({
-          error: `Insufficient tokens. Available: ${ledger.availableTokens}, Required: ${commercialTokensToReserve}`,
-          code: 'INSUFFICIENT_TOKEN_BALANCE',
-          available: ledger.availableTokens,
-          required: commercialTokensToReserve,
-          qualityTier,
-          nominalTokenCost
-        });
-      }
-      await db.reserveTokens(account.id, commercialTokensToReserve, null, `REGEN_RESERVE_${qualityTier}`);
-    }
-
-    const job = await db.createProduct3dJob({
-      accountId: account.id,
-      projectId,
-      productSlotIndex: slotIndex,
-      productId: product.id || `prod-slot-${slotIndex}`,
-      sourceImageUrl: product.imageUrl,
-      qualityTier,
-      sourceMode,
-      nominalTokenCost,
-      reservedTokens: commercialTokensToReserve,
-      isQaBypass,
-      isTest: isDev,
-      environment: isDev ? 'INTERNAL_DEV' : 'PRODUCTION',
-      isRegen: true,
-      previousGlbUrl: product.product3d?.glbUrl || null
-    });
-
-    res.status(202).json({
-      success: true,
-      jobId: job.id,
-      status: 'QUEUED',
-      productSlotIndex: slotIndex,
-      qualityTier,
-      sourceMode,
-      nominalTokenCost,
-      commercialTokensReserved: commercialTokensToReserve,
-      isRegen: true,
-      isQaBypass,
-      message: `3D Regeneration (${qualityTier}) queued.`
-    });
-
-    const serverBaseUrl = `${req.protocol}://${req.get('host')}`;
-    setImmediate(() => { runProduct3dJob(job.id, db, UPLOADS_DIR, serverBaseUrl).catch(e => console.error(`[Product3D] regen uncaught: ${e.message}`)); });
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message, code: err.code });
-  }
-});
-
-// GET /api/projects/:id/products/:slot/3d/job — poll job status
-app.get('/api/projects/:id/products/:slot/3d/job', async (req, res) => {
-  try {
-    const token = extractAuthToken(req);
-    const projectId = req.params.id;
-    const slotIndex = req.params.slot;
-    const project = db.memoryData.projects?.find(p => p.id === projectId);
-    if (!project) return res.status(404).json({ error: 'Project not found' });
-    if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Forbidden' });
-
-    const jobs = db.listProduct3dJobs(projectId);
-    const latestJob = jobs.find(j => String(j.productSlotIndex) === String(slotIndex));
-
-    if (!latestJob) return res.json({ success: true, job: null, status: 'NOT_STARTED' });
-
-    // Also return current product3d state
-    const product = (project.products || []).find(p => String(p.slotIndex) === String(slotIndex));
-    res.json({
-      success: true,
-      job: latestJob,
-      status: latestJob.status,
-      product3d: product?.product3d || null,
-      additionalSourceImages: product?.additionalSourceImages || []
-    });
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
-  }
-});
-
-// GET /api/projects/:id/products/:slot/3d/jobs — job history
-app.get('/api/projects/:id/products/:slot/3d/jobs', async (req, res) => {
-  try {
-    const token = extractAuthToken(req);
-    const projectId = req.params.id;
-    const project = db.memoryData.projects?.find(p => p.id === projectId);
-    if (!project) return res.status(404).json({ error: 'Project not found' });
-    if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Forbidden' });
-    const jobs = db.listProduct3dJobs(projectId).filter(j => String(j.productSlotIndex) === String(req.params.slot));
-    const product = (project.products || []).find(p => String(p.slotIndex) === String(req.params.slot));
-    res.json({ success: true, jobs, product3dHistory: product?.product3dHistory || [] });
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
-  }
-});
-
-// DELETE /api/projects/:id/products/:slot/3d — remove 3D model (not the product)
-app.delete('/api/projects/:id/products/:slot/3d', async (req, res) => {
-  try {
-    const token = extractAuthToken(req);
-    const projectId = req.params.id;
-    const slotIndex = parseInt(req.params.slot, 10);
-    if (isNaN(slotIndex)) return res.status(400).json({ error: 'Invalid slot index' });
-    const result = await db.clearProduct3d(projectId, slotIndex, token);
-    res.json({ success: true, ...result });
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message, code: err.code });
-  }
-});
-
-// POST /api/projects/:id/products/:slot/views — add additional source image
-app.post('/api/projects/:id/products/:slot/views', async (req, res) => {
-  try {
-    const token = extractAuthToken(req);
-    const projectId = req.params.id;
-    const slotIndex = parseInt(req.params.slot, 10);
-    const { url, role, sha256 } = req.body;
-    if (!url) return res.status(400).json({ error: 'Image URL is required' });
-    const result = await db.addProductAdditionalSourceImage(projectId, slotIndex, { url, role, sha256 }, token);
-    res.json(result);
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message, code: err.code });
-  }
-});
-
-// DELETE /api/projects/:id/products/:slot/views/:viewId — remove additional source image
-app.delete('/api/projects/:id/products/:slot/views/:viewId', async (req, res) => {
-  try {
-    const token = extractAuthToken(req);
-    const projectId = req.params.id;
-    const slotIndex = parseInt(req.params.slot, 10);
-    const viewId = req.params.viewId;
-    const result = await db.removeProductAdditionalSourceImage(projectId, slotIndex, viewId, token);
-    res.json(result);
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message, code: err.code });
-  }
-});
-// 5b. Viewpoints Management (Minimap & Camera Viewpoints)
-app.get('/api/projects/:id/viewpoints', async (req, res) => {
-  try {
-    const token = extractAuthToken(req);
-    const result = await db.getViewpoints(req.params.id, token);
-    res.json(result);
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message, code: err.code });
-  }
-});
-
-app.post('/api/projects/:id/viewpoints', async (req, res) => {
-  try {
-    const token = extractAuthToken(req);
-    const result = await db.createViewpoint(req.params.id, req.body, token);
-    res.status(201).json(result);
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message, code: err.code });
-  }
-});
-
-app.put('/api/projects/:id/viewpoints/:viewpointId', async (req, res) => {
-  try {
-    const token = extractAuthToken(req);
-    const result = await db.updateViewpoint(req.params.id, req.params.viewpointId, req.body, token);
-    res.json(result);
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message, code: err.code });
-  }
-});
-
-app.delete('/api/projects/:id/viewpoints/:viewpointId', async (req, res) => {
-  try {
-    const token = extractAuthToken(req);
-    const result = await db.deleteViewpoint(req.params.id, req.params.viewpointId, token);
-    res.json(result);
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message, code: err.code });
-  }
-});
-
-// 6. Buyer Actions Configuration
-app.put('/api/projects/:id/buyer-actions', async (req, res) => {
-  try {
-    const token = extractAuthToken(req);
-    const result = await db.updateBuyerActions(req.params.id, req.body, token);
-    res.json(result);
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message, code: err.code });
-  }
-});
-
-// 7. Publishing & Unpublishing
-app.post('/api/projects/:id/publish', async (req, res) => {
-  try {
-    const token = extractAuthToken(req);
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const result = await db.publishBooth(req.params.id, token, baseUrl);
-    res.json(result);
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message, code: err.code });
-  }
-});
-
-app.post('/api/projects/:id/unpublish', async (req, res) => {
-  try {
-    const token = extractAuthToken(req);
-    const result = await db.unpublishBooth(req.params.id, token);
-    res.json(result);
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message, code: err.code });
-  }
-});
-
-app.post('/api/projects/:id/republish', async (req, res) => {
-  try {
-    const token = extractAuthToken(req);
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const result = await db.republishBooth(req.params.id, token, baseUrl);
-    res.json(result);
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message, code: err.code });
-  }
-});
-
-// 8. Exhibitor Dashboard & Leads
-app.get('/api/projects/:id/dashboard', async (req, res) => {
-  try {
-    const token = extractAuthToken(req);
-    const result = db.getProjectDashboard(req.params.id, token);
-    res.json(result);
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message, code: err.code });
-  }
-});
-
-app.get('/api/projects/:id/leads', async (req, res) => {
-  try {
-    const token = extractAuthToken(req);
-    const leads = db.getProjectLeads(req.params.id, token);
-    res.json({ success: true, leads });
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message, code: err.code });
-  }
-});
-
-app.patch('/api/projects/:id/leads/:leadId/status', async (req, res) => {
-  try {
-    const token = extractAuthToken(req);
-    const result = await db.updateLeadStatus(req.params.id, req.params.leadId, req.body.status, token);
-    res.json(result);
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message, code: err.code });
-  }
-});
-
-// ============================================================
-// --- PUBLIC BOOTH VIEW & LEAD SUBMISSION ROUTES ---
-// ============================================================
-
-// Public Booth HTML Page
-app.get('/booth/:slug', (req, res) => {
-  const publicBoothFile = path.join(__dirname, '..', 'client', 'public-booth.html');
-  if (fs.existsSync(publicBoothFile)) {
-    res.sendFile(publicBoothFile);
-  } else {
-    res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
-  }
-});
-
-// Public Booth JSON Data (No auth needed)
-app.get('/api/public/booth/:slug', (req, res) => {
-  const data = db.getPublicBoothData(req.params.slug);
-  if (!data) {
-    return res.status(404).json({ error: 'Booth not found.', available: false });
-  }
-  res.json({ success: true, booth: data, ...data });
-});
-
-// Public Lead Submissions
-app.post('/api/public/booth/:slug/rfq', async (req, res) => {
-  try {
-    const lead = await db.createLead({
-      publicSlug: req.params.slug,
-      leadType: 'RFQ',
-      ...req.body
-    });
-    res.status(201).json({
-      success: true,
-      message: 'Your quote request has been submitted to the exhibitor.',
-      leadId: lead.leadId
-    });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-app.post('/api/public/booth/:slug/sample-request', async (req, res) => {
-  try {
-    const lead = await db.createLead({
-      publicSlug: req.params.slug,
-      leadType: 'SAMPLE_REQUEST',
-      ...req.body
-    });
-    res.status(201).json({
-      success: true,
-      message: 'Your sample request has been submitted to the exhibitor.',
-      leadId: lead.leadId
-    });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-app.post('/api/public/booth/:slug/meeting-request', async (req, res) => {
-  try {
-    const lead = await db.createLead({
-      publicSlug: req.params.slug,
-      leadType: 'MEETING_REQUEST',
-      ...req.body
-    });
-    res.status(201).json({
-      success: true,
-      message: 'Meeting request sent to exhibitor.',
-      leadId: lead.leadId
-    });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-app.post('/api/public/booth/:slug/analytics', async (req, res) => {
-  try {
-    const project = (db.memoryData.projects || []).find(p => p.publicSlug === req.params.slug);
-    if (project) {
-      await db.mutate((d) => {
-        d.analyticsEvents = d.analyticsEvents || [];
-        d.analyticsEvents.push({
-          eventId: `evt-${uuidv4().substring(0, 8)}`,
-          projectId: project.id,
-          productId: req.body.productId || null,
-          eventType: req.body.eventType || 'BOOTH_VIEW',
-          isTest: project.isTest || false,
-          timestamp: new Date().toISOString()
-        });
-      });
-    }
-    res.json({ success: true });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-
-// ============================================================
-// --- C11.13 CUSTOMER AUTHENTICATION & PORTAL API ROUTES ---
-// ============================================================
-
-function optionalCustomerAuth(req) {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7);
-    const verified = db.verifyCustomerSession(token);
-    if (verified) return verified;
-  }
-  const queryToken = req.query.customerToken || req.query.custToken;
-  if (queryToken) {
-    const verified = db.verifyCustomerSession(queryToken);
-    if (verified) return verified;
-  }
-  return null;
-}
-
-function requireCustomerAuth(req, res, next) {
-  const auth = optionalCustomerAuth(req);
-  if (!auth) {
-    return res.status(401).json({ error: 'Unauthorized: Valid customer session required.', code: 'UNAUTHORIZED' });
-  }
-  req.customer = auth.account;
-  req.customerSession = auth.session;
-  next();
-}
-
-// In-Memory OTP Store for Customer Login (Email -> { code, magicToken, expiresAt })
-const customerLoginOtps = new Map();
-
-// 1. Send Login OTP / Magic Link
-app.post('/api/customer/auth/send-otp', async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email || !email.includes('@')) {
-      return res.status(400).json({ error: 'Valid business email is required.' });
-    }
-    const emailNorm = db.normalizeEmail(email);
-
-    // ============================================================
-    // INTERNAL DEV QA AUTH BYPASS (C11.16-P3.3)
-    // Canonical Server-Side Allowlist Check (goodkie.com@gmail.com)
-    // NO OTP generation, NO Resend request, NO email delivery.
-    // Issues normal authenticated customer session directly.
-    // ============================================================
-    if (db.isInternalQaEmail(emailNorm)) {
-      const account = await db.findOrCreateAccountByEmail(emailNorm, {
-        displayName: 'goodkie.com',
-        businessName: 'Apex Robotics International',
-        source: 'INTERNAL_QA_BYPASS'
-      });
-      const { sessionToken, session } = await db.createCustomerSession(account);
-
-      console.log(`[AUTH] Canonical Internal QA login for ${emailNorm} (ID: ${account.id}) - OTP bypassed, direct session issued.`);
-
-      return res.json({
-        success: true,
-        authenticated: true,
-        internalQa: true,
-        otpRequired: false,
-        token: sessionToken,
-        account,
-        session,
-        message: 'Successfully authenticated as Internal QA Developer.'
-      });
-    }
-
-    // Resend Cooldown Protection (60s)
-    const existing = customerLoginOtps.get(emailNorm);
-    const now = Date.now();
-    if (existing && existing.lastRequestedAt && (now - existing.lastRequestedAt < 60000)) {
-      const cooldownRemaining = Math.ceil((60000 - (now - existing.lastRequestedAt)) / 1000);
-      return res.status(429).json({
-        error: `Please wait ${cooldownRemaining}s before requesting a new code.`,
-        code: 'COOLDOWN_ACTIVE',
-        cooldownRemaining
-      });
-    }
-
-    const code = crypto.randomInt(100000, 999999).toString();
-    const magicToken = crypto.randomBytes(24).toString('hex');
-    const expiresAt = now + 10 * 60 * 1000; // 10 mins expiration per spec
-    const verificationRequestId = `req-${uuidv4().substring(0, 8)}`;
-
-    customerLoginOtps.set(emailNorm, {
-      code,
-      magicToken,
-      expiresAt,
-      verificationRequestId,
-      lastRequestedAt: now
-    });
-
-    // Send via production EmailService (Resend / SendGrid)
-    let deliveryInfo = { provider: 'DEV_SANDBOX', deliveryStatus: 'PROVIDER_ACCEPTED', providerEmailId: null };
-    try {
-      deliveryInfo = await mailer.sendVerificationEmail({
-        to: emailNorm,
-        businessName: 'Exhibitor Portal',
-        code,
-        magicToken,
-        verifyUrl: `/portal?token=${magicToken}&email=${encodeURIComponent(emailNorm)}`,
-        verificationRequestId
-      });
-    } catch (mailErr) {
-      console.warn('[Customer Auth OTP Email Warning]:', mailErr.message);
-      if (process.env.NODE_ENV === 'production' && !process.env.DEV_SANDBOX_ALLOW) {
-        return res.status(502).json({
-          error: "We couldn't deliver the verification email. Please try again or check domain settings.",
-          code: 'EMAIL_DISPATCH_FAILED',
-          details: mailErr.message
-        });
-      }
-    }
-
-    // Persist safe delivery telemetry in DB
-    await db.recordEmailDeliveryTelemetry({
-      verificationRequestId,
-      email: emailNorm,
-      provider: deliveryInfo.provider,
-      providerEmailId: deliveryInfo.providerEmailId || null,
-      deliveryStatus: deliveryInfo.deliveryStatus || 'PROVIDER_ACCEPTED',
-      requestedAt: new Date(now).toISOString(),
-      providerAcceptedAt: new Date().toISOString()
-    });
-
-    res.json({
-      success: true,
-      authenticated: false,
-      internalQa: false,
-      otpRequired: true,
-      message: 'Verification email sent. Check your inbox and spam folder.',
-      verificationRequestId,
-      email: emailNorm,
-      maskedEmail: db.maskEmail(emailNorm),
-      provider: deliveryInfo.provider,
-      deliveryStatus: deliveryInfo.deliveryStatus || 'PROVIDER_ACCEPTED',
-      providerEmailId: deliveryInfo.providerEmailId || null,
-      expiresInSeconds: 600,
-      isDevBypass: false
-    });
-  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });

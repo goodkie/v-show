@@ -1482,6 +1482,13 @@ class JSONDatabase {
 
   write(data) {
     try {
+      if (!data) {
+        data = this.memoryData || this.read();
+      }
+      if (!data || typeof data !== 'object') {
+        console.error('[DB] Refusing to write invalid/undefined data to database');
+        return false;
+      }
       this.memoryData = data;
       fs.writeFileSync(TEMP_DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
       fs.renameSync(TEMP_DB_FILE, DB_FILE);
@@ -1490,6 +1497,62 @@ class JSONDatabase {
       console.error('Error writing database:', err);
       return false;
     }
+  }
+
+  // ── Canonical Project & Product Access Layer (C11.16-P3.15-R4) ──
+  getProject(projectId) {
+    const data = this.read();
+    return (data.projects || []).find(p => p.id === projectId) || null;
+  }
+
+  async getProjectById(projectId) {
+    return this.getProject(projectId);
+  }
+
+  getProduct(projectId, slotOrId) {
+    const project = this.getProject(projectId);
+    if (!project || !project.products) return null;
+    return project.products.find(p => String(p.slotIndex) === String(slotOrId) || p.id === String(slotOrId)) || null;
+  }
+
+  updateProject(projectId, updater) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) throw new Error(`Project ${projectId} not found`);
+      if (typeof updater === 'function') {
+        updater(project);
+      } else if (typeof updater === 'object' && updater !== null) {
+        Object.assign(project, updater);
+      }
+      project.updatedAt = new Date().toISOString();
+      return project;
+    });
+  }
+
+  updateProduct(projectId, slotIndex, updater) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) throw new Error(`Project ${projectId} not found`);
+      project.products = project.products || [];
+      let product = project.products.find(p => String(p.slotIndex) === String(slotIndex));
+      if (!product) {
+        product = {
+          id: `prod-slot-${slotIndex}`,
+          slotIndex: Number(slotIndex),
+          name: `Product Slot ${slotIndex}`,
+          createdAt: new Date().toISOString()
+        };
+        project.products.push(product);
+      }
+      if (typeof updater === 'function') {
+        updater(product);
+      } else if (typeof updater === 'object' && updater !== null) {
+        Object.assign(product, updater);
+      }
+      product.updatedAt = new Date().toISOString();
+      project.updatedAt = new Date().toISOString();
+      return product;
+    });
   }
 
   mutate(callback) {
@@ -12190,8 +12253,7 @@ return event;
   // ─── P3.7: getProjectById helper ─────────────────────────────
   // ============================================================
   async getProjectById(projectId) {
-    const data = this.memoryData;
-    return (data.projects || []).find(p => p.id === projectId) || null;
+    return this.getProject(projectId);
   }
 
   // ============================================================
@@ -12446,7 +12508,7 @@ return event;
    * Used to enforce MAX_ACTIVE_PRODUCT_3D_QA_JOBS concurrency safety.
    */
   countActiveProduct3dQaJobs(accountId) {
-    const data = this.memoryData;
+    const data = this.read();
     return (data.product3dJobs || []).filter(j =>
       j.accountId === accountId &&
       ['QUEUED', 'PROCESSING', 'VALIDATING'].includes(j.status)
@@ -12500,7 +12562,7 @@ return event;
   }
 
   async getProduct3dJob(jobId) {
-    const data = this.memoryData;
+    const data = this.read();
     return (data.product3dJobs || []).find(j => j.id === jobId) || null;
   }
 
@@ -12515,7 +12577,7 @@ return event;
   }
 
   listProduct3dJobs(projectId, { limit = 20 } = {}) {
-    const data = this.memoryData;
+    const data = this.read();
     return ((data.product3dJobs || [])
       .filter(j => j.projectId === projectId)
       .slice(-limit)
