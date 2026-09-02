@@ -41,26 +41,19 @@ async function runPersistenceForensics() {
     await dialog.accept();
   });
 
-  page.on('console', msg => console.log(`[Browser Console ${msg.type()}]: ${msg.text()}`));
+  page.on('console', msg => {
+    const txt = msg.text();
+    if (!txt.includes('iframe') && !txt.includes('DevTools')) {
+      console.log(`[Browser Console ${msg.type()}]: ${txt}`);
+    }
+  });
+
   const appErrors = [];
   page.on('pageerror', err => {
     const msg = err.message || '';
     if (!msg.includes('i18next') && !msg.includes('Smart Unit') && !msg.includes('antiPhishing')) {
       appErrors.push(msg);
       console.log('[App Error]:', msg);
-    }
-  });
-
-  // Track network requests
-  const networkLogs = [];
-  page.on('response', async res => {
-    const url = res.url();
-    if (url.includes('/api/')) {
-      networkLogs.push({
-        url: url.replace(/https?:\/\/[^\/]+/, ''),
-        status: res.status(),
-        method: res.request().method()
-      });
     }
   });
 
@@ -76,13 +69,11 @@ async function runPersistenceForensics() {
   console.log(`INITIAL_SERVER_GET_STATUS: ${initialGet.status}`);
   console.log(`INITIAL_PERSISTED_PINPOINTS_COUNT: ${initialPins.length}`);
 
-  // Find or create test QA Pin
-  let testPin = initialPins[0];
   const timestamp = Date.now().toString(36);
   const testTitle = `PERSISTENCE QA ${timestamp}`;
   const testDesc = `Server persistence verification ${timestamp}`;
 
-  // Step 2: Create Instant Blank Pin if needed or use existing Pin
+  // Step 2: Create Instant Blank Pin
   console.log('[2/8] Creating new QA Pin for strict persistence forensics...');
   await page.evaluate(() => {
     if (typeof startPlaceProductPinMode === 'function') startPlaceProductPinMode();
@@ -104,8 +95,8 @@ async function runPersistenceForensics() {
       pinId: blankSpot?.id || (window.activeProjectData?.pinpoints || []).slice(-1)[0]?.id
     };
   });
-  const pinId = createdPinInfo.pinId;
-  console.log(`QA_PIN_ID: ${pinId}`);
+  let pinId = createdPinInfo.pinId;
+  console.log(`QA_PIN_INITIAL_ID: ${pinId}`);
 
   // Step 3: Open Product Pin Content Editor, Edit Title/Desc & Attach 2 Products
   console.log(`[3/8] Opening Product Pin Content Editor for ${pinId} and editing content...`);
@@ -137,24 +128,34 @@ async function runPersistenceForensics() {
 
   // Step 4: Click [ Save Changes ] & Trace HTTP write request
   console.log('[4/8] Clicking [ Save Changes ] and awaiting durable server write...');
-  const saveResult = await page.evaluate(async () => {
-    const btn = document.getElementById('ppceBtnSaveChanges');
+  await page.evaluate(async () => {
     if (typeof saveProductPinContentEditorChanges === 'function') {
       await saveProductPinContentEditorChanges();
-      return { success: true };
     }
-    return { success: false };
   });
   await new Promise(r => setTimeout(r, 3000));
+
+  const savedPinInfo = await page.evaluate(() => {
+    const pin = (window.activeProjectData?.pinpoints || []).slice(-1)[0];
+    return {
+      pinId: pin?.id || pin?.pinId,
+      title: pin?.title,
+      description: pin?.description,
+      productIds: pin?.productIds
+    };
+  });
+  const finalPinId = savedPinInfo.pinId;
+  console.log(`SAVED_PIN_FINAL_ID: ${finalPinId}`);
 
   // Step 5: Direct Read-After-Write Server Verification (Fresh HTTP GET, bypass client memory)
   console.log('[5/8] Performing direct Fresh Server GET (Read-After-Write)...');
   const freshGet = await httpGet(`${BASE_URL}/api/free-funnel/projects/${PROJECT_ID}`);
-  const freshPin = (freshGet.data?.project?.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId);
+  const freshPin = (freshGet.data?.project?.pinpoints || []).find(p => p.id === finalPinId || p.pinId === finalPinId || p.title === testTitle);
 
   console.log('--- STEP 5: READ-AFTER-WRITE SERVER VERIFICATION ---');
   console.log(`FRESH_GET_STATUS: ${freshGet.status}`);
   console.log(`PIN_RECORD_FOUND_IN_SERVER_DB: ${!!freshPin}`);
+  console.log(`PIN_ID_IN_DB: "${freshPin?.id || freshPin?.pinId}"`);
   console.log(`PIN_TITLE_IN_DB: "${freshPin?.title || freshPin?.label}" (Expected: "${testTitle}")`);
   console.log(`PIN_DESCRIPTION_IN_DB: "${freshPin?.description || freshPin?.note}" (Expected: "${testDesc}")`);
   console.log(`PIN_PRODUCT_IDS_IN_DB: ${JSON.stringify(freshPin?.productIds)} (Expected: length 2)`);
@@ -171,21 +172,23 @@ async function runPersistenceForensics() {
   await new Promise(r => setTimeout(r, 4500));
 
   // Verify pin is present in client 3D hotspots list after reload
-  const reloadClientCheck = await page.evaluate((id) => {
+  const reloadClientCheck = await page.evaluate((targetTitle) => {
     const spots = window.studioHotspotsList || [];
-    const spot = spots.find(s => s.id === id || s.pinData?.id === id);
-    const pin = (window.activeProjectData?.pinpoints || []).find(p => p.id === id || p.pinId === id);
+    const spot = spots.find(s => s.name === targetTitle || s.title === targetTitle);
+    const pin = (window.activeProjectData?.pinpoints || []).find(p => p.title === targetTitle || p.label === targetTitle);
     return {
       spotFound: !!spot,
+      spotId: spot?.id,
       spotName: spot?.name,
       spotType: spot?.pinType,
       spotProductCount: spot?.productCount || spot?.productIds?.length,
       pinFound: !!pin,
+      pinId: pin?.id,
       pinTitle: pin?.title || pin?.label,
       pinDesc: pin?.description || pin?.note,
       pinProductCount: pin?.productIds?.length
     };
-  }, pinId);
+  }, testTitle);
 
   console.log('--- STEP 6: BROWSER HARD RELOAD VERIFICATION ---');
   console.log(`PIN_PRESENT_IN_HOTSPOTS_AFTER_REFRESH: ${reloadClientCheck.spotFound} (Expected: true)`);
@@ -195,9 +198,9 @@ async function runPersistenceForensics() {
 
   // Step 7: Re-open Product Pin Content Editor on refreshed page
   console.log('[7/8] Reopening Product Pin Content Editor after hard refresh...');
-  await page.evaluate((id) => {
-    if (typeof openProductPinContentEditorModal === 'function') openProductPinContentEditorModal(id);
-  }, pinId);
+  await page.evaluate((targetId) => {
+    if (typeof openProductPinContentEditorModal === 'function') openProductPinContentEditorModal(targetId);
+  }, reloadClientCheck.pinId || finalPinId);
   await new Promise(r => setTimeout(r, 1200));
 
   const modalAfterReload = await page.evaluate(() => {
