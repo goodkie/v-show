@@ -5464,55 +5464,7 @@
           tex.needsUpdate = true;
           photoMaterial.map = tex;
           photoMaterial.needsUpdate = true;
-          
-      // 3. Add custom & floating pins (Product Pins, Group Pins, Blank Pins)
-      rawPinpoints.forEach((pin, pIdx) => {
-        const pinId = pin.id || pin.pinId;
-        if (!pinId) return;
-        // Skip if already in hotspots list (e.g. standard slot pins or catalog pins)
-        if (studioHotspotsList.some(s => s.id === pinId || (pin.slotIndex && s.slotIndex === pin.slotIndex))) {
-          // If slot pin has custom title/coords from pinpoints, sync it
-          const existingSpot = studioHotspotsList.find(s => s.id === pinId || (pin.slotIndex && s.slotIndex === pin.slotIndex));
-          if (existingSpot) {
-            if (pin.title || pin.label) existingSpot.name = pin.title || pin.label;
-            if (typeof pin.u === 'number') existingSpot.u = pin.u;
-            if (typeof pin.v === 'number') existingSpot.v = pin.v;
-            existingSpot.pinData = pin;
-            if (pin.productIds) existingSpot.productIds = pin.productIds;
-            if (pin.description || pin.note) existingSpot.description = pin.description || pin.note;
-          }
-          return;
-        }
-
-        const pIds = Array.isArray(pin.productIds) ? pin.productIds : (pin.productId ? [pin.productId] : (pin.targetId ? [pin.targetId] : []));
-        const attachedProds = pIds.map(pid => rawProducts.find(p => String(p.id) === String(pid) || String(p.slotIndex) === String(pid))).filter(Boolean);
-        const isBlank = attachedProds.length === 0 && pin.pinType === 'BLANK_PIN';
-        const isGroup = attachedProds.length >= 2 || pin.pinType === 'PRODUCT_GROUP_PIN';
-        
-        const spotName = pin.title || pin.label || (attachedProds[0]?.name) || (isBlank ? 'Empty Product Pin' : 'Product Pin');
-        const spotCat = isBlank ? 'DRAFT' : (attachedProds[0]?.category || (isGroup ? 'COLLECTION' : 'PRODUCT'));
-        const spotImg = attachedProds[0]?.imageUrl || '/assets/product-placeholder.jpg';
-
-        studioHotspotsList.push({
-          id: pinId,
-          pinType: pin.pinType || (isBlank ? 'BLANK_PIN' : (isGroup ? 'PRODUCT_GROUP_PIN' : 'PRODUCT_PIN')),
-          targetId: pin.targetId || (attachedProds[0]?.id || null),
-          name: spotName,
-          title: spotName,
-          category: spotCat,
-          imageUrl: spotImg,
-          productCount: attachedProds.length,
-          productIds: pIds,
-          isDraft: isBlank,
-          isConfigured: !isBlank,
-          pinData: pin,
-          u: typeof pin.u === 'number' ? pin.u : 0.5,
-          v: typeof pin.v === 'number' ? pin.v : 0.5,
-          worldPos: new THREE.Vector3(0, 0, -400)
-        });
-      });
-  
-      recalculatePinpointPositions(projectData);
+          recalculatePinpointPositions(projectData);
         });
       }
 

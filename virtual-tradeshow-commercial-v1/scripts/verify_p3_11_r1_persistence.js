@@ -41,11 +41,13 @@ async function runPersistenceForensics() {
     await dialog.accept();
   });
 
+  page.on('console', msg => console.log(`[Browser Console ${msg.type()}]: ${msg.text()}`));
   const appErrors = [];
   page.on('pageerror', err => {
     const msg = err.message || '';
     if (!msg.includes('i18next') && !msg.includes('Smart Unit') && !msg.includes('antiPhishing')) {
       appErrors.push(msg);
+      console.log('[App Error]:', msg);
     }
   });
 
