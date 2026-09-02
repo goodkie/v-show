@@ -6995,7 +6995,7 @@ app.get('/api/projects/:id/booth-3d/sources', async (req, res) => {
   try {
     const projectId = req.params.id;
     const sources = db.listBoothSources(projectId);
-    res.json({ success: true, sources });
+    res.json({ success: true, sources, allSources: sources });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
