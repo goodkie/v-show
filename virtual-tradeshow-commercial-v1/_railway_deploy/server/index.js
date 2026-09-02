@@ -566,7 +566,26 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
 });
 
 // JSON Body Parser for all other routes
-app.use(express.json());
+// JSON Body Parser with 50mb limit for high-res photo uploads and camera captures
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.too.large') {
+    return res.status(413).json({
+      error: 'PAYLOAD_TOO_LARGE',
+      code: 'PAYLOAD_TOO_LARGE',
+      message: 'Uploaded image or payload exceeds the 50MB size limit.'
+    });
+  }
+  if (err && err instanceof SyntaxError && 'body' in err) {
+    return res.status(400).json({
+      error: 'INVALID_JSON_BODY',
+      code: 'INVALID_JSON_BODY',
+      message: err.message
+    });
+  }
+  next(err);
+});
 
 // Static File Routes
 app.use('/uploads', express.static(UPLOADS_DIR));
@@ -8641,7 +8660,7 @@ app.all('/api/*', (req, res) => {
 
 // C11.16-P3.16: Canonical Global API Error Handler (prevents default Express HTML)
 app.use((err, req, res, next) => {
-  if (req.path && req.path.startsWith('/api/')) {
+  if ((req.path && req.path.startsWith('/api/')) || (req.originalUrl && req.originalUrl.startsWith('/api/'))) {
     console.error('[API Unhandled Error]', req.method, req.path, err);
     return res.status(err.status || 500).json({
       error: err.message || 'INTERNAL_SERVER_ERROR',
