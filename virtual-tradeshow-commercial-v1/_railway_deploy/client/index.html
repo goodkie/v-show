@@ -2250,6 +2250,8 @@
       <!-- CENTER: 3D PLAYER + PRODUCT SHORTCUT CARDS -->
       <div id="player-workspace">
         <!-- OWNER STUDIO TOP TOOLBAR (Visible in OWNER_EDITOR mode) -->
+
+                <!-- OWNER STUDIO TOP TOOLBAR (Visible in OWNER_EDITOR mode) -->
         <div id="ownerStudioToolbar" style="display: none; background: rgba(5,11,22,0.96); backdrop-filter: blur(16px); border: 1px solid rgba(56,189,248,0.35); border-radius: 12px; padding: 10px 16px; margin-bottom: 12px; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <div style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 11px; font-weight: 800; color: #38bdf8; background: rgba(56,189,248,0.12); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(56,189,248,0.3); text-transform: uppercase;">
@@ -2264,14 +2266,17 @@
           </div>
 
           <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-            <button class="btn-ui" onclick="openOwnerProductEditor()" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-              <i class="fa-solid fa-plus"></i> Add Product
+            <button class="btn-ui" id="btnOwnerToolbarAddPin" onclick="startPlaceProductPinMode()" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Click anywhere on the booth to place a single or multi-product pin">
+              <i class="fa-solid fa-map-pin"></i> + Add Product Pin
+            </button>
+            <button class="btn-ui" id="btnOwnerToolbarAddProduct" onclick="openOwnerProductEditor()" style="padding: 6px 12px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-box"></i> Add Product
             </button>
             <button class="btn-ui" id="btnOwnerToolbarCatalogs" onclick="openCatalogManager()" style="padding: 6px 12px; font-size: 12px; font-weight: 700; background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.35); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
               <i class="fa-solid fa-book-open"></i> Catalogs
             </button>
-            <button class="btn-ui" id="btnOwnerToolbarPins" onclick="openPinManagerModal()" style="padding: 6px 12px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-              <i class="fa-solid fa-location-dot"></i> 3D Pins
+            <button class="btn-ui" id="btnOwnerToolbarPins" onclick="openPinManagerModal()" style="padding: 6px 12px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Manage all Product and Catalog Pins">
+              <i class="fa-solid fa-location-dot"></i> Pins
             </button>
             <button class="btn-ui" id="btnOwnerToolbarViews" onclick="openViewpointManager()" style="padding: 6px 12px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
               <i class="fa-solid fa-camera"></i> Viewpoints

@@ -19962,301 +19962,56 @@
           "coordinateSystem": "NORMALIZED_2D"
         }
       ],
-      "pinpoints": [
-        {
-          "id": "pin-fp-0776f5",
-          "productId": "prod-fp-4cbd43",
-          "productName": "Apex Industrial Robotic Arm X-1",
-          "u": 0.42,
-          "v": 0.65,
-          "label": "Apex Industrial Robotic Arm X-1",
-          "createdAt": "2026-08-24T20:39:01.302Z"
-        },
-        {
-          "id": "pin-3f33eb8f",
-          "pinId": "pin-3f33eb8f",
-          "projectId": "prj-free-b0c6f3ea",
-          "sourceId": "src-default",
-          "pinType": "CATALOG_PIN",
-          "targetId": "cat-36f3769c",
-          "productId": null,
-          "catalogId": "cat-36f3769c",
-          "slotIndex": null,
-          "u": 0.72,
-          "v": 0.45,
-          "yaw": 0,
-          "pitch": 0,
-          "coordinateSystem": "SPHERICAL",
-          "label": "QA 3D Catalog Pin",
-          "status": "ACTIVE",
-          "isBlank": false,
-          "createdAt": "2026-09-01T10:28:46.644Z",
-          "updatedAt": "2026-09-01T10:28:46.644Z"
-        },
-        {
-          "id": "pin-987d3441",
-          "pinId": "pin-987d3441",
-          "projectId": "prj-free-b0c6f3ea",
-          "sourceId": "src-default",
-          "pinType": "CATALOG_PIN",
-          "targetId": "cat-6d7d10be",
-          "productId": null,
-          "catalogId": "cat-6d7d10be",
-          "slotIndex": null,
-          "u": 0.72,
-          "v": 0.45,
-          "yaw": 0,
-          "pitch": 0,
-          "coordinateSystem": "SPHERICAL",
-          "label": "QA 3D Catalog Pin",
-          "status": "ACTIVE",
-          "isBlank": false,
-          "createdAt": "2026-09-01T10:31:39.968Z",
-          "updatedAt": "2026-09-01T10:31:39.968Z"
-        },
-        {
-          "id": "pin-e623284c",
-          "pinId": "pin-e623284c",
-          "projectId": "prj-free-b0c6f3ea",
-          "sourceId": "src-default",
-          "pinType": "PRODUCT_PIN",
-          "targetId": "prod-slot-3",
-          "productId": "prod-slot-3",
-          "catalogId": null,
-          "productIds": [],
-          "title": "Sensor & Gripper Combo",
-          "label": "Sensor & Gripper Combo",
-          "slotIndex": null,
-          "u": 0.35,
-          "v": 0.55,
-          "yaw": 0,
-          "pitch": 0,
-          "coordinateSystem": "SPHERICAL",
-          "status": "ACTIVE",
-          "isBlank": false,
-          "createdAt": "2026-09-01T22:02:00.286Z",
-          "updatedAt": "2026-09-01T22:02:00.970Z"
-        },
-        {
-          "id": "pin-78a9730e",
-          "pinId": "pin-78a9730e",
-          "projectId": "prj-free-b0c6f3ea",
-          "sourceId": "src-default",
-          "pinType": "PRODUCT_PIN",
-          "targetId": "prod-slot-3",
-          "productId": "prod-slot-3",
-          "catalogId": null,
-          "productIds": [],
-          "title": "Sensor & Gripper Combo",
-          "label": "Sensor & Gripper Combo",
-          "slotIndex": null,
-          "u": 0.35,
-          "v": 0.55,
-          "yaw": 0,
-          "pitch": 0,
-          "coordinateSystem": "SPHERICAL",
-          "status": "ACTIVE",
-          "isBlank": false,
-          "createdAt": "2026-09-01T22:02:51.279Z",
-          "updatedAt": "2026-09-01T22:02:51.644Z"
-        },
-        {
-          "id": "pin-41d54441",
-          "pinId": "pin-41d54441",
-          "projectId": "prj-free-b0c6f3ea",
-          "sourceId": "src-default",
-          "pinType": "PRODUCT_PIN",
-          "targetId": "prod-slot-3",
-          "productId": "prod-slot-3",
-          "catalogId": null,
-          "productIds": [],
-          "title": "Sensor & Gripper Combo",
-          "label": "Sensor & Gripper Combo",
-          "slotIndex": null,
-          "u": 0.35,
-          "v": 0.55,
-          "yaw": 0,
-          "pitch": 0,
-          "coordinateSystem": "SPHERICAL",
-          "status": "ACTIVE",
-          "isBlank": false,
-          "createdAt": "2026-09-01T22:03:25.448Z",
-          "updatedAt": "2026-09-01T22:03:25.748Z"
-        },
-        {
-          "id": "pin-7ee3eec9",
-          "pinId": "pin-7ee3eec9",
-          "projectId": "prj-free-b0c6f3ea",
-          "sourceId": "src-default",
-          "pinType": "PRODUCT_PIN",
-          "targetId": "prod-slot-3",
-          "productId": "prod-slot-3",
-          "catalogId": null,
-          "productIds": [],
-          "title": "Sensor & Gripper Combo",
-          "label": "Sensor & Gripper Combo",
-          "slotIndex": null,
-          "u": 0.35,
-          "v": 0.55,
-          "yaw": 0,
-          "pitch": 0,
-          "coordinateSystem": "SPHERICAL",
-          "status": "ACTIVE",
-          "isBlank": false,
-          "createdAt": "2026-09-01T22:04:06.179Z",
-          "updatedAt": "2026-09-01T22:04:07.201Z"
-        },
-        {
-          "id": "pin-0f407744",
-          "pinId": "pin-0f407744",
-          "projectId": "prj-free-b0c6f3ea",
-          "sourceId": "src-default",
-          "pinType": "PRODUCT_PIN",
-          "targetId": "prod-slot-3",
-          "productId": "prod-slot-3",
-          "catalogId": null,
-          "productIds": [],
-          "title": "Sensor & Gripper Combo",
-          "label": "Sensor & Gripper Combo",
-          "slotIndex": null,
-          "u": 0.35,
-          "v": 0.55,
-          "yaw": 0,
-          "pitch": 0,
-          "coordinateSystem": "SPHERICAL",
-          "status": "ACTIVE",
-          "isBlank": false,
-          "createdAt": "2026-09-01T22:06:10.175Z",
-          "updatedAt": "2026-09-01T22:06:10.491Z"
-        },
-        {
-          "id": "pin-6741ec80",
-          "pinId": "pin-6741ec80",
-          "projectId": "prj-free-b0c6f3ea",
-          "sourceId": "src-default",
-          "pinType": "PRODUCT_PIN",
-          "targetId": "prod-slot-3",
-          "productId": "prod-slot-3",
-          "catalogId": null,
-          "productIds": [],
-          "title": "Sensor & Gripper Combo",
-          "label": "Sensor & Gripper Combo",
-          "slotIndex": null,
-          "u": 0.35,
-          "v": 0.55,
-          "yaw": 0,
-          "pitch": 0,
-          "coordinateSystem": "SPHERICAL",
-          "status": "ACTIVE",
-          "isBlank": false,
-          "createdAt": "2026-09-01T22:08:26.089Z",
-          "updatedAt": "2026-09-01T22:08:26.525Z"
-        },
-        {
-          "id": "pin-d938952f",
-          "pinId": "pin-d938952f",
-          "projectId": "prj-free-b0c6f3ea",
-          "sourceId": "src-default",
-          "pinType": "PRODUCT_PIN",
-          "targetId": "prod-slot-3",
-          "productId": "prod-slot-3",
-          "catalogId": null,
-          "productIds": [],
-          "title": "Sensor & Gripper Combo",
-          "label": "Sensor & Gripper Combo",
-          "slotIndex": null,
-          "u": 0.35,
-          "v": 0.55,
-          "yaw": 0,
-          "pitch": 0,
-          "coordinateSystem": "SPHERICAL",
-          "status": "ACTIVE",
-          "isBlank": false,
-          "createdAt": "2026-09-01T22:10:28.518Z",
-          "updatedAt": "2026-09-01T22:10:28.727Z"
-        },
-        {
-          "id": "pin-a57180f5",
-          "pinId": "pin-a57180f5",
-          "projectId": "prj-free-b0c6f3ea",
-          "sourceId": "src-default",
-          "pinType": "PRODUCT_PIN",
-          "targetId": "prod-slot-3",
-          "productId": "prod-slot-3",
-          "catalogId": null,
-          "productIds": [],
-          "title": "Sensor & Gripper Combo",
-          "label": "Sensor & Gripper Combo",
-          "slotIndex": null,
-          "u": 0.35,
-          "v": 0.55,
-          "yaw": 0,
-          "pitch": 0,
-          "coordinateSystem": "SPHERICAL",
-          "status": "ACTIVE",
-          "isBlank": false,
-          "createdAt": "2026-09-01T22:11:31.285Z",
-          "updatedAt": "2026-09-01T22:11:31.741Z"
-        },
-        {
-          "id": "pin-c6c11cc1",
-          "pinId": "pin-c6c11cc1",
-          "projectId": "prj-free-b0c6f3ea",
-          "sourceId": "src-default",
-          "pinType": "PRODUCT_PIN",
-          "targetId": "prod-slot-3",
-          "productId": "prod-slot-3",
-          "catalogId": null,
-          "productIds": [],
-          "title": "Sensor & Gripper Combo",
-          "label": "Sensor & Gripper Combo",
-          "slotIndex": null,
-          "u": 0.35,
-          "v": 0.55,
-          "yaw": 0,
-          "pitch": 0,
-          "coordinateSystem": "SPHERICAL",
-          "status": "ACTIVE",
-          "isBlank": false,
-          "createdAt": "2026-09-01T22:15:13.199Z",
-          "updatedAt": "2026-09-01T22:15:13.620Z"
-        }
-      ],
+      "pinpoints": [],
       "products": [
         {
           "id": "prod-slot-1",
           "slotIndex": 1,
-          "name": "",
-          "category": "",
-          "imageUrl": "",
-          "shortDescription": "",
-          "description": "",
-          "sku": "",
-          "websiteUrl": "",
-          "ctaLabel": "",
-          "price": "",
-          "brochureUrl": "",
-          "status": "EMPTY",
-          "updatedAt": "2026-09-01T22:15:14.007Z"
+          "createdAt": "2026-09-01T23:17:48.231Z",
+          "name": "Autonomous Industrial Rover Alpha",
+          "imageUrl": "/assets/brand/smart_card_exhibit.jpg",
+          "category": "ROBOTICS",
+          "price": "$15,000",
+          "status": "ACTIVE",
+          "updatedAt": "2026-09-01T23:17:48.231Z"
         },
         {
           "id": "prod-slot-2",
           "slotIndex": 2,
-          "name": "Hydraulic Actuator v4",
-          "category": "MECHANICAL",
-          "imageUrl": "/models/booth_demo.jpg"
+          "createdAt": "2026-09-01T23:17:50.202Z",
+          "name": "Precision Robotic Arm v5",
+          "imageUrl": "/assets/brand/smart_card_exhibit.jpg",
+          "category": "ROBOTICS",
+          "price": "$8,500",
+          "status": "ACTIVE",
+          "updatedAt": "2026-09-01T23:17:50.202Z"
         },
         {
           "id": "prod-slot-3",
           "slotIndex": 3,
-          "name": "LIDAR Sensor Pro",
+          "createdAt": "2026-09-01T23:17:51.406Z",
+          "name": "Solid-State LiDAR Sensor 360",
+          "imageUrl": "/assets/brand/smart_card_exhibit.jpg",
           "category": "SENSORS",
-          "imageUrl": "/models/booth_demo.jpg"
+          "price": "$2,200",
+          "status": "ACTIVE",
+          "updatedAt": "2026-09-01T23:17:51.406Z"
+        },
+        {
+          "id": "prod-slot-4",
+          "slotIndex": 4,
+          "createdAt": "2026-09-01T23:17:52.075Z",
+          "name": "High-Torque BLDC Motor Driver",
+          "imageUrl": "/assets/brand/smart_card_exhibit.jpg",
+          "category": "ELECTRONICS",
+          "price": "$650",
+          "status": "ACTIVE",
+          "updatedAt": "2026-09-01T23:17:52.075Z"
         }
       ],
       "createdAt": "2026-08-24T20:39:01.246Z",
-      "updatedAt": "2026-09-01T22:15:14.009Z",
-      "contactEmail": "sarah.lin@apexrobotics.example",
+      "updatedAt": "2026-09-01T23:17:52.075Z",
+      "contactEmail": "goodkie.com@gmail.com",
       "savedAt": "2026-08-24T20:39:01.327Z",
       "planKey": "pro",
       "convertedAt": "2026-08-24T20:39:01.349Z",
@@ -20290,7 +20045,8 @@
           "createdAt": "2026-09-01T10:31:39.929Z",
           "updatedAt": "2026-09-01T10:31:39.929Z"
         }
-      ]
+      ],
+      "accountId": "acc-b5c5819f"
     },
     {
       "id": "prj-free-aeb87eb4",
@@ -34026,6 +33782,134 @@
         "productName": "QA Test Product 500"
       },
       "timestamp": "2026-09-01T16:38:30.665Z"
+    },
+    {
+      "id": "tl-0cee948d",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 1,
+        "productName": "Autonomous Industrial Rover Alpha"
+      },
+      "timestamp": "2026-09-01T23:14:49.356Z"
+    },
+    {
+      "id": "tl-09cf9be1",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 1,
+        "productName": "Autonomous Industrial Rover Alpha"
+      },
+      "timestamp": "2026-09-01T23:15:50.867Z"
+    },
+    {
+      "id": "tl-82944590",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 2,
+        "productName": "Precision Robotic Arm v5"
+      },
+      "timestamp": "2026-09-01T23:15:51.430Z"
+    },
+    {
+      "id": "tl-fe0f1fcb",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 3,
+        "productName": "Solid-State LiDAR Sensor 360"
+      },
+      "timestamp": "2026-09-01T23:15:52.030Z"
+    },
+    {
+      "id": "tl-01bf3c38",
+      "accountId": "acc-b5c5819f",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 1,
+        "productName": "Autonomous Industrial Rover Alpha"
+      },
+      "timestamp": "2026-09-01T23:16:45.524Z"
+    },
+    {
+      "id": "tl-5be33c57",
+      "accountId": "acc-b5c5819f",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 2,
+        "productName": "Precision Robotic Arm v5"
+      },
+      "timestamp": "2026-09-01T23:16:47.081Z"
+    },
+    {
+      "id": "tl-ab82daa1",
+      "accountId": "acc-b5c5819f",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 3,
+        "productName": "Solid-State LiDAR Sensor 360"
+      },
+      "timestamp": "2026-09-01T23:16:52.920Z"
+    },
+    {
+      "id": "tl-f510e8ea",
+      "accountId": "acc-b5c5819f",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 4,
+        "productName": "High-Torque BLDC Motor Driver"
+      },
+      "timestamp": "2026-09-01T23:16:55.838Z"
+    },
+    {
+      "id": "tl-1bfff9af",
+      "accountId": "acc-b5c5819f",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 1,
+        "productName": "Autonomous Industrial Rover Alpha"
+      },
+      "timestamp": "2026-09-01T23:17:48.232Z"
+    },
+    {
+      "id": "tl-61179c87",
+      "accountId": "acc-b5c5819f",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 2,
+        "productName": "Precision Robotic Arm v5"
+      },
+      "timestamp": "2026-09-01T23:17:50.202Z"
+    },
+    {
+      "id": "tl-a084d1cd",
+      "accountId": "acc-b5c5819f",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 3,
+        "productName": "Solid-State LiDAR Sensor 360"
+      },
+      "timestamp": "2026-09-01T23:17:51.406Z"
+    },
+    {
+      "id": "tl-c95d024e",
+      "accountId": "acc-b5c5819f",
+      "eventType": "PRODUCT_ADDED",
+      "details": {
+        "projectId": "prj-free-b0c6f3ea",
+        "slotIndex": 4,
+        "productName": "High-Torque BLDC Motor Driver"
+      },
+      "timestamp": "2026-09-01T23:17:52.075Z"
     }
   ],
   "operatorNotes": [

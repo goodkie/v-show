@@ -9339,7 +9339,9 @@ return event;
         (project.contactEmail && a.emailNormalized === this.normalizeEmail(project.contactEmail))
       ) || { planCode: 'FREE_BOOTH', entitlement: 'FREE BOOTH' };
 
-      const limitCheck = plans.checkProductLimit(account, (project.products || []).filter(p => p.name).length, slot);
+      const activeCount = (project.products || []).filter(p => p.name && p.name.trim()).length;
+      const isNewProd = !project.products.find(p => p.slotIndex === slot && p.name && p.name.trim());
+      const limitCheck = plans.checkProductLimit(account, activeCount, slot, isNewProd);
       if (!limitCheck.allowed) {
         const err = new Error(limitCheck.message);
         err.status = 403;
@@ -9385,13 +9387,50 @@ return event;
       product.updatedAt = new Date().toISOString();
 
       // Sync pinpoint name if existing
-      const pin = project.pinpoints.find(p => p.slotIndex === slot);
+      const pin = project.pinpoints.find(p => p.slotIndex === slot || p.targetId === product.id || (Array.isArray(p.productIds) && p.productIds.includes(product.id)));
       if (pin) {
-        pin.productName = product.name || `Product Slot ${slot}`;
-        pin.label = product.name || `ADD PRODUCT ${slot}`;
+        pin.productName = product.name || `Product ${slot}`;
+        pin.label = product.name || `Product ${slot}`;
         pin.isBlank = !product.name;
         pin.status = product.name ? 'ACTIVE' : 'BLANK';
         pin.updatedAt = new Date().toISOString();
+      }
+
+      // Handle Pin-First automatic attachment (P3.9)
+      if (prodData.attachToPinId) {
+        let targetPin = project.pinpoints.find(p => p.id === prodData.attachToPinId || p.pinId === prodData.attachToPinId);
+        if (targetPin) {
+          targetPin.productIds = Array.isArray(targetPin.productIds) ? targetPin.productIds : (targetPin.targetId ? [targetPin.targetId] : []);
+          if (!targetPin.productIds.includes(product.id)) {
+            targetPin.productIds.push(product.id);
+          }
+          if (targetPin.productIds.length >= 2) {
+            targetPin.pinType = 'PRODUCT_GROUP_PIN';
+            targetPin.title = targetPin.title || targetPin.label || 'Featured Products';
+          } else {
+            targetPin.pinType = 'PRODUCT_PIN';
+            targetPin.targetId = product.id;
+            targetPin.productId = product.id;
+          }
+          targetPin.updatedAt = new Date().toISOString();
+        }
+      } else if (prodData.pinCoords && typeof prodData.pinCoords === 'object') {
+        const newPin = {
+          id: `pin-${uuidv4().substring(0, 8)}`,
+          pinType: 'PRODUCT_PIN',
+          targetId: product.id,
+          productId: product.id,
+          productIds: [product.id],
+          productName: product.name,
+          label: product.name,
+          u: typeof prodData.pinCoords.u === 'number' ? Number(prodData.pinCoords.u.toFixed(4)) : 0.5,
+          v: typeof prodData.pinCoords.v === 'number' ? Number(prodData.pinCoords.v.toFixed(4)) : 0.5,
+          coordinateSystem: 'SPHERICAL',
+          status: 'ACTIVE',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        project.pinpoints.push(newPin);
       }
 
       project.updatedAt = new Date().toISOString();
@@ -9944,6 +9983,119 @@ return event;
     }
     const list = project.pinpoints || [];
     return { success: true, pins: list, pinpoints: list, totalCount: list.length };
+  }
+
+  
+  // --- Pin-First Product Attachment & Management (P3.9) ---
+  async addProductToPin(projectId, pinId, productId, token) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) {
+        const err = new Error('Project not found.');
+        err.status = 404;
+        throw err;
+      }
+      if (!this.verifyEditAccess(project, token)) {
+        const err = new Error('Cross-tenant access forbidden.');
+        err.status = 403;
+        throw err;
+      }
+
+      project.pinpoints = project.pinpoints || [];
+      project.products = project.products || [];
+
+      // Verify product exists in this project
+      const prod = project.products.find(p => p.id === productId || p.slotIndex === productId || `prod-slot-${p.slotIndex}` === productId);
+      if (!prod) {
+        const err = new Error('Product not found in this project.');
+        err.status = 404;
+        throw err;
+      }
+      const canonicalProdId = prod.id || `prod-slot-${prod.slotIndex}`;
+
+      let pin = project.pinpoints.find(p => p.id === pinId || p.pinId === pinId);
+      if (!pin) {
+        const err = new Error('Pin not found.');
+        err.status = 404;
+        throw err;
+      }
+
+      // Initialize and merge productIds
+      let currentIds = Array.isArray(pin.productIds) ? [...pin.productIds] : [];
+      if (pin.targetId && !currentIds.includes(pin.targetId)) currentIds.push(pin.targetId);
+      if (pin.productId && !currentIds.includes(pin.productId)) currentIds.push(pin.productId);
+
+      // Append if not already present (Reject duplicates)
+      if (!currentIds.includes(canonicalProdId)) {
+        currentIds.push(canonicalProdId);
+      }
+
+      pin.productIds = currentIds;
+      if (currentIds.length >= 2) {
+        pin.pinType = 'PRODUCT_GROUP_PIN';
+        pin.title = pin.title || pin.label || 'Featured Products';
+      } else {
+        pin.pinType = 'PRODUCT_PIN';
+        pin.targetId = currentIds[0];
+        pin.productId = currentIds[0];
+      }
+      pin.updatedAt = new Date().toISOString();
+
+      return { success: true, pin, pins: project.pinpoints };
+    });
+  }
+
+  async removeProductFromPin(projectId, pinId, productId, token) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) {
+        const err = new Error('Project not found.');
+        err.status = 404;
+        throw err;
+      }
+      if (!this.verifyEditAccess(project, token)) {
+        const err = new Error('Cross-tenant access forbidden.');
+        err.status = 403;
+        throw err;
+      }
+
+      project.pinpoints = project.pinpoints || [];
+      const pinIndex = project.pinpoints.findIndex(p => p.id === pinId || p.pinId === pinId);
+      if (pinIndex === -1) {
+        const err = new Error('Pin not found.');
+        err.status = 404;
+        throw err;
+      }
+
+      const pin = project.pinpoints[pinIndex];
+      let currentIds = Array.isArray(pin.productIds) ? [...pin.productIds] : [];
+      if (pin.targetId && !currentIds.includes(pin.targetId)) currentIds.push(pin.targetId);
+      if (pin.productId && !currentIds.includes(pin.productId)) currentIds.push(pin.productId);
+
+      // Prune the specific product reference
+      currentIds = currentIds.filter(id => id !== productId && id !== String(productId));
+
+      // Auto-normalization
+      if (currentIds.length === 0) {
+        // Delete empty pin (EMPTY_PRODUCT_PIN_COUNT = 0)
+        project.pinpoints.splice(pinIndex, 1);
+        return { success: true, deletedPinId: pinId, pins: project.pinpoints, message: 'Empty pin removed.' };
+      } else if (currentIds.length === 1) {
+        // Normalize to PRODUCT_PIN
+        pin.productIds = currentIds;
+        pin.pinType = 'PRODUCT_PIN';
+        pin.targetId = currentIds[0];
+        pin.productId = currentIds[0];
+        pin.updatedAt = new Date().toISOString();
+      } else {
+        // Remain PRODUCT_GROUP_PIN
+        pin.productIds = currentIds;
+        pin.pinType = 'PRODUCT_GROUP_PIN';
+        pin.updatedAt = new Date().toISOString();
+      }
+
+      return { success: true, pin, pins: project.pinpoints };
+    });
   }
 
   async createPin(projectId, pinData, token) {
