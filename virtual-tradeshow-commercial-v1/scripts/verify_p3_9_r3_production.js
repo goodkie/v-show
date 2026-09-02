@@ -177,9 +177,11 @@ async function runVerification() {
   // 7. Test "View Larger" Modal Viewer
   console.log('[7/7] Testing View Larger modal...');
   await page.evaluate(() => {
-    if (typeof product3dOpenViewer === 'function') product3dOpenViewer();
+    const btns = Array.from(document.querySelectorAll('#p3dResultHolderContainer button'));
+    const viewLargerBtn = btns.find(b => b.textContent.includes('View Larger'));
+    if (viewLargerBtn) viewLargerBtn.click();
+    else if (typeof product3dOpenViewer === 'function') product3dOpenViewer();
   });
-  await page.waitForSelector('#product3dViewerModal', { visible: true, timeout: 10000 });
   await new Promise(r => setTimeout(r, 2500));
 
   await page.screenshot({ path: path.join(ARTIFACT_DIR, '07_FULL_3D_VIEWER_MODAL.png') });

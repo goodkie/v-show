@@ -6202,6 +6202,7 @@
     }
 
     function openOwnerProductEditor(slotIndex = 1) {
+      window.openOwnerProductEditor = openOwnerProductEditor;
       const slot = parseInt(slotIndex, 10) || (currentSelectedProdIdx + 1) || 1;
       const modal = document.getElementById('ownerProductEditorModal');
       if (!modal) return;
@@ -9255,44 +9256,7 @@ window.openPublicProductDetail = function(product, fromCatalog) {
   }
 };
 
-const _origOpenOwnerProductEditor = window.openOwnerProductEditor;
-window.openOwnerProductEditor = function(slot) {
-  if (typeof _origOpenOwnerProductEditor === 'function') {
-    _origOpenOwnerProductEditor(slot);
-  }
-  const slotNum = parseInt(slot, 10) || 1;
-  const pid = window.activeProjectData?.id || activeProjectId || null;
-  const token = p3dGetAuthToken();
-
-  setTimeout(async () => {
-    let prod = (window.activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slotNum));
-    window._p3dState.currentProductName = prod?.name || 'Product';
-
-    // Synchronize latest job state from server
-    if (pid && slotNum) {
-      try {
-        const resp = await fetch('/api/projects/' + pid + '/products/' + slotNum + '/3d/job', {
-          headers: token ? { 'Authorization': 'Bearer ' + token, 'x-booth-edit-token': token } : {}
-        });
-        if (resp.ok) {
-          const data = await resp.json();
-          if (data.product3d) {
-            if (prod) prod.product3d = data.product3d;
-          }
-          if (data.job && ['QUEUED', 'PROCESSING', 'VALIDATING'].includes(data.job.status)) {
-            p3dStartPolling(slotNum);
-          }
-        }
-      } catch (err) {
-        console.warn('[P3D] Initial job sync error:', err.message);
-      }
-    }
-
-    await renderProduct3dSection(slotNum, prod);
-    const initialMode = (prod?.product3d?.status === 'READY' || prod?.productMediaMode === 'THREE_D') ? 'THREE_D' : 'IMAGE';
-    setProductMediaMode(initialMode, true);
-  }, 80);
-};
+// openOwnerProductEditor assigned directly in main scope
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
