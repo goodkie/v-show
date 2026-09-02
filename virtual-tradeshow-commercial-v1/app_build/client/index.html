@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>³D₂ — Turn One Booth Photo Into an Interactive 3D Booth Free</title>
-  <meta name="description" content="Upload your exhibition booth photo and business name. ³D₂ generates your interactive 3D virtual booth preview with 3 product slots in seconds.">
+  <meta name="description" content="Upload your exhibition booth photo and business name. ³D₂ generates your interactive 3D virtual booth preview with interactive product hotspots in seconds.">
 
   <!-- Open Graph -->
   <meta property="og:title" content="³D₂ — Turn One Booth Photo Into an Interactive 3D Booth Free">
@@ -2018,7 +2018,7 @@
     <!-- Upload CTA Frame -->
     <div class="upload-cta-frame">
       <div class="frame-title">Create Your Free 3D Booth</div>
-      <div class="frame-subtitle">Instant interactive 3D preview • 3 product slots included</div>
+      <div class="frame-subtitle">Instant interactive 3D preview • Showcase products in 3D</div>
 
       <form id="free-booth-form" onsubmit="handleFreeBoothSubmit(event)" novalidate>
         <!-- Initial Inputs View -->
@@ -2522,7 +2522,7 @@
     <div class="next-step-bar" id="nextStepBar">
       <div>
         <div style="font-size: 14px; font-weight: 800; color: #fff;" id="nextStepTitle">NEXT STEP: ADD YOUR FIRST PRODUCT</div>
-        <div style="font-size: 12px; color: var(--text-muted);" id="nextStepSubtitle">3 interactive product slots ready for commercial presentation.</div>
+        <div style="font-size: 12px; color: var(--text-muted);" id="nextStepSubtitle">Interactive products ready for commercial presentation.</div>
       </div>
       <button class="btn-hero btn-hero-primary" id="btnNextStepAction" onclick="handleNextStepCTA()" style="padding: 10px 20px; font-size: 13px;">
         <i class="fa-solid fa-plus"></i> ADD YOUR FIRST PRODUCT
@@ -3229,7 +3229,7 @@
   <!-- ============================================================ -->
   <!-- P3.7: PRODUCT 3D VIEWER MODAL                                -->
   <!-- ============================================================ -->
-  <div class="viewport-modal" id="product3dViewerModal" style="display: none; z-index: 9999;" role="dialog" aria-modal="true" aria-label="3D Product Viewer">
+  <div class="viewport-modal" id="product3dViewerModal" style="display: none; z-index: 10005;" role="dialog" aria-modal="true" aria-label="3D Product Viewer">
     <div class="viewport-modal-card" style="max-width: min(96vw, 900px); max-height: min(94vh, 800px); display: flex; flex-direction: column;">
       <div class="viewport-modal-header">
         <div style="display: flex; align-items: center; gap: 10px;">
@@ -3478,7 +3478,7 @@
       <div class="editor-tab-pane" id="paneProducts" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
           <div>
-            <h3 style="font-size: 18px; font-weight: 800; color: #fff;">Commercial Product Slots (3 Included)</h3>
+            <h3 style="font-size: 18px; font-weight: 800; color: #fff;">Commercial Products</h3>
             <p style="font-size: 12.5px; color: var(--text-muted);">Configure products with images, specifications, and wholesale RFQ integration.</p>
           </div>
           <button class="btn-hero" onclick="openPlanModal('product_limit')" style="padding: 6px 12px; font-size: 11px; background: rgba(192, 132, 252, 0.15); border: 1px solid #c084fc; color: #c084fc;">
@@ -4396,6 +4396,9 @@
       const ent = isDev ? 'INTERNAL_FULL_ACCESS' : (currentViewerAccount?.entitlement || activeProjectData?.entitlement || 'FREE_BOOTH').toUpperCase();
       const isFree = (ent === 'FREE_BOOTH' || ent === 'FREE') && !isPilot && !isDev;
 
+      const ownerStudioToolbar = document.getElementById('ownerStudioToolbar');
+      if (ownerStudioToolbar) ownerStudioToolbar.style.display = isOwner ? 'flex' : 'none';
+
       const btnTogglePin = document.getElementById('btnTogglePinEdit');
       if (btnTogglePin) btnTogglePin.style.display = isOwner ? 'inline-flex' : 'none';
       
@@ -4730,7 +4733,7 @@
         setTimeout(() => {
           updateProgressDisplay(70, 'GENERATING 3D BOOTH', 'Creating Virtual Showroom', 'Synthesizing 3D spatial viewport...');
           setTimeout(() => {
-            updateProgressDisplay(100, 'YOUR 3D BOOTH IS READY', '3D Virtual Booth Ready!', '3 Product Pinpoint Slots Initialized!');
+            updateProgressDisplay(100, 'YOUR 3D BOOTH IS READY', '3D Virtual Booth Ready!', 'Product Pinpoint Hotspots Initialized!');
             setTimeout(() => {
               hideProgress();
               activeProjectId = data.projectId || data.project.id;
@@ -4964,7 +4967,7 @@
           } else if (currentPercent < 60) {
             updateProgressDisplay(currentPercent, 'AI IMAGE MASTERING', 'Super-Resolution Engine', 'Executing ONNX neural super-resolution & visual clarity filtering...');
           } else if (currentPercent < 80) {
-            updateProgressDisplay(currentPercent, 'GENERATING 3D BOOTH', 'Creating Virtual Showroom', 'Synthesizing interactive 3D spatial viewport and 3 product slots...');
+            updateProgressDisplay(currentPercent, 'GENERATING 3D BOOTH', 'Creating Virtual Showroom', 'Synthesizing interactive 3D spatial showroom...');
           } else {
             updateProgressDisplay(currentPercent, 'FINALIZING PREVIEW', 'Connecting Buyer Tools', 'Configuring 1-click RFQ, Sample Request, and Meeting scheduler...');
           }
@@ -5822,23 +5825,23 @@
           slotIndex: slot,
           productId: prod.id || `prod-slot-${slot}`,
           name: isConfigured ? prod.name : `Product Slot ${slot}`,
-          category: isConfigured ? (prod.category || 'EXHIBIT ITEM') : `COMMERCIAL SLOT 0${slot}`,
+          category: isConfigured ? (prod.category || 'EXHIBIT ITEM') : 'UNCONFIGURED',
           sku: prod.sku || '',
           price: prod.price || '',
           imageUrl: (isConfigured && prod.imageUrl) ? prod.imageUrl : '/assets/product-placeholder.jpg',
           worldPos: defaultPositions[idx],
-          desc: isConfigured ? (prod.shortDescription || prod.description || '') : `Slot available for ${projectData.businessName || 'your brand'}. Add a real product to showcase specifications and accept RFQs.`,
+          desc: isConfigured ? (prod.shortDescription || prod.description || '') : `Showcase product for ${projectData.businessName || 'your brand'}. Add a real product to showcase specifications and accept RFQs.`,
           specs: [
-            ['Catalog Slot', `Slot 0${slot}`],
+            ['Category', isConfigured ? (prod.category || 'General') : 'Not Configured'],
             ['SKU / Model', isConfigured && prod.sku ? prod.sku : 'Standard'],
             ['Inquiry Engine', '1-Click Wholesale RFQ'],
-            ['Status', isConfigured ? (prod.availability || 'Active') : 'Slot Available']
+            ['Status', isConfigured ? (prod.availability || 'Active') : 'Available']
           ],
           highlights: isConfigured ? [
             'Interactive 3D Floating Capsule pinpoint anchor on exhibition booth photo',
             'Direct buyer engagement, sample ordering, and export meeting scheduler'
           ] : [
-            'Click "+ Add Product" to configure this slot with photo, specs, and price'
+            'Click "+ Add Product" to configure photo, specs, and price'
           ],
           isConfigured: isConfigured
         };
@@ -9095,7 +9098,7 @@ function openP3dConfirmModal(action, message) {
       </div>`;
     document.body.appendChild(modal);
   }
-  document.getElementById('p3dConfirmMessage').innerHTML = message;
+  (document.getElementById('p3dConfirmMessage') || document.getElementById('p3dConfirmMsg')).innerHTML = message;
   modal.style.display = 'flex';
 }
 
@@ -9303,21 +9306,38 @@ function _p3dInitViewer(glbUrl) {
 }
 
 function _p3dLoadThreeJs(callback) {
-  if (window.THREE) { if (callback) callback(); return; }
-  const s = document.createElement('script');
-  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
-  s.onload = () => {
-    const s2 = document.createElement('script');
-    s2.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js';
-    s2.onload = () => {
+  if (window.THREE && window.THREE.GLTFLoader && window.THREE.OrbitControls) {
+    if (callback) callback();
+    return;
+  }
+  function loadOrbit() {
+    if (window.THREE && window.THREE.OrbitControls) {
+      if (callback) callback();
+    } else {
       const s3 = document.createElement('script');
       s3.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js';
       s3.onload = () => { if (callback) callback(); };
       document.head.appendChild(s3);
-    };
-    document.head.appendChild(s2);
-  };
-  document.head.appendChild(s);
+    }
+  }
+  function loadGltf() {
+    if (window.THREE && window.THREE.GLTFLoader) {
+      loadOrbit();
+    } else {
+      const s2 = document.createElement('script');
+      s2.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js';
+      s2.onload = loadOrbit;
+      document.head.appendChild(s2);
+    }
+  }
+  if (!window.THREE) {
+    const s1 = document.createElement('script');
+    s1.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+    s1.onload = loadGltf;
+    document.head.appendChild(s1);
+  } else {
+    loadGltf();
+  }
 }
 
 function _p3dDoLoad(glbUrl, scene, camera, controls, renderer) {
