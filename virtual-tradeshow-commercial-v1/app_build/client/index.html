@@ -5464,7 +5464,55 @@
           tex.needsUpdate = true;
           photoMaterial.map = tex;
           photoMaterial.needsUpdate = true;
-          recalculatePinpointPositions(projectData);
+          
+      // 3. Add custom & floating pins (Product Pins, Group Pins, Blank Pins)
+      rawPinpoints.forEach((pin, pIdx) => {
+        const pinId = pin.id || pin.pinId;
+        if (!pinId) return;
+        // Skip if already in hotspots list (e.g. standard slot pins or catalog pins)
+        if (studioHotspotsList.some(s => s.id === pinId || (pin.slotIndex && s.slotIndex === pin.slotIndex))) {
+          // If slot pin has custom title/coords from pinpoints, sync it
+          const existingSpot = studioHotspotsList.find(s => s.id === pinId || (pin.slotIndex && s.slotIndex === pin.slotIndex));
+          if (existingSpot) {
+            if (pin.title || pin.label) existingSpot.name = pin.title || pin.label;
+            if (typeof pin.u === 'number') existingSpot.u = pin.u;
+            if (typeof pin.v === 'number') existingSpot.v = pin.v;
+            existingSpot.pinData = pin;
+            if (pin.productIds) existingSpot.productIds = pin.productIds;
+            if (pin.description || pin.note) existingSpot.description = pin.description || pin.note;
+          }
+          return;
+        }
+
+        const pIds = Array.isArray(pin.productIds) ? pin.productIds : (pin.productId ? [pin.productId] : (pin.targetId ? [pin.targetId] : []));
+        const attachedProds = pIds.map(pid => rawProducts.find(p => String(p.id) === String(pid) || String(p.slotIndex) === String(pid))).filter(Boolean);
+        const isBlank = attachedProds.length === 0 && pin.pinType === 'BLANK_PIN';
+        const isGroup = attachedProds.length >= 2 || pin.pinType === 'PRODUCT_GROUP_PIN';
+        
+        const spotName = pin.title || pin.label || (attachedProds[0]?.name) || (isBlank ? 'Empty Product Pin' : 'Product Pin');
+        const spotCat = isBlank ? 'DRAFT' : (attachedProds[0]?.category || (isGroup ? 'COLLECTION' : 'PRODUCT'));
+        const spotImg = attachedProds[0]?.imageUrl || '/assets/product-placeholder.jpg';
+
+        studioHotspotsList.push({
+          id: pinId,
+          pinType: pin.pinType || (isBlank ? 'BLANK_PIN' : (isGroup ? 'PRODUCT_GROUP_PIN' : 'PRODUCT_PIN')),
+          targetId: pin.targetId || (attachedProds[0]?.id || null),
+          name: spotName,
+          title: spotName,
+          category: spotCat,
+          imageUrl: spotImg,
+          productCount: attachedProds.length,
+          productIds: pIds,
+          isDraft: isBlank,
+          isConfigured: !isBlank,
+          pinData: pin,
+          u: typeof pin.u === 'number' ? pin.u : 0.5,
+          v: typeof pin.v === 'number' ? pin.v : 0.5,
+          worldPos: new THREE.Vector3(0, 0, -400)
+        });
+      });
+  
+      recalculatePinpointPositions(projectData);
         });
       }
 
@@ -5981,7 +6029,7 @@
       }
     }
 
-    async function saveProductPinContentEditorChanges() {
+        async function saveProductPinContentEditorChanges() {
       const pin = window.currentEditingContentPin;
       if (!pin) {
         closeProductPinContentEditorModal();
@@ -6002,18 +6050,28 @@
 
       const payload = {
         id: pinId,
+        pinId: pinId,
+        projectId: pid,
         pinType,
         title,
+        label: title,
         description,
         note: description,
         productIds,
         productId: productIds[0] || null,
         targetId: productIds[0] || null,
-        u: pin.u !== undefined ? pin.u : 0.5,
-        v: pin.v !== undefined ? pin.v : 0.5,
+        u: typeof pin.u === 'number' ? pin.u : 0.5,
+        v: typeof pin.v === 'number' ? pin.v : 0.5,
         status: isBlank ? 'DRAFT' : 'ACTIVE',
+        isDraft: isBlank,
         publicVisible: !isBlank
       };
+
+      const saveBtn = document.getElementById('ppceBtnSaveChanges');
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+      }
 
       try {
         let res = await fetch(`/api/projects/${pid}/pins/${pinId}`, {
@@ -6039,31 +6097,29 @@
         }
 
         const data = await res.json();
-        if (data.pins) window.activeProjectData.pinpoints = data.pins;
-        else {
-          if (!window.activeProjectData.pinpoints) window.activeProjectData.pinpoints = [];
-          const idx = window.activeProjectData.pinpoints.findIndex(p => p.id === pinId || p.pinId === pinId);
-          if (idx >= 0) window.activeProjectData.pinpoints[idx] = { ...payload, ...(data.pin || {}) };
-          else window.activeProjectData.pinpoints.push({ ...payload, ...(data.pin || {}) });
-        }
-
-        const spot = (window.studioHotspotsList || []).find(s => s.id === pinId || s.targetId === pinId || s.pinData?.id === pinId);
-        if (spot) {
-          spot.name = title || (isGroup ? 'Featured Products' : (spot.name || 'Product Pin'));
-          spot.title = title;
-          if (spot.pinData) {
-            spot.pinData.title = title;
-            spot.pinData.description = description;
-            spot.pinData.productIds = productIds;
-            spot.pinData.pinType = pinType;
+        if (res.ok && data.success) {
+          if (data.pins) window.activeProjectData.pinpoints = data.pins;
+          else if (data.pin) {
+            if (!window.activeProjectData.pinpoints) window.activeProjectData.pinpoints = [];
+            const idx = window.activeProjectData.pinpoints.findIndex(p => p.id === pinId || p.pinId === pinId);
+            if (idx >= 0) window.activeProjectData.pinpoints[idx] = data.pin;
+            else window.activeProjectData.pinpoints.push(data.pin);
           }
+
+          if (typeof setupStudioProducts === 'function') setupStudioProducts(window.activeProjectData);
+          if (window.showToast) window.showToast('✅ Pin changes saved!', 'success');
+          closeProductPinContentEditorModal();
+        } else {
+          alert('Could not save your changes: ' + (data.error || 'Server error'));
         }
-        if (typeof setupStudioProducts === 'function') setupStudioProducts(window.activeProjectData);
-        if (window.showToast) window.showToast('✅ Pin updated successfully!', 'success');
-        closeProductPinContentEditorModal();
       } catch(err) {
-        console.warn('[Pin Save Warn]', err);
-        closeProductPinContentEditorModal();
+        console.error('[Pin Save Error]', err);
+        alert('Network error while saving pin: ' + err.message);
+      } finally {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save Changes';
+        }
       }
     }
 

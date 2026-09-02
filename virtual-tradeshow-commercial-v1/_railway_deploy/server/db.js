@@ -10195,7 +10195,7 @@ return event;
     });
   }
 
-  async updatePin(projectId, pinId, pinData, token) {
+    async updatePin(projectId, pinId, pinData, token) {
     return this.mutate((db) => {
       const project = (db.projects || []).find(p => p.id === projectId);
       if (!project) {
@@ -10210,11 +10210,16 @@ return event;
       }
 
       project.pinpoints = project.pinpoints || [];
-      const pin = project.pinpoints.find(p => p.id === pinId || p.pinId === pinId);
+      let pin = project.pinpoints.find(p => p.id === pinId || p.pinId === pinId);
       if (!pin) {
-        const err = new Error('Pin not found.');
-        err.status = 404;
-        throw err;
+        // If pin does not exist yet, create it
+        pin = {
+          id: pinId,
+          pinId: pinId,
+          projectId: project.id,
+          createdAt: new Date().toISOString()
+        };
+        project.pinpoints.push(pin);
       }
 
       // Product validation & Normalization for update
@@ -10230,12 +10235,26 @@ return event;
             pin.pinType = 'PRODUCT_GROUP_PIN';
             pin.productIds = cleanProductIds;
             pin.productId = null;
-            pin.targetId = null;
+            pin.targetId = cleanProductIds[0];
+            pin.status = 'ACTIVE';
+            pin.publicVisible = true;
+            pin.isDraft = false;
           } else if (cleanProductIds.length === 1) {
             pin.pinType = 'PRODUCT_PIN';
             pin.productId = cleanProductIds[0];
             pin.targetId = cleanProductIds[0];
+            pin.productIds = cleanProductIds;
+            pin.status = 'ACTIVE';
+            pin.publicVisible = true;
+            pin.isDraft = false;
+          } else {
+            pin.pinType = 'BLANK_PIN';
+            pin.productId = null;
+            pin.targetId = null;
             pin.productIds = [];
+            pin.status = 'DRAFT';
+            pin.publicVisible = false;
+            pin.isDraft = true;
           }
         }
       }
@@ -10251,16 +10270,23 @@ return event;
       if (typeof pinData.yaw === 'number') pin.yaw = Number(pinData.yaw.toFixed(4));
       if (typeof pinData.pitch === 'number') pin.pitch = Number(pinData.pitch.toFixed(4));
       if (pinData.label !== undefined || pinData.title !== undefined) {
-        const titleText = (pinData.title || pinData.label || '').trim();
+        const titleText = (pinData.title !== undefined ? pinData.title : pinData.label || '').trim();
         pin.label = titleText;
         pin.title = titleText;
       }
+      if (pinData.description !== undefined || pinData.note !== undefined) {
+        const descText = (pinData.description !== undefined ? pinData.description : pinData.note || '').trim();
+        pin.description = descText;
+        pin.note = descText;
+      }
       if (pinData.status !== undefined) pin.status = pinData.status;
+      if (pinData.publicVisible !== undefined) pin.publicVisible = pinData.publicVisible;
+      if (pinData.isDraft !== undefined) pin.isDraft = pinData.isDraft;
 
       pin.updatedAt = new Date().toISOString();
       project.updatedAt = new Date().toISOString();
 
-      return { success: true, pin, pins: project.pinpoints };
+      return { success: true, pin, pins: project.pinpoints, pinpoint: pin, pinpoints: project.pinpoints };
     });
   }
 
