@@ -3006,10 +3006,14 @@
     </div>
   </div>
 
-  <div class="viewport-modal" id="ownerProductEditorModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); z-index: 10010; align-items: center; justify-content: center;">
-    <div class="viewport-modal-card" style="max-width: min(92vw, 760px); max-height: min(90vh, 740px);">
-      <!-- Fixed Header -->
-      <div class="viewport-modal-header">
+    <!-- ============================================================ -->
+  <!-- 1. REAL OWNER PRODUCT REGISTRATION / EDIT MODAL (P3.14 REBUILD) -->
+  <!-- ============================================================ -->
+  <div class="viewport-modal" id="ownerProductEditorModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); z-index: 10010; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box;">
+    <div class="viewport-modal-card" style="width: min(920px, calc(100vw - 48px)); max-width: 920px; max-height: calc(100vh - 48px); display: flex; flex-direction: column; background: #09101d; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 16px; overflow: hidden; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(56, 189, 248, 0.15);">
+      
+      <!-- FIXED HEADER -->
+      <div class="viewport-modal-header" style="padding: 16px 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; background: rgba(9, 16, 29, 0.98);">
         <div style="display: flex; align-items: center; gap: 10px;">
           <span style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 999px; padding: 3px 10px; font-size: 10px; font-weight: 800; color: #38bdf8; text-transform: uppercase;">
             <i class="fa-solid fa-cube"></i> REAL PRODUCT REGISTRATION
@@ -3019,21 +3023,21 @@
         <button class="close-btn" id="opeBtnClose" onclick="closeOwnerProductEditor()" style="position: static;" title="Close (Esc)">✕</button>
       </div>
 
-      <!-- Scrollable Body -->
-      <form id="ownerProductForm" onsubmit="saveOwnerProduct(event)" style="display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; margin: 0;">
+      <!-- SCROLLABLE BODY (Form wrapper) -->
+      <form id="ownerProductForm" onsubmit="saveOwnerProduct(event)" style="display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; margin: 0; overflow: hidden;">
         <input type="hidden" id="opeSlotIndex" value="1">
         
-        <div class="viewport-modal-body">
+        <div class="viewport-modal-body" style="padding: 24px; overflow-y: auto; overflow-x: hidden; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 20px;">
           
           <!-- ── PRODUCT MEDIA MODE SELECTOR (UX2 / P3.9-R3) ── -->
-          <div class="form-group" style="margin-bottom: 16px;">
+          <div class="product-media-section" style="width: 100%; min-width: 0; box-sizing: border-box;">
             <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <span style="font-weight: 800; font-size: 13px; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px;">Product Media</span>
               <span style="font-size: 11px; color: #64748b;">Image & 3D Interactive Media</span>
             </label>
             
             <!-- IMAGE / 3D SWITCHER TABS -->
-            <div id="productMediaTabsContainer" style="display: flex; gap: 8px; background: rgba(3, 7, 18, 0.6); padding: 4px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+            <div id="productMediaTabsContainer" style="display: flex; gap: 8px; background: rgba(3, 7, 18, 0.6); padding: 4px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); width: 100%; box-sizing: border-box; margin-bottom: 12px;">
               <button type="button" id="tabProductMediaImage" onclick="setProductMediaMode('IMAGE')" style="flex: 1; padding: 9px 16px; font-size: 12.5px; font-weight: 800; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease; border: 1px solid #38bdf8; background: rgba(56,189,248,0.15); color: #38bdf8;">
                 <i class="fa-solid fa-image"></i> <span>Product Image</span>
               </button>
@@ -3043,360 +3047,363 @@
                 <span id="pMedia3dGeneratingBadge" style="display: none; background: rgba(56,189,248,0.2); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 999px; padding: 1px 7px; font-size: 9.5px; font-weight: 800;"><i class="fa-solid fa-circle-notch fa-spin"></i> Busy</span>
               </button>
             </div>
-          </div>
 
-          <!-- ── TAB CONTENT: PRODUCT IMAGE STAGE ── -->
-          <div class="form-group" id="opePrimaryImageSection" style="margin-bottom: 16px; position: relative;">
-            <div id="opeImageUploadBox" style="background: #030712; border: 1.5px dashed rgba(56,189,248,0.35); border-radius: 12px; padding: 16px; text-align: center; position: relative;">
-              <img id="opeImagePreview" src="" style="max-height: 180px; max-width: 100%; border-radius: 8px; object-fit: contain; object-position: center; display: none; margin: 0 auto 12px auto; border: 1px solid rgba(255,255,255,0.1);">
-              <div style="display: flex; justify-content: center; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <input type="file" id="opeImageInput" accept="image/png, image/jpeg, image/webp" style="display: none;" onchange="previewOwnerProductImage(this)">
-                <button type="button" class="btn-ui" id="opeBtnUploadImg" onclick="document.getElementById('opeImageInput').click()" style="padding: 8px 16px; font-size: 12.5px; font-weight: 700; background: rgba(56,189,248,0.18); color: #38bdf8; border: 1px solid rgba(56,189,248,0.45); border-radius: 8px; cursor: pointer;">
-                  <i class="fa-solid fa-cloud-arrow-up"></i> <span id="opeUploadImgLabel">Upload Product Image</span>
-                </button>
-                <button type="button" id="opeBtnRemoveImg" class="btn-ui" onclick="removeOwnerProductImage()" style="display: none; padding: 8px 14px; font-size: 12.5px; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.35); border-radius: 8px; cursor: pointer;">
-                  <i class="fa-solid fa-trash"></i> Remove Image
-                </button>
-              </div>
-              <div style="font-size: 11.5px; color: #94a3b8; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                <span>Switch to the <strong style="color:#38bdf8; cursor:pointer;" onclick="setProductMediaMode('THREE_D')">3D Model tab</strong> to create an interactive 3D model.</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- ── TAB CONTENT: PRODUCT 3D STAGE ── -->
-          <div class="form-group" id="opeProduct3dSection" style="display: none; margin-bottom: 16px;">
-            
-            <!-- QA Banner -->
-            <div id="p3dQaBanner" style="display: none; background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.35); border-radius: 8px; padding: 8px 12px; font-size: 11.5px; color: #d8b4fe; margin-bottom: 12px;">
-              <i class="fa-solid fa-shield-halved"></i> <strong>Internal QA · Unlimited Test Conversions</strong> (0 commercial charge).
-            </div>
-
-            <!-- 1. VISUAL 3D RESULT HOLDER (READY STATE) -->
-            <div id="p3dResultHolderContainer" style="display: none; background: rgba(15,23,42,0.85); border: 1px solid rgba(56,189,248,0.4); border-radius: 14px; padding: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);">
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid rgba(34,197,94,0.4); border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 5px;">
-                    <i class="fa-solid fa-circle-check"></i> 3D READY
-                  </span>
-                  <span id="p3dResultTierBadge" style="font-size: 11.5px; font-weight: 700; color: #38bdf8;">Standard 3D</span>
+            <!-- TAB CONTENT: PRODUCT IMAGE STAGE -->
+            <div id="opePrimaryImageSection" style="margin-bottom: 8px; position: relative; width: 100%; box-sizing: border-box;">
+              <div id="opeImageUploadBox" style="background: #030712; border: 1.5px dashed rgba(56,189,248,0.35); border-radius: 12px; padding: 16px; text-align: center; position: relative;">
+                <img id="opeImagePreview" src="" style="max-height: 180px; max-width: 100%; border-radius: 8px; object-fit: contain; object-position: center; display: none; margin: 0 auto 12px auto; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="display: flex; justify-content: center; gap: 10px; align-items: center; flex-wrap: wrap;">
+                  <input type="file" id="opeImageInput" accept="image/png, image/jpeg, image/webp" style="display: none;" onchange="previewOwnerProductImage(this)">
+                  <button type="button" class="btn-ui" id="opeBtnUploadImg" onclick="document.getElementById('opeImageInput').click()" style="padding: 8px 16px; font-size: 12.5px; font-weight: 700; background: rgba(56,189,248,0.18); color: #38bdf8; border: 1px solid rgba(56,189,248,0.45); border-radius: 8px; cursor: pointer;">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> <span id="opeUploadImgLabel">Upload Product Image</span>
+                  </button>
+                  <button type="button" id="opeBtnRemoveImg" class="btn-ui" onclick="removeOwnerProductImage()" style="display: none; padding: 8px 14px; font-size: 12.5px; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.35); border-radius: 8px; cursor: pointer;">
+                    <i class="fa-solid fa-trash"></i> Remove Image
+                  </button>
                 </div>
-                <div id="p3dResultProvenanceText" style="font-size: 11px; color: #94a3b8;">Generated just now · 1.1 MB</div>
-              </div>
-
-              <!-- INLINE THREE.JS INTERACTIVE WEBGL PREVIEW -->
-              <div id="p3dInlineCanvasContainer" style="position: relative; width: 100%; height: 260px; background: radial-gradient(circle at center, #0f172a 0%, #030712 100%); border: 1px solid rgba(56,189,248,0.25); border-radius: 12px; overflow: hidden;">
-                <canvas id="p3dInlineCanvas" style="width: 100%; height: 100%; display: block; cursor: grab;"></canvas>
-                
-                <button type="button" onclick="product3dInlineResetView()" title="Reset Camera" style="position: absolute; top: 10px; right: 10px; z-index: 5; background: rgba(3,7,18,0.75); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer; backdrop-filter: blur(6px);">
-                  <i class="fa-solid fa-arrows-rotate"></i> Reset
-                </button>
-
-                <div id="p3dInlineLoading" style="position: absolute; inset: 0; background: rgba(3,7,18,0.85); display: none; align-items: center; justify-content: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: #38bdf8; z-index: 4;">
-                  <i class="fa-solid fa-circle-notch fa-spin"></i> Loading Interactive 3D Preview…
-                </div>
-
-                <div style="position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); font-size: 10.5px; color: #94a3b8; background: rgba(3,7,18,0.75); backdrop-filter: blur(6px); padding: 3px 12px; border-radius: 20px; pointer-events: none; white-space: nowrap; z-index: 3;">
-                  <i class="fa-solid fa-hand-pointer"></i> Drag to rotate · Scroll to zoom
+                <div style="font-size: 11.5px; color: #94a3b8; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                  <span>Switch to the <strong style="color:#38bdf8; cursor:pointer;" onclick="setProductMediaMode('THREE_D')">3D Model tab</strong> to create an interactive 3D model.</span>
                 </div>
               </div>
-
-              <!-- Action Buttons Bar -->
-              <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-top: 14px; flex-wrap: wrap;">
-                <button type="button" onclick="product3dOpenViewer()" style="flex: 1; padding: 10px 18px; font-size: 13px; font-weight: 800; background: linear-gradient(135deg,#0284c7,#2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(2,132,199,0.35);">
-                  <i class="fa-solid fa-expand"></i> <span>View Larger</span>
-                </button>
-                <button type="button" onclick="product3dRegenerate()" style="padding: 10px 16px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                  <i class="fa-solid fa-arrows-rotate"></i> <span>Regenerate</span>
-                </button>
-                <button type="button" onclick="product3dRemove()" style="padding: 10px 14px; font-size: 12px; font-weight: 700; background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                  <i class="fa-solid fa-trash"></i> <span>Remove</span>
-                </button>
-              </div>
             </div>
 
-            <!-- 2. VISUAL GENERATING / PROCESSING HOLDER -->
-            <div id="p3dGeneratingHolderContainer" style="display: none; background: rgba(15,23,42,0.9); border: 1.5px solid rgba(56,189,248,0.4); border-radius: 14px; padding: 24px 18px; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,0.6);">
-              <div style="margin-bottom: 12px;">
-                <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 34px; color: #38bdf8;"></i>
+            <!-- TAB CONTENT: PRODUCT 3D STAGE -->
+            <div id="opeProduct3dSection" style="display: none; margin-bottom: 8px; width: 100%; box-sizing: border-box;">
+              
+              <!-- QA Banner -->
+              <div id="p3dQaBanner" style="display: none; background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.35); border-radius: 8px; padding: 8px 12px; font-size: 11.5px; color: #d8b4fe; margin-bottom: 12px;">
+                <i class="fa-solid fa-shield-halved"></i> <strong>Internal QA · Unlimited Test Conversions</strong> (0 commercial charge).
               </div>
-              <div style="font-size: 14.5px; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: 0.5px;">
-                3D MODEL GENERATING
-              </div>
-              <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
-                <span id="p3dGenHolderTier" style="background: rgba(56,189,248,0.2); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 800;">High Quality 3D</span>
-                <span id="p3dGenHolderTimer" style="font-size: 12px; color: #cbd5e1; font-weight: 700; font-variant-numeric: tabular-nums;">Elapsed: 0s</span>
-              </div>
-              <div style="font-size: 12px; color: #94a3b8; max-width: 380px; margin: 0 auto 16px auto; line-height: 1.5;">
-                Your current product image remains available while the 3D model is being prepared.
-              </div>
-              <div id="p3dGenCurrentAvailableRow" style="display: none; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 12px; color: #cbd5e1;">
-                <span style="display: block; margin-bottom: 8px; color: #94a3b8;">Current 3D model remains available:</span>
-                <button type="button" onclick="product3dOpenViewer()" style="padding: 7px 16px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 8px; cursor: pointer;">
-                  <i class="fa-solid fa-eye"></i> View Current 3D
-                </button>
-              </div>
-            </div>
 
-            <!-- 3. VISUAL VALIDATING HOLDER -->
-            <div id="p3dValidatingHolderContainer" style="display: none; background: rgba(15,23,42,0.9); border: 1.5px solid rgba(168,85,247,0.4); border-radius: 14px; padding: 24px 18px; text-align: center;">
-              <div style="margin-bottom: 12px;">
-                <i class="fa-solid fa-wand-magic-sparkles fa-spin" style="font-size: 32px; color: #c084fc;"></i>
-              </div>
-              <div style="font-size: 14.5px; font-weight: 800; color: #fff; margin-bottom: 6px;">
-                Finalizing 3D Model…
-              </div>
-              <div style="font-size: 12px; color: #94a3b8; max-width: 360px; margin: 0 auto; line-height: 1.5;">
-                Checking model geometry and preparing the interactive preview.
-              </div>
-            </div>
-
-            <!-- 4. VISUAL FAILURE HOLDER -->
-            <div id="p3dFailureHolderContainer" style="display: none; background: rgba(15,23,42,0.9); border: 1.5px solid rgba(239,68,68,0.4); border-radius: 14px; padding: 20px 18px; text-align: center;">
-              <div style="margin-bottom: 10px;">
-                <i class="fa-solid fa-triangle-exclamation" style="font-size: 30px; color: #f87171;"></i>
-              </div>
-              <div style="font-size: 14px; font-weight: 800; color: #f87171; margin-bottom: 6px;">
-                3D Generation Failed
-              </div>
-              <div id="p3dFailureErrorMsg" style="font-size: 12px; color: #cbd5e1; margin-bottom: 14px; line-height: 1.4;">
-                Generation could not be completed. You can try again or keep the 2D image.
-              </div>
-              <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                <button type="button" onclick="product3dGenerate()" style="padding: 8px 18px; font-size: 12.5px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 8px; cursor: pointer;">
-                  <i class="fa-solid fa-rotate-right"></i> Try Again
-                </button>
-                <button type="button" id="p3dFailureViewCurrentBtn" onclick="product3dOpenViewer()" style="display: none; padding: 8px 16px; font-size: 12.5px; font-weight: 700; background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer;">
-                  <i class="fa-solid fa-eye"></i> View Current 3D
-                </button>
-              </div>
-            </div>
-
-            <!-- 5. INITIAL NOT_GENERATED SETUP SECTION -->
-            <div id="p3dSetupSectionContainer" style="display: block; background: rgba(15,23,42,0.7); border: 1px solid rgba(56,189,248,0.3); border-radius: 14px; padding: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-              <!-- STEP 1: SOURCE IMAGE DIRECT UPLOAD (C11.16-P3.10) -->
-              <div style="margin-bottom: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px;">
-                <div style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
-                  <span><i class="fa-solid fa-image"></i> Step 1 — Product Source Image</span>
-                  <span style="font-size: 10px; color: #94a3b8; text-transform: none;">Required for 3D conversion</span>
-                </div>
-
-                <input type="file" id="p3dTabSourceInput" accept="image/*" style="display: none;" onchange="handleP3dTabSourceUpload(event)">
-
-                <div id="p3dTabSourceEmptyBox" style="display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px dashed rgba(56,189,248,0.3); border-radius: 8px; padding: 20px 14px; background: rgba(56,189,248,0.02); text-align: center;">
-                  <i class="fa-solid fa-cloud-arrow-up" style="font-size: 26px; color: #38bdf8; margin-bottom: 8px;"></i>
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 6px;">
-                    <button type="button" onclick="document.getElementById('p3dTabSourceInput').click()" style="padding: 7px 14px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                      <i class="fa-solid fa-upload"></i> Upload Photo
-                    </button>
-                    <button type="button" onclick="openProductCameraCapture('Front View')" style="padding: 7px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                      <i class="fa-solid fa-camera"></i> Take Photo
-                    </button>
+              <!-- 1. VISUAL 3D RESULT HOLDER (READY STATE) -->
+              <div id="p3dResultHolderContainer" style="display: none; background: rgba(15,23,42,0.85); border: 1px solid rgba(56,189,248,0.4); border-radius: 14px; padding: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid rgba(34,197,94,0.4); border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 5px;">
+                      <i class="fa-solid fa-circle-check"></i> 3D READY
+                    </span>
+                    <span id="p3dResultTierBadge" style="font-size: 11.5px; font-weight: 700; color: #38bdf8;">Standard 3D</span>
                   </div>
-                  <div style="font-size: 11px; color: #94a3b8;">Upload or snap a clear photo showing the product.</div>
+                  <div id="p3dResultProvenanceText" style="font-size: 11px; color: #94a3b8;">Generated just now · 1.1 MB</div>
                 </div>
 
-                <div id="p3dTabSourceFilledBox" style="display: none; flex-direction: column; align-items: center; justify-content: center;">
-                  <div style="width: 100%; max-height: 180px; min-height: 120px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 8px; margin-bottom: 10px;">
-                    <img id="p3dTabSourceImgPreview" src="" alt="3D Source Preview" style="max-height: 160px; max-width: 100%; object-fit: contain !important; object-position: center; border-radius: 6px;">
+                <!-- INLINE THREE.JS INTERACTIVE WEBGL PREVIEW -->
+                <div id="p3dInlineCanvasContainer" style="position: relative; width: 100%; height: 260px; background: radial-gradient(circle at center, #0f172a 0%, #030712 100%); border: 1px solid rgba(56,189,248,0.25); border-radius: 12px; overflow: hidden;">
+                  <canvas id="p3dInlineCanvas" style="width: 100%; height: 100%; display: block; cursor: grab;"></canvas>
+                  
+                  <button type="button" onclick="product3dInlineResetView()" title="Reset Camera" style="position: absolute; top: 10px; right: 10px; z-index: 5; background: rgba(3,7,18,0.75); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer; backdrop-filter: blur(6px);">
+                    <i class="fa-solid fa-arrows-rotate"></i> Reset
+                  </button>
+
+                  <div id="p3dInlineLoading" style="position: absolute; inset: 0; background: rgba(3,7,18,0.85); display: none; align-items: center; justify-content: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: #38bdf8; z-index: 4;">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i> Loading Interactive 3D Preview…
                   </div>
-                  <div style="display: flex; gap: 8px; width: 100%; justify-content: center; flex-wrap: wrap;">
-                    <button type="button" onclick="document.getElementById('p3dTabSourceInput').click()" style="padding: 5px 12px; font-size: 11px; font-weight: 700; background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
-                      <i class="fa-solid fa-upload"></i> Replace
-                    </button>
-                    <button type="button" onclick="openProductCameraCapture('Replace Front View')" style="padding: 5px 12px; font-size: 11px; font-weight: 700; background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
-                      <i class="fa-solid fa-camera"></i> Retake Photo
-                    </button>
-                    <button type="button" onclick="removeP3dTabSourceImage()" style="padding: 5px 12px; font-size: 11px; font-weight: 700; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.25); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
-                      <i class="fa-solid fa-trash"></i> Remove
-                    </button>
+
+                  <div style="position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); font-size: 10.5px; color: #94a3b8; background: rgba(3,7,18,0.75); backdrop-filter: blur(6px); padding: 3px 12px; border-radius: 20px; pointer-events: none; white-space: nowrap; z-index: 3;">
+                    <i class="fa-solid fa-hand-pointer"></i> Drag to rotate · Scroll to zoom
                   </div>
                 </div>
+
+                <!-- Action Buttons Bar -->
+                <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-top: 14px; flex-wrap: wrap;">
+                  <button type="button" onclick="product3dOpenViewer()" style="flex: 1; padding: 10px 18px; font-size: 13px; font-weight: 800; background: linear-gradient(135deg,#0284c7,#2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(2,132,199,0.35);">
+                    <i class="fa-solid fa-expand"></i> <span>View Larger</span>
+                  </button>
+                  <button type="button" onclick="product3dRegenerate()" style="padding: 10px 16px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-arrows-rotate"></i> <span>Regenerate</span>
+                  </button>
+                  <button type="button" onclick="product3dRemove()" style="padding: 10px 14px; font-size: 12px; font-weight: 700; background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-trash"></i> <span>Remove</span>
+                  </button>
                 </div>
               </div>
 
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                <label style="font-weight: 800; font-size: 13px; color: #38bdf8; display: flex; align-items: center; gap: 8px; margin: 0;">
-                  <i class="fa-solid fa-cube"></i> CHOOSE 3D QUALITY
-                </label>
-                <span id="p3dTokenBalance" style="font-size: 11px; color: #94a3b8;"></span>
+              <!-- 2. VISUAL GENERATING / PROCESSING HOLDER -->
+              <div id="p3dGeneratingHolderContainer" style="display: none; background: rgba(15,23,42,0.9); border: 1.5px solid rgba(56,189,248,0.4); border-radius: 14px; padding: 24px 18px; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,0.6);">
+                <div style="margin-bottom: 12px;">
+                  <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 34px; color: #38bdf8;"></i>
+                </div>
+                <div style="font-size: 14.5px; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: 0.5px;">
+                  3D MODEL GENERATING
+                </div>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
+                  <span id="p3dGenHolderTier" style="background: rgba(56,189,248,0.2); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 800;">High Quality 3D</span>
+                  <span id="p3dGenHolderTimer" style="font-size: 12px; color: #cbd5e1; font-weight: 700; font-variant-numeric: tabular-nums;">Elapsed: 0s</span>
+                </div>
+                <div style="font-size: 12px; color: #94a3b8; max-width: 380px; margin: 0 auto 16px auto; line-height: 1.5;">
+                  Your current product image remains available while the 3D model is being prepared.
+                </div>
+                <div id="p3dGenCurrentAvailableRow" style="display: none; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 12px; color: #cbd5e1;">
+                  <span style="display: block; margin-bottom: 8px; color: #94a3b8;">Current 3D model remains available:</span>
+                  <button type="button" onclick="product3dOpenViewer()" style="padding: 7px 16px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 8px; cursor: pointer;">
+                    <i class="fa-solid fa-eye"></i> View Current 3D
+                  </button>
+                </div>
               </div>
 
-              <!-- Quality Selection Cards -->
-              <div id="p3dQualitySelectorContainer" style="margin-bottom: 12px;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;" id="p3dQualityCardsGrid">
-                  <!-- Standard Card -->
-                  <div class="p3d-quality-card" id="p3dCardSTANDARD" onclick="selectP3dQuality('STANDARD')" style="background: rgba(15,23,42,0.9); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.2s ease;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                      <span style="font-size: 12.5px; font-weight: 800; color: #fff;">Standard 3D</span>
-                      <span id="p3dBadgeSTANDARD" style="font-size: 9.5px; font-weight: 800; background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; color: #94a3b8;">1 Token</span>
+              <!-- 3. VISUAL VALIDATING HOLDER -->
+              <div id="p3dValidatingHolderContainer" style="display: none; background: rgba(15,23,42,0.9); border: 1.5px solid rgba(168,85,247,0.4); border-radius: 14px; padding: 24px 18px; text-align: center;">
+                <div style="margin-bottom: 12px;">
+                  <i class="fa-solid fa-wand-magic-sparkles fa-spin" style="font-size: 32px; color: #c084fc;"></i>
+                </div>
+                <div style="font-size: 14.5px; font-weight: 800; color: #fff; margin-bottom: 6px;">
+                  Finalizing 3D Model…
+                </div>
+                <div style="font-size: 12px; color: #94a3b8; max-width: 360px; margin: 0 auto; line-height: 1.5;">
+                  Checking model geometry and preparing the interactive preview.
+                </div>
+              </div>
+
+              <!-- 4. VISUAL FAILURE HOLDER -->
+              <div id="p3dFailureHolderContainer" style="display: none; background: rgba(15,23,42,0.9); border: 1.5px solid rgba(239,68,68,0.4); border-radius: 14px; padding: 20px 18px; text-align: center;">
+                <div style="margin-bottom: 10px;">
+                  <i class="fa-solid fa-triangle-exclamation" style="font-size: 30px; color: #f87171;"></i>
+                </div>
+                <div style="font-size: 14px; font-weight: 800; color: #f87171; margin-bottom: 6px;">
+                  3D Generation Failed
+                </div>
+                <div id="p3dFailureErrorMsg" style="font-size: 12px; color: #cbd5e1; margin-bottom: 14px; line-height: 1.4;">
+                  Generation could not be completed. You can try again or keep the 2D image.
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                  <button type="button" onclick="product3dGenerate()" style="padding: 8px 18px; font-size: 12.5px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 8px; cursor: pointer;">
+                    <i class="fa-solid fa-rotate-right"></i> Try Again
+                  </button>
+                  <button type="button" id="p3dFailureViewCurrentBtn" onclick="product3dOpenViewer()" style="display: none; padding: 8px 16px; font-size: 12.5px; font-weight: 700; background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer;">
+                    <i class="fa-solid fa-eye"></i> View Current 3D
+                  </button>
+                </div>
+              </div>
+
+              <!-- 5. INITIAL NOT_GENERATED SETUP SECTION -->
+              <div id="p3dSetupSectionContainer" style="display: block; background: rgba(15,23,42,0.7); border: 1px solid rgba(56,189,248,0.3); border-radius: 14px; padding: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                <!-- STEP 1: SOURCE IMAGE DIRECT UPLOAD (C11.16-P3.10) -->
+                <div style="margin-bottom: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px;">
+                  <div style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+                    <span><i class="fa-solid fa-image"></i> Step 1 — Product Source Image</span>
+                    <span style="font-size: 10px; color: #94a3b8; text-transform: none;">Required for 3D conversion</span>
+                  </div>
+
+                  <input type="file" id="p3dTabSourceInput" accept="image/*" style="display: none;" onchange="handleP3dTabSourceUpload(event)">
+
+                  <div id="p3dTabSourceEmptyBox" style="display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px dashed rgba(56,189,248,0.3); border-radius: 8px; padding: 20px 14px; background: rgba(56,189,248,0.02); text-align: center;">
+                    <i class="fa-solid fa-cloud-arrow-up" style="font-size: 26px; color: #38bdf8; margin-bottom: 8px;"></i>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 6px;">
+                      <button type="button" onclick="document.getElementById('p3dTabSourceInput').click()" style="padding: 7px 14px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-upload"></i> Upload Photo
+                      </button>
+                      <button type="button" onclick="openProductCameraCapture('Front View')" style="padding: 7px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-camera"></i> Take Photo
+                      </button>
                     </div>
-                    <div style="font-size: 11px; color: #94a3b8; line-height: 1.35;">Fast conversion for simple products</div>
+                    <div style="font-size: 11px; color: #94a3b8;">Upload or snap a clear photo showing the product.</div>
                   </div>
 
-                  <!-- High Quality Card -->
-                  <div class="p3d-quality-card" id="p3dCardHIGH" onclick="selectP3dQuality('HIGH')" style="background: rgba(56,189,248,0.12); border: 1.5px solid #38bdf8; border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.2s ease;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                      <span style="font-size: 12.5px; font-weight: 800; color: #38bdf8;">High Quality 3D</span>
-                      <span id="p3dBadgeHIGH" style="font-size: 9.5px; font-weight: 800; background: rgba(56,189,248,0.25); padding: 2px 6px; border-radius: 4px; color: #bae6fd;">3 Tokens</span>
+                  <div id="p3dTabSourceFilledBox" style="display: none; flex-direction: column; align-items: center; justify-content: center;">
+                    <div style="width: 100%; max-height: 180px; min-height: 120px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 8px; margin-bottom: 10px;">
+                      <img id="p3dTabSourceImgPreview" src="" alt="3D Source Preview" style="max-height: 160px; max-width: 100%; object-fit: contain !important; object-position: center; border-radius: 6px;">
                     </div>
-                    <div style="font-size: 11px; color: #cbd5e1; line-height: 1.35;">Best detail & geometry · <strong style="color: #38bdf8;">Recommended</strong></div>
-                  </div>
-
-                  <!-- Ultra Card -->
-                  <div class="p3d-quality-card" id="p3dCardULTRA" onclick="selectP3dQuality('ULTRA')" style="background: rgba(15,23,42,0.9); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.2s ease;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                      <span style="font-size: 12.5px; font-weight: 800; color: #fff;">Ultra 3D</span>
-                      <span id="p3dBadgeULTRA" style="font-size: 9.5px; font-weight: 800; background: rgba(245,158,11,0.2); padding: 2px 6px; border-radius: 4px; color: #fbbf24;">6 Tokens</span>
+                    <div style="display: flex; gap: 8px; width: 100%; justify-content: center; flex-wrap: wrap;">
+                      <button type="button" onclick="document.getElementById('p3dTabSourceInput').click()" style="padding: 5px 12px; font-size: 11px; font-weight: 700; background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+                        <i class="fa-solid fa-upload"></i> Replace
+                      </button>
+                      <button type="button" onclick="openProductCameraCapture('Replace Front View')" style="padding: 5px 12px; font-size: 11px; font-weight: 700; background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+                        <i class="fa-solid fa-camera"></i> Retake Photo
+                      </button>
+                      <button type="button" onclick="removeP3dTabSourceImage()" style="padding: 5px 12px; font-size: 11px; font-weight: 700; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.25); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+                        <i class="fa-solid fa-trash"></i> Remove
+                      </button>
                     </div>
-                    <div style="font-size: 11px; color: #94a3b8; line-height: 1.35;">Maximum practical fidelity</div>
                   </div>
                 </div>
-              </div>
 
-              <!-- Additional Views (Multi-View) -->
-              <!-- Additional Views (Multi-View Required for High & Ultra) -->
-              <div class="form-group" id="opeAdditionalViewsSection" style="display: block; margin-bottom: 12px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <span style="font-weight: 700; font-size: 12px; color: #a5b4fc;"><i class="fa-solid fa-images"></i> Multi-View Sources</span>
-                  <span id="p3dMultiViewReadinessBadge" style="font-size: 10.5px; font-weight: 700; color: #fbbf24; background: rgba(245,158,11,0.15); padding: 2px 6px; border-radius: 4px;">
-                    1 / 3 required views ready
-                  </span>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                  <label style="font-weight: 800; font-size: 13px; color: #38bdf8; display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <i class="fa-solid fa-cube"></i> CHOOSE 3D QUALITY
+                  </label>
+                  <span id="p3dTokenBalance" style="font-size: 11px; color: #94a3b8;"></span>
                 </div>
-                <div id="opeAdditionalViewsContainer" style="background: rgba(15,23,42,0.6); border: 1px dashed rgba(99,102,241,0.3); border-radius: 10px; padding: 10px;">
-                  <div id="opeAdditionalViewsList" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;"></div>
-                  <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                    <input type="file" id="opeAdditionalViewInput" accept="image/png, image/jpeg, image/webp" style="display: none;" onchange="handleAdditionalViewUpload(this)">
-                    <select id="opeAdditionalViewRole" style="background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 5px 8px; color: #cbd5e1; font-size: 11.5px;">
-                      <option value="Front">Front View</option>
-                      <option value="Left 45°">Left / 45°</option>
-                      <option value="Right 45°">Right / 45°</option>
-                      <option value="Back">Back View</option>
-                      <option value="Left">Left Side</option>
-                      <option value="Right">Right Side</option>
-                      <option value="Top">Top View</option>
-                      <option value="Detail">Detail / Logo</option>
+
+                <!-- Quality Selection Cards -->
+                <div id="p3dQualitySelectorContainer" style="margin-bottom: 12px;">
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;" id="p3dQualityCardsGrid">
+                    <!-- Standard Card -->
+                    <div class="p3d-quality-card" id="p3dCardSTANDARD" onclick="selectP3dQuality('STANDARD')" style="background: rgba(15,23,42,0.9); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.2s ease;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-size: 12.5px; font-weight: 800; color: #fff;">Standard 3D</span>
+                        <span id="p3dBadgeSTANDARD" style="font-size: 9.5px; font-weight: 800; background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; color: #94a3b8;">1 Token</span>
+                      </div>
+                      <div style="font-size: 11px; color: #94a3b8; line-height: 1.35;">Fast conversion for simple products</div>
+                    </div>
+
+                    <!-- High Quality Card -->
+                    <div class="p3d-quality-card" id="p3dCardHIGH" onclick="selectP3dQuality('HIGH')" style="background: rgba(56,189,248,0.12); border: 1.5px solid #38bdf8; border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.2s ease;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-size: 12.5px; font-weight: 800; color: #38bdf8;">High Quality 3D</span>
+                        <span id="p3dBadgeHIGH" style="font-size: 9.5px; font-weight: 800; background: rgba(56,189,248,0.25); padding: 2px 6px; border-radius: 4px; color: #bae6fd;">3 Tokens</span>
+                      </div>
+                      <div style="font-size: 11px; color: #cbd5e1; line-height: 1.35;">Best detail & geometry · <strong style="color: #38bdf8;">Recommended</strong></div>
+                    </div>
+
+                    <!-- Ultra Card -->
+                    <div class="p3d-quality-card" id="p3dCardULTRA" onclick="selectP3dQuality('ULTRA')" style="background: rgba(15,23,42,0.9); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.2s ease;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-size: 12.5px; font-weight: 800; color: #fff;">Ultra 3D</span>
+                        <span id="p3dBadgeULTRA" style="font-size: 9.5px; font-weight: 800; background: rgba(245,158,11,0.2); padding: 2px 6px; border-radius: 4px; color: #fbbf24;">6 Tokens</span>
+                      </div>
+                      <div style="font-size: 11px; color: #94a3b8; line-height: 1.35;">Maximum practical fidelity</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Additional Views (Multi-View Required for High & Ultra) -->
+                <div class="form-group" id="opeAdditionalViewsSection" style="display: block; margin-bottom: 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-weight: 700; font-size: 12px; color: #a5b4fc;"><i class="fa-solid fa-images"></i> Multi-View Sources</span>
+                    <span id="p3dMultiViewReadinessBadge" style="font-size: 10.5px; font-weight: 700; color: #fbbf24; background: rgba(245,158,11,0.15); padding: 2px 6px; border-radius: 4px;">
+                      1 / 3 required views ready
+                    </span>
+                  </div>
+                  <div id="opeAdditionalViewsContainer" style="background: rgba(15,23,42,0.6); border: 1px dashed rgba(99,102,241,0.3); border-radius: 10px; padding: 10px;">
+                    <div id="opeAdditionalViewsList" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;"></div>
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                      <input type="file" id="opeAdditionalViewInput" accept="image/png, image/jpeg, image/webp" style="display: none;" onchange="handleAdditionalViewUpload(this)">
+                      <select id="opeAdditionalViewRole" style="background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 5px 8px; color: #cbd5e1; font-size: 11.5px;">
+                        <option value="Front">Front View</option>
+                        <option value="Left 45°">Left / 45°</option>
+                        <option value="Right 45°">Right / 45°</option>
+                        <option value="Back">Back View</option>
+                        <option value="Left">Left Side</option>
+                        <option value="Right">Right Side</option>
+                        <option value="Top">Top View</option>
+                        <option value="Detail">Detail / Logo</option>
+                      </select>
+                      <button type="button" class="btn-ui" onclick="document.getElementById('opeAdditionalViewInput').click()" style="padding: 5px 12px; font-size: 11.5px; font-weight: 700; background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.4); border-radius: 6px; cursor: pointer;">
+                        <i class="fa-solid fa-plus"></i> Upload View
+                      </button>
+                      <button type="button" class="btn-ui" onclick="openProductCameraCapture(document.getElementById('opeAdditionalViewRole').value)" style="padding: 5px 12px; font-size: 11.5px; font-weight: 700; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 6px; cursor: pointer;">
+                        <i class="fa-solid fa-camera"></i> Capture View
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Reconstruction Guidance & Prompt Mode Settings (P3.12) -->
+                <div style="margin-bottom: 12px; background: rgba(15,23,42,0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 10px 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-weight: 700; font-size: 11.5px; color: #cbd5e1;"><i class="fa-solid fa-sliders"></i> RECONSTRUCTION GUIDANCE</span>
+                    <span style="font-size: 10px; color: #4ade80; font-weight: 700;">Faithful Reconstruction [Recommended]</span>
+                  </div>
+                  <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
+                    <label style="font-size: 11px; color: #94a3b8; width: 80px;">Prompt Mode:</label>
+                    <select id="p3dPromptModeSelector" style="flex: 1; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 4px 8px; color: #fff; font-size: 11px;">
+                      <option value="USE_BOTH" selected>Use Both (Full Fidelity + Negative Constraints) [Default]</option>
+                      <option value="FULL_PROMPT_ONLY">Full Fidelity Prompt Only (v1)</option>
+                      <option value="NEGATIVE_PROMPT_ONLY">Compact Negative Constraints Only (v1)</option>
+                      <option value="FAITHFUL_RECONSTRUCTION">Faithful Reconstruction Mode</option>
                     </select>
-                    <button type="button" class="btn-ui" onclick="document.getElementById('opeAdditionalViewInput').click()" style="padding: 5px 12px; font-size: 11.5px; font-weight: 700; background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.4); border-radius: 6px; cursor: pointer;">
-                      <i class="fa-solid fa-plus"></i> Upload View
-                    </button>
-                    <button type="button" class="btn-ui" onclick="openProductCameraCapture(document.getElementById('opeAdditionalViewRole').value)" style="padding: 5px 12px; font-size: 11.5px; font-weight: 700; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 6px; cursor: pointer;">
-                      <i class="fa-solid fa-camera"></i> Capture View
-                    </button>
+                  </div>
+                  <div style="font-size: 10px; color: #64748b; line-height: 1.35;">
+                    Reference image is absolute ground truth. Text, logos, proportions, and materials are locked.
                   </div>
                 </div>
-              </div>
 
-              <!-- Reconstruction Guidance & Prompt Mode Settings (P3.12) -->
-              <div style="margin-bottom: 12px; background: rgba(15,23,42,0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 10px 12px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <span style="font-weight: 700; font-size: 11.5px; color: #cbd5e1;"><i class="fa-solid fa-sliders"></i> RECONSTRUCTION GUIDANCE</span>
-                  <span style="font-size: 10px; color: #4ade80; font-weight: 700;">Faithful Reconstruction [Recommended]</span>
+                <!-- Cost & Balance Summary -->
+                <div id="p3dLiveCostBox" style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; font-size: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                  <span id="p3dLiveCostSummary" style="color: #cbd5e1; font-weight: 600;">High Quality · 3 Tokens</span>
+                  <span id="p3dLiveBalanceSummary" style="color: #94a3b8;">Available: --</span>
                 </div>
-                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
-                  <label style="font-size: 11px; color: #94a3b8; width: 80px;">Prompt Mode:</label>
-                  <select id="p3dPromptModeSelector" style="flex: 1; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 4px 8px; color: #fff; font-size: 11px;">
-                    <option value="USE_BOTH" selected>Use Both (Full Fidelity + Negative Constraints) [Default]</option>
-                    <option value="FULL_PROMPT_ONLY">Full Fidelity Prompt Only (v1)</option>
-                    <option value="NEGATIVE_PROMPT_ONLY">Compact Negative Constraints Only (v1)</option>
-                    <option value="FAITHFUL_RECONSTRUCTION">Faithful Reconstruction Mode</option>
-                  </select>
-                </div>
-                <div style="font-size: 10px; color: #64748b; line-height: 1.35;">
-                  Reference image is absolute ground truth. Text, logos, proportions, and materials are locked.
-                </div>
-              </div>
-              </div>
 
-              <!-- Cost & Balance Summary -->
-              <div id="p3dLiveCostBox" style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; font-size: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                <span id="p3dLiveCostSummary" style="color: #cbd5e1; font-weight: 600;">High Quality · 3 Tokens</span>
-                <span id="p3dLiveBalanceSummary" style="color: #94a3b8;">Available: --</span>
+                <div id="p3dWarningBanner" style="display: none; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #fbbf24; margin-bottom: 12px;"></div>
+
+                <!-- Generate CTA Button -->
+                <button type="button" id="p3dMainCtaBtn" onclick="handleP3dMainCtaClick()" style="width: 100%; padding: 12px 20px; font-size: 13.5px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(2,132,199,0.35); transition: all 0.2s ease;">
+                  <i class="fa-solid fa-cube"></i> <span id="p3dMainCtaText">Generate 3D Model</span>
+                </button>
               </div>
-
-              <div id="p3dWarningBanner" style="display: none; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #fbbf24; margin-bottom: 12px;"></div>
-
-              <!-- Generate CTA Button -->
-              <button type="button" id="p3dMainCtaBtn" onclick="handleP3dMainCtaClick()" style="width: 100%; padding: 12px 20px; font-size: 13.5px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(2,132,199,0.35); transition: all 0.2s ease;">
-                <i class="fa-solid fa-cube"></i> <span id="p3dMainCtaText">Generate 3D Model</span>
-              </button>
             </div>
           </div>
 
-          <!-- Product Name * -->
-          <div class="form-group" style="margin-bottom: 14px;">
-            <label class="form-label" style="font-weight: 700; font-size: 13px; color: #cbd5e1; display: block; margin-bottom: 4px;">Product Name *</label>
-            <input type="text" id="opeName" class="form-input" placeholder="Enter product name" required style="width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 13.5px;">
-          </div>
+          <!-- ── PRODUCT DETAILS GRID (2 columns desktop, 1 column mobile) ── -->
+          <div class="product-details-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; width: 100%; min-width: 0; box-sizing: border-box;">
+            
+            <!-- Product Name (span 2 / full width) -->
+            <div style="grid-column: 1 / -1; min-width: 0;">
+              <label class="form-label" style="font-weight: 700; font-size: 13px; color: #cbd5e1; display: block; margin-bottom: 6px;">Product Name *</label>
+              <input type="text" id="opeName" class="form-input" placeholder="Enter product name" required style="width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 14px; color: #fff; font-size: 13.5px;">
+            </div>
 
-          <!-- SKU & Category -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
-            <div>
-              <label class="form-label" style="font-weight: 700; font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">SKU / Model Code</label>
-              <input type="text" id="opeSku" class="form-input" placeholder="e.g. SKU-1001" style="width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 13.5px;">
+            <!-- SKU / Model -->
+            <div style="min-width: 0;">
+              <label class="form-label" style="font-weight: 700; font-size: 12.5px; color: #cbd5e1; display: block; margin-bottom: 6px;">SKU / Model Code</label>
+              <input type="text" id="opeSku" class="form-input" placeholder="e.g. SKU-1001" style="width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 14px; color: #fff; font-size: 13.5px;">
             </div>
-            <div>
-              <label class="form-label" style="font-weight: 700; font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Category</label>
-              <input type="text" id="opeCategory" class="form-input" placeholder="e.g. Cosmetics, Machinery" style="width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 13.5px;">
-            </div>
-          </div>
 
-          <!-- Price & Availability -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
-            <div>
-              <label class="form-label" style="font-weight: 700; font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Price / Price Display (Optional)</label>
-              <input type="text" id="opePrice" class="form-input" placeholder="e.g. $24.00 or Inquire for Wholesale" style="width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 13.5px;">
+            <!-- Category -->
+            <div style="min-width: 0;">
+              <label class="form-label" style="font-weight: 700; font-size: 12.5px; color: #cbd5e1; display: block; margin-bottom: 6px;">Category</label>
+              <input type="text" id="opeCategory" class="form-input" placeholder="e.g. Cosmetics, Machinery" style="width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 14px; color: #fff; font-size: 13.5px;">
             </div>
-            <div>
-              <label class="form-label" style="font-weight: 700; font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Availability / Status</label>
-              <select id="opeAvailability" class="form-input" style="width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 13.5px;">
+
+            <!-- Price -->
+            <div style="min-width: 0;">
+              <label class="form-label" style="font-weight: 700; font-size: 12.5px; color: #cbd5e1; display: block; margin-bottom: 6px;">Price / Price Display (Optional)</label>
+              <input type="text" id="opePrice" class="form-input" placeholder="e.g. $24.00 or Inquire for Wholesale" style="width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 14px; color: #fff; font-size: 13.5px;">
+            </div>
+
+            <!-- Availability -->
+            <div style="min-width: 0;">
+              <label class="form-label" style="font-weight: 700; font-size: 12.5px; color: #cbd5e1; display: block; margin-bottom: 6px;">Availability / Status</label>
+              <select id="opeAvailability" class="form-input" style="width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 14px; color: #fff; font-size: 13.5px;">
                 <option value="ACTIVE">In Stock / Active</option>
                 <option value="PREORDER">Made to Order / Pre-Order</option>
                 <option value="INQUIRE">Inquire for Availability</option>
               </select>
             </div>
-          </div>
 
-          <!-- Short Description -->
-          <div class="form-group" style="margin-bottom: 14px;">
-            <label class="form-label" style="font-weight: 700; font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Short Description (for Cards & Highlights)</label>
-            <textarea id="opeShortDesc" class="form-input" rows="2" placeholder="Enter product description" style="width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 13px;"></textarea>
-          </div>
-
-          <!-- Specifications -->
-          <div class="form-group" style="margin-bottom: 14px;">
-            <label class="form-label" style="font-weight: 700; font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Technical Specifications & Detailed Specs</label>
-            <textarea id="opeDesc" class="form-input" rows="3" placeholder="Enter technical specifications" style="width: 100%; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 13px;"></textarea>
-          </div>
-
-          <!-- Catalog Membership Selector -->
-          <div class="form-group" style="margin-bottom: 10px;" id="opeCatalogMembershipSection">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <label class="form-label" style="font-weight: 700; font-size: 12px; color: #38bdf8; display: flex; align-items: center; gap: 6px; margin: 0;">
-                <i class="fa-solid fa-book-open"></i> Catalog Membership
-              </label>
-              <button type="button" onclick="openInlineCatalogCreateFromProduct()" style="background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; cursor: pointer;">
-                <i class="fa-solid fa-plus"></i> Create Catalog
-              </button>
+            <!-- Short Description (span 2 / full width) -->
+            <div style="grid-column: 1 / -1; min-width: 0;">
+              <label class="form-label" style="font-weight: 700; font-size: 12.5px; color: #cbd5e1; display: block; margin-bottom: 6px;">Short Description (for Cards & Highlights)</label>
+              <textarea id="opeShortDesc" class="form-input" rows="2" placeholder="Enter product description" style="width: 100%; min-width: 0; max-width: 100%; resize: vertical; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 14px; color: #fff; font-size: 13px;"></textarea>
             </div>
-            <div id="opeCatalogCheckboxes" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; max-height: 100px; overflow-y: auto;">
-              <!-- Dynamic checkboxes for catalogs -->
+
+            <!-- Technical Specifications (span 2 / full width) -->
+            <div style="grid-column: 1 / -1; min-width: 0;">
+              <label class="form-label" style="font-weight: 700; font-size: 12.5px; color: #cbd5e1; display: block; margin-bottom: 6px;">Technical Specifications & Detailed Specs</label>
+              <textarea id="opeDesc" class="form-input" rows="3" placeholder="Enter technical specifications" style="width: 100%; min-width: 0; max-width: 100%; resize: vertical; box-sizing: border-box; background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 14px; color: #fff; font-size: 13px;"></textarea>
             </div>
+
+            <!-- Catalog Membership (span 2 / full width) -->
+            <div style="grid-column: 1 / -1; min-width: 0;" id="opeCatalogMembershipSection">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                <label class="form-label" style="font-weight: 700; font-size: 12.5px; color: #38bdf8; display: flex; align-items: center; gap: 6px; margin: 0;">
+                  <i class="fa-solid fa-book-open"></i> Catalog Membership
+                </label>
+                <button type="button" onclick="openInlineCatalogCreateFromProduct()" style="background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                  <i class="fa-solid fa-plus"></i> Create Catalog
+                </button>
+              </div>
+              <div id="opeCatalogCheckboxes" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; max-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                <!-- Dynamic checkboxes for catalogs -->
+              </div>
+            </div>
+
           </div>
+
         </div>
 
-        <!-- Fixed Sticky Footer -->
-        <div class="viewport-modal-footer">
+        <!-- STICKY FOOTER -->
+        <div class="viewport-modal-footer" style="padding: 16px 24px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; background: rgba(9, 16, 29, 0.98); position: sticky; bottom: 0; z-index: 10;">
           <button type="button" id="opeBtnDelete" onclick="deleteOwnerProduct()" style="display: none; padding: 9px 16px; font-size: 12.5px; font-weight: 700; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.35); border-radius: 8px; cursor: pointer;">
             <i class="fa-solid fa-trash"></i> Delete Product
           </button>
           
-          <div style="display: flex; gap: 10px; margin-left: auto; align-items: center;">
+          <div style="display: flex; gap: 10px; margin-left: auto; align-items: center; flex-wrap: wrap;">
             <span id="opeSaveStatus" style="font-size: 12px; color: #94a3b8; margin-right: 6px;"></span>
             <button type="button" id="opeBtnCancel" class="btn-ui" onclick="closeOwnerProductEditor()" style="padding: 9px 18px; font-size: 13px; background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer;">
               Cancel
             </button>
-            <button type="submit" id="opeBtnSave" class="btn-create-free" style="padding: 9px 24px; font-size: 13px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; border-radius: 8px; color: #fff; cursor: pointer;">
+            <button type="submit" id="opeBtnSave" class="btn-create-free" style="padding: 9px 24px; font-size: 13px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; border-radius: 8px; color: #fff; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
               <i class="fa-solid fa-check"></i> Save Product
             </button>
           </div>
@@ -3405,9 +3412,6 @@
     </div>
   </div>
 
-  <!-- ============================================================ -->
-  <!-- 2. PUBLIC PRODUCT DETAIL MODAL (Read-Only + Buyer Actions)   -->
-  <!-- ============================================================ -->
   <div class="viewport-modal" id="publicProductDetailModal" style="display: none;">
     <div class="viewport-modal-card" style="max-width: min(92vw, 540px); max-height: min(90vh, 740px);">
       <!-- Fixed Header -->
@@ -5620,1290 +5624,18 @@
     window.studioHotspotsList = studioHotspotsList;
     let isDraggingPin = false;
     window.isDraggingPin = false;
-
-    function recalculatePinpointPositions(projectData) {
-      const rawPinpoints = projectData?.pinpoints || [];
-      const defaultUVs = [
-        { u: 0.28, v: 0.62 },
-        { u: 0.50, v: 0.55 },
-        { u: 0.72, v: 0.60 }
-      ];
-
-      studioHotspotsList.forEach((spot, idx) => {
-        let pin = rawPinpoints.find(p => p.id === spot.id || p.pinId === spot.id || p.targetId === spot.targetId || p.slotIndex === spot.slotIndex);
-        const fallbackUV = defaultUVs[idx % defaultUVs.length] || { u: 0.5, v: 0.5 };
-        const u = typeof pin?.u === 'number' ? pin.u : (typeof spot.u === 'number' ? spot.u : fallbackUV.u);
-        const v = typeof pin?.v === 'number' ? pin.v : (typeof spot.v === 'number' ? spot.v : fallbackUV.v);
-
-        const phi = (1 - v) * Math.PI;
-        const theta = (u * 2 * Math.PI) - Math.PI - 0.45;
-        const r = 450;
-
-        const x = -r * Math.sin(phi) * Math.cos(theta);
-        const y = r * Math.cos(phi);
-        const z = r * Math.sin(phi) * Math.sin(theta);
-
-        spot.worldPos = new THREE.Vector3(x, y, z);
-      });
-    }
-
-    function onStudioResize() {
-      const container = document.getElementById('viewer-container');
-      if (!container || !renderer || !camera) return;
-      const rect = container.getBoundingClientRect();
-      const width = rect.width || container.clientWidth;
-      const height = rect.height || container.clientHeight;
-      if (width && height) {
-        camera.aspect = width / height;
-        camera.updateProjectionMatrix();
-        renderer.setSize(width, height);
-      }
-    }
-
-    
-    // ============================================================
-    // VISUAL PRODUCT PIN & MULTI-PRODUCT PIN ENGINE (C11.16-P3.8)
-    // ============================================================
-    window.isPlacingProductPin = false;
-    window.currentEditingPin = null;
-    window.pinSelectorSelectedProductIds = [];
-    window.lastPlacedPinCoords = null;
-
-    
-    // ============================================================
-    // CANONICAL INSTANT BLANK PIN & PRODUCT ACCUMULATION (C11.16-P3.10)
-    // ============================================================
-    window.isPlacingProductPin = false;
-    window.pinAuthoringState = 'IDLE'; // IDLE | PLACING | BLANK_PIN | ADDING_PRODUCTS | ACTIVE_PIN
-    window.currentEditingPin = null;
-    window.currentBlankPinId = null;
-    window.pendingPinAttachment = null;
-    window.pinSelectorSelectedProductIds = [];
-    window.lastPlacedPinCoords = null;
-
-    function startPlaceProductPinMode() {
-      window.pinAuthoringState = 'PLACING';
-      window.isPlacingProductPin = true;
-      if (typeof controls !== 'undefined' && controls) controls.enabled = false;
-      const banner = document.getElementById('placePinBanner');
-      if (banner) banner.style.display = 'flex';
-      const container = document.getElementById('viewer-container');
-      if (container) container.classList.add('placing-pin-cursor');
-    }
-
-    function cancelPlaceProductPinMode() {
-      window.pinAuthoringState = 'IDLE';
-      window.isPlacingProductPin = false;
-      if (typeof controls !== 'undefined' && controls) controls.enabled = true;
-      const banner = document.getElementById('placePinBanner');
-      if (banner) banner.style.display = 'none';
-      const container = document.getElementById('viewer-container');
-      if (container) container.classList.remove('placing-pin-cursor');
-    }
-
-    // Escape listener
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && (window.isPlacingProductPin || window.pinAuthoringState === 'PLACING')) {
-        cancelPlaceProductPinMode();
-      }
-    });
-
-    // ── Instant Blank Pin Creator ─────────────────────────────────
-    function createInstantBlankPin(coords) {
-      cancelPlaceProductPinMode();
-      window.pinAuthoringState = 'BLANK_PIN';
-
-      const draftId = 'pin-blank-' + Date.now().toString(36);
-      window.currentBlankPinId = draftId;
-
-      const blankPin = {
-        id: draftId,
-        pinType: 'PRODUCT_PIN',
-        isDraft: true,
-        status: 'DRAFT',
-        publicVisible: false,
-        productIds: [],
-        productId: null,
-        targetId: null,
-        u: coords.u,
-        v: coords.v,
-        worldPos: coords.hitPoint,
-        createdAt: new Date().toISOString()
-      };
-
-      if (!window.activeProjectData) window.activeProjectData = {};
-      if (!window.activeProjectData.pinpoints) window.activeProjectData.pinpoints = [];
-      window.activeProjectData.pinpoints.push(blankPin);
-
-      // Add to studioHotspotsList
-      studioHotspotsList.push({
-        id: draftId,
-        pinType: 'BLANK_PIN',
-        isDraft: true,
-        targetId: draftId,
-        name: 'Empty Product Pin',
-        category: 'PRODUCT PIN',
-        worldPos: coords.hitPoint,
-        u: coords.u,
-        v: coords.v,
-        pinData: blankPin
-      });
-
-      window.studioHotspotsList = studioHotspotsList;
-      window.activeProjectData = activeProjectData;
-      window.studioHotspotsList = studioHotspotsList;
-      buildHotspotsDOM();
-      updateFocusSpecForBlankPin(blankPin);
-      if (typeof renderProductCardsTray === 'function') renderProductCardsTray(window.activeProjectData?.pinpoints);
-
-      // Async server persistence
-      persistDraftPinToServer(blankPin);
-
-      if (window.showToast) window.showToast('📍 Blank pin placed! Click "+ Add Product" to attach items.', 'info');
-      return blankPin;
-    }
-
-    async function persistDraftPinToServer(blankPin) {
-      const pid = activeProjectId || window.activeProjectData?.id;
-      const token = p3dGetAuthToken();
-      if (!pid) return;
-
-      try {
-        const res = await fetch(`/api/projects/${pid}/pins`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token,
-            'x-booth-edit-token': token
-          },
-          body: JSON.stringify({
-            id: blankPin.id,
-            pinType: 'PRODUCT_PIN',
-            status: 'DRAFT',
-            publicVisible: false,
-            productIds: [],
-            u: blankPin.u,
-            v: blankPin.v
-          })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.pin?.id && data.pin.id !== blankPin.id) {
-            blankPin.id = data.pin.id;
-          }
-        }
-      } catch (err) {
-        console.warn('[Draft Pin Persistence Warn]', err.message);
-      }
-    }
-
-    async function removeBlankPin(pinId) {
-      if (!confirm('Remove this product pin?')) return;
-
-      // Local teardown
-      if (window.activeProjectData?.pinpoints) {
-        window.activeProjectData.pinpoints = window.activeProjectData.pinpoints.filter(p => p.id !== pinId && p.pinId !== pinId);
-      }
-      studioHotspotsList = studioHotspotsList.filter(s => s.id !== pinId);
-      buildHotspotsDOM();
-
-      const pid = activeProjectId || window.activeProjectData?.id;
-      const token = p3dGetAuthToken();
-      if (pid && pinId) {
-        try {
-          await fetch(`/api/projects/${pid}/pins/${pinId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': 'Bearer ' + token, 'x-booth-edit-token': token }
-          });
-        } catch(e) {}
-      }
-      if (window.showToast) window.showToast('Pin removed.', 'info');
-    }
-
-    function updateFocusSpecForBlankPin(pin) {
-      const titleEl = document.getElementById('focus-prod-title');
-      const catEl = document.getElementById('focus-prod-cat');
-      const descEl = document.getElementById('focus-prod-desc');
-      const actionBtn = document.getElementById('focus-prod-action');
-      const removeBtn = document.getElementById('focus-prod-remove-pin');
-
-      if (titleEl) titleEl.textContent = 'Empty Product Pin';
-      if (catEl) catEl.textContent = 'PRODUCT PIN (NO PRODUCTS)';
-      if (descEl) descEl.textContent = 'This pin has no products attached yet. Click "+ Add Product" to link a product or create a new one.';
-      if (actionBtn) {
-        actionBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Product';
-        actionBtn.onclick = () => openPinChooserModal(pin.id);
-        actionBtn.style.display = 'inline-flex';
-      }
-    }
-
-    // ── Pin Chooser Modal Actions ─────────────────────────────────
-    function openPinChooserModal(pinId) {
-      window.currentEditingPinId = pinId;
-      const modal = document.getElementById('pinChooserModal');
-      if (modal) modal.style.display = 'flex';
-    }
-
-    function closePinChooserModal() {
-      const modal = document.getElementById('pinChooserModal');
-      if (modal) modal.style.display = 'none';
-    }
-
-    function pinChooserActionAddNew() {
-      const pinId = window.currentEditingPinId;
-      closePinChooserModal();
-      
-      const pin = (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId);
-      window.pendingPinAttachment = {
-        pinId: pinId,
-        coords: pin ? { u: pin.u, v: pin.v } : (window.lastPlacedPinCoords || { u: 0.5, v: 0.5 })
-      };
-
-      // Determine next product slot index
-      const prods = window.activeProjectData?.products || [];
-      const nextSlot = prods.length + 1;
-      openOwnerProductEditor(nextSlot);
-    }
-
-    function pinChooserActionSelectExisting() {
-      const pinId = window.currentEditingPinId;
-      closePinChooserModal();
-      const pin = (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId);
-      openProductPinSelectorModal(pin || { id: pinId, ...(window.lastPlacedPinCoords || { u: 0.5, v: 0.5 }) });
-    }
-
-    // ── 3D Tab Direct Source Image Handlers ────────────────────────
-    function handleP3dTabSourceUpload(event) {
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target.result;
-        
-        // Update 3D tab preview
-        const previewImg = document.getElementById('p3dTabSourceImgPreview');
-        const emptyBox = document.getElementById('p3dTabSourceEmptyBox');
-        const filledBox = document.getElementById('p3dTabSourceFilledBox');
-        if (previewImg) previewImg.src = dataUrl;
-        if (emptyBox) emptyBox.style.display = 'none';
-        if (filledBox) filledBox.style.display = 'flex';
-
-        // Synchronize canonical Product Image
-        const opeImgPreview = document.getElementById('opeImagePreview');
-        const opeRemoveBtn = document.getElementById('opeBtnRemoveImg');
-        if (opeImgPreview) {
-          opeImgPreview.src = dataUrl;
-          opeImgPreview.style.display = 'block';
-        }
-        if (opeRemoveBtn) opeRemoveBtn.style.display = 'inline-flex';
-
-        // Transfer file to opeImageInput for multipart upload
-        try {
-          const dt = new DataTransfer();
-          dt.items.add(file);
-          const opeInput = document.getElementById('opeImageInput');
-          if (opeInput) opeInput.files = dt.files;
-        } catch(err) {}
-
-        // Enable Generate CTA
-        const ctaBtn = document.getElementById('p3dMainCtaBtn');
-        const ctaText = document.getElementById('p3dMainCtaText');
-        if (ctaBtn) ctaBtn.disabled = false;
-        if (ctaText) ctaText.textContent = 'Generate 3D Model';
-      };
-      reader.readAsDataURL(file);
-    }
-
-    
-    
-    // ============================================================
-    // PRODUCT PIN CONTENT EDITOR (C11.16-P3.11)
-    // ============================================================
-    window.currentEditingContentPin = null;
-
-    function openProductPinContentEditorModal(pinIdOrTarget) {
-      if (!pinIdOrTarget) return;
-
-      const rawPinpoints = window.activeProjectData?.pinpoints || [];
-      const spots = window.studioHotspotsList || [];
-
-      // Find pin data
-      let pin = rawPinpoints.find(p => p.id === pinIdOrTarget || p.pinId === pinIdOrTarget || String(p.slotIndex) === String(pinIdOrTarget));
-      if (!pin) {
-        const spot = spots.find(s => s.id === pinIdOrTarget || s.targetId === pinIdOrTarget || String(s.slotIndex) === String(pinIdOrTarget));
-        if (spot && spot.pinData) pin = spot.pinData;
-      }
-
-      if (!pin) {
-        pin = {
-          id: pinIdOrTarget,
-          pinType: 'BLANK_PIN',
-          isDraft: true,
-          productIds: [],
-          title: '',
-          description: '',
-          u: 0.5,
-          v: 0.5
-        };
-      }
-
-      window.currentEditingContentPin = pin;
-      window.currentEditingPinId = pin.id || pin.pinId;
-
-      renderProductPinContentEditor(pin);
-
-      const modal = document.getElementById('productPinContentEditorModal');
-      if (modal) modal.style.display = 'flex';
-    }
-
-    function closeProductPinContentEditorModal() {
-      const modal = document.getElementById('productPinContentEditorModal');
-      if (modal) modal.style.display = 'none';
-      window.currentEditingContentPin = null;
-    }
-
-    function renderProductPinContentEditor(pin) {
-      if (!pin) return;
-
-      const rawProducts = window.activeProjectData?.products || [];
-      const productIds = Array.isArray(pin.productIds) ? pin.productIds : (pin.productId || pin.targetId ? [pin.productId || pin.targetId] : []);
-      
-      const attachedProducts = productIds.map(pid => {
-        return rawProducts.find(p => String(p.id) === String(pid) || String(p.slotIndex) === String(pid));
-      }).filter(Boolean);
-
-      const isBlank = attachedProducts.length === 0;
-      const isSingle = attachedProducts.length === 1;
-      const isGroup = attachedProducts.length >= 2;
-
-      // Update Type Badge
-      const typeBadge = document.getElementById('ppcePinTypeBadge');
-      if (typeBadge) {
-        if (isBlank) {
-          typeBadge.textContent = 'BLANK PRODUCT PIN';
-          typeBadge.style.color = '#94a3b8';
-        } else if (isSingle) {
-          typeBadge.textContent = 'SINGLE PRODUCT PIN';
-          typeBadge.style.color = '#38bdf8';
-        } else {
-          typeBadge.textContent = 'PRODUCT COLLECTION (' + attachedProducts.length + ')';
-          typeBadge.style.color = '#c084fc';
-        }
-      }
-
-      // Update Count Badge
-      const countBadge = document.getElementById('ppceProductCountBadge');
-      if (countBadge) {
-        countBadge.textContent = attachedProducts.length + ' Product' + (attachedProducts.length === 1 ? '' : 's');
-      }
-
-      // Pin Title
-      const titleInput = document.getElementById('ppceTitleInput');
-      if (titleInput) {
-        let defaultTitle = pin.title || pin.label || '';
-        if (!defaultTitle) {
-          if (isSingle) defaultTitle = attachedProducts[0]?.name || '';
-          else if (isGroup) defaultTitle = 'Featured Products';
-        }
-        titleInput.value = defaultTitle;
-      }
-
-      // Pin Description
-      const descInput = document.getElementById('ppceDescriptionInput');
-      if (descInput) {
-        descInput.value = pin.description || pin.note || '';
-      }
-
-      // Render Attached Products
-      const listContainer = document.getElementById('ppceAttachedProductsList');
-      if (listContainer) {
-        if (attachedProducts.length === 0) {
-          listContainer.innerHTML = `
-            <div style="text-align: center; padding: 24px 16px; background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1); border-radius: 10px; color: #94a3b8; font-size: 12px;">
-              <i class="fa-solid fa-map-pin" style="font-size: 24px; color: #64748b; margin-bottom: 8px; display: block;"></i>
-              No products attached to this pin yet. Click <strong>+ Add Product</strong> below to attach items.
-            </div>
-          `;
-        } else {
-          listContainer.innerHTML = attachedProducts.map((prod, idx) => {
-            const p3d = prod.product3d;
-            const has3d = (p3d?.status === 'READY' || p3d?.status === 'NEEDS_REVIEW') && !!(p3d?.glbUrl);
-            const img = prod.imageUrl || '/assets/product-placeholder.jpg';
-            const slotIdx = prod.slotIndex || (idx + 1);
-
-            return `
-              <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(15,23,42,0.85); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 10px 12px; gap: 12px;">
-                <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
-                  <div style="width: 52px; height: 52px; border-radius: 8px; background: #000; border: 1px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;">
-                    <img src="${img}" alt="${prod.name || 'Product'}" style="max-width: 100%; max-height: 100%; object-fit: contain !important; object-position: center;">
-                  </div>
-                  <div style="min-width: 0;">
-                    <div style="font-size: 13px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                      ${prod.name || ('Product Slot ' + slotIdx)}
-                    </div>
-                    <div style="font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 6px; margin-top: 2px;">
-                      <span>${prod.category || 'Product'}</span>
-                      ${has3d ? '<span style="font-size: 9.5px; font-weight: 800; background: rgba(56,189,248,0.2); color: #38bdf8; padding: 1px 6px; border-radius: 4px;"><i class="fa-solid fa-cube"></i> 3D Ready</span>' : ''}
-                    </div>
-                  </div>
-                </div>
-
-                <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
-                  ${has3d ? `
-                    <button type="button" onclick="closeProductPinContentEditorModal(); product3dOpenViewer('${p3d.glbUrl}', '${prod.name || 'Product'}')" style="padding: 5px 9px; font-size: 11px; font-weight: 700; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="View 3D Model">
-                      <i class="fa-solid fa-cube"></i> View 3D
-                    </button>
-                  ` : ''}
-                  <button type="button" onclick="closeProductPinContentEditorModal(); openOwnerProductEditor(${slotIdx})" style="padding: 5px 10px; font-size: 11px; font-weight: 700; background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
-                    <i class="fa-solid fa-pen"></i> Edit
-                  </button>
-                  <button type="button" onclick="ppceRemoveProductFromPin('${prod.id || prod.slotIndex}')" style="padding: 5px 8px; font-size: 11px; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.25); border-radius: 6px; cursor: pointer;" title="Remove from this Pin (keeps in catalog)">
-                    <i class="fa-solid fa-trash-can"></i>
-                  </button>
-                </div>
-              </div>
-            `;
-          }).join('');
-        }
-      }
-    }
-
-        async function saveProductPinContentEditorChanges() {
-      const pin = window.currentEditingContentPin;
-      if (!pin) {
-        closeProductPinContentEditorModal();
-        return;
-      }
-
-      const pid = activeProjectId || window.activeProjectData?.id;
-      const token = p3dGetAuthToken();
-      const pinId = pin.id || pin.pinId;
-
-      const title = document.getElementById('ppceTitleInput')?.value || '';
-      const description = document.getElementById('ppceDescriptionInput')?.value || '';
-      const productIds = Array.isArray(pin.productIds) ? pin.productIds : (pin.productId || pin.targetId ? [pin.productId || pin.targetId] : []);
-
-      const isGroup = productIds.length >= 2;
-      const isBlank = productIds.length === 0;
-      const pinType = isBlank ? 'BLANK_PIN' : (isGroup ? 'PRODUCT_GROUP_PIN' : 'PRODUCT_PIN');
-
-      const payload = {
-        id: pinId,
-        pinId: pinId,
-        projectId: pid,
-        pinType,
-        title,
-        label: title,
-        description,
-        note: description,
-        productIds,
-        productId: productIds[0] || null,
-        targetId: productIds[0] || null,
-        u: typeof pin.u === 'number' ? pin.u : 0.5,
-        v: typeof pin.v === 'number' ? pin.v : 0.5,
-        status: isBlank ? 'DRAFT' : 'ACTIVE',
-        isDraft: isBlank,
-        publicVisible: !isBlank
-      };
-
-      const saveBtn = document.getElementById('ppceBtnSaveChanges');
-      if (saveBtn) {
-        saveBtn.disabled = true;
-        saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
-      }
-
-      try {
-        let res = await fetch(`/api/projects/${pid}/pins/${pinId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token,
-            'x-booth-edit-token': token
-          },
-          body: JSON.stringify(payload)
-        });
-
-        if (res.status === 404 || !res.ok) {
-          res = await fetch(`/api/projects/${pid}/pins`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + token,
-              'x-booth-edit-token': token
-            },
-            body: JSON.stringify(payload)
-          });
-        }
-
-        const data = await res.json();
-        if (res.ok && data.success) {
-          if (data.pins) window.activeProjectData.pinpoints = data.pins;
-          else if (data.pin) {
-            if (!window.activeProjectData.pinpoints) window.activeProjectData.pinpoints = [];
-            const idx = window.activeProjectData.pinpoints.findIndex(p => p.id === pinId || p.pinId === pinId);
-            if (idx >= 0) window.activeProjectData.pinpoints[idx] = data.pin;
-            else window.activeProjectData.pinpoints.push(data.pin);
-          }
-
-          if (typeof setupStudioProducts === 'function') setupStudioProducts(window.activeProjectData);
-      if (typeof renderProductCardsTray === 'function') renderProductCardsTray(window.activeProjectData?.pinpoints);
-          if (typeof renderProductCardsTray === 'function') renderProductCardsTray(window.activeProjectData?.pinpoints);
-          if (window.showToast) window.showToast('✅ Pin changes saved!', 'success');
-          closeProductPinContentEditorModal();
-        } else {
-          alert('Could not save your changes: ' + (data.error || 'Server error'));
-        }
-      } catch(err) {
-        console.error('[Pin Save Error]', err);
-        alert('Network error while saving pin: ' + err.message);
-      } finally {
-        if (saveBtn) {
-          saveBtn.disabled = false;
-          saveBtn.textContent = 'Save Changes';
-        }
-      }
-    }
-
-    async function ppceRemoveProductFromPin(productId) {
-      const pin = window.currentEditingContentPin;
-      if (!pin) return;
-
-      let productIds = Array.isArray(pin.productIds) ? [...pin.productIds] : (pin.productId || pin.targetId ? [pin.productId || pin.targetId] : []);
-      productIds = productIds.filter(pid => String(pid) !== String(productId));
-
-      pin.productIds = productIds;
-      pin.productId = productIds[0] || null;
-      pin.targetId = productIds[0] || null;
-      pin.pinType = productIds.length === 0 ? 'BLANK_PIN' : (productIds.length >= 2 ? 'PRODUCT_GROUP_PIN' : 'PRODUCT_PIN');
-
-      renderProductPinContentEditor(pin);
-      if (window.showToast) window.showToast('Product removed from pin.', 'info');
-    }
-
-    async function ppceRemoveCurrentPin() {
-      const pin = window.currentEditingContentPin;
-      if (!pin) return;
-      if (!confirm('Remove this product pin from booth?')) return;
-
-      const pid = activeProjectId || window.activeProjectData?.id;
-      const token = p3dGetAuthToken();
-      const pinId = pin.id || pin.pinId;
-
-      try {
-        await fetch(`/api/projects/${pid}/pins/${pinId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': 'Bearer ' + token,
-            'x-booth-edit-token': token
-          }
-        });
-      } catch(e) {}
-
-      if (window.activeProjectData?.pinpoints) {
-        window.activeProjectData.pinpoints = window.activeProjectData.pinpoints.filter(p => p.id !== pinId && p.pinId !== pinId);
-      }
-      if (typeof setupStudioProducts === 'function') setupStudioProducts(window.activeProjectData);
-      closeProductPinContentEditorModal();
-      if (window.showToast) window.showToast('Pin removed.', 'info');
-    }
-
-    function ppceOpenPositionEditor() {
-      const pin = window.currentEditingContentPin;
-      closeProductPinContentEditorModal();
-      if (pin) {
-        window.currentEditingPinTarget = {
-          type: pin.pinType || 'PRODUCT_PIN',
-          id: pin.id || pin.targetId || (pin.slotIndex ? String(pin.slotIndex) : String(pin.id || 1)),
-          pinData: pin
-        };
-        if (!window.PIN_EDIT_MODE) togglePinEditMode();
-      }
-    }
-
-// ═══════════════════════════════════════════════════════════
-    // CANONICAL EVENT-DELEGATED ALL-PIN DRAG SYSTEM (C11.16-P3.13-R1)
-    // ═══════════════════════════════════════════════════════════
-    let activeDragPinSpot = null;
-    let activeDragPinElement = null;
+    let isDragDelegationInitialized = false;
     let pointerDownStartPos = null;
     let hasDraggedPinMoved = false;
+    let activeDragPinSpot = null;
+    let activeDragPinElement = null;
+    let preDragCoords = { u: 0.5, v: 0.5 };
 
-    // ═══════════════════════════════════════════════════════════
-    // CANONICAL ALL-PIN POINTER HIT & DRAG SYSTEM (C11.16-P3.13-R2)
-    // ═══════════════════════════════════════════════════════════
-    function buildHotspotsDOM() {
-      const layer = document.getElementById('hotspot-layer');
-      if (!layer) return;
-      layer.innerHTML = '';
-
-      // Deduplicate studioHotspotsList by canonical ID
-      const seenIds = new Set();
-      const uniqueSpots = [];
-      studioHotspotsList.forEach(spot => {
-        const sid = spot.id || (spot.pinData ? spot.pinData.id : null);
-        if (sid && !seenIds.has(sid)) {
-          seenIds.add(sid);
-          uniqueSpots.push(spot);
-        } else if (!sid) {
-          uniqueSpots.push(spot);
-        }
-      });
-      studioHotspotsList = uniqueSpots;
-      window.studioHotspotsList = studioHotspotsList;
-
-      studioHotspotsList.forEach((spot, idx) => {
-        const el = document.createElement('div');
-        el.className = 'hotspot-tag';
-        if (spot.pinType === 'CATALOG_PIN') el.classList.add('hotspot-catalog');
-        else if (spot.pinType === 'PRODUCT_GROUP_PIN') el.classList.add('hotspot-group');
-        else if (spot.pinType === 'BLANK_PIN') el.classList.add('hotspot-blank');
-        
-        const pinId = spot.id || (spot.pinData ? spot.pinData.id : `spot-${idx}`);
-        el.id = pinId;
-        el.setAttribute('data-pin-id', pinId);
-        el.setAttribute('data-pin-type', spot.pinType || 'PRODUCT_PIN');
-
-        if (spot.pinType === 'BLANK_PIN') {
-          el.innerHTML = `
-            <span class="hotspot-dot" style="background: #38bdf8; box-shadow: 0 0 10px #38bdf8;"></span>
-            <div class="hotspot-info">
-              <span class="hotspot-cat" style="color: #38bdf8;">EMPTY PIN</span>
-              <span class="hotspot-label-text">${spot.name || 'Click to Add Product'}</span>
-            </div>
-          `;
-        } else if (spot.pinType === 'PRODUCT_GROUP_PIN') {
-          el.innerHTML = `
-            <span class="hotspot-dot" style="background: #34d399; box-shadow: 0 0 10px #34d399;"></span>
-            <div class="hotspot-info">
-              <span class="hotspot-cat" style="color: #34d399;">COLLECTION</span>
-              <span class="hotspot-label-text">${spot.name || 'Featured Products'}</span>
-            </div>
-          `;
-        } else if (spot.pinType === 'CATALOG_PIN') {
-          el.innerHTML = `
-            <span class="hotspot-dot" style="background: #c084fc; box-shadow: 0 0 10px #c084fc;"></span>
-            <div class="hotspot-info">
-              <span class="hotspot-cat" style="color: #c084fc;">CATALOG • ${spot.productCount || 0} ITEMS</span>
-              <span class="hotspot-label-text">${spot.name}</span>
-            </div>
-          `;
-        } else {
-          el.innerHTML = `
-            <img src="${spot.imageUrl || '/assets/product-placeholder.jpg'}" class="hotspot-thumb-img" alt="${spot.name}" style="object-fit: contain; object-position: center;">
-            <span class="hotspot-dot"></span>
-            <div class="hotspot-info">
-              <span class="hotspot-cat">${spot.category || 'PRODUCT'}</span>
-              <span class="hotspot-label-text">${spot.name || 'Product Pin'}</span>
-            </div>
-          `;
-        }
-
-        // Direct Pointer Manipulation Listeners on each Hotspot Tag
-        el.addEventListener('pointerdown', (e) => {
-          const owner = (window.VIEWER_MODE === 'OWNER_EDITOR' || window.isProjectOwner);
-          if (!owner) return;
-
-          e.stopPropagation();
-          pointerDownStartPos = { x: e.clientX, y: e.clientY };
-          hasDraggedPinMoved = false;
-          isDraggingPin = true;
-          activeDragPinElement = el;
-          activeDragPinSpot = spot;
-
-          window.currentEditingPinTarget = {
-            type: spot.pinType || 'PRODUCT_PIN',
-            id: pinId,
-            pinData: spot.pinData || spot
-          };
-
-          const pin = getOrCreateActivePin();
-          preDragCoords = { u: pin.u, v: pin.v };
-
-          try { el.setPointerCapture(e.pointerId); } catch(err) {}
-          if (controls) controls.enabled = false;
-          el.classList.add('pin-dragging');
-          highlightActiveEditingHotspot();
-        });
-
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (hasDraggedPinMoved) return;
-
-          const owner = (window.VIEWER_MODE === 'OWNER_EDITOR' || window.isProjectOwner);
-          if (owner) {
-            openProductPinContentEditorModal(pinId);
-          } else {
-            if (spot.pinType === 'CATALOG_PIN') {
-              openCatalogProductList(spot.targetId || spot.catalogId);
-            } else {
-              onProductSlotClicked(spot.productIdx !== undefined ? spot.productIdx : (spot.slotIndex - 1));
-            }
-          }
-        });
-
-        layer.appendChild(el);
-        spot.domElement = el;
-      });
-    }
-
-    // Install Global Event Delegation for Hotspot Layer
     function initHotspotLayerDragDelegation() {
-      const layer = document.getElementById('hotspot-layer');
-      if (!layer || layer.dataset.dragInitialized === 'true') return;
-      layer.dataset.dragInitialized = 'true';
-
-      layer.addEventListener('pointerdown', (e) => {
-        const owner = (window.VIEWER_MODE === 'OWNER_EDITOR' || window.isProjectOwner);
-        if (!owner) return;
-
-        const pinEl = e.target.closest('.hotspot-tag');
-        if (!pinEl) return;
-
-        const pinId = pinEl.getAttribute('data-pin-id') || pinEl.id;
-        const spot = studioHotspotsList.find(s => s.id === pinId || (s.pinData && (s.pinData.id === pinId || s.pinData.pinId === pinId)));
-        if (!spot) return;
-
-        e.stopPropagation();
-        pointerDownStartPos = { x: e.clientX, y: e.clientY };
-        hasDraggedPinMoved = false;
-        isDraggingPin = true;
-        activeDragPinElement = pinEl;
-        activeDragPinSpot = spot;
-
-        window.currentEditingPinTarget = {
-          type: spot.pinType || 'PRODUCT_PIN',
-          id: spot.id || (spot.pinData ? spot.pinData.id : pinId),
-          pinData: spot.pinData || spot
-        };
-
-        const pin = getOrCreateActivePin();
-        preDragCoords = { u: pin.u, v: pin.v };
-
-        if (controls) controls.enabled = false;
-        pinEl.classList.add('pin-dragging');
-        highlightActiveEditingHotspot();
-      });
-
-      // Window-level tracking for smooth all-speed dragging
-      window.addEventListener('pointermove', (e) => {
-        if (!isDraggingPin || !activeDragPinSpot) return;
-        e.stopPropagation();
-
-        if (pointerDownStartPos) {
-          const dist = Math.hypot(e.clientX - pointerDownStartPos.x, e.clientY - pointerDownStartPos.y);
-          if (dist >= 5) hasDraggedPinMoved = true;
-        }
-
-        handlePinDirectDrag(e.clientX, e.clientY);
-      });
-
-      window.addEventListener('pointerup', async (e) => {
-        if (!isDraggingPin) return;
-        e.stopPropagation();
-
-        const draggedSpot = activeDragPinSpot;
-        const draggedEl = activeDragPinElement;
-
-        isDraggingPin = false;
-        activeDragPinSpot = null;
-        activeDragPinElement = null;
-
-        if (draggedEl) draggedEl.classList.remove('pin-dragging');
-        if (controls) controls.enabled = true;
-
-        if (hasDraggedPinMoved) {
-          // Direct drag completed -> auto save coordinates!
-          await saveActivePinPosition();
-          if (typeof renderProductCardsTray === 'function') renderProductCardsTray(activeProjectData?.pinpoints);
-        } else {
-          // Click on Pin in Owner Mode -> Open Content Editor!
-          if (draggedSpot) {
-            if (draggedSpot.pinType === 'CATALOG_PIN') {
-              if (typeof openCatalogManager === 'function') openCatalogManager();
-            } else {
-              openProductPinContentEditorModal(draggedSpot.id || draggedSpot.pinData?.id);
-            }
-          }
-        }
-      });
-    }
-
-    window.openProductPinSelectorModal = openProductPinSelectorModal;
-    window.closeProductPinSelectorModal = closeProductPinSelectorModal;
-    window.togglePinProductSelection = togglePinProductSelection;
-    window.saveProductPinSelection = saveProductPinSelection;
-    window.openOwnerProductEditor = openOwnerProductEditor;
-    window.closeOwnerProductEditor = closeOwnerProductEditor;
-    window.startNewProductForPin = startNewProductForPin;
-
-    // ═══════════════════════════════════════════════════════════
-    // CANONICAL PRODUCT PIN CONTENT EDITOR ACTION ROUTER (C11.16-P3.13-R1)
-    // ═══════════════════════════════════════════════════════════
-    // ═══════════════════════════════════════════════════════════
-    // CANONICAL OWNER PRODUCT EDITOR (C11.16-P3.13-R2)
-    // ═══════════════════════════════════════════════════════════
-    function openOwnerProductEditor(slotOrId, options = {}) {
-      const modal = document.getElementById('ownerProductEditorModal');
-      if (!modal) return;
-
-      const prods = window.activeProjectData?.products || [];
-      let prod = null;
-      let slot = 1;
-
-      if (typeof slotOrId === 'number') {
-        slot = slotOrId;
-        prod = prods.find(p => p.slotIndex === slot);
-      } else if (typeof slotOrId === 'string') {
-        prod = prods.find(p => p.id === slotOrId || String(p.slotIndex) === slotOrId);
-        slot = prod ? prod.slotIndex : (prods.length + 1);
-      } else {
-        slot = prods.length + 1;
-      }
-
-      if (options.pinId) {
-        window.pendingPinAttachment = {
-          projectId: activeProjectId || window.activeProjectData?.id,
-          pinId: options.pinId,
-          source: "PIN_CONTENT_EDITOR",
-          action: "CREATE_NEW_PRODUCT",
-          pinCoords: options.pinCoords || null
-        };
-        window.originatingContentPinId = options.pinId;
-      } else if (!prod) {
-        window.pendingPinAttachment = null;
-      }
-
-      const slotInput = document.getElementById('opeSlotIndex');
-      if (slotInput) slotInput.value = slot;
-
-      const titleEl = document.getElementById('opeModalTitle');
-      if (titleEl) titleEl.textContent = prod ? 'Edit Product' : 'Add Product';
-
-      const nameEl = document.getElementById('opeName');
-      if (nameEl) nameEl.value = prod?.name || '';
-
-      const skuEl = document.getElementById('opeSku');
-      if (skuEl) skuEl.value = prod?.sku || '';
-
-      const catEl = document.getElementById('opeCategory');
-      if (catEl) catEl.value = prod?.category || '';
-
-      const priceEl = document.getElementById('opePrice');
-      if (priceEl) priceEl.value = prod?.price || '';
-
-      const availEl = document.getElementById('opeAvailability');
-      if (availEl) availEl.value = prod?.availability || 'ACTIVE';
-
-      const sDescEl = document.getElementById('opeShortDesc');
-      if (sDescEl) sDescEl.value = prod?.shortDescription || '';
-
-      const descEl = document.getElementById('opeDesc');
-      if (descEl) descEl.value = prod?.description || prod?.specifications || '';
-
-      const imgPreview = document.getElementById('opeImagePreview');
-      const removeBtn = document.getElementById('opeBtnRemoveImg');
-      const fileInput = document.getElementById('opeImageInput');
-      if (fileInput) fileInput.value = '';
-      if (prod?.imageUrl) {
-        if (imgPreview) {
-          imgPreview.src = prod.imageUrl;
-          imgPreview.style.display = 'block';
-        }
-        if (removeBtn) removeBtn.style.display = 'inline-flex';
-      } else {
-        if (imgPreview) {
-          imgPreview.src = '';
-          imgPreview.style.display = 'none';
-        }
-        if (removeBtn) removeBtn.style.display = 'none';
-      }
-
-      if (typeof setProductMediaMode === 'function') setProductMediaMode('IMAGE');
-      modal.style.display = 'flex';
-    }
-
-    function closeOwnerProductEditor() {
-      const modal = document.getElementById('ownerProductEditorModal');
-      if (modal) modal.style.display = 'none';
-
-      if (window.originatingContentPinId) {
-        const pinId = window.originatingContentPinId;
-        window.originatingContentPinId = null;
-        openProductPinContentEditorModal(pinId);
-      }
-    }
-
-    function startNewProductForPin(pinId) {
-      const targetId = pinId || window.currentEditingPinId || window.currentEditingContentPin?.id;
-      if (!targetId) return;
-
-      closePinFirstChoiceModal();
-      closePinChooserModal();
-      openOwnerProductEditor(null, { pinId: targetId });
-    }
-
-    // ═══════════════════════════════════════════════════════════
-    // CANONICAL PRODUCT PIN SELECTOR MODAL (C11.16-P3.13-R2)
-    // ═══════════════════════════════════════════════════════════
-    function openProductPinSelectorModal(pinDataOrCoords) {
-      if (typeof cancelPlaceProductPinMode === 'function') cancelPlaceProductPinMode();
-      const modal = document.getElementById('productPinSelectorModal');
-      if (!modal) return;
-
-      const isEdit = !!(pinDataOrCoords && (pinDataOrCoords.id || pinDataOrCoords.pinId));
-      window.currentEditingPin = isEdit ? pinDataOrCoords : null;
-      window.lastPlacedPinCoords = isEdit ? { u: pinDataOrCoords.u, v: pinDataOrCoords.v, yaw: pinDataOrCoords.yaw, pitch: pinDataOrCoords.pitch } : (pinDataOrCoords || { u: 0.5, v: 0.5 });
-
-      const titleEl = document.getElementById('pinSelectorModalTitle');
-      if (titleEl) titleEl.textContent = isEdit ? 'Select Products for Pin' : 'Add Product Pin';
-
-      const delBtn = document.getElementById('btnDeletePinSelector');
-      if (delBtn) delBtn.style.display = isEdit ? 'inline-block' : 'none';
-
-      // Pre-select products
-      if (isEdit) {
-        if (pinDataOrCoords.pinType === 'PRODUCT_GROUP_PIN' && Array.isArray(pinDataOrCoords.productIds)) {
-          window.pinSelectorSelectedProductIds = [...pinDataOrCoords.productIds];
-        } else if (Array.isArray(pinDataOrCoords.productIds) && pinDataOrCoords.productIds.length > 0) {
-          window.pinSelectorSelectedProductIds = [...pinDataOrCoords.productIds];
-        } else if (pinDataOrCoords.targetId || pinDataOrCoords.productId) {
-          window.pinSelectorSelectedProductIds = [pinDataOrCoords.targetId || pinDataOrCoords.productId];
-        } else {
-          window.pinSelectorSelectedProductIds = [];
-        }
-        const gTitle = document.getElementById('pinGroupTitleInput');
-        if (gTitle) gTitle.value = pinDataOrCoords.title || pinDataOrCoords.label || 'Featured Products';
-      } else {
-        window.pinSelectorSelectedProductIds = [];
-        const gTitle = document.getElementById('pinGroupTitleInput');
-        if (gTitle) gTitle.value = 'Featured Products';
-      }
-
-      const searchInput = document.getElementById('pinProductSearchInput');
-      if (searchInput) searchInput.value = '';
-
-      renderPinProductSelectList();
-      updatePinSelectionSummary();
-      modal.style.display = 'flex';
-    }
-
-    function closeProductPinSelectorModal() {
-      const modal = document.getElementById('productPinSelectorModal');
-      if (modal) modal.style.display = 'none';
-
-      if (window.originatingContentPinId || window.currentEditingContentPin) {
-        const pinId = window.originatingContentPinId || window.currentEditingContentPin?.id;
-        openProductPinContentEditorModal(pinId);
-      }
-    }
-
-    function setPinGroupTitlePreset(presetText) {
-      const input = document.getElementById('pinGroupTitleInput');
-      if (input) input.value = presetText;
-    }
-
-    function filterPinProductList(query) {
-      renderPinProductSelectList(query);
-    }
-
-    function renderPinProductSelectList(query = '') {
-      const listContainer = document.getElementById('pinProductSelectList');
-      if (!listContainer) return;
-
-      const allProducts = window.activeProjectData?.products || [];
-      const q = (query || '').toLowerCase().trim();
-
-      const filtered = allProducts.filter(p => {
-        if (!q) return true;
-        const name = (p.name || '').toLowerCase();
-        const cat = (p.category || '').toLowerCase();
-        const sku = (p.sku || '').toLowerCase();
-        return name.includes(q) || cat.includes(q) || sku.includes(q);
-      });
-
-      if (filtered.length === 0) {
-        listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #64748b; font-size: 12px;">No matching products found in catalog.</div>';
-        return;
-      }
-
-      listContainer.innerHTML = '';
-      filtered.forEach((prod, idx) => {
-        const isSelected = window.pinSelectorSelectedProductIds.some(id => String(id) === String(prod.id) || String(id) === String(prod.slotIndex));
-        const itemRow = document.createElement('div');
-        itemRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; background: ' + (isSelected ? 'rgba(56, 189, 248, 0.12)' : 'rgba(15, 23, 42, 0.6)') + '; border: 1px solid ' + (isSelected ? '#38bdf8' : 'rgba(255, 255, 255, 0.08)') + '; border-radius: 8px; padding: 8px 12px; cursor: pointer; transition: all 0.2s;';
-        
-        const prodId = prod.id || String(prod.slotIndex);
-        itemRow.onclick = (e) => {
-          if (e.target.tagName !== 'INPUT') {
-            togglePinProductSelection(prodId);
-          }
-        };
-
-        itemRow.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
-            <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="togglePinProductSelection('${prodId}')" style="cursor: pointer; accent-color: #38bdf8;">
-            <img src="${prod.imageUrl || '/assets/product-placeholder.jpg'}" alt="${prod.name}" style="width: 32px; height: 32px; border-radius: 6px; object-fit: contain; object-position: center; background: #000; border: 1px solid rgba(255,255,255,0.1);">
-            <div style="min-width: 0;">
-              <div style="font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${prod.name}</div>
-              <div style="font-size: 10.5px; color: #94a3b8;">${prod.category || 'Product'} • Slot ${prod.slotIndex || idx+1}</div>
-            </div>
-          </div>
-          ${prod.product3d?.status === 'READY' ? '<span style="font-size: 9px; font-weight: 800; background: rgba(56,189,248,0.2); color: #38bdf8; padding: 2px 6px; border-radius: 4px;">3D</span>' : ''}
-        `;
-
-        listContainer.appendChild(itemRow);
-      });
-    }
-
-    function togglePinProductSelection(productId) {
-      const strId = String(productId);
-      const existingIdx = window.pinSelectorSelectedProductIds.findIndex(id => String(id) === strId);
-
-      if (existingIdx >= 0) {
-        window.pinSelectorSelectedProductIds.splice(existingIdx, 1);
-      } else {
-        if (window.pinSelectorSelectedProductIds.length >= 20) {
-          alert('Maximum 20 products can be attached to one pin.');
-          return;
-        }
-        window.pinSelectorSelectedProductIds.push(strId);
-      }
-
-      renderPinProductSelectList(document.getElementById('pinProductSearchInput')?.value || '');
-      updatePinSelectionSummary();
-    }
-
-    function updatePinSelectionSummary() {
-      const count = window.pinSelectorSelectedProductIds.length;
-      const countText = document.getElementById('pinSelectedCountText');
-      const badge = document.getElementById('pinTypeBadge');
-      const groupSection = document.getElementById('pinGroupTitleSection');
-
-      if (countText) countText.textContent = count === 1 ? '1 Product Selected' : count + ' Products Selected';
-      if (badge) {
-        if (count === 0) {
-          badge.textContent = 'BLANK PIN';
-          badge.style.background = '#64748b';
-        } else if (count === 1) {
-          badge.textContent = 'PRODUCT PIN';
-          badge.style.background = '#0284c7';
-        } else {
-          badge.textContent = 'COLLECTION PIN (' + count + ')';
-          badge.style.background = '#059669';
-        }
-      }
-
-      if (groupSection) {
-        groupSection.style.display = count >= 2 ? 'block' : 'none';
-      }
-    }
-
-    async function saveProductPinSelection() {
-      if (window.pinSelectorSelectedProductIds.length === 0) {
-        alert('Please select at least one product for this pin.');
-        return;
-      }
-
-      const pid = activeProjectId || window.activeProjectData?.id;
-      const token = p3dGetAuthToken();
-      const isEdit = !!(window.currentEditingPin && (window.currentEditingPin.id || window.currentEditingPin.pinId));
-      const pinId = isEdit ? (window.currentEditingPin.id || window.currentEditingPin.pinId) : (window.currentEditingPinId || 'pin-' + Date.now().toString(36));
-
-      const isGroup = window.pinSelectorSelectedProductIds.length >= 2;
-      const pinType = isGroup ? 'PRODUCT_GROUP_PIN' : 'PRODUCT_PIN';
-      const title = isGroup ? (document.getElementById('pinGroupTitleInput')?.value || 'Featured Products').trim() : '';
-      const targetId = isGroup ? null : window.pinSelectorSelectedProductIds[0];
-
-      const coords = window.lastPlacedPinCoords || { u: 0.5, v: 0.5, yaw: 0, pitch: 0 };
-
-      const pin = (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId) || {
-        id: pinId,
-        pinId: pinId,
-        u: coords.u,
-        v: coords.v
-      };
-
-      pin.pinType = pinType;
-      pin.targetId = targetId;
-      pin.productId = targetId;
-      pin.productIds = [...window.pinSelectorSelectedProductIds];
-      if (isGroup) {
-        pin.title = title;
-        pin.label = title;
-      }
-      pin.isDraft = false;
-      pin.status = 'ACTIVE';
-
-      if (!window.activeProjectData.pinpoints) window.activeProjectData.pinpoints = [];
-      const pIdx = window.activeProjectData.pinpoints.findIndex(p => p.id === pinId || p.pinId === pinId);
-      if (pIdx >= 0) window.activeProjectData.pinpoints[pIdx] = pin;
-      else window.activeProjectData.pinpoints.push(pin);
-
-      try {
-        await fetch(`/api/projects/${pid}/pins/${pinId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token,
-            'x-booth-edit-token': token
-          },
-          body: JSON.stringify(pin)
-        });
-      } catch(e) {}
-
-      setupStudioProducts(window.activeProjectData);
-      closeProductPinSelectorModal();
-
-      if (window.showToast) window.showToast('✅ Product(s) attached to Pin!', 'success');
-    }
-
-    function openPinChooserModalFromContentEditor(targetPinId) {
-      const pin = window.currentEditingContentPin || (window.activeProjectData?.pinpoints || []).find(p => p.id === targetPinId || p.pinId === targetPinId);
-      const pinId = targetPinId || (pin ? (pin.id || pin.pinId) : window.currentEditingPinId);
-      if (!pinId) return;
-
-      window.currentEditingPinId = pinId;
-      window.pinFirstPendingCoords = pin ? { u: pin.u, v: pin.v } : (window.lastPlacedPinCoords || { u: 0.5, v: 0.5 });
-      
-      const choiceModal = document.getElementById('pinFirstChoiceModal');
-      const subtitle = document.getElementById('pinFirstCoordsSubtitle');
-      if (subtitle && pin) subtitle.textContent = `Pin: ${pin.title || pin.label || 'Product Pin'} (u: ${(pin.u||0.5).toFixed(2)}, v: ${(pin.v||0.5).toFixed(2)})`;
-      if (choiceModal) choiceModal.style.display = 'flex';
-    }
-
-    function ppceManageCatalogProducts() {
-      const pin = window.currentEditingContentPin;
-      const pinId = pin ? (pin.id || pin.pinId) : window.currentEditingPinId;
-      openPinManageProductsModal(pinId);
-    }
-
-    function openPinManageProductsModal(pinId) {
-      const pin = window.currentEditingContentPin || (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId);
-      if (!pin) return;
-
-      window.currentEditingContentPin = pin;
-      window.currentEditingPinId = pin.id || pin.pinId;
-
-      const modal = document.getElementById('pinManageProductsModal');
-      const subtitle = document.getElementById('pmpPinTitleSubtitle');
-      if (subtitle) subtitle.textContent = `Pin: ${pin.title || pin.label || 'Product Pin'}`;
-
-      renderPinManageProductsModal(pin);
-      if (modal) modal.style.display = 'flex';
-    }
-
-    function closePinManageProductsModal() {
-      const modal = document.getElementById('pinManageProductsModal');
-      if (modal) modal.style.display = 'none';
-      if (window.currentEditingContentPin) {
-        renderProductPinContentEditor(window.currentEditingContentPin);
-      }
-    }
-
-    function renderPinManageProductsModal(pin) {
-      const listEl = document.getElementById('pmpAttachedList');
-      if (!listEl) return;
-      listEl.innerHTML = '';
-
-      const rawProducts = window.activeProjectData?.products || [];
-      const pIds = Array.isArray(pin.productIds) ? pin.productIds : (pin.productId ? [pin.productId] : (pin.targetId ? [pin.targetId] : []));
-      
-      if (pIds.length === 0) {
-        listEl.innerHTML = `
-          <div style="padding: 24px 16px; text-align: center; color: #64748b; font-size: 12px; background: rgba(0,0,0,0.3); border-radius: 8px;">
-            <i class="fa-solid fa-box-open" style="font-size: 24px; margin-bottom: 8px; color: #475569; display: block;"></i>
-            No products attached to this Pin yet.<br>Click <strong>+ Add Product</strong> below to attach catalog items.
-          </div>
-        `;
-        return;
-      }
-
-      pIds.forEach((pid, idx) => {
-        const prod = rawProducts.find(p => String(p.id) === String(pid) || String(p.slotIndex) === String(pid)) || {
-          id: pid,
-          name: 'Product Slot ' + pid,
-          category: 'EXHIBIT ITEM',
-          imageUrl: '/assets/product-placeholder.jpg'
-        };
-
-        const row = document.createElement('div');
-        row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; gap: 10px;';
-
-        row.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1;">
-            <span style="font-size: 11px; font-weight: 800; color: #64748b; width: 18px;">#${idx + 1}</span>
-            <img src="${prod.imageUrl || '/assets/product-placeholder.jpg'}" alt="${prod.name}" style="width: 36px; height: 36px; border-radius: 6px; object-fit: contain; object-position: center; background: #000; border: 1px solid rgba(255,255,255,0.1);">
-            <div style="min-width: 0;">
-              <div style="font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${prod.name}</div>
-              <div style="font-size: 10.5px; color: #94a3b8;">${prod.category || 'Product'}</div>
-            </div>
-          </div>
-
-          <div style="display: flex; align-items: center; gap: 4px;">
-            <button type="button" onclick="movePinProductOrder('${pin.id || pin.pinId}', ${idx}, -1)" ${idx === 0 ? 'disabled style="opacity:0.3; cursor:not-allowed;"' : 'style="cursor:pointer;"'} class="btn-ui" style="padding: 4px 8px; font-size: 10px; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.12); border-radius: 4px;" title="Move Up">
-              <i class="fa-solid fa-arrow-up"></i>
-            </button>
-            <button type="button" onclick="movePinProductOrder('${pin.id || pin.pinId}', ${idx}, 1)" ${idx === pIds.length - 1 ? 'disabled style="opacity:0.3; cursor:not-allowed;"' : 'style="cursor:pointer;"'} class="btn-ui" style="padding: 4px 8px; font-size: 10px; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.12); border-radius: 4px;" title="Move Down">
-              <i class="fa-solid fa-arrow-down"></i>
-            </button>
-            <button type="button" onclick="openOwnerProductEditor(${prod.slotIndex || idx + 1})" style="padding: 4px 8px; font-size: 10px; font-weight: 700; background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); border-radius: 4px; cursor: pointer;">
-              Edit
-            </button>
-            <button type="button" onclick="removeProductFromPinManage('${pin.id || pin.pinId}', '${prod.id || pid}')" style="padding: 4px 8px; font-size: 10px; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); border-radius: 4px; cursor: pointer;" title="Remove from this Pin (keeps in catalog)">
-              <i class="fa-solid fa-trash"></i>
-            </button>
-          </div>
-        `;
-
-        listEl.appendChild(row);
-      });
-    }
-
-    function movePinProductOrder(pinId, fromIndex, direction) {
-      const pin = window.currentEditingContentPin || (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId);
-      if (!pin) return;
-
-      let pIds = Array.isArray(pin.productIds) ? [...pin.productIds] : (pin.productId ? [pin.productId] : []);
-      const toIndex = fromIndex + direction;
-      if (toIndex < 0 || toIndex >= pIds.length) return;
-
-      const temp = pIds[fromIndex];
-      pIds[fromIndex] = pIds[toIndex];
-      pIds[toIndex] = temp;
-
-      pin.productIds = pIds;
-      pin.productId = pIds[0] || null;
-      pin.targetId = pIds[0] || null;
-
-      renderPinManageProductsModal(pin);
-      renderProductPinContentEditor(pin);
-      if (typeof renderProductCardsTray === 'function') renderProductCardsTray(activeProjectData?.pinpoints);
-      saveProductPinContentEditorChanges();
-    }
-
-    function removeProductFromPinManage(pinId, productId) {
-      const pin = window.currentEditingContentPin || (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId);
-      if (!pin) return;
-
-      let pIds = Array.isArray(pin.productIds) ? [...pin.productIds] : (pin.productId ? [pin.productId] : []);
-      pIds = pIds.filter(pid => String(pid) !== String(productId));
-
-      pin.productIds = pIds;
-      pin.productId = pIds[0] || null;
-      pin.targetId = pIds[0] || null;
-      pin.pinType = pIds.length === 0 ? 'BLANK_PIN' : (pIds.length >= 2 ? 'PRODUCT_GROUP_PIN' : 'PRODUCT_PIN');
-
-      renderPinManageProductsModal(pin);
-      renderProductPinContentEditor(pin);
-      if (typeof setupStudioProducts === 'function') setupStudioProducts(window.activeProjectData);
-      saveProductPinContentEditorChanges();
-      if (window.showToast) window.showToast('Product unlinked from Pin.', 'info');
-    }
-
-    function updateHotspots() {
-      if (!camera) return;
+      if (isDragDelegationInitialized) return;
       const container = document.getElementById('viewer-container');
+      if (!container) return;
+      isDragDelegationInitialized = true;
       if (!container) return;
       const rect = container.getBoundingClientRect();
       const cWidth = rect.width;
@@ -7076,6 +5808,7 @@
       });
 
       window.studioHotspotsList = studioHotspotsList;
+      initHotspotLayerDragDelegation();
       if (typeof recalculatePinpointPositions === 'function') recalculatePinpointPositions(projectData);
       if (typeof buildHotspotsDOM === 'function') buildHotspotsDOM();
       if (typeof updateHotspots === 'function') updateHotspots();
