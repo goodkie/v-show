@@ -2714,6 +2714,44 @@
   <!-- ============================================================ -->
   <!-- PRODUCT PIN CONTENT EDITOR MODAL (C11.16-P3.11)              -->
   <!-- ============================================================ -->
+  <!-- ============================================================ -->
+  <!-- MODAL: PIN ATTACHED PRODUCTS MANAGER (C11.16-P3.13-R1)       -->
+  <!-- ============================================================ -->
+  <div class="viewport-modal" id="pinManageProductsModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 10008; align-items: center; justify-content: center;" role="dialog" aria-modal="true" aria-label="Manage Attached Products">
+    <div style="background: #0b1329; border: 1.5px solid rgba(56,189,248,0.45); border-radius: 16px; padding: 22px; max-width: 540px; width: 92%; max-height: 85vh; display: flex; flex-direction: column; color: #fff; box-shadow: 0 24px 60px rgba(0,0,0,0.85); font-family: 'Plus Jakarta Sans', sans-serif;">
+      
+      <!-- Modal Header -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.4); display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 14px;">
+            <i class="fa-solid fa-list-check"></i>
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: #fff;">Manage Attached Products</h3>
+            <span id="pmpPinTitleSubtitle" style="font-size: 11px; color: #94a3b8;">Reorder or remove items from this Pin</span>
+          </div>
+        </div>
+        <button type="button" onclick="closePinManageProductsModal()" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #94a3b8; border-radius: 50%; width: 28px; height: 28px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+      </div>
+
+      <!-- Attached Products Rows List -->
+      <div id="pmpAttachedList" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; max-height: 380px; padding-right: 4px;">
+        <!-- Populated via renderPinManageProductsModal() -->
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+        <button type="button" onclick="openPinChooserModalFromContentEditor()" style="padding: 8px 14px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-plus"></i> + Add Product
+        </button>
+        <button type="button" onclick="closePinManageProductsModal()" style="padding: 8px 20px; font-size: 12px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 8px; cursor: pointer;">
+          Done
+        </button>
+      </div>
+
+    </div>
+  </div>
+
   <div class="viewport-modal" id="productPinContentEditorModal" style="display: none; position: fixed; inset: 0; z-index: 10006; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); align-items: center; justify-content: center;" role="dialog" aria-modal="true" aria-label="Product Pin Editor">
     <div style="background: #0b1329; border: 1.5px solid rgba(56,189,248,0.45); border-radius: 16px; padding: 24px; max-width: 540px; width: 92%; max-height: 88vh; display: flex; flex-direction: column; color: #fff; box-shadow: 0 24px 60px rgba(0,0,0,0.85); font-family: 'Plus Jakarta Sans', sans-serif;">
       
@@ -6180,7 +6218,15 @@
       }
     }
 
-function buildHotspotsDOM() {
+// ═══════════════════════════════════════════════════════════
+    // CANONICAL EVENT-DELEGATED ALL-PIN DRAG SYSTEM (C11.16-P3.13-R1)
+    // ═══════════════════════════════════════════════════════════
+    let activeDragPinSpot = null;
+    let activeDragPinElement = null;
+    let pointerDownStartPos = null;
+    let hasDraggedPinMoved = false;
+
+    function buildHotspotsDOM() {
       const layer = document.getElementById('hotspot-layer');
       if (!layer) return;
       layer.innerHTML = '';
@@ -6192,7 +6238,9 @@ function buildHotspotsDOM() {
         else if (spot.pinType === 'PRODUCT_GROUP_PIN') el.classList.add('hotspot-group');
         else if (spot.pinType === 'BLANK_PIN') el.classList.add('hotspot-blank');
         
-        el.id = spot.id || `hotspot-${spot.pinType}-${spot.targetId || idx}`;
+        const pinId = spot.id || (spot.pinData ? spot.pinData.id : `spot-${idx}`);
+        el.id = pinId;
+        el.setAttribute('data-pin-id', pinId);
 
         if (spot.pinType === 'BLANK_PIN') {
           el.innerHTML = `
@@ -6220,7 +6268,7 @@ function buildHotspotsDOM() {
           `;
         } else {
           el.innerHTML = `
-            <img src="${spot.imageUrl || '/assets/product-placeholder.jpg'}" class="hotspot-thumb-img" alt="${spot.name}">
+            <img src="${spot.imageUrl || '/assets/product-placeholder.jpg'}" class="hotspot-thumb-img" alt="${spot.name}" style="object-fit: contain; object-position: center;">
             <span class="hotspot-dot"></span>
             <div class="hotspot-info">
               <span class="hotspot-cat">${spot.category || 'PRODUCT'}</span>
@@ -6229,103 +6277,237 @@ function buildHotspotsDOM() {
           `;
         }
 
-        // Direct Pointer Manipulation Listeners (Pointer Capture & Event Routing)
-        el.addEventListener('pointerdown', (e) => {
-          const owner = (window.VIEWER_MODE === 'OWNER_EDITOR');
-          if (!owner) return;
-
-          e.stopPropagation();
-          pointerDownStartPos = { x: e.clientX, y: e.clientY };
-          hasDraggedPinMoved = false;
-          isDraggingPin = true;
-          activeDragPinElement = el;
-
-          window.currentEditingPinTarget = {
-            type: spot.pinType || 'PRODUCT_PIN',
-            id: spot.id || spot.targetId || (spot.slotIndex ? String(spot.slotIndex) : String(spot.pinData?.id || '1')),
-            pinData: spot.pinData || spot
-          };
-
-          const pin = getOrCreateActivePin();
-          preDragCoords = { u: pin.u, v: pin.v };
-
-          try { el.setPointerCapture(e.pointerId); } catch(err) {}
-          if (controls) controls.enabled = false;
-
-          el.classList.add('pin-dragging');
-          highlightActiveEditingHotspot();
-          syncActivePinInputs();
-        });
-
-        el.addEventListener('pointermove', (e) => {
-          if (!isDraggingPin || activeDragPinElement !== el) return;
-          e.stopPropagation();
-
-          if (pointerDownStartPos) {
-            const dist = Math.hypot(e.clientX - pointerDownStartPos.x, e.clientY - pointerDownStartPos.y);
-            if (dist >= 5) hasDraggedPinMoved = true;
-          }
-
-          handlePinDirectDrag(e.clientX, e.clientY);
-        });
-
-        el.addEventListener('pointerup', async (e) => {
-          const owner = (window.VIEWER_MODE === 'OWNER_EDITOR');
-          if (!isDraggingPin && !owner) {
-            e.stopPropagation();
-            if (spot.pinType === 'CATALOG_PIN') {
-              openCatalogProductList(spot.targetId || spot.catalogId);
-            } else {
-              onProductSlotClicked(spot.productIdx !== undefined ? spot.productIdx : (spot.slotIndex - 1));
-            }
-            return;
-          }
-
-          if (isDraggingPin && activeDragPinElement === el) {
-            e.stopPropagation();
-            isDraggingPin = false;
-            el.classList.remove('pin-dragging');
-            try { el.releasePointerCapture(e.pointerId); } catch(err) {}
-            activeDragPinElement = null;
-            if (controls) controls.enabled = true;
-
-            if (hasDraggedPinMoved) {
-              await saveActivePinPosition();
-            } else {
-              if (spot.pinType === 'CATALOG_PIN') {
-                if (typeof openCatalogManager === 'function') openCatalogManager();
-              } else {
-                openProductPinContentEditorModal(spot.id || spot.targetId || spot.pinData?.id);
-              }
-            }
-          }
-        });
-
-        el.addEventListener('pointercancel', (e) => {
-          if (isDraggingPin && activeDragPinElement === el) {
-            isDraggingPin = false;
-            el.classList.remove('pin-dragging');
-            try { el.releasePointerCapture(e.pointerId); } catch(err) {}
-            activeDragPinElement = null;
-            if (controls) controls.enabled = true;
-          }
-        });
-
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const owner = (window.VIEWER_MODE === 'OWNER_EDITOR');
-          if (!owner) {
-            if (spot.pinType === 'CATALOG_PIN') {
-              openCatalogProductList(spot.targetId || spot.catalogId);
-            } else {
-              onProductSlotClicked(spot.productIdx !== undefined ? spot.productIdx : (spot.slotIndex - 1));
-            }
-          }
-        });
-
         layer.appendChild(el);
         spot.domElement = el;
       });
+    }
+
+    // Install Global Event Delegation for Hotspot Layer
+    function initHotspotLayerDragDelegation() {
+      const layer = document.getElementById('hotspot-layer');
+      if (!layer || layer.dataset.dragInitialized === 'true') return;
+      layer.dataset.dragInitialized = 'true';
+
+      layer.addEventListener('pointerdown', (e) => {
+        const owner = (window.VIEWER_MODE === 'OWNER_EDITOR' || window.isProjectOwner);
+        if (!owner) return;
+
+        const pinEl = e.target.closest('.hotspot-tag');
+        if (!pinEl) return;
+
+        const pinId = pinEl.getAttribute('data-pin-id') || pinEl.id;
+        const spot = studioHotspotsList.find(s => s.id === pinId || (s.pinData && (s.pinData.id === pinId || s.pinData.pinId === pinId)));
+        if (!spot) return;
+
+        e.stopPropagation();
+        pointerDownStartPos = { x: e.clientX, y: e.clientY };
+        hasDraggedPinMoved = false;
+        isDraggingPin = true;
+        activeDragPinElement = pinEl;
+        activeDragPinSpot = spot;
+
+        window.currentEditingPinTarget = {
+          type: spot.pinType || 'PRODUCT_PIN',
+          id: spot.id || (spot.pinData ? spot.pinData.id : pinId),
+          pinData: spot.pinData || spot
+        };
+
+        const pin = getOrCreateActivePin();
+        preDragCoords = { u: pin.u, v: pin.v };
+
+        if (controls) controls.enabled = false;
+        pinEl.classList.add('pin-dragging');
+        highlightActiveEditingHotspot();
+      });
+
+      // Window-level tracking for smooth all-speed dragging
+      window.addEventListener('pointermove', (e) => {
+        if (!isDraggingPin || !activeDragPinSpot) return;
+        e.stopPropagation();
+
+        if (pointerDownStartPos) {
+          const dist = Math.hypot(e.clientX - pointerDownStartPos.x, e.clientY - pointerDownStartPos.y);
+          if (dist >= 5) hasDraggedPinMoved = true;
+        }
+
+        handlePinDirectDrag(e.clientX, e.clientY);
+      });
+
+      window.addEventListener('pointerup', async (e) => {
+        if (!isDraggingPin) return;
+        e.stopPropagation();
+
+        const draggedSpot = activeDragPinSpot;
+        const draggedEl = activeDragPinElement;
+
+        isDraggingPin = false;
+        activeDragPinSpot = null;
+        activeDragPinElement = null;
+
+        if (draggedEl) draggedEl.classList.remove('pin-dragging');
+        if (controls) controls.enabled = true;
+
+        if (hasDraggedPinMoved) {
+          // Direct drag completed -> auto save coordinates!
+          await saveActivePinPosition();
+          if (typeof renderProductCardsTray === 'function') renderProductCardsTray(activeProjectData?.pinpoints);
+        } else {
+          // Click on Pin in Owner Mode -> Open Content Editor!
+          if (draggedSpot) {
+            if (draggedSpot.pinType === 'CATALOG_PIN') {
+              if (typeof openCatalogManager === 'function') openCatalogManager();
+            } else {
+              openProductPinContentEditorModal(draggedSpot.id || draggedSpot.pinData?.id);
+            }
+          }
+        }
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // CANONICAL PRODUCT PIN CONTENT EDITOR ACTION ROUTER (C11.16-P3.13-R1)
+    // ═══════════════════════════════════════════════════════════
+    function openPinChooserModalFromContentEditor(targetPinId) {
+      const pin = window.currentEditingContentPin || (window.activeProjectData?.pinpoints || []).find(p => p.id === targetPinId || p.pinId === targetPinId);
+      const pinId = targetPinId || (pin ? (pin.id || pin.pinId) : window.currentEditingPinId);
+      if (!pinId) return;
+
+      window.currentEditingPinId = pinId;
+      window.pinFirstPendingCoords = pin ? { u: pin.u, v: pin.v } : (window.lastPlacedPinCoords || { u: 0.5, v: 0.5 });
+      
+      const choiceModal = document.getElementById('pinFirstChoiceModal');
+      const subtitle = document.getElementById('pinFirstCoordsSubtitle');
+      if (subtitle && pin) subtitle.textContent = `Pin: ${pin.title || pin.label || 'Product Pin'} (u: ${(pin.u||0.5).toFixed(2)}, v: ${(pin.v||0.5).toFixed(2)})`;
+      if (choiceModal) choiceModal.style.display = 'flex';
+    }
+
+    function ppceManageCatalogProducts() {
+      const pin = window.currentEditingContentPin;
+      const pinId = pin ? (pin.id || pin.pinId) : window.currentEditingPinId;
+      openPinManageProductsModal(pinId);
+    }
+
+    function openPinManageProductsModal(pinId) {
+      const pin = window.currentEditingContentPin || (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId);
+      if (!pin) return;
+
+      window.currentEditingContentPin = pin;
+      window.currentEditingPinId = pin.id || pin.pinId;
+
+      const modal = document.getElementById('pinManageProductsModal');
+      const subtitle = document.getElementById('pmpPinTitleSubtitle');
+      if (subtitle) subtitle.textContent = `Pin: ${pin.title || pin.label || 'Product Pin'}`;
+
+      renderPinManageProductsModal(pin);
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closePinManageProductsModal() {
+      const modal = document.getElementById('pinManageProductsModal');
+      if (modal) modal.style.display = 'none';
+      if (window.currentEditingContentPin) {
+        renderProductPinContentEditor(window.currentEditingContentPin);
+      }
+    }
+
+    function renderPinManageProductsModal(pin) {
+      const listEl = document.getElementById('pmpAttachedList');
+      if (!listEl) return;
+      listEl.innerHTML = '';
+
+      const rawProducts = window.activeProjectData?.products || [];
+      const pIds = Array.isArray(pin.productIds) ? pin.productIds : (pin.productId ? [pin.productId] : (pin.targetId ? [pin.targetId] : []));
+      
+      if (pIds.length === 0) {
+        listEl.innerHTML = `
+          <div style="padding: 24px 16px; text-align: center; color: #64748b; font-size: 12px; background: rgba(0,0,0,0.3); border-radius: 8px;">
+            <i class="fa-solid fa-box-open" style="font-size: 24px; margin-bottom: 8px; color: #475569; display: block;"></i>
+            No products attached to this Pin yet.<br>Click <strong>+ Add Product</strong> below to attach catalog items.
+          </div>
+        `;
+        return;
+      }
+
+      pIds.forEach((pid, idx) => {
+        const prod = rawProducts.find(p => String(p.id) === String(pid) || String(p.slotIndex) === String(pid)) || {
+          id: pid,
+          name: 'Product Slot ' + pid,
+          category: 'EXHIBIT ITEM',
+          imageUrl: '/assets/product-placeholder.jpg'
+        };
+
+        const row = document.createElement('div');
+        row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; gap: 10px;';
+
+        row.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1;">
+            <span style="font-size: 11px; font-weight: 800; color: #64748b; width: 18px;">#${idx + 1}</span>
+            <img src="${prod.imageUrl || '/assets/product-placeholder.jpg'}" alt="${prod.name}" style="width: 36px; height: 36px; border-radius: 6px; object-fit: contain; object-position: center; background: #000; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="min-width: 0;">
+              <div style="font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${prod.name}</div>
+              <div style="font-size: 10.5px; color: #94a3b8;">${prod.category || 'Product'}</div>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <button type="button" onclick="movePinProductOrder('${pin.id || pin.pinId}', ${idx}, -1)" ${idx === 0 ? 'disabled style="opacity:0.3; cursor:not-allowed;"' : 'style="cursor:pointer;"'} class="btn-ui" style="padding: 4px 8px; font-size: 10px; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.12); border-radius: 4px;" title="Move Up">
+              <i class="fa-solid fa-arrow-up"></i>
+            </button>
+            <button type="button" onclick="movePinProductOrder('${pin.id || pin.pinId}', ${idx}, 1)" ${idx === pIds.length - 1 ? 'disabled style="opacity:0.3; cursor:not-allowed;"' : 'style="cursor:pointer;"'} class="btn-ui" style="padding: 4px 8px; font-size: 10px; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.12); border-radius: 4px;" title="Move Down">
+              <i class="fa-solid fa-arrow-down"></i>
+            </button>
+            <button type="button" onclick="openOwnerProductEditor(${prod.slotIndex || idx + 1})" style="padding: 4px 8px; font-size: 10px; font-weight: 700; background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); border-radius: 4px; cursor: pointer;">
+              Edit
+            </button>
+            <button type="button" onclick="removeProductFromPinManage('${pin.id || pin.pinId}', '${prod.id || pid}')" style="padding: 4px 8px; font-size: 10px; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); border-radius: 4px; cursor: pointer;" title="Remove from this Pin (keeps in catalog)">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        `;
+
+        listEl.appendChild(row);
+      });
+    }
+
+    function movePinProductOrder(pinId, fromIndex, direction) {
+      const pin = window.currentEditingContentPin || (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId);
+      if (!pin) return;
+
+      let pIds = Array.isArray(pin.productIds) ? [...pin.productIds] : (pin.productId ? [pin.productId] : []);
+      const toIndex = fromIndex + direction;
+      if (toIndex < 0 || toIndex >= pIds.length) return;
+
+      const temp = pIds[fromIndex];
+      pIds[fromIndex] = pIds[toIndex];
+      pIds[toIndex] = temp;
+
+      pin.productIds = pIds;
+      pin.productId = pIds[0] || null;
+      pin.targetId = pIds[0] || null;
+
+      renderPinManageProductsModal(pin);
+      renderProductPinContentEditor(pin);
+      if (typeof renderProductCardsTray === 'function') renderProductCardsTray(activeProjectData?.pinpoints);
+      saveProductPinContentEditorChanges();
+    }
+
+    function removeProductFromPinManage(pinId, productId) {
+      const pin = window.currentEditingContentPin || (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId);
+      if (!pin) return;
+
+      let pIds = Array.isArray(pin.productIds) ? [...pin.productIds] : (pin.productId ? [pin.productId] : []);
+      pIds = pIds.filter(pid => String(pid) !== String(productId));
+
+      pin.productIds = pIds;
+      pin.productId = pIds[0] || null;
+      pin.targetId = pIds[0] || null;
+      pin.pinType = pIds.length === 0 ? 'BLANK_PIN' : (pIds.length >= 2 ? 'PRODUCT_GROUP_PIN' : 'PRODUCT_PIN');
+
+      renderPinManageProductsModal(pin);
+      renderProductPinContentEditor(pin);
+      if (typeof setupStudioProducts === 'function') setupStudioProducts(window.activeProjectData);
+      saveProductPinContentEditorChanges();
+      if (window.showToast) window.showToast('Product unlinked from Pin.', 'info');
     }
 
     function updateHotspots() {
@@ -6510,46 +6692,160 @@ function buildHotspotsDOM() {
       if (typeof renderProductCards === 'function') renderProductCards(projectData?.products || []);
     }
 
-    function renderProductCardsTray(products) {
+    // ═══════════════════════════════════════════════════════════
+    // CANONICAL PIN CARDS TRAY (C11.16-P3.13-R1)
+    // Source of Truth: activeProjectData.pinpoints & attached Products
+    // Legacy Slot Count: 0
+    // ═══════════════════════════════════════════════════════════
+    function renderProductCardsTray(pinpointsOrProducts) {
       const tray = document.getElementById('product-cards-tray');
       if (!tray) return;
       tray.innerHTML = '';
 
-      const isOwner = (window.VIEWER_MODE === 'OWNER_EDITOR');
+      const isOwner = (window.VIEWER_MODE === 'OWNER_EDITOR' || window.isProjectOwner);
+      const rawPinpoints = (window.activeProjectData?.pinpoints || []);
+      const rawProducts = (window.activeProjectData?.products || []);
 
-      studioProducts.forEach((prod, idx) => {
-        const card = document.createElement('div');
-        card.className = `prod-quick-card ${idx === currentSelectedProdIdx ? 'active' : ''}`;
-        card.id = `pcard-${idx}`;
-        card.onclick = () => onProductSlotClicked(idx);
-        
-        if (prod.isConfigured) {
-          card.innerHTML = `
-            <div class="prod-card-thumb">
-              <img src="${prod.imageUrl}" alt="${prod.name}">
+      // If no pinpoints exist in the project, show a single Add Pin card for owner
+      if (rawPinpoints.length === 0) {
+        if (isOwner) {
+          const emptyCard = document.createElement('div');
+          emptyCard.className = 'prod-quick-card';
+          emptyCard.onclick = () => startPlaceProductPinMode();
+          emptyCard.innerHTML = `
+            <div class="prod-card-thumb" style="background: rgba(56,189,248,0.08); display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 20px;">
+              <i class="fa-solid fa-location-dot"></i>
             </div>
             <div class="prod-card-body">
-              <div class="prod-card-cat">${prod.category}</div>
-              <div class="prod-card-title">${prod.name}</div>
-              <div class="prod-card-spec">${prod.desc}</div>
-              <div class="prod-card-btn">${isOwner ? 'Edit Product ✏️' : 'Inspect Specs →'}</div>
+              <div class="prod-card-cat" style="color: #38bdf8;">PRODUCT PIN</div>
+              <div class="prod-card-title" style="color: #fff;">+ Add Product Pin</div>
+              <div class="prod-card-spec" style="color: #94a3b8;">Click to place an interactive 3D pin on your booth</div>
+              <div class="prod-card-btn" style="color: #38bdf8;">+ Place Pin</div>
+            </div>
+          `;
+          tray.appendChild(emptyCard);
+        }
+        return;
+      }
+
+      // Render a dynamic Pin Card for each Pinpoint in project
+      rawPinpoints.forEach((pin, pIdx) => {
+        const pinId = pin.id || pin.pinId || `pin-${pIdx}`;
+        const pIds = Array.isArray(pin.productIds) ? pin.productIds : (pin.productId ? [pin.productId] : (pin.targetId ? [pin.targetId] : []));
+        const attachedProds = pIds.map(pid => rawProducts.find(p => String(p.id) === String(pid) || String(p.slotIndex) === String(pid))).filter(Boolean);
+        
+        const isBlank = attachedProds.length === 0 && (pin.pinType === 'BLANK_PIN' || pin.isDraft || pin.status === 'DRAFT');
+        const isGroup = attachedProds.length >= 2 || pin.pinType === 'PRODUCT_GROUP_PIN';
+        const isCatalog = pin.pinType === 'CATALOG_PIN';
+
+        const card = document.createElement('div');
+        card.className = 'prod-quick-card';
+        card.setAttribute('data-pin-id', pinId);
+        card.id = `pcard-${pinId}`;
+
+        // Click on Pin Card -> Locate Pin in 3D viewer & Open Content Editor
+        card.onclick = () => {
+          locateAndEditPin(pinId);
+        };
+
+        if (isCatalog) {
+          const cat = (window.activeProjectData?.catalogs || []).find(c => (c.catalogId || c.id) === (pin.targetId || pin.catalogId));
+          const catName = cat?.name || pin.label || 'Catalog Pin';
+          const coverImg = cat?.coverImageUrl || '/assets/product-placeholder.jpg';
+          card.innerHTML = `
+            <div class="prod-card-thumb">
+              <img src="${coverImg}" alt="${catName}" style="width: 100%; height: 100%; object-fit: contain; object-position: center;">
+            </div>
+            <div class="prod-card-body">
+              <div class="prod-card-cat" style="color: #c084fc;">CATALOG PIN</div>
+              <div class="prod-card-title">${catName}</div>
+              <div class="prod-card-spec">${cat?.productIds?.length || 0} Products Attached</div>
+              <div class="prod-card-btn" style="color: #c084fc;">${isOwner ? 'Edit Pin ✏️' : 'View Catalog →'}</div>
+            </div>
+          `;
+        } else if (isBlank) {
+          // BLANK PIN CARD (0 Products)
+          const title = pin.title || pin.label || 'Product Pin';
+          card.innerHTML = `
+            <div class="prod-card-thumb" style="background: rgba(56,189,248,0.08); display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 20px;">
+              <i class="fa-solid fa-location-dot"></i>
+            </div>
+            <div class="prod-card-body">
+              <div class="prod-card-cat" style="color: #38bdf8;">PRODUCT PIN</div>
+              <div class="prod-card-title" style="color: #fff;">${title}</div>
+              <div class="prod-card-spec" style="color: #94a3b8;">No Products Yet</div>
+              <button type="button" onclick="event.stopPropagation(); openPinChooserModalFromContentEditor('${pinId}')" style="margin-top: 4px; padding: 4px 10px; font-size: 11px; font-weight: 800; background: rgba(56,189,248,0.15); border: 1px solid #38bdf8; color: #38bdf8; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; align-self: flex-start;">
+                <i class="fa-solid fa-plus"></i> Add Product
+              </button>
+            </div>
+          `;
+        } else if (isGroup) {
+          // MULTI-PRODUCT PIN CARD (2+ Products)
+          const title = pin.title || pin.label || 'Featured Products';
+          const thumbsHTML = attachedProds.slice(0, 3).map(p => `
+            <img src="${p.imageUrl || '/assets/product-placeholder.jpg'}" alt="${p.name}" style="width: 24px; height: 24px; border-radius: 4px; object-fit: contain; background: #000; border: 1px solid rgba(255,255,255,0.2);">
+          `).join('');
+
+          card.innerHTML = `
+            <div class="prod-card-thumb" style="background: #030712; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+              <img src="${attachedProds[0]?.imageUrl || '/assets/product-placeholder.jpg'}" alt="${title}" style="width: 100%; height: 100%; object-fit: contain; object-position: center;">
+            </div>
+            <div class="prod-card-body">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="prod-card-cat" style="color: #34d399;">COLLECTION PIN</div>
+                <span style="font-size: 9.5px; font-weight: 800; background: rgba(52,211,153,0.15); color: #34d399; padding: 1px 5px; border-radius: 4px;">${attachedProds.length} Products</span>
+              </div>
+              <div class="prod-card-title">${title}</div>
+              <div style="display: flex; gap: 4px; margin-top: 4px; align-items: center;">
+                ${thumbsHTML}
+              </div>
+              <div class="prod-card-btn">${isOwner ? 'Edit Pin ✏️' : 'View Products →'}</div>
             </div>
           `;
         } else {
+          // SINGLE PRODUCT PIN CARD (1 Product)
+          const prod = attachedProds[0] || {};
+          const has3d = !!(prod.glbUrl || prod.p3dAsset);
           card.innerHTML = `
-            <div class="prod-card-thumb" style="background: rgba(56,189,248,0.08); display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 18px;">
-              <i class="fa-solid ${isOwner ? 'fa-plus' : 'fa-box-open'}"></i>
+            <div class="prod-card-thumb">
+              <img src="${prod.imageUrl || '/assets/product-placeholder.jpg'}" alt="${prod.name || 'Product'}" style="width: 100%; height: 100%; object-fit: contain; object-position: center;">
             </div>
             <div class="prod-card-body">
-              <div class="prod-card-cat" style="color: #64748b;">SLOT 0${prod.slotIndex} AVAILABLE</div>
-              <div class="prod-card-title" style="color: ${isOwner ? '#38bdf8' : '#94a3b8'};">${isOwner ? '+ Add Product' : 'Product Slot ' + prod.slotIndex}</div>
-              <div class="prod-card-spec" style="color: #64748b;">${isOwner ? 'Click to upload image & enter specs' : 'Slot available for exhibition'}</div>
-              <div class="prod-card-btn" style="color: #38bdf8;">${isOwner ? '+ Add Product' : 'Inspect Slot'}</div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="prod-card-cat">${prod.category || 'PRODUCT PIN'}</div>
+                ${has3d ? '<span style="font-size: 9.5px; font-weight: 800; background: rgba(56,189,248,0.2); color: #38bdf8; padding: 1px 5px; border-radius: 4px;"><i class="fa-solid fa-cube"></i> 3D</span>' : ''}
+              </div>
+              <div class="prod-card-title">${prod.name || 'Product'}</div>
+              <div class="prod-card-spec">${prod.shortDescription || prod.description || '1 Product Attached'}</div>
+              <div class="prod-card-btn">${isOwner ? 'Edit Pin ✏️' : 'Inspect Specs →'}</div>
             </div>
           `;
         }
+
         tray.appendChild(card);
       });
+    }
+
+    function locateAndEditPin(pinId) {
+      const pin = (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId);
+      if (pin) {
+        window.currentEditingPinTarget = { type: pin.pinType || 'PRODUCT_PIN', id: pin.id || pin.pinId, pinData: pin };
+        if (typeof highlightActiveEditingHotspot === 'function') highlightActiveEditingHotspot();
+      }
+      
+      const isOwner = (window.VIEWER_MODE === 'OWNER_EDITOR' || window.isProjectOwner);
+      if (isOwner) {
+        openProductPinContentEditorModal(pinId);
+      } else {
+        const pIds = Array.isArray(pin?.productIds) ? pin.productIds : (pin?.productId ? [pin.productId] : []);
+        if (pIds.length >= 2) {
+          openProductGroupModal(pinId);
+        } else if (pIds.length === 1) {
+          const prods = window.activeProjectData?.products || [];
+          const idx = prods.findIndex(p => p.id === pIds[0] || p.slotIndex === pIds[0]);
+          openPublicProductDetail(idx >= 0 ? idx : 0);
+        }
+      }
     }
 
     function onProductSlotClicked(idx) {
