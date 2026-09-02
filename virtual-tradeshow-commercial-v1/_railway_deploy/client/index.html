@@ -7887,6 +7887,11 @@ function buildHotspotsDOM() {
       const pin = getOrCreateActivePin();
       pin.u = Number(u.toFixed(4));
       pin.v = Number(v.toFixed(4));
+      const curSpot = studioHotspotsList.find(s => s.id === pin.id || s.id === pin.pinId || (pin.slotIndex && s.slotIndex === pin.slotIndex));
+      if (curSpot) {
+        curSpot.u = pin.u;
+        curSpot.v = pin.v;
+      }
 
       // Update Fine Position numerical display live
       const inputU = document.getElementById('pinInputU');
@@ -8115,12 +8120,13 @@ function buildHotspotsDOM() {
     }
 
     async function saveActivePinPosition() {
-      if (!activeProjectId) return;
+      const pid = activeProjectId || window.activeProjectData?.id;
+      if (!pid) return;
       const token = getEditAuthToken();
       setPinSaveStatus('Saving...');
 
       try {
-        const res = await fetch(`/api/projects/${activeProjectId}/pinpoints`, {
+        const res = await fetch(`/api/projects/${pid}/pinpoints`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -8135,11 +8141,7 @@ function buildHotspotsDOM() {
         const data = await res.json();
         if (res.ok) {
           setPinSaveStatus('Saved');
-          const cur = window.currentEditingPinTarget || { type: 'PRODUCT_PIN', id: '1' };
-          const pinKey = `${cur.type}_${cur.id}`;
-          const pin = getOrCreateActivePin();
-          initialPinCoordinates[pinKey] = { u: pin.u, v: pin.v };
-          preDragCoords = { u: pin.u, v: pin.v };
+          if (data.pins) activeProjectData.pinpoints = data.pins;
           recalculatePinpointPositions(activeProjectData);
           updateHotspots();
         } else {

@@ -84,6 +84,15 @@ async function runP313Verification() {
   await page.waitForSelector('#viewer-container', { timeout: 30000 });
   await new Promise(r => setTimeout(r, 3500));
 
+  // Switch to Owner Mode for owner assertions
+  await page.evaluate(() => {
+    window.VIEWER_MODE = 'OWNER_EDITOR';
+    window.isProjectOwner = true;
+    localStorage.setItem('3d2_customer_token', 'internal_dev_pass');
+    setupStudioProducts(window.activeProjectData);
+  });
+  await new Promise(r => setTimeout(r, 600));
+
   // -------------------------------------------------------------
   // STAGE 1: Product Card Pin Membership Visibility Check
   // -------------------------------------------------------------
@@ -97,7 +106,7 @@ async function runP313Verification() {
       hasPinBadge: badges.length > 0
     };
   });
-  console.log(`PRODUCT_CARD_COUNT: ${cardBadgeCheck.totalCards} (Expected: 3 or 6 slots)`);
+  console.log(`PRODUCT_CARD_COUNT: ${cardBadgeCheck.totalCards} (Expected: 6 cards across Tray & Grid)`);
   console.log(`PRODUCT_CARD_PIN_BADGES: ${JSON.stringify(cardBadgeCheck.badges)}`);
   console.log(`PRODUCT_CARDS_REFLECT_PIN_MEMBERSHIP: ${cardBadgeCheck.hasPinBadge}`);
   console.log(`PRODUCT_CARD_DUPLICATION_FROM_PIN: 0`);
