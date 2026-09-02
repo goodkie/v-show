@@ -2314,15 +2314,10 @@
 
         <div id="viewer-container" style="position: relative;">
           <!-- Place Product Pin Floating Instruction Banner -->
-          <div id="placePinBanner" style="display: none; position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 60; background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(14px); border: 1px solid #38bdf8; border-radius: 30px; padding: 8px 20px; font-size: 12px; font-weight: 800; color: #38bdf8; box-shadow: 0 8px 30px rgba(0, 194, 255, 0.4); display: flex; align-items: center; gap: 14px;">
+          <div id="placePinBanner" style="display: none; position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 60; background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(14px); border: 1px solid #38bdf8; border-radius: 30px; padding: 8px 20px; font-size: 12px; font-weight: 800; color: #38bdf8; box-shadow: 0 8px 30px rgba(0, 194, 255, 0.4); align-items: center; gap: 14px;">
             <span><i class="fa-solid fa-crosshairs fa-spin"></i> Click anywhere on the booth to place the product pin.</span>
             <button onclick="cancelPlaceProductPinMode()" style="background: rgba(239,68,68,0.2); border: 1px solid #ef4444; color: #ef4444; border-radius: 20px; padding: 3px 12px; font-size: 11px; font-weight: 700; cursor: pointer;">Cancel (Esc)</button>
           </div>
-  
-          <canvas id="three-canvas"></canvas>
-          <!-- 3D Hotspot Tags Overlay -->
-          <div id="hotspot-layer"></div>
-          <div class="player-tag">🌐 Photo Immersive 360° Studio</div>
           <div class="res-pill" id="res-indicator">ULTRA-HD MASTER STUDIO</div>
 
           <!-- Owner Pin Edit Floating Panel (Visible when PIN_EDIT_MODE is active) -->
@@ -2865,80 +2860,30 @@
         
         <div class="viewport-modal-body">
           
-          <!-- ── PRODUCT MEDIA MODE SELECTOR (UX2) ── -->
-          <div class="form-group" style="margin-bottom: 20px;">
-            <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <!-- ── PRODUCT MEDIA MODE SELECTOR (UX2 / P3.9-R3) ── -->
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <span style="font-weight: 800; font-size: 13px; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px;">Product Media</span>
-              <span style="font-size: 11px; color: #64748b;">Presentation & Workflow Choice</span>
+              <span style="font-size: 11px; color: #64748b;">Image & 3D Interactive Media</span>
             </label>
-            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;">How would you like to display this product?</div>
             
-            <div id="productMediaModeContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
-              
-              <!-- IMAGE PRODUCT CARD -->
-              <div id="pMediaCardIMAGE" role="radio" aria-checked="true" tabindex="0" onclick="setProductMediaMode('IMAGE')" style="background: rgba(56,189,248,0.12); border: 2px solid #38bdf8; border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: all 0.2s ease; position: relative;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-image" style="font-size: 16px; color: #38bdf8;" id="pMediaIconIMAGE"></i>
-                    <span style="font-weight: 800; font-size: 13.5px; color: #fff;">IMAGE PRODUCT</span>
-                  </div>
-                  <div id="pMediaCheckIMAGE" style="width: 18px; height: 18px; border-radius: 50%; border: 2px solid #38bdf8; background: #38bdf8; display: flex; align-items: center; justify-content: center;">
-                    <i class="fa-solid fa-check" style="font-size: 10px; color: #020617;"></i>
-                  </div>
-                </div>
-                <div style="font-size: 11.5px; color: #cbd5e1; line-height: 1.4; margin-bottom: 8px;">
-                  Upload product images for your catalog and booth.
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #38bdf8;">
-                  <i class="fa-solid fa-cloud-arrow-up"></i> <span>Standard Image Workflow</span>
-                </div>
-              </div>
-
-              <!-- 3D PRODUCT CARD -->
-              <div id="pMediaCardTHREE_D" role="radio" aria-checked="false" tabindex="0" onclick="setProductMediaMode('THREE_D')" style="background: rgba(15,23,42,0.9); border: 2px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: all 0.2s ease; position: relative;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-cube" style="font-size: 16px; color: #94a3b8;" id="pMediaIconTHREE_D"></i>
-                    <span style="font-weight: 800; font-size: 13.5px; color: #fff;">3D PRODUCT</span>
-                  </div>
-                  <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); border-radius: 999px; padding: 2px 7px; font-size: 9.5px; font-weight: 800; text-transform: uppercase;">AI Powered</span>
-                    <div id="pMediaCheckTHREE_D" style="width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.25); background: transparent; display: flex; align-items: center; justify-content: center;"></div>
-                  </div>
-                </div>
-                <div style="font-size: 11.5px; color: #94a3b8; line-height: 1.4; margin-bottom: 8px;">
-                  Create an interactive 3D model from your product images.
-                </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 700;">
-                  <span id="pMedia3dStateLabel" style="color: #94a3b8;"><i class="fa-solid fa-wand-magic-sparkles"></i> Create 3D Model</span>
-                  <span id="pMedia3dReadyBadge" style="display: none; background: rgba(34,197,94,0.18); color: #4ade80; border: 1px solid rgba(34,197,94,0.4); border-radius: 4px; padding: 1px 6px; font-size: 9.5px;"><i class="fa-solid fa-check-circle"></i> 3D Ready</span>
-                </div>
-              </div>
-
-            </div>
-
-            <!-- Mode Switch Note (When 3D exists and switching to IMAGE) -->
-            <div id="pMediaSwitchNote" style="display: none; margin-top: 10px; background: rgba(56,189,248,0.08); border-left: 3px solid #38bdf8; padding: 8px 12px; font-size: 11.5px; color: #cbd5e1; border-radius: 4px;">
-              <i class="fa-solid fa-circle-info" style="color:#38bdf8;"></i> This product already has an active 3D model. Switching display mode will not delete it.
+            <!-- IMAGE / 3D SWITCHER TABS -->
+            <div id="productMediaTabsContainer" style="display: flex; gap: 8px; background: rgba(3, 7, 18, 0.6); padding: 4px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+              <button type="button" id="tabProductMediaImage" onclick="setProductMediaMode('IMAGE')" style="flex: 1; padding: 9px 16px; font-size: 12.5px; font-weight: 800; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease; border: 1px solid #38bdf8; background: rgba(56,189,248,0.15); color: #38bdf8;">
+                <i class="fa-solid fa-image"></i> <span>Product Image</span>
+              </button>
+              <button type="button" id="tabProductMedia3D" onclick="setProductMediaMode('THREE_D')" style="flex: 1; padding: 9px 16px; font-size: 12.5px; font-weight: 800; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease; border: 1px solid transparent; background: transparent; color: #94a3b8;">
+                <i class="fa-solid fa-cube"></i> <span>3D Model</span>
+                <span id="pMedia3dReadyBadge" style="display: none; background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid rgba(34,197,94,0.4); border-radius: 999px; padding: 1px 7px; font-size: 9.5px; font-weight: 800;"><i class="fa-solid fa-check"></i> Ready</span>
+                <span id="pMedia3dGeneratingBadge" style="display: none; background: rgba(56,189,248,0.2); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 999px; padding: 1px 7px; font-size: 9.5px; font-weight: 800;"><i class="fa-solid fa-circle-notch fa-spin"></i> Busy</span>
+              </button>
             </div>
           </div>
 
-          <!-- ── Step 1: Primary Source Image Upload Area ── -->
+          <!-- ── TAB CONTENT: PRODUCT IMAGE STAGE ── -->
           <div class="form-group" id="opePrimaryImageSection" style="margin-bottom: 16px; position: relative;">
-            <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span id="opePrimaryImageTitle" style="font-weight: 700; font-size: 13px; color: #cbd5e1;">Product Image</span>
-                <span id="opePrimaryImageBadge" style="background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); border-radius: 999px; padding: 2px 8px; font-size: 10px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-cube"></i> 3D Ready</span>
-              </div>
-              <span style="font-size: 11px; color: #64748b;">PNG, JPG, WebP · Max 10 MB</span>
-            </label>
-            
-            <div id="ope3dSourceHint" style="display: none; font-size: 11.5px; color: #94a3b8; margin-bottom: 8px;">
-              <i class="fa-solid fa-circle-info" style="color: #38bdf8;"></i> Start with a clear front or 3/4 view of the full product.
-            </div>
-
             <div id="opeImageUploadBox" style="background: #030712; border: 1.5px dashed rgba(56,189,248,0.35); border-radius: 12px; padding: 16px; text-align: center; position: relative;">
-              <img id="opeImagePreview" src="" style="max-height: 140px; max-width: 100%; border-radius: 8px; object-fit: contain; display: none; margin: 0 auto 12px auto; border: 1px solid rgba(255,255,255,0.1);">
+              <img id="opeImagePreview" src="" style="max-height: 180px; max-width: 100%; border-radius: 8px; object-fit: contain; object-position: center; display: none; margin: 0 auto 12px auto; border: 1px solid rgba(255,255,255,0.1);">
               <div style="display: flex; justify-content: center; gap: 10px; align-items: center; flex-wrap: wrap;">
                 <input type="file" id="opeImageInput" accept="image/png, image/jpeg, image/webp" style="display: none;" onchange="previewOwnerProductImage(this)">
                 <button type="button" class="btn-ui" id="opeBtnUploadImg" onclick="document.getElementById('opeImageInput').click()" style="padding: 8px 16px; font-size: 12.5px; font-weight: 700; background: rgba(56,189,248,0.18); color: #38bdf8; border: 1px solid rgba(56,189,248,0.45); border-radius: 8px; cursor: pointer;">
@@ -2948,87 +2893,132 @@
                   <i class="fa-solid fa-trash"></i> Remove Image
                 </button>
               </div>
-              
-              <!-- 3D Hint & Popover trigger -->
-              <div id="ope3dHintTriggerRow" style="font-size: 11.5px; color: #94a3b8; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;">
-                <span>This image can be converted into an interactive 3D model.</span>
-                <button type="button" onclick="toggle3dConversionPopover(event)" style="background: none; border: none; color: #38bdf8; font-size: 11.5px; font-weight: 700; text-decoration: underline; cursor: pointer; padding: 0; display: inline-flex; align-items: center; gap: 4px;">
-                  <i class="fa-solid fa-circle-question"></i> Learn about 3D conversion
-                </button>
+              <div style="font-size: 11.5px; color: #94a3b8; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <span>Switch to the <strong style="color:#38bdf8; cursor:pointer;" onclick="setProductMediaMode('THREE_D')">3D Model tab</strong> to create an interactive 3D model.</span>
               </div>
+            </div>
+          </div>
 
-              <!-- 3D Conversion Popover Modal/Card -->
-              <div id="p3dConversionPopover" style="display: none; position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); width: min(92vw, 380px); background: #0b1329; border: 1px solid rgba(56,189,248,0.45); border-radius: 12px; padding: 14px 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.85), 0 0 25px rgba(56,189,248,0.2); z-index: 50; text-align: left;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px;">
-                  <span style="font-weight: 800; font-size: 12.5px; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
-                    <i class="fa-solid fa-cube"></i> AI 3D Conversion
+          <!-- ── TAB CONTENT: PRODUCT 3D STAGE ── -->
+          <div class="form-group" id="opeProduct3dSection" style="display: none; margin-bottom: 16px;">
+            
+            <!-- QA Banner -->
+            <div id="p3dQaBanner" style="display: none; background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.35); border-radius: 8px; padding: 8px 12px; font-size: 11.5px; color: #d8b4fe; margin-bottom: 12px;">
+              <i class="fa-solid fa-shield-halved"></i> <strong>Internal QA · Unlimited Test Conversions</strong> (0 commercial charge).
+            </div>
+
+            <!-- 1. VISUAL 3D RESULT HOLDER (READY STATE) -->
+            <div id="p3dResultHolderContainer" style="display: none; background: rgba(15,23,42,0.85); border: 1px solid rgba(56,189,248,0.4); border-radius: 14px; padding: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid rgba(34,197,94,0.4); border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 5px;">
+                    <i class="fa-solid fa-circle-check"></i> 3D READY
                   </span>
-                  <button type="button" onclick="close3dConversionPopover(event)" style="background: none; border: none; color: #94a3b8; font-size: 13px; cursor: pointer; padding: 0 4px;">✕</button>
+                  <span id="p3dResultTierBadge" style="font-size: 11.5px; font-weight: 700; color: #38bdf8;">Standard 3D</span>
                 </div>
-                <ul style="margin: 0 0 10px 0; padding-left: 18px; font-size: 11.5px; color: #cbd5e1; line-height: 1.5;">
-                  <li><strong>Step 1:</strong> Upload a clear product image with the full product visible.</li>
-                  <li><strong>Step 2:</strong> Add side or back views for better geometry.</li>
-                  <li><strong>Step 3:</strong> Choose Standard, High, or Ultra quality.</li>
-                  <li><strong>Step 4:</strong> Generate an interactive 3D model.</li>
-                </ul>
-                <div style="background: rgba(56,189,248,0.08); border-left: 3px solid #38bdf8; border-radius: 4px; padding: 6px 8px; font-size: 11px; color: #94a3b8; line-height: 1.4;">
-                  <i class="fa-solid fa-circle-info" style="color: #38bdf8;"></i> <strong>Note:</strong> Single-image 3D may infer surfaces that are not visible in the original photo.
-                </div>
+                <div id="p3dResultProvenanceText" style="font-size: 11px; color: #94a3b8;">Generated just now · 1.1 MB</div>
               </div>
-            </div>
-          </div>
 
-          <!-- ── Step 2: Additional Source Views (Multi-View 3D) ── -->
-          <div class="form-group" id="opeAdditionalViewsSection" style="display: none; margin-bottom: 16px;">
-            <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span style="font-weight: 700; font-size: 12.5px; color: #a5b4fc;"><i class="fa-solid fa-images"></i> Step 2 · Improve Your 3D Model (Optional)</span>
-              <span style="font-size: 11px; color: #64748b;">Recommended for High & Ultra</span>
-            </label>
-            <div style="font-size: 11.5px; color: #94a3b8; margin-bottom: 8px;">
-              Add optional side, back, top, or detail views for more accurate 3D geometry.
-            </div>
-            <div id="opeAdditionalViewsContainer" style="background: rgba(15,23,42,0.6); border: 1px dashed rgba(99,102,241,0.3); border-radius: 10px; padding: 12px;">
-              <div id="opeAdditionalViewsList" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
-                <!-- Dynamically populated thumbnails of extra angles -->
+              <!-- INLINE THREE.JS INTERACTIVE WEBGL PREVIEW -->
+              <div id="p3dInlineCanvasContainer" style="position: relative; width: 100%; height: 260px; background: radial-gradient(circle at center, #0f172a 0%, #030712 100%); border: 1px solid rgba(56,189,248,0.25); border-radius: 12px; overflow: hidden;">
+                <canvas id="p3dInlineCanvas" style="width: 100%; height: 100%; display: block; cursor: grab;"></canvas>
+                
+                <button type="button" onclick="product3dInlineResetView()" title="Reset Camera" style="position: absolute; top: 10px; right: 10px; z-index: 5; background: rgba(3,7,18,0.75); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer; backdrop-filter: blur(6px);">
+                  <i class="fa-solid fa-arrows-rotate"></i> Reset
+                </button>
+
+                <div id="p3dInlineLoading" style="position: absolute; inset: 0; background: rgba(3,7,18,0.85); display: none; align-items: center; justify-content: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: #38bdf8; z-index: 4;">
+                  <i class="fa-solid fa-circle-notch fa-spin"></i> Loading Interactive 3D Preview…
+                </div>
+
+                <div style="position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); font-size: 10.5px; color: #94a3b8; background: rgba(3,7,18,0.75); backdrop-filter: blur(6px); padding: 3px 12px; border-radius: 20px; pointer-events: none; white-space: nowrap; z-index: 3;">
+                  <i class="fa-solid fa-hand-pointer"></i> Drag to rotate · Scroll to zoom
+                </div>
               </div>
-              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                <input type="file" id="opeAdditionalViewInput" accept="image/png, image/jpeg, image/webp" style="display: none;" onchange="handleAdditionalViewUpload(this)">
-                <select id="opeAdditionalViewRole" style="background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 6px 10px; color: #cbd5e1; font-size: 12px;">
-                  <option value="FRONT">Front View</option>
-                  <option value="BACK">Back View</option>
-                  <option value="LEFT">Left Side</option>
-                  <option value="RIGHT">Right Side</option>
-                  <option value="TOP">Top View</option>
-                  <option value="BOTTOM">Bottom View</option>
-                  <option value="45_DEGREE">45° View</option>
-                  <option value="DETAIL">Detail / Logo</option>
-                </select>
-                <button type="button" class="btn-ui" onclick="document.getElementById('opeAdditionalViewInput').click()" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.4); border-radius: 6px; cursor: pointer;">
-                  <i class="fa-solid fa-plus"></i> Add View
+
+              <!-- Action Buttons Bar -->
+              <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-top: 14px; flex-wrap: wrap;">
+                <button type="button" onclick="product3dOpenViewer()" style="flex: 1; padding: 10px 18px; font-size: 13px; font-weight: 800; background: linear-gradient(135deg,#0284c7,#2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(2,132,199,0.35);">
+                  <i class="fa-solid fa-expand"></i> <span>View Larger</span>
+                </button>
+                <button type="button" onclick="product3dRegenerate()" style="padding: 10px 16px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-arrows-rotate"></i> <span>Regenerate</span>
+                </button>
+                <button type="button" onclick="product3dRemove()" style="padding: 10px 14px; font-size: 12px; font-weight: 700; background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-trash"></i> <span>Remove</span>
                 </button>
               </div>
             </div>
-          </div>
 
-          <!-- ── Step 3 & 4: Product 3D Conversion & Quality Section ── -->
-          <div class="form-group" id="opeProduct3dSection" style="display: none; margin-bottom: 16px; margin-top: 16px;">
-            <div style="background: rgba(15,23,42,0.7); border: 1px solid rgba(56,189,248,0.3); border-radius: 14px; padding: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+            <!-- 2. VISUAL GENERATING / PROCESSING HOLDER -->
+            <div id="p3dGeneratingHolderContainer" style="display: none; background: rgba(15,23,42,0.9); border: 1.5px solid rgba(56,189,248,0.4); border-radius: 14px; padding: 24px 18px; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,0.6);">
+              <div style="margin-bottom: 12px;">
+                <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 34px; color: #38bdf8;"></i>
+              </div>
+              <div style="font-size: 14.5px; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: 0.5px;">
+                3D MODEL GENERATING
+              </div>
+              <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
+                <span id="p3dGenHolderTier" style="background: rgba(56,189,248,0.2); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 800;">High Quality 3D</span>
+                <span id="p3dGenHolderTimer" style="font-size: 12px; color: #cbd5e1; font-weight: 700; font-variant-numeric: tabular-nums;">Elapsed: 0s</span>
+              </div>
+              <div style="font-size: 12px; color: #94a3b8; max-width: 380px; margin: 0 auto 16px auto; line-height: 1.5;">
+                Your current product image remains available while the 3D model is being prepared.
+              </div>
+              <div id="p3dGenCurrentAvailableRow" style="display: none; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 12px; color: #cbd5e1;">
+                <span style="display: block; margin-bottom: 8px; color: #94a3b8;">Current 3D model remains available:</span>
+                <button type="button" onclick="product3dOpenViewer()" style="padding: 7px 16px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 8px; cursor: pointer;">
+                  <i class="fa-solid fa-eye"></i> View Current 3D
+                </button>
+              </div>
+            </div>
+
+            <!-- 3. VISUAL VALIDATING HOLDER -->
+            <div id="p3dValidatingHolderContainer" style="display: none; background: rgba(15,23,42,0.9); border: 1.5px solid rgba(168,85,247,0.4); border-radius: 14px; padding: 24px 18px; text-align: center;">
+              <div style="margin-bottom: 12px;">
+                <i class="fa-solid fa-wand-magic-sparkles fa-spin" style="font-size: 32px; color: #c084fc;"></i>
+              </div>
+              <div style="font-size: 14.5px; font-weight: 800; color: #fff; margin-bottom: 6px;">
+                Finalizing 3D Model…
+              </div>
+              <div style="font-size: 12px; color: #94a3b8; max-width: 360px; margin: 0 auto; line-height: 1.5;">
+                Checking model geometry and preparing the interactive preview.
+              </div>
+            </div>
+
+            <!-- 4. VISUAL FAILURE HOLDER -->
+            <div id="p3dFailureHolderContainer" style="display: none; background: rgba(15,23,42,0.9); border: 1.5px solid rgba(239,68,68,0.4); border-radius: 14px; padding: 20px 18px; text-align: center;">
+              <div style="margin-bottom: 10px;">
+                <i class="fa-solid fa-triangle-exclamation" style="font-size: 30px; color: #f87171;"></i>
+              </div>
+              <div style="font-size: 14px; font-weight: 800; color: #f87171; margin-bottom: 6px;">
+                3D Generation Failed
+              </div>
+              <div id="p3dFailureErrorMsg" style="font-size: 12px; color: #cbd5e1; margin-bottom: 14px; line-height: 1.4;">
+                Generation could not be completed. You can try again or keep the 2D image.
+              </div>
+              <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <button type="button" onclick="product3dGenerate()" style="padding: 8px 18px; font-size: 12.5px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 8px; cursor: pointer;">
+                  <i class="fa-solid fa-rotate-right"></i> Try Again
+                </button>
+                <button type="button" id="p3dFailureViewCurrentBtn" onclick="product3dOpenViewer()" style="display: none; padding: 8px 16px; font-size: 12.5px; font-weight: 700; background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer;">
+                  <i class="fa-solid fa-eye"></i> View Current 3D
+                </button>
+              </div>
+            </div>
+
+            <!-- 5. INITIAL NOT_GENERATED SETUP SECTION -->
+            <div id="p3dSetupSectionContainer" style="display: block; background: rgba(15,23,42,0.7); border: 1px solid rgba(56,189,248,0.3); border-radius: 14px; padding: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
               <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
                 <label style="font-weight: 800; font-size: 13px; color: #38bdf8; display: flex; align-items: center; gap: 8px; margin: 0;">
-                  <i class="fa-solid fa-cube"></i> STEP 3 · CHOOSE 3D QUALITY
-                  <span id="p3dStatusBadge" style="display: none;"></span>
+                  <i class="fa-solid fa-cube"></i> CHOOSE 3D QUALITY
                 </label>
                 <span id="p3dTokenBalance" style="font-size: 11px; color: #94a3b8;"></span>
-              </div>
-              
-              <div id="p3dQaBanner" style="display: none; background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.35); border-radius: 8px; padding: 8px 12px; font-size: 11.5px; color: #d8b4fe; margin-bottom: 12px;">
-                <i class="fa-solid fa-shield-halved"></i> <strong>Internal QA · Unlimited Test Conversions</strong> (Nominal token weights shown, 0 commercial charge).
               </div>
 
               <!-- Quality Selection Cards -->
               <div id="p3dQualitySelectorContainer" style="margin-bottom: 12px;">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;" id="p3dQualityCardsGrid">
-                  
                   <!-- Standard Card -->
                   <div class="p3d-quality-card" id="p3dCardSTANDARD" onclick="selectP3dQuality('STANDARD')" style="background: rgba(15,23,42,0.9); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.2s ease;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
@@ -3038,7 +3028,7 @@
                     <div style="font-size: 11px; color: #94a3b8; line-height: 1.35;">Fast conversion for simple products</div>
                   </div>
 
-                  <!-- High Quality Card (Recommended) -->
+                  <!-- High Quality Card -->
                   <div class="p3d-quality-card" id="p3dCardHIGH" onclick="selectP3dQuality('HIGH')" style="background: rgba(56,189,248,0.12); border: 1.5px solid #38bdf8; border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.2s ease;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                       <span style="font-size: 12.5px; font-weight: 800; color: #38bdf8;">High Quality 3D</span>
@@ -3055,52 +3045,48 @@
                     </div>
                     <div style="font-size: 11px; color: #94a3b8; line-height: 1.35;">Maximum practical fidelity</div>
                   </div>
-
                 </div>
               </div>
 
-              <!-- Live Cost Calculation & Balance Summary -->
-              <div id="p3dLiveCostBox" style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 12px; font-size: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <!-- Additional Views (Multi-View) -->
+              <div class="form-group" id="opeAdditionalViewsSection" style="display: block; margin-bottom: 12px;">
+                <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span style="font-weight: 700; font-size: 12px; color: #a5b4fc;"><i class="fa-solid fa-images"></i> Additional Views (Optional)</span>
+                  <span style="font-size: 10.5px; color: #64748b;">Side & Back views</span>
+                </label>
+                <div id="opeAdditionalViewsContainer" style="background: rgba(15,23,42,0.6); border: 1px dashed rgba(99,102,241,0.3); border-radius: 10px; padding: 10px;">
+                  <div id="opeAdditionalViewsList" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px;"></div>
+                  <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <input type="file" id="opeAdditionalViewInput" accept="image/png, image/jpeg, image/webp" style="display: none;" onchange="handleAdditionalViewUpload(this)">
+                    <select id="opeAdditionalViewRole" style="background: #030712; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 5px 8px; color: #cbd5e1; font-size: 11.5px;">
+                      <option value="FRONT">Front View</option>
+                      <option value="BACK">Back View</option>
+                      <option value="LEFT">Left Side</option>
+                      <option value="RIGHT">Right Side</option>
+                      <option value="TOP">Top View</option>
+                      <option value="BOTTOM">Bottom View</option>
+                      <option value="45_DEGREE">45° View</option>
+                      <option value="DETAIL">Detail / Logo</option>
+                    </select>
+                    <button type="button" class="btn-ui" onclick="document.getElementById('opeAdditionalViewInput').click()" style="padding: 5px 12px; font-size: 11.5px; font-weight: 700; background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.4); border-radius: 6px; cursor: pointer;">
+                      <i class="fa-solid fa-plus"></i> Add View
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Cost & Balance Summary -->
+              <div id="p3dLiveCostBox" style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; font-size: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                 <span id="p3dLiveCostSummary" style="color: #cbd5e1; font-weight: 600;">High Quality · 3 Tokens</span>
                 <span id="p3dLiveBalanceSummary" style="color: #94a3b8;">Available: --</span>
               </div>
 
-              <div id="p3dStatusLine" style="font-size: 12px; color: #94a3b8; margin-bottom: 10px; display: none;"></div>
               <div id="p3dWarningBanner" style="display: none; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #fbbf24; margin-bottom: 12px;"></div>
-              
-              <!-- ── Step 4: Primary Product 3D Conversion CTA Button & Actions ── -->
-              <div id="p3dCtaContainer" style="display: flex; flex-direction: column; gap: 10px; margin-top: 4px;">
-                <!-- Main Action Button -->
-                <button type="button" id="p3dMainCtaBtn" onclick="handleP3dMainCtaClick()" style="width: 100%; padding: 12px 20px; font-size: 13.5px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(2,132,199,0.35); transition: all 0.2s ease;">
-                  <i class="fa-solid fa-cube"></i> <span id="p3dMainCtaText">Generate 3D Model</span>
-                </button>
 
-                <!-- Secondary Actions Row (When 3D Model exists) -->
-                <div id="p3dSecondaryActionsRow" style="display: none; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: flex-end;">
-                  <button type="button" id="p3dBtnRegen" onclick="product3dRegenerate()" style="padding: 7px 14px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                    <i class="fa-solid fa-arrows-rotate"></i> Regenerate
-                  </button>
-                  <button type="button" id="p3dBtnRemove" onclick="product3dRemove()" style="padding: 7px 14px; font-size: 12px; font-weight: 700; background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                    <i class="fa-solid fa-trash"></i> Remove 3D
-                  </button>
-                </div>
-
-                <!-- Upgrade CTA (shown for PRO/FREE non-QA) -->
-                <div id="p3dUpgradeCta" style="display:none; font-size: 12px; color: #94a3b8; text-align: center; padding: 6px 0;">
-                  <i class="fa-solid fa-lock" style="color:#f59e0b;"></i> 3D Product Preview requires <strong style="color:#f59e0b;">BUSINESS</strong> plan.
-                </div>
-              </div>
-              
-              <!-- Live Activity & Progress Bar -->
-              <div id="p3dProgressBar" style="display:none; margin-top: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.06);">
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: #cbd5e1; margin-bottom: 6px;">
-                  <span id="p3dProgressLabel" style="display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-circle-notch fa-spin" style="color: #38bdf8;"></i> Generating 3D…</span>
-                  <span id="p3dProgressTimer" style="color: #94a3b8; font-variant-numeric: tabular-nums;">0s</span>
-                </div>
-                <div style="height: 4px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
-                  <div id="p3dProgressFill" style="height: 100%; width: 100%; background: linear-gradient(90deg, #0284c7, #38bdf8, #818cf8); border-radius: 4px;"></div>
-                </div>
-              </div>
+              <!-- Generate CTA Button -->
+              <button type="button" id="p3dMainCtaBtn" onclick="handleP3dMainCtaClick()" style="width: 100%; padding: 12px 20px; font-size: 13.5px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(2,132,199,0.35); transition: all 0.2s ease;">
+                <i class="fa-solid fa-cube"></i> <span id="p3dMainCtaText">Generate 3D Model</span>
+              </button>
             </div>
           </div>
 
@@ -5359,29 +5345,37 @@
     window.pinSelectorSelectedProductIds = [];
     window.lastPlacedPinCoords = null;
 
-    // 1. Enter Interactive Placement Mode
+    // 1. Canonical Pin Authoring State Engine (C11.16-P3.9-R3)
+    window.pinAuthoringState = 'IDLE'; // IDLE | PLACING | SELECTING_PRODUCTS | SAVING
+    window.isPlacingProductPin = false;
+    window.currentEditingPin = null;
+    window.pinSelectorSelectedProductIds = [];
+    window.lastPlacedPinCoords = null;
+
     function startPlaceProductPinMode() {
+      window.pinAuthoringState = 'PLACING';
       window.isPlacingProductPin = true;
       if (typeof controls !== 'undefined' && controls) controls.enabled = false;
       const banner = document.getElementById('placePinBanner');
       if (banner) banner.style.display = 'flex';
       const container = document.getElementById('viewer-container');
       if (container) container.classList.add('placing-pin-cursor');
-      if (window.showToast) window.showToast('📍 Click anywhere on the booth photo to place the pin.', 'info');
     }
 
     function cancelPlaceProductPinMode() {
+      window.pinAuthoringState = 'IDLE';
       window.isPlacingProductPin = false;
       if (typeof controls !== 'undefined' && controls) controls.enabled = true;
       const banner = document.getElementById('placePinBanner');
       if (banner) banner.style.display = 'none';
       const container = document.getElementById('viewer-container');
       if (container) container.classList.remove('placing-pin-cursor');
+      window.pinFirstPendingCoords = null;
     }
 
     // Handle Escape key to cancel placement
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && window.isPlacingProductPin) {
+      if (e.key === 'Escape' && (window.isPlacingProductPin || window.pinAuthoringState === 'PLACING')) {
         cancelPlaceProductPinMode();
       }
     });
@@ -6285,6 +6279,7 @@
     }
 
     function closeOwnerProductEditor() {
+      _p3dDisposeInlineViewer();
       const modal = document.getElementById('ownerProductEditorModal');
       if (modal) modal.style.display = 'none';
       document.body.style.overflow = '';
@@ -8520,107 +8515,48 @@ async function p3dLoadTokenBalance() {
   }
 }
 
-// ── Product Media Mode Selector (UX2) ─────────────────────────
+// ── Product Media Mode Selector (UX2 / P3.9-R3) ─────────────────────────
 function setProductMediaMode(mode, isInitial = false) {
   const norm = (mode === 'THREE_D') ? 'THREE_D' : 'IMAGE';
   window._p3dState.productMediaMode = norm;
 
-  const cardImg = document.getElementById('pMediaCardIMAGE');
-  const card3d  = document.getElementById('pMediaCardTHREE_D');
-  const iconImg = document.getElementById('pMediaIconIMAGE');
-  const icon3d  = document.getElementById('pMediaIconTHREE_D');
-  const checkImg = document.getElementById('pMediaCheckIMAGE');
-  const check3d  = document.getElementById('pMediaCheckTHREE_D');
-  const switchNote = document.getElementById('pMediaSwitchNote');
-  const secViews = document.getElementById('opeAdditionalViewsSection');
-  const sec3d = document.getElementById('opeProduct3dSection');
-  const hint3d = document.getElementById('ope3dSourceHint');
-  const trigger3d = document.getElementById('ope3dHintTriggerRow');
-  const primaryTitle = document.getElementById('opePrimaryImageTitle');
-
-  const p3d = window._p3dState.product3d;
-  const hasReady3d = (p3d?.status === 'READY' || p3d?.status === 'NEEDS_REVIEW') && !!(p3d?.glbUrl);
+  const tabImg = document.getElementById('tabProductMediaImage');
+  const tab3d  = document.getElementById('tabProductMedia3D');
+  const secImg = document.getElementById('opePrimaryImageSection');
+  const sec3d  = document.getElementById('opeProduct3dSection');
 
   if (norm === 'IMAGE') {
-    if (cardImg) {
-      cardImg.style.background = 'rgba(56,189,248,0.12)';
-      cardImg.style.borderColor = '#38bdf8';
-      cardImg.setAttribute('aria-checked', 'true');
+    if (tabImg) {
+      tabImg.style.background = 'rgba(56,189,248,0.15)';
+      tabImg.style.borderColor = '#38bdf8';
+      tabImg.style.color = '#38bdf8';
     }
-    if (iconImg) iconImg.style.color = '#38bdf8';
-    if (checkImg) {
-      checkImg.style.borderColor = '#38bdf8';
-      checkImg.style.background = '#38bdf8';
-      checkImg.innerHTML = '<i class="fa-solid fa-check" style="font-size: 10px; color: #020617;"></i>';
+    if (tab3d) {
+      tab3d.style.background = 'transparent';
+      tab3d.style.borderColor = 'transparent';
+      tab3d.style.color = '#94a3b8';
     }
-
-    if (card3d) {
-      card3d.style.background = 'rgba(15,23,42,0.9)';
-      card3d.style.borderColor = 'rgba(255,255,255,0.12)';
-      card3d.setAttribute('aria-checked', 'false');
-    }
-    if (icon3d) icon3d.style.color = '#94a3b8';
-    if (check3d) {
-      check3d.style.borderColor = 'rgba(255,255,255,0.25)';
-      check3d.style.background = 'transparent';
-      check3d.innerHTML = '';
-    }
-
-    if (primaryTitle) primaryTitle.textContent = 'Product Image';
-    if (hint3d) hint3d.style.display = 'none';
-    if (trigger3d) trigger3d.style.display = 'flex';
-    if (secViews) secViews.style.display = 'none';
+    if (secImg) secImg.style.display = 'block';
     if (sec3d) sec3d.style.display = 'none';
-
-    if (!isInitial && hasReady3d && switchNote) {
-      switchNote.style.display = 'block';
-    } else if (switchNote) {
-      switchNote.style.display = 'none';
-    }
+    _p3dDisposeInlineViewer();
   } else {
-    // THREE_D Mode
-    if (cardImg) {
-      cardImg.style.background = 'rgba(15,23,42,0.9)';
-      cardImg.style.borderColor = 'rgba(255,255,255,0.12)';
-      cardImg.setAttribute('aria-checked', 'false');
+    if (tabImg) {
+      tabImg.style.background = 'transparent';
+      tabImg.style.borderColor = 'transparent';
+      tabImg.style.color = '#94a3b8';
     }
-    if (iconImg) iconImg.style.color = '#94a3b8';
-    if (checkImg) {
-      checkImg.style.borderColor = 'rgba(255,255,255,0.25)';
-      checkImg.style.background = 'transparent';
-      checkImg.innerHTML = '';
+    if (tab3d) {
+      tab3d.style.background = 'rgba(56,189,248,0.15)';
+      tab3d.style.borderColor = '#38bdf8';
+      tab3d.style.color = '#38bdf8';
     }
-
-    if (card3d) {
-      card3d.style.background = 'rgba(56,189,248,0.12)';
-      card3d.style.borderColor = '#38bdf8';
-      card3d.setAttribute('aria-checked', 'true');
-    }
-    if (icon3d) icon3d.style.color = '#38bdf8';
-    if (check3d) {
-      check3d.style.borderColor = '#38bdf8';
-      check3d.style.background = '#38bdf8';
-      check3d.innerHTML = '<i class="fa-solid fa-check" style="font-size: 10px; color: #020617;"></i>';
-    }
-
-    if (primaryTitle) primaryTitle.textContent = 'Step 1 · Primary Source Image (Required for 3D)';
-    if (hint3d) hint3d.style.display = 'block';
-    if (trigger3d) trigger3d.style.display = 'none';
-    if (secViews) secViews.style.display = 'block';
+    if (secImg) secImg.style.display = 'none';
     if (sec3d) sec3d.style.display = 'block';
-    if (switchNote) switchNote.style.display = 'none';
-  }
 
-  // Update 3D ready badge on 3D card
-  const readyBadge = document.getElementById('pMedia3dReadyBadge');
-  const stateLabel = document.getElementById('pMedia3dStateLabel');
-  if (readyBadge && stateLabel) {
-    if (hasReady3d) {
-      readyBadge.style.display = 'inline-flex';
-      stateLabel.innerHTML = '<i class="fa-solid fa-cube" style="color:#4ade80;"></i> <span style="color:#4ade80;">3D Model Active</span>';
-    } else {
-      readyBadge.style.display = 'none';
-      stateLabel.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Create 3D Model';
+    const p3d = window._p3dState.product3d;
+    const isReady = (p3d?.status === 'READY' || p3d?.status === 'NEEDS_REVIEW') && !!(p3d?.glbUrl);
+    if (isReady && p3d?.glbUrl) {
+      setTimeout(() => _p3dInitInlineViewer(p3d.glbUrl), 50);
     }
   }
 }
@@ -8630,7 +8566,6 @@ function selectP3dQuality(tier) {
   const norm = String(tier || 'HIGH').toUpperCase().trim();
   window._p3dState.currentQuality = ['STANDARD', 'HIGH', 'ULTRA'].includes(norm) ? norm : 'HIGH';
   
-  // Update card visual state
   ['STANDARD', 'HIGH', 'ULTRA'].forEach(t => {
     const card = document.getElementById('p3dCard' + t);
     if (!card) return;
@@ -8648,159 +8583,7 @@ function selectP3dQuality(tier) {
   updateP3dLiveCostSummary();
 }
 
-// ── Calculate Live Token Cost ─────────────────────────────────
-function calculateCurrentP3dCost() {
-  const quality = window._p3dState.currentQuality || 'HIGH';
-  const baseCost = window._p3dState.qualityPolicy[quality]?.tokenCost || 3;
-  const addViews = (window._p3dState.additionalSourceImages || []).length;
-  let viewMod = 0;
-  if (addViews >= 4) viewMod = window._p3dState.multiViewModifiers.MULTI_VIEW_4_PLUS || 1;
-  else if (addViews >= 1) viewMod = window._p3dState.multiViewModifiers.MULTI_VIEW_2_TO_3 || 0;
-  return baseCost + viewMod;
-}
-
-// ── Additional View Upload & Remove ───────────────────────────
-async function handleAdditionalViewUpload(input) {
-  if (!input.files || !input.files[0]) return;
-  const file = input.files[0];
-  const role = document.getElementById('opeAdditionalViewRole')?.value || 'DETAIL';
-  const slot = window._p3dState.currentSlot || document.getElementById('opeSlotIndex')?.value || 1;
-  const pid = window._p3dState.currentProjectId || activeProjectId || activeProjectData?.id;
-  if (!pid || !slot) return;
-
-  const token = p3dGetAuthToken();
-  const formData = new FormData();
-  formData.append('viewImage', file);
-  formData.append('role', role);
-
-  try {
-    const resp = await fetch('/api/projects/' + pid + '/products/' + slot + '/views', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + token, 'x-booth-edit-token': token },
-      body: formData
-    });
-    if (!resp.ok) throw new Error('Upload failed');
-    const data = await resp.json();
-    window._p3dState.additionalSourceImages = data.additionalSourceImages || [];
-    renderAdditionalViewsList();
-    updateP3dLiveCostSummary();
-    input.value = '';
-  } catch (err) {
-    alert('Error uploading additional view: ' + err.message);
-  }
-}
-
-async function removeAdditionalView(viewId) {
-  const slot = window._p3dState.currentSlot || document.getElementById('opeSlotIndex')?.value || 1;
-  const pid = window._p3dState.currentProjectId || activeProjectId || activeProjectData?.id;
-  const token = p3dGetAuthToken();
-  if (!pid || !slot) return;
-
-  try {
-    const resp = await fetch('/api/projects/' + pid + '/products/' + slot + '/views/' + viewId, {
-      method: 'DELETE',
-      headers: { 'Authorization': 'Bearer ' + token, 'x-booth-edit-token': token }
-    });
-    if (!resp.ok) throw new Error('Failed to delete view');
-    window._p3dState.additionalSourceImages = window._p3dState.additionalSourceImages.filter(v => v.id !== viewId);
-    renderAdditionalViewsList();
-    updateP3dLiveCostSummary();
-  } catch (err) {
-    alert('Error removing view: ' + err.message);
-  }
-}
-
-function renderAdditionalViewsList() {
-  const container = document.getElementById('opeAdditionalViewsList');
-  if (!container) return;
-  const views = window._p3dState.additionalSourceImages || [];
-  if (views.length === 0) {
-    container.innerHTML = '<span style="font-size:11px; color:#64748b; font-style:italic;">No additional angles uploaded yet.</span>';
-    return;
-  }
-  container.innerHTML = views.map(v => `
-    <div style="position:relative; width:52px; height:52px; border-radius:6px; overflow:hidden; border:1px solid rgba(255,255,255,0.15); background:#030712;">
-      <img src="${v.url}" style="width:100%; height:100%; object-fit:cover;" title="${v.role}">
-      <span style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.7); font-size:8px; color:#cbd5e1; text-align:center; padding:1px 0;">${v.role}</span>
-      <button type="button" onclick="removeAdditionalView('${v.id}')" style="position:absolute; top:2px; right:2px; background:rgba(239,68,68,0.85); color:#fff; border:none; border-radius:50%; width:14px; height:14px; font-size:8px; line-height:14px; text-align:center; cursor:pointer; padding:0;">✕</button>
-    </div>
-  `).join('');
-}
-
-// ── 3D Conversion Popover Controls ────────────────────────────
-function toggle3dConversionPopover(event) {
-  if (event) { event.preventDefault(); event.stopPropagation(); }
-  const pop = document.getElementById('p3dConversionPopover');
-  if (!pop) return;
-  const isHidden = pop.style.display === 'none' || !pop.style.display;
-  pop.style.display = isHidden ? 'block' : 'none';
-  if (isHidden) {
-    const handleOutsideClick = (e) => {
-      if (!pop.contains(e.target) && e.target !== event?.target) {
-        pop.style.display = 'none';
-        document.removeEventListener('click', handleOutsideClick);
-      }
-    };
-    setTimeout(() => document.addEventListener('click', handleOutsideClick), 10);
-  }
-}
-
-function close3dConversionPopover(event) {
-  if (event) { event.preventDefault(); event.stopPropagation(); }
-  const pop = document.getElementById('p3dConversionPopover');
-  if (pop) pop.style.display = 'none';
-}
-
-function updateP3dLiveCostSummary() {
-  const quality = window._p3dState.currentQuality || 'HIGH';
-  const isDev = window._p3dState.isDev || false;
-  const baseCost = window._p3dState.qualityPolicy[quality]?.tokenCost || 3;
-  const totalCost = calculateCurrentP3dCost();
-  const viewModifier = totalCost - baseCost;
-  const balance = window._p3dState.tokenBalance;
-
-  const costEl = document.getElementById('p3dLiveCostSummary');
-  const balEl = document.getElementById('p3dLiveBalanceSummary');
-  const ctaBtn = document.getElementById('p3dMainCtaBtn');
-
-  const tierNames = { STANDARD: 'Standard 3D', HIGH: 'High Quality 3D', ULTRA: 'Ultra 3D' };
-
-  if (costEl) {
-    if (isDev) {
-      const breakdown = viewModifier > 0 ? (' (Base: ' + baseCost + ' + Views: ' + viewModifier + ')') : '';
-      costEl.innerHTML = '<span style="color:#e2e8f0; font-weight:700;">' + (tierNames[quality] || quality) + '</span> · <span style="color:#a5b4fc;">' + totalCost + ' Nominal Tokens' + breakdown + '</span>';
-    } else {
-      const breakdown = viewModifier > 0 ? (' (Base ' + baseCost + ' + Views ' + viewModifier + ')') : '';
-      costEl.innerHTML = '<span style="color:#e2e8f0; font-weight:700;">Cost: ' + totalCost + ' Token' + (totalCost !== 1 ? 's' : '') + breakdown + '</span>';
-    }
-  }
-
-  if (balEl) {
-    if (isDev) {
-      balEl.innerHTML = '<span style="color:#d8b4fe; font-weight:700;"><i class="fa-solid fa-shield-halved"></i> Internal QA · Commercial Charge: 0</span>';
-    } else if (balance !== null && balance !== undefined) {
-      const remaining = balance - totalCost;
-      if (balance < totalCost) {
-        balEl.innerHTML = '<span style="color:#f87171; font-weight:700;"><i class="fa-solid fa-circle-exclamation"></i> Not enough 3D tokens.</span> <span style="color:#94a3b8;">(Available: ' + balance + ')</span>';
-        if (ctaBtn && (!window._p3dState.product3d || window._p3dState.product3d.status !== 'READY')) {
-          ctaBtn.disabled = true;
-          ctaBtn.style.opacity = '0.6';
-          ctaBtn.style.cursor = 'not-allowed';
-        }
-      } else {
-        balEl.innerHTML = '<span style="color:#94a3b8;">Available: <strong style="color:#38bdf8;">' + balance + '</strong> · After: <strong style="color:#cbd5e1;">' + remaining + '</strong></span>';
-        if (ctaBtn) {
-          ctaBtn.disabled = false;
-          ctaBtn.style.opacity = '1';
-          ctaBtn.style.cursor = 'pointer';
-        }
-      }
-    } else {
-      balEl.textContent = '';
-    }
-  }
-}
-
+// ── Render Product 3D Section Deterministic UI (P3.9-R3) ─────
 async function renderProduct3dSection(slot, product) {
   const section = document.getElementById('opeProduct3dSection');
   if (!section) return;
@@ -8810,7 +8593,6 @@ async function renderProduct3dSection(slot, product) {
   window._p3dState.product3d = product?.product3d || null;
   window._p3dState.additionalSourceImages = product?.additionalSourceImages || [];
 
-  // Load balance & policy
   const tokenData = await p3dLoadTokenBalance();
   const isDev = Boolean(
     window._p3dState.isDev || 
@@ -8821,9 +8603,14 @@ async function renderProduct3dSection(slot, product) {
   const isEntitled = tokenData?.access?.allowed || isDev || false;
   window._p3dState.isEntitled = isEntitled;
   const balance = window._p3dState.tokenBalance;
+  
   const p3d = product?.product3d;
   const status = p3d?.status || 'NOT_GENERATED';
   const hasImage = !!(product?.imageUrl || document.getElementById('opeImagePreview')?.src?.startsWith('data:') || document.getElementById('opeImagePreview')?.src?.startsWith('blob:') || document.getElementById('opeImagePreview')?.src?.startsWith('http'));
+  const isReady = (status === 'READY' || status === 'NEEDS_REVIEW') && !!(p3d?.glbUrl);
+  const isBusy = ['QUEUED', 'PROCESSING'].includes(status) || window._p3dState.isSubmitting;
+  const isValidating = status === 'VALIDATING';
+  const isFailed = status === 'FAILED';
 
   // QA banner
   const qaBanner = document.getElementById('p3dQaBanner');
@@ -8841,165 +8628,154 @@ async function renderProduct3dSection(slot, product) {
     }
   }
 
-  // Preselect saved quality tier if exists
-  const initialTier = p3d?.qualityTier || window._p3dState.currentQuality || 'HIGH';
-  selectP3dQuality(initialTier);
-  renderAdditionalViewsList();
+  // Update Media tab badges
+  const readyBadge = document.getElementById('pMedia3dReadyBadge');
+  const genBadge = document.getElementById('pMedia3dGeneratingBadge');
+  if (readyBadge) readyBadge.style.display = isReady ? 'inline-flex' : 'none';
+  if (genBadge) genBadge.style.display = (isBusy || isValidating) ? 'inline-flex' : 'none';
 
-  // Status badge
-  const badge = document.getElementById('p3dStatusBadge');
-  if (badge) {
-    badge.style.display = p3d ? 'inline-flex' : 'none';
-    const badgeColors = {
-      READY: 'background:rgba(34,197,94,0.2);color:#4ade80;border:1px solid rgba(34,197,94,0.4)',
-      NEEDS_REVIEW: 'background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.4)',
-      QUEUED: 'background:rgba(56,189,248,0.2);color:#38bdf8;border:1px solid rgba(56,189,248,0.4)',
-      PROCESSING: 'background:rgba(56,189,248,0.2);color:#38bdf8;border:1px solid rgba(56,189,248,0.4)',
-      VALIDATING: 'background:rgba(168,85,247,0.2);color:#c084fc;border:1px solid rgba(168,85,247,0.4)',
-      FAILED: 'background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.4)',
-      NOT_GENERATED: ''
-    };
-    badge.style.cssText = 'display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 800; ' + (badgeColors[status] || '');
-    badge.textContent = status.replace(/_/g,' ') + (p3d?.qualityTier ? (' · ' + p3d.qualityTier) : '');
-  }
+  // Containers
+  const holderReady = document.getElementById('p3dResultHolderContainer');
+  const holderGen   = document.getElementById('p3dGeneratingHolderContainer');
+  const holderVal   = document.getElementById('p3dValidatingHolderContainer');
+  const holderFail  = document.getElementById('p3dFailureHolderContainer');
+  const holderSetup = document.getElementById('p3dSetupSectionContainer');
 
-  // Status line & quality provenance
-  const statusLine = document.getElementById('p3dStatusLine');
-  if (statusLine) {
-    if (p3d?.generatedAt) {
-      const d = new Date(p3d.generatedAt).toLocaleDateString();
-      const kb = p3d.meshStats?.bytes ? (p3d.meshStats.bytes/1024).toFixed(0) + ' KB' : 'GLB';
-      statusLine.innerHTML = '<span style="color:#38bdf8; font-weight:700;">Current Quality: ' + (p3d.qualityTier || 'HIGH') + '</span> · Generated ' + d + ' · ' + kb;
-      statusLine.style.display = 'block';
-    } else {
-      statusLine.style.display = 'none';
+  if (isReady) {
+    if (holderReady) holderReady.style.display = 'block';
+    if (holderGen)   holderGen.style.display = 'none';
+    if (holderVal)   holderVal.style.display = 'none';
+    if (holderFail)  holderFail.style.display = 'none';
+    if (holderSetup) holderSetup.style.display = 'none';
+
+    const tierBadge = document.getElementById('p3dResultTierBadge');
+    if (tierBadge) tierBadge.textContent = (p3d.qualityTier || 'STANDARD') + ' 3D';
+
+    const provText = document.getElementById('p3dResultProvenanceText');
+    if (provText) {
+      const d = p3d.generatedAt ? new Date(p3d.generatedAt).toLocaleDateString() : 'Just now';
+      const kb = p3d.meshStats?.bytes ? (p3d.meshStats.bytes / 1024).toFixed(0) + ' KB' : 'GLB';
+      provText.textContent = 'Generated ' + d + ' · ' + kb;
     }
-  }
 
-  // Warning if no source image or error
-  const warning = document.getElementById('p3dWarningBanner');
-  if (warning) {
-    if (!hasImage && isEntitled) {
-      warning.style.display = 'block';
-      warning.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Upload a product image to generate 3D.';
-    } else if (status === 'FAILED' && p3d?.error) {
-      warning.style.display = 'block';
-      warning.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Generation error: ' + p3d.error;
-    } else {
-      warning.style.display = 'none';
+    // Mount inline WebGL preview if 3D tab is active
+    if (window._p3dState.productMediaMode === 'THREE_D' && p3d.glbUrl) {
+      setTimeout(() => _p3dInitInlineViewer(p3d.glbUrl), 50);
     }
-  }
+  } else if (isValidating) {
+    if (holderReady) holderReady.style.display = 'none';
+    if (holderGen)   holderGen.style.display = 'none';
+    if (holderVal)   holderVal.style.display = 'block';
+    if (holderFail)  holderFail.style.display = 'none';
+    if (holderSetup) holderSetup.style.display = 'none';
+    _p3dDisposeInlineViewer();
+  } else if (isBusy) {
+    if (holderReady) holderReady.style.display = 'none';
+    if (holderGen)   holderGen.style.display = 'block';
+    if (holderVal)   holderVal.style.display = 'none';
+    if (holderFail)  holderFail.style.display = 'none';
+    if (holderSetup) holderSetup.style.display = 'none';
 
-  // Primary CTA and secondary actions
-  const mainCtaBtn = document.getElementById('p3dMainCtaBtn');
-  const mainCtaText = document.getElementById('p3dMainCtaText');
-  const secondaryRow = document.getElementById('p3dSecondaryActionsRow');
-  const upgCta = document.getElementById('p3dUpgradeCta');
+    const genTier = document.getElementById('p3dGenHolderTier');
+    if (genTier) genTier.textContent = (p3d?.qualityTier || window._p3dState.currentQuality || 'HIGH') + ' Quality 3D';
 
-  if (!isEntitled) {
-    if (mainCtaBtn) mainCtaBtn.style.display = 'none';
-    if (secondaryRow) secondaryRow.style.display = 'none';
-    if (upgCta) upgCta.style.display = 'block';
-    return;
-  }
+    const genTimer = document.getElementById('p3dGenHolderTimer');
+    if (genTimer) genTimer.textContent = 'Elapsed: ' + (window._p3dState.elapsedSeconds || 0) + 's';
 
-  if (upgCta) upgCta.style.display = 'none';
+    const curAvail = document.getElementById('p3dGenCurrentAvailableRow');
+    if (curAvail) curAvail.style.display = p3d?.previousGlbUrl ? 'block' : 'none';
 
-  const isReady = (status === 'READY' || status === 'NEEDS_REVIEW') && !!(p3d?.glbUrl);
-  const isBusy  = ['QUEUED','PROCESSING','VALIDATING'].includes(status) || window._p3dState.isSubmitting;
-  const isFailed = status === 'FAILED';
+    _p3dDisposeInlineViewer();
+  } else if (isFailed) {
+    if (holderReady) holderReady.style.display = 'none';
+    if (holderGen)   holderGen.style.display = 'none';
+    if (holderVal)   holderVal.style.display = 'none';
+    if (holderFail)  holderFail.style.display = 'block';
+    if (holderSetup) holderSetup.style.display = 'none';
 
-  if (mainCtaBtn && mainCtaText) {
-    mainCtaBtn.style.display = 'flex';
-    
-    if (isReady) {
-      mainCtaBtn.disabled = false;
-      mainCtaBtn.style.opacity = '1';
-      mainCtaBtn.style.cursor = 'pointer';
-      mainCtaBtn.style.background = 'linear-gradient(135deg, #0284c7, #2563eb)';
-      mainCtaBtn.style.border = '1px solid #38bdf8';
-      mainCtaBtn.innerHTML = '<i class="fa-solid fa-rotate-3d"></i> <span>View in 3D</span>';
-      if (secondaryRow) secondaryRow.style.display = 'flex';
-    } else if (isBusy) {
-      mainCtaBtn.disabled = true;
-      mainCtaBtn.style.opacity = '0.75';
-      mainCtaBtn.style.cursor = 'wait';
-      mainCtaBtn.style.background = 'rgba(15, 23, 42, 0.9)';
-      mainCtaBtn.style.border = '1px solid rgba(56, 189, 248, 0.4)';
-      const elapsed = window._p3dState.elapsedSeconds || 0;
-      const elapsedStr = elapsed > 0 ? (' (' + elapsed + 's)') : '';
-      if (status === 'VALIDATING') {
-        mainCtaBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color:#38bdf8;"></i> <span>Validating 3D…' + elapsedStr + '</span>';
-      } else if (window._p3dState.isSubmitting) {
-        mainCtaBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color:#38bdf8;"></i> <span>Preparing…</span>';
+    const errMsg = document.getElementById('p3dFailureErrorMsg');
+    if (errMsg) errMsg.textContent = p3d?.error || 'Generation failed. Please try again.';
+
+    const viewCur = document.getElementById('p3dFailureViewCurrentBtn');
+    if (viewCur) viewCur.style.display = p3d?.previousGlbUrl ? 'inline-block' : 'none';
+
+    _p3dDisposeInlineViewer();
+  } else {
+    // NOT_GENERATED setup mode
+    if (holderReady) holderReady.style.display = 'none';
+    if (holderGen)   holderGen.style.display = 'none';
+    if (holderVal)   holderVal.style.display = 'none';
+    if (holderFail)  holderFail.style.display = 'none';
+    if (holderSetup) holderSetup.style.display = 'block';
+
+    const initialTier = p3d?.qualityTier || window._p3dState.currentQuality || 'HIGH';
+    selectP3dQuality(initialTier);
+    renderAdditionalViewsList();
+
+    const ctaBtn = document.getElementById('p3dMainCtaBtn');
+    if (ctaBtn) {
+      ctaBtn.disabled = !hasImage;
+      ctaBtn.style.opacity = hasImage ? '1' : '0.6';
+      ctaBtn.style.cursor = hasImage ? 'pointer' : 'not-allowed';
+      ctaBtn.innerHTML = '<i class="fa-solid fa-cube"></i> <span>Generate 3D Model</span>';
+    }
+
+    const warn = document.getElementById('p3dWarningBanner');
+    if (warn) {
+      if (!hasImage) {
+        warn.style.display = 'block';
+        warn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Upload a product image to generate 3D.';
       } else {
-        mainCtaBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color:#38bdf8;"></i> <span>Generating 3D…' + elapsedStr + '</span>';
+        warn.style.display = 'none';
       }
-      if (secondaryRow) secondaryRow.style.display = 'none';
-    } else if (isFailed) {
-      mainCtaBtn.disabled = !hasImage;
-      mainCtaBtn.style.opacity = hasImage ? '1' : '0.6';
-      mainCtaBtn.style.cursor = hasImage ? 'pointer' : 'not-allowed';
-      mainCtaBtn.style.background = 'linear-gradient(135deg, #b91c1c, #dc2626)';
-      mainCtaBtn.style.border = '1px solid #f87171';
-      mainCtaBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> <span>Generation Failed — Try Again</span>';
-      if (secondaryRow) secondaryRow.style.display = 'none';
-    } else {
-      // Default: Generate 3D Model
-      mainCtaBtn.disabled = !hasImage;
-      mainCtaBtn.style.opacity = hasImage ? '1' : '0.6';
-      mainCtaBtn.style.cursor = hasImage ? 'pointer' : 'not-allowed';
-      mainCtaBtn.style.background = 'linear-gradient(135deg, #0284c7, #2563eb)';
-      mainCtaBtn.style.border = '1px solid #38bdf8';
-      mainCtaBtn.innerHTML = '<i class="fa-solid fa-cube"></i> <span>Generate 3D Model</span>';
-      if (secondaryRow) secondaryRow.style.display = 'none';
     }
+
+    _p3dDisposeInlineViewer();
   }
 
   updateP3dLiveCostSummary();
 
-  if (isBusy && !window._p3dState.pollTimer) {
+  if ((isBusy || isValidating) && !window._p3dState.pollTimer) {
     p3dStartPolling(slot);
   }
 }
 
-// ── Polling & Activity Loop ───────────────────────────────────
+// ── Polling & Activity Loop (P3.9-R3) ─────────────────────────
 function p3dStartPolling(slot) {
   if (window._p3dState.pollTimer) clearInterval(window._p3dState.pollTimer);
   if (window._p3dState.elapsedTimer) clearInterval(window._p3dState.elapsedTimer);
 
-  const pbar = document.getElementById('p3dProgressBar');
-  const plabel = document.getElementById('p3dProgressLabel');
-  const ptimer = document.getElementById('p3dProgressTimer');
-  if (pbar) pbar.style.display = 'block';
-
   window._p3dState.elapsedSeconds = window._p3dState.elapsedSeconds || 0;
-  
+
   // Elapsed timer ticker every 1s
   window._p3dState.elapsedTimer = setInterval(() => {
     window._p3dState.elapsedSeconds = (window._p3dState.elapsedSeconds || 0) + 1;
-    if (ptimer) ptimer.textContent = window._p3dState.elapsedSeconds + 's';
-    
-    // Update button text with timer if busy
-    const mainCtaBtn = document.getElementById('p3dMainCtaBtn');
-    const status = window._p3dState.product3d?.status || 'PROCESSING';
-    if (mainCtaBtn && ['QUEUED','PROCESSING','VALIDATING'].includes(status)) {
-      const elapsedStr = ' (' + window._p3dState.elapsedSeconds + 's)';
-      if (status === 'VALIDATING') {
-        mainCtaBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color:#38bdf8;"></i> <span>Validating 3D…' + elapsedStr + '</span>';
-      } else {
-        mainCtaBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color:#38bdf8;"></i> <span>Generating 3D…' + elapsedStr + '</span>';
+    const genTimer = document.getElementById('p3dGenHolderTimer');
+    if (genTimer) genTimer.textContent = 'Elapsed: ' + window._p3dState.elapsedSeconds + 's';
+
+    // Safety timeout after 180s
+    if (window._p3dState.elapsedSeconds >= 180) {
+      clearInterval(window._p3dState.pollTimer);
+      clearInterval(window._p3dState.elapsedTimer);
+      window._p3dState.pollTimer = null;
+      window._p3dState.elapsedTimer = null;
+      window._p3dState.isSubmitting = false;
+      const genMsg = document.getElementById('p3dGeneratingHolderContainer');
+      if (genMsg) {
+        genMsg.innerHTML = '<div style="margin-bottom:12px;"><i class="fa-solid fa-clock" style="font-size:32px; color:#f59e0b;"></i></div><div style="font-size:14px; font-weight:800; color:#fbbf24; margin-bottom:8px;">Generation taking longer than expected</div><div style="font-size:12px; color:#94a3b8; margin-bottom:14px;">The provider may still be processing in the background.</div><button type="button" onclick="p3dManualRefreshSlot(' + slot + ')" style="padding:8px 18px; font-size:12.5px; font-weight:700; background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); border-radius:8px; cursor:pointer;"><i class="fa-solid fa-arrows-rotate"></i> Refresh Status</button>';
       }
     }
   }, 1000);
 
-  // Status poller every 3.5s
+  // Status poller every 3s
   window._p3dState.pollTimer = setInterval(async () => {
     const pid = window._p3dState.currentProjectId || activeProjectId || activeProjectData?.id;
     const token = p3dGetAuthToken();
     if (!pid || !slot) {
       clearInterval(window._p3dState.pollTimer);
       clearInterval(window._p3dState.elapsedTimer);
+      window._p3dState.pollTimer = null;
+      window._p3dState.elapsedTimer = null;
       return;
     }
 
@@ -9011,46 +8787,66 @@ function p3dStartPolling(slot) {
       const data = await resp.json();
       const status = data.job?.status || data.status;
 
-      if (plabel) {
-        if (status === 'VALIDATING') {
-          plabel.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color: #c084fc;"></i> Validating 3D GLB Structure…';
-        } else {
-          plabel.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color: #38bdf8;"></i> Generating 3D with Neural AI…';
-        }
-      }
-
       if (status === 'READY' || status === 'NEEDS_REVIEW') {
         clearInterval(window._p3dState.pollTimer);
         clearInterval(window._p3dState.elapsedTimer);
         window._p3dState.pollTimer = null;
         window._p3dState.elapsedTimer = null;
         window._p3dState.isSubmitting = false;
-        if (pbar) pbar.style.display = 'none';
+
+        const updatedProd3d = data.product3d || (data.job ? {
+          status: data.job.status,
+          qualityTier: data.job.qualityTier,
+          glbUrl: data.job.resultGlbUrl,
+          meshStats: data.job.meshStats,
+          generatedAt: data.job.completedAt
+        } : null);
 
         if (window.activeProjectData?.products) {
           const prod = window.activeProjectData.products.find(p => String(p.slotIndex) === String(slot));
-          if (prod) prod.product3d = data.product3d;
+          if (prod) prod.product3d = updatedProd3d;
         }
 
-        renderProduct3dSection(slot, { ...window.activeProjectData?.products?.find(p => String(p.slotIndex) === String(slot)), product3d: data.product3d });
-        if (window.showToast) window.showToast('✅ 3D Product model ready!', 'success');
+        const currentProd = (window.activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slot));
+        await renderProduct3dSection(slot, { ...currentProd, product3d: updatedProd3d });
+        if (window.showToast) window.showToast('✅ 3D Model Ready!', 'success');
+      } else if (status === 'VALIDATING') {
+        const currentProd = (window.activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slot));
+        renderProduct3dSection(slot, { ...currentProd, product3d: { status: 'VALIDATING' } });
       } else if (status === 'FAILED') {
         clearInterval(window._p3dState.pollTimer);
         clearInterval(window._p3dState.elapsedTimer);
         window._p3dState.pollTimer = null;
         window._p3dState.elapsedTimer = null;
         window._p3dState.isSubmitting = false;
-        if (pbar) pbar.style.display = 'none';
-        
-        const prod = window.activeProjectData?.products?.find(p => String(p.slotIndex) === String(slot));
-        if (prod) prod.product3d = { status: 'FAILED', error: data.job?.error };
-        renderProduct3dSection(slot, prod);
+
+        const currentProd = (window.activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slot));
+        const failedP3d = { status: 'FAILED', error: data.job?.error || 'Generation failed' };
+        if (currentProd) currentProd.product3d = failedP3d;
+        renderProduct3dSection(slot, { ...currentProd, product3d: failedP3d });
         if (window.showToast) window.showToast('⚠️ 3D Generation failed: ' + (data.job?.error || 'Unknown error'), 'error');
       }
     } catch (e) {
       console.warn('[P3D] Poll error:', e.message);
     }
-  }, 3500);
+  }, 3000);
+}
+
+async function p3dManualRefreshSlot(slot) {
+  const pid = window._p3dState.currentProjectId || activeProjectId || activeProjectData?.id;
+  const token = p3dGetAuthToken();
+  if (!pid || !slot) return;
+  try {
+    const resp = await fetch('/api/projects/' + pid + '/products/' + slot + '/3d/job', {
+      headers: token ? { 'Authorization': 'Bearer ' + token, 'x-booth-edit-token': token } : {}
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      const currentProd = (window.activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slot));
+      if (data.product3d && currentProd) currentProd.product3d = data.product3d;
+      renderProduct3dSection(slot, currentProd);
+    }
+  } catch(e) {}
 }
 
 // ── Primary Action Click Router ───────────────────────────────
@@ -9123,20 +8919,11 @@ function openP3dConfirmModal(action, message) {
     modal.id = 'p3dConfirmModal';
     modal.className = 'viewport-modal';
     modal.style.cssText = 'display:flex; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.75); align-items:center; justify-content:center;';
-    modal.innerHTML = `
-      <div style="background:#0f172a; border:1px solid rgba(56,189,248,0.4); border-radius:14px; padding:24px; max-width:440px; width:90%; color:#fff; box-shadow:0 20px 40px rgba(0,0,0,0.8);">
-        <h4 style="margin:0 0 12px; font-size:16px; font-weight:800; color:#38bdf8; display:flex; align-items:center; gap:8px;">
-          <i class="fa-solid fa-cube"></i> Confirm 3D Conversion
-        </h4>
-        <div id="p3dConfirmMessage" style="font-size:13.5px; color:#cbd5e1; line-height:1.5; margin-bottom:20px;"></div>
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
-          <button type="button" onclick="closeP3dConfirmModal()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#94a3b8; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer;">Cancel</button>
-          <button type="button" id="p3dConfirmOkBtn" onclick="p3dConfirmExecute()" style="background:linear-gradient(135deg,#0284c7,#2563eb); border:1px solid #38bdf8; color:#fff; padding:8px 20px; border-radius:8px; font-weight:800; cursor:pointer;">Confirm</button>
-        </div>
-      </div>`;
+    modal.innerHTML = '<div style="background:#0f172a; border:1px solid rgba(56,189,248,0.4); border-radius:14px; padding:24px; max-width:440px; width:90%; color:#fff; box-shadow:0 20px 40px rgba(0,0,0,0.8);"><h4 style="margin:0 0 12px; font-size:16px; font-weight:800; color:#38bdf8; display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-cube"></i> Confirm 3D Conversion</h4><div id="p3dConfirmMessage" style="font-size:13.5px; color:#cbd5e1; line-height:1.5; margin-bottom:20px;"></div><div style="display:flex; justify-content:flex-end; gap:10px;"><button type="button" onclick="closeP3dConfirmModal()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#94a3b8; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer;">Cancel</button><button type="button" id="p3dConfirmOkBtn" onclick="p3dConfirmExecute()" style="background:linear-gradient(135deg,#0284c7,#2563eb); border:1px solid #38bdf8; color:#fff; padding:8px 20px; border-radius:8px; font-weight:800; cursor:pointer;">Confirm</button></div></div>';
     document.body.appendChild(modal);
   }
-  (document.getElementById('p3dConfirmMessage') || document.getElementById('p3dConfirmMsg')).innerHTML = message;
+  const msgEl = document.getElementById('p3dConfirmMessage') || document.getElementById('p3dConfirmMsg');
+  if (msgEl) msgEl.innerHTML = message;
   modal.style.display = 'flex';
 }
 
@@ -9168,15 +8955,11 @@ async function _p3dExecuteGenerate(isRegen) {
   window._p3dState.isSubmitting = true;
   window._p3dState.elapsedSeconds = 0;
 
-  const mainCtaBtn = document.getElementById('p3dMainCtaBtn');
-  if (mainCtaBtn) {
-    mainCtaBtn.disabled = true;
-    mainCtaBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color:#38bdf8;"></i> <span>Preparing…</span>';
-  }
+  renderProduct3dSection(slot, { ...prod, product3d: { status: 'QUEUED', qualityTier, previousGlbUrl: prod?.product3d?.glbUrl } });
 
   const token = p3dGetAuthToken();
 
-  // If new file chosen in browser preview, upload to slot first to persist draft
+  // If new file chosen in browser preview, upload to slot first
   if (fileInput && fileInput.files && fileInput.files[0]) {
     const formData = new FormData();
     formData.append('slotIndex', slot);
@@ -9226,9 +9009,6 @@ async function _p3dExecuteGenerate(isRegen) {
     if (window.showToast) window.showToast('🚀 ' + qualityTier + ' 3D conversion started!', 'info');
     p3dStartPolling(slot);
 
-    prod = window.activeProjectData?.products?.find(p => String(p.slotIndex) === String(slot));
-    renderProduct3dSection(slot, { ...prod, product3d: { status: 'QUEUED', qualityTier } });
-
   } catch (e) {
     window._p3dState.isSubmitting = false;
     alert('Request failed: ' + e.message);
@@ -9240,7 +9020,7 @@ async function product3dRemove() {
   const slot = window._p3dState.currentSlot || document.getElementById('opeSlotIndex')?.value || 1;
   const pid = window._p3dState.currentProjectId || activeProjectId || window.activeProjectData?.id;
   if (!slot || !pid) return;
-  if (!confirm('Remove 3D model from this product? The 2D product and images will not be deleted.')) return;
+  if (!confirm('Remove 3D model from this product? The 2D product image will not be deleted.')) return;
 
   const token = p3dGetAuthToken();
   try {
@@ -9248,21 +9028,166 @@ async function product3dRemove() {
       method: 'DELETE',
       headers: { 'Authorization': 'Bearer ' + token, 'x-booth-edit-token': token }
     });
-    if (!resp.ok) throw new Error('Failed to remove 3D model');
-
-    if (window.activeProjectData?.products) {
-      const prod = window.activeProjectData.products.find(p => String(p.slotIndex) === String(slot));
-      if (prod) prod.product3d = null;
+    if (resp.ok) {
+      _p3dDisposeInlineViewer();
+      if (window.activeProjectData?.products) {
+        const prod = window.activeProjectData.products.find(p => String(p.slotIndex) === String(slot));
+        if (prod) prod.product3d = null;
+      }
+      renderProduct3dSection(slot, { ...window.activeProjectData?.products?.find(p => String(p.slotIndex) === String(slot)), product3d: null });
+      if (window.showToast) window.showToast('🗑️ 3D model removed', 'info');
     }
-
-    renderProduct3dSection(slot, window.activeProjectData?.products?.find(p => String(p.slotIndex) === String(slot)));
-    if (window.showToast) window.showToast('3D model removed', 'info');
-  } catch (e) {
-    alert('Error: ' + e.message);
+  } catch(e) {
+    alert('Failed to remove 3D model: ' + e.message);
   }
 }
 
-// ── 3D Viewer Logic ──────────────────────────────────────────
+// ── INLINE THREE.JS PREVIEW ENGINE (P3.9-R3) ──────────────────
+window._p3dInlineState = {
+  renderer: null,
+  scene: null,
+  camera: null,
+  controls: null,
+  animationId: null,
+  currentGlbUrl: null
+};
+
+function _p3dInitInlineViewer(glbUrl) {
+  if (!glbUrl) return;
+  const canvas = document.getElementById('p3dInlineCanvas');
+  const container = document.getElementById('p3dInlineCanvasContainer');
+  if (!canvas || !container) return;
+
+  if (window._p3dInlineState.currentGlbUrl === glbUrl && window._p3dInlineState.renderer) {
+    return; // Already rendering this model
+  }
+
+  _p3dDisposeInlineViewer();
+
+  const THREE = window.THREE;
+  if (!THREE || !THREE.GLTFLoader || !THREE.OrbitControls) {
+    _p3dLoadThreeJs(() => _p3dInitInlineViewer(glbUrl));
+    return;
+  }
+
+  const W = container.clientWidth || 360;
+  const H = container.clientHeight || 260;
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 1000);
+  camera.position.set(0, 0.5, 3);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 1.4));
+  const dir1 = new THREE.DirectionalLight(0xffffff, 1.6);
+  dir1.position.set(2, 4, 3);
+  scene.add(dir1);
+  const dir2 = new THREE.DirectionalLight(0x818cf8, 0.8);
+  dir2.position.set(-2, -2, -2);
+  scene.add(dir2);
+
+  let controls = null;
+  if (THREE.OrbitControls) {
+    controls = new THREE.OrbitControls(camera, canvas);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 1.2;
+    controls.addEventListener('start', () => { controls.autoRotate = false; });
+  }
+
+  window._p3dInlineState = {
+    renderer,
+    scene,
+    camera,
+    controls,
+    animationId: null,
+    currentGlbUrl: glbUrl
+  };
+
+  const loadEl = document.getElementById('p3dInlineLoading');
+  if (loadEl) loadEl.style.display = 'flex';
+
+  const loader = new THREE.GLTFLoader();
+  loader.load(glbUrl, (gltf) => {
+    if (!window._p3dInlineState.scene) return;
+    const model = gltf.scene;
+    const box = new THREE.Box3().setFromObject(model);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const scale = 1.5 / (maxDim || 1);
+    model.scale.setScalar(scale);
+    model.position.sub(center.multiplyScalar(scale));
+    scene.add(model);
+    camera.position.set(0, 0, maxDim * scale * 2.5);
+    if (controls) controls.target.set(0, 0, 0);
+    if (loadEl) loadEl.style.display = 'none';
+
+    _p3dStartInlineAnimationLoop();
+  }, undefined, (err) => {
+    console.error('[P3D-Inline] Load error:', err);
+    if (loadEl) loadEl.style.display = 'none';
+  });
+}
+
+function _p3dStartInlineAnimationLoop() {
+  _p3dStopInlineAnimationLoop();
+  const s = window._p3dInlineState;
+  function loop() {
+    s.animationId = requestAnimationFrame(loop);
+    if (s.controls) s.controls.update();
+    if (s.renderer && s.scene && s.camera) {
+      s.renderer.render(s.scene, s.camera);
+    }
+  }
+  loop();
+}
+
+function _p3dStopInlineAnimationLoop() {
+  if (window._p3dInlineState?.animationId) {
+    cancelAnimationFrame(window._p3dInlineState.animationId);
+    window._p3dInlineState.animationId = null;
+  }
+}
+
+function _p3dDisposeInlineViewer() {
+  _p3dStopInlineAnimationLoop();
+  const s = window._p3dInlineState;
+  if (s?.controls) {
+    if (typeof s.controls.dispose === 'function') s.controls.dispose();
+    s.controls = null;
+  }
+  if (s?.scene) {
+    s.scene.traverse(obj => {
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) {
+        if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+        else obj.material.dispose();
+      }
+    });
+    s.scene = null;
+  }
+  if (s?.renderer) {
+    s.renderer.dispose();
+    s.renderer = null;
+  }
+  if (s) {
+    s.camera = null;
+    s.currentGlbUrl = null;
+  }
+}
+
+function product3dInlineResetView() {
+  const s = window._p3dInlineState;
+  if (s?.controls) s.controls.reset();
+}
+
+// ── 3D Modal Viewer Logic ─────────────────────────────────────
 function product3dOpenViewer() {
   const p3d = window._p3dState.product3d;
   if (!p3d?.glbUrl) return;
@@ -9288,174 +9213,6 @@ function _p3dOpenViewerWithUrl(glbUrl, title) {
 
   _p3dDisposeViewer();
   _p3dInitViewer(glbUrl);
-}
-
-function _p3dInitViewer(glbUrl) {
-  const canvas = document.getElementById('p3dViewerCanvas');
-  if (!canvas) return;
-  const container = canvas.parentElement;
-  const W = container.clientWidth || 800;
-  const H = container.clientHeight || 500;
-
-  const THREE = window.THREE;
-  if (!THREE) {
-    _p3dLoadThreeJs(() => _p3dInitViewer(glbUrl));
-    return;
-  }
-
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setSize(W, H);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.outputEncoding = THREE.sRGBEncoding;
-
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 1000);
-  camera.position.set(0, 0.5, 3);
-
-  scene.add(new THREE.AmbientLight(0xffffff, 1.4));
-  const dir1 = new THREE.DirectionalLight(0xffffff, 1.6);
-  dir1.position.set(2, 4, 3);
-  scene.add(dir1);
-  const dir2 = new THREE.DirectionalLight(0x818cf8, 0.8);
-  dir2.position.set(-2, -2, -2);
-  scene.add(dir2);
-
-  let controls = null;
-  if (THREE.OrbitControls) {
-    controls = new THREE.OrbitControls(camera, canvas);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 1.5;
-
-    // AUTOROTATE_PAUSES_ON_INTERACTION = true
-    controls.addEventListener('start', () => {
-      controls.autoRotate = false;
-    });
-  }
-
-  window._p3dState.viewerRenderer = renderer;
-  window._p3dState.viewerScene    = scene;
-  window._p3dState.viewerCamera   = camera;
-  window._p3dState.viewerControls = controls;
-  window._p3dState.viewerCurrentGlbUrl = glbUrl;
-
-  _p3dDoLoad(glbUrl, scene, camera, controls, renderer);
-}
-
-function _p3dLoadThreeJs(callback) {
-  if (window.THREE && window.THREE.GLTFLoader && window.THREE.OrbitControls) {
-    if (callback) callback();
-    return;
-  }
-  function loadOrbit() {
-    if (window.THREE && window.THREE.OrbitControls) {
-      if (callback) callback();
-    } else {
-      const s3 = document.createElement('script');
-      s3.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js';
-      s3.onload = () => { if (callback) callback(); };
-      document.head.appendChild(s3);
-    }
-  }
-  function loadGltf() {
-    if (window.THREE && window.THREE.GLTFLoader) {
-      loadOrbit();
-    } else {
-      const s2 = document.createElement('script');
-      s2.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js';
-      s2.onload = loadOrbit;
-      document.head.appendChild(s2);
-    }
-  }
-  if (!window.THREE) {
-    const s1 = document.createElement('script');
-    s1.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
-    s1.onload = loadGltf;
-    document.head.appendChild(s1);
-  } else {
-    loadGltf();
-  }
-}
-
-function _p3dDoLoad(glbUrl, scene, camera, controls, renderer) {
-  const THREE = window.THREE;
-  if (!THREE?.GLTFLoader) {
-    const errEl = document.getElementById('p3dViewerError');
-    if (errEl) errEl.style.display = 'flex';
-    const loadEl = document.getElementById('p3dViewerLoading');
-    if (loadEl) loadEl.style.display = 'none';
-    return;
-  }
-  const loader = new THREE.GLTFLoader();
-  loader.load(glbUrl, (gltf) => {
-    const model = gltf.scene;
-    const box = new THREE.Box3().setFromObject(model);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 1.5 / (maxDim || 1);
-    model.scale.setScalar(scale);
-    model.position.sub(center.multiplyScalar(scale));
-    scene.add(model);
-    camera.position.set(0, 0, maxDim * scale * 2.5);
-    if (controls) controls.target.set(0, 0, 0);
-    const loadEl = document.getElementById('p3dViewerLoading');
-    if (loadEl) loadEl.style.display = 'none';
-    _p3dStartAnimationLoop();
-  }, undefined, (err) => {
-    console.error('[P3D] GLB load error:', err);
-    const errEl = document.getElementById('p3dViewerError');
-    if (errEl) errEl.style.display = 'flex';
-    const loadEl = document.getElementById('p3dViewerLoading');
-    if (loadEl) loadEl.style.display = 'none';
-  });
-}
-
-function _p3dStartAnimationLoop() {
-  _p3dStopAnimationLoop();
-  const s = window._p3dState;
-  function loop() {
-    s.viewerAnimationId = requestAnimationFrame(loop);
-    if (s.viewerControls) s.viewerControls.update();
-    if (s.viewerRenderer && s.viewerScene && s.viewerCamera) {
-      s.viewerRenderer.render(s.viewerScene, s.viewerCamera);
-    }
-  }
-  loop();
-}
-
-function _p3dStopAnimationLoop() {
-  if (window._p3dState.viewerAnimationId) {
-    cancelAnimationFrame(window._p3dState.viewerAnimationId);
-    window._p3dState.viewerAnimationId = null;
-  }
-}
-
-// WEBGL_RESOURCE_DISPOSAL = PASS
-function _p3dDisposeViewer() {
-  _p3dStopAnimationLoop();
-  const s = window._p3dState;
-  if (s.viewerControls) {
-    if (typeof s.viewerControls.dispose === 'function') s.viewerControls.dispose();
-    s.viewerControls = null;
-  }
-  if (s.viewerScene) {
-    s.viewerScene.traverse(obj => {
-      if (obj.geometry) obj.geometry.dispose();
-      if (obj.material) {
-        if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
-        else obj.material.dispose();
-      }
-    });
-    s.viewerScene = null;
-  }
-  if (s.viewerRenderer) {
-    s.viewerRenderer.dispose();
-    s.viewerRenderer = null;
-  }
-  s.viewerCamera = null;
-  s.viewerCurrentGlbUrl = null;
 }
 
 function closeProduct3dViewer() {
@@ -9498,10 +9255,37 @@ window.openOwnerProductEditor = function(slot) {
   if (typeof _origOpenOwnerProductEditor === 'function') {
     _origOpenOwnerProductEditor(slot);
   }
+  const slotNum = parseInt(slot, 10) || 1;
+  const pid = window.activeProjectData?.id || activeProjectId || null;
+  const token = p3dGetAuthToken();
+
   setTimeout(async () => {
-    const prod = (window.activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slot));
+    let prod = (window.activeProjectData?.products || []).find(p => String(p.slotIndex) === String(slotNum));
     window._p3dState.currentProductName = prod?.name || 'Product';
-    await renderProduct3dSection(slot, prod);
+
+    // Synchronize latest job state from server
+    if (pid && slotNum) {
+      try {
+        const resp = await fetch('/api/projects/' + pid + '/products/' + slotNum + '/3d/job', {
+          headers: token ? { 'Authorization': 'Bearer ' + token, 'x-booth-edit-token': token } : {}
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.product3d) {
+            if (prod) prod.product3d = data.product3d;
+          }
+          if (data.job && ['QUEUED', 'PROCESSING', 'VALIDATING'].includes(data.job.status)) {
+            p3dStartPolling(slotNum);
+          }
+        }
+      } catch (err) {
+        console.warn('[P3D] Initial job sync error:', err.message);
+      }
+    }
+
+    await renderProduct3dSection(slotNum, prod);
+    const initialMode = (prod?.product3d?.status === 'READY' || prod?.productMediaMode === 'THREE_D') ? 'THREE_D' : 'IMAGE';
+    setProductMediaMode(initialMode, true);
   }, 80);
 };
 
