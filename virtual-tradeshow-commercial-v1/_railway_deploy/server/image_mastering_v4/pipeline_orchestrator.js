@@ -63,7 +63,9 @@ class PipelineOrchestrator {
       logStage('PERSON_DETECTION', { total: personAnalysis.peopleDetectedTotal, safe: personAnalysis.safeToRemoveCount, manual: personAnalysis.manualReviewCount });
 
       // ── STAGE 4: SAFE BYSTANDER REMOVAL ──
-      const humanRemovalResult = SafeBystanderRemover.executeSafeRemoval(sourcePath, personAnalysis, lockData);
+      const outputDir = options.outputDir || path.dirname(sourcePath);
+      const baseName = options.baseName || `booth_master_v4_${jobId}`;
+      const humanRemovalResult = SafeBystanderRemover.executeSafeRemoval(sourcePath, personAnalysis, lockData, outputDir, baseName);
       logStage('SAFE_HUMAN_REMOVAL', { removed: humanRemovalResult.removedCount, pass: humanRemovalResult.humanRemovalQaPass });
 
       // ── STAGE 5: TIGHT 16:9 CROPPING (85-90% OCCUPANCY) ──

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <script>
-  window.__3DZ_BUILD_INFO__ = { gitCommit: "ca0ba41", releaseId: "C11.16-P3.15-R4" };
+  window.__3DZ_BUILD_INFO__ = { gitCommit: "7f92368", releaseId: "C11.16-P3.15-R4" };
   fetch('/api/build-info').then(function(r){return r.json();}).then(function(d){if(d&&d.gitCommit)window.__3DZ_BUILD_INFO__.gitCommit=d.gitCommit;}).catch(function(){});
   </script>
 
@@ -4683,6 +4683,8 @@
       if (btnSideEditPin) btnSideEditPin.style.display = isOwner ? 'inline-flex' : 'none';
 
       const btnEditBooth = document.getElementById('btnBannerEditBooth');
+      const btnRemovePeople = document.getElementById('btnBannerRemovePeople');
+      if (btnRemovePeople) btnRemovePeople.style.display = isOwner ? 'inline-flex' : 'none';
       const btnDash = document.getElementById('btnBannerDashboard');
       const btnPub = document.getElementById('btnBannerPublish');
       if (btnEditBooth) btnEditBooth.style.display = isOwner ? 'inline-flex' : 'none';
@@ -7891,6 +7893,68 @@
       }
     }
 
+    
+    async function triggerQuickPersonRemoval() {
+      const pid = activeProjectId || window.activeProjectData?.id;
+      if (!pid) return;
+      if (!confirm('부스 사진 속 지나가는 사람/행인을 AI로 감지하여 지우시겠습니까?\n(주변 바닥 및 벽면 배경 텍스처로 자동 복원됩니다)')) {
+        return;
+      }
+
+      const btn = document.getElementById('btnBannerRemovePeople');
+      const originalText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 사람 지우는 중...';
+      }
+
+      try {
+        const token = p3dGetAuthToken();
+        const res = await fetch(`/api/projects/${pid}/booth-3d/remove-people`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+            'x-booth-edit-token': token
+          },
+          body: JSON.stringify({ applyToActiveBooth: true })
+        });
+
+        const data = await res.json();
+        if (data.success && data.cleanedUrl) {
+          if (window.activeProjectData) {
+            window.activeProjectData.photoUrl = data.cleanedUrl;
+            if (window.activeProjectData.sourceAsset) {
+              window.activeProjectData.sourceAsset.previewUrl = data.cleanedUrl;
+              window.activeProjectData.sourceAsset.highResUrl = data.cleanedUrl;
+              window.activeProjectData.sourceAsset.peopleRemoved = true;
+            }
+            if (window.activeProjectData.booth3d) {
+              window.activeProjectData.booth3d.previewUrl = data.cleanedUrl;
+              window.activeProjectData.booth3d.peopleRemoved = true;
+            }
+          }
+
+          switchActiveBoothTexture(data.cleanedUrl, window.activeProjectData);
+          if (window.showToast) {
+            window.showToast(`🎉 인물 ${data.removedCount}명을 감지하여 깨끗하게 제거했습니다!`, 'success');
+          } else {
+            alert(`🎉 인물 ${data.removedCount}명을 감지하여 깨끗하게 제거했습니다!`);
+          }
+        } else {
+          alert('사람 제거 실패: ' + (data.error || 'Server error'));
+        }
+      } catch (err) {
+        console.error('Quick person removal error:', err);
+        alert('사람 제거 중 오류가 발생했습니다: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+      }
+    }
+  
     function switchActiveBoothTexture(newPhotoUrl, projectData) {
       if (photoMaterial && textureLoader && newPhotoUrl) {
         const cleanUrl = newPhotoUrl.includes('?') ? newPhotoUrl : (newPhotoUrl + '?v=' + Date.now());
@@ -12220,6 +12284,26 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
             </div>
           </div>
         </div>
+
+        <!-- AI Person Removal Toggle Section -->
+          <div style="background: rgba(56,189,248,0.06); border: 1px solid rgba(56,189,248,0.25); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(56,189,248,0.15); display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 15px;">
+                <i class="fa-solid fa-user-slash"></i>
+              </div>
+              <div>
+                <div style="font-size: 13px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 6px;">
+                  AI 사람 및 행인 제거 (Bystander Inpainting)
+                  <span style="font-size: 10px; font-weight: 800; background: #10b981; color: #fff; padding: 1px 6px; border-radius: 4px;">ACTIVE</span>
+                </div>
+                <div style="font-size: 11px; color: #94a3b8;">부스 사진 속 지나가는 관람객과 행인, 그림자를 AI로 감지하여 바닥·벽 배경으로 지웁니다.</div>
+              </div>
+            </div>
+            <label style="position: relative; display: inline-flex; align-items: center; cursor: pointer; gap: 6px;">
+              <input type="checkbox" id="chkBoothRemovePeople" checked style="width: 18px; height: 18px; accent-color: #38bdf8; cursor: pointer;">
+              <span style="font-size: 12px; font-weight: 700; color: #38bdf8;">Enable</span>
+            </label>
+          </div>
 
         <!-- Step 3: Token Accounting & Safe Regeneration Execution -->
         <div id="boothRegenExecutionSection" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; margin-bottom: 14px;">

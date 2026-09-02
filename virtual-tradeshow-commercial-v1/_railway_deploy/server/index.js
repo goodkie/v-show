@@ -7085,6 +7085,75 @@ app.delete('/api/projects/:id/booth-3d/sources/:sourceId', async (req, res) => {
   }
 });
 
+// POST /api/projects/:id/booth-3d/remove-people (Dedicated AI Person & Bystander Removal)
+app.post('/api/projects/:id/booth-3d/remove-people', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const token = extractAuthToken(req);
+    const project = db.getProject(projectId);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
+
+    const SafeBystanderRemover = require('./image_mastering_v4/person_remover');
+    const CommercialContentLock = require('./image_mastering_v4/commercial_lock');
+    const SourceForensics = require('./image_mastering_v4/forensics');
+
+    // 1. Resolve target image path
+    let targetUrl = req.body?.sourceUrl || project.sourceAsset?.previewUrl || project.photoUrl;
+    let sourcePath = null;
+    if (targetUrl && targetUrl.startsWith('/uploads/')) {
+      sourcePath = path.join(UPLOADS_DIR, path.basename(targetUrl.split('?')[0]));
+    }
+    if (!sourcePath || !fs.existsSync(sourcePath)) {
+      const existing = fs.readdirSync(UPLOADS_DIR).filter(f => f.startsWith('booth-src-') || f.startsWith('capture-'));
+      if (existing.length > 0) {
+        sourcePath = path.join(UPLOADS_DIR, existing[existing.length - 1]);
+        targetUrl = `/uploads/${existing[existing.length - 1]}`;
+      } else {
+        sourcePath = path.join(__dirname, '..', 'client', 'assets', 'demo', 'dna-showcase', 'pano360', 'node0_360_panorama_8k.jpg');
+        targetUrl = '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg';
+      }
+    }
+
+    // 2. Perform AI Person Detection & Classification
+    const sourceInfo = SourceForensics.auditSource(sourcePath, {});
+    const lockData = CommercialContentLock.analyzeAndLock(sourceInfo, {});
+    const personAnalysis = SafeBystanderRemover.detectAndClassifyPeople(sourceInfo, lockData);
+
+    // 3. Execute Seamless Inpainting & Background Reconstruction
+    const baseName = `booth_clean_no_people_${projectId}_${Date.now()}`;
+    const removalResult = SafeBystanderRemover.executeSafeRemoval(sourcePath, personAnalysis, lockData, UPLOADS_DIR, baseName);
+
+    // 4. Optionally update project active booth immediately
+    let activeBoothUpdated = false;
+    if (req.body?.applyToActiveBooth !== false && removalResult.cleanedUrl) {
+      await db.setBooth3dActiveAsset(projectId, {
+        previewUrl: removalResult.cleanedUrl,
+        highResUrl: removalResult.cleanedUrl,
+        peopleRemoved: true,
+        peopleRemovedCount: removalResult.removedCount,
+        resolution: '8K UHD (Inpainted Clean)',
+        qualityTier: project.booth3d?.qualityTier || 'BOOTH_HIGH'
+      });
+      activeBoothUpdated = true;
+    }
+
+    res.json({
+      success: true,
+      removedCount: removalResult.removedCount,
+      originalUrl: targetUrl,
+      cleanedUrl: removalResult.cleanedUrl || targetUrl,
+      detections: personAnalysis.candidates,
+      inpaintedRegions: removalResult.inpaintedRegions,
+      activeBoothUpdated,
+      message: `AI successfully detected and removed ${removalResult.removedCount} bystander(s) with seamless background inpainting.`
+    });
+  } catch (err) {
+    console.error('[Remove People Error]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/projects/:id/booth-3d/regenerate
 app.post('/api/projects/:id/booth-3d/regenerate', async (req, res) => {
   try {
