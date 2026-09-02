@@ -6429,6 +6429,14 @@
       });
     }
 
+    window.openProductPinSelectorModal = openProductPinSelectorModal;
+    window.closeProductPinSelectorModal = closeProductPinSelectorModal;
+    window.togglePinProductSelection = togglePinProductSelection;
+    window.saveProductPinSelection = saveProductPinSelection;
+    window.openOwnerProductEditor = openOwnerProductEditor;
+    window.closeOwnerProductEditor = closeOwnerProductEditor;
+    window.startNewProductForPin = startNewProductForPin;
+
     // ═══════════════════════════════════════════════════════════
     // CANONICAL PRODUCT PIN CONTENT EDITOR ACTION ROUTER (C11.16-P3.13-R1)
     // ═══════════════════════════════════════════════════════════
@@ -6533,6 +6541,221 @@
       closePinFirstChoiceModal();
       closePinChooserModal();
       openOwnerProductEditor(null, { pinId: targetId });
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // CANONICAL PRODUCT PIN SELECTOR MODAL (C11.16-P3.13-R2)
+    // ═══════════════════════════════════════════════════════════
+    function openProductPinSelectorModal(pinDataOrCoords) {
+      if (typeof cancelPlaceProductPinMode === 'function') cancelPlaceProductPinMode();
+      const modal = document.getElementById('productPinSelectorModal');
+      if (!modal) return;
+
+      const isEdit = !!(pinDataOrCoords && (pinDataOrCoords.id || pinDataOrCoords.pinId));
+      window.currentEditingPin = isEdit ? pinDataOrCoords : null;
+      window.lastPlacedPinCoords = isEdit ? { u: pinDataOrCoords.u, v: pinDataOrCoords.v, yaw: pinDataOrCoords.yaw, pitch: pinDataOrCoords.pitch } : (pinDataOrCoords || { u: 0.5, v: 0.5 });
+
+      const titleEl = document.getElementById('pinSelectorModalTitle');
+      if (titleEl) titleEl.textContent = isEdit ? 'Select Products for Pin' : 'Add Product Pin';
+
+      const delBtn = document.getElementById('btnDeletePinSelector');
+      if (delBtn) delBtn.style.display = isEdit ? 'inline-block' : 'none';
+
+      // Pre-select products
+      if (isEdit) {
+        if (pinDataOrCoords.pinType === 'PRODUCT_GROUP_PIN' && Array.isArray(pinDataOrCoords.productIds)) {
+          window.pinSelectorSelectedProductIds = [...pinDataOrCoords.productIds];
+        } else if (Array.isArray(pinDataOrCoords.productIds) && pinDataOrCoords.productIds.length > 0) {
+          window.pinSelectorSelectedProductIds = [...pinDataOrCoords.productIds];
+        } else if (pinDataOrCoords.targetId || pinDataOrCoords.productId) {
+          window.pinSelectorSelectedProductIds = [pinDataOrCoords.targetId || pinDataOrCoords.productId];
+        } else {
+          window.pinSelectorSelectedProductIds = [];
+        }
+        const gTitle = document.getElementById('pinGroupTitleInput');
+        if (gTitle) gTitle.value = pinDataOrCoords.title || pinDataOrCoords.label || 'Featured Products';
+      } else {
+        window.pinSelectorSelectedProductIds = [];
+        const gTitle = document.getElementById('pinGroupTitleInput');
+        if (gTitle) gTitle.value = 'Featured Products';
+      }
+
+      const searchInput = document.getElementById('pinProductSearchInput');
+      if (searchInput) searchInput.value = '';
+
+      renderPinProductSelectList();
+      updatePinSelectionSummary();
+      modal.style.display = 'flex';
+    }
+
+    function closeProductPinSelectorModal() {
+      const modal = document.getElementById('productPinSelectorModal');
+      if (modal) modal.style.display = 'none';
+
+      if (window.originatingContentPinId || window.currentEditingContentPin) {
+        const pinId = window.originatingContentPinId || window.currentEditingContentPin?.id;
+        openProductPinContentEditorModal(pinId);
+      }
+    }
+
+    function setPinGroupTitlePreset(presetText) {
+      const input = document.getElementById('pinGroupTitleInput');
+      if (input) input.value = presetText;
+    }
+
+    function filterPinProductList(query) {
+      renderPinProductSelectList(query);
+    }
+
+    function renderPinProductSelectList(query = '') {
+      const listContainer = document.getElementById('pinProductSelectList');
+      if (!listContainer) return;
+
+      const allProducts = window.activeProjectData?.products || [];
+      const q = (query || '').toLowerCase().trim();
+
+      const filtered = allProducts.filter(p => {
+        if (!q) return true;
+        const name = (p.name || '').toLowerCase();
+        const cat = (p.category || '').toLowerCase();
+        const sku = (p.sku || '').toLowerCase();
+        return name.includes(q) || cat.includes(q) || sku.includes(q);
+      });
+
+      if (filtered.length === 0) {
+        listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #64748b; font-size: 12px;">No matching products found in catalog.</div>';
+        return;
+      }
+
+      listContainer.innerHTML = '';
+      filtered.forEach((prod, idx) => {
+        const isSelected = window.pinSelectorSelectedProductIds.some(id => String(id) === String(prod.id) || String(id) === String(prod.slotIndex));
+        const itemRow = document.createElement('div');
+        itemRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; background: ' + (isSelected ? 'rgba(56, 189, 248, 0.12)' : 'rgba(15, 23, 42, 0.6)') + '; border: 1px solid ' + (isSelected ? '#38bdf8' : 'rgba(255, 255, 255, 0.08)') + '; border-radius: 8px; padding: 8px 12px; cursor: pointer; transition: all 0.2s;';
+        
+        const prodId = prod.id || String(prod.slotIndex);
+        itemRow.onclick = (e) => {
+          if (e.target.tagName !== 'INPUT') {
+            togglePinProductSelection(prodId);
+          }
+        };
+
+        itemRow.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+            <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="togglePinProductSelection('${prodId}')" style="cursor: pointer; accent-color: #38bdf8;">
+            <img src="${prod.imageUrl || '/assets/product-placeholder.jpg'}" alt="${prod.name}" style="width: 32px; height: 32px; border-radius: 6px; object-fit: contain; object-position: center; background: #000; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="min-width: 0;">
+              <div style="font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${prod.name}</div>
+              <div style="font-size: 10.5px; color: #94a3b8;">${prod.category || 'Product'} • Slot ${prod.slotIndex || idx+1}</div>
+            </div>
+          </div>
+          ${prod.product3d?.status === 'READY' ? '<span style="font-size: 9px; font-weight: 800; background: rgba(56,189,248,0.2); color: #38bdf8; padding: 2px 6px; border-radius: 4px;">3D</span>' : ''}
+        `;
+
+        listContainer.appendChild(itemRow);
+      });
+    }
+
+    function togglePinProductSelection(productId) {
+      const strId = String(productId);
+      const existingIdx = window.pinSelectorSelectedProductIds.findIndex(id => String(id) === strId);
+
+      if (existingIdx >= 0) {
+        window.pinSelectorSelectedProductIds.splice(existingIdx, 1);
+      } else {
+        if (window.pinSelectorSelectedProductIds.length >= 20) {
+          alert('Maximum 20 products can be attached to one pin.');
+          return;
+        }
+        window.pinSelectorSelectedProductIds.push(strId);
+      }
+
+      renderPinProductSelectList(document.getElementById('pinProductSearchInput')?.value || '');
+      updatePinSelectionSummary();
+    }
+
+    function updatePinSelectionSummary() {
+      const count = window.pinSelectorSelectedProductIds.length;
+      const countText = document.getElementById('pinSelectedCountText');
+      const badge = document.getElementById('pinTypeBadge');
+      const groupSection = document.getElementById('pinGroupTitleSection');
+
+      if (countText) countText.textContent = count === 1 ? '1 Product Selected' : count + ' Products Selected';
+      if (badge) {
+        if (count === 0) {
+          badge.textContent = 'BLANK PIN';
+          badge.style.background = '#64748b';
+        } else if (count === 1) {
+          badge.textContent = 'PRODUCT PIN';
+          badge.style.background = '#0284c7';
+        } else {
+          badge.textContent = 'COLLECTION PIN (' + count + ')';
+          badge.style.background = '#059669';
+        }
+      }
+
+      if (groupSection) {
+        groupSection.style.display = count >= 2 ? 'block' : 'none';
+      }
+    }
+
+    async function saveProductPinSelection() {
+      if (window.pinSelectorSelectedProductIds.length === 0) {
+        alert('Please select at least one product for this pin.');
+        return;
+      }
+
+      const pid = activeProjectId || window.activeProjectData?.id;
+      const token = p3dGetAuthToken();
+      const isEdit = !!(window.currentEditingPin && (window.currentEditingPin.id || window.currentEditingPin.pinId));
+      const pinId = isEdit ? (window.currentEditingPin.id || window.currentEditingPin.pinId) : (window.currentEditingPinId || 'pin-' + Date.now().toString(36));
+
+      const isGroup = window.pinSelectorSelectedProductIds.length >= 2;
+      const pinType = isGroup ? 'PRODUCT_GROUP_PIN' : 'PRODUCT_PIN';
+      const title = isGroup ? (document.getElementById('pinGroupTitleInput')?.value || 'Featured Products').trim() : '';
+      const targetId = isGroup ? null : window.pinSelectorSelectedProductIds[0];
+
+      const coords = window.lastPlacedPinCoords || { u: 0.5, v: 0.5, yaw: 0, pitch: 0 };
+
+      const pin = (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId || p.pinId === pinId) || {
+        id: pinId,
+        pinId: pinId,
+        u: coords.u,
+        v: coords.v
+      };
+
+      pin.pinType = pinType;
+      pin.targetId = targetId;
+      pin.productId = targetId;
+      pin.productIds = [...window.pinSelectorSelectedProductIds];
+      if (isGroup) {
+        pin.title = title;
+        pin.label = title;
+      }
+      pin.isDraft = false;
+      pin.status = 'ACTIVE';
+
+      if (!window.activeProjectData.pinpoints) window.activeProjectData.pinpoints = [];
+      const pIdx = window.activeProjectData.pinpoints.findIndex(p => p.id === pinId || p.pinId === pinId);
+      if (pIdx >= 0) window.activeProjectData.pinpoints[pIdx] = pin;
+      else window.activeProjectData.pinpoints.push(pin);
+
+      try {
+        await fetch(`/api/projects/${pid}/pins/${pinId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+            'x-booth-edit-token': token
+          },
+          body: JSON.stringify(pin)
+        });
+      } catch(e) {}
+
+      setupStudioProducts(window.activeProjectData);
+      closeProductPinSelectorModal();
+
+      if (window.showToast) window.showToast('✅ Product(s) attached to Pin!', 'success');
     }
 
     function openPinChooserModalFromContentEditor(targetPinId) {
