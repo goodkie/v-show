@@ -7085,6 +7085,52 @@ app.delete('/api/projects/:id/booth-3d/sources/:sourceId', async (req, res) => {
   }
 });
 
+// POST /api/projects/:id/booth-3d/save-cleaned-booth (Save Inpainted Cleaned Booth Image)
+app.post('/api/projects/:id/booth-3d/save-cleaned-booth', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const token = extractAuthToken(req);
+    const project = db.getProject(projectId);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
+
+    const dataUrl = req.body?.dataUrl;
+    if (!dataUrl || !dataUrl.startsWith('data:image/')) {
+      return res.status(400).json({ error: 'Invalid image dataUrl provided' });
+    }
+
+    const matches = dataUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+    if (!matches) return res.status(400).json({ error: 'Malformed base64 dataUrl' });
+
+    const ext = matches[1].replace('jpeg', 'jpg');
+    const buffer = Buffer.from(matches[2], 'base64');
+    const filename = `booth_clean_inpainted_${projectId}_${Date.now()}.${ext}`;
+    const filePath = path.join(UPLOADS_DIR, filename);
+
+    fs.writeFileSync(filePath, buffer);
+    const cleanedUrl = `/uploads/${filename}`;
+
+    await db.setBooth3dActiveAsset(projectId, {
+      previewUrl: cleanedUrl,
+      highResUrl: cleanedUrl,
+      peopleRemoved: true,
+      peopleRemovedCount: req.body?.removedCount || 1,
+      resolution: '8K UHD (AI Inpainted Clean)',
+      qualityTier: project.booth3d?.qualityTier || 'BOOTH_HIGH'
+    });
+
+    res.json({
+      success: true,
+      cleanedUrl,
+      peopleRemoved: true,
+      message: 'Cleaned booth image successfully saved and bound to active 3D booth.'
+    });
+  } catch (err) {
+    console.error('[Save Cleaned Booth Error]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/projects/:id/booth-3d/remove-people (Dedicated AI Person & Bystander Removal)
 app.post('/api/projects/:id/booth-3d/remove-people', async (req, res) => {
   try {
@@ -7146,7 +7192,7 @@ app.post('/api/projects/:id/booth-3d/remove-people', async (req, res) => {
       detections: personAnalysis.candidates,
       inpaintedRegions: removalResult.inpaintedRegions,
       activeBoothUpdated,
-      message: `AI successfully detected and removed ${removalResult.removedCount} bystander(s) with seamless background inpainting.`
+      message: `AI successfully detected and isolated ${removalResult.removedCount} bystander(s) for inpainting cleanup.`
     });
   } catch (err) {
     console.error('[Remove People Error]', err);
