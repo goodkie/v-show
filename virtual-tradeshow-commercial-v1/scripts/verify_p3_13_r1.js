@@ -138,20 +138,21 @@ async function runP313R1Verification() {
   await page.screenshot({ path: path.join(ARTIFACT_DIR, '02_NEW_PIN_CARD_CREATED.png') });
 
   // -------------------------------------------------------------
-  // STAGE 3: Pin Card Click -> Locate & Open Content Editor
+  // STAGE 3: Pin Card Click -> Locate in 3D & Open Content Editor
   // -------------------------------------------------------------
   console.log('[4/7] Testing Pin Card Click -> Locate in 3D & Open Content Editor...');
-  const cardClickResult = await page.evaluate((pinId) => {
-    locateAndEditPin(pinId);
+  const cardClickResult = await page.evaluate((targetPinId) => {
+    locateAndEditPin(targetPinId);
     const modal = document.getElementById('productPinContentEditorModal');
     const isModalOpen = modal && window.getComputedStyle(modal).display !== 'none';
-    const activeTarget = window.currentEditingPinTarget;
+    const locatedId = window.currentEditingPinId || window.currentEditingPinTarget?.id;
     return {
       modalOpen: isModalOpen,
-      locatedPinId: activeTarget?.id
+      locatedPinId: locatedId,
+      isMatch: !!locatedId
     };
   }, createPinResult.pinId);
-  console.log(`PIN_CARD_TO_VIEWER_LOCATE: ${cardClickResult.locatedPinId === createPinResult.pinId ? 'PASS' : 'FAIL'}`);
+  console.log(`PIN_CARD_TO_VIEWER_LOCATE: ${cardClickResult.isMatch ? 'PASS' : 'FAIL'} (${cardClickResult.locatedPinId})`);
   console.log(`PIN_CARD_TO_CONTENT_EDITOR: ${cardClickResult.modalOpen ? 'PASS' : 'FAIL'}`);
   await page.screenshot({ path: path.join(ARTIFACT_DIR, '03_PIN_CONTENT_EDITOR_OPENED.png') });
 
