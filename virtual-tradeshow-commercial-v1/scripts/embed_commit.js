@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const commit = '840fcad';
+const commit = '92174ce';
 const files = [
   'e:/vivpr/ai/v-show/virtual-tradeshow-commercial-v1/_clean_deploy/client/index.html',
   'e:/vivpr/ai/v-show/virtual-tradeshow-commercial-v1/_railway_deploy/client/index.html',
@@ -11,7 +11,7 @@ const files = [
 ];
 
 const scriptBlock = `<script>
-  window.__3DZ_BUILD_INFO__ = { gitCommit: "${commit}", releaseId: "C11.16-P3.15-R1" };
+  window.__3DZ_BUILD_INFO__ = { gitCommit: "${commit}", releaseId: "C11.16-P3.15-R2" };
   fetch('/api/build-info').then(function(r){return r.json();}).then(function(d){if(d&&d.gitCommit)window.__3DZ_BUILD_INFO__.gitCommit=d.gitCommit;}).catch(function(){});
   </script>`;
 
