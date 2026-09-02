@@ -1,9 +1,9 @@
 const https = require('https');
 const token = '8bed6af7-cd5d-4d2b-a652-acfba822a9d7';
-const deploymentId = '9711dff8-9a46-4541-88d4-bb9f9a178140';
+const deploymentId = 'd2bbd9fc-86ff-45b7-ba07-537789bd4872';
 
 let count = 0;
-const max = 20;
+const max = 40;
 
 function checkDeployment() {
   count++;
@@ -29,13 +29,13 @@ function checkDeployment() {
         }
       } catch(e) { console.log('Error parsing response:', b); }
 
-      if (count < max) setTimeout(checkDeployment, 3000);
+      if (count < max) setTimeout(checkDeployment, 4000);
       else process.exit(1);
     });
   });
   req.on('error', (err) => {
     console.error('Request error:', err.message);
-    if (count < max) setTimeout(checkDeployment, 3000);
+    if (count < max) setTimeout(checkDeployment, 4000);
   });
   req.write(JSON.stringify({ query }));
   req.end();
