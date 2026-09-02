@@ -6834,6 +6834,8 @@
         });
       });
 
+      window.studioHotspotsList = studioHotspotsList;
+      window.activeProjectData = projectData;
       recalculatePinpointPositions(projectData);
       buildHotspotsDOM();
       renderProductCardsTray(projectData.products || []);

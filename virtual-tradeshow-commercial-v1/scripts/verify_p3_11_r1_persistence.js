@@ -174,16 +174,18 @@ async function runPersistenceForensics() {
   // Verify pin is present in client 3D hotspots list after reload
   const reloadClientCheck = await page.evaluate((targetTitle) => {
     const spots = window.studioHotspotsList || [];
-    const spot = spots.find(s => s.name === targetTitle || s.title === targetTitle);
     const pin = (window.activeProjectData?.pinpoints || []).find(p => p.title === targetTitle || p.label === targetTitle);
+    const spot = spots.find(s => s.name === targetTitle || s.title === targetTitle || (pin && (s.id === pin.id || s.id === pin.pinId)));
     return {
+      totalSpotsCount: spots.length,
+      allSpotNames: spots.map(s => s.name || s.title),
       spotFound: !!spot,
       spotId: spot?.id,
-      spotName: spot?.name,
+      spotName: spot?.name || spot?.title,
       spotType: spot?.pinType,
       spotProductCount: spot?.productCount || spot?.productIds?.length,
       pinFound: !!pin,
-      pinId: pin?.id,
+      pinId: pin?.id || pin?.pinId,
       pinTitle: pin?.title || pin?.label,
       pinDesc: pin?.description || pin?.note,
       pinProductCount: pin?.productIds?.length
@@ -191,6 +193,8 @@ async function runPersistenceForensics() {
   }, testTitle);
 
   console.log('--- STEP 6: BROWSER HARD RELOAD VERIFICATION ---');
+  console.log(`TOTAL_SPOTS_COUNT_IN_CLIENT: ${reloadClientCheck.totalSpotsCount}`);
+  console.log(`PIN_RECORD_FOUND_IN_CLIENT_STORE: ${reloadClientCheck.pinFound}`);
   console.log(`PIN_PRESENT_IN_HOTSPOTS_AFTER_REFRESH: ${reloadClientCheck.spotFound} (Expected: true)`);
   console.log(`PIN_NAME_AFTER_REFRESH: "${reloadClientCheck.spotName}" (Expected: "${testTitle}")`);
   console.log(`PIN_PRODUCT_COUNT_AFTER_REFRESH: ${reloadClientCheck.spotProductCount} (Expected: 2)`);
