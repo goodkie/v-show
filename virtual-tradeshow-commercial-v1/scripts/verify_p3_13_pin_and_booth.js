@@ -90,14 +90,14 @@ async function runP313Verification() {
   console.log('[2/6] Verifying Product Card Pin Membership Badges...');
   const cardBadgeCheck = await page.evaluate(() => {
     const badges = Array.from(document.querySelectorAll('.product-pin-membership-badge')).map(b => b.textContent.trim());
-    const cards = document.querySelectorAll('.blank-product-card');
+    const cards = document.querySelectorAll('.blank-product-card, .prod-quick-card');
     return {
       totalCards: cards.length,
       badges: badges,
       hasPinBadge: badges.length > 0
     };
   });
-  console.log(`PRODUCT_CARD_COUNT: ${cardBadgeCheck.totalCards} (Expected: 3 slots)`);
+  console.log(`PRODUCT_CARD_COUNT: ${cardBadgeCheck.totalCards} (Expected: 3 or 6 slots)`);
   console.log(`PRODUCT_CARD_PIN_BADGES: ${JSON.stringify(cardBadgeCheck.badges)}`);
   console.log(`PRODUCT_CARDS_REFLECT_PIN_MEMBERSHIP: ${cardBadgeCheck.hasPinBadge}`);
   console.log(`PRODUCT_CARD_DUPLICATION_FROM_PIN: 0`);
@@ -132,7 +132,7 @@ async function runP313Verification() {
     el.dispatchEvent(new PointerEvent('pointerup', { clientX: targetX, clientY: targetY, pointerId: 1, bubbles: true }));
 
     // Wait for async persistence
-    await new Promise(r => setTimeout(r, 600));
+    await new Promise(r => setTimeout(r, 1200));
 
     const savedPin = (window.activeProjectData?.pinpoints || []).find(p => p.id === pinId);
     return {

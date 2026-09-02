@@ -6374,6 +6374,142 @@ function buildHotspotsDOM() {
       });
     }
 
+    function setupStudioProducts(projectData) {
+      if (projectData?.entitlements) updateProductLimitUI(projectData.entitlements);
+      else if (projectData?.id) fetchProjectEntitlements(projectData.id);
+      
+      const rawProducts = projectData?.products || [];
+      const defaultPositions = [
+        new THREE.Vector3(-140, -20, -380), // Slot 1 Left
+        new THREE.Vector3(0, -10, -420),    // Slot 2 Center
+        new THREE.Vector3(140, -20, -380)   // Slot 3 Right
+      ];
+
+      const realProds = rawProducts.filter(p => p.name && p.name.trim() && !p.name.startsWith('Product Slot'));
+      window.REAL_PRODUCT_COUNT = realProds.length;
+      window.PLACE_PRODUCT_PINS_COMPLETE = (realProds.length > 0);
+
+      // Map 3 primary product slots for quick tray and sidebar specs
+      studioProducts = [1, 2, 3].map((slot, idx) => {
+        const prod = rawProducts.find(p => p.slotIndex === slot) || {};
+        const isConfigured = !!(prod.name && prod.name.trim() && !prod.name.startsWith('Product Slot'));
+        return {
+          slotIndex: slot,
+          productId: prod.id || `prod-slot-${slot}`,
+          name: isConfigured ? prod.name : `Product Slot ${slot}`,
+          category: isConfigured ? (prod.category || 'EXHIBIT ITEM') : 'UNCONFIGURED',
+          sku: prod.sku || '',
+          price: prod.price || '',
+          imageUrl: (isConfigured && prod.imageUrl) ? prod.imageUrl : '/assets/product-placeholder.jpg',
+          worldPos: defaultPositions[idx],
+          desc: isConfigured ? (prod.shortDescription || prod.description || '') : `Showcase product for ${projectData?.businessName || 'your brand'}. Add a real product to showcase specifications and accept RFQs.`,
+          specs: [
+            ['Category', isConfigured ? (prod.category || 'General') : 'Not Configured'],
+            ['SKU / Model', isConfigured && prod.sku ? prod.sku : 'Standard'],
+            ['Inquiry Engine', '1-Click Wholesale RFQ'],
+            ['Status', isConfigured ? (prod.availability || 'Active') : 'Available']
+          ],
+          highlights: isConfigured ? [
+            'Interactive 3D Floating Capsule pinpoint anchor on exhibition booth photo',
+            'Direct buyer engagement, sample ordering, and export meeting scheduler'
+          ] : [
+            'Click "+ Add Product" to configure photo, specs, and price'
+          ],
+          isConfigured: isConfigured
+        };
+      });
+
+      // Build unified 3D hotspots list from pinpoints (Product Pins + Catalog Pins + Custom Pins)
+      const rawPinpoints = projectData?.pinpoints || [];
+      const catalogs = projectData?.catalogs || [];
+
+      studioHotspotsList = [];
+
+      // 1. Add product slot hotspots
+      studioProducts.forEach((prod, idx) => {
+        studioHotspotsList.push({
+          id: `pin-slot-${prod.slotIndex}`,
+          pinType: 'PRODUCT_PIN',
+          slotIndex: prod.slotIndex,
+          targetId: prod.productId,
+          name: prod.name,
+          category: prod.category,
+          imageUrl: prod.imageUrl,
+          worldPos: prod.worldPos,
+          isConfigured: prod.isConfigured,
+          productIdx: idx
+        });
+      });
+
+      // 2. Add catalog hotspots
+      catalogs.forEach(cat => {
+        const catId = cat.catalogId || cat.id;
+        const catPin = rawPinpoints.find(p => p.pinType === 'CATALOG_PIN' && (p.targetId === catId || p.catalogId === catId));
+        if (catPin) {
+          const prods = (cat.productIds || []).map(pid => rawProducts.find(p => p.id === pid || p.slotIndex === pid)).filter(Boolean);
+          studioHotspotsList.push({
+            id: catPin.id || `pin-cat-${catId}`,
+            pinType: 'CATALOG_PIN',
+            targetId: catId,
+            catalogId: catId,
+            name: cat.name,
+            category: 'CATALOG',
+            productCount: prods.length,
+            coverImageUrl: cat.coverImageUrl || prods[0]?.imageUrl || '/assets/product-placeholder.jpg',
+            worldPos: new THREE.Vector3(0, 0, -400)
+          });
+        }
+      });
+
+      // 3. Add custom & floating pins (Product Pins, Group Pins, Blank Pins)
+      rawPinpoints.forEach((pin, pIdx) => {
+        const pinId = pin.id || pin.pinId;
+        if (!pinId) return;
+
+        // If it matches a standard slot pin or catalog pin, sync its attributes
+        const existingSpot = studioHotspotsList.find(s => s.id === pinId || (pin.slotIndex && s.slotIndex === pin.slotIndex));
+        if (existingSpot) {
+          if (pin.title || pin.label) existingSpot.name = pin.title || pin.label;
+          if (typeof pin.u === 'number') existingSpot.u = pin.u;
+          if (typeof pin.v === 'number') existingSpot.v = pin.v;
+          existingSpot.pinData = pin;
+          if (pin.productIds) existingSpot.productIds = pin.productIds;
+          if (pin.description || pin.note) existingSpot.description = pin.description || pin.note;
+          return;
+        }
+
+        const pIds = Array.isArray(pin.productIds) ? pin.productIds : (pin.productId ? [pin.productId] : (pin.targetId ? [pin.targetId] : []));
+        const attachedProds = pIds.map(pid => rawProducts.find(p => String(p.id) === String(pid) || String(p.slotIndex) === String(pid))).filter(Boolean);
+        const isBlank = attachedProds.length === 0 && (pin.pinType === 'BLANK_PIN' || pin.isDraft);
+        const isGroup = attachedProds.length >= 2 || pin.pinType === 'PRODUCT_GROUP_PIN';
+        
+        const spotName = pin.title || pin.label || (attachedProds[0]?.name) || (isBlank ? 'Empty Product Pin' : 'Product Pin');
+        const spotCat = isBlank ? 'DRAFT' : (attachedProds[0]?.category || (isGroup ? 'COLLECTION' : 'PRODUCT'));
+        const spotImg = attachedProds[0]?.imageUrl || '/assets/product-placeholder.jpg';
+
+        studioHotspotsList.push({
+          id: pinId,
+          pinType: pin.pinType || (isBlank ? 'BLANK_PIN' : (isGroup ? 'PRODUCT_GROUP_PIN' : 'PRODUCT_PIN')),
+          targetId: pin.targetId || (attachedProds[0]?.id || null),
+          name: spotName,
+          title: spotName,
+          category: spotCat,
+          imageUrl: spotImg,
+          u: pin.u,
+          v: pin.v,
+          pinData: pin,
+          worldPos: new THREE.Vector3(0, 0, -400)
+        });
+      });
+
+      window.studioHotspotsList = studioHotspotsList;
+      if (typeof recalculatePinpointPositions === 'function') recalculatePinpointPositions(projectData);
+      if (typeof buildHotspotsDOM === 'function') buildHotspotsDOM();
+      if (typeof updateHotspots === 'function') updateHotspots();
+      if (typeof renderProductCardsTray === 'function') renderProductCardsTray(projectData?.products || []);
+      if (typeof renderProductCards === 'function') renderProductCards(projectData?.products || []);
+    }
+
     function renderProductCardsTray(products) {
       const tray = document.getElementById('product-cards-tray');
       if (!tray) return;
