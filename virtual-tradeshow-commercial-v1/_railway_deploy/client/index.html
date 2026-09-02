@@ -5754,6 +5754,7 @@
       window.studioHotspotsList = studioHotspotsList;
       buildHotspotsDOM();
       updateFocusSpecForBlankPin(blankPin);
+      if (typeof renderProductCardsTray === 'function') renderProductCardsTray(window.activeProjectData?.pinpoints);
 
       // Async server persistence
       persistDraftPinToServer(blankPin);
@@ -6146,6 +6147,8 @@
           }
 
           if (typeof setupStudioProducts === 'function') setupStudioProducts(window.activeProjectData);
+      if (typeof renderProductCardsTray === 'function') renderProductCardsTray(window.activeProjectData?.pinpoints);
+          if (typeof renderProductCardsTray === 'function') renderProductCardsTray(window.activeProjectData?.pinpoints);
           if (window.showToast) window.showToast('✅ Pin changes saved!', 'success');
           closeProductPinContentEditorModal();
         } else {
