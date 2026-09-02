@@ -5534,6 +5534,8 @@
     // 3D PIN & HOTSPOT ARCHITECTURE (PRODUCT_PIN & CATALOG_PIN)
     // ============================================================
     let studioHotspotsList = [];
+      window.studioHotspotsList = studioHotspotsList;
+      window.activeProjectData = projectData;
 
     function recalculatePinpointPositions(projectData) {
       const rawPinpoints = projectData?.pinpoints || [];
@@ -5665,6 +5667,7 @@
 
       window.studioHotspotsList = studioHotspotsList;
       window.activeProjectData = activeProjectData;
+      window.studioHotspotsList = studioHotspotsList;
       buildHotspotsDOM();
       updateFocusSpecForBlankPin(blankPin);
 
