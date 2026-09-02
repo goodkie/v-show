@@ -5948,10 +5948,10 @@
       };
 
       try {
-        const url = isEdit ? `/api/projects/${pid}/pins/${pinId}` : `/api/projects/${pid}/pins`;
-        const method = isEdit ? 'PUT' : 'POST';
+        let url = isEdit ? `/api/projects/${pid}/pins/${pinId}` : `/api/projects/${pid}/pins`;
+        let method = isEdit ? 'PUT' : 'POST';
 
-        const res = await fetch(url, {
+        let res = await fetch(url, {
           method,
           headers: {
             'Content-Type': 'application/json',
@@ -5961,6 +5961,18 @@
           body: JSON.stringify(payload)
         });
 
+        if (method === 'PUT' && (res.status === 404 || !res.ok)) {
+          res = await fetch(`/api/projects/${pid}/pins`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token,
+              'x-booth-edit-token': token
+            },
+            body: JSON.stringify({ ...payload, id: pinId })
+          });
+        }
+
         const data = await res.json();
         if (!res.ok) {
           alert('Failed to save pin: ' + (data.error || 'Unknown error'));
@@ -5968,6 +5980,12 @@
         }
 
         if (data.pins) window.activeProjectData.pinpoints = data.pins;
+        else if (data.pin) {
+          if (!window.activeProjectData.pinpoints) window.activeProjectData.pinpoints = [];
+          const idx = window.activeProjectData.pinpoints.findIndex(p => p.id === pinId || p.pinId === pinId || p.id === data.pin.id);
+          if (idx >= 0) window.activeProjectData.pinpoints[idx] = data.pin;
+          else window.activeProjectData.pinpoints.push(data.pin);
+        }
         else if (data.pin) {
           if (!window.activeProjectData.pinpoints) window.activeProjectData.pinpoints = [];
           if (isEdit) {
