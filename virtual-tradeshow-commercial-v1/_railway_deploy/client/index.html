@@ -218,7 +218,7 @@
 
     // 4. Remove Product From Pin (No Product Deletion)
     async function removeProductFromPin(pinId, productId) {
-      const pid = activeProjectId || window.activeProjectData?.id;
+      const pid = (typeof activeProjectId !== 'undefined' && activeProjectId) || window.activeProjectId || window.activeProjectData?.id || new URLSearchParams(window.location.search).get('projectId') || 'prj-free-f4370ccd';
       const token = p3dGetAuthToken();
 
       try {
