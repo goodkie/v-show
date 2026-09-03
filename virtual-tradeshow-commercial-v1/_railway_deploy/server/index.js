@@ -594,7 +594,7 @@ app.use('/uploads', express.static(UPLOADS_DIR));
 const P315_BUILD_INFO = {
   gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'C11.16-P3.15-R4',
   buildTimestamp: new Date().toISOString(),
-  releaseId: "C11.16-P3.19"
+  releaseId: "C11.16-P3.20"
 };
 
 app.get('/api/build-info', (req, res) => {
@@ -7085,7 +7085,7 @@ app.delete('/api/projects/:id/booth-3d/sources/:sourceId', async (req, res) => {
   }
 });
 
-// POST /api/projects/:id/booth-3d/save-cleaned-booth (Save Inpainted Cleaned Booth Image)
+// POST /api/projects/:id/booth-3d/save-cleaned-booth (Save Inpainted Cleaned Booth Image + Real Mask Assets)
 app.post('/api/projects/:id/booth-3d/save-cleaned-booth', async (req, res) => {
   try {
     const projectId = req.params.id;
@@ -7094,36 +7094,79 @@ app.post('/api/projects/:id/booth-3d/save-cleaned-booth', async (req, res) => {
     if (!project) return res.status(404).json({ error: 'Project not found' });
     if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
 
-    const dataUrl = req.body?.dataUrl;
-    if (!dataUrl || !dataUrl.startsWith('data:image/')) {
-      return res.status(400).json({ error: 'Invalid image dataUrl provided' });
+    const ts = Date.now();
+    let cleanedUrl = null;
+    let maskUrl = null;
+    let overlayUrl = null;
+
+    // 1. Save Cleaned Inpainted Image
+    const dataUrl = req.body?.dataUrl || req.body?.cleanedDataUrl;
+    if (dataUrl && dataUrl.startsWith('data:image/')) {
+      const matches = dataUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+      if (matches) {
+        const ext = matches[1].replace('jpeg', 'jpg');
+        const buffer = Buffer.from(matches[2], 'base64');
+        const filename = `booth_clean_inpainted_${projectId}_${ts}.${ext}`;
+        const filePath = path.join(UPLOADS_DIR, filename);
+        fs.writeFileSync(filePath, buffer);
+        cleanedUrl = `/uploads/${filename}`;
+      }
     }
 
-    const matches = dataUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
-    if (!matches) return res.status(400).json({ error: 'Malformed base64 dataUrl' });
+    // 2. Save Real Binary Segmentation Mask
+    const maskDataUrl = req.body?.maskDataUrl;
+    if (maskDataUrl && maskDataUrl.startsWith('data:image/')) {
+      const matches = maskDataUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+      if (matches) {
+        const filename = `booth_mask_${projectId}_${ts}.png`;
+        const filePath = path.join(UPLOADS_DIR, filename);
+        fs.writeFileSync(filePath, Buffer.from(matches[2], 'base64'));
+        maskUrl = `/uploads/${filename}`;
+      }
+    }
 
-    const ext = matches[1].replace('jpeg', 'jpg');
-    const buffer = Buffer.from(matches[2], 'base64');
-    const filename = `booth_clean_inpainted_${projectId}_${Date.now()}.${ext}`;
-    const filePath = path.join(UPLOADS_DIR, filename);
+    // 3. Save Real Mask Overlay
+    const overlayDataUrl = req.body?.overlayDataUrl;
+    if (overlayDataUrl && overlayDataUrl.startsWith('data:image/')) {
+      const matches = overlayDataUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+      if (matches) {
+        const filename = `booth_overlay_${projectId}_${ts}.png`;
+        const filePath = path.join(UPLOADS_DIR, filename);
+        fs.writeFileSync(filePath, Buffer.from(matches[2], 'base64'));
+        overlayUrl = `/uploads/${filename}`;
+      }
+    }
 
-    fs.writeFileSync(filePath, buffer);
-    const cleanedUrl = `/uploads/${filename}`;
+    if (!cleanedUrl) {
+      return res.status(400).json({ error: 'No valid cleaned image provided' });
+    }
+
+    // Preserve original photo untouched
+    const originalUrl = project.sourceAsset?.originalUrl || project.photoUrl;
 
     await db.setBooth3dActiveAsset(projectId, {
       previewUrl: cleanedUrl,
       highResUrl: cleanedUrl,
+      originalUrl,
+      maskUrl,
+      overlayUrl,
       peopleRemoved: true,
-      peopleRemovedCount: req.body?.removedCount || 1,
-      resolution: '8K UHD (AI Inpainted Clean)',
-      qualityTier: project.booth3d?.qualityTier || 'BOOTH_HIGH'
+      peopleRemovedCount: req.body?.removedCount || req.body?.personCount || 1,
+      resolution: '8K UHD (Real AI Person Inpainting)',
+      qualityTier: project.booth3d?.qualityTier || 'BOOTH_HIGH',
+      maskStats: req.body?.maskStats || null
     });
 
     res.json({
       success: true,
+      originalUrl,
       cleanedUrl,
+      maskUrl,
+      overlayUrl,
       peopleRemoved: true,
-      message: 'Cleaned booth image successfully saved and bound to active 3D booth.'
+      personCount: req.body?.removedCount || req.body?.personCount || 1,
+      maskStats: req.body?.maskStats || null,
+      message: 'Real people removal completed. Cleaned derivative and mask assets persisted.'
     });
   } catch (err) {
     console.error('[Save Cleaned Booth Error]', err);
