@@ -16,7 +16,16 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
-const jpeg = require('jpeg-js');
+let jpeg = null;
+try {
+  jpeg = require('./lib/jpeg-js');
+} catch (e) {
+  try {
+    jpeg = require('jpeg-js');
+  } catch (e2) {
+    jpeg = null;
+  }
+}
 
 let ort = null;
 try {

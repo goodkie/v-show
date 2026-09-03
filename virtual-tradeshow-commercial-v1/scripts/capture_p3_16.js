@@ -55,12 +55,11 @@ async function capture() {
   await new Promise(r => setTimeout(r, 2000));
 
   // 3. Open Product 3D Viewer for existing READY slot 143
-  console.log('Opening Product 3D Viewer for Slot 143...');
-  await page.evaluate((slot) => {
-    if (typeof openProduct3dViewer === 'function') {
-      openProduct3dViewer(slot);
+  await page.evaluate(() => {
+    if (typeof product3dOpenViewer === 'function') {
+      product3dOpenViewer('/uploads/product3d/prj-free-14e56240/143/p3dj-4b4b4a73.glb', 'Verified 3D Product Model');
     }
-  }, SLOT);
+  });
 
   // Wait for 3D model to render (GLB fetch + GLTF parse + Three.js render)
   console.log('Waiting for 3D model render...');
