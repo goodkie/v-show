@@ -10209,6 +10209,9 @@ return event;
         .filter(pid => validProjectProductIds.includes(pid) || (project.products || []).some(p => String(p.slotIndex) === String(pid)))
         .slice(0, 20);
 
+      const pinId = `pin-${uuidv4().substring(0, 8)}`;
+      let label = (pinData.label || pinData.title || '').trim();
+
       if (pinType === 'BLANK_PIN') {
         label = label || 'New Product Pin';
       } else if (pinType !== 'CATALOG_PIN') {
@@ -10219,8 +10222,6 @@ return event;
         }
       }
 
-      const pinId = `pin-${uuidv4().substring(0, 8)}`;
-      let label = (pinData.label || pinData.title || '').trim();
       let targetId = pinData.targetId || (cleanProductIds.length === 1 ? cleanProductIds[0] : null) || pinData.catalogId || null;
 
       if (pinType === 'PRODUCT_GROUP_PIN') {
