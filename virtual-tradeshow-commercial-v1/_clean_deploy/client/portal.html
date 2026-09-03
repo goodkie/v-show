@@ -2228,6 +2228,166 @@
       }
     }
 
+    // ============================================================
+    // C11.16-P3.17 ADD BOOTH & DELETE BOOTH MODAL CONTROLLERS
+    // ============================================================
+    function escapeJsAttr(str) {
+      if (!str) return '';
+      return String(str).replace(/'/g, "\\'");
+    }
+
+    let pendingDeleteBoothId = null;
+
+    window.openCreateBoothModal = function() {
+      const modal = document.getElementById('modalCreateNewBooth');
+      if (!modal) return;
+      const inputName = document.getElementById('inputNewBoothName');
+      const inputCompany = document.getElementById('inputNewCompanyName');
+      const errBox = document.getElementById('createBoothErrorMsg');
+      const btn = document.getElementById('btnSubmitCreateBooth');
+
+      if (errBox) errBox.style.display = 'none';
+      if (inputName) inputName.value = '';
+      if (inputCompany) {
+        inputCompany.value = document.getElementById('accBusinessName')?.value || 'Apex Robotics';
+      }
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-plus"></i> Create Booth';
+      }
+
+      modal.style.display = 'flex';
+      setTimeout(() => inputName && inputName.focus(), 100);
+    };
+
+    window.closeCreateBoothModal = function() {
+      const modal = document.getElementById('modalCreateNewBooth');
+      if (modal) modal.style.display = 'none';
+    };
+
+    window.handleCreateBoothSubmit = async function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmitCreateBooth');
+      const errBox = document.getElementById('createBoothErrorMsg');
+      const boothName = document.getElementById('inputNewBoothName')?.value.trim();
+      const companyName = document.getElementById('inputNewCompanyName')?.value.trim();
+      const tradeShow = document.getElementById('inputNewTradeShow')?.value.trim();
+      const boothNumber = document.getElementById('inputNewBoothNumber')?.value.trim();
+
+      if (!boothName) {
+        if (errBox) {
+          errBox.textContent = 'Booth Name is required.';
+          errBox.style.display = 'block';
+        }
+        return;
+      }
+
+      // Duplicate click protection (ONE_CREATE_ACTION_ONE_BOOTH=true)
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating Booth...';
+      }
+      if (errBox) errBox.style.display = 'none';
+
+      try {
+        const token = customerToken || localStorage.getItem('3d2_customer_token');
+        const res = await fetch('/api/customer/booths/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ boothName, companyName, tradeShow, boothNumber })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to create booth.');
+        }
+
+        // Close modal and refresh My Booths from server
+        closeCreateBoothModal();
+        await loadCustomerBooths();
+      } catch (err) {
+        if (errBox) {
+          errBox.textContent = err.message || "Couldn't create booth. Please try again.";
+          errBox.style.display = 'block';
+        }
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-plus"></i> Create Booth';
+        }
+      }
+    };
+
+    window.openDeleteBoothModal = function(boothId, boothName) {
+      pendingDeleteBoothId = boothId;
+      const modal = document.getElementById('modalDeleteBooth');
+      if (!modal) return;
+      const msgEl = document.getElementById('deleteBoothConfirmMsg');
+      const errBox = document.getElementById('deleteBoothErrorMsg');
+      const btnConfirm = document.getElementById('btnConfirmDeleteBooth');
+
+      if (msgEl) {
+        msgEl.innerHTML = `Permanently delete <strong>"${boothName}"</strong> and its associated booth data?`;
+      }
+      if (errBox) errBox.style.display = 'none';
+      if (btnConfirm) {
+        btnConfirm.disabled = false;
+        btnConfirm.innerHTML = '<i class="fa-solid fa-trash-can"></i> Delete Booth';
+      }
+
+      modal.style.display = 'flex';
+    };
+
+    window.closeDeleteBoothModal = function() {
+      pendingDeleteBoothId = null;
+      const modal = document.getElementById('modalDeleteBooth');
+      if (modal) modal.style.display = 'none';
+    };
+
+    window.confirmDeleteBooth = async function() {
+      if (!pendingDeleteBoothId) return;
+      const btnConfirm = document.getElementById('btnConfirmDeleteBooth');
+      const btnCancel = document.getElementById('btnCancelDeleteBooth');
+      const errBox = document.getElementById('deleteBoothErrorMsg');
+
+      if (btnConfirm) {
+        btnConfirm.disabled = true;
+        btnConfirm.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Deleting...';
+      }
+      if (btnCancel) btnCancel.disabled = true;
+      if (errBox) errBox.style.display = 'none';
+
+      try {
+        const token = customerToken || localStorage.getItem('3d2_customer_token');
+        const res = await fetch(`/api/customer/booths/${encodeURIComponent(pendingDeleteBoothId)}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': 'Bearer ' + token
+          }
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Couldn't delete this booth. Please try again.");
+        }
+
+        closeDeleteBoothModal();
+        await loadCustomerBooths();
+      } catch (err) {
+        if (errBox) {
+          errBox.textContent = err.message || "Couldn't delete this booth. Please try again.";
+          errBox.style.display = 'block';
+        }
+        if (btnConfirm) {
+          btnConfirm.disabled = false;
+          btnConfirm.innerHTML = '<i class="fa-solid fa-trash-can"></i> Delete Booth';
+        }
+        if (btnCancel) btnCancel.disabled = false;
+      }
+    };
+
 </script>
 
   <!-- ============================================================ -->
