@@ -9046,56 +9046,6 @@ app.get(['/portal', '/my-booths', '/account', '/leads', '/analytics'], (req, res
   }
 });
 
-// C11.16-P3.16: Canonical Global API 404 Handler (returns JSON for ANY HTTP method)
-app.all('/api/*', (req, res) => {
-  res.status(404).json({
-    error: 'API_ROUTE_NOT_FOUND',
-    code: 'API_ROUTE_NOT_FOUND',
-    path: req.originalUrl,
-    method: req.method
-  });
-});
-
-// C11.16-P3.16: Canonical Global API Error Handler (prevents default Express HTML)
-app.use((err, req, res, next) => {
-  if ((req.path && req.path.startsWith('/api/')) || (req.originalUrl && req.originalUrl.startsWith('/api/'))) {
-    console.error('[API Unhandled Error]', req.method, req.path, err);
-    return res.status(err.status || 500).json({
-      error: err.message || 'INTERNAL_SERVER_ERROR',
-      code: err.code || 'API_INTERNAL_ERROR'
-    });
-  }
-  next(err);
-});
-
-app.get('*', (req, res) => {
-  if (req.path.startsWith('/uploads/') || req.path.startsWith('/api/') || req.path.startsWith('/assets/')) {
-    return res.status(404).json({ error: 'Not Found' });
-  }
-  if (req.path.startsWith('/organizer')) {
-    return res.sendFile(path.join(__dirname, '..', 'client', 'organizer.html'));
-  }
-  if (req.path.startsWith('/lobby') || req.path.startsWith('/event')) {
-    return res.sendFile(path.join(__dirname, '..', 'client', 'lobby.html'));
-  }
-  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
-});
-
-// Startup cleanup for stale Product 3D jobs from previous process restarts
-try {
-  const staleJobs = (db.read().product3dJobs || []).filter(j =>
-    ['QUEUED', 'PROCESSING', 'VALIDATING'].includes(j.status) &&
-    (Date.now() - new Date(j.createdAt).getTime() > 10 * 60 * 1000)
-  );
-  staleJobs.forEach(j => {
-    db.updateProduct3dJob(j.id, { status: 'FAILED', error: 'JOB_TIMED_OUT_ACROSS_RESTART' });
-  });
-  if (staleJobs.length > 0) console.log(`[Product3D] Cleaned up ${staleJobs.length} stale uncompleted jobs on startup.`);
-} catch (e) {
-  console.error('[Product3D] Startup stale job check error:', e.message);
-}
-
-
 // ============================================================
 // ─── P3.22: TRUE 3D MANAGED SERVICE QUOTES ──────────────────
 // ============================================================
@@ -9287,6 +9237,58 @@ app.post('/api/projects/:id/ai-enhance/discard', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// C11.16-P3.16: Canonical Global API 404 Handler (returns JSON for ANY HTTP method)
+app.all('/api/*', (req, res) => {
+  res.status(404).json({
+    error: 'API_ROUTE_NOT_FOUND',
+    code: 'API_ROUTE_NOT_FOUND',
+    path: req.originalUrl,
+    method: req.method
+  });
+});
+
+// C11.16-P3.16: Canonical Global API Error Handler (prevents default Express HTML)
+app.use((err, req, res, next) => {
+  if ((req.path && req.path.startsWith('/api/')) || (req.originalUrl && req.originalUrl.startsWith('/api/'))) {
+    console.error('[API Unhandled Error]', req.method, req.path, err);
+    return res.status(err.status || 500).json({
+      error: err.message || 'INTERNAL_SERVER_ERROR',
+      code: err.code || 'API_INTERNAL_ERROR'
+    });
+  }
+  next(err);
+});
+
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/uploads/') || req.path.startsWith('/api/') || req.path.startsWith('/assets/')) {
+    return res.status(404).json({ error: 'Not Found' });
+  }
+  if (req.path.startsWith('/organizer')) {
+    return res.sendFile(path.join(__dirname, '..', 'client', 'organizer.html'));
+  }
+  if (req.path.startsWith('/lobby') || req.path.startsWith('/event')) {
+    return res.sendFile(path.join(__dirname, '..', 'client', 'lobby.html'));
+  }
+  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
+});
+
+// Startup cleanup for stale Product 3D jobs from previous process restarts
+try {
+  const staleJobs = (db.read().product3dJobs || []).filter(j =>
+    ['QUEUED', 'PROCESSING', 'VALIDATING'].includes(j.status) &&
+    (Date.now() - new Date(j.createdAt).getTime() > 10 * 60 * 1000)
+  );
+  staleJobs.forEach(j => {
+    db.updateProduct3dJob(j.id, { status: 'FAILED', error: 'JOB_TIMED_OUT_ACROSS_RESTART' });
+  });
+  if (staleJobs.length > 0) console.log(`[Product3D] Cleaned up ${staleJobs.length} stale uncompleted jobs on startup.`);
+} catch (e) {
+  console.error('[Product3D] Startup stale job check error:', e.message);
+}
+
+
+
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`=======================================================`);
