@@ -317,6 +317,16 @@
       background: #334155;
       color: #fff;
     }
+    .btn-action.danger-subtle {
+      background: rgba(239, 68, 68, 0.08);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+    .btn-action.danger-subtle:hover {
+      background: rgba(239, 68, 68, 0.18);
+      border-color: rgba(239, 68, 68, 0.45);
+      color: #fca5a5;
+    }
     .btn-action.primary {
       background: var(--primary);
       border-color: var(--accent);
@@ -793,9 +803,9 @@
       <!-- Booths Grid -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2 style="font-size: 22px; font-weight: 800; color: #fff;">My ³D₂ Booths</h2>
-        <a href="/" class="btn-action primary" id="btnCreateNewBooth" style="padding: 10px 18px; font-size: 13px;">
-          <i class="fa-solid fa-plus"></i> Create New Booth
-        </a>
+        <button class="btn-action primary" id="btnCreateNewBooth" onclick="openCreateBoothModal()" style="padding: 10px 18px; font-size: 13px; cursor: pointer;">
+          <i class="fa-solid fa-plus"></i> + Add Booth
+        </button>
       </div>
 
       <div class="booths-grid" id="boothsGridContainer">
@@ -1056,6 +1066,85 @@
         </div>
       </div>
     </section>
+
+    <!-- Modal: Create New Booth (C11.16-P3.17 Part B) -->
+  <div class="drawer-modal" id="modalCreateNewBooth" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(12px); z-index: 10000;">
+    <div class="drawer-card" style="max-width: 520px; width: 90%; background: #070e1b; border: 1px solid rgba(56,189,248,0.3); border-radius: 16px; padding: 28px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); color: #fff;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin: 0; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-store" style="color: var(--accent);"></i> Create New Booth
+        </h3>
+        <button type="button" class="close-btn" onclick="closeCreateBoothModal()" style="background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer;">✕</button>
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 22px; line-height: 1.5;">
+        Set up a new trade show virtual booth. You can configure products, pinpoints, and upload physical booth photos at any time in the 3D Studio Editor.
+      </p>
+
+      <form id="formCreateNewBooth" onsubmit="handleCreateBoothSubmit(event)">
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="display: block; font-size: 12.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 6px;">Booth / Exhibition Name *</label>
+          <input type="text" id="inputNewBoothName" class="form-input" placeholder="e.g. Apex Robotics Dynamics" required style="width: 100%; box-sizing: border-box;">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="display: block; font-size: 12.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 6px;">Company / Exhibitor Name</label>
+          <input type="text" id="inputNewCompanyName" class="form-input" placeholder="e.g. Goodkie Robotics Corp" style="width: 100%; box-sizing: border-box;">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 22px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="display: block; font-size: 12.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 6px;">Trade Show / Event (Optional)</label>
+            <input type="text" id="inputNewTradeShow" class="form-input" placeholder="e.g. CES 2026" style="width: 100%; box-sizing: border-box;">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="display: block; font-size: 12.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 6px;">Booth Number (Optional)</label>
+            <input type="text" id="inputNewBoothNumber" class="form-input" placeholder="e.g. Hall B, #402" style="width: 100%; box-sizing: border-box;">
+          </div>
+        </div>
+
+        <div id="createBoothErrorMsg" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 16px; font-weight: 600;"></div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+          <button type="button" class="btn-action" onclick="closeCreateBoothModal()" style="padding: 10px 18px; font-size: 13px;">Cancel</button>
+          <button type="submit" id="btnSubmitCreateBooth" class="btn-action primary" style="padding: 10px 22px; font-size: 13px;">
+            <i class="fa-solid fa-plus"></i> Create Booth
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Delete Booth Confirmation (C11.16-P3.17 Part C) -->
+  <div class="drawer-modal" id="modalDeleteBooth" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(12px); z-index: 10000;">
+    <div class="drawer-card" style="max-width: 480px; width: 90%; background: #070e1b; border: 1px solid rgba(239,68,68,0.4); border-radius: 16px; padding: 28px; box-shadow: 0 20px 50px rgba(0,0,0,0.85); color: #fff;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 20px; font-weight: 800; color: #f87171; margin: 0; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-triangle-exclamation"></i> Delete Booth?
+        </h3>
+        <button type="button" class="close-btn" onclick="closeDeleteBoothModal()" style="background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer;">✕</button>
+      </div>
+
+      <p id="deleteBoothConfirmMsg" style="font-size: 13.5px; color: #f1f5f9; margin-bottom: 14px; line-height: 1.5;">
+        Permanently delete this booth and its associated booth data?
+      </p>
+
+      <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 10px; padding: 12px 16px; font-size: 12px; color: #cbd5e1; margin-bottom: 20px; line-height: 1.5;">
+        <div style="font-weight: 700; color: #fca5a5; margin-bottom: 4px;">Data to be permanently removed:</div>
+        • 3D Virtual booth spatial models and viewpoints<br>
+        • Exclusive product pinpoints and booth configurations<br>
+        • Booth-specific visitor analytics and draft revisions
+      </div>
+
+      <div id="deleteBoothErrorMsg" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 16px; font-weight: 600;"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px;">
+        <button type="button" class="btn-action" onclick="closeDeleteBoothModal()" id="btnCancelDeleteBooth" style="padding: 10px 18px; font-size: 13px;">Cancel</button>
+        <button type="button" class="btn-action" id="btnConfirmDeleteBooth" onclick="confirmDeleteBooth()" style="background: #ef4444; border-color: #ef4444; color: #fff; padding: 10px 22px; font-size: 13px; font-weight: 700; cursor: pointer;">
+          <i class="fa-solid fa-trash-can"></i> Delete Booth
+        </button>
+      </div>
+    </div>
+  </div>
 
   </main>
 
@@ -1464,14 +1553,14 @@
         const booths = data.booths || [];
         const container = document.getElementById('boothsGridContainer');
 
-        // Manage Create New Booth safety & plan limit
+        // Manage Add Booth button & plan limit (C11.16-P3.17 Part B)
         const btnCreate = document.getElementById('btnCreateNewBooth');
         if (btnCreate) {
-          const maxBooths = (booths[0] && booths[0].maxBooths) || data.maxBooths || 1;
-          if (booths.length >= maxBooths) {
+          const maxBooths = data.maxBooths || (booths[0] && booths[0].maxBooths) || 1;
+          const isAtLimit = data.canCreateBooth !== undefined ? !data.canCreateBooth : (booths.length >= maxBooths);
+          if (isAtLimit) {
             btnCreate.style.opacity = '0.6';
             btnCreate.style.cursor = 'not-allowed';
-            btnCreate.href = 'javascript:void(0)';
             btnCreate.onclick = function() {
               alert(`Your current plan includes ${maxBooths} active 3D virtual booth. For multi-booth enterprise packages, please contact sales or upgrade.`);
             };
@@ -1479,9 +1568,8 @@
           } else {
             btnCreate.style.opacity = '1';
             btnCreate.style.cursor = 'pointer';
-            btnCreate.href = '/';
-            btnCreate.onclick = null;
-            btnCreate.innerHTML = '<i class="fa-solid fa-plus"></i> Create New Booth';
+            btnCreate.onclick = openCreateBoothModal;
+            btnCreate.innerHTML = '<i class="fa-solid fa-plus"></i> + Add Booth';
           }
         }
 
@@ -1578,6 +1666,9 @@
               ` : ''}
               <button onclick="switchPortalTab('leads')" class="btn-action">
                 <i class="fa-solid fa-inbox"></i> Leads (${b.leadsCount})
+              </button>
+              <button onclick="openDeleteBoothModal('${b.id}', '${escapeJsAttr(b.businessName || b.boothName)}')" class="btn-action danger-subtle" title="Permanently delete this booth">
+                <i class="fa-solid fa-trash-can"></i> Delete Booth
               </button>
             </div>
           </div>

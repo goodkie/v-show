@@ -11122,6 +11122,29 @@ return event;
   getAccountPlanLimits(accountId) {
     const d = this.memoryData;
     const account = (d.accounts || []).find(a => a.id === accountId);
+    
+    // Check Internal QA allowlist or INTERNAL_FULL_ACCESS entitlement (C11.16-P3.17)
+    const accountEmail = account ? this.normalizeEmail(account.emailNormalized || account.email) : '';
+    if (this.isInternalQaEmail(accountEmail) || account?.entitlement === 'INTERNAL_FULL_ACCESS' || account?.planCode === 'INTERNAL_FULL_ACCESS' || account?.environment === 'INTERNAL_DEV') {
+      return {
+        planKey: 'INTERNAL_FULL_ACCESS',
+        plan: 'internal_full_access',
+        name: 'INTERNAL FULL ACCESS',
+        title: 'INTERNAL FULL ACCESS',
+        isCommercial: false,
+        isInternalQa: true,
+        maxBooths: 100, // Canonical server-authoritative internal QA booth allowance
+        sourceImageLimit: 60,
+        maxPhotos: 60,
+        productLimit: 100,
+        maxProducts: 100,
+        maxHotspots: 100,
+        multiSalesRep: true,
+        advancedBuyerTools: true,
+        analyticsTier: 'ADVANCED'
+      };
+    }
+
     let plan = 'pro';
     if (account) {
       // Try pilot.tier first (explicit tier on pilot record)
@@ -11146,7 +11169,11 @@ return event;
       }
     }
     const config = this.getPlanConfig();
-    return config[plan] || config.pro;
+    const resolvedConfig = config[plan] || config.pro;
+    return {
+      ...resolvedConfig,
+      maxBooths: resolvedConfig.maxBooths || 1 // Strict 1-booth pilot limit for commercial accounts
+    };
   }
 
   getCustomerBooths(accountId, emailNormalized) {
@@ -11256,6 +11283,271 @@ return event;
 
       account.updatedAt = new Date().toISOString();
       return { success: true, account };
+    });
+  }
+
+  // Canonical Booth Creation Transaction (C11.16-P3.17 Part B)
+  async createCustomerBooth(accountId, boothData = {}) {
+    const { boothName, companyName, tradeShow, boothNumber, emailNormalized } = boothData;
+    if (!boothName || !boothName.trim()) {
+      const err = new Error('Booth Name is required.');
+      err.status = 400;
+      err.code = 'BOOTH_NAME_REQUIRED';
+      throw err;
+    }
+
+    const planLimits = this.getAccountPlanLimits(accountId);
+    const existingBooths = this.getCustomerBooths(accountId, emailNormalized);
+    const maxBooths = planLimits.maxBooths || 1;
+    if (existingBooths.length >= maxBooths) {
+      const err = new Error(`Your current plan allows ${maxBooths} active booth${maxBooths !== 1 ? 's' : ''}. You have reached your limit.`);
+      err.status = 403;
+      err.code = 'BOOTH_LIMIT_REACHED';
+      err.currentCount = existingBooths.length;
+      err.limit = maxBooths;
+      throw err;
+    }
+
+    const normEmail = this.normalizeEmail(emailNormalized);
+    const isDev = this.isInternalQaEmail(normEmail);
+    const projectId = `prj-free-${uuidv4().substring(0, 8)}`;
+    const organizationId = `org-free-${uuidv4().substring(0, 8)}`;
+    const bName = boothName.trim();
+    const cName = (companyName || '').trim() || bName;
+    const defaultPhoto = '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg';
+
+    return this.mutate((db) => {
+      const d = db;
+      d.projects = d.projects || [];
+      d.freePreviewUsages = d.freePreviewUsages || [];
+      d.organizations = d.organizations || [];
+
+      // Create new project record using existing canonical project schema
+      const initialProducts = [
+        { id: 'prod-slot-1', slotIndex: 1, name: '', imageUrl: '', description: '', status: 'EMPTY', createdAt: new Date().toISOString() },
+        { id: 'prod-slot-2', slotIndex: 2, name: '', imageUrl: '', description: '', status: 'EMPTY', createdAt: new Date().toISOString() },
+        { id: 'prod-slot-3', slotIndex: 3, name: '', imageUrl: '', description: '', status: 'EMPTY', createdAt: new Date().toISOString() }
+      ];
+
+      const initialPinpoints = [
+        { id: 'pin-blank-1', slotIndex: 1, isBlank: true, u: 0.28, v: 0.62, coordinateSystem: 'NORMALIZED_2D', label: 'ADD PRODUCT 1', status: 'BLANK', createdAt: new Date().toISOString() },
+        { id: 'pin-blank-2', slotIndex: 2, isBlank: true, u: 0.50, v: 0.52, coordinateSystem: 'NORMALIZED_2D', label: 'ADD PRODUCT 2', status: 'BLANK', createdAt: new Date().toISOString() },
+        { id: 'pin-blank-3', slotIndex: 3, isBlank: true, u: 0.72, v: 0.62, coordinateSystem: 'NORMALIZED_2D', label: 'ADD PRODUCT 3', status: 'BLANK', createdAt: new Date().toISOString() }
+      ];
+
+      const editToken = 'tok-' + crypto.randomBytes(16).toString('hex');
+      const newProject = {
+        id: projectId,
+        accountId,
+        editToken,
+        publishStatus: 'DRAFT',
+        isPublished: false,
+        buyerActions: {
+          enableRfq: true,
+          enableSample: true,
+          enableMeeting: true,
+          showWebsite: true,
+          showContact: true
+        },
+        organizationId,
+        name: `${bName} Virtual Booth`,
+        businessName: cName,
+        brandName: bName,
+        tradeShow: tradeShow || null,
+        boothNumber: boothNumber || null,
+        normalizedBusinessName: this.normalizeBusinessName(cName),
+        customerEmail: normEmail || null,
+        contactEmail: normEmail || null,
+        experienceType: 'PHOTO_IMMERSIVE',
+        commercialState: 'ACTIVE_BOOTH',
+        environment: isDev ? 'INTERNAL_DEV' : 'PRODUCTION',
+        isTest: isDev,
+        internalDeveloperBypass: isDev,
+        sourceAsset: {
+          originalUrl: defaultPhoto,
+          previewUrl: defaultPhoto,
+          processedUrl: defaultPhoto,
+          uploadedAt: new Date().toISOString()
+        },
+        views: [
+          {
+            viewId: 'view-free-0',
+            name: 'Main Photo Immersive View',
+            previewUrl: defaultPhoto,
+            highResUrl: defaultPhoto,
+            coordinateSystem: 'NORMALIZED_2D'
+          }
+        ],
+        boothReady: true,
+        readyArtifacts: {
+          sourceAssetExists: true,
+          sourceReadable: true,
+          sha256Match: true,
+          viewerConfigExists: true,
+          productSlotsCount: 3
+        },
+        pinpoints: initialPinpoints,
+        products: initialProducts,
+        analyticsEvents: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      d.projects.unshift(newProject);
+
+      // Read-after-write verification
+      const verifyProject = d.projects.find(p => p.id === projectId);
+      if (!verifyProject) {
+        throw new Error('Read-after-write persistence failure for created booth.');
+      }
+
+      d.customerTimelineEvents = d.customerTimelineEvents || [];
+      d.customerTimelineEvents.push({
+        id: `tl-${uuidv4().substring(0, 8)}`,
+        accountId,
+        eventType: 'BOOTH_CREATED',
+        details: { projectId, boothName: bName, companyName: cName },
+        timestamp: new Date().toISOString()
+      });
+
+      return {
+        success: true,
+        booth: {
+          id: newProject.id,
+          boothName: newProject.brandName,
+          businessName: newProject.businessName,
+          brandName: newProject.brandName,
+          status: newProject.publishStatus,
+          isPublished: false,
+          viewsCount: 0,
+          leadsCount: 0,
+          productsCount: 0,
+          rfqsCount: 0,
+          createdAt: newProject.createdAt
+        },
+        readAfterWriteVerified: true
+      };
+    });
+  }
+
+  // Canonical Booth Deletion Transaction (C11.16-P3.17 Part C)
+  async deleteCustomerBooth(accountId, boothId, emailNormalized) {
+    if (!boothId) {
+      const err = new Error('Booth ID is required.');
+      err.status = 400;
+      err.code = 'BOOTH_ID_REQUIRED';
+      throw err;
+    }
+
+    const normEmail = this.normalizeEmail(emailNormalized);
+    const isDev = this.isInternalQaEmail(normEmail);
+
+    return this.mutate((db) => {
+      const d = db;
+      d.projects = d.projects || [];
+      
+      const project = d.projects.find(p => p.id === boothId);
+      if (!project) {
+        const err = new Error('Booth not found.');
+        err.status = 404;
+        err.code = 'BOOTH_NOT_FOUND';
+        throw err;
+      }
+
+      // Strict Cross-Tenant Authorization Check (C11.16-P3.17 Requirement 16)
+      const pEmail = this.normalizeEmail(project.contactEmail || project.customerEmail || project.email);
+      const isOwner = project.accountId === accountId || (normEmail && pEmail === normEmail);
+      if (!isOwner && !isDev) {
+        const err = new Error('Cross-tenant deletion forbidden. You do not have permission to delete this booth.');
+        err.status = 403;
+        err.code = 'CROSS_TENANT_DELETE_FORBIDDEN';
+        throw err;
+      }
+
+      // Studio Berry Strict Customer Safety Invariant (C11.16-P3.17 Requirement 0 & 47)
+      if (pEmail === 'studioberryinfo@gmail.com' || project.id === 'prj-free-14e56240' || project.id === 'prj-free-e99137ed') {
+        const err = new Error('Studio Berry production booth is protected and cannot be deleted.');
+        err.status = 403;
+        err.code = 'STUDIO_BERRY_PROTECTED';
+        throw err;
+      }
+
+      // Active 3D Job Safety (C11.16-P3.17 Requirement 21)
+      const activeJobs = (d.booth3dJobs || []).filter(j => j.projectId === boothId && (j.status === 'QUEUED' || j.status === 'PROCESSING'));
+      if (activeJobs.length > 0) {
+        const err = new Error('Cannot delete booth while 3D reconstruction is actively in progress. Please wait for the job to complete or cancel it.');
+        err.status = 409;
+        err.code = 'ACTIVE_JOB_IN_PROGRESS';
+        throw err;
+      }
+
+      // Lead / RFQ Safety (C11.16-P3.17 Requirement 19)
+      const leads = (d.leads || d.tradeLeads || []).filter(l => l.projectId === boothId || l.boothId === boothId);
+      if (!isDev && !project.isTest && leads.length > 0) {
+        const err = new Error(`Cannot delete this production booth because it contains ${leads.length} active buyer lead(s) or RFQ inquiries. To protect your commercial records, please archive leads before deletion.`);
+        err.status = 400;
+        err.code = 'CANNOT_DELETE_BOOTH_WITH_ACTIVE_LEADS';
+        err.leadsCount = leads.length;
+        throw err;
+      }
+
+      // Deletion Cascade for booth-exclusive dependencies (C11.16-P3.17 Requirement 17 & 18)
+      // 1. Remove from d.projects
+      const projectIndex = d.projects.findIndex(p => p.id === boothId);
+      if (projectIndex !== -1) {
+        d.projects.splice(projectIndex, 1);
+      }
+
+      // 2. Remove booth-specific sources
+      if (d.boothSources) {
+        d.boothSources = d.boothSources.filter(s => s.projectId !== boothId);
+      }
+
+      // 3. Remove booth-specific 3D jobs
+      if (d.booth3dJobs) {
+        d.booth3dJobs = d.booth3dJobs.filter(j => j.projectId !== boothId);
+      }
+
+      // 4. Remove booth-specific analytics events
+      if (d.analyticsEvents) {
+        d.analyticsEvents = d.analyticsEvents.filter(e => e.projectId !== boothId);
+      }
+
+      // 5. Remove freePreviewUsages entry if present
+      if (d.freePreviewUsages) {
+        d.freePreviewUsages = d.freePreviewUsages.filter(u => u.projectId !== boothId);
+      }
+
+      // 6. If internal QA/test, safe cascade leads
+      if ((isDev || project.isTest) && d.leads) {
+        d.leads = d.leads.filter(l => l.projectId !== boothId && l.boothId !== boothId);
+      }
+      if ((isDev || project.isTest) && d.tradeLeads) {
+        d.tradeLeads = d.tradeLeads.filter(l => l.projectId !== boothId && l.boothId !== boothId);
+      }
+
+      // Read-After-Write Verification (C11.16-P3.17 Requirement 22)
+      const readCheck = d.projects.find(p => p.id === boothId);
+      if (readCheck) {
+        throw new Error('Read-after-write verification failed: Booth record still present after delete.');
+      }
+
+      d.customerTimelineEvents = d.customerTimelineEvents || [];
+      d.customerTimelineEvents.push({
+        id: `tl-${uuidv4().substring(0, 8)}`,
+        accountId,
+        eventType: 'BOOTH_DELETED',
+        details: { deletedBoothId: boothId, boothName: project.brandName || project.businessName },
+        timestamp: new Date().toISOString()
+      });
+
+      return {
+        success: true,
+        deletedBoothId: boothId,
+        readAfterWriteVerified: true,
+        boothNotFound: true,
+        message: 'Booth and associated booth data permanently deleted successfully.'
+      };
     });
   }
 

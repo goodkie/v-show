@@ -594,7 +594,7 @@ app.use('/uploads', express.static(UPLOADS_DIR));
 const P315_BUILD_INFO = {
   gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'C11.16-P3.15-R4',
   buildTimestamp: new Date().toISOString(),
-  releaseId: "C11.16-P3.16"
+  releaseId: "C11.16-P3.17"
 };
 
 app.get('/api/build-info', (req, res) => {
@@ -7327,10 +7327,12 @@ app.post('/api/projects/:id/booth-3d/regenerate', async (req, res) => {
         await new Promise(r => setTimeout(r, 800));
 
         // 2. Execute V4 Absolute Fidelity mastering pipeline strictly on user's authentic source photo
+        const removePeople = req.body?.removePeople !== false;
         const baseName = `booth_master_8k_${projectId}_${job.id}`;
         const masteringResult = await defaultOrchestrator.processBoothImage(sourcePath, {
           jobId: job.id,
           planTier: effectiveAccount.planCode || 'PRO',
+          removePeople,
           outputDir: UPLOADS_DIR,
           baseName
         });
@@ -8436,11 +8438,17 @@ app.post('/api/customer/auth/logout', requireCustomerAuth, async (req, res) => {
 // 5. Get Customer's Owned Booths
 app.get('/api/customer/booths', requireCustomerAuth, (req, res) => {
   try {
+    const planLimits = db.getAccountPlanLimits(req.customer.id);
     const booths = db.getCustomerBooths(req.customer.id, req.customer.emailNormalized);
+    const maxBooths = planLimits.maxBooths || 1;
     res.json({
       success: true,
       booths,
-      totalCount: booths.length
+      totalCount: booths.length,
+      maxBooths,
+      canCreateBooth: booths.length < maxBooths,
+      isInternalQa: Boolean(planLimits.isInternalQa),
+      planKey: planLimits.planKey || 'PRO'
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -8565,9 +8573,29 @@ app.post('/api/customer/booths/claim', requireCustomerAuth, async (req, res) => 
   }
 });
 
-// 9.1 Create New Booth — Server-Side Entitlement Limit Enforcement
-app.post('/api/customer/booths/create', requireCustomerAuth, (req, res) => {
+// 9.1 Create New Booth — Server-Authoritative Booth Creation (C11.16-P3.17 Part B)
+app.post(['/api/customer/booths/create', '/api/customer/booths'], requireCustomerAuth, async (req, res) => {
   try {
+    const { boothName, companyName, tradeShow, boothNumber } = req.body || {};
+    
+    // If body contains boothName, execute canonical booth creation transaction
+    if (boothName && typeof boothName === 'string' && boothName.trim()) {
+      const result = await db.createCustomerBooth(req.customer.id, {
+        boothName: boothName.trim(),
+        companyName: companyName ? companyName.trim() : '',
+        tradeShow: tradeShow ? tradeShow.trim() : '',
+        boothNumber: boothNumber ? boothNumber.trim() : '',
+        emailNormalized: req.customer.emailNormalized
+      });
+      return res.json({
+        success: true,
+        booth: result.booth,
+        readAfterWriteVerified: true,
+        message: 'Booth created successfully.'
+      });
+    }
+
+    // Fallback entitlement check for initiation flow
     const planLimits = db.getAccountPlanLimits(req.customer.id);
     const existingBooths = db.getCustomerBooths(req.customer.id, req.customer.emailNormalized);
     const maxBooths = planLimits.maxBooths || 1;
@@ -8580,10 +8608,29 @@ app.post('/api/customer/booths/create', requireCustomerAuth, (req, res) => {
         upgradeAvailable: true
       });
     }
-    // If under limit, redirect to booth creation flow
     res.json({ success: true, message: 'Booth creation allowed.', redirectUrl: '/' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code || 'BOOTH_CREATE_ERROR' });
+  }
+});
+
+// 9.2 Delete Booth — Canonical Destruction Transaction (C11.16-P3.17 Part C)
+app.delete('/api/customer/booths/:boothId', requireCustomerAuth, async (req, res) => {
+  try {
+    const boothId = req.params.boothId;
+    if (!boothId) {
+      return res.status(400).json({ success: false, error: 'Booth ID is required.', code: 'BOOTH_ID_REQUIRED' });
+    }
+
+    const result = await db.deleteCustomerBooth(req.customer.id, boothId, req.customer.emailNormalized);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'DELETE_BOOTH_ERROR',
+      leadsCount: err.leadsCount
+    });
   }
 });
 

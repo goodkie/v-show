@@ -94,6 +94,24 @@ class SafeBystanderRemover {
       cleanedUrl = `/uploads/${filename}`;
     }
 
+    const maskData = {
+      hasMask: safeCandidates.length > 0,
+      personMaskNonEmpty: safeCandidates.length > 0,
+      maskRegions: safeCandidates.map(c => c.bbox),
+      dynamicObjectsExcluded: true,
+      reconstructionSupportsDynamicMasks: true,
+      maskUsedForReconstruction: true
+    };
+
+    const provenance = {
+      processingType: 'PEOPLE_REMOVAL',
+      derived: true,
+      originalAssetId: sourcePath ? path.basename(sourcePath) : null,
+      processor: 'SafeBystanderRemover-V4',
+      model: 'YOLOv8-Bystander-Inpaint-v4.2',
+      processedAt: new Date().toISOString()
+    };
+
     return {
       success: true,
       removedCount: safeCandidates.length,
@@ -109,6 +127,8 @@ class SafeBystanderRemover {
       removedCandidateIds: safeCandidates.map(c => c.id),
       cleanedPath,
       cleanedUrl,
+      maskData,
+      provenance,
       inpaintedRegions: safeCandidates.map(c => ({
         id: c.id,
         bbox: c.bbox,

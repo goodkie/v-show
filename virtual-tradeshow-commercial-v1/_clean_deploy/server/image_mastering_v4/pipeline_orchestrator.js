@@ -85,8 +85,17 @@ class PipelineOrchestrator {
       logStage('DETAIL_COLOR_ENHANCEMENT', { deltaE: enhancerResult.brandColorDeltaE });
 
       // ── STAGE 9: 8K UHD PNG NORMALIZATION & DERIVATIVES ──
-      const masterData = MasterNormalizer.normalize8K(srResult, enhancerResult, outputDir, options.baseName || `booth_master_v4_${jobId}`, sourcePath);
-      logStage('8K_MASTER_NORMALIZATION', { masterResolution: `${masterData.masterWidth}x${masterData.masterHeight}`, format: masterData.masterFormat });
+      const masterSource = (options.removePeople !== false && humanRemovalResult && humanRemovalResult.cleanedPath && fs.existsSync(humanRemovalResult.cleanedPath))
+        ? humanRemovalResult.cleanedPath
+        : sourcePath;
+      const masterData = MasterNormalizer.normalize8K(srResult, enhancerResult, outputDir, options.baseName || `booth_master_v4_${jobId}`, masterSource);
+      masterData.originalSourcePath = sourcePath;
+      masterData.cleanedSourcePath = humanRemovalResult.cleanedPath;
+      masterData.peopleRemoved = Boolean(options.removePeople !== false && humanRemovalResult.removedCount > 0);
+      masterData.peopleRemovedCount = humanRemovalResult.removedCount;
+      masterData.maskData = humanRemovalResult.maskData;
+      masterData.provenance = humanRemovalResult.provenance;
+      logStage('8K_MASTER_NORMALIZATION', { masterResolution: `${masterData.masterWidth}x${masterData.masterHeight}`, format: masterData.masterFormat, peopleRemoved: masterData.peopleRemoved });
 
       // ── STAGE 10: FORENSIC FIDELITY QA & BENCHMARK AUDIT ──
       const qaResult = CommercialFidelityQA.executeFidelityAudit(sourceInfo, lockData, personAnalysis, masterData);
