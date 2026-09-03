@@ -47,16 +47,39 @@ class AiEnhancedBoothPipeline {
    */
   auditSource(sourcePath, originalFilename = 'photo.jpg') {
     if (!fs.existsSync(sourcePath)) {
-      throw new Error(`Source photo not found at ${sourcePath}`);
+      const err = new Error(`SOURCE_NOT_FOUND: Source photo not found at ${sourcePath}`);
+      err.code = 'SOURCE_NOT_FOUND';
+      throw err;
     }
 
-    const buf = fs.readFileSync(sourcePath);
-    const sha256 = crypto.createHash('sha256').update(buf).digest('hex');
-    const assetId = `asset-orig-${uuidv4().substring(0, 8)}`;
-    const ext = path.extname(originalFilename).toLowerCase() || '.jpg';
-    const mime = ext === '.png' ? 'image/png' : (ext === '.webp' ? 'image/webp' : 'image/jpeg');
+    const { inspectImageBuffer, decodeImageToPixels } = require('./lib/image_normalizer');
+    const rawBuf = fs.readFileSync(sourcePath);
+    const inspection = inspectImageBuffer(rawBuf);
 
-    const { width, height } = this._parseDimensions(buf, ext);
+    if (!inspection.valid) {
+      const err = new Error(`SOURCE_NOT_IMAGE: Detected ${inspection.detectedFormat} (${inspection.reason}). Magic: ${inspection.magic}`);
+      err.code = inspection.reason;
+      err.sanitizedUserMessage = "We couldn't read this booth image. Please upload a valid JPG, PNG, or WebP photo.";
+      throw err;
+    }
+
+    let pixels;
+    try {
+      pixels = decodeImageToPixels(rawBuf, inspection.detectedFormat);
+    } catch (decErr) {
+      const err = new Error(`IMAGE_DECODE_FAILED: ${decErr.message}`);
+      err.code = 'IMAGE_DECODE_FAILED';
+      err.sanitizedUserMessage = "Image decoding failed. Please verify the photo is not corrupt.";
+      throw err;
+    }
+
+    const sha256 = crypto.createHash('sha256').update(rawBuf).digest('hex');
+    const assetId = `asset-orig-${uuidv4().substring(0, 8)}`;
+    const ext = path.extname(originalFilename).toLowerCase() || `.${inspection.detectedFormat.toLowerCase()}`;
+    const mime = inspection.mime;
+
+    const width = pixels.width;
+    const height = pixels.height;
     const aspectRatio = width / (height || 1);
     const is2to1Panorama = Math.abs(aspectRatio - 2.0) < 0.15 && width >= 3840;
     const is16to9 = Math.abs(aspectRatio - (16 / 9)) < 0.15;
@@ -65,7 +88,7 @@ class AiEnhancedBoothPipeline {
     if (width < 1920 || height < 1080) {
       warnings.push(`Low resolution source (${width}x${height}). AI 16K enhancement recommended.`);
     }
-    if (buf.length < 100 * 1024) {
+    if (rawBuf.length < 100 * 1024) {
       warnings.push('High compression artifacts detected in source.');
     }
 
@@ -74,14 +97,17 @@ class AiEnhancedBoothPipeline {
       originalFilename,
       sourcePath,
       sha256,
-      sizeBytes: buf.length,
+      sizeBytes: rawBuf.length,
       mime,
+      detectedFormat: inspection.detectedFormat,
+      magic: inspection.magic,
       width,
       height,
       aspectRatio: Number(aspectRatio.toFixed(3)),
       is2to1Panorama,
       is16to9,
       warnings,
+      pixels,
       createdAt: new Date().toISOString()
     };
   }
@@ -95,9 +121,13 @@ class AiEnhancedBoothPipeline {
     const sourcePath = sourceInfo.sourcePath;
     const is2to1 = sourceInfo.is2to1Panorama;
 
-    // Decode source JPEG
-    const rawJpg = fs.readFileSync(sourcePath);
-    const decoded = jpeg.decode(rawJpg, { useTArray: true });
+    // Multi-format decoded RGBA pixels (JPEG, PNG, WebP)
+    let decoded = sourceInfo.pixels;
+    if (!decoded || !decoded.data) {
+      const { normalizeImageInput } = require('./lib/image_normalizer');
+      const norm = await normalizeImageInput(sourcePath, { filename: sourceInfo.originalFilename });
+      decoded = norm.pixels;
+    }
     const inW = decoded.width;
     const inH = decoded.height;
 

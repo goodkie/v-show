@@ -9325,6 +9325,62 @@ app.get('/api/internal/ai-providers-health', async (req, res) => {
 });
 
 
+// C11.16-P3.22-R2: SOI Forensics Diagnostic Endpoint
+app.get('/api/internal/soi-forensics', (req, res) => {
+  try {
+    const { inspectImageBuffer } = require('./lib/image_normalizer');
+    const files = fs.readdirSync(UPLOADS_DIR);
+    const fileStats = [];
+    for (const f of files) {
+      const p = path.join(UPLOADS_DIR, f);
+      try {
+        const stat = fs.statSync(p);
+        if (stat.isFile()) {
+          fileStats.push({
+            filename: f,
+            size: stat.size,
+            mtime: stat.mtime.toISOString(),
+            mtimeMs: stat.mtimeMs
+          });
+        }
+      } catch (e) {}
+    }
+    fileStats.sort((a, b) => (b.mtimeMs || 0) - (a.mtimeMs || 0));
+
+    const top = fileStats.slice(0, 20).map(item => {
+      try {
+        const p = path.join(UPLOADS_DIR, item.filename);
+        const fd = fs.openSync(p, 'r');
+        const buf = Buffer.alloc(32);
+        const bytesRead = fs.readSync(fd, buf, 0, 32, 0);
+        fs.closeSync(fd);
+        const chunk = buf.subarray(0, bytesRead);
+        const hex = chunk.toString('hex').toUpperCase();
+        const inspection = inspectImageBuffer(chunk);
+        return {
+          ...item,
+          bytesRead,
+          first32Hex: hex,
+          first32Ascii: chunk.toString('latin1').replace(/[^\x20-\x7E]/g, '.'),
+          detectedMagicType: inspection.detectedFormat,
+          mime: inspection.mime,
+          isValidImage: inspection.valid
+        };
+      } catch (e) {
+        return { ...item, readError: e.message };
+      }
+    });
+
+    res.json({
+      success: true,
+      totalUploads: files.length,
+      recentUploads: top
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // C11.16-P3.16: Canonical Global API 404 Handler (returns JSON for ANY HTTP method)
 app.all('/api/*', (req, res) => {
   res.status(404).json({
