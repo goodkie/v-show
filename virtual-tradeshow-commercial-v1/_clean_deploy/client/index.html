@@ -5708,8 +5708,20 @@
         }
       }
 
-      if (targetTextureUrl && textureLoader) {
-        textureLoader.load(targetTextureUrl, (tex) => {
+      const candidateUrls = [];
+      if (activeBg && activeBg.derivatives) {
+        if (maxTex >= 16384 && activeBg.derivatives.master16k && activeBg.derivatives.master16k.url && window.innerWidth >= 1920) candidateUrls.push(activeBg.derivatives.master16k.url);
+        if (maxTex >= 8192 && activeBg.derivatives.desktop8k && activeBg.derivatives.desktop8k.url) candidateUrls.push(activeBg.derivatives.desktop8k.url);
+        if (maxTex >= 4096 && activeBg.derivatives.standard4k && activeBg.derivatives.standard4k.url) candidateUrls.push(activeBg.derivatives.standard4k.url);
+        if (activeBg.derivatives.mobile2k && activeBg.derivatives.mobile2k.url) candidateUrls.push(activeBg.derivatives.mobile2k.url);
+      }
+      if (photoUrl && !candidateUrls.includes(photoUrl)) candidateUrls.push(photoUrl);
+      candidateUrls.push('/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg');
+
+      function tryLoadTexture(urlIndex) {
+        if (urlIndex >= candidateUrls.length || !textureLoader) return;
+        const currentUrl = candidateUrls[urlIndex];
+        textureLoader.load(currentUrl, function(tex) {
           tex.colorSpace = THREE.SRGBColorSpace || THREE.sRGBEncoding;
           tex.encoding = THREE.sRGBEncoding;
           tex.minFilter = THREE.LinearMipmapLinearFilter;
@@ -5720,7 +5732,15 @@
           photoMaterial.map = tex;
           photoMaterial.needsUpdate = true;
           recalculatePinpointPositions(projectData);
+          if (renderer && scene && camera) renderer.render(scene, camera);
+        }, null, function(err) {
+          console.warn('[Texture Loader Fallback]', currentUrl, 'failed, attempting next candidate...');
+          tryLoadTexture(urlIndex + 1);
         });
+      }
+
+      if (candidateUrls.length > 0) {
+        tryLoadTexture(0);
       }
 
       setupStudioProducts(projectData);
