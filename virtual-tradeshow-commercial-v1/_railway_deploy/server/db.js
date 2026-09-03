@@ -9286,9 +9286,9 @@ return event;
         if (isOwner) return true;
 
         const isDev = this.isInternalQaEmail(norm) || sessData.account.entitlement === 'INTERNAL_FULL_ACCESS' || sessData.account.environment === 'INTERNAL_DEV';
-        const isTestProject = Boolean(project.isTest || project.environment === 'INTERNAL_DEV' || project.id === 'prj-qa-goodkie-dev');
-        if (isDev && isTestProject) {
-          return true;
+        if (isDev) {
+          const isStudioBerry = project.id === 'prj-free-14e56240' || (pEmail && pEmail.includes('studioberry'));
+          if (!isStudioBerry) return true;
         }
       }
     }
