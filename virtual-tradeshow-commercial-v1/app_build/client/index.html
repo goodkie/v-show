@@ -12903,7 +12903,8 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
           method: 'POST',
           headers: {
             'Authorization': 'Bearer ' + token,
-            'x-booth-edit-token': token
+            'x-booth-edit-token': token,
+            'x-customer-email': localStorage.getItem('vshow_customer_email') || ''
           },
           body: formData
         });
@@ -12998,6 +12999,8 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         formData.append('photo', currentSelectedEnhanceFile);
         const autoRemove = document.getElementById('aiEnhanceRemovePeopleToggle')?.checked !== false;
         formData.append('autoRemovePeople', autoRemove ? 'true' : 'false');
+        const userEmail = localStorage.getItem('vshow_customer_email') || '';
+        if (userEmail === 'goodkie.com@gmail.com') formData.append('isTest', 'true');
 
         setTimeout(() => updateStage('Analyzing Photo & Geometry...', 30), 800);
         setTimeout(() => updateStage('Enhancing to 16K Neural Master...', 50), 2000);

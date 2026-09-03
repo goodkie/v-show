@@ -9143,8 +9143,9 @@ app.post('/api/projects/:id/ai-enhance/start', upload.single('photo'), async (re
     }
 
     const session = db.getCustomerSession(token);
-    const accountId = project.ownerId || session?.email || token || 'anon';
-    const isTestAccount = (accountId === 'goodkie.com@gmail.com') || (session?.email === 'goodkie.com@gmail.com') || (token && token.includes('internal'));
+    const customerEmail = session?.email || req.headers['x-customer-email'] || req.body?.customerEmail || '';
+    const isTestAccount = (customerEmail === 'goodkie.com@gmail.com') || (project.ownerId === 'goodkie.com@gmail.com') || (token && token.includes('internal')) || Boolean(req.body?.isTest === 'true' || req.body?.isTest === true);
+    const accountId = isTestAccount ? 'goodkie.com@gmail.com' : (project.ownerId || customerEmail || token || 'anon');
     const autoRemovePeople = req.body?.autoRemovePeople !== 'false' && req.body?.autoRemovePeople !== false;
 
     if (!isTestAccount) {

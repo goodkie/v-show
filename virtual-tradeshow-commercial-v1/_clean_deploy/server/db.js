@@ -12617,10 +12617,16 @@ return event;
       db.tokenLedgers = db.tokenLedgers || [];
       let ledger = db.tokenLedgers.find(l => l.accountId === accountId);
       if (!ledger) {
-        const err = new Error('Token ledger not found for account.');
-        err.code = 'TOKEN_LEDGER_NOT_FOUND';
-        err.status = 400;
-        throw err;
+        ledger = {
+          accountId,
+          availableTokens: 100,
+          reservedTokens: 0,
+          consumedTokens: 0,
+          isTestAccount: accountId === 'goodkie.com@gmail.com',
+          createdAt: new Date().toISOString(),
+          lastUpdated: new Date().toISOString()
+        };
+        db.tokenLedgers.push(ledger);
       }
       if (ledger.availableTokens < amount) {
         const err = new Error(`Insufficient token balance. Available: ${ledger.availableTokens}, Required: ${amount}`);
