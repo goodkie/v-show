@@ -12558,6 +12558,7 @@ return event;
   // Token cost config — driven by env vars, not hardcoded plan prices
   getTokenCostConfig() {
     return {
+      AI_ENHANCED_BOOTH_TOKEN_COST:        parseInt(process.env.AI_ENHANCED_BOOTH_TOKEN_COST || '25', 10),
       PRODUCT_3D_SINGLE_IMAGE_TOKEN_COST: parseInt(process.env.PRODUCT_3D_SINGLE_IMAGE_TOKEN_COST || '1', 10),
       PRODUCT_3D_REGEN_TOKEN_COST:        parseInt(process.env.PRODUCT_3D_REGEN_TOKEN_COST || '1', 10),
       TOKEN_COMMERCIAL_POLICY: process.env.TOKEN_COMMERCIAL_POLICY || 'CONFIG_DRIVEN',
@@ -13356,6 +13357,166 @@ return event;
   }
 
 
+
+  // ============================================================
+  // ─── P3.22: TRUE 3D MANAGED SERVICE QUOTES ──────────────────
+  // ============================================================
+
+  async createQuoteRequest(quoteData) {
+    return this.mutate((db) => {
+      db.quoteRequests = db.quoteRequests || [];
+      const num = Math.floor(1000 + Math.random() * 9000);
+      const quoteId = `3DZ-3D-${num}`;
+      const isInternal = (quoteData.email === 'goodkie.com@gmail.com') || Boolean(quoteData.isTest);
+
+      const record = {
+        quoteId,
+        id: quoteId,
+        companyName: quoteData.companyName || 'Unknown Company',
+        contactName: quoteData.contactName || 'Unknown Contact',
+        email: quoteData.email || '',
+        phone: quoteData.phone || '',
+        tradeShow: quoteData.tradeShow || quoteData.event || '',
+        eventDate: quoteData.eventDate || '',
+        boothSize: {
+          width: quoteData.boothWidth || quoteData.width || '',
+          depth: quoteData.boothDepth || quoteData.depth || '',
+          height: quoteData.boothHeight || quoteData.height || ''
+        },
+        boothType: quoteData.boothType || 'Medium',
+        sourceAvailable: quoteData.sourceAvailable || 'Photos',
+        approxPhotos: quoteData.approxPhotos || '',
+        needCaptureAssistance: Boolean(quoteData.needCaptureAssistance),
+        needOnSiteCapture: Boolean(quoteData.needOnSiteCapture),
+        location: quoteData.location || '',
+        desiredDeliveryDate: quoteData.desiredDeliveryDate || '',
+        numberOfBooths: quoteData.numberOfBooths || 1,
+        additionalNotes: quoteData.additionalNotes || '',
+        attachments: quoteData.attachments || [],
+        status: 'NEW',
+        environment: isInternal ? 'INTERNAL_DEV' : 'PRODUCTION',
+        isTest: isInternal,
+        noPaymentCreated: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      db.quoteRequests.push(record);
+      return record;
+    });
+  }
+
+  getQuoteRequest(quoteId) {
+    const data = this.read();
+    return (data.quoteRequests || []).find(q => q.quoteId === quoteId || q.id === quoteId) || null;
+  }
+
+  listQuoteRequests(filter = {}) {
+    const data = this.read();
+    let list = data.quoteRequests || [];
+    if (filter.excludeTest) {
+      list = list.filter(q => !q.isTest && q.environment !== 'INTERNAL_DEV');
+    }
+    return list;
+  }
+
+  // ============================================================
+  // ─── P3.22: AI ENHANCED BOOTH CANDIDATE MANAGEMENT ─────────
+  // ============================================================
+
+  async saveEnhancedBoothCandidate(projectId, candidate) {
+    return this.mutate((db) => {
+      db.enhancedCandidates = db.enhancedCandidates || [];
+      const existingIdx = db.enhancedCandidates.findIndex(c => c.candidateId === candidate.candidateId);
+      if (existingIdx >= 0) {
+        db.enhancedCandidates[existingIdx] = candidate;
+      } else {
+        db.enhancedCandidates.push(candidate);
+      }
+      return candidate;
+    });
+  }
+
+  getEnhancedBoothCandidate(candidateId) {
+    const data = this.read();
+    return (data.enhancedCandidates || []).find(c => c.candidateId === candidateId) || null;
+  }
+
+  async applyEnhancedBoothCandidate(projectId, candidateId, token) {
+    return this.mutate(async (db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) throw new Error(`Project ${projectId} not found`);
+
+      const candidate = (db.enhancedCandidates || []).find(c => c.candidateId === candidateId);
+      if (!candidate) throw new Error(`Enhanced booth candidate ${candidateId} not found`);
+
+      // Token settlement: consume 25 reserved tokens (or 0 for internal QA)
+      const accountId = project.ownerId || project.userId || token || 'anon';
+      const isInternal = candidate.sourceLineage?.isTestAccount || (accountId === 'goodkie.com@gmail.com') || (token && token.includes('internal'));
+      
+      if (!isInternal) {
+        let ledger = (db.tokenLedgers || []).find(l => l.accountId === accountId);
+        if (ledger && ledger.reservedTokens >= 25) {
+          ledger.reservedTokens -= 25;
+          ledger.consumedTokens += 25;
+          ledger.lastUpdated = new Date().toISOString();
+        }
+      }
+
+      // Activate candidate on project
+      const versionId = `bver-enh-${Date.now()}`;
+      const assetId = `asset-enh-${Date.now()}`;
+      const activeUrl = candidate.activeAssetUrl || candidate.master?.url;
+
+      project.backgroundVersions = project.backgroundVersions || [];
+      const versionObj = {
+        versionId,
+        assetId,
+        url: activeUrl,
+        sourceType: 'AI_ENHANCED',
+        candidateId,
+        neuralSrModel: candidate.master?.neuralSrModel,
+        depthAsset: candidate.depth?.depthAsset,
+        viewerMode: candidate.viewer?.viewerMode || 'AI_ENHANCED_IMMERSIVE',
+        derivatives: candidate.derivatives,
+        normalFov: candidate.viewer?.normalFov || 50,
+        wideFov: candidate.viewer?.wideFov || 60,
+        createdAt: new Date().toISOString()
+      };
+      project.backgroundVersions.push(versionObj);
+
+      project.activeBackgroundVersionId = versionId;
+      project.activeBackground = versionObj;
+      project.photoUrl = activeUrl;
+      project.activeViewerMode = versionObj.viewerMode;
+      project.depthAsset = candidate.depth?.depthAsset;
+      project.updatedAt = new Date().toISOString();
+
+      candidate.status = 'APPLIED';
+      return {
+        success: true,
+        project,
+        activeBackground: versionObj
+      };
+    });
+  }
+
+  async discardEnhancedBoothCandidate(projectId, candidateId, token) {
+    return this.mutate((db) => {
+      const candidate = (db.enhancedCandidates || []).find(c => c.candidateId === candidateId);
+      if (candidate) {
+        candidate.status = 'DISCARDED';
+        const accountId = candidate.accountId || token || 'anon';
+        let ledger = (db.tokenLedgers || []).find(l => l.accountId === accountId);
+        if (ledger && ledger.reservedTokens >= 25) {
+          ledger.reservedTokens -= 25;
+          ledger.availableTokens += 25;
+          ledger.lastUpdated = new Date().toISOString();
+        }
+      }
+      return { success: true };
+    });
+  }
 }
 
 module.exports = new JSONDatabase();

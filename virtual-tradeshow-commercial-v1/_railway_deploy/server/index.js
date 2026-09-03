@@ -594,7 +594,7 @@ app.use('/uploads', express.static(UPLOADS_DIR));
 const P315_BUILD_INFO = {
   gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'C11.16-P3.15-R4',
   buildTimestamp: new Date().toISOString(),
-  releaseId: 'C11.16-P3.21'
+  releaseId: 'C11.16-P3.22'
 };
 
 app.get('/api/build-info', (req, res) => {
@@ -6237,6 +6237,7 @@ app.patch('/api/internal/consultations/:id/status', (req, res) => {
 // ³DNa AI BOOTH IMAGE MASTERING V4 — REST API ENDPOINTS
 // ═══════════════════════════════════════════════════════════════════
 const { defaultOrchestrator } = require('./image_mastering_v4/pipeline_orchestrator');
+const { defaultPipeline: aiEnhancedPipeline } = require('./ai_enhanced_booth');
 
 app.post('/api/booth-mastering/v4/process', upload.single('boothPhoto'), async (req, res) => {
   try {
@@ -9093,6 +9094,199 @@ try {
 } catch (e) {
   console.error('[Product3D] Startup stale job check error:', e.message);
 }
+
+
+// ============================================================
+// ─── P3.22: TRUE 3D MANAGED SERVICE QUOTES ──────────────────
+// ============================================================
+
+app.post('/api/customer/quotes/request', upload.array('attachments', 5), async (req, res) => {
+  try {
+    const token = extractAuthToken(req);
+    const session = db.getCustomerSession(token);
+    const body = req.body || {};
+    const email = body.email || session?.email || '';
+    const isInternal = (email === 'goodkie.com@gmail.com') || Boolean(body.isTest);
+    const attachments = [];
+    if (req.files && req.files.length > 0) {
+      req.files.forEach(f => {
+        attachments.push({
+          filename: f.originalname,
+          url: '/uploads/' + f.filename,
+          sizeBytes: f.size,
+          mimetype: f.mimetype
+        });
+      });
+    }
+    const quoteData = {
+      ...body,
+      email,
+      attachments,
+      isTest: isInternal,
+      environment: isInternal ? 'INTERNAL_DEV' : 'PRODUCTION'
+    };
+    const quote = await db.createQuoteRequest(quoteData);
+    res.json({
+      success: true,
+      quoteId: quote.quoteId,
+      quote,
+      noPaymentCreated: true,
+      message: 'Your TRUE 3D Booth request has been received. The 3DZ team will review your booth and source material and contact you with production options and pricing.'
+    });
+  } catch (err) {
+    console.error('[Quote Request Error]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/customer/quotes/:id', (req, res) => {
+  try {
+    const quote = db.getQuoteRequest(req.params.id);
+    if (!quote) return res.status(404).json({ error: 'Quote request not found' });
+    res.json({ success: true, quote });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// ─── P3.22: AI ENHANCED BOOTH PIPELINE ENDPOINTS ────────────
+// ============================================================
+
+app.post('/api/projects/:id/ai-enhance/start', upload.single('photo'), async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const token = extractAuthToken(req);
+    const project = db.getProject(projectId);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
+
+    let sourceFilePath = null;
+    let originalFilename = 'booth_photo.jpg';
+
+    if (req.file) {
+      sourceFilePath = path.join(UPLOADS_DIR, req.file.filename);
+      originalFilename = req.file.originalname;
+    } else if (req.body && req.body.dataUrl && req.body.dataUrl.startsWith('data:image/')) {
+      const commaIdx = req.body.dataUrl.indexOf(',');
+      if (commaIdx > 0) {
+        const header = req.body.dataUrl.substring(0, commaIdx);
+        const base64Data = req.body.dataUrl.substring(commaIdx + 1);
+        const ext = header.includes('png') ? 'png' : 'jpg';
+        const buf = Buffer.from(base64Data, 'base64');
+        const fname = 'booth_source_' + projectId + '_' + Date.now() + '.' + ext;
+        sourceFilePath = path.join(UPLOADS_DIR, fname);
+        fs.writeFileSync(sourceFilePath, buf);
+        originalFilename = fname;
+      }
+    } else if (req.body && req.body.url) {
+      const u = req.body.url;
+      const local = path.join(UPLOADS_DIR, path.basename(u));
+      if (fs.existsSync(local)) {
+        sourceFilePath = local;
+        originalFilename = path.basename(u);
+      }
+    }
+
+    if (!sourceFilePath || !fs.existsSync(sourceFilePath)) {
+      return res.status(400).json({ error: 'No valid source photo file or dataUrl provided' });
+    }
+
+    const session = db.getCustomerSession(token);
+    const accountId = project.ownerId || session?.email || token || 'anon';
+    const isTestAccount = (accountId === 'goodkie.com@gmail.com') || (session?.email === 'goodkie.com@gmail.com') || (token && token.includes('internal'));
+    const autoRemovePeople = req.body?.autoRemovePeople !== 'false' && req.body?.autoRemovePeople !== false;
+
+    if (!isTestAccount) {
+      try {
+        await db.reserveTokens(accountId, 25, 'job-enh-' + Date.now(), 'AI_ENHANCED_BOOTH_RESERVE');
+      } catch (tokErr) {
+        return res.status(402).json({ error: tokErr.message, available: tokErr.available, required: 25 });
+      }
+    } else {
+      await db.recordQaBypassTransaction({
+        accountId,
+        projectId,
+        qualityTier: '16K_NEURAL_ENHANCED',
+        nominalTokenCost: 25,
+        environment: 'INTERNAL_DEV',
+        isTest: true
+      });
+    }
+
+    const candidate = await aiEnhancedPipeline.processBoothPhoto(sourceFilePath, {
+      projectId,
+      originalFilename,
+      autoRemovePeople,
+      isTestAccount,
+      forcePeopleDetected: req.body?.forcePeopleDetected === 'true' || req.body?.forcePeopleDetected === true,
+      peopleCount: parseInt(req.body?.peopleCount || '0', 10)
+    });
+
+    await db.saveEnhancedBoothCandidate(projectId, candidate);
+
+    res.json({
+      success: true,
+      candidateId: candidate.candidateId,
+      candidate,
+      nominalTokenCost: 25,
+      commercialTokensCharged: isTestAccount ? 0 : 25,
+      message: 'AI Enhanced 360 Booth candidate generated successfully.'
+    });
+  } catch (err) {
+    console.error('[AI Enhance Start Error]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/projects/:id/ai-enhance/status/:candidateId', (req, res) => {
+  try {
+    const candidate = db.getEnhancedBoothCandidate(req.params.candidateId);
+    if (!candidate) return res.status(404).json({ error: 'Candidate not found' });
+    res.json({ success: true, candidate });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/projects/:id/ai-enhance/apply', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const token = extractAuthToken(req);
+    const candidateId = req.body?.candidateId;
+    if (!candidateId) return res.status(400).json({ error: 'Missing candidateId' });
+
+    const result = await db.applyEnhancedBoothCandidate(projectId, candidateId, token);
+    res.json({
+      success: true,
+      activeBackground: result.activeBackground,
+      viewerMode: result.activeBackground.viewerMode,
+      project: result.project,
+      message: 'Enhanced Booth applied to active viewer successfully.'
+    });
+  } catch (err) {
+    console.error('[Apply Enhanced Candidate Error]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/projects/:id/ai-enhance/discard', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const token = extractAuthToken(req);
+    const candidateId = req.body?.candidateId;
+    if (!candidateId) return res.status(400).json({ error: 'Missing candidateId' });
+
+    await db.discardEnhancedBoothCandidate(projectId, candidateId, token);
+    res.json({
+      success: true,
+      message: 'Enhanced Booth candidate discarded and token reservation released.'
+    });
+  } catch (err) {
+    console.error('[Discard Enhanced Candidate Error]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`=======================================================`);

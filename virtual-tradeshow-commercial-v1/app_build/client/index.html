@@ -2379,11 +2379,16 @@
 
           <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
             
-            <button class="btn-ui" id="btnOwnerReplaceBackground" onclick="triggerReplaceBackground()" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Upload and replace active booth background image">
-              <i class="fa-solid fa-cloud-arrow-up"></i> Replace Background
+            <button class="btn-ui" id="btnOwnerAiEnhanceBooth" onclick="openAiEnhanceBoothModal()" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Turn one booth photo into a high-resolution immersive booth experience.">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> AI Enhance Booth <span style="background: rgba(255,255,255,0.22); font-size: 9.5px; padding: 2px 6px; border-radius: 4px; font-weight: 800;">25 TOKENS</span>
+            </button>
+            <button class="btn-ui" id="btnOwnerRequestTrue3d" onclick="openTrue3dQuoteModal()" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #7c3aed, #6366f1); color: #fff; border: 1px solid #a855f7; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Professional multi-view 3D booth reconstruction produced by the 3DZ team.">
+              <i class="fa-solid fa-cube"></i> REQUEST TRUE 3D BOOTH <span style="background: rgba(255,255,255,0.22); font-size: 9.5px; padding: 2px 6px; border-radius: 4px; font-weight: 800;">3DZ MANAGED SERVICE</span>
+            </button>
+            <button class="btn-ui" id="btnOwnerReplaceBackground" onclick="triggerReplaceBackground()" style="padding: 6px 10px; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;" title="Directly replace raw image without AI mastering">
+              <i class="fa-solid fa-image"></i> Replace Image
             </button>
             <input type="file" id="replaceBackgroundFileInput" accept="image/*" style="display: none;" onchange="handleReplaceBackgroundFile(this)">
-            <button class="btn-ui" id="btnOwnerToolbarRegenerateBooth" onclick="openBooth3dRegenerationModal()" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: 1px solid #34d399; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Regenerate 3D Booth with multi-view photos and high-fidelity neural reconstruction"><i class="fa-solid fa-arrows-rotate"></i> Regenerate 3D Booth</button>
             <button class="btn-ui" id="btnOwnerToolbarAddPin" onclick="startPlaceProductPinMode()" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Click anywhere on the booth to place a single or multi-product pin">
               <i class="fa-solid fa-map-pin"></i> + Add Product Pin
             </button>
@@ -2408,6 +2413,18 @@
         <div id="viewer-container" style="position: relative; width: 100%; height: 100%; min-height: 520px; overflow: hidden; background: #000; border-radius: 12px;">
           <canvas id="three-canvas" style="width: 100%; height: 100%; display: block; touch-action: none;"></canvas>
           <div id="hotspot-layer" style="position: absolute; inset: 0; pointer-events: none; z-index: 20;"></div>
+          <!-- C11.16-P3.22: Immersive View Presets Toolbar -->
+          <div id="immersiveViewPresetsBar" style="position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 45; display: flex; gap: 6px; background: rgba(9, 16, 29, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 30px; padding: 4px 8px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);">
+            <button type="button" class="btn-preset" id="presetBtnNormal" onclick="setImmersiveViewPreset('NORMAL')" style="background: rgba(56,189,248,0.25); color: #38bdf8; border: 1px solid #38bdf8; border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 800; cursor: pointer;">NORMAL</button>
+            <button type="button" class="btn-preset" id="presetBtnWide" onclick="setImmersiveViewPreset('WIDE')" style="background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer;">WIDE</button>
+            <button type="button" class="btn-preset" id="presetBtnLeft" onclick="setImmersiveViewPreset('LEFT')" style="background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer;">LEFT VIEW</button>
+            <button type="button" class="btn-preset" id="presetBtnCenter" onclick="setImmersiveViewPreset('CENTER')" style="background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer;">CENTER</button>
+            <button type="button" class="btn-preset" id="presetBtnRight" onclick="setImmersiveViewPreset('RIGHT')" style="background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer;">RIGHT VIEW</button>
+            <button type="button" class="btn-preset" id="presetBtnUp" onclick="setImmersiveViewPreset('LOOK_UP')" style="background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 8px; font-size: 11px; font-weight: 700; cursor: pointer;">LOOK UP</button>
+            <button type="button" class="btn-preset" id="presetBtnDown" onclick="setImmersiveViewPreset('LOOK_DOWN')" style="background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 8px; font-size: 11px; font-weight: 700; cursor: pointer;">LOOK DOWN</button>
+            <button type="button" class="btn-preset" id="presetBtnClose" onclick="setImmersiveViewPreset('CLOSE')" style="background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 8px; font-size: 11px; font-weight: 700; cursor: pointer;">CLOSE VIEW</button>
+            <button type="button" class="btn-preset" id="presetBtnReset" onclick="setImmersiveViewPreset('RESET')" style="background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 4px 8px; font-size: 11px; font-weight: 700; cursor: pointer;">RESET</button>
+          </div>
           <!-- Place Product Pin Floating Instruction Banner -->
           <div id="placePinBanner" style="display: none; position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 60; background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(14px); border: 1px solid #38bdf8; border-radius: 30px; padding: 8px 20px; font-size: 12px; font-weight: 800; color: #38bdf8; box-shadow: 0 8px 30px rgba(0, 194, 255, 0.4); align-items: center; gap: 14px;">
             <span><i class="fa-solid fa-crosshairs fa-spin"></i> Click anywhere on the booth to place the product pin.</span>
@@ -5534,6 +5551,13 @@
         controls.maxPolarAngle = Math.PI * 0.88;
         controls.minPolarAngle = Math.PI * 0.12;
         controls.rotateSpeed = -0.42;
+
+        if (projectData?.activeViewerMode === 'AI_ENHANCED_IMMERSIVE') {
+          controls.minPolarAngle = Math.PI / 2 - (10 * Math.PI / 180);
+          controls.maxPolarAngle = Math.PI / 2 + (10 * Math.PI / 180);
+          controls.minAzimuthAngle = -18 * Math.PI / 180;
+          controls.maxAzimuthAngle = 18 * Math.PI / 180;
+        }
 
         // 360° Interior Equirectangular Sphere Mesh
         const sphereGeo = new THREE.SphereGeometry(500, 128, 64);
@@ -12821,6 +12845,445 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
 };
 
 // End P3.7 Product 3D System
+
+    // ============================================================
+    // ─── P3.22: TRUE 3D MANAGED SERVICE QUOTE LOGIC ────────────
+    // ============================================================
+
+    function openTrue3dQuoteModal() {
+      const m = document.getElementById('true3dQuoteModal');
+      if (m) m.style.display = 'flex';
+      // Prefill if customer session available
+      if (window.activeProjectData) {
+        const comp = document.getElementById('quoteCompanyName');
+        if (comp && !comp.value) comp.value = window.activeProjectData.companyName || '';
+        const email = document.getElementById('quoteEmail');
+        if (email && !email.value) {
+          email.value = localStorage.getItem('vshow_customer_email') || '';
+        }
+      }
+    }
+
+    function closeTrue3dQuoteModal() {
+      const m = document.getElementById('true3dQuoteModal');
+      if (m) m.style.display = 'none';
+    }
+
+    async function submitTrue3dQuote(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmitTrue3dQuote');
+      const origText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('companyName', document.getElementById('quoteCompanyName').value);
+        formData.append('contactName', document.getElementById('quoteContactName').value);
+        formData.append('email', document.getElementById('quoteEmail').value);
+        formData.append('phone', document.getElementById('quotePhone').value);
+        formData.append('tradeShow', document.getElementById('quoteTradeShow').value);
+        formData.append('eventDate', document.getElementById('quoteEventDate').value);
+        formData.append('boothType', document.getElementById('quoteBoothType').value);
+        formData.append('boothWidth', document.getElementById('quoteBoothWidth').value);
+        formData.append('boothDepth', document.getElementById('quoteBoothDepth').value);
+        formData.append('sourceAvailable', document.getElementById('quoteSourceAvailable').value);
+        formData.append('needOnSiteCapture', document.getElementById('quoteOnSiteCapture').value);
+        formData.append('additionalNotes', document.getElementById('quoteNotes').value);
+
+        const attachInput = document.getElementById('quoteAttachments');
+        if (attachInput && attachInput.files) {
+          Array.from(attachInput.files).forEach(f => formData.append('attachments', f));
+        }
+
+        const token = p3dGetAuthToken();
+        const res = await fetch('/api/customer/quotes/request', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'x-booth-edit-token': token
+          },
+          body: formData
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to submit quote request.');
+        }
+
+        closeTrue3dQuoteModal();
+        alert('🎉 ' + data.message + ' (Quote Ref: ' + data.quoteId + ')');
+      } catch (err) {
+        console.error('[True 3D Quote Error]', err);
+        alert('Failed to submit quote request: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origText;
+        }
+      }
+    }
+
+    // ============================================================
+    // ─── P3.22: AI ENHANCE BOOTH PIPELINE CLIENT LOGIC ──────────
+    // ============================================================
+
+    let currentSelectedEnhanceFile = null;
+    let pendingEnhancedCandidate = null;
+
+    function openAiEnhanceBoothModal() {
+      const m = document.getElementById('aiEnhanceBoothModal');
+      if (m) m.style.display = 'flex';
+      // Reset progress
+      const pCont = document.getElementById('aiEnhanceProgressContainer');
+      if (pCont) pCont.style.display = 'none';
+    }
+
+    function closeAiEnhanceBoothModal() {
+      const m = document.getElementById('aiEnhanceBoothModal');
+      if (m) m.style.display = 'none';
+    }
+
+    function handleAiEnhanceFileSelected(input) {
+      if (input.files && input.files[0]) {
+        currentSelectedEnhanceFile = input.files[0];
+        const previewBox = document.getElementById('aiEnhancePreviewBox');
+        const previewImg = document.getElementById('aiEnhancePreviewImg');
+        const fnameEl = document.getElementById('aiEnhanceFilename');
+        const fsizeEl = document.getElementById('aiEnhanceFilesize');
+
+        if (previewBox && previewImg) {
+          previewBox.style.display = 'flex';
+          previewImg.src = URL.createObjectURL(currentSelectedEnhanceFile);
+          if (fnameEl) fnameEl.textContent = currentSelectedEnhanceFile.name;
+          if (fsizeEl) fsizeEl.textContent = (currentSelectedEnhanceFile.size / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+      }
+    }
+
+    async function startAiEnhanceBooth() {
+      if (!currentSelectedEnhanceFile) {
+        alert('Please select or drop a booth photo first.');
+        return;
+      }
+
+      const btn = document.getElementById('btnStartAiEnhance');
+      const origText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+      }
+
+      const pCont = document.getElementById('aiEnhanceProgressContainer');
+      const pLabel = document.getElementById('aiEnhanceStageLabel');
+      const pBar = document.getElementById('aiEnhanceProgressBar');
+      const pPercent = document.getElementById('aiEnhanceStagePercent');
+
+      if (pCont) pCont.style.display = 'block';
+
+      const updateStage = (label, pct) => {
+        if (pLabel) pLabel.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + label;
+        if (pBar) pBar.style.width = pct + '%';
+        if (pPercent) pPercent.textContent = pct + '%';
+      };
+
+      try {
+        updateStage('Uploading Photo...', 15);
+        const pid = activeProjectId || window.activeProjectData?.id;
+        const token = p3dGetAuthToken();
+
+        const formData = new FormData();
+        formData.append('photo', currentSelectedEnhanceFile);
+        const autoRemove = document.getElementById('aiEnhanceRemovePeopleToggle')?.checked !== false;
+        formData.append('autoRemovePeople', autoRemove ? 'true' : 'false');
+
+        setTimeout(() => updateStage('Analyzing Photo & Geometry...', 30), 800);
+        setTimeout(() => updateStage('Enhancing to 16K Neural Master...', 50), 2000);
+        setTimeout(() => updateStage('Detecting & Inpainting People...', 70), 3500);
+        setTimeout(() => updateStage('Building Neural Depth Map...', 85), 5000);
+
+        const res = await fetch('/api/projects/' + pid + '/ai-enhance/start', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'x-booth-edit-token': token
+          },
+          body: formData
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to generate enhanced booth.');
+        }
+
+        updateStage('Final Quality Check & Packaging...', 100);
+        await new Promise(r => setTimeout(r, 600));
+
+        closeAiEnhanceBoothModal();
+        pendingEnhancedCandidate = data.candidate;
+        openAiEnhancedPreviewModal(data.candidate);
+
+      } catch (err) {
+        console.error('[AI Enhance Error]', err);
+        alert('AI Enhancement failed: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origText;
+        }
+      }
+    }
+
+    // ============================================================
+    // ─── P3.22: CANDIDATE COMPARISON & PREVIEW MODAL ───────────
+    // ============================================================
+
+    let currentVisualMode = 'VISUAL';
+
+    function openAiEnhancedPreviewModal(candidate) {
+      const m = document.getElementById('aiEnhancedPreviewModal');
+      if (!m) return;
+      m.style.display = 'flex';
+
+      const mainImg = document.getElementById('candidatePreviewMainImg');
+      if (mainImg) mainImg.src = candidate.activeAssetUrl || candidate.master?.url;
+
+      const resText = document.getElementById('candidateResolutionText');
+      if (resText) resText.textContent = (candidate.master?.width || 15360) + 'x' + (candidate.master?.height || 8640);
+
+      const remCount = document.getElementById('candidateRemovedCount');
+      if (remCount) remCount.textContent = candidate.peopleRemoval?.removedCount || 0;
+
+      switchCandidatePreviewTab('ENHANCED');
+    }
+
+    function closeAiEnhancedPreviewModal() {
+      const m = document.getElementById('aiEnhancedPreviewModal');
+      if (m) m.style.display = 'none';
+    }
+
+    function switchCandidatePreviewTab(tab) {
+      const tabCurr = document.getElementById('tabCurrentBooth');
+      const tabEnh = document.getElementById('tabEnhancedBooth');
+      const mainImg = document.getElementById('candidatePreviewMainImg');
+
+      if (tab === 'CURRENT') {
+        if (tabCurr) {
+          tabCurr.style.background = 'rgba(56,189,248,0.2)';
+          tabCurr.style.border = '1px solid #38bdf8';
+          tabCurr.style.color = '#38bdf8';
+        }
+        if (tabEnh) {
+          tabEnh.style.background = 'rgba(255,255,255,0.06)';
+          tabEnh.style.border = '1px solid rgba(255,255,255,0.15)';
+          tabEnh.style.color = '#cbd5e1';
+        }
+        if (mainImg && window.activeProjectData) {
+          mainImg.src = window.activeProjectData.photoUrl;
+        }
+      } else {
+        if (tabEnh) {
+          tabEnh.style.background = 'rgba(56,189,248,0.2)';
+          tabEnh.style.border = '1px solid #38bdf8';
+          tabEnh.style.color = '#38bdf8';
+        }
+        if (tabCurr) {
+          tabCurr.style.background = 'rgba(255,255,255,0.06)';
+          tabCurr.style.border = '1px solid rgba(255,255,255,0.15)';
+          tabCurr.style.color = '#cbd5e1';
+        }
+        if (mainImg && pendingEnhancedCandidate) {
+          mainImg.src = currentVisualMode === 'DEPTH'
+            ? pendingEnhancedCandidate.depth?.depthAsset
+            : (pendingEnhancedCandidate.activeAssetUrl || pendingEnhancedCandidate.master?.url);
+        }
+      }
+    }
+
+    function showCandidateVisual(mode) {
+      currentVisualMode = mode;
+      const mainImg = document.getElementById('candidatePreviewMainImg');
+      if (mainImg && pendingEnhancedCandidate) {
+        mainImg.src = mode === 'DEPTH'
+          ? pendingEnhancedCandidate.depth?.depthAsset
+          : (pendingEnhancedCandidate.activeAssetUrl || pendingEnhancedCandidate.master?.url);
+      }
+    }
+
+    async function applyAiEnhancedBoothCandidate() {
+      if (!pendingEnhancedCandidate) return;
+
+      const btn = document.getElementById('btnApplyEnhancedBooth');
+      const origText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Activating...';
+      }
+
+      try {
+        const pid = activeProjectId || window.activeProjectData?.id;
+        const token = p3dGetAuthToken();
+
+        const res = await fetch('/api/projects/' + pid + '/ai-enhance/apply', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+            'x-booth-edit-token': token
+          },
+          body: JSON.stringify({ candidateId: pendingEnhancedCandidate.candidateId })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to apply candidate.');
+        }
+
+        // Update in-memory project data
+        if (window.activeProjectData) {
+          window.activeProjectData.photoUrl = data.activeBackground.url;
+          window.activeProjectData.activeBackground = data.activeBackground;
+          window.activeProjectData.activeViewerMode = data.viewerMode;
+          window.activeProjectData.depthAsset = data.activeBackground.depthAsset;
+        }
+
+        // Apply texture to 3D Viewer
+        switchActiveBoothTexture(data.activeBackground.url, window.activeProjectData);
+
+        closeAiEnhancedPreviewModal();
+        alert('🎉 AI Enhanced Booth successfully applied and activated!');
+      } catch (err) {
+        console.error('[Apply Candidate Error]', err);
+        alert('Failed to apply candidate: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origText;
+        }
+      }
+    }
+
+    async function discardAiEnhancedBoothCandidate() {
+      if (!pendingEnhancedCandidate) {
+        closeAiEnhancedPreviewModal();
+        return;
+      }
+
+      try {
+        const pid = activeProjectId || window.activeProjectData?.id;
+        const token = p3dGetAuthToken();
+
+        await fetch('/api/projects/' + pid + '/ai-enhance/discard', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+            'x-booth-edit-token': token
+          },
+          body: JSON.stringify({ candidateId: pendingEnhancedCandidate.candidateId })
+        });
+      } catch (err) {
+        console.warn('[Discard Candidate Warning]', err.message);
+      } finally {
+        pendingEnhancedCandidate = null;
+        closeAiEnhancedPreviewModal();
+      }
+    }
+
+    // ============================================================
+    // ─── P3.22: IMMERSIVE VIEW PRESET CONTROLS ─────────────────
+    // ============================================================
+
+    function setImmersiveViewPreset(preset) {
+      if (!camera || !controls) return;
+
+      // Update active preset button highlight
+      document.querySelectorAll('#immersiveViewPresetsBar .btn-preset').forEach(b => {
+        b.style.background = 'rgba(255,255,255,0.06)';
+        b.style.borderColor = 'rgba(255,255,255,0.15)';
+        b.style.color = '#cbd5e1';
+      });
+
+      switch (preset) {
+        case 'NORMAL':
+          camera.fov = 50;
+          controls.target.set(0, 0, 0);
+          controls.minPolarAngle = Math.PI / 2 - (10 * Math.PI / 180);
+          controls.maxPolarAngle = Math.PI / 2 + (10 * Math.PI / 180);
+          controls.minAzimuthAngle = -18 * Math.PI / 180;
+          controls.maxAzimuthAngle = 18 * Math.PI / 180;
+          camera.position.set(0, 0, 0.01);
+          controls.reset();
+          highlightPresetBtn('presetBtnNormal');
+          break;
+
+        case 'WIDE':
+          camera.fov = 60;
+          controls.target.set(0, 0, 0);
+          camera.position.set(0, 0, 0.01);
+          highlightPresetBtn('presetBtnWide');
+          break;
+
+        case 'LEFT':
+          camera.fov = 50;
+          controls.target.set(Math.sin(-14 * Math.PI / 180), 0, -Math.cos(-14 * Math.PI / 180));
+          highlightPresetBtn('presetBtnLeft');
+          break;
+
+        case 'CENTER':
+          camera.fov = 50;
+          controls.target.set(0, 0, -1);
+          highlightPresetBtn('presetBtnCenter');
+          break;
+
+        case 'RIGHT':
+          camera.fov = 50;
+          controls.target.set(Math.sin(14 * Math.PI / 180), 0, -Math.cos(14 * Math.PI / 180));
+          highlightPresetBtn('presetBtnRight');
+          break;
+
+        case 'LOOK_UP':
+          camera.fov = 50;
+          controls.target.set(0, Math.sin(8 * Math.PI / 180), -Math.cos(8 * Math.PI / 180));
+          highlightPresetBtn('presetBtnUp');
+          break;
+
+        case 'LOOK_DOWN':
+          camera.fov = 50;
+          controls.target.set(0, -Math.sin(8 * Math.PI / 180), -Math.cos(8 * Math.PI / 180));
+          highlightPresetBtn('presetBtnDown');
+          break;
+
+        case 'CLOSE':
+          camera.fov = 40;
+          highlightPresetBtn('presetBtnClose');
+          break;
+
+        case 'RESET':
+        default:
+          camera.fov = 50;
+          controls.target.set(0, 0, 0);
+          camera.position.set(0, 0, 0.01);
+          controls.reset();
+          highlightPresetBtn('presetBtnReset');
+          break;
+      }
+
+      camera.updateProjectionMatrix();
+      controls.update();
+    }
+
+    function highlightPresetBtn(btnId) {
+      const b = document.getElementById(btnId);
+      if (b) {
+        b.style.background = 'rgba(56,189,248,0.25)';
+        b.style.borderColor = '#38bdf8';
+        b.style.color = '#38bdf8';
+      }
+    }
+
 </script>
 
   <!-- Virtual Fitting Room Consultation Modal -->
@@ -13186,5 +13649,249 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
   </div>
 
   <div id="appModalRoot" style="position:relative;z-index:auto;"></div>
+
+<!-- ============================================================ -->
+<!-- ─── P3.22: TRUE 3D BOOTH MANAGED SERVICE QUOTE MODAL ─────── -->
+<!-- ============================================================ -->
+<div id="true3dQuoteModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1100; align-items: center; justify-content: center; backdrop-filter: blur(8px); overflow-y: auto; padding: 20px 0;">
+  <div style="background: #09101d; border: 1.5px solid #a855f7; border-radius: 16px; width: 92%; max-width: 680px; padding: 28px; box-shadow: 0 25px 60px rgba(0,0,0,0.9); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; position: relative;">
+    <button type="button" onclick="closeTrue3dQuoteModal()" style="position: absolute; top: 16px; right: 20px; background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer;">&times;</button>
+    
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+      <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(168,85,247,0.2); display: flex; align-items: center; justify-content: center; color: #c084fc; font-size: 18px;">
+        <i class="fa-solid fa-cube"></i>
+      </div>
+      <div>
+        <h3 style="margin: 0; font-size: 20px; font-weight: 800; color: #fff;">TRUE 3D BOOTH — REQUEST A QUOTE</h3>
+        <span style="font-size: 12px; color: #c084fc; font-weight: 700;">Starting at $1,500 / Booth • High Fidelity typically $2,500+</span>
+      </div>
+    </div>
+    
+    <p style="margin: 0 0 20px 0; font-size: 12.5px; color: #94a3b8; line-height: 1.4;">
+      Professional multi-view 3D booth reconstruction produced by the 3DZ engineering team using Gaussian Splatting & neural radiance capture.
+    </p>
+
+    <form id="true3dQuoteForm" onsubmit="submitTrue3dQuote(event)">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px;">Company Name *</label>
+          <input type="text" id="quoteCompanyName" required placeholder="e.g. Apex Robotics Inc." style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 12.5px;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px;">Contact Name *</label>
+          <input type="text" id="quoteContactName" required placeholder="e.g. Jane Doe" style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 12.5px;">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px;">Email *</label>
+          <input type="email" id="quoteEmail" required placeholder="name@company.com" style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 12.5px;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px;">Phone</label>
+          <input type="tel" id="quotePhone" placeholder="+1 (555) 000-0000" style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 12.5px;">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px;">Event / Trade Show</label>
+          <input type="text" id="quoteTradeShow" placeholder="e.g. CES 2026, Automate" style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 12.5px;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px;">Event Date</label>
+          <input type="date" id="quoteEventDate" style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 12.5px;">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px;">Booth Type</label>
+          <select id="quoteBoothType" style="width: 100%; box-sizing: border-box; background: #131d2e; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 12.5px;">
+            <option value="Small">Small (10x10 ft / 3x3 m)</option>
+            <option value="Medium" selected>Medium (10x20 ft / 3x6 m)</option>
+            <option value="Large">Large (20x20+ ft / Island)</option>
+            <option value="Custom">Custom Architecture</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px;">Width (ft/m)</label>
+          <input type="text" id="quoteBoothWidth" placeholder="20 ft" style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 12.5px;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px;">Depth (ft/m)</label>
+          <input type="text" id="quoteBoothDepth" placeholder="10 ft" style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 12.5px;">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px;">Source Material Available</label>
+          <select id="quoteSourceAvailable" style="width: 100%; box-sizing: border-box; background: #131d2e; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 12.5px;">
+            <option value="Photos">40-100+ Overlapping Photos</option>
+            <option value="Video">Continuous 4K Walkthrough Video</option>
+            <option value="360 Camera">360° Panorama Camera</option>
+            <option value="No Capture Yet">No Capture Yet (Need Guidance)</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px;">Need 3DZ On-Site Capture?</label>
+          <select id="quoteOnSiteCapture" style="width: 100%; box-sizing: border-box; background: #131d2e; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 12.5px;">
+            <option value="No">No (We will capture with 3DZ guidelines)</option>
+            <option value="Yes">Yes (Dispatch 3DZ capture technician)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px;">Upload Reference Photos / Floor Plan (Optional)</label>
+        <input type="file" id="quoteAttachments" multiple accept="image/*,.pdf,.zip" style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.04); border: 1px dashed rgba(255,255,255,0.2); border-radius: 8px; padding: 8px 12px; color: #94a3b8; font-size: 11.5px;">
+      </div>
+
+      <div style="margin-bottom: 18px;">
+        <label style="display: block; font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px;">Additional Notes / Specific Requirements</label>
+        <textarea id="quoteNotes" rows="2" placeholder="Describe key product displays, lighting conditions, or schedule deadlines..." style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 12.5px; resize: vertical;"></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px;">
+        <span style="font-size: 11.5px; color: #64748b;">No upfront payment required • Custom proposal in 24h</span>
+        <button type="submit" id="btnSubmitTrue3dQuote" style="padding: 10px 24px; font-size: 13px; font-weight: 800; background: linear-gradient(135deg, #7c3aed, #6366f1); border: 1px solid #a855f7; color: #fff; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 14px rgba(124,58,237,0.4);">
+          Submit Quote Request
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ─── P3.22: AI ENHANCE BOOTH MODAL ────────────────────────── -->
+<!-- ============================================================ -->
+<div id="aiEnhanceBoothModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1100; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+  <div style="background: #09101d; border: 1.5px solid #38bdf8; border-radius: 16px; width: 92%; max-width: 580px; padding: 26px; box-shadow: 0 25px 60px rgba(0,0,0,0.9); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; position: relative;">
+    <button type="button" onclick="closeAiEnhanceBoothModal()" style="position: absolute; top: 16px; right: 20px; background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer;">&times;</button>
+    
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+      <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(56,189,248,0.2); display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 18px;">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+      </div>
+      <div>
+        <h3 style="margin: 0; font-size: 19px; font-weight: 800; color: #fff;">AI ENHANCE BOOTH</h3>
+        <span style="font-size: 12px; color: #38bdf8; font-weight: 700;">16K Neural Mastering + Depth-Aware Immersive View</span>
+      </div>
+    </div>
+
+    <p style="margin: 0 0 18px 0; font-size: 12.5px; color: #94a3b8; line-height: 1.4;">
+      Turn one booth photo into a high-resolution immersive booth experience with neural super-resolution, automatic people removal, and depth parallax.
+    </p>
+
+    <div style="border: 2px dashed rgba(56,189,248,0.4); border-radius: 12px; padding: 24px; text-align: center; background: rgba(56,189,248,0.03); margin-bottom: 16px; cursor: pointer;" onclick="document.getElementById('aiEnhancePhotoInput').click()">
+      <i class="fa-solid fa-cloud-arrow-up" style="font-size: 32px; color: #38bdf8; margin-bottom: 8px;"></i>
+      <div style="font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 4px;">Click to select or drop a booth photo</div>
+      <div style="font-size: 11px; color: #64748b;">Supports JPEG, PNG, WebP • 16:9 or 2:1 Panorama</div>
+      <input type="file" id="aiEnhancePhotoInput" accept="image/*" style="display: none;" onchange="handleAiEnhanceFileSelected(this)">
+    </div>
+
+    <div id="aiEnhancePreviewBox" style="display: none; align-items: center; gap: 12px; background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px; margin-bottom: 16px;">
+      <img id="aiEnhancePreviewImg" src="" style="width: 60px; height: 45px; object-fit: cover; border-radius: 6px; border: 1px solid #38bdf8;">
+      <div style="flex: 1; overflow: hidden;">
+        <div id="aiEnhanceFilename" style="font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+        <div id="aiEnhanceFilesize" style="font-size: 11px; color: #64748b;"></div>
+      </div>
+    </div>
+
+    <div style="background: rgba(255,255,255,0.04); border-radius: 10px; padding: 12px 14px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+      <div>
+        <div style="font-size: 12.5px; font-weight: 700; color: #fff;">Automatic People Removal</div>
+        <div style="font-size: 11px; color: #94a3b8;">Inpaint & seamlessly remove detected bystanders</div>
+      </div>
+      <label style="position: relative; display: inline-block; width: 44px; height: 24px; margin: 0; cursor: pointer;">
+        <input type="checkbox" id="aiEnhanceRemovePeopleToggle" checked style="opacity: 0; width: 0; height: 0;">
+        <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #2563eb; border-radius: 24px; transition: .3s;" id="aiEnhanceToggleSlider"></span>
+      </label>
+    </div>
+
+    <!-- Live Progress Stage Indicator -->
+    <div id="aiEnhanceProgressContainer" style="display: none; margin-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 700; color: #38bdf8; margin-bottom: 6px;">
+        <span id="aiEnhanceStageLabel"><i class="fa-solid fa-spinner fa-spin"></i> Processing...</span>
+        <span id="aiEnhanceStagePercent">0%</span>
+      </div>
+      <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden;">
+        <div id="aiEnhanceProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #2563eb); transition: width 0.4s ease;"></div>
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px;">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span style="font-size: 11.5px; color: #94a3b8;">Cost:</span>
+        <span style="background: rgba(56,189,248,0.15); color: #38bdf8; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(56,189,248,0.3);">25 TOKENS</span>
+      </div>
+      <button type="button" id="btnStartAiEnhance" onclick="startAiEnhanceBooth()" style="padding: 10px 22px; font-size: 12.5px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; color: #fff; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 14px rgba(2,132,199,0.4);">
+        <i class="fa-solid fa-bolt"></i> Generate Enhanced Booth
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ─── P3.22: CANDIDATE COMPARISON & PREVIEW MODAL ─────────── -->
+<!-- ============================================================ -->
+<div id="aiEnhancedPreviewModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1150; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+  <div style="background: #09101d; border: 1.5px solid #38bdf8; border-radius: 16px; width: 94%; max-width: 960px; padding: 24px; box-shadow: 0 25px 60px rgba(0,0,0,0.9); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <h3 style="margin: 0; font-size: 19px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-wand-magic-sparkles" style="color: #38bdf8;"></i> AI Enhanced Booth Candidate
+        </h3>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: #94a3b8;" id="candidateSummaryText">
+          16K Neural Super-Resolution • Monocular Depth Generated • Candidate Ready for Review
+        </p>
+      </div>
+      <div style="display: flex; gap: 6px;">
+        <button type="button" class="btn-ui" id="tabCurrentBooth" onclick="switchCandidatePreviewTab('CURRENT')" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 6px; cursor: pointer;">
+          CURRENT BOOTH
+        </button>
+        <button type="button" class="btn-ui" id="tabEnhancedBooth" onclick="switchCandidatePreviewTab('ENHANCED')" style="padding: 6px 14px; font-size: 12px; font-weight: 800; background: rgba(56,189,248,0.2); border: 1px solid #38bdf8; color: #38bdf8; border-radius: 6px; cursor: pointer;">
+          NEW AI ENHANCED BOOTH
+        </button>
+      </div>
+    </div>
+
+    <!-- Preview Stage / Side-by-side -->
+    <div style="position: relative; height: 380px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(56,189,248,0.3); background: #000; margin-bottom: 16px;">
+      <img id="candidatePreviewMainImg" src="" style="width: 100%; height: 100%; object-fit: contain; display: block;" alt="Candidate Preview">
+      
+      <!-- Depth Map Overlay Toggle (top-right) -->
+      <div style="position: absolute; top: 12px; right: 12px; display: flex; gap: 6px;">
+        <button type="button" onclick="showCandidateVisual('VISUAL')" style="background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer;">
+          Visual Master
+        </button>
+        <button type="button" onclick="showCandidateVisual('DEPTH')" style="background: rgba(0,0,0,0.7); border: 1px solid rgba(56,189,248,0.4); color: #38bdf8; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer;">
+          Depth Map
+        </button>
+      </div>
+
+      <!-- Resolution & Metrics Badge (bottom-left) -->
+      <div id="candidateMetricsBadge" style="position: absolute; bottom: 12px; left: 12px; background: rgba(9, 16, 29, 0.85); backdrop-filter: blur(8px); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 6px; padding: 6px 12px; font-size: 11.5px; color: #cbd5e1;">
+        <span style="color: #38bdf8; font-weight: 800;">16K MASTER:</span> <span id="candidateResolutionText">15360x8640</span> | <span style="color: #34d399; font-weight: 700;">People Removed:</span> <span id="candidateRemovedCount">0</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px;">
+      <button type="button" onclick="discardAiEnhancedBoothCandidate()" style="padding: 9px 18px; font-size: 12.5px; font-weight: 700; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; border-radius: 8px; cursor: pointer;">
+        Keep Current Photo (Discard)
+      </button>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 11.5px; color: #94a3b8;">Settles 25 Tokens on Apply</span>
+        <button type="button" id="btnApplyEnhancedBooth" onclick="applyAiEnhancedBoothCandidate()" style="padding: 10px 24px; font-size: 13px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; color: #fff; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 14px rgba(2,132,199,0.4);">
+          <i class="fa-solid fa-check"></i> Apply Enhanced Booth
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
