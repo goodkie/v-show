@@ -10209,7 +10209,9 @@ return event;
         .filter(pid => validProjectProductIds.includes(pid) || (project.products || []).some(p => String(p.slotIndex) === String(pid)))
         .slice(0, 20);
 
-      if (pinType !== 'CATALOG_PIN') {
+      if (pinType === 'BLANK_PIN') {
+        label = label || 'New Product Pin';
+      } else if (pinType !== 'CATALOG_PIN') {
         if (cleanProductIds.length >= 2) {
           pinType = 'PRODUCT_GROUP_PIN';
         } else if (cleanProductIds.length === 1) {

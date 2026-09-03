@@ -594,7 +594,7 @@ app.use('/uploads', express.static(UPLOADS_DIR));
 const P315_BUILD_INFO = {
   gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'C11.16-P3.15-R4',
   buildTimestamp: new Date().toISOString(),
-  releaseId: "C11.16-P3.17"
+  releaseId: "C11.16-P3.19"
 };
 
 app.get('/api/build-info', (req, res) => {
