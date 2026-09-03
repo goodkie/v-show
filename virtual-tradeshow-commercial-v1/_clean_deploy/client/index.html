@@ -13047,6 +13047,35 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       }
     }
 
+        window.autoRemovePeople = true;
+    window.updateAiEnhancePeopleToggleUI = function(isChecked) {
+      window.autoRemovePeople = Boolean(isChecked);
+      const input = document.getElementById('aiEnhanceRemovePeopleToggle');
+      if (input) input.checked = window.autoRemovePeople;
+      const badge = document.getElementById('aiEnhanceToggleBadge');
+      const slider = document.getElementById('aiEnhanceToggleSlider');
+      const knob = document.getElementById('aiEnhanceToggleKnob');
+      if (window.autoRemovePeople) {
+        if (badge) {
+          badge.textContent = '✓ ON';
+          badge.style.background = 'rgba(56,189,248,0.2)';
+          badge.style.color = '#38bdf8';
+          badge.style.borderColor = 'rgba(56,189,248,0.4)';
+        }
+        if (slider) slider.style.background = '#0284c7';
+        if (knob) knob.style.transform = 'translateX(22px)';
+      } else {
+        if (badge) {
+          badge.textContent = 'OFF';
+          badge.style.background = 'rgba(255,255,255,0.06)';
+          badge.style.color = '#94a3b8';
+          badge.style.borderColor = 'rgba(255,255,255,0.15)';
+        }
+        if (slider) slider.style.background = '#334155';
+        if (knob) knob.style.transform = 'translateX(0px)';
+      }
+    };
+
     async function startAiEnhanceBooth() {
       if (!currentSelectedEnhanceFile) {
         alert('Please select or drop a booth photo first.');
