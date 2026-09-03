@@ -13129,6 +13129,156 @@ return event;
       .reverse());
   }
 
+  getActiveBoothBackground(project) {
+    if (!project) return null;
+    
+    // 1. Explicitly active background version
+    if (Array.isArray(project.backgroundVersions) && project.activeBackgroundVersionId) {
+      const v = project.backgroundVersions.find(item => item.versionId === project.activeBackgroundVersionId);
+      if (v) {
+        return {
+          versionId: v.versionId,
+          assetId: v.assetId || ('asset-' + v.versionId),
+          url: v.url,
+          hash: v.hash || null,
+          sourceType: v.type || 'UPLOADED',
+          derivedFromAssetId: v.derivedFromAssetId || null
+        };
+      }
+    }
+
+    // 2. Canonical activeBackground object if present
+    if (project.activeBackground && project.activeBackground.url) {
+      return {
+        versionId: project.activeBackground.versionId || 'bver-active',
+        assetId: project.activeBackground.assetId || 'asset-active',
+        url: project.activeBackground.url,
+        hash: project.activeBackground.hash || null,
+        sourceType: project.activeBackground.sourceType || 'UPLOADED',
+        derivedFromAssetId: project.activeBackground.derivedFromAssetId || null
+      };
+    }
+
+    // 3. Cleaned derivative if active
+    if (project.booth3d?.cleanedUrl || project.sourceAsset?.cleanedUrl) {
+      const url = project.booth3d?.cleanedUrl || project.sourceAsset?.cleanedUrl;
+      return {
+        versionId: project.booth3d?.versionId || 'bver-cleaned',
+        assetId: 'asset-cleaned',
+        url,
+        hash: null,
+        sourceType: 'CLEANED',
+        derivedFromAssetId: project.sourceAsset?.originalAssetId || null
+      };
+    }
+
+    // 4. Replaced / uploaded photoUrl if not default
+    if (project.photoUrl && !project.photoUrl.includes('node0_360_panorama_8k.jpg')) {
+      return {
+        versionId: 'bver-photo',
+        assetId: 'asset-photo',
+        url: project.photoUrl,
+        hash: null,
+        sourceType: 'UPLOADED',
+        derivedFromAssetId: null
+      };
+    }
+
+    // 5. Active booth3d preview
+    if (project.booth3d?.previewUrl) {
+      return {
+        versionId: project.booth3d.versionId || 'bver-booth3d',
+        assetId: 'asset-booth3d',
+        url: project.booth3d.previewUrl,
+        hash: null,
+        sourceType: project.booth3d.previewUrl.includes('node0_360_panorama_8k.jpg') ? 'ORIGINAL' : 'UPLOADED',
+        derivedFromAssetId: null
+      };
+    }
+
+    // 6. Fallback to default
+    const defUrl = project.sourceAsset?.previewUrl || project.sourceAsset?.originalUrl || project.photoUrl || '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg';
+    return {
+      versionId: 'bver-default',
+      assetId: 'asset-default',
+      url: defUrl,
+      hash: null,
+      sourceType: 'ORIGINAL',
+      derivedFromAssetId: null
+    };
+  }
+
+  async setProjectActiveBackground(projectId, bgData) {
+    return this.mutate((db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) throw new Error('Project ' + projectId + ' not found');
+
+      project.backgroundVersions = project.backgroundVersions || [];
+
+      // If backgroundVersions is empty, seed original default version
+      if (project.backgroundVersions.length === 0) {
+        const origUrl = project.sourceAsset?.originalUrl || project.photoUrl || '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg';
+        project.backgroundVersions.push({
+          versionId: 'bver-orig-init',
+          assetId: 'asset-orig-init',
+          url: origUrl,
+          type: 'ORIGINAL',
+          derivedFromAssetId: null,
+          hash: null,
+          createdAt: project.createdAt || new Date().toISOString()
+        });
+      }
+
+      const versionId = bgData.versionId || ('bver-bg-' + uuidv4().substring(0, 8));
+      const assetId = bgData.assetId || ('asset-' + uuidv4().substring(0, 8));
+      const newVersion = {
+        versionId,
+        assetId,
+        url: bgData.url,
+        hash: bgData.hash || null,
+        type: bgData.type || 'UPLOADED',
+        derivedFromAssetId: bgData.derivedFromAssetId || null,
+        createdAt: new Date().toISOString()
+      };
+
+      project.backgroundVersions.push(newVersion);
+      if (project.backgroundVersions.length > 50) project.backgroundVersions.shift();
+
+      project.activeBackgroundVersionId = versionId;
+      project.activeBackground = newVersion;
+
+      // Sync legacy and viewer fields
+      project.photoUrl = bgData.url;
+      project.sourceAsset = project.sourceAsset || {};
+      project.sourceAsset.previewUrl = bgData.url;
+      project.sourceAsset.highResUrl = bgData.highResUrl || bgData.url;
+      if (bgData.type === 'CLEANED') {
+        project.sourceAsset.peopleRemoved = true;
+        project.sourceAsset.cleanedUrl = bgData.url;
+      }
+      if (project.booth3d) {
+        project.booth3d.previewUrl = bgData.url;
+        project.booth3d.highResUrl = bgData.highResUrl || bgData.url;
+        if (bgData.type === 'CLEANED') {
+          project.booth3d.cleanedUrl = bgData.url;
+          project.booth3d.peopleRemoved = true;
+        }
+      }
+      if (project.boothPhoto) {
+        project.boothPhoto.url = bgData.url;
+        project.boothPhoto.highResUrl = bgData.highResUrl || bgData.url;
+      }
+
+      project.updatedAt = new Date().toISOString();
+
+      return {
+        success: true,
+        activeBackground: newVersion,
+        backgroundVersions: project.backgroundVersions
+      };
+    });
+  }
+
   async setBooth3dActiveAsset(projectId, assetData) {
     return this.mutate((db) => {
       const project = (db.projects || []).find(p => p.id === projectId);

@@ -594,7 +594,7 @@ app.use('/uploads', express.static(UPLOADS_DIR));
 const P315_BUILD_INFO = {
   gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'C11.16-P3.15-R4',
   buildTimestamp: new Date().toISOString(),
-  releaseId: "C11.16-P3.20"
+  releaseId: 'C11.16-P3.21'
 };
 
 app.get('/api/build-info', (req, res) => {
@@ -7085,6 +7085,65 @@ app.delete('/api/projects/:id/booth-3d/sources/:sourceId', async (req, res) => {
   }
 });
 
+
+// POST /api/projects/:id/background (Replace Booth Background Image — C11.16-P3.21)
+app.post('/api/projects/:id/background', upload.single('background'), async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const token = extractAuthToken(req);
+    const project = db.getProject(projectId);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
+
+    let newUrl = null;
+    let fileBuffer = null;
+
+    if (req.file) {
+      newUrl = `/uploads/${req.file.filename}`;
+      const filePath = path.join(UPLOADS_DIR, req.file.filename);
+      fileBuffer = fs.readFileSync(filePath);
+    } else if (req.body?.dataUrl && req.body.dataUrl.startsWith('data:image/')) {
+      const matches = req.body.dataUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+      if (matches) {
+        const ext = matches[1].replace('jpeg', 'jpg');
+        fileBuffer = Buffer.from(matches[2], 'base64');
+        const filename = `booth_bg_${projectId}_${Date.now()}.${ext}`;
+        const filePath = path.join(UPLOADS_DIR, filename);
+        fs.writeFileSync(filePath, fileBuffer);
+        newUrl = `/uploads/${filename}`;
+      }
+    } else if (req.body?.url) {
+      newUrl = req.body.url;
+      const localPath = path.join(UPLOADS_DIR, path.basename(newUrl));
+      if (fs.existsSync(localPath)) {
+        fileBuffer = fs.readFileSync(localPath);
+      }
+    }
+
+    if (!newUrl) {
+      return res.status(400).json({ error: 'No valid image file or dataUrl provided' });
+    }
+
+    const hash = fileBuffer ? crypto.createHash('sha256').update(fileBuffer).digest('hex') : null;
+
+    const result = await db.setProjectActiveBackground(projectId, {
+      url: newUrl,
+      type: 'UPLOADED',
+      hash
+    });
+
+    res.json({
+      success: true,
+      activeBackground: result.activeBackground,
+      backgroundVersions: result.backgroundVersions,
+      message: 'Booth background replaced and activated successfully.'
+    });
+  } catch (err) {
+    console.error('[Replace Background Error]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/projects/:id/booth-3d/save-cleaned-booth (Save Inpainted Cleaned Booth Image + Real Mask Assets)
 app.post('/api/projects/:id/booth-3d/save-cleaned-booth', async (req, res) => {
   try {
@@ -7141,13 +7200,31 @@ app.post('/api/projects/:id/booth-3d/save-cleaned-booth', async (req, res) => {
       return res.status(400).json({ error: 'No valid cleaned image provided' });
     }
 
-    // Preserve original photo untouched
-    const originalUrl = project.sourceAsset?.originalUrl || project.photoUrl;
+    // C11.16-P3.21: Resolve canonical active background and register CLEANED version
+    const activeBg = db.getActiveBoothBackground(project);
+    const sourceAssetId = req.body?.sourceAssetId || activeBg?.assetId || 'asset-active';
+    const sourceUrl = req.body?.sourceUrl || activeBg?.url || project.photoUrl;
+
+    // Compute cleaned hash
+    const cleanedPath = path.join(UPLOADS_DIR, path.basename(cleanedUrl));
+    let cleanedHash = null;
+    if (fs.existsSync(cleanedPath)) {
+      cleanedHash = crypto.createHash('sha256').update(fs.readFileSync(cleanedPath)).digest('hex');
+    }
+
+    await db.setProjectActiveBackground(projectId, {
+      url: cleanedUrl,
+      type: 'CLEANED',
+      derivedFromAssetId: sourceAssetId,
+      hash: cleanedHash,
+      maskUrl,
+      overlayUrl
+    });
 
     await db.setBooth3dActiveAsset(projectId, {
       previewUrl: cleanedUrl,
       highResUrl: cleanedUrl,
-      originalUrl,
+      originalUrl: sourceUrl,
       maskUrl,
       overlayUrl,
       peopleRemoved: true,
@@ -7159,8 +7236,11 @@ app.post('/api/projects/:id/booth-3d/save-cleaned-booth', async (req, res) => {
 
     res.json({
       success: true,
-      originalUrl,
+      originalUrl: sourceUrl,
+      sourceAssetId,
       cleanedUrl,
+      cleanedHash,
+      derivedFromAssetId: sourceAssetId,
       maskUrl,
       overlayUrl,
       peopleRemoved: true,

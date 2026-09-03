@@ -2378,6 +2378,11 @@
           </div>
 
           <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            
+            <button class="btn-ui" id="btnOwnerReplaceBackground" onclick="triggerReplaceBackground()" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Upload and replace active booth background image">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Replace Background
+            </button>
+            <input type="file" id="replaceBackgroundFileInput" accept="image/*" style="display: none;" onchange="handleReplaceBackgroundFile(this)">
             <button class="btn-ui" id="btnOwnerToolbarRegenerateBooth" onclick="openBooth3dRegenerationModal()" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: 1px solid #34d399; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Regenerate 3D Booth with multi-view photos and high-fidelity neural reconstruction"><i class="fa-solid fa-arrows-rotate"></i> Regenerate 3D Booth</button>
             <button class="btn-ui" id="btnOwnerToolbarAddPin" onclick="startPlaceProductPinMode()" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Click anywhere on the booth to place a single or multi-product pin">
               <i class="fa-solid fa-map-pin"></i> + Add Product Pin
@@ -5471,7 +5476,7 @@
       checkProjectOwnership();
       applyViewerModeUI();
 
-      const photoUrl = projectData.sourceAsset?.previewUrl || projectData.sourceAsset?.originalUrl || '';
+      const activeBg = getActiveBoothBackground(projectData); const photoUrl = activeBg?.url || projectData.sourceAsset?.previewUrl || projectData.sourceAsset?.originalUrl || '';
 
       // Initialize Three.js WebGL Studio Engine
       initPhotoImmersiveThree(photoUrl, projectData);
@@ -8170,6 +8175,73 @@
     // ============================================================
     window.lastRemovalResult = null;
 
+    
+    function triggerReplaceBackground() {
+      const fileInput = document.getElementById('replaceBackgroundFileInput');
+      if (fileInput) fileInput.click();
+    }
+
+    async function handleReplaceBackgroundFile(input) {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      const pid = activeProjectId || window.activeProjectData?.id;
+      if (!pid) {
+        alert('No active project found.');
+        return;
+      }
+
+      const btn = document.getElementById('btnOwnerReplaceBackground');
+      const originalText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading...';
+      }
+
+      try {
+        const token = p3dGetAuthToken();
+        const formData = new FormData();
+        formData.append('background', file);
+
+        const res = await fetch(`/api/projects/${pid}/background`, {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'x-booth-edit-token': token,
+            'x-project-id': pid
+          },
+          body: formData
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to upload background.');
+        }
+
+        if (window.activeProjectData) {
+          window.activeProjectData.activeBackground = data.activeBackground;
+          window.activeProjectData.backgroundVersions = data.backgroundVersions;
+          window.activeProjectData.activeBackgroundVersionId = data.activeBackground.versionId;
+          window.activeProjectData.photoUrl = data.activeBackground.url;
+          if (window.activeProjectData.sourceAsset) {
+            window.activeProjectData.sourceAsset.previewUrl = data.activeBackground.url;
+            window.activeProjectData.sourceAsset.highResUrl = data.activeBackground.url;
+          }
+        }
+
+        renderActiveBoothBackground(window.activeProjectData);
+        if (window.showToast) window.showToast('🎉 Booth background replaced and activated!', 'success');
+      } catch (err) {
+        console.error('[Replace Background Error]', err);
+        alert('Failed to replace background: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+        input.value = '';
+      }
+    }
+
     async function triggerQuickPersonRemoval() {
       const urlParams = new URLSearchParams(window.location.search);
       const pid = activeProjectId || window.activeProjectId || window.activeProjectData?.id || urlParams.get('id') || urlParams.get('project');
@@ -8187,7 +8259,21 @@
 
       try {
         const token = p3dGetAuthToken();
-        const targetPhotoUrl = window.activeProjectData?.sourceAsset?.originalUrl || window.activeProjectData?.sourceAsset?.previewUrl || window.activeProjectData?.photoUrl || '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg';
+        // C11.16-P3.21: Resolve active background at click time
+        const activeBg = getActiveBoothBackground(window.activeProjectData);
+        const targetPhotoUrl = activeBg?.url || window.activeProjectData?.photoUrl || '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg';
+        const targetAssetId = activeBg?.assetId || 'asset-active';
+        const targetVersionId = activeBg?.versionId || 'bver-active';
+
+        // Part F: Immutable Session Snapshot
+        window.peopleRemovalSession = {
+          sourceAssetId: targetAssetId,
+          sourceUrl: targetPhotoUrl,
+          sourceHash: activeBg?.hash || null,
+          activeBackgroundVersionIdAtOpen: targetVersionId,
+          activeBgSnapshot: activeBg ? { ...activeBg } : null
+        };
+        console.log('[Remove People] Active source snapshot:', window.peopleRemovalSession);
 
         // 1. Load image into memory
         const img = new Image();
@@ -8362,18 +8448,15 @@
           coveragePercent
         };
 
-        // 8. Update in-memory project data and live 3D texture
-        if (window.activeProjectData) {
-          window.activeProjectData.photoUrl = saveData.cleanedUrl;
-          if (window.activeProjectData.sourceAsset) {
-            window.activeProjectData.sourceAsset.cleanedUrl = saveData.cleanedUrl;
-            window.activeProjectData.sourceAsset.maskUrl = saveData.maskUrl;
-            window.activeProjectData.sourceAsset.peopleRemoved = true;
-          }
-        }
-        switchActiveBoothTexture(saveData.cleanedUrl, window.activeProjectData);
+        // 8. Store candidate result WITHOUT mutating active 3D viewer background yet
+        window.lastRemovalResult.cleanedUrl = saveData.cleanedUrl;
+        window.lastRemovalResult.maskUrl = saveData.maskUrl;
+        window.lastRemovalResult.overlayUrl = saveData.overlayUrl;
+        window.lastRemovalResult.originalUrl = window.peopleRemovalSession.sourceUrl;
+        window.lastRemovalResult.sourceAssetId = window.peopleRemovalSession.sourceAssetId;
+        window.lastRemovalResult.derivedFromAssetId = window.peopleRemovalSession.sourceAssetId;
 
-        // 9. Open Sleek Before/After Review Modal
+        // 9. Open Sleek Before/After Review Modal (Viewer remains on active background)
         openPeopleRemovalResultModal(window.lastRemovalResult);
 
       } catch (err) {
@@ -8408,7 +8491,7 @@
                 Real AI detected ${res.personCount} bystander(s) (${res.coveragePercent}% coverage). Floor & booth textures seamlessly restored.
               </p>
             </div>
-            <button type="button" onclick="closePeopleRemovalResultModal()" style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer;">&times;</button>
+            <button type="button" onclick="cancelPeopleRemovalModal()" style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer;">&times;</button>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
@@ -8436,10 +8519,10 @@
               </button>
             </div>
             <div style="display: flex; gap: 10px;">
-              <button type="button" onclick="revertToOriginalBoothPhoto('${res.originalUrl}')" style="padding: 8px 16px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 8px; cursor: pointer;">
+              <button type="button" id="btnKeepOriginalBoothPhoto" onclick="keepOriginalBoothPhoto()" style="padding: 8px 16px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 8px; cursor: pointer;">
                 Keep Original Photo
               </button>
-              <button type="button" onclick="closePeopleRemovalResultModal()" style="padding: 8px 18px; font-size: 12px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; color: #fff; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 14px rgba(2,132,199,0.4);">
+              <button type="button" id="btnUseCleanedBoothVersion" onclick="applyCleanedBoothVersion()" style="padding: 8px 18px; font-size: 12px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; color: #fff; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 14px rgba(2,132,199,0.4);">
                 Use Cleaned Version
               </button>
             </div>
@@ -8454,13 +8537,188 @@
       if (modal) modal.style.display = 'none';
     }
 
-    function revertToOriginalBoothPhoto(origUrl) {
-      if (origUrl && window.activeProjectData) {
-        window.activeProjectData.photoUrl = origUrl;
-        switchActiveBoothTexture(origUrl, window.activeProjectData);
-      }
+    function cancelPeopleRemovalModal() {
+      // Part E: Close/X / Backdrop / Esc leaves active background intact (IMAGE_B)
       closePeopleRemovalResultModal();
-      if (window.showToast) window.showToast('Reverted to original photo.', 'info');
+      if (window.peopleRemovalSession?.sourceUrl) {
+        renderActiveBoothBackground(window.activeProjectData);
+      }
+    }
+
+    function keepOriginalBoothPhoto() {
+      // Part E: Keep Original Photo preserves the active background that was processed (IMAGE_B)
+      closePeopleRemovalResultModal();
+      if (window.peopleRemovalSession?.sourceUrl) {
+        renderActiveBoothBackground(window.activeProjectData);
+      }
+      if (window.showToast) window.showToast('Kept current booth photo.', 'info');
+    }
+
+    async function applyCleanedBoothVersion() {
+      // Part E: Explicit server mutation to activate and persist cleaned derivative
+      const res = window.lastRemovalResult;
+      const session = window.peopleRemovalSession;
+      if (!res || !res.cleanedUrl) {
+        alert('No cleaned derivative available.');
+        return;
+      }
+
+      const btn = document.getElementById('btnUseCleanedBoothVersion');
+      const origText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Activating...';
+      }
+
+      try {
+        const pid = activeProjectId || window.activeProjectData?.id;
+        const token = p3dGetAuthToken();
+
+        // Register cleaned version with backend
+        const saveRes = await fetch(`/api/projects/${pid}/booth-3d/save-cleaned-booth`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+            'x-booth-edit-token': token
+          },
+          body: JSON.stringify({
+            cleanedDataUrl: res.cleanedDataUrl,
+            maskDataUrl: res.maskDataUrl,
+            overlayDataUrl: res.overlayDataUrl,
+            sourceAssetId: session?.sourceAssetId,
+            sourceUrl: session?.sourceUrl,
+            removedCount: res.personCount,
+            maskStats: res.maskStats
+          })
+        });
+
+        const data = await saveRes.json();
+        if (!saveRes.ok || !data.success) {
+          throw new Error(data.error || 'Failed to persist cleaned booth.');
+        }
+
+        // Update in-memory project data
+        if (window.activeProjectData) {
+          window.activeProjectData.photoUrl = data.cleanedUrl;
+          window.activeProjectData.activeBackground = {
+            versionId: 'bver-cleaned-' + Date.now(),
+            assetId: 'asset-cleaned-' + Date.now(),
+            url: data.cleanedUrl,
+            sourceType: 'CLEANED',
+            derivedFromAssetId: session?.sourceAssetId
+          };
+          window.activeProjectData.activeBackgroundVersionId = window.activeProjectData.activeBackground.versionId;
+          if (window.activeProjectData.sourceAsset) {
+            window.activeProjectData.sourceAsset.previewUrl = data.cleanedUrl;
+            window.activeProjectData.sourceAsset.highResUrl = data.cleanedUrl;
+            window.activeProjectData.sourceAsset.cleanedUrl = data.cleanedUrl;
+            window.activeProjectData.sourceAsset.peopleRemoved = true;
+          }
+        }
+
+        // Switch live 3D viewer texture
+        switchActiveBoothTexture(data.cleanedUrl, window.activeProjectData);
+        closePeopleRemovalResultModal();
+        if (window.showToast) window.showToast('🎉 Cleaned version applied and saved!', 'success');
+      } catch (err) {
+        console.error('[Apply Cleaned Version Error]', err);
+        alert('Failed to apply cleaned version: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origText;
+        }
+      }
+    }
+
+    
+    // ══════════════════════════════════════════════════════════════
+    // CANONICAL ACTIVE BOOTH BACKGROUND RESOLVER (C11.16-P3.21)
+    // ══════════════════════════════════════════════════════════════
+    function getActiveBoothBackground(project) {
+      if (!project) return null;
+      
+      // 1. Explicitly active background version
+      if (Array.isArray(project.backgroundVersions) && project.activeBackgroundVersionId) {
+        const v = project.backgroundVersions.find(item => item.versionId === project.activeBackgroundVersionId);
+        if (v) {
+          return {
+            versionId: v.versionId,
+            assetId: v.assetId || ('asset-' + v.versionId),
+            url: v.url,
+            hash: v.hash || null,
+            sourceType: v.type || 'UPLOADED',
+            derivedFromAssetId: v.derivedFromAssetId || null
+          };
+        }
+      }
+
+      // 2. Canonical activeBackground object if present
+      if (project.activeBackground && project.activeBackground.url) {
+        return {
+          versionId: project.activeBackground.versionId || 'bver-active',
+          assetId: project.activeBackground.assetId || 'asset-active',
+          url: project.activeBackground.url,
+          hash: project.activeBackground.hash || null,
+          sourceType: project.activeBackground.sourceType || 'UPLOADED',
+          derivedFromAssetId: project.activeBackground.derivedFromAssetId || null
+        };
+      }
+
+      // 3. Cleaned derivative if active
+      if (project.booth3d?.cleanedUrl || project.sourceAsset?.cleanedUrl) {
+        const url = project.booth3d?.cleanedUrl || project.sourceAsset?.cleanedUrl;
+        return {
+          versionId: project.booth3d?.versionId || 'bver-cleaned',
+          assetId: 'asset-cleaned',
+          url,
+          hash: null,
+          sourceType: 'CLEANED',
+          derivedFromAssetId: project.sourceAsset?.originalAssetId || null
+        };
+      }
+
+      // 4. Replaced / uploaded photoUrl if not default
+      if (project.photoUrl && !project.photoUrl.includes('node0_360_panorama_8k.jpg')) {
+        return {
+          versionId: 'bver-photo',
+          assetId: 'asset-photo',
+          url: project.photoUrl,
+          hash: null,
+          sourceType: 'UPLOADED',
+          derivedFromAssetId: null
+        };
+      }
+
+      // 5. Active booth3d preview
+      if (project.booth3d?.previewUrl) {
+        return {
+          versionId: project.booth3d.versionId || 'bver-booth3d',
+          assetId: 'asset-booth3d',
+          url: project.booth3d.previewUrl,
+          hash: null,
+          sourceType: project.booth3d.previewUrl.includes('node0_360_panorama_8k.jpg') ? 'ORIGINAL' : 'UPLOADED',
+          derivedFromAssetId: null
+        };
+      }
+
+      // 6. Fallback to default
+      const defUrl = project.sourceAsset?.previewUrl || project.sourceAsset?.originalUrl || project.photoUrl || '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg';
+      return {
+        versionId: 'bver-default',
+        assetId: 'asset-default',
+        url: defUrl,
+        hash: null,
+        sourceType: 'ORIGINAL',
+        derivedFromAssetId: null
+      };
+    }
+
+    function renderActiveBoothBackground(projectData = window.activeProjectData) {
+      const activeBg = getActiveBoothBackground(projectData);
+      if (!activeBg || !activeBg.url) return;
+      switchActiveBoothTexture(activeBg.url, projectData);
     }
 
     function switchActiveBoothTexture(newPhotoUrl, projectData) {
