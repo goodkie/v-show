@@ -11211,7 +11211,7 @@ return event;
         publicSlug: p.publicSlug || null,
         publicUrl: p.publicUrl || (p.publicSlug ? `https://3dz.site/booth/${p.publicSlug}` : null),
         qrCodeDataUrl: p.qrCodeDataUrl || null,
-        previewUrl: p.previewUrl || p.sourceAsset?.previewUrl || null,
+        previewUrl: (this.getActiveBoothBackground(p)?.url) || p.previewUrl || p.sourceAsset?.previewUrl || null,
         productsCount: productSlotsCount,
         maxProducts: planLimits.maxProducts || 100,
         maxBooths: planLimits.maxBooths || 1,
@@ -13148,7 +13148,14 @@ return event;
           assetId: v.assetId || ('asset-' + v.versionId),
           url: v.url,
           hash: v.hash || null,
-          sourceType: v.type || 'UPLOADED',
+          sourceType: v.sourceType || v.type || 'AI_ENHANCED',
+          candidateId: v.candidateId || null,
+          neuralSrModel: v.neuralSrModel || null,
+          depthAsset: v.depthAsset || null,
+          viewerMode: v.viewerMode || 'AI_ENHANCED_IMMERSIVE',
+          derivatives: v.derivatives || null,
+          normalFov: v.normalFov || 50,
+          wideFov: v.wideFov || 60,
           derivedFromAssetId: v.derivedFromAssetId || null
         };
       }
@@ -13161,7 +13168,14 @@ return event;
         assetId: project.activeBackground.assetId || 'asset-active',
         url: project.activeBackground.url,
         hash: project.activeBackground.hash || null,
-        sourceType: project.activeBackground.sourceType || 'UPLOADED',
+        sourceType: project.activeBackground.sourceType || 'AI_ENHANCED',
+        candidateId: project.activeBackground.candidateId || null,
+        neuralSrModel: project.activeBackground.neuralSrModel || null,
+        depthAsset: project.activeBackground.depthAsset || null,
+        viewerMode: project.activeBackground.viewerMode || 'AI_ENHANCED_IMMERSIVE',
+        derivatives: project.activeBackground.derivatives || null,
+        normalFov: project.activeBackground.normalFov || 50,
+        wideFov: project.activeBackground.wideFov || 60,
         derivedFromAssetId: project.activeBackground.derivedFromAssetId || null
       };
     }

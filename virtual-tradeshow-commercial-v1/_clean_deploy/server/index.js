@@ -9182,6 +9182,11 @@ app.post('/api/projects/:id/ai-enhance/start', upload.single('photo'), async (re
       candidate,
       nominalTokenCost: 25,
       commercialTokensCharged: isTestAccount ? 0 : 25,
+      autoRemovePeopleDiagnostic: {
+        uiState: autoRemovePeople,
+        requestState: autoRemovePeople,
+        serverState: autoRemovePeople
+      },
       message: 'AI Enhanced 360 Booth candidate generated successfully.'
     });
   } catch (err) {

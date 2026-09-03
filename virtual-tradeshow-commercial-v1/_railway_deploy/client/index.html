@@ -4846,6 +4846,36 @@
       initAppBoot();
     }
 
+        async function resumeBoothFromSession(projectId) {
+      if (!projectId) return;
+      try {
+        const res = await fetch('/api/free-funnel/projects/' + encodeURIComponent(projectId));
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.project) {
+            activeProjectId = data.project.id;
+            activeProjectData = data.project;
+            window.activeProjectId = data.project.id;
+            window.activeProjectData = data.project;
+            checkProjectOwnership();
+            renderStudioBooth(data.project);
+            const banner = document.getElementById('resume-booth-banner');
+            if (banner) banner.remove();
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('[Resume Session Fetch Warn]', err);
+      }
+      const saved = localStorage.getItem('dna_free_booth_session');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed?.project) renderStudioBooth(parsed.project);
+        } catch(e) {}
+      }
+    }
+
     function recoverExistingBoothSession() {
       try {
         const saved = localStorage.getItem('dna_free_booth_session');
@@ -4861,7 +4891,7 @@
               <div style="font-size:13px;">
                 <span style="font-weight:700;">Resume Your 3D Booth:</span> ${parsed.project.businessName || 'Exhibitor Booth'}
               </div>
-              <button class="btn-ui upgrade" style="padding:6px 14px; font-size:12px; margin-left:8px; cursor:pointer;" onclick="renderStudioBooth(JSON.parse(localStorage.getItem('dna_free_booth_session')).project)">Open Studio →</button>
+              <button class="btn-ui upgrade" style="padding:6px 14px; font-size:12px; margin-left:8px; cursor:pointer;" onclick="resumeBoothFromSession(JSON.parse(localStorage.getItem('dna_free_booth_session')).project?.id)">Open Studio →</button>
               <button style="background:none; border:none; color:#94a3b8; font-size:16px; cursor:pointer; padding:0 4px;" onclick="document.getElementById('resume-booth-banner').remove()">×</button>
             `;
             document.body.appendChild(banner);
@@ -5548,16 +5578,11 @@
         controls.maxDistance = 0.05;
         controls.enablePan = false;
         controls.target.set(0, 0, 0);
-        controls.maxPolarAngle = Math.PI * 0.88;
-        controls.minPolarAngle = Math.PI * 0.12;
+        controls.maxPolarAngle = Math.PI / 2 + (25 * Math.PI / 180);
+        controls.minPolarAngle = Math.PI / 2 - (25 * Math.PI / 180);
+        controls.minAzimuthAngle = -35 * Math.PI / 180;
+        controls.maxAzimuthAngle = 35 * Math.PI / 180;
         controls.rotateSpeed = -0.42;
-
-        if (projectData?.activeViewerMode === 'AI_ENHANCED_IMMERSIVE') {
-          controls.minPolarAngle = Math.PI / 2 - (10 * Math.PI / 180);
-          controls.maxPolarAngle = Math.PI / 2 + (10 * Math.PI / 180);
-          controls.minAzimuthAngle = -18 * Math.PI / 180;
-          controls.maxAzimuthAngle = 18 * Math.PI / 180;
-        }
 
         // 360° Interior Equirectangular Sphere Mesh
         const sphereGeo = new THREE.SphereGeometry(500, 128, 64);
@@ -5571,12 +5596,16 @@
         });
         // C11.16-P3.22-R1: Human Eye-Level Default Camera Baseline (1.65m equivalent)
         // Elevate sphere by +35 units so standing eye line frames exhibits/counters rather than empty ceiling
+        // C11.16-P3.23: Human Standing Eye-Level Policy (Horizon 45-55%, Level Horizon Pitch 0°)
+        // Sphere concentric at (0, 0, 0) with optical center aligned at -Z (rotation.y = -Math.PI / 2)
         photoSphere = new THREE.Mesh(sphereGeo, photoMaterial);
-        photoSphere.rotation.y = -0.45;
-        photoSphere.position.set(0, 35, 0);
+        photoSphere.position.set(0, 0, 0);
+        photoSphere.rotation.y = -Math.PI / 2;
         photoSphere.renderOrder = -1;
         scene.add(photoSphere);
-        controls.target.set(0, -0.06, -1);
+
+        camera.position.set(0, 0, 0.01);
+        controls.target.set(0, 0, 0);
 
         window.addEventListener('resize', onStudioResize);
 
@@ -5632,10 +5661,13 @@
             const intersects = raycaster.intersectObject(photoSphere);
             if (intersects.length > 0) {
               hitPoint = intersects[0].point.clone();
-              const normal = hitPoint.clone().normalize();
-              u = (Math.atan2(normal.z, -normal.x) + Math.PI + 0.45) / (2 * Math.PI) % 1;
-              if (u < 0) u += 1;
-              v = 1 - (Math.acos(Math.max(-1, Math.min(1, normal.y))) / Math.PI);
+              if (intersects[0].uv) {
+                u = intersects[0].uv.x;
+                v = intersects[0].uv.y;
+              } else {
+                u = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                v = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+              }
             }
           }
 
@@ -5643,7 +5675,7 @@
             u = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
             v = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
             const phi = (1 - v) * Math.PI;
-            const theta = (u * 2 * Math.PI) - Math.PI - 0.45;
+            const theta = (0.5 - 2 * u) * Math.PI;
             const r = 450;
             hitPoint = new THREE.Vector3(-r * Math.sin(phi) * Math.cos(theta), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(theta));
           }
@@ -5662,8 +5694,9 @@
         }
       }
 
-      // C11.16-P3.22-R1: Dynamic Maximum Safe Texture Selection & High-DPI Filtering
-      let targetTextureUrl = photoUrl;
+      // C11.16-P3.23: Resolve canonical active background version
+      const activeBg = getActiveBoothBackground(projectData);
+      let targetTextureUrl = photoUrl || activeBg?.url;
       const maxTex = renderer ? renderer.capabilities.maxTextureSize : 4096;
       if (activeBg?.derivatives) {
         if (maxTex >= 16384 && activeBg.derivatives.master16k?.url && window.innerWidth >= 1920) {
@@ -5777,7 +5810,7 @@
         const v = typeof pin?.v === 'number' ? pin.v : (typeof spot.v === 'number' ? spot.v : fallbackUV.v);
 
         const phi = (1 - v) * Math.PI;
-        const theta = (u * 2 * Math.PI) - Math.PI - 0.45;
+        const theta = (0.5 - 2 * u) * Math.PI;
         const r = 450;
 
         const x = -r * Math.sin(phi) * Math.cos(theta);
@@ -8689,7 +8722,14 @@
             assetId: v.assetId || ('asset-' + v.versionId),
             url: v.url,
             hash: v.hash || null,
-            sourceType: v.type || 'UPLOADED',
+            sourceType: v.sourceType || v.type || 'AI_ENHANCED',
+            candidateId: v.candidateId || null,
+            neuralSrModel: v.neuralSrModel || null,
+            depthAsset: v.depthAsset || null,
+            viewerMode: v.viewerMode || 'AI_ENHANCED_IMMERSIVE',
+            derivatives: v.derivatives || null,
+            normalFov: v.normalFov || 50,
+            wideFov: v.wideFov || 60,
             derivedFromAssetId: v.derivedFromAssetId || null
           };
         }
@@ -8702,7 +8742,14 @@
           assetId: project.activeBackground.assetId || 'asset-active',
           url: project.activeBackground.url,
           hash: project.activeBackground.hash || null,
-          sourceType: project.activeBackground.sourceType || 'UPLOADED',
+          sourceType: project.activeBackground.sourceType || 'AI_ENHANCED',
+          candidateId: project.activeBackground.candidateId || null,
+          neuralSrModel: project.activeBackground.neuralSrModel || null,
+          depthAsset: project.activeBackground.depthAsset || null,
+          viewerMode: project.activeBackground.viewerMode || 'AI_ENHANCED_IMMERSIVE',
+          derivatives: project.activeBackground.derivatives || null,
+          normalFov: project.activeBackground.normalFov || 50,
+          wideFov: project.activeBackground.wideFov || 60,
           derivedFromAssetId: project.activeBackground.derivedFromAssetId || null
         };
       }
@@ -13015,7 +13062,7 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
 
         const formData = new FormData();
         formData.append('photo', currentSelectedEnhanceFile);
-        const autoRemove = document.getElementById('aiEnhanceRemovePeopleToggle')?.checked !== false;
+        const autoRemove = window.autoRemovePeople !== false;
         formData.append('autoRemovePeople', autoRemove ? 'true' : 'false');
         const userEmail = localStorage.getItem('vshow_customer_email') || '';
         if (userEmail === 'goodkie.com@gmail.com') formData.append('isTest', 'true');
@@ -13214,99 +13261,130 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
     }
 
     // ============================================================
-    // ─── P3.22: IMMERSIVE VIEW PRESET CONTROLS ─────────────────
+    // ─── C11.16-P3.23: CANONICAL EYE-LEVEL CAMERA & PRESETS ──────
     // ============================================================
+    window.CAMERA_RENDER_SOURCE_OF_TRUTH = 'THREE_PERSPECTIVE_CAMERA_ORBIT_CONTROLS';
+    window.viewerCameraState = {
+      yawDeg: 0,
+      pitchDeg: 0,
+      fov: 50,
+      distance: 0.01,
+      target: new THREE.Vector3(0, 0, 0)
+    };
+
+    function applyCameraViewPreset(yawDeg, pitchDeg, fovDeg) {
+      if (!camera || !controls) return;
+      window.viewerCameraState.yawDeg = yawDeg;
+      window.viewerCameraState.pitchDeg = pitchDeg;
+      window.viewerCameraState.fov = fovDeg || camera.fov || 50;
+
+      const radYaw = yawDeg * Math.PI / 180;
+      const radPitch = pitchDeg * Math.PI / 180;
+
+      // Spherical look direction pointing outward into booth scene
+      // Look direction: yaw=0, pitch=0 points straight ahead along -Z
+      // Yaw: positive = look right, negative = look left
+      // Pitch: positive = look up, negative = look down
+      const lookDir = new THREE.Vector3(
+        Math.sin(radYaw) * Math.cos(radPitch),
+        Math.sin(radPitch),
+        -Math.cos(radYaw) * Math.cos(radPitch)
+      ).normalize();
+
+      // Observer positioned on tiny orbit sphere around origin looking at (0, 0, 0)
+      camera.position.copy(lookDir.clone().multiplyScalar(-0.01));
+      controls.target.set(0, 0, 0);
+
+      camera.fov = window.viewerCameraState.fov;
+      camera.updateProjectionMatrix();
+
+      controls.minDistance = 0.005;
+      controls.maxDistance = 0.05;
+      controls.minPolarAngle = Math.PI / 2 - (25 * Math.PI / 180);
+      controls.maxPolarAngle = Math.PI / 2 + (25 * Math.PI / 180);
+      controls.minAzimuthAngle = -35 * Math.PI / 180;
+      controls.maxAzimuthAngle = 35 * Math.PI / 180;
+      controls.update();
+
+      if (renderer && scene) {
+        renderer.render(scene, camera);
+      }
+    }
 
     function setImmersiveViewPreset(preset) {
       if (!camera || !controls) return;
-
-      // Update active preset button highlight
-      document.querySelectorAll('#immersiveViewPresetsBar .btn-preset').forEach(b => {
-        b.style.background = 'rgba(255,255,255,0.06)';
-        b.style.borderColor = 'rgba(255,255,255,0.15)';
-        b.style.color = '#cbd5e1';
-      });
+      const currYaw = window.viewerCameraState?.yawDeg || 0;
+      const currPitch = window.viewerCameraState?.pitchDeg || 0;
+      const currFov = camera.fov || 50;
 
       switch (preset) {
         case 'NORMAL':
-          camera.fov = 50;
-          if (photoSphere) photoSphere.position.set(0, 35, 0);
-          controls.target.set(0, -0.06, -1);
-          controls.minPolarAngle = Math.PI / 2 - (10 * Math.PI / 180);
-          controls.maxPolarAngle = Math.PI / 2 + (10 * Math.PI / 180);
-          controls.minAzimuthAngle = -18 * Math.PI / 180;
-          controls.maxAzimuthAngle = 18 * Math.PI / 180;
-          camera.position.set(0, 0, 0.01);
-          controls.reset();
-          controls.target.set(0, -0.06, -1);
+          applyCameraViewPreset(0, 0, 50);
           highlightPresetBtn('presetBtnNormal');
           break;
 
         case 'WIDE':
-          camera.fov = 60;
-          if (photoSphere) photoSphere.position.set(0, 35, 0);
-          controls.target.set(0, -0.06, -1);
-          camera.position.set(0, 0, 0.01);
+          applyCameraViewPreset(0, 0, 60);
           highlightPresetBtn('presetBtnWide');
           break;
 
         case 'LEFT':
-          camera.fov = 50;
-          controls.target.set(Math.sin(-14 * Math.PI / 180), -0.06, -Math.cos(-14 * Math.PI / 180));
+          applyCameraViewPreset(-14, 0, 50);
           highlightPresetBtn('presetBtnLeft');
           break;
 
         case 'CENTER':
-          camera.fov = 50;
-          if (photoSphere) photoSphere.position.set(0, 35, 0);
-          controls.target.set(0, -0.06, -1);
+          applyCameraViewPreset(0, 0, currFov);
           highlightPresetBtn('presetBtnCenter');
           break;
 
         case 'RIGHT':
-          camera.fov = 50;
-          controls.target.set(Math.sin(14 * Math.PI / 180), -0.06, -Math.cos(14 * Math.PI / 180));
+          applyCameraViewPreset(14, 0, 50);
           highlightPresetBtn('presetBtnRight');
           break;
 
         case 'LOOK_UP':
-          camera.fov = 50;
-          controls.target.set(0, 0.08, -1);
+          applyCameraViewPreset(currYaw, 8, currFov);
           highlightPresetBtn('presetBtnUp');
           break;
 
         case 'LOOK_DOWN':
-          camera.fov = 50;
-          controls.target.set(0, -0.20, -1);
+          applyCameraViewPreset(currYaw, -8, currFov);
           highlightPresetBtn('presetBtnDown');
           break;
 
         case 'CLOSE':
-          camera.fov = 40;
+          applyCameraViewPreset(currYaw, currPitch, 40);
           highlightPresetBtn('presetBtnClose');
           break;
 
         case 'RESET':
         default:
-          camera.fov = 50;
-          controls.target.set(0, 0, 0);
-          camera.position.set(0, 0, 0.01);
-          controls.reset();
+          applyCameraViewPreset(0, 0, 50);
           highlightPresetBtn('presetBtnReset');
           break;
       }
-
-      camera.updateProjectionMatrix();
-      controls.update();
     }
 
     function highlightPresetBtn(btnId) {
-      const b = document.getElementById(btnId);
-      if (b) {
-        b.style.background = 'rgba(56,189,248,0.25)';
-        b.style.borderColor = '#38bdf8';
-        b.style.color = '#38bdf8';
-      }
+      const presetIds = [
+        'presetBtnNormal', 'presetBtnWide', 'presetBtnLeft', 'presetBtnCenter',
+        'presetBtnRight', 'presetBtnUp', 'presetBtnDown', 'presetBtnClose', 'presetBtnReset'
+      ];
+      presetIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          if (id === btnId) {
+            el.style.background = 'rgba(56,189,248,0.25)';
+            el.style.borderColor = '#38bdf8';
+            el.style.color = '#38bdf8';
+          } else {
+            el.style.background = 'rgba(255,255,255,0.06)';
+            el.style.borderColor = 'rgba(255,255,255,0.15)';
+            el.style.color = '#cbd5e1';
+          }
+        }
+      });
     }
 
 </script>
@@ -13825,15 +13903,21 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       </div>
     </div>
 
+    <!-- C11.16-P3.23: Explicit Accessible People Removal Toggle -->
     <div style="background: rgba(255,255,255,0.04); border-radius: 10px; padding: 12px 14px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
       <div>
         <div style="font-size: 12.5px; font-weight: 700; color: #fff;">Automatic People Removal</div>
-        <div style="font-size: 11px; color: #94a3b8;">Inpaint & seamlessly remove detected bystanders</div>
+        <div style="font-size: 11px; color: #94a3b8;">Automatically detect and remove bystanders.</div>
       </div>
-      <label style="position: relative; display: inline-block; width: 44px; height: 24px; margin: 0; cursor: pointer;">
-        <input type="checkbox" id="aiEnhanceRemovePeopleToggle" checked style="opacity: 0; width: 0; height: 0;">
-        <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #2563eb; border-radius: 24px; transition: .3s;" id="aiEnhanceToggleSlider"></span>
-      </label>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <label style="position: relative; display: inline-block; width: 48px; height: 26px; margin: 0; cursor: pointer;">
+          <input type="checkbox" id="aiEnhanceRemovePeopleToggle" checked onchange="updateAiEnhancePeopleToggleUI(this.checked)" style="opacity: 0; width: 0; height: 0;">
+          <span id="aiEnhanceToggleSlider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #0284c7; border-radius: 26px; transition: .25s; display: flex; align-items: center; padding: 2px;">
+            <span id="aiEnhanceToggleKnob" style="height: 22px; width: 22px; background: #fff; border-radius: 50%; transition: .25s; transform: translateX(22px); box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></span>
+          </span>
+        </label>
+        <span id="aiEnhanceToggleBadge" style="font-size: 11.5px; font-weight: 800; min-width: 52px; text-align: center; padding: 3px 8px; border-radius: 6px; background: rgba(56,189,248,0.2); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4);">✓ ON</span>
+      </div>
     </div>
 
     <!-- Live Progress Stage Indicator -->
