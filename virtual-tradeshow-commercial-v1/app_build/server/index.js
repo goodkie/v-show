@@ -7154,9 +7154,9 @@ app.post('/api/projects/:id/booth-3d/save-cleaned-booth', async (req, res) => {
     if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
 
     const ts = Date.now();
-    let cleanedUrl = null;
-    let maskUrl = null;
-    let overlayUrl = null;
+    let cleanedUrl = req.body?.cleanedUrl || null;
+    let maskUrl = req.body?.maskUrl || null;
+    let overlayUrl = req.body?.overlayUrl || null;
 
     // 1. Save Cleaned Inpainted Image
     const dataUrl = req.body?.dataUrl || req.body?.cleanedDataUrl;

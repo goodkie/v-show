@@ -8439,22 +8439,19 @@
         }
 
         window.lastRemovalResult = {
-          originalUrl: targetPhotoUrl,
+          originalUrl: window.peopleRemovalSession.sourceUrl,
           cleanedUrl: saveData.cleanedUrl,
           maskUrl: saveData.maskUrl,
           overlayUrl: saveData.overlayUrl,
+          cleanedDataUrl: cleanedCanvas.toDataURL('image/jpeg', 0.95),
+          maskDataUrl: maskCanvas.toDataURL('image/png'),
+          overlayDataUrl: overlayCanvas.toDataURL('image/jpeg', 0.95),
+          sourceAssetId: window.peopleRemovalSession.sourceAssetId,
+          derivedFromAssetId: window.peopleRemovalSession.sourceAssetId,
           personCount: targetedPeople.length,
           nonzeroPixels,
           coveragePercent
         };
-
-        // 8. Store candidate result WITHOUT mutating active 3D viewer background yet
-        window.lastRemovalResult.cleanedUrl = saveData.cleanedUrl;
-        window.lastRemovalResult.maskUrl = saveData.maskUrl;
-        window.lastRemovalResult.overlayUrl = saveData.overlayUrl;
-        window.lastRemovalResult.originalUrl = window.peopleRemovalSession.sourceUrl;
-        window.lastRemovalResult.sourceAssetId = window.peopleRemovalSession.sourceAssetId;
-        window.lastRemovalResult.derivedFromAssetId = window.peopleRemovalSession.sourceAssetId;
 
         // 9. Open Sleek Before/After Review Modal (Viewer remains on active background)
         openPeopleRemovalResultModal(window.lastRemovalResult);
@@ -8583,9 +8580,11 @@
             'x-booth-edit-token': token
           },
           body: JSON.stringify({
+            cleanedUrl: res.cleanedUrl,
             cleanedDataUrl: res.cleanedDataUrl,
-            maskDataUrl: res.maskDataUrl,
-            overlayDataUrl: res.overlayDataUrl,
+            dataUrl: res.cleanedDataUrl,
+            maskUrl: res.maskUrl,
+            overlayUrl: res.overlayUrl,
             sourceAssetId: session?.sourceAssetId,
             sourceUrl: session?.sourceUrl,
             removedCount: res.personCount,
