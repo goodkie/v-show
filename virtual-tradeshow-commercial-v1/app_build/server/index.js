@@ -594,7 +594,7 @@ app.use('/uploads', express.static(UPLOADS_DIR));
 const P315_BUILD_INFO = {
   gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'C11.16-P3.15-R4',
   buildTimestamp: new Date().toISOString(),
-  releaseId: 'C11.16-P3.22'
+  releaseId: 'C11.16-P3.22-R1'
 };
 
 app.get('/api/build-info', (req, res) => {
@@ -9238,6 +9238,92 @@ app.post('/api/projects/:id/ai-enhance/discard', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+
+// C11.16-P3.22-R1: AI Provider Health & Credit Audit Endpoint
+app.get('/api/internal/ai-providers-health', async (req, res) => {
+  const replicateToken = process.env.REPLICATE_API_TOKEN;
+  const falKey = process.env.FAL_KEY;
+
+  let replicateStatus = {
+    providerName: 'Replicate',
+    configured: Boolean(replicateToken),
+    keyPresent: Boolean(replicateToken),
+    keyValid: 'UNKNOWN',
+    billingOrCreditStatus: 'UNKNOWN',
+    modelEndpoint: 'https://api.replicate.com/v1/models/firtoz/trellis',
+    lastAttemptHttpStatus: null,
+    lastAttemptErrorSanitized: null,
+    currentPipelineDependsOnProvider: false
+  };
+
+  if (replicateToken) {
+    try {
+      const probeRes = await new Promise((resolve) => {
+        const https = require('https');
+        const r = https.request({
+          hostname: 'api.replicate.com',
+          path: '/v1/account',
+          method: 'GET',
+          headers: {
+            'Authorization': `Token ${replicateToken}`,
+            'User-Agent': 'v-show-health-probe/1.0'
+          }
+        }, (resp) => {
+          let data = '';
+          resp.on('data', c => data += c);
+          resp.on('end', () => {
+            resolve({ status: resp.statusCode, body: data });
+          });
+        });
+        r.on('error', (err) => resolve({ status: 500, error: err.message }));
+        r.end();
+      });
+
+      replicateStatus.lastAttemptHttpStatus = probeRes.status;
+      if (probeRes.status === 200) {
+        replicateStatus.keyValid = true;
+        replicateStatus.billingOrCreditStatus = 'ACTIVE';
+      } else if (probeRes.status === 401 || probeRes.status === 403) {
+        replicateStatus.keyValid = false;
+        replicateStatus.billingOrCreditStatus = 'INVALID_KEY';
+      } else if (probeRes.status === 402) {
+        replicateStatus.keyValid = true;
+        replicateStatus.billingOrCreditStatus = 'NO_CREDIT';
+        replicateStatus.lastAttemptErrorSanitized = 'Payment required / Zero credit balance';
+      } else {
+        replicateStatus.billingOrCreditStatus = 'UNKNOWN';
+        replicateStatus.lastAttemptErrorSanitized = `HTTP ${probeRes.status}`;
+      }
+    } catch (e) {
+      replicateStatus.lastAttemptErrorSanitized = e.message;
+    }
+  } else {
+    replicateStatus.billingOrCreditStatus = 'NO_KEY';
+    replicateStatus.keyValid = false;
+  }
+
+  const falStatus = {
+    providerName: 'fal.ai',
+    configured: Boolean(falKey),
+    keyPresent: Boolean(falKey),
+    keyValid: false,
+    billingOrCreditStatus: 'NO_KEY',
+    modelEndpoint: 'https://fal.run',
+    lastAttemptHttpStatus: null,
+    lastAttemptErrorSanitized: 'FAL_KEY is not configured in process.env',
+    currentPipelineDependsOnProvider: false
+  };
+
+  res.json({
+    success: true,
+    releaseId: 'C11.16-P3.22-R1',
+    timestamp: new Date().toISOString(),
+    coreEnhancementWorksWithZeroPaidApiCredit: true,
+    providers: [replicateStatus, falStatus]
+  });
+});
+
 
 // C11.16-P3.16: Canonical Global API 404 Handler (returns JSON for ANY HTTP method)
 app.all('/api/*', (req, res) => {

@@ -5569,11 +5569,14 @@
           opacity: 1.0,
           depthWrite: false
         });
+        // C11.16-P3.22-R1: Human Eye-Level Default Camera Baseline (1.65m equivalent)
+        // Elevate sphere by +35 units so standing eye line frames exhibits/counters rather than empty ceiling
         photoSphere = new THREE.Mesh(sphereGeo, photoMaterial);
         photoSphere.rotation.y = -0.45;
-        photoSphere.position.set(0, 0, 0);
+        photoSphere.position.set(0, 35, 0);
         photoSphere.renderOrder = -1;
         scene.add(photoSphere);
+        controls.target.set(0, -0.06, -1);
 
         window.addEventListener('resize', onStudioResize);
 
@@ -5659,11 +5662,26 @@
         }
       }
 
-      // Load booth photo into 360° texture
-      if (photoUrl && textureLoader) {
-        textureLoader.load(photoUrl, (tex) => {
+      // C11.16-P3.22-R1: Dynamic Maximum Safe Texture Selection & High-DPI Filtering
+      let targetTextureUrl = photoUrl;
+      const maxTex = renderer ? renderer.capabilities.maxTextureSize : 4096;
+      if (activeBg?.derivatives) {
+        if (maxTex >= 16384 && activeBg.derivatives.master16k?.url && window.innerWidth >= 1920) {
+          targetTextureUrl = activeBg.derivatives.master16k.url;
+        } else if (maxTex >= 8192 && activeBg.derivatives.desktop8k?.url) {
+          targetTextureUrl = activeBg.derivatives.desktop8k.url;
+        } else if (maxTex >= 4096 && activeBg.derivatives.standard4k?.url) {
+          targetTextureUrl = activeBg.derivatives.standard4k.url;
+        } else if (activeBg.derivatives.mobile2k?.url) {
+          targetTextureUrl = activeBg.derivatives.mobile2k.url;
+        }
+      }
+
+      if (targetTextureUrl && textureLoader) {
+        textureLoader.load(targetTextureUrl, (tex) => {
+          tex.colorSpace = THREE.SRGBColorSpace || THREE.sRGBEncoding;
           tex.encoding = THREE.sRGBEncoding;
-          tex.minFilter = THREE.LinearMipMapLinearFilter;
+          tex.minFilter = THREE.LinearMipmapLinearFilter;
           tex.magFilter = THREE.LinearFilter;
           tex.generateMipmaps = true;
           tex.anisotropy = renderer ? renderer.capabilities.getMaxAnisotropy() : 16;
@@ -13212,50 +13230,54 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       switch (preset) {
         case 'NORMAL':
           camera.fov = 50;
-          controls.target.set(0, 0, 0);
+          if (photoSphere) photoSphere.position.set(0, 35, 0);
+          controls.target.set(0, -0.06, -1);
           controls.minPolarAngle = Math.PI / 2 - (10 * Math.PI / 180);
           controls.maxPolarAngle = Math.PI / 2 + (10 * Math.PI / 180);
           controls.minAzimuthAngle = -18 * Math.PI / 180;
           controls.maxAzimuthAngle = 18 * Math.PI / 180;
           camera.position.set(0, 0, 0.01);
           controls.reset();
+          controls.target.set(0, -0.06, -1);
           highlightPresetBtn('presetBtnNormal');
           break;
 
         case 'WIDE':
           camera.fov = 60;
-          controls.target.set(0, 0, 0);
+          if (photoSphere) photoSphere.position.set(0, 35, 0);
+          controls.target.set(0, -0.06, -1);
           camera.position.set(0, 0, 0.01);
           highlightPresetBtn('presetBtnWide');
           break;
 
         case 'LEFT':
           camera.fov = 50;
-          controls.target.set(Math.sin(-14 * Math.PI / 180), 0, -Math.cos(-14 * Math.PI / 180));
+          controls.target.set(Math.sin(-14 * Math.PI / 180), -0.06, -Math.cos(-14 * Math.PI / 180));
           highlightPresetBtn('presetBtnLeft');
           break;
 
         case 'CENTER':
           camera.fov = 50;
-          controls.target.set(0, 0, -1);
+          if (photoSphere) photoSphere.position.set(0, 35, 0);
+          controls.target.set(0, -0.06, -1);
           highlightPresetBtn('presetBtnCenter');
           break;
 
         case 'RIGHT':
           camera.fov = 50;
-          controls.target.set(Math.sin(14 * Math.PI / 180), 0, -Math.cos(14 * Math.PI / 180));
+          controls.target.set(Math.sin(14 * Math.PI / 180), -0.06, -Math.cos(14 * Math.PI / 180));
           highlightPresetBtn('presetBtnRight');
           break;
 
         case 'LOOK_UP':
           camera.fov = 50;
-          controls.target.set(0, Math.sin(8 * Math.PI / 180), -Math.cos(8 * Math.PI / 180));
+          controls.target.set(0, 0.08, -1);
           highlightPresetBtn('presetBtnUp');
           break;
 
         case 'LOOK_DOWN':
           camera.fov = 50;
-          controls.target.set(0, -Math.sin(8 * Math.PI / 180), -Math.cos(8 * Math.PI / 180));
+          controls.target.set(0, -0.20, -1);
           highlightPresetBtn('presetBtnDown');
           break;
 
