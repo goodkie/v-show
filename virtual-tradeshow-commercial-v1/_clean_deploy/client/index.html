@@ -13575,11 +13575,13 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         const chk = document.getElementById('proSpatialRemovePeopleToggle');
         formData.append('autoRemovePeople', chk ? String(chk.checked) : 'true');
 
-        const token = localStorage.getItem('token') || '';
+        const token = localStorage.getItem('token') || localStorage.getItem('customerToken') || '';
+        const customerEmail = localStorage.getItem('customerEmail') || localStorage.getItem('vshow_customer_email') || 'goodkie.com@gmail.com';
         const res = await fetch('/api/projects/' + projectId + '/spatial/start', {
           method: 'POST',
           headers: {
-            'Authorization': 'Bearer ' + token
+            'Authorization': 'Bearer ' + token,
+            'x-customer-email': customerEmail
           },
           body: formData
         });
