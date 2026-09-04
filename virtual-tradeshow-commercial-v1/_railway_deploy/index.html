@@ -5723,7 +5723,7 @@
       let rail = document.getElementById(railId);
       if (rail) rail.remove();
 
-      if (vps.length > 1 && (projectData?.viewerMode === 'MULTI_VIEW_SPATIAL' || activeBg?.sourceType === 'MULTI_VIEW_SPATIAL')) {
+      if (vps.length >= 1 && (projectData?.viewerMode === 'MULTI_VIEW_SPATIAL' || activeBg?.sourceType === 'MULTI_VIEW_SPATIAL' || activeBg?.versionType === 'SPATIAL')) {
         const container = document.getElementById('viewer-container');
         if (!container) return;
         rail = document.createElement('div');
@@ -14097,6 +14097,11 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       window.currentSpatialCandidate = candidate;
       const m = document.getElementById('proSpatialPreviewModal');
       if (!m) return;
+      m.dataset.candidateId = candidate.candidateId || '';
+      m.dataset.projectId = candidate.projectId || window.activeProjectId || 'prj-free-f4370ccd';
+
+      // Canonical deterministic binding of Apply button (C11.24-P0 Req M & N)
+      bindSpatialApplyButton(candidate);
 
       const title = document.getElementById('spatialPreviewModalTitle');
       const subtitle = document.getElementById('spatialPreviewModalSubtitle');
@@ -14136,6 +14141,53 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       }, 50);
     }
 
+    function bindSpatialApplyButton(candidate) {
+      const btn = document.getElementById('btnApplySpatialBooth') || document.getElementById('applySpatialCandidateBtn');
+      if (!btn) return;
+      btn.id = 'btnApplySpatialBooth';
+      btn.setAttribute('data-candidate-id', candidate?.candidateId || '');
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Apply to Active Booth';
+
+      // Remove inline onclick ambiguity (C11.24 Req N)
+      btn.removeAttribute('onclick');
+
+      // Rebind clean event listeners via clone
+      const freshBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(freshBtn, btn);
+
+      freshBtn.addEventListener('pointerdown', (e) => {
+        if (typeof emitSpatialTextureLifecycle === 'function') {
+          emitSpatialTextureLifecycle('SPATIAL_APPLY_POINTER_DOWN', {
+            candidateId: candidate?.candidateId,
+            buttonId: freshBtn.id,
+            timestamp: Date.now()
+          });
+        }
+        window.__3DZ_LAST_APPLY_TRACE__ = window.__3DZ_LAST_APPLY_TRACE__ || {};
+        window.__3DZ_LAST_APPLY_TRACE__.buttonExists = true;
+        window.__3DZ_LAST_APPLY_TRACE__.pointerDownCaptured = true;
+      });
+
+      freshBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof emitSpatialTextureLifecycle === 'function') {
+          emitSpatialTextureLifecycle('SPATIAL_APPLY_CLICK', {
+            candidateId: candidate?.candidateId,
+            buttonId: freshBtn.id,
+            timestamp: Date.now()
+          });
+        }
+        window.__3DZ_LAST_APPLY_TRACE__ = window.__3DZ_LAST_APPLY_TRACE__ || {};
+        window.__3DZ_LAST_APPLY_TRACE__.clickCaptured = true;
+        handleSpatialApply();
+      });
+    }
+    window.bindSpatialApplyButton = bindSpatialApplyButton;
+
     function closeSpatialBoothPreviewModal() {
       const m = document.getElementById('proSpatialPreviewModal');
       if (m) m.style.display = 'none';
@@ -14162,13 +14214,22 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
     let spatialIsTransitioning = false;
     let spatialYaw = 0.0;
     let spatialPitch = 0.0;
-    let spatialCurrentFov = 50;
 
-    const MIN_SAFE_YAW = -0.45; // ~ -25 deg
-    const MAX_SAFE_YAW = 0.45;  // ~ +25 deg
-    const MIN_SAFE_PITCH = -0.18; // ~ -10 deg
-    const MAX_SAFE_PITCH = 0.18;  // ~ +10 deg
-    const EDGE_TRANSITION_THRESHOLD_PX = 40;
+    // ── C11.24-P0: CALIBRATED SPATIAL IMMERSION TUNING (Goal C & B Baseline) ──
+    const NORMAL_FOV = 55;
+    const WIDE_FOV = 68;
+    let spatialCurrentFov = NORMAL_FOV;
+
+    // Substantial local exploration range: Soft ~ ±28°, Hard ~ ±36°
+    const LOCAL_YAW_SOFT_RANGE = 28 * Math.PI / 180; // ~ 0.488 rad (±28°)
+    const LOCAL_YAW_HARD_RANGE = 36 * Math.PI / 180; // ~ 0.628 rad (±36°)
+    const LOCAL_PITCH_MIN = -12 * Math.PI / 180;     // ~ -0.209 rad (-12°)
+    const LOCAL_PITCH_MAX = 15 * Math.PI / 180;      // ~ +0.262 rad (+15°)
+
+    // Requires 100px past hard range to transition, ensuring meaningful local sweep first
+    const EDGE_TRANSITION_THRESHOLD_PX = 100;
+    const ZOOM_OUT_MIN = 0.88;
+    const ZOOM_IN_MAX = 1.35;
 
     let spatialDragState = SPATIAL_DRAG_STATES.IDLE;
     let edgeAccumPx = 0;
@@ -14631,49 +14692,53 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
 
         if (spatialIsTransitioning) return;
 
-        // Yaw sensitivity (radians per pixel)
-        const yawSensitivity = 0.003;
-        const pitchSensitivity = 0.002;
+        // Calibrated sensitivity for smooth 1:1 lookaround
+        const yawSensitivity = 0.0035;
+        const pitchSensitivity = 0.0025;
 
-        const nextYaw = spatialYaw - dx * yawSensitivity;
-        const nextPitch = spatialPitch + dy * pitchSensitivity;
+        const desiredYaw = spatialYaw - dx * yawSensitivity;
+        const desiredPitch = spatialPitch + dy * pitchSensitivity;
 
-        // Inside safe lookaround range
-        if (nextYaw >= MIN_SAFE_YAW && nextYaw <= MAX_SAFE_YAW) {
-          spatialYaw = nextYaw;
+        // 0–70% Drag: Natural 1:1 perspective lookaround within LOCAL_YAW_SOFT_RANGE (±28°)
+        if (Math.abs(desiredYaw) <= LOCAL_YAW_SOFT_RANGE) {
+          spatialYaw = desiredYaw;
           edgeAccumPx = 0;
           hideEdgeIndicator();
         } else {
-          // Boundary reached -> accumulate edge drag for transition
-          if (nextYaw > MAX_SAFE_YAW) {
-            spatialYaw = MAX_SAFE_YAW;
-            if (dx < 0 && spatialActiveIdx < spatialViewpoints.length - 1) {
-              edgeAccumPx += Math.abs(dx);
-              const targetSlot = spatialViewpoints[spatialActiveIdx + 1].slot;
-              showEdgeIndicator('RIGHT', targetSlot, edgeAccumPx / EDGE_TRANSITION_THRESHOLD_PX);
-              if (edgeAccumPx >= EDGE_TRANSITION_THRESHOLD_PX) {
-                hideEdgeIndicator();
-                triggerViewpointTravel(spatialActiveIdx + 1, 'RIGHT');
-                return;
-              }
+          // 70–100%: Progressive elastic resistance between soft range (28°) and hard range (36°)
+          const sign = Math.sign(desiredYaw);
+          const overflow = Math.abs(desiredYaw) - LOCAL_YAW_SOFT_RANGE;
+          const resisted = LOCAL_YAW_SOFT_RANGE + overflow * 0.35;
+          spatialYaw = sign * Math.min(LOCAL_YAW_HARD_RANGE, resisted);
+
+          // Travel Arm Zone: accumulate edge drag towards adjacent viewpoints
+          if (sign > 0 && dx < 0 && spatialActiveIdx < spatialViewpoints.length - 1) {
+            edgeAccumPx += Math.abs(dx);
+            const targetSlot = spatialViewpoints[spatialActiveIdx + 1].slot;
+            showEdgeIndicator('RIGHT', targetSlot, Math.min(1.0, edgeAccumPx / EDGE_TRANSITION_THRESHOLD_PX));
+            if (edgeAccumPx >= EDGE_TRANSITION_THRESHOLD_PX) {
+              hideEdgeIndicator();
+              triggerViewpointTravel(spatialActiveIdx + 1, 'RIGHT');
+              return;
             }
-          } else if (nextYaw < MIN_SAFE_YAW) {
-            spatialYaw = MIN_SAFE_YAW;
-            if (dx > 0 && spatialActiveIdx > 0) {
-              edgeAccumPx += Math.abs(dx);
-              const targetSlot = spatialViewpoints[spatialActiveIdx - 1].slot;
-              showEdgeIndicator('LEFT', targetSlot, edgeAccumPx / EDGE_TRANSITION_THRESHOLD_PX);
-              if (edgeAccumPx >= EDGE_TRANSITION_THRESHOLD_PX) {
-                hideEdgeIndicator();
-                triggerViewpointTravel(spatialActiveIdx - 1, 'LEFT');
-                return;
-              }
+          } else if (sign < 0 && dx > 0 && spatialActiveIdx > 0) {
+            edgeAccumPx += Math.abs(dx);
+            const targetSlot = spatialViewpoints[spatialActiveIdx - 1].slot;
+            showEdgeIndicator('LEFT', targetSlot, Math.min(1.0, edgeAccumPx / EDGE_TRANSITION_THRESHOLD_PX));
+            if (edgeAccumPx >= EDGE_TRANSITION_THRESHOLD_PX) {
+              hideEdgeIndicator();
+              triggerViewpointTravel(spatialActiveIdx - 1, 'LEFT');
+              return;
             }
+          } else {
+            // Dragging inward away from edge relaxes resistance
+            edgeAccumPx = Math.max(0, edgeAccumPx - Math.abs(dx));
+            if (edgeAccumPx <= 5) hideEdgeIndicator();
           }
         }
 
-        // Clamp pitch
-        spatialPitch = Math.max(MIN_SAFE_PITCH, Math.min(MAX_SAFE_PITCH, nextPitch));
+        // Clamp pitch to safe vertical look limits (-12° to +15°) without triggering horizontal travel
+        spatialPitch = Math.max(LOCAL_PITCH_MIN, Math.min(LOCAL_PITCH_MAX, desiredPitch));
         updateCameraOrientation();
         renderSpatial();
       };
@@ -14688,8 +14753,10 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       // Mouse wheel / Pinch zoom FOV
       canvas.onwheel = (e) => {
         e.preventDefault();
-        const delta = Math.sign(e.deltaY) * 2;
-        spatialCurrentFov = Math.max(38, Math.min(65, spatialCurrentFov + delta));
+        const delta = Math.sign(e.deltaY) * 2.5;
+        const minFov = Math.round(NORMAL_FOV / ZOOM_IN_MAX); // 41°
+        const maxFov = WIDE_FOV; // 68°
+        spatialCurrentFov = Math.max(minFov, Math.min(maxFov, spatialCurrentFov + delta));
         if (spatialCamera) {
           spatialCamera.fov = spatialCurrentFov;
           spatialCamera.updateProjectionMatrix();
@@ -14705,6 +14772,21 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       window.spatialMatTransition = spatialMatTransition;
       window.spatialViewpoints = spatialViewpoints;
       window.__3DZ_VIEWER_RENDERER = 'THREE_WEBGL';
+
+    // Shared Canonical Viewpoint Engine (C11.24 Req S)
+    window.SpatialViewpointRenderer = {
+      version: 'CONNECTED_VIEWPOINT_V3_2',
+      normalFov: 55,
+      wideFov: 68,
+      yawSoftRange: LOCAL_YAW_SOFT_RANGE,
+      yawHardRange: LOCAL_YAW_HARD_RANGE,
+      pitchMin: LOCAL_PITCH_MIN,
+      pitchMax: LOCAL_PITCH_MAX,
+      getPose: () => ({ yaw: spatialYaw, pitch: spatialPitch, fov: spatialCurrentFov }),
+      selectViewpoint: (idx) => selectSpatialPreviewAnchor(idx),
+      render: () => renderSpatial()
+    };
+
 
       renderSpatial();
     }
@@ -14825,9 +14907,9 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       spatialMatTransition.visible = true;
       spatialMatTransition.needsUpdate = true;
 
-      // Initial orientation for target mesh entry
+      // Compatible entry orientation: entering from opposite side for continuous travel
       const startYaw = spatialYaw;
-      const targetYaw = direction === 'RIGHT' ? (MIN_SAFE_YAW + 0.05) : (MAX_SAFE_YAW - 0.05);
+      const targetYaw = direction === 'RIGHT' ? (-LOCAL_YAW_SOFT_RANGE * 0.7) : (LOCAL_YAW_SOFT_RANGE * 0.7);
 
       const durationMs = 380;
       const startTime = performance.now();
@@ -14862,7 +14944,9 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
           spatialMatTransition.map = null;
 
           spatialIsTransitioning = false;
-          spatialDragState = SPATIAL_DRAG_STATES.IDLE;
+          // Maintain continuous drag if pointer is still held down (C11.24 Goal G)
+          spatialDragState = continuousPointerDown ? SPATIAL_DRAG_STATES.PANNING : SPATIAL_DRAG_STATES.IDLE;
+          edgeAccumPx = 0;
 
           updatePreviewUI(targetIdx);
           preloadAdjacentViewpoints(targetIdx);
@@ -14988,86 +15072,160 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       }
     }
 
-    async function applySpatialCandidateAction() {
-      const candidate = window.currentSpatialCandidate;
-      if (!candidate || !candidate.candidateId) {
-        alert('No active candidate to apply.');
+    // ── C11.24-P0: CANONICAL SPATIAL APPLY ACTION WITH COMPLETE FORENSICS ──
+    async function handleSpatialApply() {
+      if (typeof emitSpatialTextureLifecycle === 'function') {
+        emitSpatialTextureLifecycle('SPATIAL_APPLY_HANDLER_ENTER', { timestamp: Date.now() });
+      }
+      window.__3DZ_LAST_APPLY_TRACE__ = window.__3DZ_LAST_APPLY_TRACE__ || {};
+      window.__3DZ_LAST_APPLY_TRACE__.handlerEntered = true;
+
+      const modal = document.getElementById('proSpatialPreviewModal');
+      const modalCandId = modal ? modal.dataset.candidateId : null;
+      const curCand = window.currentSpatialCandidate;
+      const snapCand = window.previewCandidateSnapshot;
+
+      const candidateId = curCand?.candidateId || snapCand?.candidateId || modalCandId;
+      if (!candidateId) {
+        console.error('[Apply Spatial] No candidate ID resolved at click time');
+        alert('No candidate selected to apply.');
         return;
       }
 
-      const projectId = candidate.projectId || 
-                        (typeof activeProjectId !== 'undefined' && activeProjectId) || 
-                        window.activeProjectId || 
-                        'prj-free-f4370ccd';
+      if (typeof emitSpatialTextureLifecycle === 'function') {
+        emitSpatialTextureLifecycle('SPATIAL_APPLY_CANDIDATE_RESOLVED', {
+          candidateId,
+          currentCandidateId: curCand?.candidateId || null,
+          snapshotCandidateId: snapCand?.candidateId || null,
+          modalCandidateId: modalCandId || null
+        });
+      }
+      window.__3DZ_LAST_APPLY_TRACE__.candidateIdResolved = candidateId;
 
+      const projectId = curCand?.projectId || snapCand?.projectId || (modal ? modal.dataset.projectId : null) || window.activeProjectId || 'prj-free-f4370ccd';
       const editToken = (typeof getEditAuthToken === 'function' ? getEditAuthToken() : null) || 
                         window.activeProjectData?.editToken || 
                         localStorage.getItem('token') || 
                         localStorage.getItem('customerToken') || 
                         'dev_bypass_token';
 
-      const btn = document.getElementById('btnApplySpatialBooth');
+      const btn = document.getElementById('btnApplySpatialBooth') || document.getElementById('applySpatialCandidateBtn');
       if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Applying…';
       }
 
+      const fetchStartTime = Date.now();
+      if (typeof emitSpatialTextureLifecycle === 'function') {
+        emitSpatialTextureLifecycle('SPATIAL_APPLY_FETCH_START', {
+          projectId,
+          candidateId,
+          timestamp: fetchStartTime
+        });
+      }
+      window.__3DZ_LAST_APPLY_TRACE__.fetchStarted = true;
+
       try {
-        const res = await fetch('/api/projects/' + projectId + '/spatial/apply', {
+        const res = await fetch(`/api/projects/${projectId}/spatial/apply`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + editToken,
             'x-booth-edit-token': editToken
           },
-          body: JSON.stringify({ candidateId: candidate.candidateId })
+          body: JSON.stringify({ candidateId })
         });
 
-        const data = await res.json();
-        if (data.success) {
-          closeSpatialBoothPreviewModal();
-          if (data.project) {
-            window.activeProjectData = data.project;
-            try {
-              localStorage.setItem('dna_free_booth_session', JSON.stringify({ project: data.project }));
-            } catch (e) {
-              console.warn('[Apply Spatial] Failed to update localStorage:', e);
-            }
-            const activeBg = getActiveBoothBackground(data.project);
-            const activeUrl = activeBg?.url || data.project.sourceAsset?.previewUrl || data.project.sourceAsset?.originalUrl;
-            if (activeUrl && typeof switchActiveBoothTexture === 'function') {
-              switchActiveBoothTexture(activeUrl, data.project);
-            }
-            if (typeof renderStudioBooth === 'function') {
-              renderStudioBooth(data.project);
-            }
-            if (typeof setupActiveSpatialViewerRail === 'function') {
-              setupActiveSpatialViewerRail(data.project);
-            }
+        const fetchDuration = Date.now() - fetchStartTime;
+        const resBody = await res.json();
+        window.__3DZ_LAST_APPLY_TRACE__.httpStatus = res.status;
+
+        if (typeof emitSpatialTextureLifecycle === 'function') {
+          emitSpatialTextureLifecycle('SPATIAL_APPLY_FETCH_COMPLETE', {
+            status: res.status,
+            ok: res.ok,
+            durationMs: fetchDuration,
+            success: resBody.success
+          });
+        }
+
+        if (res.ok && resBody.success && resBody.project) {
+          if (typeof emitSpatialTextureLifecycle === 'function') {
+            emitSpatialTextureLifecycle('SPATIAL_APPLY_SERVER_STATE', {
+              serverViewerMode: resBody.project.viewerMode,
+              serverActiveSpatialVersionId: resBody.project.activeSpatialVersionId
+            });
           }
-          if (typeof loadProject === 'function') {
-            loadProject(projectId);
+
+          // Atomic client state synchronization (Req Q)
+          window.activeProjectData = resBody.project;
+          try {
+            localStorage.setItem('dna_free_booth_session', JSON.stringify({
+              project: resBody.project,
+              savedAt: new Date().toISOString()
+            }));
+          } catch (e) {}
+
+          closeSpatialBoothPreviewModal();
+
+          // Render active studio booth with spatial rail
+          if (typeof renderStudioBooth === 'function') {
+            renderStudioBooth(resBody.project);
+          }
+          if (typeof setupActiveSpatialViewerRail === 'function') {
+            setupActiveSpatialViewerRail(resBody.project);
+          }
+
+          if (typeof emitSpatialTextureLifecycle === 'function') {
+            emitSpatialTextureLifecycle('SPATIAL_ACTIVE_VIEWER_INIT', {
+              viewerMode: resBody.project.viewerMode,
+              hasRail: Boolean(document.getElementById('activeBoothSpatialRail'))
+            });
+          }
+
+          setTimeout(() => {
+            if (typeof emitSpatialTextureLifecycle === 'function') {
+              emitSpatialTextureLifecycle('SPATIAL_ACTIVE_FIRST_VISIBLE_FRAME', {
+                timestamp: Date.now()
+              });
+            }
+          }, 100);
+
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Spatial Booth Applied';
           }
           if (window.showToast) window.showToast('🎉 Spatial Booth applied to active booth!', 'success');
-          alert('Spatial Booth successfully applied to your active booth!');
         } else {
-          alert('Failed to apply candidate: ' + (data.error || 'Unknown error'));
+          console.error('[Apply Spatial Error]', resBody);
+          if (typeof emitSpatialTextureLifecycle === 'function') {
+            emitSpatialTextureLifecycle('SPATIAL_APPLY_FAILED', {
+              status: res.status,
+              error: resBody.error || resBody.message
+            });
+          }
           if (btn) {
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-check"></i> Apply to Active Booth';
           }
+          alert('Unable to apply Spatial Booth: ' + (resBody.error || resBody.message || 'Server error'));
         }
       } catch (err) {
-        console.error('[Apply Spatial Error]', err);
-        alert('Error applying candidate. Please check connection and try again.');
+        console.error('[Apply Spatial Network Error]', err);
+        if (typeof emitSpatialTextureLifecycle === 'function') {
+          emitSpatialTextureLifecycle('SPATIAL_APPLY_FAILED', { error: err.message });
+        }
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = '<i class="fa-solid fa-check"></i> Apply to Active Booth';
         }
+        alert('Unable to apply Spatial Booth. Please check your connection.');
       }
     }
+    window.handleSpatialApply = handleSpatialApply;
+    window.applySpatialCandidateAction = handleSpatialApply;
 
-    async function discardSpatialCandidateAction() {
+        async function discardSpatialCandidateAction() {
       const candidate = window.currentSpatialCandidate;
       if (candidate && candidate.candidateId) {
         const projectId = candidate.projectId || 'prj-free-f4370ccd';

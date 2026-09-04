@@ -186,7 +186,38 @@ var ThreeDZProbes = class ThreeDZProbes {
     }
 
     const renderCount = typeof window !== 'undefined' ? (window.__3DZ_RENDER_COUNT || 0) : 0;
-    const applyTrace = typeof window !== 'undefined' ? (window.__3DZ_LAST_APPLY_TRACE__ || 'UNAVAILABLE') : 'UNAVAILABLE';
+    const applyTrace = typeof window !== 'undefined' ? (window.__3DZ_LAST_APPLY_TRACE__ || {}) : {};
+    const applyBtn = document.getElementById('btnApplySpatialBooth') || document.getElementById('applySpatialCandidateBtn');
+    const applyButtonExists = Boolean(applyBtn);
+    const applyClickCaptured = Boolean(applyTrace.clickCaptured);
+    const applyHandlerEntered = Boolean(applyTrace.handlerEntered);
+    const applyFetchStarted = Boolean(applyTrace.fetchStarted);
+
+    // C11.24-P0 Req U, V, W: Dual Visual Probes & Disagreement Resolution
+    const webglBufferPixelProbe = {
+      sampled: true,
+      validContentRatio,
+      blackRatio,
+      isUniformlyBackground
+    };
+
+    const visibleScreenshotPixelProbe = (typeof window !== 'undefined' && window.__3DZ_LATEST_SCREENSHOT_PROBE__)
+      ? window.__3DZ_LATEST_SCREENSHOT_PROBE__
+      : null;
+
+    let visualProbeDisagreement = false;
+    let authoritativeValidRatio = validContentRatio;
+    let authoritativeBlackRatio = blackRatio;
+
+    // If visible screenshot proves photograph is rendered, screenshot probe wins
+    if (visibleScreenshotPixelProbe && visibleScreenshotPixelProbe.validContentRatio > 0.05) {
+      if (validContentRatio < 0.05) {
+        visualProbeDisagreement = true;
+      }
+      authoritativeValidRatio = visibleScreenshotPixelProbe.validContentRatio;
+      authoritativeBlackRatio = visibleScreenshotPixelProbe.blackRatio;
+      canvasValid = true;
+    }
 
     return {
       hasActiveCanvas: Boolean(canvas),
@@ -196,15 +227,22 @@ var ThreeDZProbes = class ThreeDZProbes {
       hasSpatialRail: Boolean(rail),
       railButtonsCount: rail && typeof rail.querySelectorAll === 'function' ? rail.querySelectorAll('button').length : 0,
       canvasValid,
-      validContentRatio,
-      blackRatio,
-      isUniformlyBackground,
+      validContentRatio: authoritativeValidRatio,
+      blackRatio: authoritativeBlackRatio,
+      isUniformlyBackground: authoritativeValidRatio < 0.02,
+      webglBufferPixelProbe,
+      visibleScreenshotPixelProbe,
+      visualProbeDisagreement,
       viewerRenderer,
       textureReady,
       currentViewpoint,
       textureUrlSelected,
       renderCount,
-      applyTrace
+      applyTrace,
+      applyButtonExists,
+      applyClickCaptured,
+      applyHandlerEntered,
+      applyFetchStarted
     };
   }
 
@@ -254,6 +292,13 @@ var ThreeDZProbes = class ThreeDZProbes {
       viewerRenderer: act.viewerRenderer,
       textureReady: act.textureReady,
       canvasValid: act.canvasValid,
+      webglBufferPixelProbe: act.webglBufferPixelProbe,
+      visibleScreenshotPixelProbe: act.visibleScreenshotPixelProbe,
+      visualProbeDisagreement: act.visualProbeDisagreement,
+      applyButtonExists: act.applyButtonExists,
+      applyClickCaptured: act.applyClickCaptured,
+      applyHandlerEntered: act.applyHandlerEntered,
+      applyFetchStarted: act.applyFetchStarted,
       applyTrace: act.applyTrace
     };
   }
