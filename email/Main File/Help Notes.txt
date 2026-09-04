@@ -1,0 +1,45 @@
+===============================
+          HELP GUIDE
+===============================
+
+Thank you for purchasing our template "Purple Real Estate Instagram Story"!
+Follow these quick steps to edit your design.
+
+-------------------------------
+1. FILE INFO
+-------------------------------
+- 6 AI File (Adobe Illustrator)
+- 6 EPS File
+- 6 PSD File (Adobe Photoshop)
+- TXT File (Help Guide)
+
+Resolution: 72 DPI
+Color Mode: RGB
+Size : 1080 x 1920 px
+
+-------------------------------
+2. FONTS
+-------------------------------
+Free fonts used:
+- Raleway – https://fonts.google.com/specimen/Raleway
+
+-------------------------------
+3. REPLACE IMAGES
+-------------------------------
+In Photoshop:
+1. Find the layer named "Your Image Here".
+2. Double-click the thumbnail to open the Smart Object.
+3. Paste your new image, resize (Ctrl+T / Cmd+T), and Save.
+
+1. Select the placeholder shape.
+2. Go to File > Place, choose your image, and click Place.
+3. Adjust size and position, Right-click and choose Make Clipping Mask
+
+-------------------------------
+4. SUPPORT
+-------------------------------
+Envato Profile: https://elements.envato.com/user/Skiiller_studio/
+Email: skiillerteam@gmail.com
+
+
+Thank you for choosing our template!
