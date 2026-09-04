@@ -2109,6 +2109,46 @@
 
     <!-- Upload CTA Frame -->
     <div class="upload-cta-frame">
+
+      <!-- ============================================================ -->
+      <!-- ─── C11.17: CAPTURE GUIDE DISPLAY (BEFORE SOURCE SLOTS) ─── -->
+      <!-- ============================================================ -->
+      <div id="landing-capture-guide-section" style="background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 16px; padding: 22px 20px; margin-bottom: 24px; box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);">
+        <div style="text-align: center; margin-bottom: 16px;">
+          <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; margin-bottom: 8px;">
+            <i class="fa-solid fa-camera"></i> SPATIAL CAPTURE GUIDE
+          </div>
+          <h2 style="font-size: 20px; font-weight: 800; color: #fff; margin: 0 0 6px 0; letter-spacing: -0.3px;">How to Take Great Spatial Booth Photos</h2>
+          <p style="font-size: 13px; color: #94a3b8; margin: 0; line-height: 1.4;">Move from left to right while keeping part of the previous shot visible.</p>
+        </div>
+
+        <!-- Prominent Owner Capture Guide Illustration -->
+        <div style="text-align: center; margin-bottom: 16px;">
+          <img src="/assets/spatial-booth/7-view-capture-guide.jpg" alt="How to Take Great Spatial Booth Photos - 7-View Capture Guide" style="width: 100%; max-width: 680px; height: auto; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.3); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);" loading="eager">
+        </div>
+
+        <!-- 4 Concise Rules -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 12px;">
+          <div style="background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 10px 12px; border-left: 3px solid #38bdf8;">
+            <div style="font-size: 11.5px; font-weight: 700; color: #38bdf8; margin-bottom: 2px;">1. Eye-Level Height</div>
+            <div style="font-size: 11px; color: #cbd5e1; line-height: 1.35;">Keep the camera near natural standing eye level.</div>
+          </div>
+          <div style="background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 10px 12px; border-left: 3px solid #38bdf8;">
+            <div style="font-size: 11.5px; font-weight: 700; color: #38bdf8; margin-bottom: 2px;">2. Center First</div>
+            <div style="font-size: 11px; color: #cbd5e1; line-height: 1.35;">Take the center photo first facing the primary booth desk.</div>
+          </div>
+          <div style="background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 10px 12px; border-left: 3px solid #38bdf8;">
+            <div style="font-size: 11.5px; font-weight: 700; color: #38bdf8; margin-bottom: 2px;">3. Move Sideways</div>
+            <div style="font-size: 11px; color: #cbd5e1; line-height: 1.35;">Move sideways between shots — don't just rotate in one spot.</div>
+          </div>
+          <div style="background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 10px 12px; border-left: 3px solid #38bdf8;">
+            <div style="font-size: 11.5px; font-weight: 700; color: #38bdf8; margin-bottom: 2px;">4. 40–60% Overlap</div>
+            <div style="font-size: 11px; color: #cbd5e1; line-height: 1.35;">Keep roughly 40–60% of the previous view visible.</div>
+          </div>
+        </div>
+        <div style="text-align: center; font-size: 11px; color: #64748b;">Clear, sharp photos with consistent lighting work best.</div>
+      </div>
+
       <div class="frame-title">Create Your Free 3D Booth</div>
       <div class="frame-subtitle">Instant interactive 3D preview • Showcase products in 3D</div>
 
@@ -2127,15 +2167,105 @@
 
           
 
-          <div class="form-group">
-            <label class="form-label">Booth Photo *</label>
-            <div class="drop-zone" id="booth-drop-zone" onclick="document.getElementById('booth-file-input').click()">
-              <div class="drop-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
-              <div class="drop-title" id="drop-title-txt">Drag and drop your booth photo here</div>
-              <div class="drop-hint" id="drop-filename-txt">or click to browse files (JPEG, PNG, WebP)</div>
-              <input type="file" id="booth-file-input" accept="image/*" style="display: none;" onchange="handleFileSelected(this)">
+          
+          <!-- ─── C11.17: 7-SLOT SPATIAL BOOTH UPLOADER ──────────────── -->
+          <div class="form-group" style="margin-bottom: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 6px;">
+              <div>
+                <label class="form-label" style="margin: 0; font-size: 14px; font-weight: 800; color: #fff;">Create a Wider AI Spatial Booth</label>
+                <div style="font-size: 11.5px; color: #94a3b8; margin-top: 2px;">Start with one center photo for free. PRO members can add up to 7 overlapping booth photos for a wider, smoother left-to-right spatial experience.</div>
+              </div>
+            </div>
+
+            <!-- 7 Spatial Slots Row -->
+            <div id="spatial-7-slots-container" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; background: rgba(5, 11, 22, 0.85); border: 1.5px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 10px 8px; margin-bottom: 10px;">
+              
+              <!-- Slot 1: FAR LEFT (PRO) -->
+              <div class="spatial-slot slot-locked-pro" onclick="openSpatialUpsellModal('FAR_LEFT')" style="cursor: pointer; border: 1.5px dashed rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 4px; text-align: center; background: rgba(255,255,255,0.02); transition: .2s; position: relative;">
+                <div style="font-size: 9px; font-weight: 800; color: #f59e0b; background: rgba(245,158,11,0.15); padding: 2px 4px; border-radius: 4px; margin-bottom: 6px; display: inline-block;">PRO</div>
+                <div style="font-size: 18px; color: #475569; margin-bottom: 4px;"><i class="fa-solid fa-lock"></i></div>
+                <div style="font-size: 10px; font-weight: 700; color: #94a3b8;">Far Left</div>
+                <div style="font-size: 8.5px; color: #64748b;">Slot 1</div>
+              </div>
+
+              <!-- Slot 2: LEFT (PRO) -->
+              <div class="spatial-slot slot-locked-pro" onclick="openSpatialUpsellModal('LEFT')" style="cursor: pointer; border: 1.5px dashed rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 4px; text-align: center; background: rgba(255,255,255,0.02); transition: .2s; position: relative;">
+                <div style="font-size: 9px; font-weight: 800; color: #f59e0b; background: rgba(245,158,11,0.15); padding: 2px 4px; border-radius: 4px; margin-bottom: 6px; display: inline-block;">PRO</div>
+                <div style="font-size: 18px; color: #475569; margin-bottom: 4px;"><i class="fa-solid fa-lock"></i></div>
+                <div style="font-size: 10px; font-weight: 700; color: #94a3b8;">Left</div>
+                <div style="font-size: 8.5px; color: #64748b;">Slot 2</div>
+              </div>
+
+              <!-- Slot 3: LEFT-CENTER (PRO) -->
+              <div class="spatial-slot slot-locked-pro" onclick="openSpatialUpsellModal('LEFT_CENTER')" style="cursor: pointer; border: 1.5px dashed rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 4px; text-align: center; background: rgba(255,255,255,0.02); transition: .2s; position: relative;">
+                <div style="font-size: 9px; font-weight: 800; color: #f59e0b; background: rgba(245,158,11,0.15); padding: 2px 4px; border-radius: 4px; margin-bottom: 6px; display: inline-block;">PRO</div>
+                <div style="font-size: 18px; color: #475569; margin-bottom: 4px;"><i class="fa-solid fa-lock"></i></div>
+                <div style="font-size: 10px; font-weight: 700; color: #94a3b8;">Left-Center</div>
+                <div style="font-size: 8.5px; color: #64748b;">Slot 3</div>
+              </div>
+
+              <!-- Slot 4: CENTER (FREE TEST — DOMINANT ACTIVE) -->
+              <div class="spatial-slot slot-free-center" id="spatialCenterSlot" onclick="document.getElementById('booth-file-input').click()" style="cursor: pointer; border: 2px solid #38bdf8; border-radius: 8px; padding: 10px 4px; text-align: center; background: rgba(56, 189, 248, 0.12); box-shadow: 0 0 18px rgba(56, 189, 248, 0.35); transition: .2s; position: relative;">
+                <div style="font-size: 9px; font-weight: 800; color: #38bdf8; background: rgba(56,189,248,0.25); border: 1px solid #38bdf8; padding: 2px 4px; border-radius: 4px; margin-bottom: 6px; display: inline-block;">FREE TEST</div>
+                <div id="centerSlotIcon" style="font-size: 20px; color: #38bdf8; margin-bottom: 4px;"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                <div id="centerSlotTitle" style="font-size: 11px; font-weight: 800; color: #fff;">Center</div>
+                <div id="centerSlotSubtitle" style="font-size: 8.5px; color: #38bdf8; font-weight: 750;">Start Here</div>
+                <input type="file" id="booth-file-input" accept="image/*" style="display: none;" onchange="handleSpatialCenterFileSelected(this)">
+              </div>
+
+              <!-- Slot 5: RIGHT-CENTER (PRO) -->
+              <div class="spatial-slot slot-locked-pro" onclick="openSpatialUpsellModal('RIGHT_CENTER')" style="cursor: pointer; border: 1.5px dashed rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 4px; text-align: center; background: rgba(255,255,255,0.02); transition: .2s; position: relative;">
+                <div style="font-size: 9px; font-weight: 800; color: #f59e0b; background: rgba(245,158,11,0.15); padding: 2px 4px; border-radius: 4px; margin-bottom: 6px; display: inline-block;">PRO</div>
+                <div style="font-size: 18px; color: #475569; margin-bottom: 4px;"><i class="fa-solid fa-lock"></i></div>
+                <div style="font-size: 10px; font-weight: 700; color: #94a3b8;">Right-Center</div>
+                <div style="font-size: 8.5px; color: #64748b;">Slot 5</div>
+              </div>
+
+              <!-- Slot 6: RIGHT (PRO) -->
+              <div class="spatial-slot slot-locked-pro" onclick="openSpatialUpsellModal('RIGHT')" style="cursor: pointer; border: 1.5px dashed rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 4px; text-align: center; background: rgba(255,255,255,0.02); transition: .2s; position: relative;">
+                <div style="font-size: 9px; font-weight: 800; color: #f59e0b; background: rgba(245,158,11,0.15); padding: 2px 4px; border-radius: 4px; margin-bottom: 6px; display: inline-block;">PRO</div>
+                <div style="font-size: 18px; color: #475569; margin-bottom: 4px;"><i class="fa-solid fa-lock"></i></div>
+                <div style="font-size: 10px; font-weight: 700; color: #94a3b8;">Right</div>
+                <div style="font-size: 8.5px; color: #64748b;">Slot 6</div>
+              </div>
+
+              <!-- Slot 7: FAR RIGHT (PRO) -->
+              <div class="spatial-slot slot-locked-pro" onclick="openSpatialUpsellModal('FAR_RIGHT')" style="cursor: pointer; border: 1.5px dashed rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 4px; text-align: center; background: rgba(255,255,255,0.02); transition: .2s; position: relative;">
+                <div style="font-size: 9px; font-weight: 800; color: #f59e0b; background: rgba(245,158,11,0.15); padding: 2px 4px; border-radius: 4px; margin-bottom: 6px; display: inline-block;">PRO</div>
+                <div style="font-size: 18px; color: #475569; margin-bottom: 4px;"><i class="fa-solid fa-lock"></i></div>
+                <div style="font-size: 10px; font-weight: 700; color: #94a3b8;">Far Right</div>
+                <div style="font-size: 8.5px; color: #64748b;">Slot 7</div>
+              </div>
+
+            </div>
+
+            <!-- Selected Center File Details -->
+            <div id="spatialCenterFilePreview" style="display: none; align-items: center; justify-content: space-between; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px;">
+              <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+                <img id="spatialCenterThumb" src="" style="width: 44px; height: 32px; object-fit: cover; border-radius: 4px; border: 1px solid #38bdf8;">
+                <div style="overflow: hidden;">
+                  <div id="spatialCenterFilename" style="font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+                  <div style="font-size: 10.5px; color: #38bdf8;">Center View Ready (Free Test)</div>
+                </div>
+              </div>
+              <button type="button" onclick="clearSpatialCenterFile(event)" style="background: none; border: none; color: #94a3b8; font-size: 14px; cursor: pointer; padding: 4px 8px;" title="Remove Photo">&times;</button>
+            </div>
+
+            <!-- Benefit Progression Infographic -->
+            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px 14px; font-size: 11px; color: #94a3b8;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-weight: 700; color: #cbd5e1;">
+                <span>1 Photo: Fast Preview</span>
+                <span>•</span>
+                <span>3 Photos: Wider L/C/R</span>
+                <span>•</span>
+                <span style="color: #38bdf8;">5–7 Photos: Best Spatial View</span>
+              </div>
+              <div style="font-size: 10px; color: #64748b; line-height: 1.35;">
+                1 photo is enough to start. Add more views when available. More overlapping photos expand spatial coverage. Results depend on image overlap, clarity, camera position, and scene detail.
+              </div>
             </div>
           </div>
+
 
           <!-- AI Person & Bystander Removal Toggle (C11.16-P3.17 Part D) -->
           <div style="background: rgba(56,189,248,0.06); border: 1px solid rgba(56,189,248,0.25); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
@@ -2381,6 +2511,9 @@
             
             <button class="btn-ui" id="btnOwnerAiEnhanceBooth" onclick="openAiEnhanceBoothModal()" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Turn one booth photo into a high-resolution immersive booth experience.">
               <i class="fa-solid fa-wand-magic-sparkles"></i> AI Enhance Booth <span style="background: rgba(255,255,255,0.22); font-size: 9.5px; padding: 2px 6px; border-radius: 4px; font-weight: 800;">25 TOKENS</span>
+            </button>
+            <button class="btn-ui" id="btnOwnerAiSpatialBooth" onclick="openAiSpatialBoothModal()" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #6366f1); color: #fff; border: 1px solid #38bdf8; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Combine 1 to 7 overlapping photos into a wide-angle AI Spatial Booth.">
+              <i class="fa-solid fa-layer-group"></i> AI Spatial Booth <span style="background: rgba(255,255,255,0.22); font-size: 9.5px; padding: 2px 6px; border-radius: 4px; font-weight: 800;">PRO+</span>
             </button>
             <button class="btn-ui" id="btnOwnerRequestTrue3d" onclick="openTrue3dQuoteModal()" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #7c3aed, #6366f1); color: #fff; border: 1px solid #a855f7; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Professional multi-view 3D booth reconstruction produced by the 3DZ team.">
               <i class="fa-solid fa-cube"></i> REQUEST TRUE 3D BOOTH <span style="background: rgba(255,255,255,0.22); font-size: 9.5px; padding: 2px 6px; border-radius: 4px; font-weight: 800;">3DZ MANAGED SERVICE</span>
@@ -4235,7 +4368,8 @@
           <div class="plan-price">$299 <span>/ mo</span></div>
           <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">For individual exhibitors &amp; focused collections</p>
           <ul style="font-size: 12px; text-align: left; color: #cbd5e1; list-style: none; padding: 0; line-height: 1.8; margin-bottom: 20px;">
-            <li>✓ Photo Immersive Booth — up to 3 views</li>
+            <li>✓ Up to 7-photo AI Spatial Booth</li>
+            <li style="font-size: 11px; color: #38bdf8; margin-left: 12px; line-height: 1.3;">Combine overlapping left-to-right booth photos for wider immersive spatial coverage.</li>
             <li>✓ Up to 30 Interactive Products</li>
             <li>✓ Digital Product Catalog &amp; PDF Specs</li>
             <li>✓ Smart Exhibitor NFC Card capability</li>
@@ -4255,7 +4389,7 @@
           <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">For active B2B sales teams &amp; higher volume</p>
           <ul style="font-size: 12px; text-align: left; color: #cbd5e1; list-style: none; padding: 0; line-height: 1.8; margin-bottom: 20px;">
             <li>✓ Everything in PRO</li>
-            <li>✓ Multi-View Spatial Experience (up to 60 images)</li>
+            <li>✓ 7-View AI Spatial Booth</li>
             <li>✓ Up to 100 Interactive Products</li>
             <li>✓ 30 Advanced Product 3D / 360 Media Assets</li>
             <li>✓ Managed White-Glove Production Support</li>
@@ -4278,7 +4412,8 @@
             <li>✓ Custom Product &amp; Pinpoint Limits</li>
             <li>✓ Multi-Booth &amp; Multi-Show Programs</li>
             <li>✓ Custom Interactive 3D Showrooms</li>
-            <li>✓ Authentic 3D Digital Twin Review</li>
+            <li>✓ Automated 7-View AI Spatial Booth</li>
+            <li>✓ 3DZ Managed TRUE 3D Booth</li>
             <li>✓ Dedicated Production Lead &amp; Contract SLA</li>
             <li>✓ Custom CRM / API Integration &amp; White-Label</li>
           </ul>
@@ -4395,19 +4530,19 @@
       <div class="plan-card">
         <div style="font-weight: 800; font-size: 20px; color: #fff;">PRO</div>
         <div class="plan-price">$299 <span>/ mo</span></div>
-        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">1 Published Space • 25 Products</p>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">1 Published Space • 25 Products • Up to 7-photo AI Spatial Booth</p>
         <button class="btn-create-free" onclick="openPlanModal('pricing_section')" style="padding: 10px; font-size: 13px;">CHOOSE PRO</button>
       </div>
       <div class="plan-card popular">
         <div style="font-weight: 800; font-size: 20px; color: #38bdf8;">BUSINESS</div>
         <div class="plan-price">$799 <span>/ mo</span></div>
-        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">10 Multi-View Spaces • 100 Products</p>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">10 Multi-View Spaces • 100 Products • 7-View AI Spatial Booth</p>
         <button class="btn-create-free" onclick="openPlanModal('pricing_section')" style="padding: 10px; font-size: 13px; background: linear-gradient(135deg, #0284c7, #2563eb);">CHOOSE BUSINESS</button>
       </div>
       <div class="plan-card">
         <div style="font-weight: 800; font-size: 20px; color: #fff;">CUSTOM</div>
         <div class="plan-price">Quote <span>/ project</span></div>
-        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Gaussian Splatting &amp; Digital Twin</p>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Automated 7-View AI Spatial Booth + 3DZ Managed TRUE 3D Booth</p>
         <button class="btn-hero btn-hero-secondary" onclick="openPlanModal('pricing_section')" style="width: 100%; padding: 10px; font-size: 13px; justify-content: center;">REQUEST QUOTE</button>
       </div>
     </div>
@@ -13019,7 +13154,267 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
     let currentSelectedEnhanceFile = null;
     let pendingEnhancedCandidate = null;
 
-    function openAiEnhanceBoothModal() {
+    
+    // ============================================================
+    // ─── C11.17: PRO+ 7-VIEW AI SPATIAL BOOTH CLIENT LOGIC ──────
+    // ============================================================
+
+    window.proSpatialSlots = [
+      { slot: 'FAR_LEFT', name: 'Far Left', file: null, previewUrl: null, status: 'EMPTY' },
+      { slot: 'LEFT', name: 'Left', file: null, previewUrl: null, status: 'EMPTY' },
+      { slot: 'LEFT_CENTER', name: 'Left-Center', file: null, previewUrl: null, status: 'EMPTY' },
+      { slot: 'CENTER', name: 'Center', file: null, previewUrl: null, status: 'EMPTY' },
+      { slot: 'RIGHT_CENTER', name: 'Right-Center', file: null, previewUrl: null, status: 'EMPTY' },
+      { slot: 'RIGHT', name: 'Right', file: null, previewUrl: null, status: 'EMPTY' },
+      { slot: 'FAR_RIGHT', name: 'Far Right', file: null, previewUrl: null, status: 'EMPTY' }
+    ];
+
+    window.currentSpatialCandidate = null;
+
+    function openSpatialUpsellModal(slotKey) {
+      const m = document.getElementById('spatialBoothUpsellModal');
+      if (m) m.style.display = 'flex';
+    }
+
+    function closeSpatialUpsellModal() {
+      const m = document.getElementById('spatialBoothUpsellModal');
+      if (m) m.style.display = 'none';
+    }
+
+    function handleSpatialCenterFileSelected(input) {
+      if (!input.files || !input.files[0]) return;
+      selectedFile = input.files[0];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const pBox = document.getElementById('spatialCenterFilePreview');
+        const pThumb = document.getElementById('spatialCenterThumb');
+        const pName = document.getElementById('spatialCenterFilename');
+        const slotEl = document.getElementById('spatialCenterSlot');
+        if (pBox) pBox.style.display = 'flex';
+        if (pThumb) pThumb.src = e.target.result;
+        if (pName) pName.textContent = selectedFile.name;
+        if (slotEl) {
+          slotEl.style.borderColor = '#22c55e';
+          const icon = document.getElementById('centerSlotIcon');
+          if (icon) icon.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #22c55e;"></i>';
+          const sub = document.getElementById('centerSlotSubtitle');
+          if (sub) { sub.textContent = '1 File Selected'; sub.style.color = '#22c55e'; }
+        }
+      };
+      reader.readAsDataURL(selectedFile);
+    }
+
+    function clearSpatialCenterFile(e) {
+      if (e) e.stopPropagation();
+      selectedFile = null;
+      const pBox = document.getElementById('spatialCenterFilePreview');
+      if (pBox) pBox.style.display = 'none';
+      const slotEl = document.getElementById('spatialCenterSlot');
+      if (slotEl) {
+        slotEl.style.borderColor = '#38bdf8';
+        const icon = document.getElementById('centerSlotIcon');
+        if (icon) icon.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i>';
+        const sub = document.getElementById('centerSlotSubtitle');
+        if (sub) { sub.textContent = 'Start Here'; sub.style.color = '#38bdf8'; }
+      }
+      const fin = document.getElementById('booth-file-input');
+      if (fin) fin.value = '';
+    }
+
+    function openAiSpatialBoothModal() {
+      const m = document.getElementById('aiSpatialBoothModal');
+      if (m) {
+        m.style.display = 'flex';
+        renderProSpatialSlots();
+      }
+    }
+
+    function closeAiSpatialBoothModal() {
+      const m = document.getElementById('aiSpatialBoothModal');
+      if (m) m.style.display = 'none';
+    }
+
+    function toggleProCaptureGuide() {
+      const gc = document.getElementById('proGuideContent');
+      if (gc) gc.style.display = (gc.style.display === 'none') ? 'block' : 'none';
+    }
+
+    function updateProSpatialPeopleToggle(val) {
+      const badge = document.getElementById('proSpatialPeopleBadge');
+      const knob = document.getElementById('proSpatialToggleKnob');
+      const slider = document.getElementById('proSpatialToggleSlider');
+      if (val) {
+        if (badge) { badge.textContent = '✓ ON'; badge.style.color = '#38bdf8'; }
+        if (knob) knob.style.transform = 'translateX(20px)';
+        if (slider) slider.style.background = '#0284c7';
+      } else {
+        if (badge) { badge.textContent = 'OFF'; badge.style.color = '#94a3b8'; }
+        if (knob) knob.style.transform = 'translateX(0px)';
+        if (slider) slider.style.background = '#334155';
+      }
+    }
+
+    function renderProSpatialSlots() {
+      const container = document.getElementById('pro7SlotsGrid');
+      if (!container) return;
+      let readyCount = 0;
+
+      container.innerHTML = window.proSpatialSlots.map((s, idx) => {
+        const isReady = s.file || s.previewUrl;
+        if (isReady) readyCount++;
+        return `
+          <div style="border: 1.5px solid ${isReady ? '#38bdf8' : 'rgba(255,255,255,0.15)'}; border-radius: 8px; padding: 8px 4px; text-align: center; background: ${isReady ? 'rgba(56,189,248,0.1)' : 'rgba(255,255,255,0.02)'}; position: relative;">
+            <div style="font-size: 8.5px; font-weight: 800; color: ${s.slot === 'CENTER' ? '#38bdf8' : '#94a3b8'}; margin-bottom: 4px;">${s.name}</div>
+            <div style="width: 100%; height: 50px; border-radius: 4px; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
+              ${isReady ? `<img src="${s.previewUrl}" style="width: 100%; height: 100%; object-fit: cover;">` : `<i class="fa-solid fa-camera" style="color: #475569; font-size: 16px;"></i>`}
+            </div>
+            <div style="display: flex; justify-content: center; gap: 4px;">
+              ${idx > 0 && isReady ? `<button type="button" onclick="moveProSlot(${idx}, -1)" style="background: none; border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; font-size: 8px; border-radius: 3px; padding: 2px 4px; cursor: pointer;">◀</button>` : ''}
+              ${idx < 6 && isReady ? `<button type="button" onclick="moveProSlot(${idx}, 1)" style="background: none; border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; font-size: 8px; border-radius: 3px; padding: 2px 4px; cursor: pointer;">▶</button>` : ''}
+              ${isReady ? `<button type="button" onclick="removeProSlot(${idx})" style="background: none; border: none; color: #f87171; font-size: 9px; cursor: pointer;">✕</button>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const badge = document.getElementById('proSlotCountBadge');
+      if (badge) badge.textContent = readyCount + ' of 7 views ready';
+
+      const compatCard = document.getElementById('proCompatibilityCard');
+      if (compatCard) {
+        if (readyCount >= 2) {
+          compatCard.style.display = 'block';
+          const pill = document.getElementById('compatStatusPill');
+          if (pill) pill.textContent = readyCount + ' COMPATIBLE VIEWS';
+        } else {
+          compatCard.style.display = 'none';
+        }
+      }
+    }
+
+    function moveProSlot(idx, dir) {
+      const targetIdx = idx + dir;
+      if (targetIdx < 0 || targetIdx >= window.proSpatialSlots.length) return;
+      const tmpFile = window.proSpatialSlots[idx].file;
+      const tmpUrl = window.proSpatialSlots[idx].previewUrl;
+      window.proSpatialSlots[idx].file = window.proSpatialSlots[targetIdx].file;
+      window.proSpatialSlots[idx].previewUrl = window.proSpatialSlots[targetIdx].previewUrl;
+      window.proSpatialSlots[targetIdx].file = tmpFile;
+      window.proSpatialSlots[targetIdx].previewUrl = tmpUrl;
+      renderProSpatialSlots();
+    }
+
+    function removeProSlot(idx) {
+      window.proSpatialSlots[idx].file = null;
+      window.proSpatialSlots[idx].previewUrl = null;
+      renderProSpatialSlots();
+    }
+
+    function handleProSpatialFilesSelected(input) {
+      if (!input.files || input.files.length === 0) return;
+      const files = Array.from(input.files).slice(0, 7);
+      files.forEach((f, i) => {
+        if (i < window.proSpatialSlots.length) {
+          window.proSpatialSlots[i].file = f;
+          window.proSpatialSlots[i].previewUrl = URL.createObjectURL(f);
+        }
+      });
+      renderProSpatialSlots();
+    }
+
+    async function startProSpatialGeneration() {
+      const activeSlots = window.proSpatialSlots.filter(s => s.file);
+      const projectId = currentProjectId || 'prj-free-f4370ccd';
+      
+      const pBox = document.getElementById('proSpatialProgressBox');
+      const pLbl = document.getElementById('proSpatialStageLabel');
+      const pPct = document.getElementById('proSpatialStagePercent');
+      const pBar = document.getElementById('proSpatialProgressBar');
+      const btn = document.getElementById('btnGenerateSpatial');
+
+      if (pBox) pBox.style.display = 'block';
+      if (btn) btn.disabled = true;
+
+      const stages = [
+        { pct: 15, text: 'Preparing photos...' },
+        { pct: 35, text: 'Enhancing image quality...' },
+        { pct: 55, text: 'Removing bystanders...' },
+        { pct: 75, text: 'Analyzing overlap...' },
+        { pct: 90, text: 'Aligning views & building camera rail...' },
+        { pct: 100, text: 'Spatial Booth Ready!' }
+      ];
+
+      let sIdx = 0;
+      const interval = setInterval(() => {
+        if (sIdx < stages.length) {
+          if (pLbl) pLbl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + stages[sIdx].text;
+          if (pPct) pPct.textContent = stages[sIdx].pct + '%';
+          if (pBar) pBar.style.width = stages[sIdx].pct + '%';
+          sIdx++;
+        }
+      }, 400);
+
+      try {
+        const formData = new FormData();
+        activeSlots.forEach((s, idx) => {
+          formData.append('photos', s.file);
+          formData.append('slot_' + idx, s.slot);
+        });
+
+        const chk = document.getElementById('proSpatialRemovePeopleToggle');
+        formData.append('autoRemovePeople', chk ? String(chk.checked) : 'true');
+
+        const token = localStorage.getItem('token') || '';
+        const res = await fetch('/api/projects/' + projectId + '/spatial/start', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token
+          },
+          body: formData
+        });
+
+        clearInterval(interval);
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.message || 'Spatial Booth generation failed.');
+          if (pBox) pBox.style.display = 'none';
+          if (btn) btn.disabled = false;
+          return;
+        }
+
+        window.currentSpatialCandidate = data.candidate;
+        if (pLbl) pLbl.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #4ade80;"></i> Spatial Booth Ready!';
+        if (pPct) pPct.textContent = '100%';
+        if (pBar) pBar.style.width = '100%';
+
+        setTimeout(async () => {
+          // Automatically apply candidate
+          const applyRes = await fetch('/api/projects/' + projectId + '/spatial/apply', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ candidateId: data.candidateId })
+          });
+          const applyData = await applyRes.json();
+          if (applyData.success) {
+            alert('7-View AI Spatial Booth successfully created and applied!');
+            closeAiSpatialBoothModal();
+            window.location.reload();
+          }
+        }, 600);
+
+      } catch (err) {
+        clearInterval(interval);
+        alert('Generation failed: ' + err.message);
+        if (pBox) pBox.style.display = 'none';
+        if (btn) btn.disabled = false;
+      }
+    }
+
+
+function openAiEnhanceBoothModal() {
       const m = document.getElementById('aiEnhanceBoothModal');
       if (m) m.style.display = 'flex';
       // Reset progress
@@ -13377,7 +13772,30 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
           highlightPresetBtn('presetBtnWide');
           break;
 
-        case 'LEFT':
+        case 'LEFT': // Spatial anchor navigation
+          if (window.spatialAnchors && window.spatialAnchors.length > 0) {
+            const leftAnchor = window.spatialAnchors[0];
+            targetPitch = 0.0;
+            targetYaw = leftAnchor.pose?.yaw || -0.419;
+            targetFov = 50;
+            break;
+          }
+          targetPitch = 0.0;
+          targetYaw = -0.244;
+          targetFov = 50;
+          break;
+        case 'RIGHT': // Spatial anchor navigation
+          if (window.spatialAnchors && window.spatialAnchors.length > 0) {
+            const rightAnchor = window.spatialAnchors[window.spatialAnchors.length - 1];
+            targetPitch = 0.0;
+            targetYaw = rightAnchor.pose?.yaw || 0.419;
+            targetFov = 50;
+            break;
+          }
+          targetPitch = 0.0;
+          targetYaw = 0.244;
+          targetFov = 50;
+          break;
           applyCameraViewPreset(-14, 0, 50);
           highlightPresetBtn('presetBtnLeft');
           break;
@@ -13919,6 +14337,151 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
 <!-- ============================================================ -->
 <!-- ─── P3.22: AI ENHANCE BOOTH MODAL ────────────────────────── -->
 <!-- ============================================================ -->
+
+<!-- ============================================================ -->
+<!-- ─── C11.17: CONVERSION UPSELL MODAL (PRO 7-VIEW EXPANSION) ─ -->
+<!-- ============================================================ -->
+<div id="spatialBoothUpsellModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1200; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+  <div style="background: #09101d; border: 1.5px solid #38bdf8; border-radius: 18px; width: 92%; max-width: 520px; padding: 28px; box-shadow: 0 25px 60px rgba(0,0,0,0.9); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; position: relative;">
+    <button type="button" onclick="closeSpatialUpsellModal()" style="position: absolute; top: 16px; right: 20px; background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer;">&times;</button>
+    
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+      <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(56,189,248,0.2); display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 20px;">
+        <i class="fa-solid fa-layer-group"></i>
+      </div>
+      <div>
+        <h3 style="margin: 0; font-size: 20px; font-weight: 800; color: #fff;">Expand Your Booth View</h3>
+        <span style="font-size: 12px; color: #f59e0b; font-weight: 800; text-transform: uppercase;">PRO+ Exclusive Feature</span>
+      </div>
+    </div>
+
+    <p style="margin: 0 0 20px 0; font-size: 13.5px; color: #94a3b8; line-height: 1.5;">
+      Your center photo creates a fast immersive preview. With PRO, add up to 7 overlapping booth photos for wider left-to-right spatial coverage.
+    </p>
+
+    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; margin-bottom: 22px;">
+      <div style="font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 8px;">PRO Plan Features:</div>
+      <div style="font-size: 11.5px; color: #cbd5e1; line-height: 1.6;">
+        <div>✓ Up to 7-photo AI Spatial Booth</div>
+        <div>✓ Wider left-to-right spatial camera rail</div>
+        <div>✓ Automatic people & bystander removal</div>
+        <div>✓ 16K super-resolution neural mastering</div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <a href="/portal" id="btnUnlockSpatialPro" style="display: block; text-align: center; text-decoration: none; padding: 12px 20px; font-size: 13.5px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; color: #fff; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 14px rgba(2,132,199,0.4);">
+        Unlock 7-View Spatial Booth
+      </a>
+      <button type="button" onclick="closeSpatialUpsellModal()" style="padding: 10px; font-size: 12.5px; font-weight: 600; background: none; border: 1px solid rgba(255,255,255,0.12); color: #94a3b8; border-radius: 8px; cursor: pointer;">
+        Continue with 1 Photo
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ─── C11.17: AUTHENTICATED PRO+ AI SPATIAL BOOTH CREATOR ─── -->
+<!-- ============================================================ -->
+<div id="aiSpatialBoothModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 1120; align-items: center; justify-content: center; backdrop-filter: blur(10px); overflow-y: auto; padding: 20px 0;">
+  <div style="background: #09101d; border: 1.5px solid #38bdf8; border-radius: 18px; width: 94%; max-width: 820px; padding: 26px; box-shadow: 0 25px 60px rgba(0,0,0,0.95); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; position: relative;">
+    <button type="button" onclick="closeAiSpatialBoothModal()" style="position: absolute; top: 16px; right: 20px; background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer;">&times;</button>
+    
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px;">
+      <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(56,189,248,0.2); display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 20px;">
+        <i class="fa-solid fa-layer-group"></i>
+      </div>
+      <div>
+        <h3 style="margin: 0; font-size: 20px; font-weight: 800; color: #fff;">7-VIEW AI SPATIAL BOOTH</h3>
+        <span style="font-size: 12px; color: #38bdf8; font-weight: 700;">Multi-View Camera Rail + Standing Eye-Level Spatial Experience</span>
+      </div>
+    </div>
+
+    <!-- STEP 1: CAPTURE GUIDE BEFORE SLOTS -->
+    <div id="proCreatorCaptureGuide" style="background: rgba(15,23,42,0.6); border: 1px solid rgba(56,189,248,0.25); border-radius: 12px; padding: 14px; margin-bottom: 18px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 12px; font-weight: 800; color: #38bdf8;"><i class="fa-solid fa-book-open"></i> STEP 1: Capture Guide</span>
+        <button type="button" onclick="toggleProCaptureGuide()" style="background: none; border: none; color: #94a3b8; font-size: 11px; cursor: pointer; text-decoration: underline;">Hide Guide</button>
+      </div>
+      <div id="proGuideContent">
+        <div style="text-align: center; margin-bottom: 10px;">
+          <img src="/assets/spatial-booth/7-view-capture-guide.jpg" alt="Spatial Booth Capture Guide" style="width: 100%; max-width: 540px; border-radius: 8px; border: 1px solid rgba(56,189,248,0.2);">
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; font-size: 10.5px; color: #cbd5e1;">
+          <div style="background: rgba(255,255,255,0.03); padding: 6px; border-radius: 6px;">1. Standing eye level</div>
+          <div style="background: rgba(255,255,255,0.03); padding: 6px; border-radius: 6px;">2. Center shot first</div>
+          <div style="background: rgba(255,255,255,0.03); padding: 6px; border-radius: 6px;">3. Move sideways</div>
+          <div style="background: rgba(255,255,255,0.03); padding: 6px; border-radius: 6px;">4. 40–60% overlap</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: 7 UPLOAD SLOTS -->
+    <div style="margin-bottom: 18px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 12px; font-weight: 800; color: #fff;"><i class="fa-solid fa-images"></i> STEP 2: Upload Booth Views (1 to 7 photos)</span>
+        <span id="proSlotCountBadge" style="font-size: 11px; font-weight: 700; color: #38bdf8;">0 of 7 views ready</span>
+      </div>
+
+      <div id="pro7SlotsGrid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;">
+        <!-- Dynamically rendered via renderProSpatialSlots() -->
+      </div>
+      <input type="file" id="proSpatialMultiInput" multiple accept="image/*" style="display: none;" onchange="handleProSpatialFilesSelected(this)">
+    </div>
+
+    <!-- STEP 3: COMPATIBILITY & OVERLAP ANALYSIS -->
+    <div id="proCompatibilityCard" style="display: none; background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px; padding: 12px 16px; margin-bottom: 18px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 12px; font-weight: 800; color: #38bdf8;"><i class="fa-solid fa-chart-line"></i> STEP 3: Overlap & Compatibility</span>
+        <span id="compatStatusPill" style="font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: rgba(34,197,94,0.2); color: #4ade80;">6 COMPATIBLE VIEWS</span>
+      </div>
+      <div id="compatDetailsTxt" style="font-size: 11.5px; color: #cbd5e1; line-height: 1.4;">
+        Adjacent feature geometry verified. Usable horizontal spatial rail configured.
+      </div>
+    </div>
+
+    <!-- PEOPLE REMOVAL TOGGLE -->
+    <div style="background: rgba(255,255,255,0.03); border-radius: 10px; padding: 10px 14px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between;">
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #fff;">Automatic People Removal</div>
+        <div style="font-size: 11px; color: #94a3b8;">Neural inpainting removes bystanders across all views.</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <label style="position: relative; display: inline-block; width: 44px; height: 24px; margin: 0; cursor: pointer;">
+          <input type="checkbox" id="proSpatialRemovePeopleToggle" checked onchange="updateProSpatialPeopleToggle(this.checked)" style="opacity: 0; width: 0; height: 0;">
+          <span id="proSpatialToggleSlider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #0284c7; border-radius: 24px; transition: .25s;">
+            <span id="proSpatialToggleKnob" style="position: absolute; top: 2px; left: 2px; height: 20px; width: 20px; background: #fff; border-radius: 50%; transition: .25s; transform: translateX(20px);"></span>
+          </span>
+        </label>
+        <span id="proSpatialPeopleBadge" style="font-size: 11px; font-weight: 800; color: #38bdf8;">✓ ON</span>
+      </div>
+    </div>
+
+    <!-- STEP 4: GENERATION PROGRESS -->
+    <div id="proSpatialProgressBox" style="display: none; margin-bottom: 18px;">
+      <div style="display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 700; color: #38bdf8; margin-bottom: 6px;">
+        <span id="proSpatialStageLabel"><i class="fa-solid fa-spinner fa-spin"></i> Preparing photos...</span>
+        <span id="proSpatialStagePercent">0%</span>
+      </div>
+      <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden;">
+        <div id="proSpatialProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #6366f1); transition: width 0.3s ease;"></div>
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px;">
+      <button type="button" onclick="document.getElementById('proSpatialMultiInput').click()" style="padding: 8px 14px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer;">
+        <i class="fa-solid fa-plus"></i> Add Photos
+      </button>
+      <div style="display: flex; gap: 10px;">
+        <button type="button" id="btnGenerateSpatial" onclick="startProSpatialGeneration()" style="padding: 10px 22px; font-size: 13px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #6366f1); border: 1px solid #38bdf8; color: #fff; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 14px rgba(2,132,199,0.4);">
+          <i class="fa-solid fa-bolt"></i> Generate Spatial Booth
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="aiEnhanceBoothModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1100; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
   <div style="background: #09101d; border: 1.5px solid #38bdf8; border-radius: 16px; width: 92%; max-width: 580px; padding: 26px; box-shadow: 0 25px 60px rgba(0,0,0,0.9); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; position: relative;">
     <button type="button" onclick="closeAiEnhanceBoothModal()" style="position: absolute; top: 16px; right: 20px; background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer;">&times;</button>

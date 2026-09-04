@@ -13139,6 +13139,28 @@ return event;
   getActiveBoothBackground(project) {
     if (!project) return null;
     
+    // 0. Explicitly active spatial booth version (C11.17)
+    if (Array.isArray(project.spatialBoothVersions) && project.activeSpatialVersionId) {
+      const sv = project.spatialBoothVersions.find(item => item.id === project.activeSpatialVersionId || item.versionId === project.activeSpatialVersionId);
+      if (sv) {
+        return {
+          versionId: sv.id || sv.versionId,
+          assetId: 'asset-spatial-' + (sv.id || sv.versionId),
+          url: sv.activeBackgroundUrl || (sv.anchors && sv.anchors[0]?.textureUrl) || sv.url,
+          sourceType: 'MULTI_VIEW_SPATIAL',
+          candidateId: sv.candidateId || null,
+          viewerMode: 'MULTI_VIEW_SPATIAL',
+          anchors: sv.anchors || [],
+          adjacentGraph: sv.adjacentGraph || [],
+          usableHorizontalRange: sv.usableHorizontalRange || null,
+          registrationConfidence: sv.registrationConfidence || 0.9,
+          derivatives: sv.derivatives || null,
+          normalFov: 50,
+          wideFov: 60
+        };
+      }
+    }
+    
     // 1. Explicitly active background version
     if (Array.isArray(project.backgroundVersions) && project.activeBackgroundVersionId) {
       const v = project.backgroundVersions.find(item => item.versionId === project.activeBackgroundVersionId);
@@ -13518,6 +13540,84 @@ return event;
         project,
         activeBackground: versionObj
       };
+    });
+  }
+
+  async saveSpatialBoothCandidate(projectId, candidate) {
+    return this.mutate((db) => {
+      db.spatialCandidates = db.spatialCandidates || [];
+      const existingIdx = db.spatialCandidates.findIndex(c => c.candidateId === candidate.candidateId);
+      if (existingIdx >= 0) {
+        db.spatialCandidates[existingIdx] = candidate;
+      } else {
+        db.spatialCandidates.push(candidate);
+      }
+      return candidate;
+    });
+  }
+
+  getSpatialBoothCandidate(candidateId) {
+    const data = this.read();
+    return (data.spatialCandidates || []).find(c => c.candidateId === candidateId) || null;
+  }
+
+  async applySpatialBoothCandidate(projectId, candidateId, token) {
+    return this.mutate(async (db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) throw new Error(`Project ${projectId} not found`);
+
+      const candidate = (db.spatialCandidates || []).find(c => c.candidateId === candidateId);
+      if (!candidate) throw new Error(`Spatial booth candidate ${candidateId} not found`);
+
+      const versionId = `bver-spatial-${Date.now()}`;
+      const activeUrl = candidate.activeBackgroundUrl || (candidate.anchors && candidate.anchors[0]?.textureUrl);
+
+      project.spatialBoothVersions = project.spatialBoothVersions || [];
+      const versionObj = {
+        id: versionId,
+        versionId,
+        projectId,
+        candidateId,
+        activeBackgroundUrl: activeUrl,
+        url: activeUrl,
+        sourceType: 'MULTI_VIEW_SPATIAL',
+        viewerMode: candidate.viewerMode || 'MULTI_VIEW_SPATIAL',
+        anchors: candidate.anchors || [],
+        adjacentGraph: candidate.adjacentGraph || [],
+        usableHorizontalRange: candidate.usableHorizontalRange || null,
+        registrationConfidence: candidate.registrationConfidence || 0.9,
+        compatibleSourceCount: candidate.compatibleSourceCount || candidate.anchors?.length || 1,
+        sourceViews: candidate.sourceViews || [],
+        assetManifest: candidate.assetManifest || [],
+        derivatives: candidate.derivatives || {},
+        status: 'APPLIED',
+        createdAt: new Date().toISOString()
+      };
+      project.spatialBoothVersions.push(versionObj);
+
+      project.activeSpatialVersionId = versionId;
+      project.activeSpatialVersion = versionObj;
+      project.photoUrl = activeUrl;
+      project.viewerMode = versionObj.viewerMode;
+      project.activeViewerMode = versionObj.viewerMode;
+      project.updatedAt = new Date().toISOString();
+
+      candidate.status = 'APPLIED';
+      return {
+        success: true,
+        project,
+        activeSpatialVersion: versionObj
+      };
+    });
+  }
+
+  async discardSpatialBoothCandidate(projectId, candidateId, token) {
+    return this.mutate((db) => {
+      const candidate = (db.spatialCandidates || []).find(c => c.candidateId === candidateId);
+      if (candidate) {
+        candidate.status = 'DISCARDED';
+      }
+      return { success: true };
     });
   }
 

@@ -6238,6 +6238,10 @@ app.patch('/api/internal/consultations/:id/status', (req, res) => {
 // ═══════════════════════════════════════════════════════════════════
 const { defaultOrchestrator } = require('./image_mastering_v4/pipeline_orchestrator');
 const { defaultPipeline: aiEnhancedPipeline } = require('./ai_enhanced_booth');
+const { defaultSpatialPipeline: spatialPipeline, SLOTS } = require('./spatial_pipeline');
+const FEATURE_MULTI_VIEW_SPATIAL = true;
+const FEATURE_LANDING_7_SLOT_FUNNEL = true;
+const FEATURE_SPATIAL_CAPTURE_GUIDE = true;
 
 app.post('/api/booth-mastering/v4/process', upload.single('boothPhoto'), async (req, res) => {
   try {
@@ -9243,6 +9247,154 @@ app.post('/api/projects/:id/ai-enhance/discard', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// ============================================================
+// ─── C11.17: PRO+ 7-VIEW AI SPATIAL BOOTH PIPELINE ENDPOINTS ─
+// ============================================================
+
+app.post('/api/projects/:id/spatial/start', upload.array('photos', 7), async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const token = extractAuthToken(req);
+    const project = db.getProject(projectId);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!db.verifyEditAccess(project, token)) return res.status(403).json({ error: 'Cross-tenant access forbidden.' });
+
+    const session = db.getCustomerSession(token);
+    const customerEmail = session?.email || req.headers['x-customer-email'] || req.body?.customerEmail || '';
+    const isTestAccount = (customerEmail === 'goodkie.com@gmail.com') || (project.ownerId === 'goodkie.com@gmail.com') || (token && token.includes('internal')) || Boolean(req.body?.isTest === 'true' || req.body?.isTest === true);
+    
+    // Entitlement Check: MULTI_VIEW_SPATIAL_BOOTH requires PRO, BUSINESS, CUSTOM, or INTERNAL_FULL_ACCESS
+    const plan = (project.plan || session?.plan || (isTestAccount ? 'INTERNAL_FULL_ACCESS' : 'FREE')).toUpperCase();
+    const isEntitled = isTestAccount || ['PRO', 'BUSINESS', 'CUSTOM', 'INTERNAL_FULL_ACCESS'].includes(plan);
+    if (!isEntitled) {
+      return res.status(403).json({
+        error: 'ENTITLEMENT_REQUIRED',
+        message: '7-View AI Spatial Booth is available only to PRO, BUSINESS, or CUSTOM members.',
+        upgradeUrl: '/portal',
+        plan
+      });
+    }
+
+    // Gather photos from files or URLs/dataUrls
+    const sourceList = [];
+    if (req.files && req.files.length > 0) {
+      req.files.forEach((f, idx) => {
+        const slot = req.body['slot_' + idx] || (req.body.slots ? JSON.parse(req.body.slots)[idx] : null) || SLOTS[idx] || 'CENTER';
+        sourceList.push({
+          path: path.join(UPLOADS_DIR, f.filename),
+          originalFilename: f.originalname,
+          slot
+        });
+      });
+    } else if (req.body && req.body.sources) {
+      const parsedSources = typeof req.body.sources === 'string' ? JSON.parse(req.body.sources) : req.body.sources;
+      parsedSources.forEach((s, idx) => {
+        let localPath = null;
+        if (s.url) {
+          const lp = path.join(UPLOADS_DIR, path.basename(s.url));
+          if (fs.existsSync(lp)) localPath = lp;
+        }
+        if (localPath) {
+          sourceList.push({
+            path: localPath,
+            originalFilename: s.originalFilename || path.basename(s.url),
+            slot: s.slot || SLOTS[idx] || 'CENTER'
+          });
+        }
+      });
+    }
+
+    // If only 1 file or center photo provided, fallback to standard center
+    if (sourceList.length === 0 && project.photoUrl) {
+      const local = path.join(UPLOADS_DIR, path.basename(project.photoUrl));
+      if (fs.existsSync(local)) {
+        sourceList.push({
+          path: local,
+          originalFilename: path.basename(project.photoUrl),
+          slot: 'CENTER'
+        });
+      }
+    }
+
+    if (sourceList.length === 0) {
+      return res.status(400).json({ error: 'No valid source photos uploaded for Spatial Booth generation.' });
+    }
+
+    const autoRemovePeople = req.body?.autoRemovePeople !== 'false' && req.body?.autoRemovePeople !== false;
+
+    // Process spatial booth candidate
+    const candidate = await spatialPipeline.processSpatialBooth(sourceList, {
+      projectId,
+      autoRemovePeople,
+      isTestAccount
+    });
+
+    await db.saveSpatialBoothCandidate(projectId, candidate);
+
+    res.json({
+      success: true,
+      candidateId: candidate.candidateId,
+      candidate,
+      nominalTokenCost: 0,
+      commercialTokensCharged: 0,
+      message: 'AI Spatial Booth candidate generated successfully.'
+    });
+  } catch (err) {
+    console.error('[Spatial Start Error]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/projects/:id/spatial/status/:candidateId', (req, res) => {
+  try {
+    const candidate = db.getSpatialBoothCandidate(req.params.candidateId);
+    if (!candidate) return res.status(404).json({ error: 'Spatial candidate not found' });
+    res.json({ success: true, candidate });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/projects/:id/spatial/apply', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const token = extractAuthToken(req);
+    const candidateId = req.body?.candidateId;
+    if (!candidateId) return res.status(400).json({ error: 'Missing candidateId' });
+
+    const result = await db.applySpatialBoothCandidate(projectId, candidateId, token);
+    res.json({
+      success: true,
+      activeSpatialVersion: result.activeSpatialVersion,
+      viewerMode: result.activeSpatialVersion.viewerMode,
+      project: result.project,
+      message: 'Spatial Booth applied to active viewer successfully.'
+    });
+  } catch (err) {
+    console.error('[Apply Spatial Candidate Error]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/projects/:id/spatial/discard', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const token = extractAuthToken(req);
+    const candidateId = req.body?.candidateId;
+    if (!candidateId) return res.status(400).json({ error: 'Missing candidateId' });
+
+    await db.discardSpatialBoothCandidate(projectId, candidateId, token);
+    res.json({
+      success: true,
+      message: 'Spatial Booth candidate discarded.'
+    });
+  } catch (err) {
+    console.error('[Discard Spatial Candidate Error]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 
 // C11.16-P3.22-R1: AI Provider Health & Credit Audit Endpoint
