@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>³D₂ MASTER ADMIN — Platform Operations & Service Health</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-base: #020617;
+      --bg-surface: #0b1329;
+      --bg-card: #111d3d;
+      --border-subtle: rgba(56, 189, 248, 0.15);
+      --border-focus: #38bdf8;
+      --accent-cyan: #38bdf8;
+      --accent-indigo: #6366f1;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --badge-green: rgba(34, 197, 94, 0.15);
+      --badge-green-txt: #4ade80;
+      --badge-red: rgba(239, 68, 68, 0.15);
+      --badge-red-txt: #f87171;
+      --badge-yellow: rgba(234, 179, 8, 0.15);
+      --badge-yellow-txt: #facc15;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 14px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .brand-logo span {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-indigo));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .brand-badge {
+      font-size: 10px;
+      font-weight: 800;
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid #ef4444;
+      color: #f87171;
+      padding: 2px 8px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .nav-tabs {
+      display: flex;
+      gap: 6px;
+      background: rgba(2, 6, 23, 0.6);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+    }
+    .nav-tab {
+      padding: 7px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      border-radius: 7px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      transition: all 0.15s ease;
+    }
+    .nav-tab:hover { color: #fff; background: rgba(255,255,255,0.04); }
+    .nav-tab.active {
+      color: #fff;
+      background: var(--accent-indigo);
+      box-shadow: 0 2px 8px rgba(99,102,241,0.4);
+    }
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .btn-action {
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .btn-cyan {
+      background: linear-gradient(135deg, #0284c7, var(--accent-indigo));
+      border: 1px solid var(--accent-cyan);
+      color: #fff;
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+    }
+    .btn-secondary:hover { color: #fff; }
+
+    main {
+      flex: 1;
+      padding: 28px;
+      max-width: 1440px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: block; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Overview Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .metric-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-indigo));
+    }
+    .metric-title { font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .metric-value { font-size: 26px; font-weight: 800; color: #fff; }
+    .metric-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+    /* Tables */
+    .table-container {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .table-toolbar {
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(2, 6, 23, 0.8);
+      border: 1px solid var(--border-subtle);
+      padding: 6px 12px;
+      border-radius: 8px;
+      width: 280px;
+    }
+    .search-box input {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 12px;
+      outline: none;
+      width: 100%;
+    }
+    .filter-pills { display: flex; gap: 6px; }
+    .filter-pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .filter-pill.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left; }
+    th {
+      background: rgba(2, 6, 23, 0.5);
+      padding: 12px 18px;
+      font-weight: 700;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    td {
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      color: #cbd5e1;
+    }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .status-badge {
+      display: inline-block;
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .badge-active { background: var(--badge-green); color: var(--badge-green-txt); }
+    .badge-disabled { background: var(--badge-red); color: var(--badge-red-txt); }
+    .badge-warning { background: var(--badge-yellow); color: var(--badge-yellow-txt); }
+
+    /* Modals */
+    .admin-modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .admin-modal-backdrop.active { display: flex; }
+    .admin-modal {
+      background: var(--bg-surface);
+      border: 1.5px solid var(--border-focus);
+      border-radius: 16px;
+      width: min(100%, 560px);
+      padding: 26px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.9);
+      position: relative;
+    }
+    .admin-modal h3 { font-size: 18px; font-weight: 800; margin-bottom: 6px; color: #fff; }
+    .admin-modal p { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      background: rgba(2, 6, 23, 0.8);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-size: 13px;
+      color: #fff;
+      outline: none;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--border-focus);
+    }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+
+    /* Service Health Cards */
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .service-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .service-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .service-name { font-size: 15px; font-weight: 800; color: #fff; }
+    .service-cat { font-size: 10.5px; color: var(--text-dim); text-transform: uppercase; font-weight: 700; }
+    .service-detail { font-size: 11.5px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px; }
+    .service-footer {
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-logo">
+      <span>³D₂ MASTER ADMIN</span>
+      <span class="brand-badge">Restricted Access</span>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchPanel('overview')"><i class="fa-solid fa-chart-pie"></i> Overview</button>
+      <button class="nav-tab" onclick="switchPanel('subscribers')"><i class="fa-solid fa-users"></i> Subscribers</button>
+      <button class="nav-tab" onclick="switchPanel('accounts')"><i class="fa-solid fa-id-card"></i> Accounts</button>
+      <button class="nav-tab" onclick="switchPanel('booths')"><i class="fa-solid fa-cube"></i> Booths</button>
+      <button class="nav-tab" onclick="switchPanel('health')"><i class="fa-solid fa-heart-pulse"></i> Service Health</button>
+      <button class="nav-tab" onclick="switchPanel('costs')"><i class="fa-solid fa-coins"></i> Costs & Credits</button>
+      <button class="nav-tab" onclick="switchPanel('audit')"><i class="fa-solid fa-shield-halved"></i> Audit Log</button>
+    </div>
+    <div class="header-actions">
+      <button class="btn-action btn-secondary" onclick="refreshCurrentView()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+      <button class="btn-action btn-cyan" onclick="openCreateAccountModal()"><i class="fa-solid fa-plus"></i> New Account</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- 1. OVERVIEW PANEL -->
+    <div id="panel-overview" class="view-panel active">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-title">Total Accounts</div>
+          <div class="metric-value" id="metTotalAccounts">—</div>
+          <div class="metric-sub">Platform registered accounts</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Active Commercial</div>
+          <div class="metric-value" id="metActiveCommercial" style="color: #4ade80;">—</div>
+          <div class="metric-sub">Excludes INTERNAL_DEV QA</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">PRO Subscribers</div>
+          <div class="metric-value" id="metProSubscribers">—</div>
+          <div class="metric-sub">$299/mo plan accounts</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">BUSINESS Subscribers</div>
+          <div class="metric-value" id="metBizSubscribers">—</div>
+          <div class="metric-sub">$799/mo enterprise accounts</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Active Booths</div>
+          <div class="metric-value" id="metActiveBooths">—</div>
+          <div class="metric-sub">Exhibition virtual spaces</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Spatial Booths</div>
+          <div class="metric-value" id="metSpatialBooths" style="color: #38bdf8;">—</div>
+          <div class="metric-sub">MULTI_VIEW_SPATIAL enabled</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Published Booths</div>
+          <div class="metric-value" id="metPublishedBooths">—</div>
+          <div class="metric-sub">Public live visitor access</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Total Products</div>
+          <div class="metric-value" id="metTotalProducts">—</div>
+          <div class="metric-sub">Pinned 3D & photo items</div>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <div class="table-toolbar">
+          <div style="font-weight: 800; font-size: 14px; color: #fff;">Quick Operational Summary</div>
+          <div style="font-size: 12px; color: var(--text-muted);" id="overviewLastUpdated">Last sync: Just now</div>
+        </div>
+        <div style="padding: 20px; font-size: 13px; color: #cbd5e1; line-height: 1.6;">
+          <p>This Master Admin Control Center provides canonical oversight of all customer accounts, active commercial subscriptions, and provider infrastructure health. No API keys or credentials are exposed.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. SUBSCRIBERS PANEL -->
+    <div id="panel-subscribers" class="view-panel">
+      <div class="table-container">
+        <div class="table-toolbar">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass" style="color: var(--text-dim);"></i>
+            <input type="text" id="subSearchInput" placeholder="Search business, contact, email..." oninput="filterSubscribers()">
+          </div>
+          <div class="filter-pills">
+            <button class="filter-pill active" onclick="setSubFilter('ALL', this)">ALL</button>
+            <button class="filter-pill" onclick="setSubFilter('PRO', this)">PRO</button>
+            <button class="filter-pill" onclick="setSubFilter('BUSINESS', this)">BUSINESS</button>
+            <button class="filter-pill" onclick="setSubFilter('PILOT', this)">PILOT</button>
+            <button class="filter-pill" onclick="setSubFilter('INTERNAL', this)">INTERNAL</button>
+            <button class="filter-pill" onclick="setSubFilter('ACTIVE', this)">ACTIVE</button>
+            <button class="filter-pill" onclick="setSubFilter('INACTIVE', this)">INACTIVE</button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Business</th>
+              <th>Contact</th>
+              <th>Email</th>
+              <th>Plan</th>
+              <th>Billing</th>
+              <th>Booths</th>
+              <th>Created</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="subscribersTableBody">
+            <tr><td colspan="9" style="text-align: center; padding: 24px; color: var(--text-dim);">Loading subscribers...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 3. ACCOUNTS PANEL -->
+    <div id="panel-accounts" class="view-panel">
+      <div class="table-container">
+        <div class="table-toolbar">
+          <div style="font-weight: 800; font-size: 14px; color: #fff;">Account Provisioning & Status Controls</div>
+          <button class="btn-action btn-cyan" onclick="openCreateAccountModal()"><i class="fa-solid fa-user-plus"></i> Create Account</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Account ID</th>
+              <th>Business Name</th>
+              <th>Email</th>
+              <th>Type</th>
+              <th>Entitlement</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="accountsTableBody">
+            <tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-dim);">Loading accounts...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 4. BOOTHS PANEL -->
+    <div id="panel-booths" class="view-panel">
+      <div class="table-container">
+        <div class="table-toolbar">
+          <div style="font-weight: 800; font-size: 14px; color: #fff;">Exhibition Booth Inventory</div>
+          <span style="font-size: 12px; color: var(--text-dim);" id="boothsCountLabel">—</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Booth ID</th>
+              <th>Booth Name</th>
+              <th>Business</th>
+              <th>Viewer Mode</th>
+              <th>Sources</th>
+              <th>Published</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody id="boothsTableBody">
+            <tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-dim);">Loading booths...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 5. SERVICE HEALTH PANEL -->
+    <div id="panel-health" class="view-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 16px; font-weight: 800; color: #fff;">Infrastructure & AI Provider Health</h3>
+        <button class="btn-action btn-secondary" onclick="refreshServiceHealth()"><i class="fa-solid fa-arrows-rotate"></i> Refresh Service Status</button>
+      </div>
+      <div class="service-grid" id="serviceHealthGrid">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- 6. COSTS & CREDITS PANEL -->
+    <div id="panel-costs" class="view-panel">
+      <div class="table-container" style="margin-bottom: 24px;">
+        <div class="table-toolbar">
+          <div style="font-weight: 800; font-size: 14px; color: #fff;"><i class="fa-solid fa-server" style="color: #38bdf8;"></i> Railway Hosting Cost & Usage</div>
+          <div style="font-size: 11px; color: #4ade80;" id="railwayBillingCycle">Current Billing Period</div>
+        </div>
+        <div style="padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">CURRENT BILL</div>
+            <div style="font-size: 22px; font-weight: 800; color: #fff;" id="railwayCurrentBill">—</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">ESTIMATED BILL</div>
+            <div style="font-size: 22px; font-weight: 800; color: #38bdf8;" id="railwayEstimatedBill">—</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">CPU USAGE</div>
+            <div style="font-size: 16px; font-weight: 700; color: #cbd5e1;" id="railwayCpu">—</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">MEMORY USAGE</div>
+            <div style="font-size: 16px; font-weight: 700; color: #cbd5e1;" id="railwayMemory">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <div class="table-toolbar">
+          <div style="font-weight: 800; font-size: 14px; color: #fff;"><i class="fa-solid fa-credit-card" style="color: #6366f1;"></i> Provider Cost & Credit Status</div>
+          <div style="font-size: 11.5px; color: var(--text-dim);">No paid inference triggered for health checks</div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th>Category</th>
+              <th>Status</th>
+              <th>Billing Model</th>
+              <th>Credit / Balance</th>
+              <th>Usage (30d)</th>
+              <th>Est. Cost</th>
+              <th>Last Checked</th>
+            </tr>
+          </thead>
+          <tbody id="costsTableBody">
+            <tr><td colspan="8" style="text-align: center; padding: 24px; color: var(--text-dim);">Loading costs & credits...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 7. AUDIT LOG PANEL -->
+    <div id="panel-audit" class="view-panel">
+      <div class="table-container">
+        <div class="table-toolbar">
+          <div style="font-weight: 800; font-size: 14px; color: #fff;">Administrative Audit Log</div>
+          <span style="font-size: 12px; color: var(--text-dim);">Immutable mutation records</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Admin Account</th>
+              <th>Action</th>
+              <th>Target Account</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody id="auditTableBody">
+            <tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--text-dim);">Loading audit events...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- CREATE ACCOUNT MODAL -->
+  <div id="createAccountModal" class="admin-modal-backdrop">
+    <div class="admin-modal">
+      <h3>Create New Account</h3>
+      <p>Provision an account with administrative entitlement override.</p>
+      <form id="createAccountForm" onsubmit="handleCreateAccount(event)">
+        <div class="form-group">
+          <label>Business Name *</label>
+          <input type="text" id="newBizName" required placeholder="e.g. Apex Industrial">
+        </div>
+        <div class="form-group">
+          <label>Contact Name *</label>
+          <input type="text" id="newContactName" required placeholder="e.g. Jane Doe">
+        </div>
+        <div class="form-group">
+          <label>Verified Email *</label>
+          <input type="email" id="newEmail" required placeholder="e.g. jane@apexindustrial.com">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label>Account Type</label>
+            <select id="newAccountType">
+              <option value="CUSTOMER">CUSTOMER</option>
+              <option value="PILOT">PILOT</option>
+              <option value="INTERNAL_TEST">INTERNAL_TEST</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Plan / Entitlement</label>
+            <select id="newPlan">
+              <option value="PRO">PRO ($299)</option>
+              <option value="BUSINESS">BUSINESS ($799)</option>
+              <option value="CUSTOM">CUSTOM</option>
+              <option value="PILOT">PILOT</option>
+              <option value="INTERNAL_FULL_ACCESS">INTERNAL_FULL_ACCESS</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea id="newNotes" rows="2" placeholder="Administrative notes for this account..."></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-action btn-secondary" onclick="closeCreateAccountModal()">Cancel</button>
+          <button type="submit" class="btn-action btn-cyan">Create Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- EDIT ACCOUNT MODAL -->
+  <div id="editAccountModal" class="admin-modal-backdrop">
+    <div class="admin-modal">
+      <h3>Edit Account</h3>
+      <p>Modify business details, status, or entitlement tier.</p>
+      <form id="editAccountForm" onsubmit="handleEditAccount(event)">
+        <input type="hidden" id="editAccountId">
+        <div class="form-group">
+          <label>Business Name</label>
+          <input type="text" id="editBizName" required>
+        </div>
+        <div class="form-group">
+          <label>Contact Name</label>
+          <input type="text" id="editContactName" required>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="editEmail" required>
+        </div>
+        <div class="form-group">
+          <label>Plan</label>
+          <select id="editPlan">
+            <option value="FREE">FREE</option>
+            <option value="PRO">PRO</option>
+            <option value="BUSINESS">BUSINESS</option>
+            <option value="CUSTOM">CUSTOM</option>
+            <option value="PILOT">PILOT</option>
+            <option value="INTERNAL_FULL_ACCESS">INTERNAL_FULL_ACCESS</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Modification Reason</label>
+          <input type="text" id="editReason" placeholder="Reason for audit log...">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-action btn-secondary" onclick="closeEditAccountModal()">Cancel</button>
+          <button type="submit" class="btn-action btn-cyan">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let currentPanel = 'overview';
+    let currentSubFilter = 'ALL';
+    let allSubscribersData = [];
+
+    function getAuthHeaders() {
+      const token = localStorage.getItem('token') || localStorage.getItem('customerToken') || 'dev_bypass_token';
+      const email = localStorage.getItem('customerEmail') || 'goodkie.com@gmail.com';
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token,
+        'x-customer-email': email
+      };
+    }
+
+    function switchPanel(panelId) {
+      currentPanel = panelId;
+      document.querySelectorAll('.nav-tab').forEach((t, idx) => {
+        t.classList.remove('active');
+      });
+      if (event && event.target) {
+        const btn = event.target.closest('.nav-tab') || event.target;
+        btn.classList.add('active');
+      }
+
+      document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+      const target = document.getElementById('panel-' + panelId);
+      if (target) target.classList.add('active');
+
+      loadPanelData(panelId);
+    }
+
+    function refreshCurrentView() {
+      loadPanelData(currentPanel);
+    }
+
+    async function loadPanelData(panelId) {
+      if (panelId === 'overview') loadOverview();
+      else if (panelId === 'subscribers') loadSubscribers();
+      else if (panelId === 'accounts') loadAccounts();
+      else if (panelId === 'booths') loadBooths();
+      else if (panelId === 'health') loadHealth();
+      else if (panelId === 'costs') loadCosts();
+      else if (panelId === 'audit') loadAudit();
+    }
+
+    async function loadOverview() {
+      try {
+        const res = await fetch('/api/master-admin/overview', { headers: getAuthHeaders() });
+        const data = await res.json();
+        if (data.ok && data.metrics) {
+          document.getElementById('metTotalAccounts').textContent = data.metrics.totalAccounts;
+          document.getElementById('metActiveCommercial').textContent = data.metrics.activeCommercialSubscribers;
+          document.getElementById('metProSubscribers').textContent = data.metrics.proCount;
+          document.getElementById('metBizSubscribers').textContent = data.metrics.businessCount;
+          document.getElementById('metActiveBooths').textContent = data.metrics.activeBooths;
+          document.getElementById('metSpatialBooths').textContent = data.metrics.spatialBooths;
+          document.getElementById('metPublishedBooths').textContent = data.metrics.publishedBooths;
+          document.getElementById('metTotalProducts').textContent = data.metrics.totalProducts;
+          document.getElementById('overviewLastUpdated').textContent = 'Last sync: ' + new Date().toLocaleTimeString();
+        }
+      } catch(e) { console.error('Overview error', e); }
+    }
+
+    async function loadSubscribers() {
+      try {
+        const res = await fetch('/api/master-admin/subscribers', { headers: getAuthHeaders() });
+        const data = await res.json();
+        if (data.ok) {
+          allSubscribersData = data.subscribers || [];
+          renderSubscribers();
+        }
+      } catch(e) { console.error('Subscribers error', e); }
+    }
+
+    function setSubFilter(filter, el) {
+      currentSubFilter = filter;
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      renderSubscribers();
+    }
+
+    function filterSubscribers() {
+      renderSubscribers();
+    }
+
+    function renderSubscribers() {
+      const search = (document.getElementById('subSearchInput')?.value || '').trim().toLowerCase();
+      let list = allSubscribersData;
+
+      if (currentSubFilter !== 'ALL') {
+        if (currentSubFilter === 'INTERNAL') list = list.filter(a => a.isTest);
+        else if (currentSubFilter === 'ACTIVE') list = list.filter(a => a.status === 'ACTIVE');
+        else if (currentSubFilter === 'INACTIVE') list = list.filter(a => a.status === 'DISABLED' || a.status === 'INACTIVE');
+        else if (currentSubFilter === 'PILOT') list = list.filter(a => a.isPilot || a.plan === 'PILOT');
+        else list = list.filter(a => a.plan === currentSubFilter);
+      }
+
+      if (search) {
+        list = list.filter(a =>
+          a.businessName.toLowerCase().includes(search) ||
+          a.contactName.toLowerCase().includes(search) ||
+          a.email.toLowerCase().includes(search) ||
+          a.id.toLowerCase().includes(search)
+        );
+      }
+
+      const tbody = document.getElementById('subscribersTableBody');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 24px; color: var(--text-dim);">No matching subscribers found.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(a => `
+        <tr>
+          <td style="font-weight: 700; color: #fff;">${escapeHtml(a.businessName)}</td>
+          <td>${escapeHtml(a.contactName)}</td>
+          <td style="font-family: monospace; font-size: 11.5px;">${escapeHtml(a.email)}</td>
+          <td><span style="font-weight: 800; font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(99,102,241,0.2); color: #818cf8;">${a.plan}</span></td>
+          <td>${a.billingStatus}</td>
+          <td>${a.booths}</td>
+          <td>${a.created.substring(0, 10)}</td>
+          <td><span class="status-badge ${a.status === 'ACTIVE' ? 'badge-active' : 'badge-disabled'}">${a.status}</span></td>
+          <td>
+            <button onclick="openEditAccountModal('${a.id}')" style="background: none; border: none; color: #38bdf8; cursor: pointer; font-size: 12px; margin-right: 8px;"><i class="fa-solid fa-pen-to-square"></i></button>
+            ${a.status === 'ACTIVE' 
+              ? `<button onclick="toggleAccountStatus('${a.id}', 'disable')" style="background: none; border: none; color: #f87171; cursor: pointer; font-size: 12px;"><i class="fa-solid fa-ban"></i></button>`
+              : `<button onclick="toggleAccountStatus('${a.id}', 'enable')" style="background: none; border: none; color: #4ade80; cursor: pointer; font-size: 12px;"><i class="fa-solid fa-check"></i></button>`
+            }
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadAccounts() {
+      try {
+        const res = await fetch('/api/master-admin/subscribers', { headers: getAuthHeaders() });
+        const data = await res.json();
+        if (data.ok) {
+          const tbody = document.getElementById('accountsTableBody');
+          tbody.innerHTML = (data.subscribers || []).map(a => `
+            <tr>
+              <td style="font-family: monospace; font-size: 11px; color: #94a3b8;">${a.id}</td>
+              <td style="font-weight: 700; color: #fff;">${escapeHtml(a.businessName)}</td>
+              <td style="font-family: monospace; font-size: 11.5px;">${escapeHtml(a.email)}</td>
+              <td><span style="font-size: 10.5px; font-weight: 700; color: #94a3b8;">${a.isTest ? 'INTERNAL' : (a.isPilot ? 'PILOT' : 'CUSTOMER')}</span></td>
+              <td>${a.entitlement}</td>
+              <td><span class="status-badge ${a.status === 'ACTIVE' ? 'badge-active' : 'badge-disabled'}">${a.status}</span></td>
+              <td>
+                <button class="btn-action btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="openEditAccountModal('${a.id}')">Edit</button>
+              </td>
+            </tr>
+          `).join('');
+        }
+      } catch(e) { console.error('Accounts error', e); }
+    }
+
+    async function loadBooths() {
+      try {
+        const res = await fetch('/api/master-admin/booths', { headers: getAuthHeaders() });
+        const data = await res.json();
+        if (data.ok) {
+          document.getElementById('boothsCountLabel').textContent = data.count + ' total booths';
+          const tbody = document.getElementById('boothsTableBody');
+          tbody.innerHTML = (data.booths || []).map(b => `
+            <tr>
+              <td style="font-family: monospace; font-size: 11px; color: #94a3b8;">${b.id}</td>
+              <td style="font-weight: 700; color: #fff;">${escapeHtml(b.name)}</td>
+              <td>${escapeHtml(b.businessName)}</td>
+              <td><span style="font-weight: 800; font-size: 10.5px; padding: 2px 6px; border-radius: 4px; background: ${b.viewerMode === 'MULTI_VIEW_SPATIAL' ? 'rgba(56,189,248,0.2)' : 'rgba(255,255,255,0.06)'}; color: ${b.viewerMode === 'MULTI_VIEW_SPATIAL' ? '#38bdf8' : '#cbd5e1'};">${b.viewerMode}</span></td>
+              <td>${b.sourceCount} views</td>
+              <td><span class="status-badge ${b.published ? 'badge-active' : 'badge-warning'}">${b.published ? 'PUBLISHED' : 'DRAFT'}</span></td>
+              <td>${b.updated ? b.updated.substring(0, 10) : 'N/A'}</td>
+            </tr>
+          `).join('');
+        }
+      } catch(e) { console.error('Booths error', e); }
+    }
+
+    async function loadHealth() {
+      try {
+        const res = await fetch('/api/master-admin/health', { headers: getAuthHeaders() });
+        const data = await res.json();
+        if (data.ok && data.services) {
+          const container = document.getElementById('serviceHealthGrid');
+          container.innerHTML = data.services.map(s => `
+            <div class="service-card">
+              <div>
+                <div class="service-header">
+                  <div>
+                    <div class="service-name">${s.name}</div>
+                    <div class="service-cat">${s.category}</div>
+                  </div>
+                  <span class="status-badge ${s.status === 'HEALTHY' ? 'badge-active' : (s.status === 'DEGRADED' ? 'badge-warning' : 'badge-disabled')}">${s.status}</span>
+                </div>
+                <div class="service-detail">
+                  <div><strong>Used by:</strong> ${s.usedBy}</div>
+                  <div><strong>Billing:</strong> ${s.billingModel}</div>
+                  <div><strong>Credit Status:</strong> <span style="font-family: monospace; font-size: 11px;">${s.creditStatus}</span></div>
+                </div>
+              </div>
+              <div class="service-footer">
+                <span>Checked: ${s.lastChecked.substring(11, 19)} UTC</span>
+                <span style="color: #38bdf8; font-weight: 700;">${s.configured ? 'Configured' : 'Not Set'}</span>
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch(e) { console.error('Health error', e); }
+    }
+
+    async function refreshServiceHealth() {
+      try {
+        const res = await fetch('/api/master-admin/health/refresh', { method: 'POST', headers: getAuthHeaders() });
+        const data = await res.json();
+        if (data.ok) loadHealth();
+      } catch(e) { console.error('Refresh health error', e); }
+    }
+
+    async function loadCosts() {
+      try {
+        const res = await fetch('/api/master-admin/costs', { headers: getAuthHeaders() });
+        const data = await res.json();
+        if (data.ok) {
+          if (data.railwayUsage) {
+            document.getElementById('railwayCurrentBill').textContent = data.railwayUsage.currentBill;
+            document.getElementById('railwayEstimatedBill').textContent = data.railwayUsage.estimatedBill;
+            document.getElementById('railwayCpu').textContent = data.railwayUsage.breakdown?.cpu || 'Normal';
+            document.getElementById('railwayMemory').textContent = data.railwayUsage.breakdown?.memory || 'Normal';
+          }
+          const tbody = document.getElementById('costsTableBody');
+          tbody.innerHTML = (data.costItems || []).map(c => `
+            <tr>
+              <td style="font-weight: 700; color: #fff;">${c.service}</td>
+              <td style="font-size: 11px; color: var(--text-dim);">${c.category}</td>
+              <td><span class="status-badge ${c.status === 'HEALTHY' ? 'badge-active' : 'badge-warning'}">${c.status}</span></td>
+              <td>${c.billingModel}</td>
+              <td style="font-family: monospace; font-weight: 700; color: #38bdf8;">${c.creditBalance}</td>
+              <td>${c.currentUsage}</td>
+              <td>${c.estimatedCost}</td>
+              <td style="font-size: 11px;">${c.lastChecked.substring(11, 19)} UTC</td>
+            </tr>
+          `).join('');
+        }
+      } catch(e) { console.error('Costs error', e); }
+    }
+
+    async function loadAudit() {
+      try {
+        const res = await fetch('/api/master-admin/audit', { headers: getAuthHeaders() });
+        const data = await res.json();
+        if (data.ok) {
+          const tbody = document.getElementById('auditTableBody');
+          tbody.innerHTML = (data.logs || []).map(l => `
+            <tr>
+              <td style="font-family: monospace; font-size: 11px;">${l.timestamp.substring(0, 19).replace('T', ' ')}</td>
+              <td style="font-weight: 700; color: #cbd5e1;">${l.adminAccountId}</td>
+              <td><span style="font-weight: 800; font-size: 11px; color: #38bdf8;">${l.action}</span></td>
+              <td style="font-family: monospace; font-size: 11px;">${l.targetAccountId || '—'}</td>
+              <td>${escapeHtml(l.reason || '')}</td>
+            </tr>
+          `).join('');
+        }
+      } catch(e) { console.error('Audit error', e); }
+    }
+
+    // Modal Operations
+    function openCreateAccountModal() {
+      document.getElementById('createAccountModal').classList.add('active');
+    }
+    function closeCreateAccountModal() {
+      document.getElementById('createAccountModal').classList.remove('active');
+    }
+    async function handleCreateAccount(e) {
+      e.preventDefault();
+      const body = {
+        businessName: document.getElementById('newBizName').value,
+        contactName: document.getElementById('newContactName').value,
+        email: document.getElementById('newEmail').value,
+        accountType: document.getElementById('newAccountType').value,
+        plan: document.getElementById('newPlan').value,
+        notes: document.getElementById('newNotes').value
+      };
+      try {
+        const res = await fetch('/api/master-admin/accounts', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.ok) {
+          closeCreateAccountModal();
+          alert('Account successfully created: ' + data.account.businessName);
+          loadPanelData(currentPanel);
+        } else {
+          alert('Error: ' + (data.error || 'Failed to create account'));
+        }
+      } catch(err) { alert('Request failed: ' + err.message); }
+    }
+
+    function openEditAccountModal(accountId) {
+      const acc = allSubscribersData.find(a => a.id === accountId);
+      if (!acc) return;
+      document.getElementById('editAccountId').value = acc.id;
+      document.getElementById('editBizName').value = acc.businessName;
+      document.getElementById('editContactName').value = acc.contactName;
+      document.getElementById('editEmail').value = acc.email;
+      document.getElementById('editPlan').value = acc.plan;
+      document.getElementById('editAccountModal').classList.add('active');
+    }
+    function closeEditAccountModal() {
+      document.getElementById('editAccountModal').classList.remove('active');
+    }
+    async function handleEditAccount(e) {
+      e.preventDefault();
+      const id = document.getElementById('editAccountId').value;
+      const body = {
+        businessName: document.getElementById('editBizName').value,
+        contactName: document.getElementById('editContactName').value,
+        email: document.getElementById('editEmail').value,
+        plan: document.getElementById('editPlan').value,
+        reason: document.getElementById('editReason').value || 'Master Admin update'
+      };
+      try {
+        const res = await fetch('/api/master-admin/accounts/' + id, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.ok) {
+          closeEditAccountModal();
+          alert('Account updated successfully.');
+          loadPanelData(currentPanel);
+        } else {
+          alert('Error: ' + (data.error || 'Failed to update'));
+        }
+      } catch(err) { alert('Request failed: ' + err.message); }
+    }
+
+    async function toggleAccountStatus(id, action) {
+      if (!confirm('Are you sure you want to ' + action + ' this account?')) return;
+      try {
+        const res = await fetch('/api/master-admin/accounts/' + id + '/' + action, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ reason: 'Admin ' + action + ' toggle' })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          alert(data.message);
+          loadPanelData(currentPanel);
+        } else {
+          alert('Error: ' + (data.error || 'Action failed'));
+        }
+      } catch(err) { alert('Request error: ' + err.message); }
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
+
+    // Auto-init
+    window.addEventListener('DOMContentLoaded', () => {
+      loadOverview();
+    });
+  </script>
+</body>
+</html>

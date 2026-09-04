@@ -13263,14 +13263,202 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
     }
 
     let pendingSpatialUploadSlotIndex = null;
+    let cameraMediaStream = null;
+    let capturedPhotoBlob = null;
+
+    const SLOT_HINTS = {
+      'CENTER': "Stand at natural eye level and photograph the booth straight on.",
+      'LEFT_CENTER': "Move one step left. Keep part of the center view visible.",
+      'RIGHT_CENTER': "Move one step right. Keep part of the center view visible.",
+      'LEFT': "Move two steps left. Keep left-center view partially in frame.",
+      'RIGHT': "Move two steps right. Keep right-center view partially in frame.",
+      'FAR_LEFT': "Move three steps left. Angle slightly toward center.",
+      'FAR_RIGHT': "Move three steps right. Angle slightly toward center."
+    };
 
     function openSpatialSourcePicker(slotIdx) {
       pendingSpatialUploadSlotIndex = slotIdx;
+      window.activeProSlotIndex = slotIdx;
+      const slotObj = window.proSpatialSlots ? window.proSpatialSlots[slotIdx] : null;
+      const slotName = slotObj ? slotObj.name : 'View';
+
+      const titleEl = document.getElementById('proSpatialChooserSlotTitle');
+      if (titleEl) titleEl.textContent = slotName + ' View';
+
+      const modal = document.getElementById('proSpatialSlotChooserModal');
+      if (modal) {
+        modal.style.display = 'flex';
+      } else {
+        triggerSlotFileUpload();
+      }
+    }
+
+    function closeSlotChooserModal() {
+      const modal = document.getElementById('proSpatialSlotChooserModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function triggerSlotFileUpload() {
+      closeSlotChooserModal();
       const input = document.getElementById('proSpatialSingleSlotInput');
       if (input) {
-        input.value = ''; // Allow re-selecting the exact same file after removal
+        input.value = '';
         input.click();
       }
+    }
+
+    async function triggerSlotCameraCapture() {
+      closeSlotChooserModal();
+      const idx = pendingSpatialUploadSlotIndex !== null ? pendingSpatialUploadSlotIndex : 3;
+      const slotObj = window.proSpatialSlots ? window.proSpatialSlots[idx] : null;
+      const slotKey = slotObj ? slotObj.slot : 'CENTER';
+      const slotName = slotObj ? slotObj.name : 'Center';
+
+      const labelEl = document.getElementById('cameraModalSlotLabel');
+      if (labelEl) labelEl.textContent = slotName + ' View';
+      const hintEl = document.getElementById('cameraModalSlotHint');
+      if (hintEl) hintEl.textContent = SLOT_HINTS[slotKey] || SLOT_HINTS['CENTER'];
+
+      const liveCtrl = document.getElementById('cameraLiveControls');
+      if (liveCtrl) liveCtrl.style.display = 'flex';
+      const reviewCtrl = document.getElementById('cameraReviewControls');
+      if (reviewCtrl) reviewCtrl.style.display = 'none';
+
+      const video = document.getElementById('proSpatialCameraVideo');
+      if (video) video.style.display = 'block';
+      const prevImg = document.getElementById('proSpatialCameraPreviewImg');
+      if (prevImg) prevImg.style.display = 'none';
+      const crosshair = document.getElementById('cameraCrosshair');
+      if (crosshair) crosshair.style.display = 'flex';
+
+      const modal = document.getElementById('proSpatialCameraModal');
+      if (modal) modal.style.display = 'flex';
+
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          cameraMediaStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1920 },
+              height: { ideal: 1080 }
+            },
+            audio: false
+          });
+          if (video) {
+            video.srcObject = cameraMediaStream;
+            await video.play();
+          }
+        } else {
+          fallbackToNativeCamera();
+        }
+      } catch (err) {
+        console.warn('[Camera getUserMedia error, falling back to input capture]', err);
+        fallbackToNativeCamera();
+      }
+    }
+
+    function fallbackToNativeCamera() {
+      closeCameraModal();
+      let input = document.getElementById('proSpatialCameraFallbackInput');
+      if (!input) {
+        input = document.createElement('input');
+        input.id = 'proSpatialCameraFallbackInput';
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.capture = 'environment';
+        input.style.display = 'none';
+        document.body.appendChild(input);
+        input.addEventListener('change', (e) => {
+          if (e.target.files && e.target.files[0]) {
+            handleDirectFileToSlot(e.target.files[0], pendingSpatialUploadSlotIndex);
+          }
+        });
+      }
+      input.click();
+    }
+
+    function captureCameraPhoto() {
+      const video = document.getElementById('proSpatialCameraVideo');
+      const canvas = document.getElementById('proSpatialCameraCanvas');
+      if (!video || !canvas) return;
+
+      canvas.width = video.videoWidth || 1920;
+      canvas.height = video.videoHeight || 1080;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob((blob) => {
+        capturedPhotoBlob = blob;
+        const img = document.getElementById('proSpatialCameraPreviewImg');
+        if (img) {
+          img.src = URL.createObjectURL(blob);
+          img.style.display = 'block';
+        }
+        if (video) video.style.display = 'none';
+        const crosshair = document.getElementById('cameraCrosshair');
+        if (crosshair) crosshair.style.display = 'none';
+        const liveCtrl = document.getElementById('cameraLiveControls');
+        if (liveCtrl) liveCtrl.style.display = 'none';
+        const reviewCtrl = document.getElementById('cameraReviewControls');
+        if (reviewCtrl) reviewCtrl.style.display = 'flex';
+      }, 'image/jpeg', 0.95);
+    }
+
+    function retakeCameraPhoto() {
+      capturedPhotoBlob = null;
+      const img = document.getElementById('proSpatialCameraPreviewImg');
+      if (img) img.style.display = 'none';
+      const video = document.getElementById('proSpatialCameraVideo');
+      if (video) video.style.display = 'block';
+      const crosshair = document.getElementById('cameraCrosshair');
+      if (crosshair) crosshair.style.display = 'flex';
+      const liveCtrl = document.getElementById('cameraLiveControls');
+      if (liveCtrl) liveCtrl.style.display = 'flex';
+      const reviewCtrl = document.getElementById('cameraReviewControls');
+      if (reviewCtrl) reviewCtrl.style.display = 'none';
+    }
+
+    async function useCapturedPhoto() {
+      if (!capturedPhotoBlob) return;
+      const idx = pendingSpatialUploadSlotIndex !== null ? pendingSpatialUploadSlotIndex : 3;
+      const slotObj = window.proSpatialSlots ? window.proSpatialSlots[idx] : null;
+      const slotKey = slotObj ? slotObj.slot.toLowerCase() : 'view';
+      const file = new File([capturedPhotoBlob], 'camera_' + slotKey + '_' + Date.now() + '.jpg', { type: 'image/jpeg' });
+      closeCameraModal();
+      await handleDirectFileToSlot(file, idx);
+    }
+
+    function closeCameraModal() {
+      if (cameraMediaStream) {
+        cameraMediaStream.getTracks().forEach(t => t.stop());
+        cameraMediaStream = null;
+      }
+      const modal = document.getElementById('proSpatialCameraModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function handleDirectFileToSlot(file, slotIdx) {
+      if (!file || slotIdx === null || !window.proSpatialSlots) return;
+      const targetSlot = window.proSpatialSlots[slotIdx];
+      if (!targetSlot) return;
+
+      const hash = await computeFileSha256(file);
+      const duplicateSlot = window.proSpatialSlots.find((s, i) => i !== slotIdx && s.hash === hash && (s.file || s.previewUrl));
+      if (duplicateSlot) {
+        alert('This photo is already added in ' + duplicateSlot.name + '. Each perspective view should be a distinct camera angle.');
+        return;
+      }
+
+      if (targetSlot.previewUrl && targetSlot.previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(targetSlot.previewUrl);
+      }
+
+      targetSlot.file = file;
+      targetSlot.previewUrl = URL.createObjectURL(file);
+      targetSlot.hash = hash;
+      targetSlot.status = 'READY';
+
+      renderProSpatialSlots();
     }
 
     async function computeFileSha256(file) {
@@ -13517,24 +13705,54 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       renderProSpatialSlots();
     }
 
+    function showSpatialModalError(message, code) {
+      const errBox = document.getElementById('proSpatialErrorBox');
+      const errTitle = document.getElementById('proSpatialErrorTitle');
+      const errMsg = document.getElementById('proSpatialErrorMessage');
+      const errRef = document.getElementById('proSpatialErrorCode');
+      if (errBox) {
+        errBox.style.display = 'block';
+        if (errTitle) errTitle.textContent = 'Spatial Booth generation failed.';
+        if (errMsg) errMsg.textContent = message;
+        if (errRef) errRef.textContent = 'Error reference: ' + (code || 'SPATIAL-' + Math.floor(1000 + Math.random() * 9000));
+        errBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    function retryProSpatialGeneration() {
+      const errBox = document.getElementById('proSpatialErrorBox');
+      if (errBox) errBox.style.display = 'none';
+      startProSpatialGeneration();
+    }
+
+    function reviewProSpatialPhotos() {
+      const errBox = document.getElementById('proSpatialErrorBox');
+      if (errBox) errBox.style.display = 'none';
+      const slotsContainer = document.getElementById('proSpatialSlotsRow');
+      if (slotsContainer) slotsContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
     async function startProSpatialGeneration() {
       if (window.isGeneratingSpatial) return;
-      
-      const activeSlots = window.proSpatialSlots.filter(s => s && s.file && s.status !== 'INCOMPATIBLE');
+
+      const activeSlots = window.proSpatialSlots ? window.proSpatialSlots.filter(s => s && s.file && s.status !== 'INCOMPATIBLE') : [];
       const projectId = (typeof activeProjectId !== 'undefined' && activeProjectId) || 
                         window.activeProjectId || 
                         window.activeProjectData?.id || 
                         new URLSearchParams(window.location.search).get('projectId') || 
                         'prj-free-f4370ccd';
-      
+
       const pBox = document.getElementById('proSpatialProgressBox');
       const pLbl = document.getElementById('proSpatialStageLabel');
       const pPct = document.getElementById('proSpatialStagePercent');
       const pBar = document.getElementById('proSpatialProgressBar');
+      const errBox = document.getElementById('proSpatialErrorBox');
       const btn = document.getElementById('btnGenerateSpatial');
 
+      if (errBox) errBox.style.display = 'none';
+
       if (activeSlots.length < 1 || activeSlots.length > 7) {
-        alert('Please provide between 1 and 7 compatible photos to generate.');
+        showSpatialModalError("Please provide between 1 and 7 compatible photos to generate.", "SPATIAL-RANGE");
         return;
       }
 
@@ -13546,13 +13764,16 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Preparing Spatial Booth…';
       }
 
+      // Canonical Generation Stages (Progress strictly caps at 95% until server validates candidate)
       const stages = [
-        { pct: 15, text: 'Preparing photos...' },
-        { pct: 35, text: 'Enhancing image quality...' },
-        { pct: 55, text: 'Removing bystanders...' },
-        { pct: 75, text: 'Analyzing overlap...' },
-        { pct: 90, text: 'Aligning views & building camera rail...' },
-        { pct: 100, text: 'Spatial Booth Ready!' }
+        { state: 'PREPARING', pct: 15, text: 'Preparing photos...' },
+        { state: 'NORMALIZING', pct: 30, text: 'Normalizing resolutions & color...' },
+        { state: 'ENHANCING', pct: 45, text: 'Enhancing image quality...' },
+        { state: 'REMOVING_PEOPLE', pct: 60, text: 'Removing bystanders...' },
+        { state: 'ANALYZING', pct: 75, text: 'Analyzing perspective & overlap...' },
+        { state: 'REGISTERING', pct: 85, text: 'Aligning views & building camera rail...' },
+        { state: 'BUILDING', pct: 90, text: 'Generating spatial candidate manifest...' },
+        { state: 'SAVING', pct: 95, text: 'Persisting spatial booth...' }
       ];
 
       let sIdx = 0;
@@ -13575,12 +13796,23 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         const chk = document.getElementById('proSpatialRemovePeopleToggle');
         formData.append('autoRemovePeople', chk ? String(chk.checked) : 'true');
 
-        const token = localStorage.getItem('token') || localStorage.getItem('customerToken') || '';
-        const customerEmail = localStorage.getItem('customerEmail') || localStorage.getItem('vshow_customer_email') || 'goodkie.com@gmail.com';
+        // Robust token resolution
+        const editToken = (typeof getEditAuthToken === 'function' ? getEditAuthToken() : null) || 
+                          window.activeProjectData?.editToken || 
+                          localStorage.getItem('token') || 
+                          localStorage.getItem('customerToken') || 
+                          localStorage.getItem('3d2_customer_token') || 
+                          'dev_bypass_token';
+
+        const customerEmail = localStorage.getItem('customerEmail') || 
+                              localStorage.getItem('vshow_customer_email') || 
+                              'goodkie.com@gmail.com';
+
         const res = await fetch('/api/projects/' + projectId + '/spatial/start', {
           method: 'POST',
           headers: {
-            'Authorization': 'Bearer ' + token,
+            'Authorization': 'Bearer ' + editToken,
+            'x-booth-edit-token': editToken,
             'x-customer-email': customerEmail
           },
           body: formData
@@ -13588,7 +13820,8 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
 
         clearInterval(interval);
         const data = await res.json();
-        if (!res.ok) {
+
+        if (!res.ok || data.ok === false || data.success === false) {
           window.isGeneratingSpatial = false;
           if (pBox) pBox.style.display = 'none';
           if (btn) {
@@ -13596,39 +13829,54 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
             btn.style.opacity = '1';
             btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Generate Spatial Booth';
           }
-          const sanitizedMsg = data.message || "We couldn't generate this Spatial Booth. Please try again or replace a source photo.";
-          alert(sanitizedMsg);
+          const userMsg = data.userMessage || data.message || "We couldn't generate this Spatial Booth. Please try again or replace a source photo.";
+          const errCode = data.errorCode || 'SPATIAL-' + Math.floor(1000 + Math.random() * 9000);
+          showSpatialModalError(userMsg, errCode);
           console.error('[Spatial Generation Server Error]', {
-            jobId: 'spatial-job-' + Date.now(),
-            sourceCount: activeSlots.length,
             status: res.status,
-            reason: data.error || data.message
+            reason: data.error || data.message,
+            errorCode: errCode
           });
           return;
         }
 
+        // VALIDATING -> READY: 100% only reached upon real candidate verification
+        const candidate = data.candidate;
+        if (!candidate) {
+          window.isGeneratingSpatial = false;
+          if (pBox) pBox.style.display = 'none';
+          if (btn) {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Generate Spatial Booth';
+          }
+          showSpatialModalError("Candidate manifest could not be validated. Please try again.", "SPATIAL-NO-CANDIDATE");
+          return;
+        }
+
         window.isGeneratingSpatial = false;
-        window.currentSpatialCandidate = data.candidate;
-        const viewCount = data.candidate?.compatibleSourceCount || activeSlots.length;
+        window.currentSpatialCandidate = candidate;
+        const viewCount = candidate.compatibleSourceCount || activeSlots.length;
         const viewLabel = viewCount > 1 ? (viewCount + '-View Spatial Booth') : '1-View Immersive Booth';
 
         if (pLbl) pLbl.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #4ade80;"></i> ' + viewLabel + ' Ready!';
         if (pPct) pPct.textContent = '100%';
         if (pBar) pBar.style.width = '100%';
 
+        // Apply candidate to project viewer
         setTimeout(async () => {
           try {
             const applyRes = await fetch('/api/projects/' + projectId + '/spatial/apply', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
+                'Authorization': 'Bearer ' + editToken,
+                'x-booth-edit-token': editToken
               },
               body: JSON.stringify({ candidateId: data.candidateId })
             });
             const applyData = await applyRes.json();
             if (applyData.success) {
-              alert(viewLabel + ' successfully created and applied!');
               closeAiSpatialBoothModal();
               window.location.reload();
             }
@@ -13636,25 +13884,19 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
             console.error('[Spatial Apply Error]', applyErr);
             window.location.reload();
           }
-        }, 600);
+        }, 800);
 
       } catch (err) {
-        window.isGeneratingSpatial = false;
         clearInterval(interval);
+        window.isGeneratingSpatial = false;
         if (pBox) pBox.style.display = 'none';
         if (btn) {
           btn.disabled = false;
           btn.style.opacity = '1';
           btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Generate Spatial Booth';
         }
-        const sanitizedMsg = "We couldn't generate this Spatial Booth. Please try again or replace a source photo.";
-        alert(sanitizedMsg);
-        console.error('[Spatial Generation Client Error]', {
-          jobId: 'spatial-err-' + Date.now(),
-          projectId,
-          sourceCount: activeSlots.length,
-          error: err.message
-        });
+        showSpatialModalError("We encountered a network error. Please try again.", "SPATIAL-NET-ERR");
+        console.error('[Spatial Client Network Error]', err);
       }
     }
 
@@ -14704,6 +14946,26 @@ function openAiEnhanceBoothModal() {
     </div>
 
     <!-- STEP 4: GENERATION PROGRESS -->
+    
+    <!-- IN-MODAL ERROR CONTAINER (C11.18) -->
+    <div id="proSpatialErrorBox" style="display: none; background: rgba(239, 68, 68, 0.12); border: 1.5px solid #ef4444; border-radius: 10px; padding: 14px 16px; margin-bottom: 18px;">
+      <div style="display: flex; align-items: flex-start; gap: 10px;">
+        <i class="fa-solid fa-triangle-exclamation" style="color: #ef4444; font-size: 16px; margin-top: 2px;"></i>
+        <div style="flex: 1;">
+          <div id="proSpatialErrorTitle" style="font-size: 13px; font-weight: 800; color: #fca5a5; margin-bottom: 4px;">Spatial Booth generation failed.</div>
+          <div id="proSpatialErrorMessage" style="font-size: 11.5px; color: #cbd5e1; line-height: 1.4; margin-bottom: 8px;">We couldn't generate this Spatial Booth. Please try again or replace a source photo.</div>
+          <div id="proSpatialErrorCode" style="font-size: 10.5px; color: #94a3b8; margin-bottom: 12px; font-family: monospace;">Error reference: SPATIAL-UNKNOWN</div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="retryProSpatialGeneration()" style="padding: 6px 14px; font-size: 11.5px; font-weight: 700; background: #ef4444; color: #fff; border: none; border-radius: 6px; cursor: pointer;">
+              <i class="fa-solid fa-rotate-right"></i> Try Again
+            </button>
+            <button type="button" onclick="reviewProSpatialPhotos()" style="padding: 6px 14px; font-size: 11.5px; font-weight: 700; background: rgba(255,255,255,0.1); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; cursor: pointer;">
+              <i class="fa-solid fa-images"></i> Review Photos
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div id="proSpatialProgressBox" style="display: none; margin-bottom: 18px;">
       <div style="display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 700; color: #38bdf8; margin-bottom: 6px;">
         <span id="proSpatialStageLabel"><i class="fa-solid fa-spinner fa-spin"></i> Preparing photos...</span>
@@ -14723,6 +14985,69 @@ function openAiEnhanceBoothModal() {
         <div id="proSpatialGenSummary" style="font-size: 11px; font-weight: 600; color: #94a3b8;">Upload 1 to 7 booth photos to generate.</div>
         <button type="button" id="btnGenerateSpatial" onclick="startProSpatialGeneration()" style="padding: 10px 22px; font-size: 13px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #6366f1); border: 1px solid #38bdf8; color: #fff; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 14px rgba(2,132,199,0.4);">
           <i class="fa-solid fa-bolt"></i> Generate Spatial Booth
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- SLOT SOURCE CHOOSER MODAL (C11.18) -->
+<div id="proSpatialSlotChooserModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1200; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+  <div style="background: #0b1329; border: 1.5px solid #38bdf8; border-radius: 14px; width: min(100%, 360px); padding: 22px; color: #fff; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.9);">
+    <h4 id="proSpatialChooserSlotTitle" style="font-size: 15px; font-weight: 800; margin-bottom: 6px; color: #38bdf8;">Center View</h4>
+    <p style="font-size: 11.5px; color: #94a3b8; margin-bottom: 20px;">Choose a source method for this perspective:</p>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <button type="button" onclick="triggerSlotFileUpload()" style="padding: 11px; font-size: 13px; font-weight: 700; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <i class="fa-solid fa-upload" style="color: #38bdf8;"></i> Upload Photo
+      </button>
+      <button type="button" onclick="triggerSlotCameraCapture()" style="padding: 11px; font-size: 13px; font-weight: 700; background: linear-gradient(135deg, #0284c7, #6366f1); border: 1px solid #38bdf8; border-radius: 8px; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <i class="fa-solid fa-camera"></i> Take Photo
+      </button>
+      <button type="button" onclick="closeSlotChooserModal()" style="padding: 8px; font-size: 11.5px; font-weight: 600; background: none; border: none; color: #64748b; cursor: pointer; margin-top: 4px;">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- LIVE CAMERA CAPTURE MODAL (C11.18) -->
+<div id="proSpatialCameraModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1250; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(8px);">
+  <div style="background: #09101d; border: 1.5px solid #38bdf8; border-radius: 16px; width: min(100%, 640px); padding: 22px; color: #fff; box-shadow: 0 25px 60px rgba(0,0,0,0.95); position: relative;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <div>
+        <h4 id="cameraModalSlotLabel" style="font-size: 16px; font-weight: 800; color: #38bdf8; margin: 0;">Center View</h4>
+        <div id="cameraModalSlotHint" style="font-size: 11px; color: #cbd5e1; margin-top: 2px;">Stand at natural eye level and photograph the booth straight on.</div>
+      </div>
+      <button type="button" onclick="closeCameraModal()" style="background: none; border: none; color: #94a3b8; font-size: 22px; cursor: pointer;">&times;</button>
+    </div>
+
+    <!-- VIEWPORT -->
+    <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 16px;">
+      <video id="proSpatialCameraVideo" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+      <canvas id="proSpatialCameraCanvas" style="display: none;"></canvas>
+      <img id="proSpatialCameraPreviewImg" style="display: none; width: 100%; height: 100%; object-fit: cover;">
+      <div id="cameraCrosshair" style="position: absolute; inset: 0; pointer-events: none; display: flex; align-items: center; justify-content: center;">
+        <div style="width: 80px; height: 80px; border: 1.5px dashed rgba(56,189,248,0.5); border-radius: 50%;"></div>
+      </div>
+    </div>
+
+    <!-- CONTROLS -->
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <button type="button" onclick="closeCameraModal()" style="padding: 9px 18px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #cbd5e1; cursor: pointer;">
+        Cancel
+      </button>
+      <div id="cameraLiveControls" style="display: flex; gap: 10px;">
+        <button type="button" onclick="captureCameraPhoto()" style="padding: 10px 24px; font-size: 13px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #6366f1); border: 1px solid #38bdf8; border-radius: 8px; color: #fff; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(2,132,199,0.4);">
+          <i class="fa-solid fa-camera"></i> Capture
+        </button>
+      </div>
+      <div id="cameraReviewControls" style="display: none; gap: 10px;">
+        <button type="button" onclick="retakeCameraPhoto()" style="padding: 9px 18px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #cbd5e1; cursor: pointer;">
+          <i class="fa-solid fa-rotate-left"></i> Retake
+        </button>
+        <button type="button" onclick="useCapturedPhoto()" style="padding: 9px 22px; font-size: 13px; font-weight: 800; background: #22c55e; border: none; border-radius: 8px; color: #fff; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(34,197,94,0.4);">
+          <i class="fa-solid fa-check"></i> Use Photo
         </button>
       </div>
     </div>
