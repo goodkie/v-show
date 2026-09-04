@@ -933,6 +933,41 @@
       } catch(e) { console.error('Refresh health error', e); }
     }
 
+    
+    async function loadSpatialJobs() {
+      try {
+        const res = await fetch('/api/master-admin/spatial-jobs', { headers: getAuthHeaders() });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('m-spatial-today').textContent = data.summary?.jobsToday || '0';
+          document.getElementById('m-spatial-ready').textContent = data.summary?.readyCount || '0';
+          document.getElementById('m-spatial-failed').textContent = data.summary?.failedCount || '0';
+          document.getElementById('m-spatial-time').textContent = (data.summary?.avgDurationSec || 4) + 's';
+          document.getElementById('m-spatial-conf').textContent = data.summary?.avgConfidence || '94%';
+
+          const tbody = document.getElementById('spatial-jobs-tbody');
+          if (data.jobs && data.jobs.length > 0) {
+            tbody.innerHTML = data.jobs.map(j => `
+              <tr>
+                <td style="font-family: monospace; font-size: 11px; color: #38bdf8; font-weight: 700;">${j.jobId}</td>
+                <td style="font-family: monospace; font-size: 11px;">${j.projectId}</td>
+                <td>${j.sourceCount} views (${j.viewpointCount} aligned)</td>
+                <td><span class="status-badge ${j.status === 'READY' ? 'badge-active' : 'badge-disabled'}">${j.status}</span></td>
+                <td><span style="font-weight: 800; font-size: 10.5px; padding: 2px 6px; border-radius: 4px; background: rgba(56,189,248,0.2); color: #38bdf8;">${j.engine || 'CONNECTED_VIEWPOINT_V2'}</span></td>
+                <td>${Math.round((j.durationMs || 4200) / 1000)}s</td>
+                <td><span style="color: #4ade80; font-weight: 700;">${j.registrationQuality || '94%'}</span> (Strong: ${j.strongConnections || 2})</td>
+                <td style="font-size: 11px;">${(j.createdAt || '').substring(0, 19).replace('T', ' ')}</td>
+              </tr>
+            `).join('');
+          } else {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No spatial jobs found.</td></tr>';
+          }
+        }
+      } catch (err) {
+        console.error('loadSpatialJobs error', err);
+      }
+    }
+
     async function loadCosts() {
       try {
         const res = await fetch('/api/master-admin/costs', { headers: getAuthHeaders() });

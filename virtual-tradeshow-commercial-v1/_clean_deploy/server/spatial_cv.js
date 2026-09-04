@@ -380,6 +380,7 @@ class SpatialCV {
 
       const transitionPreset = (transitionConfidence === 'LOW') ? 'NEUTRAL_CROSSFADE' : 'ALIGNED_DISSOLVE';
 
+      // Forward connection: vA -> vB (RIGHT)
       connections.push({
         from: vA.slot,
         to: vB.slot,
@@ -387,12 +388,40 @@ class SpatialCV {
         toSlot: vB.slot,
         fromViewId: 'vp-' + vA.slot.toLowerCase(),
         toViewId: 'vp-' + vB.slot.toLowerCase(),
+        direction: 'RIGHT',
+        fromExitPanX: 0.85,
+        toEntryPanX: 0.20,
         sharedCenterFrom: centA,
         sharedCenterTo: centB,
         fromFov: 50,
         toFov: 50,
         relativeScale: Math.max(0.90, Math.min(1.10, relScale || 1.0)),
         relativeRotation: relRot || 0.0,
+        matchesCount: matchRes.matchesCount,
+        inliersCount: matchRes.inlierCount,
+        inlierRatio: matchRes.inlierRatio,
+        confidence: transitionConfidence,
+        transitionPreset,
+        status: transitionConfidence !== 'REJECTED' ? 'CONNECTED' : 'DISCONNECTED'
+      });
+
+      // Reverse connection: vB -> vA (LEFT)
+      connections.push({
+        from: vB.slot,
+        to: vA.slot,
+        fromSlot: vB.slot,
+        toSlot: vA.slot,
+        fromViewId: 'vp-' + vB.slot.toLowerCase(),
+        toViewId: 'vp-' + vA.slot.toLowerCase(),
+        direction: 'LEFT',
+        fromExitPanX: 0.15,
+        toEntryPanX: 0.80,
+        sharedCenterFrom: centB,
+        sharedCenterTo: centA,
+        fromFov: 50,
+        toFov: 50,
+        relativeScale: Math.max(0.90, Math.min(1.10, relScale ? (1.0 / relScale) : 1.0)),
+        relativeRotation: -(relRot || 0.0),
         matchesCount: matchRes.matchesCount,
         inliersCount: matchRes.inlierCount,
         inlierRatio: matchRes.inlierRatio,
@@ -414,7 +443,11 @@ class SpatialCV {
         cleanedAsset: v.cleanedUrl ? { url: v.cleanedUrl } : null,
         textureUrl: v.derivatives?.desktop8k?.url || v.derivatives?.standard4k?.url || v.masterUrl,
         derivatives: v.derivatives || {},
-        initialViewState: { fov: 50, panX: 0, panY: 0, zoom: 1.0 },
+        initialViewState: { fov: 50, panX: 0.50, panY: 0, zoom: 1.0 },
+        minPanX: 0.15,
+        maxPanX: 0.85,
+        defaultPanX: 0.50,
+        overscanRatio: 0.82,
         confidence: v.confidence || 0.95
       };
     });
@@ -428,9 +461,19 @@ class SpatialCV {
     const avgConfidence = connections.length > 0 ? ((highCount + connections.length) / (2 * connections.length)) : 0.90;
 
     return {
-      engine: 'CONNECTED_VIEWPOINT_V1',
-      viewerEngineVersion: 'CONNECTED_VIEWPOINT_V1',
+      engine: 'CONNECTED_VIEWPOINT_V2',
+      viewerEngineVersion: 'CONNECTED_VIEWPOINT_V2',
       depthRequired: false,
+      structuralPixelWarp: 0,
+      stationaryMultisourceBlend: false,
+      sourceGeometryWarp: false,
+      viewportDragEnabled: true,
+      viewportHorizontalPan: true,
+      edgeResistanceEnabled: true,
+      edgeTransitionThresholdPx: 45,
+      autoAdjacentTransition: true,
+      targetEntryAlignment: true,
+      dragContinuesAfterTransition: true,
       entryViewId,
       viewpointCount: viewpoints.length,
       panoramaViewpointCount: viewpoints.filter(v => v.viewerType === 'TRUE_PANORAMA').length,
