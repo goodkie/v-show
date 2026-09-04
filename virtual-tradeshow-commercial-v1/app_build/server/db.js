@@ -13673,6 +13673,11 @@ return event;
     });
   }
 
+  getAllSpatialJobs() {
+    const data = this.read();
+    return data.spatialJobs || [];
+  }
+
   getSpatialJobById(jobId) {
     const data = this.read();
     return (data.spatialJobs || []).find(j => j.jobId === jobId) || null;

@@ -319,6 +319,7 @@
       <button class="nav-tab" onclick="switchPanel('booths')"><i class="fa-solid fa-cube"></i> Booths</button>
       <button class="nav-tab" onclick="switchPanel('health')"><i class="fa-solid fa-heart-pulse"></i> Service Health</button>
       <button class="nav-tab" onclick="switchPanel('costs')"><i class="fa-solid fa-coins"></i> Costs & Credits</button>
+      <button class="nav-tab" onclick="switchPanel('spatial')"><i class="fa-solid fa-layer-group"></i> Spatial Jobs</button>
       <button class="nav-tab" onclick="switchPanel('audit')"><i class="fa-solid fa-shield-halved"></i> Audit Log</button>
     </div>
     <div class="header-actions">
@@ -539,7 +540,65 @@
     </div>
 
     <!-- 7. AUDIT LOG PANEL -->
-    <div id="panel-audit" class="view-panel">
+    
+  <!-- SPATIAL JOBS PANEL (C11.19) -->
+  <div id="panel-spatial" class="admin-panel">
+    <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 20px;">
+      <div class="metric-card">
+        <div class="metric-title">Spatial Jobs Today</div>
+        <div class="metric-value" id="m-spatial-today">0</div>
+        <div class="metric-sub">Multi-view generation</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Jobs READY (100%)</div>
+        <div class="metric-value" id="m-spatial-ready" style="color: var(--status-success);">0</div>
+        <div class="metric-sub">Spatially aligned</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Jobs FAILED</div>
+        <div class="metric-value" id="m-spatial-failed" style="color: var(--status-error);">0</div>
+        <div class="metric-sub">Incompatible / rejected</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Avg Generation Time</div>
+        <div class="metric-value" id="m-spatial-time">42s</div>
+        <div class="metric-sub">ONNX neural super-res</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Avg Inlier Confidence</div>
+        <div class="metric-value" id="m-spatial-conf" style="color: var(--accent-cyan);">94%</div>
+        <div class="metric-sub">128-dim SIFT feature graph</div>
+      </div>
+    </div>
+
+    <div class="data-table-card">
+      <div class="table-header">
+        <div class="table-title"><i class="fa-solid fa-layer-group" style="color: var(--accent-cyan);"></i> Multi-View Spatial Jobs</div>
+        <button class="btn-action" onclick="loadSpatialJobs()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+      </div>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Job ID</th>
+              <th>Project ID</th>
+              <th>Sources</th>
+              <th>Status</th>
+              <th>Progress</th>
+              <th>Duration</th>
+              <th>Quality / Inliers</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody id="spatial-jobs-tbody">
+            <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading spatial jobs...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="panel-audit" class="view-panel">
       <div class="table-container">
         <div class="table-toolbar">
           <div style="font-weight: 800; font-size: 14px; color: #fff;">Administrative Audit Log</div>
