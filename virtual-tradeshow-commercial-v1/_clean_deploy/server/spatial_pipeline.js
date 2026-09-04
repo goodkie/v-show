@@ -170,6 +170,8 @@ class SpatialBoothPipeline {
         id: 'sview-' + uuidv4().substring(0, 8),
         slot: assignedSlot,
         originalFilename: src.originalFilename,
+        localPath: src.path,
+        path: src.path,
         status: 'GOOD',
         confidence: 0.95,
         sha256,
@@ -297,7 +299,7 @@ class SpatialBoothPipeline {
       label: compatibleViews.length > 1 ? (compatibleViews.length + '-View Spatial Booth') : '1-View Immersive Booth',
       totalSourceCount: sourceList.length,
       compatibleSourceCount: compatibleViews.length,
-      registrationConfidence: 0.92,
+      registrationConfidence: registrationConfidence || 0.92,
       usableHorizontalRange: { minYaw, maxYaw, minX, maxX },
       registrationGraph: adjacentGraph,
       adjacentGraph,
@@ -312,7 +314,7 @@ class SpatialBoothPipeline {
       activeAnchorIndex: centerAnchorIdx,
       activeBackgroundUrl: anchors[centerAnchorIdx]?.textureUrl || processedViews[0]?.masterUrl,
       derivatives: anchors[centerAnchorIdx]?.derivatives || {},
-      assetManifest: sortedViews.map(v => ({
+      assetManifest: compatibleViews.map(v => ({
         slot: v.slot,
         masterUrl: v.masterUrl,
         derivatives: v.derivatives,
