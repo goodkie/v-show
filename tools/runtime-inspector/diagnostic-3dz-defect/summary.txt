@@ -1,0 +1,53 @@
+============================================================
+RUNTIME_INSPECTOR_REPORT (ChatGPT Optimized)
+============================================================
+
+APP=3DZ Virtual Tradeshow Studio
+APP_ID=3dz-virtual-tradeshow
+ENVIRONMENT=localhost
+URL=https://v-show-commercial-v1-production.up.railway.app/app/admin/booths
+
+SESSION_ID=RI-20260904-nbik67
+SESSION_START=2026-09-04T18:01:57.261Z
+CAPTURE_TIME=2026-09-04T18:01:57.268Z
+DURATION_MS=7
+PRIVACY_MODE=STANDARD
+
+------------------------------------------------------------
+DIAGNOSTIC VERDICT
+------------------------------------------------------------
+FIRST_FAILED_STAGE=RENDER
+PRIMARY_FAILURE=Canvas visible but uniformly background/black/white
+
+ERROR_COUNT=0
+NETWORK_FAILURE_COUNT=0
+
+LAST_USER_ACTION=button  (Apply to Active Booth)
+
+LAST_REQUEST=POST https://v-show-commercial-v1-production.up.railway.app/api/projects/prj_3dz_p0_prod/spatial/apply
+LAST_REQUEST_STATUS=200
+
+------------------------------------------------------------
+TOP ERRORS
+------------------------------------------------------------
+None
+
+------------------------------------------------------------
+ADAPTER SPECIFIC RUNTIME STATE
+------------------------------------------------------------
+ID: 3dz v1.0.0
+  PROJECT_ID: "prj_3dz_p0_prod"
+  VIEWER_MODE: null
+  ACTIVE_SPATIAL_VERSION: null
+  CANDIDATE_ID: null
+  CANDIDATE_ENGINE: null
+  PREVIEW_MODAL_OPEN: undefined
+  ACTIVE_SPATIAL_RAIL_PRESENT: undefined
+
+------------------------------------------------------------
+SAFETY & REDACTION
+------------------------------------------------------------
+SENSITIVE_DATA_REDACTED=true
+REDACTION_COUNT=0
+SECRET_SCAN_STATUS=PASS
+============================================================

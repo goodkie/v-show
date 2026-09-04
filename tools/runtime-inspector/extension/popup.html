@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Runtime Inspector</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      <span class="badge-ri">RI</span>
+      <span class="title">Runtime Inspector</span>
+    </div>
+    <span id="envBadge" class="badge-env">DETECTING</span>
+  </div>
+
+  <div class="status-card">
+    <div class="row">
+      <span class="label">App:</span>
+      <span id="appName" class="val">Loading...</span>
+    </div>
+    <div class="row">
+      <span class="label">Adapter:</span>
+      <span id="adapterName" class="val">None</span>
+    </div>
+    <div class="row">
+      <span class="label">Session:</span>
+      <span id="sessionId" class="val-mono">--</span>
+    </div>
+  </div>
+
+  <div class="telemetry-grid">
+    <div class="telemetry-box">
+      <div class="num" id="errCount">0</div>
+      <div class="lbl">Errors</div>
+    </div>
+    <div class="telemetry-box">
+      <div class="num" id="netCount">0</div>
+      <div class="lbl">Network</div>
+    </div>
+    <div class="telemetry-box">
+      <div class="num" id="eventCount">0</div>
+      <div class="lbl">Events</div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="btnToggleRecord" class="btn btn-primary">Start Recording</button>
+    <button id="btnMarkProblem" class="btn btn-warn">Mark Problem Here</button>
+    <button id="btnSnapshot" class="btn btn-secondary">Capture Snapshot</button>
+    <button id="btnExport" class="btn btn-success">Export Diagnostic</button>
+  </div>
+
+  <div class="footer">
+    <a href="#" id="linkOptions">Options & Domains</a>
+    <a href="#" id="linkInspector">Details Page</a>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

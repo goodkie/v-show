@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RuntimeInspectorDiagnostic",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "inspectorVersion",
+    "session",
+    "app",
+    "environment",
+    "timeline",
+    "errors",
+    "network"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "string", "enum": ["1.0.0"] },
+    "inspectorVersion": { "type": "string" },
+    "session": {
+      "type": "object",
+      "required": ["sessionId", "startTime", "captureTime", "durationMs"],
+      "properties": {
+        "sessionId": { "type": "string" },
+        "startTime": { "type": "string" },
+        "captureTime": { "type": "string" },
+        "durationMs": { "type": "number" },
+        "mode": { "type": "string", "enum": ["RECORDING", "SNAPSHOT", "PROBLEM_MARKER"] },
+        "privacyMode": { "type": "string", "enum": ["STRICT", "STANDARD", "INTERNAL"] }
+      }
+    },
+    "app": {
+      "type": "object",
+      "required": ["appId", "appName", "url"],
+      "properties": {
+        "appId": { "type": "string" },
+        "appName": { "type": "string" },
+        "url": { "type": "string" },
+        "origin": { "type": "string" },
+        "environment": { "type": "string", "enum": ["localhost", "development", "staging", "production", "unknown"] }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "properties": {
+        "userAgent": { "type": "string" },
+        "platform": { "type": "string" },
+        "language": { "type": "string" },
+        "viewport": {
+          "type": "object",
+          "properties": {
+            "width": { "type": "number" },
+            "height": { "type": "number" },
+            "devicePixelRatio": { "type": "number" }
+          }
+        }
+      }
+    },
+    "build": {
+      "type": "object",
+      "properties": {
+        "commit": { "type": "string" },
+        "version": { "type": "string" },
+        "buildTimestamp": { "type": "string" }
+      }
+    },
+    "runtime": { "type": "object" },
+    "adapter": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "matched": { "type": "boolean" },
+        "appState": { "type": "object" },
+        "probes": { "type": "object" },
+        "summary": { "type": "object" }
+      }
+    },
+    "errors": { "type": "array" },
+    "network": { "type": "array" },
+    "timeline": { "type": "array" },
+    "performance": { "type": "object" },
+    "visual": {
+      "type": "object",
+      "properties": {
+        "canvases": { "type": "array" },
+        "webgl": { "type": "object" },
+        "hasScreenshot": { "type": "boolean" }
+      }
+    },
+    "custom": { "type": "object" },
+    "redaction": {
+      "type": "object",
+      "required": ["sanitized", "redactionCount", "privacyMode"],
+      "properties": {
+        "sanitized": { "type": "boolean" },
+        "redactionCount": { "type": "number" },
+        "privacyMode": { "type": "string" },
+        "rulesApplied": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "diagnostics": {
+      "type": "object",
+      "properties": {
+        "firstFailedStage": { "type": "string" },
+        "primaryFailure": { "type": "string" }
+      }
+    }
+  }
+}

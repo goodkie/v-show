@@ -1,0 +1,225 @@
+[
+  {
+    "id": "ev-ynx6j8l",
+    "timestamp": 1788544917263,
+    "isoTime": "2026-09-04T18:01:57.263Z",
+    "category": "APP",
+    "type": "ADAPTER_MATCHED",
+    "severity": "INFO",
+    "source": "runtime-core",
+    "correlationId": null,
+    "payload": {
+      "adapterId": "3dz",
+      "adapterName": "3DZ Spatial Virtual Tradeshow Adapter",
+      "version": "1.0.0"
+    }
+  },
+  {
+    "id": "ev-16yxoka",
+    "timestamp": 1788544917263,
+    "isoTime": "2026-09-04T18:01:57.263Z",
+    "category": "APP",
+    "type": "RUNTIME_INSPECTOR_READY",
+    "severity": "INFO",
+    "source": "runtime-core",
+    "correlationId": null,
+    "payload": {
+      "version": "1.0.0",
+      "adapter": "3dz"
+    }
+  },
+  {
+    "id": "ev-ejpjn2x",
+    "timestamp": 1788544917264,
+    "isoTime": "2026-09-04T18:01:57.264Z",
+    "category": "CONSOLE",
+    "type": "CONSOLE_LOG",
+    "severity": "INFO",
+    "source": "runtime-core",
+    "correlationId": null,
+    "payload": {
+      "level": "log",
+      "message": "Adapter matched: 3DZ Spatial Virtual Tradeshow Adapter",
+      "classification": "CONSOLE",
+      "argCount": 2
+    }
+  },
+  {
+    "id": "ev-j8oh39v",
+    "timestamp": 1788544917264,
+    "isoTime": "2026-09-04T18:01:57.264Z",
+    "category": "APP",
+    "type": "RECORDING_STARTED",
+    "severity": "INFO",
+    "source": "runtime-core",
+    "correlationId": null,
+    "payload": {
+      "sessionId": "RI-20260904-nbik67",
+      "startTime": 1788544917261
+    }
+  },
+  {
+    "id": "ev-vzkioxk",
+    "timestamp": 1788544917264,
+    "isoTime": "2026-09-04T18:01:57.264Z",
+    "category": "INTERACTION",
+    "type": "USER_CLICK",
+    "severity": "INFO",
+    "source": "runtime-core",
+    "correlationId": "VIEWPORT_OPEN-1788544917264-1",
+    "payload": {
+      "tag": "button",
+      "id": "btn-open-spatial-preview",
+      "text": "Preview Spatial View"
+    }
+  },
+  {
+    "id": "ev-v6d8c71",
+    "timestamp": 1788544917264,
+    "isoTime": "2026-09-04T18:01:57.264Z",
+    "category": "APP",
+    "type": "3DZ_VIEWER_INIT",
+    "severity": "INFO",
+    "source": "runtime-core",
+    "correlationId": "VIEWPORT_OPEN-1788544917264-1",
+    "payload": {
+      "viewerEngine": "THREE_JS_CYLINDRICAL",
+      "currentViewpoint": "CENTER",
+      "radius": 6.85,
+      "arcSpan": 1.57,
+      "meshOffset": -1.5707963,
+      "cameraFacing": "-Z",
+      "meshPosition": "+X"
+    }
+  },
+  {
+    "id": "ev-qfw4idc",
+    "timestamp": 1788544917265,
+    "isoTime": "2026-09-04T18:01:57.265Z",
+    "category": "CONSOLE",
+    "type": "CONSOLE_LOG",
+    "severity": "INFO",
+    "source": "runtime-core",
+    "correlationId": null,
+    "payload": {
+      "level": "log",
+      "message": "Canvas Probe Result: {\"canvasCount\":1,\"isUniformlyBlack\":true,\"blackRatio\":1}",
+      "classification": "CONSOLE",
+      "argCount": 2
+    }
+  },
+  {
+    "id": "ev-qgn1o9x",
+    "timestamp": 1788544917266,
+    "isoTime": "2026-09-04T18:01:57.266Z",
+    "category": "APP",
+    "type": "USER_PROBLEM_MARKER",
+    "severity": "WARN",
+    "source": "runtime-core",
+    "correlationId": "PROBLEM-1788544917266-2",
+    "payload": {
+      "annotation": "BLACK SPATIAL VIEWER: Center viewport is black, uploaded photo not visible on screen",
+      "timestamp": 1788544917266,
+      "markerId": "PROBLEM-1788544917266-2"
+    }
+  },
+  {
+    "id": "ev-x8mx54q",
+    "timestamp": 1788544917266,
+    "isoTime": "2026-09-04T18:01:57.266Z",
+    "category": "INTERACTION",
+    "type": "USER_CLICK",
+    "severity": "INFO",
+    "source": "runtime-core",
+    "correlationId": "APPLY_BACKGROUND-1788544917266-3",
+    "payload": {
+      "tag": "button",
+      "id": "btn-apply-active-booth",
+      "text": "Apply to Active Booth"
+    }
+  },
+  {
+    "id": "ev-46p2xs4",
+    "timestamp": 1788544917266,
+    "isoTime": "2026-09-04T18:01:57.266Z",
+    "category": "NETWORK",
+    "type": "FETCH_START",
+    "severity": "INFO",
+    "source": "runtime-core",
+    "correlationId": "APPLY_BACKGROUND-1788544917266-3",
+    "payload": {
+      "method": "POST",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/api/projects/prj_3dz_p0_prod/spatial/apply",
+      "headers": {
+        "content-type": "application/json",
+        "authorization": "[REDACTED_SECRET]"
+      },
+      "body": {
+        "candidateId": "spatial_cand_cylindrical_v2",
+        "targetBoothId": "booth_default_01"
+      }
+    }
+  },
+  {
+    "id": "ev-edscdsh",
+    "timestamp": 1788544917266,
+    "isoTime": "2026-09-04T18:01:57.266Z",
+    "category": "NETWORK",
+    "type": "FETCH_COMPLETE",
+    "severity": "INFO",
+    "source": "runtime-core",
+    "correlationId": "APPLY_BACKGROUND-1788544917266-3",
+    "payload": {
+      "method": "POST",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/api/projects/prj_3dz_p0_prod/spatial/apply",
+      "status": 200,
+      "ok": true,
+      "durationMs": 340
+    }
+  },
+  {
+    "id": "ev-aghk5tq",
+    "timestamp": 1788544917267,
+    "isoTime": "2026-09-04T18:01:57.267Z",
+    "category": "CONSOLE",
+    "type": "CONSOLE_LOG",
+    "severity": "INFO",
+    "source": "runtime-core",
+    "correlationId": null,
+    "payload": {
+      "level": "log",
+      "message": "3DZ State Check After Apply: {\"activeBackgroundVersionId\":\"bg_v1_legacy_flat\",\"candidateId\":null,\"appliedSuccessfully\":false}",
+      "classification": "CONSOLE",
+      "argCount": 2
+    }
+  },
+  {
+    "id": "ev-ozkan2t",
+    "timestamp": 1788544917267,
+    "isoTime": "2026-09-04T18:01:57.267Z",
+    "category": "APP",
+    "type": "USER_PROBLEM_MARKER",
+    "severity": "WARN",
+    "source": "runtime-core",
+    "correlationId": "PROBLEM-1788544917267-4",
+    "payload": {
+      "annotation": "APPLY FAILURE: Active booth background remained bg_v1_legacy_flat instead of updating to spatial candidate",
+      "timestamp": 1788544917267,
+      "markerId": "PROBLEM-1788544917267-4"
+    }
+  },
+  {
+    "id": "ev-8r1q2hf",
+    "timestamp": 1788544917267,
+    "isoTime": "2026-09-04T18:01:57.267Z",
+    "category": "APP",
+    "type": "RECORDING_STOPPED",
+    "severity": "INFO",
+    "source": "runtime-core",
+    "correlationId": null,
+    "payload": {
+      "sessionId": "RI-20260904-nbik67",
+      "durationMs": 6
+    }
+  }
+]

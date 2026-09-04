@@ -1,0 +1,41 @@
+[
+  {
+    "id": "ev-46p2xs4",
+    "timestamp": 1788544917266,
+    "isoTime": "2026-09-04T18:01:57.266Z",
+    "category": "NETWORK",
+    "type": "FETCH_START",
+    "severity": "INFO",
+    "source": "runtime-core",
+    "correlationId": "APPLY_BACKGROUND-1788544917266-3",
+    "payload": {
+      "method": "POST",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/api/projects/prj_3dz_p0_prod/spatial/apply",
+      "headers": {
+        "content-type": "application/json",
+        "authorization": "[REDACTED_SECRET]"
+      },
+      "body": {
+        "candidateId": "spatial_cand_cylindrical_v2",
+        "targetBoothId": "booth_default_01"
+      }
+    }
+  },
+  {
+    "id": "ev-edscdsh",
+    "timestamp": 1788544917266,
+    "isoTime": "2026-09-04T18:01:57.266Z",
+    "category": "NETWORK",
+    "type": "FETCH_COMPLETE",
+    "severity": "INFO",
+    "source": "runtime-core",
+    "correlationId": "APPLY_BACKGROUND-1788544917266-3",
+    "payload": {
+      "method": "POST",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/api/projects/prj_3dz_p0_prod/spatial/apply",
+      "status": 200,
+      "ok": true,
+      "durationMs": 340
+    }
+  }
+]
