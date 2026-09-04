@@ -3,7 +3,7 @@
  * Module: core/monitors.js
  */
 
-class UniversalPerformanceMonitor {
+var UniversalPerformanceMonitor = class UniversalPerformanceMonitor {
   constructor(eventBus) {
     this.eventBus = eventBus;
   }
@@ -33,9 +33,9 @@ class UniversalPerformanceMonitor {
     }
     return metrics;
   }
-}
+};
 
-class UniversalStorageMonitor {
+var UniversalStorageMonitor = class UniversalStorageMonitor {
   constructor(eventBus) {
     this.eventBus = eventBus;
   }
@@ -49,8 +49,8 @@ class UniversalStorageMonitor {
           const val = localStorage.getItem(key) || '';
           result.localStorage.push({
             key,
-            sizeBytes: val.length * 2,
-            type: typeof val
+            sizeBytes: val.length,
+            isLikelySecret: /token|key|secret|auth|jwt/i.test(key)
           });
         }
       }
@@ -60,17 +60,17 @@ class UniversalStorageMonitor {
           const val = sessionStorage.getItem(key) || '';
           result.sessionStorage.push({
             key,
-            sizeBytes: val.length * 2,
-            type: typeof val
+            sizeBytes: val.length,
+            isLikelySecret: /token|key|secret|auth|jwt/i.test(key)
           });
         }
       }
     } catch (e) {}
     return result;
   }
-}
+};
 
-class UniversalInteractionMonitor {
+var UniversalInteractionMonitor = class UniversalInteractionMonitor {
   constructor(eventBus, redactionEngine) {
     this.eventBus = eventBus;
     this.redaction = redactionEngine;

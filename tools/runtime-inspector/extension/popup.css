@@ -310,3 +310,87 @@ body {
 .footer a:hover {
   text-decoration: underline;
 }
+
+/* Subsystem Health Card (Part B2) */
+.subsystems-card {
+  background: #1e293b;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border: 1px solid #334155;
+}
+
+.subsystem-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.subsystem-name {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.subsystem-val {
+  font-weight: 700;
+  font-size: 10.5px;
+}
+
+.status-idle, .status-standby {
+  color: #64748b;
+}
+
+.status-recording {
+  color: #f87171;
+  animation: pulse 1.5s infinite;
+}
+
+.status-connected, .status-capturing, .status-ready {
+  color: #34d399;
+}
+
+.status-failed {
+  color: #ef4444;
+  font-weight: 800;
+}
+
+.status-info {
+  color: #38bdf8;
+}
+
+.alert-danger {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+}
+
+/* Screenshot Privacy Card (Part D2) */
+.privacy-card {
+  background: #162032;
+  border: 1px solid #26354a;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  font-size: 11px;
+}
+
+.privacy-stats {
+  display: flex;
+  justify-content: space-between;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+
+.privacy-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #cbd5e1;
+  cursor: pointer;
+  user-select: none;
+}
+

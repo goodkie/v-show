@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Runtime Inspector V1.1</title>
+  <title>Runtime Inspector V1.2</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
@@ -12,6 +12,12 @@
       <span class="title">Runtime Inspector</span>
     </div>
     <span id="sessionStatusBadge" class="badge-status badge-idle">IDLE</span>
+  </div>
+
+  <!-- Bridge Warning Banner -->
+  <div id="bridgeWarningBanner" class="alert-banner alert-danger" style="display: none;">
+    ⚠️ <strong>Page telemetry not connected</strong><br>
+    <span style="font-size: 10px; opacity: 0.9;">Script bootstrap timed out or failed to connect.</span>
   </div>
 
   <!-- Crash Recovery / Paused Notice Banner -->
@@ -35,8 +41,36 @@
       <span id="sessionDuration" class="val-bold">00:00</span>
     </div>
     <div class="row">
-      <span class="label">Adapter:</span>
-      <span id="adapterName" class="val">3DZ / Generic</span>
+      <span class="label">Target URL:</span>
+      <span id="targetUrl" class="val-mono text-truncate">--</span>
+    </div>
+  </div>
+
+  <!-- Subsystem Health Indicators (Part B2) -->
+  <div class="subsystems-card">
+    <div class="subsystem-row">
+      <span class="subsystem-name">SESSION</span>
+      <span id="badgeSession" class="subsystem-val status-idle">● IDLE</span>
+    </div>
+    <div class="subsystem-row">
+      <span class="subsystem-name">PAGE BRIDGE</span>
+      <span id="badgePageBridge" class="subsystem-val status-standby">● STANDBY</span>
+    </div>
+    <div class="subsystem-row">
+      <span class="subsystem-name">NETWORK</span>
+      <span id="badgeNetwork" class="subsystem-val status-standby">● STANDBY</span>
+    </div>
+    <div class="subsystem-row">
+      <span class="subsystem-name">CONSOLE</span>
+      <span id="badgeConsole" class="subsystem-val status-standby">● STANDBY</span>
+    </div>
+    <div class="subsystem-row">
+      <span class="subsystem-name">ADAPTER</span>
+      <span id="badgeAdapter" class="subsystem-val status-info">● 3DZ</span>
+    </div>
+    <div class="subsystem-row">
+      <span class="subsystem-name">SCREENSHOT</span>
+      <span id="badgeScreenshot" class="subsystem-val status-ready">● READY</span>
     </div>
   </div>
 
@@ -55,19 +89,39 @@
       <div class="lbl">Errors</div>
     </div>
     <div class="telemetry-box">
-      <div class="num" id="netCount">0</div>
-      <div class="lbl">Network</div>
+      <div class="num" id="shotCount">0</div>
+      <div class="lbl">Screenshots</div>
     </div>
+  </div>
+
+  <!-- Screenshot & Privacy Status (Part D2) -->
+  <div id="screenshotPrivacyCard" class="privacy-card">
+    <div class="privacy-stats">
+      <span>Screenshots: <strong id="shotCountDetail">0</strong></span>
+      <span>Masked Regions: <strong id="maskedCountDetail">0</strong></span>
+    </div>
+    <label class="privacy-checkbox-label">
+      <input type="checkbox" id="chkIncludeScreenshots" checked>
+      Include Screenshots in Export
+    </label>
   </div>
 
   <!-- Main Controls -->
   <div class="actions">
     <button id="btnToggleRecord" class="btn btn-primary">Start Recording</button>
     <div id="recordExplanation" class="hint-text">
-      Records runtime activity across page navigation and reloads until you press Stop.
+      Records cross-page telemetry, console, network, and screenshots until stopped.
     </div>
-    <button id="btnMarkProblem" class="btn btn-warn" style="display: none;">Mark Problem Here</button>
-    <button id="btnExport" class="btn btn-success" style="display: none;">Export Diagnostic</button>
+
+    <div id="activeActionButtons" style="display: none; display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+      <button id="btnMarkProblem" class="btn btn-warn">Mark Problem Here</button>
+      <div style="display: flex; gap: 6px;">
+        <button id="btnCaptureScreenshot" class="btn btn-secondary" style="flex: 1;">Capture Screenshot</button>
+        <button id="btnCaptureSnapshot" class="btn btn-secondary" style="flex: 1;">Capture Snapshot</button>
+      </div>
+    </div>
+
+    <button id="btnExport" class="btn btn-success" style="display: none; margin-top: 8px;">Export Diagnostic ZIP</button>
   </div>
 
   <!-- Recent Sessions Section -->

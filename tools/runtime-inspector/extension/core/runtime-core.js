@@ -15,7 +15,7 @@ if (typeof require !== 'undefined') {
   var { DiagnosticExporter } = require('./exporter');
 }
 
-class RuntimeInspectorCore {
+var RuntimeInspectorCore = class RuntimeInspectorCore {
   constructor(options = {}) {
     this.privacyMode = options.privacyMode || 'STANDARD';
     this.redaction = new RedactionEngine({ privacyMode: this.privacyMode });

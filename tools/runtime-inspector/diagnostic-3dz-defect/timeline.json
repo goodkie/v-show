@@ -1,8 +1,8 @@
 [
   {
-    "id": "ev-9c214eh",
-    "timestamp": 1788548736073,
-    "isoTime": "2026-09-04T19:05:36.073Z",
+    "id": "ev-583yj21",
+    "timestamp": 1788552172950,
+    "isoTime": "2026-09-04T20:02:52.950Z",
     "category": "APP",
     "type": "ADAPTER_MATCHED",
     "severity": "INFO",
@@ -15,9 +15,9 @@
     }
   },
   {
-    "id": "ev-fz7wku5",
-    "timestamp": 1788548736074,
-    "isoTime": "2026-09-04T19:05:36.074Z",
+    "id": "ev-eb8905c",
+    "timestamp": 1788552172950,
+    "isoTime": "2026-09-04T20:02:52.950Z",
     "category": "APP",
     "type": "RUNTIME_INSPECTOR_READY",
     "severity": "INFO",
@@ -29,9 +29,9 @@
     }
   },
   {
-    "id": "ev-bjlyl2q",
-    "timestamp": 1788548736075,
-    "isoTime": "2026-09-04T19:05:36.075Z",
+    "id": "ev-d1yirvk",
+    "timestamp": 1788552172950,
+    "isoTime": "2026-09-04T20:02:52.950Z",
     "category": "CONSOLE",
     "type": "CONSOLE_LOG",
     "severity": "INFO",
@@ -45,28 +45,28 @@
     }
   },
   {
-    "id": "ev-s1gkxp3",
-    "timestamp": 1788548736075,
-    "isoTime": "2026-09-04T19:05:36.075Z",
+    "id": "ev-1zptvhj",
+    "timestamp": 1788552172951,
+    "isoTime": "2026-09-04T20:02:52.951Z",
     "category": "APP",
     "type": "RECORDING_STARTED",
     "severity": "INFO",
     "source": "runtime-core",
     "correlationId": null,
     "payload": {
-      "sessionId": "RI-20260904-vsf1dc",
-      "startTime": 1788548736071
+      "sessionId": "RI-20260904-5beqds",
+      "startTime": 1788552172948
     }
   },
   {
-    "id": "ev-lkqksfk",
-    "timestamp": 1788548736075,
-    "isoTime": "2026-09-04T19:05:36.075Z",
+    "id": "ev-nq1zsj6",
+    "timestamp": 1788552172951,
+    "isoTime": "2026-09-04T20:02:52.951Z",
     "category": "INTERACTION",
     "type": "USER_CLICK",
     "severity": "INFO",
     "source": "runtime-core",
-    "correlationId": "VIEWPORT_OPEN-1788548736075-1",
+    "correlationId": "VIEWPORT_OPEN-1788552172951-1",
     "payload": {
       "tag": "button",
       "id": "btn-open-spatial-preview",
@@ -74,14 +74,14 @@
     }
   },
   {
-    "id": "ev-9v9sxhx",
-    "timestamp": 1788548736075,
-    "isoTime": "2026-09-04T19:05:36.075Z",
+    "id": "ev-mn64rhl",
+    "timestamp": 1788552172951,
+    "isoTime": "2026-09-04T20:02:52.951Z",
     "category": "APP",
     "type": "3DZ_VIEWER_INIT",
     "severity": "INFO",
     "source": "runtime-core",
-    "correlationId": "VIEWPORT_OPEN-1788548736075-1",
+    "correlationId": "VIEWPORT_OPEN-1788552172951-1",
     "payload": {
       "viewerEngine": "THREE_JS_CYLINDRICAL",
       "currentViewpoint": "CENTER",
@@ -93,9 +93,9 @@
     }
   },
   {
-    "id": "ev-p80fcn4",
-    "timestamp": 1788548736077,
-    "isoTime": "2026-09-04T19:05:36.077Z",
+    "id": "ev-sr6yixo",
+    "timestamp": 1788552172952,
+    "isoTime": "2026-09-04T20:02:52.952Z",
     "category": "CONSOLE",
     "type": "CONSOLE_LOG",
     "severity": "INFO",
@@ -109,29 +109,29 @@
     }
   },
   {
-    "id": "ev-iz346du",
-    "timestamp": 1788548736078,
-    "isoTime": "2026-09-04T19:05:36.078Z",
+    "id": "ev-2o3pry9",
+    "timestamp": 1788552172952,
+    "isoTime": "2026-09-04T20:02:52.952Z",
     "category": "APP",
     "type": "USER_PROBLEM_MARKER",
     "severity": "WARN",
     "source": "runtime-core",
-    "correlationId": "PROBLEM-1788548736077-2",
+    "correlationId": "PROBLEM-1788552172952-2",
     "payload": {
       "annotation": "BLACK SPATIAL VIEWER: Center viewport is black, uploaded photo not visible on screen",
-      "timestamp": 1788548736077,
-      "markerId": "PROBLEM-1788548736077-2"
+      "timestamp": 1788552172952,
+      "markerId": "PROBLEM-1788552172952-2"
     }
   },
   {
-    "id": "ev-9h6sf1l",
-    "timestamp": 1788548736078,
-    "isoTime": "2026-09-04T19:05:36.078Z",
+    "id": "ev-p6xpzb4",
+    "timestamp": 1788552172952,
+    "isoTime": "2026-09-04T20:02:52.952Z",
     "category": "INTERACTION",
     "type": "USER_CLICK",
     "severity": "INFO",
     "source": "runtime-core",
-    "correlationId": "APPLY_BACKGROUND-1788548736078-3",
+    "correlationId": "APPLY_BACKGROUND-1788552172952-3",
     "payload": {
       "tag": "button",
       "id": "btn-apply-active-booth",
@@ -139,14 +139,14 @@
     }
   },
   {
-    "id": "ev-0l5pogp",
-    "timestamp": 1788548736078,
-    "isoTime": "2026-09-04T19:05:36.078Z",
+    "id": "ev-i0d05k4",
+    "timestamp": 1788552172952,
+    "isoTime": "2026-09-04T20:02:52.952Z",
     "category": "NETWORK",
     "type": "FETCH_START",
     "severity": "INFO",
     "source": "runtime-core",
-    "correlationId": "APPLY_BACKGROUND-1788548736078-3",
+    "correlationId": "APPLY_BACKGROUND-1788552172952-3",
     "payload": {
       "method": "POST",
       "url": "https://v-show-commercial-v1-production.up.railway.app/api/projects/prj_3dz_p0_prod/spatial/apply",
@@ -161,14 +161,14 @@
     }
   },
   {
-    "id": "ev-tns34dh",
-    "timestamp": 1788548736078,
-    "isoTime": "2026-09-04T19:05:36.078Z",
+    "id": "ev-mj4s65d",
+    "timestamp": 1788552172952,
+    "isoTime": "2026-09-04T20:02:52.952Z",
     "category": "NETWORK",
     "type": "FETCH_COMPLETE",
     "severity": "INFO",
     "source": "runtime-core",
-    "correlationId": "APPLY_BACKGROUND-1788548736078-3",
+    "correlationId": "APPLY_BACKGROUND-1788552172952-3",
     "payload": {
       "method": "POST",
       "url": "https://v-show-commercial-v1-production.up.railway.app/api/projects/prj_3dz_p0_prod/spatial/apply",
@@ -178,9 +178,9 @@
     }
   },
   {
-    "id": "ev-zh1awvm",
-    "timestamp": 1788548736078,
-    "isoTime": "2026-09-04T19:05:36.078Z",
+    "id": "ev-b1a9eq2",
+    "timestamp": 1788552172953,
+    "isoTime": "2026-09-04T20:02:52.953Z",
     "category": "CONSOLE",
     "type": "CONSOLE_LOG",
     "severity": "INFO",
@@ -188,38 +188,38 @@
     "correlationId": null,
     "payload": {
       "level": "log",
-      "message": "3DZ State Check After Apply: {\"activeBackgroundVersionId\":\"bg_v1_legacy_flat\",\"candidateId\":null,\"appliedSuccessfully\":false}",
+      "message": "3DZ State Check After Apply: {\"activeBackgroundVersionId\":\"bg_v1_legacy_flat\",\"candidateId\":\"UNAVAILABLE\",\"appliedSuccessfully\":false}",
       "classification": "CONSOLE",
       "argCount": 2
     }
   },
   {
-    "id": "ev-5ora3sw",
-    "timestamp": 1788548736079,
-    "isoTime": "2026-09-04T19:05:36.079Z",
+    "id": "ev-juucl0y",
+    "timestamp": 1788552172953,
+    "isoTime": "2026-09-04T20:02:52.953Z",
     "category": "APP",
     "type": "USER_PROBLEM_MARKER",
     "severity": "WARN",
     "source": "runtime-core",
-    "correlationId": "PROBLEM-1788548736079-4",
+    "correlationId": "PROBLEM-1788552172953-4",
     "payload": {
       "annotation": "APPLY FAILURE: Active booth background remained bg_v1_legacy_flat instead of updating to spatial candidate",
-      "timestamp": 1788548736079,
-      "markerId": "PROBLEM-1788548736079-4"
+      "timestamp": 1788552172953,
+      "markerId": "PROBLEM-1788552172953-4"
     }
   },
   {
-    "id": "ev-j6cd60a",
-    "timestamp": 1788548736079,
-    "isoTime": "2026-09-04T19:05:36.079Z",
+    "id": "ev-zwkgmpm",
+    "timestamp": 1788552172953,
+    "isoTime": "2026-09-04T20:02:52.953Z",
     "category": "APP",
     "type": "RECORDING_STOPPED",
     "severity": "INFO",
     "source": "runtime-core",
     "correlationId": null,
     "payload": {
-      "sessionId": "RI-20260904-vsf1dc",
-      "durationMs": 8
+      "sessionId": "RI-20260904-5beqds",
+      "durationMs": 5
     }
   }
 ]

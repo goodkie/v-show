@@ -6,7 +6,7 @@
  * Classifies noise: BROWSER_EXTENSION_NOISE, THIRD_PARTY_NOISE, APP_ERROR.
  */
 
-class UniversalConsoleMonitor {
+var UniversalConsoleMonitor = class UniversalConsoleMonitor {
   constructor(eventBus, redactionEngine) {
     this.eventBus = eventBus;
     this.redaction = redactionEngine;

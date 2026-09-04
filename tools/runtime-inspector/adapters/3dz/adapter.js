@@ -9,7 +9,7 @@ if (typeof require !== 'undefined') {
   var config = require('./config.json');
 }
 
-class ThreeDZAdapter {
+var ThreeDZAdapter = class ThreeDZAdapter {
   constructor() {
     this.id = '3dz';
     this.name = '3DZ Spatial Virtual Tradeshow Adapter';

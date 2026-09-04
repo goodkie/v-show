@@ -6,7 +6,7 @@
  * for zero memory leak operation.
  */
 
-class BoundedBuffer {
+var BoundedBuffer = class BoundedBuffer {
   constructor(maxSize = 2000) {
     this.maxSize = maxSize;
     this.buffer = [];
@@ -36,9 +36,9 @@ class BoundedBuffer {
   get length() {
     return this.buffer.length;
   }
-}
+};
 
-class UniversalEventBus {
+var UniversalEventBus = class UniversalEventBus {
   constructor(options = {}) {
     this.version = '1.0.0';
     this.sessionId = options.sessionId || ('RI-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + Math.random().toString(36).slice(2, 8));
@@ -65,6 +65,7 @@ class UniversalEventBus {
       window.__RUNTIME_INSPECTOR__ = {
         version: this.version,
         sessionId: this.sessionId,
+        eventBus: this,
         isRecording: () => this.isRecording,
         start: () => this.start(),
         stop: () => this.stop(),

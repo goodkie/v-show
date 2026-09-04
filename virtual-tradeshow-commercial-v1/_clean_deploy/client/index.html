@@ -5701,12 +5701,17 @@
 
       const activeBg = getActiveBoothBackground(projectData); const photoUrl = activeBg?.url || projectData.sourceAsset?.previewUrl || projectData.sourceAsset?.originalUrl || '';
 
-      // Initialize Three.js WebGL Studio Engine
-      initPhotoImmersiveThree(photoUrl, projectData);
+      // Initialize or update Three.js WebGL Studio Engine
+      if (!isThreeInitialized) {
+        initPhotoImmersiveThree(photoUrl, projectData);
+      } else if (photoUrl && typeof switchActiveBoothTexture === 'function') {
+        switchActiveBoothTexture(photoUrl, projectData);
+      }
       renderProductCardsTray(projectData.products || []);
       renderProductCards(projectData.products || []);
       updateNextStepCTA();
       loadProjectViewpoints();
+      setupActiveSpatialViewerRail(projectData);
       initPinInteractionListeners();
       logAnalyticsEvent('immersive_view_started', { projectId: projectData.id });
     }
@@ -5728,7 +5733,8 @@
         let htmlBtns = '<span style="font-size: 11px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 5px;"><i class="fa-solid fa-cube"></i> SPATIAL BOOTH:</span>';
         vps.forEach((vp, idx) => {
           const slot = vp.slot || ('VIEW ' + (idx + 1));
-          const url = vp.textureUrl || vp.url || (vp.derivatives && (vp.derivatives.standard4k?.url || vp.derivatives.desktop8k?.url));
+          const resolved = typeof resolveSpatialViewpointTexture === 'function' ? resolveSpatialViewpointTexture(vp) : { url: vp.textureUrl || vp.url };
+          const url = resolved.url || vp.textureUrl || vp.url || (vp.derivatives && (vp.derivatives.standard4k?.url || vp.derivatives.desktop8k?.url));
           htmlBtns += `<button type="button" onclick="switchActiveSpatialViewpoint('${url}', '${slot}', this)" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(56,189,248,0.3); border-radius: 14px; padding: 4px 10px; font-size: 10.5px; font-weight: 700; color: #cbd5e1; cursor: pointer; transition: all 0.2s;" data-slot="${slot}">${slot}</button>`;
         });
         rail.innerHTML = htmlBtns;
@@ -13584,6 +13590,9 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
     }
 
     function closeAiSpatialBoothModal() {
+      if (typeof abortSpatialPolling === 'function') {
+        abortSpatialPolling('MODAL_CLOSED');
+      }
       const m = document.getElementById('aiSpatialBoothModal');
       if (m) {
         m.style.display = 'none';
@@ -13920,8 +13929,34 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       }
     }
 
-    function pollSpatialJob(jobId, projectId) {
-      if (spatialPollingInterval) clearInterval(spatialPollingInterval);
+    // ── C11.23-P0R2: ROBUST SEQUENTIAL SPATIAL POLLING ENGINE (MAX_CONCURRENT=1) ──
+    const MAX_CONCURRENT_POLL_REQUESTS = 1;
+    let spatialPollAbortController = null;
+    let spatialPollGenerationEpoch = 0;
+    let spatialActivePollJobId = null;
+    let isSpatialPollingActive = false;
+    let previewCandidateSnapshot = null;
+
+    function abortSpatialPolling(reason = 'MANUAL') {
+      if (spatialPollAbortController) {
+        try { spatialPollAbortController.abort(); } catch (e) {}
+        spatialPollAbortController = null;
+      }
+      isSpatialPollingActive = false;
+      spatialActivePollJobId = null;
+      console.log('[Spatial Polling] Aborted:', reason);
+    }
+    window.abortSpatialPolling = abortSpatialPolling;
+
+    async function pollSpatialJob(jobId, projectId) {
+      // Abort any existing poll flight before starting new one
+      abortSpatialPolling('NEW_POLL_STARTED');
+
+      spatialPollGenerationEpoch++;
+      const currentEpoch = spatialPollGenerationEpoch;
+      spatialActivePollJobId = jobId;
+      isSpatialPollingActive = true;
+      spatialPollAbortController = new AbortController();
 
       const pBox = document.getElementById('proSpatialProgressBox');
       const pLbl = document.getElementById('proSpatialStageLabel');
@@ -13930,16 +13965,36 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       const pStall = document.getElementById('proSpatialStallWarning');
       const btn = document.getElementById('btnGenerateSpatial');
 
-      spatialPollingInterval = setInterval(async () => {
+      console.log(`[Spatial Polling] Starting sequential loop for job=${jobId}, epoch=${currentEpoch}`);
+
+      while (isSpatialPollingActive && currentEpoch === spatialPollGenerationEpoch && jobId === spatialActivePollJobId) {
         try {
-          const res = await fetch('/api/spatial-jobs/' + jobId);
+          const fetchSignal = spatialPollAbortController ? spatialPollAbortController.signal : undefined;
+          const res = await fetch('/api/spatial-jobs/' + jobId, { signal: fetchSignal });
+
+          // Stale response guard
+          if (!isSpatialPollingActive || currentEpoch !== spatialPollGenerationEpoch || jobId !== spatialActivePollJobId) {
+            console.log(`[Spatial Polling] Discarding stale response for job=${jobId}`);
+            break;
+          }
+
           if (!res.ok) {
             console.warn('[Spatial Poll HTTP Error]', res.status);
-            return;
+            await new Promise(r => setTimeout(r, 2000));
+            continue;
           }
+
           const data = await res.json();
+          if (!isSpatialPollingActive || currentEpoch !== spatialPollGenerationEpoch || jobId !== spatialActivePollJobId) {
+            console.log(`[Spatial Polling] Discarding stale payload for job=${jobId}`);
+            break;
+          }
+
           const job = data.job;
-          if (!job) return;
+          if (!job) {
+            await new Promise(r => setTimeout(r, 1500));
+            continue;
+          }
 
           const progress = typeof job.progress === 'number' ? job.progress : 5;
           if (progress > spatialLastProgress) {
@@ -13972,8 +14027,8 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
           if (pBar) pBar.style.width = progress + '%';
 
           if (job.status === 'READY') {
-            clearInterval(spatialPollingInterval);
-            spatialPollingInterval = null;
+            console.log('[Spatial Polling] Job is READY! Freezing candidate snapshot...');
+            abortSpatialPolling('JOB_READY');
             window.isGeneratingSpatial = false;
             try { localStorage.removeItem('activeSpatialJob'); } catch (e) {}
 
@@ -13988,22 +14043,25 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
               btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Generate Spatial Booth';
             }
 
+            // Freeze candidate in immutable snapshot (P0-B requirement)
             const candidate = job.candidate;
             if (candidate) {
-              window.currentSpatialCandidate = candidate;
+              previewCandidateSnapshot = JSON.parse(JSON.stringify(candidate));
+              window.previewCandidateSnapshot = previewCandidateSnapshot;
+              window.currentSpatialCandidate = previewCandidateSnapshot;
+
               setTimeout(() => {
                 closeAiSpatialBoothModal();
-                openSpatialBoothPreviewModal(candidate);
+                openSpatialBoothPreviewModal(previewCandidateSnapshot);
               }, 400);
             } else {
               showSpatialModalError("Candidate manifest missing from completed job.", "SPATIAL-NO-CANDIDATE");
             }
-            return;
+            break;
           }
 
           if (job.status === 'FAILED') {
-            clearInterval(spatialPollingInterval);
-            spatialPollingInterval = null;
+            abortSpatialPolling('JOB_FAILED');
             window.isGeneratingSpatial = false;
             try { localStorage.removeItem('activeSpatialJob'); } catch (e) {}
 
@@ -14016,13 +14074,22 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
             const userMsg = job.userMessage || job.error || "We couldn't generate this Spatial Booth. Please try again or replace a source photo.";
             const errCode = job.errorCode || 'SPATIAL-FAILED';
             showSpatialModalError(userMsg, errCode);
-            return;
+            break;
           }
 
         } catch (pollErr) {
+          if (pollErr.name === 'AbortError') {
+            console.log('[Spatial Polling] Active request aborted intentionally.');
+            break;
+          }
           console.warn('[Spatial Polling Network Error]', pollErr);
         }
-      }, 1500);
+
+        // Sequential delay: wait 1500ms before next iteration (strictly 1 concurrent request)
+        if (isSpatialPollingActive && currentEpoch === spatialPollGenerationEpoch) {
+          await new Promise(r => setTimeout(r, 1500));
+        }
+      }
     }
 
     function openSpatialBoothPreviewModal(candidate) {
@@ -14112,17 +14179,219 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
     let continuousPointerDown = false;
     let whiteFrameCount = 0;
 
+
+    // ── CANONICAL SPATIAL TEXTURE LIFECYCLE EMITTER (C11.23-P0R2) ──
+    window.__3DZ_TEXTURE_LIFECYCLE = window.__3DZ_TEXTURE_LIFECYCLE || [];
+    window.__3DZ_RENDER_COUNT = 0;
+
+    function emitSpatialTextureLifecycle(eventName, payload = {}) {
+      const record = {
+        name: eventName,
+        payload,
+        timestamp: Date.now(),
+        iso: new Date().toISOString()
+      };
+      window.__3DZ_LAST_EVENT = record;
+      window.__3DZ_TEXTURE_LIFECYCLE.push(record);
+      console.log(`[3DZ Lifecycle] ${eventName}`, payload);
+
+      if (window.RI_CORE && window.RI_CORE.eventBus) {
+        try {
+          window.RI_CORE.eventBus.emit('SPATIAL', eventName, payload, {
+            severity: eventName.includes('FAIL') ? 'ERROR' : 'INFO'
+          });
+        } catch (e) {}
+      }
+      if (typeof window.dispatchEvent === 'function') {
+        try {
+          window.dispatchEvent(new CustomEvent('ri:' + eventName.toLowerCase(), { detail: payload }));
+        } catch (e) {}
+      }
+    }
+    window.emitSpatialTextureLifecycle = emitSpatialTextureLifecycle;
+
+    // ── CANONICAL SPATIAL VIEWPOINT TEXTURE RESOLVER (C11.23-P0R1) ──
+    function resolveSpatialViewpointTexture(viewpoint, deviceProfile = 'desktop') {
+      if (!viewpoint) return { url: null, selectedField: null, resolution: null, viewpointId: null, viewpointRole: null };
+
+      const v = viewpoint;
+      if (typeof emitSpatialTextureLifecycle === 'function') {
+        emitSpatialTextureLifecycle('SPATIAL_TEXTURE_RESOLVER_ENTER', {
+          viewpointId: v.id || v.viewId || null,
+          slot: v.slot || v.role || 'CENTER',
+          hasDerivatives: Boolean(v.derivatives),
+          deviceProfile
+        });
+      }
+      let url = null;
+      let selectedField = null;
+      let resolution = 'UNKNOWN';
+
+      // 1. Check derivatives according to profile
+      if (v.derivatives) {
+        if (deviceProfile === 'mobile' && v.derivatives.mobile2k?.url) {
+          url = v.derivatives.mobile2k.url;
+          selectedField = 'derivatives.mobile2k.url';
+          resolution = '2K';
+        } else if (deviceProfile === 'mobile' && v.derivatives.standard4k?.url) {
+          url = v.derivatives.standard4k.url;
+          selectedField = 'derivatives.standard4k.url';
+          resolution = '4K';
+        } else if (v.derivatives.desktop8k?.url) {
+          url = v.derivatives.desktop8k.url;
+          selectedField = 'derivatives.desktop8k.url';
+          resolution = '8K';
+        } else if (v.derivatives.standard4k?.url) {
+          url = v.derivatives.standard4k.url;
+          selectedField = 'derivatives.standard4k.url';
+          resolution = '4K';
+        } else if (v.derivatives.mobile2k?.url) {
+          url = v.derivatives.mobile2k.url;
+          selectedField = 'derivatives.mobile2k.url';
+          resolution = '2K';
+        } else if (v.derivatives.master16k?.url) {
+          url = v.derivatives.master16k.url;
+          selectedField = 'derivatives.master16k.url';
+          resolution = '16K';
+        }
+      }
+
+      // 2. Direct textureUrl field
+      if (!url && v.textureUrl) {
+        url = v.textureUrl;
+        selectedField = 'textureUrl';
+        resolution = 'TEXTURE_URL';
+      }
+
+      // 3. Direct url field (e.g. from candidate / vp.url)
+      if (!url && v.url) {
+        url = v.url;
+        selectedField = 'url';
+        resolution = 'DIRECT_URL';
+      }
+
+      // 4. masteredAsset
+      if (!url && v.masteredAsset?.url) {
+        url = v.masteredAsset.url;
+        selectedField = 'masteredAsset.url';
+        resolution = 'MASTERED_ASSET';
+      }
+
+      // 5. masterUrl
+      if (!url && v.masterUrl) {
+        url = v.masterUrl;
+        selectedField = 'masterUrl';
+        resolution = 'MASTER_URL';
+      }
+
+      // 6. sourceAsset
+      if (!url && v.sourceAsset?.url) {
+        url = v.sourceAsset.url;
+        selectedField = 'sourceAsset.url';
+        resolution = 'SOURCE_ASSET';
+      }
+
+      // 7. cleanedAsset
+      if (!url && v.cleanedAsset?.url) {
+        url = v.cleanedAsset.url;
+        selectedField = 'cleanedAsset.url';
+        resolution = 'CLEANED_ASSET';
+      }
+
+      const viewpointId = v.id || v.viewId || null;
+      const viewpointRole = v.slot || v.role || 'CENTER';
+
+      const result = {
+        url,
+        selectedField,
+        resolution,
+        viewpointId,
+        viewpointRole,
+        sanitizedUrl: url ? url.split('?')[0] : null
+      };
+
+      // Emit RI Observable Events
+      if (url) {
+        if (typeof emitSpatialTextureLifecycle === 'function') {
+          emitSpatialTextureLifecycle('SPATIAL_TEXTURE_RESOLVED', result);
+        }
+      } else {
+        if (typeof emitSpatialTextureLifecycle === 'function') {
+          emitSpatialTextureLifecycle('SPATIAL_TEXTURE_RESOLVE_FAILED', result);
+        }
+      }
+
+      return result;
+    }
+    window.resolveSpatialViewpointTexture = resolveSpatialViewpointTexture;
+
+    function showSpatialViewpointError(msg = 'Unable to load this viewpoint.') {
+      let el = document.getElementById('spatialPreviewErrorOverlay');
+      if (!el) {
+        const container = document.getElementById('spatialPreviewCanvasContainer');
+        if (!container) return;
+        el = document.createElement('div');
+        el.id = 'spatialPreviewErrorOverlay';
+        el.style.cssText = 'display:none; position:absolute; inset:0; background:rgba(15,23,42,0.88); backdrop-filter:blur(6px); z-index:30; flex-direction:column; align-items:center; justify-content:center; gap:12px; color:#f8fafc; font-family:"Plus Jakarta Sans",sans-serif;';
+        el.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b; font-size:32px;"></i><div style="font-size:14px; font-weight:700;" id="spatialPreviewErrorText">Unable to load this viewpoint.</div><button type="button" id="spatialPreviewRetryBtn" onclick="retryCurrentSpatialViewpoint()" style="background:#0284c7; color:#fff; border:1px solid #38bdf8; border-radius:8px; padding:6px 16px; font-size:12px; font-weight:700; cursor:pointer;">Retry</button>';
+        container.appendChild(el);
+      }
+      const txt = document.getElementById('spatialPreviewErrorText');
+      if (txt) txt.textContent = msg;
+      el.style.display = 'flex';
+    }
+
+    function hideSpatialViewpointError() {
+      const el = document.getElementById('spatialPreviewErrorOverlay');
+      if (el) el.style.display = 'none';
+    }
+
+    function retryCurrentSpatialViewpoint() {
+      hideSpatialViewpointError();
+      if (typeof spatialActiveIdx === 'number' && typeof retryViewpointLoad === 'function') {
+        retryViewpointLoad(spatialActiveIdx);
+      }
+    }
+
     async function ensureViewpointReady(vp) {
       if (vp.isGpuReady && vp.tex) return true;
-      if (!vp.url) return false;
+      const resolved = resolveSpatialViewpointTexture(vp);
+      const targetUrl = resolved.url || vp.url;
+      if (!targetUrl) {
+        showSpatialViewpointError('Unable to load this viewpoint.');
+        return false;
+      }
 
       if (vp.loadPromise) return vp.loadPromise;
+
+      const reqStartTime = Date.now();
+      if (typeof emitSpatialTextureLifecycle === 'function') {
+        emitSpatialTextureLifecycle('SPATIAL_TEXTURE_REQUEST_START', {
+          url: targetUrl,
+          slot: vp.slot || vp.role || 'CENTER',
+          viewpointId: vp.id || null
+        });
+      }
 
       vp.loadPromise = new Promise((resolve) => {
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload = () => {
           try {
+            const reqDuration = Date.now() - reqStartTime;
+            if (typeof emitSpatialTextureLifecycle === 'function') {
+              emitSpatialTextureLifecycle('SPATIAL_TEXTURE_HTTP', {
+                url: targetUrl,
+                naturalWidth: img.naturalWidth,
+                naturalHeight: img.naturalHeight,
+                durationMs: reqDuration
+              });
+              emitSpatialTextureLifecycle('SPATIAL_TEXTURE_DECODED', {
+                width: img.naturalWidth,
+                height: img.naturalHeight
+              });
+            }
+
             const tex = new THREE.Texture(img);
             tex.encoding = THREE.sRGBEncoding;
             tex.generateMipmaps = true;
@@ -14131,17 +14400,29 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
             tex.needsUpdate = true;
             vp.tex = tex;
             vp.isGpuReady = true;
+
+            if (typeof emitSpatialTextureLifecycle === 'function') {
+              emitSpatialTextureLifecycle('SPATIAL_TEXTURE_CREATED', {
+                textureId: tex.id,
+                imageWidth: img.naturalWidth,
+                imageHeight: img.naturalHeight
+              });
+            }
+
+            hideSpatialViewpointError();
             resolve(true);
           } catch (err) {
             console.warn('[Spatial Texture Upload Error]', err);
+            showSpatialViewpointError('Unable to upload texture to GPU.');
             resolve(false);
           }
         };
         img.onerror = (e) => {
-          console.warn('[Spatial Image Load Error] for slot ' + vp.slot, vp.url, e);
+          console.warn('[Spatial Image Load Error] for slot ' + (vp.slot || vp.role || 'CENTER'), targetUrl, e);
+          showSpatialViewpointError('Unable to load this viewpoint.');
           resolve(false);
         };
-        img.src = vp.url;
+        img.src = targetUrl;
       });
 
       return vp.loadPromise;
@@ -14196,11 +14477,11 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       spatialPitch = 0.0;
       updateCameraOrientation();
 
-      // Extract viewpoints from candidate
+      // Extract viewpoints from candidate (Canonical Texture Resolver)
       spatialViewpoints = [];
       const vps = candidate.viewpoints || candidate.anchors || [];
       vps.forEach((vp, idx) => {
-        const url = vp.textureUrl || (vp.derivatives && (vp.derivatives.standard4k?.url || vp.derivatives.desktop8k?.url)) || vp.masterUrl || (vp.sourceAsset && vp.sourceAsset.url) || '';
+        const resolved = resolveSpatialViewpointTexture(vp);
         spatialViewpoints.push({
           id: vp.id || ('vp-' + (vp.slot || idx).toString().toLowerCase()),
           slot: vp.slot || ('VIEW ' + (idx + 1)),
@@ -14212,7 +14493,8 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
           safePitchRange: [MIN_SAFE_PITCH, MAX_SAFE_PITCH],
           tex: null,
           isGpuReady: false,
-          url
+          url: resolved.url,
+          resolved
         });
       });
 
@@ -14226,11 +14508,11 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       const sphereGeo = new THREE.SphereGeometry(500, 128, 64);
       sphereGeo.scale(-1, 1, 1);
 
-      // Current Viewpoint Mesh - NEVER WHITE FALLBACK: color 0x000000, visible false until textured
+      // Current Viewpoint Mesh - color 0xffffff, visible false until textured (NEVER WHITE FLASH)
       spatialMatCurrent = new THREE.MeshBasicMaterial({
         side: THREE.FrontSide,
         map: null,
-        color: 0x000000,
+        color: 0xffffff,
         transparent: true,
         opacity: 0.0,
         visible: false,
@@ -14242,11 +14524,11 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       spatialMeshCurrent.renderOrder = -1;
       spatialScene.add(spatialMeshCurrent);
 
-      // Transition Mesh for double-buffering - color 0x000000, visible false until textured
+      // Transition Mesh for double-buffering - color 0xffffff, visible false until textured
       spatialMatTransition = new THREE.MeshBasicMaterial({
         side: THREE.FrontSide,
         map: null,
-        color: 0x000000,
+        color: 0xffffff,
         transparent: true,
         opacity: 0.0,
         visible: false,
@@ -14270,10 +14552,29 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       if (curVp) {
         ensureViewpointReady(curVp).then((ready) => {
           if (ready && curVp.tex && spatialMatCurrent) {
+            spatialMatCurrent.color.setHex(0xffffff);
             spatialMatCurrent.map = curVp.tex;
+            spatialMatCurrent.needsUpdate = true;
+
+            if (typeof emitSpatialTextureLifecycle === 'function') {
+              emitSpatialTextureLifecycle('SPATIAL_MATERIAL_MAP_ASSIGNED', {
+                materialId: spatialMatCurrent.id,
+                textureId: curVp.tex.id,
+                slot: curVp.slot
+              });
+            }
+
             spatialMatCurrent.opacity = 1.0;
             spatialMatCurrent.visible = true;
-            spatialMatCurrent.needsUpdate = true;
+
+            if (typeof emitSpatialTextureLifecycle === 'function') {
+              emitSpatialTextureLifecycle('SPATIAL_MATERIAL_VISIBLE', {
+                visible: true,
+                opacity: 1.0,
+                slot: curVp.slot
+              });
+            }
+
             renderSpatial();
             hideSpatialLoadingOverlay();
             updatePreviewUI(spatialActiveIdx);
@@ -14396,6 +14697,15 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         }
       };
 
+      // Expose globals for Runtime Inspector & Verification
+      window.spatialRenderer = spatialRenderer;
+      window.spatialScene = spatialScene;
+      window.spatialCamera = spatialCamera;
+      window.spatialMatCurrent = spatialMatCurrent;
+      window.spatialMatTransition = spatialMatTransition;
+      window.spatialViewpoints = spatialViewpoints;
+      window.__3DZ_VIEWER_RENDERER = 'THREE_WEBGL';
+
       renderSpatial();
     }
 
@@ -14509,6 +14819,7 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
 
       // DOUBLE BUFFERED TRANSITION: Zero White Flash
       // Target mesh receives texture and becomes visible at opacity 0.0
+      spatialMatTransition.color.setHex(0xffffff);
       spatialMatTransition.map = targetVp.tex;
       spatialMatTransition.opacity = 0.0;
       spatialMatTransition.visible = true;
@@ -14540,6 +14851,7 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         } else {
           // Finalize handoff & swap buffers
           spatialActiveIdx = targetIdx;
+          spatialMatCurrent.color.setHex(0xffffff);
           spatialMatCurrent.map = targetVp.tex;
           spatialMatCurrent.opacity = 1.0;
           spatialMatCurrent.visible = true;
@@ -14629,9 +14941,33 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       }
     }
 
+    let spatialFirstValidFrameEmitted = false;
+
     function renderSpatial() {
       if (spatialRenderer && spatialScene && spatialCamera) {
         spatialRenderer.render(spatialScene, spatialCamera);
+        window.__3DZ_RENDER_COUNT = (window.__3DZ_RENDER_COUNT || 0) + 1;
+
+        if (window.__3DZ_RENDER_COUNT === 1 && typeof emitSpatialTextureLifecycle === 'function') {
+          emitSpatialTextureLifecycle('SPATIAL_FIRST_RENDER', {
+            renderCount: window.__3DZ_RENDER_COUNT,
+            hasMap: Boolean(spatialMatCurrent && spatialMatCurrent.map),
+            visible: Boolean(spatialMatCurrent && spatialMatCurrent.visible)
+          });
+        }
+
+        if (!spatialFirstValidFrameEmitted && spatialMatCurrent && spatialMatCurrent.visible && spatialMatCurrent.map) {
+          spatialFirstValidFrameEmitted = true;
+          setTimeout(() => {
+            if (typeof emitSpatialTextureLifecycle === 'function') {
+              emitSpatialTextureLifecycle('SPATIAL_FIRST_VALID_FRAME', {
+                renderCount: window.__3DZ_RENDER_COUNT,
+                activeIdx: spatialActiveIdx,
+                slot: spatialViewpoints[spatialActiveIdx]?.slot || 'CENTER'
+              });
+            }
+          }, 50);
+        }
       }
     }
 
@@ -14692,11 +15028,25 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
           closeSpatialBoothPreviewModal();
           if (data.project) {
             window.activeProjectData = data.project;
+            try {
+              localStorage.setItem('dna_free_booth_session', JSON.stringify({ project: data.project }));
+            } catch (e) {
+              console.warn('[Apply Spatial] Failed to update localStorage:', e);
+            }
+            const activeBg = getActiveBoothBackground(data.project);
+            const activeUrl = activeBg?.url || data.project.sourceAsset?.previewUrl || data.project.sourceAsset?.originalUrl;
+            if (activeUrl && typeof switchActiveBoothTexture === 'function') {
+              switchActiveBoothTexture(activeUrl, data.project);
+            }
+            if (typeof renderStudioBooth === 'function') {
+              renderStudioBooth(data.project);
+            }
+            if (typeof setupActiveSpatialViewerRail === 'function') {
+              setupActiveSpatialViewerRail(data.project);
+            }
           }
           if (typeof loadProject === 'function') {
             loadProject(projectId);
-          } else {
-            window.location.reload();
           }
           if (window.showToast) window.showToast('🎉 Spatial Booth applied to active booth!', 'success');
           alert('Spatial Booth successfully applied to your active booth!');

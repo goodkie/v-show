@@ -3,7 +3,7 @@
  * Module: adapters/3dz/actions.js
  */
 
-class ThreeDZActionTracker {
+var ThreeDZActionTracker = class ThreeDZActionTracker {
   constructor(eventBus) {
     this.eventBus = eventBus;
   }

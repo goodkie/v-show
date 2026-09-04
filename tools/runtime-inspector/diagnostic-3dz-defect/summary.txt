@@ -7,11 +7,18 @@ APP_ID=3dz-virtual-tradeshow
 ENVIRONMENT=localhost
 URL=https://v-show-commercial-v1-production.up.railway.app/app/admin/booths
 
-SESSION_ID=RI-20260904-vsf1dc
-SESSION_START=2026-09-04T19:05:36.071Z
-CAPTURE_TIME=2026-09-04T19:05:36.079Z
-DURATION_MS=8
+SESSION_ID=RI-20260904-5beqds
+SESSION_START=2026-09-04T20:02:52.948Z
+CAPTURE_TIME=2026-09-04T20:02:52.954Z
+DURATION_MS=6
 PRIVACY_MODE=STANDARD
+
+SCREENSHOT_COUNT=0
+PROBLEM_MARKER_COUNT=2
+LAST_PROBLEM_MARKER=APPLY FAILURE: Active booth background remained bg_v1_legacy_flat instead of updating to spatial candidate
+LAST_PROBLEM_SCREENSHOT=None
+LAST_PROBLEM_TIMESTAMP=2026-09-04T20:02:52.953Z
+VISUAL_EVIDENCE_INCLUDED=false
 
 ------------------------------------------------------------
 DIAGNOSTIC VERDICT
@@ -21,6 +28,7 @@ PRIMARY_FAILURE=Canvas visible but uniformly background/black/white
 
 ERROR_COUNT=0
 NETWORK_FAILURE_COUNT=0
+TOTAL_EVENTS=14
 
 LAST_USER_ACTION=button  (Apply to Active Booth)
 
@@ -37,17 +45,18 @@ ADAPTER SPECIFIC RUNTIME STATE
 ------------------------------------------------------------
 ID: 3dz v1.0.0
   PROJECT_ID: "prj_3dz_p0_prod"
-  VIEWER_MODE: null
-  ACTIVE_SPATIAL_VERSION: null
-  CANDIDATE_ID: null
-  CANDIDATE_ENGINE: null
-  PREVIEW_MODAL_OPEN: undefined
-  ACTIVE_SPATIAL_RAIL_PRESENT: undefined
+  VIEWER_MODE: "UNAVAILABLE"
+  ACTIVE_SPATIAL_VERSION: "UNAVAILABLE"
+  CANDIDATE_ID: "UNAVAILABLE"
+  CANDIDATE_ENGINE: undefined
+  PREVIEW_MODAL_OPEN: false
+  ACTIVE_SPATIAL_RAIL_PRESENT: false
 
 ------------------------------------------------------------
 SAFETY & REDACTION
 ------------------------------------------------------------
 SENSITIVE_DATA_REDACTED=true
-REDACTION_COUNT=0
+REDACTION_COUNT=2
 SECRET_SCAN_STATUS=PASS
+CAPTURE_AUTHENTICITY=REAL_CHROME_EXTENSION
 ============================================================

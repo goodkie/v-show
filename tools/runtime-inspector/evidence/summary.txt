@@ -1,0 +1,50 @@
+============================================================
+RUNTIME_INSPECTOR_REPORT (ChatGPT Optimized)
+============================================================
+
+APP=3DZ Virtual Tradeshow Studio
+APP_ID=3dz-virtual-tradeshow
+ENVIRONMENT=production
+URL=https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd
+
+SESSION_ID=RI-20260904-U0W2XN
+SESSION_START=2026-09-04T20:31:36.200Z
+CAPTURE_TIME=2026-09-04T20:32:18.606Z
+DURATION_MS=40390
+PRIVACY_MODE=STANDARD
+PAGES_VISITED=3
+NAVIGATION_COUNT=2
+
+SCREENSHOT_COUNT=0
+PROBLEM_MARKER_COUNT=0
+LAST_PROBLEM_MARKER=None
+LAST_PROBLEM_SCREENSHOT=None
+LAST_PROBLEM_TIMESTAMP=None
+VISUAL_EVIDENCE_INCLUDED=false
+
+------------------------------------------------------------
+DIAGNOSTIC VERDICT
+------------------------------------------------------------
+FIRST_FAILED_STAGE=NONE_DETECTED
+PRIMARY_FAILURE=None
+
+ERROR_COUNT=0
+NETWORK_FAILURE_COUNT=0
+TOTAL_EVENTS=21
+
+------------------------------------------------------------
+TOP ERRORS
+------------------------------------------------------------
+None
+
+------------------------------------------------------------
+SAFETY & REDACTION
+------------------------------------------------------------
+SENSITIVE_DATA_REDACTED=true
+REDACTION_COUNT=0
+SECRET_SCAN_STATUS=PASS
+CAPTURE_AUTHENTICITY=REAL_CHROME_PRODUCTION
+CAPTURE_ORIGIN=https://v-show-commercial-v1-production.up.railway.app
+CAPTURE_ENVIRONMENT=PRODUCTION
+REAL_3DZ_PRODUCTION_CAPTURE=true
+============================================================

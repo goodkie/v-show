@@ -6,7 +6,7 @@
  * headers (sanitized), and response metadata. Never captures credentials.
  */
 
-class UniversalNetworkMonitor {
+var UniversalNetworkMonitor = class UniversalNetworkMonitor {
   constructor(eventBus, redactionEngine, options = {}) {
     this.eventBus = eventBus;
     this.redaction = redactionEngine;

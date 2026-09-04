@@ -10,7 +10,7 @@
  *             credentials, keys, tokens, and authorization data.
  */
 
-class RedactionEngine {
+var RedactionEngine = class RedactionEngine {
   constructor(options = {}) {
     this.privacyMode = options.privacyMode || 'STANDARD'; // STRICT | STANDARD | INTERNAL
     this.customRules = options.customRules || [];

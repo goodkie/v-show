@@ -6,7 +6,7 @@
  * and tracks WebGL context state, max texture sizes, and gl.getError().
  */
 
-class UniversalCanvasMonitor {
+var UniversalCanvasMonitor = class UniversalCanvasMonitor {
   constructor(eventBus) {
     this.eventBus = eventBus;
   }
@@ -53,6 +53,17 @@ class UniversalCanvasMonitor {
 
   samplePixelDistribution(canvas) {
     try {
+      if (typeof canvas.getContext === 'function') {
+        const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+        if (gl && typeof gl.readPixels === 'function') {
+          const sampleW = Math.min(32, gl.drawingBufferWidth || canvas.width || 32);
+          const sampleH = Math.min(32, gl.drawingBufferHeight || canvas.height || 32);
+          const pixels = new Uint8Array(sampleW * sampleH * 4);
+          gl.readPixels(0, 0, sampleW, sampleH, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+          return this.analyzePixels(pixels);
+        }
+      }
+
       if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
         // Fallback direct 2d context read if canvas has getContext
         if (typeof canvas.getContext === 'function') {
@@ -118,11 +129,15 @@ class UniversalCanvasMonitor {
   }
 }
 
-class UniversalWebGLMonitor {
+var UniversalWebGLMonitor = class UniversalWebGLMonitor {
   constructor(eventBus) {
     this.eventBus = eventBus;
     this.contexts = [];
     this.isAttached = false;
+    this.shaderDiagnostics = {
+      compileErrors: [],
+      linkErrors: []
+    };
   }
 
   attach() {
@@ -142,6 +157,7 @@ class UniversalWebGLMonitor {
 
   registerContext(canvas, gl, type) {
     if (this.contexts.some(c => c.canvas === canvas)) return;
+    const self = this;
 
     const contextRecord = {
       canvas,
@@ -155,6 +171,86 @@ class UniversalWebGLMonitor {
     };
 
     this.contexts.push(contextRecord);
+
+    // 1. Intercept Shader Compilation & Diagnostics
+    if (!gl.__riShaderHooked) {
+      gl.__riShaderHooked = true;
+
+      const origShaderSource = gl.shaderSource;
+      if (origShaderSource) {
+        gl.shaderSource = function (shader, source) {
+          try { shader.__riSource = source; } catch (e) {}
+          return origShaderSource.apply(this, arguments);
+        };
+      }
+
+      const origCompileShader = gl.compileShader;
+      if (origCompileShader) {
+        gl.compileShader = function (shader) {
+          const res = origCompileShader.apply(this, arguments);
+          try {
+            const success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+            const shaderType = gl.getShaderParameter(shader, gl.SHADER_TYPE) === gl.VERTEX_SHADER ? 'VERTEX_SHADER' : 'FRAGMENT_SHADER';
+            if (!success) {
+              const infoLog = (gl.getShaderInfoLog(shader) || '').trim();
+              const callStack = new Error().stack || '';
+
+              let owner = 'Three.js / Material';
+              if (callStack.includes('PhotoImmersive')) owner = 'PhotoImmersiveViewer';
+              else if (callStack.includes('spatialPreview') || callStack.includes('initSpatialPreviewWebGL')) owner = 'Spatial Preview';
+              else if (callStack.includes('cylinder') || callStack.includes('Cylinder')) owner = 'legacy cylindrical renderer';
+
+              const errRecord = {
+                canvasId: canvas.id || 'unnamed',
+                shaderType,
+                compileStatus: false,
+                infoLog,
+                callSite: callStack.split('\n').slice(1, 4).map(s => s.trim()).join(' -> '),
+                owner,
+                timestamp: Date.now()
+              };
+
+              self.shaderDiagnostics.compileErrors.push(errRecord);
+
+              self.eventBus.emit('WEBGL', 'WEBGL_SHADER_COMPILE_ERROR', errRecord, {
+                severity: 'ERROR',
+                source: 'webgl-monitor'
+              });
+            }
+          } catch (e) {}
+          return res;
+        };
+      }
+
+      const origLinkProgram = gl.linkProgram;
+      if (origLinkProgram) {
+        gl.linkProgram = function (program) {
+          const res = origLinkProgram.apply(this, arguments);
+          try {
+            const success = gl.getProgramParameter(program, gl.LINK_STATUS);
+            if (!success) {
+              const infoLog = (gl.getProgramInfoLog(program) || '').trim();
+              const callStack = new Error().stack || '';
+              const errRecord = {
+                canvasId: canvas.id || 'unnamed',
+                linkStatus: false,
+                infoLog,
+                callSite: callStack.split('\n').slice(1, 4).map(s => s.trim()).join(' -> '),
+                timestamp: Date.now()
+              };
+
+              self.shaderDiagnostics.linkErrors.push(errRecord);
+
+              self.eventBus.emit('WEBGL', 'WEBGL_PROGRAM_LINK_ERROR', errRecord, {
+                severity: 'ERROR',
+                source: 'webgl-monitor'
+              });
+            }
+          } catch (e) {}
+          return res;
+        };
+      }
+    }
 
     canvas.addEventListener('webglcontextlost', (e) => {
       contextRecord.lost = true;
@@ -180,17 +276,24 @@ class UniversalWebGLMonitor {
     }, { severity: 'INFO' });
   }
 
+  getShaderDiagnostics() {
+    return this.shaderDiagnostics;
+  }
+
   getReport() {
-    return this.contexts.map(c => ({
-      canvasId: c.canvas.id || 'unnamed',
-      type: c.type,
-      contextLost: c.gl.isContextLost ? c.gl.isContextLost() : c.lost,
-      maxTextureSize: c.maxTextureSize,
-      maxRenderbufferSize: c.maxRenderbufferSize,
-      drawingBufferWidth: c.gl.drawingBufferWidth || 0,
-      drawingBufferHeight: c.gl.drawingBufferHeight || 0,
-      lastErrorCode: c.gl.getError ? c.gl.getError() : 0
-    }));
+    return {
+      contexts: this.contexts.map(c => ({
+        canvasId: c.canvas.id || 'unnamed',
+        type: c.type,
+        contextLost: c.gl.isContextLost ? c.gl.isContextLost() : c.lost,
+        maxTextureSize: c.maxTextureSize,
+        maxRenderbufferSize: c.maxRenderbufferSize,
+        drawingBufferWidth: c.gl.drawingBufferWidth || 0,
+        drawingBufferHeight: c.gl.drawingBufferHeight || 0,
+        lastErrorCode: c.gl.getError ? c.gl.getError() : 0
+      })),
+      shaderDiagnostics: this.shaderDiagnostics
+    };
   }
 }
 

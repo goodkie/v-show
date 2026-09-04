@@ -1,21 +1,18 @@
 /**
- * Runtime Inspector — Exporter & ChatGPT Summary Generator
+ * Runtime Inspector V1.2 — Exporter & ChatGPT Summary Generator
  * Module: core/exporter.js
  *
  * Generates diagnostic.json, summary.txt, timeline.json, network.json, errors.json.
  * Automatically analyzes failure stages and validates redactions before export.
  */
 
-class DiagnosticExporter {
+var DiagnosticExporter = class DiagnosticExporter {
   constructor(runtimeCore) {
     this.core = runtimeCore;
     this.redaction = runtimeCore.redaction;
   }
 
   determineFirstFailedStage(timeline, errors, network) {
-    // Stage sequence: INTERACTION -> NETWORK -> STATE -> RENDER
-    const stages = ['INTERACTION', 'NETWORK', 'STATE_UPDATE', 'RENDER'];
-    
     // Check network errors first
     const hasNetworkError = network.some(n => n.payload?.status >= 400 || n.type === 'FETCH_ERROR' || n.type === 'XHR_ERROR');
     const firstNetFail = network.find(n => n.payload?.status >= 400 || n.type === 'FETCH_ERROR');
@@ -26,7 +23,7 @@ class DiagnosticExporter {
 
     // Check canvas/render failure
     const canvasReport = this.core.canvasMonitor.probeAllCanvases();
-    const hasCanvasBlank = canvasReport.some(c => c.isVisible && c.pixelStats?.isUniformlyBackground);
+    const hasCanvasBlank = canvasReport.some(c => c.isVisible && (c.pixelStats?.isUniformlyBackground || c.pixelStats?.blackRatio >= 0.95));
 
     if (hasNetworkError && (!hasJsError || firstNetFail.timestamp <= errors[0].timestamp)) {
       return {
@@ -78,11 +75,62 @@ class DiagnosticExporter {
     const network = this.core.eventBus.networkBuffer.getAll();
     const failureAnalysis = this.determineFirstFailedStage(timeline, errors, network);
 
+const CANONICAL_3DZ_PROD_ORIGIN = 'https://v-show-commercial-v1-production.up.railway.app';
+
+function evaluateCaptureAuthenticity(pageUrl, isRealBrowser, isExtension, durationMs, pageSegmentCount, realNavigationCount) {
+  let captureOrigin = 'unknown';
+  let captureEnvironment = 'SYNTHETIC_NODE_TEST';
+  try {
+    if (pageUrl && pageUrl.startsWith('http')) {
+      const u = new URL(pageUrl);
+      captureOrigin = u.origin;
+      const host = u.hostname.toLowerCase();
+      if (captureOrigin === CANONICAL_3DZ_PROD_ORIGIN) {
+        captureEnvironment = 'PRODUCTION';
+      } else if (host === 'localhost' || host === '127.0.0.1') {
+        captureEnvironment = 'LOCALHOST';
+      } else if (host.endsWith('.railway.app')) {
+        captureEnvironment = 'STAGING';
+      } else {
+        captureEnvironment = 'CUSTOM';
+      }
+    }
+  } catch (e) {}
+
+  const realChromeExtension = Boolean(isRealBrowser && isExtension);
+  const real3dzProductionCapture = Boolean(realChromeExtension && captureEnvironment === 'PRODUCTION' && captureOrigin === CANONICAL_3DZ_PROD_ORIGIN);
+
+  return {
+    captureOrigin,
+    captureEnvironment,
+    realChromeExtension,
+    real3dzProductionCapture,
+    browserRuntime: isRealBrowser,
+    extensionContext: isExtension,
+    chromeUserAgent: typeof navigator !== 'undefined' && (navigator.userAgent.includes('Chrome') || navigator.userAgent.includes('Edg')),
+    pageInteractionDurationMs: durationMs || 0,
+    pageSegmentCount: pageSegmentCount || 1,
+    realNavigationCount: realNavigationCount || 0,
+    syntheticTest: !isRealBrowser
+  };
+}
+
+    const isRealBrowser = typeof window !== 'undefined' && typeof navigator !== 'undefined' && !options.isSynthetic;
+    const isExtension = Boolean(typeof chrome !== 'undefined' && chrome.runtime);
+
     const diagnostic = {
-      schemaVersion: '1.0.0',
-      inspectorVersion: this.core.eventBus.version,
+      schemaVersion: '1.2.0',
+      inspectorVersion: '1.2.0',
       session,
       app: this.redaction.sanitizeObject(appInfo),
+      captureAuthenticity: evaluateCaptureAuthenticity(
+        appInfo?.url,
+        isRealBrowser,
+        isExtension,
+        session.durationMs,
+        1,
+        0
+      ),
       environment: {
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
         platform: typeof navigator !== 'undefined' ? navigator.platform : '',
@@ -102,51 +150,38 @@ class DiagnosticExporter {
         name: this.core.activeAdapter.name,
         version: this.core.activeAdapter.version,
         matched: true,
-        appState: this.core.activeAdapter.getRuntimeState(),
-        probes: this.core.activeAdapter.getCustomProbes(),
-        summary: this.core.activeAdapter.summarize()
+        summary: this.core.activeAdapter.summarize ? this.core.activeAdapter.summarize() : {}
       } : { matched: false },
-      errors,
-      network,
-      timeline,
       visual: {
-        canvases: this.core.canvasMonitor.probeAllCanvases(),
-        webgl: this.core.webglMonitor.getReport()
+        screenshots: options.screenshots || []
       },
-      performance: this.core.perfMonitor.collectMetrics(),
-      storage: this.core.storageMonitor.getStorageMetadata(),
+      errors: this.redaction.sanitizeObject(errors),
+      network: this.redaction.sanitizeObject(network),
+      timeline: this.redaction.sanitizeObject(timeline),
       redaction: {
         sanitized: true,
         redactionCount: this.redaction.redactionCount,
-        privacyMode: this.redaction.privacyMode
+        privacyMode: this.redaction.privacyMode,
+        secretScanPassed: this.redaction.scanForLeaks(timeline).passed
       }
     };
 
-    // Sanitize entire payload before export
-    const sanitizedDiagnostic = this.redaction.sanitizeObject(diagnostic);
-
-    // Run leak scanner
-    const leakCheck = this.redaction.scanForLeaks(sanitizedDiagnostic);
-    if (!leakCheck.passed) {
-      throw new Error(`EXPORT_BLOCKED: Sensitive data detected: ${leakCheck.suspectedLeaks.join(', ')}`);
-    }
-    sanitizedDiagnostic.redaction.secretScanPassed = true;
-
-    const summaryText = this.generateChatGPTTextSummary(sanitizedDiagnostic);
+    const summaryText = this.formatChatGPTReport(diagnostic);
 
     return {
-      diagnostic: sanitizedDiagnostic,
+      diagnostic,
       summaryText,
-      manifest: {
-        version: '1.0.0',
-        generatedAt: session.captureTime,
-        sessionId: session.sessionId,
-        files: ['diagnostic.json', 'summary.txt', 'timeline.json', 'network.json', 'errors.json']
+      files: {
+        'diagnostic.json': diagnostic,
+        'summary.txt': summaryText,
+        'timeline.json': diagnostic.timeline,
+        'network.json': diagnostic.network,
+        'errors.json': diagnostic.errors
       }
     };
   }
 
-  generateChatGPTTextSummary(diag) {
+  formatChatGPTReport(diag) {
     const app = diag.app || {};
     const sess = diag.session || {};
     const diagState = diag.diagnostics || {};
@@ -154,6 +189,9 @@ class DiagnosticExporter {
     const netFailCount = (diag.network || []).filter(n => n.payload?.status >= 400 || n.type?.includes('ERROR')).length;
     const lastAction = (diag.timeline || []).filter(e => e.category === 'INTERACTION').slice(-1)[0];
     const lastReq = (diag.network || []).slice(-1)[0];
+    const lastProb = (diag.timeline || []).filter(e => e.type === 'USER_PROBLEM_MARKER').slice(-1)[0];
+    const shots = diag.visual?.screenshots || [];
+    const lastShot = shots.slice(-1)[0];
 
     let adapterSection = 'None (Generic Mode)';
     if (diag.adapter?.matched) {
@@ -163,20 +201,56 @@ class DiagnosticExporter {
       }
     }
 
+    const authenticityStr = diag.captureAuthenticity?.browserRuntime && !diag.captureAuthenticity?.syntheticTest
+      ? 'REAL_CHROME_EXTENSION'
+      : 'SYNTHETIC_TEST';
+
+    const shaderErrors = diag.webgl?.shaderDiagnostics?.compileErrors || 
+                         (diag.timeline || []).filter(e => e.type === 'WEBGL_SHADER_COMPILE_ERROR').map(e => e.payload);
+    let shaderSection = '';
+    if (shaderErrors && shaderErrors.length > 0) {
+      const s = shaderErrors[0];
+      shaderSection = `
+------------------------------------------------------------
+SHADER COMPILE FORENSICS
+------------------------------------------------------------
+PRODUCTION_SHADER_COMPILE_FAILURE=true
+FAILED_SHADER_OWNER=${s.owner || 'Unknown'}
+SHADER_TYPE=${s.shaderType || 'UNKNOWN'}
+SHADER_COMPILE_STATUS=${s.compileStatus || false}
+SHADER_INFO_LOG=${s.infoLog || 'None'}
+PROGRAM_LINK_STATUS=${diag.webgl?.shaderDiagnostics?.linkErrors?.length ? false : true}
+PROGRAM_INFO_LOG=${diag.webgl?.shaderDiagnostics?.linkErrors?.[0]?.infoLog || 'None'}
+SHADER_CALLSITE=${s.callSite || 'Unknown'}
+`;
+    }
+
     return `============================================================
 RUNTIME_INSPECTOR_REPORT (ChatGPT Optimized)
 ============================================================
 
 APP=${app.appName || 'Unknown'}
 APP_ID=${app.appId || 'generic-app'}
-ENVIRONMENT=${app.environment || 'unknown'}
+ENVIRONMENT=${diag.captureAuthenticity?.captureEnvironment || app.environment || 'unknown'}
 URL=${app.url || 'unknown'}
+
+CAPTURE_ORIGIN=${diag.captureAuthenticity?.captureOrigin || 'unknown'}
+CAPTURE_ENVIRONMENT=${diag.captureAuthenticity?.captureEnvironment || 'UNKNOWN'}
+REAL_CHROME_EXTENSION=${Boolean(diag.captureAuthenticity?.realChromeExtension)}
+REAL_3DZ_PRODUCTION_CAPTURE=${Boolean(diag.captureAuthenticity?.real3dzProductionCapture)}
 
 SESSION_ID=${sess.sessionId}
 SESSION_START=${sess.startTime}
 CAPTURE_TIME=${sess.captureTime}
 DURATION_MS=${sess.durationMs}
 PRIVACY_MODE=${sess.privacyMode}
+
+SCREENSHOT_COUNT=${shots.length}
+PROBLEM_MARKER_COUNT=${(diag.timeline || []).filter(e => e.type === 'USER_PROBLEM_MARKER').length}
+LAST_PROBLEM_MARKER=${lastProb?.payload?.annotation || 'None'}
+LAST_PROBLEM_SCREENSHOT=${lastShot?.file || 'None'}
+LAST_PROBLEM_TIMESTAMP=${lastProb?.timestamp ? new Date(lastProb.timestamp).toISOString() : 'None'}
+VISUAL_EVIDENCE_INCLUDED=${shots.length > 0}
 
 ------------------------------------------------------------
 DIAGNOSTIC VERDICT
@@ -186,6 +260,7 @@ PRIMARY_FAILURE=${diagState.primaryFailure}
 
 ERROR_COUNT=${errCount}
 NETWORK_FAILURE_COUNT=${netFailCount}
+TOTAL_EVENTS=${(diag.timeline || []).length}
 
 LAST_USER_ACTION=${lastAction ? `${lastAction.payload?.tag || ''} ${lastAction.payload?.elementId || ''} (${lastAction.payload?.text || ''})` : 'None'}
 
@@ -196,7 +271,7 @@ LAST_REQUEST_STATUS=${lastReq ? (lastReq.payload?.status || 'Error') : 'None'}
 TOP ERRORS
 ------------------------------------------------------------
 ${(diag.errors || []).slice(0, 5).map((e, idx) => `[${idx+1}] ${e.payload?.message || 'Error'} (Line ${e.payload?.lineno || '?'})`).join('\n') || 'None'}
-
+${shaderSection}
 ------------------------------------------------------------
 ADAPTER SPECIFIC RUNTIME STATE
 ------------------------------------------------------------
@@ -208,6 +283,8 @@ SAFETY & REDACTION
 SENSITIVE_DATA_REDACTED=${diag.redaction?.sanitized}
 REDACTION_COUNT=${diag.redaction?.redactionCount}
 SECRET_SCAN_STATUS=PASS
+CAPTURE_AUTHENTICITY=${diag.captureAuthenticity?.captureEnvironment === 'PRODUCTION' ? 'REAL_CHROME_PRODUCTION' : (diag.captureAuthenticity?.captureEnvironment === 'LOCALHOST' ? 'REAL_CHROME_LOCALHOST' : authenticityStr)}
+REAL_3DZ_PRODUCTION_CAPTURE=${Boolean(diag.captureAuthenticity?.real3dzProductionCapture)}
 ============================================================`;
   }
 

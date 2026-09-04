@@ -1,0 +1,687 @@
+{
+  "schemaVersion": "1.2.0",
+  "inspectorVersion": "1.2.0",
+  "session": {
+    "sessionId": "RI-20260904-U0W2XN",
+    "startTime": "2026-09-04T20:31:36.200Z",
+    "captureTime": "2026-09-04T20:32:18.606Z",
+    "durationMs": 40390,
+    "mode": "RECORDING",
+    "privacyMode": "STANDARD",
+    "navigationCount": 2,
+    "pageSegments": [
+      {
+        "id": "seg-1-init",
+        "name": "about:blank",
+        "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+        "startedAt": "2026-09-04T20:31:36.200Z"
+      },
+      {
+        "id": "seg-2-2iqq",
+        "name": "Page 2",
+        "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+        "startedAt": "2026-09-04T20:32:01.706Z"
+      },
+      {
+        "id": "seg-3-j883",
+        "name": "Page 3",
+        "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+        "startedAt": "2026-09-04T20:32:09.345Z"
+      }
+    ]
+  },
+  "app": {
+    "appId": "3dz-virtual-tradeshow",
+    "appName": "3DZ Virtual Tradeshow Studio",
+    "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+    "environment": "production"
+  },
+  "captureAuthenticity": {
+    "captureOrigin": "https://v-show-commercial-v1-production.up.railway.app",
+    "captureEnvironment": "PRODUCTION",
+    "realChromeExtension": true,
+    "real3dzProductionCapture": true,
+    "browserRuntime": true,
+    "extensionContext": true,
+    "chromeUserAgent": true,
+    "pageInteractionDurationMs": 40390,
+    "pageSegmentCount": 3,
+    "realNavigationCount": 2,
+    "syntheticTest": false
+  },
+  "diagnostics": {
+    "firstFailedStage": "NONE_DETECTED",
+    "primaryFailure": "None"
+  },
+  "adapter": {
+    "id": "3dz",
+    "name": "3DZ Spatial Virtual Tradeshow Adapter",
+    "version": "1.0.0",
+    "matched": true
+  },
+  "visual": {
+    "screenshots": []
+  },
+  "errors": [],
+  "network": [
+    {
+      "id": "ev-0gv2eez",
+      "timestamp": 1788553915582,
+      "isoTime": "2026-09-04T20:31:55.582Z",
+      "category": "NETWORK",
+      "type": "FETCH_START",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915582-6",
+      "payload": {
+        "method": "GET",
+        "url": "/api/projects/prj-free-f4370ccd/entitlements",
+        "initiator": "fetch",
+        "startTime": 1788553915582
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-0i2e9yj",
+      "timestamp": 1788553915592,
+      "isoTime": "2026-09-04T20:31:55.592Z",
+      "category": "NETWORK",
+      "type": "FETCH_START",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915592-8",
+      "payload": {
+        "method": "POST",
+        "url": "/api/free-funnel/analytics/event",
+        "initiator": "fetch",
+        "startTime": 1788553915592
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-5xe74k4",
+      "timestamp": 1788553917367,
+      "isoTime": "2026-09-04T20:31:57.367Z",
+      "category": "NETWORK",
+      "type": "FETCH_COMPLETE",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915591-7",
+      "payload": {
+        "method": "GET",
+        "url": "/api/projects/prj-free-f4370ccd/viewpoints",
+        "status": 200,
+        "ok": true,
+        "durationMs": 1775,
+        "contentType": "application/json; charset=utf-8",
+        "responseSize": 32,
+        "initiator": "fetch"
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-72jw2is",
+      "timestamp": 1788553915592,
+      "isoTime": "2026-09-04T20:31:55.592Z",
+      "category": "NETWORK",
+      "type": "FETCH_START",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915592-9",
+      "payload": {
+        "method": "GET",
+        "url": "/api/free-funnel/projects/prj-free-f4370ccd",
+        "initiator": "fetch",
+        "startTime": 1788553915592
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-aa6f087",
+      "timestamp": 1788553915591,
+      "isoTime": "2026-09-04T20:31:55.591Z",
+      "category": "NETWORK",
+      "type": "FETCH_START",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915591-7",
+      "payload": {
+        "method": "GET",
+        "url": "/api/projects/prj-free-f4370ccd/viewpoints",
+        "initiator": "fetch",
+        "startTime": 1788553915591
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-bav436b",
+      "timestamp": 1788553917367,
+      "isoTime": "2026-09-04T20:31:57.367Z",
+      "category": "NETWORK",
+      "type": "FETCH_COMPLETE",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915592-9",
+      "payload": {
+        "method": "GET",
+        "url": "/api/free-funnel/projects/prj-free-f4370ccd",
+        "status": 200,
+        "ok": true,
+        "durationMs": 1775,
+        "contentType": "application/json; charset=utf-8",
+        "responseSize": 0,
+        "initiator": "fetch"
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-ip5xssh",
+      "timestamp": 1788553915420,
+      "isoTime": "2026-09-04T20:31:55.420Z",
+      "category": "NETWORK",
+      "type": "FETCH_COMPLETE",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915238-5",
+      "payload": {
+        "method": "POST",
+        "url": "/api/projects/prj-free-f4370ccd/spatial/apply",
+        "status": 200,
+        "ok": true,
+        "durationMs": 182,
+        "contentType": "application/json; charset=utf-8",
+        "responseSize": 0,
+        "initiator": "fetch"
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-kip2yto",
+      "timestamp": 1788553915238,
+      "isoTime": "2026-09-04T20:31:55.238Z",
+      "category": "NETWORK",
+      "type": "FETCH_START",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915238-5",
+      "payload": {
+        "method": "POST",
+        "url": "/api/projects/prj-free-f4370ccd/spatial/apply",
+        "initiator": "fetch",
+        "startTime": 1788553915238
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-lrw9oy2",
+      "timestamp": 1788553917366,
+      "isoTime": "2026-09-04T20:31:57.366Z",
+      "category": "NETWORK",
+      "type": "FETCH_COMPLETE",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915592-8",
+      "payload": {
+        "method": "POST",
+        "url": "/api/free-funnel/analytics/event",
+        "status": 200,
+        "ok": true,
+        "durationMs": 1775,
+        "contentType": "application/json; charset=utf-8",
+        "responseSize": 204,
+        "initiator": "fetch"
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-uctpe6a",
+      "timestamp": 1788553917366,
+      "isoTime": "2026-09-04T20:31:57.366Z",
+      "category": "NETWORK",
+      "type": "FETCH_COMPLETE",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915582-6",
+      "payload": {
+        "method": "GET",
+        "url": "/api/projects/prj-free-f4370ccd/entitlements",
+        "status": 200,
+        "ok": true,
+        "durationMs": 1784,
+        "contentType": "application/json; charset=utf-8",
+        "responseSize": 168,
+        "initiator": "fetch"
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    }
+  ],
+  "timeline": [
+    {
+      "sessionId": "RI-20260904-U0W2XN",
+      "pageSegmentId": "seg-1-init",
+      "category": "APP",
+      "type": "START_RECORDING",
+      "timestamp": 1788553896200,
+      "payload": {
+        "sessionId": "RI-20260904-U0W2XN",
+        "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36 Edg/152.0.0.0"
+      },
+      "id": 1
+    },
+    {
+      "sessionId": "RI-20260904-U0W2XN",
+      "pageSegmentId": "seg-1-init",
+      "category": "APP",
+      "type": "RI_PAGE_CAPTURE_READY",
+      "timestamp": 1788553899130,
+      "payload": {
+        "sessionId": "RI-20260904-U0W2XN",
+        "pageSegmentId": "seg-1-init",
+        "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+        "adapterId": "3dz",
+        "coreVersion": "1.2.0",
+        "status": "READY",
+        "title": "³D₂ — Turn One Booth Photo Into an Interactive 3D Booth Free"
+      },
+      "id": 2
+    },
+    {
+      "sessionId": "RI-20260904-U0W2XN",
+      "pageSegmentId": "seg-2-2iqq",
+      "category": "NAVIGATION",
+      "type": "PAGE_RELOAD",
+      "timestamp": 1788553921705,
+      "payload": {
+        "fromUrl": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+        "toUrl": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+        "navigationIndex": 1
+      },
+      "id": 3
+    },
+    {
+      "sessionId": "RI-20260904-U0W2XN",
+      "pageSegmentId": "seg-2-2iqq",
+      "category": "APP",
+      "type": "RI_PAGE_CAPTURE_BOOTSTRAP_FAILED",
+      "timestamp": 1788553925403,
+      "payload": {
+        "reason": "Page capture handshake not received within 3000ms",
+        "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd"
+      },
+      "id": 4
+    },
+    {
+      "sessionId": "RI-20260904-U0W2XN",
+      "pageSegmentId": "seg-2-2iqq",
+      "category": "APP",
+      "type": "RI_PAGE_CAPTURE_READY",
+      "timestamp": 1788553929339,
+      "payload": {
+        "sessionId": "RI-20260904-U0W2XN",
+        "pageSegmentId": "seg-2-2iqq",
+        "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+        "adapterId": "3dz",
+        "coreVersion": "1.2.0",
+        "status": "READY",
+        "title": "³D₂ — Turn One Booth Photo Into an Interactive 3D Booth Free"
+      },
+      "id": 5
+    },
+    {
+      "sessionId": "RI-20260904-U0W2XN",
+      "pageSegmentId": "seg-3-j883",
+      "category": "NAVIGATION",
+      "type": "PAGE_RELOAD",
+      "timestamp": 1788553929345,
+      "payload": {
+        "fromUrl": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+        "toUrl": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+        "navigationIndex": 2
+      },
+      "id": 6
+    },
+    {
+      "sessionId": "RI-20260904-U0W2XN",
+      "pageSegmentId": "seg-3-j883",
+      "category": "APP",
+      "type": "RI_PAGE_CAPTURE_BOOTSTRAP_FAILED",
+      "timestamp": 1788553932852,
+      "payload": {
+        "reason": "Page capture handshake not received within 3000ms",
+        "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd"
+      },
+      "id": 7
+    },
+    {
+      "sessionId": "RI-20260904-U0W2XN",
+      "pageSegmentId": "seg-3-j883",
+      "category": "APP",
+      "type": "STOP_RECORDING",
+      "timestamp": 1788553936590,
+      "payload": {
+        "sessionId": "RI-20260904-U0W2XN",
+        "durationMs": 40390,
+        "eventCount": 19
+      },
+      "id": 8
+    },
+    {
+      "sessionId": "RI-20260904-U0W2XN",
+      "pageSegmentId": "seg-3-j883",
+      "category": "APP",
+      "type": "RI_PAGE_CAPTURE_READY",
+      "timestamp": 1788553936678,
+      "payload": {
+        "sessionId": "RI-20260904-U0W2XN",
+        "pageSegmentId": "seg-3-j883",
+        "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+        "adapterId": "3dz",
+        "coreVersion": "1.2.0",
+        "status": "READY",
+        "title": "³D₂ — Turn One Booth Photo Into an Interactive 3D Booth Free"
+      },
+      "id": 9
+    },
+    {
+      "id": "ev-0gv2eez",
+      "timestamp": 1788553915582,
+      "isoTime": "2026-09-04T20:31:55.582Z",
+      "category": "NETWORK",
+      "type": "FETCH_START",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915582-6",
+      "payload": {
+        "method": "GET",
+        "url": "/api/projects/prj-free-f4370ccd/entitlements",
+        "initiator": "fetch",
+        "startTime": 1788553915582
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-0i2e9yj",
+      "timestamp": 1788553915592,
+      "isoTime": "2026-09-04T20:31:55.592Z",
+      "category": "NETWORK",
+      "type": "FETCH_START",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915592-8",
+      "payload": {
+        "method": "POST",
+        "url": "/api/free-funnel/analytics/event",
+        "initiator": "fetch",
+        "startTime": 1788553915592
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-5xe74k4",
+      "timestamp": 1788553917367,
+      "isoTime": "2026-09-04T20:31:57.367Z",
+      "category": "NETWORK",
+      "type": "FETCH_COMPLETE",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915591-7",
+      "payload": {
+        "method": "GET",
+        "url": "/api/projects/prj-free-f4370ccd/viewpoints",
+        "status": 200,
+        "ok": true,
+        "durationMs": 1775,
+        "contentType": "application/json; charset=utf-8",
+        "responseSize": 32,
+        "initiator": "fetch"
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-72jw2is",
+      "timestamp": 1788553915592,
+      "isoTime": "2026-09-04T20:31:55.592Z",
+      "category": "NETWORK",
+      "type": "FETCH_START",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915592-9",
+      "payload": {
+        "method": "GET",
+        "url": "/api/free-funnel/projects/prj-free-f4370ccd",
+        "initiator": "fetch",
+        "startTime": 1788553915592
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-a6liz9p",
+      "timestamp": 1788553898427,
+      "isoTime": "2026-09-04T20:31:38.427Z",
+      "category": "APP",
+      "type": "RECORDING_STARTED",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": null,
+      "payload": {
+        "sessionId": "RI-20260904-U0W2XN",
+        "startTime": 1788553889023
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-aa6f087",
+      "timestamp": 1788553915591,
+      "isoTime": "2026-09-04T20:31:55.591Z",
+      "category": "NETWORK",
+      "type": "FETCH_START",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915591-7",
+      "payload": {
+        "method": "GET",
+        "url": "/api/projects/prj-free-f4370ccd/viewpoints",
+        "initiator": "fetch",
+        "startTime": 1788553915591
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-bav436b",
+      "timestamp": 1788553917367,
+      "isoTime": "2026-09-04T20:31:57.367Z",
+      "category": "NETWORK",
+      "type": "FETCH_COMPLETE",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915592-9",
+      "payload": {
+        "method": "GET",
+        "url": "/api/free-funnel/projects/prj-free-f4370ccd",
+        "status": 200,
+        "ok": true,
+        "durationMs": 1775,
+        "contentType": "application/json; charset=utf-8",
+        "responseSize": 0,
+        "initiator": "fetch"
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-gpjzb7r",
+      "timestamp": 1788553901545,
+      "isoTime": "2026-09-04T20:31:41.545Z",
+      "category": "WEBGL",
+      "type": "WEBGL_CONTEXT_INITIALIZED",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": null,
+      "payload": {
+        "canvasId": "spatialPreviewCanvas",
+        "type": "webgl2",
+        "maxTextureSize": 16384,
+        "maxRenderbufferSize": 16384
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-ip5xssh",
+      "timestamp": 1788553915420,
+      "isoTime": "2026-09-04T20:31:55.420Z",
+      "category": "NETWORK",
+      "type": "FETCH_COMPLETE",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915238-5",
+      "payload": {
+        "method": "POST",
+        "url": "/api/projects/prj-free-f4370ccd/spatial/apply",
+        "status": 200,
+        "ok": true,
+        "durationMs": 182,
+        "contentType": "application/json; charset=utf-8",
+        "responseSize": 0,
+        "initiator": "fetch"
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-kip2yto",
+      "timestamp": 1788553915238,
+      "isoTime": "2026-09-04T20:31:55.238Z",
+      "category": "NETWORK",
+      "type": "FETCH_START",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915238-5",
+      "payload": {
+        "method": "POST",
+        "url": "/api/projects/prj-free-f4370ccd/spatial/apply",
+        "initiator": "fetch",
+        "startTime": 1788553915238
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-lrw9oy2",
+      "timestamp": 1788553917366,
+      "isoTime": "2026-09-04T20:31:57.366Z",
+      "category": "NETWORK",
+      "type": "FETCH_COMPLETE",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915592-8",
+      "payload": {
+        "method": "POST",
+        "url": "/api/free-funnel/analytics/event",
+        "status": 200,
+        "ok": true,
+        "durationMs": 1775,
+        "contentType": "application/json; charset=utf-8",
+        "responseSize": 204,
+        "initiator": "fetch"
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    },
+    {
+      "id": "ev-uctpe6a",
+      "timestamp": 1788553917366,
+      "isoTime": "2026-09-04T20:31:57.366Z",
+      "category": "NETWORK",
+      "type": "FETCH_COMPLETE",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788553915582-6",
+      "payload": {
+        "method": "GET",
+        "url": "/api/projects/prj-free-f4370ccd/entitlements",
+        "status": 200,
+        "ok": true,
+        "durationMs": 1784,
+        "contentType": "application/json; charset=utf-8",
+        "responseSize": 168,
+        "initiator": "fetch"
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-U0W2XN"
+    }
+  ],
+  "navigations": [
+    {
+      "sessionId": "RI-20260904-U0W2XN",
+      "pageSegmentId": "seg-2-2iqq",
+      "category": "NAVIGATION",
+      "type": "PAGE_RELOAD",
+      "timestamp": 1788553921705,
+      "payload": {
+        "fromUrl": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+        "toUrl": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+        "navigationIndex": 1
+      },
+      "id": 3
+    },
+    {
+      "sessionId": "RI-20260904-U0W2XN",
+      "pageSegmentId": "seg-3-j883",
+      "category": "NAVIGATION",
+      "type": "PAGE_RELOAD",
+      "timestamp": 1788553929345,
+      "payload": {
+        "fromUrl": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+        "toUrl": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+        "navigationIndex": 2
+      },
+      "id": 6
+    }
+  ],
+  "redaction": {
+    "sanitized": true,
+    "redactionCount": 0,
+    "privacyMode": "STANDARD",
+    "secretScanPassed": true
+  }
+}
