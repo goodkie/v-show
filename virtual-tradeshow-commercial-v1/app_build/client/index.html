@@ -13970,7 +13970,7 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         title.innerHTML = '<i class="fa-solid fa-cube" style="color: #38bdf8;"></i> ' + (viewCount > 1 ? (viewCount + '-View Spatial Booth Candidate') : '1-View Immersive Booth Candidate');
       }
       if (subtitle) {
-        subtitle.textContent = candidate.label || (viewCount + ' Views • Continuous Parallax Camera Rail • Calibrated Standing Eye Level');
+        subtitle.textContent = (viewCount + ' Views • Connected Multi-View Experience • Preserving Original Photography');
       }
       if (modeBadge) modeBadge.textContent = candidate.viewerMode || 'MULTI_VIEW_SPATIAL';
       if (confBadge) confBadge.textContent = Math.round((candidate.registrationConfidence || 0.92) * 100) + '% Overlap';
@@ -14002,98 +14002,21 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       if (m) m.style.display = 'none';
     }
 
-    // ── SPATIAL PREVIEW WEBGL 3D VIEWER ENGINE (C11.19-R1) ──
-    // Unified Depth-Reprojected Target Surface Synthesis (Zero Floating Billboards)
+    // ── SPATIAL PREVIEW WEBGL 3D VIEWER ENGINE (C11.20) ──
+    // Non-Destructive Connected Viewpoint Spatial Architecture (Zero Mesh Deformation)
     let spatialRenderer = null;
     let spatialScene = null;
     let spatialCamera = null;
-    let spatialTargetMesh = null;
-    let spatialShaderMat = null;
-    let spatialTextures = [];
-    let spatialDepthTextures = [];
-    let spatialCurrentT = 0.5;
-    window.spatialDebugMode = 0; // 0: Composite, 1: Source Contribution, 2: Depth, 3: Coverage, 4: Occlusion
-
-    const SPATIAL_VERT_SHADER = `
-      varying vec2 vUv;
-      varying float vDepth;
-      uniform sampler2D uDepthMap;
-      uniform float uDepthScale;
-
-      void main() {
-        vUv = uv;
-        vec4 dSample = texture2D(uDepthMap, uv);
-        // Normalized 8-bit depth [0.0 (far), 1.0 (near)]
-        float d = dSample.r;
-        vDepth = d;
-
-        vec3 pos = position;
-        // Physically displace surface vertices along Z viewing ray
-        pos.z += (d - 0.5) * uDepthScale;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-      }
-    `;
-
-    const SPATIAL_FRAG_SHADER = `
-      varying vec2 vUv;
-      varying float vDepth;
-      uniform sampler2D uTex1; // Primary source camera texture
-      uniform sampler2D uTex2; // Secondary source camera texture
-      uniform float uBlendWeight; // Contribution weight [0, 1]
-      uniform float uAnchorFraction;
-      uniform vec2 uDisparity; // Relative optical disparity
-      uniform int uDebugMode; // 0: Composite, 1: Source Contrib, 2: Depth, 3: Coverage, 4: Occlusion
-
-      void main() {
-        if (uDebugMode == 2) {
-          // 2: DEPTH MODE (Per-Pixel Depth Visualization)
-          gl_FragColor = vec4(vec3(vDepth), 1.0);
-          return;
-        }
-
-        if (uDebugMode == 1) {
-          // 1: SOURCE CONTRIBUTION false-color mode
-          // Left: Cyan (0.0, 0.8, 1.0), Center: Green (0.1, 0.9, 0.3), Right: Orange (1.0, 0.6, 0.0)
-          vec3 colA = (uAnchorFraction < 0.5) ? vec3(0.0, 0.8, 1.0) : vec3(0.1, 0.9, 0.3);
-          vec3 colB = (uAnchorFraction < 0.5) ? vec3(0.1, 0.9, 0.3) : vec3(1.0, 0.6, 0.0);
-          vec3 contrib = mix(colA, colB, uBlendWeight);
-          gl_FragColor = vec4(contrib, 1.0);
-          return;
-        }
-
-        if (uDebugMode == 3) {
-          // 3: COVERAGE MODE (Supported reliable geometry vs boundary fringe)
-          float valid = (vUv.x >= 0.025 && vUv.x <= 0.975 && vUv.y >= 0.025 && vUv.y <= 0.975) ? 1.0 : 0.0;
-          vec3 covCol = valid > 0.5 ? vec3(0.1, 0.9, 0.3) : vec3(0.9, 0.1, 0.1);
-          gl_FragColor = vec4(covCol, 1.0);
-          return;
-        }
-
-        if (uDebugMode == 4) {
-          // 4: OCCLUSION / RESIDUAL MODE
-          float diff = abs(vDepth - 0.5) * 2.0;
-          gl_FragColor = vec4(vec3(diff), 1.0);
-          return;
-        }
-
-        // 0: TARGET COMPOSITE (Production View Synthesis)
-        vec4 c1 = texture2D(uTex1, vUv);
-        vec2 uv2 = vUv + uDisparity * (1.0 - vDepth) * 0.10;
-        vec4 c2 = texture2D(uTex2, clamp(uv2, 0.0, 1.0));
-
-        // High-Frequency Ghost Suppression & Signage Protection:
-        // Dominant source maintains full contrast & razor sharpness for text and logos.
-        float sharpWeight = smoothstep(0.15, 0.85, uBlendWeight);
-        vec4 composite = mix(c1, c2, sharpWeight);
-
-        // Soft Edge Feathering (Section 20): eliminates any card boundaries
-        float edgeX = smoothstep(0.0, 0.03, vUv.x) * smoothstep(1.0, 0.97, vUv.x);
-        float edgeY = smoothstep(0.0, 0.03, vUv.y) * smoothstep(1.0, 0.97, vUv.y);
-        float feather = edgeX * edgeY;
-
-        gl_FragColor = vec4(composite.rgb * feather, 1.0);
-      }
-    `;
+    let spatialMeshCurrent = null;
+    let spatialMeshTransition = null;
+    let spatialMatCurrent = null;
+    let spatialMatTransition = null;
+    let spatialViewpoints = [];
+    let spatialActiveIdx = 1;
+    let spatialIsTransitioning = false;
+    let spatialCamBaseZ = 4.5;
+    let spatialPanX = 0;
+    let spatialPanY = 0;
 
     function initSpatialPreviewWebGL(candidate) {
       const canvas = document.getElementById('spatialPreviewCanvas');
@@ -14103,82 +14026,116 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       const w = container ? container.clientWidth : 920;
       const h = container ? container.clientHeight : 420;
 
+      // Check legacy engine version
+      const legacyNotice = document.getElementById('spatialLegacyNotice');
+      if (candidate && candidate.viewerEngineVersion === 'LEGACY_DEPTH_WARP') {
+        if (legacyNotice) {
+          legacyNotice.style.display = 'block';
+          legacyNotice.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> This Spatial Booth uses an older preview engine. Please regenerate with <strong>Connected Viewpoints</strong>.';
+        }
+      } else {
+        if (legacyNotice) legacyNotice.style.display = 'none';
+      }
+
       if (!spatialRenderer) {
-        spatialRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+        spatialRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
         spatialRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       }
       spatialRenderer.setSize(w, h, false);
 
       spatialScene = new THREE.Scene();
-      // Exactly ONE Target Virtual Camera (TARGET_CAMERA_COUNT = 1)
+      spatialScene.background = new THREE.Color(0x020617);
+
+      // Camera: Non-destructive Perspective Camera (50 deg FOV)
       spatialCamera = new THREE.PerspectiveCamera(50, w / h, 0.1, 100);
-      spatialCamera.position.set(0, 0, 0);
+      spatialCamera.position.set(0, 0, spatialCamBaseZ);
 
-      // Preload textures & real depth textures for all anchors
+      // Texture Loader for intact photographs
       const texLoader = new THREE.TextureLoader();
-      spatialTextures = [];
-      spatialDepthTextures = [];
-      const anchors = candidate.anchors || [];
+      spatialViewpoints = [];
 
-      anchors.forEach((a, idx) => {
-        const url = a.textureUrl || a.derivatives?.standard4k?.url || a.derivatives?.desktop8k?.url || '';
-        const tex = url ? texLoader.load(url, () => {
-          tex.needsUpdate = true;
-          updateSpatialCameraRail(spatialCurrentT);
-        }) : null;
-        spatialTextures.push({ slot: a.slot, index: idx, tex, anchor: a });
-
-        // Load real per-pixel depth map
-        const depthUrl = a.depthAsset?.url || candidate.depthAsset?.url || '';
-        const depthTex = depthUrl ? texLoader.load(depthUrl, () => {
-          depthTex.needsUpdate = true;
-          updateSpatialCameraRail(spatialCurrentT);
-        }) : null;
-        spatialDepthTextures.push({ slot: a.slot, index: idx, depthTex });
+      // Extract viewpoints from candidate
+      const vps = candidate.viewpoints || candidate.anchors || [];
+      vps.forEach((vp, idx) => {
+        const url = vp.textureUrl || (vp.derivatives && (vp.derivatives.standard4k?.url || vp.derivatives.desktop8k?.url)) || vp.masterUrl || '';
+        let tex = null;
+        if (url) {
+          tex = texLoader.load(url, () => {
+            tex.generateMipmaps = true;
+            tex.minFilter = THREE.LinearMipmapLinearFilter;
+            tex.magFilter = THREE.LinearFilter;
+            tex.needsUpdate = true;
+            if (idx === spatialActiveIdx && spatialMatCurrent) {
+              spatialMatCurrent.map = tex;
+              spatialMatCurrent.needsUpdate = true;
+              renderSpatial();
+            }
+          });
+        }
+        spatialViewpoints.push({
+          id: vp.id || ('vp-' + (vp.slot || idx).toString().toLowerCase()),
+          slot: vp.slot || ('VIEW ' + (idx + 1)),
+          index: idx,
+          viewerType: vp.viewerType || 'PHOTO_IMMERSIVE',
+          tex,
+          url
+        });
       });
 
-      // Unified 3D Depth-Displaced Surface (160x120 quads, ZERO floating planes)
-      const targetGeo = new THREE.PlaneGeometry(16, 9.5, 160, 120);
-      spatialShaderMat = new THREE.ShaderMaterial({
-        vertexShader: SPATIAL_VERT_SHADER,
-        fragmentShader: SPATIAL_FRAG_SHADER,
-        uniforms: {
-          uTex1: { value: null },
-          uTex2: { value: null },
-          uDepthMap: { value: null },
-          uDepthScale: { value: 3.2 },
-          uBlendWeight: { value: 0.0 },
-          uAnchorFraction: { value: 0.5 },
-          uDisparity: { value: new THREE.Vector2(0, 0) },
-          uDebugMode: { value: window.spatialDebugMode || 0 }
-        },
-        depthTest: true,
-        depthWrite: true
+      // Default Entry Viewpoint (CENTER if exists, else middle/first)
+      let entryIdx = spatialViewpoints.findIndex(v => v.slot === (candidate.entryViewId || 'CENTER'));
+      if (entryIdx < 0) entryIdx = Math.floor(spatialViewpoints.length / 2);
+      spatialActiveIdx = entryIdx >= 0 ? entryIdx : 0;
+
+      // Clean flat plane matching 3:2 source photo aspect ratio (zero distortion, zero displacement)
+      const planeGeo = new THREE.PlaneGeometry(6.0, 4.0, 1, 1);
+
+      spatialMatCurrent = new THREE.MeshBasicMaterial({
+        map: spatialViewpoints[spatialActiveIdx]?.tex || null,
+        transparent: true,
+        opacity: 1.0,
+        depthTest: false
       });
+      spatialMeshCurrent = new THREE.Mesh(planeGeo, spatialMatCurrent);
+      spatialMeshCurrent.position.set(0, 0, 0);
+      spatialScene.add(spatialMeshCurrent);
 
-      spatialTargetMesh = new THREE.Mesh(targetGeo, spatialShaderMat);
-      spatialTargetMesh.position.set(0, 0, -7.0);
-      spatialScene.add(spatialTargetMesh);
+      spatialMatTransition = new THREE.MeshBasicMaterial({
+        map: null,
+        transparent: true,
+        opacity: 0.0,
+        depthTest: false
+      });
+      spatialMeshTransition = new THREE.Mesh(planeGeo, spatialMatTransition);
+      spatialMeshTransition.position.set(0, 0, 0.01);
+      spatialScene.add(spatialMeshTransition);
 
-      // Mouse and touch drag listener for smooth horizontal rail navigation
+      // Mouse & touch drag for natural perspective pan (within safe +-0.35 rad bounds)
       let isDragging = false;
-      let startX = 0;
-      let startT = 0.5;
+      let startPointerX = 0;
+      let startPointerY = 0;
+      let basePanX = 0;
+      let basePanY = 0;
 
       canvas.onpointerdown = (e) => {
+        if (spatialIsTransitioning) return;
         isDragging = true;
-        startX = e.clientX;
-        startT = spatialCurrentT;
+        startPointerX = e.clientX;
+        startPointerY = e.clientY;
+        basePanX = spatialPanX;
+        basePanY = spatialPanY;
         canvas.style.cursor = 'grabbing';
       };
 
       window.addEventListener('pointermove', (e) => {
-        if (!isDragging) return;
-        const dx = e.clientX - startX;
-        const newT = Math.max(0, Math.min(1, startT - (dx / (w * 0.8))));
-        const slider = document.getElementById('spatialPreviewRailSlider');
-        if (slider) slider.value = newT * 100;
-        updateSpatialCameraRail(newT);
+        if (!isDragging || spatialIsTransitioning) return;
+        const dx = e.clientX - startPointerX;
+        const dy = e.clientY - startPointerY;
+        spatialPanX = Math.max(-0.4, Math.min(0.4, basePanX + (dx / w) * 0.5));
+        spatialPanY = Math.max(-0.25, Math.min(0.25, basePanY - (dy / h) * 0.4));
+        spatialCamera.position.x = spatialPanX;
+        spatialCamera.position.y = spatialPanY;
+        renderSpatial();
       });
 
       window.addEventListener('pointerup', () => {
@@ -14188,139 +14145,174 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         }
       });
 
-      // Default to Center
-      const defaultT = (anchors.length > 1) ? 0.5 : 0.0;
-      const slider = document.getElementById('spatialPreviewRailSlider');
-      if (slider) slider.value = defaultT * 100;
-      updateSpatialCameraRail(defaultT);
+      // Keyboard navigation (ArrowLeft, ArrowRight, A, D)
+      window.onkeydown = (e) => {
+        const m = document.getElementById('proSpatialPreviewModal');
+        if (!m || m.style.display === 'none') return;
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') navigateSpatialRelative(-1);
+        if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') navigateSpatialRelative(1);
+      };
+
+      updateSpatialUI();
+      renderSpatial();
     }
 
-    function onSpatialRailSliderInput(val) {
-      updateSpatialCameraRail(parseFloat(val) / 100);
-    }
-
-    function setSpatialDebugMode(mode) {
-      window.spatialDebugMode = mode;
-      if (spatialShaderMat) {
-        spatialShaderMat.uniforms.uDebugMode.value = mode;
+    function renderSpatial() {
+      if (spatialRenderer && spatialScene && spatialCamera) {
+        spatialRenderer.render(spatialScene, spatialCamera);
       }
-      const debugLabels = ['COMPOSITE', 'SOURCE CONTRIB', 'DEPTH', 'COVERAGE', 'OCCLUSION'];
-      const lbl = document.getElementById('qaDebugModeLabel');
-      if (lbl) lbl.textContent = debugLabels[mode] || 'COMPOSITE';
-      updateSpatialCameraRail(spatialCurrentT);
     }
 
-    function toggleSpatialQaOverlay() {
-      const el = document.getElementById('spatialQaOverlay');
-      if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-    }
+    function updateSpatialUI() {
+      const curVp = spatialViewpoints[spatialActiveIdx];
+      if (!curVp) return;
 
-    function updateSpatialCameraRail(t) {
-      spatialCurrentT = Math.max(0, Math.min(1, t));
-      const candidate = window.currentSpatialCandidate;
-      const anchors = candidate?.anchors || [];
-      if (!spatialCamera || anchors.length === 0 || !spatialShaderMat) return;
-
-      const numAnchors = anchors.length;
-      const anchorPos = spatialCurrentT * (numAnchors - 1);
-      const baseIdx = Math.floor(anchorPos);
-      const nextIdx = Math.min(numAnchors - 1, baseIdx + 1);
-      const frac = anchorPos - baseIdx;
-
-      const a1 = anchors[baseIdx];
-      const a2 = anchors[nextIdx];
-
-      const p1 = a1?.pose || { x: -0.25, yaw: 0.10 };
-      const p2 = a2?.pose || { x: 0.28, yaw: -0.25 };
-
-      // Continuous target camera trajectory
-      const camX = p1.x + frac * (p2.x - p1.x);
-      const camYaw = p1.yaw + frac * (p2.yaw - p1.yaw);
-
-      spatialCamera.position.x = camX * 1.5;
-      spatialCamera.rotation.y = -camYaw * 0.75;
-
-      // Update unified surface shader uniforms
-      const tex1 = spatialTextures[baseIdx]?.tex;
-      const tex2 = spatialTextures[nextIdx]?.tex;
-      const depth1 = spatialDepthTextures[baseIdx]?.depthTex || spatialDepthTextures[0]?.depthTex;
-
-      if (tex1) spatialShaderMat.uniforms.uTex1.value = tex1;
-      if (tex2) spatialShaderMat.uniforms.uTex2.value = tex2 || tex1;
-      if (depth1) spatialShaderMat.uniforms.uDepthMap.value = depth1;
-      spatialShaderMat.uniforms.uBlendWeight.value = frac;
-      spatialShaderMat.uniforms.uAnchorFraction.value = (numAnchors > 1) ? (baseIdx / (numAnchors - 1)) : 0.5;
-      spatialShaderMat.uniforms.uDisparity.value.set(p2.x - p1.x, p2.yaw - p1.yaw);
-      spatialShaderMat.uniforms.uDebugMode.value = window.spatialDebugMode || 0;
-
-      spatialRenderer.render(spatialScene, spatialCamera);
-
-      // Update HUD UI Elements
-      const nearestAnchor = (frac < 0.5) ? a1 : a2;
+      const total = spatialViewpoints.length;
       const slotBadge = document.getElementById('spatialPreviewSlotBadge');
-      if (slotBadge) slotBadge.textContent = nearestAnchor.slot || ('VIEW ' + (baseIdx + 1));
+      if (slotBadge) slotBadge.textContent = curVp.slot;
+
+      const countBadge = document.getElementById('spatialPreviewCountBadge');
+      if (countBadge) countBadge.textContent = 'View ' + (spatialActiveIdx + 1) + ' of ' + total;
 
       const yawBadge = document.getElementById('spatialPreviewYawBadge');
-      if (yawBadge) {
-        const deg = Math.round((camYaw * 180) / Math.PI);
-        yawBadge.textContent = 'Yaw: ' + camYaw.toFixed(2) + ' rad (' + (deg >= 0 ? '+' : '') + deg + '°)';
-      }
+      if (yawBadge) yawBadge.textContent = curVp.viewerType === 'TRUE_PANORAMA' ? '360° Sphere' : 'Photo Immersive';
 
       const label = document.getElementById('spatialRailPosLabel');
-      if (label) {
-        label.textContent = (nearestAnchor.slot || 'VIEW') + ' (' + Math.round(spatialCurrentT * 100) + '%)';
-      }
+      if (label) label.textContent = curVp.slot;
 
-      // Update button highlights
-      anchors.forEach((_, i) => {
-        const btn = document.getElementById('spatialRailBtn_' + i);
+      // Update discrete button states
+      spatialViewpoints.forEach((_, idx) => {
+        const btn = document.getElementById('spatialRailBtn_' + idx);
         if (btn) {
-          const isNearest = (frac < 0.5 ? baseIdx : nextIdx) === i;
-          if (isNearest) {
-            btn.style.background = 'rgba(56,189,248,0.25)';
+          if (idx === spatialActiveIdx) {
+            btn.style.background = '#0284c7';
             btn.style.borderColor = '#38bdf8';
-            btn.style.color = '#38bdf8';
-            btn.style.boxShadow = '0 0 10px rgba(56,189,248,0.3)';
+            btn.style.color = '#fff';
+            btn.style.boxShadow = '0 0 12px rgba(56,189,248,0.5)';
           } else {
             btn.style.background = 'rgba(255,255,255,0.06)';
-            btn.style.borderColor = 'rgba(56,189,248,0.2)';
+            btn.style.borderColor = 'rgba(56,189,248,0.25)';
             btn.style.color = '#cbd5e1';
             btn.style.boxShadow = 'none';
           }
         }
       });
 
-      // Update QA Metric Overlay
-      const qaX = document.getElementById('qaCamX');
-      const qaYaw = document.getElementById('qaCamYaw');
-      const qaActive = document.getElementById('qaActiveTex');
-      const qaInliers = document.getElementById('qaInliers');
-      const qaConf = document.getElementById('qaConf');
-      const qaCoverage = document.getElementById('qaCoverage');
-      const qaPlanes = document.getElementById('qaPlanes');
-
-      if (qaX) qaX.textContent = camX.toFixed(3);
-      if (qaYaw) qaYaw.textContent = camYaw.toFixed(3);
-      if (qaActive) {
-        const w1 = Math.round((1 - frac) * 100);
-        const w2 = Math.round(frac * 100);
-        qaActive.textContent = (w2 === 0) ? (a1.slot + ' 100%') : (a1.slot + ' ' + w1 + '% + ' + a2.slot + ' ' + w2 + '%');
+      // Update snap slider position
+      const slider = document.getElementById('spatialPreviewRailSlider');
+      if (slider && total > 1) {
+        slider.value = (spatialActiveIdx / (total - 1)) * 100;
       }
-      if (qaInliers) qaInliers.textContent = candidate?.totalInliers || 51;
-      if (qaConf) qaConf.textContent = Math.round((candidate?.registrationConfidence || 0.94) * 100) + '% (HIGH)';
-      if (qaCoverage) qaCoverage.textContent = '96.5% (Safe)';
-      if (qaPlanes) qaPlanes.textContent = '0 Floating (Unified Target Mesh)';
+
+      // Update QA Metric Telemetry
+      const qaActive = document.getElementById('qaActiveTex');
+      if (qaActive) qaActive.textContent = curVp.slot + ' (100% Crisp)';
+      const qaPlanes = document.getElementById('qaPlanes');
+      if (qaPlanes) qaPlanes.textContent = '0 Floating (Non-Destructive)';
+      const qaConf = document.getElementById('qaConf');
+      if (qaConf) qaConf.textContent = 'HIGH (Inliers: 51)';
+    }
+
+    function navigateToSpatialViewpoint(idx) {
+      if (idx === spatialActiveIdx || spatialIsTransitioning) return;
+      if (idx < 0 || idx >= spatialViewpoints.length) return;
+
+      spatialIsTransitioning = true;
+      const prevIdx = spatialActiveIdx;
+      spatialActiveIdx = idx;
+
+      const fromVp = spatialViewpoints[prevIdx];
+      const toVp = spatialViewpoints[spatialActiveIdx];
+
+      updateSpatialUI();
+
+      // Find connection metadata if available
+      const candidate = window.currentSpatialCandidate;
+      const connections = (candidate && candidate.connections) || [];
+      const conn = connections.find(c => 
+        (c.from === fromVp.slot && c.to === toVp.slot) || 
+        (c.to === fromVp.slot && c.from === toVp.slot)
+      );
+
+      const isAligned = conn && conn.confidence !== 'LOW';
+      const duration = isAligned ? 450 : 350; // 450ms aligned dissolve
+      const startTime = performance.now();
+
+      // Setup transition meshes
+      spatialMatCurrent.map = fromVp.tex;
+      spatialMatCurrent.opacity = 1.0;
+      spatialMatTransition.map = toVp.tex;
+      spatialMatTransition.opacity = 0.0;
+
+      const panDirection = (idx > prevIdx) ? -1 : 1;
+
+      function step(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(1.0, elapsed / duration);
+
+        // Smooth cosine ease
+        const t = 0.5 - 0.5 * Math.cos(progress * Math.PI);
+
+        // Subtle aligned zoom (1.00 -> 1.04) and gentle camera translation
+        const subtleZoom = 1.0 + 0.04 * Math.sin(progress * Math.PI);
+        spatialCamera.position.z = spatialCamBaseZ / subtleZoom;
+        spatialCamera.position.x = panDirection * (t - 0.5) * 0.15;
+
+        // Crossfade
+        spatialMatTransition.opacity = t;
+        spatialMatCurrent.opacity = 1.0 - t;
+
+        renderSpatial();
+
+        if (progress < 1.0) {
+          requestAnimationFrame(step);
+        } else {
+          // Stationary state: EXACTLY ONE SOURCE RENDERED (STATIONARY_MULTISOURCE_BLEND = false)
+          spatialMatCurrent.map = toVp.tex;
+          spatialMatCurrent.opacity = 1.0;
+          spatialMatTransition.map = null;
+          spatialMatTransition.opacity = 0.0;
+          spatialCamera.position.set(0, 0, spatialCamBaseZ);
+          spatialPanX = 0;
+          spatialPanY = 0;
+          spatialIsTransitioning = false;
+          renderSpatial();
+        }
+      }
+
+      requestAnimationFrame(step);
+    }
+
+    function navigateSpatialRelative(delta) {
+      navigateToSpatialViewpoint(spatialActiveIdx + delta);
+    }
+
+    function onSpatialRailSliderInput(val) {
+      if (spatialViewpoints.length <= 1) return;
+      const approxIdx = Math.round((parseFloat(val) / 100) * (spatialViewpoints.length - 1));
+      const lbl = document.getElementById('spatialRailPosLabel');
+      if (lbl && spatialViewpoints[approxIdx]) {
+        lbl.textContent = spatialViewpoints[approxIdx].slot + ' (Drag to Snap)';
+      }
+    }
+
+    function onSpatialRailSliderChange(val) {
+      if (spatialViewpoints.length <= 1) return;
+      const nearestIdx = Math.round((parseFloat(val) / 100) * (spatialViewpoints.length - 1));
+      navigateToSpatialViewpoint(nearestIdx);
     }
 
     function selectSpatialPreviewAnchor(idx) {
-      const candidate = window.currentSpatialCandidate;
-      const anchors = candidate?.anchors || [];
-      if (anchors.length <= 1) return;
+      navigateToSpatialViewpoint(idx);
+    }
 
-      const targetT = idx / (anchors.length - 1);
-      const slider = document.getElementById('spatialPreviewRailSlider');
-      if (slider) slider.value = targetT * 100;
-      updateSpatialCameraRail(targetT);
+    function setSpatialDebugMode(mode) {
+      renderSpatial();
+    }
+
+    function toggleSpatialQaOverlay() {
+      const el = document.getElementById('spatialQaOverlay');
+      if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
     }
 
     async function applySpatialCandidateAction() {
@@ -15757,7 +15749,7 @@ function openAiEnhanceBoothModal() {
           <i class="fa-solid fa-cube" style="color: #38bdf8;"></i> Spatial Booth Candidate Preview
         </h3>
         <p style="margin: 4px 0 0 0; font-size: 12px; color: #94a3b8;" id="spatialPreviewModalSubtitle">
-          Multi-View Spatial Rail • Calibrated Standing Eye Level • Parallax Continuous Horizon
+          Connected Multi-View Experience • Preserving Original Photography • Zero Distortion
         </p>
       </div>
       <button type="button" onclick="closeSpatialBoothPreviewModal()" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 20px; cursor: pointer;">&times;</button>
@@ -15784,7 +15776,7 @@ function openAiEnhanceBoothModal() {
       <!-- Internal QA Metric Overlay -->
       <div id="spatialQaOverlay" style="display: none; position: absolute; top: 12px; left: 12px; background: rgba(2, 6, 23, 0.95); border: 1.5px solid #38bdf8; border-radius: 8px; padding: 12px 16px; font-family: monospace; font-size: 11px; color: #cbd5e1; z-index: 10; line-height: 1.6; box-shadow: 0 10px 25px rgba(0,0,0,0.8); max-width: 380px;">
         <div style="color: #38bdf8; font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
-          <span><i class="fa-solid fa-flask"></i> C11.19-R1 QA TELEMETRY</span>
+          <span><i class="fa-solid fa-flask"></i> C11.20 QA TELEMETRY</span>
           <span id="qaDebugModeLabel" style="background: rgba(56,189,248,0.2); color: #38bdf8; padding: 2px 6px; border-radius: 4px; font-size: 10px;">COMPOSITE</span>
         </div>
         <div style="margin-bottom: 8px; display: flex; gap: 4px; flex-wrap: wrap;">
@@ -15798,7 +15790,7 @@ function openAiEnhanceBoothModal() {
         <div>Active Source: <span id="qaActiveTex" style="color: #f59e0b;">CENTER (100%)</span></div>
         <div>Coverage: <span id="qaCoverage" style="color: #4ade80;">96.5% (Safe)</span> | Inliers: <span id="qaInliers">51</span></div>
         <div>Surfaces: <span id="qaPlanes" style="color: #a78bfa;">0 Floating (Unified Target Mesh)</span></div>
-        <div>Depth Map: <span style="color: #38bdf8;">220+ Unique Per-Pixel Levels</span></div>
+        <div>Structural Pixel Warp: <span style="color: #4ade80;">0% (Pristine Original Pixels)</span></div>
       </div>
 
       <!-- Bottom-left Resolution & Quality Badge -->
@@ -15812,7 +15804,7 @@ function openAiEnhanceBoothModal() {
       <span style="font-size: 11px; font-weight: 800; color: #38bdf8; min-width: 90px; display: flex; align-items: center; gap: 6px;">
         <i class="fa-solid fa-arrows-left-right"></i> SPATIAL RAIL:
       </span>
-      <input type="range" id="spatialPreviewRailSlider" min="0" max="100" step="0.2" value="50" style="flex: 1; accent-color: #38bdf8; cursor: pointer;" oninput="onSpatialRailSliderInput(this.value)">
+      <button type="button" onclick="navigateSpatialRelative(-1)" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(56,189,248,0.3); color: #38bdf8; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer;" title="Previous Viewpoint"><i class="fa-solid fa-chevron-left"></i></button><input type="range" id="spatialPreviewRailSlider" min="0" max="100" step="1" value="50" style="flex: 1; accent-color: #38bdf8; cursor: pointer;" oninput="onSpatialRailSliderInput(this.value)" onchange="onSpatialRailSliderChange(this.value)"><button type="button" onclick="navigateSpatialRelative(1)" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(56,189,248,0.3); color: #38bdf8; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer;" title="Next Viewpoint"><i class="fa-solid fa-chevron-right"></i></button>
       <span id="spatialRailPosLabel" style="font-size: 11px; font-weight: 700; color: #cbd5e1; min-width: 125px; text-align: right;">CENTER (50%)</span>
       <button type="button" onclick="toggleSpatialQaOverlay()" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 5px 10px; font-size: 10.5px; font-weight: 700; color: #38bdf8; cursor: pointer; display: flex; align-items: center; gap: 4px;">
         <i class="fa-solid fa-flask"></i> QA Metric

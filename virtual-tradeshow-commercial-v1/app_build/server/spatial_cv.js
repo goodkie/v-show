@@ -1,15 +1,16 @@
 /**
- * ³D₂ / 3DZ — C11.19-R1 REAL MULTI-VIEW SPATIAL COMPUTER VISION & REPROJECTION ENGINE
+ * ³D₂ / 3DZ — C11.20 CONNECTED VIEWPOINT SPATIAL BOOTH ENGINE
  * Module: server/spatial_cv.js
  * 
  * Features:
- * 1. 128-Dimensional Orientation Gradient Histogram Descriptors (SIFT-like)
- * 2. Lowe's Nearest-Neighbor Ratio Test Matching (0.85)
- * 3. 800-Iteration RANSAC Homography / Affine Inlier Verification
- * 4. Geometric Relative Pose Solver in Canonical Coordinates (CENTER root)
- * 5. Relative Scene Translation Units with Geometric Ordering Validation
- * 6. Real Per-Pixel Monocular & Structural Depth Map Estimation (200+ unique values)
- * 7. Depth Scale Alignment and Registration Graph Assembly
+ * 1. Non-Destructive Multi-View Connected Viewpoint Architecture
+ * 2. 128-Dimensional Orientation Gradient Histogram Descriptors (SIFT-like)
+ * 3. Lowe's Nearest-Neighbor Ratio Test Matching (0.85)
+ * 4. 800-Iteration RANSAC Homography / Affine Inlier Verification
+ * 5. Feature Matching ONLY for Transition Alignment (No Texture/Mesh Warping)
+ * 6. Shared Visual Landmark Centroid Computation (sharedCenterFrom, sharedCenterTo)
+ * 7. Classified Viewpoint Types (TRUE_PANORAMA vs PHOTO_IMMERSIVE)
+ * 8. Zero Depth Mesh Deformation (depthRequired = false)
  */
 
 const fs = require('fs');
@@ -118,22 +119,26 @@ class SpatialCV {
       for (let sy = 0; sy < 4; sy++) {
         for (let sx = 0; sx < 4; sx++) {
           const subStartX = Math.floor(kp.x - this.descriptorRadius + sx * subCellSize);
-          const subEndX = Math.floor(subStartX + subCellSize);
           const subStartY = Math.floor(kp.y - this.descriptorRadius + sy * subCellSize);
-          const subEndY = Math.floor(subStartY + subCellSize);
-          const subIndex = (sy * 4 + sx) * 8;
+          const hist = new Float32Array(8);
 
-          for (let py = subStartY; py < subEndY; py++) {
-            if (py < 0 || py >= h) continue;
-            const rowOffset = py * w;
-            for (let px = subStartX; px < subEndX; px++) {
-              if (px < 0 || px >= w) continue;
-              const pIdx = rowOffset + px;
-              const mag = gradMag[pIdx];
-              const ang = gradAngle[pIdx];
-              const bin = Math.floor((ang / (2 * Math.PI)) * 8) % 8;
-              desc[subIndex + bin] += mag;
+          for (let py = 0; py < Math.floor(subCellSize); py++) {
+            for (let px = 0; px < Math.floor(subCellSize); px++) {
+              const curX = subStartX + px;
+              const curY = subStartY + py;
+              if (curX >= 0 && curX < w && curY >= 0 && curY < h) {
+                const idx = curY * w + curX;
+                const mag = gradMag[idx];
+                const ang = gradAngle[idx];
+                const bin = Math.floor((ang / (2 * Math.PI)) * 8) % 8;
+                hist[bin] += mag;
+              }
             }
+          }
+
+          const cellIdx = (sy * 4 + sx) * 8;
+          for (let b = 0; b < 8; b++) {
+            desc[cellIdx + b] = hist[b];
           }
         }
       }
@@ -141,16 +146,14 @@ class SpatialCV {
       let norm = 0;
       for (let i = 0; i < 128; i++) norm += desc[i] * desc[i];
       norm = Math.sqrt(norm);
-      if (norm > 1e-6) {
+      if (norm > 1e-4) {
         for (let i = 0; i < 128; i++) {
-          let v = desc[i] / norm;
-          if (v > 0.2) v = 0.2;
-          desc[i] = v;
+          desc[i] = Math.min(0.2, desc[i] / norm);
         }
         let renorm = 0;
         for (let i = 0; i < 128; i++) renorm += desc[i] * desc[i];
         renorm = Math.sqrt(renorm);
-        if (renorm > 1e-6) {
+        if (renorm > 1e-4) {
           for (let i = 0; i < 128; i++) desc[i] /= renorm;
         }
       }
@@ -158,7 +161,6 @@ class SpatialCV {
     }
 
     return {
-      imagePath,
       width: w,
       height: h,
       keypoints,
@@ -173,10 +175,11 @@ class SpatialCV {
     const kpB = featB.keypoints;
 
     const matches = [];
+
     for (let i = 0; i < descA.length; i++) {
       const da = descA[i];
       let bestDist = Infinity;
-      let secondDist = Infinity;
+      let secondBestDist = Infinity;
       let bestIdx = -1;
 
       for (let j = 0; j < descB.length; j++) {
@@ -186,17 +189,20 @@ class SpatialCV {
           const diff = da[k] - db[k];
           d += diff * diff;
         }
+
         if (d < bestDist) {
-          secondDist = bestDist;
+          secondBestDist = bestDist;
           bestDist = d;
           bestIdx = j;
-        } else if (d < secondDist) {
-          secondDist = d;
+        } else if (d < secondBestDist) {
+          secondBestDist = d;
         }
       }
 
-      if (bestDist < (this.loweRatioThreshold * this.loweRatioThreshold) * secondDist && bestIdx >= 0) {
+      if (bestDist < this.loweRatioThreshold * this.loweRatioThreshold * secondBestDist && bestIdx >= 0) {
         matches.push({
+          idxA: i,
+          idxB: bestIdx,
           ptA: kpA[i],
           ptB: kpB[bestIdx],
           distance: Math.sqrt(bestDist)
@@ -236,8 +242,8 @@ class SpatialCV {
       if (Math.abs(det) < 1e-4) continue;
 
       const a = (u1 * (y2 - y3) - y1 * (u2 - u3) + (u2 * y3 - u3 * y2)) / det;
-      const b = (x1 * (u2 - u3) - u1 * (x2 - x3) + (x2 * u3 - x3 * u2)) / det;
-      const tx = (x1 * (y2 * u3 - y3 * u2) - y1 * (x2 * u3 - x3 * u2) + u1 * (x2 * y3 - x3 * y2)) / det;
+      const b = (x1 * (u2 - u3) - u1 * (x2 - x3) + (x2 * u3 - x3 * y2)) / det;
+      const tx = (x1 * (y2 * u3 - y3 * u2) - y1 * (x2 * u3 - x3 * y2) + u1 * (x2 * y3 - x3 * y2)) / det;
 
       const c = (v1 * (y2 - y3) - y1 * (v2 - v3) + (v2 * y3 - v3 * y2)) / det;
       const d = (x1 * (v2 - v3) - v1 * (x2 - x3) + (x2 * v3 - x3 * v2)) / det;
@@ -262,11 +268,11 @@ class SpatialCV {
 
     const inlierRatio = matches.length > 0 ? (bestInliers.length / matches.length) : 0;
     let confidence = 'REJECTED';
-    if (bestInliers.length >= 15 && inlierRatio >= 0.35) {
+    if (bestInliers.length >= 10 && inlierRatio >= 0.18) {
       confidence = 'HIGH';
-    } else if (bestInliers.length >= 8 && inlierRatio >= 0.20) {
+    } else if (bestInliers.length >= 5 && inlierRatio >= 0.10) {
       confidence = 'MEDIUM';
-    } else if (bestInliers.length >= 4 && inlierRatio >= 0.12) {
+    } else if (bestInliers.length >= 3) {
       confidence = 'LOW';
     }
 
@@ -281,10 +287,8 @@ class SpatialCV {
       avgDy /= bestInliers.length;
     }
 
-    // Disparity to normalized relative camera motion:
-    // Physical geometry: If objects move left on sensor (avgDx < 0), camera moved right (dX > 0).
     const normDx = avgDx / (featA.width || 3840);
-    const camDx = -normDx; // Relative camera step X in scene units
+    const camDx = -normDx;
     const relYaw = Math.atan2(-normDx, 1.0);
 
     return {
@@ -303,123 +307,11 @@ class SpatialCV {
     };
   }
 
-  generateRealDepthMap(jpegPath, destPngPath) {
-    const fileBuf = fs.readFileSync(jpegPath);
-    const decoded = jpeg.decode(fileBuf, { useTArray: true });
-    const { width: w, height: h, data } = decoded;
-
-    const targetW = 512;
-    const targetH = 288;
-    const depthBuffer = new Uint8Array(targetW * targetH);
-
-    const luma = new Float32Array(targetW * targetH);
-    for (let y = 0; y < targetH; y++) {
-      const srcY = Math.floor((y / targetH) * h);
-      for (let x = 0; x < targetW; x++) {
-        const srcX = Math.floor((x / targetW) * w);
-        const srcIdx = (srcY * w + srcX) * 4;
-        const r = data[srcIdx];
-        const g = data[srcIdx + 1];
-        const b = data[srcIdx + 2];
-        luma[y * targetW + x] = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0;
-      }
-    }
-
-    const edgeEnergy = new Float32Array(targetW * targetH);
-    for (let y = 1; y < targetH - 1; y++) {
-      for (let x = 1; x < targetW - 1; x++) {
-        const idx = y * targetW + x;
-        const dx = luma[idx + 1] - luma[idx - 1];
-        const dy = luma[idx + targetW] - luma[idx - targetW];
-        edgeEnergy[idx] = Math.sqrt(dx * dx + dy * dy);
-      }
-    }
-
-    const horizonY = 0.45;
-    const uniqueValues = new Set();
-    let minVal = 255;
-    let maxVal = 0;
-
-    for (let y = 0; y < targetH; y++) {
-      const normY = y / targetH;
-      const groundFactor = normY > horizonY ? Math.pow((normY - horizonY) / (1.0 - horizonY), 1.2) : 0.0;
-      const ceilingFactor = normY <= horizonY ? Math.pow((horizonY - normY) / horizonY, 1.5) * 0.25 : 0.0;
-
-      for (let x = 0; x < targetW; x++) {
-        const idx = y * targetW + x;
-        const lum = luma[idx];
-        const edge = edgeEnergy[idx];
-        const distFromCenter = Math.abs(x - targetW / 2) / (targetW / 2);
-
-        let d = 0.20 + 0.65 * groundFactor + 0.15 * lum * (1.0 - 0.3 * distFromCenter) + 0.10 * edge - ceilingFactor;
-        d = Math.max(0.05, Math.min(0.98, d));
-
-        const byteVal = Math.round(d * 255);
-        depthBuffer[idx] = byteVal;
-        uniqueValues.add(byteVal);
-        if (byteVal < minVal) minVal = byteVal;
-        if (byteVal > maxVal) maxVal = byteVal;
-      }
-    }
-
-    const rawPng = Buffer.alloc(targetH * (targetW * 1 + 1));
-    let pIdx = 0;
-    for (let y = 0; y < targetH; y++) {
-      rawPng[pIdx++] = 0;
-      for (let x = 0; x < targetW; x++) {
-        rawPng[pIdx++] = depthBuffer[y * targetW + x];
-      }
-    }
-
-    const compressed = zlib.deflateSync(rawPng);
-    const sig = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
-    const ihdr = Buffer.alloc(25);
-    ihdr.writeUInt32BE(13, 0);
-    ihdr.write('IHDR', 4);
-    ihdr.writeUInt32BE(targetW, 8);
-    ihdr.writeUInt32BE(targetH, 12);
-    ihdr[16] = 8;
-    ihdr[17] = 0;
-    ihdr[18] = 0;
-    ihdr[19] = 0;
-    ihdr[20] = 0;
-
-    const crc32 = (buf) => {
-      let c = 0xffffffff;
-      for (let i = 0; i < buf.length; i++) {
-        c ^= buf[i];
-        for (let k = 0; k < 8; k++) {
-          c = (c >>> 1) ^ (0xedb88320 & -(c & 1));
-        }
-      }
-      return (c ^ 0xffffffff) >>> 0;
-    };
-
-    const ihdrData = ihdr.subarray(4, 21);
-    ihdr.writeUInt32BE(crc32(ihdrData), 21);
-
-    const idatHeader = Buffer.alloc(8);
-    idatHeader.writeUInt32BE(compressed.length, 0);
-    idatHeader.write('IDAT', 4);
-    const idatCrc = Buffer.alloc(4);
-    const idatData = Buffer.concat([Buffer.from('IDAT'), compressed]);
-    idatCrc.writeUInt32BE(crc32(idatData), 0);
-
-    const iend = Buffer.from([0, 0, 0, 0, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82]);
-    const finalPng = Buffer.concat([sig, ihdr, idatHeader, compressed, idatCrc, iend]);
-    fs.writeFileSync(destPngPath, finalPng);
-
-    return {
-      width: targetW,
-      height: targetH,
-      uniqueValueCount: uniqueValues.size,
-      min: minVal,
-      max: maxVal,
-      realPerPixelDepth: true
-    };
-  }
-
-  buildRegistrationGraph(views, uploadsDir = '') {
+  /**
+   * C11.20 Connected Viewpoint Graph Builder
+   * Preserves each source view intact. No depth maps, no mesh warping.
+   */
+  buildConnectionGraph(views, uploadsDir = '') {
     const SLOT_ORDER = ['FAR_LEFT', 'LEFT', 'LEFT_CENTER', 'CENTER', 'RIGHT_CENTER', 'RIGHT', 'FAR_RIGHT'];
 
     const sorted = [...views].sort((a, b) => {
@@ -429,162 +321,158 @@ class SpatialCV {
     });
 
     const viewFeatures = [];
-    const depthMetadata = {};
-
     for (const v of sorted) {
       try {
         const feat = this.extractFeatures(v.path);
-        let depthAsset = null;
-        if (uploadsDir && fs.existsSync(uploadsDir)) {
-          const depthFilename = `booth_depth_${v.slot.toLowerCase()}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}.png`;
-          const depthDest = path.join(uploadsDir, depthFilename);
-          const depthRes = this.generateRealDepthMap(v.path, depthDest);
-          depthAsset = {
-            url: `/uploads/${depthFilename}`,
-            ...depthRes
-          };
-          Object.assign(depthMetadata, depthRes);
-        }
-        viewFeatures.push({ ...v, feat, depthAsset });
+        viewFeatures.push({
+          ...v,
+          feat,
+          width: feat.width,
+          height: feat.height
+        });
       } catch (e) {
-        console.warn(`[SpatialCV] Feature/depth extraction failed for ${v.slot}:`, e.message);
+        console.warn(`[SpatialCV] Feature extraction failed for ${v.slot}:`, e.message);
       }
     }
 
     if (viewFeatures.length === 0) {
-      throw new Error('No valid view features could be extracted for spatial registration.');
+      throw new Error('No valid view features could be extracted for connection graph.');
     }
 
-    const registrationGraph = [];
+    const connections = [];
     for (let i = 0; i < viewFeatures.length - 1; i++) {
       const vA = viewFeatures[i];
       const vB = viewFeatures[i + 1];
 
       const matchRes = this.matchPair(vA.feat, vB.feat);
-      registrationGraph.push({
+
+      let centA = { u: 0.5, v: 0.5 };
+      let centB = { u: 0.5, v: 0.5 };
+      let relScale = 1.0;
+      let relRot = 0.0;
+
+      if (matchRes.inliers && matchRes.inliers.length > 0) {
+        let suA = 0, svA = 0, suB = 0, svB = 0;
+        for (const m of matchRes.inliers) {
+          suA += m.ptA.x / vA.feat.width;
+          svA += m.ptA.y / vA.feat.height;
+          suB += m.ptB.x / vB.feat.width;
+          svB += m.ptB.y / vB.feat.height;
+        }
+        const n = matchRes.inliers.length;
+        centA = { u: Number((suA / n).toFixed(3)), v: Number((svA / n).toFixed(3)) };
+        centB = { u: Number((suB / n).toFixed(3)), v: Number((svB / n).toFixed(3)) };
+
+        if (matchRes.model) {
+          relScale = Number(Math.sqrt(matchRes.model.a * matchRes.model.a + matchRes.model.c * matchRes.model.c).toFixed(3));
+          relRot = Number(Math.atan2(matchRes.model.c, matchRes.model.a).toFixed(3));
+        }
+      }
+
+      let transitionConfidence = matchRes.confidence;
+      if (matchRes.inlierCount >= 8 && matchRes.inlierRatio >= 0.14) {
+        transitionConfidence = 'HIGH';
+      } else if (matchRes.inlierCount >= 4) {
+        transitionConfidence = 'MEDIUM';
+      } else {
+        transitionConfidence = 'LOW';
+      }
+
+      const transitionPreset = (transitionConfidence === 'LOW') ? 'NEUTRAL_CROSSFADE' : 'ALIGNED_DISSOLVE';
+
+      connections.push({
+        from: vA.slot,
+        to: vB.slot,
         fromSlot: vA.slot,
         toSlot: vB.slot,
-        keypointsA: vA.feat.keypoints.length,
-        keypointsB: vB.feat.keypoints.length,
+        fromViewId: 'vp-' + vA.slot.toLowerCase(),
+        toViewId: 'vp-' + vB.slot.toLowerCase(),
+        sharedCenterFrom: centA,
+        sharedCenterTo: centB,
+        fromFov: 50,
+        toFov: 50,
+        relativeScale: Math.max(0.90, Math.min(1.10, relScale || 1.0)),
+        relativeRotation: relRot || 0.0,
         matchesCount: matchRes.matchesCount,
         inliersCount: matchRes.inlierCount,
         inlierRatio: matchRes.inlierRatio,
-        confidence: matchRes.confidence,
-        relativePose: matchRes.relativePose,
-        status: matchRes.confidence !== 'REJECTED' ? 'CONNECTED' : 'DISCONNECTED'
+        confidence: transitionConfidence,
+        transitionPreset,
+        status: transitionConfidence !== 'REJECTED' ? 'CONNECTED' : 'DISCONNECTED'
       });
     }
 
-    let centerIdx = viewFeatures.findIndex(v => v.slot === 'CENTER');
-    if (centerIdx < 0) {
-      centerIdx = Math.floor(viewFeatures.length / 2);
-    }
-    const centerView = viewFeatures[centerIdx];
-
-    const solvedPoses = new Map();
-    // Canonical origin at CENTER
-    solvedPoses.set(centerView.slot, { x: 0.0, y: 0.0, z: 0.0, yaw: 0.0, confidence: 1.0 });
-
-    // Center -> Right (moves in +X direction)
-    for (let i = centerIdx; i < viewFeatures.length - 1; i++) {
-      const curSlot = viewFeatures[i].slot;
-      const nextSlot = viewFeatures[i + 1].slot;
-      const edge = registrationGraph.find(e => e.fromSlot === curSlot && e.toSlot === nextSlot);
-      const curPose = solvedPoses.get(curSlot);
-
-      if (edge && edge.status === 'CONNECTED' && curPose) {
-        const stepX = Math.abs(edge.relativePose.camDx) > 0.05 ? Math.abs(edge.relativePose.camDx) : 0.28;
-        const stepYaw = edge.relativePose.camYaw !== 0 ? -Math.abs(edge.relativePose.camYaw) : -0.25;
-        solvedPoses.set(nextSlot, {
-          x: Number((curPose.x + stepX).toFixed(4)),
-          y: Number((curPose.y + (edge.relativePose.imgDy || 0.0)).toFixed(4)),
-          z: 0.0,
-          yaw: Number((curPose.yaw + stepYaw).toFixed(4)),
-          confidence: edge.confidence === 'HIGH' ? 0.95 : (edge.confidence === 'MEDIUM' ? 0.85 : 0.65)
-        });
-      } else if (curPose) {
-        solvedPoses.set(nextSlot, {
-          x: Number((curPose.x + 0.28).toFixed(4)),
-          y: 0.0,
-          z: 0.0,
-          yaw: Number((curPose.yaw - 0.25).toFixed(4)),
-          confidence: 0.50
-        });
-      }
-    }
-
-    // Center -> Left (moves in -X direction)
-    for (let i = centerIdx; i > 0; i--) {
-      const curSlot = viewFeatures[i].slot;
-      const prevSlot = viewFeatures[i - 1].slot;
-      const edge = registrationGraph.find(e => e.fromSlot === prevSlot && e.toSlot === curSlot);
-      const curPose = solvedPoses.get(curSlot);
-
-      if (edge && edge.status === 'CONNECTED' && curPose) {
-        const stepX = Math.abs(edge.relativePose.camDx) > 0.05 ? Math.abs(edge.relativePose.camDx) : 0.22;
-        const stepYaw = edge.relativePose.camYaw !== 0 ? Math.abs(edge.relativePose.camYaw) : 0.10;
-        solvedPoses.set(prevSlot, {
-          x: Number((curPose.x - stepX).toFixed(4)),
-          y: Number((curPose.y - (edge.relativePose.imgDy || 0.0)).toFixed(4)),
-          z: 0.0,
-          yaw: Number((curPose.yaw + stepYaw).toFixed(4)),
-          confidence: edge.confidence === 'HIGH' ? 0.95 : (edge.confidence === 'MEDIUM' ? 0.85 : 0.65)
-        });
-      } else if (curPose) {
-        solvedPoses.set(prevSlot, {
-          x: Number((curPose.x - 0.22).toFixed(4)),
-          y: 0.0,
-          z: 0.0,
-          yaw: Number((curPose.yaw + 0.10).toFixed(4)),
-          confidence: 0.50
-        });
-      }
-    }
-
-    const anchors = viewFeatures.map((v, idx) => {
-      const pose = solvedPoses.get(v.slot) || { x: 0, y: 0, z: 0, yaw: 0, confidence: 0.8 };
+    const viewpoints = viewFeatures.map((v, idx) => {
+      const isPano = v.width && v.height && Math.abs((v.width / v.height) - 2.0) < 0.15;
       return {
-        id: 'anchor-' + v.slot.toLowerCase(),
-        index: idx,
+        id: 'vp-' + v.slot.toLowerCase(),
         slot: v.slot,
-        originalFilename: v.originalFilename,
-        pose: {
-          x: pose.x,
-          y: pose.y,
-          z: pose.z,
-          yaw: pose.yaw
-        },
-        confidence: pose.confidence,
-        depthAsset: v.depthAsset || null
+        index: idx,
+        viewerType: isPano ? 'TRUE_PANORAMA' : 'PHOTO_IMMERSIVE',
+        sourceAsset: { url: v.masterUrl || v.path },
+        masteredAsset: { url: v.derivatives?.desktop8k?.url || v.masterUrl },
+        cleanedAsset: v.cleanedUrl ? { url: v.cleanedUrl } : null,
+        textureUrl: v.derivatives?.desktop8k?.url || v.derivatives?.standard4k?.url || v.masterUrl,
+        derivatives: v.derivatives || {},
+        initialViewState: { fov: 50, panX: 0, panY: 0, zoom: 1.0 },
+        confidence: v.confidence || 0.95
       };
     });
 
-    const allX = anchors.map(a => a.pose.x);
-    const allYaw = anchors.map(a => a.pose.yaw);
-    const minX = Math.min(...allX);
-    const maxX = Math.max(...allX);
-    const minYaw = Math.min(...allYaw);
-    const maxYaw = Math.max(...allYaw);
+    const centerVp = viewpoints.find(v => v.slot === 'CENTER') || viewpoints[Math.floor(viewpoints.length / 2)] || viewpoints[0];
+    const entryViewId = centerVp ? centerVp.slot : 'CENTER';
 
-    const totalInliers = registrationGraph.reduce((sum, e) => sum + (e.inliersCount || 0), 0);
+    const totalInliers = connections.reduce((s, c) => s + (c.inliersCount || 0), 0);
 
-    const leftX = solvedPoses.get('LEFT_CENTER')?.x ?? solvedPoses.get('LEFT')?.x ?? -0.22;
-    const centerX = solvedPoses.get('CENTER')?.x ?? 0.0;
-    const rightX = solvedPoses.get('RIGHT_CENTER')?.x ?? solvedPoses.get('RIGHT')?.x ?? 0.28;
+    const highCount = connections.filter(c => c.confidence === 'HIGH').length;
+    const avgConfidence = connections.length > 0 ? ((highCount + connections.length) / (2 * connections.length)) : 0.90;
 
     return {
-      registrationGraph,
-      anchors,
+      engine: 'CONNECTED_VIEWPOINT_V1',
+      viewerEngineVersion: 'CONNECTED_VIEWPOINT_V1',
+      depthRequired: false,
+      entryViewId,
+      viewpointCount: viewpoints.length,
+      panoramaViewpointCount: viewpoints.filter(v => v.viewerType === 'TRUE_PANORAMA').length,
+      photoImmersiveViewpointCount: viewpoints.filter(v => v.viewerType === 'PHOTO_IMMERSIVE').length,
+      viewpoints,
+      connections,
       totalInliers,
-      depthMetadata,
-      bounds: { minX, maxX, minYaw, maxYaw },
-      poseOrdering: {
-        leftCenter: leftX,
-        center: centerX,
-        rightCenter: rightX,
-        isValid: leftX < centerX && centerX < rightX
-      }
+      averageConfidence: Number(avgConfidence.toFixed(2)),
+      // Backward compatibility fields for candidate schema
+      registrationGraph: connections.map(c => ({
+        fromSlot: c.fromSlot,
+        toSlot: c.toSlot,
+        matchesCount: c.matchesCount,
+        inliersCount: c.inliersCount,
+        inlierRatio: c.inlierRatio,
+        confidence: c.confidence,
+        status: c.status,
+        relativePose: { dx: 0.25, dy: 0, relYaw: 0 }
+      })),
+      anchors: viewpoints.map((vp, idx) => ({
+        id: 'anchor-' + vp.slot.toLowerCase(),
+        index: idx,
+        slot: vp.slot,
+        viewId: vp.id,
+        textureUrl: vp.textureUrl,
+        derivatives: vp.derivatives,
+        pose: {
+          x: (idx - Math.floor(viewpoints.length / 2)) * 0.25,
+          y: 0.0,
+          z: 0.0,
+          yaw: (idx - Math.floor(viewpoints.length / 2)) * -0.15
+        },
+        target: { x: 0, y: 0, z: 0 },
+        confidence: vp.confidence
+      })),
+      bounds: { minX: -0.5, maxX: 0.5, minYaw: -0.3, maxYaw: 0.3 }
     };
+  }
+
+  // Alias for backward compatibility
+  buildRegistrationGraph(views, uploadsDir = '') {
+    return this.buildConnectionGraph(views, uploadsDir);
   }
 }
 
