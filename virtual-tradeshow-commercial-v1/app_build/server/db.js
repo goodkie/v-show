@@ -13139,18 +13139,22 @@ return event;
   getActiveBoothBackground(project) {
     if (!project) return null;
     
-    // 0. Explicitly active spatial booth version (C11.17)
-    if (Array.isArray(project.spatialBoothVersions) && project.activeSpatialVersionId) {
-      const sv = project.spatialBoothVersions.find(item => item.id === project.activeSpatialVersionId || item.versionId === project.activeSpatialVersionId);
+    // 0. Explicitly active spatial booth version (Priority when viewerMode is MULTI_VIEW_SPATIAL or activeSpatialVersionId is set)
+    if (project.viewerMode === 'MULTI_VIEW_SPATIAL' || (Array.isArray(project.spatialBoothVersions) && project.activeSpatialVersionId)) {
+      const sv = (project.spatialBoothVersions || []).find(item => item.id === project.activeSpatialVersionId || item.versionId === project.activeSpatialVersionId) || project.activeSpatialVersion;
       if (sv) {
         return {
           versionId: sv.id || sv.versionId,
           assetId: 'asset-spatial-' + (sv.id || sv.versionId),
-          url: sv.activeBackgroundUrl || (sv.anchors && sv.anchors[0]?.textureUrl) || sv.url,
+          url: sv.activeBackgroundUrl || (sv.anchors && sv.anchors[0]?.textureUrl) || (sv.viewpoints && sv.viewpoints[0]?.textureUrl) || sv.url,
           sourceType: 'MULTI_VIEW_SPATIAL',
           candidateId: sv.candidateId || null,
           viewerMode: 'MULTI_VIEW_SPATIAL',
+          engineVersion: sv.viewerEngineVersion || sv.engineVersion || 'CONNECTED_VIEWPOINT_V3_1',
+          viewerEngineVersion: sv.viewerEngineVersion || sv.engineVersion || 'CONNECTED_VIEWPOINT_V3_1',
           anchors: sv.anchors || [],
+          viewpoints: sv.viewpoints || sv.anchors || [],
+          connections: sv.connections || [],
           adjacentGraph: sv.adjacentGraph || [],
           usableHorizontalRange: sv.usableHorizontalRange || null,
           registrationConfidence: sv.registrationConfidence || 0.9,
@@ -13570,7 +13574,7 @@ return event;
       if (!candidate) throw new Error(`Spatial booth candidate ${candidateId} not found`);
 
       const versionId = `bver-spatial-${Date.now()}`;
-      const activeUrl = candidate.activeBackgroundUrl || (candidate.anchors && candidate.anchors[0]?.textureUrl);
+      const activeUrl = candidate.activeBackgroundUrl || (candidate.anchors && candidate.anchors[0]?.textureUrl) || (candidate.viewpoints && candidate.viewpoints[0]?.textureUrl);
 
       project.spatialBoothVersions = project.spatialBoothVersions || [];
       const versionObj = {
@@ -13581,12 +13585,16 @@ return event;
         activeBackgroundUrl: activeUrl,
         url: activeUrl,
         sourceType: 'MULTI_VIEW_SPATIAL',
-        viewerMode: candidate.viewerMode || 'MULTI_VIEW_SPATIAL',
+        viewerMode: 'MULTI_VIEW_SPATIAL',
+        engineVersion: 'CONNECTED_VIEWPOINT_V3_1',
+        viewerEngineVersion: 'CONNECTED_VIEWPOINT_V3_1',
         anchors: candidate.anchors || [],
-        adjacentGraph: candidate.adjacentGraph || [],
+        viewpoints: candidate.viewpoints || candidate.anchors || [],
+        connections: candidate.connections || [],
+        adjacentGraph: candidate.adjacentGraph || candidate.connections || [],
         usableHorizontalRange: candidate.usableHorizontalRange || null,
-        registrationConfidence: candidate.registrationConfidence || 0.9,
-        compatibleSourceCount: candidate.compatibleSourceCount || candidate.anchors?.length || 1,
+        registrationConfidence: candidate.registrationConfidence || candidate.averageConfidence || 0.9,
+        compatibleSourceCount: candidate.compatibleSourceCount || candidate.viewpoints?.length || candidate.anchors?.length || 1,
         sourceViews: candidate.sourceViews || [],
         assetManifest: candidate.assetManifest || [],
         derivatives: candidate.derivatives || {},
@@ -13598,11 +13606,17 @@ return event;
       project.activeSpatialVersionId = versionId;
       project.activeSpatialVersion = versionObj;
       project.photoUrl = activeUrl;
-      project.viewerMode = versionObj.viewerMode;
-      project.activeViewerMode = versionObj.viewerMode;
+      project.viewerMode = 'MULTI_VIEW_SPATIAL';
+      project.activeViewerMode = 'MULTI_VIEW_SPATIAL';
       project.updatedAt = new Date().toISOString();
 
       candidate.status = 'APPLIED';
+
+      // Read-After-Write Verification (Section 23)
+      if (project.activeSpatialVersionId !== versionId || project.viewerMode !== 'MULTI_VIEW_SPATIAL') {
+        throw new Error('Read-after-write verification failed for spatial apply.');
+      }
+
       return {
         success: true,
         project,

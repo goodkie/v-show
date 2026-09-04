@@ -98,7 +98,7 @@ app.get('/api/master-admin/spatial-jobs', requireMasterAdmin, (req, res) => {
         jobId: j.jobId,
         projectId: j.projectId,
         accountId: j.accountId,
-        engine: j.candidate?.engine || j.candidate?.viewerEngineVersion || 'CONNECTED_VIEWPOINT_V3',
+        engine: j.candidate?.engine || j.candidate?.viewerEngineVersion || 'CONNECTED_VIEWPOINT_V3_1',
         viewpointCount: j.candidate?.viewpointCount || j.candidate?.compatibleSourceCount || 3,
         strongConnections: (j.candidate?.connections && j.candidate.connections.filter(c => c.confidence === 'HIGH' || c.confidence === 'MEDIUM').length) || 2,
         weakConnections: (j.candidate?.connections && j.candidate.connections.filter(c => c.confidence === 'LOW').length) || 0,
@@ -9617,7 +9617,15 @@ app.post('/api/projects/:id/spatial/apply', async (req, res) => {
     const candidateId = req.body?.candidateId;
     if (!candidateId) return res.status(400).json({ error: 'Missing candidateId' });
 
+    const beforeProject = await db.getProject(projectId);
     const result = await db.applySpatialBoothCandidate(projectId, candidateId, token);
+    const afterProject = await db.getProject(projectId);
+
+    console.log(`[SPATIAL_APPLY_AUDIT] Project=${projectId} Candidate=${candidateId}`);
+    console.log(`  BEFORE: viewerMode=${beforeProject?.viewerMode} activeSpatialVersionId=${beforeProject?.activeSpatialVersionId}`);
+    console.log(`  AFTER_WRITE: viewerMode=${result.project?.viewerMode} activeSpatialVersionId=${result.project?.activeSpatialVersionId}`);
+    console.log(`  READ_AFTER_WRITE: viewerMode=${afterProject?.viewerMode} activeSpatialVersionId=${afterProject?.activeSpatialVersionId}`);
+
     res.json({
       success: true,
       activeSpatialVersion: result.activeSpatialVersion,

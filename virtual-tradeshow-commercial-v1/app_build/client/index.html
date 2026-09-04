@@ -5711,6 +5711,49 @@
       logAnalyticsEvent('immersive_view_started', { projectId: projectData.id });
     }
 
+    function setupActiveSpatialViewerRail(projectData) {
+      const activeBg = getActiveBoothBackground(projectData);
+      const vps = activeBg?.viewpoints || activeBg?.anchors || [];
+      const railId = 'activeBoothSpatialRail';
+      let rail = document.getElementById(railId);
+      if (rail) rail.remove();
+
+      if (vps.length > 1 && (projectData?.viewerMode === 'MULTI_VIEW_SPATIAL' || activeBg?.sourceType === 'MULTI_VIEW_SPATIAL')) {
+        const container = document.getElementById('viewer-container');
+        if (!container) return;
+        rail = document.createElement('div');
+        rail.id = railId;
+        rail.style.cssText = 'position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); background: rgba(9,16,29,0.92); backdrop-filter: blur(10px); border: 1.5px solid #38bdf8; border-radius: 30px; padding: 6px 14px; display: flex; align-items: center; gap: 8px; z-index: 25; box-shadow: 0 8px 25px rgba(0,0,0,0.7);';
+        
+        let htmlBtns = '<span style="font-size: 11px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 5px;"><i class="fa-solid fa-cube"></i> SPATIAL BOOTH:</span>';
+        vps.forEach((vp, idx) => {
+          const slot = vp.slot || ('VIEW ' + (idx + 1));
+          const url = vp.textureUrl || vp.url || (vp.derivatives && (vp.derivatives.standard4k?.url || vp.derivatives.desktop8k?.url));
+          htmlBtns += `<button type="button" onclick="switchActiveSpatialViewpoint('${url}', '${slot}', this)" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(56,189,248,0.3); border-radius: 14px; padding: 4px 10px; font-size: 10.5px; font-weight: 700; color: #cbd5e1; cursor: pointer; transition: all 0.2s;" data-slot="${slot}">${slot}</button>`;
+        });
+        rail.innerHTML = htmlBtns;
+        container.appendChild(rail);
+      }
+    }
+
+    function switchActiveSpatialViewpoint(url, slot, btn) {
+      if (!url) return;
+      switchActiveBoothTexture(url, window.activeProjectData);
+      const rail = document.getElementById('activeBoothSpatialRail');
+      if (rail) {
+        rail.querySelectorAll('button').forEach(b => {
+          b.style.background = 'rgba(255,255,255,0.08)';
+          b.style.borderColor = 'rgba(56,189,248,0.3)';
+          b.style.color = '#cbd5e1';
+        });
+      }
+      if (btn) {
+        btn.style.background = '#0284c7';
+        btn.style.borderColor = '#38bdf8';
+        btn.style.color = '#fff';
+      }
+    }
+
     function initPhotoImmersiveThree(photoUrl, projectData) {
       const container = document.getElementById('viewer-container');
       const canvas = document.getElementById('three-canvas');
@@ -5779,6 +5822,9 @@
         photoSphere.rotation.y = -Math.PI / 2;
         photoSphere.renderOrder = -1;
         scene.add(photoSphere);
+
+        // Multi-View Spatial Booth Active Navigation Rail (C11.22-P0R1 Parity)
+        setupActiveSpatialViewerRail(projectData);
 
         camera.position.set(0, 0, 0.01);
         controls.target.set(0, 0, 0);
@@ -8909,6 +8955,32 @@
     function getActiveBoothBackground(project) {
       if (!project) return null;
       
+      // 0. Explicitly active spatial booth version (Priority when viewerMode is MULTI_VIEW_SPATIAL or activeSpatialVersionId is set)
+      if (project.viewerMode === 'MULTI_VIEW_SPATIAL' || (Array.isArray(project.spatialBoothVersions) && project.activeSpatialVersionId)) {
+        const sv = (project.spatialBoothVersions || []).find(item => item.id === project.activeSpatialVersionId || item.versionId === project.activeSpatialVersionId) || project.activeSpatialVersion;
+        if (sv) {
+          return {
+            versionId: sv.id || sv.versionId,
+            assetId: 'asset-spatial-' + (sv.id || sv.versionId),
+            url: sv.activeBackgroundUrl || (sv.anchors && sv.anchors[0]?.textureUrl) || (sv.viewpoints && sv.viewpoints[0]?.textureUrl) || sv.url,
+            sourceType: 'MULTI_VIEW_SPATIAL',
+            candidateId: sv.candidateId || null,
+            viewerMode: 'MULTI_VIEW_SPATIAL',
+            engineVersion: sv.viewerEngineVersion || sv.engineVersion || 'CONNECTED_VIEWPOINT_V3_1',
+            viewerEngineVersion: sv.viewerEngineVersion || sv.engineVersion || 'CONNECTED_VIEWPOINT_V3_1',
+            anchors: sv.anchors || [],
+            viewpoints: sv.viewpoints || sv.anchors || [],
+            adjacentGraph: sv.adjacentGraph || [],
+            connections: sv.connections || [],
+            usableHorizontalRange: sv.usableHorizontalRange || null,
+            registrationConfidence: sv.registrationConfidence || 0.9,
+            derivatives: sv.derivatives || null,
+            normalFov: 50,
+            wideFov: 60
+          };
+        }
+      }
+
       // 1. Explicitly active background version
       if (Array.isArray(project.backgroundVersions) && project.activeBackgroundVersionId) {
         const v = project.backgroundVersions.find(item => item.versionId === project.activeBackgroundVersionId);
@@ -14002,8 +14074,7 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       if (m) m.style.display = 'none';
     }
 
-    // ── SPATIAL PREVIEW WEBGL 3D VIEWER ENGINE (C11.22) ──
-    // Immersive Connected Viewpoint V3 (No-White-Flash Transitions, Cylindrical Immersion, 360-like Controls)
+    // ── SPATIAL PREVIEW WEBGL 3D VIEWER ENGINE (C11.22-P0R1: Proven PhotoImmersive Engine) ──
     const SPATIAL_DRAG_STATES = {
       IDLE: 'IDLE',
       PANNING: 'PANNING',
@@ -14022,19 +14093,15 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
     let spatialViewpoints = [];
     let spatialActiveIdx = 1;
     let spatialIsTransitioning = false;
-    let spatialCamBaseZ = 0.01; // Camera inside cylindrical origin
-    let spatialYaw = 0.0;       // Radians lookaround
-    let spatialPitch = 0.0;     // Radians lookaround
-    let spatialCurrentFov = 52;
-    let spatialCurvature = 0.35;
-    let spatialHorizonOffset = 0.0;
-    let spatialLensCorrection = 0.0;
+    let spatialYaw = 0.0;
+    let spatialPitch = 0.0;
+    let spatialCurrentFov = 50;
 
-    const MIN_SAFE_YAW = -0.38; // ~ -22 deg
-    const MAX_SAFE_YAW = 0.38;  // ~ +22 deg
-    const MIN_SAFE_PITCH = -0.10; // ~ -6 deg
-    const MAX_SAFE_PITCH = 0.10;  // ~ +6 deg
-    const EDGE_TRANSITION_THRESHOLD_PX = 45;
+    const MIN_SAFE_YAW = -0.45; // ~ -25 deg
+    const MAX_SAFE_YAW = 0.45;  // ~ +25 deg
+    const MIN_SAFE_PITCH = -0.18; // ~ -10 deg
+    const MAX_SAFE_PITCH = 0.18;  // ~ +10 deg
+    const EDGE_TRANSITION_THRESHOLD_PX = 40;
 
     let spatialDragState = SPATIAL_DRAG_STATES.IDLE;
     let edgeAccumPx = 0;
@@ -14042,36 +14109,8 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
     let lastPointerX = 0;
     let lastPointerY = 0;
     let lastPointerTime = 0;
-    let pointerVelocityX = 0;
-    let pointerVelocityY = 0;
     let continuousPointerDown = false;
-    let continuousTransitionsInDrag = 0;
-    let pendingDragDelta = 0;
-    let userHasInteracted = false;
     let whiteFrameCount = 0;
-
-    // Immersion Presets
-    const IMMERSION_PRESETS = {
-      SUBTLE: { fov: 48, curvature: 0.18, horizon: 0, lens: 0 },
-      NORMAL: { fov: 52, curvature: 0.35, horizon: 0, lens: 0 },
-      WIDE:   { fov: 60, curvature: 0.52, horizon: 0, lens: 0 },
-      CUSTOM: { fov: 52, curvature: 0.35, horizon: 0, lens: 0 }
-    };
-    let activeImmersionPreset = 'NORMAL';
-
-    function buildCylindricalGeometry(fov, curvature, aspect) {
-      const cur = Math.max(0.0, Math.min(0.60, curvature !== undefined ? curvature : 0.35));
-      if (cur < 0.02) {
-        return new THREE.PlaneGeometry(6.0, 4.0, 32, 16);
-      }
-      const radius = 6.0 / (cur * 2.5); // Cylinder radius
-      const arcSpan = Math.max(0.7, Math.min(1.8, (fov * Math.PI / 180) * 1.35));
-      const height = (radius * arcSpan) / (aspect || 1.5);
-      const thetaStart = -Math.PI / 2 - arcSpan / 2;
-      const geom = new THREE.CylinderGeometry(radius, radius, height, 64, 16, true, thetaStart, arcSpan);
-      geom.scale(-1, 1, 1); // Render inside of cylinder
-      return geom;
-    }
 
     async function ensureViewpointReady(vp) {
       if (vp.isGpuReady && vp.tex) return true;
@@ -14079,37 +14118,31 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
 
       if (vp.loadPromise) return vp.loadPromise;
 
-      vp.loadPromise = (async () => {
-        try {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.src = vp.url;
-          await img.decode();
-
-          const tex = new THREE.Texture(img);
-          tex.generateMipmaps = true;
-          tex.minFilter = THREE.LinearMipmapLinearFilter;
-          tex.magFilter = THREE.LinearFilter;
-          tex.needsUpdate = true;
-          vp.tex = tex;
-
-          // Offscreen GPU warm-up
-          if (spatialRenderer && spatialMeshTransition && spatialMatTransition) {
-            spatialMatTransition.map = tex;
-            spatialMatTransition.opacity = 0.001;
-            spatialRenderer.render(spatialScene, spatialCamera);
-            spatialMatTransition.opacity = 0.0;
+      vp.loadPromise = new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          try {
+            const tex = new THREE.Texture(img);
+            tex.encoding = THREE.sRGBEncoding;
+            tex.generateMipmaps = true;
+            tex.minFilter = THREE.LinearMipmapLinearFilter;
+            tex.magFilter = THREE.LinearFilter;
+            tex.needsUpdate = true;
+            vp.tex = tex;
+            vp.isGpuReady = true;
+            resolve(true);
+          } catch (err) {
+            console.warn('[Spatial Texture Upload Error]', err);
+            resolve(false);
           }
-
-          vp.isGpuReady = true;
-          return true;
-        } catch (err) {
-          console.warn('[Spatial] Preload/decode error for', vp.slot, err);
-          return false;
-        } finally {
-          vp.loadPromise = null;
-        }
-      })();
+        };
+        img.onerror = (e) => {
+          console.warn('[Spatial Image Load Error] for slot ' + vp.slot, vp.url, e);
+          resolve(false);
+        };
+        img.src = vp.url;
+      });
 
       return vp.loadPromise;
     }
@@ -14121,23 +14154,44 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       const container = document.getElementById('spatialPreviewCanvasContainer');
       const w = container ? container.clientWidth : 920;
       const h = container ? container.clientHeight : 520;
+      const aspect = w / h;
+
+      // WebGL Context Event Listeners
+      if (!canvas._hasContextHandlers) {
+        canvas._hasContextHandlers = true;
+        canvas.addEventListener('webglcontextlost', (e) => {
+          e.preventDefault();
+          console.warn('[Spatial WebGL] Context lost');
+        }, false);
+        canvas.addEventListener('webglcontextrestored', () => {
+          console.log('[Spatial WebGL] Context restored');
+          initSpatialPreviewWebGL(window.currentSpatialCandidate);
+        }, false);
+      }
 
       // Renderer setup
       if (!spatialRenderer) {
-        spatialRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
-        spatialRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        spatialRenderer = new THREE.WebGLRenderer({
+          canvas,
+          antialias: true,
+          powerPreference: 'high-performance',
+          precision: 'highp',
+          preserveDrawingBuffer: true
+        });
+        spatialRenderer.outputEncoding = THREE.sRGBEncoding;
+        spatialRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+        spatialRenderer.toneMappingExposure = 1.18;
       }
       spatialRenderer.setSize(w, h, false);
+      spatialRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 
       spatialScene = new THREE.Scene();
-      spatialScene.background = new THREE.Color(0x020617); // Dark navy/black, never white
+      spatialScene.background = new THREE.Color(0x020617); // Dark navy/black, NEVER white
 
-      // Camera: Non-destructive Perspective Camera inside cylindrical origin
-      const aspect = w / h;
-      spatialCurrentFov = 52;
-      spatialCamera = new THREE.PerspectiveCamera(spatialCurrentFov, aspect, 0.01, 1000);
-      spatialCamera.position.set(0, spatialHorizonOffset * 0.02, 0.01);
-
+      // Camera: Non-destructive Perspective Camera inside sphere center looking along -Z
+      spatialCurrentFov = 50;
+      spatialCamera = new THREE.PerspectiveCamera(spatialCurrentFov, aspect, 0.01, 2000);
+      spatialCamera.position.set(0, 0, 0.01);
       spatialYaw = 0.0;
       spatialPitch = 0.0;
       updateCameraOrientation();
@@ -14146,19 +14200,16 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       spatialViewpoints = [];
       const vps = candidate.viewpoints || candidate.anchors || [];
       vps.forEach((vp, idx) => {
-        const url = vp.textureUrl || (vp.derivatives && (vp.derivatives.standard4k?.url || vp.derivatives.desktop8k?.url)) || vp.masterUrl || '';
+        const url = vp.textureUrl || (vp.derivatives && (vp.derivatives.standard4k?.url || vp.derivatives.desktop8k?.url)) || vp.masterUrl || (vp.sourceAsset && vp.sourceAsset.url) || '';
         spatialViewpoints.push({
           id: vp.id || ('vp-' + (vp.slot || idx).toString().toLowerCase()),
           slot: vp.slot || ('VIEW ' + (idx + 1)),
           index: idx,
           viewerType: vp.viewerType || 'PHOTO_IMMERSIVE',
-          projection: vp.projection || 'CYLINDRICAL_IMMERSIVE',
-          fov: vp.fov || 52,
-          curvature: vp.curvature !== undefined ? vp.curvature : 0.35,
-          safeYawRange: vp.safeYawRange || [MIN_SAFE_YAW, MAX_SAFE_YAW],
-          safePitchRange: vp.safePitchRange || [MIN_SAFE_PITCH, MAX_SAFE_PITCH],
-          horizonOffset: vp.horizonOffset || 0.0,
-          lensCorrection: vp.lensCorrection || 0.0,
+          projection: 'PHOTO_IMMERSIVE',
+          fov: 50,
+          safeYawRange: [MIN_SAFE_YAW, MAX_SAFE_YAW],
+          safePitchRange: [MIN_SAFE_PITCH, MAX_SAFE_PITCH],
           tex: null,
           isGpuReady: false,
           url
@@ -14170,54 +14221,89 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       if (entryIdx < 0) entryIdx = Math.floor(spatialViewpoints.length / 2);
       spatialActiveIdx = entryIdx >= 0 ? entryIdx : 0;
 
-      // Build Double-Buffered Cylindrical Meshes
-      const cylGeo = buildCylindricalGeometry(spatialCurrentFov, spatialCurvature, aspect);
+      // PROVEN PHOTO_IMMERSIVE SPHERE GEOMETRY
+      // SphereGeometry(500, 128, 64) with scale(-1, 1, 1) and rotation.y = -Math.PI / 2
+      const sphereGeo = new THREE.SphereGeometry(500, 128, 64);
+      sphereGeo.scale(-1, 1, 1);
 
+      // Current Viewpoint Mesh - NEVER WHITE FALLBACK: color 0x000000, visible false until textured
       spatialMatCurrent = new THREE.MeshBasicMaterial({
+        side: THREE.FrontSide,
         map: null,
-        color: 0xffffff,
-        transparent: true,
-        opacity: 1.0,
-        depthWrite: false
-      });
-      spatialMeshCurrent = new THREE.Mesh(cylGeo, spatialMatCurrent);
-      spatialMeshCurrent.position.set(0, 0, 0);
-      spatialScene.add(spatialMeshCurrent);
-
-      spatialMatTransition = new THREE.MeshBasicMaterial({
-        map: null,
-        color: 0xffffff,
+        color: 0x000000,
         transparent: true,
         opacity: 0.0,
+        visible: false,
         depthWrite: false
       });
-      spatialMeshTransition = new THREE.Mesh(cylGeo.clone(), spatialMatTransition);
+      spatialMeshCurrent = new THREE.Mesh(sphereGeo, spatialMatCurrent);
+      spatialMeshCurrent.position.set(0, 0, 0);
+      spatialMeshCurrent.rotation.y = -Math.PI / 2;
+      spatialMeshCurrent.renderOrder = -1;
+      spatialScene.add(spatialMeshCurrent);
+
+      // Transition Mesh for double-buffering - color 0x000000, visible false until textured
+      spatialMatTransition = new THREE.MeshBasicMaterial({
+        side: THREE.FrontSide,
+        map: null,
+        color: 0x000000,
+        transparent: true,
+        opacity: 0.0,
+        visible: false,
+        depthWrite: false
+      });
+      spatialMeshTransition = new THREE.Mesh(sphereGeo.clone(), spatialMatTransition);
       spatialMeshTransition.position.set(0, 0, 0);
+      spatialMeshTransition.rotation.y = -Math.PI / 2;
+      spatialMeshTransition.renderOrder = 0;
       spatialScene.add(spatialMeshTransition);
 
       // Reset interaction state
       continuousPointerDown = false;
-      continuousTransitionsInDrag = 0;
-      pendingDragDelta = 0;
       edgeAccumPx = 0;
       spatialDragState = SPATIAL_DRAG_STATES.IDLE;
 
-      // Decode and activate entry viewpoint first
+      // Show Loading Overlay until entry viewpoint is fully decoded & rendered
+      showSpatialLoadingOverlay();
+
       const curVp = spatialViewpoints[spatialActiveIdx];
       if (curVp) {
-        ensureViewpointReady(curVp).then(() => {
-          if (spatialMatCurrent) {
+        ensureViewpointReady(curVp).then((ready) => {
+          if (ready && curVp.tex && spatialMatCurrent) {
             spatialMatCurrent.map = curVp.tex;
+            spatialMatCurrent.opacity = 1.0;
+            spatialMatCurrent.visible = true;
             spatialMatCurrent.needsUpdate = true;
             renderSpatial();
+            hideSpatialLoadingOverlay();
+            updatePreviewUI(spatialActiveIdx);
+          } else {
+            // First-Frame Watchdog Fallback
+            handleSpatialTextureLoadFailure(curVp);
           }
         });
       }
 
-      // Preload adjacent viewpoints immediately (Req 3)
+      // Preload adjacent viewpoints immediately
       preloadAdjacentViewpoints(spatialActiveIdx);
 
-      // ── 360-LIKE LOOKAROUND & DRAG-TO-TRAVEL POINTER HANDLERS ──
+      // First-frame watchdog: 3 second timeout
+      setTimeout(() => {
+        if (!curVp.isGpuReady || !spatialMatCurrent.map) {
+          console.warn('[Spatial Watchdog] 3s elapsed without render, triggering recovery');
+          ensureViewpointReady(curVp).then(() => {
+            if (curVp.tex) {
+              spatialMatCurrent.map = curVp.tex;
+              spatialMatCurrent.opacity = 1.0;
+              spatialMatCurrent.visible = true;
+              renderSpatial();
+              hideSpatialLoadingOverlay();
+            }
+          });
+        }
+      }, 3000);
+
+      // ── POINTER GESTURE HANDLERS (Drag-to-travel & Lookaround) ──
       canvas.onpointerdown = (e) => {
         if (spatialIsTransitioning) return;
         continuousPointerDown = true;
@@ -14227,190 +14313,152 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         lastPointerX = e.clientX;
         lastPointerY = e.clientY;
         lastPointerTime = performance.now();
-        pointerVelocityX = 0;
-        pointerVelocityY = 0;
         edgeAccumPx = 0;
-
         spatialDragState = SPATIAL_DRAG_STATES.PANNING;
         canvas.style.cursor = 'grabbing';
 
-        if (!userHasInteracted) {
-          userHasInteracted = true;
-          const hint = document.getElementById('spatialDragHint');
-          if (hint) hint.style.opacity = '0';
-        }
+        const hint = document.getElementById('spatialDragHint');
+        if (hint) hint.style.opacity = '0';
       };
 
       canvas.onpointermove = (e) => {
         if (!continuousPointerDown) return;
-        const now = performance.now();
-        const dt = Math.max(1, now - lastPointerTime);
         const dx = e.clientX - lastPointerX;
         const dy = e.clientY - lastPointerY;
-
-        pointerVelocityX = dx / dt;
-        pointerVelocityY = dy / dt;
         lastPointerX = e.clientX;
         lastPointerY = e.clientY;
-        lastPointerTime = now;
-
-        if (spatialIsTransitioning) {
-          // Accumulate drag delta in queue during transition (Req 32, 33)
-          pendingDragDelta += dx;
-          return;
-        }
-
-        // 360-like Lookaround: horizontal drag = yaw, vertical drag = pitch
-        const curVp = spatialViewpoints[spatialActiveIdx];
-        const minYaw = curVp?.safeYawRange ? curVp.safeYawRange[0] : MIN_SAFE_YAW;
-        const maxYaw = curVp?.safeYawRange ? curVp.safeYawRange[1] : MAX_SAFE_YAW;
-        const yawSensitivity = 0.0016;
-        const pitchSensitivity = 0.0010;
-
-        // Yaw delta: dragging right rotates camera toward the right of current view
-        const deltaYaw = dx * yawSensitivity;
-        const nextYaw = spatialYaw + deltaYaw;
-
-        // Small vertical look tilt (pitch)
-        spatialPitch = Math.max(MIN_SAFE_PITCH, Math.min(MAX_SAFE_PITCH, spatialPitch - dy * pitchSensitivity));
-
-        if (nextYaw >= minYaw && nextYaw <= maxYaw) {
-          // Normal Lookaround PANNING within safe cylinder arc
-          spatialYaw = nextYaw;
-          spatialDragState = SPATIAL_DRAG_STATES.PANNING;
-          edgeAccumPx = 0;
-          hideEdgeIndicator();
-          updateCameraOrientation();
-          renderSpatial();
-          updateSpatialRailPosition();
-
-          // Edge preload hint (Req 34): when reaching 75% of yaw range, ensure neighbor is decoded
-          if (spatialYaw > maxYaw * 0.70 && spatialActiveIdx < spatialViewpoints.length - 1) {
-            ensureViewpointReady(spatialViewpoints[spatialActiveIdx + 1]);
-          } else if (spatialYaw < minYaw * 0.70 && spatialActiveIdx > 0) {
-            ensureViewpointReady(spatialViewpoints[spatialActiveIdx - 1]);
-          }
-        } else if (nextYaw > maxYaw) {
-          // Reached right safe boundary (travel toward next viewpoint)
-          spatialYaw = maxYaw;
-          updateCameraOrientation();
-          renderSpatial();
-          updateSpatialRailPosition();
-
-          const hasNext = spatialActiveIdx < spatialViewpoints.length - 1;
-          if (hasNext) {
-            spatialDragState = SPATIAL_DRAG_STATES.EDGE_RESISTANCE;
-            edgeAccumPx += Math.max(0, dx) * 0.40;
-            const nextSlot = spatialViewpoints[spatialActiveIdx + 1]?.slot;
-            showEdgeIndicator('RIGHT', nextSlot, edgeAccumPx / EDGE_TRANSITION_THRESHOLD_PX);
-
-            if (edgeAccumPx >= EDGE_TRANSITION_THRESHOLD_PX) {
-              edgeAccumPx = 0;
-              hideEdgeIndicator();
-              triggerViewpointTransition(spatialActiveIdx + 1, 'RIGHT');
-            }
-          }
-        } else if (nextYaw < minYaw) {
-          // Reached left safe boundary (travel toward previous viewpoint)
-          spatialYaw = minYaw;
-          updateCameraOrientation();
-          renderSpatial();
-          updateSpatialRailPosition();
-
-          const hasPrev = spatialActiveIdx > 0;
-          if (hasPrev) {
-            spatialDragState = SPATIAL_DRAG_STATES.EDGE_RESISTANCE;
-            edgeAccumPx += Math.max(0, -dx) * 0.40;
-            const prevSlot = spatialViewpoints[spatialActiveIdx - 1]?.slot;
-            showEdgeIndicator('LEFT', prevSlot, edgeAccumPx / EDGE_TRANSITION_THRESHOLD_PX);
-
-            if (edgeAccumPx >= EDGE_TRANSITION_THRESHOLD_PX) {
-              edgeAccumPx = 0;
-              hideEdgeIndicator();
-              triggerViewpointTransition(spatialActiveIdx - 1, 'LEFT');
-            }
-          }
-        }
-      };
-
-      const handlePointerEnd = () => {
-        if (!continuousPointerDown) return;
-        continuousPointerDown = false;
-        if (dragPointerId !== null) {
-          try { canvas.releasePointerCapture(dragPointerId); } catch (err) {}
-          dragPointerId = null;
-        }
-        canvas.style.cursor = 'grab';
-        hideEdgeIndicator();
 
         if (spatialIsTransitioning) return;
 
-        // Smooth settling
-        if (Math.abs(pointerVelocityX) > 0.15) {
-          spatialDragState = SPATIAL_DRAG_STATES.SETTLING;
-          let decayVel = pointerVelocityX * 0.025;
-          const curVp = spatialViewpoints[spatialActiveIdx];
-          const minYaw = curVp?.safeYawRange ? curVp.safeYawRange[0] : MIN_SAFE_YAW;
-          const maxYaw = curVp?.safeYawRange ? curVp.safeYawRange[1] : MAX_SAFE_YAW;
+        // Yaw sensitivity (radians per pixel)
+        const yawSensitivity = 0.003;
+        const pitchSensitivity = 0.002;
 
-          function settleStep() {
-            if (continuousPointerDown || spatialIsTransitioning) return;
-            decayVel *= 0.88;
-            spatialYaw = Math.max(minYaw, Math.min(maxYaw, spatialYaw + decayVel));
-            updateCameraOrientation();
-            renderSpatial();
-            updateSpatialRailPosition();
+        const nextYaw = spatialYaw - dx * yawSensitivity;
+        const nextPitch = spatialPitch + dy * pitchSensitivity;
 
-            if (Math.abs(decayVel) > 0.0005) {
-              requestAnimationFrame(settleStep);
-            } else {
-              spatialDragState = SPATIAL_DRAG_STATES.IDLE;
+        // Inside safe lookaround range
+        if (nextYaw >= MIN_SAFE_YAW && nextYaw <= MAX_SAFE_YAW) {
+          spatialYaw = nextYaw;
+          edgeAccumPx = 0;
+          hideEdgeIndicator();
+        } else {
+          // Boundary reached -> accumulate edge drag for transition
+          if (nextYaw > MAX_SAFE_YAW) {
+            spatialYaw = MAX_SAFE_YAW;
+            if (dx < 0 && spatialActiveIdx < spatialViewpoints.length - 1) {
+              edgeAccumPx += Math.abs(dx);
+              const targetSlot = spatialViewpoints[spatialActiveIdx + 1].slot;
+              showEdgeIndicator('RIGHT', targetSlot, edgeAccumPx / EDGE_TRANSITION_THRESHOLD_PX);
+              if (edgeAccumPx >= EDGE_TRANSITION_THRESHOLD_PX) {
+                hideEdgeIndicator();
+                triggerViewpointTravel(spatialActiveIdx + 1, 'RIGHT');
+                return;
+              }
+            }
+          } else if (nextYaw < MIN_SAFE_YAW) {
+            spatialYaw = MIN_SAFE_YAW;
+            if (dx > 0 && spatialActiveIdx > 0) {
+              edgeAccumPx += Math.abs(dx);
+              const targetSlot = spatialViewpoints[spatialActiveIdx - 1].slot;
+              showEdgeIndicator('LEFT', targetSlot, edgeAccumPx / EDGE_TRANSITION_THRESHOLD_PX);
+              if (edgeAccumPx >= EDGE_TRANSITION_THRESHOLD_PX) {
+                hideEdgeIndicator();
+                triggerViewpointTravel(spatialActiveIdx - 1, 'LEFT');
+                return;
+              }
             }
           }
-          requestAnimationFrame(settleStep);
-        } else {
-          spatialDragState = SPATIAL_DRAG_STATES.IDLE;
         }
-      };
 
-      canvas.onpointerup = handlePointerEnd;
-      canvas.onpointercancel = handlePointerEnd;
-
-      // Wheel / Pinch zoom (Req 16)
-      canvas.onwheel = (e) => {
-        e.preventDefault();
-        const delta = Math.sign(e.deltaY) * 2.0;
-        spatialCurrentFov = Math.max(40, Math.min(65, spatialCurrentFov + delta));
-        spatialCamera.fov = spatialCurrentFov;
-        spatialCamera.updateProjectionMatrix();
+        // Clamp pitch
+        spatialPitch = Math.max(MIN_SAFE_PITCH, Math.min(MAX_SAFE_PITCH, nextPitch));
+        updateCameraOrientation();
         renderSpatial();
       };
 
-      // Keyboard navigation
-      window.onkeydown = (e) => {
-        const m = document.getElementById('proSpatialPreviewModal');
-        if (!m || m.style.display === 'none') return;
-        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
-          if (spatialActiveIdx > 0) triggerViewpointTransition(spatialActiveIdx - 1, 'LEFT');
-        }
-        if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
-          if (spatialActiveIdx < spatialViewpoints.length - 1) triggerViewpointTransition(spatialActiveIdx + 1, 'RIGHT');
+      canvas.onpointerup = canvas.onpointercancel = (e) => {
+        continuousPointerDown = false;
+        canvas.style.cursor = 'grab';
+        hideEdgeIndicator();
+        try { if (dragPointerId !== null) canvas.releasePointerCapture(dragPointerId); } catch (err) {}
+      };
+
+      // Mouse wheel / Pinch zoom FOV
+      canvas.onwheel = (e) => {
+        e.preventDefault();
+        const delta = Math.sign(e.deltaY) * 2;
+        spatialCurrentFov = Math.max(38, Math.min(65, spatialCurrentFov + delta));
+        if (spatialCamera) {
+          spatialCamera.fov = spatialCurrentFov;
+          spatialCamera.updateProjectionMatrix();
+          renderSpatial();
         }
       };
 
-      updateSpatialUI();
       renderSpatial();
     }
 
-    function preloadAdjacentViewpoints(centerIdx) {
-      if (centerIdx > 0) ensureViewpointReady(spatialViewpoints[centerIdx - 1]);
-      if (centerIdx < spatialViewpoints.length - 1) ensureViewpointReady(spatialViewpoints[centerIdx + 1]);
+    function showSpatialLoadingOverlay() {
+      let overlay = document.getElementById('spatialPreviewLoadingOverlay');
+      if (!overlay) {
+        const container = document.getElementById('spatialPreviewCanvasContainer');
+        if (!container) return;
+        overlay = document.createElement('div');
+        overlay.id = 'spatialPreviewLoadingOverlay';
+        overlay.style.cssText = 'position: absolute; inset: 0; background: #020617; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 25; transition: opacity 0.3s ease;';
+        overlay.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color: #38bdf8; font-size: 32px; margin-bottom: 12px;"></i><span style="color: #cbd5e1; font-size: 13px; font-weight: 700;">Loading immersive viewpoint...</span>';
+        container.appendChild(overlay);
+      }
+      overlay.style.display = 'flex';
+      overlay.style.opacity = '1';
+    }
+
+    function hideSpatialLoadingOverlay() {
+      const overlay = document.getElementById('spatialPreviewLoadingOverlay');
+      if (overlay) {
+        overlay.style.opacity = '0';
+        setTimeout(() => { overlay.style.display = 'none'; }, 300);
+      }
+    }
+
+    function handleSpatialTextureLoadFailure(vp) {
+      hideSpatialLoadingOverlay();
+      const notice = document.getElementById('spatialNoticeBanner');
+      if (notice) {
+        notice.style.display = 'block';
+        notice.style.borderColor = '#f87171';
+        notice.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: #f87171;"></i> View couldn't be loaded. <button onclick="retryViewpointLoad(${vp.index})" style="margin-left: 8px; background: #38bdf8; color: #000; border: none; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; cursor: pointer;">Retry</button>`;
+      }
+    }
+
+    function retryViewpointLoad(idx) {
+      const vp = spatialViewpoints[idx];
+      if (!vp) return;
+      vp.isGpuReady = false;
+      vp.loadPromise = null;
+      showSpatialLoadingOverlay();
+      ensureViewpointReady(vp).then(() => {
+        if (vp.tex && spatialMatCurrent) {
+          spatialMatCurrent.map = vp.tex;
+          spatialMatCurrent.opacity = 1.0;
+          spatialMatCurrent.visible = true;
+          renderSpatial();
+          hideSpatialLoadingOverlay();
+          const notice = document.getElementById('spatialNoticeBanner');
+          if (notice) notice.style.display = 'none';
+        }
+      });
     }
 
     function updateCameraOrientation() {
       if (!spatialCamera) return;
       spatialCamera.rotation.set(spatialPitch, -spatialYaw, 0, 'YXZ');
-      spatialCamera.position.y = spatialHorizonOffset * 0.02;
+    }
+
+    function preloadAdjacentViewpoints(centerIdx) {
+      if (centerIdx > 0) ensureViewpointReady(spatialViewpoints[centerIdx - 1]);
+      if (centerIdx < spatialViewpoints.length - 1) ensureViewpointReady(spatialViewpoints[centerIdx + 1]);
     }
 
     function showEdgeIndicator(direction, targetSlot, progress) {
@@ -14421,11 +14469,11 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       if (direction === 'RIGHT') {
         el.style.right = '24px';
         el.style.left = 'auto';
-        el.innerHTML = '<i class="fa-solid fa-arrow-right" style="color: #38bdf8;"></i> Continue drag to enter ' + targetSlot;
+        el.innerHTML = '<i class="fa-solid fa-arrow-right" style="color: #38bdf8;"></i> Drag to enter ' + targetSlot;
       } else {
         el.style.left = '24px';
         el.style.right = 'auto';
-        el.innerHTML = '<i class="fa-solid fa-arrow-left" style="color: #38bdf8;"></i> Continue drag to enter ' + targetSlot;
+        el.innerHTML = '<i class="fa-solid fa-arrow-left" style="color: #38bdf8;"></i> Drag to enter ' + targetSlot;
       }
     }
 
@@ -14434,126 +14482,151 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       if (el) el.style.display = 'none';
     }
 
-    function showTransitionNotice(msg) {
-      const el = document.getElementById('spatialNoticeBanner');
-      if (!el) return;
-      el.textContent = msg;
-      el.style.display = 'block';
-      setTimeout(() => { if (el) el.style.display = 'none'; }, 2400);
+    function selectSpatialPreviewAnchor(idx) {
+      if (idx < 0 || idx >= spatialViewpoints.length || idx === spatialActiveIdx) return;
+      triggerViewpointTravel(idx, idx > spatialActiveIdx ? 'RIGHT' : 'LEFT');
     }
 
-    async function triggerViewpointTransition(targetIdx, direction) {
+    async function triggerViewpointTravel(targetIdx, direction) {
       if (spatialIsTransitioning) return;
-      if (targetIdx < 0 || targetIdx >= spatialViewpoints.length) return;
-
       const targetVp = spatialViewpoints[targetIdx];
       if (!targetVp) return;
 
-      // CRITICAL GATE: NEVER START TRANSITION UNTIL TARGET IS READY (Req 2)
+      spatialIsTransitioning = true;
+      spatialDragState = SPATIAL_DRAG_STATES.TRANSITIONING;
+
+      // Ensure target viewpoint GPU ready
       if (!targetVp.isGpuReady || !targetVp.tex) {
-        showTransitionNotice("Loading next view...");
+        showSpatialNotice('Loading ' + targetVp.slot + '...');
         const ready = await ensureViewpointReady(targetVp);
+        hideSpatialNotice();
         if (!ready) {
-          // Abort safely, zero white frame, remain on current view (Req 9)
-          showTransitionNotice("Next view is still loading. Try again.");
+          spatialIsTransitioning = false;
+          spatialDragState = SPATIAL_DRAG_STATES.IDLE;
           return;
         }
       }
 
-      executeViewpointTransition(targetIdx, direction);
-    }
+      // DOUBLE BUFFERED TRANSITION: Zero White Flash
+      // Target mesh receives texture and becomes visible at opacity 0.0
+      spatialMatTransition.map = targetVp.tex;
+      spatialMatTransition.opacity = 0.0;
+      spatialMatTransition.visible = true;
+      spatialMatTransition.needsUpdate = true;
 
-    function executeViewpointTransition(targetIdx, direction, onComplete) {
-      if (spatialIsTransitioning) return;
-      if (targetIdx < 0 || targetIdx >= spatialViewpoints.length) return;
+      // Initial orientation for target mesh entry
+      const startYaw = spatialYaw;
+      const targetYaw = direction === 'RIGHT' ? (MIN_SAFE_YAW + 0.05) : (MAX_SAFE_YAW - 0.05);
 
-      spatialIsTransitioning = true;
-      spatialDragState = SPATIAL_DRAG_STATES.TRANSITIONING;
-      continuousTransitionsInDrag++;
-
-      const prevIdx = spatialActiveIdx;
-      spatialActiveIdx = targetIdx;
-
-      const fromVp = spatialViewpoints[prevIdx];
-      const toVp = spatialViewpoints[spatialActiveIdx];
-
-      // Connection metadata
-      const candidate = window.currentSpatialCandidate;
-      const connections = (candidate && candidate.connections) || [];
-      const conn = connections.find(c => (c.from === fromVp.slot && c.to === toVp.slot) || (c.to === fromVp.slot && c.from === toVp.slot));
-
-      // Orientation handoff parameters (Req 25, 26, 27)
-      const fromExitYaw = (direction === 'RIGHT') ? MAX_SAFE_YAW : MIN_SAFE_YAW;
-      const toEntryYaw = (direction === 'RIGHT') ? MIN_SAFE_YAW : MAX_SAFE_YAW;
-      const fromFov = fromVp.fov || 52;
-      const toFov = toVp.fov || 52;
-
-      const duration = 380; // 380ms aligned handoff
+      const durationMs = 380;
       const startTime = performance.now();
 
-      // Double-buffering: configure target mesh on offscreen buffer
-      spatialMatTransition.map = toVp.tex;
-      spatialMatTransition.opacity = 0.0;
-      spatialMatCurrent.map = fromVp.tex;
-      spatialMatCurrent.opacity = 1.0;
-
-      function step(now) {
+      function animateTransition(now) {
         const elapsed = now - startTime;
-        const progress = Math.min(1.0, elapsed / duration);
-        const t = 0.5 - 0.5 * Math.cos(progress * Math.PI); // Smooth cosine ease
+        const p = Math.min(1.0, elapsed / durationMs);
+        const ease = 0.5 - 0.5 * Math.cos(p * Math.PI); // Cosine ease-in-out
 
-        // Aligned dissolve: active view remains visible while target crossfades in
-        spatialMatTransition.opacity = t;
-        spatialMatCurrent.opacity = 1.0 - t;
+        // Crossfade: current fades to 0, transition fades to 1
+        if (spatialMatCurrent) spatialMatCurrent.opacity = 1.0 - ease;
+        if (spatialMatTransition) spatialMatTransition.opacity = ease;
 
-        // Smooth orientation handoff
-        spatialYaw = fromExitYaw + (toEntryYaw - fromExitYaw) * t;
-        spatialCurrentFov = fromFov + (toFov - fromFov) * t;
-        spatialCamera.fov = spatialCurrentFov;
-        spatialCamera.updateProjectionMatrix();
-
+        // Smooth camera handoff
+        spatialYaw = startYaw + (targetYaw - startYaw) * ease;
         updateCameraOrientation();
         renderSpatial();
-        updateSpatialRailPosition();
 
-        if (progress < 1.0) {
-          requestAnimationFrame(step);
+        if (p < 1.0) {
+          requestAnimationFrame(animateTransition);
         } else {
-          // Stationary node reached: target becomes sole ACTIVE source
-          spatialMatCurrent.map = toVp.tex;
+          // Finalize handoff & swap buffers
+          spatialActiveIdx = targetIdx;
+          spatialMatCurrent.map = targetVp.tex;
           spatialMatCurrent.opacity = 1.0;
-          spatialMatTransition.map = null;
+          spatialMatCurrent.visible = true;
+          spatialMatCurrent.needsUpdate = true;
+
           spatialMatTransition.opacity = 0.0;
-          spatialYaw = toEntryYaw;
-          updateCameraOrientation();
+          spatialMatTransition.visible = false;
+          spatialMatTransition.map = null;
+
           spatialIsTransitioning = false;
-          updateSpatialUI();
+          spatialDragState = SPATIAL_DRAG_STATES.IDLE;
+
+          updatePreviewUI(targetIdx);
+          preloadAdjacentViewpoints(targetIdx);
           renderSpatial();
-
-          // Apply pending drag delta from queue if continuous drag is active (Req 32, 33)
-          if (continuousPointerDown) {
-            spatialDragState = SPATIAL_DRAG_STATES.PANNING;
-            edgeAccumPx = 0;
-            if (pendingDragDelta !== 0) {
-              spatialYaw = Math.max(MIN_SAFE_YAW, Math.min(MAX_SAFE_YAW, spatialYaw + pendingDragDelta * 0.0016));
-              pendingDragDelta = 0;
-              updateCameraOrientation();
-              renderSpatial();
-            }
-            lastPointerTime = performance.now();
-          } else {
-            spatialDragState = SPATIAL_DRAG_STATES.IDLE;
-            pendingDragDelta = 0;
-          }
-
-          // Preload next adjacent neighbors
-          preloadAdjacentViewpoints(spatialActiveIdx);
-
-          if (typeof onComplete === 'function') onComplete();
         }
       }
 
-      requestAnimationFrame(step);
+      requestAnimationFrame(animateTransition);
+    }
+
+    function showSpatialNotice(msg) {
+      const n = document.getElementById('spatialNoticeBanner');
+      if (n) {
+        n.textContent = msg;
+        n.style.display = 'block';
+        n.style.opacity = '1';
+      }
+    }
+
+    function hideSpatialNotice() {
+      const n = document.getElementById('spatialNoticeBanner');
+      if (n) {
+        n.style.opacity = '0';
+        setTimeout(() => { n.style.display = 'none'; }, 300);
+      }
+    }
+
+    function updatePreviewUI(activeIdx) {
+      const vp = spatialViewpoints[activeIdx];
+      const slotBadge = document.getElementById('spatialPreviewSlotBadge');
+      if (slotBadge && vp) slotBadge.textContent = vp.slot;
+
+      const railSlider = document.getElementById('spatialPreviewRailSlider');
+      if (railSlider && spatialViewpoints.length > 1) {
+        railSlider.value = Math.round((activeIdx / (spatialViewpoints.length - 1)) * 100);
+      }
+
+      const railPosLabel = document.getElementById('spatialRailPosLabel');
+      if (railPosLabel && vp) {
+        railPosLabel.textContent = vp.slot + ' (' + (activeIdx + 1) + ' of ' + spatialViewpoints.length + ')';
+      }
+
+      const railButtons = document.getElementById('spatialPreviewRailButtons');
+      if (railButtons) {
+        const btns = railButtons.querySelectorAll('.spatial-rail-btn');
+        btns.forEach((btn, i) => {
+          if (i === activeIdx) {
+            btn.style.background = '#0284c7';
+            btn.style.borderColor = '#38bdf8';
+            btn.style.color = '#fff';
+          } else {
+            btn.style.background = 'rgba(255,255,255,0.06)';
+            btn.style.borderColor = 'rgba(56,189,248,0.3)';
+            btn.style.color = '#cbd5e1';
+          }
+        });
+      }
+    }
+
+    function onSpatialRailSliderInput(val) {
+      if (spatialViewpoints.length <= 1) return;
+      const targetIdx = Math.round((val / 100) * (spatialViewpoints.length - 1));
+      if (targetIdx !== spatialActiveIdx) {
+        selectSpatialPreviewAnchor(targetIdx);
+      }
+    }
+
+    function onSpatialRailSliderChange(val) {
+      onSpatialRailSliderInput(val);
+    }
+
+    function navigateSpatialRelative(delta) {
+      const next = spatialActiveIdx + delta;
+      if (next >= 0 && next < spatialViewpoints.length) {
+        selectSpatialPreviewAnchor(next);
+      }
     }
 
     function renderSpatial() {
@@ -14562,255 +14635,22 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       }
     }
 
-    function updateSpatialRailPosition() {
-      const slider = document.getElementById('spatialPreviewRailSlider');
-      const total = spatialViewpoints.length;
-      if (slider && total > 1) {
-        const yawOffset = spatialYaw / (MAX_SAFE_YAW * 2); // -0.5 to +0.5
-        const normalizedIndex = Math.max(0, Math.min(total - 1, spatialActiveIdx + yawOffset * 0.5));
-        slider.value = (normalizedIndex / (total - 1)) * 100;
-      }
-      const label = document.getElementById('spatialRailPosLabel');
-      const curVp = spatialViewpoints[spatialActiveIdx];
-      if (label && curVp) {
-        label.textContent = curVp.slot + ' (Yaw: ' + (spatialYaw * 180 / Math.PI).toFixed(1) + '°)';
-      }
-    }
-
-    function updateSpatialUI() {
-      const curVp = spatialViewpoints[spatialActiveIdx];
-      if (!curVp) return;
-
-      const total = spatialViewpoints.length;
-      const slotBadge = document.getElementById('spatialPreviewSlotBadge');
-      if (slotBadge) slotBadge.textContent = curVp.slot;
-
-      const countBadge = document.getElementById('spatialPreviewCountBadge');
-      if (countBadge) countBadge.textContent = 'View ' + (spatialActiveIdx + 1) + ' of ' + total;
-
-      const yawBadge = document.getElementById('spatialPreviewYawBadge');
-      if (yawBadge) yawBadge.textContent = 'Immersion: ' + activeImmersionPreset + ' (' + spatialCurrentFov + '°)';
-
-      // Update discrete button states
-      spatialViewpoints.forEach((_, idx) => {
-        const btn = document.getElementById('spatialRailBtn_' + idx);
-        if (btn) {
-          if (idx === spatialActiveIdx) {
-            btn.style.background = '#0284c7';
-            btn.style.borderColor = '#38bdf8';
-            btn.style.color = '#fff';
-            btn.style.boxShadow = '0 0 12px rgba(56,189,248,0.5)';
-          } else {
-            btn.style.background = 'rgba(255,255,255,0.06)';
-            btn.style.borderColor = 'rgba(56,189,248,0.25)';
-            btn.style.color = '#cbd5e1';
-            btn.style.boxShadow = 'none';
-          }
-        }
-      });
-
-      updateSpatialRailPosition();
-
-      // Update QA Metric Telemetry
-      const qaActive = document.getElementById('qaActiveTex');
-      if (qaActive) qaActive.textContent = curVp.slot + ' (100% Crisp)';
-      const qaPlanes = document.getElementById('qaPlanes');
-      if (qaPlanes) qaPlanes.textContent = 'Cylindrical (Zero White Flash)';
-      const qaConf = document.getElementById('qaConf');
-      if (qaConf) qaConf.textContent = 'HIGH (Inliers: 51)';
-    }
-
-    // ── VIEWPOINT SETTINGS DRAWER CONTROLS (C11.22) ──
-    function toggleViewpointSettingsDrawer() {
-      const el = document.getElementById('viewpointSettingsDrawer');
-      if (!el) return;
-      el.style.display = el.style.display === 'none' ? 'block' : 'none';
-    }
-
-    function applyImmersionPreset(presetKey) {
-      const p = IMMERSION_PRESETS[presetKey];
-      if (!p) return;
-      activeImmersionPreset = presetKey;
-
-      document.querySelectorAll('.preset-btn').forEach(b => {
-        b.style.background = 'rgba(255,255,255,0.06)';
-        b.style.borderColor = 'rgba(56,189,248,0.3)';
-        b.style.color = '#cbd5e1';
-      });
-      const activeBtn = document.getElementById('presetBtn_' + presetKey);
-      if (activeBtn) {
-        activeBtn.style.background = '#0284c7';
-        activeBtn.style.borderColor = '#38bdf8';
-        activeBtn.style.color = '#fff';
-      }
-
-      document.getElementById('sliderCurvature').value = Math.round(p.curvature * 100);
-      document.getElementById('valCurvature').textContent = p.curvature.toFixed(2);
-      document.getElementById('sliderFov').value = p.fov;
-      document.getElementById('valFov').textContent = p.fov + '°';
-      document.getElementById('sliderHorizon').value = p.horizon;
-      document.getElementById('valHorizon').textContent = p.horizon.toFixed(1);
-      document.getElementById('sliderLens').value = p.lens;
-      document.getElementById('valLens').textContent = p.lens.toFixed(1);
-
-      spatialCurvature = p.curvature;
-      spatialCurrentFov = p.fov;
-      spatialHorizonOffset = p.horizon;
-      spatialLensCorrection = p.lens;
-
-      rebuildCurrentViewGeometry();
-    }
-
-    function onImmersionParamChange(param, value) {
-      activeImmersionPreset = 'CUSTOM';
-      document.querySelectorAll('.preset-btn').forEach(b => {
-        b.style.background = 'rgba(255,255,255,0.06)';
-        b.style.borderColor = 'rgba(56,189,248,0.3)';
-        b.style.color = '#cbd5e1';
-      });
-      const customBtn = document.getElementById('presetBtn_CUSTOM');
-      if (customBtn) {
-        customBtn.style.background = '#0284c7';
-        customBtn.style.borderColor = '#38bdf8';
-        customBtn.style.color = '#fff';
-      }
-
-      if (param === 'curvature') {
-        spatialCurvature = value;
-        document.getElementById('valCurvature').textContent = value.toFixed(2);
-      } else if (param === 'fov') {
-        spatialCurrentFov = value;
-        document.getElementById('valFov').textContent = value + '°';
-      } else if (param === 'horizon') {
-        spatialHorizonOffset = value;
-        document.getElementById('valHorizon').textContent = value.toFixed(1);
-      } else if (param === 'lens') {
-        spatialLensCorrection = value;
-        document.getElementById('valLens').textContent = value.toFixed(1);
-      }
-
-      rebuildCurrentViewGeometry();
-    }
-
-    function rebuildCurrentViewGeometry() {
-      if (!spatialScene || !spatialMeshCurrent || !spatialCamera) return;
-      const container = document.getElementById('spatialPreviewCanvasContainer');
-      const w = container ? container.clientWidth : 920;
-      const h = container ? container.clientHeight : 520;
-      const aspect = w / h;
-
-      const newGeo = buildCylindricalGeometry(spatialCurrentFov, spatialCurvature, aspect);
-      spatialMeshCurrent.geometry.dispose();
-      spatialMeshCurrent.geometry = newGeo;
-
-      if (spatialMeshTransition) {
-        spatialMeshTransition.geometry.dispose();
-        spatialMeshTransition.geometry = newGeo.clone();
-      }
-
-      spatialCamera.fov = spatialCurrentFov;
-      spatialCamera.updateProjectionMatrix();
-      updateCameraOrientation();
-      renderSpatial();
-    }
-
-    function applyImmersionToAllViews() {
-      spatialViewpoints.forEach(vp => {
-        vp.fov = spatialCurrentFov;
-        vp.curvature = spatialCurvature;
-        vp.horizonOffset = spatialHorizonOffset;
-        vp.lensCorrection = spatialLensCorrection;
-        vp.immersionPreset = activeImmersionPreset;
-      });
-      showTransitionNotice("Immersion settings applied to all views.");
-    }
-
-    function resetImmersionToRecommended() {
-      applyImmersionPreset('NORMAL');
-      showTransitionNotice("Reset to recommended calibrated immersion.");
-    }
-
-    function navigateToSpatialViewpoint(idx) {
-      if (idx === spatialActiveIdx || spatialIsTransitioning) return;
-      if (idx < 0 || idx >= spatialViewpoints.length) return;
-      const direction = (idx > spatialActiveIdx) ? 'RIGHT' : 'LEFT';
-      triggerViewpointTransition(idx, direction);
-    }
-
-    function navigateSpatialRelative(delta) {
-      navigateToSpatialViewpoint(spatialActiveIdx + delta);
-    }
-
-    function onSpatialRailSliderInput(val) {
-      if (spatialViewpoints.length <= 1) return;
-      const approxIdx = Math.round((parseFloat(val) / 100) * (spatialViewpoints.length - 1));
-      const lbl = document.getElementById('spatialRailPosLabel');
-      if (lbl && spatialViewpoints[approxIdx]) {
-        lbl.textContent = spatialViewpoints[approxIdx].slot + ' (Drag to Snap)';
-      }
-    }
-
-    function onSpatialRailSliderChange(val) {
-      if (spatialViewpoints.length <= 1) return;
-      const nearestIdx = Math.round((parseFloat(val) / 100) * (spatialViewpoints.length - 1));
-      if (nearestIdx !== spatialActiveIdx) {
-        navigateToSpatialViewpoint(nearestIdx);
-      }
-    }
-
-    function selectSpatialPreviewAnchor(idx) {
-      navigateToSpatialViewpoint(idx);
-    }
-
-    function setSpatialDebugMode(mode) {
-      renderSpatial();
-    }
-
-    function toggleSpatialQaOverlay() {
-      const el = document.getElementById('spatialQaOverlay');
-      if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-    }
-
-    // ── FULLSCREEN PREVIEW CONTROLS ──
     function toggleSpatialFullscreen() {
       const container = document.getElementById('spatialPreviewCanvasContainer');
       if (!container) return;
-      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-        if (container.requestFullscreen) {
-          container.requestFullscreen();
-        } else if (container.webkitRequestFullscreen) {
-          container.webkitRequestFullscreen();
-        }
+      if (!document.fullscreenElement) {
+        container.requestFullscreen().catch(err => console.warn('Fullscreen request failed', err));
       } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-          document.webkitExitFullscreen();
-        }
+        document.exitFullscreen();
       }
     }
 
-    function onSpatialFullscreenChange() {
-      const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-      const btn = document.getElementById('btnSpatialFullscreen');
-      if (btn) {
-        btn.innerHTML = isFs ? '<i class="fa-solid fa-compress"></i> Exit' : '<i class="fa-solid fa-expand"></i> Fullscreen';
-      }
-      const container = document.getElementById('spatialPreviewCanvasContainer');
-      if (container && spatialRenderer && spatialCamera) {
-        setTimeout(() => {
-          const w = container.clientWidth;
-          const h = container.clientHeight;
-          spatialRenderer.setSize(w, h, false);
-          spatialCamera.aspect = w / h;
-          spatialCamera.updateProjectionMatrix();
-          rebuildCurrentViewGeometry();
-        }, 60);
+    function toggleSpatialQaOverlay() {
+      const overlay = document.getElementById('spatialQaOverlay');
+      if (overlay) {
+        overlay.style.display = overlay.style.display === 'none' ? 'block' : 'none';
       }
     }
-
-    document.addEventListener('fullscreenchange', onSpatialFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', onSpatialFullscreenChange);
 
     async function applySpatialCandidateAction() {
       const candidate = window.currentSpatialCandidate;
@@ -14850,12 +14690,16 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         const data = await res.json();
         if (data.success) {
           closeSpatialBoothPreviewModal();
-          alert('Spatial Booth successfully applied to your active booth!');
+          if (data.project) {
+            window.activeProjectData = data.project;
+          }
           if (typeof loadProject === 'function') {
             loadProject(projectId);
           } else {
             window.location.reload();
           }
+          if (window.showToast) window.showToast('🎉 Spatial Booth applied to active booth!', 'success');
+          alert('Spatial Booth successfully applied to your active booth!');
         } else {
           alert('Failed to apply candidate: ' + (data.error || 'Unknown error'));
           if (btn) {
@@ -16372,7 +16216,7 @@ function openAiEnhanceBoothModal() {
       </div>
 
       <!-- Bottom-left Resolution & Quality Badge -->
-      <div id="spatialPreviewQualityBadge" style="position: absolute; bottom: 12px; left: 12px; background: rgba(9, 16, 29, 0.85); backdrop-filter: blur(8px); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 6px; padding: 6px 12px; font-size: 11.5px; color: #cbd5e1; z-index: 2;">
+      <div id="spatialPreviewQualityBadge" style="position: absolute; bottom: 12px; left: 12px; background: rgba(9, 16, 29, 0.85); backdrop-filter: blur(8px); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 6px; padding: 6px 12px; font-size: 11.5px; color: #cbd5e1; z-index: 2; display: none;">
         <span style="color: #38bdf8; font-weight: 800;">8K DERIVATIVE</span> | <span style="color: #34d399; font-weight: 700;">Registration:</span> <span id="spatialPreviewConfidence">94% Inliers</span> | <span style="color: #a78bfa; font-weight: 700;">Engine:</span> <span id="spatialPreviewMode">3D WEBGL SPATIAL</span>
       </div>
     </div>

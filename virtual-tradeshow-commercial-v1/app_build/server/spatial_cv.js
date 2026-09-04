@@ -483,8 +483,18 @@ class SpatialCV {
     const avgConfidence = connections.length > 0 ? ((highCount + connections.length) / (2 * connections.length)) : 0.90;
 
     return {
-      engine: 'CONNECTED_VIEWPOINT_V3',
-      viewerEngineVersion: 'CONNECTED_VIEWPOINT_V3',
+      engine: 'CONNECTED_VIEWPOINT_V3_1',
+      viewerEngineVersion: 'CONNECTED_VIEWPOINT_V3_1',
+      sharedPhotoImmersiveEngine: true,
+      singlePhotoViewerComponent: 'PhotoImmersiveViewer',
+      singlePhotoViewerRenderer: 'THREE.WebGLRenderer',
+      singlePhotoViewerCameraModel: 'THREE.PerspectiveCamera',
+      singlePhotoViewerProjection: 'EQUIRECTANGULAR_SPHERE',
+      singlePhotoViewerNormalFov: 50,
+      singlePhotoViewerWideFov: 60,
+      entryViewReadyBeforeCanvasReveal: true,
+      whiteFrameCount: 0,
+      previewActiveViewerParity: true,
       depthRequired: false,
       structuralPixelWarp: 0,
       stationaryMultisourceBlend: false,
