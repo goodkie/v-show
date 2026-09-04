@@ -9398,34 +9398,112 @@ app.post('/api/projects/:id/spatial/start', upload.array('photos', 7), async (re
     }
 
     const autoRemovePeople = req.body?.autoRemovePeople !== 'false' && req.body?.autoRemovePeople !== false;
+    const jobId = 'job-spatial-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
 
-    // Process spatial booth candidate
-    const candidate = await spatialPipeline.processSpatialBooth(sourceList, {
+    // Initial durable job record in DB
+    const jobRecord = {
+      jobId,
       projectId,
-      autoRemovePeople,
-      isTestAccount
-    });
+      accountId: account?.id || null,
+      requestId: jobId,
+      status: 'QUEUED',
+      progress: 5,
+      currentStage: 'QUEUED',
+      stageLabel: 'Job queued for processing',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      candidateId: null,
+      candidate: null,
+      errorCode: null
+    };
 
-    await db.saveSpatialBoothCandidate(projectId, candidate);
+    await db.createSpatialJob(jobRecord);
+    console.log(`[SPATIAL][${jobId}][QUEUED] Spatial job queued for project ${projectId} (${sourceList.length} source photos)`);
 
-    res.json({
+    // Return 202 Accepted immediately to prevent gateway/browser timeout
+    res.status(202).json({
       ok: true,
       success: true,
-      jobId: candidate.candidateId,
-      candidateId: candidate.candidateId,
-      candidate: {
-        id: candidate.candidateId,
-        projectId,
-        viewerMode: candidate.viewerMode,
-        sourceCount: candidate.sourceViewCount || candidate.totalSourceCount,
-        compatibleSourceCount: candidate.compatibleSourceCount,
-        spatialVersionId: candidate.candidateId,
-        assetManifest: candidate.assetManifest,
-        ...candidate
-      },
-      nominalTokenCost: 0,
-      commercialTokensCharged: 0,
-      message: 'Spatial Booth candidate generated successfully.'
+      jobId,
+      status: 'QUEUED',
+      progress: 5,
+      currentStage: 'QUEUED',
+      stageLabel: 'Job queued for processing',
+      message: 'Spatial generation started in background.'
+    });
+
+    // Durable asynchronous pipeline execution
+    setImmediate(async () => {
+      try {
+        await db.updateSpatialJob(jobId, {
+          status: 'PROCESSING',
+          progress: 10,
+          currentStage: 'PREPARING',
+          stageLabel: 'Preparing spatial booth pipeline'
+        });
+        console.log(`[SPATIAL][${jobId}][PREPARING] Preparing spatial booth pipeline`);
+
+        const candidate = await spatialPipeline.processSpatialBooth(sourceList, {
+          projectId,
+          autoRemovePeople,
+          isTestAccount,
+          onStage: async (stage, progress, label) => {
+            await db.updateSpatialJob(jobId, {
+              status: 'PROCESSING',
+              progress,
+              currentStage: stage,
+              stageLabel: label
+            });
+            console.log(`[SPATIAL][${jobId}][${stage}] ${label} (Progress: ${progress}%)`);
+          }
+        });
+
+        // Stage: SAVING (92%)
+        await db.updateSpatialJob(jobId, {
+          status: 'PROCESSING',
+          progress: 92,
+          currentStage: 'SAVING',
+          stageLabel: 'Saving spatial booth candidate & derivatives'
+        });
+        console.log(`[SPATIAL][${jobId}][SAVING] Saving spatial booth candidate ${candidate.candidateId}`);
+        await db.saveSpatialBoothCandidate(projectId, candidate);
+
+        // Stage: VALIDATING (97%)
+        await db.updateSpatialJob(jobId, {
+          status: 'PROCESSING',
+          progress: 97,
+          currentStage: 'VALIDATING',
+          stageLabel: 'Validating multi-view spatial contract'
+        });
+        console.log(`[SPATIAL][${jobId}][VALIDATING] Validating candidate contract for ${candidate.candidateId}`);
+
+        if (!candidate.anchors || candidate.anchors.length === 0) {
+          throw new Error('Spatial candidate validation failed: no valid camera anchors found');
+        }
+
+        // Stage: READY (100%)
+        await db.updateSpatialJob(jobId, {
+          status: 'READY',
+          progress: 100,
+          currentStage: 'READY',
+          stageLabel: 'Spatial Booth Ready!',
+          candidateId: candidate.candidateId,
+          candidate
+        });
+        console.log(`[SPATIAL][${jobId}][READY] Spatial Booth candidate READY: ${candidate.candidateId} (100%)`);
+      } catch (workerErr) {
+        console.error(`[SPATIAL][${jobId}][FAILED] Worker error:`, workerErr);
+        const errCode = 'SPATIAL-' + Math.floor(1000 + Math.random() * 9000);
+        await db.updateSpatialJob(jobId, {
+          status: 'FAILED',
+          progress: 0,
+          currentStage: 'FAILED',
+          stageLabel: 'Spatial Booth generation failed',
+          errorCode: errCode,
+          error: workerErr.message,
+          userMessage: workerErr.sanitizedUserMessage || "We couldn't generate this Spatial Booth. Please try again or replace a source photo."
+        });
+      }
     });
   } catch (err) {
     console.error('[Spatial Start Error]', err);
@@ -9440,13 +9518,43 @@ app.post('/api/projects/:id/spatial/start', upload.array('photos', 7), async (re
   }
 });
 
-app.get('/api/projects/:id/spatial/status/:candidateId', (req, res) => {
+// Alias POST /api/projects/:id/spatial/generate to spatial/start
+app.post('/api/projects/:id/spatial/generate', (req, res, next) => {
+  req.url = req.url.replace('/spatial/generate', '/spatial/start');
+  app._router.handle(req, res, next);
+});
+
+// Poll spatial job status
+app.get('/api/spatial-jobs/:jobId', (req, res) => {
+  try {
+    const job = db.getSpatialJobById(req.params.jobId);
+    if (!job) {
+      return res.status(404).json({ ok: false, error: 'Spatial job not found' });
+    }
+    res.json({ ok: true, job });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Get active spatial job for a project (for page refresh recovery)
+app.get('/api/projects/:id/spatial/job', (req, res) => {
+  try {
+    const job = db.getActiveSpatialJobForProject(req.params.id);
+    res.json({ ok: true, job: job || null });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Candidate retrieval endpoint (aliases candidate/:id and status/:id)
+app.get(['/api/projects/:id/spatial/candidate/:candidateId', '/api/projects/:id/spatial/status/:candidateId'], (req, res) => {
   try {
     const candidate = db.getSpatialBoothCandidate(req.params.candidateId);
-    if (!candidate) return res.status(404).json({ error: 'Spatial candidate not found' });
-    res.json({ success: true, candidate });
+    if (!candidate) return res.status(404).json({ ok: false, error: 'Spatial candidate not found' });
+    res.json({ ok: true, success: true, candidate });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
 

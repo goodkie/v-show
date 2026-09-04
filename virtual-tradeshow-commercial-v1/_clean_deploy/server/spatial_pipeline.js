@@ -62,8 +62,17 @@ class SpatialBoothPipeline {
     const {
       projectId,
       autoRemovePeople = true,
-      isTestAccount = false
+      isTestAccount = false,
+      onStage = null
     } = options;
+
+    const notifyStage = (stage, progress, label) => {
+      if (typeof onStage === 'function') {
+        try { onStage(stage, progress, label); } catch (e) { console.error('[Spatial Stage Callback Error]', e); }
+      }
+    };
+
+    notifyStage('PREPARING', 10, 'Preparing spatial booth pipeline');
 
     const MIN_SOURCE_COUNT = 1;
     const MAX_SOURCE_COUNT = 7;
@@ -88,6 +97,7 @@ class SpatialBoothPipeline {
     for (let i = 0; i < sourceList.length; i++) {
       const src = sourceList[i];
       const assignedSlot = src.slot && SLOTS.includes(src.slot) ? src.slot : (SLOTS[i] || 'CENTER');
+      notifyStage('NORMALIZING', 20, 'Normalizing and auditing view ' + (i + 1) + ' of ' + sourceList.length + ' (' + assignedSlot + ')');
       
       let rawBuf = null;
       try {
@@ -129,6 +139,10 @@ class SpatialBoothPipeline {
         continue;
       }
 
+      notifyStage('ENHANCING', 35, 'Generating super-resolution derivatives for view ' + (i + 1) + ' (' + assignedSlot + ')');
+      if (autoRemovePeople) {
+        notifyStage('REMOVING_PEOPLE', 50, 'Segmenting & removing bystanders for view ' + (i + 1) + ' (' + assignedSlot + ')');
+      }
       // Generate enhanced derivatives using aiEnhancedPipeline
       let enhancementResult = null;
       try {
@@ -178,6 +192,7 @@ class SpatialBoothPipeline {
     }
 
     // Step 3: Construct Adjacent View Graph & Overlap Confidence
+    notifyStage('ANALYZING', 65, 'Analyzing multi-view overlap graph');
     const sortedViews = [...compatibleViews].sort((a, b) => {
       return SLOTS.indexOf(a.slot) - SLOTS.indexOf(b.slot);
     });
@@ -197,6 +212,7 @@ class SpatialBoothPipeline {
     }
 
     // Step 4: Build camera anchors along continuous horizontal rail
+    notifyStage('REGISTERING', 75, 'Registering camera poses & horizon');
     const anchors = sortedViews.map((v, idx) => {
       return {
         id: 'anchor-' + v.slot.toLowerCase(),
@@ -219,6 +235,7 @@ class SpatialBoothPipeline {
     });
 
     // Find center or nearest center anchor
+    notifyStage('BUILDING', 85, 'Building continuous spatial camera rail');
     let centerAnchorIdx = anchors.findIndex(a => a.slot === 'CENTER');
     if (centerAnchorIdx < 0) {
       centerAnchorIdx = Math.floor(anchors.length / 2);

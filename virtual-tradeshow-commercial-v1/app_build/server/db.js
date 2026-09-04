@@ -13621,6 +13621,71 @@ return event;
     });
   }
 
+  // --- C11.18-P0R1: Durable Asynchronous Spatial Jobs ---
+  async createSpatialJob(jobData) {
+    return this.mutate((db) => {
+      db.spatialJobs = db.spatialJobs || [];
+      const job = {
+        jobId: jobData.jobId || ('job-spatial-' + Date.now() + '-' + uuidv4().substring(0, 6)),
+        projectId: jobData.projectId,
+        accountId: jobData.accountId || 'acc-anon',
+        requestId: jobData.requestId || ('req-' + Date.now()),
+        sourceViewIds: jobData.sourceViewIds || [],
+        sourceCount: jobData.sourceCount || 1,
+        compatibleSourceCount: jobData.compatibleSourceCount || 1,
+        autoRemovePeople: jobData.autoRemovePeople !== false,
+        status: jobData.status || 'QUEUED',
+        progress: typeof jobData.progress === 'number' ? jobData.progress : 5,
+        currentStage: jobData.currentStage || 'QUEUED',
+        stageLabel: jobData.stageLabel || 'Queued for spatial generation...',
+        createdAt: new Date().toISOString(),
+        startedAt: null,
+        updatedAt: new Date().toISOString(),
+        completedAt: null,
+        failedAt: null,
+        candidateId: null,
+        candidate: null,
+        errorCode: null,
+        errorSanitized: null,
+        ...jobData
+      };
+      db.spatialJobs.unshift(job);
+      if (db.spatialJobs.length > 500) db.spatialJobs.pop();
+      return job;
+    });
+  }
+
+  async updateSpatialJob(jobId, updates) {
+    return this.mutate((db) => {
+      db.spatialJobs = db.spatialJobs || [];
+      const job = db.spatialJobs.find(j => j.jobId === jobId);
+      if (!job) return null;
+
+      Object.assign(job, updates);
+      job.updatedAt = new Date().toISOString();
+      if (updates.status === 'READY' && !job.completedAt) {
+        job.completedAt = new Date().toISOString();
+      }
+      if (updates.status === 'FAILED' && !job.failedAt) {
+        job.failedAt = new Date().toISOString();
+      }
+      return job;
+    });
+  }
+
+  getSpatialJobById(jobId) {
+    const data = this.read();
+    return (data.spatialJobs || []).find(j => j.jobId === jobId) || null;
+  }
+
+  getActiveSpatialJobForProject(projectId) {
+    const data = this.read();
+    return (data.spatialJobs || []).find(j => 
+      j.projectId === projectId && 
+      (j.status === 'QUEUED' || j.status === 'PROCESSING' || j.status === 'RUNNING' || (j.progress < 100 && j.status !== 'FAILED'))
+    ) || null;
+  }
+
   async discardEnhancedBoothCandidate(projectId, candidateId, token) {
     return this.mutate((db) => {
       const candidate = (db.enhancedCandidates || []).find(c => c.candidateId === candidateId);
