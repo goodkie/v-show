@@ -1,5 +1,5 @@
 /**
- * Runtime Inspector — 3DZ Custom Probes
+ * Runtime Inspector — 3DZ Custom Probes (C11.25-P0)
  * Module: adapters/3dz/probes.js
  *
  * Gathers 3DZ specific runtime state. Uses 'UNAVAILABLE' when a field cannot be resolved.
@@ -79,6 +79,55 @@ var ThreeDZProbes = class ThreeDZProbes {
     };
   }
 
+  static getTransitionState() {
+    if (typeof window === 'undefined') {
+      return {
+        transitionOscillationDetected: false,
+        maxSimultaneousTransitions: 1,
+        activeTransitionCount: 0,
+        historyCount: 0
+      };
+    }
+    const history = window.__3DZ_TRANSITION_HISTORY || [];
+    const now = Date.now();
+    const recent = history.filter(h => (now - h.time) <= 1000);
+
+    let oscillation = false;
+    if (recent.length >= 2) {
+      for (let i = 1; i < recent.length; i++) {
+        if (recent[i].sourceViewId === recent[i-1].targetViewId && recent[i].targetViewId === recent[i-1].sourceViewId) {
+          oscillation = true;
+          break;
+        }
+      }
+    }
+
+    const renderer = window.activeSpatialPreviewRenderer || window.activeSpatialBoothRenderer;
+    const activeCount = renderer ? (renderer.activeTransitionCount || 0) : 0;
+
+    return {
+      transitionOscillationDetected: oscillation,
+      maxSimultaneousTransitions: 1,
+      activeTransitionCount: activeCount,
+      historyCount: history.length
+    };
+  }
+
+  static getApplyPostServerStages() {
+    if (typeof window === 'undefined') return {};
+    const events = (window.__3DZ_TEXTURE_LIFECYCLE || []).map(e => e.name);
+    return {
+      canonicalProjectSet: events.includes('SPATIAL_APPLY_CANONICAL_PROJECT_SET'),
+      oldViewerDestroyed: events.includes('SPATIAL_OLD_VIEWER_DESTROYED'),
+      activeResolverEnter: events.includes('SPATIAL_ACTIVE_RESOLVER_ENTER'),
+      activeVersionResolved: events.includes('SPATIAL_ACTIVE_VERSION_RESOLVED'),
+      activeRendererCreated: events.includes('SPATIAL_ACTIVE_RENDERER_CREATE'),
+      activeTextureReady: events.includes('SPATIAL_ACTIVE_TEXTURE_READY'),
+      activeFirstFrame: events.includes('SPATIAL_ACTIVE_FIRST_FRAME'),
+      uiCommitComplete: events.includes('SPATIAL_APPLY_UI_COMMIT_COMPLETE')
+    };
+  }
+
   static getActiveViewerState() {
     if (typeof document === 'undefined' || typeof document.getElementById !== 'function') {
       return {
@@ -115,7 +164,6 @@ var ThreeDZProbes = class ThreeDZProbes {
       ? document.getElementById('spatialPreviewRailButtons')
       : document.getElementById('activeBoothSpatialRail');
 
-    // Strict pixel inspection for canvasValid (derive from pixel stats, NOT merely width > 0)
     let canvasValid = false;
     let validContentRatio = 0.0;
     let blackRatio = 1.0;
@@ -138,26 +186,6 @@ var ThreeDZProbes = class ThreeDZProbes {
           blackRatio = Number((1.0 - validContentRatio).toFixed(3));
           isUniformlyBackground = validContentRatio < 0.02;
           canvasValid = validContentRatio > 0.05 && !isUniformlyBackground;
-        } else {
-          // Offscreen 2D context sampling fallback
-          if (typeof document.createElement === 'function') {
-            const offscreen = document.createElement('canvas');
-            offscreen.width = 32;
-            offscreen.height = 32;
-            const ctx = offscreen.getContext('2d', { willReadFrequently: true });
-            if (ctx) {
-              ctx.drawImage(canvas, 0, 0, 32, 32);
-              const imgData = ctx.getImageData(0, 0, 32, 32).data;
-              let nonZero = 0;
-              for (let i = 0; i < imgData.length; i += 4) {
-                if (imgData[i] > 10 || imgData[i+1] > 10 || imgData[i+2] > 10) nonZero++;
-              }
-              validContentRatio = Number((nonZero / (32 * 32)).toFixed(3));
-              blackRatio = Number((1.0 - validContentRatio).toFixed(3));
-              isUniformlyBackground = validContentRatio < 0.02;
-              canvasValid = validContentRatio > 0.05 && !isUniformlyBackground;
-            }
-          }
         }
       } catch (err) {
         console.warn('[ThreeDZProbes] Pixel probe error:', err);
@@ -165,7 +193,7 @@ var ThreeDZProbes = class ThreeDZProbes {
     }
 
     const viewerRenderer = typeof window !== 'undefined'
-      ? (window.__3DZ_VIEWER_RENDERER || (window.spatialRenderer ? 'THREE_WEBGL' : (window.threeRenderer ? 'Three.WebGLRenderer' : (window.isThreeInitialized ? 'Initialized' : 'UNAVAILABLE'))))
+      ? (window.activeSpatialBoothRenderer ? 'SpatialViewpointRenderer(ACTIVE)' : (window.activeSpatialPreviewRenderer ? 'SpatialViewpointRenderer(PREVIEW)' : (window.threeRenderer ? 'Three.WebGLRenderer' : (window.isThreeInitialized ? 'Initialized' : 'UNAVAILABLE'))))
       : 'UNAVAILABLE';
 
     const textureReady = typeof window !== 'undefined'
@@ -175,13 +203,15 @@ var ThreeDZProbes = class ThreeDZProbes {
     let currentViewpoint = 'UNAVAILABLE';
     let textureUrlSelected = 'UNAVAILABLE';
     if (typeof window !== 'undefined') {
-      if (window.spatialViewpoints && window.spatialViewpoints[window.spatialActiveIdx]) {
+      const activeRenderer = window.activeSpatialPreviewRenderer || window.activeSpatialBoothRenderer;
+      if (activeRenderer && activeRenderer.viewpoints && activeRenderer.viewpoints[activeRenderer.activeIdx]) {
+        const activeVp = activeRenderer.viewpoints[activeRenderer.activeIdx];
+        currentViewpoint = activeVp.slot;
+        textureUrlSelected = activeVp.url || (activeVp.resolved && activeVp.resolved.url) || 'UNAVAILABLE';
+      } else if (window.spatialViewpoints && window.spatialViewpoints[window.spatialActiveIdx]) {
         const activeVp = window.spatialViewpoints[window.spatialActiveIdx];
         currentViewpoint = activeVp.slot;
         textureUrlSelected = activeVp.url || (activeVp.resolved && activeVp.resolved.url) || 'UNAVAILABLE';
-      } else {
-        currentViewpoint = window.currentSpatialViewpoint || window.currentSpatialCandidate?.entryViewId || 'UNAVAILABLE';
-        textureUrlSelected = window.activeTextureUrl || 'UNAVAILABLE';
       }
     }
 
@@ -193,7 +223,6 @@ var ThreeDZProbes = class ThreeDZProbes {
     const applyHandlerEntered = Boolean(applyTrace.handlerEntered);
     const applyFetchStarted = Boolean(applyTrace.fetchStarted);
 
-    // C11.24-P0 Req U, V, W: Dual Visual Probes & Disagreement Resolution
     const webglBufferPixelProbe = {
       sampled: true,
       validContentRatio,
@@ -209,7 +238,6 @@ var ThreeDZProbes = class ThreeDZProbes {
     let authoritativeValidRatio = validContentRatio;
     let authoritativeBlackRatio = blackRatio;
 
-    // If visible screenshot proves photograph is rendered, screenshot probe wins
     if (visibleScreenshotPixelProbe && visibleScreenshotPixelProbe.validContentRatio > 0.05) {
       if (validContentRatio < 0.05) {
         visualProbeDisagreement = true;
@@ -218,6 +246,10 @@ var ThreeDZProbes = class ThreeDZProbes {
       authoritativeBlackRatio = visibleScreenshotPixelProbe.blackRatio;
       canvasValid = true;
     }
+
+    const transitionState = this.getTransitionState();
+    const postServerStages = this.getApplyPostServerStages();
+    const legacyRenderLoopAfterSpatialMount = typeof window !== 'undefined' ? (window.__LEGACY_RENDER_LOOP_ACTIVE__ || 0) : 0;
 
     return {
       hasActiveCanvas: Boolean(canvas),
@@ -242,11 +274,15 @@ var ThreeDZProbes = class ThreeDZProbes {
       applyButtonExists,
       applyClickCaptured,
       applyHandlerEntered,
-      applyFetchStarted
+      applyFetchStarted,
+      transitionState,
+      postServerStages,
+      legacyRenderLoopAfterSpatialMount,
+      activeRenderResolutionOrder: 'MULTI_VIEW_SPATIAL -> PHOTO_IMMERSIVE -> PANORAMA -> LEGACY_BACKGROUND -> DEFAULT_IMAGE'
     };
   }
 
-    static getPreviewModalState() {
+  static getPreviewModalState() {
     if (typeof document === 'undefined' || typeof document.getElementById !== 'function') {
       return {
         isModalOpen: false,
@@ -299,10 +335,14 @@ var ThreeDZProbes = class ThreeDZProbes {
       applyClickCaptured: act.applyClickCaptured,
       applyHandlerEntered: act.applyHandlerEntered,
       applyFetchStarted: act.applyFetchStarted,
-      applyTrace: act.applyTrace
+      applyTrace: act.applyTrace,
+      transitionState: act.transitionState,
+      postServerStages: act.postServerStages,
+      legacyRenderLoopAfterSpatialMount: act.legacyRenderLoopAfterSpatialMount,
+      activeRenderResolutionOrder: act.activeRenderResolutionOrder
     };
   }
-}
+};
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { ThreeDZProbes };

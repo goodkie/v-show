@@ -5660,6 +5660,54 @@
     let drawer3dWireframe = false;
     let currentMediaMode = 'photo'; // 'photo' | '3d'
 
+    // ── C11.25-P0: CANONICAL VIEWER TEARDOWN & RECOVERY ──
+    function destroyCurrentBoothViewer() {
+      if (typeof emitSpatialTextureLifecycle === 'function') {
+        emitSpatialTextureLifecycle('SPATIAL_OLD_VIEWER_DESTROY_BEGIN', { timestamp: Date.now() });
+      }
+      window.studioAnimateStopped = true;
+      if (window.studioAnimateId) {
+        cancelAnimationFrame(window.studioAnimateId);
+        window.studioAnimateId = null;
+      }
+      if (controls) {
+        try { controls.dispose(); } catch (e) {}
+        controls = null;
+      }
+      if (photoSphere && scene) {
+        try {
+          scene.remove(photoSphere);
+          if (photoSphere.geometry) photoSphere.geometry.dispose();
+          if (photoSphere.material) {
+            if (photoSphere.material.map) photoSphere.material.map.dispose();
+            photoSphere.material.dispose();
+          }
+        } catch (e) {}
+        photoSphere = null;
+      }
+      if (renderer) {
+        try { renderer.dispose(); } catch (e) {}
+        renderer = null;
+      }
+      isThreeInitialized = false;
+      window.removeEventListener('resize', onStudioResize);
+
+      const oldRail = document.getElementById('activeBoothSpatialRail');
+      if (oldRail) oldRail.remove();
+
+      window.__LEGACY_RENDER_LOOP_ACTIVE__ = 0;
+      if (typeof emitSpatialTextureLifecycle === 'function') {
+        emitSpatialTextureLifecycle('SPATIAL_OLD_VIEWER_DESTROYED', {
+          timestamp: Date.now(),
+          legacyRenderLoopActive: 0
+        });
+        emitSpatialTextureLifecycle('SPATIAL_OLD_VIEWER_DESTROY_COMPLETE', {
+          timestamp: Date.now()
+        });
+      }
+    }
+    window.destroyCurrentBoothViewer = destroyCurrentBoothViewer;
+
     function renderStudioBooth(projectData) {
       document.getElementById('hero-funnel').style.display = 'none';
       const studio = document.getElementById('freeStudioSection');
@@ -5675,7 +5723,6 @@
       const badgeEl = document.getElementById('studioBannerPlanBadge');
       const bizNameEl = document.getElementById('studioBannerBizName');
 
-      // Canonical Business Name (e.g. studio berry)
       const canonicalBiz = currentViewerAccount?.businessName || (projectData.businessName && projectData.businessName !== 'www' ? projectData.businessName : 'studio berry');
       window.VIEWER_BUSINESS_NAME = canonicalBiz;
       window.VIEWER_BUSINESS_NAME_SOURCE = currentViewerAccount?.businessName ? 'ACCOUNT_METADATA' : 'PROJECT_METADATA';
@@ -5693,11 +5740,42 @@
       }
 
       if (bizNameEl) {
-        bizNameEl.textContent = `${canonicalBiz} — Experience your photo as an interactive 3D virtual booth. Drag to look around in 360°, or click pins to inspect products.`;
+        bizNameEl.textContent = canonicalBiz + ' — Experience your photo as an interactive 3D virtual booth. Drag to look around in 360°, or click pins to inspect products.';
       }
 
       checkProjectOwnership();
       applyViewerModeUI();
+
+      // C11.25-P0 Priority 0: Active Spatial Viewer Resolution
+      // ACTIVE_RENDER_RESOLUTION_ORDER: MULTI_VIEW_SPATIAL -> PHOTO_IMMERSIVE -> PANORAMA -> LEGACY_BACKGROUND -> DEFAULT_IMAGE
+      if (projectData?.viewerMode === 'MULTI_VIEW_SPATIAL' && projectData?.activeSpatialVersionId) {
+        const activeBg = getActiveBoothBackground(projectData);
+        if (activeBg && (activeBg.sourceType === 'MULTI_VIEW_SPATIAL' || activeBg.versionType === 'SPATIAL' || projectData.viewerMode === 'MULTI_VIEW_SPATIAL')) {
+          if (typeof emitSpatialTextureLifecycle === 'function') {
+            emitSpatialTextureLifecycle('SPATIAL_ACTIVE_RESOLVER_ENTER', {
+              projectId: projectData.id,
+              viewerMode: projectData.viewerMode,
+              activeSpatialVersionId: projectData.activeSpatialVersionId
+            });
+            emitSpatialTextureLifecycle('SPATIAL_ACTIVE_VERSION_RESOLVED', {
+              versionId: activeBg.versionId,
+              candidateId: activeBg.candidateId,
+              viewpointsCount: (activeBg.viewpoints || []).length
+            });
+          }
+
+          destroyCurrentBoothViewer();
+          mountActiveSpatialBoothViewer(projectData, activeBg);
+
+          renderProductCardsTray(projectData.products || []);
+          renderProductCards(projectData.products || []);
+          updateNextStepCTA();
+          loadProjectViewpoints();
+          initPinInteractionListeners();
+          logAnalyticsEvent('immersive_view_started', { projectId: projectData.id });
+          return;
+        }
+      }
 
       const activeBg = getActiveBoothBackground(projectData); const photoUrl = activeBg?.url || projectData.sourceAsset?.previewUrl || projectData.sourceAsset?.originalUrl || '';
 
@@ -10844,7 +10922,8 @@
     }
 
             function studioAnimate(time) {
-      requestAnimationFrame(studioAnimate);
+      if (window.studioAnimateStopped) return;
+      window.studioAnimateId = requestAnimationFrame(studioAnimate);
       if (controls) controls.update();
       updateHotspots();
       drawRadar();
@@ -14193,55 +14272,24 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       if (m) m.style.display = 'none';
     }
 
-    // ── SPATIAL PREVIEW WEBGL 3D VIEWER ENGINE (C11.22-P0R1: Proven PhotoImmersive Engine) ──
-    const SPATIAL_DRAG_STATES = {
+    // ── SPATIAL EXPERIENCE ARCHITECTURE (C11.25-P0) ──
+    // Unified SpatialViewpointRenderer for PREVIEW and ACTIVE host modes
+    // Featuring:
+    // 1. Calibrated Curved Projection Geometry (eliminates 360 over-crop on ordinary photos)
+    // 2. Deterministic 5-State Machine (IDLE -> LOCAL_DRAG -> EDGE_ARMED -> TRANSITION_LOCKED -> TARGET_SETTLE)
+    // 3. Pointer Rebase & Opposite-side Entry Angle Alignment (zero jitter, zero oscillation)
+    // 4. 4K-First Adaptive Textures with Seamless 8K Idle Upgrade
+    // 5. Complete Active Viewer Mounting and Teardown
+
+    const SPATIAL_TRANSITION_STATES = {
       IDLE: 'IDLE',
-      PANNING: 'PANNING',
-      EDGE_RESISTANCE: 'EDGE_RESISTANCE',
-      TRANSITIONING: 'TRANSITIONING',
-      SETTLING: 'SETTLING'
+      LOCAL_DRAG: 'LOCAL_DRAG',
+      EDGE_ARMED: 'EDGE_ARMED',
+      TRANSITION_LOCKED: 'TRANSITION_LOCKED',
+      TARGET_SETTLE: 'TARGET_SETTLE'
     };
 
-    let spatialRenderer = null;
-    let spatialScene = null;
-    let spatialCamera = null;
-    let spatialMeshCurrent = null;
-    let spatialMeshTransition = null;
-    let spatialMatCurrent = null;
-    let spatialMatTransition = null;
-    let spatialViewpoints = [];
-    let spatialActiveIdx = 1;
-    let spatialIsTransitioning = false;
-    let spatialYaw = 0.0;
-    let spatialPitch = 0.0;
-
-    // ── C11.24-P0: CALIBRATED SPATIAL IMMERSION TUNING (Goal C & B Baseline) ──
-    const NORMAL_FOV = 55;
-    const WIDE_FOV = 68;
-    let spatialCurrentFov = NORMAL_FOV;
-
-    // Substantial local exploration range: Soft ~ ±28°, Hard ~ ±36°
-    const LOCAL_YAW_SOFT_RANGE = 28 * Math.PI / 180; // ~ 0.488 rad (±28°)
-    const LOCAL_YAW_HARD_RANGE = 36 * Math.PI / 180; // ~ 0.628 rad (±36°)
-    const LOCAL_PITCH_MIN = -12 * Math.PI / 180;     // ~ -0.209 rad (-12°)
-    const LOCAL_PITCH_MAX = 15 * Math.PI / 180;      // ~ +0.262 rad (+15°)
-
-    // Requires 100px past hard range to transition, ensuring meaningful local sweep first
-    const EDGE_TRANSITION_THRESHOLD_PX = 100;
-    const ZOOM_OUT_MIN = 0.88;
-    const ZOOM_IN_MAX = 1.35;
-
-    let spatialDragState = SPATIAL_DRAG_STATES.IDLE;
-    let edgeAccumPx = 0;
-    let dragPointerId = null;
-    let lastPointerX = 0;
-    let lastPointerY = 0;
-    let lastPointerTime = 0;
-    let continuousPointerDown = false;
-    let whiteFrameCount = 0;
-
-
-    // ── CANONICAL SPATIAL TEXTURE LIFECYCLE EMITTER (C11.23-P0R2) ──
+    window.__3DZ_TRANSITION_HISTORY = window.__3DZ_TRANSITION_HISTORY || [];
     window.__3DZ_TEXTURE_LIFECYCLE = window.__3DZ_TEXTURE_LIFECYCLE || [];
     window.__3DZ_RENDER_COUNT = 0;
 
@@ -14255,6 +14303,16 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       window.__3DZ_LAST_EVENT = record;
       window.__3DZ_TEXTURE_LIFECYCLE.push(record);
       console.log(`[3DZ Lifecycle] ${eventName}`, payload);
+
+      if (eventName === 'SPATIAL_TRANSITION_COMPLETE') {
+        window.__3DZ_TRANSITION_HISTORY.push({
+          transitionId: payload.transitionId,
+          sourceViewId: payload.sourceViewId,
+          targetViewId: payload.targetViewId,
+          direction: payload.direction,
+          time: Date.now()
+        });
+      }
 
       if (window.RI_CORE && window.RI_CORE.eventBus) {
         try {
@@ -14271,8 +14329,8 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
     }
     window.emitSpatialTextureLifecycle = emitSpatialTextureLifecycle;
 
-    // ── CANONICAL SPATIAL VIEWPOINT TEXTURE RESOLVER (C11.23-P0R1) ──
-    function resolveSpatialViewpointTexture(viewpoint, deviceProfile = 'desktop') {
+    // ── CANONICAL SPATIAL VIEWPOINT TEXTURE RESOLVER ──
+    function resolveSpatialViewpointTexture(viewpoint, deviceProfile = 'desktop', tier = 'initial') {
       if (!viewpoint) return { url: null, selectedField: null, resolution: null, viewpointId: null, viewpointRole: null };
 
       const v = viewpoint;
@@ -14281,78 +14339,76 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
           viewpointId: v.id || v.viewId || null,
           slot: v.slot || v.role || 'CENTER',
           hasDerivatives: Boolean(v.derivatives),
-          deviceProfile
+          deviceProfile,
+          tier
         });
       }
       let url = null;
       let selectedField = null;
       let resolution = 'UNKNOWN';
 
-      // 1. Check derivatives according to profile
       if (v.derivatives) {
-        if (deviceProfile === 'mobile' && v.derivatives.mobile2k?.url) {
-          url = v.derivatives.mobile2k.url;
-          selectedField = 'derivatives.mobile2k.url';
-          resolution = '2K';
-        } else if (deviceProfile === 'mobile' && v.derivatives.standard4k?.url) {
-          url = v.derivatives.standard4k.url;
-          selectedField = 'derivatives.standard4k.url';
-          resolution = '4K';
-        } else if (v.derivatives.desktop8k?.url) {
-          url = v.derivatives.desktop8k.url;
-          selectedField = 'derivatives.desktop8k.url';
-          resolution = '8K';
-        } else if (v.derivatives.standard4k?.url) {
-          url = v.derivatives.standard4k.url;
-          selectedField = 'derivatives.standard4k.url';
-          resolution = '4K';
-        } else if (v.derivatives.mobile2k?.url) {
-          url = v.derivatives.mobile2k.url;
-          selectedField = 'derivatives.mobile2k.url';
-          resolution = '2K';
-        } else if (v.derivatives.master16k?.url) {
-          url = v.derivatives.master16k.url;
-          selectedField = 'derivatives.master16k.url';
-          resolution = '16K';
+        if (deviceProfile === 'mobile') {
+          if (v.derivatives.mobile2k?.url) {
+            url = v.derivatives.mobile2k.url;
+            selectedField = 'derivatives.mobile2k.url';
+            resolution = '2K';
+          } else if (v.derivatives.standard4k?.url) {
+            url = v.derivatives.standard4k.url;
+            selectedField = 'derivatives.standard4k.url';
+            resolution = '4K';
+          }
+        } else {
+          // Desktop: 4K first policy (Section 21)
+          if (tier === 'upgrade' && v.derivatives.desktop8k?.url) {
+            url = v.derivatives.desktop8k.url;
+            selectedField = 'derivatives.desktop8k.url';
+            resolution = '8K';
+          } else if (v.derivatives.standard4k?.url) {
+            url = v.derivatives.standard4k.url;
+            selectedField = 'derivatives.standard4k.url';
+            resolution = '4K';
+          } else if (v.derivatives.desktop8k?.url) {
+            url = v.derivatives.desktop8k.url;
+            selectedField = 'derivatives.desktop8k.url';
+            resolution = '8K';
+          } else if (v.derivatives.mobile2k?.url) {
+            url = v.derivatives.mobile2k.url;
+            selectedField = 'derivatives.mobile2k.url';
+            resolution = '2K';
+          } else if (v.derivatives.master16k?.url) {
+            url = v.derivatives.master16k.url;
+            selectedField = 'derivatives.master16k.url';
+            resolution = '16K';
+          }
         }
       }
 
-      // 2. Direct textureUrl field
       if (!url && v.textureUrl) {
         url = v.textureUrl;
         selectedField = 'textureUrl';
         resolution = 'TEXTURE_URL';
       }
-
-      // 3. Direct url field (e.g. from candidate / vp.url)
       if (!url && v.url) {
         url = v.url;
         selectedField = 'url';
         resolution = 'DIRECT_URL';
       }
-
-      // 4. masteredAsset
       if (!url && v.masteredAsset?.url) {
         url = v.masteredAsset.url;
         selectedField = 'masteredAsset.url';
         resolution = 'MASTERED_ASSET';
       }
-
-      // 5. masterUrl
       if (!url && v.masterUrl) {
         url = v.masterUrl;
         selectedField = 'masterUrl';
         resolution = 'MASTER_URL';
       }
-
-      // 6. sourceAsset
       if (!url && v.sourceAsset?.url) {
         url = v.sourceAsset.url;
         selectedField = 'sourceAsset.url';
         resolution = 'SOURCE_ASSET';
       }
-
-      // 7. cleanedAsset
       if (!url && v.cleanedAsset?.url) {
         url = v.cleanedAsset.url;
         selectedField = 'cleanedAsset.url';
@@ -14371,76 +14427,263 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         sanitizedUrl: url ? url.split('?')[0] : null
       };
 
-      // Emit RI Observable Events
       if (url) {
-        if (typeof emitSpatialTextureLifecycle === 'function') {
-          emitSpatialTextureLifecycle('SPATIAL_TEXTURE_RESOLVED', result);
-        }
+        emitSpatialTextureLifecycle('SPATIAL_TEXTURE_RESOLVED', result);
       } else {
-        if (typeof emitSpatialTextureLifecycle === 'function') {
-          emitSpatialTextureLifecycle('SPATIAL_TEXTURE_RESOLVE_FAILED', result);
-        }
+        emitSpatialTextureLifecycle('SPATIAL_TEXTURE_RESOLVE_FAILED', result);
       }
 
       return result;
     }
     window.resolveSpatialViewpointTexture = resolveSpatialViewpointTexture;
 
-    function showSpatialViewpointError(msg = 'Unable to load this viewpoint.') {
-      let el = document.getElementById('spatialPreviewErrorOverlay');
-      if (!el) {
-        const container = document.getElementById('spatialPreviewCanvasContainer');
-        if (!container) return;
-        el = document.createElement('div');
-        el.id = 'spatialPreviewErrorOverlay';
-        el.style.cssText = 'display:none; position:absolute; inset:0; background:rgba(15,23,42,0.88); backdrop-filter:blur(6px); z-index:30; flex-direction:column; align-items:center; justify-content:center; gap:12px; color:#f8fafc; font-family:"Plus Jakarta Sans",sans-serif;';
-        el.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b; font-size:32px;"></i><div style="font-size:14px; font-weight:700;" id="spatialPreviewErrorText">Unable to load this viewpoint.</div><button type="button" id="spatialPreviewRetryBtn" onclick="retryCurrentSpatialViewpoint()" style="background:#0284c7; color:#fff; border:1px solid #38bdf8; border-radius:8px; padding:6px 16px; font-size:12px; font-weight:700; cursor:pointer;">Retry</button>';
-        container.appendChild(el);
+    // ── UNIFIED SPATIAL VIEWPOINT RENDERER CLASS (C11.25-P0) ──
+    class SpatialViewpointRenderer {
+      constructor(options = {}) {
+        this.hostMode = options.hostMode || 'PREVIEW'; // 'PREVIEW' or 'ACTIVE'
+        this.container = options.container;
+        this.canvas = options.canvas;
+        this.candidate = options.candidate || {};
+        this.projectData = options.projectData || window.activeProjectData || {};
+        this.onFirstFrame = options.onFirstFrame || null;
+
+        // Camera & FOV parameters
+        this.NORMAL_FOV = 52;
+        this.WIDE_FOV = 65;
+        this.currentFov = this.NORMAL_FOV;
+
+        // Calibrated Local Immersion Range (Soft ±28°, Hard ±36°)
+        this.LOCAL_YAW_SOFT_RANGE = 28 * Math.PI / 180; // ~0.488 rad (±28°)
+        this.LOCAL_YAW_HARD_RANGE = 36 * Math.PI / 180; // ~0.628 rad (±36°)
+        this.LOCAL_PITCH_MIN = -12 * Math.PI / 180;     // ~-0.209 rad (-12°)
+        this.LOCAL_PITCH_MAX = 15 * Math.PI / 180;      // ~+0.262 rad (+15°)
+        this.EDGE_TRANSITION_THRESHOLD_PX = 90;
+
+        // Curved Geometry (110° Arc, Preserving Aspect Ratio)
+        this.CURVED_ARC = 110 * Math.PI / 180; // ~1.92 rad
+        this.CURVED_RADIUS = 500;
+
+        // State Machine
+        this.currentState = SPATIAL_TRANSITION_STATES.IDLE;
+        this.activeTransitionCount = 0;
+        this.transitionId = 0;
+        this.pendingDragDelta = 0;
+        this.settleTimer = null;
+        this.idleUpgradeTimer = null;
+
+        this.viewpoints = [];
+        this.activeIdx = 0;
+        this.yaw = 0.0;
+        this.pitch = 0.0;
+        this.continuousPointerDown = false;
+        this.lastPointerX = 0;
+        this.lastPointerY = 0;
+        this.edgeAccumPx = 0;
+        this.isDestroyed = false;
+
+        this.renderer = null;
+        this.scene = null;
+        this.camera = null;
+        this.meshCurrent = null;
+        this.meshTransition = null;
+        this.matCurrent = null;
+        this.matTransition = null;
+
+        this.init();
       }
-      const txt = document.getElementById('spatialPreviewErrorText');
-      if (txt) txt.textContent = msg;
-      el.style.display = 'flex';
-    }
 
-    function hideSpatialViewpointError() {
-      const el = document.getElementById('spatialPreviewErrorOverlay');
-      if (el) el.style.display = 'none';
-    }
+      init() {
+        if (!this.canvas || !this.container) return;
 
-    function retryCurrentSpatialViewpoint() {
-      hideSpatialViewpointError();
-      if (typeof spatialActiveIdx === 'number' && typeof retryViewpointLoad === 'function') {
-        retryViewpointLoad(spatialActiveIdx);
-      }
-    }
+        const w = this.container.clientWidth || 920;
+        const h = this.container.clientHeight || 520;
+        const aspect = w / h;
 
-    async function ensureViewpointReady(vp) {
-      if (vp.isGpuReady && vp.tex) return true;
-      const resolved = resolveSpatialViewpointTexture(vp);
-      const targetUrl = resolved.url || vp.url;
-      if (!targetUrl) {
-        showSpatialViewpointError('Unable to load this viewpoint.');
-        return false;
-      }
-
-      if (vp.loadPromise) return vp.loadPromise;
-
-      const reqStartTime = Date.now();
-      if (typeof emitSpatialTextureLifecycle === 'function') {
-        emitSpatialTextureLifecycle('SPATIAL_TEXTURE_REQUEST_START', {
-          url: targetUrl,
-          slot: vp.slot || vp.role || 'CENTER',
-          viewpointId: vp.id || null
+        // 1. Renderer
+        this.renderer = new THREE.WebGLRenderer({
+          canvas: this.canvas,
+          antialias: true,
+          powerPreference: 'high-performance',
+          precision: 'highp',
+          preserveDrawingBuffer: true
         });
+        this.renderer.setSize(w, h, false);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        this.renderer.outputEncoding = THREE.sRGBEncoding;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.18;
+
+        // 2. Scene & Camera
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x020617);
+
+        this.camera = new THREE.PerspectiveCamera(this.currentFov, aspect, 0.01, 2000);
+        this.camera.position.set(0, 0, 0.01);
+        this.yaw = 0.0;
+        this.pitch = 0.0;
+        this.updateCamera();
+
+        // 3. Resolve viewpoints from candidate/version
+        this.viewpoints = [];
+        const rawVps = this.candidate.viewpoints || this.candidate.anchors || [];
+        rawVps.forEach((vp, idx) => {
+          const resolved = resolveSpatialViewpointTexture(vp, 'desktop', 'initial');
+          this.viewpoints.push({
+            id: vp.id || ('vp-' + (vp.slot || idx).toString().toLowerCase()),
+            slot: vp.slot || ('VIEW ' + (idx + 1)),
+            index: idx,
+            viewerType: vp.viewerType || 'PHOTO_IMMERSIVE',
+            projection: 'PHOTO_IMMERSIVE',
+            fov: this.NORMAL_FOV,
+            tex: null,
+            isGpuReady: false,
+            url: resolved.url,
+            derivatives: vp.derivatives || null,
+            resolved
+          });
+        });
+
+        if (this.viewpoints.length === 0) {
+          const singleUrl = this.candidate.activeBackgroundUrl || this.candidate.url || '/uploads/booth_8k_desktop_1788435138265_44e6ae.jpg';
+          this.viewpoints.push({
+            id: 'vp-center',
+            slot: 'CENTER',
+            index: 0,
+            viewerType: 'PHOTO_IMMERSIVE',
+            projection: 'PHOTO_IMMERSIVE',
+            fov: this.NORMAL_FOV,
+            tex: null,
+            isGpuReady: false,
+            url: singleUrl,
+            resolved: { url: singleUrl }
+          });
+        }
+
+        // Find entry viewpoint (CENTER if exists, else middle/0)
+        let entryIdx = this.viewpoints.findIndex(v => v.slot === (this.candidate.entryViewId || 'CENTER'));
+        if (entryIdx < 0) entryIdx = Math.floor(this.viewpoints.length / 2);
+        this.activeIdx = entryIdx >= 0 ? entryIdx : 0;
+
+        // 4. Create Curved Projection Geometries (Aspect Preserved)
+        const arc = this.CURVED_ARC;
+        const R = this.CURVED_RADIUS;
+        const arcLen = R * arc;
+        const geoAspect = 2.0; // Standard 2:1 pano/source derivative
+        const geoHeight = arcLen / geoAspect;
+        const thetaStart = Math.PI * 1.5 - (arc / 2);
+
+        const curvedGeo = new THREE.CylinderGeometry(R, R, geoHeight, 64, 16, true, thetaStart, arc);
+        curvedGeo.scale(-1, 1, 1);
+
+        this.matCurrent = new THREE.MeshBasicMaterial({
+          side: THREE.DoubleSide,
+          map: null,
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.0,
+          visible: false,
+          depthWrite: false
+        });
+        this.meshCurrent = new THREE.Mesh(curvedGeo, this.matCurrent);
+        this.meshCurrent.position.set(0, 0, 0);
+        this.meshCurrent.renderOrder = -1;
+        this.scene.add(this.meshCurrent);
+
+        this.matTransition = new THREE.MeshBasicMaterial({
+          side: THREE.DoubleSide,
+          map: null,
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.0,
+          visible: false,
+          depthWrite: false
+        });
+        this.meshTransition = new THREE.Mesh(curvedGeo.clone(), this.matTransition);
+        this.meshTransition.position.set(0, 0, 0);
+        this.meshTransition.renderOrder = 0;
+        this.scene.add(this.meshTransition);
+
+        // 5. Setup Gesture Handlers & Active Rail
+        this.setupGestureHandlers();
+        this.setupRail();
+
+        // 6. Expose global handles for Runtime Inspector & backwards-compatibility
+        window.SpatialViewpointRenderer = SpatialViewpointRenderer;
+        window.spatialRenderer = this.renderer;
+        window.spatialMatCurrent = this.matCurrent;
+        window.spatialViewpoints = this.viewpoints;
+        window.spatialActiveIdx = this.activeIdx;
+
+        // 7. Load Initial Viewpoint
+        const curVp = this.viewpoints[this.activeIdx];
+        if (curVp) {
+          this.ensureViewpointReady(curVp).then(ready => {
+            if (ready && curVp.tex && this.matCurrent) {
+              this.matCurrent.map = curVp.tex;
+              this.matCurrent.opacity = 1.0;
+              this.matCurrent.visible = true;
+              this.matCurrent.needsUpdate = true;
+              this.render();
+
+              emitSpatialTextureLifecycle(this.hostMode === 'ACTIVE' ? 'SPATIAL_ACTIVE_FIRST_FRAME' : 'SPATIAL_FIRST_VALID_FRAME', {
+                hostMode: this.hostMode,
+                viewpointId: curVp.id,
+                slot: curVp.slot,
+                timestamp: Date.now()
+              });
+
+              if (this.onFirstFrame) this.onFirstFrame();
+              this.scheduleIdleUpgrade(curVp);
+            }
+          });
+        }
+
+        // 8. Preload neighbors (4K)
+        this.preloadAdjacent();
       }
 
-      vp.loadPromise = new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-          try {
-            const reqDuration = Date.now() - reqStartTime;
-            if (typeof emitSpatialTextureLifecycle === 'function') {
+      updateCamera() {
+        if (!this.camera) return;
+        const cosP = Math.cos(this.pitch);
+        const sinP = Math.sin(this.pitch);
+        const sinY = Math.sin(this.yaw);
+        const cosY = Math.cos(this.yaw);
+
+        const target = new THREE.Vector3(
+          -sinY * cosP,
+          sinP,
+          -cosY * cosP
+        );
+        this.camera.lookAt(target);
+      }
+
+      render() {
+        if (this.renderer && this.scene && this.camera && !this.isDestroyed) {
+          this.renderer.render(this.scene, this.camera);
+          window.__3DZ_RENDER_COUNT = (window.__3DZ_RENDER_COUNT || 0) + 1;
+        }
+      }
+
+      async ensureViewpointReady(vp) {
+        if (vp.isGpuReady && vp.tex) return true;
+        const targetUrl = vp.url || vp.resolved?.url;
+        if (!targetUrl) return false;
+
+        if (vp.loadPromise) return vp.loadPromise;
+
+        const reqStartTime = Date.now();
+        emitSpatialTextureLifecycle(this.hostMode === 'ACTIVE' ? 'SPATIAL_ACTIVE_TEXTURE_REQUEST' : 'SPATIAL_TEXTURE_REQUEST_START', {
+          url: targetUrl,
+          slot: vp.slot,
+          viewpointId: vp.id
+        });
+
+        vp.loadPromise = new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            try {
+              const reqDuration = Date.now() - reqStartTime;
               emitSpatialTextureLifecycle('SPATIAL_TEXTURE_HTTP', {
                 url: targetUrl,
                 naturalWidth: img.naturalWidth,
@@ -14451,627 +14694,489 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
                 width: img.naturalWidth,
                 height: img.naturalHeight
               });
-            }
 
-            const tex = new THREE.Texture(img);
-            tex.encoding = THREE.sRGBEncoding;
-            tex.generateMipmaps = true;
-            tex.minFilter = THREE.LinearMipmapLinearFilter;
-            tex.magFilter = THREE.LinearFilter;
-            tex.needsUpdate = true;
-            vp.tex = tex;
-            vp.isGpuReady = true;
+              const tex = new THREE.Texture(img);
+              tex.encoding = THREE.sRGBEncoding;
+              tex.generateMipmaps = true;
+              tex.minFilter = THREE.LinearMipmapLinearFilter;
+              tex.magFilter = THREE.LinearFilter;
+              tex.needsUpdate = true;
 
-            if (typeof emitSpatialTextureLifecycle === 'function') {
-              emitSpatialTextureLifecycle('SPATIAL_TEXTURE_CREATED', {
+              vp.tex = tex;
+              vp.isGpuReady = true;
+
+              emitSpatialTextureLifecycle(this.hostMode === 'ACTIVE' ? 'SPATIAL_ACTIVE_TEXTURE_READY' : 'SPATIAL_TEXTURE_CREATED', {
                 textureId: tex.id,
-                imageWidth: img.naturalWidth,
-                imageHeight: img.naturalHeight
+                slot: vp.slot,
+                url: targetUrl
               });
+              resolve(true);
+            } catch (err) {
+              console.warn('[Spatial GPU Upload Error]', err);
+              resolve(false);
             }
-
-            hideSpatialViewpointError();
-            resolve(true);
-          } catch (err) {
-            console.warn('[Spatial Texture Upload Error]', err);
-            showSpatialViewpointError('Unable to upload texture to GPU.');
+          };
+          img.onerror = () => {
+            console.warn('[Spatial Image Load Error]', targetUrl);
             resolve(false);
+          };
+          img.src = targetUrl;
+        });
+
+        return vp.loadPromise;
+      }
+
+      preloadAdjacent() {
+        const leftIdx = this.activeIdx - 1;
+        const rightIdx = this.activeIdx + 1;
+        if (leftIdx >= 0 && this.viewpoints[leftIdx]) {
+          this.ensureViewpointReady(this.viewpoints[leftIdx]);
+        }
+        if (rightIdx < this.viewpoints.length && this.viewpoints[rightIdx]) {
+          this.ensureViewpointReady(this.viewpoints[rightIdx]);
+        }
+      }
+
+      scheduleIdleUpgrade(vp) {
+        if (this.idleUpgradeTimer) clearTimeout(this.idleUpgradeTimer);
+        if (!vp.derivatives?.desktop8k?.url || vp.is8kUpgraded) return;
+
+        this.idleUpgradeTimer = setTimeout(async () => {
+          if (this.isDestroyed) return;
+          const upgrade8kUrl = vp.derivatives.desktop8k.url;
+          console.log('[Spatial Idle Upgrade] Upgrading to 8K in background:', upgrade8kUrl);
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            if (this.isDestroyed) return;
+            const tex8k = new THREE.Texture(img);
+            tex8k.encoding = THREE.sRGBEncoding;
+            tex8k.generateMipmaps = true;
+            tex8k.minFilter = THREE.LinearMipmapLinearFilter;
+            tex8k.magFilter = THREE.LinearFilter;
+            tex8k.needsUpdate = true;
+
+            if (this.activeIdx === vp.index && this.matCurrent) {
+              this.matCurrent.map = tex8k;
+              this.matCurrent.needsUpdate = true;
+              this.render();
+            }
+            vp.tex = tex8k;
+            vp.is8kUpgraded = true;
+            emitSpatialTextureLifecycle('SPATIAL_IDLE_TEXTURE_UPGRADE', {
+              slot: vp.slot,
+              tier: '8K',
+              url: upgrade8kUrl
+            });
+          };
+          img.src = upgrade8kUrl;
+        }, 2500);
+      }
+
+      setupGestureHandlers() {
+        const canvas = this.canvas;
+        if (!canvas) return;
+
+        canvas.onpointerdown = (e) => {
+          if (this.currentState === SPATIAL_TRANSITION_STATES.TRANSITION_LOCKED) return;
+          this.continuousPointerDown = true;
+          this.lastPointerX = e.clientX;
+          this.lastPointerY = e.clientY;
+          this.edgeAccumPx = 0;
+          if (this.currentState !== SPATIAL_TRANSITION_STATES.TARGET_SETTLE) {
+            this.currentState = SPATIAL_TRANSITION_STATES.LOCAL_DRAG;
           }
+          try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+          canvas.style.cursor = 'grabbing';
+          emitSpatialTextureLifecycle('SPATIAL_LOCAL_DRAG_START', { x: e.clientX, y: e.clientY });
         };
-        img.onerror = (e) => {
-          console.warn('[Spatial Image Load Error] for slot ' + (vp.slot || vp.role || 'CENTER'), targetUrl, e);
-          showSpatialViewpointError('Unable to load this viewpoint.');
-          resolve(false);
-        };
-        img.src = targetUrl;
-      });
 
-      return vp.loadPromise;
-    }
+        canvas.onpointermove = (e) => {
+          if (!this.continuousPointerDown) return;
+          const dx = e.clientX - this.lastPointerX;
+          const dy = e.clientY - this.lastPointerY;
+          this.lastPointerX = e.clientX;
+          this.lastPointerY = e.clientY;
 
-    function initSpatialPreviewWebGL(candidate) {
-      const canvas = document.getElementById('spatialPreviewCanvas');
-      if (!canvas) return;
+          if (this.currentState === SPATIAL_TRANSITION_STATES.TRANSITION_LOCKED) {
+            this.pendingDragDelta += dx;
+            return;
+          }
 
-      const container = document.getElementById('spatialPreviewCanvasContainer');
-      const w = container ? container.clientWidth : 920;
-      const h = container ? container.clientHeight : 520;
-      const aspect = w / h;
+          const yawSensitivity = 0.0035;
+          const pitchSensitivity = 0.0025;
 
-      // WebGL Context Event Listeners
-      if (!canvas._hasContextHandlers) {
-        canvas._hasContextHandlers = true;
-        canvas.addEventListener('webglcontextlost', (e) => {
-          e.preventDefault();
-          console.warn('[Spatial WebGL] Context lost');
-        }, false);
-        canvas.addEventListener('webglcontextrestored', () => {
-          console.log('[Spatial WebGL] Context restored');
-          initSpatialPreviewWebGL(window.currentSpatialCandidate);
-        }, false);
-      }
+          if (this.currentState === SPATIAL_TRANSITION_STATES.TARGET_SETTLE) {
+            this.yaw = Math.max(-this.LOCAL_YAW_SOFT_RANGE, Math.min(this.LOCAL_YAW_SOFT_RANGE, this.yaw - dx * yawSensitivity));
+            this.pitch = Math.max(this.LOCAL_PITCH_MIN, Math.min(this.LOCAL_PITCH_MAX, this.pitch + dy * pitchSensitivity));
+            this.updateCamera();
+            this.render();
+            return;
+          }
 
-      // Renderer setup
-      if (!spatialRenderer) {
-        spatialRenderer = new THREE.WebGLRenderer({
-          canvas,
-          antialias: true,
-          powerPreference: 'high-performance',
-          precision: 'highp',
-          preserveDrawingBuffer: true
-        });
-        spatialRenderer.outputEncoding = THREE.sRGBEncoding;
-        spatialRenderer.toneMapping = THREE.ACESFilmicToneMapping;
-        spatialRenderer.toneMappingExposure = 1.18;
-      }
-      spatialRenderer.setSize(w, h, false);
-      spatialRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+          const desiredYaw = this.yaw - dx * yawSensitivity;
+          const desiredPitch = this.pitch + dy * pitchSensitivity;
 
-      spatialScene = new THREE.Scene();
-      spatialScene.background = new THREE.Color(0x020617); // Dark navy/black, NEVER white
-
-      // Camera: Non-destructive Perspective Camera inside sphere center looking along -Z
-      spatialCurrentFov = 50;
-      spatialCamera = new THREE.PerspectiveCamera(spatialCurrentFov, aspect, 0.01, 2000);
-      spatialCamera.position.set(0, 0, 0.01);
-      spatialYaw = 0.0;
-      spatialPitch = 0.0;
-      updateCameraOrientation();
-
-      // Extract viewpoints from candidate (Canonical Texture Resolver)
-      spatialViewpoints = [];
-      const vps = candidate.viewpoints || candidate.anchors || [];
-      vps.forEach((vp, idx) => {
-        const resolved = resolveSpatialViewpointTexture(vp);
-        spatialViewpoints.push({
-          id: vp.id || ('vp-' + (vp.slot || idx).toString().toLowerCase()),
-          slot: vp.slot || ('VIEW ' + (idx + 1)),
-          index: idx,
-          viewerType: vp.viewerType || 'PHOTO_IMMERSIVE',
-          projection: 'PHOTO_IMMERSIVE',
-          fov: 50,
-          safeYawRange: [-LOCAL_YAW_HARD_RANGE, LOCAL_YAW_HARD_RANGE],
-          safePitchRange: [LOCAL_PITCH_MIN, LOCAL_PITCH_MAX],
-          tex: null,
-          isGpuReady: false,
-          url: resolved.url,
-          resolved
-        });
-      });
-
-      // Default Entry Viewpoint (CENTER if exists, else middle/first)
-      let entryIdx = spatialViewpoints.findIndex(v => v.slot === (candidate.entryViewId || 'CENTER'));
-      if (entryIdx < 0) entryIdx = Math.floor(spatialViewpoints.length / 2);
-      spatialActiveIdx = entryIdx >= 0 ? entryIdx : 0;
-
-      // PROVEN PHOTO_IMMERSIVE SPHERE GEOMETRY
-      // SphereGeometry(500, 128, 64) with scale(-1, 1, 1) and rotation.y = -Math.PI / 2
-      const sphereGeo = new THREE.SphereGeometry(500, 128, 64);
-      sphereGeo.scale(-1, 1, 1);
-
-      // Current Viewpoint Mesh - color 0xffffff, visible false until textured (NEVER WHITE FLASH)
-      spatialMatCurrent = new THREE.MeshBasicMaterial({
-        side: THREE.FrontSide,
-        map: null,
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.0,
-        visible: false,
-        depthWrite: false
-      });
-      spatialMeshCurrent = new THREE.Mesh(sphereGeo, spatialMatCurrent);
-      spatialMeshCurrent.position.set(0, 0, 0);
-      spatialMeshCurrent.rotation.y = -Math.PI / 2;
-      spatialMeshCurrent.renderOrder = -1;
-      spatialScene.add(spatialMeshCurrent);
-
-      // Transition Mesh for double-buffering - color 0xffffff, visible false until textured
-      spatialMatTransition = new THREE.MeshBasicMaterial({
-        side: THREE.FrontSide,
-        map: null,
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.0,
-        visible: false,
-        depthWrite: false
-      });
-      spatialMeshTransition = new THREE.Mesh(sphereGeo.clone(), spatialMatTransition);
-      spatialMeshTransition.position.set(0, 0, 0);
-      spatialMeshTransition.rotation.y = -Math.PI / 2;
-      spatialMeshTransition.renderOrder = 0;
-      spatialScene.add(spatialMeshTransition);
-
-      // Reset interaction state
-      continuousPointerDown = false;
-      edgeAccumPx = 0;
-      spatialDragState = SPATIAL_DRAG_STATES.IDLE;
-
-      // Show Loading Overlay until entry viewpoint is fully decoded & rendered
-      showSpatialLoadingOverlay();
-
-      const curVp = spatialViewpoints[spatialActiveIdx];
-      if (curVp) {
-        ensureViewpointReady(curVp).then((ready) => {
-          if (ready && curVp.tex && spatialMatCurrent) {
-            spatialMatCurrent.color.setHex(0xffffff);
-            spatialMatCurrent.map = curVp.tex;
-            spatialMatCurrent.needsUpdate = true;
-
-            if (typeof emitSpatialTextureLifecycle === 'function') {
-              emitSpatialTextureLifecycle('SPATIAL_MATERIAL_MAP_ASSIGNED', {
-                materialId: spatialMatCurrent.id,
-                textureId: curVp.tex.id,
-                slot: curVp.slot
-              });
-            }
-
-            spatialMatCurrent.opacity = 1.0;
-            spatialMatCurrent.visible = true;
-
-            if (typeof emitSpatialTextureLifecycle === 'function') {
-              emitSpatialTextureLifecycle('SPATIAL_MATERIAL_VISIBLE', {
-                visible: true,
-                opacity: 1.0,
-                slot: curVp.slot
-              });
-            }
-
-            renderSpatial();
-            hideSpatialLoadingOverlay();
-            updatePreviewUI(spatialActiveIdx);
+          if (Math.abs(desiredYaw) <= this.LOCAL_YAW_SOFT_RANGE) {
+            this.yaw = desiredYaw;
+            this.edgeAccumPx = 0;
+            this.currentState = SPATIAL_TRANSITION_STATES.LOCAL_DRAG;
+            this.hideEdgeIndicator();
           } else {
-            // First-Frame Watchdog Fallback
-            handleSpatialTextureLoadFailure(curVp);
+            this.currentState = SPATIAL_TRANSITION_STATES.EDGE_ARMED;
+            const sign = Math.sign(desiredYaw);
+            const overflow = Math.abs(desiredYaw) - this.LOCAL_YAW_SOFT_RANGE;
+            const resisted = this.LOCAL_YAW_SOFT_RANGE + overflow * 0.35;
+            this.yaw = sign * Math.min(this.LOCAL_YAW_HARD_RANGE, resisted);
+
+            if (sign > 0 && dx < 0 && this.activeIdx < this.viewpoints.length - 1) {
+              this.edgeAccumPx += Math.abs(dx);
+              const targetVp = this.viewpoints[this.activeIdx + 1];
+              this.showEdgeIndicator('RIGHT', targetVp.slot, Math.min(1.0, this.edgeAccumPx / this.EDGE_TRANSITION_THRESHOLD_PX));
+              if (this.edgeAccumPx >= this.EDGE_TRANSITION_THRESHOLD_PX) {
+                this.hideEdgeIndicator();
+                this.triggerTransition(this.activeIdx + 1, 'RIGHT');
+                return;
+              }
+            } else if (sign < 0 && dx > 0 && this.activeIdx > 0) {
+              this.edgeAccumPx += Math.abs(dx);
+              const targetVp = this.viewpoints[this.activeIdx - 1];
+              this.showEdgeIndicator('LEFT', targetVp.slot, Math.min(1.0, this.edgeAccumPx / this.EDGE_TRANSITION_THRESHOLD_PX));
+              if (this.edgeAccumPx >= this.EDGE_TRANSITION_THRESHOLD_PX) {
+                this.hideEdgeIndicator();
+                this.triggerTransition(this.activeIdx - 1, 'LEFT');
+                return;
+              }
+            } else {
+              this.edgeAccumPx = Math.max(0, this.edgeAccumPx - Math.abs(dx));
+              if (this.edgeAccumPx <= 5) this.hideEdgeIndicator();
+            }
           }
-        });
+
+          this.pitch = Math.max(this.LOCAL_PITCH_MIN, Math.min(this.LOCAL_PITCH_MAX, desiredPitch));
+          this.updateCamera();
+          this.render();
+          emitSpatialTextureLifecycle('SPATIAL_LOCAL_YAW', { yaw: this.yaw, pitch: this.pitch });
+        };
+
+        canvas.onpointerup = canvas.onpointercancel = (e) => {
+          this.continuousPointerDown = false;
+          canvas.style.cursor = 'grab';
+          this.hideEdgeIndicator();
+          if (this.currentState === SPATIAL_TRANSITION_STATES.LOCAL_DRAG || this.currentState === SPATIAL_TRANSITION_STATES.EDGE_ARMED) {
+            this.currentState = SPATIAL_TRANSITION_STATES.IDLE;
+          }
+        };
       }
 
-      // Preload adjacent viewpoints immediately
-      preloadAdjacentViewpoints(spatialActiveIdx);
+      async triggerTransition(targetIdx, direction) {
+        if (this.activeTransitionCount >= 1 || this.currentState === SPATIAL_TRANSITION_STATES.TRANSITION_LOCKED) {
+          console.warn('[Spatial State Machine] Transition rejected: already active or locked');
+          return;
+        }
 
-      // First-frame watchdog: 3 second timeout
-      setTimeout(() => {
-        if (!curVp.isGpuReady || !spatialMatCurrent.map) {
-          console.warn('[Spatial Watchdog] 3s elapsed without render, triggering recovery');
-          ensureViewpointReady(curVp).then(() => {
-            if (curVp.tex) {
-              spatialMatCurrent.map = curVp.tex;
-              spatialMatCurrent.opacity = 1.0;
-              spatialMatCurrent.visible = true;
-              renderSpatial();
-              hideSpatialLoadingOverlay();
+        const sourceIdx = this.activeIdx;
+        const targetVp = this.viewpoints[targetIdx];
+        if (!targetVp) return;
+
+        this.activeTransitionCount = 1;
+        this.currentState = SPATIAL_TRANSITION_STATES.TRANSITION_LOCKED;
+        this.transitionId++;
+
+        emitSpatialTextureLifecycle('SPATIAL_TRANSITION_REQUEST', {
+          transitionId: this.transitionId,
+          sourceIdx,
+          targetIdx,
+          direction
+        });
+        emitSpatialTextureLifecycle('SPATIAL_TRANSITION_LOCKED', {
+          transitionId: this.transitionId,
+          sourceIdx,
+          targetIdx
+        });
+
+        if (!targetVp.isGpuReady) {
+          console.log('[Spatial Transition] Waiting for target texture before starting crossfade...');
+          await this.ensureViewpointReady(targetVp);
+        }
+        emitSpatialTextureLifecycle('SPATIAL_TARGET_TEXTURE_READY', {
+          targetIdx,
+          slot: targetVp.slot
+        });
+
+        const targetEntryYaw = direction === 'RIGHT' 
+          ? -0.55 * this.LOCAL_YAW_SOFT_RANGE 
+          : 0.55 * this.LOCAL_YAW_SOFT_RANGE;
+
+        this.matTransition.map = targetVp.tex;
+        this.matTransition.opacity = 0.0;
+        this.matTransition.visible = true;
+        this.matTransition.needsUpdate = true;
+
+        const startTime = performance.now();
+        const duration = 260;
+
+        const animateCrossfade = (now) => {
+          const elapsed = now - startTime;
+          const progress = Math.min(1.0, elapsed / duration);
+          const ease = progress * (2 - progress);
+
+          this.matCurrent.opacity = 1.0 - ease;
+          this.matTransition.opacity = ease;
+
+          this.render();
+          emitSpatialTextureLifecycle('SPATIAL_TRANSITION_FRAME', {
+            transitionId: this.transitionId,
+            progress: Number(progress.toFixed(3))
+          });
+
+          if (progress < 1.0) {
+            requestAnimationFrame(animateCrossfade);
+          } else {
+            this.matCurrent.map = targetVp.tex;
+            this.matCurrent.opacity = 1.0;
+            this.matTransition.visible = false;
+            this.matTransition.opacity = 0.0;
+
+            this.activeIdx = targetIdx;
+            this.yaw = targetEntryYaw;
+            this.updateCamera();
+            this.render();
+
+            window.spatialActiveIdx = this.activeIdx;
+            this.updateRailUI();
+
+            emitSpatialTextureLifecycle('SPATIAL_TRANSITION_COMPLETE', {
+              transitionId: this.transitionId,
+              sourceViewId: this.viewpoints[sourceIdx]?.id,
+              targetViewId: targetVp.id,
+              direction,
+              targetEntryYaw
+            });
+
+            emitSpatialTextureLifecycle('SPATIAL_POINTER_REBASED', {
+              rebasedYaw: targetEntryYaw,
+              pointerX: this.lastPointerX
+            });
+
+            this.currentState = SPATIAL_TRANSITION_STATES.TARGET_SETTLE;
+            if (this.settleTimer) clearTimeout(this.settleTimer);
+
+            this.settleTimer = setTimeout(() => {
+              this.currentState = this.continuousPointerDown ? SPATIAL_TRANSITION_STATES.LOCAL_DRAG : SPATIAL_TRANSITION_STATES.IDLE;
+              this.activeTransitionCount = 0;
+              emitSpatialTextureLifecycle('SPATIAL_TARGET_SETTLED', {
+                targetIdx,
+                slot: targetVp.slot
+              });
+              this.preloadAdjacent();
+              this.scheduleIdleUpgrade(targetVp);
+            }, 220);
+          }
+        };
+
+        requestAnimationFrame(animateCrossfade);
+      }
+
+      selectViewpoint(idx) {
+        if (idx === this.activeIdx || idx < 0 || idx >= this.viewpoints.length) return;
+        const dir = idx > this.activeIdx ? 'RIGHT' : 'LEFT';
+        this.triggerTransition(idx, dir);
+      }
+
+      setupRail() {
+        if (this.hostMode === 'PREVIEW') {
+          const rail = document.getElementById('spatialPreviewRailButtons');
+          if (!rail) return;
+          rail.innerHTML = '';
+          this.viewpoints.forEach((vp, idx) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.id = 'spatialRailBtn_' + idx;
+            btn.className = 'spatial-rail-btn';
+            btn.style.cssText = 'padding: 5px 12px; font-size: 11px; font-weight: 700; border-radius: 6px; cursor: pointer; transition: all 0.2s; border: 1px solid rgba(56,189,248,0.3); background: rgba(255,255,255,0.06); color: #cbd5e1;';
+            btn.innerHTML = '<i class="fa-solid fa-camera"></i> ' + (vp.slot || ('View ' + (idx + 1)));
+            btn.onclick = () => this.selectViewpoint(idx);
+            rail.appendChild(btn);
+          });
+          this.updateRailUI();
+        } else if (this.hostMode === 'ACTIVE') {
+          const railId = 'activeBoothSpatialRail';
+          let rail = document.getElementById(railId);
+          if (rail) rail.remove();
+
+          const container = this.container;
+          if (!container) return;
+
+          rail = document.createElement('div');
+          rail.id = railId;
+          rail.style.cssText = 'position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); background: rgba(9,16,29,0.92); backdrop-filter: blur(10px); border: 1.5px solid #38bdf8; border-radius: 30px; padding: 6px 14px; display: flex; align-items: center; gap: 8px; z-index: 25; box-shadow: 0 8px 25px rgba(0,0,0,0.7);';
+
+          let htmlBtns = '<span style="font-size: 11px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 5px;"><i class="fa-solid fa-cube"></i> SPATIAL BOOTH:</span>';
+          this.viewpoints.forEach((vp, idx) => {
+            const slot = vp.slot || ('VIEW ' + (idx + 1));
+            htmlBtns += `<button type="button" id="activeSpatialBtn_${idx}" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(56,189,248,0.3); border-radius: 14px; padding: 4px 10px; font-size: 10.5px; font-weight: 700; color: #cbd5e1; cursor: pointer; transition: all 0.2s;" data-slot="${slot}">${slot}</button>`;
+          });
+          rail.innerHTML = htmlBtns;
+          container.appendChild(rail);
+
+          this.viewpoints.forEach((vp, idx) => {
+            const b = document.getElementById('activeSpatialBtn_' + idx);
+            if (b) b.onclick = () => this.selectViewpoint(idx);
+          });
+          this.updateRailUI();
+        }
+      }
+
+      updateRailUI() {
+        if (this.hostMode === 'PREVIEW') {
+          this.viewpoints.forEach((vp, idx) => {
+            const btn = document.getElementById('spatialRailBtn_' + idx);
+            if (btn) {
+              if (idx === this.activeIdx) {
+                btn.style.background = '#0284c7';
+                btn.style.borderColor = '#38bdf8';
+                btn.style.color = '#fff';
+              } else {
+                btn.style.background = 'rgba(255,255,255,0.06)';
+                btn.style.borderColor = 'rgba(56,189,248,0.3)';
+                btn.style.color = '#cbd5e1';
+              }
+            }
+          });
+          const badge = document.getElementById('spatialPreviewPositionBadge');
+          if (badge && this.viewpoints[this.activeIdx]) {
+            badge.textContent = `${this.viewpoints[this.activeIdx].slot} (${this.activeIdx + 1} of ${this.viewpoints.length})`;
+          }
+        } else if (this.hostMode === 'ACTIVE') {
+          this.viewpoints.forEach((vp, idx) => {
+            const btn = document.getElementById('activeSpatialBtn_' + idx);
+            if (btn) {
+              if (idx === this.activeIdx) {
+                btn.style.background = '#0284c7';
+                btn.style.borderColor = '#38bdf8';
+                btn.style.color = '#fff';
+              } else {
+                btn.style.background = 'rgba(255,255,255,0.08)';
+                btn.style.borderColor = 'rgba(56,189,248,0.3)';
+                btn.style.color = '#cbd5e1';
+              }
             }
           });
         }
-      }, 3000);
+      }
 
-      // ── POINTER GESTURE HANDLERS (Drag-to-travel & Lookaround) ──
-      canvas.onpointerdown = (e) => {
-        if (spatialIsTransitioning) return;
-        continuousPointerDown = true;
-        dragPointerId = e.pointerId;
-        try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
-
-        lastPointerX = e.clientX;
-        lastPointerY = e.clientY;
-        lastPointerTime = performance.now();
-        edgeAccumPx = 0;
-        spatialDragState = SPATIAL_DRAG_STATES.PANNING;
-        canvas.style.cursor = 'grabbing';
-
-        const hint = document.getElementById('spatialDragHint');
-        if (hint) hint.style.opacity = '0';
-      };
-
-      canvas.onpointermove = (e) => {
-        if (!continuousPointerDown) return;
-        const dx = e.clientX - lastPointerX;
-        const dy = e.clientY - lastPointerY;
-        lastPointerX = e.clientX;
-        lastPointerY = e.clientY;
-
-        if (spatialIsTransitioning) return;
-
-        // Calibrated sensitivity for smooth 1:1 lookaround
-        const yawSensitivity = 0.0035;
-        const pitchSensitivity = 0.0025;
-
-        const desiredYaw = spatialYaw - dx * yawSensitivity;
-        const desiredPitch = spatialPitch + dy * pitchSensitivity;
-
-        // 0–70% Drag: Natural 1:1 perspective lookaround within LOCAL_YAW_SOFT_RANGE (±28°)
-        if (Math.abs(desiredYaw) <= LOCAL_YAW_SOFT_RANGE) {
-          spatialYaw = desiredYaw;
-          edgeAccumPx = 0;
-          hideEdgeIndicator();
-        } else {
-          // 70–100%: Progressive elastic resistance between soft range (28°) and hard range (36°)
-          const sign = Math.sign(desiredYaw);
-          const overflow = Math.abs(desiredYaw) - LOCAL_YAW_SOFT_RANGE;
-          const resisted = LOCAL_YAW_SOFT_RANGE + overflow * 0.35;
-          spatialYaw = sign * Math.min(LOCAL_YAW_HARD_RANGE, resisted);
-
-          // Travel Arm Zone: accumulate edge drag towards adjacent viewpoints
-          if (sign > 0 && dx < 0 && spatialActiveIdx < spatialViewpoints.length - 1) {
-            edgeAccumPx += Math.abs(dx);
-            const targetSlot = spatialViewpoints[spatialActiveIdx + 1].slot;
-            showEdgeIndicator('RIGHT', targetSlot, Math.min(1.0, edgeAccumPx / EDGE_TRANSITION_THRESHOLD_PX));
-            if (edgeAccumPx >= EDGE_TRANSITION_THRESHOLD_PX) {
-              hideEdgeIndicator();
-              triggerViewpointTravel(spatialActiveIdx + 1, 'RIGHT');
-              return;
-            }
-          } else if (sign < 0 && dx > 0 && spatialActiveIdx > 0) {
-            edgeAccumPx += Math.abs(dx);
-            const targetSlot = spatialViewpoints[spatialActiveIdx - 1].slot;
-            showEdgeIndicator('LEFT', targetSlot, Math.min(1.0, edgeAccumPx / EDGE_TRANSITION_THRESHOLD_PX));
-            if (edgeAccumPx >= EDGE_TRANSITION_THRESHOLD_PX) {
-              hideEdgeIndicator();
-              triggerViewpointTravel(spatialActiveIdx - 1, 'LEFT');
-              return;
-            }
+      showEdgeIndicator(dir, targetSlot, progress) {
+        let el = document.getElementById('spatialEdgeIndicator');
+        if (!el && this.container) {
+          el = document.createElement('div');
+          el.id = 'spatialEdgeIndicator';
+          el.style.cssText = 'position: absolute; top: 50%; transform: translateY(-50%); padding: 10px 18px; border-radius: 30px; background: rgba(2,132,199,0.85); backdrop-filter: blur(8px); border: 1.5px solid #38bdf8; color: #fff; font-size: 12px; font-weight: 800; display: none; z-index: 20; pointer-events: none; transition: opacity 0.15s;';
+          this.container.appendChild(el);
+        }
+        if (el) {
+          el.style.display = 'block';
+          el.style.opacity = progress.toString();
+          if (dir === 'RIGHT') {
+            el.style.right = '24px';
+            el.style.left = 'auto';
+            el.innerHTML = `Pan to explore ${targetSlot} <i class="fa-solid fa-chevron-right"></i>`;
           } else {
-            // Dragging inward away from edge relaxes resistance
-            edgeAccumPx = Math.max(0, edgeAccumPx - Math.abs(dx));
-            if (edgeAccumPx <= 5) hideEdgeIndicator();
+            el.style.left = '24px';
+            el.style.right = 'auto';
+            el.innerHTML = `<i class="fa-solid fa-chevron-left"></i> Pan to explore ${targetSlot}`;
           }
         }
+      }
 
-        // Clamp pitch to safe vertical look limits (-12° to +15°) without triggering horizontal travel
-        spatialPitch = Math.max(LOCAL_PITCH_MIN, Math.min(LOCAL_PITCH_MAX, desiredPitch));
-        updateCameraOrientation();
-        renderSpatial();
-      };
+      hideEdgeIndicator() {
+        const el = document.getElementById('spatialEdgeIndicator');
+        if (el) el.style.display = 'none';
+      }
 
-      canvas.onpointerup = canvas.onpointercancel = (e) => {
-        continuousPointerDown = false;
-        canvas.style.cursor = 'grab';
-        hideEdgeIndicator();
-        try { if (dragPointerId !== null) canvas.releasePointerCapture(dragPointerId); } catch (err) {}
-      };
-
-      // Mouse wheel / Pinch zoom FOV
-      canvas.onwheel = (e) => {
-        e.preventDefault();
-        const delta = Math.sign(e.deltaY) * 2.5;
-        const minFov = Math.round(NORMAL_FOV / ZOOM_IN_MAX); // 41°
-        const maxFov = WIDE_FOV; // 68°
-        spatialCurrentFov = Math.max(minFov, Math.min(maxFov, spatialCurrentFov + delta));
-        if (spatialCamera) {
-          spatialCamera.fov = spatialCurrentFov;
-          spatialCamera.updateProjectionMatrix();
-          renderSpatial();
+      destroy() {
+        this.isDestroyed = true;
+        if (this.settleTimer) clearTimeout(this.settleTimer);
+        if (this.idleUpgradeTimer) clearTimeout(this.idleUpgradeTimer);
+        if (this.matCurrent) {
+          if (this.matCurrent.map) this.matCurrent.map.dispose();
+          this.matCurrent.dispose();
         }
-      };
-
-      // Expose globals for Runtime Inspector & Verification
-      window.spatialRenderer = spatialRenderer;
-      window.spatialScene = spatialScene;
-      window.spatialCamera = spatialCamera;
-      window.spatialMatCurrent = spatialMatCurrent;
-      window.spatialMatTransition = spatialMatTransition;
-      window.spatialViewpoints = spatialViewpoints;
-      window.__3DZ_VIEWER_RENDERER = 'THREE_WEBGL';
-
-    // Shared Canonical Viewpoint Engine (C11.24 Req S)
-    window.SpatialViewpointRenderer = {
-      version: 'CONNECTED_VIEWPOINT_V3_2',
-      normalFov: 55,
-      wideFov: 68,
-      yawSoftRange: LOCAL_YAW_SOFT_RANGE,
-      yawHardRange: LOCAL_YAW_HARD_RANGE,
-      pitchMin: LOCAL_PITCH_MIN,
-      pitchMax: LOCAL_PITCH_MAX,
-      getPose: () => ({ yaw: spatialYaw, pitch: spatialPitch, fov: spatialCurrentFov }),
-      selectViewpoint: (idx) => selectSpatialPreviewAnchor(idx),
-      render: () => renderSpatial()
-    };
-
-
-      renderSpatial();
-    }
-
-    function showSpatialLoadingOverlay() {
-      let overlay = document.getElementById('spatialPreviewLoadingOverlay');
-      if (!overlay) {
-        const container = document.getElementById('spatialPreviewCanvasContainer');
-        if (!container) return;
-        overlay = document.createElement('div');
-        overlay.id = 'spatialPreviewLoadingOverlay';
-        overlay.style.cssText = 'position: absolute; inset: 0; background: #020617; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 25; transition: opacity 0.3s ease;';
-        overlay.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color: #38bdf8; font-size: 32px; margin-bottom: 12px;"></i><span style="color: #cbd5e1; font-size: 13px; font-weight: 700;">Loading immersive viewpoint...</span>';
-        container.appendChild(overlay);
-      }
-      overlay.style.display = 'flex';
-      overlay.style.opacity = '1';
-    }
-
-    function hideSpatialLoadingOverlay() {
-      const overlay = document.getElementById('spatialPreviewLoadingOverlay');
-      if (overlay) {
-        overlay.style.opacity = '0';
-        setTimeout(() => { overlay.style.display = 'none'; }, 300);
-      }
-    }
-
-    function handleSpatialTextureLoadFailure(vp) {
-      hideSpatialLoadingOverlay();
-      const notice = document.getElementById('spatialNoticeBanner');
-      if (notice) {
-        notice.style.display = 'block';
-        notice.style.borderColor = '#f87171';
-        notice.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: #f87171;"></i> View couldn't be loaded. <button onclick="retryViewpointLoad(${vp.index})" style="margin-left: 8px; background: #38bdf8; color: #000; border: none; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; cursor: pointer;">Retry</button>`;
-      }
-    }
-
-    function retryViewpointLoad(idx) {
-      const vp = spatialViewpoints[idx];
-      if (!vp) return;
-      vp.isGpuReady = false;
-      vp.loadPromise = null;
-      showSpatialLoadingOverlay();
-      ensureViewpointReady(vp).then(() => {
-        if (vp.tex && spatialMatCurrent) {
-          spatialMatCurrent.map = vp.tex;
-          spatialMatCurrent.opacity = 1.0;
-          spatialMatCurrent.visible = true;
-          renderSpatial();
-          hideSpatialLoadingOverlay();
-          const notice = document.getElementById('spatialNoticeBanner');
-          if (notice) notice.style.display = 'none';
+        if (this.matTransition) {
+          if (this.matTransition.map) this.matTransition.map.dispose();
+          this.matTransition.dispose();
         }
+        if (this.meshCurrent && this.scene) this.scene.remove(this.meshCurrent);
+        if (this.meshTransition && this.scene) this.scene.remove(this.meshTransition);
+        if (this.renderer) {
+          this.renderer.dispose();
+        }
+      }
+    }
+
+    window.SpatialViewpointRenderer = SpatialViewpointRenderer;
+
+    function initSpatialPreviewWebGL(candidate) {
+      if (window.activeSpatialPreviewRenderer) {
+        window.activeSpatialPreviewRenderer.destroy();
+        window.activeSpatialPreviewRenderer = null;
+      }
+      const container = document.getElementById('spatialPreviewCanvasContainer');
+      const canvas = document.getElementById('spatialPreviewCanvas');
+      if (!container || !canvas) return;
+
+      window.activeSpatialPreviewRenderer = new SpatialViewpointRenderer({
+        hostMode: 'PREVIEW',
+        container,
+        canvas,
+        candidate
       });
-    }
-
-    function updateCameraOrientation() {
-      if (!spatialCamera) return;
-      spatialCamera.rotation.set(spatialPitch, -spatialYaw, 0, 'YXZ');
-    }
-
-    function preloadAdjacentViewpoints(centerIdx) {
-      if (centerIdx > 0) ensureViewpointReady(spatialViewpoints[centerIdx - 1]);
-      if (centerIdx < spatialViewpoints.length - 1) ensureViewpointReady(spatialViewpoints[centerIdx + 1]);
-    }
-
-    function showEdgeIndicator(direction, targetSlot, progress) {
-      const el = document.getElementById('spatialEdgeIndicator');
-      if (!el) return;
-      el.style.display = 'flex';
-      el.style.opacity = Math.min(1.0, Math.max(0.4, progress));
-      if (direction === 'RIGHT') {
-        el.style.right = '24px';
-        el.style.left = 'auto';
-        el.innerHTML = '<i class="fa-solid fa-arrow-right" style="color: #38bdf8;"></i> Drag to enter ' + targetSlot;
-      } else {
-        el.style.left = '24px';
-        el.style.right = 'auto';
-        el.innerHTML = '<i class="fa-solid fa-arrow-left" style="color: #38bdf8;"></i> Drag to enter ' + targetSlot;
-      }
-    }
-
-    function hideEdgeIndicator() {
-      const el = document.getElementById('spatialEdgeIndicator');
-      if (el) el.style.display = 'none';
     }
 
     function selectSpatialPreviewAnchor(idx) {
-      if (idx < 0 || idx >= spatialViewpoints.length || idx === spatialActiveIdx) return;
-      triggerViewpointTravel(idx, idx > spatialActiveIdx ? 'RIGHT' : 'LEFT');
-    }
-
-    async function triggerViewpointTravel(targetIdx, direction) {
-      if (spatialIsTransitioning) return;
-      const targetVp = spatialViewpoints[targetIdx];
-      if (!targetVp) return;
-
-      spatialIsTransitioning = true;
-      spatialDragState = SPATIAL_DRAG_STATES.TRANSITIONING;
-
-      // Ensure target viewpoint GPU ready
-      if (!targetVp.isGpuReady || !targetVp.tex) {
-        showSpatialNotice('Loading ' + targetVp.slot + '...');
-        const ready = await ensureViewpointReady(targetVp);
-        hideSpatialNotice();
-        if (!ready) {
-          spatialIsTransitioning = false;
-          spatialDragState = SPATIAL_DRAG_STATES.IDLE;
-          return;
-        }
-      }
-
-      // DOUBLE BUFFERED TRANSITION: Zero White Flash
-      // Target mesh receives texture and becomes visible at opacity 0.0
-      spatialMatTransition.color.setHex(0xffffff);
-      spatialMatTransition.map = targetVp.tex;
-      spatialMatTransition.opacity = 0.0;
-      spatialMatTransition.visible = true;
-      spatialMatTransition.needsUpdate = true;
-
-      // Compatible entry orientation: entering from opposite side for continuous travel
-      const startYaw = spatialYaw;
-      const targetYaw = direction === 'RIGHT' ? (-LOCAL_YAW_SOFT_RANGE * 0.7) : (LOCAL_YAW_SOFT_RANGE * 0.7);
-
-      const durationMs = 380;
-      const startTime = performance.now();
-
-      function animateTransition(now) {
-        const elapsed = now - startTime;
-        const p = Math.min(1.0, elapsed / durationMs);
-        const ease = 0.5 - 0.5 * Math.cos(p * Math.PI); // Cosine ease-in-out
-
-        // Crossfade: current fades to 0, transition fades to 1
-        if (spatialMatCurrent) spatialMatCurrent.opacity = 1.0 - ease;
-        if (spatialMatTransition) spatialMatTransition.opacity = ease;
-
-        // Smooth camera handoff
-        spatialYaw = startYaw + (targetYaw - startYaw) * ease;
-        updateCameraOrientation();
-        renderSpatial();
-
-        if (p < 1.0) {
-          requestAnimationFrame(animateTransition);
-        } else {
-          // Finalize handoff & swap buffers
-          spatialActiveIdx = targetIdx;
-          spatialMatCurrent.color.setHex(0xffffff);
-          spatialMatCurrent.map = targetVp.tex;
-          spatialMatCurrent.opacity = 1.0;
-          spatialMatCurrent.visible = true;
-          spatialMatCurrent.needsUpdate = true;
-
-          spatialMatTransition.opacity = 0.0;
-          spatialMatTransition.visible = false;
-          spatialMatTransition.map = null;
-
-          spatialIsTransitioning = false;
-          // Maintain continuous drag if pointer is still held down (C11.24 Goal G)
-          spatialDragState = continuousPointerDown ? SPATIAL_DRAG_STATES.PANNING : SPATIAL_DRAG_STATES.IDLE;
-          edgeAccumPx = 0;
-
-          updatePreviewUI(targetIdx);
-          preloadAdjacentViewpoints(targetIdx);
-          renderSpatial();
-        }
-      }
-
-      requestAnimationFrame(animateTransition);
-    }
-
-    function showSpatialNotice(msg) {
-      const n = document.getElementById('spatialNoticeBanner');
-      if (n) {
-        n.textContent = msg;
-        n.style.display = 'block';
-        n.style.opacity = '1';
+      if (window.activeSpatialPreviewRenderer) {
+        window.activeSpatialPreviewRenderer.selectViewpoint(idx);
       }
     }
 
-    function hideSpatialNotice() {
-      const n = document.getElementById('spatialNoticeBanner');
-      if (n) {
-        n.style.opacity = '0';
-        setTimeout(() => { n.style.display = 'none'; }, 300);
-      }
-    }
-
-    function updatePreviewUI(activeIdx) {
-      const vp = spatialViewpoints[activeIdx];
-      const slotBadge = document.getElementById('spatialPreviewSlotBadge');
-      if (slotBadge && vp) slotBadge.textContent = vp.slot;
-
-      const railSlider = document.getElementById('spatialPreviewRailSlider');
-      if (railSlider && spatialViewpoints.length > 1) {
-        railSlider.value = Math.round((activeIdx / (spatialViewpoints.length - 1)) * 100);
-      }
-
-      const railPosLabel = document.getElementById('spatialRailPosLabel');
-      if (railPosLabel && vp) {
-        railPosLabel.textContent = vp.slot + ' (' + (activeIdx + 1) + ' of ' + spatialViewpoints.length + ')';
-      }
-
-      const railButtons = document.getElementById('spatialPreviewRailButtons');
-      if (railButtons) {
-        const btns = railButtons.querySelectorAll('.spatial-rail-btn');
-        btns.forEach((btn, i) => {
-          if (i === activeIdx) {
-            btn.style.background = '#0284c7';
-            btn.style.borderColor = '#38bdf8';
-            btn.style.color = '#fff';
-          } else {
-            btn.style.background = 'rgba(255,255,255,0.06)';
-            btn.style.borderColor = 'rgba(56,189,248,0.3)';
-            btn.style.color = '#cbd5e1';
-          }
+    function mountActiveSpatialBoothViewer(projectData, activeBg) {
+      if (typeof emitSpatialTextureLifecycle === 'function') {
+        emitSpatialTextureLifecycle('SPATIAL_ACTIVE_RENDERER_CREATE', {
+          projectId: projectData?.id,
+          activeSpatialVersionId: projectData?.activeSpatialVersionId
         });
       }
-    }
 
-    function onSpatialRailSliderInput(val) {
-      if (spatialViewpoints.length <= 1) return;
-      const targetIdx = Math.round((val / 100) * (spatialViewpoints.length - 1));
-      if (targetIdx !== spatialActiveIdx) {
-        selectSpatialPreviewAnchor(targetIdx);
+      if (window.activeSpatialBoothRenderer) {
+        window.activeSpatialBoothRenderer.destroy();
+        window.activeSpatialBoothRenderer = null;
       }
-    }
 
-    function onSpatialRailSliderChange(val) {
-      onSpatialRailSliderInput(val);
-    }
+      const container = document.getElementById('viewer-container');
+      const canvas = document.getElementById('three-canvas');
+      if (!container || !canvas) return;
 
-    function navigateSpatialRelative(delta) {
-      const next = spatialActiveIdx + delta;
-      if (next >= 0 && next < spatialViewpoints.length) {
-        selectSpatialPreviewAnchor(next);
-      }
-    }
-
-    let spatialFirstValidFrameEmitted = false;
-
-    function renderSpatial() {
-      if (spatialRenderer && spatialScene && spatialCamera) {
-        spatialRenderer.render(spatialScene, spatialCamera);
-        window.__3DZ_RENDER_COUNT = (window.__3DZ_RENDER_COUNT || 0) + 1;
-
-        if (window.__3DZ_RENDER_COUNT === 1 && typeof emitSpatialTextureLifecycle === 'function') {
-          emitSpatialTextureLifecycle('SPATIAL_FIRST_RENDER', {
-            renderCount: window.__3DZ_RENDER_COUNT,
-            hasMap: Boolean(spatialMatCurrent && spatialMatCurrent.map),
-            visible: Boolean(spatialMatCurrent && spatialMatCurrent.visible)
-          });
+      window.activeSpatialBoothRenderer = new SpatialViewpointRenderer({
+        hostMode: 'ACTIVE',
+        container,
+        canvas,
+        candidate: activeBg,
+        projectData,
+        onFirstFrame: () => {
+          console.log('[Active Spatial Viewer] First frame rendered!');
+          if (typeof closeSpatialBoothPreviewModal === 'function') {
+            closeSpatialBoothPreviewModal();
+          }
+          if (typeof emitSpatialTextureLifecycle === 'function') {
+            emitSpatialTextureLifecycle('SPATIAL_APPLY_UI_COMMIT_COMPLETE', {
+              activeSpatialVersionId: projectData?.activeSpatialVersionId,
+              timestamp: Date.now()
+            });
+          }
         }
-
-        if (!spatialFirstValidFrameEmitted && spatialMatCurrent && spatialMatCurrent.visible && spatialMatCurrent.map) {
-          spatialFirstValidFrameEmitted = true;
-          setTimeout(() => {
-            if (typeof emitSpatialTextureLifecycle === 'function') {
-              emitSpatialTextureLifecycle('SPATIAL_FIRST_VALID_FRAME', {
-                renderCount: window.__3DZ_RENDER_COUNT,
-                activeIdx: spatialActiveIdx,
-                slot: spatialViewpoints[spatialActiveIdx]?.slot || 'CENTER'
-              });
-            }
-          }, 50);
-        }
-      }
+      });
     }
-
-    function toggleSpatialFullscreen() {
-      const container = document.getElementById('spatialPreviewCanvasContainer');
-      if (!container) return;
-      if (!document.fullscreenElement) {
-        container.requestFullscreen().catch(err => console.warn('Fullscreen request failed', err));
-      } else {
-        document.exitFullscreen();
-      }
-    }
-
-    function toggleSpatialQaOverlay() {
-      const overlay = document.getElementById('spatialQaOverlay');
-      if (overlay) {
-        overlay.style.display = overlay.style.display === 'none' ? 'block' : 'none';
-      }
-    }
-
+    window.mountActiveSpatialBoothViewer = mountActiveSpatialBoothViewer;
     // ── C11.24-P0: CANONICAL SPATIAL APPLY ACTION WITH COMPLETE FORENSICS ──
     async function handleSpatialApply() {
       if (typeof emitSpatialTextureLifecycle === 'function') {
@@ -15157,7 +15262,7 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
             });
           }
 
-          // Atomic client state synchronization (Req Q)
+          // Atomic client state synchronization (Section 3)
           window.activeProjectData = resBody.project;
           try {
             localStorage.setItem('dna_free_booth_session', JSON.stringify({
@@ -15166,30 +15271,19 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
             }));
           } catch (e) {}
 
-          closeSpatialBoothPreviewModal();
-
-          // Render active studio booth with spatial rail
-          if (typeof renderStudioBooth === 'function') {
-            renderStudioBooth(resBody.project);
-          }
-          if (typeof setupActiveSpatialViewerRail === 'function') {
-            setupActiveSpatialViewerRail(resBody.project);
-          }
-
           if (typeof emitSpatialTextureLifecycle === 'function') {
-            emitSpatialTextureLifecycle('SPATIAL_ACTIVE_VIEWER_INIT', {
-              viewerMode: resBody.project.viewerMode,
-              hasRail: Boolean(document.getElementById('activeBoothSpatialRail'))
+            emitSpatialTextureLifecycle('SPATIAL_APPLY_CANONICAL_PROJECT_SET', {
+              projectId: resBody.project.id,
+              activeSpatialVersionId: resBody.project.activeSpatialVersionId,
+              timestamp: Date.now()
             });
           }
 
-          setTimeout(() => {
-            if (typeof emitSpatialTextureLifecycle === 'function') {
-              emitSpatialTextureLifecycle('SPATIAL_ACTIVE_FIRST_VISIBLE_FRAME', {
-                timestamp: Date.now()
-              });
-            }
-          }, 100);
+          // Render active studio booth (destroys old viewer and mounts active spatial)
+          // Preview modal remains OPEN until active spatial viewer emits SPATIAL_ACTIVE_FIRST_FRAME (Section 23)
+          if (typeof renderStudioBooth === 'function') {
+            renderStudioBooth(resBody.project);
+          }
 
           if (btn) {
             btn.disabled = false;
