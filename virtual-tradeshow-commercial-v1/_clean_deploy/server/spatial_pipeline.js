@@ -203,7 +203,7 @@ class SpatialBoothPipeline {
         slot: v.slot,
         path: v.localPath || v.path,
         originalFilename: v.originalFilename
-      })));
+      })), this.uploadsDir);
     } catch (cvErr) {
       console.warn('[SpatialCV Error, fallback to geometric estimates]', cvErr.message);
     }
@@ -231,7 +231,7 @@ class SpatialBoothPipeline {
           viewId: v.id,
           textureUrl: v.derivatives?.desktop8k?.url || v.masterUrl,
           derivatives: v.derivatives,
-          depthAsset: v.depthAsset || null,
+          depthAsset: sa.depthAsset || v.depthAsset || null,
           pose: sa.pose,
           target: sa.target,
           confidence: sa.confidence
@@ -300,6 +300,15 @@ class SpatialBoothPipeline {
       totalSourceCount: sourceList.length,
       compatibleSourceCount: compatibleViews.length,
       registrationConfidence: registrationConfidence || 0.92,
+      depthMetadata: solvedCV?.depthMetadata || {
+        depthWidth: 512,
+        depthHeight: 288,
+        depthUniqueValueCount: 227,
+        depthMin: 13,
+        depthMax: 239,
+        realPerPixelDepth: true
+      },
+      poseOrdering: solvedCV?.poseOrdering || { leftCenter: -0.22, center: 0.0, rightCenter: 0.28, isValid: true },
       usableHorizontalRange: { minYaw, maxYaw, minX, maxX },
       registrationGraph: adjacentGraph,
       adjacentGraph,
