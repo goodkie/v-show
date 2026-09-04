@@ -5022,31 +5022,7 @@
       initAppBoot();
     }
 
-    function recoverExistingBoothSession() {
-      try {
-        const saved = localStorage.getItem('dna_free_booth_session');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed && parsed.project && parsed.project.id && !activeProjectId) {
-            console.log('Recovered existing 3D booth session:', parsed.project.id);
-            const banner = document.createElement('div');
-            banner.id = 'resume-booth-banner';
-            banner.style.cssText = 'position:fixed; bottom:20px; right:20px; z-index:9999; background:#0b1526; border:1px solid #38bdf8; border-radius:12px; padding:14px 20px; box-shadow:0 10px 30px rgba(0,0,0,0.8); display:flex; align-items:center; gap:12px; color:#fff; font-family:"Plus Jakarta Sans",sans-serif;';
-            banner.innerHTML = `
-              <i class="fa-solid fa-cube" style="color:#38bdf8; font-size:18px;"></i>
-              <div style="font-size:13px;">
-                <span style="font-weight:700;">Resume Your 3D Booth:</span> ${parsed.project.businessName || 'Exhibitor Booth'}
-              </div>
-              <button class="btn-ui upgrade" style="padding:6px 14px; font-size:12px; margin-left:8px; cursor:pointer;" onclick="resumeBoothFromSession('${parsed.project.id}')">Open Studio →</button>
-              <button style="background:none; border:none; color:#94a3b8; font-size:16px; cursor:pointer; padding:0 4px;" onclick="document.getElementById('resume-booth-banner').remove()">×</button>
-            `;
-            document.body.appendChild(banner);
-          }
-        }
-      } catch(e) {}
-    }
-
-    async function resumeBoothFromSession(projectId) {
+        async function resumeBoothFromSession(projectId) {
       if (!projectId) return;
       try {
         const res = await fetch('/api/free-funnel/projects/' + encodeURIComponent(projectId));
@@ -5069,9 +5045,35 @@
       }
       const saved = localStorage.getItem('dna_free_booth_session');
       if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed?.project) renderStudioBooth(parsed.project);
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed?.project) renderStudioBooth(parsed.project);
+        } catch(e) {}
       }
+    }
+
+    function recoverExistingBoothSession() {
+      try {
+        const saved = localStorage.getItem('dna_free_booth_session');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.project && parsed.project.id && !activeProjectId) {
+            console.log('Recovered existing 3D booth session:', parsed.project.id);
+            const banner = document.createElement('div');
+            banner.id = 'resume-booth-banner';
+            banner.style.cssText = 'position:fixed; bottom:20px; right:20px; z-index:9999; background:#0b1526; border:1px solid #38bdf8; border-radius:12px; padding:14px 20px; box-shadow:0 10px 30px rgba(0,0,0,0.8); display:flex; align-items:center; gap:12px; color:#fff; font-family:"Plus Jakarta Sans",sans-serif;';
+            banner.innerHTML = `
+              <i class="fa-solid fa-cube" style="color:#38bdf8; font-size:18px;"></i>
+              <div style="font-size:13px;">
+                <span style="font-weight:700;">Resume Your 3D Booth:</span> ${parsed.project.businessName || 'Exhibitor Booth'}
+              </div>
+              <button class="btn-ui upgrade" style="padding:6px 14px; font-size:12px; margin-left:8px; cursor:pointer;" onclick="resumeBoothFromSession(JSON.parse(localStorage.getItem('dna_free_booth_session')).project?.id)">Open Studio →</button>
+              <button style="background:none; border:none; color:#94a3b8; font-size:16px; cursor:pointer; padding:0 4px;" onclick="document.getElementById('resume-booth-banner').remove()">×</button>
+            `;
+            document.body.appendChild(banner);
+          }
+        }
+      } catch(e) {}
     }
 
     function handleFileSelected(input) {
@@ -13410,28 +13412,54 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       const badge = document.getElementById('proSlotCountBadge');
       if (badge) badge.textContent = readyCount + ' of 7 views ready';
 
+      const uploadedCount = window.proSpatialSlots.filter(s => s && (s.file || s.previewUrl)).length;
+      const compatibleCount = window.proSpatialSlots.filter(s => s && (s.file || s.previewUrl) && s.status !== 'INCOMPATIBLE').length;
+      const hasIncompatible = uploadedCount > compatibleCount;
+
       const compatCard = document.getElementById('proCompatibilityCard');
       if (compatCard) {
-        if (readyCount >= 2) {
+        if (compatibleCount >= 2) {
           compatCard.style.display = 'block';
           const pill = document.getElementById('compatStatusPill');
-          if (pill) pill.textContent = readyCount + ' COMPATIBLE VIEWS';
+          if (pill) pill.textContent = compatibleCount + ' COMPATIBLE VIEWS';
+          const desc = document.getElementById('compatDetailsTxt');
+          if (desc) desc.textContent = 'Adjacent feature geometry verified across ' + compatibleCount + ' views. Usable horizontal spatial rail configured.';
+        } else if (compatibleCount === 1) {
+          compatCard.style.display = 'block';
+          const pill = document.getElementById('compatStatusPill');
+          if (pill) pill.textContent = '1 COMPATIBLE VIEW';
+          const desc = document.getElementById('compatDetailsTxt');
+          if (desc) desc.textContent = 'Single reference angle verified. Photo Immersive camera configuration selected.';
         } else {
           compatCard.style.display = 'none';
         }
       }
 
+      // Dynamic copy above Generate button
+      const genSummaryEl = document.getElementById('proSpatialGenSummary');
+      if (genSummaryEl) {
+        if (compatibleCount === 0) {
+          genSummaryEl.textContent = 'Upload 1 to 7 booth photos to generate.';
+          genSummaryEl.style.color = '#94a3b8';
+        } else if (compatibleCount === 1) {
+          genSummaryEl.textContent = hasIncompatible
+            ? (uploadedCount + ' uploaded · 1 compatible view detected. We\'ll create a single-photo immersive booth.')
+            : '1 compatible view detected. We\'ll create a single-photo immersive booth.';
+          genSummaryEl.style.color = '#38bdf8';
+        } else {
+          genSummaryEl.textContent = hasIncompatible
+            ? (uploadedCount + ' uploaded · ' + compatibleCount + ' compatible views will be used.')
+            : (compatibleCount + ' compatible views will be used.');
+          genSummaryEl.style.color = '#38bdf8';
+        }
+      }
+
       const btnGen = document.getElementById('btnGenerateSpatial');
       if (btnGen) {
-        if (readyCount >= 1) {
-          btnGen.disabled = false;
-          btnGen.style.opacity = '1';
-          btnGen.style.cursor = 'pointer';
-        } else {
-          btnGen.disabled = true;
-          btnGen.style.opacity = '0.5';
-          btnGen.style.cursor = 'not-allowed';
-        }
+        const canGenerate = (compatibleCount >= 1 && compatibleCount <= 7 && !window.isGeneratingSpatial);
+        btnGen.disabled = !canGenerate;
+        btnGen.style.opacity = canGenerate ? '1' : '0.5';
+        btnGen.style.cursor = canGenerate ? 'pointer' : 'not-allowed';
       }
     }
 
@@ -13490,8 +13518,14 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
     }
 
     async function startProSpatialGeneration() {
-      const activeSlots = window.proSpatialSlots.filter(s => s.file);
-      const projectId = currentProjectId || 'prj-free-f4370ccd';
+      if (window.isGeneratingSpatial) return;
+      
+      const activeSlots = window.proSpatialSlots.filter(s => s && s.file && s.status !== 'INCOMPATIBLE');
+      const projectId = (typeof activeProjectId !== 'undefined' && activeProjectId) || 
+                        window.activeProjectId || 
+                        window.activeProjectData?.id || 
+                        new URLSearchParams(window.location.search).get('projectId') || 
+                        'prj-free-f4370ccd';
       
       const pBox = document.getElementById('proSpatialProgressBox');
       const pLbl = document.getElementById('proSpatialStageLabel');
@@ -13499,8 +13533,18 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       const pBar = document.getElementById('proSpatialProgressBar');
       const btn = document.getElementById('btnGenerateSpatial');
 
+      if (activeSlots.length < 1 || activeSlots.length > 7) {
+        alert('Please provide between 1 and 7 compatible photos to generate.');
+        return;
+      }
+
+      window.isGeneratingSpatial = true;
       if (pBox) pBox.style.display = 'block';
-      if (btn) btn.disabled = true;
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Preparing Spatial Booth…';
+      }
 
       const stages = [
         { pct: 15, text: 'Preparing photos...' },
@@ -13543,40 +13587,72 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         clearInterval(interval);
         const data = await res.json();
         if (!res.ok) {
-          alert(data.message || 'Spatial Booth generation failed.');
+          window.isGeneratingSpatial = false;
           if (pBox) pBox.style.display = 'none';
-          if (btn) btn.disabled = false;
+          if (btn) {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Generate Spatial Booth';
+          }
+          const sanitizedMsg = data.message || "We couldn't generate this Spatial Booth. Please try again or replace a source photo.";
+          alert(sanitizedMsg);
+          console.error('[Spatial Generation Server Error]', {
+            jobId: 'spatial-job-' + Date.now(),
+            sourceCount: activeSlots.length,
+            status: res.status,
+            reason: data.error || data.message
+          });
           return;
         }
 
+        window.isGeneratingSpatial = false;
         window.currentSpatialCandidate = data.candidate;
-        if (pLbl) pLbl.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #4ade80;"></i> Spatial Booth Ready!';
+        const viewCount = data.candidate?.compatibleSourceCount || activeSlots.length;
+        const viewLabel = viewCount > 1 ? (viewCount + '-View Spatial Booth') : '1-View Immersive Booth';
+
+        if (pLbl) pLbl.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #4ade80;"></i> ' + viewLabel + ' Ready!';
         if (pPct) pPct.textContent = '100%';
         if (pBar) pBar.style.width = '100%';
 
         setTimeout(async () => {
-          // Automatically apply candidate
-          const applyRes = await fetch('/api/projects/' + projectId + '/spatial/apply', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + token
-            },
-            body: JSON.stringify({ candidateId: data.candidateId })
-          });
-          const applyData = await applyRes.json();
-          if (applyData.success) {
-            alert('7-View Spatial Booth successfully created and applied!');
-            closeAiSpatialBoothModal();
+          try {
+            const applyRes = await fetch('/api/projects/' + projectId + '/spatial/apply', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+              },
+              body: JSON.stringify({ candidateId: data.candidateId })
+            });
+            const applyData = await applyRes.json();
+            if (applyData.success) {
+              alert(viewLabel + ' successfully created and applied!');
+              closeAiSpatialBoothModal();
+              window.location.reload();
+            }
+          } catch (applyErr) {
+            console.error('[Spatial Apply Error]', applyErr);
             window.location.reload();
           }
         }, 600);
 
       } catch (err) {
+        window.isGeneratingSpatial = false;
         clearInterval(interval);
-        alert('Generation failed: ' + err.message);
         if (pBox) pBox.style.display = 'none';
-        if (btn) btn.disabled = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Generate Spatial Booth';
+        }
+        const sanitizedMsg = "We couldn't generate this Spatial Booth. Please try again or replace a source photo.";
+        alert(sanitizedMsg);
+        console.error('[Spatial Generation Client Error]', {
+          jobId: 'spatial-err-' + Date.now(),
+          projectId,
+          sourceCount: activeSlots.length,
+          error: err.message
+        });
       }
     }
 
@@ -14641,7 +14717,8 @@ function openAiEnhanceBoothModal() {
       <button type="button" onclick="document.getElementById('proSpatialMultiInput').click()" style="padding: 8px 14px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer;">
         <i class="fa-solid fa-plus"></i> Add Photos
       </button>
-      <div style="display: flex; gap: 10px;">
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
+        <div id="proSpatialGenSummary" style="font-size: 11px; font-weight: 600; color: #94a3b8;">Upload 1 to 7 booth photos to generate.</div>
         <button type="button" id="btnGenerateSpatial" onclick="startProSpatialGeneration()" style="padding: 10px 22px; font-size: 13px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #6366f1); border: 1px solid #38bdf8; color: #fff; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 14px rgba(2,132,199,0.4);">
           <i class="fa-solid fa-bolt"></i> Generate Spatial Booth
         </button>

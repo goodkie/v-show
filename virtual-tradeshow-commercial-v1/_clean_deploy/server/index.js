@@ -9342,7 +9342,7 @@ app.post('/api/projects/:id/spatial/start', upload.array('photos', 7), async (re
     });
   } catch (err) {
     console.error('[Spatial Start Error]', err);
-    res.status(500).json({ error: err.message });
+    res.status(err.statusCode || 500).json({ error: err.message, message: err.sanitizedUserMessage || err.message });
   }
 });
 

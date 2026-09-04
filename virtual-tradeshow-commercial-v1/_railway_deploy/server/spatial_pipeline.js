@@ -65,11 +65,18 @@ class SpatialBoothPipeline {
       isTestAccount = false
     } = options;
 
-    if (!sourceList || sourceList.length === 0) {
-      throw new Error('At least 1 source photo is required for AI Spatial Booth.');
+    const MIN_SOURCE_COUNT = 1;
+    const MAX_SOURCE_COUNT = 7;
+
+    if (!sourceList || sourceList.length < MIN_SOURCE_COUNT) {
+      const err = new Error('At least 1 source photo is required for Spatial Booth.');
+      err.statusCode = 400;
+      throw err;
     }
-    if (sourceList.length > 7) {
-      throw new Error('AI Spatial Booth currently supports up to 7 source photos.');
+    if (sourceList.length > MAX_SOURCE_COUNT) {
+      const err = new Error('Spatial Booth currently supports up to 7 source photos.');
+      err.statusCode = 400;
+      throw err;
     }
 
     const candidateId = 'cand-spatial-' + Date.now();
@@ -230,6 +237,8 @@ class SpatialBoothPipeline {
       createdAt: new Date().toISOString(),
       status: 'READY_FOR_PREVIEW',
       viewerMode,
+      sourceViewCount: compatibleViews.length,
+      label: compatibleViews.length > 1 ? (compatibleViews.length + '-View Spatial Booth') : '1-View Immersive Booth',
       totalSourceCount: sourceList.length,
       compatibleSourceCount: compatibleViews.length,
       registrationConfidence: 0.92,
