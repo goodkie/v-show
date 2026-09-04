@@ -2,31 +2,25 @@
   "schemaVersion": "1.2.0",
   "inspectorVersion": "1.2.0",
   "session": {
-    "sessionId": "RI-20260904-73GO3B",
-    "startTime": "2026-09-04T21:00:32.281Z",
-    "captureTime": "2026-09-04T21:01:11.298Z",
-    "durationMs": 37009,
+    "sessionId": "RI-20260904-35KW1X",
+    "startTime": "2026-09-04T21:41:22.684Z",
+    "captureTime": "2026-09-04T21:42:04.912Z",
+    "durationMs": 40209,
     "mode": "RECORDING",
     "privacyMode": "STANDARD",
-    "navigationCount": 2,
+    "navigationCount": 1,
     "pageSegments": [
       {
         "id": "seg-1-init",
         "name": "about:blank",
         "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-        "startedAt": "2026-09-04T21:00:32.281Z"
+        "startedAt": "2026-09-04T21:41:22.684Z"
       },
       {
-        "id": "seg-2-chc0",
+        "id": "seg-2-zqn3",
         "name": "Page 2",
         "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-        "startedAt": "2026-09-04T21:00:56.353Z"
-      },
-      {
-        "id": "seg-3-ipbu",
-        "name": "Page 3",
-        "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-        "startedAt": "2026-09-04T21:01:03.102Z"
+        "startedAt": "2026-09-04T21:41:52.888Z"
       }
     ]
   },
@@ -44,9 +38,9 @@
     "browserRuntime": true,
     "extensionContext": true,
     "chromeUserAgent": true,
-    "pageInteractionDurationMs": 37009,
-    "pageSegmentCount": 3,
-    "realNavigationCount": 2,
+    "pageInteractionDurationMs": 40209,
+    "pageSegmentCount": 2,
+    "realNavigationCount": 1,
     "syntheticTest": false
   },
   "diagnostics": {
@@ -65,364 +59,196 @@
   "errors": [],
   "network": [
     {
-      "id": "ev-2jck0za",
-      "timestamp": 1788555650856,
-      "isoTime": "2026-09-04T21:00:50.856Z",
-      "category": "NETWORK",
-      "type": "FETCH_COMPLETE",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555650682-8",
-      "payload": {
-        "method": "GET",
-        "url": "/api/free-funnel/projects/prj-free-f4370ccd",
-        "status": 200,
-        "ok": true,
-        "durationMs": 174,
-        "contentType": "application/json; charset=utf-8",
-        "responseSize": 0,
-        "initiator": "fetch"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-332pr1c",
-      "timestamp": 1788555650670,
-      "isoTime": "2026-09-04T21:00:50.670Z",
-      "category": "NETWORK",
-      "type": "FETCH_COMPLETE",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555650493-5",
-      "payload": {
-        "method": "POST",
-        "url": "/api/projects/prj-free-f4370ccd/spatial/apply",
-        "status": 200,
-        "ok": true,
-        "durationMs": 177,
-        "contentType": "application/json; charset=utf-8",
-        "responseSize": 0,
-        "initiator": "fetch"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-6pb28te",
-      "timestamp": 1788555664695,
-      "isoTime": "2026-09-04T21:01:04.695Z",
+      "id": "ev-49ev7bv",
+      "timestamp": 1788558104465,
+      "isoTime": "2026-09-04T21:41:44.465Z",
       "category": "NETWORK",
       "type": "FETCH_START",
       "severity": "INFO",
       "source": "runtime-core",
-      "correlationId": "REQ-1788555664695-3",
+      "correlationId": "REQ-1788558104465-6",
       "payload": {
         "method": "GET",
         "url": "/api/projects/prj-free-f4370ccd/viewpoints",
         "initiator": "fetch",
-        "startTime": 1788555664695
-      },
-      "pageSegmentId": "seg-3-ipbu",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-9cnsavr",
-      "timestamp": 1788555664691,
-      "isoTime": "2026-09-04T21:01:04.691Z",
-      "category": "NETWORK",
-      "type": "FETCH_START",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555664691-2",
-      "payload": {
-        "method": "GET",
-        "url": "/api/projects/prj-free-f4370ccd/entitlements",
-        "initiator": "fetch",
-        "startTime": 1788555664691
-      },
-      "pageSegmentId": "seg-3-ipbu",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-dknosi4",
-      "timestamp": 1788555665440,
-      "isoTime": "2026-09-04T21:01:05.440Z",
-      "category": "NETWORK",
-      "type": "FETCH_COMPLETE",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555664695-4",
-      "payload": {
-        "method": "POST",
-        "url": "/api/free-funnel/analytics/event",
-        "status": 200,
-        "ok": true,
-        "durationMs": 745,
-        "contentType": "application/json; charset=utf-8",
-        "responseSize": 204,
-        "initiator": "fetch"
-      },
-      "pageSegmentId": "seg-3-ipbu",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-fo74irr",
-      "timestamp": 1788555650681,
-      "isoTime": "2026-09-04T21:00:50.681Z",
-      "category": "NETWORK",
-      "type": "FETCH_START",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555650681-6",
-      "payload": {
-        "method": "GET",
-        "url": "/api/projects/prj-free-f4370ccd/viewpoints",
-        "initiator": "fetch",
-        "startTime": 1788555650681
+        "startTime": 1788558104465
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-j3k6rbo",
-      "timestamp": 1788555650682,
-      "isoTime": "2026-09-04T21:00:50.682Z",
-      "category": "NETWORK",
-      "type": "FETCH_START",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555650682-7",
-      "payload": {
-        "method": "POST",
-        "url": "/api/free-funnel/analytics/event",
-        "initiator": "fetch",
-        "startTime": 1788555650682
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-m3xz2e5",
-      "timestamp": 1788555665441,
-      "isoTime": "2026-09-04T21:01:05.441Z",
+      "id": "ev-c46ac45",
+      "timestamp": 1788558104686,
+      "isoTime": "2026-09-04T21:41:44.686Z",
       "category": "NETWORK",
       "type": "FETCH_COMPLETE",
       "severity": "INFO",
       "source": "runtime-core",
-      "correlationId": "REQ-1788555664691-2",
-      "payload": {
-        "method": "GET",
-        "url": "/api/projects/prj-free-f4370ccd/entitlements",
-        "status": 200,
-        "ok": true,
-        "durationMs": 750,
-        "contentType": "application/json; charset=utf-8",
-        "responseSize": 168,
-        "initiator": "fetch"
-      },
-      "pageSegmentId": "seg-3-ipbu",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-mhkyox1",
-      "timestamp": 1788555650856,
-      "isoTime": "2026-09-04T21:00:50.856Z",
-      "category": "NETWORK",
-      "type": "FETCH_COMPLETE",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555650682-7",
-      "payload": {
-        "method": "POST",
-        "url": "/api/free-funnel/analytics/event",
-        "status": 200,
-        "ok": true,
-        "durationMs": 175,
-        "contentType": "application/json; charset=utf-8",
-        "responseSize": 204,
-        "initiator": "fetch"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-pgatwug",
-      "timestamp": 1788555665444,
-      "isoTime": "2026-09-04T21:01:05.444Z",
-      "category": "NETWORK",
-      "type": "FETCH_COMPLETE",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555664695-3",
+      "correlationId": "REQ-1788558104465-6",
       "payload": {
         "method": "GET",
         "url": "/api/projects/prj-free-f4370ccd/viewpoints",
         "status": 200,
         "ok": true,
-        "durationMs": 749,
-        "contentType": "application/json; charset=utf-8",
-        "responseSize": 32,
-        "initiator": "fetch"
-      },
-      "pageSegmentId": "seg-3-ipbu",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-sz3psyb",
-      "timestamp": 1788555663915,
-      "isoTime": "2026-09-04T21:01:03.915Z",
-      "category": "NETWORK",
-      "type": "FETCH_START",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555663915-1",
-      "payload": {
-        "method": "GET",
-        "url": "/api/free-funnel/projects/prj-free-f4370ccd",
-        "initiator": "fetch",
-        "startTime": 1788555663915
-      },
-      "pageSegmentId": "seg-3-ipbu",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-vsmai8n",
-      "timestamp": 1788555650786,
-      "isoTime": "2026-09-04T21:00:50.786Z",
-      "category": "NETWORK",
-      "type": "FETCH_COMPLETE",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555650681-6",
-      "payload": {
-        "method": "GET",
-        "url": "/api/projects/prj-free-f4370ccd/viewpoints",
-        "status": 200,
-        "ok": true,
-        "durationMs": 104,
+        "durationMs": 222,
         "contentType": "application/json; charset=utf-8",
         "responseSize": 32,
         "initiator": "fetch"
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-wl7b4jx",
-      "timestamp": 1788555664695,
-      "isoTime": "2026-09-04T21:01:04.695Z",
-      "category": "NETWORK",
-      "type": "FETCH_START",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555664695-4",
-      "payload": {
-        "method": "POST",
-        "url": "/api/free-funnel/analytics/event",
-        "initiator": "fetch",
-        "startTime": 1788555664695
-      },
-      "pageSegmentId": "seg-3-ipbu",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-y2fvhi1",
-      "timestamp": 1788555650682,
-      "isoTime": "2026-09-04T21:00:50.682Z",
-      "category": "NETWORK",
-      "type": "FETCH_START",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555650682-8",
-      "payload": {
-        "method": "GET",
-        "url": "/api/free-funnel/projects/prj-free-f4370ccd",
-        "initiator": "fetch",
-        "startTime": 1788555650682
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-ylqpqa3",
-      "timestamp": 1788555664091,
-      "isoTime": "2026-09-04T21:01:04.091Z",
+      "id": "ev-cavgoqr",
+      "timestamp": 1788558112548,
+      "isoTime": "2026-09-04T21:41:52.548Z",
       "category": "NETWORK",
       "type": "FETCH_COMPLETE",
       "severity": "INFO",
       "source": "runtime-core",
-      "correlationId": "REQ-1788555663915-1",
+      "correlationId": "REQ-1788558112437-8",
       "payload": {
         "method": "GET",
         "url": "/api/free-funnel/projects/prj-free-f4370ccd",
         "status": 200,
         "ok": true,
-        "durationMs": 176,
+        "durationMs": 111,
         "contentType": "application/json; charset=utf-8",
         "responseSize": 0,
         "initiator": "fetch"
       },
-      "pageSegmentId": "seg-3-ipbu",
+      "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-zmylf6f",
-      "timestamp": 1788555650493,
-      "isoTime": "2026-09-04T21:00:50.493Z",
+      "id": "ev-j2pazb0",
+      "timestamp": 1788558104467,
+      "isoTime": "2026-09-04T21:41:44.467Z",
       "category": "NETWORK",
       "type": "FETCH_START",
       "severity": "INFO",
       "source": "runtime-core",
-      "correlationId": "REQ-1788555650493-5",
+      "correlationId": "REQ-1788558104467-7",
+      "payload": {
+        "method": "POST",
+        "url": "/api/free-funnel/analytics/event",
+        "initiator": "fetch",
+        "startTime": 1788558104467
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-35KW1X"
+    },
+    {
+      "id": "ev-jef13vk",
+      "timestamp": 1788558104346,
+      "isoTime": "2026-09-04T21:41:44.346Z",
+      "category": "NETWORK",
+      "type": "FETCH_COMPLETE",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788558104097-5",
+      "payload": {
+        "method": "POST",
+        "url": "/api/projects/prj-free-f4370ccd/spatial/apply",
+        "status": 200,
+        "ok": true,
+        "durationMs": 250,
+        "contentType": "application/json; charset=utf-8",
+        "responseSize": 0,
+        "initiator": "fetch"
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-35KW1X"
+    },
+    {
+      "id": "ev-qmchcn5",
+      "timestamp": 1788558104686,
+      "isoTime": "2026-09-04T21:41:44.686Z",
+      "category": "NETWORK",
+      "type": "FETCH_COMPLETE",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788558104467-7",
+      "payload": {
+        "method": "POST",
+        "url": "/api/free-funnel/analytics/event",
+        "status": 200,
+        "ok": true,
+        "durationMs": 219,
+        "contentType": "application/json; charset=utf-8",
+        "responseSize": 204,
+        "initiator": "fetch"
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-35KW1X"
+    },
+    {
+      "id": "ev-tb4i93f",
+      "timestamp": 1788558104097,
+      "isoTime": "2026-09-04T21:41:44.097Z",
+      "category": "NETWORK",
+      "type": "FETCH_START",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788558104097-5",
       "payload": {
         "method": "POST",
         "url": "/api/projects/prj-free-f4370ccd/spatial/apply",
         "initiator": "fetch",
-        "startTime": 1788555650493
+        "startTime": 1788558104097
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
+    },
+    {
+      "id": "ev-txus5qk",
+      "timestamp": 1788558112437,
+      "isoTime": "2026-09-04T21:41:52.437Z",
+      "category": "NETWORK",
+      "type": "FETCH_START",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788558112437-8",
+      "payload": {
+        "method": "GET",
+        "url": "/api/free-funnel/projects/prj-free-f4370ccd",
+        "initiator": "fetch",
+        "startTime": 1788558112437
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-35KW1X"
     }
   ],
   "timeline": [
     {
-      "sessionId": "RI-20260904-73GO3B",
+      "sessionId": "RI-20260904-35KW1X",
       "pageSegmentId": "seg-1-init",
       "category": "APP",
       "type": "START_RECORDING",
-      "timestamp": 1788555632281,
+      "timestamp": 1788558082684,
       "payload": {
-        "sessionId": "RI-20260904-73GO3B",
+        "sessionId": "RI-20260904-35KW1X",
         "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
         "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36 Edg/152.0.0.0"
       },
       "id": 1
     },
     {
-      "sessionId": "RI-20260904-73GO3B",
+      "sessionId": "RI-20260904-35KW1X",
       "pageSegmentId": "seg-1-init",
       "category": "APP",
       "type": "RI_PAGE_CAPTURE_READY",
-      "timestamp": 1788555632327,
+      "timestamp": 1788558082809,
       "payload": {
-        "sessionId": "RI-20260904-73GO3B",
+        "sessionId": "RI-20260904-35KW1X",
         "pageSegmentId": "seg-1-init",
         "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
         "adapterId": "3dz",
@@ -433,11 +259,11 @@
       "id": 2
     },
     {
-      "sessionId": "RI-20260904-73GO3B",
-      "pageSegmentId": "seg-2-chc0",
+      "sessionId": "RI-20260904-35KW1X",
+      "pageSegmentId": "seg-2-zqn3",
       "category": "NAVIGATION",
       "type": "PAGE_RELOAD",
-      "timestamp": 1788555656353,
+      "timestamp": 1788558112888,
       "payload": {
         "fromUrl": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
         "toUrl": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
@@ -446,11 +272,11 @@
       "id": 3
     },
     {
-      "sessionId": "RI-20260904-73GO3B",
-      "pageSegmentId": "seg-2-chc0",
+      "sessionId": "RI-20260904-35KW1X",
+      "pageSegmentId": "seg-2-zqn3",
       "category": "APP",
       "type": "RI_PAGE_CAPTURE_BOOTSTRAP_FAILED",
-      "timestamp": 1788555659944,
+      "timestamp": 1788558116390,
       "payload": {
         "reason": "Page capture handshake not received within 3000ms",
         "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd"
@@ -458,14 +284,14 @@
       "id": 4
     },
     {
-      "sessionId": "RI-20260904-73GO3B",
-      "pageSegmentId": "seg-2-chc0",
+      "sessionId": "RI-20260904-35KW1X",
+      "pageSegmentId": "seg-2-zqn3",
       "category": "APP",
       "type": "RI_PAGE_CAPTURE_READY",
-      "timestamp": 1788555662727,
+      "timestamp": 1788558118109,
       "payload": {
-        "sessionId": "RI-20260904-73GO3B",
-        "pageSegmentId": "seg-2-chc0",
+        "sessionId": "RI-20260904-35KW1X",
+        "pageSegmentId": "seg-2-zqn3",
         "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
         "adapterId": "3dz",
         "coreVersion": "1.2.0",
@@ -475,289 +301,43 @@
       "id": 5
     },
     {
-      "sessionId": "RI-20260904-73GO3B",
-      "pageSegmentId": "seg-3-ipbu",
-      "category": "NAVIGATION",
-      "type": "PAGE_RELOAD",
-      "timestamp": 1788555663102,
+      "sessionId": "RI-20260904-35KW1X",
+      "pageSegmentId": "seg-2-zqn3",
+      "category": "APP",
+      "type": "STOP_RECORDING",
+      "timestamp": 1788558122893,
       "payload": {
-        "fromUrl": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-        "toUrl": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-        "navigationIndex": 2
+        "sessionId": "RI-20260904-35KW1X",
+        "durationMs": 40209,
+        "eventCount": 47
       },
       "id": 6
     },
     {
-      "sessionId": "RI-20260904-73GO3B",
-      "pageSegmentId": "seg-3-ipbu",
-      "category": "APP",
-      "type": "RI_PAGE_CAPTURE_READY",
-      "timestamp": 1788555663828,
-      "payload": {
-        "sessionId": "RI-20260904-73GO3B",
-        "pageSegmentId": "seg-3-ipbu",
-        "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-        "adapterId": "3dz",
-        "coreVersion": "1.2.0",
-        "status": "READY",
-        "title": "³D₂ — Turn One Booth Photo Into an Interactive 3D Booth Free"
-      },
-      "id": 7
-    },
-    {
-      "sessionId": "RI-20260904-73GO3B",
-      "pageSegmentId": "seg-3-ipbu",
-      "category": "APP",
-      "type": "STOP_RECORDING",
-      "timestamp": 1788555669290,
-      "payload": {
-        "sessionId": "RI-20260904-73GO3B",
-        "durationMs": 37009,
-        "eventCount": 96
-      },
-      "id": 8
-    },
-    {
-      "id": "ev-03t0k0d",
-      "timestamp": 1788555635106,
-      "isoTime": "2026-09-04T21:00:35.106Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_REQUEST_START {\"url\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\",\"slot\":\"LEFT\",\"viewpointId\":\"vp-left\"}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-269kyl3",
-      "timestamp": 1788555635106,
-      "isoTime": "2026-09-04T21:00:35.106Z",
+      "id": "ev-03vhtt1",
+      "timestamp": 1788558084841,
+      "isoTime": "2026-09-04T21:41:24.841Z",
       "category": "SPATIAL",
       "type": "SPATIAL_TEXTURE_RESOLVED",
       "severity": "INFO",
       "source": "runtime-core",
       "correlationId": null,
       "payload": {
-        "url": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg",
-        "selectedField": "url",
-        "resolution": "DIRECT_URL",
-        "viewpointId": "vp-left",
-        "viewpointRole": "LEFT",
-        "sanitizedUrl": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-2jck0za",
-      "timestamp": 1788555650856,
-      "isoTime": "2026-09-04T21:00:50.856Z",
-      "category": "NETWORK",
-      "type": "FETCH_COMPLETE",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555650682-8",
-      "payload": {
-        "method": "GET",
-        "url": "/api/free-funnel/projects/prj-free-f4370ccd",
-        "status": 200,
-        "ok": true,
-        "durationMs": 174,
-        "contentType": "application/json; charset=utf-8",
-        "responseSize": 0,
-        "initiator": "fetch"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-332pr1c",
-      "timestamp": 1788555650670,
-      "isoTime": "2026-09-04T21:00:50.670Z",
-      "category": "NETWORK",
-      "type": "FETCH_COMPLETE",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555650493-5",
-      "payload": {
-        "method": "POST",
-        "url": "/api/projects/prj-free-f4370ccd/spatial/apply",
-        "status": 200,
-        "ok": true,
-        "durationMs": 177,
-        "contentType": "application/json; charset=utf-8",
-        "responseSize": 0,
-        "initiator": "fetch"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-3k3ar9p",
-      "timestamp": 1788555641075,
-      "isoTime": "2026-09-04T21:00:41.075Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_CREATED {\"textureId\":8,\"imageWidth\":16384,\"imageHeight\":8192}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-3l2y743",
-      "timestamp": 1788555643235,
-      "isoTime": "2026-09-04T21:00:43.235Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_DECODED {\"width\":16384,\"height\":8192}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-3o9qa4k",
-      "timestamp": 1788555635107,
-      "isoTime": "2026-09-04T21:00:35.107Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_REQUEST_START",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "url": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg",
-        "slot": "RIGHT",
-        "viewpointId": "vp-right"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-497na3x",
-      "timestamp": 1788555635106,
-      "isoTime": "2026-09-04T21:00:35.106Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVER_ENTER {\"viewpointId\":\"vp-right\",\"slot\":\"RIGHT\",\"hasDerivatives\":false,\"deviceProfile\":\"desktop\"}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-4q1pdfj",
-      "timestamp": 1788555635105,
-      "isoTime": "2026-09-04T21:00:35.105Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVED {\"url\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\",\"selectedField\":\"url\",\"resolution\":\"DIRECT_URL\",\"viewpointId\":\"vp-left\",\"viewpointRole\":\"LEFT\",\"sanitizedUrl\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\"}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-56jx3ps",
-      "timestamp": 1788555635089,
-      "isoTime": "2026-09-04T21:00:35.089Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_RESOLVED",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "url": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg",
+        "url": "/uploads/booth_8k_desktop_1788558045958_d1b934.jpg",
         "selectedField": "derivatives.desktop8k.url",
         "resolution": "8K",
         "viewpointId": "vp-left",
         "viewpointRole": "LEFT",
-        "sanitizedUrl": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg"
+        "sanitizedUrl": "/uploads/booth_8k_desktop_1788558045958_d1b934.jpg"
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-5zc6rs9",
-      "timestamp": 1788555635106,
-      "isoTime": "2026-09-04T21:00:35.106Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_REQUEST_START",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "url": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg",
-        "slot": "LEFT",
-        "viewpointId": "vp-left"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-5zdlqef",
-      "timestamp": 1788555643234,
-      "isoTime": "2026-09-04T21:00:43.234Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_CREATED",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "textureId": 9,
-        "imageWidth": 16384,
-        "imageHeight": 8192
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-60qt24v",
-      "timestamp": 1788555635090,
-      "isoTime": "2026-09-04T21:00:35.090Z",
+      "id": "ev-14a1z51",
+      "timestamp": 1788558104459,
+      "isoTime": "2026-09-04T21:41:44.459Z",
       "category": "CONSOLE",
       "type": "CONSOLE_LOG",
       "severity": "INFO",
@@ -765,36 +345,71 @@
       "correlationId": null,
       "payload": {
         "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVED {\"url\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\",\"selectedField\":\"derivatives.desktop8k.url\",\"resolution\":\"8K\",\"viewpointId\":\"vp-right\",\"viewpointRole\":\"RIGHT\",\"sanitizedUrl\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\"}",
+        "message": "[3DZ Lifecycle] SPATIAL_APPLY_SERVER_STATE {\"serverViewerMode\":\"MULTI_VIEW_SPATIAL\",\"serverActiveSpatialVersionId\":\"bver-spatial-1788558104187\"}",
         "classification": "CONSOLE",
         "argCount": 2
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-63l2ybr",
-      "timestamp": 1788555643235,
-      "isoTime": "2026-09-04T21:00:43.235Z",
+      "id": "ev-1b67v2p",
+      "timestamp": 1788558104687,
+      "isoTime": "2026-09-04T21:41:44.687Z",
       "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_CREATED",
+      "type": "SPATIAL_ACTIVE_FIRST_VISIBLE_FRAME",
       "severity": "INFO",
       "source": "runtime-core",
       "correlationId": null,
       "payload": {
-        "textureId": 10,
-        "imageWidth": 16384,
-        "imageHeight": 8192
+        "timestamp": 1788558104687
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-66wwq77",
-      "timestamp": 1788555635107,
-      "isoTime": "2026-09-04T21:00:35.107Z",
+      "id": "ev-1eh8k27",
+      "timestamp": 1788558104469,
+      "isoTime": "2026-09-04T21:41:44.469Z",
+      "category": "SPATIAL",
+      "type": "SPATIAL_TEXTURE_RESOLVED",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": null,
+      "payload": {
+        "url": "/uploads/booth_8k_desktop_1788558045958_d1b934.jpg",
+        "selectedField": "derivatives.desktop8k.url",
+        "resolution": "8K",
+        "viewpointId": "vp-center",
+        "viewpointRole": "CENTER",
+        "sanitizedUrl": "/uploads/booth_8k_desktop_1788558045958_d1b934.jpg"
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-35KW1X"
+    },
+    {
+      "id": "ev-28hn7hq",
+      "timestamp": 1788558104094,
+      "isoTime": "2026-09-04T21:41:44.094Z",
+      "category": "SPATIAL",
+      "type": "SPATIAL_APPLY_HANDLER_ENTER",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": null,
+      "payload": {
+        "timestamp": 1788558104093
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-35KW1X"
+    },
+    {
+      "id": "ev-2bdo84i",
+      "timestamp": 1788558104466,
+      "isoTime": "2026-09-04T21:41:44.466Z",
       "category": "CONSOLE",
       "type": "CONSOLE_LOG",
       "severity": "INFO",
@@ -802,18 +417,18 @@
       "correlationId": null,
       "payload": {
         "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVED {\"url\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\",\"selectedField\":\"url\",\"resolution\":\"DIRECT_URL\",\"viewpointId\":\"vp-right\",\"viewpointRole\":\"RIGHT\",\"sanitizedUrl\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\"}",
+        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVED {\"url\":\"/uploads/booth_8k_desktop_1788558045958_d1b934.jpg\",\"selectedField\":\"derivatives.desktop8k.url\",\"resolution\":\"8K\",\"viewpointId\":\"vp-center\",\"viewpointRole\":\"CENTER\",\"sanitizedUrl\":\"/uploads/booth_8k_desktop_1788558045958_d1b934.jpg\"}",
         "classification": "CONSOLE",
         "argCount": 2
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-6bzerr0",
-      "timestamp": 1788555641074,
-      "isoTime": "2026-09-04T21:00:41.074Z",
+      "id": "ev-2idbrhe",
+      "timestamp": 1788558104687,
+      "isoTime": "2026-09-04T21:41:44.687Z",
       "category": "CONSOLE",
       "type": "CONSOLE_LOG",
       "severity": "INFO",
@@ -821,77 +436,231 @@
       "correlationId": null,
       "payload": {
         "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_DECODED {\"width\":16384,\"height\":8192}",
+        "message": "[3DZ Lifecycle] SPATIAL_ACTIVE_FIRST_VISIBLE_FRAME {\"timestamp\":1788558104687}",
         "classification": "CONSOLE",
         "argCount": 2
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-6m7htqb",
-      "timestamp": 1788555635090,
-      "isoTime": "2026-09-04T21:00:35.090Z",
+      "id": "ev-2tvrhxb",
+      "timestamp": 1788558104459,
+      "isoTime": "2026-09-04T21:41:44.459Z",
+      "category": "SPATIAL",
+      "type": "SPATIAL_APPLY_SERVER_STATE",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": null,
+      "payload": {
+        "serverViewerMode": "MULTI_VIEW_SPATIAL",
+        "serverActiveSpatialVersionId": "bver-spatial-1788558104187"
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-35KW1X"
+    },
+    {
+      "id": "ev-49ev7bv",
+      "timestamp": 1788558104465,
+      "isoTime": "2026-09-04T21:41:44.465Z",
+      "category": "NETWORK",
+      "type": "FETCH_START",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788558104465-6",
+      "payload": {
+        "method": "GET",
+        "url": "/api/projects/prj-free-f4370ccd/viewpoints",
+        "initiator": "fetch",
+        "startTime": 1788558104465
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-35KW1X"
+    },
+    {
+      "id": "ev-4pvchtz",
+      "timestamp": 1788558104092,
+      "isoTime": "2026-09-04T21:41:44.092Z",
+      "category": "CONSOLE",
+      "type": "CONSOLE_LOG",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": null,
+      "payload": {
+        "level": "log",
+        "message": "[3DZ Lifecycle] SPATIAL_APPLY_CLICK {\"candidateId\":\"cand-spatial-1788558010617\",\"buttonId\":\"btnApplySpatialBooth\",\"timestamp\":1788558104092}",
+        "classification": "CONSOLE",
+        "argCount": 2
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-35KW1X"
+    },
+    {
+      "id": "ev-5gkpcnj",
+      "timestamp": 1788558104090,
+      "isoTime": "2026-09-04T21:41:44.090Z",
+      "category": "SPATIAL",
+      "type": "SPATIAL_APPLY_POINTER_DOWN",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": null,
+      "payload": {
+        "candidateId": "cand-spatial-1788558010617",
+        "buttonId": "btnApplySpatialBooth",
+        "timestamp": 1788558104089
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-35KW1X"
+    },
+    {
+      "id": "ev-5jylv50",
+      "timestamp": 1788558104096,
+      "isoTime": "2026-09-04T21:41:44.096Z",
+      "category": "SPATIAL",
+      "type": "SPATIAL_APPLY_FETCH_START",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": null,
+      "payload": {
+        "projectId": "prj-free-f4370ccd",
+        "candidateId": "cand-spatial-1788558010617",
+        "timestamp": 1788558104096
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-35KW1X"
+    },
+    {
+      "id": "ev-7v5tgot",
+      "timestamp": 1788558104091,
+      "isoTime": "2026-09-04T21:41:44.091Z",
+      "category": "INTERACTION",
+      "type": "USER_CLICK",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": null,
+      "payload": {
+        "tag": "button",
+        "elementId": "#btnApplySpatialBooth",
+        "text": "Apply to Active Booth",
+        "className": ""
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-35KW1X"
+    },
+    {
+      "id": "ev-8vg5mz1",
+      "timestamp": 1788558104095,
+      "isoTime": "2026-09-04T21:41:44.095Z",
+      "category": "CONSOLE",
+      "type": "CONSOLE_LOG",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": null,
+      "payload": {
+        "level": "log",
+        "message": "[3DZ Lifecycle] SPATIAL_APPLY_CANDIDATE_RESOLVED {\"candidateId\":\"cand-spatial-1788558010617\",\"currentCandidateId\":\"cand-spatial-1788558010617\",\"snapshotCandidateId\":null,\"modalCandidateId\":\"cand-spatial-1788558010617\"}",
+        "classification": "CONSOLE",
+        "argCount": 2
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-35KW1X"
+    },
+    {
+      "id": "ev-a4fjb4i",
+      "timestamp": 1788558104466,
+      "isoTime": "2026-09-04T21:41:44.466Z",
       "category": "SPATIAL",
       "type": "SPATIAL_TEXTURE_RESOLVER_ENTER",
       "severity": "INFO",
       "source": "runtime-core",
       "correlationId": null,
       "payload": {
-        "viewpointId": "vp-right",
-        "slot": "RIGHT",
+        "viewpointId": "vp-center",
+        "slot": "CENTER",
         "hasDerivatives": true,
         "deviceProfile": "desktop"
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-6pb28te",
-      "timestamp": 1788555664695,
-      "isoTime": "2026-09-04T21:01:04.695Z",
-      "category": "NETWORK",
-      "type": "FETCH_START",
+      "id": "ev-c1kg7m9",
+      "timestamp": 1788558084840,
+      "isoTime": "2026-09-04T21:41:24.840Z",
+      "category": "CONSOLE",
+      "type": "CONSOLE_LOG",
       "severity": "INFO",
       "source": "runtime-core",
-      "correlationId": "REQ-1788555664695-3",
+      "correlationId": null,
+      "payload": {
+        "level": "log",
+        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVED {\"url\":\"/uploads/booth_8k_desktop_1788558045958_d1b934.jpg\",\"selectedField\":\"derivatives.desktop8k.url\",\"resolution\":\"8K\",\"viewpointId\":\"vp-left\",\"viewpointRole\":\"LEFT\",\"sanitizedUrl\":\"/uploads/booth_8k_desktop_1788558045958_d1b934.jpg\"}",
+        "classification": "CONSOLE",
+        "argCount": 2
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-35KW1X"
+    },
+    {
+      "id": "ev-c46ac45",
+      "timestamp": 1788558104686,
+      "isoTime": "2026-09-04T21:41:44.686Z",
+      "category": "NETWORK",
+      "type": "FETCH_COMPLETE",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788558104465-6",
       "payload": {
         "method": "GET",
         "url": "/api/projects/prj-free-f4370ccd/viewpoints",
-        "initiator": "fetch",
-        "startTime": 1788555664695
-      },
-      "pageSegmentId": "seg-3-ipbu",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-75mcqrf",
-      "timestamp": 1788555635090,
-      "isoTime": "2026-09-04T21:00:35.090Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_RESOLVED",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "url": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg",
-        "selectedField": "derivatives.desktop8k.url",
-        "resolution": "8K",
-        "viewpointId": "vp-right",
-        "viewpointRole": "RIGHT",
-        "sanitizedUrl": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg"
+        "status": 200,
+        "ok": true,
+        "durationMs": 222,
+        "contentType": "application/json; charset=utf-8",
+        "responseSize": 32,
+        "initiator": "fetch"
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-7dxi358",
-      "timestamp": 1788555643233,
-      "isoTime": "2026-09-04T21:00:43.233Z",
+      "id": "ev-cavgoqr",
+      "timestamp": 1788558112548,
+      "isoTime": "2026-09-04T21:41:52.548Z",
+      "category": "NETWORK",
+      "type": "FETCH_COMPLETE",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": "REQ-1788558112437-8",
+      "payload": {
+        "method": "GET",
+        "url": "/api/free-funnel/projects/prj-free-f4370ccd",
+        "status": 200,
+        "ok": true,
+        "durationMs": 111,
+        "contentType": "application/json; charset=utf-8",
+        "responseSize": 0,
+        "initiator": "fetch"
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-35KW1X"
+    },
+    {
+      "id": "ev-dgxovi9",
+      "timestamp": 1788558104096,
+      "isoTime": "2026-09-04T21:41:44.096Z",
       "category": "CONSOLE",
       "type": "CONSOLE_LOG",
       "severity": "INFO",
@@ -899,58 +668,18 @@
       "correlationId": null,
       "payload": {
         "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_HTTP {\"url\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\",\"naturalWidth\":16384,\"naturalHeight\":8192,\"durationMs\":8127}",
+        "message": "[3DZ Lifecycle] SPATIAL_APPLY_FETCH_START {\"projectId\":\"prj-free-f4370ccd\",\"candidateId\":\"cand-spatial-1788558010617\",\"timestamp\":1788558104096}",
         "classification": "CONSOLE",
         "argCount": 2
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-8009ags",
-      "timestamp": 1788555635087,
-      "isoTime": "2026-09-04T21:00:35.087Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVER_ENTER {\"viewpointId\":\"vp-left\",\"slot\":\"LEFT\",\"hasDerivatives\":true,\"deviceProfile\":\"desktop\"}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-8213948",
-      "timestamp": 1788555639946,
-      "isoTime": "2026-09-04T21:00:39.946Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_RESOLVED",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "url": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg",
-        "selectedField": "url",
-        "resolution": "DIRECT_URL",
-        "viewpointId": "vp-left",
-        "viewpointRole": "LEFT",
-        "sanitizedUrl": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-85jnlwj",
-      "timestamp": 1788555635072,
-      "isoTime": "2026-09-04T21:00:35.072Z",
+      "id": "ev-dzqv3w2",
+      "timestamp": 1788558084809,
+      "isoTime": "2026-09-04T21:41:24.809Z",
       "category": "WEBGL",
       "type": "WEBGL_CONTEXT_INITIALIZED",
       "severity": "INFO",
@@ -964,263 +693,33 @@
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-8xagqum",
-      "timestamp": 1788555639945,
-      "isoTime": "2026-09-04T21:00:39.945Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
+      "id": "ev-ep9zga6",
+      "timestamp": 1788558084842,
+      "isoTime": "2026-09-04T21:41:24.842Z",
+      "category": "ERROR",
+      "type": "UNHANDLED_EXCEPTION",
+      "severity": "CRITICAL",
       "source": "runtime-core",
       "correlationId": null,
       "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVER_ENTER {\"viewpointId\":\"vp-left\",\"slot\":\"LEFT\",\"hasDerivatives\":false,\"deviceProfile\":\"desktop\"}",
-        "classification": "CONSOLE",
-        "argCount": 2
+        "message": "Uncaught ReferenceError: MIN_SAFE_YAW is not defined",
+        "filename": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+        "lineno": 14553,
+        "colno": 26,
+        "stack": "ReferenceError: MIN_SAFE_YAW is not defined\n    at https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd:14553:26\n    at Array.forEach (<anonymous>)\n    at initSpatialPreviewWebGL (https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd:14544:11)\n    at https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd:14140:9",
+        "classification": "APP_ERROR"
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-91i24el",
-      "timestamp": 1788555645768,
-      "isoTime": "2026-09-04T21:00:45.768Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_FIRST_VALID_FRAME",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "renderCount": 4,
-        "activeIdx": 1,
-        "slot": "CENTER"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-9cnsavr",
-      "timestamp": 1788555664691,
-      "isoTime": "2026-09-04T21:01:04.691Z",
-      "category": "NETWORK",
-      "type": "FETCH_START",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555664691-2",
-      "payload": {
-        "method": "GET",
-        "url": "/api/projects/prj-free-f4370ccd/entitlements",
-        "initiator": "fetch",
-        "startTime": 1788555664691
-      },
-      "pageSegmentId": "seg-3-ipbu",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-9vy7i8z",
-      "timestamp": 1788555639946,
-      "isoTime": "2026-09-04T21:00:39.946Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_RESOLVER_ENTER",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "viewpointId": "vp-left",
-        "slot": "LEFT",
-        "hasDerivatives": false,
-        "deviceProfile": "desktop"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-a3i9zz2",
-      "timestamp": 1788555635102,
-      "isoTime": "2026-09-04T21:00:35.102Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVED {\"url\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\",\"selectedField\":\"url\",\"resolution\":\"DIRECT_URL\",\"viewpointId\":\"vp-center\",\"viewpointRole\":\"CENTER\",\"sanitizedUrl\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\"}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-aokq47w",
-      "timestamp": 1788555635112,
-      "isoTime": "2026-09-04T21:00:35.112Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_FIRST_RENDER",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "renderCount": 1,
-        "hasMap": false,
-        "visible": false
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-bg047k0",
-      "timestamp": 1788555635090,
-      "isoTime": "2026-09-04T21:00:35.090Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_RESOLVED",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "url": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg",
-        "selectedField": "derivatives.desktop8k.url",
-        "resolution": "8K",
-        "viewpointId": "vp-center",
-        "viewpointRole": "CENTER",
-        "sanitizedUrl": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-c0voqf8",
-      "timestamp": 1788555635102,
-      "isoTime": "2026-09-04T21:00:35.102Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVER_ENTER {\"viewpointId\":\"vp-center\",\"slot\":\"CENTER\",\"hasDerivatives\":false,\"deviceProfile\":\"desktop\"}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-cgcshct",
-      "timestamp": 1788555635103,
-      "isoTime": "2026-09-04T21:00:35.103Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_REQUEST_START {\"url\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\",\"slot\":\"CENTER\",\"viewpointId\":\"vp-center\"}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-d8n8xrj",
-      "timestamp": 1788555635107,
-      "isoTime": "2026-09-04T21:00:35.107Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_RESOLVED",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "url": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg",
-        "selectedField": "url",
-        "resolution": "DIRECT_URL",
-        "viewpointId": "vp-right",
-        "viewpointRole": "RIGHT",
-        "sanitizedUrl": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-dh6nn2k",
-      "timestamp": 1788555638148,
-      "isoTime": "2026-09-04T21:00:38.148Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_WARN",
-      "severity": "WARN",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "warn",
-        "message": "[Spatial Watchdog] 3s elapsed without render, triggering recovery",
-        "classification": "CONSOLE",
-        "argCount": 1
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-dhs1dta",
-      "timestamp": 1788555635103,
-      "isoTime": "2026-09-04T21:00:35.103Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_RESOLVED",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "url": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg",
-        "selectedField": "url",
-        "resolution": "DIRECT_URL",
-        "viewpointId": "vp-center",
-        "viewpointRole": "CENTER",
-        "sanitizedUrl": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-dj4kvc8",
-      "timestamp": 1788555638149,
-      "isoTime": "2026-09-04T21:00:38.149Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVED {\"url\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\",\"selectedField\":\"url\",\"resolution\":\"DIRECT_URL\",\"viewpointId\":\"vp-center\",\"viewpointRole\":\"CENTER\",\"sanitizedUrl\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\"}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-djdf86o",
-      "timestamp": 1788555635088,
-      "isoTime": "2026-09-04T21:00:35.088Z",
+      "id": "ev-fbyo0hw",
+      "timestamp": 1788558084840,
+      "isoTime": "2026-09-04T21:41:24.840Z",
       "category": "SPATIAL",
       "type": "SPATIAL_TEXTURE_RESOLVER_ENTER",
       "severity": "INFO",
@@ -1234,56 +733,48 @@
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-dknosi4",
-      "timestamp": 1788555665440,
-      "isoTime": "2026-09-04T21:01:05.440Z",
-      "category": "NETWORK",
-      "type": "FETCH_COMPLETE",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555664695-4",
-      "payload": {
-        "method": "POST",
-        "url": "/api/free-funnel/analytics/event",
-        "status": 200,
-        "ok": true,
-        "durationMs": 745,
-        "contentType": "application/json; charset=utf-8",
-        "responseSize": 204,
-        "initiator": "fetch"
-      },
-      "pageSegmentId": "seg-3-ipbu",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-ew3fcfo",
-      "timestamp": 1788555638150,
-      "isoTime": "2026-09-04T21:00:38.150Z",
+      "id": "ev-fh94k42",
+      "timestamp": 1788558104470,
+      "isoTime": "2026-09-04T21:41:44.470Z",
       "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_RESOLVED",
+      "type": "SPATIAL_ACTIVE_VIEWER_INIT",
       "severity": "INFO",
       "source": "runtime-core",
       "correlationId": null,
       "payload": {
-        "url": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg",
-        "selectedField": "url",
-        "resolution": "DIRECT_URL",
-        "viewpointId": "vp-center",
-        "viewpointRole": "CENTER",
-        "sanitizedUrl": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg"
+        "viewerMode": "MULTI_VIEW_SPATIAL",
+        "hasRail": true
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-fb869xb",
-      "timestamp": 1788555635089,
-      "isoTime": "2026-09-04T21:00:35.089Z",
+      "id": "ev-g351oxn",
+      "timestamp": 1788558104458,
+      "isoTime": "2026-09-04T21:41:44.458Z",
+      "category": "CONSOLE",
+      "type": "CONSOLE_LOG",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": null,
+      "payload": {
+        "level": "log",
+        "message": "[3DZ Lifecycle] SPATIAL_APPLY_FETCH_COMPLETE {\"status\":200,\"ok\":true,\"durationMs\":250,\"success\":true}",
+        "classification": "CONSOLE",
+        "argCount": 2
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-35KW1X"
+    },
+    {
+      "id": "ev-hdqbfbw",
+      "timestamp": 1788558104468,
+      "isoTime": "2026-09-04T21:41:44.468Z",
       "category": "CONSOLE",
       "type": "CONSOLE_LOG",
       "severity": "INFO",
@@ -1297,256 +788,90 @@
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-fo74irr",
-      "timestamp": 1788555650681,
-      "isoTime": "2026-09-04T21:00:50.681Z",
+      "id": "ev-iuq06yg",
+      "timestamp": 1788558084840,
+      "isoTime": "2026-09-04T21:41:24.840Z",
+      "category": "CONSOLE",
+      "type": "CONSOLE_LOG",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": null,
+      "payload": {
+        "level": "log",
+        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVER_ENTER {\"viewpointId\":\"vp-left\",\"slot\":\"LEFT\",\"hasDerivatives\":true,\"deviceProfile\":\"desktop\"}",
+        "classification": "CONSOLE",
+        "argCount": 2
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-35KW1X"
+    },
+    {
+      "id": "ev-j2pazb0",
+      "timestamp": 1788558104467,
+      "isoTime": "2026-09-04T21:41:44.467Z",
       "category": "NETWORK",
       "type": "FETCH_START",
       "severity": "INFO",
       "source": "runtime-core",
-      "correlationId": "REQ-1788555650681-6",
-      "payload": {
-        "method": "GET",
-        "url": "/api/projects/prj-free-f4370ccd/viewpoints",
-        "initiator": "fetch",
-        "startTime": 1788555650681
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-gjzi0rf",
-      "timestamp": 1788555643234,
-      "isoTime": "2026-09-04T21:00:43.234Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_HTTP",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "url": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg",
-        "naturalWidth": 16384,
-        "naturalHeight": 8192,
-        "durationMs": 8127
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-h4fi9gf",
-      "timestamp": 1788555643234,
-      "isoTime": "2026-09-04T21:00:43.234Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_DECODED {\"width\":16384,\"height\":8192}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-hgh3qc7",
-      "timestamp": 1788555635102,
-      "isoTime": "2026-09-04T21:00:35.102Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_RESOLVER_ENTER",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "viewpointId": "vp-center",
-        "slot": "CENTER",
-        "hasDerivatives": false,
-        "deviceProfile": "desktop"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-hnincmx",
-      "timestamp": 1788555641074,
-      "isoTime": "2026-09-04T21:00:41.074Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_HTTP {\"url\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\",\"naturalWidth\":16384,\"naturalHeight\":8192,\"durationMs\":5970}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-hxnc3q0",
-      "timestamp": 1788555635104,
-      "isoTime": "2026-09-04T21:00:35.104Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_REQUEST_START",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "url": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg",
-        "slot": "CENTER",
-        "viewpointId": "vp-center"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-i9knfa3",
-      "timestamp": 1788555635107,
-      "isoTime": "2026-09-04T21:00:35.107Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_REQUEST_START {\"url\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\",\"slot\":\"RIGHT\",\"viewpointId\":\"vp-right\"}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-iyws0ne",
-      "timestamp": 1788555664658,
-      "isoTime": "2026-09-04T21:01:04.658Z",
-      "category": "WEBGL",
-      "type": "WEBGL_CONTEXT_INITIALIZED",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "canvasId": "three-canvas",
-        "type": "webgl2",
-        "maxTextureSize": 16384,
-        "maxRenderbufferSize": 16384
-      },
-      "pageSegmentId": "seg-3-ipbu",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-j3k6rbo",
-      "timestamp": 1788555650682,
-      "isoTime": "2026-09-04T21:00:50.682Z",
-      "category": "NETWORK",
-      "type": "FETCH_START",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555650682-7",
+      "correlationId": "REQ-1788558104467-7",
       "payload": {
         "method": "POST",
         "url": "/api/free-funnel/analytics/event",
         "initiator": "fetch",
-        "startTime": 1788555650682
+        "startTime": 1788558104467
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-j4ptikm",
-      "timestamp": 1788555639519,
-      "isoTime": "2026-09-04T21:00:39.519Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
+      "id": "ev-jef13vk",
+      "timestamp": 1788558104346,
+      "isoTime": "2026-09-04T21:41:44.346Z",
+      "category": "NETWORK",
+      "type": "FETCH_COMPLETE",
       "severity": "INFO",
       "source": "runtime-core",
-      "correlationId": null,
+      "correlationId": "REQ-1788558104097-5",
       "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVED {\"url\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\",\"selectedField\":\"derivatives.desktop8k.url\",\"resolution\":\"8K\",\"viewpointId\":\"vp-center\",\"viewpointRole\":\"CENTER\",\"sanitizedUrl\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\"}",
-        "classification": "CONSOLE",
-        "argCount": 2
+        "method": "POST",
+        "url": "/api/projects/prj-free-f4370ccd/spatial/apply",
+        "status": 200,
+        "ok": true,
+        "durationMs": 250,
+        "contentType": "application/json; charset=utf-8",
+        "responseSize": 0,
+        "initiator": "fetch"
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-jphmmai",
-      "timestamp": 1788555639946,
-      "isoTime": "2026-09-04T21:00:39.946Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVED {\"url\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\",\"selectedField\":\"url\",\"resolution\":\"DIRECT_URL\",\"viewpointId\":\"vp-left\",\"viewpointRole\":\"LEFT\",\"sanitizedUrl\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\"}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-kovi6d8",
-      "timestamp": 1788555635089,
-      "isoTime": "2026-09-04T21:00:35.089Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVED {\"url\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\",\"selectedField\":\"derivatives.desktop8k.url\",\"resolution\":\"8K\",\"viewpointId\":\"vp-center\",\"viewpointRole\":\"CENTER\",\"sanitizedUrl\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\"}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-lcpn6qn",
-      "timestamp": 1788555632317,
-      "isoTime": "2026-09-04T21:00:32.317Z",
+      "id": "ev-jzkjuat",
+      "timestamp": 1788558082800,
+      "isoTime": "2026-09-04T21:41:22.800Z",
       "category": "APP",
       "type": "RECORDING_STARTED",
       "severity": "INFO",
       "source": "runtime-core",
       "correlationId": null,
       "payload": {
-        "sessionId": "RI-20260904-73GO3B",
-        "startTime": 1788555625654
+        "sessionId": "RI-20260904-35KW1X",
+        "startTime": 1788558075801
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-ll8uv6r",
-      "timestamp": 1788555643235,
-      "isoTime": "2026-09-04T21:00:43.235Z",
+      "id": "ev-kbpx01m",
+      "timestamp": 1788558104469,
+      "isoTime": "2026-09-04T21:41:44.469Z",
       "category": "CONSOLE",
       "type": "CONSOLE_LOG",
       "severity": "INFO",
@@ -1554,18 +879,18 @@
       "correlationId": null,
       "payload": {
         "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_HTTP {\"url\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\",\"naturalWidth\":16384,\"naturalHeight\":8192,\"durationMs\":8127}",
+        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVED {\"url\":\"/uploads/booth_8k_desktop_1788558045958_d1b934.jpg\",\"selectedField\":\"derivatives.desktop8k.url\",\"resolution\":\"8K\",\"viewpointId\":\"vp-center\",\"viewpointRole\":\"CENTER\",\"sanitizedUrl\":\"/uploads/booth_8k_desktop_1788558045958_d1b934.jpg\"}",
         "classification": "CONSOLE",
         "argCount": 2
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-lr5qduo",
-      "timestamp": 1788555645768,
-      "isoTime": "2026-09-04T21:00:45.768Z",
+      "id": "ev-l2wo8wf",
+      "timestamp": 1788558104089,
+      "isoTime": "2026-09-04T21:41:44.089Z",
       "category": "CONSOLE",
       "type": "CONSOLE_LOG",
       "severity": "INFO",
@@ -1573,41 +898,18 @@
       "correlationId": null,
       "payload": {
         "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_FIRST_VALID_FRAME {\"renderCount\":4,\"activeIdx\":1,\"slot\":\"CENTER\"}",
+        "message": "[3DZ Lifecycle] SPATIAL_APPLY_POINTER_DOWN {\"candidateId\":\"cand-spatial-1788558010617\",\"buttonId\":\"btnApplySpatialBooth\",\"timestamp\":1788558104089}",
         "classification": "CONSOLE",
         "argCount": 2
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-m3xz2e5",
-      "timestamp": 1788555665441,
-      "isoTime": "2026-09-04T21:01:05.441Z",
-      "category": "NETWORK",
-      "type": "FETCH_COMPLETE",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555664691-2",
-      "payload": {
-        "method": "GET",
-        "url": "/api/projects/prj-free-f4370ccd/entitlements",
-        "status": 200,
-        "ok": true,
-        "durationMs": 750,
-        "contentType": "application/json; charset=utf-8",
-        "responseSize": 168,
-        "initiator": "fetch"
-      },
-      "pageSegmentId": "seg-3-ipbu",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-m8j3boz",
-      "timestamp": 1788555635104,
-      "isoTime": "2026-09-04T21:00:35.104Z",
+      "id": "ev-m1u25ll",
+      "timestamp": 1788558104470,
+      "isoTime": "2026-09-04T21:41:44.470Z",
       "category": "CONSOLE",
       "type": "CONSOLE_LOG",
       "severity": "INFO",
@@ -1615,60 +917,18 @@
       "correlationId": null,
       "payload": {
         "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVER_ENTER {\"viewpointId\":\"vp-left\",\"slot\":\"LEFT\",\"hasDerivatives\":false,\"deviceProfile\":\"desktop\"}",
+        "message": "[3DZ Lifecycle] SPATIAL_ACTIVE_VIEWER_INIT {\"viewerMode\":\"MULTI_VIEW_SPATIAL\",\"hasRail\":true}",
         "classification": "CONSOLE",
         "argCount": 2
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-mhkyox1",
-      "timestamp": 1788555650856,
-      "isoTime": "2026-09-04T21:00:50.856Z",
-      "category": "NETWORK",
-      "type": "FETCH_COMPLETE",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555650682-7",
-      "payload": {
-        "method": "POST",
-        "url": "/api/free-funnel/analytics/event",
-        "status": 200,
-        "ok": true,
-        "durationMs": 175,
-        "contentType": "application/json; charset=utf-8",
-        "responseSize": 204,
-        "initiator": "fetch"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-mrtm317",
-      "timestamp": 1788555635090,
-      "isoTime": "2026-09-04T21:00:35.090Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVER_ENTER {\"viewpointId\":\"vp-right\",\"slot\":\"RIGHT\",\"hasDerivatives\":true,\"deviceProfile\":\"desktop\"}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-nm2s4mp",
-      "timestamp": 1788555639519,
-      "isoTime": "2026-09-04T21:00:39.519Z",
+      "id": "ev-oodn9gc",
+      "timestamp": 1788558104466,
+      "isoTime": "2026-09-04T21:41:44.466Z",
       "category": "CONSOLE",
       "type": "CONSOLE_LOG",
       "severity": "INFO",
@@ -1682,127 +942,54 @@
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-nm9dfxo",
-      "timestamp": 1788555643234,
-      "isoTime": "2026-09-04T21:00:43.234Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_CREATED {\"textureId\":9,\"imageWidth\":16384,\"imageHeight\":8192}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-nyfl0l5",
-      "timestamp": 1788555643235,
-      "isoTime": "2026-09-04T21:00:43.235Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_CREATED {\"textureId\":10,\"imageWidth\":16384,\"imageHeight\":8192}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-o0b7z8a",
-      "timestamp": 1788555635088,
-      "isoTime": "2026-09-04T21:00:35.088Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVED {\"url\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\",\"selectedField\":\"derivatives.desktop8k.url\",\"resolution\":\"8K\",\"viewpointId\":\"vp-left\",\"viewpointRole\":\"LEFT\",\"sanitizedUrl\":\"/uploads/booth_8k_desktop_1788555595253_4820cb.jpg\"}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-oj0ingi",
-      "timestamp": 1788555641075,
-      "isoTime": "2026-09-04T21:00:41.075Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_CREATED",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "textureId": 8,
-        "imageWidth": 16384,
-        "imageHeight": 8192
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-p3u4s3z",
-      "timestamp": 1788555643235,
-      "isoTime": "2026-09-04T21:00:43.235Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_DECODED",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "width": 16384,
-        "height": 8192
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-pgatwug",
-      "timestamp": 1788555665444,
-      "isoTime": "2026-09-04T21:01:05.444Z",
+      "id": "ev-qmchcn5",
+      "timestamp": 1788558104686,
+      "isoTime": "2026-09-04T21:41:44.686Z",
       "category": "NETWORK",
       "type": "FETCH_COMPLETE",
       "severity": "INFO",
       "source": "runtime-core",
-      "correlationId": "REQ-1788555664695-3",
+      "correlationId": "REQ-1788558104467-7",
       "payload": {
-        "method": "GET",
-        "url": "/api/projects/prj-free-f4370ccd/viewpoints",
+        "method": "POST",
+        "url": "/api/free-funnel/analytics/event",
         "status": 200,
         "ok": true,
-        "durationMs": 749,
+        "durationMs": 219,
         "contentType": "application/json; charset=utf-8",
-        "responseSize": 32,
+        "responseSize": 204,
         "initiator": "fetch"
       },
-      "pageSegmentId": "seg-3-ipbu",
+      "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-pi2cwlm",
-      "timestamp": 1788555635112,
-      "isoTime": "2026-09-04T21:00:35.112Z",
+      "id": "ev-qsaiscs",
+      "timestamp": 1788558104459,
+      "isoTime": "2026-09-04T21:41:44.459Z",
+      "category": "SPATIAL",
+      "type": "SPATIAL_APPLY_FETCH_COMPLETE",
+      "severity": "INFO",
+      "source": "runtime-core",
+      "correlationId": null,
+      "payload": {
+        "status": 200,
+        "ok": true,
+        "durationMs": 250,
+        "success": true
+      },
+      "pageSegmentId": "seg-1-init",
+      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
+      "sessionId": "RI-20260904-35KW1X"
+    },
+    {
+      "id": "ev-t2tqrz8",
+      "timestamp": 1788558104094,
+      "isoTime": "2026-09-04T21:41:44.094Z",
       "category": "CONSOLE",
       "type": "CONSOLE_LOG",
       "severity": "INFO",
@@ -1810,323 +997,114 @@
       "correlationId": null,
       "payload": {
         "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_FIRST_RENDER {\"renderCount\":1,\"hasMap\":false,\"visible\":false}",
+        "message": "[3DZ Lifecycle] SPATIAL_APPLY_HANDLER_ENTER {\"timestamp\":1788558104093}",
         "classification": "CONSOLE",
         "argCount": 2
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-pmy34gy",
-      "timestamp": 1788555641074,
-      "isoTime": "2026-09-04T21:00:41.074Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_HTTP",
+      "id": "ev-tb4i93f",
+      "timestamp": 1788558104097,
+      "isoTime": "2026-09-04T21:41:44.097Z",
+      "category": "NETWORK",
+      "type": "FETCH_START",
       "severity": "INFO",
       "source": "runtime-core",
-      "correlationId": null,
+      "correlationId": "REQ-1788558104097-5",
       "payload": {
-        "url": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg",
-        "naturalWidth": 16384,
-        "naturalHeight": 8192,
-        "durationMs": 5970
+        "method": "POST",
+        "url": "/api/projects/prj-free-f4370ccd/spatial/apply",
+        "initiator": "fetch",
+        "startTime": 1788558104097
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-q3iomrs",
-      "timestamp": 1788555641075,
-      "isoTime": "2026-09-04T21:00:41.075Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
+      "id": "ev-txus5qk",
+      "timestamp": 1788558112437,
+      "isoTime": "2026-09-04T21:41:52.437Z",
+      "category": "NETWORK",
+      "type": "FETCH_START",
       "severity": "INFO",
       "source": "runtime-core",
-      "correlationId": null,
+      "correlationId": "REQ-1788558112437-8",
       "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_MATERIAL_MAP_ASSIGNED {\"materialId\":10,\"textureId\":8,\"slot\":\"CENTER\"}",
-        "classification": "CONSOLE",
-        "argCount": 2
+        "method": "GET",
+        "url": "/api/free-funnel/projects/prj-free-f4370ccd",
+        "initiator": "fetch",
+        "startTime": 1788558112437
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-qq28bem",
-      "timestamp": 1788555638149,
-      "isoTime": "2026-09-04T21:00:38.149Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_RESOLVER_ENTER",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "viewpointId": "vp-center",
-        "slot": "CENTER",
-        "hasDerivatives": false,
-        "deviceProfile": "desktop"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-qufs2d7",
-      "timestamp": 1788555641076,
-      "isoTime": "2026-09-04T21:00:41.076Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_MATERIAL_VISIBLE {\"visible\":true,\"opacity\":1,\"slot\":\"CENTER\"}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-rt3661c",
-      "timestamp": 1788555643234,
-      "isoTime": "2026-09-04T21:00:43.234Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_DECODED",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "width": 16384,
-        "height": 8192
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-sc9ivyf",
-      "timestamp": 1788555639519,
-      "isoTime": "2026-09-04T21:00:39.519Z",
+      "id": "ev-ux1w0nj",
+      "timestamp": 1788558104467,
+      "isoTime": "2026-09-04T21:41:44.467Z",
       "category": "SPATIAL",
       "type": "SPATIAL_TEXTURE_RESOLVED",
       "severity": "INFO",
       "source": "runtime-core",
       "correlationId": null,
       "payload": {
-        "url": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg",
+        "url": "/uploads/booth_8k_desktop_1788558045958_d1b934.jpg",
         "selectedField": "derivatives.desktop8k.url",
         "resolution": "8K",
         "viewpointId": "vp-center",
         "viewpointRole": "CENTER",
-        "sanitizedUrl": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg"
+        "sanitizedUrl": "/uploads/booth_8k_desktop_1788558045958_d1b934.jpg"
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-sz3psyb",
-      "timestamp": 1788555663915,
-      "isoTime": "2026-09-04T21:01:03.915Z",
-      "category": "NETWORK",
-      "type": "FETCH_START",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555663915-1",
-      "payload": {
-        "method": "GET",
-        "url": "/api/free-funnel/projects/prj-free-f4370ccd",
-        "initiator": "fetch",
-        "startTime": 1788555663915
-      },
-      "pageSegmentId": "seg-3-ipbu",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-twxiwjg",
-      "timestamp": 1788555641075,
-      "isoTime": "2026-09-04T21:00:41.075Z",
+      "id": "ev-uyejmv4",
+      "timestamp": 1788558104092,
+      "isoTime": "2026-09-04T21:41:44.092Z",
       "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_DECODED",
+      "type": "SPATIAL_APPLY_CLICK",
       "severity": "INFO",
       "source": "runtime-core",
       "correlationId": null,
       "payload": {
-        "width": 16384,
-        "height": 8192
+        "candidateId": "cand-spatial-1788558010617",
+        "buttonId": "btnApplySpatialBooth",
+        "timestamp": 1788558104092
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-ubvvkid",
-      "timestamp": 1788555635089,
-      "isoTime": "2026-09-04T21:00:35.089Z",
+      "id": "ev-x4n1z54",
+      "timestamp": 1788558104095,
+      "isoTime": "2026-09-04T21:41:44.095Z",
       "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_RESOLVER_ENTER",
+      "type": "SPATIAL_APPLY_CANDIDATE_RESOLVED",
       "severity": "INFO",
       "source": "runtime-core",
       "correlationId": null,
       "payload": {
-        "viewpointId": "vp-center",
-        "slot": "CENTER",
-        "hasDerivatives": true,
-        "deviceProfile": "desktop"
+        "candidateId": "cand-spatial-1788558010617",
+        "currentCandidateId": "cand-spatial-1788558010617",
+        "snapshotCandidateId": null,
+        "modalCandidateId": "cand-spatial-1788558010617"
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     },
     {
-      "id": "ev-vsmai8n",
-      "timestamp": 1788555650786,
-      "isoTime": "2026-09-04T21:00:50.786Z",
-      "category": "NETWORK",
-      "type": "FETCH_COMPLETE",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555650681-6",
-      "payload": {
-        "method": "GET",
-        "url": "/api/projects/prj-free-f4370ccd/viewpoints",
-        "status": 200,
-        "ok": true,
-        "durationMs": 104,
-        "contentType": "application/json; charset=utf-8",
-        "responseSize": 32,
-        "initiator": "fetch"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-wl7b4jx",
-      "timestamp": 1788555664695,
-      "isoTime": "2026-09-04T21:01:04.695Z",
-      "category": "NETWORK",
-      "type": "FETCH_START",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555664695-4",
-      "payload": {
-        "method": "POST",
-        "url": "/api/free-funnel/analytics/event",
-        "initiator": "fetch",
-        "startTime": 1788555664695
-      },
-      "pageSegmentId": "seg-3-ipbu",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-woiawps",
-      "timestamp": 1788555635107,
-      "isoTime": "2026-09-04T21:00:35.107Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_RESOLVER_ENTER",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "viewpointId": "vp-right",
-        "slot": "RIGHT",
-        "hasDerivatives": false,
-        "deviceProfile": "desktop"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-wz6ymgh",
-      "timestamp": 1788555641076,
-      "isoTime": "2026-09-04T21:00:41.076Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_MATERIAL_MAP_ASSIGNED",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "materialId": 10,
-        "textureId": 8,
-        "slot": "CENTER"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-xjks2qh",
-      "timestamp": 1788555664685,
-      "isoTime": "2026-09-04T21:01:04.685Z",
-      "category": "WEBGL",
-      "type": "WEBGL_CONTEXT_INITIALIZED",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "canvasId": "drawer-3d-canvas",
-        "type": "webgl2",
-        "maxTextureSize": 16384,
-        "maxRenderbufferSize": 16384
-      },
-      "pageSegmentId": "seg-3-ipbu",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-y033nma",
-      "timestamp": 1788555635105,
-      "isoTime": "2026-09-04T21:00:35.105Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_RESOLVER_ENTER",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "viewpointId": "vp-left",
-        "slot": "LEFT",
-        "hasDerivatives": false,
-        "deviceProfile": "desktop"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-y2fvhi1",
-      "timestamp": 1788555650682,
-      "isoTime": "2026-09-04T21:00:50.682Z",
-      "category": "NETWORK",
-      "type": "FETCH_START",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555650682-8",
-      "payload": {
-        "method": "GET",
-        "url": "/api/free-funnel/projects/prj-free-f4370ccd",
-        "initiator": "fetch",
-        "startTime": 1788555650682
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-ydf1qmd",
-      "timestamp": 1788555639519,
-      "isoTime": "2026-09-04T21:00:39.519Z",
+      "id": "ev-xd619x7",
+      "timestamp": 1788558104468,
+      "isoTime": "2026-09-04T21:41:44.468Z",
       "category": "SPATIAL",
       "type": "SPATIAL_TEXTURE_RESOLVER_ENTER",
       "severity": "INFO",
@@ -2140,133 +1118,22 @@
       },
       "pageSegmentId": "seg-1-init",
       "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-ylqpqa3",
-      "timestamp": 1788555664091,
-      "isoTime": "2026-09-04T21:01:04.091Z",
-      "category": "NETWORK",
-      "type": "FETCH_COMPLETE",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555663915-1",
-      "payload": {
-        "method": "GET",
-        "url": "/api/free-funnel/projects/prj-free-f4370ccd",
-        "status": 200,
-        "ok": true,
-        "durationMs": 176,
-        "contentType": "application/json; charset=utf-8",
-        "responseSize": 0,
-        "initiator": "fetch"
-      },
-      "pageSegmentId": "seg-3-ipbu",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-yu8dtwg",
-      "timestamp": 1788555638149,
-      "isoTime": "2026-09-04T21:00:38.149Z",
-      "category": "CONSOLE",
-      "type": "CONSOLE_LOG",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "level": "log",
-        "message": "[3DZ Lifecycle] SPATIAL_TEXTURE_RESOLVER_ENTER {\"viewpointId\":\"vp-center\",\"slot\":\"CENTER\",\"hasDerivatives\":false,\"deviceProfile\":\"desktop\"}",
-        "classification": "CONSOLE",
-        "argCount": 2
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-zaq2yom",
-      "timestamp": 1788555643235,
-      "isoTime": "2026-09-04T21:00:43.235Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_TEXTURE_HTTP",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "url": "/uploads/booth_8k_desktop_1788555595253_4820cb.jpg",
-        "naturalWidth": 16384,
-        "naturalHeight": 8192,
-        "durationMs": 8127
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-zmceow9",
-      "timestamp": 1788555641076,
-      "isoTime": "2026-09-04T21:00:41.076Z",
-      "category": "SPATIAL",
-      "type": "SPATIAL_MATERIAL_VISIBLE",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": null,
-      "payload": {
-        "visible": true,
-        "opacity": 1,
-        "slot": "CENTER"
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
-    },
-    {
-      "id": "ev-zmylf6f",
-      "timestamp": 1788555650493,
-      "isoTime": "2026-09-04T21:00:50.493Z",
-      "category": "NETWORK",
-      "type": "FETCH_START",
-      "severity": "INFO",
-      "source": "runtime-core",
-      "correlationId": "REQ-1788555650493-5",
-      "payload": {
-        "method": "POST",
-        "url": "/api/projects/prj-free-f4370ccd/spatial/apply",
-        "initiator": "fetch",
-        "startTime": 1788555650493
-      },
-      "pageSegmentId": "seg-1-init",
-      "url": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-      "sessionId": "RI-20260904-73GO3B"
+      "sessionId": "RI-20260904-35KW1X"
     }
   ],
   "navigations": [
     {
-      "sessionId": "RI-20260904-73GO3B",
-      "pageSegmentId": "seg-2-chc0",
+      "sessionId": "RI-20260904-35KW1X",
+      "pageSegmentId": "seg-2-zqn3",
       "category": "NAVIGATION",
       "type": "PAGE_RELOAD",
-      "timestamp": 1788555656353,
+      "timestamp": 1788558112888,
       "payload": {
         "fromUrl": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
         "toUrl": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
         "navigationIndex": 1
       },
       "id": 3
-    },
-    {
-      "sessionId": "RI-20260904-73GO3B",
-      "pageSegmentId": "seg-3-ipbu",
-      "category": "NAVIGATION",
-      "type": "PAGE_RELOAD",
-      "timestamp": 1788555663102,
-      "payload": {
-        "fromUrl": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-        "toUrl": "https://v-show-commercial-v1-production.up.railway.app/?projectId=prj-free-f4370ccd",
-        "navigationIndex": 2
-      },
-      "id": 6
     }
   ],
   "redaction": {

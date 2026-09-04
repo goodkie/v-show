@@ -129,6 +129,7 @@ async function main() {
       { id: 'anchor-right', slot: 'RIGHT', textureUrl: texUrl }
     ];
     generatedCandidate.viewerMode = 'MULTI_VIEW_SPATIAL';
+    generatedCandidate.entryViewId = 'CENTER';
   }
 
   // 2. Launch Real Chrome Browser with Extension
@@ -190,16 +191,6 @@ async function main() {
 
     await page.bringToFront();
 
-    // 6. Open Preview Modal with Persisted Candidate
-    console.log('\n[Phase 3 — Preview] Opening Preview Modal with Candidate...');
-    await page.evaluate((cand) => {
-      window.currentSpatialCandidate = cand;
-      if (typeof openSpatialBoothPreviewModal === 'function') {
-        openSpatialBoothPreviewModal(cand);
-      }
-    }, generatedCandidate);
-    await new Promise(r => setTimeout(r, 3000));
-
     // Helper: sample visible screenshot crop for visual probe
     async function sampleVisibleProbe() {
       const shot = await page.screenshot({ encoding: 'base64' });
@@ -235,6 +226,22 @@ async function main() {
       return stats;
     }
 
+    // 6. Open Preview Modal with Persisted Candidate
+    console.log('\n[Phase 3 — Preview] Opening Preview Modal with Candidate...');
+    await page.evaluate((cand) => {
+      window.currentSpatialCandidate = cand;
+      if (typeof openSpatialBoothPreviewModal === 'function') {
+        openSpatialBoothPreviewModal(cand);
+      }
+    }, generatedCandidate);
+
+    // Wait for spatial preview texture to load & render
+    console.log('Waiting for Spatial Preview texture load and render...');
+    await page.waitForFunction(() => {
+      return Boolean(window.spatialMatCurrent && window.spatialMatCurrent.visible && window.spatialMatCurrent.map);
+    }, { timeout: 20000 }).catch(e => console.warn('Texture wait timeout:', e.message));
+
+    await new Promise(r => setTimeout(r, 2000));
     await sampleVisibleProbe();
 
     // 01_CENTER_NEUTRAL.png
@@ -254,8 +261,9 @@ async function main() {
     if (canvasBox) {
       await page.mouse.move(canvasBox.x, canvasBox.y);
       await page.mouse.down();
-      await page.mouse.move(canvasBox.x + 180, canvasBox.y, { steps: 12 });
-      await new Promise(r => setTimeout(r, 200));
+      // Drag rightward to turn camera look left (within local soft range)
+      await page.mouse.move(canvasBox.x + 120, canvasBox.y, { steps: 10 });
+      await new Promise(r => setTimeout(r, 100));
       await page.mouse.up();
     }
     await new Promise(r => setTimeout(r, 1000));
@@ -270,8 +278,9 @@ async function main() {
     if (canvasBox) {
       await page.mouse.move(canvasBox.x, canvasBox.y);
       await page.mouse.down();
-      await page.mouse.move(canvasBox.x - 300, canvasBox.y, { steps: 15 });
-      await new Promise(r => setTimeout(r, 200));
+      // Drag leftward across center to look right
+      await page.mouse.move(canvasBox.x - 240, canvasBox.y, { steps: 15 });
+      await new Promise(r => setTimeout(r, 100));
       await page.mouse.up();
     }
     await new Promise(r => setTimeout(r, 1000));
@@ -283,11 +292,13 @@ async function main() {
 
     // 9. Continuous Drag / Viewpoint Transition to RIGHT_CENTER
     console.log('\n[Phase 5 — Travel Transition] Transitioning to RIGHT_CENTER Viewpoint...');
+    // Continuous drag across threshold or anchor navigation
     await page.evaluate(() => {
       if (typeof selectSpatialPreviewAnchor === 'function') {
         selectSpatialPreviewAnchor(2); // RIGHT viewpoint
       }
     });
+    // Wait for transition animation / settling
     await new Promise(r => setTimeout(r, 2000));
     await sampleVisibleProbe();
 
@@ -300,8 +311,8 @@ async function main() {
     if (canvasBox) {
       await page.mouse.move(canvasBox.x, canvasBox.y);
       await page.mouse.down();
-      await page.mouse.move(canvasBox.x - 200, canvasBox.y + 30, { steps: 12 });
-      await new Promise(r => setTimeout(r, 200));
+      await page.mouse.move(canvasBox.x - 180, canvasBox.y + 40, { steps: 12 });
+      await new Promise(r => setTimeout(r, 100));
       await page.mouse.up();
     }
     await new Promise(r => setTimeout(r, 1000));
@@ -350,7 +361,7 @@ async function main() {
 
       return {
         trace,
-        lifecycleEvents: lifecycle.map(e => e.stage || e.event || e.type),
+        lifecycleEvents: lifecycle.map(e => e.name || e.stage || e.event || e.type),
         clientViewerMode,
         clientActiveSpatialVersion,
         hasSpatialRail,
