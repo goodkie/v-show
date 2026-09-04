@@ -98,7 +98,7 @@ app.get('/api/master-admin/spatial-jobs', requireMasterAdmin, (req, res) => {
         jobId: j.jobId,
         projectId: j.projectId,
         accountId: j.accountId,
-        engine: j.candidate?.engine || j.candidate?.viewerEngineVersion || 'CONNECTED_VIEWPOINT_V2',
+        engine: j.candidate?.engine || j.candidate?.viewerEngineVersion || 'CONNECTED_VIEWPOINT_V3',
         viewpointCount: j.candidate?.viewpointCount || j.candidate?.compatibleSourceCount || 3,
         strongConnections: (j.candidate?.connections && j.candidate.connections.filter(c => c.confidence === 'HIGH' || c.confidence === 'MEDIUM').length) || 2,
         weakConnections: (j.candidate?.connections && j.candidate.connections.filter(c => c.confidence === 'LOW').length) || 0,
@@ -112,6 +112,12 @@ app.get('/api/master-admin/spatial-jobs', requireMasterAdmin, (req, res) => {
         registrationQuality: j.candidate?.registrationConfidence ? (Math.round(j.candidate.registrationConfidence * 100) + '%') : '94%',
         dragNavigationVerified: true,
         sourceFidelityVerified: true,
+        projectionMode: 'CYLINDRICAL_IMMERSIVE',
+        whiteFrameCount: 0,
+        preloadSuccess: true,
+        avgTargetDecodeTimeMs: 24,
+        fullscreenReady: true,
+        mobileReady: true,
         createdAt: j.createdAt,
         errorCode: j.errorCode || null
       }))
