@@ -1,26 +1,78 @@
 /**
- * Runtime Inspector — Page Bridge (Executes in Web Application context)
+ * Runtime Inspector V1.1 — Page Bridge
  * Module: extension/page-bridge.js
+ *
+ * Runs directly in Web Application execution context.
+ * Streams real-time events to Content Script.
  */
 
 (function () {
-  if (window.__RI_BRIDGE_INITIALIZED__) return;
-  window.__RI_BRIDGE_INITIALIZED__ = true;
+  if (window.__RI_BRIDGE_V1_1_INITIALIZED__) return;
+  window.__RI_BRIDGE_V1_1_INITIALIZED__ = true;
 
-  console.log('[Runtime Inspector] Page Bridge initialized in web context.');
+  console.log('[Runtime Inspector V1.1] Page Bridge loaded in page context.');
 
-  // Check if Core is loaded or instantiate bundled fallback
-  if (typeof window.RuntimeInspectorCore !== 'undefined') {
+  // Initialize universal core if present
+  if (typeof window.RuntimeInspectorCore !== 'undefined' && !window.RI_CORE) {
     window.RI_CORE = new window.RuntimeInspectorCore();
     if (typeof window.ThreeDZAdapter !== 'undefined') {
       window.RI_CORE.registerAdapter(new window.ThreeDZAdapter());
     }
     window.RI_CORE.init();
+    window.RI_CORE.startRecording();
   }
 
-  // Listen to content-script requests
+  // Intercept and stream events to content script
+  if (window.__RUNTIME_INSPECTOR__ && window.__RUNTIME_INSPECTOR__.eventBus) {
+    const originalEmit = window.__RUNTIME_INSPECTOR__.eventBus.emit.bind(window.__RUNTIME_INSPECTOR__.eventBus);
+    window.__RUNTIME_INSPECTOR__.eventBus.emit = function (category, type, payload, options) {
+      const ev = originalEmit(category, type, payload, options);
+      window.postMessage({ type: 'RI_EMIT_EVENT', event: ev }, '*');
+      return ev;
+    };
+  }
+
+  // Monitor SPA History navigation (pushState, replaceState, popstate)
+  let lastHref = window.location.href;
+  const notifySpaNav = (type, state) => {
+    const currentHref = window.location.href;
+    if (currentHref !== lastHref) {
+      window.postMessage({
+        type: 'RI_SPA_ROUTE_CHANGE',
+        payload: {
+          fromUrl: lastHref,
+          toUrl: currentHref,
+          action: type,
+          state
+        }
+      }, '*');
+      lastHref = currentHref;
+    }
+  };
+
+  const origPushState = history.pushState;
+  history.pushState = function (state, title, url) {
+    origPushState.apply(this, arguments);
+    notifySpaNav('pushState', state);
+  };
+
+  const origReplaceState = history.replaceState;
+  history.replaceState = function (state, title, url) {
+    origReplaceState.apply(this, arguments);
+    notifySpaNav('replaceState', state);
+  };
+
+  window.addEventListener('popstate', (e) => {
+    notifySpaNav('popstate', e.state);
+  });
+
+  // Listen to messages from content script
   window.addEventListener('message', (event) => {
     if (!event.data) return;
+
+    if (event.data.type === 'RI_COMMAND_START') {
+      if (window.RI_CORE) window.RI_CORE.startRecording();
+    }
 
     if (event.data.type === 'RI_QUERY_STATE') {
       const state = {
@@ -28,24 +80,11 @@
         sessionId: window.__RUNTIME_INSPECTOR__?.sessionId || 'NOT_INITIALIZED',
         isRecording: window.__RUNTIME_INSPECTOR__?.isRecording ? window.__RUNTIME_INSPECTOR__.isRecording() : false,
         eventCount: window.__RUNTIME_INSPECTOR__?.getEvents().length || 0,
-        errorCount: window.__RUNTIME_INSPECTOR__?.getErrors().length || 0,
-        networkCount: window.__RUNTIME_INSPECTOR__?.getNetwork().length || 0,
         adapter: window.RI_CORE?.activeAdapter?.id || 'GENERIC',
         url: window.location.href,
         title: document.title
       };
       window.postMessage({ type: 'RI_STATE_RESPONSE', payload: state }, '*');
-    }
-
-    if (event.data.type === 'RI_EXECUTE_ACTION') {
-      const action = event.data.action;
-      if (action === 'START_RECORDING' && window.RI_CORE) {
-        window.RI_CORE.startRecording();
-      } else if (action === 'STOP_RECORDING' && window.RI_CORE) {
-        window.RI_CORE.stopRecording();
-      } else if (action === 'MARK_PROBLEM' && window.RI_CORE) {
-        window.RI_CORE.markProblem(event.data.payload?.annotation || 'User Problem Marker');
-      }
     }
   });
 })();

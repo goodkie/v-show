@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Runtime Inspector (RI)",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Universal Browser & Web Application Runtime Diagnostics Platform",
   "permissions": [
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "webNavigation"
   ],
-  "optional_host_permissions": [
+  "optional_permissions": [
     "https://*/*",
     "http://*/*"
   ],
@@ -38,8 +39,8 @@
     {
       "resources": [
         "page-bridge.js",
-        "../core/*",
-        "../adapters/*"
+        "core/*",
+        "adapters/*"
       ],
       "matches": ["<all_urls>"]
     }

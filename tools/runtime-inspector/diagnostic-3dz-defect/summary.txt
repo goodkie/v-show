@@ -7,10 +7,10 @@ APP_ID=3dz-virtual-tradeshow
 ENVIRONMENT=localhost
 URL=https://v-show-commercial-v1-production.up.railway.app/app/admin/booths
 
-SESSION_ID=RI-20260904-nbik67
-SESSION_START=2026-09-04T18:01:57.261Z
-CAPTURE_TIME=2026-09-04T18:01:57.268Z
-DURATION_MS=7
+SESSION_ID=RI-20260904-vsf1dc
+SESSION_START=2026-09-04T19:05:36.071Z
+CAPTURE_TIME=2026-09-04T19:05:36.079Z
+DURATION_MS=8
 PRIVACY_MODE=STANDARD
 
 ------------------------------------------------------------

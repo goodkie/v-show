@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Runtime Inspector</title>
+  <title>Runtime Inspector V1.1</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
@@ -11,25 +11,45 @@
       <span class="badge-ri">RI</span>
       <span class="title">Runtime Inspector</span>
     </div>
-    <span id="envBadge" class="badge-env">DETECTING</span>
+    <span id="sessionStatusBadge" class="badge-status badge-idle">IDLE</span>
   </div>
 
+  <!-- Crash Recovery / Paused Notice Banner -->
+  <div id="recoveryBanner" class="alert-banner" style="display: none;">
+    <div id="recoveryText" class="alert-text">Recovered recording session</div>
+    <div class="alert-buttons">
+      <button id="btnResumeSession" class="btn-xs btn-primary">Resume</button>
+      <button id="btnStopSaveSession" class="btn-xs btn-warn">Stop & Save</button>
+      <button id="btnDiscardSession" class="btn-xs btn-secondary">Discard</button>
+    </div>
+  </div>
+
+  <!-- Primary Session Info Card -->
   <div class="status-card">
-    <div class="row">
-      <span class="label">App:</span>
-      <span id="appName" class="val">Loading...</span>
-    </div>
-    <div class="row">
-      <span class="label">Adapter:</span>
-      <span id="adapterName" class="val">None</span>
-    </div>
     <div class="row">
       <span class="label">Session:</span>
       <span id="sessionId" class="val-mono">--</span>
     </div>
+    <div class="row">
+      <span class="label">Duration:</span>
+      <span id="sessionDuration" class="val-bold">00:00</span>
+    </div>
+    <div class="row">
+      <span class="label">Adapter:</span>
+      <span id="adapterName" class="val">3DZ / Generic</span>
+    </div>
   </div>
 
+  <!-- Telemetry Metrics Grid -->
   <div class="telemetry-grid">
+    <div class="telemetry-box">
+      <div class="num" id="pageCount">0</div>
+      <div class="lbl">Pages</div>
+    </div>
+    <div class="telemetry-box">
+      <div class="num" id="eventCount">0</div>
+      <div class="lbl">Events</div>
+    </div>
     <div class="telemetry-box">
       <div class="num" id="errCount">0</div>
       <div class="lbl">Errors</div>
@@ -38,22 +58,27 @@
       <div class="num" id="netCount">0</div>
       <div class="lbl">Network</div>
     </div>
-    <div class="telemetry-box">
-      <div class="num" id="eventCount">0</div>
-      <div class="lbl">Events</div>
-    </div>
   </div>
 
+  <!-- Main Controls -->
   <div class="actions">
     <button id="btnToggleRecord" class="btn btn-primary">Start Recording</button>
-    <button id="btnMarkProblem" class="btn btn-warn">Mark Problem Here</button>
-    <button id="btnSnapshot" class="btn btn-secondary">Capture Snapshot</button>
-    <button id="btnExport" class="btn btn-success">Export Diagnostic</button>
+    <div id="recordExplanation" class="hint-text">
+      Records runtime activity across page navigation and reloads until you press Stop.
+    </div>
+    <button id="btnMarkProblem" class="btn btn-warn" style="display: none;">Mark Problem Here</button>
+    <button id="btnExport" class="btn btn-success" style="display: none;">Export Diagnostic</button>
+  </div>
+
+  <!-- Recent Sessions Section -->
+  <div class="section-title">Recent Sessions (Latest 5)</div>
+  <div id="recentSessionsList" class="recent-list">
+    <div class="empty-state">No recent sessions recorded yet.</div>
   </div>
 
   <div class="footer">
     <a href="#" id="linkOptions">Options & Domains</a>
-    <a href="#" id="linkInspector">Details Page</a>
+    <a href="#" id="linkInspector">Open Full Inspector</a>
   </div>
 
   <script src="popup.js"></script>
