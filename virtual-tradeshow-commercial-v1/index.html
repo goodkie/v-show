@@ -14856,7 +14856,12 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
           };
           img.onerror = () => {
             console.warn('[Spatial Image Load Error]', targetUrl);
-            resolve(false);
+            const fallbackUrl = '/assets/spatial-booth/12-shot-360-capture-guide.svg';
+            if (img.src && !img.src.includes('12-shot-360-capture-guide.svg')) {
+              img.src = fallbackUrl;
+            } else {
+              resolve(false);
+            }
           };
           img.src = targetUrl;
         });
@@ -15605,6 +15610,11 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         };
         img.onerror = () => {
           console.warn('[Panoramic Texture Load Error]', textureUrl);
+          const fallbackUrl = '/assets/spatial-booth/12-shot-360-capture-guide.svg';
+          if (img.src && !img.src.includes('12-shot-360-capture-guide.svg')) {
+            console.log('[Panoramic Fallback to Bundled Asset]', fallbackUrl);
+            img.src = fallbackUrl;
+          }
         };
         img.src = textureUrl;
       }
