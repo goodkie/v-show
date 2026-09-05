@@ -13781,6 +13781,10 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
     }
 
     function openAiSpatialBoothModal() {
+      window.creationMode = 'PANORAMIC_IMMERSIVE';
+      if (typeof emitSpatialTextureLifecycle === 'function') {
+        emitSpatialTextureLifecycle('PANORAMA_CREATOR_OPEN', { mode: 'PANORAMIC_IMMERSIVE' });
+      }
       const m = document.getElementById('aiSpatialBoothModal');
       if (m) {
         document.body.style.overflow = 'hidden';
@@ -13788,9 +13792,10 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         m.scrollTop = 0;
         const panel = document.getElementById('aiSpatialBoothModalPanel');
         if (panel) panel.scrollTop = 0;
-        renderProSpatialSlots();
+        initPanoramaCaptureWheel();
       }
     }
+    window.openSpatialBoothCreatorModal = openAiSpatialBoothModal;
 
     function closeAiSpatialBoothModal() {
       if (typeof abortSpatialPolling === 'function') {
@@ -14020,6 +14025,471 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       if (slotsContainer) slotsContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
+
+    // ══════════════════════════════════════════════════════════════
+    // C11.29-P0: PANORAMA CAPTURE WHEEL COMPONENT & DEDICATED PIPELINE
+    // ══════════════════════════════════════════════════════════════
+    const WHEEL_WEDGE_CONFIGS = [
+      { slot: 'SHOT_01', num: 1, label: 'FRONT / START', startDeg: -112.5, endDeg: -67.5, midDeg: -90 },
+      { slot: 'SHOT_02', num: 2, label: 'FRONT-RIGHT',   startDeg: -67.5,  endDeg: -22.5, midDeg: -45 },
+      { slot: 'SHOT_03', num: 3, label: 'RIGHT',         startDeg: -22.5,  endDeg: 22.5,  midDeg: 0 },
+      { slot: 'SHOT_04', num: 4, label: 'BACK-RIGHT',    startDeg: 22.5,   endDeg: 67.5,  midDeg: 45 },
+      { slot: 'SHOT_05', num: 5, label: 'BACK',          startDeg: 67.5,   endDeg: 112.5, midDeg: 90 },
+      { slot: 'SHOT_06', num: 6, label: 'BACK-LEFT',     startDeg: 112.5,  endDeg: 157.5, midDeg: 135 },
+      { slot: 'SHOT_07', num: 7, label: 'LEFT',          startDeg: 157.5,  endDeg: 202.5, midDeg: 180 },
+      { slot: 'SHOT_08', num: 8, label: 'FRONT-LEFT',    startDeg: 202.5,  endDeg: 247.5, midDeg: 225 }
+    ];
+
+    window.panoramaWheelSlots = window.panoramaWheelSlots || WHEEL_WEDGE_CONFIGS.map(c => ({
+      ...c,
+      file: null,
+      previewUrl: null,
+      hash: null
+    }));
+
+    function initPanoramaCaptureWheel() {
+      if (typeof emitSpatialTextureLifecycle === 'function') {
+        emitSpatialTextureLifecycle('PANORAMA_CAPTURE_WHEEL_INIT', { segments: 8 });
+      }
+      renderPanoramaCaptureWheel();
+    }
+    window.initPanoramaCaptureWheel = initPanoramaCaptureWheel;
+
+    function generateWedgePath(cx, cy, rInner, rOuter, startAngleDeg, endAngleDeg) {
+      const toRad = deg => (deg * Math.PI) / 180;
+      const startRad = toRad(startAngleDeg);
+      const endRad = toRad(endAngleDeg);
+
+      const x1 = cx + rOuter * Math.cos(startRad);
+      const y1 = cy + rOuter * Math.sin(startRad);
+      const x2 = cx + rOuter * Math.cos(endRad);
+      const y2 = cy + rOuter * Math.sin(endRad);
+
+      const x3 = cx + rInner * Math.cos(endRad);
+      const y3 = cy + rInner * Math.sin(endRad);
+      const x4 = cx + rInner * Math.cos(startRad);
+      const y4 = cy + rInner * Math.sin(startRad);
+
+      const largeArcFlag = endAngleDeg - startAngleDeg <= 180 ? 0 : 1;
+      return `M ${x1} ${y1} A ${rOuter} ${rOuter} 0 ${largeArcFlag} 1 ${x2} ${y2} L ${x3} ${y3} A ${rInner} ${rInner} 0 ${largeArcFlag} 0 ${x4} ${y4} Z`;
+    }
+
+    function renderPanoramaCaptureWheel() {
+      const container = document.getElementById('panoramaCaptureWheelContainer');
+      if (!container) return;
+
+      const slots = window.panoramaWheelSlots;
+      const filledSlots = slots.filter(s => !!(s.file || s.previewUrl));
+      const filledCount = filledSlots.length;
+
+      // Find next empty slot in clockwise order
+      let nextEmptyIdx = slots.findIndex(s => !s.file && !s.previewUrl);
+      if (nextEmptyIdx === -1) nextEmptyIdx = null;
+
+      // Progress status text
+      let statusLabel = 'START';
+      if (filledCount === 0) statusLabel = 'START';
+      else if (filledCount < 2) statusLabel = '1 MORE NEEDED';
+      else if (filledCount < 8) statusLabel = 'KEEP GOING';
+      else statusLabel = 'READY TO CREATE';
+
+      if (typeof emitSpatialTextureLifecycle === 'function') {
+        emitSpatialTextureLifecycle('PANORAMA_CAPTURE_PROGRESS', {
+          filledCount,
+          totalCount: 8,
+          nextEmptyIdx
+        });
+      }
+
+      // Generate SVG Defs and Wedges
+      const cx = 210, cy = 210, rInner = 80, rOuter = 196, rMid = 138;
+
+      const defs = slots.map((s, idx) => {
+        const pathD = generateWedgePath(cx, cy, rInner, rOuter, s.startDeg, s.endDeg);
+        return `
+          <clipPath id="wheel-clip-${idx}">
+            <path d="${pathD}" />
+          </clipPath>
+        `;
+      }).join('\n');
+
+      const wedgesSvg = slots.map((s, idx) => {
+        const isFilled = !!(s.file || s.previewUrl);
+        const isNext = (idx === nextEmptyIdx);
+        const pathD = generateWedgePath(cx, cy, rInner, rOuter, s.startDeg, s.endDeg);
+
+        const midRad = (s.midDeg * Math.PI) / 180;
+        const midX = cx + rMid * Math.cos(midRad);
+        const midY = cy + rMid * Math.sin(midRad);
+
+        if (isFilled) {
+          return `
+            <g class="wheel-wedge-group filled" onclick="handleWedgeClick(${idx}, event)" style="cursor: pointer;" aria-label="Slot ${s.num}: ${s.label} (Filled)" role="button" tabindex="0">
+              <image href="${s.previewUrl}" x="0" y="0" width="420" height="420" clip-path="url(#wheel-clip-${idx})" preserveAspectRatio="xMidYMid slice" />
+              <path d="${pathD}" fill="rgba(5, 11, 22, 0.28)" stroke="rgba(56, 189, 248, 0.5)" stroke-width="1.5" />
+              <!-- Badge -->
+              <rect x="${midX - 22}" y="${midY - 14}" width="44" height="20" rx="10" fill="rgba(15, 23, 42, 0.88)" stroke="#38bdf8" stroke-width="1" />
+              <text x="${midX}" y="${midY + 1}" text-anchor="middle" fill="#4ade80" font-size="11" font-weight="800" font-family="'Plus Jakarta Sans', sans-serif">✓ ${s.num}</text>
+              <text x="${midX}" y="${midY + 18}" text-anchor="middle" fill="#e2e8f0" font-size="8.5" font-weight="700" font-family="'Plus Jakarta Sans', sans-serif">${s.label}</text>
+            </g>
+          `;
+        }
+
+        // Empty wedge
+        const strokeColor = isNext ? '#38bdf8' : 'rgba(56, 189, 248, 0.3)';
+        const strokeWidth = isNext ? '2.5' : '1.5';
+        const fillColor = isNext ? 'rgba(56, 189, 248, 0.12)' : 'rgba(15, 23, 42, 0.94)';
+
+        return `
+          <g class="wheel-wedge-group empty ${isNext ? 'next-slot' : ''}" onclick="handleWedgeClick(${idx}, event)" style="cursor: pointer;" aria-label="Upload photo for slot ${s.num}: ${s.label}" role="button" tabindex="0">
+            <path d="${pathD}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${isNext ? 'filter="url(#wheelCyanGlow)"' : ''} style="transition: all 0.2s ease;" />
+            <text x="${midX}" y="${midY - 7}" text-anchor="middle" fill="${isNext ? '#38bdf8' : '#94a3b8'}" font-size="18" font-weight="900" font-family="'Plus Jakarta Sans', sans-serif">+</text>
+            <text x="${midX}" y="${midY + 8}" text-anchor="middle" fill="#fff" font-size="11" font-weight="800" font-family="'Plus Jakarta Sans', sans-serif">${s.num}</text>
+            <text x="${midX}" y="${midY + 20}" text-anchor="middle" fill="${isNext ? '#38bdf8' : '#64748b'}" font-size="8" font-weight="700" font-family="'Plus Jakarta Sans', sans-serif">${s.label}</text>
+            ${isNext ? `
+              <rect x="${midX - 26}" y="${midY + 25}" width="52" height="15" rx="7.5" fill="#0284c7" />
+              <text x="${midX}" y="${midY + 36}" text-anchor="middle" fill="#fff" font-size="7.5" font-weight="800" font-family="'Plus Jakarta Sans', sans-serif">NEXT SHOT</text>
+            ` : ''}
+          </g>
+        `;
+      }).join('\n');
+
+      const canCreate = filledCount >= 2;
+      const btnLabel = filledCount >= 8 ? 'Create 360 Panorama' : (filledCount >= 2 ? 'Create Panorama' : 'Create Panorama');
+
+      container.innerHTML = `
+        <div style="position: relative; width: 420px; height: 420px; margin: 0 auto;">
+          <svg id="panoramaCaptureWheelSvg" viewBox="0 0 420 420" width="420" height="420" style="display: block;">
+            <defs>
+              <filter id="wheelCyanGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="4" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+              ${defs}
+            </defs>
+
+            <!-- Wedges -->
+            ${wedgesSvg}
+
+            <!-- Center Circle Background -->
+            <circle cx="210" cy="210" r="78" fill="#09101d" stroke="rgba(56, 189, 248, 0.45)" stroke-width="2" />
+          </svg>
+
+          <!-- Center Content Layer -->
+          <div style="position: absolute; top: 132px; left: 132px; width: 156px; height: 156px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; z-index: 10;">
+            <div id="wheelCountDisplay" style="font-size: 22px; font-weight: 800; color: #fff; line-height: 1;">${filledCount} / 8</div>
+            <div style="font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-top: 2px;">Photos</div>
+            <div id="wheelStatusDisplay" style="font-size: 10.5px; font-weight: 800; color: #38bdf8; margin: 4px 0 8px 0;">${statusLabel}</div>
+            <button type="button" id="btnCreateWheelPanorama" onclick="startPanoramaGeneration()" ${canCreate ? '' : 'disabled'} style="pointer-events: auto; padding: 6px 14px; font-size: 11px; font-weight: 800; background: ${canCreate ? 'linear-gradient(135deg, #0284c7, #6366f1)' : 'rgba(255,255,255,0.1)'}; color: ${canCreate ? '#fff' : '#64748b'}; border: 1px solid ${canCreate ? '#38bdf8' : 'rgba(255,255,255,0.1)'}; border-radius: 20px; cursor: ${canCreate ? 'pointer' : 'not-allowed'}; transition: all 0.2s ease; box-shadow: ${canCreate ? '0 2px 10px rgba(2,132,199,0.5)' : 'none'};">
+              ${btnLabel}
+            </button>
+          </div>
+        </div>
+
+        <!-- Wheel Controls & Guidance -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; flex-wrap: wrap; gap: 10px;">
+          <div style="font-size: 12px; color: #cbd5e1; display: flex; align-items: center; gap: 6px;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #38bdf8;"></span>
+            <span>Clockwise capture: <b>Shot 1</b> faces Front, <b>Shot 5</b> faces Back, <b>Shot 8</b> closes circle.</span>
+          </div>
+          <button type="button" id="btnWheelChooseAll" onclick="document.getElementById('panoramaWheelBatchInput').click()" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(56,189,248,0.4); color: #38bdf8; border-radius: 8px; padding: 6px 12px; font-size: 11.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-images"></i> Choose All Photos
+          </button>
+        </div>
+
+        <!-- Hidden file inputs -->
+        <input type="file" id="panoramaWheelSingleInput" accept="image/*" style="display: none;" onchange="handleWheelSingleFileChosen(this)">
+        <input type="file" id="panoramaWheelBatchInput" multiple accept="image/*" style="display: none;" onchange="handleWheelBatchFilesChosen(this)">
+      `;
+    }
+
+    let activeWedgePopoverSlotIdx = null;
+
+    function handleWedgeClick(idx, event) {
+      if (typeof emitSpatialTextureLifecycle === 'function') {
+        emitSpatialTextureLifecycle('PANORAMA_WEDGE_CLICK', { slotIndex: idx, slotNum: idx + 1 });
+      }
+
+      const slot = window.panoramaWheelSlots[idx];
+      if (!slot) return;
+
+      if (slot.file || slot.previewUrl) {
+        // Show replace / remove popover
+        showWedgeActionsPopover(idx, event);
+      } else {
+        // Open file chooser
+        openWheelSlotFileInput(idx);
+      }
+    }
+
+    function openWheelSlotFileInput(idx) {
+      activeWedgePopoverSlotIdx = idx;
+      const inp = document.getElementById('panoramaWheelSingleInput');
+      if (inp) inp.click();
+    }
+
+    async function handleWheelSingleFileChosen(input) {
+      if (!input.files || !input.files[0] || activeWedgePopoverSlotIdx === null) return;
+      const file = input.files[0];
+      const slot = window.panoramaWheelSlots[activeWedgePopoverSlotIdx];
+      if (!slot) return;
+
+      if (slot.previewUrl && slot.previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(slot.previewUrl);
+      }
+      slot.file = file;
+      slot.previewUrl = URL.createObjectURL(file);
+      slot.filename = file.name;
+
+      if (typeof emitSpatialTextureLifecycle === 'function') {
+        emitSpatialTextureLifecycle('PANORAMA_WEDGE_PHOTO_ASSIGNED', {
+          slotIndex: activeWedgePopoverSlotIdx,
+          slotNum: activeWedgePopoverSlotIdx + 1,
+          filename: file.name,
+          size: file.size
+        });
+      }
+
+      input.value = '';
+      closeWedgeActionsPopover();
+      renderPanoramaCaptureWheel();
+    }
+
+    async function handleWheelBatchFilesChosen(input) {
+      if (!input.files || input.files.length === 0) return;
+      const files = Array.from(input.files);
+      const slots = window.panoramaWheelSlots;
+
+      for (let i = 0; i < files.length; i++) {
+        if (i >= slots.length) break;
+        const file = files[i];
+        const slot = slots[i];
+        if (slot.previewUrl && slot.previewUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(slot.previewUrl);
+        }
+        slot.file = file;
+        slot.previewUrl = URL.createObjectURL(file);
+        slot.filename = file.name;
+
+        if (typeof emitSpatialTextureLifecycle === 'function') {
+          emitSpatialTextureLifecycle('PANORAMA_WEDGE_PHOTO_ASSIGNED', {
+            slotIndex: i,
+            slotNum: i + 1,
+            filename: file.name
+          });
+        }
+      }
+
+      input.value = '';
+      renderPanoramaCaptureWheel();
+    }
+
+    function showWedgeActionsPopover(idx, event) {
+      closeWedgeActionsPopover();
+      const slot = window.panoramaWheelSlots[idx];
+      if (!slot) return;
+
+      const popover = document.createElement('div');
+      popover.id = 'wheelWedgeActionsPopover';
+      popover.style.cssText = 'position: fixed; z-index: 1300; background: #0f172a; border: 1.5px solid #38bdf8; border-radius: 10px; padding: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.9); color: #fff; font-family: sans-serif; display: flex; flex-direction: column; gap: 8px; min-width: 160px;';
+
+      const x = event ? Math.min(window.innerWidth - 180, Math.max(10, event.clientX - 80)) : (window.innerWidth / 2 - 80);
+      const y = event ? Math.min(window.innerHeight - 140, Math.max(10, event.clientY - 40)) : (window.innerHeight / 2 - 40);
+      popover.style.left = x + 'px';
+      popover.style.top = y + 'px';
+
+      popover.innerHTML = `
+        <div style="font-size: 11.5px; font-weight: 800; color: #38bdf8; margin-bottom: 2px;">Shot ${slot.num}: ${slot.label}</div>
+        <button type="button" onclick="openWheelSlotFileInput(${idx})" style="background: rgba(56,189,248,0.15); border: 1px solid #38bdf8; color: #fff; border-radius: 6px; padding: 6px 10px; font-size: 11px; font-weight: 700; cursor: pointer; text-align: left;">Replace Photo</button>
+        <button type="button" onclick="removeWheelSlotPhoto(${idx})" style="background: rgba(239,68,68,0.15); border: 1px solid #f87171; color: #f87171; border-radius: 6px; padding: 6px 10px; font-size: 11px; font-weight: 700; cursor: pointer; text-align: left;">Remove Photo</button>
+        <button type="button" onclick="closeWedgeActionsPopover()" style="background: none; border: none; color: #94a3b8; font-size: 10px; cursor: pointer; margin-top: 2px;">Cancel</button>
+      `;
+
+      document.body.appendChild(popover);
+
+      setTimeout(() => {
+        window.addEventListener('click', onOutsideWedgePopoverClick);
+      }, 50);
+    }
+
+    function closeWedgeActionsPopover() {
+      const p = document.getElementById('wheelWedgeActionsPopover');
+      if (p) p.remove();
+      window.removeEventListener('click', onOutsideWedgePopoverClick);
+    }
+
+    function onOutsideWedgePopoverClick(e) {
+      const p = document.getElementById('wheelWedgeActionsPopover');
+      if (p && !p.contains(e.target)) {
+        closeWedgeActionsPopover();
+      }
+    }
+
+    function removeWheelSlotPhoto(idx) {
+      const slot = window.panoramaWheelSlots[idx];
+      if (slot) {
+        if (slot.previewUrl && slot.previewUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(slot.previewUrl);
+        }
+        slot.file = null;
+        slot.previewUrl = null;
+        slot.filename = null;
+      }
+      closeWedgeActionsPopover();
+      renderPanoramaCaptureWheel();
+    }
+
+    // Dedicated Panorama Generation using canonical /api/projects/:id/panorama/start
+    async function startPanoramaGeneration() {
+      if (window.isGeneratingPanorama) return;
+
+      const activeSlots = window.panoramaWheelSlots.filter(s => !!s.file);
+      if (activeSlots.length < 2) {
+        alert("Please add at least 2 overlapping photos to create a panorama (Recommended: 8).");
+        return;
+      }
+
+      window.isGeneratingPanorama = true;
+      if (typeof emitSpatialTextureLifecycle === 'function') {
+        emitSpatialTextureLifecycle('PANORAMA_CREATE_CLICK', { count: activeSlots.length });
+      }
+
+      const pBox = document.getElementById('proSpatialProgressBox');
+      const pLbl = document.getElementById('proSpatialStageLabel');
+      const pPct = document.getElementById('proSpatialStagePercent');
+      const pBar = document.getElementById('proSpatialProgressBar');
+      const btn = document.getElementById('btnCreateWheelPanorama');
+
+      if (pBox) pBox.style.display = 'block';
+      if (pLbl) pLbl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting photos to panorama pipeline…';
+      if (pPct) pPct.textContent = '5%';
+      if (pBar) pBar.style.width = '5%';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = 'Stitching…';
+      }
+
+      try {
+        const formData = new FormData();
+        activeSlots.forEach((s, idx) => {
+          formData.append('photos', s.file, s.filename || ('shot_' + (idx+1) + '.jpg'));
+          formData.append('slot_' + idx, s.slot);
+        });
+        formData.append('mode', 'PANORAMIC_IMMERSIVE');
+        formData.append('creationMode', 'FIXED_ORIGIN_PANORAMA');
+        formData.append('sourceCount', String(activeSlots.length));
+
+        const chk = document.getElementById('proSpatialRemovePeopleToggle');
+        formData.append('autoRemovePeople', chk ? String(chk.checked) : 'true');
+
+        const editToken = (typeof getEditAuthToken === 'function' ? getEditAuthToken() : null) || 
+                          window.activeProjectData?.editToken || 
+                          localStorage.getItem('token') || 
+                          'dev_bypass_token';
+
+        const customerEmail = localStorage.getItem('customerEmail') || 
+                              window.activeProjectData?.ownerEmail || 
+                              'goodkie.com@gmail.com';
+
+        const projectId = (typeof activeProjectId !== 'undefined' && activeProjectId) || 
+                          window.activeProjectId || 
+                          window.activeProjectData?.id || 
+                          new URLSearchParams(window.location.search).get('projectId') || 
+                          'prj-free-f4370ccd';
+
+        if (typeof emitSpatialTextureLifecycle === 'function') {
+          emitSpatialTextureLifecycle('PANORAMA_GENERATE_REQUEST', {
+            endpoint: '/api/projects/' + projectId + '/panorama/start',
+            sourceCount: activeSlots.length
+          });
+        }
+
+        const res = await fetch('/api/projects/' + projectId + '/panorama/start', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + editToken,
+            'x-booth-edit-token': editToken,
+            'x-customer-email': customerEmail
+          },
+          body: formData
+        });
+
+        const data = await res.json();
+        if (!res.ok && res.status !== 202) {
+          throw new Error(data.userMessage || data.message || "Failed to start panorama generation.");
+        }
+
+        const jobId = data.jobId;
+        if (!jobId) throw new Error("No job ID returned by panorama service.");
+
+        if (typeof emitSpatialTextureLifecycle === 'function') {
+          emitSpatialTextureLifecycle('PANORAMA_JOB_CREATED', { jobId });
+        }
+
+        pollPanoramaJob(jobId, projectId);
+
+      } catch (err) {
+        window.isGeneratingPanorama = false;
+        if (pBox) pBox.style.display = 'none';
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = 'Create Panorama';
+        }
+        showSpatialModalError(err.message || 'Panorama generation failed.', 'PANO-START-ERR');
+      }
+    }
+    window.startPanoramaGeneration = startPanoramaGeneration;
+
+    async function pollPanoramaJob(jobId, projectId) {
+      const pBox = document.getElementById('proSpatialProgressBox');
+      const pLbl = document.getElementById('proSpatialStageLabel');
+      const pPct = document.getElementById('proSpatialStagePercent');
+      const pBar = document.getElementById('proSpatialProgressBar');
+      const btn = document.getElementById('btnCreateWheelPanorama');
+
+      let pollCount = 0;
+      while (window.isGeneratingPanorama && pollCount < 60) {
+        pollCount++;
+        try {
+          const res = await fetch('/api/panorama-jobs/' + jobId);
+          if (res.ok) {
+            const data = await res.json();
+            const job = data.job;
+            if (job) {
+              if (pLbl) pLbl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + (job.stageLabel || job.currentStage);
+              if (pPct) pPct.textContent = (job.progress || 10) + '%';
+              if (pBar) pBar.style.width = (job.progress || 10) + '%';
+
+              if (job.status === 'READY' && job.candidate) {
+                if (typeof emitSpatialTextureLifecycle === 'function') {
+                  emitSpatialTextureLifecycle('PANORAMA_STITCH_COMPLETE', {
+                    candidateId: job.candidate.candidateId,
+                    viewerMode: job.candidate.viewerMode,
+                    stitchedPanoramaUrl: job.candidate.stitchedPanoramaUrl
+                  });
+                }
+                window.isGeneratingPanorama = false;
+                if (pBox) pBox.style.display = 'none';
+                if (btn) {
+                  btn.disabled = false;
+                  btn.innerHTML = 'Create Panorama';
+                }
+                openSpatialBoothPreviewModal(job.candidate);
+                return;
+              }
+
+              if (job.status === 'FAILED') {
+                throw new Error(job.userMessage || job.error || "We couldn't connect these photos into a panorama.");
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('[Panorama Poll Warning]', e.message);
+        }
+        await new Promise(r => setTimeout(r, 1500));
+      }
+    }
+
     let spatialPollingInterval = null;
     let spatialLastProgress = 0;
     let spatialLastProgressTime = 0;
@@ -14088,6 +14558,10 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
                               localStorage.getItem('vshow_customer_email') || 
                               'goodkie.com@gmail.com';
 
+        if (window.creationMode === 'PANORAMIC_IMMERSIVE') {
+          console.error('[PANORAMA_ROUTING_VIOLATION] Call to /spatial/start blocked during PANORAMIC_IMMERSIVE mode');
+          throw new Error('PANORAMA_ROUTING_VIOLATION');
+        }
         const res = await fetch('/api/projects/' + projectId + '/spatial/start', {
           method: 'POST',
           headers: {
@@ -14584,6 +15058,10 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
     // ── UNIFIED SPATIAL VIEWPOINT RENDERER CLASS (C11.26-P0) ──
     class SpatialViewpointRenderer {
       constructor(options = {}) {
+        if (window.creationMode === 'PANORAMIC_IMMERSIVE' || (options.candidate && options.candidate.viewerMode === 'PANORAMIC_IMMERSIVE')) {
+          console.error('[PANORAMA_ROUTING_VIOLATION] SpatialViewpointRenderer cannot be instantiated for PANORAMIC_IMMERSIVE');
+          throw new Error('PANORAMA_ROUTING_VIOLATION');
+        }
         this.hostMode = options.hostMode || 'PREVIEW'; // 'PREVIEW' or 'ACTIVE'
         this.container = options.container;
         this.canvas = options.canvas;
@@ -16285,7 +16763,9 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       window.__3DZ_LAST_APPLY_TRACE__.fetchStarted = true;
 
       try {
-        const res = await fetch(`/api/projects/${projectId}/spatial/apply`, {
+        const isPanoApply = (cand?.viewerMode === 'PANORAMIC_IMMERSIVE') || Boolean(cand?.stitchedPanoramaUrl) || (window.creationMode === 'PANORAMIC_IMMERSIVE');
+        const applyEndpoint = isPanoApply ? `/api/projects/${projectId}/panorama/apply` : `/api/projects/${projectId}/spatial/apply`;
+        const res = await fetch(applyEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -17603,23 +18083,31 @@ function openAiEnhanceBoothModal() {
       </div>
     </div>
 
-    <!-- STEP 2: 7 UPLOAD SLOTS -->
-    <div style="margin-bottom: 18px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-        <span style="font-size: 12px; font-weight: 800; color: #fff;"><i class="fa-solid fa-images"></i> STEP 2: Upload 360 Rotational Photos</span>
+    <!-- STEP 2: 8-SHOT PANORAMA CAPTURE WHEEL (C11.29-P0) -->
+    <div style="margin-bottom: 20px; background: rgba(5, 11, 22, 0.6); border: 1.5px solid rgba(56, 189, 248, 0.3); border-radius: 16px; padding: 18px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+        <div>
+          <span style="font-size: 13px; font-weight: 800; color: #38bdf8;"><i class="fa-solid fa-circle-notch"></i> 8-SHOT PANORAMA CAPTURE WHEEL</span>
+          <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Stay in the center, rotate clockwise, and capture 8 overlapping photos.</div>
+        </div>
         <div style="display: flex; align-items: center; gap: 8px;">
-          <button type="button" onclick="switchProSpatialSlotCount(12)" id="slotCountBtn12" style="background: rgba(56,189,248,0.25); border: 1px solid #38bdf8; color: #38bdf8; border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: 700; cursor: pointer;">12 Shots</button>
-          <button type="button" onclick="switchProSpatialSlotCount(16)" id="slotCountBtn16" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: 700; cursor: pointer;">16 Shots</button>
-          <button type="button" onclick="document.getElementById('proSpatialMultiInput').click()" style="background: linear-gradient(135deg, #0284c7, #38bdf8); border: none; color: #fff; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px;"><i class="fa-solid fa-folder-open"></i> Choose All Photos</button>
-          <span id="proSlotCountBadge" style="font-size: 11px; font-weight: 700; color: #38bdf8;">0 of 12 views ready</span>
+          <span style="font-size: 11px; background: rgba(56,189,248,0.15); border: 1px solid #38bdf8; color: #38bdf8; border-radius: 6px; padding: 3px 8px; font-weight: 700;">8 Recommended</span>
         </div>
       </div>
 
-      <div id="pro7SlotsGrid" class="pro-spatial-slots-grid">
-        <!-- Dynamically rendered via renderProSpatialSlots() -->
+      <!-- Center-of-Space Pictogram & Rules (Section 11 & 36) -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 16px; background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 10px 12px; text-align: center;">
+        <div style="font-size: 10.5px; font-weight: 800; color: #38bdf8;">1. STAY IN ONE SPOT</div>
+        <div style="font-size: 10.5px; font-weight: 800; color: #f59e0b;">2. ROTATE — DON'T WALK</div>
+        <div style="font-size: 10.5px; font-weight: 800; color: #4ade80;">3. OVERLAP EACH SHOT</div>
+        <div style="font-size: 10.5px; font-weight: 800; color: #a855f7;">4. KEEP SAME HEIGHT</div>
+        <div style="font-size: 10.5px; font-weight: 800; color: #38bdf8;">5. CLOSE THE CIRCLE</div>
       </div>
-      <input type="file" id="proSpatialSingleSlotInput" accept="image/jpeg,image/png,image/webp,image/*" style="display: none;" onchange="handleProSpatialSlotFileChosen(this)">
-      <input type="file" id="proSpatialMultiInput" multiple accept="image/jpeg,image/png,image/webp,image/*" style="display: none;" onchange="handleProSpatialFilesSelected(this)">
+
+      <!-- The 8-Segment Interactive Wheel Container -->
+      <div id="panoramaCaptureWheelContainer">
+        <!-- Dynamically rendered via renderPanoramaCaptureWheel() -->
+      </div>
     </div>
 
     <!-- STEP 3: COMPATIBILITY & OVERLAP ANALYSIS -->

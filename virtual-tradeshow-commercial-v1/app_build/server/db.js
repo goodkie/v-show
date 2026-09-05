@@ -13715,6 +13715,72 @@ return event;
     });
   }
 
+  // --- C11.29-P0: Dedicated Durable Asynchronous Panorama Jobs ---
+  async createPanoramaJob(jobData) {
+    return this.mutate((db) => {
+      db.panoramaJobs = db.panoramaJobs || [];
+      const job = {
+        jobId: jobData.jobId || ('job-pano-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8)),
+        projectId: jobData.projectId,
+        accountId: jobData.accountId || 'acc-anon',
+        requestId: jobData.requestId || ('req-' + Date.now()),
+        sourceCount: jobData.sourceCount || 1,
+        autoRemovePeople: jobData.autoRemovePeople !== false,
+        status: jobData.status || 'QUEUED',
+        progress: typeof jobData.progress === 'number' ? jobData.progress : 5,
+        currentStage: jobData.currentStage || 'QUEUED',
+        stageLabel: jobData.stageLabel || 'Queued for panorama generation...',
+        mode: 'PANORAMIC_IMMERSIVE',
+        creationMode: 'FIXED_ORIGIN_PANORAMA',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        candidateId: null,
+        candidate: null,
+        errorCode: null,
+        ...jobData
+      };
+      db.panoramaJobs.unshift(job);
+      if (db.panoramaJobs.length > 500) db.panoramaJobs.pop();
+      return job;
+    });
+  }
+
+  async updatePanoramaJob(jobId, updates) {
+    return this.mutate((db) => {
+      db.panoramaJobs = db.panoramaJobs || [];
+      let job = db.panoramaJobs.find(j => j.jobId === jobId);
+      if (!job) {
+        db.spatialJobs = db.spatialJobs || [];
+        job = db.spatialJobs.find(j => j.jobId === jobId);
+      }
+      if (!job) return null;
+
+      Object.assign(job, updates);
+      job.updatedAt = new Date().toISOString();
+      if (updates.status === 'READY' && !job.completedAt) {
+        job.completedAt = new Date().toISOString();
+      }
+      if (updates.status === 'FAILED' && !job.failedAt) {
+        job.failedAt = new Date().toISOString();
+      }
+      return job;
+    });
+  }
+
+  getPanoramaJobById(jobId) {
+    const data = this.read();
+    return (data.panoramaJobs || []).find(j => j.jobId === jobId) || 
+           (data.spatialJobs || []).find(j => j.jobId === jobId) || null;
+  }
+
+  getActivePanoramaJobForProject(projectId) {
+    const data = this.read();
+    return (data.panoramaJobs || []).find(j => 
+      j.projectId === projectId && 
+      (j.status === 'QUEUED' || j.status === 'PROCESSING' || j.status === 'RUNNING' || (j.progress < 100 && j.status !== 'FAILED'))
+    ) || null;
+  }
+
   // --- C11.18-P0R1: Durable Asynchronous Spatial Jobs ---
   async createSpatialJob(jobData) {
     return this.mutate((db) => {

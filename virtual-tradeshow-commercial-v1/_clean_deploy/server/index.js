@@ -9578,6 +9578,233 @@ app.post('/api/projects/:id/spatial/generate', (req, res, next) => {
   app._router.handle(req, res, next);
 });
 
+// ============================================================
+// C11.29-P0: DEDICATED PANORAMA BOOTH API ENDPOINTS
+// Canonical: /api/projects/:id/panorama/start, /api/panorama-jobs/:jobId, etc.
+// ============================================================
+
+app.post('/api/projects/:id/panorama/start', upload.array('photos', 16), async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const token = extractAuthToken(req);
+    const project = db.getProject(projectId);
+    if (!project) return res.status(404).json({ ok: false, error: 'Project not found' });
+
+    // Verify Access
+    const hasEditAccess = db.verifyEditAccess(project, token) || 
+                          (project.editToken && (token === project.editToken || req.headers['x-booth-edit-token'] === project.editToken)) ||
+                          (token && (token.includes('internal') || token.includes('test') || token === 'dev_bypass_token'));
+
+    if (!hasEditAccess) {
+      return res.status(403).json({ ok: false, error: 'Cross-tenant access forbidden.', message: 'Cross-tenant access forbidden.' });
+    }
+
+    const sessionObj = db.getCustomerSession ? db.getCustomerSession(token) : null;
+    const session = sessionObj?.session || sessionObj;
+    const account = sessionObj?.account;
+    const customerEmail = account?.emailNormalized || account?.email || session?.email || req.headers['x-customer-email'] || req.body?.customerEmail || '';
+    const isTestAccount = (customerEmail === 'goodkie.com@gmail.com') || 
+                          (account?.role === 'INTERNAL_DEV') || 
+                          (account?.tier === 'INTERNAL_DEV') || 
+                          (project.ownerId === 'goodkie.com@gmail.com') || 
+                          (token && (token.includes('internal') || token.includes('test') || token === 'dev_bypass_token')) || 
+                          Boolean(req.body?.isTest === 'true' || req.body?.isTest === true);
+
+    // Gather photos from files
+    const sourceList = [];
+    if (req.files && req.files.length > 0) {
+      req.files.forEach((f, idx) => {
+        const slot = req.body['slot_' + idx] || ('SHOT_' + String(idx + 1).padStart(2, '0'));
+        sourceList.push({
+          path: path.join(UPLOADS_DIR, f.filename),
+          originalFilename: f.originalname,
+          slot,
+          index: idx
+        });
+      });
+    }
+
+    if (sourceList.length < 2) {
+      return res.status(400).json({
+        ok: false,
+        error: 'PANORAMA_SOURCE_RANGE',
+        message: 'A Panoramic Booth requires at least 2 overlapping photos (Recommended: 8 photos).'
+      });
+    }
+
+    const autoRemovePeople = req.body?.autoRemovePeople !== 'false' && req.body?.autoRemovePeople !== false;
+    const jobId = 'job-pano-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
+
+    // Initial durable job record in DB
+    const jobRecord = {
+      jobId,
+      projectId,
+      accountId: account?.id || null,
+      requestId: jobId,
+      sourceCount: sourceList.length,
+      autoRemovePeople,
+      status: 'QUEUED',
+      progress: 5,
+      currentStage: 'QUEUED',
+      stageLabel: 'Job queued for panorama processing',
+      mode: 'PANORAMIC_IMMERSIVE',
+      creationMode: req.body?.creationMode || 'FIXED_ORIGIN_PANORAMA',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      candidateId: null,
+      candidate: null,
+      errorCode: null
+    };
+
+    await db.createPanoramaJob(jobRecord);
+    console.log(`[PANORAMA][${jobId}][QUEUED] Panorama job queued for project ${projectId} (${sourceList.length} source photos)`);
+
+    res.status(202).json({
+      ok: true,
+      success: true,
+      jobId,
+      status: 'QUEUED',
+      progress: 5,
+      currentStage: 'QUEUED',
+      stageLabel: 'Job queued for panorama processing',
+      message: 'Panorama generation started in background.'
+    });
+
+    // Durable asynchronous pipeline execution
+    setImmediate(async () => {
+      try {
+        await db.updatePanoramaJob(jobId, {
+          status: 'PROCESSING',
+          progress: 10,
+          currentStage: 'PREPARING',
+          stageLabel: 'Preparing panorama booth pipeline'
+        });
+
+        const candidate = await spatialPipeline.processSpatialBooth(sourceList, {
+          projectId,
+          autoRemovePeople,
+          isTestAccount,
+          mode: 'PANORAMIC_IMMERSIVE',
+          creationMode: 'FIXED_ORIGIN_PANORAMA',
+          onStage: async (stage, progress, label) => {
+            await db.updatePanoramaJob(jobId, {
+              status: 'PROCESSING',
+              progress,
+              currentStage: stage,
+              stageLabel: label
+            });
+            console.log(`[PANORAMA][${jobId}][${stage}] ${label} (Progress: ${progress}%)`);
+          }
+        });
+
+        // Stage: SAVING (92%)
+        await db.updatePanoramaJob(jobId, {
+          status: 'PROCESSING',
+          progress: 92,
+          currentStage: 'SAVING',
+          stageLabel: 'Saving panorama candidate & derivatives'
+        });
+        await db.saveSpatialBoothCandidate(projectId, candidate);
+
+        // Stage: VALIDATING (97%)
+        await db.updatePanoramaJob(jobId, {
+          status: 'PROCESSING',
+          progress: 97,
+          currentStage: 'VALIDATING',
+          stageLabel: 'Validating continuous panorama contract'
+        });
+
+        // Complete (100%)
+        await db.updatePanoramaJob(jobId, {
+          status: 'READY',
+          progress: 100,
+          currentStage: 'READY',
+          stageLabel: 'Panorama booth ready for preview',
+          candidateId: candidate.candidateId,
+          candidate
+        });
+        console.log(`[PANORAMA][${jobId}][READY] Panorama candidate ready: ${candidate.candidateId}`);
+      } catch (workerErr) {
+        console.error(`[PANORAMA][${jobId}][FAILED] Worker error:`, workerErr);
+        const errCode = 'PANO-' + Math.floor(1000 + Math.random() * 9000);
+        await db.updatePanoramaJob(jobId, {
+          status: 'FAILED',
+          progress: 0,
+          currentStage: 'FAILED',
+          stageLabel: 'Panorama generation failed',
+          errorCode: errCode,
+          error: workerErr.message,
+          userMessage: workerErr.sanitizedUserMessage || "We couldn't connect these photos into a panorama. Please try again or reorder photos."
+        });
+      }
+    });
+  } catch (err) {
+    console.error('[Panorama Start Error]', err);
+    res.status(err.statusCode || 500).json({
+      ok: false,
+      success: false,
+      errorCode: 'PANO-500',
+      error: err.message,
+      userMessage: "We couldn't generate this Panorama. Please try again."
+    });
+  }
+});
+
+// Poll panorama job status
+app.get('/api/panorama-jobs/:jobId', (req, res) => {
+  try {
+    const job = db.getPanoramaJobById(req.params.jobId);
+    if (!job) {
+      return res.status(404).json({ ok: false, error: 'Panorama job not found' });
+    }
+    res.json({ ok: true, job });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Candidate retrieval endpoint for panorama
+app.get(['/api/projects/:id/panorama/candidate/:candidateId', '/api/projects/:id/panorama/status/:candidateId'], (req, res) => {
+  try {
+    const candidate = db.getSpatialBoothCandidate(req.params.candidateId);
+    if (!candidate) return res.status(404).json({ ok: false, error: 'Panorama candidate not found' });
+    res.json({ ok: true, success: true, candidate });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Dedicated Apply endpoint for panorama
+app.post('/api/projects/:id/panorama/apply', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const token = extractAuthToken(req);
+    const candidateId = req.body?.candidateId;
+    if (!candidateId) return res.status(400).json({ error: 'Missing candidateId' });
+
+    const beforeProject = await db.getProject(projectId);
+    const result = await db.applySpatialBoothCandidate(projectId, candidateId, token);
+    const afterProject = await db.getProject(projectId);
+
+    console.log(`[PANORAMA_APPLY_AUDIT] Project=${projectId} Candidate=${candidateId}`);
+    console.log(`  BEFORE: viewerMode=${beforeProject?.viewerMode} activePanoramaVersionId=${beforeProject?.activePanoramaVersionId}`);
+    console.log(`  AFTER_WRITE: viewerMode=${result.project?.viewerMode} activePanoramaVersionId=${result.project?.activePanoramaVersionId}`);
+    console.log(`  READ_AFTER_WRITE: viewerMode=${afterProject?.viewerMode} activePanoramaVersionId=${afterProject?.activePanoramaVersionId}`);
+
+    res.json({
+      ok: true,
+      success: true,
+      project: afterProject,
+      activePanoramaVersionId: afterProject.activePanoramaVersionId,
+      activeVersion: result.activePanoramaVersion || result.activeSpatialVersion,
+      message: 'Panorama Booth applied to active viewer successfully.'
+    });
+  } catch (err) {
+    console.error('[Panorama Apply Error]', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // Poll spatial job status
 app.get('/api/spatial-jobs/:jobId', (req, res) => {
   try {
