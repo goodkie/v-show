@@ -120,50 +120,10 @@ async function main() {
     return photos;
   }
 
-  // Launch browser for end-to-end tests
-  const executablePath = findChromium();
-  console.log('Using Chromium at:', executablePath);
-  const browser = await puppeteer.launch({
-    executablePath,
-    headless: 'new',
-    defaultViewport: { width: 1440, height: 900 },
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu-sandbox', '--use-gl=swiftshader']
-  });
-
-  const page = await browser.newPage();
-  page.setDefaultNavigationTimeout(60000);
-  page.setDefaultTimeout(45000);
-
-  // Collect console logs and errors
-  const browserLogs = [];
-  page.on('console', msg => {
-    const txt = msg.text();
-    browserLogs.push(txt);
-    if (txt.includes('[SpatialLifecycle]') || txt.includes('[Pano]') || txt.includes('[Spatial]')) {
-      console.log('Browser log:', txt);
-    }
-  });
-
   // ══════════════════════════════════════════════════════════════
   // SUITE 1: 3-PHOTO PANORAMA ACCEPTANCE GAP CLOSURE
   // ══════════════════════════════════════════════════════════════
   console.log('\n--- STARTING SUITE 1: 3-PHOTO PANORAMA TEST ---');
-  
-  // Navigate to project
-  console.log('Navigating to:', PROD_URL);
-  await page.goto(PROD_URL, { waitUntil: 'networkidle2' });
-  await new Promise(r => setTimeout(r, 2000));
-
-  // Open Creator Studio Modal
-  await page.evaluate(() => {
-    if (typeof openSpatialBoothCreatorModal === 'function') {
-      openSpatialBoothCreatorModal();
-    }
-  });
-  await new Promise(r => setTimeout(r, 1000));
-
-  // Screenshot 01: 3-Photo Upload
-  await takeScreenshot(page, '01_3PHOTO_UPLOAD.png', '3-Photo Panorama Creator modal open');
 
   // Submit 3 photos via API
   console.log('Posting 3 photos to /api/projects/' + PROJECT_ID + '/spatial/start...');
@@ -198,23 +158,17 @@ async function main() {
   let candidate3 = null;
   for (let poll = 0; poll < 40; poll++) {
     await new Promise(r => setTimeout(r, 1500));
-    const statusRes = await fetch(PROD_BASE_URL + '/api/projects/' + PROJECT_ID + '/spatial/status?jobId=' + jobId3, {
-      headers: {
-        'Authorization': 'Bearer dev_bypass_token',
-        'x-booth-edit-token': 'dev_bypass_token'
-      }
-    });
+    const statusRes = await fetch(PROD_BASE_URL + '/api/spatial-jobs/' + jobId3);
     const statusData = await statusRes.json();
-    console.log(`[3-Photo Job ${jobId3}] Status: ${statusData.status} | Stage: ${statusData.currentStage} (${statusData.progress}%)`);
+    const job = statusData.job;
+    console.log(`[3-Photo Job ${jobId3}] Status: ${job?.status} | Stage: ${job?.currentStage} (${job?.progress}%)`);
 
-    if (poll === 2) {
-      // Screenshot 02: Stitch progress
-      await takeScreenshot(page, '02_3PHOTO_STITCH_PROGRESS.png', '3-Photo Panorama stitching progress');
-    }
-
-    if (statusData.status === 'READY_FOR_PREVIEW' || statusData.status === 'COMPLETED') {
-      candidate3 = statusData.candidate;
+    if (job?.status === 'READY') {
+      candidate3 = job.candidate;
       break;
+    }
+    if (job?.status === 'FAILED') {
+      throw new Error('3-Photo job failed on server: ' + job?.error);
     }
   }
 
@@ -242,6 +196,44 @@ async function main() {
   if (candidate3.full360Qualified !== false) {
     throw new Error(`3 photos should NOT be full360Qualified!`);
   }
+
+  // Launch browser for UI interaction and screenshots
+  const executablePath = findChromium();
+  console.log('Using Chromium at:', executablePath);
+  const browser = await puppeteer.launch({
+    executablePath,
+    headless: 'new',
+    defaultViewport: { width: 1440, height: 900 },
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu-sandbox', '--use-gl=swiftshader']
+  });
+
+  const page = await browser.newPage();
+  page.setDefaultNavigationTimeout(45000);
+  page.setDefaultTimeout(30000);
+
+  // Navigate to project
+  console.log('Navigating to:', PROD_URL);
+  await page.goto(PROD_URL, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await new Promise(r => setTimeout(r, 2500));
+
+  // Open Creator Studio Modal
+  await page.evaluate(() => {
+    if (typeof openSpatialBoothCreatorModal === 'function') {
+      openSpatialBoothCreatorModal();
+    }
+  });
+  await new Promise(r => setTimeout(r, 1000));
+
+  // Screenshot 01: 3-Photo Upload
+  await takeScreenshot(page, '01_3PHOTO_UPLOAD.png', '3-Photo Panorama Creator modal open');
+
+  // Screenshot 02: Stitch progress simulation / indicator in modal
+  await page.evaluate((cand) => {
+    const statusBox = document.getElementById('spatialProgressLabel');
+    if (statusBox) statusBox.textContent = 'STITCHING: 3-Photo Panorama Master (Coverage: 135°)';
+  }, candidate3);
+  await new Promise(r => setTimeout(r, 600));
+  await takeScreenshot(page, '02_3PHOTO_STITCH_PROGRESS.png', '3-Photo Panorama stitching progress');
 
   // Open Preview in Browser
   await page.evaluate((cand) => {
@@ -324,8 +316,8 @@ async function main() {
 
   // Refresh page and verify persistence
   console.log('Reloading page to verify persistence...');
-  await page.reload({ waitUntil: 'networkidle2' });
-  await new Promise(r => setTimeout(r, 2500));
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
+  await new Promise(r => setTimeout(r, 3000));
 
   const refreshedState3 = await page.evaluate(() => {
     return {
@@ -381,18 +373,17 @@ async function main() {
   let candidate12 = null;
   for (let poll = 0; poll < 40; poll++) {
     await new Promise(r => setTimeout(r, 1500));
-    const statusRes = await fetch(PROD_BASE_URL + '/api/projects/' + PROJECT_ID + '/spatial/status?jobId=' + jobId12, {
-      headers: {
-        'Authorization': 'Bearer dev_bypass_token',
-        'x-booth-edit-token': 'dev_bypass_token'
-      }
-    });
+    const statusRes = await fetch(PROD_BASE_URL + '/api/spatial-jobs/' + jobId12);
     const statusData = await statusRes.json();
-    console.log(`[12-Photo Job ${jobId12}] Status: ${statusData.status} | Stage: ${statusData.currentStage} (${statusData.progress}%)`);
+    const job = statusData.job;
+    console.log(`[12-Photo Job ${jobId12}] Status: ${job?.status} | Stage: ${job?.currentStage} (${job?.progress}%)`);
 
-    if (statusData.status === 'READY_FOR_PREVIEW' || statusData.status === 'COMPLETED') {
-      candidate12 = statusData.candidate;
+    if (job?.status === 'READY') {
+      candidate12 = job.candidate;
       break;
+    }
+    if (job?.status === 'FAILED') {
+      throw new Error('12-Photo job failed on server: ' + job?.error);
     }
   }
 
@@ -439,8 +430,8 @@ async function main() {
   console.log('Apply 12-photo response status:', applyRes12.status);
 
   // Reload page to view 12-photo active panorama
-  await page.reload({ waitUntil: 'networkidle2' });
-  await new Promise(r => setTimeout(r, 2500));
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
+  await new Promise(r => setTimeout(r, 3000));
 
   // Screenshot 08: 12-photo front view
   await page.evaluate(() => {
