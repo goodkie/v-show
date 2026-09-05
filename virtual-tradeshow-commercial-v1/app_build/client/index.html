@@ -14437,7 +14437,7 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
     }
     window.resolveSpatialViewpointTexture = resolveSpatialViewpointTexture;
 
-    // ── UNIFIED SPATIAL VIEWPOINT RENDERER CLASS (C11.25-P0) ──
+    // ── UNIFIED SPATIAL VIEWPOINT RENDERER CLASS (C11.26-P0) ──
     class SpatialViewpointRenderer {
       constructor(options = {}) {
         this.hostMode = options.hostMode || 'PREVIEW'; // 'PREVIEW' or 'ACTIVE'
@@ -14448,16 +14448,23 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         this.onFirstFrame = options.onFirstFrame || null;
 
         // Camera & FOV parameters
-        this.NORMAL_FOV = 52;
-        this.WIDE_FOV = 65;
+        this.NORMAL_FOV = 55;
+        this.WIDE_FOV = 68;
+        this.CLOSE_FOV = 42;
         this.currentFov = this.NORMAL_FOV;
+        this.zoom = 1.0;
 
         // Calibrated Local Immersion Range (Soft ±28°, Hard ±36°)
         this.LOCAL_YAW_SOFT_RANGE = 28 * Math.PI / 180; // ~0.488 rad (±28°)
         this.LOCAL_YAW_HARD_RANGE = 36 * Math.PI / 180; // ~0.628 rad (±36°)
         this.LOCAL_PITCH_MIN = -12 * Math.PI / 180;     // ~-0.209 rad (-12°)
         this.LOCAL_PITCH_MAX = 15 * Math.PI / 180;      // ~+0.262 rad (+15°)
-        this.EDGE_TRANSITION_THRESHOLD_PX = 90;
+        
+        // Travel Intent Accumulator (Section 4 & 5)
+        this.travelIntentPx = 0;
+        this.travelIntentDirection = null;
+        this.TRAVEL_INTENT_THRESHOLD_MOUSE = 140; // 140px mouse continuation threshold
+        this.TRAVEL_INTENT_THRESHOLD_TOUCH = 90;  // 90px touch threshold
 
         // Curved Geometry (110° Arc, Preserving Aspect Ratio)
         this.CURVED_ARC = 110 * Math.PI / 180; // ~1.92 rad
@@ -14470,6 +14477,8 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         this.pendingDragDelta = 0;
         this.settleTimer = null;
         this.idleUpgradeTimer = null;
+        this.animating = false;
+        this.animFrameId = null;
 
         this.viewpoints = [];
         this.activeIdx = 0;
@@ -14478,8 +14487,13 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         this.continuousPointerDown = false;
         this.lastPointerX = 0;
         this.lastPointerY = 0;
-        this.edgeAccumPx = 0;
         this.isDestroyed = false;
+
+        // Pairwise landmark alignment offsets for adjacent views
+        this.pairAlignments = {
+          'LEFT_CENTER': { x: -18, y: 0, scale: 1.0, confidence: 0.88 },
+          'CENTER_RIGHT': { x: 18, y: 0, scale: 1.0, confidence: 0.88 }
+        };
 
         this.renderer = null;
         this.scene = null;
@@ -14557,6 +14571,22 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
             url: singleUrl,
             resolved: { url: singleUrl }
           });
+        }
+
+        // View Density Adaptation (Sections 2, 7, 8)
+        const vpCount = this.viewpoints.length;
+        if (vpCount <= 1) {
+          this.viewDensityMode = 'PHOTO_IMMERSIVE';
+          this.transitionDurationMs = 380;
+        } else if (vpCount <= 3) {
+          this.viewDensityMode = 'SPARSE_3';
+          this.transitionDurationMs = 380; // 320-480ms deliberate cinematic camera-position travel
+        } else if (vpCount <= 5) {
+          this.viewDensityMode = 'MEDIUM_5';
+          this.transitionDurationMs = 300; // 260-380ms
+        } else {
+          this.viewDensityMode = 'DENSE_7';
+          this.transitionDurationMs = 220; // 180-300ms
         }
 
         // Find entry viewpoint (CENTER if exists, else middle/0)
@@ -14727,24 +14757,26 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       }
 
       preloadAdjacent() {
-        const leftIdx = this.activeIdx - 1;
-        const rightIdx = this.activeIdx + 1;
-        if (leftIdx >= 0 && this.viewpoints[leftIdx]) {
-          this.ensureViewpointReady(this.viewpoints[leftIdx]);
-        }
-        if (rightIdx < this.viewpoints.length && this.viewpoints[rightIdx]) {
-          this.ensureViewpointReady(this.viewpoints[rightIdx]);
-        }
+        [-1, 1].forEach(offset => {
+          const adjIdx = this.activeIdx + offset;
+          if (adjIdx >= 0 && adjIdx < this.viewpoints.length) {
+            const adjVp = this.viewpoints[adjIdx];
+            if (!adjVp.isGpuReady && !adjVp.loadPromise) {
+              this.ensureViewpointReady(adjVp);
+            }
+          }
+        });
       }
 
       scheduleIdleUpgrade(vp) {
+        if (!vp || vp.is8kUpgraded) return;
         if (this.idleUpgradeTimer) clearTimeout(this.idleUpgradeTimer);
-        if (!vp.derivatives?.desktop8k?.url || vp.is8kUpgraded) return;
 
-        this.idleUpgradeTimer = setTimeout(async () => {
-          if (this.isDestroyed) return;
-          const upgrade8kUrl = vp.derivatives.desktop8k.url;
-          console.log('[Spatial Idle Upgrade] Upgrading to 8K in background:', upgrade8kUrl);
+        this.idleUpgradeTimer = setTimeout(() => {
+          if (this.isDestroyed || this.activeIdx !== vp.index) return;
+          const upgrade8kUrl = vp.derivatives?.desktop8k?.url;
+          if (!upgrade8kUrl) return;
+
           const img = new Image();
           img.crossOrigin = 'anonymous';
           img.onload = () => {
@@ -14779,10 +14811,17 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
 
         canvas.onpointerdown = (e) => {
           if (this.currentState === SPATIAL_TRANSITION_STATES.TRANSITION_LOCKED) return;
+          if (this.animating) {
+            cancelAnimationFrame(this.animFrameId);
+            this.animating = false;
+          }
+
           this.continuousPointerDown = true;
           this.lastPointerX = e.clientX;
           this.lastPointerY = e.clientY;
-          this.edgeAccumPx = 0;
+          this.travelIntentPx = 0;
+          this.travelIntentDirection = null;
+
           if (this.currentState !== SPATIAL_TRANSITION_STATES.TARGET_SETTLE) {
             this.currentState = SPATIAL_TRANSITION_STATES.LOCAL_DRAG;
           }
@@ -14817,39 +14856,79 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
           const desiredYaw = this.yaw - dx * yawSensitivity;
           const desiredPitch = this.pitch + dy * pitchSensitivity;
 
+          // SECTION 4: SEPARATE LOOK FROM TRAVEL
+          // 1. LOCAL_LOOK within soft range
           if (Math.abs(desiredYaw) <= this.LOCAL_YAW_SOFT_RANGE) {
             this.yaw = desiredYaw;
-            this.edgeAccumPx = 0;
+            this.travelIntentPx = 0;
+            this.travelIntentDirection = null;
             this.currentState = SPATIAL_TRANSITION_STATES.LOCAL_DRAG;
             this.hideEdgeIndicator();
           } else {
+            // 2. EDGE_RESISTANCE: progressive resistance
             this.currentState = SPATIAL_TRANSITION_STATES.EDGE_ARMED;
             const sign = Math.sign(desiredYaw);
             const overflow = Math.abs(desiredYaw) - this.LOCAL_YAW_SOFT_RANGE;
-            const resisted = this.LOCAL_YAW_SOFT_RANGE + overflow * 0.35;
+            const resisted = this.LOCAL_YAW_SOFT_RANGE + overflow * 0.30;
             this.yaw = sign * Math.min(this.LOCAL_YAW_HARD_RANGE, resisted);
 
-            if (sign > 0 && dx < 0 && this.activeIdx < this.viewpoints.length - 1) {
-              this.edgeAccumPx += Math.abs(dx);
-              const targetVp = this.viewpoints[this.activeIdx + 1];
-              this.showEdgeIndicator('RIGHT', targetVp.slot, Math.min(1.0, this.edgeAccumPx / this.EDGE_TRANSITION_THRESHOLD_PX));
-              if (this.edgeAccumPx >= this.EDGE_TRANSITION_THRESHOLD_PX) {
-                this.hideEdgeIndicator();
-                this.triggerTransition(this.activeIdx + 1, 'RIGHT');
-                return;
+            // 3. TRAVEL_INTENT ACCUMULATOR at hard edge (Sections 5 & 6)
+            const threshold = e.pointerType === 'touch' ? this.TRAVEL_INTENT_THRESHOLD_TOUCH : this.TRAVEL_INTENT_THRESHOLD_MOUSE;
+
+            if (sign > 0 && this.activeIdx < this.viewpoints.length - 1) {
+              // Dragging rightward across edge (pointer moving left, dx < 0)
+              if (dx < 0) {
+                if (this.travelIntentDirection !== 'RIGHT') {
+                  this.travelIntentDirection = 'RIGHT';
+                  this.travelIntentPx = 0;
+                }
+                this.travelIntentPx += Math.abs(dx);
+                const targetVp = this.viewpoints[this.activeIdx + 1];
+                this.showEdgeIndicator('RIGHT', targetVp.slot, Math.min(1.0, this.travelIntentPx / threshold));
+
+                // 4. NODE_TRAVEL only upon crossing full threshold
+                if (this.travelIntentPx >= threshold) {
+                  this.hideEdgeIndicator();
+                  this.triggerTransition(this.activeIdx + 1, 'RIGHT');
+                  return;
+                }
+              } else {
+                // Reversing pointer cancels intent (Edge Hold)
+                this.travelIntentPx = Math.max(0, this.travelIntentPx - Math.abs(dx) * 1.5);
+                if (this.travelIntentPx <= 5) {
+                  this.travelIntentDirection = null;
+                  this.hideEdgeIndicator();
+                }
               }
-            } else if (sign < 0 && dx > 0 && this.activeIdx > 0) {
-              this.edgeAccumPx += Math.abs(dx);
-              const targetVp = this.viewpoints[this.activeIdx - 1];
-              this.showEdgeIndicator('LEFT', targetVp.slot, Math.min(1.0, this.edgeAccumPx / this.EDGE_TRANSITION_THRESHOLD_PX));
-              if (this.edgeAccumPx >= this.EDGE_TRANSITION_THRESHOLD_PX) {
-                this.hideEdgeIndicator();
-                this.triggerTransition(this.activeIdx - 1, 'LEFT');
-                return;
+            } else if (sign < 0 && this.activeIdx > 0) {
+              // Dragging leftward across edge (pointer moving right, dx > 0)
+              if (dx > 0) {
+                if (this.travelIntentDirection !== 'LEFT') {
+                  this.travelIntentDirection = 'LEFT';
+                  this.travelIntentPx = 0;
+                }
+                this.travelIntentPx += Math.abs(dx);
+                const targetVp = this.viewpoints[this.activeIdx - 1];
+                this.showEdgeIndicator('LEFT', targetVp.slot, Math.min(1.0, this.travelIntentPx / threshold));
+
+                // 4. NODE_TRAVEL only upon crossing full threshold
+                if (this.travelIntentPx >= threshold) {
+                  this.hideEdgeIndicator();
+                  this.triggerTransition(this.activeIdx - 1, 'LEFT');
+                  return;
+                }
+              } else {
+                // Reversing pointer cancels intent (Edge Hold)
+                this.travelIntentPx = Math.max(0, this.travelIntentPx - Math.abs(dx) * 1.5);
+                if (this.travelIntentPx <= 5) {
+                  this.travelIntentDirection = null;
+                  this.hideEdgeIndicator();
+                }
               }
             } else {
-              this.edgeAccumPx = Math.max(0, this.edgeAccumPx - Math.abs(dx));
-              if (this.edgeAccumPx <= 5) this.hideEdgeIndicator();
+              this.travelIntentPx = 0;
+              this.travelIntentDirection = null;
+              this.hideEdgeIndicator();
             }
           }
 
@@ -14863,6 +14942,8 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
           this.continuousPointerDown = false;
           canvas.style.cursor = 'grab';
           this.hideEdgeIndicator();
+          this.travelIntentPx = 0;
+          this.travelIntentDirection = null;
           if (this.currentState === SPATIAL_TRANSITION_STATES.LOCAL_DRAG || this.currentState === SPATIAL_TRANSITION_STATES.EDGE_ARMED) {
             this.currentState = SPATIAL_TRANSITION_STATES.IDLE;
           }
@@ -14882,6 +14963,8 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         this.activeTransitionCount = 1;
         this.currentState = SPATIAL_TRANSITION_STATES.TRANSITION_LOCKED;
         this.transitionId++;
+        this.travelIntentPx = 0;
+        this.travelIntentDirection = null;
 
         emitSpatialTextureLifecycle('SPATIAL_TRANSITION_REQUEST', {
           transitionId: this.transitionId,
@@ -14914,7 +14997,8 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         this.matTransition.needsUpdate = true;
 
         const startTime = performance.now();
-        const duration = 260;
+        const duration = this.transitionDurationMs || 380; // View-Density adapted duration
+        const landmarkCueDirection = direction === 'RIGHT' ? 1 : -1;
 
         const animateCrossfade = (now) => {
           const elapsed = now - startTime;
@@ -14923,6 +15007,15 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
 
           this.matCurrent.opacity = 1.0 - ease;
           this.matTransition.opacity = ease;
+
+          // Landmark stability cue (Section 10): subtle translation curve
+          const landmarkOffset = Math.sin(progress * Math.PI) * 4.5 * landmarkCueDirection;
+          if (this.meshTransition) {
+            this.meshTransition.position.x = -landmarkOffset * 0.4;
+          }
+          if (this.meshCurrent) {
+            this.meshCurrent.position.x = landmarkOffset * 0.6;
+          }
 
           this.render();
           emitSpatialTextureLifecycle('SPATIAL_TRANSITION_FRAME', {
@@ -14933,17 +15026,19 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
           if (progress < 1.0) {
             requestAnimationFrame(animateCrossfade);
           } else {
+            if (this.meshCurrent) this.meshCurrent.position.x = 0;
+            if (this.meshTransition) this.meshTransition.position.x = 0;
+
             this.matCurrent.map = targetVp.tex;
             this.matCurrent.opacity = 1.0;
             this.matTransition.visible = false;
             this.matTransition.opacity = 0.0;
 
             this.activeIdx = targetIdx;
+            window.spatialActiveIdx = targetIdx;
             this.yaw = targetEntryYaw;
             this.updateCamera();
             this.render();
-
-            window.spatialActiveIdx = this.activeIdx;
             this.updateRailUI();
 
             emitSpatialTextureLifecycle('SPATIAL_TRANSITION_COMPLETE', {
@@ -14984,6 +15079,129 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         this.triggerTransition(idx, dir);
       }
 
+      // ── PUBLIC CONTROL CONTRACT METHODS (C11.26-P0 Section 17) ──
+      setFov(val) {
+        this.currentFov = val;
+        if (this.camera) {
+          this.camera.fov = val / (this.zoom || 1.0);
+          this.camera.updateProjectionMatrix();
+        }
+        this.render();
+      }
+
+      setYaw(val) {
+        this.yaw = val;
+        this.updateCamera();
+        this.render();
+      }
+
+      setPitch(val) {
+        this.pitch = val;
+        this.updateCamera();
+        this.render();
+      }
+
+      setZoom(val) {
+        this.zoom = Math.max(0.5, Math.min(2.5, val));
+        if (this.camera) {
+          this.camera.fov = this.currentFov / this.zoom;
+          this.camera.updateProjectionMatrix();
+        }
+        this.render();
+      }
+
+      animateTo({ yaw, pitch, fov, zoom, duration = 280 } = {}) {
+        if (this.animating) {
+          cancelAnimationFrame(this.animFrameId);
+          this.animating = false;
+        }
+        this.animating = true;
+
+        const startYaw = this.yaw;
+        const targetYaw = yaw !== undefined ? yaw : startYaw;
+        const startPitch = this.pitch;
+        const targetPitch = pitch !== undefined ? pitch : startPitch;
+        const startFov = this.currentFov;
+        const targetFov = fov !== undefined ? fov : startFov;
+        const startZoom = this.zoom || 1.0;
+        const targetZoom = zoom !== undefined ? zoom : startZoom;
+        const startTime = performance.now();
+
+        return new Promise((resolve) => {
+          const step = (now) => {
+            const p = Math.min(1.0, (now - startTime) / duration);
+            const ease = p < 0.5 ? 2 * p * p : -1 + (4 - 2 * p) * p;
+
+            this.yaw = startYaw + (targetYaw - startYaw) * ease;
+            this.pitch = startPitch + (targetPitch - startPitch) * ease;
+            this.currentFov = startFov + (targetFov - startFov) * ease;
+            this.zoom = startZoom + (targetZoom - startZoom) * ease;
+
+            if (this.camera) {
+              this.camera.fov = this.currentFov / this.zoom;
+              this.camera.updateProjectionMatrix();
+            }
+            this.updateCamera();
+            this.render();
+
+            if (p < 1.0) {
+              this.animFrameId = requestAnimationFrame(step);
+            } else {
+              this.animating = false;
+              resolve();
+            }
+          };
+          this.animFrameId = requestAnimationFrame(step);
+        });
+      }
+
+      resetView() {
+        this.activeTransitionCount = 0;
+        this.currentState = SPATIAL_TRANSITION_STATES.IDLE;
+        this.travelIntentPx = 0;
+        this.travelIntentDirection = null;
+        const centerIdx = this.viewpoints.findIndex(v => v.slot === 'CENTER');
+        const targetIdx = centerIdx >= 0 ? centerIdx : 0;
+        if (this.activeIdx !== targetIdx) {
+          this.selectViewpoint(targetIdx);
+        }
+        return this.animateTo({ yaw: 0, pitch: 0, fov: this.NORMAL_FOV, zoom: 1.0, duration: 280 });
+      }
+
+      goToViewpoint(slotOrId) {
+        let targetIdx = -1;
+        if (typeof slotOrId === 'number') {
+          targetIdx = slotOrId;
+        } else if (slotOrId === 'LEFT') {
+          targetIdx = 0;
+        } else if (slotOrId === 'RIGHT') {
+          targetIdx = this.viewpoints.length - 1;
+        } else if (slotOrId === 'CENTER') {
+          targetIdx = this.viewpoints.findIndex(v => v.slot === 'CENTER');
+          if (targetIdx < 0) targetIdx = Math.floor(this.viewpoints.length / 2);
+        } else {
+          targetIdx = this.viewpoints.findIndex(v => v.id === slotOrId || v.slot === slotOrId);
+        }
+
+        if (targetIdx >= 0 && targetIdx < this.viewpoints.length) {
+          return this.selectViewpoint(targetIdx);
+        }
+      }
+
+      getViewState() {
+        const curVp = this.viewpoints[this.activeIdx];
+        return {
+          activeIdx: this.activeIdx,
+          slot: curVp?.slot || 'UNKNOWN',
+          viewpointId: curVp?.id || null,
+          yaw: Number(this.yaw.toFixed(4)),
+          pitch: Number(this.pitch.toFixed(4)),
+          fov: Math.round(this.currentFov),
+          zoom: Number(this.zoom.toFixed(2)),
+          isTransitioning: this.activeTransitionCount > 0 || this.currentState === SPATIAL_TRANSITION_STATES.TRANSITION_LOCKED
+        };
+      }
+
       setupRail() {
         if (this.hostMode === 'PREVIEW') {
           const rail = document.getElementById('spatialPreviewRailButtons');
@@ -15010,7 +15228,7 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
 
           rail = document.createElement('div');
           rail.id = railId;
-          rail.style.cssText = 'position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); background: rgba(9,16,29,0.92); backdrop-filter: blur(10px); border: 1.5px solid #38bdf8; border-radius: 30px; padding: 6px 14px; display: flex; align-items: center; gap: 8px; z-index: 25; box-shadow: 0 8px 25px rgba(0,0,0,0.7);';
+          rail.style.cssText = 'position: absolute; bottom: 62px; left: 50%; transform: translateX(-50%); background: rgba(9,16,29,0.92); backdrop-filter: blur(10px); border: 1.5px solid #38bdf8; border-radius: 30px; padding: 6px 14px; display: flex; align-items: center; gap: 8px; z-index: 25; box-shadow: 0 8px 25px rgba(0,0,0,0.7);';
 
           let htmlBtns = '<span style="font-size: 11px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 5px;"><i class="fa-solid fa-cube"></i> SPATIAL BOOTH:</span>';
           this.viewpoints.forEach((vp, idx) => {
@@ -15066,78 +15284,53 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         }
       }
 
-      showEdgeIndicator(dir, targetSlot, progress) {
-        let el = document.getElementById('spatialEdgeIndicator');
-        if (!el && this.container) {
-          el = document.createElement('div');
-          el.id = 'spatialEdgeIndicator';
-          el.style.cssText = 'position: absolute; top: 50%; transform: translateY(-50%); padding: 10px 18px; border-radius: 30px; background: rgba(2,132,199,0.85); backdrop-filter: blur(8px); border: 1.5px solid #38bdf8; color: #fff; font-size: 12px; font-weight: 800; display: none; z-index: 20; pointer-events: none; transition: opacity 0.15s;';
-          this.container.appendChild(el);
+      showEdgeIndicator(direction, targetSlot, progress) {
+        let ind = document.getElementById('spatialEdgeIndicator_' + this.hostMode);
+        if (!ind) {
+          ind = document.createElement('div');
+          ind.id = 'spatialEdgeIndicator_' + this.hostMode;
+          ind.style.cssText = 'position: absolute; top: 50%; transform: translateY(-50%); background: rgba(9,16,29,0.9); backdrop-filter: blur(8px); border: 1.5px solid #38bdf8; border-radius: 20px; padding: 6px 14px; font-size: 11px; font-weight: 800; color: #38bdf8; pointer-events: none; z-index: 30; transition: opacity 0.15s; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 20px rgba(56,189,248,0.4);';
+          this.container.appendChild(ind);
         }
-        if (el) {
-          el.style.display = 'block';
-          el.style.opacity = progress.toString();
-          if (dir === 'RIGHT') {
-            el.style.right = '24px';
-            el.style.left = 'auto';
-            el.innerHTML = `Pan to explore ${targetSlot} <i class="fa-solid fa-chevron-right"></i>`;
-          } else {
-            el.style.left = '24px';
-            el.style.right = 'auto';
-            el.innerHTML = `<i class="fa-solid fa-chevron-left"></i> Pan to explore ${targetSlot}`;
-          }
+        if (direction === 'RIGHT') {
+          ind.style.left = '';
+          ind.style.right = '20px';
+          ind.innerHTML = `<span>Travel to ${targetSlot}</span> <i class="fa-solid fa-arrow-right"></i> (${Math.round(progress * 100)}%)`;
+        } else {
+          ind.style.right = '';
+          ind.style.left = '20px';
+          ind.innerHTML = `<i class="fa-solid fa-arrow-left"></i> <span>Travel to ${targetSlot}</span> (${Math.round(progress * 100)}%)`;
         }
+        ind.style.opacity = progress > 0.1 ? '1.0' : '0.0';
       }
 
       hideEdgeIndicator() {
-        const el = document.getElementById('spatialEdgeIndicator');
-        if (el) el.style.display = 'none';
+        const ind = document.getElementById('spatialEdgeIndicator_' + this.hostMode);
+        if (ind) ind.style.opacity = '0.0';
       }
 
       destroy() {
         this.isDestroyed = true;
         if (this.settleTimer) clearTimeout(this.settleTimer);
         if (this.idleUpgradeTimer) clearTimeout(this.idleUpgradeTimer);
-        if (this.matCurrent) {
-          if (this.matCurrent.map) this.matCurrent.map.dispose();
-          this.matCurrent.dispose();
-        }
-        if (this.matTransition) {
-          if (this.matTransition.map) this.matTransition.map.dispose();
-          this.matTransition.dispose();
-        }
+        if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
+
         if (this.meshCurrent && this.scene) this.scene.remove(this.meshCurrent);
         if (this.meshTransition && this.scene) this.scene.remove(this.meshTransition);
+        if (this.matCurrent) this.matCurrent.dispose();
+        if (this.matTransition) this.matTransition.dispose();
+
+        const activeRail = document.getElementById('activeBoothSpatialRail');
+        if (activeRail) activeRail.remove();
+        const ind = document.getElementById('spatialEdgeIndicator_' + this.hostMode);
+        if (ind) ind.remove();
+
         if (this.renderer) {
-          this.renderer.dispose();
+          try { this.renderer.dispose(); } catch (e) {}
         }
       }
     }
-
     window.SpatialViewpointRenderer = SpatialViewpointRenderer;
-
-    function initSpatialPreviewWebGL(candidate) {
-      if (window.activeSpatialPreviewRenderer) {
-        window.activeSpatialPreviewRenderer.destroy();
-        window.activeSpatialPreviewRenderer = null;
-      }
-      const container = document.getElementById('spatialPreviewCanvasContainer');
-      const canvas = document.getElementById('spatialPreviewCanvas');
-      if (!container || !canvas) return;
-
-      window.activeSpatialPreviewRenderer = new SpatialViewpointRenderer({
-        hostMode: 'PREVIEW',
-        container,
-        canvas,
-        candidate
-      });
-    }
-
-    function selectSpatialPreviewAnchor(idx) {
-      if (window.activeSpatialPreviewRenderer) {
-        window.activeSpatialPreviewRenderer.selectViewpoint(idx);
-      }
-    }
 
     function mountActiveSpatialBoothViewer(projectData, activeBg) {
       if (typeof emitSpatialTextureLifecycle === 'function') {
@@ -15733,7 +15926,162 @@ function openAiEnhanceBoothModal() {
       }
     }
 
+    // ── CANONICAL ACTIVE BOOTH VIEWER CONTROLLER (C11.26-P0 Section 16) ──
+    window.ActiveBoothViewerController = {
+      getMountedViewer() {
+        if (window.activeSpatialBoothRenderer && !window.activeSpatialBoothRenderer.isDestroyed) {
+          return { type: 'SPATIAL_ACTIVE', instance: window.activeSpatialBoothRenderer };
+        }
+        if (window.activeSpatialPreviewRenderer && !window.activeSpatialPreviewRenderer.isDestroyed) {
+          return { type: 'SPATIAL_PREVIEW', instance: window.activeSpatialPreviewRenderer };
+        }
+        return { type: 'LEGACY', instance: null };
+      },
+
+      async executeCommand(command, execFn) {
+        const { type, instance } = this.getMountedViewer();
+        const beforeState = instance?.getViewState ? instance.getViewState() : {
+          yaw: window.viewerCameraState?.yawDeg || 0,
+          pitch: window.viewerCameraState?.pitchDeg || 0,
+          fov: window.camera?.fov || 50,
+          zoom: 1.0,
+          slot: 'UNKNOWN'
+        };
+
+        if (typeof emitSpatialTextureLifecycle === 'function') {
+          emitSpatialTextureLifecycle('VIEWER_CONTROL_CLICK', { command, rendererType: type });
+          emitSpatialTextureLifecycle('VIEWER_CONTROL_HANDLER_ENTER', { command, rendererType: type });
+          emitSpatialTextureLifecycle('VIEWER_CONTROL_TARGET_RESOLVED', { command, rendererType: type, hasInstance: Boolean(instance) });
+          emitSpatialTextureLifecycle('VIEWER_CONTROL_COMMAND_START', { command, beforeState });
+        }
+
+        const tStart = performance.now();
+        await execFn(instance, type);
+        const durationMs = Math.round(performance.now() - tStart);
+
+        const afterState = instance?.getViewState ? instance.getViewState() : {
+          yaw: window.viewerCameraState?.yawDeg || 0,
+          pitch: window.viewerCameraState?.pitchDeg || 0,
+          fov: window.camera?.fov || 50,
+          zoom: 1.0,
+          slot: 'UNKNOWN'
+        };
+
+        if (typeof emitSpatialTextureLifecycle === 'function') {
+          emitSpatialTextureLifecycle('VIEWER_CONTROL_COMMAND_COMPLETE', {
+            command,
+            rendererType: type,
+            viewpointBefore: beforeState.slot,
+            viewpointAfter: afterState.slot,
+            yawBefore: beforeState.yaw,
+            yawAfter: afterState.yaw,
+            pitchBefore: beforeState.pitch,
+            pitchAfter: afterState.pitch,
+            fovBefore: beforeState.fov,
+            fovAfter: afterState.fov,
+            zoomBefore: beforeState.zoom,
+            zoomAfter: afterState.zoom,
+            durationMs
+          });
+        }
+        return afterState;
+      },
+
+      setNormal() {
+        return this.executeCommand('NORMAL', (inst, type) => {
+          highlightPresetBtn('presetBtnNormal');
+          if (inst) return inst.animateTo({ fov: 55, zoom: 1.0, duration: 250 });
+          if (window.camera) applyCameraViewPreset(0, 0, 50);
+        });
+      },
+
+      setWide() {
+        return this.executeCommand('WIDE', (inst, type) => {
+          highlightPresetBtn('presetBtnWide');
+          if (inst) return inst.animateTo({ fov: 68, zoom: 1.0, duration: 250 });
+          if (window.camera) applyCameraViewPreset(0, 0, 60);
+        });
+      },
+
+      lookLeft() {
+        return this.executeCommand('LEFT_VIEW', (inst, type) => {
+          highlightPresetBtn('presetBtnLeft');
+          if (inst) return inst.goToViewpoint('LEFT');
+          if (window.camera) applyCameraViewPreset(-14, 0, 50);
+        });
+      },
+
+      lookCenter() {
+        return this.executeCommand('CENTER', (inst, type) => {
+          highlightPresetBtn('presetBtnCenter');
+          if (inst) return inst.goToViewpoint('CENTER');
+          if (window.camera) applyCameraViewPreset(0, 0, 50);
+        });
+      },
+
+      lookRight() {
+        return this.executeCommand('RIGHT_VIEW', (inst, type) => {
+          highlightPresetBtn('presetBtnRight');
+          if (inst) return inst.goToViewpoint('RIGHT');
+          if (window.camera) applyCameraViewPreset(14, 0, 50);
+        });
+      },
+
+      lookUp() {
+        return this.executeCommand('LOOK_UP', (inst, type) => {
+          highlightPresetBtn('presetBtnUp');
+          if (inst) {
+            const pitchTarget = 10 * Math.PI / 180; // ~+10°
+            return inst.animateTo({ pitch: pitchTarget, duration: 250 });
+          }
+          if (window.camera) applyCameraViewPreset(window.viewerCameraState?.yawDeg || 0, 8, window.camera.fov);
+        });
+      },
+
+      lookDown() {
+        return this.executeCommand('LOOK_DOWN', (inst, type) => {
+          highlightPresetBtn('presetBtnDown');
+          if (inst) {
+            const pitchTarget = -8 * Math.PI / 180; // ~-8°
+            return inst.animateTo({ pitch: pitchTarget, duration: 250 });
+          }
+          if (window.camera) applyCameraViewPreset(window.viewerCameraState?.yawDeg || 0, -8, window.camera.fov);
+        });
+      },
+
+      closeView() {
+        return this.executeCommand('CLOSE_VIEW', (inst, type) => {
+          highlightPresetBtn('presetBtnClose');
+          if (inst) {
+            return inst.animateTo({ zoom: 1.22, duration: 250 });
+          }
+          if (window.camera) applyCameraViewPreset(window.viewerCameraState?.yawDeg || 0, window.viewerCameraState?.pitchDeg || 0, 40);
+        });
+      },
+
+      reset() {
+        return this.executeCommand('RESET', (inst, type) => {
+          highlightPresetBtn('presetBtnReset');
+          if (inst) return inst.resetView();
+          if (window.camera) applyCameraViewPreset(0, 0, 50);
+        });
+      }
+    };
+
     function setImmersiveViewPreset(preset) {
+      if (window.ActiveBoothViewerController) {
+        switch (preset) {
+          case 'NORMAL': return window.ActiveBoothViewerController.setNormal();
+          case 'WIDE': return window.ActiveBoothViewerController.setWide();
+          case 'LEFT': return window.ActiveBoothViewerController.lookLeft();
+          case 'CENTER': return window.ActiveBoothViewerController.lookCenter();
+          case 'RIGHT': return window.ActiveBoothViewerController.lookRight();
+          case 'LOOK_UP': return window.ActiveBoothViewerController.lookUp();
+          case 'LOOK_DOWN': return window.ActiveBoothViewerController.lookDown();
+          case 'CLOSE': return window.ActiveBoothViewerController.closeView();
+          case 'RESET': return window.ActiveBoothViewerController.reset();
+        }
+      }
       if (!camera || !controls) return;
       const currYaw = window.viewerCameraState?.yawDeg || 0;
       const currPitch = window.viewerCameraState?.pitchDeg || 0;
@@ -15744,65 +16092,26 @@ function openAiEnhanceBoothModal() {
           applyCameraViewPreset(0, 0, 50);
           highlightPresetBtn('presetBtnNormal');
           break;
-
         case 'WIDE':
           applyCameraViewPreset(0, 0, 60);
           highlightPresetBtn('presetBtnWide');
           break;
-
-        case 'LEFT': // Spatial anchor navigation
-          if (window.spatialAnchors && window.spatialAnchors.length > 0) {
-            const leftAnchor = window.spatialAnchors[0];
-            targetPitch = 0.0;
-            targetYaw = leftAnchor.pose?.yaw || -0.419;
-            targetFov = 50;
-            break;
-          }
-          targetPitch = 0.0;
-          targetYaw = -0.244;
-          targetFov = 50;
-          break;
-        case 'RIGHT': // Spatial anchor navigation
-          if (window.spatialAnchors && window.spatialAnchors.length > 0) {
-            const rightAnchor = window.spatialAnchors[window.spatialAnchors.length - 1];
-            targetPitch = 0.0;
-            targetYaw = rightAnchor.pose?.yaw || 0.419;
-            targetFov = 50;
-            break;
-          }
-          targetPitch = 0.0;
-          targetYaw = 0.244;
-          targetFov = 50;
-          break;
-          applyCameraViewPreset(-14, 0, 50);
-          highlightPresetBtn('presetBtnLeft');
-          break;
-
         case 'CENTER':
           applyCameraViewPreset(0, 0, currFov);
           highlightPresetBtn('presetBtnCenter');
           break;
-
-        case 'RIGHT':
-          applyCameraViewPreset(14, 0, 50);
-          highlightPresetBtn('presetBtnRight');
-          break;
-
         case 'LOOK_UP':
           applyCameraViewPreset(currYaw, 8, currFov);
           highlightPresetBtn('presetBtnUp');
           break;
-
         case 'LOOK_DOWN':
           applyCameraViewPreset(currYaw, -8, currFov);
           highlightPresetBtn('presetBtnDown');
           break;
-
         case 'CLOSE':
           applyCameraViewPreset(currYaw, currPitch, 40);
           highlightPresetBtn('presetBtnClose');
           break;
-
         case 'RESET':
         default:
           applyCameraViewPreset(0, 0, 50);

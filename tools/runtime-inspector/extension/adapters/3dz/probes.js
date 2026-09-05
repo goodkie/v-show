@@ -309,6 +309,18 @@ var ThreeDZProbes = class ThreeDZProbes {
     };
   }
 
+  static getViewerControlState() {
+    if (typeof window === 'undefined') return { controllerExists: false };
+    const hasController = Boolean(window.ActiveBoothViewerController);
+    const mounted = window.ActiveBoothViewerController?.getMountedViewer ? window.ActiveBoothViewerController.getMountedViewer() : { type: 'NONE' };
+    const viewState = mounted.instance?.getViewState ? mounted.instance.getViewState() : null;
+    return {
+      controllerExists: hasController,
+      mountedType: mounted.type,
+      viewState
+    };
+  }
+
   static getComplete3DZState() {
     const proj = this.getProjectState();
     const cand = this.getSpatialCandidateState();
@@ -339,7 +351,8 @@ var ThreeDZProbes = class ThreeDZProbes {
       transitionState: act.transitionState,
       postServerStages: act.postServerStages,
       legacyRenderLoopAfterSpatialMount: act.legacyRenderLoopAfterSpatialMount,
-      activeRenderResolutionOrder: act.activeRenderResolutionOrder
+      activeRenderResolutionOrder: act.activeRenderResolutionOrder,
+      viewerControlState: this.getViewerControlState()
     };
   }
 };
