@@ -192,6 +192,8 @@ class PanoramicStitcher {
     const accumProvB = new Float32Array(panoW * panoH);
     const accumWeight = new Float32Array(panoW * panoH);
 
+    const pairMatches = (ringValidation && ringValidation.pairMatches) || [];
+
     if (isFull360) {
       for (let i = 0; i < N; i++) {
         angularAnchors.push(Math.round((i / N) * 360));

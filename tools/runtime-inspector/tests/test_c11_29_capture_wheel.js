@@ -17,7 +17,12 @@
  * - 16 canonical screenshots in RI-20260905-C1129.zip
  */
 
-const puppeteer = require('puppeteer');
+let puppeteer;
+try {
+  puppeteer = require('puppeteer');
+} catch (e) {
+  puppeteer = require('../../../virtual-tradeshow-commercial-v1/node_modules/puppeteer');
+}
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
