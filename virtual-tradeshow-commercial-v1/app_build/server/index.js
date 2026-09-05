@@ -9365,7 +9365,7 @@ app.post('/api/projects/:id/ai-enhance/discard', async (req, res) => {
 // ─── C11.17: PRO+ 7-VIEW AI SPATIAL BOOTH PIPELINE ENDPOINTS ─
 // ============================================================
 
-app.post('/api/projects/:id/spatial/start', upload.array('photos', 7), async (req, res) => {
+app.post('/api/projects/:id/spatial/start', upload.array('photos', 16), async (req, res) => {
   try {
     const projectId = req.params.id;
     const token = extractAuthToken(req);

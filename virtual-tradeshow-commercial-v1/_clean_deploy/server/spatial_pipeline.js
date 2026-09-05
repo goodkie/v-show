@@ -17,6 +17,7 @@ const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const { defaultPipeline: aiEnhancedPipeline } = require('./ai_enhanced_booth');
 const { defaultSpatialCV } = require('./spatial_cv');
+const { defaultPanoramicStitcher } = require('./panoramic_stitcher');
 
 const SLOTS = [
   'FAR_LEFT',
@@ -78,7 +79,7 @@ class SpatialBoothPipeline {
     notifyStage('PREPARING', 10, 'Preparing connected viewpoint spatial pipeline');
 
     const MIN_SOURCE_COUNT = 1;
-    const MAX_SOURCE_COUNT = 7;
+    const MAX_SOURCE_COUNT = 16;
 
     if (!sourceList || sourceList.length < MIN_SOURCE_COUNT) {
       const err = new Error('At least 1 source photo is required for Spatial Booth.');
@@ -86,7 +87,7 @@ class SpatialBoothPipeline {
       throw err;
     }
     if (sourceList.length > MAX_SOURCE_COUNT) {
-      const err = new Error('Spatial Booth currently supports up to 7 source photos.');
+      const err = new Error('Spatial Booth currently supports up to 16 source photos.');
       err.statusCode = 400;
       throw err;
     }
@@ -192,6 +193,85 @@ class SpatialBoothPipeline {
     const compatibleViews = processedViews.filter(v => v.status === 'GOOD' || v.status === 'FAIR');
     if (compatibleViews.length === 0) {
       throw new Error('None of the uploaded photos were compatible with Spatial Booth generation.');
+    }
+
+    // ── C11.27-R1: PANORAMIC_IMMERSIVE CENTER-ORIGIN RING PIPELINE (>= 8 photos or mode override) ──
+    const isPanoramicMode = (compatibleViews.length >= 8) || (options.mode === 'PANORAMIC_IMMERSIVE');
+    if (isPanoramicMode) {
+      notifyStage('MATCHING', 40, 'Validating 360 ring closure & adjacent pair overlap (~50%)');
+      const ringValidation = defaultPanoramicStitcher.validateRingClosure(compatibleViews);
+
+      notifyStage('ALIGNING', 55, 'Optimizing continuous equirectangular seam geometry & exposure compensation');
+      notifyStage('STITCHING', 70, 'Stitching 360 panoramic master using multi-band cosine feather blending');
+
+      const stitchResult = await defaultPanoramicStitcher.stitchEquirectangular(compatibleViews, {
+        candidateId,
+        width: 4096,
+        height: 2048
+      });
+
+      notifyStage('BUILDING_VIEWPOINTS', 88, 'Synthesizing continuous 360 panoramic immersive environment');
+
+      const candidate = {
+        candidateId,
+        projectId,
+        createdAt: new Date().toISOString(),
+        status: 'READY_FOR_PREVIEW',
+        engine: 'PANORAMIC_IMMERSIVE_V1',
+        viewerEngineVersion: 'PANORAMIC_IMMERSIVE_V1',
+        viewerMode: 'PANORAMIC_IMMERSIVE',
+        projectionType: 'EQUIRECTANGULAR',
+        horizontalCoverageDeg: ringValidation.horizontalCoverageDeg,
+        full360Qualified: ringValidation.isFull360,
+        captureRingValid: ringValidation.isRingValid,
+        firstLastClosureConfidence: ringValidation.firstLastClosureConfidence,
+        firstLastOverlapPercent: ringValidation.firstLastOverlapPercent,
+        averageOverlapPercent: ringValidation.averageOverlapPercent,
+        pairMatches: ringValidation.pairMatches,
+        angularAnchors: stitchResult.angularAnchors,
+        stitchedPanoramaUrl: stitchResult.url,
+        activeBackgroundUrl: stitchResult.url,
+        textureUrl: stitchResult.url,
+        entryViewId: 'START',
+        viewpointCount: 1,
+        sourceViewCount: compatibleViews.length,
+        totalSourceCount: sourceList.length,
+        compatibleSourceCount: compatibleViews.length,
+        registrationConfidence: ringValidation.firstLastClosureConfidence,
+        depthRequired: false,
+        viewportDragEnabled: true,
+        viewportHorizontalPan: true,
+        continuousYawEnabled: true,
+        mouseWheelZoomEnabled: true,
+        floatingArrowsEnabled: true,
+        activeAnchorIndex: 0,
+        derivatives: {
+          standard4k: { url: stitchResult.url, width: 4096, height: 2048 },
+          desktop8k: { url: stitchResult.url, width: 8192, height: 4096 },
+          mobile2k: { url: stitchResult.url, width: 2048, height: 1024 }
+        },
+        viewpoints: [{
+          id: 'vp-pano-master',
+          slot: 'PANORAMA_360',
+          index: 0,
+          viewerType: 'PANORAMIC_IMMERSIVE',
+          textureUrl: stitchResult.url,
+          derivatives: {
+            standard4k: { url: stitchResult.url },
+            desktop8k: { url: stitchResult.url }
+          }
+        }],
+        anchors: stitchResult.angularAnchors.map((deg, idx) => ({
+          id: 'anchor-deg-' + deg,
+          index: idx,
+          degree: deg,
+          slot: 'SHOT_' + String(idx + 1).padStart(2, '0'),
+          textureUrl: stitchResult.url
+        })),
+        sourceViews: processedViews
+      };
+
+      return candidate;
     }
 
     // Stage 3: MATCHING (40%) & Stage 4: ALIGNING (55%)

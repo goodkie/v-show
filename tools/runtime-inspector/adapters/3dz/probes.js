@@ -278,7 +278,7 @@ var ThreeDZProbes = class ThreeDZProbes {
       transitionState,
       postServerStages,
       legacyRenderLoopAfterSpatialMount,
-      activeRenderResolutionOrder: 'MULTI_VIEW_SPATIAL -> PHOTO_IMMERSIVE -> PANORAMA -> LEGACY_BACKGROUND -> DEFAULT_IMAGE'
+      activeRenderResolutionOrder: 'PANORAMIC_IMMERSIVE -> MULTI_VIEW_SPATIAL -> PHOTO_IMMERSIVE -> PANORAMA -> LEGACY_BACKGROUND -> DEFAULT_IMAGE'
     };
   }
 
@@ -306,6 +306,44 @@ var ThreeDZProbes = class ThreeDZProbes {
       isLoadingOverlayVisible,
       canvasWidth: canvas ? canvas.width : 0,
       canvasHeight: canvas ? canvas.height : 0
+    };
+  }
+
+
+  static getPanoramaState() {
+    if (typeof window === 'undefined') return { isPanoramaActive: false };
+    const mounted = window.ActiveBoothViewerController?.getMountedViewer ? window.ActiveBoothViewerController.getMountedViewer() : { type: 'NONE' };
+    const inst = mounted.instance;
+    const isPano = mounted.type === 'PANORAMIC_IMMERSIVE' || (inst instanceof window.PanoramicBoothViewer);
+    const viewState = inst?.getViewState ? inst.getViewState() : null;
+
+    const leftArrow = document.querySelector('.pano-arrow-left');
+    const rightArrow = document.querySelector('.pano-arrow-right');
+
+    return {
+      isPanoramaActive: isPano,
+      rendererType: mounted.type,
+      yaw: viewState?.yaw || 0,
+      pitch: viewState?.pitch || 0,
+      fov: viewState?.fov || 55,
+      zoom: viewState?.zoom || 1.0,
+      horizontalCoverageDeg: inst?.candidate?.horizontalCoverageDeg || 360,
+      full360Qualified: inst?.candidate?.full360Qualified !== false,
+      captureRingValid: inst?.candidate?.captureRingValid !== false,
+      angularAnchors: inst?.angularAnchors || [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330],
+      floatingArrowsVisible: Boolean(leftArrow && rightArrow)
+    };
+  }
+
+  static getZoomState() {
+    if (typeof window === 'undefined') return { currentFov: 55, targetFov: 55 };
+    const mounted = window.ActiveBoothViewerController?.getMountedViewer ? window.ActiveBoothViewerController.getMountedViewer() : { type: 'NONE' };
+    const inst = mounted.instance;
+    return {
+      currentFov: inst?.currentFov || 55,
+      targetFov: inst?.targetFov || inst?.currentFov || 55,
+      minFov: inst?.MIN_FOV || 30,
+      maxFov: inst?.MAX_FOV || 82
     };
   }
 

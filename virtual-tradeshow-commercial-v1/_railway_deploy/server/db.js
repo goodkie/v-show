@@ -13139,28 +13139,34 @@ return event;
   getActiveBoothBackground(project) {
     if (!project) return null;
     
-    // 0. Explicitly active spatial booth version (Priority when viewerMode is MULTI_VIEW_SPATIAL or activeSpatialVersionId is set)
-    if (project.viewerMode === 'MULTI_VIEW_SPATIAL' || (Array.isArray(project.spatialBoothVersions) && project.activeSpatialVersionId)) {
-      const sv = (project.spatialBoothVersions || []).find(item => item.id === project.activeSpatialVersionId || item.versionId === project.activeSpatialVersionId) || project.activeSpatialVersion;
+    // 0. Explicitly active panoramic or spatial booth version (C11.27-R1 Priority: PANORAMIC_IMMERSIVE -> MULTI_VIEW_SPATIAL)
+    const isPanoActive = project.viewerMode === 'PANORAMIC_IMMERSIVE' || Boolean(project.activePanoramaVersionId);
+    const activeVerId = project.activePanoramaVersionId || project.activeSpatialVersionId;
+    if (isPanoActive || project.viewerMode === 'MULTI_VIEW_SPATIAL' || (Array.isArray(project.spatialBoothVersions) && activeVerId)) {
+      const sv = (project.spatialBoothVersions || []).find(item => item.id === activeVerId || item.versionId === activeVerId) || project.activeSpatialVersion;
       if (sv) {
+        const mode = (isPanoActive || sv.viewerMode === 'PANORAMIC_IMMERSIVE' || Boolean(sv.stitchedPanoramaUrl)) ? 'PANORAMIC_IMMERSIVE' : 'MULTI_VIEW_SPATIAL';
         return {
           versionId: sv.id || sv.versionId,
-          assetId: 'asset-spatial-' + (sv.id || sv.versionId),
-          url: sv.activeBackgroundUrl || (sv.anchors && sv.anchors[0]?.textureUrl) || (sv.viewpoints && sv.viewpoints[0]?.textureUrl) || sv.url,
-          sourceType: 'MULTI_VIEW_SPATIAL',
+          assetId: 'asset-' + (mode === 'PANORAMIC_IMMERSIVE' ? 'pano-' : 'spatial-') + (sv.id || sv.versionId),
+          url: sv.stitchedPanoramaUrl || sv.activeBackgroundUrl || (sv.anchors && sv.anchors[0]?.textureUrl) || (sv.viewpoints && sv.viewpoints[0]?.textureUrl) || sv.url,
+          sourceType: mode,
           candidateId: sv.candidateId || null,
-          viewerMode: 'MULTI_VIEW_SPATIAL',
-          engineVersion: sv.viewerEngineVersion || sv.engineVersion || 'CONNECTED_VIEWPOINT_V3_1',
-          viewerEngineVersion: sv.viewerEngineVersion || sv.engineVersion || 'CONNECTED_VIEWPOINT_V3_1',
+          viewerMode: mode,
+          stitchedPanoramaUrl: sv.stitchedPanoramaUrl || sv.activeBackgroundUrl || sv.url,
+          horizontalCoverageDeg: sv.horizontalCoverageDeg || 360,
+          angularAnchors: sv.angularAnchors || [],
+          engineVersion: sv.viewerEngineVersion || sv.engineVersion || (mode === 'PANORAMIC_IMMERSIVE' ? 'PANORAMIC_IMMERSIVE_V1' : 'CONNECTED_VIEWPOINT_V3_1'),
+          viewerEngineVersion: sv.viewerEngineVersion || sv.engineVersion || (mode === 'PANORAMIC_IMMERSIVE' ? 'PANORAMIC_IMMERSIVE_V1' : 'CONNECTED_VIEWPOINT_V3_1'),
           anchors: sv.anchors || [],
           viewpoints: sv.viewpoints || sv.anchors || [],
           connections: sv.connections || [],
           adjacentGraph: sv.adjacentGraph || [],
           usableHorizontalRange: sv.usableHorizontalRange || null,
-          registrationConfidence: sv.registrationConfidence || 0.9,
+          registrationConfidence: sv.registrationConfidence || 0.95,
           derivatives: sv.derivatives || null,
-          normalFov: 50,
-          wideFov: 60
+          normalFov: 55,
+          wideFov: 68
         };
       }
     }
@@ -13577,6 +13583,9 @@ return event;
       const activeUrl = candidate.activeBackgroundUrl || (candidate.anchors && candidate.anchors[0]?.textureUrl) || (candidate.viewpoints && candidate.viewpoints[0]?.textureUrl);
 
       project.spatialBoothVersions = project.spatialBoothVersions || [];
+      const isPano = candidate.viewerMode === 'PANORAMIC_IMMERSIVE' || Boolean(candidate.stitchedPanoramaUrl);
+      const chosenViewerMode = isPano ? 'PANORAMIC_IMMERSIVE' : (candidate.viewerMode || 'MULTI_VIEW_SPATIAL');
+
       const versionObj = {
         id: versionId,
         versionId,
@@ -13584,16 +13593,19 @@ return event;
         candidateId,
         activeBackgroundUrl: activeUrl,
         url: activeUrl,
-        sourceType: 'MULTI_VIEW_SPATIAL',
-        viewerMode: 'MULTI_VIEW_SPATIAL',
-        engineVersion: 'CONNECTED_VIEWPOINT_V3_1',
-        viewerEngineVersion: 'CONNECTED_VIEWPOINT_V3_1',
+        stitchedPanoramaUrl: candidate.stitchedPanoramaUrl || activeUrl,
+        horizontalCoverageDeg: candidate.horizontalCoverageDeg || 360,
+        angularAnchors: candidate.angularAnchors || [],
+        sourceType: chosenViewerMode,
+        viewerMode: chosenViewerMode,
+        engineVersion: isPano ? 'PANORAMIC_IMMERSIVE_V1' : 'CONNECTED_VIEWPOINT_V3_1',
+        viewerEngineVersion: isPano ? 'PANORAMIC_IMMERSIVE_V1' : 'CONNECTED_VIEWPOINT_V3_1',
         anchors: candidate.anchors || [],
         viewpoints: candidate.viewpoints || candidate.anchors || [],
         connections: candidate.connections || [],
         adjacentGraph: candidate.adjacentGraph || candidate.connections || [],
         usableHorizontalRange: candidate.usableHorizontalRange || null,
-        registrationConfidence: candidate.registrationConfidence || candidate.averageConfidence || 0.9,
+        registrationConfidence: candidate.registrationConfidence || candidate.averageConfidence || 0.95,
         compatibleSourceCount: candidate.compatibleSourceCount || candidate.viewpoints?.length || candidate.anchors?.length || 1,
         sourceViews: candidate.sourceViews || [],
         assetManifest: candidate.assetManifest || [],
@@ -13604,16 +13616,19 @@ return event;
       project.spatialBoothVersions.push(versionObj);
 
       project.activeSpatialVersionId = versionId;
+      if (isPano) {
+        project.activePanoramaVersionId = versionId;
+      }
       project.activeSpatialVersion = versionObj;
       project.photoUrl = activeUrl;
-      project.viewerMode = 'MULTI_VIEW_SPATIAL';
-      project.activeViewerMode = 'MULTI_VIEW_SPATIAL';
+      project.viewerMode = chosenViewerMode;
+      project.activeViewerMode = chosenViewerMode;
       project.updatedAt = new Date().toISOString();
 
       candidate.status = 'APPLIED';
 
-      // Read-After-Write Verification (Section 23)
-      if (project.activeSpatialVersionId !== versionId || project.viewerMode !== 'MULTI_VIEW_SPATIAL') {
+      // Read-After-Write Verification (Section 23 / 51)
+      if (project.activeSpatialVersionId !== versionId || project.viewerMode !== chosenViewerMode) {
         throw new Error('Read-after-write verification failed for spatial apply.');
       }
 
