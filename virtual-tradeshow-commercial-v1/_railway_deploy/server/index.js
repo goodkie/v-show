@@ -9495,7 +9495,7 @@ app.post('/api/projects/:id/spatial/start', upload.array('photos', 16), async (r
         });
         console.log(`[SPATIAL][${jobId}][PREPARING] Preparing spatial booth pipeline`);
 
-        const requestedMode = req.body?.mode || (sourceList.length >= 8 ? 'PANORAMIC_IMMERSIVE' : 'MULTI_VIEW_SPATIAL');
+        const requestedMode = req.body?.mode || (sourceList.length >= 2 ? 'PANORAMIC_IMMERSIVE' : 'PHOTO_IMMERSIVE');
         const candidate = await spatialPipeline.processSpatialBooth(sourceList, {
           projectId,
           autoRemovePeople,

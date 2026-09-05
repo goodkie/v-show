@@ -13139,13 +13139,51 @@ return event;
   getActiveBoothBackground(project) {
     if (!project) return null;
     
-    // 0. Explicitly active panoramic or spatial booth version (C11.27-R1 Priority: PANORAMIC_IMMERSIVE -> MULTI_VIEW_SPATIAL)
+    // 0. Explicitly active panoramic booth version (C11.28 Priority 0: PANORAMIC_IMMERSIVE)
     const isPanoActive = project.viewerMode === 'PANORAMIC_IMMERSIVE' || Boolean(project.activePanoramaVersionId);
-    const activeVerId = project.activePanoramaVersionId || project.activeSpatialVersionId;
-    if (isPanoActive || project.viewerMode === 'MULTI_VIEW_SPATIAL' || (Array.isArray(project.spatialBoothVersions) && activeVerId)) {
+    if (isPanoActive) {
+      const pId = project.activePanoramaVersionId;
+      const pv = (project.panoramaVersions || []).find(item => item.id === pId || item.versionId === pId) ||
+                 (project.spatialBoothVersions || []).find(item => item.id === pId || item.versionId === pId);
+      if (pv) {
+        return {
+          versionId: pv.id || pv.versionId,
+          assetId: 'asset-pano-' + (pv.id || pv.versionId),
+          url: pv.stitchedPanoramaUrl || pv.activeBackgroundUrl || pv.textureUrl || pv.url,
+          sourceType: 'PANORAMIC_IMMERSIVE',
+          candidateId: pv.candidateId || null,
+          viewerMode: 'PANORAMIC_IMMERSIVE',
+          stitchedPanoramaUrl: pv.stitchedPanoramaUrl || pv.activeBackgroundUrl || pv.url,
+          horizontalCoverageDeg: pv.horizontalCoverageDeg || 360,
+          full360Qualified: pv.full360Qualified !== false,
+          angularAnchors: pv.angularAnchors || [],
+          engineVersion: pv.viewerEngineVersion || pv.engineVersion || 'PANORAMIC_IMMERSIVE_V1',
+          viewerEngineVersion: pv.viewerEngineVersion || pv.engineVersion || 'PANORAMIC_IMMERSIVE_V1',
+          anchors: pv.anchors || [],
+          viewpoints: pv.viewpoints || pv.anchors || [],
+          connections: pv.connections || [],
+          adjacentGraph: pv.adjacentGraph || [],
+          usableHorizontalRange: pv.usableHorizontalRange || null,
+          registrationConfidence: pv.registrationConfidence || 0.95,
+          derivatives: pv.derivatives || null,
+          masterDimensions: pv.masterDimensions || null,
+          nativeStitchDimensions: pv.nativeStitchDimensions || null,
+          srUsed: pv.srUsed || false,
+          srModel: pv.srModel || null,
+          master16kStatus: pv.master16kStatus || 'NATIVE_BELOW_16K',
+          pixelsPerHorizontalDegree: pv.pixelsPerHorizontalDegree || null,
+          normalFov: 55,
+          wideFov: 68
+        };
+      }
+    }
+
+    // 0b. Explicitly active spatial booth version (MULTI_VIEW_SPATIAL)
+    const activeVerId = project.activeSpatialVersionId;
+    if (project.viewerMode === 'MULTI_VIEW_SPATIAL' || (Array.isArray(project.spatialBoothVersions) && activeVerId)) {
       const sv = (project.spatialBoothVersions || []).find(item => item.id === activeVerId || item.versionId === activeVerId) || project.activeSpatialVersion;
       if (sv) {
-        const mode = (isPanoActive || sv.viewerMode === 'PANORAMIC_IMMERSIVE' || Boolean(sv.stitchedPanoramaUrl)) ? 'PANORAMIC_IMMERSIVE' : 'MULTI_VIEW_SPATIAL';
+        const mode = (sv.viewerMode === 'PANORAMIC_IMMERSIVE' || Boolean(sv.stitchedPanoramaUrl)) ? 'PANORAMIC_IMMERSIVE' : 'MULTI_VIEW_SPATIAL';
         return {
           versionId: sv.id || sv.versionId,
           assetId: 'asset-' + (mode === 'PANORAMIC_IMMERSIVE' ? 'pano-' : 'spatial-') + (sv.id || sv.versionId),
@@ -13155,6 +13193,7 @@ return event;
           viewerMode: mode,
           stitchedPanoramaUrl: sv.stitchedPanoramaUrl || sv.activeBackgroundUrl || sv.url,
           horizontalCoverageDeg: sv.horizontalCoverageDeg || 360,
+          full360Qualified: sv.full360Qualified !== false,
           angularAnchors: sv.angularAnchors || [],
           engineVersion: sv.viewerEngineVersion || sv.engineVersion || (mode === 'PANORAMIC_IMMERSIVE' ? 'PANORAMIC_IMMERSIVE_V1' : 'CONNECTED_VIEWPOINT_V3_1'),
           viewerEngineVersion: sv.viewerEngineVersion || sv.engineVersion || (mode === 'PANORAMIC_IMMERSIVE' ? 'PANORAMIC_IMMERSIVE_V1' : 'CONNECTED_VIEWPOINT_V3_1'),
@@ -13165,8 +13204,8 @@ return event;
           usableHorizontalRange: sv.usableHorizontalRange || null,
           registrationConfidence: sv.registrationConfidence || 0.95,
           derivatives: sv.derivatives || null,
-          normalFov: 55,
-          wideFov: 68
+          normalFov: mode === 'PANORAMIC_IMMERSIVE' ? 55 : 50,
+          wideFov: mode === 'PANORAMIC_IMMERSIVE' ? 68 : 60
         };
       }
     }
@@ -13579,14 +13618,15 @@ return event;
       const candidate = (db.spatialCandidates || []).find(c => c.candidateId === candidateId);
       if (!candidate) throw new Error(`Spatial booth candidate ${candidateId} not found`);
 
-      const versionId = `bver-spatial-${Date.now()}`;
-      const activeUrl = candidate.activeBackgroundUrl || (candidate.anchors && candidate.anchors[0]?.textureUrl) || (candidate.viewpoints && candidate.viewpoints[0]?.textureUrl);
-
-      project.spatialBoothVersions = project.spatialBoothVersions || [];
       const isPano = candidate.viewerMode === 'PANORAMIC_IMMERSIVE' || 
                      Boolean(candidate.stitchedPanoramaUrl) || 
                      candidate.projectionType === 'EQUIRECTANGULAR' || 
                      (candidate.engine && candidate.engine.startsWith('PANORAMIC_'));
+
+      // C11.28: Dedicated namespace and no dual-write
+      const versionId = isPano ? `pver-panorama-${Date.now()}` : `bver-spatial-${Date.now()}`;
+      const activeUrl = candidate.activeBackgroundUrl || (candidate.anchors && candidate.anchors[0]?.textureUrl) || (candidate.viewpoints && candidate.viewpoints[0]?.textureUrl) || candidate.stitchedPanoramaUrl;
+
       const chosenViewerMode = isPano ? 'PANORAMIC_IMMERSIVE' : 
                                ((candidate.viewpoints && candidate.viewpoints.length > 1) ? 'MULTI_VIEW_SPATIAL' : (candidate.viewerMode || 'MULTI_VIEW_SPATIAL'));
 
@@ -13599,6 +13639,8 @@ return event;
         url: activeUrl,
         stitchedPanoramaUrl: candidate.stitchedPanoramaUrl || activeUrl,
         horizontalCoverageDeg: candidate.horizontalCoverageDeg || 360,
+        full360Qualified: candidate.full360Qualified !== false,
+        captureRingValid: candidate.captureRingValid,
         angularAnchors: candidate.angularAnchors || [],
         sourceType: chosenViewerMode,
         viewerMode: chosenViewerMode,
@@ -13614,16 +13656,28 @@ return event;
         sourceViews: candidate.sourceViews || [],
         assetManifest: candidate.assetManifest || [],
         derivatives: candidate.derivatives || {},
+        masterDimensions: candidate.masterDimensions || null,
+        nativeStitchDimensions: candidate.nativeStitchDimensions || null,
+        srUsed: candidate.srUsed || false,
+        srModel: candidate.srModel || null,
+        master16kStatus: candidate.master16kStatus || 'NATIVE_BELOW_16K',
+        pixelsPerHorizontalDegree: candidate.pixelsPerHorizontalDegree || null,
         status: 'APPLIED',
         createdAt: new Date().toISOString()
       };
-      project.spatialBoothVersions.push(versionObj);
 
-      project.activeSpatialVersionId = versionId;
       if (isPano) {
+        project.panoramaVersions = project.panoramaVersions || [];
+        project.panoramaVersions.push(versionObj);
         project.activePanoramaVersionId = versionId;
+        // Do NOT overwrite or dual-write activeSpatialVersionId for new panoramas
+      } else {
+        project.spatialBoothVersions = project.spatialBoothVersions || [];
+        project.spatialBoothVersions.push(versionObj);
+        project.activeSpatialVersionId = versionId;
+        project.activeSpatialVersion = versionObj;
       }
-      project.activeSpatialVersion = versionObj;
+
       project.photoUrl = activeUrl;
       project.viewerMode = chosenViewerMode;
       project.activeViewerMode = chosenViewerMode;
@@ -13632,14 +13686,21 @@ return event;
       candidate.status = 'APPLIED';
 
       // Read-After-Write Verification (Section 23 / 51)
-      if (project.activeSpatialVersionId !== versionId || project.viewerMode !== chosenViewerMode) {
-        throw new Error('Read-after-write verification failed for spatial apply.');
+      if (isPano) {
+        if (project.activePanoramaVersionId !== versionId || project.viewerMode !== chosenViewerMode) {
+          throw new Error('Read-after-write verification failed for panoramic apply.');
+        }
+      } else {
+        if (project.activeSpatialVersionId !== versionId || project.viewerMode !== chosenViewerMode) {
+          throw new Error('Read-after-write verification failed for spatial apply.');
+        }
       }
 
       return {
         success: true,
         project,
-        activeSpatialVersion: versionObj
+        activePanoramaVersion: isPano ? versionObj : undefined,
+        activeSpatialVersion: isPano ? project.activeSpatialVersion : versionObj
       };
     });
   }

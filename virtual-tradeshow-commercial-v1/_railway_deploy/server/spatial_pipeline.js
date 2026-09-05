@@ -114,7 +114,7 @@ class SpatialBoothPipeline {
 
       const sha256 = crypto.createHash('sha256').update(rawBuf).digest('hex');
 
-      const isPanoRequested = (sourceList.length >= 8) || (options.mode === 'PANORAMIC_IMMERSIVE');
+      const isPanoRequested = (sourceList.length >= 2) || (options.mode === 'PANORAMIC_IMMERSIVE');
       if (seenHashes.has(sha256) && !isTestAccount && !isPanoRequested) {
         processedViews.push({
           id: 'sview-' + uuidv4().substring(0, 8),
@@ -197,18 +197,18 @@ class SpatialBoothPipeline {
     }
 
     // ── C11.27-R1: PANORAMIC_IMMERSIVE CENTER-ORIGIN RING PIPELINE (>= 8 photos or mode override) ──
-    const isPanoramicMode = (sourceList.length >= 8) || (compatibleViews.length >= 8) || (options.mode === 'PANORAMIC_IMMERSIVE');
+    const isPanoramicMode = (options.mode === 'PANORAMIC_IMMERSIVE') || (sourceList.length >= 2 && options.mode !== 'MULTI_VIEW_SPATIAL') || (compatibleViews.length >= 2 && options.mode !== 'MULTI_VIEW_SPATIAL');
     if (isPanoramicMode) {
-      notifyStage('MATCHING', 40, 'Validating 360 ring closure & adjacent pair overlap (~50%)');
-      const ringValidation = defaultPanoramicStitcher.validateRingClosure(compatibleViews);
+      notifyStage('MATCHING', 40, 'Validating capture ring geometry & adjacent pair overlap');
+      const ringValidation = defaultPanoramicStitcher.validateRingClosure(compatibleViews, options);
 
       notifyStage('ALIGNING', 55, 'Optimizing continuous equirectangular seam geometry & exposure compensation');
-      notifyStage('STITCHING', 70, 'Stitching 360 panoramic master using multi-band cosine feather blending');
+      notifyStage('STITCHING', 70, 'Stitching panoramic master using multi-band cosine feather blending');
 
       const stitchResult = await defaultPanoramicStitcher.stitchEquirectangular(compatibleViews, {
         candidateId,
-        width: 4096,
-        height: 2048
+        horizontalCoverageDeg: ringValidation.horizontalCoverageDeg,
+        ...options
       });
 
       notifyStage('BUILDING_VIEWPOINTS', 88, 'Synthesizing continuous 360 panoramic immersive environment');
@@ -233,6 +233,7 @@ class SpatialBoothPipeline {
         stitchedPanoramaUrl: stitchResult.url,
         activeBackgroundUrl: stitchResult.url,
         textureUrl: stitchResult.url,
+        masterUrl: stitchResult.masterUrl,
         entryViewId: 'START',
         viewpointCount: 1,
         sourceViewCount: compatibleViews.length,
@@ -246,11 +247,14 @@ class SpatialBoothPipeline {
         mouseWheelZoomEnabled: true,
         floatingArrowsEnabled: true,
         activeAnchorIndex: 0,
-        derivatives: {
-          standard4k: { url: stitchResult.url, width: 4096, height: 2048 },
-          desktop8k: { url: stitchResult.url, width: 8192, height: 4096 },
-          mobile2k: { url: stitchResult.url, width: 2048, height: 1024 }
-        },
+        masterDimensions: stitchResult.masterFinalDimensions,
+        nativeStitchDimensions: stitchResult.nativeStitchDimensions,
+        matchingProxyDimensions: stitchResult.matchingProxyDimensions,
+        srUsed: stitchResult.srUsed,
+        srModel: stitchResult.srModel,
+        master16kStatus: stitchResult.master16kStatus,
+        pixelsPerHorizontalDegree: stitchResult.pixelsPerHorizontalDegree,
+        derivatives: stitchResult.derivatives,
         viewpoints: [{
           id: 'vp-pano-master',
           slot: 'PANORAMA_360',

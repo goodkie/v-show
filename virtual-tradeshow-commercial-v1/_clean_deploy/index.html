@@ -9072,19 +9072,62 @@
     function getActiveBoothBackground(project) {
       if (!project) return null;
       
-      // 0. Explicitly active spatial booth version (Priority when viewerMode is MULTI_VIEW_SPATIAL or activeSpatialVersionId is set)
+      // 0. Explicitly active panoramic booth version (Priority 0: PANORAMIC_IMMERSIVE)
+      const isPanoActive = project.viewerMode === 'PANORAMIC_IMMERSIVE' || Boolean(project.activePanoramaVersionId);
+      if (isPanoActive) {
+        const pId = project.activePanoramaVersionId;
+        const pv = (project.panoramaVersions || []).find(item => item.id === pId || item.versionId === pId) ||
+                   (project.spatialBoothVersions || []).find(item => item.id === pId || item.versionId === pId);
+        if (pv) {
+          return {
+            versionId: pv.id || pv.versionId,
+            assetId: 'asset-pano-' + (pv.id || pv.versionId),
+            url: pv.stitchedPanoramaUrl || pv.activeBackgroundUrl || pv.textureUrl || pv.url,
+            sourceType: 'PANORAMIC_IMMERSIVE',
+            candidateId: pv.candidateId || null,
+            viewerMode: 'PANORAMIC_IMMERSIVE',
+            stitchedPanoramaUrl: pv.stitchedPanoramaUrl || pv.activeBackgroundUrl || pv.url,
+            horizontalCoverageDeg: pv.horizontalCoverageDeg || 360,
+            full360Qualified: pv.full360Qualified !== false,
+            angularAnchors: pv.angularAnchors || [],
+            engineVersion: pv.viewerEngineVersion || pv.engineVersion || 'PANORAMIC_IMMERSIVE_V1',
+            viewerEngineVersion: pv.viewerEngineVersion || pv.engineVersion || 'PANORAMIC_IMMERSIVE_V1',
+            anchors: pv.anchors || [],
+            viewpoints: pv.viewpoints || pv.anchors || [],
+            adjacentGraph: pv.adjacentGraph || [],
+            connections: pv.connections || [],
+            usableHorizontalRange: pv.usableHorizontalRange || null,
+            registrationConfidence: pv.registrationConfidence || 0.95,
+            derivatives: pv.derivatives || null,
+            masterDimensions: pv.masterDimensions || null,
+            nativeStitchDimensions: pv.nativeStitchDimensions || null,
+            srUsed: pv.srUsed || false,
+            srModel: pv.srModel || null,
+            master16kStatus: pv.master16kStatus || 'NATIVE_BELOW_16K',
+            pixelsPerHorizontalDegree: pv.pixelsPerHorizontalDegree || null,
+            normalFov: 55,
+            wideFov: 68
+          };
+        }
+      }
+
+      // 0b. Explicitly active spatial booth version (Priority when viewerMode is MULTI_VIEW_SPATIAL or activeSpatialVersionId is set)
       if (project.viewerMode === 'MULTI_VIEW_SPATIAL' || (Array.isArray(project.spatialBoothVersions) && project.activeSpatialVersionId)) {
         const sv = (project.spatialBoothVersions || []).find(item => item.id === project.activeSpatialVersionId || item.versionId === project.activeSpatialVersionId) || project.activeSpatialVersion;
         if (sv) {
+          const mode = (sv.viewerMode === 'PANORAMIC_IMMERSIVE' || Boolean(sv.stitchedPanoramaUrl)) ? 'PANORAMIC_IMMERSIVE' : 'MULTI_VIEW_SPATIAL';
           return {
             versionId: sv.id || sv.versionId,
             assetId: 'asset-spatial-' + (sv.id || sv.versionId),
             url: sv.activeBackgroundUrl || (sv.anchors && sv.anchors[0]?.textureUrl) || (sv.viewpoints && sv.viewpoints[0]?.textureUrl) || sv.url,
-            sourceType: 'MULTI_VIEW_SPATIAL',
+            sourceType: mode,
             candidateId: sv.candidateId || null,
-            viewerMode: 'MULTI_VIEW_SPATIAL',
-            engineVersion: sv.viewerEngineVersion || sv.engineVersion || 'CONNECTED_VIEWPOINT_V3_1',
-            viewerEngineVersion: sv.viewerEngineVersion || sv.engineVersion || 'CONNECTED_VIEWPOINT_V3_1',
+            viewerMode: mode,
+            stitchedPanoramaUrl: sv.stitchedPanoramaUrl || sv.activeBackgroundUrl || sv.url,
+            horizontalCoverageDeg: sv.horizontalCoverageDeg || 360,
+            full360Qualified: sv.full360Qualified !== false,
+            engineVersion: sv.viewerEngineVersion || sv.engineVersion || (mode === 'PANORAMIC_IMMERSIVE' ? 'PANORAMIC_IMMERSIVE_V1' : 'CONNECTED_VIEWPOINT_V3_1'),
+            viewerEngineVersion: sv.viewerEngineVersion || sv.engineVersion || (mode === 'PANORAMIC_IMMERSIVE' ? 'PANORAMIC_IMMERSIVE_V1' : 'CONNECTED_VIEWPOINT_V3_1'),
             anchors: sv.anchors || [],
             viewpoints: sv.viewpoints || sv.anchors || [],
             adjacentGraph: sv.adjacentGraph || [],
@@ -9092,8 +9135,8 @@
             usableHorizontalRange: sv.usableHorizontalRange || null,
             registrationConfidence: sv.registrationConfidence || 0.9,
             derivatives: sv.derivatives || null,
-            normalFov: 50,
-            wideFov: 60
+            normalFov: mode === 'PANORAMIC_IMMERSIVE' ? 55 : 50,
+            wideFov: mode === 'PANORAMIC_IMMERSIVE' ? 68 : 60
           };
         }
       }
@@ -15668,7 +15711,13 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
           const yawSensitivity = 0.0035;
           const pitchSensitivity = 0.0025;
 
-          this.yaw = (this.yaw - dx * yawSensitivity) % (2 * Math.PI);
+          const covDeg = this.candidate.horizontalCoverageDeg || 360;
+          if (covDeg < 360) {
+            const maxHalfArc = (covDeg / 2) * (Math.PI / 180);
+            this.yaw = Math.max(-maxHalfArc, Math.min(maxHalfArc, this.yaw - dx * yawSensitivity));
+          } else {
+            this.yaw = (this.yaw - dx * yawSensitivity) % (2 * Math.PI);
+          }
           this.pitch = Math.max(-18 * Math.PI / 180, Math.min(22 * Math.PI / 180, this.pitch + dy * pitchSensitivity));
 
           this.updateCamera();
@@ -15826,7 +15875,12 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
 
         // Each anchor is 30 deg (Math.PI / 6 rad)
         const stepRad = (30 * Math.PI) / 180;
-        const targetYaw = direction === 'RIGHT' ? (this.yaw + stepRad) : (this.yaw - stepRad);
+        let targetYaw = direction === 'RIGHT' ? (this.yaw + stepRad) : (this.yaw - stepRad);
+        const covDeg = this.candidate.horizontalCoverageDeg || 360;
+        if (covDeg < 360) {
+          const maxHalfArc = (covDeg / 2) * (Math.PI / 180);
+          targetYaw = Math.max(-maxHalfArc, Math.min(maxHalfArc, targetYaw));
+        }
         
         return this.animateTo({
           yaw: targetYaw,
@@ -15847,7 +15901,12 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         const startFov = this.currentFov;
         const startZoom = this.zoom;
 
-        const endYaw = yaw !== undefined ? yaw : startYaw;
+        let endYaw = yaw !== undefined ? yaw : startYaw;
+        const covDeg = this.candidate.horizontalCoverageDeg || 360;
+        if (covDeg < 360) {
+          const maxHalfArc = (covDeg / 2) * (Math.PI / 180);
+          endYaw = Math.max(-maxHalfArc, Math.min(maxHalfArc, endYaw));
+        }
         const endPitch = pitch !== undefined ? pitch : startPitch;
         const endFov = fov !== undefined ? fov : startFov;
         const endZoom = zoom !== undefined ? zoom : startZoom;
@@ -16004,6 +16063,7 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       }
     }
     window.PanoramicBoothViewer = PanoramicBoothViewer;
+    window.PanoramaRenderer = PanoramicBoothViewer;
 
     function initSpatialPreviewWebGL(candidate) {
       if (window.activeSpatialPreviewRenderer) {
