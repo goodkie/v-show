@@ -14332,12 +14332,21 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       const modeBadge = document.getElementById('spatialPreviewMode');
       const confBadge = document.getElementById('spatialPreviewConfidence');
 
+      const isPano = candidate?.viewerMode === 'PANORAMIC_IMMERSIVE' || Boolean(candidate?.stitchedPanoramaUrl);
       const viewCount = candidate.compatibleSourceCount || candidate.sourceViewCount || (candidate.anchors ? candidate.anchors.length : 1);
       if (title) {
-        title.innerHTML = '<i class="fa-solid fa-cube" style="color: #38bdf8;"></i> ' + (viewCount > 1 ? (viewCount + '-View Spatial Booth Candidate') : '1-View Immersive Booth Candidate');
+        if (isPano) {
+          title.innerHTML = '<i class="fa-solid fa-globe" style="color: #38bdf8;"></i> 360° Panoramic Booth Candidate';
+        } else {
+          title.innerHTML = '<i class="fa-solid fa-cube" style="color: #38bdf8;"></i> ' + (viewCount > 1 ? (viewCount + '-View Spatial Booth Candidate') : '1-View Immersive Booth Candidate');
+        }
       }
       if (subtitle) {
-        subtitle.textContent = (viewCount + ' Views • Connected Multi-View Experience • Preserving Original Photography');
+        if (isPano) {
+          subtitle.textContent = (viewCount + ' Shots • Stitched 360° Panoramic Sphere • 16K Master Preserved');
+        } else {
+          subtitle.textContent = (viewCount + ' Views • Connected Multi-View Experience • Preserving Original Photography');
+        }
       }
       if (modeBadge) modeBadge.textContent = candidate.viewerMode || 'MULTI_VIEW_SPATIAL';
       if (confBadge) confBadge.textContent = Math.round((candidate.registrationConfidence || 0.92) * 100) + '% Overlap';
@@ -15677,6 +15686,18 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         this.camera.lookAt(target);
         this.camera.fov = this.currentFov;
         this.camera.updateProjectionMatrix();
+
+        const yawBadge = document.getElementById('spatialPreviewYawBadge');
+        if (yawBadge && this.hostMode === 'PREVIEW') {
+          const deg = Math.round((this.yaw * 180) / Math.PI) % 360;
+          yawBadge.textContent = 'Yaw: ' + (deg < 0 ? deg + 360 : deg) + '° (' + this.yaw.toFixed(2) + ' rad)';
+        }
+      }
+
+      selectViewpoint(idx) {
+        const N = (this.candidate.anchors && this.candidate.anchors.length) || 8;
+        const targetYaw = (idx * (2 * Math.PI / N));
+        return this.animateTo({ yaw: targetYaw, duration: 300 });
       }
 
       render() {

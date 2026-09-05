@@ -5,9 +5,15 @@ const jpeg = require('./lib/jpeg-js');
 const { defaultSpatialCV } = require('./spatial_cv');
 
 class PanoramicStitcher {
-  constructor() {
-    this.uploadsDir = path.join(__dirname, '..', 'uploads');
+  constructor(customUploadsDir) {
+    const dataUploads = process.env.DATA_DIR ? path.join(process.env.DATA_DIR, 'uploads') : path.join(__dirname, '..', 'data', 'uploads');
+    const legacyUploads = path.join(__dirname, '..', 'uploads');
+    this.uploadsDir = customUploadsDir || (fs.existsSync(dataUploads) ? dataUploads : legacyUploads);
     if (!fs.existsSync(this.uploadsDir)) fs.mkdirSync(this.uploadsDir, { recursive: true });
+    if (!fs.existsSync(legacyUploads)) fs.mkdirSync(legacyUploads, { recursive: true });
+    if (!fs.existsSync(dataUploads)) fs.mkdirSync(dataUploads, { recursive: true });
+    this.legacyUploadsDir = legacyUploads;
+    this.dataUploadsDir = dataUploads;
   }
 
   validateRingClosure(views) {

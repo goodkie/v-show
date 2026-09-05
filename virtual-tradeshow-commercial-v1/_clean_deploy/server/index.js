@@ -702,6 +702,7 @@ app.use((err, req, res, next) => {
 
 // Static File Routes
 app.use('/uploads', express.static(UPLOADS_DIR));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // ── C11.16-P3.15-R4: Runtime Build Info Endpoint ────────────────
 const P315_BUILD_INFO = {
