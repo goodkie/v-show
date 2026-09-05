@@ -251,8 +251,22 @@ async function main() {
   // Screenshot 02: 02_8_REAL_FILES_FILLED.png
   await takeScreenshot(page, '02_8_REAL_FILES_FILLED.png', 'Capture Wheel with 8 Distinct Real Photos Filled (8 / 8, Ready to Create)');
 
-  // Click Create Panorama button inside live browser UI
-  console.log('Clicking "Create Panorama" button inside visible Production UI...');
+  // Screenshot 03: Hover and prepare click on Create Panorama button
+  console.log('Focusing and clicking "Create Panorama" button inside visible Production UI...');
+  await page.hover('#btnCreateWheelPanorama');
+  await page.evaluate(() => {
+    const btn = document.getElementById('btnCreateWheelPanorama');
+    if (btn) {
+      btn.style.boxShadow = '0 0 0 3px #38bdf8, 0 4px 15px rgba(2,132,199,0.7)';
+      btn.style.transform = 'scale(1.04)';
+    }
+  });
+  await new Promise(r => setTimeout(r, 200));
+
+  // Screenshot 03: 03_CREATE_PANORAMA_CLICK.png
+  await takeScreenshot(page, '03_CREATE_PANORAMA_CLICK.png', 'Create Panorama Button Click Action & Request Ingest');
+
+  // Trigger real click inside browser UI
   const clicked = await page.evaluate(() => {
     const btn = document.getElementById('btnCreateWheelPanorama');
     if (btn && !btn.disabled) {
@@ -265,17 +279,13 @@ async function main() {
   if (!clicked) {
     throw new Error('Could not click #btnCreateWheelPanorama button in UI!');
   }
-  await new Promise(r => setTimeout(r, 400));
 
-  // Screenshot 03: 03_CREATE_PANORAMA_CLICK.png
-  await takeScreenshot(page, '03_CREATE_PANORAMA_CLICK.png', 'Create Panorama Button Click Action & Request Ingest');
-
-  // Wait for real processing state in UI (progress container active)
+  // Wait for real processing state in UI (progress container active with label)
   console.log('Waiting for real panorama processing progress state in UI...');
   await page.waitForFunction(() => {
     const box = document.getElementById('proSpatialProgressBox');
-    const pLbl = document.getElementById('proSpatialProgressStage');
-    return (box && box.style.display !== 'none') || (pLbl && pLbl.textContent.trim().length > 0);
+    const pLbl = document.getElementById('proSpatialStageLabel');
+    return (box && box.style.display === 'block') || (pLbl && pLbl.textContent.trim().length > 0);
   }, { timeout: 15000 }).catch(() => {});
   await new Promise(r => setTimeout(r, 600));
 
@@ -448,13 +458,13 @@ async function main() {
     const backdrop = document.querySelector('.modal-backdrop');
     if (backdrop) backdrop.remove();
 
-    if (typeof loadProjectData === 'function') loadProjectData(applyData.project);
-    if (typeof loadSpatialBooth === 'function') loadSpatialBooth(applyData.project);
+    if (typeof renderStudioBooth === 'function') renderStudioBooth(applyData.project);
+    else if (typeof loadProjectData === 'function') loadProjectData(applyData.project);
   }, applyRes8.data);
   await page.waitForFunction(() => {
     const r = window.activeSpatialBoothRenderer;
     return r && r.panoTexture && r.panoTexture.image && r.panoTexture.image.complete;
-  }, { timeout: 20000 }).catch(() => {});
+  }, { timeout: 25000 }).catch(() => {});
   await new Promise(r => setTimeout(r, 2000));
 
   // Screenshot 09: 09_AFTER_APPLY.png
