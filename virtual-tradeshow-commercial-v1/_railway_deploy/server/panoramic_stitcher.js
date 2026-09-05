@@ -373,6 +373,16 @@ class PanoramicStitcher {
     const out2kFileName = 'pano-2k-' + candidateId + '.jpg';
     const out2kFilePath = path.join(this.uploadsDir, out2kFileName);
     fs.writeFileSync(out2kFilePath, encoded4k.data);
+    try { fs.writeFileSync(path.join(this.legacyUploadsDir, out2kFileName), encoded4k.data); } catch (e) {}
+    try { fs.writeFileSync(path.join(this.dataUploadsDir, out2kFileName), encoded4k.data); } catch (e) {}
+
+    // Diagnostic Provenance output file
+    const outProvenanceFileName = 'pano-provenance-' + candidateId + '.jpg';
+    const outProvenanceFilePath = path.join(this.uploadsDir, outProvenanceFileName);
+    const encodedProv = jpeg.encode({ data: provenanceBuf, width: panoW, height: panoH }, 85);
+    fs.writeFileSync(outProvenanceFilePath, encodedProv.data);
+    try { fs.writeFileSync(path.join(this.legacyUploadsDir, outProvenanceFileName), encodedProv.data); } catch (e) {}
+    try { fs.writeFileSync(path.join(this.dataUploadsDir, outProvenanceFileName), encodedProv.data); } catch (e) {}
 
     const masterSha256 = crypto.createHash('sha256').update(encoded4k.data).digest('hex');
     const nativePixelsPerHorizontalDegree = Number((nativeW / coverageDeg).toFixed(2));
