@@ -35,6 +35,7 @@ var ThreeDZProbes = class ThreeDZProbes {
       businessName: p.businessName || 'UNAVAILABLE',
       viewerMode: p.viewerMode || 'UNAVAILABLE',
       activeSpatialVersionId: p.activeSpatialVersionId || 'UNAVAILABLE',
+      activePanoramaVersionId: p.activePanoramaVersionId || (p.viewerMode === 'PANORAMIC_IMMERSIVE' ? p.activeSpatialVersionId : 'UNAVAILABLE'),
       activeBackgroundVersionId: p.activeBackgroundVersionId || 'UNAVAILABLE',
       spatialBoothVersionsCount: (p.spatialBoothVersions || []).length,
       backgroundVersionsCount: (p.backgroundVersions || []).length

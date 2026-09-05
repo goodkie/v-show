@@ -13583,8 +13583,12 @@ return event;
       const activeUrl = candidate.activeBackgroundUrl || (candidate.anchors && candidate.anchors[0]?.textureUrl) || (candidate.viewpoints && candidate.viewpoints[0]?.textureUrl);
 
       project.spatialBoothVersions = project.spatialBoothVersions || [];
-      const isPano = candidate.viewerMode === 'PANORAMIC_IMMERSIVE' || Boolean(candidate.stitchedPanoramaUrl);
-      const chosenViewerMode = isPano ? 'PANORAMIC_IMMERSIVE' : (candidate.viewerMode || 'MULTI_VIEW_SPATIAL');
+      const isPano = candidate.viewerMode === 'PANORAMIC_IMMERSIVE' || 
+                     Boolean(candidate.stitchedPanoramaUrl) || 
+                     candidate.projectionType === 'EQUIRECTANGULAR' || 
+                     (candidate.engine && candidate.engine.startsWith('PANORAMIC_'));
+      const chosenViewerMode = isPano ? 'PANORAMIC_IMMERSIVE' : 
+                               ((candidate.viewpoints && candidate.viewpoints.length > 1) ? 'MULTI_VIEW_SPATIAL' : (candidate.viewerMode || 'MULTI_VIEW_SPATIAL'));
 
       const versionObj = {
         id: versionId,

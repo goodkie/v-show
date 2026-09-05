@@ -319,7 +319,7 @@ class SpatialBoothPipeline {
     if (centerAnchorIdx < 0) centerAnchorIdx = Math.floor(viewpoints.length / 2);
 
     const connectedEdges = connections.filter(e => e.status === 'CONNECTED');
-    const viewerMode = (viewpoints.length > 1 && connectedEdges.length > 0) ? 'MULTI_VIEW_SPATIAL' : 'PHOTO_IMMERSIVE';
+    const viewerMode = (viewpoints.length > 1) ? 'MULTI_VIEW_SPATIAL' : 'PHOTO_IMMERSIVE';
 
     const connectedViewGenerationMs = Date.now() - pipelineStartTime;
     const legacyGenerationMs = 12400; // Historical benchmark with 3-plane depth warping
