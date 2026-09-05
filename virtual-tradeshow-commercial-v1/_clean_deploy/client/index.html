@@ -14568,9 +14568,9 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         const arc = this.CURVED_ARC;
         const R = this.CURVED_RADIUS;
         const arcLen = R * arc;
-        const geoAspect = 2.0; // Standard 2:1 pano/source derivative
+        const geoAspect = 1.85; // Standard 16:9 / wide derivative
         const geoHeight = arcLen / geoAspect;
-        const thetaStart = Math.PI * 1.5 - (arc / 2);
+        const thetaStart = Math.PI - (arc / 2);
 
         const curvedGeo = new THREE.CylinderGeometry(R, R, geoHeight, 64, 16, true, thetaStart, arc);
         curvedGeo.scale(-1, 1, 1);
