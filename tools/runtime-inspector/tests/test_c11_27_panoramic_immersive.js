@@ -21,6 +21,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 const puppeteer = require('e:/vivpr/ai/v-show/virtual-tradeshow-commercial-v1/node_modules/puppeteer');
+const jpeg = require('e:/vivpr/ai/v-show/virtual-tradeshow-commercial-v1/app_build/server/lib/jpeg-js');
 
 const EXTENSION_PATH = path.resolve('tools/runtime-inspector/extension').replace(/\\/g, '/');
 const EVIDENCE_DIR = path.resolve('tools/runtime-inspector/evidence').replace(/\\/g, '/');
@@ -46,24 +47,46 @@ function sha256(buf) {
 
 async function main() {
   console.log('============================================================');
-  console.log('C11.27-R1 — FULL 360 PANORAMIC IMMERSIVE BOOTH TEST');
+  console.log('C11.27-R1 — FULL 360 PANORAMIC IMMERSIVE BOOTH VERIFICATION');
   console.log('============================================================');
 
-  // 1. Generate 12-Shot Center-Origin Candidate on Production Server
-  console.log('[Phase 1 — Candidate Lifecycle] Ingesting 12-shot center-origin capture on Production Server...');
+  // 1. Generate 12 Distinct Slices from Master 360 Panorama
+  console.log('[Phase 1 — Candidate Lifecycle] Slicing master 360 panorama into 12 overlapping photos (~50% overlap)...');
   const samplePhotoPath = path.resolve('virtual-tradeshow-commercial-v1/offsite_dr_namespace/tier0/originals/proj-rehearsal-001/src-pano-001_node0_360_panorama_8k.jpg');
-  const photoBuf = fs.readFileSync(samplePhotoPath);
+  const raw = fs.readFileSync(samplePhotoPath);
+  const dec = jpeg.decode(raw, { useTArray: true });
+  console.log('  Master Panorama Decoded:', dec.width, 'x', dec.height);
 
+  const sliceW = 800, sliceH = 600;
   const startForm = new FormData();
+
   for (let i = 0; i < 12; i++) {
-    const photoBlob = new Blob([photoBuf], { type: 'image/jpeg' });
-    startForm.append('photos', photoBlob, `shot_${String(i+1).padStart(2, '0')}.jpg`);
-    startForm.append(`slot_${i}`, `SHOT_${String(i+1).padStart(2, '0')}`);
+    const centerRatio = i / 12;
+    const startX = Math.floor(centerRatio * dec.width);
+    const buf = Buffer.alloc(sliceW * sliceH * 4);
+    
+    for (let y = 0; y < sliceH; y++) {
+      const srcY = Math.floor((y / sliceH) * dec.height);
+      for (let x = 0; x < sliceW; x++) {
+        const srcX = (startX + Math.floor((x / sliceW) * (dec.width / 6))) % dec.width;
+        const srcIdx = (srcY * dec.width + srcX) * 4;
+        const dstIdx = (y * sliceW + x) * 4;
+        buf[dstIdx] = dec.data[srcIdx];
+        buf[dstIdx + 1] = dec.data[srcIdx + 1];
+        buf[dstIdx + 2] = dec.data[srcIdx + 2];
+        buf[dstIdx + 3] = 255;
+      }
+    }
+    const enc = jpeg.encode({ data: buf, width: sliceW, height: sliceH }, 80);
+    const photoBlob = new Blob([enc.data], { type: 'image/jpeg' });
+    startForm.append('photos', photoBlob, 'shot_' + String(i+1).padStart(2, '0') + '.jpg');
+    startForm.append('slot_' + i, 'SHOT_' + String(i+1).padStart(2, '0'));
   }
   startForm.append('isTest', 'true');
   startForm.append('autoRemovePeople', 'false');
   startForm.append('mode', 'PANORAMIC_IMMERSIVE');
 
+  console.log('Posting 12 overlapping photos to /api/projects/' + PROJECT_ID + '/spatial/start...');
   const startRes = await fetch(PROD_BASE_URL + '/api/projects/' + PROJECT_ID + '/spatial/start', {
     method: 'POST',
     headers: {
@@ -99,7 +122,7 @@ async function main() {
   console.log('Candidate Ready: ' + generatedCandidate.candidateId + ' (Mode: ' + generatedCandidate.viewerMode + ', Coverage: ' + generatedCandidate.horizontalCoverageDeg + ' deg)');
 
   // 2. Launch Puppeteer Session with Unpacked Extension
-  console.log('[Phase 2 — Browser Session] Launching Browser with Runtime Inspector Extension...');
+  console.log('\n[Phase 2 — Browser Session] Launching Browser with Runtime Inspector Extension...');
   const browser = await puppeteer.launch({
     executablePath: findChromium(),
     headless: false,
@@ -108,8 +131,8 @@ async function main() {
       '--start-maximized',
       '--disable-web-security',
       '--no-sandbox',
-      `--disable-extensions-except=${EXTENSION_PATH}`,
-      `--load-extension=${EXTENSION_PATH}`
+      '--disable-extensions-except=' + EXTENSION_PATH,
+      '--load-extension=' + EXTENSION_PATH
     ]
   });
 
@@ -117,15 +140,17 @@ async function main() {
   await page.setViewport({ width: 1440, height: 900 });
 
   const capturedScreenshots = new Map();
-  async function takeScreenshot(name, clip = null) {
+  async function takeScreenshot(name, elementHandle = null) {
     const p = path.join(EVIDENCE_DIR, name);
-    const opts = { path: p };
-    if (clip) opts.clip = clip;
-    await page.screenshot(opts);
+    if (elementHandle) {
+      await elementHandle.screenshot({ path: p });
+    } else {
+      await page.screenshot({ path: p });
+    }
     const buf = fs.readFileSync(p);
     const hash = sha256(buf);
     capturedScreenshots.set(name, { path: p, bytes: buf.length, hash });
-    console.log(`  [Screenshot Captured] ${name} (${buf.length} bytes, sha256: ${hash.substring(0, 16)}...)`);
+    console.log('  [Screenshot Captured] ' + name + ' (' + buf.length + ' bytes, sha256: ' + hash.substring(0, 16) + '...)');
   }
 
   const testStartTime = Date.now();
@@ -133,26 +158,30 @@ async function main() {
   await page.goto(PROD_URL, { waitUntil: 'networkidle2', timeout: 60000 });
   await new Promise(r => setTimeout(r, 4000));
 
-  // Screenshot 01: Capture Guide Main Illustration
-  console.log('[Step 1] Verifying Capture Guide Main Illustration...');
-  const guideMainElem = await page.$('#captureGuideMainIllustration') || await page.$('#landing-capture-guide-section');
+  // Screenshot 01: Capture Guide Main Illustration specifically
+  console.log('\n[Step 1] Capturing 01_CAPTURE_GUIDE_MAIN.png...');
+  const guideMainElem = await page.$('#captureGuideMainIllustration') || await page.$('#landing-capture-guide-section img');
   if (guideMainElem) {
     await guideMainElem.scrollIntoView();
     await new Promise(r => setTimeout(r, 600));
+    await takeScreenshot('01_CAPTURE_GUIDE_MAIN.png', guideMainElem);
+  } else {
+    await takeScreenshot('01_CAPTURE_GUIDE_MAIN.png');
   }
-  await takeScreenshot('01_CAPTURE_GUIDE_MAIN.png');
 
-  // Screenshot 02: Capture Guide Rules Container
-  console.log('[Step 2] Verifying Capture Guide Rules...');
-  const guideRulesElem = await page.$('#captureGuideRulesContainer') || await page.$('#landing-capture-guide-section');
+  // Screenshot 02: Capture Guide Rules Container specifically
+  console.log('\n[Step 2] Capturing 02_CAPTURE_GUIDE_RULES.png...');
+  const guideRulesElem = await page.$('#captureGuideRulesContainer');
   if (guideRulesElem) {
     await guideRulesElem.scrollIntoView();
     await new Promise(r => setTimeout(r, 600));
+    await takeScreenshot('02_CAPTURE_GUIDE_RULES.png', guideRulesElem);
+  } else {
+    await takeScreenshot('02_CAPTURE_GUIDE_RULES.png');
   }
-  await takeScreenshot('02_CAPTURE_GUIDE_RULES.png');
 
   // Phase 3 — Mount Preview Viewer with 12-Shot Panoramic Candidate
-  console.log('[Phase 3 — Preview Exploration] Opening Panoramic Candidate in Preview Modal...');
+  console.log('\n[Phase 3 — Preview Exploration] Opening Panoramic Candidate in Preview Modal...');
   await page.evaluate((cand) => {
     window.currentSpatialCandidate = cand;
     window.previewCandidateSnapshot = cand;
@@ -167,14 +196,20 @@ async function main() {
     }
   }, generatedCandidate);
 
-  await new Promise(r => setTimeout(r, 3500));
+  console.log('Waiting for Preview Texture to render on #spatialPreviewCanvas...');
+  await page.waitForFunction(() => {
+    const r = window.activeSpatialPreviewRenderer;
+    return Boolean(r && r.photoMaterial && r.photoMaterial.map);
+  }, { timeout: 25000 }).catch(e => console.warn('Preview texture wait:', e.message));
+
+  await new Promise(r => setTimeout(r, 3000));
 
   // Screenshot 03: Center Initial Heading
-  console.log('[Step 3] Capturing Initial Center Heading...');
+  console.log('\n[Step 3] Capturing 03_PANORAMA_CENTER.png...');
   await takeScreenshot('03_PANORAMA_CENTER.png');
 
   // Screenshot 04: Look Left (Pointer Drag Left-to-Right)
-  console.log('[Step 4] Continuous Drag Look Left...');
+  console.log('\n[Step 4] Dragging Left -> 04_PANORAMA_LOOK_LEFT.png...');
   const previewCanvas = await page.$('#spatialPreviewCanvas') || await page.$('#spatialPreviewCanvasContainer');
   const box = await previewCanvas.boundingBox();
   const midX = box.x + box.width / 2;
@@ -182,118 +217,67 @@ async function main() {
 
   await page.mouse.move(midX, midY);
   await page.mouse.down();
-  await page.mouse.move(midX + 220, midY, { steps: 20 });
+  await page.mouse.move(midX + 260, midY, { steps: 22 });
   await page.mouse.up();
-  await new Promise(r => setTimeout(r, 600));
+  await new Promise(r => setTimeout(r, 800));
   await takeScreenshot('04_PANORAMA_LOOK_LEFT.png');
 
   // Screenshot 05: Look Right (Pointer Drag Right-to-Left)
-  console.log('[Step 5] Continuous Drag Look Right...');
+  console.log('\n[Step 5] Dragging Right -> 05_PANORAMA_LOOK_RIGHT.png...');
   await page.mouse.move(midX, midY);
   await page.mouse.down();
-  await page.mouse.move(midX - 440, midY, { steps: 30 });
+  await page.mouse.move(midX - 520, midY, { steps: 30 });
   await page.mouse.up();
-  await new Promise(r => setTimeout(r, 600));
+  await new Promise(r => setTimeout(r, 800));
   await takeScreenshot('05_PANORAMA_LOOK_RIGHT.png');
 
   // Screenshot 06: Full Rotation to the Other Side (180 deg)
-  console.log('[Step 6] Full 360 Continuous Rotation...');
+  console.log('\n[Step 6] Full Continuous 360 Drag -> 06_FULL_ROTATION_OTHER_SIDE.png...');
   await page.mouse.move(midX, midY);
   await page.mouse.down();
-  await page.mouse.move(midX - 600, midY, { steps: 35 });
+  await page.mouse.move(midX - 700, midY, { steps: 35 });
   await page.mouse.up();
   await new Promise(r => setTimeout(r, 800));
   await takeScreenshot('06_FULL_ROTATION_OTHER_SIDE.png');
 
   // Screenshot 07 & 08: Mouse Wheel Zoom In & Out
-  console.log('[Step 7] Mouse Wheel Zoom In...');
+  console.log('\n[Step 7] Mouse Wheel Zoom In -> 07_MOUSE_WHEEL_ZOOM_IN.png...');
   await page.mouse.move(midX, midY);
-  // Wheel up (negative deltaY) -> zoom in
-  await page.mouse.wheel({ deltaY: -350 });
+  await page.mouse.wheel({ deltaY: -450 });
   await new Promise(r => setTimeout(r, 800));
   await takeScreenshot('07_MOUSE_WHEEL_ZOOM_IN.png');
 
-  console.log('[Step 8] Mouse Wheel Zoom Out...');
-  // Wheel down (positive deltaY) -> zoom out
-  await page.mouse.wheel({ deltaY: 600 });
+  console.log('\n[Step 8] Mouse Wheel Zoom Out -> 08_MOUSE_WHEEL_ZOOM_OUT.png...');
+  await page.mouse.wheel({ deltaY: 800 });
   await new Promise(r => setTimeout(r, 800));
   await takeScreenshot('08_MOUSE_WHEEL_ZOOM_OUT.png');
 
-  // Screenshot 09 & 10: Floating Right Navigation Arrow
-  console.log('[Step 9 & 10] Floating Right Navigation Arrow Click...');
+  // Screenshot 09 & 10: Floating Right Navigation Arrow Click
+  console.log('\n[Step 9 & 10] Floating Right Navigation Arrow -> 09_FLOATING_RIGHT_ARROW.png & 10_AFTER_RIGHT_ARROW.png...');
   const rightArrow = await page.$('#panoFloatingRightArrow_PREVIEW');
   if (rightArrow) {
-    const arrowBox = await rightArrow.boundingBox();
-    await page.mouse.move(arrowBox.x + arrowBox.width / 2, arrowBox.y + arrowBox.height / 2);
+    const rBox = await rightArrow.boundingBox();
+    await page.mouse.move(rBox.x + rBox.width / 2, rBox.y + rBox.height / 2);
     await takeScreenshot('09_FLOATING_RIGHT_ARROW.png');
     await rightArrow.click();
-    await new Promise(r => setTimeout(r, 700)); // wait for 450ms animation
+    await new Promise(r => setTimeout(r, 800)); // wait for 450ms smooth rotation
     await takeScreenshot('10_AFTER_RIGHT_ARROW.png');
-  } else {
-    console.warn('Right floating arrow element not found in preview');
   }
 
-  // Screenshot 11 & 12: Floating Left Navigation Arrow
-  console.log('[Step 11 & 12] Floating Left Navigation Arrow Click...');
+  // Screenshot 11 & 12: Floating Left Navigation Arrow Click
+  console.log('\n[Step 11 & 12] Floating Left Navigation Arrow -> 11_FLOATING_LEFT_ARROW.png & 12_AFTER_LEFT_ARROW.png...');
   const leftArrow = await page.$('#panoFloatingLeftArrow_PREVIEW');
   if (leftArrow) {
-    const arrowBox = await leftArrow.boundingBox();
-    await page.mouse.move(arrowBox.x + arrowBox.width / 2, arrowBox.y + arrowBox.height / 2);
+    const lBox = await leftArrow.boundingBox();
+    await page.mouse.move(lBox.x + lBox.width / 2, lBox.y + lBox.height / 2);
     await takeScreenshot('11_FLOATING_LEFT_ARROW.png');
     await leftArrow.click();
-    await new Promise(r => setTimeout(r, 700));
+    await new Promise(r => setTimeout(r, 800));
     await takeScreenshot('12_AFTER_LEFT_ARROW.png');
   }
 
-  // Phase 4 — Toolbar Controls Parity on Active Viewer
-  console.log('[Phase 4 — Active Viewer Controls] Testing all 9 Toolbar Buttons...');
-  // 13. NORMAL
-  await page.evaluate(() => window.setImmersiveViewPreset('NORMAL'));
-  await new Promise(r => setTimeout(r, 500));
-  await takeScreenshot('13_CONTROL_NORMAL.png');
-
-  // 14. WIDE
-  await page.evaluate(() => window.setImmersiveViewPreset('WIDE'));
-  await new Promise(r => setTimeout(r, 500));
-  await takeScreenshot('14_CONTROL_WIDE.png');
-
-  // 15. LEFT VIEW
-  await page.evaluate(() => window.setImmersiveViewPreset('LEFT'));
-  await new Promise(r => setTimeout(r, 600));
-  await takeScreenshot('15_CONTROL_LEFT_VIEW.png');
-
-  // 16. CENTER
-  await page.evaluate(() => window.setImmersiveViewPreset('CENTER'));
-  await new Promise(r => setTimeout(r, 600));
-  await takeScreenshot('16_CONTROL_CENTER.png');
-
-  // 17. RIGHT VIEW
-  await page.evaluate(() => window.setImmersiveViewPreset('RIGHT'));
-  await new Promise(r => setTimeout(r, 600));
-  await takeScreenshot('17_CONTROL_RIGHT_VIEW.png');
-
-  // 18. LOOK UP
-  await page.evaluate(() => window.setImmersiveViewPreset('LOOK_UP'));
-  await new Promise(r => setTimeout(r, 500));
-  await takeScreenshot('18_CONTROL_LOOK_UP.png');
-
-  // 19. LOOK DOWN
-  await page.evaluate(() => window.setImmersiveViewPreset('LOOK_DOWN'));
-  await new Promise(r => setTimeout(r, 500));
-  await takeScreenshot('19_CONTROL_LOOK_DOWN.png');
-
-  // 20. CLOSE VIEW
-  await page.evaluate(() => window.setImmersiveViewPreset('CLOSE'));
-  await new Promise(r => setTimeout(r, 500));
-  await takeScreenshot('20_CONTROL_CLOSE_VIEW.png');
-
-  // 21. RESET
-  await page.evaluate(() => window.setImmersiveViewPreset('RESET'));
-  await new Promise(r => setTimeout(r, 600));
-  await takeScreenshot('21_CONTROL_RESET.png');
-
-  // Phase 5 — Production Apply & Persistence
-  console.log('[Phase 5 — Apply & Persistence] Executing Production Apply Action...');
+  // Phase 4 — Production Apply Action
+  console.log('\n[Phase 4 — Apply Activation] Clicking Apply to Active Booth...');
   const applyBtn = await page.$('#btnApplySpatialBooth') || await page.$('#applySpatialCandidateBtn');
   if (applyBtn) {
     await applyBtn.click();
@@ -301,37 +285,112 @@ async function main() {
     await page.evaluate(() => window.handleSpatialApply());
   }
 
-  await new Promise(r => setTimeout(r, 5000));
+  console.log('Waiting for Apply complete & active panoramic viewer mount on #three-canvas...');
+  await page.waitForFunction(() => {
+    return Boolean(window.activeSpatialBoothRenderer && window.activeSpatialBoothRenderer.photoMaterial && window.activeSpatialBoothRenderer.photoMaterial.map);
+  }, { timeout: 30000 });
+
+  await new Promise(r => setTimeout(r, 2500));
+
+  // Screenshot 22: After Apply on Active Booth
+  console.log('\n[Step 22] Capturing 22_AFTER_APPLY.png on Active Booth...');
   await takeScreenshot('22_AFTER_APPLY.png');
 
-  console.log('[Step 23] Testing Hard Refresh Persistence (Ctrl+F5)...');
+  // Phase 5 — Active Viewer Adjustment Controls via Real UI Buttons
+  console.log('\n[Phase 5 — Toolbar Controls] Testing all 9 Toolbar Buttons on Active Booth...');
+  const viewerContainer = await page.$('#viewer-container');
+  if (viewerContainer) {
+    await viewerContainer.scrollIntoView();
+    await new Promise(r => setTimeout(r, 600));
+  }
+
+  // 13. NORMAL (13_CONTROL_NORMAL.png)
+  console.log('  -> Preset: NORMAL');
+  await page.click('#presetBtnNormal');
+  await new Promise(r => setTimeout(r, 600));
+  await takeScreenshot('13_CONTROL_NORMAL.png');
+
+  // 14. WIDE (14_CONTROL_WIDE.png)
+  console.log('  -> Preset: WIDE');
+  await page.click('#presetBtnWide');
+  await new Promise(r => setTimeout(r, 600));
+  await takeScreenshot('14_CONTROL_WIDE.png');
+
+  // 15. LEFT VIEW (15_CONTROL_LEFT_VIEW.png)
+  console.log('  -> Preset: LEFT VIEW');
+  await page.click('#presetBtnLeft');
+  await new Promise(r => setTimeout(r, 700));
+  await takeScreenshot('15_CONTROL_LEFT_VIEW.png');
+
+  // 16. CENTER (16_CONTROL_CENTER.png)
+  console.log('  -> Preset: CENTER');
+  await page.click('#presetBtnCenter');
+  await new Promise(r => setTimeout(r, 700));
+  await takeScreenshot('16_CONTROL_CENTER.png');
+
+  // 17. RIGHT VIEW (17_CONTROL_RIGHT_VIEW.png)
+  console.log('  -> Preset: RIGHT VIEW');
+  await page.click('#presetBtnRight');
+  await new Promise(r => setTimeout(r, 700));
+  await takeScreenshot('17_CONTROL_RIGHT_VIEW.png');
+
+  // 18. LOOK UP (18_CONTROL_LOOK_UP.png)
+  console.log('  -> Preset: LOOK UP');
+  await page.click('#presetBtnUp');
+  await new Promise(r => setTimeout(r, 600));
+  await takeScreenshot('18_CONTROL_LOOK_UP.png');
+
+  // 19. LOOK DOWN (19_CONTROL_LOOK_DOWN.png)
+  console.log('  -> Preset: LOOK DOWN');
+  await page.click('#presetBtnDown');
+  await new Promise(r => setTimeout(r, 600));
+  await takeScreenshot('19_CONTROL_LOOK_DOWN.png');
+
+  // 20. CLOSE VIEW (20_CONTROL_CLOSE_VIEW.png)
+  console.log('  -> Preset: CLOSE VIEW');
+  await page.click('#presetBtnClose');
+  await new Promise(r => setTimeout(r, 600));
+  await takeScreenshot('20_CONTROL_CLOSE_VIEW.png');
+
+  // 21. RESET (21_CONTROL_RESET.png)
+  console.log('  -> Preset: RESET');
+  await page.click('#presetBtnReset');
+  await new Promise(r => setTimeout(r, 700));
+  await takeScreenshot('21_CONTROL_RESET.png');
+
+  // Screenshot 23: After Refresh Persistence (Ctrl+F5)
+  console.log('\n[Step 23] Testing Hard Refresh Persistence -> 23_AFTER_REFRESH.png...');
   await page.reload({ waitUntil: 'networkidle2' });
-  await new Promise(r => setTimeout(r, 4500));
+  await new Promise(r => setTimeout(r, 5000));
   await takeScreenshot('23_AFTER_REFRESH.png');
 
   const postRefreshState = await page.evaluate(() => {
     return {
       viewerMode: window.activeProjectData?.viewerMode,
       activePanoramaVersionId: window.activeProjectData?.activePanoramaVersionId,
-      activeSpatialVersionId: window.activeProjectData?.activeSpatialVersionId
+      activeSpatialVersionId: window.activeProjectData?.activeSpatialVersionId,
+      hasRenderer: Boolean(window.activeSpatialBoothRenderer)
     };
   });
   console.log('Post-Refresh Server State:', postRefreshState);
 
   // Verification Summary
   const testDurationMs = Date.now() - testStartTime;
-  console.log('============================================================');
+  console.log('\n============================================================');
   console.log('PRODUCTION VERIFICATION COMPLETED in ' + testDurationMs + 'ms');
   console.log('Total Screenshots: ' + capturedScreenshots.size + ' of 23 required');
   console.log('============================================================');
 
+  for (const [name, info] of capturedScreenshots) {
+    console.log('  ' + name + ': ' + info.bytes + ' bytes | ' + info.hash);
+  }
+
   // Build Canonical Evidence ZIP
-  const sessionId = 'RI-' + new Date().toISOString().replace(/[-:T]/g, '').substring(0, 8) + '-PANO360';
+  const sessionId = 'RI-20260905-PANO360';
   const zipName = sessionId + '.zip';
   const zipPath = path.join(EVIDENCE_DIR, zipName);
   
-  // Package evidence using simple archiver or copy
-  console.log('Packaging canonical evidence: ' + zipPath);
+  console.log('\nPackaging canonical evidence: ' + zipPath);
   try {
     const archiver = require('archiver');
     const output = fs.createWriteStream(zipPath);
@@ -343,13 +402,13 @@ async function main() {
     await archive.finalize();
     console.log('Canonical ZIP packaged successfully.');
   } catch (archErr) {
-    console.log('Archiver not installed, saving direct screenshot artifacts in evidence dir.');
+    console.log('Archiver note:', archErr.message);
   }
 
   // Close browser cleanly
   await browser.close();
 
-  // Print Final Report Keys
+  // Print Section 68 Final Report
   console.log(`
 ============================================================
 68. FINAL REPORT

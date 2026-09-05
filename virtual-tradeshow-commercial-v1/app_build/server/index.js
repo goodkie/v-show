@@ -9495,10 +9495,12 @@ app.post('/api/projects/:id/spatial/start', upload.array('photos', 16), async (r
         });
         console.log(`[SPATIAL][${jobId}][PREPARING] Preparing spatial booth pipeline`);
 
+        const requestedMode = req.body?.mode || (sourceList.length >= 8 ? 'PANORAMIC_IMMERSIVE' : 'MULTI_VIEW_SPATIAL');
         const candidate = await spatialPipeline.processSpatialBooth(sourceList, {
           projectId,
           autoRemovePeople,
           isTestAccount,
+          mode: requestedMode,
           onStage: async (stage, progress, label) => {
             await db.updateSpatialJob(jobId, {
               status: 'PROCESSING',

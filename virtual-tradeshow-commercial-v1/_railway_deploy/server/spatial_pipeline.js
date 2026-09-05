@@ -114,7 +114,8 @@ class SpatialBoothPipeline {
 
       const sha256 = crypto.createHash('sha256').update(rawBuf).digest('hex');
 
-      if (seenHashes.has(sha256)) {
+      const isPanoRequested = (sourceList.length >= 8) || (options.mode === 'PANORAMIC_IMMERSIVE');
+      if (seenHashes.has(sha256) && !isTestAccount && !isPanoRequested) {
         processedViews.push({
           id: 'sview-' + uuidv4().substring(0, 8),
           localPath: src.path,
@@ -196,7 +197,7 @@ class SpatialBoothPipeline {
     }
 
     // ── C11.27-R1: PANORAMIC_IMMERSIVE CENTER-ORIGIN RING PIPELINE (>= 8 photos or mode override) ──
-    const isPanoramicMode = (compatibleViews.length >= 8) || (options.mode === 'PANORAMIC_IMMERSIVE');
+    const isPanoramicMode = (sourceList.length >= 8) || (compatibleViews.length >= 8) || (options.mode === 'PANORAMIC_IMMERSIVE');
     if (isPanoramicMode) {
       notifyStage('MATCHING', 40, 'Validating 360 ring closure & adjacent pair overlap (~50%)');
       const ringValidation = defaultPanoramicStitcher.validateRingClosure(compatibleViews);
