@@ -15184,6 +15184,9 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         }
 
         if (targetIdx >= 0 && targetIdx < this.viewpoints.length) {
+          if (targetIdx === this.activeIdx) {
+            return this.animateTo({ yaw: 0, pitch: 0, duration: 250 });
+          }
           return this.selectViewpoint(targetIdx);
         }
       }
@@ -15358,6 +15361,15 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
     window.selectSpatialPreviewAnchor = selectSpatialPreviewAnchor;
 
     function mountActiveSpatialBoothViewer(projectData, activeBg) {
+      if (!activeBg) activeBg = {};
+      const previewCand = window.currentSpatialCandidate || window.previewCandidateSnapshot;
+      if (previewCand && previewCand.viewpoints && previewCand.viewpoints.length > 1) {
+        if (!activeBg.viewpoints || activeBg.viewpoints.length <= 1) {
+          activeBg.viewpoints = previewCand.viewpoints;
+          activeBg.anchors = previewCand.anchors;
+        }
+      }
+
       if (typeof emitSpatialTextureLifecycle === 'function') {
         emitSpatialTextureLifecycle('SPATIAL_ACTIVE_RENDERER_CREATE', {
           projectId: projectData?.id,

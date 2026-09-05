@@ -66,8 +66,12 @@ async function main() {
 
   const startForm = new FormData();
   const photoBlob = new Blob([photoBuf], { type: 'image/jpeg' });
+  startForm.append('photos', photoBlob, 'left_pano_8k.jpg');
+  startForm.append('slot_0', 'LEFT');
   startForm.append('photos', photoBlob, 'center_pano_8k.jpg');
-  startForm.append('slot_0', 'CENTER');
+  startForm.append('slot_1', 'CENTER');
+  startForm.append('photos', photoBlob, 'right_pano_8k.jpg');
+  startForm.append('slot_2', 'RIGHT');
   startForm.append('isTest', 'true');
   startForm.append('autoRemovePeople', 'false');
 
