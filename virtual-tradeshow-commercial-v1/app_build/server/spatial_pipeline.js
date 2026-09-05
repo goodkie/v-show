@@ -92,7 +92,8 @@ class SpatialBoothPipeline {
       throw err;
     }
 
-    const candidateId = 'cand-spatial-' + Date.now();
+    const isPano = (options.mode === 'PANORAMIC_IMMERSIVE') || (options.creationMode === 'FIXED_ORIGIN_PANORAMA') || (sourceList.length >= 2 && options.creationMode === 'PANORAMIC_IMMERSIVE');
+    const candidateId = (isPano ? 'cand-panorama-' : 'cand-spatial-') + Date.now();
     const processedViews = [];
     const seenHashes = new Map();
     const warnings = [];
@@ -260,6 +261,9 @@ class SpatialBoothPipeline {
         masterSha256: stitchResult.masterSha256,
         sourceContributions: stitchResult.sourceContributions,
         contributingSourceCount: stitchResult.contributingSourceCount,
+        actualContributingSourceCount: stitchResult.actualContributingSourceCount || stitchResult.contributingSourceCount,
+        compositorMetrics: stitchResult.compositorMetrics,
+        provenancePanoramaUrl: stitchResult.provenanceUrl,
         sourceHashes: stitchResult.sourceHashes,
         derivatives: stitchResult.derivatives,
         viewpoints: [{

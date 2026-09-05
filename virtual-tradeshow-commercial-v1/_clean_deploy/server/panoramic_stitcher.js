@@ -144,12 +144,13 @@ class PanoramicStitcher {
     const masterFinalDimensions = { width: masterW, height: masterH };
     const pixelsPerHorizontalDegree = Number((nativeW / coverageDeg).toFixed(2));
 
-    // 5. Standard 4K canvas for primary viewer load
+    // 5. Standard 4K canvas & Diagnostic Provenance canvas
     const panoW = 4096;
     const panoH = 2048;
     const outBuf = Buffer.alloc(panoW * panoH * 4);
+    const provenanceBuf = Buffer.alloc(panoW * panoH * 4);
 
-    // Initial background: subtle dark gradient
+    // Initial background: subtle dark slate
     for (let y = 0; y < panoH; y++) {
       for (let x = 0; x < panoW; x++) {
         const idx = (y * panoW + x) * 4;
@@ -157,106 +158,203 @@ class PanoramicStitcher {
         outBuf[idx + 1] = 6;
         outBuf[idx + 2] = 23;
         outBuf[idx + 3] = 255;
+
+        provenanceBuf[idx] = 15;
+        provenanceBuf[idx + 1] = 23;
+        provenanceBuf[idx + 2] = 42;
+        provenanceBuf[idx + 3] = 255;
       }
     }
 
-    // 6. Stitch photos onto equirectangular canvas & track pixel contributions
+    // Diagnostic provenance palette (distinct index/hue for each source)
+    const DIAGNOSTIC_PALETTE = [
+      [239, 68, 68],    // Source 1 (0° Front): Crimson Red #ef4444
+      [249, 115, 22],   // Source 2 (45° Front-Right): Bright Orange #f97316
+      [234, 179, 8],    // Source 3 (90° Right): Amber Yellow #eab308
+      [34, 197, 94],    // Source 4 (135° Back-Right): Emerald Green #22c55e
+      [6, 182, 212],    // Source 5 (180° Back): Cyan #06b6d4
+      [59, 130, 246],   // Source 6 (225° Back-Left): Royal Blue #3b82f6
+      [168, 85, 247],   // Source 7 (270° Left): Purple #a855f7
+      [236, 72, 153]    // Source 8 (315° Front-Left): Pink Magenta #ec4899
+    ];
+
+    // 6. Compute multi-band compositor weights & accumulate pixels
     const angularAnchors = [];
-    const sourceWeights = new Array(decodedViews.length).fill(0);
+    const validPixelCounts = new Array(decodedViews.length).fill(0);
+    const finalBlendWeightSums = new Array(decodedViews.length).fill(0);
+
+    // Accumulators for weighted pixel colors per canvas pixel
+    const accumR = new Float32Array(panoW * panoH);
+    const accumG = new Float32Array(panoW * panoH);
+    const accumB = new Float32Array(panoW * panoH);
+    const accumProvR = new Float32Array(panoW * panoH);
+    const accumProvG = new Float32Array(panoW * panoH);
+    const accumProvB = new Float32Array(panoW * panoH);
+    const accumWeight = new Float32Array(panoW * panoH);
 
     if (isFull360) {
       for (let i = 0; i < N; i++) {
         angularAnchors.push(Math.round((i / N) * 360));
       }
 
+      // First pass: compute column coverage and weights per view
       for (let i = 0; i < N; i++) {
         const srcObj = decodedViews[i % decodedViews.length];
         const dec = srcObj.dec;
         const centerAngleDeg = (i / N) * 360;
         const centerCol = Math.floor((centerAngleDeg / 360) * panoW);
-        const sectorCols = Math.floor((panoW / N) * 1.5);
+        const pair = pairMatches[i] || {};
+        const overlapRatio = pair.overlapPercent ? (pair.overlapPercent / 100) : 0.50;
+        const inlierRatio = pair.inlierCount ? (pair.inlierCount / 42) : 1.0;
+
+        // Sector width calibrated from registration overlap
+        const sectorCols = Math.floor((panoW / N) * (1.35 + overlapRatio * 0.28));
         const halfSector = Math.floor(sectorCols / 2);
+        const diagColor = DIAGNOSTIC_PALETTE[i % DIAGNOSTIC_PALETTE.length];
 
         for (let sc = -halfSector; sc <= halfSector; sc++) {
           const dstCol = (centerCol + sc + panoW) % panoW;
-          const weight = 0.5 * (1 + Math.cos((sc / halfSector) * Math.PI));
+          const normDist = sc / halfSector;
+          const cosWeight = 0.5 * (1 + Math.cos(normDist * Math.PI)) * (0.92 + inlierRatio * 0.08);
           const srcColRatio = (sc + halfSector) / sectorCols;
           const srcX = Math.min(dec.width - 1, Math.max(0, Math.floor(srcColRatio * dec.width)));
-          sourceWeights[i % decodedViews.length] += weight * panoH;
 
           for (let y = 0; y < panoH; y++) {
+            const normY = (y - panoH / 2) / (panoH / 2);
+            const radFalloff = Math.max(0.05, 1 - 0.20 * (normDist * normDist + normY * normY * 0.5));
+            const w = cosWeight * radFalloff;
+
             const srcY = Math.min(dec.height - 1, Math.max(0, Math.floor((y / panoH) * dec.height)));
             const srcIdx = (srcY * dec.width + srcX) * 4;
-            const dstIdx = (y * panoW + dstCol) * 4;
+            const pixIdx = y * panoW + dstCol;
 
-            const curR = outBuf[dstIdx];
-            const curG = outBuf[dstIdx + 1];
-            const curB = outBuf[dstIdx + 2];
+            const pr = dec.data[srcIdx];
+            const pg = dec.data[srcIdx + 1];
+            const pb = dec.data[srcIdx + 2];
 
-            outBuf[dstIdx] = Math.round(curR * (1 - weight) + dec.data[srcIdx] * weight);
-            outBuf[dstIdx + 1] = Math.round(curG * (1 - weight) + dec.data[srcIdx + 1] * weight);
-            outBuf[dstIdx + 2] = Math.round(curB * (1 - weight) + dec.data[srcIdx + 2] * weight);
-            outBuf[dstIdx + 3] = 255;
+            accumR[pixIdx] += pr * w;
+            accumG[pixIdx] += pg * w;
+            accumB[pixIdx] += pb * w;
+
+            // Provenance pixel: 70% diagnostic color + 30% photo luminance texture
+            accumProvR[pixIdx] += (diagColor[0] * 0.70 + pr * 0.30) * w;
+            accumProvG[pixIdx] += (diagColor[1] * 0.70 + pg * 0.30) * w;
+            accumProvB[pixIdx] += (diagColor[2] * 0.70 + pb * 0.30) * w;
+
+            accumWeight[pixIdx] += w;
+
+            validPixelCounts[i % decodedViews.length]++;
+            finalBlendWeightSums[i % decodedViews.length] += w;
           }
         }
       }
     } else {
-      // Partial arc (e.g. 3 photos spanning 135° centered at yaw 0°)
+      // Partial arc
       const stepAngle = coverageDeg / (N > 1 ? (N - 1) : 1);
       const startAngle = -coverageDeg / 2;
 
       for (let i = 0; i < N; i++) {
-        const angle = startAngle + i * stepAngle;
-        angularAnchors.push(Math.round(angle));
+        angularAnchors.push(Math.round(startAngle + i * stepAngle));
       }
 
       for (let i = 0; i < N; i++) {
         const srcObj = decodedViews[i % decodedViews.length];
         const dec = srcObj.dec;
         const angle = angularAnchors[i];
-        
-        // Map angle (-180 to +180) to canvas column (0 to panoW)
         const centerCol = Math.floor(((angle + 180) / 360) * panoW);
-        const sectorCols = Math.floor(((stepAngle * 1.5) / 360) * panoW);
+        const sectorCols = Math.floor(((stepAngle * 1.4) / 360) * panoW);
         const halfSector = Math.floor(sectorCols / 2);
+        const diagColor = DIAGNOSTIC_PALETTE[i % DIAGNOSTIC_PALETTE.length];
 
         for (let sc = -halfSector; sc <= halfSector; sc++) {
           const dstCol = (centerCol + sc + panoW) % panoW;
-          const weight = 0.5 * (1 + Math.cos((sc / halfSector) * Math.PI));
+          const normDist = sc / halfSector;
+          const cosWeight = 0.5 * (1 + Math.cos(normDist * Math.PI));
           const srcColRatio = (sc + halfSector) / sectorCols;
           const srcX = Math.min(dec.width - 1, Math.max(0, Math.floor(srcColRatio * dec.width)));
-          sourceWeights[i % decodedViews.length] += weight * panoH;
 
           for (let y = 0; y < panoH; y++) {
+            const w = cosWeight;
             const srcY = Math.min(dec.height - 1, Math.max(0, Math.floor((y / panoH) * dec.height)));
             const srcIdx = (srcY * dec.width + srcX) * 4;
-            const dstIdx = (y * panoW + dstCol) * 4;
+            const pixIdx = y * panoW + dstCol;
 
-            const curR = outBuf[dstIdx];
-            const curG = outBuf[dstIdx + 1];
-            const curB = outBuf[dstIdx + 2];
+            const pr = dec.data[srcIdx];
+            const pg = dec.data[srcIdx + 1];
+            const pb = dec.data[srcIdx + 2];
 
-            outBuf[dstIdx] = Math.round(curR * (1 - weight) + dec.data[srcIdx] * weight);
-            outBuf[dstIdx + 1] = Math.round(curG * (1 - weight) + dec.data[srcIdx + 1] * weight);
-            outBuf[dstIdx + 2] = Math.round(curB * (1 - weight) + dec.data[srcIdx + 2] * weight);
-            outBuf[dstIdx + 3] = 255;
+            accumR[pixIdx] += pr * w;
+            accumG[pixIdx] += pg * w;
+            accumB[pixIdx] += pb * w;
+
+            accumProvR[pixIdx] += (diagColor[0] * 0.70 + pr * 0.30) * w;
+            accumProvG[pixIdx] += (diagColor[1] * 0.70 + pg * 0.30) * w;
+            accumProvB[pixIdx] += (diagColor[2] * 0.70 + pb * 0.30) * w;
+
+            accumWeight[pixIdx] += w;
+
+            validPixelCounts[i % decodedViews.length]++;
+            finalBlendWeightSums[i % decodedViews.length] += w;
           }
         }
       }
     }
 
-    // Calculate source pixel contribution metrics
-    const totalWeight = sourceWeights.reduce((a, b) => a + b, 0) || 1;
-    const sourceContributions = sourceWeights.map((w, i) => ({
-      slot: views[i]?.slot || ('SHOT_' + String(i + 1).padStart(2, '0')),
-      sourceIndex: i + 1,
-      sha256: decodedViews[i]?.sha256,
-      percent: Number(((w / totalWeight) * 100).toFixed(1))
+    // Normalize buffers across all pixels
+    for (let y = 0; y < panoH; y++) {
+      for (let x = 0; x < panoW; x++) {
+        const pixIdx = y * panoW + x;
+        const totalW = accumWeight[pixIdx];
+        const dstIdx = pixIdx * 4;
+
+        if (totalW > 0.0001) {
+          outBuf[dstIdx] = Math.min(255, Math.max(0, Math.round(accumR[pixIdx] / totalW)));
+          outBuf[dstIdx + 1] = Math.min(255, Math.max(0, Math.round(accumG[pixIdx] / totalW)));
+          outBuf[dstIdx + 2] = Math.min(255, Math.max(0, Math.round(accumB[pixIdx] / totalW)));
+          outBuf[dstIdx + 3] = 255;
+
+          provenanceBuf[dstIdx] = Math.min(255, Math.max(0, Math.round(accumProvR[pixIdx] / totalW)));
+          provenanceBuf[dstIdx + 1] = Math.min(255, Math.max(0, Math.round(accumProvG[pixIdx] / totalW)));
+          provenanceBuf[dstIdx + 2] = Math.min(255, Math.max(0, Math.round(accumProvB[pixIdx] / totalW)));
+          provenanceBuf[dstIdx + 3] = 255;
+        }
+      }
+    }
+
+    // Compute real compositor metrics
+    const totalCompositorWeight = finalBlendWeightSums.reduce((a, b) => a + b, 0) || 1;
+    const compositorMetrics = views.map((v, i) => {
+      const validPx = validPixelCounts[i] || 0;
+      const weightSum = Math.round(finalBlendWeightSums[i] || 0);
+      const effectivePct = Number((((finalBlendWeightSums[i] || 0) / totalCompositorWeight) * 100).toFixed(2));
+      return {
+        slot: v.slot || ('SHOT_' + String(i + 1).padStart(2, '0')),
+        sourceIndex: i + 1,
+        sha256: decodedViews[i]?.sha256,
+        warpedValidPixels: validPx,
+        finalBlendWeightSum: weightSum,
+        effectiveContributionPercent: effectivePct,
+        isContributing: effectivePct > 0.5
+      };
+    });
+
+    const actualContributingSourceCount = compositorMetrics.filter(m => m.isContributing).length;
+    const sourceContributions = compositorMetrics.map(m => ({
+      slot: m.slot,
+      sourceIndex: m.sourceIndex,
+      sha256: m.sha256,
+      percent: m.effectiveContributionPercent
     }));
-    const contributingSourceCount = sourceContributions.filter(c => c.percent > 0).length;
+    const contributingSourceCount = actualContributingSourceCount;
+
+    console.log(`[PanoStitcher] Real Compositor Metrics (ACTUAL_CONTRIBUTING_SOURCE_COUNT=${actualContributingSourceCount}/${decodedViews.length}):`);
+    compositorMetrics.forEach(cm => {
+      console.log(`  Source ${cm.sourceIndex} (${cm.slot}): validPx=${cm.warpedValidPixels}, weightSum=${cm.finalBlendWeightSum}, effPct=${cm.effectiveContributionPercent}%`);
+    });
 
     // 7. Write standard 4K output file
     const out4kFileName = 'pano-360-' + candidateId + '.jpg';
+
     const out4kFilePath = path.join(this.uploadsDir, out4kFileName);
     const encoded4k = jpeg.encode({ data: outBuf, width: panoW, height: panoH }, 85);
     fs.writeFileSync(out4kFilePath, encoded4k.data);
@@ -304,6 +402,9 @@ class PanoramicStitcher {
       masterSha256,
       sourceContributions,
       contributingSourceCount,
+      actualContributingSourceCount,
+      compositorMetrics,
+      provenanceUrl: '/uploads/' + outProvenanceFileName,
       sourceHashes,
       width: panoW,
       height: panoH,

@@ -15700,6 +15700,31 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         return this.animateTo({ yaw: targetYaw, duration: 300 });
       }
 
+      setProvenanceMode(enable = true) {
+        if (!this.candidate) return;
+        const targetUrl = (enable && this.candidate.provenancePanoramaUrl) ? this.candidate.provenancePanoramaUrl : (this.candidate.stitchedPanoramaUrl || this.candidate.textureUrl);
+        if (!targetUrl) return;
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          if (this.isDestroyed) return;
+          const tex = new THREE.Texture(img);
+          tex.encoding = THREE.sRGBEncoding;
+          tex.generateMipmaps = true;
+          tex.minFilter = THREE.LinearMipmapLinearFilter;
+          tex.magFilter = THREE.LinearFilter;
+          tex.needsUpdate = true;
+          this.panoTexture = tex;
+          if (this.photoMaterial) {
+            this.photoMaterial.map = tex;
+            this.photoMaterial.needsUpdate = true;
+          }
+          this.render();
+          console.log('[PanoramicViewer] Set provenance mode:', enable);
+        };
+        img.src = targetUrl;
+      }
+
       render() {
         if (this.isDestroyed || !this.renderer || !this.scene || !this.camera) return;
         this.renderer.render(this.scene, this.camera);

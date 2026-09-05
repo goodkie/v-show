@@ -14343,12 +14343,18 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
     async function startPanoramaGeneration() {
       if (window.isGeneratingPanorama) return;
 
+      if (window.generationInFlight || window.isGeneratingPanorama) {
+        console.warn('[PANORAMA_START_BLOCKED] Generation already in flight');
+        return;
+      }
+
       const activeSlots = window.panoramaWheelSlots.filter(s => !!s.file);
       if (activeSlots.length < 2) {
         alert("Please add at least 2 overlapping photos to create a panorama (Recommended: 8).");
         return;
       }
 
+      window.generationInFlight = true;
       window.isGeneratingPanorama = true;
       if (typeof emitSpatialTextureLifecycle === 'function') {
         emitSpatialTextureLifecycle('PANORAMA_CREATE_CLICK', { count: activeSlots.length });
@@ -14429,6 +14435,7 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         pollPanoramaJob(jobId, projectId);
 
       } catch (err) {
+        window.generationInFlight = false;
         window.isGeneratingPanorama = false;
         if (pBox) pBox.style.display = 'none';
         if (btn) {
@@ -16176,6 +16183,31 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         const N = (this.candidate.anchors && this.candidate.anchors.length) || 8;
         const targetYaw = (idx * (2 * Math.PI / N));
         return this.animateTo({ yaw: targetYaw, duration: 300 });
+      }
+
+      setProvenanceMode(enable = true) {
+        if (!this.candidate) return;
+        const targetUrl = (enable && this.candidate.provenancePanoramaUrl) ? this.candidate.provenancePanoramaUrl : (this.candidate.stitchedPanoramaUrl || this.candidate.textureUrl);
+        if (!targetUrl) return;
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          if (this.isDestroyed) return;
+          const tex = new THREE.Texture(img);
+          tex.encoding = THREE.sRGBEncoding;
+          tex.generateMipmaps = true;
+          tex.minFilter = THREE.LinearMipmapLinearFilter;
+          tex.magFilter = THREE.LinearFilter;
+          tex.needsUpdate = true;
+          this.panoTexture = tex;
+          if (this.photoMaterial) {
+            this.photoMaterial.map = tex;
+            this.photoMaterial.needsUpdate = true;
+          }
+          this.render();
+          console.log('[PanoramicViewer] Set provenance mode:', enable);
+        };
+        img.src = targetUrl;
       }
 
       render() {
