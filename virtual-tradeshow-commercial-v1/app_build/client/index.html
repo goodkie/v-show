@@ -15332,6 +15332,31 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
     }
     window.SpatialViewpointRenderer = SpatialViewpointRenderer;
 
+    function initSpatialPreviewWebGL(candidate) {
+      if (window.activeSpatialPreviewRenderer) {
+        window.activeSpatialPreviewRenderer.destroy();
+        window.activeSpatialPreviewRenderer = null;
+      }
+      const container = document.getElementById('spatialPreviewCanvasContainer');
+      const canvas = document.getElementById('spatialPreviewCanvas');
+      if (!container || !canvas) return;
+
+      window.activeSpatialPreviewRenderer = new SpatialViewpointRenderer({
+        hostMode: 'PREVIEW',
+        container,
+        canvas,
+        candidate
+      });
+    }
+    window.initSpatialPreviewWebGL = initSpatialPreviewWebGL;
+
+    function selectSpatialPreviewAnchor(idx) {
+      if (window.activeSpatialPreviewRenderer) {
+        window.activeSpatialPreviewRenderer.selectViewpoint(idx);
+      }
+    }
+    window.selectSpatialPreviewAnchor = selectSpatialPreviewAnchor;
+
     function mountActiveSpatialBoothViewer(projectData, activeBg) {
       if (typeof emitSpatialTextureLifecycle === 'function') {
         emitSpatialTextureLifecycle('SPATIAL_ACTIVE_RENDERER_CREATE', {
