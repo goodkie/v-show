@@ -154,13 +154,13 @@ async function main() {
   }
 
   const testStartTime = Date.now();
-  console.log('Navigating to ' + PROD_URL);
-  await page.goto(PROD_URL, { waitUntil: 'networkidle2', timeout: 60000 });
-  await new Promise(r => setTimeout(r, 4000));
+  console.log('Navigating to ' + PROD_BASE_URL + ' for Capture Guide verification...');
+  await page.goto(PROD_BASE_URL, { waitUntil: 'networkidle2', timeout: 60000 });
+  await new Promise(r => setTimeout(r, 3000));
 
   // Screenshot 01: Capture Guide Main Illustration specifically
   console.log('\n[Step 1] Capturing 01_CAPTURE_GUIDE_MAIN.png...');
-  const guideMainElem = await page.$('#captureGuideMainIllustration') || await page.$('#landing-capture-guide-section img');
+  const guideMainElem = await page.$('#captureGuideMainIllustration');
   if (guideMainElem) {
     await guideMainElem.scrollIntoView();
     await new Promise(r => setTimeout(r, 600));
@@ -180,19 +180,26 @@ async function main() {
     await takeScreenshot('02_CAPTURE_GUIDE_RULES.png');
   }
 
+  // Navigate to PROD_URL for Candidate Preview and Active Booth
+  console.log('Navigating to ' + PROD_URL + ' for Preview & Active Booth...');
+  await page.goto(PROD_URL, { waitUntil: 'networkidle2', timeout: 60000 });
+  await new Promise(r => setTimeout(r, 4000));
+
   // Phase 3 — Mount Preview Viewer with 12-Shot Panoramic Candidate
   console.log('\n[Phase 3 — Preview Exploration] Opening Panoramic Candidate in Preview Modal...');
   await page.evaluate((cand) => {
     window.currentSpatialCandidate = cand;
     window.previewCandidateSnapshot = cand;
-    if (typeof window.initSpatialPreviewWebGL === 'function') {
+    if (typeof window.openSpatialBoothPreviewModal === 'function') {
+      window.openSpatialBoothPreviewModal(cand);
+    } else if (typeof window.initSpatialPreviewWebGL === 'function') {
       window.initSpatialPreviewWebGL(cand);
-    }
-    const modal = document.getElementById('proSpatialPreviewModal');
-    if (modal) {
-      modal.style.display = 'flex';
-      modal.dataset.candidateId = cand.candidateId;
-      modal.dataset.projectId = cand.projectId;
+      const modal = document.getElementById('proSpatialPreviewModal');
+      if (modal) {
+        modal.style.display = 'flex';
+        modal.dataset.candidateId = cand.candidateId;
+        modal.dataset.projectId = cand.projectId;
+      }
     }
   }, generatedCandidate);
 
@@ -243,12 +250,18 @@ async function main() {
   // Screenshot 07 & 08: Mouse Wheel Zoom In & Out
   console.log('\n[Step 7] Mouse Wheel Zoom In -> 07_MOUSE_WHEEL_ZOOM_IN.png...');
   await page.mouse.move(midX, midY);
-  await page.mouse.wheel({ deltaY: -450 });
+  for (let z = 0; z < 8; z++) {
+    await page.mouse.wheel({ deltaY: -150 });
+    await new Promise(r => setTimeout(r, 60));
+  }
   await new Promise(r => setTimeout(r, 800));
   await takeScreenshot('07_MOUSE_WHEEL_ZOOM_IN.png');
 
   console.log('\n[Step 8] Mouse Wheel Zoom Out -> 08_MOUSE_WHEEL_ZOOM_OUT.png...');
-  await page.mouse.wheel({ deltaY: 800 });
+  for (let z = 0; z < 14; z++) {
+    await page.mouse.wheel({ deltaY: 150 });
+    await new Promise(r => setTimeout(r, 60));
+  }
   await new Promise(r => setTimeout(r, 800));
   await takeScreenshot('08_MOUSE_WHEEL_ZOOM_OUT.png');
 
@@ -392,17 +405,13 @@ async function main() {
   
   console.log('\nPackaging canonical evidence: ' + zipPath);
   try {
-    const archiver = require('archiver');
-    const output = fs.createWriteStream(zipPath);
-    const archive = archiver('zip', { zlib: { level: 9 } });
-    archive.pipe(output);
-    for (const [sname, info] of capturedScreenshots) {
-      archive.file(info.path, { name: sname });
-    }
-    await archive.finalize();
-    console.log('Canonical ZIP packaged successfully.');
+    const { execSync } = require('child_process');
+    const escapedEvidence = EVIDENCE_DIR.split('/').join('\\');
+    const escapedZip = zipPath.split('/').join('\\');
+    execSync('powershell -Command "Compress-Archive -Path \'' + escapedEvidence + '\\*.png\' -DestinationPath \'' + escapedZip + '\' -Force"');
+    console.log('Canonical ZIP packaged successfully via Compress-Archive: ' + fs.statSync(zipPath).size + ' bytes');
   } catch (archErr) {
-    console.log('Archiver note:', archErr.message);
+    console.log('Packaging note:', archErr.message);
   }
 
   // Close browser cleanly
