@@ -9632,6 +9632,22 @@ app.post('/api/projects/:id/panorama/start', upload.array('photos', 16), async (
       });
     }
 
+    // Section 7: PANORAMA_SOURCE_INGEST proof & telemetry
+    const sourceHashes = [];
+    sourceList.forEach(s => {
+      try {
+        const fileBuf = fs.readFileSync(s.path);
+        const h = crypto.createHash('sha256').update(fileBuf).digest('hex');
+        s.sha256 = h;
+        sourceHashes.push(h);
+      } catch (err) {}
+    });
+    const distinctSourceHashes = Array.from(new Set(sourceHashes));
+    const requestedCount = parseInt(req.body?.sourceCount, 10) || (req.files ? req.files.length : 0);
+    const receivedCount = req.files ? req.files.length : 0;
+    console.log(`[PANORAMA_SOURCE_INGEST] requestedSourceCount=${requestedCount} receivedSourceCount=${receivedCount} decodedSourceCount=${sourceList.length} distinctSourceCount=${distinctSourceHashes.length}`);
+    console.log(`[PANORAMA_SOURCE_INGEST] sourceHashes=${sourceHashes.map(h => h.substring(0, 16) + '...').join(',')}`);
+
     const autoRemovePeople = req.body?.autoRemovePeople !== 'false' && req.body?.autoRemovePeople !== false;
     const jobId = 'job-pano-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
 
@@ -9684,6 +9700,7 @@ app.post('/api/projects/:id/panorama/start', upload.array('photos', 16), async (
           projectId,
           autoRemovePeople,
           isTestAccount,
+          sourceHashes,
           mode: 'PANORAMIC_IMMERSIVE',
           creationMode: 'FIXED_ORIGIN_PANORAMA',
           onStage: async (stage, progress, label) => {

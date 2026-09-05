@@ -254,6 +254,13 @@ class SpatialBoothPipeline {
         srModel: stitchResult.srModel,
         master16kStatus: stitchResult.master16kStatus,
         pixelsPerHorizontalDegree: stitchResult.pixelsPerHorizontalDegree,
+        nativePixelsPerHorizontalDegree: stitchResult.nativePixelsPerHorizontalDegree,
+        masterPixelsPerHorizontalDegree: stitchResult.masterPixelsPerHorizontalDegree,
+        masterDetailOrigin: stitchResult.masterDetailOrigin,
+        masterSha256: stitchResult.masterSha256,
+        sourceContributions: stitchResult.sourceContributions,
+        contributingSourceCount: stitchResult.contributingSourceCount,
+        sourceHashes: stitchResult.sourceHashes,
         derivatives: stitchResult.derivatives,
         viewpoints: [{
           id: 'vp-pano-master',

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const jpeg = require('./lib/jpeg-js');
 const { defaultSpatialCV } = require('./spatial_cv');
 
@@ -67,14 +68,17 @@ class PanoramicStitcher {
 
     // 1. Load and decode source photos
     const decodedViews = [];
+    const sourceHashes = [];
     for (let i = 0; i < N; i++) {
       const v = views[i];
       const filePath = v.localPath || v.path;
       if (filePath && fs.existsSync(filePath)) {
         try {
           const raw = fs.readFileSync(filePath);
+          const h = crypto.createHash('sha256').update(raw).digest('hex');
+          sourceHashes.push(h);
           const dec = jpeg.decode(raw, { useTArray: true, maxResolutionInMP: 500, maxMemoryUsageInMB: 4096 });
-          decodedViews.push({ dec, slot: v.slot, index: i, width: dec.width, height: dec.height });
+          decodedViews.push({ dec, slot: v.slot, index: i, width: dec.width, height: dec.height, sha256: h });
         } catch (e) {
           console.warn('[PanoStitcher] Failed to decode view', i, e.message);
         }
@@ -84,6 +88,9 @@ class PanoramicStitcher {
     if (decodedViews.length === 0) {
       throw new Error('No valid images could be decoded for panorama stitch.');
     }
+
+    console.log(`[PANORAMA_STITCH_START] inputSourceCount=${decodedViews.length} candidateId=${candidateId}`);
+    console.log(`[PANORAMA_STITCH_START] sourceHashes=${sourceHashes.map(h => h.substring(0, 16) + '...').join(',')}`);
 
     const srcW = decodedViews[0].width;
     const srcH = decodedViews[0].height;
@@ -147,8 +154,10 @@ class PanoramicStitcher {
       }
     }
 
-    // 6. Stitch photos onto equirectangular canvas
+    // 6. Stitch photos onto equirectangular canvas & track pixel contributions
     const angularAnchors = [];
+    const sourceWeights = new Array(decodedViews.length).fill(0);
+
     if (isFull360) {
       for (let i = 0; i < N; i++) {
         angularAnchors.push(Math.round((i / N) * 360));
@@ -167,6 +176,7 @@ class PanoramicStitcher {
           const weight = 0.5 * (1 + Math.cos((sc / halfSector) * Math.PI));
           const srcColRatio = (sc + halfSector) / sectorCols;
           const srcX = Math.min(dec.width - 1, Math.max(0, Math.floor(srcColRatio * dec.width)));
+          sourceWeights[i % decodedViews.length] += weight * panoH;
 
           for (let y = 0; y < panoH; y++) {
             const srcY = Math.min(dec.height - 1, Math.max(0, Math.floor((y / panoH) * dec.height)));
@@ -209,6 +219,7 @@ class PanoramicStitcher {
           const weight = 0.5 * (1 + Math.cos((sc / halfSector) * Math.PI));
           const srcColRatio = (sc + halfSector) / sectorCols;
           const srcX = Math.min(dec.width - 1, Math.max(0, Math.floor(srcColRatio * dec.width)));
+          sourceWeights[i % decodedViews.length] += weight * panoH;
 
           for (let y = 0; y < panoH; y++) {
             const srcY = Math.min(dec.height - 1, Math.max(0, Math.floor((y / panoH) * dec.height)));
@@ -227,6 +238,16 @@ class PanoramicStitcher {
         }
       }
     }
+
+    // Calculate source pixel contribution metrics
+    const totalWeight = sourceWeights.reduce((a, b) => a + b, 0) || 1;
+    const sourceContributions = sourceWeights.map((w, i) => ({
+      slot: views[i]?.slot || ('SHOT_' + String(i + 1).padStart(2, '0')),
+      sourceIndex: i + 1,
+      sha256: decodedViews[i]?.sha256,
+      percent: Number(((w / totalWeight) * 100).toFixed(1))
+    }));
+    const contributingSourceCount = sourceContributions.filter(c => c.percent > 0).length;
 
     // 7. Write standard 4K output file
     const out4kFileName = 'pano-360-' + candidateId + '.jpg';
@@ -247,8 +268,14 @@ class PanoramicStitcher {
     const out2kFilePath = path.join(this.uploadsDir, out2kFileName);
     fs.writeFileSync(out2kFilePath, encoded4k.data);
 
+    const masterSha256 = crypto.createHash('sha256').update(encoded4k.data).digest('hex');
+    const nativePixelsPerHorizontalDegree = Number((nativeW / coverageDeg).toFixed(2));
+    const masterPixelsPerHorizontalDegree = Number((masterW / coverageDeg).toFixed(2));
+
     console.log(`[PanoStitcher] Stitched candidate=${candidateId} (N=${N}, coverage=${coverageDeg}°, full360=${isFull360})`);
-    console.log(`  Native: ${nativeW}x${nativeH}, Master: ${masterW}x${masterH}, Status: ${master16kStatus}`);
+    console.log(`  Native: ${nativeW}x${nativeH} (${nativePixelsPerHorizontalDegree} px/deg), Master: ${masterW}x${masterH} (${masterPixelsPerHorizontalDegree} px/deg), Status: ${master16kStatus}`);
+    console.log(`  Contributing Sources: ${contributingSourceCount}/${decodedViews.length}`);
+    sourceContributions.forEach(sc => console.log(`    Source ${sc.sourceIndex} (${sc.slot}): ${sc.percent}%`));
 
     return {
       url: '/uploads/' + out4kFileName,
@@ -264,7 +291,14 @@ class PanoramicStitcher {
       srUsed,
       srModel,
       master16kStatus,
-      pixelsPerHorizontalDegree,
+      pixelsPerHorizontalDegree: nativePixelsPerHorizontalDegree,
+      nativePixelsPerHorizontalDegree,
+      masterPixelsPerHorizontalDegree,
+      masterDetailOrigin: master16kStatus,
+      masterSha256,
+      sourceContributions,
+      contributingSourceCount,
+      sourceHashes,
       width: panoW,
       height: panoH,
       angularAnchors,
