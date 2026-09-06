@@ -204,32 +204,70 @@ class SpatialBoothPipeline {
       const ringValidation = defaultPanoramicStitcher.validateRingClosure(compatibleViews, options);
 
       notifyStage('ALIGNING', 55, 'Optimizing continuous equirectangular seam geometry & exposure compensation');
-      notifyStage('STITCHING', 70, 'Stitching panoramic master using multi-band cosine feather blending');
+      notifyStage('STITCHING', 70, 'Stitching panoramic master using geometric rotational warping and seam blending');
 
       const stitchResult = await defaultPanoramicStitcher.stitchEquirectangular(compatibleViews, {
         candidateId,
         horizontalCoverageDeg: ringValidation.horizontalCoverageDeg,
+        ringValidation,
         ...options
       });
 
-      notifyStage('BUILDING_VIEWPOINTS', 88, 'Synthesizing continuous 360 panoramic immersive environment');
+      if (!ringValidation.isGeometryValid || stitchResult.status === 'STITCH_VALIDATION_FAILED') {
+        const failMessage = "We couldn't reliably connect these photos. Please retake them with more overlap from the same position.";
+        notifyStage('STITCH_VALIDATION_FAILED', 100, failMessage);
+        return {
+          candidateId,
+          projectId,
+          createdAt: new Date().toISOString(),
+          status: 'STITCH_VALIDATION_FAILED',
+          geometryValid: false,
+          full360Qualified: false,
+          engine: 'PANORAMIC_GEOMETRIC_V1',
+          viewerEngineVersion: 'PANORAMIC_GEOMETRIC_V1',
+          viewerMode: 'PANORAMIC_IMMERSIVE',
+          horizontalCoverageDeg: ringValidation.horizontalCoverageDeg || 52,
+          captureRingValid: false,
+          ringClosureRotationErrorDeg: ringValidation.ringClosureRotationErrorDeg,
+          ringClosureReprojectionError: ringValidation.ringClosureReprojectionError,
+          ringClosureConfidence: ringValidation.ringClosureConfidence || 0,
+          firstLastClosureConfidence: ringValidation.firstLastClosureConfidence || 0,
+          firstLastOverlapPercent: ringValidation.firstLastOverlapPercent || 0,
+          averageOverlapPercent: ringValidation.averageOverlapPercent || 0,
+          pairMatches: ringValidation.pairMatches || [],
+          message: failMessage,
+          customerMessage: failMessage,
+          sourceViewCount: compatibleViews.length,
+          totalSourceCount: sourceList.length,
+          compatibleSourceCount: compatibleViews.length,
+          sourceViews: processedViews,
+          applyEnabled: false
+        };
+      }
+
+      notifyStage('BUILDING_VIEWPOINTS', 88, 'Synthesizing continuous panoramic immersive environment');
 
       const candidate = {
         candidateId,
         projectId,
         createdAt: new Date().toISOString(),
         status: 'READY_FOR_PREVIEW',
-        engine: 'PANORAMIC_IMMERSIVE_V1',
-        viewerEngineVersion: 'PANORAMIC_IMMERSIVE_V1',
+        geometryValid: true,
+        engine: 'PANORAMIC_GEOMETRIC_V1',
+        viewerEngineVersion: 'PANORAMIC_GEOMETRIC_V1',
         viewerMode: 'PANORAMIC_IMMERSIVE',
         projectionType: 'EQUIRECTANGULAR',
         horizontalCoverageDeg: ringValidation.horizontalCoverageDeg,
-        full360Qualified: ringValidation.isFull360,
+        full360Qualified: ringValidation.full360Qualified,
         captureRingValid: ringValidation.isRingValid,
+        ringClosureRotationErrorDeg: ringValidation.ringClosureRotationErrorDeg,
+        ringClosureReprojectionError: ringValidation.ringClosureReprojectionError,
+        ringClosureConfidence: ringValidation.ringClosureConfidence,
         firstLastClosureConfidence: ringValidation.firstLastClosureConfidence,
         firstLastOverlapPercent: ringValidation.firstLastOverlapPercent,
         averageOverlapPercent: ringValidation.averageOverlapPercent,
         pairMatches: ringValidation.pairMatches,
+        applyEnabled: true,
         angularAnchors: stitchResult.angularAnchors,
         stitchedPanoramaUrl: stitchResult.url,
         activeBackgroundUrl: stitchResult.url,

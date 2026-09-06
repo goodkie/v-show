@@ -9732,6 +9732,23 @@ app.post('/api/projects/:id/panorama/start', upload.array('photos', 16), async (
           stageLabel: 'Validating continuous panorama contract'
         });
 
+        if (candidate.status === 'STITCH_VALIDATION_FAILED' || candidate.geometryValid === false) {
+          const failMsg = candidate.customerMessage || "We couldn't reliably connect these photos. Please retake them with more overlap from the same position.";
+          await db.updatePanoramaJob(jobId, {
+            status: 'FAILED',
+            progress: 100,
+            currentStage: 'STITCH_VALIDATION_FAILED',
+            stageLabel: 'Stitch validation failed: retake required',
+            errorCode: 'STITCH_VALIDATION_FAILED',
+            error: failMsg,
+            userMessage: failMsg,
+            candidateId: candidate.candidateId,
+            candidate
+          });
+          console.log(`[PANORAMA][${jobId}][FAILED] Stitch validation failed: retake required`);
+          return;
+        }
+
         // Complete (100%)
         await db.updatePanoramaJob(jobId, {
           status: 'READY',
@@ -9799,6 +9816,15 @@ app.post('/api/projects/:id/panorama/apply', async (req, res) => {
     const token = extractAuthToken(req);
     const candidateId = req.body?.candidateId;
     if (!candidateId) return res.status(400).json({ error: 'Missing candidateId' });
+
+    const cand = await db.getSpatialBoothCandidate(candidateId);
+    if (cand && (cand.geometryValid === false || cand.applyEnabled === false || cand.status === 'STITCH_VALIDATION_FAILED')) {
+      return res.status(400).json({
+        ok: false,
+        error: 'STITCH_VALIDATION_FAILED',
+        message: "Cannot apply candidate: stitch validation failed. Please retake photos."
+      });
+    }
 
     const beforeProject = await db.getProject(projectId);
     const result = await db.applySpatialBoothCandidate(projectId, candidateId, token);

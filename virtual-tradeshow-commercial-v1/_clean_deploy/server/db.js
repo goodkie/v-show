@@ -13618,6 +13618,10 @@ return event;
       const candidate = (db.spatialCandidates || []).find(c => c.candidateId === candidateId);
       if (!candidate) throw new Error(`Spatial booth candidate ${candidateId} not found`);
 
+      if (candidate.geometryValid === false || candidate.status === 'STITCH_VALIDATION_FAILED' || candidate.applyEnabled === false) {
+        throw new Error('Cannot apply candidate: stitch validation failed. Retake required.');
+      }
+
       const isPano = candidate.viewerMode === 'PANORAMIC_IMMERSIVE' || 
                      Boolean(candidate.stitchedPanoramaUrl) || 
                      candidate.projectionType === 'EQUIRECTANGULAR' || 
