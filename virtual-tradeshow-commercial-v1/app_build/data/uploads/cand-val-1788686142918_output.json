@@ -1,0 +1,213 @@
+{
+  "status": "READY",
+  "opencvStatusCode": "OK",
+  "engine": "OPENCV",
+  "engineVersion": "5.0.0",
+  "featureEngine": "SIFT",
+  "cameraEstimationStatus": "CONVERGED",
+  "bundleAdjustmentStatus": "CONVERGED",
+  "warpStatus": "SUCCESS",
+  "exposureCompensationStatus": "SUCCESS",
+  "seamStatus": "SUCCESS",
+  "blendStatus": "SUCCESS",
+  "panoramaCreated": true,
+  "applyEnabled": true,
+  "geometryValid": true,
+  "full360Qualified": false,
+  "panoramaType": "PARTIAL",
+  "projection": "SPHERICAL",
+  "nativeWidth": 7504,
+  "nativeHeight": 3085,
+  "nativeDimensions": "7504x3085",
+  "horizontalCoverageDeg": 189.9,
+  "verticalCoverageDeg": 78.1,
+  "yawMin": -94.9,
+  "yawMax": 94.9,
+  "pitchMin": -39.0,
+  "pitchMax": 39.0,
+  "connectedCameraIndices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "connectedCount": 9,
+  "sourceCount": 12,
+  "nativeFile": "cand-val-1788686142918_native.jpg",
+  "nativePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\cand-val-1788686142918_native.jpg",
+  "previewFile": "cand-val-1788686142918_preview.jpg",
+  "previewPath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\cand-val-1788686142918_preview.jpg",
+  "masterSha256": "03a1f1aa0b8fd61a6f828451990df3a5b2b338a2bc299f4afd3a41e9e91c8725",
+  "srUsed": false,
+  "anchors": [
+    {
+      "id": "anchor-deg--94",
+      "index": 0,
+      "degree": -94.9,
+      "slot": "SHOT_01"
+    },
+    {
+      "id": "anchor-deg--71",
+      "index": 1,
+      "degree": -71.2,
+      "slot": "SHOT_02"
+    },
+    {
+      "id": "anchor-deg--47",
+      "index": 2,
+      "degree": -47.5,
+      "slot": "SHOT_03"
+    },
+    {
+      "id": "anchor-deg--23",
+      "index": 3,
+      "degree": -23.7,
+      "slot": "SHOT_04"
+    },
+    {
+      "id": "anchor-deg-0",
+      "index": 4,
+      "degree": 0.0,
+      "slot": "SHOT_05"
+    },
+    {
+      "id": "anchor-deg-23",
+      "index": 5,
+      "degree": 23.7,
+      "slot": "SHOT_06"
+    },
+    {
+      "id": "anchor-deg-47",
+      "index": 6,
+      "degree": 47.5,
+      "slot": "SHOT_07"
+    },
+    {
+      "id": "anchor-deg-71",
+      "index": 7,
+      "degree": 71.2,
+      "slot": "SHOT_08"
+    },
+    {
+      "id": "anchor-deg-94",
+      "index": 8,
+      "degree": 94.9,
+      "slot": "SHOT_09"
+    }
+  ],
+  "sources": [
+    {
+      "index": 0,
+      "slot": "FAR_LEFT",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788685771601-349849582.jpg",
+      "sha256": "ac09d1252fcfeb1db2a9da29e4d315e992798310a4269b843a808cebe1e5bea6",
+      "cameraMake": "NIKON",
+      "cameraModel": "E990",
+      "focalLength35mm": null
+    },
+    {
+      "index": 1,
+      "slot": "LEFT",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788685771620-240476648.jpg",
+      "sha256": "2b7a79f8a16e0a6083d5479640fef3f3d144cd6ca624f409a8c45687122595ee",
+      "cameraMake": "NIKON",
+      "cameraModel": "E990",
+      "focalLength35mm": null
+    },
+    {
+      "index": 2,
+      "slot": "LEFT_CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788685771634-316857601.jpg",
+      "sha256": "6bb081528fd8b7ae86c18911a51846f98538a2f8dca39d0a6fffee6d30e7850e",
+      "cameraMake": "NIKON",
+      "cameraModel": "E990",
+      "focalLength35mm": null
+    },
+    {
+      "index": 3,
+      "slot": "CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788685771648-456558477.jpg",
+      "sha256": "5ede12bfa0677ab82b364eefffebe0de0d9cd3f6d05b30fc14c215234d2a4c27",
+      "cameraMake": "NIKON",
+      "cameraModel": "E990",
+      "focalLength35mm": null
+    },
+    {
+      "index": 4,
+      "slot": "RIGHT_CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788685771663-750136483.jpg",
+      "sha256": "c5d186860549c91ffa2adb0b414b6b3bf98c5e817052ee73c27b076854155f9c",
+      "cameraMake": "NIKON",
+      "cameraModel": "E990",
+      "focalLength35mm": null
+    },
+    {
+      "index": 5,
+      "slot": "RIGHT",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788685771962-385187845.jpg",
+      "sha256": "9435efc966f567498829f4361d2724238892edee59ee4463beb74f106551a581",
+      "cameraMake": "NIKON",
+      "cameraModel": "E990",
+      "focalLength35mm": null
+    },
+    {
+      "index": 6,
+      "slot": "FAR_RIGHT",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788685771984-960949222.jpg",
+      "sha256": "c394dc8be50c32c4c2e4800bc087dc607e711d34d5bc10195e8eef4793ae11f2",
+      "cameraMake": "NIKON",
+      "cameraModel": "E990",
+      "focalLength35mm": null
+    },
+    {
+      "index": 7,
+      "slot": "CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788685772001-97071355.jpg",
+      "sha256": "8e7a06c94aa9a200703edf4c928ab811d77cca50631141d9a9e9f7add922d672",
+      "cameraMake": "NIKON",
+      "cameraModel": "E990",
+      "focalLength35mm": null
+    },
+    {
+      "index": 8,
+      "slot": "CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788685772047-659722957.jpg",
+      "sha256": "979988c36e1f9cdd8d5a07bc72b0d51c40af46fb82ca3accfb765a09bf9924fe",
+      "cameraMake": "NIKON",
+      "cameraModel": "E990",
+      "focalLength35mm": null
+    },
+    {
+      "index": 9,
+      "slot": "CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788685772111-670322312.jpg",
+      "sha256": "28f5fbe23600307a2cabd6407109217099774db89c9d6b4c6ac4232183bbd0bb",
+      "cameraMake": "NIKON",
+      "cameraModel": "E990",
+      "focalLength35mm": null
+    },
+    {
+      "index": 10,
+      "slot": "CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788685772231-216121459.jpg",
+      "sha256": "1da4e75714b777bb7787bd757443d5ffc2309149dc4f67e3eeaa82646c028049",
+      "cameraMake": "NIKON",
+      "cameraModel": "E990",
+      "focalLength35mm": null
+    },
+    {
+      "index": 11,
+      "slot": "CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788685772367-927341037.jpg",
+      "sha256": "87e62e0a8b7ebb46b05c6dfec8bf300781dd97a3dc734634d3229b43790a6ecf",
+      "cameraMake": "NIKON",
+      "cameraModel": "E990",
+      "focalLength35mm": null
+    }
+  ]
+}

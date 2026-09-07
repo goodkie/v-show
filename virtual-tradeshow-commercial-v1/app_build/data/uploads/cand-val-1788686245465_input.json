@@ -1,0 +1,66 @@
+{
+  "sources": [
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788686239053-690886903.jpg",
+      "slot": "FAR_LEFT",
+      "index": 0
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788686239075-717811468.jpg",
+      "slot": "LEFT",
+      "index": 1
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788686239089-124009740.jpg",
+      "slot": "LEFT_CENTER",
+      "index": 2
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788686239103-390032148.jpg",
+      "slot": "CENTER",
+      "index": 3
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788686239405-234707028.jpg",
+      "slot": "RIGHT_CENTER",
+      "index": 4
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788686239424-618070216.jpg",
+      "slot": "RIGHT",
+      "index": 5
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788686239449-310648910.jpg",
+      "slot": "FAR_RIGHT",
+      "index": 6
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788686239467-711549450.jpg",
+      "slot": "CENTER",
+      "index": 7
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788686239485-662945785.jpg",
+      "slot": "CENTER",
+      "index": 8
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788686239500-94011310.jpg",
+      "slot": "CENTER",
+      "index": 9
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788686239521-711150054.jpg",
+      "slot": "CENTER",
+      "index": 10
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788686239551-343457219.jpg",
+      "slot": "CENTER",
+      "index": 11
+    }
+  ],
+  "outputDir": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads",
+  "candidateId": "cand-val-1788686245465"
+}

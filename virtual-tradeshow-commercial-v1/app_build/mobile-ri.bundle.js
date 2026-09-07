@@ -1327,6 +1327,31 @@ if (typeof window !== 'undefined') {
               window.__MOBILE_RI_INSTANCE__ = new MobileRuntimeInspector({ qaSessionToken });
               window.__MOBILE_RI_INSTANCE__.start();
             }
+
+            // C12.4 Owner QA Wizard Auto-Launch: Guarantee Step 1 entry upon authorized QA session
+            const searchParams = new URLSearchParams(window.location.search);
+            const hasWizardIntent = searchParams.get('mode') === 'booth-tour-wizard' || searchParams.get('step') !== null || searchParams.get('openWizard') === '1' || window.__IS_INTERNAL_QA__;
+            if (hasWizardIntent) {
+              const stepVal = parseInt(searchParams.get('step') || '1', 10);
+              const targetStep = (!isNaN(stepVal) && stepVal > 0) ? stepVal : 1;
+              const launchWizard = () => {
+                if (typeof window.openMultiPointTourWizard === 'function' && window.setupWizard) {
+                  window.openMultiPointTourWizard(targetStep);
+                  if (window.setupWizard) {
+                    window.setupWizard.currentStep = targetStep;
+                    window.setupWizard.renderStep();
+                  }
+                  return true;
+                }
+                return false;
+              };
+              if (!launchWizard()) {
+                const retryTimer = setInterval(() => {
+                  if (launchWizard()) clearInterval(retryTimer);
+                }, 100);
+                setTimeout(() => clearInterval(retryTimer), 4000);
+              }
+            }
             return;
           } else {
             console.warn('[MobileRI] Server rejected QA session capability check.');

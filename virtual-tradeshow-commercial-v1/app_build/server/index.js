@@ -10533,7 +10533,7 @@ app.post('/api/projects/:id/capture-session/create', async (req, res) => {
 
     captureSessions.set(sessionToken, sessionData);
 
-    const canonicalUrl = `${CANONICAL_PUBLIC_ORIGIN}/index.html?projectId=${projectId}&token=${sessionToken}&step=6`;
+    const canonicalUrl = `${CANONICAL_PUBLIC_ORIGIN}/index.html?projectId=${projectId}&mode=booth-tour-wizard&step=1&token=${sessionToken}&qa=1`;
 
     console.log('[CaptureSession] Created session for ' + projectId + ': ' + sessionToken.slice(0, 12) + '... (expires: ' + expiresAt + ')');
 

@@ -1,0 +1,186 @@
+{
+  "status": "READY",
+  "opencvStatusCode": "OK",
+  "engine": "OPENCV",
+  "engineVersion": "5.0.0",
+  "featureEngine": "SIFT",
+  "cameraEstimationStatus": "CONVERGED",
+  "bundleAdjustmentStatus": "CONVERGED",
+  "warpStatus": "SUCCESS",
+  "exposureCompensationStatus": "SUCCESS",
+  "seamStatus": "SUCCESS",
+  "blendStatus": "SUCCESS",
+  "panoramaCreated": true,
+  "applyEnabled": true,
+  "geometryValid": true,
+  "allInputImagesUsed": true,
+  "full360Qualified": false,
+  "panoramaType": "PARTIAL",
+  "projection": "SPHERICAL",
+  "nativeWidth": 4974,
+  "nativeHeight": 3811,
+  "nativeDimensions": "4974x3811",
+  "horizontalCoverageDeg": 120.2,
+  "verticalCoverageDeg": 92.1,
+  "outputMosaicCoverageEstimateDeg": 120.2,
+  "cameraGeometryCoverageDeg": 20.0,
+  "lastFirstPairReprojectionError": 0.63,
+  "globalRingClosureError": null,
+  "lastFirstPairResult": {
+    "fromSlot": "SHOT_08",
+    "toSlot": "SHOT_01",
+    "pairLabel": "SHOT_08->SHOT_01",
+    "goodMatchCount": 164,
+    "inlierCount": 121,
+    "inlierRatio": 0.738,
+    "medianReprojectionError": 0.63,
+    "homographyValid": true,
+    "status": "GOOD"
+  },
+  "yawMin": -60.1,
+  "yawMax": 60.1,
+  "pitchMin": -45.0,
+  "pitchMax": 45.0,
+  "connectedCameraIndices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "connectedCount": 8,
+  "sourceCount": 8,
+  "nativeFile": "cand-val-1788751928258_native.jpg",
+  "nativePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\cand-val-1788751928258_native.jpg",
+  "previewFile": "cand-val-1788751928258_preview.jpg",
+  "previewPath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\cand-val-1788751928258_preview.jpg",
+  "masterSha256": "6292908d6c7d3ea2c65aacfa3d144a92d8d56b5759a62892532a17c317c10074",
+  "srUsed": false,
+  "anchors": [
+    {
+      "id": "anchor-deg--60",
+      "index": 0,
+      "degree": -60.1,
+      "slot": "SHOT_01"
+    },
+    {
+      "id": "anchor-deg--42",
+      "index": 1,
+      "degree": -42.9,
+      "slot": "SHOT_02"
+    },
+    {
+      "id": "anchor-deg--25",
+      "index": 2,
+      "degree": -25.8,
+      "slot": "SHOT_03"
+    },
+    {
+      "id": "anchor-deg--8",
+      "index": 3,
+      "degree": -8.6,
+      "slot": "SHOT_04"
+    },
+    {
+      "id": "anchor-deg-8",
+      "index": 4,
+      "degree": 8.6,
+      "slot": "SHOT_05"
+    },
+    {
+      "id": "anchor-deg-25",
+      "index": 5,
+      "degree": 25.8,
+      "slot": "SHOT_06"
+    },
+    {
+      "id": "anchor-deg-42",
+      "index": 6,
+      "degree": 42.9,
+      "slot": "SHOT_07"
+    },
+    {
+      "id": "anchor-deg-60",
+      "index": 7,
+      "degree": 60.1,
+      "slot": "SHOT_08"
+    }
+  ],
+  "sources": [
+    {
+      "index": 0,
+      "slot": "FAR_LEFT",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788751911473-441556551.jpg",
+      "sha256": "b9ed91a92484450f725a2f04206454334bb713c5ded8c42f599b5b1b982a4c16",
+      "cameraMake": "samsung",
+      "cameraModel": "Galaxy S23 Ultra",
+      "focalLength35mm": 13.0
+    },
+    {
+      "index": 1,
+      "slot": "LEFT",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788751911554-189189910.jpg",
+      "sha256": "2ae4b79e3847e2d531b258cf1eaf9c742672a7124b362fb7974701431948b859",
+      "cameraMake": "samsung",
+      "cameraModel": "Galaxy S23 Ultra",
+      "focalLength35mm": 13.0
+    },
+    {
+      "index": 2,
+      "slot": "LEFT_CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788751911633-626993046.jpg",
+      "sha256": "7873fd5354a8162139cd4ea6f65b29c84823778deb71c09ea25a5560d016ef1c",
+      "cameraMake": "samsung",
+      "cameraModel": "Galaxy S23 Ultra",
+      "focalLength35mm": 13.0
+    },
+    {
+      "index": 3,
+      "slot": "CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788751911712-704935925.jpg",
+      "sha256": "3ae7edd8980c91db542fedc0629f529c4910b09b7d9dc79f832658d595c215dd",
+      "cameraMake": "samsung",
+      "cameraModel": "Galaxy S23 Ultra",
+      "focalLength35mm": 13.0
+    },
+    {
+      "index": 4,
+      "slot": "RIGHT_CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788751911790-145485186.jpg",
+      "sha256": "a8f59ac02d746afe628e35e980a00f0f8e61eea7891371b6071a4961de9457c9",
+      "cameraMake": "samsung",
+      "cameraModel": "Galaxy S23 Ultra",
+      "focalLength35mm": 13.0
+    },
+    {
+      "index": 5,
+      "slot": "RIGHT",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788751911870-655184414.jpg",
+      "sha256": "f6df88bf6ab397eb7bee74896a8dce9c9ac3f8434ae1a4a44032dfa83fda7c1b",
+      "cameraMake": "samsung",
+      "cameraModel": "Galaxy S23 Ultra",
+      "focalLength35mm": 13.0
+    },
+    {
+      "index": 6,
+      "slot": "FAR_RIGHT",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788751911949-506298424.jpg",
+      "sha256": "577ee2d73c57659ba23571a6e5452e9cf93c971c45c567b2689d0afd36604b9a",
+      "cameraMake": "samsung",
+      "cameraModel": "Galaxy S23 Ultra",
+      "focalLength35mm": 13.0
+    },
+    {
+      "index": 7,
+      "slot": "CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788751912025-216202744.jpg",
+      "sha256": "75cd885dbf7dc621c00ae6c37579375a8ea96519dcd7f053de6f9c0b27e4c07c",
+      "cameraMake": "samsung",
+      "cameraModel": "Galaxy S23 Ultra",
+      "focalLength35mm": 13.0
+    }
+  ]
+}

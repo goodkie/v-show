@@ -1,0 +1,46 @@
+{
+  "sources": [
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788751911473-441556551.jpg",
+      "slot": "FAR_LEFT",
+      "index": 0
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788751911554-189189910.jpg",
+      "slot": "LEFT",
+      "index": 1
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788751911633-626993046.jpg",
+      "slot": "LEFT_CENTER",
+      "index": 2
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788751911712-704935925.jpg",
+      "slot": "CENTER",
+      "index": 3
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788751911790-145485186.jpg",
+      "slot": "RIGHT_CENTER",
+      "index": 4
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788751911870-655184414.jpg",
+      "slot": "RIGHT",
+      "index": 5
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788751911949-506298424.jpg",
+      "slot": "FAR_RIGHT",
+      "index": 6
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\capture-1788751912025-216202744.jpg",
+      "slot": "CENTER",
+      "index": 7
+    }
+  ],
+  "outputDir": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads",
+  "candidateId": "cand-val-1788751928258"
+}

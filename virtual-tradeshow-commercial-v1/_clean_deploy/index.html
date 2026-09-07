@@ -20063,8 +20063,12 @@ class SetupWizardController {
     document.body.style.overflow = 'hidden';
     this.modal.style.display = 'flex';
 
-    const urlStep = parseInt(new URLSearchParams(window.location.search).get('step') || '', 10);
-    const targetStep = overrideStep || (!isNaN(urlStep) && urlStep > 0 ? urlStep : null);
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlStep = parseInt(urlParams.get('step') || '', 10);
+    let targetStep = overrideStep !== undefined && overrideStep !== null ? overrideStep : (!isNaN(urlStep) && urlStep > 0 ? urlStep : null);
+    if (targetStep === null && (urlParams.get('mode') === 'booth-tour-wizard' || urlParams.get('openWizard') === '1')) {
+      targetStep = 1;
+    }
 
     const projectId = this.getProjectId();
     if (projectId) {
@@ -21202,9 +21206,11 @@ window.saveBoothMapEditorChanges = async function() {
 setTimeout(() => {
   try {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('step') || urlParams.get('openWizard') === '1') {
-      openMultiPointTourWizard();
-      const targetStep = parseInt(urlParams.get('step') || '6', 10);
+    const hasWizardIntent = urlParams.get('step') !== null || urlParams.get('openWizard') === '1' || urlParams.get('mode') === 'booth-tour-wizard';
+    if (hasWizardIntent) {
+      const stepParam = urlParams.get('step');
+      const targetStep = stepParam ? parseInt(stepParam, 10) : 1;
+      openMultiPointTourWizard(targetStep);
       setTimeout(() => {
         if (window.setupWizard) {
           window.setupWizard.currentStep = targetStep;
@@ -21215,7 +21221,7 @@ setTimeout(() => {
   } catch(e) {
     console.warn('[Wizard AutoOpen]', e);
   }
-}, 600);
+}, 300);
 
 function toggleMobileBoothMap(forceState) {
   const sheet = document.getElementById('mobileBoothMapSheet');

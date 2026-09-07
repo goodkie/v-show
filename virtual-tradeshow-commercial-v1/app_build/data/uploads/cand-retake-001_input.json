@@ -1,0 +1,46 @@
+{
+  "sources": [
+    {
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_01_20231006_181139.jpg",
+      "slot": "SHOT_01",
+      "index": 0
+    },
+    {
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_02_20231006_181145.jpg",
+      "slot": "SHOT_02",
+      "index": 1
+    },
+    {
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_03_20231006_181151.jpg",
+      "slot": "SHOT_03",
+      "index": 2
+    },
+    {
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_04_20231006_181155.jpg",
+      "slot": "SHOT_04",
+      "index": 3
+    },
+    {
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_05_20231006_181203.jpg",
+      "slot": "SHOT_05",
+      "index": 4
+    },
+    {
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_06_20231006_181204.jpg",
+      "slot": "SHOT_06",
+      "index": 5
+    },
+    {
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_07_20231006_181218.jpg",
+      "slot": "SHOT_07",
+      "index": 6
+    },
+    {
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_08_20231006_181237.jpg",
+      "slot": "SHOT_08",
+      "index": 7
+    }
+  ],
+  "outputDir": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads",
+  "candidateId": "cand-retake-001"
+}
