@@ -234,13 +234,19 @@ class MobileInspectorUI {
       const screenshotData = await this.captureScreenshot();
       const state = this.adapter.getRuntimeState();
 
+      const rollingBuffer = this.adapter.buffer ? this.adapter.buffer.freezeSnapshot() : {};
       const payload = {
         sessionId: this.adapter.sessionId,
         submittedAt: new Date().toISOString(),
         ownerNote: note,
         hasScreenshot: Boolean(screenshotData),
         screenshotBase64: screenshotData,
-        state
+        state,
+        runtimeState: state,
+        timeline: rollingBuffer.events || [],
+        consoleLogs: rollingBuffer.consoleLogs || [],
+        networkRequests: rollingBuffer.networkRequests || [],
+        summary: this.adapter.summarize()
       };
 
       const qaSessionToken = (typeof window !== 'undefined' && window.sessionStorage) ? window.sessionStorage.getItem('mobile_ri_qa_token') : null;

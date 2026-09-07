@@ -1214,7 +1214,7 @@ app.post('/api/internal-qa/mobile-ri/report', express.json({ limit: '25mb' }), a
     filesSaved.push('network.json');
 
     // 5. runtime_state.json
-    const runtimeState = sanitized.runtimeState || {};
+    const runtimeState = sanitized.runtimeState || sanitized.state || {};
     fs.writeFileSync(path.join(baseDir, 'runtime_state.json'), JSON.stringify(runtimeState, null, 2), 'utf8');
     filesSaved.push('runtime_state.json');
 
@@ -1282,9 +1282,41 @@ app.get('/api/internal-qa/mobile-ri/session/:sessionId', (req, res) => {
     if (!fs.existsSync(baseDir)) {
       return res.status(404).json({ ok: false, error: 'Session not found' });
     }
+    // Specific file download support (?file=xxx)
+    const targetFile = req.query.file;
+    if (targetFile && typeof targetFile === 'string') {
+      const safeFile = path.basename(targetFile);
+      const filePath = path.join(baseDir, safeFile);
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ ok: false, error: 'File not found' });
+      }
+      if (safeFile.endsWith('.png')) {
+        res.setHeader('Content-Type', 'image/png');
+        return fs.createReadStream(filePath).pipe(res);
+      }
+      if (safeFile.endsWith('.json')) {
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        return fs.createReadStream(filePath).pipe(res);
+      }
+      return res.sendFile(filePath);
+    }
+
+    const files = fs.readdirSync(baseDir);
     const summaryFile = path.join(baseDir, 'summary.json');
     const summary = fs.existsSync(summaryFile) ? JSON.parse(fs.readFileSync(summaryFile, 'utf8')) : null;
-    res.json({ ok: true, sessionId, summary, files: fs.readdirSync(baseDir) });
+
+    // Assemble diagnostic data from all saved JSON artifacts
+    const data = {};
+    for (const fileItem of files) {
+      if (fileItem.endsWith('.json')) {
+        try {
+          const fileContent = fs.readFileSync(path.join(baseDir, fileItem), 'utf8');
+          data[fileItem.replace('.json', '')] = JSON.parse(fileContent);
+        } catch (e) {}
+      }
+    }
+
+    res.json({ ok: true, sessionId, summary, files, data });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }

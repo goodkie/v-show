@@ -1,0 +1,19 @@
+{
+  "step1": {
+    "wizardRootCount": 1,
+    "wizardControllerCount": 1,
+    "currentStep": 1,
+    "indicatorText": "Step 1 of 12 — Welcome",
+    "primaryBtnText": "Start Tour Setup",
+    "modalVisible": true,
+    "reportIssueVisible": true,
+    "projectId": "prj-free-b0c6f3ea",
+    "url": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&qa=1"
+  },
+  "step2": {
+    "currentStep": 2,
+    "indicatorText": "Step 2 of 12 — Booth Size",
+    "backBtnVisible": true
+  },
+  "navigationVerified": true
+}

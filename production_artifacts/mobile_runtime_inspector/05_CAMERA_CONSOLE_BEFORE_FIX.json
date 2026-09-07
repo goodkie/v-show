@@ -1,0 +1,37 @@
+[
+  {
+    "level": "info",
+    "message": "[QA Auth] Redeemed single-use QR token -> Issued QA browser session for prj-free-b0c6f3ea",
+    "timestamp": "2026-09-07T19:04:37.828Z"
+  },
+  {
+    "level": "info",
+    "message": "[MobileRI] Initializing Mobile Runtime Inspector on Samsung Galaxy S23 Ultra...",
+    "timestamp": "2026-09-07T19:04:38.100Z"
+  },
+  {
+    "level": "info",
+    "message": "[MobileRI] Client instrumentation attached. Session: RI-M-CAHOQL",
+    "timestamp": "2026-09-07T19:04:38.150Z"
+  },
+  {
+    "level": "info",
+    "message": "[Wizard] Launching C12.4 Step 1 (Welcome)...",
+    "timestamp": "2026-09-07T19:04:38.210Z"
+  },
+  {
+    "level": "info",
+    "message": "[Wizard] Step 6 (360° Guided Capture) rendered.",
+    "timestamp": "2026-09-07T19:05:03.350Z"
+  },
+  {
+    "level": "warn",
+    "message": "[GuidedCapture Start Error] TypeError: controller.start is not a function\n    at SetupWizardController.startGuidedCapture (index.html:20512:24)\n    at HTMLButtonElement.onclick (index.html:20446:83)",
+    "timestamp": "2026-09-07T19:05:05.124Z"
+  },
+  {
+    "level": "info",
+    "message": "[MobileRI] Report submitted successfully. Session: RI-M-CAHOQL",
+    "timestamp": "2026-09-07T19:05:47.606Z"
+  }
+]

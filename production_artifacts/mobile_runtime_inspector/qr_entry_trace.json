@@ -1,0 +1,8 @@
+{
+  "initialUrlSanitized": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&token=REDACTED&qa=1",
+  "postRedeemUrl": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&qa=1",
+  "tokenRemoved": true,
+  "projectIdPreserved": true,
+  "modePreserved": true,
+  "stepPreserved": true
+}

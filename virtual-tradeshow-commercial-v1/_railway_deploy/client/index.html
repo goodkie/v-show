@@ -19542,7 +19542,22 @@ class GuidedCaptureController {
     return this.capabilities;
   }
 
-  async startCapture() {
+  async start(options = {}) {
+    // Clean any previous capture or stream resources cleanly
+    this.stopCaptureResources();
+
+    // Resolve target video element: options > #guidedCaptureVideo > #guidedLiveVideo
+    let video = options.videoElement || document.getElementById('guidedCaptureVideo') || document.getElementById('guidedLiveVideo');
+    if (!video) {
+      video = document.createElement('video');
+      video.id = 'guidedCaptureVideo';
+      video.playsInline = true;
+      video.muted = true;
+      video.autoplay = true;
+      document.body.appendChild(video);
+    }
+    this.videoElement = video;
+
     this.diagnosticSessionId = Math.random().toString(36).substring(2, 8).toUpperCase();
     this.telemetry.startButtonEventReceived = true;
     this.telemetry.guidedControllerStartCalled = true;
@@ -19563,7 +19578,9 @@ class GuidedCaptureController {
     this.telemetry.errorMessage = null;
     this.telemetry.diagnosticSessionId = this.diagnosticSessionId;
 
-    this.state = 'PREPARING';
+    // State machine: REQUESTING_PERMISSION
+    this.state = 'REQUESTING_PERMISSION';
+    this.cameraStage = 'REQUESTING_PERMISSION';
     this.accumulatedRotation = 0.0;
     this.directionLocked = false;
     this.rotationDirection = null;
@@ -19574,16 +19591,15 @@ class GuidedCaptureController {
     this.lastSelectedAngle = null;
     this.lastSelectedTimestamp = null;
     this.closureVerified = false;
-    this.guidanceMessage = 'Starting camera & sensors...';
+    this.guidanceMessage = 'Requesting camera access...';
     this.notifyProgress();
-
-    // ── PERSIST TELEMETRY BEFORE ANY EARLY RETURNS ──
     this.sendTelemetry();
 
-    // 1. Genuine Insecure Context Check (browser explicitly marks window.isSecureContext === false)
+    // 1. Secure context verification
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     if (!window.isSecureContext && !isLocalhost && (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)) {
-      this.state = 'NEEDS_ATTENTION';
+      this.state = 'ERROR';
+      this.cameraStage = 'SECURE_CONTEXT_FAILURE';
       this.telemetry.errorCode = 'INSECURE_CONTEXT';
       this.telemetry.errorMessage = 'Browser is in an insecure context (HTTP).';
       this.guidanceMessage = 'Camera access requires secure connection.';
@@ -19593,12 +19609,13 @@ class GuidedCaptureController {
         diagnosticId: this.diagnosticSessionId
       });
       this.sendTelemetry();
-      return;
+      throw new Error('Camera access requires secure context (HTTPS).');
     }
 
-    // 2. Check if mediaDevices API is completely absent
+    // 2. MediaDevices availability verification
     if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
-      this.state = 'NEEDS_ATTENTION';
+      this.state = 'ERROR';
+      this.cameraStage = 'GET_USER_MEDIA_UNAVAILABLE';
       this.telemetry.errorCode = 'CAMERA_API_UNAVAILABLE';
       this.telemetry.errorMessage = 'navigator.mediaDevices.getUserMedia is unavailable.';
       this.guidanceMessage = 'Camera API unavailable.';
@@ -19608,83 +19625,148 @@ class GuidedCaptureController {
         diagnosticId: this.diagnosticSessionId
       });
       this.sendTelemetry();
-      return;
+      throw new Error('Camera API is unavailable on this browser.');
     }
 
-    // 3. Setup Watchdog (3.5s)
+    // 3. Startup Watchdog (~5.0s)
     if (this.watchdogTimer) clearTimeout(this.watchdogTimer);
     this.watchdogTimer = setTimeout(() => {
-      this.checkWatchdog();
-    }, 3500);
+      this.checkStartupWatchdog();
+    }, 5000);
 
-    // 4. Capability-Based Camera Startup
+    // 4. Progressive Camera Constraint Fallback
+    this.state = 'OPENING_CAMERA';
+    this.cameraStage = 'OPENING_CAMERA';
+    this.telemetry.getUserMediaCalled = true;
+    window.__getUserMediaCalled = true;
+
+    let stream = null;
+    let successfulAttempt = null;
+
+    // Attempt A: environment ideal + 1080p target
     try {
-      this.telemetry.getUserMediaCalled = true;
-      let stream = null;
-
-      // Attempt 1: ideal environment facingMode (no strict module/resolution requirements)
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        },
+        audio: false
+      });
+      successfulAttempt = 'Attempt A (environment ideal + 1080p)';
+    } catch (errA) {
+      console.warn('[GuidedCapture] Attempt A failed:', errA.name, errA.message);
+      // Attempt B: environment ideal only
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: 'environment' } },
           audio: false
         });
-      } catch (e1) {
-        console.warn('[GuidedCapture] Ideal environment constraint failed, retrying relaxed video:true...', e1);
-        // Attempt 2: retry with relaxed constraints
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-      }
+        successfulAttempt = 'Attempt B (environment ideal)';
+      } catch (errB) {
+        console.warn('[GuidedCapture] Attempt B failed:', errB.name, errB.message);
+        // Attempt C: video: true
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+          });
+          successfulAttempt = 'Attempt C (video: true)';
+        } catch (errC) {
+          this.state = 'ERROR';
+          this.cameraStage = (errC.name === 'NotAllowedError' || errC.name === 'PermissionDeniedError')
+            ? 'CAMERA_PERMISSION_DENIED'
+            : 'GET_USER_MEDIA_REJECTED';
+          this.telemetry.errorCode = errC.name || 'CameraError';
+          this.telemetry.errorMessage = errC.message;
+          this.telemetry.cameraPermissionState = (errC.name === 'NotAllowedError' || errC.name === 'PermissionDeniedError') ? 'denied' : 'error';
+          window.__lastCameraError = { code: errC.name, message: errC.message };
 
-      if (stream) {
-        this.mediaStream = stream;
-        this.telemetry.getUserMediaResolved = true;
-        this.telemetry.cameraPermissionState = 'granted';
-
-        // Connect to video element inside the circular guidance widget
-        let video = document.getElementById('guidedLiveVideo');
-        if (!video) {
-          video = document.createElement('video');
-          video.id = 'guidedLiveVideo';
-          video.style.display = 'none';
-          document.body.appendChild(video);
+          let userMsg = 'Camera access blocked: ' + (errC.message || 'Check device permissions.');
+          if (errC.name === 'NotAllowedError' || errC.name === 'PermissionDeniedError') {
+            userMsg = 'Camera permission was denied. Please allow camera access in browser settings and tap Try Again.';
+          } else if (errC.name === 'NotFoundError' || errC.name === 'DevicesNotFoundError') {
+            userMsg = 'No camera was found on this device.';
+          } else if (errC.name === 'NotReadableError' || errC.name === 'TrackStartError') {
+            userMsg = 'Camera is in use by another app. Close other apps and retry.';
+          }
+          this.notifyAttention({
+            code: errC.name,
+            message: userMsg,
+            diagnosticId: this.diagnosticSessionId
+          });
+          this.sendTelemetry();
+          throw errC;
         }
-        video.playsInline = true;
-        video.muted = true;
-        video.autoplay = true;
-        video.srcObject = stream;
-        await video.play().catch(e => console.warn('[GuidedCapture] Video play error:', e));
-
-        this.videoElement = video;
-        this.telemetry.videoTrackActive = Boolean(stream.getVideoTracks().length && stream.getVideoTracks()[0].readyState === 'live');
-        this.telemetry.videoWidth = video.videoWidth || 640;
-        this.telemetry.videoHeight = video.videoHeight || 480;
-        video.style.opacity = '0.75';
       }
-    } catch (camErr) {
-      console.error('[GuidedCapture] Camera getUserMedia error:', camErr);
-      this.state = 'NEEDS_ATTENTION';
-      this.telemetry.errorCode = camErr.name || 'CameraError';
-      this.telemetry.errorMessage = camErr.message;
-      this.telemetry.cameraPermissionState = (camErr.name === 'NotAllowedError' || camErr.name === 'PermissionDeniedError') ? 'denied' : 'error';
-
-      let userFacingMsg = 'Camera unavailable: ' + (camErr.message || 'Check device permissions.');
-      if (camErr.name === 'NotAllowedError' || camErr.name === 'PermissionDeniedError') {
-        userFacingMsg = 'Camera access is blocked. Allow camera permission and try again.';
-      } else if (camErr.name === 'NotFoundError' || camErr.name === 'DevicesNotFoundError') {
-        userFacingMsg = 'No camera was found.';
-      } else if (camErr.name === 'NotReadableError' || camErr.name === 'TrackStartError') {
-        userFacingMsg = 'Your camera is being used by another app.';
-      }
-
-      this.notifyAttention({
-        code: camErr.name,
-        message: userFacingMsg,
-        diagnosticId: this.diagnosticSessionId
-      });
-      this.sendTelemetry();
-      return;
     }
 
-    // 5. Attach motion listeners
+    // Stream successfully acquired
+    this.mediaStream = stream;
+    this.telemetry.getUserMediaResolved = true;
+    window.__getUserMediaResolved = true;
+    this.telemetry.cameraPermissionState = 'granted';
+    console.log('[GuidedCapture] Camera stream acquired via ' + successfulAttempt);
+
+    // 5. ATTACHING_STREAM
+    this.state = 'ATTACHING_STREAM';
+    this.cameraStage = 'ATTACHING_STREAM';
+    video.playsInline = true;
+    video.muted = true;
+    video.autoplay = true;
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
+    video.srcObject = stream;
+
+    // 6. WAITING_FOR_VIDEO / video.play()
+    this.state = 'WAITING_FOR_VIDEO';
+    this.cameraStage = 'WAITING_FOR_VIDEO';
+
+    try {
+      await video.play();
+    } catch (playErr) {
+      console.warn('[GuidedCapture] video.play() error:', playErr);
+      this.cameraStage = 'CAMERA_PLAYBACK_BLOCKED';
+      this.telemetry.errorCode = playErr.name || 'PlayError';
+      this.telemetry.errorMessage = playErr.message;
+      this.notifyAttention({
+        code: 'PLAYBACK_BLOCKED',
+        message: 'Tap the preview to start camera playback.',
+        diagnosticId: this.diagnosticSessionId
+      });
+      throw playErr;
+    }
+
+    // Wait for video metadata / loadedmetadata if dimensions not ready yet
+    if (video.videoWidth === 0 || video.readyState < 2) {
+      await new Promise((resolve) => {
+        const onLoaded = () => {
+          video.removeEventListener('loadedmetadata', onLoaded);
+          video.removeEventListener('canplay', onLoaded);
+          resolve();
+        };
+        video.addEventListener('loadedmetadata', onLoaded, { once: true });
+        video.addEventListener('canplay', onLoaded, { once: true });
+        setTimeout(resolve, 1500);
+      });
+    }
+
+    // 7. Transition to PREVIEW_READY
+    this.state = 'PREVIEW_READY';
+    this.cameraStage = 'PREVIEW_READY';
+    if (this.watchdogTimer) {
+      clearTimeout(this.watchdogTimer);
+      this.watchdogTimer = null;
+    }
+
+    const liveTracks = stream.getVideoTracks().filter(t => t.readyState === 'live');
+    this.telemetry.videoTrackActive = liveTracks.length > 0;
+    this.telemetry.videoWidth = video.videoWidth || 1280;
+    this.telemetry.videoHeight = video.videoHeight || 720;
+    video.style.opacity = '1';
+    video.style.display = 'block';
+
+    // 8. Attach sensors & start frame loop for capture
     try {
       if (typeof DeviceOrientationEvent !== 'undefined') {
         window.addEventListener('deviceorientation', this.sensorHandler, true);
@@ -19693,20 +19775,48 @@ class GuidedCaptureController {
         window.addEventListener('devicemotion', this.motionHandler, true);
       }
     } catch (e) {
-      console.warn('[GuidedCapture] Sensor listener error:', e);
+      console.warn('[GuidedCapture] Sensor listener note:', e);
     }
 
-    // 6. Select Initial canonical keyframe (0 deg)
+    // Select initial canonical keyframe (0 deg)
     this.selectCanonicalKeyframe(0.0, 100);
 
-    // 7. Transition to CAPTURING
+    // Transition state to CAPTURING for active rotation tracking
     this.state = 'CAPTURING';
     this.telemetry.captureLoopActive = true;
     this.guidanceMessage = 'Stand in one spot and slowly turn in a full circle.';
     this.notifyProgress();
-
-    // 8. Start Visual Frame Loop
     this.startFrameLoop();
+    this.sendTelemetry();
+
+    return {
+      status: 'PREVIEW_READY',
+      videoWidth: this.telemetry.videoWidth,
+      videoHeight: this.telemetry.videoHeight,
+      successfulAttempt
+    };
+  }
+
+  async startCapture(options = {}) {
+    return this.start(options);
+  }
+
+  checkStartupWatchdog() {
+    if (this.state === 'PREVIEW_READY' || this.state === 'CAPTURING' || this.state === 'COMPLETE') return;
+
+    let stage = 'CAMERA_START_FAILED';
+    if (this.cameraStage === 'REQUESTING_PERMISSION') stage = 'CAMERA_PERMISSION_PENDING';
+    else if (this.cameraStage === 'OPENING_CAMERA') stage = 'CAMERA_STREAM_FAILED';
+    else if (this.cameraStage === 'ATTACHING_STREAM' || this.cameraStage === 'WAITING_FOR_VIDEO') stage = 'CAMERA_VIDEO_NOT_READY';
+    else if (this.cameraStage === 'CAMERA_PLAYBACK_BLOCKED') stage = 'CAMERA_PLAYBACK_BLOCKED';
+
+    this.state = 'NEEDS_ATTENTION';
+    this.telemetry.errorCode = stage;
+    this.notifyAttention({
+      code: stage,
+      message: 'Camera preview not ready (' + stage + '). Tap Try Again to re-initialize camera.',
+      diagnosticId: this.diagnosticSessionId
+    });
     this.sendTelemetry();
   }
 
@@ -20008,6 +20118,7 @@ class GuidedCaptureController {
       this.mediaStream = null;
     }
     if (this.videoElement) {
+      try { this.videoElement.srcObject = null; } catch(e) {}
       this.videoElement.style.opacity = '0';
     }
   }

@@ -1,0 +1,45 @@
+[
+  {
+    "method": "POST",
+    "url": "https://v-show-commercial-v1-production.up.railway.app/api/internal-qa/auth/redeem-session",
+    "status": 200,
+    "timestamp": "2026-09-07T19:04:37.828Z",
+    "response": {
+      "ok": true,
+      "authorized": true,
+      "role": "OWNER_QA"
+    }
+  },
+  {
+    "method": "GET",
+    "url": "https://v-show-commercial-v1-production.up.railway.app/api/internal-qa/capabilities",
+    "status": 200,
+    "timestamp": "2026-09-07T19:04:38.050Z",
+    "response": {
+      "ok": true,
+      "authorized": true,
+      "mobileRuntimeInspector": true
+    }
+  },
+  {
+    "method": "POST",
+    "url": "https://v-show-commercial-v1-production.up.railway.app/api/projects/prj-free-b0c6f3ea/wizard-state",
+    "status": 200,
+    "timestamp": "2026-09-07T19:05:03.373Z",
+    "response": {
+      "ok": true,
+      "success": true
+    }
+  },
+  {
+    "method": "POST",
+    "url": "https://v-show-commercial-v1-production.up.railway.app/api/internal-qa/mobile-ri/report",
+    "status": 200,
+    "timestamp": "2026-09-07T19:05:47.606Z",
+    "response": {
+      "ok": true,
+      "sessionId": "RI-M-CAHOQL",
+      "status": "PERSISTED"
+    }
+  }
+]

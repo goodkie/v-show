@@ -1,0 +1,80 @@
+[
+  {
+    "timestamp": "2026-09-07T19:04:37.828Z",
+    "source": "OWNER_S23_SCAN",
+    "type": "QR_TOKEN_REDEMPTION",
+    "event": "Redeemed single-use QR token -> Issued QA browser session for prj-free-b0c6f3ea"
+  },
+  {
+    "timestamp": "2026-09-07T19:04:38.210Z",
+    "source": "BROWSER_ROUTING",
+    "type": "WIZARD_AUTO_LAUNCH",
+    "event": "Launched C12.4 Setup Wizard directly at Step 1 (Welcome)"
+  },
+  {
+    "timestamp": "2026-09-07T19:04:42.150Z",
+    "source": "OWNER_INTERACTION",
+    "type": "NAVIGATION",
+    "event": "Step 1 -> Step 2 (Booth Size)"
+  },
+  {
+    "timestamp": "2026-09-07T19:04:48.330Z",
+    "source": "OWNER_INTERACTION",
+    "type": "NAVIGATION",
+    "event": "Step 2 -> Step 3 (Viewpoint Count: 3)"
+  },
+  {
+    "timestamp": "2026-09-07T19:04:54.620Z",
+    "source": "OWNER_INTERACTION",
+    "type": "NAVIGATION",
+    "event": "Step 3 -> Step 4 (Viewpoint 1 Name)"
+  },
+  {
+    "timestamp": "2026-09-07T19:04:59.810Z",
+    "source": "OWNER_INTERACTION",
+    "type": "NAVIGATION",
+    "event": "Step 4 -> Step 5 (Stand Guide)"
+  },
+  {
+    "timestamp": "2026-09-07T19:05:03.373Z",
+    "source": "OWNER_INTERACTION",
+    "type": "NAVIGATION",
+    "event": "Step 5 -> Step 6 (Guided 360° Capture). Server persisted wizardState step 6."
+  },
+  {
+    "timestamp": "2026-09-07T19:05:05.120Z",
+    "source": "OWNER_TAP",
+    "type": "USER_GESTURE",
+    "event": "Owner physically tapped '#btnStartGuidedCapture' (START 360° CAPTURE)"
+  },
+  {
+    "timestamp": "2026-09-07T19:05:05.122Z",
+    "source": "SETUP_WIZARD",
+    "type": "HANDLER_EXECUTION",
+    "event": "setupWizard.startGuidedCapture() invoked. Button changed to 'Starting Camera...'"
+  },
+  {
+    "timestamp": "2026-09-07T19:05:05.124Z",
+    "source": "JAVASCRIPT_RUNTIME",
+    "type": "TYPE_ERROR",
+    "event": "TypeError: controller.start is not a function. GuidedCaptureController defines startCapture(), not start()."
+  },
+  {
+    "timestamp": "2026-09-07T19:05:05.126Z",
+    "source": "SETUP_WIZARD",
+    "type": "CATCH_BLOCK",
+    "event": "Catch block handled error. Button updated to 'Try Again', status pill updated to 'Camera start note: controller.start is not a function'."
+  },
+  {
+    "timestamp": "2026-09-07T19:05:44.200Z",
+    "source": "OWNER_INTERACTION",
+    "type": "MOBILE_RI_OPEN",
+    "event": "Owner clicked floating 'REPORT ISSUE' button to inspect failure."
+  },
+  {
+    "timestamp": "2026-09-07T19:05:47.606Z",
+    "source": "MOBILE_RI_ADAPTER",
+    "type": "REPORT_INGESTION",
+    "event": "Report submitted to /api/internal-qa/mobile-ri/report. Persisted session RI-M-CAHOQL."
+  }
+]
