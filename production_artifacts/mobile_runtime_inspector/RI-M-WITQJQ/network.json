@@ -1,0 +1,524 @@
+[
+  {
+    "timestamp": 1788819023300,
+    "isoTime": "2026-09-07T22:10:23.300Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 169,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819024318,
+    "isoTime": "2026-09-07T22:10:24.318Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 151,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819025346,
+    "isoTime": "2026-09-07T22:10:25.346Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 165,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819026369,
+    "isoTime": "2026-09-07T22:10:26.369Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 166,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819027410,
+    "isoTime": "2026-09-07T22:10:27.410Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 161,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819028590,
+    "isoTime": "2026-09-07T22:10:28.590Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 290,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819029516,
+    "isoTime": "2026-09-07T22:10:29.516Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 170,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819030542,
+    "isoTime": "2026-09-07T22:10:30.542Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 165,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819031530,
+    "isoTime": "2026-09-07T22:10:31.530Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 149,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819032586,
+    "isoTime": "2026-09-07T22:10:32.586Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 148,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819033615,
+    "isoTime": "2026-09-07T22:10:33.615Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 151,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819034632,
+    "isoTime": "2026-09-07T22:10:34.632Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 152,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819035656,
+    "isoTime": "2026-09-07T22:10:35.656Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 159,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819036671,
+    "isoTime": "2026-09-07T22:10:36.671Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 157,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819037689,
+    "isoTime": "2026-09-07T22:10:37.689Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 158,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819038701,
+    "isoTime": "2026-09-07T22:10:38.701Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 153,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819039751,
+    "isoTime": "2026-09-07T22:10:39.751Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 168,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819040757,
+    "isoTime": "2026-09-07T22:10:40.757Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 154,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819041778,
+    "isoTime": "2026-09-07T22:10:41.778Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 150,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819042829,
+    "isoTime": "2026-09-07T22:10:42.829Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 172,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819043840,
+    "isoTime": "2026-09-07T22:10:43.840Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 166,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819044841,
+    "isoTime": "2026-09-07T22:10:44.841Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 159,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819045897,
+    "isoTime": "2026-09-07T22:10:45.897Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 150,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819046958,
+    "isoTime": "2026-09-07T22:10:46.958Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 145,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819047986,
+    "isoTime": "2026-09-07T22:10:47.986Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 156,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819049030,
+    "isoTime": "2026-09-07T22:10:49.030Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 150,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819050068,
+    "isoTime": "2026-09-07T22:10:50.068Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 172,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819051066,
+    "isoTime": "2026-09-07T22:10:51.066Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 153,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819052163,
+    "isoTime": "2026-09-07T22:10:52.163Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 177,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819053168,
+    "isoTime": "2026-09-07T22:10:53.168Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 138,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819054201,
+    "isoTime": "2026-09-07T22:10:54.201Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 155,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819055213,
+    "isoTime": "2026-09-07T22:10:55.213Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 150,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819056244,
+    "isoTime": "2026-09-07T22:10:56.244Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 164,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819057259,
+    "isoTime": "2026-09-07T22:10:57.259Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 161,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819058288,
+    "isoTime": "2026-09-07T22:10:58.288Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 172,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819059282,
+    "isoTime": "2026-09-07T22:10:59.282Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 153,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819060335,
+    "isoTime": "2026-09-07T22:11:00.335Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 148,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819061317,
+    "isoTime": "2026-09-07T22:11:01.317Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 113,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819062390,
+    "isoTime": "2026-09-07T22:11:02.390Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 170,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819063410,
+    "isoTime": "2026-09-07T22:11:03.410Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 181,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819064411,
+    "isoTime": "2026-09-07T22:11:04.411Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 165,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819065393,
+    "isoTime": "2026-09-07T22:11:05.393Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 131,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819066478,
+    "isoTime": "2026-09-07T22:11:06.478Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 159,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819067506,
+    "isoTime": "2026-09-07T22:11:07.506Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 160,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819068527,
+    "isoTime": "2026-09-07T22:11:08.527Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 165,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819069527,
+    "isoTime": "2026-09-07T22:11:09.527Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 148,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819070646,
+    "isoTime": "2026-09-07T22:11:10.646Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 250,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819071579,
+    "isoTime": "2026-09-07T22:11:11.579Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 167,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819072578,
+    "isoTime": "2026-09-07T22:11:12.578Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 149,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819073632,
+    "isoTime": "2026-09-07T22:11:13.632Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 187,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819074633,
+    "isoTime": "2026-09-07T22:11:14.633Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 154,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819075747,
+    "isoTime": "2026-09-07T22:11:15.747Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 167,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819076748,
+    "isoTime": "2026-09-07T22:11:16.748Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 153,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819077780,
+    "isoTime": "2026-09-07T22:11:17.780Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 166,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819078808,
+    "isoTime": "2026-09-07T22:11:18.808Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 176,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819079801,
+    "isoTime": "2026-09-07T22:11:19.801Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 152,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819080816,
+    "isoTime": "2026-09-07T22:11:20.816Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 152,
+    "ok": true
+  },
+  {
+    "timestamp": 1788819081840,
+    "isoTime": "2026-09-07T22:11:21.840Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 154,
+    "ok": true
+  }
+]

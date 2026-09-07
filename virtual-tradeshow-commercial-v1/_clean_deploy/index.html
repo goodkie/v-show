@@ -19916,6 +19916,7 @@ class GuidedCaptureController {
         }
       } else {
         this.telemetry.guidanceMode = 'SENSOR_VISUAL';
+        this.guidanceMode = 'SENSOR_VISUAL';
       }
     }
 
@@ -20018,6 +20019,7 @@ class GuidedCaptureController {
     const hash = (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(16, '0');
 
     const candId = 'C' + String(this.candidateFrames.length + 1).padStart(3, '0');
+    const candBytes = Math.round(dataUrl.length * 0.75);
     const cand = {
       candidateId: candId,
       index: this.candidateFrames.length + 1,
@@ -20028,8 +20030,10 @@ class GuidedCaptureController {
       motionScore: Math.round((this.turnSpeedDps || 0) * 10) / 10,
       width: vw,
       height: vh,
+      bytes: candBytes,
       hash,
       dataUrl,
+      serverAssetUrl: null,
       uploadStatus: 'PENDING'
     };
 
@@ -20137,12 +20141,13 @@ class GuidedCaptureController {
         exposureScore: cand.exposureScore,
         overlapPrevious: idx === 0 ? 1.0 : Math.round(Math.max(0.15, 1.0 - (deltaAngle / 65.0)) * 100) / 100,
         selectionReason: 'ADAPTIVE_ANGULAR_OPTIMAL',
-        dataUrl: cand.dataUrl,
+        dataUrl: cand.dataUrl || null,
+        serverAssetUrl: cand.serverAssetUrl || ('/data/guided_capture_keyframes/' + (this.diagnosticSessionId || '') + '/candidates/' + cand.candidateId + '.jpg'),
         hash: cand.hash,
         width: cand.width,
         height: cand.height,
         mimeType: 'image/jpeg',
-        bytes: Math.round(cand.dataUrl.length * 0.75)
+        bytes: (Number.isFinite(cand.bytes) && cand.bytes > 0) ? cand.bytes : (cand.dataUrl ? Math.round(cand.dataUrl.length * 0.75) : 0)
       };
     });
 
@@ -20182,9 +20187,17 @@ class GuidedCaptureController {
       const x = col * tileW;
       const y = row * tileH;
 
-      const img = new Image();
-      img.src = kf.dataUrl;
-      sctx.drawImage(img, x, y, tileW, tileH);
+      if (kf.dataUrl) {
+        const img = new Image();
+        img.src = kf.dataUrl;
+        sctx.drawImage(img, x, y, tileW, tileH);
+      } else {
+        sctx.fillStyle = '#1e293b';
+        sctx.fillRect(x + 2, y + 2, tileW - 4, tileH - 4);
+        sctx.fillStyle = '#38bdf8';
+        sctx.font = 'bold 22px monospace';
+        sctx.fillText(kf.keyframeId + ' (Persisted)', x + 20, y + tileH / 2 - 10);
+      }
 
       sctx.fillStyle = 'rgba(9, 16, 29, 0.85)';
       sctx.fillRect(x, y + tileH - 36, tileW, 36);
@@ -20251,7 +20264,9 @@ class GuidedCaptureController {
 
       if (res.ok) {
         cand.uploadStatus = 'PERSISTED';
+        cand.serverAssetUrl = '/data/guided_capture_keyframes/' + captureSessionId + '/candidates/' + cand.candidateId + '.jpg';
         this.persistedCandidateCount = (this.persistedCandidateCount || 0) + 1;
+        this.telemetry.persistedCandidateCount = this.persistedCandidateCount;
         // Release heavy JPEG buffer from mobile RAM
         cand.dataUrl = null;
       } else {
@@ -20487,7 +20502,21 @@ class GuidedCaptureController {
 
   finalizeCapture() {
     // 1. Run canonical selection first while video stream is still active
-    const selectionOk = this.selectCanonicalKeyframesFromCandidates();
+    let selectionOk = false;
+    try {
+      selectionOk = this.selectCanonicalKeyframesFromCandidates();
+    } catch (err) {
+      console.error('[GuidedCapture] Canonical selection error:', err);
+      this.state = 'ERROR';
+      this.guidanceMessage = 'Selection error: ' + (err.message || 'Unknown error');
+      this.stopCaptureResources();
+      this.notifyAttention({
+        code: 'CANONICAL_SELECTION_FAILED',
+        message: 'Candidate pool preserved on server (' + (this.persistedCandidateCount || 0) + ' frames). Error: ' + err.message
+      });
+      this.sendTelemetry();
+      return;
+    }
 
     // 2. Validate Minimum Gate
     if (!selectionOk || this.canonicalKeyframes.length < this.MIN_CANONICAL_KEYFRAMES) {
@@ -20763,7 +20792,7 @@ class SetupWizardController {
 
     if (this.btnPrimary) {
       this.btnPrimary.disabled = false;
-      this.btnPrimary.style.display = 'inline-flex';
+      this.btnPrimary.style.display = (s === 6) ? 'none' : 'inline-flex';
       this.btnPrimary.onclick = () => this.nextStep();
     }
 

@@ -1,0 +1,18 @@
+{
+  "sessionId": "RI-M-WITQJQ",
+  "environment": "INTERNAL_DEV",
+  "isTest": true,
+  "receivedAt": "2026-09-07T22:11:23.093Z",
+  "SESSION_ID": "RI-M-WITQJQ",
+  "PLATFORM": "Android Chrome",
+  "platform": "Android Chrome",
+  "SECURE_HTTPS": "YES",
+  "CAMERA_READY": "AVAILABLE",
+  "CAMERA_FRAMES": 4173,
+  "MOTION_EVENTS": 8694,
+  "CURRENT_STEP": 7,
+  "STEP_NAME": "Viewpoint 1 Ready",
+  "CAPTURE_PROGRESS": "0%",
+  "RAW_CSS_LEAK": "CLEAN",
+  "CHECKPOINT_COUNT": 19
+}

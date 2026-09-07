@@ -1,0 +1,259 @@
+[
+  {
+    "timestamp": 1788819025006,
+    "isoTime": "2026-09-07T22:10:25.006Z",
+    "category": "CHECKPOINT",
+    "type": "FATAL_JS_ERROR",
+    "payload": {
+      "message": "Uncaught TypeError: Cannot read properties of null (reading 'length')",
+      "filename": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&token=%5BREDACTED%5D&qa=1",
+      "lineno": 20145,
+      "colno": 40
+    }
+  },
+  {
+    "timestamp": 1788819026618,
+    "isoTime": "2026-09-07T22:10:26.618Z",
+    "category": "CHECKPOINT",
+    "type": "CAPTURE_ZERO_PROGRESS_CHECKPOINT",
+    "payload": {
+      "cameraActive": true,
+      "previewFrames": 1155,
+      "sensorEvents": 3484,
+      "guidanceMode": "UNKNOWN",
+      "accumulatedRotation": 24114
+    }
+  },
+  {
+    "timestamp": 1788819030079,
+    "isoTime": "2026-09-07T22:10:30.079Z",
+    "category": "CHECKPOINT",
+    "type": "FATAL_JS_ERROR",
+    "payload": {
+      "message": "Uncaught TypeError: Cannot read properties of null (reading 'length')",
+      "filename": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&token=%5BREDACTED%5D&qa=1",
+      "lineno": 20145,
+      "colno": 40
+    }
+  },
+  {
+    "timestamp": 1788819034618,
+    "isoTime": "2026-09-07T22:10:34.618Z",
+    "category": "CHECKPOINT",
+    "type": "CAPTURE_ZERO_PROGRESS_CHECKPOINT",
+    "payload": {
+      "cameraActive": true,
+      "previewFrames": 1430,
+      "sensorEvents": 4173,
+      "guidanceMode": "UNKNOWN",
+      "accumulatedRotation": 36909
+    }
+  },
+  {
+    "timestamp": 1788819035081,
+    "isoTime": "2026-09-07T22:10:35.081Z",
+    "category": "CHECKPOINT",
+    "type": "FATAL_JS_ERROR",
+    "payload": {
+      "message": "Uncaught TypeError: Cannot read properties of null (reading 'length')",
+      "filename": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&token=%5BREDACTED%5D&qa=1",
+      "lineno": 20145,
+      "colno": 40
+    }
+  },
+  {
+    "timestamp": 1788819036006,
+    "isoTime": "2026-09-07T22:10:36.006Z",
+    "category": "INTERACTION",
+    "type": "TAP",
+    "payload": {
+      "id": "btnMobileRiReport",
+      "className": null,
+      "text": "REPORT ISSUE"
+    }
+  },
+  {
+    "timestamp": 1788819040085,
+    "isoTime": "2026-09-07T22:10:40.085Z",
+    "category": "CHECKPOINT",
+    "type": "FATAL_JS_ERROR",
+    "payload": {
+      "message": "Uncaught TypeError: Cannot read properties of null (reading 'length')",
+      "filename": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&token=%5BREDACTED%5D&qa=1",
+      "lineno": 20145,
+      "colno": 40
+    }
+  },
+  {
+    "timestamp": 1788819042624,
+    "isoTime": "2026-09-07T22:10:42.624Z",
+    "category": "CHECKPOINT",
+    "type": "CAPTURE_ZERO_PROGRESS_CHECKPOINT",
+    "payload": {
+      "cameraActive": true,
+      "previewFrames": 1831,
+      "sensorEvents": 4921,
+      "guidanceMode": "UNKNOWN",
+      "accumulatedRotation": 53140
+    }
+  },
+  {
+    "timestamp": 1788819045281,
+    "isoTime": "2026-09-07T22:10:45.281Z",
+    "category": "CHECKPOINT",
+    "type": "FATAL_JS_ERROR",
+    "payload": {
+      "message": "Uncaught TypeError: Cannot read properties of null (reading 'length')",
+      "filename": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&token=%5BREDACTED%5D&qa=1",
+      "lineno": 20145,
+      "colno": 40
+    }
+  },
+  {
+    "timestamp": 1788819050297,
+    "isoTime": "2026-09-07T22:10:50.297Z",
+    "category": "CHECKPOINT",
+    "type": "FATAL_JS_ERROR",
+    "payload": {
+      "message": "Uncaught TypeError: Cannot read properties of null (reading 'length')",
+      "filename": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&token=%5BREDACTED%5D&qa=1",
+      "lineno": 20145,
+      "colno": 40
+    }
+  },
+  {
+    "timestamp": 1788819050618,
+    "isoTime": "2026-09-07T22:10:50.618Z",
+    "category": "CHECKPOINT",
+    "type": "CAPTURE_ZERO_PROGRESS_CHECKPOINT",
+    "payload": {
+      "cameraActive": true,
+      "previewFrames": 2309,
+      "sensorEvents": 5598,
+      "guidanceMode": "UNKNOWN",
+      "accumulatedRotation": 65179
+    }
+  },
+  {
+    "timestamp": 1788819055298,
+    "isoTime": "2026-09-07T22:10:55.298Z",
+    "category": "CHECKPOINT",
+    "type": "FATAL_JS_ERROR",
+    "payload": {
+      "message": "Uncaught TypeError: Cannot read properties of null (reading 'length')",
+      "filename": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&token=%5BREDACTED%5D&qa=1",
+      "lineno": 20145,
+      "colno": 40
+    }
+  },
+  {
+    "timestamp": 1788819058621,
+    "isoTime": "2026-09-07T22:10:58.621Z",
+    "category": "CHECKPOINT",
+    "type": "CAPTURE_ZERO_PROGRESS_CHECKPOINT",
+    "payload": {
+      "cameraActive": true,
+      "previewFrames": 2744,
+      "sensorEvents": 6403,
+      "guidanceMode": "UNKNOWN",
+      "accumulatedRotation": 85461
+    }
+  },
+  {
+    "timestamp": 1788819060300,
+    "isoTime": "2026-09-07T22:11:00.300Z",
+    "category": "CHECKPOINT",
+    "type": "FATAL_JS_ERROR",
+    "payload": {
+      "message": "Uncaught TypeError: Cannot read properties of null (reading 'length')",
+      "filename": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&token=%5BREDACTED%5D&qa=1",
+      "lineno": 20145,
+      "colno": 40
+    }
+  },
+  {
+    "timestamp": 1788819065315,
+    "isoTime": "2026-09-07T22:11:05.315Z",
+    "category": "CHECKPOINT",
+    "type": "FATAL_JS_ERROR",
+    "payload": {
+      "message": "Uncaught TypeError: Cannot read properties of null (reading 'length')",
+      "filename": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&token=%5BREDACTED%5D&qa=1",
+      "lineno": 20145,
+      "colno": 40
+    }
+  },
+  {
+    "timestamp": 1788819066621,
+    "isoTime": "2026-09-07T22:11:06.621Z",
+    "category": "CHECKPOINT",
+    "type": "CAPTURE_ZERO_PROGRESS_CHECKPOINT",
+    "payload": {
+      "cameraActive": true,
+      "previewFrames": 3223,
+      "sensorEvents": 7134,
+      "guidanceMode": "UNKNOWN",
+      "accumulatedRotation": 100631
+    }
+  },
+  {
+    "timestamp": 1788819070334,
+    "isoTime": "2026-09-07T22:11:10.334Z",
+    "category": "CHECKPOINT",
+    "type": "FATAL_JS_ERROR",
+    "payload": {
+      "message": "Uncaught TypeError: Cannot read properties of null (reading 'length')",
+      "filename": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&token=%5BREDACTED%5D&qa=1",
+      "lineno": 20145,
+      "colno": 40
+    }
+  },
+  {
+    "timestamp": 1788819074618,
+    "isoTime": "2026-09-07T22:11:14.618Z",
+    "category": "CHECKPOINT",
+    "type": "CAPTURE_ZERO_PROGRESS_CHECKPOINT",
+    "payload": {
+      "cameraActive": true,
+      "previewFrames": 3700,
+      "sensorEvents": 7961,
+      "guidanceMode": "UNKNOWN",
+      "accumulatedRotation": 120507
+    }
+  },
+  {
+    "timestamp": 1788819075362,
+    "isoTime": "2026-09-07T22:11:15.362Z",
+    "category": "CHECKPOINT",
+    "type": "FATAL_JS_ERROR",
+    "payload": {
+      "message": "Uncaught TypeError: Cannot read properties of null (reading 'length')",
+      "filename": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&token=%5BREDACTED%5D&qa=1",
+      "lineno": 20145,
+      "colno": 40
+    }
+  },
+  {
+    "timestamp": 1788819080366,
+    "isoTime": "2026-09-07T22:11:20.366Z",
+    "category": "CHECKPOINT",
+    "type": "FATAL_JS_ERROR",
+    "payload": {
+      "message": "Uncaught TypeError: Cannot read properties of null (reading 'length')",
+      "filename": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&token=%5BREDACTED%5D&qa=1",
+      "lineno": 20145,
+      "colno": 40
+    }
+  },
+  {
+    "timestamp": 1788819082518,
+    "isoTime": "2026-09-07T22:11:22.518Z",
+    "category": "INTERACTION",
+    "type": "TAP",
+    "payload": {
+      "id": "btnMobileRiSubmit",
+      "className": null,
+      "text": "CAPTURE BUG REPORT"
+    }
+  }
+]

@@ -1,0 +1,36 @@
+{
+  "milestone": "C12.8-P0R2",
+  "sessionId": "RI-M-WITQJQ",
+  "candidatePoolId": "TOUL2T",
+  "inputCameraCount": 14,
+  "registeredCameraCount": 8,
+  "droppedCameraCount": 6,
+  "droppedCandidateIds": [
+    "C001",
+    "C006",
+    "C011",
+    "C012",
+    "C015",
+    "C018"
+  ],
+  "cameraRegistrationRatio": 0.571,
+  "bundleAdjustmentStatus": "OK",
+  "poseCollapse": false,
+  "sensorRotationSpan": 350.4,
+  "solvedYawSpan": 160.3,
+  "nativeWidth": 3290,
+  "nativeHeight": 1469,
+  "nativeAspectRatio": 2.24,
+  "directionalViewHashes": [
+    "002569df5c8bf5b685a7cfa9a1453955b21e1c992150cb66f0f0e98b8b1a0b78",
+    "751cfcb76b27e403322543671a5531244e29e2691406b90bb30edb6a45a12442",
+    "950fc805073803e1d3cf015ba4b651451af53a462680d98d66d36a01953d1a46",
+    "cc464f31d632030ad5cd85761f191a34ac175e451cc86228eb8308f8c1c6585e"
+  ],
+  "uniqueDirectionalHashes": 4,
+  "minPairwiseInliers": 17,
+  "meanPairwiseInliers": 87.5,
+  "closureInliers": 17,
+  "ringGraphConnected": true,
+  "connectedComponentCount": 1
+}

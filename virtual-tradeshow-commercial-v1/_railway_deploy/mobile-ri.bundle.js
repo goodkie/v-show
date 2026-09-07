@@ -583,7 +583,7 @@ class MobileAdapter {
       lastOrientation: this.lastOrientation,
       lastMotion: this.lastMotion,
       sensorGuidanceMode: (isBrowser && window.guidedCaptureController)
-        ? (window.guidedCaptureController.guidanceMode || 'UNKNOWN')
+        ? (window.guidedCaptureController.guidanceMode || window.guidedCaptureController.telemetry?.guidanceMode || 'UNKNOWN')
         : (this.deviceOrientationCount > 0 ? 'ORIENTATION' : 'VISUAL_ONLY')
     };
   }
