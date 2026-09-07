@@ -1,0 +1,64 @@
+{
+  "test1_rawCssLeak": true,
+  "test2_duplicateBranding": true,
+  "test3_step9DraggableClamped": true,
+  "test4_hardRefreshPersistence": true,
+  "test5_all12StepsWalkthrough": true,
+  "test6_editBoothMapModal": true,
+  "stepsVisited": [
+    {
+      "cur": 1,
+      "indicator": "Step 1 of 12 — Welcome"
+    },
+    {
+      "cur": 2,
+      "indicator": "Step 2 of 12 — Booth Size"
+    },
+    {
+      "cur": 3,
+      "indicator": "Step 3 of 12 — Viewpoint Count"
+    },
+    {
+      "cur": 4,
+      "indicator": "Step 4 of 12 — Viewpoint 1 Name"
+    },
+    {
+      "cur": 5,
+      "indicator": "Step 5 of 12 — Stand Guide"
+    },
+    {
+      "cur": 6,
+      "indicator": "Step 6 of 12 — Guided 360° Capture"
+    },
+    {
+      "cur": 7,
+      "indicator": "Step 7 of 12 — Viewpoint 1 Ready"
+    },
+    {
+      "cur": 8,
+      "indicator": "Step 8 of 12 — All Viewpoints Ready"
+    },
+    {
+      "cur": 9,
+      "indicator": "Step 9 of 12 — Map Setup"
+    },
+    {
+      "cur": 10,
+      "indicator": "Step 10 of 12 — Connections"
+    },
+    {
+      "cur": 11,
+      "indicator": "Step 11 of 12 — Tour Preview"
+    },
+    {
+      "cur": 12,
+      "indicator": "Step 12 of 12 — Live Tour Complete"
+    }
+  ],
+  "details": {
+    "rawCssVisibleCount": 0,
+    "duplicateBrandText": 0,
+    "duplicateMyBoothsText": 0
+  },
+  "overallStatus": "ALL_TESTS_PASSED"
+}
