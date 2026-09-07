@@ -1,0 +1,80 @@
+{
+  "milestone": "C12.2-P0",
+  "timestamp": "2026-09-07T13:28:00Z",
+  "device": "Samsung Galaxy S23 Ultra",
+  "focal_length_mm": 2.2,
+  "max_canonical_source_keyframes": 8,
+  "guided_capture_ux": {
+    "direction_lock": true,
+    "speed_guidance": true,
+    "level_guidance": true,
+    "backtracking_protection": true,
+    "micro_stepping_protection": true,
+    "progress_dots_count": 8
+  },
+  "test_a": {
+    "executed": true,
+    "source_dataset": "c11_33_p0_evidence/originals/12shot",
+    "total_candidate_frames": 12,
+    "canonical_keyframes_selected": 8,
+    "registered_camera_count": 4,
+    "dropped_camera_count": 4,
+    "inlier_ratio_avg": 0.42,
+    "solved_camera_center_span_deg": 88.4,
+    "solved_edge_aware_horizontal_coverage_deg": 188.6,
+    "full_360_qualified": false,
+    "failure_code": "QUALITY_GATE_FAILURE",
+    "failure_reason": "4 of 8 canonical keyframes dropped due to insufficient pairwise feature overlap across ~45\u00b0 angular steps in convention booth hall"
+  },
+  "test_b": {
+    "executed": false,
+    "skipped_reason": "Halted per Section 39 Stop Rule: Test A failed full 360 qualification"
+  },
+  "freeze_invariants": {
+    "multi_point_viewer_frozen": true,
+    "multi_point_tour_controller_frozen": true,
+    "booth_map_frozen": true,
+    "tour_connections_frozen": true,
+    "billing_untouched": true,
+    "studio_berry_mutated": false,
+    "payment_pilot_armed": false,
+    "real_charge_count": 0
+  },
+  "visual_evidence": {
+    "01_GUIDED_CAPTURE_PROGRESS_START.jpg": {
+      "sha256": "a1b6f74465960412e37ed8bf12eec6985c72ec788d11b207d5ac27e880a26337",
+      "bytes": 82409,
+      "dimensions": "1440x900"
+    },
+    "02_GUIDED_CAPTURE_PROGRESS_25.jpg": {
+      "sha256": "6079ee9b9063b8d92ab093cd9e03438ac89192c73d8e45f0ed8e6f4548dcac44",
+      "bytes": 79912,
+      "dimensions": "1440x900"
+    },
+    "03_GUIDED_CAPTURE_PROGRESS_50.jpg": {
+      "sha256": "84dead58570bb5eefa3b251d9d92cc8e073826d5cd7da70bdb51d646b0d0ae95",
+      "bytes": 80004,
+      "dimensions": "1440x900"
+    },
+    "04_GUIDED_CAPTURE_PROGRESS_75.jpg": {
+      "sha256": "4f5b77a032e0dc058d74569de33790b0eedcf719da503e8b1b48653cbfbdcebc",
+      "bytes": 81181,
+      "dimensions": "1440x900"
+    },
+    "05_GUIDED_CAPTURE_COMPLETE.jpg": {
+      "sha256": "af4936217e71dff435f0d545edbb77469eac22a69554eb4f82440b41ff43581c",
+      "bytes": 81700,
+      "dimensions": "1440x900"
+    },
+    "06_SELECTED_8_KEYFRAMES_CONTACT.jpg": {
+      "sha256": "03169dffb1734cc59fe68d10ff66dd7dceae46e40fb1d7e1ac99a9b8a5f367e3",
+      "bytes": 396910,
+      "dimensions": "1920x720"
+    },
+    "07_NATIVE_PANORAMA.jpg": {
+      "sha256": "513652e80410a760179c8e70799e623add4f0a6b705b52d71810c0075c3a9dc9",
+      "bytes": 241282,
+      "dimensions": "1887x1291"
+    }
+  }
+}

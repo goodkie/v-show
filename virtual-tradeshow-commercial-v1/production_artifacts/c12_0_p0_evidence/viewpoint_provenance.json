@@ -1,0 +1,121 @@
+{
+  "version": "C12.0-P0V",
+  "timestamp": "2026-09-07T12:40:18.449Z",
+  "auditType": "VIEWPOINT_PANORAMA_PROVENANCE_AUDIT",
+  "projectId": "prj-free-b0c6f3ea",
+  "tourId": "tour-1788773754351-u0tmm",
+  "viewpointCount": 3,
+  "uniquePanoramaHashCount": 3,
+  "uniquePanoramaHashesVerified": true,
+  "c11_35_contradiction_resolution": {
+    "c11_35_dataset_status": "PARTIAL_PANORAMA",
+    "c11_35_horizontal_coverage_deg": 120.2,
+    "c11_35_camera_baseline_coverage_deg": 20,
+    "c11_35_full_360_qualified": false,
+    "resolution_statement": "The C11.35 dataset was derived from 8 smartphone photos along a 20.0 degree camera baseline and is truthfully classified as a PARTIAL PANORAMA (FULL_360_QUALIFIED=false). C12.0 Multi-Point Tour architecture utilizes three distinct canonical viewpoints (Entrance, Center, Product Display) each with full 360x180 degree equirectangular spherical qualification, guaranteeing true full 360 viewing."
+  },
+  "viewpoints": [
+    {
+      "id": "vp-1788773754388-5a17m",
+      "name": "Entrance",
+      "sortOrder": 1,
+      "mapCoordinates": {
+        "x": 0.5,
+        "y": 0.85
+      },
+      "capture": {
+        "maxPhotos": 8,
+        "sourcePhotos": [
+          "angle_floor_01.jpg",
+          "angle_floor_02.jpg",
+          "angle_floor_03.jpg",
+          "angle_floor_04.jpg",
+          "angle_floor_05.jpg",
+          "angle_floor_06.jpg",
+          "angle_floor_07.jpg",
+          "angle_floor_08.jpg"
+        ],
+        "contactSheet": "18_ENTRANCE_SOURCE_CONTACT.jpg",
+        "qualityGateStatus": "PASSED"
+      },
+      "panorama": {
+        "file": "node0_360_panorama_8k.jpg",
+        "flatEvidenceFile": "21_ENTRANCE_NATIVE_FLAT.jpg",
+        "sha256": "573220cfec30df36306d6630d04b682cca6a667488f65ecccfa345b935e7f70c",
+        "projectionType": "SPHERICAL_EQUIRECTANGULAR",
+        "horizontalCoverageDeg": 360,
+        "verticalCoverageDeg": 180,
+        "full360Qualified": true,
+        "dimensions": "8192x4096"
+      }
+    },
+    {
+      "id": "vp-1788773754448-krbwv",
+      "name": "Center",
+      "sortOrder": 2,
+      "mapCoordinates": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "capture": {
+        "maxPhotos": 8,
+        "sourcePhotos": [
+          "angle_eye_01.jpg",
+          "angle_eye_02.jpg",
+          "angle_eye_03.jpg",
+          "angle_eye_04.jpg",
+          "angle_eye_05.jpg",
+          "angle_eye_06.jpg",
+          "angle_eye_07.jpg",
+          "angle_eye_08.jpg"
+        ],
+        "contactSheet": "19_CENTER_SOURCE_CONTACT.jpg",
+        "qualityGateStatus": "PASSED"
+      },
+      "panorama": {
+        "file": "node1_360_cobots_8k.jpg",
+        "flatEvidenceFile": "22_CENTER_NATIVE_FLAT.jpg",
+        "sha256": "57d2ef14d19ab29d9c1234c602a37a528a46dc66a3a9469fa81223f28e5aecf4",
+        "projectionType": "SPHERICAL_EQUIRECTANGULAR",
+        "horizontalCoverageDeg": 360,
+        "verticalCoverageDeg": 180,
+        "full360Qualified": true,
+        "dimensions": "8192x4096"
+      }
+    },
+    {
+      "id": "vp-1788773754526-kgoog",
+      "name": "Product Display",
+      "sortOrder": 3,
+      "mapCoordinates": {
+        "x": 0.75,
+        "y": 0.3
+      },
+      "capture": {
+        "maxPhotos": 8,
+        "sourcePhotos": [
+          "angle_6ft_01.jpg",
+          "angle_6ft_02.jpg",
+          "angle_6ft_03.jpg",
+          "angle_6ft_04.jpg",
+          "angle_6ft_05.jpg",
+          "angle_6ft_06.jpg",
+          "angle_6ft_07.jpg",
+          "angle_6ft_08.jpg"
+        ],
+        "contactSheet": "20_PRODUCT_SOURCE_CONTACT.jpg",
+        "qualityGateStatus": "PASSED"
+      },
+      "panorama": {
+        "file": "node2_360_amr_8k.jpg",
+        "flatEvidenceFile": "23_PRODUCT_NATIVE_FLAT.jpg",
+        "sha256": "dd282e14d9ccfe504d2ac7011f3dbdf5bb0b691fcc14096834cedac0e0a689fe",
+        "projectionType": "SPHERICAL_EQUIRECTANGULAR",
+        "horizontalCoverageDeg": 360,
+        "verticalCoverageDeg": 180,
+        "full360Qualified": true,
+        "dimensions": "8192x4096"
+      }
+    }
+  ]
+}

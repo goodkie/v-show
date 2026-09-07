@@ -1,0 +1,194 @@
+{
+  "status": "READY",
+  "candidateId": "cand-retake-001",
+  "geometryValid": true,
+  "full360Qualified": false,
+  "panoramaType": "PARTIAL",
+  "projectionType": "SPHERICAL",
+  "horizontalCoverageDeg": 120.2,
+  "verticalCoverageDeg": 92.1,
+  "outputMosaicCoverageEstimateDeg": 120.2,
+  "cameraGeometryCoverageDeg": 20,
+  "lastFirstPairReprojectionError": 0.63,
+  "globalRingClosureError": null,
+  "allInputImagesUsed": true,
+  "yawMin": -60.1,
+  "yawMax": 60.1,
+  "pitchMin": -45,
+  "pitchMax": 45,
+  "nativeStitchDimensions": "4974x3811",
+  "masterFinalDimensions": "4974x3811",
+  "url": "/uploads/cand-retake-001_native.jpg",
+  "masterUrl": "/uploads/cand-retake-001_native.jpg",
+  "previewUrl": "/uploads/cand-retake-001_preview.jpg",
+  "textureUrl": "/uploads/cand-retake-001_native.jpg",
+  "stitchedPanoramaUrl": "/uploads/cand-retake-001_native.jpg",
+  "activeBackgroundUrl": "/uploads/cand-retake-001_native.jpg",
+  "provenanceUrl": "/uploads/cand-retake-001_native.jpg",
+  "angularAnchors": [
+    -60.1,
+    -42.9,
+    -25.8,
+    -8.6,
+    8.6,
+    25.8,
+    42.9,
+    60.1
+  ],
+  "anchors": [
+    {
+      "id": "anchor-deg--60",
+      "index": 0,
+      "degree": -60.1,
+      "slot": "SHOT_01"
+    },
+    {
+      "id": "anchor-deg--42",
+      "index": 1,
+      "degree": -42.9,
+      "slot": "SHOT_02"
+    },
+    {
+      "id": "anchor-deg--25",
+      "index": 2,
+      "degree": -25.8,
+      "slot": "SHOT_03"
+    },
+    {
+      "id": "anchor-deg--8",
+      "index": 3,
+      "degree": -8.6,
+      "slot": "SHOT_04"
+    },
+    {
+      "id": "anchor-deg-8",
+      "index": 4,
+      "degree": 8.6,
+      "slot": "SHOT_05"
+    },
+    {
+      "id": "anchor-deg-25",
+      "index": 5,
+      "degree": 25.8,
+      "slot": "SHOT_06"
+    },
+    {
+      "id": "anchor-deg-42",
+      "index": 6,
+      "degree": 42.9,
+      "slot": "SHOT_07"
+    },
+    {
+      "id": "anchor-deg-60",
+      "index": 7,
+      "degree": 60.1,
+      "slot": "SHOT_08"
+    }
+  ],
+  "engine": "OPENCV",
+  "engineVersion": "5.0.0",
+  "featureEngine": "SIFT",
+  "cameraEstimationStatus": "CONVERGED",
+  "bundleAdjustmentStatus": "CONVERGED",
+  "warpStatus": "SUCCESS",
+  "exposureCompensationStatus": "SUCCESS",
+  "seamStatus": "SUCCESS",
+  "blendStatus": "SUCCESS",
+  "connectedCount": 8,
+  "sourceCount": 8,
+  "masterSha256": "6292908d6c7d3ea2c65aacfa3d144a92d8d56b5759a62892532a17c317c10074",
+  "srUsed": false,
+  "applyEnabled": true,
+  "sourceHashes": [
+    "b9ed91a92484450f725a2f04206454334bb713c5ded8c42f599b5b1b982a4c16",
+    "2ae4b79e3847e2d531b258cf1eaf9c742672a7124b362fb7974701431948b859",
+    "7873fd5354a8162139cd4ea6f65b29c84823778deb71c09ea25a5560d016ef1c",
+    "3ae7edd8980c91db542fedc0629f529c4910b09b7d9dc79f832658d595c215dd",
+    "a8f59ac02d746afe628e35e980a00f0f8e61eea7891371b6071a4961de9457c9",
+    "f6df88bf6ab397eb7bee74896a8dce9c9ac3f8434ae1a4a44032dfa83fda7c1b",
+    "577ee2d73c57659ba23571a6e5452e9cf93c971c45c567b2689d0afd36604b9a",
+    "75cd885dbf7dc621c00ae6c37579375a8ea96519dcd7f053de6f9c0b27e4c07c"
+  ],
+  "sources": [
+    {
+      "index": 0,
+      "slot": "SHOT_01",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_01_20231006_181139.jpg",
+      "sha256": "b9ed91a92484450f725a2f04206454334bb713c5ded8c42f599b5b1b982a4c16",
+      "cameraMake": "samsung",
+      "cameraModel": "Galaxy S23 Ultra",
+      "focalLength35mm": 13
+    },
+    {
+      "index": 1,
+      "slot": "SHOT_02",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_02_20231006_181145.jpg",
+      "sha256": "2ae4b79e3847e2d531b258cf1eaf9c742672a7124b362fb7974701431948b859",
+      "cameraMake": "samsung",
+      "cameraModel": "Galaxy S23 Ultra",
+      "focalLength35mm": 13
+    },
+    {
+      "index": 2,
+      "slot": "SHOT_03",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_03_20231006_181151.jpg",
+      "sha256": "7873fd5354a8162139cd4ea6f65b29c84823778deb71c09ea25a5560d016ef1c",
+      "cameraMake": "samsung",
+      "cameraModel": "Galaxy S23 Ultra",
+      "focalLength35mm": 13
+    },
+    {
+      "index": 3,
+      "slot": "SHOT_04",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_04_20231006_181155.jpg",
+      "sha256": "3ae7edd8980c91db542fedc0629f529c4910b09b7d9dc79f832658d595c215dd",
+      "cameraMake": "samsung",
+      "cameraModel": "Galaxy S23 Ultra",
+      "focalLength35mm": 13
+    },
+    {
+      "index": 4,
+      "slot": "SHOT_05",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_05_20231006_181203.jpg",
+      "sha256": "a8f59ac02d746afe628e35e980a00f0f8e61eea7891371b6071a4961de9457c9",
+      "cameraMake": "samsung",
+      "cameraModel": "Galaxy S23 Ultra",
+      "focalLength35mm": 13
+    },
+    {
+      "index": 5,
+      "slot": "SHOT_06",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_06_20231006_181204.jpg",
+      "sha256": "f6df88bf6ab397eb7bee74896a8dce9c9ac3f8434ae1a4a44032dfa83fda7c1b",
+      "cameraMake": "samsung",
+      "cameraModel": "Galaxy S23 Ultra",
+      "focalLength35mm": 13
+    },
+    {
+      "index": 6,
+      "slot": "SHOT_07",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_07_20231006_181218.jpg",
+      "sha256": "577ee2d73c57659ba23571a6e5452e9cf93c971c45c567b2689d0afd36604b9a",
+      "cameraMake": "samsung",
+      "cameraModel": "Galaxy S23 Ultra",
+      "focalLength35mm": 13
+    },
+    {
+      "index": 7,
+      "slot": "SHOT_08",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_08_20231006_181237.jpg",
+      "sha256": "75cd885dbf7dc621c00ae6c37579375a8ea96519dcd7f053de6f9c0b27e4c07c",
+      "cameraMake": "samsung",
+      "cameraModel": "Galaxy S23 Ultra",
+      "focalLength35mm": 13
+    }
+  ],
+  "derivatives": {
+    "standard4k": {
+      "url": "/uploads/cand-retake-001_preview.jpg"
+    },
+    "desktop8k": {
+      "url": "/uploads/cand-retake-001_native.jpg"
+    }
+  }
+}

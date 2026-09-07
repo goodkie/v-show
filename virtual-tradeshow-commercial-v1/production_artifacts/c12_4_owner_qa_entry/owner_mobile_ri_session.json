@@ -1,0 +1,17 @@
+{
+  "generatedAt": "2026-09-07T17:40:17.738Z",
+  "environment": "PRODUCTION_HTTPS",
+  "projectId": "prj-free-b0c6f3ea",
+  "tokenPrefix": "tok-cap-d66f...",
+  "secureUrlSanitized": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&token=[REDACTED]&qa=1&step=9",
+  "targetDevice": "Samsung Galaxy S23 Ultra (Android Chrome)",
+  "qrCodePng": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\a60a4785-daac-4045-b047-9b489e649678\\OWNER_QA_MOBILE_RI_QR.png",
+  "qrCodeSvg": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\a60a4785-daac-4045-b047-9b489e649678\\OWNER_QA_MOBILE_RI_QR.svg",
+  "evidenceJpg": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\a60a4785-daac-4045-b047-9b489e649678\\10_OWNER_QA_QR.jpg",
+  "qrProperties": {
+    "errorCorrection": "H (High 30% recovery)",
+    "margin": 4,
+    "scale": 14,
+    "destination": "HTTPS Production Single-Use Entry"
+  }
+}

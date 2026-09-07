@@ -1,0 +1,199 @@
+{
+  "milestone": "C12.3-P0",
+  "timestamp": "2026-09-07T13:46:00Z",
+  "policy": {
+    "keyframe_selection_mode": "ADAPTIVE",
+    "min_canonical_keyframes": 8,
+    "soft_target_keyframes": 12,
+    "max_canonical_keyframes": 16,
+    "customer_selects_photo_count": false
+  },
+  "test_a": {
+    "real_physical_camera_capture": true,
+    "phone_model": "samsung Galaxy S23 Ultra",
+    "camera_module": "Ultra-Wide 2.2mm (13mm eq)",
+    "capture_duration_seconds": 148,
+    "candidate_frames_analyzed": 12,
+    "canonical_keyframes_selected": 12,
+    "canonical_source_dimensions": "4000x3000",
+    "pair_count": 12,
+    "connected_pair_count": 10,
+    "disconnected_pair_count": 2,
+    "registered_camera_count": 12,
+    "dropped_camera_count": 0,
+    "solved_camera_center_span_deg": 41.5,
+    "solved_edge_aware_horizontal_coverage_deg": 141.7,
+    "full_360_qualified": false,
+    "failure_code": "FEATURE_POOR_REGION",
+    "failure_reason": "Pairs 2->3 and 9->10 failed connectivity threshold (<15 inliers) due to feature-sparse transitions, and physical camera yaw span was only 25.2\u00b0 instead of full 360\u00b0 rotation.",
+    "pairwise_results": [
+      {
+        "pair": "1->2",
+        "fromSlot": "SHOT_01",
+        "toSlot": "SHOT_02",
+        "goodMatches": 273,
+        "inliers": 219,
+        "inlierRatio": 0.802,
+        "status": "CONNECTED"
+      },
+      {
+        "pair": "2->3",
+        "fromSlot": "SHOT_02",
+        "toSlot": "SHOT_03",
+        "goodMatches": 16,
+        "inliers": 6,
+        "inlierRatio": 0.375,
+        "status": "DISCONNECTED"
+      },
+      {
+        "pair": "3->4",
+        "fromSlot": "SHOT_03",
+        "toSlot": "SHOT_04",
+        "goodMatches": 580,
+        "inliers": 511,
+        "inlierRatio": 0.881,
+        "status": "CONNECTED"
+      },
+      {
+        "pair": "4->5",
+        "fromSlot": "SHOT_04",
+        "toSlot": "SHOT_05",
+        "goodMatches": 660,
+        "inliers": 606,
+        "inlierRatio": 0.918,
+        "status": "CONNECTED"
+      },
+      {
+        "pair": "5->6",
+        "fromSlot": "SHOT_05",
+        "toSlot": "SHOT_06",
+        "goodMatches": 530,
+        "inliers": 457,
+        "inlierRatio": 0.862,
+        "status": "CONNECTED"
+      },
+      {
+        "pair": "6->7",
+        "fromSlot": "SHOT_06",
+        "toSlot": "SHOT_07",
+        "goodMatches": 144,
+        "inliers": 96,
+        "inlierRatio": 0.667,
+        "status": "CONNECTED"
+      },
+      {
+        "pair": "7->8",
+        "fromSlot": "SHOT_07",
+        "toSlot": "SHOT_08",
+        "goodMatches": 487,
+        "inliers": 457,
+        "inlierRatio": 0.938,
+        "status": "CONNECTED"
+      },
+      {
+        "pair": "8->9",
+        "fromSlot": "SHOT_08",
+        "toSlot": "SHOT_09",
+        "goodMatches": 457,
+        "inliers": 432,
+        "inlierRatio": 0.945,
+        "status": "CONNECTED"
+      },
+      {
+        "pair": "9->10",
+        "fromSlot": "SHOT_09",
+        "toSlot": "SHOT_10",
+        "goodMatches": 19,
+        "inliers": 6,
+        "inlierRatio": 0.316,
+        "status": "DISCONNECTED"
+      },
+      {
+        "pair": "10->11",
+        "fromSlot": "SHOT_10",
+        "toSlot": "SHOT_11",
+        "goodMatches": 156,
+        "inliers": 80,
+        "inlierRatio": 0.513,
+        "status": "CONNECTED"
+      },
+      {
+        "pair": "11->12",
+        "fromSlot": "SHOT_11",
+        "toSlot": "SHOT_12",
+        "goodMatches": 176,
+        "inliers": 108,
+        "inlierRatio": 0.614,
+        "status": "CONNECTED"
+      },
+      {
+        "pair": "12->1",
+        "fromSlot": "SHOT_12",
+        "toSlot": "SHOT_01",
+        "goodMatches": 223,
+        "inliers": 162,
+        "inlierRatio": 0.726,
+        "status": "CONNECTED"
+      }
+    ],
+    "native_visual_result": {
+      "dimensions": "1119x857",
+      "duplicated_major_objects": "NONE",
+      "double_signage": "NONE",
+      "double_text": "NONE",
+      "ghosting": "NONE",
+      "stretching": "MINOR",
+      "broken_verticals": "NONE",
+      "bad_ring_closure": "MODERATE"
+    }
+  },
+  "test_b": {
+    "executed": false,
+    "skipped_reason": "Halted per Section 22 & Section 36 Stop Rule: Test A failed full 360 qualification"
+  },
+  "freeze_invariants": {
+    "multi_point_viewer_technically_proven": true,
+    "wizard_runtime_accepted": true,
+    "studio_berry_mutated": false,
+    "payment_pilot_armed": false,
+    "real_charge_count": 0,
+    "real_billing_used": false
+  },
+  "evidence_files": {
+    "01_CAPTURE_START.jpg": {
+      "sha256": "f921977552ee42b72743f4f380279758195be45013c99bf4656996f212bc09e9",
+      "bytes": 79597,
+      "dimensions": "1440x900"
+    },
+    "02_CAPTURE_25.jpg": {
+      "sha256": "7bc93fd9d8b404dcec3b97b48cdeb5318449da0ac45df7fa45e8c7ac85f7e4e1",
+      "bytes": 78592,
+      "dimensions": "1440x900"
+    },
+    "03_CAPTURE_50.jpg": {
+      "sha256": "1c98ac4a0fbab7bb474154314fea60b31dd097b7e0b126cc83b8f1c31b4b0d52",
+      "bytes": 79423,
+      "dimensions": "1440x900"
+    },
+    "04_CAPTURE_75.jpg": {
+      "sha256": "9541b51409d786a8b7234c9540e58a52d9b10860c4593a8bd748d78f6aca3234",
+      "bytes": 79479,
+      "dimensions": "1440x900"
+    },
+    "05_CAPTURE_COMPLETE.jpg": {
+      "sha256": "2b3a6eb336b9fa6eab5b82ccbebc2a4f01d0f97f0e7f1a45896421c81e20f779",
+      "bytes": 81705,
+      "dimensions": "1440x900"
+    },
+    "06_CANONICAL_CONTACT_SHEET.jpg": {
+      "sha256": "ff1ba8bcc44bb6b83d23e8df75a51a3c0d675a35f13fa0d7769595eed01ae0dd",
+      "bytes": 595269,
+      "dimensions": "1920x1080"
+    },
+    "07_NATIVE_PANORAMA.jpg": {
+      "sha256": "769c84afeea609c6331371528be336f592095dfa7eaf858eb634868be5039b73",
+      "bytes": 120904,
+      "dimensions": "1119x857"
+    }
+  }
+}

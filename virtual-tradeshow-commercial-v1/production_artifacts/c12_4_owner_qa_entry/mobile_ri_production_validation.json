@@ -1,0 +1,81 @@
+{
+  "timestamp": "2026-09-07T17:45:00.000Z",
+  "milestone": "MOBILE RUNTIME INSPECTOR V1 + C12.4 OWNER QA SECURE ENTRY",
+  "deployment": {
+    "platform": "Railway",
+    "service": "v-show-commercial-v1",
+    "serviceId": "8e807076-c4bf-4f0a-8bdc-e56d9ecb2016",
+    "deploymentId": "74c3f5fc-347f-4a6e-8cc3-03799ef90806",
+    "environment": "production",
+    "environmentId": "1241ff56-1c40-48a3-8831-eb4b1f913f13",
+    "status": "SUCCESS",
+    "productionUrl": "https://v-show-commercial-v1-production.up.railway.app"
+  },
+  "endpointsValidated": {
+    "health": {
+      "path": "/health",
+      "status": 200,
+      "ok": true
+    },
+    "mobileDashboard": {
+      "path": "/runtime-inspector/mobile",
+      "status": 200,
+      "type": "text/html"
+    },
+    "clientBundle": {
+      "path": "/mobile-ri.bundle.js",
+      "status": 200,
+      "sizeBytes": 48880
+    },
+    "reportIngestion": {
+      "path": "/api/internal-qa/mobile-ri/report",
+      "status": 200,
+      "testedSession": "RI-M-PROD-VERIFY",
+      "persistedFilesCount": 9
+    },
+    "sessionInspection": {
+      "path": "/api/internal-qa/mobile-ri/session/:sessionId",
+      "status": 200,
+      "ok": true
+    }
+  },
+  "physicalTargetValidation": {
+    "primaryTarget": "Samsung Galaxy S23 Ultra (Android Chrome)",
+    "screenDimensions": "384x824",
+    "devicePixelRatio": 3.0,
+    "touchEnabled": true,
+    "secondaryTarget": "iOS Safari",
+    "liveSessionTested": "RI-M-C2RY33",
+    "bottomSheetUI": {
+      "floatingButtonMounted": true,
+      "gatingEnforced": true,
+      "normalUserVisible": false,
+      "qaSessionVisible": true,
+      "reportSubmissionSuccess": true
+    }
+  },
+  "securityAudit": {
+    "clientSideRedaction": true,
+    "serverSideRedaction": true,
+    "testSecretOccurrences": 0,
+    "leakCheckPassed": true,
+    "environmentMarker": "INTERNAL_DEV",
+    "isTestFlag": true
+  },
+  "safetyInvariants": {
+    "EXISTING_RI_CORE_REUSED": true,
+    "MOBILE_ADAPTER_CREATED": true,
+    "DESKTOP_RI_REGRESSION_PASS": true,
+    "STUDIO_BERRY_MUTATED": false,
+    "PAYMENT_PILOT_ARMED": false,
+    "REAL_CHARGE_COUNT": 0,
+    "REAL_BILLING_USED": false
+  },
+  "ownerEntryQr": {
+    "pngFile": "OWNER_QA_MOBILE_RI_QR.png",
+    "svgFile": "OWNER_QA_MOBILE_RI_QR.svg",
+    "jpgEvidence": "10_OWNER_QA_QR.jpg",
+    "secureUrlRedacted": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&token=[REDACTED]&qa=1&step=9",
+    "errorCorrection": "H (High 30% recovery)"
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "camera": {
+    "make": "samsung",
+    "model": "Galaxy S23 Ultra",
+    "lens": "Ultra-Wide 13mm equivalent (2.2mm physical, f/2.2)",
+    "orientation": "LANDSCAPE (Orientation 1)",
+    "sourceResolution": "4000x3000",
+    "exifFocalLength": "2.2 mm",
+    "focalLength35mm": "13 mm"
+  },
+  "suite_8shot": {
+    "dataset": "REAL_SMARTPHONE_8SHOT_001",
+    "sourceCount": 8,
+    "syntheticCount": 0,
+    "distinctHashes": 8,
+    "createClickCount": 1,
+    "panoramaStartRequestCount": 1,
+    "outputProjection": "SPHERICAL",
+    "outputNativeDimensions": "4186x3240",
+    "solvedHorizontalCoverageDeg": 130.1,
+    "solvedVerticalCoverageDeg": 100.7,
+    "firstLastMatchValid": true,
+    "bundleAdjustment": "CONVERGED",
+    "closureResidual": 36.89,
+    "full360Qualified": false,
+    "visualQuality": {
+      "DUPLICATED_MAJOR_OBJECTS": "NONE",
+      "DOUBLE_SIGNAGE": "NONE",
+      "DOUBLE_TEXT": "NONE",
+      "BROKEN_VERTICALS": "NONE",
+      "BROKEN_HORIZONTALS": "NONE",
+      "GHOSTING": "NONE",
+      "STRETCHING": "NONE",
+      "EXPOSURE_SEAMS": "NONE",
+      "MISSING_REGION": "NONE",
+      "BAD_RING_CLOSURE": "NONE"
+    }
+  },
+  "suite_12shot": {
+    "dataset": "REAL_SMARTPHONE_12SHOT_001",
+    "sourceCount": 12,
+    "syntheticCount": 0,
+    "distinctHashes": 12,
+    "createClickCount": 1,
+    "panoramaStartRequestCount": 1,
+    "outputProjection": "SPHERICAL",
+    "outputNativeDimensions": "4785x3615",
+    "solvedHorizontalCoverageDeg": 130.7,
+    "solvedVerticalCoverageDeg": 98.7,
+    "firstLastMatchValid": true,
+    "bundleAdjustment": "CONVERGED",
+    "closureResidual": 36.89,
+    "full360Qualified": false,
+    "visualQuality": {
+      "DUPLICATED_MAJOR_OBJECTS": "NONE",
+      "DOUBLE_SIGNAGE": "NONE",
+      "DOUBLE_TEXT": "NONE",
+      "BROKEN_VERTICALS": "NONE",
+      "BROKEN_HORIZONTALS": "NONE",
+      "GHOSTING": "NONE",
+      "STRETCHING": "NONE",
+      "EXPOSURE_SEAMS": "NONE",
+      "MISSING_REGION": "NONE",
+      "BAD_RING_CLOSURE": "NONE"
+    }
+  },
+  "customerCaptureDecision": {
+    "finding": "Both 8-shot and 12-shot real smartphone camera captures successfully stitched with high visual fidelity, seamless multi-band blending, zero ghosting, and converged bundle adjustment. However, neither dataset satisfies full 360° qualification (solved coverage: 130.1° and 130.7° respectively, with partial arc). The 12-shot sequence demonstrates denser adjacent feature matches and wider pixel canvas (4785x3615 vs 4186x3240).",
+    "recommendedCount": "12 recommended (8 minimum supported)",
+    "captureWheelUxAction": "RETAIN_8_WEDGE_CAPTURE_WHEEL_UX_UNTIL_OWNER_DECISION"
+  },
+  "safetyInvariants": {
+    "STUDIO_BERRY_MUTATED": false,
+    "PAYMENT_PILOT_ARMED": false,
+    "STRIPE_LIVE_MODE_CONFIGURED": false,
+    "REAL_CHARGE_COUNT": 0,
+    "REAL_BILLING_USED": false
+  }
+}

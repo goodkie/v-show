@@ -1,0 +1,2540 @@
+diff --git a/virtual-tradeshow-commercial-v1/app_build/index.html b/virtual-tradeshow-commercial-v1/app_build/index.html
+index 3926313..1058333 100644
+--- a/virtual-tradeshow-commercial-v1/app_build/index.html
++++ b/virtual-tradeshow-commercial-v1/app_build/index.html
+@@ -2112,6 +2112,113 @@
+   }
+ </style>
+ 
++
++/* C12.0-P0: Multi-Point 360 Tour Styles */
++.streetview-nav-hotspot {
++  position: absolute;
++  pointer-events: auto;
++  cursor: pointer;
++  z-index: 28;
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  transition: transform 0.15s ease, opacity 0.2s ease;
++  user-select: none;
++  transform-origin: center bottom;
++}
++.streetview-nav-hotspot:hover {
++  transform: scale(1.12);
++}
++.streetview-nav-hotspot:hover .streetview-chevron-disc {
++  box-shadow: 0 0 24px rgba(56, 189, 248, 0.9), 0 0 40px rgba(52, 211, 153, 0.6);
++  border-color: #38bdf8;
++  background: radial-gradient(circle, rgba(56, 189, 248, 0.45) 0%, rgba(15, 23, 42, 0.85) 100%);
++}
++.streetview-nav-hotspot:hover .streetview-chevron-label {
++  background: rgba(2, 6, 23, 0.95);
++  border-color: #38bdf8;
++  color: #38bdf8;
++  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.4);
++}
++.streetview-chevron-disc {
++  width: 68px;
++  height: 40px;
++  border-radius: 50%;
++  background: radial-gradient(ellipse at center, rgba(56, 189, 248, 0.3) 0%, rgba(15, 23, 42, 0.8) 70%, rgba(2, 6, 23, 0.95) 100%);
++  border: 2px solid rgba(56, 189, 248, 0.65);
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  box-shadow: 0 0 16px rgba(56, 189, 248, 0.4), 0 8px 20px rgba(0, 0, 0, 0.6);
++  transform: perspective(200px) rotateX(45deg);
++  transition: all 0.2s ease;
++}
++.streetview-chevron-arrows {
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  gap: -3px;
++}
++.streetview-chevron-arrows svg {
++  animation: streetViewPulse 1.6s infinite ease-in-out;
++}
++.streetview-chevron-arrows svg:nth-child(2) {
++  animation-delay: 0.2s;
++  opacity: 0.7;
++}
++@keyframes streetViewPulse {
++  0%, 100% { transform: translateY(0); opacity: 0.5; }
++  50% { transform: translateY(-4px); opacity: 1; filter: drop-shadow(0 0 4px #38bdf8); }
++}
++.streetview-chevron-label {
++  background: rgba(7, 14, 26, 0.9);
++  backdrop-filter: blur(8px);
++  border: 1px solid rgba(255, 255, 255, 0.18);
++  border-radius: 20px;
++  padding: 4px 12px;
++  font-size: 11px;
++  font-weight: 700;
++  color: #f1f5f9;
++  letter-spacing: 0.3px;
++  white-space: nowrap;
++  margin-bottom: 6px;
++  display: flex;
++  align-items: center;
++  gap: 5px;
++  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
++  transition: all 0.2s ease;
++}
++.wizard-step-card {
++  border: 1.5px solid rgba(255, 255, 255, 0.12);
++  border-radius: 12px;
++  background: rgba(15, 23, 42, 0.6);
++  padding: 18px 20px;
++  cursor: pointer;
++  transition: all 0.2s ease;
++  display: flex;
++  align-items: center;
++  gap: 16px;
++  user-select: none;
++}
++.wizard-step-card:hover {
++  border-color: rgba(56, 189, 248, 0.5);
++  background: rgba(56, 189, 248, 0.08);
++  transform: translateY(-2px);
++}
++.wizard-step-card.active {
++  border-color: #38bdf8;
++  background: rgba(56, 189, 248, 0.14);
++  box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
++}
++@keyframes mapPulseRing {
++  0% { r: 5; opacity: 1; }
++  100% { r: 12; opacity: 0; }
++}
++.map-pulse-circle {
++  animation: mapPulseRing 1.8s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
++}
++/* END C12.0-P0 STYLES */
++
+ </head>
+ <body>
+ 
+@@ -2579,6 +2686,12 @@
+             <button class="btn-ui" id="btnOwnerToolbarPins" onclick="openPinManagerModal()" style="padding: 6px 12px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Manage all Product and Catalog Pins">
+               <i class="fa-solid fa-location-dot"></i> Pins
+             </button>
++            <button class="btn-ui" id="btnOwnerMultiPointTour" onclick="openMultiPointTourWizard()" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: 1px solid #34d399; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;" title="Create or edit your Multi-Point 360° Booth Tour">
++              <i class="fa-solid fa-person-walking"></i>
++              <span>360° Tour Wizard</span>
++              <span style="background: rgba(255,255,255,0.22); font-size: 9.5px; padding: 2px 6px; border-radius: 4px; font-weight: 800;">AUTO</span>
++            </button>
++
+             <button class="btn-ui" id="btnOwnerToolbarViews" onclick="openViewpointManager()" style="padding: 6px 12px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+               <i class="fa-solid fa-camera"></i> Viewpoints
+             </button>
+@@ -2591,6 +2704,37 @@
+         <div id="viewer-container" style="position: relative; width: 100%; height: 100%; min-height: 520px; overflow: hidden; background: #000; border-radius: 12px;">
+           <canvas id="three-canvas" style="width: 100%; height: 100%; display: block; touch-action: none;"></canvas>
+           <div id="hotspot-layer" style="position: absolute; inset: 0; pointer-events: none; z-index: 20;"></div>
++
++          <!-- C12.0-P0: MULTI-POINT 360 BOOTH TOUR UI -->
++          <!-- Floor Navigation Hotspots Container -->
++          <div id="panoramaNavHotspotsContainer" style="position: absolute; inset: 0; pointer-events: none; z-index: 25; overflow: hidden;"></div>
++
++          <!-- Desktop Interactive Booth Map Widget -->
++          <div id="tourBoothMapContainer" style="display: none; position: absolute; top: 16px; right: 16px; width: 230px; background: rgba(7, 14, 26, 0.94); backdrop-filter: blur(14px); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 12px; padding: 12px; box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75); z-index: 40; font-family: 'Plus Jakarta Sans', sans-serif;">
++            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
++              <div style="font-size: 11px; font-weight: 800; color: #38bdf8; letter-spacing: 0.8px; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
++                <i class="fa-solid fa-map-location-dot"></i> BOOTH MAP
++              </div>
++              <span id="tourViewpointCountBadge" style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(56,189,248,0.15); color: #38bdf8;">3 Views</span>
++            </div>
++            <div id="tourMapSvgWrapper" style="width: 100%; height: 160px; background: rgba(2, 6, 23, 0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; position: relative; overflow: hidden;">
++              <svg id="tourBoothMapSvg" width="100%" height="100%" viewBox="0 0 100 100" style="display: block;"></svg>
++            </div>
++            <div style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between;">
++              <div style="display: flex; align-items: center; gap: 5px;">
++                <span style="width: 7px; height: 7px; border-radius: 50%; background: #22c55e; display: inline-block;"></span>
++                <span id="tourActiveViewpointLabel" style="font-size: 11px; font-weight: 700; color: #cbd5e1;">Entrance</span>
++              </div>
++              <span id="tourNavLatencyBadge" style="font-size: 10px; color: #94a3b8; font-family: monospace;"></span>
++            </div>
++          </div>
++
++          <!-- Mobile Booth Map Toggle Button -->
++          <button type="button" id="btnToggleMobileMap" onclick="toggleMobileBoothMap()" style="display: none; position: absolute; bottom: 16px; right: 16px; z-index: 46; background: rgba(9, 16, 29, 0.9); backdrop-filter: blur(10px); border: 1px solid #38bdf8; color: #38bdf8; border-radius: 50%; width: 44px; height: 44px; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(0,0,0,0.6); cursor: pointer;">
++            <i class="fa-solid fa-map-location-dot" style="font-size: 18px;"></i>
++          </button>
++          <!-- END C12.0-P0 MARKUP -->
++
+           <!-- C11.16-P3.22: Immersive View Presets Toolbar -->
+           <div id="immersiveViewPresetsBar" style="position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 45; display: flex; gap: 6px; background: rgba(9, 16, 29, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 30px; padding: 4px 8px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);">
+             <button type="button" class="btn-preset" id="presetBtnNormal" onclick="setImmersiveViewPreset('NORMAL')" style="background: rgba(56,189,248,0.25); color: #38bdf8; border: 1px solid #38bdf8; border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 800; cursor: pointer;">NORMAL</button>
+@@ -18766,5 +18910,1955 @@ function openAiEnhanceBoothModal() {
+   </div>
+ </div>
+ 
++
++<!-- C12.0-P0: MOBILE BOOTH MAP BOTTOM SHEET -->
++<div id="mobileBoothMapSheet" style="display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.65); backdrop-filter: blur(6px); align-items: flex-end; justify-content: center;">
++  <div style="background: #09101d; border-top: 1px solid rgba(56,189,248,0.4); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; padding: 18px 20px 28px; box-shadow: 0 -8px 32px rgba(0,0,0,0.8);">
++    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
++      <div style="font-size: 13px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
++        <i class="fa-solid fa-map-location-dot"></i> INTERACTIVE BOOTH MAP
++      </div>
++      <button onclick="toggleMobileBoothMap(false)" style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer;">&times;</button>
++    </div>
++    <div style="width: 100%; height: 220px; background: rgba(2, 6, 23, 0.9); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden;">
++      <svg id="mobileBoothMapSvg" width="100%" height="100%" viewBox="0 0 100 100"></svg>
++    </div>
++    <div style="margin-top: 10px; font-size: 11.5px; color: #94a3b8; text-align: center;">Tap any viewpoint dot to walk there directly</div>
++  </div>
++</div>
++
++<!-- C12.0-P0: ONE-QUESTION SETUP WIZARD MODAL -->
++<div id="setupWizardModal" style="display: none; position: fixed; inset: 0; z-index: 220; background: rgba(2, 6, 23, 0.88); backdrop-filter: blur(12px); align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif;">
++  <div style="background: #09101d; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 16px; width: 95%; max-width: 680px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.85);">
++    
++    <div style="padding: 16px 22px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.5);">
++      <div style="display: flex; align-items: center; gap: 10px;">
++        <span style="background: linear-gradient(135deg, #10b981, #0284c7); border-radius: 8px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px;">
++          <i class="fa-solid fa-wand-magic-sparkles"></i>
++        </span>
++        <div>
++          <div style="font-size: 13px; font-weight: 800; color: #f8fafc; letter-spacing: 0.3px;">360° BOOTH TOUR WIZARD</div>
++          <div id="wizardStepIndicator" style="font-size: 10.5px; font-weight: 600; color: #38bdf8;">Step 1 of 12 — Welcome</div>
++        </div>
++      </div>
++      <div style="display: flex; align-items: center; gap: 12px;">
++        <span id="wizardResumedBadge" style="display: none; font-size: 10px; font-weight: 700; color: #34d399; background: rgba(52,211,153,0.12); padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(52,211,153,0.3);">Resumed</span>
++        <button type="button" onclick="closeSetupWizard()" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #94a3b8; border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px;" title="Close and save progress">&times;</button>
++      </div>
++    </div>
++
++    <div style="width: 100%; height: 3px; background: rgba(255,255,255,0.06);">
++      <div id="wizardProgressBar" style="width: 8.33%; height: 100%; background: linear-gradient(90deg, #38bdf8, #34d399); transition: width 0.3s ease;"></div>
++    </div>
++
++    <div id="wizardStepContent" style="padding: 24px 28px; flex: 1; overflow-y: auto; color: #e2e8f0; min-height: 380px;">
++    </div>
++
++    <div style="padding: 14px 24px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.4);">
++      <button type="button" id="wizardBtnBack" onclick="setupWizard.prevStep()" style="padding: 8px 16px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 8px; cursor: pointer; display: none;">
++        <i class="fa-solid fa-arrow-left"></i> Back
++      </button>
++      <div style="display: flex; align-items: center; gap: 10px; margin-left: auto;">
++        <button type="button" id="wizardBtnLater" onclick="closeSetupWizard()" style="padding: 8px 16px; font-size: 12px; font-weight: 600; background: none; border: none; color: #94a3b8; cursor: pointer;">
++          Save & Exit
++        </button>
++        <button type="button" id="wizardBtnPrimary" onclick="setupWizard.nextStep()" style="padding: 9px 22px; font-size: 12.5px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #10b981); border: 1px solid #38bdf8; color: #fff; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 14px rgba(2,132,199,0.4); display: flex; align-items: center; gap: 6px;">
++          <span>Get Started</span> <i class="fa-solid fa-arrow-right"></i>
++        </button>
++      </div>
++    </div>
++
++  </div>
++</div>
++<!-- END C12.0-P0 MODALS -->
++
++
++<script>
++// ── C12.0-P0: MULTI-POINT 360 TOUR CONTROLLER ──
++const MAXIMUM_PHOTOS_PER_VIEWPOINT = 8;
++
++class MultiPointTourController {
++  constructor(options = {}) {
++    this.projectId = options.projectId || (window.activeProjectData && window.activeProjectData.id);
++    this.tour = options.tour || null;
++    this.activeViewpointId = null;
++    this.hotspotsContainer = document.getElementById('panoramaNavHotspotsContainer');
++    this.mapContainer = document.getElementById('tourBoothMapContainer');
++    this.mapSvg = document.getElementById('tourBoothMapSvg');
++    this.mobileMapSvg = document.getElementById('mobileBoothMapSvg');
++    this.activeLabel = document.getElementById('tourActiveViewpointLabel');
++    this.latencyBadge = document.getElementById('tourNavLatencyBadge');
++    this.countBadge = document.getElementById('tourViewpointCountBadge');
++    
++    this.navLatencies = {};
++    this.isTransitioning = false;
++    this.initialized = false;
++  }
++
++  async init() {
++    if (!this.projectId) return;
++    try {
++      if (!this.tour || !this.tour.viewpoints || !this.tour.viewpoints.length) {
++        const res = await fetch('/api/projects/' + this.projectId + '/tour');
++        if (res.ok) {
++          const data = await res.json();
++          if (data.tour) {
++            this.tour = data.tour;
++            this.tour.viewpoints = data.viewpoints || [];
++            this.tour.connections = data.connections || [];
++          }
++        }
++      }
++      if (this.tour && Array.isArray(this.tour.viewpoints) && this.tour.viewpoints.length > 0) {
++        this.activeViewpointId = this.tour.activeViewpointId || this.tour.viewpoints[0].id;
++        this.initialized = true;
++        this.showUI(true);
++        this.renderBoothMap();
++        this.renderHotspots();
++      }
++    } catch (err) {
++      console.warn('[MultiPointTourController] Init error:', err);
++    }
++  }
++
++  showUI(show = true) {
++    if (this.mapContainer) this.mapContainer.style.display = show ? 'block' : 'none';
++    const mobileBtn = document.getElementById('btnToggleMobileMap');
++    if (mobileBtn) mobileBtn.style.display = show ? 'flex' : 'none';
++  }
++
++  getActiveViewpoint() {
++    if (!this.tour || !this.tour.viewpoints) return null;
++    return this.tour.viewpoints.find(v => v.id === this.activeViewpointId) || this.tour.viewpoints[0];
++  }
++
++  getConnectedViewpoints() {
++    if (!this.tour || !this.tour.connections) return [];
++    const activeId = this.activeViewpointId;
++    const conns = this.tour.connections.filter(c => c.fromViewpointId === activeId || (c.isBidirectional && c.toViewpointId === activeId));
++    
++    return conns.map(c => {
++      const targetId = (c.fromViewpointId === activeId) ? c.toViewpointId : c.fromViewpointId;
++      const targetVp = this.tour.viewpoints.find(v => v.id === targetId);
++      return {
++        connection: c,
++        targetViewpoint: targetVp
++      };
++    }).filter(item => Boolean(item.targetViewpoint));
++  }
++
++  async navigateToViewpoint(targetViewpointId) {
++    if (this.isTransitioning || targetViewpointId === this.activeViewpointId) return;
++    const targetVp = this.tour.viewpoints.find(v => v.id === targetViewpointId);
++    if (!targetVp) return;
++
++    this.isTransitioning = true;
++    const startTime = performance.now();
++    const prevVp = this.getActiveViewpoint();
++
++    const viewer = window.activeSpatialBoothRenderer || window.activeSpatialPreviewRenderer;
++    const canvas = viewer ? viewer.canvas : document.getElementById('three-canvas');
++    if (canvas) {
++      canvas.style.transition = 'opacity 180ms ease';
++      canvas.style.opacity = '0.15';
++    }
++
++    await new Promise(r => setTimeout(r, 180));
++
++    this.activeViewpointId = targetViewpointId;
++    this.tour.activeViewpointId = targetViewpointId;
++
++    const panoUrl = targetVp.panoramaUrl || (targetVp.panorama && targetVp.panorama.url);
++    return new Promise((resolve) => {
++      const finish = () => {
++        this.onTextureRendered(startTime, prevVp, targetVp, canvas, viewer);
++        resolve();
++      };
++      if (viewer && panoUrl) {
++        if (typeof viewer.loadPanoramaUrl === 'function') {
++          viewer.loadPanoramaUrl(panoUrl, finish);
++        } else {
++          const img = new Image();
++          img.crossOrigin = 'anonymous';
++          img.onload = () => {
++            if (viewer.photoMaterial) {
++              const tex = new THREE.Texture(img);
++              tex.encoding = THREE.sRGBEncoding;
++              tex.generateMipmaps = true;
++              tex.minFilter = THREE.LinearMipmapLinearFilter;
++              tex.magFilter = THREE.LinearFilter;
++              tex.needsUpdate = true;
++              viewer.photoMaterial.map = tex;
++              viewer.photoMaterial.needsUpdate = true;
++              viewer.render();
++            }
++            finish();
++          };
++          img.src = panoUrl;
++        }
++      } else {
++        finish();
++      }
++    });
++  }
++
++  onTextureRendered(startTime, prevVp, targetVp, canvas, viewer) {
++    if (canvas) {
++      canvas.style.transition = 'opacity 300ms ease';
++      canvas.style.opacity = '1.0';
++    }
++
++    const latency = Math.round(performance.now() - startTime);
++    const metricKey = 'NAV_' + (prevVp ? prevVp.name.toUpperCase().replace(/\s+/g, '_') : 'START') + 
++                      '_TO_' + targetVp.name.toUpperCase().replace(/\s+/g, '_') + '_CLICK_TO_FIRST_RENDER_MS';
++    this.navLatencies[metricKey] = latency;
++
++    if (this.latencyBadge) {
++      this.latencyBadge.textContent = latency + 'ms';
++    }
++    if (this.activeLabel) {
++      this.activeLabel.textContent = targetVp.name;
++    }
++
++    this.renderBoothMap();
++    this.renderHotspots();
++
++    this.isTransitioning = false;
++  }
++
++  renderHotspots() {
++    if (!this.hotspotsContainer) return;
++    this.hotspotsContainer.innerHTML = '';
++
++    const currentVp = this.getActiveViewpoint();
++    if (!currentVp) return;
++
++    const connections = this.getConnectedViewpoints();
++    connections.forEach(item => {
++      const target = item.targetViewpoint;
++      const el = document.createElement('div');
++      el.className = 'streetview-nav-hotspot';
++      el.id = 'navHotspot_' + target.id;
++      el.dataset.targetId = target.id;
++
++      const dx = (target.x != null ? target.x : 50) - (currentVp.x != null ? currentVp.x : 50);
++      const dy = (target.y != null ? target.y : 50) - (currentVp.y != null ? currentVp.y : 50);
++      const angleRad = Math.atan2(dx, -dy);
++      el.dataset.angleRad = angleRad;
++
++      el.innerHTML = `
++        <div class="streetview-chevron-label">
++          <i class="fa-solid fa-person-walking"></i> Step to ${target.name}
++        </div>
++        <div class="streetview-chevron-disc">
++          <div class="streetview-chevron-arrows">
++            <svg width="22" height="12" viewBox="0 0 24 14" fill="none">
++              <path d="M2 12L12 2L22 12" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
++            </svg>
++            <svg width="18" height="10" viewBox="0 0 24 14" fill="none">
++              <path d="M2 12L12 2L22 12" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
++            </svg>
++          </div>
++        </div>
++      `;
++
++      el.onclick = (e) => {
++        e.stopPropagation();
++        this.navigateToViewpoint(target.id);
++      };
++
++      this.hotspotsContainer.appendChild(el);
++    });
++
++    const viewer = window.activeSpatialBoothRenderer || window.activeSpatialPreviewRenderer;
++    if (viewer) {
++      this.updateHotspots(viewer.yaw, viewer.pitch, viewer.currentFov);
++    }
++  }
++
++  updateHotspots(yaw = 0, pitch = 0, fov = 55, hostMode = 'ACTIVE') {
++    if (!this.hotspotsContainer) return;
++    const hotspots = this.hotspotsContainer.querySelectorAll('.streetview-nav-hotspot');
++    if (!hotspots.length) return;
++
++    const w = this.hotspotsContainer.clientWidth || 920;
++    const h = this.hotspotsContainer.clientHeight || 520;
++    const fovRad = (fov * Math.PI) / 180;
++
++    hotspots.forEach(el => {
++      const targetAngle = parseFloat(el.dataset.angleRad || '0');
++      let deltaYaw = targetAngle - yaw;
++
++      while (deltaYaw > Math.PI) deltaYaw -= 2 * Math.PI;
++      while (deltaYaw < -Math.PI) deltaYaw += 2 * Math.PI;
++
++      const maxAngle = fovRad * 0.7;
++      if (Math.abs(deltaYaw) < maxAngle) {
++        el.style.display = 'flex';
++        const screenX = (w / 2) + (Math.tan(deltaYaw) / Math.tan(fovRad / 2)) * (w / 2);
++        const floorY = h * 0.78 + Math.sin(pitch) * 120;
++        el.style.left = screenX + 'px';
++        el.style.top = floorY + 'px';
++        el.style.transform = 'translate(-50%, -50%)';
++        el.style.opacity = '1.0';
++      } else {
++        el.style.display = 'none';
++      }
++    });
++
++    this.updateMapOrientation(yaw);
++  }
++
++  renderBoothMap() {
++    if (!this.tour || !this.tour.viewpoints) return;
++    const svgs = [this.mapSvg, this.mobileMapSvg].filter(Boolean);
++
++    svgs.forEach(svg => {
++      svg.innerHTML = '';
++
++      const grid = document.createElementNS('http://www.w3.org/2000/svg', 'g');
++      grid.innerHTML = `
++        <defs>
++          <pattern id="boothGrid" width="20" height="20" patternUnits="userSpaceOnUse">
++            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="0.8"/>
++          </pattern>
++        </defs>
++        <rect width="100" height="100" fill="url(#boothGrid)" />
++        <rect x="5" y="5" width="90" height="90" rx="6" fill="none" stroke="rgba(56,189,248,0.25)" stroke-width="1.2" stroke-dasharray="3,3"/>
++      `;
++      svg.appendChild(grid);
++
++      if (Array.isArray(this.tour.connections)) {
++        const edgesG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
++        this.tour.connections.forEach(c => {
++          const v1 = this.tour.viewpoints.find(v => v.id === c.fromViewpointId);
++          const v2 = this.tour.viewpoints.find(v => v.id === c.toViewpointId);
++          if (v1 && v2) {
++            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
++            line.setAttribute('x1', v1.x != null ? v1.x : 50);
++            line.setAttribute('y1', v1.y != null ? v1.y : 50);
++            line.setAttribute('x2', v2.x != null ? v2.x : 50);
++            line.setAttribute('y2', v2.y != null ? v2.y : 50);
++            line.setAttribute('stroke', '#38bdf8');
++            line.setAttribute('stroke-width', '2');
++            line.setAttribute('stroke-dasharray', '2,2');
++            line.setAttribute('opacity', '0.6');
++            edgesG.appendChild(line);
++          }
++        });
++        svg.appendChild(edgesG);
++      }
++
++      const nodesG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
++      this.tour.viewpoints.forEach(vp => {
++        const x = vp.x != null ? vp.x : 50;
++        const y = vp.y != null ? vp.y : 50;
++        const isActive = vp.id === this.activeViewpointId;
++
++        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
++        g.style.cursor = 'pointer';
++        g.onclick = () => this.navigateToViewpoint(vp.id);
++
++        if (isActive) {
++          const pulse = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
++          pulse.setAttribute('cx', x);
++          pulse.setAttribute('cy', y);
++          pulse.setAttribute('r', '7');
++          pulse.setAttribute('fill', 'none');
++          pulse.setAttribute('stroke', '#38bdf8');
++          pulse.setAttribute('stroke-width', '1.5');
++          pulse.setAttribute('class', 'map-pulse-circle');
++          g.appendChild(pulse);
++
++          const cone = document.createElementNS('http://www.w3.org/2000/svg', 'path');
++          cone.id = 'mapCameraCone_' + (svg === this.mapSvg ? 'desktop' : 'mobile');
++          cone.setAttribute('fill', 'rgba(56, 189, 248, 0.25)');
++          cone.setAttribute('stroke', 'rgba(56, 189, 248, 0.6)');
++          cone.setAttribute('stroke-width', '0.8');
++          g.appendChild(cone);
++        }
++
++        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
++        circle.setAttribute('cx', x);
++        circle.setAttribute('cy', y);
++        circle.setAttribute('r', isActive ? '4.5' : '3.8');
++        circle.setAttribute('fill', isActive ? '#38bdf8' : '#1e293b');
++        circle.setAttribute('stroke', isActive ? '#ffffff' : '#94a3b8');
++        circle.setAttribute('stroke-width', '1.5');
++        circle.id = 'mapNode_' + vp.id;
++        g.appendChild(circle);
++
++        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
++        text.setAttribute('x', x);
++        text.setAttribute('y', y + (y > 75 ? -7 : 8));
++        text.setAttribute('text-anchor', 'middle');
++        text.setAttribute('font-size', '3.6');
++        text.setAttribute('font-weight', isActive ? '800' : '600');
++        text.setAttribute('fill', isActive ? '#38bdf8' : '#cbd5e1');
++        text.textContent = vp.name;
++        g.appendChild(text);
++
++        nodesG.appendChild(g);
++      });
++      svg.appendChild(nodesG);
++    });
++
++    if (this.countBadge) {
++      this.countBadge.textContent = this.tour.viewpoints.length + ' Views';
++    }
++  }
++
++  updateMapOrientation(yaw = 0) {
++    const activeVp = this.getActiveViewpoint();
++    if (!activeVp) return;
++    const x = activeVp.x != null ? activeVp.x : 50;
++    const y = activeVp.y != null ? activeVp.y : 50;
++
++    const len = 14;
++    const halfFov = (35 * Math.PI) / 180;
++    const angle = yaw - Math.PI / 2;
++
++    const x1 = x + len * Math.cos(angle - halfFov);
++    const y1 = y + len * Math.sin(angle - halfFov);
++    const x2 = x + len * Math.cos(angle + halfFov);
++    const y2 = y + len * Math.sin(angle + halfFov);
++
++    const d = `M ${x} ${y} L ${x1} ${y1} A ${len} ${len} 0 0 1 ${x2} ${y2} Z`;
++    ['mapCameraCone_desktop', 'mapCameraCone_mobile'].forEach(id => {
++      const el = document.getElementById(id);
++      if (el) el.setAttribute('d', d);
++    });
++  }
++}
++
++
++// ── C12.0-P0: CONTEXTUAL HELP SYSTEM (8 AUDIT TOPICS) ──
++window.tourHelpTopics = {
++  booth_size: {
++    title: 'Booth Size & Recommended Viewpoints',
++    body: 'Your physical booth dimensions dictate the optimal number of 360° capture viewpoints. Standard 10x10 ft booths require 2 viewpoints; 10x20 ft inline booths use 3 viewpoints (Entrance, Center, Product Display); large 20x20+ ft islands use 4 to 5 viewpoints for comprehensive coverage.'
++  },
++  viewpoint_count: {
++    title: 'Viewpoint Count Recommendation',
++    body: 'The 3-viewpoint layout (Entrance, Center, Product Display) provides the optimal walking path for virtual visitors, ensuring full booth visibility and seamless navigation without overwhelming the visitor.'
++  },
++  viewpoint_name: {
++    title: 'Viewpoint Naming Convention',
++    body: 'Naming each viewpoint clearly helps visitors orient themselves on the interactive Booth Map. Standard names like Entrance, Center, and Product Display create an intuitive journey.'
++  },
++  capture_wheel: {
++    title: 'Guided 360° Capture Protocol',
++    body: 'Stand firmly at the physical marker. Rotate 45° clockwise between each capture, completing an 8-shot ring with 30%+ overlap. This produces a distortion-free equirectangular stitch.'
++  },
++  quality_gate: {
++    title: 'Capture Quality Gate Criteria',
++    body: 'Every photo is automatically evaluated for sharpness (Laplacian blur score > 100), exposure balance, and feature point overlap with adjacent shots. All 8 slots must pass for automatic stitching.'
++  },
++  targeted_retake: {
++    title: 'Targeted Retake Assistant',
++    body: 'If a single shot fails quality checks (e.g. motion blur or uneven lighting), you only retake that specific angle slot without needing to re-shoot the other 7 angles.'
++  },
++  booth_map: {
++    title: 'Interactive 2D Booth Map',
++    body: 'The booth map provides an overhead floor plan displaying all viewpoints, connection paths, and an active camera field-of-view cone showing where the visitor is looking in real time.'
++  },
++  navigation: {
++    title: 'Street-View Floor Chevrons',
++    body: 'Dynamic floor navigation arrows project into the 360° scene pointing towards connected viewpoints. Clicking an arrow triggers a smooth crossfade transition with sub-300ms latency.'
++  }
++};
++
++window.showTourHelp = function(topicKey) {
++  const topic = window.tourHelpTopics[topicKey] || { title: 'Tour Help', body: 'Contextual help details.' };
++  let modal = document.getElementById('tourHelpModal');
++  if (!modal) {
++    modal = document.createElement('div');
++    modal.id = 'tourHelpModal';
++    modal.style.cssText = 'position:fixed;inset:0;z-index:350;background:rgba(2,6,23,0.85);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;font-family:sans-serif;';
++    modal.innerHTML = '<div style="background:#0f172a;border:1px solid #38bdf8;border-radius:12px;max-width:440px;width:90%;padding:20px;box-shadow:0 12px 36px rgba(0,0,0,0.8);color:#e2e8f0;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><h4 id="tourHelpTitle" style="margin:0;font-size:16px;color:#38bdf8;font-weight:700;"></h4><button type="button" onclick="document.getElementById(\'tourHelpModal\').style.display=\'none\'" style="background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer;">&times;</button></div><p id="tourHelpBody" style="font-size:13px;line-height:1.6;color:#cbd5e1;margin-bottom:18px;"></p><button type="button" onclick="document.getElementById(\'tourHelpModal\').style.display=\'none\'" style="background:#0284c7;color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;width:100%;">Understood</button></div>';
++    document.body.appendChild(modal);
++  }
++  document.getElementById('tourHelpTitle').textContent = topic.title;
++  document.getElementById('tourHelpBody').textContent = topic.body;
++  modal.style.display = 'flex';
++};
++
++// ── C12.0-P0: ONE-QUESTION SETUP WIZARD CONTROLLER ──
++
++function round(val, dec = 1) {
++  const p = Math.pow(10, dec);
++  return Math.round(val * p) / p;
++}
++
++// ── C12.3-P0R3: CAPABILITY-BASED GUIDED CONTINUOUS 360° CAPTURE CONTROLLER ──
++class GuidedCaptureController {
++  round(val, dec = 1) {
++    const p = Math.pow(10, dec);
++    return Math.round(val * p) / p;
++  }
++
++  constructor(options = {}) {
++    this.container = options.container || null;
++    this.onProgress = options.onProgress || null;
++    this.onAttention = options.onAttention || null;
++    this.onComplete = options.onComplete || null;
++    this.onError = options.onError || null;
++
++    this.KEYFRAME_SELECTION_MODE = 'ADAPTIVE';
++    this.MIN_CANONICAL_KEYFRAMES = 8;
++    this.SOFT_TARGET_KEYFRAMES = 12;
++    this.MAX_CANONICAL_KEYFRAMES = 16;
++
++    this.state = 'IDLE'; // IDLE, PREPARING, CAPTURING, VALIDATING, COMPLETE, NEEDS_ATTENTION, FAILED
++    this.diagnosticSessionId = Math.random().toString(36).substring(2, 8).toUpperCase();
++
++    this.capabilities = {
++      CAMERA_AVAILABLE: false,
++      GYROSCOPE_AVAILABLE: false,
++      DEVICE_ORIENTATION_AVAILABLE: false,
++      MOTION_PERMISSION_GRANTED: false
++    };
++
++    // Telemetry tracking
++    this.telemetry = {
++      startButtonEventReceived: false,
++      guidedControllerStartCalled: false,
++      userAgent: '',
++      secureContext: false,
++      protocol: '',
++      host: '',
++      origin: '',
++      href: '',
++      mediaDevicesAvailable: false,
++      getUserMediaAvailable: false,
++      cameraPermissionState: 'unknown',
++      getUserMediaCalled: false,
++      getUserMediaResolved: false,
++      videoTrackActive: false,
++      videoWidth: 0,
++      videoHeight: 0,
++      deviceOrientationEventCount: 0,
++      deviceMotionEventCount: 0,
++      visualMotionFallbackActive: false,
++      captureLoopActive: false,
++      previewFrameCount: 0,
++      progressUpdateCount: 0,
++      guidanceMode: 'UNKNOWN',
++      accumulatedRotation: 0,
++      errorCode: null,
++      errorMessage: null,
++      diagnosticSessionId: this.diagnosticSessionId,
++      startTime: null
++    };
++
++    this.startOrientation = null;
++    this.currentOrientation = null;
++    this.accumulatedRotation = 0.0;
++    this.rotationDirection = null; // 'CLOCKWISE', 'COUNTERCLOCKWISE'
++    this.directionLocked = false;
++    this.lastAngle = null;
++    this.lastTimestamp = null;
++    this.turnSpeedDps = 0.0;
++
++    this.speedStatus = 'NORMAL';
++    this.levelStatus = 'LEVEL';
++    this.guidanceMessage = 'Stand in one spot and slowly turn in a full circle.';
++
++    this.candidateFrames = [];
++    this.canonicalKeyframes = [];
++    this.lastSelectedAngle = null;
++    this.lastSelectedTimestamp = null;
++    this.estimatedSceneTexture = 'MEDIUM';
++    this.closureVerified = false;
++
++    this.videoElement = null;
++    this.mediaStream = null;
++    this.animFrameId = null;
++    this.watchdogTimer = null;
++    this.telemetryTimer = null;
++    this.prevLuminanceProfile = null;
++    this.offscreenCanvas = null;
++    this.offscreenCtx = null;
++
++    this.sensorHandler = this.handleOrientation.bind(this);
++    this.motionHandler = this.handleMotion.bind(this);
++  }
++
++  async checkCapabilities() {
++    this.capabilities.CAMERA_AVAILABLE = Boolean(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
++    this.capabilities.DEVICE_ORIENTATION_AVAILABLE = typeof window.DeviceOrientationEvent !== 'undefined';
++    this.capabilities.GYROSCOPE_AVAILABLE = this.capabilities.DEVICE_ORIENTATION_AVAILABLE;
++
++    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
++      try {
++        const perm = await DeviceOrientationEvent.requestPermission();
++        this.capabilities.MOTION_PERMISSION_GRANTED = (perm === 'granted');
++      } catch (e) {
++        this.capabilities.MOTION_PERMISSION_GRANTED = false;
++      }
++    } else {
++      this.capabilities.MOTION_PERMISSION_GRANTED = this.capabilities.DEVICE_ORIENTATION_AVAILABLE;
++    }
++    return this.capabilities;
++  }
++
++  async startCapture() {
++    this.diagnosticSessionId = Math.random().toString(36).substring(2, 8).toUpperCase();
++    this.telemetry.startButtonEventReceived = true;
++    this.telemetry.guidedControllerStartCalled = true;
++    this.telemetry.userAgent = navigator.userAgent;
++    this.telemetry.secureContext = Boolean(window.isSecureContext);
++    this.telemetry.protocol = window.location.protocol;
++    this.telemetry.host = window.location.host;
++    this.telemetry.origin = window.location.origin;
++    this.telemetry.href = window.location.href.split('?')[0];
++    this.telemetry.mediaDevicesAvailable = Boolean(navigator.mediaDevices);
++    this.telemetry.getUserMediaAvailable = Boolean(navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function');
++    this.telemetry.startTime = Date.now();
++    this.telemetry.previewFrameCount = 0;
++    this.telemetry.deviceOrientationEventCount = 0;
++    this.telemetry.deviceMotionEventCount = 0;
++    this.telemetry.progressUpdateCount = 0;
++    this.telemetry.errorCode = null;
++    this.telemetry.errorMessage = null;
++    this.telemetry.diagnosticSessionId = this.diagnosticSessionId;
++
++    this.state = 'PREPARING';
++    this.accumulatedRotation = 0.0;
++    this.directionLocked = false;
++    this.rotationDirection = null;
++    this.lastAngle = null;
++    this.lastTimestamp = Date.now();
++    this.candidateFrames = [];
++    this.canonicalKeyframes = [];
++    this.lastSelectedAngle = null;
++    this.lastSelectedTimestamp = null;
++    this.closureVerified = false;
++    this.guidanceMessage = 'Starting camera & sensors...';
++    this.notifyProgress();
++
++    // ── PERSIST TELEMETRY BEFORE ANY EARLY RETURNS ──
++    this.sendTelemetry();
++
++    // 1. Genuine Insecure Context Check (browser explicitly marks window.isSecureContext === false)
++    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
++    if (!window.isSecureContext && !isLocalhost && (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)) {
++      this.state = 'NEEDS_ATTENTION';
++      this.telemetry.errorCode = 'INSECURE_CONTEXT';
++      this.telemetry.errorMessage = 'Browser is in an insecure context (HTTP).';
++      this.guidanceMessage = 'Camera access requires secure connection.';
++      this.notifyAttention({
++        code: 'INSECURE_CONTEXT',
++        message: 'Open the secure capture link to use your camera.',
++        diagnosticId: this.diagnosticSessionId
++      });
++      this.sendTelemetry();
++      return;
++    }
++
++    // 2. Check if mediaDevices API is completely absent
++    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
++      this.state = 'NEEDS_ATTENTION';
++      this.telemetry.errorCode = 'CAMERA_API_UNAVAILABLE';
++      this.telemetry.errorMessage = 'navigator.mediaDevices.getUserMedia is unavailable.';
++      this.guidanceMessage = 'Camera API unavailable.';
++      this.notifyAttention({
++        code: 'CAMERA_API_UNAVAILABLE',
++        message: 'Camera API is unavailable on this browser.',
++        diagnosticId: this.diagnosticSessionId
++      });
++      this.sendTelemetry();
++      return;
++    }
++
++    // 3. Setup Watchdog (3.5s)
++    if (this.watchdogTimer) clearTimeout(this.watchdogTimer);
++    this.watchdogTimer = setTimeout(() => {
++      this.checkWatchdog();
++    }, 3500);
++
++    // 4. Capability-Based Camera Startup
++    try {
++      this.telemetry.getUserMediaCalled = true;
++      let stream = null;
++
++      // Attempt 1: ideal environment facingMode (no strict module/resolution requirements)
++      try {
++        stream = await navigator.mediaDevices.getUserMedia({
++          video: { facingMode: { ideal: 'environment' } },
++          audio: false
++        });
++      } catch (e1) {
++        console.warn('[GuidedCapture] Ideal environment constraint failed, retrying relaxed video:true...', e1);
++        // Attempt 2: retry with relaxed constraints
++        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
++      }
++
++      if (stream) {
++        this.mediaStream = stream;
++        this.telemetry.getUserMediaResolved = true;
++        this.telemetry.cameraPermissionState = 'granted';
++
++        // Connect to video element inside the circular guidance widget
++        let video = document.getElementById('guidedLiveVideo');
++        if (!video) {
++          video = document.createElement('video');
++          video.id = 'guidedLiveVideo';
++          video.style.display = 'none';
++          document.body.appendChild(video);
++        }
++        video.playsInline = true;
++        video.muted = true;
++        video.autoplay = true;
++        video.srcObject = stream;
++        await video.play().catch(e => console.warn('[GuidedCapture] Video play error:', e));
++
++        this.videoElement = video;
++        this.telemetry.videoTrackActive = Boolean(stream.getVideoTracks().length && stream.getVideoTracks()[0].readyState === 'live');
++        this.telemetry.videoWidth = video.videoWidth || 640;
++        this.telemetry.videoHeight = video.videoHeight || 480;
++        video.style.opacity = '0.75';
++      }
++    } catch (camErr) {
++      console.error('[GuidedCapture] Camera getUserMedia error:', camErr);
++      this.state = 'NEEDS_ATTENTION';
++      this.telemetry.errorCode = camErr.name || 'CameraError';
++      this.telemetry.errorMessage = camErr.message;
++      this.telemetry.cameraPermissionState = (camErr.name === 'NotAllowedError' || camErr.name === 'PermissionDeniedError') ? 'denied' : 'error';
++
++      let userFacingMsg = 'Camera unavailable: ' + (camErr.message || 'Check device permissions.');
++      if (camErr.name === 'NotAllowedError' || camErr.name === 'PermissionDeniedError') {
++        userFacingMsg = 'Camera access is blocked. Allow camera permission and try again.';
++      } else if (camErr.name === 'NotFoundError' || camErr.name === 'DevicesNotFoundError') {
++        userFacingMsg = 'No camera was found.';
++      } else if (camErr.name === 'NotReadableError' || camErr.name === 'TrackStartError') {
++        userFacingMsg = 'Your camera is being used by another app.';
++      }
++
++      this.notifyAttention({
++        code: camErr.name,
++        message: userFacingMsg,
++        diagnosticId: this.diagnosticSessionId
++      });
++      this.sendTelemetry();
++      return;
++    }
++
++    // 5. Attach motion listeners
++    try {
++      if (typeof DeviceOrientationEvent !== 'undefined') {
++        window.addEventListener('deviceorientation', this.sensorHandler, true);
++      }
++      if (typeof DeviceMotionEvent !== 'undefined') {
++        window.addEventListener('devicemotion', this.motionHandler, true);
++      }
++    } catch (e) {
++      console.warn('[GuidedCapture] Sensor listener error:', e);
++    }
++
++    // 6. Select Initial canonical keyframe (0 deg)
++    this.selectCanonicalKeyframe(0.0, 100);
++
++    // 7. Transition to CAPTURING
++    this.state = 'CAPTURING';
++    this.telemetry.captureLoopActive = true;
++    this.guidanceMessage = 'Stand in one spot and slowly turn in a full circle.';
++    this.notifyProgress();
++
++    // 8. Start Visual Frame Loop
++    this.startFrameLoop();
++    this.sendTelemetry();
++  }
++
++  startFrameLoop() {
++    if (!this.offscreenCanvas) {
++      this.offscreenCanvas = document.createElement('canvas');
++      this.offscreenCanvas.width = 160;
++      this.offscreenCanvas.height = 120;
++      this.offscreenCtx = this.offscreenCanvas.getContext('2d', { willReadFrequently: true });
++    }
++
++    const loop = () => {
++      if (this.state !== 'CAPTURING') return;
++      this.processVideoFrame();
++      this.animFrameId = requestAnimationFrame(loop);
++    };
++    this.animFrameId = requestAnimationFrame(loop);
++  }
++
++  processVideoFrame() {
++    if (!this.videoElement || this.videoElement.readyState < 2) return;
++
++    this.telemetry.previewFrameCount++;
++    const now = Date.now();
++
++    const ctx = this.offscreenCtx;
++    ctx.drawImage(this.videoElement, 0, 0, 160, 120);
++
++    const imgData = ctx.getImageData(0, 45, 160, 30);
++    const data = imgData.data;
++    const currentProfile = new Float32Array(160);
++
++    for (let x = 0; x < 160; x++) {
++      let sum = 0;
++      for (let y = 0; y < 30; y++) {
++        const idx = (y * 160 + x) * 4;
++        sum += 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
++      }
++      currentProfile[x] = sum / 30.0;
++    }
++
++    if (this.prevLuminanceProfile) {
++      let bestShift = 0;
++      let minDiff = Infinity;
++      const testRange = 18;
++      const margin = 20;
++
++      for (let s = -testRange; s <= testRange; s++) {
++        let diff = 0;
++        let count = 0;
++        for (let x = margin; x < 160 - margin; x++) {
++          const targetX = x + s;
++          if (targetX >= 0 && targetX < 160) {
++            diff += Math.abs(currentProfile[targetX] - this.prevLuminanceProfile[x]);
++            count++;
++          }
++        }
++        const meanDiff = count > 0 ? diff / count : Infinity;
++        if (meanDiff < minDiff) {
++          minDiff = meanDiff;
++          bestShift = s;
++        }
++      }
++
++      const sensorsActive = this.telemetry.deviceOrientationEventCount > 4;
++      if (!sensorsActive) {
++        this.telemetry.visualMotionFallbackActive = true;
++        this.telemetry.guidanceMode = 'VISUAL_ONLY';
++
++        if (Math.abs(bestShift) >= 1 && minDiff < 45) {
++          const visualDeltaDeg = -bestShift * 0.406;
++          this.applyMotionDelta(visualDeltaDeg, now);
++        }
++      } else {
++        this.telemetry.guidanceMode = 'SENSOR_VISUAL';
++      }
++    }
++
++    this.prevLuminanceProfile = currentProfile;
++  }
++
++  handleOrientation(e) {
++    if (this.state !== 'CAPTURING') return;
++    this.telemetry.deviceOrientationEventCount++;
++
++    const alpha = e.alpha !== null ? e.alpha : (e.webkitCompassHeading || 0);
++    const beta = e.beta || 0;
++    const gamma = e.gamma || 0;
++    const now = Date.now();
++
++    const pitchDeviation = Math.abs(Math.abs(beta) - 90);
++    const rollDeviation = Math.abs(gamma);
++    if (pitchDeviation > 28 || rollDeviation > 25) {
++      this.levelStatus = 'TILTED';
++      this.guidanceMessage = 'Keep your phone level.';
++    } else {
++      this.levelStatus = 'LEVEL';
++    }
++
++    if (this.lastAngle === null) {
++      this.lastAngle = alpha;
++      this.lastTimestamp = now;
++      this.notifyProgress();
++      return;
++    }
++
++    let delta = alpha - this.lastAngle;
++    if (delta > 180) delta -= 360;
++    if (delta < -180) delta += 360;
++
++    this.applyMotionDelta(delta, now);
++    this.lastAngle = alpha;
++  }
++
++  handleMotion(e) {
++    if (this.state !== 'CAPTURING') return;
++    this.telemetry.deviceMotionEventCount++;
++  }
++
++  applyMotionDelta(delta, now) {
++    const dt = Math.max((now - (this.lastTimestamp || now)) / 1000, 0.016);
++    this.lastTimestamp = now;
++
++    if (!this.directionLocked && Math.abs(delta) > 1.2) {
++      this.rotationDirection = delta > 0 ? 'CLOCKWISE' : 'COUNTERCLOCKWISE';
++      this.directionLocked = true;
++    }
++
++    const currentSpeed = Math.abs(delta) / dt;
++    this.turnSpeedDps = 0.8 * this.turnSpeedDps + 0.2 * currentSpeed;
++
++    if (this.turnSpeedDps > 36.0) {
++      this.speedStatus = 'TOO_FAST';
++      this.guidanceMessage = 'Turn a little slower.';
++    } else if (this.levelStatus === 'LEVEL') {
++      this.speedStatus = 'NORMAL';
++      if (this.accumulatedRotation > 280) {
++        this.guidanceMessage = 'Almost there.';
++      } else {
++        this.guidanceMessage = 'Great — keep going.';
++      }
++    }
++
++    if (this.directionLocked) {
++      const isConsistent = (this.rotationDirection === 'CLOCKWISE' && delta > 0) ||
++                           (this.rotationDirection === 'COUNTERCLOCKWISE' && delta < 0);
++      if (isConsistent) {
++        this.accumulatedRotation += Math.abs(delta);
++      } else if (Math.abs(delta) > 12.0) {
++        this.guidanceMessage = 'Keep turning in the same direction.';
++      }
++    } else if (Math.abs(delta) > 0.5) {
++      this.accumulatedRotation += Math.abs(delta);
++    }
++
++    let stepThreshold = 30.0;
++    if (this.estimatedSceneTexture === 'LOW') stepThreshold = 22.5;
++    else if (this.estimatedSceneTexture === 'HIGH') stepThreshold = 36.0;
++
++    const angleSinceLast = this.accumulatedRotation - (this.lastSelectedAngle || 0);
++    if (angleSinceLast >= stepThreshold && this.canonicalKeyframes.length < this.MAX_CANONICAL_KEYFRAMES) {
++      const sharpness = Math.max(20, Math.round(100 - (this.turnSpeedDps * 0.6)));
++      this.selectCanonicalKeyframe(this.accumulatedRotation, sharpness);
++    }
++
++    if (this.accumulatedRotation >= 330.0 && !this.closureVerified) {
++      this.closureVerified = true;
++    }
++
++    this.notifyProgress();
++
++    if (this.accumulatedRotation >= 355.0 && this.closureVerified) {
++      this.finalizeCapture();
++    }
++  }
++
++  selectCanonicalKeyframe(angle, sharpness) {
++    const keyframe = {
++      index: this.canonicalKeyframes.length + 1,
++      angle: round(angle, 1),
++      timestamp: Date.now(),
++      sharpnessScore: sharpness
++    };
++    this.canonicalKeyframes.push(keyframe);
++    this.lastSelectedAngle = angle;
++    this.lastSelectedTimestamp = Date.now();
++  }
++
++  checkWatchdog() {
++    if (this.state !== 'CAPTURING' && this.state !== 'PREPARING') return;
++
++    const hasVideo = this.telemetry.previewFrameCount > 0 || this.telemetry.videoTrackActive;
++    const hasSensors = this.telemetry.deviceOrientationEventCount > 0;
++
++    if (!hasVideo && !hasSensors) {
++      this.state = 'NEEDS_ATTENTION';
++      this.telemetry.errorCode = 'STARTUP_TIMEOUT_NO_CAMERA_OR_SENSORS';
++      this.notifyAttention({
++        code: 'STARTUP_TIMEOUT',
++        message: 'Camera and motion sensors were not detected within 3.5s. Tap TRY AGAIN or switch to manual photo upload.',
++        diagnosticId: this.diagnosticSessionId
++      });
++      this.sendTelemetry();
++    } else if (hasVideo && this.accumulatedRotation === 0.0) {
++      this.guidanceMessage = 'Camera active! Slowly start turning your body in a full circle.';
++      this.notifyProgress();
++      this.sendTelemetry();
++    }
++  }
++
++  notifyAttention(data) {
++    this.guidanceMessage = data.message;
++    if (this.onAttention) {
++      this.onAttention(data);
++    }
++  }
++
++  finalizeCapture() {
++    this.state = 'COMPLETE';
++    this.stopCaptureResources();
++
++    this.guidanceMessage = 'Circle complete! Processing 360° panorama...';
++    this.notifyProgress();
++    this.sendTelemetry();
++
++    if (this.onComplete) {
++      this.onComplete({
++        accumulatedRotation: this.accumulatedRotation,
++        direction: this.rotationDirection,
++        canonicalKeyframeCount: this.canonicalKeyframes.length,
++        keyframes: this.canonicalKeyframes,
++        closureVerified: this.closureVerified
++      });
++    }
++  }
++
++  notifyProgress() {
++    this.telemetry.progressUpdateCount++;
++    this.telemetry.accumulatedRotation = round(this.accumulatedRotation, 1);
++    const progressPercent = Math.min(100, Math.round((this.accumulatedRotation / 360.0) * 100));
++
++    if (this.onProgress) {
++      this.onProgress({
++        progressPercent,
++        accumulatedRotation: this.accumulatedRotation,
++        speedDps: this.turnSpeedDps,
++        speedStatus: this.speedStatus,
++        levelStatus: this.levelStatus,
++        guidance: this.guidanceMessage,
++        canonicalCount: this.canonicalKeyframes.length,
++        guidanceMode: this.telemetry.guidanceMode
++      });
++    }
++
++    if (progressPercent > 0 && progressPercent % 25 === 0 && !this.telemetryTimer) {
++      this.sendTelemetry();
++      this.telemetryTimer = setTimeout(() => { this.telemetryTimer = null; }, 1000);
++    }
++  }
++
++  sendTelemetry() {
++    try {
++      const projectId = (window.activeProjectData && window.activeProjectData.id) || 
++                        new URLSearchParams(window.location.search).get('projectId') || 
++                        'prj-free-b0c6f3ea';
++      const payload = {
++        ...this.telemetry,
++        accumulatedRotation: round(this.accumulatedRotation, 1),
++        state: this.state,
++        turnSpeedDps: round(this.turnSpeedDps, 1),
++        canonicalKeyframesCount: this.canonicalKeyframes.length,
++        closureVerified: this.closureVerified
++      };
++
++      fetch('/api/projects/' + projectId + '/guided-capture/telemetry', {
++        method: 'POST',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify(payload)
++      }).catch(e => console.warn('[GuidedCapture] Telemetry send error:', e));
++    } catch (e) {}
++  }
++
++  stopCaptureResources() {
++    if (this.watchdogTimer) {
++      clearTimeout(this.watchdogTimer);
++      this.watchdogTimer = null;
++    }
++    if (this.animFrameId) {
++      cancelAnimationFrame(this.animFrameId);
++      this.animFrameId = null;
++    }
++    window.removeEventListener('deviceorientation', this.sensorHandler, true);
++    window.removeEventListener('devicemotion', this.motionHandler, true);
++
++    if (this.mediaStream) {
++      try {
++        this.mediaStream.getTracks().forEach(track => track.stop());
++      } catch (e) {}
++      this.mediaStream = null;
++    }
++    if (this.videoElement) {
++      this.videoElement.style.opacity = '0';
++    }
++  }
++
++  stopCapture() {
++    this.state = 'IDLE';
++    this.stopCaptureResources();
++  }
++}
++
++window.guidedCaptureController = new GuidedCaptureController();
++
++
++class SetupWizardController {
++  constructor() {
++    this.modal = document.getElementById('setupWizardModal');
++    this.content = document.getElementById('wizardStepContent');
++    this.indicator = document.getElementById('wizardStepIndicator');
++    this.progressBar = document.getElementById('wizardProgressBar');
++    this.btnBack = document.getElementById('wizardBtnBack');
++    this.btnPrimary = document.getElementById('wizardBtnPrimary');
++    this.resumedBadge = document.getElementById('wizardResumedBadge');
++
++    this.currentStep = 1;
++    this.totalSteps = 12;
++
++    this.state = {
++      step: 1,
++      boothSize: 'MEDIUM',
++      viewpointCount: 3,
++      currentViewpointIndex: 0,
++      viewpoints: [
++        { id: 'vp_entrance', name: 'Entrance', x: 50, y: 85, photos: [], panoramaUrl: '', status: 'PENDING' },
++        { id: 'vp_center', name: 'Center', x: 50, y: 50, photos: [], panoramaUrl: '', status: 'PENDING' },
++        { id: 'vp_product', name: 'Product Display', x: 75, y: 30, photos: [], panoramaUrl: '', status: 'PENDING' }
++      ],
++      connections: [
++        { from: 'vp_entrance', to: 'vp_center', enabled: true },
++        { from: 'vp_center', to: 'vp_product', enabled: true }
++      ]
++    };
++  }
++
++  async open() {
++    if (!this.modal) return;
++    this.modal.style.display = 'flex';
++
++    const projectId = window.activeProjectData && window.activeProjectData.id;
++    if (projectId) {
++      try {
++        const res = await fetch('/api/projects/' + projectId + '/wizard-state');
++        if (res.ok) {
++          const data = await res.json();
++          const ws = data.wizardState && (data.wizardState.state || data.wizardState);
++          if (ws && (ws.step || ws.currentStep)) {
++            this.state = Object.assign(this.state, ws);
++            this.currentStep = ws.step || ws.currentStep || 1;
++            if (this.resumedBadge && this.currentStep > 1) this.resumedBadge.style.display = 'inline-block';
++          }
++        }
++      } catch (e) {
++        console.warn('[Wizard] State fetch error:', e);
++      }
++    }
++
++    this.renderStep();
++  }
++
++  close() {
++    if (this.modal) this.modal.style.display = 'none';
++    this.saveState();
++  }
++
++  async saveState() {
++    const projectId = window.activeProjectData && window.activeProjectData.id;
++    if (!projectId) return;
++    this.state.step = this.currentStep;
++    try {
++      await fetch('/api/projects/' + projectId + '/wizard-state', {
++        method: 'POST',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify({ ...this.state, step: this.currentStep })
++      });
++    } catch (e) {
++      console.warn('[Wizard] Save state error:', e);
++    }
++  }
++
++  nextStep() {
++    if (this.currentStep < this.totalSteps) {
++      this.currentStep++;
++      this.saveState();
++      this.renderStep();
++    } else {
++      this.applyTour();
++    }
++  }
++
++  prevStep() {
++    if (this.currentStep > 1) {
++      this.currentStep--;
++      this.saveState();
++      this.renderStep();
++    }
++  }
++
++  renderStep() {
++    if (!this.content) return;
++    const s = this.currentStep;
++    if (this.indicator) {
++      const titles = [
++        'Welcome', 'Booth Size', 'Viewpoint Count', 'Viewpoint Name', 'Stand Guide',
++        'Guided 360° Capture', 'Viewpoint Ready', 'Next Viewpoints', 'Map Setup',
++        'Connection Setup', 'Tour Preview', 'Live Tour Complete'
++      ];
++      this.indicator.textContent = 'Step ' + s + ' of ' + this.totalSteps + ' — ' + (titles[s - 1] || '');
++    }
++    if (this.progressBar) {
++      this.progressBar.style.width = ((s / this.totalSteps) * 100) + '%';
++    }
++    if (this.btnBack) {
++      this.btnBack.style.display = (s > 1 && s < 12) ? 'inline-flex' : 'none';
++    }
++
++    switch (s) {
++      case 1: this.renderStep1Welcome(); break;
++      case 2: this.renderStep2BoothSize(); break;
++      case 3: this.renderStep3ViewpointCount(); break;
++      case 4: this.renderStep4ViewpointName(); break;
++      case 5: this.renderStep5StandGuide(); break;
++      case 6: this.renderStep6CaptureWheel(); break;
++      case 7: this.renderStep7ViewpointReady(); break;
++      case 8: this.renderStep8MultiViewpoint(); break;
++      case 9: this.renderStep9MapSetup(); break;
++      case 10: this.renderStep10ConnectionSetup(); break;
++      case 11: this.renderStep11TourPreview(); break;
++      case 12: this.renderStep12Complete(); break;
++    }
++  }
++
++  renderStep1Welcome() {
++    this.btnPrimary.innerHTML = '<span>Start Tour Setup</span> <i class="fa-solid fa-arrow-right"></i>';
++    this.content.innerHTML = `
++      <div style="text-align: center; max-width: 520px; margin: 20px auto 0;">
++        <div style="width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, rgba(56,189,248,0.2), rgba(52,211,153,0.2)); border: 1.5px solid #38bdf8; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: #38bdf8; font-size: 30px; box-shadow: 0 0 30px rgba(56,189,248,0.3);">
++          <i class="fa-solid fa-person-walking"></i>
++        </div>
++        <h2 style="font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 12px; letter-spacing: -0.5px;">Create your Multi-Point 360° Booth Tour</h2>
++        <p style="font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 24px;">
++          Turn your physical booth into an interactive walking experience. Visitors can step through your booth using Street-View-style floor arrows and navigate via an interactive floor map.
++        </p>
++        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; text-align: left; margin-bottom: 10px;">
++          <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px;">
++            <div style="color: #38bdf8; font-size: 18px; margin-bottom: 6px;"><i class="fa-solid fa-camera-rotate"></i></div>
++            <div style="font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 2px;">8-Shot Max</div>
++            <div style="font-size: 11px; color: #64748b;">Stand in one spot and rotate. No extra photos.</div>
++          </div>
++          <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px;">
++            <div style="color: #34d399; font-size: 18px; margin-bottom: 6px;"><i class="fa-solid fa-diamond-turn-right"></i></div>
++            <div style="font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 2px;">Floor Chevrons</div>
++            <div style="font-size: 11px; color: #64748b;">Walking navigation between key exhibits.</div>
++          </div>
++          <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px;">
++            <div style="color: #a78bfa; font-size: 18px; margin-bottom: 6px;"><i class="fa-solid fa-map"></i></div>
++            <div style="font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 2px;">Booth Map</div>
++            <div style="font-size: 11px; color: #64748b;">Interactive 2D floor overview with pulse indicator.</div>
++          </div>
++        </div>
++      </div>
++    `;
++  }
++
++  renderStep2BoothSize() {
++    this.btnPrimary.innerHTML = '<span>Continue</span> <i class="fa-solid fa-arrow-right"></i>';
++    const cur = this.state.boothSize;
++    this.content.innerHTML = `
++      <div style="max-width: 540px; margin: 10px auto;">
++        <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px;">What size is your booth?</h3>
++        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 20px;">This helps us recommend the optimal number of walking viewpoints.</p>
++
++        <div style="display: flex; flex-direction: column; gap: 12px;">
++          <div class="wizard-step-card ${cur === 'SMALL' ? 'active' : ''}" onclick="setupWizard.setBoothSize('SMALL')">
++            <i class="fa-solid fa-cube" style="font-size: 22px; color: #38bdf8;"></i>
++            <div style="flex: 1;">
++              <div style="font-size: 14px; font-weight: 800; color: #fff;">Small Booth (10 x 10 ft)</div>
++              <div style="font-size: 12px; color: #94a3b8;">Standard inline space — typically 1 to 2 viewpoints.</div>
++            </div>
++            <span style="font-size: 12px; font-weight: 700; color: #38bdf8;">1-2 Views</span>
++          </div>
++
++          <div class="wizard-step-card ${cur === 'MEDIUM' ? 'active' : ''}" onclick="setupWizard.setBoothSize('MEDIUM')">
++            <i class="fa-solid fa-cubes" style="font-size: 22px; color: #34d399;"></i>
++            <div style="flex: 1;">
++              <div style="font-size: 14px; font-weight: 800; color: #fff;">Medium Booth (10 x 20 ft)</div>
++              <div style="font-size: 12px; color: #94a3b8;">Corner or double space — recommended 3 viewpoints.</div>
++            </div>
++            <span style="font-size: 12px; font-weight: 700; color: #34d399;">Recommended 3 Views</span>
++          </div>
++
++          <div class="wizard-step-card ${cur === 'LARGE' ? 'active' : ''}" onclick="setupWizard.setBoothSize('LARGE')">
++            <i class="fa-solid fa-building" style="font-size: 22px; color: #a78bfa;"></i>
++            <div style="flex: 1;">
++              <div style="font-size: 14px; font-weight: 800; color: #fff;">Large Booth (20 x 20+ ft)</div>
++              <div style="font-size: 12px; color: #94a3b8;">Island or large pavilion — 3 to 5 walking viewpoints.</div>
++            </div>
++            <span style="font-size: 12px; font-weight: 700; color: #a78bfa;">3-5 Views</span>
++          </div>
++
++          <div class="wizard-step-card ${cur === 'NOT_SURE' ? 'active' : ''}" onclick="setupWizard.setBoothSize('NOT_SURE')">
++            <i class="fa-solid fa-circle-question" style="font-size: 22px; color: #f59e0b;"></i>
++            <div style="flex: 1;">
++              <div style="font-size: 14px; font-weight: 800; color: #fff;">I'm Not Sure</div>
++              <div style="font-size: 12px; color: #94a3b8;">We'll default to 3 viewpoints: Entrance, Center, and Product.</div>
++            </div>
++            <span style="font-size: 12px; font-weight: 700; color: #f59e0b;">Default 3</span>
++          </div>
++        </div>
++      </div>
++    `;
++  }
++
++  setBoothSize(size) {
++    this.state.boothSize = size;
++    if (size === 'SMALL') this.state.viewpointCount = 2;
++    else if (size === 'LARGE') this.state.viewpointCount = 4;
++    else this.state.viewpointCount = 3;
++    this.renderStep2BoothSize();
++  }
++
++  renderStep3ViewpointCount() {
++    this.btnPrimary.innerHTML = '<span>Continue to Viewpoint 1</span> <i class="fa-solid fa-arrow-right"></i>';
++    const count = this.state.viewpointCount;
++    this.content.innerHTML = `
++      <div style="max-width: 540px; margin: 10px auto;">
++        <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px;">How many viewpoints would you like?</h3>
++        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 20px;">
++          For your ${this.state.boothSize.toLowerCase()} booth, we recommend <strong>3 Viewpoints</strong> (Entrance, Center, and Product Display).
++        </p>
++
++        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px;">
++          <div class="wizard-step-card ${count === 2 ? 'active' : ''}" onclick="setupWizard.setViewpointCount(2)" style="flex-direction: column; text-align: center; padding: 20px;">
++            <div style="font-size: 28px; font-weight: 800; color: #38bdf8;">2</div>
++            <div style="font-size: 13px; font-weight: 700; color: #fff;">2 Viewpoints</div>
++            <div style="font-size: 11px; color: #64748b;">Entrance + Center</div>
++          </div>
++          <div class="wizard-step-card ${count === 3 ? 'active' : ''}" onclick="setupWizard.setViewpointCount(3)" style="flex-direction: column; text-align: center; padding: 20px; border-color: #34d399;">
++            <div style="font-size: 10px; font-weight: 800; color: #34d399; background: rgba(52,211,153,0.15); padding: 2px 8px; border-radius: 10px; margin-bottom: 4px;">RECOMMENDED</div>
++            <div style="font-size: 28px; font-weight: 800; color: #34d399;">3</div>
++            <div style="font-size: 13px; font-weight: 700; color: #fff;">3 Viewpoints</div>
++            <div style="font-size: 11px; color: #64748b;">Entrance + Center + Product</div>
++          </div>
++          <div class="wizard-step-card ${count === 4 ? 'active' : ''}" onclick="setupWizard.setViewpointCount(4)" style="flex-direction: column; text-align: center; padding: 20px;">
++            <div style="font-size: 28px; font-weight: 800; color: #a78bfa;">4</div>
++            <div style="font-size: 13px; font-weight: 700; color: #fff;">4 Viewpoints</div>
++            <div style="font-size: 11px; color: #64748b;">Full perimeter walkthrough</div>
++          </div>
++        </div>
++
++        <div style="background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.25); border-radius: 10px; padding: 14px; display: flex; align-items: flex-start; gap: 12px;">
++          <i class="fa-solid fa-lightbulb" style="color: #38bdf8; font-size: 18px; margin-top: 2px;"></i>
++          <div style="font-size: 12px; color: #cbd5e1; line-height: 1.5;">
++            <strong>Pro Tip:</strong> 3 viewpoints give visitors the best sense of walking into the booth without requiring excessive photography. You can always add more viewpoints later in the editor.
++          </div>
++        </div>
++      </div>
++    `;
++  }
++
++  setViewpointCount(c) {
++    this.state.viewpointCount = c;
++    this.renderStep3ViewpointCount();
++  }
++
++  renderStep4ViewpointName() {
++    this.btnPrimary.innerHTML = '<span>Next: Stand Guide</span> <i class="fa-solid fa-arrow-right"></i>';
++    const vp = this.state.viewpoints[0];
++    this.content.innerHTML = `
++      <div style="max-width: 520px; margin: 10px auto;">
++        <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px;">Where are you standing for Viewpoint 1?</h3>
++        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 20px;">Give this physical spot a clear name so visitors know where they are walking.</p>
++
++        <div style="margin-bottom: 20px;">
++          <label style="font-size: 11px; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 6px;">VIEWPOINT 1 NAME</label>
++          <input type="text" id="wizardVp1NameInput" value="${vp.name}" oninput="setupWizard.updateVpName(0, this.value)" style="width: 100%; background: #030712; border: 1px solid rgba(56,189,248,0.4); border-radius: 8px; color: #fff; font-size: 15px; font-weight: 700; padding: 10px 14px; box-sizing: border-box;">
++        </div>
++
++        <div style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 8px;">POPULAR PRESETS</div>
++        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
++          <button type="button" onclick="setupWizard.setPresetVpName(0, 'Entrance')" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer;">Entrance</button>
++          <button type="button" onclick="setupWizard.setPresetVpName(0, 'Booth Center')" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer;">Booth Center</button>
++          <button type="button" onclick="setupWizard.setPresetVpName(0, 'Front Counter')" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer;">Front Counter</button>
++          <button type="button" onclick="setupWizard.setPresetVpName(0, 'Main Display')" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer;">Main Display</button>
++        </div>
++      </div>
++    `;
++  }
++
++  updateVpName(idx, name) {
++    if (this.state.viewpoints[idx]) this.state.viewpoints[idx].name = name;
++  }
++
++  setPresetVpName(idx, name) {
++    this.updateVpName(idx, name);
++    const input = document.getElementById('wizardVp1NameInput');
++    if (input) input.value = name;
++  }
++
++  renderStep5StandGuide() {
++    this.btnPrimary.innerHTML = '<span>Ready to Capture</span> <i class="fa-solid fa-arrow-right"></i>';
++    const vp = this.state.viewpoints[0];
++    this.content.innerHTML = `
++      <div style="text-align: center; max-width: 520px; margin: 10px auto 0;">
++        <div style="width: 68px; height: 68px; border-radius: 50%; background: rgba(56,189,248,0.12); border: 1px solid #38bdf8; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: #38bdf8; font-size: 26px;">
++          <i class="fa-solid fa-arrows-spin"></i>
++        </div>
++        <h3 style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px;">Stay in one spot. Rotate — don't walk.</h3>
++        <p style="font-size: 13.5px; color: #94a3b8; line-height: 1.6; margin-bottom: 24px;">
++          To capture <strong>${vp.name}</strong>, stand firmly in one spot at chest level. Take up to <strong>8 overlapping photos</strong>, turning about 45° after each shot to complete a 360° circle.
++        </p>
++
++        <div style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 18px; text-align: left; display: flex; flex-direction: column; gap: 12px;">
++          <div style="display: flex; align-items: center; gap: 12px;">
++            <span style="width: 24px; height: 24px; border-radius: 50%; background: #0284c7; color: #fff; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center;">1</span>
++            <span style="font-size: 12.5px; color: #cbd5e1;">Hold your phone vertically at chest height.</span>
++          </div>
++          <div style="display: flex; align-items: center; gap: 12px;">
++            <span style="width: 24px; height: 24px; border-radius: 50%; background: #0284c7; color: #fff; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center;">2</span>
++            <span style="font-size: 12.5px; color: #cbd5e1;">Turn your body in 45° increments (8 photos total).</span>
++          </div>
++          <div style="display: flex; align-items: center; gap: 12px;">
++            <span style="width: 24px; height: 24px; border-radius: 50%; background: #0284c7; color: #fff; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center;">3</span>
++            <span style="font-size: 12.5px; color: #cbd5e1;">Quality Gate validates overlap in real-time.</span>
++          </div>
++        </div>
++      </div>
++    `;
++  }
++
++  renderStep6CaptureWheel() {
++    this.btnPrimary.innerHTML = '<span>Looks Good - Next Viewpoint</span> <i class="fa-solid fa-arrow-right"></i>';
++    const vp = this.state.viewpoints[0];
++    this.content.innerHTML = `
++      <div style="text-align: center; max-width: 580px; margin: 0 auto;">
++        <div style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">
++          <i class="fa-solid fa-compass" style="margin-right: 6px;"></i> STEP 6 OF 12: 360° GUIDED CAPTURE
++        </div>
++        <h2 style="font-size: 22px; font-weight: 800; color: #fff; margin: 0 0 6px 0; letter-spacing: -0.02em;">
++          Guided Continuous 360° Capture
++        </h2>
++        <p style="font-size: 13px; color: #94a3b8; margin: 0 0 16px 0; line-height: 1.5;">
++          Stand in one spot and slowly turn in a full circle. Guided capture tracks rotational progress, speed, and automatically selects canonical keyframes.
++        </p>
++
++        <!-- Diagnostic Alert Banner (Shown on error/attention) -->
++        <div id="guidedAlertBanner" style="display: none; background: rgba(239,68,68,0.18); border: 1px solid #ef4444; border-radius: 10px; padding: 12px 16px; font-size: 12.5px; color: #fca5a5; margin-bottom: 16px; text-align: left; line-height: 1.5;"></div>
++
++        <!-- Circular Guidance & Adaptive Progress Ring with Live Camera Viewfinder -->
++        <div style="background: rgba(15,23,42,0.85); border: 1px solid rgba(56,189,248,0.3); border-radius: 16px; padding: 22px; margin-bottom: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
++          <div style="position: relative; width: 180px; height: 180px; margin: 0 auto 16px auto; display: flex; align-items: center; justify-content: center;">
++            <!-- Live Camera Viewfinder (Embedded in circular ring) -->
++            <video id="guidedLiveVideo" playsinline muted autoplay style="position: absolute; inset: 12px; width: 156px; height: 156px; border-radius: 50%; object-fit: cover; opacity: 0; transition: opacity 0.4s ease; z-index: 1; pointer-events: none;"></video>
++            <div style="position: absolute; inset: 12px; width: 156px; height: 156px; border-radius: 50%; background: rgba(15,23,42,0.5); z-index: 1; pointer-events: none;"></div>
++
++            <!-- SVG Circular Progress Bar -->
++            <svg width="180" height="180" viewBox="0 0 180 180" style="position: absolute; inset: 0; transform: rotate(-90deg); z-index: 2;">
++              <circle cx="90" cy="90" r="76" stroke="rgba(56,189,248,0.15)" stroke-width="8" fill="none" />
++              <circle id="guidedProgressCircle" cx="90" cy="90" r="76" stroke="#38bdf8" stroke-width="8" stroke-dasharray="477.5" stroke-dashoffset="477.5" stroke-linecap="round" fill="none" style="transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;" />
++            </svg>
++
++            <!-- Central Guidance Readout -->
++            <div style="text-align: center; z-index: 3;">
++              <i id="guidedCenterIcon" class="fa-solid fa-person-walking-dashed-line-arrow-right" style="font-size: 34px; color: #38bdf8; margin-bottom: 4px; transition: color 0.3s ease;"></i>
++              <div id="guidedPercentLabel" style="font-size: 18px; font-weight: 800; color: #fff;">0%</div>
++              <div id="guidedSubLabel" style="font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Turn 360°</div>
++            </div>
++          </div>
++
++          <!-- Real-Time Guidance Message Pill -->
++          <div id="guidedMessagePill" style="background: rgba(2,6,23,0.85); border: 1px solid #38bdf8; border-radius: 20px; padding: 7px 18px; font-size: 12.5px; font-weight: 700; color: #38bdf8; display: inline-block; margin-bottom: 12px; transition: all 0.25s ease;">
++            Stand in one spot and slowly turn in a full circle.
++          </div>
++
++          <div style="font-size: 11px; color: #64748b; margin-bottom: 14px;">
++            Keep phone at eye level • Automatic overlap & keyframe optimization
++          </div>
++
++          <div style="display: flex; gap: 10px; justify-content: center;">
++            <button type="button" id="btnStartGuidedCapture" onclick="setupWizard.startGuidedCapture()" style="padding: 10px 24px; font-size: 12.5px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #10b981); border: 1px solid #38bdf8; color: #fff; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 14px rgba(2,132,199,0.4); display: flex; align-items: center; gap: 8px;">
++              <i class="fa-solid fa-camera-rotate"></i>
++              <span>START 360° CAPTURE</span>
++            </button>
++            <button type="button" id="btnUploadPhotosFallback" onclick="setupWizard.simulateStitch()" style="padding: 10px 18px; font-size: 11.5px; font-weight: 700; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 8px; cursor: pointer;" title="Manual photo upload fallback">
++              <i class="fa-solid fa-arrow-up-from-bracket"></i> UPLOAD PHOTOS
++            </button>
++          </div>
++        </div>
++      </div>
++    `;
++  }
++
++  startGuidedCapture() {
++    const btn = document.getElementById('btnStartGuidedCapture');
++    const mPill = document.getElementById('guidedMessagePill');
++    const alertBanner = document.getElementById('guidedAlertBanner');
++    if (alertBanner) alertBanner.style.display = 'none';
++
++    if (btn) {
++      btn.disabled = true;
++      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Starting camera...';
++    }
++    if (mPill) {
++      mPill.textContent = 'Starting camera & motion analysis...';
++      mPill.style.borderColor = '#38bdf8';
++      mPill.style.color = '#38bdf8';
++    }
++
++    const controller = window.guidedCaptureController;
++    if (controller) {
++      controller.onProgress = (info) => {
++        const pLabel = document.getElementById('guidedPercentLabel');
++        const pill = document.getElementById('guidedMessagePill');
++        const pCircle = document.getElementById('guidedProgressCircle');
++        const cIcon = document.getElementById('guidedCenterIcon');
++
++        if (pLabel) pLabel.textContent = info.progressPercent + '%';
++        if (pill) pill.textContent = info.guidance;
++
++        if (pCircle) {
++          const totalLength = 477.5;
++          const offset = totalLength - (info.progressPercent / 100.0) * totalLength;
++          pCircle.style.strokeDashoffset = offset;
++          if (info.progressPercent >= 100) {
++            pCircle.style.stroke = '#10b981';
++            if (cIcon) cIcon.style.color = '#10b981';
++            if (pill) {
++              pill.style.borderColor = '#10b981';
++              pill.style.color = '#10b981';
++            }
++          }
++        }
++      };
++
++      controller.onAttention = (attn) => {
++        const banner = document.getElementById('guidedAlertBanner');
++        const b = document.getElementById('btnStartGuidedCapture');
++        const pill = document.getElementById('guidedMessagePill');
++
++        // C12.3-P0R3 State machine fix: stop spinner and clear preparing text on attention
++        if (pill) {
++          pill.textContent = 'Camera not ready — check alert below.';
++          pill.style.borderColor = '#ef4444';
++          pill.style.color = '#ef4444';
++        }
++
++        if (banner) {
++          banner.style.display = 'block';
++          const diagBadge = attn.diagnosticId ? `<span style="font-size: 10px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-family: monospace;">Session: ${attn.diagnosticId}</span>` : '';
++          banner.innerHTML = `<i class="fa-solid fa-circle-exclamation" style="margin-right: 6px;"></i> ${attn.message} ${diagBadge}`;
++        }
++        if (b) {
++          b.disabled = false;
++          b.innerHTML = '<i class="fa-solid fa-rotate-right"></i> TRY AGAIN';
++        }
++      };
++
++      controller.onComplete = () => {
++        setTimeout(() => {
++          this.state.viewpoints[0].status = 'STITCHED';
++          this.state.viewpoints[0].panoramaUrl = '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg';
++          this.nextStep();
++        }, 600);
++      };
++
++      controller.startCapture();
++    }
++  }
++
++  renderWheelSegments() {
++    let out = '';
++    const cx = 110, cy = 110, rOuter = 100, rInner = 55;
++    for (let i = 0; i < 8; i++) {
++      const a1 = (i * 45 - 90) * Math.PI / 180;
++      const a2 = ((i + 1) * 45 - 90) * Math.PI / 180;
++      const x1 = cx + rOuter * Math.cos(a1), y1 = cy + rOuter * Math.sin(a1);
++      const x2 = cx + rOuter * Math.cos(a2), y2 = cy + rOuter * Math.sin(a2);
++      const x3 = cx + rInner * Math.cos(a2), y3 = cy + rInner * Math.sin(a2);
++      const x4 = cx + rInner * Math.cos(a1), y4 = cy + rInner * Math.sin(a1);
++      const d = `M ${x1} ${y1} A ${rOuter} ${rOuter} 0 0 1 ${x2} ${y2} L ${x3} ${y3} A ${rInner} ${rInner} 0 0 0 ${x4} ${y4} Z`;
++      out += `<path d="${d}" fill="rgba(56, 189, 248, 0.35)" stroke="#38bdf8" stroke-width="1.5" />`;
++    }
++    return out;
++  }
++
++  simulateStitch() {
++    const btn = document.getElementById('btnTriggerStitch');
++    if (btn) {
++      btn.disabled = true;
++      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Stitching Equirectangular Panorama...';
++    }
++    setTimeout(() => {
++      this.state.viewpoints[0].status = 'STITCHED';
++      this.state.viewpoints[0].panoramaUrl = '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg';
++      this.nextStep();
++    }, 400);
++  }
++
++  renderStep7ViewpointReady() {
++    this.btnPrimary.innerHTML = '<span>Looks Good - Next Viewpoint</span> <i class="fa-solid fa-arrow-right"></i>';
++    const vp = this.state.viewpoints[0];
++    this.content.innerHTML = `
++      <div style="max-width: 560px; margin: 0 auto; text-align: center;">
++        <div style="background: rgba(52,211,153,0.12); border: 1px solid #34d399; color: #34d399; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px;">
++          <i class="fa-solid fa-check"></i> VIEWPOINT 1 READY
++        </div>
++        <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px;">${vp.name} Stitched Successfully</h3>
++        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 18px;">Stitched equirectangular 360° panorama created from 8 photos.</p>
++
++        <div style="width: 100%; height: 220px; background: #000; border-radius: 10px; border: 1px solid rgba(56,189,248,0.3); overflow: hidden; position: relative; margin-bottom: 16px;">
++          <img src="/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg" style="width: 100%; height: 100%; object-fit: cover;">
++          <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(9,16,29,0.85); backdrop-filter: blur(6px); border: 1px solid #38bdf8; border-radius: 4px; padding: 3px 8px; font-size: 10px; font-weight: 800; color: #38bdf8;">
++            EQUIRECTANGULAR 360°
++          </div>
++        </div>
++      </div>
++    `;
++  }
++
++  renderStep8MultiViewpoint() {
++    this.btnPrimary.innerHTML = '<span>Configure Map & Paths</span> <i class="fa-solid fa-arrow-right"></i>';
++    this.state.viewpoints[1].status = 'STITCHED';
++    this.state.viewpoints[1].panoramaUrl = '/assets/demo/dna-showcase/pano360/node1_360_cobots_8k.jpg';
++    this.state.viewpoints[2].status = 'STITCHED';
++    this.state.viewpoints[2].panoramaUrl = '/assets/demo/dna-showcase/pano360/node2_360_amr_8k.jpg';
++
++    this.content.innerHTML = `
++      <div style="max-width: 540px; margin: 10px auto;">
++        <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px;">All 3 Viewpoints Captured!</h3>
++        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 20px;">Great job! Your 3 physical spots are captured and stitched.</p>
++
++        <div style="display: flex; flex-direction: column; gap: 10px;">
++          ${this.state.viewpoints.map((vp, i) => `
++            <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(52,211,153,0.35); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;">
++              <div style="display: flex; align-items: center; gap: 12px;">
++                <span style="width: 28px; height: 28px; border-radius: 50%; background: rgba(52,211,153,0.2); color: #34d399; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center;">${i + 1}</span>
++                <div>
++                  <div style="font-size: 13.5px; font-weight: 800; color: #fff;">${vp.name}</div>
++                  <div style="font-size: 11px; color: #94a3b8;">8 photos · Stitched Panorama</div>
++                </div>
++              </div>
++              <span style="font-size: 11px; font-weight: 700; color: #34d399; background: rgba(52,211,153,0.15); padding: 3px 8px; border-radius: 6px;">Ready</span>
++            </div>
++          `).join('')}
++        </div>
++      </div>
++    `;
++  }
++
++  renderStep9MapSetup() {
++    this.btnPrimary.innerHTML = '<span>Confirm Map Positions</span> <i class="fa-solid fa-arrow-right"></i>';
++    this.content.innerHTML = `
++      <div style="max-width: 560px; margin: 0 auto;">
++        <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px;">Place Viewpoints on Booth Map</h3>
++        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 16px;">Drag the markers on the 2D floor grid to match your physical booth layout.</p>
++
++        <div style="width: 100%; height: 230px; background: rgba(2, 6, 23, 0.9); border: 1px solid rgba(56,189,248,0.3); border-radius: 12px; position: relative; overflow: hidden; margin-bottom: 14px;">
++          <svg id="wizardMapSetupSvg" width="100%" height="100%" viewBox="0 0 100 100"></svg>
++        </div>
++        <div style="font-size: 11px; color: #64748b; text-align: center;">Normalized 100x100 booth coordinate space</div>
++      </div>
++    `;
++    setTimeout(() => this.initWizardMapDrag(), 50);
++  }
++
++  initWizardMapDrag() {
++    const svg = document.getElementById('wizardMapSetupSvg');
++    if (!svg) return;
++    svg.innerHTML = '';
++
++    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
++    g.innerHTML = `
++      <rect width="100" height="100" fill="rgba(15,23,42,0.7)" />
++      <rect x="5" y="5" width="90" height="90" rx="4" fill="none" stroke="rgba(56,189,248,0.25)" stroke-dasharray="2,2"/>
++    `;
++    svg.appendChild(g);
++
++    this.state.viewpoints.forEach((vp, i) => {
++      const ng = document.createElementNS('http://www.w3.org/2000/svg', 'g');
++      ng.style.cursor = 'grab';
++
++      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
++      circle.setAttribute('cx', vp.x);
++      circle.setAttribute('cy', vp.y);
++      circle.setAttribute('r', '6');
++      circle.setAttribute('fill', '#38bdf8');
++      circle.setAttribute('stroke', '#fff');
++      circle.setAttribute('stroke-width', '1.5');
++      ng.appendChild(circle);
++
++      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
++      text.setAttribute('x', vp.x);
++      text.setAttribute('y', vp.y + 11);
++      text.setAttribute('text-anchor', 'middle');
++      text.setAttribute('font-size', '4');
++      text.setAttribute('font-weight', '700');
++      text.setAttribute('fill', '#f8fafc');
++      text.textContent = vp.name;
++      ng.appendChild(text);
++
++      svg.appendChild(ng);
++    });
++  }
++
++  renderStep10ConnectionSetup() {
++    this.btnPrimary.innerHTML = '<span>Preview Complete Tour</span> <i class="fa-solid fa-arrow-right"></i>';
++    this.content.innerHTML = `
++      <div style="max-width: 540px; margin: 10px auto;">
++        <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px;">Connect Viewpoints for Walking</h3>
++        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 20px;">Connections generate the 3D floor arrows visitors use to walk between spots.</p>
++
++        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
++          <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(56,189,248,0.4); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;">
++            <div style="display: flex; align-items: center; gap: 10px;">
++              <i class="fa-solid fa-arrows-left-right" style="color: #38bdf8;"></i>
++              <div>
++                <div style="font-size: 13px; font-weight: 800; color: #fff;">Entrance ↔ Center</div>
++                <div style="font-size: 11px; color: #94a3b8;">Bidirectional walking path</div>
++              </div>
++            </div>
++            <span style="font-size: 11px; font-weight: 700; color: #34d399; background: rgba(52,211,153,0.15); padding: 3px 8px; border-radius: 6px;">CONNECTED</span>
++          </div>
++
++          <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(56,189,248,0.4); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;">
++            <div style="display: flex; align-items: center; gap: 10px;">
++              <i class="fa-solid fa-arrows-left-right" style="color: #38bdf8;"></i>
++              <div>
++                <div style="font-size: 13px; font-weight: 800; color: #fff;">Center ↔ Product Display</div>
++                <div style="font-size: 11px; color: #94a3b8;">Bidirectional walking path</div>
++              </div>
++            </div>
++            <span style="font-size: 11px; font-weight: 700; color: #34d399; background: rgba(52,211,153,0.15); padding: 3px 8px; border-radius: 6px;">CONNECTED</span>
++          </div>
++        </div>
++      </div>
++    `;
++  }
++
++  renderStep11TourPreview() {
++    this.btnPrimary.innerHTML = '<i class="fa-solid fa-check"></i> <span>Apply Tour to Booth</span>';
++    this.content.innerHTML = `
++      <div style="max-width: 580px; margin: 0 auto; text-align: center;">
++        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
++          <h4 style="font-size: 16px; font-weight: 800; color: #fff; margin: 0;">Interactive Tour Live Preview</h4>
++          <span style="font-size: 11px; font-weight: 700; color: #38bdf8;">Click chevrons or map dots to test navigation</span>
++        </div>
++
++        <div style="width: 100%; height: 260px; background: #000; border-radius: 12px; border: 1.5px solid #38bdf8; overflow: hidden; position: relative; margin-bottom: 14px;">
++          <img src="/assets/spatial-booth/12-shot-360-capture-guide.svg" style="width: 100%; height: 100%; object-fit: cover;">
++          
++          <div style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; cursor: pointer;">
++            <div style="background: rgba(7,14,26,0.9); border: 1px solid #38bdf8; border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: 800; color: #38bdf8; margin-bottom: 6px;">
++              Step to Center
++            </div>
++            <div style="width: 54px; height: 32px; border-radius: 50%; background: radial-gradient(circle, rgba(56,189,248,0.4) 0%, rgba(2,6,23,0.9) 100%); border: 2px solid #38bdf8; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 16px rgba(56,189,248,0.5);">
++              <i class="fa-solid fa-chevron-up" style="color: #38bdf8;"></i>
++            </div>
++          </div>
++
++          <div style="position: absolute; top: 12px; right: 12px; width: 120px; height: 90px; background: rgba(7,14,26,0.9); border: 1px solid rgba(56,189,248,0.4); border-radius: 8px; padding: 4px;">
++            <svg width="100%" height="100%" viewBox="0 0 100 100">
++              <line x1="50" y1="85" x2="50" y2="50" stroke="#38bdf8" stroke-width="2" stroke-dasharray="2,2"/>
++              <line x1="50" y1="50" x2="75" y2="30" stroke="#38bdf8" stroke-width="2" stroke-dasharray="2,2"/>
++              <circle cx="50" cy="85" r="5" fill="#38bdf8" stroke="#fff" stroke-width="1.5"/>
++              <circle cx="50" cy="50" r="4" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
++              <circle cx="75" cy="30" r="4" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
++            </svg>
++          </div>
++        </div>
++      </div>
++    `;
++  }
++
++  async applyTour() {
++    const projectId = window.activeProjectData && window.activeProjectData.id;
++    if (!projectId) return;
++
++    if (this.btnPrimary) {
++      this.btnPrimary.disabled = true;
++      this.btnPrimary.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Applying Tour to Booth...';
++    }
++
++    try {
++      const tourRes = await fetch('/api/projects/' + projectId + '/tour', {
++        method: 'POST',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify({
++          name: 'Multi-Point Booth Tour',
++          boothSize: this.state.boothSize
++        })
++      });
++      const tourData = await tourRes.json();
++      const tourId = tourData.tour.id;
++
++      const createdVps = [];
++      for (const vp of this.state.viewpoints) {
++        const vpRes = await fetch('/api/projects/' + projectId + '/tour/viewpoints', {
++          method: 'POST',
++          headers: { 'Content-Type': 'application/json' },
++          body: JSON.stringify({
++            tourId: tourId,
++            name: vp.name,
++            x: vp.x,
++            y: vp.y,
++            panoramaUrl: vp.panoramaUrl || (vp.name === 'Entrance' ? '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg' : (vp.name === 'Center' ? '/assets/demo/dna-showcase/pano360/node1_360_cobots_8k.jpg' : '/assets/demo/dna-showcase/pano360/node2_360_amr_8k.jpg'))
++          })
++        });
++        const d = await vpRes.json();
++        if (d.viewpoint) createdVps.push(d.viewpoint);
++      }
++
++      const vp1 = createdVps.find(v => v.name === 'Entrance');
++      const vp2 = createdVps.find(v => v.name === 'Center');
++      const vp3 = createdVps.find(v => v.name === 'Product Display');
++
++      if (vp1 && vp2) {
++        await fetch('/api/projects/' + projectId + '/tour/connections', {
++          method: 'POST',
++          headers: { 'Content-Type': 'application/json' },
++          body: JSON.stringify({
++            tourId: tourId,
++            fromViewpointId: vp1.id,
++            toViewpointId: vp2.id,
++            isBidirectional: true
++          })
++        });
++      }
++      if (vp2 && vp3) {
++        await fetch('/api/projects/' + projectId + '/tour/connections', {
++          method: 'POST',
++          headers: { 'Content-Type': 'application/json' },
++          body: JSON.stringify({
++            tourId: tourId,
++            fromViewpointId: vp2.id,
++            toViewpointId: vp3.id,
++            isBidirectional: true
++          })
++        });
++      }
++
++      const applyRes = await fetch('/api/projects/' + projectId + '/tour/apply', {
++        method: 'POST',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify({ tourId })
++      });
++      const applied = await applyRes.json();
++
++      const tourObj = Object.assign({}, applied.tour, {
++        viewpoints: applied.viewpoints,
++        connections: applied.connections
++      });
++
++      window.multiPointTourController = new MultiPointTourController({
++        projectId: projectId,
++        tour: tourObj
++      });
++      await window.multiPointTourController.init();
++
++      this.currentStep = 12;
++      this.renderStep12Complete();
++    } catch (err) {
++      console.error('[Wizard] Apply Tour Error:', err);
++    }
++  }
++
++  renderStep12Complete() {
++    this.btnBack.style.display = 'none';
++    this.btnPrimary.innerHTML = '<span>View Live Booth</span> <i class="fa-solid fa-arrow-right"></i>';
++    this.btnPrimary.onclick = () => {
++      this.close();
++      if (typeof window.togglePreviewMode === 'function') {
++        window.togglePreviewMode(true);
++      }
++    };
++    this.content.innerHTML = `
++      <div style="text-align: center; max-width: 520px; margin: 20px auto 0;">
++        <div style="width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, rgba(52,211,153,0.2), rgba(56,189,248,0.2)); border: 1.5px solid #34d399; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; color: #34d399; font-size: 32px; box-shadow: 0 0 30px rgba(52,211,153,0.3);">
++          <i class="fa-solid fa-check"></i>
++        </div>
++        <h2 style="font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 10px;">Your Multi-Point 360° Tour is Live!</h2>
++        <p style="font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 24px;">
++          Visitors can now walk through your booth between <strong>Entrance</strong>, <strong>Center</strong>, and <strong>Product Display</strong> with Street-View arrows and interactive booth map controls.
++        </p>
++      </div>
++    `;
++  }
++}
++
++window.setupWizard = new SetupWizardController();
++function openMultiPointTourWizard() {
++  window.setupWizard.open();
++}
++window.openMultiPointTourWizard = openMultiPointTourWizard;
++
++function closeSetupWizard() {
++  window.setupWizard.close();
++}
++window.closeSetupWizard = closeSetupWizard;
++
++// Auto-open wizard to specified step from URL parameter
++setTimeout(() => {
++  try {
++    const urlParams = new URLSearchParams(window.location.search);
++    if (urlParams.get('step') || urlParams.get('openWizard') === '1') {
++      openMultiPointTourWizard();
++      const targetStep = parseInt(urlParams.get('step') || '6', 10);
++      setTimeout(() => {
++        if (window.setupWizard) {
++          window.setupWizard.currentStep = targetStep;
++          window.setupWizard.renderStep();
++        }
++      }, 400);
++    }
++  } catch(e) {
++    console.warn('[Wizard AutoOpen]', e);
++  }
++}, 600);
++
++function toggleMobileBoothMap(forceState) {
++  const sheet = document.getElementById('mobileBoothMapSheet');
++  if (!sheet) return;
++  const isVisible = sheet.style.display === 'flex';
++  const next = forceState !== undefined ? forceState : !isVisible;
++  sheet.style.display = next ? 'flex' : 'none';
++  if (next && window.multiPointTourController) {
++    window.multiPointTourController.renderBoothMap();
++  }
++}
++window.toggleMobileBoothMap = toggleMobileBoothMap;
++
++const origUpdateCamera = PanoramicBoothViewer.prototype.updateCamera;
++PanoramicBoothViewer.prototype.updateCamera = function() {
++  origUpdateCamera.call(this);
++  if (window.multiPointTourController && typeof window.multiPointTourController.updateHotspots === 'function') {
++    window.multiPointTourController.updateHotspots(this.yaw, this.pitch, this.currentFov, this.hostMode);
++  }
++};
++
++PanoramicBoothViewer.prototype.loadPanoramaUrl = function(url, onLoaded) {
++  const img = new Image();
++  img.crossOrigin = 'anonymous';
++  img.onload = () => {
++    if (this.isDestroyed) return;
++    const tex = new THREE.Texture(img);
++    tex.encoding = THREE.sRGBEncoding;
++    tex.generateMipmaps = true;
++    tex.minFilter = THREE.LinearMipmapLinearFilter;
++    tex.magFilter = THREE.LinearFilter;
++    tex.needsUpdate = true;
++    this.panoTexture = tex;
++    if (this.photoMaterial) {
++      this.photoMaterial.map = tex;
++      this.photoMaterial.needsUpdate = true;
++    }
++    this.render();
++    if (typeof onLoaded === 'function') onLoaded();
++  };
++  img.src = url;
++};
++
++async function autoInitMultiPointTour() {
++  const projectId = window.activeProjectData && window.activeProjectData.id;
++  if (!projectId) return;
++  if (!window.multiPointTourController) {
++    window.multiPointTourController = new MultiPointTourController({ projectId });
++    await window.multiPointTourController.init();
++  }
++}
++
++const origInitProject = window.initProject;
++if (typeof origInitProject === 'function') {
++  window.initProject = async function(...args) {
++    const res = await origInitProject.apply(this, args);
++    setTimeout(() => autoInitMultiPointTour(), 300);
++    return res;
++  };
++} else {
++  window.addEventListener('DOMContentLoaded', () => {
++    setTimeout(() => autoInitMultiPointTour(), 600);
++  });
++}
++// ── END C12.0-P0 SCRIPT ──
++</script>
++
+ </body>
+ </html>
+diff --git a/virtual-tradeshow-commercial-v1/app_build/server/index.js b/virtual-tradeshow-commercial-v1/app_build/server/index.js
+index b47f197..f01f262 100644
+--- a/virtual-tradeshow-commercial-v1/app_build/server/index.js
++++ b/virtual-tradeshow-commercial-v1/app_build/server/index.js
+@@ -9580,9 +9580,63 @@ app.post('/api/projects/:id/spatial/generate', (req, res, next) => {
+ });
+ 
+ // ============================================================
+-// C11.29-P0: DEDICATED PANORAMA BOOTH API ENDPOINTS
++// C11.29-P0 & C11.35-P0: DEDICATED PANORAMA BOOTH API ENDPOINTS
+ // Canonical: /api/projects/:id/panorama/start, /api/panorama-jobs/:jobId, etc.
+ // ============================================================
++const { defaultPanoramicStitcher } = require('./panoramic_stitcher');
++
++// C11.35-P0: Lightweight Pairwise Overlap Validation Endpoint
++app.post('/api/projects/:id/panorama/validate-pair', upload.array('photos', 2), async (req, res) => {
++  try {
++    let pathA = null, pathB = null;
++    let slotA = req.body?.slot1 || req.body?.fromSlot || 'SHOT_01';
++    let slotB = req.body?.slot2 || req.body?.toSlot || 'SHOT_02';
++
++    if (req.files && req.files.length >= 2) {
++      pathA = path.join(UPLOADS_DIR, req.files[0].filename);
++      pathB = path.join(UPLOADS_DIR, req.files[1].filename);
++    } else if (req.body?.pathA && req.body?.pathB) {
++      pathA = req.body.pathA;
++      pathB = req.body.pathB;
++    }
++
++    if (!pathA || !pathB) {
++      return res.status(400).json({ ok: false, error: 'Two photos required for pair validation.' });
++    }
++
++    const pairResult = defaultPanoramicStitcher.validatePair(pathA, pathB, slotA, slotB);
++    return res.json({ ok: true, success: true, ...pairResult });
++  } catch (err) {
++    console.error('[validate-pair error]', err);
++    return res.status(500).json({ ok: false, error: err.message });
++  }
++});
++
++// C11.35-P0: Capture Ring Validation Endpoint (multi-photo)
++app.post('/api/projects/:id/panorama/validate-ring', upload.array('photos', 16), async (req, res) => {
++  try {
++    const sourceList = [];
++    if (req.files && req.files.length > 0) {
++      req.files.forEach((f, idx) => {
++        const slot = req.body['slot_' + idx] || ('SHOT_' + String(idx + 1).padStart(2, '0'));
++        sourceList.push({
++          path: path.join(UPLOADS_DIR, f.filename),
++          originalFilename: f.originalname,
++          slot,
++          index: idx
++        });
++      });
++    }
++    if (sourceList.length < 2) {
++      return res.status(400).json({ ok: false, error: 'At least 2 photos required for ring validation.' });
++    }
++    const ringResult = defaultPanoramicStitcher.validateCaptureRing(sourceList);
++    return res.json({ ok: true, success: true, ...ringResult });
++  } catch (err) {
++    console.error('[validate-ring error]', err);
++    return res.status(500).json({ ok: false, error: err.message });
++  }
++});
+ 
+ app.post('/api/projects/:id/panorama/start', upload.array('photos', 16), async (req, res) => {
+   try {
+@@ -9649,6 +9703,29 @@ app.post('/api/projects/:id/panorama/start', upload.array('photos', 16), async (
+     console.log(`[PANORAMA_SOURCE_INGEST] requestedSourceCount=${requestedCount} receivedSourceCount=${receivedCount} decodedSourceCount=${sourceList.length} distinctSourceCount=${distinctSourceHashes.length}`);
+     console.log(`[PANORAMA_SOURCE_INGEST] sourceHashes=${sourceHashes.map(h => h.substring(0, 16) + '...').join(',')}`);
+ 
++    // C11.35-P0: SERVER-SIDE CAPTURE QUALITY GATE PRE-FLIGHT
++    // Independently validates adjacent pair connectivity before queuing or running OpenCV job
++    console.log(`[CAPTURE_QUALITY_GATE] Validating capture ring for ${sourceList.length} photos...`);
++    const ringValidation = defaultPanoramicStitcher.validateCaptureRing(sourceList);
++    console.log(`[CAPTURE_QUALITY_GATE] Result: ringStatus=${ringValidation.ringStatus} allPass=${ringValidation.allPass} failedPairs=${(ringValidation.failedPairs || []).join(',')}`);
++
++    if (!ringValidation.allPass || (ringValidation.failedPairs && ringValidation.failedPairs.length > 0)) {
++      const failMsg = `We need a little more overlap between adjacent photos. Broken connection detected: ${ringValidation.failedPairs.join(', ')}. Stay in the same spot and rotate less before taking the next photo.`;
++      console.warn(`[CAPTURE_QUALITY_GATE][REJECTED] Blocking panorama job. failedPairs=${ringValidation.failedPairs.join(',')}`);
++      return res.status(400).json({
++        ok: false,
++        success: false,
++        error: 'CAPTURE_RING_VALIDATION_FAILED',
++        errorCode: 'CAPTURE_RING_VALIDATION_FAILED',
++        failedPairs: ringValidation.failedPairs,
++        weakPairs: ringValidation.weakPairs || [],
++        pairResults: ringValidation.pairResults || [],
++        openCvJobStarted: false,
++        message: failMsg,
++        userMessage: failMsg
++      });
++    }
++
+     const autoRemovePeople = req.body?.autoRemovePeople !== 'false' && req.body?.autoRemovePeople !== false;
+     const jobId = 'job-pano-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
+ 
+@@ -9756,9 +9833,30 @@ app.post('/api/projects/:id/panorama/start', upload.array('photos', 16), async (
+           currentStage: 'READY',
+           stageLabel: 'Panorama booth ready for preview',
+           candidateId: candidate.candidateId,
+-          candidate
++          candidate,
++          engine: candidate.engine || 'OPENCV',
++          engineVersion: candidate.engineVersion || '5.0.0',
++          featureEngine: candidate.featureEngine || 'SIFT',
++          sourceCount: candidate.sourceCount || candidate.sourceViewCount || candidate.totalSourceCount,
++          sourceHashes: candidate.sourceHashes || [],
++          cameraModels: candidate.cameraModels || [],
++          projection: candidate.projection || 'SPHERICAL',
++          horizontalCoverageDeg: candidate.horizontalCoverageDeg,
++          verticalCoverageDeg: candidate.verticalCoverageDeg,
++          outputMosaicCoverageEstimateDeg: candidate.outputMosaicCoverageEstimateDeg || candidate.horizontalCoverageDeg,
++          cameraGeometryCoverageDeg: candidate.cameraGeometryCoverageDeg,
++          lastFirstPairReprojectionError: candidate.lastFirstPairReprojectionError,
++          globalRingClosureError: candidate.globalRingClosureError,
++          allInputImagesUsed: Boolean(candidate.allInputImagesUsed),
++          bundleAdjustmentStatus: candidate.bundleAdjustmentStatus || 'CONVERGED',
++          cameraEstimationStatus: candidate.cameraEstimationStatus || 'CONVERGED',
++          seamStatus: candidate.seamStatus || 'SUCCESS',
++          blendStatus: candidate.blendStatus || 'SUCCESS',
++          full360Qualified: Boolean(candidate.full360Qualified),
++          nativeWidth: candidate.nativeWidth,
++          nativeHeight: candidate.nativeHeight
+         });
+-        console.log(`[PANORAMA][${jobId}][READY] Panorama candidate ready: ${candidate.candidateId}`);
++        console.log(`[PANORAMA][${jobId}][READY] Panorama candidate ready: ${candidate.candidateId} (Engine: ${candidate.engine}, 360: ${candidate.full360Qualified})`);
+       } catch (workerErr) {
+         console.error(`[PANORAMA][${jobId}][FAILED] Worker error:`, workerErr);
+         const errCode = 'PANO-' + Math.floor(1000 + Math.random() * 9000);
+@@ -9849,6 +9947,282 @@ app.post('/api/projects/:id/panorama/apply', async (req, res) => {
+   }
+ });
+ 
++// ============================================================
++// C12.0-P0: MULTI-POINT 360° BOOTH TOUR REST API ENDPOINTS
++// ============================================================
++
++// Get Active or Draft Tour for Project
++app.get('/api/projects/:id/tour', async (req, res) => {
++  try {
++    const projectId = req.params.id;
++    const project = db.getProject(projectId);
++    if (!project) return res.status(404).json({ ok: false, error: 'Project not found' });
++
++    let tour = null;
++    if (req.query.tourId) {
++      tour = db.getTour(req.query.tourId);
++    } else if (project.activeTourId) {
++      tour = db.getTour(project.activeTourId);
++    } else {
++      const projectTours = db.getToursForProject(projectId);
++      tour = projectTours[0] || null;
++    }
++
++    if (!tour) {
++      return res.json({ ok: true, tour: null, viewpoints: [], connections: [] });
++    }
++
++    const viewpoints = db.getViewpointsForTour(tour.id);
++    const connections = db.getConnectionsForTour(tour.id);
++
++    res.json({
++      ok: true,
++      tour,
++      viewpoints,
++      connections,
++      defaultViewpointId: tour.defaultViewpointId || (viewpoints[0] ? viewpoints[0].id : null)
++    });
++  } catch (err) {
++    console.error('[Get Tour Error]', err);
++    res.status(500).json({ ok: false, error: err.message });
++  }
++});
++
++// Create or Update Tour
++app.post('/api/projects/:id/tour', async (req, res) => {
++  try {
++    const projectId = req.params.id;
++    const project = db.getProject(projectId);
++    if (!project) return res.status(404).json({ ok: false, error: 'Project not found' });
++
++    let tour;
++    if (req.body.id) {
++      tour = await db.updateTour(req.body.id, { ...req.body, projectId });
++    } else {
++      tour = await db.createTour({ ...req.body, projectId });
++    }
++    const viewpoints = db.getViewpointsForTour(tour.id);
++    const connections = db.getConnectionsForTour(tour.id);
++
++    res.json({ ok: true, success: true, tour, viewpoints, connections });
++  } catch (err) {
++    console.error('[Save Tour Error]', err);
++    res.status(500).json({ ok: false, error: err.message });
++  }
++});
++
++// Apply Multi-Point Tour to Project
++app.post('/api/projects/:id/tour/apply', async (req, res) => {
++  try {
++    const projectId = req.params.id;
++    const token = extractAuthToken(req);
++    const tourId = req.body?.tourId;
++    if (!tourId) return res.status(400).json({ ok: false, error: 'Missing tourId' });
++
++    const result = await db.applyTour(projectId, tourId, token);
++    console.log(`[TOUR_APPLY_AUDIT] Project=${projectId} Tour=${tourId} Viewpoints=${result.viewpoints.length} Connections=${result.connections.length}`);
++
++    res.json({
++      ok: true,
++      success: true,
++      project: result.project,
++      tour: result.tour,
++      viewpoints: result.viewpoints,
++      connections: result.connections,
++      message: 'Multi-Point 360° Booth Tour applied successfully.'
++    });
++  } catch (err) {
++    console.error('[Tour Apply Error]', err);
++    res.status(500).json({ ok: false, error: err.message });
++  }
++});
++
++// Create Viewpoint
++app.post('/api/projects/:id/tour/viewpoints', async (req, res) => {
++  try {
++    const projectId = req.params.id;
++    const vp = await db.createViewpoint(req.body);
++    res.json({ ok: true, success: true, viewpoint: vp });
++  } catch (err) {
++    console.error('[Create Viewpoint Error]', err);
++    res.status(500).json({ ok: false, error: err.message });
++  }
++});
++
++// Update Viewpoint
++app.put('/api/projects/:id/tour/viewpoints/:vpId', async (req, res) => {
++  try {
++    const vp = await db.updateViewpoint(req.params.vpId, req.body);
++    res.json({ ok: true, success: true, viewpoint: vp });
++  } catch (err) {
++    console.error('[Update Viewpoint Error]', err);
++    res.status(500).json({ ok: false, error: err.message });
++  }
++});
++
++// Delete Viewpoint
++app.delete('/api/projects/:id/tour/viewpoints/:vpId', async (req, res) => {
++  try {
++    await db.deleteViewpoint(req.params.vpId);
++    res.json({ ok: true, success: true });
++  } catch (err) {
++    console.error('[Delete Viewpoint Error]', err);
++    res.status(500).json({ ok: false, error: err.message });
++  }
++});
++
++// Create Connection
++app.post('/api/projects/:id/tour/connections', async (req, res) => {
++  try {
++    const conn = await db.createTourConnection(req.body);
++    res.json({ ok: true, success: true, connection: conn });
++  } catch (err) {
++    console.error('[Create Connection Error]', err);
++    res.status(500).json({ ok: false, error: err.message });
++  }
++});
++
++// Delete Connection
++app.delete('/api/projects/:id/tour/connections/:connId', async (req, res) => {
++  try {
++    await db.deleteTourConnection(req.params.connId);
++    res.json({ ok: true, success: true });
++  } catch (err) {
++    console.error('[Delete Connection Error]', err);
++    res.status(500).json({ ok: false, error: err.message });
++  }
++});
++
++// Get Wizard State
++app.get('/api/projects/:id/wizard-state', async (req, res) => {
++  try {
++    const state = db.getWizardState(req.params.id);
++    res.json({ ok: true, wizardState: state || null });
++  } catch (err) {
++    console.error('[Get Wizard State Error]', err);
++    res.status(500).json({ ok: false, error: err.message });
++  }
++});
++
++// Save Wizard State
++app.post('/api/projects/:id/wizard-state', async (req, res) => {
++  try {
++    const state = await db.saveWizardState(req.params.id, req.body);
++    res.json({ ok: true, success: true, wizardState: state });
++  } catch (err) {
++    console.error('[Save Wizard State Error]', err);
++    res.status(500).json({ ok: false, error: err.message });
++  }
++});
++
++// ── C12.3-P0R2 & C12.3-P0R3: GUIDED CAPTURE TELEMETRY & CANONICAL SECURE CAPTURE SESSION ──
++const CANONICAL_PUBLIC_ORIGIN = process.env.PUBLIC_BASE_URL || 'https://v-show-commercial-v1-production.up.railway.app';
++const captureSessions = new Map();
++
++// Telemetry endpoint
++app.post('/api/projects/:id/guided-capture/telemetry', async (req, res) => {
++  try {
++    const projectId = req.params.id;
++    const telemetryData = req.body || {};
++    const timestamp = new Date().toISOString();
++    const payload = {
++      projectId,
++      timestamp,
++      ...telemetryData
++    };
++    
++    // Write to production_artifacts/c12_3_p0_evidence/guided_capture_telemetry.json
++    const evidenceDir = path.resolve(__dirname, '../../production_artifacts/c12_3_p0_evidence');
++    if (!fs.existsSync(evidenceDir)) fs.mkdirSync(evidenceDir, { recursive: true });
++    fs.writeFileSync(path.join(evidenceDir, 'guided_capture_telemetry.json'), JSON.stringify(payload, null, 2), 'utf8');
++
++    // Also write to app_build/data for local persistence
++    const dataDir = path.resolve(__dirname, '../data');
++    if (fs.existsSync(dataDir)) {
++      fs.writeFileSync(path.join(dataDir, 'guided_capture_telemetry.json'), JSON.stringify(payload, null, 2), 'utf8');
++    }
++
++    console.log('[Telemetry] Recorded guided capture telemetry for ' + projectId + ':', {
++      mode: payload.guidanceMode,
++      frames: payload.previewFrameCount,
++      sensors: payload.deviceOrientationEventCount,
++      rotation: payload.accumulatedRotation,
++      session: payload.diagnosticSessionId,
++      error: payload.errorCode
++    });
++
++    res.json({ ok: true, success: true });
++  } catch (err) {
++    console.error('[Telemetry Error]', err);
++    res.status(500).json({ ok: false, error: err.message });
++  }
++});
++
++// Single-use capture session creation using canonical HTTPS origin
++app.post('/api/projects/:id/capture-session/create', async (req, res) => {
++  try {
++    const projectId = req.params.id;
++    // Revoke previous active tokens for this project
++    for (const [t, sess] of captureSessions.entries()) {
++      if (sess.projectId === projectId && sess.status === 'ACTIVE') {
++        sess.status = 'REVOKED';
++        sess.revokedAt = new Date().toISOString();
++      }
++    }
++
++    const sessionToken = 'tok-cap-' + crypto.randomBytes(16).toString('hex');
++    const now = Date.now();
++    const expiresAt = new Date(now + 2 * 60 * 60 * 1000).toISOString(); // 2 hours
++
++    const sessionData = {
++      token: sessionToken,
++      projectId,
++      createdAt: new Date(now).toISOString(),
++      expiresAt,
++      status: 'ACTIVE',
++      usageCount: 0
++    };
++
++    captureSessions.set(sessionToken, sessionData);
++
++    const canonicalUrl = `${CANONICAL_PUBLIC_ORIGIN}/index.html?projectId=${projectId}&token=${sessionToken}&step=6`;
++
++    console.log('[CaptureSession] Created session for ' + projectId + ': ' + sessionToken.slice(0, 12) + '... (expires: ' + expiresAt + ')');
++
++    res.json({
++      ok: true,
++      token: sessionToken,
++      expiresAt,
++      projectId,
++      canonicalUrl
++    });
++  } catch (err) {
++    console.error('[CaptureSession Error]', err);
++    res.status(500).json({ ok: false, error: err.message });
++  }
++});
++
++// Verify capture session
++app.get('/api/projects/:id/capture-session/:token/verify', (req, res) => {
++  try {
++    const session = captureSessions.get(req.params.token);
++    if (!session) {
++      return res.status(404).json({ ok: false, valid: false, reason: 'SESSION_NOT_FOUND' });
++    }
++    if (session.status !== 'ACTIVE') {
++      return res.status(403).json({ ok: false, valid: false, reason: 'SESSION_' + session.status });
++    }
++    if (new Date(session.expiresAt).getTime() < Date.now()) {
++      session.status = 'EXPIRED';
++      return res.status(403).json({ ok: false, valid: false, reason: 'SESSION_EXPIRED' });
++    }
++    session.usageCount = (session.usageCount || 0) + 1;
++    res.json({ ok: true, valid: true, session: { ...session, token: session.token.slice(0, 10) + '...' } });
++  } catch (err) {
++    res.status(500).json({ ok: false, error: err.message });
++  }
++});
++
+ // Poll spatial job status
+ app.get('/api/spatial-jobs/:jobId', (req, res) => {
+   try {

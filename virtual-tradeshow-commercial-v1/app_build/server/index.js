@@ -10500,6 +10500,109 @@ const CANONICAL_PUBLIC_ORIGIN = process.env.PUBLIC_BASE_URL || 'https://v-show-c
 // captureSessions Map initialized globally in Mobile RI QA section
 
 // Telemetry endpoint
+app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50mb' }), async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const body = req.body || {};
+    const keyframes = body.keyframes || [];
+    const contactSheetDataUrl = body.contactSheetDataUrl;
+    const captureSessionId = body.captureSessionId || ('sess_' + Date.now());
+
+    const kfDir = path.resolve(__dirname, '../../production_artifacts/c12_6_keyframes', captureSessionId);
+    const repoRiDir = path.resolve(__dirname, '../../production_artifacts/mobile_runtime_inspector');
+    const dataKfDir = path.resolve(__dirname, '../data/guided_capture_keyframes', captureSessionId);
+
+    [kfDir, repoRiDir, dataKfDir].forEach(d => {
+      if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+    });
+
+    for (const kf of keyframes) {
+      if (kf.dataUrl) {
+        const base64Data = kf.dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
+        const buf = Buffer.from(base64Data, 'base64');
+        const filename = (kf.keyframeId || ('KF' + kf.index)) + '.jpg';
+        fs.writeFileSync(path.join(kfDir, filename), buf);
+        fs.writeFileSync(path.join(dataKfDir, filename), buf);
+      }
+    }
+
+    if (contactSheetDataUrl) {
+      const csBase64 = contactSheetDataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
+      const csBuf = Buffer.from(csBase64, 'base64');
+      fs.writeFileSync(path.join(kfDir, '06_CANONICAL_KEYFRAME_CONTACT_SHEET.jpg'), csBuf);
+      fs.writeFileSync(path.join(repoRiDir, '06_CANONICAL_KEYFRAME_CONTACT_SHEET.jpg'), csBuf);
+      fs.writeFileSync(path.join(dataKfDir, '06_CANONICAL_KEYFRAME_CONTACT_SHEET.jpg'), csBuf);
+    }
+
+    const kfMetadata = keyframes.map(kf => ({
+      keyframeId: kf.keyframeId,
+      index: kf.index,
+      timestamp: kf.timestamp,
+      estimatedYawDeg: kf.estimatedYawDeg,
+      relativeRotationDeg: kf.relativeRotationDeg,
+      sharpnessScore: kf.sharpnessScore,
+      exposureScore: kf.exposureScore,
+      overlapPrevious: kf.overlapPrevious,
+      selectionReason: kf.selectionReason,
+      hash: kf.hash,
+      width: kf.width,
+      height: kf.height,
+      mimeType: kf.mimeType,
+      bytes: kf.bytes
+    }));
+
+    const pipelineDoc = {
+      projectId,
+      captureSessionId,
+      timestamp: new Date().toISOString(),
+      previewFrameCount: body.previewFrameCount,
+      candidateFrameCount: body.candidateFrameCount,
+      acceptedCandidateCount: body.acceptedCandidateCount,
+      rejectedCandidateCount: body.rejectedCandidateCount,
+      canonicalKeyframeCount: keyframes.length,
+      accumulatedRotation: body.accumulatedRotation,
+      guidanceMode: body.guidanceMode,
+      closureVerified: keyframes.length >= 8,
+      status: keyframes.length >= 8 ? 'CAPTURE_OUTPUT_READY' : 'INSUFFICIENT_KEYFRAMES'
+    };
+
+    const candidateDoc = {
+      totalCandidates: body.candidateFrameCount,
+      acceptedCount: body.acceptedCandidateCount,
+      rejectedCount: body.rejectedCandidateCount,
+      rejectionReasons: body.rejectionReasons || []
+    };
+
+    const qualityGateDoc = {
+      minimumGatePassed: keyframes.length >= 8,
+      maximumGatePassed: keyframes.length <= 16,
+      uniqueHashCount: new Set(keyframes.map(k => k.hash)).size,
+      keyframeCount: keyframes.length,
+      hashesMatchKeyframeCount: new Set(keyframes.map(k => k.hash)).size === keyframes.length,
+      angularDistribution: keyframes.map(k => k.estimatedYawDeg),
+      firstLastOverlap: keyframes.length > 0 ? keyframes[0].overlapPrevious : 0,
+      panoramaInputReady: keyframes.length >= 8
+    };
+
+    fs.writeFileSync(path.join(repoRiDir, 'canonical_keyframes.json'), JSON.stringify(kfMetadata, null, 2));
+    fs.writeFileSync(path.join(repoRiDir, 'candidate_selection.json'), JSON.stringify(candidateDoc, null, 2));
+    fs.writeFileSync(path.join(repoRiDir, 'guided_capture_pipeline.json'), JSON.stringify(pipelineDoc, null, 2));
+    fs.writeFileSync(path.join(repoRiDir, 'capture_quality_gate.json'), JSON.stringify(qualityGateDoc, null, 2));
+
+    console.log('[GuidedCapture] Saved ' + keyframes.length + ' keyframes for session ' + captureSessionId);
+
+    res.json({
+      ok: true,
+      canonicalKeyframeCount: keyframes.length,
+      panoramaInputReady: keyframes.length >= 8,
+      captureSessionId
+    });
+  } catch (err) {
+    console.error('[GuidedCapture Keyframes Error]', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 app.post('/api/projects/:id/guided-capture/telemetry', async (req, res) => {
   try {
     const projectId = req.params.id;

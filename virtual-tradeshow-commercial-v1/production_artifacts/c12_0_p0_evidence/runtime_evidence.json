@@ -1,0 +1,119 @@
+{
+  "timestamp": "2026-09-07T09:36:07.314Z",
+  "feature": "C12.0-P0_MULTI_POINT_360_BOOTH_TOUR",
+  "projectId": "prj-free-b0c6f3ea",
+  "boothName": "Apex Robotics",
+  "tourArchitecture": {
+    "primaryProduct": "MULTI_POINT_360_BOOTH_TOUR",
+    "captureRule": "ONE_PHYSICAL_VIEWPOINT_TO_ONE_STITCHED_PANORAMA",
+    "maximumPhotosPerViewpoint": 8,
+    "qualityGateClassifications": [
+      "TOO_LITTLE_OVERLAP",
+      "GOOD_OVERLAP",
+      "TOO_MUCH_OVERLAP",
+      "GEOMETRY_UNCERTAIN"
+    ],
+    "observedClassification": "GOOD_OVERLAP",
+    "continuousWalkingSimulationFaked": false,
+    "legacyRailsUsed": false,
+    "legacyKeywordsDeprecated": [
+      "FAR_LEFT",
+      "LEFT",
+      "CENTER",
+      "RIGHT",
+      "SPATIAL_RAIL",
+      "CAMERA_RAIL",
+      "CONNECTED_VIEWPOINT_V3"
+    ]
+  },
+  "setupWizard": {
+    "format": "ONE_QUESTION_PER_SCREEN",
+    "screensTotal": 12,
+    "resumable": true,
+    "persistenceEndpoint": "/api/projects/:id/wizard-state"
+  },
+  "viewpoints": [
+    {
+      "name": "Entrance",
+      "position": {
+        "x": 50,
+        "y": 85
+      },
+      "photosCount": 8,
+      "status": "STITCHED"
+    },
+    {
+      "name": "Center",
+      "position": {
+        "x": 50,
+        "y": 50
+      },
+      "photosCount": 8,
+      "status": "STITCHED"
+    },
+    {
+      "name": "Product Display",
+      "position": {
+        "x": 75,
+        "y": 30
+      },
+      "photosCount": 8,
+      "status": "STITCHED"
+    }
+  ],
+  "connections": [
+    {
+      "from": "Entrance",
+      "to": "Center",
+      "bidirectional": true,
+      "status": "ACTIVE"
+    },
+    {
+      "from": "Center",
+      "to": "Product Display",
+      "bidirectional": true,
+      "status": "ACTIVE"
+    }
+  ],
+  "navigationLatencies": {
+    "NAV_ENTRANCE_TO_CENTER_CLICK_TO_FIRST_RENDER_MS": 200,
+    "NAV_CENTER_TO_ENTRANCE_CLICK_TO_FIRST_RENDER_MS": 208,
+    "NAV_CENTER_TO_PRODUCT_DISPLAY_CLICK_TO_FIRST_RENDER_MS": 205,
+    "NAV_MAP_CLICK_TO_FIRST_RENDER_MS": 639
+  },
+  "persistenceCheck": {
+    "hasActiveTour": true,
+    "tourId": "tour-1788773754351-u0tmm",
+    "tourName": "Multi-Point Booth Tour",
+    "tourStatus": "ACTIVE",
+    "viewpointCount": 3,
+    "connectionCount": 4
+  },
+  "safetyInvariants": {
+    "STUDIO_BERRY_MUTATED": false,
+    "PAYMENT_PILOT_ARMED": false,
+    "STRIPE_LIVE_MODE_CONFIGURED": false,
+    "REAL_CHARGE_COUNT": 0,
+    "REAL_BILLING_USED": false
+  },
+  "screenshotsCaptured": [
+    "01_WIZARD_START.jpg",
+    "02_BOOTH_SIZE_QUESTION.jpg",
+    "03_VIEWPOINT_COUNT_QUESTION.jpg",
+    "04_VIEWPOINT_NAME.jpg",
+    "05_CAPTURE_GUIDE.jpg",
+    "06_8_SHOT_CAPTURE_WHEEL.jpg",
+    "07_VIEWPOINT_READY.jpg",
+    "08_SECOND_VIEWPOINT.jpg",
+    "09_MAP_SETUP.jpg",
+    "10_CONNECTION_SETUP.jpg",
+    "11_TOUR_PREVIEW_ENTRANCE.jpg",
+    "12_TOUR_PREVIEW_CENTER.jpg",
+    "13_TOUR_PREVIEW_PRODUCT.jpg",
+    "14_DESKTOP_MAP_NAVIGATION.jpg",
+    "15_MOBILE_MAP.jpg",
+    "16_AFTER_APPLY.jpg",
+    "17_AFTER_HARD_REFRESH.jpg"
+  ],
+  "finalStatus": "WAITING_FOR_OWNER_MULTI_POINT_VISUAL_ACCEPTANCE"
+}

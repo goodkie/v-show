@@ -1,0 +1,19 @@
+{
+  "beforeState": {
+    "activeViewpointId": "vp-1788773754448-krbwv",
+    "viewpointName": "Center",
+    "panoramaVersionId": "pano-ver-center-001",
+    "textureAsset": "/assets/demo/dna-showcase/pano360/node1_360_cobots_8k.jpg",
+    "currentTextureSrc": "http://localhost:3000/assets/demo/dna-showcase/pano360/node1_360_cobots_8k.jpg"
+  },
+  "afterState": {
+    "activeViewpointId": "vp-1788773754526-kgoog",
+    "viewpointName": "Product Display",
+    "panoramaVersionId": "pano-ver-product-001",
+    "textureAsset": "/assets/demo/dna-showcase/pano360/node2_360_amr_8k.jpg",
+    "currentTextureSrc": "http://localhost:3000/assets/demo/dna-showcase/pano360/node2_360_amr_8k.jpg"
+  },
+  "r1Sha": "5c6d986b36c813d513e702e76a69d101dd255532d5f35b1b6d4b1d5a2d80e93d",
+  "centerSha": "606e1e2d32ebaf4c6092a9f40b177ef0ff1223126b9f86e33e42eed8c9a83ca3",
+  "byteIdentical": false
+}

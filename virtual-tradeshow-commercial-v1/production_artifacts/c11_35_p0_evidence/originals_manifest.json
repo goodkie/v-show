@@ -1,0 +1,58 @@
+[
+  {
+    "shot": 1,
+    "name": "SHOT_01_20231006_181139.jpg",
+    "bytes": 3913667,
+    "sha256": "b9ed91a92484450f725a2f04206454334bb713c5ded8c42f599b5b1b982a4c16",
+    "dst": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_01_20231006_181139.jpg"
+  },
+  {
+    "shot": 2,
+    "name": "SHOT_02_20231006_181145.jpg",
+    "bytes": 3926008,
+    "sha256": "2ae4b79e3847e2d531b258cf1eaf9c742672a7124b362fb7974701431948b859",
+    "dst": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_02_20231006_181145.jpg"
+  },
+  {
+    "shot": 3,
+    "name": "SHOT_03_20231006_181151.jpg",
+    "bytes": 3929452,
+    "sha256": "7873fd5354a8162139cd4ea6f65b29c84823778deb71c09ea25a5560d016ef1c",
+    "dst": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_03_20231006_181151.jpg"
+  },
+  {
+    "shot": 4,
+    "name": "SHOT_04_20231006_181155.jpg",
+    "bytes": 3917349,
+    "sha256": "3ae7edd8980c91db542fedc0629f529c4910b09b7d9dc79f832658d595c215dd",
+    "dst": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_04_20231006_181155.jpg"
+  },
+  {
+    "shot": 5,
+    "name": "SHOT_05_20231006_181203.jpg",
+    "bytes": 3966622,
+    "sha256": "a8f59ac02d746afe628e35e980a00f0f8e61eea7891371b6071a4961de9457c9",
+    "dst": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_05_20231006_181203.jpg"
+  },
+  {
+    "shot": 6,
+    "name": "SHOT_06_20231006_181204.jpg",
+    "bytes": 3954699,
+    "sha256": "f6df88bf6ab397eb7bee74896a8dce9c9ac3f8434ae1a4a44032dfa83fda7c1b",
+    "dst": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_06_20231006_181204.jpg"
+  },
+  {
+    "shot": 7,
+    "name": "SHOT_07_20231006_181218.jpg",
+    "bytes": 3755339,
+    "sha256": "577ee2d73c57659ba23571a6e5452e9cf93c971c45c567b2689d0afd36604b9a",
+    "dst": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_07_20231006_181218.jpg"
+  },
+  {
+    "shot": 8,
+    "name": "SHOT_08_20231006_181237.jpg",
+    "bytes": 3785790,
+    "sha256": "75cd885dbf7dc621c00ae6c37579375a8ea96519dcd7f053de6f9c0b27e4c07c",
+    "dst": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_35_p0_evidence\\originals\\SHOT_08_20231006_181237.jpg"
+  }
+]

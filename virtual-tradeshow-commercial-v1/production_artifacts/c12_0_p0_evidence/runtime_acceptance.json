@@ -1,0 +1,430 @@
+{
+  "milestone": "C12.0-P0V",
+  "timestamp": "2026-09-07T12:40:18.450Z",
+  "finalStatus": "WAITING_FOR_OWNER_VISUAL_ACCEPTANCE",
+  "projectId": "prj-free-b0c6f3ea",
+  "tourId": "tour-1788773754351-u0tmm",
+  "architecture": "MULTI_POINT_360_BOOTH_TOUR",
+  "singleSourceOfTruthController": {
+    "controllerClass": "MultiPointTourController",
+    "instanceLocation": "window.multiPointTourController",
+    "verified": true
+  },
+  "screenshotsCount": 40,
+  "screenshotsTotalExpected": 40,
+  "screenshotsComplete": true,
+  "directionalProof": {
+    "screenshots": [
+      {
+        "id": "24_ENTRANCE_FRONT.jpg",
+        "vp": "Entrance",
+        "yawDeg": 0,
+        "sha256": "d6db10aa3c9400090460cc01e804c08db6309653ecdb33d3369183803be5a1aa"
+      },
+      {
+        "id": "25_ENTRANCE_RIGHT.jpg",
+        "vp": "Entrance",
+        "yawDeg": 90,
+        "sha256": "a8de06a4d818176d16ec6855c7cf8d82ea6592233d3ca5078482ffdec2179c80"
+      },
+      {
+        "id": "26_ENTRANCE_BACK.jpg",
+        "vp": "Entrance",
+        "yawDeg": 180,
+        "sha256": "556621add866a157113075dd0e35d2618d5622b4bf71dec3701ac28609bd5574"
+      },
+      {
+        "id": "27_ENTRANCE_LEFT.jpg",
+        "vp": "Entrance",
+        "yawDeg": 270,
+        "sha256": "4ca317a9f467ef8b8b00fa2acb4dc62b1bc3b583fa80799005dd43a039c424a3"
+      },
+      {
+        "id": "28_CENTER_FRONT.jpg",
+        "vp": "Center",
+        "yawDeg": 0,
+        "sha256": "606e1e2d32ebaf4c6092a9f40b177ef0ff1223126b9f86e33e42eed8c9a83ca3"
+      },
+      {
+        "id": "29_CENTER_RIGHT.jpg",
+        "vp": "Center",
+        "yawDeg": 90,
+        "sha256": "e3732eeb9ab5f119792f3cb4ab390e69384a65b842ded7569663a9fd3abed6d2"
+      },
+      {
+        "id": "30_CENTER_BACK.jpg",
+        "vp": "Center",
+        "yawDeg": 180,
+        "sha256": "c634f7d9d49f493d4fec4222e2cb9a77e1eade7b29aebb9f6b153a40335866e6"
+      },
+      {
+        "id": "31_CENTER_LEFT.jpg",
+        "vp": "Center",
+        "yawDeg": 270,
+        "sha256": "dfdb2016390cd51f95fb58586763b69a4ad82926628322c3026298219c914e37"
+      },
+      {
+        "id": "32_PRODUCT_FRONT.jpg",
+        "vp": "Product Display",
+        "yawDeg": 0,
+        "sha256": "5c6d986b36c813d513e702e76a69d101dd255532d5f35b1b6d4b1d5a2d80e93d"
+      },
+      {
+        "id": "33_PRODUCT_RIGHT.jpg",
+        "vp": "Product Display",
+        "yawDeg": 90,
+        "sha256": "1cc545e760e26000bd3372e2203dbf27c794db6d2bf53a3944cdf7247d307566"
+      },
+      {
+        "id": "34_PRODUCT_BACK.jpg",
+        "vp": "Product Display",
+        "yawDeg": 180,
+        "sha256": "d6d25b746f1f655b0b62725469e99aa47e8c03413126b0cedbaa0d8df2c7e9c8"
+      },
+      {
+        "id": "35_PRODUCT_LEFT.jpg",
+        "vp": "Product Display",
+        "yawDeg": 270,
+        "sha256": "f9dcd831259c494b9af9fbf09cd15676a4dd13ecfc41083091264456ce77c020"
+      }
+    ],
+    "uniqueDirectionalHashesCount": 12,
+    "allHashesUnique": true,
+    "pixelDifferences": {
+      "entrance_front_vs_right_percent": 5.91,
+      "center_front_vs_right_percent": 9.66,
+      "product_front_vs_right_percent": 10.29,
+      "entrance_vs_center_front_percent": 12.46,
+      "center_vs_product_front_percent": 3.64,
+      "entrance_vs_product_front_percent": 12.21,
+      "native_equirectangular_pano_diff_entrance_vs_center_percent": 32.17,
+      "native_equirectangular_pano_diff_center_vs_product_percent": 11.07,
+      "native_equirectangular_pano_diff_entrance_vs_product_percent": 32.7
+    }
+  },
+  "navigationVerification": {
+    "floorChevronHotspots": {
+      "entrance_to_center_screenshot": "36_ARROW_ENTRANCE_TO_CENTER.jpg",
+      "center_to_product_screenshot": "37_ARROW_CENTER_TO_PRODUCT.jpg",
+      "status": "VERIFIED"
+    },
+    "boothMapDesktop": {
+      "map_product_active_screenshot": "38_MAP_PRODUCT_ACTIVE.jpg",
+      "status": "VERIFIED"
+    },
+    "boothMapMobile": {
+      "mobile_viewport_screenshot": "40_MOBILE_VIEWER_MAP_NAV.jpg",
+      "viewport": "390x844",
+      "status": "VERIFIED"
+    },
+    "setupWizardResume": {
+      "wizard_resume_screenshot": "39_WIZARD_RESUME_AFTER_REFRESH.jpg",
+      "resumedStep": 4,
+      "resumedBadgeVisible": true,
+      "status": "VERIFIED"
+    }
+  },
+  "helpButtonsAudit": {
+    "totalTopicsAudited": 8,
+    "allTopicsPassed": true,
+    "topics": [
+      {
+        "topic": "booth_size",
+        "name": "Booth Size help",
+        "verified": true
+      },
+      {
+        "topic": "viewpoint_count",
+        "name": "Viewpoint Count help",
+        "verified": true
+      },
+      {
+        "topic": "viewpoint_name",
+        "name": "Viewpoint Name help",
+        "verified": true
+      },
+      {
+        "topic": "capture_wheel",
+        "name": "Capture Wheel help",
+        "verified": true
+      },
+      {
+        "topic": "quality_gate",
+        "name": "Capture Quality Gate help",
+        "verified": true
+      },
+      {
+        "topic": "targeted_retake",
+        "name": "Targeted Retake help",
+        "verified": true
+      },
+      {
+        "topic": "booth_map",
+        "name": "Booth Map help",
+        "verified": true
+      },
+      {
+        "topic": "navigation",
+        "name": "Connection / Navigation help",
+        "verified": true
+      }
+    ]
+  },
+  "legacyUIElementsAudit": {
+    "spatialRailPresent": false,
+    "pseudo3DPresent": false,
+    "visibleLegacyElementsCount": 0,
+    "status": "CLEAN"
+  },
+  "invariants": {
+    "STUDIO_BERRY_MUTATED": false,
+    "PAYMENT_PILOT_ARMED": false,
+    "STRIPE_LIVE_MODE_CONFIGURED": false,
+    "REAL_CHARGE_COUNT": 0,
+    "REAL_BILLING_USED": false,
+    "BACKGROUND_TASK_COUNT": 0,
+    "ALL_C12_TASKS_COMPLETED": true
+  },
+  "screenshots": [
+    {
+      "filename": "01_WIZARD_START.jpg",
+      "exists": true,
+      "sizeBytes": 67872,
+      "sha256": "95e1af564711780d20d54ee109e892211b801f96f54e2f3bdef3ba590d8d66e5"
+    },
+    {
+      "filename": "02_BOOTH_SIZE_QUESTION.jpg",
+      "exists": true,
+      "sizeBytes": 66505,
+      "sha256": "16ec823cae25d077a8ef6869524c254ff584ac40791ea901b1a49aa91868c653"
+    },
+    {
+      "filename": "03_VIEWPOINT_COUNT_QUESTION.jpg",
+      "exists": true,
+      "sizeBytes": 68011,
+      "sha256": "3450c05adb4fe6c50033312459b44d28f22d54f7049cf15113f474e4d5389519"
+    },
+    {
+      "filename": "04_VIEWPOINT_NAME.jpg",
+      "exists": true,
+      "sizeBytes": 58003,
+      "sha256": "a064cd60a61e8e40a5ef09e12d22f8f1d48b758e7f3d150251dd74b7c0671f5b"
+    },
+    {
+      "filename": "05_CAPTURE_GUIDE.jpg",
+      "exists": true,
+      "sizeBytes": 67128,
+      "sha256": "c460d20be9044e49c9469057e7a17e574a555066da39caf47808196753c53634"
+    },
+    {
+      "filename": "06_8_SHOT_CAPTURE_WHEEL.jpg",
+      "exists": true,
+      "sizeBytes": 68029,
+      "sha256": "8a962cc422f4ab228a107c49fba6eeaf585c5d9e67ba2b3407c4805eee9a62cd"
+    },
+    {
+      "filename": "07_VIEWPOINT_READY.jpg",
+      "exists": true,
+      "sizeBytes": 76874,
+      "sha256": "8db452313f4c693c3cfa947d3a92f92b498aca1ba685ebd94137569858bcc35c"
+    },
+    {
+      "filename": "08_SECOND_VIEWPOINT.jpg",
+      "exists": true,
+      "sizeBytes": 62398,
+      "sha256": "01b7b8fc96588a7585d6ceb9a10a3c3f635e42da8a996c6527092be18584e19d"
+    },
+    {
+      "filename": "09_MAP_SETUP.jpg",
+      "exists": true,
+      "sizeBytes": 58855,
+      "sha256": "f4fa2be84226e8cf95a4b7e6b59838316a9f22293979533341d533614c4d920b"
+    },
+    {
+      "filename": "10_CONNECTION_SETUP.jpg",
+      "exists": true,
+      "sizeBytes": 62312,
+      "sha256": "678219b6a02a0d4b2d8e7663f478ee06167c1f8eac08356572699001f532a6c4"
+    },
+    {
+      "filename": "11_TOUR_PREVIEW_ENTRANCE.jpg",
+      "exists": true,
+      "sizeBytes": 74897,
+      "sha256": "111238f7b5c7fbe3598bb025e409b946bd33d3337b4ba0d760505b71045c4e87"
+    },
+    {
+      "filename": "12_TOUR_PREVIEW_CENTER.jpg",
+      "exists": true,
+      "sizeBytes": 76944,
+      "sha256": "32b7db7e5820fa4f3499e8f1cf013bb236178ef27c49b2ce2acfc0a0b88a88f9"
+    },
+    {
+      "filename": "13_TOUR_PREVIEW_PRODUCT.jpg",
+      "exists": true,
+      "sizeBytes": 74556,
+      "sha256": "0bdcf89b53f246f1e07d83fd4e5e3aeb10862f71e55c2cf4249a3dfccf8ac411"
+    },
+    {
+      "filename": "14_DESKTOP_MAP_NAVIGATION.jpg",
+      "exists": true,
+      "sizeBytes": 174375,
+      "sha256": "5825e6822a2df379b941876428f94713a2fdce520573d055c6cc82ce37fe3dae"
+    },
+    {
+      "filename": "15_MOBILE_MAP.jpg",
+      "exists": true,
+      "sizeBytes": 54599,
+      "sha256": "786d557e07f4bfdac728d5a5218c6f17f3cce5b5ffe92c8bef8a9414a2423b1f"
+    },
+    {
+      "filename": "16_AFTER_APPLY.jpg",
+      "exists": true,
+      "sizeBytes": 54617,
+      "sha256": "79012c251cd5c0454330a844f2de7e56196570ebd7a0b4698dc4a864738a6a95"
+    },
+    {
+      "filename": "17_AFTER_HARD_REFRESH.jpg",
+      "exists": true,
+      "sizeBytes": 168222,
+      "sha256": "a22c37e4b6de2f7c19cf1407efe8b0010e46b5824d7147116519166ffb19e804"
+    },
+    {
+      "filename": "18_ENTRANCE_SOURCE_CONTACT.jpg",
+      "exists": true,
+      "sizeBytes": 361958,
+      "sha256": "0cc0abbeeeb214b204f200922f9688a2e35b054f7ba936fdcc1caf220e49f0fc"
+    },
+    {
+      "filename": "19_CENTER_SOURCE_CONTACT.jpg",
+      "exists": true,
+      "sizeBytes": 362248,
+      "sha256": "f52f5bfc2ff9f8bbbf38e74b6a64dc3e858032f18766e3eecf5412fbcfe2cc37"
+    },
+    {
+      "filename": "20_PRODUCT_SOURCE_CONTACT.jpg",
+      "exists": true,
+      "sizeBytes": 356587,
+      "sha256": "aad7d6e48f00f00ea0abcb98aac6e658f59ebed4b406198021e24cee948d2370"
+    },
+    {
+      "filename": "21_ENTRANCE_NATIVE_FLAT.jpg",
+      "exists": true,
+      "sizeBytes": 1023279,
+      "sha256": "85166c05b60093849b1bf370a88514e60a48012174ed7b7f61dcdc1a711c4f35"
+    },
+    {
+      "filename": "22_CENTER_NATIVE_FLAT.jpg",
+      "exists": true,
+      "sizeBytes": 1169784,
+      "sha256": "cdd8452d9f72ecaa76a2063d8ec4c2363704776160ad5e8fe625512d3a311c94"
+    },
+    {
+      "filename": "23_PRODUCT_NATIVE_FLAT.jpg",
+      "exists": true,
+      "sizeBytes": 1294122,
+      "sha256": "15b78f7b473d4d2cb22871c93226da75410d2ac293a162eb02260ae9af35bb6a"
+    },
+    {
+      "filename": "24_ENTRANCE_FRONT.jpg",
+      "exists": true,
+      "sizeBytes": 174417,
+      "sha256": "d6db10aa3c9400090460cc01e804c08db6309653ecdb33d3369183803be5a1aa"
+    },
+    {
+      "filename": "25_ENTRANCE_RIGHT.jpg",
+      "exists": true,
+      "sizeBytes": 154856,
+      "sha256": "a8de06a4d818176d16ec6855c7cf8d82ea6592233d3ca5078482ffdec2179c80"
+    },
+    {
+      "filename": "26_ENTRANCE_BACK.jpg",
+      "exists": true,
+      "sizeBytes": 156158,
+      "sha256": "556621add866a157113075dd0e35d2618d5622b4bf71dec3701ac28609bd5574"
+    },
+    {
+      "filename": "27_ENTRANCE_LEFT.jpg",
+      "exists": true,
+      "sizeBytes": 165407,
+      "sha256": "4ca317a9f467ef8b8b00fa2acb4dc62b1bc3b583fa80799005dd43a039c424a3"
+    },
+    {
+      "filename": "28_CENTER_FRONT.jpg",
+      "exists": true,
+      "sizeBytes": 188573,
+      "sha256": "606e1e2d32ebaf4c6092a9f40b177ef0ff1223126b9f86e33e42eed8c9a83ca3"
+    },
+    {
+      "filename": "29_CENTER_RIGHT.jpg",
+      "exists": true,
+      "sizeBytes": 180816,
+      "sha256": "e3732eeb9ab5f119792f3cb4ab390e69384a65b842ded7569663a9fd3abed6d2"
+    },
+    {
+      "filename": "30_CENTER_BACK.jpg",
+      "exists": true,
+      "sizeBytes": 168193,
+      "sha256": "c634f7d9d49f493d4fec4222e2cb9a77e1eade7b29aebb9f6b153a40335866e6"
+    },
+    {
+      "filename": "31_CENTER_LEFT.jpg",
+      "exists": true,
+      "sizeBytes": 170882,
+      "sha256": "dfdb2016390cd51f95fb58586763b69a4ad82926628322c3026298219c914e37"
+    },
+    {
+      "filename": "32_PRODUCT_FRONT.jpg",
+      "exists": true,
+      "sizeBytes": 182857,
+      "sha256": "5c6d986b36c813d513e702e76a69d101dd255532d5f35b1b6d4b1d5a2d80e93d"
+    },
+    {
+      "filename": "33_PRODUCT_RIGHT.jpg",
+      "exists": true,
+      "sizeBytes": 184767,
+      "sha256": "1cc545e760e26000bd3372e2203dbf27c794db6d2bf53a3944cdf7247d307566"
+    },
+    {
+      "filename": "34_PRODUCT_BACK.jpg",
+      "exists": true,
+      "sizeBytes": 191147,
+      "sha256": "d6d25b746f1f655b0b62725469e99aa47e8c03413126b0cedbaa0d8df2c7e9c8"
+    },
+    {
+      "filename": "35_PRODUCT_LEFT.jpg",
+      "exists": true,
+      "sizeBytes": 192587,
+      "sha256": "f9dcd831259c494b9af9fbf09cd15676a4dd13ecfc41083091264456ce77c020"
+    },
+    {
+      "filename": "36_ARROW_ENTRANCE_TO_CENTER.jpg",
+      "exists": true,
+      "sizeBytes": 170943,
+      "sha256": "9554d059c482908d20ce7b85f1e2556ff944bb8b77fe4e889271d030f3d3f64a"
+    },
+    {
+      "filename": "37_ARROW_CENTER_TO_PRODUCT.jpg",
+      "exists": true,
+      "sizeBytes": 192572,
+      "sha256": "d965155200a4c19d015ad87169e19c42166b8a1d4421eb2f54fa155f49df191d"
+    },
+    {
+      "filename": "38_MAP_PRODUCT_ACTIVE.jpg",
+      "exists": true,
+      "sizeBytes": 192471,
+      "sha256": "0b1c4f90ce1da0bfd6e05cf0b0cc3274d990b6867026dd3ef1ab3f301cf79bf6"
+    },
+    {
+      "filename": "39_WIZARD_RESUME_AFTER_REFRESH.jpg",
+      "exists": true,
+      "sizeBytes": 58894,
+      "sha256": "1887ab405c99908da5788fce5cc563beae3f6d977d68b54c729dc9a370f302c4"
+    },
+    {
+      "filename": "40_MOBILE_VIEWER_MAP_NAV.jpg",
+      "exists": true,
+      "sizeBytes": 19513,
+      "sha256": "dca7641cfae7589223bf193f7bc0e3398477e259db5de2fd6052258aebcfb098"
+    }
+  ]
+}

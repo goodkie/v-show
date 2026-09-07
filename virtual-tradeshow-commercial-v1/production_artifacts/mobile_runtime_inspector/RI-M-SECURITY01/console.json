@@ -1,0 +1,6 @@
+[
+  {
+    "level": "INFO",
+    "msg": "test log with token=[REDACTED_TOKEN] and auth=secretpassword999"
+  }
+]

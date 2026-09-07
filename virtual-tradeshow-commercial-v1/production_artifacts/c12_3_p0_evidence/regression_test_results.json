@@ -1,0 +1,13 @@
+{
+  "suite": "C12.3-P0R3_AUTOMATED_REGRESSION_SUITE",
+  "timestamp": "2026-09-07T14:41:29.037Z",
+  "results": {
+    "testA_secureContextAttemptsGetUserMedia": true,
+    "testB_insecureContextShowsSecureLinkMessage": true,
+    "testC_permissionDeniedShowsCameraMessageNotHttps": true,
+    "testD_constraintFailureRetriesRelaxed": true,
+    "testE_canonicalHttpsOriginPreserved": true,
+    "testF_needsAttentionClearsStartingSpinner": true
+  },
+  "allPassed": true
+}

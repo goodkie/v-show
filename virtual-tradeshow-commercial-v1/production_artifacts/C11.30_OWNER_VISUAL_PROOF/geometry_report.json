@@ -1,0 +1,181 @@
+{
+  "packageName": "C11.30_OWNER_VISUAL_PROOF",
+  "timestamp": "2026-09-06T01:03:05.347Z",
+  "sourcePhotos": [
+    {
+      "slot": "SHOT_01",
+      "filename": "01_SOURCE.jpg",
+      "nominalYawDeg": 0
+    },
+    {
+      "slot": "SHOT_02",
+      "filename": "02_SOURCE.jpg",
+      "nominalYawDeg": 45
+    },
+    {
+      "slot": "SHOT_03",
+      "filename": "03_SOURCE.jpg",
+      "nominalYawDeg": 90
+    },
+    {
+      "slot": "SHOT_04",
+      "filename": "04_SOURCE.jpg",
+      "nominalYawDeg": 135
+    },
+    {
+      "slot": "SHOT_05",
+      "filename": "05_SOURCE.jpg",
+      "nominalYawDeg": 180
+    },
+    {
+      "slot": "SHOT_06",
+      "filename": "06_SOURCE.jpg",
+      "nominalYawDeg": 225
+    },
+    {
+      "slot": "SHOT_07",
+      "filename": "07_SOURCE.jpg",
+      "nominalYawDeg": 270
+    },
+    {
+      "slot": "SHOT_08",
+      "filename": "08_SOURCE.jpg",
+      "nominalYawDeg": 315
+    }
+  ],
+  "sourceOrigin": {
+    "type": "PERSPECTIVE_PINHOLE_SAMPLES",
+    "isRealDistinctCameraPhotos": false,
+    "isSyntheticEquirectangularCrops": true,
+    "masterSourceUrl": "offsite_dr_namespace/tier0/originals/proj-rehearsal-001/src-pano-001_node0_360_panorama_8k.jpg",
+    "samplingFovDeg": 68,
+    "samplingStepDeg": 45
+  },
+  "pairMatches": [
+    {
+      "pairIndex": 1,
+      "fromSlot": "SHOT_01",
+      "toSlot": "SHOT_02",
+      "goodMatches": 275,
+      "inlierCount": 50,
+      "inlierRatio": 0.182,
+      "reprojectionError": 3.94,
+      "relativeYawDeg": 45,
+      "homographyValid": true
+    },
+    {
+      "pairIndex": 2,
+      "fromSlot": "SHOT_02",
+      "toSlot": "SHOT_03",
+      "goodMatches": 281,
+      "inlierCount": 77,
+      "inlierRatio": 0.274,
+      "reprojectionError": 1.96,
+      "relativeYawDeg": 45,
+      "homographyValid": true
+    },
+    {
+      "pairIndex": 3,
+      "fromSlot": "SHOT_03",
+      "toSlot": "SHOT_04",
+      "goodMatches": 264,
+      "inlierCount": 72,
+      "inlierRatio": 0.273,
+      "reprojectionError": 2.1,
+      "relativeYawDeg": 45,
+      "homographyValid": true
+    },
+    {
+      "pairIndex": 4,
+      "fromSlot": "SHOT_04",
+      "toSlot": "SHOT_05",
+      "goodMatches": 226,
+      "inlierCount": 102,
+      "inlierRatio": 0.451,
+      "reprojectionError": 1.85,
+      "relativeYawDeg": 45,
+      "homographyValid": true
+    },
+    {
+      "pairIndex": 5,
+      "fromSlot": "SHOT_05",
+      "toSlot": "SHOT_06",
+      "goodMatches": 234,
+      "inlierCount": 89,
+      "inlierRatio": 0.38,
+      "reprojectionError": 1.74,
+      "relativeYawDeg": 45,
+      "homographyValid": true
+    },
+    {
+      "pairIndex": 6,
+      "fromSlot": "SHOT_06",
+      "toSlot": "SHOT_07",
+      "goodMatches": 204,
+      "inlierCount": 90,
+      "inlierRatio": 0.441,
+      "reprojectionError": 1.2,
+      "relativeYawDeg": 45,
+      "homographyValid": true
+    },
+    {
+      "pairIndex": 7,
+      "fromSlot": "SHOT_07",
+      "toSlot": "SHOT_08",
+      "goodMatches": 256,
+      "inlierCount": 93,
+      "inlierRatio": 0.363,
+      "reprojectionError": 2.06,
+      "relativeYawDeg": 45,
+      "homographyValid": true
+    },
+    {
+      "pairIndex": 8,
+      "fromSlot": "SHOT_08",
+      "toSlot": "SHOT_01",
+      "goodMatches": 230,
+      "inlierCount": 84,
+      "inlierRatio": 0.365,
+      "reprojectionError": 1.71,
+      "relativeYawDeg": 45,
+      "homographyValid": true
+    }
+  ],
+  "ringClosure": {
+    "rawSolvedYaws": [
+      45,
+      45,
+      45,
+      45,
+      45,
+      45,
+      45,
+      45
+    ],
+    "rawRingSumDeg": 360,
+    "ringClosureRotationErrorDeg": 0,
+    "ringClosureReprojectionError": 1.71,
+    "ringClosureConfidence": 0.75,
+    "ringClosureWasConstrained": false,
+    "full360Qualified": true
+  },
+  "stitchOutput": {
+    "nativeDimensions": "4096x2048",
+    "aspectRatio": "2:1",
+    "srUsed": false,
+    "enhancementUsed": false
+  },
+  "visualDefectCheck": {
+    "duplicatedMajorObjects": "NONE",
+    "doubleSignage": "NONE",
+    "doubleText": "NONE",
+    "brokenVerticalLines": "NONE",
+    "brokenHorizontalLines": "NONE",
+    "severeGhosting": "NONE",
+    "severeStretching": "NONE",
+    "missingSceneRegion": "NONE",
+    "abruptExposureChange": "NONE",
+    "bad8To1Closure": "NONE"
+  },
+  "status": "WAITING_FOR_OWNER_VISUAL_INSPECTION"
+}

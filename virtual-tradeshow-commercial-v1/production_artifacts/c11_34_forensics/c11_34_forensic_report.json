@@ -1,0 +1,986 @@
+{
+  "metadata_8shot": [
+    {
+      "filename": "SHOT_01_20231006_181055.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\8shot\\SHOT_01_20231006_181055.jpg",
+      "sha256": "c421643d2761a3fef72cf7b1eb384f5957a9cf1d1cc98959fcec95802465b03c",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:10:56"
+    },
+    {
+      "filename": "SHOT_02_20231006_181130.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\8shot\\SHOT_02_20231006_181130.jpg",
+      "sha256": "814c4e9f5e690c4e68147630cb2fc98ae38c010ec065a082d51e6d8f96948c81",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:11:30"
+    },
+    {
+      "filename": "SHOT_03_20231006_181151.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\8shot\\SHOT_03_20231006_181151.jpg",
+      "sha256": "7873fd5354a8162139cd4ea6f65b29c84823778deb71c09ea25a5560d016ef1c",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:11:52"
+    },
+    {
+      "filename": "SHOT_04_20231006_181203.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\8shot\\SHOT_04_20231006_181203.jpg",
+      "sha256": "a8f59ac02d746afe628e35e980a00f0f8e61eea7891371b6071a4961de9457c9",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:12:03"
+    },
+    {
+      "filename": "SHOT_05_20231006_181225.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\8shot\\SHOT_05_20231006_181225.jpg",
+      "sha256": "53411d1afea54b0ce6051c959eb585bbffbe09d58a9c171376f8db80947087b5",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:12:25"
+    },
+    {
+      "filename": "SHOT_06_20231006_181237.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\8shot\\SHOT_06_20231006_181237.jpg",
+      "sha256": "75cd885dbf7dc621c00ae6c37579375a8ea96519dcd7f053de6f9c0b27e4c07c",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:12:37"
+    },
+    {
+      "filename": "SHOT_07_20231006_181300.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\8shot\\SHOT_07_20231006_181300.jpg",
+      "sha256": "ec00cbb8a47fdd14df1ece815cdefa1b554c505320312f7e5f0e41caa787aa60",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:13:00"
+    },
+    {
+      "filename": "SHOT_08_20231006_181323.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\8shot\\SHOT_08_20231006_181323.jpg",
+      "sha256": "a40d95c28de7720fb02da802e2f0f1e89e86fee4bbd928c6899e0ab4a898425e",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:13:24"
+    }
+  ],
+  "metadata_12shot": [
+    {
+      "filename": "SHOT_01_20231006_181055.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\12shot\\SHOT_01_20231006_181055.jpg",
+      "sha256": "c421643d2761a3fef72cf7b1eb384f5957a9cf1d1cc98959fcec95802465b03c",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:10:56"
+    },
+    {
+      "filename": "SHOT_02_20231006_181101.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\12shot\\SHOT_02_20231006_181101.jpg",
+      "sha256": "92ae72fb7b901b2562f8834eeb1717f813b8cf33e47ce3591b24d9825f881004",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:11:02"
+    },
+    {
+      "filename": "SHOT_03_20231006_181130.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\12shot\\SHOT_03_20231006_181130.jpg",
+      "sha256": "814c4e9f5e690c4e68147630cb2fc98ae38c010ec065a082d51e6d8f96948c81",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:11:30"
+    },
+    {
+      "filename": "SHOT_04_20231006_181139.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\12shot\\SHOT_04_20231006_181139.jpg",
+      "sha256": "b9ed91a92484450f725a2f04206454334bb713c5ded8c42f599b5b1b982a4c16",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:11:40"
+    },
+    {
+      "filename": "SHOT_05_20231006_181151.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\12shot\\SHOT_05_20231006_181151.jpg",
+      "sha256": "7873fd5354a8162139cd4ea6f65b29c84823778deb71c09ea25a5560d016ef1c",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:11:52"
+    },
+    {
+      "filename": "SHOT_06_20231006_181203.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\12shot\\SHOT_06_20231006_181203.jpg",
+      "sha256": "a8f59ac02d746afe628e35e980a00f0f8e61eea7891371b6071a4961de9457c9",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:12:03"
+    },
+    {
+      "filename": "SHOT_07_20231006_181218.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\12shot\\SHOT_07_20231006_181218.jpg",
+      "sha256": "577ee2d73c57659ba23571a6e5452e9cf93c971c45c567b2689d0afd36604b9a",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:12:18"
+    },
+    {
+      "filename": "SHOT_08_20231006_181225.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\12shot\\SHOT_08_20231006_181225.jpg",
+      "sha256": "53411d1afea54b0ce6051c959eb585bbffbe09d58a9c171376f8db80947087b5",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:12:25"
+    },
+    {
+      "filename": "SHOT_09_20231006_181237.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\12shot\\SHOT_09_20231006_181237.jpg",
+      "sha256": "75cd885dbf7dc621c00ae6c37579375a8ea96519dcd7f053de6f9c0b27e4c07c",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:12:37"
+    },
+    {
+      "filename": "SHOT_10_20231006_181300.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\12shot\\SHOT_10_20231006_181300.jpg",
+      "sha256": "ec00cbb8a47fdd14df1ece815cdefa1b554c505320312f7e5f0e41caa787aa60",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:13:00"
+    },
+    {
+      "filename": "SHOT_11_20231006_181308.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\12shot\\SHOT_11_20231006_181308.jpg",
+      "sha256": "2ee78764f6e188ffa354a68e173a72c7a1411e3a16a7285e799f7cc595a6bd9b",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:13:08"
+    },
+    {
+      "filename": "SHOT_12_20231006_181323.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\c11_33_p0_evidence\\originals\\12shot\\SHOT_12_20231006_181323.jpg",
+      "sha256": "a40d95c28de7720fb02da802e2f0f1e89e86fee4bbd928c6899e0ab4a898425e",
+      "width": 4000,
+      "height": 3000,
+      "orientation": 1,
+      "focalLength": 2.2,
+      "focalLength35mm": 13.0,
+      "timestamp": "2023:10:06 18:13:24"
+    }
+  ],
+  "matches_8shot": [
+    {
+      "pair": "1->2",
+      "from_idx": 1,
+      "to_idx": 2,
+      "from_file": "SHOT_01_20231006_181055.jpg",
+      "to_file": "SHOT_02_20231006_181130.jpg",
+      "good_matches": 21,
+      "inliers": 4,
+      "inlier_ratio": 0.19,
+      "median_reprojection_error": 0.46,
+      "valid": false
+    },
+    {
+      "pair": "2->3",
+      "from_idx": 2,
+      "to_idx": 3,
+      "from_file": "SHOT_02_20231006_181130.jpg",
+      "to_file": "SHOT_03_20231006_181151.jpg",
+      "good_matches": 630,
+      "inliers": 533,
+      "inlier_ratio": 0.846,
+      "median_reprojection_error": 0.62,
+      "valid": true
+    },
+    {
+      "pair": "3->4",
+      "from_idx": 3,
+      "to_idx": 4,
+      "from_file": "SHOT_03_20231006_181151.jpg",
+      "to_file": "SHOT_04_20231006_181203.jpg",
+      "good_matches": 530,
+      "inliers": 449,
+      "inlier_ratio": 0.847,
+      "median_reprojection_error": 0.52,
+      "valid": true
+    },
+    {
+      "pair": "4->5",
+      "from_idx": 4,
+      "to_idx": 5,
+      "from_file": "SHOT_04_20231006_181203.jpg",
+      "to_file": "SHOT_05_20231006_181225.jpg",
+      "good_matches": 137,
+      "inliers": 92,
+      "inlier_ratio": 0.672,
+      "median_reprojection_error": 0.41,
+      "valid": true
+    },
+    {
+      "pair": "5->6",
+      "from_idx": 5,
+      "to_idx": 6,
+      "from_file": "SHOT_05_20231006_181225.jpg",
+      "to_file": "SHOT_06_20231006_181237.jpg",
+      "good_matches": 457,
+      "inliers": 411,
+      "inlier_ratio": 0.899,
+      "median_reprojection_error": 0.41,
+      "valid": true
+    },
+    {
+      "pair": "6->7",
+      "from_idx": 6,
+      "to_idx": 7,
+      "from_file": "SHOT_06_20231006_181237.jpg",
+      "to_file": "SHOT_07_20231006_181300.jpg",
+      "good_matches": 19,
+      "inliers": 5,
+      "inlier_ratio": 0.263,
+      "median_reprojection_error": 0.0,
+      "valid": false
+    },
+    {
+      "pair": "7->8",
+      "from_idx": 7,
+      "to_idx": 8,
+      "from_file": "SHOT_07_20231006_181300.jpg",
+      "to_file": "SHOT_08_20231006_181323.jpg",
+      "good_matches": 100,
+      "inliers": 57,
+      "inlier_ratio": 0.57,
+      "median_reprojection_error": 1.01,
+      "valid": true
+    },
+    {
+      "pair": "8->1",
+      "from_idx": 8,
+      "to_idx": 1,
+      "from_file": "SHOT_08_20231006_181323.jpg",
+      "to_file": "SHOT_01_20231006_181055.jpg",
+      "good_matches": 223,
+      "inliers": 158,
+      "inlier_ratio": 0.709,
+      "median_reprojection_error": 1.04,
+      "valid": true
+    }
+  ],
+  "matches_12shot": [
+    {
+      "pair": "1->2",
+      "from_idx": 1,
+      "to_idx": 2,
+      "from_file": "SHOT_01_20231006_181055.jpg",
+      "to_file": "SHOT_02_20231006_181101.jpg",
+      "good_matches": 273,
+      "inliers": 210,
+      "inlier_ratio": 0.769,
+      "median_reprojection_error": 1.23,
+      "valid": true
+    },
+    {
+      "pair": "2->3",
+      "from_idx": 2,
+      "to_idx": 3,
+      "from_file": "SHOT_02_20231006_181101.jpg",
+      "to_file": "SHOT_03_20231006_181130.jpg",
+      "good_matches": 16,
+      "inliers": 6,
+      "inlier_ratio": 0.375,
+      "median_reprojection_error": 0.71,
+      "valid": false
+    },
+    {
+      "pair": "3->4",
+      "from_idx": 3,
+      "to_idx": 4,
+      "from_file": "SHOT_03_20231006_181130.jpg",
+      "to_file": "SHOT_04_20231006_181139.jpg",
+      "good_matches": 580,
+      "inliers": 498,
+      "inlier_ratio": 0.859,
+      "median_reprojection_error": 0.59,
+      "valid": true
+    },
+    {
+      "pair": "4->5",
+      "from_idx": 4,
+      "to_idx": 5,
+      "from_file": "SHOT_04_20231006_181139.jpg",
+      "to_file": "SHOT_05_20231006_181151.jpg",
+      "good_matches": 660,
+      "inliers": 600,
+      "inlier_ratio": 0.909,
+      "median_reprojection_error": 0.47,
+      "valid": true
+    },
+    {
+      "pair": "5->6",
+      "from_idx": 5,
+      "to_idx": 6,
+      "from_file": "SHOT_05_20231006_181151.jpg",
+      "to_file": "SHOT_06_20231006_181203.jpg",
+      "good_matches": 530,
+      "inliers": 449,
+      "inlier_ratio": 0.847,
+      "median_reprojection_error": 0.52,
+      "valid": true
+    },
+    {
+      "pair": "6->7",
+      "from_idx": 6,
+      "to_idx": 7,
+      "from_file": "SHOT_06_20231006_181203.jpg",
+      "to_file": "SHOT_07_20231006_181218.jpg",
+      "good_matches": 144,
+      "inliers": 96,
+      "inlier_ratio": 0.667,
+      "median_reprojection_error": 0.43,
+      "valid": true
+    },
+    {
+      "pair": "7->8",
+      "from_idx": 7,
+      "to_idx": 8,
+      "from_file": "SHOT_07_20231006_181218.jpg",
+      "to_file": "SHOT_08_20231006_181225.jpg",
+      "good_matches": 487,
+      "inliers": 457,
+      "inlier_ratio": 0.938,
+      "median_reprojection_error": 0.32,
+      "valid": true
+    },
+    {
+      "pair": "8->9",
+      "from_idx": 8,
+      "to_idx": 9,
+      "from_file": "SHOT_08_20231006_181225.jpg",
+      "to_file": "SHOT_09_20231006_181237.jpg",
+      "good_matches": 457,
+      "inliers": 411,
+      "inlier_ratio": 0.899,
+      "median_reprojection_error": 0.41,
+      "valid": true
+    },
+    {
+      "pair": "9->10",
+      "from_idx": 9,
+      "to_idx": 10,
+      "from_file": "SHOT_09_20231006_181237.jpg",
+      "to_file": "SHOT_10_20231006_181300.jpg",
+      "good_matches": 19,
+      "inliers": 5,
+      "inlier_ratio": 0.263,
+      "median_reprojection_error": 0.0,
+      "valid": false
+    },
+    {
+      "pair": "10->11",
+      "from_idx": 10,
+      "to_idx": 11,
+      "from_file": "SHOT_10_20231006_181300.jpg",
+      "to_file": "SHOT_11_20231006_181308.jpg",
+      "good_matches": 156,
+      "inliers": 77,
+      "inlier_ratio": 0.494,
+      "median_reprojection_error": 1.56,
+      "valid": true
+    },
+    {
+      "pair": "11->12",
+      "from_idx": 11,
+      "to_idx": 12,
+      "from_file": "SHOT_11_20231006_181308.jpg",
+      "to_file": "SHOT_12_20231006_181323.jpg",
+      "good_matches": 176,
+      "inliers": 105,
+      "inlier_ratio": 0.597,
+      "median_reprojection_error": 1.34,
+      "valid": true
+    },
+    {
+      "pair": "12->1",
+      "from_idx": 12,
+      "to_idx": 1,
+      "from_file": "SHOT_12_20231006_181323.jpg",
+      "to_file": "SHOT_01_20231006_181055.jpg",
+      "good_matches": 223,
+      "inliers": 158,
+      "inlier_ratio": 0.709,
+      "median_reprojection_error": 1.04,
+      "valid": true
+    }
+  ],
+  "camera_solution_8shot": {
+    "status": 0,
+    "connected_indices": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "cameras": [
+      {
+        "cameraIndex": 0,
+        "sourceIndex": 2,
+        "sourceFilename": "SHOT_02_20231006_181130.jpg",
+        "focal": 485.19,
+        "aspect": 1.0,
+        "ppx": 447.0,
+        "ppy": 335.5,
+        "yaw": -1.97,
+        "pitch": -2.44,
+        "roll": 0.39,
+        "perCameraHFOV": 85.31,
+        "R": [
+          [
+            0.9993950724601746,
+            -0.00532250851392746,
+            -0.03436747565865517
+          ],
+          [
+            0.006782011594623327,
+            0.99907386302948,
+            0.04249173775315285
+          ],
+          [
+            0.03410949185490608,
+            -0.04269911348819733,
+            0.9985055923461914
+          ]
+        ]
+      },
+      {
+        "cameraIndex": 1,
+        "sourceIndex": 3,
+        "sourceFilename": "SHOT_03_20231006_181151.jpg",
+        "focal": 490.8,
+        "aspect": 1.0,
+        "ppx": 447.0,
+        "ppy": 335.5,
+        "yaw": -5.36,
+        "pitch": -2.94,
+        "roll": 0.07,
+        "perCameraHFOV": 84.65,
+        "R": [
+          [
+            0.9956331849098206,
+            0.0035835150629281998,
+            -0.09328313916921616
+          ],
+          [
+            0.0012093205004930496,
+            0.9986839890480042,
+            0.051272351294755936
+          ],
+          [
+            0.09334411472082138,
+            -0.0511612668633461,
+            0.9943186044692993
+          ]
+        ]
+      },
+      {
+        "cameraIndex": 2,
+        "sourceIndex": 4,
+        "sourceFilename": "SHOT_04_20231006_181203.jpg",
+        "focal": 479.31,
+        "aspect": 1.0,
+        "ppx": 447.0,
+        "ppy": 335.5,
+        "yaw": -6.16,
+        "pitch": 0.69,
+        "roll": 0.07,
+        "perCameraHFOV": 86.0,
+        "R": [
+          [
+            0.9942300915718079,
+            -0.0025254443753510714,
+            -0.10723844170570374
+          ],
+          [
+            0.0012378212995827198,
+            0.9999263882637024,
+            -0.012071896344423294
+          ],
+          [
+            0.10726101696491241,
+            0.011869508773088455,
+            0.9941601157188416
+          ]
+        ]
+      },
+      {
+        "cameraIndex": 3,
+        "sourceIndex": 5,
+        "sourceFilename": "SHOT_05_20231006_181225.jpg",
+        "focal": 308.37,
+        "aspect": 1.0,
+        "ppx": 447.0,
+        "ppy": 335.5,
+        "yaw": 0.61,
+        "pitch": -1.11,
+        "roll": -0.68,
+        "perCameraHFOV": 110.8,
+        "R": [
+          [
+            0.9998763799667358,
+            0.011615123599767685,
+            0.01059870794415474
+          ],
+          [
+            -0.01181818824261427,
+            0.9997438788414001,
+            0.019301850348711014
+          ],
+          [
+            -0.010371796786785126,
+            -0.019424719735980034,
+            0.9997575879096985
+          ]
+        ]
+      },
+      {
+        "cameraIndex": 4,
+        "sourceIndex": 6,
+        "sourceFilename": "SHOT_06_20231006_181237.jpg",
+        "focal": 302.76,
+        "aspect": 1.0,
+        "ppx": 447.0,
+        "ppy": 335.5,
+        "yaw": 12.96,
+        "pitch": -0.97,
+        "roll": 0.15,
+        "perCameraHFOV": 111.78,
+        "R": [
+          [
+            0.9745013117790222,
+            -0.0064053162932395935,
+            0.22429031133651733
+          ],
+          [
+            0.0026722410693764687,
+            0.9998528957366943,
+            0.016943488270044327
+          ],
+          [
+            -0.22436586022377014,
+            -0.015912089496850967,
+            0.9743751287460327
+          ]
+        ]
+      }
+    ],
+    "raw_yaws": [
+      -1.9712800979614258,
+      -5.35958194732666,
+      -6.156598091125488,
+      0.6073856949806213,
+      12.963041305541992
+    ],
+    "unwrapped_yaws": [
+      -1.9712800979614258,
+      -5.36,
+      -6.16,
+      0.61,
+      12.96
+    ],
+    "min_yaw": -6.16,
+    "max_yaw": 12.96,
+    "camera_center_sweep_deg": 19.12,
+    "edge_aware_horizontal_coverage_deg": 118.01
+  },
+  "camera_solution_12shot": {
+    "status": 0,
+    "connected_indices": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "cameras": [
+      {
+        "cameraIndex": 0,
+        "sourceIndex": 3,
+        "sourceFilename": "SHOT_03_20231006_181130.jpg",
+        "focal": 457.91,
+        "aspect": 1.0,
+        "ppx": 447.0,
+        "ppy": 335.5,
+        "yaw": -0.69,
+        "pitch": -6.51,
+        "roll": -0.01,
+        "perCameraHFOV": 88.62,
+        "R": [
+          [
+            0.9999265670776367,
+            0.0015745209529995918,
+            -0.012017951346933842
+          ],
+          [
+            -0.00020280184980947524,
+            0.993561327457428,
+            0.11329653859138489
+          ],
+          [
+            0.012118972837924957,
+            -0.11328579485416412,
+            0.9934885501861572
+          ]
+        ]
+      },
+      {
+        "cameraIndex": 1,
+        "sourceIndex": 4,
+        "sourceFilename": "SHOT_04_20231006_181139.jpg",
+        "focal": 461.42,
+        "aspect": 1.0,
+        "ppx": 447.0,
+        "ppy": 335.5,
+        "yaw": -5.77,
+        "pitch": -6.18,
+        "roll": -0.15,
+        "perCameraHFOV": 88.18,
+        "R": [
+          [
+            0.9949089288711548,
+            0.013442902825772762,
+            -0.09987752884626389
+          ],
+          [
+            -0.002621457912027836,
+            0.9941803216934204,
+            0.10769742727279663
+          ],
+          [
+            0.10074403136968613,
+            -0.1068873479962349,
+            0.9891539812088013
+          ]
+        ]
+      },
+      {
+        "cameraIndex": 2,
+        "sourceIndex": 5,
+        "sourceFilename": "SHOT_05_20231006_181151.jpg",
+        "focal": 463.51,
+        "aspect": 1.0,
+        "ppx": 447.0,
+        "ppy": 335.5,
+        "yaw": -4.24,
+        "pitch": -7.05,
+        "roll": -0.07,
+        "perCameraHFOV": 87.92,
+        "R": [
+          [
+            0.9972563982009888,
+            0.010294961743056774,
+            -0.07330497354269028
+          ],
+          [
+            -0.0012277401983737946,
+            0.9924460053443909,
+            0.1226767972111702
+          ],
+          [
+            0.07401416450738907,
+            -0.1222502589225769,
+            0.9897356629371643
+          ]
+        ]
+      },
+      {
+        "cameraIndex": 3,
+        "sourceIndex": 6,
+        "sourceFilename": "SHOT_06_20231006_181203.jpg",
+        "focal": 452.56,
+        "aspect": 1.0,
+        "ppx": 447.0,
+        "ppy": 335.5,
+        "yaw": -5.07,
+        "pitch": -3.2,
+        "roll": -0.04,
+        "perCameraHFOV": 89.29,
+        "R": [
+          [
+            0.9960771203041077,
+            0.00562267005443573,
+            -0.0883110985159874
+          ],
+          [
+            -0.0006874827668070793,
+            0.9984409213066101,
+            0.05581532418727875
+          ],
+          [
+            0.08848723769187927,
+            -0.055535688996315,
+            0.9945278763771057
+          ]
+        ]
+      },
+      {
+        "cameraIndex": 4,
+        "sourceIndex": 7,
+        "sourceFilename": "SHOT_07_20231006_181218.jpg",
+        "focal": 295.74,
+        "aspect": 1.0,
+        "ppx": 447.0,
+        "ppy": 335.5,
+        "yaw": 0.5,
+        "pitch": -6.0,
+        "roll": 0.22,
+        "perCameraHFOV": 113.02,
+        "R": [
+          [
+            0.9999498724937439,
+            -0.004839867819100618,
+            0.008759411051869392
+          ],
+          [
+            0.00389742199331522,
+            0.9945088028907776,
+            0.1045803651213646
+          ],
+          [
+            -0.009217479266226292,
+            -0.10454102605581284,
+            0.9944778084754944
+          ]
+        ]
+      },
+      {
+        "cameraIndex": 5,
+        "sourceIndex": 8,
+        "sourceFilename": "SHOT_08_20231006_181225.jpg",
+        "focal": 293.51,
+        "aspect": 1.0,
+        "ppx": 447.0,
+        "ppy": 335.5,
+        "yaw": 1.2,
+        "pitch": -5.87,
+        "roll": 0.16,
+        "perCameraHFOV": 113.42,
+        "R": [
+          [
+            0.9997714161872864,
+            -0.005012986715883017,
+            0.02078547701239586
+          ],
+          [
+            0.002860545413568616,
+            0.9947474598884583,
+            0.10231965780258179
+          ],
+          [
+            -0.021189238876104355,
+            -0.10223683714866638,
+            0.9945343136787415
+          ]
+        ]
+      },
+      {
+        "cameraIndex": 6,
+        "sourceIndex": 9,
+        "sourceFilename": "SHOT_09_20231006_181237.jpg",
+        "focal": 286.84,
+        "aspect": 1.0,
+        "ppx": 447.0,
+        "ppy": 335.5,
+        "yaw": 14.19,
+        "pitch": -5.79,
+        "roll": -0.12,
+        "perCameraHFOV": 114.62,
+        "R": [
+          [
+            0.9695181250572205,
+            -0.02269027940928936,
+            0.24396665394306183
+          ],
+          [
+            -0.002101106569170952,
+            0.994896411895752,
+            0.10088077187538147
+          ],
+          [
+            -0.24501053988933563,
+            -0.09831838309764862,
+            0.9645223617553711
+          ]
+        ]
+      }
+    ],
+    "raw_yaws": [
+      -0.6930570602416992,
+      -5.765766143798828,
+      -4.235889434814453,
+      -5.0743842124938965,
+      0.5046510696411133,
+      1.1972906589508057,
+      14.194694519042969
+    ],
+    "unwrapped_yaws": [
+      -0.6930570602416992,
+      -5.77,
+      -4.24,
+      -5.07,
+      0.5,
+      1.2,
+      14.19
+    ],
+    "min_yaw": -5.77,
+    "max_yaw": 14.19,
+    "camera_center_sweep_deg": 19.96,
+    "edge_aware_horizontal_coverage_deg": 121.36
+  },
+  "formula_audit": {
+    "function": "run_opencv_stitching() in server/opencv_panorama_worker.py",
+    "inputs": {
+      "pano_w": {
+        "8shot": 4186,
+        "12shot": 4785
+      },
+      "native_focal": {
+        "8shot": 1843.1,
+        "12shot": 2095.8
+      },
+      "formula": "horiz_cov_deg = (pano_w / native_focal) * (180 / pi)"
+    },
+    "step_by_step_8shot": {
+      "pano_w": 4186,
+      "native_focal": 1843.1,
+      "horiz_cov_rad": 2.271173566274212,
+      "horiz_cov_deg": 130.12865988918813
+    },
+    "step_by_step_12shot": {
+      "pano_w": 4785,
+      "native_focal": 2095.8,
+      "horiz_cov_rad": 2.283137703979387,
+      "horiz_cov_deg": 130.81415448520798
+    },
+    "value_source": "OUTPUT_CROP_WIDTH of only the largest connected component, which dropped non-connected cameras"
+  },
+  "component_membership": {
+    "8shot": {
+      "input_count": 8,
+      "connected_count": 5,
+      "connected_indices": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "dropped_indices": [
+        0,
+        6,
+        7
+      ],
+      "dropped_filenames": [
+        "SHOT_01_20231006_181055.jpg",
+        "SHOT_07_20231006_181300.jpg",
+        "SHOT_08_20231006_181323.jpg"
+      ],
+      "all_inputs_used": false,
+      "drop_reason": "Pair 1->2 (4 inliers) and Pair 6->7 (5 inliers) failed homography inlier threshold (<15 inliers), fragmenting the match graph."
+    },
+    "12shot": {
+      "input_count": 12,
+      "connected_count": 7,
+      "connected_indices": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "dropped_indices": [
+        0,
+        1,
+        9,
+        10,
+        11
+      ],
+      "dropped_filenames": [
+        "SHOT_01_20231006_181055.jpg",
+        "SHOT_02_20231006_181101.jpg",
+        "SHOT_10_20231006_181300.jpg",
+        "SHOT_11_20231006_181308.jpg",
+        "SHOT_12_20231006_181323.jpg"
+      ],
+      "all_inputs_used": false,
+      "drop_reason": "Pair 2->3 (6 inliers) and Pair 9->10 (5 inliers) failed homography inlier threshold (<15 inliers), leaving only photos 3..9 in largest component."
+    }
+  },
+  "closure_residual_audit": {
+    "reported_value": 36.89,
+    "calculation_source": "cv2.findHomography reprojection error between last photo and first photo in scratch/prepare_c11_33_datasets.py",
+    "why_identical": "Both REAL_SMARTPHONE_8SHOT_001 and REAL_SMARTPHONE_12SHOT_001 shared the identical first photo (20231006_181055.jpg) and identical last photo (20231006_181323.jpg), so the pairwise homography reprojection error evaluated the identical image pair.",
+    "reused": true,
+    "status": "VALID_PAIRWISE_HOMOGRAPHY_ERROR_ON_IDENTICAL_IMAGES"
+  },
+  "root_cause": "IMAGE_COMPONENT_DROPOUT",
+  "final_status": "IMAGE_COMPONENT_DROPOUT"
+}
