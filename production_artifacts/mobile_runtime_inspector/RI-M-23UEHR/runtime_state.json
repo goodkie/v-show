@@ -1,0 +1,214 @@
+{
+  "appInfo": {
+    "appId": "3dz-virtual-tradeshow-mobile",
+    "appName": "3DZ Virtual Tradeshow Studio (Mobile)",
+    "mobileRiSessionId": "RI-M-23UEHR",
+    "timestamp": "2026-09-07T20:50:51.878Z",
+    "platform": "Android Chrome",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Mobile Safari/537.36",
+    "protocol": "https:",
+    "host": "v-show-commercial-v1-production.up.railway.app",
+    "url": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&qa=1",
+    "isSecureContext": true,
+    "screenWidth": 345,
+    "screenHeight": 883,
+    "devicePixelRatio": 2.625,
+    "orientation": "portrait-primary",
+    "environment": "production"
+  },
+  "camera": {
+    "hasMediaDevices": true,
+    "hasGetUserMedia": true,
+    "isSecureContext": true,
+    "cameraPermissionState": "prompt",
+    "getUserMediaCalled": true,
+    "getUserMediaResolved": true,
+    "cameraStreamActive": false,
+    "videoTrackState": "NO_TRACK",
+    "videoWidth": 1280,
+    "videoHeight": 720,
+    "videoReadyState": 4,
+    "facingMode": "unknown",
+    "cameraModule": "UNKNOWN",
+    "lastErrorCode": null,
+    "lastErrorMessage": null
+  },
+  "sensor": {
+    "hasDeviceOrientation": true,
+    "hasDeviceMotion": true,
+    "deviceOrientationEventCount": 3033,
+    "deviceMotionEventCount": 5620,
+    "lastOrientationTimestamp": 1788814251865,
+    "lastMotionTimestamp": 1788814251859,
+    "lastOrientation": {
+      "alpha": 93.5,
+      "beta": 31.1,
+      "gamma": 1.7,
+      "absolute": false
+    },
+    "lastMotion": {
+      "accX": 0.1,
+      "accY": -0.1,
+      "accZ": -0.2,
+      "rotAlpha": -8.4,
+      "rotBeta": -0.8,
+      "rotGamma": -3.1
+    },
+    "sensorGuidanceMode": "UNKNOWN"
+  },
+  "guidedCapture": {
+    "controllerPresent": true,
+    "controllerId": "guided_capture_0",
+    "captureState": "COMPLETE",
+    "progressPercent": 0,
+    "accumulatedRotation": 355,
+    "previewFrameCount": 226,
+    "candidateFrameCount": 45,
+    "acceptedCandidateCount": 38,
+    "rejectedCandidateCount": 7,
+    "canonicalKeyframeCount": 12,
+    "candidateRejectionReasons": [
+      {
+        "angle": 24.3,
+        "reason": "MOTION_BLUR",
+        "sharpness": 27,
+        "exposure": 79,
+        "timestamp": 1788814161965
+      },
+      {
+        "angle": 159.7,
+        "reason": "MOTION_BLUR",
+        "sharpness": 16,
+        "exposure": 59,
+        "timestamp": 1788814166953
+      },
+      {
+        "angle": 163.2,
+        "reason": "MOTION_BLUR",
+        "sharpness": 19,
+        "exposure": 67,
+        "timestamp": 1788814167066
+      },
+      {
+        "angle": 163.2,
+        "reason": "MOTION_BLUR",
+        "sharpness": 20,
+        "exposure": 85,
+        "timestamp": 1788814167181
+      },
+      {
+        "angle": 199.2,
+        "reason": "MOTION_BLUR",
+        "sharpness": 24,
+        "exposure": 119,
+        "timestamp": 1788814167968
+      },
+      {
+        "angle": 204.7,
+        "reason": "MOTION_BLUR",
+        "sharpness": 27,
+        "exposure": 137,
+        "timestamp": 1788814168092
+      },
+      {
+        "angle": 204.7,
+        "reason": "MOTION_BLUR",
+        "sharpness": 28,
+        "exposure": 174,
+        "timestamp": 1788814168200
+      }
+    ],
+    "guidanceMode": "UNKNOWN",
+    "visualMotionFallbackActive": false,
+    "orientationEventCount": 3033,
+    "motionEventCount": 5620,
+    "lastErrorCode": null,
+    "lastErrorMessage": null
+  },
+  "wizard": {
+    "wizardPresent": true,
+    "controllerInstanceCount": 1,
+    "wizardRootCount": 1,
+    "currentWizardStep": 7,
+    "wizardStepName": "Viewpoint 1 Ready",
+    "projectId": "prj-free-b0c6f3ea",
+    "tourId": null,
+    "viewpointCount": 3,
+    "currentViewpointId": "vp_entrance",
+    "isModalOpen": true
+  },
+  "viewpointMap": {
+    "mapMounted": true,
+    "activeSvgId": "editBoothMapSvg",
+    "viewpointCount": 3,
+    "renderedMarkerCount": 0,
+    "viewpoints": [
+      {
+        "id": "vp_entrance",
+        "name": "Entrance",
+        "x": 50,
+        "y": 85
+      },
+      {
+        "id": "vp_center",
+        "name": "Center",
+        "x": 48.7,
+        "y": 48.3
+      },
+      {
+        "id": "vp_product",
+        "name": "Product Display",
+        "x": 25.4,
+        "y": 20.7
+      }
+    ]
+  },
+  "viewer": {
+    "controllerPresent": false,
+    "tourId": null,
+    "activeViewpointId": null,
+    "viewerMode": "STANDARD"
+  },
+  "domHealth": {
+    "duplicateWizardRoots": 1,
+    "brandLogoCount": 1,
+    "brandDuplicateTextCount": 0,
+    "rawCssLeaksDetected": false,
+    "leakedCssSnippets": []
+  },
+  "rollingBufferSnapshot": {
+    "capturedAt": "2026-09-07T20:50:51.881Z",
+    "windowSeconds": 60,
+    "eventCount": 2,
+    "events": [
+      {
+        "timestamp": 1788814215238,
+        "isoTime": "2026-09-07T20:50:15.238Z",
+        "category": "INTERACTION",
+        "type": "TAP",
+        "payload": {
+          "id": "btnMobileRiReport",
+          "className": null,
+          "text": "REPORT ISSUE"
+        }
+      },
+      {
+        "timestamp": 1788814251875,
+        "isoTime": "2026-09-07T20:50:51.875Z",
+        "category": "INTERACTION",
+        "type": "TAP",
+        "payload": {
+          "id": "btnMobileRiSubmit",
+          "className": null,
+          "text": "CAPTURE BUG REPORT"
+        }
+      }
+    ],
+    "consoleCount": 0,
+    "consoleLogs": [],
+    "networkCount": 0,
+    "networkRequests": [],
+    "checkpointCount": 0,
+    "checkpoints": []
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "hasDeviceOrientation": true,
+  "hasDeviceMotion": true,
+  "deviceOrientationEventCount": 3033,
+  "deviceMotionEventCount": 5620,
+  "lastOrientationTimestamp": 1788814251865,
+  "lastMotionTimestamp": 1788814251859,
+  "lastOrientation": {
+    "alpha": 93.5,
+    "beta": 31.1,
+    "gamma": 1.7,
+    "absolute": false
+  },
+  "lastMotion": {
+    "accX": 0.1,
+    "accY": -0.1,
+    "accZ": -0.2,
+    "rotAlpha": -8.4,
+    "rotBeta": -0.8,
+    "rotGamma": -3.1
+  },
+  "sensorGuidanceMode": "UNKNOWN"
+}

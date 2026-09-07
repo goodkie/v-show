@@ -1,0 +1,45 @@
+{
+  "sessionId": "TEST_SYNTH_SESSION",
+  "canonicalCount": 12,
+  "canonicalCandidates": [
+    "C001",
+    "C002",
+    "C005",
+    "C007",
+    "C009",
+    "C010",
+    "C011",
+    "C012",
+    "C013",
+    "C014",
+    "C015",
+    "C016"
+  ],
+  "bridgesAdded": 3,
+  "bridgeDetails": [
+    {
+      "sector": "C002->C005",
+      "bridgeCandidate": "C003",
+      "bridgeIndex": 2,
+      "originalEdgeInliers": 0,
+      "bridgeMinInliers": 23,
+      "valid": true
+    },
+    {
+      "sector": "C005->C007",
+      "bridgeCandidate": "C006",
+      "bridgeIndex": 5,
+      "originalEdgeInliers": 5,
+      "bridgeMinInliers": 10,
+      "valid": false
+    },
+    {
+      "sector": "C007->C009",
+      "bridgeCandidate": "C008",
+      "bridgeIndex": 7,
+      "originalEdgeInliers": 7,
+      "bridgeMinInliers": 23,
+      "valid": true
+    }
+  ]
+}

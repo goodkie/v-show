@@ -1,0 +1,18 @@
+{
+  "sessionId": "RI-M-23UEHR",
+  "environment": "INTERNAL_DEV",
+  "isTest": true,
+  "receivedAt": "2026-09-07T20:50:51.972Z",
+  "SESSION_ID": "RI-M-23UEHR",
+  "PLATFORM": "Android Chrome",
+  "platform": "Android Chrome",
+  "SECURE_HTTPS": "YES",
+  "CAMERA_READY": "AVAILABLE",
+  "CAMERA_FRAMES": 226,
+  "MOTION_EVENTS": 8653,
+  "CURRENT_STEP": 7,
+  "STEP_NAME": "Viewpoint 1 Ready",
+  "CAPTURE_PROGRESS": "0%",
+  "RAW_CSS_LEAK": "CLEAN",
+  "CHECKPOINT_COUNT": 0
+}

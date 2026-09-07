@@ -19511,7 +19511,18 @@ class GuidedCaptureController {
     this.candidateFrameCount = 0;
     this.acceptedCandidateCount = 0;
     this.rejectedCandidateCount = 0;
+    this.persistedCandidateCount = 0;
+    this.candidateUploadFailures = 0;
+    this.candidateUploadQueue = [];
+    this.candidateUploadActiveCount = 0;
     this.canonicalKeyframeCount = 0;
+    this.stitchAwareCanonicalCount = 0;
+    this.bridgeFrameCount = 0;
+    this.panoramaInputCount = 0;
+    this.graphConnected = null;
+    this.connectedComponentCount = 0;
+    this.weakestEdge = null;
+    this.closureEdgeConfidence = null;
     this.keyframeCount = 0;
     this.lastCandidateAngle = null;
     this.lastCandidateTimestamp = null;
@@ -20006,18 +20017,20 @@ class GuidedCaptureController {
     h2 = Math.imul(h2 ^ (h2 >>> 13), 3266489909);
     const hash = (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(16, '0');
 
+    const candId = 'C' + String(this.candidateFrames.length + 1).padStart(3, '0');
     const cand = {
-      candidateId: 'cand_' + (this.candidateFrames.length + 1),
+      candidateId: candId,
       index: this.candidateFrames.length + 1,
       timestamp: Date.now(),
       angle: Math.round(currentAngle * 10) / 10,
       sharpnessScore: sharpness,
       exposureScore: exposure,
+      motionScore: Math.round((this.turnSpeedDps || 0) * 10) / 10,
       width: vw,
       height: vh,
       hash,
       dataUrl,
-      status: 'ACCEPTED'
+      uploadStatus: 'PENDING'
     };
 
     this.candidateFrames.push(cand);
@@ -20025,6 +20038,9 @@ class GuidedCaptureController {
     this.telemetry.acceptedCandidateCount = this.acceptedCandidateCount;
     this.lastCandidateAngle = currentAngle;
     this.lastCandidateTimestamp = Date.now();
+
+    // Stream candidate frame to server immediately via bounded queue
+    this.enqueueCandidateUpload(cand);
 
     return cand;
   }
@@ -20185,6 +20201,85 @@ class GuidedCaptureController {
     return sheetCanvas.toDataURL('image/jpeg', 0.88);
   }
 
+  enqueueCandidateUpload(cand) {
+    if (!this.candidateUploadQueue) this.candidateUploadQueue = [];
+    this.candidateUploadQueue.push(cand);
+    this.processCandidateUploadQueue();
+  }
+
+  async processCandidateUploadQueue() {
+    if (this.candidateUploadActiveCount === undefined) this.candidateUploadActiveCount = 0;
+    const maxConcurrency = 2;
+    while (this.candidateUploadActiveCount < maxConcurrency && this.candidateUploadQueue.length > 0) {
+      const cand = this.candidateUploadQueue.shift();
+      this.candidateUploadActiveCount++;
+      cand.uploadStatus = 'UPLOADING';
+      this.uploadSingleCandidate(cand).finally(() => {
+        this.candidateUploadActiveCount--;
+        this.processCandidateUploadQueue();
+      });
+    }
+  }
+
+  async uploadSingleCandidate(cand) {
+    try {
+      const projectId = (window.activeProjectData && window.activeProjectData.id) ||
+                        new URLSearchParams(window.location.search).get('projectId') ||
+                        'prj-free-b0c6f3ea';
+      const payload = {
+        projectId,
+        captureSessionId: this.diagnosticSessionId,
+        candidateId: cand.candidateId,
+        index: cand.index,
+        timestamp: cand.timestamp,
+        estimatedYawDeg: cand.angle,
+        relativeRotationDeg: cand.angle,
+        sourceWidth: cand.width,
+        sourceHeight: cand.height,
+        sharpnessScore: cand.sharpnessScore,
+        exposureScore: cand.exposureScore,
+        motionScore: cand.motionScore,
+        contentHash: cand.hash,
+        dataUrl: cand.dataUrl
+      };
+
+      const res = await fetch('/api/projects/' + projectId + '/guided-capture/candidate-frame', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        cand.uploadStatus = 'PERSISTED';
+        this.persistedCandidateCount = (this.persistedCandidateCount || 0) + 1;
+        // Release heavy JPEG buffer from mobile RAM
+        cand.dataUrl = null;
+      } else {
+        cand.uploadStatus = 'FAILED_RETRYABLE';
+        this.candidateUploadFailures = (this.candidateUploadFailures || 0) + 1;
+      }
+    } catch (err) {
+      cand.uploadStatus = 'FAILED_RETRYABLE';
+      this.candidateUploadFailures = (this.candidateUploadFailures || 0) + 1;
+    }
+  }
+
+  async waitForCandidateUploadsToSettle(timeoutMs = 15000) {
+    const start = Date.now();
+    while ((this.candidateUploadQueue.length > 0 || this.candidateUploadActiveCount > 0) && (Date.now() - start < timeoutMs)) {
+      const retryable = this.candidateFrames.filter(c => c.uploadStatus === 'FAILED_RETRYABLE' && c.dataUrl);
+      if (retryable.length > 0 && this.candidateUploadQueue.length === 0) {
+        retryable.forEach(c => {
+          c.uploadStatus = 'PENDING';
+          this.candidateUploadQueue.push(c);
+        });
+        this.processCandidateUploadQueue();
+      }
+      await new Promise(r => setTimeout(r, 120));
+    }
+    return this.candidateFrames.every(c => c.uploadStatus === 'PERSISTED');
+  }
+
   async persistCaptureOutput() {
     try {
       const projectId = (window.activeProjectData && window.activeProjectData.id) ||
@@ -20194,6 +20289,33 @@ class GuidedCaptureController {
       const viewpointId = window.setupWizard?.state?.viewpoints?.[0]?.id || 'vp_entrance';
       const captureSessionId = this.diagnosticSessionId;
 
+      // 1. Await candidate streaming queue to drain and settle
+      console.log('[GuidedCapture] Awaiting candidate uploads to settle...');
+      const settled = await this.waitForCandidateUploadsToSettle();
+      console.log('[GuidedCapture] Candidate uploads settled. Success:', settled, 'Persisted:', this.persistedCandidateCount);
+
+      // 2. Finalize candidate pool on server
+      await fetch('/api/projects/' + projectId + '/guided-capture/finalize-capture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId,
+          tourId,
+          viewpointId,
+          captureSessionId,
+          previewFrameCount: this.telemetry.previewFrameCount,
+          candidateFrameCount: this.candidateFrameCount,
+          acceptedCandidateCount: this.acceptedCandidateCount,
+          rejectedCandidateCount: this.rejectedCandidateCount,
+          persistedCandidateCount: this.persistedCandidateCount,
+          candidateUploadFailures: this.candidateUploadFailures,
+          accumulatedRotation: this.accumulatedRotation,
+          guidanceMode: this.telemetry.guidanceMode,
+          rejectionReasons: this.candidateRejectionReasons
+        })
+      });
+
+      // 3. Persist canonical keyframes & contact sheet
       const contactSheetDataUrl = this.generateContactSheet(this.canonicalKeyframes);
 
       const payload = {
@@ -20205,6 +20327,7 @@ class GuidedCaptureController {
         candidateFrameCount: this.candidateFrameCount,
         acceptedCandidateCount: this.acceptedCandidateCount,
         rejectedCandidateCount: this.rejectedCandidateCount,
+        persistedCandidateCount: this.persistedCandidateCount,
         canonicalKeyframeCount: this.canonicalKeyframes.length,
         accumulatedRotation: this.accumulatedRotation,
         guidanceMode: this.telemetry.guidanceMode,
@@ -20220,7 +20343,7 @@ class GuidedCaptureController {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      console.log('[GuidedCapture] Keyframes persisted to server successfully.');
+      console.log('[GuidedCapture] Keyframes and Candidate Pool persisted to server successfully.');
     } catch (e) {
       console.warn('[GuidedCapture] Failed to persist keyframes:', e);
     }

@@ -1,0 +1,131 @@
+{
+  "sessionId": "TEST_SYNTH_SESSION",
+  "panoramaInputCount": 15,
+  "graphConnected": false,
+  "fullRingReady": false,
+  "minAdjacentInliers": 7,
+  "weakestEdge": "C012->C013 (7 inliers)",
+  "closureInliers": 34,
+  "frames": [
+    {
+      "sequenceIndex": 1,
+      "type": "CANONICAL",
+      "candidateId": "C001",
+      "estimatedYawDeg": 0.0,
+      "hash": "hash_C001",
+      "file": "C001.jpg"
+    },
+    {
+      "sequenceIndex": 2,
+      "type": "CANONICAL",
+      "candidateId": "C002",
+      "estimatedYawDeg": 25.0,
+      "hash": "hash_C002",
+      "file": "C002.jpg"
+    },
+    {
+      "sequenceIndex": 3,
+      "type": "BRIDGE",
+      "candidateId": "C003",
+      "estimatedYawDeg": 35.6,
+      "hash": "hash_C003",
+      "file": "C003.jpg"
+    },
+    {
+      "sequenceIndex": 4,
+      "type": "CANONICAL",
+      "candidateId": "C005",
+      "estimatedYawDeg": 65.9,
+      "hash": "hash_C005",
+      "file": "C005.jpg"
+    },
+    {
+      "sequenceIndex": 5,
+      "type": "BRIDGE",
+      "candidateId": "C006",
+      "estimatedYawDeg": 73.9,
+      "hash": "hash_C006",
+      "file": "C006.jpg"
+    },
+    {
+      "sequenceIndex": 6,
+      "type": "CANONICAL",
+      "candidateId": "C007",
+      "estimatedYawDeg": 90.0,
+      "hash": "hash_C007",
+      "file": "C007.jpg"
+    },
+    {
+      "sequenceIndex": 7,
+      "type": "BRIDGE",
+      "candidateId": "C008",
+      "estimatedYawDeg": 103.1,
+      "hash": "hash_C008",
+      "file": "C008.jpg"
+    },
+    {
+      "sequenceIndex": 8,
+      "type": "CANONICAL",
+      "candidateId": "C009",
+      "estimatedYawDeg": 133.5,
+      "hash": "hash_C009",
+      "file": "C009.jpg"
+    },
+    {
+      "sequenceIndex": 9,
+      "type": "CANONICAL",
+      "candidateId": "C010",
+      "estimatedYawDeg": 150.0,
+      "hash": "hash_C010",
+      "file": "C010.jpg"
+    },
+    {
+      "sequenceIndex": 10,
+      "type": "CANONICAL",
+      "candidateId": "C011",
+      "estimatedYawDeg": 168.8,
+      "hash": "hash_C011",
+      "file": "C011.jpg"
+    },
+    {
+      "sequenceIndex": 11,
+      "type": "CANONICAL",
+      "candidateId": "C012",
+      "estimatedYawDeg": 213.0,
+      "hash": "hash_C012",
+      "file": "C012.jpg"
+    },
+    {
+      "sequenceIndex": 12,
+      "type": "CANONICAL",
+      "candidateId": "C013",
+      "estimatedYawDeg": 228.6,
+      "hash": "hash_C013",
+      "file": "C013.jpg"
+    },
+    {
+      "sequenceIndex": 13,
+      "type": "CANONICAL",
+      "candidateId": "C014",
+      "estimatedYawDeg": 270.6,
+      "hash": "hash_C014",
+      "file": "C014.jpg"
+    },
+    {
+      "sequenceIndex": 14,
+      "type": "CANONICAL",
+      "candidateId": "C015",
+      "estimatedYawDeg": 309.3,
+      "hash": "hash_C015",
+      "file": "C015.jpg"
+    },
+    {
+      "sequenceIndex": 15,
+      "type": "CANONICAL",
+      "candidateId": "C016",
+      "estimatedYawDeg": 339.7,
+      "hash": "hash_C016",
+      "file": "C016.jpg"
+    }
+  ]
+}

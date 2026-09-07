@@ -10499,6 +10499,156 @@ app.post('/api/projects/:id/wizard-state', async (req, res) => {
 const CANONICAL_PUBLIC_ORIGIN = process.env.PUBLIC_BASE_URL || 'https://v-show-commercial-v1-production.up.railway.app';
 // captureSessions Map initialized globally in Mobile RI QA section
 
+// C12.8-P0: Incremental candidate frame persistence endpoint
+app.post('/api/projects/:id/guided-capture/candidate-frame', express.json({ limit: '15mb' }), async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const body = req.body || {};
+    const captureSessionId = body.captureSessionId || ('sess_' + Date.now());
+    const candidateId = body.candidateId;
+    const dataUrl = body.dataUrl;
+
+    if (!candidateId || !dataUrl) {
+      return res.status(400).json({ ok: false, error: 'candidateId and dataUrl required' });
+    }
+
+    const base64Data = dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
+    const buf = Buffer.from(base64Data, 'base64');
+
+    const dataKfDir = path.resolve(__dirname, '../data/guided_capture_keyframes', captureSessionId);
+    const candDir = path.join(dataKfDir, 'candidates');
+    const localArtifactCandDir = path.resolve(__dirname, '../../production_artifacts/c12_8_candidates', captureSessionId);
+
+    [dataKfDir, candDir, localArtifactCandDir].forEach(d => {
+      if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+    });
+
+    const candFile = path.join(candDir, candidateId + '.jpg');
+    fs.writeFileSync(candFile, buf);
+    try {
+      fs.writeFileSync(path.join(localArtifactCandDir, candidateId + '.jpg'), buf);
+    } catch (e) {}
+
+    // Update candidate_pool.json
+    const poolManifestPath = path.join(dataKfDir, 'candidate_pool.json');
+    let poolData = {
+      projectId,
+      captureSessionId,
+      updatedAt: new Date().toISOString(),
+      candidates: []
+    };
+
+    if (fs.existsSync(poolManifestPath)) {
+      try {
+        poolData = JSON.parse(fs.readFileSync(poolManifestPath, 'utf8'));
+      } catch (e) {}
+    }
+
+    const candMeta = {
+      candidateId,
+      index: body.index || (poolData.candidates.length + 1),
+      timestamp: body.timestamp || Date.now(),
+      estimatedYawDeg: body.estimatedYawDeg !== undefined ? body.estimatedYawDeg : (body.angle || 0),
+      relativeRotationDeg: body.relativeRotationDeg !== undefined ? body.relativeRotationDeg : (body.angle || 0),
+      sourceWidth: body.sourceWidth || 1080,
+      sourceHeight: body.sourceHeight || 1920,
+      sharpnessScore: body.sharpnessScore || 0,
+      exposureScore: body.exposureScore || 0,
+      motionScore: body.motionScore || 0,
+      contentHash: body.contentHash || body.hash || '',
+      bytes: buf.length,
+      persistedAt: new Date().toISOString()
+    };
+
+    const existingIdx = poolData.candidates.findIndex(c => c.candidateId === candidateId);
+    if (existingIdx >= 0) {
+      poolData.candidates[existingIdx] = candMeta;
+    } else {
+      poolData.candidates.push(candMeta);
+    }
+
+    poolData.totalCandidates = poolData.candidates.length;
+    poolData.updatedAt = new Date().toISOString();
+
+    fs.writeFileSync(poolManifestPath, JSON.stringify(poolData, null, 2));
+
+    res.json({
+      ok: true,
+      candidateId,
+      persisted: true,
+      bytes: buf.length,
+      poolCount: poolData.candidates.length
+    });
+  } catch (err) {
+    console.error('[GuidedCapture Candidate Frame Error]', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// C12.8-P0: Finalize capture session and trigger stitch-aware analysis
+app.post('/api/projects/:id/guided-capture/finalize-capture', express.json({ limit: '10mb' }), async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const body = req.body || {};
+    const captureSessionId = body.captureSessionId || ('sess_' + Date.now());
+    const dataKfDir = path.resolve(__dirname, '../data/guided_capture_keyframes', captureSessionId);
+    const poolManifestPath = path.join(dataKfDir, 'candidate_pool.json');
+
+    let poolData = { candidates: [] };
+    if (fs.existsSync(poolManifestPath)) {
+      try {
+        poolData = JSON.parse(fs.readFileSync(poolManifestPath, 'utf8'));
+      } catch (e) {}
+    }
+
+    poolData.previewFrameCount = body.previewFrameCount;
+    poolData.candidateFrameCount = body.candidateFrameCount;
+    poolData.acceptedCandidateCount = body.acceptedCandidateCount || poolData.candidates.length;
+    poolData.rejectedCandidateCount = body.rejectedCandidateCount || 0;
+    poolData.accumulatedRotation = body.accumulatedRotation || 360;
+    poolData.guidanceMode = body.guidanceMode;
+    poolData.rejectionReasons = body.rejectionReasons || [];
+    poolData.status = 'CANDIDATE_POOL_PERSISTED';
+
+    fs.writeFileSync(poolManifestPath, JSON.stringify(poolData, null, 2));
+
+    const repoRiDir = path.resolve(__dirname, '../../production_artifacts/mobile_runtime_inspector');
+    if (fs.existsSync(repoRiDir)) {
+      try {
+        fs.writeFileSync(path.join(repoRiDir, 'candidate_pool.json'), JSON.stringify(poolData, null, 2));
+      } catch (e) {}
+    }
+
+    res.json({
+      ok: true,
+      captureSessionId,
+      persistedCandidateCount: poolData.candidates.length,
+      status: 'CANDIDATE_POOL_PERSISTED'
+    });
+  } catch (err) {
+    console.error('[GuidedCapture Finalize Capture Error]', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// C12.8-P0: Candidate pool inspection endpoint
+app.get('/api/projects/:id/guided-capture/candidate-pool/:sessionId', (req, res) => {
+  try {
+    const captureSessionId = req.params.sessionId;
+    const dataKfDir = path.resolve(__dirname, '../data/guided_capture_keyframes', captureSessionId);
+    const poolManifestPath = path.join(dataKfDir, 'candidate_pool.json');
+
+    if (!fs.existsSync(poolManifestPath)) {
+      return res.status(404).json({ ok: false, error: 'Candidate pool not found' });
+    }
+
+    const data = JSON.parse(fs.readFileSync(poolManifestPath, 'utf8'));
+    res.json({ ok: true, pool: data });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // Telemetry endpoint
 app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50mb' }), async (req, res) => {
   try {
