@@ -975,7 +975,7 @@ const healthHandler = (req, res) => {
     schemaVersion: 5,
     stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
-    uiVersion: '3D2-V11.11-P0-3D-BOOTH',
+    uiVersion: '3D2-C12.8-P0-CANDIDATE-STREAMING',
     clientPath: path.join(__dirname, '..', 'client'),
     timestamp: new Date().toISOString()
   });
