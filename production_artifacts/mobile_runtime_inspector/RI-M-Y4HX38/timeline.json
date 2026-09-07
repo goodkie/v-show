@@ -1,0 +1,68 @@
+[
+  {
+    "timestamp": 1788809594668,
+    "isoTime": "2026-09-07T19:33:14.668Z",
+    "category": "INTERACTION",
+    "type": "TAP",
+    "payload": {
+      "id": "wizardBtnPrimary",
+      "className": null,
+      "text": "Start Tour Setup"
+    }
+  },
+  {
+    "timestamp": 1788809597551,
+    "isoTime": "2026-09-07T19:33:17.551Z",
+    "category": "INTERACTION",
+    "type": "TAP",
+    "payload": {
+      "id": "wizardBtnPrimary",
+      "className": null,
+      "text": "Continue"
+    }
+  },
+  {
+    "timestamp": 1788809600411,
+    "isoTime": "2026-09-07T19:33:20.411Z",
+    "category": "INTERACTION",
+    "type": "TAP",
+    "payload": {
+      "id": "wizardBtnPrimary",
+      "className": null,
+      "text": "Continue to Viewpoint 1"
+    }
+  },
+  {
+    "timestamp": 1788809612277,
+    "isoTime": "2026-09-07T19:33:32.277Z",
+    "category": "INTERACTION",
+    "type": "TAP",
+    "payload": {
+      "id": "wizardBtnPrimary",
+      "className": null,
+      "text": "Next: Stand Guide"
+    }
+  },
+  {
+    "timestamp": 1788809630648,
+    "isoTime": "2026-09-07T19:33:50.648Z",
+    "category": "INTERACTION",
+    "type": "TAP",
+    "payload": {
+      "id": "btnMobileRiReport",
+      "className": null,
+      "text": "REPORT ISSUE"
+    }
+  },
+  {
+    "timestamp": 1788809634426,
+    "isoTime": "2026-09-07T19:33:54.426Z",
+    "category": "INTERACTION",
+    "type": "TAP",
+    "payload": {
+      "id": "btnMobileRiSubmit",
+      "className": null,
+      "text": "CAPTURE BUG REPORT"
+    }
+  }
+]

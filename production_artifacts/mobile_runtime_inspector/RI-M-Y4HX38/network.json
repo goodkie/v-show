@@ -1,0 +1,47 @@
+[
+  {
+    "timestamp": 1788809591379,
+    "isoTime": "2026-09-07T19:33:11.379Z",
+    "method": "GET",
+    "url": "/api/projects/prj-free-b0c6f3ea/wizard-state",
+    "status": 200,
+    "durationMs": 100,
+    "ok": true
+  },
+  {
+    "timestamp": 1788809594936,
+    "isoTime": "2026-09-07T19:33:14.936Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/wizard-state",
+    "status": 200,
+    "durationMs": 268,
+    "ok": true
+  },
+  {
+    "timestamp": 1788809597745,
+    "isoTime": "2026-09-07T19:33:17.745Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/wizard-state",
+    "status": 200,
+    "durationMs": 193,
+    "ok": true
+  },
+  {
+    "timestamp": 1788809600590,
+    "isoTime": "2026-09-07T19:33:20.590Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/wizard-state",
+    "status": 200,
+    "durationMs": 179,
+    "ok": true
+  },
+  {
+    "timestamp": 1788809612401,
+    "isoTime": "2026-09-07T19:33:32.401Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/wizard-state",
+    "status": 200,
+    "durationMs": 124,
+    "ok": true
+  }
+]

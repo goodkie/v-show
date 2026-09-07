@@ -1,0 +1,251 @@
+{
+  "appInfo": {
+    "appId": "3dz-virtual-tradeshow-mobile",
+    "appName": "3DZ Virtual Tradeshow Studio (Mobile)",
+    "mobileRiSessionId": "RI-M-Y4HX38",
+    "timestamp": "2026-09-07T19:33:54.430Z",
+    "platform": "Android Chrome",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Mobile Safari/537.36",
+    "protocol": "https:",
+    "host": "v-show-commercial-v1-production.up.railway.app",
+    "url": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&qa=1",
+    "isSecureContext": true,
+    "screenWidth": 345,
+    "screenHeight": 883,
+    "devicePixelRatio": 2.625,
+    "orientation": "portrait-primary",
+    "environment": "production"
+  },
+  "camera": {
+    "hasMediaDevices": true,
+    "hasGetUserMedia": true,
+    "isSecureContext": true,
+    "cameraPermissionState": "prompt",
+    "getUserMediaCalled": false,
+    "getUserMediaResolved": false,
+    "cameraStreamActive": false,
+    "videoTrackState": "NO_TRACK",
+    "videoWidth": 1280,
+    "videoHeight": 720,
+    "videoReadyState": 4,
+    "facingMode": "unknown",
+    "cameraModule": "UNKNOWN",
+    "lastErrorCode": null,
+    "lastErrorMessage": null
+  },
+  "sensor": {
+    "hasDeviceOrientation": true,
+    "hasDeviceMotion": true,
+    "deviceOrientationEventCount": 982,
+    "deviceMotionEventCount": 2570,
+    "lastOrientationTimestamp": 1788809634375,
+    "lastMotionTimestamp": 1788809634413,
+    "lastOrientation": {
+      "alpha": 86.4,
+      "beta": 62.5,
+      "gamma": 9.4,
+      "absolute": false
+    },
+    "lastMotion": {
+      "accX": 0.1,
+      "accY": 0,
+      "accZ": 0,
+      "rotAlpha": -2.4,
+      "rotBeta": 1.5,
+      "rotGamma": -3.4
+    },
+    "sensorGuidanceMode": "UNKNOWN"
+  },
+  "guidedCapture": {
+    "controllerPresent": true,
+    "controllerId": "guided_capture_0",
+    "captureState": "IDLE",
+    "progressPercent": 0,
+    "accumulatedRotation": 0,
+    "previewFrameCount": 0,
+    "candidateFrameCount": 0,
+    "canonicalKeyframeCount": 0,
+    "guidanceMode": "UNKNOWN",
+    "visualMotionFallbackActive": false,
+    "orientationEventCount": 982,
+    "motionEventCount": 2570,
+    "lastErrorCode": null,
+    "lastErrorMessage": null
+  },
+  "wizard": {
+    "wizardPresent": true,
+    "controllerInstanceCount": 1,
+    "wizardRootCount": 1,
+    "currentWizardStep": 5,
+    "wizardStepName": "Stand Guide",
+    "projectId": "prj-free-b0c6f3ea",
+    "tourId": null,
+    "viewpointCount": 3,
+    "currentViewpointId": "vp_entrance",
+    "isModalOpen": true
+  },
+  "viewpointMap": {
+    "mapMounted": true,
+    "activeSvgId": "editBoothMapSvg",
+    "viewpointCount": 3,
+    "renderedMarkerCount": 0,
+    "viewpoints": [
+      {
+        "id": "vp_entrance",
+        "name": "Entrance",
+        "x": 50,
+        "y": 85
+      },
+      {
+        "id": "vp_center",
+        "name": "Center",
+        "x": 48.7,
+        "y": 48.3
+      },
+      {
+        "id": "vp_product",
+        "name": "Product Display",
+        "x": 25.4,
+        "y": 20.7
+      }
+    ]
+  },
+  "viewer": {
+    "controllerPresent": false,
+    "tourId": null,
+    "activeViewpointId": null,
+    "viewerMode": "STANDARD"
+  },
+  "domHealth": {
+    "duplicateWizardRoots": 1,
+    "brandLogoCount": 1,
+    "brandDuplicateTextCount": 0,
+    "rawCssLeaksDetected": false,
+    "leakedCssSnippets": []
+  },
+  "rollingBufferSnapshot": {
+    "capturedAt": "2026-09-07T19:33:54.433Z",
+    "windowSeconds": 60,
+    "eventCount": 6,
+    "events": [
+      {
+        "timestamp": 1788809594668,
+        "isoTime": "2026-09-07T19:33:14.668Z",
+        "category": "INTERACTION",
+        "type": "TAP",
+        "payload": {
+          "id": "wizardBtnPrimary",
+          "className": null,
+          "text": "Start Tour Setup"
+        }
+      },
+      {
+        "timestamp": 1788809597551,
+        "isoTime": "2026-09-07T19:33:17.551Z",
+        "category": "INTERACTION",
+        "type": "TAP",
+        "payload": {
+          "id": "wizardBtnPrimary",
+          "className": null,
+          "text": "Continue"
+        }
+      },
+      {
+        "timestamp": 1788809600411,
+        "isoTime": "2026-09-07T19:33:20.411Z",
+        "category": "INTERACTION",
+        "type": "TAP",
+        "payload": {
+          "id": "wizardBtnPrimary",
+          "className": null,
+          "text": "Continue to Viewpoint 1"
+        }
+      },
+      {
+        "timestamp": 1788809612277,
+        "isoTime": "2026-09-07T19:33:32.277Z",
+        "category": "INTERACTION",
+        "type": "TAP",
+        "payload": {
+          "id": "wizardBtnPrimary",
+          "className": null,
+          "text": "Next: Stand Guide"
+        }
+      },
+      {
+        "timestamp": 1788809630648,
+        "isoTime": "2026-09-07T19:33:50.648Z",
+        "category": "INTERACTION",
+        "type": "TAP",
+        "payload": {
+          "id": "btnMobileRiReport",
+          "className": null,
+          "text": "REPORT ISSUE"
+        }
+      },
+      {
+        "timestamp": 1788809634426,
+        "isoTime": "2026-09-07T19:33:54.426Z",
+        "category": "INTERACTION",
+        "type": "TAP",
+        "payload": {
+          "id": "btnMobileRiSubmit",
+          "className": null,
+          "text": "CAPTURE BUG REPORT"
+        }
+      }
+    ],
+    "consoleCount": 0,
+    "consoleLogs": [],
+    "networkCount": 5,
+    "networkRequests": [
+      {
+        "timestamp": 1788809591379,
+        "isoTime": "2026-09-07T19:33:11.379Z",
+        "method": "GET",
+        "url": "/api/projects/prj-free-b0c6f3ea/wizard-state",
+        "status": 200,
+        "durationMs": 100,
+        "ok": true
+      },
+      {
+        "timestamp": 1788809594936,
+        "isoTime": "2026-09-07T19:33:14.936Z",
+        "method": "POST",
+        "url": "/api/projects/prj-free-b0c6f3ea/wizard-state",
+        "status": 200,
+        "durationMs": 268,
+        "ok": true
+      },
+      {
+        "timestamp": 1788809597745,
+        "isoTime": "2026-09-07T19:33:17.745Z",
+        "method": "POST",
+        "url": "/api/projects/prj-free-b0c6f3ea/wizard-state",
+        "status": 200,
+        "durationMs": 193,
+        "ok": true
+      },
+      {
+        "timestamp": 1788809600590,
+        "isoTime": "2026-09-07T19:33:20.590Z",
+        "method": "POST",
+        "url": "/api/projects/prj-free-b0c6f3ea/wizard-state",
+        "status": 200,
+        "durationMs": 179,
+        "ok": true
+      },
+      {
+        "timestamp": 1788809612401,
+        "isoTime": "2026-09-07T19:33:32.401Z",
+        "method": "POST",
+        "url": "/api/projects/prj-free-b0c6f3ea/wizard-state",
+        "status": 200,
+        "durationMs": 124,
+        "ok": true
+      }
+    ],
+    "checkpointCount": 0,
+    "checkpoints": []
+  }
+}

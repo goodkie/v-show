@@ -1,0 +1,62 @@
+{
+  "totalCandidates": 26,
+  "acceptedCount": 26,
+  "rejectedCount": 0,
+  "sampleDistribution": [
+    {
+      "id": "KF01",
+      "yaw": 0,
+      "sharp": 3
+    },
+    {
+      "id": "KF02",
+      "yaw": 31.6,
+      "sharp": 3
+    },
+    {
+      "id": "KF03",
+      "yaw": 60,
+      "sharp": 3
+    },
+    {
+      "id": "KF04",
+      "yaw": 75,
+      "sharp": 3
+    },
+    {
+      "id": "KF05",
+      "yaw": 105,
+      "sharp": 3
+    },
+    {
+      "id": "KF06",
+      "yaw": 152,
+      "sharp": 3
+    },
+    {
+      "id": "KF07",
+      "yaw": 195,
+      "sharp": 3
+    },
+    {
+      "id": "KF08",
+      "yaw": 225,
+      "sharp": 2
+    },
+    {
+      "id": "KF09",
+      "yaw": 271.2,
+      "sharp": 3
+    },
+    {
+      "id": "KF10",
+      "yaw": 285,
+      "sharp": 3
+    },
+    {
+      "id": "KF11",
+      "yaw": 315,
+      "sharp": 3
+    }
+  ]
+}

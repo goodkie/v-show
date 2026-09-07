@@ -1,0 +1,18 @@
+{
+  "sessionId": "RI-M-K8OHTJ",
+  "environment": "INTERNAL_DEV",
+  "isTest": true,
+  "receivedAt": "2026-09-07T19:51:47.026Z",
+  "SESSION_ID": "RI-M-K8OHTJ",
+  "PLATFORM": "Android Chrome",
+  "platform": "Android Chrome",
+  "SECURE_HTTPS": "YES",
+  "CAMERA_READY": "AVAILABLE",
+  "CAMERA_FRAMES": 0,
+  "MOTION_EVENTS": 13523,
+  "CURRENT_STEP": 6,
+  "STEP_NAME": "Guided 360° Capture",
+  "CAPTURE_PROGRESS": "0%",
+  "RAW_CSS_LEAK": "CLEAN",
+  "CHECKPOINT_COUNT": 0
+}

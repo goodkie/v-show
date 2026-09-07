@@ -1,0 +1,161 @@
+{
+  "appInfo": {
+    "appId": "3dz-virtual-tradeshow-mobile",
+    "appName": "3DZ Virtual Tradeshow Studio (Mobile)",
+    "mobileRiSessionId": "RI-M-K8OHTJ",
+    "timestamp": "2026-09-07T19:51:46.946Z",
+    "platform": "Android Chrome",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Mobile Safari/537.36",
+    "protocol": "https:",
+    "host": "v-show-commercial-v1-production.up.railway.app",
+    "url": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&qa=1",
+    "isSecureContext": true,
+    "screenWidth": 345,
+    "screenHeight": 883,
+    "devicePixelRatio": 2.625,
+    "orientation": "portrait-primary",
+    "environment": "production"
+  },
+  "camera": {
+    "hasMediaDevices": true,
+    "hasGetUserMedia": true,
+    "isSecureContext": true,
+    "cameraPermissionState": "prompt",
+    "getUserMediaCalled": true,
+    "getUserMediaResolved": true,
+    "cameraStreamActive": false,
+    "videoTrackState": "NO_TRACK",
+    "videoWidth": 0,
+    "videoHeight": 0,
+    "videoReadyState": 0,
+    "facingMode": "unknown",
+    "cameraModule": "UNKNOWN",
+    "lastErrorCode": null,
+    "lastErrorMessage": null
+  },
+  "sensor": {
+    "hasDeviceOrientation": true,
+    "hasDeviceMotion": true,
+    "deviceOrientationEventCount": 4885,
+    "deviceMotionEventCount": 8638,
+    "lastOrientationTimestamp": 1788810706926,
+    "lastMotionTimestamp": 1788810706937,
+    "lastOrientation": {
+      "alpha": 89,
+      "beta": 65.4,
+      "gamma": 3.5,
+      "absolute": false
+    },
+    "lastMotion": {
+      "accX": -0.1,
+      "accY": 0,
+      "accZ": -0.1,
+      "rotAlpha": -3.6,
+      "rotBeta": -7.9,
+      "rotGamma": -3.3
+    },
+    "sensorGuidanceMode": "UNKNOWN"
+  },
+  "guidedCapture": {
+    "controllerPresent": true,
+    "controllerId": "guided_capture_0",
+    "captureState": "COMPLETE",
+    "progressPercent": 0,
+    "accumulatedRotation": 356,
+    "previewFrameCount": 0,
+    "candidateFrameCount": 0,
+    "canonicalKeyframeCount": 0,
+    "guidanceMode": "UNKNOWN",
+    "visualMotionFallbackActive": false,
+    "orientationEventCount": 4885,
+    "motionEventCount": 8638,
+    "lastErrorCode": null,
+    "lastErrorMessage": null
+  },
+  "wizard": {
+    "wizardPresent": true,
+    "controllerInstanceCount": 1,
+    "wizardRootCount": 1,
+    "currentWizardStep": 6,
+    "wizardStepName": "Guided 360° Capture",
+    "projectId": "prj-free-b0c6f3ea",
+    "tourId": null,
+    "viewpointCount": 3,
+    "currentViewpointId": "vp_entrance",
+    "isModalOpen": true
+  },
+  "viewpointMap": {
+    "mapMounted": true,
+    "activeSvgId": "editBoothMapSvg",
+    "viewpointCount": 3,
+    "renderedMarkerCount": 0,
+    "viewpoints": [
+      {
+        "id": "vp_entrance",
+        "name": "Entrance",
+        "x": 50,
+        "y": 85
+      },
+      {
+        "id": "vp_center",
+        "name": "Center",
+        "x": 48.7,
+        "y": 48.3
+      },
+      {
+        "id": "vp_product",
+        "name": "Product Display",
+        "x": 25.4,
+        "y": 20.7
+      }
+    ]
+  },
+  "viewer": {
+    "controllerPresent": false,
+    "tourId": null,
+    "activeViewpointId": null,
+    "viewerMode": "STANDARD"
+  },
+  "domHealth": {
+    "duplicateWizardRoots": 1,
+    "brandLogoCount": 1,
+    "brandDuplicateTextCount": 0,
+    "rawCssLeaksDetected": false,
+    "leakedCssSnippets": []
+  },
+  "rollingBufferSnapshot": {
+    "capturedAt": "2026-09-07T19:51:46.949Z",
+    "windowSeconds": 60,
+    "eventCount": 2,
+    "events": [
+      {
+        "timestamp": 1788810653149,
+        "isoTime": "2026-09-07T19:50:53.149Z",
+        "category": "INTERACTION",
+        "type": "TAP",
+        "payload": {
+          "id": "btnMobileRiReport",
+          "className": null,
+          "text": "REPORT ISSUE"
+        }
+      },
+      {
+        "timestamp": 1788810706943,
+        "isoTime": "2026-09-07T19:51:46.943Z",
+        "category": "INTERACTION",
+        "type": "TAP",
+        "payload": {
+          "id": "btnMobileRiSubmit",
+          "className": null,
+          "text": "CAPTURE BUG REPORT"
+        }
+      }
+    ],
+    "consoleCount": 0,
+    "consoleLogs": [],
+    "networkCount": 0,
+    "networkRequests": [],
+    "checkpointCount": 0,
+    "checkpoints": []
+  }
+}

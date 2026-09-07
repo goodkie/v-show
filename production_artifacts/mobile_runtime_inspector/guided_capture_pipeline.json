@@ -1,0 +1,12 @@
+{
+  "projectId": "prj-free-b0c6f3ea",
+  "testMode": "SYNTHETIC_KEYFRAME_PIPELINE_TEST",
+  "timestamp": "2026-09-07T20:01:00.586Z",
+  "previewFrameCount": 127,
+  "candidateFrameCount": 26,
+  "acceptedCandidateCount": 26,
+  "rejectedCandidateCount": 0,
+  "canonicalKeyframeCount": 11,
+  "closureVerified": true,
+  "status": "CAPTURE_OUTPUT_READY"
+}

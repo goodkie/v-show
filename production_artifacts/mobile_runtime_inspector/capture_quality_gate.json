@@ -1,0 +1,22 @@
+{
+  "minimumGatePassed": true,
+  "maximumGatePassed": true,
+  "uniqueHashCount": 11,
+  "keyframeCount": 11,
+  "hashesMatchKeyframeCount": true,
+  "angularDistribution": [
+    0,
+    31.6,
+    60,
+    75,
+    105,
+    152,
+    195,
+    225,
+    271.2,
+    285,
+    315
+  ],
+  "firstLastOverlap": 1,
+  "panoramaInputReady": true
+}

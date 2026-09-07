@@ -1,0 +1,18 @@
+{
+  "sessionId": "RI-M-Y4HX38",
+  "environment": "INTERNAL_DEV",
+  "isTest": true,
+  "receivedAt": "2026-09-07T19:33:54.548Z",
+  "SESSION_ID": "RI-M-Y4HX38",
+  "PLATFORM": "Android Chrome",
+  "platform": "Android Chrome",
+  "SECURE_HTTPS": "YES",
+  "CAMERA_READY": "AVAILABLE",
+  "CAMERA_FRAMES": 0,
+  "MOTION_EVENTS": 3552,
+  "CURRENT_STEP": 5,
+  "STEP_NAME": "Stand Guide",
+  "CAPTURE_PROGRESS": "0%",
+  "RAW_CSS_LEAK": "CLEAN",
+  "CHECKPOINT_COUNT": 0
+}
