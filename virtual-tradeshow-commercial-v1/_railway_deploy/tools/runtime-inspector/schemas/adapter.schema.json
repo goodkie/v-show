@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RuntimeInspectorAdapter",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "version",
+    "match",
+    "getAppInfo",
+    "getRuntimeState",
+    "getCustomProbes",
+    "getActions",
+    "sanitize",
+    "summarize"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "version": { "type": "string" }
+  }
+}

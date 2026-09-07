@@ -13855,20 +13855,334 @@ return event;
     ) || null;
   }
 
-  async discardEnhancedBoothCandidate(projectId, candidateId, token) {
+  // ============================================================
+  // C12.0-P0: MULTI-POINT 360° BOOTH TOUR ARCHITECTURE
+  // Models: Tour, Viewpoint, Connection, WizardState
+  // ============================================================
+
+  getTour(tourId) {
+    const data = this.read();
+    return (data.tours || []).find(t => t.id === tourId) || null;
+  }
+
+  getToursForProject(projectId) {
+    const data = this.read();
+    return (data.tours || []).filter(t => t.projectId === projectId);
+  }
+
+  getActiveTourForProject(projectId) {
+    const data = this.read();
+    const project = (data.projects || []).find(p => p.id === projectId);
+    if (!project || !project.activeTourId) return null;
+    return (data.tours || []).find(t => t.id === project.activeTourId) || null;
+  }
+
+  async createTour(tourData) {
     return this.mutate((db) => {
-      const candidate = (db.enhancedCandidates || []).find(c => c.candidateId === candidateId);
-      if (candidate) {
-        candidate.status = 'DISCARDED';
-        const accountId = candidate.accountId || token || 'anon';
-        let ledger = (db.tokenLedgers || []).find(l => l.accountId === accountId);
-        if (ledger && ledger.reservedTokens >= 25) {
-          ledger.reservedTokens -= 25;
-          ledger.availableTokens += 25;
-          ledger.lastUpdated = new Date().toISOString();
+      db.tours = db.tours || [];
+      const id = tourData.id || ('tour-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7));
+      const tour = {
+        id,
+        projectId: tourData.projectId,
+        viewerMode: 'MULTI_POINT_PANORAMA',
+        name: tourData.name || 'Main Booth Tour',
+        viewpointIds: tourData.viewpointIds || [],
+        defaultViewpointId: tourData.defaultViewpointId || null,
+        map: {
+          backgroundType: tourData.map?.backgroundType || 'GENERATED_GRID',
+          backgroundAssetId: tourData.map?.backgroundAssetId || null
+        },
+        status: tourData.status || 'DRAFT',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      db.tours.push(tour);
+      return tour;
+    });
+  }
+
+  async updateTour(tourId, updates) {
+    return this.mutate((db) => {
+      db.tours = db.tours || [];
+      const idx = db.tours.findIndex(t => t.id === tourId);
+      if (idx === -1) throw new Error(`Tour ${tourId} not found`);
+      const tour = db.tours[idx];
+      db.tours[idx] = {
+        ...tour,
+        ...updates,
+        map: { ...tour.map, ...(updates.map || {}) },
+        updatedAt: new Date().toISOString()
+      };
+      return db.tours[idx];
+    });
+  }
+
+  getViewpoint(viewpointId) {
+    const data = this.read();
+    return (data.viewpoints || []).find(v => v.id === viewpointId) || null;
+  }
+
+  getViewpointsForTour(tourId) {
+    const data = this.read();
+    return (data.viewpoints || []).filter(v => v.tourId === tourId).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+  }
+
+  async createViewpoint(vpData) {
+    return this.mutate((db) => {
+      db.viewpoints = db.viewpoints || [];
+      db.tours = db.tours || [];
+      const id = vpData.id || ('vp-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7));
+      const vp = {
+        id,
+        tourId: vpData.tourId,
+        name: vpData.name || 'Viewpoint',
+        description: vpData.description || '',
+        sortOrder: typeof vpData.sortOrder === 'number' ? vpData.sortOrder : db.viewpoints.filter(v => v.tourId === vpData.tourId).length + 1,
+        mapX: typeof vpData.mapX === 'number' ? vpData.mapX : 0.5,
+        mapY: typeof vpData.mapY === 'number' ? vpData.mapY : 0.5,
+        capture: {
+          maxPhotos: 8,
+          sourcePhotoIds: vpData.capture?.sourcePhotoIds || [],
+          captureRingConnected: Boolean(vpData.capture?.captureRingConnected),
+          qualityGateStatus: vpData.capture?.qualityGateStatus || 'INCOMPLETE'
+        },
+        panorama: {
+          candidatePanoramaVersionId: vpData.panorama?.candidatePanoramaVersionId || null,
+          activePanoramaVersionId: vpData.panorama?.activePanoramaVersionId || null,
+          projectionType: vpData.panorama?.projectionType || 'SPHERICAL',
+          horizontalCoverageDeg: vpData.panorama?.horizontalCoverageDeg || 360,
+          verticalCoverageDeg: vpData.panorama?.verticalCoverageDeg || 180,
+          full360Qualified: vpData.panorama?.full360Qualified !== undefined ? Boolean(vpData.panorama.full360Qualified) : true,
+          url: vpData.panorama?.url || vpData.panoramaUrl || null,
+          previewUrl: vpData.panorama?.previewUrl || vpData.panoramaUrl || null
+        },
+        panoramaUrl: vpData.panoramaUrl || vpData.panorama?.url || null,
+        status: vpData.status || 'DRAFT',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      db.viewpoints.push(vp);
+
+      // Add to tour viewpointIds if tour exists
+      const tour = db.tours.find(t => t.id === vpData.tourId);
+      if (tour) {
+        tour.viewpointIds = tour.viewpointIds || [];
+        if (!tour.viewpointIds.includes(id)) {
+          tour.viewpointIds.push(id);
+        }
+        if (!tour.defaultViewpointId) {
+          tour.defaultViewpointId = id;
+        }
+        tour.updatedAt = new Date().toISOString();
+      }
+
+      return vp;
+    });
+  }
+
+  async updateViewpoint(viewpointId, updates) {
+    return this.mutate((db) => {
+      db.viewpoints = db.viewpoints || [];
+      const idx = db.viewpoints.findIndex(v => v.id === viewpointId);
+      if (idx === -1) throw new Error(`Viewpoint ${viewpointId} not found`);
+      const existing = db.viewpoints[idx];
+      db.viewpoints[idx] = {
+        ...existing,
+        ...updates,
+        capture: { ...existing.capture, ...(updates.capture || {}) },
+        panorama: { ...existing.panorama, ...(updates.panorama || {}) },
+        panoramaUrl: updates.panoramaUrl || updates.panorama?.url || existing.panoramaUrl || existing.panorama?.url || null,
+        updatedAt: new Date().toISOString()
+      };
+      return db.viewpoints[idx];
+    });
+  }
+
+  async deleteViewpoint(viewpointId) {
+    return this.mutate((db) => {
+      db.viewpoints = db.viewpoints || [];
+      db.tourConnections = db.tourConnections || [];
+      db.tours = db.tours || [];
+
+      const vp = db.viewpoints.find(v => v.id === viewpointId);
+      if (!vp) return { success: true };
+
+      // Remove from viewpoints
+      db.viewpoints = db.viewpoints.filter(v => v.id !== viewpointId);
+
+      // Remove from tour viewpointIds
+      const tour = db.tours.find(t => t.id === vp.tourId);
+      if (tour && tour.viewpointIds) {
+        tour.viewpointIds = tour.viewpointIds.filter(id => id !== viewpointId);
+        if (tour.defaultViewpointId === viewpointId) {
+          tour.defaultViewpointId = tour.viewpointIds[0] || null;
+        }
+        tour.updatedAt = new Date().toISOString();
+      }
+
+      // Remove associated connections
+      db.tourConnections = db.tourConnections.filter(c => c.fromViewpointId !== viewpointId && c.toViewpointId !== viewpointId);
+
+      return { success: true };
+    });
+  }
+
+  getConnectionsForTour(tourId) {
+    const data = this.read();
+    return (data.tourConnections || []).filter(c => c.tourId === tourId);
+  }
+
+  async createTourConnection(connData) {
+    return this.mutate((db) => {
+      db.tourConnections = db.tourConnections || [];
+      const id = connData.id || ('conn-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7));
+      const conn = {
+        id,
+        tourId: connData.tourId,
+        fromViewpointId: connData.fromViewpointId,
+        toViewpointId: connData.toViewpointId,
+        navigationYaw: typeof connData.navigationYaw === 'number' ? connData.navigationYaw : 0.0,
+        label: connData.label || 'Go to Viewpoint',
+        bidirectional: connData.bidirectional !== false,
+        status: connData.status || 'ACTIVE',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      // Check if already exists
+      const existingIdx = db.tourConnections.findIndex(c => 
+        c.tourId === connData.tourId && 
+        c.fromViewpointId === connData.fromViewpointId && 
+        c.toViewpointId === connData.toViewpointId
+      );
+      if (existingIdx !== -1) {
+        db.tourConnections[existingIdx] = conn;
+      } else {
+        db.tourConnections.push(conn);
+      }
+
+      // If bidirectional, ensure reverse edge exists
+      if (conn.bidirectional) {
+        const reverseYaw = (conn.navigationYaw + 180) % 360;
+        const fromVp = (db.viewpoints || []).find(v => v.id === conn.fromViewpointId);
+        const reverseLabel = fromVp ? `Go to ${fromVp.name}` : 'Go back';
+        const revIdx = db.tourConnections.findIndex(c => 
+          c.tourId === connData.tourId && 
+          c.fromViewpointId === connData.toViewpointId && 
+          c.toViewpointId === connData.fromViewpointId
+        );
+        const revConn = {
+          id: revIdx !== -1 ? db.tourConnections[revIdx].id : ('conn-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7)),
+          tourId: connData.tourId,
+          fromViewpointId: connData.toViewpointId,
+          toViewpointId: connData.fromViewpointId,
+          navigationYaw: reverseYaw,
+          label: reverseLabel,
+          bidirectional: true,
+          status: 'ACTIVE',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        if (revIdx !== -1) {
+          db.tourConnections[revIdx] = revConn;
+        } else {
+          db.tourConnections.push(revConn);
         }
       }
+
+      return conn;
+    });
+  }
+
+  async deleteTourConnection(connId) {
+    return this.mutate((db) => {
+      db.tourConnections = db.tourConnections || [];
+      const conn = db.tourConnections.find(c => c.id === connId);
+      if (conn && conn.bidirectional) {
+        db.tourConnections = db.tourConnections.filter(c => 
+          c.id !== connId && 
+          !(c.tourId === conn.tourId && c.fromViewpointId === conn.toViewpointId && c.toViewpointId === conn.fromViewpointId)
+        );
+      } else {
+        db.tourConnections = db.tourConnections.filter(c => c.id !== connId);
+      }
       return { success: true };
+    });
+  }
+
+  getWizardState(projectId) {
+    const data = this.read();
+    return (data.wizardStates || {})[projectId] || null;
+  }
+
+  async saveWizardState(projectId, stateData) {
+    return this.mutate((db) => {
+      db.wizardStates = db.wizardStates || {};
+      const existing = db.wizardStates[projectId] || {};
+      db.wizardStates[projectId] = {
+        status: stateData.status || 'IN_PROGRESS',
+        currentStep: stateData.currentStep || existing.currentStep || 'START',
+        boothSize: stateData.boothSize || existing.boothSize || 'MEDIUM',
+        plannedViewpointCount: stateData.plannedViewpointCount || existing.plannedViewpointCount || 3,
+        completedViewpointIds: stateData.completedViewpointIds || existing.completedViewpointIds || [],
+        tourId: stateData.tourId || existing.tourId || null,
+        lastUpdatedAt: new Date().toISOString(),
+        ...stateData
+      };
+      return db.wizardStates[projectId];
+    });
+  }
+
+  async applyTour(projectId, tourId, token) {
+    return this.mutate(async (db) => {
+      const project = (db.projects || []).find(p => p.id === projectId);
+      if (!project) throw new Error(`Project ${projectId} not found`);
+
+      const tour = (db.tours || []).find(t => t.id === tourId);
+      if (!tour) throw new Error(`Tour ${tourId} not found`);
+
+      const viewpoints = (db.viewpoints || []).filter(v => v.tourId === tourId);
+      if (viewpoints.length === 0) {
+        throw new Error('Cannot apply tour: tour must contain at least 1 Viewpoint.');
+      }
+
+      // Validate default viewpoint
+      let defaultVp = viewpoints.find(v => v.id === tour.defaultViewpointId) || viewpoints[0];
+      tour.defaultViewpointId = defaultVp.id;
+      tour.status = 'ACTIVE';
+      tour.updatedAt = new Date().toISOString();
+
+      // Activate all viewpoints
+      viewpoints.forEach(vp => {
+        vp.status = 'READY';
+        if (vp.panorama?.candidatePanoramaVersionId && !vp.panorama?.activePanoramaVersionId) {
+          vp.panorama.activePanoramaVersionId = vp.panorama.candidatePanoramaVersionId;
+        }
+        vp.updatedAt = new Date().toISOString();
+      });
+
+      // Update project
+      project.viewerMode = 'MULTI_POINT_PANORAMA';
+      project.activeViewerMode = 'MULTI_POINT_PANORAMA';
+      project.activeTourId = tourId;
+      project.defaultViewpointId = defaultVp.id;
+      project.photoUrl = defaultVp.panorama?.url || defaultVp.panorama?.previewUrl || project.photoUrl;
+      project.updatedAt = new Date().toISOString();
+
+      // Update wizard state to COMPLETED
+      db.wizardStates = db.wizardStates || {};
+      if (db.wizardStates[projectId]) {
+        db.wizardStates[projectId].status = 'COMPLETED';
+        db.wizardStates[projectId].lastUpdatedAt = new Date().toISOString();
+      }
+
+      return {
+        success: true,
+        project,
+        tour,
+        viewpoints,
+        connections: (db.tourConnections || []).filter(c => c.tourId === tourId)
+      };
     });
   }
 }

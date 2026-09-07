@@ -1,3 +1,7 @@
-﻿node_modules/
+node_modules/
 .git/
 *.log
+data/uploads/
+uploads/
+production_artifacts/
+virtual-tradeshow-commercial-v1/

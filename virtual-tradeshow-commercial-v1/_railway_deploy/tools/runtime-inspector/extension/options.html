@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Runtime Inspector Options</title>
+  <style>
+    body { background: #090d16; color: #e2e8f0; font-family: sans-serif; padding: 30px; max-width: 600px; margin: 0 auto; }
+    h1 { color: #38bdf8; font-size: 20px; }
+    .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    label { display: block; font-weight: bold; margin-bottom: 8px; color: #94a3b8; }
+    select, input[type="text"] { width: 100%; padding: 8px; background: #020617; border: 1px solid #334155; color: #fff; border-radius: 4px; box-sizing: border-box; }
+    .domain-list { list-style: none; padding: 0; }
+    .domain-item { display: flex; justify-content: space-between; padding: 8px 12px; background: #020617; border: 1px solid #1e293b; border-radius: 4px; margin-bottom: 6px; }
+    button { background: #0284c7; color: #fff; border: none; border-radius: 4px; padding: 8px 14px; font-weight: bold; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Runtime Inspector Settings</h1>
+  <div class="card">
+    <label>Privacy Mode</label>
+    <select id="privacyMode">
+      <option value="STRICT">STRICT (Maximum Redaction, IDs redacted)</option>
+      <option value="STANDARD" selected>STANDARD (Default: Technical IDs preserved, Secrets & PII redacted)</option>
+      <option value="INTERNAL">INTERNAL (Engineering diagnostic payloads allowed, Secrets strictly blocked)</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <label>Approved Development Domains</label>
+    <ul class="domain-list" id="domainList">
+      <li class="domain-item"><span>v-show-commercial-v1-production.up.railway.app</span></li>
+      <li class="domain-item"><span>localhost</span></li>
+      <li class="domain-item"><span>127.0.0.1</span></li>
+    </ul>
+    <div style="display: flex; gap: 8px; margin-top: 12px;">
+      <input type="text" id="newDomain" placeholder="https://my-new-app.com">
+      <button type="button" id="btnAddDomain">Add Domain</button>
+    </div>
+  </div>
+</body>
+</html>

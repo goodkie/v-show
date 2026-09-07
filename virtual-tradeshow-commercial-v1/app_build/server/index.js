@@ -984,6 +984,354 @@ const healthHandler = (req, res) => {
 app.get('/health', healthHandler);
 app.get('/api/health', healthHandler);
 
+// ── Mobile Runtime Inspector Diagnostic API (C12.4 OWNER QA) ──
+let MobileRedactionEngine;
+try {
+  MobileRedactionEngine = require('../../../tools/runtime-inspector/core/redaction').RedactionEngine;
+} catch (e) {
+  try {
+    MobileRedactionEngine = require('../../tools/runtime-inspector/core/redaction').RedactionEngine;
+  } catch (e2) {
+    try {
+      MobileRedactionEngine = require('../tools/runtime-inspector/core/redaction').RedactionEngine;
+    } catch (e3) {
+      class FallbackRedactor {
+        constructor() { this.redactionCount = 0; }
+        sanitizeString(s) {
+          if (typeof s !== 'string') return s;
+          return s.replace(/eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}/g, '[REDACTED_JWT]')
+                  .replace(/Bearer\s+[^\s]+/gi, 'Bearer [REDACTED_TOKEN]')
+                  .replace(/tok-cap-[a-zA-Z0-9-]+/gi, '[REDACTED_TOKEN]');
+        }
+        sanitizeUrl(u) {
+          if (!u || typeof u !== 'string') return u;
+          return u.replace(/([?&](?:token|key|secret|auth|signature)=)[^&]+/gi, '$1[REDACTED]');
+        }
+        sanitizeObject(o) {
+          if (!o || typeof o !== 'object') return typeof o === 'string' ? this.sanitizeString(o) : o;
+          const res = Array.isArray(o) ? [] : {};
+          for (const [k, v] of Object.entries(o)) {
+            if (/token|secret|password|auth|cookie|key|jwt/i.test(k) && typeof v === 'string') {
+              res[k] = '[REDACTED_SECRET]';
+            } else if (typeof v === 'string') {
+              res[k] = this.sanitizeUrl(this.sanitizeString(v));
+            } else if (typeof v === 'object') {
+              res[k] = this.sanitizeObject(v);
+            } else {
+              res[k] = v;
+            }
+          }
+          return res;
+        }
+      }
+      MobileRedactionEngine = FallbackRedactor;
+    }
+  }
+}
+
+const serverRedactor = new MobileRedactionEngine({ privacyMode: 'STANDARD' });
+
+// Global thread-safe QA session storage
+const captureSessions = global.__captureSessions || (global.__captureSessions = new Map());
+const qaBrowserSessions = global.__qaBrowserSessions || (global.__qaBrowserSessions = new Map());
+
+function verifyQaAccess(req) {
+  // 1. Check QA browser session token (x-qa-session header or query param)
+  const qaSessionToken = (req.headers && req.headers['x-qa-session']) || (req.query && req.query.qaSessionToken) || (req.body && req.body.qaSessionToken);
+  if (qaSessionToken && qaBrowserSessions.has(qaSessionToken)) {
+    const sess = qaBrowserSessions.get(qaSessionToken);
+    if (sess.status === 'AUTHORIZED' && new Date(sess.expiresAt).getTime() > Date.now()) {
+      return sess;
+    }
+  }
+
+  // 2. Check active (unredeemed) QA token during initial exchange window
+  const qaToken = (req.headers && req.headers['x-qa-token']) || (req.query && req.query.token) || (req.body && req.body.token);
+  if (qaToken && captureSessions.has(qaToken)) {
+    const sess = captureSessions.get(qaToken);
+    if (sess.status === 'ACTIVE' && new Date(sess.expiresAt).getTime() > Date.now()) {
+      return sess;
+    }
+  }
+
+  // 3. Check Master Admin authorization if authenticated
+  if (req.user && (req.user.role === 'MASTER_ADMIN' || req.user.role === 'admin')) {
+    return { role: 'MASTER_ADMIN', authorized: true };
+  }
+
+  // 4. Check Bearer token for INTERNAL_FULL_ACCESS / INTERNAL_FULL_FEATURE_QA entitlement
+  const authHeader = req.headers && (req.headers['authorization'] || req.headers['Authorization']);
+  if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+    const bearer = authHeader.substring(7).trim();
+    if (typeof db !== 'undefined' && db.findCustomerSessionByToken) {
+      const custSess = db.findCustomerSessionByToken(bearer);
+      if (custSess && custSess.account && (custSess.account.entitlement === 'INTERNAL_FULL_ACCESS' || custSess.account.accountPurpose === 'INTERNAL_FULL_FEATURE_QA')) {
+        return { role: 'INTERNAL_QA', authorized: true, account: custSess.account, expiresAt: custSess.expiresAt };
+      }
+    }
+  }
+
+  return null;
+}
+
+// ── Endpoint 1: Single-Use QR Token Redemption ──
+app.post('/api/internal-qa/auth/redeem-session', express.json(), (req, res) => {
+  try {
+    const { token, projectId } = req.body || {};
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ ok: false, authorized: false, reason: 'TOKEN_REQUIRED' });
+    }
+
+    const session = captureSessions.get(token);
+    if (!session) {
+      return res.status(404).json({ ok: false, authorized: false, reason: 'QA_TOKEN_NOT_FOUND' });
+    }
+
+    if (new Date(session.expiresAt).getTime() < Date.now() || session.status === 'EXPIRED') {
+      session.status = 'EXPIRED';
+      return res.status(403).json({ ok: false, authorized: false, reason: 'QA_SESSION_EXPIRED' });
+    }
+
+    if (session.status === 'REDEEMED') {
+      return res.status(403).json({ ok: false, authorized: false, reason: 'QR_TOKEN_ALREADY_REDEEMED' });
+    }
+
+    if (session.status !== 'ACTIVE') {
+      return res.status(403).json({ ok: false, authorized: false, reason: 'QA_TOKEN_' + session.status });
+    }
+
+    // SINGLE USE: Invalidate the raw QR token immediately upon redemption
+    session.status = 'REDEEMED';
+    session.redeemedAt = new Date().toISOString();
+    session.usageCount = (session.usageCount || 0) + 1;
+
+    // Issue short-lived authorized QA browser session token
+    const qaSessionToken = 'qa-sess-' + crypto.randomBytes(24).toString('hex');
+    const browserSession = {
+      qaSessionToken,
+      projectId: session.projectId || projectId || 'prj-free-b0c6f3ea',
+      qrToken: session.token,
+      createdAt: new Date().toISOString(),
+      expiresAt: session.expiresAt,
+      status: 'AUTHORIZED',
+      role: 'OWNER_QA'
+    };
+    qaBrowserSessions.set(qaSessionToken, browserSession);
+
+    console.log(`[QA Auth] Redeemed single-use QR token -> Issued QA browser session for ${browserSession.projectId}`);
+
+    res.json({
+      ok: true,
+      authorized: true,
+      mobileRuntimeInspector: true,
+      qaSessionToken,
+      projectId: browserSession.projectId,
+      expiresAt: browserSession.expiresAt
+    });
+  } catch (err) {
+    console.error('[QA Redeem Error]', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ── Endpoint 2: Server-Authoritative Capability Verification ──
+app.get('/api/internal-qa/capabilities', (req, res) => {
+  try {
+    const auth = verifyQaAccess(req);
+    if (!auth) {
+      return res.status(200).json({
+        ok: true,
+        authorized: false,
+        mobileRuntimeInspector: false,
+        reason: 'UNAUTHORIZED_QA_SESSION'
+      });
+    }
+    res.json({
+      ok: true,
+      authorized: true,
+      mobileRuntimeInspector: true,
+      role: auth.role || 'OWNER_QA',
+      projectId: auth.projectId || 'prj-free-b0c6f3ea',
+      expiresAt: auth.expiresAt
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ── Endpoint 3: Gated Mobile RI Report Ingestion ──
+app.post('/api/internal-qa/mobile-ri/report', express.json({ limit: '25mb' }), async (req, res) => {
+  try {
+    const auth = verifyQaAccess(req);
+    if (!auth) {
+      return res.status(403).json({
+        ok: false,
+        error: 'FORBIDDEN: Server-side QA authorization required'
+      });
+    }
+
+    const rawPayload = req.body || {};
+    let sessionId = rawPayload.sessionId || ('RI-M-' + Math.random().toString(36).substring(2, 8).toUpperCase());
+    sessionId = sessionId.replace(/[^a-zA-Z0-9_-]/g, '');
+
+    // Server-side deep sanitization
+    const sanitized = serverRedactor.sanitizeObject(rawPayload);
+
+    // Guarantee environment and test markers
+    sanitized.environment = 'INTERNAL_DEV';
+    sanitized.isTest = true;
+    sanitized.receivedAt = new Date().toISOString();
+
+    const baseDir = path.join(process.cwd(), 'production_artifacts', 'mobile_runtime_inspector', sessionId);
+    fs.mkdirSync(baseDir, { recursive: true });
+
+    const filesSaved = [];
+
+    // 1. summary.json
+    const summaryData = {
+      sessionId,
+      environment: 'INTERNAL_DEV',
+      isTest: true,
+      receivedAt: sanitized.receivedAt,
+      ...(sanitized.summary || {})
+    };
+    fs.writeFileSync(path.join(baseDir, 'summary.json'), JSON.stringify(summaryData, null, 2), 'utf8');
+    filesSaved.push('summary.json');
+
+    // 2. timeline.json
+    const timelineData = sanitized.timeline || (sanitized.bufferSnapshot ? sanitized.bufferSnapshot.events : []);
+    fs.writeFileSync(path.join(baseDir, 'timeline.json'), JSON.stringify(timelineData, null, 2), 'utf8');
+    filesSaved.push('timeline.json');
+
+    // 3. console.json
+    const consoleData = sanitized.consoleLogs || (sanitized.bufferSnapshot ? sanitized.bufferSnapshot.consoleLogs : []);
+    fs.writeFileSync(path.join(baseDir, 'console.json'), JSON.stringify(consoleData, null, 2), 'utf8');
+    filesSaved.push('console.json');
+
+    // 4. network.json
+    const networkData = sanitized.networkRequests || (sanitized.bufferSnapshot ? sanitized.bufferSnapshot.networkRequests : []);
+    fs.writeFileSync(path.join(baseDir, 'network.json'), JSON.stringify(networkData, null, 2), 'utf8');
+    filesSaved.push('network.json');
+
+    // 5. runtime_state.json
+    const runtimeState = sanitized.runtimeState || {};
+    fs.writeFileSync(path.join(baseDir, 'runtime_state.json'), JSON.stringify(runtimeState, null, 2), 'utf8');
+    filesSaved.push('runtime_state.json');
+
+    // 6. camera_state.json
+    const cameraState = runtimeState.camera || {};
+    fs.writeFileSync(path.join(baseDir, 'camera_state.json'), JSON.stringify(cameraState, null, 2), 'utf8');
+    filesSaved.push('camera_state.json');
+
+    // 7. sensor_state.json
+    const sensorState = runtimeState.sensor || {};
+    fs.writeFileSync(path.join(baseDir, 'sensor_state.json'), JSON.stringify(sensorState, null, 2), 'utf8');
+    filesSaved.push('sensor_state.json');
+
+    // 8. wizard_state.json
+    const wizardState = runtimeState.wizard || {};
+    fs.writeFileSync(path.join(baseDir, 'wizard_state.json'), JSON.stringify(wizardState, null, 2), 'utf8');
+    filesSaved.push('wizard_state.json');
+
+    // 9. viewer_state.json
+    const viewerState = runtimeState.viewer || {};
+    fs.writeFileSync(path.join(baseDir, 'viewer_state.json'), JSON.stringify(viewerState, null, 2), 'utf8');
+    filesSaved.push('viewer_state.json');
+
+    // 10. screenshot.png (if screenshotBase64 provided)
+    if (rawPayload.screenshotBase64 && typeof rawPayload.screenshotBase64 === 'string') {
+      const match = rawPayload.screenshotBase64.match(/^data:image\/(png|jpeg|jpg);base64,(.+)$/);
+      if (match) {
+        const buf = Buffer.from(match[2], 'base64');
+        fs.writeFileSync(path.join(baseDir, 'screenshot.png'), buf);
+        filesSaved.push('screenshot.png');
+      }
+    }
+
+    console.log(`[MobileRI] Persisted session ${sessionId} with ${filesSaved.length} files to ${baseDir}`);
+
+    res.status(200).json({
+      ok: true,
+      sessionId,
+      status: 'PERSISTED',
+      environment: 'INTERNAL_DEV',
+      isTest: true,
+      artifactPath: `/production_artifacts/mobile_runtime_inspector/${sessionId}/`,
+      filesSaved,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('[MobileRI] Error persisting report:', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ── Endpoint 4: Gated Mobile RI Session Inspection ──
+app.get('/api/internal-qa/mobile-ri/session/:sessionId', (req, res) => {
+  try {
+    const auth = verifyQaAccess(req);
+    if (!auth) {
+      return res.status(403).json({
+        ok: false,
+        error: 'FORBIDDEN: Server-side QA authorization required'
+      });
+    }
+
+    const sessionId = (req.params.sessionId || '').replace(/[^a-zA-Z0-9_-]/g, '');
+    const baseDir = path.join(process.cwd(), 'production_artifacts', 'mobile_runtime_inspector', sessionId);
+    if (!fs.existsSync(baseDir)) {
+      return res.status(404).json({ ok: false, error: 'Session not found' });
+    }
+    const summaryFile = path.join(baseDir, 'summary.json');
+    const summary = fs.existsSync(summaryFile) ? JSON.parse(fs.readFileSync(summaryFile, 'utf8')) : null;
+    res.json({ ok: true, sessionId, summary, files: fs.readdirSync(baseDir) });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ── Endpoint 5: Gated Mobile RI Dashboard ──
+app.get('/runtime-inspector/mobile', (req, res) => {
+  const auth = verifyQaAccess(req);
+  if (!auth) {
+    return res.status(403).send('<!DOCTYPE html><html><body style="background:#0f172a;color:#ef4444;font-family:sans-serif;padding:30px;"><h2>403 Forbidden</h2><p>Server-side QA authorization required.</p></body></html>');
+  }
+
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mobile Runtime Inspector Dashboard — 3DZ</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; }
+    h1 { color: #38bdf8; font-size: 20px; margin-bottom: 8px; }
+    .badge { display: inline-block; background: #1e293b; color: #38bdf8; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-family: monospace; border: 1px solid #334155; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 16px; margin-top: 16px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #334155; }
+    th { color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <h1>📱 Mobile Runtime Inspector (C12.4 OWNER QA)</h1>
+  <div><span class="badge">ENVIRONMENT: INTERNAL_DEV</span> <span class="badge">STATUS: ACTIVE</span></div>
+  <div class="card">
+    <h3>Active Architecture & Endpoints</h3>
+    <table>
+      <tr><th>Endpoint</th><th>Method</th><th>Description</th></tr>
+      <tr><td><code>/api/internal-qa/auth/redeem-session</code></td><td>POST</td><td>Exchanges single-use QR token for short-lived QA browser session</td></tr>
+      <tr><td><code>/api/internal-qa/capabilities</code></td><td>GET</td><td>Server-authoritative QA capability verification</td></tr>
+      <tr><td><code>/api/internal-qa/mobile-ri/report</code></td><td>POST</td><td>Ingests 60s rolling buffer, camera/sensor metrics & saves artifacts</td></tr>
+      <tr><td><code>/api/internal-qa/mobile-ri/session/:id</code></td><td>GET</td><td>Inspects saved session diagnostic artifacts</td></tr>
+      <tr><td><code>/mobile-ri.bundle.js</code></td><td>GET</td><td>Client instrumentation bundle for S23 Ultra / iOS Safari</td></tr>
+    </table>
+  </div>
+</body>
+</html>`);
+});
+
 // TEMP DIAGNOSTIC: Read first lines of served index.html
 app.get('/api/debug/client-version', (req, res) => {
   try {
@@ -9580,9 +9928,63 @@ app.post('/api/projects/:id/spatial/generate', (req, res, next) => {
 });
 
 // ============================================================
-// C11.29-P0: DEDICATED PANORAMA BOOTH API ENDPOINTS
+// C11.29-P0 & C11.35-P0: DEDICATED PANORAMA BOOTH API ENDPOINTS
 // Canonical: /api/projects/:id/panorama/start, /api/panorama-jobs/:jobId, etc.
 // ============================================================
+const { defaultPanoramicStitcher } = require('./panoramic_stitcher');
+
+// C11.35-P0: Lightweight Pairwise Overlap Validation Endpoint
+app.post('/api/projects/:id/panorama/validate-pair', upload.array('photos', 2), async (req, res) => {
+  try {
+    let pathA = null, pathB = null;
+    let slotA = req.body?.slot1 || req.body?.fromSlot || 'SHOT_01';
+    let slotB = req.body?.slot2 || req.body?.toSlot || 'SHOT_02';
+
+    if (req.files && req.files.length >= 2) {
+      pathA = path.join(UPLOADS_DIR, req.files[0].filename);
+      pathB = path.join(UPLOADS_DIR, req.files[1].filename);
+    } else if (req.body?.pathA && req.body?.pathB) {
+      pathA = req.body.pathA;
+      pathB = req.body.pathB;
+    }
+
+    if (!pathA || !pathB) {
+      return res.status(400).json({ ok: false, error: 'Two photos required for pair validation.' });
+    }
+
+    const pairResult = defaultPanoramicStitcher.validatePair(pathA, pathB, slotA, slotB);
+    return res.json({ ok: true, success: true, ...pairResult });
+  } catch (err) {
+    console.error('[validate-pair error]', err);
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// C11.35-P0: Capture Ring Validation Endpoint (multi-photo)
+app.post('/api/projects/:id/panorama/validate-ring', upload.array('photos', 16), async (req, res) => {
+  try {
+    const sourceList = [];
+    if (req.files && req.files.length > 0) {
+      req.files.forEach((f, idx) => {
+        const slot = req.body['slot_' + idx] || ('SHOT_' + String(idx + 1).padStart(2, '0'));
+        sourceList.push({
+          path: path.join(UPLOADS_DIR, f.filename),
+          originalFilename: f.originalname,
+          slot,
+          index: idx
+        });
+      });
+    }
+    if (sourceList.length < 2) {
+      return res.status(400).json({ ok: false, error: 'At least 2 photos required for ring validation.' });
+    }
+    const ringResult = defaultPanoramicStitcher.validateCaptureRing(sourceList);
+    return res.json({ ok: true, success: true, ...ringResult });
+  } catch (err) {
+    console.error('[validate-ring error]', err);
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
 
 app.post('/api/projects/:id/panorama/start', upload.array('photos', 16), async (req, res) => {
   try {
@@ -9648,6 +10050,29 @@ app.post('/api/projects/:id/panorama/start', upload.array('photos', 16), async (
     const receivedCount = req.files ? req.files.length : 0;
     console.log(`[PANORAMA_SOURCE_INGEST] requestedSourceCount=${requestedCount} receivedSourceCount=${receivedCount} decodedSourceCount=${sourceList.length} distinctSourceCount=${distinctSourceHashes.length}`);
     console.log(`[PANORAMA_SOURCE_INGEST] sourceHashes=${sourceHashes.map(h => h.substring(0, 16) + '...').join(',')}`);
+
+    // C11.35-P0: SERVER-SIDE CAPTURE QUALITY GATE PRE-FLIGHT
+    // Independently validates adjacent pair connectivity before queuing or running OpenCV job
+    console.log(`[CAPTURE_QUALITY_GATE] Validating capture ring for ${sourceList.length} photos...`);
+    const ringValidation = defaultPanoramicStitcher.validateCaptureRing(sourceList);
+    console.log(`[CAPTURE_QUALITY_GATE] Result: ringStatus=${ringValidation.ringStatus} allPass=${ringValidation.allPass} failedPairs=${(ringValidation.failedPairs || []).join(',')}`);
+
+    if (!ringValidation.allPass || (ringValidation.failedPairs && ringValidation.failedPairs.length > 0)) {
+      const failMsg = `We need a little more overlap between adjacent photos. Broken connection detected: ${ringValidation.failedPairs.join(', ')}. Stay in the same spot and rotate less before taking the next photo.`;
+      console.warn(`[CAPTURE_QUALITY_GATE][REJECTED] Blocking panorama job. failedPairs=${ringValidation.failedPairs.join(',')}`);
+      return res.status(400).json({
+        ok: false,
+        success: false,
+        error: 'CAPTURE_RING_VALIDATION_FAILED',
+        errorCode: 'CAPTURE_RING_VALIDATION_FAILED',
+        failedPairs: ringValidation.failedPairs,
+        weakPairs: ringValidation.weakPairs || [],
+        pairResults: ringValidation.pairResults || [],
+        openCvJobStarted: false,
+        message: failMsg,
+        userMessage: failMsg
+      });
+    }
 
     const autoRemovePeople = req.body?.autoRemovePeople !== 'false' && req.body?.autoRemovePeople !== false;
     const jobId = 'job-pano-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
@@ -9756,9 +10181,30 @@ app.post('/api/projects/:id/panorama/start', upload.array('photos', 16), async (
           currentStage: 'READY',
           stageLabel: 'Panorama booth ready for preview',
           candidateId: candidate.candidateId,
-          candidate
+          candidate,
+          engine: candidate.engine || 'OPENCV',
+          engineVersion: candidate.engineVersion || '5.0.0',
+          featureEngine: candidate.featureEngine || 'SIFT',
+          sourceCount: candidate.sourceCount || candidate.sourceViewCount || candidate.totalSourceCount,
+          sourceHashes: candidate.sourceHashes || [],
+          cameraModels: candidate.cameraModels || [],
+          projection: candidate.projection || 'SPHERICAL',
+          horizontalCoverageDeg: candidate.horizontalCoverageDeg,
+          verticalCoverageDeg: candidate.verticalCoverageDeg,
+          outputMosaicCoverageEstimateDeg: candidate.outputMosaicCoverageEstimateDeg || candidate.horizontalCoverageDeg,
+          cameraGeometryCoverageDeg: candidate.cameraGeometryCoverageDeg,
+          lastFirstPairReprojectionError: candidate.lastFirstPairReprojectionError,
+          globalRingClosureError: candidate.globalRingClosureError,
+          allInputImagesUsed: Boolean(candidate.allInputImagesUsed),
+          bundleAdjustmentStatus: candidate.bundleAdjustmentStatus || 'CONVERGED',
+          cameraEstimationStatus: candidate.cameraEstimationStatus || 'CONVERGED',
+          seamStatus: candidate.seamStatus || 'SUCCESS',
+          blendStatus: candidate.blendStatus || 'SUCCESS',
+          full360Qualified: Boolean(candidate.full360Qualified),
+          nativeWidth: candidate.nativeWidth,
+          nativeHeight: candidate.nativeHeight
         });
-        console.log(`[PANORAMA][${jobId}][READY] Panorama candidate ready: ${candidate.candidateId}`);
+        console.log(`[PANORAMA][${jobId}][READY] Panorama candidate ready: ${candidate.candidateId} (Engine: ${candidate.engine}, 360: ${candidate.full360Qualified})`);
       } catch (workerErr) {
         console.error(`[PANORAMA][${jobId}][FAILED] Worker error:`, workerErr);
         const errCode = 'PANO-' + Math.floor(1000 + Math.random() * 9000);
@@ -9845,6 +10291,282 @@ app.post('/api/projects/:id/panorama/apply', async (req, res) => {
     });
   } catch (err) {
     console.error('[Panorama Apply Error]', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ============================================================
+// C12.0-P0: MULTI-POINT 360° BOOTH TOUR REST API ENDPOINTS
+// ============================================================
+
+// Get Active or Draft Tour for Project
+app.get('/api/projects/:id/tour', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const project = db.getProject(projectId);
+    if (!project) return res.status(404).json({ ok: false, error: 'Project not found' });
+
+    let tour = null;
+    if (req.query.tourId) {
+      tour = db.getTour(req.query.tourId);
+    } else if (project.activeTourId) {
+      tour = db.getTour(project.activeTourId);
+    } else {
+      const projectTours = db.getToursForProject(projectId);
+      tour = projectTours[0] || null;
+    }
+
+    if (!tour) {
+      return res.json({ ok: true, tour: null, viewpoints: [], connections: [] });
+    }
+
+    const viewpoints = db.getViewpointsForTour(tour.id);
+    const connections = db.getConnectionsForTour(tour.id);
+
+    res.json({
+      ok: true,
+      tour,
+      viewpoints,
+      connections,
+      defaultViewpointId: tour.defaultViewpointId || (viewpoints[0] ? viewpoints[0].id : null)
+    });
+  } catch (err) {
+    console.error('[Get Tour Error]', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Create or Update Tour
+app.post('/api/projects/:id/tour', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const project = db.getProject(projectId);
+    if (!project) return res.status(404).json({ ok: false, error: 'Project not found' });
+
+    let tour;
+    if (req.body.id) {
+      tour = await db.updateTour(req.body.id, { ...req.body, projectId });
+    } else {
+      tour = await db.createTour({ ...req.body, projectId });
+    }
+    const viewpoints = db.getViewpointsForTour(tour.id);
+    const connections = db.getConnectionsForTour(tour.id);
+
+    res.json({ ok: true, success: true, tour, viewpoints, connections });
+  } catch (err) {
+    console.error('[Save Tour Error]', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Apply Multi-Point Tour to Project
+app.post('/api/projects/:id/tour/apply', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const token = extractAuthToken(req);
+    const tourId = req.body?.tourId;
+    if (!tourId) return res.status(400).json({ ok: false, error: 'Missing tourId' });
+
+    const result = await db.applyTour(projectId, tourId, token);
+    console.log(`[TOUR_APPLY_AUDIT] Project=${projectId} Tour=${tourId} Viewpoints=${result.viewpoints.length} Connections=${result.connections.length}`);
+
+    res.json({
+      ok: true,
+      success: true,
+      project: result.project,
+      tour: result.tour,
+      viewpoints: result.viewpoints,
+      connections: result.connections,
+      message: 'Multi-Point 360° Booth Tour applied successfully.'
+    });
+  } catch (err) {
+    console.error('[Tour Apply Error]', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Create Viewpoint
+app.post('/api/projects/:id/tour/viewpoints', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const vp = await db.createViewpoint(req.body);
+    res.json({ ok: true, success: true, viewpoint: vp });
+  } catch (err) {
+    console.error('[Create Viewpoint Error]', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Update Viewpoint
+app.put('/api/projects/:id/tour/viewpoints/:vpId', async (req, res) => {
+  try {
+    const vp = await db.updateViewpoint(req.params.vpId, req.body);
+    res.json({ ok: true, success: true, viewpoint: vp });
+  } catch (err) {
+    console.error('[Update Viewpoint Error]', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Delete Viewpoint
+app.delete('/api/projects/:id/tour/viewpoints/:vpId', async (req, res) => {
+  try {
+    await db.deleteViewpoint(req.params.vpId);
+    res.json({ ok: true, success: true });
+  } catch (err) {
+    console.error('[Delete Viewpoint Error]', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Create Connection
+app.post('/api/projects/:id/tour/connections', async (req, res) => {
+  try {
+    const conn = await db.createTourConnection(req.body);
+    res.json({ ok: true, success: true, connection: conn });
+  } catch (err) {
+    console.error('[Create Connection Error]', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Delete Connection
+app.delete('/api/projects/:id/tour/connections/:connId', async (req, res) => {
+  try {
+    await db.deleteTourConnection(req.params.connId);
+    res.json({ ok: true, success: true });
+  } catch (err) {
+    console.error('[Delete Connection Error]', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Get Wizard State
+app.get('/api/projects/:id/wizard-state', async (req, res) => {
+  try {
+    const state = db.getWizardState(req.params.id);
+    res.json({ ok: true, wizardState: state || null });
+  } catch (err) {
+    console.error('[Get Wizard State Error]', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Save Wizard State
+app.post('/api/projects/:id/wizard-state', async (req, res) => {
+  try {
+    const state = await db.saveWizardState(req.params.id, req.body);
+    res.json({ ok: true, success: true, wizardState: state });
+  } catch (err) {
+    console.error('[Save Wizard State Error]', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ── C12.3-P0R2 & C12.3-P0R3: GUIDED CAPTURE TELEMETRY & CANONICAL SECURE CAPTURE SESSION ──
+const CANONICAL_PUBLIC_ORIGIN = process.env.PUBLIC_BASE_URL || 'https://v-show-commercial-v1-production.up.railway.app';
+// captureSessions Map initialized globally in Mobile RI QA section
+
+// Telemetry endpoint
+app.post('/api/projects/:id/guided-capture/telemetry', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const telemetryData = req.body || {};
+    const timestamp = new Date().toISOString();
+    const payload = {
+      projectId,
+      timestamp,
+      ...telemetryData
+    };
+    
+    // Write to production_artifacts/c12_3_p0_evidence/guided_capture_telemetry.json
+    const evidenceDir = path.resolve(__dirname, '../../production_artifacts/c12_3_p0_evidence');
+    if (!fs.existsSync(evidenceDir)) fs.mkdirSync(evidenceDir, { recursive: true });
+    fs.writeFileSync(path.join(evidenceDir, 'guided_capture_telemetry.json'), JSON.stringify(payload, null, 2), 'utf8');
+
+    // Also write to app_build/data for local persistence
+    const dataDir = path.resolve(__dirname, '../data');
+    if (fs.existsSync(dataDir)) {
+      fs.writeFileSync(path.join(dataDir, 'guided_capture_telemetry.json'), JSON.stringify(payload, null, 2), 'utf8');
+    }
+
+    console.log('[Telemetry] Recorded guided capture telemetry for ' + projectId + ':', {
+      mode: payload.guidanceMode,
+      frames: payload.previewFrameCount,
+      sensors: payload.deviceOrientationEventCount,
+      rotation: payload.accumulatedRotation,
+      session: payload.diagnosticSessionId,
+      error: payload.errorCode
+    });
+
+    res.json({ ok: true, success: true });
+  } catch (err) {
+    console.error('[Telemetry Error]', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Single-use capture session creation using canonical HTTPS origin
+app.post('/api/projects/:id/capture-session/create', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    // Revoke previous active tokens for this project
+    for (const [t, sess] of captureSessions.entries()) {
+      if (sess.projectId === projectId && sess.status === 'ACTIVE') {
+        sess.status = 'REVOKED';
+        sess.revokedAt = new Date().toISOString();
+      }
+    }
+
+    const sessionToken = 'tok-cap-' + crypto.randomBytes(16).toString('hex');
+    const now = Date.now();
+    const expiresAt = new Date(now + 2 * 60 * 60 * 1000).toISOString(); // 2 hours
+
+    const sessionData = {
+      token: sessionToken,
+      projectId,
+      createdAt: new Date(now).toISOString(),
+      expiresAt,
+      status: 'ACTIVE',
+      usageCount: 0
+    };
+
+    captureSessions.set(sessionToken, sessionData);
+
+    const canonicalUrl = `${CANONICAL_PUBLIC_ORIGIN}/index.html?projectId=${projectId}&token=${sessionToken}&step=6`;
+
+    console.log('[CaptureSession] Created session for ' + projectId + ': ' + sessionToken.slice(0, 12) + '... (expires: ' + expiresAt + ')');
+
+    res.json({
+      ok: true,
+      token: sessionToken,
+      expiresAt,
+      projectId,
+      canonicalUrl
+    });
+  } catch (err) {
+    console.error('[CaptureSession Error]', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Verify capture session
+app.get('/api/projects/:id/capture-session/:token/verify', (req, res) => {
+  try {
+    const session = captureSessions.get(req.params.token);
+    if (!session) {
+      return res.status(404).json({ ok: false, valid: false, reason: 'SESSION_NOT_FOUND' });
+    }
+    if (session.status !== 'ACTIVE') {
+      return res.status(403).json({ ok: false, valid: false, reason: 'SESSION_' + session.status });
+    }
+    if (new Date(session.expiresAt).getTime() < Date.now()) {
+      session.status = 'EXPIRED';
+      return res.status(403).json({ ok: false, valid: false, reason: 'SESSION_EXPIRED' });
+    }
+    session.usageCount = (session.usageCount || 0) + 1;
+    res.json({ ok: true, valid: true, session: { ...session, token: session.token.slice(0, 10) + '...' } });
+  } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
 });

@@ -147,15 +147,9 @@ class SpatialBoothPipeline {
 
       // Stage 5: MASTERING (70%) & REMOVING_PEOPLE (80%)
       let enhancementResult = null;
-      try {
-        enhancementResult = await aiEnhancedPipeline.processBoothPhoto(src.path, {
-          projectId,
-          originalFilename: src.originalFilename,
-          autoRemovePeople,
-          isTestAccount
-        });
-      } catch (enhErr) {
-        console.warn('[Spatial Enhance Fallback]', enhErr.message);
+      if (isPano) {
+        // C11.32-P0: Panoramic pipeline stitches native camera inputs directly.
+        // SR_USED = false (no ESRGAN/16K super-resolution).
         enhancementResult = {
           master: { url: '/uploads/' + path.basename(src.path) },
           derivatives: {
@@ -164,9 +158,28 @@ class SpatialBoothPipeline {
             mobile2k: { url: '/uploads/' + path.basename(src.path) }
           }
         };
+      } else {
+        try {
+          enhancementResult = await aiEnhancedPipeline.processBoothPhoto(src.path, {
+            projectId,
+            originalFilename: src.originalFilename,
+            autoRemovePeople,
+            isTestAccount
+          });
+        } catch (enhErr) {
+          console.warn('[Spatial Enhance Fallback]', enhErr.message);
+          enhancementResult = {
+            master: { url: '/uploads/' + path.basename(src.path) },
+            derivatives: {
+              desktop8k: { url: '/uploads/' + path.basename(src.path) },
+              standard4k: { url: '/uploads/' + path.basename(src.path) },
+              mobile2k: { url: '/uploads/' + path.basename(src.path) }
+            }
+          };
+        }
       }
 
-      const isPano = audit.width && audit.height && Math.abs((audit.width / audit.height) - 2.0) < 0.15;
+      const is2to1Pano = audit.width && audit.height && Math.abs((audit.width / audit.height) - 2.0) < 0.15;
 
       processedViews.push({
         id: 'sview-' + uuidv4().substring(0, 8),
@@ -253,12 +266,30 @@ class SpatialBoothPipeline {
         createdAt: new Date().toISOString(),
         status: 'READY_FOR_PREVIEW',
         geometryValid: true,
-        engine: 'PANORAMIC_GEOMETRIC_V1',
-        viewerEngineVersion: 'PANORAMIC_GEOMETRIC_V1',
+        engine: stitchResult.engine || 'OPENCV',
+        engineVersion: stitchResult.engineVersion || '5.0.0',
+        featureEngine: stitchResult.featureEngine || 'SIFT',
+        viewerEngineVersion: 'OPENCV',
         viewerMode: 'PANORAMIC_IMMERSIVE',
-        projectionType: 'EQUIRECTANGULAR',
-        horizontalCoverageDeg: ringValidation.horizontalCoverageDeg,
-        full360Qualified: ringValidation.full360Qualified,
+        panoramaType: stitchResult.panoramaType || (stitchResult.full360Qualified ? 'FULL_360' : 'PARTIAL'),
+        projection: stitchResult.projectionType || (stitchResult.full360Qualified ? 'EQUIRECTANGULAR' : 'SPHERICAL'),
+        projectionType: stitchResult.projectionType || (stitchResult.full360Qualified ? 'EQUIRECTANGULAR' : 'SPHERICAL'),
+        horizontalCoverageDeg: stitchResult.horizontalCoverageDeg || ringValidation.horizontalCoverageDeg || 0,
+        verticalCoverageDeg: stitchResult.verticalCoverageDeg || ringValidation.verticalCoverageDeg || 0,
+        yawMin: stitchResult.yawMin,
+        yawMax: stitchResult.yawMax,
+        pitchMin: stitchResult.pitchMin,
+        pitchMax: stitchResult.pitchMax,
+        full360Qualified: Boolean(stitchResult.full360Qualified),
+        bundleAdjustmentStatus: stitchResult.bundleAdjustmentStatus || 'CONVERGED',
+        cameraEstimationStatus: stitchResult.cameraEstimationStatus || 'CONVERGED',
+        warpStatus: stitchResult.warpStatus || 'SUCCESS',
+        exposureCompensationStatus: stitchResult.exposureCompensationStatus || 'SUCCESS',
+        seamStatus: stitchResult.seamStatus || 'SUCCESS',
+        blendStatus: stitchResult.blendStatus || 'SUCCESS',
+        nativeWidth: stitchResult.nativeWidth || (stitchResult.nativeStitchDimensions ? parseInt(stitchResult.nativeStitchDimensions.split('x')[0], 10) : 0),
+        nativeHeight: stitchResult.nativeHeight || (stitchResult.nativeStitchDimensions ? parseInt(stitchResult.nativeStitchDimensions.split('x')[1], 10) : 0),
+        cameraModels: (stitchResult.sources || []).map(s => `${s.cameraMake || ''} ${s.cameraModel || ''}`.trim()),
         captureRingValid: ringValidation.isRingValid,
         ringClosureRotationErrorDeg: ringValidation.ringClosureRotationErrorDeg,
         ringClosureReprojectionError: ringValidation.ringClosureReprojectionError,

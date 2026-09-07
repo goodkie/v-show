@@ -1,0 +1,43 @@
+{
+  "appId": "3dz-virtual-tradeshow",
+  "appName": "3DZ Virtual Tradeshow Studio",
+  "version": "1.0.0",
+  "domains": [
+    "v-show-commercial-v1-production.up.railway.app",
+    "localhost",
+    "127.0.0.1"
+  ],
+  "safeRoutes": [
+    "/",
+    "/index.html",
+    "/master-admin.html",
+    "/admin.html"
+  ],
+  "interestingEndpoints": [
+    "/api/projects",
+    "/api/spatial/start",
+    "/api/spatial-jobs",
+    "/api/spatial/apply",
+    "/api/spatial/discard",
+    "/health"
+  ],
+  "safePayloadFields": [
+    "projectId",
+    "candidateId",
+    "jobId",
+    "slot",
+    "status",
+    "engine",
+    "engineVersion",
+    "viewerMode",
+    "whiteFrameCount"
+  ],
+  "importantDomSelectors": [
+    "#spatialPreviewCanvas",
+    "#three-canvas",
+    "#viewer-container",
+    "#proSpatialPreviewModal",
+    "#btnApplySpatialBooth",
+    "#activeBoothSpatialRail"
+  ]
+}

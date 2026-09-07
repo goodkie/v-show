@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RuntimeInspectorEvent",
+  "type": "object",
+  "required": [
+    "id",
+    "timestamp",
+    "category",
+    "type",
+    "severity",
+    "source",
+    "payload"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "timestamp": { "type": "number" },
+    "isoTime": { "type": "string" },
+    "category": {
+      "type": "string",
+      "enum": [
+        "APP",
+        "NETWORK",
+        "CONSOLE",
+        "ERROR",
+        "DOM",
+        "PERFORMANCE",
+        "INTERACTION",
+        "CANVAS",
+        "WEBGL",
+        "STORAGE",
+        "MEDIA",
+        "CUSTOM"
+      ]
+    },
+    "type": { "type": "string" },
+    "severity": { "type": "string", "enum": ["DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"] },
+    "source": { "type": "string" },
+    "correlationId": { "type": ["string", "null"] },
+    "payload": { "type": "object" }
+  }
+}
