@@ -813,7 +813,7 @@ const workerIntegrityHandler = (req, res) => {
   }
   res.json({
     ok: true,
-    uiVersion: '3D2-C12.9-P2R11',
+    uiVersion: '3D2-C12.9-P2R12',
     gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || P315_BUILD_INFO.gitCommit,
     pythonVersion,
     opencvVersion,
@@ -1082,7 +1082,7 @@ const healthHandler = (req, res) => {
     schemaVersion: 5,
     stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
-    uiVersion: '3D2-C12.9-P2R11',
+    uiVersion: '3D2-C12.9-P2R12',
     storageRoot: GUIDED_CAPTURE_STORAGE_ROOT,
     storageRootExists: STORAGE_ROOT_EXISTS,
     storageRootWritable: STORAGE_ROOT_WRITABLE,
@@ -10311,7 +10311,8 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
       }
 
       if (panoManifest && Array.isArray(panoManifest.frames) && panoManifest.frames.length >= 2) {
-        console.log(`[P2R10] Using adaptive stitch manifest: ${panoManifest.frames.length} frames (canonical: ${(panoManifest.canonicalKeyframeIds || []).length}, bridges: ${(panoManifest.supplementalBridgeIds || []).length})`);
+        // §2 FIX: Use authoritative manifest field names (canonicalFrameIds, supplementalBridgeFrameIds, visualGraphConnected)
+        console.log(`[P2R12] Using adaptive stitch manifest: ${panoManifest.frames.length} frames (canonical: ${(panoManifest.canonicalFrameIds || panoManifest.canonicalKeyframeIds || []).length}, bridges: ${(panoManifest.supplementalBridgeFrameIds || panoManifest.supplementalBridgeIds || []).length})`);
         
         panoManifest.frames.forEach((f, idx) => {
           let fPath = null;
@@ -10342,10 +10343,13 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
           }
         });
 
+        // §2 FRAME-SCHEMA TRUTH LOCK: Read canonical field names from authoritative manifest.
+        // Manifest uses: canonicalFrameIds, supplementalBridgeFrameIds, visualGraphConnected.
+        // Legacy aliases (canonicalKeyframeIds, supplementalBridgeIds, fullRingConnected) are fallbacks only.
         req.body.panoramaStitchFrameIds = panoManifest.panoramaStitchFrameIds || panoManifest.frames.map(f => f.candidateId || f.id);
-        req.body.canonicalFrameIds = panoManifest.canonicalKeyframeIds || [];
-        req.body.supplementalBridgeFrameIds = panoManifest.supplementalBridgeIds || [];
-        req.body.visualGraphConnected = panoManifest.fullRingConnected !== false;
+        req.body.canonicalFrameIds = panoManifest.canonicalFrameIds || panoManifest.canonicalKeyframeIds || [];
+        req.body.supplementalBridgeFrameIds = panoManifest.supplementalBridgeFrameIds || panoManifest.supplementalBridgeIds || [];
+        req.body.visualGraphConnected = panoManifest.visualGraphConnected !== false;
       }
 
       let canonicalList = req.body.keyframes || req.body.canonicalKeyframes;
@@ -10385,7 +10389,10 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
           let kfPath = null;
           const kfName = kf.keyframeId || ('KF' + String(idx + 1).padStart(2, '0'));
           const directCanonFile = path.join(paths.canonicalDir, kfName + '.jpg');
-          const candId = kf.candidateId || (candidatePool?.candidates?.[idx]?.candidateId) || ('C' + String(idx + 1).padStart(3, '0'));
+          // §3 INDEX_BASED_PHYSICAL_FRAME_FALLBACK_USED=false: candidateId MUST come from the keyframe
+          // object's own field. Index-based candidatePool.candidates[idx].candidateId is forbidden
+          // because pool order does not guarantee identity equality with the keyframe.
+          const candId = kf.candidateId || null;
           const candFile = candId ? path.join(paths.candidateDir, candId + '.jpg') : null;
           
           // Legacy fallbacks for reading
@@ -10678,7 +10685,16 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
           blendStatus: candidate.blendStatus || 'SUCCESS',
           full360Qualified: Boolean(candidate.full360Qualified),
           nativeWidth: candidate.nativeWidth,
-          nativeHeight: candidate.nativeHeight
+          nativeHeight: candidate.nativeHeight,
+          // §2 FRAME-SCHEMA TRUTH LOCK: propagate authoritative frame classification from manifest
+          canonicalFrameIds: candidate.canonicalFrameIds || req.body?.canonicalFrameIds || [],
+          supplementalBridgeFrameIds: candidate.supplementalBridgeFrameIds || req.body?.supplementalBridgeFrameIds || [],
+          panoramaStitchFrameIds: candidate.panoramaStitchFrameIds || req.body?.panoramaStitchFrameIds || [],
+          // §5 ACCEPTANCE FLAGS: horizontal ring qualification is separate from full-sphere qualification
+          technicalHorizontalRingCandidate: Boolean(candidate.full360Qualified),
+          fullSphericalEquirectangular: Boolean(candidate.fullSphericalEquirectangular),
+          // §3 PROVENANCE: confirm no index-based frame fallback was used
+          indexBasedPhysicalFrameFallbackUsed: false
         });
         console.log(`[PANORAMA][${jobId}][READY] Panorama candidate ready: ${candidate.candidateId} (Engine: ${candidate.engine}, 360: ${candidate.full360Qualified})`);
       } catch (workerErr) {

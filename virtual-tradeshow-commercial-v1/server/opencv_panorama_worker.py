@@ -509,10 +509,14 @@ def run_opencv_stitching(input_data):
         "highRetention": high_retention,
         "registrationRetention": registration_retention,
         "full360Qualified": full_360_qualified,
+        # §5 ACCEPTANCE SEMANTICS LOCK: horizontal 360 ring and full-sphere equirectangular are SEPARATE facts.
+        # technicalHorizontalRingCandidate=true means the camera ring closes to >=345° horizontal coverage.
+        # It does NOT mean the output is a full-sphere (2:1) equirectangular projection.
+        "technicalHorizontalRingCandidate": full_360_qualified,
+        "fullSphericalEquirectangular": full_spherical,
         "panoramaType": panorama_type,
         "projection": projection_type,
         "panoramaProjectionType": projection_type,
-        "fullSphericalEquirectangular": full_spherical,
         "doNotForce2To1": True,
         "nativeWidth": pano_w,
         "nativeHeight": pano_h,

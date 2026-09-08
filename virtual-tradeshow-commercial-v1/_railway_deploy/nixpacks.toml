@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["...", "(python3.withPackages (ps: with ps; [ opencv4 numpy ]))", "libGL", "glib"]
+nixPkgs = ["...", "(python3.withPackages (ps: with ps; [ opencv4 numpy networkx ]))", "libGL", "glib"]
 
 [phases.install]
 cmds = ["npm install --ignore-scripts"]
