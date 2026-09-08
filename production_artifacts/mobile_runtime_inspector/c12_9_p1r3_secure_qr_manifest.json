@@ -1,0 +1,12 @@
+{
+  "projectId": "prj-free-b0c6f3ea",
+  "token": "[REDACTED_SECURE_TOKEN]",
+  "status": "ACTIVE",
+  "expiresAt": "2026-09-08T13:16:17.801Z",
+  "targetUrl": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&token=[REDACTED]&qa=1",
+  "canonicalHost": "v-show-commercial-v1-production.up.railway.app",
+  "protocol": "https:",
+  "createdAt": "2026-09-08T11:16:16.939Z",
+  "qrBrainPath": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\d83397bc-3323-46b8-a23f-951c5d5d9f30\\OWNER_QA_C12_9_P1R3_QR.png",
+  "qrProdPath": "E:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\OWNER_QA_C12_9_P1R3_QR.png"
+}
