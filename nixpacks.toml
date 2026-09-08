@@ -1,3 +1,6 @@
+[phases.setup]
+nixPkgs = ["...", "python3", "python3Packages.pip", "python3Packages.numpy", "python3Packages.opencv4"]
+
 [phases.install]
 cmds = ["npm install --ignore-scripts"]
 

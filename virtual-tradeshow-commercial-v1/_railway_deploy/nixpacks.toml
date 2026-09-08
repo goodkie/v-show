@@ -1,5 +1,8 @@
+[phases.setup]
+nixPkgs = ["...", "python3", "python3Packages.pip", "python3Packages.numpy", "python3Packages.opencv4"]
+
 [phases.install]
-cmds = ["npm install"]
+cmds = ["npm install --ignore-scripts"]
 
 [start]
-cmd = "node server/index.js"
+cmd = "node virtual-tradeshow-commercial-v1/app_build/server/index.js"

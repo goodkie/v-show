@@ -81,10 +81,21 @@ class PanoramicStitcher {
     this.legacyUploadsDir = legacyUploads;
     this.dataUploadsDir = dataUploads;
 
-    this.pythonExe = process.env.PYTHON_PATH ||
-      (fs.existsSync('e:/vivpr/ai/v-show-reconstruction-work/python_env/python.exe')
-        ? 'e:/vivpr/ai/v-show-reconstruction-work/python_env/python.exe'
-        : 'python');
+    const findPython = () => {
+      if (process.env.PYTHON_PATH) return process.env.PYTHON_PATH;
+      if (process.env.PYTHON_BIN) return process.env.PYTHON_BIN;
+      if (fs.existsSync('e:/vivpr/ai/v-show-reconstruction-work/python_env/python.exe')) {
+        return 'e:/vivpr/ai/v-show-reconstruction-work/python_env/python.exe';
+      }
+      for (const candidate of ['python3', 'python', '/usr/bin/python3', '/usr/local/bin/python3', '/usr/bin/python']) {
+        try {
+          execFileSync(candidate, ['--version'], { stdio: 'ignore' });
+          return candidate;
+        } catch (e) {}
+      }
+      return 'python3';
+    };
+    this.pythonExe = findPython();
     this.workerScript = path.join(__dirname, 'opencv_panorama_worker.py');
   }
 

@@ -10250,10 +10250,21 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
         try {
           const { execFileSync } = require('child_process');
           const selectorScript = path.join(__dirname, 'stitch_aware_selector.py');
-          const pythonExe = process.env.PYTHON_BIN || 
-            (fs.existsSync('e:/vivpr/ai/v-show-reconstruction-work/python_env/python.exe')
-              ? 'e:/vivpr/ai/v-show-reconstruction-work/python_env/python.exe'
-              : 'python');
+          const findPython = () => {
+            if (process.env.PYTHON_PATH) return process.env.PYTHON_PATH;
+            if (process.env.PYTHON_BIN) return process.env.PYTHON_BIN;
+            if (fs.existsSync('e:/vivpr/ai/v-show-reconstruction-work/python_env/python.exe')) {
+              return 'e:/vivpr/ai/v-show-reconstruction-work/python_env/python.exe';
+            }
+            for (const candidate of ['python3', 'python', '/usr/bin/python3', '/usr/local/bin/python3', '/usr/bin/python']) {
+              try {
+                execFileSync(candidate, ['--version'], { stdio: 'ignore' });
+                return candidate;
+              } catch (e) {}
+            }
+            return 'python3';
+          };
+          const pythonExe = findPython();
           console.log(`[P2R10] Auto-generating adaptive stitch manifest via stitch_aware_selector for session ${captureSessionId}...`);
           execFileSync(pythonExe, [selectorScript, '--session-dir', paths.sessionRoot, '--output-dir', paths.sessionRoot, '--session-id', captureSessionId], {
             encoding: 'utf-8',
