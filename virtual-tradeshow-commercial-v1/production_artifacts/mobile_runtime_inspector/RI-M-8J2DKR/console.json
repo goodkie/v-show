@@ -1,0 +1,16 @@
+[
+  {
+    "timestamp": 1788827260004,
+    "isoTime": "2026-09-08T00:27:40.004Z",
+    "level": "WARN",
+    "message": "[GuidedCapture Start Error] {}",
+    "details": null
+  },
+  {
+    "timestamp": 1788827260977,
+    "isoTime": "2026-09-08T00:27:40.977Z",
+    "level": "WARN",
+    "message": "[GuidedCapture Start Error] {}",
+    "details": null
+  }
+]

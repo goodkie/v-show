@@ -1,0 +1,427 @@
+{
+  "ok": true,
+  "sessionId": "RI-M-8J2DKR",
+  "summary": {
+    "sessionId": "RI-M-8J2DKR",
+    "environment": "INTERNAL_DEV",
+    "isTest": true,
+    "receivedAt": "2026-09-08T00:28:29.269Z",
+    "SESSION_ID": "RI-M-8J2DKR",
+    "PLATFORM": "Android Chrome",
+    "platform": "Android Chrome",
+    "SECURE_HTTPS": "YES",
+    "CAMERA_READY": "ACTIVE",
+    "CAMERA_FRAMES": 0,
+    "MOTION_EVENTS": 6188,
+    "CURRENT_STEP": 6,
+    "STEP_NAME": "Guided 360° Capture",
+    "CAPTURE_PROGRESS": "0%",
+    "RAW_CSS_LEAK": "CLEAN",
+    "CHECKPOINT_COUNT": 0
+  },
+  "files": [
+    "camera_state.json",
+    "console.json",
+    "network.json",
+    "runtime_state.json",
+    "screenshot.png",
+    "sensor_state.json",
+    "summary.json",
+    "timeline.json",
+    "viewer_state.json",
+    "wizard_state.json"
+  ],
+  "data": {
+    "camera_state": {
+      "hasMediaDevices": true,
+      "hasGetUserMedia": true,
+      "isSecureContext": true,
+      "cameraPermissionState": "prompt",
+      "getUserMediaCalled": false,
+      "getUserMediaResolved": true,
+      "cameraStreamActive": true,
+      "videoTrackState": "live",
+      "videoWidth": 0,
+      "videoHeight": 0,
+      "videoReadyState": 0,
+      "facingMode": "environment",
+      "cameraModule": "UNKNOWN",
+      "lastErrorCode": null,
+      "lastErrorMessage": null
+    },
+    "console": [
+      {
+        "timestamp": 1788827260004,
+        "isoTime": "2026-09-08T00:27:40.004Z",
+        "level": "WARN",
+        "message": "[GuidedCapture Start Error] {}",
+        "details": null
+      },
+      {
+        "timestamp": 1788827260977,
+        "isoTime": "2026-09-08T00:27:40.977Z",
+        "level": "WARN",
+        "message": "[GuidedCapture Start Error] {}",
+        "details": null
+      }
+    ],
+    "network": [
+      {
+        "timestamp": 1788827252108,
+        "isoTime": "2026-09-08T00:27:32.108Z",
+        "method": "POST",
+        "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+        "status": 200,
+        "durationMs": 173,
+        "ok": true
+      }
+    ],
+    "runtime_state": {
+      "appInfo": {
+        "appId": "3dz-virtual-tradeshow-mobile",
+        "appName": "3DZ Virtual Tradeshow Studio (Mobile)",
+        "mobileRiSessionId": "RI-M-8J2DKR",
+        "timestamp": "2026-09-08T00:28:29.100Z",
+        "platform": "Android Chrome",
+        "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Mobile Safari/537.36",
+        "protocol": "https:",
+        "host": "v-show-commercial-v1-production.up.railway.app",
+        "url": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&qa=1",
+        "isSecureContext": true,
+        "screenWidth": 345,
+        "screenHeight": 883,
+        "devicePixelRatio": 2.625,
+        "orientation": "portrait-primary",
+        "environment": "production"
+      },
+      "camera": {
+        "hasMediaDevices": true,
+        "hasGetUserMedia": true,
+        "isSecureContext": true,
+        "cameraPermissionState": "prompt",
+        "getUserMediaCalled": false,
+        "getUserMediaResolved": true,
+        "cameraStreamActive": true,
+        "videoTrackState": "live",
+        "videoWidth": 0,
+        "videoHeight": 0,
+        "videoReadyState": 0,
+        "facingMode": "environment",
+        "cameraModule": "UNKNOWN",
+        "lastErrorCode": null,
+        "lastErrorMessage": null
+      },
+      "sensor": {
+        "hasDeviceOrientation": true,
+        "hasDeviceMotion": true,
+        "deviceOrientationEventCount": 1816,
+        "deviceMotionEventCount": 4372,
+        "lastOrientationTimestamp": 1788827309082,
+        "lastMotionTimestamp": 1788827309092,
+        "lastOrientation": {
+          "alpha": 80.6,
+          "beta": 28.9,
+          "gamma": 0.2,
+          "absolute": false
+        },
+        "lastMotion": {
+          "accX": 0.1,
+          "accY": 0.1,
+          "accZ": 0.1,
+          "rotAlpha": -6.5,
+          "rotBeta": 0.3,
+          "rotGamma": -1
+        },
+        "sensorGuidanceMode": "UNKNOWN"
+      },
+      "guidedCapture": {
+        "controllerPresent": true,
+        "controllerId": "guided_capture_0",
+        "captureState": "WAITING_FOR_VIDEO",
+        "progressPercent": 0,
+        "accumulatedRotation": 0,
+        "previewFrameCount": 0,
+        "candidateFrameCount": 0,
+        "acceptedCandidateCount": 0,
+        "rejectedCandidateCount": 0,
+        "canonicalKeyframeCount": 0,
+        "candidateRejectionReasons": [],
+        "persistedCandidateCount": 0,
+        "candidateUploadFailures": 0,
+        "candidatePoolId": "HXTRHD",
+        "stitchAwareCanonicalCount": 0,
+        "bridgeFrameCount": 0,
+        "panoramaInputCount": 0,
+        "graphConnected": null,
+        "connectedComponentCount": 0,
+        "weakestEdge": null,
+        "closureEdgeConfidence": null,
+        "guidanceMode": "UNKNOWN",
+        "visualMotionFallbackActive": false,
+        "orientationEventCount": 1816,
+        "motionEventCount": 4372,
+        "lastErrorCode": null,
+        "lastErrorMessage": null,
+        "closureConfirmed": false,
+        "captureCompletionReason": "IN_PROGRESS",
+        "visualClosureSearchEnabled": false,
+        "visualClosureSearchEnabledAtRotation": 300,
+        "closureCheckCount": 0,
+        "bestClosureMatchFrameId": null,
+        "bestClosureReferenceId": null,
+        "closureRawMatches": 0,
+        "closureGoodMatches": 0,
+        "closureInliers": 0,
+        "closureInlierRatio": 0,
+        "closureReprojectionError": null,
+        "closureInlierCellCount": 0,
+        "closureInlierBboxAreaRatio": 0,
+        "closureSensorExpectedDelta": 360,
+        "closureVisualRelativeRotation": null,
+        "closureConsecutiveConfirmationCount": 0,
+        "fastRotationEventCount": 0,
+        "canonicalSelectedCount": 0,
+        "canonicalPersistedCount": 0,
+        "fatalJsErrorCount": 0
+      },
+      "wizard": {
+        "wizardPresent": true,
+        "controllerInstanceCount": 1,
+        "wizardRootCount": 1,
+        "currentWizardStep": 6,
+        "wizardStepName": "Guided 360° Capture",
+        "projectId": "prj-free-b0c6f3ea",
+        "tourId": null,
+        "viewpointCount": 3,
+        "currentViewpointId": "vp_entrance",
+        "isModalOpen": true
+      },
+      "viewpointMap": {
+        "mapMounted": true,
+        "activeSvgId": "editBoothMapSvg",
+        "viewpointCount": 3,
+        "renderedMarkerCount": 0,
+        "viewpoints": [
+          {
+            "id": "vp_entrance",
+            "name": "Entrance",
+            "x": 50,
+            "y": 85
+          },
+          {
+            "id": "vp_center",
+            "name": "Center",
+            "x": 48.7,
+            "y": 48.3
+          },
+          {
+            "id": "vp_product",
+            "name": "Product Display",
+            "x": 25.4,
+            "y": 20.7
+          }
+        ]
+      },
+      "viewer": {
+        "controllerPresent": false,
+        "tourId": null,
+        "activeViewpointId": null,
+        "viewerMode": "STANDARD"
+      },
+      "domHealth": {
+        "duplicateWizardRoots": 1,
+        "brandLogoCount": 1,
+        "brandDuplicateTextCount": 0,
+        "rawCssLeaksDetected": false,
+        "leakedCssSnippets": []
+      },
+      "rollingBufferSnapshot": {
+        "capturedAt": "2026-09-08T00:28:29.103Z",
+        "windowSeconds": 60,
+        "eventCount": 4,
+        "events": [
+          {
+            "timestamp": 1788827259930,
+            "isoTime": "2026-09-08T00:27:39.930Z",
+            "category": "INTERACTION",
+            "type": "TAP",
+            "payload": {
+              "id": "btnStartGuidedCapture",
+              "className": null,
+              "text": "Try Again"
+            }
+          },
+          {
+            "timestamp": 1788827260917,
+            "isoTime": "2026-09-08T00:27:40.917Z",
+            "category": "INTERACTION",
+            "type": "TAP",
+            "payload": {
+              "id": "btnStartGuidedCapture",
+              "className": null,
+              "text": "Try Again"
+            }
+          },
+          {
+            "timestamp": 1788827281342,
+            "isoTime": "2026-09-08T00:28:01.342Z",
+            "category": "INTERACTION",
+            "type": "TAP",
+            "payload": {
+              "id": "btnMobileRiReport",
+              "className": null,
+              "text": "REPORT ISSUE"
+            }
+          },
+          {
+            "timestamp": 1788827309099,
+            "isoTime": "2026-09-08T00:28:29.099Z",
+            "category": "INTERACTION",
+            "type": "TAP",
+            "payload": {
+              "id": "btnMobileRiSubmit",
+              "className": null,
+              "text": "CAPTURE BUG REPORT"
+            }
+          }
+        ],
+        "consoleCount": 2,
+        "consoleLogs": [
+          {
+            "timestamp": 1788827260004,
+            "isoTime": "2026-09-08T00:27:40.004Z",
+            "level": "WARN",
+            "message": "[GuidedCapture Start Error] {}",
+            "details": null
+          },
+          {
+            "timestamp": 1788827260977,
+            "isoTime": "2026-09-08T00:27:40.977Z",
+            "level": "WARN",
+            "message": "[GuidedCapture Start Error] {}",
+            "details": null
+          }
+        ],
+        "networkCount": 1,
+        "networkRequests": [
+          {
+            "timestamp": 1788827252108,
+            "isoTime": "2026-09-08T00:27:32.108Z",
+            "method": "POST",
+            "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+            "status": 200,
+            "durationMs": 173,
+            "ok": true
+          }
+        ],
+        "checkpointCount": 0,
+        "checkpoints": []
+      }
+    },
+    "sensor_state": {
+      "hasDeviceOrientation": true,
+      "hasDeviceMotion": true,
+      "deviceOrientationEventCount": 1816,
+      "deviceMotionEventCount": 4372,
+      "lastOrientationTimestamp": 1788827309082,
+      "lastMotionTimestamp": 1788827309092,
+      "lastOrientation": {
+        "alpha": 80.6,
+        "beta": 28.9,
+        "gamma": 0.2,
+        "absolute": false
+      },
+      "lastMotion": {
+        "accX": 0.1,
+        "accY": 0.1,
+        "accZ": 0.1,
+        "rotAlpha": -6.5,
+        "rotBeta": 0.3,
+        "rotGamma": -1
+      },
+      "sensorGuidanceMode": "UNKNOWN"
+    },
+    "summary": {
+      "sessionId": "RI-M-8J2DKR",
+      "environment": "INTERNAL_DEV",
+      "isTest": true,
+      "receivedAt": "2026-09-08T00:28:29.269Z",
+      "SESSION_ID": "RI-M-8J2DKR",
+      "PLATFORM": "Android Chrome",
+      "platform": "Android Chrome",
+      "SECURE_HTTPS": "YES",
+      "CAMERA_READY": "ACTIVE",
+      "CAMERA_FRAMES": 0,
+      "MOTION_EVENTS": 6188,
+      "CURRENT_STEP": 6,
+      "STEP_NAME": "Guided 360° Capture",
+      "CAPTURE_PROGRESS": "0%",
+      "RAW_CSS_LEAK": "CLEAN",
+      "CHECKPOINT_COUNT": 0
+    },
+    "timeline": [
+      {
+        "timestamp": 1788827259930,
+        "isoTime": "2026-09-08T00:27:39.930Z",
+        "category": "INTERACTION",
+        "type": "TAP",
+        "payload": {
+          "id": "btnStartGuidedCapture",
+          "className": null,
+          "text": "Try Again"
+        }
+      },
+      {
+        "timestamp": 1788827260917,
+        "isoTime": "2026-09-08T00:27:40.917Z",
+        "category": "INTERACTION",
+        "type": "TAP",
+        "payload": {
+          "id": "btnStartGuidedCapture",
+          "className": null,
+          "text": "Try Again"
+        }
+      },
+      {
+        "timestamp": 1788827281342,
+        "isoTime": "2026-09-08T00:28:01.342Z",
+        "category": "INTERACTION",
+        "type": "TAP",
+        "payload": {
+          "id": "btnMobileRiReport",
+          "className": null,
+          "text": "REPORT ISSUE"
+        }
+      },
+      {
+        "timestamp": 1788827309099,
+        "isoTime": "2026-09-08T00:28:29.099Z",
+        "category": "INTERACTION",
+        "type": "TAP",
+        "payload": {
+          "id": "btnMobileRiSubmit",
+          "className": null,
+          "text": "CAPTURE BUG REPORT"
+        }
+      }
+    ],
+    "viewer_state": {
+      "controllerPresent": false,
+      "tourId": null,
+      "activeViewpointId": null,
+      "viewerMode": "STANDARD"
+    },
+    "wizard_state": {
+      "wizardPresent": true,
+      "controllerInstanceCount": 1,
+      "wizardRootCount": 1,
+      "currentWizardStep": 6,
+      "wizardStepName": "Guided 360° Capture",
+      "projectId": "prj-free-b0c6f3ea",
+      "tourId": null,
+      "viewpointCount": 3,
+      "currentViewpointId": "vp_entrance",
+      "isModalOpen": true
+    }
+  }
+}

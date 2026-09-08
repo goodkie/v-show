@@ -1,0 +1,46 @@
+[
+  {
+    "timestamp": 1788827259930,
+    "isoTime": "2026-09-08T00:27:39.930Z",
+    "category": "INTERACTION",
+    "type": "TAP",
+    "payload": {
+      "id": "btnStartGuidedCapture",
+      "className": null,
+      "text": "Try Again"
+    }
+  },
+  {
+    "timestamp": 1788827260917,
+    "isoTime": "2026-09-08T00:27:40.917Z",
+    "category": "INTERACTION",
+    "type": "TAP",
+    "payload": {
+      "id": "btnStartGuidedCapture",
+      "className": null,
+      "text": "Try Again"
+    }
+  },
+  {
+    "timestamp": 1788827281342,
+    "isoTime": "2026-09-08T00:28:01.342Z",
+    "category": "INTERACTION",
+    "type": "TAP",
+    "payload": {
+      "id": "btnMobileRiReport",
+      "className": null,
+      "text": "REPORT ISSUE"
+    }
+  },
+  {
+    "timestamp": 1788827309099,
+    "isoTime": "2026-09-08T00:28:29.099Z",
+    "category": "INTERACTION",
+    "type": "TAP",
+    "payload": {
+      "id": "btnMobileRiSubmit",
+      "className": null,
+      "text": "CAPTURE BUG REPORT"
+    }
+  }
+]

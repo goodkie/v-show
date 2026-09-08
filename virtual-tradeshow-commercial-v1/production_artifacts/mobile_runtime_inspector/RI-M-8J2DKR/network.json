@@ -1,0 +1,11 @@
+[
+  {
+    "timestamp": 1788827252108,
+    "isoTime": "2026-09-08T00:27:32.108Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 173,
+    "ok": true
+  }
+]
