@@ -1,0 +1,12 @@
+{
+  "wizardPresent": true,
+  "controllerInstanceCount": 1,
+  "wizardRootCount": 1,
+  "currentWizardStep": 6,
+  "wizardStepName": "Guided 360° Capture",
+  "projectId": "prj-free-b0c6f3ea",
+  "tourId": null,
+  "viewpointCount": 3,
+  "currentViewpointId": "vp_entrance",
+  "isModalOpen": true
+}

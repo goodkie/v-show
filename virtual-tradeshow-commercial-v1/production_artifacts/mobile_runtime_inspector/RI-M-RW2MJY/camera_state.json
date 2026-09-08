@@ -1,0 +1,17 @@
+{
+  "hasMediaDevices": true,
+  "hasGetUserMedia": true,
+  "isSecureContext": true,
+  "cameraPermissionState": "prompt",
+  "getUserMediaCalled": false,
+  "getUserMediaResolved": false,
+  "cameraStreamActive": true,
+  "videoTrackState": "live",
+  "videoWidth": 0,
+  "videoHeight": 0,
+  "videoReadyState": 0,
+  "facingMode": "environment",
+  "cameraModule": "UNKNOWN",
+  "lastErrorCode": null,
+  "lastErrorMessage": null
+}

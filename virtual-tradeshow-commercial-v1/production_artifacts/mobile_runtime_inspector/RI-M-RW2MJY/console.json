@@ -1,0 +1,9 @@
+[
+  {
+    "timestamp": 1788830771056,
+    "isoTime": "2026-09-08T01:26:11.056Z",
+    "level": "WARN",
+    "message": "[GuidedCapture Start Error] {\"name\":\"CAMERA_VIDEO_NOT_READY\"}",
+    "details": null
+  }
+]

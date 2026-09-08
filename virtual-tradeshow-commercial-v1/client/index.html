@@ -19430,7 +19430,7 @@ function round(val, dec = 1) {
   return Math.round(val * p) / p;
 }
 
-// ── C12.9-P1R1: EVENT-DRIVEN VIDEO READINESS & IDEMPOTENT RETRY GUIDED 360° CAPTURE CONTROLLER ──
+// ── C12.9-P1R2: SINGLE-FLIGHT START, ORIENTATION-AWARE CAMERA CONSTRAINTS & SEPARATED PRESENTATION WATCHDOG GUIDED 360° CAPTURE CONTROLLER ──
 
 // Predefined 128-bit BRIEF sampling pairs (32 pairs of [dx1, dy1, dx2, dy2])
 const BRIEF_PAIRS = [
@@ -20079,8 +20079,15 @@ class GuidedCaptureController {
   }
 
 
-  resetCaptureForRetry() {
+  resetCaptureForRetry(reason = 'USER_EXPLICIT_RETRY') {
     this.tryAgainCount = (this.tryAgainCount || 0) + 1;
+    this.resetCaptureForRetryCallCount = (this.resetCaptureForRetryCallCount || 0) + 1;
+    this.lastResetReason = reason;
+
+    // Invalidate any in-flight attempt
+    this.currentStartupAttemptId = ++this.startupAttemptId;
+    this.startupInFlight = false;
+    this.startupPromise = null;
 
     // 1. Clear watchdog and timers
     if (this.watchdogTimer) {
@@ -20124,6 +20131,7 @@ class GuidedCaptureController {
         });
       } catch(e){}
       this.mediaStream = null;
+      this.activeStream = null;
       this.telemetry.oldStreamTracksStopped = true;
     }
 
@@ -20134,7 +20142,7 @@ class GuidedCaptureController {
       } catch(e){}
     }
 
-    // 6. Reset frame counters & visual detector transient state
+    // 6. Reset frame counters & visual detector transient state (preserving persisted candidates)
     this.previewFrameCount = 0;
     this.candidateFrameCount = 0;
     this.acceptedCandidateCount = 0;
@@ -20158,22 +20166,39 @@ class GuidedCaptureController {
     this.captureCompletionReason = null;
     this.startupReject = null;
     this.telemetry.tryAgainCount = this.tryAgainCount;
+    this.telemetry.resetCaptureForRetryCallCount = this.resetCaptureForRetryCallCount;
+    this.telemetry.resetReason = reason;
 
     return this.startupAttemptId;
   }
 
-  async start(options = {}) {
-    // If start is called while already attempting, cleanly reset first
-    if (this.state === 'REQUESTING_PERMISSION' || this.state === 'OPENING_CAMERA' ||
-        this.state === 'ATTACHING_STREAM' || this.state === 'WAITING_FOR_METADATA' ||
-        this.state === 'WAITING_FOR_FIRST_FRAME') {
-      this.resetCaptureForRetry();
+  start(options = {}) {
+    this.startCallCountPerTap = (this.startCallCountPerTap || 0) + 1;
+    this.telemetry.startCallCountPerTap = this.startCallCountPerTap;
+
+    // Single-flight semantics: if startup is already in flight, return the existing startup promise
+    if (this.startupInFlight && this.startupPromise) {
+      console.warn('[GuidedCapture] Duplicate start() invocation ignored; returning active in-flight startup promise.');
+      return this.startupPromise;
     }
 
+    this.startupInFlight = true;
+    this.startupPromise = this._executeStart(options).finally(() => {
+      this.startupInFlight = false;
+      this.startupPromise = null;
+    });
+
+    return this.startupPromise;
+  }
+
+  async _executeStart(options = {}) {
     const attemptId = ++this.startupAttemptId;
     this.currentStartupAttemptId = attemptId;
     const startTime = Date.now();
 
+    this.controllerStartCallCount = (this.controllerStartCallCount || 0) + 1;
+    this.telemetry.controllerStartCallCount = this.controllerStartCallCount;
+    this.telemetry.startupInFlight = true;
     this.telemetry.startupAttemptId = attemptId;
     this.telemetry.guidedControllerStartCalled = true;
     this.telemetry.startTime = startTime;
@@ -20192,12 +20217,30 @@ class GuidedCaptureController {
     this.telemetry.cameraStartResult = 'PENDING';
     this.telemetry.cameraStartErrorCode = null;
     this.telemetry.captureStartResult = 'PENDING';
+    this.telemetry.videoPlayCalled = false;
+    this.telemetry.videoPlayResolved = false;
+    this.telemetry.videoPlayErrorName = null;
+    this.telemetry.videoPlayErrorMessage = null;
+    this.telemetry.videoEventCounts = {
+      loadedmetadata: 0,
+      loadeddata: 0,
+      canplay: 0,
+      playing: 0,
+      resize: 0,
+      stalled: 0,
+      error: 0,
+      waiting: 0,
+      suspend: 0
+    };
     this.captureCompletionReason = null;
 
     this.telemetry.timings = {
       startTime,
+      motionPermissionStartMs: null,
+      motionPermissionEndMs: null,
       getUserMediaStartMs: null,
       getUserMediaResolvedMs: null,
+      videoPresentationWatchdogStartMs: null,
       srcObjectAssignedMs: null,
       loadedMetadataMs: null,
       loadedDataMs: null,
@@ -20215,45 +20258,59 @@ class GuidedCaptureController {
     this.cameraStage = 'REQUESTING_PERMISSION';
     this.notifyProgress();
 
-    // Start 12.0s startup watchdog as final safety boundary
-    if (this.watchdogTimer) clearTimeout(this.watchdogTimer);
-    this.watchdogTimer = setTimeout(() => {
-      if (attemptId !== this.currentStartupAttemptId) {
-        this.staleCallbackIgnoredCount++;
-        return;
-      }
-      this.handleStartupWatchdogTimeout(attemptId);
-    }, 12000);
-
+    this.telemetry.motionPermissionStartMs = Date.now() - startTime;
+    this.telemetry.timings.motionPermissionStartMs = this.telemetry.motionPermissionStartMs;
     await this.requestMotionPermission();
+    this.telemetry.motionPermissionEndMs = Date.now() - startTime;
+    this.telemetry.timings.motionPermissionEndMs = this.telemetry.motionPermissionEndMs;
+
     if (attemptId !== this.currentStartupAttemptId) {
       this.staleCallbackIgnoredCount++;
       return;
     }
 
-    const video = options.videoElement || this.videoElement || document.getElementById('guidedCaptureVideo');
-    if (!video) {
-      const err = new Error('No video element provided for guided capture');
+    // Resolve connected active video element
+    let video = options.videoElement || (typeof document !== 'undefined' ? document.getElementById('guidedCaptureVideo') : null) || this.videoElement;
+    if (video && typeof video.isConnected === 'boolean' && !video.isConnected && typeof document !== 'undefined') {
+      const reconnected = document.getElementById('guidedCaptureVideo');
+      if (reconnected) video = reconnected;
+    }
+
+    if (!video || (typeof video.isConnected === 'boolean' && !video.isConnected)) {
+      const err = new Error('No connected video element provided for guided capture');
       this.state = 'ERROR';
       this.fatalJsErrorCount++;
       this.telemetry.errorCode = 'NO_VIDEO_ELEMENT';
       this.telemetry.errorMessage = err.message;
+      this.telemetry.videoElementFound = Boolean(video);
+      this.telemetry.videoElementConnected = Boolean(video && video.isConnected);
       this.telemetry.cameraStartResult = 'ERROR';
       this.sendTelemetry();
       throw err;
     }
     this.videoElement = video;
+    this.telemetry.videoElementFound = true;
+    this.telemetry.videoElementConnected = true;
 
     // 2. OPENING_CAMERA
     this.state = 'OPENING_CAMERA';
     this.cameraStage = 'OPENING_CAMERA';
     this.telemetry.getUserMediaCalled = true;
+    if (typeof window !== 'undefined') window.__getUserMediaCalled = true;
     this.telemetry.timings.getUserMediaStartMs = Date.now() - startTime;
 
     let stream = null;
     let successfulAttempt = null;
 
-    const attempts = [
+    // Orientation-aware camera constraint cascade:
+    // If portrait (height > width), ideal constraints should match portrait aspect ratio
+    const isPortrait = (typeof window !== 'undefined' && window.innerHeight > window.innerWidth);
+    const attempts = isPortrait ? [
+      { name: 'ENV_PORTRAIT_1080P', constraints: { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1080 }, height: { ideal: 1920 } }, audio: false } },
+      { name: 'ENV_PORTRAIT_720P', constraints: { video: { facingMode: { ideal: 'environment' }, width: { ideal: 720 }, height: { ideal: 1280 } }, audio: false } },
+      { name: 'ENV_BASIC', constraints: { video: { facingMode: 'environment' }, audio: false } },
+      { name: 'DEFAULT_VIDEO', constraints: { video: true, audio: false } }
+    ] : [
       { name: 'ENV_1080P', constraints: { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false } },
       { name: 'ENV_720P', constraints: { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false } },
       { name: 'ENV_BASIC', constraints: { video: { facingMode: 'environment' }, audio: false } },
@@ -20279,15 +20336,15 @@ class GuidedCaptureController {
           this.telemetry.errorMessage = errC.message;
           this.telemetry.cameraStartResult = 'STREAM_FAILED';
           this.telemetry.cameraPermissionState = (errC.name === 'NotAllowedError' || errC.name === 'PermissionDeniedError') ? 'denied' : 'error';
-          window.__lastCameraError = { code: errC.name, message: errC.message };
+          if (typeof window !== 'undefined') window.__lastCameraError = { code: errC.name, message: errC.message };
 
           let userMsg = 'Camera access blocked: ' + (errC.message || 'Check device permissions.');
           if (errC.name === 'NotAllowedError' || errC.name === 'PermissionDeniedError') {
-            userMsg = 'Camera permission was denied. Please allow camera access in browser settings and tap Try Again.';
+            userMsg = 'Camera access is required to capture your booth. Allow camera access in Chrome and try again.';
           } else if (errC.name === 'NotFoundError' || errC.name === 'DevicesNotFoundError') {
-            userMsg = 'No camera was found on this device.';
+            userMsg = 'No camera was detected.';
           } else if (errC.name === 'NotReadableError' || errC.name === 'TrackStartError') {
-            userMsg = 'Camera is in use by another app. Close other apps and retry.';
+            userMsg = 'Camera is currently unavailable or being used by another application.';
           }
           this.notifyAttention({
             code: errC.name,
@@ -20310,19 +20367,51 @@ class GuidedCaptureController {
     this.state = 'STREAM_ACQUIRED';
     this.cameraStage = 'STREAM_ACQUIRED';
     this.mediaStream = stream;
+    this.activeStream = stream;
     this.telemetry.getUserMediaResolved = true;
+    if (typeof window !== 'undefined') window.__getUserMediaResolved = true;
     this.telemetry.streamAcquired = true;
     this.telemetry.timings.getUserMediaResolvedMs = Date.now() - startTime;
     this.telemetry.cameraPermissionState = 'granted';
+    const liveTracks = stream.getVideoTracks().filter(t => t.readyState === 'live');
+    this.telemetry.activeVideoTrackCount = liveTracks.length;
+    this.telemetry.videoTrackActive = liveTracks.length > 0;
 
-    // 4. ATTACHING_STREAM
+    // 4. ATTACHING_STREAM & ARM PRESENTATION WATCHDOG
+    // The 12-second safety boundary begins strictly when video presentation begins (srcObject assigned)
     this.state = 'ATTACHING_STREAM';
     this.cameraStage = 'ATTACHING_STREAM';
+
+    // Verify video is connected before assignment
+    if (typeof video.isConnected === 'boolean' && !video.isConnected && typeof document !== 'undefined') {
+      const reconnected = document.getElementById('guidedCaptureVideo');
+      if (reconnected) {
+        video = reconnected;
+        this.videoElement = video;
+      }
+    }
+
+    // Set muted and autoplay attributes safely before srcObject assignment
     video.autoplay = true;
     video.muted = true;
+    video.defaultMuted = true;
     video.playsInline = true;
     video.setAttribute('playsinline', '');
     video.setAttribute('webkit-playsinline', '');
+    video.setAttribute('muted', '');
+
+    const presentationWatchdogStartMs = Date.now() - startTime;
+    this.telemetry.videoPresentationWatchdogStartMs = presentationWatchdogStartMs;
+    this.telemetry.timings.videoPresentationWatchdogStartMs = presentationWatchdogStartMs;
+
+    if (this.watchdogTimer) clearTimeout(this.watchdogTimer);
+    this.watchdogTimer = setTimeout(() => {
+      if (attemptId !== this.currentStartupAttemptId) {
+        this.staleCallbackIgnoredCount++;
+        return;
+      }
+      this.handleStartupWatchdogTimeout(attemptId);
+    }, 12000);
 
     // 5. EVENT-DRIVEN VIDEO READINESS
     try {
@@ -20351,10 +20440,8 @@ class GuidedCaptureController {
     this.telemetry.cameraStartResult = 'PASS';
     this.telemetry.timings.previewReadyMs = Date.now() - startTime;
     this.telemetry.timings.startupTotalMs = Date.now() - startTime;
-    const liveTracks = stream.getVideoTracks().filter(t => t.readyState === 'live');
-    this.telemetry.videoTrackActive = liveTracks.length > 0;
-    this.telemetry.videoWidth = video.videoWidth || 1280;
-    this.telemetry.videoHeight = video.videoHeight || 720;
+    this.telemetry.videoWidth = video.videoWidth || 1080;
+    this.telemetry.videoHeight = video.videoHeight || 1920;
     video.style.opacity = '1';
     video.style.display = 'block';
 
@@ -20441,42 +20528,89 @@ class GuidedCaptureController {
         }
       };
 
+      const recordEvent = (name) => {
+        if (this.telemetry.videoEventCounts && typeof this.telemetry.videoEventCounts[name] === 'number') {
+          this.telemetry.videoEventCounts[name]++;
+        }
+      };
+
+      const triggerPlay = (ctx) => {
+        try {
+          this.telemetry.videoPlayCalled = true;
+          const p = video.play();
+          if (p && typeof p.then === 'function') {
+            p.then(() => {
+              if (attemptId !== this.currentStartupAttemptId) {
+                this.staleCallbackIgnoredCount++;
+                return;
+              }
+              this.telemetry.videoPlayResolved = true;
+              if (!this.telemetry.timings.playPromiseResolvedMs) {
+                this.telemetry.timings.playPromiseResolvedMs = Date.now() - startTime;
+              }
+              finishReady('playPromise:' + ctx);
+            }).catch(playErr => {
+              this.telemetry.videoPlayErrorName = playErr.name || 'PlayError';
+              this.telemetry.videoPlayErrorMessage = playErr.message || '';
+              console.warn('[GuidedCapture] Play promise note (' + ctx + '):', playErr.name, playErr.message);
+            });
+          }
+        } catch (err) {
+          this.telemetry.videoPlayErrorName = err.name || 'PlayException';
+          this.telemetry.videoPlayErrorMessage = err.message || '';
+          console.warn('[GuidedCapture] Play call exception (' + ctx + '):', err);
+        }
+      };
+
       const onMetadata = () => {
+        recordEvent('loadedmetadata');
         if (attemptId !== this.currentStartupAttemptId) {
           this.staleCallbackIgnoredCount++;
           return;
         }
         this.telemetry.videoLoadedMetadata = true;
-        this.telemetry.timings.loadedMetadataMs = Date.now() - startTime;
+        if (!this.telemetry.timings.loadedMetadataMs) {
+          this.telemetry.timings.loadedMetadataMs = Date.now() - startTime;
+        }
         this.state = 'WAITING_FOR_FIRST_FRAME';
         this.cameraStage = 'WAITING_FOR_FIRST_FRAME';
         if (video.videoWidth > 0 && !this.telemetry.timings.firstNonzeroDimensionsMs) {
           this.telemetry.timings.firstNonzeroDimensionsMs = Date.now() - startTime;
         }
+        if (video.paused) triggerPlay('onMetadata');
         finishReady('loadedmetadata');
       };
 
       const onLoadedData = () => {
+        recordEvent('loadeddata');
         if (attemptId !== this.currentStartupAttemptId) {
           this.staleCallbackIgnoredCount++;
           return;
         }
         this.telemetry.videoLoadedData = true;
-        this.telemetry.timings.loadedDataMs = Date.now() - startTime;
+        if (!this.telemetry.timings.loadedDataMs) {
+          this.telemetry.timings.loadedDataMs = Date.now() - startTime;
+        }
+        if (video.paused) triggerPlay('onLoadedData');
         finishReady('loadeddata');
       };
 
       const onCanPlay = () => {
+        recordEvent('canplay');
         if (attemptId !== this.currentStartupAttemptId) {
           this.staleCallbackIgnoredCount++;
           return;
         }
         this.telemetry.videoCanPlay = true;
-        this.telemetry.timings.canPlayMs = Date.now() - startTime;
+        if (!this.telemetry.timings.canPlayMs) {
+          this.telemetry.timings.canPlayMs = Date.now() - startTime;
+        }
+        if (video.paused) triggerPlay('onCanPlay');
         finishReady('canplay');
       };
 
       const onPlaying = () => {
+        recordEvent('playing');
         if (attemptId !== this.currentStartupAttemptId) {
           this.staleCallbackIgnoredCount++;
           return;
@@ -20485,6 +20619,7 @@ class GuidedCaptureController {
       };
 
       const onResize = () => {
+        recordEvent('resize');
         if (attemptId !== this.currentStartupAttemptId) {
           this.staleCallbackIgnoredCount++;
           return;
@@ -20495,12 +20630,20 @@ class GuidedCaptureController {
         finishReady('resize');
       };
 
+      const onGenericEvent = (evt) => {
+        recordEvent(evt.type);
+      };
+
       this.videoListeners = {
         loadedmetadata: onMetadata,
         loadeddata: onLoadedData,
         canplay: onCanPlay,
         playing: onPlaying,
-        resize: onResize
+        resize: onResize,
+        stalled: onGenericEvent,
+        error: onGenericEvent,
+        waiting: onGenericEvent,
+        suspend: onGenericEvent
       };
 
       video.addEventListener('loadedmetadata', onMetadata);
@@ -20508,6 +20651,10 @@ class GuidedCaptureController {
       video.addEventListener('canplay', onCanPlay);
       video.addEventListener('playing', onPlaying);
       video.addEventListener('resize', onResize);
+      video.addEventListener('stalled', onGenericEvent);
+      video.addEventListener('error', onGenericEvent);
+      video.addEventListener('waiting', onGenericEvent);
+      video.addEventListener('suspend', onGenericEvent);
 
       // Assign srcObject
       this.state = 'WAITING_FOR_METADATA';
@@ -20516,24 +20663,19 @@ class GuidedCaptureController {
       this.telemetry.videoSrcObjectAssigned = true;
       this.telemetry.timings.srcObjectAssignedMs = Date.now() - startTime;
 
-      // Handle video.play() promise
-      try {
-        const playPromise = video.play();
-        if (playPromise && typeof playPromise.then === 'function') {
-          playPromise.then(() => {
-            if (attemptId !== this.currentStartupAttemptId) {
-              this.staleCallbackIgnoredCount++;
-              return;
-            }
-            this.telemetry.videoPlayResolved = true;
-            this.telemetry.timings.playPromiseResolvedMs = Date.now() - startTime;
-            finishReady('playPromise');
-          }).catch(playErr => {
-            console.warn('[GuidedCapture] Play promise note:', playErr.name, playErr.message);
-          });
+      // Handle video.play() safely within gesture chain
+      triggerPlay('gestureChain');
+
+      // Check if metadata / dimensions are already available immediately
+      if (video.readyState >= 1 || video.videoWidth > 0) {
+        if (!this.telemetry.videoLoadedMetadata) {
+          this.telemetry.videoLoadedMetadata = true;
+          this.telemetry.timings.loadedMetadataMs = Date.now() - startTime;
         }
-      } catch (err) {
-        console.warn('[GuidedCapture] Play call exception:', err);
+        if (video.videoWidth > 0 && !this.telemetry.timings.firstNonzeroDimensionsMs) {
+          this.telemetry.timings.firstNonzeroDimensionsMs = Date.now() - startTime;
+        }
+        finishReady('immediate');
       }
 
       // Check requestVideoFrameCallback support
@@ -20543,18 +20685,24 @@ class GuidedCaptureController {
             this.staleCallbackIgnoredCount++;
             return;
           }
+          this.rvfcCallbackCount = (this.rvfcCallbackCount || 0) + 1;
+          this.telemetry.rvfcCallbackCount = this.rvfcCallbackCount;
           this.telemetry.firstVideoFrameMediaTime = metadata ? metadata.mediaTime : null;
           finishReady('requestVideoFrameCallback');
         };
         rvfcHandle = video.requestVideoFrameCallback(onFrameCallback);
         this.rvfcId = rvfcHandle;
+        this.telemetry.rvfcRegistered = true;
       }
 
-      // Polling fallback
+      // Polling fallback every 100ms
       pollTimer = setInterval(() => {
         if (attemptId !== this.currentStartupAttemptId) {
           cleanup();
           return;
+        }
+        if (video.paused && video.readyState >= 1) {
+          triggerPlay('pollInterval');
         }
         if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
           finishReady('poll');
@@ -20592,10 +20740,12 @@ class GuidedCaptureController {
     this.telemetry.cameraStartErrorCode = stage;
     this.telemetry.captureStartResult = 'VIDEO_NOT_READY';
     this.captureCompletionReason = 'VIDEO_NOT_READY';
+    this.telemetry.watchdogFired = true;
+    this.telemetry.watchdogStage = stage;
 
     this.notifyAttention({
       code: stage,
-      message: 'Camera stream connected but video frame presentation timed out. Tap Try Again.',
+      message: this.lastErrorMessage,
       diagnosticId: this.diagnosticSessionId
     });
     this.sendTelemetry();
@@ -20608,7 +20758,7 @@ class GuidedCaptureController {
     }
   }
 
-    startFrameLoop() {
+  startFrameLoop() {
     if (!this.offscreenCanvas) {
       this.offscreenCanvas = document.createElement('canvas');
       this.offscreenCanvas.width = 160;

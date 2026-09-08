@@ -1,0 +1,24 @@
+[
+  {
+    "timestamp": 1788830776222,
+    "isoTime": "2026-09-08T01:26:16.222Z",
+    "category": "INTERACTION",
+    "type": "TAP",
+    "payload": {
+      "id": "btnMobileRiReport",
+      "className": null,
+      "text": "REPORT ISSUE"
+    }
+  },
+  {
+    "timestamp": 1788830830258,
+    "isoTime": "2026-09-08T01:27:10.258Z",
+    "category": "INTERACTION",
+    "type": "TAP",
+    "payload": {
+      "id": "btnMobileRiSubmit",
+      "className": null,
+      "text": "CAPTURE BUG REPORT"
+    }
+  }
+]
