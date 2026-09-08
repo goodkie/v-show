@@ -975,7 +975,7 @@ const healthHandler = (req, res) => {
     schemaVersion: 5,
     stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
-    uiVersion: '3D2-C12.9-P2R3',
+    uiVersion: '3D2-C12.9-P2R4',
     clientPath: path.join(__dirname, '..', 'client'),
     timestamp: new Date().toISOString()
   });
@@ -10165,32 +10165,34 @@ app.post('/api/projects/:id/panorama/start', upload.array('photos', 16), async (
     console.log(`[PANORAMA_SOURCE_INGEST] requestedSourceCount=${requestedCount} receivedSourceCount=${receivedCount} decodedSourceCount=${sourceList.length} distinctSourceCount=${distinctSourceHashes.length}`);
     console.log(`[PANORAMA_SOURCE_INGEST] sourceHashes=${sourceHashes.map(h => h.substring(0, 16) + '...').join(',')}`);
 
-    // C11.35-P0: SERVER-SIDE CAPTURE QUALITY GATE PRE-FLIGHT
-    // Guided continuous capture with proven visual loop has already verified contiguous overlap on device
-    let ringValidation = { allPass: true, failedPairs: [] };
-    if (!captureSessionId || !req.body?.closureConfirmed) {
-      console.log(`[CAPTURE_QUALITY_GATE] Validating capture ring for ${sourceList.length} photos...`);
-      ringValidation = defaultPanoramicStitcher.validateCaptureRing(sourceList);
-      console.log(`[CAPTURE_QUALITY_GATE] Result: ringStatus=${ringValidation.ringStatus} allPass=${ringValidation.allPass} failedPairs=${(ringValidation.failedPairs || []).join(',')}`);
+    // C12.9-P2R4: Critical Safety Correction — Ring Preflight Restoration
+    // CAPTURE_CLOSURE_BYPASSES_RING_PREFLIGHT = false
+    // capture-level closureVerified proves physical start/end overlap on device,
+    // but MUST NOT bypass panorama-level ring/graph validation or mark full 360 valid.
+    const CAPTURE_CLOSURE_BYPASSES_RING_PREFLIGHT = false;
+    console.log(`[CAPTURE_QUALITY_GATE] Validating capture ring for ${sourceList.length} photos (bypass=${CAPTURE_CLOSURE_BYPASSES_RING_PREFLIGHT})...`);
+    const ringValidation = defaultPanoramicStitcher.validateCaptureRing(sourceList);
+    console.log(`[CAPTURE_QUALITY_GATE] Result: ringStatus=${ringValidation.ringStatus} allPass=${ringValidation.allPass} failedPairs=${(ringValidation.failedPairs || []).join(',')}`);
 
-      if (!ringValidation.allPass || (ringValidation.failedPairs && ringValidation.failedPairs.length > 0)) {
-        const failMsg = `We need a little more overlap between adjacent photos. Broken connection detected: ${ringValidation.failedPairs.join(', ')}. Stay in the same spot and rotate less before taking the next photo.`;
-        console.warn(`[CAPTURE_QUALITY_GATE][REJECTED] Blocking panorama job. failedPairs=${ringValidation.failedPairs.join(',')}`);
-        return res.status(400).json({
-          ok: false,
-          success: false,
-          error: 'CAPTURE_RING_VALIDATION_FAILED',
-          errorCode: 'CAPTURE_RING_VALIDATION_FAILED',
-          failedPairs: ringValidation.failedPairs,
-          weakPairs: ringValidation.weakPairs || [],
-          pairResults: ringValidation.pairResults || [],
-          openCvJobStarted: false,
-          message: failMsg,
-          userMessage: failMsg
-        });
-      }
-    } else {
-      console.log(`[CAPTURE_QUALITY_GATE] Guided capture session ${captureSessionId} with confirmed visual loop bypassed redundant pre-flight ring rejection.`);
+    // If source photos failed ring connection and this is NOT an authorized guided capture with physical closure, block immediately.
+    // If it IS an authorized guided capture session, the job is allowed to be CREATED for forensic replay,
+    // but ringPreflightPass and panorama validation will independently evaluate and reflect true geometry.
+    const isGuidedClosure = Boolean(captureSessionId && (req.body?.closureConfirmed || req.body?.closureVerified));
+    if ((!ringValidation.allPass || (ringValidation.failedPairs && ringValidation.failedPairs.length > 0)) && !isGuidedClosure) {
+      const failMsg = `We need a little more overlap between adjacent photos. Broken connection detected: ${ringValidation.failedPairs.join(', ')}. Stay in the same spot and rotate less before taking the next photo.`;
+      console.warn(`[CAPTURE_QUALITY_GATE][REJECTED] Blocking panorama job. failedPairs=${ringValidation.failedPairs.join(',')}`);
+      return res.status(400).json({
+        ok: false,
+        success: false,
+        error: 'CAPTURE_RING_VALIDATION_FAILED',
+        errorCode: 'CAPTURE_RING_VALIDATION_FAILED',
+        failedPairs: ringValidation.failedPairs,
+        weakPairs: ringValidation.weakPairs || [],
+        pairResults: ringValidation.pairResults || [],
+        openCvJobStarted: false,
+        message: failMsg,
+        userMessage: failMsg
+      });
     }
 
     const autoRemovePeople = req.body?.autoRemovePeople !== 'false' && req.body?.autoRemovePeople !== false;
@@ -10204,6 +10206,12 @@ app.post('/api/projects/:id/panorama/start', upload.array('photos', 16), async (
       requestId: jobId,
       sourceCount: sourceList.length,
       captureSessionId: captureSessionId || null,
+      captureClosureVerified: Boolean(req.body?.closureVerified || req.body?.closureConfirmed),
+      captureClosureBypassesRingPreflight: false,
+      ringPreflightPass: ringValidation.allPass,
+      ringStatus: ringValidation.ringStatus,
+      failedPairs: ringValidation.failedPairs || [],
+      weakPairs: ringValidation.weakPairs || [],
       autoRemovePeople,
       status: 'QUEUED',
       progress: 5,
@@ -10737,15 +10745,42 @@ app.get('/api/internal-qa/guided-capture/candidate-file/:sessionId/:file', (req,
     const file = path.basename(req.params.file || '');
     if (!sessionId || !file) return res.status(400).json({ ok: false, error: 'Invalid parameters' });
 
-    const dataKfDir = path.resolve(__dirname, '../data/guided_capture_keyframes', sessionId);
-    const candPath = path.join(dataKfDir, 'candidates', file);
-    const kfPath = path.join(dataKfDir, file);
+    const searchDirs = [
+      path.resolve(__dirname, '../data/guided_capture_keyframes', sessionId),
+      path.resolve(DATA_DIR, 'guided_capture_keyframes', sessionId),
+      path.resolve('/data/guided_capture_keyframes', sessionId),
+      path.resolve(DATA_DIR, sessionId),
+      path.resolve('/data', sessionId),
+      path.resolve(process.cwd(), 'data/guided_capture_keyframes', sessionId),
+      path.resolve(process.cwd(), 'production_artifacts/c12_6_keyframes', sessionId),
+      path.resolve(process.cwd(), 'production_artifacts/c12_8_candidates', sessionId),
+      path.resolve(process.cwd(), 'production_artifacts/mobile_runtime_inspector', sessionId),
+      path.resolve(__dirname, '../../production_artifacts/c12_6_keyframes', sessionId),
+      path.resolve(__dirname, '../../production_artifacts/c12_8_candidates', sessionId),
+      path.resolve(__dirname, '../../production_artifacts/mobile_runtime_inspector', sessionId),
+      path.resolve(DATA_DIR, 'uploads'),
+      UPLOADS_DIR
+    ];
+
+    if (file === 'status' || file === 'audit') {
+      const audit = searchDirs.map(d => ({
+        dir: d,
+        exists: fs.existsSync(d),
+        files: fs.existsSync(d) ? fs.readdirSync(d).slice(0, 50) : []
+      }));
+      return res.json({ ok: true, sessionId, audit });
+    }
 
     let targetPath = null;
-    if (fs.existsSync(candPath)) targetPath = candPath;
-    else if (fs.existsSync(kfPath)) targetPath = kfPath;
+    for (const d of searchDirs) {
+      if (!fs.existsSync(d)) continue;
+      const p1 = path.join(d, file);
+      const p2 = path.join(d, 'candidates', file);
+      if (fs.existsSync(p1) && fs.statSync(p1).isFile()) { targetPath = p1; break; }
+      if (fs.existsSync(p2) && fs.statSync(p2).isFile()) { targetPath = p2; break; }
+    }
 
-    if (!targetPath) return res.status(404).json({ ok: false, error: 'File not found' });
+    if (!targetPath) return res.status(404).json({ ok: false, error: 'File not found', searched: searchDirs });
 
     if (file.endsWith('.jpg') || file.endsWith('.jpeg')) {
       res.setHeader('Content-Type', 'image/jpeg');
@@ -10762,6 +10797,31 @@ app.get('/api/internal-qa/guided-capture/candidate-file/:sessionId/:file', (req,
     return res.sendFile(targetPath);
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get('/api/internal-qa/guided-capture/storage-audit', (req, res) => {
+  try {
+    const scanDir = (d, max = 50) => {
+      if (!fs.existsSync(d)) return { exists: false, count: 0, sample: [] };
+      const items = fs.readdirSync(d);
+      return { exists: true, count: items.length, sample: items.slice(0, max) };
+    };
+    res.json({
+      ok: true,
+      cwd: process.cwd(),
+      dirname: __dirname,
+      DATA_DIR: typeof DATA_DIR !== 'undefined' ? DATA_DIR : null,
+      UPLOADS_DIR: typeof UPLOADS_DIR !== 'undefined' ? UPLOADS_DIR : null,
+      volumeData: scanDir('/data'),
+      dataUploads: scanDir(path.join(DATA_DIR, 'uploads')),
+      guidedKeyframesDataDir: scanDir(path.join(DATA_DIR, 'guided_capture_keyframes')),
+      guidedKeyframesAppDir: scanDir(path.resolve(__dirname, '../data/guided_capture_keyframes')),
+      prodArtifactsCwd: scanDir(path.join(process.cwd(), 'production_artifacts')),
+      prodArtifactsDirname: scanDir(path.resolve(__dirname, '../../production_artifacts'))
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
   }
 });
 
