@@ -1423,7 +1423,12 @@ if (typeof window !== 'undefined') {
             console.log('[MobileRI] Single-use QR token redeemed successfully. QA browser session established.');
           } else {
             console.warn('[MobileRI] Server rejected QA token redemption:', redeemData.reason || redeemData.error);
-            if (window.sessionStorage) window.sessionStorage.removeItem('mobile_ri_qa_token');
+            // C12.9-P2R6: Fallback to local QA mode so REPORT ISSUE control remains mounted
+            if (params.get('qa') === '1' || params.get('mode') === 'booth-tour-wizard') {
+              console.log('[MobileRI] Mounting fallback Mobile RI for QA/wizard session...');
+              window.__MOBILE_RI_INSTANCE__ = new MobileRuntimeInspector({ fallbackMode: true });
+              window.__MOBILE_RI_INSTANCE__.start();
+            }
             return;
           }
         } catch (err) {

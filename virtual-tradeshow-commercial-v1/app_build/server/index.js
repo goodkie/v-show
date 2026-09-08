@@ -1029,7 +1029,7 @@ const healthHandler = (req, res) => {
     schemaVersion: 5,
     stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
-    uiVersion: '3D2-C12.9-P2R5',
+    uiVersion: '3D2-C12.9-P2R6',
     storageRoot: GUIDED_CAPTURE_STORAGE_ROOT,
     storageRootExists: STORAGE_ROOT_EXISTS,
     storageRootWritable: STORAGE_ROOT_WRITABLE,
@@ -1176,6 +1176,7 @@ app.post('/api/internal-qa/auth/redeem-session', express.json(), (req, res) => {
       role: 'OWNER_QA'
     };
     qaBrowserSessions.set(qaSessionToken, browserSession);
+    saveDurableQaSessions();
 
     console.log(`[QA Auth] Redeemed single-use QR token -> Issued QA browser session for ${browserSession.projectId}`);
 
@@ -9809,7 +9810,11 @@ app.post('/api/projects/:id/spatial/start', upload.array('photos', 16), async (r
   try {
     const projectId = req.params.id;
     const token = extractAuthToken(req);
-    const project = db.getProject(projectId);
+    let project = db.getProject(projectId);
+    if (!project) {
+      // C12.9-P2R6: Project Identity Contract Repair — Auto-hydrate if capture session or QA project
+      project = ensureAuthoritativeQaProject(projectId);
+    }
     if (!project) return res.status(404).json({ ok: false, error: 'Project not found' });
 
     // Verify Access: allow editToken, customer session, or dev bypass
@@ -10121,6 +10126,12 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
       }
 
       let canonicalList = req.body.keyframes || req.body.canonicalKeyframes;
+      if (!canonicalList || !canonicalList.length) {
+        const sessionKfJson = path.join(paths.sessionRoot, 'canonical_keyframes.json');
+        if (fs.existsSync(sessionKfJson)) {
+          try { canonicalList = JSON.parse(fs.readFileSync(sessionKfJson, 'utf8')); } catch (e) {}
+        }
+      }
       if (!canonicalList || !canonicalList.length) {
         if (candidatePool && candidatePool.canonicalKeyframes && candidatePool.canonicalKeyframes.length) {
           canonicalList = candidatePool.canonicalKeyframes;
@@ -10995,7 +11006,7 @@ app.get('/api/internal-qa/guided-capture/storage-audit', (req, res) => {
     };
     res.json({
       ok: true,
-      serviceVersion: '3D2-C12.9-P2R5',
+      serviceVersion: '3D2-C12.9-P2R6',
       cwd: process.cwd(),
       dirname: __dirname,
       PERSISTENT_VOLUME_ROOT,
@@ -11186,6 +11197,8 @@ app.post('/api/projects/:id/capture-session/create', async (req, res) => {
     };
 
     captureSessions.set(sessionToken, sessionData);
+    ensureAuthoritativeQaProject(projectId);
+    saveDurableQaSessions();
 
     const canonicalUrl = `${CANONICAL_PUBLIC_ORIGIN}/index.html?projectId=${projectId}&mode=booth-tour-wizard&step=1&token=${sessionToken}&qa=1`;
 

@@ -18,7 +18,7 @@ class MobileInspectorUI {
 
     this.container = document.createElement('div');
     this.container.id = 'mobileRiContainer';
-    this.container.style.cssText = 'position: fixed; z-index: 999999; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; pointer-events: none;';
+    this.container.style.cssText = 'position: fixed; z-index: 2147483647; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; pointer-events: none;';
 
     // Floating REPORT ISSUE Button (Bottom Right)
     const floatBtn = document.createElement('button');

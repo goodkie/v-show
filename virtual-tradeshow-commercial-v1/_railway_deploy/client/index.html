@@ -22453,9 +22453,7 @@ class SetupWizardController {
           <button type="button" id="btnStartGuidedCapture" onclick="setupWizard.startGuidedCapture()" style="background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; color: #fff; font-size: 13px; font-weight: 800; border-radius: 8px; padding: 10px 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
             <i class="fa-solid fa-play"></i> START 360° CAPTURE
           </button>
-          <button type="button" onclick="setupWizard.simulateStitch()" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15); color: #cbd5e1; font-size: 12px; font-weight: 600; border-radius: 8px; padding: 10px 16px; cursor: pointer;">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> Use Demo Stitch
-          </button>
+          <!-- C12.9-P2R6: Demo Stitch removed from physical path -->
         </div>
       </div>
     `;
@@ -22524,6 +22522,15 @@ class SetupWizardController {
         } catch (err) {
           console.error('[SetupWizard] Panorama trigger error:', err);
           if (pill) pill.textContent = 'Panorama error: ' + (err.message || 'Please try again');
+          // C12.9-P2R6: Guarantee Mobile RI Report button visibility on error state
+          if (window.__MOBILE_RI_INSTANCE__ && window.__MOBILE_RI_INSTANCE__.ui) {
+            window.__MOBILE_RI_INSTANCE__.ui.mount();
+          } else if (typeof window.MobileRuntimeInspector === 'function') {
+            try {
+              window.__MOBILE_RI_INSTANCE__ = new window.MobileRuntimeInspector({});
+              window.__MOBILE_RI_INSTANCE__.start();
+            } catch(e){}
+          }
           if (btn) {
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Retry Panorama';

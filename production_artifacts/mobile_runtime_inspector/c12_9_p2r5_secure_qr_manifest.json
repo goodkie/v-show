@@ -1,0 +1,12 @@
+{
+  "projectId": "prj-free-b0c6f3ea",
+  "token": "[REDACTED_SECURE_TOKEN]",
+  "status": "ACTIVE",
+  "expiresAt": "2026-09-08T19:35:10.418Z",
+  "targetUrl": "[REDACTED_SECURE_URL]",
+  "createdAt": "2026-09-08T17:35:09.716Z",
+  "qrBrainPath": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\d83397bc-3323-46b8-a23f-951c5d5d9f30\\OWNER_QA_C12_9_P2R5_QR.png",
+  "qrProdPath": "E:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\OWNER_QA_C12_9_P2R5_QR.png",
+  "version": "3D2-C12.9-P2R5",
+  "READY_FOR_ONE_NEW_PHYSICAL_S23_CAPTURE": true
+}

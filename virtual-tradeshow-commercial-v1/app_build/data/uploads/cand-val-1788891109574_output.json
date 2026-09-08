@@ -1,0 +1,188 @@
+{
+  "status": "READY",
+  "opencvStatusCode": "OK",
+  "engine": "OPENCV",
+  "engineVersion": "5.0.0",
+  "featureEngine": "SIFT",
+  "cameraEstimationStatus": "CONVERGED",
+  "bundleAdjustmentStatus": "CONVERGED",
+  "warpStatus": "SUCCESS",
+  "exposureCompensationStatus": "SUCCESS",
+  "seamStatus": "SUCCESS",
+  "blendStatus": "SUCCESS",
+  "panoramaCreated": true,
+  "applyEnabled": true,
+  "geometryValid": true,
+  "allInputImagesUsed": false,
+  "full360Qualified": false,
+  "panoramaType": "PARTIAL",
+  "projection": "SPHERICAL",
+  "nativeWidth": 3469,
+  "nativeHeight": 1087,
+  "nativeDimensions": "3469x1087",
+  "horizontalCoverageDeg": 138.0,
+  "verticalCoverageDeg": 43.2,
+  "outputMosaicCoverageEstimateDeg": 138.0,
+  "cameraGeometryCoverageDeg": 65.1,
+  "lastFirstPairReprojectionError": 1.05,
+  "globalRingClosureError": null,
+  "lastFirstPairResult": {
+    "fromSlot": "SHOT_12",
+    "toSlot": "SHOT_01",
+    "pairLabel": "SHOT_12->SHOT_01",
+    "goodMatchCount": 91,
+    "inlierCount": 56,
+    "inlierRatio": 0.615,
+    "medianReprojectionError": 1.05,
+    "homographyValid": true,
+    "status": "GOOD",
+    "overlapClassification": "GOOD_OVERLAP"
+  },
+  "yawMin": -69.0,
+  "yawMax": 69.0,
+  "pitchMin": -21.6,
+  "pitchMax": 21.6,
+  "connectedCameraIndices": [
+    1,
+    2,
+    3
+  ],
+  "connectedCount": 3,
+  "sourceCount": 12,
+  "nativeFile": "cand-val-1788891109574_native.jpg",
+  "nativePath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\cand-val-1788891109574_native.jpg",
+  "previewFile": "cand-val-1788891109574_preview.jpg",
+  "previewPath": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads\\cand-val-1788891109574_preview.jpg",
+  "masterSha256": "e1a6e66f03083865a81d8a5d287050f7a9d7d21b18a84957799ddfd110bc93a6",
+  "srUsed": false,
+  "anchors": [
+    {
+      "id": "anchor-deg--69",
+      "index": 0,
+      "degree": -69.0,
+      "slot": "SHOT_01"
+    },
+    {
+      "id": "anchor-deg-0",
+      "index": 1,
+      "degree": 0.0,
+      "slot": "SHOT_02"
+    },
+    {
+      "id": "anchor-deg-69",
+      "index": 2,
+      "degree": 69.0,
+      "slot": "SHOT_03"
+    }
+  ],
+  "sources": [
+    {
+      "index": 0,
+      "slot": "FAR_LEFT",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C001.jpg",
+      "sha256": "752b843254840a2846ccb06d6b34da31f7e98a885e200344bf918338f8033000",
+      "cameraMake": "UNKNOWN",
+      "cameraModel": "UNKNOWN",
+      "focalLength35mm": null
+    },
+    {
+      "index": 1,
+      "slot": "LEFT",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C004.jpg",
+      "sha256": "993de242720bc62cc4093b5377d602549b402ee16642db1acd677d3c38efdfc4",
+      "cameraMake": "UNKNOWN",
+      "cameraModel": "UNKNOWN",
+      "focalLength35mm": null
+    },
+    {
+      "index": 2,
+      "slot": "LEFT_CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C007.jpg",
+      "sha256": "c975bf67d8bdc3fe8019676a2333241fa42ea76199645e210f853a959be3e054",
+      "cameraMake": "UNKNOWN",
+      "cameraModel": "UNKNOWN",
+      "focalLength35mm": null
+    },
+    {
+      "index": 3,
+      "slot": "CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C011.jpg",
+      "sha256": "b114a58ab954fd638ff22c901813b6cbd928c79ddeb38b1dd474135ce9a5276c",
+      "cameraMake": "UNKNOWN",
+      "cameraModel": "UNKNOWN",
+      "focalLength35mm": null
+    },
+    {
+      "index": 4,
+      "slot": "RIGHT_CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C015.jpg",
+      "sha256": "034481ae87059cdcf07ea6ed574be58c3371ff5a14fece61b46a7db28d1e4851",
+      "cameraMake": "UNKNOWN",
+      "cameraModel": "UNKNOWN",
+      "focalLength35mm": null
+    },
+    {
+      "index": 5,
+      "slot": "RIGHT",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C018.jpg",
+      "sha256": "de9d7e4ebd4bc2745e64544ece009f1abcc122d46796d9c628868896852380f6",
+      "cameraMake": "UNKNOWN",
+      "cameraModel": "UNKNOWN",
+      "focalLength35mm": null
+    },
+    {
+      "index": 6,
+      "slot": "FAR_RIGHT",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C022.jpg",
+      "sha256": "0da341b15de1d9ba4d4808e5fb15ed233e0c4690d3ac084a587ae3c349ce55d5",
+      "cameraMake": "UNKNOWN",
+      "cameraModel": "UNKNOWN",
+      "focalLength35mm": null
+    },
+    {
+      "index": 7,
+      "slot": "CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C026.jpg",
+      "sha256": "4ea4626e4c17f8b71b9717c5b02b21f35115b249b16075a2c5606852fe27e011",
+      "cameraMake": "UNKNOWN",
+      "cameraModel": "UNKNOWN",
+      "focalLength35mm": null
+    },
+    {
+      "index": 8,
+      "slot": "CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C029.jpg",
+      "sha256": "ab17f13d71f69dc1e1e19987b1cc46b6ead37fa56e5e874a7f4e1be4243453c0",
+      "cameraMake": "UNKNOWN",
+      "cameraModel": "UNKNOWN",
+      "focalLength35mm": null
+    },
+    {
+      "index": 9,
+      "slot": "CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C033.jpg",
+      "sha256": "5a737786fe77b09ffefc845faf44ed06b23fe64b0b216ace2c5b0aefc400b6e9",
+      "cameraMake": "UNKNOWN",
+      "cameraModel": "UNKNOWN",
+      "focalLength35mm": null
+    },
+    {
+      "index": 10,
+      "slot": "CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C037.jpg",
+      "sha256": "5cc036ea7bad78ca218fa74a7cea3fee08ef9586e17bc65a4c870e2a7eb52ed7",
+      "cameraMake": "UNKNOWN",
+      "cameraModel": "UNKNOWN",
+      "focalLength35mm": null
+    },
+    {
+      "index": 11,
+      "slot": "CENTER",
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C040.jpg",
+      "sha256": "80e8b1b58faca20a9f77029efea1e56baa8d25ab29ae9e38c634bc733cede861",
+      "cameraMake": "UNKNOWN",
+      "cameraModel": "UNKNOWN",
+      "focalLength35mm": null
+    }
+  ]
+}

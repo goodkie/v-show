@@ -1,0 +1,66 @@
+{
+  "sources": [
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C001.jpg",
+      "slot": "FAR_LEFT",
+      "index": 0
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C004.jpg",
+      "slot": "LEFT",
+      "index": 1
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C007.jpg",
+      "slot": "LEFT_CENTER",
+      "index": 2
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C011.jpg",
+      "slot": "CENTER",
+      "index": 3
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C015.jpg",
+      "slot": "RIGHT_CENTER",
+      "index": 4
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C018.jpg",
+      "slot": "RIGHT",
+      "index": 5
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C022.jpg",
+      "slot": "FAR_RIGHT",
+      "index": 6
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C026.jpg",
+      "slot": "CENTER",
+      "index": 7
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C029.jpg",
+      "slot": "CENTER",
+      "index": 8
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C033.jpg",
+      "slot": "CENTER",
+      "index": 9
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C037.jpg",
+      "slot": "CENTER",
+      "index": 10
+    },
+    {
+      "path": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C040.jpg",
+      "slot": "CENTER",
+      "index": 11
+    }
+  ],
+  "outputDir": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1\\app_build\\data\\uploads",
+  "candidateId": "cand-val-1788891109574"
+}
