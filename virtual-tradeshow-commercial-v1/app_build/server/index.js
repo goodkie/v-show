@@ -774,6 +774,33 @@ app.get('/api/build-info', (req, res) => {
   });
 });
 
+const workerIntegrityHandler = (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  const getHash = (filename) => {
+    try {
+      const p = path.join(__dirname, filename);
+      if (fs.existsSync(p)) {
+        return crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  };
+  res.json({
+    ok: true,
+    uiVersion: '3D2-C12.9-P2R10',
+    gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || P315_BUILD_INFO.gitCommit,
+    workerCodeHash: getHash('opencv_panorama_worker.py'),
+    opencvPanoramaWorkerHash: getHash('opencv_panorama_worker.py'),
+    panoramaGeometryValidatorHash: getHash('panorama_geometry_validator.py'),
+    stitchAwareSelectorHash: getHash('stitch_aware_selector.py'),
+    panoramicStitcherHash: getHash('panoramic_stitcher.js')
+  });
+};
+app.get('/api/worker-integrity', workerIntegrityHandler);
+app.get('/api/diagnostics/worker-hashes', workerIntegrityHandler);
+
 
 app.use('/vendor/spark', express.static(path.join(__dirname, '..', 'node_modules', '@sparkjsdev', 'spark', 'dist')));
 app.use('/vendor/three', express.static(path.join(__dirname, '..', 'node_modules', 'three')));
@@ -10209,13 +10236,41 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
       // C12.9-P2R10: Production Adaptive Multi-Hop Stitch Input Manifest Support
       // Decouple canonical capture keyframes (8-16) from panorama stitch frames (canonical + supplemental bridges)
       const panoManifestPath = path.join(paths.sessionRoot, 'panorama_input_manifest.json');
-      let panoManifest = null;
-      if (fs.existsSync(panoManifestPath)) {
+      let panoManifest = req.body?.panoramaInputManifest || req.body?.panoramaManifest || req.body?.stitchManifest || null;
+      if (!panoManifest && fs.existsSync(panoManifestPath)) {
         try {
           panoManifest = JSON.parse(fs.readFileSync(panoManifestPath, 'utf8'));
         } catch (e) {
           console.warn('[P2R10] Failed to parse panorama_input_manifest.json:', e.message);
         }
+      }
+
+      // Auto-generate stitch manifest via stitch_aware_selector if missing and candidates exist
+      if (!panoManifest && !fs.existsSync(panoManifestPath) && fs.existsSync(paths.candidateDir)) {
+        try {
+          const { execFileSync } = require('child_process');
+          const selectorScript = path.join(__dirname, 'stitch_aware_selector.py');
+          const pythonExe = process.env.PYTHON_BIN || 
+            (fs.existsSync('e:/vivpr/ai/v-show-reconstruction-work/python_env/python.exe')
+              ? 'e:/vivpr/ai/v-show-reconstruction-work/python_env/python.exe'
+              : 'python');
+          console.log(`[P2R10] Auto-generating adaptive stitch manifest via stitch_aware_selector for session ${captureSessionId}...`);
+          execFileSync(pythonExe, [selectorScript, '--session-dir', paths.sessionRoot, '--output-dir', paths.sessionRoot, '--session-id', captureSessionId], {
+            encoding: 'utf-8',
+            timeout: 60000
+          });
+          if (fs.existsSync(panoManifestPath)) {
+            panoManifest = JSON.parse(fs.readFileSync(panoManifestPath, 'utf8'));
+          }
+        } catch (selErr) {
+          console.warn('[P2R10] stitch_aware_selector auto-run warning:', selErr.message);
+        }
+      }
+
+      if (panoManifest && !fs.existsSync(panoManifestPath)) {
+        try {
+          fs.writeFileSync(panoManifestPath, JSON.stringify(panoManifest, null, 2), 'utf8');
+        } catch (e) {}
       }
 
       if (panoManifest && Array.isArray(panoManifest.frames) && panoManifest.frames.length >= 2) {
@@ -10293,11 +10348,12 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
           let kfPath = null;
           const kfName = kf.keyframeId || ('KF' + String(idx + 1).padStart(2, '0'));
           const directCanonFile = path.join(paths.canonicalDir, kfName + '.jpg');
-          const candFile = kf.candidateId ? path.join(paths.candidateDir, kf.candidateId + '.jpg') : null;
+          const candId = kf.candidateId || (candidatePool?.candidates?.[idx]?.candidateId) || ('C' + String(idx + 1).padStart(3, '0'));
+          const candFile = candId ? path.join(paths.candidateDir, candId + '.jpg') : null;
           
           // Legacy fallbacks for reading
           const legacyCanonFile = path.resolve(DATA_DIR, 'guided_capture_keyframes', captureSessionId, kfName + '.jpg');
-          const legacyCandFile = kf.candidateId ? path.resolve(DATA_DIR, 'guided_capture_keyframes', captureSessionId, 'candidates', kf.candidateId + '.jpg') : null;
+          const legacyCandFile = candId ? path.resolve(DATA_DIR, 'guided_capture_keyframes', captureSessionId, 'candidates', candId + '.jpg') : null;
 
           if (fs.existsSync(directCanonFile) && fs.statSync(directCanonFile).size > 0) {
             kfPath = directCanonFile;
