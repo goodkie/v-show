@@ -1,0 +1,530 @@
+{
+  "ok": true,
+  "sessionId": "RI-M-ZY40FJ",
+  "summary": {
+    "sessionId": "RI-M-ZY40FJ",
+    "environment": "INTERNAL_DEV",
+    "isTest": true,
+    "receivedAt": "2026-09-08T11:22:33.276Z",
+    "SESSION_ID": "RI-M-ZY40FJ",
+    "PLATFORM": "Android Chrome",
+    "platform": "Android Chrome",
+    "SECURE_HTTPS": "YES",
+    "CAMERA_READY": "AVAILABLE",
+    "CAMERA_FRAMES": 379,
+    "MOTION_EVENTS": 13336,
+    "CURRENT_STEP": 6,
+    "STEP_NAME": "Guided 360° Capture",
+    "CAPTURE_PROGRESS": "99%",
+    "RAW_CSS_LEAK": "CLEAN",
+    "CHECKPOINT_COUNT": 0
+  },
+  "files": [
+    "camera_state.json",
+    "console.json",
+    "network.json",
+    "runtime_state.json",
+    "screenshot.png",
+    "sensor_state.json",
+    "summary.json",
+    "timeline.json",
+    "viewer_state.json",
+    "wizard_state.json"
+  ],
+  "data": {
+    "camera_state": {
+      "hasMediaDevices": true,
+      "hasGetUserMedia": true,
+      "isSecureContext": true,
+      "cameraPermissionState": "prompt",
+      "getUserMediaCalled": true,
+      "getUserMediaResolved": true,
+      "cameraStreamActive": false,
+      "videoTrackState": "ended",
+      "videoWidth": 0,
+      "videoHeight": 0,
+      "videoReadyState": 0,
+      "facingMode": "unknown",
+      "cameraModule": "UNKNOWN",
+      "lastErrorCode": null,
+      "lastErrorMessage": null
+    },
+    "console": [],
+    "network": [],
+    "runtime_state": {
+      "appInfo": {
+        "appId": "3dz-virtual-tradeshow-mobile",
+        "appName": "3DZ Virtual Tradeshow Studio (Mobile)",
+        "mobileRiSessionId": "RI-M-ZY40FJ",
+        "timestamp": "2026-09-08T11:22:33.173Z",
+        "platform": "Android Chrome",
+        "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Mobile Safari/537.36",
+        "protocol": "https:",
+        "host": "v-show-commercial-v1-production.up.railway.app",
+        "url": "https://v-show-commercial-v1-production.up.railway.app/index.html?projectId=prj-free-b0c6f3ea&mode=booth-tour-wizard&step=1&qa=1",
+        "isSecureContext": true,
+        "screenWidth": 345,
+        "screenHeight": 883,
+        "devicePixelRatio": 2.625,
+        "orientation": "portrait-primary",
+        "environment": "production"
+      },
+      "camera": {
+        "hasMediaDevices": true,
+        "hasGetUserMedia": true,
+        "isSecureContext": true,
+        "cameraPermissionState": "prompt",
+        "getUserMediaCalled": true,
+        "getUserMediaResolved": true,
+        "cameraStreamActive": false,
+        "videoTrackState": "ended",
+        "videoWidth": 0,
+        "videoHeight": 0,
+        "videoReadyState": 0,
+        "facingMode": "unknown",
+        "cameraModule": "UNKNOWN",
+        "lastErrorCode": null,
+        "lastErrorMessage": null
+      },
+      "sensor": {
+        "hasDeviceOrientation": true,
+        "hasDeviceMotion": true,
+        "deviceOrientationEventCount": 4392,
+        "deviceMotionEventCount": 8944,
+        "lastOrientationTimestamp": 1788866553137,
+        "lastMotionTimestamp": 1788866553141,
+        "lastOrientation": {
+          "alpha": 174.9,
+          "beta": 39.2,
+          "gamma": -15,
+          "absolute": false
+        },
+        "lastMotion": {
+          "accX": 0,
+          "accY": 0,
+          "accZ": -0.1,
+          "rotAlpha": -2.1,
+          "rotBeta": -1.5,
+          "rotGamma": -0.3
+        },
+        "sensorGuidanceMode": "SENSOR_VISUAL"
+      },
+      "guidedCapture": {
+        "controllerPresent": true,
+        "controllerId": "guided_capture_0",
+        "captureState": "CAPTURE_NEEDS_RETRY",
+        "progressPercent": 99,
+        "accumulatedRotation": 450,
+        "previewFrameCount": 379,
+        "candidateFrameCount": 51,
+        "acceptedCandidateCount": 40,
+        "rejectedCandidateCount": 11,
+        "canonicalKeyframeCount": 0,
+        "candidateRejectionReasons": [
+          {
+            "angle": 19.5,
+            "reason": "OVER_EXPOSED",
+            "sharpness": 2,
+            "exposure": 252,
+            "timestamp": 1788866393007
+          },
+          {
+            "angle": 126.7,
+            "reason": "UNDER_EXPOSED",
+            "sharpness": 9,
+            "exposure": 12,
+            "timestamp": 1788866397551
+          },
+          {
+            "angle": 284.1,
+            "reason": "MOTION_BLUR",
+            "sharpness": 19,
+            "exposure": 147,
+            "timestamp": 1788866403100
+          },
+          {
+            "angle": 293.9,
+            "reason": "MOTION_BLUR",
+            "sharpness": 17,
+            "exposure": 60,
+            "timestamp": 1788866403230
+          },
+          {
+            "angle": 293.9,
+            "reason": "MOTION_BLUR",
+            "sharpness": 16,
+            "exposure": 83,
+            "timestamp": 1788866403361
+          },
+          {
+            "angle": 303.2,
+            "reason": "MOTION_BLUR",
+            "sharpness": 17,
+            "exposure": 108,
+            "timestamp": 1788866403499
+          },
+          {
+            "angle": 318.7,
+            "reason": "MOTION_BLUR",
+            "sharpness": 10,
+            "exposure": 34,
+            "timestamp": 1788866403893
+          },
+          {
+            "angle": 318.7,
+            "reason": "MOTION_BLUR",
+            "sharpness": 19,
+            "exposure": 55,
+            "timestamp": 1788866404026
+          },
+          {
+            "angle": 331.2,
+            "reason": "MOTION_BLUR",
+            "sharpness": 0,
+            "exposure": 254,
+            "timestamp": 1788866404175
+          },
+          {
+            "angle": 383.6,
+            "reason": "OVER_EXPOSED",
+            "sharpness": 6,
+            "exposure": 246,
+            "timestamp": 1788866407530
+          },
+          {
+            "angle": 139.9,
+            "reason": "MOTION_BLUR",
+            "sharpness": 20,
+            "exposure": 60,
+            "timestamp": 1788866438326
+          },
+          {
+            "angle": 139.9,
+            "reason": "MOTION_BLUR",
+            "sharpness": 17,
+            "exposure": 50,
+            "timestamp": 1788866438465
+          },
+          {
+            "angle": 161.4,
+            "reason": "MOTION_BLUR",
+            "sharpness": 17,
+            "exposure": 40,
+            "timestamp": 1788866438609
+          },
+          {
+            "angle": 161.4,
+            "reason": "MOTION_BLUR",
+            "sharpness": 16,
+            "exposure": 39,
+            "timestamp": 1788866438741
+          },
+          {
+            "angle": 170.9,
+            "reason": "MOTION_BLUR",
+            "sharpness": 25,
+            "exposure": 103,
+            "timestamp": 1788866438868
+          },
+          {
+            "angle": 175.2,
+            "reason": "MOTION_BLUR",
+            "sharpness": 18,
+            "exposure": 48,
+            "timestamp": 1788866438999
+          },
+          {
+            "angle": 226.2,
+            "reason": "MOTION_BLUR",
+            "sharpness": 16,
+            "exposure": 82,
+            "timestamp": 1788866440268
+          },
+          {
+            "angle": 272.4,
+            "reason": "MOTION_BLUR",
+            "sharpness": 18,
+            "exposure": 64,
+            "timestamp": 1788866441788
+          },
+          {
+            "angle": 280.3,
+            "reason": "MOTION_BLUR",
+            "sharpness": 19,
+            "exposure": 81,
+            "timestamp": 1788866441933
+          },
+          {
+            "angle": 284.4,
+            "reason": "MOTION_BLUR",
+            "sharpness": 20,
+            "exposure": 100,
+            "timestamp": 1788866442065
+          },
+          {
+            "angle": 410.5,
+            "reason": "OVER_EXPOSED",
+            "sharpness": 1,
+            "exposure": 254,
+            "timestamp": 1788866447624
+          }
+        ],
+        "persistedCandidateCount": 40,
+        "candidateUploadFailures": 0,
+        "candidatePoolId": "CAP-4R2OXV",
+        "stitchAwareCanonicalCount": 0,
+        "bridgeFrameCount": 0,
+        "panoramaInputCount": 0,
+        "graphConnected": null,
+        "connectedComponentCount": 0,
+        "weakestEdge": null,
+        "closureEdgeConfidence": null,
+        "guidanceMode": "SENSOR_VISUAL",
+        "visualMotionFallbackActive": false,
+        "orientationEventCount": 4392,
+        "motionEventCount": 8944,
+        "lastErrorCode": null,
+        "lastErrorMessage": null,
+        "ownerCameraStartTap": true,
+        "startButtonHandlerCount": 2,
+        "controllerStartCallCount": 2,
+        "startupInFlight": true,
+        "cameraStartAttemptCount": 3,
+        "currentStartAttemptId": 3,
+        "getUserMediaCalled": true,
+        "getUserMediaResolved": true,
+        "streamAcquired": true,
+        "videoElementFound": true,
+        "videoElementConnected": true,
+        "videoSrcObjectAssigned": true,
+        "videoLoadedMetadata": false,
+        "videoLoadedData": false,
+        "videoCanPlay": false,
+        "videoPlayCalled": true,
+        "videoPlayResolved": true,
+        "videoPlayErrorName": null,
+        "videoPlayErrorMessage": null,
+        "videoEventCounts": {
+          "loadedmetadata": 0,
+          "loadeddata": 0,
+          "canplay": 0,
+          "playing": 0,
+          "resize": 1,
+          "stalled": 0,
+          "error": 0,
+          "waiting": 1,
+          "suspend": 0
+        },
+        "videoWidth": 0,
+        "videoHeight": 0,
+        "videoReadyState": 0,
+        "firstVideoFrameReceived": true,
+        "previewReady": true,
+        "cameraStartResult": "PASS",
+        "cameraStartErrorCode": null,
+        "startupTotalMs": 726,
+        "tryAgainCount": 1,
+        "resetCaptureForRetryCallCount": 1,
+        "resetReason": "USER_EXPLICIT_RETRY",
+        "oldStreamTracksStopped": false,
+        "staleCallbackIgnoredCount": 0,
+        "activeStreamCount": 0,
+        "activeVideoTrackCount": 0,
+        "videoFrameCallbackSupported": true,
+        "rvfcRegistered": true,
+        "rvfcCallbackCount": 0,
+        "firstVideoFrameTimestamp": 1788866432533,
+        "firstVideoFrameMediaTime": null,
+        "watchdogFired": false,
+        "watchdogStage": null,
+        "startCallCountPerTap": 2,
+        "timings": {
+          "startTime": 1788866431807,
+          "motionPermissionStartMs": 0,
+          "motionPermissionEndMs": 12,
+          "getUserMediaStartMs": 12,
+          "getUserMediaResolvedMs": 684,
+          "videoPresentationWatchdogStartMs": 684,
+          "srcObjectAssignedMs": 684,
+          "loadedMetadataMs": null,
+          "loadedDataMs": null,
+          "canPlayMs": null,
+          "playPromiseResolvedMs": 728,
+          "firstNonzeroDimensionsMs": 726,
+          "firstVideoFrameMs": 726,
+          "previewReadyMs": 726,
+          "startupTotalMs": 726,
+          "watchdogTimeoutMs": 12000
+        },
+        "closureConfirmed": false,
+        "captureCompletionReason": "RETRY_REQUIRED",
+        "visualClosureSearchEnabled": true,
+        "visualClosureSearchEnabledAtRotation": 300,
+        "closureCheckCount": 31,
+        "bestClosureMatchFrameId": "C040",
+        "bestClosureReferenceId": "C001",
+        "closureRawMatches": 35,
+        "closureGoodMatches": 15,
+        "closureInliers": 4,
+        "closureInlierRatio": 0.267,
+        "closureReprojectionError": 1.69,
+        "closureInlierCellCount": 2,
+        "closureInlierBboxAreaRatio": 0.103,
+        "closureSensorExpectedDelta": 90,
+        "closureVisualRelativeRotation": -98.3,
+        "closureConsecutiveConfirmationCount": 0,
+        "fastRotationEventCount": 66,
+        "canonicalSelectedCount": 0,
+        "canonicalPersistedCount": 0,
+        "fatalJsErrorCount": 0
+      },
+      "wizard": {
+        "wizardPresent": true,
+        "controllerInstanceCount": 1,
+        "wizardRootCount": 1,
+        "currentWizardStep": 6,
+        "wizardStepName": "Guided 360° Capture",
+        "projectId": "prj-free-b0c6f3ea",
+        "tourId": null,
+        "viewpointCount": 3,
+        "currentViewpointId": "vp_entrance",
+        "isModalOpen": true
+      },
+      "viewpointMap": {
+        "mapMounted": true,
+        "activeSvgId": "editBoothMapSvg",
+        "viewpointCount": 3,
+        "renderedMarkerCount": 0,
+        "viewpoints": [
+          {
+            "id": "vp_entrance",
+            "name": "Entrance",
+            "x": 50,
+            "y": 85
+          },
+          {
+            "id": "vp_center",
+            "name": "Center",
+            "x": 48.7,
+            "y": 48.3
+          },
+          {
+            "id": "vp_product",
+            "name": "Product Display",
+            "x": 25.4,
+            "y": 20.7
+          }
+        ]
+      },
+      "viewer": {
+        "controllerPresent": false,
+        "tourId": null,
+        "activeViewpointId": null,
+        "viewerMode": "STANDARD"
+      },
+      "domHealth": {
+        "duplicateWizardRoots": 1,
+        "brandLogoCount": 1,
+        "brandDuplicateTextCount": 0,
+        "rawCssLeaksDetected": false,
+        "leakedCssSnippets": []
+      },
+      "rollingBufferSnapshot": {
+        "capturedAt": "2026-09-08T11:22:33.176Z",
+        "windowSeconds": 60,
+        "eventCount": 1,
+        "events": [
+          {
+            "timestamp": 1788866553162,
+            "isoTime": "2026-09-08T11:22:33.162Z",
+            "category": "INTERACTION",
+            "type": "TAP",
+            "payload": {
+              "id": "btnMobileRiSubmit",
+              "className": null,
+              "text": "CAPTURE BUG REPORT"
+            }
+          }
+        ],
+        "consoleCount": 0,
+        "consoleLogs": [],
+        "networkCount": 0,
+        "networkRequests": [],
+        "checkpointCount": 0,
+        "checkpoints": []
+      }
+    },
+    "sensor_state": {
+      "hasDeviceOrientation": true,
+      "hasDeviceMotion": true,
+      "deviceOrientationEventCount": 4392,
+      "deviceMotionEventCount": 8944,
+      "lastOrientationTimestamp": 1788866553137,
+      "lastMotionTimestamp": 1788866553141,
+      "lastOrientation": {
+        "alpha": 174.9,
+        "beta": 39.2,
+        "gamma": -15,
+        "absolute": false
+      },
+      "lastMotion": {
+        "accX": 0,
+        "accY": 0,
+        "accZ": -0.1,
+        "rotAlpha": -2.1,
+        "rotBeta": -1.5,
+        "rotGamma": -0.3
+      },
+      "sensorGuidanceMode": "SENSOR_VISUAL"
+    },
+    "summary": {
+      "sessionId": "RI-M-ZY40FJ",
+      "environment": "INTERNAL_DEV",
+      "isTest": true,
+      "receivedAt": "2026-09-08T11:22:33.276Z",
+      "SESSION_ID": "RI-M-ZY40FJ",
+      "PLATFORM": "Android Chrome",
+      "platform": "Android Chrome",
+      "SECURE_HTTPS": "YES",
+      "CAMERA_READY": "AVAILABLE",
+      "CAMERA_FRAMES": 379,
+      "MOTION_EVENTS": 13336,
+      "CURRENT_STEP": 6,
+      "STEP_NAME": "Guided 360° Capture",
+      "CAPTURE_PROGRESS": "99%",
+      "RAW_CSS_LEAK": "CLEAN",
+      "CHECKPOINT_COUNT": 0
+    },
+    "timeline": [
+      {
+        "timestamp": 1788866553162,
+        "isoTime": "2026-09-08T11:22:33.162Z",
+        "category": "INTERACTION",
+        "type": "TAP",
+        "payload": {
+          "id": "btnMobileRiSubmit",
+          "className": null,
+          "text": "CAPTURE BUG REPORT"
+        }
+      }
+    ],
+    "viewer_state": {
+      "controllerPresent": false,
+      "tourId": null,
+      "activeViewpointId": null,
+      "viewerMode": "STANDARD"
+    },
+    "wizard_state": {
+      "wizardPresent": true,
+      "controllerInstanceCount": 1,
+      "wizardRootCount": 1,
+      "currentWizardStep": 6,
+      "wizardStepName": "Guided 360° Capture",
+      "projectId": "prj-free-b0c6f3ea",
+      "tourId": null,
+      "viewpointCount": 3,
+      "currentViewpointId": "vp_entrance",
+      "isModalOpen": true
+    }
+  }
+}

@@ -19447,7 +19447,8 @@ const BRIEF_PAIRS = [
 class VisualLoopDetector {
   constructor(options = {}) {
     this.minRotationSearchGate = options.minRotationSearchGate || 300.0;
-    this.inlierThreshold = options.inlierThreshold || 15;
+    this.maxRotationSearchGate = options.maxRotationSearchGate || 450.0;
+    this.inlierThreshold = options.inlierThreshold || 10;
     this.inlierRatioThreshold = options.inlierRatioThreshold || 0.35;
     this.reprojectionThreshold = options.reprojectionThreshold || 6.5;
     this.minInlierCellCount = options.minInlierCellCount || 3;
@@ -19548,7 +19549,7 @@ class VisualLoopDetector {
       }
     }
 
-    // Keep top 2-3 keypoints per grid bucket
+    // Keep top 2 keypoints per grid bucket (up to 96 keypoints)
     for (let b = 0; b < gridBuckets.length; b++) {
       gridBuckets[b].sort((a, b) => b.score - a.score);
       const top = gridBuckets[b].slice(0, 2);
@@ -19557,7 +19558,7 @@ class VisualLoopDetector {
       }
     }
 
-    // Extract BRIEF descriptor for each keypoint
+    // Extract steered BRIEF descriptor for each keypoint
     const descriptors = new Uint32Array(keypoints.length);
     for (let i = 0; i < keypoints.length; i++) {
       const kp = keypoints[i];
@@ -19607,7 +19608,7 @@ class VisualLoopDetector {
   }
 
   addStartReference(candidateId, angle, featureData) {
-    if (this.startReferences.length >= 3) return false;
+    if (this.startReferences.length >= 5) return false;
     this.startReferences.push({
       candidateId,
       angle,
@@ -19616,15 +19617,17 @@ class VisualLoopDetector {
     return true;
   }
 
+  // Cascade Verifier: Stage 1 Similarity -> Stage 2 Affine fallback
   evaluateClosure(candidateId, currentAngle, featureData) {
     this.closureCheckCount++;
 
-    if (currentAngle < this.minRotationSearchGate) {
+    if (currentAngle < this.minRotationSearchGate || currentAngle > this.maxRotationSearchGate) {
       return {
         pass: false,
-        reason: 'BELOW_MIN_ROTATION_GATE',
+        reason: 'OUTSIDE_ROTATION_SEARCH_GATE',
         angle: currentAngle,
-        minGate: this.minRotationSearchGate
+        minGate: this.minRotationSearchGate,
+        maxGate: this.maxRotationSearchGate
       };
     }
 
@@ -19635,13 +19638,19 @@ class VisualLoopDetector {
     let bestResult = null;
 
     for (const ref of this.startReferences) {
-      const matchResult = this.matchAndEstimate(ref.featureData, featureData);
-      if (!bestResult || matchResult.inlierCount > bestResult.inlierCount) {
+      // Sensor consistency prior: current angle should be close to 360° + ref.angle (±55°)
+      const expectedYaw = 360.0 + ref.angle;
+      const deltaFromExpected = Math.abs(currentAngle - expectedYaw);
+      if (deltaFromExpected > 55.0) continue;
+
+      const matchResult = this.matchAndEstimateCascade(ref.featureData, featureData);
+      if (!bestResult || (matchResult.pass && !bestResult.pass) || (matchResult.inlierCount > bestResult.inlierCount)) {
         bestResult = {
           ...matchResult,
           referenceId: ref.candidateId,
           referenceAngle: ref.angle,
-          candidateId
+          candidateId,
+          deltaFromExpected: Math.round(deltaFromExpected * 10) / 10
         };
       }
     }
@@ -19653,18 +19662,7 @@ class VisualLoopDetector {
 
     this.bestClosureMatch = bestResult;
 
-    // Multi-factor gate
-    const hasEnoughInliers = bestResult.inlierCount >= this.inlierThreshold ||
-      (bestResult.inlierCount >= 12 && bestResult.inlierRatio >= 0.50);
-    const hasGoodRatio = bestResult.inlierRatio >= this.inlierRatioThreshold;
-    const hasLowError = bestResult.reprojectionError <= this.reprojectionThreshold;
-    const hasSpatialDist = bestResult.spatialDistributionPass === true;
-    const hasPlausibleRotation = Math.abs(bestResult.relativeRotationDeg) <= 30.0;
-    const hasPlausibleScale = bestResult.scale >= 0.70 && bestResult.scale <= 1.40;
-
-    const pass = hasEnoughInliers && hasGoodRatio && hasLowError && hasSpatialDist && hasPlausibleRotation && hasPlausibleScale;
-
-    if (pass) {
+    if (bestResult.pass) {
       this.consecutiveConfirmations++;
       if (this.consecutiveConfirmations >= this.requiredConsecutiveConfirmations) {
         this.closureConfirmed = true;
@@ -19674,21 +19672,21 @@ class VisualLoopDetector {
     }
 
     return {
-      pass,
+      pass: bestResult.pass,
       closureConfirmed: this.closureConfirmed,
       consecutiveConfirmations: this.consecutiveConfirmations,
       ...bestResult
     };
   }
 
-  matchAndEstimate(refFeatures, currFeatures) {
+  matchAndEstimateCascade(refFeatures, currFeatures) {
     const rawMatches = [];
     const refKp = refFeatures.keypoints;
     const currKp = currFeatures.keypoints;
     const refDesc = refFeatures.descriptors;
     const currDesc = currFeatures.descriptors;
 
-    // Nearest neighbor with ratio test
+    // Nearest neighbor with Lowe's ratio test
     for (let c = 0; c < currKp.length; c++) {
       let bestDist = 33;
       let secondDist = 33;
@@ -19715,11 +19713,12 @@ class VisualLoopDetector {
       }
     }
 
-    // Lowe's ratio test (Hamming <= 10 out of 32 bits, ratio <= 0.82)
     const goodMatches = rawMatches.filter(m => m.dist <= 10 && (m.dist / Math.max(1, m.secondDist)) <= 0.82);
 
-    if (goodMatches.length < 6) {
+    if (goodMatches.length < 4) {
       return {
+        modelUsed: 'NONE',
+        pass: false,
         rawMatchCount: rawMatches.length,
         goodMatchCount: goodMatches.length,
         inlierCount: 0,
@@ -19733,12 +19732,64 @@ class VisualLoopDetector {
       };
     }
 
-    // 2D Similarity RANSAC (2 points: scale, rotation, translation)
+    // ── STAGE 1: Fast 2D Similarity RANSAC (4 DOF) ──
+    const simResult = this.fitSimilarityRANSAC(goodMatches, refKp, currKp, 80, 6.5, currFeatures.width, currFeatures.height);
+    const simPass = (
+      simResult.inlierCount >= 10 &&
+      simResult.inlierRatio >= 0.35 &&
+      simResult.reprojectionError <= 6.5 &&
+      simResult.spatialDistributionPass &&
+      Math.abs(simResult.relativeRotationDeg) <= 30.0 &&
+      simResult.scale >= 0.70 && simResult.scale <= 1.40
+    );
+
+    if (simPass) {
+      return {
+        modelUsed: 'SIMILARITY',
+        pass: true,
+        rawMatchCount: rawMatches.length,
+        goodMatchCount: goodMatches.length,
+        ...simResult
+      };
+    }
+
+    // ── STAGE 2: Perspective-Tolerant Fallback - Affine 2D RANSAC (6 DOF) ──
+    if (goodMatches.length >= 18) {
+      const affResult = this.fitAffineRANSAC(goodMatches, refKp, currKp, 100, 6.5, currFeatures.width, currFeatures.height);
+      const affPass = (
+        affResult.plausible &&
+        affResult.inlierCount >= 4 &&
+        affResult.inlierRatio >= 0.12 &&
+        affResult.reprojectionError <= 2.5 &&
+        affResult.inlierCellCount >= 2 &&
+        affResult.bboxAreaRatio >= 0.05
+      );
+
+      if (affPass) {
+        return {
+          modelUsed: 'AFFINE_FALLBACK',
+          pass: true,
+          rawMatchCount: rawMatches.length,
+          goodMatchCount: goodMatches.length,
+          ...affResult
+        };
+      }
+    }
+
+    // Failed both stages
+    return {
+      modelUsed: simResult.inlierCount > 0 ? 'SIMILARITY' : 'NONE',
+      pass: false,
+      rawMatchCount: rawMatches.length,
+      goodMatchCount: goodMatches.length,
+      ...simResult
+    };
+  }
+
+  fitSimilarityRANSAC(goodMatches, refKp, currKp, maxIterations = 80, inlierThresh = 6.5, imgW = 320, imgH = 180) {
     let bestInliers = [];
     let bestModel = null;
     let minMeanError = Infinity;
-    const maxIterations = 80;
-    const inlierPixelThresh = 6.5;
 
     for (let it = 0; it < maxIterations; it++) {
       const idx1 = Math.floor(Math.random() * goodMatches.length);
@@ -19747,7 +19798,6 @@ class VisualLoopDetector {
 
       const m1 = goodMatches[idx1];
       const m2 = goodMatches[idx2];
-
       const p1 = refKp[m1.refIdx];
       const q1 = currKp[m1.currIdx];
       const p2 = refKp[m2.refIdx];
@@ -19761,7 +19811,6 @@ class VisualLoopDetector {
       const norm_p_sq = dx_p * dx_p + dy_p * dy_p;
       if (norm_p_sq < 16) continue;
 
-      // Solve similarity transform: [dx_q; dy_q] = [a, -b; b, a] * [dx_p; dy_p]
       const a = (dx_q * dx_p + dy_q * dy_p) / norm_p_sq;
       const b = (dy_q * dx_p - dx_q * dy_p) / norm_p_sq;
       const tx = q1.x - (a * p1.x - b * p1.y);
@@ -19774,12 +19823,11 @@ class VisualLoopDetector {
         const gm = goodMatches[i];
         const p = refKp[gm.refIdx];
         const q = currKp[gm.currIdx];
-
         const predX = a * p.x - b * p.y + tx;
         const predY = b * p.x + a * p.y + ty;
-        const err = Math.sqrt((predX - q.x) ** 2 + (predY - q.y) ** 2);
+        const err = Math.hypot(predX - q.x, predY - q.y);
 
-        if (err <= inlierPixelThresh) {
+        if (err <= inlierThresh) {
           inliers.push(gm);
           totalErr += err;
         }
@@ -19795,19 +19843,159 @@ class VisualLoopDetector {
     const inlierCount = bestInliers.length;
     const inlierRatio = goodMatches.length > 0 ? inlierCount / goodMatches.length : 0;
     const reprojectionError = minMeanError < Infinity ? Math.round(minMeanError * 100) / 100 : 99.0;
-
     let relativeRotationDeg = 0;
     let scale = 1.0;
+
     if (bestModel) {
-      scale = Math.round(Math.sqrt(bestModel.a ** 2 + bestModel.b ** 2) * 100) / 100;
+      scale = Math.round(Math.hypot(bestModel.a, bestModel.b) * 100) / 100;
       relativeRotationDeg = Math.round(Math.atan2(bestModel.b, bestModel.a) * (180 / Math.PI) * 10) / 10;
     }
 
-    // Spatial distribution test
+    const spatial = this.calculateSpatial(bestInliers, currKp, imgW, imgH);
+
+    return {
+      inlierCount,
+      inlierRatio: Math.round(inlierRatio * 1000) / 1000,
+      reprojectionError,
+      spatialDistributionPass: spatial.spatialDistributionPass,
+      inlierCellCount: spatial.inlierCellCount,
+      bboxAreaRatio: spatial.bboxAreaRatio,
+      relativeRotationDeg,
+      scale
+    };
+  }
+
+  fitAffineRANSAC(goodMatches, refKp, currKp, maxIterations = 100, inlierThresh = 6.5, imgW = 320, imgH = 180) {
+    if (goodMatches.length < 3) {
+      return {
+        inlierCount: 0,
+        inlierRatio: 0,
+        reprojectionError: 99.0,
+        spatialDistributionPass: false,
+        inlierCellCount: 0,
+        bboxAreaRatio: 0,
+        relativeRotationDeg: 0,
+        scale: 1.0,
+        plausible: false
+      };
+    }
+
+    let bestInliers = [];
+    let bestModel = null;
+    let minMeanError = Infinity;
+
+    for (let it = 0; it < maxIterations; it++) {
+      const i1 = Math.floor(Math.random() * goodMatches.length);
+      let i2 = Math.floor(Math.random() * goodMatches.length);
+      let i3 = Math.floor(Math.random() * goodMatches.length);
+      if (i1 === i2 || i2 === i3 || i1 === i3) continue;
+
+      const p1 = [refKp[goodMatches[i1].refIdx], refKp[goodMatches[i2].refIdx], refKp[goodMatches[i3].refIdx]];
+      const p2 = [currKp[goodMatches[i1].currIdx], currKp[goodMatches[i2].currIdx], currKp[goodMatches[i3].currIdx]];
+
+      // Solve 6-parameter affine transform via Gaussian elimination
+      const A = [];
+      const B = [];
+      for (let i = 0; i < 3; i++) {
+        A.push([p1[i].x, p1[i].y, 1, 0, 0, 0]);
+        B.push(p2[i].x);
+        A.push([0, 0, 0, p1[i].x, p1[i].y, 1]);
+        B.push(p2[i].y);
+      }
+
+      for (let i = 0; i < 6; i++) {
+        let maxR = i;
+        for (let k = i + 1; k < 6; k++) {
+          if (Math.abs(A[k][i]) > Math.abs(A[maxR][i])) maxR = k;
+        }
+        [A[i], A[maxR]] = [A[maxR], A[i]];
+        [B[i], B[maxR]] = [B[maxR], B[i]];
+        if (Math.abs(A[i][i]) < 1e-7) continue;
+        for (let k = i + 1; k < 6; k++) {
+          const factor = A[k][i] / A[i][i];
+          for (let j = i; j < 6; j++) A[k][j] -= factor * A[i][j];
+          B[k] -= factor * B[i];
+        }
+      }
+
+      const x = new Array(6);
+      let solOk = true;
+      for (let i = 5; i >= 0; i--) {
+        let sum = B[i];
+        for (let j = i + 1; j < 6; j++) sum -= A[i][j] * x[j];
+        if (Math.abs(A[i][i]) < 1e-7) { solOk = false; break; }
+        x[i] = sum / A[i][i];
+      }
+      if (!solOk) continue;
+
+      const M = [
+        [x[0], x[1], x[2]],
+        [x[3], x[4], x[5]]
+      ];
+
+      // Physical plausibility bounds
+      const det = M[0][0] * M[1][1] - M[0][1] * M[1][0];
+      if (det < 0.35 || det > 2.8) continue;
+
+      const inliers = [];
+      let totalErr = 0;
+
+      for (let i = 0; i < goodMatches.length; i++) {
+        const gm = goodMatches[i];
+        const p = refKp[gm.refIdx];
+        const q = currKp[gm.currIdx];
+        const predX = M[0][0] * p.x + M[0][1] * p.y + M[0][2];
+        const predY = M[1][0] * p.x + M[1][1] * p.y + M[1][2];
+        const err = Math.hypot(predX - q.x, predY - q.y);
+
+        if (err <= inlierThresh) {
+          inliers.push(gm);
+          totalErr += err;
+        }
+      }
+
+      if (inliers.length > bestInliers.length) {
+        bestInliers = inliers;
+        bestModel = M;
+        minMeanError = totalErr / inliers.length;
+      }
+    }
+
+    const inlierCount = bestInliers.length;
+    const inlierRatio = goodMatches.length > 0 ? inlierCount / goodMatches.length : 0;
+    const reprojectionError = minMeanError < Infinity ? Math.round(minMeanError * 100) / 100 : 99.0;
+    let scale = 1.0;
+    let relativeRotationDeg = 0;
+
+    if (bestModel) {
+      scale = Math.round(Math.sqrt(Math.abs(bestModel[0][0] * bestModel[1][1] - bestModel[0][1] * bestModel[1][0])) * 100) / 100;
+      relativeRotationDeg = Math.round(Math.atan2(bestModel[1][0], bestModel[0][0]) * (180 / Math.PI) * 10) / 10;
+    }
+
+    const spatial = this.calculateSpatial(bestInliers, currKp, imgW, imgH);
+
+    return {
+      inlierCount,
+      inlierRatio: Math.round(inlierRatio * 1000) / 1000,
+      reprojectionError,
+      spatialDistributionPass: spatial.spatialDistributionPass,
+      inlierCellCount: spatial.inlierCellCount,
+      bboxAreaRatio: spatial.bboxAreaRatio,
+      relativeRotationDeg,
+      scale,
+      plausible: bestModel !== null
+    };
+  }
+
+  calculateSpatial(inliers, currKp, imgW, imgH) {
+    if (!inliers || inliers.length === 0) {
+      return { spatialDistributionPass: false, inlierCellCount: 0, bboxAreaRatio: 0 };
+    }
+
     const occupiedCells = new Set();
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
 
-    for (const inlier of bestInliers) {
+    for (const inlier of inliers) {
       const q = currKp[inlier.currIdx];
       occupiedCells.add(q.cell);
       if (q.x < minX) minX = q.x;
@@ -19817,24 +20005,15 @@ class VisualLoopDetector {
     }
 
     const inlierCellCount = occupiedCells.size;
-    const imgW = currFeatures.width || 160;
-    const imgH = currFeatures.height || 120;
-    const bboxW = inlierCount > 0 ? Math.max(0, maxX - minX) : 0;
-    const bboxH = inlierCount > 0 ? Math.max(0, maxY - minY) : 0;
+    const bboxW = Math.max(0, maxX - minX);
+    const bboxH = Math.max(0, maxY - minY);
     const bboxAreaRatio = Math.round(((bboxW * bboxH) / (imgW * imgH)) * 1000) / 1000;
     const spatialDistributionPass = inlierCellCount >= this.minInlierCellCount && bboxAreaRatio >= this.minBboxAreaRatio;
 
     return {
-      rawMatchCount: rawMatches.length,
-      goodMatchCount: goodMatches.length,
-      inlierCount,
-      inlierRatio: Math.round(inlierRatio * 1000) / 1000,
-      reprojectionError,
       spatialDistributionPass,
       inlierCellCount,
-      bboxAreaRatio,
-      relativeRotationDeg,
-      scale
+      bboxAreaRatio
     };
   }
 }
@@ -20802,8 +20981,9 @@ class GuidedCaptureController {
   startFrameLoop() {
     if (!this.offscreenCanvas) {
       this.offscreenCanvas = document.createElement('canvas');
-      this.offscreenCanvas.width = 160;
-      this.offscreenCanvas.height = 120;
+      // C12.9-P2: Dynamic aspect-ratio preserving sizing (long side 320px)
+      this.offscreenCanvas.width = 320;
+      this.offscreenCanvas.height = 180;
       this.offscreenCtx = this.offscreenCanvas.getContext('2d', { willReadFrequently: true });
     }
     if (!this.fullCaptureCanvas) {
@@ -20830,34 +21010,63 @@ class GuidedCaptureController {
     this.telemetry.previewFrameCount++;
     const now = Date.now();
 
-    const ctx = this.offscreenCtx;
-    ctx.drawImage(this.videoElement, 0, 0, 160, 120);
-
-    const imgData = ctx.getImageData(0, 45, 160, 30);
-    const data = imgData.data;
-    const currentProfile = new Float32Array(160);
-
-    for (let x = 0; x < 160; x++) {
-      let sum = 0;
-      for (let y = 0; y < 30; y++) {
-        const idx = (y * 160 + x) * 4;
-        sum += 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
-      }
-      currentProfile[x] = sum / 30.0;
+    // C12.9-P2: Preserve aspect ratio: scale long side to 320
+    const vw = this.videoElement.videoWidth;
+    const vh = this.videoElement.videoHeight;
+    let targetW, targetH;
+    if (vw >= vh) {
+      targetW = 320;
+      targetH = Math.max(1, Math.round(320 * vh / vw));
+    } else {
+      targetH = 320;
+      targetW = Math.max(1, Math.round(320 * vw / vh));
     }
 
-    if (this.prevLuminanceProfile) {
+    if (this.offscreenCanvas.width !== targetW || this.offscreenCanvas.height !== targetH) {
+      this.offscreenCanvas.width = targetW;
+      this.offscreenCanvas.height = targetH;
+      this.offscreenCtx = this.offscreenCanvas.getContext('2d', { willReadFrequently: true });
+    }
+
+    this.analysisInputAspectRatio = Math.round((vw / vh) * 10000) / 10000;
+    this.processingAspectRatio = Math.round((targetW / targetH) * 10000) / 10000;
+    this.analysisAspectRatioDistortion = false;
+    this.chosenAnalysisResolution = targetW + 'x' + targetH;
+    this.telemetry.analysisInputAspectRatio = this.analysisInputAspectRatio;
+    this.telemetry.processingAspectRatio = this.processingAspectRatio;
+    this.telemetry.analysisAspectRatioDistortion = this.analysisAspectRatioDistortion;
+    this.telemetry.chosenAnalysisResolution = this.chosenAnalysisResolution;
+
+    const ctx = this.offscreenCtx;
+    ctx.drawImage(this.videoElement, 0, 0, targetW, targetH);
+
+    const bandH = Math.max(10, Math.round(targetH * 0.25));
+    const bandY = Math.max(0, Math.floor((targetH - bandH) / 2));
+    const imgData = ctx.getImageData(0, bandY, targetW, bandH);
+    const data = imgData.data;
+    const currentProfile = new Float32Array(targetW);
+
+    for (let x = 0; x < targetW; x++) {
+      let sum = 0;
+      for (let y = 0; y < bandH; y++) {
+        const idx = (y * targetW + x) * 4;
+        sum += 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+      }
+      currentProfile[x] = sum / bandH;
+    }
+
+    if (this.prevLuminanceProfile && this.prevLuminanceProfile.length === targetW) {
       let bestShift = 0;
       let minDiff = Infinity;
-      const testRange = 18;
-      const margin = 20;
+      const testRange = 24;
+      const margin = 25;
 
       for (let s = -testRange; s <= testRange; s++) {
         let diff = 0;
         let count = 0;
-        for (let x = margin; x < 160 - margin; x++) {
+        for (let x = margin; x < targetW - margin; x++) {
           const targetX = x + s;
-          if (targetX >= 0 && targetX < 160) {
+          if (targetX >= 0 && targetX < targetW) {
             diff += Math.abs(currentProfile[targetX] - this.prevLuminanceProfile[x]);
             count++;
           }
@@ -20869,18 +21078,10 @@ class GuidedCaptureController {
         }
       }
 
-      const sensorsActive = this.telemetry.deviceOrientationEventCount > 4;
-      if (!sensorsActive) {
-        this.telemetry.visualMotionFallbackActive = true;
-        this.telemetry.guidanceMode = 'VISUAL_ONLY';
-
-        if (Math.abs(bestShift) >= 1 && minDiff < 45) {
-          const visualDeltaDeg = -bestShift * 0.406;
-          this.applyMotionDelta(visualDeltaDeg, now);
-        }
-      } else {
-        this.telemetry.guidanceMode = 'SENSOR_VISUAL';
-        this.guidanceMode = 'SENSOR_VISUAL';
+      if (minDiff < 35.0) {
+        const estimatedSpeedDps = Math.round((Math.abs(bestShift) * 1.8) * 10) / 10;
+        this.turnSpeedDps = estimatedSpeedDps;
+        this.telemetry.turnSpeedDps = this.turnSpeedDps;
       }
     }
 
@@ -21010,10 +21211,10 @@ class GuidedCaptureController {
     this.lastCandidateAngle = currentAngle;
     this.lastCandidateTimestamp = Date.now();
 
-    // ── Extract lightweight visual features for loop detection ──
+    // ── Extract lightweight visual features for loop detection (C12.9-P2 Aspect-Preserved) ──
     try {
-      const offW = 160;
-      const offH = 120;
+      const offW = this.offscreenCanvas.width;
+      const offH = this.offscreenCanvas.height;
       const offData = this.offscreenCtx.getImageData(0, 0, offW, offH).data;
       const lumArray = new Uint8Array(offW * offH);
       for (let i = 0; i < offW * offH; i++) {
@@ -21021,8 +21222,8 @@ class GuidedCaptureController {
       }
       const features = this.visualLoopDetector.extractFeatures(lumArray, offW, offH);
 
-      // Save early frames into start-region reference set (0°, ~5°, ~10°)
-      if (this.visualLoopDetector.startReferences.length < 3 && currentAngle <= 16.0) {
+      // Save early frames into start-region reference set (up to 5 references across 0° - 36°)
+      if (this.visualLoopDetector.startReferences.length < 5 && currentAngle <= 36.0) {
         const lastRef = this.visualLoopDetector.startReferences[this.visualLoopDetector.startReferences.length - 1];
         const angleDiff = lastRef ? Math.abs(currentAngle - lastRef.angle) : 999;
         if (this.visualLoopDetector.startReferences.length === 0 || angleDiff >= 4.0) {
@@ -21030,7 +21231,7 @@ class GuidedCaptureController {
         }
       }
 
-      // If in closure search zone (>= 300°), evaluate closure match
+      // If in closure search zone (300° to 450°), evaluate closure match
       if (this.visualClosureSearchEnabled) {
         const evalRes = this.visualLoopDetector.evaluateClosure(candId, this.accumulatedRotation, features);
         this.closureCheckCount = this.visualLoopDetector.closureCheckCount;
@@ -21040,15 +21241,18 @@ class GuidedCaptureController {
           this.bestClosureMatch = evalRes;
           this.telemetry.bestClosureMatchFrameId = evalRes.candidateId;
           this.telemetry.bestClosureReferenceId = evalRes.referenceId;
+          this.telemetry.closureVerificationModel = evalRes.modelUsed || 'NONE';
           this.telemetry.closureRawMatches = evalRes.rawMatchCount;
           this.telemetry.closureGoodMatches = evalRes.goodMatchCount;
           this.telemetry.closureInliers = evalRes.inlierCount;
           this.telemetry.closureInlierRatio = evalRes.inlierRatio;
           this.telemetry.closureReprojectionError = evalRes.reprojectionError;
+          this.telemetry.closureSpatialDistributionPass = evalRes.spatialDistributionPass;
           this.telemetry.closureInlierCellCount = evalRes.inlierCellCount;
           this.telemetry.closureInlierBboxAreaRatio = evalRes.bboxAreaRatio;
-          this.telemetry.closureSensorExpectedDelta = Math.round(Math.abs(this.accumulatedRotation - 360.0) * 10) / 10;
+          this.telemetry.closureSensorExpectedDelta = evalRes.deltaFromExpected || Math.round(Math.abs(this.accumulatedRotation - 360.0) * 10) / 10;
           this.telemetry.closureVisualRelativeRotation = evalRes.relativeRotationDeg;
+          this.telemetry.closureScale = evalRes.scale;
           this.telemetry.closureConsecutiveConfirmationCount = evalRes.consecutiveConfirmations;
 
           if (evalRes.pass) {
