@@ -1,0 +1,1105 @@
+{
+  "camera_count": 16,
+  "cameras": [
+    {
+      "index": 0,
+      "frame_id": "C001",
+      "sensor_yaw_deg": 0.0,
+      "sensor_pitch_deg": 0.0,
+      "sensor_roll_deg": 0.0,
+      "estimated_R_raw": [
+        [
+          0.365343,
+          0.128986,
+          -0.921893
+        ],
+        [
+          -0.005102,
+          0.990616,
+          0.13658
+        ],
+        [
+          0.930859,
+          -0.045195,
+          0.362573
+        ]
+      ],
+      "determinant_R": 1.0,
+      "naive_solved_yaw": -68.57,
+      "naive_solved_pitch": -7.11,
+      "naive_solved_roll": -0.8,
+      "corrected_pano_yaw": -68.53,
+      "corrected_pano_pitch": -7.85,
+      "corrected_pano_roll": -0.3,
+      "camera_forward_vector": [
+        0.9309,
+        -0.0452,
+        0.3626
+      ],
+      "camera_up_vector": [
+        0.0051,
+        -0.9906,
+        -0.1366
+      ],
+      "camera_right_vector": [
+        0.3653,
+        0.129,
+        -0.9219
+      ],
+      "quaternion_wxyz": [
+        0.8244,
+        -0.0551,
+        -0.5618,
+        -0.0407
+      ]
+    },
+    {
+      "index": 1,
+      "frame_id": "C003",
+      "sensor_yaw_deg": 8.5,
+      "sensor_pitch_deg": 0.0,
+      "sensor_roll_deg": 0.0,
+      "estimated_R_raw": [
+        [
+          0.510379,
+          0.122367,
+          -0.851199
+        ],
+        [
+          -0.010216,
+          0.990617,
+          0.136284
+        ],
+        [
+          0.859889,
+          -0.060861,
+          0.50684
+        ]
+      ],
+      "determinant_R": 1.0,
+      "naive_solved_yaw": -59.3,
+      "naive_solved_pitch": -6.85,
+      "naive_solved_roll": -1.15,
+      "corrected_pano_yaw": -59.23,
+      "corrected_pano_pitch": -7.83,
+      "corrected_pano_roll": -0.59,
+      "camera_forward_vector": [
+        0.8599,
+        -0.0609,
+        0.5068
+      ],
+      "camera_up_vector": [
+        0.0102,
+        -0.9906,
+        -0.1363
+      ],
+      "camera_right_vector": [
+        0.5104,
+        0.1224,
+        -0.8512
+      ],
+      "quaternion_wxyz": [
+        0.8672,
+        -0.0568,
+        -0.4933,
+        -0.0382
+      ],
+      "quaternion_sign_aligned_wxyz": [
+        0.8672,
+        -0.0568,
+        -0.4933,
+        -0.0382
+      ]
+    },
+    {
+      "index": 2,
+      "frame_id": "C006",
+      "sensor_yaw_deg": 32.4,
+      "sensor_pitch_deg": 0.0,
+      "sensor_roll_deg": 0.0,
+      "estimated_R_raw": [
+        [
+          0.905973,
+          0.074443,
+          -0.416738
+        ],
+        [
+          -0.01735,
+          0.990119,
+          0.139151
+        ],
+        [
+          0.422979,
+          -0.118837,
+          0.898313
+        ]
+      ],
+      "determinant_R": 1.0,
+      "naive_solved_yaw": -25.02,
+      "naive_solved_pitch": -7.54,
+      "naive_solved_roll": -1.1,
+      "corrected_pano_yaw": -24.89,
+      "corrected_pano_pitch": -8.0,
+      "corrected_pano_roll": -1.0,
+      "camera_forward_vector": [
+        0.423,
+        -0.1188,
+        0.8983
+      ],
+      "camera_up_vector": [
+        0.0173,
+        -0.9901,
+        -0.1392
+      ],
+      "camera_right_vector": [
+        0.906,
+        0.0744,
+        -0.4167
+      ],
+      "quaternion_wxyz": [
+        0.974,
+        -0.0662,
+        -0.2155,
+        -0.0236
+      ],
+      "quaternion_sign_aligned_wxyz": [
+        0.974,
+        -0.0662,
+        -0.2155,
+        -0.0236
+      ]
+    },
+    {
+      "index": 3,
+      "frame_id": "C008",
+      "sensor_yaw_deg": 50.6,
+      "sensor_pitch_deg": 0.0,
+      "sensor_roll_deg": 0.0,
+      "estimated_R_raw": [
+        [
+          0.990094,
+          0.048747,
+          -0.131671
+        ],
+        [
+          -0.030987,
+          0.990536,
+          0.133711
+        ],
+        [
+          0.136943,
+          -0.128306,
+          0.982234
+        ]
+      ],
+      "determinant_R": 1.0,
+      "naive_solved_yaw": -7.87,
+      "naive_solved_pitch": -7.44,
+      "naive_solved_roll": -1.79,
+      "corrected_pano_yaw": -7.64,
+      "corrected_pano_pitch": -7.68,
+      "corrected_pano_roll": -1.79,
+      "camera_forward_vector": [
+        0.1369,
+        -0.1283,
+        0.9822
+      ],
+      "camera_up_vector": [
+        0.031,
+        -0.9905,
+        -0.1337
+      ],
+      "camera_right_vector": [
+        0.9901,
+        0.0487,
+        -0.1317
+      ],
+      "quaternion_wxyz": [
+        0.9953,
+        -0.0658,
+        -0.0675,
+        -0.02
+      ],
+      "quaternion_sign_aligned_wxyz": [
+        0.9953,
+        -0.0658,
+        -0.0675,
+        -0.02
+      ]
+    },
+    {
+      "index": 4,
+      "frame_id": "C011",
+      "sensor_yaw_deg": 71.8,
+      "sensor_pitch_deg": 0.0,
+      "sensor_roll_deg": 0.0,
+      "estimated_R_raw": [
+        [
+          0.995199,
+          0.015964,
+          0.096559
+        ],
+        [
+          -0.026724,
+          0.99344,
+          0.111191
+        ],
+        [
+          -0.09415,
+          -0.113238,
+          0.989097
+        ]
+      ],
+      "determinant_R": 1.0,
+      "naive_solved_yaw": 5.4,
+      "naive_solved_pitch": -6.53,
+      "naive_solved_roll": -1.54,
+      "corrected_pano_yaw": 5.58,
+      "corrected_pano_pitch": -6.38,
+      "corrected_pano_roll": -1.54,
+      "camera_forward_vector": [
+        -0.0941,
+        -0.1132,
+        0.9891
+      ],
+      "camera_up_vector": [
+        0.0267,
+        -0.9934,
+        -0.1112
+      ],
+      "camera_right_vector": [
+        0.9952,
+        0.016,
+        0.0966
+      ],
+      "quaternion_wxyz": [
+        0.9972,
+        -0.0563,
+        0.0478,
+        -0.0107
+      ],
+      "quaternion_sign_aligned_wxyz": [
+        0.9972,
+        -0.0563,
+        0.0478,
+        -0.0107
+      ]
+    },
+    {
+      "index": 5,
+      "frame_id": "C012",
+      "sensor_yaw_deg": 76.1,
+      "sensor_pitch_deg": 0.0,
+      "sensor_roll_deg": 0.0,
+      "estimated_R_raw": [
+        [
+          0.989968,
+          -0.002442,
+          0.141269
+        ],
+        [
+          -0.014369,
+          0.992926,
+          0.117858
+        ],
+        [
+          -0.140558,
+          -0.118705,
+          0.982931
+        ]
+      ],
+      "determinant_R": 1.0,
+      "naive_solved_yaw": 8.08,
+      "naive_solved_pitch": -6.89,
+      "naive_solved_roll": -0.83,
+      "corrected_pano_yaw": 8.18,
+      "corrected_pano_pitch": -6.77,
+      "corrected_pano_roll": -0.83,
+      "camera_forward_vector": [
+        -0.1406,
+        -0.1187,
+        0.9829
+      ],
+      "camera_up_vector": [
+        0.0144,
+        -0.9929,
+        -0.1179
+      ],
+      "camera_right_vector": [
+        0.99,
+        -0.0024,
+        0.1413
+      ],
+      "quaternion_wxyz": [
+        0.9957,
+        -0.0594,
+        0.0708,
+        -0.003
+      ],
+      "quaternion_sign_aligned_wxyz": [
+        0.9957,
+        -0.0594,
+        0.0708,
+        -0.003
+      ]
+    },
+    {
+      "index": 6,
+      "frame_id": "C015",
+      "sensor_yaw_deg": 106.1,
+      "sensor_pitch_deg": 0.0,
+      "sensor_roll_deg": 0.0,
+      "estimated_R_raw": [
+        [
+          0.820362,
+          -0.06133,
+          0.568546
+        ],
+        [
+          -0.011142,
+          0.992329,
+          0.123122
+        ],
+        [
+          -0.571735,
+          -0.10734,
+          0.813386
+        ]
+      ],
+      "determinant_R": 1.0,
+      "naive_solved_yaw": 34.87,
+      "naive_solved_pitch": -7.52,
+      "naive_solved_roll": -0.78,
+      "corrected_pano_yaw": 34.95,
+      "corrected_pano_pitch": -7.07,
+      "corrected_pano_roll": -0.64,
+      "camera_forward_vector": [
+        -0.5717,
+        -0.1073,
+        0.8134
+      ],
+      "camera_up_vector": [
+        0.0111,
+        -0.9923,
+        -0.1231
+      ],
+      "camera_right_vector": [
+        0.8204,
+        -0.0613,
+        0.5685
+      ],
+      "quaternion_wxyz": [
+        0.9521,
+        -0.0605,
+        0.2994,
+        0.0132
+      ],
+      "quaternion_sign_aligned_wxyz": [
+        0.9521,
+        -0.0605,
+        0.2994,
+        0.0132
+      ]
+    },
+    {
+      "index": 7,
+      "frame_id": "C018",
+      "sensor_yaw_deg": 127.7,
+      "sensor_pitch_deg": 0.0,
+      "sensor_roll_deg": 0.0,
+      "estimated_R_raw": [
+        [
+          0.451688,
+          -0.05931,
+          0.890203
+        ],
+        [
+          -0.027631,
+          0.996379,
+          0.080404
+        ],
+        [
+          -0.891748,
+          -0.060915,
+          0.448413
+        ]
+      ],
+      "determinant_R": 1.0,
+      "naive_solved_yaw": 63.09,
+      "naive_solved_pitch": -7.74,
+      "naive_solved_roll": -3.5,
+      "corrected_pano_yaw": 63.26,
+      "corrected_pano_pitch": -4.61,
+      "corrected_pano_roll": -1.59,
+      "camera_forward_vector": [
+        -0.8917,
+        -0.0609,
+        0.4484
+      ],
+      "camera_up_vector": [
+        0.0276,
+        -0.9964,
+        -0.0804
+      ],
+      "camera_right_vector": [
+        0.4517,
+        -0.0593,
+        0.8902
+      ],
+      "quaternion_wxyz": [
+        0.851,
+        -0.0415,
+        0.5235,
+        0.0093
+      ],
+      "quaternion_sign_aligned_wxyz": [
+        0.851,
+        -0.0415,
+        0.5235,
+        0.0093
+      ]
+    },
+    {
+      "index": 8,
+      "frame_id": "C020",
+      "sensor_yaw_deg": 143.0,
+      "sensor_pitch_deg": 0.0,
+      "sensor_roll_deg": 0.0,
+      "estimated_R_raw": [
+        [
+          0.034847,
+          -0.084655,
+          0.995801
+        ],
+        [
+          -0.037026,
+          0.995612,
+          0.085934
+        ],
+        [
+          -0.998706,
+          -0.039865,
+          0.03156
+        ]
+      ],
+      "determinant_R": 1.0,
+      "naive_solved_yaw": 87.09,
+      "naive_solved_pitch": -51.63,
+      "naive_solved_roll": -46.74,
+      "corrected_pano_yaw": 88.18,
+      "corrected_pano_pitch": -4.93,
+      "corrected_pano_roll": -2.13,
+      "camera_forward_vector": [
+        -0.9987,
+        -0.0399,
+        0.0316
+      ],
+      "camera_up_vector": [
+        0.037,
+        -0.9956,
+        -0.0859
+      ],
+      "camera_right_vector": [
+        0.0348,
+        -0.0847,
+        0.9958
+      ],
+      "quaternion_wxyz": [
+        0.718,
+        -0.0438,
+        0.6945,
+        0.0166
+      ],
+      "quaternion_sign_aligned_wxyz": [
+        0.718,
+        -0.0438,
+        0.6945,
+        0.0166
+      ]
+    },
+    {
+      "index": 9,
+      "frame_id": "C023",
+      "sensor_yaw_deg": 184.5,
+      "sensor_pitch_deg": 0.0,
+      "sensor_roll_deg": 0.0,
+      "estimated_R_raw": [
+        [
+          -0.347106,
+          -0.090829,
+          0.933417
+        ],
+        [
+          -0.016432,
+          0.995735,
+          0.090782
+        ],
+        [
+          -0.937682,
+          0.016173,
+          -0.347118
+        ]
+      ],
+      "determinant_R": 1.0,
+      "naive_solved_yaw": 69.67,
+      "naive_solved_pitch": 177.33,
+      "naive_solved_roll": -177.29,
+      "corrected_pano_yaw": 110.4,
+      "corrected_pano_pitch": -5.21,
+      "corrected_pano_roll": -0.95,
+      "camera_forward_vector": [
+        -0.9377,
+        0.0162,
+        -0.3471
+      ],
+      "camera_up_vector": [
+        0.0164,
+        -0.9957,
+        -0.0908
+      ],
+      "camera_right_vector": [
+        -0.3471,
+        -0.0908,
+        0.9334
+      ],
+      "quaternion_wxyz": [
+        0.5704,
+        -0.0327,
+        0.8201,
+        0.0326
+      ],
+      "quaternion_sign_aligned_wxyz": [
+        0.5704,
+        -0.0327,
+        0.8201,
+        0.0326
+      ]
+    },
+    {
+      "index": 10,
+      "frame_id": "C026",
+      "sensor_yaw_deg": 199.6,
+      "sensor_pitch_deg": 0.0,
+      "sensor_roll_deg": 0.0,
+      "estimated_R_raw": [
+        [
+          -0.675667,
+          -0.073725,
+          0.733512
+        ],
+        [
+          -0.018612,
+          0.996376,
+          0.083001
+        ],
+        [
+          -0.736972,
+          0.042429,
+          -0.67459
+        ]
+      ],
+      "determinant_R": 1.0,
+      "naive_solved_yaw": 47.47,
+      "naive_solved_pitch": 176.4,
+      "naive_solved_roll": -178.42,
+      "corrected_pano_yaw": 132.6,
+      "corrected_pano_pitch": -4.76,
+      "corrected_pano_roll": -1.07,
+      "camera_forward_vector": [
+        -0.737,
+        0.0424,
+        -0.6746
+      ],
+      "camera_up_vector": [
+        0.0186,
+        -0.9964,
+        -0.083
+      ],
+      "camera_right_vector": [
+        -0.6757,
+        -0.0737,
+        0.7335
+      ],
+      "quaternion_wxyz": [
+        0.4019,
+        -0.0252,
+        0.9147,
+        0.0343
+      ],
+      "quaternion_sign_aligned_wxyz": [
+        0.4019,
+        -0.0252,
+        0.9147,
+        0.0343
+      ]
+    },
+    {
+      "index": 11,
+      "frame_id": "C028",
+      "sensor_yaw_deg": 221.1,
+      "sensor_pitch_deg": 0.0,
+      "sensor_roll_deg": 0.0,
+      "estimated_R_raw": [
+        [
+          -0.912047,
+          -0.046829,
+          0.407403
+        ],
+        [
+          -0.008278,
+          0.995359,
+          0.095879
+        ],
+        [
+          -0.410002,
+          0.084073,
+          -0.908202
+        ]
+      ],
+      "determinant_R": 1.0,
+      "naive_solved_yaw": 24.2,
+      "naive_solved_pitch": 174.71,
+      "naive_solved_roll": -179.48,
+      "corrected_pano_yaw": 155.84,
+      "corrected_pano_pitch": -5.5,
+      "corrected_pano_roll": -0.48,
+      "camera_forward_vector": [
+        -0.41,
+        0.0841,
+        -0.9082
+      ],
+      "camera_up_vector": [
+        0.0083,
+        -0.9954,
+        -0.0959
+      ],
+      "camera_right_vector": [
+        -0.912,
+        -0.0468,
+        0.4074
+      ],
+      "quaternion_wxyz": [
+        0.2092,
+        -0.0141,
+        0.9767,
+        0.0461
+      ],
+      "quaternion_sign_aligned_wxyz": [
+        0.2092,
+        -0.0141,
+        0.9767,
+        0.0461
+      ]
+    },
+    {
+      "index": 12,
+      "frame_id": "C031",
+      "sensor_yaw_deg": 254.3,
+      "sensor_pitch_deg": 0.0,
+      "sensor_roll_deg": 0.0,
+      "estimated_R_raw": [
+        [
+          -0.999492,
+          -0.028339,
+          0.014601
+        ],
+        [
+          -0.026591,
+          0.993738,
+          0.108526
+        ],
+        [
+          -0.017585,
+          0.108083,
+          -0.993986
+        ]
+      ],
+      "determinant_R": 1.0,
+      "naive_solved_yaw": 1.01,
+      "naive_solved_pitch": 173.79,
+      "naive_solved_roll": -178.48,
+      "corrected_pano_yaw": 179.16,
+      "corrected_pano_pitch": -6.23,
+      "corrected_pano_roll": -1.53,
+      "camera_forward_vector": [
+        -0.0176,
+        0.1081,
+        -0.994
+      ],
+      "camera_up_vector": [
+        0.0266,
+        -0.9937,
+        -0.1085
+      ],
+      "camera_right_vector": [
+        -0.9995,
+        -0.0283,
+        0.0146
+      ],
+      "quaternion_wxyz": [
+        0.0081,
+        -0.0138,
+        0.9984,
+        0.0542
+      ],
+      "quaternion_sign_aligned_wxyz": [
+        0.0081,
+        -0.0138,
+        0.9984,
+        0.0542
+      ]
+    },
+    {
+      "index": 13,
+      "frame_id": "C036",
+      "sensor_yaw_deg": 286.4,
+      "sensor_pitch_deg": 0.0,
+      "sensor_roll_deg": 0.0,
+      "estimated_R_raw": [
+        [
+          -0.770298,
+          0.02214,
+          -0.637299
+        ],
+        [
+          -0.057801,
+          0.992859,
+          0.104356
+        ],
+        [
+          0.635059,
+          0.117222,
+          -0.763518
+        ]
+      ],
+      "determinant_R": 1.0,
+      "naive_solved_yaw": -39.42,
+      "naive_solved_pitch": 171.27,
+      "naive_solved_roll": -175.71,
+      "corrected_pano_yaw": -140.15,
+      "corrected_pano_pitch": -5.99,
+      "corrected_pano_roll": -3.33,
+      "camera_forward_vector": [
+        0.6351,
+        0.1172,
+        -0.7635
+      ],
+      "camera_up_vector": [
+        0.0578,
+        -0.9929,
+        -0.1044
+      ],
+      "camera_right_vector": [
+        -0.7703,
+        0.0221,
+        -0.6373
+      ],
+      "quaternion_wxyz": [
+        -0.3388,
+        -0.0095,
+        0.939,
+        0.059
+      ],
+      "quaternion_sign_aligned_wxyz": [
+        -0.3388,
+        -0.0095,
+        0.939,
+        0.059
+      ]
+    },
+    {
+      "index": 14,
+      "frame_id": "C040",
+      "sensor_yaw_deg": 323.6,
+      "sensor_pitch_deg": 0.0,
+      "sensor_roll_deg": 0.0,
+      "estimated_R_raw": [
+        [
+          -0.527308,
+          0.046364,
+          -0.848408
+        ],
+        [
+          -0.031651,
+          0.996745,
+          0.074142
+        ],
+        [
+          0.849084,
+          0.065949,
+          -0.524124
+        ]
+      ],
+      "determinant_R": 1.0,
+      "naive_solved_yaw": -58.11,
+      "naive_solved_pitch": 172.83,
+      "naive_solved_roll": -176.57,
+      "corrected_pano_yaw": -121.71,
+      "corrected_pano_pitch": -4.25,
+      "corrected_pano_roll": -1.82,
+      "camera_forward_vector": [
+        0.8491,
+        0.0659,
+        -0.5241
+      ],
+      "camera_up_vector": [
+        0.0317,
+        -0.9967,
+        -0.0741
+      ],
+      "camera_right_vector": [
+        -0.5273,
+        0.0464,
+        -0.8484
+      ],
+      "quaternion_wxyz": [
+        -0.4861,
+        0.0042,
+        0.873,
+        0.0401
+      ],
+      "quaternion_sign_aligned_wxyz": [
+        -0.4861,
+        0.0042,
+        0.873,
+        0.0401
+      ]
+    },
+    {
+      "index": 15,
+      "frame_id": "C043",
+      "sensor_yaw_deg": 350.4,
+      "sensor_pitch_deg": 0.0,
+      "sensor_roll_deg": 0.0,
+      "estimated_R_raw": [
+        [
+          -0.208658,
+          0.087127,
+          -0.9741
+        ],
+        [
+          -0.017195,
+          0.995543,
+          0.092728
+        ],
+        [
+          0.977837,
+          0.036098,
+          -0.20623
+        ]
+      ],
+      "determinant_R": 1.0,
+      "naive_solved_yaw": -77.91,
+      "naive_solved_pitch": 170.07,
+      "naive_solved_roll": -175.29,
+      "corrected_pano_yaw": -101.95,
+      "corrected_pano_pitch": -5.32,
+      "corrected_pano_roll": -0.99,
+      "camera_forward_vector": [
+        0.9778,
+        0.0361,
+        -0.2062
+      ],
+      "camera_up_vector": [
+        0.0172,
+        -0.9955,
+        -0.0927
+      ],
+      "camera_right_vector": [
+        -0.2087,
+        0.0871,
+        -0.9741
+      ],
+      "quaternion_wxyz": [
+        0.6286,
+        -0.0225,
+        -0.7763,
+        -0.0415
+      ],
+      "quaternion_sign_aligned_wxyz": [
+        -0.6286,
+        0.0225,
+        0.7763,
+        0.0415
+      ]
+    }
+  ],
+  "adjacent_transitions": [
+    {
+      "from_id": "C001",
+      "to_id": "C003",
+      "is_closure": false,
+      "sensor_yaw_delta": 8.5,
+      "relative_yaw_deg": 9.21,
+      "relative_pitch_deg": -0.13,
+      "relative_roll_deg": 0.97,
+      "relative_rotation_angle_deg": 9.27,
+      "up_vector_delta_angle_deg": 0.52
+    },
+    {
+      "from_id": "C003",
+      "to_id": "C006",
+      "is_closure": false,
+      "sensor_yaw_delta": 23.9,
+      "relative_yaw_deg": 33.96,
+      "relative_pitch_deg": -1.84,
+      "relative_roll_deg": 3.9,
+      "relative_rotation_angle_deg": 34.29,
+      "up_vector_delta_angle_deg": 0.61
+    },
+    {
+      "from_id": "C006",
+      "to_id": "C008",
+      "is_closure": false,
+      "sensor_yaw_delta": 18.2,
+      "relative_yaw_deg": 17.09,
+      "relative_pitch_deg": -0.34,
+      "relative_roll_deg": 1.53,
+      "relative_rotation_angle_deg": 17.17,
+      "up_vector_delta_angle_deg": 1.02
+    },
+    {
+      "from_id": "C008",
+      "to_id": "C011",
+      "is_closure": false,
+      "sensor_yaw_delta": 21.2,
+      "relative_yaw_deg": 13.16,
+      "relative_pitch_deg": 0.69,
+      "relative_roll_deg": 1.96,
+      "relative_rotation_angle_deg": 13.31,
+      "up_vector_delta_angle_deg": 1.5
+    },
+    {
+      "from_id": "C011",
+      "to_id": "C012",
+      "is_closure": false,
+      "sensor_yaw_delta": 4.3,
+      "relative_yaw_deg": 2.57,
+      "relative_pitch_deg": -0.46,
+      "relative_roll_deg": 1.0,
+      "relative_rotation_angle_deg": 2.8,
+      "up_vector_delta_angle_deg": 1.02
+    },
+    {
+      "from_id": "C012",
+      "to_id": "C015",
+      "is_closure": false,
+      "sensor_yaw_delta": 30.0,
+      "relative_yaw_deg": 26.54,
+      "relative_pitch_deg": -1.39,
+      "relative_roll_deg": 3.14,
+      "relative_rotation_angle_deg": 26.8,
+      "up_vector_delta_angle_deg": 0.69
+    },
+    {
+      "from_id": "C015",
+      "to_id": "C018",
+      "is_closure": false,
+      "sensor_yaw_delta": 21.6,
+      "relative_yaw_deg": 28.24,
+      "relative_pitch_deg": 1.31,
+      "relative_roll_deg": 2.33,
+      "relative_rotation_angle_deg": 28.34,
+      "up_vector_delta_angle_deg": 2.65
+    },
+    {
+      "from_id": "C018",
+      "to_id": "C020",
+      "is_closure": false,
+      "sensor_yaw_delta": 15.3,
+      "relative_yaw_deg": 24.8,
+      "relative_pitch_deg": -1.41,
+      "relative_roll_deg": 1.25,
+      "relative_rotation_angle_deg": 24.88,
+      "up_vector_delta_angle_deg": 0.61
+    },
+    {
+      "from_id": "C020",
+      "to_id": "C023",
+      "is_closure": false,
+      "sensor_yaw_delta": 41.5,
+      "relative_yaw_deg": 22.08,
+      "relative_pitch_deg": -1.44,
+      "relative_roll_deg": 2.89,
+      "relative_rotation_angle_deg": 22.35,
+      "up_vector_delta_angle_deg": 1.34
+    },
+    {
+      "from_id": "C023",
+      "to_id": "C026",
+      "is_closure": false,
+      "sensor_yaw_delta": 15.1,
+      "relative_yaw_deg": 22.12,
+      "relative_pitch_deg": -0.29,
+      "relative_roll_deg": 1.77,
+      "relative_rotation_angle_deg": 22.2,
+      "up_vector_delta_angle_deg": 0.53
+    },
+    {
+      "from_id": "C026",
+      "to_id": "C028",
+      "is_closure": false,
+      "sensor_yaw_delta": 21.5,
+      "relative_yaw_deg": 23.1,
+      "relative_pitch_deg": -1.54,
+      "relative_roll_deg": 2.38,
+      "relative_rotation_angle_deg": 23.31,
+      "up_vector_delta_angle_deg": 0.67
+    },
+    {
+      "from_id": "C028",
+      "to_id": "C031",
+      "is_closure": false,
+      "sensor_yaw_delta": 33.2,
+      "relative_yaw_deg": 23.17,
+      "relative_pitch_deg": -1.36,
+      "relative_roll_deg": 1.08,
+      "relative_rotation_angle_deg": 23.25,
+      "up_vector_delta_angle_deg": 1.27
+    },
+    {
+      "from_id": "C031",
+      "to_id": "C036",
+      "is_closure": false,
+      "sensor_yaw_delta": 32.1,
+      "relative_yaw_deg": 40.4,
+      "relative_pitch_deg": -2.25,
+      "relative_roll_deg": 1.89,
+      "relative_rotation_angle_deg": 40.54,
+      "up_vector_delta_angle_deg": 1.79
+    },
+    {
+      "from_id": "C036",
+      "to_id": "C040",
+      "is_closure": false,
+      "sensor_yaw_delta": 37.2,
+      "relative_yaw_deg": 18.45,
+      "relative_pitch_deg": 0.38,
+      "relative_roll_deg": 3.24,
+      "relative_rotation_angle_deg": 18.72,
+      "up_vector_delta_angle_deg": 2.3
+    },
+    {
+      "from_id": "C040",
+      "to_id": "C043",
+      "is_closure": false,
+      "sensor_yaw_delta": 26.8,
+      "relative_yaw_deg": 19.62,
+      "relative_pitch_deg": -1.93,
+      "relative_roll_deg": 2.16,
+      "relative_rotation_angle_deg": 19.87,
+      "up_vector_delta_angle_deg": 1.56
+    },
+    {
+      "from_id": "C043",
+      "to_id": "C001",
+      "is_closure": true,
+      "sensor_yaw_delta": 9.6,
+      "relative_yaw_deg": 33.08,
+      "relative_pitch_deg": -3.94,
+      "relative_roll_deg": 3.47,
+      "relative_rotation_angle_deg": 33.6,
+      "up_vector_delta_angle_deg": 2.7
+    }
+  ]
+}

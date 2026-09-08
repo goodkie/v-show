@@ -975,7 +975,7 @@ const healthHandler = (req, res) => {
     schemaVersion: 5,
     stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
-    uiVersion: '3D2-C12.8-P0R2-HOTFIX',
+    uiVersion: '3D2-C12.9-P0',
     clientPath: path.join(__dirname, '..', 'client'),
     timestamp: new Date().toISOString()
   });
@@ -10602,6 +10602,14 @@ app.post('/api/projects/:id/guided-capture/finalize-capture', express.json({ lim
     }
 
     poolData.previewFrameCount = body.previewFrameCount;
+    poolData.closureConfirmed = body.closureConfirmed || false;
+    poolData.captureCompletionReason = body.captureCompletionReason || 'UNKNOWN';
+    poolData.closureInliers = body.closureInliers || 0;
+    poolData.closureInlierRatio = body.closureInlierRatio || 0;
+    poolData.closureInlierCellCount = body.closureInlierCellCount || 0;
+    poolData.closureReprojectionError = body.closureReprojectionError || null;
+    poolData.bestClosureMatchFrameId = body.bestClosureMatchFrameId || null;
+    poolData.bestClosureReferenceId = body.bestClosureReferenceId || null;
     poolData.candidateFrameCount = body.candidateFrameCount;
     poolData.acceptedCandidateCount = body.acceptedCandidateCount || poolData.candidates.length;
     poolData.rejectedCandidateCount = body.rejectedCandidateCount || 0;

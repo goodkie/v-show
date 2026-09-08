@@ -1,0 +1,101 @@
+[
+  {
+    "candidateId": "C040",
+    "timestamp": 1788818983222,
+    "sensorYaw": 323.6,
+    "sharpness": 39,
+    "exposure": 138,
+    "motion": 36.1,
+    "sha256": "4dc735d5dfb743ec5aff7996ce966fc7a93456bc11ada3512cf8c65d23a96c5d",
+    "sift_keypoints": 1564,
+    "orb_keypoints": 2000
+  },
+  {
+    "candidateId": "C041",
+    "timestamp": 1788818983681,
+    "sensorYaw": 332.6,
+    "sharpness": 30,
+    "exposure": 114,
+    "motion": 29.8,
+    "sha256": "32039dd8e50940e6fe2e0412a7a538b967d6be5bd3194557a4e1b210dd6eb7fb",
+    "sift_keypoints": 1460,
+    "orb_keypoints": 2000
+  },
+  {
+    "candidateId": "C042",
+    "timestamp": 1788818983944,
+    "sensorYaw": 340.9,
+    "sharpness": 17,
+    "exposure": 117,
+    "motion": 29.7,
+    "sha256": "44e01b929419f47f6185bfeaf463d8e1940fbc741ea127002fbd2b2fc8683497",
+    "sift_keypoints": 1284,
+    "orb_keypoints": 2000
+  },
+  {
+    "candidateId": "C043",
+    "timestamp": 1788818984214,
+    "sensorYaw": 350.4,
+    "sharpness": 7,
+    "exposure": 156,
+    "motion": 32.4,
+    "sha256": "6b64a22ec619f7d480afd78c178cdfe4cc863f4e607e8820cc32c0a1a86b61ac",
+    "sift_keypoints": 1321,
+    "orb_keypoints": 2000
+  },
+  {
+    "candidateId": "C001",
+    "timestamp": 1788818964528,
+    "sensorYaw": 0,
+    "sharpness": 58,
+    "exposure": 51,
+    "motion": 0,
+    "sha256": "ab8f88180eb71671b2a821403dad90ec94be713925fd4a0909c1ed23fa7efd1f",
+    "sift_keypoints": 1936,
+    "orb_keypoints": 2000
+  },
+  {
+    "candidateId": "C002",
+    "timestamp": 1788818965824,
+    "sensorYaw": 4.2,
+    "sharpness": 55,
+    "exposure": 75,
+    "motion": 6.1,
+    "sha256": "ef0fec7744ee489f4dd61442474256a75dabcd24b2ff0a090af3c89089a685e0",
+    "sift_keypoints": 2373,
+    "orb_keypoints": 2000
+  },
+  {
+    "candidateId": "C003",
+    "timestamp": 1788818966327,
+    "sensorYaw": 8.5,
+    "sharpness": 60,
+    "exposure": 88,
+    "motion": 9.3,
+    "sha256": "3ee385d1e756acce655c696e04604d7d01a3875af8dff4f5fdf0543378b4574c",
+    "sift_keypoints": 2657,
+    "orb_keypoints": 2000
+  },
+  {
+    "candidateId": "C004",
+    "timestamp": 1788818966798,
+    "sensorYaw": 19.9,
+    "sharpness": 34,
+    "exposure": 55,
+    "motion": 21.5,
+    "sha256": "c4fd45b36b13f90af6e42297646c14fb31db1306a62cef4ecc3009fa1847c85a",
+    "sift_keypoints": 2671,
+    "orb_keypoints": 2000
+  },
+  {
+    "candidateId": "C005",
+    "timestamp": 1788818967334,
+    "sensorYaw": 24.8,
+    "sharpness": 16,
+    "exposure": 39,
+    "motion": 14.1,
+    "sha256": "f8a920cf533cc55eab1cb209a3969848f88dac4d19675289c40be1e671708e74",
+    "sift_keypoints": 2343,
+    "orb_keypoints": 2000
+  }
+]

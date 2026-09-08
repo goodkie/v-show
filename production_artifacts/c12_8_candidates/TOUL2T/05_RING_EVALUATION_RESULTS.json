@@ -1,0 +1,248 @@
+[
+  {
+    "ring_name": "R14_BASE",
+    "frame_count": 14,
+    "frame_ids": [
+      "C001",
+      "C006",
+      "C011",
+      "C012",
+      "C015",
+      "C018",
+      "C020",
+      "C023",
+      "C026",
+      "C028",
+      "C031",
+      "C036",
+      "C040",
+      "C042"
+    ],
+    "local_ring_connected": false,
+    "min_adjacent_inliers": 0,
+    "mean_adjacent_inliers": 5.7,
+    "sensor_yaw_span": 340.9,
+    "default_thresh_1_0": {
+      "opencv_conf_thresh": 1.0,
+      "global_component_count": 3,
+      "estimator_registered_count": 12,
+      "ba_retained_count": 12,
+      "dropped_ids": [
+        "C001",
+        "C006"
+      ],
+      "solved_yaw_span": 157.3,
+      "pose_collapse": false,
+      "global_camera_pose_valid": false
+    },
+    "adaptive_thresh_0_6": {
+      "opencv_conf_thresh": 0.6,
+      "global_component_count": 1,
+      "estimator_registered_count": 14,
+      "ba_retained_count": 14,
+      "dropped_ids": [],
+      "solved_yaw_span": 157.4,
+      "pose_collapse": false,
+      "global_camera_pose_valid": false
+    }
+  },
+  {
+    "ring_name": "R15_BRIDGE_A",
+    "frame_count": 15,
+    "frame_ids": [
+      "C001",
+      "C006",
+      "C011",
+      "C012",
+      "C015",
+      "C018",
+      "C020",
+      "C023",
+      "C026",
+      "C028",
+      "C031",
+      "C036",
+      "C040",
+      "C042",
+      "C043"
+    ],
+    "local_ring_connected": false,
+    "min_adjacent_inliers": 0,
+    "mean_adjacent_inliers": 8.4,
+    "sensor_yaw_span": 350.4,
+    "default_thresh_1_0": {
+      "opencv_conf_thresh": 1.0,
+      "global_component_count": 3,
+      "estimator_registered_count": 13,
+      "ba_retained_count": 13,
+      "dropped_ids": [
+        "C001",
+        "C006"
+      ],
+      "solved_yaw_span": 162.8,
+      "pose_collapse": false,
+      "global_camera_pose_valid": false
+    },
+    "adaptive_thresh_0_6": {
+      "opencv_conf_thresh": 0.6,
+      "global_component_count": 1,
+      "estimator_registered_count": 15,
+      "ba_retained_count": 15,
+      "dropped_ids": [],
+      "solved_yaw_span": 165.3,
+      "pose_collapse": false,
+      "global_camera_pose_valid": false
+    }
+  },
+  {
+    "ring_name": "R15_BRIDGE_B",
+    "frame_count": 15,
+    "frame_ids": [
+      "C001",
+      "C003",
+      "C006",
+      "C011",
+      "C012",
+      "C015",
+      "C018",
+      "C020",
+      "C023",
+      "C026",
+      "C028",
+      "C031",
+      "C036",
+      "C040",
+      "C042"
+    ],
+    "local_ring_connected": false,
+    "min_adjacent_inliers": 0,
+    "mean_adjacent_inliers": 7.1,
+    "sensor_yaw_span": 340.9,
+    "default_thresh_1_0": {
+      "opencv_conf_thresh": 1.0,
+      "global_component_count": 6,
+      "estimator_registered_count": 10,
+      "ba_retained_count": 10,
+      "dropped_ids": [
+        "C001",
+        "C003",
+        "C006",
+        "C011",
+        "C012"
+      ],
+      "solved_yaw_span": 170.3,
+      "pose_collapse": false,
+      "global_camera_pose_valid": false
+    },
+    "adaptive_thresh_0_6": {
+      "opencv_conf_thresh": 0.6,
+      "global_component_count": 1,
+      "estimator_registered_count": 12,
+      "ba_retained_count": 12,
+      "dropped_ids": [
+        "C001",
+        "C003",
+        "C006"
+      ],
+      "solved_yaw_span": 171.1,
+      "pose_collapse": false,
+      "global_camera_pose_valid": false
+    }
+  },
+  {
+    "ring_name": "R16_BRIDGE_AB",
+    "frame_count": 16,
+    "frame_ids": [
+      "C001",
+      "C003",
+      "C006",
+      "C011",
+      "C012",
+      "C015",
+      "C018",
+      "C020",
+      "C023",
+      "C026",
+      "C028",
+      "C031",
+      "C036",
+      "C040",
+      "C042",
+      "C043"
+    ],
+    "local_ring_connected": false,
+    "min_adjacent_inliers": 0,
+    "mean_adjacent_inliers": 9.5,
+    "sensor_yaw_span": 350.4,
+    "default_thresh_1_0": {
+      "opencv_conf_thresh": 1.0,
+      "global_component_count": 4,
+      "estimator_registered_count": 13,
+      "ba_retained_count": 13,
+      "dropped_ids": [
+        "C001",
+        "C003",
+        "C006"
+      ],
+      "solved_yaw_span": 164.5,
+      "pose_collapse": false,
+      "global_camera_pose_valid": false
+    },
+    "adaptive_thresh_0_6": {
+      "opencv_conf_thresh": 0.6,
+      "global_component_count": 1,
+      "estimator_registered_count": 16,
+      "ba_retained_count": 16,
+      "dropped_ids": [],
+      "solved_yaw_span": 160.9,
+      "pose_collapse": false,
+      "global_camera_pose_valid": false
+    }
+  },
+  {
+    "ring_name": "R16_BRIDGE_ABC",
+    "frame_count": 16,
+    "frame_ids": [
+      "C001",
+      "C003",
+      "C006",
+      "C008",
+      "C011",
+      "C012",
+      "C015",
+      "C018",
+      "C020",
+      "C023",
+      "C026",
+      "C028",
+      "C031",
+      "C036",
+      "C040",
+      "C043"
+    ],
+    "local_ring_connected": false,
+    "min_adjacent_inliers": 0,
+    "mean_adjacent_inliers": 6.2,
+    "sensor_yaw_span": 350.4,
+    "default_thresh_1_0": {
+      "opencv_conf_thresh": 1.0,
+      "global_component_count": 1,
+      "estimator_registered_count": 16,
+      "ba_retained_count": 16,
+      "dropped_ids": [],
+      "solved_yaw_span": 158.0,
+      "pose_collapse": false,
+      "global_camera_pose_valid": false
+    },
+    "adaptive_thresh_0_6": {
+      "opencv_conf_thresh": 0.6,
+      "global_component_count": 1,
+      "estimator_registered_count": 16,
+      "ba_retained_count": 16,
+      "dropped_ids": [],
+      "solved_yaw_span": 162.9,
+      "pose_collapse": false,
+      "global_camera_pose_valid": false
+    }
+  }
+]

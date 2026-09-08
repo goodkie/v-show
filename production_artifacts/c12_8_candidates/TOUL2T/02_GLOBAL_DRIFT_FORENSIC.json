@@ -1,0 +1,146 @@
+[
+  {
+    "edge": "C001 -> C003",
+    "sensor_delta_deg": 8.5,
+    "visual_delta_deg": 8.94,
+    "delta_error_deg": 0.44,
+    "cumulative_sensor_yaw": 8.5,
+    "cumulative_visual_yaw": 8.94,
+    "cumulative_drift_deg": 0.44
+  },
+  {
+    "edge": "C003 -> C006",
+    "sensor_delta_deg": 23.9,
+    "visual_delta_deg": 32.97,
+    "delta_error_deg": 9.07,
+    "cumulative_sensor_yaw": 32.4,
+    "cumulative_visual_yaw": 41.92,
+    "cumulative_drift_deg": 9.52
+  },
+  {
+    "edge": "C006 -> C008",
+    "sensor_delta_deg": 18.2,
+    "visual_delta_deg": 16.51,
+    "delta_error_deg": -1.69,
+    "cumulative_sensor_yaw": 50.6,
+    "cumulative_visual_yaw": 58.43,
+    "cumulative_drift_deg": 7.83
+  },
+  {
+    "edge": "C008 -> C011",
+    "sensor_delta_deg": 21.2,
+    "visual_delta_deg": 12.7,
+    "delta_error_deg": -8.5,
+    "cumulative_sensor_yaw": 71.8,
+    "cumulative_visual_yaw": 71.13,
+    "cumulative_drift_deg": -0.67
+  },
+  {
+    "edge": "C011 -> C012",
+    "sensor_delta_deg": 4.3,
+    "visual_delta_deg": 2.7,
+    "delta_error_deg": -1.6,
+    "cumulative_sensor_yaw": 76.1,
+    "cumulative_visual_yaw": 73.83,
+    "cumulative_drift_deg": -2.27
+  },
+  {
+    "edge": "C012 -> C015",
+    "sensor_delta_deg": 30.0,
+    "visual_delta_deg": 25.44,
+    "delta_error_deg": -4.56,
+    "cumulative_sensor_yaw": 106.1,
+    "cumulative_visual_yaw": 99.27,
+    "cumulative_drift_deg": -6.83
+  },
+  {
+    "edge": "C015 -> C018",
+    "sensor_delta_deg": 21.6,
+    "visual_delta_deg": 27.23,
+    "delta_error_deg": 5.63,
+    "cumulative_sensor_yaw": 127.7,
+    "cumulative_visual_yaw": 126.5,
+    "cumulative_drift_deg": -1.2
+  },
+  {
+    "edge": "C018 -> C020",
+    "sensor_delta_deg": 15.3,
+    "visual_delta_deg": 24.3,
+    "delta_error_deg": 9.0,
+    "cumulative_sensor_yaw": 143.0,
+    "cumulative_visual_yaw": 150.8,
+    "cumulative_drift_deg": 7.8
+  },
+  {
+    "edge": "C020 -> C023",
+    "sensor_delta_deg": 41.5,
+    "visual_delta_deg": 22.06,
+    "delta_error_deg": -19.44,
+    "cumulative_sensor_yaw": 184.5,
+    "cumulative_visual_yaw": 172.86,
+    "cumulative_drift_deg": -11.64
+  },
+  {
+    "edge": "C023 -> C026",
+    "sensor_delta_deg": 15.1,
+    "visual_delta_deg": 22.09,
+    "delta_error_deg": 6.99,
+    "cumulative_sensor_yaw": 199.6,
+    "cumulative_visual_yaw": 194.94,
+    "cumulative_drift_deg": -4.66
+  },
+  {
+    "edge": "C026 -> C028",
+    "sensor_delta_deg": 21.5,
+    "visual_delta_deg": 23.12,
+    "delta_error_deg": 1.62,
+    "cumulative_sensor_yaw": 221.1,
+    "cumulative_visual_yaw": 218.07,
+    "cumulative_drift_deg": -3.03
+  },
+  {
+    "edge": "C028 -> C031",
+    "sensor_delta_deg": 33.2,
+    "visual_delta_deg": 23.11,
+    "delta_error_deg": -10.09,
+    "cumulative_sensor_yaw": 254.3,
+    "cumulative_visual_yaw": 241.17,
+    "cumulative_drift_deg": -13.13
+  },
+  {
+    "edge": "C031 -> C036",
+    "sensor_delta_deg": 32.1,
+    "visual_delta_deg": 40.3,
+    "delta_error_deg": 8.2,
+    "cumulative_sensor_yaw": 286.4,
+    "cumulative_visual_yaw": 281.47,
+    "cumulative_drift_deg": -4.93
+  },
+  {
+    "edge": "C036 -> C040",
+    "sensor_delta_deg": 37.2,
+    "visual_delta_deg": 18.37,
+    "delta_error_deg": -18.83,
+    "cumulative_sensor_yaw": 323.6,
+    "cumulative_visual_yaw": 299.83,
+    "cumulative_drift_deg": -23.77
+  },
+  {
+    "edge": "C040 -> C043",
+    "sensor_delta_deg": 26.8,
+    "visual_delta_deg": 19.56,
+    "delta_error_deg": -7.24,
+    "cumulative_sensor_yaw": 350.4,
+    "cumulative_visual_yaw": 319.39,
+    "cumulative_drift_deg": -31.01
+  },
+  {
+    "edge": "C043 -> C001",
+    "sensor_delta_deg": 9.6,
+    "visual_delta_deg": 38.42,
+    "delta_error_deg": 28.82,
+    "cumulative_sensor_yaw": 360.0,
+    "cumulative_visual_yaw": 357.82,
+    "cumulative_drift_deg": -2.18
+  }
+]

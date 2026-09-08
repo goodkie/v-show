@@ -1,0 +1,177 @@
+{
+  "A_feature_extraction": {
+    "nodes": [
+      "C001",
+      "C006",
+      "C011",
+      "C012",
+      "C015",
+      "C018",
+      "C020",
+      "C023",
+      "C026",
+      "C028",
+      "C031",
+      "C036",
+      "C040",
+      "C042"
+    ],
+    "dropped": []
+  },
+  "B_pairwise_matcher": {
+    "nodes": [
+      "C001",
+      "C006",
+      "C011",
+      "C012",
+      "C015",
+      "C018",
+      "C020",
+      "C023",
+      "C026",
+      "C028",
+      "C031",
+      "C036",
+      "C040",
+      "C042"
+    ],
+    "raw_edge_count": 6,
+    "dropped": []
+  },
+  "C_confidence_filter": {
+    "nodes": [
+      "C001",
+      "C006",
+      "C011",
+      "C012",
+      "C015",
+      "C018",
+      "C020",
+      "C023",
+      "C026",
+      "C028",
+      "C031",
+      "C036",
+      "C040",
+      "C042"
+    ],
+    "edge_count": 2,
+    "component_count": 12,
+    "components": [
+      [
+        "C011",
+        "C012"
+      ],
+      [
+        "C040",
+        "C042"
+      ],
+      [
+        "C001"
+      ],
+      [
+        "C006"
+      ],
+      [
+        "C015"
+      ],
+      [
+        "C018"
+      ],
+      [
+        "C020"
+      ],
+      [
+        "C023"
+      ],
+      [
+        "C026"
+      ],
+      [
+        "C028"
+      ],
+      [
+        "C031"
+      ],
+      [
+        "C036"
+      ]
+    ]
+  },
+  "D_leaveBiggestComponent": {
+    "retained": [
+      "C011",
+      "C012"
+    ],
+    "dropped": [
+      "C001",
+      "C006",
+      "C015",
+      "C018",
+      "C020",
+      "C023",
+      "C026",
+      "C028",
+      "C031",
+      "C036",
+      "C040",
+      "C042"
+    ]
+  },
+  "E_estimator_input": {
+    "nodes": [
+      "C011",
+      "C012"
+    ],
+    "dropped": []
+  },
+  "F_estimator_output": {
+    "nodes": [
+      "C011",
+      "C012"
+    ],
+    "dropped": []
+  },
+  "G_ba_input": {
+    "nodes": [
+      "C011",
+      "C012"
+    ],
+    "dropped": []
+  },
+  "H_ba_output": {
+    "nodes": [
+      "C011",
+      "C012",
+      "C015",
+      "C018",
+      "C020",
+      "C023",
+      "C026",
+      "C028",
+      "C031",
+      "C036",
+      "C040",
+      "C042"
+    ],
+    "dropped": []
+  },
+  "I_wave_correction": {
+    "nodes": [
+      "C011",
+      "C012",
+      "C015",
+      "C018",
+      "C020",
+      "C023",
+      "C026",
+      "C028",
+      "C031",
+      "C036",
+      "C040",
+      "C042"
+    ],
+    "dropped": []
+  },
+  "EXACT_FIRST_DROP_STAGE": "Stage D (leaveBiggestComponent / component filtering at default panoConfidenceThresh=1.0)"
+}

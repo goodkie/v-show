@@ -1,0 +1,19 @@
+{
+  "device_model": "Samsung Galaxy S23 Ultra (SM-S918N)",
+  "source_resolution": [
+    1080,
+    1920
+  ],
+  "work_resolution": [
+    580,
+    1032
+  ],
+  "work_scale": 0.5370370370370371,
+  "focal_length_registration_scale_px": 423.5,
+  "focal_length_original_scale_px": 788.6,
+  "focal_origin": "Estimated dynamically via cv2.detail.focalsFromHomography median over high-confidence pairwise homographies",
+  "estimated_hfov_deg": 68.8,
+  "estimated_vfov_deg": 101.2,
+  "focal_initialization_causes_sector_rejection": false,
+  "true_rejection_cause": "OpenCV leaveBiggestComponent splits graph at conf_thresh=1.0 because transition edges (C018->C020, C042->C001, C001->C006, C006->C011) have match confidence between 0.5 and 0.85, below the 1.0 threshold"
+}

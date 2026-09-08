@@ -19430,7 +19430,415 @@ function round(val, dec = 1) {
   return Math.round(val * p) / p;
 }
 
-// ── C12.3-P0R3: CAPABILITY-BASED GUIDED CONTINUOUS 360° CAPTURE CONTROLLER ──
+// ── C12.9-P0: VISUAL LOOP-AWARE GUIDED 360° CAPTURE CONTROLLER WITH START-REGION OVERLAP DETECTION ──
+
+// Predefined 128-bit BRIEF sampling pairs (32 pairs of [dx1, dy1, dx2, dy2])
+const BRIEF_PAIRS = [
+  [-4, -7, 3, 5], [2, -6, -3, 6], [-8, 2, 7, -3], [-1, 8, 2, -7],
+  [-5, -3, 4, 2], [6, -4, -5, 3], [-2, -8, 1, 7], [7, 1, -6, -2],
+  [-3, 4, 3, -5], [5, 5, -4, -6], [-7, -2, 6, 3], [1, -5, -2, 6],
+  [-6, 6, 5, -5], [4, -7, -3, 7], [-5, 1, 4, -2], [3, 8, -4, -7],
+  [-2, -5, 2, 4], [7, -3, -6, 4], [-4, -8, 3, 7], [5, 2, -5, -3],
+  [-7, 5, 6, -4], [2, 7, -3, -6], [-6, -4, 5, 3], [4, 6, -5, -5],
+  [-3, -7, 2, 6], [6, 3, -7, -2], [-1, 5, 1, -6], [8, -1, -7, 2],
+  [-5, 7, 4, -6], [3, -4, -4, 5], [-8, -3, 7, 4], [2, -8, -1, 7]
+];
+
+class VisualLoopDetector {
+  constructor(options = {}) {
+    this.minRotationSearchGate = options.minRotationSearchGate || 300.0;
+    this.inlierThreshold = options.inlierThreshold || 15;
+    this.inlierRatioThreshold = options.inlierRatioThreshold || 0.35;
+    this.reprojectionThreshold = options.reprojectionThreshold || 6.5;
+    this.minInlierCellCount = options.minInlierCellCount || 3;
+    this.minBboxAreaRatio = options.minBboxAreaRatio || 0.15;
+    this.requiredConsecutiveConfirmations = options.requiredConsecutiveConfirmations || 2;
+
+    this.startReferences = [];
+    this.consecutiveConfirmations = 0;
+    this.bestClosureMatch = null;
+    this.closureCheckCount = 0;
+    this.closureConfirmed = false;
+  }
+
+  // FAST-9 Corner Detector with grid-based bucketing
+  extractFeatures(luminance, width, height) {
+    const keypoints = [];
+    const threshold = 18;
+    const circleOffsets = [
+      [0, -3], [1, -3], [2, -2], [3, -1],
+      [3, 0], [3, 1], [2, 2], [1, 3],
+      [0, 3], [-1, 3], [-2, 2], [-3, 1],
+      [-3, 0], [-3, -1], [-2, -2], [-1, -3]
+    ];
+
+    const gridCols = 8;
+    const gridRows = 6;
+    const cellW = width / gridCols;
+    const cellH = height / gridRows;
+    const gridBuckets = Array.from({ length: gridCols * gridRows }, () => []);
+
+    for (let y = 5; y < height - 5; y += 2) {
+      const rowOffset = y * width;
+      for (let x = 5; x < width - 5; x += 2) {
+        const p = luminance[rowOffset + x];
+
+        // Quick check on pixels 0, 4, 8, 12
+        const p0 = luminance[(y - 3) * width + x];
+        const p4 = luminance[y * width + (x + 3)];
+        const p8 = luminance[(y + 3) * width + x];
+        const p12 = luminance[y * width + (x - 3)];
+
+        let brightCount = (p0 > p + threshold ? 1 : 0) + (p4 > p + threshold ? 1 : 0) +
+                          (p8 > p + threshold ? 1 : 0) + (p12 > p + threshold ? 1 : 0);
+        let darkCount = (p0 < p - threshold ? 1 : 0) + (p4 < p - threshold ? 1 : 0) +
+                        (p8 < p - threshold ? 1 : 0) + (p12 < p - threshold ? 1 : 0);
+
+        if (brightCount < 3 && darkCount < 3) continue;
+
+        // Full 16-pixel ring test
+        const ring = new Uint8Array(16);
+        for (let i = 0; i < 16; i++) {
+          ring[i] = luminance[(y + circleOffsets[i][1]) * width + (x + circleOffsets[i][0])];
+        }
+
+        let isCorner = false;
+        let score = 0;
+
+        // Check 9 contiguous pixels brighter
+        for (let start = 0; start < 16; start++) {
+          let cont = true;
+          for (let k = 0; k < 9; k++) {
+            if (ring[(start + k) % 16] <= p + threshold) {
+              cont = false;
+              break;
+            }
+          }
+          if (cont) {
+            isCorner = true;
+            break;
+          }
+        }
+
+        if (!isCorner) {
+          // Check 9 contiguous pixels darker
+          for (let start = 0; start < 16; start++) {
+            let cont = true;
+            for (let k = 0; k < 9; k++) {
+              if (ring[(start + k) % 16] >= p - threshold) {
+                cont = false;
+                break;
+              }
+            }
+            if (cont) {
+              isCorner = true;
+              break;
+            }
+          }
+        }
+
+        if (isCorner) {
+          for (let i = 0; i < 16; i++) {
+            score += Math.abs(ring[i] - p);
+          }
+          const gx = Math.min(gridCols - 1, Math.floor(x / cellW));
+          const gy = Math.min(gridRows - 1, Math.floor(y / cellH));
+          gridBuckets[gy * gridCols + gx].push({ x, y, score });
+        }
+      }
+    }
+
+    // Keep top 2-3 keypoints per grid bucket
+    for (let b = 0; b < gridBuckets.length; b++) {
+      gridBuckets[b].sort((a, b) => b.score - a.score);
+      const top = gridBuckets[b].slice(0, 2);
+      for (const kp of top) {
+        keypoints.push(kp);
+      }
+    }
+
+    // Extract BRIEF descriptor for each keypoint
+    const descriptors = new Uint32Array(keypoints.length);
+    for (let i = 0; i < keypoints.length; i++) {
+      const kp = keypoints[i];
+      let desc = 0;
+
+      // Intensity centroid angle
+      let m10 = 0, m01 = 0;
+      for (let dy = -4; dy <= 4; dy++) {
+        for (let dx = -4; dx <= 4; dx++) {
+          const val = luminance[(kp.y + dy) * width + (kp.x + dx)] || 0;
+          m10 += dx * val;
+          m01 += dy * val;
+        }
+      }
+      const angle = Math.atan2(m01, m10);
+      const cosA = Math.cos(angle);
+      const sinA = Math.sin(angle);
+
+      for (let p = 0; p < BRIEF_PAIRS.length; p++) {
+        const pair = BRIEF_PAIRS[p];
+        const rx1 = Math.round(kp.x + pair[0] * cosA - pair[1] * sinA);
+        const ry1 = Math.round(kp.y + pair[0] * sinA + pair[1] * cosA);
+        const rx2 = Math.round(kp.x + pair[2] * cosA - pair[3] * sinA);
+        const ry2 = Math.round(kp.y + pair[2] * sinA + pair[3] * cosA);
+
+        const v1 = (rx1 >= 0 && rx1 < width && ry1 >= 0 && ry1 < height) ? luminance[ry1 * width + rx1] : 0;
+        const v2 = (rx2 >= 0 && rx2 < width && ry2 >= 0 && ry2 < height) ? luminance[ry2 * width + rx2] : 0;
+
+        if (v1 < v2) {
+          desc |= (1 << p);
+        }
+      }
+      descriptors[i] = desc >>> 0;
+      kp.cellX = Math.min(2, Math.floor(kp.x / (width / 3)));
+      kp.cellY = Math.min(2, Math.floor(kp.y / (height / 3)));
+      kp.cell = kp.cellY * 3 + kp.cellX;
+    }
+
+    return { keypoints, descriptors, width, height };
+  }
+
+  hammingDistance(a, b) {
+    let v = (a ^ b) >>> 0;
+    v = v - ((v >>> 1) & 0x55555555);
+    v = (v & 0x33333333) + ((v >>> 2) & 0x33333333);
+    return ((v + (v >>> 4) & 0xF0F0F0F) * 0x1010101) >>> 24;
+  }
+
+  addStartReference(candidateId, angle, featureData) {
+    if (this.startReferences.length >= 3) return false;
+    this.startReferences.push({
+      candidateId,
+      angle,
+      featureData
+    });
+    return true;
+  }
+
+  evaluateClosure(candidateId, currentAngle, featureData) {
+    this.closureCheckCount++;
+
+    if (currentAngle < this.minRotationSearchGate) {
+      return {
+        pass: false,
+        reason: 'BELOW_MIN_ROTATION_GATE',
+        angle: currentAngle,
+        minGate: this.minRotationSearchGate
+      };
+    }
+
+    if (!this.startReferences || this.startReferences.length === 0) {
+      return { pass: false, reason: 'NO_START_REFERENCES' };
+    }
+
+    let bestResult = null;
+
+    for (const ref of this.startReferences) {
+      const matchResult = this.matchAndEstimate(ref.featureData, featureData);
+      if (!bestResult || matchResult.inlierCount > bestResult.inlierCount) {
+        bestResult = {
+          ...matchResult,
+          referenceId: ref.candidateId,
+          referenceAngle: ref.angle,
+          candidateId
+        };
+      }
+    }
+
+    if (!bestResult) {
+      this.consecutiveConfirmations = 0;
+      return { pass: false, reason: 'NO_MATCH_EVALUATED' };
+    }
+
+    this.bestClosureMatch = bestResult;
+
+    // Multi-factor gate
+    const hasEnoughInliers = bestResult.inlierCount >= this.inlierThreshold ||
+      (bestResult.inlierCount >= 12 && bestResult.inlierRatio >= 0.50);
+    const hasGoodRatio = bestResult.inlierRatio >= this.inlierRatioThreshold;
+    const hasLowError = bestResult.reprojectionError <= this.reprojectionThreshold;
+    const hasSpatialDist = bestResult.spatialDistributionPass === true;
+    const hasPlausibleRotation = Math.abs(bestResult.relativeRotationDeg) <= 30.0;
+    const hasPlausibleScale = bestResult.scale >= 0.70 && bestResult.scale <= 1.40;
+
+    const pass = hasEnoughInliers && hasGoodRatio && hasLowError && hasSpatialDist && hasPlausibleRotation && hasPlausibleScale;
+
+    if (pass) {
+      this.consecutiveConfirmations++;
+      if (this.consecutiveConfirmations >= this.requiredConsecutiveConfirmations) {
+        this.closureConfirmed = true;
+      }
+    } else {
+      this.consecutiveConfirmations = 0;
+    }
+
+    return {
+      pass,
+      closureConfirmed: this.closureConfirmed,
+      consecutiveConfirmations: this.consecutiveConfirmations,
+      ...bestResult
+    };
+  }
+
+  matchAndEstimate(refFeatures, currFeatures) {
+    const rawMatches = [];
+    const refKp = refFeatures.keypoints;
+    const currKp = currFeatures.keypoints;
+    const refDesc = refFeatures.descriptors;
+    const currDesc = currFeatures.descriptors;
+
+    // Nearest neighbor with ratio test
+    for (let c = 0; c < currKp.length; c++) {
+      let bestDist = 33;
+      let secondDist = 33;
+      let bestRefIdx = -1;
+
+      for (let r = 0; r < refKp.length; r++) {
+        const d = this.hammingDistance(currDesc[c], refDesc[r]);
+        if (d < bestDist) {
+          secondDist = bestDist;
+          bestDist = d;
+          bestRefIdx = r;
+        } else if (d < secondDist) {
+          secondDist = d;
+        }
+      }
+
+      if (bestRefIdx >= 0) {
+        rawMatches.push({
+          currIdx: c,
+          refIdx: bestRefIdx,
+          dist: bestDist,
+          secondDist
+        });
+      }
+    }
+
+    // Lowe's ratio test (Hamming <= 10 out of 32 bits, ratio <= 0.82)
+    const goodMatches = rawMatches.filter(m => m.dist <= 10 && (m.dist / Math.max(1, m.secondDist)) <= 0.82);
+
+    if (goodMatches.length < 6) {
+      return {
+        rawMatchCount: rawMatches.length,
+        goodMatchCount: goodMatches.length,
+        inlierCount: 0,
+        inlierRatio: 0,
+        reprojectionError: 99.0,
+        spatialDistributionPass: false,
+        inlierCellCount: 0,
+        bboxAreaRatio: 0,
+        relativeRotationDeg: 0,
+        scale: 1.0
+      };
+    }
+
+    // 2D Similarity RANSAC (2 points: scale, rotation, translation)
+    let bestInliers = [];
+    let bestModel = null;
+    let minMeanError = Infinity;
+    const maxIterations = 80;
+    const inlierPixelThresh = 6.5;
+
+    for (let it = 0; it < maxIterations; it++) {
+      const idx1 = Math.floor(Math.random() * goodMatches.length);
+      let idx2 = Math.floor(Math.random() * goodMatches.length);
+      if (idx1 === idx2) continue;
+
+      const m1 = goodMatches[idx1];
+      const m2 = goodMatches[idx2];
+
+      const p1 = refKp[m1.refIdx];
+      const q1 = currKp[m1.currIdx];
+      const p2 = refKp[m2.refIdx];
+      const q2 = currKp[m2.currIdx];
+
+      const dx_p = p2.x - p1.x;
+      const dy_p = p2.y - p1.y;
+      const dx_q = q2.x - q1.x;
+      const dy_q = q2.y - q1.y;
+
+      const norm_p_sq = dx_p * dx_p + dy_p * dy_p;
+      if (norm_p_sq < 16) continue;
+
+      // Solve similarity transform: [dx_q; dy_q] = [a, -b; b, a] * [dx_p; dy_p]
+      const a = (dx_q * dx_p + dy_q * dy_p) / norm_p_sq;
+      const b = (dy_q * dx_p - dx_q * dy_p) / norm_p_sq;
+      const tx = q1.x - (a * p1.x - b * p1.y);
+      const ty = q1.y - (b * p1.x + a * p1.y);
+
+      const inliers = [];
+      let totalErr = 0;
+
+      for (let i = 0; i < goodMatches.length; i++) {
+        const gm = goodMatches[i];
+        const p = refKp[gm.refIdx];
+        const q = currKp[gm.currIdx];
+
+        const predX = a * p.x - b * p.y + tx;
+        const predY = b * p.x + a * p.y + ty;
+        const err = Math.sqrt((predX - q.x) ** 2 + (predY - q.y) ** 2);
+
+        if (err <= inlierPixelThresh) {
+          inliers.push(gm);
+          totalErr += err;
+        }
+      }
+
+      if (inliers.length > bestInliers.length) {
+        bestInliers = inliers;
+        bestModel = { a, b, tx, ty };
+        minMeanError = inliers.length > 0 ? totalErr / inliers.length : Infinity;
+      }
+    }
+
+    const inlierCount = bestInliers.length;
+    const inlierRatio = goodMatches.length > 0 ? inlierCount / goodMatches.length : 0;
+    const reprojectionError = minMeanError < Infinity ? Math.round(minMeanError * 100) / 100 : 99.0;
+
+    let relativeRotationDeg = 0;
+    let scale = 1.0;
+    if (bestModel) {
+      scale = Math.round(Math.sqrt(bestModel.a ** 2 + bestModel.b ** 2) * 100) / 100;
+      relativeRotationDeg = Math.round(Math.atan2(bestModel.b, bestModel.a) * (180 / Math.PI) * 10) / 10;
+    }
+
+    // Spatial distribution test
+    const occupiedCells = new Set();
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+
+    for (const inlier of bestInliers) {
+      const q = currKp[inlier.currIdx];
+      occupiedCells.add(q.cell);
+      if (q.x < minX) minX = q.x;
+      if (q.x > maxX) maxX = q.x;
+      if (q.y < minY) minY = q.y;
+      if (q.y > maxY) maxY = q.y;
+    }
+
+    const inlierCellCount = occupiedCells.size;
+    const imgW = currFeatures.width || 160;
+    const imgH = currFeatures.height || 120;
+    const bboxW = inlierCount > 0 ? Math.max(0, maxX - minX) : 0;
+    const bboxH = inlierCount > 0 ? Math.max(0, maxY - minY) : 0;
+    const bboxAreaRatio = Math.round(((bboxW * bboxH) / (imgW * imgH)) * 1000) / 1000;
+    const spatialDistributionPass = inlierCellCount >= this.minInlierCellCount && bboxAreaRatio >= this.minBboxAreaRatio;
+
+    return {
+      rawMatchCount: rawMatches.length,
+      goodMatchCount: goodMatches.length,
+      inlierCount,
+      inlierRatio: Math.round(inlierRatio * 1000) / 1000,
+      reprojectionError,
+      spatialDistributionPass,
+      inlierCellCount,
+      bboxAreaRatio,
+      relativeRotationDeg,
+      scale
+    };
+  }
+}
+
 class GuidedCaptureController {
   round(val, dec = 1) {
     const p = Math.pow(10, dec);
@@ -19444,12 +19852,18 @@ class GuidedCaptureController {
     this.onComplete = options.onComplete || null;
     this.onError = options.onError || null;
 
-    this.KEYFRAME_SELECTION_MODE = 'ADAPTIVE';
+    this.KEYFRAME_SELECTION_MODE = 'ADAPTIVE_CLOSURE_PRESERVING';
     this.MIN_CANONICAL_KEYFRAMES = 8;
     this.SOFT_TARGET_KEYFRAMES = 12;
     this.MAX_CANONICAL_KEYFRAMES = 16;
+    this.MIN_ROTATION_SEARCH_GATE = 300.0;
 
-    this.state = 'IDLE'; // IDLE, PREPARING, CAPTURING, VALIDATING, COMPLETE, NEEDS_ATTENTION, FAILED
+    // FSM States:
+    // IDLE, REQUESTING_PERMISSION, OPENING_CAMERA, PREVIEW_READY, CAPTURING,
+    // APPROACHING_CLOSURE, SEARCHING_FOR_START_OVERLAP, CLOSURE_CANDIDATE, CLOSURE_CONFIRMED,
+    // FINALIZING_CANDIDATES, SELECTING_CANONICAL, PERSISTING_CANONICAL, COMPLETE,
+    // CAPTURE_NEEDS_MORE_ROTATION, CAPTURE_NEEDS_RETRY, ERROR
+    this.state = 'IDLE';
     this.diagnosticSessionId = Math.random().toString(36).substring(2, 8).toUpperCase();
 
     this.capabilities = {
@@ -19459,8 +19873,31 @@ class GuidedCaptureController {
       MOTION_PERMISSION_GRANTED: false
     };
 
+    // Visual Loop Detector
+    this.visualLoopDetector = new VisualLoopDetector({
+      minRotationSearchGate: this.MIN_ROTATION_SEARCH_GATE,
+      inlierThreshold: 15,
+      inlierRatioThreshold: 0.35,
+      reprojectionThreshold: 6.5,
+      minInlierCellCount: 3,
+      minBboxAreaRatio: 0.15,
+      requiredConsecutiveConfirmations: 2
+    });
+
+    this.visualClosureSearchEnabled = false;
+    this.closureConfirmed = false;
+    this.consecutiveClosureConfirmations = 0;
+    this.closureCheckCount = 0;
+    this.bestClosureMatch = null;
+    this.fastRotationEventCount = 0;
+    this.fastRotationSectors = new Set();
+    this.fatalJsErrorCount = 0;
+
     // Telemetry tracking
     this.telemetry = {
+      riSessionId: this.diagnosticSessionId,
+      captureSessionId: this.diagnosticSessionId,
+      candidatePoolId: this.diagnosticSessionId,
       startButtonEventReceived: false,
       guidedControllerStartCalled: false,
       userAgent: '',
@@ -19483,6 +19920,32 @@ class GuidedCaptureController {
       captureLoopActive: false,
       previewFrameCount: 0,
       progressUpdateCount: 0,
+      candidateEvaluationCount: 0,
+      candidateMaterializedCount: 0,
+      candidateAcceptedCount: 0,
+      candidatePersistedCount: 0,
+      candidateUploadFailureCount: 0,
+      normalizedSensorRotationDeg: 0,
+      visualClosureSearchEnabledAtRotation: this.MIN_ROTATION_SEARCH_GATE,
+      closureCheckCount: 0,
+      bestClosureMatchFrameId: null,
+      bestClosureReferenceId: null,
+      closureRawMatches: 0,
+      closureGoodMatches: 0,
+      closureInliers: 0,
+      closureInlierRatio: 0,
+      closureReprojectionError: null,
+      closureInlierCellCount: 0,
+      closureInlierBboxAreaRatio: 0,
+      closureSensorExpectedDelta: 360.0,
+      closureVisualRelativeRotation: null,
+      closureConsecutiveConfirmationCount: 0,
+      closureConfirmed: false,
+      captureCompletionReason: 'IN_PROGRESS',
+      fastRotationEventCount: 0,
+      canonicalSelectedCount: 0,
+      canonicalPersistedCount: 0,
+      fatalJsErrorCount: 0,
       guidanceMode: 'UNKNOWN',
       accumulatedRotation: 0,
       errorCode: null,
@@ -19494,7 +19957,7 @@ class GuidedCaptureController {
     this.startOrientation = null;
     this.currentOrientation = null;
     this.accumulatedRotation = 0.0;
-    this.rotationDirection = null; // 'CLOCKWISE', 'COUNTERCLOCKWISE'
+    this.rotationDirection = null;
     this.directionLocked = false;
     this.lastAngle = null;
     this.lastTimestamp = null;
@@ -19550,153 +20013,90 @@ class GuidedCaptureController {
     this.capabilities.GYROSCOPE_AVAILABLE = this.capabilities.DEVICE_ORIENTATION_AVAILABLE;
 
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-      try {
-        const perm = await DeviceOrientationEvent.requestPermission();
-        this.capabilities.MOTION_PERMISSION_GRANTED = (perm === 'granted');
-      } catch (e) {
-        this.capabilities.MOTION_PERMISSION_GRANTED = false;
-      }
+      this.capabilities.MOTION_PERMISSION_GRANTED = false;
     } else {
       this.capabilities.MOTION_PERMISSION_GRANTED = this.capabilities.DEVICE_ORIENTATION_AVAILABLE;
     }
     return this.capabilities;
   }
 
-  async start(options = {}) {
-    // Clean any previous capture or stream resources cleanly
-    this.stopCaptureResources();
+  async requestMotionPermission() {
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      try {
+        const response = await DeviceOrientationEvent.requestPermission();
+        this.capabilities.MOTION_PERMISSION_GRANTED = (response === 'granted');
+        return response === 'granted';
+      } catch (err) {
+        this.capabilities.MOTION_PERMISSION_GRANTED = false;
+        return false;
+      }
+    }
+    return true;
+  }
 
-    // Resolve target video element: options > #guidedCaptureVideo > #guidedLiveVideo
-    let video = options.videoElement || document.getElementById('guidedCaptureVideo') || document.getElementById('guidedLiveVideo');
+  async start(options = {}) {
+    this.telemetry.guidedControllerStartCalled = true;
+    this.telemetry.startTime = Date.now();
+    this.telemetry.userAgent = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+    this.telemetry.secureContext = (typeof window !== 'undefined' && window.isSecureContext) || false;
+    this.telemetry.protocol = (typeof window !== 'undefined' && window.location && window.location.protocol) || '';
+    this.telemetry.host = (typeof window !== 'undefined' && window.location && window.location.host) || '';
+    this.telemetry.origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+    this.telemetry.href = (typeof window !== 'undefined' && window.location && window.location.href) || '';
+    this.telemetry.mediaDevicesAvailable = Boolean(typeof navigator !== 'undefined' && navigator.mediaDevices);
+    this.telemetry.getUserMediaAvailable = Boolean(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+
+    // 1. REQUESTING_PERMISSION
+    this.state = 'REQUESTING_PERMISSION';
+    this.cameraStage = 'REQUESTING_PERMISSION';
+    this.notifyProgress();
+
+    // Start 3.5s startup watchdog
+    if (!this.watchdogTimer) {
+      this.watchdogTimer = setTimeout(() => this.checkStartupWatchdog(), 3500);
+    }
+
+    await this.requestMotionPermission();
+
+    const video = options.videoElement || this.videoElement || document.getElementById('guidedCaptureVideo');
     if (!video) {
-      video = document.createElement('video');
-      video.id = 'guidedCaptureVideo';
-      video.playsInline = true;
-      video.muted = true;
-      video.autoplay = true;
-      document.body.appendChild(video);
+      const err = new Error('No video element provided for guided capture');
+      this.state = 'ERROR';
+      this.fatalJsErrorCount++;
+      this.telemetry.errorCode = 'NO_VIDEO_ELEMENT';
+      this.telemetry.errorMessage = err.message;
+      this.sendTelemetry();
+      throw err;
     }
     this.videoElement = video;
 
-    this.diagnosticSessionId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    this.telemetry.startButtonEventReceived = true;
-    this.telemetry.guidedControllerStartCalled = true;
-    this.telemetry.userAgent = navigator.userAgent;
-    this.telemetry.secureContext = Boolean(window.isSecureContext);
-    this.telemetry.protocol = window.location.protocol;
-    this.telemetry.host = window.location.host;
-    this.telemetry.origin = window.location.origin;
-    this.telemetry.href = window.location.href.split('?')[0];
-    this.telemetry.mediaDevicesAvailable = Boolean(navigator.mediaDevices);
-    this.telemetry.getUserMediaAvailable = Boolean(navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function');
-    this.telemetry.startTime = Date.now();
-    this.telemetry.previewFrameCount = 0;
-    this.telemetry.deviceOrientationEventCount = 0;
-    this.telemetry.deviceMotionEventCount = 0;
-    this.telemetry.progressUpdateCount = 0;
-    this.telemetry.errorCode = null;
-    this.telemetry.errorMessage = null;
-    this.telemetry.diagnosticSessionId = this.diagnosticSessionId;
-
-    // State machine: REQUESTING_PERMISSION
-    this.state = 'REQUESTING_PERMISSION';
-    this.cameraStage = 'REQUESTING_PERMISSION';
-    this.accumulatedRotation = 0.0;
-    this.directionLocked = false;
-    this.rotationDirection = null;
-    this.lastAngle = null;
-    this.lastTimestamp = Date.now();
-    this.candidateFrames = [];
-    this.canonicalKeyframes = [];
-    this.lastSelectedAngle = null;
-    this.lastSelectedTimestamp = null;
-    this.closureVerified = false;
-    this.guidanceMessage = 'Requesting camera access...';
-    this.notifyProgress();
-    this.sendTelemetry();
-
-    // 1. Secure context verification
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (!window.isSecureContext && !isLocalhost && (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)) {
-      this.state = 'ERROR';
-      this.cameraStage = 'SECURE_CONTEXT_FAILURE';
-      this.telemetry.errorCode = 'INSECURE_CONTEXT';
-      this.telemetry.errorMessage = 'Browser is in an insecure context (HTTP).';
-      this.guidanceMessage = 'Camera access requires secure connection.';
-      this.notifyAttention({
-        code: 'INSECURE_CONTEXT',
-        message: 'Open the secure capture link to use your camera.',
-        diagnosticId: this.diagnosticSessionId
-      });
-      this.sendTelemetry();
-      throw new Error('Camera access requires secure context (HTTPS).');
-    }
-
-    // 2. MediaDevices availability verification
-    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
-      this.state = 'ERROR';
-      this.cameraStage = 'GET_USER_MEDIA_UNAVAILABLE';
-      this.telemetry.errorCode = 'CAMERA_API_UNAVAILABLE';
-      this.telemetry.errorMessage = 'navigator.mediaDevices.getUserMedia is unavailable.';
-      this.guidanceMessage = 'Camera API unavailable.';
-      this.notifyAttention({
-        code: 'CAMERA_API_UNAVAILABLE',
-        message: 'Camera API is unavailable on this browser.',
-        diagnosticId: this.diagnosticSessionId
-      });
-      this.sendTelemetry();
-      throw new Error('Camera API is unavailable on this browser.');
-    }
-
-    // 3. Startup Watchdog (~5.0s)
-    if (this.watchdogTimer) clearTimeout(this.watchdogTimer);
-    this.watchdogTimer = setTimeout(() => {
-      this.checkStartupWatchdog();
-    }, 5000);
-
-    // 4. Progressive Camera Constraint Fallback
+    // 2. OPENING_CAMERA
     this.state = 'OPENING_CAMERA';
     this.cameraStage = 'OPENING_CAMERA';
     this.telemetry.getUserMediaCalled = true;
-    window.__getUserMediaCalled = true;
 
     let stream = null;
     let successfulAttempt = null;
 
-    // Attempt A: environment ideal + 1080p target
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
-        },
-        audio: false
-      });
-      successfulAttempt = 'Attempt A (environment ideal + 1080p)';
-    } catch (errA) {
-      console.warn('[GuidedCapture] Attempt A failed:', errA.name, errA.message);
-      // Attempt B: environment ideal only
+    // Camera constraint cascade: Environment 1080p -> Environment 720p -> Basic Environment -> Default Video
+    const attempts = [
+      { name: 'ENV_1080P', constraints: { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false } },
+      { name: 'ENV_720P', constraints: { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false } },
+      { name: 'ENV_BASIC', constraints: { video: { facingMode: 'environment' }, audio: false } },
+      { name: 'DEFAULT_VIDEO', constraints: { video: true, audio: false } }
+    ];
+
+    for (const attempt of attempts) {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' } },
-          audio: false
-        });
-        successfulAttempt = 'Attempt B (environment ideal)';
-      } catch (errB) {
-        console.warn('[GuidedCapture] Attempt B failed:', errB.name, errB.message);
-        // Attempt C: video: true
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: false
-          });
-          successfulAttempt = 'Attempt C (video: true)';
-        } catch (errC) {
-          this.state = 'ERROR';
-          this.cameraStage = (errC.name === 'NotAllowedError' || errC.name === 'PermissionDeniedError')
-            ? 'CAMERA_PERMISSION_DENIED'
-            : 'GET_USER_MEDIA_REJECTED';
+        stream = await navigator.mediaDevices.getUserMedia(attempt.constraints);
+        if (stream && stream.getVideoTracks().length > 0) {
+          successfulAttempt = attempt.name;
+          break;
+        }
+      } catch (errC) {
+        if (attempt === attempts[attempts.length - 1]) {
+          this.state = 'NEEDS_ATTENTION';
+          this.cameraStage = 'CAMERA_STREAM_FAILED';
           this.telemetry.errorCode = errC.name || 'CameraError';
           this.telemetry.errorMessage = errC.message;
           this.telemetry.cameraPermissionState = (errC.name === 'NotAllowedError' || errC.name === 'PermissionDeniedError') ? 'denied' : 'error';
@@ -19726,9 +20126,8 @@ class GuidedCaptureController {
     this.telemetry.getUserMediaResolved = true;
     window.__getUserMediaResolved = true;
     this.telemetry.cameraPermissionState = 'granted';
-    console.log('[GuidedCapture] Camera stream acquired via ' + successfulAttempt);
 
-    // 5. ATTACHING_STREAM
+    // 3. ATTACHING_STREAM
     this.state = 'ATTACHING_STREAM';
     this.cameraStage = 'ATTACHING_STREAM';
     video.playsInline = true;
@@ -19738,14 +20137,13 @@ class GuidedCaptureController {
     video.setAttribute('webkit-playsinline', '');
     video.srcObject = stream;
 
-    // 6. WAITING_FOR_VIDEO / video.play()
+    // 4. WAITING_FOR_VIDEO / video.play()
     this.state = 'WAITING_FOR_VIDEO';
     this.cameraStage = 'WAITING_FOR_VIDEO';
 
     try {
       await video.play();
     } catch (playErr) {
-      console.warn('[GuidedCapture] video.play() error:', playErr);
       this.cameraStage = 'CAMERA_PLAYBACK_BLOCKED';
       this.telemetry.errorCode = playErr.name || 'PlayError';
       this.telemetry.errorMessage = playErr.message;
@@ -19757,7 +20155,6 @@ class GuidedCaptureController {
       throw playErr;
     }
 
-    // Wait for video metadata / loadedmetadata if dimensions not ready yet
     if (video.videoWidth === 0 || video.readyState < 2) {
       await new Promise((resolve) => {
         const onLoaded = () => {
@@ -19771,7 +20168,7 @@ class GuidedCaptureController {
       });
     }
 
-    // 7. Transition to PREVIEW_READY
+    // 5. PREVIEW_READY
     this.state = 'PREVIEW_READY';
     this.cameraStage = 'PREVIEW_READY';
     if (this.watchdogTimer) {
@@ -19786,7 +20183,7 @@ class GuidedCaptureController {
     video.style.opacity = '1';
     video.style.display = 'block';
 
-    // 8. Attach sensors & start frame loop for capture
+    // 6. Attach sensors & start frame loop
     try {
       if (typeof DeviceOrientationEvent !== 'undefined') {
         window.addEventListener('deviceorientation', this.sensorHandler, true);
@@ -19798,10 +20195,7 @@ class GuidedCaptureController {
       console.warn('[GuidedCapture] Sensor listener note:', e);
     }
 
-    // Select initial canonical keyframe (0 deg)
-    this.selectCanonicalKeyframe(0.0, 100);
-
-    // Transition state to CAPTURING for active rotation tracking
+    // 7. Transition to CAPTURING
     this.state = 'CAPTURING';
     this.telemetry.captureLoopActive = true;
     this.guidanceMessage = 'Stand in one spot and slowly turn in a full circle.';
@@ -19853,7 +20247,8 @@ class GuidedCaptureController {
     }
 
     const loop = () => {
-      if (this.state !== 'CAPTURING') return;
+      const activeStates = ['CAPTURING', 'APPROACHING_CLOSURE', 'SEARCHING_FOR_START_OVERLAP', 'CLOSURE_CANDIDATE'];
+      if (!activeStates.includes(this.state)) return;
       this.processVideoFrame();
       this.animFrameId = requestAnimationFrame(loop);
     };
@@ -19929,7 +20324,8 @@ class GuidedCaptureController {
                          (angleDelta >= 8.0) ||
                          (timeDelta >= 350 && angleDelta >= 4.0);
 
-    if (shouldSample && this.state === 'CAPTURING') {
+    const activeStates = ['CAPTURING', 'APPROACHING_CLOSURE', 'SEARCHING_FOR_START_OVERLAP', 'CLOSURE_CANDIDATE'];
+    if (shouldSample && activeStates.includes(this.state)) {
       this.extractCandidateFrame(this.accumulatedRotation);
     }
   }
@@ -19949,6 +20345,7 @@ class GuidedCaptureController {
 
     this.candidateFrameCount = (this.candidateFrameCount || 0) + 1;
     this.telemetry.candidateFrameCount = this.candidateFrameCount;
+    this.telemetry.candidateEvaluationCount = (this.telemetry.candidateEvaluationCount || 0) + 1;
 
     // Center patch analysis
     const sampleW = 160;
@@ -20007,7 +20404,7 @@ class GuidedCaptureController {
 
     const dataUrl = this.fullCaptureCanvas.toDataURL('image/jpeg', 0.85);
 
-    // Fast hash
+    // Fast content hash
     let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
     for (let i = 0, ch; i < dataUrl.length; i += 17) {
       ch = dataUrl.charCodeAt(i);
@@ -20039,9 +20436,87 @@ class GuidedCaptureController {
 
     this.candidateFrames.push(cand);
     this.acceptedCandidateCount = this.candidateFrames.length;
+    this.telemetry.candidateMaterializedCount = this.acceptedCandidateCount;
     this.telemetry.acceptedCandidateCount = this.acceptedCandidateCount;
     this.lastCandidateAngle = currentAngle;
     this.lastCandidateTimestamp = Date.now();
+
+    // ── Extract lightweight visual features for loop detection ──
+    try {
+      const offW = 160;
+      const offH = 120;
+      const offData = this.offscreenCtx.getImageData(0, 0, offW, offH).data;
+      const lumArray = new Uint8Array(offW * offH);
+      for (let i = 0; i < offW * offH; i++) {
+        lumArray[i] = Math.round(0.299 * offData[i * 4] + 0.587 * offData[i * 4 + 1] + 0.114 * offData[i * 4 + 2]);
+      }
+      const features = this.visualLoopDetector.extractFeatures(lumArray, offW, offH);
+
+      // Save early frames into start-region reference set (0°, ~5°, ~10°)
+      if (this.visualLoopDetector.startReferences.length < 3 && currentAngle <= 16.0) {
+        const lastRef = this.visualLoopDetector.startReferences[this.visualLoopDetector.startReferences.length - 1];
+        const angleDiff = lastRef ? Math.abs(currentAngle - lastRef.angle) : 999;
+        if (this.visualLoopDetector.startReferences.length === 0 || angleDiff >= 4.0) {
+          this.visualLoopDetector.addStartReference(candId, currentAngle, features);
+        }
+      }
+
+      // If in closure search zone (>= 300°), evaluate closure match
+      if (this.visualClosureSearchEnabled) {
+        const evalRes = this.visualLoopDetector.evaluateClosure(candId, this.accumulatedRotation, features);
+        this.closureCheckCount = this.visualLoopDetector.closureCheckCount;
+        this.telemetry.closureCheckCount = this.closureCheckCount;
+
+        if (evalRes && evalRes.inlierCount !== undefined) {
+          this.bestClosureMatch = evalRes;
+          this.telemetry.bestClosureMatchFrameId = evalRes.candidateId;
+          this.telemetry.bestClosureReferenceId = evalRes.referenceId;
+          this.telemetry.closureRawMatches = evalRes.rawMatchCount;
+          this.telemetry.closureGoodMatches = evalRes.goodMatchCount;
+          this.telemetry.closureInliers = evalRes.inlierCount;
+          this.telemetry.closureInlierRatio = evalRes.inlierRatio;
+          this.telemetry.closureReprojectionError = evalRes.reprojectionError;
+          this.telemetry.closureInlierCellCount = evalRes.inlierCellCount;
+          this.telemetry.closureInlierBboxAreaRatio = evalRes.bboxAreaRatio;
+          this.telemetry.closureSensorExpectedDelta = Math.round(Math.abs(this.accumulatedRotation - 360.0) * 10) / 10;
+          this.telemetry.closureVisualRelativeRotation = evalRes.relativeRotationDeg;
+          this.telemetry.closureConsecutiveConfirmationCount = evalRes.consecutiveConfirmations;
+
+          if (evalRes.pass) {
+            this.consecutiveClosureConfirmations = evalRes.consecutiveConfirmations;
+            this.state = 'CLOSURE_CANDIDATE';
+            this.guidanceMessage = 'Hold steady...';
+            this.notifyProgress();
+
+            if (evalRes.closureConfirmed) {
+              this.closureConfirmed = true;
+              this.telemetry.closureConfirmed = true;
+              this.telemetry.captureCompletionReason = 'VISUAL_LOOP_CONFIRMED';
+              this.state = 'CLOSURE_CONFIRMED';
+              this.guidanceMessage = '360° capture complete';
+              this.notifyProgress();
+              this.sendTelemetry();
+
+              // Trigger finalization
+              setTimeout(() => {
+                this.finalizeCapture();
+              }, 200);
+            }
+          } else {
+            this.consecutiveClosureConfirmations = 0;
+            if (this.state === 'CLOSURE_CANDIDATE') {
+              this.state = 'SEARCHING_FOR_START_OVERLAP';
+              this.guidanceMessage = this.accumulatedRotation >= 360.0
+                ? 'Keep turning slowly until the starting view matches.'
+                : 'Match the starting view to finish';
+              this.notifyProgress();
+            }
+          }
+        }
+      }
+    } catch (featErr) {
+      console.warn('[GuidedCapture Feature Extraction Error]', featErr);
+    }
 
     // Stream candidate frame to server immediately via bounded queue
     this.enqueueCandidateUpload(cand);
@@ -20058,68 +20533,84 @@ class GuidedCaptureController {
     }
 
     const targetCount = Math.max(8, Math.min(16, this.candidateFrames.length >= 12 ? 12 : this.candidateFrames.length));
-    const bucketSize = 360.0 / targetCount;
     const selected = [];
 
-    for (let i = 0; i < targetCount; i++) {
-      const targetAngle = i * bucketSize;
-      const minAngle = targetAngle - bucketSize * 0.6;
-      const maxAngle = targetAngle + bucketSize * 0.6;
+    // Pin start and closure frames if closure was confirmed
+    const startCandId = (this.visualLoopDetector && this.visualLoopDetector.startReferences.length > 0)
+      ? this.visualLoopDetector.startReferences[0].candidateId
+      : this.candidateFrames[0].candidateId;
+    const closureCandId = this.bestClosureMatch ? this.bestClosureMatch.candidateId : null;
 
-      const inSector = this.candidateFrames.filter(c => c.angle >= minAngle && c.angle <= maxAngle);
-      let best = null;
+    const startCand = this.candidateFrames.find(c => c.candidateId === startCandId) || this.candidateFrames[0];
+    const closureCand = closureCandId ? this.candidateFrames.find(c => c.candidateId === closureCandId) : null;
 
-      if (inSector.length > 0) {
-        best = inSector.reduce((prev, curr) => (curr.sharpnessScore > prev.sharpnessScore ? curr : prev), inSector[0]);
-      } else {
-        let closest = null;
+    if (startCand) selected.push(startCand);
+    if (closureCand && closureCand.candidateId !== startCand.candidateId) selected.push(closureCand);
+
+    // Fill intermediate sectors
+    const remainingSlots = targetCount - selected.length;
+    if (remainingSlots > 0) {
+      const minAngle = startCand ? startCand.angle : 0;
+      const maxAngle = closureCand ? closureCand.angle : 360.0;
+      const angleSpan = Math.max(180.0, maxAngle - minAngle);
+      const step = angleSpan / (remainingSlots + 1);
+
+      for (let i = 1; i <= remainingSlots; i++) {
+        const targetAngle = minAngle + i * step;
+        let best = null;
         let minDiff = Infinity;
+
         for (const c of this.candidateFrames) {
+          if (selected.some(s => s.candidateId === c.candidateId)) continue;
           const diff = Math.abs(c.angle - targetAngle);
           if (diff < minDiff) {
             minDiff = diff;
-            closest = c;
+            best = c;
           }
         }
-        if (closest && minDiff < bucketSize * 1.2) {
-          best = closest;
+
+        if (best && !selected.some(s => s.candidateId === best.candidateId)) {
+          selected.push(best);
         }
       }
+    }
 
-      if (best && !selected.find(s => s.candidateId === best.candidateId)) {
-        selected.push(best);
+    // Top up if still below 8
+    if (selected.length < 8 && this.candidateFrames.length >= 8) {
+      const unused = this.candidateFrames.filter(c => !selected.some(s => s.candidateId === c.candidateId));
+      unused.sort((a, b) => b.sharpnessScore - a.sharpnessScore);
+      for (const u of unused) {
+        if (selected.length >= 8) break;
+        selected.push(u);
       }
     }
 
     selected.sort((a, b) => a.angle - b.angle);
 
-    if (selected.length < 8 && this.candidateFrames.length >= 8) {
-      const unused = this.candidateFrames.filter(c => !selected.find(s => s.candidateId === c.candidateId));
-      unused.sort((a, b) => b.sharpnessScore - a.sharpnessScore);
-      for (const u of unused) {
-        if (selected.length >= 8) break;
-        const tooClose = selected.some(s => Math.abs(s.angle - u.angle) < 8.0);
-        if (!tooClose) {
-          selected.push(u);
-        }
-      }
-      selected.sort((a, b) => a.angle - b.angle);
-    }
-
+    // Bounded between 8 and 16
     while (selected.length > 16) {
       let minGap = Infinity;
       let removeIdx = -1;
       for (let i = 0; i < selected.length - 1; i++) {
+        if (selected[i] === startCand || selected[i] === closureCand) continue;
         const gap = selected[i + 1].angle - selected[i].angle;
         if (gap < minGap) {
           minGap = gap;
-          removeIdx = selected[i].sharpnessScore < selected[i + 1].sharpnessScore ? i : i + 1;
+          removeIdx = i;
         }
       }
-      if (removeIdx > 0 && removeIdx < selected.length - 1) {
+      if (removeIdx > 0) {
         selected.splice(removeIdx, 1);
       } else {
-        selected.pop();
+        const nonPinned = selected.filter(s => s !== startCand && s !== closureCand);
+        if (nonPinned.length > 0) {
+          nonPinned.sort((a, b) => a.sharpnessScore - b.sharpnessScore);
+          const dropIdx = selected.indexOf(nonPinned[0]);
+          if (dropIdx !== -1) selected.splice(dropIdx, 1);
+          else selected.pop();
+        } else {
+          selected.pop();
+        }
       }
     }
 
@@ -20140,7 +20631,7 @@ class GuidedCaptureController {
         sharpnessScore: cand.sharpnessScore,
         exposureScore: cand.exposureScore,
         overlapPrevious: idx === 0 ? 1.0 : Math.round(Math.max(0.15, 1.0 - (deltaAngle / 65.0)) * 100) / 100,
-        selectionReason: 'ADAPTIVE_ANGULAR_OPTIMAL',
+        selectionReason: (cand === startCand || cand === closureCand) ? 'LOOP_CLOSURE_PRESERVED' : 'ADAPTIVE_ANGULAR_OPTIMAL',
         dataUrl: cand.dataUrl || null,
         serverAssetUrl: cand.serverAssetUrl || ('/data/guided_capture_keyframes/' + (this.diagnosticSessionId || '') + '/candidates/' + cand.candidateId + '.jpg'),
         hash: cand.hash,
@@ -20154,12 +20645,14 @@ class GuidedCaptureController {
     const firstKf = canonicalList[0];
     const lastKf = canonicalList[canonicalList.length - 1];
     const closureDelta = Math.abs(360 - (lastKf.estimatedYawDeg - firstKf.estimatedYawDeg));
-    this.closureVerified = (closureDelta <= 45.0 && canonicalList.length >= 8);
+    this.closureVerified = (closureDelta <= 45.0 && canonicalList.length >= 8 && this.closureConfirmed);
 
     this.canonicalKeyframes = canonicalList;
     this.canonicalKeyframeCount = canonicalList.length;
     this.keyframeCount = canonicalList.length;
     this.telemetry.canonicalKeyframeCount = canonicalList.length;
+    this.telemetry.canonicalSelectedCount = canonicalList.length;
+    this.telemetry.canonicalPersistedCount = canonicalList.length;
 
     return true;
   }
@@ -20264,18 +20757,21 @@ class GuidedCaptureController {
 
       if (res.ok) {
         cand.uploadStatus = 'PERSISTED';
-        cand.serverAssetUrl = '/data/guided_capture_keyframes/' + captureSessionId + '/candidates/' + cand.candidateId + '.jpg';
+        cand.serverAssetUrl = '/data/guided_capture_keyframes/' + this.diagnosticSessionId + '/candidates/' + cand.candidateId + '.jpg';
         this.persistedCandidateCount = (this.persistedCandidateCount || 0) + 1;
         this.telemetry.persistedCandidateCount = this.persistedCandidateCount;
+        this.telemetry.candidatePersistedCount = this.persistedCandidateCount;
         // Release heavy JPEG buffer from mobile RAM
         cand.dataUrl = null;
       } else {
         cand.uploadStatus = 'FAILED_RETRYABLE';
         this.candidateUploadFailures = (this.candidateUploadFailures || 0) + 1;
+        this.telemetry.candidateUploadFailureCount = this.candidateUploadFailures;
       }
     } catch (err) {
       cand.uploadStatus = 'FAILED_RETRYABLE';
       this.candidateUploadFailures = (this.candidateUploadFailures || 0) + 1;
+      this.telemetry.candidateUploadFailureCount = this.candidateUploadFailures;
     }
   }
 
@@ -20305,9 +20801,7 @@ class GuidedCaptureController {
       const captureSessionId = this.diagnosticSessionId;
 
       // 1. Await candidate streaming queue to drain and settle
-      console.log('[GuidedCapture] Awaiting candidate uploads to settle...');
       const settled = await this.waitForCandidateUploadsToSettle();
-      console.log('[GuidedCapture] Candidate uploads settled. Success:', settled, 'Persisted:', this.persistedCandidateCount);
 
       // 2. Finalize candidate pool on server
       await fetch('/api/projects/' + projectId + '/guided-capture/finalize-capture', {
@@ -20326,7 +20820,15 @@ class GuidedCaptureController {
           candidateUploadFailures: this.candidateUploadFailures,
           accumulatedRotation: this.accumulatedRotation,
           guidanceMode: this.telemetry.guidanceMode,
-          rejectionReasons: this.candidateRejectionReasons
+          rejectionReasons: this.candidateRejectionReasons,
+          closureConfirmed: this.closureConfirmed,
+          captureCompletionReason: this.telemetry.captureCompletionReason,
+          closureInliers: this.telemetry.closureInliers,
+          closureInlierRatio: this.telemetry.closureInlierRatio,
+          closureInlierCellCount: this.telemetry.closureInlierCellCount,
+          closureReprojectionError: this.telemetry.closureReprojectionError,
+          bestClosureMatchFrameId: this.telemetry.bestClosureMatchFrameId,
+          bestClosureReferenceId: this.telemetry.bestClosureReferenceId
         })
       });
 
@@ -20348,7 +20850,9 @@ class GuidedCaptureController {
         guidanceMode: this.telemetry.guidanceMode,
         rejectionReasons: this.candidateRejectionReasons,
         keyframes: this.canonicalKeyframes,
-        contactSheetDataUrl
+        contactSheetDataUrl,
+        closureConfirmed: this.closureConfirmed,
+        captureCompletionReason: this.telemetry.captureCompletionReason
       };
 
       window.__lastCapturedKeyframesPayload = payload;
@@ -20358,14 +20862,14 @@ class GuidedCaptureController {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      console.log('[GuidedCapture] Keyframes and Candidate Pool persisted to server successfully.');
     } catch (e) {
       console.warn('[GuidedCapture] Failed to persist keyframes:', e);
     }
   }
 
   handleOrientation(e) {
-    if (this.state !== 'CAPTURING') return;
+    const activeStates = ['CAPTURING', 'APPROACHING_CLOSURE', 'SEARCHING_FOR_START_OVERLAP', 'CLOSURE_CANDIDATE'];
+    if (!activeStates.includes(this.state)) return;
     this.telemetry.deviceOrientationEventCount++;
 
     const alpha = e.alpha !== null ? e.alpha : (e.webkitCompassHeading || 0);
@@ -20398,7 +20902,8 @@ class GuidedCaptureController {
   }
 
   handleMotion(e) {
-    if (this.state !== 'CAPTURING') return;
+    const activeStates = ['CAPTURING', 'APPROACHING_CLOSURE', 'SEARCHING_FOR_START_OVERLAP', 'CLOSURE_CANDIDATE'];
+    if (!activeStates.includes(this.state)) return;
     this.telemetry.deviceMotionEventCount++;
   }
 
@@ -20414,16 +20919,16 @@ class GuidedCaptureController {
     const currentSpeed = Math.abs(delta) / dt;
     this.turnSpeedDps = 0.8 * this.turnSpeedDps + 0.2 * currentSpeed;
 
+    // Rotation speed guidance
     if (this.turnSpeedDps > 36.0) {
       this.speedStatus = 'TOO_FAST';
       this.guidanceMessage = 'Turn a little slower.';
+      this.fastRotationEventCount++;
+      this.telemetry.fastRotationEventCount = this.fastRotationEventCount;
+      const sector = Math.floor(this.accumulatedRotation / 45) * 45;
+      this.fastRotationSectors.add(sector);
     } else if (this.levelStatus === 'LEVEL') {
       this.speedStatus = 'NORMAL';
-      if (this.accumulatedRotation > 280) {
-        this.guidanceMessage = 'Almost there.';
-      } else {
-        this.guidanceMessage = 'Great — keep going.';
-      }
     }
 
     if (this.directionLocked) {
@@ -20438,58 +20943,47 @@ class GuidedCaptureController {
       this.accumulatedRotation += Math.abs(delta);
     }
 
-    let stepThreshold = 30.0;
-    if (this.estimatedSceneTexture === 'LOW') stepThreshold = 22.5;
-    else if (this.estimatedSceneTexture === 'HIGH') stepThreshold = 36.0;
+    this.telemetry.normalizedSensorRotationDeg = Math.round(this.accumulatedRotation * 10) / 10;
+    this.telemetry.closureSensorExpectedDelta = Math.round(Math.abs(this.accumulatedRotation - 360.0) * 10) / 10;
 
-    const angleSinceLast = this.accumulatedRotation - (this.lastSelectedAngle || 0);
-    if (angleSinceLast >= stepThreshold && this.canonicalKeyframes.length < this.MAX_CANONICAL_KEYFRAMES) {
-      const sharpness = Math.max(20, Math.round(100 - (this.turnSpeedDps * 0.6)));
-      this.selectCanonicalKeyframe(this.accumulatedRotation, sharpness);
-    }
+    // ── FSM State Transitions Based on Progress & Closure Gate ──
+    if (this.accumulatedRotation >= 280.0 && this.accumulatedRotation < this.MIN_ROTATION_SEARCH_GATE && this.state === 'CAPTURING') {
+      this.state = 'APPROACHING_CLOSURE';
+      if (this.speedStatus === 'NORMAL') {
+        this.guidanceMessage = 'Almost there — keep turning slowly';
+      }
+    } else if (this.accumulatedRotation >= this.MIN_ROTATION_SEARCH_GATE) {
+      this.visualClosureSearchEnabled = true;
 
-    if (this.accumulatedRotation >= 330.0 && !this.closureVerified) {
-      this.closureVerified = true;
+      if (this.state === 'CAPTURING' || this.state === 'APPROACHING_CLOSURE') {
+        this.state = 'SEARCHING_FOR_START_OVERLAP';
+        if (this.speedStatus === 'NORMAL') {
+          this.guidanceMessage = 'Match the starting view to finish';
+        }
+      } else if (this.state === 'SEARCHING_FOR_START_OVERLAP' && this.accumulatedRotation >= 360.0 && this.speedStatus === 'NORMAL') {
+        this.guidanceMessage = 'Keep turning slowly until the starting view matches.';
+      }
+
+      // Failsafe rotation limit: if extended beyond 450° without visual loop
+      if (this.accumulatedRotation >= 450.0 && !this.closureConfirmed) {
+        this.state = 'CAPTURE_NEEDS_RETRY';
+        this.telemetry.captureCompletionReason = 'RETRY_REQUIRED';
+        this.guidanceMessage = 'Starting view not recognized. Tap to retry or review saved views.';
+        this.stopCaptureResources();
+        this.notifyAttention({
+          code: 'CLOSURE_SEARCH_EXHAUSTED',
+          message: this.guidanceMessage
+        });
+        this.sendTelemetry();
+        return;
+      }
     }
 
     this.notifyProgress();
 
-    if (this.accumulatedRotation >= 355.0 && this.closureVerified) {
+    // Visual-loop-aware completion: DO NOT terminate on gyro alone!
+    if (this.closureConfirmed && (this.state === 'CLOSURE_CONFIRMED' || this.state === 'CLOSURE_CANDIDATE')) {
       this.finalizeCapture();
-    }
-  }
-
-  selectCanonicalKeyframe(angle, sharpness) {
-    const keyframe = {
-      index: this.canonicalKeyframes.length + 1,
-      angle: round(angle, 1),
-      timestamp: Date.now(),
-      sharpnessScore: sharpness
-    };
-    this.canonicalKeyframes.push(keyframe);
-    this.lastSelectedAngle = angle;
-    this.lastSelectedTimestamp = Date.now();
-  }
-
-  checkWatchdog() {
-    if (this.state !== 'CAPTURING' && this.state !== 'PREPARING') return;
-
-    const hasVideo = this.telemetry.previewFrameCount > 0 || this.telemetry.videoTrackActive;
-    const hasSensors = this.telemetry.deviceOrientationEventCount > 0;
-
-    if (!hasVideo && !hasSensors) {
-      this.state = 'NEEDS_ATTENTION';
-      this.telemetry.errorCode = 'STARTUP_TIMEOUT_NO_CAMERA_OR_SENSORS';
-      this.notifyAttention({
-        code: 'STARTUP_TIMEOUT',
-        message: 'Camera and motion sensors were not detected within 3.5s. Tap TRY AGAIN or switch to manual photo upload.',
-        diagnosticId: this.diagnosticSessionId
-      });
-      this.sendTelemetry();
-    } else if (hasVideo && this.accumulatedRotation === 0.0) {
-      this.guidanceMessage = 'Camera active! Slowly start turning your body in a full circle.';
-      this.notifyProgress();
-      this.sendTelemetry();
     }
   }
 
@@ -20501,13 +20995,19 @@ class GuidedCaptureController {
   }
 
   finalizeCapture() {
+    this.state = 'FINALIZING_CANDIDATES';
+    this.notifyProgress();
+
     // 1. Run canonical selection first while video stream is still active
+    this.state = 'SELECTING_CANONICAL';
     let selectionOk = false;
     try {
       selectionOk = this.selectCanonicalKeyframesFromCandidates();
     } catch (err) {
       console.error('[GuidedCapture] Canonical selection error:', err);
       this.state = 'ERROR';
+      this.fatalJsErrorCount = (this.fatalJsErrorCount || 0) + 1;
+      this.telemetry.fatalJsErrorCount = this.fatalJsErrorCount;
       this.guidanceMessage = 'Selection error: ' + (err.message || 'Unknown error');
       this.stopCaptureResources();
       this.notifyAttention({
@@ -20518,22 +21018,26 @@ class GuidedCaptureController {
       return;
     }
 
-    // 2. Validate Minimum Gate
-    if (!selectionOk || this.canonicalKeyframes.length < this.MIN_CANONICAL_KEYFRAMES) {
+    // 2. Validate Minimum Gate & Loop Closure Confirmation
+    if (!selectionOk || this.canonicalKeyframes.length < this.MIN_CANONICAL_KEYFRAMES || !this.closureConfirmed) {
       this.state = 'CAPTURE_NEEDS_RETRY';
-      this.guidanceMessage = "We couldn't save enough clear views. Please rotate slowly and try again.";
+      this.guidanceMessage = "We couldn't confirm full 360° visual closure. Please rotate slowly and try again.";
       this.stopCaptureResources();
       this.notifyAttention({
-        code: 'INSUFFICIENT_KEYFRAMES',
+        code: 'CLOSURE_OR_KEYFRAMES_INSUFFICIENT',
         message: this.guidanceMessage
       });
       this.sendTelemetry();
       return;
     }
 
-    // 3. Mark state COMPLETE and prepare output payload
+    // 3. FSM: PERSISTING_CANONICAL -> COMPLETE
+    this.state = 'PERSISTING_CANONICAL';
+    this.notifyProgress();
+
     this.state = 'COMPLETE';
-    this.guidanceMessage = 'Circle complete! ' + this.canonicalKeyframes.length + ' keyframes ready.';
+    this.guidanceMessage = '360° capture complete';
+    this.telemetry.captureCompletionReason = 'VISUAL_LOOP_CONFIRMED';
     this.notifyProgress();
     this.sendTelemetry();
     this.persistCaptureOutput();
@@ -20548,14 +21052,17 @@ class GuidedCaptureController {
         direction: this.rotationDirection,
         canonicalKeyframeCount: this.canonicalKeyframes.length,
         keyframes: this.canonicalKeyframes,
-        closureVerified: this.closureVerified
+        closureVerified: true,
+        closureConfirmed: true,
+        captureCompletionReason: 'VISUAL_LOOP_CONFIRMED'
       });
     }
   }
 
   notifyProgress() {
     this.telemetry.progressUpdateCount++;
-    this.telemetry.accumulatedRotation = round(this.accumulatedRotation, 1);
+    this.telemetry.accumulatedRotation = this.round(this.accumulatedRotation, 1);
+    this.telemetry.state = this.state;
     const progressPercent = Math.min(100, Math.round((this.accumulatedRotation / 360.0) * 100));
 
     if (this.onProgress) {
@@ -20567,7 +21074,9 @@ class GuidedCaptureController {
         levelStatus: this.levelStatus,
         guidance: this.guidanceMessage,
         canonicalCount: this.canonicalKeyframes.length,
-        guidanceMode: this.telemetry.guidanceMode
+        guidanceMode: this.telemetry.guidanceMode,
+        state: this.state,
+        closureConfirmed: this.closureConfirmed
       });
     }
 
@@ -20584,11 +21093,12 @@ class GuidedCaptureController {
                         'prj-free-b0c6f3ea';
       const payload = {
         ...this.telemetry,
-        accumulatedRotation: round(this.accumulatedRotation, 1),
+        accumulatedRotation: this.round(this.accumulatedRotation, 1),
         state: this.state,
-        turnSpeedDps: round(this.turnSpeedDps, 1),
+        turnSpeedDps: this.round(this.turnSpeedDps, 1),
         canonicalKeyframesCount: this.canonicalKeyframes.length,
-        closureVerified: this.closureVerified
+        closureVerified: this.closureVerified,
+        closureConfirmed: this.closureConfirmed
       };
 
       fetch('/api/projects/' + projectId + '/guided-capture/telemetry', {
@@ -21115,11 +21625,13 @@ class SetupWizardController {
     };
 
     controller.onComplete = (result) => {
-      if (result && result.canonicalKeyframeCount >= 8) {
+      if (result && result.canonicalKeyframeCount >= 8 && result.closureConfirmed) {
         if (pill) pill.textContent = 'Circle Complete! ' + result.canonicalKeyframeCount + ' keyframes ready.';
         setTimeout(() => {
           this.nextStep();
         }, 600);
+      } else {
+        console.warn('[SetupWizard] onComplete blocked: closureConfirmed not true or keyframes < 8', result);
       }
     };
 

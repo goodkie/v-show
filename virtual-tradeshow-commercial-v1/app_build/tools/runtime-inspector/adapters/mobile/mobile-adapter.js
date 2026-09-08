@@ -242,7 +242,28 @@ class MobileAdapter {
       orientationEventCount: c.orientationCount || this.deviceOrientationCount,
       motionEventCount: c.motionCount || this.deviceMotionCount,
       lastErrorCode: c.lastErrorCode || null,
-      lastErrorMessage: c.lastErrorMessage || null
+      lastErrorMessage: c.lastErrorMessage || null,
+      closureConfirmed: Boolean(c.closureConfirmed || c.telemetry?.closureConfirmed),
+      captureCompletionReason: c.telemetry?.captureCompletionReason || (c.closureConfirmed ? 'VISUAL_LOOP_CONFIRMED' : 'IN_PROGRESS'),
+      visualClosureSearchEnabled: Boolean(c.visualClosureSearchEnabled || (c.accumulatedRotation >= 300.0)),
+      visualClosureSearchEnabledAtRotation: 300.0,
+      closureCheckCount: c.closureCheckCount || (c.visualLoopDetector ? c.visualLoopDetector.closureCheckCount : 0) || c.telemetry?.closureCheckCount || 0,
+      bestClosureMatchFrameId: c.bestClosureMatch?.candidateId || c.telemetry?.bestClosureMatchFrameId || null,
+      bestClosureReferenceId: c.bestClosureMatch?.referenceId || c.telemetry?.bestClosureReferenceId || null,
+      closureRawMatches: c.bestClosureMatch?.rawMatchCount || c.telemetry?.closureRawMatches || 0,
+      closureGoodMatches: c.bestClosureMatch?.goodMatchCount || c.telemetry?.closureGoodMatches || 0,
+      closureInliers: c.bestClosureMatch?.inlierCount || c.telemetry?.closureInliers || 0,
+      closureInlierRatio: c.bestClosureMatch?.inlierRatio || c.telemetry?.closureInlierRatio || 0,
+      closureReprojectionError: c.bestClosureMatch?.reprojectionError || c.telemetry?.closureReprojectionError || null,
+      closureInlierCellCount: c.bestClosureMatch?.inlierCellCount || c.telemetry?.closureInlierCellCount || 0,
+      closureInlierBboxAreaRatio: c.bestClosureMatch?.bboxAreaRatio || c.telemetry?.closureInlierBboxAreaRatio || 0,
+      closureSensorExpectedDelta: Math.abs(Math.round(c.accumulatedRotation || 0) - 360),
+      closureVisualRelativeRotation: c.bestClosureMatch?.relativeRotationDeg || c.telemetry?.closureVisualRelativeRotation || null,
+      closureConsecutiveConfirmationCount: c.consecutiveClosureConfirmations || c.telemetry?.closureConsecutiveConfirmationCount || 0,
+      fastRotationEventCount: c.fastRotationEventCount || c.telemetry?.fastRotationEventCount || 0,
+      canonicalSelectedCount: (c.canonicalKeyframes ? c.canonicalKeyframes.length : 0),
+      canonicalPersistedCount: (c.canonicalKeyframes ? c.canonicalKeyframes.length : 0),
+      fatalJsErrorCount: c.fatalJsErrorCount || 0
     };
   }
 

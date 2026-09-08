@@ -1,0 +1,92 @@
+[
+  {
+    "edge": "C040 -> C042",
+    "label": "Strong Closure",
+    "raw_matches": 19,
+    "h_inliers": 17,
+    "f_inliers": 18,
+    "e_inliers": 19,
+    "rotation_residual_deg": 32.5,
+    "classification": "ROTATION_INCONSISTENT (Out-of-plane tilt/wobble)"
+  },
+  {
+    "edge": "C042 -> C001",
+    "label": "Weak Closure-to-Start",
+    "raw_matches": 0,
+    "h_inliers": 0,
+    "f_inliers": 0,
+    "e_inliers": 0,
+    "rotation_residual_deg": 999.0,
+    "classification": "UNCERTAIN"
+  },
+  {
+    "edge": "C001 -> C006",
+    "label": "Early Transition A",
+    "raw_matches": 0,
+    "h_inliers": 0,
+    "f_inliers": 0,
+    "e_inliers": 0,
+    "rotation_residual_deg": 999.0,
+    "classification": "UNCERTAIN"
+  },
+  {
+    "edge": "C006 -> C011",
+    "label": "Early Transition B",
+    "raw_matches": 2,
+    "h_inliers": 0,
+    "f_inliers": 0,
+    "e_inliers": 0,
+    "rotation_residual_deg": 999.0,
+    "classification": "UNCERTAIN"
+  },
+  {
+    "edge": "C011 -> C012",
+    "label": "Mid Bridge",
+    "raw_matches": 42,
+    "h_inliers": 35,
+    "f_inliers": 40,
+    "e_inliers": 42,
+    "rotation_residual_deg": 7.5,
+    "classification": "PURE_ROTATIONAL_CONSISTENT"
+  },
+  {
+    "edge": "C015 -> C018",
+    "label": "Transition C",
+    "raw_matches": 5,
+    "h_inliers": 0,
+    "f_inliers": 0,
+    "e_inliers": 0,
+    "rotation_residual_deg": 999.0,
+    "classification": "UNCERTAIN"
+  },
+  {
+    "edge": "C018 -> C020",
+    "label": "Drop Boundary",
+    "raw_matches": 4,
+    "h_inliers": 0,
+    "f_inliers": 0,
+    "e_inliers": 0,
+    "rotation_residual_deg": 999.0,
+    "classification": "UNCERTAIN"
+  },
+  {
+    "edge": "C023 -> C026",
+    "label": "Strong Core",
+    "raw_matches": 7,
+    "h_inliers": 7,
+    "f_inliers": 0,
+    "e_inliers": 0,
+    "rotation_residual_deg": 999.0,
+    "classification": "UNCERTAIN"
+  },
+  {
+    "edge": "C031 -> C036",
+    "label": "Late Transition",
+    "raw_matches": 3,
+    "h_inliers": 0,
+    "f_inliers": 0,
+    "e_inliers": 0,
+    "rotation_residual_deg": 999.0,
+    "classification": "UNCERTAIN"
+  }
+]
