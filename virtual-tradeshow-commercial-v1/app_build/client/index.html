@@ -20084,6 +20084,19 @@ class GuidedCaptureController {
     this.resetCaptureForRetryCallCount = (this.resetCaptureForRetryCallCount || 0) + 1;
     this.lastResetReason = reason;
 
+    // Freeze previous attempt in attempts history to preserve forensic continuity
+    if (!this.previousAttempts) this.previousAttempts = [];
+    if (this.diagnosticSessionId) {
+      this.previousAttempts.push({
+        sessionId: this.diagnosticSessionId,
+        candidateCount: (this.candidateFrames && this.candidateFrames.length) || 0,
+        persistedCount: this.persistedCandidateCount || 0,
+        rotationDeg: Math.round(this.accumulatedRotation * 10) / 10,
+        reason: this.lastResetReason || reason,
+        failedAttemptSnapshot: this.failedAttemptSnapshot || null
+      });
+    }
+
     // Invalidate any in-flight attempt
     this.currentStartupAttemptId = ++this.startupAttemptId;
     this.startupInFlight = false;
@@ -20142,7 +20155,17 @@ class GuidedCaptureController {
       } catch(e){}
     }
 
-    // 6. Reset frame counters & visual detector transient state (preserving persisted candidates)
+    // 6. Generate NEW distinct candidate pool & session ID for fresh attempt
+    const newPoolId = 'CAP-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    this.diagnosticSessionId = newPoolId;
+    this.candidatePoolId = newPoolId;
+    this.captureAttemptNumber = (this.captureAttemptNumber || 1) + 1;
+    this.telemetry.diagnosticSessionId = newPoolId;
+    this.telemetry.candidatePoolId = newPoolId;
+    this.telemetry.captureSessionId = newPoolId;
+    this.telemetry.captureAttemptNumber = this.captureAttemptNumber;
+
+    // 7. Reset frame counters, queues, and visual detector transient state
     this.previewFrameCount = 0;
     this.candidateFrameCount = 0;
     this.acceptedCandidateCount = 0;
@@ -20152,15 +20175,33 @@ class GuidedCaptureController {
     this.closureConfirmed = false;
     this.bestClosureMatch = null;
     this.closureCheckCount = 0;
+    this.candidateFrames = [];
+    this.candidateUploadQueue = [];
+    this.persistedCandidateCount = 0;
+    this.candidateUploadFailures = 0;
     if (this.visualLoopDetector && typeof this.visualLoopDetector.reset === 'function') {
       this.visualLoopDetector.reset();
     }
 
-    // 7. Reset states & errors
+    // 8. Cleanly reset physical rotation and progress for the new capture attempt
+    this.accumulatedRotation = 0.0;
+    this.normalizedSensorRotationDeg = 0.0;
+    this.progressPercent = 0;
+    this.directionLocked = false;
+    this.rotationDirection = null;
+    this.initialAlpha = null;
+    this.lastAlpha = null;
+    this.visualClosureSearchEnabled = false;
+    this.failedAttemptSnapshot = null;
+
+    // 9. Reset states & errors
     this.state = 'IDLE';
     this.cameraStage = 'IDLE';
     this.lastErrorCode = null;
     this.lastErrorMessage = null;
+    this.telemetry.errorCode = null;
+    this.telemetry.errorMessage = null;
+    this.telemetry.cameraStartErrorCode = null;
     this.firstRealFrameObserved = false;
     this.isCapturing = false;
     this.captureCompletionReason = null;
@@ -21496,11 +21537,27 @@ class GuidedCaptureController {
       if (this.accumulatedRotation >= 450.0 && !this.closureConfirmed) {
         this.state = 'CAPTURE_NEEDS_RETRY';
         this.telemetry.captureCompletionReason = 'RETRY_REQUIRED';
-        this.guidanceMessage = 'Starting view not recognized. Tap to retry or review saved views.';
+        this.guidanceMessage = 'Starting view not recognized. Continue a little farther or tap to retry.';
+        
+        // C12.9-P1R3: Preserve terminal immutable snapshot on failure
+        this.failedAttemptSnapshot = {
+          sensorRotationDeg: Math.round(this.accumulatedRotation * 10) / 10,
+          progressPercent: this.progressPercent || 99,
+          closureCheckCount: this.closureCheckCount || 0,
+          bestClosureMetrics: this.bestClosureMatch || null,
+          candidatePoolId: this.diagnosticSessionId,
+          timestamp: new Date().toISOString()
+        };
+        this.telemetry.failedAttemptSnapshot = this.failedAttemptSnapshot;
+        this.telemetry.failureTriggerRotationDeg = this.failedAttemptSnapshot.sensorRotationDeg;
+
         this.stopCaptureResources();
         this.notifyAttention({
           code: 'CLOSURE_SEARCH_EXHAUSTED',
-          message: this.guidanceMessage
+          message: this.guidanceMessage,
+          finalRotationDeg: this.failedAttemptSnapshot.sensorRotationDeg,
+          progressPercent: this.failedAttemptSnapshot.progressPercent,
+          candidatePoolId: this.diagnosticSessionId
         });
         this.sendTelemetry();
         return;
@@ -21590,13 +21647,46 @@ class GuidedCaptureController {
   notifyProgress() {
     this.telemetry.progressUpdateCount++;
     this.telemetry.accumulatedRotation = this.round(this.accumulatedRotation, 1);
+    this.telemetry.normalizedSensorRotationDeg = this.round(this.accumulatedRotation, 1);
+    this.normalizedSensorRotationDeg = this.round(this.accumulatedRotation, 1);
     this.telemetry.state = this.state;
-    const progressPercent = Math.min(100, Math.round((this.accumulatedRotation / 360.0) * 100));
+
+    // C12.9-P1R3: Strict customer-visible progress semantics
+    // 100% strictly requires VISUAL LOOP CONFIRMED & FINALIZATION ENTERED.
+    // Physical rotation alone must NEVER display 100% while closureConfirmed=false.
+    let progressPercent = 0;
+    if (this.closureConfirmed || this.state === 'COMPLETE' || this.state === 'PERSISTING_CANONICAL') {
+      progressPercent = 100;
+    } else if (this.state === 'SEARCHING_FOR_START_OVERLAP' || this.accumulatedRotation >= this.MIN_ROTATION_SEARCH_GATE) {
+      // Searching zone (>= 300°): progress rises based on physical rotation but MUST be capped between 92% and 99%
+      const searchHorizon = 150.0; // 300° to 450°
+      const frac = Math.min(1.0, Math.max(0, (this.accumulatedRotation - this.MIN_ROTATION_SEARCH_GATE) / searchHorizon));
+      progressPercent = Math.min(99, Math.round(92 + frac * 7));
+    } else if (this.accumulatedRotation >= 280.0) {
+      // 280° - 300°: APPROACHING_CLOSURE -> 85% to 92%
+      const frac = (this.accumulatedRotation - 280.0) / 20.0;
+      progressPercent = Math.min(92, Math.round(85 + frac * 7));
+    } else {
+      // 0° - 280°: CAPTURING -> 0% to 85%
+      progressPercent = Math.min(85, Math.round((this.accumulatedRotation / 280.0) * 85));
+    }
+
+    // Enforce mandatory invariant: PROGRESS_100_REQUIRES_VISUAL_LOOP_CONFIRMED
+    if (!this.closureConfirmed && progressPercent >= 100) {
+      progressPercent = 99;
+    }
+
+    this.progressPercent = progressPercent;
+    this.telemetry.progressPercent = progressPercent;
+    this.telemetry.visibleProgressPercent = progressPercent;
+    this.telemetry.visibleRotationLabelDeg = Math.round(this.normalizedSensorRotationDeg);
 
     if (this.onProgress) {
       this.onProgress({
         progressPercent,
         accumulatedRotation: this.accumulatedRotation,
+        normalizedSensorRotationDeg: this.normalizedSensorRotationDeg,
+        integratedYawDeg: this.normalizedSensorRotationDeg, // Fix: support legacy key name
         speedDps: this.turnSpeedDps,
         speedStatus: this.speedStatus,
         levelStatus: this.levelStatus,
@@ -22136,6 +22226,11 @@ class SetupWizardController {
     }
     const controller = window.guidedCaptureController;
 
+    // C12.9-P1R3: If controller is in error or retry state, auto-reset cleanly for fresh attempt
+    if (controller.state === 'CAPTURE_NEEDS_RETRY' || controller.state === 'NEEDS_ATTENTION' || controller.state === 'ERROR') {
+      controller.resetCaptureForRetry('USER_EXPLICIT_RETRY');
+    }
+
     if (btn) {
       btn.disabled = true;
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Initializing Camera...';
@@ -22144,13 +22239,14 @@ class SetupWizardController {
     controller.onProgress = (info) => {
       const pct = Math.min(100, Math.round(info.progressPercent || 0));
       if (pText) pText.textContent = pct + '%';
-      if (rText) rText.textContent = Math.round(info.integratedYawDeg || 0) + '° ROTATION';
+      const rotVal = Math.round(info.normalizedSensorRotationDeg !== undefined ? info.normalizedSensorRotationDeg : (info.accumulatedRotation || info.integratedYawDeg || 0));
+      if (rText) rText.textContent = rotVal + '° ROTATION';
       if (pCircle) {
         const offset = 565.48 - (565.48 * (pct / 100));
         pCircle.setAttribute('stroke-dashoffset', offset);
       }
       if (pill) {
-        pill.textContent = info.speedState === 'TOO_FAST' ? 'Slow down turning' : (pct >= 100 ? 'Circle Complete!' : 'Turn slowly in a circle...');
+        pill.textContent = info.speedStatus === 'TOO_FAST' ? 'Slow down turning' : (pct >= 100 ? 'Circle Complete!' : 'Turn slowly in a circle...');
       }
     };
 
@@ -22168,10 +22264,18 @@ class SetupWizardController {
     controller.onAttention = (attn) => {
       if (btn) {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Try Again';
+        btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> TRY AGAIN';
+        btn.onclick = () => this.retryGuidedCapture();
       }
       if (pill) {
-        pill.textContent = attn.message || 'Please rotate slowly and try again.';
+        pill.textContent = attn.message || 'Starting view not recognized. Continue a little farther or try again.';
+      }
+      // Preserve terminal immutable snapshot on failure screen - DO NOT reset to 0°
+      if (attn.finalRotationDeg !== undefined && rText) {
+        rText.textContent = Math.round(attn.finalRotationDeg) + '° ROTATION';
+      }
+      if (attn.progressPercent !== undefined && pText) {
+        pText.textContent = Math.round(attn.progressPercent) + '%';
       }
     };
 
@@ -22186,6 +22290,27 @@ class SetupWizardController {
         btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Try Again';
       }
       if (pill) pill.textContent = 'Camera start note: ' + (err.message || 'Permission required');
+    }
+  }
+
+  retryGuidedCapture() {
+    console.log('[SetupWizard] Initiating clean idempotent guided capture retry...');
+    if (window.guidedCaptureController) {
+      window.guidedCaptureController.resetCaptureForRetry('USER_EXPLICIT_RETRY');
+    }
+    const pText = document.getElementById('guidedPercentText');
+    const rText = document.getElementById('guidedRotText');
+    const pCircle = document.getElementById('guidedProgressCircle');
+    if (pText) pText.textContent = '0%';
+    if (rText) rText.textContent = '0° ROTATION';
+    if (pCircle) pCircle.setAttribute('stroke-dashoffset', '565.48');
+    this.startGuidedCapture();
+  }
+
+  reviewSavedViews() {
+    console.log('[SetupWizard] Reviewing saved views from candidate pool...');
+    if (window.guidedCaptureController && window.guidedCaptureController.diagnosticSessionId) {
+      window.open('/api/projects/' + this.getProjectId() + '/guided-capture/candidate-pool/' + window.guidedCaptureController.diagnosticSessionId, '_blank');
     }
   }
 

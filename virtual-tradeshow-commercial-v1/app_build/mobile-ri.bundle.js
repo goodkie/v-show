@@ -867,11 +867,45 @@ class MobileInspectorUI {
 
   mount() {
     if (typeof document === 'undefined') return;
-    if (document.getElementById('mobileRiContainer')) return;
+    const existingRoots = document.querySelectorAll('#mobileRiContainer');
+    if (existingRoots.length > 0) {
+      for (let i = 1; i < existingRoots.length; i++) existingRoots[i].remove();
+      this.container = existingRoots[0];
+      return;
+    }
 
     this.container = document.createElement('div');
     this.container.id = 'mobileRiContainer';
-    this.container.style.cssText = 'position: fixed; z-index: 999999; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; pointer-events: none;';
+    this.container.style.cssText = 'position: fixed; z-index: 2147483647; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; pointer-events: none;';
+
+    // C12.9-P1R3: Persistent MutationObserver Remount Engine
+    if (typeof MutationObserver !== 'undefined' && !this._observerInstalled) {
+      this._observerInstalled = true;
+      this._remountCount = 0;
+      this._observer = new MutationObserver(() => {
+        try {
+          const isQaAuthorized = Boolean(
+            (typeof window !== 'undefined' && window.__IS_INTERNAL_QA__) ||
+            (typeof window !== 'undefined' && window.sessionStorage && window.sessionStorage.getItem('mobile_ri_qa_token')) ||
+            (typeof window !== 'undefined' && window.localStorage && window.localStorage.getItem('mobile_ri_qa_token'))
+          );
+          if (isQaAuthorized) {
+            const roots = document.querySelectorAll('#mobileRiContainer');
+            if (roots.length === 0) {
+              this._remountCount = (this._remountCount || 0) + 1;
+              console.log('[MobileRI] Detach detected! Auto-remounting Mobile Runtime Inspector (remountCount=' + this._remountCount + ')...');
+              this.mount();
+            } else if (roots.length > 1) {
+              for (let i = 1; i < roots.length; i++) roots[i].remove();
+            }
+          }
+        } catch(e) {}
+      });
+      const targetNode = document.body || document.documentElement;
+      if (targetNode) {
+        this._observer.observe(targetNode, { childList: true, subtree: true });
+      }
+    }
 
     // Floating REPORT ISSUE Button (Bottom Right)
     const floatBtn = document.createElement('button');
@@ -1406,12 +1440,24 @@ if (typeof window !== 'undefined') {
           });
           const capData = await capRes.json();
           if (capData.ok && capData.authorized && capData.mobileRuntimeInspector) {
+            window.__IS_INTERNAL_QA__ = true;
+            window.__MOBILE_RI_AUTHORIZED__ = true;
+            if (window.localStorage) {
+              try { window.localStorage.setItem('mobile_ri_qa_token', qaSessionToken); } catch(e){}
+            }
             if (!window.__MOBILE_RI_INSTANCE__) {
               console.log('[MobileRI] Server-side QA authorization confirmed. Mounting Mobile Runtime Inspector...');
-              window.__IS_INTERNAL_QA__ = true;
               window.__MOBILE_RI_INSTANCE__ = new MobileRuntimeInspector({ qaSessionToken });
               window.__MOBILE_RI_INSTANCE__.start();
+            } else {
+              window.__MOBILE_RI_INSTANCE__.ui.mount();
             }
+
+            // Expose canonical Section 22 / Addendum L telemetry accessors on window
+            window.MOBILE_RI_AUTHORIZED = true;
+            window.MOBILE_RI_ROOT_COUNT = () => document.querySelectorAll('#mobileRiContainer').length;
+            window.MOBILE_RI_VISIBLE = () => Boolean(document.getElementById('mobileRiContainer') && document.getElementById('btnMobileRiReport'));
+            window.MOBILE_RI_SESSION_ID = () => (window.__MOBILE_RI_INSTANCE__ && window.__MOBILE_RI_INSTANCE__.adapter && window.__MOBILE_RI_INSTANCE__.adapter.sessionId) || null;
 
             // C12.4 Owner QA Wizard Auto-Launch: Guarantee Step 1 entry upon authorized QA session
             const searchParams = new URLSearchParams(window.location.search);
