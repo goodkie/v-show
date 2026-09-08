@@ -803,13 +803,17 @@ const workerIntegrityHandler = (req, res) => {
       return 'python3';
     })();
     pythonVersion = execFileSync(pyExe, ['--version'], { encoding: 'utf8' }).trim();
-    opencvVersion = execFileSync(pyExe, ['-c', 'import sys, glob, os; sp = glob.glob("/root/.nix-profile/lib/python*/site-packages"); sys.path.insert(0, sp[0]) if sp else None; import cv2; print(cv2.__version__)'], { encoding: 'utf8' }).trim();
+    try {
+      opencvVersion = execFileSync(pyExe, ['-c', 'import cv2; print(cv2.__version__)'], { encoding: 'utf8' }).trim();
+    } catch (eDirect) {
+      opencvVersion = execFileSync(pyExe, ['-c', 'import sys, glob, os; sp = glob.glob("/root/.nix-profile/lib/python*/site-packages"); sys.path.insert(0, sp[0]) if sp else None; import cv2; print(cv2.__version__)'], { encoding: 'utf8' }).trim();
+    }
   } catch (pyErr) {
     opencvVersion = 'error: ' + pyErr.message;
   }
   res.json({
     ok: true,
-    uiVersion: '3D2-C12.9-P2R10',
+    uiVersion: '3D2-C12.9-P2R11',
     gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || P315_BUILD_INFO.gitCommit,
     pythonVersion,
     opencvVersion,
@@ -1078,7 +1082,7 @@ const healthHandler = (req, res) => {
     schemaVersion: 5,
     stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
-    uiVersion: '3D2-C12.9-P2R10',
+    uiVersion: '3D2-C12.9-P2R11',
     storageRoot: GUIDED_CAPTURE_STORAGE_ROOT,
     storageRootExists: STORAGE_ROOT_EXISTS,
     storageRootWritable: STORAGE_ROOT_WRITABLE,

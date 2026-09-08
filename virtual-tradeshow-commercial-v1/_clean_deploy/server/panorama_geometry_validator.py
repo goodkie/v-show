@@ -12,15 +12,17 @@ Authoritative Invariants:
 
 import os
 import sys
-import glob
-
-site_pkgs = glob.glob('/root/.nix-profile/lib/python*/site-packages')
-if site_pkgs and site_pkgs[0] not in sys.path:
-    sys.path.insert(0, site_pkgs[0])
-
 import math
-import cv2
-import numpy as np
+try:
+    import cv2
+    import numpy as np
+except ImportError:
+    import glob
+    site_pkgs = glob.glob('/root/.nix-profile/lib/python*/site-packages')
+    if site_pkgs and site_pkgs[0] not in sys.path:
+        sys.path.insert(0, site_pkgs[0])
+    import cv2
+    import numpy as np
 
 # Authoritative Policy Constants
 RAW_H_CONDITION_NUMBER_HARD_GATE = False
