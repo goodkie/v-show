@@ -803,7 +803,7 @@ const workerIntegrityHandler = (req, res) => {
       return 'python3';
     })();
     pythonVersion = execFileSync(pyExe, ['--version'], { encoding: 'utf8' }).trim();
-    opencvVersion = execFileSync(pyExe, ['-c', 'import sys, glob, os; [sys.path.insert(0, p) for p in (glob.glob("/root/.nix-profile/lib/python*/site-packages") + glob.glob("/nix/store/*opencv*/lib/python*/site-packages") + glob.glob("/nix/store/*numpy*/lib/python*/site-packages") + glob.glob("/nix/store/*-env/lib/python*/site-packages")) if os.path.isdir(p)]; import cv2; print(cv2.__version__)'], { encoding: 'utf8' }).trim();
+    opencvVersion = execFileSync(pyExe, ['-c', 'import sys, glob, os; sp = glob.glob("/root/.nix-profile/lib/python*/site-packages"); sys.path.insert(0, sp[0]) if sp else None; import cv2; print(cv2.__version__)'], { encoding: 'utf8' }).trim();
   } catch (pyErr) {
     opencvVersion = 'error: ' + pyErr.message;
   }

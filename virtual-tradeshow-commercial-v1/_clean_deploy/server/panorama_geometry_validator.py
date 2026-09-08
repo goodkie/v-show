@@ -14,15 +14,9 @@ import os
 import sys
 import glob
 
-for sp in (
-    glob.glob('/root/.nix-profile/lib/python*/site-packages') +
-    glob.glob('/nix/var/nix/profiles/*/lib/python*/site-packages') +
-    glob.glob('/nix/store/*opencv*/lib/python*/site-packages') +
-    glob.glob('/nix/store/*numpy*/lib/python*/site-packages') +
-    glob.glob('/nix/store/*-env/lib/python*/site-packages')
-):
-    if sp not in sys.path and os.path.isdir(sp):
-        sys.path.insert(0, sp)
+site_pkgs = glob.glob('/root/.nix-profile/lib/python*/site-packages')
+if site_pkgs and site_pkgs[0] not in sys.path:
+    sys.path.insert(0, site_pkgs[0])
 
 import math
 import cv2
