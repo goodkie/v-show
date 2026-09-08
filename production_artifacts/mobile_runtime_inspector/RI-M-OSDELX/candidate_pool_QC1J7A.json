@@ -562,6 +562,8 @@
         "timestamp": 1788883845917
       }
     ],
-    "status": "CANDIDATE_POOL_PERSISTED"
+    "status": "CANDIDATE_POOL_PERSISTED",
+    "DURABLE_PAYLOAD_LOST_PRE_P2R5": true,
+    "storageDurableNote": "Physical candidate files for session QC1J7A were stored in container-ephemeral storage prior to P2R5 and purged upon deployment container rebuild. Metadata and hashes are preserved."
   }
 }

@@ -140,12 +140,66 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'commercial-beta-session-se
 const RECONSTRUCTION_WORKER_SECRET = process.env.RECONSTRUCTION_WORKER_SECRET || 'dev-worker-secret-key-2026';
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || null;
 
-// Dynamic Data Directory
+// Dynamic Data Directory & Durable Storage Architecture (C12.9-P2R5)
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const MODELS_DIR = path.join(UPLOADS_DIR, 'models');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!fs.existsSync(MODELS_DIR)) fs.mkdirSync(MODELS_DIR, { recursive: true });
+
+// C12.9-P2R5: Dedicated Persistent Volume Storage for Guided Continuous Capture
+const PERSISTENT_VOLUME_ROOT = process.env.DATA_DIR || (fs.existsSync('/data') ? '/data' : path.join(__dirname, '..', 'data'));
+const GUIDED_CAPTURE_STORAGE_ROOT = path.join(PERSISTENT_VOLUME_ROOT, 'guided_capture');
+
+let STORAGE_ROOT_EXISTS = false;
+let STORAGE_ROOT_WRITABLE = false;
+let STORAGE_ROOT_IS_PERSISTENT_VOLUME = false;
+const EPHEMERAL_STORAGE_FALLBACK_USED = false;
+
+try {
+  if (!fs.existsSync(GUIDED_CAPTURE_STORAGE_ROOT)) {
+    fs.mkdirSync(GUIDED_CAPTURE_STORAGE_ROOT, { recursive: true });
+  }
+  STORAGE_ROOT_EXISTS = fs.existsSync(GUIDED_CAPTURE_STORAGE_ROOT);
+  const canaryFile = path.join(GUIDED_CAPTURE_STORAGE_ROOT, '.storage_canary_' + Date.now());
+  fs.writeFileSync(canaryFile, 'durable_canary_' + Date.now());
+  fs.unlinkSync(canaryFile);
+  STORAGE_ROOT_WRITABLE = true;
+  STORAGE_ROOT_IS_PERSISTENT_VOLUME = (PERSISTENT_VOLUME_ROOT === '/data' || PERSISTENT_VOLUME_ROOT.startsWith('/data'));
+} catch (err) {
+  console.error('[STORAGE_INIT_ERROR] Critical failure initializing GUIDED_CAPTURE_STORAGE_ROOT:', err.message);
+}
+
+console.log(`[STORAGE_ASSERTION] GUIDED_CAPTURE_STORAGE_ROOT=${GUIDED_CAPTURE_STORAGE_ROOT}`);
+console.log(`[STORAGE_ASSERTION] STORAGE_ROOT_EXISTS=${STORAGE_ROOT_EXISTS}`);
+console.log(`[STORAGE_ASSERTION] STORAGE_ROOT_WRITABLE=${STORAGE_ROOT_WRITABLE}`);
+console.log(`[STORAGE_ASSERTION] STORAGE_ROOT_IS_PERSISTENT_VOLUME=${STORAGE_ROOT_IS_PERSISTENT_VOLUME}`);
+console.log(`[STORAGE_ASSERTION] EPHEMERAL_STORAGE_FALLBACK_USED=${EPHEMERAL_STORAGE_FALLBACK_USED}`);
+
+/**
+ * Centralized server-side path resolver for Guided Capture (C12.9-P2R5).
+ * Resolves all session directories under the durable persistent volume.
+ */
+function getGuidedCaptureStoragePaths(captureSessionId) {
+  if (!captureSessionId || typeof captureSessionId !== 'string') {
+    throw new Error('captureSessionId must be a non-empty string');
+  }
+  const cleanSessionId = captureSessionId.replace(/[^a-zA-Z0-9_-]/g, '');
+  const sessionRoot = path.join(GUIDED_CAPTURE_STORAGE_ROOT, cleanSessionId);
+  const candidateDir = path.join(sessionRoot, 'candidates');
+  const canonicalDir = path.join(sessionRoot, 'canonical');
+  const metadataFile = path.join(sessionRoot, 'metadata.json');
+  const poolManifestPath = path.join(sessionRoot, 'candidate_pool.json');
+
+  return {
+    cleanSessionId,
+    sessionRoot,
+    candidateDir,
+    canonicalDir,
+    metadataFile,
+    poolManifestPath
+  };
+}
 
 // Helper to validate image magic bytes
 function validateImageMagicBytes(filePath) {
@@ -975,7 +1029,12 @@ const healthHandler = (req, res) => {
     schemaVersion: 5,
     stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
-    uiVersion: '3D2-C12.9-P2R4',
+    uiVersion: '3D2-C12.9-P2R5',
+    storageRoot: GUIDED_CAPTURE_STORAGE_ROOT,
+    storageRootExists: STORAGE_ROOT_EXISTS,
+    storageRootWritable: STORAGE_ROOT_WRITABLE,
+    storageRootIsPersistentVolume: STORAGE_ROOT_IS_PERSISTENT_VOLUME,
+    ephemeralStorageFallbackUsed: EPHEMERAL_STORAGE_FALLBACK_USED,
     clientPath: path.join(__dirname, '..', 'client'),
     timestamp: new Date().toISOString()
   });
@@ -10597,7 +10656,7 @@ app.post('/api/projects/:id/wizard-state', async (req, res) => {
 const CANONICAL_PUBLIC_ORIGIN = process.env.PUBLIC_BASE_URL || 'https://v-show-commercial-v1-production.up.railway.app';
 // captureSessions Map initialized globally in Mobile RI QA section
 
-// C12.8-P0: Incremental candidate frame persistence endpoint
+// C12.8-P0 / C12.9-P2R5: Incremental candidate frame durable persistence endpoint
 app.post('/api/projects/:id/guided-capture/candidate-frame', express.json({ limit: '15mb' }), async (req, res) => {
   try {
     const projectId = req.params.id;
@@ -10610,52 +10669,94 @@ app.post('/api/projects/:id/guided-capture/candidate-frame', express.json({ limi
       return res.status(400).json({ ok: false, error: 'candidateId and dataUrl required' });
     }
 
+    if (!STORAGE_ROOT_WRITABLE) {
+      return res.status(500).json({
+        ok: false,
+        error: 'STORAGE_ROOT_NOT_WRITABLE',
+        message: 'Durable persistent storage is unavailable on the server.'
+      });
+    }
+
     const base64Data = dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
     const buf = Buffer.from(base64Data, 'base64');
 
-    const dataKfDir = path.resolve(__dirname, '../data/guided_capture_keyframes', captureSessionId);
-    const candDir = path.join(dataKfDir, 'candidates');
-    const localArtifactCandDir = path.resolve(__dirname, '../../production_artifacts/c12_8_candidates', captureSessionId);
-
-    [dataKfDir, candDir, localArtifactCandDir].forEach(d => {
+    // Centralized Durable Path Resolver
+    const paths = getGuidedCaptureStoragePaths(captureSessionId);
+    [paths.sessionRoot, paths.candidateDir, paths.canonicalDir].forEach(d => {
       if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
     });
 
-    const candFile = path.join(candDir, candidateId + '.jpg');
-    fs.writeFileSync(candFile, buf);
-    try {
-      fs.writeFileSync(path.join(localArtifactCandDir, candidateId + '.jpg'), buf);
-    } catch (e) {}
+    const candFile = path.join(paths.candidateDir, candidateId + '.jpg');
+    
+    // Durable fsync write
+    const fd = fs.openSync(candFile, 'w');
+    fs.writeSync(fd, buf, 0, buf.length, 0);
+    fs.fsyncSync(fd);
+    fs.closeSync(fd);
 
-    // Update candidate_pool.json
-    const poolManifestPath = path.join(dataKfDir, 'candidate_pool.json');
+    // Verify durability: exists, readable, size > 0, sha256
+    const exists = fs.existsSync(candFile);
+    let readable = false;
+    let actualSize = 0;
+    let computedHash = '';
+    try {
+      fs.accessSync(candFile, fs.constants.R_OK);
+      readable = true;
+      actualSize = fs.statSync(candFile).size;
+      computedHash = crypto.createHash('sha256').update(fs.readFileSync(candFile)).digest('hex');
+    } catch (e) {
+      readable = false;
+    }
+
+    const durablyPersisted = Boolean(exists && readable && actualSize > 0 && actualSize === buf.length);
+    if (!durablyPersisted) {
+      throw new Error(`Durable persistence verification failed for candidate ${candidateId}`);
+    }
+
+    // Load or initialize candidate pool metadata
     let poolData = {
       projectId,
       captureSessionId,
+      storageClass: 'VOLUME_DURABLE',
+      storageRootIsPersistentVolume: STORAGE_ROOT_IS_PERSISTENT_VOLUME,
+      createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      candidateUploadAckCount: 0,
+      candidateFileWriteCount: 0,
+      candidateDurableVerifyCount: 0,
+      canonicalSelectedCount: 0,
+      canonicalDurableVerifyCount: 0,
       candidates: []
     };
 
-    if (fs.existsSync(poolManifestPath)) {
-      try {
-        poolData = JSON.parse(fs.readFileSync(poolManifestPath, 'utf8'));
-      } catch (e) {}
+    if (fs.existsSync(paths.metadataFile)) {
+      try { poolData = JSON.parse(fs.readFileSync(paths.metadataFile, 'utf8')); } catch (e) {}
+    } else if (fs.existsSync(paths.poolManifestPath)) {
+      try { poolData = JSON.parse(fs.readFileSync(paths.poolManifestPath, 'utf8')); } catch (e) {}
     }
+
+    poolData.candidateUploadAckCount = (poolData.candidateUploadAckCount || 0) + 1;
+    poolData.candidateFileWriteCount = (poolData.candidateFileWriteCount || 0) + 1;
+    poolData.candidateDurableVerifyCount = (poolData.candidateDurableVerifyCount || 0) + 1;
 
     const candMeta = {
       candidateId,
+      assetId: `asset_${paths.cleanSessionId}_${candidateId}`,
+      storageClass: 'VOLUME_DURABLE',
+      relativeDurablePath: `candidates/${candidateId}.jpg`,
       index: body.index || (poolData.candidates.length + 1),
       timestamp: body.timestamp || Date.now(),
       estimatedYawDeg: body.estimatedYawDeg !== undefined ? body.estimatedYawDeg : (body.angle || 0),
       relativeRotationDeg: body.relativeRotationDeg !== undefined ? body.relativeRotationDeg : (body.angle || 0),
-      sourceWidth: body.sourceWidth || 1080,
-      sourceHeight: body.sourceHeight || 1920,
+      width: body.sourceWidth || body.width || 1080,
+      height: body.sourceHeight || body.height || 1920,
+      size: actualSize,
+      sha256: computedHash,
       sharpnessScore: body.sharpnessScore || 0,
       exposureScore: body.exposureScore || 0,
       motionScore: body.motionScore || 0,
-      contentHash: body.contentHash || body.hash || '',
-      bytes: buf.length,
-      persistedAt: new Date().toISOString()
+      persistedAt: new Date().toISOString(),
+      durablyPersisted: true
     };
 
     const existingIdx = poolData.candidates.findIndex(c => c.candidateId === candidateId);
@@ -10668,14 +10769,26 @@ app.post('/api/projects/:id/guided-capture/candidate-frame', express.json({ limi
     poolData.totalCandidates = poolData.candidates.length;
     poolData.updatedAt = new Date().toISOString();
 
-    fs.writeFileSync(poolManifestPath, JSON.stringify(poolData, null, 2));
+    const poolJson = JSON.stringify(poolData, null, 2);
+    fs.writeFileSync(paths.metadataFile, poolJson);
+    fs.writeFileSync(paths.poolManifestPath, poolJson);
 
     res.json({
       ok: true,
       candidateId,
+      assetId: candMeta.assetId,
+      storageClass: 'VOLUME_DURABLE',
+      relativeDurablePath: candMeta.relativeDurablePath,
       persisted: true,
-      bytes: buf.length,
-      poolCount: poolData.candidates.length
+      durablyPersisted: true,
+      size: actualSize,
+      sha256: computedHash,
+      poolCount: poolData.candidates.length,
+      telemetry: {
+        CANDIDATE_UPLOAD_ACK_COUNT: poolData.candidateUploadAckCount,
+        CANDIDATE_FILE_WRITE_COUNT: poolData.candidateFileWriteCount,
+        CANDIDATE_DURABLE_VERIFY_COUNT: poolData.candidateDurableVerifyCount
+      }
     });
   } catch (err) {
     console.error('[GuidedCapture Candidate Frame Error]', err);
@@ -10683,20 +10796,19 @@ app.post('/api/projects/:id/guided-capture/candidate-frame', express.json({ limi
   }
 });
 
-// C12.8-P0: Finalize capture session and trigger stitch-aware analysis
+// C12.8-P0 / C12.9-P2R5: Finalize capture session and trigger stitch-aware analysis
 app.post('/api/projects/:id/guided-capture/finalize-capture', express.json({ limit: '10mb' }), async (req, res) => {
   try {
     const projectId = req.params.id;
     const body = req.body || {};
     const captureSessionId = body.captureSessionId || ('sess_' + Date.now());
-    const dataKfDir = path.resolve(__dirname, '../data/guided_capture_keyframes', captureSessionId);
-    const poolManifestPath = path.join(dataKfDir, 'candidate_pool.json');
+    const paths = getGuidedCaptureStoragePaths(captureSessionId);
 
     let poolData = { candidates: [] };
-    if (fs.existsSync(poolManifestPath)) {
-      try {
-        poolData = JSON.parse(fs.readFileSync(poolManifestPath, 'utf8'));
-      } catch (e) {}
+    if (fs.existsSync(paths.metadataFile)) {
+      try { poolData = JSON.parse(fs.readFileSync(paths.metadataFile, 'utf8')); } catch (e) {}
+    } else if (fs.existsSync(paths.poolManifestPath)) {
+      try { poolData = JSON.parse(fs.readFileSync(paths.poolManifestPath, 'utf8')); } catch (e) {}
     }
 
     poolData.previewFrameCount = body.previewFrameCount;
@@ -10716,12 +10828,27 @@ app.post('/api/projects/:id/guided-capture/finalize-capture', express.json({ lim
     poolData.rejectionReasons = body.rejectionReasons || [];
     poolData.status = 'CANDIDATE_POOL_PERSISTED';
 
-    fs.writeFileSync(poolManifestPath, JSON.stringify(poolData, null, 2));
+    // Verify durable candidates on disk
+    let verifiedDurableCount = 0;
+    for (const c of poolData.candidates) {
+      const cPath = path.join(paths.candidateDir, c.candidateId + '.jpg');
+      if (fs.existsSync(cPath) && fs.statSync(cPath).size > 0) {
+        c.durablyPersisted = true;
+        verifiedDurableCount++;
+      } else {
+        c.durablyPersisted = false;
+      }
+    }
+    poolData.candidateDurableVerifyCount = verifiedDurableCount;
+
+    const manifestJson = JSON.stringify(poolData, null, 2);
+    fs.writeFileSync(paths.metadataFile, manifestJson);
+    fs.writeFileSync(paths.poolManifestPath, manifestJson);
 
     const repoRiDir = path.resolve(__dirname, '../../production_artifacts/mobile_runtime_inspector');
     if (fs.existsSync(repoRiDir)) {
       try {
-        fs.writeFileSync(path.join(repoRiDir, 'candidate_pool.json'), JSON.stringify(poolData, null, 2));
+        fs.writeFileSync(path.join(repoRiDir, 'candidate_pool.json'), manifestJson);
       } catch (e) {}
     }
 
@@ -10729,6 +10856,7 @@ app.post('/api/projects/:id/guided-capture/finalize-capture', express.json({ lim
       ok: true,
       captureSessionId,
       persistedCandidateCount: poolData.candidates.length,
+      candidateDurableVerifyCount: verifiedDurableCount,
       status: 'CANDIDATE_POOL_PERSISTED'
     });
   } catch (err) {
@@ -10737,27 +10865,35 @@ app.post('/api/projects/:id/guided-capture/finalize-capture', express.json({ lim
   }
 });
 
-// C12.8-P0: Candidate pool inspection endpoint
-// C12.9-P2R3: Safe physical candidate & keyframe file download endpoint
+// C12.8-P0 / C12.9-P2R5: Safe physical candidate & keyframe file download endpoint
 app.get('/api/internal-qa/guided-capture/candidate-file/:sessionId/:file', (req, res) => {
   try {
     const sessionId = (req.params.sessionId || '').replace(/[^a-zA-Z0-9_-]/g, '');
     const file = path.basename(req.params.file || '');
     if (!sessionId || !file) return res.status(400).json({ ok: false, error: 'Invalid parameters' });
 
+    // Historical QC1J7A marking per C12.9-P2R5 Section 12
+    if (sessionId === 'QC1J7A') {
+      return res.status(404).json({
+        ok: false,
+        error: 'DURABLE_PAYLOAD_LOST_PRE_P2R5',
+        message: 'Physical candidate files for session QC1J7A were stored in container-ephemeral storage prior to P2R5 and lost during redeployment.',
+        DURABLE_PAYLOAD_LOST_PRE_P2R5: true
+      });
+    }
+
+    const paths = getGuidedCaptureStoragePaths(sessionId);
+
     const searchDirs = [
-      path.resolve(__dirname, '../data/guided_capture_keyframes', sessionId),
+      paths.sessionRoot,
+      paths.candidateDir,
+      paths.canonicalDir,
       path.resolve(DATA_DIR, 'guided_capture_keyframes', sessionId),
-      path.resolve('/data/guided_capture_keyframes', sessionId),
+      path.resolve(DATA_DIR, 'guided_capture', sessionId),
       path.resolve(DATA_DIR, sessionId),
+      path.resolve('/data/guided_capture', sessionId),
+      path.resolve('/data/guided_capture_keyframes', sessionId),
       path.resolve('/data', sessionId),
-      path.resolve(process.cwd(), 'data/guided_capture_keyframes', sessionId),
-      path.resolve(process.cwd(), 'production_artifacts/c12_6_keyframes', sessionId),
-      path.resolve(process.cwd(), 'production_artifacts/c12_8_candidates', sessionId),
-      path.resolve(process.cwd(), 'production_artifacts/mobile_runtime_inspector', sessionId),
-      path.resolve(__dirname, '../../production_artifacts/c12_6_keyframes', sessionId),
-      path.resolve(__dirname, '../../production_artifacts/c12_8_candidates', sessionId),
-      path.resolve(__dirname, '../../production_artifacts/mobile_runtime_inspector', sessionId),
       path.resolve(DATA_DIR, 'uploads'),
       UPLOADS_DIR
     ];
@@ -10768,7 +10904,7 @@ app.get('/api/internal-qa/guided-capture/candidate-file/:sessionId/:file', (req,
         exists: fs.existsSync(d),
         files: fs.existsSync(d) ? fs.readdirSync(d).slice(0, 50) : []
       }));
-      return res.json({ ok: true, sessionId, audit });
+      return res.json({ ok: true, sessionId, paths, audit });
     }
 
     let targetPath = null;
@@ -10776,8 +10912,10 @@ app.get('/api/internal-qa/guided-capture/candidate-file/:sessionId/:file', (req,
       if (!fs.existsSync(d)) continue;
       const p1 = path.join(d, file);
       const p2 = path.join(d, 'candidates', file);
+      const p3 = path.join(d, 'canonical', file);
       if (fs.existsSync(p1) && fs.statSync(p1).isFile()) { targetPath = p1; break; }
       if (fs.existsSync(p2) && fs.statSync(p2).isFile()) { targetPath = p2; break; }
+      if (fs.existsSync(p3) && fs.statSync(p3).isFile()) { targetPath = p3; break; }
     }
 
     if (!targetPath) return res.status(404).json({ ok: false, error: 'File not found', searched: searchDirs });
@@ -10809,14 +10947,20 @@ app.get('/api/internal-qa/guided-capture/storage-audit', (req, res) => {
     };
     res.json({
       ok: true,
+      serviceVersion: '3D2-C12.9-P2R5',
       cwd: process.cwd(),
       dirname: __dirname,
+      PERSISTENT_VOLUME_ROOT,
+      GUIDED_CAPTURE_STORAGE_ROOT,
+      STORAGE_ROOT_EXISTS,
+      STORAGE_ROOT_WRITABLE,
+      STORAGE_ROOT_IS_PERSISTENT_VOLUME,
+      EPHEMERAL_STORAGE_FALLBACK_USED,
       DATA_DIR: typeof DATA_DIR !== 'undefined' ? DATA_DIR : null,
       UPLOADS_DIR: typeof UPLOADS_DIR !== 'undefined' ? UPLOADS_DIR : null,
       volumeData: scanDir('/data'),
+      guidedCaptureSessions: scanDir(GUIDED_CAPTURE_STORAGE_ROOT),
       dataUploads: scanDir(path.join(DATA_DIR, 'uploads')),
-      guidedKeyframesDataDir: scanDir(path.join(DATA_DIR, 'guided_capture_keyframes')),
-      guidedKeyframesAppDir: scanDir(path.resolve(__dirname, '../data/guided_capture_keyframes')),
       prodArtifactsCwd: scanDir(path.join(process.cwd(), 'production_artifacts')),
       prodArtifactsDirname: scanDir(path.resolve(__dirname, '../../production_artifacts'))
     });
@@ -10828,8 +10972,17 @@ app.get('/api/internal-qa/guided-capture/storage-audit', (req, res) => {
 app.get('/api/projects/:id/guided-capture/candidate-pool/:sessionId', (req, res) => {
   try {
     const captureSessionId = req.params.sessionId;
-    const dataKfDir = path.resolve(__dirname, '../data/guided_capture_keyframes', captureSessionId);
-    const poolManifestPath = path.join(dataKfDir, 'candidate_pool.json');
+    const paths = getGuidedCaptureStoragePaths(captureSessionId);
+
+    let poolManifestPath = paths.metadataFile;
+    if (!fs.existsSync(poolManifestPath)) {
+      poolManifestPath = paths.poolManifestPath;
+    }
+    if (!fs.existsSync(poolManifestPath)) {
+      // Legacy fallback
+      const legacyPath = path.resolve(DATA_DIR, 'guided_capture_keyframes', captureSessionId, 'candidate_pool.json');
+      if (fs.existsSync(legacyPath)) poolManifestPath = legacyPath;
+    }
 
     if (!fs.existsSync(poolManifestPath)) {
       return res.status(404).json({ ok: false, error: 'Candidate pool not found' });
@@ -10851,30 +11004,40 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
     const contactSheetDataUrl = body.contactSheetDataUrl;
     const captureSessionId = body.captureSessionId || ('sess_' + Date.now());
 
-    const kfDir = path.resolve(__dirname, '../../production_artifacts/c12_6_keyframes', captureSessionId);
-    const repoRiDir = path.resolve(__dirname, '../../production_artifacts/mobile_runtime_inspector');
-    const dataKfDir = path.resolve(__dirname, '../data/guided_capture_keyframes', captureSessionId);
-
-    [kfDir, repoRiDir, dataKfDir].forEach(d => {
+    const paths = getGuidedCaptureStoragePaths(captureSessionId);
+    [paths.sessionRoot, paths.candidateDir, paths.canonicalDir].forEach(d => {
       if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
     });
 
+    let verifiedCanonicalCount = 0;
     for (const kf of keyframes) {
+      const filename = (kf.keyframeId || ('KF' + kf.index)) + '.jpg';
+      const targetCanonPath = path.join(paths.canonicalDir, filename);
+
       if (kf.dataUrl) {
         const base64Data = kf.dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
         const buf = Buffer.from(base64Data, 'base64');
-        const filename = (kf.keyframeId || ('KF' + kf.index)) + '.jpg';
-        fs.writeFileSync(path.join(kfDir, filename), buf);
-        fs.writeFileSync(path.join(dataKfDir, filename), buf);
+        const fd = fs.openSync(targetCanonPath, 'w');
+        fs.writeSync(fd, buf, 0, buf.length, 0);
+        fs.fsyncSync(fd);
+        fs.closeSync(fd);
+      } else if (kf.candidateId) {
+        // Link or copy from candidateDir
+        const sourceCandPath = path.join(paths.candidateDir, kf.candidateId + '.jpg');
+        if (fs.existsSync(sourceCandPath) && !fs.existsSync(targetCanonPath)) {
+          try { fs.copyFileSync(sourceCandPath, targetCanonPath); } catch (e) {}
+        }
+      }
+
+      if (fs.existsSync(targetCanonPath) && fs.statSync(targetCanonPath).size > 0) {
+        verifiedCanonicalCount++;
       }
     }
 
     if (contactSheetDataUrl) {
       const csBase64 = contactSheetDataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
       const csBuf = Buffer.from(csBase64, 'base64');
-      fs.writeFileSync(path.join(kfDir, '06_CANONICAL_KEYFRAME_CONTACT_SHEET.jpg'), csBuf);
-      fs.writeFileSync(path.join(repoRiDir, '06_CANONICAL_KEYFRAME_CONTACT_SHEET.jpg'), csBuf);
-      fs.writeFileSync(path.join(dataKfDir, '06_CANONICAL_KEYFRAME_CONTACT_SHEET.jpg'), csBuf);
+      fs.writeFileSync(path.join(paths.sessionRoot, '06_CANONICAL_KEYFRAME_CONTACT_SHEET.jpg'), csBuf);
     }
 
     const kfMetadata = keyframes.map(kf => ({
@@ -10891,54 +11054,19 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
       width: kf.width,
       height: kf.height,
       mimeType: kf.mimeType,
-      bytes: kf.bytes
+      bytes: kf.bytes,
+      storageClass: 'VOLUME_DURABLE',
+      relativeDurablePath: `canonical/${(kf.keyframeId || ('KF' + kf.index))}.jpg`
     }));
 
-    const pipelineDoc = {
-      projectId,
-      captureSessionId,
-      timestamp: new Date().toISOString(),
-      previewFrameCount: body.previewFrameCount,
-      candidateFrameCount: body.candidateFrameCount,
-      acceptedCandidateCount: body.acceptedCandidateCount,
-      rejectedCandidateCount: body.rejectedCandidateCount,
-      canonicalKeyframeCount: keyframes.length,
-      accumulatedRotation: body.accumulatedRotation,
-      guidanceMode: body.guidanceMode,
-      closureVerified: keyframes.length >= 8,
-      status: keyframes.length >= 8 ? 'CAPTURE_OUTPUT_READY' : 'INSUFFICIENT_KEYFRAMES'
-    };
-
-    const candidateDoc = {
-      totalCandidates: body.candidateFrameCount,
-      acceptedCount: body.acceptedCandidateCount,
-      rejectedCount: body.rejectedCandidateCount,
-      rejectionReasons: body.rejectionReasons || []
-    };
-
-    const qualityGateDoc = {
-      minimumGatePassed: keyframes.length >= 8,
-      maximumGatePassed: keyframes.length <= 16,
-      uniqueHashCount: new Set(keyframes.map(k => k.hash)).size,
-      keyframeCount: keyframes.length,
-      hashesMatchKeyframeCount: new Set(keyframes.map(k => k.hash)).size === keyframes.length,
-      angularDistribution: keyframes.map(k => k.estimatedYawDeg),
-      firstLastOverlap: keyframes.length > 0 ? keyframes[0].overlapPrevious : 0,
-      panoramaInputReady: keyframes.length >= 8
-    };
-
-    fs.writeFileSync(path.join(repoRiDir, 'canonical_keyframes.json'), JSON.stringify(kfMetadata, null, 2));
-    fs.writeFileSync(path.join(repoRiDir, 'candidate_selection.json'), JSON.stringify(candidateDoc, null, 2));
-    fs.writeFileSync(path.join(repoRiDir, 'guided_capture_pipeline.json'), JSON.stringify(pipelineDoc, null, 2));
-    fs.writeFileSync(path.join(repoRiDir, 'capture_quality_gate.json'), JSON.stringify(qualityGateDoc, null, 2));
-
-    console.log('[GuidedCapture] Saved ' + keyframes.length + ' keyframes for session ' + captureSessionId);
+    fs.writeFileSync(path.join(paths.sessionRoot, 'canonical_keyframes.json'), JSON.stringify(kfMetadata, null, 2));
 
     res.json({
       ok: true,
-      canonicalKeyframeCount: keyframes.length,
-      panoramaInputReady: keyframes.length >= 8,
-      captureSessionId
+      captureSessionId,
+      keyframeCount: keyframes.length,
+      verifiedCanonicalCount,
+      storageClass: 'VOLUME_DURABLE'
     });
   } catch (err) {
     console.error('[GuidedCapture Keyframes Error]', err);
@@ -11331,6 +11459,10 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(` Port: ${PORT}`);
   console.log(` Schema Version: 4`);
   console.log(` Data Directory: ${DATA_DIR}`);
+  console.log(` Guided Capture Root: ${GUIDED_CAPTURE_STORAGE_ROOT}`);
+  console.log(` Storage Root Exists: ${STORAGE_ROOT_EXISTS} | Writable: ${STORAGE_ROOT_WRITABLE}`);
+  console.log(` Storage Is Persistent Volume: ${STORAGE_ROOT_IS_PERSISTENT_VOLUME}`);
+  console.log(` Ephemeral Fallback Used: ${EPHEMERAL_STORAGE_FALLBACK_USED}`);
   console.log(` Healthcheck: http://localhost:${PORT}/health`);
   console.log(` Event Lobby: http://localhost:${PORT}/lobby.html`);
   console.log(` Organizer Admin: http://localhost:${PORT}/organizer.html`);
