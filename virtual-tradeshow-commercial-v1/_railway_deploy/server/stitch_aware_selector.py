@@ -19,6 +19,17 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)
 
+import glob
+for sp in (
+    glob.glob('/root/.nix-profile/lib/python*/site-packages') +
+    glob.glob('/nix/var/nix/profiles/*/lib/python*/site-packages') +
+    glob.glob('/nix/store/*opencv*/lib/python*/site-packages') +
+    glob.glob('/nix/store/*numpy*/lib/python*/site-packages') +
+    glob.glob('/nix/store/*-env/lib/python*/site-packages')
+):
+    if sp not in sys.path and os.path.isdir(sp):
+        sys.path.insert(0, sp)
+
 import json
 import math
 import hashlib
