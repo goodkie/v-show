@@ -21812,9 +21812,24 @@ class GuidedCaptureController {
       this.state = 'CAPTURE_NEEDS_RETRY';
       this.guidanceMessage = "We couldn't confirm full 360° visual closure. Please rotate slowly and try again.";
       this.stopCaptureResources();
+      // C12.9-P2R2 fix: Preserve immutable snapshot (mirrors CLOSURE_SEARCH_EXHAUSTED path)
+      // so onAttention can render accurate rotation/progress instead of stale DOM values.
+      this.failedAttemptSnapshot = {
+        sensorRotationDeg: Math.round(this.accumulatedRotation * 10) / 10,
+        progressPercent: this.progressPercent || 0,
+        closureCheckCount: this.closureCheckCount || 0,
+        bestClosureMetrics: this.bestClosureMatch || null,
+        candidatePoolId: this.diagnosticSessionId,
+        timestamp: new Date().toISOString()
+      };
+      this.telemetry.failedAttemptSnapshot = this.failedAttemptSnapshot;
+      this.telemetry.failureTriggerRotationDeg = this.failedAttemptSnapshot.sensorRotationDeg;
+      const _failDisplay = this.getGuidedCaptureDisplayState(this.failedAttemptSnapshot);
       this.notifyAttention({
         code: 'CLOSURE_OR_KEYFRAMES_INSUFFICIENT',
-        message: this.guidanceMessage
+        message: this.guidanceMessage,
+        finalRotationDeg: _failDisplay.rotationDeg,
+        progressPercent: _failDisplay.progressPercent
       });
       this.sendTelemetry();
       return;
@@ -21856,10 +21871,11 @@ class GuidedCaptureController {
     this.telemetry.state = this.state;
 
     // C12.9-P1R3: Strict customer-visible progress semantics
-    // 100% strictly requires VISUAL LOOP CONFIRMED & FINALIZATION ENTERED.
-    // Physical rotation alone must NEVER display 100% while closureConfirmed=false.
+    // 100% strictly requires VISUAL LOOP CONFIRMED (closureConfirmed===true).
+    // State transitions (PERSISTING_CANONICAL, COMPLETE) are NOT independent gates.
+    // C12.9-P2R2 fix: closureConfirmed is the sole authority for 100%.
     let progressPercent = 0;
-    if (this.closureConfirmed || this.state === 'COMPLETE' || this.state === 'PERSISTING_CANONICAL') {
+    if (this.closureConfirmed) {
       progressPercent = 100;
     } else if (this.state === 'SEARCHING_FOR_START_OVERLAP' || this.accumulatedRotation >= this.MIN_ROTATION_SEARCH_GATE) {
       // Searching zone (>= 300°): progress rises based on physical rotation but MUST be capped between 92% and 99%
@@ -21906,6 +21922,38 @@ class GuidedCaptureController {
       this.sendTelemetry();
       this.telemetryTimer = setTimeout(() => { this.telemetryTimer = null; }, 1000);
     }
+  }
+
+  // C12.9-P2R2 — Section 16: Shared display state accessor
+  // Both live capture UI (onProgress) and failure UI (onAttention) MUST derive display
+  // values from this function. On failure pass the immutable failedAttemptSnapshot.
+  getGuidedCaptureDisplayState(snapshot) {
+    if (snapshot) {
+      // Failure path: snapshot is immutable; NEVER show 100% from a failure
+      const displayProgress = Math.min(99, Math.round(snapshot.progressPercent != null ? snapshot.progressPercent : 99));
+      if (displayProgress >= 100) {
+        console.error('[GCC_INVARIANT_VIOLATION] getGuidedCaptureDisplayState: snapshot produced 100% without closureConfirmed');
+        this.telemetry.GUIDED_DISPLAY_INVARIANT_VIOLATION_COUNT = (this.telemetry.GUIDED_DISPLAY_INVARIANT_VIOLATION_COUNT || 0) + 1;
+      }
+      return {
+        rotationDeg: Math.round(snapshot.sensorRotationDeg != null ? snapshot.sensorRotationDeg : 0),
+        progressPercent: displayProgress,
+        closureConfirmed: false,
+        fsmState: 'CAPTURE_NEEDS_RETRY'
+      };
+    }
+    // Live path
+    const progressPercent = this.progressPercent || 0;
+    if (!this.closureConfirmed && progressPercent >= 100) {
+      console.error('[GCC_INVARIANT_VIOLATION] getGuidedCaptureDisplayState: live path reached 100% without closureConfirmed');
+      this.telemetry.GUIDED_DISPLAY_INVARIANT_VIOLATION_COUNT = (this.telemetry.GUIDED_DISPLAY_INVARIANT_VIOLATION_COUNT || 0) + 1;
+    }
+    return {
+      rotationDeg: Math.round(this.normalizedSensorRotationDeg || 0),
+      progressPercent,
+      closureConfirmed: this.closureConfirmed,
+      fsmState: this.state
+    };
   }
 
   sendTelemetry() {
@@ -22474,12 +22522,15 @@ class SetupWizardController {
       if (pill) {
         pill.textContent = attn.message || 'Starting view not recognized. Continue a little farther or try again.';
       }
-      // Preserve terminal immutable snapshot on failure screen - DO NOT reset to 0°
-      if (attn.finalRotationDeg !== undefined && rText) {
-        rText.textContent = Math.round(attn.finalRotationDeg) + '° ROTATION';
-      }
-      if (attn.progressPercent !== undefined && pText) {
-        pText.textContent = Math.round(attn.progressPercent) + '%';
+      // C12.9-P2R2 fix: ALWAYS derive display values from controller state.
+      // The old conditional (attn.finalRotationDeg !== undefined) left stale 100%/0° on screen
+      // when CLOSURE_OR_KEYFRAMES_INSUFFICIENT omitted those fields.
+      const displayState = controller.getGuidedCaptureDisplayState(controller.failedAttemptSnapshot || null);
+      if (rText) rText.textContent = displayState.rotationDeg + '° ROTATION';
+      if (pText) pText.textContent = displayState.progressPercent + '%';
+      if (pCircle) {
+        const offset = 565.48 - (565.48 * (displayState.progressPercent / 100));
+        pCircle.setAttribute('stroke-dashoffset', offset);
       }
     };
 
@@ -22502,12 +22553,10 @@ class SetupWizardController {
     if (window.guidedCaptureController) {
       window.guidedCaptureController.resetCaptureForRetry('USER_EXPLICIT_RETRY');
     }
-    const pText = document.getElementById('guidedPercentText');
-    const rText = document.getElementById('guidedRotText');
-    const pCircle = document.getElementById('guidedProgressCircle');
-    if (pText) pText.textContent = '0%';
-    if (rText) rText.textContent = '0° ROTATION';
-    if (pCircle) pCircle.setAttribute('stroke-dashoffset', '565.48');
+    // C12.9-P2R2 fix: Do NOT pre-reset DOM to 0%/0° here.
+    // The previous failure screen correctly shows the snapshot values.
+    // startGuidedCapture() re-attaches onProgress; the first tick will update to 0% naturally
+    // without a visible stale-to-zero flash on retry tap.
     this.startGuidedCapture();
   }
 
