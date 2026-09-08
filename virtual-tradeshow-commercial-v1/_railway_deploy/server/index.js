@@ -10110,9 +10110,8 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
     const sourceList = [];
 
     if (captureSessionId) {
-      const dataKfDir = path.resolve(__dirname, '../data/guided_capture_keyframes', captureSessionId);
-      const candDir = path.join(dataKfDir, 'candidates');
-      const poolManifestPath = path.join(dataKfDir, 'candidate_pool.json');
+      const paths = getGuidedCaptureStoragePaths(captureSessionId);
+      const poolManifestPath = fs.existsSync(paths.metadataFile) ? paths.metadataFile : paths.poolManifestPath;
 
       let candidatePool = null;
       if (fs.existsSync(poolManifestPath)) {
@@ -10125,8 +10124,14 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
       if (!canonicalList || !canonicalList.length) {
         if (candidatePool && candidatePool.canonicalKeyframes && candidatePool.canonicalKeyframes.length) {
           canonicalList = candidatePool.canonicalKeyframes;
-        } else if (fs.existsSync(dataKfDir)) {
-          const files = fs.readdirSync(dataKfDir).filter(f => /^KF\d+\.jpg$/i.test(f)).sort();
+        } else if (candidatePool && candidatePool.canonicalIds && candidatePool.canonicalIds.length) {
+          canonicalList = candidatePool.canonicalIds.map((cid, i) => ({
+            keyframeId: 'KF' + String(i + 1).padStart(2, '0'),
+            candidateId: cid,
+            index: i + 1
+          }));
+        } else if (fs.existsSync(paths.canonicalDir)) {
+          const files = fs.readdirSync(paths.canonicalDir).filter(f => /^KF\d+\.jpg$/i.test(f)).sort();
           if (files.length >= 2) {
             canonicalList = files.map((f, i) => ({
               keyframeId: f.replace(/\.jpg$/i, ''),
@@ -10137,35 +10142,77 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
         }
       }
 
+      // Hardened Durable File Verification (C12.9-P2R5 Section 7 & 8)
+      const missingFrames = [];
+      const resolvedList = [];
+
       if (canonicalList && canonicalList.length > 0) {
         canonicalList.forEach((kf, idx) => {
           let kfPath = null;
           const kfName = kf.keyframeId || ('KF' + String(idx + 1).padStart(2, '0'));
-          const directKfFile = path.join(dataKfDir, kfName + '.jpg');
-          const candFile = kf.candidateId ? path.join(candDir, kf.candidateId + '.jpg') : null;
+          const directCanonFile = path.join(paths.canonicalDir, kfName + '.jpg');
+          const candFile = kf.candidateId ? path.join(paths.candidateDir, kf.candidateId + '.jpg') : null;
+          
+          // Legacy fallbacks for reading
+          const legacyCanonFile = path.resolve(DATA_DIR, 'guided_capture_keyframes', captureSessionId, kfName + '.jpg');
+          const legacyCandFile = kf.candidateId ? path.resolve(DATA_DIR, 'guided_capture_keyframes', captureSessionId, 'candidates', kf.candidateId + '.jpg') : null;
 
-          if (fs.existsSync(directKfFile)) {
-            kfPath = directKfFile;
-          } else if (candFile && fs.existsSync(candFile)) {
+          if (fs.existsSync(directCanonFile) && fs.statSync(directCanonFile).size > 0) {
+            kfPath = directCanonFile;
+          } else if (candFile && fs.existsSync(candFile) && fs.statSync(candFile).size > 0) {
             kfPath = candFile;
+          } else if (fs.existsSync(legacyCanonFile) && fs.statSync(legacyCanonFile).size > 0) {
+            kfPath = legacyCanonFile;
+          } else if (legacyCandFile && fs.existsSync(legacyCandFile) && fs.statSync(legacyCandFile).size > 0) {
+            kfPath = legacyCandFile;
           } else if (kf.dataUrl) {
             const base64Data = kf.dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
             const buf = Buffer.from(base64Data, 'base64');
-            fs.writeFileSync(directKfFile, buf);
-            kfPath = directKfFile;
+            fs.writeFileSync(directCanonFile, buf);
+            kfPath = directCanonFile;
           }
 
           if (kfPath) {
-            sourceList.push({
-              path: kfPath,
-              originalFilename: path.basename(kfPath),
-              slot: 'SHOT_' + String(idx + 1).padStart(2, '0'),
-              index: idx,
-              estimatedYawDeg: kf.estimatedYawDeg !== undefined ? kf.estimatedYawDeg : (kf.angle || 0),
-              candidateId: kf.candidateId || kfName
-            });
+            try {
+              fs.accessSync(kfPath, fs.constants.R_OK);
+              const sz = fs.statSync(kfPath).size;
+              if (sz > 0) {
+                resolvedList.push({
+                  path: kfPath,
+                  originalFilename: path.basename(kfPath),
+                  slot: 'SHOT_' + String(idx + 1).padStart(2, '0'),
+                  index: idx,
+                  estimatedYawDeg: kf.estimatedYawDeg !== undefined ? kf.estimatedYawDeg : (kf.angle || 0),
+                  candidateId: kf.candidateId || kfName,
+                  size: sz
+                });
+              } else {
+                missingFrames.push({ index: idx + 1, keyframeId: kfName, candidateId: kf.candidateId, reason: 'ZERO_BYTE_FILE' });
+              }
+            } catch (e) {
+              missingFrames.push({ index: idx + 1, keyframeId: kfName, candidateId: kf.candidateId, reason: 'UNREADABLE_FILE' });
+            }
+          } else {
+            missingFrames.push({ index: idx + 1, keyframeId: kfName, candidateId: kf.candidateId, reason: 'FILE_NOT_FOUND' });
           }
         });
+
+        // If any canonical keyframe is missing from durable storage, reject immediately with HTTP 409
+        if (missingFrames.length > 0) {
+          console.warn(`[PANORAMA_SOURCE_FILE_MISSING] Missing ${missingFrames.length} canonical files for session ${captureSessionId}:`, missingFrames);
+          return res.status(409).json({
+            ok: false,
+            error: 'PANORAMA_SOURCE_FILE_MISSING',
+            code: 'PANORAMA_SOURCE_FILE_MISSING',
+            message: `Cannot start panorama. ${missingFrames.length} canonical keyframes are missing from durable storage.`,
+            PANORAMA_INPUT_NOT_DURABLE: true,
+            CANONICAL_INPUT_FILES_RESOLVED: resolvedList.length,
+            CANONICAL_SELECTED_COUNT: canonicalList.length,
+            missingFrames
+          });
+        }
+
+        sourceList.push(...resolvedList);
       }
 
       // Fallback: If canonical keyframes were not saved as separate files, pull from candidates
@@ -10175,15 +10222,16 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
         const step = (cands.length - 1) / (count - 1);
         for (let i = 0; i < count; i++) {
           const c = cands[Math.round(i * step)];
-          const cPath = path.join(candDir, c.candidateId + '.jpg');
-          if (fs.existsSync(cPath)) {
+          const cPath = path.join(paths.candidateDir, c.candidateId + '.jpg');
+          if (fs.existsSync(cPath) && fs.statSync(cPath).size > 0) {
             sourceList.push({
               path: cPath,
               originalFilename: path.basename(cPath),
               slot: 'SHOT_' + String(i + 1).padStart(2, '0'),
               index: i,
               estimatedYawDeg: c.estimatedYawDeg,
-              candidateId: c.candidateId
+              candidateId: c.candidateId,
+              size: fs.statSync(cPath).size
             });
           }
         }
