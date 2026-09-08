@@ -10077,7 +10077,7 @@ app.post('/api/projects/:id/panorama/validate-ring', upload.array('photos', 16),
   }
 });
 
-app.post('/api/projects/:id/panorama/start', upload.array('photos', 16), async (req, res) => {
+app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), upload.array('photos', 16), async (req, res) => {
   try {
     const projectId = req.params.id;
     const token = extractAuthToken(req);
