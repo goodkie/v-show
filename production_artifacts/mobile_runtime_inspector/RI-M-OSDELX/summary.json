@@ -1,0 +1,18 @@
+{
+  "sessionId": "RI-M-OSDELX",
+  "environment": "INTERNAL_DEV",
+  "isTest": true,
+  "receivedAt": "2026-09-08T16:11:48.098Z",
+  "SESSION_ID": "RI-M-OSDELX",
+  "PLATFORM": "Android Chrome",
+  "platform": "Android Chrome",
+  "SECURE_HTTPS": "YES",
+  "CAMERA_READY": "AVAILABLE",
+  "CAMERA_FRAMES": 120,
+  "MOTION_EVENTS": 7194,
+  "CURRENT_STEP": 7,
+  "STEP_NAME": "Viewpoint 1 Ready",
+  "CAPTURE_PROGRESS": "100%",
+  "RAW_CSS_LEAK": "CLEAN",
+  "CHECKPOINT_COUNT": 0
+}

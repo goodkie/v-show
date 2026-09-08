@@ -1,0 +1,119 @@
+[
+  {
+    "timestamp": 1788883848325,
+    "isoTime": "2026-09-08T16:10:48.325Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/candidate-frame",
+    "status": 200,
+    "durationMs": 657,
+    "ok": true
+  },
+  {
+    "timestamp": 1788883848613,
+    "isoTime": "2026-09-08T16:10:48.613Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/candidate-frame",
+    "status": 200,
+    "durationMs": 445,
+    "ok": true
+  },
+  {
+    "timestamp": 1788883849181,
+    "isoTime": "2026-09-08T16:10:49.181Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/candidate-frame",
+    "status": 200,
+    "durationMs": 575,
+    "ok": true
+  },
+  {
+    "timestamp": 1788883849512,
+    "isoTime": "2026-09-08T16:10:49.512Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/candidate-frame",
+    "status": 200,
+    "durationMs": 617,
+    "ok": true
+  },
+  {
+    "timestamp": 1788883850239,
+    "isoTime": "2026-09-08T16:10:50.239Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/candidate-frame",
+    "status": 200,
+    "durationMs": 1057,
+    "ok": true
+  },
+  {
+    "timestamp": 1788883850508,
+    "isoTime": "2026-09-08T16:10:50.508Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 811,
+    "ok": true
+  },
+  {
+    "timestamp": 1788883850508,
+    "isoTime": "2026-09-08T16:10:50.508Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/candidate-frame",
+    "status": 200,
+    "durationMs": 995,
+    "ok": true
+  },
+  {
+    "timestamp": 1788883850520,
+    "isoTime": "2026-09-08T16:10:50.520Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 823,
+    "ok": true
+  },
+  {
+    "timestamp": 1788883850520,
+    "isoTime": "2026-09-08T16:10:50.520Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/telemetry",
+    "status": 200,
+    "durationMs": 620,
+    "ok": true
+  },
+  {
+    "timestamp": 1788883850914,
+    "isoTime": "2026-09-08T16:10:50.914Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/candidate-frame",
+    "status": 200,
+    "durationMs": 674,
+    "ok": true
+  },
+  {
+    "timestamp": 1788883850915,
+    "isoTime": "2026-09-08T16:10:50.915Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/wizard-state",
+    "status": 200,
+    "durationMs": 412,
+    "ok": true
+  },
+  {
+    "timestamp": 1788883851146,
+    "isoTime": "2026-09-08T16:10:51.146Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/finalize-capture",
+    "status": 200,
+    "durationMs": 156,
+    "ok": true
+  },
+  {
+    "timestamp": 1788883851618,
+    "isoTime": "2026-09-08T16:10:51.618Z",
+    "method": "POST",
+    "url": "/api/projects/prj-free-b0c6f3ea/guided-capture/keyframes",
+    "status": 200,
+    "durationMs": 379,
+    "ok": true
+  }
+]

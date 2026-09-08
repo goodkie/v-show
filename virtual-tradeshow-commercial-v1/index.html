@@ -20043,6 +20043,7 @@ class GuidedCaptureController {
     // FINALIZING_CANDIDATES, SELECTING_CANONICAL, PERSISTING_CANONICAL, COMPLETE,
     // CAPTURE_NEEDS_MORE_ROTATION, CAPTURE_NEEDS_RETRY, ERROR
     this.state = 'IDLE';
+    this._isFinalizing = false;
     this.diagnosticSessionId = Math.random().toString(36).substring(2, 8).toUpperCase();
 
     this.capabilities = {
@@ -20260,6 +20261,7 @@ class GuidedCaptureController {
 
   resetCaptureForRetry(reason = 'USER_EXPLICIT_RETRY') {
     this.tryAgainCount = (this.tryAgainCount || 0) + 1;
+    this._isFinalizing = false;
     this.resetCaptureForRetryCallCount = (this.resetCaptureForRetryCallCount || 0) + 1;
     this.lastResetReason = reason;
 
@@ -21783,7 +21785,13 @@ class GuidedCaptureController {
     }
   }
 
-  finalizeCapture() {
+  async finalizeCapture() {
+    if (this._isFinalizing) {
+      console.log('[GuidedCapture] Finalize already in progress, skipping duplicate call.');
+      return;
+    }
+    this._isFinalizing = true;
+
     this.state = 'FINALIZING_CANDIDATES';
     this.notifyProgress();
 
@@ -21812,8 +21820,6 @@ class GuidedCaptureController {
       this.state = 'CAPTURE_NEEDS_RETRY';
       this.guidanceMessage = "We couldn't confirm full 360° visual closure. Please rotate slowly and try again.";
       this.stopCaptureResources();
-      // C12.9-P2R2 fix: Preserve immutable snapshot (mirrors CLOSURE_SEARCH_EXHAUSTED path)
-      // so onAttention can render accurate rotation/progress instead of stale DOM values.
       this.failedAttemptSnapshot = {
         sensorRotationDeg: Math.round(this.accumulatedRotation * 10) / 10,
         progressPercent: this.progressPercent || 0,
@@ -21844,14 +21850,22 @@ class GuidedCaptureController {
     this.telemetry.captureCompletionReason = 'VISUAL_LOOP_CONFIRMED';
     this.notifyProgress();
     this.sendTelemetry();
-    this.persistCaptureOutput();
+
+    // C12.9-P2R3: MUST await persistence before destroying resources and notifying wizard!
+    try {
+      await this.persistCaptureOutput();
+    } catch (err) {
+      console.warn('[GuidedCapture] persistCaptureOutput warning:', err);
+    }
 
     // 4. Safe destructive cleanup ONLY AFTER data is materialized
     this.stopCaptureResources();
 
-    // 5. Notify wizard
+    // 5. Notify wizard with full session context for downstream panorama processing
     if (this.onComplete) {
       this.onComplete({
+        captureSessionId: this.diagnosticSessionId,
+        candidatePoolId: this.diagnosticSessionId,
         accumulatedRotation: this.accumulatedRotation,
         direction: this.rotationDirection,
         canonicalKeyframeCount: this.canonicalKeyframes.length,
@@ -22502,12 +22516,20 @@ class SetupWizardController {
       }
     };
 
-    controller.onComplete = (result) => {
+    controller.onComplete = async (result) => {
       if (result && result.canonicalKeyframeCount >= 8 && result.closureConfirmed) {
-        if (pill) pill.textContent = 'Circle Complete! ' + result.canonicalKeyframeCount + ' keyframes ready.';
-        setTimeout(() => {
-          this.nextStep();
-        }, 600);
+        if (pill) pill.textContent = 'Circle Complete! ' + result.canonicalKeyframeCount + ' keyframes ready. Processing panorama...';
+        try {
+          await this.startPanoramaFromGuidedCapture(result);
+        } catch (err) {
+          console.error('[SetupWizard] Panorama trigger error:', err);
+          if (pill) pill.textContent = 'Panorama error: ' + (err.message || 'Please try again');
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Retry Panorama';
+            btn.onclick = () => this.startPanoramaFromGuidedCapture(result);
+          }
+        }
       } else {
         console.warn('[SetupWizard] onComplete blocked: closureConfirmed not true or keyframes < 8', result);
       }
@@ -22571,9 +22593,175 @@ class SetupWizardController {
     this.nextStep();
   }
 
-  renderStep7ViewpointReady() {
-    this.btnPrimary.innerHTML = '<span>Looks Good - Next Viewpoint</span> <i class="fa-solid fa-arrow-right"></i>';
+  async startPanoramaFromGuidedCapture(captureResult) {
+    console.log('[SetupWizard] startPanoramaFromGuidedCapture called for session:', captureResult?.captureSessionId);
+    this.state.activeCaptureSessionId = captureResult?.captureSessionId;
+    this.state.canonicalKeyframeCount = captureResult?.canonicalKeyframeCount || (captureResult?.keyframes ? captureResult.keyframes.length : 0);
+    this.state.panoramaJobStatus = 'STARTING';
+    this.state.currentPanoramaJob = null;
+    this.state.panoramaJobProgress = 10;
+    this.state.panoramaJobStageLabel = 'Queueing panorama processing...';
+
+    const projectId = this.getProjectId();
+    const payload = {
+      captureSessionId: captureResult?.captureSessionId,
+      canonicalKeyframeCount: this.state.canonicalKeyframeCount,
+      closureConfirmed: true,
+      creationMode: 'FIXED_ORIGIN_PANORAMA',
+      autoRemovePeople: true,
+      tourId: this.state.tourId || 'tour_default',
+      viewpointId: (this.state.viewpoints && this.state.viewpoints[0]?.id) || 'vp_entrance',
+      keyframes: captureResult?.keyframes ? captureResult.keyframes.map(k => ({
+        keyframeId: k.keyframeId,
+        index: k.index,
+        candidateId: k.candidateId,
+        estimatedYawDeg: k.estimatedYawDeg,
+        hash: k.hash
+      })) : []
+    };
+
+    const res = await fetch('/api/projects/' + projectId + '/panorama/start', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.jobId) {
+      throw new Error(data.message || data.error || ('Panorama start failed with status ' + res.status));
+    }
+
+    console.log('[SetupWizard] Panorama job successfully created:', data.jobId);
+    this.state.currentPanoramaJobId = data.jobId;
+    this.state.panoramaJobStatus = data.status || 'QUEUED';
+
+    // Transition to Step 7 Viewpoint Ready with active polling
+    this.nextStep();
+  }
+
+  startPanoramaJobPolling(jobId) {
+    if (this._panoPollInterval) clearInterval(this._panoPollInterval);
+
+    this._panoPollInterval = setInterval(async () => {
+      try {
+        const res = await fetch('/api/panorama-jobs/' + jobId);
+        if (!res.ok) return;
+        const data = await res.json();
+        const job = data.job;
+        if (!job) return;
+
+        this.state.panoramaJobProgress = job.progress || 10;
+        this.state.panoramaJobStageLabel = job.stageLabel || job.currentStage || 'Processing 360° panorama...';
+
+        const pBar = document.getElementById('pano-progress-bar');
+        const pText = document.getElementById('pano-progress-text');
+        const sLabel = document.getElementById('pano-stage-label');
+        if (pBar) pBar.style.width = (job.progress || 10) + '%';
+        if (pText) pText.textContent = (job.progress || 10) + '% Complete';
+        if (sLabel) sLabel.textContent = job.stageLabel || 'Processing...';
+
+        if (job.status === 'READY') {
+          clearInterval(this._panoPollInterval);
+          this.state.panoramaJobStatus = 'READY';
+          this.state.currentPanoramaJob = job;
+          const vp = this.state.viewpoints[0];
+          if (vp) {
+            vp.status = 'STITCHED';
+            if (job.candidate?.stitchedPanoramaUrl) vp.panoramaUrl = job.candidate.stitchedPanoramaUrl;
+          }
+          this.renderStep7ViewpointReady();
+        } else if (job.status === 'FAILED') {
+          clearInterval(this._panoPollInterval);
+          this.state.panoramaJobStatus = 'FAILED';
+          this.renderPanoramaJobFailed(job);
+        }
+      } catch (err) {
+        console.warn('[SetupWizard] Panorama polling error:', err);
+      }
+    }, 1000);
+  }
+
+  renderPanoramaJobFailed(job) {
     const vp = this.state.viewpoints[0];
+    this.btnPrimary.disabled = false;
+    this.btnPrimary.innerHTML = '<i class="fa-solid fa-rotate-right"></i> <span>Retry Stitch</span>';
+    this.btnPrimary.onclick = () => {
+      if (this.state.activeCaptureSessionId) {
+        this.startPanoramaFromGuidedCapture({
+          captureSessionId: this.state.activeCaptureSessionId,
+          canonicalKeyframeCount: this.state.canonicalKeyframeCount
+        });
+      }
+    };
+
+    const errMsg = job.userMessage || job.error || 'Panorama processing could not complete.';
+
+    this.content.innerHTML = `
+      <div style="max-width: 560px; margin: 0 auto; text-align: center;">
+        <div style="background: rgba(239,68,68,0.12); border: 1px solid #ef4444; color: #ef4444; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px;">
+          <i class="fa-solid fa-triangle-exclamation"></i> PROCESSING ERROR
+        </div>
+        <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px;">Stitching Encountered an Issue</h3>
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 18px;">${errMsg}</p>
+
+        <div style="background: rgba(30,41,59,0.5); border: 1px solid #334155; border-radius: 10px; padding: 20px; margin-bottom: 16px;">
+          <p style="font-size: 12px; color: #cbd5e1; margin-bottom: 12px;">Candidate frames from session <b>${this.state.activeCaptureSessionId || ''}</b> are safely preserved on the server.</p>
+          <button type="button" class="btn btn-outline" style="font-size: 12px; padding: 6px 14px;" onclick="window.setupWizard.retryGuidedCapture()">
+            <i class="fa-solid fa-camera"></i> Retake Capture
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  renderStep7ViewpointReady() {
+    const vp = this.state.viewpoints[0];
+    const jobId = this.state.currentPanoramaJobId;
+
+    // If a panorama job was started and is not yet READY, display active processing state & poll
+    if (jobId && this.state.panoramaJobStatus !== 'READY') {
+      this.btnPrimary.disabled = true;
+      this.btnPrimary.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Stitching In Progress...</span>';
+
+      const jobProgress = this.state.panoramaJobProgress || 15;
+      const jobLabel = this.state.panoramaJobStageLabel || 'Processing 360° Panorama...';
+
+      this.content.innerHTML = `
+        <div style="max-width: 560px; margin: 0 auto; text-align: center;">
+          <div style="background: rgba(56,189,248,0.12); border: 1px solid #38bdf8; color: #38bdf8; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px;">
+            <i class="fa-solid fa-arrows-spin fa-spin"></i> STITCHING IN PROGRESS
+          </div>
+          <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px;">Stitching ${vp.name}</h3>
+          <p style="font-size: 13px; color: #94a3b8; margin-bottom: 18px;" id="pano-stage-label">${jobLabel}</p>
+
+          <div style="width: 100%; height: 220px; background: #0f172a; border-radius: 10px; border: 1px solid rgba(56,189,248,0.3); overflow: hidden; position: relative; margin-bottom: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px;">
+            <div style="width: 50px; height: 50px; border-radius: 50%; border: 3px solid rgba(56,189,248,0.2); border-top-color: #38bdf8; animation: spin 1s linear infinite; margin-bottom: 16px;"></div>
+            <div style="width: 100%; max-width: 320px; background: rgba(30,41,59,0.8); border-radius: 6px; height: 8px; overflow: hidden; margin-bottom: 10px;">
+              <div id="pano-progress-bar" style="width: ${jobProgress}%; height: 100%; background: #38bdf8; transition: width 0.3s ease;"></div>
+            </div>
+            <div id="pano-progress-text" style="font-size: 12px; font-weight: 700; color: #38bdf8;">${jobProgress}% Complete</div>
+            <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(9,16,29,0.85); backdrop-filter: blur(6px); border: 1px solid #38bdf8; border-radius: 4px; padding: 3px 8px; font-size: 10px; font-weight: 800; color: #38bdf8;">
+              JOB: ${jobId.slice(0, 16)}...
+            </div>
+          </div>
+        </div>
+      `;
+
+      this.startPanoramaJobPolling(jobId);
+      return;
+    }
+
+    // When READY or no job, render Viewpoint Ready view
+    this.btnPrimary.disabled = false;
+    this.btnPrimary.innerHTML = '<span>Looks Good - Next Viewpoint</span> <i class="fa-solid fa-arrow-right"></i>';
+    this.btnPrimary.onclick = () => this.nextStep();
+
+    const panoImgUrl = (this.state.currentPanoramaJob && (this.state.currentPanoramaJob.candidate?.stitchedPanoramaUrl || this.state.currentPanoramaJob.candidate?.masterUrl)) ||
+                       vp.panoramaUrl ||
+                       '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg';
+
     this.content.innerHTML = `
       <div style="max-width: 560px; margin: 0 auto; text-align: center;">
         <div style="background: rgba(52,211,153,0.12); border: 1px solid #34d399; color: #34d399; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px;">
@@ -22583,7 +22771,7 @@ class SetupWizardController {
         <p style="font-size: 13px; color: #94a3b8; margin-bottom: 18px;">Stitched equirectangular 360° panorama created from continuous capture.</p>
 
         <div style="width: 100%; height: 220px; background: #000; border-radius: 10px; border: 1px solid rgba(56,189,248,0.3); overflow: hidden; position: relative; margin-bottom: 16px;">
-          <img src="/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg" style="width: 100%; height: 100%; object-fit: cover;">
+          <img src="${panoImgUrl}" style="width: 100%; height: 100%; object-fit: cover;">
           <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(9,16,29,0.85); backdrop-filter: blur(6px); border: 1px solid #38bdf8; border-radius: 4px; padding: 3px 8px; font-size: 10px; font-weight: 800; color: #38bdf8;">
             EQUIRECTANGULAR 360°
           </div>

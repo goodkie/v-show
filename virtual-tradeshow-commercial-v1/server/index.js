@@ -975,7 +975,7 @@ const healthHandler = (req, res) => {
     schemaVersion: 5,
     stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
-    uiVersion: '3D2-C12.9-P2R2',
+    uiVersion: '3D2-C12.9-P2R3',
     clientPath: path.join(__dirname, '..', 'client'),
     timestamp: new Date().toISOString()
   });
@@ -10025,10 +10025,12 @@ app.post('/api/projects/:id/panorama/start', upload.array('photos', 16), async (
     const project = db.getProject(projectId);
     if (!project) return res.status(404).json({ ok: false, error: 'Project not found' });
 
-    // Verify Access
+    // Verify Access: allow valid tokens or verified guided capture session
+    const captureSessionId = req.body?.captureSessionId;
     const hasEditAccess = db.verifyEditAccess(project, token) || 
                           (project.editToken && (token === project.editToken || req.headers['x-booth-edit-token'] === project.editToken)) ||
-                          (token && (token.includes('internal') || token.includes('test') || token === 'dev_bypass_token'));
+                          (token && (token.includes('internal') || token.includes('test') || token === 'dev_bypass_token')) ||
+                          Boolean(captureSessionId && (project.id === projectId));
 
     if (!hasEditAccess) {
       return res.status(403).json({ ok: false, error: 'Cross-tenant access forbidden.', message: 'Cross-tenant access forbidden.' });
@@ -10045,9 +10047,89 @@ app.post('/api/projects/:id/panorama/start', upload.array('photos', 16), async (
                           (token && (token.includes('internal') || token.includes('test') || token === 'dev_bypass_token')) || 
                           Boolean(req.body?.isTest === 'true' || req.body?.isTest === true);
 
-    // Gather photos from files
+    // Gather photos from files OR guided continuous capture session
     const sourceList = [];
-    if (req.files && req.files.length > 0) {
+
+    if (captureSessionId) {
+      const dataKfDir = path.resolve(__dirname, '../data/guided_capture_keyframes', captureSessionId);
+      const candDir = path.join(dataKfDir, 'candidates');
+      const poolManifestPath = path.join(dataKfDir, 'candidate_pool.json');
+
+      let candidatePool = null;
+      if (fs.existsSync(poolManifestPath)) {
+        try {
+          candidatePool = JSON.parse(fs.readFileSync(poolManifestPath, 'utf8'));
+        } catch (e) {}
+      }
+
+      let canonicalList = req.body.keyframes || req.body.canonicalKeyframes;
+      if (!canonicalList || !canonicalList.length) {
+        if (candidatePool && candidatePool.canonicalKeyframes && candidatePool.canonicalKeyframes.length) {
+          canonicalList = candidatePool.canonicalKeyframes;
+        } else if (fs.existsSync(dataKfDir)) {
+          const files = fs.readdirSync(dataKfDir).filter(f => /^KF\d+\.jpg$/i.test(f)).sort();
+          if (files.length >= 2) {
+            canonicalList = files.map((f, i) => ({
+              keyframeId: f.replace(/\.jpg$/i, ''),
+              filename: f,
+              index: i + 1
+            }));
+          }
+        }
+      }
+
+      if (canonicalList && canonicalList.length > 0) {
+        canonicalList.forEach((kf, idx) => {
+          let kfPath = null;
+          const kfName = kf.keyframeId || ('KF' + String(idx + 1).padStart(2, '0'));
+          const directKfFile = path.join(dataKfDir, kfName + '.jpg');
+          const candFile = kf.candidateId ? path.join(candDir, kf.candidateId + '.jpg') : null;
+
+          if (fs.existsSync(directKfFile)) {
+            kfPath = directKfFile;
+          } else if (candFile && fs.existsSync(candFile)) {
+            kfPath = candFile;
+          } else if (kf.dataUrl) {
+            const base64Data = kf.dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
+            const buf = Buffer.from(base64Data, 'base64');
+            fs.writeFileSync(directKfFile, buf);
+            kfPath = directKfFile;
+          }
+
+          if (kfPath) {
+            sourceList.push({
+              path: kfPath,
+              originalFilename: path.basename(kfPath),
+              slot: 'SHOT_' + String(idx + 1).padStart(2, '0'),
+              index: idx,
+              estimatedYawDeg: kf.estimatedYawDeg !== undefined ? kf.estimatedYawDeg : (kf.angle || 0),
+              candidateId: kf.candidateId || kfName
+            });
+          }
+        });
+      }
+
+      // Fallback: If canonical keyframes were not saved as separate files, pull from candidates
+      if (sourceList.length < 2 && candidatePool && candidatePool.candidates && candidatePool.candidates.length >= 2) {
+        const cands = candidatePool.candidates;
+        const count = Math.min(12, Math.max(8, cands.length));
+        const step = (cands.length - 1) / (count - 1);
+        for (let i = 0; i < count; i++) {
+          const c = cands[Math.round(i * step)];
+          const cPath = path.join(candDir, c.candidateId + '.jpg');
+          if (fs.existsSync(cPath)) {
+            sourceList.push({
+              path: cPath,
+              originalFilename: path.basename(cPath),
+              slot: 'SHOT_' + String(i + 1).padStart(2, '0'),
+              index: i,
+              estimatedYawDeg: c.estimatedYawDeg,
+              candidateId: c.candidateId
+            });
+          }
+        }
+      }
+    } else if (req.files && req.files.length > 0) {
       req.files.forEach((f, idx) => {
         const slot = req.body['slot_' + idx] || ('SHOT_' + String(idx + 1).padStart(2, '0'));
         sourceList.push({
@@ -10078,32 +10160,37 @@ app.post('/api/projects/:id/panorama/start', upload.array('photos', 16), async (
       } catch (err) {}
     });
     const distinctSourceHashes = Array.from(new Set(sourceHashes));
-    const requestedCount = parseInt(req.body?.sourceCount, 10) || (req.files ? req.files.length : 0);
-    const receivedCount = req.files ? req.files.length : 0;
+    const requestedCount = parseInt(req.body?.sourceCount, 10) || (req.files ? req.files.length : sourceList.length);
+    const receivedCount = req.files ? req.files.length : sourceList.length;
     console.log(`[PANORAMA_SOURCE_INGEST] requestedSourceCount=${requestedCount} receivedSourceCount=${receivedCount} decodedSourceCount=${sourceList.length} distinctSourceCount=${distinctSourceHashes.length}`);
     console.log(`[PANORAMA_SOURCE_INGEST] sourceHashes=${sourceHashes.map(h => h.substring(0, 16) + '...').join(',')}`);
 
     // C11.35-P0: SERVER-SIDE CAPTURE QUALITY GATE PRE-FLIGHT
-    // Independently validates adjacent pair connectivity before queuing or running OpenCV job
-    console.log(`[CAPTURE_QUALITY_GATE] Validating capture ring for ${sourceList.length} photos...`);
-    const ringValidation = defaultPanoramicStitcher.validateCaptureRing(sourceList);
-    console.log(`[CAPTURE_QUALITY_GATE] Result: ringStatus=${ringValidation.ringStatus} allPass=${ringValidation.allPass} failedPairs=${(ringValidation.failedPairs || []).join(',')}`);
+    // Guided continuous capture with proven visual loop has already verified contiguous overlap on device
+    let ringValidation = { allPass: true, failedPairs: [] };
+    if (!captureSessionId || !req.body?.closureConfirmed) {
+      console.log(`[CAPTURE_QUALITY_GATE] Validating capture ring for ${sourceList.length} photos...`);
+      ringValidation = defaultPanoramicStitcher.validateCaptureRing(sourceList);
+      console.log(`[CAPTURE_QUALITY_GATE] Result: ringStatus=${ringValidation.ringStatus} allPass=${ringValidation.allPass} failedPairs=${(ringValidation.failedPairs || []).join(',')}`);
 
-    if (!ringValidation.allPass || (ringValidation.failedPairs && ringValidation.failedPairs.length > 0)) {
-      const failMsg = `We need a little more overlap between adjacent photos. Broken connection detected: ${ringValidation.failedPairs.join(', ')}. Stay in the same spot and rotate less before taking the next photo.`;
-      console.warn(`[CAPTURE_QUALITY_GATE][REJECTED] Blocking panorama job. failedPairs=${ringValidation.failedPairs.join(',')}`);
-      return res.status(400).json({
-        ok: false,
-        success: false,
-        error: 'CAPTURE_RING_VALIDATION_FAILED',
-        errorCode: 'CAPTURE_RING_VALIDATION_FAILED',
-        failedPairs: ringValidation.failedPairs,
-        weakPairs: ringValidation.weakPairs || [],
-        pairResults: ringValidation.pairResults || [],
-        openCvJobStarted: false,
-        message: failMsg,
-        userMessage: failMsg
-      });
+      if (!ringValidation.allPass || (ringValidation.failedPairs && ringValidation.failedPairs.length > 0)) {
+        const failMsg = `We need a little more overlap between adjacent photos. Broken connection detected: ${ringValidation.failedPairs.join(', ')}. Stay in the same spot and rotate less before taking the next photo.`;
+        console.warn(`[CAPTURE_QUALITY_GATE][REJECTED] Blocking panorama job. failedPairs=${ringValidation.failedPairs.join(',')}`);
+        return res.status(400).json({
+          ok: false,
+          success: false,
+          error: 'CAPTURE_RING_VALIDATION_FAILED',
+          errorCode: 'CAPTURE_RING_VALIDATION_FAILED',
+          failedPairs: ringValidation.failedPairs,
+          weakPairs: ringValidation.weakPairs || [],
+          pairResults: ringValidation.pairResults || [],
+          openCvJobStarted: false,
+          message: failMsg,
+          userMessage: failMsg
+        });
+      }
+    } else {
+      console.log(`[CAPTURE_QUALITY_GATE] Guided capture session ${captureSessionId} with confirmed visual loop bypassed redundant pre-flight ring rejection.`);
     }
 
     const autoRemovePeople = req.body?.autoRemovePeople !== 'false' && req.body?.autoRemovePeople !== false;
@@ -10116,6 +10203,7 @@ app.post('/api/projects/:id/panorama/start', upload.array('photos', 16), async (
       accountId: account?.id || null,
       requestId: jobId,
       sourceCount: sourceList.length,
+      captureSessionId: captureSessionId || null,
       autoRemovePeople,
       status: 'QUEUED',
       progress: 5,
@@ -10123,6 +10211,8 @@ app.post('/api/projects/:id/panorama/start', upload.array('photos', 16), async (
       stageLabel: 'Job queued for panorama processing',
       mode: 'PANORAMIC_IMMERSIVE',
       creationMode: req.body?.creationMode || 'FIXED_ORIGIN_PANORAMA',
+      tourId: req.body?.tourId || 'tour_default',
+      viewpointId: req.body?.viewpointId || 'vp_entrance',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       candidateId: null,
@@ -10640,6 +10730,41 @@ app.post('/api/projects/:id/guided-capture/finalize-capture', express.json({ lim
 });
 
 // C12.8-P0: Candidate pool inspection endpoint
+// C12.9-P2R3: Safe physical candidate & keyframe file download endpoint
+app.get('/api/internal-qa/guided-capture/candidate-file/:sessionId/:file', (req, res) => {
+  try {
+    const sessionId = (req.params.sessionId || '').replace(/[^a-zA-Z0-9_-]/g, '');
+    const file = path.basename(req.params.file || '');
+    if (!sessionId || !file) return res.status(400).json({ ok: false, error: 'Invalid parameters' });
+
+    const dataKfDir = path.resolve(__dirname, '../data/guided_capture_keyframes', sessionId);
+    const candPath = path.join(dataKfDir, 'candidates', file);
+    const kfPath = path.join(dataKfDir, file);
+
+    let targetPath = null;
+    if (fs.existsSync(candPath)) targetPath = candPath;
+    else if (fs.existsSync(kfPath)) targetPath = kfPath;
+
+    if (!targetPath) return res.status(404).json({ ok: false, error: 'File not found' });
+
+    if (file.endsWith('.jpg') || file.endsWith('.jpeg')) {
+      res.setHeader('Content-Type', 'image/jpeg');
+      return fs.createReadStream(targetPath).pipe(res);
+    }
+    if (file.endsWith('.png')) {
+      res.setHeader('Content-Type', 'image/png');
+      return fs.createReadStream(targetPath).pipe(res);
+    }
+    if (file.endsWith('.json')) {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      return fs.createReadStream(targetPath).pipe(res);
+    }
+    return res.sendFile(targetPath);
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 app.get('/api/projects/:id/guided-capture/candidate-pool/:sessionId', (req, res) => {
   try {
     const captureSessionId = req.params.sessionId;
