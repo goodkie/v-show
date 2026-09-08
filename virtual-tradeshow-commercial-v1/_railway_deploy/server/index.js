@@ -787,10 +787,32 @@ const workerIntegrityHandler = (req, res) => {
       return null;
     }
   };
+  let opencvVersion = null;
+  let pythonVersion = null;
+  try {
+    const { execFileSync } = require('child_process');
+    const pyExe = (() => {
+      if (process.env.PYTHON_PATH) return process.env.PYTHON_PATH;
+      if (process.env.PYTHON_BIN) return process.env.PYTHON_BIN;
+      for (const candidate of ['/opt/venv/bin/python3', '/opt/venv/bin/python', 'python3', 'python', '/usr/bin/python3', '/usr/local/bin/python3', '/usr/bin/python']) {
+        try {
+          execFileSync(candidate, ['--version'], { stdio: 'ignore' });
+          return candidate;
+        } catch (e) {}
+      }
+      return 'python3';
+    })();
+    pythonVersion = execFileSync(pyExe, ['--version'], { encoding: 'utf8' }).trim();
+    opencvVersion = execFileSync(pyExe, ['-c', 'import cv2; print(cv2.__version__)'], { encoding: 'utf8' }).trim();
+  } catch (pyErr) {
+    opencvVersion = 'error: ' + pyErr.message;
+  }
   res.json({
     ok: true,
     uiVersion: '3D2-C12.9-P2R10',
     gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || P315_BUILD_INFO.gitCommit,
+    pythonVersion,
+    opencvVersion,
     workerCodeHash: getHash('opencv_panorama_worker.py'),
     opencvPanoramaWorkerHash: getHash('opencv_panorama_worker.py'),
     panoramaGeometryValidatorHash: getHash('panorama_geometry_validator.py'),
@@ -10256,7 +10278,7 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
             if (fs.existsSync('e:/vivpr/ai/v-show-reconstruction-work/python_env/python.exe')) {
               return 'e:/vivpr/ai/v-show-reconstruction-work/python_env/python.exe';
             }
-            for (const candidate of ['python3', 'python', '/usr/bin/python3', '/usr/local/bin/python3', '/usr/bin/python']) {
+            for (const candidate of ['/opt/venv/bin/python3', '/opt/venv/bin/python', 'python3', 'python', '/usr/bin/python3', '/usr/local/bin/python3', '/usr/bin/python']) {
               try {
                 execFileSync(candidate, ['--version'], { stdio: 'ignore' });
                 return candidate;

@@ -87,7 +87,7 @@ class PanoramicStitcher {
       if (fs.existsSync('e:/vivpr/ai/v-show-reconstruction-work/python_env/python.exe')) {
         return 'e:/vivpr/ai/v-show-reconstruction-work/python_env/python.exe';
       }
-      for (const candidate of ['python3', 'python', '/usr/bin/python3', '/usr/local/bin/python3', '/usr/bin/python']) {
+      for (const candidate of ['/opt/venv/bin/python3', '/opt/venv/bin/python', 'python3', 'python', '/usr/bin/python3', '/usr/local/bin/python3', '/usr/bin/python']) {
         try {
           execFileSync(candidate, ['--version'], { stdio: 'ignore' });
           return candidate;

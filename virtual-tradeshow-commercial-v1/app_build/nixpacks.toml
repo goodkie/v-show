@@ -1,5 +1,7 @@
+providers = ["...", "python"]
+
 [phases.setup]
-nixPkgs = ["...", "python3", "python3Packages.pip", "python3Packages.numpy", "python3Packages.opencv4"]
+nixPkgs = ["...", "libGL", "glib"]
 
 [phases.install]
 cmds = ["npm install --ignore-scripts"]
