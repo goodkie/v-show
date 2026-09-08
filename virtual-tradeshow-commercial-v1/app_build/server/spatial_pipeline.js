@@ -78,8 +78,9 @@ class SpatialBoothPipeline {
     // Stage 1: PREPARING (10%)
     notifyStage('PREPARING', 10, 'Preparing connected viewpoint spatial pipeline');
 
+    const isPano = (options.mode === 'PANORAMIC_IMMERSIVE') || (options.creationMode === 'FIXED_ORIGIN_PANORAMA') || (sourceList.length >= 2 && options.creationMode === 'PANORAMIC_IMMERSIVE');
     const MIN_SOURCE_COUNT = 1;
-    const MAX_SOURCE_COUNT = 16;
+    const MAX_SOURCE_COUNT = isPano ? 48 : 16;
 
     if (!sourceList || sourceList.length < MIN_SOURCE_COUNT) {
       const err = new Error('At least 1 source photo is required for Spatial Booth.');
@@ -87,12 +88,11 @@ class SpatialBoothPipeline {
       throw err;
     }
     if (sourceList.length > MAX_SOURCE_COUNT) {
-      const err = new Error('Spatial Booth currently supports up to 16 source photos.');
+      const err = new Error(`Spatial Booth supports up to ${MAX_SOURCE_COUNT} source photos.`);
       err.statusCode = 400;
       throw err;
     }
 
-    const isPano = (options.mode === 'PANORAMIC_IMMERSIVE') || (options.creationMode === 'FIXED_ORIGIN_PANORAMA') || (sourceList.length >= 2 && options.creationMode === 'PANORAMIC_IMMERSIVE');
     const candidateId = (isPano ? 'cand-panorama-' : 'cand-spatial-') + Date.now();
     const processedViews = [];
     const seenHashes = new Map();
@@ -103,7 +103,7 @@ class SpatialBoothPipeline {
 
     for (let i = 0; i < sourceList.length; i++) {
       const src = sourceList[i];
-      const assignedSlot = src.slot && SLOTS.includes(src.slot) ? src.slot : (SLOTS[i] || 'CENTER');
+      const assignedSlot = src.slot || (SLOTS[i] || ('SHOT_' + String(i + 1).padStart(2, '0')));
       
       let rawBuf = null;
       try {

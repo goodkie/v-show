@@ -12,11 +12,28 @@ Features:
 
 import sys
 import os
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+if script_dir not in sys.path:
+    sys.path.insert(0, script_dir)
+
 import json
 import argparse
 import hashlib
 import cv2
 import numpy as np
+
+# Shared SO(3) pure-rotation geometry validator
+from panorama_geometry_validator import (
+    validate_edge_features,
+    build_intrinsics_matrix,
+    RAW_H_CONDITION_NUMBER_HARD_GATE,
+    ESSENTIAL_MATRIX_PRIMARY_MODEL,
+    FORCED_EDGE_POLICY
+)
+
+MIN_REGISTRATION_RETENTION = 0.85
+FULL_360_MIN_COVERAGE_DEG = 340.0
 
 cv2.ocl.setUseOpenCL(False)
 
@@ -97,62 +114,23 @@ def validate_single_pair(img_path_a, img_path_b, from_slot="SHOT_01", to_slot="S
             "inlierCount": 0,
             "inlierRatio": 0.0,
             "medianReprojectionError": None,
+            "rotationDeg": None,
             "homographyValid": False,
             "status": "FAILED"
         }
 
-    bf = cv2.BFMatcher(cv2.NORM_L2)
-    raw_matches = bf.knnMatch(des1, des2, k=2)
-    good = []
-    for m, n in raw_matches:
-        if m.distance < 0.75 * n.distance:
-            good.append(m)
+    val_res = validate_edge_features(
+        kp1, des1, kp2, des2,
+        img_shape=img1_sm.shape[:2],
+        sensor_yaw_a=None,
+        sensor_yaw_b=None
+    )
+    inlier_count = val_res["nInliers"]
+    inlier_ratio = val_res["inlierRatio"]
+    median_err = val_res["reprojErrorPx"]
 
-    if len(good) < 15:
-        return {
-            "fromSlot": from_slot,
-            "toSlot": to_slot,
-            "goodMatchCount": len(good),
-            "inlierCount": 0,
-            "inlierRatio": 0.0,
-            "medianReprojectionError": None,
-            "homographyValid": False,
-            "status": "FAILED"
-        }
-
-    src_pts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
-    dst_pts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
-
-    H, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 4.0)
-    if H is None or mask is None:
-        return {
-            "fromSlot": from_slot,
-            "toSlot": to_slot,
-            "goodMatchCount": len(good),
-            "inlierCount": 0,
-            "inlierRatio": 0.0,
-            "medianReprojectionError": None,
-            "homographyValid": False,
-            "status": "FAILED"
-        }
-
-    inlier_mask = mask.ravel().tolist()
-    inlier_count = int(sum(inlier_mask))
-    inlier_ratio = round(inlier_count / max(1, len(good)), 3)
-
-    inlier_src = src_pts[mask.ravel() == 1]
-    inlier_dst = dst_pts[mask.ravel() == 1]
-    if len(inlier_src) > 0:
-        proj = cv2.perspectiveTransform(inlier_src, H)
-        errors = np.linalg.norm(inlier_dst - proj, axis=2).ravel()
-        median_err = round(float(np.median(errors)), 2)
-    else:
-        median_err = 999.0
-
-    if inlier_count >= 30 and inlier_ratio >= 0.35 and median_err <= 4.0:
-        status = "GOOD"
-    elif inlier_count >= 15 and inlier_ratio >= 0.20 and median_err <= 6.0:
-        status = "WEAK"
+    if val_res["valid"]:
+        status = "GOOD" if inlier_count >= 30 and inlier_ratio >= 0.35 else "WEAK"
     else:
         status = "FAILED"
 
@@ -169,11 +147,12 @@ def validate_single_pair(img_path_a, img_path_b, from_slot="SHOT_01", to_slot="S
         "fromSlot": from_slot,
         "toSlot": to_slot,
         "pairLabel": f"{from_slot}->{to_slot}",
-        "goodMatchCount": len(good),
+        "goodMatchCount": val_res["nMatches"],
         "inlierCount": inlier_count,
         "inlierRatio": inlier_ratio,
         "medianReprojectionError": median_err,
-        "homographyValid": True,
+        "rotationDeg": val_res["rotationDeg"],
+        "homographyValid": val_res["valid"],
         "status": status,
         "overlapClassification": overlap_class
     }
@@ -201,18 +180,20 @@ def validate_capture_ring(sources, max_dim=1024):
         slots.append(slot)
 
     sift = cv2.SIFT_create()
-    bf = cv2.BFMatcher(cv2.NORM_L2)
     kps = []
     descs = []
+    img_shapes = []
     for p in paths:
         if not os.path.exists(p):
             kps.append([])
             descs.append(None)
+            img_shapes.append((540, 960))
             continue
         im = cv2.imread(p)
         if im is None:
             kps.append([])
             descs.append(None)
+            img_shapes.append((540, 960))
             continue
         h, w = im.shape[:2]
         s = min(1.0, max_dim / max(h, w))
@@ -220,6 +201,7 @@ def validate_capture_ring(sources, max_dim=1024):
         kp, des = sift.detectAndCompute(im_sm, None)
         kps.append(kp)
         descs.append(des)
+        img_shapes.append(im_sm.shape[:2])
 
     pair_results = []
     failed_pairs = []
@@ -233,104 +215,36 @@ def validate_capture_ring(sources, max_dim=1024):
         des1, des2 = descs[i], descs[nxt]
         kp1, kp2 = kps[i], kps[nxt]
 
-        if des1 is None or des2 is None or len(kp1) < 4 or len(kp2) < 4:
-            res = {
-                "fromSlot": from_slot,
-                "toSlot": to_slot,
-                "pairKey": pair_key,
-                "goodMatchCount": 0,
-                "inlierCount": 0,
-                "inlierRatio": 0.0,
-                "medianReprojectionError": None,
-                "homographyValid": False,
-                "status": "FAILED"
-            }
-            pair_results.append(res)
-            failed_pairs.append(pair_key)
-            continue
+        val_res = validate_edge_features(
+            kp1, des1, kp2, des2,
+            img_shape=img_shapes[i],
+            sensor_yaw_a=None,
+            sensor_yaw_b=None
+        )
+        inlier_count = val_res["nInliers"]
+        inlier_ratio = val_res["inlierRatio"]
+        median_err = val_res["reprojErrorPx"]
 
-        raw_matches = bf.knnMatch(des1, des2, k=2)
-        good = []
-        for m, n in raw_matches:
-            if m.distance < 0.75 * n.distance:
-                good.append(m)
-
-        if len(good) < 15:
-            res = {
-                "fromSlot": from_slot,
-                "toSlot": to_slot,
-                "pairKey": pair_key,
-                "goodMatchCount": len(good),
-                "inlierCount": 0,
-                "inlierRatio": 0.0,
-                "medianReprojectionError": None,
-                "homographyValid": False,
-                "status": "FAILED"
-            }
-            pair_results.append(res)
-            failed_pairs.append(pair_key)
-            continue
-
-        src_pts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
-        dst_pts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
-
-        H, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 4.0)
-        if H is None or mask is None:
-            res = {
-                "fromSlot": from_slot,
-                "toSlot": to_slot,
-                "pairKey": pair_key,
-                "goodMatchCount": len(good),
-                "inlierCount": 0,
-                "inlierRatio": 0.0,
-                "medianReprojectionError": None,
-                "homographyValid": False,
-                "status": "FAILED"
-            }
-            pair_results.append(res)
-            failed_pairs.append(pair_key)
-            continue
-
-        inlier_mask = mask.ravel().tolist()
-        inlier_count = int(sum(inlier_mask))
-        inlier_ratio = round(inlier_count / max(1, len(good)), 3)
-
-        inlier_src = src_pts[mask.ravel() == 1]
-        inlier_dst = dst_pts[mask.ravel() == 1]
-        if len(inlier_src) > 0:
-            proj = cv2.perspectiveTransform(inlier_src, H)
-            errors = np.linalg.norm(inlier_dst - proj, axis=2).ravel()
-            median_err = round(float(np.median(errors)), 2)
-        else:
-            median_err = 999.0
-
-        if inlier_count >= 30 and inlier_ratio >= 0.35 and median_err <= 4.0:
-            status = "GOOD"
-        elif inlier_count >= 15 and inlier_ratio >= 0.20 and median_err <= 6.0:
-            status = "WEAK"
-            weak_pairs.append(pair_key)
+        if val_res["valid"]:
+            status = "GOOD" if inlier_count >= 30 and inlier_ratio >= 0.35 else "WEAK"
+            if status == "WEAK":
+                weak_pairs.append(pair_key)
+            overlap_class = "GOOD_OVERLAP"
         else:
             status = "FAILED"
             failed_pairs.append(pair_key)
-
-        if status == "FAILED":
             overlap_class = "TOO_LITTLE_OVERLAP"
-        elif inlier_count >= 800 and inlier_ratio >= 0.95:
-            overlap_class = "TOO_MUCH_OVERLAP"
-        elif status in ("GOOD", "WEAK"):
-            overlap_class = "GOOD_OVERLAP"
-        else:
-            overlap_class = "GEOMETRY_UNCERTAIN"
 
         res = {
             "fromSlot": from_slot,
             "toSlot": to_slot,
             "pairKey": pair_key,
-            "goodMatchCount": len(good),
+            "goodMatchCount": val_res["nMatches"],
             "inlierCount": inlier_count,
             "inlierRatio": inlier_ratio,
             "medianReprojectionError": median_err,
-            "homographyValid": True,
+            "rotationDeg": val_res["rotationDeg"],
+            "homographyValid": val_res["valid"],
             "status": status,
             "overlapClassification": overlap_class
         }
@@ -364,6 +278,21 @@ def run_opencv_stitching(input_data):
             "userMessage": "Please provide at least 2 overlapping photos.",
             "panoramaCreated": False,
             "applyEnabled": False
+        }
+
+    if input_data.get('visualGraphConnected') is False:
+        return {
+            "status": "FAILED",
+            "errorCode": "PANORAMA_RING_GRAPH_DISCONNECTED",
+            "message": "Visual ring graph is disconnected. Rejecting stitch preflight to prevent silent camera dropout.",
+            "userMessage": "These photos do not form a continuous visual ring around 360 degrees. Please check capture coverage.",
+            "panoramaCreated": False,
+            "applyEnabled": False,
+            "geometryValid": False,
+            "full360Qualified": False,
+            "visualGraphConnected": False,
+            "engine": "OPENCV",
+            "sourceCount": len(sources)
         }
 
     # 1. Inspect source files and compute hashes
@@ -415,6 +344,8 @@ def run_opencv_stitching(input_data):
         h, w, _ = img.shape
         orig_shapes.append((w, h))
         loaded_images.append(img)
+
+
 
     # 4. Create native OpenCV Stitcher configured for PANORAMA
     stitcher = cv2.Stitcher_create(cv2.Stitcher_PANORAMA)
@@ -477,27 +408,34 @@ def run_opencv_stitching(input_data):
     vert_cov_rad = pano_h / native_focal if native_focal > 0 else 0
     vert_cov_deg = float(np.clip(np.rad2deg(vert_cov_rad), 10.0, 180.0))
 
-    # Camera geometry coverage (based on solved camera rotation yaw angles)
-    yaws = []
+    # Camera geometry coverage (based on solved camera rotation optical axis in SO(3))
+    optical_yaws = []
     if cameras:
         for c in cameras:
             R = c.R
             yaw = np.arctan2(R[0, 2], R[2, 2])
-            yaws.append(float(np.rad2deg(yaw)))
-    cam_geom_cov_deg = round(float(max(yaws) - min(yaws)), 1) if yaws else 0.0
+            optical_yaws.append(float(np.rad2deg(yaw)))
+    cam_geom_cov_deg = round(float(max(optical_yaws) - min(optical_yaws)), 1) if optical_yaws else 0.0
+    solved_optical_axis_coverage_deg = cam_geom_cov_deg
+
+    input_camera_count = len(sources)
+    registered_camera_count = len(connected_indices)
+    registration_retention = round(registered_camera_count / max(1, input_camera_count), 3)
 
     # Evaluate full 360 qualification:
-    all_connected = (len(connected_indices) == len(sources))
-    is_360_geom = (cam_geom_cov_deg >= 345.0)
-    full_360_qualified = bool(all_connected and is_360_geom and last_first_accepted)
+    all_connected = (registered_camera_count == input_camera_count)
+    high_retention = (registration_retention >= 0.85)
+    is_360_geom = (solved_optical_axis_coverage_deg >= 345.0)
+    full_360_qualified = bool(high_retention and is_360_geom and last_first_accepted)
     
     # Global ring closure error (post-bundle metric: null if unclosed/partial)
-    if full_360_qualified and len(yaws) >= 2:
-        global_ring_closure_err = round(abs(360.0 - cam_geom_cov_deg), 2)
+    if full_360_qualified and len(optical_yaws) >= 2:
+        global_ring_closure_err = round(abs(360.0 - solved_optical_axis_coverage_deg), 2)
     else:
         global_ring_closure_err = None
 
-    projection_type = "EQUIRECTANGULAR" if full_360_qualified else "SPHERICAL"
+    full_spherical = bool(full_360_qualified and vert_cov_deg >= 160.0)
+    projection_type = "EQUIRECTANGULAR_FULL_SPHERE" if full_spherical else "SPHERICAL_BAND"
     panorama_type = "FULL_360" if full_360_qualified else "PARTIAL"
 
     # Yaw / Pitch Navigation Limits
@@ -539,6 +477,10 @@ def run_opencv_stitching(input_data):
             "slot": f"SHOT_{idx+1:02d}"
         })
 
+    canonical_frame_ids = input_data.get('canonicalFrameIds') or [s.get('candidateId') for s in sources if s.get('type') == 'CANONICAL'] or [s.get('candidateId') for s in sources]
+    panorama_stitch_frame_ids = input_data.get('panoramaStitchFrameIds') or [s.get('candidateId') for s in sources]
+    supplemental_bridge_frame_ids = input_data.get('supplementalBridgeFrameIds') or [s.get('candidateId') for s in sources if s.get('type') == 'BRIDGE'] or []
+
     return {
         "status": "READY",
         "opencvStatusCode": "OK",
@@ -555,9 +497,14 @@ def run_opencv_stitching(input_data):
         "applyEnabled": True,
         "geometryValid": True,
         "allInputImagesUsed": all_connected,
+        "highRetention": high_retention,
+        "registrationRetention": registration_retention,
         "full360Qualified": full_360_qualified,
         "panoramaType": panorama_type,
         "projection": projection_type,
+        "panoramaProjectionType": projection_type,
+        "fullSphericalEquirectangular": full_spherical,
+        "doNotForce2To1": True,
         "nativeWidth": pano_w,
         "nativeHeight": pano_h,
         "nativeDimensions": f"{pano_w}x{pano_h}",
@@ -565,6 +512,7 @@ def run_opencv_stitching(input_data):
         "verticalCoverageDeg": round(vert_cov_deg, 1),
         "outputMosaicCoverageEstimateDeg": round(mosaic_cov_deg, 1),
         "cameraGeometryCoverageDeg": cam_geom_cov_deg,
+        "solvedOpticalAxisCoverageDeg": solved_optical_axis_coverage_deg,
         "lastFirstPairReprojectionError": last_first_reproj,
         "globalRingClosureError": global_ring_closure_err,
         "lastFirstPairResult": last_first_val,
@@ -573,8 +521,15 @@ def run_opencv_stitching(input_data):
         "pitchMin": pitch_min,
         "pitchMax": pitch_max,
         "connectedCameraIndices": connected_indices,
-        "connectedCount": len(connected_indices),
+        "connectedCount": registered_camera_count,
+        "registeredCameraCount": registered_camera_count,
+        "inputCameraCount": input_camera_count,
         "sourceCount": len(sources),
+        "canonicalFrameIds": canonical_frame_ids,
+        "panoramaStitchFrameIds": panorama_stitch_frame_ids,
+        "supplementalBridgeFrameIds": supplemental_bridge_frame_ids,
+        "visualGraphConnected": True,
+        "visualGraphComponentCount": input_data.get('visualGraphComponentCount', 1),
         "nativeFile": native_filename,
         "nativePath": native_path,
         "previewFile": preview_filename,

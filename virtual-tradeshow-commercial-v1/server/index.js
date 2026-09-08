@@ -1029,7 +1029,7 @@ const healthHandler = (req, res) => {
     schemaVersion: 5,
     stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
-    uiVersion: '3D2-C12.9-P2R6',
+    uiVersion: '3D2-C12.9-P2R10',
     storageRoot: GUIDED_CAPTURE_STORAGE_ROOT,
     storageRootExists: STORAGE_ROOT_EXISTS,
     storageRootWritable: STORAGE_ROOT_WRITABLE,
@@ -10137,8 +10137,8 @@ app.post('/api/projects/:id/panorama/validate-pair', upload.array('photos', 2), 
   }
 });
 
-// C11.35-P0: Capture Ring Validation Endpoint (multi-photo)
-app.post('/api/projects/:id/panorama/validate-ring', upload.array('photos', 16), async (req, res) => {
+// C11.35-P0 / C12.9-P2R10: Capture Ring Validation Endpoint (multi-photo up to 48)
+app.post('/api/projects/:id/panorama/validate-ring', upload.array('photos', 48), async (req, res) => {
   try {
     const sourceList = [];
     if (req.files && req.files.length > 0) {
@@ -10163,7 +10163,7 @@ app.post('/api/projects/:id/panorama/validate-ring', upload.array('photos', 16),
   }
 });
 
-app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), upload.array('photos', 16), async (req, res) => {
+app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), upload.array('photos', 48), async (req, res) => {
   try {
     const projectId = req.params.id;
     const token = extractAuthToken(req);
@@ -10206,14 +10206,64 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
         } catch (e) {}
       }
 
+      // C12.9-P2R10: Production Adaptive Multi-Hop Stitch Input Manifest Support
+      // Decouple canonical capture keyframes (8-16) from panorama stitch frames (canonical + supplemental bridges)
+      const panoManifestPath = path.join(paths.sessionRoot, 'panorama_input_manifest.json');
+      let panoManifest = null;
+      if (fs.existsSync(panoManifestPath)) {
+        try {
+          panoManifest = JSON.parse(fs.readFileSync(panoManifestPath, 'utf8'));
+        } catch (e) {
+          console.warn('[P2R10] Failed to parse panorama_input_manifest.json:', e.message);
+        }
+      }
+
+      if (panoManifest && Array.isArray(panoManifest.frames) && panoManifest.frames.length >= 2) {
+        console.log(`[P2R10] Using adaptive stitch manifest: ${panoManifest.frames.length} frames (canonical: ${(panoManifest.canonicalKeyframeIds || []).length}, bridges: ${(panoManifest.supplementalBridgeIds || []).length})`);
+        
+        panoManifest.frames.forEach((f, idx) => {
+          let fPath = null;
+          const candId = f.candidateId || f.id;
+          const directCandFile = path.join(paths.candidateDir, candId + '.jpg');
+          const directCanonFile = path.join(paths.canonicalDir, (f.id || candId) + '.jpg');
+          
+          if (f.file && fs.existsSync(f.file) && fs.statSync(f.file).size > 0) {
+            fPath = f.file;
+          } else if (fs.existsSync(directCandFile) && fs.statSync(directCandFile).size > 0) {
+            fPath = directCandFile;
+          } else if (fs.existsSync(directCanonFile) && fs.statSync(directCanonFile).size > 0) {
+            fPath = directCanonFile;
+          }
+
+          if (fPath) {
+            sourceList.push({
+              path: fPath,
+              originalFilename: path.basename(fPath),
+              slot: 'SHOT_' + String(idx + 1).padStart(2, '0'),
+              index: idx,
+              estimatedYawDeg: f.estimatedYawDeg !== undefined ? f.estimatedYawDeg : 0,
+              candidateId: candId,
+              keyframeId: f.id,
+              type: f.type || 'CANONICAL',
+              size: fs.statSync(fPath).size
+            });
+          }
+        });
+
+        req.body.panoramaStitchFrameIds = panoManifest.panoramaStitchFrameIds || panoManifest.frames.map(f => f.candidateId || f.id);
+        req.body.canonicalFrameIds = panoManifest.canonicalKeyframeIds || [];
+        req.body.supplementalBridgeFrameIds = panoManifest.supplementalBridgeIds || [];
+        req.body.visualGraphConnected = panoManifest.fullRingConnected !== false;
+      }
+
       let canonicalList = req.body.keyframes || req.body.canonicalKeyframes;
-      if (!canonicalList || !canonicalList.length) {
+      if (sourceList.length === 0 && (!canonicalList || !canonicalList.length)) {
         const sessionKfJson = path.join(paths.sessionRoot, 'canonical_keyframes.json');
         if (fs.existsSync(sessionKfJson)) {
           try { canonicalList = JSON.parse(fs.readFileSync(sessionKfJson, 'utf8')); } catch (e) {}
         }
       }
-      if (!canonicalList || !canonicalList.length) {
+      if (sourceList.length === 0 && (!canonicalList || !canonicalList.length)) {
         if (candidatePool && candidatePool.canonicalKeyframes && candidatePool.canonicalKeyframes.length) {
           canonicalList = candidatePool.canonicalKeyframes;
         } else if (candidatePool && candidatePool.canonicalIds && candidatePool.canonicalIds.length) {
@@ -10238,7 +10288,7 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
       const missingFrames = [];
       const resolvedList = [];
 
-      if (canonicalList && canonicalList.length > 0) {
+      if (sourceList.length === 0 && canonicalList && canonicalList.length > 0) {
         canonicalList.forEach((kf, idx) => {
           let kfPath = null;
           const kfName = kf.keyframeId || ('KF' + String(idx + 1).padStart(2, '0'));
@@ -10458,6 +10508,10 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
           sourceHashes,
           mode: 'PANORAMIC_IMMERSIVE',
           creationMode: 'FIXED_ORIGIN_PANORAMA',
+          panoramaStitchFrameIds: req.body?.panoramaStitchFrameIds,
+          canonicalFrameIds: req.body?.canonicalFrameIds,
+          supplementalBridgeFrameIds: req.body?.supplementalBridgeFrameIds,
+          visualGraphConnected: req.body?.visualGraphConnected,
           onStage: async (stage, progress, label) => {
             await db.updatePanoramaJob(jobId, {
               status: 'PROCESSING',
@@ -11087,7 +11141,7 @@ app.get('/api/internal-qa/guided-capture/storage-audit', (req, res) => {
     };
     res.json({
       ok: true,
-      serviceVersion: '3D2-C12.9-P2R6',
+      serviceVersion: '3D2-C12.9-P2R10',
       cwd: process.cwd(),
       dirname: __dirname,
       PERSISTENT_VOLUME_ROOT,

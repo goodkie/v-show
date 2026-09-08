@@ -1,0 +1,461 @@
+{
+  "sessionId": "LLST42",
+  "panoramaInputCount": 40,
+  "graphConnected": true,
+  "visualGraphConnected": true,
+  "visualGraphComponentCount": 1,
+  "fullRingReady": true,
+  "minAdjacentInliers": 24,
+  "weakestEdge": "C023->C024 (24 inliers)",
+  "closureInliers": 70,
+  "canonicalFrameIds": [
+    "C001",
+    "C004",
+    "C007",
+    "C011",
+    "C015",
+    "C018",
+    "C022",
+    "C026",
+    "C029",
+    "C033",
+    "C036",
+    "C040"
+  ],
+  "panoramaStitchFrameIds": [
+    "C001",
+    "C002",
+    "C003",
+    "C004",
+    "C005",
+    "C006",
+    "C007",
+    "C008",
+    "C009",
+    "C010",
+    "C011",
+    "C012",
+    "C013",
+    "C014",
+    "C015",
+    "C016",
+    "C017",
+    "C018",
+    "C019",
+    "C020",
+    "C021",
+    "C022",
+    "C023",
+    "C024",
+    "C025",
+    "C026",
+    "C027",
+    "C028",
+    "C029",
+    "C030",
+    "C031",
+    "C032",
+    "C033",
+    "C034",
+    "C035",
+    "C036",
+    "C037",
+    "C038",
+    "C039",
+    "C040"
+  ],
+  "supplementalBridgeFrameIds": [
+    "C002",
+    "C003",
+    "C005",
+    "C006",
+    "C008",
+    "C009",
+    "C010",
+    "C012",
+    "C013",
+    "C014",
+    "C016",
+    "C017",
+    "C019",
+    "C020",
+    "C021",
+    "C023",
+    "C024",
+    "C025",
+    "C027",
+    "C028",
+    "C030",
+    "C031",
+    "C032",
+    "C034",
+    "C035",
+    "C037",
+    "C038",
+    "C039"
+  ],
+  "minConnectedStitchInputCount": 40,
+  "maxAllowedStitchInputs": 48,
+  "frames": [
+    {
+      "sequenceIndex": 1,
+      "type": "CANONICAL",
+      "candidateId": "C001",
+      "estimatedYawDeg": 0,
+      "hash": "752b843254840a2846ccb06d6b34da31f7e98a885e200344bf918338f8033000",
+      "file": "C001.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C001.jpg"
+    },
+    {
+      "sequenceIndex": 2,
+      "type": "BRIDGE",
+      "candidateId": "C002",
+      "estimatedYawDeg": 4.9,
+      "hash": "293709a91178bce0d414a3af1ff8d02a443a2a4583d701737ea23a8ff5788179",
+      "file": "C002.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C002.jpg"
+    },
+    {
+      "sequenceIndex": 3,
+      "type": "BRIDGE",
+      "candidateId": "C003",
+      "estimatedYawDeg": 15.5,
+      "hash": "57d1d32ecb943920821a5822639a99c8f525de85a47420d07f9d71e30dfb194d",
+      "file": "C003.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C003.jpg"
+    },
+    {
+      "sequenceIndex": 4,
+      "type": "CANONICAL",
+      "candidateId": "C004",
+      "estimatedYawDeg": 27.6,
+      "hash": "993de242720bc62cc4093b5377d602549b402ee16642db1acd677d3c38efdfc4",
+      "file": "C004.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C004.jpg"
+    },
+    {
+      "sequenceIndex": 5,
+      "type": "BRIDGE",
+      "candidateId": "C005",
+      "estimatedYawDeg": 36.8,
+      "hash": "c147e8467a27ca25f98c6d2548aa04305c430e5cd4648ee91ebe5581b5ae3947",
+      "file": "C005.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C005.jpg"
+    },
+    {
+      "sequenceIndex": 6,
+      "type": "BRIDGE",
+      "candidateId": "C006",
+      "estimatedYawDeg": 46.7,
+      "hash": "41b62bb79cad0290f402683f9cfe821755a9b1df63342ccc25c64c523e10cb1b",
+      "file": "C006.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C006.jpg"
+    },
+    {
+      "sequenceIndex": 7,
+      "type": "CANONICAL",
+      "candidateId": "C007",
+      "estimatedYawDeg": 57.8,
+      "hash": "c975bf67d8bdc3fe8019676a2333241fa42ea76199645e210f853a959be3e054",
+      "file": "C007.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C007.jpg"
+    },
+    {
+      "sequenceIndex": 8,
+      "type": "BRIDGE",
+      "candidateId": "C008",
+      "estimatedYawDeg": 69.6,
+      "hash": "8da5715ae44acc275abe4bf26c62adc4b5b0829148672472f65447a346fa60ab",
+      "file": "C008.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C008.jpg"
+    },
+    {
+      "sequenceIndex": 9,
+      "type": "BRIDGE",
+      "candidateId": "C009",
+      "estimatedYawDeg": 76.9,
+      "hash": "61aa58132b1d1fb238ac358ca42947012f37a07fb56e9671135fefef97e6ef37",
+      "file": "C009.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C009.jpg"
+    },
+    {
+      "sequenceIndex": 10,
+      "type": "BRIDGE",
+      "candidateId": "C010",
+      "estimatedYawDeg": 85.4,
+      "hash": "97abab9341633a6db123e6f02004cb339e96325074f1c5c2bbf47e90b67c3c47",
+      "file": "C010.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C010.jpg"
+    },
+    {
+      "sequenceIndex": 11,
+      "type": "CANONICAL",
+      "candidateId": "C011",
+      "estimatedYawDeg": 90.1,
+      "hash": "b114a58ab954fd638ff22c901813b6cbd928c79ddeb38b1dd474135ce9a5276c",
+      "file": "C011.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C011.jpg"
+    },
+    {
+      "sequenceIndex": 12,
+      "type": "BRIDGE",
+      "candidateId": "C012",
+      "estimatedYawDeg": 98.2,
+      "hash": "1c4cb2129bd58b824251ccda52d400b36cc4673af07e53e91acfaba3d18ab5b5",
+      "file": "C012.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C012.jpg"
+    },
+    {
+      "sequenceIndex": 13,
+      "type": "BRIDGE",
+      "candidateId": "C013",
+      "estimatedYawDeg": 102.3,
+      "hash": "ee463d96f9484971e2d43669a397ef35078eabd8be2230dffe15e47c0e2017d5",
+      "file": "C013.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C013.jpg"
+    },
+    {
+      "sequenceIndex": 14,
+      "type": "BRIDGE",
+      "candidateId": "C014",
+      "estimatedYawDeg": 111.6,
+      "hash": "f788b724e29c57375abc65e8986ee0ac8fc7a58c907e8298283e886e4ce78b83",
+      "file": "C014.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C014.jpg"
+    },
+    {
+      "sequenceIndex": 15,
+      "type": "CANONICAL",
+      "candidateId": "C015",
+      "estimatedYawDeg": 120,
+      "hash": "034481ae87059cdcf07ea6ed574be58c3371ff5a14fece61b46a7db28d1e4851",
+      "file": "C015.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C015.jpg"
+    },
+    {
+      "sequenceIndex": 16,
+      "type": "BRIDGE",
+      "candidateId": "C016",
+      "estimatedYawDeg": 127,
+      "hash": "dc2751118e4cdc9a25c5a8f26f4abf6c9f1235b80babcff23dabc5aa22cc21d5",
+      "file": "C016.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C016.jpg"
+    },
+    {
+      "sequenceIndex": 17,
+      "type": "BRIDGE",
+      "candidateId": "C017",
+      "estimatedYawDeg": 138.3,
+      "hash": "26d5736408643d59bbe81ed18d6ade51db189ad438f42269cfa04c958833e535",
+      "file": "C017.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C017.jpg"
+    },
+    {
+      "sequenceIndex": 18,
+      "type": "CANONICAL",
+      "candidateId": "C018",
+      "estimatedYawDeg": 148,
+      "hash": "de9d7e4ebd4bc2745e64544ece009f1abcc122d46796d9c628868896852380f6",
+      "file": "C018.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C018.jpg"
+    },
+    {
+      "sequenceIndex": 19,
+      "type": "BRIDGE",
+      "candidateId": "C019",
+      "estimatedYawDeg": 158.1,
+      "hash": "cae6a82177d3b499eab00af4499a9683ddb1b50c720f6a226f33dcfb19597c8b",
+      "file": "C019.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C019.jpg"
+    },
+    {
+      "sequenceIndex": 20,
+      "type": "BRIDGE",
+      "candidateId": "C020",
+      "estimatedYawDeg": 169.1,
+      "hash": "5819ffbbe41cd4dc3d4b65fd7c0829d84edfd39c6b97d1dc3ba54ee552e618b9",
+      "file": "C020.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C020.jpg"
+    },
+    {
+      "sequenceIndex": 21,
+      "type": "BRIDGE",
+      "candidateId": "C021",
+      "estimatedYawDeg": 174.6,
+      "hash": "87c5425dd89aa5fdba781f55542594bc6eb9a79452480c6d9d70158cf6ec9bb8",
+      "file": "C021.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C021.jpg"
+    },
+    {
+      "sequenceIndex": 22,
+      "type": "CANONICAL",
+      "candidateId": "C022",
+      "estimatedYawDeg": 179.9,
+      "hash": "0da341b15de1d9ba4d4808e5fb15ed233e0c4690d3ac084a587ae3c349ce55d5",
+      "file": "C022.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C022.jpg"
+    },
+    {
+      "sequenceIndex": 23,
+      "type": "BRIDGE",
+      "candidateId": "C023",
+      "estimatedYawDeg": 188.2,
+      "hash": "77b48cf6073d072e4981d2cbb33a5f943e9f8da61d30cfb486b72c6cb7c821a2",
+      "file": "C023.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C023.jpg"
+    },
+    {
+      "sequenceIndex": 24,
+      "type": "BRIDGE",
+      "candidateId": "C024",
+      "estimatedYawDeg": 198.4,
+      "hash": "7e4291a3d5888d8d4e299f62642d806ea635013bb516de4fad85540ea5c70500",
+      "file": "C024.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C024.jpg"
+    },
+    {
+      "sequenceIndex": 25,
+      "type": "BRIDGE",
+      "candidateId": "C025",
+      "estimatedYawDeg": 207.1,
+      "hash": "0b4e2aa7b719ac7e17c7476370cdeda7b3b7927c060c95ca9e670340a9aa6a4b",
+      "file": "C025.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C025.jpg"
+    },
+    {
+      "sequenceIndex": 26,
+      "type": "CANONICAL",
+      "candidateId": "C026",
+      "estimatedYawDeg": 211.3,
+      "hash": "4ea4626e4c17f8b71b9717c5b02b21f35115b249b16075a2c5606852fe27e011",
+      "file": "C026.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C026.jpg"
+    },
+    {
+      "sequenceIndex": 27,
+      "type": "BRIDGE",
+      "candidateId": "C027",
+      "estimatedYawDeg": 219.2,
+      "hash": "1fe736d195d4a2695152045d09944a9e3ae7ca2e449cbfc3a9d09d3795c5fc36",
+      "file": "C027.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C027.jpg"
+    },
+    {
+      "sequenceIndex": 28,
+      "type": "BRIDGE",
+      "candidateId": "C028",
+      "estimatedYawDeg": 230.2,
+      "hash": "74ab029fe3c206b7e9dbb5ae5eac966103992b263d75560d80faf49e4947913a",
+      "file": "C028.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C028.jpg"
+    },
+    {
+      "sequenceIndex": 29,
+      "type": "CANONICAL",
+      "candidateId": "C029",
+      "estimatedYawDeg": 238.5,
+      "hash": "ab17f13d71f69dc1e1e19987b1cc46b6ead37fa56e5e874a7f4e1be4243453c0",
+      "file": "C029.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C029.jpg"
+    },
+    {
+      "sequenceIndex": 30,
+      "type": "BRIDGE",
+      "candidateId": "C030",
+      "estimatedYawDeg": 246.5,
+      "hash": "36bd55080dffadd9de9d8f2966993b2df08b2a89cf61607c3be97cb48eb612bd",
+      "file": "C030.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C030.jpg"
+    },
+    {
+      "sequenceIndex": 31,
+      "type": "BRIDGE",
+      "candidateId": "C031",
+      "estimatedYawDeg": 250.9,
+      "hash": "3f0d8c7938e8a6146c369d00427874d5bed231ce622ef5b2980b65c4c3621d9b",
+      "file": "C031.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C031.jpg"
+    },
+    {
+      "sequenceIndex": 32,
+      "type": "BRIDGE",
+      "candidateId": "C032",
+      "estimatedYawDeg": 259.9,
+      "hash": "44f352f6408ada57f1c43b69922db7f7f5c34172c77c5aaa9e0b08a2fae86046",
+      "file": "C032.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C032.jpg"
+    },
+    {
+      "sequenceIndex": 33,
+      "type": "CANONICAL",
+      "candidateId": "C033",
+      "estimatedYawDeg": 269.5,
+      "hash": "5a737786fe77b09ffefc845faf44ed06b23fe64b0b216ace2c5b0aefc400b6e9",
+      "file": "C033.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C033.jpg"
+    },
+    {
+      "sequenceIndex": 34,
+      "type": "BRIDGE",
+      "candidateId": "C034",
+      "estimatedYawDeg": 279.6,
+      "hash": "99f54cd930769c18028b5712e289857645494d3aa94220a2f17dc206141c1f63",
+      "file": "C034.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C034.jpg"
+    },
+    {
+      "sequenceIndex": 35,
+      "type": "BRIDGE",
+      "candidateId": "C035",
+      "estimatedYawDeg": 289.8,
+      "hash": "542a0b685b5008cee3525c5b0686d9a592f8eebe2f1a7eac125bd514b7aa7690",
+      "file": "C035.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C035.jpg"
+    },
+    {
+      "sequenceIndex": 36,
+      "type": "CANONICAL",
+      "candidateId": "C036",
+      "estimatedYawDeg": 296.3,
+      "hash": "eac5d35f6a58e3f6d7c7dae2e92321ee2f96d277aa7c8a89091bb776ac314a08",
+      "file": "C036.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C036.jpg"
+    },
+    {
+      "sequenceIndex": 37,
+      "type": "BRIDGE",
+      "candidateId": "C037",
+      "estimatedYawDeg": 306.3,
+      "hash": "5cc036ea7bad78ca218fa74a7cea3fee08ef9586e17bc65a4c870e2a7eb52ed7",
+      "file": "C037.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C037.jpg"
+    },
+    {
+      "sequenceIndex": 38,
+      "type": "BRIDGE",
+      "candidateId": "C038",
+      "estimatedYawDeg": 314.4,
+      "hash": "723cc5e6119e534ef12314c693fe2558f9a07cddbefd91a0c4d39816183c23d8",
+      "file": "C038.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C038.jpg"
+    },
+    {
+      "sequenceIndex": 39,
+      "type": "BRIDGE",
+      "candidateId": "C039",
+      "estimatedYawDeg": 324.7,
+      "hash": "8cc23bcd211ee9e80163d2685d20790fd584f2c5715710b9290a769137afb0fb",
+      "file": "C039.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C039.jpg"
+    },
+    {
+      "sequenceIndex": 40,
+      "type": "CANONICAL",
+      "candidateId": "C040",
+      "estimatedYawDeg": 331.9,
+      "hash": "80e8b1b58faca20a9f77029efea1e56baa8d25ab29ae9e38c634bc733cede861",
+      "file": "C040.jpg",
+      "path": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C040.jpg"
+    }
+  ]
+}

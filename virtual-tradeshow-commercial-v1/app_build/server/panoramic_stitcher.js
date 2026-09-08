@@ -151,17 +151,26 @@ class PanoramicStitcher {
     }
   }
 
-  runOpenCvWorker(sources, outputDir, candidateId) {
+  runOpenCvWorker(sources, outputDir, candidateId, options = {}) {
     const inputJson = path.join(outputDir, `${candidateId}_input.json`);
     const outputJson = path.join(outputDir, `${candidateId}_output.json`);
-    fs.writeFileSync(inputJson, JSON.stringify({ sources, outputDir, candidateId }, null, 2));
+    const payload = {
+      sources,
+      outputDir,
+      candidateId,
+      canonicalFrameIds: options.canonicalFrameIds,
+      panoramaStitchFrameIds: options.panoramaStitchFrameIds,
+      supplementalBridgeFrameIds: options.supplementalBridgeFrameIds,
+      visualGraphConnected: options.visualGraphConnected
+    };
+    fs.writeFileSync(inputJson, JSON.stringify(payload, null, 2));
 
     try {
       console.log(`[OpenCV Worker] Launching native OpenCV stitching for candidate ${candidateId} (${sources.length} sources)...`);
       const stdout = execFileSync(this.pythonExe, [this.workerScript, '--input-json', inputJson, '--output-json', outputJson], {
         encoding: 'utf-8',
         maxBuffer: 50 * 1024 * 1024,
-        timeout: 120000
+        timeout: 600000
       });
       console.log(`[OpenCV Worker] Output: ${stdout.trim()}`);
 
@@ -204,7 +213,7 @@ class PanoramicStitcher {
       index: i
     }));
 
-    const workerResult = this.runOpenCvWorker(workerSources, this.uploadsDir, candidateId);
+    const workerResult = this.runOpenCvWorker(workerSources, this.uploadsDir, candidateId, options);
 
     const isGeometryValid = (workerResult.status === 'READY') && (workerResult.geometryValid === true);
     const full360Qualified = Boolean(workerResult.full360Qualified);
@@ -242,7 +251,7 @@ class PanoramicStitcher {
         slot: v.slot || ('SHOT_' + String(i + 1).padStart(2, '0')),
         index: i
       }));
-      workerResult = this.runOpenCvWorker(workerSources, this.uploadsDir, candidateId);
+      workerResult = this.runOpenCvWorker(workerSources, this.uploadsDir, candidateId, options);
     }
 
     if (workerResult.status !== 'READY' || !workerResult.geometryValid) {
