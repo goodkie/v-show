@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "evidenceId": "C12_9_P2R13_CODE_PASS",
+  "milestone": "C12.9-P2R13",
+  "verdict": "PASS",
+  "evidenceLevel": "LIVE_PRODUCTION_VERIFIED",
+  "sourceCommit": "219f463753e4d66eefb0a842ec39920abf73b30c",
+  "productionScoped": true,
+  "productionProvenanceVerified": true,
+  "ownerExplicitApproval": false,
+  "lockedItems": {
+    "CANDIDATE_ID_PASSTHROUGH": "PASS",
+    "PYTHON_SUBSET_FILTER_APPLICATION": "PASS",
+    "WORKER_TIMEOUT_60MIN_FOR_LLST42": "PASS",
+    "APP_BUILD_PRODUCTION_PARITY": "PASS",
+    "LIVE_PRODUCTION_REPLAY": "PASS",
+    "SUBSET_APPLIED": true,
+    "STITCH_INPUT_COUNT": 36,
+    "SUBSET_EXCLUDED": ["C010", "C020", "C030", "C039"]
+  },
+  "notLocked": {
+    "GLOBAL_GEOMETRY_QA": "FAIL_P2R12_LOCKED",
+    "VISUAL_WARP_QA": "FAIL_P2R12_LOCKED",
+    "EXPOSURE_SEAM_QA": "NEEDS_IMPROVEMENT",
+    "SO3_POSE_OPTIMIZATION": "NOT_STARTED",
+    "GLOBAL_ROTATION_AVERAGING": "NOT_STARTED",
+    "PANORAMA_ACCEPTANCE": "PENDING_OWNER_VISUAL_REVIEW",
+    "FULL_360_ACCEPTANCE": false,
+    "OWNER_VISUAL_ACCEPTANCE": false
+  },
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/server/panoramic_stitcher.js",
+    "virtual-tradeshow-commercial-v1/app_build/server/panoramic_stitcher.js",
+    "virtual-tradeshow-commercial-v1/server/spatial_pipeline.js",
+    "virtual-tradeshow-commercial-v1/app_build/server/spatial_pipeline.js"
+  ],
+  "evidence": {
+    "captureSessionId": "LLST42",
+    "productionJobId": "job-pano-1788935740486-pgtz2",
+    "productionOutput": "cand-val-1788935745148_native.jpg",
+    "productionDimensions": "8985x1418",
+    "stitchInputCount": 36,
+    "p2r12HBind": 0.4182,
+    "p2r13HBind": 0.3893,
+    "p2r12SeamJump": 32.77,
+    "p2r13SeamJump": 12.05,
+    "p2r12YawStdDeg": 29.94,
+    "p2r13YawStdDeg": 13.48
+  }
+}
