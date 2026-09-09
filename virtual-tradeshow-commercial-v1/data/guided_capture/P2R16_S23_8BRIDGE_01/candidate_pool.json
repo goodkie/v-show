@@ -1,0 +1,292 @@
+{
+  "captureSessionId": "P2R16_S23_8BRIDGE_01",
+  "device": "Samsung Galaxy S23 Ultra SM-S918U",
+  "browser": "Chrome Mobile 128.0.6613.88",
+  "primaryShotCount": 8,
+  "bridgeFrameCount": 3,
+  "totalFrameCount": 11,
+  "candidates": [
+    {
+      "candidateId": "SHOT_000",
+      "assetId": "asset_P2R16_S23_SESSION_01_SHOT_000",
+      "index": 1,
+      "targetAngleDeg": 0,
+      "actualSensorYawDeg": 0.2,
+      "yawError": 0.2,
+      "width": 4000,
+      "height": 3000,
+      "bytes": 1388924,
+      "sha256": "a33b7375375e602314f03e9d3389cf72ba3b669a71e9cf068e6d88d71dbfe36d",
+      "sharpness": 20,
+      "blurStatus": "SHARP",
+      "durablyPersisted": true,
+      "photoCapabilities": {
+        "imageWidth": {
+          "max": 4000,
+          "min": 1920,
+          "step": 1
+        },
+        "imageHeight": {
+          "max": 3000,
+          "min": 1080,
+          "step": 1
+        }
+      },
+      "isHighResStill": true,
+      "stabilityWindowMs": 500,
+      "yawVelocityThreshold": 5.0
+    },
+    {
+      "candidateId": "SHOT_022_BRIDGE",
+      "assetId": "asset_P2R16_S23_8BRIDGE_01_SHOT_022_BRIDGE",
+      "targetAngleDeg": 22.5,
+      "actualSensorYawDeg": 22.4,
+      "yawError": -0.1,
+      "width": 4000,
+      "height": 3000,
+      "bytes": 1326206,
+      "sha256": "9345f869b9b66ed2839795d06adcb8d7db9a3d59d233c59bd970cf55cf7f91e5",
+      "isBridgeFrame": true,
+      "isHighResStill": true,
+      "rawLaplacianVariance": 1.943
+    },
+    {
+      "candidateId": "SHOT_045",
+      "assetId": "asset_P2R16_S23_SESSION_01_SHOT_045",
+      "index": 2,
+      "targetAngleDeg": 45,
+      "actualSensorYawDeg": 45.4,
+      "yawError": 0.4,
+      "width": 4000,
+      "height": 3000,
+      "bytes": 1366089,
+      "sha256": "34aefdf00f0dc598b974d0cdd9f45adc1166734e3b9b8c0a7787063d36e11fe5",
+      "sharpness": 20,
+      "blurStatus": "SHARP",
+      "durablyPersisted": true,
+      "photoCapabilities": {
+        "imageWidth": {
+          "max": 4000,
+          "min": 1920,
+          "step": 1
+        },
+        "imageHeight": {
+          "max": 3000,
+          "min": 1080,
+          "step": 1
+        }
+      },
+      "isHighResStill": true,
+      "stabilityWindowMs": 500,
+      "yawVelocityThreshold": 5.0
+    },
+    {
+      "candidateId": "SHOT_090",
+      "assetId": "asset_P2R16_S23_SESSION_01_SHOT_090",
+      "index": 3,
+      "targetAngleDeg": 90,
+      "actualSensorYawDeg": 89.8,
+      "yawError": -0.2,
+      "width": 4000,
+      "height": 3000,
+      "bytes": 1506237,
+      "sha256": "91f9d88bdc36539a4353070d1a58d4ae3e865689ec56e90c3612c1ea28d03d7f",
+      "sharpness": 20,
+      "blurStatus": "SHARP",
+      "durablyPersisted": true,
+      "photoCapabilities": {
+        "imageWidth": {
+          "max": 4000,
+          "min": 1920,
+          "step": 1
+        },
+        "imageHeight": {
+          "max": 3000,
+          "min": 1080,
+          "step": 1
+        }
+      },
+      "isHighResStill": true,
+      "stabilityWindowMs": 500,
+      "yawVelocityThreshold": 5.0
+    },
+    {
+      "candidateId": "SHOT_135",
+      "assetId": "asset_P2R16_S23_SESSION_01_SHOT_135",
+      "index": 4,
+      "targetAngleDeg": 135,
+      "actualSensorYawDeg": 135.3,
+      "yawError": 0.3,
+      "width": 4000,
+      "height": 3000,
+      "bytes": 1478019,
+      "sha256": "c2f138e7fcbcd327abd9e9c3977c66404b697529f632a06ee9a3290332be84f4",
+      "sharpness": 20,
+      "blurStatus": "SHARP",
+      "durablyPersisted": true,
+      "photoCapabilities": {
+        "imageWidth": {
+          "max": 4000,
+          "min": 1920,
+          "step": 1
+        },
+        "imageHeight": {
+          "max": 3000,
+          "min": 1080,
+          "step": 1
+        }
+      },
+      "isHighResStill": true,
+      "stabilityWindowMs": 500,
+      "yawVelocityThreshold": 5.0
+    },
+    {
+      "candidateId": "SHOT_157_BRIDGE",
+      "assetId": "asset_P2R16_S23_8BRIDGE_01_SHOT_157_BRIDGE",
+      "targetAngleDeg": 157.5,
+      "actualSensorYawDeg": 157.6,
+      "yawError": 0.1,
+      "width": 4000,
+      "height": 3000,
+      "bytes": 1437474,
+      "sha256": "875b8d5e5ba0635012bcda5d8f2f804728d574fdce340df67ab96d275caa3315",
+      "isBridgeFrame": true,
+      "isHighResStill": true,
+      "rawLaplacianVariance": 2.432
+    },
+    {
+      "candidateId": "SHOT_180",
+      "assetId": "asset_P2R16_S23_SESSION_01_SHOT_180",
+      "index": 5,
+      "targetAngleDeg": 180,
+      "actualSensorYawDeg": 179.7,
+      "yawError": -0.3,
+      "width": 4000,
+      "height": 3000,
+      "bytes": 1470411,
+      "sha256": "b0c0eba20ae83028444d0a7e25f6f71dd2720767248d93e0ac2c9ed4e6cf575c",
+      "sharpness": 20,
+      "blurStatus": "SHARP",
+      "durablyPersisted": true,
+      "photoCapabilities": {
+        "imageWidth": {
+          "max": 4000,
+          "min": 1920,
+          "step": 1
+        },
+        "imageHeight": {
+          "max": 3000,
+          "min": 1080,
+          "step": 1
+        }
+      },
+      "isHighResStill": true,
+      "stabilityWindowMs": 500,
+      "yawVelocityThreshold": 5.0
+    },
+    {
+      "candidateId": "SHOT_225",
+      "assetId": "asset_P2R16_S23_SESSION_01_SHOT_225",
+      "index": 6,
+      "targetAngleDeg": 225,
+      "actualSensorYawDeg": 225.1,
+      "yawError": 0.1,
+      "width": 4000,
+      "height": 3000,
+      "bytes": 1660468,
+      "sha256": "a85593f9b0bc210cf8c66cf056b36da361556a16aed0257b77c5818aa4412040",
+      "sharpness": 20,
+      "blurStatus": "SHARP",
+      "durablyPersisted": true,
+      "photoCapabilities": {
+        "imageWidth": {
+          "max": 4000,
+          "min": 1920,
+          "step": 1
+        },
+        "imageHeight": {
+          "max": 3000,
+          "min": 1080,
+          "step": 1
+        }
+      },
+      "isHighResStill": true,
+      "stabilityWindowMs": 500,
+      "yawVelocityThreshold": 5.0
+    },
+    {
+      "candidateId": "SHOT_270",
+      "assetId": "asset_P2R16_S23_SESSION_01_SHOT_270",
+      "index": 7,
+      "targetAngleDeg": 270,
+      "actualSensorYawDeg": 270.4,
+      "yawError": 0.4,
+      "width": 4000,
+      "height": 3000,
+      "bytes": 1538830,
+      "sha256": "a30d91b8e2d4b8862b07e67a814565b4fa2e074bf5aa7029f5f57ffb91db6723",
+      "sharpness": 20,
+      "blurStatus": "SHARP",
+      "durablyPersisted": true,
+      "photoCapabilities": {
+        "imageWidth": {
+          "max": 4000,
+          "min": 1920,
+          "step": 1
+        },
+        "imageHeight": {
+          "max": 3000,
+          "min": 1080,
+          "step": 1
+        }
+      },
+      "isHighResStill": true,
+      "stabilityWindowMs": 500,
+      "yawVelocityThreshold": 5.0
+    },
+    {
+      "candidateId": "SHOT_292_BRIDGE",
+      "assetId": "asset_P2R16_S23_8BRIDGE_01_SHOT_292_BRIDGE",
+      "targetAngleDeg": 292.5,
+      "actualSensorYawDeg": 292.3,
+      "yawError": -0.2,
+      "width": 4000,
+      "height": 3000,
+      "bytes": 1473029,
+      "sha256": "7472007746cdfe0ea52d5eb61b7dda57c9a7ae95adfde2a58b3aadf62c903f40",
+      "isBridgeFrame": true,
+      "isHighResStill": true,
+      "rawLaplacianVariance": 2.456
+    },
+    {
+      "candidateId": "SHOT_315",
+      "assetId": "asset_P2R16_S23_SESSION_01_SHOT_315",
+      "index": 8,
+      "targetAngleDeg": 315,
+      "actualSensorYawDeg": 314.8,
+      "yawError": -0.2,
+      "width": 4000,
+      "height": 3000,
+      "bytes": 1556625,
+      "sha256": "2528ad572418fda8f1edefe48409ed63372f19982387cf243bbd456507a838c8",
+      "sharpness": 20,
+      "blurStatus": "SHARP",
+      "durablyPersisted": true,
+      "photoCapabilities": {
+        "imageWidth": {
+          "max": 4000,
+          "min": 1920,
+          "step": 1
+        },
+        "imageHeight": {
+          "max": 3000,
+          "min": 1080,
+          "step": 1
+        }
+      },
+      "isHighResStill": true,
+      "stabilityWindowMs": 500,
+      "yawVelocityThreshold": 5.0
+    }
+  ]
+}
