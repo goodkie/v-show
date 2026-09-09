@@ -1,0 +1,51 @@
+name: 3D2 Automatic PASS Lock
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'virtual-tradeshow-commercial-v1/server/qa/pass_evidence/**.json'
+      - 'virtual-tradeshow-commercial-v1/server/qa/auto_lock_milestone.py'
+      - 'virtual-tradeshow-commercial-v1/server/qa/milestones/AUTO_LOCK_POLICY.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: 3d2-auto-pass-lock
+  cancel-in-progress: false
+
+jobs:
+  materialize-pass-locks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate legacy P2R12 baseline lock
+        run: python virtual-tradeshow-commercial-v1/server/test_c12_9_p2r12_milestone_lock.py
+
+      - name: Validate automatic lock policy
+        run: python virtual-tradeshow-commercial-v1/server/test_auto_milestone_lock.py
+
+      - name: Materialize all verified PASS locks
+        run: python virtual-tradeshow-commercial-v1/server/qa/auto_lock_milestone.py --promote-all
+
+      - name: Commit immutable lock artifacts
+        shell: bash
+        run: |
+          if git diff --quiet -- virtual-tradeshow-commercial-v1/server/qa/milestones/auto; then
+            echo 'No new PASS locks to commit.'
+            exit 0
+          fi
+          git config user.name '3D2 Milestone Lock Bot'
+          git config user.email '3d2-milestone-lock@users.noreply.github.com'
+          git add virtual-tradeshow-commercial-v1/server/qa/milestones/auto
+          git commit -m 'qa(auto-lock): freeze newly verified PASS code'
+          git push origin HEAD:master
