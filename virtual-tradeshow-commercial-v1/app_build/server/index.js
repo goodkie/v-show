@@ -10520,7 +10520,15 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
     // but MUST NOT bypass panorama-level ring/graph validation or mark full 360 valid.
     const CAPTURE_CLOSURE_BYPASSES_RING_PREFLIGHT = false;
     console.log(`[CAPTURE_QUALITY_GATE] Validating capture ring for ${sourceList.length} photos (bypass=${CAPTURE_CLOSURE_BYPASSES_RING_PREFLIGHT})...`);
-    const ringValidation = defaultPanoramicStitcher.validateCaptureRing(sourceList);
+    const rawRingValidation = defaultPanoramicStitcher.validateCaptureRing(sourceList);
+    const ringValidation = rawRingValidation || {
+      ok: false,
+      allPass: false,
+      ringStatus: 'BROKEN',
+      failedPairs: [],
+      weakPairs: [],
+      pairResults: []
+    };
     console.log(`[CAPTURE_QUALITY_GATE] Result: ringStatus=${ringValidation.ringStatus} allPass=${ringValidation.allPass} failedPairs=${(ringValidation.failedPairs || []).join(',')}`);
 
     // If source photos failed ring connection and this is NOT an authorized guided capture with physical closure, block immediately.

@@ -263,6 +263,15 @@ def validate_capture_ring(sources, max_dim=1024):
     all_pass = (len(failed_pairs) == 0)
     ring_status = "CONNECTED" if all_pass else "BROKEN"
 
+    return {
+        "ok": all_pass,
+        "allPass": all_pass,
+        "ringStatus": ring_status,
+        "failedPairs": failed_pairs,
+        "weakPairs": weak_pairs,
+        "pairResults": pair_results
+    }
+
 def rodrigues_log(R):
     rvec, _ = cv2.Rodrigues(R)
     return rvec.ravel()
