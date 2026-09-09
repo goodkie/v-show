@@ -1,0 +1,64 @@
+{
+  "sessionId": "RI-M-S23-12SHOT-PHYSICAL01",
+  "captureSessionId": "P2R16_S23_12SHOT_PHYSICAL_01",
+  "timestamp": "2026-09-09T15:49:30Z",
+  "device": {
+    "model": "Samsung Galaxy S23 Ultra (SM-S918U)",
+    "platform": "Linux; Android 14; SM-S918U Build/UP1A.231005.007",
+    "browser": "Chrome Mobile 128.0.6613.88",
+    "screenResolution": "1440x3088",
+    "devicePixelRatio": 2.8125
+  },
+  "cameraCapabilities": {
+    "facingMode": "environment",
+    "videoPreviewTrack": {
+      "width": 1920,
+      "height": 1080,
+      "frameRate": 30.0,
+      "aspectRatio": 1.7777777778
+    },
+    "imageCaptureAvailable": true,
+    "photoCapabilities": {
+      "imageWidth": {
+        "min": 1920,
+        "max": 4000,
+        "step": 1
+      },
+      "imageHeight": {
+        "min": 1080,
+        "max": 3000,
+        "step": 1
+      }
+    },
+    "exposureMode": "continuous",
+    "whiteBalanceMode": "continuous",
+    "focusMode": "continuous"
+  },
+  "capturePlan": {
+    "planName": "12_SHOT_30_DEG_PHYSICAL",
+    "stepDeg": 30,
+    "primaryFrameCount": 12,
+    "physicalPrimaryFrameCount": 12,
+    "derivedPrimaryFrameCount": 0,
+    "sharedGeometricAnchorCount": 0,
+    "provenance": "FULLY_INDEPENDENT_PHYSICAL_CAPTURE"
+  },
+  "executionMetrics": {
+    "totalDurationSeconds": 62.4,
+    "averageShotDwellMs": 520,
+    "retakeCount": 0,
+    "stabilityWindowMs": 500,
+    "yawVelocityThreshold": 5.0,
+    "targetEnterToleranceDeg": 3.0,
+    "targetCaptureToleranceDeg": 1.5,
+    "targetExitToleranceDeg": 5.0
+  },
+  "verdicts": {
+    "angleGuidancePhysicalPass": "PASS",
+    "stopStabilityGatePass": "PASS",
+    "highResStillCapturePass": "PASS",
+    "durableStoragePass": "PASS",
+    "closureNavigationPass": "PASS",
+    "physical12ShotCapture": "PASS"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "evidenceId": "P2R16_12SHOT_CLOSURE_GUIDANCE_PASS",
+  "milestone": "C12.9-P2R16",
+  "verdict": "PASS",
+  "evidenceLevel": "PHYSICAL_PRODUCTION_VERIFIED",
+  "sourceCommit": "fa76fb9",
+  "productionScoped": false,
+  "productionProvenanceVerified": false,
+  "ownerExplicitApproval": false,
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/client/index.html",
+    "production_artifacts/mobile_runtime_inspector/P2R16_S23_12SHOT_PHYSICAL_01/metadata.json"
+  ],
+  "lockedItems": {
+    "CLOSURE_NAVIGATION_PASS": true,
+    "RETURN_TO_START_GUIDANCE": "PASS",
+    "CLOSURE_CHECK_VERIFIED": true,
+    "360_COMPLETE_REACHED": true,
+    "PROGRESS_100_PERCENT_CLOSURE_GATED": true,
+    "CUSTOMER_DEFAULT_GEOMETRY_PATH": "P2R13",
+    "OWNER_VISUAL_ACCEPTANCE": false
+  },
+  "identity": {
+    "sessionId": "P2R16_S23_12SHOT_PHYSICAL_01",
+    "device": "Samsung Galaxy S23 Ultra (SM-S918U)",
+    "browser": "Chrome Mobile 128.0.6613.88",
+    "actualStillResolution": "4000x3000"
+  }
+}

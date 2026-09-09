@@ -1,0 +1,87 @@
+{
+  "sessionId": "P2R16_S23_12SHOT_PHYSICAL_01",
+  "storageMode": "VOLUME_DURABLE_FSYNC",
+  "storageLocations": [
+    "/data/guided_capture/sessions/P2R16_S23_12SHOT_PHYSICAL_01/originals/",
+    "/data/guided_capture/sessions/P2R16_S23_12SHOT_PHYSICAL_01/candidates/",
+    "production_artifacts/mobile_runtime_inspector/P2R16_S23_12SHOT_PHYSICAL_01/originals/"
+  ],
+  "fileCount": 12,
+  "allFilesExist": true,
+  "allFilesReadable": true,
+  "allHashesVerified": true,
+  "files": [
+    {
+      "name": "SHOT_000.jpg",
+      "sizeBytes": 3131501,
+      "sha256": "1e8905b839cfbda56d3fb99e6e807002a363848086c9eafb308c1071b12fd1b4",
+      "resolution": "4000x3000"
+    },
+    {
+      "name": "SHOT_030.jpg",
+      "sizeBytes": 3102883,
+      "sha256": "f4f41abbc41a185a65fde985a5b80e262a5f8a3a902dcccb60d8fd938a568f52",
+      "resolution": "4000x3000"
+    },
+    {
+      "name": "SHOT_060.jpg",
+      "sizeBytes": 3163394,
+      "sha256": "5f0fde7242e4b769ac66780443ebddfac5a68dd662cbca12cde862d5652eeba8",
+      "resolution": "4000x3000"
+    },
+    {
+      "name": "SHOT_090.jpg",
+      "sizeBytes": 3221562,
+      "sha256": "8c4c4992250e656830ed1b1852248dca5e13eb342d373098b11e30ea841b21d6",
+      "resolution": "4000x3000"
+    },
+    {
+      "name": "SHOT_120.jpg",
+      "sizeBytes": 3219716,
+      "sha256": "9a39eaf34265539e315368017c02047535113ad9f1e7e391fad905e3fb612880",
+      "resolution": "4000x3000"
+    },
+    {
+      "name": "SHOT_150.jpg",
+      "sizeBytes": 3192092,
+      "sha256": "ab42a7cbcb1105f4120233115878081a933e5a0007362c8e7a050ca58a4cf3cd",
+      "resolution": "4000x3000"
+    },
+    {
+      "name": "SHOT_180.jpg",
+      "sizeBytes": 3190757,
+      "sha256": "55eee09bd82b40d1a0d710725360bcba83ab4d4e2ec043ab7d6e49193b2632b8",
+      "resolution": "4000x3000"
+    },
+    {
+      "name": "SHOT_210.jpg",
+      "sizeBytes": 3236839,
+      "sha256": "56316954bc4c7a3d9ce195e467cfa5d690ee32ca0b36b4defadb8a75390cd22b",
+      "resolution": "4000x3000"
+    },
+    {
+      "name": "SHOT_240.jpg",
+      "sizeBytes": 3242658,
+      "sha256": "02e39a14c06657b43db9aff23eb9eedd0a4903e89b832e2219cb56ec04db069a",
+      "resolution": "4000x3000"
+    },
+    {
+      "name": "SHOT_270.jpg",
+      "sizeBytes": 3230836,
+      "sha256": "659f66da607efe72a0906d4ba72c3bf27a65fb4ae9be844b8e448da5af5e74d7",
+      "resolution": "4000x3000"
+    },
+    {
+      "name": "SHOT_300.jpg",
+      "sizeBytes": 3214312,
+      "sha256": "e7f68d919ff91d1b686856ecdcf6f7cab783a078bfb48abb7f88a948b4704596",
+      "resolution": "4000x3000"
+    },
+    {
+      "name": "SHOT_330.jpg",
+      "sizeBytes": 3244031,
+      "sha256": "517bfa3edc1984d742ab146378c1e94ebec7d49b0a710f57838607be1ccfcbbc",
+      "resolution": "4000x3000"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "closureNavigationTriggered": true,
+  "closureStartAngleDeg": 330.0,
+  "closureTargetAngleDeg": 360.0,
+  "closureToleranceDeg": 3.0,
+  "returnToStartSequence": [
+    {
+      "state": "RETURN_TO_START",
+      "yawDeg": 342.1,
+      "guidance": "RETURN TO START"
+    },
+    {
+      "state": "CLOSURE_CHECK",
+      "yawDeg": 359.4,
+      "guidance": "CLOSURE CHECK"
+    },
+    {
+      "state": "360_COMPLETE",
+      "yawDeg": 360.2,
+      "guidance": "360 COMPLETE"
+    }
+  ],
+  "closureVerified": true,
+  "closureConfirmed": true,
+  "verdict": "PASS"
+}

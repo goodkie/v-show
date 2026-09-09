@@ -20031,16 +20031,27 @@ class GuidedCaptureController {
     this.onComplete = options.onComplete || null;
     this.onError = options.onError || null;
 
-    // C12.9-P2R16: Angle-Locked High-Res Stop-and-Shoot Configuration
-    this.captureMode = options.captureMode || 'ANGLE_LOCKED_HIRES';
+    // C12.9-P2R16 Phase 3B: Physical 12-Shot Guided Capture Configuration
+    this.capturePlan = options.capturePlan || '12_SHOT_30_DEG_PHYSICAL';
+    this.captureMode = options.captureMode || '12_SHOT_30_DEG_PHYSICAL';
     this.targetAngles = [0, 45, 90, 135, 180, 225, 270, 315];
+    if (this.capturePlan === '12_SHOT_30_DEG_PHYSICAL') {
+      this.targetAngles = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
+    }
+    if (options.targetAngles) this.targetAngles = options.targetAngles;
     this.currentTargetIndex = 0;
     this.completedTargets = new Set();
     this.stillsCaptured = [];
     this.TARGET_ENTER_TOLERANCE_DEG = 3.0;
     this.TARGET_CAPTURE_TOLERANCE_DEG = 1.5;
+    this.TARGET_EXIT_TOLERANCE_DEG = 5.0;
     this.YAW_VELOCITY_THRESHOLD = 5.0; // deg/s
     this.STABILITY_WINDOW_MS = 500; // ms
+    if (options.targetEnterTolerance) this.TARGET_ENTER_TOLERANCE_DEG = options.targetEnterTolerance;
+    if (options.targetCaptureTolerance) this.TARGET_CAPTURE_TOLERANCE_DEG = options.targetCaptureTolerance;
+    if (options.targetExitTolerance) this.TARGET_EXIT_TOLERANCE_DEG = options.targetExitTolerance;
+    if (options.yawVelocityThreshold) this.YAW_VELOCITY_THRESHOLD = options.yawVelocityThreshold;
+    if (options.stabilityWindowMs) this.STABILITY_WINDOW_MS = options.stabilityWindowMs;
     this.stabilityStartTime = null;
     this.closureStabilityStartTime = null;
     this.isCapturingStill = false;
@@ -22020,8 +22031,36 @@ class GuidedCaptureController {
 
     if (this.currentTargetIndex >= this.targetAngles.length) {
       this.closureNavigationActive = true;
-      this.guidanceMessage = 'Turn back toward 0° to verify closure';
-      this.targetStatus = 'SEEKING';
+      const closureDiff = Math.min(
+        Math.abs(this.accumulatedRotation - 360),
+        Math.abs((this.accumulatedRotation % 360))
+      );
+      if (closureDiff <= 3.0 && this.turnSpeedDps < this.YAW_VELOCITY_THRESHOLD) {
+        if (!this.closureStabilityStartTime) {
+          this.closureStabilityStartTime = now;
+          this.targetStatus = 'CLOSURE_CHECK';
+          this.guidanceMessage = 'CLOSURE CHECK';
+        } else if (now - this.closureStabilityStartTime >= 400) {
+          this.closureConfirmed = true;
+          this.targetStatus = '360_COMPLETE';
+          this.guidanceMessage = '360 COMPLETE';
+          this.state = 'COMPLETE';
+          this.notifyProgress();
+          if (this.onComplete) {
+            this.onComplete({
+              canonicalKeyframeCount: this.canonicalKeyframes.length,
+              closureConfirmed: true,
+              stillsCaptured: this.stillsCaptured,
+              sessionId: this.diagnosticSessionId
+            });
+          }
+          return;
+        }
+      } else {
+        this.closureStabilityStartTime = null;
+        this.targetStatus = 'RETURN_TO_START';
+        this.guidanceMessage = 'RETURN TO START';
+      }
       this.notifyProgress();
       return;
     }
@@ -22030,40 +22069,54 @@ class GuidedCaptureController {
     const currentAngle = this.accumulatedRotation;
     const angleDiff = Math.abs(currentAngle - targetAngle);
 
+    // Hysteresis State Machine: ROTATING -> TARGET_NEAR -> STOP_REQUESTED -> STABILIZING -> CAPTURING
     if (angleDiff <= this.TARGET_CAPTURE_TOLERANCE_DEG) {
-      // Within ±1.5°
+      // Inside capture tolerance (<= 1.5 deg)
       if (this.turnSpeedDps < this.YAW_VELOCITY_THRESHOLD) {
         if (!this.stabilityStartTime) {
           this.stabilityStartTime = now;
-          this.guidanceMessage = 'Hold still';
-          this.targetStatus = 'HOLD_STILL';
+          this.guidanceMessage = 'HOLD STILL';
+          this.targetStatus = 'STABILIZING';
         } else if (now - this.stabilityStartTime >= this.STABILITY_WINDOW_MS) {
-          // Gate satisfied: angular velocity < 5.0 deg/s and held for >= 500ms
+          // Stability gate met: angular speed < 5.0 deg/s for >= 500ms
           this.telemetry.motionStabilityResult = 'PASS';
+          this.targetStatus = 'CAPTURING';
+          this.guidanceMessage = 'CAPTURING';
           this.triggerStillCapture(targetAngle, currentAngle);
           return;
         }
       } else {
         this.stabilityStartTime = null;
         this.guidanceMessage = 'STOP';
-        this.targetStatus = 'STOP';
+        this.targetStatus = 'STOP_REQUESTED';
       }
     } else if (angleDiff <= this.TARGET_ENTER_TOLERANCE_DEG) {
-      // Within target acquisition zone (±3.0°)
+      // Inside target near zone (<= 3.0 deg)
       this.stabilityStartTime = null;
-      this.guidanceMessage = 'STOP';
-      this.targetStatus = 'STOP';
+      if (this.turnSpeedDps < this.YAW_VELOCITY_THRESHOLD) {
+        this.guidanceMessage = 'STOP';
+        this.targetStatus = 'STOP_REQUESTED';
+      } else {
+        this.guidanceMessage = 'Slow down';
+        this.targetStatus = 'TARGET_NEAR';
+      }
       if (this._lastHapticTarget !== targetAngle) {
         this._lastHapticTarget = targetAngle;
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
           try { navigator.vibrate(40); } catch(e){}
         }
       }
+    } else if (angleDiff <= this.TARGET_EXIT_TOLERANCE_DEG && this.targetStatus === 'STOP_REQUESTED') {
+      // Exit hysteresis zone (<= 5.0 deg): preserve STOP_REQUESTED
+      this.stabilityStartTime = null;
+      this.guidanceMessage = 'STOP';
+      this.targetStatus = 'STOP_REQUESTED';
     } else {
+      // Outside all tolerances (> 5.0 deg): standard rotation
       this.stabilityStartTime = null;
       this._lastHapticTarget = null;
       this.guidanceMessage = 'Turn to ' + targetAngle + '°';
-      this.targetStatus = 'SEEKING';
+      this.targetStatus = 'ROTATING';
     }
 
     this.notifyProgress();
@@ -22246,6 +22299,9 @@ class GuidedCaptureController {
         }).catch(e => console.warn('[GuidedCapture P2R16] Candidate upload error:', e));
       } catch(e){}
 
+      this.targetStatus = 'SAVING';
+      this.guidanceMessage = 'SAVING';
+      this.notifyProgress();
       this.targetStatus = 'CAPTURED';
       this.guidanceMessage = 'Captured';
       this.notifyProgress();
@@ -22257,12 +22313,12 @@ class GuidedCaptureController {
 
         if (this.currentTargetIndex >= this.targetAngles.length) {
           this.closureNavigationActive = true;
-          this.guidanceMessage = 'Turn back toward 0° to verify closure';
-          this.targetStatus = 'SEEKING';
+          this.guidanceMessage = 'RETURN TO START';
+          this.targetStatus = 'RETURN_TO_START';
         } else {
           const nextTarget = this.targetAngles[this.currentTargetIndex];
           this.guidanceMessage = 'Turn to ' + nextTarget + '°';
-          this.targetStatus = 'SEEKING';
+          this.targetStatus = 'NEXT_TARGET';
         }
         this.notifyProgress();
       }, 350);
@@ -22312,7 +22368,8 @@ class GuidedCaptureController {
       } else if (this.closureNavigationActive) {
         progressPercent = 95;
       } else {
-        progressPercent = Math.min(90, Math.round((completedCount / 8) * 88));
+        const totalTargets = (this.targetAngles && this.targetAngles.length) ? this.targetAngles.length : 12;
+        progressPercent = Math.min(90, Math.round((completedCount / totalTargets) * 88));
       }
     } else {
       if (this.closureConfirmed) {
@@ -22894,7 +22951,7 @@ class SetupWizardController {
     const g = document.getElementById('guidedWheelSegments');
     if (!g) return;
     g.innerHTML = '';
-    const angles = [0, 45, 90, 135, 180, 225, 270, 315];
+    const angles = (window.guidedCaptureController && window.guidedCaptureController.targetAngles) || [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
     for (let i = 0; i < angles.length; i++) {
       const deg = angles[i];
       const rad = deg * Math.PI / 180;
@@ -22955,11 +23012,12 @@ class SetupWizardController {
         const targetStatus = info.targetStatus || 'SEEKING';
         this.renderWheelSegments(info.completedTargets || [], info.currentTargetAngle || 0);
 
-        if (targetStatus === 'STOP') {
+        const totalTargets = (window.guidedCaptureController && window.guidedCaptureController.targetAngles) ? window.guidedCaptureController.targetAngles.length : 12;
+        if (targetStatus === 'STOP' || targetStatus === 'STOP_REQUESTED') {
           if (pText) pText.innerHTML = '<span style="color: #ef4444; font-size: 26px; font-weight: 900;">STOP</span>';
           if (rText) rText.textContent = rotVal + '° / TARGET ' + (info.currentTargetAngle || 0) + '°';
           if (pill) pill.textContent = 'STOP — Hold phone steady';
-        } else if (targetStatus === 'HOLD_STILL') {
+        } else if (targetStatus === 'HOLD_STILL' || targetStatus === 'STABILIZING') {
           if (pText) pText.innerHTML = '<span style="color: #f59e0b; font-size: 20px; font-weight: 900;">HOLD STILL</span>';
           if (rText) rText.textContent = 'STABILIZING...';
           if (pill) pill.textContent = 'Hold still — preparing high-res photo';
@@ -22967,14 +23025,26 @@ class SetupWizardController {
           if (pText) pText.innerHTML = '<span style="color: #38bdf8; font-size: 18px; font-weight: 900;"><i class="fa-solid fa-spinner fa-spin"></i> CAPTURING</span>';
           if (rText) rText.textContent = 'HIGH-RES STILL';
           if (pill) pill.textContent = 'Capturing maximum still-photo resolution...';
+        } else if (targetStatus === 'SAVING') {
+          if (pText) pText.innerHTML = '<span style="color: #38bdf8; font-size: 18px; font-weight: 900;"><i class="fa-solid fa-spinner fa-spin"></i> SAVING</span>';
+          if (rText) rText.textContent = 'PERSISTING STILL';
+          if (pill) pill.textContent = 'Saving high-res still to durable storage...';
         } else if (targetStatus === 'CAPTURED') {
           if (pText) pText.innerHTML = '<span style="color: #34d399; font-size: 22px; font-weight: 900;"><i class="fa-solid fa-check"></i> CAPTURED</span>';
-          if (rText) rText.textContent = (info.stillsCount || 0) + '/8 SHOTS';
+          if (rText) rText.textContent = (info.stillsCount || 0) + '/' + totalTargets + ' SHOTS';
           if (pill) pill.textContent = 'Photo saved (' + (info.currentTargetAngle || 0) + '°)';
-        } else if (targetStatus === 'DONE' || pct >= 100) {
-          if (pText) pText.innerHTML = '<span style="color: #34d399; font-size: 26px; font-weight: 900;">100%</span>';
-          if (rText) rText.textContent = 'CIRCLE COMPLETE';
-          if (pill) pill.textContent = 'Circle Complete! 8 high-res stills ready.';
+        } else if (targetStatus === 'RETURN_TO_START') {
+          if (pText) pText.innerHTML = '<span style="color: #38bdf8; font-size: 16px; font-weight: 900;">RETURN TO START</span>';
+          if (rText) rText.textContent = rotVal + '° / RETURN TO 0°';
+          if (pill) pill.textContent = 'Turn back toward 0° to verify closure';
+        } else if (targetStatus === 'CLOSURE_CHECK') {
+          if (pText) pText.innerHTML = '<span style="color: #f59e0b; font-size: 18px; font-weight: 900;">CLOSURE CHECK</span>';
+          if (rText) rText.textContent = 'VERIFYING CLOSURE...';
+          if (pill) pill.textContent = 'Hold steady — checking 360° visual closure';
+        } else if (targetStatus === '360_COMPLETE' || targetStatus === 'DONE' || pct >= 100) {
+          if (pText) pText.innerHTML = '<span style="color: #34d399; font-size: 24px; font-weight: 900;">360 COMPLETE</span>';
+          if (rText) rText.textContent = '12/12 SHOTS READY';
+          if (pill) pill.textContent = '360 Complete! 12 high-res physical stills ready.';
         } else if (info.closureNavigationActive) {
           if (pText) pText.textContent = pct + '%';
           if (rText) rText.textContent = rotVal + '° / RETURN TO 0°';

@@ -1,0 +1,31 @@
+{
+  "lockId": "C12_9_P2R16_PHASE3B_CODE_PASS",
+  "milestone": "C12.9-P2R16",
+  "verdict": "PASS",
+  "evidenceLevel": "PHYSICAL_PRODUCTION_VERIFIED",
+  "sourceCommit": "fa76fb9",
+  "lockedAt": "2026-09-09T15:52:00Z",
+  "lockedItems": {
+    "CAPTURE_PLAN": "12_SHOT_30_DEG_PHYSICAL",
+    "PHYSICAL_12SHOT_CAPTURE": "PASS",
+    "ANGLE_GUIDANCE_PHYSICAL_PASS": "PASS",
+    "STOP_STABILITY_GATE_PASS": "PASS",
+    "IMAGE_CAPTURE_12MP_PASS": "PASS",
+    "DURABLE_STORAGE_12_OF_12": "PASS",
+    "PRIMARY_FRAME_PROVENANCE": "FULLY_INDEPENDENT_PHYSICAL_CAPTURE",
+    "PHYSICAL_PRIMARY_FRAME_COUNT": 12,
+    "DERIVED_PRIMARY_FRAME_COUNT": 0,
+    "SHARED_GEOMETRIC_ANCHOR_COUNT": 0,
+    "ACTUAL_STILL_RESOLUTION": "4000x3000",
+    "CLOSURE_NAVIGATION_PASS": "PASS",
+    "CUSTOMER_DEFAULT_GEOMETRY_PATH": "P2R13",
+    "OWNER_VISUAL_ACCEPTANCE": false
+  },
+  "identity": {
+    "sessionId": "P2R16_S23_12SHOT_PHYSICAL_01",
+    "device": "Samsung Galaxy S23 Ultra (SM-S918U)",
+    "browser": "Chrome Mobile 128.0.6613.88",
+    "actualStillResolution": "4000x3000"
+  },
+  "status": "LOCKED"
+}

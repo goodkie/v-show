@@ -1,0 +1,22 @@
+{
+  "sessionId": "RI-M-S23-12SHOT-PHYSICAL01",
+  "videoTrackActive": true,
+  "videoPreviewResolution": "1920x1080",
+  "stillResolution": "4000x3000",
+  "photoSettings": {
+    "imageWidth": 4000,
+    "imageHeight": 3000
+  },
+  "capabilities": {
+    "imageWidth": {
+      "min": 1920,
+      "max": 4000,
+      "step": 1
+    },
+    "imageHeight": {
+      "min": 1080,
+      "max": 3000,
+      "step": 1
+    }
+  }
+}
