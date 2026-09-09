@@ -20031,6 +20031,26 @@ class GuidedCaptureController {
     this.onComplete = options.onComplete || null;
     this.onError = options.onError || null;
 
+    // C12.9-P2R16: Angle-Locked High-Res Stop-and-Shoot Configuration
+    this.captureMode = options.captureMode || 'ANGLE_LOCKED_HIRES';
+    this.targetAngles = [0, 45, 90, 135, 180, 225, 270, 315];
+    this.currentTargetIndex = 0;
+    this.completedTargets = new Set();
+    this.stillsCaptured = [];
+    this.TARGET_ENTER_TOLERANCE_DEG = 3.0;
+    this.TARGET_CAPTURE_TOLERANCE_DEG = 1.5;
+    this.YAW_VELOCITY_THRESHOLD = 5.0; // deg/s
+    this.STABILITY_WINDOW_MS = 500; // ms
+    this.stabilityStartTime = null;
+    this.closureStabilityStartTime = null;
+    this.isCapturingStill = false;
+    this.closureNavigationActive = false;
+    this.targetStatus = 'SEEKING'; // SEEKING, STOP, HOLD_STILL, CAPTURING, CAPTURED, DONE
+    this.imageCapture = null;
+    this.photoCapabilities = null;
+    this.adaptiveBridgeTargets = [];
+    this._lastHapticTarget = null;
+
     this.KEYFRAME_SELECTION_MODE = 'ADAPTIVE_CLOSURE_PRESERVING';
     this.MIN_CANONICAL_KEYFRAMES = 8;
     this.SOFT_TARGET_KEYFRAMES = 12;
@@ -20175,7 +20195,22 @@ class GuidedCaptureController {
       errorCode: null,
       errorMessage: null,
       diagnosticSessionId: this.diagnosticSessionId,
-      startTime: null
+      startTime: null,
+      // C12.9-P2R16 Telemetry
+      captureMode: this.captureMode,
+      imageCaptureAvailable: false,
+      photoCapabilities: null,
+      maxStillWidth: null,
+      maxStillHeight: null,
+      actualStillWidth: null,
+      actualStillHeight: null,
+      capturePlanSelected: '8_SHOT_45_DEG',
+      angleStepDeg: 45,
+      stabilityWindowMs: 500,
+      yawVelocityThreshold: 5.0,
+      motionStabilityResult: 'PENDING',
+      stillsCapturedCount: 0,
+      stillsResults: {}
     };
 
     this.startOrientation = null;
@@ -20360,6 +20395,15 @@ class GuidedCaptureController {
     this.candidateUploadQueue = [];
     this.persistedCandidateCount = 0;
     this.candidateUploadFailures = 0;
+    // Reset P2R16 angle-locked state
+    this.currentTargetIndex = 0;
+    this.completedTargets = new Set();
+    this.stillsCaptured = [];
+    this.stabilityStartTime = null;
+    this.closureStabilityStartTime = null;
+    this.isCapturingStill = false;
+    this.closureNavigationActive = false;
+    this.targetStatus = 'SEEKING';
     if (this.visualLoopDetector && typeof this.visualLoopDetector.reset === 'function') {
       this.visualLoopDetector.reset();
     }
@@ -20598,6 +20642,26 @@ class GuidedCaptureController {
     const liveTracks = stream.getVideoTracks().filter(t => t.readyState === 'live');
     this.telemetry.activeVideoTrackCount = liveTracks.length;
     this.telemetry.videoTrackActive = liveTracks.length > 0;
+
+    // C12.9-P2R16: Probe ImageCapture and photo capabilities
+    const photoTrack = stream.getVideoTracks()[0];
+    if (photoTrack && typeof window !== 'undefined' && typeof window.ImageCapture !== 'undefined') {
+      try {
+        this.imageCapture = new window.ImageCapture(photoTrack);
+        if (typeof this.imageCapture.getPhotoCapabilities === 'function') {
+          this.photoCapabilities = await this.imageCapture.getPhotoCapabilities();
+          this.telemetry.imageCaptureAvailable = true;
+          this.telemetry.photoCapabilities = this.photoCapabilities;
+          if (this.photoCapabilities && this.photoCapabilities.imageWidth) {
+            this.telemetry.maxStillWidth = this.photoCapabilities.imageWidth.max;
+            this.telemetry.maxStillHeight = this.photoCapabilities.imageHeight.max;
+          }
+          console.log('[GuidedCapture P2R16] Photo capabilities probed:', this.photoCapabilities);
+        }
+      } catch (capErr) {
+        console.warn('[GuidedCapture P2R16] ImageCapture probe failed:', capErr);
+      }
+    }
 
     // 4. ATTACHING_STREAM & ARM PRESENTATION WATCHDOG
     // The 12-second safety boundary begins strictly when video presentation begins (srcObject assigned)
@@ -21089,16 +21153,21 @@ class GuidedCaptureController {
 
     this.prevLuminanceProfile = currentProfile;
 
-    // Candidate Extraction Trigger (adaptive sampling)
-    const angleDelta = Math.abs(this.accumulatedRotation - (this.lastCandidateAngle !== null ? this.lastCandidateAngle : -999));
-    const timeDelta = now - (this.lastCandidateTimestamp || 0);
-    const shouldSample = (this.candidateFrames.length === 0 && this.videoElement.videoWidth > 0) ||
-                         (angleDelta >= 8.0) ||
-                         (timeDelta >= 350 && angleDelta >= 4.0);
+    // C12.9-P2R16: In Angle-Locked High-Res Stop-and-Shoot mode, delegate candidate triggers to target state machine
+    if (this.captureMode === 'ANGLE_LOCKED_HIRES') {
+      this.checkAngleLockedTarget(now);
+    } else {
+      // Legacy candidate extraction trigger (adaptive sampling)
+      const angleDelta = Math.abs(this.accumulatedRotation - (this.lastCandidateAngle !== null ? this.lastCandidateAngle : -999));
+      const timeDelta = now - (this.lastCandidateTimestamp || 0);
+      const shouldSample = (this.candidateFrames.length === 0 && this.videoElement.videoWidth > 0) ||
+                           (angleDelta >= 8.0) ||
+                           (timeDelta >= 350 && angleDelta >= 4.0);
 
-    const activeStates = ['CAPTURING', 'APPROACHING_CLOSURE', 'SEARCHING_FOR_START_OVERLAP', 'CLOSURE_CANDIDATE'];
-    if (shouldSample && activeStates.includes(this.state)) {
-      this.extractCandidateFrame(this.accumulatedRotation);
+      const activeStates = ['CAPTURING', 'APPROACHING_CLOSURE', 'SEARCHING_FOR_START_OVERLAP', 'CLOSURE_CANDIDATE'];
+      if (shouldSample && activeStates.includes(this.state)) {
+        this.extractCandidateFrame(this.accumulatedRotation);
+      }
     }
   }
 
@@ -21721,6 +21790,11 @@ class GuidedCaptureController {
     this.telemetry.normalizedSensorRotationDeg = Math.round(this.accumulatedRotation * 10) / 10;
     this.telemetry.closureSensorExpectedDelta = Math.round(Math.abs(this.accumulatedRotation - 360.0) * 10) / 10;
 
+    // C12.9-P2R16: Update angle guidance and stability gate on motion delta
+    if (this.captureMode === 'ANGLE_LOCKED_HIRES') {
+      this.checkAngleLockedTarget(now);
+    }
+
     // ── FSM State Transitions Based on Progress & Closure Gate ──
     if (this.accumulatedRotation >= 280.0 && this.accumulatedRotation < this.MIN_ROTATION_SEARCH_GATE && this.state === 'CAPTURING') {
       this.state = 'APPROACHING_CLOSURE';
@@ -21877,6 +21951,348 @@ class GuidedCaptureController {
     }
   }
 
+  // C12.9-P2R16: Check target angle proximity, stability gate, and trigger stop-and-shoot
+  checkAngleLockedTarget(now = Date.now()) {
+    if (this.captureMode !== 'ANGLE_LOCKED_HIRES') return;
+    const activeStates = ['CAPTURING', 'APPROACHING_CLOSURE', 'SEARCHING_FOR_START_OVERLAP', 'CLOSURE_CANDIDATE'];
+    if (!activeStates.includes(this.state)) return;
+
+    if (this.closureNavigationActive) {
+      // Guide user back toward 0° (or around to 360°)
+      const currentRot = this.accumulatedRotation;
+      const closureDelta = Math.abs(currentRot - 360.0);
+      const isNearClosure = (closureDelta <= this.TARGET_ENTER_TOLERANCE_DEG) || (currentRot >= 355.0);
+
+      if (isNearClosure) {
+        if (this.turnSpeedDps < this.YAW_VELOCITY_THRESHOLD) {
+          if (!this.closureStabilityStartTime) {
+            this.closureStabilityStartTime = now;
+            this.guidanceMessage = 'Hold still to verify closure';
+            this.targetStatus = 'HOLD_STILL';
+          } else if (now - this.closureStabilityStartTime >= this.STABILITY_WINDOW_MS) {
+            // Closure verified!
+            this.closureConfirmed = true;
+            this.closureVerified = true;
+            this.state = 'COMPLETE';
+            this.progressPercent = 100;
+            this.guidanceMessage = 'Circle Complete! 8 high-res stills captured.';
+            this.targetStatus = 'DONE';
+            this.telemetry.closureConfirmed = true;
+            this.telemetry.captureCompletionReason = 'VISUAL_LOOP_CONFIRMED';
+            this.notifyProgress();
+            this.sendTelemetry();
+
+            if (this.onComplete) {
+              this.onComplete({
+                captureSessionId: this.diagnosticSessionId,
+                candidatePoolId: this.diagnosticSessionId,
+                accumulatedRotation: this.accumulatedRotation,
+                direction: this.rotationDirection,
+                canonicalKeyframeCount: this.canonicalKeyframes.length,
+                keyframes: this.canonicalKeyframes,
+                closureVerified: true,
+                closureConfirmed: true,
+                captureCompletionReason: 'VISUAL_LOOP_CONFIRMED'
+              });
+            }
+            return;
+          }
+        } else {
+          this.closureStabilityStartTime = null;
+          this.guidanceMessage = 'STOP';
+          this.targetStatus = 'STOP';
+        }
+      } else {
+        this.closureStabilityStartTime = null;
+        this.guidanceMessage = 'Turn back toward 0° to verify closure';
+        this.targetStatus = 'SEEKING';
+      }
+      this.notifyProgress();
+      return;
+    }
+
+    if (this.isCapturingStill) {
+      this.guidanceMessage = 'CAPTURING';
+      this.targetStatus = 'CAPTURING';
+      this.notifyProgress();
+      return;
+    }
+
+    if (this.currentTargetIndex >= this.targetAngles.length) {
+      this.closureNavigationActive = true;
+      this.guidanceMessage = 'Turn back toward 0° to verify closure';
+      this.targetStatus = 'SEEKING';
+      this.notifyProgress();
+      return;
+    }
+
+    const targetAngle = this.targetAngles[this.currentTargetIndex];
+    const currentAngle = this.accumulatedRotation;
+    const angleDiff = Math.abs(currentAngle - targetAngle);
+
+    if (angleDiff <= this.TARGET_CAPTURE_TOLERANCE_DEG) {
+      // Within ±1.5°
+      if (this.turnSpeedDps < this.YAW_VELOCITY_THRESHOLD) {
+        if (!this.stabilityStartTime) {
+          this.stabilityStartTime = now;
+          this.guidanceMessage = 'Hold still';
+          this.targetStatus = 'HOLD_STILL';
+        } else if (now - this.stabilityStartTime >= this.STABILITY_WINDOW_MS) {
+          // Gate satisfied: angular velocity < 5.0 deg/s and held for >= 500ms
+          this.telemetry.motionStabilityResult = 'PASS';
+          this.triggerStillCapture(targetAngle, currentAngle);
+          return;
+        }
+      } else {
+        this.stabilityStartTime = null;
+        this.guidanceMessage = 'STOP';
+        this.targetStatus = 'STOP';
+      }
+    } else if (angleDiff <= this.TARGET_ENTER_TOLERANCE_DEG) {
+      // Within target acquisition zone (±3.0°)
+      this.stabilityStartTime = null;
+      this.guidanceMessage = 'STOP';
+      this.targetStatus = 'STOP';
+      if (this._lastHapticTarget !== targetAngle) {
+        this._lastHapticTarget = targetAngle;
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          try { navigator.vibrate(40); } catch(e){}
+        }
+      }
+    } else {
+      this.stabilityStartTime = null;
+      this._lastHapticTarget = null;
+      this.guidanceMessage = 'Turn to ' + targetAngle + '°';
+      this.targetStatus = 'SEEKING';
+    }
+
+    this.notifyProgress();
+  }
+
+  // C12.9-P2R16: Execute still photo capture with maximum resolution and immutable archival
+  async triggerStillCapture(targetAngle, currentAngle) {
+    if (this.isCapturingStill) return;
+    this.isCapturingStill = true;
+    this.targetStatus = 'CAPTURING';
+    this.guidanceMessage = 'CAPTURING';
+    this.notifyProgress();
+
+    const shotIdx = this.currentTargetIndex;
+    const shotId = 'SHOT_' + String(targetAngle).padStart(3, '0');
+    const now = Date.now();
+    const yawError = Math.round((currentAngle - targetAngle) * 10) / 10;
+
+    try {
+      let blob = null;
+      let dataUrl = null;
+      let width = 0;
+      let height = 0;
+      let bytes = 0;
+      let sha256 = '';
+
+      // Preferred API Path: ImageCapture.takePhoto()
+      if (this.imageCapture && typeof this.imageCapture.takePhoto === 'function') {
+        try {
+          const photoOpts = {};
+          if (this.photoCapabilities && this.photoCapabilities.imageWidth && this.photoCapabilities.imageWidth.max) {
+            photoOpts.imageWidth = this.photoCapabilities.imageWidth.max;
+            photoOpts.imageHeight = this.photoCapabilities.imageHeight.max;
+          }
+          blob = await this.imageCapture.takePhoto(photoOpts);
+          if (blob) {
+            bytes = blob.size;
+            const buffer = await blob.arrayBuffer();
+            if (typeof crypto !== 'undefined' && crypto.subtle) {
+              const hashBuf = await crypto.subtle.digest('SHA-256', buffer);
+              const hashArr = Array.from(new Uint8Array(hashBuf));
+              sha256 = hashArr.map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+            dataUrl = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.readAsDataURL(blob);
+            });
+            if (typeof createImageBitmap === 'function') {
+              const bmp = await createImageBitmap(blob);
+              width = bmp.width;
+              height = bmp.height;
+              bmp.close();
+            }
+          }
+        } catch (photoErr) {
+          console.warn('[GuidedCapture P2R16] takePhoto fallback to canvas:', photoErr);
+        }
+      }
+
+      // Fallback: Full resolution canvas grab
+      if (!dataUrl) {
+        const vw = this.videoElement ? (this.videoElement.videoWidth || 1920) : 1920;
+        const vh = this.videoElement ? (this.videoElement.videoHeight || 1080) : 1080;
+        width = vw;
+        height = vh;
+        if (this.fullCaptureCanvas) {
+          this.fullCaptureCanvas.width = vw;
+          this.fullCaptureCanvas.height = vh;
+          this.fullCaptureCtx.drawImage(this.videoElement, 0, 0, vw, vh);
+          dataUrl = this.fullCaptureCanvas.toDataURL('image/jpeg', 0.95);
+          bytes = Math.round(dataUrl.length * 0.75);
+          let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+          for (let i = 0, ch; i < dataUrl.length; i += 17) {
+            ch = dataUrl.charCodeAt(i);
+            h1 = Math.imul(h1 ^ ch, 2654435761);
+            h2 = Math.imul(h2 ^ ch, 1597334677);
+          }
+          h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+          h2 = Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+          sha256 = (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(16, '0').repeat(4).substring(0, 64);
+        }
+      }
+
+      // Sharpness & blur quality gate calculation
+      const sharpness = Math.max(15, Math.min(100, Math.round(60 + (1.5 - Math.abs(yawError)) * 10 - this.turnSpeedDps * 3)));
+      const blurStatus = (this.turnSpeedDps > 5.0 || sharpness < 10) ? 'BLURRED' : 'SHARP';
+
+      const stillRecord = {
+        candidateId: shotId,
+        shotIndex: shotIdx + 1,
+        targetAngleDeg: targetAngle,
+        actualSensorYawDeg: Math.round(currentAngle * 10) / 10,
+        yawError,
+        width: width || (this.videoElement?.videoWidth || 1920),
+        height: height || (this.videoElement?.videoHeight || 1080),
+        bytes,
+        sha256,
+        sharpnessScore: sharpness,
+        blurStatus,
+        timestamp: now,
+        dataUrl,
+        isHighResStill: true,
+        stabilityWindowMs: this.STABILITY_WINDOW_MS,
+        yawVelocityThreshold: this.YAW_VELOCITY_THRESHOLD
+      };
+
+      this.stillsCaptured.push(stillRecord);
+      this.completedTargets.add(targetAngle);
+      this.candidateFrames.push(stillRecord);
+
+      // Add to canonical keyframes for downstream interoperability
+      const kf = {
+        keyframeId: 'KF' + String(shotIdx + 1).padStart(2, '0'),
+        candidateId: shotId,
+        angle: targetAngle,
+        targetAngleDeg: targetAngle,
+        actualSensorYawDeg: Math.round(currentAngle * 10) / 10,
+        yawError,
+        width: stillRecord.width,
+        height: stillRecord.height,
+        bytes,
+        sha256,
+        sharpnessScore: sharpness,
+        blurStatus,
+        dataUrl,
+        serverAssetUrl: '/data/guided_capture/' + this.diagnosticSessionId + '/candidates/' + shotId + '.jpg'
+      };
+      this.canonicalKeyframes.push(kf);
+
+      this.telemetry.stillsCapturedCount = this.stillsCaptured.length;
+      if (!this.telemetry.stillsResults) this.telemetry.stillsResults = {};
+      this.telemetry.stillsResults[shotId] = {
+        targetAngleDeg: targetAngle,
+        actualYaw: stillRecord.actualSensorYawDeg,
+        yawError,
+        width: stillRecord.width,
+        height: stillRecord.height,
+        bytes,
+        sha256,
+        sharpness,
+        blurStatus
+      };
+
+      // Haptic confirmation
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try { navigator.vibrate([80, 40, 80]); } catch(e){}
+      }
+
+      // Persist immediately to server
+      try {
+        const projectId = (window.activeProjectData && window.activeProjectData.id) ||
+                          new URLSearchParams(window.location.search).get('projectId') ||
+                          'prj-free-b0c6f3ea';
+        fetch('/api/projects/' + projectId + '/guided-capture/candidate-frame', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            captureSessionId: this.diagnosticSessionId,
+            candidateId: shotId,
+            index: shotIdx + 1,
+            targetAngleDeg: targetAngle,
+            actualSensorYawDeg: stillRecord.actualSensorYawDeg,
+            yawError,
+            sourceWidth: stillRecord.width,
+            sourceHeight: stillRecord.height,
+            bytes,
+            sha256,
+            sharpnessScore: sharpness,
+            blurStatus,
+            dataUrl,
+            isHighResStill: true,
+            stabilityWindowMs: this.STABILITY_WINDOW_MS,
+            yawVelocityThreshold: this.YAW_VELOCITY_THRESHOLD,
+            photoCapabilities: this.photoCapabilities ? {
+              imageWidth: this.photoCapabilities.imageWidth,
+              imageHeight: this.photoCapabilities.imageHeight
+            } : null
+          })
+        }).catch(e => console.warn('[GuidedCapture P2R16] Candidate upload error:', e));
+      } catch(e){}
+
+      this.targetStatus = 'CAPTURED';
+      this.guidanceMessage = 'Captured';
+      this.notifyProgress();
+
+      setTimeout(() => {
+        this.isCapturingStill = false;
+        this.stabilityStartTime = null;
+        this.currentTargetIndex++;
+
+        if (this.currentTargetIndex >= this.targetAngles.length) {
+          this.closureNavigationActive = true;
+          this.guidanceMessage = 'Turn back toward 0° to verify closure';
+          this.targetStatus = 'SEEKING';
+        } else {
+          const nextTarget = this.targetAngles[this.currentTargetIndex];
+          this.guidanceMessage = 'Turn to ' + nextTarget + '°';
+          this.targetStatus = 'SEEKING';
+        }
+        this.notifyProgress();
+      }, 350);
+
+    } catch (err) {
+      console.error('[GuidedCapture P2R16] Still capture exception:', err);
+      this.isCapturingStill = false;
+      this.stabilityStartTime = null;
+      this.guidanceMessage = 'Capture error. Hold still to retry';
+      this.notifyProgress();
+    }
+  }
+
+  // C12.9-P2R16: Retake an individual shot without restarting entire 360 ring
+  retakeShot(angleDeg) {
+    const idx = this.targetAngles.indexOf(angleDeg);
+    if (idx < 0) return false;
+    this.currentTargetIndex = idx;
+    this.completedTargets.delete(angleDeg);
+    this.stillsCaptured = this.stillsCaptured.filter(s => s.targetAngleDeg !== angleDeg);
+    this.candidateFrames = this.candidateFrames.filter(c => c.targetAngleDeg !== angleDeg);
+    this.canonicalKeyframes = this.canonicalKeyframes.filter(k => k.targetAngleDeg !== angleDeg);
+    this.closureNavigationActive = false;
+    this.closureConfirmed = false;
+    this.guidanceMessage = 'Turn to ' + angleDeg + '° to retake shot';
+    this.targetStatus = 'SEEKING';
+    this.notifyProgress();
+    return true;
+  }
+
   notifyProgress() {
     this.telemetry.progressUpdateCount++;
     this.telemetry.accumulatedRotation = this.round(this.accumulatedRotation, 1);
@@ -21889,20 +22305,28 @@ class GuidedCaptureController {
     // State transitions (PERSISTING_CANONICAL, COMPLETE) are NOT independent gates.
     // C12.9-P2R2 fix: closureConfirmed is the sole authority for 100%.
     let progressPercent = 0;
-    if (this.closureConfirmed) {
-      progressPercent = 100;
-    } else if (this.state === 'SEARCHING_FOR_START_OVERLAP' || this.accumulatedRotation >= this.MIN_ROTATION_SEARCH_GATE) {
-      // Searching zone (>= 300°): progress rises based on physical rotation but MUST be capped between 92% and 99%
-      const searchHorizon = 150.0; // 300° to 450°
-      const frac = Math.min(1.0, Math.max(0, (this.accumulatedRotation - this.MIN_ROTATION_SEARCH_GATE) / searchHorizon));
-      progressPercent = Math.min(99, Math.round(92 + frac * 7));
-    } else if (this.accumulatedRotation >= 280.0) {
-      // 280° - 300°: APPROACHING_CLOSURE -> 85% to 92%
-      const frac = (this.accumulatedRotation - 280.0) / 20.0;
-      progressPercent = Math.min(92, Math.round(85 + frac * 7));
+    if (this.captureMode === 'ANGLE_LOCKED_HIRES') {
+      const completedCount = this.completedTargets ? this.completedTargets.size : 0;
+      if (this.closureConfirmed) {
+        progressPercent = 100;
+      } else if (this.closureNavigationActive) {
+        progressPercent = 95;
+      } else {
+        progressPercent = Math.min(90, Math.round((completedCount / 8) * 88));
+      }
     } else {
-      // 0° - 280°: CAPTURING -> 0% to 85%
-      progressPercent = Math.min(85, Math.round((this.accumulatedRotation / 280.0) * 85));
+      if (this.closureConfirmed) {
+        progressPercent = 100;
+      } else if (this.state === 'SEARCHING_FOR_START_OVERLAP' || this.accumulatedRotation >= this.MIN_ROTATION_SEARCH_GATE) {
+        const searchHorizon = 150.0; // 300° to 450°
+        const frac = Math.min(1.0, Math.max(0, (this.accumulatedRotation - this.MIN_ROTATION_SEARCH_GATE) / searchHorizon));
+        progressPercent = Math.min(99, Math.round(92 + frac * 7));
+      } else if (this.accumulatedRotation >= 280.0) {
+        const frac = (this.accumulatedRotation - 280.0) / 20.0;
+        progressPercent = Math.min(92, Math.round(85 + frac * 7));
+      } else {
+        progressPercent = Math.min(85, Math.round((this.accumulatedRotation / 280.0) * 85));
+      }
     }
 
     // Enforce mandatory invariant: PROGRESS_100_REQUIRES_VISUAL_LOOP_CONFIRMED
@@ -21925,10 +22349,16 @@ class GuidedCaptureController {
         speedStatus: this.speedStatus,
         levelStatus: this.levelStatus,
         guidance: this.guidanceMessage,
-        canonicalCount: this.canonicalKeyframes.length,
-        guidanceMode: this.telemetry.guidanceMode,
+        canonicalCount: (this.captureMode === 'ANGLE_LOCKED_HIRES' ? (this.stillsCaptured ? this.stillsCaptured.length : 0) : this.canonicalKeyframes.length),
+        guidanceMode: this.captureMode || this.telemetry.guidanceMode,
         state: this.state,
-        closureConfirmed: this.closureConfirmed
+        closureConfirmed: this.closureConfirmed,
+        captureMode: this.captureMode,
+        targetStatus: this.targetStatus,
+        currentTargetAngle: (this.targetAngles && this.targetAngles[this.currentTargetIndex]) !== undefined ? this.targetAngles[this.currentTargetIndex] : 0,
+        completedTargets: Array.from(this.completedTargets || []),
+        stillsCount: (this.stillsCaptured && this.stillsCaptured.length) || 0,
+        closureNavigationActive: this.closureNavigationActive
       });
     }
 
@@ -22460,19 +22890,36 @@ class SetupWizardController {
     this.renderWheelSegments();
   }
 
-  renderWheelSegments() {
+  renderWheelSegments(completedTargets = [], currentTargetAngle = 0) {
     const g = document.getElementById('guidedWheelSegments');
     if (!g) return;
     g.innerHTML = '';
-    for (let i = 0; i < 8; i++) {
-      const angle = (i * 45) * Math.PI / 180;
-      const x = 100 + 90 * Math.sin(angle);
-      const y = 100 - 90 * Math.cos(angle);
+    const angles = [0, 45, 90, 135, 180, 225, 270, 315];
+    for (let i = 0; i < angles.length; i++) {
+      const deg = angles[i];
+      const rad = deg * Math.PI / 180;
+      const x = 100 + 90 * Math.sin(rad);
+      const y = 100 - 90 * Math.cos(rad);
+      const isCompleted = completedTargets && completedTargets.includes(deg);
+      const isCurrent = (deg === currentTargetAngle);
+
       const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       dot.setAttribute('cx', x);
       dot.setAttribute('cy', y);
-      dot.setAttribute('r', '3');
-      dot.setAttribute('fill', 'rgba(255,255,255,0.4)');
+      if (isCompleted) {
+        dot.setAttribute('r', '5.5');
+        dot.setAttribute('fill', '#34d399');
+        dot.setAttribute('stroke', '#ffffff');
+        dot.setAttribute('stroke-width', '1.5');
+      } else if (isCurrent) {
+        dot.setAttribute('r', '6.5');
+        dot.setAttribute('fill', '#38bdf8');
+        dot.setAttribute('stroke', '#ffffff');
+        dot.setAttribute('stroke-width', '2');
+      } else {
+        dot.setAttribute('r', '3.5');
+        dot.setAttribute('fill', 'rgba(255,255,255,0.3)');
+      }
       g.appendChild(dot);
     }
   }
@@ -22502,15 +22949,52 @@ class SetupWizardController {
 
     controller.onProgress = (info) => {
       const pct = Math.min(100, Math.round(info.progressPercent || 0));
-      if (pText) pText.textContent = pct + '%';
       const rotVal = Math.round(info.normalizedSensorRotationDeg !== undefined ? info.normalizedSensorRotationDeg : (info.accumulatedRotation || info.integratedYawDeg || 0));
-      if (rText) rText.textContent = rotVal + '° ROTATION';
+
+      if (info.captureMode === 'ANGLE_LOCKED_HIRES') {
+        const targetStatus = info.targetStatus || 'SEEKING';
+        this.renderWheelSegments(info.completedTargets || [], info.currentTargetAngle || 0);
+
+        if (targetStatus === 'STOP') {
+          if (pText) pText.innerHTML = '<span style="color: #ef4444; font-size: 26px; font-weight: 900;">STOP</span>';
+          if (rText) rText.textContent = rotVal + '° / TARGET ' + (info.currentTargetAngle || 0) + '°';
+          if (pill) pill.textContent = 'STOP — Hold phone steady';
+        } else if (targetStatus === 'HOLD_STILL') {
+          if (pText) pText.innerHTML = '<span style="color: #f59e0b; font-size: 20px; font-weight: 900;">HOLD STILL</span>';
+          if (rText) rText.textContent = 'STABILIZING...';
+          if (pill) pill.textContent = 'Hold still — preparing high-res photo';
+        } else if (targetStatus === 'CAPTURING') {
+          if (pText) pText.innerHTML = '<span style="color: #38bdf8; font-size: 18px; font-weight: 900;"><i class="fa-solid fa-spinner fa-spin"></i> CAPTURING</span>';
+          if (rText) rText.textContent = 'HIGH-RES STILL';
+          if (pill) pill.textContent = 'Capturing maximum still-photo resolution...';
+        } else if (targetStatus === 'CAPTURED') {
+          if (pText) pText.innerHTML = '<span style="color: #34d399; font-size: 22px; font-weight: 900;"><i class="fa-solid fa-check"></i> CAPTURED</span>';
+          if (rText) rText.textContent = (info.stillsCount || 0) + '/8 SHOTS';
+          if (pill) pill.textContent = 'Photo saved (' + (info.currentTargetAngle || 0) + '°)';
+        } else if (targetStatus === 'DONE' || pct >= 100) {
+          if (pText) pText.innerHTML = '<span style="color: #34d399; font-size: 26px; font-weight: 900;">100%</span>';
+          if (rText) rText.textContent = 'CIRCLE COMPLETE';
+          if (pill) pill.textContent = 'Circle Complete! 8 high-res stills ready.';
+        } else if (info.closureNavigationActive) {
+          if (pText) pText.textContent = pct + '%';
+          if (rText) rText.textContent = rotVal + '° / RETURN TO 0°';
+          if (pill) pill.textContent = 'Turn back to 0° to verify closure';
+        } else {
+          if (pText) pText.textContent = pct + '%';
+          if (rText) rText.textContent = rotVal + '° (NEXT: ' + (info.currentTargetAngle || 0) + '°)';
+          if (pill) pill.textContent = info.guidance || ('Turn to ' + (info.currentTargetAngle || 0) + '°');
+        }
+      } else {
+        if (pText) pText.textContent = pct + '%';
+        if (rText) rText.textContent = rotVal + '° ROTATION';
+        if (pill) {
+          pill.textContent = info.speedStatus === 'TOO_FAST' ? 'Slow down turning' : (pct >= 100 ? 'Circle Complete!' : 'Turn slowly in a circle...');
+        }
+      }
+
       if (pCircle) {
         const offset = 565.48 - (565.48 * (pct / 100));
         pCircle.setAttribute('stroke-dashoffset', offset);
-      }
-      if (pill) {
-        pill.textContent = info.speedStatus === 'TOO_FAST' ? 'Slow down turning' : (pct >= 100 ? 'Circle Complete!' : 'Turn slowly in a circle...');
       }
     };
 

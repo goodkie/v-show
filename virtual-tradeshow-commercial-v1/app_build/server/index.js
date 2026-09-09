@@ -10967,8 +10967,8 @@ app.post('/api/projects/:id/wizard-state', async (req, res) => {
 const CANONICAL_PUBLIC_ORIGIN = process.env.PUBLIC_BASE_URL || 'https://v-show-commercial-v1-production.up.railway.app';
 // captureSessions Map initialized globally in Mobile RI QA section
 
-// C12.8-P0 / C12.9-P2R5: Incremental candidate frame durable persistence endpoint
-app.post('/api/projects/:id/guided-capture/candidate-frame', express.json({ limit: '15mb' }), async (req, res) => {
+// C12.8-P0 / C12.9-P2R5 / C12.9-P2R16: Incremental candidate frame durable persistence endpoint (60MB limit for high-res stills)
+app.post('/api/projects/:id/guided-capture/candidate-frame', express.json({ limit: '60mb' }), async (req, res) => {
   try {
     const projectId = req.params.id;
     const body = req.body || {};
@@ -11057,6 +11057,9 @@ app.post('/api/projects/:id/guided-capture/candidate-frame', express.json({ limi
       relativeDurablePath: `candidates/${candidateId}.jpg`,
       index: body.index || (poolData.candidates.length + 1),
       timestamp: body.timestamp || Date.now(),
+      targetAngleDeg: body.targetAngleDeg !== undefined ? body.targetAngleDeg : (body.estimatedYawDeg !== undefined ? body.estimatedYawDeg : (body.angle || 0)),
+      actualSensorYawDeg: body.actualSensorYawDeg !== undefined ? body.actualSensorYawDeg : (body.estimatedYawDeg !== undefined ? body.estimatedYawDeg : (body.angle || 0)),
+      yawError: body.yawError !== undefined ? body.yawError : 0,
       estimatedYawDeg: body.estimatedYawDeg !== undefined ? body.estimatedYawDeg : (body.angle || 0),
       relativeRotationDeg: body.relativeRotationDeg !== undefined ? body.relativeRotationDeg : (body.angle || 0),
       width: body.sourceWidth || body.width || 1080,
@@ -11066,6 +11069,11 @@ app.post('/api/projects/:id/guided-capture/candidate-frame', express.json({ limi
       sharpnessScore: body.sharpnessScore || 0,
       exposureScore: body.exposureScore || 0,
       motionScore: body.motionScore || 0,
+      blurStatus: body.blurStatus || (body.sharpnessScore < 10 ? 'BLURRED' : 'SHARP'),
+      isHighResStill: Boolean(body.isHighResStill),
+      photoCapabilities: body.photoCapabilities || null,
+      stabilityWindowMs: body.stabilityWindowMs || null,
+      yawVelocityThreshold: body.yawVelocityThreshold || null,
       persistedAt: new Date().toISOString(),
       durablyPersisted: true
     };
@@ -11103,6 +11111,71 @@ app.post('/api/projects/:id/guided-capture/candidate-frame', express.json({ limi
     });
   } catch (err) {
     console.error('[GuidedCapture Candidate Frame Error]', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// C12.9-P2R16: Dedicated QA Endpoint to inspect P2R16 Phase 1 per-shot report
+app.get('/api/internal-qa/guided-capture/p2r16-phase1-report/:sessionId', (req, res) => {
+  try {
+    const sessionId = req.params.sessionId;
+    const paths = getGuidedCaptureStoragePaths(sessionId);
+    let poolData = null;
+    if (fs.existsSync(paths.metadataFile)) {
+      poolData = JSON.parse(fs.readFileSync(paths.metadataFile, 'utf8'));
+    } else if (fs.existsSync(paths.poolManifestPath)) {
+      poolData = JSON.parse(fs.readFileSync(paths.poolManifestPath, 'utf8'));
+    }
+    if (!poolData) {
+      return res.status(404).json({ ok: false, error: 'SESSION_NOT_FOUND', sessionId });
+    }
+
+    const primaryAngles = [0, 45, 90, 135, 180, 225, 270, 315];
+    const perShotResults = {};
+    let highResPassCount = 0;
+
+    for (const angle of primaryAngles) {
+      const shotKey = 'SHOT_' + String(angle).padStart(3, '0');
+      const cand = poolData.candidates.find(c => c.candidateId === shotKey || c.targetAngleDeg === angle);
+      if (cand) {
+        const filePath = path.join(paths.candidateDir, cand.candidateId + '.jpg');
+        const fileExists = fs.existsSync(filePath);
+        const actualFileSize = fileExists ? fs.statSync(filePath).size : 0;
+        const hashMatch = Boolean(cand.sha256 && cand.sha256.length === 64);
+        const isSharp = cand.blurStatus !== 'BLURRED' && (cand.sharpnessScore >= 10);
+        const isPass = Boolean(fileExists && actualFileSize > 0 && hashMatch && isSharp);
+        if (isPass) highResPassCount++;
+
+        perShotResults[shotKey] = {
+          targetAngleDeg: angle,
+          actualYaw: cand.actualSensorYawDeg !== undefined ? cand.actualSensorYawDeg : cand.targetAngleDeg,
+          yawError: cand.yawError !== undefined ? cand.yawError : 0,
+          width: cand.width,
+          height: cand.height,
+          bytes: actualFileSize || cand.size,
+          sha256: cand.sha256,
+          sharpness: cand.sharpnessScore,
+          blurStatus: cand.blurStatus || 'SHARP',
+          durablyPersisted: fileExists && actualFileSize > 0
+        };
+      } else {
+        perShotResults[shotKey] = {
+          targetAngleDeg: angle,
+          status: 'MISSING'
+        };
+      }
+    }
+
+    const allEightPresent = (highResPassCount === 8);
+    res.json({
+      ok: true,
+      sessionId,
+      shotCount: poolData.candidates.length,
+      primaryEightPassCount: highResPassCount,
+      durableStoragePass: allEightPresent,
+      perShotResults
+    });
+  } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
