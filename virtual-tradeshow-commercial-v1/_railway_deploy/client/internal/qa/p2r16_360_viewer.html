@@ -1,52 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>³D₂ AI 360 Viewer — Internal QA (C12.9-P2R16)</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>C12.9-P2R16 Internal 360 QA Viewer (Dual-Mode Spherical Band)</title>
+  
+  <!-- FontAwesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Three.js r128 (Exact Approved Dependency) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
   <style>
     :root {
       --bg: #090d16;
       --card-bg: rgba(15, 23, 42, 0.85);
-      --border: rgba(255, 255, 255, 0.12);
+      --border: rgba(56, 189, 248, 0.2);
       --accent-quality: #10b981;
+      --accent-depth: #a78bfa;
       --accent-easy: #38bdf8;
+      --text: #f8fafc;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
     html, body {
-      width: 100%; height: 100%; height: 100dvh;
-      overflow: hidden; background: var(--bg);
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      color: #f8fafc; touch-action: none;
+      width: 100%; height: 100%; overflow: hidden;
+      background-color: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     #viewer-container {
-      width: 100%; height: 100%; position: absolute;
-      top: 0; left: 0; z-index: 1; cursor: grab;
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      touch-action: none; cursor: grab;
     }
     #viewer-container:active { cursor: grabbing; }
 
-    /* Top Bar */
+    /* Top Navigation & Mode Switcher */
     .top-bar {
-      position: absolute; top: 12px; left: 16px; right: 16px;
+      position: absolute; top: 16px; left: 16px; right: 16px;
       z-index: 10; display: flex; justify-content: space-between;
       align-items: center; pointer-events: none; flex-wrap: wrap; gap: 10px;
     }
     .header-panel {
       background: var(--card-bg); border: 1px solid var(--border);
-      border-radius: 12px; padding: 10px 16px; backdrop-filter: blur(12px);
+      border-radius: 12px; padding: 8px 16px; backdrop-filter: blur(12px);
       pointer-events: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }
     .brand-title {
-      font-size: 13px; font-weight: 900; letter-spacing: 0.05em;
-      text-transform: uppercase; color: #fff; display: flex; align-items: center; gap: 8px;
+      font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px;
     }
     .qa-badge {
-      background: #ef4444; color: #fff; font-size: 10px; font-weight: 800;
+      background: rgba(245, 158, 11, 0.2); color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.4); font-size: 10px;
       padding: 2px 6px; border-radius: 4px; letter-spacing: 0.08em;
     }
     .sub-specs {
@@ -62,10 +64,15 @@
     }
     .mode-btn {
       background: transparent; border: none; color: #94a3b8;
-      font-size: 12px; font-weight: 800; padding: 8px 16px;
+      font-size: 12px; font-weight: 800; padding: 8px 14px;
       border-radius: 8px; cursor: pointer; display: flex;
       align-items: center; gap: 6px; transition: all 0.15s ease;
     }
+    .mode-btn.active-quality-depth {
+      background: var(--accent-depth); color: #fff;
+      box-shadow: 0 0 16px rgba(167, 139, 250, 0.4);
+    }
+    .mode-btn.active-quality-current,
     .mode-btn.active-quality {
       background: var(--accent-quality); color: #fff;
       box-shadow: 0 0 16px rgba(16, 185, 129, 0.4);
@@ -141,19 +148,22 @@
   <div class="top-bar">
     <div class="header-panel">
       <div class="brand-title">
-        <span>³D₂ AI 360 Viewer</span>
+        <span>V-Show AI 360 Viewer</span>
         <span class="qa-badge">INTERNAL QA</span>
-        <span id="active-mode-tag" style="color: var(--accent-quality); font-weight: 800; font-size: 11px;">QUALITY 360</span>
+        <span id="active-mode-tag" style="color: var(--accent-depth); font-weight: 800; font-size: 11px;">QUALITY (DEPTH)</span>
       </div>
       <div class="sub-specs">
-        Source: Phase 6 | Projection: 360° Spherical Band | Vertical: ~68° (-34° to +34°)
+        Source: P2R16 12-Shot Physical | Projection: 360° Spherical Band | Vertical: ~68° (-34° to +34°)
       </div>
     </div>
 
     <!-- MODE SWITCHER -->
     <div class="mode-switch-container">
-      <button type="button" id="btn-mode-quality" class="mode-btn active-quality" onclick="switchMode('quality')">
-        <i class="fa-solid fa-camera"></i> Quality 360 <span class="hotkey-hint">Q</span>
+      <button type="button" id="btn-mode-quality-depth" class="mode-btn active-quality-depth" onclick="switchMode('quality-depth')">
+        <i class="fa-solid fa-layer-group"></i> Quality (Depth) <span class="hotkey-hint">D</span>
+      </button>
+      <button type="button" id="btn-mode-quality-current" class="mode-btn" onclick="switchMode('quality')" id="btn-mode-quality">
+        <i class="fa-solid fa-camera"></i> Quality (Current) <span class="hotkey-hint">Q</span>
       </button>
       <button type="button" id="btn-mode-easy" class="mode-btn" onclick="switchMode('easy')">
         <i class="fa-solid fa-arrows-rotate"></i> Easy 360 <span class="hotkey-hint">E</span>
@@ -185,14 +195,14 @@
       <button type="button" class="action-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen">
         <i class="fa-solid fa-expand"></i> Fullscreen
       </button>
-      <a id="btn-native-src" class="action-btn" href="/production_artifacts/mobile_runtime_inspector/P2R16_AI_QUALITY12_OWNER_REVIEW.jpg" target="_blank" title="View Full 18631x3620 Source JPG">
+      <a id="btn-native-src" class="action-btn" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_DEPTH_AWARE_OWNER_REVIEW.jpg" target="_blank" title="View Full 18631x3620 Source JPG">
         <i class="fa-solid fa-arrow-up-right-from-square"></i> Original 18.6K
       </a>
     </div>
   </div>
 
   <script>
-    // --- Phase 7A Configuration ---
+    // --- Phase 7B Configuration ---
     const CONFIG = {
       haovDeg: 360,
       vaovDeg: 68,
@@ -204,9 +214,9 @@
     };
 
     // State
-    let currentMode = 'quality'; // Default to Quality as per Owner preference
-    let currentYaw = 0.0;        // Continuous horizontal (degrees)
-    let currentPitch = 0.0;      // Clamped vertical (degrees)
+    let currentMode = 'quality-depth'; // Phase 7B default: quality-depth
+    let currentYaw = 0.0;               // Continuous horizontal (degrees)
+    let currentPitch = 0.0;             // Clamped vertical (degrees)
     let currentFov = CONFIG.defaultFovDeg;
 
     let scene, camera, renderer, sphereMesh, textureLoader;
@@ -219,8 +229,10 @@
 
     // Authoritative artifact paths
     const NATIVE_URLS = {
-      quality: '/production_artifacts/mobile_runtime_inspector/P2R16_AI_QUALITY12_OWNER_REVIEW.jpg',
-      easy: '/production_artifacts/mobile_runtime_inspector/P2R16_AI_CONTINUOUS_OWNER_REVIEW.jpg'
+      'quality-depth': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_DEPTH_AWARE_OWNER_REVIEW.jpg',
+      'quality-current': '/production_artifacts/mobile_runtime_inspector/P2R16_AI_QUALITY12_OWNER_REVIEW.jpg',
+      'quality': '/production_artifacts/mobile_runtime_inspector/P2R16_AI_QUALITY12_OWNER_REVIEW.jpg',
+      'easy': '/production_artifacts/mobile_runtime_inspector/P2R16_AI_CONTINUOUS_OWNER_REVIEW.jpg'
     };
 
     // Telemetry recorder for QA verification
@@ -252,7 +264,7 @@
       const startTime = performance.now();
       const container = document.getElementById('viewer-container');
 
-      // 1. Detect WebGL capabilities
+      // 1. WebGL Capabilities Detection
       try {
         const testCanvas = document.createElement('canvas');
         const gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
@@ -266,7 +278,7 @@
         console.warn('WebGL detection error:', e);
       }
 
-      // Safe proxy selection rule (Section 7)
+      // Safe proxy selection rule
       if (maxTextureSize >= 8192) {
         selectedProxyWidth = 8192;
       } else if (maxTextureSize >= 4096) {
@@ -280,8 +292,8 @@
       // 2. Read mode from query param if provided
       const urlParams = new URLSearchParams(window.location.search);
       const qMode = urlParams.get('mode');
-      if (qMode === 'easy' || qMode === 'quality') {
-        currentMode = qMode;
+      if (qMode === 'easy' || qMode === 'quality-depth' || qMode === 'quality-current' || qMode === 'quality') {
+        currentMode = (qMode === 'quality') ? 'quality-current' : qMode;
       }
 
       // 3. Three.js Scene Setup
@@ -292,13 +304,13 @@
       renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(window.innerWidth, window.innerHeight);
-      // Phase 7A.1: Color & Exposure Hotfix
+      // Phase 7A.1 & 7B: Frozen Color & Exposure Pipeline
       renderer.outputEncoding = THREE.sRGBEncoding;
       renderer.toneMapping = THREE.NoToneMapping;
       renderer.toneMappingExposure = 1.0;
       container.appendChild(renderer.domElement);
 
-      // 4. Inward-Facing Spherical Band Geometry (Section 8, 9)
+      // 4. Inward-Facing Spherical Band Geometry
       // HAOV = 360, VAOV = 68 (pitch from -34 to +34)
       const radius = 500;
       const vaovRad = (CONFIG.vaovDeg * Math.PI) / 180;
@@ -312,6 +324,7 @@
       geometry.scale(-1, 1, 1);
 
       textureLoader = new THREE.TextureLoader();
+      // Phase 7A.1 & 7B: Frozen Pure White Mesh Material
       const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
       sphereMesh = new THREE.Mesh(geometry, material);
       scene.add(sphereMesh);
@@ -333,10 +346,11 @@
       window.addEventListener('pointerup', onPointerUp, false);
       container.addEventListener('wheel', onDocumentMouseWheel, { passive: false });
 
-      // Keyboard Hotkeys: Q = Quality, E = Easy
+      // Keyboard Hotkeys: D/1 = Depth, Q/2 = Current, E/3 = Easy
       window.addEventListener('keydown', (e) => {
-        if (e.key === 'q' || e.key === 'Q') switchMode('quality');
-        if (e.key === 'e' || e.key === 'E') switchMode('easy');
+        if (e.key === 'd' || e.key === 'D' || e.key === '1') switchMode('quality-depth');
+        if (e.key === 'q' || e.key === 'Q' || e.key === '2') switchMode('quality-current');
+        if (e.key === 'e' || e.key === 'E' || e.key === '3') switchMode('easy');
       });
 
       updateUiModeIndicator();
@@ -350,7 +364,8 @@
     function loadModeTexture(mode, onComplete) {
       document.getElementById('loading-overlay').style.display = 'flex';
       document.getElementById('loading-overlay').style.opacity = '1';
-      document.getElementById('loading-text').textContent = `Loading ${mode === 'quality' ? 'Quality 360' : 'Easy 360'} (${selectedProxyWidth}px)...`;
+      const modeLabel = (mode === 'quality-depth') ? 'Quality (Depth)' : ((mode === 'easy') ? 'Easy 360' : 'Quality (Current)');
+      document.getElementById('loading-text').textContent = `Loading ${modeLabel} (${selectedProxyWidth}px)...`;
 
       const proxyUrl = getProxyUrl(mode, selectedProxyWidth);
       textureLoader.load(
@@ -360,7 +375,7 @@
           texture.magFilter = THREE.LinearFilter;
           texture.wrapS = THREE.RepeatWrapping;
           texture.wrapT = THREE.ClampToEdgeWrapping;
-          // Phase 7A.1: Exact sRGB texture encoding & full 0xffffff material color
+          // Phase 7A.1 & 7B: Exact sRGB texture encoding & full 0xffffff material color
           texture.encoding = THREE.sRGBEncoding;
 
           sphereMesh.material.map = texture;
@@ -401,20 +416,25 @@
     }
 
     function updateUiModeIndicator() {
-      const btnQ = document.getElementById('btn-mode-quality');
+      const btnQD = document.getElementById('btn-mode-quality-depth');
+      const btnQC = document.getElementById('btn-mode-quality-current');
       const btnE = document.getElementById('btn-mode-easy');
       const tag = document.getElementById('active-mode-tag');
       const btnNative = document.getElementById('btn-native-src');
 
-      if (currentMode === 'quality') {
-        btnQ.className = 'mode-btn active-quality';
-        btnE.className = 'mode-btn';
-        tag.textContent = 'QUALITY 360';
+      if (btnQD) btnQD.className = (currentMode === 'quality-depth') ? 'mode-btn active-quality-depth' : 'mode-btn';
+      if (btnQC) btnQC.className = (currentMode === 'quality-current' || currentMode === 'quality') ? 'mode-btn active-quality-current' : 'mode-btn';
+      if (btnE) btnE.className = (currentMode === 'easy') ? 'mode-btn active-easy' : 'mode-btn';
+
+      if (currentMode === 'quality-depth') {
+        tag.textContent = 'QUALITY (DEPTH)';
+        tag.style.color = 'var(--accent-depth)';
+        btnNative.href = NATIVE_URLS['quality-depth'];
+      } else if (currentMode === 'quality-current' || currentMode === 'quality') {
+        tag.textContent = 'QUALITY (CURRENT)';
         tag.style.color = 'var(--accent-quality)';
-        btnNative.href = NATIVE_URLS.quality;
+        btnNative.href = NATIVE_URLS['quality-current'];
       } else {
-        btnQ.className = 'mode-btn';
-        btnE.className = 'mode-btn active-easy';
         tag.textContent = 'EASY 360';
         tag.style.color = 'var(--accent-easy)';
         btnNative.href = NATIVE_URLS.easy;
@@ -453,11 +473,11 @@
         const deltaX = (event.clientX - onPointerDownPointerX) * factor;
         const deltaY = (event.clientY - onPointerDownPointerY) * factor;
 
-        // Continuous horizontal wrap (Section 11)
+        // Continuous horizontal wrap
         currentYaw = (onPointerDownLon - deltaX) % 360.0;
         if (currentYaw < 0) currentYaw += 360.0;
 
-        // Strict pitch clamping to spherical band (-34° to +34°) (Section 8)
+        // Strict pitch clamping to spherical band (-34° to +34°)
         currentPitch = Math.max(CONFIG.minPitchDeg, Math.min(CONFIG.maxPitchDeg, onPointerDownLat + deltaY));
 
         window.__VIEWER_TELEMETRY__.dragYawWorks = true;

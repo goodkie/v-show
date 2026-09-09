@@ -63,6 +63,27 @@
       "estimatedComputeCostUsd": 0.0178,
       "costBudgetWarning": false,
       "timestamp": "2026-09-09T14:02:30Z"
+    },
+    {
+      "jobId": "job-ai360-quality-depth-p2r16-01",
+      "sessionId": "P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01",
+      "captureMode": "AI_PORTRAIT_12SHOT_360_DEPTH_AWARE",
+      "rawFrameCount": 12,
+      "selectedFrameCount": 12,
+      "aiModelsUsed": [
+        "DepthAware_OpticalCenter_Model",
+        "OcclusionAware_SeamOwnership",
+        "StructurePreserving_Multiband_Blend"
+      ],
+      "gpuType": "L40S",
+      "gpuSeconds": 42.5,
+      "cpuSeconds": 16.5,
+      "ramPeakGb": 12.4,
+      "storageBytes": 14019116,
+      "processingDurationSeconds": 16.49,
+      "estimatedComputeCostUsd": 0.023,
+      "costBudgetWarning": false,
+      "timestamp": "2026-09-09T16:30:00Z"
     }
   ]
 }
