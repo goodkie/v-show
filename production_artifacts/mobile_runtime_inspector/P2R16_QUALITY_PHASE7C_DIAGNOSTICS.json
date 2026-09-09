@@ -41,7 +41,6 @@
     "INFERENCE_START_TIMESTAMP": "2026-09-09T18:28:18.040Z",
     "INFERENCE_END_TIMESTAMP": "2026-09-09T18:38:49.740Z",
     "TOTAL_INFERENCE_SECONDS": 631.7,
-    "PEAK_MEMORY_MB": 4042.3,
     "PAIR_RESULTS": [
       {
         "pair": "SHOT_000_TO_SHOT_030",
@@ -139,7 +138,8 @@
         "certainty_mean": 0.993,
         "inference_seconds": 49.7
       }
-    ]
+    ],
+    "PEAK_PROCESS_RAM_MB": 4042.3
   },
   "VGGT_EXECUTION": {
     "MODEL_NAME": "VGGT-1B-Commercial-Architecture",
@@ -172,7 +172,7 @@
       518,
       518
     ],
-    "PEAK_MEMORY_MB": 9430.8
+    "PEAK_PROCESS_RAM_MB": 9430.8
   },
   "BUNDLE_ADJUSTMENT": {
     "ITERATIONS": 35,
@@ -286,7 +286,53 @@
       "max_discontinuity_px": 0.9
     }
   },
-  "QUALITY_GHOSTING_QA": "PASS",
-  "OWNER_VISUAL_ACCEPTANCE": true,
-  "TOTAL_RUNTIME_SECONDS": 820.715696554184
+  "QUALITY_GHOSTING_QA": "FAIL",
+  "OWNER_VISUAL_ACCEPTANCE": false,
+  "TOTAL_RUNTIME_SECONDS": 820.715696554184,
+  "OWNER_REVIEW_COMPLETED": false,
+  "PHASE7C_ROMA_EXECUTION": "TRUE_12_ADJACENT_PAIR_INFERENCE",
+  "PHASE7C_VGGT_EXECUTION": "TRUE_4_KEYFRAME_FORWARD_PASS",
+  "PHASE7C_FULL_12_VIEW_VGGT": "NOT_PROVEN",
+  "PHASE7C_CAMERA_PATH_PROVENANCE": "UNRESOLVED",
+  "PHASE7C_ZBUFFER_REPROJECTION_PROOF": "INCOMPLETE",
+  "DINOV2_BACKBONE_CHECKPOINT": "C:\\Users\\oPus\\.cache\\torch\\hub\\checkpoints\\dinov2_vitl14_pretrain.pth",
+  "DINOV2_BACKBONE_SHA256": "d5383ea8f4877b2472eb973e0fd72d557c7da5d3611bd527ceeb1d7162cbf428",
+  "VGGT_FULL_MODEL_CHECKPOINT": "NOT_LOADED_DINOV2_BACKBONE_ONLY",
+  "VGGT_FULL_MODEL_SHA256": "UNAVAILABLE",
+  "VGGT_FULL_STATE_DICT_LOADED": false,
+  "MISSING_KEYS_COUNT": 1797,
+  "UNEXPECTED_KEYS_COUNT": 343,
+  "CAMERA_PATH_AUDIT": {
+    "CAMERA_PATH_GENERATION_METHOD": "CIRCULAR_PRIOR_INITIALIZED_OPTIMIZATION",
+    "FIXED_RADIUS_USED": true,
+    "SIN_COS_YAW_INITIALIZER_USED": true,
+    "FINAL_CAMERA_CENTERS_EQUAL_INITIAL_PRIOR": true,
+    "AUDIT_FINDING": "Camera centers were initialized on a geometric circle prior (radius 0.45) and retained prior coordinates due to insufficient scale constraints in BA."
+  },
+  "Z_BUFFER_ACTUALLY_EXECUTED": false,
+  "REPROJECTION_TELEMETRY": {
+    "method": "WEIGHTED_CYLINDRICAL_BLENDING_WITH_DEPTH_PLANE_MASKS",
+    "projectedPixelCount": 67444220,
+    "validDepthPixelCount": 67444220,
+    "rejectedDepthPixelCount": 0,
+    "zBufferCollisionCount": 0,
+    "occlusionRejectedCount": 0,
+    "sourceOwnershipPixelCountPerShot": {
+      "SHOT_000": 5620351,
+      "SHOT_030": 5620351,
+      "SHOT_060": 5620351,
+      "SHOT_090": 5620351,
+      "SHOT_120": 5620351,
+      "SHOT_150": 5620351,
+      "SHOT_180": 5620351,
+      "SHOT_210": 5620351,
+      "SHOT_240": 5620351,
+      "SHOT_270": 5620351,
+      "SHOT_300": 5620351,
+      "SHOT_330": 5620351
+    },
+    "invalidProjectionCount": 0,
+    "outputCoverageRatio": 1.0,
+    "AUDIT_NOTE": "Full per-fragment Z-buffer hardware depth testing was approximated by alpha blending."
+  }
 }

@@ -234,7 +234,7 @@
     };
 
     // State
-    let currentMode = 'quality-ai'; // Phase 7C default: quality-ai
+    let currentMode = 'quality-ai'; // Default INTERNAL QA: quality-ai-12view // Phase 7C default: quality-ai
     let currentYaw = 0.0;           // Continuous horizontal (degrees)
     let currentPitch = 0.0;         // Clamped vertical (degrees)
     let currentFov = CONFIG.defaultFovDeg;
@@ -249,6 +249,8 @@
 
     // Authoritative artifact paths
     const NATIVE_URLS = {
+      'quality-ai-12view': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_AI_OWNER_REVIEW.jpg',
+      'quality-ai-4view': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_AI_OWNER_REVIEW.jpg',
       'quality-ai': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_AI_OWNER_REVIEW.jpg',
       'quality-depth-plane': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_DEPTH_AWARE_OWNER_REVIEW.jpg',
       'quality-depth': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_DEPTH_AWARE_OWNER_REVIEW.jpg',
@@ -314,10 +316,16 @@
       // 2. Read mode from query param if provided
       const urlParams = new URLSearchParams(window.location.search);
       const qMode = urlParams.get('mode');
+      if (!qMode) {
+        currentMode = 'quality-ai-12view';
+      }
       if (qMode) {
-        if (qMode === 'easy' || qMode === 'quality-ai' || qMode === 'quality-depth-plane' || qMode === 'quality-depth' || qMode === 'quality-current' || qMode === 'quality') {
-          currentMode = (qMode === 'quality') ? 'quality-current' : ((qMode === 'quality-depth') ? 'quality-depth-plane' : qMode);
-        }
+        if (qMode === 'quality-ai-4view') currentMode = 'quality-ai-4view';
+        else if (qMode === 'quality-ai-12view') currentMode = 'quality-ai-12view';
+        else if (qMode === 'quality-ai') currentMode = 'quality-ai-12view';
+        else if (qMode === 'quality-depth-plane' || qMode === 'quality-depth') currentMode = 'quality-depth-plane';
+        else if (qMode === 'quality-current' || qMode === 'quality') currentMode = 'quality-current';
+        else if (qMode === 'easy') currentMode = 'easy';
       }
 
       // 3. Three.js Scene Setup
@@ -383,7 +391,7 @@
     }
 
     function getProxyUrl(mode, width) {
-      if (mode === 'quality-ai') {
+      if (mode === 'quality-ai-12view' || mode === 'quality-ai-4view' || mode === 'quality-ai') {
         return `/internal-assets/p2r16/viewer/quality-ai-${width}.jpg`;
       } else if (mode === 'quality-depth-plane' || mode === 'quality-depth') {
         return `/internal-assets/p2r16/viewer/quality-depth-${width}.jpg`;
