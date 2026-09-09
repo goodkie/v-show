@@ -86,14 +86,14 @@ def evaluate_pixel_occupancy(image: np.ndarray) -> dict:
     }
 
 
-def evaluate_orientation_sanity(cameras: list[dict | object]) -> dict:
+def evaluate_orientation_sanity(cameras: list[dict | object], expected_step_deg: float = None, hfov_deg: float = 68.0) -> dict:
     """
     Audit camera orientations for:
     - implausible roll
     - optical-axis foldback
     - non-monotonic ring traversal
     - camera inversion
-    - neighboring-frame orientation discontinuity
+    - plan-aware neighboring-frame orientation discontinuity (ORIENTATION_GATE_MODEL)
     """
     if not cameras or len(cameras) < 2:
         return {
@@ -156,12 +156,10 @@ def evaluate_orientation_sanity(cameras: list[dict | object]) -> dict:
             dot_val = float(np.dot(optical_axes[i], optical_axes[nxt]))
             if dot_val < min_dot:
                 min_dot = dot_val
-        # Adjacent cameras in a 36-frame ring are ~10 deg apart (dot ~ 0.98).
-        # Any dot < 0.60 indicates a severe geometric foldback.
         if min_dot < 0.60:
             failed_checks.append("OPTICAL_AXIS_FOLDBACK")
 
-    # 4. Ring monotonicity and neighbor step check
+    # 4. Ring monotonicity and plan-aware neighbor step check
     yaw_steps = []
     for i in range(N - 1):
         step = (yaws[i+1] - yaws[i] + 180.0) % 360.0 - 180.0
@@ -170,13 +168,19 @@ def evaluate_orientation_sanity(cameras: list[dict | object]) -> dict:
     min_yaw_step = float(np.min(yaw_steps)) if yaw_steps else 0.0
     max_yaw_step = float(np.max(yaw_steps)) if yaw_steps else 0.0
 
-    # Ring should advance in one direction with small steps (e.g. 5 to 30 deg).
-    # Negative step < -5.0 deg indicates ring reversal/foldback.
-    # Large step > 45.0 deg indicates orientation discontinuity.
+    # Plan-Aware Orientation Gate Model:
+    # Infers or takes expected step, adds physical sensor jitter and dwell movement tolerance,
+    # and strictly caps tolerance at (HFOV - 15 deg) to guarantee overlap margin.
+    if expected_step_deg is None:
+        expected_step_deg = 360.0 / float(N)
+    
+    dynamic_tolerance = max(6.0, 0.15 * float(expected_step_deg))
+    plan_step_tolerance_deg = min(float(hfov_deg) - 15.0, float(expected_step_deg) + dynamic_tolerance)
+
     if min_yaw_step < -5.0:
         failed_checks.append("NON_MONOTONIC_RING_TRAVERSAL")
-    if max_yaw_step > 45.0:
-        failed_checks.append("NEIGHBOR_ORIENTATION_DISCONTINUITY")
+    if max_yaw_step > plan_step_tolerance_deg:
+        failed_checks.append(f"NEIGHBOR_ORIENTATION_DISCONTINUITY: {max_yaw_step:.2f} deg > {plan_step_tolerance_deg:.2f} deg")
 
     orientation_pass = (len(failed_checks) == 0)
 
@@ -184,6 +188,11 @@ def evaluate_orientation_sanity(cameras: list[dict | object]) -> dict:
         "orientationPass": orientation_pass,
         "failedOrientationChecks": failed_checks,
         "metrics": {
+            "ORIENTATION_GATE_MODEL": "PLAN_AWARE_STEP_AND_HFOV_OVERLAP",
+            "EXPECTED_STEP_DEG": round(float(expected_step_deg), 2),
+            "PLAN_STEP_TOLERANCE_DEG": round(float(plan_step_tolerance_deg), 2),
+            "MIN_YAW_STEP_TOLERANCE_DEG": -5.0,
+            "HFOV_DEG": round(float(hfov_deg), 2),
             "MAX_ABS_ROLL_DEG": round(max_abs_roll, 2),
             "ROLL_STD_DEG": round(roll_std, 2),
             "MAX_ABS_PITCH_DEG": round(max_abs_pitch, 2),
@@ -349,7 +358,7 @@ def evaluate_structural_orientation(image: np.ndarray) -> dict:
     }
 
 
-def evaluate_catastrophic_visual_sanity_gates(image: np.ndarray, cameras: list = None) -> dict:
+def evaluate_catastrophic_visual_sanity_gates(image: np.ndarray, cameras: list = None, expected_step_deg: float = None, hfov_deg: float = 68.0) -> dict:
     """
     Master evaluator for all catastrophic visual sanity gates.
     Must run BEFORE any aggregate metrics (H_BEND, SEAM_JUMP) are considered.
@@ -358,7 +367,7 @@ def evaluate_catastrophic_visual_sanity_gates(image: np.ndarray, cameras: list =
     horiz = evaluate_horizon_oscillation(image)
     topo = evaluate_band_topology(image)
     struct = evaluate_structural_orientation(image)
-    orient = evaluate_orientation_sanity(cameras) if cameras else {"orientationPass": True, "failedOrientationChecks": [], "metrics": {}}
+    orient = evaluate_orientation_sanity(cameras, expected_step_deg=expected_step_deg, hfov_deg=hfov_deg) if cameras else {"orientationPass": True, "failedOrientationChecks": [], "metrics": {}}
 
     failed_gates = []
     if not occ["occupancyPass"]:

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-Unit Test Suite: C12.9-P2R16 Phase 2 High-Res Panorama Matrix
+Unit Test Suite: C12.9-P2R16 Phase 2 & 2A High-Res Panorama Matrix
 Tests:
 1. Source Manifest & Sharpness Audit Integrity
 2. Comparison Datasets (8-shot, 8-shot bridge, 10-shot, 12-shot)
 3. Full-Resolution Render Geometry & Effective Pixels Per Degree
-4. Visual Review & Forensic Artifact Completeness
+4. Visual Review & Forensic Artifact Completeness (including 8 vs 12 and native crops)
 5. Customer Default (P2R13) & Owner Visual Acceptance (False) Lock
+6. Phase 2A Projection Semantics & Plan-Aware Orientation Gate
 """
 
 import os
@@ -88,7 +89,9 @@ class TestP2R16Phase2Suite(unittest.TestCase):
             "P2R16_12_OWNER_REVIEW.jpg",
             "P2R16_12_CLOSURE.jpg",
             "P2R16_12_FORENSIC_OVERLAY.jpg",
-            "P2R16_PHASE2_4WAY_COMPARISON.jpg"
+            "P2R16_PHASE2_4WAY_COMPARISON.jpg",
+            "P2R16_8_VS_12_SIDE_BY_SIDE.jpg",
+            "P2R16_NATIVE_CROP_COMPARISON.jpg"
         ]
         for fname in required_artifacts:
             fpath = ARTIFACTS_DIR / fname
@@ -100,6 +103,24 @@ class TestP2R16Phase2Suite(unittest.TestCase):
             data = json.load(f)
         self.assertEqual(data.get("customerDefaultGeometryPath"), "P2R13")
         self.assertFalse(data.get("OWNER_VISUAL_ACCEPTANCE"))
+
+    def test_06_phase2a_projection_and_gate_semantics(self):
+        with open(MATRIX_RESULTS_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        self.assertTrue(data.get("PROJECTION_SEMANTICS_CORRECTED"))
+        self.assertEqual(data.get("PANORAMA_PROJECTION_TYPE"), "SPHERICAL_BAND")
+        self.assertFalse(data.get("FULL_SPHERICAL_EQUIRECTANGULAR"))
+        self.assertEqual(data.get("HORIZONTAL_COVERAGE_DEG"), 360.0)
+        self.assertEqual(data.get("ORIENTATION_GATE_MODEL"), "PLAN_AWARE_STEP_AND_HFOV_OVERLAP")
+        self.assertTrue(data.get("SHARPNESS_LEGACY_CLAMP_SUPERSEDED"))
+        self.assertTrue(data.get("P2R16_10_PHYSICAL_SOURCE_VERIFIED"))
+        self.assertTrue(data.get("P2R16_12_PHYSICAL_SOURCE_VERIFIED"))
+        self.assertEqual(data.get("HIGH_RES_PHYSICAL_CAPTURE"), "PASS")
+        self.assertEqual(data.get("PROXY_SOLVE_FULL_RES_RENDER"), "PASS")
+        self.assertEqual(data.get("12_SHOT_GRAPH_SANITY"), "PASS")
+        self.assertTrue(data.get("P2R16_12_TECHNICAL_MATRIX_WINNER"))
+        self.assertEqual(data.get("TECHNICAL_PREFERRED_PLAN"), "12_SHOT_30_DEG")
+        self.assertEqual(data.get("OWNER_PREFERRED_PLAN"), "UNRESOLVED")
 
 if __name__ == "__main__":
     unittest.main()

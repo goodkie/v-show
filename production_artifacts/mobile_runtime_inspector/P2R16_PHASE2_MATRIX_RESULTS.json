@@ -1,5 +1,5 @@
 {
-  "experiment": "C12.9-P2R16_PHASE2_MATRIX",
+  "experiment": "C12.9-P2R16_PHASE2A_MATRIX",
   "device": "Samsung Galaxy S23 Ultra SM-S918U",
   "browser": "Chrome Mobile 128.0.6613.88",
   "customerDefaultGeometryPath": "P2R13",
@@ -61,7 +61,11 @@
         "ownerReview": "P2R16_8_OWNER_REVIEW.jpg",
         "closurePanel": "P2R16_8_CLOSURE.jpg",
         "forensicOverlay": "P2R16_8_FORENSIC_OVERLAY.jpg"
-      }
+      },
+      "projectionType": "SPHERICAL_BAND",
+      "horizontalCoverageDeg": 360.0,
+      "verticalCoverageDeg": 54.8,
+      "fullSphericalEquirectangular": false
     },
     "P2R16_8B": {
       "planId": "P2R16_8B",
@@ -117,7 +121,11 @@
         "ownerReview": "P2R16_8B_OWNER_REVIEW.jpg",
         "closurePanel": "P2R16_8B_CLOSURE.jpg",
         "forensicOverlay": "P2R16_8B_FORENSIC_OVERLAY.jpg"
-      }
+      },
+      "projectionType": "SPHERICAL_BAND",
+      "horizontalCoverageDeg": 360.0,
+      "verticalCoverageDeg": 54.8,
+      "fullSphericalEquirectangular": false
     },
     "P2R16_10": {
       "planId": "P2R16_10",
@@ -173,7 +181,11 @@
         "ownerReview": "P2R16_10_OWNER_REVIEW.jpg",
         "closurePanel": "P2R16_10_CLOSURE.jpg",
         "forensicOverlay": "P2R16_10_FORENSIC_OVERLAY.jpg"
-      }
+      },
+      "projectionType": "SPHERICAL_BAND",
+      "horizontalCoverageDeg": 360.0,
+      "verticalCoverageDeg": 54.8,
+      "fullSphericalEquirectangular": false
     },
     "P2R16_12": {
       "planId": "P2R16_12",
@@ -227,7 +239,46 @@
         "ownerReview": "P2R16_12_OWNER_REVIEW.jpg",
         "closurePanel": "P2R16_12_CLOSURE.jpg",
         "forensicOverlay": "P2R16_12_FORENSIC_OVERLAY.jpg"
-      }
+      },
+      "projectionType": "SPHERICAL_BAND",
+      "horizontalCoverageDeg": 360.0,
+      "verticalCoverageDeg": 54.8,
+      "fullSphericalEquirectangular": false
     }
+  },
+  "PROJECTION_SEMANTICS_CORRECTED": true,
+  "PANORAMA_PROJECTION_TYPE": "SPHERICAL_BAND",
+  "HORIZONTAL_COVERAGE_DEG": 360.0,
+  "VERTICAL_COVERAGE_DEG": 54.8,
+  "FULL_SPHERICAL_EQUIRECTANGULAR": false,
+  "ASPECT_RATIO": "6.64:1",
+  "ORIENTATION_GATE_MODEL": "PLAN_AWARE_STEP_AND_HFOV_OVERLAP",
+  "PLAN_STEP_TOLERANCE_DEG": {
+    "8_SHOT": 51.75,
+    "10_SHOT": 42.0,
+    "12_SHOT": 36.0,
+    "36_SHOT": 16.0
+  },
+  "SHARPNESS_LEGACY_CLAMP_SUPERSEDED": true,
+  "P2R16_10_PHYSICAL_SOURCE_VERIFIED": true,
+  "P2R16_12_PHYSICAL_SOURCE_VERIFIED": true,
+  "HIGH_RES_PHYSICAL_CAPTURE": "PASS",
+  "PROXY_SOLVE_FULL_RES_RENDER": "PASS",
+  "12_SHOT_GRAPH_SANITY": "PASS",
+  "P2R16_12_TECHNICAL_MATRIX_WINNER": true,
+  "TECHNICAL_PREFERRED_PLAN": "12_SHOT_30_DEG",
+  "OWNER_PREFERRED_PLAN": "UNRESOLVED",
+  "12_SHOT_VISUAL_ACCEPTANCE": "PENDING_OWNER_REVIEW",
+  "8_SHOT_VISUAL_ACCEPTANCE": "PENDING_OWNER_REVIEW",
+  "BEST_COMMERCIAL_CAPTURE_PLAN": "UNRESOLVED",
+  "CUSTOMER_DEFAULT_GEOMETRY_PATH": "P2R13",
+  "reviewArtifacts": {
+    "ownerReview8": "P2R16_8_OWNER_REVIEW.jpg",
+    "ownerReview8B": "P2R16_8B_OWNER_REVIEW.jpg",
+    "ownerReview10": "P2R16_10_OWNER_REVIEW.jpg",
+    "ownerReview12": "P2R16_12_OWNER_REVIEW.jpg",
+    "fourWayComparison": "P2R16_PHASE2_4WAY_COMPARISON.jpg",
+    "sideBySide8vs12": "P2R16_8_VS_12_SIDE_BY_SIDE.jpg",
+    "nativeCropComparison": "P2R16_NATIVE_CROP_COMPARISON.jpg"
   }
 }
