@@ -1074,6 +1074,42 @@ app.use('/assets', express.static(path.join(__dirname, '..', 'assets')));
 app.use(express.static(path.join(__dirname, '..', 'client')));
 app.use(express.static(path.join(__dirname, '..')));
 
+// ── C12.9-P2R16 Phase 7A: Real Internal 360 Viewer Route & Static Proxies ──
+app.get('/internal/qa/p2r16/360-viewer', (req, res) => {
+  const candidates = [
+    path.join(__dirname, '..', 'client', 'internal', 'qa', 'p2r16_360_viewer.html'),
+    path.join(__dirname, '..', 'app_build', 'client', 'internal', 'qa', 'p2r16_360_viewer.html'),
+    path.join(__dirname, '..', 'internal', 'qa', 'p2r16_360_viewer.html')
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return res.sendFile(p);
+  }
+  res.status(404).send('Viewer not found');
+});
+
+const p2r16ViewerAssets = [
+  path.join(__dirname, '..', 'client', 'internal-assets', 'p2r16', 'viewer'),
+  path.join(__dirname, '..', 'app_build', 'client', 'internal-assets', 'p2r16', 'viewer'),
+  path.join(__dirname, '..', '..', 'production_artifacts', 'mobile_runtime_inspector', 'viewer_proxies'),
+  path.join(__dirname, '..', 'production_artifacts', 'mobile_runtime_inspector', 'viewer_proxies')
+];
+p2r16ViewerAssets.forEach(dir => {
+  if (fs.existsSync(dir)) {
+    app.use('/internal-assets/p2r16/viewer', express.static(dir));
+  }
+});
+
+const productionArtifactDirs = [
+  path.join(__dirname, '..', '..', 'production_artifacts'),
+  path.join(__dirname, '..', 'production_artifacts')
+];
+productionArtifactDirs.forEach(dir => {
+  if (fs.existsSync(dir)) {
+    app.use('/production_artifacts', express.static(dir));
+  }
+});
+
+
 // --- 1. Healthcheck (Canonical: /health, Alias: /api/health) & Public Plan Endpoints ---
 const healthHandler = (req, res) => {
   res.status(200).json({

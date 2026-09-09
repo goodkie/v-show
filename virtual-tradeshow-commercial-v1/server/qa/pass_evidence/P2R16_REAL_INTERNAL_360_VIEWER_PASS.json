@@ -1,0 +1,39 @@
+{
+  "evidenceId": "P2R16_REAL_INTERNAL_360_VIEWER_PASS",
+  "milestone": "C12.9-P2R16",
+  "evidenceLevel": "LIVE_PRODUCTION_VERIFIED",
+  "verdict": "PASS",
+  "createdAtUtc": "2026-09-09T18:50:12.923596+00:00",
+  "sourceCommit": "9dc344bc5b73ec18b2261c5c5607f44b24ef0bef",
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/client/internal/qa/p2r16_360_viewer.html",
+    "virtual-tradeshow-commercial-v1/server/index.js"
+  ],
+  "codeSha256": {
+    "virtual-tradeshow-commercial-v1/client/internal/qa/p2r16_360_viewer.html": "85aa514fe1a76b2062804ec0e9e225f13a61288e1a378358edc3db3c554449ef",
+    "virtual-tradeshow-commercial-v1/server/index.js": "54b804dac8e09caec3585fb65fe481e34541a1e5e58614f51aeca010289d3b0d"
+  },
+  "productionScoped": true,
+  "productionProvenanceVerified": true,
+  "ownerExplicitApproval": false,
+  "identity": {
+    "component": "Internal360Viewer",
+    "route": "/internal/qa/p2r16/360-viewer"
+  },
+  "lockedItems": {
+    "VIEWER_ROUTE": "/internal/qa/p2r16/360-viewer",
+    "SPHERICAL_BAND_GEOMETRY": true,
+    "HAOV_DEG": 360,
+    "VAOV_DEG": 68,
+    "PITCH_CLAMP_MIN_DEG": -34,
+    "PITCH_CLAMP_MAX_DEG": 34,
+    "QUALITY_EASY_AB_SWITCH": true,
+    "WEBGL_MAX_TEXTURE_SIZE_DETECTION": true,
+    "PROXIES_AVAILABLE": [
+      2048,
+      4096,
+      8192
+    ]
+  },
+  "reason": "Interactive 360 spherical band viewer implemented with WebGL safe proxies, continuous wrap, and pitch clamping."
+}
