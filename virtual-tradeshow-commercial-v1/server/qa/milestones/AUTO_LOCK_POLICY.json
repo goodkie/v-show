@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "policyName": "3D2_AUTOMATIC_PASS_LOCK",
+  "enabled": true,
+  "lockOnlyVerdict": "PASS",
+  "allowedEvidenceLevels": ["PHYSICAL_PRODUCTION_VERIFIED", "LIVE_PRODUCTION_VERIFIED", "OWNER_VISUAL_VERIFIED"],
+  "requireSourceCommit": true,
+  "requireCodePaths": true,
+  "requireEvidenceId": true,
+  "requireProductionProvenanceForProductionLocks": true,
+  "neverAutoPromote": ["FAIL", "PENDING", "NOT_PROVEN", "NEEDS_IMPROVEMENT"],
+  "ownerGatedFields": ["OWNER_VISUAL_ACCEPTANCE", "FULL_360_ACCEPTANCE", "PANORAMA_ACCEPTANCE"],
+  "ownerGatedRule": "May only auto-lock PASS when evidenceLevel=OWNER_VISUAL_VERIFIED and ownerExplicitApproval=true",
+  "immutability": {
+    "overwriteExistingLock": false,
+    "supersedeRequiresNewEvidence": true,
+    "sourceCommitIsImmutable": true,
+    "codeHashesAreImmutable": true
+  },
+  "regressionRule": "A locked PASS may only be revoked by NEW_PHYSICAL_PRODUCTION_EVIDENCE=true with explicit reproduction evidence.",
+  "sensorPolicy": {
+    "SENSOR_IS_TOPOLOGY_OR_INITIALIZATION_PRIOR": true,
+    "SENSOR_FORCED_VISUAL_EDGE": false,
+    "SENSOR_FORCED_FINAL_GEOMETRY": false
+  },
+  "geometryPolicy": {
+    "RAW_H_CONDITION_NUMBER_HARD_GATE": false,
+    "ESSENTIAL_MATRIX_PRIMARY_MODEL": false,
+    "FORCED_EDGE_POLICY": false,
+    "DO_NOT_FORCE_2_TO_1": true
+  }
+}
