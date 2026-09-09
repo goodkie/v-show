@@ -223,7 +223,8 @@ class PanoramicStitcher {
       slot: v.slot || ('SHOT_' + String(i + 1).padStart(2, '0')),
       index: i,
       // P2R13: Pass candidateId so Python worker SUBSET_40_EXCLUDE_CANDIDATE_IDS filter can operate
-      candidateId: v.candidateId || null
+      candidateId: v.candidateId || null,
+      estimatedYawDeg: (v.estimatedYawDeg !== undefined && v.estimatedYawDeg !== null) ? Number(v.estimatedYawDeg) : (v.angle || 0)
     }));
 
     const workerResult = this.runOpenCvWorker(workerSources, this.uploadsDir, candidateId, options);
@@ -263,7 +264,8 @@ class PanoramicStitcher {
         path: v.localPath || v.path,
         slot: v.slot || ('SHOT_' + String(i + 1).padStart(2, '0')),
         index: i,
-        candidateId: v.candidateId || null
+        candidateId: v.candidateId || null,
+        estimatedYawDeg: (v.estimatedYawDeg !== undefined && v.estimatedYawDeg !== null) ? Number(v.estimatedYawDeg) : (v.angle || 0)
       }));
       workerResult = this.runOpenCvWorker(workerSources, this.uploadsDir, candidateId, options);
     }

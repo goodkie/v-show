@@ -28,6 +28,8 @@ except ImportError:
     import cv2
     import numpy as np
 
+cv2.ocl.setUseOpenCL(False)
+
 import json
 import argparse
 import hashlib
@@ -297,6 +299,21 @@ def run_so3_global_rotation_stitch(images, sources, focal_px=1500.0, sensor_weig
     if N < 2:
         return cv2.Stitcher_ERR_NEED_MORE_IMGS, None, None, None
 
+    def safe_yaw(s):
+        if not isinstance(s, dict):
+            return 0.0
+        val = s.get('estimatedYawDeg')
+        if val is None:
+            val = s.get('angle')
+        try:
+            return float(val) if val is not None else 0.0
+        except (ValueError, TypeError):
+            return 0.0
+
+    has_sensor_yaw = any(abs(safe_yaw(s)) > 1e-4 for s in sources)
+    if not has_sensor_yaw:
+        sensor_weight = 0.0
+
     w, h = images[0].shape[1], images[0].shape[0]
     K = build_intrinsics_matrix(width=w, height=h, focal_px=focal_px).astype(np.float32)
 
@@ -338,16 +355,19 @@ def run_so3_global_rotation_stitch(images, sources, focal_px=1500.0, sensor_weig
         R_rel, angle_deg, orth_err = extract_so3_rotation(H, K)
         if R_rel is None or angle_deg > 65.0 or orth_err > 1e-3:
             continue
-        yaw_i = sources[i].get('estimatedYawDeg', 0.0)
-        yaw_j = sources[j].get('estimatedYawDeg', 0.0)
-        sensor_diff = abs((yaw_j - yaw_i + 180.0) % 360.0 - 180.0)
-        disagreement = abs(angle_deg - sensor_diff)
-        disagreement = abs((disagreement + 180.0) % 360.0 - 180.0)
-        if disagreement > 35.0 and not (min(i, j) == 0 and max(i, j) == N - 1):
-            continue
+        if has_sensor_yaw:
+            yaw_i = safe_yaw(sources[i])
+            yaw_j = safe_yaw(sources[j])
+            sensor_diff = abs((yaw_j - yaw_i + 180.0) % 360.0 - 180.0)
+            disagreement = abs(angle_deg - sensor_diff)
+            disagreement = abs((disagreement + 180.0) % 360.0 - 180.0)
+            if disagreement > 35.0 and not (min(i, j) == 0 and max(i, j) == N - 1):
+                continue
         edges.append({'i': i, 'j': j, 'R_ij': R_rel})
 
+    print(f"[SO3] Extracted {len(edges)} valid relative rotation edges for {N} frames (has_sensor={has_sensor_yaw})", file=sys.stderr)
     if len(edges) < N:
+        print(f"[SO3] Too few edges ({len(edges)} < {N}) for closed loop averaging", file=sys.stderr)
         return cv2.Stitcher_ERR_HOMOGRAPHY_EST_FAIL, None, None, None
 
     # 3. Initial sequential accumulation
@@ -359,14 +379,17 @@ def run_so3_global_rotation_stitch(images, sources, focal_px=1500.0, sensor_weig
             U, _, Vt = np.linalg.svd(R_next)
             R_current.append(U @ Vt)
         else:
-            delta_yaw = sources[i+1].get('estimatedYawDeg', 0.0) - sources[i].get('estimatedYawDeg', 0.0)
+            if has_sensor_yaw:
+                delta_yaw = safe_yaw(sources[i+1]) - safe_yaw(sources[i])
+            else:
+                delta_yaw = 360.0 / N
             rad = np.radians(delta_yaw)
             Ry = np.array([[np.cos(rad), 0, np.sin(rad)], [0, 1, 0], [-np.sin(rad), 0, np.cos(rad)]])
             R_current.append(Ry @ R_current[-1])
 
     # 4. Joint rotation averaging on Lie algebra so(3)
     huber_delta = 0.05
-    for _ in range(50):
+    for it in range(50):
         rows, rhs = [], []
         for e in edges:
             i, j = e['i'], e['j']
@@ -381,11 +404,11 @@ def run_so3_global_rotation_stitch(images, sources, focal_px=1500.0, sensor_weig
                 if i > 0: row[3 * (i - 1) + k] = -sqrt_w
                 rows.append(row)
                 rhs.append(-sqrt_w * r[k])
-        if sensor_weight > 0:
+        if sensor_weight > 0 and has_sensor_yaw:
             sqrt_sw = np.sqrt(sensor_weight)
             for i in range(1, N):
                 yaw_curr, _, _ = decompose_yaw_pitch_roll(R_current[i])
-                yaw_prior = sources[i].get('estimatedYawDeg', 0.0) - sources[0].get('estimatedYawDeg', 0.0)
+                yaw_prior = safe_yaw(sources[i]) - safe_yaw(sources[0])
                 err_yaw = (yaw_curr - yaw_prior + 180.0) % 360.0 - 180.0
                 row = np.zeros(3 * (N - 1), dtype=np.float64)
                 row[3 * (i - 1) + 1] = sqrt_sw
@@ -409,6 +432,8 @@ def run_so3_global_rotation_stitch(images, sources, focal_px=1500.0, sensor_weig
             R_new = rodrigues_exp(d_omega) @ R_current[i]
             U, _, Vt = np.linalg.svd(R_new)
             R_current[i] = U @ Vt
+
+    print(f"[SO3] Joint rotation averaging converged after {it+1} iterations", file=sys.stderr)
 
     # 5. Render Spherical Band with Voronoi distance-transform MultiBandBlender
     rotations_f32 = [R.astype(np.float32) for R in R_current]
@@ -594,10 +619,14 @@ def run_opencv_stitching(input_data):
     if subset_applied and len(stitch_images) >= 12:
         filtered_sources = [s for s in sources if s.get('candidateId') not in SUBSET_40_EXCLUDE_CANDIDATE_IDS]
         try:
+            print(f"[SO3] Launching SO(3) global rotation stitch for {len(stitch_images)} frames...", file=sys.stderr)
             so3_status, so3_pano, so3_cameras, so3_comp = run_so3_global_rotation_stitch(
                 stitch_images, filtered_sources, focal_px=1500.0, sensor_weight=0.005, roll_weight=0.005
             )
+            print(f"[SO3] Completed with status={so3_status}, pano is None? {so3_pano is None}", file=sys.stderr)
         except Exception as e:
+            import traceback
+            print(f"[SO3 Error] Exception: {e}\n{traceback.format_exc()}", file=sys.stderr)
             so3_status = None
 
     if so3_status == cv2.Stitcher_OK and so3_pano is not None:
