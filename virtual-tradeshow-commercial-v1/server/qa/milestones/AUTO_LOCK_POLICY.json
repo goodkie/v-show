@@ -3,13 +3,26 @@
   "policyName": "3D2_AUTOMATIC_PASS_LOCK",
   "enabled": true,
   "lockOnlyVerdict": "PASS",
-  "allowedEvidenceLevels": ["PHYSICAL_PRODUCTION_VERIFIED", "LIVE_PRODUCTION_VERIFIED", "OWNER_VISUAL_VERIFIED"],
+  "allowedEvidenceLevels": [
+    "PHYSICAL_PRODUCTION_VERIFIED",
+    "LIVE_PRODUCTION_VERIFIED",
+    "OWNER_VISUAL_VERIFIED"
+  ],
   "requireSourceCommit": true,
   "requireCodePaths": true,
   "requireEvidenceId": true,
   "requireProductionProvenanceForProductionLocks": true,
-  "neverAutoPromote": ["FAIL", "PENDING", "NOT_PROVEN", "NEEDS_IMPROVEMENT"],
-  "ownerGatedFields": ["OWNER_VISUAL_ACCEPTANCE", "FULL_360_ACCEPTANCE", "PANORAMA_ACCEPTANCE"],
+  "neverAutoPromote": [
+    "FAIL",
+    "PENDING",
+    "NOT_PROVEN",
+    "NEEDS_IMPROVEMENT"
+  ],
+  "ownerGatedFields": [
+    "OWNER_VISUAL_ACCEPTANCE",
+    "FULL_360_ACCEPTANCE",
+    "PANORAMA_ACCEPTANCE"
+  ],
   "ownerGatedRule": "May only auto-lock PASS when evidenceLevel=OWNER_VISUAL_VERIFIED and ownerExplicitApproval=true",
   "immutability": {
     "overwriteExistingLock": false,
@@ -28,5 +41,83 @@
     "ESSENTIAL_MATRIX_PRIMARY_MODEL": false,
     "FORCED_EDGE_POLICY": false,
     "DO_NOT_FORCE_2_TO_1": true
+  },
+  "evidenceTiers": {
+    "LEVEL_1_CODE": "unit/static/regression test only",
+    "LEVEL_2_RUNTIME": "Production execution/provenance",
+    "LEVEL_3_ARTIFACT": "output artifact structural validation",
+    "LEVEL_4_VISUAL": "actual artifact visual QA",
+    "LEVEL_5_OWNER": "explicit Owner acceptance"
+  },
+  "tierRules": [
+    "A lower level may NEVER imply a higher level.",
+    "CODE_PASS != FEATURE_PASS",
+    "RUNTIME_PASS != OUTPUT_QUALITY_PASS",
+    "METRIC_PASS != VISUAL_PASS",
+    "JOB_READY != PANORAMA_PASS"
+  ],
+  "visualFeatureLockRule": {
+    "applicableFeatureTypes": [
+      "image",
+      "panorama",
+      "3D viewer",
+      "video",
+      "rendered UI",
+      "visual reconstruction"
+    ],
+    "requirementsForFeaturePass": [
+      "actual Production artifact exists",
+      "artifact provenance verified",
+      "structural artifact QA PASS",
+      "visual QA PASS",
+      "OWNER explicit PASS when Owner-gated"
+    ],
+    "withoutRequirements": "only implementation/runtime subcomponents may lock"
+  },
+  "visualEvidencePriority": [
+    "1 OWNER inspection of actual Production pixels",
+    "2 Production visual artifact forensic QA",
+    "3 Production runtime telemetry",
+    "4 automated image metrics",
+    "5 unit/local tests"
+  ],
+  "visualEvidencePriorityRule": "A lower-priority metric may not override a higher-priority visual FAIL.",
+  "negativeEvidenceLocking": {
+    "enabled": true,
+    "lockExtension": ".FAIL.LOCK.json",
+    "allowedFailureLevels": [
+      "OWNER_VISUAL_VERIFIED",
+      "PHYSICAL_PRODUCTION_VERIFIED"
+    ],
+    "effect": "Prohibits reclassification of THAT exact artifact/build as PASS."
+  },
+  "artifactIdentityBinding": {
+    "requiredFields": [
+      "commitSha",
+      "deploymentId",
+      "jobId",
+      "artifactPath",
+      "sha256",
+      "dimensions"
+    ]
+  },
+  "technicalVisualCandidateGate": {
+    "requiredConditions": [
+      "PRODUCTION_PROVENANCE == PASS",
+      "GRAPH_CONNECTIVITY == PASS",
+      "CAMERA_RETENTION == PASS",
+      "ORIENTATION_SANITY == PASS",
+      "VALID_PIXEL_OCCUPANCY == PASS",
+      "NO_FOLDBACK == PASS",
+      "NO_INTERIOR_VOID == PASS",
+      "GLOBAL_GEOMETRY_AUTOMATED_QA == PASS",
+      "PRODUCTION_ARTIFACT_VISUAL_FORENSIC_QA == PASS"
+    ],
+    "supportingMetricsOnly": [
+      "H_BEND",
+      "SEAM_JUMP",
+      "LOOP_ERROR"
+    ],
+    "supportingMetricsCannotIndependentlyPass": true
   }
 }

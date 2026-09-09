@@ -616,10 +616,14 @@ def run_opencv_stitching(input_data):
     so3_pano = None
     so3_cameras = None
     so3_comp = None
-    if subset_applied and len(stitch_images) >= 12:
+    # C12.9-P2R14R1: Restore safe P2R13 customer-facing default. Preserve P2R14 SO(3) behind experiment flag.
+    options = input_data.get('options', {})
+    enable_p2r14_experimental = options.get('enableP2R14Experiment', False) or options.get('enableSO3GlobalRotation', False)
+
+    if enable_p2r14_experimental and subset_applied and len(stitch_images) >= 12:
         filtered_sources = [s for s in sources if s.get('candidateId') not in SUBSET_40_EXCLUDE_CANDIDATE_IDS]
         try:
-            print(f"[SO3] Launching SO(3) global rotation stitch for {len(stitch_images)} frames...", file=sys.stderr)
+            print(f"[SO3] Launching experimental SO(3) global rotation stitch for {len(stitch_images)} frames...", file=sys.stderr)
             so3_status, so3_pano, so3_cameras, so3_comp = run_so3_global_rotation_stitch(
                 stitch_images, filtered_sources, focal_px=1500.0, sensor_weight=0.005, roll_weight=0.005
             )
@@ -629,12 +633,13 @@ def run_opencv_stitching(input_data):
             print(f"[SO3 Error] Exception: {e}\n{traceback.format_exc()}", file=sys.stderr)
             so3_status = None
 
-    if so3_status == cv2.Stitcher_OK and so3_pano is not None:
+    if enable_p2r14_experimental and so3_status == cv2.Stitcher_OK and so3_pano is not None:
         status = cv2.Stitcher_OK
         pano = so3_pano
         cameras = so3_cameras
         connected_indices = so3_comp
     else:
+        # P2R13 Safe Customer Baseline: Native OpenCV Stitcher with Wave Correction + Seam Estimation 0.10 + 36-frame subset
         status, pano = stitcher.stitch(stitch_images)
         cameras = stitcher.cameras()
         comp = stitcher.component()
@@ -716,6 +721,17 @@ def run_opencv_stitching(input_data):
 
     master_sha256 = compute_sha256(native_path)
 
+    # 7b. Catastrophic Visual Sanity Gates (C12.9-P2R14R1 Policy Hardening)
+    try:
+        from panorama_sanity_gates import evaluate_catastrophic_visual_sanity_gates
+        sanity_result = evaluate_catastrophic_visual_sanity_gates(pano, cameras)
+    except Exception as e:
+        sanity_result = {
+            "sanityPass": False,
+            "failedGates": [f"SANITY_CHECK_EXCEPTION: {str(e)}"],
+            "metrics": {}
+        }
+
     # 8. Angular Anchors
     anchors = []
     anchor_count = len(connected_indices) if len(connected_indices) > 0 else len(sources)
@@ -755,6 +771,10 @@ def run_opencv_stitching(input_data):
         # technicalHorizontalRingCandidate=true means the camera ring closes to >=345° horizontal coverage.
         # It does NOT mean the output is a full-sphere (2:1) equirectangular projection.
         "technicalHorizontalRingCandidate": full_360_qualified,
+        "technicalVisualCandidate": bool(full_360_qualified and sanity_result["sanityPass"]),
+        "catastrophicSanityPass": sanity_result["sanityPass"],
+        "catastrophicSanityFailedGates": sanity_result["failedGates"],
+        "catastrophicSanityMetrics": sanity_result["metrics"],
         "fullSphericalEquirectangular": full_spherical,
         "panoramaType": panorama_type,
         "projection": projection_type,

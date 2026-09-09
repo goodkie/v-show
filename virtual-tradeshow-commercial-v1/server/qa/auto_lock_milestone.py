@@ -40,16 +40,25 @@ def validate_evidence(ev: dict, policy: dict) -> None:
     missing = [k for k in required if not ev.get(k)]
     if missing:
         raise ValueError(f"missing required evidence fields: {missing}")
-    if ev["verdict"] != policy["lockOnlyVerdict"]:
+    
+    if ev["verdict"] == "FAIL":
+        neg_policy = policy.get("negativeEvidenceLocking", {})
+        if not neg_policy.get("enabled", False):
+            raise ValueError("negative evidence locking is disabled")
+        allowed_failure_levels = neg_policy.get("allowedFailureLevels", ["OWNER_VISUAL_VERIFIED", "PHYSICAL_PRODUCTION_VERIFIED"])
+        if ev["evidenceLevel"] not in allowed_failure_levels:
+            raise ValueError(f"insufficient failure evidence level: {ev['evidenceLevel']}")
+    elif ev["verdict"] != policy["lockOnlyVerdict"]:
         raise ValueError(f"not lockable verdict: {ev['verdict']}")
-    if ev["evidenceLevel"] not in policy["allowedEvidenceLevels"]:
-        raise ValueError(f"insufficient evidence level: {ev['evidenceLevel']}")
-    if ev.get("productionScoped", False) and not ev.get("productionProvenanceVerified", False):
-        raise ValueError("production-scoped PASS lacks verified production provenance")
-    owner_fields = set(policy.get("ownerGatedFields", []))
-    if any(k in owner_fields and v is True for k, v in ev.get("lockedItems", {}).items()):
-        if not (ev.get("evidenceLevel") == "OWNER_VISUAL_VERIFIED" and ev.get("ownerExplicitApproval") is True):
-            raise ValueError("owner-gated PASS cannot auto-lock without explicit owner verification")
+    else:
+        if ev["evidenceLevel"] not in policy["allowedEvidenceLevels"]:
+            raise ValueError(f"insufficient evidence level: {ev['evidenceLevel']}")
+        if ev.get("productionScoped", False) and not ev.get("productionProvenanceVerified", False):
+            raise ValueError("production-scoped PASS lacks verified production provenance")
+        owner_fields = set(policy.get("ownerGatedFields", []))
+        if any(k in owner_fields and v is True for k, v in ev.get("lockedItems", {}).items()):
+            if not (ev.get("evidenceLevel") == "OWNER_VISUAL_VERIFIED" and ev.get("ownerExplicitApproval") is True):
+                raise ValueError("owner-gated PASS cannot auto-lock without explicit owner verification")
 
 
 def materialize(ev_path: Path, policy: dict) -> Path:
@@ -66,29 +75,35 @@ def materialize(ev_path: Path, policy: dict) -> Path:
         except subprocess.CalledProcessError as exc:
             raise ValueError(f"code path missing at source commit {source_commit}: {rel}") from exc
 
+    is_failure_lock = (ev["verdict"] == "FAIL")
+    lock_type = "IMMUTABLE_FAILURE_LOCK" if is_failure_lock else "IMMUTABLE_PASS_CODE_LOCK"
     lock = {
         "schemaVersion": 1,
-        "lockType": "IMMUTABLE_PASS_CODE_LOCK",
+        "lockType": lock_type,
         "evidenceId": ev["evidenceId"],
         "milestone": ev["milestone"],
-        "verdict": "PASS",
+        "verdict": ev["verdict"],
         "evidenceLevel": ev["evidenceLevel"],
         "sourceCommit": source_commit,
         "materializedFromHead": current,
         "productionScoped": bool(ev.get("productionScoped", False)),
         "productionProvenanceVerified": bool(ev.get("productionProvenanceVerified", False)),
         "ownerExplicitApproval": bool(ev.get("ownerExplicitApproval", False)),
+        "ownerExplicitRejection": bool(ev.get("ownerExplicitRejection", False)),
         "lockedItems": ev["lockedItems"],
         "codePaths": ev["codePaths"],
         "codeSha256": hashes,
         "evidence": ev.get("evidence", {}),
+        "identity": ev.get("identity", {}),
+        "reason": ev.get("reason", ""),
         "regressionRevocationPolicy": policy["regressionRule"],
         "createdAtUtc": datetime.now(timezone.utc).isoformat(),
         "immutable": True
     }
 
     LOCK_DIR.mkdir(parents=True, exist_ok=True)
-    out = LOCK_DIR / f"{ev['evidenceId']}.LOCK.json"
+    ext = ".FAIL.LOCK.json" if is_failure_lock else ".LOCK.json"
+    out = LOCK_DIR / f"{ev['evidenceId']}{ext}"
     if out.exists():
         existing = load_json(out)
         comparison = dict(lock)

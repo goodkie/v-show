@@ -1,0 +1,38 @@
+{
+  "evidenceId": "C12_9_P2R14_VISUAL_FAILURE",
+  "milestone": "C12.9-P2R14",
+  "verdict": "FAIL",
+  "evidenceLevel": "OWNER_VISUAL_VERIFIED",
+  "sourceCommit": "a1565a4917a6014f5b536a76a3f953946a7a6e34",
+  "productionScoped": true,
+  "productionProvenanceVerified": true,
+  "ownerExplicitApproval": false,
+  "ownerExplicitRejection": true,
+  "ownerReviewCompleted": true,
+  "reason": "Actual Production panorama exhibits catastrophic global geometric distortion, invalid projection/compositing, large blank canvas region, severe horizon/roll failure, and invalid lower image fragments.",
+  "identity": {
+    "version": "3D2-C12.9-P2R14",
+    "productionCommit": "a1565a4917a6014f5b536a76a3f953946a7a6e34",
+    "deploymentId": "ca149985-0449-4178-ad28-1c47fcf272ab",
+    "jobId": "job-pano-1788951973028-8x5fm",
+    "artifact": "cand-val-1788951977682_native.jpg",
+    "sha256": "38de6f9dda91c7904287d58c77b97408f7d04d70f57e2b8eb7e17241f89b7109",
+    "dimensions": "9425x1600",
+    "ownerVisualResult": "FAIL"
+  },
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/server/opencv_panorama_worker.py",
+    "virtual-tradeshow-commercial-v1/app_build/server/opencv_panorama_worker.py",
+    "virtual-tradeshow-commercial-v1/server/panoramic_stitcher.js",
+    "virtual-tradeshow-commercial-v1/app_build/server/panoramic_stitcher.js"
+  ],
+  "lockedItems": {
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "TECHNICAL_VISUAL_CANDIDATE": false,
+    "GLOBAL_GEOMETRY_QA": "FAIL",
+    "VISUAL_WARP_QA": "FAIL",
+    "CLOSURE_SEAM_QA": "FAIL",
+    "PANORAMA_ACCEPTANCE": "FAIL_CATASTROPHIC_VISUAL_GEOMETRY",
+    "FULL_360_ACCEPTANCE": false
+  }
+}

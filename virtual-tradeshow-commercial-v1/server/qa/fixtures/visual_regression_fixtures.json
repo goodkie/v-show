@@ -1,0 +1,43 @@
+{
+  "fixtures": {
+    "P2R12_PRODUCTION": {
+      "version": "3D2-C12.9-P2R12",
+      "role": "POSITIVE_VISUAL_REGRESSION_FIXTURE",
+      "status": "HISTORICAL_BASELINE",
+      "description": "P2R12 Production live stitched output",
+      "sha256": "0a0f1f924e5953435a46d55ac54884557ef23fdd7426d331f134e7cc195c8e35",
+      "dimensions": "10481x1379",
+      "expectedSanityPass": true,
+      "expectedVisualVerdict": "PASS"
+    },
+    "P2R13_PRODUCTION": {
+      "version": "3D2-C12.9-P2R13",
+      "role": "POSITIVE_VISUAL_REGRESSION_FIXTURE",
+      "status": "CURRENT_SAFE_CUSTOMER_BASELINE",
+      "description": "P2R13 Production live stitched output (36 frames subset)",
+      "sha256": "91e53cff09087674e52c8366f5c5e1a15a26668f9e550e092eea001c090890e5",
+      "dimensions": "8985x1418",
+      "expectedSanityPass": true,
+      "expectedVisualVerdict": "PASS"
+    },
+    "P2R14_FAILED_PRODUCTION": {
+      "version": "3D2-C12.9-P2R14",
+      "role": "NEGATIVE_VISUAL_REGRESSION_FIXTURE",
+      "status": "QUARANTINED_VISUAL_FAILURE",
+      "description": "P2R14 Failed Production output (cand-val-1788951977682_native.jpg)",
+      "sha256": "38de6f9dda91c7904287d58c77b97408f7d04d70f57e2b8eb7e17241f89b7109",
+      "dimensions": "9425x1600",
+      "ownerReviewCompleted": true,
+      "ownerVisualAcceptance": false,
+      "technicalVisualCandidate": false,
+      "expectedSanityPass": false,
+      "expectedVisualVerdict": "FAIL",
+      "failureReason": "Severe visual warping, detached image fragments, and Voronoi seam cuts under uncalibrated spherical wrapping"
+    }
+  },
+  "policyRules": [
+    "NEGATIVE_VISUAL_REGRESSION_FIXTURE must be rejected by visual QA gates",
+    "POSITIVE_VISUAL_REGRESSION_FIXTURE must pass baseline sanity gates",
+    "Customer-facing default must resolve to CURRENT_SAFE_CUSTOMER_BASELINE until new candidate passes all gates"
+  ]
+}

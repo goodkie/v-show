@@ -24,6 +24,16 @@ except ImportError:
     import cv2
     import numpy as np
 
+try:
+    from panorama_sanity_gates import (
+        evaluate_catastrophic_visual_sanity_gates,
+        evaluate_pixel_occupancy,
+        evaluate_orientation_sanity,
+        evaluate_horizon_oscillation
+    )
+except ImportError:
+    pass
+
 # Authoritative Policy Constants
 RAW_H_CONDITION_NUMBER_HARD_GATE = False
 ESSENTIAL_MATRIX_PRIMARY_MODEL = False

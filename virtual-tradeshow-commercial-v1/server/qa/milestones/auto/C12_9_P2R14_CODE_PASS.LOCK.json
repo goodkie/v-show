@@ -44,16 +44,27 @@
   "immutable": true,
   "lockType": "IMMUTABLE_PASS_CODE_LOCK",
   "lockedItems": {
+    "P2R14_PRODUCTION_DEPLOYMENT": "PASS",
+    "P2R14_LIVE_REPLAY_EXECUTION": "PASS",
+    "P2R14_OUTPUT_FILE_GENERATED": "PASS",
+    "STITCH_INPUT_COUNT": 36,
+    "SUBSET_APPLIED": true,
+    "SUBSET_EXCLUDED": [
+      "C010",
+      "C020",
+      "C030",
+      "C039"
+    ],
     "DO_NOT_FORCE_2_TO_1": true,
-    "H_BEND_IMPROVEMENT": "PASS",
+    "H_BEND_IMPROVEMENT": "SUPERSEDED_BY_OWNER_VISUAL_FAILURE",
     "LIVE_PRODUCTION_REPLAY": "PASS",
     "PRODUCTION_DIMENSIONS": "9425x1600",
-    "ROLL_HORIZON_STABILIZATION": "PASS",
-    "SEAM_JUMP_IMPROVEMENT": "PASS",
-    "SO3_GLOBAL_ROTATION_RECOVERY": "PASS",
-    "SPHERICAL_BAND_PROJECTION": "PASS",
-    "TECHNICAL_VISUAL_CANDIDATE": true,
-    "VORONOI_MULTIBAND_BLENDING": "PASS"
+    "ROLL_HORIZON_STABILIZATION": "SUPERSEDED_BY_OWNER_VISUAL_FAILURE",
+    "SEAM_JUMP_IMPROVEMENT": "SUPERSEDED_BY_OWNER_VISUAL_FAILURE",
+    "SO3_GLOBAL_ROTATION_RECOVERY": "SUPERSEDED_BY_OWNER_VISUAL_FAILURE",
+    "SPHERICAL_BAND_PROJECTION": "SUPERSEDED_BY_OWNER_VISUAL_FAILURE",
+    "TECHNICAL_VISUAL_CANDIDATE": "SUPERSEDED_BY_OWNER_VISUAL_FAILURE",
+    "VORONOI_MULTIBAND_BLENDING": "SUPERSEDED_BY_OWNER_VISUAL_FAILURE"
   },
   "materializedFromHead": "a1565a4917a6014f5b536a76a3f953946a7a6e34",
   "milestone": "C12.9-P2R14",
@@ -63,5 +74,9 @@
   "regressionRevocationPolicy": "A locked PASS may only be revoked by NEW_PHYSICAL_PRODUCTION_EVIDENCE=true with explicit reproduction evidence.",
   "schemaVersion": 1,
   "sourceCommit": "a1565a4917a6014f5b536a76a3f953946a7a6e34",
-  "verdict": "PASS"
+  "verdict": "QUARANTINED_PASS",
+  "lockStatus": "QUARANTINED_VISUAL_FAILURE",
+  "featureVerdict": "FAIL_CATASTROPHIC_VISUAL_GEOMETRY",
+  "executionVerdict": "PASS",
+  "quarantineReason": "Owner inspection verified catastrophic visual failure on production pixels. Execution/deployment facts preserved, all visual/feature locks superseded."
 }

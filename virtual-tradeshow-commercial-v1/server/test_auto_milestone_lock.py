@@ -37,4 +37,21 @@ try:
 except ValueError:
     pass
 
+# Test negative failure lock validation
+fail_evidence = json.loads((SERVER / 'qa' / 'pass_evidence' / 'C12_9_P2R14_VISUAL_FAILURE.json').read_text(encoding='utf-8'))
+validate_evidence(fail_evidence, policy)
+assert fail_evidence['verdict'] == 'FAIL'
+assert fail_evidence['evidenceLevel'] == 'OWNER_VISUAL_VERIFIED'
+assert fail_evidence['ownerExplicitRejection'] is True
+assert fail_evidence['lockedItems']['OWNER_VISUAL_ACCEPTANCE'] is False
+assert fail_evidence['lockedItems']['TECHNICAL_VISUAL_CANDIDATE'] is False
+
+bad_fail = dict(fail_evidence)
+bad_fail['evidenceLevel'] = 'LEVEL_1_CODE'
+try:
+    validate_evidence(bad_fail, policy)
+    raise AssertionError('insufficient failure evidence level was incorrectly auto-lockable')
+except ValueError:
+    pass
+
 print('AUTO_MILESTONE_LOCK_TEST=PASS')

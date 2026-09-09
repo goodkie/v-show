@@ -1,0 +1,50 @@
+{
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/server/opencv_panorama_worker.py",
+    "virtual-tradeshow-commercial-v1/app_build/server/opencv_panorama_worker.py",
+    "virtual-tradeshow-commercial-v1/server/panoramic_stitcher.js",
+    "virtual-tradeshow-commercial-v1/app_build/server/panoramic_stitcher.js"
+  ],
+  "codeSha256": {
+    "virtual-tradeshow-commercial-v1/app_build/server/opencv_panorama_worker.py": "e6244fe8605b6b1889d0b425fd2a26cd4ef1b2e0164605ff4eaf8347d8f4dad7",
+    "virtual-tradeshow-commercial-v1/app_build/server/panoramic_stitcher.js": "ff7970427dca0d51b7ad258f670f2a6aad3dd380f95b902f3016707e30ed3fb7",
+    "virtual-tradeshow-commercial-v1/server/opencv_panorama_worker.py": "e6244fe8605b6b1889d0b425fd2a26cd4ef1b2e0164605ff4eaf8347d8f4dad7",
+    "virtual-tradeshow-commercial-v1/server/panoramic_stitcher.js": "8cdd8b0285ef8c5af59b2ba824494191e817d91f6e78a5d98e19b7513e096860"
+  },
+  "createdAtUtc": "2026-09-09T12:04:22.041509+00:00",
+  "evidence": {},
+  "evidenceId": "C12_9_P2R14_VISUAL_FAILURE",
+  "evidenceLevel": "OWNER_VISUAL_VERIFIED",
+  "identity": {
+    "artifact": "cand-val-1788951977682_native.jpg",
+    "deploymentId": "ca149985-0449-4178-ad28-1c47fcf272ab",
+    "dimensions": "9425x1600",
+    "jobId": "job-pano-1788951973028-8x5fm",
+    "ownerVisualResult": "FAIL",
+    "productionCommit": "a1565a4917a6014f5b536a76a3f953946a7a6e34",
+    "sha256": "38de6f9dda91c7904287d58c77b97408f7d04d70f57e2b8eb7e17241f89b7109",
+    "version": "3D2-C12.9-P2R14"
+  },
+  "immutable": true,
+  "lockType": "IMMUTABLE_FAILURE_LOCK",
+  "lockedItems": {
+    "CLOSURE_SEAM_QA": "FAIL",
+    "FULL_360_ACCEPTANCE": false,
+    "GLOBAL_GEOMETRY_QA": "FAIL",
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "PANORAMA_ACCEPTANCE": "FAIL_CATASTROPHIC_VISUAL_GEOMETRY",
+    "TECHNICAL_VISUAL_CANDIDATE": false,
+    "VISUAL_WARP_QA": "FAIL"
+  },
+  "materializedFromHead": "e9f62ede3160adfcab8a31d750c1ba9888f0b254",
+  "milestone": "C12.9-P2R14",
+  "ownerExplicitApproval": false,
+  "ownerExplicitRejection": true,
+  "productionProvenanceVerified": true,
+  "productionScoped": true,
+  "reason": "Actual Production panorama exhibits catastrophic global geometric distortion, invalid projection/compositing, large blank canvas region, severe horizon/roll failure, and invalid lower image fragments.",
+  "regressionRevocationPolicy": "A locked PASS may only be revoked by NEW_PHYSICAL_PRODUCTION_EVIDENCE=true with explicit reproduction evidence.",
+  "schemaVersion": 1,
+  "sourceCommit": "a1565a4917a6014f5b536a76a3f953946a7a6e34",
+  "verdict": "FAIL"
+}
