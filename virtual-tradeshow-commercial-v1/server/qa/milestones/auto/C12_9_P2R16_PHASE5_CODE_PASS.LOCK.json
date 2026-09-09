@@ -1,0 +1,27 @@
+{
+  "lockId": "C12_9_P2R16_PHASE5_CODE_PASS",
+  "milestone": "C12.9-P2R16",
+  "verdict": "PASS",
+  "evidenceLevel": "PHYSICAL_PRODUCTION_VERIFIED",
+  "sourceCommit": "4ce1ca256715d378739900b7879519ad0f5af698",
+  "lockedAt": "2026-09-09T17:25:00Z",
+  "lockedItems": {
+    "PORTRAIT_SOURCE_PROVENANCE_PASS": "PASS",
+    "PORTRAIT_RING_GRAPH_PASS": "PASS",
+    "FULL_RES_PORTRAIT_RENDER_PASS": "PASS",
+    "SEAM_FIRST_ANTI_GHOSTING": "PASS",
+    "CUSTOMER_DEFAULT_GEOMETRY_PATH": "P2R13",
+    "OWNER_VISUAL_ACCEPTANCE": false
+  },
+  "identity": {
+    "sessionId": "P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01",
+    "riSessionId": "RI-M-P2R16-PORTRAIT12-01",
+    "device": "Samsung Galaxy S23 Ultra (SM-S918U)",
+    "browser": "Chrome Mobile 128.0.6613.88",
+    "captureOrientation": "PORTRAIT_ONLY",
+    "rawEncodedResolution": "4000x3000",
+    "exifOrientation": 6,
+    "normalizedResolution": "3000x4000"
+  },
+  "status": "LOCKED"
+}

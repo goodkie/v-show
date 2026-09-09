@@ -1,0 +1,38 @@
+{
+  "evidenceId": "P2R16_PORTRAIT_SOURCE_PROVENANCE_PASS",
+  "milestone": "C12.9-P2R16",
+  "verdict": "PASS",
+  "evidenceLevel": "PHYSICAL_PRODUCTION_VERIFIED",
+  "sourceCommit": "4ce1ca256715d378739900b7879519ad0f5af698",
+  "productionScoped": false,
+  "productionProvenanceVerified": false,
+  "ownerExplicitApproval": false,
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/server/qa/P2R16_PORTRAIT12_SOURCE_ALLOWLIST.json",
+    "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/metadata.json"
+  ],
+  "lockedItems": {
+    "SOURCE_SESSION_ID": "P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01",
+    "SOURCE_ALLOWLIST_ENFORCED": true,
+    "SOURCE_ALLOWLIST_COUNT": 12,
+    "SOURCE_HASHES_UNIQUE": true,
+    "PHYSICAL_PRIMARY_FRAME_COUNT": 12,
+    "DERIVED_FRAME_COUNT": 0,
+    "REUSED_FRAME_COUNT": 0,
+    "LLST42_FRAME_COUNT": 0,
+    "PANORAMA_REPROJECTED_FRAME_COUNT": 0,
+    "PORTRAIT_ORIENTATION_NORMALIZATION_PASS": "PASS",
+    "CUSTOMER_DEFAULT_GEOMETRY_PATH": "P2R13",
+    "OWNER_VISUAL_ACCEPTANCE": false
+  },
+  "identity": {
+    "sessionId": "P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01",
+    "riSessionId": "RI-M-P2R16-PORTRAIT12-01",
+    "device": "Samsung Galaxy S23 Ultra (SM-S918U)",
+    "browser": "Chrome Mobile 128.0.6613.88",
+    "captureOrientation": "PORTRAIT_ONLY",
+    "rawEncodedResolution": "4000x3000",
+    "exifOrientation": 6,
+    "normalizedResolution": "3000x4000"
+  }
+}

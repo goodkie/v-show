@@ -1,0 +1,36 @@
+{
+  "evidenceId": "P2R16_PORTRAIT_RING_GRAPH_PASS",
+  "milestone": "C12.9-P2R16",
+  "verdict": "PASS",
+  "evidenceLevel": "PHYSICAL_PRODUCTION_VERIFIED",
+  "sourceCommit": "4ce1ca256715d378739900b7879519ad0f5af698",
+  "productionScoped": false,
+  "productionProvenanceVerified": false,
+  "ownerExplicitApproval": false,
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/server/panorama_geometry_validator.py",
+    "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/metadata.json"
+  ],
+  "lockedItems": {
+    "GRAPH_COMPONENT_COUNT": 1,
+    "RING_PATH_EXISTS": true,
+    "CLOSURE_EDGE_VALID": true,
+    "TOTAL_EDGES": 12,
+    "MIN_EDGE_INLIERS": 249,
+    "MAX_EDGE_INLIERS": 991,
+    "WORST_PARALLAX_EDGE": "SHOT_120 -> SHOT_150",
+    "CAMERA_TRANSLATION_RISK": "LOW",
+    "CUSTOMER_DEFAULT_GEOMETRY_PATH": "P2R13",
+    "OWNER_VISUAL_ACCEPTANCE": false
+  },
+  "identity": {
+    "sessionId": "P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01",
+    "riSessionId": "RI-M-P2R16-PORTRAIT12-01",
+    "device": "Samsung Galaxy S23 Ultra (SM-S918U)",
+    "browser": "Chrome Mobile 128.0.6613.88",
+    "captureOrientation": "PORTRAIT_ONLY",
+    "rawEncodedResolution": "4000x3000",
+    "exifOrientation": 6,
+    "normalizedResolution": "3000x4000"
+  }
+}
