@@ -1,0 +1,61 @@
+{
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/server/opencv_panorama_worker.py",
+    "virtual-tradeshow-commercial-v1/app_build/server/opencv_panorama_worker.py",
+    "virtual-tradeshow-commercial-v1/server/spherical_branch_cut.py",
+    "virtual-tradeshow-commercial-v1/app_build/server/spherical_branch_cut.py",
+    "virtual-tradeshow-commercial-v1/server/panorama_sanity_gates.py",
+    "virtual-tradeshow-commercial-v1/app_build/server/panorama_sanity_gates.py",
+    "virtual-tradeshow-commercial-v1/server/index.js",
+    "virtual-tradeshow-commercial-v1/app_build/server/index.js"
+  ],
+  "codeSha256": {
+    "virtual-tradeshow-commercial-v1/app_build/server/index.js": "448894f62741e55bcf85c512c4a600112d9b4c5ead5e52587f9ebe96faeb3e84",
+    "virtual-tradeshow-commercial-v1/app_build/server/opencv_panorama_worker.py": "15970f6974cee7e3d3e739c66a72836495ff9863c70c0300a8d78f67ac0e7e4c",
+    "virtual-tradeshow-commercial-v1/app_build/server/panorama_sanity_gates.py": "a2f105dbd4fe48c2945e383c007b656715a5dbfb27fc8a39095b00bc05b17002",
+    "virtual-tradeshow-commercial-v1/app_build/server/spherical_branch_cut.py": "39aa66b51891457379d9bb7659be8a204573eaf1dc2190fff23f83142aec4b9a",
+    "virtual-tradeshow-commercial-v1/server/index.js": "448894f62741e55bcf85c512c4a600112d9b4c5ead5e52587f9ebe96faeb3e84",
+    "virtual-tradeshow-commercial-v1/server/opencv_panorama_worker.py": "15970f6974cee7e3d3e739c66a72836495ff9863c70c0300a8d78f67ac0e7e4c",
+    "virtual-tradeshow-commercial-v1/server/panorama_sanity_gates.py": "a2f105dbd4fe48c2945e383c007b656715a5dbfb27fc8a39095b00bc05b17002",
+    "virtual-tradeshow-commercial-v1/server/spherical_branch_cut.py": "39aa66b51891457379d9bb7659be8a204573eaf1dc2190fff23f83142aec4b9a"
+  },
+  "createdAtUtc": "2026-09-09T14:15:28.431236+00:00",
+  "evidence": {},
+  "evidenceId": "C12_9_P2R15_CODE_PASS",
+  "evidenceLevel": "LIVE_PRODUCTION_VERIFIED",
+  "identity": {
+    "customerDefaultDimensions": "8985x1418",
+    "customerDefaultSha256": "91e53cff09087674e52c8366f5c5e1a15a26668f9e550e092eea001c090890e5",
+    "deploymentId": "f552ac3b-7d13-45b6-a5ec-dc0597dc937e",
+    "liveReplayJobId": "job-pano-1788962911830-x1d5m",
+    "uiVersion": "3D2-C12.9-P2R15"
+  },
+  "immutable": true,
+  "lockType": "IMMUTABLE_PASS_CODE_LOCK",
+  "lockedItems": {
+    "CATASTROPHIC_VISUAL_GATES_HARDENED": "PASS",
+    "CUSTOMER_DEFAULT_GEOMETRY_PATH": "P2R13",
+    "CYCLIC_BRANCH_CUT_HANDLING": "PASS",
+    "FULL_360_ACCEPTANCE": false,
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "P2R15_EXPERIMENTAL_EXPOSED_FOR_QA_ONLY": "PASS",
+    "PANORAMA_ACCEPTANCE": "PENDING_OWNER_VISUAL_ACCEPTANCE",
+    "REAL_LLST42_MAX_RESIDUAL_DEG": 2.5591,
+    "ROLL_STD_REDUCTION": "PASS",
+    "SO3_TRANSFORM_CONVENTION_PROVEN": "PASS",
+    "SYNTHETIC_CONVENTION_MAX_RESIDUAL_DEG": 0.0,
+    "TECHNICAL_VISUAL_CANDIDATE": "PASS",
+    "WAVE_CORRECTION_PURE_ROTATION": "PASS"
+  },
+  "materializedFromHead": "e769c997cd4b89753e22feb70899bd1cc03ab7d6",
+  "milestone": "C12.9-P2R15",
+  "ownerExplicitApproval": false,
+  "ownerExplicitRejection": false,
+  "productionProvenanceVerified": true,
+  "productionScoped": true,
+  "reason": "",
+  "regressionRevocationPolicy": "A locked PASS may only be revoked by NEW_PHYSICAL_PRODUCTION_EVIDENCE=true with explicit reproduction evidence.",
+  "schemaVersion": 1,
+  "sourceCommit": "e769c997cd4b89753e22feb70899bd1cc03ab7d6",
+  "verdict": "PASS"
+}

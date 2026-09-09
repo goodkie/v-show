@@ -1,0 +1,42 @@
+{
+  "evidenceId": "C12_9_P2R15_CODE_PASS",
+  "milestone": "C12.9-P2R15",
+  "verdict": "PASS",
+  "evidenceLevel": "LIVE_PRODUCTION_VERIFIED",
+  "sourceCommit": "e769c997cd4b89753e22feb70899bd1cc03ab7d6",
+  "productionScoped": true,
+  "productionProvenanceVerified": true,
+  "ownerExplicitApproval": false,
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/server/opencv_panorama_worker.py",
+    "virtual-tradeshow-commercial-v1/app_build/server/opencv_panorama_worker.py",
+    "virtual-tradeshow-commercial-v1/server/spherical_branch_cut.py",
+    "virtual-tradeshow-commercial-v1/app_build/server/spherical_branch_cut.py",
+    "virtual-tradeshow-commercial-v1/server/panorama_sanity_gates.py",
+    "virtual-tradeshow-commercial-v1/app_build/server/panorama_sanity_gates.py",
+    "virtual-tradeshow-commercial-v1/server/index.js",
+    "virtual-tradeshow-commercial-v1/app_build/server/index.js"
+  ],
+  "lockedItems": {
+    "SO3_TRANSFORM_CONVENTION_PROVEN": "PASS",
+    "SYNTHETIC_CONVENTION_MAX_RESIDUAL_DEG": 0.0,
+    "REAL_LLST42_MAX_RESIDUAL_DEG": 2.5591,
+    "WAVE_CORRECTION_PURE_ROTATION": "PASS",
+    "ROLL_STD_REDUCTION": "PASS",
+    "CYCLIC_BRANCH_CUT_HANDLING": "PASS",
+    "CATASTROPHIC_VISUAL_GATES_HARDENED": "PASS",
+    "CUSTOMER_DEFAULT_GEOMETRY_PATH": "P2R13",
+    "P2R15_EXPERIMENTAL_EXPOSED_FOR_QA_ONLY": "PASS",
+    "TECHNICAL_VISUAL_CANDIDATE": "PASS",
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "FULL_360_ACCEPTANCE": false,
+    "PANORAMA_ACCEPTANCE": "PENDING_OWNER_VISUAL_ACCEPTANCE"
+  },
+  "identity": {
+    "deploymentId": "f552ac3b-7d13-45b6-a5ec-dc0597dc937e",
+    "liveReplayJobId": "job-pano-1788962911830-x1d5m",
+    "customerDefaultSha256": "91e53cff09087674e52c8366f5c5e1a15a26668f9e550e092eea001c090890e5",
+    "customerDefaultDimensions": "8985x1418",
+    "uiVersion": "3D2-C12.9-P2R15"
+  }
+}
