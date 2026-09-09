@@ -20031,13 +20031,26 @@ class GuidedCaptureController {
     this.onComplete = options.onComplete || null;
     this.onError = options.onError || null;
 
-    // C12.9-P2R16 Phase 3B: Physical 12-Shot Guided Capture Configuration
-    this.capturePlan = options.capturePlan || '12_SHOT_30_DEG_PHYSICAL';
-    this.captureMode = options.captureMode || '12_SHOT_30_DEG_PHYSICAL';
+    // C12.9-P2R16 Phase 4: Portrait-Only True Physical High-Res Guided Capture
+    this.GUIDED_360_CAPTURE_ORIENTATION = 'PORTRAIT_ONLY';
+    this.captureOrientation = 'PORTRAIT_ONLY';
+    this.PRIMARY_CAPTURE_PLAN = '12_SHOT_30_DEG_PORTRAIT';
+    this.capturePlan = options.capturePlan || '12_SHOT_30_DEG_PORTRAIT';
+    this.captureMode = options.captureMode || '12_SHOT_30_DEG_PORTRAIT';
     this.targetAngles = [0, 45, 90, 135, 180, 225, 270, 315];
-    if (this.capturePlan === '12_SHOT_30_DEG_PHYSICAL') {
+    if (this.capturePlan === '12_SHOT_30_DEG_PHYSICAL' || this.capturePlan === '12_SHOT_30_DEG_PORTRAIT') {
       this.targetAngles = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
     }
+    this.devicePhysicalOrientation = 'PORTRAIT';
+    this.screenOrientation = 'portrait-primary';
+    this.deviceRollDeg = 0.0;
+    this.PORTRAIT_ROLL_PREFERRED_MAX_DEG = 3.0;
+    this.PORTRAIT_ROLL_WARNING_THRESHOLD_DEG = 5.0;
+    this.PORTRAIT_ROLL_REJECT_THRESHOLD_DEG = 7.0;
+    this.portraitGateStatus = 'ORIENTATION_CHECK';
+    this.isCapturePausedOrientation = false;
+    this.cameraPositionInstruction = 'Keep the camera in the same spot as you turn.';
+    this.cameraRotationInstruction = 'Rotate around the phone, not around your body.';
     if (options.targetAngles) this.targetAngles = options.targetAngles;
     this.currentTargetIndex = 0;
     this.completedTargets = new Set();
@@ -21165,7 +21178,7 @@ class GuidedCaptureController {
     this.prevLuminanceProfile = currentProfile;
 
     // C12.9-P2R16: In Angle-Locked High-Res Stop-and-Shoot mode, delegate candidate triggers to target state machine
-    if (this.captureMode === 'ANGLE_LOCKED_HIRES') {
+    if (this.captureMode === 'ANGLE_LOCKED_HIRES' || this.captureMode === '12_SHOT_30_DEG_PHYSICAL' || this.captureMode === '12_SHOT_30_DEG_PORTRAIT') {
       this.checkAngleLockedTarget(now);
     } else {
       // Legacy candidate extraction trigger (adaptive sampling)
@@ -21802,7 +21815,7 @@ class GuidedCaptureController {
     this.telemetry.closureSensorExpectedDelta = Math.round(Math.abs(this.accumulatedRotation - 360.0) * 10) / 10;
 
     // C12.9-P2R16: Update angle guidance and stability gate on motion delta
-    if (this.captureMode === 'ANGLE_LOCKED_HIRES') {
+    if (this.captureMode === 'ANGLE_LOCKED_HIRES' || this.captureMode === '12_SHOT_30_DEG_PHYSICAL' || this.captureMode === '12_SHOT_30_DEG_PORTRAIT') {
       this.checkAngleLockedTarget(now);
     }
 
@@ -21962,9 +21975,61 @@ class GuidedCaptureController {
     }
   }
 
+  // C12.9-P2R16 Phase 4: Physical Portrait Orientation and Roll Gate
+  checkOrientation() {
+    let isPortrait = false;
+    if (typeof window !== 'undefined') {
+      if (window.screen && window.screen.orientation && window.screen.orientation.type) {
+        isPortrait = window.screen.orientation.type.startsWith('portrait');
+        this.screenOrientation = window.screen.orientation.type;
+      } else if (typeof window.orientation !== 'undefined') {
+        isPortrait = (window.orientation === 0 || window.orientation === 180);
+        this.screenOrientation = isPortrait ? 'portrait-primary' : 'landscape-primary';
+      } else {
+        isPortrait = (window.innerHeight >= window.innerWidth);
+        this.screenOrientation = isPortrait ? 'portrait-primary' : 'landscape-primary';
+      }
+    } else {
+      isPortrait = true;
+    }
+    this.devicePhysicalOrientation = isPortrait ? 'PORTRAIT' : 'LANDSCAPE';
+
+    if (!isPortrait) {
+      this.portraitGateStatus = 'ROTATE_PHONE_VERTICALLY';
+      if (this.state === 'CAPTURING' || this.state === 'STABILIZING' || this.state === 'ROTATING') {
+        this.isCapturePausedOrientation = true;
+        this.guidanceMessage = 'Rotate your phone back to vertical';
+      } else {
+        this.guidanceMessage = 'Hold your phone vertically';
+      }
+      return false;
+    }
+
+    const absRoll = Math.abs(this.deviceRollDeg || 0.0);
+    if (absRoll > this.PORTRAIT_ROLL_REJECT_THRESHOLD_DEG) {
+      this.portraitGateStatus = 'PORTRAIT_ROLL_WARNING';
+      this.guidanceMessage = 'Hold phone upright (roll > 7°)';
+      return false;
+    } else if (absRoll > this.PORTRAIT_ROLL_WARNING_THRESHOLD_DEG) {
+      this.portraitGateStatus = 'PORTRAIT_ROLL_WARNING';
+      this.guidanceMessage = 'Keep phone upright';
+    } else {
+      this.portraitGateStatus = 'PORTRAIT_READY';
+      this.isCapturePausedOrientation = false;
+    }
+    return true;
+  }
+
   // C12.9-P2R16: Check target angle proximity, stability gate, and trigger stop-and-shoot
   checkAngleLockedTarget(now = Date.now()) {
-    if (this.captureMode !== 'ANGLE_LOCKED_HIRES') return;
+    if (this.captureMode !== 'ANGLE_LOCKED_HIRES' && 
+        this.captureMode !== '12_SHOT_30_DEG_PHYSICAL' && 
+        this.captureMode !== '12_SHOT_30_DEG_PORTRAIT') return;
+
+    if (!this.checkOrientation()) {
+      this.notifyProgress();
+      return;
+    }
     const activeStates = ['CAPTURING', 'APPROACHING_CLOSURE', 'SEARCHING_FOR_START_OVERLAP', 'CLOSURE_CANDIDATE'];
     if (!activeStates.includes(this.state)) return;
 
@@ -22361,7 +22426,7 @@ class GuidedCaptureController {
     // State transitions (PERSISTING_CANONICAL, COMPLETE) are NOT independent gates.
     // C12.9-P2R2 fix: closureConfirmed is the sole authority for 100%.
     let progressPercent = 0;
-    if (this.captureMode === 'ANGLE_LOCKED_HIRES') {
+    if (this.captureMode === 'ANGLE_LOCKED_HIRES' || this.captureMode === '12_SHOT_30_DEG_PHYSICAL' || this.captureMode === '12_SHOT_30_DEG_PORTRAIT') {
       const completedCount = this.completedTargets ? this.completedTargets.size : 0;
       if (this.closureConfirmed) {
         progressPercent = 100;
@@ -22406,7 +22471,7 @@ class GuidedCaptureController {
         speedStatus: this.speedStatus,
         levelStatus: this.levelStatus,
         guidance: this.guidanceMessage,
-        canonicalCount: (this.captureMode === 'ANGLE_LOCKED_HIRES' ? (this.stillsCaptured ? this.stillsCaptured.length : 0) : this.canonicalKeyframes.length),
+        canonicalCount: ((this.captureMode === 'ANGLE_LOCKED_HIRES' || this.captureMode === '12_SHOT_30_DEG_PHYSICAL' || this.captureMode === '12_SHOT_30_DEG_PORTRAIT') ? (this.stillsCaptured ? this.stillsCaptured.length : 0) : this.canonicalKeyframes.length),
         guidanceMode: this.captureMode || this.telemetry.guidanceMode,
         state: this.state,
         closureConfirmed: this.closureConfirmed,
@@ -23008,7 +23073,7 @@ class SetupWizardController {
       const pct = Math.min(100, Math.round(info.progressPercent || 0));
       const rotVal = Math.round(info.normalizedSensorRotationDeg !== undefined ? info.normalizedSensorRotationDeg : (info.accumulatedRotation || info.integratedYawDeg || 0));
 
-      if (info.captureMode === 'ANGLE_LOCKED_HIRES') {
+      if (info.captureMode === 'ANGLE_LOCKED_HIRES' || info.captureMode === '12_SHOT_30_DEG_PHYSICAL' || info.captureMode === '12_SHOT_30_DEG_PORTRAIT') {
         const targetStatus = info.targetStatus || 'SEEKING';
         this.renderWheelSegments(info.completedTargets || [], info.currentTargetAngle || 0);
 

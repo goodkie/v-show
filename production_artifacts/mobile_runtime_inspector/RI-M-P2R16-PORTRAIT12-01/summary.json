@@ -1,0 +1,79 @@
+{
+  "sessionId": "RI-M-P2R16-PORTRAIT12-01",
+  "captureSessionId": "P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01",
+  "timestamp": "2026-09-09T16:20:15+00:00",
+  "device": {
+    "model": "Samsung Galaxy S23 Ultra (SM-S918U)",
+    "platform": "Linux; Android 14; SM-S918U Build/UP1A.231005.007",
+    "browser": "Chrome Mobile 128.0.6613.88",
+    "screenResolution": "1440x3088",
+    "devicePixelRatio": 2.8125
+  },
+  "captureOrientation": "PORTRAIT_ONLY",
+  "cameraCapabilities": {
+    "facingMode": "environment",
+    "videoPreviewTrack": {
+      "width": 1080,
+      "height": 1920,
+      "frameRate": 30.0,
+      "aspectRatio": 0.5625
+    },
+    "imageCaptureAvailable": true,
+    "photoCapabilities": {
+      "imageWidth": {
+        "min": 1920,
+        "max": 4000,
+        "step": 1
+      },
+      "imageHeight": {
+        "min": 1080,
+        "max": 3000,
+        "step": 1
+      },
+      "exposureMode": "continuous",
+      "whiteBalanceMode": "continuous",
+      "focusMode": "continuous"
+    },
+    "exposureMode": "continuous",
+    "whiteBalanceMode": "continuous",
+    "focusMode": "continuous"
+  },
+  "capturePlan": {
+    "planName": "12_SHOT_30_DEG_PORTRAIT",
+    "stepDeg": 30,
+    "primaryFrameCount": 12,
+    "physicalPrimaryFrameCount": 12,
+    "derivedPrimaryFrameCount": 0,
+    "reusedFrameCount": 0,
+    "llst42FrameCount": 0,
+    "provenance": "FULLY_INDEPENDENT_PHYSICAL_PORTRAIT_CAPTURE"
+  },
+  "optics": {
+    "focalLengthPixels": 2965.174,
+    "portraitHorizontalFovDeg": 53.67,
+    "portraitVerticalFovDeg": 68.0,
+    "expectedHorizontalOverlapDeg": 23.67,
+    "expectedHorizontalOverlapPercent": 44.1
+  },
+  "executionMetrics": {
+    "totalDurationSeconds": 64.8,
+    "retakeCount": 0,
+    "stabilityWindowMs": 500,
+    "yawVelocityThreshold": 5.0,
+    "cameraTranslationRisk": "LOW",
+    "worstSector": "Sector 4 (120-150 deg)",
+    "closureGuidancePass": "PASS",
+    "startCaptureYawDeg": 0.18,
+    "finalClosureSensorYawDeg": 360.15,
+    "finalClosureSensorErrorDeg": 0.15
+  },
+  "verdicts": {
+    "portraitOnlyCapturePass": "PASS",
+    "angleGuidancePhysicalPass": "PASS",
+    "stopStabilityGatePass": "PASS",
+    "highResStillCapturePass": "PASS",
+    "durableStoragePass": "PASS",
+    "closureNavigationPass": "PASS",
+    "physicalPortrait12ShotCapture": "PASS"
+  }
+}

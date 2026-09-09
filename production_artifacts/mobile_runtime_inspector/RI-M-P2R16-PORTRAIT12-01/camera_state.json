@@ -1,0 +1,28 @@
+{
+  "sessionId": "RI-M-P2R16-PORTRAIT12-01",
+  "captureOrientation": "PORTRAIT_ONLY",
+  "videoTrackActive": true,
+  "videoPreviewResolution": "1080x1920",
+  "rawEncodedResolution": "4000x3000",
+  "exifOrientation": 6,
+  "normalizedResolution": "3000x4000",
+  "photoSettings": {
+    "imageWidth": 4000,
+    "imageHeight": 3000
+  },
+  "capabilities": {
+    "imageWidth": {
+      "min": 1920,
+      "max": 4000,
+      "step": 1
+    },
+    "imageHeight": {
+      "min": 1080,
+      "max": 3000,
+      "step": 1
+    },
+    "exposureMode": "continuous",
+    "whiteBalanceMode": "continuous",
+    "focusMode": "continuous"
+  }
+}

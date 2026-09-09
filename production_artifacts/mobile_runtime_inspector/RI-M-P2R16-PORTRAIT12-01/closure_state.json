@@ -1,0 +1,12 @@
+{
+  "closureNavigationTriggered": true,
+  "closureStartAngleDeg": 330.0,
+  "closureTargetAngleDeg": 360.0,
+  "startCaptureYawDeg": 0.18,
+  "finalClosureSensorYawDeg": 360.15,
+  "finalClosureSensorErrorDeg": 0.15,
+  "closureToleranceDeg": 1.5,
+  "closureVerified": true,
+  "closureConfirmed": true,
+  "verdict": "PASS"
+}

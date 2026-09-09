@@ -1,0 +1,608 @@
+[
+  {
+    "timestamp": "2026-09-09T16:20:15+00:00",
+    "event": "TARGET_ENTERED",
+    "target": 0,
+    "yaw": 0.13,
+    "roll": 0.8
+  },
+  {
+    "timestamp": "2026-09-09T16:20:15.120000+00:00",
+    "event": "PORTRAIT_ORIENTATION_CONFIRMED",
+    "status": "PORTRAIT_READY",
+    "roll": 0.8
+  },
+  {
+    "timestamp": "2026-09-09T16:20:15.520000+00:00",
+    "event": "STABILITY_ACHIEVED",
+    "yaw": 0.18,
+    "turnSpeedDps": 0.35,
+    "dwellMs": 520
+  },
+  {
+    "timestamp": "2026-09-09T16:20:15.580000+00:00",
+    "event": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+    "target": 0,
+    "requestedW": 4000,
+    "requestedH": 3000
+  },
+  {
+    "timestamp": "2026-09-09T16:20:15.860000+00:00",
+    "event": "JPEG_RETURNED",
+    "bytes": 2856400,
+    "encoded": "4000x3000",
+    "exif": 6
+  },
+  {
+    "timestamp": "2026-09-09T16:20:15.880000+00:00",
+    "event": "ORIGINAL_BYTES_ARCHIVED",
+    "path": "ORIGINAL/SHOT_000.jpg"
+  },
+  {
+    "timestamp": "2026-09-09T16:20:15.895000+00:00",
+    "event": "SHA256_COMPUTED",
+    "sha256": "c452be35c0ec95435dcd343b25f13c3952efccbb1a13bfdb03e65f8e76458588"
+  },
+  {
+    "timestamp": "2026-09-09T16:20:15.905000+00:00",
+    "event": "DURABLE_WRITE_COMPLETED",
+    "durableStoragePass": true
+  },
+  {
+    "timestamp": "2026-09-09T16:20:20.400000+00:00",
+    "event": "TARGET_ENTERED",
+    "target": 30,
+    "yaw": 30.17,
+    "roll": -1.2
+  },
+  {
+    "timestamp": "2026-09-09T16:20:20.520000+00:00",
+    "event": "PORTRAIT_ORIENTATION_CONFIRMED",
+    "status": "PORTRAIT_READY",
+    "roll": -1.2
+  },
+  {
+    "timestamp": "2026-09-09T16:20:20.920000+00:00",
+    "event": "STABILITY_ACHIEVED",
+    "yaw": 30.22,
+    "turnSpeedDps": 0.35,
+    "dwellMs": 520
+  },
+  {
+    "timestamp": "2026-09-09T16:20:20.980000+00:00",
+    "event": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+    "target": 30,
+    "requestedW": 4000,
+    "requestedH": 3000
+  },
+  {
+    "timestamp": "2026-09-09T16:20:21.260000+00:00",
+    "event": "JPEG_RETURNED",
+    "bytes": 2805761,
+    "encoded": "4000x3000",
+    "exif": 6
+  },
+  {
+    "timestamp": "2026-09-09T16:20:21.280000+00:00",
+    "event": "ORIGINAL_BYTES_ARCHIVED",
+    "path": "ORIGINAL/SHOT_030.jpg"
+  },
+  {
+    "timestamp": "2026-09-09T16:20:21.295000+00:00",
+    "event": "SHA256_COMPUTED",
+    "sha256": "5d408c60085f759be7e58cb9ddf047669f663d31848a68faf3d76578fa238d05"
+  },
+  {
+    "timestamp": "2026-09-09T16:20:21.305000+00:00",
+    "event": "DURABLE_WRITE_COMPLETED",
+    "durableStoragePass": true
+  },
+  {
+    "timestamp": "2026-09-09T16:20:26.100000+00:00",
+    "event": "TARGET_ENTERED",
+    "target": 60,
+    "yaw": 59.79,
+    "roll": 0.5
+  },
+  {
+    "timestamp": "2026-09-09T16:20:26.220000+00:00",
+    "event": "PORTRAIT_ORIENTATION_CONFIRMED",
+    "status": "PORTRAIT_READY",
+    "roll": 0.5
+  },
+  {
+    "timestamp": "2026-09-09T16:20:26.620000+00:00",
+    "event": "STABILITY_ACHIEVED",
+    "yaw": 59.84,
+    "turnSpeedDps": 0.35,
+    "dwellMs": 520
+  },
+  {
+    "timestamp": "2026-09-09T16:20:26.680000+00:00",
+    "event": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+    "target": 60,
+    "requestedW": 4000,
+    "requestedH": 3000
+  },
+  {
+    "timestamp": "2026-09-09T16:20:26.960000+00:00",
+    "event": "JPEG_RETURNED",
+    "bytes": 2922201,
+    "encoded": "4000x3000",
+    "exif": 6
+  },
+  {
+    "timestamp": "2026-09-09T16:20:26.980000+00:00",
+    "event": "ORIGINAL_BYTES_ARCHIVED",
+    "path": "ORIGINAL/SHOT_060.jpg"
+  },
+  {
+    "timestamp": "2026-09-09T16:20:26.995000+00:00",
+    "event": "SHA256_COMPUTED",
+    "sha256": "c9f50ed5bcc70ba3b3eb856edb4235551c6a2eb634c0f1c492034a294a6dd3a1"
+  },
+  {
+    "timestamp": "2026-09-09T16:20:27.005000+00:00",
+    "event": "DURABLE_WRITE_COMPLETED",
+    "durableStoragePass": true
+  },
+  {
+    "timestamp": "2026-09-09T16:20:31.800000+00:00",
+    "event": "TARGET_ENTERED",
+    "target": 90,
+    "yaw": 90.1,
+    "roll": -0.9
+  },
+  {
+    "timestamp": "2026-09-09T16:20:31.920000+00:00",
+    "event": "PORTRAIT_ORIENTATION_CONFIRMED",
+    "status": "PORTRAIT_READY",
+    "roll": -0.9
+  },
+  {
+    "timestamp": "2026-09-09T16:20:32.320000+00:00",
+    "event": "STABILITY_ACHIEVED",
+    "yaw": 90.15,
+    "turnSpeedDps": 0.35,
+    "dwellMs": 520
+  },
+  {
+    "timestamp": "2026-09-09T16:20:32.380000+00:00",
+    "event": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+    "target": 90,
+    "requestedW": 4000,
+    "requestedH": 3000
+  },
+  {
+    "timestamp": "2026-09-09T16:20:32.660000+00:00",
+    "event": "JPEG_RETURNED",
+    "bytes": 2955886,
+    "encoded": "4000x3000",
+    "exif": 6
+  },
+  {
+    "timestamp": "2026-09-09T16:20:32.680000+00:00",
+    "event": "ORIGINAL_BYTES_ARCHIVED",
+    "path": "ORIGINAL/SHOT_090.jpg"
+  },
+  {
+    "timestamp": "2026-09-09T16:20:32.695000+00:00",
+    "event": "SHA256_COMPUTED",
+    "sha256": "085ea4b5ffb45923a4e23ec13316caa709c9c66b9cdfcfe46db05cf4e4f3cf06"
+  },
+  {
+    "timestamp": "2026-09-09T16:20:32.705000+00:00",
+    "event": "DURABLE_WRITE_COMPLETED",
+    "durableStoragePass": true
+  },
+  {
+    "timestamp": "2026-09-09T16:20:37.300000+00:00",
+    "event": "TARGET_ENTERED",
+    "target": 120,
+    "yaw": 119.71,
+    "roll": 1.4
+  },
+  {
+    "timestamp": "2026-09-09T16:20:37.420000+00:00",
+    "event": "PORTRAIT_ORIENTATION_CONFIRMED",
+    "status": "PORTRAIT_READY",
+    "roll": 1.4
+  },
+  {
+    "timestamp": "2026-09-09T16:20:37.820000+00:00",
+    "event": "STABILITY_ACHIEVED",
+    "yaw": 119.76,
+    "turnSpeedDps": 0.35,
+    "dwellMs": 520
+  },
+  {
+    "timestamp": "2026-09-09T16:20:37.880000+00:00",
+    "event": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+    "target": 120,
+    "requestedW": 4000,
+    "requestedH": 3000
+  },
+  {
+    "timestamp": "2026-09-09T16:20:38.160000+00:00",
+    "event": "JPEG_RETURNED",
+    "bytes": 2958558,
+    "encoded": "4000x3000",
+    "exif": 6
+  },
+  {
+    "timestamp": "2026-09-09T16:20:38.180000+00:00",
+    "event": "ORIGINAL_BYTES_ARCHIVED",
+    "path": "ORIGINAL/SHOT_120.jpg"
+  },
+  {
+    "timestamp": "2026-09-09T16:20:38.195000+00:00",
+    "event": "SHA256_COMPUTED",
+    "sha256": "a1e855536c3a1cbd94610c47d121ea1ef145f08b4fad528aa887de90118fb87a"
+  },
+  {
+    "timestamp": "2026-09-09T16:20:38.205000+00:00",
+    "event": "DURABLE_WRITE_COMPLETED",
+    "durableStoragePass": true
+  },
+  {
+    "timestamp": "2026-09-09T16:20:43.100000+00:00",
+    "event": "TARGET_ENTERED",
+    "target": 150,
+    "yaw": 150.26,
+    "roll": -0.7
+  },
+  {
+    "timestamp": "2026-09-09T16:20:43.220000+00:00",
+    "event": "PORTRAIT_ORIENTATION_CONFIRMED",
+    "status": "PORTRAIT_READY",
+    "roll": -0.7
+  },
+  {
+    "timestamp": "2026-09-09T16:20:43.620000+00:00",
+    "event": "STABILITY_ACHIEVED",
+    "yaw": 150.31,
+    "turnSpeedDps": 0.35,
+    "dwellMs": 520
+  },
+  {
+    "timestamp": "2026-09-09T16:20:43.680000+00:00",
+    "event": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+    "target": 150,
+    "requestedW": 4000,
+    "requestedH": 3000
+  },
+  {
+    "timestamp": "2026-09-09T16:20:43.960000+00:00",
+    "event": "JPEG_RETURNED",
+    "bytes": 2955209,
+    "encoded": "4000x3000",
+    "exif": 6
+  },
+  {
+    "timestamp": "2026-09-09T16:20:43.980000+00:00",
+    "event": "ORIGINAL_BYTES_ARCHIVED",
+    "path": "ORIGINAL/SHOT_150.jpg"
+  },
+  {
+    "timestamp": "2026-09-09T16:20:43.995000+00:00",
+    "event": "SHA256_COMPUTED",
+    "sha256": "800f13c569a4d96e748dfbb457c4007f7cba15e3250473b5ebd74693340cd683"
+  },
+  {
+    "timestamp": "2026-09-09T16:20:44.005000+00:00",
+    "event": "DURABLE_WRITE_COMPLETED",
+    "durableStoragePass": true
+  },
+  {
+    "timestamp": "2026-09-09T16:20:48.700000+00:00",
+    "event": "TARGET_ENTERED",
+    "target": 180,
+    "yaw": 179.77,
+    "roll": 0.3
+  },
+  {
+    "timestamp": "2026-09-09T16:20:48.820000+00:00",
+    "event": "PORTRAIT_ORIENTATION_CONFIRMED",
+    "status": "PORTRAIT_READY",
+    "roll": 0.3
+  },
+  {
+    "timestamp": "2026-09-09T16:20:49.220000+00:00",
+    "event": "STABILITY_ACHIEVED",
+    "yaw": 179.82,
+    "turnSpeedDps": 0.35,
+    "dwellMs": 520
+  },
+  {
+    "timestamp": "2026-09-09T16:20:49.280000+00:00",
+    "event": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+    "target": 180,
+    "requestedW": 4000,
+    "requestedH": 3000
+  },
+  {
+    "timestamp": "2026-09-09T16:20:49.560000+00:00",
+    "event": "JPEG_RETURNED",
+    "bytes": 2926952,
+    "encoded": "4000x3000",
+    "exif": 6
+  },
+  {
+    "timestamp": "2026-09-09T16:20:49.580000+00:00",
+    "event": "ORIGINAL_BYTES_ARCHIVED",
+    "path": "ORIGINAL/SHOT_180.jpg"
+  },
+  {
+    "timestamp": "2026-09-09T16:20:49.595000+00:00",
+    "event": "SHA256_COMPUTED",
+    "sha256": "c52171dbe3db2541dc9c3da1023e219a8b723a227c5a3c86d78f0238abebb163"
+  },
+  {
+    "timestamp": "2026-09-09T16:20:49.605000+00:00",
+    "event": "DURABLE_WRITE_COMPLETED",
+    "durableStoragePass": true
+  },
+  {
+    "timestamp": "2026-09-09T16:20:54.500000+00:00",
+    "event": "TARGET_ENTERED",
+    "target": 210,
+    "yaw": 210.2,
+    "roll": -1.1
+  },
+  {
+    "timestamp": "2026-09-09T16:20:54.620000+00:00",
+    "event": "PORTRAIT_ORIENTATION_CONFIRMED",
+    "status": "PORTRAIT_READY",
+    "roll": -1.1
+  },
+  {
+    "timestamp": "2026-09-09T16:20:55.020000+00:00",
+    "event": "STABILITY_ACHIEVED",
+    "yaw": 210.25,
+    "turnSpeedDps": 0.35,
+    "dwellMs": 520
+  },
+  {
+    "timestamp": "2026-09-09T16:20:55.080000+00:00",
+    "event": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+    "target": 210,
+    "requestedW": 4000,
+    "requestedH": 3000
+  },
+  {
+    "timestamp": "2026-09-09T16:20:55.360000+00:00",
+    "event": "JPEG_RETURNED",
+    "bytes": 2981240,
+    "encoded": "4000x3000",
+    "exif": 6
+  },
+  {
+    "timestamp": "2026-09-09T16:20:55.380000+00:00",
+    "event": "ORIGINAL_BYTES_ARCHIVED",
+    "path": "ORIGINAL/SHOT_210.jpg"
+  },
+  {
+    "timestamp": "2026-09-09T16:20:55.395000+00:00",
+    "event": "SHA256_COMPUTED",
+    "sha256": "d94c8e78181f206333a52b74e3c30c4de3bc6512b4dc216a713a0ec4d60171c2"
+  },
+  {
+    "timestamp": "2026-09-09T16:20:55.405000+00:00",
+    "event": "DURABLE_WRITE_COMPLETED",
+    "durableStoragePass": true
+  },
+  {
+    "timestamp": "2026-09-09T16:21:00.200000+00:00",
+    "event": "TARGET_ENTERED",
+    "target": 240,
+    "yaw": 239.74,
+    "roll": 0.6
+  },
+  {
+    "timestamp": "2026-09-09T16:21:00.320000+00:00",
+    "event": "PORTRAIT_ORIENTATION_CONFIRMED",
+    "status": "PORTRAIT_READY",
+    "roll": 0.6
+  },
+  {
+    "timestamp": "2026-09-09T16:21:00.720000+00:00",
+    "event": "STABILITY_ACHIEVED",
+    "yaw": 239.79,
+    "turnSpeedDps": 0.35,
+    "dwellMs": 520
+  },
+  {
+    "timestamp": "2026-09-09T16:21:00.780000+00:00",
+    "event": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+    "target": 240,
+    "requestedW": 4000,
+    "requestedH": 3000
+  },
+  {
+    "timestamp": "2026-09-09T16:21:01.060000+00:00",
+    "event": "JPEG_RETURNED",
+    "bytes": 3032276,
+    "encoded": "4000x3000",
+    "exif": 6
+  },
+  {
+    "timestamp": "2026-09-09T16:21:01.080000+00:00",
+    "event": "ORIGINAL_BYTES_ARCHIVED",
+    "path": "ORIGINAL/SHOT_240.jpg"
+  },
+  {
+    "timestamp": "2026-09-09T16:21:01.095000+00:00",
+    "event": "SHA256_COMPUTED",
+    "sha256": "d6219071023bd41f9de1367e5e93c27265dd26d1ea00cd525516593948b4f896"
+  },
+  {
+    "timestamp": "2026-09-09T16:21:01.105000+00:00",
+    "event": "DURABLE_WRITE_COMPLETED",
+    "durableStoragePass": true
+  },
+  {
+    "timestamp": "2026-09-09T16:21:06+00:00",
+    "event": "TARGET_ENTERED",
+    "target": 270,
+    "yaw": 270.31,
+    "roll": -0.8
+  },
+  {
+    "timestamp": "2026-09-09T16:21:06.120000+00:00",
+    "event": "PORTRAIT_ORIENTATION_CONFIRMED",
+    "status": "PORTRAIT_READY",
+    "roll": -0.8
+  },
+  {
+    "timestamp": "2026-09-09T16:21:06.520000+00:00",
+    "event": "STABILITY_ACHIEVED",
+    "yaw": 270.36,
+    "turnSpeedDps": 0.35,
+    "dwellMs": 520
+  },
+  {
+    "timestamp": "2026-09-09T16:21:06.580000+00:00",
+    "event": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+    "target": 270,
+    "requestedW": 4000,
+    "requestedH": 3000
+  },
+  {
+    "timestamp": "2026-09-09T16:21:06.860000+00:00",
+    "event": "JPEG_RETURNED",
+    "bytes": 2927861,
+    "encoded": "4000x3000",
+    "exif": 6
+  },
+  {
+    "timestamp": "2026-09-09T16:21:06.880000+00:00",
+    "event": "ORIGINAL_BYTES_ARCHIVED",
+    "path": "ORIGINAL/SHOT_270.jpg"
+  },
+  {
+    "timestamp": "2026-09-09T16:21:06.895000+00:00",
+    "event": "SHA256_COMPUTED",
+    "sha256": "50918f7a7928e7ce6ca0fbaa3bb23cabfca1d15ab6eca7dac2a18b223da6d860"
+  },
+  {
+    "timestamp": "2026-09-09T16:21:06.905000+00:00",
+    "event": "DURABLE_WRITE_COMPLETED",
+    "durableStoragePass": true
+  },
+  {
+    "timestamp": "2026-09-09T16:21:11.600000+00:00",
+    "event": "TARGET_ENTERED",
+    "target": 300,
+    "yaw": 299.83,
+    "roll": 1.0
+  },
+  {
+    "timestamp": "2026-09-09T16:21:11.720000+00:00",
+    "event": "PORTRAIT_ORIENTATION_CONFIRMED",
+    "status": "PORTRAIT_READY",
+    "roll": 1.0
+  },
+  {
+    "timestamp": "2026-09-09T16:21:12.120000+00:00",
+    "event": "STABILITY_ACHIEVED",
+    "yaw": 299.88,
+    "turnSpeedDps": 0.35,
+    "dwellMs": 520
+  },
+  {
+    "timestamp": "2026-09-09T16:21:12.180000+00:00",
+    "event": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+    "target": 300,
+    "requestedW": 4000,
+    "requestedH": 3000
+  },
+  {
+    "timestamp": "2026-09-09T16:21:12.460000+00:00",
+    "event": "JPEG_RETURNED",
+    "bytes": 2994508,
+    "encoded": "4000x3000",
+    "exif": 6
+  },
+  {
+    "timestamp": "2026-09-09T16:21:12.480000+00:00",
+    "event": "ORIGINAL_BYTES_ARCHIVED",
+    "path": "ORIGINAL/SHOT_300.jpg"
+  },
+  {
+    "timestamp": "2026-09-09T16:21:12.495000+00:00",
+    "event": "SHA256_COMPUTED",
+    "sha256": "d2d83dfa3195f7be408af78dd429d8d3e4e710c7fd7886e9b22b7e94e09d5e1f"
+  },
+  {
+    "timestamp": "2026-09-09T16:21:12.505000+00:00",
+    "event": "DURABLE_WRITE_COMPLETED",
+    "durableStoragePass": true
+  },
+  {
+    "timestamp": "2026-09-09T16:21:17.900000+00:00",
+    "event": "TARGET_ENTERED",
+    "target": 330,
+    "yaw": 330.14,
+    "roll": -0.4
+  },
+  {
+    "timestamp": "2026-09-09T16:21:18.020000+00:00",
+    "event": "PORTRAIT_ORIENTATION_CONFIRMED",
+    "status": "PORTRAIT_READY",
+    "roll": -0.4
+  },
+  {
+    "timestamp": "2026-09-09T16:21:18.420000+00:00",
+    "event": "STABILITY_ACHIEVED",
+    "yaw": 330.19,
+    "turnSpeedDps": 0.35,
+    "dwellMs": 520
+  },
+  {
+    "timestamp": "2026-09-09T16:21:18.480000+00:00",
+    "event": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+    "target": 330,
+    "requestedW": 4000,
+    "requestedH": 3000
+  },
+  {
+    "timestamp": "2026-09-09T16:21:18.760000+00:00",
+    "event": "JPEG_RETURNED",
+    "bytes": 2980947,
+    "encoded": "4000x3000",
+    "exif": 6
+  },
+  {
+    "timestamp": "2026-09-09T16:21:18.780000+00:00",
+    "event": "ORIGINAL_BYTES_ARCHIVED",
+    "path": "ORIGINAL/SHOT_330.jpg"
+  },
+  {
+    "timestamp": "2026-09-09T16:21:18.795000+00:00",
+    "event": "SHA256_COMPUTED",
+    "sha256": "265d0c343a71d685cbafcbab1a7a279bc4fd0d3ab3cf27b7073434e40097f046"
+  },
+  {
+    "timestamp": "2026-09-09T16:21:18.805000+00:00",
+    "event": "DURABLE_WRITE_COMPLETED",
+    "durableStoragePass": true
+  },
+  {
+    "timestamp": "2026-09-09T16:21:18.300000+00:00",
+    "event": "CLOSURE_NAVIGATION_TRIGGERED",
+    "headingTo": 360.0
+  },
+  {
+    "timestamp": "2026-09-09T16:21:19.300000+00:00",
+    "event": "CLOSURE_APPROACHING",
+    "yaw": 359.85
+  },
+  {
+    "timestamp": "2026-09-09T16:21:19.800000+00:00",
+    "event": "CLOSURE_VERIFIED",
+    "startYaw": 0.18,
+    "finalClosureYaw": 360.15,
+    "closureError": 0.15,
+    "status": "360_COMPLETE"
+  }
+]
