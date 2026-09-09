@@ -221,7 +221,9 @@ class PanoramicStitcher {
     const workerSources = views.map((v, i) => ({
       path: v.localPath || v.path,
       slot: v.slot || ('SHOT_' + String(i + 1).padStart(2, '0')),
-      index: i
+      index: i,
+      // P2R13: Pass candidateId so Python worker SUBSET_40_EXCLUDE_CANDIDATE_IDS filter can operate
+      candidateId: v.candidateId || null
     }));
 
     const workerResult = this.runOpenCvWorker(workerSources, this.uploadsDir, candidateId, options);
@@ -260,7 +262,8 @@ class PanoramicStitcher {
       const workerSources = views.map((v, i) => ({
         path: v.localPath || v.path,
         slot: v.slot || ('SHOT_' + String(i + 1).padStart(2, '0')),
-        index: i
+        index: i,
+        candidateId: v.candidateId || null
       }));
       workerResult = this.runOpenCvWorker(workerSources, this.uploadsDir, candidateId, options);
     }

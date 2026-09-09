@@ -201,7 +201,9 @@ class SpatialBoothPipeline {
         },
         depthAsset: null,
         yawOffset: SLOT_YAW_OFFSETS[assignedSlot] || 0,
-        xOffset: SLOT_X_OFFSETS[assignedSlot] || 0
+        xOffset: SLOT_X_OFFSETS[assignedSlot] || 0,
+        // P2R13: Carry candidateId through pipeline so Python worker subset filter can identify frames
+        candidateId: src.candidateId || null
       });
     }
 

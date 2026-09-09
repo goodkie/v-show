@@ -201,7 +201,8 @@ class SpatialBoothPipeline {
         },
         depthAsset: null,
         yawOffset: SLOT_YAW_OFFSETS[assignedSlot] || 0,
-        xOffset: SLOT_X_OFFSETS[assignedSlot] || 0
+        xOffset: SLOT_X_OFFSETS[assignedSlot] || 0,
+        candidateId: src.candidateId || null
       });
     }
 
