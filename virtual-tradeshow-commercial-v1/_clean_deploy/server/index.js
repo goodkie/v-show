@@ -1075,6 +1075,28 @@ app.use(express.static(path.join(__dirname, '..', 'client')));
 app.use(express.static(path.join(__dirname, '..')));
 
 // ── C12.9-P2R16 Phase 7A: Real Internal 360 Viewer Route & Static Proxies ──
+
+app.get('/internal-assets/p2r16/viewer/:file', (req, res) => {
+  const fileName = path.basename(req.params.file);
+  const candidates = [
+    path.join(__dirname, '..', 'client', 'internal-assets', 'p2r16', 'viewer', fileName),
+    path.join(__dirname, '..', 'app_build', 'client', 'internal-assets', 'p2r16', 'viewer', fileName),
+    path.join(__dirname, '..', '..', 'production_artifacts', 'mobile_runtime_inspector', 'viewer_proxies', fileName),
+    path.join(__dirname, '..', 'production_artifacts', 'mobile_runtime_inspector', 'viewer_proxies', fileName)
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) {
+        res.setHeader('Content-Type', 'image/jpeg');
+      } else if (fileName.endsWith('.json')) {
+        res.setHeader('Content-Type', 'application/json');
+      }
+      return res.sendFile(p);
+    }
+  }
+  res.status(404).send('Proxy not found');
+});
+
 app.get('/internal/qa/p2r16/360-viewer', (req, res) => {
   const candidates = [
     path.join(__dirname, '..', 'client', 'internal', 'qa', 'p2r16_360_viewer.html'),
