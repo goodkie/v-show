@@ -1,0 +1,43 @@
+{
+  "evidenceId": "C12_9_P2R16_PHASE2A_CODE_PASS",
+  "milestone": "C12.9-P2R16",
+  "verdict": "PASS",
+  "evidenceLevel": "PHYSICAL_PRODUCTION_VERIFIED",
+  "sourceCommit": "54ac1a5bbdba935396d7478901d3bc5e8600bc8c",
+  "productionScoped": false,
+  "productionProvenanceVerified": false,
+  "ownerExplicitApproval": false,
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/server/panorama_sanity_gates.py",
+    "virtual-tradeshow-commercial-v1/server/test_c12_9_p2r16_phase2_suite.py",
+    "production_artifacts/mobile_runtime_inspector/P2R16_PHASE2_MATRIX_RESULTS.json",
+    "production_artifacts/mobile_runtime_inspector/P2R16_PHASE2_PROVENANCE_SUMMARY.json"
+  ],
+  "lockedItems": {
+    "PROJECTION_SEMANTICS_CORRECTED": true,
+    "PANORAMA_PROJECTION_TYPE": "SPHERICAL_BAND",
+    "FULL_SPHERICAL_EQUIRECTANGULAR": false,
+    "HORIZONTAL_COVERAGE_DEG": 360.0,
+    "ORIENTATION_GATE_MODEL": "PLAN_AWARE_STEP_AND_HFOV_OVERLAP",
+    "SHARPNESS_LEGACY_CLAMP_SUPERSEDED": true,
+    "P2R16_10_PHYSICAL_SOURCE_VERIFIED": true,
+    "P2R16_12_PHYSICAL_SOURCE_VERIFIED": true,
+    "HIGH_RES_PHYSICAL_CAPTURE": "PASS",
+    "PROXY_SOLVE_FULL_RES_RENDER": "PASS",
+    "12_SHOT_GRAPH_SANITY": "PASS",
+    "P2R16_12_TECHNICAL_MATRIX_WINNER": true,
+    "TECHNICAL_PREFERRED_PLAN": "12_SHOT_30_DEG",
+    "OWNER_PREFERRED_PLAN": "UNRESOLVED",
+    "12_SHOT_VISUAL_ACCEPTANCE": "PENDING_OWNER_REVIEW",
+    "8_SHOT_VISUAL_ACCEPTANCE": "PENDING_OWNER_REVIEW",
+    "BEST_COMMERCIAL_CAPTURE_PLAN": "UNRESOLVED",
+    "CUSTOMER_DEFAULT_GEOMETRY_PATH": "P2R13",
+    "OWNER_VISUAL_ACCEPTANCE": false
+  },
+  "identity": {
+    "sessionId": "P2R16_S23_SESSION_01",
+    "device": "Samsung Galaxy S23 Ultra (SM-S918U)",
+    "browser": "Chrome Mobile 128.0.6613.88",
+    "actualStillResolution": "4000x3000"
+  }
+}

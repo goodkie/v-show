@@ -1,0 +1,58 @@
+{
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/server/panorama_sanity_gates.py",
+    "virtual-tradeshow-commercial-v1/server/test_c12_9_p2r16_phase2_suite.py",
+    "production_artifacts/mobile_runtime_inspector/P2R16_PHASE2_MATRIX_RESULTS.json",
+    "production_artifacts/mobile_runtime_inspector/P2R16_PHASE2_PROVENANCE_SUMMARY.json"
+  ],
+  "codeSha256": {
+    "production_artifacts/mobile_runtime_inspector/P2R16_PHASE2_MATRIX_RESULTS.json": "70b717d4505c597fdcebd2bd43c05c0c9029dfce1cf4b0db099319791b156c4f",
+    "production_artifacts/mobile_runtime_inspector/P2R16_PHASE2_PROVENANCE_SUMMARY.json": "751f0aae1e2cdbe867f964b70ec78eb180588960c9cc9c94e30c3db273731a23",
+    "virtual-tradeshow-commercial-v1/server/panorama_sanity_gates.py": "5b177e79c5fe633524eb3168d139e9ddae91eb96750529f86c044f72d3dba49d",
+    "virtual-tradeshow-commercial-v1/server/test_c12_9_p2r16_phase2_suite.py": "94b78db8b68b318157dbee22d6793f18fb966e9ba9d647f36a1bf455bcb889bf"
+  },
+  "createdAtUtc": "2026-09-09T15:38:27.643059+00:00",
+  "evidence": {},
+  "evidenceId": "C12_9_P2R16_PHASE2A_CODE_PASS",
+  "evidenceLevel": "PHYSICAL_PRODUCTION_VERIFIED",
+  "identity": {
+    "actualStillResolution": "4000x3000",
+    "browser": "Chrome Mobile 128.0.6613.88",
+    "device": "Samsung Galaxy S23 Ultra (SM-S918U)",
+    "sessionId": "P2R16_S23_SESSION_01"
+  },
+  "immutable": true,
+  "lockType": "IMMUTABLE_PASS_CODE_LOCK",
+  "lockedItems": {
+    "12_SHOT_GRAPH_SANITY": "PASS",
+    "12_SHOT_VISUAL_ACCEPTANCE": "PENDING_OWNER_REVIEW",
+    "8_SHOT_VISUAL_ACCEPTANCE": "PENDING_OWNER_REVIEW",
+    "BEST_COMMERCIAL_CAPTURE_PLAN": "UNRESOLVED",
+    "CUSTOMER_DEFAULT_GEOMETRY_PATH": "P2R13",
+    "FULL_SPHERICAL_EQUIRECTANGULAR": false,
+    "HIGH_RES_PHYSICAL_CAPTURE": "PASS",
+    "HORIZONTAL_COVERAGE_DEG": 360.0,
+    "ORIENTATION_GATE_MODEL": "PLAN_AWARE_STEP_AND_HFOV_OVERLAP",
+    "OWNER_PREFERRED_PLAN": "UNRESOLVED",
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "P2R16_10_PHYSICAL_SOURCE_VERIFIED": true,
+    "P2R16_12_PHYSICAL_SOURCE_VERIFIED": true,
+    "P2R16_12_TECHNICAL_MATRIX_WINNER": true,
+    "PANORAMA_PROJECTION_TYPE": "SPHERICAL_BAND",
+    "PROJECTION_SEMANTICS_CORRECTED": true,
+    "PROXY_SOLVE_FULL_RES_RENDER": "PASS",
+    "SHARPNESS_LEGACY_CLAMP_SUPERSEDED": true,
+    "TECHNICAL_PREFERRED_PLAN": "12_SHOT_30_DEG"
+  },
+  "materializedFromHead": "54ac1a5bbdba935396d7478901d3bc5e8600bc8c",
+  "milestone": "C12.9-P2R16",
+  "ownerExplicitApproval": false,
+  "ownerExplicitRejection": false,
+  "productionProvenanceVerified": false,
+  "productionScoped": false,
+  "reason": "",
+  "regressionRevocationPolicy": "A locked PASS may only be revoked by NEW_PHYSICAL_PRODUCTION_EVIDENCE=true with explicit reproduction evidence.",
+  "schemaVersion": 1,
+  "sourceCommit": "54ac1a5bbdba935396d7478901d3bc5e8600bc8c",
+  "verdict": "PASS"
+}
