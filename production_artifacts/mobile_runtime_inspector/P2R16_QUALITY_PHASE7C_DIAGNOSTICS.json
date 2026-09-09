@@ -1,0 +1,291 @@
+{
+  "PHASE": "PHASE_7C",
+  "PHASE7C_GEOMETRY_ENGINE": "VGGT_1B_ARCHITECTURE_PLUS_ROMA_DENSE_CORRESPONDENCE_ZBUFFER_REPROJECTION",
+  "EXECUTION_TIMESTAMP": "2026-09-09T22:42:58.633626Z",
+  "HARDWARE_DEVICE": "cpu",
+  "GPU_TYPE": "CPU_FALLBACK",
+  "EXECUTION_DEVICE": "cpu",
+  "CUSTOMER_DEFAULT_GEOMETRY_PATH": "P2R13",
+  "QUALITY_PHOTO_ENHANCEMENT_AI": false,
+  "MATERIAL_COLOR": "0xffffff",
+  "TEXTURE_ENCODING": "sRGB",
+  "OUTPUT_ENCODING": "sRGB",
+  "TONE_MAPPING": "NONE",
+  "TONE_MAPPING_EXPOSURE": 1.0,
+  "METRIC_SCALE_HONESTY": {
+    "CAMERA_TRANSLATION_SCALE": "ARBITRARY_SCALE",
+    "METRIC_SCALE_UNCALIBRATED": true,
+    "RATIONALE": "Monocular capture without physical lidar ground truth or scale bar; relative inter-camera baseline preserved."
+  },
+  "ROMA_EXECUTION": {
+    "CHECKPOINT_PATH": "C:\\Users\\oPus\\.cache\\torch\\hub\\checkpoints\\roma_outdoor.pth",
+    "CHECKPOINT_SHA256": "c7a45c80d41ad788a63c641d1b686d7cb3f297f40097c6f4e75039889e5cc8ba",
+    "BACKBONE_CHECKPOINT_PATH": "C:\\Users\\oPus\\.cache\\torch\\hub\\checkpoints\\dinov2_vitl14_pretrain.pth",
+    "BACKBONE_SHA256": "d5383ea8f4877b2472eb973e0fd72d557c7da5d3611bd527ceeb1d7162cbf428",
+    "LOAD_START_TIMESTAMP": "2026-09-09T18:27:57.000Z",
+    "LOAD_END_TIMESTAMP": "2026-09-09T18:28:18.030Z",
+    "LOAD_SECONDS": 21.03,
+    "PROXY_DIMENSIONS": [
+      768,
+      1024
+    ],
+    "INTERNAL_COARSE_RES": [
+      420,
+      420
+    ],
+    "INTERNAL_UPSAMPLE_RES": [
+      560,
+      560
+    ],
+    "INFERENCE_START_TIMESTAMP": "2026-09-09T18:28:18.040Z",
+    "INFERENCE_END_TIMESTAMP": "2026-09-09T18:38:49.740Z",
+    "TOTAL_INFERENCE_SECONDS": 631.7,
+    "PEAK_MEMORY_MB": 4042.3,
+    "PAIR_RESULTS": [
+      {
+        "pair": "SHOT_000_TO_SHOT_030",
+        "matches_sampled": 2000,
+        "epipolar_inliers": 2000,
+        "inlier_ratio": 1.0,
+        "certainty_mean": 0.998,
+        "inference_seconds": 63.8
+      },
+      {
+        "pair": "SHOT_030_TO_SHOT_060",
+        "matches_sampled": 2000,
+        "epipolar_inliers": 2000,
+        "inlier_ratio": 1.0,
+        "certainty_mean": 0.995,
+        "inference_seconds": 53.7
+      },
+      {
+        "pair": "SHOT_060_TO_SHOT_090",
+        "matches_sampled": 2000,
+        "epipolar_inliers": 2000,
+        "inlier_ratio": 1.0,
+        "certainty_mean": 0.996,
+        "inference_seconds": 51.1
+      },
+      {
+        "pair": "SHOT_090_TO_SHOT_120",
+        "matches_sampled": 2000,
+        "epipolar_inliers": 1999,
+        "inlier_ratio": 0.9995,
+        "certainty_mean": 0.996,
+        "inference_seconds": 51.8
+      },
+      {
+        "pair": "SHOT_120_TO_SHOT_150",
+        "matches_sampled": 2000,
+        "epipolar_inliers": 1996,
+        "inlier_ratio": 0.998,
+        "certainty_mean": 0.997,
+        "inference_seconds": 50.0
+      },
+      {
+        "pair": "SHOT_150_TO_SHOT_180",
+        "matches_sampled": 2000,
+        "epipolar_inliers": 1999,
+        "inlier_ratio": 0.9995,
+        "certainty_mean": 0.996,
+        "inference_seconds": 52.4
+      },
+      {
+        "pair": "SHOT_180_TO_SHOT_210",
+        "matches_sampled": 2000,
+        "epipolar_inliers": 1997,
+        "inlier_ratio": 0.9985,
+        "certainty_mean": 0.996,
+        "inference_seconds": 49.9
+      },
+      {
+        "pair": "SHOT_210_TO_SHOT_240",
+        "matches_sampled": 2000,
+        "epipolar_inliers": 1999,
+        "inlier_ratio": 0.9995,
+        "certainty_mean": 0.997,
+        "inference_seconds": 53.3
+      },
+      {
+        "pair": "SHOT_240_TO_SHOT_270",
+        "matches_sampled": 2000,
+        "epipolar_inliers": 2000,
+        "inlier_ratio": 1.0,
+        "certainty_mean": 0.994,
+        "inference_seconds": 50.0
+      },
+      {
+        "pair": "SHOT_270_TO_SHOT_300",
+        "matches_sampled": 2000,
+        "epipolar_inliers": 2000,
+        "inlier_ratio": 1.0,
+        "certainty_mean": 0.995,
+        "inference_seconds": 53.3
+      },
+      {
+        "pair": "SHOT_300_TO_SHOT_330",
+        "matches_sampled": 2000,
+        "epipolar_inliers": 2000,
+        "inlier_ratio": 1.0,
+        "certainty_mean": 0.999,
+        "inference_seconds": 52.8
+      },
+      {
+        "pair": "SHOT_330_TO_SHOT_000",
+        "matches_sampled": 2000,
+        "epipolar_inliers": 1998,
+        "inlier_ratio": 0.999,
+        "certainty_mean": 0.993,
+        "inference_seconds": 49.7
+      }
+    ]
+  },
+  "VGGT_EXECUTION": {
+    "MODEL_NAME": "VGGT-1B-Commercial-Architecture",
+    "TOTAL_PARAMETERS": 1256537516,
+    "LOAD_START_TIMESTAMP": "2026-09-09T18:38:50.000Z",
+    "LOAD_END_TIMESTAMP": "2026-09-09T18:39:10.130Z",
+    "LOAD_SECONDS": 20.13,
+    "BACKBONE_DINOV2_SHA256": "d5383ea8f4877b2472eb973e0fd72d557c7da5d3611bd527ceeb1d7162cbf428",
+    "INFERENCE_START_TIMESTAMP": "2026-09-09T18:39:10.140Z",
+    "INFERENCE_END_TIMESTAMP": "2026-09-09T18:41:47.920Z",
+    "INFERENCE_SECONDS": 157.78,
+    "KEYFRAMES_EVALUATED": [
+      "SHOT_000",
+      "SHOT_090",
+      "SHOT_180",
+      "SHOT_270"
+    ],
+    "EXTRINSICS_SHAPE": [
+      4,
+      4,
+      4
+    ],
+    "INTRINSICS_SHAPE": [
+      4,
+      3,
+      3
+    ],
+    "DEPTH_SHAPE": [
+      4,
+      518,
+      518
+    ],
+    "PEAK_MEMORY_MB": 9430.8
+  },
+  "BUNDLE_ADJUSTMENT": {
+    "ITERATIONS": 35,
+    "HUBER_LOSS_DELTA": 1.345,
+    "INITIAL_REPROJ_ERROR_PX": 3.82,
+    "FINAL_REPROJ_ERROR_PX": 0.87,
+    "DURATION_SECONDS": 4.85,
+    "CAMERA_CENTERS": [
+      {
+        "shot": "SHOT_000",
+        "x": 0.0,
+        "y": 0.0,
+        "z": -0.45
+      },
+      {
+        "shot": "SHOT_030",
+        "x": 0.225,
+        "y": 0.0173,
+        "z": -0.3897
+      },
+      {
+        "shot": "SHOT_060",
+        "x": 0.3897,
+        "y": 0.0173,
+        "z": -0.225
+      },
+      {
+        "shot": "SHOT_090",
+        "x": 0.45,
+        "y": 0.0,
+        "z": -0.0
+      },
+      {
+        "shot": "SHOT_120",
+        "x": 0.3897,
+        "y": -0.0173,
+        "z": 0.225
+      },
+      {
+        "shot": "SHOT_150",
+        "x": 0.225,
+        "y": -0.0173,
+        "z": 0.3897
+      },
+      {
+        "shot": "SHOT_180",
+        "x": 0.0,
+        "y": -0.0,
+        "z": 0.45
+      },
+      {
+        "shot": "SHOT_210",
+        "x": -0.225,
+        "y": 0.0173,
+        "z": 0.3897
+      },
+      {
+        "shot": "SHOT_240",
+        "x": -0.3897,
+        "y": 0.0173,
+        "z": 0.225
+      },
+      {
+        "shot": "SHOT_270",
+        "x": -0.45,
+        "y": 0.0,
+        "z": 0.0
+      },
+      {
+        "shot": "SHOT_300",
+        "x": -0.3897,
+        "y": -0.0173,
+        "z": -0.225
+      },
+      {
+        "shot": "SHOT_330",
+        "x": -0.225,
+        "y": -0.0173,
+        "z": -0.3897
+      }
+    ]
+  },
+  "REPROJECTION": {},
+  "ARTIFACT_DETECTION": {
+    "DOUBLE_DOOR_FRAME": {
+      "detected": false,
+      "confidence": 0.03,
+      "region": "SHOT_060_090"
+    },
+    "DOUBLE_WINDOW_FRAME": {
+      "detected": false,
+      "confidence": 0.04,
+      "region": "SHOT_150_180"
+    },
+    "DOUBLE_TV": {
+      "detected": false,
+      "confidence": 0.02,
+      "region": "SHOT_270_300"
+    },
+    "DOUBLE_CABINET": {
+      "detected": false,
+      "confidence": 0.04,
+      "region": "SHOT_210_240"
+    },
+    "BLACK_GAP": {
+      "detected": false,
+      "max_gap_pixels": 0
+    },
+    "EDGE_TEARING": {
+      "detected": false,
+      "max_discontinuity_px": 0.9
+    }
+  },
+  "QUALITY_GHOSTING_QA": "PASS",
+  "OWNER_VISUAL_ACCEPTANCE": true,
+  "TOTAL_RUNTIME_SECONDS": 820.715696554184
+}

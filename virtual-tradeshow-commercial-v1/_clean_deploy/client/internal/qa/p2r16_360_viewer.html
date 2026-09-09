@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>C12.9-P2R16 Internal 360 QA Viewer (Dual-Mode Spherical Band)</title>
+  <title>C12.9-P2R16 Internal 360 QA Viewer (4-Mode AI Multi-View Spherical Band)</title>
   
   <!-- FontAwesome for Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -13,10 +13,11 @@
   <style>
     :root {
       --bg: #090d16;
-      --card-bg: rgba(15, 23, 42, 0.85);
+      --card-bg: rgba(15, 23, 42, 0.88);
       --border: rgba(56, 189, 248, 0.2);
-      --accent-quality: #10b981;
+      --accent-ai: #00ff88;
       --accent-depth: #a78bfa;
+      --accent-quality: #10b981;
       --accent-easy: #38bdf8;
       --text: #f8fafc;
     }
@@ -47,8 +48,8 @@
       font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px;
     }
     .qa-badge {
-      background: rgba(245, 158, 11, 0.2); color: #f59e0b;
-      border: 1px solid rgba(245, 158, 11, 0.4); font-size: 10px;
+      background: rgba(0, 255, 136, 0.15); color: #00ff88;
+      border: 1px solid rgba(0, 255, 136, 0.4); font-size: 10px;
       padding: 2px 6px; border-radius: 4px; letter-spacing: 0.08em;
     }
     .sub-specs {
@@ -58,22 +59,25 @@
     /* Mode Switcher */
     .mode-switch-container {
       background: var(--card-bg); border: 1px solid var(--border);
-      border-radius: 12px; padding: 6px; display: flex; gap: 6px;
+      border-radius: 12px; padding: 5px; display: flex; gap: 5px;
       backdrop-filter: blur(12px); pointer-events: auto;
       box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }
     .mode-btn {
       background: transparent; border: none; color: #94a3b8;
-      font-size: 12px; font-weight: 800; padding: 8px 14px;
+      font-size: 11px; font-weight: 800; padding: 7px 12px;
       border-radius: 8px; cursor: pointer; display: flex;
-      align-items: center; gap: 6px; transition: all 0.15s ease;
+      align-items: center; gap: 5px; transition: all 0.15s ease;
+    }
+    .mode-btn.active-quality-ai {
+      background: var(--accent-ai); color: #020617;
+      box-shadow: 0 0 16px rgba(0, 255, 136, 0.4);
     }
     .mode-btn.active-quality-depth {
       background: var(--accent-depth); color: #fff;
       box-shadow: 0 0 16px rgba(167, 139, 250, 0.4);
     }
-    .mode-btn.active-quality-current,
-    .mode-btn.active-quality {
+    .mode-btn.active-quality-current {
       background: var(--accent-quality); color: #fff;
       box-shadow: 0 0 16px rgba(16, 185, 129, 0.4);
     }
@@ -121,88 +125,104 @@
     }
     .spinner {
       width: 44px; height: 44px; border: 3px solid rgba(56, 189, 248, 0.2);
-      border-top-color: #38bdf8; border-radius: 50%;
-      animation: spin 0.8s linear infinite; margin-bottom: 16px;
+      border-top-color: var(--accent-ai); border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin-bottom: 12px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    #loading-text { font-size: 13px; font-weight: 600; color: #cbd5e1; letter-spacing: 0.05em; }
 
-    /* Pitch limit indicator lines */
-    .compass-pill {
-      background: rgba(0, 0, 0, 0.6); padding: 4px 10px;
-      border-radius: 20px; font-size: 11px; font-weight: 700;
-      color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);
+    /* Crosshair Center Reticle */
+    .reticle {
+      position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
+      transform: translate(-50%, -50%); pointer-events: none; opacity: 0.25; z-index: 5;
     }
+    .reticle::before, .reticle::after {
+      content: ''; position: absolute; background: #fff;
+    }
+    .reticle::before { top: 4px; left: 0; right: 0; height: 2px; }
+    .reticle::after { left: 4px; top: 0; bottom: 0; width: 2px; }
   </style>
 </head>
 <body>
-
   <div id="viewer-container"></div>
+  <div class="reticle"></div>
 
+  <!-- Loading State -->
   <div id="loading-overlay">
     <div class="spinner"></div>
-    <div id="loading-text" style="font-size: 13px; font-weight: 700; color: #f8fafc;">Loading 360 Spherical Band Texture...</div>
-    <div id="loading-sub" style="font-size: 11px; color: #64748b; margin-top: 4px;">Evaluating WebGL MAX_TEXTURE_SIZE</div>
+    <div id="loading-text">Initializing 360 AI Geometry Engine...</div>
   </div>
 
-  <!-- TOP BAR -->
+  <!-- Top Bar -->
   <div class="top-bar">
     <div class="header-panel">
       <div class="brand-title">
-        <span>V-Show AI 360 Viewer</span>
-        <span class="qa-badge">INTERNAL QA</span>
-        <span id="active-mode-tag" style="color: var(--accent-depth); font-weight: 800; font-size: 11px;">QUALITY (DEPTH)</span>
+        <i class="fa-solid fa-cube" style="color: var(--accent-ai);"></i>
+        <span>C12.9-P2R16 360 INSPECTOR</span>
+        <span class="qa-badge">PHASE 7C TRUE AI</span>
       </div>
       <div class="sub-specs">
-        Source: P2R16 12-Shot Physical | Projection: 360° Spherical Band | Vertical: ~68° (-34° to +34°)
+        HAOV 360° | VAOV 68° | Pitch [-34°, +34°] | Mode: <span id="active-mode-tag" style="color: var(--accent-ai); font-weight: 700;">QUALITY AI</span>
       </div>
     </div>
 
-    <!-- MODE SWITCHER -->
+    <!-- 4-Mode Switcher -->
     <div class="mode-switch-container">
-      <button type="button" id="btn-mode-quality-depth" class="mode-btn active-quality-depth" onclick="switchMode('quality-depth')">
-        <i class="fa-solid fa-layer-group"></i> Quality (Depth) <span class="hotkey-hint">D</span>
+      <button id="btn-mode-quality-ai" class="mode-btn active-quality-ai" onclick="switchMode('quality-ai')">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span>Quality AI</span>
+        <span class="hotkey-hint">A/1</span>
       </button>
-      <button type="button" id="btn-mode-quality-current" class="mode-btn" onclick="switchMode('quality')" id="btn-mode-quality">
-        <i class="fa-solid fa-camera"></i> Quality (Current) <span class="hotkey-hint">Q</span>
+      <button id="btn-mode-quality-depth" class="mode-btn" onclick="switchMode('quality-depth-plane')">
+        <i class="fa-solid fa-layer-group"></i>
+        <span>Depth Plane</span>
+        <span class="hotkey-hint">D/2</span>
       </button>
-      <button type="button" id="btn-mode-easy" class="mode-btn" onclick="switchMode('easy')">
-        <i class="fa-solid fa-arrows-rotate"></i> Easy 360 <span class="hotkey-hint">E</span>
+      <button id="btn-mode-quality-current" class="mode-btn" onclick="switchMode('quality-current')">
+        <i class="fa-solid fa-draw-polygon"></i>
+        <span>Homography</span>
+        <span class="hotkey-hint">Q/3</span>
+      </button>
+      <button id="btn-mode-easy" class="mode-btn" onclick="switchMode('easy')">
+        <i class="fa-solid fa-bolt"></i>
+        <span>Easy 360</span>
+        <span class="hotkey-hint">E/4</span>
       </button>
     </div>
   </div>
 
-  <!-- BOTTOM BAR -->
+  <!-- Bottom Bar -->
   <div class="bottom-bar">
     <div class="telemetry-panel">
       <div class="telemetry-item">
-        <span class="compass-pill" id="yaw-pitch-indicator">YAW: 0° | PITCH: 0°</span>
+        Yaw: <strong id="yaw-text">0.0°</strong>
       </div>
       <div class="telemetry-item">
-        Proxy: <strong id="proxy-res-text">8192px</strong>
+        Pitch: <strong id="pitch-text">0.0°</strong>
       </div>
       <div class="telemetry-item">
-        GPU Limit: <strong id="max-tex-text">16384px</strong>
+        FOV: <strong id="fov-text">65°</strong>
       </div>
-      <div class="telemetry-item" style="color: #64748b;">
-        Pitch clamped: ±34° (spherical band)
+      <div class="telemetry-item">
+        Proxy: <strong id="proxy-res-text">4096px</strong>
+      </div>
+      <div class="telemetry-item">
+        Max GL: <strong id="max-tex-text">4096px</strong>
       </div>
     </div>
 
     <div class="action-controls">
-      <button type="button" class="action-btn" onclick="resetView()" title="Reset View (0° Yaw, 0° Pitch)">
+      <button class="action-btn" onclick="resetView()" title="Reset to Center (Yaw 0, Pitch 0, FOV 65)">
         <i class="fa-solid fa-crosshairs"></i> Reset
       </button>
-      <button type="button" class="action-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen">
-        <i class="fa-solid fa-expand"></i> Fullscreen
-      </button>
-      <a id="btn-native-src" class="action-btn" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_DEPTH_AWARE_OWNER_REVIEW.jpg" target="_blank" title="View Full 18631x3620 Source JPG">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> Original 18.6K
+      <a id="btn-native-src" class="action-btn" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_AI_OWNER_REVIEW.jpg" target="_blank" title="Inspect Full Canvas">
+        <i class="fa-solid fa-up-right-from-square"></i> Original
       </a>
     </div>
   </div>
 
   <script>
-    // --- Phase 7B Configuration ---
+    // --- Phase 7C Configuration ---
     const CONFIG = {
       haovDeg: 360,
       vaovDeg: 68,
@@ -214,9 +234,9 @@
     };
 
     // State
-    let currentMode = 'quality-depth'; // Phase 7B default: quality-depth
-    let currentYaw = 0.0;               // Continuous horizontal (degrees)
-    let currentPitch = 0.0;             // Clamped vertical (degrees)
+    let currentMode = 'quality-ai'; // Phase 7C default: quality-ai
+    let currentYaw = 0.0;           // Continuous horizontal (degrees)
+    let currentPitch = 0.0;         // Clamped vertical (degrees)
     let currentFov = CONFIG.defaultFovDeg;
 
     let scene, camera, renderer, sphereMesh, textureLoader;
@@ -229,6 +249,8 @@
 
     // Authoritative artifact paths
     const NATIVE_URLS = {
+      'quality-ai': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_AI_OWNER_REVIEW.jpg',
+      'quality-depth-plane': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_DEPTH_AWARE_OWNER_REVIEW.jpg',
       'quality-depth': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_DEPTH_AWARE_OWNER_REVIEW.jpg',
       'quality-current': '/production_artifacts/mobile_runtime_inspector/P2R16_AI_QUALITY12_OWNER_REVIEW.jpg',
       'quality': '/production_artifacts/mobile_runtime_inspector/P2R16_AI_QUALITY12_OWNER_REVIEW.jpg',
@@ -292,8 +314,10 @@
       // 2. Read mode from query param if provided
       const urlParams = new URLSearchParams(window.location.search);
       const qMode = urlParams.get('mode');
-      if (qMode === 'easy' || qMode === 'quality-depth' || qMode === 'quality-current' || qMode === 'quality') {
-        currentMode = (qMode === 'quality') ? 'quality-current' : qMode;
+      if (qMode) {
+        if (qMode === 'easy' || qMode === 'quality-ai' || qMode === 'quality-depth-plane' || qMode === 'quality-depth' || qMode === 'quality-current' || qMode === 'quality') {
+          currentMode = (qMode === 'quality') ? 'quality-current' : ((qMode === 'quality-depth') ? 'quality-depth-plane' : qMode);
+        }
       }
 
       // 3. Three.js Scene Setup
@@ -304,7 +328,7 @@
       renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(window.innerWidth, window.innerHeight);
-      // Phase 7A.1 & 7B: Frozen Color & Exposure Pipeline
+      // Phase 7A.1, 7B & 7C: Frozen Color & Exposure Pipeline
       renderer.outputEncoding = THREE.sRGBEncoding;
       renderer.toneMapping = THREE.NoToneMapping;
       renderer.toneMappingExposure = 1.0;
@@ -324,7 +348,7 @@
       geometry.scale(-1, 1, 1);
 
       textureLoader = new THREE.TextureLoader();
-      // Phase 7A.1 & 7B: Frozen Pure White Mesh Material
+      // Phase 7A.1, 7B & 7C: Frozen Pure White Mesh Material
       const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
       sphereMesh = new THREE.Mesh(geometry, material);
       scene.add(sphereMesh);
@@ -346,11 +370,12 @@
       window.addEventListener('pointerup', onPointerUp, false);
       container.addEventListener('wheel', onDocumentMouseWheel, { passive: false });
 
-      // Keyboard Hotkeys: D/1 = Depth, Q/2 = Current, E/3 = Easy
+      // Keyboard Hotkeys: A/1 = Quality AI, D/2 = Depth Plane, Q/3 = Homography, E/4 = Easy
       window.addEventListener('keydown', (e) => {
-        if (e.key === 'd' || e.key === 'D' || e.key === '1') switchMode('quality-depth');
-        if (e.key === 'q' || e.key === 'Q' || e.key === '2') switchMode('quality-current');
-        if (e.key === 'e' || e.key === 'E' || e.key === '3') switchMode('easy');
+        if (e.key === 'a' || e.key === 'A' || e.key === '1') switchMode('quality-ai');
+        if (e.key === 'd' || e.key === 'D' || e.key === '2') switchMode('quality-depth-plane');
+        if (e.key === 'q' || e.key === 'Q' || e.key === '3') switchMode('quality-current');
+        if (e.key === 'e' || e.key === 'E' || e.key === '4') switchMode('easy');
       });
 
       updateUiModeIndicator();
@@ -358,13 +383,25 @@
     }
 
     function getProxyUrl(mode, width) {
-      return `/internal-assets/p2r16/viewer/${mode}-${width}.jpg`;
+      if (mode === 'quality-ai') {
+        return `/internal-assets/p2r16/viewer/quality-ai-${width}.jpg`;
+      } else if (mode === 'quality-depth-plane' || mode === 'quality-depth') {
+        return `/internal-assets/p2r16/viewer/quality-depth-${width}.jpg`;
+      } else if (mode === 'easy') {
+        return `/internal-assets/p2r16/viewer/easy-${width}.jpg`;
+      } else {
+        return `/internal-assets/p2r16/viewer/quality-${width}.jpg`;
+      }
     }
 
     function loadModeTexture(mode, onComplete) {
       document.getElementById('loading-overlay').style.display = 'flex';
       document.getElementById('loading-overlay').style.opacity = '1';
-      const modeLabel = (mode === 'quality-depth') ? 'Quality (Depth)' : ((mode === 'easy') ? 'Easy 360' : 'Quality (Current)');
+      let modeLabel = 'Quality AI';
+      if (mode === 'quality-depth-plane' || mode === 'quality-depth') modeLabel = 'Quality (Depth Plane)';
+      else if (mode === 'quality-current' || mode === 'quality') modeLabel = 'Quality (Homography)';
+      else if (mode === 'easy') modeLabel = 'Easy 360';
+      
       document.getElementById('loading-text').textContent = `Loading ${modeLabel} (${selectedProxyWidth}px)...`;
 
       const proxyUrl = getProxyUrl(mode, selectedProxyWidth);
@@ -375,7 +412,7 @@
           texture.magFilter = THREE.LinearFilter;
           texture.wrapS = THREE.RepeatWrapping;
           texture.wrapT = THREE.ClampToEdgeWrapping;
-          // Phase 7A.1 & 7B: Exact sRGB texture encoding & full 0xffffff material color
+          // Phase 7A.1, 7B & 7C: Exact sRGB texture encoding & full 0xffffff material color
           texture.encoding = THREE.sRGBEncoding;
 
           sphereMesh.material.map = texture;
@@ -416,22 +453,28 @@
     }
 
     function updateUiModeIndicator() {
+      const btnQA = document.getElementById('btn-mode-quality-ai');
       const btnQD = document.getElementById('btn-mode-quality-depth');
       const btnQC = document.getElementById('btn-mode-quality-current');
       const btnE = document.getElementById('btn-mode-easy');
       const tag = document.getElementById('active-mode-tag');
       const btnNative = document.getElementById('btn-native-src');
 
-      if (btnQD) btnQD.className = (currentMode === 'quality-depth') ? 'mode-btn active-quality-depth' : 'mode-btn';
+      if (btnQA) btnQA.className = (currentMode === 'quality-ai') ? 'mode-btn active-quality-ai' : 'mode-btn';
+      if (btnQD) btnQD.className = (currentMode === 'quality-depth-plane' || currentMode === 'quality-depth') ? 'mode-btn active-quality-depth' : 'mode-btn';
       if (btnQC) btnQC.className = (currentMode === 'quality-current' || currentMode === 'quality') ? 'mode-btn active-quality-current' : 'mode-btn';
       if (btnE) btnE.className = (currentMode === 'easy') ? 'mode-btn active-easy' : 'mode-btn';
 
-      if (currentMode === 'quality-depth') {
-        tag.textContent = 'QUALITY (DEPTH)';
+      if (currentMode === 'quality-ai') {
+        tag.textContent = 'QUALITY AI';
+        tag.style.color = 'var(--accent-ai)';
+        btnNative.href = NATIVE_URLS['quality-ai'];
+      } else if (currentMode === 'quality-depth-plane' || currentMode === 'quality-depth') {
+        tag.textContent = 'QUALITY (DEPTH PLANE)';
         tag.style.color = 'var(--accent-depth)';
-        btnNative.href = NATIVE_URLS['quality-depth'];
+        btnNative.href = NATIVE_URLS['quality-depth-plane'];
       } else if (currentMode === 'quality-current' || currentMode === 'quality') {
-        tag.textContent = 'QUALITY (CURRENT)';
+        tag.textContent = 'QUALITY (HOMOGRAPHY)';
         tag.style.color = 'var(--accent-quality)';
         btnNative.href = NATIVE_URLS['quality-current'];
       } else {
@@ -449,81 +492,66 @@
       camera.updateProjectionMatrix();
     }
 
-    function toggleFullscreen() {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(err => console.warn(err));
-      } else {
-        if (document.exitFullscreen) document.exitFullscreen();
-      }
-    }
-
-    // --- Interaction & Continuous Wrapping ---
-    function onPointerDown(event) {
-      if (event.isPrimary === false) return;
-      isUserInteracting = true;
-      onPointerDownPointerX = event.clientX;
-      onPointerDownPointerY = event.clientY;
-      onPointerDownLon = currentYaw;
-      onPointerDownLat = currentPitch;
-    }
-
-    function onPointerMove(event) {
-      if (isUserInteracting === true) {
-        const factor = currentFov / 300;
-        const deltaX = (event.clientX - onPointerDownPointerX) * factor;
-        const deltaY = (event.clientY - onPointerDownPointerY) * factor;
-
-        // Continuous horizontal wrap
-        currentYaw = (onPointerDownLon - deltaX) % 360.0;
-        if (currentYaw < 0) currentYaw += 360.0;
-
-        // Strict pitch clamping to spherical band (-34° to +34°)
-        currentPitch = Math.max(CONFIG.minPitchDeg, Math.min(CONFIG.maxPitchDeg, onPointerDownLat + deltaY));
-
-        window.__VIEWER_TELEMETRY__.dragYawWorks = true;
-        if (event.pointerType === 'touch') {
-          window.__VIEWER_TELEMETRY__.touchYawWorks = true;
-        }
-        window.__VIEWER_TELEMETRY__.horizontalWrapWorks = true;
-        window.__VIEWER_TELEMETRY__.pitchLimitWorks = true;
-      }
-    }
-
-    function onPointerUp() {
-      isUserInteracting = false;
-    }
-
-    function onDocumentMouseWheel(event) {
-      event.preventDefault();
-      currentFov = Math.max(CONFIG.minFovDeg, Math.min(CONFIG.maxFovDeg, currentFov + event.deltaY * 0.05));
-      camera.fov = currentFov;
-      camera.updateProjectionMatrix();
-    }
-
     function onWindowResize() {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
+    function onPointerDown(e) {
+      isUserInteracting = true;
+      onPointerDownPointerX = e.clientX;
+      onPointerDownPointerY = e.clientY;
+      onPointerDownLon = currentYaw;
+      onPointerDownLat = currentPitch;
+    }
+
+    function onPointerMove(e) {
+      if (!isUserInteracting) return;
+      const dx = (onPointerDownPointerX - e.clientX) * 0.15 * (currentFov / CONFIG.defaultFovDeg);
+      const dy = (e.clientY - onPointerDownPointerY) * 0.15 * (currentFov / CONFIG.defaultFovDeg);
+
+      currentYaw = (onPointerDownLon + dx) % 360;
+      if (currentYaw < 0) currentYaw += 360;
+
+      currentPitch = Math.max(CONFIG.minPitchDeg, Math.min(CONFIG.maxPitchDeg, onPointerDownLat + dy));
+
+      window.__VIEWER_TELEMETRY__.dragYawWorks = true;
+      window.__VIEWER_TELEMETRY__.horizontalWrapWorks = true;
+      window.__VIEWER_TELEMETRY__.pitchLimitWorks = true;
+    }
+
+    function onPointerUp() {
+      isUserInteracting = false;
+    }
+
+    function onDocumentMouseWheel(e) {
+      e.preventDefault();
+      currentFov += e.deltaY * 0.05;
+      currentFov = Math.max(CONFIG.minFovDeg, Math.min(CONFIG.maxFovDeg, currentFov));
+      camera.fov = currentFov;
+      camera.updateProjectionMatrix();
+    }
+
     function animate() {
       requestAnimationFrame(animate);
+      update();
+    }
 
-      // Compute camera target vector from yaw and pitch
+    function update() {
       const phi = THREE.MathUtils.degToRad(90 - currentPitch);
       const theta = THREE.MathUtils.degToRad(currentYaw);
 
-      const targetX = 500 * Math.sin(phi) * Math.cos(theta);
-      const targetY = 500 * Math.cos(phi);
-      const targetZ = 500 * Math.sin(phi) * Math.sin(theta);
+      camera.target.x = 500 * Math.sin(phi) * Math.cos(theta);
+      camera.target.y = 500 * Math.cos(phi);
+      camera.target.z = 500 * Math.sin(phi) * Math.sin(theta);
+      camera.lookAt(camera.target);
 
-      camera.lookAt(targetX, targetY, targetZ);
       renderer.render(scene, camera);
 
-      // Update telemetry pill
-      const yawDisplay = Math.round(currentYaw);
-      const pitchDisplay = (currentPitch >= 0 ? '+' : '') + Math.round(currentPitch);
-      document.getElementById('yaw-pitch-indicator').textContent = `YAW: ${yawDisplay}° | PITCH: ${pitchDisplay}° | FOV: ${Math.round(currentFov)}°`;
+      document.getElementById('yaw-text').textContent = currentYaw.toFixed(1) + '°';
+      document.getElementById('pitch-text').textContent = currentPitch.toFixed(1) + '°';
+      document.getElementById('fov-text').textContent = Math.round(currentFov) + '°';
     }
 
     window.addEventListener('DOMContentLoaded', init);

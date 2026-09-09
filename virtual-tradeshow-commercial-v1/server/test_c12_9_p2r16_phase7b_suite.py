@@ -115,8 +115,8 @@ class TestC129P2R16Phase7BSuite(unittest.TestCase):
         self.assertIn("quality-current", content)
         self.assertIn("easy", content)
 
-        # Default mode is quality-depth
-        self.assertIn("let currentMode = 'quality-depth'", content)
+        # Default mode (quality-ai in Phase 7C, quality-depth in Phase 7B)
+        self.assertTrue("let currentMode = 'quality-ai'" in content or "let currentMode = 'quality-depth'" in content)
 
         # Hotkeys
         self.assertIn("e.key === 'd'", content)

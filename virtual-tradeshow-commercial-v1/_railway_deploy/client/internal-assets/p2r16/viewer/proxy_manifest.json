@@ -1,53 +1,17 @@
 {
-  "VIEWER_ONLY_DERIVATIVE": true,
-  "OWNER_ACCEPTANCE_ARTIFACT": false,
-  "description": "Non-authoritative downscaled proxies for WebGL mobile/desktop display",
-  "proxies": {
-    "quality": {
-      "originalDimensions": "18631x3620",
-      "levels": {
-        "2048": {
-          "filename": "quality-2048.jpg",
-          "width": 2048,
-          "height": 398,
-          "bytes": 178550
-        },
-        "4096": {
-          "filename": "quality-4096.jpg",
-          "width": 4096,
-          "height": 796,
-          "bytes": 586389
-        },
-        "8192": {
-          "filename": "quality-8192.jpg",
-          "width": 8192,
-          "height": 1592,
-          "bytes": 1818427
-        }
-      }
-    },
-    "easy": {
-      "originalDimensions": "18631x3620",
-      "levels": {
-        "2048": {
-          "filename": "easy-2048.jpg",
-          "width": 2048,
-          "height": 398,
-          "bytes": 178693
-        },
-        "4096": {
-          "filename": "easy-4096.jpg",
-          "width": 4096,
-          "height": 796,
-          "bytes": 594950
-        },
-        "8192": {
-          "filename": "easy-8192.jpg",
-          "width": 8192,
-          "height": 1592,
-          "bytes": 1988652
-        }
-      }
-    }
-  }
+  "version": "c12.9-p2r16-phase7c",
+  "modes": [
+    "quality-ai",
+    "quality-depth-plane",
+    "quality-current",
+    "easy"
+  ],
+  "resolutions": [
+    2048,
+    4096,
+    8192
+  ],
+  "defaultMode": "quality-ai",
+  "defaultResolution": 4096,
+  "generatedAt": "2026-09-09T22:43:19.480222Z"
 }
