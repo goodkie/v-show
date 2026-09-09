@@ -59,7 +59,6 @@ def materialize(ev_path: Path, policy: dict) -> Path:
     validate_evidence(ev, policy)
     source_commit = ev["sourceCommit"]
     current = git_head()
-    # Evidence may refer to an ancestor production commit; verify it exists locally.
     subprocess.check_call(["git", "cat-file", "-e", f"{source_commit}^{{commit}}"], cwd=ROOT)
 
     hashes = {}
@@ -95,11 +94,11 @@ def materialize(ev_path: Path, policy: dict) -> Path:
     encoded = json.dumps(lock, indent=2, sort_keys=True) + "\n"
     if out.exists():
         existing = load_json(out)
-        # Ignore timestamp when checking idempotency.
+        comparison = dict(lock)
         for k in ["createdAtUtc", "materializedFromHead"]:
             existing.pop(k, None)
-            lock.pop(k, None)
-        if existing != lock:
+            comparison.pop(k, None)
+        if existing != comparison:
             raise ValueError(f"immutable lock conflict: {out}")
         return out
     out.write_text(encoded, encoding="utf-8")
@@ -112,12 +111,16 @@ def main() -> int:
     ap.add_argument("--promote-all", action="store_true")
     args = ap.parse_args()
     policy = load_json(POLICY_PATH)
-    paths = sorted(EVIDENCE_DIR.glob("*.json")) if args.promote_all else [Path(args.evidence)]
-    if not paths or paths == [Path(None)]:
-        ap.error("provide evidence JSON or --promote-all")
-    outputs = []
-    for p in paths:
-        outputs.append(str(materialize(p, policy)))
+    if args.promote_all:
+        paths = sorted(EVIDENCE_DIR.glob("*.json"))
+        if not paths:
+            print(json.dumps({"AUTO_LOCK_PASS": True, "locks": [], "note": "no evidence files"}, indent=2))
+            return 0
+    else:
+        if not args.evidence:
+            ap.error("provide evidence JSON or --promote-all")
+        paths = [Path(args.evidence)]
+    outputs = [str(materialize(p, policy)) for p in paths]
     print(json.dumps({"AUTO_LOCK_PASS": True, "locks": outputs}, indent=2))
     return 0
 
