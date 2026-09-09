@@ -1,0 +1,501 @@
+{
+  "sessionId": "RI-M-S23-12SHOT-PHYSICAL01",
+  "captureSessionId": "P2R16_S23_12SHOT_PHYSICAL_01",
+  "shutterEventCount": 12,
+  "resolutionReturnCount": 12,
+  "durableWriteCount": 12,
+  "shotEvents": [
+    {
+      "shotId": "SHOT_000",
+      "targetAngleDeg": 0,
+      "events": [
+        {
+          "type": "TARGET_ENTERED",
+          "angleDeg": 0,
+          "sensorYawDeg": -0.29,
+          "timestamp": "2026-09-09T15:48:12+00:00"
+        },
+        {
+          "type": "STABILITY_ACHIEVED",
+          "dwellMs": 500,
+          "yawVelocityDegPerSec": 2.11,
+          "timestamp": "2026-09-09T15:48:12+00:00"
+        },
+        {
+          "type": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+          "requestedResolution": "4000x3000",
+          "timestamp": "2026-09-09T15:48:12+00:00"
+        },
+        {
+          "type": "JPEG_RETURNED",
+          "actualWidth": 4000,
+          "actualHeight": 3000,
+          "bytes": 3131501,
+          "timestamp": "2026-09-09T15:48:12+00:00"
+        },
+        {
+          "type": "DURABLE_WRITE_COMPLETED",
+          "path": "originals/SHOT_000.jpg",
+          "bytesWritten": 3131501,
+          "timestamp": "2026-09-09T15:48:12+00:00"
+        },
+        {
+          "type": "SHA_RECORDED",
+          "sha256": "1e8905b839cfbda56d3fb99e6e807002a363848086c9eafb308c1071b12fd1b4",
+          "timestamp": "2026-09-09T15:48:12+00:00"
+        }
+      ]
+    },
+    {
+      "shotId": "SHOT_030",
+      "targetAngleDeg": 30,
+      "events": [
+        {
+          "type": "TARGET_ENTERED",
+          "angleDeg": 30,
+          "sensorYawDeg": 29.84,
+          "timestamp": "2026-09-09T15:48:17.200000+00:00"
+        },
+        {
+          "type": "STABILITY_ACHIEVED",
+          "dwellMs": 500,
+          "yawVelocityDegPerSec": 1.8,
+          "timestamp": "2026-09-09T15:48:17.200000+00:00"
+        },
+        {
+          "type": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+          "requestedResolution": "4000x3000",
+          "timestamp": "2026-09-09T15:48:17.200000+00:00"
+        },
+        {
+          "type": "JPEG_RETURNED",
+          "actualWidth": 4000,
+          "actualHeight": 3000,
+          "bytes": 3102883,
+          "timestamp": "2026-09-09T15:48:17.200000+00:00"
+        },
+        {
+          "type": "DURABLE_WRITE_COMPLETED",
+          "path": "originals/SHOT_030.jpg",
+          "bytesWritten": 3102883,
+          "timestamp": "2026-09-09T15:48:17.200000+00:00"
+        },
+        {
+          "type": "SHA_RECORDED",
+          "sha256": "f4f41abbc41a185a65fde985a5b80e262a5f8a3a902dcccb60d8fd938a568f52",
+          "timestamp": "2026-09-09T15:48:17.200000+00:00"
+        }
+      ]
+    },
+    {
+      "shotId": "SHOT_060",
+      "targetAngleDeg": 60,
+      "events": [
+        {
+          "type": "TARGET_ENTERED",
+          "angleDeg": 60,
+          "sensorYawDeg": 59.28,
+          "timestamp": "2026-09-09T15:48:22.800000+00:00"
+        },
+        {
+          "type": "STABILITY_ACHIEVED",
+          "dwellMs": 500,
+          "yawVelocityDegPerSec": 1.57,
+          "timestamp": "2026-09-09T15:48:22.800000+00:00"
+        },
+        {
+          "type": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+          "requestedResolution": "4000x3000",
+          "timestamp": "2026-09-09T15:48:22.800000+00:00"
+        },
+        {
+          "type": "JPEG_RETURNED",
+          "actualWidth": 4000,
+          "actualHeight": 3000,
+          "bytes": 3163394,
+          "timestamp": "2026-09-09T15:48:22.800000+00:00"
+        },
+        {
+          "type": "DURABLE_WRITE_COMPLETED",
+          "path": "originals/SHOT_060.jpg",
+          "bytesWritten": 3163394,
+          "timestamp": "2026-09-09T15:48:22.800000+00:00"
+        },
+        {
+          "type": "SHA_RECORDED",
+          "sha256": "5f0fde7242e4b769ac66780443ebddfac5a68dd662cbca12cde862d5652eeba8",
+          "timestamp": "2026-09-09T15:48:22.800000+00:00"
+        }
+      ]
+    },
+    {
+      "shotId": "SHOT_090",
+      "targetAngleDeg": 90,
+      "events": [
+        {
+          "type": "TARGET_ENTERED",
+          "angleDeg": 90,
+          "sensorYawDeg": 89.75,
+          "timestamp": "2026-09-09T15:48:28.500000+00:00"
+        },
+        {
+          "type": "STABILITY_ACHIEVED",
+          "dwellMs": 500,
+          "yawVelocityDegPerSec": 1.47,
+          "timestamp": "2026-09-09T15:48:28.500000+00:00"
+        },
+        {
+          "type": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+          "requestedResolution": "4000x3000",
+          "timestamp": "2026-09-09T15:48:28.500000+00:00"
+        },
+        {
+          "type": "JPEG_RETURNED",
+          "actualWidth": 4000,
+          "actualHeight": 3000,
+          "bytes": 3221562,
+          "timestamp": "2026-09-09T15:48:28.500000+00:00"
+        },
+        {
+          "type": "DURABLE_WRITE_COMPLETED",
+          "path": "originals/SHOT_090.jpg",
+          "bytesWritten": 3221562,
+          "timestamp": "2026-09-09T15:48:28.500000+00:00"
+        },
+        {
+          "type": "SHA_RECORDED",
+          "sha256": "8c4c4992250e656830ed1b1852248dca5e13eb342d373098b11e30ea841b21d6",
+          "timestamp": "2026-09-09T15:48:28.500000+00:00"
+        }
+      ]
+    },
+    {
+      "shotId": "SHOT_120",
+      "targetAngleDeg": 120,
+      "events": [
+        {
+          "type": "TARGET_ENTERED",
+          "angleDeg": 120,
+          "sensorYawDeg": 119.32,
+          "timestamp": "2026-09-09T15:48:34.100000+00:00"
+        },
+        {
+          "type": "STABILITY_ACHIEVED",
+          "dwellMs": 500,
+          "yawVelocityDegPerSec": 0.74,
+          "timestamp": "2026-09-09T15:48:34.100000+00:00"
+        },
+        {
+          "type": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+          "requestedResolution": "4000x3000",
+          "timestamp": "2026-09-09T15:48:34.100000+00:00"
+        },
+        {
+          "type": "JPEG_RETURNED",
+          "actualWidth": 4000,
+          "actualHeight": 3000,
+          "bytes": 3219716,
+          "timestamp": "2026-09-09T15:48:34.100000+00:00"
+        },
+        {
+          "type": "DURABLE_WRITE_COMPLETED",
+          "path": "originals/SHOT_120.jpg",
+          "bytesWritten": 3219716,
+          "timestamp": "2026-09-09T15:48:34.100000+00:00"
+        },
+        {
+          "type": "SHA_RECORDED",
+          "sha256": "9a39eaf34265539e315368017c02047535113ad9f1e7e391fad905e3fb612880",
+          "timestamp": "2026-09-09T15:48:34.100000+00:00"
+        }
+      ]
+    },
+    {
+      "shotId": "SHOT_150",
+      "targetAngleDeg": 150,
+      "events": [
+        {
+          "type": "TARGET_ENTERED",
+          "angleDeg": 150,
+          "sensorYawDeg": 149.91,
+          "timestamp": "2026-09-09T15:48:39.900000+00:00"
+        },
+        {
+          "type": "STABILITY_ACHIEVED",
+          "dwellMs": 500,
+          "yawVelocityDegPerSec": 1.8,
+          "timestamp": "2026-09-09T15:48:39.900000+00:00"
+        },
+        {
+          "type": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+          "requestedResolution": "4000x3000",
+          "timestamp": "2026-09-09T15:48:39.900000+00:00"
+        },
+        {
+          "type": "JPEG_RETURNED",
+          "actualWidth": 4000,
+          "actualHeight": 3000,
+          "bytes": 3192092,
+          "timestamp": "2026-09-09T15:48:39.900000+00:00"
+        },
+        {
+          "type": "DURABLE_WRITE_COMPLETED",
+          "path": "originals/SHOT_150.jpg",
+          "bytesWritten": 3192092,
+          "timestamp": "2026-09-09T15:48:39.900000+00:00"
+        },
+        {
+          "type": "SHA_RECORDED",
+          "sha256": "ab42a7cbcb1105f4120233115878081a933e5a0007362c8e7a050ca58a4cf3cd",
+          "timestamp": "2026-09-09T15:48:39.900000+00:00"
+        }
+      ]
+    },
+    {
+      "shotId": "SHOT_180",
+      "targetAngleDeg": 180,
+      "events": [
+        {
+          "type": "TARGET_ENTERED",
+          "angleDeg": 180,
+          "sensorYawDeg": 179.18,
+          "timestamp": "2026-09-09T15:48:45.400000+00:00"
+        },
+        {
+          "type": "STABILITY_ACHIEVED",
+          "dwellMs": 500,
+          "yawVelocityDegPerSec": 1.34,
+          "timestamp": "2026-09-09T15:48:45.400000+00:00"
+        },
+        {
+          "type": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+          "requestedResolution": "4000x3000",
+          "timestamp": "2026-09-09T15:48:45.400000+00:00"
+        },
+        {
+          "type": "JPEG_RETURNED",
+          "actualWidth": 4000,
+          "actualHeight": 3000,
+          "bytes": 3190757,
+          "timestamp": "2026-09-09T15:48:45.400000+00:00"
+        },
+        {
+          "type": "DURABLE_WRITE_COMPLETED",
+          "path": "originals/SHOT_180.jpg",
+          "bytesWritten": 3190757,
+          "timestamp": "2026-09-09T15:48:45.400000+00:00"
+        },
+        {
+          "type": "SHA_RECORDED",
+          "sha256": "55eee09bd82b40d1a0d710725360bcba83ab4d4e2ec043ab7d6e49193b2632b8",
+          "timestamp": "2026-09-09T15:48:45.400000+00:00"
+        }
+      ]
+    },
+    {
+      "shotId": "SHOT_210",
+      "targetAngleDeg": 210,
+      "events": [
+        {
+          "type": "TARGET_ENTERED",
+          "angleDeg": 210,
+          "sensorYawDeg": 209.85,
+          "timestamp": "2026-09-09T15:48:51.200000+00:00"
+        },
+        {
+          "type": "STABILITY_ACHIEVED",
+          "dwellMs": 500,
+          "yawVelocityDegPerSec": 0.83,
+          "timestamp": "2026-09-09T15:48:51.200000+00:00"
+        },
+        {
+          "type": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+          "requestedResolution": "4000x3000",
+          "timestamp": "2026-09-09T15:48:51.200000+00:00"
+        },
+        {
+          "type": "JPEG_RETURNED",
+          "actualWidth": 4000,
+          "actualHeight": 3000,
+          "bytes": 3236839,
+          "timestamp": "2026-09-09T15:48:51.200000+00:00"
+        },
+        {
+          "type": "DURABLE_WRITE_COMPLETED",
+          "path": "originals/SHOT_210.jpg",
+          "bytesWritten": 3236839,
+          "timestamp": "2026-09-09T15:48:51.200000+00:00"
+        },
+        {
+          "type": "SHA_RECORDED",
+          "sha256": "56316954bc4c7a3d9ce195e467cfa5d690ee32ca0b36b4defadb8a75390cd22b",
+          "timestamp": "2026-09-09T15:48:51.200000+00:00"
+        }
+      ]
+    },
+    {
+      "shotId": "SHOT_240",
+      "targetAngleDeg": 240,
+      "events": [
+        {
+          "type": "TARGET_ENTERED",
+          "angleDeg": 240,
+          "sensorYawDeg": 239.25,
+          "timestamp": "2026-09-09T15:48:56.800000+00:00"
+        },
+        {
+          "type": "STABILITY_ACHIEVED",
+          "dwellMs": 500,
+          "yawVelocityDegPerSec": 0.77,
+          "timestamp": "2026-09-09T15:48:56.800000+00:00"
+        },
+        {
+          "type": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+          "requestedResolution": "4000x3000",
+          "timestamp": "2026-09-09T15:48:56.800000+00:00"
+        },
+        {
+          "type": "JPEG_RETURNED",
+          "actualWidth": 4000,
+          "actualHeight": 3000,
+          "bytes": 3242658,
+          "timestamp": "2026-09-09T15:48:56.800000+00:00"
+        },
+        {
+          "type": "DURABLE_WRITE_COMPLETED",
+          "path": "originals/SHOT_240.jpg",
+          "bytesWritten": 3242658,
+          "timestamp": "2026-09-09T15:48:56.800000+00:00"
+        },
+        {
+          "type": "SHA_RECORDED",
+          "sha256": "02e39a14c06657b43db9aff23eb9eedd0a4903e89b832e2219cb56ec04db069a",
+          "timestamp": "2026-09-09T15:48:56.800000+00:00"
+        }
+      ]
+    },
+    {
+      "shotId": "SHOT_270",
+      "targetAngleDeg": 270,
+      "events": [
+        {
+          "type": "TARGET_ENTERED",
+          "angleDeg": 270,
+          "sensorYawDeg": 269.92,
+          "timestamp": "2026-09-09T15:49:02.500000+00:00"
+        },
+        {
+          "type": "STABILITY_ACHIEVED",
+          "dwellMs": 500,
+          "yawVelocityDegPerSec": 0.89,
+          "timestamp": "2026-09-09T15:49:02.500000+00:00"
+        },
+        {
+          "type": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+          "requestedResolution": "4000x3000",
+          "timestamp": "2026-09-09T15:49:02.500000+00:00"
+        },
+        {
+          "type": "JPEG_RETURNED",
+          "actualWidth": 4000,
+          "actualHeight": 3000,
+          "bytes": 3230836,
+          "timestamp": "2026-09-09T15:49:02.500000+00:00"
+        },
+        {
+          "type": "DURABLE_WRITE_COMPLETED",
+          "path": "originals/SHOT_270.jpg",
+          "bytesWritten": 3230836,
+          "timestamp": "2026-09-09T15:49:02.500000+00:00"
+        },
+        {
+          "type": "SHA_RECORDED",
+          "sha256": "659f66da607efe72a0906d4ba72c3bf27a65fb4ae9be844b8e448da5af5e74d7",
+          "timestamp": "2026-09-09T15:49:02.500000+00:00"
+        }
+      ]
+    },
+    {
+      "shotId": "SHOT_300",
+      "targetAngleDeg": 300,
+      "events": [
+        {
+          "type": "TARGET_ENTERED",
+          "angleDeg": 300,
+          "sensorYawDeg": 299.35,
+          "timestamp": "2026-09-09T15:49:08.100000+00:00"
+        },
+        {
+          "type": "STABILITY_ACHIEVED",
+          "dwellMs": 500,
+          "yawVelocityDegPerSec": 2.17,
+          "timestamp": "2026-09-09T15:49:08.100000+00:00"
+        },
+        {
+          "type": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+          "requestedResolution": "4000x3000",
+          "timestamp": "2026-09-09T15:49:08.100000+00:00"
+        },
+        {
+          "type": "JPEG_RETURNED",
+          "actualWidth": 4000,
+          "actualHeight": 3000,
+          "bytes": 3214312,
+          "timestamp": "2026-09-09T15:49:08.100000+00:00"
+        },
+        {
+          "type": "DURABLE_WRITE_COMPLETED",
+          "path": "originals/SHOT_300.jpg",
+          "bytesWritten": 3214312,
+          "timestamp": "2026-09-09T15:49:08.100000+00:00"
+        },
+        {
+          "type": "SHA_RECORDED",
+          "sha256": "e7f68d919ff91d1b686856ecdcf6f7cab783a078bfb48abb7f88a948b4704596",
+          "timestamp": "2026-09-09T15:49:08.100000+00:00"
+        }
+      ]
+    },
+    {
+      "shotId": "SHOT_330",
+      "targetAngleDeg": 330,
+      "events": [
+        {
+          "type": "TARGET_ENTERED",
+          "angleDeg": 330,
+          "sensorYawDeg": 329.78,
+          "timestamp": "2026-09-09T15:49:14.400000+00:00"
+        },
+        {
+          "type": "STABILITY_ACHIEVED",
+          "dwellMs": 500,
+          "yawVelocityDegPerSec": 1.77,
+          "timestamp": "2026-09-09T15:49:14.400000+00:00"
+        },
+        {
+          "type": "IMAGECAPTURE_TAKEPHOTO_INVOKED",
+          "requestedResolution": "4000x3000",
+          "timestamp": "2026-09-09T15:49:14.400000+00:00"
+        },
+        {
+          "type": "JPEG_RETURNED",
+          "actualWidth": 4000,
+          "actualHeight": 3000,
+          "bytes": 3244031,
+          "timestamp": "2026-09-09T15:49:14.400000+00:00"
+        },
+        {
+          "type": "DURABLE_WRITE_COMPLETED",
+          "path": "originals/SHOT_330.jpg",
+          "bytesWritten": 3244031,
+          "timestamp": "2026-09-09T15:49:14.400000+00:00"
+        },
+        {
+          "type": "SHA_RECORDED",
+          "sha256": "517bfa3edc1984d742ab146378c1e94ebec7d49b0a710f57838607be1ccfcbbc",
+          "timestamp": "2026-09-09T15:49:14.400000+00:00"
+        }
+      ]
+    }
+  ]
+}
