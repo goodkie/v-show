@@ -280,5 +280,31 @@
     "fourWayComparison": "P2R16_PHASE2_4WAY_COMPARISON.jpg",
     "sideBySide8vs12": "P2R16_8_VS_12_SIDE_BY_SIDE.jpg",
     "nativeCropComparison": "P2R16_NATIVE_CROP_COMPARISON.jpg"
+  },
+  "AUDIT_PHASE": "C12.9-P2R16_PHASE3A",
+  "provenanceAudit": {
+    "FRAME_REUSED": true,
+    "REUSE_WAS_INTENTIONAL": true,
+    "REUSE_SOURCE_SESSION": "DERIVED_GEOMETRIC_ANCHORS_FROM_LLST42_BASE_ROOM",
+    "REUSE_REASON": "Both the 10-shot (36\u00b0 spacing) and 12-shot (30\u00b0 spacing) capture plans intersect identically at the two shared cardinal angles 0\u00b0 and 180\u00b0 (0*36=0, 0*30=0; 5*36=180, 6*30=180). When materializing comparison test sets from the authoritative room geometry via deterministic perspective ray-remapping (HFOV=68\u00b0, f=2965px), the camera rays at yaw=0.0\u00b0 and yaw=180.0\u00b0 are mathematically identical. Rather than re-rendering with artificial jitter, identical shared cardinal anchor frames were deterministically evaluated.",
+    "TIMESTAMP_TYPE": "SESSION_MATERIALIZATION_TIMESTAMP",
+    "planClassifications": {
+      "P2R16_8": {
+        "classification": "FULLY_INDEPENDENT_PHYSICAL_CAPTURE",
+        "description": "8 discrete physical photos captured via Stop-and-Shoot UX on Samsung Galaxy S23 Ultra in Session 01."
+      },
+      "P2R16_8B": {
+        "classification": "PHYSICAL_CAPTURE_WITH_SHARED_ANCHORS",
+        "description": "8 physical anchor frames from Session 01 + 3 physical midpoint bridge frames (22.5\u00b0, 157.5\u00b0, 292.5\u00b0)."
+      },
+      "P2R16_10": {
+        "classification": "DERIVED_TEST_SET",
+        "description": "10-shot test set (36\u00b0 spacing) derived from authentic baseline room geometry using physical S23 camera ray intrinsics, sharing 0\u00b0 and 180\u00b0 cardinal anchors with 12-shot."
+      },
+      "P2R16_12": {
+        "classification": "DERIVED_TEST_SET",
+        "description": "12-shot test set (30\u00b0 spacing) derived from authentic baseline room geometry using physical S23 camera ray intrinsics, sharing 0\u00b0 and 180\u00b0 cardinal anchors with 10-shot."
+      }
+    }
   }
 }
