@@ -43,6 +43,8 @@ from panorama_geometry_validator import (
     ESSENTIAL_MATRIX_PRIMARY_MODEL,
     FORCED_EDGE_POLICY
 )
+from spherical_branch_cut import split_wrapped_warped_image
+from panorama_sanity_gates import evaluate_catastrophic_visual_sanity_gates
 
 MIN_REGISTRATION_RETENTION = 0.85
 FULL_360_MIN_COVERAGE_DEG = 340.0
@@ -289,11 +291,12 @@ def decompose_yaw_pitch_roll(R):
     roll = np.degrees(np.arctan2(R_c[1, 0], R_c[1, 1]))
     return yaw, pitch, roll
 
-def run_so3_global_rotation_stitch(images, sources, focal_px=1500.0, sensor_weight=0.005, roll_weight=0.005):
+def run_so3_global_rotation_stitch(images, sources, focal_px=1500.0, sensor_weight=0.005, roll_weight=0.005, apply_wave_correction=True, apply_branch_cut=True):
     """
-    P2R14: SO(3) Global Rotation Recovery & Roll-Stabilized Spherical Band Stitcher.
-    Solves all camera orientations jointly on Lie algebra so(3) and renders via
-    spherical warper and Voronoi distance-transform MultiBandBlender.
+    P2R15: SO(3) Global Rotation Recovery with Wave-Corrected Spherical Band & Cyclic Branch-Cut Stitcher.
+    Solves all camera orientations jointly on Lie algebra so(3), levels the horizontal ring
+    via pure-rotation wave correction, handles +/-pi branch cuts safely, and renders via
+    Voronoi distance-transform MultiBandBlender with Feather fallback.
     """
     N = len(images)
     if N < 2:
@@ -435,51 +438,108 @@ def run_so3_global_rotation_stitch(images, sources, focal_px=1500.0, sensor_weig
 
     print(f"[SO3] Joint rotation averaging converged after {it+1} iterations", file=sys.stderr)
 
-    # 5. Render Spherical Band with Voronoi distance-transform MultiBandBlender
+    # 5. Pure-Rotation Horizontal Wave Correction (Section 6)
+    if apply_wave_correction:
+        axes = np.array([R.T @ np.array([0.0, 0.0, 1.0]) for R in R_current])
+        M = axes.T @ axes
+        U, S, Vt = np.linalg.svd(M)
+        normal = Vt[2]
+        if normal[1] < 0:
+            normal = -normal
+        target_up = np.array([0.0, 1.0, 0.0])
+        v = np.cross(normal, target_up)
+        c_dot = float(np.dot(normal, target_up))
+        s_norm = float(np.linalg.norm(v))
+        if s_norm >= 1e-7:
+            vx = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+            R_wave = np.eye(3) + vx + (vx @ vx) * ((1.0 - c_dot) / (s_norm**2))
+            R_current = [R @ R_wave.T for R in R_current]
+            print(f"[SO3] Applied horizontal wave correction (normal={normal})", file=sys.stderr)
+
+    # 6. Render Spherical Band with Cyclic Branch-Cut Handling and Distance-Transform Blender
     rotations_f32 = [R.astype(np.float32) for R in R_current]
     warper = cv2.PyRotationWarper('spherical', float(focal_px))
-    rois = [warper.warpRoi((w, h), K, R) for R in rotations_f32]
-    min_x = min(r[0] for r in rois)
-    min_y = min(r[1] for r in rois)
-    max_x = max(r[0] + r[2] for r in rois)
-    max_y = max(r[1] + r[3] for r in rois)
-    pano_roi = (min_x, min_y, max_x - min_x, max_y - min_y)
 
     corners, warped_imgs, raw_masks = [], [], []
     for img, R in zip(images, rotations_f32):
         c, w_img = warper.warp(img, K, R, cv2.INTER_LINEAR, cv2.BORDER_REFLECT)
         mask = np.full((h, w), 255, dtype=np.uint8)
-        c_m, w_mask = warper.warp(mask, K, R, cv2.INTER_NEAREST, cv2.BORDER_CONSTANT)
-        corners.append(c)
-        warped_imgs.append(w_img)
-        raw_masks.append(w_mask)
+        _, w_mask = warper.warp(mask, K, R, cv2.INTER_NEAREST, cv2.BORDER_CONSTANT)
+        if apply_branch_cut:
+            pieces = split_wrapped_warped_image(w_img, w_mask, c, focal_px)
+            for pc_corner, pc_img, pc_mask in pieces:
+                corners.append(pc_corner)
+                warped_imgs.append(pc_img)
+                raw_masks.append(pc_mask)
+        else:
+            corners.append(c)
+            warped_imgs.append(w_img)
+            raw_masks.append(w_mask)
 
-    canvas_dist = np.full((pano_roi[3], pano_roi[2]), -1.0, dtype=np.float32)
-    canvas_owner = np.full((pano_roi[3], pano_roi[2]), -1, dtype=np.int16)
+    min_x = min(c[0] for c in corners)
+    min_y = min(c[1] for c in corners)
+    max_x = max(c[0] + im.shape[1] for c, im in zip(corners, warped_imgs))
+    max_y = max(c[1] + im.shape[0] for c, im in zip(corners, warped_imgs))
+    pano_roi = (int(min_x), int(min_y), int(max_x - min_x), int(max_y - min_y))
+    pano_w_total = pano_roi[2]
+    pano_h_total = pano_roi[3]
+
+    canvas_dist = np.full((pano_h_total, pano_w_total), -1.0, dtype=np.float32)
+    canvas_owner = np.full((pano_h_total, pano_w_total), -1, dtype=np.int16)
     for idx, (c, m) in enumerate(zip(corners, raw_masks)):
         rx, ry = c[0] - min_x, c[1] - min_y
         hm, wm = m.shape[:2]
         d = cv2.distanceTransform(m, cv2.DIST_L2, 3)
-        sub = canvas_dist[ry:ry+hm, rx:rx+wm]
-        better = d > sub
-        sub[better] = d[better]
-        canvas_owner[ry:ry+hm, rx:rx+wm][better] = idx
+        rx_cl = max(0, min(pano_w_total, rx))
+        ry_cl = max(0, min(pano_h_total, ry))
+        hm_cl = min(hm, pano_h_total - ry_cl)
+        wm_cl = min(wm, pano_w_total - rx_cl)
+        if hm_cl <= 0 or wm_cl <= 0: continue
+        sub_d = d[:hm_cl, :wm_cl]
+        sub_canvas = canvas_dist[ry_cl:ry_cl+hm_cl, rx_cl:rx_cl+wm_cl]
+        better = sub_d > sub_canvas
+        sub_canvas[better] = sub_d[better]
+        canvas_owner[ry_cl:ry_cl+hm_cl, rx_cl:rx_cl+wm_cl][better] = idx
 
     voronoi_masks = []
     for idx, (c, m) in enumerate(zip(corners, raw_masks)):
         rx, ry = c[0] - min_x, c[1] - min_y
         hm, wm = m.shape[:2]
-        v_mask = np.where(canvas_owner[ry:ry+hm, rx:rx+wm] == idx, 255, 0).astype(np.uint8)
+        rx_cl = max(0, min(pano_w_total, rx))
+        ry_cl = max(0, min(pano_h_total, ry))
+        hm_cl = min(hm, pano_h_total - ry_cl)
+        wm_cl = min(wm, pano_w_total - rx_cl)
+        v_mask = np.zeros((hm, wm), dtype=np.uint8)
+        if hm_cl > 0 and wm_cl > 0:
+            sub_owner = canvas_owner[ry_cl:ry_cl+hm_cl, rx_cl:rx_cl+wm_cl]
+            v_mask[:hm_cl, :wm_cl] = np.where(sub_owner == idx, 255, 0).astype(np.uint8)
         voronoi_masks.append(v_mask)
 
-    blender = cv2.detail.MultiBandBlender()
-    blender.prepare(pano_roi)
-    for c, w_img, v_mask in zip(corners, warped_imgs, voronoi_masks):
-        blender.feed(w_img.astype(np.int16), v_mask, c)
-    res, _ = blender.blend(None, None)
-    pano = np.clip(res, 0, 255).astype(np.uint8)
+    try:
+        blender = cv2.detail.MultiBandBlender()
+        blender.prepare(pano_roi)
+        for c, w_img, v_mask in zip(corners, warped_imgs, voronoi_masks):
+            if cv2.countNonZero(v_mask) > 0:
+                blender.feed(w_img.astype(np.int16), v_mask, c)
+        res, _ = blender.blend(None, None)
+        pano = np.clip(res, 0, 255).astype(np.uint8)
+    except Exception as e:
+        print(f"[SO3] MultiBandBlender fallback to Feather: {e}", file=sys.stderr)
+        blender = cv2.detail.FeatherBlender(0.02)
+        blender.prepare(pano_roi)
+        for c, w_img, m in zip(corners, warped_imgs, raw_masks):
+            blender.feed(w_img.astype(np.int16), m, c)
+        res, _ = blender.blend(None, None)
+        pano = np.clip(res, 0, 255).astype(np.uint8)
 
-    # 6. Construct CameraParams
+    # Catastrophic Visual Gates check (Section 12, 13, 14)
+    cam_dicts = [{'R': R} for R in R_current]
+    gate_res = evaluate_catastrophic_visual_sanity_gates(pano, cam_dicts)
+    if not gate_res.get('sanityPass', True):
+        print(f"[SO3] Catastrophic visual gates FAILED: {gate_res.get('failedGates')}", file=sys.stderr)
+        return cv2.Stitcher_ERR_HOMOGRAPHY_EST_FAIL, None, None, None
+
+    # 7. Construct CameraParams
     cameras = []
     for R in rotations_f32:
         cp = cv2.detail.CameraParams()
@@ -616,16 +676,19 @@ def run_opencv_stitching(input_data):
     so3_pano = None
     so3_cameras = None
     so3_comp = None
-    # C12.9-P2R14R1: Restore safe P2R13 customer-facing default. Preserve P2R14 SO(3) behind experiment flag.
+    # C12.9-P2R15: Support P2R15 experiment behind explicit flag enableP2R15Experiment
+    # Customer default remains safe P2R13 baseline unless explicit experimental flag is passed
     options = input_data.get('options', {})
+    enable_p2r15_experimental = options.get('enableP2R15Experiment', False)
     enable_p2r14_experimental = options.get('enableP2R14Experiment', False) or options.get('enableSO3GlobalRotation', False)
 
-    if enable_p2r14_experimental and subset_applied and len(stitch_images) >= 12:
+    if (enable_p2r15_experimental or enable_p2r14_experimental) and subset_applied and len(stitch_images) >= 12:
         filtered_sources = [s for s in sources if s.get('candidateId') not in SUBSET_40_EXCLUDE_CANDIDATE_IDS]
         try:
-            print(f"[SO3] Launching experimental SO(3) global rotation stitch for {len(stitch_images)} frames...", file=sys.stderr)
+            print(f"[SO3] Launching experimental SO(3) stitch (p2r15={enable_p2r15_experimental}) for {len(stitch_images)} frames...", file=sys.stderr)
             so3_status, so3_pano, so3_cameras, so3_comp = run_so3_global_rotation_stitch(
-                stitch_images, filtered_sources, focal_px=1500.0, sensor_weight=0.005, roll_weight=0.005
+                stitch_images, filtered_sources, focal_px=1500.0, sensor_weight=0.005, roll_weight=0.005,
+                apply_wave_correction=True, apply_branch_cut=True
             )
             print(f"[SO3] Completed with status={so3_status}, pano is None? {so3_pano is None}", file=sys.stderr)
         except Exception as e:
@@ -633,7 +696,7 @@ def run_opencv_stitching(input_data):
             print(f"[SO3 Error] Exception: {e}\n{traceback.format_exc()}", file=sys.stderr)
             so3_status = None
 
-    if enable_p2r14_experimental and so3_status == cv2.Stitcher_OK and so3_pano is not None:
+    if (enable_p2r15_experimental or enable_p2r14_experimental) and so3_status == cv2.Stitcher_OK and so3_pano is not None:
         status = cv2.Stitcher_OK
         pano = so3_pano
         cameras = so3_cameras

@@ -227,6 +227,128 @@ def evaluate_horizon_oscillation(image: np.ndarray, num_strips: int = 24) -> dic
     }
 
 
+def evaluate_band_topology(image: np.ndarray) -> dict:
+    """
+    Section 13 Visual Band Topology Gate:
+    Detects:
+    - multiple detached vertical image layers
+    - lower-frame fragments
+    - unexpected repeated bands
+    - abrupt top/bottom envelope jumps
+    """
+    h, w = image.shape[:2]
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if len(image.shape) == 3 else image
+    mask = (gray > 5).astype(np.uint8)
+
+    # Close small interior scene dark features (e.g. black TVs, computer screens, dark furniture)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 35))
+    closed = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+
+    step_x = max(1, w // 1000)
+    cols_sampled = list(range(0, w, step_x))
+    multi_layer_count = 0
+    bottom_fragment_count = 0
+    top_ys = []
+    bot_ys = []
+
+    for x in cols_sampled:
+        col = closed[:, x]
+        idx = np.where(col > 0)[0]
+        if len(idx) == 0:
+            continue
+        top_ys.append(float(idx[0]))
+        bot_ys.append(float(idx[-1]))
+
+        diffs = np.diff(idx)
+        gaps = np.where(diffs > 40)[0]
+        if len(gaps) > 0:
+            multi_layer_count += 1
+            for g in gaps:
+                if idx[g] > h * 0.60:
+                    bottom_fragment_count += 1
+                    break
+
+    total_valid_cols = max(1, len(top_ys))
+    multi_layer_ratio = multi_layer_count / total_valid_cols
+    bottom_fragment_ratio = bottom_fragment_count / total_valid_cols
+
+    top_jumps = np.abs(np.diff(top_ys)) if len(top_ys) > 1 else [0.0]
+    bot_jumps = np.abs(np.diff(bot_ys)) if len(bot_ys) > 1 else [0.0]
+    top_jump_p95 = float(np.percentile(top_jumps, 95))
+    bot_jump_p95 = float(np.percentile(bot_jumps, 95))
+
+    topology_pass = (multi_layer_ratio <= 0.08) and (bottom_fragment_ratio <= 0.08) and (top_jump_p95 <= 50.0) and (bot_jump_p95 <= 50.0)
+    
+    failed_topology = []
+    if multi_layer_ratio > 0.08:
+        failed_topology.append(f"MULTI_LAYER_COLUMNS ({multi_layer_ratio:.2%} > 8.0%)")
+    if bottom_fragment_ratio > 0.08:
+        failed_topology.append(f"BOTTOM_FRAGMENTS ({bottom_fragment_ratio:.2%} > 8.0%)")
+    if top_jump_p95 > 50.0:
+        failed_topology.append(f"TOP_ENVELOPE_JUMP ({top_jump_p95:.1f}px > 50px)")
+    if bot_jump_p95 > 50.0:
+        failed_topology.append(f"BOTTOM_ENVELOPE_JUMP ({bot_jump_p95:.1f}px > 50px)")
+
+    return {
+        "topologyPass": topology_pass,
+        "failedTopologyChecks": failed_topology,
+        "MULTI_LAYER_COLUMN_RATIO": round(multi_layer_ratio, 4),
+        "BOTTOM_FRAGMENT_RATIO": round(bottom_fragment_ratio, 4),
+        "TOP_ENVELOPE_JUMP_P95": round(top_jump_p95, 2),
+        "BOTTOM_ENVELOPE_JUMP_P95": round(bot_jump_p95, 2)
+    }
+
+
+def evaluate_structural_orientation(image: np.ndarray) -> dict:
+    """
+    Section 14 Structural Orientation Gate:
+    Measures detected near-vertical and near-horizontal line distributions.
+    """
+    h, w = image.shape[:2]
+    scale = min(1.0, 1600.0 / max(h, w))
+    sm_h, sm_w = int(round(h * scale)), int(round(w * scale))
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if len(image.shape) == 3 else image
+    gray_sm = cv2.resize(gray, (sm_w, sm_h), interpolation=cv2.INTER_AREA)
+
+    edges = cv2.Canny(gray_sm, 50, 150)
+    lines = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=80, minLineLength=40, maxLineGap=10)
+
+    if lines is None or len(lines) == 0:
+        return {
+            "structuralPass": True,
+            "NEAR_VERTICAL_LINE_COUNT": 0,
+            "NEAR_HORIZONTAL_LINE_COUNT": 0,
+            "VERTICAL_LINE_BENDING_SCORE": 0.0,
+            "HORIZONTAL_LINE_BENDING_SCORE": 0.0
+        }
+
+    vert_angles = []
+    horiz_angles = []
+    for line in lines:
+        l = line.ravel()
+        if len(l) < 4:
+            continue
+        x1, y1, x2, y2 = float(l[0]), float(l[1]), float(l[2]), float(l[3])
+        angle = math.degrees(math.atan2(y2 - y1, x2 - x1))
+        angle = (angle + 180.0) % 180.0
+        if 75.0 <= angle <= 105.0:
+            vert_angles.append(abs(angle - 90.0))
+        elif angle <= 15.0 or angle >= 165.0:
+            dev = min(angle, 180.0 - angle)
+            horiz_angles.append(dev)
+
+    vert_score = float(np.mean(vert_angles)) if vert_angles else 0.0
+    horiz_score = float(np.mean(horiz_angles)) if horiz_angles else 0.0
+
+    return {
+        "structuralPass": vert_score <= 8.0,
+        "NEAR_VERTICAL_LINE_COUNT": len(vert_angles),
+        "NEAR_HORIZONTAL_LINE_COUNT": len(horiz_angles),
+        "VERTICAL_LINE_BENDING_SCORE": round(vert_score, 2),
+        "HORIZONTAL_LINE_BENDING_SCORE": round(horiz_score, 2)
+    }
+
+
 def evaluate_catastrophic_visual_sanity_gates(image: np.ndarray, cameras: list = None) -> dict:
     """
     Master evaluator for all catastrophic visual sanity gates.
@@ -234,6 +356,8 @@ def evaluate_catastrophic_visual_sanity_gates(image: np.ndarray, cameras: list =
     """
     occ = evaluate_pixel_occupancy(image)
     horiz = evaluate_horizon_oscillation(image)
+    topo = evaluate_band_topology(image)
+    struct = evaluate_structural_orientation(image)
     orient = evaluate_orientation_sanity(cameras) if cameras else {"orientationPass": True, "failedOrientationChecks": [], "metrics": {}}
 
     failed_gates = []
@@ -245,6 +369,9 @@ def evaluate_catastrophic_visual_sanity_gates(image: np.ndarray, cameras: list =
         failed_gates.append(f"DISCONNECTED_MASK_COMPONENTS ({occ['VALID_MASK_COMPONENT_COUNT']} != 1)")
     if not horiz["horizonPass"]:
         failed_gates.append(f"EXTREME_HORIZON_OSCILLATION ({horiz['HORIZON_OSCILLATION_RATIO']:.2%} > 8%)")
+    if not topo["topologyPass"]:
+        for f in topo["failedTopologyChecks"]:
+            failed_gates.append(f"TOPOLOGY_GATE_FAIL: {f}")
     if not orient["orientationPass"]:
         for f in orient["failedOrientationChecks"]:
             failed_gates.append(f"ORIENTATION_GATE_FAIL: {f}")
@@ -254,6 +381,8 @@ def evaluate_catastrophic_visual_sanity_gates(image: np.ndarray, cameras: list =
     combined_metrics = {}
     combined_metrics.update(occ)
     combined_metrics.update(horiz)
+    combined_metrics.update(topo)
+    combined_metrics.update(struct)
     combined_metrics.update(orient.get("metrics", {}))
 
     return {
