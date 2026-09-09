@@ -3,7 +3,8 @@
 
 Only evidence explicitly marked PASS and backed by physical/live production or
 owner-visual verification is lockable. FAIL/PENDING/NOT_PROVEN states are never
-promoted. Existing locks are immutable.
+promoted. Existing locks are immutable. Code hashes are taken from the evidence
+source commit, never from the current checkout.
 """
 from __future__ import annotations
 
@@ -21,20 +22,17 @@ EVIDENCE_DIR = SERVER / "qa" / "pass_evidence"
 LOCK_DIR = SERVER / "qa" / "milestones" / "auto"
 
 
-def sha256_file(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
 def git_head() -> str:
     return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
 
 
 def load_json(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def sha256_at_commit(commit: str, relpath: str) -> str:
+    data = subprocess.check_output(["git", "show", f"{commit}:{relpath}"], cwd=ROOT)
+    return hashlib.sha256(data).hexdigest()
 
 
 def validate_evidence(ev: dict, policy: dict) -> None:
@@ -63,10 +61,10 @@ def materialize(ev_path: Path, policy: dict) -> Path:
 
     hashes = {}
     for rel in ev["codePaths"]:
-        p = ROOT / rel
-        if not p.is_file():
-            raise ValueError(f"code path missing: {rel}")
-        hashes[rel] = sha256_file(p)
+        try:
+            hashes[rel] = sha256_at_commit(source_commit, rel)
+        except subprocess.CalledProcessError as exc:
+            raise ValueError(f"code path missing at source commit {source_commit}: {rel}") from exc
 
     lock = {
         "schemaVersion": 1,
@@ -91,7 +89,6 @@ def materialize(ev_path: Path, policy: dict) -> Path:
 
     LOCK_DIR.mkdir(parents=True, exist_ok=True)
     out = LOCK_DIR / f"{ev['evidenceId']}.LOCK.json"
-    encoded = json.dumps(lock, indent=2, sort_keys=True) + "\n"
     if out.exists():
         existing = load_json(out)
         comparison = dict(lock)
@@ -101,7 +98,7 @@ def materialize(ev_path: Path, policy: dict) -> Path:
         if existing != comparison:
             raise ValueError(f"immutable lock conflict: {out}")
         return out
-    out.write_text(encoded, encoding="utf-8")
+    out.write_text(json.dumps(lock, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return out
 
 
