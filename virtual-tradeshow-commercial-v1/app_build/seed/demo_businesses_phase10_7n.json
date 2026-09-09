@@ -1,0 +1,16 @@
+{
+  "environment": "SYNTHETIC_TEST",
+  "purpose": "Owner-operated UI/database launch rehearsal only. Never count toward REAL prospects, pilot quota, MRR, ARR, outreach or billing.",
+  "businesses": [
+    {"id":"syn-wilo-001","companyName":"Wilo Demo Booth","brand":"Wilo","industry":"Water Technology","eventName":"WaterExpo 2026 Demo","boothNumber":"A01","contactName":"Demo Owner","contactEmail":"owner+wilo@example.invalid","website":"https://example.invalid/wilo-demo","stage":"DEMO_READY","qualificationScore":92,"priority":"P1","products":["Wilo-Helix EXCEL","Wilo-Stratos MAXO","Wilo-Sub TWI 5","Wilo-DrainLift SANI-L"],"assets":{"boothHero":"USER_SUPPLIED_WILO_REFERENCE","generatedUiReference":"a_high_detail_composite_ui_mockup_website_and_da.png"}},
+    {"id":"syn-aquatech-002","companyName":"AquaTech Solutions","industry":"Water Treatment","eventName":"WaterExpo 2026 Demo","boothNumber":"A02","contactName":"Maya Chen","contactEmail":"maya@aquatech.example.invalid","stage":"READY_TO_CONTACT","qualificationScore":84,"priority":"P1"},
+    {"id":"syn-hydropump-003","companyName":"HydroPump Co.","industry":"Industrial Equipment","eventName":"WaterExpo 2026 Demo","boothNumber":"A03","contactName":"Daniel Ortiz","contactEmail":"daniel@hydropump.example.invalid","stage":"CONTACTED","qualificationScore":79,"priority":"P1"},
+    {"id":"syn-cleanwater-004","companyName":"CleanWater Systems","industry":"Environmental Technology","eventName":"WaterExpo 2026 Demo","boothNumber":"A04","contactName":"Priya Shah","contactEmail":"priya@cleanwater.example.invalid","stage":"REPLIED","qualificationScore":76,"priority":"P2"},
+    {"id":"syn-flowmaster-005","companyName":"FlowMaster Inc.","industry":"Pump Solutions","eventName":"WaterExpo 2026 Demo","boothNumber":"A05","contactName":"Ethan Brooks","contactEmail":"ethan@flowmaster.example.invalid","stage":"INTERESTED","qualificationScore":88,"priority":"P1"},
+    {"id":"syn-bluewater-006","companyName":"BlueWater Tech","industry":"Smart Water","eventName":"WaterExpo 2026 Demo","boothNumber":"A06","contactName":"Sofia Lee","contactEmail":"sofia@bluewater.example.invalid","stage":"FOLLOW_UP","qualificationScore":71,"priority":"P2"},
+    {"id":"syn-pureflow-007","companyName":"PureFlow Ltd.","industry":"Filtration Systems","eventName":"WaterExpo 2026 Demo","boothNumber":"A07","contactName":"Noah Wilson","contactEmail":"noah@pureflow.example.invalid","stage":"DEMO_PROPOSED","qualificationScore":81,"priority":"P1"},
+    {"id":"syn-ecowater-008","companyName":"EcoWater Global","industry":"Sustainability","eventName":"WaterExpo 2026 Demo","boothNumber":"A08","contactName":"Amelia King","contactEmail":"amelia@ecowater.example.invalid","stage":"DEMO_SCHEDULED","qualificationScore":86,"priority":"P1"},
+    {"id":"syn-aquasense-009","companyName":"AquaSense","industry":"IoT Solutions","eventName":"WaterExpo 2026 Demo","boothNumber":"A09","contactName":"Lucas Martin","contactEmail":"lucas@aquasense.example.invalid","stage":"DEMO_COMPLETED","qualificationScore":90,"priority":"P1"},
+    {"id":"syn-watervision-010","companyName":"WaterVision","industry":"Monitoring Systems","eventName":"WaterExpo 2026 Demo","boothNumber":"A10","contactName":"Olivia Davis","contactEmail":"olivia@watervision.example.invalid","stage":"PILOT_PROPOSED","qualificationScore":94,"priority":"P1"}
+  ]
+}
