@@ -181,7 +181,7 @@ class PanoramicStitcher {
       const stdout = execFileSync(this.pythonExe, [this.workerScript, '--input-json', inputJson, '--output-json', outputJson], {
         encoding: 'utf-8',
         maxBuffer: 50 * 1024 * 1024,
-        timeout: 600000
+        timeout: 3600000
       });
       console.log(`[OpenCV Worker] Output: ${stdout.trim()}`);
 
