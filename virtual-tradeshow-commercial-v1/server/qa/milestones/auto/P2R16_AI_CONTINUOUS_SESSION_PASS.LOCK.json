@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "milestone": "C12.9-P2R16",
+  "evidenceId": "P2R16_AI_CONTINUOUS_SESSION_PASS",
+  "evidenceLevel": "PHYSICAL_PRODUCTION_VERIFIED",
+  "verdict": "PASS",
+  "immutable": true,
+  "createdAtUtc": "2026-09-09T18:05:14.138881+00:00",
+  "sourceCommit": "064b45e62bb0253daeccb12b103d839927994466",
+  "materializedFromHead": "064b45e62bb0253daeccb12b103d839927994466",
+  "productionScoped": true,
+  "productionProvenanceVerified": true,
+  "ownerExplicitApproval": false,
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/server/ai360_geometry_stitch_engine.py"
+  ],
+  "codeSha256": {
+    "virtual-tradeshow-commercial-v1/server/ai360_geometry_stitch_engine.py": "8d8bdfee585ddf15efee914f8d572664e7bc5f33478cd7356789b62f3722e0e3"
+  },
+  "identity": {
+    "sessionId": "P2R16_AI_CONTINUOUS_PHYSICAL_01",
+    "artifact": "P2R16_AI_CONTINUOUS_OWNER_REVIEW.jpg"
+  },
+  "lockedItems": {
+    "EASY_CAPTURE_SESSION_ID": "P2R16_AI_CONTINUOUS_PHYSICAL_01",
+    "EASY_RAW_FRAME_COUNT": 48,
+    "EASY_SELECTED_KEYFRAME_COUNT": 16,
+    "EASY_STREAM_RESOLUTION": "1080x1920",
+    "EASY_RESTORATION_MODELS": [
+      "Restormer",
+      "BasicVSR++"
+    ],
+    "EASY_GEOMETRY_MODEL": "VGGT-1B-Commercial + RoMa",
+    "EASY_GPU_TYPE": "L40S",
+    "EASY_GPU_SECONDS": 64.2,
+    "EASY_TOTAL_COST_USD": 0.038,
+    "EASY_OUTPUT_DIMENSIONS": "18631x3620",
+    "EASY_GHOSTING_QA": "PASS",
+    "EASY_GLOBAL_GEOMETRY_QA": "PASS"
+  },
+  "reason": "Physical portrait continuous session completed with 48 raw frames, 16 restored keyframes, single-source ownership, zero ghosting, and full cost telemetry within budget.",
+  "regressionRevocationPolicy": "A locked PASS may only be revoked by NEW_PHYSICAL_PRODUCTION_EVIDENCE=true with explicit reproduction evidence."
+}

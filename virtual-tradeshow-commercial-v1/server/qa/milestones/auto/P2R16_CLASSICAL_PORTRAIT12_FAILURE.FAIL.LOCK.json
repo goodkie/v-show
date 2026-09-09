@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "milestone": "C12.9-P2R16",
+  "evidenceId": "P2R16_CLASSICAL_PORTRAIT12_FAILURE",
+  "evidenceLevel": "OWNER_VISUAL_VERIFIED",
+  "verdict": "FAIL",
+  "lockType": "IMMUTABLE_FAILURE_LOCK",
+  "immutable": true,
+  "ownerExplicitApproval": false,
+  "ownerExplicitRejection": true,
+  "createdAtUtc": "2026-09-09T18:01:47.807375+00:00",
+  "sourceCommit": "064b45e62bb0253daeccb12b103d839927994466",
+  "productionScoped": true,
+  "productionProvenanceVerified": true,
+  "identity": {
+    "version": "3D2-C12.9-P2R16-PORTRAIT12",
+    "artifact": "P2R16_PORTRAIT_12SHOT_OWNER_REVIEW.jpg",
+    "sha256": "8dc461493da0330fa0643b42d26f648a4d77404a0ab371271746c7fdd6502ce4",
+    "dimensions": "18631x3620",
+    "productionCommit": "064b45e62bb0253daeccb12b103d839927994466",
+    "ownerVisualResult": "FAIL"
+  },
+  "lockedItems": {
+    "P2R16_CLASSICAL_PORTRAIT12_GHOSTING_QA": "FAIL",
+    "P2R16_CLASSICAL_PORTRAIT12_GLOBAL_GEOMETRY_QA": "FAIL",
+    "P2R16_CLASSICAL_PORTRAIT12_VISUAL_WARP_QA": "FAIL",
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "PANORAMA_ACCEPTANCE": "FAIL_GHOSTING_AND_GLOBAL_GEOMETRY",
+    "TECHNICAL_VISUAL_CANDIDATE": false
+  },
+  "reason": "The Owner visually rejected the previous classical portrait panorama due to ghosting (translucent duplicate images), global geometry distortion, and visual warp.",
+  "regressionRevocationPolicy": "A locked PASS may only be revoked by NEW_PHYSICAL_PRODUCTION_EVIDENCE=true with explicit reproduction evidence."
+}

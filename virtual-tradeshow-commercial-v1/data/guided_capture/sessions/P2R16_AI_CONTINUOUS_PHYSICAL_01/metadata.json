@@ -1,0 +1,195 @@
+{
+  "sessionId": "P2R16_AI_CONTINUOUS_PHYSICAL_01",
+  "captureMode": "AI_CONTINUOUS_360",
+  "orientation": "PORTRAIT",
+  "rawPhysicalFrameCount": 48,
+  "selectedKeyframeCount": 16,
+  "captureDurationSeconds": 28.8,
+  "streamResolution": "1080x1920",
+  "geometryFrameCount": 48,
+  "restoredResolution": "2160x3840",
+  "restorationModels": [
+    "Restormer",
+    "BasicVSR++"
+  ],
+  "geometryModel": "VGGT-1B-Commercial + RoMa",
+  "timestamp": "2026-09-09T18:04:09.914751+00:00",
+  "keyframes": [
+    {
+      "keyframeIndex": 1,
+      "sourceRawFrame": "FRAME_001.jpg",
+      "filename": "KEYFRAME_01.jpg",
+      "yaw": 0.0,
+      "width": 2160,
+      "height": 3840,
+      "sourceDetailType": "AI_RESTORED",
+      "superResolutionScale": 2.0,
+      "sha256": "bb7a786d03a39b08b66dec46699e24f44811270892c8ac7dbadb4e69e8619fb5"
+    },
+    {
+      "keyframeIndex": 2,
+      "sourceRawFrame": "FRAME_005.jpg",
+      "filename": "KEYFRAME_02.jpg",
+      "yaw": 30.0,
+      "width": 2160,
+      "height": 3840,
+      "sourceDetailType": "AI_RESTORED",
+      "superResolutionScale": 2.0,
+      "sha256": "eaee53e130baaa3e5e3f5001644bb2cf25df3b4e2d79f235b82231790fee8d2d"
+    },
+    {
+      "keyframeIndex": 3,
+      "sourceRawFrame": "FRAME_008.jpg",
+      "filename": "KEYFRAME_03.jpg",
+      "yaw": 52.5,
+      "width": 2160,
+      "height": 3840,
+      "sourceDetailType": "AI_RESTORED",
+      "superResolutionScale": 2.0,
+      "sha256": "eec13dcd841bb877c41f91b0a53a09b74b145e5cb285f46b8791d69723b84690"
+    },
+    {
+      "keyframeIndex": 4,
+      "sourceRawFrame": "FRAME_009.jpg",
+      "filename": "KEYFRAME_04.jpg",
+      "yaw": 60.0,
+      "width": 2160,
+      "height": 3840,
+      "sourceDetailType": "AI_RESTORED",
+      "superResolutionScale": 2.0,
+      "sha256": "e54c3d9c54c23555608e015d32b94494ec9039ba09006687a568a1a64dbe3683"
+    },
+    {
+      "keyframeIndex": 5,
+      "sourceRawFrame": "FRAME_013.jpg",
+      "filename": "KEYFRAME_05.jpg",
+      "yaw": 90.0,
+      "width": 2160,
+      "height": 3840,
+      "sourceDetailType": "AI_RESTORED",
+      "superResolutionScale": 2.0,
+      "sha256": "db691edd0a06a20ef0c9c2a90cdf17c37cf3ba37a137b16c8ab50503c10cf90f"
+    },
+    {
+      "keyframeIndex": 6,
+      "sourceRawFrame": "FRAME_017.jpg",
+      "filename": "KEYFRAME_06.jpg",
+      "yaw": 120.0,
+      "width": 2160,
+      "height": 3840,
+      "sourceDetailType": "AI_RESTORED",
+      "superResolutionScale": 2.0,
+      "sha256": "0cfbabac578f055326cea34d24b32e2ab6085e307843ee982c1f963be2ca6929"
+    },
+    {
+      "keyframeIndex": 7,
+      "sourceRawFrame": "FRAME_018.jpg",
+      "filename": "KEYFRAME_07.jpg",
+      "yaw": 127.5,
+      "width": 2160,
+      "height": 3840,
+      "sourceDetailType": "AI_RESTORED",
+      "superResolutionScale": 2.0,
+      "sha256": "8b790d631593f9d24004ca295b9dff5ca83275154e374e3a8804ab8ae6b49b69"
+    },
+    {
+      "keyframeIndex": 8,
+      "sourceRawFrame": "FRAME_021.jpg",
+      "filename": "KEYFRAME_08.jpg",
+      "yaw": 150.0,
+      "width": 2160,
+      "height": 3840,
+      "sourceDetailType": "AI_RESTORED",
+      "superResolutionScale": 2.0,
+      "sha256": "b816929217db00ff1d715407332cceba3121c73cf74b9ec75be7995a40636f96"
+    },
+    {
+      "keyframeIndex": 9,
+      "sourceRawFrame": "FRAME_025.jpg",
+      "filename": "KEYFRAME_09.jpg",
+      "yaw": 180.0,
+      "width": 2160,
+      "height": 3840,
+      "sourceDetailType": "AI_RESTORED",
+      "superResolutionScale": 2.0,
+      "sha256": "c84bcd57fb667147584fca9bc2c2bd94f0c45d1054129865740adcb1a11f9831"
+    },
+    {
+      "keyframeIndex": 10,
+      "sourceRawFrame": "FRAME_029.jpg",
+      "filename": "KEYFRAME_10.jpg",
+      "yaw": 210.0,
+      "width": 2160,
+      "height": 3840,
+      "sourceDetailType": "AI_RESTORED",
+      "superResolutionScale": 2.0,
+      "sha256": "a6143fcb270452c30c36c49cd4be36977a41268eddfebffe2118dc5ce4415f27"
+    },
+    {
+      "keyframeIndex": 11,
+      "sourceRawFrame": "FRAME_032.jpg",
+      "filename": "KEYFRAME_11.jpg",
+      "yaw": 232.5,
+      "width": 2160,
+      "height": 3840,
+      "sourceDetailType": "AI_RESTORED",
+      "superResolutionScale": 2.0,
+      "sha256": "9f16e897df2bd1aeb163a1af397b694733d49ab5e208d7559d5edde5003a0997"
+    },
+    {
+      "keyframeIndex": 12,
+      "sourceRawFrame": "FRAME_033.jpg",
+      "filename": "KEYFRAME_12.jpg",
+      "yaw": 240.0,
+      "width": 2160,
+      "height": 3840,
+      "sourceDetailType": "AI_RESTORED",
+      "superResolutionScale": 2.0,
+      "sha256": "1b6ac862b13f51a22293d3665844a6b4fad5b1fc2ed2ceb04e2bc80a25265fe0"
+    },
+    {
+      "keyframeIndex": 13,
+      "sourceRawFrame": "FRAME_037.jpg",
+      "filename": "KEYFRAME_13.jpg",
+      "yaw": 270.0,
+      "width": 2160,
+      "height": 3840,
+      "sourceDetailType": "AI_RESTORED",
+      "superResolutionScale": 2.0,
+      "sha256": "7d277537d71d2525ce8f86099cf4eee17b6953173a8d3a2636063d67a073b566"
+    },
+    {
+      "keyframeIndex": 14,
+      "sourceRawFrame": "FRAME_041.jpg",
+      "filename": "KEYFRAME_14.jpg",
+      "yaw": 300.0,
+      "width": 2160,
+      "height": 3840,
+      "sourceDetailType": "AI_RESTORED",
+      "superResolutionScale": 2.0,
+      "sha256": "c2e2bf7c2361a3627e3eb06d6819b3091c744a6e31ea01e432a0ce2a27d7cd91"
+    },
+    {
+      "keyframeIndex": 15,
+      "sourceRawFrame": "FRAME_042.jpg",
+      "filename": "KEYFRAME_15.jpg",
+      "yaw": 307.5,
+      "width": 2160,
+      "height": 3840,
+      "sourceDetailType": "AI_RESTORED",
+      "superResolutionScale": 2.0,
+      "sha256": "a7cdff56799f32aca0180cf856238b525ab78b0f2f1f643b88c4cc260f412bc7"
+    },
+    {
+      "keyframeIndex": 16,
+      "sourceRawFrame": "FRAME_045.jpg",
+      "filename": "KEYFRAME_16.jpg",
+      "yaw": 330.0,
+      "width": 2160,
+      "height": 3840,
+      "sourceDetailType": "AI_RESTORED",
+      "superResolutionScale": 2.0,
+      "sha256": "22b7151c5865888b0374262f606e1979ef3b88669fe7323c8cdf84938b643fa6"
+    }
+  ]
+}

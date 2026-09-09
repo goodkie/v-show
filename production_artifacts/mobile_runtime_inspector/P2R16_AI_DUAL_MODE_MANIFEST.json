@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "manifestName": "P2R16_AI_DUAL_MODE_MANIFEST",
+  "createdAtUtc": "2026-09-09T18:04:56.114043+00:00",
+  "easyMode": {
+    "sessionId": "P2R16_AI_CONTINUOUS_PHYSICAL_01",
+    "artifact": "P2R16_AI_CONTINUOUS_OWNER_REVIEW.jpg",
+    "dimensions": "18631x3620",
+    "bytes": 8747152,
+    "sha256": "589daa909741cc71a94647282b25420fde0de602b77ed837dcc5e4e99164ba7e",
+    "rawFrameCount": 48,
+    "selectedKeyframeCount": 16,
+    "restorationModels": [
+      "Restormer",
+      "BasicVSR++"
+    ],
+    "geometryModel": "VGGT-1B-Commercial + RoMa",
+    "gpuType": "L40S",
+    "gpuSeconds": 64.2,
+    "totalCostUsd": 0.038,
+    "ghostingQa": "PASS",
+    "globalGeometryQa": "PASS",
+    "blackInteriorGap": "PASS",
+    "detachedVerticalStrip": "PASS",
+    "ownerVisualAcceptance": false
+  },
+  "qualityMode": {
+    "sessionId": "P2R16_AI_PORTRAIT12_PHYSICAL_01",
+    "artifact": "P2R16_AI_QUALITY12_OWNER_REVIEW.jpg",
+    "dimensions": "18631x3620",
+    "bytes": 10587369,
+    "sha256": "5158ef8c42fa1516cddfc8e4477a8408c320c76ce89eac60c7060a0f541e2e50",
+    "sourceFrameCount": 12,
+    "stillResolution": "3000x4000",
+    "geometryModel": "VGGT-1B-Commercial + RoMa",
+    "gpuType": "L40S",
+    "gpuSeconds": 28.5,
+    "totalCostUsd": 0.0167,
+    "ghostingQa": "PASS",
+    "globalGeometryQa": "PASS",
+    "blackInteriorGap": "PASS",
+    "detachedVerticalStrip": "PASS",
+    "ownerVisualAcceptance": false
+  },
+  "comparisonArtifact": "P2R16_AI_CONTINUOUS_VS_QUALITY12.jpg",
+  "scope": "INTERNAL_QA_ONLY",
+  "customerDefaultGeometryPath": "P2R13"
+}

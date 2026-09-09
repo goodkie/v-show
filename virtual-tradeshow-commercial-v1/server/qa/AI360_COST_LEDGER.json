@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "ledgerName": "AI360_COST_LEDGER",
+  "provider": "Modal",
+  "pricingTable": {
+    "L40S": {
+      "usdPerGpuSecond": 0.000542,
+      "usdPerCpuSecond": 1.3e-05,
+      "usdPerGbRamSecond": 2e-06
+    },
+    "A10": {
+      "usdPerGpuSecond": 0.000306,
+      "usdPerCpuSecond": 1.3e-05,
+      "usdPerGbRamSecond": 2e-06
+    }
+  },
+  "thresholds": {
+    "EASY_MODE_COMPUTE_COST_TARGET_MIN_USD": 0.03,
+    "EASY_MODE_COMPUTE_COST_TARGET_MAX_USD": 0.06,
+    "EASY_MODE_COMPUTE_COST_HARD_WARNING_USD": 0.1,
+    "QUALITY_MODE_COMPUTE_COST_TARGET_MIN_USD": 0.013,
+    "QUALITY_MODE_COMPUTE_COST_TARGET_MAX_USD": 0.03,
+    "QUALITY_MODE_COMPUTE_COST_HARD_WARNING_USD": 0.05
+  },
+  "jobs": [
+    {
+      "jobId": "job-ai360-continuous-p2r16-01",
+      "sessionId": "P2R16_AI_CONTINUOUS_PHYSICAL_01",
+      "captureMode": "AI_CONTINUOUS_360",
+      "rawFrameCount": 48,
+      "selectedFrameCount": 16,
+      "aiModelsUsed": [
+        "Restormer",
+        "VGGT_1B_COMMERCIAL",
+        "RoMa_DENSE"
+      ],
+      "gpuType": "L40S",
+      "gpuSeconds": 64.2,
+      "cpuSeconds": 71.0,
+      "ramPeakGb": 14.8,
+      "storageBytes": 48920110,
+      "processingDurationSeconds": 78.4,
+      "estimatedComputeCostUsd": 0.0384,
+      "costBudgetWarning": false,
+      "timestamp": "2026-09-09T14:02:00Z"
+    },
+    {
+      "jobId": "job-ai360-quality12-p2r16-01",
+      "sessionId": "P2R16_AI_PORTRAIT12_PHYSICAL_01",
+      "captureMode": "AI_PORTRAIT_12SHOT_360",
+      "rawFrameCount": 12,
+      "selectedFrameCount": 12,
+      "aiModelsUsed": [
+        "VGGT_1B_COMMERCIAL",
+        "RoMa_DENSE"
+      ],
+      "gpuType": "L40S",
+      "gpuSeconds": 28.5,
+      "cpuSeconds": 34.2,
+      "ramPeakGb": 11.2,
+      "storageBytes": 36582040,
+      "processingDurationSeconds": 38.1,
+      "estimatedComputeCostUsd": 0.0178,
+      "costBudgetWarning": false,
+      "timestamp": "2026-09-09T14:02:30Z"
+    }
+  ]
+}

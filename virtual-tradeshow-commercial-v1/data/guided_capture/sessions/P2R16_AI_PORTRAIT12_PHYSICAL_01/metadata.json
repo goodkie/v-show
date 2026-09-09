@@ -1,0 +1,133 @@
+{
+  "sessionId": "P2R16_AI_PORTRAIT12_PHYSICAL_01",
+  "captureMode": "AI_PORTRAIT_12SHOT_360",
+  "orientation": "PORTRAIT",
+  "sourceFrameCount": 12,
+  "stillResolution": "3000x4000 (visual portrait) / 4000x3000 (EXIF:6)",
+  "geometryModel": "VGGT-1B-Commercial + RoMa",
+  "aiDetailGeneration": false,
+  "superResolution": "NONE (Native 12MP physical stills)",
+  "timestamp": "2026-09-09T18:04:43.772481+00:00",
+  "stills": [
+    {
+      "targetAngle": 0,
+      "filename": "SHOT_000.jpg",
+      "width": 3000,
+      "height": 4000,
+      "originalWidth": 4000,
+      "originalHeight": 3000,
+      "exifOrientation": 6,
+      "sha256": "2862e4f3ba8ffeae494247b06955b6c473563f3c0ed274bf417fad178c18ced1"
+    },
+    {
+      "targetAngle": 30,
+      "filename": "SHOT_030.jpg",
+      "width": 3000,
+      "height": 4000,
+      "originalWidth": 4000,
+      "originalHeight": 3000,
+      "exifOrientation": 6,
+      "sha256": "f3c607cac405d52bd894337809c06536510b7f9099197fdf436b5a55c09663b7"
+    },
+    {
+      "targetAngle": 60,
+      "filename": "SHOT_060.jpg",
+      "width": 3000,
+      "height": 4000,
+      "originalWidth": 4000,
+      "originalHeight": 3000,
+      "exifOrientation": 6,
+      "sha256": "e9a80d3d70f7dbaa5cadd89ce960879a760bc769f514f2fac619a837b1a7e002"
+    },
+    {
+      "targetAngle": 90,
+      "filename": "SHOT_090.jpg",
+      "width": 3000,
+      "height": 4000,
+      "originalWidth": 4000,
+      "originalHeight": 3000,
+      "exifOrientation": 6,
+      "sha256": "2743bc94b0a5447f1f203afdb8ba0d387c508ee720cd834bf92a40acecf9e199"
+    },
+    {
+      "targetAngle": 120,
+      "filename": "SHOT_120.jpg",
+      "width": 3000,
+      "height": 4000,
+      "originalWidth": 4000,
+      "originalHeight": 3000,
+      "exifOrientation": 6,
+      "sha256": "b6e880948b576ce2fd6f49e0cbb58d3e649488c8a370ff3f8de1d118f62aee3e"
+    },
+    {
+      "targetAngle": 150,
+      "filename": "SHOT_150.jpg",
+      "width": 3000,
+      "height": 4000,
+      "originalWidth": 4000,
+      "originalHeight": 3000,
+      "exifOrientation": 6,
+      "sha256": "3d2f64ee001d55af93e25a17cb34e552bfc91b9db35d12d8f5c5ac48e881a7e6"
+    },
+    {
+      "targetAngle": 180,
+      "filename": "SHOT_180.jpg",
+      "width": 3000,
+      "height": 4000,
+      "originalWidth": 4000,
+      "originalHeight": 3000,
+      "exifOrientation": 6,
+      "sha256": "6a1dd160297bbf127a16b37cda9c4e948cf762c8c95bc2fa21da119c2e2dc09a"
+    },
+    {
+      "targetAngle": 210,
+      "filename": "SHOT_210.jpg",
+      "width": 3000,
+      "height": 4000,
+      "originalWidth": 4000,
+      "originalHeight": 3000,
+      "exifOrientation": 6,
+      "sha256": "428d400da04e6dc4a62b366a6564817214576d63adbd73c673bd428d5bc89d14"
+    },
+    {
+      "targetAngle": 240,
+      "filename": "SHOT_240.jpg",
+      "width": 3000,
+      "height": 4000,
+      "originalWidth": 4000,
+      "originalHeight": 3000,
+      "exifOrientation": 6,
+      "sha256": "5309988c77d7ffc0aa8440121f25641e6be577e532d3b79c6530e933a3abd481"
+    },
+    {
+      "targetAngle": 270,
+      "filename": "SHOT_270.jpg",
+      "width": 3000,
+      "height": 4000,
+      "originalWidth": 4000,
+      "originalHeight": 3000,
+      "exifOrientation": 6,
+      "sha256": "dea16eab5b4bd07f179a3d5e21b99776cb7fec050938f70023ce98b471cf76ff"
+    },
+    {
+      "targetAngle": 300,
+      "filename": "SHOT_300.jpg",
+      "width": 3000,
+      "height": 4000,
+      "originalWidth": 4000,
+      "originalHeight": 3000,
+      "exifOrientation": 6,
+      "sha256": "9e1bcfce48d3cc14c55b41028bda1c8a53b7ebca8245a8403f052e9983b23213"
+    },
+    {
+      "targetAngle": 330,
+      "filename": "SHOT_330.jpg",
+      "width": 3000,
+      "height": 4000,
+      "originalWidth": 4000,
+      "originalHeight": 3000,
+      "exifOrientation": 6,
+      "sha256": "24407d287deeef07d6e23b3d9f2294b1627de33c8cf9462b56b0f578b3d7df8b"
+    }
+  ]
+}

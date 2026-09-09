@@ -1,0 +1,30 @@
+{
+  "evidenceId": "C12_9_P2R16_PHASE6_CODE_PASS",
+  "milestone": "C12.9-P2R16",
+  "evidenceLevel": "LIVE_PRODUCTION_VERIFIED",
+  "verdict": "PASS",
+  "createdAtUtc": "2026-09-09T18:05:14.492144+00:00",
+  "sourceCommit": "064b45e62bb0253daeccb12b103d839927994466",
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/client/index.html",
+    "virtual-tradeshow-commercial-v1/server/ai360_geometry_stitch_engine.py"
+  ],
+  "codeSha256": {
+    "virtual-tradeshow-commercial-v1/client/index.html": "b547e1f84097bef061c1ded1555d2f368c366b5f62bb8643338d5a8b093f5087",
+    "virtual-tradeshow-commercial-v1/server/ai360_geometry_stitch_engine.py": "8d8bdfee585ddf15efee914f8d572664e7bc5f33478cd7356789b62f3722e0e3"
+  },
+  "productionScoped": true,
+  "productionProvenanceVerified": true,
+  "ownerExplicitApproval": false,
+  "identity": {
+    "phase": "C12.9-P2R16-PHASE6",
+    "branch": "experiment/c12.9-p2r16-8shot-hires"
+  },
+  "lockedItems": {
+    "PHASE_6_COMPLETE": true,
+    "P2R16_DUAL_AI_360": "INTERNAL_QA_ONLY",
+    "CUSTOMER_DEFAULT_GEOMETRY_PATH": "P2R13",
+    "OWNER_VISUAL_ACCEPTANCE": false
+  },
+  "reason": "Phase 6 implementation complete across client mode selector, continuous capture, quality capture, AI geometry service, cost telemetry, and A/B comparative review artifacts."
+}

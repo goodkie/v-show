@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "milestone": "C12.9-P2R16",
+  "evidenceId": "P2R16_DUAL_MODE_SELECTOR_PASS",
+  "evidenceLevel": "LIVE_PRODUCTION_VERIFIED",
+  "verdict": "PASS",
+  "immutable": true,
+  "createdAtUtc": "2026-09-09T18:05:13.759465+00:00",
+  "sourceCommit": "064b45e62bb0253daeccb12b103d839927994466",
+  "materializedFromHead": "064b45e62bb0253daeccb12b103d839927994466",
+  "productionScoped": true,
+  "productionProvenanceVerified": true,
+  "ownerExplicitApproval": false,
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/client/index.html"
+  ],
+  "codeSha256": {
+    "virtual-tradeshow-commercial-v1/client/index.html": "b547e1f84097bef061c1ded1555d2f368c366b5f62bb8643338d5a8b093f5087"
+  },
+  "identity": {
+    "component": "GuidedCaptureController/SetupWizard",
+    "feature": "DualModeSelectorScreen"
+  },
+  "lockedItems": {
+    "MODE_SELECTOR_IMPLEMENTED": true,
+    "AVAILABLE_CAPTURE_MODES": [
+      "AI_CONTINUOUS_360",
+      "AI_PORTRAIT_12SHOT_360"
+    ],
+    "DEFAULT_MODE": "AI_PORTRAIT_12SHOT_360",
+    "PORTRAIT_ONLY_BOTH_MODES": true,
+    "INTERNAL_AI_NAMES_PROTECTED": true
+  },
+  "reason": "Client UI presents customer-friendly Mode Selector with Easy 360 and Quality 360 options while enforcing portrait orientation and shielding internal AI terms.",
+  "regressionRevocationPolicy": "A locked PASS may only be revoked by NEW_PHYSICAL_PRODUCTION_EVIDENCE=true with explicit reproduction evidence."
+}

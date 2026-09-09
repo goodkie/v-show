@@ -1,0 +1,110 @@
+[
+  {
+    "eventType": "ImageCapture.takePhoto",
+    "targetAngle": 0,
+    "actualAngle": 0,
+    "timestamp": "2026-09-09T18:04:13.361806+00:00",
+    "status": "CAPTURED",
+    "originalSha256": "f7454ee005b0c3feac5ffff187a55d56df62fe8fb52ecb5f1f91ebad84bb037c",
+    "normalizedSha256": "2862e4f3ba8ffeae494247b06955b6c473563f3c0ed274bf417fad178c18ced1"
+  },
+  {
+    "eventType": "ImageCapture.takePhoto",
+    "targetAngle": 30,
+    "actualAngle": 30,
+    "timestamp": "2026-09-09T18:04:16.212644+00:00",
+    "status": "CAPTURED",
+    "originalSha256": "ab3eaa58847f63beeba9cfc53ab867df07a2bcfd83dead98caf18c01dafa39de",
+    "normalizedSha256": "f3c607cac405d52bd894337809c06536510b7f9099197fdf436b5a55c09663b7"
+  },
+  {
+    "eventType": "ImageCapture.takePhoto",
+    "targetAngle": 60,
+    "actualAngle": 60,
+    "timestamp": "2026-09-09T18:04:18.919975+00:00",
+    "status": "CAPTURED",
+    "originalSha256": "59b43a3d57b3d67b27d64703c20f2fa6bfb997a4c5453320d3aad3996d1a9503",
+    "normalizedSha256": "e9a80d3d70f7dbaa5cadd89ce960879a760bc769f514f2fac619a837b1a7e002"
+  },
+  {
+    "eventType": "ImageCapture.takePhoto",
+    "targetAngle": 90,
+    "actualAngle": 90,
+    "timestamp": "2026-09-09T18:04:21.579511+00:00",
+    "status": "CAPTURED",
+    "originalSha256": "2a48d9fcb330e7111bd4aaf98014af65c546829a9bcd32c4f565e4cd11c5e2d6",
+    "normalizedSha256": "2743bc94b0a5447f1f203afdb8ba0d387c508ee720cd834bf92a40acecf9e199"
+  },
+  {
+    "eventType": "ImageCapture.takePhoto",
+    "targetAngle": 120,
+    "actualAngle": 120,
+    "timestamp": "2026-09-09T18:04:24.298877+00:00",
+    "status": "CAPTURED",
+    "originalSha256": "df063adfd7f713c28648d50fba2133bbd7a99635a40954a5bf9e1ec168c65cce",
+    "normalizedSha256": "b6e880948b576ce2fd6f49e0cbb58d3e649488c8a370ff3f8de1d118f62aee3e"
+  },
+  {
+    "eventType": "ImageCapture.takePhoto",
+    "targetAngle": 150,
+    "actualAngle": 150,
+    "timestamp": "2026-09-09T18:04:27.156761+00:00",
+    "status": "CAPTURED",
+    "originalSha256": "67d0fea94e1207eb0dab9c4bcee6731530eb9a9a5edeb58e0fc8370480b78f9b",
+    "normalizedSha256": "3d2f64ee001d55af93e25a17cb34e552bfc91b9db35d12d8f5c5ac48e881a7e6"
+  },
+  {
+    "eventType": "ImageCapture.takePhoto",
+    "targetAngle": 180,
+    "actualAngle": 180,
+    "timestamp": "2026-09-09T18:04:30.107719+00:00",
+    "status": "CAPTURED",
+    "originalSha256": "3ed4902f204419b50d048c9a6dca559f1f6dc7a40c98d40c4f74727574d75ae4",
+    "normalizedSha256": "6a1dd160297bbf127a16b37cda9c4e948cf762c8c95bc2fa21da119c2e2dc09a"
+  },
+  {
+    "eventType": "ImageCapture.takePhoto",
+    "targetAngle": 210,
+    "actualAngle": 210,
+    "timestamp": "2026-09-09T18:04:32.886682+00:00",
+    "status": "CAPTURED",
+    "originalSha256": "450c26aa95a5f2f6113644d98206480c3de3c72bf332ca84aa9df4eedee22179",
+    "normalizedSha256": "428d400da04e6dc4a62b366a6564817214576d63adbd73c673bd428d5bc89d14"
+  },
+  {
+    "eventType": "ImageCapture.takePhoto",
+    "targetAngle": 240,
+    "actualAngle": 240,
+    "timestamp": "2026-09-09T18:04:35.630102+00:00",
+    "status": "CAPTURED",
+    "originalSha256": "06590b3dd3a84f5360adab6ae4e6f6e4e92e6fd927a8056b890b205400bf29dd",
+    "normalizedSha256": "5309988c77d7ffc0aa8440121f25641e6be577e532d3b79c6530e933a3abd481"
+  },
+  {
+    "eventType": "ImageCapture.takePhoto",
+    "targetAngle": 270,
+    "actualAngle": 270,
+    "timestamp": "2026-09-09T18:04:38.328581+00:00",
+    "status": "CAPTURED",
+    "originalSha256": "f5761478c3a203dc48d638085f65af039808fd7b54bbe09495becefb77f8d8b0",
+    "normalizedSha256": "dea16eab5b4bd07f179a3d5e21b99776cb7fec050938f70023ce98b471cf76ff"
+  },
+  {
+    "eventType": "ImageCapture.takePhoto",
+    "targetAngle": 300,
+    "actualAngle": 300,
+    "timestamp": "2026-09-09T18:04:40.944002+00:00",
+    "status": "CAPTURED",
+    "originalSha256": "7c5288c07dac511dfb000f4e79d14c2a19654c7dfe0c8b7372b52befd939e0e5",
+    "normalizedSha256": "9e1bcfce48d3cc14c55b41028bda1c8a53b7ebca8245a8403f052e9983b23213"
+  },
+  {
+    "eventType": "ImageCapture.takePhoto",
+    "targetAngle": 330,
+    "actualAngle": 330,
+    "timestamp": "2026-09-09T18:04:43.772481+00:00",
+    "status": "CAPTURED",
+    "originalSha256": "4a888337edf2f67a5b55498c1eb85a3c3ebf600feff20dd95db073c58108a516",
+    "normalizedSha256": "24407d287deeef07d6e23b3d9f2294b1627de33c8cf9462b56b0f578b3d7df8b"
+  }
+]

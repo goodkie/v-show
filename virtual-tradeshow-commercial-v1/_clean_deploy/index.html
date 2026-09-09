@@ -20031,7 +20031,9 @@ class GuidedCaptureController {
     this.onComplete = options.onComplete || null;
     this.onError = options.onError || null;
 
-    // C12.9-P2R16 Phase 4: Portrait-Only True Physical High-Res Guided Capture
+    // C12.9-P2R16 Phase 6: Dual User-Selectable AI 360 Modes
+    this.AVAILABLE_CAPTURE_MODES = ['AI_CONTINUOUS_360', 'AI_PORTRAIT_12SHOT_360'];
+    this.DEFAULT_MODE = 'AI_PORTRAIT_12SHOT_360';
     this.GUIDED_360_CAPTURE_ORIENTATION = 'PORTRAIT_ONLY';
     this.captureOrientation = 'PORTRAIT_ONLY';
     this.PRIMARY_CAPTURE_PLAN = '12_SHOT_30_DEG_PORTRAIT';
@@ -22962,6 +22964,85 @@ class SetupWizardController {
     `;
   }
 
+  renderStep6ModeSelector() {
+    this.btnPrimary.innerHTML = '<span>Proceed to Capture</span> <i class="fa-solid fa-arrow-right"></i>';
+    const currentMode = this.state.selectedCaptureMode || localStorage.getItem('3d2_selected_capture_mode') || 'AI_PORTRAIT_12SHOT_360';
+    this.content.innerHTML = `
+      <div style="text-align: center; max-width: 580px; margin: 0 auto;">
+        <div style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">
+          <i class="fa-solid fa-layer-group" style="margin-right: 6px;"></i> STEP 6: 360° CAPTURE MODE
+        </div>
+        <h2 style="font-size: 22px; font-weight: 800; color: #fff; margin: 0 0 6px 0; letter-spacing: -0.02em;">
+          Choose your 360 capture mode
+        </h2>
+        <p style="font-size: 13px; color: #94a3b8; margin: 0 0 20px 0; line-height: 1.5;">
+          Select how you want to capture your 360° viewpoint. Both modes require holding your phone vertically in portrait orientation.
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; text-align: left;">
+          <!-- MODE A: EASY 360 -->
+          <div style="background: rgba(15, 23, 42, 0.7); border: 2px solid ${currentMode === 'AI_CONTINUOUS_360' ? '#38bdf8' : 'rgba(255, 255, 255, 0.1)'}; border-radius: 12px; padding: 18px; position: relative; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 10px; font-weight: 800; background: #0284c7; color: #fff; padding: 3px 8px; border-radius: 6px; letter-spacing: 0.05em;">EASIEST</span>
+                <i class="fa-solid fa-arrows-rotate" style="color: #38bdf8;"></i>
+              </div>
+              <h3 style="font-size: 16px; font-weight: 800; color: #fff; margin: 0 0 8px 0;">Easy 360</h3>
+              <p style="font-size: 12px; color: #94a3b8; margin: 0 0 12px 0; line-height: 1.4;">
+                Simply turn around slowly. AI automatically selects and improves the best frames.
+              </p>
+              <div style="font-size: 11px; color: #64748b; margin-bottom: 16px;">
+                <strong style="color: #cbd5e1;">Best for:</strong> Quick and simple capture
+              </div>
+            </div>
+            <button type="button" onclick="setupWizard.selectCaptureMode('AI_CONTINUOUS_360')" style="width: 100%; background: ${currentMode === 'AI_CONTINUOUS_360' ? '#0284c7' : 'rgba(255, 255, 255, 0.06)'}; border: 1px solid #38bdf8; color: #fff; font-size: 12px; font-weight: 800; border-radius: 8px; padding: 10px; cursor: pointer;">
+              Start Easy 360
+            </button>
+          </div>
+
+          <!-- MODE B: QUALITY 360 -->
+          <div style="background: rgba(15, 23, 42, 0.7); border: 2px solid ${currentMode === 'AI_PORTRAIT_12SHOT_360' ? '#38bdf8' : 'rgba(255, 255, 255, 0.1)'}; border-radius: 12px; padding: 18px; position: relative; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 10px; font-weight: 800; background: #059669; color: #fff; padding: 3px 8px; border-radius: 6px; letter-spacing: 0.05em;">BEST QUALITY</span>
+                <i class="fa-solid fa-camera" style="color: #34d399;"></i>
+              </div>
+              <h3 style="font-size: 16px; font-weight: 800; color: #fff; margin: 0 0 8px 0;">Quality 360</h3>
+              <p style="font-size: 12px; color: #94a3b8; margin: 0 0 12px 0; line-height: 1.4;">
+                Pause briefly at each guided position for maximum image detail.
+              </p>
+              <div style="font-size: 11px; color: #64748b; margin-bottom: 16px;">
+                <strong style="color: #cbd5e1;">Best for:</strong> Premium 360 tours
+              </div>
+            </div>
+            <button type="button" onclick="setupWizard.selectCaptureMode('AI_PORTRAIT_12SHOT_360')" style="width: 100%; background: ${currentMode === 'AI_PORTRAIT_12SHOT_360' ? '#059669' : 'rgba(255, 255, 255, 0.06)'}; border: 1px solid #34d399; color: #fff; font-size: 12px; font-weight: 800; border-radius: 8px; padding: 10px; cursor: pointer;">
+              Start Quality 360
+            </button>
+          </div>
+        </div>
+
+        <div style="font-size: 11px; color: #64748b;">
+          Portrait orientation required. Turn your phone vertically before starting.
+        </div>
+      </div>
+    `;
+  }
+
+  selectCaptureMode(mode) {
+    this.state.selectedCaptureMode = mode;
+    try { localStorage.setItem('3d2_selected_capture_mode', mode); } catch(e) {}
+    if (window.guidedCaptureController) {
+      window.guidedCaptureController.captureMode = mode;
+      window.guidedCaptureController.selectedCaptureMode = mode;
+      if (mode === 'AI_CONTINUOUS_360') {
+        window.guidedCaptureController.capturePlan = 'AI_CONTINUOUS_360';
+      } else {
+        window.guidedCaptureController.capturePlan = '12_SHOT_30_DEG_PORTRAIT';
+      }
+    }
+    this.renderStep6CaptureWheel();
+  }
+
   renderStep6CaptureWheel() {
     this.btnPrimary.innerHTML = '<span>Looks Good - Next Viewpoint</span> <i class="fa-solid fa-arrow-right"></i>';
     const vp = this.state.viewpoints[0];
@@ -23002,6 +23083,9 @@ class SetupWizardController {
 
         <!-- CONTROLS & DIAGNOSTICS -->
         <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+          <button type="button" onclick="setupWizard.renderStep6ModeSelector()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; font-size: 12px; font-weight: 700; border-radius: 8px; padding: 10px 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-sliders"></i> Mode
+          </button>
           <button type="button" id="btnStartGuidedCapture" onclick="setupWizard.startGuidedCapture()" style="background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; color: #fff; font-size: 13px; font-weight: 800; border-radius: 8px; padding: 10px 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
             <i class="fa-solid fa-play"></i> START 360° CAPTURE
           </button>
@@ -23073,7 +23157,7 @@ class SetupWizardController {
       const pct = Math.min(100, Math.round(info.progressPercent || 0));
       const rotVal = Math.round(info.normalizedSensorRotationDeg !== undefined ? info.normalizedSensorRotationDeg : (info.accumulatedRotation || info.integratedYawDeg || 0));
 
-      if (info.captureMode === 'ANGLE_LOCKED_HIRES' || info.captureMode === '12_SHOT_30_DEG_PHYSICAL' || info.captureMode === '12_SHOT_30_DEG_PORTRAIT') {
+      if (info.captureMode === 'ANGLE_LOCKED_HIRES' || info.captureMode === '12_SHOT_30_DEG_PHYSICAL' || info.captureMode === '12_SHOT_30_DEG_PORTRAIT' || info.captureMode === 'AI_PORTRAIT_12SHOT_360') {
         const targetStatus = info.targetStatus || 'SEEKING';
         this.renderWheelSegments(info.completedTargets || [], info.currentTargetAngle || 0);
 

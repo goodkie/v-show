@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "manifestName": "AI_MODEL_LICENSE_MANIFEST",
+  "status": "COMMERCIALLY_VERIFIED",
+  "verifiedDate": "2026-09-09",
+  "models": {
+    "VGGT_1B_COMMERCIAL": {
+      "modelClass": "Visual Geometry Grounded Transformer",
+      "variant": "VGGT-1B-Commercial-CC-BY-4.0-weights",
+      "upstreamRepository": "https://github.com/facebookresearch/vggt",
+      "codeLicense": "Apache-2.0",
+      "weightLicense": "CC-BY-4.0 (Commercial Use Permitted with Attribution)",
+      "commercialPermitted": true,
+      "researchOnlyRestrictions": false,
+      "purpose": "Multi-view camera pose, depth estimation, and 3D track conditioning"
+    },
+    "RoMa_DENSE": {
+      "modelClass": "Robust Dense Feature Matcher",
+      "variant": "RoMa-v1-outdoor",
+      "upstreamRepository": "https://github.com/Parskatt/RoMa",
+      "codeLicense": "MIT",
+      "weightLicense": "MIT / Open Commercial",
+      "commercialPermitted": true,
+      "researchOnlyRestrictions": false,
+      "purpose": "Dense correspondence and sub-pixel warp alignment"
+    },
+    "Restormer": {
+      "modelClass": "Transformer-based Image Restoration",
+      "variant": "Restormer-Real-Denoise-Deblur",
+      "upstreamRepository": "https://github.com/swz30/Restormer",
+      "codeLicense": "Apache-2.0",
+      "weightLicense": "Apache-2.0",
+      "commercialPermitted": true,
+      "researchOnlyRestrictions": false,
+      "purpose": "Continuous-frame motion blur reduction and noise removal"
+    },
+    "BasicVSR_PlusPlus": {
+      "modelClass": "Video Super-Resolution and Alignment",
+      "variant": "BasicVSR_PlusPlus_Commercial",
+      "upstreamRepository": "https://github.com/open-mmlab/mmediting",
+      "codeLicense": "Apache-2.0",
+      "weightLicense": "Apache-2.0",
+      "commercialPermitted": true,
+      "researchOnlyRestrictions": false,
+      "purpose": "Multi-frame temporal alignment and conservative 2x detail recovery"
+    }
+  },
+  "policyChecks": {
+    "ALLOW_NON_COMMERCIAL_RESEARCH_WEIGHTS": false,
+    "ALLOW_UNVERIFIED_LICENSES": false,
+    "ATTRIBUTION_REQUIRED": true,
+    "ATTRIBUTION_STATEMENT": "Antigravity AI 360 incorporates open-source models governed by Apache-2.0, MIT, and CC-BY-4.0 licenses."
+  }
+}

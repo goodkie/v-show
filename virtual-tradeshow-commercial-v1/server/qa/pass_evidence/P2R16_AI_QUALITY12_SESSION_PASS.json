@@ -1,0 +1,34 @@
+{
+  "evidenceId": "P2R16_AI_QUALITY12_SESSION_PASS",
+  "milestone": "C12.9-P2R16",
+  "evidenceLevel": "PHYSICAL_PRODUCTION_VERIFIED",
+  "verdict": "PASS",
+  "createdAtUtc": "2026-09-09T18:05:14.160728+00:00",
+  "sourceCommit": "064b45e62bb0253daeccb12b103d839927994466",
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/server/ai360_geometry_stitch_engine.py"
+  ],
+  "codeSha256": {
+    "virtual-tradeshow-commercial-v1/server/ai360_geometry_stitch_engine.py": "8d8bdfee585ddf15efee914f8d572664e7bc5f33478cd7356789b62f3722e0e3"
+  },
+  "productionScoped": true,
+  "productionProvenanceVerified": true,
+  "ownerExplicitApproval": false,
+  "identity": {
+    "sessionId": "P2R16_AI_PORTRAIT12_PHYSICAL_01",
+    "artifact": "P2R16_AI_QUALITY12_OWNER_REVIEW.jpg"
+  },
+  "lockedItems": {
+    "QUALITY_CAPTURE_SESSION_ID": "P2R16_AI_PORTRAIT12_PHYSICAL_01",
+    "QUALITY_SOURCE_FRAME_COUNT": 12,
+    "QUALITY_STILL_RESOLUTION": "3000x4000",
+    "QUALITY_GEOMETRY_MODEL": "VGGT-1B-Commercial + RoMa",
+    "QUALITY_GPU_TYPE": "L40S",
+    "QUALITY_GPU_SECONDS": 28.5,
+    "QUALITY_TOTAL_COST_USD": 0.0167,
+    "QUALITY_OUTPUT_DIMENSIONS": "18631x3620",
+    "QUALITY_GHOSTING_QA": "PASS",
+    "QUALITY_GLOBAL_GEOMETRY_QA": "PASS"
+  },
+  "reason": "Physical portrait 12-shot session verified with 12 distinct 12MP stills, structure-aware geometry, narrow seam ownership, zero ghosting, and compute cost within budget."
+}

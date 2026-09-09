@@ -1,0 +1,31 @@
+{
+  "evidenceId": "P2R16_AI360_GEOMETRY_ENGINE_PASS",
+  "milestone": "C12.9-P2R16",
+  "evidenceLevel": "PHYSICAL_PRODUCTION_VERIFIED",
+  "verdict": "PASS",
+  "createdAtUtc": "2026-09-09T18:05:14.473493+00:00",
+  "sourceCommit": "064b45e62bb0253daeccb12b103d839927994466",
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/server/ai360_geometry_stitch_engine.py"
+  ],
+  "codeSha256": {
+    "virtual-tradeshow-commercial-v1/server/ai360_geometry_stitch_engine.py": "8d8bdfee585ddf15efee914f8d572664e7bc5f33478cd7356789b62f3722e0e3"
+  },
+  "productionScoped": true,
+  "productionProvenanceVerified": true,
+  "ownerExplicitApproval": false,
+  "identity": {
+    "service": "AI360_GEOMETRY_STITCH_ENGINE",
+    "version": "1.0.0"
+  },
+  "lockedItems": {
+    "ENGINE_INITIALIZED": true,
+    "ORIENTATION_GATE_ENFORCED": true,
+    "BLACK_INTERIOR_GAP_GATE": "PASS",
+    "DETACHED_VERTICAL_STRIP_GATE": "PASS",
+    "DISCONNECTED_VISIBLE_REGION_GATE": "PASS",
+    "LICENSE_MANIFEST_VERIFIED": true,
+    "COST_LEDGER_ACTIVE": true
+  },
+  "reason": "Shared internal geometry service passes structural sanity gates, verifies model licenses, and records compute telemetry."
+}
