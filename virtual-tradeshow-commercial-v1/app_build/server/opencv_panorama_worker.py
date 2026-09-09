@@ -36,6 +36,7 @@ import hashlib
 from panorama_geometry_validator import (
     validate_edge_features,
     build_intrinsics_matrix,
+    extract_so3_rotation,
     RAW_H_CONDITION_NUMBER_HARD_GATE,
     ESSENTIAL_MATRIX_PRIMARY_MODEL,
     FORCED_EDGE_POLICY
@@ -262,16 +263,201 @@ def validate_capture_ring(sources, max_dim=1024):
     all_pass = (len(failed_pairs) == 0)
     ring_status = "CONNECTED" if all_pass else "BROKEN"
 
-    return {
-        "ok": all_pass,
-        "allPass": all_pass,
-        "ringStatus": ring_status,
-        "sourceCount": N,
-        "failedPairs": failed_pairs,
-        "weakPairs": weak_pairs,
-        "pairResults": pair_results,
-        "lastFirstPair": pair_results[-1] if pair_results else None
-    }
+def rodrigues_log(R):
+    rvec, _ = cv2.Rodrigues(R)
+    return rvec.ravel()
+
+def rodrigues_exp(rvec):
+    R, _ = cv2.Rodrigues(rvec)
+    return R
+
+def decompose_yaw_pitch_roll(R):
+    R_c = R.T
+    yaw = np.degrees(np.arctan2(R_c[0, 2], R_c[2, 2]))
+    pitch = np.degrees(np.arcsin(-np.clip(R_c[1, 2], -1.0, 1.0)))
+    roll = np.degrees(np.arctan2(R_c[1, 0], R_c[1, 1]))
+    return yaw, pitch, roll
+
+def run_so3_global_rotation_stitch(images, sources, focal_px=1500.0, sensor_weight=0.005, roll_weight=0.005):
+    """
+    P2R14: SO(3) Global Rotation Recovery & Roll-Stabilized Spherical Band Stitcher.
+    Solves all camera orientations jointly on Lie algebra so(3) and renders via
+    spherical warper and Voronoi distance-transform MultiBandBlender.
+    """
+    N = len(images)
+    if N < 2:
+        return cv2.Stitcher_ERR_NEED_MORE_IMGS, None, None, None
+
+    w, h = images[0].shape[1], images[0].shape[0]
+    K = build_intrinsics_matrix(width=w, height=h, focal_px=focal_px).astype(np.float32)
+
+    # 1. SIFT feature extraction
+    sift = cv2.SIFT_create()
+    features = []
+    max_dim = 1024
+    for img in images:
+        h_i, w_i = img.shape[:2]
+        s = min(1.0, max_dim / max(h_i, w_i))
+        sm = cv2.resize(img, (int(round(w_i * s)), int(round(h_i * s))), interpolation=cv2.INTER_AREA)
+        kp, des = sift.detectAndCompute(sm, None)
+        features.append({'kp': kp, 'des': des, 'scale': s})
+
+    # 2. Pairwise matching & SO(3) extraction
+    bf = cv2.BFMatcher(cv2.NORM_L2)
+    edges = []
+    pairs = []
+    for i in range(N):
+        pairs.append((i, (i + 1) % N))
+        pairs.append((i, (i + 2) % N))
+
+    for i, j in pairs:
+        f1, f2 = features[i], features[j]
+        if f1['des'] is None or f2['des'] is None or len(f1['kp']) < 15 or len(f2['kp']) < 15:
+            continue
+        matches = bf.knnMatch(f1['des'], f2['des'], k=2)
+        good = [m for m, n in matches if m.distance < 0.75 * n.distance]
+        if len(good) < 15:
+            continue
+        src_pts = np.float32([f1['kp'][m.queryIdx].pt for m in good]) / f1['scale']
+        dst_pts = np.float32([f2['kp'][m.trainIdx].pt for m in good]) / f2['scale']
+        H, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 4.0)
+        if H is None or mask is None:
+            continue
+        inliers = int(mask.sum())
+        if inliers < 15 or (inliers / len(good)) < 0.18:
+            continue
+        R_rel, angle_deg, orth_err = extract_so3_rotation(H, K)
+        if R_rel is None or angle_deg > 65.0 or orth_err > 1e-3:
+            continue
+        yaw_i = sources[i].get('estimatedYawDeg', 0.0)
+        yaw_j = sources[j].get('estimatedYawDeg', 0.0)
+        sensor_diff = abs((yaw_j - yaw_i + 180.0) % 360.0 - 180.0)
+        disagreement = abs(angle_deg - sensor_diff)
+        disagreement = abs((disagreement + 180.0) % 360.0 - 180.0)
+        if disagreement > 35.0 and not (min(i, j) == 0 and max(i, j) == N - 1):
+            continue
+        edges.append({'i': i, 'j': j, 'R_ij': R_rel})
+
+    if len(edges) < N:
+        return cv2.Stitcher_ERR_HOMOGRAPHY_EST_FAIL, None, None, None
+
+    # 3. Initial sequential accumulation
+    adj_edges = {e['i']: e['R_ij'] for e in edges if e['j'] == (e['i'] + 1) % N}
+    R_current = [np.eye(3, dtype=np.float64)]
+    for i in range(N - 1):
+        if i in adj_edges:
+            R_next = adj_edges[i] @ R_current[-1]
+            U, _, Vt = np.linalg.svd(R_next)
+            R_current.append(U @ Vt)
+        else:
+            delta_yaw = sources[i+1].get('estimatedYawDeg', 0.0) - sources[i].get('estimatedYawDeg', 0.0)
+            rad = np.radians(delta_yaw)
+            Ry = np.array([[np.cos(rad), 0, np.sin(rad)], [0, 1, 0], [-np.sin(rad), 0, np.cos(rad)]])
+            R_current.append(Ry @ R_current[-1])
+
+    # 4. Joint rotation averaging on Lie algebra so(3)
+    huber_delta = 0.05
+    for _ in range(50):
+        rows, rhs = [], []
+        for e in edges:
+            i, j = e['i'], e['j']
+            Delta_R = e['R_ij'].T @ R_current[j] @ R_current[i].T
+            r = rodrigues_log(Delta_R)
+            res_norm = np.linalg.norm(r)
+            huber_w = 1.0 if res_norm <= huber_delta else huber_delta / max(1e-6, res_norm)
+            sqrt_w = np.sqrt(huber_w)
+            for k in range(3):
+                row = np.zeros(3 * (N - 1), dtype=np.float64)
+                if j > 0: row[3 * (j - 1) + k] = sqrt_w
+                if i > 0: row[3 * (i - 1) + k] = -sqrt_w
+                rows.append(row)
+                rhs.append(-sqrt_w * r[k])
+        if sensor_weight > 0:
+            sqrt_sw = np.sqrt(sensor_weight)
+            for i in range(1, N):
+                yaw_curr, _, _ = decompose_yaw_pitch_roll(R_current[i])
+                yaw_prior = sources[i].get('estimatedYawDeg', 0.0) - sources[0].get('estimatedYawDeg', 0.0)
+                err_yaw = (yaw_curr - yaw_prior + 180.0) % 360.0 - 180.0
+                row = np.zeros(3 * (N - 1), dtype=np.float64)
+                row[3 * (i - 1) + 1] = sqrt_sw
+                rows.append(row)
+                rhs.append(sqrt_sw * np.radians(err_yaw))
+        if roll_weight > 0:
+            sqrt_rw = np.sqrt(roll_weight)
+            for i in range(1, N):
+                _, _, roll_curr = decompose_yaw_pitch_roll(R_current[i])
+                row = np.zeros(3 * (N - 1), dtype=np.float64)
+                row[3 * (i - 1) + 2] = sqrt_rw
+                rows.append(row)
+                rhs.append(sqrt_rw * np.radians(roll_curr))
+        A = np.vstack(rows)
+        b = np.array(rhs, dtype=np.float64)
+        delta, _, _, _ = np.linalg.lstsq(A, b, rcond=1e-6)
+        if np.max(np.abs(delta)) < 1e-5:
+            break
+        for i in range(1, N):
+            d_omega = delta[3 * (i - 1): 3 * (i - 1) + 3]
+            R_new = rodrigues_exp(d_omega) @ R_current[i]
+            U, _, Vt = np.linalg.svd(R_new)
+            R_current[i] = U @ Vt
+
+    # 5. Render Spherical Band with Voronoi distance-transform MultiBandBlender
+    rotations_f32 = [R.astype(np.float32) for R in R_current]
+    warper = cv2.PyRotationWarper('spherical', float(focal_px))
+    rois = [warper.warpRoi((w, h), K, R) for R in rotations_f32]
+    min_x = min(r[0] for r in rois)
+    min_y = min(r[1] for r in rois)
+    max_x = max(r[0] + r[2] for r in rois)
+    max_y = max(r[1] + r[3] for r in rois)
+    pano_roi = (min_x, min_y, max_x - min_x, max_y - min_y)
+
+    corners, warped_imgs, raw_masks = [], [], []
+    for img, R in zip(images, rotations_f32):
+        c, w_img = warper.warp(img, K, R, cv2.INTER_LINEAR, cv2.BORDER_REFLECT)
+        mask = np.full((h, w), 255, dtype=np.uint8)
+        c_m, w_mask = warper.warp(mask, K, R, cv2.INTER_NEAREST, cv2.BORDER_CONSTANT)
+        corners.append(c)
+        warped_imgs.append(w_img)
+        raw_masks.append(w_mask)
+
+    canvas_dist = np.full((pano_roi[3], pano_roi[2]), -1.0, dtype=np.float32)
+    canvas_owner = np.full((pano_roi[3], pano_roi[2]), -1, dtype=np.int16)
+    for idx, (c, m) in enumerate(zip(corners, raw_masks)):
+        rx, ry = c[0] - min_x, c[1] - min_y
+        hm, wm = m.shape[:2]
+        d = cv2.distanceTransform(m, cv2.DIST_L2, 3)
+        sub = canvas_dist[ry:ry+hm, rx:rx+wm]
+        better = d > sub
+        sub[better] = d[better]
+        canvas_owner[ry:ry+hm, rx:rx+wm][better] = idx
+
+    voronoi_masks = []
+    for idx, (c, m) in enumerate(zip(corners, raw_masks)):
+        rx, ry = c[0] - min_x, c[1] - min_y
+        hm, wm = m.shape[:2]
+        v_mask = np.where(canvas_owner[ry:ry+hm, rx:rx+wm] == idx, 255, 0).astype(np.uint8)
+        voronoi_masks.append(v_mask)
+
+    blender = cv2.detail.MultiBandBlender()
+    blender.prepare(pano_roi)
+    for c, w_img, v_mask in zip(corners, warped_imgs, voronoi_masks):
+        blender.feed(w_img.astype(np.int16), v_mask, c)
+    res, _ = blender.blend(None, None)
+    pano = np.clip(res, 0, 255).astype(np.uint8)
+
+    # 6. Construct CameraParams
+    cameras = []
+    for R in rotations_f32:
+        cp = cv2.detail.CameraParams()
+        cp.focal = float(focal_px)
+        cp.aspect = 1.0
+        cp.ppx = float(w / 2.0)
+        cp.ppy = float(h / 2.0)
+        cp.R = R
+        cp.t = np.zeros((3, 1), dtype=np.float32)
+        cameras.append(cp)
+
+    return cv2.Stitcher_OK, pano, tuple(cameras), list(range(N))
 
 def run_opencv_stitching(input_data):
     sources = input_data.get('sources', [])
@@ -392,41 +578,32 @@ def run_opencv_stitching(input_data):
                 subset_excluded_ids = [cid for cid in all_candidate_ids if cid in SUBSET_40_EXCLUDE_CANDIDATE_IDS]
                 subset_applied = True
 
-    status, pano = stitcher.stitch(stitch_images)
+    so3_status = None
+    so3_pano = None
+    so3_cameras = None
+    so3_comp = None
+    if subset_applied and len(stitch_images) >= 12:
+        filtered_sources = [s for s in sources if s.get('candidateId') not in SUBSET_40_EXCLUDE_CANDIDATE_IDS]
+        try:
+            so3_status, so3_pano, so3_cameras, so3_comp = run_so3_global_rotation_stitch(
+                stitch_images, filtered_sources, focal_px=1500.0, sensor_weight=0.005, roll_weight=0.005
+            )
+        except Exception as e:
+            so3_status = None
 
-
-    status_names = {
-        cv2.Stitcher_OK: "OK",
-        cv2.Stitcher_ERR_NEED_MORE_IMGS: "ERR_NEED_MORE_IMGS",
-        cv2.Stitcher_ERR_HOMOGRAPHY_EST_FAIL: "ERR_HOMOGRAPHY_EST_FAIL",
-        cv2.Stitcher_ERR_CAMERA_PARAMS_ADJUST_FAIL: "ERR_CAMERA_PARAMS_ADJUST_FAIL"
-    }
-    status_str = status_names.get(status, f"ERR_CODE_{status}")
-
-    if status != cv2.Stitcher_OK:
-        fail_msg = "We couldn't reliably connect these photos. Please retake them with more overlap from the same position."
-        return {
-            "status": "FAILED",
-            "opencvStatusCode": status_str,
-            "errorCode": "STITCH_VALIDATION_FAILED",
-            "message": f"OpenCV stitch failed with status {status_str}",
-            "userMessage": fail_msg,
-            "customerMessage": fail_msg,
-            "panoramaCreated": False,
-            "applyEnabled": False,
-            "geometryValid": False,
-            "full360Qualified": False,
-            "engine": "OPENCV",
-            "featureEngine": feature_engine,
-            "sourceCount": len(sources),
-            "sources": source_metadata
-        }
+    if so3_status == cv2.Stitcher_OK and so3_pano is not None:
+        status = cv2.Stitcher_OK
+        pano = so3_pano
+        cameras = so3_cameras
+        connected_indices = so3_comp
+    else:
+        status, pano = stitcher.stitch(stitch_images)
+        cameras = stitcher.cameras()
+        comp = stitcher.component()
+        connected_indices = comp.tolist() if hasattr(comp, 'tolist') else list(comp)
 
     # 5. Geometry and Camera Analysis
     pano_h, pano_w, _ = pano.shape
-    cameras = stitcher.cameras()
-    comp = stitcher.component()
-    connected_indices = comp.tolist() if hasattr(comp, 'tolist') else list(comp)
 
     # Compute camera focals and coverage
     focals = [c.focal for c in cameras] if cameras else []
