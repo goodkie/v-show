@@ -1,8 +1,8 @@
 [phases.setup]
-nixPkgs = ["...", "(python3.withPackages (ps: with ps; [ opencv4 numpy ]))", "libGL", "glib"]
+nixPkgs = ["...", "(python3.withPackages (ps: with ps; [ opencv4 numpy networkx ]))", "libGL", "glib"]
 
 [phases.install]
-cmds = ["npm install --ignore-scripts", "pip install networkx"]
+cmds = ["npm install --ignore-scripts"]
 
 [start]
 cmd = "node virtual-tradeshow-commercial-v1/app_build/server/index.js"
