@@ -1,0 +1,56 @@
+{
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/server/panoramic_stitcher.js",
+    "virtual-tradeshow-commercial-v1/app_build/server/panoramic_stitcher.js",
+    "virtual-tradeshow-commercial-v1/server/spatial_pipeline.js",
+    "virtual-tradeshow-commercial-v1/app_build/server/spatial_pipeline.js"
+  ],
+  "codeSha256": {
+    "virtual-tradeshow-commercial-v1/app_build/server/panoramic_stitcher.js": "445d12e320791b6ca2ad84f4dccc599ab1a74cc6f4f44c7f35f0f8927ead64a9",
+    "virtual-tradeshow-commercial-v1/app_build/server/spatial_pipeline.js": "1dfa902acc7f97c27ffc1c94327f085fddc23b98b43a7263ace6ff882dab3815",
+    "virtual-tradeshow-commercial-v1/server/panoramic_stitcher.js": "e180333a78913a4050c080ccfb91ce28e770d3ffcb1b4f40b809fbe077f78d22",
+    "virtual-tradeshow-commercial-v1/server/spatial_pipeline.js": "279bcfe53a2fa119e711386df23b8ab5cc81f994c1f327140939ee9d3867ebfb"
+  },
+  "createdAtUtc": "2026-09-09T09:57:09.055459+00:00",
+  "evidence": {
+    "captureSessionId": "LLST42",
+    "p2r12HBind": 0.4182,
+    "p2r12SeamJump": 32.77,
+    "p2r12YawStdDeg": 29.94,
+    "p2r13HBind": 0.3893,
+    "p2r13SeamJump": 12.05,
+    "p2r13YawStdDeg": 13.48,
+    "productionDimensions": "8985x1418",
+    "productionJobId": "job-pano-1788935740486-pgtz2",
+    "productionOutput": "cand-val-1788935745148_native.jpg",
+    "stitchInputCount": 36
+  },
+  "evidenceId": "C12_9_P2R13_CODE_PASS",
+  "evidenceLevel": "LIVE_PRODUCTION_VERIFIED",
+  "immutable": true,
+  "lockType": "IMMUTABLE_PASS_CODE_LOCK",
+  "lockedItems": {
+    "APP_BUILD_PRODUCTION_PARITY": "PASS",
+    "CANDIDATE_ID_PASSTHROUGH": "PASS",
+    "LIVE_PRODUCTION_REPLAY": "PASS",
+    "PYTHON_SUBSET_FILTER_APPLICATION": "PASS",
+    "STITCH_INPUT_COUNT": 36,
+    "SUBSET_APPLIED": true,
+    "SUBSET_EXCLUDED": [
+      "C010",
+      "C020",
+      "C030",
+      "C039"
+    ],
+    "WORKER_TIMEOUT_60MIN_FOR_LLST42": "PASS"
+  },
+  "materializedFromHead": "8347d6f04bf3608826b7d8cda7f4af226c4ca2f1",
+  "milestone": "C12.9-P2R13",
+  "ownerExplicitApproval": false,
+  "productionProvenanceVerified": true,
+  "productionScoped": true,
+  "regressionRevocationPolicy": "A locked PASS may only be revoked by NEW_PHYSICAL_PRODUCTION_EVIDENCE=true with explicit reproduction evidence.",
+  "schemaVersion": 1,
+  "sourceCommit": "219f463753e4d66eefb0a842ec39920abf73b30c",
+  "verdict": "PASS"
+}
