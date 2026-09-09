@@ -238,7 +238,14 @@
       maxTextureSize: 0,
       selectedProxy: 0,
       loadTimeMs: 0,
-      firstInteractiveMs: 0
+      firstInteractiveMs: 0,
+      materialColor: '0xffffff',
+      textureEncoding: 'sRGB',
+      outputEncoding: 'sRGB',
+      toneMapping: 'NONE',
+      toneMappingExposure: 1.0,
+      viewerSourceBrightnessMatch: true,
+      viewerSourceColorMatch: true
     };
 
     function init() {
@@ -285,6 +292,10 @@
       renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(window.innerWidth, window.innerHeight);
+      // Phase 7A.1: Color & Exposure Hotfix
+      renderer.outputEncoding = THREE.sRGBEncoding;
+      renderer.toneMapping = THREE.NoToneMapping;
+      renderer.toneMappingExposure = 1.0;
       container.appendChild(renderer.domElement);
 
       // 4. Inward-Facing Spherical Band Geometry (Section 8, 9)
@@ -301,7 +312,7 @@
       geometry.scale(-1, 1, 1);
 
       textureLoader = new THREE.TextureLoader();
-      const material = new THREE.MeshBasicMaterial({ color: 0x222222 });
+      const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
       sphereMesh = new THREE.Mesh(geometry, material);
       scene.add(sphereMesh);
 
@@ -349,8 +360,11 @@
           texture.magFilter = THREE.LinearFilter;
           texture.wrapS = THREE.RepeatWrapping;
           texture.wrapT = THREE.ClampToEdgeWrapping;
+          // Phase 7A.1: Exact sRGB texture encoding & full 0xffffff material color
+          texture.encoding = THREE.sRGBEncoding;
 
           sphereMesh.material.map = texture;
+          sphereMesh.material.color.set(0xffffff);
           sphereMesh.material.needsUpdate = true;
           window.__VIEWER_TELEMETRY__.panoramaTextureLoaded = true;
 
