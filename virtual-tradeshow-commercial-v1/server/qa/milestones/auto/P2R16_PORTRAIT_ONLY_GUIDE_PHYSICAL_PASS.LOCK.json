@@ -3,7 +3,7 @@
   "milestone": "C12.9-P2R16",
   "verdict": "PASS",
   "evidenceLevel": "PHYSICAL_PRODUCTION_VERIFIED",
-  "sourceCommit": "7181257be56c6986179d1e89d57ad65ba5fc1741",
+  "sourceCommit": "4cab8f8f4b3ff666b4cb7d54745d45e61a1467f0",
   "lockedAt": "2026-09-09T16:25:00Z",
   "lockedItems": {
     "GUIDED_360_CAPTURE_ORIENTATION": "PORTRAIT_ONLY",
