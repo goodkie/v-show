@@ -145,6 +145,17 @@
 </head>
 <body>
   <div id="viewer-container"></div>
+
+  <!-- Phase 7C.2: Explicit QA Placeholder for 12-View Commercial VGGT -->
+  <div id="qa-placeholder-overlay" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(15,23,42,0.92); border:2px solid #f59e0b; border-radius:12px; padding:24px 32px; text-align:center; z-index:50; color:#f8fafc; font-family:sans-serif; max-width:90%; box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);">
+    <i class="fa-solid fa-triangle-exclamation" style="font-size:36px; color:#f59e0b; margin-bottom:12px; display:block;"></i>
+    <h2 style="font-size:18px; margin:0 0 8px 0; color:#f8fafc; font-weight:700;">12-View Commercial VGGT result not generated yet</h2>
+    <p style="font-size:13px; color:#94a3b8; margin:0 0 16px 0; line-height:1.5;">Gated repository access (facebook/VGGT-1B-Commercial) and Modal L40S GPU authentication required.</p>
+    <button onclick="switchMode('quality-ai-4view')" style="background:#3b82f6; color:#fff; border:none; border-radius:6px; padding:10px 18px; font-weight:600; cursor:pointer; font-size:13px; transition:background 0.2s;">
+      <i class="fa-solid fa-arrow-left"></i> View 4-Keyframe Phase 7C Canvas
+    </button>
+  </div>
+
   <div class="reticle"></div>
 
   <!-- Loading State -->
@@ -234,7 +245,7 @@
     };
 
     // State
-    let currentMode = 'quality-ai'; // Default INTERNAL QA: quality-ai-12view // Phase 7C default: quality-ai
+    let currentMode = 'quality-ai'; // Default internal QA: quality-ai-4view // Default INTERNAL QA: quality-ai-12view // Phase 7C default: quality-ai
     let currentYaw = 0.0;           // Continuous horizontal (degrees)
     let currentPitch = 0.0;         // Clamped vertical (degrees)
     let currentFov = CONFIG.defaultFovDeg;
@@ -317,7 +328,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       const qMode = urlParams.get('mode');
       if (!qMode) {
-        currentMode = 'quality-ai-12view';
+        currentMode = 'quality-ai-4view';
       }
       if (qMode) {
         if (qMode === 'quality-ai-4view') currentMode = 'quality-ai-4view';
@@ -402,7 +413,45 @@
       }
     }
 
+    function createPlaceholderTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 2048;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 4;
+      for (let x = 0; x < canvas.width; x += 64) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += 64) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+      }
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 44px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('12-View Commercial VGGT result not generated yet', canvas.width / 2, canvas.height / 2 - 20);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '28px sans-serif';
+      ctx.fillText('Gated facebook/VGGT-1B-Commercial + Modal L40S GPU execution required', canvas.width / 2, canvas.height / 2 + 35);
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.encoding = THREE.sRGBEncoding;
+      return tex;
+    }
+
     function loadModeTexture(mode, onComplete) {
+      if (mode === 'quality-ai-12view') {
+        sphereMesh.material.map = createPlaceholderTexture();
+        sphereMesh.material.color.set(0xffffff);
+        sphereMesh.material.needsUpdate = true;
+        window.__VIEWER_TELEMETRY__.panoramaTextureLoaded = true;
+        document.getElementById('loading-overlay').style.display = 'none';
+        document.getElementById('qa-placeholder-overlay').style.display = 'block';
+        if (onComplete) onComplete();
+        return;
+      }
+      document.getElementById('qa-placeholder-overlay').style.display = 'none';
       document.getElementById('loading-overlay').style.display = 'flex';
       document.getElementById('loading-overlay').style.opacity = '1';
       let modeLabel = 'Quality AI';
