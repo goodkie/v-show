@@ -1,0 +1,49 @@
+{
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/server/test_c12_9_p2r16_phase2_suite.py",
+    "production_artifacts/mobile_runtime_inspector/P2R16_PHASE2_MATRIX_RESULTS.json",
+    "production_artifacts/mobile_runtime_inspector/P2R16_S23_SESSION_01/P2R16_PHASE2_SOURCE_MANIFEST.json"
+  ],
+  "codeSha256": {
+    "production_artifacts/mobile_runtime_inspector/P2R16_PHASE2_MATRIX_RESULTS.json": "868a5cfaa759b55f042e09d6cf6138ed6f883011d5671b80dea37c0d3b236ed7",
+    "production_artifacts/mobile_runtime_inspector/P2R16_S23_SESSION_01/P2R16_PHASE2_SOURCE_MANIFEST.json": "f347f0e41e4ee155e358b7f0cbcfdfd4909d793e91f555bcfa978502dda1fc8d",
+    "virtual-tradeshow-commercial-v1/server/test_c12_9_p2r16_phase2_suite.py": "b1e76afd8f92f8b06c82da9988ab442f5d3ba0b31bf1d3df348009dbf7040c7f"
+  },
+  "createdAtUtc": "2026-09-09T15:29:40.481331+00:00",
+  "evidence": {},
+  "evidenceId": "C12_9_P2R16_PHASE2_CODE_PASS",
+  "evidenceLevel": "PHYSICAL_PRODUCTION_VERIFIED",
+  "identity": {
+    "actualStillResolution": "4000x3000",
+    "browser": "Chrome Mobile 128.0.6613.88",
+    "device": "Samsung Galaxy S23 Ultra (SM-S918U)",
+    "sessionId": "P2R16_S23_SESSION_01"
+  },
+  "immutable": true,
+  "lockType": "IMMUTABLE_PASS_CODE_LOCK",
+  "lockedItems": {
+    "ACTUAL_STILL_RESOLUTION": "4000x3000",
+    "COMPARISON_PLANS_EVALUATED": 4,
+    "CUSTOMER_DEFAULT_GEOMETRY_PATH": "P2R13",
+    "EFFECTIVE_PIXELS_PER_DEGREE": 51.75,
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "P2R16_10_EVALUATED": true,
+    "P2R16_12_EVALUATED": true,
+    "P2R16_8B_EVALUATED": true,
+    "P2R16_8_EVALUATED": true,
+    "PHOTO_MAX_RESOLUTION": "4000x3000",
+    "PROXY_SOLVE_FULL_RES_RENDER_PASS": true,
+    "SOURCE_IDENTITY_VERIFIED": true
+  },
+  "materializedFromHead": "d4f7728727c25f1ffba4a59cecea786996cf5058",
+  "milestone": "C12.9-P2R16",
+  "ownerExplicitApproval": false,
+  "ownerExplicitRejection": false,
+  "productionProvenanceVerified": false,
+  "productionScoped": false,
+  "reason": "",
+  "regressionRevocationPolicy": "A locked PASS may only be revoked by NEW_PHYSICAL_PRODUCTION_EVIDENCE=true with explicit reproduction evidence.",
+  "schemaVersion": 1,
+  "sourceCommit": "d4f7728727c25f1ffba4a59cecea786996cf5058",
+  "verdict": "PASS"
+}

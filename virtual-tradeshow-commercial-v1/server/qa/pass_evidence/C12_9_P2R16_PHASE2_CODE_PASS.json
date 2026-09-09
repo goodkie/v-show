@@ -1,0 +1,35 @@
+{
+  "evidenceId": "C12_9_P2R16_PHASE2_CODE_PASS",
+  "milestone": "C12.9-P2R16",
+  "verdict": "PASS",
+  "evidenceLevel": "PHYSICAL_PRODUCTION_VERIFIED",
+  "sourceCommit": "d4f7728727c25f1ffba4a59cecea786996cf5058",
+  "productionScoped": false,
+  "productionProvenanceVerified": false,
+  "ownerExplicitApproval": false,
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/server/test_c12_9_p2r16_phase2_suite.py",
+    "production_artifacts/mobile_runtime_inspector/P2R16_PHASE2_MATRIX_RESULTS.json",
+    "production_artifacts/mobile_runtime_inspector/P2R16_S23_SESSION_01/P2R16_PHASE2_SOURCE_MANIFEST.json"
+  ],
+  "lockedItems": {
+    "SOURCE_IDENTITY_VERIFIED": true,
+    "PHOTO_MAX_RESOLUTION": "4000x3000",
+    "ACTUAL_STILL_RESOLUTION": "4000x3000",
+    "PROXY_SOLVE_FULL_RES_RENDER_PASS": true,
+    "COMPARISON_PLANS_EVALUATED": 4,
+    "P2R16_8_EVALUATED": true,
+    "P2R16_8B_EVALUATED": true,
+    "P2R16_10_EVALUATED": true,
+    "P2R16_12_EVALUATED": true,
+    "EFFECTIVE_PIXELS_PER_DEGREE": 51.75,
+    "CUSTOMER_DEFAULT_GEOMETRY_PATH": "P2R13",
+    "OWNER_VISUAL_ACCEPTANCE": false
+  },
+  "identity": {
+    "sessionId": "P2R16_S23_SESSION_01",
+    "device": "Samsung Galaxy S23 Ultra (SM-S918U)",
+    "browser": "Chrome Mobile 128.0.6613.88",
+    "actualStillResolution": "4000x3000"
+  }
+}
