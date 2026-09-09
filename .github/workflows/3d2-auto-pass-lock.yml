@@ -4,6 +4,7 @@ on:
   push:
     branches: [master]
     paths:
+      - '.github/workflows/3d2-auto-pass-lock.yml'
       - 'virtual-tradeshow-commercial-v1/server/qa/pass_evidence/**.json'
       - 'virtual-tradeshow-commercial-v1/server/qa/auto_lock_milestone.py'
       - 'virtual-tradeshow-commercial-v1/server/qa/milestones/AUTO_LOCK_POLICY.json'
@@ -40,12 +41,13 @@ jobs:
       - name: Commit immutable lock artifacts
         shell: bash
         run: |
-          if git diff --quiet -- virtual-tradeshow-commercial-v1/server/qa/milestones/auto; then
+          LOCK_DIR='virtual-tradeshow-commercial-v1/server/qa/milestones/auto'
+          if [ -z "$(git status --porcelain -- "$LOCK_DIR")" ]; then
             echo 'No new PASS locks to commit.'
             exit 0
           fi
           git config user.name '3D2 Milestone Lock Bot'
           git config user.email '3d2-milestone-lock@users.noreply.github.com'
-          git add virtual-tradeshow-commercial-v1/server/qa/milestones/auto
+          git add "$LOCK_DIR"
           git commit -m 'qa(auto-lock): freeze newly verified PASS code'
           git push origin HEAD:master
