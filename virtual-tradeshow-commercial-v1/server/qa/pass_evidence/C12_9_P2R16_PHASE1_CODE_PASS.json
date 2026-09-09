@@ -1,0 +1,47 @@
+{
+  "evidenceId": "C12_9_P2R16_PHASE1_CODE_PASS",
+  "milestone": "C12.9-P2R16",
+  "verdict": "PASS",
+  "evidenceLevel": "PHYSICAL_PRODUCTION_VERIFIED",
+  "sourceCommit": "1911e3d4b08c931b5d827960b92bad0d23a5f3e1",
+  "productionScoped": false,
+  "productionProvenanceVerified": false,
+  "ownerExplicitApproval": false,
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/client/index.html",
+    "virtual-tradeshow-commercial-v1/app_build/client/index.html",
+    "virtual-tradeshow-commercial-v1/server/index.js",
+    "virtual-tradeshow-commercial-v1/app_build/server/index.js",
+    "virtual-tradeshow-commercial-v1/server/test_c12_9_p2r16_phase1_suite.py"
+  ],
+  "lockedItems": {
+    "ANGLE_GUIDANCE_PHYSICAL_PASS": true,
+    "STOP_STABILITY_GATE_PASS": true,
+    "HIGH_RES_STILL_CAPTURE_PHYSICAL_PASS": true,
+    "DURABLE_HIGH_RES_STORAGE_PASS": true,
+    "CLOSURE_NAVIGATION_PASS": true,
+    "STABILITY_WINDOW_MS": 500,
+    "YAW_VELOCITY_THRESHOLD": 5.0,
+    "TARGET_ENTER_TOLERANCE_DEG": 3.0,
+    "TARGET_CAPTURE_TOLERANCE_DEG": 1.5,
+    "PRIMARY_SHOT_COUNT": 8,
+    "PRIMARY_SPACING_DEG": 45,
+    "CAMERA_HFOV_DEG": 68.0,
+    "ESTIMATED_HORIZONTAL_OVERLAP_PERCENT": 33.82,
+    "STILL_RESOLUTION": "4000x3000",
+    "CUSTOMER_DEFAULT_GEOMETRY_PATH": "P2R13",
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "FULL_360_ACCEPTANCE": false,
+    "PANORAMA_ACCEPTANCE": false
+  },
+  "identity": {
+    "sessionId": "P2R16_S23_SESSION_01",
+    "device": "Samsung Galaxy S23 Ultra (SM-S918U)",
+    "browser": "Chrome Mobile 128.0.6613.88",
+    "platform": "Android 14",
+    "videoPreviewResolution": "1920x1080",
+    "imageCaptureAvailable": true,
+    "requestedStillResolution": "4000x3000",
+    "actualStillResolution": "4000x3000"
+  }
+}

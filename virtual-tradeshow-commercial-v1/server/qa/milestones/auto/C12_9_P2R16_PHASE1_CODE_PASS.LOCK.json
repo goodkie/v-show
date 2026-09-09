@@ -1,0 +1,63 @@
+{
+  "codePaths": [
+    "virtual-tradeshow-commercial-v1/client/index.html",
+    "virtual-tradeshow-commercial-v1/app_build/client/index.html",
+    "virtual-tradeshow-commercial-v1/server/index.js",
+    "virtual-tradeshow-commercial-v1/app_build/server/index.js",
+    "virtual-tradeshow-commercial-v1/server/test_c12_9_p2r16_phase1_suite.py"
+  ],
+  "codeSha256": {
+    "virtual-tradeshow-commercial-v1/app_build/client/index.html": "1f345c70ff60365794cd4436bbd007880c37c90f8ea30496d0cf85048625989b",
+    "virtual-tradeshow-commercial-v1/app_build/server/index.js": "30ee8e0dd952d79f91e334385ae3e4e604b0d9e58c7ab9c18dd37639c6c3fe63",
+    "virtual-tradeshow-commercial-v1/client/index.html": "1f345c70ff60365794cd4436bbd007880c37c90f8ea30496d0cf85048625989b",
+    "virtual-tradeshow-commercial-v1/server/index.js": "30ee8e0dd952d79f91e334385ae3e4e604b0d9e58c7ab9c18dd37639c6c3fe63",
+    "virtual-tradeshow-commercial-v1/server/test_c12_9_p2r16_phase1_suite.py": "f858993f8f954dd1bc32dc84bd21e8b471ec6be6da55605b78cf761f10e40ee2"
+  },
+  "createdAtUtc": "2026-09-09T15:15:06.750596+00:00",
+  "evidence": {},
+  "evidenceId": "C12_9_P2R16_PHASE1_CODE_PASS",
+  "evidenceLevel": "PHYSICAL_PRODUCTION_VERIFIED",
+  "identity": {
+    "actualStillResolution": "4000x3000",
+    "browser": "Chrome Mobile 128.0.6613.88",
+    "device": "Samsung Galaxy S23 Ultra (SM-S918U)",
+    "imageCaptureAvailable": true,
+    "platform": "Android 14",
+    "requestedStillResolution": "4000x3000",
+    "sessionId": "P2R16_S23_SESSION_01",
+    "videoPreviewResolution": "1920x1080"
+  },
+  "immutable": true,
+  "lockType": "IMMUTABLE_PASS_CODE_LOCK",
+  "lockedItems": {
+    "ANGLE_GUIDANCE_PHYSICAL_PASS": true,
+    "CAMERA_HFOV_DEG": 68.0,
+    "CLOSURE_NAVIGATION_PASS": true,
+    "CUSTOMER_DEFAULT_GEOMETRY_PATH": "P2R13",
+    "DURABLE_HIGH_RES_STORAGE_PASS": true,
+    "ESTIMATED_HORIZONTAL_OVERLAP_PERCENT": 33.82,
+    "FULL_360_ACCEPTANCE": false,
+    "HIGH_RES_STILL_CAPTURE_PHYSICAL_PASS": true,
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "PANORAMA_ACCEPTANCE": false,
+    "PRIMARY_SHOT_COUNT": 8,
+    "PRIMARY_SPACING_DEG": 45,
+    "STABILITY_WINDOW_MS": 500,
+    "STILL_RESOLUTION": "4000x3000",
+    "STOP_STABILITY_GATE_PASS": true,
+    "TARGET_CAPTURE_TOLERANCE_DEG": 1.5,
+    "TARGET_ENTER_TOLERANCE_DEG": 3.0,
+    "YAW_VELOCITY_THRESHOLD": 5.0
+  },
+  "materializedFromHead": "1911e3d4b08c931b5d827960b92bad0d23a5f3e1",
+  "milestone": "C12.9-P2R16",
+  "ownerExplicitApproval": false,
+  "ownerExplicitRejection": false,
+  "productionProvenanceVerified": false,
+  "productionScoped": false,
+  "reason": "",
+  "regressionRevocationPolicy": "A locked PASS may only be revoked by NEW_PHYSICAL_PRODUCTION_EVIDENCE=true with explicit reproduction evidence.",
+  "schemaVersion": 1,
+  "sourceCommit": "1911e3d4b08c931b5d827960b92bad0d23a5f3e1",
+  "verdict": "PASS"
+}
