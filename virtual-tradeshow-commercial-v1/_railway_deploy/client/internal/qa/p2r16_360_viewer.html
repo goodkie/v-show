@@ -260,7 +260,7 @@
 
     // Authoritative artifact paths
     const NATIVE_URLS = {
-      'quality-ai-12view': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_AI_OWNER_REVIEW.jpg',
+      'quality-ai-12view': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_OWNER_REVIEW.jpg',
       'quality-ai-4view': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_AI_OWNER_REVIEW.jpg',
       'quality-ai': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_AI_OWNER_REVIEW.jpg',
       'quality-depth-plane': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_DEPTH_AWARE_OWNER_REVIEW.jpg',
@@ -402,7 +402,9 @@
     }
 
     function getProxyUrl(mode, width) {
-      if (mode === 'quality-ai-12view' || mode === 'quality-ai-4view' || mode === 'quality-ai') {
+      if (mode === 'quality-ai-12view' || mode === 'quality-ai') {
+        return '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_OWNER_REVIEW.jpg';
+      } else if (mode === 'quality-ai-4view') {
         return `/internal-assets/p2r16/viewer/quality-ai-${width}.jpg`;
       } else if (mode === 'quality-depth-plane' || mode === 'quality-depth') {
         return `/internal-assets/p2r16/viewer/quality-depth-${width}.jpg`;
@@ -441,16 +443,6 @@
     }
 
     function loadModeTexture(mode, onComplete) {
-      if (mode === 'quality-ai-12view') {
-        sphereMesh.material.map = createPlaceholderTexture();
-        sphereMesh.material.color.set(0xffffff);
-        sphereMesh.material.needsUpdate = true;
-        window.__VIEWER_TELEMETRY__.panoramaTextureLoaded = true;
-        document.getElementById('loading-overlay').style.display = 'none';
-        document.getElementById('qa-placeholder-overlay').style.display = 'block';
-        if (onComplete) onComplete();
-        return;
-      }
       document.getElementById('qa-placeholder-overlay').style.display = 'none';
       document.getElementById('loading-overlay').style.display = 'flex';
       document.getElementById('loading-overlay').style.opacity = '1';
@@ -517,15 +509,19 @@
       const tag = document.getElementById('active-mode-tag');
       const btnNative = document.getElementById('btn-native-src');
 
-      if (btnQA) btnQA.className = (currentMode === 'quality-ai') ? 'mode-btn active-quality-ai' : 'mode-btn';
+      if (btnQA) btnQA.className = (currentMode === 'quality-ai' || currentMode === 'quality-ai-12view' || currentMode === 'quality-ai-4view') ? 'mode-btn active-quality-ai' : 'mode-btn';
       if (btnQD) btnQD.className = (currentMode === 'quality-depth-plane' || currentMode === 'quality-depth') ? 'mode-btn active-quality-depth' : 'mode-btn';
       if (btnQC) btnQC.className = (currentMode === 'quality-current' || currentMode === 'quality') ? 'mode-btn active-quality-current' : 'mode-btn';
       if (btnE) btnE.className = (currentMode === 'easy') ? 'mode-btn active-easy' : 'mode-btn';
 
-      if (currentMode === 'quality-ai') {
-        tag.textContent = 'QUALITY AI';
+      if (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai') {
+        tag.textContent = 'QUALITY AI (12-VIEW COMMERCIAL VGGT)';
         tag.style.color = 'var(--accent-ai)';
-        btnNative.href = NATIVE_URLS['quality-ai'];
+        btnNative.href = NATIVE_URLS['quality-ai-12view'];
+      } else if (currentMode === 'quality-ai-4view') {
+        tag.textContent = 'QUALITY AI (4-KEYFRAME CANVAS)';
+        tag.style.color = 'var(--accent-ai)';
+        btnNative.href = NATIVE_URLS['quality-ai-4view'];
       } else if (currentMode === 'quality-depth-plane' || currentMode === 'quality-depth') {
         tag.textContent = 'QUALITY (DEPTH PLANE)';
         tag.style.color = 'var(--accent-depth)';
