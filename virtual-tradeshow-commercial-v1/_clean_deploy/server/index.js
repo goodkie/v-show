@@ -1069,6 +1069,45 @@ app.get(['/', '/index.html'], (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
 });
 
+// ── C12.9-P2R16: /production_artifacts/* MUST be registered BEFORE SPA catch-all ──
+const productionArtifactDirs = [
+  path.join(process.cwd(), 'production_artifacts'),
+  path.join(__dirname, '..', '..', '..', 'production_artifacts'),
+  path.join(__dirname, '..', '..', 'production_artifacts'),
+  path.join(__dirname, '..', 'production_artifacts'),
+  path.join(process.cwd(), 'virtual-tradeshow-commercial-v1', 'production_artifacts')
+];
+productionArtifactDirs.forEach(dir => {
+  if (fs.existsSync(dir)) {
+    app.use('/production_artifacts', express.static(dir));
+  }
+});
+
+app.get('/production_artifacts/*', (req, res, next) => {
+  const relPath = req.params[0];
+  const candidates = [
+    path.join(process.cwd(), 'production_artifacts', relPath),
+    path.join(__dirname, '..', '..', '..', 'production_artifacts', relPath),
+    path.join(__dirname, '..', '..', 'production_artifacts', relPath),
+    path.join(__dirname, '..', 'production_artifacts', relPath),
+    path.join(process.cwd(), 'virtual-tradeshow-commercial-v1', 'production_artifacts', relPath)
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) {
+      try {
+        if (fs.statSync(c).isFile()) {
+          if (c.endsWith('.json')) res.setHeader('Content-Type', 'application/json');
+          else if (c.endsWith('.jpg') || c.endsWith('.jpeg')) res.setHeader('Content-Type', 'image/jpeg');
+          else if (c.endsWith('.png')) res.setHeader('Content-Type', 'image/png');
+          return res.sendFile(c);
+        }
+      } catch (e) {}
+    }
+  }
+  next();
+});
+
+// ── SPA catch-all static middleware (AFTER artifact routes) ──
 app.use('/assets', express.static(path.join(__dirname, '..', 'client', 'assets')));
 app.use('/assets', express.static(path.join(__dirname, '..', 'assets')));
 app.use(express.static(path.join(__dirname, '..', 'client')));
@@ -1121,15 +1160,6 @@ p2r16ViewerAssets.forEach(dir => {
   }
 });
 
-const productionArtifactDirs = [
-  path.join(__dirname, '..', '..', 'production_artifacts'),
-  path.join(__dirname, '..', 'production_artifacts')
-];
-productionArtifactDirs.forEach(dir => {
-  if (fs.existsSync(dir)) {
-    app.use('/production_artifacts', express.static(dir));
-  }
-});
 
 
 // --- 1. Healthcheck (Canonical: /health, Alias: /api/health) & Public Plan Endpoints ---
