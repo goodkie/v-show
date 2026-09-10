@@ -334,5 +334,38 @@
     "OWNER_VISUAL_ACCEPTANCE": false,
     "CUSTOMER_DEFAULT": "P2R13",
     "MASTER_TOUCHED": false
+  },
+  "PHASE_7C2R4P1_DEPLOYMENT": {
+    "RAILWAY_DEPLOYMENT_ID": "e391264b-610a-4b8e-84bf-f960ef49bb42",
+    "RAILWAY_DEPLOYMENT_STATUS": "SUCCESS",
+    "COMMIT_SHA": "fefe150d6ea71f12387d7b425f96212b32779c74",
+    "DEPLOYED_AT": "2026-09-10T22:xx:xx.000Z",
+    "LIVE_JPEG_QA": {
+      "IDENTITY": {
+        "HTTP_STATUS": 200,
+        "CONTENT_LENGTH": 7193510,
+        "BYTES_MATCH": true,
+        "LUMA_MEAN": 98.8262,
+        "NONBLACK_RATIO": 0.992346,
+        "BLACK_ARTIFACT_DETECTED": false,
+        "LIVE_QA_RESULT": "PASS"
+      },
+      "SAFE_MATCHED": {
+        "HTTP_STATUS": 200,
+        "CONTENT_LENGTH": 7341790,
+        "BYTES_MATCH": true,
+        "LUMA_MEAN": 97.072,
+        "NONBLACK_RATIO": 0.992358,
+        "BLACK_ARTIFACT_DETECTED": false,
+        "LIVE_QA_RESULT": "PASS"
+      },
+      "OVERALL_LIVE_JPEG_QA": "PASS"
+    },
+    "OWNER_REVIEW_URL": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p1",
+    "IDENTITY_DIRECT_URL": "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P1_IDENTITY_OWNER_REVIEW.jpg",
+    "OWNER_REVIEW_COMPLETED": false,
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "CUSTOMER_DEFAULT": "P2R13",
+    "MASTER_TOUCHED": false
   }
 }
