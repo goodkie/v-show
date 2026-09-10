@@ -631,7 +631,10 @@
         // Global State
     const urlParamsGlobal = (typeof window !== 'undefined' && window.location) ? new URLSearchParams(window.location.search) : null;
     const qModeGlobal = urlParamsGlobal ? urlParamsGlobal.get('mode') : null;
-    let currentMode = (qModeGlobal === 'quality-ai-r4p2') ? 'quality-ai-r4p2' : ((qModeGlobal === 'quality-ai-r4p1') ? 'quality-ai-r4p1' : ((qModeGlobal === 'quality-ai-r4') ? 'quality-ai-r4' : ((qModeGlobal === 'quality-ai-r31') ? 'quality-ai-r31' : ((qModeGlobal === 'quality-ai-r3') ? 'quality-ai-r3' : 'quality-ai-12view')));
+    let currentMode = 'quality-ai-r4p2';
+    if (qModeGlobal && ['quality-ai-r4p2', 'quality-ai-r4p1', 'quality-ai-r4', 'quality-ai-r31', 'quality-ai-r3', 'quality-ai-12view', 'quality-ai'].includes(qModeGlobal)) {
+      currentMode = qModeGlobal;
+    }
     let userSelectedTier = 'AUTO';
     let activeTier = '12K';   // Default: 12K OWNER QA
     let activeTextureUrl = QUALITY_AI_TIERS['12K'].url;
