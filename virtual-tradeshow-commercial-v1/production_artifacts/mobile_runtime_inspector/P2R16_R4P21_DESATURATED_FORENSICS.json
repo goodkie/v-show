@@ -1,0 +1,907 @@
+{
+  "AUDIT_FINDING": {
+    "SHARPNESS_METRIC_CLAMPED": true,
+    "SHARPNESS_METRIC_UPPER_CAP": 1.5,
+    "CLAMP_ROOT_CAUSE": "save_forensics_json.py applied min(ten / effective_src_ten, 1.5). Scale factor (PANO_PPD/SRC_PPD)**2 = 0.298 in effective_src_ten scaled raw ratio by ~3.35x, causing almost all crops to exceed 1.5000 and saturate at the cap."
+  },
+  "VALID_CORRESPONDING_REGION_COUNT": 20,
+  "RAW_METRICS_SUMMARY": {
+    "TENENGRAD": {
+      "R4_RAW_RETENTION_MEDIAN": 2.6436,
+      "R4P2_RAW_RETENTION_MEDIAN": 2.2893,
+      "R4_TO_R4P2_RELATIVE_CHANGE_PERCENT": -13.4
+    },
+    "GRADIENT_MAGNITUDE": {
+      "R4_RAW_RETENTION_MEDIAN": 1.5244,
+      "R4P2_RAW_RETENTION_MEDIAN": 1.3898,
+      "R4_TO_R4P2_RELATIVE_CHANGE_PERCENT": -8.83
+    },
+    "LAPLACIAN": {
+      "R4_RAW_RETENTION_MEDIAN": 1.5135,
+      "R4P2_RAW_RETENTION_MEDIAN": 0.8235,
+      "R4_TO_R4P2_RELATIVE_CHANGE_PERCENT": -45.59
+    }
+  },
+  "REGIONS": [
+    {
+      "regionId": "REG_01",
+      "name": "Cabinet wood grain & seam",
+      "ownerShot": "SHOT_000",
+      "yawDeg": 2.0,
+      "pitchDeg": 0.0,
+      "panoBbox": [
+        0,
+        888,
+        148,
+        1048
+      ],
+      "sourceBbox": [
+        1534,
+        1920,
+        1694,
+        2080
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 165.21,
+        "gradient": 9.84,
+        "laplacian": 30.68
+      },
+      "R4_METRICS": {
+        "tenengrad": 5692.33,
+        "gradient": 16.77,
+        "laplacian": 679.63
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 5663.69,
+        "gradient": 15.3,
+        "laplacian": 661.08
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 34.456,
+        "r4p2_tenengrad_retention": 34.2826,
+        "r4_gradient_retention": 1.7036,
+        "r4p2_gradient_retention": 1.5544,
+        "r4_laplacian_retention": 22.1524,
+        "r4p2_laplacian_retention": 21.548,
+        "r4_to_r4p2_relative_change_percent": -0.5
+      }
+    },
+    {
+      "regionId": "REG_02",
+      "name": "Door frame vertical edge",
+      "ownerShot": "SHOT_000",
+      "yawDeg": 18.0,
+      "pitchDeg": 5.0,
+      "panoBbox": [
+        534,
+        718,
+        694,
+        878
+      ],
+      "sourceBbox": [
+        2484,
+        1635,
+        2644,
+        1795
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 72.47,
+        "gradient": 7.47,
+        "laplacian": 31.44
+      },
+      "R4_METRICS": {
+        "tenengrad": 191.16,
+        "gradient": 11.66,
+        "laplacian": 45.01
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 158.17,
+        "gradient": 10.49,
+        "laplacian": 24.75
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 2.6379,
+        "r4p2_tenengrad_retention": 2.1826,
+        "r4_gradient_retention": 1.56,
+        "r4p2_gradient_retention": 1.4042,
+        "r4_laplacian_retention": 1.4315,
+        "r4p2_laplacian_retention": 0.7872,
+        "r4_to_r4p2_relative_change_percent": -17.26
+      }
+    },
+    {
+      "regionId": "REG_03",
+      "name": "White wall trim upper",
+      "ownerShot": "SHOT_030",
+      "yawDeg": 32.0,
+      "pitchDeg": 18.0,
+      "panoBbox": [
+        1012,
+        274,
+        1172,
+        434
+      ],
+      "sourceBbox": [
+        1537,
+        834,
+        1697,
+        994
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 73.68,
+        "gradient": 7.53,
+        "laplacian": 31.44
+      },
+      "R4_METRICS": {
+        "tenengrad": 166.53,
+        "gradient": 10.88,
+        "laplacian": 43.69
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 135.56,
+        "gradient": 9.66,
+        "laplacian": 23.81
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 2.2601,
+        "r4p2_tenengrad_retention": 1.8398,
+        "r4_gradient_retention": 1.4441,
+        "r4p2_gradient_retention": 1.2818,
+        "r4_laplacian_retention": 1.3896,
+        "r4p2_laplacian_retention": 0.7574,
+        "r4_to_r4p2_relative_change_percent": -18.6
+      }
+    },
+    {
+      "regionId": "REG_04",
+      "name": "Curtain fabric texture high",
+      "ownerShot": "SHOT_030",
+      "yawDeg": 45.0,
+      "pitchDeg": 10.0,
+      "panoBbox": [
+        1456,
+        547,
+        1616,
+        707
+      ],
+      "sourceBbox": [
+        2320,
+        1331,
+        2480,
+        1491
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 146.07,
+        "gradient": 9.74,
+        "laplacian": 32.1
+      },
+      "R4_METRICS": {
+        "tenengrad": 196.73,
+        "gradient": 11.7,
+        "laplacian": 44.93
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 164.58,
+        "gradient": 10.5,
+        "laplacian": 23.84
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 1.3468,
+        "r4p2_tenengrad_retention": 1.1267,
+        "r4_gradient_retention": 1.2016,
+        "r4p2_gradient_retention": 1.0783,
+        "r4_laplacian_retention": 1.3997,
+        "r4p2_laplacian_retention": 0.7427,
+        "r4_to_r4p2_relative_change_percent": -16.34
+      }
+    },
+    {
+      "regionId": "REG_05",
+      "name": "Curtain drape shadow edge",
+      "ownerShot": "SHOT_060",
+      "yawDeg": 62.0,
+      "pitchDeg": -5.0,
+      "panoBbox": [
+        2036,
+        1059,
+        2196,
+        1219
+      ],
+      "sourceBbox": [
+        1535,
+        2205,
+        1695,
+        2365
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 336.34,
+        "gradient": 14.82,
+        "laplacian": 32.48
+      },
+      "R4_METRICS": {
+        "tenengrad": 349.23,
+        "gradient": 14.12,
+        "laplacian": 46.84
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 312.4,
+        "gradient": 12.97,
+        "laplacian": 25.96
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 1.0383,
+        "r4p2_tenengrad_retention": 0.9288,
+        "r4_gradient_retention": 0.953,
+        "r4p2_gradient_retention": 0.8753,
+        "r4_laplacian_retention": 1.4418,
+        "r4p2_laplacian_retention": 0.7992,
+        "r4_to_r4p2_relative_change_percent": -10.55
+      }
+    },
+    {
+      "regionId": "REG_06",
+      "name": "Window mullion & frame",
+      "ownerShot": "SHOT_060",
+      "yawDeg": 78.0,
+      "pitchDeg": 8.0,
+      "panoBbox": [
+        2582,
+        615,
+        2742,
+        775
+      ],
+      "sourceBbox": [
+        2489,
+        1462,
+        2649,
+        1622
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 203.45,
+        "gradient": 11.13,
+        "laplacian": 32.59
+      },
+      "R4_METRICS": {
+        "tenengrad": 668.41,
+        "gradient": 19.58,
+        "laplacian": 53.26
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 624.51,
+        "gradient": 18.64,
+        "laplacian": 29.48
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 3.2853,
+        "r4p2_tenengrad_retention": 3.0696,
+        "r4_gradient_retention": 1.759,
+        "r4p2_gradient_retention": 1.6741,
+        "r4_laplacian_retention": 1.6344,
+        "r4p2_laplacian_retention": 0.9048,
+        "r4_to_r4p2_relative_change_percent": -6.57
+      }
+    },
+    {
+      "regionId": "REG_07",
+      "name": "Baseboard floor transition",
+      "ownerShot": "SHOT_090",
+      "yawDeg": 92.0,
+      "pitchDeg": -20.0,
+      "panoBbox": [
+        3060,
+        1570,
+        3220,
+        1730
+      ],
+      "sourceBbox": [
+        1542,
+        3182,
+        1702,
+        3342
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 482.91,
+        "gradient": 15.94,
+        "laplacian": 33.28
+      },
+      "R4_METRICS": {
+        "tenengrad": 324.91,
+        "gradient": 12.3,
+        "laplacian": 43.45
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 288.22,
+        "gradient": 11.03,
+        "laplacian": 24.17
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 0.6728,
+        "r4p2_tenengrad_retention": 0.5968,
+        "r4_gradient_retention": 0.7719,
+        "r4p2_gradient_retention": 0.6918,
+        "r4_laplacian_retention": 1.3055,
+        "r4p2_laplacian_retention": 0.7262,
+        "r4_to_r4p2_relative_change_percent": -11.29
+      }
+    },
+    {
+      "regionId": "REG_08",
+      "name": "Wall corner vertical boundary",
+      "ownerShot": "SHOT_090",
+      "yawDeg": 105.0,
+      "pitchDeg": 0.0,
+      "panoBbox": [
+        3504,
+        888,
+        3664,
+        1048
+      ],
+      "sourceBbox": [
+        2354,
+        1920,
+        2514,
+        2080
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 893.03,
+        "gradient": 19.69,
+        "laplacian": 34.95
+      },
+      "R4_METRICS": {
+        "tenengrad": 156.64,
+        "gradient": 10.28,
+        "laplacian": 43.84
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 126.89,
+        "gradient": 8.99,
+        "laplacian": 24.04
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 0.1754,
+        "r4p2_tenengrad_retention": 0.1421,
+        "r4_gradient_retention": 0.522,
+        "r4p2_gradient_retention": 0.4566,
+        "r4_laplacian_retention": 1.2542,
+        "r4p2_laplacian_retention": 0.6877,
+        "r4_to_r4p2_relative_change_percent": -18.99
+      }
+    },
+    {
+      "regionId": "REG_09",
+      "name": "Poster/Sign text fine edge",
+      "ownerShot": "SHOT_120",
+      "yawDeg": 122.0,
+      "pitchDeg": 2.0,
+      "panoBbox": [
+        4084,
+        820,
+        4244,
+        980
+      ],
+      "sourceBbox": [
+        1540,
+        1801,
+        1700,
+        1961
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 109.87,
+        "gradient": 9.08,
+        "laplacian": 31.15
+      },
+      "R4_METRICS": {
+        "tenengrad": 291.09,
+        "gradient": 14.14,
+        "laplacian": 49.88
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 251.31,
+        "gradient": 12.89,
+        "laplacian": 27.24
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 2.6493,
+        "r4p2_tenengrad_retention": 2.2872,
+        "r4_gradient_retention": 1.5565,
+        "r4p2_gradient_retention": 1.4196,
+        "r4_laplacian_retention": 1.6015,
+        "r4p2_laplacian_retention": 0.8747,
+        "r4_to_r4p2_relative_change_percent": -13.67
+      }
+    },
+    {
+      "regionId": "REG_10",
+      "name": "Display panel top border",
+      "ownerShot": "SHOT_120",
+      "yawDeg": 138.0,
+      "pitchDeg": 15.0,
+      "panoBbox": [
+        4630,
+        377,
+        4790,
+        537
+      ],
+      "sourceBbox": [
+        2535,
+        1005,
+        2695,
+        1165
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 278.71,
+        "gradient": 11.58,
+        "laplacian": 32.86
+      },
+      "R4_METRICS": {
+        "tenengrad": 391.78,
+        "gradient": 16.28,
+        "laplacian": 54.31
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 356.65,
+        "gradient": 15.35,
+        "laplacian": 30.53
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 1.4057,
+        "r4p2_tenengrad_retention": 1.2797,
+        "r4_gradient_retention": 1.4068,
+        "r4p2_gradient_retention": 1.3264,
+        "r4_laplacian_retention": 1.6525,
+        "r4p2_laplacian_retention": 0.9291,
+        "r4_to_r4p2_relative_change_percent": -8.97
+      }
+    },
+    {
+      "regionId": "REG_11",
+      "name": "Chair backrest contour",
+      "ownerShot": "SHOT_150",
+      "yawDeg": 152.0,
+      "pitchDeg": -10.0,
+      "panoBbox": [
+        5108,
+        1229,
+        5268,
+        1389
+      ],
+      "sourceBbox": [
+        1547,
+        2559,
+        1707,
+        2719
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 113.66,
+        "gradient": 9.22,
+        "laplacian": 31.82
+      },
+      "R4_METRICS": {
+        "tenengrad": 295.14,
+        "gradient": 13.76,
+        "laplacian": 49.09
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 260.45,
+        "gradient": 12.68,
+        "laplacian": 27.37
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 2.5966,
+        "r4p2_tenengrad_retention": 2.2914,
+        "r4_gradient_retention": 1.4922,
+        "r4p2_gradient_retention": 1.3753,
+        "r4_laplacian_retention": 1.5429,
+        "r4p2_laplacian_retention": 0.8603,
+        "r4_to_r4p2_relative_change_percent": -11.75
+      }
+    },
+    {
+      "regionId": "REG_12",
+      "name": "Desk surface front edge",
+      "ownerShot": "SHOT_150",
+      "yawDeg": 168.0,
+      "pitchDeg": -18.0,
+      "panoBbox": [
+        5654,
+        1502,
+        5814,
+        1662
+      ],
+      "sourceBbox": [
+        2597,
+        3097,
+        2757,
+        3257
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 131.23,
+        "gradient": 9.81,
+        "laplacian": 30.28
+      },
+      "R4_METRICS": {
+        "tenengrad": 522.7,
+        "gradient": 15.57,
+        "laplacian": 50.3
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 482.31,
+        "gradient": 14.43,
+        "laplacian": 27.3
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 3.983,
+        "r4p2_tenengrad_retention": 3.6753,
+        "r4_gradient_retention": 1.5875,
+        "r4p2_gradient_retention": 1.4713,
+        "r4_laplacian_retention": 1.6609,
+        "r4p2_laplacian_retention": 0.9015,
+        "r4_to_r4p2_relative_change_percent": -7.73
+      }
+    },
+    {
+      "regionId": "REG_13",
+      "name": "Dark room cabinet latch",
+      "ownerShot": "SHOT_180",
+      "yawDeg": 182.0,
+      "pitchDeg": 3.0,
+      "panoBbox": [
+        6132,
+        786,
+        6292,
+        946
+      ],
+      "sourceBbox": [
+        1549,
+        1725,
+        1709,
+        1885
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 100.17,
+        "gradient": 8.47,
+        "laplacian": 30.84
+      },
+      "R4_METRICS": {
+        "tenengrad": 814.56,
+        "gradient": 19.0,
+        "laplacian": 49.94
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 776.21,
+        "gradient": 17.96,
+        "laplacian": 31.33
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 8.1316,
+        "r4p2_tenengrad_retention": 7.7488,
+        "r4_gradient_retention": 2.243,
+        "r4p2_gradient_retention": 2.1204,
+        "r4_laplacian_retention": 1.6195,
+        "r4p2_laplacian_retention": 1.0159,
+        "r4_to_r4p2_relative_change_percent": -4.71
+      }
+    },
+    {
+      "regionId": "REG_14",
+      "name": "Wall outlet / socket trim",
+      "ownerShot": "SHOT_210",
+      "yawDeg": 212.0,
+      "pitchDeg": -12.0,
+      "panoBbox": [
+        7156,
+        1298,
+        7316,
+        1458
+      ],
+      "sourceBbox": [
+        1567,
+        2827,
+        1727,
+        2987
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 120.99,
+        "gradient": 9.43,
+        "laplacian": 32.2
+      },
+      "R4_METRICS": {
+        "tenengrad": 409.22,
+        "gradient": 16.16,
+        "laplacian": 48.95
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 373.98,
+        "gradient": 15.25,
+        "laplacian": 27.12
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 3.3824,
+        "r4p2_tenengrad_retention": 3.0911,
+        "r4_gradient_retention": 1.7137,
+        "r4p2_gradient_retention": 1.6172,
+        "r4_laplacian_retention": 1.5205,
+        "r4p2_laplacian_retention": 0.8423,
+        "r4_to_r4p2_relative_change_percent": -8.61
+      }
+    },
+    {
+      "regionId": "REG_15",
+      "name": "Door handle metallic highlight",
+      "ownerShot": "SHOT_240",
+      "yawDeg": 242.0,
+      "pitchDeg": -2.0,
+      "panoBbox": [
+        8180,
+        956,
+        8340,
+        1116
+      ],
+      "sourceBbox": [
+        1545,
+        2045,
+        1705,
+        2205
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 151.95,
+        "gradient": 10.54,
+        "laplacian": 30.61
+      },
+      "R4_METRICS": {
+        "tenengrad": 666.3,
+        "gradient": 19.1,
+        "laplacian": 52.48
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 620.07,
+        "gradient": 18.1,
+        "laplacian": 28.89
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 4.3851,
+        "r4p2_tenengrad_retention": 4.0808,
+        "r4_gradient_retention": 1.8126,
+        "r4p2_gradient_retention": 1.7168,
+        "r4_laplacian_retention": 1.7147,
+        "r4p2_laplacian_retention": 0.9439,
+        "r4_to_r4p2_relative_change_percent": -6.94
+      }
+    },
+    {
+      "regionId": "REG_16",
+      "name": "Ceiling corner edge trim",
+      "ownerShot": "SHOT_270",
+      "yawDeg": 272.0,
+      "pitchDeg": 22.0,
+      "panoBbox": [
+        9204,
+        138,
+        9364,
+        298
+      ],
+      "sourceBbox": [
+        1542,
+        511,
+        1702,
+        671
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 57.58,
+        "gradient": 6.68,
+        "laplacian": 30.81
+      },
+      "R4_METRICS": {
+        "tenengrad": 186.78,
+        "gradient": 10.88,
+        "laplacian": 43.98
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 159.97,
+        "gradient": 9.7,
+        "laplacian": 24.57
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 3.2436,
+        "r4p2_tenengrad_retention": 2.778,
+        "r4_gradient_retention": 1.6281,
+        "r4p2_gradient_retention": 1.4521,
+        "r4_laplacian_retention": 1.4275,
+        "r4p2_laplacian_retention": 0.7976,
+        "r4_to_r4p2_relative_change_percent": -14.36
+      }
+    },
+    {
+      "regionId": "REG_17",
+      "name": "Bookshelf partition joint",
+      "ownerShot": "SHOT_270",
+      "yawDeg": 285.0,
+      "pitchDeg": 5.0,
+      "panoBbox": [
+        9648,
+        718,
+        9808,
+        878
+      ],
+      "sourceBbox": [
+        2354,
+        1615,
+        2514,
+        1775
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 98.19,
+        "gradient": 8.56,
+        "laplacian": 31.65
+      },
+      "R4_METRICS": {
+        "tenengrad": 339.9,
+        "gradient": 12.76,
+        "laplacian": 46.6
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 305.42,
+        "gradient": 11.48,
+        "laplacian": 25.01
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 3.4616,
+        "r4p2_tenengrad_retention": 3.1105,
+        "r4_gradient_retention": 1.4898,
+        "r4p2_gradient_retention": 1.3412,
+        "r4_laplacian_retention": 1.4722,
+        "r4p2_laplacian_retention": 0.7901,
+        "r4_to_r4p2_relative_change_percent": -10.14
+      }
+    },
+    {
+      "regionId": "REG_18",
+      "name": "Small object tabletop edge",
+      "ownerShot": "SHOT_300",
+      "yawDeg": 302.0,
+      "pitchDeg": -15.0,
+      "panoBbox": [
+        10228,
+        1400,
+        10388,
+        1560
+      ],
+      "sourceBbox": [
+        1542,
+        2854,
+        1702,
+        3014
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 193.03,
+        "gradient": 11.76,
+        "laplacian": 32.85
+      },
+      "R4_METRICS": {
+        "tenengrad": 1173.36,
+        "gradient": 24.23,
+        "laplacian": 61.32
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 1118.38,
+        "gradient": 23.39,
+        "laplacian": 31.91
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 6.0786,
+        "r4p2_tenengrad_retention": 5.7938,
+        "r4_gradient_retention": 2.061,
+        "r4p2_gradient_retention": 1.9892,
+        "r4_laplacian_retention": 1.8668,
+        "r4p2_laplacian_retention": 0.9715,
+        "r4_to_r4p2_relative_change_percent": -4.69
+      }
+    },
+    {
+      "regionId": "REG_19",
+      "name": "Carpet / floor texture fine",
+      "ownerShot": "SHOT_330",
+      "yawDeg": 332.0,
+      "pitchDeg": -22.0,
+      "panoBbox": [
+        11252,
+        1639,
+        11412,
+        1799
+      ],
+      "sourceBbox": [
+        1540,
+        3306,
+        1700,
+        3466
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 155.27,
+        "gradient": 10.3,
+        "laplacian": 30.87
+      },
+      "R4_METRICS": {
+        "tenengrad": 285.41,
+        "gradient": 13.51,
+        "laplacian": 46.5
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 249.63,
+        "gradient": 12.38,
+        "laplacian": 24.84
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 1.8381,
+        "r4p2_tenengrad_retention": 1.6077,
+        "r4_gradient_retention": 1.3108,
+        "r4p2_gradient_retention": 1.2014,
+        "r4_laplacian_retention": 1.5064,
+        "r4p2_laplacian_retention": 0.8048,
+        "r4_to_r4p2_relative_change_percent": -12.53
+      }
+    },
+    {
+      "regionId": "REG_20",
+      "name": "Closure seam cabinet corner",
+      "ownerShot": "SHOT_330",
+      "yawDeg": 352.0,
+      "pitchDeg": 8.0,
+      "panoBbox": [
+        11935,
+        615,
+        12095,
+        775
+      ],
+      "sourceBbox": [
+        2814,
+        1438,
+        2974,
+        1598
+      ],
+      "CORRESPONDENCE_VALID": true,
+      "SOURCE_METRICS": {
+        "tenengrad": 375.82,
+        "gradient": 15.65,
+        "laplacian": 32.42
+      },
+      "R4_METRICS": {
+        "tenengrad": 75.43,
+        "gradient": 7.58,
+        "laplacian": 38.66
+      },
+      "R4P2_METRICS": {
+        "tenengrad": 48.75,
+        "gradient": 6.05,
+        "laplacian": 21.03
+      },
+      "RAW_RETENTION": {
+        "r4_tenengrad_retention": 0.2007,
+        "r4p2_tenengrad_retention": 0.1297,
+        "r4_gradient_retention": 0.4845,
+        "r4p2_gradient_retention": 0.3869,
+        "r4_laplacian_retention": 1.1926,
+        "r4p2_laplacian_retention": 0.6488,
+        "r4_to_r4p2_relative_change_percent": -35.37
+      }
+    }
+  ]
+}

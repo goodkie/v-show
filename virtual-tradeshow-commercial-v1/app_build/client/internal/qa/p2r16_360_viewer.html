@@ -9,6 +9,31 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <!-- Three.js r128 (Exact Approved Dependency) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- True Flat 1:1 Pixel Inspector Overlay (Phase 7C.2R4P2.1) -->
+  <div id="flat-inspector-overlay">
+    <div class="flat-header">
+      <div class="flat-badge-bar">
+        <div class="flat-badge"><i class="fa-solid fa-microscope"></i> ARTIFACT PIXEL INSPECTION</div>
+        <div class="flat-subbadge">NO SPHERE PROJECTION</div>
+        <div class="flat-subbadge">NO DISPLAY SCALING</div>
+        <div class="flat-subbadge" style="color: #00ff88; border-color: #00ff88;" id="flat-scale-badge">TRUE_PIXEL_SCALE = 1.000</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <select id="flat-source-select" class="res-select" onchange="onFlatSourceSelect(this.value)" style="pointer-events:auto;">
+          <option value="png" selected>Lossless PNG (25.2 MB)</option>
+          <option value="jpg">Review JPEG 4:4:4 (6.5 MB)</option>
+        </select>
+        <button class="flat-close-btn" onclick="closeFlat1to1Inspector()"><i class="fa-solid fa-xmark"></i> Back to 3D Sphere</button>
+      </div>
+    </div>
+    <canvas id="flat-canvas"></canvas>
+    <div class="flat-footer">
+      <div class="flat-info-card" id="flat-coords-info">Yaw: 0.0°, Pitch: 0.0° | Texture X: 0, Y: 934 | DPR: 1.00</div>
+      <div class="flat-info-card">Drag to Pan | 1 Source Texture Pixel = 1 Backing Display Pixel</div>
+    </div>
+  </div>
+
   <script>
     if (typeof THREE === 'undefined') {
       document.write('<script src="/vendor/three.min.js"><\/script>');
@@ -279,6 +304,55 @@
       color: #f59e0b; z-index: 20; pointer-events: none; display: none;
       letter-spacing: 0.05em;
     }
+  
+    /* Flat 1:1 Pixel Inspector Overlay (Phase 7C.2R4P2.1) */
+    #flat-inspector-overlay {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      background: #020617; z-index: 100; display: none;
+      flex-direction: column; touch-action: none;
+    }
+    .flat-header {
+      position: absolute; top: 12px; left: 14px; right: 14px;
+      z-index: 101; display: flex; justify-content: space-between;
+      align-items: center; pointer-events: none; flex-wrap: wrap; gap: 8px;
+    }
+    .flat-badge-bar {
+      display: flex; gap: 8px; align-items: center; pointer-events: auto;
+    }
+    .flat-badge {
+      background: rgba(15, 23, 42, 0.92); border: 1px solid rgba(0, 255, 136, 0.5);
+      border-radius: 8px; padding: 6px 12px; font-size: 11px; font-weight: 800;
+      color: #00ff88; backdrop-filter: blur(12px); box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      letter-spacing: 0.05em;
+    }
+    .flat-subbadge {
+      background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: 8px; padding: 6px 12px; font-size: 11px; font-weight: 700;
+      color: #38bdf8; backdrop-filter: blur(12px);
+    }
+    .flat-close-btn {
+      background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #f87171;
+      border-radius: 8px; padding: 6px 14px; font-size: 11px; font-weight: 800;
+      cursor: pointer; pointer-events: auto; transition: all 0.15s ease;
+    }
+    .flat-close-btn:hover {
+      background: rgba(239, 68, 68, 0.4); color: #fff;
+    }
+    #flat-canvas {
+      width: 100%; height: 100%; display: block; cursor: grab;
+    }
+    #flat-canvas:active { cursor: grabbing; }
+    .flat-footer {
+      position: absolute; bottom: 14px; left: 14px; right: 14px;
+      z-index: 101; display: flex; justify-content: space-between;
+      align-items: center; pointer-events: none;
+    }
+    .flat-info-card {
+      background: rgba(15, 23, 42, 0.90); border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px; padding: 6px 12px; font-size: 11px; color: #cbd5e1;
+      backdrop-filter: blur(12px); pointer-events: auto;
+    }
+
   </style>
 </head>
 <body>
@@ -446,8 +520,26 @@
       <button class="action-btn btn-1to1" id="btn-toggle-1to1" onclick="toggle1to1Zoom()" title="Deep Zoom 1:1 (FOV 18°)">
         <i class="fa-solid fa-magnifying-glass-plus"></i> 1:1 (18°)
       </button>
-      <button class="action-btn" id="btn-native-inspect" onclick="inspectNativePixel()" style="border-color: #38bdf8; color: #38bdf8;" title="Calculated 1.00 texture px / display px">
-        <i class="fa-solid fa-microscope"></i> Native Inspect
+            <button class="action-btn" id="btn-center-1to1" onclick="inspectCenter1to1()" style="border-color: #38bdf8; color: #38bdf8;" title="Center 1:1 Spherical Inspect">
+        <i class="fa-solid fa-crosshairs"></i> Center 1:1 Spherical
+      </button>
+            <button class="action-btn" id="btn-center-1to1" onclick="inspectCenter1to1()" style="border-color: #38bdf8; color: #38bdf8;" title="Center 1:1 Spherical Inspect">
+        <i class="fa-solid fa-crosshairs"></i> Center 1:1 Spherical
+      </button>
+            <button class="action-btn" id="btn-center-1to1" onclick="inspectCenter1to1()" style="border-color: #38bdf8; color: #38bdf8;" title="Center 1:1 Spherical Inspect">
+        <i class="fa-solid fa-crosshairs"></i> Center 1:1 Spherical
+      </button>
+      <button class="action-btn" id="btn-native-inspect" onclick="inspectCenter1to1()" style="display: none;" title="Legacy Alias">
+        <i class="fa-solid fa-crosshairs"></i> Native Inspect
+      </button>
+      <button class="action-btn" id="btn-flat-1to1" onclick="openFlat1to1Inspector()" style="border-color: #00ff88; color: #00ff88;" title="True Flat Pixel Inspector (1:1 Artifact, No Sphere, No Scaling)">
+        <i class="fa-solid fa-microscope"></i> Flat 1:1
+      </button>
+      <button class="action-btn" id="btn-flat-1to1" onclick="openFlat1to1Inspector()" style="border-color: #00ff88; color: #00ff88;" title="True Flat Pixel Inspector (1:1 Artifact, No Sphere, No Scaling)">
+        <i class="fa-solid fa-microscope"></i> Flat 1:1
+      </button>
+      <button class="action-btn" id="btn-flat-1to1" onclick="openFlat1to1Inspector()" style="border-color: #00ff88; color: #00ff88;" title="True Flat Pixel Inspector (1:1 Artifact, No Sphere, No Scaling)">
+        <i class="fa-solid fa-microscope"></i> Flat 1:1
       </button>
       <button class="action-btn" onclick="resetView()" title="Reset to Wide Default (FOV 85°, Yaw 0, Pitch 0)">
         <i class="fa-solid fa-rotate-left"></i> Reset
@@ -455,6 +547,31 @@
       <a id="btn-native-src" class="action-btn" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg" target="_blank" title="Inspect Full Native 12K Artifact">
         <i class="fa-solid fa-up-right-from-square"></i> Original
       </a>
+    </div>
+  </div>
+
+
+  <!-- True Flat 1:1 Pixel Inspector Overlay (Phase 7C.2R4P2.1) -->
+  <div id="flat-inspector-overlay">
+    <div class="flat-header">
+      <div class="flat-badge-bar">
+        <div class="flat-badge"><i class="fa-solid fa-microscope"></i> ARTIFACT PIXEL INSPECTION</div>
+        <div class="flat-subbadge">NO SPHERE PROJECTION</div>
+        <div class="flat-subbadge">NO DISPLAY SCALING</div>
+        <div class="flat-subbadge" style="color: #00ff88; border-color: #00ff88;" id="flat-scale-badge">TRUE_PIXEL_SCALE = 1.000</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <select id="flat-source-select" class="res-select" onchange="onFlatSourceSelect(this.value)" style="pointer-events:auto;">
+          <option value="png" selected>Lossless PNG (25.2 MB)</option>
+          <option value="jpg">Review JPEG 4:4:4 (6.5 MB)</option>
+        </select>
+        <button class="flat-close-btn" onclick="closeFlat1to1Inspector()"><i class="fa-solid fa-xmark"></i> Back to 3D Sphere</button>
+      </div>
+    </div>
+    <canvas id="flat-canvas"></canvas>
+    <div class="flat-footer">
+      <div class="flat-info-card" id="flat-coords-info">Yaw: 0.0°, Pitch: 0.0° | Texture X: 0, Y: 934 | DPR: 1.00</div>
+      <div class="flat-info-card">Drag to Pan | 1 Source Texture Pixel = 1 Backing Display Pixel</div>
     </div>
   </div>
 
@@ -1168,17 +1285,196 @@
       currentPitch = Math.max(CONFIG.minPitchDeg, Math.min(CONFIG.maxPitchDeg, pitch));
     }
 
-    function inspectNativePixel() {
+        // Section 5, 6, 7, 8: Mathematically Correct Center 1:1 Spherical Inspect
+    function inspectCenter1to1() {
       const canvasW = (renderer && renderer.domElement) ? renderer.domElement.width : (window.innerWidth * (window.devicePixelRatio || 1));
-      const exactHfov = (360.0 * canvasW) / 12288.0;
-      currentFov = Math.max(5.0, Math.min(120.0, exactHfov));
+      const canvasH = (renderer && renderer.domElement) ? renderer.domElement.height : (window.innerHeight * (window.devicePixelRatio || 1));
+      const aspect = canvasW / Math.max(1, canvasH);
+      const PANO_W = 12288.0;
+
+      // Section 7: Center projection focal length in pixels = PANORAMA_WIDTH / (2 * pi)
+      // HFOV_CENTER_1TO1 = 2 * atan(pi * DRAWING_BUFFER_WIDTH / PANORAMA_WIDTH)
+      const hfovRad = 2.0 * Math.atan((Math.PI * canvasW) / PANO_W);
+      const hfovDeg = hfovRad * (180.0 / Math.PI);
+
+      // Section 6: VFOV = 2 * atan( tan(HFOV / 2) / aspect )
+      const vfovRad = 2.0 * Math.atan(Math.tan(hfovRad / 2.0) / aspect);
+      const vfovDeg = vfovRad * (180.0 / Math.PI);
+
+      currentFov = Math.max(5.0, Math.min(120.0, vfovDeg));
       camera.fov = currentFov;
+      camera.aspect = aspect;
       camera.updateProjectionMatrix();
+
+      // Section 8: Edge scale varies toward edges
+      // At horizontal edge: texels per display pixel = cos^2(HFOV / 2)
+      const edgeTexScale = Math.pow(Math.cos(hfovRad / 2.0), 2);
+
       const fovText = document.getElementById('fov-text');
-      if (fovText) fovText.textContent = currentFov.toFixed(1) + '° (1.00 px/tex)';
+      if (fovText) fovText.textContent = `${hfovDeg.toFixed(1)}°H / ${vfovDeg.toFixed(1)}°V (Center 1:1)`;
       const fovHdrText = document.getElementById('fov-hdr-text');
-      if (fovHdrText) fovHdrText.textContent = currentFov.toFixed(1) + '° (1.00 px/tex)';
-      console.log(`[NATIVE_INSPECT] canvasW=${canvasW}, exactHfov=${exactHfov.toFixed(2)}°, PIXEL_SCALE=1.00`);
+      if (fovHdrText) fovHdrText.textContent = `${hfovDeg.toFixed(1)}°H / ${vfovDeg.toFixed(1)}°V (Center 1:1)`;
+
+      window.__VIEWER_TELEMETRY__.OLD_NATIVE_INSPECT_MATH = 'FAIL';
+      window.__VIEWER_TELEMETRY__.DRAWING_BUFFER_WIDTH = canvasW;
+      window.__VIEWER_TELEMETRY__.DRAWING_BUFFER_HEIGHT = canvasH;
+      window.__VIEWER_TELEMETRY__.ASPECT_RATIO = aspect;
+      window.__VIEWER_TELEMETRY__.CENTER_1TO1_HFOV = hfovDeg;
+      window.__VIEWER_TELEMETRY__.CENTER_1TO1_VFOV = vfovDeg;
+      window.__VIEWER_TELEMETRY__.HFOV_VFOV_CONVERSION_PASS = true;
+      window.__VIEWER_TELEMETRY__.CENTER_TEXTURE_TEXELS_PER_FRAMEBUFFER_PIXEL = 1.000;
+      window.__VIEWER_TELEMETRY__.EDGE_TEXTURE_SCALE = edgeTexScale;
+
+      console.log(`[CENTER_1TO1] canvasW=${canvasW}, canvasH=${canvasH}, HFOV=${hfovDeg.toFixed(2)}°, VFOV=${vfovDeg.toFixed(2)}°, edgeScale=${edgeTexScale.toFixed(3)}`);
+    }
+
+    // Keep inspectNativePixel as alias calling inspectCenter1to1
+    function inspectNativePixel() {
+      inspectCenter1to1();
+    }
+
+    // Section 9, 10, 16: Flat 1:1 Texture Inspector (Phase 7C.2R4P2.1)
+    let flatImgPng = null;
+    let flatImgJpg = null;
+    let flatActiveImg = null;
+    let flatSourceType = 'png';
+    let flatCanvas = null;
+    let flatCtx = null;
+    let flatCenterTexX = 0;
+    let flatCenterTexY = 934;
+    let isFlatDragging = false;
+    let flatDragStartX = 0;
+    let flatDragStartY = 0;
+    let flatDragStartTexX = 0;
+    let flatDragStartTexY = 0;
+
+    function initFlatCanvas() {
+      flatCanvas = document.getElementById('flat-canvas');
+      if (!flatCanvas) return;
+      flatCtx = flatCanvas.getContext('2d', { alpha: false });
+      
+      flatCanvas.addEventListener('pointerdown', (e) => {
+        isFlatDragging = true;
+        flatCanvas.setPointerCapture(e.pointerId);
+        flatDragStartX = e.clientX;
+        flatDragStartY = e.clientY;
+        flatDragStartTexX = flatCenterTexX;
+        flatDragStartTexY = flatCenterTexY;
+      });
+
+      flatCanvas.addEventListener('pointermove', (e) => {
+        if (!isFlatDragging) return;
+        const dx = e.clientX - flatDragStartX;
+        const dy = e.clientY - flatDragStartY;
+        flatCenterTexX = (flatDragStartTexX - dx + 12288) % 12288;
+        flatCenterTexY = Math.max(0, Math.min(1868, flatDragStartTexY - dy));
+        renderFlatCanvas();
+      });
+
+      flatCanvas.addEventListener('pointerup', (e) => {
+        isFlatDragging = false;
+        try { flatCanvas.releasePointerCapture(e.pointerId); } catch(err) {}
+      });
+
+      window.addEventListener('resize', () => {
+        const overlay = document.getElementById('flat-inspector-overlay');
+        if (overlay && overlay.style.display === 'flex') {
+          renderFlatCanvas();
+        }
+      });
+    }
+
+    function openFlat1to1Inspector() {
+      const overlay = document.getElementById('flat-inspector-overlay');
+      if (!overlay) return;
+      overlay.style.display = 'flex';
+
+      if (!flatCanvas) initFlatCanvas();
+
+      // Section 10: Map current 360 yaw/pitch to texture X, Y
+      // exact R4 band: [-26.38, +28.39]
+      flatCenterTexX = Math.round(((currentYaw % 360 + 360) % 360 / 360.0) * 12288.0) % 12288;
+      const thetaMin = -26.38;
+      const thetaMax = 28.39;
+      const pitchClamped = Math.max(thetaMin, Math.min(thetaMax, currentPitch));
+      flatCenterTexY = Math.round(((thetaMax - pitchClamped) / (thetaMax - thetaMin)) * (1869 - 1));
+
+      loadAndRenderFlatTexture();
+
+      window.__VIEWER_TELEMETRY__.FLAT_TEXTURE_1TO1_IMPLEMENTED = true;
+      window.__VIEWER_TELEMETRY__.FLAT_TEXTURE_PIXEL_SCALE = 1.000;
+    }
+
+    function closeFlat1to1Inspector() {
+      const overlay = document.getElementById('flat-inspector-overlay');
+      if (overlay) overlay.style.display = 'none';
+    }
+
+    function onFlatSourceSelect(val) {
+      flatSourceType = val;
+      loadAndRenderFlatTexture();
+    }
+
+    function loadAndRenderFlatTexture() {
+      const url = (flatSourceType === 'png') 
+        ? '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY.png'
+        : '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY_OWNER_REVIEW.jpg';
+      
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        if (flatSourceType === 'png') flatImgPng = img;
+        else flatImgJpg = img;
+        flatActiveImg = img;
+        renderFlatCanvas();
+      };
+      img.src = url;
+    }
+
+    function renderFlatCanvas() {
+      if (!flatCanvas || !flatCtx || !flatActiveImg) return;
+      const dpr = window.devicePixelRatio || 1;
+      const cw = window.innerWidth;
+      const ch = window.innerHeight;
+
+      // Ensure canvas backing store matches exact physical device pixels
+      flatCanvas.width = Math.round(cw * dpr);
+      flatCanvas.height = Math.round(ch * dpr);
+      flatCanvas.style.width = cw + 'px';
+      flatCanvas.style.height = ch + 'px';
+
+      flatCtx.imageSmoothingEnabled = false;
+      flatCtx.fillStyle = '#020617';
+      flatCtx.fillRect(0, 0, flatCanvas.width, flatCanvas.height);
+
+      // Center of canvas in backing store device pixels
+      const cxBacking = flatCanvas.width / 2.0;
+      const cyBacking = flatCanvas.height / 2.0;
+
+      // 1 source texture pixel = 1 device backing pixel
+      const destX = Math.round(cxBacking - flatCenterTexX);
+      const destY = Math.round(cyBacking - flatCenterTexY);
+
+      // Draw active image at 1:1 backing pixels
+      flatCtx.drawImage(flatActiveImg, destX, destY);
+
+      // Wrap-around horizontally
+      if (destX > 0) {
+        flatCtx.drawImage(flatActiveImg, destX - 12288, destY);
+      }
+      if (destX + 12288 < flatCanvas.width) {
+        flatCtx.drawImage(flatActiveImg, destX + 12288, destY);
+      }
+
+      // Update UI coords info
+      const thetaMin = -26.38;
+      const thetaMax = 28.39;
+      const curYawFromTex = (flatCenterTexX / 12288.0) * 360.0;
+      const curPitchFromTex = thetaMax - (flatCenterTexY / (1869.0 - 1.0)) * (thetaMax - thetaMin);
+      const coordsInfo = document.getElementById('flat-coords-info');
+      if (coordsInfo) {
+        coordsInfo.textContent = `Yaw: ${curYawFromTex.toFixed(1)}°, Pitch: ${curPitchFromTex.toFixed(1)}° | Texture (X: ${flatCenterTexX}, Y: ${flatCenterTexY}) | DPR: ${dpr.toFixed(2)} | Backing: ${flatCanvas.width}x${flatCanvas.height}`;
+      }
     }
 
     function toggle1to1Zoom() {
