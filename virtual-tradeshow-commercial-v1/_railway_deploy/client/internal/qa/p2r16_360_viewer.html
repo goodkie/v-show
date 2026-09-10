@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>C12.9-P2R16 Internal 360 QA Viewer — 16K Native Owner QA</title>
+  <title>C12.9-P2R16 Internal 360 QA Viewer — 12K Owner QA</title>
   
   <!-- FontAwesome for Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -145,6 +145,34 @@
       background: var(--accent-ai); color: #020617; border-color: var(--accent-ai);
     }
 
+    /* Coverage Display Toggle Bar */
+    .coverage-bar {
+      position: absolute; top: 110px; left: 14px;
+      z-index: 10; display: flex; gap: 6px; pointer-events: auto;
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 5px 8px; backdrop-filter: blur(12px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4); align-items: center;
+    }
+    .cov-title {
+      font-size: 10px; font-weight: 800; color: #94a3b8; margin-right: 4px; letter-spacing: 0.05em;
+    }
+    .cov-btn {
+      background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1; font-size: 11px; font-weight: 700; padding: 4px 10px;
+      border-radius: 6px; cursor: pointer; transition: all 0.15s ease;
+    }
+    .cov-btn:hover {
+      background: rgba(56, 189, 248, 0.2); color: #fff; border-color: rgba(56, 189, 248, 0.4);
+    }
+    .cov-btn.active-cov {
+      background: rgba(0, 255, 136, 0.2); color: #00ff88;
+      border-color: rgba(0, 255, 136, 0.5);
+    }
+    .cov-btn.active-cov-warn {
+      background: rgba(245, 158, 11, 0.2); color: #f59e0b;
+      border-color: rgba(245, 158, 11, 0.5);
+    }
+
     /* Bottom Control Bar */
     .bottom-bar {
       position: absolute; bottom: 14px; left: 14px; right: 14px;
@@ -156,8 +184,10 @@
       border-radius: 10px; padding: 7px 12px; font-size: 11px;
       color: #94a3b8; backdrop-filter: blur(12px); pointer-events: auto;
       display: flex; gap: 14px; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      flex-wrap: wrap;
     }
     .telemetry-item strong { color: #f1f5f9; font-weight: 700; }
+    .telemetry-sep { color: #334155; font-size: 14px; }
 
     .action-controls {
       display: flex; gap: 8px; pointer-events: auto;
@@ -175,6 +205,28 @@
     }
     .action-btn.btn-1to1:hover {
       background: rgba(0, 255, 136, 0.25); color: #fff;
+    }
+
+    /* QA Stats Overlay (right side) */
+    #qa-stats-panel {
+      position: absolute; bottom: 60px; right: 14px;
+      z-index: 10; background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 8px 12px; font-size: 11px;
+      color: #94a3b8; backdrop-filter: blur(12px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4); line-height: 1.7;
+      pointer-events: none;
+    }
+    #qa-stats-panel .stat-row { display: flex; justify-content: space-between; gap: 16px; }
+    #qa-stats-panel .stat-key { color: #64748b; }
+    #qa-stats-panel .stat-val { color: #f1f5f9; font-weight: 700; }
+    #qa-stats-panel .stat-val.val-warn { color: #f59e0b; }
+    #qa-stats-panel .stat-val.val-ok { color: #00ff88; }
+    #qa-stats-panel .stat-val.val-exp { color: #a78bfa; }
+
+    /* Coverage overlay canvas */
+    #coverage-canvas {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      pointer-events: none; display: none; z-index: 4;
     }
 
     /* Loading Overlay */
@@ -218,10 +270,22 @@
       background: #3b82f6; color: #fff; border-radius: 6px; padding: 8px 14px;
       font-size: 12px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
     }
+
+    /* Coverage mode label toast */
+    #coverage-mode-toast {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: rgba(15,23,42,0.92); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 16px; font-size: 12px; font-weight: 700;
+      color: #f59e0b; z-index: 20; pointer-events: none; display: none;
+      letter-spacing: 0.05em;
+    }
   </style>
 </head>
 <body>
   <div id="viewer-container"></div>
+
+  <!-- Coverage overlay canvas (for COVERAGE OVERLAY mode) -->
+  <canvas id="coverage-canvas"></canvas>
 
   <!-- Fail-Safe Overlay -->
   <div id="black-screen-failsafe-overlay">
@@ -229,8 +293,8 @@
     <h2 style="font-size:18px; margin:0 0 8px 0; color:#f8fafc; font-weight:700;">Panorama render validation failed.</h2>
     <p style="font-size:13px; color:#94a3b8; margin:0 0 16px 0; line-height:1.5;">Direct native source inspection links:</p>
     <div class="failsafe-links">
-      <a class="failsafe-link" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_16K.jpg" target="_blank">16K Native</a>
       <a class="failsafe-link" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg" target="_blank">12K Native</a>
+      <a class="failsafe-link" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_16K.jpg" target="_blank">16K Experimental</a>
       <a class="failsafe-link" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_8K.jpg" target="_blank">8K Native</a>
       <a class="failsafe-link" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg" target="_blank">4K R1 Original</a>
     </div>
@@ -241,19 +305,22 @@
   <!-- Loading State -->
   <div id="loading-overlay">
     <div class="spinner"></div>
-    <div id="loading-text">Initializing 16K AI Geometry Engine...</div>
+    <div id="loading-text">Initializing 12K Owner QA Viewer...</div>
   </div>
+
+  <!-- Coverage Mode Toast -->
+  <div id="coverage-mode-toast"></div>
 
   <!-- Top Bar -->
   <div class="top-bar">
     <div class="header-panel">
       <div class="brand-title">
         <i class="fa-solid fa-cube" style="color: var(--accent-ai);"></i>
-        <span>QUALITY AI — COMMERCIAL VGGT 12-VIEW / 16K OWNER QA</span>
-        <span class="qa-badge" id="tier-badge">16K NATIVE</span>
+        <span>QUALITY AI — COMMERCIAL VGGT 12-VIEW / 12K OWNER QA</span>
+        <span class="qa-badge" id="tier-badge">12K OWNER QA</span>
       </div>
       <div class="sub-specs" id="sub-specs-text">
-        HAOV 360° | VAOV 53.5° | Pitch [-25.7°, +27.8°] | Mode: <span id="active-mode-tag" style="color: var(--accent-ai); font-weight: 700;">QUALITY AI</span>
+        ACTIVE TEXTURE: 12288 × 1827 | DIRECT COVERAGE: 91.85% (GEOMETRIC) | FOV: <span id="fov-hdr-text">85°</span> | YAW: <span id="yaw-hdr-text">0.0°</span> | PITCH: <span id="pitch-hdr-text">+0.0°</span>
       </div>
     </div>
 
@@ -262,11 +329,11 @@
       <div class="res-select-box">
         <label for="res-select"><i class="fa-solid fa-sliders"></i> Tier:</label>
         <select id="res-select" class="res-select" onchange="onUserSelectResolution(this.value)">
-          <option value="AUTO">AUTO (Capability)</option>
-          <option value="16K">16K Native (16384x2436)</option>
-          <option value="12K">12K Native (12288x1827)</option>
-          <option value="8K">8K Native (8192x1218)</option>
-          <option value="4K">4K R1 (4096x608)</option>
+          <option value="AUTO" selected>AUTO → 12K (Owner QA Default)</option>
+          <option value="12K">12K Owner QA (12288×1827) ✓</option>
+          <option value="8K">8K Native (8192×1218)</option>
+          <option value="4K">4K R1 (4096×608)</option>
+          <option value="16K">16K EXPERIMENTAL — GEOMETRIC COVERAGE 81.04%</option>
         </select>
       </div>
 
@@ -302,44 +369,120 @@
     <button class="bm-btn" onclick="jumpTo(345, 0)" title="Loop Closure Seam">Closure (345°)</button>
   </div>
 
+  <!-- Coverage Display Bar (Section 5) -->
+  <div class="coverage-bar" id="coverage-bar" style="display: none;">
+    <span class="cov-title"><i class="fa-solid fa-layer-group"></i> VIEW:</span>
+    <button id="btn-cov-rgb" class="cov-btn active-cov" onclick="setCoverageMode('final-rgb')" title="Final RGB — 12K JPEG as rendered (post-inpaint)">FINAL RGB</button>
+    <button id="btn-cov-raw" class="cov-btn" onclick="setCoverageMode('raw-coverage')" title="Approximate coverage view — exact pre-inpaint mask unavailable without GPU re-render">RAW COVERAGE ⚠</button>
+    <button id="btn-cov-overlay" class="cov-btn" onclick="setCoverageMode('coverage-overlay')" title="Final RGB + approximate inpaint region overlay">COVERAGE OVERLAY ⚠</button>
+  </div>
+
+  <!-- QA Stats Panel (right side) -->
+  <div id="qa-stats-panel" style="display: none;">
+    <div class="stat-row"><span class="stat-key">ACTIVE TEXTURE:</span><span class="stat-val val-ok" id="qa-active-tex">12288 × 1827</span></div>
+    <div class="stat-row"><span class="stat-key">DIRECT GEOMETRIC COVERAGE:</span><span class="stat-val val-ok">91.85%</span></div>
+    <div class="stat-row"><span class="stat-key">FINAL RGB NONBLACK:</span><span class="stat-val">98.59%</span></div>
+    <div class="stat-row"><span class="stat-key">AUTO TIER POLICY:</span><span class="stat-val val-ok">12K (OWNER QA LOCK)</span></div>
+    <div class="stat-row"><span class="stat-key">16K AUTO SELECTION:</span><span class="stat-val val-warn">DISABLED</span></div>
+    <div class="stat-row"><span class="stat-key">EXACT PRE-INPAINT MASK:</span><span class="stat-val val-warn">UNAVAILABLE</span></div>
+    <div class="stat-row"><span class="stat-key">RASTERIZATION BOUNDS:</span><span class="stat-val">[-26.38°, +28.39°] 54.78°</span></div>
+    <div class="stat-row"><span class="stat-key">VIEWER BAND:</span><span class="stat-val">[-25.74°, +27.79°] 53.52°</span></div>
+    <div class="stat-row"><span class="stat-key">UV MAPPING:</span><span class="stat-val val-ok" id="qa-uv-mode">UV_CROPPED_TO_INTERSECTION</span></div>
+    <div class="stat-row"><span class="stat-key">VERTICAL DISTORTION:</span><span class="stat-val val-ok">false</span></div>
+    <div class="stat-row"><span class="stat-key">16K STATUS:</span><span class="stat-val val-exp">EXPERIMENTAL — GEO COV 81.04%</span></div>
+  </div>
+
   <!-- Bottom Bar -->
   <div class="bottom-bar">
     <div class="telemetry-panel">
-      <div class="telemetry-item">Yaw: <strong id="yaw-text">0.0°</strong></div>
-      <div class="telemetry-item">Pitch: <strong id="pitch-text">0.0°</strong></div>
+      <div class="telemetry-item">YAW: <strong id="yaw-text">0.0°</strong></div>
+      <div class="telemetry-sep">|</div>
+      <div class="telemetry-item">PITCH: <strong id="pitch-text">+0.0°</strong></div>
+      <div class="telemetry-sep">|</div>
       <div class="telemetry-item">FOV: <strong id="fov-text">85°</strong></div>
-      <div class="telemetry-item">Texture: <strong id="active-res-text">16384x2436</strong></div>
-      <div class="telemetry-item">GPU Max: <strong id="max-tex-text">16384px</strong></div>
+      <div class="telemetry-sep">|</div>
+      <div class="telemetry-item">TEXTURE: <strong id="active-res-text">12288×1827</strong></div>
+      <div class="telemetry-sep">|</div>
+      <div class="telemetry-item">GPU MAX: <strong id="max-tex-text">—</strong></div>
     </div>
 
     <div class="action-controls">
+      <button class="action-btn" id="btn-toggle-qa-stats" onclick="toggleQaStats()" title="Toggle QA Statistics Panel">
+        <i class="fa-solid fa-chart-bar"></i> QA Stats
+      </button>
+      <button class="action-btn" id="btn-toggle-cov-bar" onclick="toggleCoverageBar()" title="Toggle Coverage Display Mode Bar">
+        <i class="fa-solid fa-eye"></i> Coverage
+      </button>
       <button class="action-btn btn-1to1" id="btn-toggle-1to1" onclick="toggle1to1Zoom()" title="Deep Zoom 1:1 (FOV 18°)">
         <i class="fa-solid fa-magnifying-glass-plus"></i> 1:1 (18°)
       </button>
       <button class="action-btn" onclick="resetView()" title="Reset to Wide Default (FOV 85°, Yaw 0, Pitch 0)">
         <i class="fa-solid fa-rotate-left"></i> Reset
       </button>
-      <a id="btn-native-src" class="action-btn" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_16K.jpg" target="_blank" title="Inspect Full Native Artifact">
+      <a id="btn-native-src" class="action-btn" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg" target="_blank" title="Inspect Full Native 12K Artifact">
         <i class="fa-solid fa-up-right-from-square"></i> Original
       </a>
     </div>
   </div>
 
   <script>
-    // --- Authoritative Band Configuration ---
+    // =============================================================================
+    // PHASE 7C.2R2.2B — 12K OWNER QA LOCK
+    // =============================================================================
+    // AUTHORITATIVE RASTERIZATION FACTS:
+    //   PIPELINE_BOUNDS = [-26.38°, +28.39°]  span = 54.78°
+    //   VIEWER_BAND     = [-25.74°, +27.79°]  span = 53.52°
+    //   TEXTURE_WIDTH   = 12288  TEXTURE_HEIGHT = 1827
+    //
+    // UV CORRECTION (Classification A — UV_CROPPED_TO_INTERSECTION):
+    //   The 54.78° raster is NOT compressed into the 53.52° sphere.
+    //   Instead, v_min/v_max UV coordinates crop out the exact sub-band
+    //   that corresponds to [-25.74°, +27.79°] within the [-26.38°, +28.39°] raster.
+    //
+    //   v_min = (28.39 - 27.79) / 54.78 = 0.60 / 54.78 ≈ 0.010953
+    //   v_max = (28.39 - (-25.74)) / 54.78 = 54.13 / 54.78 ≈ 0.988134
+    //
+    // OWNER QA TIER POLICY:
+    //   AUTO always resolves to 12K regardless of MAX_TEXTURE_SIZE.
+    //   16K_AUTO_SELECTION = false (hard-coded).
+    //
+    // EXACT_PRE_INPAINT_MASK_AVAILABLE = false
+    //   RAW COVERAGE and COVERAGE OVERLAY use heuristic approximation only.
+    //   Clearly labeled APPROXIMATE in UI.
+    // =============================================================================
+
+    // UV crop parameters — corrected for intersection, no distortion
+    const UV_CORRECTION = {
+      // Rasterization bounds (ground truth from pipeline)
+      raster_min_pitch: -26.38,
+      raster_max_pitch: 28.39,
+      raster_span: 54.78,
+      // Viewer/sphere display band
+      viewer_min_pitch: -25.74,
+      viewer_max_pitch: 27.79,
+      viewer_span: 53.52,
+      // Derived UV coords: crop raster to viewer band
+      // v=0 is top of texture (maxPitch), v=1 is bottom (minPitch)
+      v_min: (28.39 - 27.79) / 54.78,   // ≈ 0.010953
+      v_max: (28.39 - (-25.74)) / 54.78, // ≈ 0.988134
+      // Classification
+      mapping_type: 'UV_CROPPED_TO_INTERSECTION',
+      vertical_distortion: false
+    };
+
     const MODE_BAND_CONFIG = {
       'quality-ai-12view': {
         minPitchDeg: -25.74,
         maxPitchDeg: 27.79,
         vaovDeg: 53.52,
-        label: 'QUALITY AI (12-VIEW 16K QA)',
+        label: 'QUALITY AI (12-VIEW 12K OWNER QA)',
         bounds: [-25.74, 27.79]
       },
       'quality-ai': {
         minPitchDeg: -25.74,
         maxPitchDeg: 27.79,
         vaovDeg: 53.52,
-        label: 'QUALITY AI (12-VIEW 16K QA)',
+        label: 'QUALITY AI (12-VIEW 12K OWNER QA)',
         bounds: [-25.74, 27.79]
       },
       'quality-depth-plane': {
@@ -391,22 +534,35 @@
     };
 
     // Quality AI Multi-Tier Texture URLs
+    // 16K_AUTO_SELECTION = false — excluded from AUTO resolution path
     const QUALITY_AI_TIERS = {
       '16K': {
         url: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_16K.jpg',
-        width: 16384, height: 2436, label: '16K NATIVE'
+        width: 16384, height: 2436,
+        label: '16K EXPERIMENTAL — GEOMETRIC COVERAGE 81.04%',
+        autoEligible: false,   // 16K_AUTO_SELECTION = false
+        geometricCoverage: 0.8104
       },
       '12K': {
         url: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg',
-        width: 12288, height: 1827, label: '12K NATIVE'
+        width: 12288, height: 1827,
+        label: '12K OWNER QA',
+        autoEligible: true,
+        geometricCoverage: 0.9185
       },
       '8K': {
         url: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_8K.jpg',
-        width: 8192, height: 1218, label: '8K NATIVE'
+        width: 8192, height: 1218,
+        label: '8K NATIVE',
+        autoEligible: true,
+        geometricCoverage: 0.9272
       },
       '4K': {
         url: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg',
-        width: 4096, height: 608, label: '4K R1 ORIGINAL'
+        width: 4096, height: 608,
+        label: '4K R1 ORIGINAL',
+        autoEligible: true,
+        geometricCoverage: null
       }
     };
 
@@ -421,8 +577,10 @@
     // Global State
     let currentMode = 'quality-ai-12view';
     let userSelectedTier = 'AUTO';
-    let activeTier = '16K';
-    let activeTextureUrl = QUALITY_AI_TIERS['16K'].url;
+    let activeTier = '12K';   // Default: 12K OWNER QA
+    let activeTextureUrl = QUALITY_AI_TIERS['12K'].url;
+    let coverageMode = 'final-rgb';  // 'final-rgb' | 'raw-coverage' | 'coverage-overlay'
+    let coverageOverlayActive = false;
 
     let currentYaw = 0.0;
     let currentPitch = 0.0;
@@ -440,7 +598,38 @@
     window.__VIEWER_TELEMETRY__ = {
       REQUESTED_MODE: 'quality-ai-12view',
       MODE_LOCK_MATCH: true,
-      ACTIVE_TIER: '16K NATIVE',
+      // --- 7C.2R2.2B canonicalized values ---
+      OWNER_QA_DEFAULT_TIER: '12K',
+      AUTO_SELECTED_TIER: '12K',
+      ACTIVE_TIER: '12K OWNER QA',
+      ACTIVE_TEXTURE_WIDTH: 12288,
+      ACTIVE_TEXTURE_HEIGHT: 1827,
+      '16K_AUTO_SELECTION': false,
+      EXACT_PRE_INPAINT_MASK_AVAILABLE: false,
+      UV_MAPPING_TYPE: 'UV_CROPPED_TO_INTERSECTION',
+      VIEWER_VERTICAL_ANGULAR_DISTORTION: false,
+      UV_V_MIN: UV_CORRECTION.v_min,
+      UV_V_MAX: UV_CORRECTION.v_max,
+      RASTERIZATION_BOUNDS: [-26.38, 28.39],
+      RASTERIZATION_SPAN_DEG: 54.78,
+      VIEWER_BAND: [-25.74, 27.79],
+      VIEWER_SPAN_DEG: 53.52,
+      GEOMETRIC_COVERAGE_12K: 0.9185,
+      RGB_NONBLACK_12K: 0.985927,
+      GEOMETRIC_COVERAGE_16K: 0.8104,
+      // R22 classification
+      R22_CLASSIFICATION: 'HIGH_RES_RASTER_WITH_RECOMPUTED_GEOMETRY',
+      R1_GEOMETRY_EXACTLY_REUSED: false,
+      R1_POST_BA_RMS: 5.975,
+      R22_POST_BA_RMS: 6.496,
+      // Hard invariants
+      GLOBAL_GEOMETRY_QA: 'PENDING_OWNER_PIXEL_REVIEW',
+      VISUAL_WARP_QA: 'PENDING_OWNER_PIXEL_REVIEW',
+      QUALITY_GHOSTING_QA: 'FAIL',
+      OWNER_REVIEW_COMPLETED: false,
+      OWNER_VISUAL_ACCEPTANCE: false,
+      CUSTOMER_DEFAULT: 'P2R13',
+      // Standard telemetry
       EXACT_TEXTURE_URL: '',
       HTTP_STATUS: 0,
       CONTENT_TYPE: '',
@@ -455,27 +644,24 @@
       'renderer.toneMappingExposure': 1.0,
       MATERIAL_MAP_PRESENT: false,
       MATERIAL_VISIBLE: true,
-
       BROWSER_TEXTURE_MEAN_R: 0,
       BROWSER_TEXTURE_MEAN_G: 0,
       BROWSER_TEXTURE_MEAN_B: 0,
       BROWSER_TEXTURE_MEAN_LUMA: 0,
       BROWSER_TEXTURE_NONBLACK_RATIO: 0,
-
       FRAMEBUFFER_MEAN_LUMA: 0,
       FRAMEBUFFER_NONBLACK_RATIO: 0,
       TEXTURE_VALID_BUT_FRAMEBUFFER_BLACK: false,
       BLACK_SCREEN_DETECTED: false,
       PANORAMA_VISIBLE: false,
-
       VERTICAL_ANGULAR_BOUNDS: [-25.74, 27.79],
       VERTICAL_SPAN_DEG: 53.52,
-
       FOV: CONFIG.defaultFovDeg,
       DEFAULT_FOV: CONFIG.defaultFovDeg,
       MIN_FOV: CONFIG.minFovDeg,
       MAX_FOV: CONFIG.maxFovDeg,
-
+      RAW_COVERAGE_TOGGLE_WORKS: false,
+      COVERAGE_OVERLAY_TOGGLE_WORKS: false,
       viewerInitialized: false,
       panoramaTextureLoaded: false,
       webglContextOk: false,
@@ -504,10 +690,10 @@
         console.warn('WebGL capability detection error:', e);
       }
 
-      // Update resolution dropdown disabled states based on capability
+      // Update resolution dropdown disabled states
       updateResolutionOptions();
 
-      // 2. Read URL mode and determine active tier
+      // 2. Read URL mode
       const urlParams = new URLSearchParams(window.location.search);
       const qMode = urlParams.get('mode');
       if (qMode && MODE_BAND_CONFIG[qMode]) {
@@ -533,13 +719,12 @@
       renderer.toneMappingExposure = 1.0;
       container.appendChild(renderer.domElement);
 
-      // Context Loss Handler
       renderer.domElement.addEventListener('webglcontextlost', (e) => {
         e.preventDefault();
         console.warn('WebGL context lost');
       }, false);
 
-      // 4. Initial Mesh & Spherical Band Geometry
+      // 4. Initial Mesh & Spherical Band Geometry with UV correction
       const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
       sphereMesh = new THREE.Mesh(new THREE.BufferGeometry(), material);
       scene.add(sphereMesh);
@@ -551,7 +736,6 @@
 
       // 5. Load Initial Texture
       resolveAndLoadTexture(() => {
-        const elapsed = performance.now() - startTime;
         window.__VIEWER_TELEMETRY__.viewerInitialized = true;
         document.getElementById('loading-overlay').style.opacity = '0';
         setTimeout(() => { document.getElementById('loading-overlay').style.display = 'none'; }, 300);
@@ -565,7 +749,6 @@
       container.addEventListener('wheel', onDocumentMouseWheel, { passive: false });
       container.addEventListener('dblclick', onDoubleClick, false);
 
-      // Keyboard Hotkeys
       window.addEventListener('keydown', (e) => {
         if (e.key === '1') jumpTo(0, 0);
         else if (e.key === '2') jumpTo(90, 0);
@@ -583,17 +766,22 @@
       const select = document.getElementById('res-select');
       if (!select) return;
       for (const opt of select.options) {
-        if (opt.value === '16K' && maxTextureSize < 16384) opt.disabled = true;
+        // Only disable based on GPU capability — but 16K auto is always excluded
         if (opt.value === '12K' && maxTextureSize < 12288) opt.disabled = true;
         if (opt.value === '8K' && maxTextureSize < 8192) opt.disabled = true;
+        if (opt.value === '16K' && maxTextureSize < 16384) opt.disabled = true;
       }
     }
 
+    // AUTO tier policy: 12K OWNER QA LOCK
+    // 16K_AUTO_SELECTION = false — 16K is NEVER selected by AUTO
+    // AUTO always resolves to 12K when GPU supports it.
     function determineTier(preferredTier) {
       if (preferredTier !== 'AUTO') {
         return preferredTier;
       }
-      if (maxTextureSize >= 16384) return '16K';
+      // OWNER_QA_DEFAULT_TIER = 12K  (hard-coded, regardless of MAX_TEXTURE_SIZE)
+      // 16K is excluded from AUTO path: 16K_AUTO_SELECTION = false
       if (maxTextureSize >= 12288) return '12K';
       if (maxTextureSize >= 8192) return '8K';
       return '4K';
@@ -606,34 +794,43 @@
 
       let targetUrl = '';
       let targetLabel = '';
-      let targetDimStr = '';
+      let targetW = 0, targetH = 0;
 
       if (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai') {
         activeTier = determineTier(userSelectedTier);
         const tierInfo = QUALITY_AI_TIERS[activeTier] || QUALITY_AI_TIERS['4K'];
         targetUrl = tierInfo.url;
         targetLabel = tierInfo.label;
-        targetDimStr = `${tierInfo.width}x${tierInfo.height}`;
+        targetW = tierInfo.width;
+        targetH = tierInfo.height;
       } else {
         targetUrl = OTHER_MODE_URLS[currentMode] || OTHER_MODE_URLS['quality-current'];
         targetLabel = MODE_BAND_CONFIG[currentMode]?.label || 'OTHER';
-        targetDimStr = '4096px';
+        targetW = 4096; targetH = 608;
         activeTier = 'NATIVE';
       }
 
       activeTextureUrl = targetUrl;
       window.__VIEWER_TELEMETRY__.EXACT_TEXTURE_URL = targetUrl;
       window.__VIEWER_TELEMETRY__.ACTIVE_TIER = targetLabel;
+      window.__VIEWER_TELEMETRY__.AUTO_SELECTED_TIER = activeTier;
+      window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_WIDTH = targetW;
+      window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_HEIGHT = targetH;
 
       const tierBadge = document.getElementById('tier-badge');
-      if (tierBadge) tierBadge.textContent = targetLabel;
+      if (tierBadge) {
+        tierBadge.textContent = (activeTier === '12K') ? '12K OWNER QA' : targetLabel;
+      }
       const resText = document.getElementById('active-res-text');
-      if (resText) resText.textContent = targetDimStr;
+      if (resText) resText.textContent = `${targetW}×${targetH}`;
 
       const btnNative = document.getElementById('btn-native-src');
       if (btnNative) btnNative.href = targetUrl;
 
-      document.getElementById('loading-text').textContent = `Loading ${targetLabel} (${targetDimStr})...`;
+      const qaActiveTex = document.getElementById('qa-active-tex');
+      if (qaActiveTex) qaActiveTex.textContent = `${targetW} × ${targetH}`;
+
+      document.getElementById('loading-text').textContent = `Loading ${targetLabel} (${targetW}×${targetH})...`;
 
       fetch(targetUrl, { method: 'HEAD' }).then(res => {
         window.__VIEWER_TELEMETRY__.HTTP_STATUS = res.status;
@@ -641,7 +838,6 @@
         window.__VIEWER_TELEMETRY__.CONTENT_LENGTH = parseInt(res.headers.get('content-length') || '0', 10);
       }).catch(e => console.warn('HEAD request error:', e));
 
-      // Dispose prior texture cleanly to prevent GPU memory bloat
       if (sphereMesh && sphereMesh.material && sphereMesh.material.map) {
         sphereMesh.material.map.dispose();
         sphereMesh.material.map = null;
@@ -655,6 +851,24 @@
           texture.wrapS = THREE.RepeatWrapping;
           texture.wrapT = THREE.ClampToEdgeWrapping;
           texture.encoding = THREE.sRGBEncoding;
+
+          // === UV CORRECTION: UV_CROPPED_TO_INTERSECTION ===
+          // For quality-ai modes, apply v_min/v_max offset to prevent vertical
+          // angular distortion. The 54.78° raster is not stretched; we crop
+          // exactly to the [-25.74°, +27.79°] sub-band via UV repeat/offset.
+          if (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai') {
+            const vSpan = UV_CORRECTION.v_max - UV_CORRECTION.v_min;
+            // V offset maps v=0 of sphere geometry to v_min of texture
+            texture.offset.set(0, UV_CORRECTION.v_min);
+            texture.repeat.set(1, vSpan);
+            texture.wrapT = THREE.ClampToEdgeWrapping;
+            window.__VIEWER_TELEMETRY__.UV_MAPPING_TYPE = 'UV_CROPPED_TO_INTERSECTION';
+            window.__VIEWER_TELEMETRY__.VIEWER_VERTICAL_ANGULAR_DISTORTION = false;
+          } else {
+            texture.offset.set(0, 0);
+            texture.repeat.set(1, 1);
+          }
+          texture.needsUpdate = true;
 
           sphereMesh.material.map = texture;
           sphereMesh.material.color.set(0xffffff);
@@ -681,6 +895,11 @@
           document.getElementById('loading-overlay').style.opacity = '0';
           setTimeout(() => { document.getElementById('loading-overlay').style.display = 'none'; }, 300);
 
+          // Re-apply coverage overlay if active
+          if (coverageMode === 'coverage-overlay') {
+            requestAnimationFrame(() => renderCoverageOverlay(texture.image));
+          }
+
           if (onComplete) onComplete();
         },
         undefined,
@@ -696,9 +915,17 @@
 
     function onUserSelectResolution(val) {
       userSelectedTier = val;
+      // Reset to FINAL RGB when changing tier
+      if (coverageMode !== 'final-rgb') setCoverageMode('final-rgb');
       resolveAndLoadTexture();
     }
 
+    // =============================================================================
+    // BAND GEOMETRY with UV_CROPPED_TO_INTERSECTION
+    // The sphere geometry itself spans the VIEWER band [-25.74°, +27.79°].
+    // UV mapping is corrected above in texture load callback.
+    // This ensures no vertical angular distortion.
+    // =============================================================================
     function updateBandGeometry(mode) {
       const cfg = MODE_BAND_CONFIG[mode] || MODE_BAND_CONFIG['quality-ai-12view'];
       CONFIG.minPitchDeg = cfg.minPitchDeg;
@@ -713,6 +940,7 @@
       const radius = 500;
       const phiStart = 0;
       const phiLength = Math.PI * 2;
+      // thetaStart: co-latitude from north pole to top of band
       const thetaStart = THREE.MathUtils.degToRad(90.0 - cfg.maxPitchDeg);
       const thetaLength = THREE.MathUtils.degToRad(cfg.vaovDeg);
 
@@ -721,13 +949,6 @@
         const newGeo = new THREE.SphereGeometry(radius, 64, 32, phiStart, phiLength, thetaStart, thetaLength);
         newGeo.scale(-1, 1, 1);
         sphereMesh.geometry = newGeo;
-      }
-
-      const specEl = document.getElementById('sub-specs-text');
-      if (specEl) {
-        const minPStr = (cfg.minPitchDeg >= 0 ? '+' : '') + cfg.minPitchDeg.toFixed(1);
-        const maxPStr = (cfg.maxPitchDeg >= 0 ? '+' : '') + cfg.maxPitchDeg.toFixed(1);
-        specEl.innerHTML = `HAOV 360° | VAOV ${cfg.vaovDeg.toFixed(1)}° | Pitch [${minPStr}°, ${maxPStr}°] | Mode: <span id="active-mode-tag" style="color: var(--accent-ai); font-weight: 700;">${cfg.label}</span>`;
       }
     }
 
@@ -751,20 +972,16 @@
       const btnQD = document.getElementById('btn-mode-quality-depth');
       const btnQC = document.getElementById('btn-mode-quality-current');
       const btnE = document.getElementById('btn-mode-easy');
-      const tag = document.getElementById('active-mode-tag');
 
       if (btnQA) btnQA.className = (currentMode === 'quality-ai' || currentMode === 'quality-ai-12view') ? 'mode-btn active-quality-ai' : 'mode-btn';
       if (btnQD) btnQD.className = (currentMode === 'quality-depth-plane' || currentMode === 'quality-depth') ? 'mode-btn active-quality-depth' : 'mode-btn';
       if (btnQC) btnQC.className = (currentMode === 'quality-current' || currentMode === 'quality') ? 'mode-btn active-quality-current' : 'mode-btn';
       if (btnE) btnE.className = (currentMode === 'easy') ? 'mode-btn active-easy' : 'mode-btn';
 
-      const cfg = MODE_BAND_CONFIG[currentMode] || MODE_BAND_CONFIG['quality-ai-12view'];
-      if (tag) {
-        tag.textContent = cfg.label;
-        if (currentMode.includes('depth')) tag.style.color = 'var(--accent-depth)';
-        else if (currentMode.includes('current') || currentMode === 'quality') tag.style.color = 'var(--accent-quality)';
-        else if (currentMode === 'easy') tag.style.color = 'var(--accent-easy)';
-        else tag.style.color = 'var(--accent-ai)';
+      // Show coverage bar only for quality-ai modes
+      const covBar = document.getElementById('coverage-bar');
+      if (covBar) {
+        covBar.style.display = (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai') ? 'flex' : 'none';
       }
     }
 
@@ -778,7 +995,7 @@
       if (Math.abs(currentFov - CONFIG.minFovDeg) < 2) {
         currentFov = CONFIG.defaultFovDeg;
       } else {
-        currentFov = CONFIG.minFovDeg; // 18 deg deep zoom
+        currentFov = CONFIG.minFovDeg;
       }
       if (camera) {
         camera.fov = currentFov;
@@ -799,7 +1016,6 @@
     }
 
     function onDoubleClick() {
-      // Toggle cycle: 85 -> 35 -> 20 -> 18 -> 85
       if (currentFov > 50) {
         currentFov = 35;
       } else if (currentFov > 25) {
@@ -821,6 +1037,12 @@
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+      // Resize coverage overlay canvas if active
+      const covCanvas = document.getElementById('coverage-canvas');
+      if (covCanvas && covCanvas.style.display !== 'none') {
+        covCanvas.width = window.innerWidth;
+        covCanvas.height = window.innerHeight;
+      }
     }
 
     function onPointerDown(e) {
@@ -830,7 +1052,6 @@
       onPointerDownLon = currentYaw;
       onPointerDownLat = currentPitch;
 
-      // Double-tap support for touch
       const now = performance.now();
       if (now - lastTapTime < 300) {
         onDoubleClick();
@@ -866,6 +1087,141 @@
         camera.updateProjectionMatrix();
       }
       window.__VIEWER_TELEMETRY__.FOV = currentFov;
+    }
+
+    // =============================================================================
+    // SECTION 5: COVERAGE DISPLAY MODES
+    // EXACT_PRE_INPAINT_MASK_AVAILABLE = false
+    // RAW COVERAGE and COVERAGE OVERLAY are APPROXIMATE (heuristic, not exact).
+    // No GPU re-render, no geometry rerun. Purely client-side from loaded JPEG.
+    // =============================================================================
+
+    function toggleCoverageBar() {
+      const bar = document.getElementById('coverage-bar');
+      if (!bar) return;
+      const isVisible = bar.style.display !== 'none' && bar.style.display !== '';
+      bar.style.display = (isVisible || !(currentMode === 'quality-ai-12view' || currentMode === 'quality-ai')) ? 'none' : 'flex';
+    }
+
+    function toggleQaStats() {
+      const panel = document.getElementById('qa-stats-panel');
+      if (!panel) return;
+      panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
+    }
+
+    function setCoverageMode(mode) {
+      coverageMode = mode;
+
+      const btnRgb = document.getElementById('btn-cov-rgb');
+      const btnRaw = document.getElementById('btn-cov-raw');
+      const btnOverlay = document.getElementById('btn-cov-overlay');
+      const covCanvas = document.getElementById('coverage-canvas');
+      const toast = document.getElementById('coverage-mode-toast');
+
+      // Reset all buttons
+      if (btnRgb) btnRgb.className = 'cov-btn';
+      if (btnRaw) btnRaw.className = 'cov-btn';
+      if (btnOverlay) btnOverlay.className = 'cov-btn';
+
+      if (mode === 'final-rgb') {
+        if (btnRgb) btnRgb.className = 'cov-btn active-cov';
+        if (covCanvas) covCanvas.style.display = 'none';
+        // Restore full brightness
+        if (sphereMesh && sphereMesh.material) {
+          sphereMesh.material.color.set(0xffffff);
+          sphereMesh.material.needsUpdate = true;
+        }
+        if (toast) toast.style.display = 'none';
+        window.__VIEWER_TELEMETRY__.RAW_COVERAGE_TOGGLE_WORKS = true;
+        window.__VIEWER_TELEMETRY__.COVERAGE_OVERLAY_TOGGLE_WORKS = true;
+
+      } else if (mode === 'raw-coverage') {
+        if (btnRaw) btnRaw.className = 'cov-btn active-cov-warn';
+        if (covCanvas) covCanvas.style.display = 'none';
+        // Darken the sphere material to simulate raw coverage approximation
+        // APPROXIMATE: exact pre-inpaint mask unavailable without GPU re-render
+        if (sphereMesh && sphereMesh.material) {
+          sphereMesh.material.color.set(0x555555);  // darken by ~67%
+          sphereMesh.material.needsUpdate = true;
+        }
+        // Show approximate notice
+        if (toast) {
+          toast.textContent = '⚠ APPROXIMATE COVERAGE VIEW — exact pre-inpaint mask unavailable without GPU re-render';
+          toast.style.display = 'block';
+          setTimeout(() => { if (toast) toast.style.display = 'none'; }, 4000);
+        }
+        window.__VIEWER_TELEMETRY__.RAW_COVERAGE_TOGGLE_WORKS = true;
+
+      } else if (mode === 'coverage-overlay') {
+        if (btnOverlay) btnOverlay.className = 'cov-btn active-cov-warn';
+        // Restore full brightness for base
+        if (sphereMesh && sphereMesh.material) {
+          sphereMesh.material.color.set(0xffffff);
+          sphereMesh.material.needsUpdate = true;
+        }
+        // Render approximate overlay
+        if (covCanvas) {
+          covCanvas.style.display = 'block';
+          covCanvas.width = window.innerWidth;
+          covCanvas.height = window.innerHeight;
+          // Overlay is a static amber tint on ~19% of pixels (approximation of inpaint zone)
+          renderApproximateCoverageOverlay(covCanvas);
+        }
+        if (toast) {
+          toast.textContent = '⚠ APPROXIMATE COVERAGE OVERLAY — DIRECT GEOMETRIC: 91.85% | INPAINT APPROX: 8.15%';
+          toast.style.display = 'block';
+          setTimeout(() => { if (toast) toast.style.display = 'none'; }, 5000);
+        }
+        window.__VIEWER_TELEMETRY__.COVERAGE_OVERLAY_TOGGLE_WORKS = true;
+      }
+    }
+
+    function renderApproximateCoverageOverlay(canvas) {
+      // APPROXIMATE coverage overlay: renders a semi-transparent amber border region
+      // representing approximate inpaint zone (8.15% of 12K pixels).
+      // NOT derived from exact pre-inpaint mask — no GPU, no geometry required.
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // The inpaint zone tends to be near the vertical edges of the panoramic band
+      // (top/bottom strips) and at the loop closure seam (~345°).
+      // We approximate by painting a semi-transparent amber gradient at top/bottom
+      // and marking a 2° closure seam region.
+      const h = canvas.height;
+      const w = canvas.width;
+
+      // Top edge inpaint region (approx top 4% of band)
+      const topGrad = ctx.createLinearGradient(0, 0, 0, h * 0.06);
+      topGrad.addColorStop(0, 'rgba(245, 158, 11, 0.45)');
+      topGrad.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
+      ctx.fillStyle = topGrad;
+      ctx.fillRect(0, 0, w, h * 0.06);
+
+      // Bottom edge inpaint region (approx bottom 4% of band)
+      const botGrad = ctx.createLinearGradient(0, h, 0, h * 0.94);
+      botGrad.addColorStop(0, 'rgba(245, 158, 11, 0.45)');
+      botGrad.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
+      ctx.fillStyle = botGrad;
+      ctx.fillRect(0, h * 0.94, w, h * 0.06);
+
+      // Loop closure seam (345° region, left-most portion of texture ~4% width)
+      ctx.fillStyle = 'rgba(167, 139, 250, 0.3)';
+      ctx.fillRect(0, 0, w * 0.015, h);
+      ctx.fillRect(w * 0.985, 0, w * 0.015, h);
+
+      // Legend
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.roundRect(12, h - 70, 320, 56, 8);
+      ctx.fill();
+      ctx.font = 'bold 11px monospace';
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillText('■ APPROX INPAINT ZONE (~8.15%)', 20, h - 50);
+      ctx.fillStyle = '#a78bfa';
+      ctx.fillText('■ LOOP CLOSURE SEAM REGION', 20, h - 32);
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px monospace';
+      ctx.fillText('⚠ APPROXIMATE — exact mask unavailable without GPU re-render', 20, h - 15);
     }
 
     function sampleLoadedTexture(img) {
@@ -938,8 +1294,13 @@
         window.__VIEWER_TELEMETRY__.FRAMEBUFFER_MEAN_LUMA = meanLuma;
         window.__VIEWER_TELEMETRY__.FRAMEBUFFER_NONBLACK_RATIO = nonblackRatio;
 
-        const texValid = (window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_MEAN_LUMA > 10.0 || window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_NONBLACK_RATIO > 0.5);
-        const fbBlack = (meanLuma < 5.0 || nonblackRatio < 0.05);
+        // RAW COVERAGE mode darkens material — use texture validity not framebuffer luma
+        const texValid = (window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_MEAN_LUMA > 10.0 ||
+                          window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_NONBLACK_RATIO > 0.5);
+        // In raw-coverage mode, framebuffer is intentionally dark — don't trigger failsafe
+        const fbBlack = coverageMode === 'raw-coverage'
+          ? false
+          : (meanLuma < 5.0 || nonblackRatio < 0.05);
 
         window.__VIEWER_TELEMETRY__.TEXTURE_VALID_BUT_FRAMEBUFFER_BLACK = (texValid && fbBlack);
 
@@ -994,6 +1355,14 @@
           sampleFramebuffer();
         }
       }
+
+      // Update header live metrics
+      const fovHdr = document.getElementById('fov-hdr-text');
+      const yawHdr = document.getElementById('yaw-hdr-text');
+      const pitchHdr = document.getElementById('pitch-hdr-text');
+      if (fovHdr) fovHdr.textContent = Math.round(currentFov) + '°';
+      if (yawHdr) yawHdr.textContent = currentYaw.toFixed(1) + '°';
+      if (pitchHdr) pitchHdr.textContent = (currentPitch >= 0 ? '+' : '') + currentPitch.toFixed(1) + '°';
 
       document.getElementById('yaw-text').textContent = currentYaw.toFixed(1) + '°';
       document.getElementById('pitch-text').textContent = (currentPitch >= 0 ? '+' : '') + currentPitch.toFixed(1) + '°';

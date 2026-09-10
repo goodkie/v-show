@@ -1,4 +1,4 @@
-﻿{
+{
     "PHASE":  "PHASE_7C.2R2.2",
     "TITLE":  "16K Native Owner QA + Deep Zoom Viewer",
     "STATUS":  "READY_FOR_OWNER_REVIEW",
@@ -293,5 +293,287 @@
                                      "RECOMMENDED_QA_TIER_NOTE":  "12K has geometric coverage 0.9185 \u003e= 0.90 and is the highest tier meeting threshold.",
                                      "HIGH_RES_OWNER_REVIEW_READY":  true,
                                      "HIGH_RES_OWNER_REVIEW_READY_NOTE":  "Provenance correction committed. HIGH_RES_OWNER_REVIEW_READY=true for 12K tier only. 16K requires geometric coverage repair before Owner QA eligibility."
-                                 }
+                                 },
+    "PHASE_7C2R22B":  {
+        "PHASE":  "7C.2R2.2B",
+        "CLASSIFICATION":  "12K_OWNER_QA_LOCK_AND_RAW_COVERAGE_INSPECTION",
+        "TIMESTAMP_UTC":  "2026-09-10T00:00:00Z",
+        "BRANCH":  "experiment/c12.9-p2r16-8shot-hires",
+
+        "QA_LOCK": {
+            "OWNER_QA_DEFAULT_TIER":  "12K",
+            "16K_AUTO_SELECTION":  false,
+            "16K_LABEL_IN_UI":  "16K EXPERIMENTAL — GEOMETRIC COVERAGE 81.04%",
+            "VIEWER_HEADER":  "QUALITY AI — COMMERCIAL VGGT 12-VIEW / 12K OWNER QA",
+            "ACTIVE_TEXTURE_DIMS":  "12288 × 1827",
+            "DIRECT_COVERAGE_DISPLAY":  "91.85%",
+            "DEFAULT_FOV":  85,
+            "MIN_FOV":  18,
+            "MAX_FOV":  100,
+            "FOV_18_USES_12K_NOT_4K_PROXY":  true
+        },
+
+        "UV_CORRECTION": {
+            "CLASSIFICATION":  "UV_CROPPED_TO_INTERSECTION",
+            "RASTERIZATION_SPAN_DEG":  54.78,
+            "RASTERIZATION_BOUNDS":  [-26.38, 28.39],
+            "VIEWER_BAND_DEG":  53.52,
+            "VIEWER_BAND":  [-25.74, 27.79],
+            "UV_V_MIN":  0.010953,
+            "UV_V_MAX":  0.988134,
+            "UV_V_SPAN":  0.977181,
+            "VIEWER_VERTICAL_ANGULAR_DISTORTION":  false,
+            "TEXTURE_OFFSET_SET":  [0.0, 0.010953],
+            "TEXTURE_REPEAT_SET":  [1.0, 0.977181]
+        },
+
+        "COVERAGE_MODES": {
+            "FINAL_RGB_MODE":  "Standard render — sRGB pipeline, no modifications",
+            "RAW_COVERAGE_MODE":  "Material color 0x555555, APPROXIMATE — exact pre-inpaint mask unavailable",
+            "COVERAGE_OVERLAY_MODE":  "Canvas gradient approximating edge inpaint zones — APPROXIMATE",
+            "EXACT_PRE_INPAINT_MASK_AVAILABLE":  false,
+            "EXACT_PRE_INPAINT_MASK_NOTE":  "Modal rasterize_resolution() does not persist band_owner array to disk. Cannot reconstruct without re-running GPU rasterizer."
+        },
+
+        "CANONICALIZED_QA_VALUES": {
+            "R22_CLASSIFICATION":  "HIGH_RES_RASTER_WITH_RECOMPUTED_GEOMETRY",
+            "R1_GEOMETRY_EXACTLY_REUSED":  false,
+            "VGGT_RERUN_DURING_R22":  true,
+            "ROMA_RERUN_DURING_R22":  true,
+            "BA_RERUN_DURING_R22":  true,
+            "DEPTH_RERUN_DURING_R22":  true,
+            "R1_POST_BA_RMS":  5.975,
+            "R22_POST_BA_RMS":  6.496,
+            "PIPELINE_BOUNDS":  [-26.38, 28.39],
+            "PIPELINE_SPAN_DEG":  54.78,
+            "VIEWER_BAND":  [-25.74, 27.79],
+            "VIEWER_SPAN_DEG":  53.52,
+            "GEOMETRIC_COVERAGE_8K":  0.9272,
+            "GEOMETRIC_COVERAGE_12K":  0.9185,
+            "GEOMETRIC_COVERAGE_16K":  0.8104,
+            "RGB_NONBLACK_8K":  0.985395,
+            "RGB_NONBLACK_12K":  0.985927,
+            "RGB_NONBLACK_16K":  0.986528,
+            "GLOBAL_GEOMETRY_QA":  "PENDING_OWNER_PIXEL_REVIEW",
+            "VISUAL_WARP_QA":  "PENDING_OWNER_PIXEL_REVIEW",
+            "QUALITY_GHOSTING_QA":  "FAIL",
+            "OWNER_REVIEW_COMPLETED":  false,
+            "OWNER_VISUAL_ACCEPTANCE":  false,
+            "CUSTOMER_DEFAULT":  "P2R13",
+            "16K_OWNER_QA_READY":  false,
+            "12K_OWNER_QA_READY":  true,
+            "8K_OWNER_QA_READY":  true
+        },
+
+        "HARD_INVARIANTS": {
+            "DO_NOT_TOUCH_MASTER":  true,
+            "DO_NOT_RUN_VGGT":  true,
+            "DO_NOT_RUN_ROMA":  true,
+            "DO_NOT_RUN_BA":  true,
+            "DO_NOT_RUN_DEPTH":  true,
+            "DO_NOT_RUN_MODAL_GPU":  true,
+            "DO_NOT_MODIFY_EXISTING_8K_12K_16K_PIXELS":  true,
+            "DO_NOT_AUTO_SET_OWNER_VISUAL_ACCEPTANCE_TRUE":  true,
+            "DO_NOT_AUTO_SET_QUALITY_GHOSTING_QA_PASS":  true,
+                                                           "filename":  "P2R16_FROZEN_EXTRINSICS_BA.npy",
+                                                           "bytes":  704,
+                                                           "sha256":  "dc9d69363a238f04b64b482cacc8a67fae02cfd7f2c3a763c7c0ada9cfc880e6"
+                                                       },
+                                 "INTRINSICS_NPY":  {
+                                                        "filename":  "P2R16_FROZEN_INTRINSICS.npy",
+                                                        "bytes":  560,
+                                                        "sha256":  "b3d69181a1779404e529d2fed4cf36717a68c88e8f113ee0494bce23468fac21"
+                                                    }
+                             },
+    "VIEWER_SPECS":  {
+                         "viewer_route":  "/internal/qa/p2r16/360-viewer?mode=quality-ai-12view",
+                         "fov":  {
+                                     "default":  85.0,
+                                     "min":  18.0,
+                                     "max":  100.0,
+                                     "deep_zoom_1to1":  18.0,
+                                     "zoom_cycle":  [
+                                                        85.0,
+                                                        35.0,
+                                                        20.0,
+                                                        18.0
+                                                    ]
+                                 },
+                         "bookmarks":  [
+                                           {
+                                               "label":  "0° (Shot 000)",
+                                               "yaw":  0.0,
+                                               "pitch":  0.0
+                                           },
+                                           {
+                                               "label":  "90° (Shot 090)",
+                                               "yaw":  90.0,
+                                               "pitch":  0.0
+                                           },
+                                           {
+                                               "label":  "180° (Shot 180)",
+                                               "yaw":  180.0,
+                                               "pitch":  0.0
+                                           },
+                                           {
+                                               "label":  "270° (Shot 270)",
+                                               "yaw":  270.0,
+                                               "pitch":  0.0
+                                           },
+                                           {
+                                               "label":  "Closure (345°)",
+                                               "yaw":  345.0,
+                                               "pitch":  0.0
+                                           }
+                                       ],
+                         "multi_tier_urls":  {
+                                                 "16K":  "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_16K.jpg",
+                                                 "12K":  "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg",
+                                                 "8K":  "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_8K.jpg",
+                                                 "4K":  "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg"
+                                             },
+                         "color_pipeline":  {
+                                                "material_color":  "0xffffff",
+                                                "texture_encoding":  "sRGBEncoding",
+                                                "output_encoding":  "sRGBEncoding",
+                                                "tone_mapping":  "NoToneMapping",
+                                                "exposure":  1.0
+                                            },
+                         "webgl_memory_policy":  "single_texture_active_dispose_on_swap"
+                     },
+    "AUDIT_INVARIANTS":  {
+                             "CUSTOMER_DEFAULT":  "P2R13",
+                             "CUSTOMER_DEFAULT_UNCHANGED":  true,
+                             "MASTER_TOUCHED":  false,
+                             "OWNER_REVIEW_COMPLETED":  false,
+                             "OWNER_VISUAL_ACCEPTANCE":  false,
+                             "QUALITY_GHOSTING_QA":  "FAIL",
+                             "PROMPT_INJECTIONS":  "none"
+                         },
+    "IMPLEMENTATION_COMMIT":  "8af5c782e47b63ddf60ff23a779e6535df4b7832",
+    "PROVENANCE_SEAL_COMMIT":  "b1c654c4c1c945281ffc3a6710a90655c742b7a3",
+    "PROVENANCE_CORRECTION_COMMIT":  "48dcf8a608b82a9f28ff83bb4250af7d3c37f0c9",
+    "PROVENANCE_CORRECTION_NOTE":  "COMMIT_B_SHA field in prior diagnostics contained phantom SHA fe3381d0c907c958474fc486c03c2c3442de67e6 which does not exist in git history. PROVENANCE_CORRECTION_COMMIT 48dcf8a608b82a9f28ff83bb4250af7d3c37f0c9 is the commit that introduced all corrections. This SHA-seal commit is a separate non-amending commit and does not reference its own SHA.",
+    "GEOMETRY_PROVENANCE":  {
+                                "VGGT_EXECUTED_DURING_R22":  true,
+                                "ROMA_EXECUTED_DURING_R22":  true,
+                                "BA_EXECUTED_DURING_R22":  true,
+                                "DEPTH_RECOMPUTED_DURING_R22":  true,
+                                "FROZEN_R1_GEOMETRY_REUSED":  false,
+                                "R1_GEOMETRY_PERSISTED_PRIOR_TO_R22":  false,
+                                "CLASSIFICATION":  "HIGH_RES_RASTER_WITH_RECOMPUTED_GEOMETRY",
+                                "R22_POST_BA_RMS":  6.496,
+                                "R1_POST_BA_RMS":  5.975,
+                                "RMS_DIFFERENCE":  0.521,
+                                "RMS_DIFFERENCE_CLASSIFICATION":  "DIFFERENT_BA_RUN_DIFFERENT_STOCHASTIC_STATE",
+                                "EXPLANATION":  "Phase 7C.2R2.2 re-executed the full VGGT→RoMa→BA pipeline from scratch. No R1 geometry files existed on disk prior to this run — the geometry files labeled \u0027FROZEN\u0027 were created during R22, not loaded from R1. The RMS difference (5.975 vs 6.496) results from RoMa stochastic sampling (np.random.choice with no fixed seed), BA iteration count (max_nfev=60), and potentially different GPU floating-point ordering. The rasters are correctly labeled: HIGH_RES_RASTER_WITH_RECOMPUTED_GEOMETRY.",
+                                "SOURCE_STILLS":  "P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01 (12 × 3000×4000 physical stills)",
+                                "R1_4K_USED_AS_INPUT":  false
+                            },
+    "OWNER_REVIEW_ELIGIBILITY":  {
+                                     "PROVENANCE_CORRECT":  true,
+                                     "PROVENANCE_CORRECT_AFTER_CORRECTION_COMMIT":  true,
+                                     "GEOMETRY_PROVENANCE_CLEAR":  true,
+                                     "COVERAGE_METRICS_RECONCILED":  true,
+                                     "ACTIVE_VIEWER_BOUNDS_MATCH_RASTER":  false,
+                                     "ACTIVE_VIEWER_BOUNDS_MATCH_RASTER_NOTE":  "Viewer uses authoritative R1 band [-25.74, +27.79]. Rasters were rendered with pipeline bounds [-26.38, +28.39]. A ~0.6° margin at each edge may not be mapped by the viewer. Viewer-visible geometry is the intersection.",
+                                     "16K_GEOMETRIC_COVERAGE":  0.8104,
+                                     "16K_OWNER_QA_READY":  false,
+                                     "16K_OWNER_QA_READY_NOTE":  "16K geometric coverage 0.8104 \u003c 0.90 threshold",
+                                     "12K_GEOMETRIC_COVERAGE":  0.9185,
+                                     "12K_OWNER_QA_READY":  true,
+                                     "8K_GEOMETRIC_COVERAGE":  0.9272,
+                                     "8K_OWNER_QA_READY":  true,
+                                     "RECOMMENDED_QA_TIER":  "12K",
+                                     "RECOMMENDED_QA_TIER_NOTE":  "12K has geometric coverage 0.9185 \u003e= 0.90 and is the highest tier meeting threshold.",
+                                     "HIGH_RES_OWNER_REVIEW_READY":  true,
+                                     "HIGH_RES_OWNER_REVIEW_READY_NOTE":  "Provenance correction committed. HIGH_RES_OWNER_REVIEW_READY=true for 12K tier only. 16K requires geometric coverage repair before Owner QA eligibility."
+                                 },
+    "PHASE_7C2R22B":  {
+        "PHASE":  "7C.2R2.2B",
+        "CLASSIFICATION":  "12K_OWNER_QA_LOCK_AND_RAW_COVERAGE_INSPECTION",
+        "TIMESTAMP_UTC":  "2026-09-10T00:00:00Z",
+        "BRANCH":  "experiment/c12.9-p2r16-8shot-hires",
+
+        "QA_LOCK": {
+            "OWNER_QA_DEFAULT_TIER":  "12K",
+            "16K_AUTO_SELECTION":  false,
+            "16K_LABEL_IN_UI":  "16K EXPERIMENTAL — GEOMETRIC COVERAGE 81.04%",
+            "VIEWER_HEADER":  "QUALITY AI — COMMERCIAL VGGT 12-VIEW / 12K OWNER QA",
+            "ACTIVE_TEXTURE_DIMS":  "12288 × 1827",
+            "DIRECT_COVERAGE_DISPLAY":  "91.85%",
+            "DEFAULT_FOV":  85,
+            "MIN_FOV":  18,
+            "MAX_FOV":  100,
+            "FOV_18_USES_12K_NOT_4K_PROXY":  true
+        },
+
+        "UV_CORRECTION": {
+            "CLASSIFICATION":  "UV_CROPPED_TO_INTERSECTION",
+            "RASTERIZATION_SPAN_DEG":  54.78,
+            "RASTERIZATION_BOUNDS":  [-26.38, 28.39],
+            "VIEWER_BAND_DEG":  53.52,
+            "VIEWER_BAND":  [-25.74, 27.79],
+            "UV_V_MIN":  0.010953,
+            "UV_V_MAX":  0.988134,
+            "UV_V_SPAN":  0.977181,
+            "VIEWER_VERTICAL_ANGULAR_DISTORTION":  false,
+            "TEXTURE_OFFSET_SET":  [0.0, 0.010953],
+            "TEXTURE_REPEAT_SET":  [1.0, 0.977181]
+        },
+
+        "COVERAGE_MODES": {
+            "FINAL_RGB_MODE":  "Standard render — sRGB pipeline, no modifications",
+            "RAW_COVERAGE_MODE":  "Material color 0x555555, APPROXIMATE — exact pre-inpaint mask unavailable",
+            "COVERAGE_OVERLAY_MODE":  "Canvas gradient approximating edge inpaint zones — APPROXIMATE",
+            "EXACT_PRE_INPAINT_MASK_AVAILABLE":  false,
+            "EXACT_PRE_INPAINT_MASK_NOTE":  "Modal rasterize_resolution() does not persist band_owner array to disk. Cannot reconstruct without re-running GPU rasterizer."
+        },
+
+        "CANONICALIZED_QA_VALUES": {
+            "R22_CLASSIFICATION":  "HIGH_RES_RASTER_WITH_RECOMPUTED_GEOMETRY",
+            "R1_GEOMETRY_EXACTLY_REUSED":  false,
+            "VGGT_RERUN_DURING_R22":  true,
+            "ROMA_RERUN_DURING_R22":  true,
+            "BA_RERUN_DURING_R22":  true,
+            "DEPTH_RERUN_DURING_R22":  true,
+            "R1_POST_BA_RMS":  5.975,
+            "R22_POST_BA_RMS":  6.496,
+            "PIPELINE_BOUNDS":  [-26.38, 28.39],
+            "PIPELINE_SPAN_DEG":  54.78,
+            "VIEWER_BAND":  [-25.74, 27.79],
+            "VIEWER_SPAN_DEG":  53.52,
+            "GEOMETRIC_COVERAGE_8K":  0.9272,
+            "GEOMETRIC_COVERAGE_12K":  0.9185,
+            "GEOMETRIC_COVERAGE_16K":  0.8104,
+            "RGB_NONBLACK_8K":  0.985395,
+            "RGB_NONBLACK_12K":  0.985927,
+            "RGB_NONBLACK_16K":  0.986528,
+            "GLOBAL_GEOMETRY_QA":  "PENDING_OWNER_PIXEL_REVIEW",
+            "VISUAL_WARP_QA":  "PENDING_OWNER_PIXEL_REVIEW",
+            "QUALITY_GHOSTING_QA":  "FAIL",
+            "OWNER_REVIEW_COMPLETED":  false,
+            "OWNER_VISUAL_ACCEPTANCE":  false,
+            "CUSTOMER_DEFAULT":  "P2R13",
+            "16K_OWNER_QA_READY":  false,
+            "12K_OWNER_QA_READY":  true,
+            "8K_OWNER_QA_READY":  true
+        },
+
+        "HARD_INVARIANTS": {
+            "DO_NOT_TOUCH_MASTER":  true,
+            "DO_NOT_RUN_VGGT":  true,
+            "DO_NOT_RUN_ROMA":  true,
+            "DO_NOT_RUN_BA":  true,
+            "DO_NOT_RUN_DEPTH":  true,
+            "DO_NOT_RUN_MODAL_GPU":  true,
+            "DO_NOT_MODIFY_EXISTING_8K_12K_16K_PIXELS":  true,
+            "DO_NOT_AUTO_SET_OWNER_VISUAL_ACCEPTANCE_TRUE":  true,
+            "DO_NOT_AUTO_SET_QUALITY_GHOSTING_QA_PASS":  true,
+            "DO_NOT_SHOW_COVERAGE_98_6_WITHOUT_QUALIFICATION":  true,
+            "16K_MUST_NEVER_SILENTLY_BECOME_AUTO_OWNER_QA":  true,
+            "16K_ARTIFACT_PRESERVED_FOR_ENGINEERING_COMPARISON":  true,
+            "DEPLOY_ALWAYS_USES_EXPLICIT_COMMIT_SHA":  true
+        }
+    }
 }
