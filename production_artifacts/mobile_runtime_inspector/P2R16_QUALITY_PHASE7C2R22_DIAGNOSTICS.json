@@ -1,227 +1,297 @@
-{
-  "PHASE": "PHASE_7C.2R2.2",
-  "TITLE": "16K Native Owner QA + Deep Zoom Viewer",
-  "STATUS": "READY_FOR_OWNER_REVIEW",
-  "BASE_COMMIT": "c85e7ccee7efb21a02d674a099a060c9e551b3ba",
-  "COMMIT_A_SHA": "8af5c782e47b63ddf60ff23a779e6535df4b7832",
-  "COMMIT_B_SHA": "fe3381d0c907c958474fc486c03c2c3442de67e6",
-  "FROZEN_INPUT_SHA": "c614d1f3c1250f5aee7738a5163fbc8598f17ad196eb4c4e296f9419b4cb7918",
-  "RASTERS": {
-    "8K": {
-      "filename": "P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_8K.jpg",
-      "dimensions": [
-        8192,
-        1218
-      ],
-      "bytes": 3319272,
-      "sha256": "3e7647148028c1b8a49463d09ccf9b448d0e9658b7c79dec6aa0cb6602f3a590",
-      "vertical_angular_bounds": [
-        -25.74,
-        27.79
-      ],
-      "vertical_span_deg": 53.52,
-      "coverage_ratio": 1.0,
-      "url": "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_8K.jpg"
-    },
-    "12K": {
-      "filename": "P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg",
-      "dimensions": [
-        12288,
-        1827
-      ],
-      "bytes": 7048447,
-      "sha256": "891b71739a18c866c1604f24d33495a421576d162b3df609b73f7e8f57b87203",
-      "vertical_angular_bounds": [
-        -25.74,
-        27.79
-      ],
-      "vertical_span_deg": 53.52,
-      "coverage_ratio": 1.0,
-      "url": "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg"
-    },
-    "16K": {
-      "filename": "P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_16K.jpg",
-      "dimensions": [
-        16384,
-        2436
-      ],
-      "bytes": 15058120,
-      "sha256": "763544654f065cb3657cdd2a982e4ddf5f5282388d57d05cdfbf9bd7bece0b68",
-      "vertical_angular_bounds": [
-        -25.74,
-        27.79
-      ],
-      "vertical_span_deg": 53.52,
-      "coverage_ratio": 1.0,
-      "url": "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_16K.jpg"
-    }
-  },
-  "SEAM_FORENSICS": {
-    "8K": {
-      "width": 8192,
-      "height": 1218,
-      "bytes": 3319272,
-      "sha256": "3e7647148028c1b8a49463d09ccf9b448d0e9658b7c79dec6aa0cb6602f3a590",
-      "seam_forensics": {
-        "seam_strip_width_px": 400,
-        "seam_delta_rms": 3.2,
-        "seam_laplacian_var": 76.34
-      },
-      "edge_metrics": {
-        "crop_size_px": 512,
-        "crop_A_door_window_frame": {
-          "laplacian_variance": 34.56,
-          "sobel_mean": 13.84
-        },
-        "crop_B_wall_ceiling_boundary": {
-          "laplacian_variance": 75.58,
-          "sobel_mean": 18.34
-        },
-        "crop_C_high_frequency_sign_text": {
-          "laplacian_variance": 71.31,
-          "sobel_mean": 21.4
-        },
-        "overall_laplacian_variance": 53.64,
-        "overall_sobel_magnitude": 17.61
-      }
-    },
-    "12K": {
-      "width": 12288,
-      "height": 1827,
-      "bytes": 7048447,
-      "sha256": "891b71739a18c866c1604f24d33495a421576d162b3df609b73f7e8f57b87203",
-      "seam_forensics": {
-        "seam_strip_width_px": 600,
-        "seam_delta_rms": 2.89,
-        "seam_laplacian_var": 1702.79
-      },
-      "edge_metrics": {
-        "crop_size_px": 768,
-        "crop_A_door_window_frame": {
-          "laplacian_variance": 96.33,
-          "sobel_mean": 11.77
-        },
-        "crop_B_wall_ceiling_boundary": {
-          "laplacian_variance": 69.04,
-          "sobel_mean": 14.7
-        },
-        "crop_C_high_frequency_sign_text": {
-          "laplacian_variance": 43.41,
-          "sobel_mean": 16.3
-        },
-        "overall_laplacian_variance": 175.5,
-        "overall_sobel_magnitude": 15.26
-      }
-    },
-    "16K": {
-      "width": 16384,
-      "height": 2436,
-      "bytes": 15058120,
-      "sha256": "763544654f065cb3657cdd2a982e4ddf5f5282388d57d05cdfbf9bd7bece0b68",
-      "seam_forensics": {
-        "seam_strip_width_px": 800,
-        "seam_delta_rms": 3.34,
-        "seam_laplacian_var": 3493.89
-      },
-      "edge_metrics": {
-        "crop_size_px": 1024,
-        "crop_A_door_window_frame": {
-          "laplacian_variance": 697.74,
-          "sobel_mean": 15.99
-        },
-        "crop_B_wall_ceiling_boundary": {
-          "laplacian_variance": 172.08,
-          "sobel_mean": 18.7
-        },
-        "crop_C_high_frequency_sign_text": {
-          "laplacian_variance": 201.15,
-          "sobel_mean": 19.4
-        },
-        "overall_laplacian_variance": 461.74,
-        "overall_sobel_magnitude": 17.72
-      }
-    }
-  },
-  "GEOMETRY_PERSISTENCE": {
-    "DEPTH_NPZ": {
-      "filename": "P2R16_FROZEN_GEOMETRY_DEPTH.npz",
-      "bytes": 1429459,
-      "sha256": "c5375de0dcf3b7c7119ff9cb962f60091a0923a6645eff063cb868ee5d9ac71f"
-    },
-    "EXTRINSICS_BA_NPY": {
-      "filename": "P2R16_FROZEN_EXTRINSICS_BA.npy",
-      "bytes": 704,
-      "sha256": "dc9d69363a238f04b64b482cacc8a67fae02cfd7f2c3a763c7c0ada9cfc880e6"
-    },
-    "INTRINSICS_NPY": {
-      "filename": "P2R16_FROZEN_INTRINSICS.npy",
-      "bytes": 560,
-      "sha256": "b3d69181a1779404e529d2fed4cf36717a68c88e8f113ee0494bce23468fac21"
-    }
-  },
-  "VIEWER_SPECS": {
-    "viewer_route": "/internal/qa/p2r16/360-viewer?mode=quality-ai-12view",
-    "fov": {
-      "default": 85.0,
-      "min": 18.0,
-      "max": 100.0,
-      "deep_zoom_1to1": 18.0,
-      "zoom_cycle": [
-        85.0,
-        35.0,
-        20.0,
-        18.0
-      ]
-    },
-    "bookmarks": [
-      {
-        "label": "0\u00b0 (Shot 000)",
-        "yaw": 0.0,
-        "pitch": 0.0
-      },
-      {
-        "label": "90\u00b0 (Shot 090)",
-        "yaw": 90.0,
-        "pitch": 0.0
-      },
-      {
-        "label": "180\u00b0 (Shot 180)",
-        "yaw": 180.0,
-        "pitch": 0.0
-      },
-      {
-        "label": "270\u00b0 (Shot 270)",
-        "yaw": 270.0,
-        "pitch": 0.0
-      },
-      {
-        "label": "Closure (345\u00b0)",
-        "yaw": 345.0,
-        "pitch": 0.0
-      }
-    ],
-    "multi_tier_urls": {
-      "16K": "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_16K.jpg",
-      "12K": "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg",
-      "8K": "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_8K.jpg",
-      "4K": "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg"
-    },
-    "color_pipeline": {
-      "material_color": "0xffffff",
-      "texture_encoding": "sRGBEncoding",
-      "output_encoding": "sRGBEncoding",
-      "tone_mapping": "NoToneMapping",
-      "exposure": 1.0
-    },
-    "webgl_memory_policy": "single_texture_active_dispose_on_swap"
-  },
-  "AUDIT_INVARIANTS": {
-    "CUSTOMER_DEFAULT": "P2R13",
-    "CUSTOMER_DEFAULT_UNCHANGED": true,
-    "MASTER_TOUCHED": false,
-    "OWNER_REVIEW_COMPLETED": false,
-    "OWNER_VISUAL_ACCEPTANCE": false,
-    "QUALITY_GHOSTING_QA": "FAIL",
-    "PROMPT_INJECTIONS": "none"
-  }
+﻿{
+    "PHASE":  "PHASE_7C.2R2.2",
+    "TITLE":  "16K Native Owner QA + Deep Zoom Viewer",
+    "STATUS":  "READY_FOR_OWNER_REVIEW",
+    "BASE_COMMIT":  "c85e7ccee7efb21a02d674a099a060c9e551b3ba",
+    "FROZEN_INPUT_SHA":  "c614d1f3c1250f5aee7738a5163fbc8598f17ad196eb4c4e296f9419b4cb7918",
+    "RASTERS":  {
+                    "8K":  {
+                               "filename":  "P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_8K.jpg",
+                               "dimensions":  [
+                                                  8192,
+                                                  1218
+                                              ],
+                               "bytes":  3319272,
+                               "sha256":  "3e7647148028c1b8a49463d09ccf9b448d0e9658b7c79dec6aa0cb6602f3a590",
+                               "vertical_angular_bounds":  [
+                                                               -25.74,
+                                                               27.79
+                                                           ],
+                               "vertical_span_deg":  53.52,
+                               "url":  "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_8K.jpg",
+                               "geometric_coverage_ratio":  0.9272,
+                               "rgb_nonblack_ratio":  0.985395,
+                               "coverage_metric_note":  "geometric_coverage from Modal rasterizer telemetry; rgb_nonblack from JPEG pixel measurement",
+                               "viewer_mapping_bounds":  [
+                                                             -25.74,
+                                                             27.79
+                                                         ],
+                               "rasterization_bounds":  [
+                                                            -26.38,
+                                                            28.39
+                                                        ],
+                               "rasterization_bounds_note":  "Rasterization used pipeline 99.5th-percentile bounds [-26.38, +28.39]. Viewer maps texture using authoritative R1 band [-25.74, +27.79]."
+                           },
+                    "12K":  {
+                                "filename":  "P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg",
+                                "dimensions":  [
+                                                   12288,
+                                                   1827
+                                               ],
+                                "bytes":  7048447,
+                                "sha256":  "891b71739a18c866c1604f24d33495a421576d162b3df609b73f7e8f57b87203",
+                                "vertical_angular_bounds":  [
+                                                                -25.74,
+                                                                27.79
+                                                            ],
+                                "vertical_span_deg":  53.52,
+                                "url":  "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg",
+                                "geometric_coverage_ratio":  0.9185,
+                                "rgb_nonblack_ratio":  0.985927,
+                                "coverage_metric_note":  "geometric_coverage from Modal rasterizer telemetry; rgb_nonblack from JPEG pixel measurement",
+                                "viewer_mapping_bounds":  [
+                                                              -25.74,
+                                                              27.79
+                                                          ],
+                                "rasterization_bounds":  [
+                                                             -26.38,
+                                                             28.39
+                                                         ],
+                                "rasterization_bounds_note":  "Rasterization used pipeline 99.5th-percentile bounds [-26.38, +28.39]. Viewer maps texture using authoritative R1 band [-25.74, +27.79]."
+                            },
+                    "16K":  {
+                                "filename":  "P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_16K.jpg",
+                                "dimensions":  [
+                                                   16384,
+                                                   2436
+                                               ],
+                                "bytes":  15058120,
+                                "sha256":  "763544654f065cb3657cdd2a982e4ddf5f5282388d57d05cdfbf9bd7bece0b68",
+                                "vertical_angular_bounds":  [
+                                                                -25.74,
+                                                                27.79
+                                                            ],
+                                "vertical_span_deg":  53.52,
+                                "url":  "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_16K.jpg",
+                                "geometric_coverage_ratio":  0.8104,
+                                "rgb_nonblack_ratio":  0.986528,
+                                "coverage_metric_note":  "geometric_coverage from Modal rasterizer telemetry; rgb_nonblack from JPEG pixel measurement. coverage_1.0_in_prior_diagnostics=FALSE",
+                                "viewer_mapping_bounds":  [
+                                                              -25.74,
+                                                              27.79
+                                                          ],
+                                "rasterization_bounds":  [
+                                                             -26.38,
+                                                             28.39
+                                                         ],
+                                "rasterization_bounds_note":  "Rasterization used pipeline 99.5th-percentile bounds [-26.38, +28.39]. Viewer maps texture using authoritative R1 band [-25.74, +27.79]."
+                            }
+                },
+    "SEAM_FORENSICS":  {
+                           "8K":  {
+                                      "width":  8192,
+                                      "height":  1218,
+                                      "bytes":  3319272,
+                                      "sha256":  "3e7647148028c1b8a49463d09ccf9b448d0e9658b7c79dec6aa0cb6602f3a590",
+                                      "seam_forensics":  {
+                                                             "seam_strip_width_px":  400,
+                                                             "seam_delta_rms":  3.2,
+                                                             "seam_laplacian_var":  76.34
+                                                         },
+                                      "edge_metrics":  {
+                                                           "crop_size_px":  512,
+                                                           "crop_A_door_window_frame":  {
+                                                                                            "laplacian_variance":  34.56,
+                                                                                            "sobel_mean":  13.84
+                                                                                        },
+                                                           "crop_B_wall_ceiling_boundary":  {
+                                                                                                "laplacian_variance":  75.58,
+                                                                                                "sobel_mean":  18.34
+                                                                                            },
+                                                           "crop_C_high_frequency_sign_text":  {
+                                                                                                   "laplacian_variance":  71.31,
+                                                                                                   "sobel_mean":  21.4
+                                                                                               },
+                                                           "overall_laplacian_variance":  53.64,
+                                                           "overall_sobel_magnitude":  17.61
+                                                       }
+                                  },
+                           "12K":  {
+                                       "width":  12288,
+                                       "height":  1827,
+                                       "bytes":  7048447,
+                                       "sha256":  "891b71739a18c866c1604f24d33495a421576d162b3df609b73f7e8f57b87203",
+                                       "seam_forensics":  {
+                                                              "seam_strip_width_px":  600,
+                                                              "seam_delta_rms":  2.89,
+                                                              "seam_laplacian_var":  1702.79
+                                                          },
+                                       "edge_metrics":  {
+                                                            "crop_size_px":  768,
+                                                            "crop_A_door_window_frame":  {
+                                                                                             "laplacian_variance":  96.33,
+                                                                                             "sobel_mean":  11.77
+                                                                                         },
+                                                            "crop_B_wall_ceiling_boundary":  {
+                                                                                                 "laplacian_variance":  69.04,
+                                                                                                 "sobel_mean":  14.7
+                                                                                             },
+                                                            "crop_C_high_frequency_sign_text":  {
+                                                                                                    "laplacian_variance":  43.41,
+                                                                                                    "sobel_mean":  16.3
+                                                                                                },
+                                                            "overall_laplacian_variance":  175.5,
+                                                            "overall_sobel_magnitude":  15.26
+                                                        }
+                                   },
+                           "16K":  {
+                                       "width":  16384,
+                                       "height":  2436,
+                                       "bytes":  15058120,
+                                       "sha256":  "763544654f065cb3657cdd2a982e4ddf5f5282388d57d05cdfbf9bd7bece0b68",
+                                       "seam_forensics":  {
+                                                              "seam_strip_width_px":  800,
+                                                              "seam_delta_rms":  3.34,
+                                                              "seam_laplacian_var":  3493.89
+                                                          },
+                                       "edge_metrics":  {
+                                                            "crop_size_px":  1024,
+                                                            "crop_A_door_window_frame":  {
+                                                                                             "laplacian_variance":  697.74,
+                                                                                             "sobel_mean":  15.99
+                                                                                         },
+                                                            "crop_B_wall_ceiling_boundary":  {
+                                                                                                 "laplacian_variance":  172.08,
+                                                                                                 "sobel_mean":  18.7
+                                                                                             },
+                                                            "crop_C_high_frequency_sign_text":  {
+                                                                                                    "laplacian_variance":  201.15,
+                                                                                                    "sobel_mean":  19.4
+                                                                                                },
+                                                            "overall_laplacian_variance":  461.74,
+                                                            "overall_sobel_magnitude":  17.72
+                                                        }
+                                   }
+                       },
+    "GEOMETRY_PERSISTENCE":  {
+                                 "DEPTH_NPZ":  {
+                                                   "filename":  "P2R16_FROZEN_GEOMETRY_DEPTH.npz",
+                                                   "bytes":  1429459,
+                                                   "sha256":  "c5375de0dcf3b7c7119ff9cb962f60091a0923a6645eff063cb868ee5d9ac71f"
+                                               },
+                                 "EXTRINSICS_BA_NPY":  {
+                                                           "filename":  "P2R16_FROZEN_EXTRINSICS_BA.npy",
+                                                           "bytes":  704,
+                                                           "sha256":  "dc9d69363a238f04b64b482cacc8a67fae02cfd7f2c3a763c7c0ada9cfc880e6"
+                                                       },
+                                 "INTRINSICS_NPY":  {
+                                                        "filename":  "P2R16_FROZEN_INTRINSICS.npy",
+                                                        "bytes":  560,
+                                                        "sha256":  "b3d69181a1779404e529d2fed4cf36717a68c88e8f113ee0494bce23468fac21"
+                                                    }
+                             },
+    "VIEWER_SPECS":  {
+                         "viewer_route":  "/internal/qa/p2r16/360-viewer?mode=quality-ai-12view",
+                         "fov":  {
+                                     "default":  85.0,
+                                     "min":  18.0,
+                                     "max":  100.0,
+                                     "deep_zoom_1to1":  18.0,
+                                     "zoom_cycle":  [
+                                                        85.0,
+                                                        35.0,
+                                                        20.0,
+                                                        18.0
+                                                    ]
+                                 },
+                         "bookmarks":  [
+                                           {
+                                               "label":  "0° (Shot 000)",
+                                               "yaw":  0.0,
+                                               "pitch":  0.0
+                                           },
+                                           {
+                                               "label":  "90° (Shot 090)",
+                                               "yaw":  90.0,
+                                               "pitch":  0.0
+                                           },
+                                           {
+                                               "label":  "180° (Shot 180)",
+                                               "yaw":  180.0,
+                                               "pitch":  0.0
+                                           },
+                                           {
+                                               "label":  "270° (Shot 270)",
+                                               "yaw":  270.0,
+                                               "pitch":  0.0
+                                           },
+                                           {
+                                               "label":  "Closure (345°)",
+                                               "yaw":  345.0,
+                                               "pitch":  0.0
+                                           }
+                                       ],
+                         "multi_tier_urls":  {
+                                                 "16K":  "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_16K.jpg",
+                                                 "12K":  "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg",
+                                                 "8K":  "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_8K.jpg",
+                                                 "4K":  "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg"
+                                             },
+                         "color_pipeline":  {
+                                                "material_color":  "0xffffff",
+                                                "texture_encoding":  "sRGBEncoding",
+                                                "output_encoding":  "sRGBEncoding",
+                                                "tone_mapping":  "NoToneMapping",
+                                                "exposure":  1.0
+                                            },
+                         "webgl_memory_policy":  "single_texture_active_dispose_on_swap"
+                     },
+    "AUDIT_INVARIANTS":  {
+                             "CUSTOMER_DEFAULT":  "P2R13",
+                             "CUSTOMER_DEFAULT_UNCHANGED":  true,
+                             "MASTER_TOUCHED":  false,
+                             "OWNER_REVIEW_COMPLETED":  false,
+                             "OWNER_VISUAL_ACCEPTANCE":  false,
+                             "QUALITY_GHOSTING_QA":  "FAIL",
+                             "PROMPT_INJECTIONS":  "none"
+                         },
+    "IMPLEMENTATION_COMMIT":  "8af5c782e47b63ddf60ff23a779e6535df4b7832",
+    "PROVENANCE_SEAL_COMMIT":  "b1c654c4c1c945281ffc3a6710a90655c742b7a3",
+    "PROVENANCE_CORRECTION_COMMIT":  "10a7227eba1b44b254840b17a4611e39193715c2",
+    "PROVENANCE_CORRECTION_NOTE":  "COMMIT_B_SHA field in prior diagnostics contained phantom SHA fe3381d0c907c958474fc486c03c2c3442de67e6 which does not exist in git history. Correct PROVENANCE_SEAL_COMMIT is b1c654c4c1c945281ffc3a6710a90655c742b7a3.",
+    "GEOMETRY_PROVENANCE":  {
+                                "VGGT_EXECUTED_DURING_R22":  true,
+                                "ROMA_EXECUTED_DURING_R22":  true,
+                                "BA_EXECUTED_DURING_R22":  true,
+                                "DEPTH_RECOMPUTED_DURING_R22":  true,
+                                "FROZEN_R1_GEOMETRY_REUSED":  false,
+                                "R1_GEOMETRY_PERSISTED_PRIOR_TO_R22":  false,
+                                "CLASSIFICATION":  "HIGH_RES_RASTER_WITH_RECOMPUTED_GEOMETRY",
+                                "R22_POST_BA_RMS":  6.496,
+                                "R1_POST_BA_RMS":  5.975,
+                                "RMS_DIFFERENCE":  0.521,
+                                "RMS_DIFFERENCE_CLASSIFICATION":  "DIFFERENT_BA_RUN_DIFFERENT_STOCHASTIC_STATE",
+                                "EXPLANATION":  "Phase 7C.2R2.2 re-executed the full VGGT→RoMa→BA pipeline from scratch. No R1 geometry files existed on disk prior to this run — the geometry files labeled \u0027FROZEN\u0027 were created during R22, not loaded from R1. The RMS difference (5.975 vs 6.496) results from RoMa stochastic sampling (np.random.choice with no fixed seed), BA iteration count (max_nfev=60), and potentially different GPU floating-point ordering. The rasters are correctly labeled: HIGH_RES_RASTER_WITH_RECOMPUTED_GEOMETRY.",
+                                "SOURCE_STILLS":  "P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01 (12 × 3000×4000 physical stills)",
+                                "R1_4K_USED_AS_INPUT":  false
+                            },
+    "OWNER_REVIEW_ELIGIBILITY":  {
+                                     "PROVENANCE_CORRECT":  true,
+                                     "PROVENANCE_CORRECT_AFTER_CORRECTION_COMMIT":  true,
+                                     "GEOMETRY_PROVENANCE_CLEAR":  true,
+                                     "COVERAGE_METRICS_RECONCILED":  true,
+                                     "ACTIVE_VIEWER_BOUNDS_MATCH_RASTER":  false,
+                                     "ACTIVE_VIEWER_BOUNDS_MATCH_RASTER_NOTE":  "Viewer uses authoritative R1 band [-25.74, +27.79]. Rasters were rendered with pipeline bounds [-26.38, +28.39]. A ~0.6° margin at each edge may not be mapped by the viewer. Viewer-visible geometry is the intersection.",
+                                     "16K_GEOMETRIC_COVERAGE":  0.8104,
+                                     "16K_OWNER_QA_READY":  false,
+                                     "16K_OWNER_QA_READY_NOTE":  "16K geometric coverage 0.8104 \u003c 0.90 threshold",
+                                     "12K_GEOMETRIC_COVERAGE":  0.9185,
+                                     "12K_OWNER_QA_READY":  true,
+                                     "8K_GEOMETRIC_COVERAGE":  0.9272,
+                                     "8K_OWNER_QA_READY":  true,
+                                     "RECOMMENDED_QA_TIER":  "12K",
+                                     "RECOMMENDED_QA_TIER_NOTE":  "12K has geometric coverage 0.9185 \u003e= 0.90 and is the highest tier meeting threshold.",
+                                     "HIGH_RES_OWNER_REVIEW_READY":  true,
+                                     "HIGH_RES_OWNER_REVIEW_READY_NOTE":  "Provenance correction committed. HIGH_RES_OWNER_REVIEW_READY=true for 12K tier only. 16K requires geometric coverage repair before Owner QA eligibility."
+                                 }
 }
