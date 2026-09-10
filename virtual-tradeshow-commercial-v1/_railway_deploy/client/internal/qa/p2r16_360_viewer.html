@@ -149,8 +149,8 @@
   <!-- Phase 7C.2: Explicit QA Placeholder for 12-View Commercial VGGT -->
   <div id="qa-placeholder-overlay" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(15,23,42,0.92); border:2px solid #f59e0b; border-radius:12px; padding:24px 32px; text-align:center; z-index:50; color:#f8fafc; font-family:sans-serif; max-width:90%; box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);">
     <i class="fa-solid fa-triangle-exclamation" style="font-size:36px; color:#f59e0b; margin-bottom:12px; display:block;"></i>
-    <h2 style="font-size:18px; margin:0 0 8px 0; color:#f8fafc; font-weight:700;">12-View Commercial VGGT result not generated yet</h2>
-    <p style="font-size:13px; color:#94a3b8; margin:0 0 16px 0; line-height:1.5;">Gated repository access (facebook/VGGT-1B-Commercial) and Modal L40S GPU authentication required.</p>
+    <h2 style="font-size:18px; margin:0 0 8px 0; color:#f8fafc; font-weight:700;">Phase 7C.2R1 geometry repair pending</h2>
+    <p style="font-size:13px; color:#94a3b8; margin:0 0 16px 0; line-height:1.5;">RoMa ABI + Bundle Adjustment + true spherical band coverage repair in progress.</p>
     <button onclick="switchMode('quality-ai-4view')" style="background:#3b82f6; color:#fff; border:none; border-radius:6px; padding:10px 18px; font-weight:600; cursor:pointer; font-size:13px; transition:background 0.2s;">
       <i class="fa-solid fa-arrow-left"></i> View 4-Keyframe Phase 7C Canvas
     </button>
@@ -259,10 +259,11 @@
     let pinchStartDist = 0;
 
     // Authoritative artifact paths
-    const NATIVE_URLS = {
-      'quality-ai-12view': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_OWNER_REVIEW.jpg',
+            const NATIVE_URLS = {
+      'quality-ai-12view-debug-7c2': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_OWNER_REVIEW.jpg',
+      'quality-ai-12view': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg',
       'quality-ai-4view': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_AI_OWNER_REVIEW.jpg',
-      'quality-ai': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_AI_OWNER_REVIEW.jpg',
+      'quality-ai': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg',
       'quality-depth-plane': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_DEPTH_AWARE_OWNER_REVIEW.jpg',
       'quality-depth': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_DEPTH_AWARE_OWNER_REVIEW.jpg',
       'quality-current': '/production_artifacts/mobile_runtime_inspector/P2R16_AI_QUALITY12_OWNER_REVIEW.jpg',
@@ -401,9 +402,11 @@
       animate();
     }
 
-    function getProxyUrl(mode, width) {
-      if (mode === 'quality-ai-12view' || mode === 'quality-ai') {
+        function getProxyUrl(mode, width) {
+      if (mode === 'quality-ai-12view-debug-7c2') {
         return '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_OWNER_REVIEW.jpg';
+      } else if (mode === 'quality-ai-12view' || mode === 'quality-ai') {
+        return '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg';
       } else if (mode === 'quality-ai-4view') {
         return `/internal-assets/p2r16/viewer/quality-ai-${width}.jpg`;
       } else if (mode === 'quality-depth-plane' || mode === 'quality-depth') {
@@ -433,21 +436,23 @@
       ctx.fillStyle = '#f59e0b';
       ctx.font = 'bold 44px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('12-View Commercial VGGT result not generated yet', canvas.width / 2, canvas.height / 2 - 20);
+      ctx.fillText('Phase 7C.2R1 geometry repair pending', canvas.width / 2, canvas.height / 2 - 20);
       ctx.fillStyle = '#94a3b8';
       ctx.font = '28px sans-serif';
-      ctx.fillText('Gated facebook/VGGT-1B-Commercial + Modal L40S GPU execution required', canvas.width / 2, canvas.height / 2 + 35);
+      ctx.fillText('RoMa dense correspondence + Bundle Adjustment in progress', canvas.width / 2, canvas.height / 2 + 35);
       const tex = new THREE.CanvasTexture(canvas);
       tex.encoding = THREE.sRGBEncoding;
       return tex;
     }
 
-    function loadModeTexture(mode, onComplete) {
+            function loadModeTexture(mode, onComplete) {
       document.getElementById('qa-placeholder-overlay').style.display = 'none';
       document.getElementById('loading-overlay').style.display = 'flex';
       document.getElementById('loading-overlay').style.opacity = '1';
       let modeLabel = 'Quality AI';
-      if (mode === 'quality-depth-plane' || mode === 'quality-depth') modeLabel = 'Quality (Depth Plane)';
+      if (mode === 'quality-ai-12view') modeLabel = 'Quality AI (12-View Commercial VGGT R1)';
+      else if (mode === 'quality-ai-12view-debug-7c2') modeLabel = 'Quality AI (12-View 7C.2 Debug)';
+      else if (mode === 'quality-depth-plane' || mode === 'quality-depth') modeLabel = 'Quality (Depth Plane)';
       else if (mode === 'quality-current' || mode === 'quality') modeLabel = 'Quality (Homography)';
       else if (mode === 'easy') modeLabel = 'Easy 360';
       
@@ -469,80 +474,22 @@
           sphereMesh.material.needsUpdate = true;
           window.__VIEWER_TELEMETRY__.panoramaTextureLoaded = true;
 
-          if (onComplete) onComplete();
+          const elapsed = performance.now() - (window.__VIEWER_START_TIME__ || performance.now());
+          window.__VIEWER_TELEMETRY__.loadTimeMs = Math.round(elapsed);
+          window.__VIEWER_TELEMETRY__.firstInteractiveMs = Math.round(elapsed);
           document.getElementById('loading-overlay').style.opacity = '0';
           setTimeout(() => { document.getElementById('loading-overlay').style.display = 'none'; }, 300);
+
+          if (onComplete) onComplete();
         },
         undefined,
         (err) => {
-          console.error('Texture load failed:', err);
-          // Fallback to 2048 proxy if higher level fails
-          if (selectedProxyWidth > 2048) {
-            console.log('Falling back to 2048px safe proxy...');
-            selectedProxyWidth = 2048;
-            loadModeTexture(mode, onComplete);
-          }
+          console.error(`Failed to load texture for mode ${mode}:`, err);
+          document.getElementById('loading-text').textContent = `Error loading texture for ${modeLabel}`;
+          window.__VIEWER_TELEMETRY__.blackScreen = true;
+          if (onComplete) onComplete();
         }
       );
-    }
-
-    function switchMode(newMode) {
-      if (newMode === currentMode && window.__VIEWER_TELEMETRY__.panoramaTextureLoaded) return;
-      currentMode = newMode;
-      window.__VIEWER_TELEMETRY__.qualityEasySwitchWorks = true;
-
-      // Update URL query without page reload
-      const url = new URL(window.location);
-      url.searchParams.set('mode', newMode);
-      window.history.replaceState({}, '', url);
-
-      updateUiModeIndicator();
-      // Load new mode texture while preserving exact currentYaw, currentPitch, currentFov
-      loadModeTexture(newMode);
-    }
-
-    function updateUiModeIndicator() {
-      const btnQA = document.getElementById('btn-mode-quality-ai');
-      const btnQD = document.getElementById('btn-mode-quality-depth');
-      const btnQC = document.getElementById('btn-mode-quality-current');
-      const btnE = document.getElementById('btn-mode-easy');
-      const tag = document.getElementById('active-mode-tag');
-      const btnNative = document.getElementById('btn-native-src');
-
-      if (btnQA) btnQA.className = (currentMode === 'quality-ai' || currentMode === 'quality-ai-12view' || currentMode === 'quality-ai-4view') ? 'mode-btn active-quality-ai' : 'mode-btn';
-      if (btnQD) btnQD.className = (currentMode === 'quality-depth-plane' || currentMode === 'quality-depth') ? 'mode-btn active-quality-depth' : 'mode-btn';
-      if (btnQC) btnQC.className = (currentMode === 'quality-current' || currentMode === 'quality') ? 'mode-btn active-quality-current' : 'mode-btn';
-      if (btnE) btnE.className = (currentMode === 'easy') ? 'mode-btn active-easy' : 'mode-btn';
-
-      if (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai') {
-        tag.textContent = 'QUALITY AI (12-VIEW COMMERCIAL VGGT)';
-        tag.style.color = 'var(--accent-ai)';
-        btnNative.href = NATIVE_URLS['quality-ai-12view'];
-      } else if (currentMode === 'quality-ai-4view') {
-        tag.textContent = 'QUALITY AI (4-KEYFRAME CANVAS)';
-        tag.style.color = 'var(--accent-ai)';
-        btnNative.href = NATIVE_URLS['quality-ai-4view'];
-      } else if (currentMode === 'quality-depth-plane' || currentMode === 'quality-depth') {
-        tag.textContent = 'QUALITY (DEPTH PLANE)';
-        tag.style.color = 'var(--accent-depth)';
-        btnNative.href = NATIVE_URLS['quality-depth-plane'];
-      } else if (currentMode === 'quality-current' || currentMode === 'quality') {
-        tag.textContent = 'QUALITY (HOMOGRAPHY)';
-        tag.style.color = 'var(--accent-quality)';
-        btnNative.href = NATIVE_URLS['quality-current'];
-      } else {
-        tag.textContent = 'EASY 360';
-        tag.style.color = 'var(--accent-easy)';
-        btnNative.href = NATIVE_URLS.easy;
-      }
-    }
-
-    function resetView() {
-      currentYaw = 0.0;
-      currentPitch = 0.0;
-      currentFov = CONFIG.defaultFovDeg;
-      camera.fov = currentFov;
-      camera.updateProjectionMatrix();
     }
 
     function onWindowResize() {
