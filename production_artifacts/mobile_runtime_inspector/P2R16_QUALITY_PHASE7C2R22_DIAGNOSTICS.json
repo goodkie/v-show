@@ -257,8 +257,8 @@
                          },
     "IMPLEMENTATION_COMMIT":  "8af5c782e47b63ddf60ff23a779e6535df4b7832",
     "PROVENANCE_SEAL_COMMIT":  "b1c654c4c1c945281ffc3a6710a90655c742b7a3",
-    "PROVENANCE_CORRECTION_COMMIT":  "10a7227eba1b44b254840b17a4611e39193715c2",
-    "PROVENANCE_CORRECTION_NOTE":  "COMMIT_B_SHA field in prior diagnostics contained phantom SHA fe3381d0c907c958474fc486c03c2c3442de67e6 which does not exist in git history. Correct PROVENANCE_SEAL_COMMIT is b1c654c4c1c945281ffc3a6710a90655c742b7a3.",
+    "PROVENANCE_CORRECTION_COMMIT":  "48dcf8a608b82a9f28ff83bb4250af7d3c37f0c9",
+    "PROVENANCE_CORRECTION_NOTE":  "COMMIT_B_SHA field in prior diagnostics contained phantom SHA fe3381d0c907c958474fc486c03c2c3442de67e6 which does not exist in git history. PROVENANCE_CORRECTION_COMMIT 48dcf8a608b82a9f28ff83bb4250af7d3c37f0c9 is the commit that introduced all corrections. This SHA-seal commit is a separate non-amending commit and does not reference its own SHA.",
     "GEOMETRY_PROVENANCE":  {
                                 "VGGT_EXECUTED_DURING_R22":  true,
                                 "ROMA_EXECUTED_DURING_R22":  true,
