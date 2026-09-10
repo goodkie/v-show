@@ -281,5 +281,58 @@
     "EXACT_TEXTURE_URL": "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4_FULLPORTRAIT_OWNER_REVIEW_R1.jpg",
     "FRAMEBUFFER_MEAN_LUMA": 73.68,
     "FRAMEBUFFER_NONBLACK_RATIO": 0.959
+  },
+  "PHASE_7C2R4P1": {
+    "PHASE_7C2R4P1_STATUS": "COMPLETE",
+    "TIMESTAMP": "2026-09-10T21:57:21.294670Z",
+    "PHOTOMETRIC_COLLAPSE": true,
+    "ROOT_CAUSE": "scipy.optimize.least_squares trivial zero solution -> gains~0 in matched_rgb_12k",
+    "IDENTITY_JPEG": {
+      "filename": "P2R16_QUALITY12_R4P1_IDENTITY_OWNER_REVIEW.jpg",
+      "bytes": 7193510,
+      "sha256": "99e95cb3cb43983bcb6b4320b7d40a1af1ce102c6ad770ac5719882f5b132086",
+      "PREWRITE_DTYPE": "uint8",
+      "PREWRITE_MIN": 0,
+      "PREWRITE_MAX": 255,
+      "PREWRITE_MEAN": 98.7147,
+      "LUMA_MEAN": 98.8264,
+      "NONBLACK_RATIO": 0.99855,
+      "BLACK_DETECTED": false,
+      "JPEG_QUALITY": 95,
+      "SUBSAMPLING": "4:4:4",
+      "QA_STATUS": "PASS"
+    },
+    "SAFE_MATCHED_JPEG": {
+      "filename": "P2R16_QUALITY12_R4P1_SAFE_MATCHED_OWNER_REVIEW.jpg",
+      "bytes": 7341790,
+      "sha256": "da2dc44215afaf79a3ce057cbe54a2f231efa33ce8f83ef1bd6b63149af1aa66",
+      "LUMA_MEAN": 97.0719,
+      "NONBLACK_RATIO": 0.998528,
+      "BLACK_DETECTED": false,
+      "GAINS_RANGE": [
+        0.9199,
+        1.0799
+      ],
+      "QA_STATUS": "PASS"
+    },
+    "VIEWER_MODE": "quality-ai-r4p1",
+    "VIEWER_URL_PARAM": "?mode=quality-ai-r4p1",
+    "DEFAULT_TEXTURE": "IDENTITY",
+    "VIEWER_COMMITS": {
+      "artifacts_commit": "4757340",
+      "viewer_patch_commit": "1caa350"
+    },
+    "PIPELINE_AUDIT": {
+      "FLOAT_RANGE_CONVERSION_BUG": false,
+      "RGB_BGR_SWAP_BUG": false,
+      "CLIPPING_BUG": false,
+      "DIVIDE_BY_255_BUG": false,
+      "PHOTOMETRIC_GAIN_BIAS_COLLAPSE": true
+    },
+    "OWNER_REVIEW_URL": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p1",
+    "OWNER_REVIEW_COMPLETED": false,
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "CUSTOMER_DEFAULT": "P2R13",
+    "MASTER_TOUCHED": false
   }
 }
