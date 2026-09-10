@@ -1,0 +1,971 @@
+{
+  "PHASE": "7C.2R3.1",
+  "STATUS": "PARTIAL",
+  "WALL_SECONDS": 25.27,
+  "MASTER_TOUCHED": false,
+  "CUSTOMER_DEFAULT": "P2R13",
+  "OWNER_REVIEW_COMPLETED": false,
+  "OWNER_VISUAL_ACCEPTANCE": false,
+  "QUALITY_GHOSTING_QA": "FAIL",
+  "GLOBAL_GEOMETRY_QA": "PENDING_OWNER_PIXEL_REVIEW",
+  "VISUAL_WARP_QA": "PENDING_OWNER_PIXEL_REVIEW",
+  "VGGT_RERUN": false,
+  "ROMA_RERUN": false,
+  "BA_RERUN": false,
+  "DEPTH_RERUN": false,
+  "INPAINT_USED": false,
+  "VGGT_FORWARD_COUNT": 0,
+  "ROMA_INFERENCE_COUNT": 0,
+  "BA_EXECUTION_COUNT": 0,
+  "DEPTH_MODEL_EXECUTION_COUNT": 0,
+  "R3_BASE_COMMIT": "3ee3f205f09c58160269fbba45e35fb26b8520ac",
+  "R3_BASE_DIRECT_COVERAGE": 0.926109,
+  "R22_GEOMETRY_REUSED": true,
+  "R22_GEOMETRY_HASHES": {
+    "EXTRINSICS": "dc9d69363a238f04b64b482cacc8a67fae02cfd7f2c3a763c7c0ada9cfc880e6",
+    "INTRINSICS": "b3d69181a1779404e529d2fed4cf36717a68c88e8f113ee0494bce23468fac21",
+    "DEPTH": "c5375de0dcf3b7c7119ff9cb962f60091a0923a6645eff063cb868ee5d9ac71f"
+  },
+  "BUG_FIXED_DEPTH_TO_RGB_VERTICAL_OFFSET": true,
+  "R3_BUG_v_src": "v_depth * (3000/518) + 500  [WRONG: only sampled rows 500-3500]",
+  "R31_FIX_v_src": "v_depth * (4000/518)          [CORRECT: full rows 0-4000]",
+  "DEPTH_TO_RGB_MAPPING_PROVEN": true,
+  "DEPTH_TO_RGB_AUDIT": {
+    "view_0": {
+      "R3_in_bounds_ratio": 1.0,
+      "R3.1_in_bounds_ratio": 1.0,
+      "sample_count": 25
+    },
+    "view_3": {
+      "R3_in_bounds_ratio": 1.0,
+      "R3.1_in_bounds_ratio": 1.0,
+      "sample_count": 25
+    },
+    "view_6": {
+      "R3_in_bounds_ratio": 1.0,
+      "R3.1_in_bounds_ratio": 1.0,
+      "sample_count": 25
+    },
+    "view_9": {
+      "R3_in_bounds_ratio": 1.0,
+      "R3.1_in_bounds_ratio": 1.0,
+      "sample_count": 25
+    }
+  },
+  "DEPTH_JUMP_THRESHOLD": 0.2,
+  "ADAPTIVE_TRIANGULATION_USED": true,
+  "SURFEL_FALLBACK_USED": true,
+  "SURFEL_FALLBACK_COUNT": 325022,
+  "SURFEL_FALLBACK_IS_GEOMETRY_BASED": true,
+  "MULTI_SOURCE_DIRECT_RECOVERY_USED": true,
+  "MULTI_SOURCE_RECOVERED_PIXELS": 0,
+  "MULTI_SOURCE_RECOVERY_BY_CAMERA": {
+    "0": 0,
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0,
+    "6": 0,
+    "7": 0,
+    "8": 0,
+    "9": 0,
+    "10": 0,
+    "11": 0
+  },
+  "TRIANGLES_TOTAL": 12829872,
+  "TRIANGLES_ACCEPTED": 6410270,
+  "TRIANGLES_DEPTH_REJECTED": 3626,
+  "R31_RENDER_BOUNDS": [
+    -26.38,
+    28.39
+  ],
+  "R31_VERTICAL_SPAN": 54.77,
+  "OUTPUT_DIMENSIONS": "12288 x 1869",
+  "DIRECT_GEOMETRIC_COVERAGE": 0.94145,
+  "DIRECT_GEOMETRIC_COVERAGE_PASS": false,
+  "COLUMN_ANY_HIT_RATIO": 1.0,
+  "COLUMN_50_PERCENT_COVERED_RATIO": 0.982178,
+  "COLUMN_90_PERCENT_COVERED_RATIO": 0.808187,
+  "COLUMN_95_PERCENT_COVERED_RATIO": 0.388997,
+  "COLUMN_ANY_HIT_PASS": true,
+  "COLUMN_90_PASS": false,
+  "CLOSURE_DIRECT_COVERAGE": 0.997407,
+  "CLOSURE_DIRECT_COVERAGE_PASS": true,
+  "RESOLUTION_INDEPENDENT_COVERAGE_PASS": true,
+  "COVERAGE_4K": 0.92654,
+  "COVERAGE_8K": 0.927139,
+  "COVERAGE_12K": 0.927298,
+  "EMPTY_PIXEL_COUNT": 1344664,
+  "EMPTY_COMPONENT_COUNT": 19,
+  "INTERIOR_HOLE_PIXEL_COUNT": 641,
+  "INTERIOR_HOLE_PIXEL_RATIO": 0.0005,
+  "EDGE_HOLE_PIXEL_COUNT": 1343887,
+  "EDGE_HOLE_PIXEL_RATIO": 0.9994,
+  "THIN_CRACK_PIXEL_COUNT": 136,
+  "THIN_CRACK_COMPONENT_COUNT": 11,
+  "EMPTY_COMPONENT_ANALYSIS": [
+    {
+      "id": 1,
+      "AREA_PX": 620,
+      "CLASSIFICATION": "EDGE_OF_VERTICAL_COVERAGE",
+      "BOUNDING_BOX": [
+        0,
+        0,
+        4,
+        251
+      ],
+      "CENTROID_XY": [
+        1.0,
+        109.4
+      ],
+      "YAW_RANGE": [
+        -180.0,
+        -179.88
+      ],
+      "PITCH_RANGE": [
+        21.03,
+        28.39
+      ],
+      "TOUCHES_TOP_BAND_EDGE": true,
+      "TOUCHES_BOTTOM_BAND_EDGE": false,
+      "TOUCHES_LEFT_RIGHT_CLOSURE": true,
+      "INTERIOR_HOLE": false
+    },
+    {
+      "id": 2,
+      "AREA_PX": 900223,
+      "CLASSIFICATION": "LARGE_REGION",
+      "BOUNDING_BOX": [
+        1933,
+        0,
+        10124,
+        216
+      ],
+      "CENTROID_XY": [
+        5738.3,
+        59.8
+      ],
+      "YAW_RANGE": [
+        -123.37,
+        116.6
+      ],
+      "PITCH_RANGE": [
+        22.06,
+        28.39
+      ],
+      "TOUCHES_TOP_BAND_EDGE": true,
+      "TOUCHES_BOTTOM_BAND_EDGE": false,
+      "TOUCHES_LEFT_RIGHT_CLOSURE": false,
+      "INTERIOR_HOLE": false
+    },
+    {
+      "id": 3,
+      "AREA_PX": 22,
+      "CLASSIFICATION": "THIN_CRACK",
+      "BOUNDING_BOX": [
+        12284,
+        0,
+        12287,
+        6
+      ],
+      "CENTROID_XY": [
+        12285.7,
+        2.4
+      ],
+      "YAW_RANGE": [
+        179.88,
+        179.97
+      ],
+      "PITCH_RANGE": [
+        28.21,
+        28.39
+      ],
+      "TOUCHES_TOP_BAND_EDGE": true,
+      "TOUCHES_BOTTOM_BAND_EDGE": false,
+      "TOUCHES_LEFT_RIGHT_CLOSURE": true,
+      "INTERIOR_HOLE": false
+    },
+    {
+      "id": 4,
+      "AREA_PX": 641,
+      "CLASSIFICATION": "INTERIOR_GEOMETRIC_HOLE",
+      "BOUNDING_BOX": [
+        12284,
+        9,
+        12287,
+        255
+      ],
+      "CENTROID_XY": [
+        12286.0,
+        147.9
+      ],
+      "YAW_RANGE": [
+        179.88,
+        179.97
+      ],
+      "PITCH_RANGE": [
+        20.92,
+        28.13
+      ],
+      "TOUCHES_TOP_BAND_EDGE": false,
+      "TOUCHES_BOTTOM_BAND_EDGE": false,
+      "TOUCHES_LEFT_RIGHT_CLOSURE": true,
+      "INTERIOR_HOLE": true
+    },
+    {
+      "id": 5,
+      "AREA_PX": 1,
+      "CLASSIFICATION": "THIN_CRACK",
+      "BOUNDING_BOX": [
+        3346,
+        146,
+        3346,
+        146
+      ],
+      "CENTROID_XY": [
+        3346.0,
+        146.0
+      ],
+      "YAW_RANGE": [
+        -81.97,
+        -81.97
+      ],
+      "PITCH_RANGE": [
+        24.11,
+        24.11
+      ],
+      "TOUCHES_TOP_BAND_EDGE": false,
+      "TOUCHES_BOTTOM_BAND_EDGE": false,
+      "TOUCHES_LEFT_RIGHT_CLOSURE": false,
+      "INTERIOR_HOLE": false
+    },
+    {
+      "id": 6,
+      "AREA_PX": 4,
+      "CLASSIFICATION": "THIN_CRACK",
+      "BOUNDING_BOX": [
+        3310,
+        157,
+        3313,
+        157
+      ],
+      "CENTROID_XY": [
+        3311.5,
+        157.0
+      ],
+      "YAW_RANGE": [
+        -83.03,
+        -82.94
+      ],
+      "PITCH_RANGE": [
+        23.79,
+        23.79
+      ],
+      "TOUCHES_TOP_BAND_EDGE": false,
+      "TOUCHES_BOTTOM_BAND_EDGE": false,
+      "TOUCHES_LEFT_RIGHT_CLOSURE": false,
+      "INTERIOR_HOLE": false
+    },
+    {
+      "id": 7,
+      "AREA_PX": 3,
+      "CLASSIFICATION": "THIN_CRACK",
+      "BOUNDING_BOX": [
+        3307,
+        158,
+        3309,
+        158
+      ],
+      "CENTROID_XY": [
+        3308.0,
+        158.0
+      ],
+      "YAW_RANGE": [
+        -83.12,
+        -83.06
+      ],
+      "PITCH_RANGE": [
+        23.76,
+        23.76
+      ],
+      "TOUCHES_TOP_BAND_EDGE": false,
+      "TOUCHES_BOTTOM_BAND_EDGE": false,
+      "TOUCHES_LEFT_RIGHT_CLOSURE": false,
+      "INTERIOR_HOLE": false
+    },
+    {
+      "id": 8,
+      "AREA_PX": 2,
+      "CLASSIFICATION": "THIN_CRACK",
+      "BOUNDING_BOX": [
+        3304,
+        159,
+        3305,
+        159
+      ],
+      "CENTROID_XY": [
+        3304.5,
+        159.0
+      ],
+      "YAW_RANGE": [
+        -83.2,
+        -83.17
+      ],
+      "PITCH_RANGE": [
+        23.73,
+        23.73
+      ],
+      "TOUCHES_TOP_BAND_EDGE": false,
+      "TOUCHES_BOTTOM_BAND_EDGE": false,
+      "TOUCHES_LEFT_RIGHT_CLOSURE": false,
+      "INTERIOR_HOLE": false
+    },
+    {
+      "id": 9,
+      "AREA_PX": 1,
+      "CLASSIFICATION": "THIN_CRACK",
+      "BOUNDING_BOX": [
+        3301,
+        160,
+        3301,
+        160
+      ],
+      "CENTROID_XY": [
+        3301.0,
+        160.0
+      ],
+      "YAW_RANGE": [
+        -83.29,
+        -83.29
+      ],
+      "PITCH_RANGE": [
+        23.7,
+        23.7
+      ],
+      "TOUCHES_TOP_BAND_EDGE": false,
+      "TOUCHES_BOTTOM_BAND_EDGE": false,
+      "TOUCHES_LEFT_RIGHT_CLOSURE": false,
+      "INTERIOR_HOLE": false
+    },
+    {
+      "id": 10,
+      "AREA_PX": 3,
+      "CLASSIFICATION": "THIN_CRACK",
+      "BOUNDING_BOX": [
+        3129,
+        185,
+        3131,
+        185
+      ],
+      "CENTROID_XY": [
+        3130.0,
+        185.0
+      ],
+      "YAW_RANGE": [
+        -88.33,
+        -88.27
+      ],
+      "PITCH_RANGE": [
+        22.97,
+        22.97
+      ],
+      "TOUCHES_TOP_BAND_EDGE": false,
+      "TOUCHES_BOTTOM_BAND_EDGE": false,
+      "TOUCHES_LEFT_RIGHT_CLOSURE": false,
+      "INTERIOR_HOLE": false
+    },
+    {
+      "id": 11,
+      "AREA_PX": 1,
+      "CLASSIFICATION": "THIN_CRACK",
+      "BOUNDING_BOX": [
+        3133,
+        196,
+        3133,
+        196
+      ],
+      "CENTROID_XY": [
+        3133.0,
+        196.0
+      ],
+      "YAW_RANGE": [
+        -88.21,
+        -88.21
+      ],
+      "PITCH_RANGE": [
+        22.65,
+        22.65
+      ],
+      "TOUCHES_TOP_BAND_EDGE": false,
+      "TOUCHES_BOTTOM_BAND_EDGE": false,
+      "TOUCHES_LEFT_RIGHT_CLOSURE": false,
+      "INTERIOR_HOLE": false
+    },
+    {
+      "id": 12,
+      "AREA_PX": 80,
+      "CLASSIFICATION": "THIN_CRACK",
+      "BOUNDING_BOX": [
+        0,
+        253,
+        4,
+        272
+      ],
+      "CENTROID_XY": [
+        1.6,
+        262.7
+      ],
+      "YAW_RANGE": [
+        -180.0,
+        -179.88
+      ],
+      "PITCH_RANGE": [
+        20.42,
+        20.98
+      ],
+      "TOUCHES_TOP_BAND_EDGE": false,
+      "TOUCHES_BOTTOM_BAND_EDGE": false,
+      "TOUCHES_LEFT_RIGHT_CLOSURE": true,
+      "INTERIOR_HOLE": false
+    },
+    {
+      "id": 13,
+      "AREA_PX": 16,
+      "CLASSIFICATION": "THIN_CRACK",
+      "BOUNDING_BOX": [
+        12287,
+        257,
+        12287,
+        272
+      ],
+      "CENTROID_XY": [
+        12287.0,
+        264.5
+      ],
+      "YAW_RANGE": [
+        179.97,
+        179.97
+      ],
+      "PITCH_RANGE": [
+        20.42,
+        20.86
+      ],
+      "TOUCHES_TOP_BAND_EDGE": false,
+      "TOUCHES_BOTTOM_BAND_EDGE": false,
+      "TOUCHES_LEFT_RIGHT_CLOSURE": true,
+      "INTERIOR_HOLE": false
+    },
+    {
+      "id": 14,
+      "AREA_PX": 3,
+      "CLASSIFICATION": "THIN_CRACK",
+      "BOUNDING_BOX": [
+        0,
+        1760,
+        0,
+        1762
+      ],
+      "CENTROID_XY": [
+        0.0,
+        1761.0
+      ],
+      "YAW_RANGE": [
+        -180.0,
+        -180.0
+      ],
+      "PITCH_RANGE": [
+        -23.24,
+        -23.19
+      ],
+      "TOUCHES_TOP_BAND_EDGE": false,
+      "TOUCHES_BOTTOM_BAND_EDGE": false,
+      "TOUCHES_LEFT_RIGHT_CLOSURE": true,
+      "INTERIOR_HOLE": false
+    },
+    {
+      "id": 15,
+      "AREA_PX": 124,
+      "CLASSIFICATION": "SEAM_HOLE",
+      "BOUNDING_BOX": [
+        12283,
+        1760,
+        12287,
+        1799
+      ],
+      "CENTROID_XY": [
+        12285.4,
+        1781.4
+      ],
+      "YAW_RANGE": [
+        179.85,
+        179.97
+      ],
+      "PITCH_RANGE": [
+        -24.33,
+        -23.19
+      ],
+      "TOUCHES_TOP_BAND_EDGE": false,
+      "TOUCHES_BOTTOM_BAND_EDGE": false,
+      "TOUCHES_LEFT_RIGHT_CLOSURE": true,
+      "INTERIOR_HOLE": false
+    },
+    {
+      "id": 16,
+      "AREA_PX": 404,
+      "CLASSIFICATION": "EDGE_OF_VERTICAL_COVERAGE",
+      "BOUNDING_BOX": [
+        0,
+        1764,
+        4,
+        1868
+      ],
+      "CENTROID_XY": [
+        1.6,
+        1817.5
+      ],
+      "YAW_RANGE": [
+        -180.0,
+        -179.88
+      ],
+      "PITCH_RANGE": [
+        -26.35,
+        -23.3
+      ],
+      "TOUCHES_TOP_BAND_EDGE": false,
+      "TOUCHES_BOTTOM_BAND_EDGE": true,
+      "TOUCHES_LEFT_RIGHT_CLOSURE": true,
+      "INTERIOR_HOLE": false
+    },
+    {
+      "id": 17,
+      "AREA_PX": 442235,
+      "CLASSIFICATION": "LARGE_REGION",
+      "BOUNDING_BOX": [
+        2398,
+        1774,
+        9986,
+        1868
+      ],
+      "CENTROID_XY": [
+        6254.6,
+        1837.5
+      ],
+      "YAW_RANGE": [
+        -109.75,
+        112.56
+      ],
+      "PITCH_RANGE": [
+        -26.35,
+        -23.6
+      ],
+      "TOUCHES_TOP_BAND_EDGE": false,
+      "TOUCHES_BOTTOM_BAND_EDGE": true,
+      "TOUCHES_LEFT_RIGHT_CLOSURE": false,
+      "INTERIOR_HOLE": false
+    },
+    {
+      "id": 18,
+      "AREA_PX": 102,
+      "CLASSIFICATION": "EDGE_OF_VERTICAL_COVERAGE",
+      "BOUNDING_BOX": [
+        12283,
+        1801,
+        12287,
+        1868
+      ],
+      "CENTROID_XY": [
+        12286.4,
+        1840.2
+      ],
+      "YAW_RANGE": [
+        179.85,
+        179.97
+      ],
+      "PITCH_RANGE": [
+        -26.35,
+        -24.39
+      ],
+      "TOUCHES_TOP_BAND_EDGE": false,
+      "TOUCHES_BOTTOM_BAND_EDGE": true,
+      "TOUCHES_LEFT_RIGHT_CLOSURE": true,
+      "INTERIOR_HOLE": false
+    },
+    {
+      "id": 19,
+      "AREA_PX": 179,
+      "CLASSIFICATION": "EDGE_OF_VERTICAL_COVERAGE",
+      "BOUNDING_BOX": [
+        11681,
+        1865,
+        11756,
+        1868
+      ],
+      "CENTROID_XY": [
+        11715.9,
+        1867.1
+      ],
+      "YAW_RANGE": [
+        162.22,
+        164.41
+      ],
+      "PITCH_RANGE": [
+        -26.35,
+        -26.26
+      ],
+      "TOUCHES_TOP_BAND_EDGE": false,
+      "TOUCHES_BOTTOM_BAND_EDGE": true,
+      "TOUCHES_LEFT_RIGHT_CLOSURE": false,
+      "INTERIOR_HOLE": false
+    }
+  ],
+  "WORST_10_YAW_REGIONS": [
+    {
+      "YAW_DEG": -85,
+      "COVERAGE": 0.8381
+    },
+    {
+      "YAW_DEG": -84,
+      "COVERAGE": 0.8391
+    },
+    {
+      "YAW_DEG": -86,
+      "COVERAGE": 0.8398
+    },
+    {
+      "YAW_DEG": -87,
+      "COVERAGE": 0.8424
+    },
+    {
+      "YAW_DEG": -88,
+      "COVERAGE": 0.8517
+    },
+    {
+      "YAW_DEG": -83,
+      "COVERAGE": 0.8571
+    },
+    {
+      "YAW_DEG": -90,
+      "COVERAGE": 0.8649
+    },
+    {
+      "YAW_DEG": -89,
+      "COVERAGE": 0.8651
+    },
+    {
+      "YAW_DEG": -91,
+      "COVERAGE": 0.8652
+    },
+    {
+      "YAW_DEG": -93,
+      "COVERAGE": 0.8657
+    }
+  ],
+  "PITCH_BIN_COVERAGE": {
+    "TOP_5_PERCENT_COVERAGE": 0.371855,
+    "UPPER_QUARTER_COVERAGE": 0.842883,
+    "CENTER_HALF_COVERAGE": 1.0,
+    "LOWER_QUARTER_COVERAGE": 0.922959,
+    "BOTTOM_5_PERCENT_COVERAGE": 0.612423
+  },
+  "THRESHOLD_SWEEP_RESULTS": {
+    "0.08": {
+      "DIRECT_COVERAGE_4K": 0.92445,
+      "COLUMN_ANY_HIT_4K": 0.98877,
+      "TRIANGLES_ACCEPTED": 6403127,
+      "TRIANGLES_REJECTED": 10769
+    },
+    "0.1": {
+      "DIRECT_COVERAGE_4K": 0.925365,
+      "COLUMN_ANY_HIT_4K": 0.989502,
+      "TRIANGLES_ACCEPTED": 6406138,
+      "TRIANGLES_REJECTED": 7758
+    },
+    "0.12": {
+      "DIRECT_COVERAGE_4K": 0.925751,
+      "COLUMN_ANY_HIT_4K": 0.98999,
+      "TRIANGLES_ACCEPTED": 6407891,
+      "TRIANGLES_REJECTED": 6005
+    },
+    "0.15": {
+      "DIRECT_COVERAGE_4K": 0.92604,
+      "COLUMN_ANY_HIT_4K": 0.98999,
+      "TRIANGLES_ACCEPTED": 6409161,
+      "TRIANGLES_REJECTED": 4735
+    },
+    "0.2": {
+      "DIRECT_COVERAGE_4K": 0.92654,
+      "COLUMN_ANY_HIT_4K": 0.991943,
+      "TRIANGLES_ACCEPTED": 6410270,
+      "TRIANGLES_REJECTED": 3626
+    }
+  },
+  "CHOSEN_THRESHOLD": 0.2,
+  "DEPTH_VALIDITY_PER_SHOT": {
+    "SHOT_000": {
+      "DEPTH_VALID_PIXEL_RATIO": 1.0,
+      "DEPTH_INVALID_PIXEL_COUNT": 0,
+      "DEPTH_MIN": 0.705,
+      "DEPTH_MEDIAN": 0.8851,
+      "DEPTH_MAX": 1.1026
+    },
+    "SHOT_030": {
+      "DEPTH_VALID_PIXEL_RATIO": 1.0,
+      "DEPTH_INVALID_PIXEL_COUNT": 0,
+      "DEPTH_MIN": 0.8186,
+      "DEPTH_MEDIAN": 1.0554,
+      "DEPTH_MAX": 1.6878
+    },
+    "SHOT_060": {
+      "DEPTH_VALID_PIXEL_RATIO": 1.0,
+      "DEPTH_INVALID_PIXEL_COUNT": 0,
+      "DEPTH_MIN": 0.8808,
+      "DEPTH_MEDIAN": 1.5732,
+      "DEPTH_MAX": 1.7897
+    },
+    "SHOT_090": {
+      "DEPTH_VALID_PIXEL_RATIO": 1.0,
+      "DEPTH_INVALID_PIXEL_COUNT": 0,
+      "DEPTH_MIN": 1.4324,
+      "DEPTH_MEDIAN": 1.7011,
+      "DEPTH_MAX": 1.9656
+    },
+    "SHOT_120": {
+      "DEPTH_VALID_PIXEL_RATIO": 1.0,
+      "DEPTH_INVALID_PIXEL_COUNT": 0,
+      "DEPTH_MIN": 0.4817,
+      "DEPTH_MEDIAN": 0.9303,
+      "DEPTH_MAX": 1.7482
+    },
+    "SHOT_150": {
+      "DEPTH_VALID_PIXEL_RATIO": 1.0,
+      "DEPTH_INVALID_PIXEL_COUNT": 0,
+      "DEPTH_MIN": 0.5068,
+      "DEPTH_MEDIAN": 0.6381,
+      "DEPTH_MAX": 0.8842
+    },
+    "SHOT_180": {
+      "DEPTH_VALID_PIXEL_RATIO": 1.0,
+      "DEPTH_INVALID_PIXEL_COUNT": 0,
+      "DEPTH_MIN": 0.4614,
+      "DEPTH_MEDIAN": 0.5501,
+      "DEPTH_MAX": 0.6444
+    },
+    "SHOT_210": {
+      "DEPTH_VALID_PIXEL_RATIO": 1.0,
+      "DEPTH_INVALID_PIXEL_COUNT": 0,
+      "DEPTH_MIN": 0.4632,
+      "DEPTH_MEDIAN": 0.5523,
+      "DEPTH_MAX": 0.6753
+    },
+    "SHOT_240": {
+      "DEPTH_VALID_PIXEL_RATIO": 1.0,
+      "DEPTH_INVALID_PIXEL_COUNT": 0,
+      "DEPTH_MIN": 0.4301,
+      "DEPTH_MEDIAN": 0.7189,
+      "DEPTH_MAX": 2.4272
+    },
+    "SHOT_270": {
+      "DEPTH_VALID_PIXEL_RATIO": 1.0,
+      "DEPTH_INVALID_PIXEL_COUNT": 0,
+      "DEPTH_MIN": 0.4369,
+      "DEPTH_MEDIAN": 0.7091,
+      "DEPTH_MAX": 3.8938
+    },
+    "SHOT_300": {
+      "DEPTH_VALID_PIXEL_RATIO": 1.0,
+      "DEPTH_INVALID_PIXEL_COUNT": 0,
+      "DEPTH_MIN": 0.4284,
+      "DEPTH_MEDIAN": 0.5332,
+      "DEPTH_MAX": 2.1503
+    },
+    "SHOT_330": {
+      "DEPTH_VALID_PIXEL_RATIO": 1.0,
+      "DEPTH_INVALID_PIXEL_COUNT": 0,
+      "DEPTH_MIN": 0.4352,
+      "DEPTH_MEDIAN": 0.809,
+      "DEPTH_MAX": 1.1922
+    }
+  },
+  "PRE_COLOR_MATCH_RMS": 14.34,
+  "POST_COLOR_MATCH_RMS": 11.95,
+  "PER_CAMERA_RGB_GAINS": [
+    [
+      1.0,
+      1.0,
+      1.0
+    ],
+    [
+      0.9021124839782715,
+      0.9224861860275269,
+      0.9260600805282593
+    ],
+    [
+      0.7900905609130859,
+      0.8229544758796692,
+      0.7935404181480408
+    ],
+    [
+      0.7677788138389587,
+      0.7825372219085693,
+      0.7520636320114136
+    ],
+    [
+      0.7556656002998352,
+      0.7765786647796631,
+      0.75
+    ],
+    [
+      0.7625383138656616,
+      0.7868381142616272,
+      0.7689785361289978
+    ],
+    [
+      0.75,
+      0.7617076635360718,
+      0.75
+    ],
+    [
+      0.75,
+      0.8034132719039917,
+      0.75
+    ],
+    [
+      0.7700192928314209,
+      0.8010667562484741,
+      0.7802838087081909
+    ],
+    [
+      0.75,
+      0.75,
+      0.75
+    ],
+    [
+      0.75,
+      0.75,
+      0.75
+    ],
+    [
+      0.9242814779281616,
+      0.9736137390136719,
+      0.9641869068145752
+    ]
+  ],
+  "PER_CAMERA_RGB_BIASES": [
+    [
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      8.326144218444824,
+      3.31032395362854,
+      5.371340751647949
+    ],
+    [
+      19.21281623840332,
+      10.030068397521973,
+      16.870996475219727
+    ],
+    [
+      20.0,
+      12.243046760559082,
+      19.927717208862305
+    ],
+    [
+      20.0,
+      11.618875503540039,
+      19.85846519470215
+    ],
+    [
+      20.0,
+      10.32971477508545,
+      17.073698043823242
+    ],
+    [
+      20.0,
+      11.07291316986084,
+      16.52801513671875
+    ],
+    [
+      19.99355125427246,
+      9.67751407623291,
+      16.060924530029297
+    ],
+    [
+      19.227745056152344,
+      9.449345588684082,
+      14.26156234741211
+    ],
+    [
+      20.0,
+      12.316368103027344,
+      13.715591430664062
+    ],
+    [
+      19.31338882446289,
+      11.19603157043457,
+      12.305231094360352
+    ],
+    [
+      7.790315628051758,
+      1.8625646829605103,
+      5.10018253326416
+    ]
+  ],
+  "SHARPNESS_RETENTION_MEDIAN": 0.476,
+  "CLOSURE_COLOR_DELTA": 0.09,
+  "PIXEL_PROVENANCE_VALID_RATIO": 0.9999,
+  "PIXEL_PROVENANCE_SAMPLE_COUNT": 10000,
+  "R3_FINAL_RGB_SOURCE": "ORIGINAL_3000x4000_PHYSICAL_STILLS",
+  "FULL_RES_PHYSICAL_PIXEL_PROVENANCE": "PASS",
+  "SOURCE_OWNERSHIP_PIXEL_COUNT_PER_SHOT": {
+    "SHOT_000": 1567835,
+    "SHOT_030": 639392,
+    "SHOT_060": 2582351,
+    "SHOT_090": 1438066,
+    "SHOT_120": 2812918,
+    "SHOT_150": 437550,
+    "SHOT_180": 1954401,
+    "SHOT_210": 3829574,
+    "SHOT_240": 1200051,
+    "SHOT_270": 2189716,
+    "SHOT_300": 1456893,
+    "SHOT_330": 1512861
+  },
+  "RENDERER_REPAIR_SUFFICIENT": false,
+  "R4_GEOMETRY_RERUN_REQUIRED": true,
+  "ALL_GATES_PASS": false,
+  "ARTIFACTS": {
+    "RAW_DIRECT": {
+      "name": "P2R16_QUALITY12_R31_FULLRES_PHYSICAL_RAW_DIRECT.png",
+      "bytes": 24961499,
+      "sha256": "9bc34f07ad828c95a48f8549ea52c40131e19c45fc8624f9ae3dd18db204a942",
+      "dims": "12288x1869"
+    },
+    "DIRECT_MASK": {
+      "name": "P2R16_QUALITY12_R31_DIRECT_COVERAGE_MASK.png",
+      "bytes": 31724,
+      "sha256": "9b49bd2e239228067bb90639c9cd67f7f363387fdf253dc787a87901ee328a49",
+      "dims": "12288x1869"
+    },
+    "SOURCE_OWNERSHIP": {
+      "name": "P2R16_QUALITY12_R31_SOURCE_OWNERSHIP.png",
+      "bytes": 188207,
+      "sha256": "5489068b7a9760d06120fac96eedfb8853a4d08faae47ea85585b9f7cd180cf7",
+      "dims": "12288x1869"
+    },
+    "HOLE_CLASSIFICATION": {
+      "name": "P2R16_QUALITY12_R31_HOLE_CLASSIFICATION.png",
+      "bytes": 74308,
+      "sha256": "388f3a8b4856173d7aafc297da90028ebf9c474a5f4d4bf7e11174df65fbd170",
+      "dims": "12288x1869"
+    },
+    "OWNER_REVIEW": {
+      "name": "P2R16_QUALITY12_R31_FULLRES_PHYSICAL_OWNER_REVIEW.jpg",
+      "bytes": 5630800,
+      "sha256": "e5d75e57b770072a5f54edfb3506c8831b1e785e24c428aec92a0c6ee5abd951",
+      "dims": "12288x1869"
+    }
+  }
+}
