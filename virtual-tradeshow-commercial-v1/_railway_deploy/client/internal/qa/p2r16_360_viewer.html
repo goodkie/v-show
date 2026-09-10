@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>C12.9-P2R16 Internal 360 QA Viewer — 12K Owner QA</title>
+  <title>C12.9-P2R16 Internal 360 QA Viewer — 12K Owner QA (Exact Mask)</title>
   
   <!-- FontAwesome for Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -293,7 +293,10 @@
     <h2 style="font-size:18px; margin:0 0 8px 0; color:#f8fafc; font-weight:700;">Panorama render validation failed.</h2>
     <p style="font-size:13px; color:#94a3b8; margin:0 0 16px 0; line-height:1.5;">Direct native source inspection links:</p>
     <div class="failsafe-links">
-      <a class="failsafe-link" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg" target="_blank">12K Native</a>
+      <a class="failsafe-link" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg" target="_blank">12K Final JPEG</a>
+      <a class="failsafe-link" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R22_QA_12K_RAW_NO_INPAINT.png" target="_blank">12K Raw PNG</a>
+      <a class="failsafe-link" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R22_QA_12K_DIRECT_COVERAGE_MASK.png" target="_blank">12K Mask PNG</a>
+      <a class="failsafe-link" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R22_QA_12K_INPAINT_OVERLAY.jpg" target="_blank">12K Inpaint Overlay</a>
       <a class="failsafe-link" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_16K.jpg" target="_blank">16K Experimental</a>
       <a class="failsafe-link" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_8K.jpg" target="_blank">8K Native</a>
       <a class="failsafe-link" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg" target="_blank">4K R1 Original</a>
@@ -320,7 +323,7 @@
         <span class="qa-badge" id="tier-badge">12K OWNER QA</span>
       </div>
       <div class="sub-specs" id="sub-specs-text">
-        ACTIVE TEXTURE: 12288 × 1827 | DIRECT COVERAGE: 91.85% (GEOMETRIC) | FOV: <span id="fov-hdr-text">85°</span> | YAW: <span id="yaw-hdr-text">0.0°</span> | PITCH: <span id="pitch-hdr-text">+0.0°</span>
+        ACTIVE TEXTURE: 12288 × 1827 | DIRECT GEOMETRIC COVERAGE: 91.85% | INPAINTED FRACTION: 8.15% | FOV: <span id="fov-hdr-text">85°</span> | YAW: <span id="yaw-hdr-text">0.0°</span> | PITCH: <span id="pitch-hdr-text">+0.0°</span>
       </div>
     </div>
 
@@ -369,22 +372,27 @@
     <button class="bm-btn" onclick="jumpTo(345, 0)" title="Loop Closure Seam">Closure (345°)</button>
   </div>
 
-  <!-- Coverage Display Bar (Section 5) -->
+  <!-- Coverage Display Bar (Phase 7C.2R2.2C Exact Modes) -->
   <div class="coverage-bar" id="coverage-bar" style="display: none;">
     <span class="cov-title"><i class="fa-solid fa-layer-group"></i> VIEW:</span>
     <button id="btn-cov-rgb" class="cov-btn active-cov" onclick="setCoverageMode('final-rgb')" title="Final RGB — 12K JPEG as rendered (post-inpaint)">FINAL RGB</button>
-    <button id="btn-cov-raw" class="cov-btn" onclick="setCoverageMode('raw-coverage')" title="Approximate coverage view — exact pre-inpaint mask unavailable without GPU re-render">RAW COVERAGE ⚠</button>
-    <button id="btn-cov-overlay" class="cov-btn" onclick="setCoverageMode('coverage-overlay')" title="Final RGB + approximate inpaint region overlay">COVERAGE OVERLAY ⚠</button>
+    <button id="btn-cov-raw" class="cov-btn" onclick="setCoverageMode('raw-direct')" title="Exact raw directly projected physical-source pixels (no inpaint)">RAW DIRECT PIXELS</button>
+    <button id="btn-cov-mask" class="cov-btn" onclick="setCoverageMode('direct-mask')" title="Exact binary coverage mask (255=direct physical hit, 0=empty)">DIRECT COVERAGE MASK</button>
+    <button id="btn-cov-overlay" class="cov-btn" onclick="setCoverageMode('inpaint-overlay')" title="Final RGB with exact missing-mask pixels highlighted in amber">INPAINT OVERLAY</button>
   </div>
 
   <!-- QA Stats Panel (right side) -->
   <div id="qa-stats-panel" style="display: none;">
     <div class="stat-row"><span class="stat-key">ACTIVE TEXTURE:</span><span class="stat-val val-ok" id="qa-active-tex">12288 × 1827</span></div>
-    <div class="stat-row"><span class="stat-key">DIRECT GEOMETRIC COVERAGE:</span><span class="stat-val val-ok">91.85%</span></div>
-    <div class="stat-row"><span class="stat-key">FINAL RGB NONBLACK:</span><span class="stat-val">98.59%</span></div>
+    <div class="stat-row"><span class="stat-key">TOTAL PIXELS:</span><span class="stat-val val-ok">22,450,176</span></div>
+    <div class="stat-row"><span class="stat-key">DIRECT HIT PIXELS:</span><span class="stat-val val-ok">20,620,138</span></div>
+    <div class="stat-row"><span class="stat-key">EMPTY PIXELS (INPAINTED):</span><span class="stat-val val-warn">1,830,038</span></div>
+    <div class="stat-row"><span class="stat-key">DIRECT GEOMETRIC COVERAGE:</span><span class="stat-val val-ok">91.85% (0.918484)</span></div>
+    <div class="stat-row"><span class="stat-key">INPAINTED FRACTION:</span><span class="stat-val val-warn">8.15% (0.081516)</span></div>
+    <div class="stat-row"><span class="stat-key">EXACT PRE-INPAINT MASK:</span><span class="stat-val val-ok">AVAILABLE & VERIFIED</span></div>
+    <div class="stat-row"><span class="stat-key">MASK ACCOUNTING:</span><span class="stat-val val-ok">PASS (20,620,138 + 1,830,038 == 22,450,176)</span></div>
     <div class="stat-row"><span class="stat-key">AUTO TIER POLICY:</span><span class="stat-val val-ok">12K (OWNER QA LOCK)</span></div>
     <div class="stat-row"><span class="stat-key">16K AUTO SELECTION:</span><span class="stat-val val-warn">DISABLED</span></div>
-    <div class="stat-row"><span class="stat-key">EXACT PRE-INPAINT MASK:</span><span class="stat-val val-warn">UNAVAILABLE</span></div>
     <div class="stat-row"><span class="stat-key">RASTERIZATION BOUNDS:</span><span class="stat-val">[-26.38°, +28.39°] 54.78°</span></div>
     <div class="stat-row"><span class="stat-key">VIEWER BAND:</span><span class="stat-val">[-25.74°, +27.79°] 53.52°</span></div>
     <div class="stat-row"><span class="stat-key">UV MAPPING:</span><span class="stat-val val-ok" id="qa-uv-mode">UV_CROPPED_TO_INTERSECTION</span></div>
@@ -579,8 +587,14 @@
     let userSelectedTier = 'AUTO';
     let activeTier = '12K';   // Default: 12K OWNER QA
     let activeTextureUrl = QUALITY_AI_TIERS['12K'].url;
-    let coverageMode = 'final-rgb';  // 'final-rgb' | 'raw-coverage' | 'coverage-overlay'
-    let coverageOverlayActive = false;
+    // Coverage Display Modes (Phase 7C.2R2.2C Exact Modes)
+    let coverageMode = 'final-rgb';  // 'final-rgb' | 'raw-direct' | 'direct-mask' | 'inpaint-overlay'
+    const COVERAGE_MODE_TEXTURES = {
+      'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg',
+      'raw-direct': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R22_QA_12K_RAW_NO_INPAINT.png',
+      'direct-mask': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R22_QA_12K_DIRECT_COVERAGE_MASK.png',
+      'inpaint-overlay': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R22_QA_12K_INPAINT_OVERLAY.jpg'
+    };
 
     let currentYaw = 0.0;
     let currentPitch = 0.0;
@@ -598,14 +612,23 @@
     window.__VIEWER_TELEMETRY__ = {
       REQUESTED_MODE: 'quality-ai-12view',
       MODE_LOCK_MATCH: true,
-      // --- 7C.2R2.2B canonicalized values ---
+      // --- 7C.2R2.2C canonicalized values ---
       OWNER_QA_DEFAULT_TIER: '12K',
       AUTO_SELECTED_TIER: '12K',
       ACTIVE_TIER: '12K OWNER QA',
       ACTIVE_TEXTURE_WIDTH: 12288,
       ACTIVE_TEXTURE_HEIGHT: 1827,
       '16K_AUTO_SELECTION': false,
-      EXACT_PRE_INPAINT_MASK_AVAILABLE: false,
+      EXACT_PRE_INPAINT_MASK_AVAILABLE: true,
+      RAW_DIRECT_PIXELS_TOGGLE: false,
+      DIRECT_COVERAGE_MASK_TOGGLE: false,
+      INPAINT_OVERLAY_TOGGLE: false,
+      TOTAL_PIXELS: 22450176,
+      DIRECT_HIT_PIXELS: 20620138,
+      EMPTY_PIXELS: 1830038,
+      DIRECT_COVERAGE_RATIO: 0.918484,
+      INPAINT_REQUIRED_RATIO: 0.081516,
+      MASK_PIXEL_ACCOUNTING_PASS: true,
       UV_MAPPING_TYPE: 'UV_CROPPED_TO_INTERSECTION',
       VIEWER_VERTICAL_ANGULAR_DISTORTION: false,
       UV_V_MIN: UV_CORRECTION.v_min,
@@ -614,7 +637,7 @@
       RASTERIZATION_SPAN_DEG: 54.78,
       VIEWER_BAND: [-25.74, 27.79],
       VIEWER_SPAN_DEG: 53.52,
-      GEOMETRIC_COVERAGE_12K: 0.9185,
+      GEOMETRIC_COVERAGE_12K: 0.918484,
       RGB_NONBLACK_12K: 0.985927,
       GEOMETRIC_COVERAGE_16K: 0.8104,
       // R22 classification
@@ -799,8 +822,13 @@
       if (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai') {
         activeTier = determineTier(userSelectedTier);
         const tierInfo = QUALITY_AI_TIERS[activeTier] || QUALITY_AI_TIERS['4K'];
-        targetUrl = tierInfo.url;
-        targetLabel = tierInfo.label;
+        if (activeTier === '12K' && coverageMode !== 'final-rgb' && COVERAGE_MODE_TEXTURES[coverageMode]) {
+          targetUrl = COVERAGE_MODE_TEXTURES[coverageMode];
+          targetLabel = '12K ' + (coverageMode === 'raw-direct' ? 'RAW DIRECT' : (coverageMode === 'direct-mask' ? 'COVERAGE MASK' : 'INPAINT OVERLAY'));
+        } else {
+          targetUrl = tierInfo.url;
+          targetLabel = tierInfo.label;
+        }
         targetW = tierInfo.width;
         targetH = tierInfo.height;
       } else {
@@ -1114,65 +1142,67 @@
 
       const btnRgb = document.getElementById('btn-cov-rgb');
       const btnRaw = document.getElementById('btn-cov-raw');
+      const btnMask = document.getElementById('btn-cov-mask');
       const btnOverlay = document.getElementById('btn-cov-overlay');
-      const covCanvas = document.getElementById('coverage-canvas');
       const toast = document.getElementById('coverage-mode-toast');
+      const subSpecs = document.getElementById('sub-specs-text');
 
       // Reset all buttons
       if (btnRgb) btnRgb.className = 'cov-btn';
       if (btnRaw) btnRaw.className = 'cov-btn';
+      if (btnMask) btnMask.className = 'cov-btn';
       if (btnOverlay) btnOverlay.className = 'cov-btn';
 
       if (mode === 'final-rgb') {
         if (btnRgb) btnRgb.className = 'cov-btn active-cov';
-        if (covCanvas) covCanvas.style.display = 'none';
-        // Restore full brightness
-        if (sphereMesh && sphereMesh.material) {
-          sphereMesh.material.color.set(0xffffff);
-          sphereMesh.material.needsUpdate = true;
-        }
         if (toast) toast.style.display = 'none';
+        if (subSpecs) {
+          subSpecs.innerHTML = 'ACTIVE TEXTURE: 12288 × 1827 | DIRECT GEOMETRIC COVERAGE: 91.85% | INPAINTED FRACTION: 8.15% | FOV: <span id="fov-hdr-text">' + Math.round(currentFov) + '°</span> | YAW: <span id="yaw-hdr-text">' + currentYaw.toFixed(1) + '°</span> | PITCH: <span id="pitch-hdr-text">' + (currentPitch >= 0 ? '+' : '') + currentPitch.toFixed(1) + '°</span>';
+        }
         window.__VIEWER_TELEMETRY__.RAW_COVERAGE_TOGGLE_WORKS = true;
         window.__VIEWER_TELEMETRY__.COVERAGE_OVERLAY_TOGGLE_WORKS = true;
+        resolveAndLoadTexture();
 
-      } else if (mode === 'raw-coverage') {
+      } else if (mode === 'raw-direct') {
         if (btnRaw) btnRaw.className = 'cov-btn active-cov-warn';
-        if (covCanvas) covCanvas.style.display = 'none';
-        // Darken the sphere material to simulate raw coverage approximation
-        // APPROXIMATE: exact pre-inpaint mask unavailable without GPU re-render
-        if (sphereMesh && sphereMesh.material) {
-          sphereMesh.material.color.set(0x555555);  // darken by ~67%
-          sphereMesh.material.needsUpdate = true;
-        }
-        // Show approximate notice
         if (toast) {
-          toast.textContent = '⚠ APPROXIMATE COVERAGE VIEW — exact pre-inpaint mask unavailable without GPU re-render';
+          toast.textContent = 'NO INPAINT — DIRECT PHYSICAL PROJECTION ONLY';
           toast.style.display = 'block';
           setTimeout(() => { if (toast) toast.style.display = 'none'; }, 4000);
         }
+        if (subSpecs) {
+          subSpecs.innerHTML = 'ACTIVE TEXTURE: 12288 × 1827 (RAW PNG) | <strong style="color: #00ff88;">NO INPAINT — DIRECT PHYSICAL PROJECTION ONLY</strong> | COVERAGE: 91.85%';
+        }
+        window.__VIEWER_TELEMETRY__.RAW_DIRECT_PIXELS_TOGGLE = true;
         window.__VIEWER_TELEMETRY__.RAW_COVERAGE_TOGGLE_WORKS = true;
+        resolveAndLoadTexture();
 
-      } else if (mode === 'coverage-overlay') {
-        if (btnOverlay) btnOverlay.className = 'cov-btn active-cov-warn';
-        // Restore full brightness for base
-        if (sphereMesh && sphereMesh.material) {
-          sphereMesh.material.color.set(0xffffff);
-          sphereMesh.material.needsUpdate = true;
-        }
-        // Render approximate overlay
-        if (covCanvas) {
-          covCanvas.style.display = 'block';
-          covCanvas.width = window.innerWidth;
-          covCanvas.height = window.innerHeight;
-          // Overlay is a static amber tint on ~19% of pixels (approximation of inpaint zone)
-          renderApproximateCoverageOverlay(covCanvas);
-        }
+      } else if (mode === 'direct-mask') {
+        if (btnMask) btnMask.className = 'cov-btn active-cov-warn';
         if (toast) {
-          toast.textContent = '⚠ APPROXIMATE COVERAGE OVERLAY — DIRECT GEOMETRIC: 91.85% | INPAINT APPROX: 8.15%';
+          toast.textContent = 'NO INPAINT — DIRECT PHYSICAL PROJECTION ONLY (WHITE=255 DIRECT HIT, BLACK=0 MISSING)';
+          toast.style.display = 'block';
+          setTimeout(() => { if (toast) toast.style.display = 'none'; }, 4000);
+        }
+        if (subSpecs) {
+          subSpecs.innerHTML = 'ACTIVE TEXTURE: 12288 × 1827 (MASK PNG) | <strong style="color: #00ff88;">DIRECT COVERAGE MASK</strong> (WHITE=255 DIRECT HIT, BLACK=0 MISSING)';
+        }
+        window.__VIEWER_TELEMETRY__.DIRECT_COVERAGE_MASK_TOGGLE = true;
+        resolveAndLoadTexture();
+
+      } else if (mode === 'inpaint-overlay') {
+        if (btnOverlay) btnOverlay.className = 'cov-btn active-cov-warn';
+        if (toast) {
+          toast.textContent = 'EXACT INPAINT OVERLAY — AMBER REGIONS = INPAINTED PIXELS (8.15%)';
           toast.style.display = 'block';
           setTimeout(() => { if (toast) toast.style.display = 'none'; }, 5000);
         }
+        if (subSpecs) {
+          subSpecs.innerHTML = 'ACTIVE TEXTURE: 12288 × 1827 (INPAINT OVERLAY) | <strong style="color: #f59e0b;">INPAINT OVERLAY</strong> (AMBER REGIONS = INPAINTED PIXELS 8.15%)';
+        }
+        window.__VIEWER_TELEMETRY__.INPAINT_OVERLAY_TOGGLE = true;
         window.__VIEWER_TELEMETRY__.COVERAGE_OVERLAY_TOGGLE_WORKS = true;
+        resolveAndLoadTexture();
       }
     }
 
