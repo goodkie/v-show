@@ -410,5 +410,19 @@
     "MASTER_TOUCHED": false,
     "COMMIT_A": "6e974a202ee6df84e24681d7a4d127e783ef2a8a",
     "SOURCE_COMMIT": "6e974a202ee6df84e24681d7a4d127e783ef2a8a"
+  },
+  "PHASE_7C2R4P2_DEPLOYMENT": {
+    "RAILWAY_DEPLOYMENT_ID": "f7a3a410-0f71-4b63-ab3a-c875ac64cf16",
+    "RAILWAY_DEPLOYMENT_COMMIT": "8a79916d21899fc71cd65ed524229da29975d419",
+    "RAILWAY_DEPLOYMENT_STATUS": "SUCCESS",
+    "OWNER_REVIEW_URL": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p2",
+    "IDENTITY_JPEG_URL": "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY_OWNER_REVIEW.jpg",
+    "IDENTITY_PNG_URL": "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY.png",
+    "LIVE_VERIFICATION_STATUS": "PASS",
+    "HEADLESS_TEST_STATUS": "PASS",
+    "OWNER_REVIEW_COMPLETED": false,
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "CUSTOMER_DEFAULT": "P2R13",
+    "MASTER_TOUCHED": false
   }
 }
