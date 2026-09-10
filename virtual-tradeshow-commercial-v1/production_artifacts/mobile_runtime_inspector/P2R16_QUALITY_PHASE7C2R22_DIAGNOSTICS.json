@@ -1,0 +1,227 @@
+{
+  "PHASE": "PHASE_7C.2R2.2",
+  "TITLE": "16K Native Owner QA + Deep Zoom Viewer",
+  "STATUS": "READY_FOR_OWNER_REVIEW",
+  "BASE_COMMIT": "c85e7ccee7efb21a02d674a099a060c9e551b3ba",
+  "COMMIT_A_SHA": "PENDING_COMMIT_A",
+  "COMMIT_B_SHA": "PENDING_COMMIT_B",
+  "FROZEN_INPUT_SHA": "c614d1f3c1250f5aee7738a5163fbc8598f17ad196eb4c4e296f9419b4cb7918",
+  "RASTERS": {
+    "8K": {
+      "filename": "P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_8K.jpg",
+      "dimensions": [
+        8192,
+        1218
+      ],
+      "bytes": 3319272,
+      "sha256": "3e7647148028c1b8a49463d09ccf9b448d0e9658b7c79dec6aa0cb6602f3a590",
+      "vertical_angular_bounds": [
+        -25.74,
+        27.79
+      ],
+      "vertical_span_deg": 53.52,
+      "coverage_ratio": 1.0,
+      "url": "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_8K.jpg"
+    },
+    "12K": {
+      "filename": "P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg",
+      "dimensions": [
+        12288,
+        1827
+      ],
+      "bytes": 7048447,
+      "sha256": "891b71739a18c866c1604f24d33495a421576d162b3df609b73f7e8f57b87203",
+      "vertical_angular_bounds": [
+        -25.74,
+        27.79
+      ],
+      "vertical_span_deg": 53.52,
+      "coverage_ratio": 1.0,
+      "url": "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg"
+    },
+    "16K": {
+      "filename": "P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_16K.jpg",
+      "dimensions": [
+        16384,
+        2436
+      ],
+      "bytes": 15058120,
+      "sha256": "763544654f065cb3657cdd2a982e4ddf5f5282388d57d05cdfbf9bd7bece0b68",
+      "vertical_angular_bounds": [
+        -25.74,
+        27.79
+      ],
+      "vertical_span_deg": 53.52,
+      "coverage_ratio": 1.0,
+      "url": "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_16K.jpg"
+    }
+  },
+  "SEAM_FORENSICS": {
+    "8K": {
+      "width": 8192,
+      "height": 1218,
+      "bytes": 3319272,
+      "sha256": "3e7647148028c1b8a49463d09ccf9b448d0e9658b7c79dec6aa0cb6602f3a590",
+      "seam_forensics": {
+        "seam_strip_width_px": 400,
+        "seam_delta_rms": 3.2,
+        "seam_laplacian_var": 76.34
+      },
+      "edge_metrics": {
+        "crop_size_px": 512,
+        "crop_A_door_window_frame": {
+          "laplacian_variance": 34.56,
+          "sobel_mean": 13.84
+        },
+        "crop_B_wall_ceiling_boundary": {
+          "laplacian_variance": 75.58,
+          "sobel_mean": 18.34
+        },
+        "crop_C_high_frequency_sign_text": {
+          "laplacian_variance": 71.31,
+          "sobel_mean": 21.4
+        },
+        "overall_laplacian_variance": 53.64,
+        "overall_sobel_magnitude": 17.61
+      }
+    },
+    "12K": {
+      "width": 12288,
+      "height": 1827,
+      "bytes": 7048447,
+      "sha256": "891b71739a18c866c1604f24d33495a421576d162b3df609b73f7e8f57b87203",
+      "seam_forensics": {
+        "seam_strip_width_px": 600,
+        "seam_delta_rms": 2.89,
+        "seam_laplacian_var": 1702.79
+      },
+      "edge_metrics": {
+        "crop_size_px": 768,
+        "crop_A_door_window_frame": {
+          "laplacian_variance": 96.33,
+          "sobel_mean": 11.77
+        },
+        "crop_B_wall_ceiling_boundary": {
+          "laplacian_variance": 69.04,
+          "sobel_mean": 14.7
+        },
+        "crop_C_high_frequency_sign_text": {
+          "laplacian_variance": 43.41,
+          "sobel_mean": 16.3
+        },
+        "overall_laplacian_variance": 175.5,
+        "overall_sobel_magnitude": 15.26
+      }
+    },
+    "16K": {
+      "width": 16384,
+      "height": 2436,
+      "bytes": 15058120,
+      "sha256": "763544654f065cb3657cdd2a982e4ddf5f5282388d57d05cdfbf9bd7bece0b68",
+      "seam_forensics": {
+        "seam_strip_width_px": 800,
+        "seam_delta_rms": 3.34,
+        "seam_laplacian_var": 3493.89
+      },
+      "edge_metrics": {
+        "crop_size_px": 1024,
+        "crop_A_door_window_frame": {
+          "laplacian_variance": 697.74,
+          "sobel_mean": 15.99
+        },
+        "crop_B_wall_ceiling_boundary": {
+          "laplacian_variance": 172.08,
+          "sobel_mean": 18.7
+        },
+        "crop_C_high_frequency_sign_text": {
+          "laplacian_variance": 201.15,
+          "sobel_mean": 19.4
+        },
+        "overall_laplacian_variance": 461.74,
+        "overall_sobel_magnitude": 17.72
+      }
+    }
+  },
+  "GEOMETRY_PERSISTENCE": {
+    "DEPTH_NPZ": {
+      "filename": "P2R16_FROZEN_GEOMETRY_DEPTH.npz",
+      "bytes": 1429459,
+      "sha256": "c5375de0dcf3b7c7119ff9cb962f60091a0923a6645eff063cb868ee5d9ac71f"
+    },
+    "EXTRINSICS_BA_NPY": {
+      "filename": "P2R16_FROZEN_EXTRINSICS_BA.npy",
+      "bytes": 704,
+      "sha256": "dc9d69363a238f04b64b482cacc8a67fae02cfd7f2c3a763c7c0ada9cfc880e6"
+    },
+    "INTRINSICS_NPY": {
+      "filename": "P2R16_FROZEN_INTRINSICS.npy",
+      "bytes": 560,
+      "sha256": "b3d69181a1779404e529d2fed4cf36717a68c88e8f113ee0494bce23468fac21"
+    }
+  },
+  "VIEWER_SPECS": {
+    "viewer_route": "/internal/qa/p2r16/360-viewer?mode=quality-ai-12view",
+    "fov": {
+      "default": 85.0,
+      "min": 18.0,
+      "max": 100.0,
+      "deep_zoom_1to1": 18.0,
+      "zoom_cycle": [
+        85.0,
+        35.0,
+        20.0,
+        18.0
+      ]
+    },
+    "bookmarks": [
+      {
+        "label": "0\u00b0 (Shot 000)",
+        "yaw": 0.0,
+        "pitch": 0.0
+      },
+      {
+        "label": "90\u00b0 (Shot 090)",
+        "yaw": 90.0,
+        "pitch": 0.0
+      },
+      {
+        "label": "180\u00b0 (Shot 180)",
+        "yaw": 180.0,
+        "pitch": 0.0
+      },
+      {
+        "label": "270\u00b0 (Shot 270)",
+        "yaw": 270.0,
+        "pitch": 0.0
+      },
+      {
+        "label": "Closure (345\u00b0)",
+        "yaw": 345.0,
+        "pitch": 0.0
+      }
+    ],
+    "multi_tier_urls": {
+      "16K": "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_16K.jpg",
+      "12K": "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg",
+      "8K": "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_8K.jpg",
+      "4K": "/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg"
+    },
+    "color_pipeline": {
+      "material_color": "0xffffff",
+      "texture_encoding": "sRGBEncoding",
+      "output_encoding": "sRGBEncoding",
+      "tone_mapping": "NoToneMapping",
+      "exposure": 1.0
+    },
+    "webgl_memory_policy": "single_texture_active_dispose_on_swap"
+  },
+  "AUDIT_INVARIANTS": {
+    "CUSTOMER_DEFAULT": "P2R13",
+    "CUSTOMER_DEFAULT_UNCHANGED": true,
+    "MASTER_TOUCHED": false,
+    "OWNER_REVIEW_COMPLETED": false,
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "QUALITY_GHOSTING_QA": "FAIL",
+    "PROMPT_INJECTIONS": "none"
+  }
+}

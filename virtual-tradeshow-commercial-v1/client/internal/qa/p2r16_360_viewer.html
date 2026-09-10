@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>C12.9-P2R16 Internal 360 QA Viewer (4-Mode AI Multi-View Spherical Band)</title>
+  <title>C12.9-P2R16 Internal 360 QA Viewer — 16K Native Owner QA</title>
   
   <!-- FontAwesome for Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -18,12 +18,14 @@
   <style>
     :root {
       --bg: #090d16;
-      --card-bg: rgba(15, 23, 42, 0.88);
-      --border: rgba(56, 189, 248, 0.2);
+      --card-bg: rgba(15, 23, 42, 0.90);
+      --border: rgba(56, 189, 248, 0.25);
       --accent-ai: #00ff88;
       --accent-depth: #a78bfa;
       --accent-quality: #10b981;
       --accent-easy: #38bdf8;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
       --text: #f8fafc;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
@@ -40,7 +42,7 @@
 
     /* Top Navigation & Mode Switcher */
     .top-bar {
-      position: absolute; top: 16px; left: 16px; right: 16px;
+      position: absolute; top: 14px; left: 14px; right: 14px;
       z-index: 10; display: flex; justify-content: space-between;
       align-items: center; pointer-events: none; flex-wrap: wrap; gap: 10px;
     }
@@ -50,29 +52,58 @@
       pointer-events: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }
     .brand-title {
-      font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 8px;
     }
     .qa-badge {
       background: rgba(0, 255, 136, 0.15); color: #00ff88;
       border: 1px solid rgba(0, 255, 136, 0.4); font-size: 10px;
-      padding: 2px 6px; border-radius: 4px; letter-spacing: 0.08em;
+      padding: 2px 6px; border-radius: 4px; letter-spacing: 0.08em; font-weight: 700;
+    }
+    .tier-badge {
+      background: rgba(56, 189, 248, 0.15); color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.4); font-size: 10px;
+      padding: 2px 6px; border-radius: 4px; letter-spacing: 0.05em; font-weight: 700;
     }
     .sub-specs {
       font-size: 11px; color: #94a3b8; margin-top: 3px; font-weight: 500;
     }
 
+    /* Top Right Controls */
+    .top-right-panel {
+      display: flex; gap: 8px; align-items: center; pointer-events: auto;
+    }
+
+    /* Resolution Selector Dropdown */
+    .res-select-box {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 5px 8px; backdrop-filter: blur(12px);
+      display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    .res-select-box label {
+      font-size: 11px; font-weight: 700; color: #94a3b8;
+    }
+    .res-select {
+      background: rgba(30, 41, 59, 0.9); color: #f8fafc;
+      border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px;
+      font-size: 11px; font-weight: 700; padding: 4px 8px; cursor: pointer;
+      outline: none;
+    }
+    .res-select option:disabled {
+      color: #64748b; background: #0f172a;
+    }
+
     /* Mode Switcher */
     .mode-switch-container {
       background: var(--card-bg); border: 1px solid var(--border);
-      border-radius: 12px; padding: 5px; display: flex; gap: 5px;
+      border-radius: 12px; padding: 4px; display: flex; gap: 4px;
       backdrop-filter: blur(12px); pointer-events: auto;
       box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }
     .mode-btn {
       background: transparent; border: none; color: #94a3b8;
-      font-size: 11px; font-weight: 800; padding: 7px 12px;
+      font-size: 11px; font-weight: 800; padding: 6px 10px;
       border-radius: 8px; cursor: pointer; display: flex;
-      align-items: center; gap: 5px; transition: all 0.15s ease;
+      align-items: center; gap: 4px; transition: all 0.15s ease;
     }
     .mode-btn.active-quality-ai {
       background: var(--accent-ai); color: #020617;
@@ -90,22 +121,41 @@
       background: var(--accent-easy); color: #020617;
       box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
     }
-    .hotkey-hint {
-      font-size: 9px; opacity: 0.7; border: 1px solid currentColor;
-      padding: 1px 4px; border-radius: 3px; margin-left: 2px;
+
+    /* Bookmarks Toolbar */
+    .bookmarks-bar {
+      position: absolute; top: 72px; left: 14px;
+      z-index: 10; display: flex; gap: 6px; pointer-events: auto;
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 5px 8px; backdrop-filter: blur(12px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4); align-items: center;
+    }
+    .bm-title {
+      font-size: 10px; font-weight: 800; color: #94a3b8; margin-right: 4px; letter-spacing: 0.05em;
+    }
+    .bm-btn {
+      background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1; font-size: 11px; font-weight: 700; padding: 4px 8px;
+      border-radius: 6px; cursor: pointer; transition: all 0.15s ease; display: flex; align-items: center; gap: 4px;
+    }
+    .bm-btn:hover {
+      background: rgba(56, 189, 248, 0.2); color: #fff; border-color: rgba(56, 189, 248, 0.4);
+    }
+    .bm-btn.active-bm {
+      background: var(--accent-ai); color: #020617; border-color: var(--accent-ai);
     }
 
     /* Bottom Control Bar */
     .bottom-bar {
-      position: absolute; bottom: 16px; left: 16px; right: 16px;
+      position: absolute; bottom: 14px; left: 14px; right: 14px;
       z-index: 10; display: flex; justify-content: space-between;
       align-items: flex-end; pointer-events: none; flex-wrap: wrap; gap: 10px;
     }
     .telemetry-panel {
       background: var(--card-bg); border: 1px solid var(--border);
-      border-radius: 10px; padding: 8px 14px; font-size: 11px;
+      border-radius: 10px; padding: 7px 12px; font-size: 11px;
       color: #94a3b8; backdrop-filter: blur(12px); pointer-events: auto;
-      display: flex; gap: 16px; align-items: center;
+      display: flex; gap: 14px; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }
     .telemetry-item strong { color: #f1f5f9; font-weight: 700; }
 
@@ -114,17 +164,23 @@
     }
     .action-btn {
       background: var(--card-bg); border: 1px solid var(--border);
-      color: #cbd5e1; font-size: 12px; font-weight: 700;
-      padding: 8px 12px; border-radius: 8px; cursor: pointer;
+      color: #cbd5e1; font-size: 11px; font-weight: 700;
+      padding: 7px 11px; border-radius: 8px; cursor: pointer;
       backdrop-filter: blur(12px); display: flex; align-items: center; gap: 6px;
-      text-decoration: none; transition: background 0.15s ease;
+      text-decoration: none; transition: background 0.15s ease; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }
-    .action-btn:hover { background: rgba(30, 41, 59, 0.9); color: #fff; }
+    .action-btn:hover { background: rgba(30, 41, 59, 0.95); color: #fff; }
+    .action-btn.btn-1to1 {
+      background: rgba(0, 255, 136, 0.15); border-color: rgba(0, 255, 136, 0.4); color: #00ff88;
+    }
+    .action-btn.btn-1to1:hover {
+      background: rgba(0, 255, 136, 0.25); color: #fff;
+    }
 
     /* Loading Overlay */
     #loading-overlay {
       position: absolute; inset: 0; z-index: 50;
-      background: rgba(9, 13, 22, 0.9); display: flex;
+      background: rgba(9, 13, 22, 0.92); display: flex;
       flex-direction: column; align-items: center; justify-content: center;
       transition: opacity 0.3s ease; pointer-events: none;
     }
@@ -146,29 +202,38 @@
     }
     .reticle::before { top: 4px; left: 0; right: 0; height: 2px; }
     .reticle::after { left: 4px; top: 0; bottom: 0; width: 2px; }
+
+    /* Fail-Safe Overlay */
+    #black-screen-failsafe-overlay {
+      display: none; position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%); background: rgba(15, 23, 42, 0.96);
+      border: 2px solid #ef4444; border-radius: 12px; padding: 24px 32px;
+      text-align: center; z-index: 60; color: #f8fafc; font-family: sans-serif;
+      max-width: 90%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+    }
+    .failsafe-links {
+      display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 14px;
+    }
+    .failsafe-link {
+      background: #3b82f6; color: #fff; border-radius: 6px; padding: 8px 14px;
+      font-size: 12px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+    }
   </style>
 </head>
 <body>
   <div id="viewer-container"></div>
 
-  <!-- Phase 7C.2: Explicit QA Placeholder for 12-View Commercial VGGT -->
-  <div id="qa-placeholder-overlay" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(15,23,42,0.92); border:2px solid #f59e0b; border-radius:12px; padding:24px 32px; text-align:center; z-index:50; color:#f8fafc; font-family:sans-serif; max-width:90%; box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);">
-    <i class="fa-solid fa-triangle-exclamation" style="font-size:36px; color:#f59e0b; margin-bottom:12px; display:block;"></i>
-    <h2 style="font-size:18px; margin:0 0 8px 0; color:#f8fafc; font-weight:700;">Phase 7C.2R1 geometry repair pending</h2>
-    <p style="font-size:13px; color:#94a3b8; margin:0 0 16px 0; line-height:1.5;">RoMa ABI + Bundle Adjustment + true spherical band coverage repair in progress.</p>
-    <button onclick="switchMode('quality-ai-4view')" style="background:#3b82f6; color:#fff; border:none; border-radius:6px; padding:10px 18px; font-weight:600; cursor:pointer; font-size:13px; transition:background 0.2s;">
-      <i class="fa-solid fa-arrow-left"></i> View 4-Keyframe Phase 7C Canvas
-    </button>
-  </div>
-
-  <!-- Phase 7C.2R2: Explicit Black-Screen Fail-Safe Overlay (NEVER SHOW SILENT BLACK) -->
-  <div id="black-screen-failsafe-overlay" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(15,23,42,0.95); border:2px solid #ef4444; border-radius:12px; padding:24px 32px; text-align:center; z-index:60; color:#f8fafc; font-family:sans-serif; max-width:90%; box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);">
+  <!-- Fail-Safe Overlay -->
+  <div id="black-screen-failsafe-overlay">
     <i class="fa-solid fa-triangle-exclamation" style="font-size:36px; color:#ef4444; margin-bottom:12px; display:block;"></i>
     <h2 style="font-size:18px; margin:0 0 8px 0; color:#f8fafc; font-weight:700;">Panorama render validation failed.</h2>
-    <p style="font-size:13px; color:#94a3b8; margin:0 0 16px 0; line-height:1.5;">Use Original for source inspection.</p>
-    <a id="failsafe-original-btn" class="action-btn" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg" target="_blank" style="display:inline-flex; align-items:center; gap:8px; background:#3b82f6; color:#fff; border:none; border-radius:6px; padding:10px 18px; font-weight:600; text-decoration:none; font-size:13px; transition:background 0.2s;">
-      <i class="fa-solid fa-up-right-from-square"></i> Use Original for source inspection
-    </a>
+    <p style="font-size:13px; color:#94a3b8; margin:0 0 16px 0; line-height:1.5;">Direct native source inspection links:</p>
+    <div class="failsafe-links">
+      <a class="failsafe-link" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_16K.jpg" target="_blank">16K Native</a>
+      <a class="failsafe-link" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg" target="_blank">12K Native</a>
+      <a class="failsafe-link" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_8K.jpg" target="_blank">8K Native</a>
+      <a class="failsafe-link" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg" target="_blank">4K R1 Original</a>
+    </div>
   </div>
 
   <div class="reticle"></div>
@@ -176,7 +241,7 @@
   <!-- Loading State -->
   <div id="loading-overlay">
     <div class="spinner"></div>
-    <div id="loading-text">Initializing 360 AI Geometry Engine...</div>
+    <div id="loading-text">Initializing 16K AI Geometry Engine...</div>
   </div>
 
   <!-- Top Bar -->
@@ -184,166 +249,168 @@
     <div class="header-panel">
       <div class="brand-title">
         <i class="fa-solid fa-cube" style="color: var(--accent-ai);"></i>
-        <span>C12.9-P2R16 360 INSPECTOR</span>
-        <span class="qa-badge">PHASE 7C.2R2</span>
+        <span>QUALITY AI — COMMERCIAL VGGT 12-VIEW / 16K OWNER QA</span>
+        <span class="qa-badge" id="tier-badge">16K NATIVE</span>
       </div>
       <div class="sub-specs" id="sub-specs-text">
         HAOV 360° | VAOV 53.5° | Pitch [-25.7°, +27.8°] | Mode: <span id="active-mode-tag" style="color: var(--accent-ai); font-weight: 700;">QUALITY AI</span>
       </div>
     </div>
 
-    <!-- 4-Mode Switcher -->
-    <div class="mode-switch-container">
-      <button id="btn-mode-quality-ai" class="mode-btn active-quality-ai" onclick="switchMode('quality-ai-12view')">
-        <i class="fa-solid fa-wand-magic-sparkles"></i>
-        <span>Quality AI</span>
-        <span class="hotkey-hint">A/1</span>
-      </button>
-      <button id="btn-mode-quality-depth" class="mode-btn" onclick="switchMode('quality-depth-plane')">
-        <i class="fa-solid fa-layer-group"></i>
-        <span>Depth Plane</span>
-        <span class="hotkey-hint">D/2</span>
-      </button>
-      <button id="btn-mode-quality-current" class="mode-btn" onclick="switchMode('quality-current')">
-        <i class="fa-solid fa-draw-polygon"></i>
-        <span>Homography</span>
-        <span class="hotkey-hint">Q/3</span>
-      </button>
-      <button id="btn-mode-easy" class="mode-btn" onclick="switchMode('easy')">
-        <i class="fa-solid fa-bolt"></i>
-        <span>Easy 360</span>
-        <span class="hotkey-hint">E/4</span>
-      </button>
+    <div class="top-right-panel">
+      <!-- Resolution Dropdown -->
+      <div class="res-select-box">
+        <label for="res-select"><i class="fa-solid fa-sliders"></i> Tier:</label>
+        <select id="res-select" class="res-select" onchange="onUserSelectResolution(this.value)">
+          <option value="AUTO">AUTO (Capability)</option>
+          <option value="16K">16K Native (16384x2436)</option>
+          <option value="12K">12K Native (12288x1827)</option>
+          <option value="8K">8K Native (8192x1218)</option>
+          <option value="4K">4K R1 (4096x608)</option>
+        </select>
+      </div>
+
+      <!-- Mode Switcher -->
+      <div class="mode-switch-container">
+        <button id="btn-mode-quality-ai" class="mode-btn active-quality-ai" onclick="switchMode('quality-ai-12view')">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span>Quality AI</span>
+        </button>
+        <button id="btn-mode-quality-depth" class="mode-btn" onclick="switchMode('quality-depth-plane')">
+          <i class="fa-solid fa-layer-group"></i>
+          <span>Depth Plane</span>
+        </button>
+        <button id="btn-mode-quality-current" class="mode-btn" onclick="switchMode('quality-current')">
+          <i class="fa-solid fa-draw-polygon"></i>
+          <span>Homography</span>
+        </button>
+        <button id="btn-mode-easy" class="mode-btn" onclick="switchMode('easy')">
+          <i class="fa-solid fa-bolt"></i>
+          <span>Easy 360</span>
+        </button>
+      </div>
     </div>
+  </div>
+
+  <!-- Bookmarks Bar -->
+  <div class="bookmarks-bar">
+    <span class="bm-title"><i class="fa-solid fa-bookmark"></i> JUMP:</span>
+    <button class="bm-btn" onclick="jumpTo(0, 0)">0° (Shot 000)</button>
+    <button class="bm-btn" onclick="jumpTo(90, 0)">90° (Shot 090)</button>
+    <button class="bm-btn" onclick="jumpTo(180, 0)">180° (Shot 180)</button>
+    <button class="bm-btn" onclick="jumpTo(270, 0)">270° (Shot 270)</button>
+    <button class="bm-btn" onclick="jumpTo(345, 0)" title="Loop Closure Seam">Closure (345°)</button>
   </div>
 
   <!-- Bottom Bar -->
   <div class="bottom-bar">
     <div class="telemetry-panel">
-      <div class="telemetry-item">
-        Yaw: <strong id="yaw-text">0.0°</strong>
-      </div>
-      <div class="telemetry-item">
-        Pitch: <strong id="pitch-text">0.0°</strong>
-      </div>
-      <div class="telemetry-item">
-        FOV: <strong id="fov-text">65°</strong>
-      </div>
-      <div class="telemetry-item">
-        Proxy: <strong id="proxy-res-text">4096px</strong>
-      </div>
-      <div class="telemetry-item">
-        Max GL: <strong id="max-tex-text">4096px</strong>
-      </div>
+      <div class="telemetry-item">Yaw: <strong id="yaw-text">0.0°</strong></div>
+      <div class="telemetry-item">Pitch: <strong id="pitch-text">0.0°</strong></div>
+      <div class="telemetry-item">FOV: <strong id="fov-text">85°</strong></div>
+      <div class="telemetry-item">Texture: <strong id="active-res-text">16384x2436</strong></div>
+      <div class="telemetry-item">GPU Max: <strong id="max-tex-text">16384px</strong></div>
     </div>
 
     <div class="action-controls">
-      <button class="action-btn" onclick="resetView()" title="Reset to Center (Yaw 0, Pitch 0, FOV 65)">
-        <i class="fa-solid fa-crosshairs"></i> Reset
+      <button class="action-btn btn-1to1" id="btn-toggle-1to1" onclick="toggle1to1Zoom()" title="Deep Zoom 1:1 (FOV 18°)">
+        <i class="fa-solid fa-magnifying-glass-plus"></i> 1:1 (18°)
       </button>
-      <a id="btn-native-src" class="action-btn" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg" target="_blank" title="Inspect Full Canvas">
+      <button class="action-btn" onclick="resetView()" title="Reset to Wide Default (FOV 85°, Yaw 0, Pitch 0)">
+        <i class="fa-solid fa-rotate-left"></i> Reset
+      </button>
+      <a id="btn-native-src" class="action-btn" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_16K.jpg" target="_blank" title="Inspect Full Native Artifact">
         <i class="fa-solid fa-up-right-from-square"></i> Original
       </a>
     </div>
   </div>
 
   <script>
-    // --- Phase 7C.2R2 Configuration & Band Definitions ---
+    // --- Authoritative Band Configuration ---
     const MODE_BAND_CONFIG = {
       'quality-ai-12view': {
         minPitchDeg: -25.74,
         maxPitchDeg: 27.79,
         vaovDeg: 53.52,
-        label: 'QUALITY AI (12-VIEW R1)',
-        bounds: [-25.74, 27.79],
-        url: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg'
+        label: 'QUALITY AI (12-VIEW 16K QA)',
+        bounds: [-25.74, 27.79]
       },
       'quality-ai': {
         minPitchDeg: -25.74,
         maxPitchDeg: 27.79,
         vaovDeg: 53.52,
-        label: 'QUALITY AI (12-VIEW R1)',
-        bounds: [-25.74, 27.79],
-        url: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg'
-      },
-      'quality-ai-4view': {
-        minPitchDeg: -34.0,
-        maxPitchDeg: 34.0,
-        vaovDeg: 68.0,
-        label: 'QUALITY AI (4-KEYFRAME CANVAS)',
-        bounds: [-34.0, 34.0],
-        url: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_AI_OWNER_REVIEW.jpg'
+        label: 'QUALITY AI (12-VIEW 16K QA)',
+        bounds: [-25.74, 27.79]
       },
       'quality-depth-plane': {
         minPitchDeg: -34.0,
         maxPitchDeg: 34.0,
         vaovDeg: 68.0,
         label: 'QUALITY (DEPTH PLANE)',
-        bounds: [-34.0, 34.0],
-        url: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_DEPTH_AWARE_OWNER_REVIEW.jpg'
+        bounds: [-34.0, 34.0]
       },
       'quality-depth': {
         minPitchDeg: -34.0,
         maxPitchDeg: 34.0,
         vaovDeg: 68.0,
         label: 'QUALITY (DEPTH PLANE)',
-        bounds: [-34.0, 34.0],
-        url: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_DEPTH_AWARE_OWNER_REVIEW.jpg'
+        bounds: [-34.0, 34.0]
       },
       'quality-current': {
         minPitchDeg: -34.0,
         maxPitchDeg: 34.0,
         vaovDeg: 68.0,
         label: 'QUALITY (HOMOGRAPHY)',
-        bounds: [-34.0, 34.0],
-        url: '/production_artifacts/mobile_runtime_inspector/P2R16_AI_QUALITY12_OWNER_REVIEW.jpg'
+        bounds: [-34.0, 34.0]
       },
       'quality': {
         minPitchDeg: -34.0,
         maxPitchDeg: 34.0,
         vaovDeg: 68.0,
         label: 'QUALITY (HOMOGRAPHY)',
-        bounds: [-34.0, 34.0],
-        url: '/production_artifacts/mobile_runtime_inspector/P2R16_AI_QUALITY12_OWNER_REVIEW.jpg'
+        bounds: [-34.0, 34.0]
       },
       'easy': {
         minPitchDeg: -34.0,
         maxPitchDeg: 34.0,
         vaovDeg: 68.0,
         label: 'EASY 360',
-        bounds: [-34.0, 34.0],
-        url: '/production_artifacts/mobile_runtime_inspector/P2R16_AI_CONTINUOUS_OWNER_REVIEW.jpg'
+        bounds: [-34.0, 34.0]
       }
     };
 
+    // Deep Zoom Bounds
     const CONFIG = {
       haovDeg: 360,
       vaovDeg: 53.52,
       minPitchDeg: -25.74,
       maxPitchDeg: 27.79,
-      defaultFovDeg: 65,
-      minFovDeg: 35,
-      maxFovDeg: 90
+      defaultFovDeg: 85,
+      minFovDeg: 18,
+      maxFovDeg: 100
     };
 
-    // State
-    let currentMode = 'quality-ai-12view';
-    let currentYaw = 0.0;
-    let currentPitch = 0.0;
-    let currentFov = CONFIG.defaultFovDeg;
+    // Quality AI Multi-Tier Texture URLs
+    const QUALITY_AI_TIERS = {
+      '16K': {
+        url: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_16K.jpg',
+        width: 16384, height: 2436, label: '16K NATIVE'
+      },
+      '12K': {
+        url: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg',
+        width: 12288, height: 1827, label: '12K NATIVE'
+      },
+      '8K': {
+        url: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_8K.jpg',
+        width: 8192, height: 1218, label: '8K NATIVE'
+      },
+      '4K': {
+        url: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg',
+        width: 4096, height: 608, label: '4K R1 ORIGINAL'
+      }
+    };
 
-    let scene, camera, renderer, sphereMesh, textureLoader;
-    let maxTextureSize = 4096;
-    let selectedProxyWidth = 4096;
-    let isUserInteracting = false;
-    let onPointerDownPointerX = 0, onPointerDownPointerY = 0;
-    let onPointerDownLon = 0, onPointerDownLat = 0;
-    let frameCount = 0;
-
-    const NATIVE_URLS = {
-      'quality-ai-12view': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg',
-      'quality-ai': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg',
-      'quality-ai-4view': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_AI_OWNER_REVIEW.jpg',
+    const OTHER_MODE_URLS = {
       'quality-depth-plane': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_DEPTH_AWARE_OWNER_REVIEW.jpg',
       'quality-depth': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_DEPTH_AWARE_OWNER_REVIEW.jpg',
       'quality-current': '/production_artifacts/mobile_runtime_inspector/P2R16_AI_QUALITY12_OWNER_REVIEW.jpg',
@@ -351,9 +418,29 @@
       'easy': '/production_artifacts/mobile_runtime_inspector/P2R16_AI_CONTINUOUS_OWNER_REVIEW.jpg'
     };
 
-    // Authoritative Telemetry Store
+    // Global State
+    let currentMode = 'quality-ai-12view';
+    let userSelectedTier = 'AUTO';
+    let activeTier = '16K';
+    let activeTextureUrl = QUALITY_AI_TIERS['16K'].url;
+
+    let currentYaw = 0.0;
+    let currentPitch = 0.0;
+    let currentFov = CONFIG.defaultFovDeg;
+
+    let scene, camera, renderer, sphereMesh, textureLoader;
+    let maxTextureSize = 4096;
+    let isUserInteracting = false;
+    let onPointerDownPointerX = 0, onPointerDownPointerY = 0;
+    let onPointerDownLon = 0, onPointerDownLat = 0;
+    let frameCount = 0;
+    let lastTapTime = 0;
+
+    // Telemetry Store
     window.__VIEWER_TELEMETRY__ = {
       REQUESTED_MODE: 'quality-ai-12view',
+      MODE_LOCK_MATCH: true,
+      ACTIVE_TIER: '16K NATIVE',
       EXACT_TEXTURE_URL: '',
       HTTP_STATUS: 0,
       CONTENT_TYPE: '',
@@ -369,41 +456,33 @@
       MATERIAL_MAP_PRESENT: false,
       MATERIAL_VISIBLE: true,
 
-      // Section 9: Browser texture offscreen sampling
       BROWSER_TEXTURE_MEAN_R: 0,
       BROWSER_TEXTURE_MEAN_G: 0,
       BROWSER_TEXTURE_MEAN_B: 0,
       BROWSER_TEXTURE_MEAN_LUMA: 0,
       BROWSER_TEXTURE_NONBLACK_RATIO: 0,
 
-      // Section 10: WebGL framebuffer sampling
       FRAMEBUFFER_MEAN_LUMA: 0,
       FRAMEBUFFER_NONBLACK_RATIO: 0,
       TEXTURE_VALID_BUT_FRAMEBUFFER_BLACK: false,
-
-      // Section 11: Band geometry
-      VERTICAL_ANGULAR_BOUNDS: [-25.74, 27.79],
-      VERTICAL_SPAN_DEG: 53.52,
-
-      // Section 13: Fail-safe
       BLACK_SCREEN_DETECTED: false,
       PANORAMA_VISIBLE: false,
 
-      // Standard telemetry
+      VERTICAL_ANGULAR_BOUNDS: [-25.74, 27.79],
+      VERTICAL_SPAN_DEG: 53.52,
+
+      FOV: CONFIG.defaultFovDeg,
+      DEFAULT_FOV: CONFIG.defaultFovDeg,
+      MIN_FOV: CONFIG.minFovDeg,
+      MAX_FOV: CONFIG.maxFovDeg,
+
       viewerInitialized: false,
       panoramaTextureLoaded: false,
       webglContextOk: false,
       dragYawWorks: false,
-      touchYawWorks: false,
-      qualityEasySwitchWorks: false,
-      horizontalWrapWorks: false,
       pitchLimitWorks: false,
-      blackScreen: false,
-      javascriptFatalError: false,
+      horizontalWrapWorks: false,
       maxTextureSize: 0,
-      selectedProxy: 0,
-      loadTimeMs: 0,
-      firstInteractiveMs: 0,
       frameCount: 0
     };
 
@@ -411,48 +490,33 @@
       const startTime = performance.now();
       const container = document.getElementById('viewer-container');
 
-      // 1. WebGL Capabilities Detection
+      // 1. Detect WebGL Max Texture Size
       try {
         const testCanvas = document.createElement('canvas');
         const gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
         if (gl) {
-          maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+          maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE) || 4096;
           window.__VIEWER_TELEMETRY__.maxTextureSize = maxTextureSize;
           window.__VIEWER_TELEMETRY__.webglContextOk = true;
           document.getElementById('max-tex-text').textContent = maxTextureSize + 'px';
         }
       } catch (e) {
-        console.warn('WebGL detection error:', e);
+        console.warn('WebGL capability detection error:', e);
       }
 
-      // Safe proxy selection rule
-      if (maxTextureSize >= 8192) {
-        selectedProxyWidth = 8192;
-      } else if (maxTextureSize >= 4096) {
-        selectedProxyWidth = 4096;
-      } else {
-        selectedProxyWidth = 2048;
-      }
-      window.__VIEWER_TELEMETRY__.selectedProxy = selectedProxyWidth;
-      document.getElementById('proxy-res-text').textContent = selectedProxyWidth + 'px';
+      // Update resolution dropdown disabled states based on capability
+      updateResolutionOptions();
 
-      // 2. Read mode from query param if provided
+      // 2. Read URL mode and determine active tier
       const urlParams = new URLSearchParams(window.location.search);
       const qMode = urlParams.get('mode');
-      if (qMode) {
-        if (MODE_BAND_CONFIG[qMode]) {
-          currentMode = qMode;
-        } else if (qMode === 'quality-ai') {
-          currentMode = 'quality-ai-12view';
-        } else if (qMode === 'quality-depth') {
-          currentMode = 'quality-depth-plane';
-        } else if (qMode === 'quality') {
-          currentMode = 'quality-current';
-        }
+      if (qMode && MODE_BAND_CONFIG[qMode]) {
+        currentMode = qMode;
       } else {
         currentMode = 'quality-ai-12view';
       }
       window.__VIEWER_TELEMETRY__.REQUESTED_MODE = currentMode;
+      window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH = (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai');
 
       // 3. Three.js Scene Setup
       scene = new THREE.Scene();
@@ -462,11 +526,18 @@
       renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(window.innerWidth, window.innerHeight);
-      // Locked Color & Exposure Pipeline
+
+      // Locked Color Pipeline
       renderer.outputEncoding = THREE.sRGBEncoding;
       renderer.toneMapping = THREE.NoToneMapping;
       renderer.toneMappingExposure = 1.0;
       container.appendChild(renderer.domElement);
+
+      // Context Loss Handler
+      renderer.domElement.addEventListener('webglcontextlost', (e) => {
+        e.preventDefault();
+        console.warn('WebGL context lost');
+      }, false);
 
       // 4. Initial Mesh & Spherical Band Geometry
       const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -475,15 +546,12 @@
 
       textureLoader = new THREE.TextureLoader();
 
-      // Configure geometry and UI for active mode
       updateBandGeometry(currentMode);
       updateUiModeIndicator();
 
-      // 5. Load Texture for Initial Mode
-      loadModeTexture(currentMode, () => {
+      // 5. Load Initial Texture
+      resolveAndLoadTexture(() => {
         const elapsed = performance.now() - startTime;
-        window.__VIEWER_TELEMETRY__.loadTimeMs = Math.round(elapsed);
-        window.__VIEWER_TELEMETRY__.firstInteractiveMs = Math.round(elapsed);
         window.__VIEWER_TELEMETRY__.viewerInitialized = true;
         document.getElementById('loading-overlay').style.opacity = '0';
         setTimeout(() => { document.getElementById('loading-overlay').style.display = 'none'; }, 300);
@@ -495,17 +563,140 @@
       window.addEventListener('pointermove', onPointerMove, false);
       window.addEventListener('pointerup', onPointerUp, false);
       container.addEventListener('wheel', onDocumentMouseWheel, { passive: false });
+      container.addEventListener('dblclick', onDoubleClick, false);
 
       // Keyboard Hotkeys
       window.addEventListener('keydown', (e) => {
-        if (e.key === 'a' || e.key === 'A' || e.key === '1') switchMode('quality-ai-12view');
-        if (e.key === 'd' || e.key === 'D' || e.key === '2') switchMode('quality-depth-plane');
-        if (e.key === 'q' || e.key === 'Q' || e.key === '3') switchMode('quality-current');
-        if (e.key === 'e' || e.key === 'E' || e.key === '4') switchMode('easy');
+        if (e.key === '1') jumpTo(0, 0);
+        else if (e.key === '2') jumpTo(90, 0);
+        else if (e.key === '3') jumpTo(180, 0);
+        else if (e.key === '4') jumpTo(270, 0);
+        else if (e.key === '5') jumpTo(345, 0);
+        else if (e.key === 'z' || e.key === 'Z') toggle1to1Zoom();
+        else if (e.key === 'r' || e.key === 'R') resetView();
       });
 
-      // Start animation loop
       animate();
+    }
+
+    function updateResolutionOptions() {
+      const select = document.getElementById('res-select');
+      if (!select) return;
+      for (const opt of select.options) {
+        if (opt.value === '16K' && maxTextureSize < 16384) opt.disabled = true;
+        if (opt.value === '12K' && maxTextureSize < 12288) opt.disabled = true;
+        if (opt.value === '8K' && maxTextureSize < 8192) opt.disabled = true;
+      }
+    }
+
+    function determineTier(preferredTier) {
+      if (preferredTier !== 'AUTO') {
+        return preferredTier;
+      }
+      if (maxTextureSize >= 16384) return '16K';
+      if (maxTextureSize >= 12288) return '12K';
+      if (maxTextureSize >= 8192) return '8K';
+      return '4K';
+    }
+
+    function resolveAndLoadTexture(onComplete) {
+      hideBlackScreenFailSafe();
+      document.getElementById('loading-overlay').style.display = 'flex';
+      document.getElementById('loading-overlay').style.opacity = '1';
+
+      let targetUrl = '';
+      let targetLabel = '';
+      let targetDimStr = '';
+
+      if (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai') {
+        activeTier = determineTier(userSelectedTier);
+        const tierInfo = QUALITY_AI_TIERS[activeTier] || QUALITY_AI_TIERS['4K'];
+        targetUrl = tierInfo.url;
+        targetLabel = tierInfo.label;
+        targetDimStr = `${tierInfo.width}x${tierInfo.height}`;
+      } else {
+        targetUrl = OTHER_MODE_URLS[currentMode] || OTHER_MODE_URLS['quality-current'];
+        targetLabel = MODE_BAND_CONFIG[currentMode]?.label || 'OTHER';
+        targetDimStr = '4096px';
+        activeTier = 'NATIVE';
+      }
+
+      activeTextureUrl = targetUrl;
+      window.__VIEWER_TELEMETRY__.EXACT_TEXTURE_URL = targetUrl;
+      window.__VIEWER_TELEMETRY__.ACTIVE_TIER = targetLabel;
+
+      const tierBadge = document.getElementById('tier-badge');
+      if (tierBadge) tierBadge.textContent = targetLabel;
+      const resText = document.getElementById('active-res-text');
+      if (resText) resText.textContent = targetDimStr;
+
+      const btnNative = document.getElementById('btn-native-src');
+      if (btnNative) btnNative.href = targetUrl;
+
+      document.getElementById('loading-text').textContent = `Loading ${targetLabel} (${targetDimStr})...`;
+
+      fetch(targetUrl, { method: 'HEAD' }).then(res => {
+        window.__VIEWER_TELEMETRY__.HTTP_STATUS = res.status;
+        window.__VIEWER_TELEMETRY__.CONTENT_TYPE = res.headers.get('content-type') || '';
+        window.__VIEWER_TELEMETRY__.CONTENT_LENGTH = parseInt(res.headers.get('content-length') || '0', 10);
+      }).catch(e => console.warn('HEAD request error:', e));
+
+      // Dispose prior texture cleanly to prevent GPU memory bloat
+      if (sphereMesh && sphereMesh.material && sphereMesh.material.map) {
+        sphereMesh.material.map.dispose();
+        sphereMesh.material.map = null;
+      }
+
+      textureLoader.load(
+        targetUrl,
+        (texture) => {
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+          texture.wrapS = THREE.RepeatWrapping;
+          texture.wrapT = THREE.ClampToEdgeWrapping;
+          texture.encoding = THREE.sRGBEncoding;
+
+          sphereMesh.material.map = texture;
+          sphereMesh.material.color.set(0xffffff);
+          sphereMesh.material.needsUpdate = true;
+
+          window.__VIEWER_TELEMETRY__.TEXTURE_LOAD_SUCCESS = true;
+          window.__VIEWER_TELEMETRY__.panoramaTextureLoaded = true;
+          window.__VIEWER_TELEMETRY__['texture.image.width'] = texture.image ? (texture.image.naturalWidth || texture.image.width) : 0;
+          window.__VIEWER_TELEMETRY__['texture.image.height'] = texture.image ? (texture.image.naturalHeight || texture.image.height) : 0;
+          window.__VIEWER_TELEMETRY__['texture.encoding'] = 'sRGB';
+          window.__VIEWER_TELEMETRY__['material.color'] = '0xffffff';
+          window.__VIEWER_TELEMETRY__['renderer.outputEncoding'] = 'sRGB';
+          window.__VIEWER_TELEMETRY__['renderer.toneMapping'] = 'NONE';
+          window.__VIEWER_TELEMETRY__['renderer.toneMappingExposure'] = 1.0;
+          window.__VIEWER_TELEMETRY__.MATERIAL_MAP_PRESENT = true;
+          window.__VIEWER_TELEMETRY__.MATERIAL_VISIBLE = sphereMesh.material.visible;
+
+          if (texture.image) {
+            sampleLoadedTexture(texture.image);
+          }
+
+          window.__FRAME_COUNT_SINCE_TEXTURE__ = 0;
+
+          document.getElementById('loading-overlay').style.opacity = '0';
+          setTimeout(() => { document.getElementById('loading-overlay').style.display = 'none'; }, 300);
+
+          if (onComplete) onComplete();
+        },
+        undefined,
+        (err) => {
+          console.error(`Failed to load texture ${targetUrl}:`, err);
+          document.getElementById('loading-text').textContent = `Error loading texture ${targetLabel}`;
+          window.__VIEWER_TELEMETRY__.TEXTURE_LOAD_SUCCESS = false;
+          showBlackScreenFailSafe();
+          if (onComplete) onComplete();
+        }
+      );
+    }
+
+    function onUserSelectResolution(val) {
+      userSelectedTier = val;
+      resolveAndLoadTexture();
     }
 
     function updateBandGeometry(mode) {
@@ -522,8 +713,6 @@
       const radius = 500;
       const phiStart = 0;
       const phiLength = Math.PI * 2;
-      // In spherical coordinates from +Y axis (zenith):
-      // pitch = maxPitchDeg is at thetaStart = (90 - maxPitchDeg)
       const thetaStart = THREE.MathUtils.degToRad(90.0 - cfg.maxPitchDeg);
       const thetaLength = THREE.MathUtils.degToRad(cfg.vaovDeg);
 
@@ -542,36 +731,141 @@
       }
     }
 
-    function getProxyUrl(mode, width) {
-      if (mode === 'quality-ai-12view' || mode === 'quality-ai') {
-        return '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg';
-      } else if (mode === 'quality-ai-12view-debug-7c2') {
-        return '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_OWNER_REVIEW.jpg';
-      } else if (mode === 'quality-ai-4view') {
-        return `/internal-assets/p2r16/viewer/quality-ai-${width}.jpg`;
-      } else if (mode === 'quality-depth-plane' || mode === 'quality-depth') {
-        return `/internal-assets/p2r16/viewer/quality-depth-${width}.jpg`;
-      } else if (mode === 'easy') {
-        return `/internal-assets/p2r16/viewer/easy-${width}.jpg`;
+    function switchMode(newMode) {
+      if (newMode === currentMode && window.__VIEWER_TELEMETRY__.panoramaTextureLoaded) return;
+      currentMode = newMode;
+      window.__VIEWER_TELEMETRY__.REQUESTED_MODE = newMode;
+      window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH = (newMode === 'quality-ai-12view' || newMode === 'quality-ai');
+
+      const url = new URL(window.location);
+      url.searchParams.set('mode', newMode);
+      window.history.replaceState({}, '', url);
+
+      updateBandGeometry(newMode);
+      updateUiModeIndicator();
+      resolveAndLoadTexture();
+    }
+
+    function updateUiModeIndicator() {
+      const btnQA = document.getElementById('btn-mode-quality-ai');
+      const btnQD = document.getElementById('btn-mode-quality-depth');
+      const btnQC = document.getElementById('btn-mode-quality-current');
+      const btnE = document.getElementById('btn-mode-easy');
+      const tag = document.getElementById('active-mode-tag');
+
+      if (btnQA) btnQA.className = (currentMode === 'quality-ai' || currentMode === 'quality-ai-12view') ? 'mode-btn active-quality-ai' : 'mode-btn';
+      if (btnQD) btnQD.className = (currentMode === 'quality-depth-plane' || currentMode === 'quality-depth') ? 'mode-btn active-quality-depth' : 'mode-btn';
+      if (btnQC) btnQC.className = (currentMode === 'quality-current' || currentMode === 'quality') ? 'mode-btn active-quality-current' : 'mode-btn';
+      if (btnE) btnE.className = (currentMode === 'easy') ? 'mode-btn active-easy' : 'mode-btn';
+
+      const cfg = MODE_BAND_CONFIG[currentMode] || MODE_BAND_CONFIG['quality-ai-12view'];
+      if (tag) {
+        tag.textContent = cfg.label;
+        if (currentMode.includes('depth')) tag.style.color = 'var(--accent-depth)';
+        else if (currentMode.includes('current') || currentMode === 'quality') tag.style.color = 'var(--accent-quality)';
+        else if (currentMode === 'easy') tag.style.color = 'var(--accent-easy)';
+        else tag.style.color = 'var(--accent-ai)';
+      }
+    }
+
+    function jumpTo(yaw, pitch) {
+      currentYaw = yaw % 360;
+      if (currentYaw < 0) currentYaw += 360;
+      currentPitch = Math.max(CONFIG.minPitchDeg, Math.min(CONFIG.maxPitchDeg, pitch));
+    }
+
+    function toggle1to1Zoom() {
+      if (Math.abs(currentFov - CONFIG.minFovDeg) < 2) {
+        currentFov = CONFIG.defaultFovDeg;
       } else {
-        return `/internal-assets/p2r16/viewer/quality-${width}.jpg`;
+        currentFov = CONFIG.minFovDeg; // 18 deg deep zoom
       }
+      if (camera) {
+        camera.fov = currentFov;
+        camera.updateProjectionMatrix();
+      }
+      window.__VIEWER_TELEMETRY__.FOV = currentFov;
     }
 
-    function showBlackScreenFailSafe() {
-      const overlay = document.getElementById('black-screen-failsafe-overlay');
-      if (overlay) overlay.style.display = 'block';
-      const loading = document.getElementById('loading-overlay');
-      if (loading) loading.style.display = 'none';
-      const failsafeBtn = document.getElementById('failsafe-original-btn');
-      if (failsafeBtn && NATIVE_URLS[currentMode]) {
-        failsafeBtn.href = NATIVE_URLS[currentMode];
+    function resetView() {
+      currentYaw = 0.0;
+      currentPitch = 0.0;
+      currentFov = CONFIG.defaultFovDeg;
+      if (camera) {
+        camera.fov = currentFov;
+        camera.updateProjectionMatrix();
       }
+      window.__VIEWER_TELEMETRY__.FOV = currentFov;
     }
 
-    function hideBlackScreenFailSafe() {
-      const overlay = document.getElementById('black-screen-failsafe-overlay');
-      if (overlay) overlay.style.display = 'none';
+    function onDoubleClick() {
+      // Toggle cycle: 85 -> 35 -> 20 -> 18 -> 85
+      if (currentFov > 50) {
+        currentFov = 35;
+      } else if (currentFov > 25) {
+        currentFov = 20;
+      } else if (currentFov > 18) {
+        currentFov = 18;
+      } else {
+        currentFov = CONFIG.defaultFovDeg;
+      }
+      if (camera) {
+        camera.fov = currentFov;
+        camera.updateProjectionMatrix();
+      }
+      window.__VIEWER_TELEMETRY__.FOV = currentFov;
+    }
+
+    function onWindowResize() {
+      if (!camera || !renderer) return;
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function onPointerDown(e) {
+      isUserInteracting = true;
+      onPointerDownPointerX = e.clientX;
+      onPointerDownPointerY = e.clientY;
+      onPointerDownLon = currentYaw;
+      onPointerDownLat = currentPitch;
+
+      // Double-tap support for touch
+      const now = performance.now();
+      if (now - lastTapTime < 300) {
+        onDoubleClick();
+      }
+      lastTapTime = now;
+    }
+
+    function onPointerMove(e) {
+      if (!isUserInteracting) return;
+      const dx = (onPointerDownPointerX - e.clientX) * 0.15 * (currentFov / CONFIG.defaultFovDeg);
+      const dy = (e.clientY - onPointerDownPointerY) * 0.15 * (currentFov / CONFIG.defaultFovDeg);
+
+      currentYaw = (onPointerDownLon + dx) % 360;
+      if (currentYaw < 0) currentYaw += 360;
+
+      currentPitch = Math.max(CONFIG.minPitchDeg, Math.min(CONFIG.maxPitchDeg, onPointerDownLat + dy));
+
+      window.__VIEWER_TELEMETRY__.dragYawWorks = true;
+      window.__VIEWER_TELEMETRY__.horizontalWrapWorks = true;
+      window.__VIEWER_TELEMETRY__.pitchLimitWorks = true;
+    }
+
+    function onPointerUp() {
+      isUserInteracting = false;
+    }
+
+    function onDocumentMouseWheel(e) {
+      e.preventDefault();
+      currentFov += e.deltaY * 0.05;
+      currentFov = Math.max(CONFIG.minFovDeg, Math.min(CONFIG.maxFovDeg, currentFov));
+      if (camera) {
+        camera.fov = currentFov;
+        camera.updateProjectionMatrix();
+      }
+      window.__VIEWER_TELEMETRY__.FOV = currentFov;
     }
 
     function sampleLoadedTexture(img) {
@@ -601,17 +895,11 @@
           sumLuma += luma;
           if (luma > 5.0) nonblackCount++;
         }
-        const meanR = +(sumR / total).toFixed(2);
-        const meanG = +(sumG / total).toFixed(2);
-        const meanB = +(sumB / total).toFixed(2);
-        const meanLuma = +(sumLuma / total).toFixed(2);
-        const nonblackRatio = +(nonblackCount / total).toFixed(4);
-
-        window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_MEAN_R = meanR;
-        window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_MEAN_G = meanG;
-        window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_MEAN_B = meanB;
-        window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_MEAN_LUMA = meanLuma;
-        window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_NONBLACK_RATIO = nonblackRatio;
+        window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_MEAN_R = +(sumR / total).toFixed(2);
+        window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_MEAN_G = +(sumG / total).toFixed(2);
+        window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_MEAN_B = +(sumB / total).toFixed(2);
+        window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_MEAN_LUMA = +(sumLuma / total).toFixed(2);
+        window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_NONBLACK_RATIO = +(nonblackCount / total).toFixed(4);
       } catch (err) {
         console.warn('sampleLoadedTexture note:', err);
       }
@@ -624,7 +912,6 @@
         const width = gl.drawingBufferWidth || renderer.domElement.width;
         const height = gl.drawingBufferHeight || renderer.domElement.height;
 
-        // Central viewport sample: exclude top 25% and bottom 25%, middle 50%
         const sampleW = Math.max(16, Math.floor(width * 0.5));
         const sampleH = Math.max(16, Math.floor(height * 0.5));
         const startX = Math.floor((width - sampleW) / 2);
@@ -670,171 +957,16 @@
       }
     }
 
-    function loadModeTexture(mode, onComplete) {
-      hideBlackScreenFailSafe();
-      document.getElementById('qa-placeholder-overlay').style.display = 'none';
-      document.getElementById('loading-overlay').style.display = 'flex';
-      document.getElementById('loading-overlay').style.opacity = '1';
-
-      const cfg = MODE_BAND_CONFIG[mode] || MODE_BAND_CONFIG['quality-ai-12view'];
-      document.getElementById('loading-text').textContent = `Loading ${cfg.label} (${selectedProxyWidth}px)...`;
-
-      const proxyUrl = getProxyUrl(mode, selectedProxyWidth);
-      window.__VIEWER_TELEMETRY__.EXACT_TEXTURE_URL = proxyUrl;
-      window.__VIEWER_TELEMETRY__.REQUESTED_MODE = mode;
-
-      fetch(proxyUrl, { method: 'HEAD' }).then(res => {
-        window.__VIEWER_TELEMETRY__.HTTP_STATUS = res.status;
-        window.__VIEWER_TELEMETRY__.CONTENT_TYPE = res.headers.get('content-type') || '';
-        window.__VIEWER_TELEMETRY__.CONTENT_LENGTH = parseInt(res.headers.get('content-length') || '0', 10);
-      }).catch(e => {
-        console.warn('HEAD request note:', e);
-      });
-
-      textureLoader.load(
-        proxyUrl,
-        (texture) => {
-          texture.minFilter = THREE.LinearFilter;
-          texture.magFilter = THREE.LinearFilter;
-          texture.wrapS = THREE.RepeatWrapping;
-          texture.wrapT = THREE.ClampToEdgeWrapping;
-          texture.encoding = THREE.sRGBEncoding;
-
-          sphereMesh.material.map = texture;
-          sphereMesh.material.color.set(0xffffff);
-          sphereMesh.material.needsUpdate = true;
-
-          window.__VIEWER_TELEMETRY__.TEXTURE_LOAD_SUCCESS = true;
-          window.__VIEWER_TELEMETRY__.panoramaTextureLoaded = true;
-          window.__VIEWER_TELEMETRY__['texture.image.width'] = texture.image ? (texture.image.naturalWidth || texture.image.width) : 0;
-          window.__VIEWER_TELEMETRY__['texture.image.height'] = texture.image ? (texture.image.naturalHeight || texture.image.height) : 0;
-          window.__VIEWER_TELEMETRY__['texture.encoding'] = 'sRGB';
-          window.__VIEWER_TELEMETRY__['material.color'] = '0xffffff';
-          window.__VIEWER_TELEMETRY__['renderer.outputEncoding'] = 'sRGB';
-          window.__VIEWER_TELEMETRY__['renderer.toneMapping'] = 'NONE';
-          window.__VIEWER_TELEMETRY__['renderer.toneMappingExposure'] = 1.0;
-          window.__VIEWER_TELEMETRY__.MATERIAL_MAP_PRESENT = true;
-          window.__VIEWER_TELEMETRY__.MATERIAL_VISIBLE = sphereMesh.material.visible;
-
-          if (texture.image) {
-            sampleLoadedTexture(texture.image);
-          }
-
-          // Reset frame count since texture load so framebuffer is sampled on frame 3
-          window.__FRAME_COUNT_SINCE_TEXTURE__ = 0;
-
-          const elapsed = performance.now() - (window.__VIEWER_START_TIME__ || performance.now());
-          window.__VIEWER_TELEMETRY__.loadTimeMs = Math.round(elapsed);
-          window.__VIEWER_TELEMETRY__.firstInteractiveMs = Math.round(elapsed);
-          document.getElementById('loading-overlay').style.opacity = '0';
-          setTimeout(() => { document.getElementById('loading-overlay').style.display = 'none'; }, 300);
-
-          if (onComplete) onComplete();
-        },
-        undefined,
-        (err) => {
-          console.error(`Failed to load texture for mode ${mode}:`, err);
-          document.getElementById('loading-text').textContent = `Error loading texture for ${cfg.label}`;
-          window.__VIEWER_TELEMETRY__.blackScreen = true;
-          window.__VIEWER_TELEMETRY__.TEXTURE_LOAD_SUCCESS = false;
-          showBlackScreenFailSafe();
-          if (onComplete) onComplete();
-        }
-      );
+    function showBlackScreenFailSafe() {
+      const overlay = document.getElementById('black-screen-failsafe-overlay');
+      if (overlay) overlay.style.display = 'block';
+      const loading = document.getElementById('loading-overlay');
+      if (loading) loading.style.display = 'none';
     }
 
-    function switchMode(newMode) {
-      if (newMode === currentMode && window.__VIEWER_TELEMETRY__.panoramaTextureLoaded) return;
-      currentMode = newMode;
-      window.__VIEWER_TELEMETRY__.REQUESTED_MODE = newMode;
-      window.__VIEWER_TELEMETRY__.qualityEasySwitchWorks = true;
-
-      const url = new URL(window.location);
-      url.searchParams.set('mode', newMode);
-      window.history.replaceState({}, '', url);
-
-      updateBandGeometry(newMode);
-      updateUiModeIndicator();
-      loadModeTexture(newMode);
-    }
-
-    function updateUiModeIndicator() {
-      const btnQA = document.getElementById('btn-mode-quality-ai');
-      const btnQD = document.getElementById('btn-mode-quality-depth');
-      const btnQC = document.getElementById('btn-mode-quality-current');
-      const btnE = document.getElementById('btn-mode-easy');
-      const tag = document.getElementById('active-mode-tag');
-      const btnNative = document.getElementById('btn-native-src');
-
-      if (btnQA) btnQA.className = (currentMode === 'quality-ai' || currentMode === 'quality-ai-12view' || currentMode === 'quality-ai-4view') ? 'mode-btn active-quality-ai' : 'mode-btn';
-      if (btnQD) btnQD.className = (currentMode === 'quality-depth-plane' || currentMode === 'quality-depth') ? 'mode-btn active-quality-depth' : 'mode-btn';
-      if (btnQC) btnQC.className = (currentMode === 'quality-current' || currentMode === 'quality') ? 'mode-btn active-quality-current' : 'mode-btn';
-      if (btnE) btnE.className = (currentMode === 'easy') ? 'mode-btn active-easy' : 'mode-btn';
-
-      const cfg = MODE_BAND_CONFIG[currentMode] || MODE_BAND_CONFIG['quality-ai-12view'];
-      if (tag) {
-        tag.textContent = cfg.label;
-        if (currentMode.includes('depth')) tag.style.color = 'var(--accent-depth)';
-        else if (currentMode.includes('current') || currentMode === 'quality') tag.style.color = 'var(--accent-quality)';
-        else if (currentMode === 'easy') tag.style.color = 'var(--accent-easy)';
-        else tag.style.color = 'var(--accent-ai)';
-      }
-
-      if (btnNative && NATIVE_URLS[currentMode]) {
-        btnNative.href = NATIVE_URLS[currentMode];
-      }
-    }
-
-    function resetView() {
-      currentYaw = 0.0;
-      currentPitch = 0.0;
-      currentFov = CONFIG.defaultFovDeg;
-      if (camera) {
-        camera.fov = currentFov;
-        camera.updateProjectionMatrix();
-      }
-    }
-
-    function onWindowResize() {
-      if (!camera || !renderer) return;
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-
-    function onPointerDown(e) {
-      isUserInteracting = true;
-      onPointerDownPointerX = e.clientX;
-      onPointerDownPointerY = e.clientY;
-      onPointerDownLon = currentYaw;
-      onPointerDownLat = currentPitch;
-    }
-
-    function onPointerMove(e) {
-      if (!isUserInteracting) return;
-      const dx = (onPointerDownPointerX - e.clientX) * 0.15 * (currentFov / CONFIG.defaultFovDeg);
-      const dy = (e.clientY - onPointerDownPointerY) * 0.15 * (currentFov / CONFIG.defaultFovDeg);
-
-      currentYaw = (onPointerDownLon + dx) % 360;
-      if (currentYaw < 0) currentYaw += 360;
-
-      currentPitch = Math.max(CONFIG.minPitchDeg, Math.min(CONFIG.maxPitchDeg, onPointerDownLat + dy));
-
-      window.__VIEWER_TELEMETRY__.dragYawWorks = true;
-      window.__VIEWER_TELEMETRY__.horizontalWrapWorks = true;
-      window.__VIEWER_TELEMETRY__.pitchLimitWorks = true;
-    }
-
-    function onPointerUp() {
-      isUserInteracting = false;
-    }
-
-    function onDocumentMouseWheel(e) {
-      e.preventDefault();
-      currentFov += e.deltaY * 0.05;
-      currentFov = Math.max(CONFIG.minFovDeg, Math.min(CONFIG.maxFovDeg, currentFov));
-      camera.fov = currentFov;
-      camera.updateProjectionMatrix();
+    function hideBlackScreenFailSafe() {
+      const overlay = document.getElementById('black-screen-failsafe-overlay');
+      if (overlay) overlay.style.display = 'none';
     }
 
     function animate() {
