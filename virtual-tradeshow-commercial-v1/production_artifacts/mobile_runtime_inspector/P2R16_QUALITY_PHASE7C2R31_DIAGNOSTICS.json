@@ -967,5 +967,8 @@
       "sha256": "e5d75e57b770072a5f54edfb3506c8831b1e785e24c428aec92a0c6ee5abd951",
       "dims": "12288x1869"
     }
-  }
+  },
+  "R31_IMPLEMENTATION_COMMIT": "47ede58206669b8a11034dca5b5ec8a5bda6f6f3",
+  "COMMIT_A": "47ede58206669b8a11034dca5b5ec8a5bda6f6f3",
+  "BRANCH": "experiment/c12.9-p2r16-8shot-hires"
 }
