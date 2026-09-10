@@ -9,6 +9,11 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <!-- Three.js r128 (Exact Approved Dependency) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    if (typeof THREE === 'undefined') {
+      document.write('<script src="/vendor/three.min.js"><\/script>');
+    }
+  </script>
 
   <style>
     :root {
@@ -112,7 +117,7 @@
       color: #cbd5e1; font-size: 12px; font-weight: 700;
       padding: 8px 12px; border-radius: 8px; cursor: pointer;
       backdrop-filter: blur(12px); display: flex; align-items: center; gap: 6px;
-      transition: background 0.15s ease;
+      text-decoration: none; transition: background 0.15s ease;
     }
     .action-btn:hover { background: rgba(30, 41, 59, 0.9); color: #fff; }
 
@@ -156,6 +161,16 @@
     </button>
   </div>
 
+  <!-- Phase 7C.2R2: Explicit Black-Screen Fail-Safe Overlay (NEVER SHOW SILENT BLACK) -->
+  <div id="black-screen-failsafe-overlay" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(15,23,42,0.95); border:2px solid #ef4444; border-radius:12px; padding:24px 32px; text-align:center; z-index:60; color:#f8fafc; font-family:sans-serif; max-width:90%; box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);">
+    <i class="fa-solid fa-triangle-exclamation" style="font-size:36px; color:#ef4444; margin-bottom:12px; display:block;"></i>
+    <h2 style="font-size:18px; margin:0 0 8px 0; color:#f8fafc; font-weight:700;">Panorama render validation failed.</h2>
+    <p style="font-size:13px; color:#94a3b8; margin:0 0 16px 0; line-height:1.5;">Use Original for source inspection.</p>
+    <a id="failsafe-original-btn" class="action-btn" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg" target="_blank" style="display:inline-flex; align-items:center; gap:8px; background:#3b82f6; color:#fff; border:none; border-radius:6px; padding:10px 18px; font-weight:600; text-decoration:none; font-size:13px; transition:background 0.2s;">
+      <i class="fa-solid fa-up-right-from-square"></i> Use Original for source inspection
+    </a>
+  </div>
+
   <div class="reticle"></div>
 
   <!-- Loading State -->
@@ -170,16 +185,16 @@
       <div class="brand-title">
         <i class="fa-solid fa-cube" style="color: var(--accent-ai);"></i>
         <span>C12.9-P2R16 360 INSPECTOR</span>
-        <span class="qa-badge">PHASE 7C TRUE AI</span>
+        <span class="qa-badge">PHASE 7C.2R2</span>
       </div>
-      <div class="sub-specs">
-        HAOV 360° | VAOV 68° | Pitch [-34°, +34°] | Mode: <span id="active-mode-tag" style="color: var(--accent-ai); font-weight: 700;">QUALITY AI</span>
+      <div class="sub-specs" id="sub-specs-text">
+        HAOV 360° | VAOV 53.5° | Pitch [-25.7°, +27.8°] | Mode: <span id="active-mode-tag" style="color: var(--accent-ai); font-weight: 700;">QUALITY AI</span>
       </div>
     </div>
 
     <!-- 4-Mode Switcher -->
     <div class="mode-switch-container">
-      <button id="btn-mode-quality-ai" class="mode-btn active-quality-ai" onclick="switchMode('quality-ai')">
+      <button id="btn-mode-quality-ai" class="mode-btn active-quality-ai" onclick="switchMode('quality-ai-12view')">
         <i class="fa-solid fa-wand-magic-sparkles"></i>
         <span>Quality AI</span>
         <span class="hotkey-hint">A/1</span>
@@ -226,28 +241,95 @@
       <button class="action-btn" onclick="resetView()" title="Reset to Center (Yaw 0, Pitch 0, FOV 65)">
         <i class="fa-solid fa-crosshairs"></i> Reset
       </button>
-      <a id="btn-native-src" class="action-btn" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_AI_OWNER_REVIEW.jpg" target="_blank" title="Inspect Full Canvas">
+      <a id="btn-native-src" class="action-btn" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg" target="_blank" title="Inspect Full Canvas">
         <i class="fa-solid fa-up-right-from-square"></i> Original
       </a>
     </div>
   </div>
 
   <script>
-    // --- Phase 7C Configuration ---
+    // --- Phase 7C.2R2 Configuration & Band Definitions ---
+    const MODE_BAND_CONFIG = {
+      'quality-ai-12view': {
+        minPitchDeg: -25.74,
+        maxPitchDeg: 27.79,
+        vaovDeg: 53.52,
+        label: 'QUALITY AI (12-VIEW R1)',
+        bounds: [-25.74, 27.79],
+        url: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg'
+      },
+      'quality-ai': {
+        minPitchDeg: -25.74,
+        maxPitchDeg: 27.79,
+        vaovDeg: 53.52,
+        label: 'QUALITY AI (12-VIEW R1)',
+        bounds: [-25.74, 27.79],
+        url: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg'
+      },
+      'quality-ai-4view': {
+        minPitchDeg: -34.0,
+        maxPitchDeg: 34.0,
+        vaovDeg: 68.0,
+        label: 'QUALITY AI (4-KEYFRAME CANVAS)',
+        bounds: [-34.0, 34.0],
+        url: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_AI_OWNER_REVIEW.jpg'
+      },
+      'quality-depth-plane': {
+        minPitchDeg: -34.0,
+        maxPitchDeg: 34.0,
+        vaovDeg: 68.0,
+        label: 'QUALITY (DEPTH PLANE)',
+        bounds: [-34.0, 34.0],
+        url: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_DEPTH_AWARE_OWNER_REVIEW.jpg'
+      },
+      'quality-depth': {
+        minPitchDeg: -34.0,
+        maxPitchDeg: 34.0,
+        vaovDeg: 68.0,
+        label: 'QUALITY (DEPTH PLANE)',
+        bounds: [-34.0, 34.0],
+        url: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_DEPTH_AWARE_OWNER_REVIEW.jpg'
+      },
+      'quality-current': {
+        minPitchDeg: -34.0,
+        maxPitchDeg: 34.0,
+        vaovDeg: 68.0,
+        label: 'QUALITY (HOMOGRAPHY)',
+        bounds: [-34.0, 34.0],
+        url: '/production_artifacts/mobile_runtime_inspector/P2R16_AI_QUALITY12_OWNER_REVIEW.jpg'
+      },
+      'quality': {
+        minPitchDeg: -34.0,
+        maxPitchDeg: 34.0,
+        vaovDeg: 68.0,
+        label: 'QUALITY (HOMOGRAPHY)',
+        bounds: [-34.0, 34.0],
+        url: '/production_artifacts/mobile_runtime_inspector/P2R16_AI_QUALITY12_OWNER_REVIEW.jpg'
+      },
+      'easy': {
+        minPitchDeg: -34.0,
+        maxPitchDeg: 34.0,
+        vaovDeg: 68.0,
+        label: 'EASY 360',
+        bounds: [-34.0, 34.0],
+        url: '/production_artifacts/mobile_runtime_inspector/P2R16_AI_CONTINUOUS_OWNER_REVIEW.jpg'
+      }
+    };
+
     const CONFIG = {
       haovDeg: 360,
-      vaovDeg: 68,
-      minPitchDeg: -34.0,
-      maxPitchDeg: 34.0,
+      vaovDeg: 53.52,
+      minPitchDeg: -25.74,
+      maxPitchDeg: 27.79,
       defaultFovDeg: 65,
       minFovDeg: 35,
       maxFovDeg: 90
     };
 
     // State
-    let currentMode = 'quality-ai'; // Default internal QA: quality-ai-4view // Default INTERNAL QA: quality-ai-12view // Phase 7C default: quality-ai
-    let currentYaw = 0.0;           // Continuous horizontal (degrees)
-    let currentPitch = 0.0;         // Clamped vertical (degrees)
+    let currentMode = 'quality-ai-12view';
+    let currentYaw = 0.0;
+    let currentPitch = 0.0;
     let currentFov = CONFIG.defaultFovDeg;
 
     let scene, camera, renderer, sphereMesh, textureLoader;
@@ -256,14 +338,12 @@
     let isUserInteracting = false;
     let onPointerDownPointerX = 0, onPointerDownPointerY = 0;
     let onPointerDownLon = 0, onPointerDownLat = 0;
-    let pinchStartDist = 0;
+    let frameCount = 0;
 
-    // Authoritative artifact paths
-            const NATIVE_URLS = {
-      'quality-ai-12view-debug-7c2': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_OWNER_REVIEW.jpg',
+    const NATIVE_URLS = {
       'quality-ai-12view': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg',
-      'quality-ai-4view': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_AI_OWNER_REVIEW.jpg',
       'quality-ai': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg',
+      'quality-ai-4view': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_AI_OWNER_REVIEW.jpg',
       'quality-depth-plane': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_DEPTH_AWARE_OWNER_REVIEW.jpg',
       'quality-depth': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_DEPTH_AWARE_OWNER_REVIEW.jpg',
       'quality-current': '/production_artifacts/mobile_runtime_inspector/P2R16_AI_QUALITY12_OWNER_REVIEW.jpg',
@@ -271,8 +351,45 @@
       'easy': '/production_artifacts/mobile_runtime_inspector/P2R16_AI_CONTINUOUS_OWNER_REVIEW.jpg'
     };
 
-    // Telemetry recorder for QA verification
+    // Authoritative Telemetry Store
     window.__VIEWER_TELEMETRY__ = {
+      REQUESTED_MODE: 'quality-ai-12view',
+      EXACT_TEXTURE_URL: '',
+      HTTP_STATUS: 0,
+      CONTENT_TYPE: '',
+      CONTENT_LENGTH: 0,
+      TEXTURE_LOAD_SUCCESS: false,
+      'texture.image.width': 0,
+      'texture.image.height': 0,
+      'texture.encoding': 'sRGB',
+      'material.color': '0xffffff',
+      'renderer.outputEncoding': 'sRGB',
+      'renderer.toneMapping': 'NONE',
+      'renderer.toneMappingExposure': 1.0,
+      MATERIAL_MAP_PRESENT: false,
+      MATERIAL_VISIBLE: true,
+
+      // Section 9: Browser texture offscreen sampling
+      BROWSER_TEXTURE_MEAN_R: 0,
+      BROWSER_TEXTURE_MEAN_G: 0,
+      BROWSER_TEXTURE_MEAN_B: 0,
+      BROWSER_TEXTURE_MEAN_LUMA: 0,
+      BROWSER_TEXTURE_NONBLACK_RATIO: 0,
+
+      // Section 10: WebGL framebuffer sampling
+      FRAMEBUFFER_MEAN_LUMA: 0,
+      FRAMEBUFFER_NONBLACK_RATIO: 0,
+      TEXTURE_VALID_BUT_FRAMEBUFFER_BLACK: false,
+
+      // Section 11: Band geometry
+      VERTICAL_ANGULAR_BOUNDS: [-25.74, 27.79],
+      VERTICAL_SPAN_DEG: 53.52,
+
+      // Section 13: Fail-safe
+      BLACK_SCREEN_DETECTED: false,
+      PANORAMA_VISIBLE: false,
+
+      // Standard telemetry
       viewerInitialized: false,
       panoramaTextureLoaded: false,
       webglContextOk: false,
@@ -287,13 +404,7 @@
       selectedProxy: 0,
       loadTimeMs: 0,
       firstInteractiveMs: 0,
-      materialColor: '0xffffff',
-      textureEncoding: 'sRGB',
-      outputEncoding: 'sRGB',
-      toneMapping: 'NONE',
-      toneMappingExposure: 1.0,
-      viewerSourceBrightnessMatch: true,
-      viewerSourceColorMatch: true
+      frameCount: 0
     };
 
     function init() {
@@ -328,50 +439,45 @@
       // 2. Read mode from query param if provided
       const urlParams = new URLSearchParams(window.location.search);
       const qMode = urlParams.get('mode');
-      if (!qMode) {
-        currentMode = 'quality-ai-4view';
-      }
       if (qMode) {
-        if (qMode === 'quality-ai-4view') currentMode = 'quality-ai-4view';
-        else if (qMode === 'quality-ai-12view') currentMode = 'quality-ai-12view';
-        else if (qMode === 'quality-ai') currentMode = 'quality-ai-12view';
-        else if (qMode === 'quality-depth-plane' || qMode === 'quality-depth') currentMode = 'quality-depth-plane';
-        else if (qMode === 'quality-current' || qMode === 'quality') currentMode = 'quality-current';
-        else if (qMode === 'easy') currentMode = 'easy';
+        if (MODE_BAND_CONFIG[qMode]) {
+          currentMode = qMode;
+        } else if (qMode === 'quality-ai') {
+          currentMode = 'quality-ai-12view';
+        } else if (qMode === 'quality-depth') {
+          currentMode = 'quality-depth-plane';
+        } else if (qMode === 'quality') {
+          currentMode = 'quality-current';
+        }
+      } else {
+        currentMode = 'quality-ai-12view';
       }
+      window.__VIEWER_TELEMETRY__.REQUESTED_MODE = currentMode;
 
       // 3. Three.js Scene Setup
       scene = new THREE.Scene();
       camera = new THREE.PerspectiveCamera(currentFov, window.innerWidth / window.innerHeight, 1, 1100);
       camera.target = new THREE.Vector3(0, 0, 0);
 
-      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(window.innerWidth, window.innerHeight);
-      // Phase 7A.1, 7B & 7C: Frozen Color & Exposure Pipeline
+      // Locked Color & Exposure Pipeline
       renderer.outputEncoding = THREE.sRGBEncoding;
       renderer.toneMapping = THREE.NoToneMapping;
       renderer.toneMappingExposure = 1.0;
       container.appendChild(renderer.domElement);
 
-      // 4. Inward-Facing Spherical Band Geometry
-      // HAOV = 360, VAOV = 68 (pitch from -34 to +34)
-      const radius = 500;
-      const vaovRad = (CONFIG.vaovDeg * Math.PI) / 180;
-      const phiStart = 0;
-      const phiLength = Math.PI * 2;
-      const thetaStart = (Math.PI / 2) - (vaovRad / 2); // 90° - 34° = 56° from zenith
-      const thetaLength = vaovRad;                       // 68° arc
-
-      const geometry = new THREE.SphereGeometry(radius, 64, 32, phiStart, phiLength, thetaStart, thetaLength);
-      // Invert geometry so texture faces inward toward center
-      geometry.scale(-1, 1, 1);
+      // 4. Initial Mesh & Spherical Band Geometry
+      const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      sphereMesh = new THREE.Mesh(new THREE.BufferGeometry(), material);
+      scene.add(sphereMesh);
 
       textureLoader = new THREE.TextureLoader();
-      // Phase 7A.1, 7B & 7C: Frozen Pure White Mesh Material
-      const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
-      sphereMesh = new THREE.Mesh(geometry, material);
-      scene.add(sphereMesh);
+
+      // Configure geometry and UI for active mode
+      updateBandGeometry(currentMode);
+      updateUiModeIndicator();
 
       // 5. Load Texture for Initial Mode
       loadModeTexture(currentMode, () => {
@@ -390,23 +496,57 @@
       window.addEventListener('pointerup', onPointerUp, false);
       container.addEventListener('wheel', onDocumentMouseWheel, { passive: false });
 
-      // Keyboard Hotkeys: A/1 = Quality AI, D/2 = Depth Plane, Q/3 = Homography, E/4 = Easy
+      // Keyboard Hotkeys
       window.addEventListener('keydown', (e) => {
-        if (e.key === 'a' || e.key === 'A' || e.key === '1') switchMode('quality-ai');
+        if (e.key === 'a' || e.key === 'A' || e.key === '1') switchMode('quality-ai-12view');
         if (e.key === 'd' || e.key === 'D' || e.key === '2') switchMode('quality-depth-plane');
         if (e.key === 'q' || e.key === 'Q' || e.key === '3') switchMode('quality-current');
         if (e.key === 'e' || e.key === 'E' || e.key === '4') switchMode('easy');
       });
 
-      updateUiModeIndicator();
+      // Start animation loop
       animate();
     }
 
-        function getProxyUrl(mode, width) {
-      if (mode === 'quality-ai-12view-debug-7c2') {
-        return '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_OWNER_REVIEW.jpg';
-      } else if (mode === 'quality-ai-12view' || mode === 'quality-ai') {
+    function updateBandGeometry(mode) {
+      const cfg = MODE_BAND_CONFIG[mode] || MODE_BAND_CONFIG['quality-ai-12view'];
+      CONFIG.minPitchDeg = cfg.minPitchDeg;
+      CONFIG.maxPitchDeg = cfg.maxPitchDeg;
+      CONFIG.vaovDeg = cfg.vaovDeg;
+
+      currentPitch = Math.max(cfg.minPitchDeg, Math.min(cfg.maxPitchDeg, currentPitch));
+
+      window.__VIEWER_TELEMETRY__.VERTICAL_ANGULAR_BOUNDS = cfg.bounds;
+      window.__VIEWER_TELEMETRY__.VERTICAL_SPAN_DEG = cfg.vaovDeg;
+
+      const radius = 500;
+      const phiStart = 0;
+      const phiLength = Math.PI * 2;
+      // In spherical coordinates from +Y axis (zenith):
+      // pitch = maxPitchDeg is at thetaStart = (90 - maxPitchDeg)
+      const thetaStart = THREE.MathUtils.degToRad(90.0 - cfg.maxPitchDeg);
+      const thetaLength = THREE.MathUtils.degToRad(cfg.vaovDeg);
+
+      if (sphereMesh) {
+        if (sphereMesh.geometry) sphereMesh.geometry.dispose();
+        const newGeo = new THREE.SphereGeometry(radius, 64, 32, phiStart, phiLength, thetaStart, thetaLength);
+        newGeo.scale(-1, 1, 1);
+        sphereMesh.geometry = newGeo;
+      }
+
+      const specEl = document.getElementById('sub-specs-text');
+      if (specEl) {
+        const minPStr = (cfg.minPitchDeg >= 0 ? '+' : '') + cfg.minPitchDeg.toFixed(1);
+        const maxPStr = (cfg.maxPitchDeg >= 0 ? '+' : '') + cfg.maxPitchDeg.toFixed(1);
+        specEl.innerHTML = `HAOV 360° | VAOV ${cfg.vaovDeg.toFixed(1)}° | Pitch [${minPStr}°, ${maxPStr}°] | Mode: <span id="active-mode-tag" style="color: var(--accent-ai); font-weight: 700;">${cfg.label}</span>`;
+      }
+    }
+
+    function getProxyUrl(mode, width) {
+      if (mode === 'quality-ai-12view' || mode === 'quality-ai') {
         return '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg';
+      } else if (mode === 'quality-ai-12view-debug-7c2') {
+        return '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_OWNER_REVIEW.jpg';
       } else if (mode === 'quality-ai-4view') {
         return `/internal-assets/p2r16/viewer/quality-ai-${width}.jpg`;
       } else if (mode === 'quality-depth-plane' || mode === 'quality-depth') {
@@ -418,47 +558,139 @@
       }
     }
 
-    function createPlaceholderTexture() {
-      const canvas = document.createElement('canvas');
-      canvas.width = 2048;
-      canvas.height = 1024;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.strokeStyle = '#1e293b';
-      ctx.lineWidth = 4;
-      for (let x = 0; x < canvas.width; x += 64) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+    function showBlackScreenFailSafe() {
+      const overlay = document.getElementById('black-screen-failsafe-overlay');
+      if (overlay) overlay.style.display = 'block';
+      const loading = document.getElementById('loading-overlay');
+      if (loading) loading.style.display = 'none';
+      const failsafeBtn = document.getElementById('failsafe-original-btn');
+      if (failsafeBtn && NATIVE_URLS[currentMode]) {
+        failsafeBtn.href = NATIVE_URLS[currentMode];
       }
-      for (let y = 0; y < canvas.height; y += 64) {
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
-      }
-      ctx.fillStyle = '#f59e0b';
-      ctx.font = 'bold 44px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('Phase 7C.2R1 geometry repair pending', canvas.width / 2, canvas.height / 2 - 20);
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '28px sans-serif';
-      ctx.fillText('RoMa dense correspondence + Bundle Adjustment in progress', canvas.width / 2, canvas.height / 2 + 35);
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.encoding = THREE.sRGBEncoding;
-      return tex;
     }
 
-            function loadModeTexture(mode, onComplete) {
+    function hideBlackScreenFailSafe() {
+      const overlay = document.getElementById('black-screen-failsafe-overlay');
+      if (overlay) overlay.style.display = 'none';
+    }
+
+    function sampleLoadedTexture(img) {
+      try {
+        const canvas = document.createElement('canvas');
+        const w = 256;
+        const natH = img.naturalHeight || img.height || 608;
+        const natW = img.naturalWidth || img.width || 4096;
+        const h = Math.max(16, Math.round(w * (natH / natW)));
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const imgData = ctx.getImageData(0, 0, w, h);
+        const data = imgData.data;
+        let sumR = 0, sumG = 0, sumB = 0, sumLuma = 0;
+        let nonblackCount = 0;
+        const total = w * h;
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+          sumR += r;
+          sumG += g;
+          sumB += b;
+          sumLuma += luma;
+          if (luma > 5.0) nonblackCount++;
+        }
+        const meanR = +(sumR / total).toFixed(2);
+        const meanG = +(sumG / total).toFixed(2);
+        const meanB = +(sumB / total).toFixed(2);
+        const meanLuma = +(sumLuma / total).toFixed(2);
+        const nonblackRatio = +(nonblackCount / total).toFixed(4);
+
+        window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_MEAN_R = meanR;
+        window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_MEAN_G = meanG;
+        window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_MEAN_B = meanB;
+        window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_MEAN_LUMA = meanLuma;
+        window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_NONBLACK_RATIO = nonblackRatio;
+      } catch (err) {
+        console.warn('sampleLoadedTexture note:', err);
+      }
+    }
+
+    function sampleFramebuffer() {
+      try {
+        const gl = renderer.getContext();
+        if (!gl) return;
+        const width = gl.drawingBufferWidth || renderer.domElement.width;
+        const height = gl.drawingBufferHeight || renderer.domElement.height;
+
+        // Central viewport sample: exclude top 25% and bottom 25%, middle 50%
+        const sampleW = Math.max(16, Math.floor(width * 0.5));
+        const sampleH = Math.max(16, Math.floor(height * 0.5));
+        const startX = Math.floor((width - sampleW) / 2);
+        const startY = Math.floor((height - sampleH) / 2);
+
+        const pixels = new Uint8Array(sampleW * sampleH * 4);
+        gl.readPixels(startX, startY, sampleW, sampleH, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+        let sumLuma = 0;
+        let nonblackCount = 0;
+        const total = sampleW * sampleH;
+        for (let i = 0; i < pixels.length; i += 4) {
+          const r = pixels[i];
+          const g = pixels[i + 1];
+          const b = pixels[i + 2];
+          const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+          sumLuma += luma;
+          if (luma > 5.0) nonblackCount++;
+        }
+
+        const meanLuma = +(sumLuma / total).toFixed(2);
+        const nonblackRatio = +(nonblackCount / total).toFixed(4);
+
+        window.__VIEWER_TELEMETRY__.FRAMEBUFFER_MEAN_LUMA = meanLuma;
+        window.__VIEWER_TELEMETRY__.FRAMEBUFFER_NONBLACK_RATIO = nonblackRatio;
+
+        const texValid = (window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_MEAN_LUMA > 10.0 || window.__VIEWER_TELEMETRY__.BROWSER_TEXTURE_NONBLACK_RATIO > 0.5);
+        const fbBlack = (meanLuma < 5.0 || nonblackRatio < 0.05);
+
+        window.__VIEWER_TELEMETRY__.TEXTURE_VALID_BUT_FRAMEBUFFER_BLACK = (texValid && fbBlack);
+
+        if (texValid && fbBlack) {
+          window.__VIEWER_TELEMETRY__.BLACK_SCREEN_DETECTED = true;
+          window.__VIEWER_TELEMETRY__.PANORAMA_VISIBLE = false;
+          showBlackScreenFailSafe();
+        } else {
+          window.__VIEWER_TELEMETRY__.BLACK_SCREEN_DETECTED = false;
+          window.__VIEWER_TELEMETRY__.PANORAMA_VISIBLE = true;
+          hideBlackScreenFailSafe();
+        }
+      } catch (err) {
+        console.warn('sampleFramebuffer note:', err);
+      }
+    }
+
+    function loadModeTexture(mode, onComplete) {
+      hideBlackScreenFailSafe();
       document.getElementById('qa-placeholder-overlay').style.display = 'none';
       document.getElementById('loading-overlay').style.display = 'flex';
       document.getElementById('loading-overlay').style.opacity = '1';
-      let modeLabel = 'Quality AI';
-      if (mode === 'quality-ai-12view') modeLabel = 'Quality AI (12-View Commercial VGGT R1)';
-      else if (mode === 'quality-ai-12view-debug-7c2') modeLabel = 'Quality AI (12-View 7C.2 Debug)';
-      else if (mode === 'quality-depth-plane' || mode === 'quality-depth') modeLabel = 'Quality (Depth Plane)';
-      else if (mode === 'quality-current' || mode === 'quality') modeLabel = 'Quality (Homography)';
-      else if (mode === 'easy') modeLabel = 'Easy 360';
-      
-      document.getElementById('loading-text').textContent = `Loading ${modeLabel} (${selectedProxyWidth}px)...`;
+
+      const cfg = MODE_BAND_CONFIG[mode] || MODE_BAND_CONFIG['quality-ai-12view'];
+      document.getElementById('loading-text').textContent = `Loading ${cfg.label} (${selectedProxyWidth}px)...`;
 
       const proxyUrl = getProxyUrl(mode, selectedProxyWidth);
+      window.__VIEWER_TELEMETRY__.EXACT_TEXTURE_URL = proxyUrl;
+      window.__VIEWER_TELEMETRY__.REQUESTED_MODE = mode;
+
+      fetch(proxyUrl, { method: 'HEAD' }).then(res => {
+        window.__VIEWER_TELEMETRY__.HTTP_STATUS = res.status;
+        window.__VIEWER_TELEMETRY__.CONTENT_TYPE = res.headers.get('content-type') || '';
+        window.__VIEWER_TELEMETRY__.CONTENT_LENGTH = parseInt(res.headers.get('content-length') || '0', 10);
+      }).catch(e => {
+        console.warn('HEAD request note:', e);
+      });
+
       textureLoader.load(
         proxyUrl,
         (texture) => {
@@ -466,13 +698,30 @@
           texture.magFilter = THREE.LinearFilter;
           texture.wrapS = THREE.RepeatWrapping;
           texture.wrapT = THREE.ClampToEdgeWrapping;
-          // Phase 7A.1, 7B & 7C: Exact sRGB texture encoding & full 0xffffff material color
           texture.encoding = THREE.sRGBEncoding;
 
           sphereMesh.material.map = texture;
           sphereMesh.material.color.set(0xffffff);
           sphereMesh.material.needsUpdate = true;
+
+          window.__VIEWER_TELEMETRY__.TEXTURE_LOAD_SUCCESS = true;
           window.__VIEWER_TELEMETRY__.panoramaTextureLoaded = true;
+          window.__VIEWER_TELEMETRY__['texture.image.width'] = texture.image ? (texture.image.naturalWidth || texture.image.width) : 0;
+          window.__VIEWER_TELEMETRY__['texture.image.height'] = texture.image ? (texture.image.naturalHeight || texture.image.height) : 0;
+          window.__VIEWER_TELEMETRY__['texture.encoding'] = 'sRGB';
+          window.__VIEWER_TELEMETRY__['material.color'] = '0xffffff';
+          window.__VIEWER_TELEMETRY__['renderer.outputEncoding'] = 'sRGB';
+          window.__VIEWER_TELEMETRY__['renderer.toneMapping'] = 'NONE';
+          window.__VIEWER_TELEMETRY__['renderer.toneMappingExposure'] = 1.0;
+          window.__VIEWER_TELEMETRY__.MATERIAL_MAP_PRESENT = true;
+          window.__VIEWER_TELEMETRY__.MATERIAL_VISIBLE = sphereMesh.material.visible;
+
+          if (texture.image) {
+            sampleLoadedTexture(texture.image);
+          }
+
+          // Reset frame count since texture load so framebuffer is sampled on frame 3
+          window.__FRAME_COUNT_SINCE_TEXTURE__ = 0;
 
           const elapsed = performance.now() - (window.__VIEWER_START_TIME__ || performance.now());
           window.__VIEWER_TELEMETRY__.loadTimeMs = Math.round(elapsed);
@@ -485,14 +734,69 @@
         undefined,
         (err) => {
           console.error(`Failed to load texture for mode ${mode}:`, err);
-          document.getElementById('loading-text').textContent = `Error loading texture for ${modeLabel}`;
+          document.getElementById('loading-text').textContent = `Error loading texture for ${cfg.label}`;
           window.__VIEWER_TELEMETRY__.blackScreen = true;
+          window.__VIEWER_TELEMETRY__.TEXTURE_LOAD_SUCCESS = false;
+          showBlackScreenFailSafe();
           if (onComplete) onComplete();
         }
       );
     }
 
+    function switchMode(newMode) {
+      if (newMode === currentMode && window.__VIEWER_TELEMETRY__.panoramaTextureLoaded) return;
+      currentMode = newMode;
+      window.__VIEWER_TELEMETRY__.REQUESTED_MODE = newMode;
+      window.__VIEWER_TELEMETRY__.qualityEasySwitchWorks = true;
+
+      const url = new URL(window.location);
+      url.searchParams.set('mode', newMode);
+      window.history.replaceState({}, '', url);
+
+      updateBandGeometry(newMode);
+      updateUiModeIndicator();
+      loadModeTexture(newMode);
+    }
+
+    function updateUiModeIndicator() {
+      const btnQA = document.getElementById('btn-mode-quality-ai');
+      const btnQD = document.getElementById('btn-mode-quality-depth');
+      const btnQC = document.getElementById('btn-mode-quality-current');
+      const btnE = document.getElementById('btn-mode-easy');
+      const tag = document.getElementById('active-mode-tag');
+      const btnNative = document.getElementById('btn-native-src');
+
+      if (btnQA) btnQA.className = (currentMode === 'quality-ai' || currentMode === 'quality-ai-12view' || currentMode === 'quality-ai-4view') ? 'mode-btn active-quality-ai' : 'mode-btn';
+      if (btnQD) btnQD.className = (currentMode === 'quality-depth-plane' || currentMode === 'quality-depth') ? 'mode-btn active-quality-depth' : 'mode-btn';
+      if (btnQC) btnQC.className = (currentMode === 'quality-current' || currentMode === 'quality') ? 'mode-btn active-quality-current' : 'mode-btn';
+      if (btnE) btnE.className = (currentMode === 'easy') ? 'mode-btn active-easy' : 'mode-btn';
+
+      const cfg = MODE_BAND_CONFIG[currentMode] || MODE_BAND_CONFIG['quality-ai-12view'];
+      if (tag) {
+        tag.textContent = cfg.label;
+        if (currentMode.includes('depth')) tag.style.color = 'var(--accent-depth)';
+        else if (currentMode.includes('current') || currentMode === 'quality') tag.style.color = 'var(--accent-quality)';
+        else if (currentMode === 'easy') tag.style.color = 'var(--accent-easy)';
+        else tag.style.color = 'var(--accent-ai)';
+      }
+
+      if (btnNative && NATIVE_URLS[currentMode]) {
+        btnNative.href = NATIVE_URLS[currentMode];
+      }
+    }
+
+    function resetView() {
+      currentYaw = 0.0;
+      currentPitch = 0.0;
+      currentFov = CONFIG.defaultFovDeg;
+      if (camera) {
+        camera.fov = currentFov;
+        camera.updateProjectionMatrix();
+      }
+    }
+
     function onWindowResize() {
+      if (!camera || !renderer) return;
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -539,6 +843,9 @@
     }
 
     function update() {
+      frameCount++;
+      window.__VIEWER_TELEMETRY__.frameCount = frameCount;
+
       const phi = THREE.MathUtils.degToRad(90 - currentPitch);
       const theta = THREE.MathUtils.degToRad(currentYaw);
 
@@ -549,8 +856,15 @@
 
       renderer.render(scene, camera);
 
+      if (window.__FRAME_COUNT_SINCE_TEXTURE__ !== undefined) {
+        window.__FRAME_COUNT_SINCE_TEXTURE__++;
+        if (window.__FRAME_COUNT_SINCE_TEXTURE__ === 3) {
+          sampleFramebuffer();
+        }
+      }
+
       document.getElementById('yaw-text').textContent = currentYaw.toFixed(1) + '°';
-      document.getElementById('pitch-text').textContent = currentPitch.toFixed(1) + '°';
+      document.getElementById('pitch-text').textContent = (currentPitch >= 0 ? '+' : '') + currentPitch.toFixed(1) + '°';
       document.getElementById('fov-text').textContent = Math.round(currentFov) + '°';
     }
 
