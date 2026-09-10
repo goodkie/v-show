@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>C12.9-P2R16 Internal 360 QA Viewer - R3.1 Coverage Audit & Direct-Hit Repair (12K Owner QA)</title>
+  <title>C12.9-P2R16 Internal 360 QA Viewer - R4 Full Portrait Recompute (99.95% Direct Coverage)</title>
   
   <!-- FontAwesome for Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -342,7 +342,11 @@
 
       <!-- Mode Switcher -->
       <div class="mode-switch-container">
-                <button id="btn-mode-quality-r31" class="mode-btn active-quality-ai" onclick="switchMode('quality-ai-r31')">
+                        <button id="btn-mode-quality-r4" class="mode-btn active-quality-ai" onclick="switchMode('quality-ai-r4')">
+          <i class="fa-solid fa-certificate"></i>
+          <span>Quality AI R4</span>
+        </button>
+        <button id="btn-mode-quality-r31" class="mode-btn active-quality-ai" onclick="switchMode('quality-ai-r31')">
           <i class="fa-solid fa-microscope"></i>
           <span>Quality AI R3.1</span>
         </button>
@@ -489,6 +493,13 @@
     };
 
     const MODE_BAND_CONFIG = {
+      'quality-ai-r4': {
+        minPitchDeg: -26.38,
+        maxPitchDeg: 28.39,
+        vaovDeg: 54.77,
+        label: 'QUALITY AI (R4 FULL PORTRAIT RECOMPUTE)',
+        bounds: [-26.38, 28.39]
+      },
       'quality-ai-r31': {
         minPitchDeg: -26.38,
         maxPitchDeg: 28.39,
@@ -607,7 +618,7 @@
     };
 
     // Global State
-    let currentMode = (qMode === 'quality-ai-r31') ? 'quality-ai-r31' : ((qMode === 'quality-ai-r3') ? 'quality-ai-r3' : 'quality-ai-12view');
+    let currentMode = (qMode === 'quality-ai-r4') ? 'quality-ai-r4' : ((qMode === 'quality-ai-r31') ? 'quality-ai-r31' : ((qMode === 'quality-ai-r3') ? 'quality-ai-r3' : 'quality-ai-12view'));
     let userSelectedTier = 'AUTO';
     let activeTier = '12K';   // Default: 12K OWNER QA
     let activeTextureUrl = QUALITY_AI_TIERS['12K'].url;
@@ -619,7 +630,13 @@
       'direct-mask': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R3_DIRECT_COVERAGE_MASK.png',
       'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R3_SOURCE_OWNERSHIP.png'
     };
-        const R31_COVERAGE_TEXTURES = {
+            const R4_COVERAGE_TEXTURES = {
+      'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4_FULLPORTRAIT_OWNER_REVIEW.jpg',
+      'raw-direct': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4_FULLPORTRAIT_RAW_DIRECT.png',
+      'direct-mask': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4_DIRECT_COVERAGE_MASK.png',
+      'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4_SOURCE_OWNERSHIP.png'
+    };
+    const R31_COVERAGE_TEXTURES = {
       'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R31_FULLRES_PHYSICAL_OWNER_REVIEW.jpg',
       'raw-direct': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R31_FULLRES_PHYSICAL_RAW_DIRECT.png',
       'direct-mask': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R31_DIRECT_COVERAGE_MASK.png',
@@ -761,7 +778,7 @@
       if (qMode && MODE_BAND_CONFIG[qMode]) {
         currentMode = qMode;
       } else {
-        currentMode = (qMode === 'quality-ai-r31') ? 'quality-ai-r31' : ((qMode === 'quality-ai-r3') ? 'quality-ai-r3' : 'quality-ai-12view');
+        currentMode = (qMode === 'quality-ai-r4') ? 'quality-ai-r4' : ((qMode === 'quality-ai-r31') ? 'quality-ai-r31' : ((qMode === 'quality-ai-r3') ? 'quality-ai-r3' : 'quality-ai-12view'));
       }
       window.__VIEWER_TELEMETRY__.REQUESTED_MODE = currentMode;
       window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH = (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai' || currentMode === 'quality-ai-r3' || currentMode === 'quality-ai-r31');
@@ -858,28 +875,20 @@
       let targetLabel = '';
       let targetW = 0, targetH = 0;
 
-                  if (currentMode === 'quality-ai-r31') {
+                  
+      if (currentMode === 'quality-ai-r4') {
+        activeTier = '12K';
+        targetUrl = R4_COVERAGE_TEXTURES[coverageMode] || R4_COVERAGE_TEXTURES['final-rgb'];
+        targetLabel = '12K R4 (' + coverageMode.toUpperCase() + ')';
+        targetW = 12288;
+        targetH = 1869;
+      } else if (currentMode === 'quality-ai-r31') {
         activeTier = '12K';
         targetUrl = R31_COVERAGE_TEXTURES[coverageMode] || R31_COVERAGE_TEXTURES['final-rgb'];
         targetLabel = '12K R3.1 (' + coverageMode.toUpperCase() + ')';
         targetW = 12288;
         targetH = 1869;
-      } else           if (currentMode === 'quality-ai-r31' || currentMode === 'quality-ai-r3' || currentMode === 'quality-ai-r31') {
-            texture.offset.set(0, 0);
-            texture.repeat.set(1, 1);
-            texture.wrapT = THREE.ClampToEdgeWrapping;
-            window.__VIEWER_TELEMETRY__.UV_MAPPING_TYPE = 'FULL_BAND_DIRECT';
-            window.__VIEWER_TELEMETRY__.VIEWER_VERTICAL_ANGULAR_DISTORTION = false;
-            window.__VIEWER_TELEMETRY__.R31_ACTIVE = (currentMode === 'quality-ai-r31');
-            window.__VIEWER_TELEMETRY__.INPAINT_USED = false;
-            window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE = (currentMode === 'quality-ai-r31') ? 0.94145 : 0.926109;
-            window.__VIEWER_TELEMETRY__.CUSTOMER_DEFAULT = 'P2R13';
-            window.__VIEWER_TELEMETRY__.OWNER_REVIEW_COMPLETED = false;
-            window.__VIEWER_TELEMETRY__.OWNER_VISUAL_ACCEPTANCE = false;
-            window.__VIEWER_TELEMETRY__.QUALITY_GHOSTING_QA = 'FAIL';
-            window.__VIEWER_TELEMETRY__.GLOBAL_GEOMETRY_QA = 'PENDING_OWNER_PIXEL_REVIEW';
-            window.__VIEWER_TELEMETRY__.VISUAL_WARP_QA = 'PENDING_OWNER_PIXEL_REVIEW';
-          } else if (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai') {
+      } else if (currentMode === 'quality-ai-r3') {
         activeTier = '12K';
         targetUrl = R3_COVERAGE_TEXTURES[coverageMode] || R3_COVERAGE_TEXTURES['final-rgb'];
         targetLabel = '12K R3 FULLRES (' + coverageMode.toUpperCase() + ')';
@@ -950,21 +959,17 @@
           // For quality-ai modes, apply v_min/v_max offset to prevent vertical
           // angular distortion. The 54.78° raster is not stretched; we crop
           // exactly to the [-25.74°, +27.79°] sub-band via UV repeat/offset.
-                      if (currentMode === 'quality-ai-r31') {
-        activeTier = '12K';
-        targetUrl = R31_COVERAGE_TEXTURES[coverageMode] || R31_COVERAGE_TEXTURES['final-rgb'];
-        targetLabel = '12K R3.1 (' + coverageMode.toUpperCase() + ')';
-        targetW = 12288;
-        targetH = 1869;
-      } else           if (currentMode === 'quality-ai-r31' || currentMode === 'quality-ai-r3' || currentMode === 'quality-ai-r31') {
+                      
+          if (currentMode === 'quality-ai-r4' || currentMode === 'quality-ai-r31' || currentMode === 'quality-ai-r3') {
             texture.offset.set(0, 0);
             texture.repeat.set(1, 1);
             texture.wrapT = THREE.ClampToEdgeWrapping;
             window.__VIEWER_TELEMETRY__.UV_MAPPING_TYPE = 'FULL_BAND_DIRECT';
             window.__VIEWER_TELEMETRY__.VIEWER_VERTICAL_ANGULAR_DISTORTION = false;
+            window.__VIEWER_TELEMETRY__.R4_ACTIVE = (currentMode === 'quality-ai-r4');
             window.__VIEWER_TELEMETRY__.R31_ACTIVE = (currentMode === 'quality-ai-r31');
             window.__VIEWER_TELEMETRY__.INPAINT_USED = false;
-            window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE = (currentMode === 'quality-ai-r31') ? 0.94145 : 0.926109;
+            window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE = (currentMode === 'quality-ai-r4') ? 0.999509 : ((currentMode === 'quality-ai-r31') ? 0.94145 : 0.926109);
             window.__VIEWER_TELEMETRY__.CUSTOMER_DEFAULT = 'P2R13';
             window.__VIEWER_TELEMETRY__.OWNER_REVIEW_COMPLETED = false;
             window.__VIEWER_TELEMETRY__.OWNER_VISUAL_ACCEPTANCE = false;
@@ -972,12 +977,6 @@
             window.__VIEWER_TELEMETRY__.GLOBAL_GEOMETRY_QA = 'PENDING_OWNER_PIXEL_REVIEW';
             window.__VIEWER_TELEMETRY__.VISUAL_WARP_QA = 'PENDING_OWNER_PIXEL_REVIEW';
           } else if (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai') {
-        activeTier = '12K';
-        targetUrl = R3_COVERAGE_TEXTURES[coverageMode] || R3_COVERAGE_TEXTURES['final-rgb'];
-        targetLabel = '12K R3 FULLRES (' + coverageMode.toUpperCase() + ')';
-        targetW = 12288;
-        targetH = 1869;
-      } else if (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai') {
             const vSpan = UV_CORRECTION.v_max - UV_CORRECTION.v_min;
             // V offset maps v=0 of sphere geometry to v_min of texture
             texture.offset.set(0, UV_CORRECTION.v_min);
@@ -1077,7 +1076,7 @@
       if (newMode === currentMode && window.__VIEWER_TELEMETRY__.panoramaTextureLoaded) return;
       currentMode = newMode;
       window.__VIEWER_TELEMETRY__.REQUESTED_MODE = newMode;
-      window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH = (newMode === 'quality-ai-12view' || newMode === 'quality-ai');
+      window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH = (newMode === 'quality-ai-12view' || newMode === 'quality-ai' || newMode === 'quality-ai-r3' || newMode === 'quality-ai-r31' || newMode === 'quality-ai-r4');
 
       const url = new URL(window.location);
       url.searchParams.set('mode', newMode);
@@ -1091,6 +1090,7 @@
     function updateUiModeIndicator() {
       const btnQA = document.getElementById('btn-mode-quality-ai');
       const btnR3 = document.getElementById('btn-mode-quality-r3');
+      const btnR4 = document.getElementById('btn-mode-quality-r4');
       const btnR31 = document.getElementById('btn-mode-quality-r31');
       const btnQD = document.getElementById('btn-mode-quality-depth');
       const btnQC = document.getElementById('btn-mode-quality-current');
@@ -1098,6 +1098,7 @@
 
       if (btnQA) btnQA.className = (currentMode === 'quality-ai' || currentMode === 'quality-ai-12view') ? 'mode-btn active-quality-ai' : 'mode-btn';
       if (btnR3) btnR3.className = (currentMode === 'quality-ai-r3' || currentMode === 'quality-ai-r31') ? 'mode-btn active-quality-ai' : 'mode-btn';
+      if (btnR4) btnR4.className = (currentMode === 'quality-ai-r4') ? 'mode-btn active-quality-ai' : 'mode-btn';
       if (btnR31) btnR31.className = (currentMode === 'quality-ai-r31') ? 'mode-btn active-quality-ai' : 'mode-btn';
       if (btnQD) btnQD.className = (currentMode === 'quality-depth-plane' || currentMode === 'quality-depth') ? 'mode-btn active-quality-depth' : 'mode-btn';
       if (btnQC) btnQC.className = (currentMode === 'quality-current' || currentMode === 'quality') ? 'mode-btn active-quality-current' : 'mode-btn';
