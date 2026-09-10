@@ -970,5 +970,9 @@
   },
   "R31_IMPLEMENTATION_COMMIT": "47ede58206669b8a11034dca5b5ec8a5bda6f6f3",
   "COMMIT_A": "47ede58206669b8a11034dca5b5ec8a5bda6f6f3",
-  "BRANCH": "experiment/c12.9-p2r16-8shot-hires"
+  "BRANCH": "experiment/c12.9-p2r16-8shot-hires",
+  "COMMIT_B": "9d721efc91ea5de503ca59c3494ae5635c431dc9",
+  "RAILWAY_DEPLOYMENT_ID": "d157facf-35c1-4509-af10-ffde1b78af8c",
+  "RAILWAY_DEPLOYMENT_STATUS": "SUCCESS",
+  "ALL_ENDPOINTS_PASS": true
 }
