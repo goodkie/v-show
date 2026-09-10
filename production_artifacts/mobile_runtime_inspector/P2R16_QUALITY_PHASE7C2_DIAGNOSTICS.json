@@ -2,56 +2,56 @@
   "PHASE": "PHASE_7C_2",
   "PHASE7C2_BASE_COMMIT": "699df569782834796d0ece24a8619eb9e5a0ac02",
   "COMMERCIAL_VGGT_REPO": "facebook/VGGT-1B-Commercial",
-  "COMMERCIAL_MODEL_ACCESS_GRANTED": false,
-  "HF_AUTH_PRESENT": false,
-  "MODAL_AUTH_PRESENT": false,
-  "MODAL_WORKSPACE_RESOLVED": null,
-  "MODAL_ENVIRONMENT_RESOLVED": null,
-  "EXECUTION_DEVICE": "cpu",
-  "GPU_TYPE": "NONE (STOPPED_PER_SECTION_4_AND_5)",
-  "CUDA_AVAILABLE": false,
-  "CUDA_DEVICE_NAME": "NONE",
-  "TORCH_DEVICE": "cpu",
-  "VGGT_FULL_STATE_DICT_LOADED": false,
-  "MISSING_KEYS_COUNT": 1797,
-  "UNEXPECTED_KEYS_COUNT": 343,
-  "VGGT_COMMERCIAL_CHECKPOINT_FILE": "NOT_DOWNLOADED (Requires HF_TOKEN with access to facebook/VGGT-1B-Commercial)",
-  "VGGT_COMMERCIAL_CHECKPOINT_SIZE_BYTES": 0,
-  "VGGT_COMMERCIAL_FULL_MODEL_SHA256": "NOT_DOWNLOADED",
+  "COMMERCIAL_MODEL_ACCESS_GRANTED": true,
+  "HF_AUTH_PRESENT": true,
+  "MODAL_AUTH_PRESENT": true,
+  "MODAL_WORKSPACE_RESOLVED": "goodkie-com",
+  "MODAL_ENVIRONMENT_RESOLVED": "main",
+  "EXECUTION_DEVICE": "cuda:0 (NVIDIA L40S)",
+  "GPU_TYPE": "NVIDIA L40S",
+  "CUDA_AVAILABLE": true,
+  "CUDA_DEVICE_NAME": "NVIDIA L40S",
+  "TORCH_DEVICE": "cuda:0",
+  "VGGT_FULL_STATE_DICT_LOADED": true,
+  "MISSING_KEYS_COUNT": 0,
+  "UNEXPECTED_KEYS_COUNT": 0,
+  "VGGT_COMMERCIAL_CHECKPOINT_FILE": "/cache/VGGT-1B-Commercial/model.safetensors",
+  "VGGT_COMMERCIAL_CHECKPOINT_SIZE_BYTES": 5026367224,
+  "VGGT_COMMERCIAL_FULL_MODEL_SHA256": "2b766b284359bc47ce26be107254621f685b758a0282082ff109f3ff02788b53",
   "DINOV2_BACKBONE_CHECKPOINT": "C:\\Users\\oPus\\.cache\\torch\\hub\\checkpoints\\dinov2_vitl14_pretrain.pth",
   "DINOV2_BACKBONE_SHA256": "d5383ea8f4877b2472eb973e0fd72d557c7da5d3611bd527ceeb1d7162cbf428",
   "VGGT_INPUT_FRAME_COUNT": 12,
-  "CAMERA_OUTPUT_COUNT": 0,
-  "DEPTH_MAP_COUNT": 0,
+  "CAMERA_OUTPUT_COUNT": 12,
+  "DEPTH_MAP_COUNT": 12,
   "ROMA_ACTUALLY_EXECUTED": false,
   "RAW_ROMA_CORRESPONDENCE_COUNT": 0,
-  "CAMERA_PATH_GENERATION_METHOD": "BLOCKED_GATED_COMMERCIAL_MODEL_ACCESS_AND_MODAL_GPU_AUTH",
+  "CAMERA_PATH_GENERATION_METHOD": "TRUE_12VIEW_COMMERCIAL_VGGT",
   "SYNTHETIC_CIRCULAR_FINAL_PATH": false,
   "FIXED_RADIUS_USED": false,
   "SIN_COS_YAW_INITIALIZER_USED": false,
-  "BA_CAMERA_COUNT": 0,
+  "BA_CAMERA_COUNT": 12,
   "BA_OBSERVATION_COUNT": 0,
-  "INITIAL_REPROJECTION_RMS": 0.0,
-  "FINAL_REPROJECTION_RMS": 0.0,
-  "CAMERA_TRANSLATION_SCALE": "ARBITRARY_SCALE",
+  "INITIAL_REPROJECTION_RMS": -1.0,
+  "FINAL_REPROJECTION_RMS": -1.0,
+  "CAMERA_TRANSLATION_SCALE": "VGGT_WORLD_SCALE",
   "METRIC_SCALE_UNCALIBRATED": true,
-  "Z_BUFFER_ACTUALLY_EXECUTED": false,
-  "PROJECTED_PIXEL_COUNT": 0,
-  "VALID_DEPTH_PIXEL_COUNT": 0,
+  "Z_BUFFER_ACTUALLY_EXECUTED": true,
+  "PROJECTED_PIXEL_COUNT": 3219888,
+  "VALID_DEPTH_PIXEL_COUNT": 3219888,
   "DEPTH_REJECTED_PIXEL_COUNT": 0,
-  "ZBUFFER_COLLISION_COUNT": 0,
-  "OCCLUSION_REJECTED_COUNT": 0,
+  "ZBUFFER_COLLISION_COUNT": 1848403,
+  "OCCLUSION_REJECTED_COUNT": 1848403,
   "INVALID_PROJECTION_COUNT": 0,
-  "OUTPUT_COVERAGE_RATIO": 0.0,
+  "OUTPUT_COVERAGE_RATIO": 0.1635,
   "SOURCE_OWNERSHIP_PIXEL_COUNT_PER_SHOT": {},
-  "OUTPUT_DIMENSIONS": "NONE (STOPPED_PER_SECTION_4_AND_5)",
-  "OUTPUT_SHA256": "NONE",
-  "MODEL_CACHE_HIT": false,
-  "VGGT_GPU_SECONDS": 0.0,
-  "ROMA_GPU_SECONDS": 0.0,
-  "TOTAL_JOB_GPU_SECONDS": 0.0,
-  "TOTAL_JOB_WALL_SECONDS": 0.0,
-  "STEADY_STATE_COMPUTE_COST_USD": 0.0,
+  "OUTPUT_DIMENSIONS": "4096x2048",
+  "OUTPUT_SHA256": "2d1fa8c12167a79622332eefd25c234c5e63ced3f5dee580725ae325857a64dc",
+  "MODEL_CACHE_HIT": true,
+  "VGGT_GPU_SECONDS": 4.91,
+  "ROMA_GPU_SECONDS": 0.13,
+  "TOTAL_JOB_GPU_SECONDS": 30.44,
+  "TOTAL_JOB_WALL_SECONDS": 81.0,
+  "STEADY_STATE_COMPUTE_COST_USD": 0.04,
   "VIEWER_7C_URL": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16/360-viewer?mode=quality-ai-4view",
   "VIEWER_7C2_URL": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16/360-viewer?mode=quality-ai-12view",
   "QUALITY_GHOSTING_QA": "FAIL",
@@ -61,17 +61,247 @@
   "CUSTOMER_DEFAULT_GEOMETRY_PATH": "P2R13",
   "QUALITY_PHOTO_ENHANCEMENT_AI": false,
   "MASTER_TOUCHED": false,
-  "STOP_STATUS": "BLOCKED_COMMERCIAL_MODEL_ACCESS_AND_MODAL_GPU_AUTH",
+  "STOP_STATUS": "COMPLETE_PENDING_OWNER_PIXEL_REVIEW",
   "GATE_EVALUATION": {
-    "SECTION_4_ACCESS_GATE": "BLOCKED_COMMERCIAL_MODEL_ACCESS",
-    "SECTION_5_MODAL_GATE": "BLOCKED_MODAL_GPU_AUTH"
+    "SECTION_4_ACCESS_GATE": "PASS",
+    "SECTION_5_MODAL_GATE": "PASS"
   },
-  "ARTIFACT_SOURCE_COMMIT": "7e02533550e18450f3eda2e96e7e0e71856ca200",
-  "RAILWAY_DEPLOYMENT_ID": "7ea6f3ea-49b8-4e7f-8c6e-6826be5792d4",
-  "RAILWAY_DEPLOYMENT_STATUS": "SUCCESS",
-  "RAILWAY_DEPLOYED_AT": "2026-09-09T23:55:01Z",
-  "MANIFEST_STAMP_COMMIT": "8a3602d1fdd3938c39b02b75d164f38382ee3039",
+  "ARTIFACT_SOURCE_COMMIT": "424e122eb383d68f55ddb7fdd5d15d6076098ccf",
+  "RAILWAY_DEPLOYMENT_ID": "PENDING_PHASE7C2_DEPLOY",
+  "RAILWAY_DEPLOYMENT_STATUS": "PENDING",
+  "RAILWAY_DEPLOYED_AT": "PENDING",
+  "MANIFEST_STAMP_COMMIT": "PENDING_COMMIT_B",
   "ENDPOINTS_VERIFIED": 14,
   "ENDPOINTS_VERIFIED_OK": 14,
-  "NEXT_PHASE": "OWNER_PIXEL_REVIEW_PHASE7C2"
+  "NEXT_PHASE": "OWNER_PIXEL_REVIEW_PHASE7C2",
+  "PHASE_7C2_TRUE_EXECUTION": {
+    "phase": "PHASE_7C2_TRUE_12VIEW_COMMERCIAL_VGGT",
+    "model_repo": "facebook/VGGT-1B-Commercial",
+    "gpu": "NVIDIA L40S",
+    "stages": {
+      "stage1_checkpoint_load": {
+        "FULL_STATE_DICT_LOADED": true,
+        "MISSING_KEYS_COUNT": 0,
+        "UNEXPECTED_KEYS_COUNT": 0,
+        "MODEL_SHA256_VERIFIED": true,
+        "MODEL_SHA256": "2b766b284359bc47ce26be107254621f685b758a0282082ff109f3ff02788b53",
+        "MODEL_BYTES_VERIFIED": true,
+        "HEAD_WEIGHTS": {
+          "aggregator": true,
+          "camera_head": true,
+          "depth_head": true,
+          "point_head": true
+        },
+        "elapsed_sec": 15.89
+      },
+      "stage2_source_lock": {
+        "IMAGE_COUNT": 12,
+        "SHA256_ALL_PASS": true,
+        "EXIF_TRANSPOSE_APPLIED": true,
+        "NORMALIZED_DIMENSIONS": "3000x4000",
+        "QUALITY360_PHOTO_ENHANCEMENT": false,
+        "UPSCALE": false,
+        "shot_ids": [
+          "SHOT_000",
+          "SHOT_030",
+          "SHOT_060",
+          "SHOT_090",
+          "SHOT_120",
+          "SHOT_150",
+          "SHOT_180",
+          "SHOT_210",
+          "SHOT_240",
+          "SHOT_270",
+          "SHOT_300",
+          "SHOT_330"
+        ],
+        "yaws": [
+          0.0,
+          30.0,
+          60.0,
+          90.0,
+          120.0,
+          150.0,
+          180.0,
+          210.0,
+          240.0,
+          270.0,
+          300.0,
+          330.0
+        ],
+        "elapsed_sec": 1.15
+      },
+      "stage3_vggt_inference": {
+        "CAMERA_COUNT": 12,
+        "DEPTH_MAP_COUNT": 12,
+        "VGGT_RESOLUTION": 518,
+        "LOAD_RESOLUTION": 1024,
+        "SYNTHETIC_CAMERA_CIRCLE": false,
+        "extrinsics_shape": [
+          12,
+          3,
+          4
+        ],
+        "intrinsics_shape": [
+          12,
+          3,
+          3
+        ],
+        "depth_valid_pct_per_view": [
+          100.0,
+          100.0,
+          100.0,
+          100.0,
+          100.0,
+          100.0,
+          100.0,
+          100.0,
+          100.0,
+          100.0,
+          100.0,
+          100.0
+        ],
+        "camera_centers_world": [
+          [
+            -0.00020984260481782258,
+            0.00016025385411921889,
+            -0.00037189791328273714
+          ],
+          [
+            -0.0032394658774137497,
+            0.002211082261055708,
+            -0.00036459416151046753
+          ],
+          [
+            0.006758701056241989,
+            0.006041347980499268,
+            -0.08017497509717941
+          ],
+          [
+            -0.4595229923725128,
+            0.052787214517593384,
+            -0.6906740665435791
+          ],
+          [
+            1.2979705333709717,
+            -0.1106882095336914,
+            0.5821782350540161
+          ],
+          [
+            -1.1596393585205078,
+            0.009922981262207031,
+            -0.7169702053070068
+          ],
+          [
+            -1.0569286346435547,
+            0.03341197967529297,
+            -0.5605326890945435
+          ],
+          [
+            -0.5202676057815552,
+            0.05313509702682495,
+            -0.8890550136566162
+          ],
+          [
+            -0.07175740599632263,
+            0.035525381565093994,
+            -1.2958711385726929
+          ],
+          [
+            -0.5957814455032349,
+            -0.005843758583068848,
+            0.020007774233818054
+          ],
+          [
+            -0.24695047736167908,
+            0.006725728511810303,
+            -0.05994835123419762
+          ],
+          [
+            -0.00790722668170929,
+            0.001265064813196659,
+            -0.007815910503268242
+          ]
+        ],
+        "elapsed_sec": 4.91
+      },
+      "stage4_roma": {
+        "PAIR_COUNT": 12,
+        "PAIR_RESULTS": [
+          {
+            "error": "/usr/local/lib/python3.11/site-packages/local_corr/_C.cpython-311-x86_64-linux-gnu.so: undefined symbol: _ZN5torch3jit11parseSchemaERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEb",
+            "INLIER_COUNT": 0
+          }
+        ],
+        "elapsed_sec": 0.13
+      },
+      "stage5_bundle_adjustment": {
+        "PRE_BA_REPROJ_ERROR_PX": -1.0,
+        "POST_BA_REPROJ_ERROR_PX": -1.0,
+        "BA_ACCEPTED": false,
+        "VALID_PAIRS_USED": 0,
+        "elapsed_sec": 0.0
+      },
+      "stage6_depth_reprojection": {
+        "HORIZONTAL_360": true,
+        "VERTICAL_COVERAGE": "SOURCE_BAND_ONLY",
+        "PANO_W": 4096,
+        "PANO_H": 2048,
+        "elapsed_sec": 7.6
+      },
+      "stage7_zbuffer": {
+        "ALPHA_BLENDING_STRUCTURES": false,
+        "REAL_DEPTH_COMPARISON": true,
+        "TOTAL_PIXELS": 8388608,
+        "PIXELS_HIT": 1371485,
+        "PIXELS_EMPTY": 7017123,
+        "COVERAGE_PCT": 16.35,
+        "elapsed_sec": 7.6
+      },
+      "stage8_render": {
+        "ARTIFACT_NAME": "P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_OWNER_REVIEW.jpg",
+        "ARTIFACT_SIZE_BYTES": 3263658,
+        "ARTIFACT_SHA256": "2d1fa8c12167a79622332eefd25c234c5e63ced3f5dee580725ae325857a64dc",
+        "OUTPUT_ENCODING": "sRGB",
+        "TONE_MAPPING": "NONE",
+        "TONE_MAPPING_EXPOSURE": 1.0,
+        "MATERIAL_COLOR": "0xffffff",
+        "TEXTURE_ENCODING": "sRGB",
+        "elapsed_sec": 0.11
+      },
+      "stage9_visual_qa": {
+        "AUTOMATED_GHOSTING_RESULT": "REQUIRES_HUMAN_REVIEW",
+        "QUALITY_GHOSTING_QA": "FAIL",
+        "OWNER_VISUAL_ACCEPTANCE": false,
+        "OWNER_REVIEW_COMPLETED": false,
+        "QUALITY_PHOTO_ENHANCEMENT_AI": false,
+        "seam_pixel_count": 1256210,
+        "dark_pixel_pct": 84.04,
+        "coverage_pct": 16.35,
+        "elapsed_sec": 0.53
+      },
+      "stage10_viewer": {
+        "MODE": "quality-ai-12view",
+        "UPDATE_PENDING": false,
+        "NOTE": "All 4 viewer HTML copies updated for ?mode=quality-ai-12view",
+        "UPDATED": true
+      }
+    },
+    "gpu_memory_mib": 45457,
+    "total_elapsed_sec": 30.44,
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "OWNER_REVIEW_COMPLETED": false,
+    "QUALITY_GHOSTING_QA": "FAIL",
+    "CUSTOMER_DEFAULT_GEOMETRY_PATH": "P2R13",
+    "MASTER_TOUCHED": false,
+    "TRUE_12VIEW_VGGT_EXECUTION": "COMPLETE",
+    "TRUE_12VIEW_OUTPUT_ARTIFACT": "P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_OWNER_REVIEW.jpg",
+    "SYNTHETIC_CAMERA_CIRCLE": false,
+    "QUALITY_PHOTO_ENHANCEMENT_AI": false,
+    "artifact_output_path": "production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_OWNER_REVIEW.jpg",
+    "artifact_sha256_verified_local": true
+  },
+  "OUTPUT_SIZE_BYTES": 3263658,
+  "TRUE_12VIEW_VGGT_EXECUTION": "COMPLETE",
+  "TRUE_12VIEW_OUTPUT_ARTIFACT": "P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_OWNER_REVIEW.jpg"
 }
