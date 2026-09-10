@@ -1,0 +1,125 @@
+{
+  "PHASE": "PHASE_7C.2R2",
+  "BASE_COMMIT": "30714a8f2927ece626c9d86429deeec81c406ed1",
+  "BRANCH": "experiment/c12.9-p2r16-8shot-hires",
+  "ROOT_CAUSE": "Viewer-side JavaScript ReferenceError: updateUiModeIndicator, switchMode, and resetView were undefined in p2r16_360_viewer.html after prior replace edit, causing init() to throw at line 401 and halt script execution before animate() was called (WebGL never rendered frames). In addition, spherical band geometry was hardcoded to symmetric 68-degree VAOV rather than exact diagnostics bounds [-25.74, 27.79] (53.52 degrees). Decoded R1 JPEG pixels are 100% valid (mean luma 100.19, nonblack ratio 0.9891).",
+  "R1_OWNER_VISUAL_DISPLAY": "FAIL_BLACK_SCREEN",
+  "R1_PANORAMA_VISUAL_QA": "FAIL",
+  "GLOBAL_GEOMETRY_QA": "PENDING_VALID_VISIBLE_PIXELS",
+  "ARTIFACT_RGB_QA": "PASS",
+  "RGB_SERIALIZATION_BUG": false,
+  "VALID_GEOMETRY_WITH_ZERO_RGB_BUG": false,
+  "PRESERVED_R1_GEOMETRY_EVIDENCE": {
+    "COMMERCIAL_CHECKPOINT_LOAD": "PASS",
+    "TRUE_12VIEW_VGGT_FORWARD_PASS": "PASS",
+    "ROMA_PAIR_SUCCESS_COUNT": 12,
+    "BA_EXECUTED": true,
+    "PRE_BA_REPROJECTION_RMS": 322.871,
+    "POST_BA_REPROJECTION_RMS": 5.975
+  },
+  "LOCAL_ARTIFACT_SHA256": "c614d1f3c1250f5aee7738a5163fbc8598f17ad196eb4c4e296f9419b4cb7918",
+  "LIVE_ARTIFACT_SHA256": "c614d1f3c1250f5aee7738a5163fbc8598f17ad196eb4c4e296f9419b4cb7918",
+  "LOCAL_SHA_MATCH_EXPECTED": true,
+  "LIVE_SHA_MATCH_EXPECTED": true,
+  "LOCAL_LIVE_SHA_MATCH": true,
+  "ARTIFACT_NAME": "P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg",
+  "ARTIFACT_WIDTH": 4096,
+  "ARTIFACT_HEIGHT": 608,
+  "ARTIFACT_BYTES": 1127209,
+  "ARTIFACT_PIXEL_STATS": {
+    "DECODE_PASS": true,
+    "WIDTH": 4096,
+    "HEIGHT": 608,
+    "MODE": "RGB",
+    "DTYPE": "uint8",
+    "RGB_MIN": 0,
+    "RGB_MAX": 255,
+    "RGB_MEAN_R": 115.6617,
+    "RGB_MEAN_G": 94.0979,
+    "RGB_MEAN_B": 90.9974,
+    "LUMA_MIN": 0.0,
+    "LUMA_MAX": 248.288,
+    "LUMA_MEAN": 100.192,
+    "LUMA_MEDIAN": 99.844,
+    "LUMA_P95": 215.351,
+    "LUMA_P99": 237.618,
+    "PCT_LUMA_LE_1": 0.0346,
+    "PCT_LUMA_LE_5": 1.0911,
+    "PCT_LUMA_LE_16": 4.7187,
+    "NONBLACK_PIXEL_RATIO": 0.989089,
+    "NONBLACK_BOUNDING_BOX": [
+      0,
+      0,
+      4095,
+      607
+    ],
+    "UNIQUE_COLOR_COUNT": 362659,
+    "IMAGE_ENTROPY": 7.738
+  },
+  "PRE_SAVE_RENDER_BUFFER_STATS": {
+    "RENDER_BUFFER_DTYPE": "uint8",
+    "RENDER_BUFFER_SHAPE": [
+      608,
+      4096,
+      3
+    ],
+    "RENDER_BUFFER_MIN": 0,
+    "RENDER_BUFFER_MAX": 255,
+    "RENDER_BUFFER_MEAN": 100.25,
+    "RENDER_NONZERO_RATIO": 0.9891
+  },
+  "POST_SAVE_JPEG_STATS": {
+    "JPEG_BYTES": 1127209,
+    "JPEG_SHA256": "c614d1f3c1250f5aee7738a5163fbc8598f17ad196eb4c4e296f9419b4cb7918",
+    "LUMA_MEAN": 100.192,
+    "NONBLACK_PIXEL_RATIO": 0.989089
+  },
+  "RGB_SERIALIZATION_POLICY": "DIRECT_UINT8_NO_RESCALE",
+  "RGB_SERIALIZATION_INPUT_RANGE": [
+    0,
+    255
+  ],
+  "RGB_SERIALIZATION_OUTPUT_RANGE": [
+    0,
+    255
+  ],
+  "VIEWER_TEXTURE_STATS": {
+    "TEXTURE_LOAD_SUCCESS": true,
+    "WIDTH": 4096,
+    "HEIGHT": 608,
+    "BROWSER_TEXTURE_MEAN_R": 115.66,
+    "BROWSER_TEXTURE_MEAN_G": 94.1,
+    "BROWSER_TEXTURE_MEAN_B": 91.0,
+    "BROWSER_TEXTURE_MEAN_LUMA": 100.19,
+    "BROWSER_TEXTURE_NONBLACK_RATIO": 0.9891
+  },
+  "VIEWER_FRAMEBUFFER_STATS": {
+    "FRAMEBUFFER_MEAN_LUMA": 75.6825,
+    "FRAMEBUFFER_NONBLACK_RATIO": 0.95,
+    "TEXTURE_VALID_BUT_FRAMEBUFFER_BLACK": false
+  },
+  "SPHERICAL_BAND_MAPPING_CORRECTED": true,
+  "VERTICAL_ANGULAR_BOUNDS": [
+    -25.74,
+    27.79
+  ],
+  "VERTICAL_SPAN_DEG": 53.52,
+  "BLACK_SCREEN_DETECTED": false,
+  "PANORAMA_VISIBLE": true,
+  "R2_CREATED": false,
+  "R2_ARTIFACT_NAME": "N/A (R1 RGB artifact verified valid, failure was viewer-side)",
+  "R2_ARTIFACT_SHA256": "N/A",
+  "AUTOMATED_BROWSER_BLACK_SCREEN": false,
+  "AUTOMATED_BROWSER_SCREENSHOT_SHA256": "35db4d4b707c461392d56d1ca30953790b1ad0a0b97592dcd8547c00f4db3590",
+  "CENTRAL_VIEW_MEAN_LUMA": 75.6825,
+  "CENTRAL_VIEW_NONBLACK_RATIO": 0.95,
+  "VIEWER_URL": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16/360-viewer?mode=quality-ai-12view",
+  "OWNER_REVIEW_COMPLETED": false,
+  "OWNER_VISUAL_ACCEPTANCE": false,
+  "QUALITY_GHOSTING_QA": "FAIL",
+  "CUSTOMER_DEFAULT": "P2R13",
+  "MASTER_TOUCHED": false,
+  "SOURCE_COMMIT": "98b941884ee54914dbd6904a1b7e47060b60dd76",
+  "MANIFEST_STAMP_COMMIT": "PENDING_COMMIT_B",
+  "RAILWAY_DEPLOYMENT_ID": "PENDING_DEPLOYMENT"
+}
