@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>C12.9-P2R16 Internal 360 QA Viewer — 12K Owner QA (Exact Mask)</title>
+  <title>C12.9-P2R16 Internal 360 QA Viewer — R3 Full-Resolution Physical Reprojection (12K Owner QA)</title>
   
   <!-- FontAwesome for Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -342,6 +342,10 @@
 
       <!-- Mode Switcher -->
       <div class="mode-switch-container">
+        <button id="btn-mode-quality-r3" class="mode-btn active-quality-ai" onclick="switchMode('quality-ai-r3')">
+          <i class="fa-solid fa-camera-retro"></i>
+          <span>Quality AI R3</span>
+        </button>
         <button id="btn-mode-quality-ai" class="mode-btn active-quality-ai" onclick="switchMode('quality-ai-12view')">
           <i class="fa-solid fa-wand-magic-sparkles"></i>
           <span>Quality AI</span>
@@ -378,6 +382,7 @@
     <button id="btn-cov-rgb" class="cov-btn active-cov" onclick="setCoverageMode('final-rgb')" title="Final RGB — 12K JPEG as rendered (post-inpaint)">FINAL RGB</button>
     <button id="btn-cov-raw" class="cov-btn" onclick="setCoverageMode('raw-direct')" title="Exact raw directly projected physical-source pixels (no inpaint)">RAW DIRECT PIXELS</button>
     <button id="btn-cov-mask" class="cov-btn" onclick="setCoverageMode('direct-mask')" title="Exact binary coverage mask (255=direct physical hit, 0=empty)">DIRECT COVERAGE MASK</button>
+        <button id="btn-cov-owner" class="cov-btn" onclick="setCoverageMode('source-ownership')" title="Camera Source Ownership (12 discrete colors)">SOURCE OWNERSHIP</button>
     <button id="btn-cov-overlay" class="cov-btn" onclick="setCoverageMode('inpaint-overlay')" title="Final RGB with exact missing-mask pixels highlighted in amber">INPAINT OVERLAY</button>
   </div>
 
@@ -479,6 +484,13 @@
     };
 
     const MODE_BAND_CONFIG = {
+      'quality-ai-r3': {
+        minPitchDeg: -26.38,
+        maxPitchDeg: 28.39,
+        vaovDeg: 54.77,
+        label: 'QUALITY AI (R3 FULL-RES REPROJECTION)',
+        bounds: [-26.38, 28.39]
+      },
       'quality-ai-12view': {
         minPitchDeg: -25.74,
         maxPitchDeg: 27.79,
@@ -583,12 +595,18 @@
     };
 
     // Global State
-    let currentMode = 'quality-ai-12view';
+    let currentMode = (qMode === 'quality-ai-r3') ? 'quality-ai-r3' : 'quality-ai-12view';
     let userSelectedTier = 'AUTO';
     let activeTier = '12K';   // Default: 12K OWNER QA
     let activeTextureUrl = QUALITY_AI_TIERS['12K'].url;
     // Coverage Display Modes (Phase 7C.2R2.2C Exact Modes)
     let coverageMode = 'final-rgb';  // 'final-rgb' | 'raw-direct' | 'direct-mask' | 'inpaint-overlay'
+        const R3_COVERAGE_TEXTURES = {
+      'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R3_FULLRES_PHYSICAL_OWNER_REVIEW.jpg',
+      'raw-direct': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R3_FULLRES_PHYSICAL_RAW_DIRECT.png',
+      'direct-mask': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R3_DIRECT_COVERAGE_MASK.png',
+      'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R3_SOURCE_OWNERSHIP.png'
+    };
     const COVERAGE_MODE_TEXTURES = {
       'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg',
       'raw-direct': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R22_QA_12K_RAW_NO_INPAINT.png',
@@ -722,10 +740,10 @@
       if (qMode && MODE_BAND_CONFIG[qMode]) {
         currentMode = qMode;
       } else {
-        currentMode = 'quality-ai-12view';
+        currentMode = (qMode === 'quality-ai-r3') ? 'quality-ai-r3' : 'quality-ai-12view';
       }
       window.__VIEWER_TELEMETRY__.REQUESTED_MODE = currentMode;
-      window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH = (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai');
+      window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH = (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai' || currentMode === 'quality-ai-r3');
 
       // 3. Three.js Scene Setup
       scene = new THREE.Scene();
@@ -819,7 +837,13 @@
       let targetLabel = '';
       let targetW = 0, targetH = 0;
 
-      if (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai') {
+            if (currentMode === 'quality-ai-r3') {
+        activeTier = '12K';
+        targetUrl = R3_COVERAGE_TEXTURES[coverageMode] || R3_COVERAGE_TEXTURES['final-rgb'];
+        targetLabel = '12K R3 FULLRES (' + coverageMode.toUpperCase() + ')';
+        targetW = 12288;
+        targetH = 1869;
+      } else if (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai') {
         activeTier = determineTier(userSelectedTier);
         const tierInfo = QUALITY_AI_TIERS[activeTier] || QUALITY_AI_TIERS['4K'];
         if (activeTier === '12K' && coverageMode !== 'final-rgb' && COVERAGE_MODE_TEXTURES[coverageMode]) {
@@ -884,7 +908,13 @@
           // For quality-ai modes, apply v_min/v_max offset to prevent vertical
           // angular distortion. The 54.78° raster is not stretched; we crop
           // exactly to the [-25.74°, +27.79°] sub-band via UV repeat/offset.
-          if (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai') {
+                if (currentMode === 'quality-ai-r3') {
+        activeTier = '12K';
+        targetUrl = R3_COVERAGE_TEXTURES[coverageMode] || R3_COVERAGE_TEXTURES['final-rgb'];
+        targetLabel = '12K R3 FULLRES (' + coverageMode.toUpperCase() + ')';
+        targetW = 12288;
+        targetH = 1869;
+      } else if (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai') {
             const vSpan = UV_CORRECTION.v_max - UV_CORRECTION.v_min;
             // V offset maps v=0 of sphere geometry to v_min of texture
             texture.offset.set(0, UV_CORRECTION.v_min);
@@ -997,11 +1027,13 @@
 
     function updateUiModeIndicator() {
       const btnQA = document.getElementById('btn-mode-quality-ai');
+      const btnR3 = document.getElementById('btn-mode-quality-r3');
       const btnQD = document.getElementById('btn-mode-quality-depth');
       const btnQC = document.getElementById('btn-mode-quality-current');
       const btnE = document.getElementById('btn-mode-easy');
 
       if (btnQA) btnQA.className = (currentMode === 'quality-ai' || currentMode === 'quality-ai-12view') ? 'mode-btn active-quality-ai' : 'mode-btn';
+      if (btnR3) btnR3.className = (currentMode === 'quality-ai-r3') ? 'mode-btn active-quality-ai' : 'mode-btn';
       if (btnQD) btnQD.className = (currentMode === 'quality-depth-plane' || currentMode === 'quality-depth') ? 'mode-btn active-quality-depth' : 'mode-btn';
       if (btnQC) btnQC.className = (currentMode === 'quality-current' || currentMode === 'quality') ? 'mode-btn active-quality-current' : 'mode-btn';
       if (btnE) btnE.className = (currentMode === 'easy') ? 'mode-btn active-easy' : 'mode-btn';
@@ -1009,7 +1041,7 @@
       // Show coverage bar only for quality-ai modes
       const covBar = document.getElementById('coverage-bar');
       if (covBar) {
-        covBar.style.display = (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai') ? 'flex' : 'none';
+        covBar.style.display = (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai' || currentMode === 'quality-ai-r3') ? 'flex' : 'none';
       }
     }
 
@@ -1025,22 +1057,14 @@
       } else {
         currentFov = CONFIG.minFovDeg;
       }
-      if (camera) {
-        camera.fov = currentFov;
-        camera.updateProjectionMatrix();
-      }
-      window.__VIEWER_TELEMETRY__.FOV = currentFov;
+      updateCameraFov();
     }
 
     function resetView() {
       currentYaw = 0.0;
       currentPitch = 0.0;
       currentFov = CONFIG.defaultFovDeg;
-      if (camera) {
-        camera.fov = currentFov;
-        camera.updateProjectionMatrix();
-      }
-      window.__VIEWER_TELEMETRY__.FOV = currentFov;
+      updateCameraFov();
     }
 
     function onDoubleClick() {
@@ -1060,10 +1084,28 @@
       window.__VIEWER_TELEMETRY__.FOV = currentFov;
     }
 
+        function updateCameraFov() {
+      if (!camera) return;
+      const aspect = window.innerWidth / window.innerHeight;
+      const safeVfov = CONFIG.vaovDeg * 0.94;
+      const safeHfov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(safeVfov / 2)) * aspect));
+      const actualHfov = Math.min(currentFov, safeHfov);
+      const actualVfov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(actualHfov / 2)) / aspect));
+      camera.fov = actualVfov;
+      camera.updateProjectionMatrix();
+      window.__VIEWER_TELEMETRY__.FOV = actualHfov;
+      window.__VIEWER_TELEMETRY__.VFOV = actualVfov;
+      window.__VIEWER_TELEMETRY__.HFOV = actualHfov;
+      const fovText = document.getElementById('fov-text');
+      if (fovText) fovText.textContent = `${Math.round(actualHfov)}° (V:${Math.round(actualVfov)}°)`;
+      const fovHdr = document.getElementById('fov-hdr-text');
+      if (fovHdr) fovHdr.textContent = `${Math.round(actualHfov)}°`;
+    }
+
     function onWindowResize() {
       if (!camera || !renderer) return;
       camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
+      updateCameraFov();
       renderer.setSize(window.innerWidth, window.innerHeight);
       // Resize coverage overlay canvas if active
       const covCanvas = document.getElementById('coverage-canvas');
@@ -1144,6 +1186,9 @@
       const btnRaw = document.getElementById('btn-cov-raw');
       const btnMask = document.getElementById('btn-cov-mask');
       const btnOverlay = document.getElementById('btn-cov-overlay');
+      const btnOwner = document.getElementById('btn-cov-owner');
+      if (btnOwner) btnOwner.className = 'cov-btn';
+
       const toast = document.getElementById('coverage-mode-toast');
       const subSpecs = document.getElementById('sub-specs-text');
 
@@ -1190,6 +1235,17 @@
         window.__VIEWER_TELEMETRY__.DIRECT_COVERAGE_MASK_TOGGLE = true;
         resolveAndLoadTexture();
 
+            } else if (mode === 'source-ownership') {
+        if (btnOwner) btnOwner.className = 'cov-btn active-cov-warn';
+        if (toast) {
+          toast.textContent = '12-VIEW CAMERA SOURCE OWNERSHIP — 12 DISCRETE COLORS';
+          toast.style.display = 'block';
+          setTimeout(() => { if (toast) toast.style.display = 'none'; }, 4000);
+        }
+        if (subSpecs) {
+          subSpecs.innerHTML = 'ACTIVE TEXTURE: 12288 × 1869 (OWNERSHIP PNG) | <strong style="color: #38bdf8;">SOURCE OWNERSHIP MAP</strong> (12 COLORS)';
+        }
+        resolveAndLoadTexture();
       } else if (mode === 'inpaint-overlay') {
         if (btnOverlay) btnOverlay.className = 'cov-btn active-cov-warn';
         if (toast) {
