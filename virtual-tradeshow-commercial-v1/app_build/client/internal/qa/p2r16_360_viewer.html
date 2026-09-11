@@ -1346,13 +1346,13 @@
           // angular distortion. The 54.78° raster is not stretched; we crop
           // exactly to the [-25.74°, +27.79°] sub-band via UV repeat/offset.
                       
-          if (currentMode === 'quality-ai-r4p3' || currentMode === 'quality-ai-r4p2' || currentMode === 'quality-ai-r4p1' || currentMode === 'quality-ai-r4' || currentMode === 'quality-ai-r31' || currentMode === 'quality-ai-r3') {
+          if (currentMode === 'quality-ai-r4p4' || currentMode === 'quality-ai-r4p3' || currentMode === 'quality-ai-r4p2' || currentMode === 'quality-ai-r4p1' || currentMode === 'quality-ai-r4' || currentMode === 'quality-ai-r31' || currentMode === 'quality-ai-r3') {
             texture.offset.set(0, 0);
             texture.repeat.set(1, 1);
             texture.wrapT = THREE.ClampToEdgeWrapping;
             window.__VIEWER_TELEMETRY__.UV_MAPPING_TYPE = 'FULL_BAND_DIRECT';
             window.__VIEWER_TELEMETRY__.VIEWER_VERTICAL_ANGULAR_DISTORTION = false;
-            const currentMeta = MODE_METADATA[currentMode] || MODE_METADATA['quality-ai-r4p4', 'quality-ai-r4p3'];
+            const currentMeta = MODE_METADATA[currentMode] || MODE_METADATA['quality-ai-r4p4'] || MODE_METADATA['quality-ai-r4p3'];
             window.__VIEWER_TELEMETRY__.REQUESTED_MODE = qModeGlobal || currentMode;
             window.__VIEWER_TELEMETRY__.RESOLVED_MODE = currentMode;
             window.__VIEWER_TELEMETRY__.CURRENT_MODE = currentMode;
@@ -1366,10 +1366,10 @@
             window.__VIEWER_TELEMETRY__.BLACK_CRACK_PIXELS = currentMeta.blackCrackPixels !== undefined ? currentMeta.blackCrackPixels : 0;
             window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_FILENAME = (currentMode === 'quality-ai-r4p4') ? 'P2R16_QUALITY12_R4P4_LOCAL_GEOMETRY_IDENTITY.png' : (currentMode === 'quality-ai-r4p3') ? 'P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png' : (currentMode === 'quality-ai-r4p2' ? 'P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY.png' : targetUrl.split('/').pop().split('?')[0]);
             window.__VIEWER_TELEMETRY__.EXPECTED_TEXTURE_SHA256 = currentMeta.expectedSha256 || '';
-            window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH = (window.__VIEWER_TELEMETRY__.REQUESTED_MODE === currentMode && window.__VIEWER_TELEMETRY__.RESOLVED_MODE === currentMode && window.__VIEWER_TELEMETRY__.CURRENT_MODE === currentMode && (currentMode !== 'quality-ai-r4p3' || (window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_FILENAME === 'P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png' && targetW === 12288 && targetH === 1869)));
+            window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH = (window.__VIEWER_TELEMETRY__.REQUESTED_MODE === currentMode && window.__VIEWER_TELEMETRY__.RESOLVED_MODE === currentMode && window.__VIEWER_TELEMETRY__.CURRENT_MODE === currentMode && (currentMode !== 'quality-ai-r4p3' || (window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_FILENAME === 'P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png' && targetW === 12288 && targetH === 1869)) && (currentMode !== 'quality-ai-r4p4' || (window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_FILENAME === 'P2R16_QUALITY12_R4P4_LOCAL_GEOMETRY_IDENTITY.png' && targetW === 12288 && targetH === 1869)));
             window.__VIEWER_TELEMETRY__.R4P4_OWNER_REVIEW_ELIGIBLE = (currentMode === 'quality-ai-r4p4' && window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH === true && window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE === 1.0 && window.__VIEWER_TELEMETRY__.BLACK_CRACK_PIXELS === 0 && window.__VIEWER_TELEMETRY__.INPAINT_USED === false);
             window.__VIEWER_TELEMETRY__.R4P3_OWNER_REVIEW_ELIGIBLE = (currentMode === 'quality-ai-r4p3' && window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH === true && window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE === 1.0 && window.__VIEWER_TELEMETRY__.BLACK_CRACK_PIXELS === 0 && window.__VIEWER_TELEMETRY__.INPAINT_USED === false);
-            window.__VIEWER_TELEMETRY__.CACHE_BUST_KEY = CACHE_BUST_KEY_R4P3;
+            window.__VIEWER_TELEMETRY__.CACHE_BUST_KEY = (currentMode === 'quality-ai-r4p4') ? CACHE_BUST_KEY_R4P4 : CACHE_BUST_KEY_R4P3;
             window.__VIEWER_TELEMETRY__.CUSTOMER_DEFAULT = 'P2R13';
             window.__VIEWER_TELEMETRY__.OWNER_REVIEW_COMPLETED = false;
             window.__VIEWER_TELEMETRY__.OWNER_VISUAL_ACCEPTANCE = false;
