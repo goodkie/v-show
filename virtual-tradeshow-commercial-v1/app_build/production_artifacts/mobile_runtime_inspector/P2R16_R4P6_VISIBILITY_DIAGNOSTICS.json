@@ -1,0 +1,70 @@
+{
+  "PHASE": "7C.2R4P6",
+  "SECTION": "29-30 VISIBILITY GRAPH",
+  "VISIBILITY_GRAPH_NODE_COUNT": 5,
+  "VISIBILITY_GRAPH_EDGE_COUNT": 2,
+  "VISIBILITY_GRAPH_CYCLE_COUNT": 0,
+  "CROSS_OCCLUSION_TRIANGLE_COUNT": 0,
+  "TOPOLOGY_SPLIT_AT_CONFIDENT_OCCLUSION": true,
+  "NODES": [
+    {
+      "id": "surface_cabinet_yaw150",
+      "type": "FOREGROUND",
+      "primary_cam": 5,
+      "depth_range": [
+        1.1,
+        1.8
+      ]
+    },
+    {
+      "id": "surface_window_yaw150",
+      "type": "BACKGROUND",
+      "primary_cam": 4,
+      "depth_range": [
+        2.5,
+        4.2
+      ]
+    },
+    {
+      "id": "surface_furniture_yaw240",
+      "type": "FOREGROUND",
+      "primary_cam": 8,
+      "depth_range": [
+        1.2,
+        2.0
+      ]
+    },
+    {
+      "id": "surface_wall_yaw240",
+      "type": "BACKGROUND",
+      "primary_cam": 9,
+      "depth_range": [
+        2.8,
+        4.5
+      ]
+    },
+    {
+      "id": "surface_wall_yaw060",
+      "type": "BACKGROUND",
+      "primary_cam": 2,
+      "depth_range": [
+        2.0,
+        3.5
+      ]
+    }
+  ],
+  "EDGES": [
+    {
+      "from": "surface_cabinet_yaw150",
+      "to": "surface_window_yaw150",
+      "relation": "OCCLUDES",
+      "confidence": 0.98
+    },
+    {
+      "from": "surface_furniture_yaw240",
+      "to": "surface_wall_yaw240",
+      "relation": "OCCLUDES",
+      "confidence": 0.96
+    }
+  ]
+}

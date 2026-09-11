@@ -1,0 +1,78 @@
+{
+  "PHASE": "7C.2R4P6",
+  "SECTION": "21-25 LINE-PLANE DIAGNOSTICS",
+  "STRUCTURAL_LINE_COUNT_RAW": 21147,
+  "STRUCTURAL_LINE_COUNT_ACCEPTED": 6890,
+  "STRUCTURAL_LINE_TRACK_COUNT": 1843,
+  "TRI_VIEW_TRACK_COUNT": 1843,
+  "PLANE_HYPOTHESIS_COUNT": 6,
+  "PLANE_ACCEPTED_COUNT": 6,
+  "PLANES": [
+    {
+      "plane_id": 0,
+      "normal": [
+        0.1098,
+        -0.9566,
+        0.2698
+      ],
+      "offset": -0.0093,
+      "inlier_count": 2737,
+      "confidence": 1.0
+    },
+    {
+      "plane_id": 1,
+      "normal": [
+        0.2138,
+        0.9488,
+        0.2326
+      ],
+      "offset": -0.0167,
+      "inlier_count": 429,
+      "confidence": 1.0
+    },
+    {
+      "plane_id": 2,
+      "normal": [
+        -0.307,
+        0.9391,
+        0.1545
+      ],
+      "offset": -0.0064,
+      "inlier_count": 144,
+      "confidence": 1.0
+    },
+    {
+      "plane_id": 3,
+      "normal": [
+        0.1865,
+        0.9502,
+        -0.2498
+      ],
+      "offset": 0.0551,
+      "inlier_count": 119,
+      "confidence": 1.0
+    },
+    {
+      "plane_id": 4,
+      "normal": [
+        0.1636,
+        0.9777,
+        0.1313
+      ],
+      "offset": -0.1789,
+      "inlier_count": 61,
+      "confidence": 1.0
+    },
+    {
+      "plane_id": 5,
+      "normal": [
+        0.3221,
+        -0.8752,
+        0.361
+      ],
+      "offset": 0.0243,
+      "inlier_count": 37,
+      "confidence": 1.0
+    }
+  ]
+}

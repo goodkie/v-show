@@ -397,7 +397,27 @@
           <i class="fa-solid fa-compass-drafting"></i>
           <span>Quality R4.4 Refined</span>
         </button>
-                        <button id="btn-mode-quality-r4p5-a" class="mode-btn" onclick="switchMode('quality-ai-r4p5-a')" style="border-color: #38bdf8; color: #38bdf8;">
+                                <button id="btn-mode-quality-r4p6-a" class="mode-btn" onclick="switchMode('quality-ai-r4p6-a')" style="border-color: #38bdf8; color: #38bdf8;">
+          <i class="fa-solid fa-cube"></i>
+          <span>R4P6 A (Control)</span>
+        </button>
+        <button id="btn-mode-quality-r4p6-b" class="mode-btn" onclick="switchMode('quality-ai-r4p6-b')" style="border-color: #a855f7; color: #a855f7;">
+          <i class="fa-solid fa-draw-polygon"></i>
+          <span>R4P6 B (Lines)</span>
+        </button>
+        <button id="btn-mode-quality-r4p6-c" class="mode-btn" onclick="switchMode('quality-ai-r4p6-c')" style="border-color: #ec4899; color: #ec4899;">
+          <i class="fa-solid fa-layer-group"></i>
+          <span>R4P6 C (Planes)</span>
+        </button>
+        <button id="btn-mode-quality-r4p6-d" class="mode-btn" onclick="switchMode('quality-ai-r4p6-d')" style="border-color: #00ff88; color: #00ff88; font-weight: bold;">
+          <i class="fa-solid fa-gem"></i>
+          <span>R4P6 D (Struct+Vis)</span>
+        </button>
+        <button id="btn-mode-quality-r4p6-e" class="mode-btn" onclick="switchMode('quality-ai-r4p6-e')" style="border-color: #f59e0b; color: #f59e0b;">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>R4P6 E (Hybrid)</span>
+        </button>
+<button id="btn-mode-quality-r4p5-a" class="mode-btn" onclick="switchMode('quality-ai-r4p5-a')" style="border-color: #38bdf8; color: #38bdf8;">
           <i class="fa-solid fa-flask"></i>
           <span>R4P5 A (Base)</span>
         </button>
@@ -705,6 +725,96 @@
           'edge-residual': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P4_EDGE_RESIDUAL_HEATMAP.png',
           'structural-lines': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P4_LINE_ALIGNMENT_AFTER.png'
         }
+      },
+      'quality-ai-r4p6-a': {
+        shortName: 'R4P6 A Control',
+        title: 'QUALITY AI — P2R16 | R4P6 A — CONTROL BASELINE | 4K OWNER CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P6 A Control Baseline — 4K Owner QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999315, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P6_A_CONTROL_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P6_A_CONTROL_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P6_A_CONTROL_4K.jpg',
+        expectedSha256: '9f0133965c3d2dca',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P6 A — CONTROL BASELINE (4K)',
+        geometryMode: 'CONTROL_BASELINE',
+        structureLines: 'OFF',
+        occlusionSplit: false,
+        crossEdgeTriangles: 0,
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P6_A_CONTROL_4K.jpg' }
+      },
+      'quality-ai-r4p6-b': {
+        shortName: 'R4P6 B Lines',
+        title: 'QUALITY AI — P2R16 | R4P6 B — STRUCTURAL LINES ONLY | 4K OWNER CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P6 B Structural Lines Only — 4K Owner QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999315, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P6_B_LINES_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P6_B_LINES_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P6_B_LINES_4K.jpg',
+        expectedSha256: '9f0133965c3d2dca',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P6 B — STRUCTURAL LINES CONSTRAINED (4K)',
+        geometryMode: 'STRUCTURAL_LINES',
+        structureLines: '1843_TRACKS',
+        occlusionSplit: false,
+        crossEdgeTriangles: 0,
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P6_B_LINES_4K.jpg' }
+      },
+      'quality-ai-r4p6-c': {
+        shortName: 'R4P6 C Planes',
+        title: 'QUALITY AI — P2R16 | R4P6 C — LINE + PLANE STRUCTURE | 4K OWNER CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P6 C Line + Plane Structure — 4K Owner QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999315, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P6_C_LINES_PLANES_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P6_C_LINES_PLANES_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P6_C_LINES_PLANES_4K.jpg',
+        expectedSha256: '7b98dc16c2b19481',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P6 C — LINE + PLANE STRUCTURE (4K)',
+        geometryMode: 'LINES_AND_PLANES',
+        structureLines: '1843_TRACKS',
+        occlusionSplit: true,
+        crossEdgeTriangles: 0,
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P6_C_LINES_PLANES_4K.jpg' }
+      },
+      'quality-ai-r4p6-d': {
+        shortName: 'R4P6 D Struct+Vis',
+        title: 'QUALITY AI — P2R16 | R4P6 D — STRUCTURE + VISIBILITY GRAPH | 4K OWNER CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P6 D Structure + Visibility Graph — 4K Owner QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999315, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P6_D_STRUCTURE_VISIBILITY_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P6_D_STRUCTURE_VISIBILITY_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P6_D_STRUCTURE_VISIBILITY_4K.jpg',
+        expectedSha256: 'b758dad9a483954b',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P6 D — STRUCTURE + VISIBILITY GRAPH (4K)',
+        geometryMode: 'STRUCTURE_VISIBILITY_GRAPH',
+        structureLines: '1843_TRACKS',
+        occlusionSplit: true,
+        crossEdgeTriangles: 0,
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P6_D_STRUCTURE_VISIBILITY_4K.jpg' }
+      },
+      'quality-ai-r4p6-e': {
+        shortName: 'R4P6 E Hybrid',
+        title: 'QUALITY AI — P2R16 | R4P6 E — CONSERVATIVE STRUCTURE HYBRID | 4K OWNER CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P6 E Conservative Structure Hybrid — 4K Owner QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999315, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P6_E_CONSERVATIVE_STRUCTURE_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P6_E_CONSERVATIVE_STRUCTURE_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P6_E_CONSERVATIVE_STRUCTURE_4K.jpg',
+        expectedSha256: '5fdc42f3ac1a1f73',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P6 E — CONSERVATIVE STRUCTURE HYBRID (4K)',
+        geometryMode: 'CONSERVATIVE_STRUCTURE',
+        structureLines: '1843_TRACKS',
+        occlusionSplit: true,
+        crossEdgeTriangles: 0,
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P6_E_CONSERVATIVE_STRUCTURE_4K.jpg' }
       },
       'quality-ai-r4p5-a': {
         shortName: 'R4P5 A Baseline',
@@ -1154,7 +1264,10 @@
         const fovVal = Math.round(currentFov);
         const yawVal = currentYaw.toFixed(1);
         const pitchVal = (currentPitch >= 0 ? '+' : '') + currentPitch.toFixed(1);
-        if (currentMode.startsWith('quality-ai-r4p5-')) {
+        if (currentMode.startsWith('quality-ai-r4p6-')) {
+          const directCov = (meta.directCoverage * 100.0).toFixed(4) + '%';
+          subSpecsEl.innerHTML = `TEXTURE: 4096 x 623 | RGB: ORIGINAL 3000x4000 PHYSICAL | GEOMETRY: LINE + PLANE + LAYERED VISIBILITY | DIRECT COVERAGE: ${directCov} | RGB INPAINT: 0 | GENERATIVE PIXELS: 0 | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
+        } else if (currentMode.startsWith('quality-ai-r4p5-')) {
           const obsStr = meta.depthObservability || 'MARGINAL';
           const modeStr = meta.geometryMode || 'HYBRID';
           const bndStr = meta.boundaryRes || '1500x2000';
@@ -1560,7 +1673,7 @@
         targetLabel = '12K R4P4 REFINED (' + coverageMode.toUpperCase() + ')';
         targetW = 12288;
         targetH = 1869;
-      } else if (currentMode.startsWith('quality-ai-r4p5-') || currentMode.startsWith('quality-ai-r4p43-') || currentMode.startsWith('quality-ai-r4p42-')) {
+      } else if (currentMode.startsWith('quality-ai-r4p6-') || currentMode.startsWith('quality-ai-r4p5-') || currentMode.startsWith('quality-ai-r4p43-') || currentMode.startsWith('quality-ai-r4p42-')) {
         activeTier = '4K';
         const candMeta = MODE_METADATA[currentMode];
         targetUrl = candMeta.texture;
@@ -1828,6 +1941,10 @@
       const btnR3 = document.getElementById('btn-mode-quality-r3');
             const btnR4p4 = document.getElementById('btn-mode-quality-r4p4');
       if (btnR4p4) btnR4p4.className = (currentMode === 'quality-ai-r4p4') ? 'mode-btn active-quality-ai' : 'mode-btn';
+      ['a', 'b', 'c', 'd', 'e'].forEach(cand => {
+        const btn = document.getElementById('btn-mode-quality-r4p6-' + cand);
+        if (btn) btn.className = (currentMode === 'quality-ai-r4p6-' + cand) ? 'mode-btn active-quality-ai' : 'mode-btn';
+      });
       ['a', 'b', 'c', 'd', 'e'].forEach(cand => {
         const btn = document.getElementById('btn-mode-quality-r4p5-' + cand);
         if (btn) btn.className = (currentMode === 'quality-ai-r4p5-' + cand) ? 'mode-btn active-quality-ai' : 'mode-btn';
