@@ -1,0 +1,26 @@
+{
+  "PHASE": "7C.2R4P3",
+  "COMMIT_B": "404549fbd2a4dd4cbed67b1ef594d8e88f781cfa",
+  "RAILWAY_DEPLOY_ID": "UNKNOWN",
+  "DEPLOY_URL": "https://v-show-commercial-v1-production.up.railway.app",
+  "TIMESTAMP": "2026-09-11T00:30:21Z",
+  "HEADLESS_VERIFY": {
+    "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png": {
+      "status": 200,
+      "content-length": "5036291"
+    },
+    "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY_OWNER_REVIEW.jpg": {
+      "status": 200,
+      "content-length": "5036291"
+    },
+    "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SOURCE_OWNERSHIP.png": {
+      "status": 200,
+      "content-length": "5036291"
+    },
+    "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY.png": {
+      "status": 200,
+      "content-length": "25188855"
+    }
+  },
+  "ALL_VERIFY_OK": true
+}
