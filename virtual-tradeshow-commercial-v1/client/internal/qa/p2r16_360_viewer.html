@@ -397,6 +397,26 @@
           <i class="fa-solid fa-compass-drafting"></i>
           <span>Quality R4.4 Refined</span>
         </button>
+                <button id="btn-mode-quality-r4p43-f0" class="mode-btn" onclick="switchMode('quality-ai-r4p43-f0')" style="border-color: #38bdf8; color: #38bdf8;">
+          <i class="fa-solid fa-flask"></i>
+          <span>R4P4.3 F0 (D Base)</span>
+        </button>
+        <button id="btn-mode-quality-r4p43-f1" class="mode-btn" onclick="switchMode('quality-ai-r4p43-f1')" style="border-color: #00ff88; color: #00ff88;">
+          <i class="fa-solid fa-code-compare"></i>
+          <span>R4P4.3 F1 (MV Only)</span>
+        </button>
+        <button id="btn-mode-quality-r4p43-f2" class="mode-btn" onclick="switchMode('quality-ai-r4p43-f2')" style="border-color: #00ff88; color: #00ff88;">
+          <i class="fa-solid fa-code-compare"></i>
+          <span>R4P4.3 F2 (MV+1px)</span>
+        </button>
+        <button id="btn-mode-quality-r4p43-f3" class="mode-btn" onclick="switchMode('quality-ai-r4p43-f3')" style="border-color: #00ff88; color: #00ff88;">
+          <i class="fa-solid fa-code-compare"></i>
+          <span>R4P4.3 F3 (MV+2px)</span>
+        </button>
+        <button id="btn-mode-quality-r4p43-f4" class="mode-btn" onclick="switchMode('quality-ai-r4p43-f4')" style="border-color: #00ff88; color: #00ff88;">
+          <i class="fa-solid fa-code-compare"></i>
+          <span>R4P4.3 F4 (MV+4px)</span>
+        </button>
         <button id="btn-mode-quality-r4p42-a" class="mode-btn" onclick="switchMode('quality-ai-r4p42-a')" style="border-color: #a78bfa; color: #a78bfa;">
           <i class="fa-solid fa-flask"></i>
           <span>R4P4.2 A (Base)</span>
@@ -666,6 +686,86 @@
           'structural-lines': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P4_LINE_ALIGNMENT_AFTER.png'
         }
       },
+      'quality-ai-r4p43-f0': {
+        shortName: 'R4P4.3 F0 Baseline',
+        title: 'QUALITY AI — P2R16 | R4P4.3 F0 — CANDIDATE D BASELINE (518 EDT) | INTERNAL QA',
+        docTitle: 'C12.9-P2R16 — R4P4.3 F0 Candidate D Baseline — 4K Internal QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999317, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P43_CANDIDATE_F0_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P43_CANDIDATE_F0_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P43_CANDIDATE_F0_4K.jpg',
+        expectedSha256: '651d3a75aa25c334',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P4.3 F0 — CANDIDATE D BASELINE (518 EDT)',
+        depthRecoveryPct: '2.33%',
+        depthRecoveryType: 'EDT_UNCONSTRAINED',
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P43_CANDIDATE_F0_4K.jpg' }
+      },
+      'quality-ai-r4p43-f1': {
+        shortName: 'R4P4.3 F1 MV-Only',
+        title: 'QUALITY AI — P2R16 | R4P4.3 F1 — MULTIVIEW RECOVERY ONLY | INTERNAL QA',
+        docTitle: 'C12.9-P2R16 — R4P4.3 F1 Multi-View Only — 4K Internal QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999315, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P43_CANDIDATE_F1_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P43_CANDIDATE_F1_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P43_CANDIDATE_F1_4K.jpg',
+        expectedSha256: 'a31076120d038f33',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P4.3 F1 — MULTIVIEW RECOVERY ONLY (0px LOCAL)',
+        depthRecoveryPct: '0.45%',
+        depthRecoveryType: 'MULTIVIEW_ONLY',
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P43_CANDIDATE_F1_4K.jpg' }
+      },
+      'quality-ai-r4p43-f2': {
+        shortName: 'R4P4.3 F2 MV+1px',
+        title: 'QUALITY AI — P2R16 | R4P4.3 F2 — MULTIVIEW + 1PX LOCAL | INTERNAL QA',
+        docTitle: 'C12.9-P2R16 — R4P4.3 F2 Multi-View + 1px Local — 4K Internal QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999317, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P43_CANDIDATE_F2_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P43_CANDIDATE_F2_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P43_CANDIDATE_F2_4K.jpg',
+        expectedSha256: '2ead44f50d178eef',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P4.3 F2 — MULTIVIEW + 1PX SAME-SURFACE LOCAL',
+        depthRecoveryPct: '2.22%',
+        depthRecoveryType: 'MV_PLUS_1PX_LOCAL',
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P43_CANDIDATE_F2_4K.jpg' }
+      },
+      'quality-ai-r4p43-f3': {
+        shortName: 'R4P4.3 F3 MV+2px',
+        title: 'QUALITY AI — P2R16 | R4P4.3 F3 — MULTIVIEW + 2PX LOCAL | INTERNAL QA',
+        docTitle: 'C12.9-P2R16 — R4P4.3 F3 Multi-View + 2px Local — 4K Internal QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999317, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P43_CANDIDATE_F3_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P43_CANDIDATE_F3_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P43_CANDIDATE_F3_4K.jpg',
+        expectedSha256: 'bb6605a2867f75b9',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P4.3 F3 — MULTIVIEW + 2PX SAME-SURFACE LOCAL',
+        depthRecoveryPct: '2.30%',
+        depthRecoveryType: 'MV_PLUS_2PX_LOCAL',
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P43_CANDIDATE_F3_4K.jpg' }
+      },
+      'quality-ai-r4p43-f4': {
+        shortName: 'R4P4.3 F4 MV+4px',
+        title: 'QUALITY AI — P2R16 | R4P4.3 F4 — MULTIVIEW + 4PX LOCAL | INTERNAL QA',
+        docTitle: 'C12.9-P2R16 — R4P4.3 F4 Multi-View + 4px Local — 4K Internal QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999317, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P43_CANDIDATE_F4_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P43_CANDIDATE_F4_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P43_CANDIDATE_F4_4K.jpg',
+        expectedSha256: 'd0e385066a18416e',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P4.3 F4 — MULTIVIEW + 4PX SAME-SURFACE LOCAL',
+        depthRecoveryPct: '2.33%',
+        depthRecoveryType: 'MV_PLUS_4PX_LOCAL',
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P43_CANDIDATE_F4_4K.jpg' }
+      },
       'quality-ai-r4p42-a': {
         shortName: 'R4P4.2 Cand-A Baseline',
         title: 'QUALITY AI — P2R16 | R4P4.2 CANDIDATE A — 518 MESH 4K BASELINE | INTERNAL QA',
@@ -934,7 +1034,12 @@
         const fovVal = Math.round(currentFov);
         const yawVal = currentYaw.toFixed(1);
         const pitchVal = (currentPitch >= 0 ? '+' : '') + currentPitch.toFixed(1);
-        subSpecsEl.innerHTML = `ACTIVE TEXTURE: ${meta.width || 12288} × ${meta.height || 1869} | DIRECT GEOMETRIC COVERAGE: ${covStr} | BLACK CRACK PIXELS: ${cracks} | INPAINTED FRACTION: ${inpaintPct} | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
+        if (currentMode.startsWith('quality-ai-r4p43-')) {
+          const depthRecStr = meta.depthRecoveryPct || '0.00%';
+          subSpecsEl.innerHTML = `ACTIVE TEXTURE: ${meta.width || 4096} × ${meta.height || 623} | DIRECT GEOMETRIC COVERAGE: ${covStr} | BLACK CRACK PIXELS: ${cracks} | RGB INPAINT: 0.00% | DEPTH RECOVERY: ${depthRecStr} | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
+        } else {
+          subSpecsEl.innerHTML = `ACTIVE TEXTURE: ${meta.width || 12288} × ${meta.height || 1869} | DIRECT GEOMETRIC COVERAGE: ${covStr} | BLACK CRACK PIXELS: ${cracks} | INPAINTED FRACTION: ${inpaintPct} | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
+        }
       }
 
       // Update QA Stats panel fields if elements exist
@@ -1035,7 +1140,7 @@
     const urlParamsGlobal = (typeof window !== 'undefined' && window.location) ? new URLSearchParams(window.location.search) : null;
     const qModeGlobal = urlParamsGlobal ? urlParamsGlobal.get('mode') : null;
     let currentMode = 'quality-ai-r4p3';
-    if (qModeGlobal && ['quality-ai-r4p4', 'quality-ai-r4p42-a', 'quality-ai-r4p42-b', 'quality-ai-r4p42-c', 'quality-ai-r4p42-d', 'quality-ai-r4p42-e', 'quality-ai-r4p3', 'quality-ai-r4p2', 'quality-ai-r4p1', 'quality-ai-r4', 'quality-ai-r31', 'quality-ai-r3', 'quality-ai-12view', 'quality-ai'].includes(qModeGlobal)) {
+    if (qModeGlobal && ['quality-ai-r4p43-f0', 'quality-ai-r4p43-f1', 'quality-ai-r4p43-f2', 'quality-ai-r4p43-f3', 'quality-ai-r4p43-f4', 'quality-ai-r4p4', 'quality-ai-r4p42-a', 'quality-ai-r4p42-b', 'quality-ai-r4p42-c', 'quality-ai-r4p42-d', 'quality-ai-r4p42-e', 'quality-ai-r4p3', 'quality-ai-r4p2', 'quality-ai-r4p1', 'quality-ai-r4', 'quality-ai-r31', 'quality-ai-r3', 'quality-ai-12view', 'quality-ai'].includes(qModeGlobal)) {
       currentMode = qModeGlobal;
     }
     let userSelectedTier = 'AUTO';
@@ -1327,7 +1432,7 @@
         targetLabel = '12K R4P4 REFINED (' + coverageMode.toUpperCase() + ')';
         targetW = 12288;
         targetH = 1869;
-      } else if (currentMode.startsWith('quality-ai-r4p42-')) {
+      } else if (currentMode.startsWith('quality-ai-r4p43-') || currentMode.startsWith('quality-ai-r4p42-')) {
         activeTier = '4K';
         const candMeta = MODE_METADATA[currentMode];
         targetUrl = candMeta.texture;
@@ -1595,6 +1700,10 @@
       const btnR3 = document.getElementById('btn-mode-quality-r3');
             const btnR4p4 = document.getElementById('btn-mode-quality-r4p4');
       if (btnR4p4) btnR4p4.className = (currentMode === 'quality-ai-r4p4') ? 'mode-btn active-quality-ai' : 'mode-btn';
+      ['f0', 'f1', 'f2', 'f3', 'f4'].forEach(f => {
+        const btn = document.getElementById('btn-mode-quality-r4p43-' + f);
+        if (btn) btn.className = (currentMode === 'quality-ai-r4p43-' + f) ? 'mode-btn active-quality-ai' : 'mode-btn';
+      });
       ['a', 'b', 'c', 'd', 'e'].forEach(cand => {
         const btn = document.getElementById('btn-mode-quality-r4p42-' + cand);
         if (btn) btn.className = (currentMode === 'quality-ai-r4p42-' + cand) ? 'mode-btn active-quality-ai' : 'mode-btn';

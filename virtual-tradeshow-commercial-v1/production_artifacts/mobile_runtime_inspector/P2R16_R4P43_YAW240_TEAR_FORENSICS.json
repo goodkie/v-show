@@ -1,0 +1,196 @@
+{
+  "PHASE": "7C.2R4P4.3",
+  "ZONE": "YAW240",
+  "PRIMARY_ROOT_CAUSE": "OCCLUSION_MISCLASSIFICATION_ACROSS_DISCONTINUITY",
+  "PANORAMA_BBOX": {
+    "min_x": 384,
+    "max_x": 991,
+    "min_y": 0,
+    "max_y": 623,
+    "width": 608,
+    "height": 624
+  },
+  "PANORAMA_PIXEL_COUNT": 921,
+  "OWNER_CAMERA_BEFORE": 8,
+  "OWNER_CAMERA_AFTER": 9,
+  "SOURCE_UV_RANGE": {
+    "u_min": 65,
+    "u_max": 453,
+    "v_min": 17,
+    "v_max": 486
+  },
+  "DEPTH_PIXEL_SAMPLE_COUNT": 921,
+  "DEPTH_PIXEL_IDS_SAMPLE": [
+    [
+      453,
+      17
+    ],
+    [
+      453,
+      18
+    ],
+    [
+      453,
+      19
+    ],
+    [
+      453,
+      20
+    ],
+    [
+      453,
+      21
+    ],
+    [
+      453,
+      22
+    ],
+    [
+      453,
+      23
+    ],
+    [
+      453,
+      24
+    ],
+    [
+      453,
+      25
+    ],
+    [
+      453,
+      26
+    ],
+    [
+      65,
+      27
+    ],
+    [
+      453,
+      27
+    ],
+    [
+      65,
+      28
+    ],
+    [
+      453,
+      28
+    ],
+    [
+      65,
+      29
+    ],
+    [
+      453,
+      29
+    ],
+    [
+      65,
+      30
+    ],
+    [
+      453,
+      30
+    ],
+    [
+      65,
+      31
+    ],
+    [
+      453,
+      31
+    ]
+  ],
+  "DEPTH_FILL_DONOR_IDS_SAMPLE": [
+    [
+      450,
+      17
+    ],
+    [
+      450,
+      18
+    ],
+    [
+      450,
+      19
+    ],
+    [
+      450,
+      20
+    ],
+    [
+      450,
+      21
+    ],
+    [
+      450,
+      22
+    ],
+    [
+      450,
+      23
+    ],
+    [
+      450,
+      24
+    ],
+    [
+      450,
+      25
+    ],
+    [
+      450,
+      26
+    ],
+    [
+      67,
+      27
+    ],
+    [
+      450,
+      27
+    ],
+    [
+      67,
+      28
+    ],
+    [
+      450,
+      28
+    ],
+    [
+      67,
+      29
+    ],
+    [
+      450,
+      29
+    ],
+    [
+      67,
+      30
+    ],
+    [
+      450,
+      30
+    ],
+    [
+      67,
+      31
+    ],
+    [
+      450,
+      31
+    ]
+  ],
+  "DEPTH_GRADIENT": {
+    "mean": 0.46681,
+    "max": 0.50719,
+    "p95": 0.49129
+  },
+  "VALID_ALTERNATE_CAMERA_COUNT": 2,
+  "OCCLUSION_CLASS": "FURNITURE_CORNER_WALL_OCCLUSION",
+  "STRUCTURAL_EDGE_OVERLAP": true,
+  "ANALYSIS": "Tear at YAW240 originates from Camera 08 boundary samples spanning panorama X=[384, 991]. The nearest-neighbor fill created depth-surface displacement across the FURNITURE_CORNER_WALL_OCCLUSION boundary, resulting in triangular tearing against overlapping cameras [7, 9]."
+}

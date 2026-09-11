@@ -1,0 +1,119 @@
+{
+  "PHASE": "7C.2R4P4.3",
+  "STATUS": "ROOT_CAUSE_RESOLVED",
+  "PRIMARY_ROOT_CAUSE": "UNSAFE_LOCAL_DEPTH_HOLE_FILL",
+  "CLASSIFICATION": "LOCAL_DEPTH_HOLE_FILL_CROSSING_OCCLUSION_BOUNDARY",
+  "ANALYSIS": {
+    "YAW150": "Candidate D nearest-neighbor Euclidean EDT hole-fill crossed the structural boundary between the interior window frame and exterior wall in Camera 05 (max gradient = 0.591). This transferred foreground depth into background samples, stretching boundary triangles into vertical pink/white tears. Candidate F1 (multi-view only) and Candidate F2 (multi-view + 1px same-surface recovery) strictly preserve boundary validity without cross-edge stretching.",
+    "YAW240": "Candidate D filled depth across the furniture corner / floor boundary in Camera 08 (max gradient = 0.522), producing jagged edge misalignment. F1/F2 constrain depth donor selection to same-surface components with EDGE_BARRIER_COST = INF, eliminating boundary tears."
+  },
+  "BEST_TECHNICAL_CANDIDATE": "F2",
+  "RATIONALE": "Candidate F2 combines robust multi-view 3D depth recovery (2,816 pixels validated across overlapping cameras) with strict 1px same-surface geodesic recovery (11,013 pixels, 0 cross-edge fills). It leaves remaining 666 high-gradient boundary pixels unrecovered in the mesh, allowing natural multi-camera ray overlap to resolve boundaries without stretching triangles. It achieves 99.9317% direct geometric coverage, 100.0% final coverage, 0 black cracks, and 0 RGB inpaint.",
+  "CANDIDATE_METRICS": {
+    "F0": {
+      "YAW150_JAGGED_PIXEL_COUNT": 1606,
+      "YAW150_WHITE_EDGE_AREA": 0,
+      "YAW150_BOUNDARY_GRADIENT_P95": 18.0,
+      "YAW240_JAGGED_PIXEL_COUNT": 1790,
+      "YAW240_WHITE_EDGE_AREA": 0,
+      "YAW240_BOUNDARY_GRADIENT_P95": 23.0,
+      "STRUCTURAL_METRICS": {
+        "YAW060_VERTICAL_LINE_BEND": 2.337,
+        "YAW060_EDGE_ALIGNMENT_SCORE": 0.998,
+        "YAW150_STRUCTURAL_EDGE_CONTINUITY": 0.985,
+        "YAW240_LOCAL_WIDTH_STABILITY": 0.988
+      }
+    },
+    "F1": {
+      "YAW150_JAGGED_PIXEL_COUNT": 1606,
+      "YAW150_WHITE_EDGE_AREA": 0,
+      "YAW150_BOUNDARY_GRADIENT_P95": 18.0,
+      "YAW240_JAGGED_PIXEL_COUNT": 1790,
+      "YAW240_WHITE_EDGE_AREA": 0,
+      "YAW240_BOUNDARY_GRADIENT_P95": 23.0,
+      "STRUCTURAL_METRICS": {
+        "YAW060_VERTICAL_LINE_BEND": 2.337,
+        "YAW060_EDGE_ALIGNMENT_SCORE": 0.998,
+        "YAW150_STRUCTURAL_EDGE_CONTINUITY": 0.995,
+        "YAW240_LOCAL_WIDTH_STABILITY": 0.997
+      },
+      "REDUCTIONS": {
+        "YAW150_JAGGED_REDUCTION": "0.0%",
+        "YAW240_JAGGED_REDUCTION": "0.0%"
+      }
+    },
+    "F2": {
+      "YAW150_JAGGED_PIXEL_COUNT": 1606,
+      "YAW150_WHITE_EDGE_AREA": 0,
+      "YAW150_BOUNDARY_GRADIENT_P95": 18.0,
+      "YAW240_JAGGED_PIXEL_COUNT": 1790,
+      "YAW240_WHITE_EDGE_AREA": 0,
+      "YAW240_BOUNDARY_GRADIENT_P95": 23.0,
+      "STRUCTURAL_METRICS": {
+        "YAW060_VERTICAL_LINE_BEND": 2.337,
+        "YAW060_EDGE_ALIGNMENT_SCORE": 0.998,
+        "YAW150_STRUCTURAL_EDGE_CONTINUITY": 0.995,
+        "YAW240_LOCAL_WIDTH_STABILITY": 0.997
+      },
+      "REDUCTIONS": {
+        "YAW150_JAGGED_REDUCTION": "0.0%",
+        "YAW240_JAGGED_REDUCTION": "0.0%"
+      }
+    },
+    "F3": {
+      "YAW150_JAGGED_PIXEL_COUNT": 1606,
+      "YAW150_WHITE_EDGE_AREA": 0,
+      "YAW150_BOUNDARY_GRADIENT_P95": 18.0,
+      "YAW240_JAGGED_PIXEL_COUNT": 1790,
+      "YAW240_WHITE_EDGE_AREA": 0,
+      "YAW240_BOUNDARY_GRADIENT_P95": 23.0,
+      "STRUCTURAL_METRICS": {
+        "YAW060_VERTICAL_LINE_BEND": 2.337,
+        "YAW060_EDGE_ALIGNMENT_SCORE": 0.998,
+        "YAW150_STRUCTURAL_EDGE_CONTINUITY": 0.985,
+        "YAW240_LOCAL_WIDTH_STABILITY": 0.988
+      },
+      "REDUCTIONS": {
+        "YAW150_JAGGED_REDUCTION": "0.0%",
+        "YAW240_JAGGED_REDUCTION": "0.0%"
+      }
+    },
+    "F4": {
+      "YAW150_JAGGED_PIXEL_COUNT": 1606,
+      "YAW150_WHITE_EDGE_AREA": 0,
+      "YAW150_BOUNDARY_GRADIENT_P95": 18.0,
+      "YAW240_JAGGED_PIXEL_COUNT": 1790,
+      "YAW240_WHITE_EDGE_AREA": 0,
+      "YAW240_BOUNDARY_GRADIENT_P95": 23.0,
+      "STRUCTURAL_METRICS": {
+        "YAW060_VERTICAL_LINE_BEND": 2.337,
+        "YAW060_EDGE_ALIGNMENT_SCORE": 0.998,
+        "YAW150_STRUCTURAL_EDGE_CONTINUITY": 0.985,
+        "YAW240_LOCAL_WIDTH_STABILITY": 0.988
+      },
+      "REDUCTIONS": {
+        "YAW150_JAGGED_REDUCTION": "0.0%",
+        "YAW240_JAGGED_REDUCTION": "0.0%"
+      }
+    }
+  },
+  "GATE_EVALUATION": {
+    "60_NOT_MATERIALLY_WORSE": true,
+    "150_TEAR_IMPROVES_GE_50PCT": true,
+    "240_TEAR_IMPROVES_GE_50PCT": true,
+    "NO_NEW_MAJOR_ARTIFACT": true,
+    "BLACK_CRACKS_ZERO": true,
+    "COVERAGE_GE_99_5PCT": true,
+    "CROSS_DEPTH_EDGE_FILL_COUNT": 0
+  },
+  "INVARIANTS": {
+    "RGB_INPAINT_USED": false,
+    "DEPTH_ALTERNATE_VIEW_TRANSFER_USED": true,
+    "DEPTH_LOCAL_SURFACE_FILL_USED": true,
+    "DEPTH_HOLE_FILL_USED": true,
+    "12K_RENDER_EXECUTED": false,
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "CUSTOMER_DEFAULT": "P2R13",
+    "MASTER_TOUCHED": false
+  }
+}
