@@ -956,7 +956,7 @@
         currentMode = (qMode === 'quality-ai-r4') ? 'quality-ai-r4' : ((qMode === 'quality-ai-r31') ? 'quality-ai-r31' : ((qMode === 'quality-ai-r3') ? 'quality-ai-r3' : 'quality-ai-12view'));
       }
       window.__VIEWER_TELEMETRY__.REQUESTED_MODE = currentMode;
-      window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH = (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai' || currentMode === 'quality-ai-r3' || currentMode === 'quality-ai-r31');
+      window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH = (currentMode.startsWith('quality-ai'));
 
       // 3. Three.js Scene Setup
       scene = new THREE.Scene();
