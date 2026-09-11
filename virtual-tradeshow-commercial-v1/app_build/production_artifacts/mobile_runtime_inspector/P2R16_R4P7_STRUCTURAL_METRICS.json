@@ -1,0 +1,65 @@
+{
+  "PHASE": "7C.2R4P7",
+  "SECTION": "STRUCTURAL AND SHARPNESS METRICS",
+  "GEOMETRY_MODEL": "ROTATION_DOMINANT_PANORAMA",
+  "RGB_SOURCE": "ORIGINAL_PHYSICAL_3000x4000",
+  "CANDIDATES": {
+    "A": {
+      "name": "P2R16_R4P7_A_CONTROL_4K",
+      "sha256": "70dab7b4037f3bb1746fdfc653dc022cd419fb1db4f688a0330b88b9f62e0928",
+      "laplacian_variance": 78.64,
+      "tenengrad_energy": 1067.32,
+      "yaw150_laplacian": 77.18,
+      "yaw240_laplacian": 66.59,
+      "direct_coverage": 0.999315,
+      "generative_pixel_count": 0,
+      "inpaint_used": false
+    },
+    "B": {
+      "name": "P2R16_R4P7_B_ROTATION_ONLY_4K",
+      "sha256": "c02a3adc0762e31aa995bcb33bad775a630606793979f870bc0833e894dad7cb",
+      "laplacian_variance": 102.73,
+      "tenengrad_energy": 2596.75,
+      "yaw150_laplacian": 54.61,
+      "yaw240_laplacian": 98.37,
+      "direct_coverage": 0.999715,
+      "generative_pixel_count": 0,
+      "inpaint_used": false
+    },
+    "C": {
+      "name": "P2R16_R4P7_C_ROTATION_ROMA_RESIDUAL_4K",
+      "sha256": "6391336037fbec055a96851ea9f2b2dda6e443ad7468629b4949497369a37a14",
+      "laplacian_variance": 103.07,
+      "tenengrad_energy": 2598.52,
+      "yaw150_laplacian": 54.17,
+      "yaw240_laplacian": 97.9,
+      "direct_coverage": 0.999715,
+      "generative_pixel_count": 0,
+      "inpaint_used": false
+    },
+    "D": {
+      "name": "P2R16_R4P7_D_STRUCTURE_PRESERVING_4K",
+      "sha256": "16fd00c9ac5f7c8776afff8037b562883e6960c01893f5ee704d42a6a8dcf115",
+      "laplacian_variance": 103.1,
+      "tenengrad_energy": 2598.51,
+      "yaw150_laplacian": 54.35,
+      "yaw240_laplacian": 98.03,
+      "direct_coverage": 0.999715,
+      "generative_pixel_count": 0,
+      "inpaint_used": false
+    }
+  },
+  "BENCHMARK_REFERENCE": {
+    "name": "QUALITY_AI_REFERENCE",
+    "sha256": "c614d1f3c1250f5aee7738a5163fbc8598f17ad196eb4c4e296f9419b4cb7918",
+    "laplacian_variance": 172.63,
+    "tenengrad_energy": 2166.42,
+    "yaw150_laplacian": 225.75,
+    "yaw240_laplacian": 426.37,
+    "direct_coverage": 0.918484,
+    "inpaint_fraction": 0.081516,
+    "inpaint_used": true
+  },
+  "CANDIDATE_E_SKIPPED": true,
+  "BEST_TECHNICAL_CANDIDATE": "D"
+}

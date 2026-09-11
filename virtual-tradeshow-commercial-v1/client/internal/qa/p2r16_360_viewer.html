@@ -397,7 +397,23 @@
           <i class="fa-solid fa-compass-drafting"></i>
           <span>Quality R4.4 Refined</span>
         </button>
-                                <button id="btn-mode-quality-r4p6-a" class="mode-btn" onclick="switchMode('quality-ai-r4p6-a')" style="border-color: #38bdf8; color: #38bdf8;">
+                                        <button id="btn-mode-quality-r4p7-a" class="mode-btn" onclick="switchMode('quality-ai-r4p7-a')" style="border-color: #38bdf8; color: #38bdf8;">
+          <i class="fa-solid fa-cube"></i>
+          <span>R4P7 A (Control)</span>
+        </button>
+        <button id="btn-mode-quality-r4p7-b" class="mode-btn" onclick="switchMode('quality-ai-r4p7-b')" style="border-color: #a855f7; color: #a855f7;">
+          <i class="fa-solid fa-rotate"></i>
+          <span>R4P7 B (Rotation)</span>
+        </button>
+        <button id="btn-mode-quality-r4p7-c" class="mode-btn" onclick="switchMode('quality-ai-r4p7-c')" style="border-color: #ec4899; color: #ec4899;">
+          <i class="fa-solid fa-wave-square"></i>
+          <span>R4P7 C (Residual)</span>
+        </button>
+        <button id="btn-mode-quality-r4p7-d" class="mode-btn" onclick="switchMode('quality-ai-r4p7-d')" style="border-color: #00ff88; color: #00ff88; font-weight: bold;">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>R4P7 D (Struct-Pres)</span>
+        </button>
+<button id="btn-mode-quality-r4p6-a" class="mode-btn" onclick="switchMode('quality-ai-r4p6-a')" style="border-color: #38bdf8; color: #38bdf8;">
           <i class="fa-solid fa-cube"></i>
           <span>R4P6 A (Control)</span>
         </button>
@@ -725,6 +741,66 @@
           'edge-residual': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P4_EDGE_RESIDUAL_HEATMAP.png',
           'structural-lines': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P4_LINE_ALIGNMENT_AFTER.png'
         }
+      },
+      'quality-ai-r4p7-a': {
+        shortName: 'R4P7 A Control',
+        title: 'QUALITY AI — P2R16 | R4P7 A — CONTROL BASELINE | 4K OWNER CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P7 A Control Baseline — 4K Owner QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999315, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P7_A_CONTROL_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P7_A_CONTROL_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P7_A_CONTROL_4K.jpg',
+        expectedSha256: '70dab7b4037f3bb1',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P7 A — CONTROL BASELINE (4K)',
+        geometryMode: 'CONTROL_BASELINE',
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P7_A_CONTROL_4K.jpg' }
+      },
+      'quality-ai-r4p7-b': {
+        shortName: 'R4P7 B Rotation',
+        title: 'QUALITY AI — P2R16 | R4P7 B — PURE ROTATION | 4K OWNER CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P7 B Pure Rotation — 4K Owner QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999715, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P7_B_ROTATION_ONLY_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P7_B_ROTATION_ONLY_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P7_B_ROTATION_ONLY_4K.jpg',
+        expectedSha256: 'c02a3adc0762e31a',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P7 B — PURE ROTATION (4K)',
+        geometryMode: 'PURE_ROTATION',
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P7_B_ROTATION_ONLY_4K.jpg' }
+      },
+      'quality-ai-r4p7-c': {
+        shortName: 'R4P7 C Residual',
+        title: 'QUALITY AI — P2R16 | R4P7 C — ROTATION + ROMA RESIDUAL | 4K OWNER CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P7 C Rotation + RoMa Residual — 4K Owner QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999715, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P7_C_ROTATION_ROMA_RESIDUAL_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P7_C_ROTATION_ROMA_RESIDUAL_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P7_C_ROTATION_ROMA_RESIDUAL_4K.jpg',
+        expectedSha256: '6391336037fbec05',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P7 C — ROTATION + ROMA RESIDUAL (4K)',
+        geometryMode: 'ROTATION_ROMA_RESIDUAL',
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P7_C_ROTATION_ROMA_RESIDUAL_4K.jpg' }
+      },
+      'quality-ai-r4p7-d': {
+        shortName: 'R4P7 D Struct-Pres',
+        title: 'QUALITY AI — P2R16 | R4P7 D — STRUCTURE PRESERVING | 4K OWNER CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P7 D Structure Preserving — 4K Owner QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999715, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P7_D_STRUCTURE_PRESERVING_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P7_D_STRUCTURE_PRESERVING_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P7_D_STRUCTURE_PRESERVING_4K.jpg',
+        expectedSha256: '16fd00c9ac5f7c87',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P7 D — STRUCTURE PRESERVING (4K)',
+        geometryMode: 'STRUCTURE_PRESERVING',
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P7_D_STRUCTURE_PRESERVING_4K.jpg' }
       },
       'quality-ai-r4p6-a': {
         shortName: 'R4P6 A Control',
@@ -1264,7 +1340,10 @@
         const fovVal = Math.round(currentFov);
         const yawVal = currentYaw.toFixed(1);
         const pitchVal = (currentPitch >= 0 ? '+' : '') + currentPitch.toFixed(1);
-        if (currentMode.startsWith('quality-ai-r4p6-')) {
+        if (currentMode.startsWith('quality-ai-r4p7-')) {
+          const directCov = (meta.directCoverage * 100.0).toFixed(4) + '%';
+          subSpecsEl.innerHTML = `TEXTURE: 4096 x 623 | RGB: ORIGINAL 3000x4000 PHYSICAL | GEOMETRY: ROTATION-DOMINANT PANORAMA | DIRECT COVERAGE: ${directCov} | RGB INPAINT: 0 | GENERATIVE PIXELS: 0 | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
+        } else if (currentMode.startsWith('quality-ai-r4p6-')) {
           const directCov = (meta.directCoverage * 100.0).toFixed(4) + '%';
           subSpecsEl.innerHTML = `TEXTURE: 4096 x 623 | RGB: ORIGINAL 3000x4000 PHYSICAL | GEOMETRY: LINE + PLANE + LAYERED VISIBILITY | DIRECT COVERAGE: ${directCov} | RGB INPAINT: 0 | GENERATIVE PIXELS: 0 | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
         } else if (currentMode.startsWith('quality-ai-r4p5-')) {
@@ -1673,7 +1752,7 @@
         targetLabel = '12K R4P4 REFINED (' + coverageMode.toUpperCase() + ')';
         targetW = 12288;
         targetH = 1869;
-      } else if (currentMode.startsWith('quality-ai-r4p6-') || currentMode.startsWith('quality-ai-r4p5-') || currentMode.startsWith('quality-ai-r4p43-') || currentMode.startsWith('quality-ai-r4p42-')) {
+      } else if (currentMode.startsWith('quality-ai-r4p7-') || currentMode.startsWith('quality-ai-r4p6-') || currentMode.startsWith('quality-ai-r4p5-') || currentMode.startsWith('quality-ai-r4p43-') || currentMode.startsWith('quality-ai-r4p42-')) {
         activeTier = '4K';
         const candMeta = MODE_METADATA[currentMode];
         targetUrl = candMeta.texture;
@@ -1941,6 +2020,10 @@
       const btnR3 = document.getElementById('btn-mode-quality-r3');
             const btnR4p4 = document.getElementById('btn-mode-quality-r4p4');
       if (btnR4p4) btnR4p4.className = (currentMode === 'quality-ai-r4p4') ? 'mode-btn active-quality-ai' : 'mode-btn';
+      ['a', 'b', 'c', 'd'].forEach(cand => {
+        const btn = document.getElementById('btn-mode-quality-r4p7-' + cand);
+        if (btn) btn.className = (currentMode === 'quality-ai-r4p7-' + cand) ? 'mode-btn active-quality-ai' : 'mode-btn';
+      });
       ['a', 'b', 'c', 'd', 'e'].forEach(cand => {
         const btn = document.getElementById('btn-mode-quality-r4p6-' + cand);
         if (btn) btn.className = (currentMode === 'quality-ai-r4p6-' + cand) ? 'mode-btn active-quality-ai' : 'mode-btn';

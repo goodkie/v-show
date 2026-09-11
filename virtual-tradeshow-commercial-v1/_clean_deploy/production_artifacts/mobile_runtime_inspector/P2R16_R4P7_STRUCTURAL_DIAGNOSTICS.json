@@ -1,0 +1,37 @@
+{
+  "PHASE": "7C.2R4P7",
+  "SECTION": "STRUCTURAL DIAGNOSTICS & FORENSIC SYNTHESIS",
+  "HYPOTHESIS_TESTED": "QUALITY_AI_REFERENCE visual superiority stems from point-splatting with hole inpainting rather than mesh stretch, and behaves like rotation-dominant projection.",
+  "FORENSIC_FINDINGS": {
+    "PROVENANCE": "Quality AI Reference contains 91.85% direct physical pixels, 8.15% Telea inpainting.",
+    "MESH_VS_SPLATTING": "R4P4-R4P6 mesh triangulation bridged depth discontinuities with rubber-sheet triangles, causing stretch artifacts at Yaw 150 and 240. Reference uses point splatting where occlusion leaves empty holes filled smoothly with Telea, avoiding triangle shear.",
+    "ROTATION_DOMINANCE": "In rotation-dominant panorama projection (R4P7 Candidates B-D), rays are projected via H = K * R * K^-1 with camera ownership assigned to the angularly nearest camera. This eliminates metric depth extrapolation errors and depth-mesh stretching entirely."
+  },
+  "CANDIDATE_COMPARISON": {
+    "A_CONTROL": "Previous R4P6 control baseline (mesh-derived depth reprojection).",
+    "B_PURE_ROTATION": "Zero depth warp, pure spherical-to-perspective rotation. Completely free of projective tearing and stretching.",
+    "C_ROTATION_ROMA_RESIDUAL": "B + smooth cosine-damped RoMa parallax residual (max 2.5px) for improved seam alignment.",
+    "D_STRUCTURE_PRESERVING": "C + zero-warp stiffness clamps at YAW 150 and YAW 240 critical structural boundaries, preserving architectural straightness."
+  },
+  "SEAM_INTEGRITY": {
+    "SEAM_DISCONTINUITY_MAX_PX_CANDIDATE_B": 3.8,
+    "SEAM_DISCONTINUITY_MAX_PX_CANDIDATE_C": 1.2,
+    "SEAM_DISCONTINUITY_MAX_PX_CANDIDATE_D": 0.9,
+    "YAW150_OCCLUSION_DISTORTION": "ELIMINATED",
+    "YAW240_OCCLUSION_DISTORTION": "ELIMINATED"
+  },
+  "INVARIANTS_COMPLIANCE": {
+    "VGGT_FORWARD_COUNT": 0,
+    "DEPTH_MODEL_EXECUTION_COUNT": 0,
+    "ROMA_INFERENCE_COUNT": 0,
+    "BA_EXECUTION_COUNT": 0,
+    "RGB_INPAINT_USED": false,
+    "GENERATIVE_PIXEL_COUNT": 0,
+    "REFERENCE_RGB_PIXEL_COUNT": 0,
+    "12K_RENDER_EXECUTED": false,
+    "MASTER_TOUCHED": false,
+    "CUSTOMER_DEFAULT": "P2R13",
+    "OWNER_VISUAL_ACCEPTANCE": false
+  },
+  "RECOMMENDATION": "Candidate D is recommended for Owner Visual Review as the cleanest 100% physical-RGB candidate without depth-mesh distortion."
+}

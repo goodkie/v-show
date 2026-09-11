@@ -1,0 +1,21 @@
+{
+  "PHASE": "7C.2R4P7",
+  "SECTION": "REFERENCE PIXEL PROVENANCE AUDIT",
+  "REFERENCE_RGB_SOURCE": "ORIGINAL_PHYSICAL_3000x4000",
+  "REFERENCE_PIXEL_OPERATION": "MIXED",
+  "REFERENCE_DIRECT_PHYSICAL_PIXEL_RATIO": 0.918484,
+  "REFERENCE_WARPED_PHYSICAL_PIXEL_RATIO": 0.0,
+  "REFERENCE_MULTI_SOURCE_BLEND_RATIO": 0.0,
+  "REFERENCE_INPAINT_PIXEL_RATIO": 0.081516,
+  "REFERENCE_GENERATIVE_PIXEL_RATIO": 0.0,
+  "REFERENCE_UNKNOWN_PIXEL_RATIO": 0.0,
+  "STRATIFIED_VALIDATION_SAMPLES": 100000,
+  "VALIDATION_SAMPLE_RESULTS": {
+    "direct_physical_samples": 91848,
+    "inpainted_samples": 8152,
+    "generative_samples": 0
+  },
+  "INPAINTING_ALGORITHM": "cv2.INPAINT_TELEA (radius=3)",
+  "REFERENCE_EXACT_PIXEL_PROVENANCE_NOT_AVAILABLE": false,
+  "CONCLUSION": "Quality AI Reference RGB is directly sampled from physical stills where 3D points project (91.85%), but 8.15% of pixels are synthetic Telea inpaint filling holes between projected points. Zero diffusion/generative AI pixels."
+}

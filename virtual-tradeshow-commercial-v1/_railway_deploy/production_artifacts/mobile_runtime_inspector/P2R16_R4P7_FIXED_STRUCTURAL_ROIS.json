@@ -1,0 +1,90 @@
+{
+  "ROI_000": {
+    "yaw_deg": 0.0,
+    "x_center": 0,
+    "box": [
+      -150,
+      100,
+      150,
+      520
+    ],
+    "description": "Door / Entry Frame"
+  },
+  "ROI_060": {
+    "yaw_deg": 60.0,
+    "x_center": 682,
+    "box": [
+      532,
+      100,
+      832,
+      520
+    ],
+    "description": "Regression guard: Wall / picture frame continuity"
+  },
+  "ROI_090": {
+    "yaw_deg": 90.0,
+    "x_center": 1024,
+    "box": [
+      874,
+      100,
+      1174,
+      520
+    ],
+    "description": "Ceiling trim / right wall transition"
+  },
+  "ROI_150": {
+    "yaw_deg": 150.0,
+    "x_center": 1706,
+    "box": [
+      1546,
+      120,
+      1866,
+      540
+    ],
+    "description": "Critical defect: Wood cabinet / vertical frame / bright window / wall boundary"
+  },
+  "ROI_180": {
+    "yaw_deg": 180.0,
+    "x_center": 2048,
+    "box": [
+      1898,
+      100,
+      2198,
+      520
+    ],
+    "description": "South window / desk frame"
+  },
+  "ROI_240": {
+    "yaw_deg": 240.0,
+    "x_center": 2730,
+    "box": [
+      2570,
+      110,
+      2890,
+      530
+    ],
+    "description": "Critical defect: Window / furniture / wall boundary discontinuity"
+  },
+  "ROI_270": {
+    "yaw_deg": 270.0,
+    "x_center": 3072,
+    "box": [
+      2922,
+      100,
+      3222,
+      520
+    ],
+    "description": "West display corner"
+  },
+  "ROI_345": {
+    "yaw_deg": 345.0,
+    "x_center": 3925,
+    "box": [
+      3775,
+      100,
+      4075,
+      520
+    ],
+    "description": "Closure boundary approach"
+  }
+}

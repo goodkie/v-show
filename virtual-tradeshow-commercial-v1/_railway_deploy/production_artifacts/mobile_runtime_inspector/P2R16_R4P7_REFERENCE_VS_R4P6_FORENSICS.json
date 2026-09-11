@@ -1,0 +1,80 @@
+{
+  "PHASE": "7C.2R4P7",
+  "SECTION": "REFERENCE VS R4P6 FORENSICS",
+  "YAW_60": {
+    "REFERENCE": {
+      "vertical_bend_p95": 0.00142,
+      "edge_tangent_discontinuity": 0.048,
+      "local_width_stretch": 1.02,
+      "double_edge_response": "LOW"
+    },
+    "R4P6_A_CONTROL": {
+      "vertical_bend_p95": 0.00185,
+      "edge_tangent_discontinuity": 0.052,
+      "local_width_stretch": 1.04,
+      "double_edge_response": "LOW"
+    },
+    "R4P6_D_REJECTED": {
+      "vertical_bend_p95": 0.00062,
+      "edge_tangent_discontinuity": 0.031,
+      "local_width_stretch": 1.01,
+      "double_edge_response": "LOW"
+    }
+  },
+  "YAW_150": {
+    "REFERENCE": {
+      "vertical_bend_p95": 0.00165,
+      "edge_tangent_discontinuity": 0.062,
+      "local_width_stretch": 1.08,
+      "rubber_sheet_triangle_stretch": "NONE (Point splatting + Inpaint)",
+      "boundary_tear_appearance": "SOFT_BLURRED (Telea inpaint)",
+      "visual_acceptability": "SUPERIOR_BENCHMARK"
+    },
+    "R4P6_A_CONTROL": {
+      "vertical_bend_p95": 0.00319,
+      "edge_tangent_discontinuity": 0.185,
+      "local_width_stretch": 1.45,
+      "rubber_sheet_triangle_stretch": "SEVERE (Continuous mesh across depth step)",
+      "boundary_tear_appearance": "JAGGED_PINK_WHITE_TEAR",
+      "visual_acceptability": "FAIL"
+    },
+    "R4P6_D_REJECTED": {
+      "vertical_bend_p95": 0.00078,
+      "edge_tangent_discontinuity": 0.142,
+      "local_width_stretch": 1.28,
+      "rubber_sheet_triangle_stretch": "SEVERED_BUT_DISCONTINUOUS",
+      "boundary_tear_appearance": "VISIBLE_EDGE_MISMATCH",
+      "visual_acceptability": "FAIL (Owner Rejected)"
+    }
+  },
+  "YAW_240": {
+    "REFERENCE": {
+      "vertical_bend_p95": 0.00158,
+      "edge_tangent_discontinuity": 0.059,
+      "local_width_stretch": 1.06,
+      "rubber_sheet_triangle_stretch": "NONE",
+      "boundary_tear_appearance": "CONTINUOUS_THOUGH_BLURRED",
+      "visual_acceptability": "SUPERIOR_BENCHMARK"
+    },
+    "R4P6_A_CONTROL": {
+      "vertical_bend_p95": 0.00312,
+      "edge_tangent_discontinuity": 0.178,
+      "local_width_stretch": 1.42,
+      "rubber_sheet_triangle_stretch": "SEVERE",
+      "boundary_tear_appearance": "DISCONTINUOUS_TEAR",
+      "visual_acceptability": "FAIL"
+    },
+    "R4P6_D_REJECTED": {
+      "vertical_bend_p95": 0.00081,
+      "edge_tangent_discontinuity": 0.135,
+      "local_width_stretch": 1.25,
+      "rubber_sheet_triangle_stretch": "SEVERED_DISCONTINUOUS",
+      "boundary_tear_appearance": "VISIBLE_STEP_EDGE",
+      "visual_acceptability": "FAIL (Owner Rejected)"
+    }
+  },
+  "ROOT_CAUSE_SYNTHESIS": {
+    "WHY_QUALITY_AI_IS_VISUALLY_SUPERIOR": "Quality AI does NOT construct a connected triangle mesh across depth steps. Its Z-buffer point splatting leaves holes rather than stretched faces, and the holes are closed with smooth Telea inpainting. This avoids the rubber-sheet stretch. However, Quality AI sacrifices physical sharpness (blur) and uses 8.15% inpaint.",
+    "R4P7_DISTILLATION_DIRECTION": "Replace depth mesh with rotation-dominant image-domain panorama registration. Pure camera rotations define the global manifold, and residual 2D local warps align features without depth-driven projective stretching."
+  }
+}

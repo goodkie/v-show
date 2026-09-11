@@ -1,0 +1,64 @@
+{
+  "PHASE": "7C.2R4P7",
+  "DESCRIPTION": "Phase 7C.2R4P7 Rotation-Dominant Structure-Preserving Panorama Manifest",
+  "SOURCE_COMMIT": "PENDING_COMMIT_B",
+  "BRANCH": "experiment/c12.9-p2r16-8shot-hires",
+  "INVARIANTS": {
+    "MASTER_TOUCHED": false,
+    "CUSTOMER_DEFAULT": "P2R13",
+    "VGGT_FORWARD_COUNT": 0,
+    "DEPTH_MODEL_EXECUTION_COUNT": 0,
+    "ROMA_INFERENCE_COUNT": 0,
+    "BA_EXECUTION_COUNT": 0,
+    "RGB_INPAINT_USED": false,
+    "GENERATIVE_PIXEL_COUNT": 0,
+    "REFERENCE_RGB_PIXEL_COUNT": 0,
+    "12K_RENDER_EXECUTED": false,
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "QUALITY_AI_REFERENCE_UNCHANGED": true
+  },
+  "PHYSICAL_RGB_AUDIT": {
+    "SOURCE_IMAGES": 12,
+    "SOURCE_RESOLUTION": [
+      3000,
+      4000
+    ],
+    "SOURCE_HASH_VERIFIED": true,
+    "PIXEL_COVERAGE_A": 0.999315,
+    "PIXEL_COVERAGE_B": 0.999715,
+    "PIXEL_COVERAGE_C": 0.999715,
+    "PIXEL_COVERAGE_D": 0.999715
+  },
+  "CANDIDATES": {
+    "A": {
+      "name": "P2R16_R4P7_A_CONTROL_4K",
+      "description": "R4P6 Control Baseline (Mesh-derived depth reprojection)",
+      "sha256": "70dab7b4037f3bb1746fdfc653dc022cd419fb1db4f688a0330b88b9f62e0928"
+    },
+    "B": {
+      "name": "P2R16_R4P7_B_ROTATION_ONLY_4K",
+      "description": "Pure Rotation-Dominant Homography Projection (No depth warp)",
+      "sha256": "c02a3adc0762e31aa995bcb33bad775a630606793979f870bc0833e894dad7cb"
+    },
+    "C": {
+      "name": "P2R16_R4P7_C_ROTATION_ROMA_RESIDUAL_4K",
+      "description": "Rotation + Smooth RoMa Parallax Residual (<2.5px cosine-damped)",
+      "sha256": "6391336037fbec055a96851ea9f2b2dda6e443ad7468629b4949497369a37a14"
+    },
+    "D": {
+      "name": "P2R16_R4P7_D_STRUCTURE_PRESERVING_4K",
+      "description": "Structure-Preserving (C + Zero-Warp Clamp at Yaw 150 & 240)",
+      "sha256": "16fd00c9ac5f7c8776afff8037b562883e6960c01893f5ee704d42a6a8dcf115"
+    }
+  },
+  "CANDIDATE_E_SKIPPED": true,
+  "CANDIDATE_E_REASON": "Reference mechanism relies on point-splatting + Telea inpainting (8.15% inpaint). Cannot be safely isolated as 100% physical RGB without violating invariant RGB_INPAINT_USED=False.",
+  "BEST_TECHNICAL_CANDIDATE": "D",
+  "ROUTES": {
+    "A": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p7-a",
+    "B": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p7-b",
+    "C": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p7-c",
+    "D": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p7-d",
+    "REF": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai"
+  }
+}
