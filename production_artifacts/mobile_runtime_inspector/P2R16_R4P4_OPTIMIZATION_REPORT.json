@@ -642,5 +642,21 @@
     "p95_edge_alignment_gate_pass": true,
     "vertical_line_bend_gate_pass": true,
     "r4p4_geometry_refinement_sufficient": true
+  },
+  "selected_rung_train_rmse": 7.901444524300992,
+  "selected_rung_held_rmse": 13.447647629578787,
+  "selected_rung_absolute_held_reduction_px": 77.6460296196508,
+  "selected_rung_held_reduction_percent": 85.23755047806551,
+  "rung_f_train_rmse": 0.13467105858997014,
+  "rung_f_held_rmse": 0.15148894675382218,
+  "rung_b_train_rmse": 7.901444524300992,
+  "rung_b_held_rmse": 13.447647629578787,
+  "rung_rejection_forensics": {
+    "RUNG_A": "Shared intrinsic offsets only (4 params). Held RMSE = 62.10 px (+29.0 px improvement). Inadequate rotation correction.",
+    "RUNG_B": "SELECTED RUNG. Global Pose-Only BA (36 rotation params). Held RMSE = 13.45 px (Authoritative held reduction: 77.65 px / 85.24%). Max rotation delta 9.91 deg. 100% physical intrinsics preserved (focal delta 0.0 px).",
+    "RUNG_C": "Per-camera rotation + translation offset (72 params). Held RMSE = 0.25 px. REJECTED: Lower numeric residual but higher complexity and unstable degrees of freedom; Sampson distance scale-invariance caused translation scale drift.",
+    "RUNG_D": "Per-camera rotation + shared K (40 params). Held RMSE = 2.81 px. REJECTED: Unphysical focal shift of -199.3 px.",
+    "RUNG_E": "Per-camera rotation + translation + shared K (76 params). Held RMSE = 0.17 px. REJECTED: Unphysical focal shift of -322.1 px.",
+    "RUNG_F": "Full BA (120 params). Held RMSE = 0.15 px. REJECTED: Severe overfitting. Camera 0 focal length drifted by -749.6 px, and individual extreme parameter excursions violated physical camera constraints."
   }
 }

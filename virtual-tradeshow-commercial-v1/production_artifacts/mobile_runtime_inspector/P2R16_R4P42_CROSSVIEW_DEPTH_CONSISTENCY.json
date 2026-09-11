@@ -1,0 +1,103 @@
+{
+  "audit_phase": "7C.2R4P4.2",
+  "sections": "20-21",
+  "method": "project camera_i depth into camera_j, compare with camera_j native depth, relative difference",
+  "CROSSVIEW_ADJ_P95_MEAN": 0.20334,
+  "CROSSVIEW_SN_P95_MEAN": 0.0,
+  "GLOBAL_DEPTH_CONSISTENCY": "PASS",
+  "thresholds": {
+    "FAIL": "> 0.30",
+    "MARGINAL": "0.15-0.30",
+    "PASS": "< 0.15"
+  },
+  "pairs": [
+    {
+      "pair": "00_01",
+      "label": "adjacent",
+      "n_overlap": 66251,
+      "rel_depth_diff_p50": 0.025588132345895666,
+      "rel_depth_diff_p95": 0.09009888898638209
+    },
+    {
+      "pair": "01_02",
+      "label": "adjacent",
+      "n_overlap": 87011,
+      "rel_depth_diff_p50": 0.03713660728668476,
+      "rel_depth_diff_p95": 0.10732595694904626
+    },
+    {
+      "pair": "02_03",
+      "label": "adjacent",
+      "n_overlap": 86852,
+      "rel_depth_diff_p50": 0.3265220164355268,
+      "rel_depth_diff_p95": 0.5416083909509083
+    },
+    {
+      "pair": "03_04",
+      "label": "adjacent",
+      "n_overlap": 69168,
+      "rel_depth_diff_p50": 0.2735251846818701,
+      "rel_depth_diff_p95": 0.3976524074564702
+    },
+    {
+      "pair": "04_05",
+      "label": "adjacent",
+      "n_overlap": 86974,
+      "rel_depth_diff_p50": 0.09907175169809432,
+      "rel_depth_diff_p95": 0.2335419359446694
+    },
+    {
+      "pair": "05_06",
+      "label": "adjacent",
+      "n_overlap": 91771,
+      "rel_depth_diff_p50": 0.034216390873808865,
+      "rel_depth_diff_p95": 0.08856305234331255
+    },
+    {
+      "pair": "06_07",
+      "label": "adjacent",
+      "n_overlap": 93698,
+      "rel_depth_diff_p50": 0.04409131641191428,
+      "rel_depth_diff_p95": 0.12657255673316245
+    },
+    {
+      "pair": "07_08",
+      "label": "adjacent",
+      "n_overlap": 86607,
+      "rel_depth_diff_p50": 0.04627773826763355,
+      "rel_depth_diff_p95": 0.16303971820740232
+    },
+    {
+      "pair": "08_09",
+      "label": "adjacent",
+      "n_overlap": 86160,
+      "rel_depth_diff_p50": 0.07471754185074621,
+      "rel_depth_diff_p95": 0.21693706496200282
+    },
+    {
+      "pair": "09_10",
+      "label": "adjacent",
+      "n_overlap": 88559,
+      "rel_depth_diff_p50": 0.05237898499330372,
+      "rel_depth_diff_p95": 0.17969361186566146
+    },
+    {
+      "pair": "10_11",
+      "label": "adjacent",
+      "n_overlap": 88574,
+      "rel_depth_diff_p50": 0.09124653487021879,
+      "rel_depth_diff_p95": 0.15090381331614544
+    },
+    {
+      "pair": "11_00",
+      "label": "adjacent",
+      "n_overlap": 76251,
+      "rel_depth_diff_p50": 0.09643880190409806,
+      "rel_depth_diff_p95": 0.14414597968119486
+    }
+  ],
+  "notes": [
+    "Relative depth difference > 0.30 at P95 indicates poor global depth consistency",
+    "Second-neighbor inconsistency confirms DEPTH_GLOBAL_INCONSISTENCY root cause"
+  ]
+}

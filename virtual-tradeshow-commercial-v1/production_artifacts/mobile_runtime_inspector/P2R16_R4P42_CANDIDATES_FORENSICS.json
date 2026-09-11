@@ -1,0 +1,70 @@
+{
+  "PHASE": "7C.2R4P4.2",
+  "ARTIFACT_TYPE": "CANDIDATE_4K_PANORAMAS",
+  "INVARIANTS": {
+    "VGGT_FORWARD_COUNT": 0,
+    "DEPTH_MODEL_EXECUTION_COUNT": 0,
+    "ROMA_INFERENCE_COUNT": 0,
+    "BA_EXECUTION_COUNT": 0,
+    "MASTER_TOUCHED": false,
+    "CUSTOMER_DEFAULT": "P2R13",
+    "OWNER_VISUAL_ACCEPTANCE": false
+  },
+  "CANDIDATES": {
+    "A": {
+      "filename": "P2R16_R4P42_CANDIDATE_A_4K.jpg",
+      "sha256": "a1a1782cadfb4349978543f2a31e6657edd84f7eb77c52025682b0b444b18703",
+      "bytes": 1137222,
+      "direct_coverage": 0.9993173467596308,
+      "final_coverage": 1.0,
+      "crack_recovered": 1742,
+      "mesh_resolution": 518,
+      "n_triangles": 4813269,
+      "duration_sec": 2.039918899536133
+    },
+    "B": {
+      "filename": "P2R16_R4P42_CANDIDATE_B_4K.jpg",
+      "sha256": "e4848d5f405a421abb51b4e59593d4eb918bfc40b1e8cf3cfbe50177dd6df6c6",
+      "bytes": 1003440,
+      "direct_coverage": 0.999299712204053,
+      "final_coverage": 0.999972960348114,
+      "crack_recovered": 1718,
+      "mesh_resolution": 1036,
+      "n_triangles": 19245094,
+      "duration_sec": 5.222341299057007
+    },
+    "C": {
+      "filename": "P2R16_R4P42_CANDIDATE_C_4K.jpg",
+      "sha256": "689e81dae7b450199c9844e2ab85ec90ad13702ba91d545d35811ddc67155484",
+      "bytes": 1020602,
+      "direct_coverage": 0.9993122523324639,
+      "final_coverage": 0.9999741359851525,
+      "crack_recovered": 1689,
+      "mesh_resolution": 1036,
+      "n_triangles": 19249548,
+      "duration_sec": 5.268911123275757
+    },
+    "D": {
+      "filename": "P2R16_R4P42_CANDIDATE_D_4K.jpg",
+      "sha256": "30a2431840725cb1d983384cc45d0d478f5e4f621471fcf0f826578fb90f101d",
+      "bytes": 1137507,
+      "direct_coverage": 0.9993173467596308,
+      "final_coverage": 1.0,
+      "crack_recovered": 1742,
+      "mesh_resolution": 518,
+      "n_triangles": 4813269,
+      "duration_sec": 1.3695464134216309
+    },
+    "E": {
+      "filename": "P2R16_R4P42_CANDIDATE_E_4K.jpg",
+      "sha256": "57b00ecf3ca836433128dd5a4a1b5eede71fde46cfe5a58e8cad9276379988cc",
+      "bytes": 1008636,
+      "direct_coverage": 0.9993377244682986,
+      "final_coverage": 0.9999835410814607,
+      "crack_recovered": 1648,
+      "mesh_resolution": 1036,
+      "n_triangles": 19294759,
+      "duration_sec": 6.098616123199463
+    }
+  }
+}

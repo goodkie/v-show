@@ -1,0 +1,140 @@
+{
+  "AVERAGE_DEPTH_EDGE_OFFSET_P95_PHYSICAL_PX": 352.96642519485687,
+  "MAX_DEPTH_EDGE_OFFSET_P95_PHYSICAL_PX": 1117.1809016047296,
+  "AVERAGE_EDGE_OVERLAP_IOU": 0.07170591594853028,
+  "DEPTH_TRANSITION_CLASSIFICATION": "BLURRED_AND_SHIFTED",
+  "PER_VIEW_STATS": [
+    {
+      "view": 0,
+      "shot_id": "SHOT_000",
+      "depth_edge_count": 1036,
+      "rgb_edge_count": 11837,
+      "depth_edge_offset_518_p95": 10.036274909973145,
+      "depth_edge_offset_physical_p95_px": 77.50019235500497,
+      "depth_edge_overlap_iou": 0.061686309442236534,
+      "depth_edge_transition_width_px": 29.343629343629342,
+      "rgb_edge_transition_width_px": 9.266409266409266
+    },
+    {
+      "view": 1,
+      "shot_id": "SHOT_030",
+      "depth_edge_count": 1036,
+      "rgb_edge_count": 9266,
+      "depth_edge_offset_518_p95": 13.117199897766113,
+      "depth_edge_offset_physical_p95_px": 101.29111890166882,
+      "depth_edge_overlap_iou": 0.056250932895494384,
+      "depth_edge_transition_width_px": 29.343629343629342,
+      "rgb_edge_transition_width_px": 9.266409266409266
+    },
+    {
+      "view": 2,
+      "shot_id": "SHOT_060",
+      "depth_edge_count": 1036,
+      "rgb_edge_count": 14698,
+      "depth_edge_offset_518_p95": 106.833740234375,
+      "depth_edge_offset_physical_p95_px": 824.9709670608107,
+      "depth_edge_overlap_iou": 0.0368523440282763,
+      "depth_edge_transition_width_px": 29.343629343629342,
+      "rgb_edge_transition_width_px": 9.266409266409266
+    },
+    {
+      "view": 3,
+      "shot_id": "SHOT_090",
+      "depth_edge_count": 1036,
+      "rgb_edge_count": 15248,
+      "depth_edge_offset_518_p95": 17.256698608398438,
+      "depth_edge_offset_physical_p95_px": 133.25635991041264,
+      "depth_edge_overlap_iou": 0.036848542233794926,
+      "depth_edge_transition_width_px": 29.343629343629342,
+      "rgb_edge_transition_width_px": 9.266409266409266
+    },
+    {
+      "view": 4,
+      "shot_id": "SHOT_120",
+      "depth_edge_count": 1036,
+      "rgb_edge_count": 14745,
+      "depth_edge_offset_518_p95": 34.61875534057617,
+      "depth_edge_offset_physical_p95_px": 267.32629606622527,
+      "depth_edge_overlap_iou": 0.03730593413436364,
+      "depth_edge_transition_width_px": 29.343629343629342,
+      "rgb_edge_transition_width_px": 9.266409266409266
+    },
+    {
+      "view": 5,
+      "shot_id": "SHOT_150",
+      "depth_edge_count": 1036,
+      "rgb_edge_count": 9263,
+      "depth_edge_offset_518_p95": 17.190000534057617,
+      "depth_edge_offset_physical_p95_px": 132.74131686530978,
+      "depth_edge_overlap_iou": 0.058771736737838434,
+      "depth_edge_transition_width_px": 29.343629343629342,
+      "rgb_edge_transition_width_px": 9.266409266409266
+    },
+    {
+      "view": 6,
+      "shot_id": "SHOT_180",
+      "depth_edge_count": 1036,
+      "rgb_edge_count": 4182,
+      "depth_edge_offset_518_p95": 52.39863586425781,
+      "depth_edge_offset_physical_p95_px": 404.6226707664696,
+      "depth_edge_overlap_iou": 0.11465740818204635,
+      "depth_edge_transition_width_px": 29.343629343629342,
+      "rgb_edge_transition_width_px": 9.266409266409266
+    },
+    {
+      "view": 7,
+      "shot_id": "SHOT_210",
+      "depth_edge_count": 1036,
+      "rgb_edge_count": 4103,
+      "depth_edge_offset_518_p95": 47.44807815551758,
+      "depth_edge_offset_physical_p95_px": 366.39442591133263,
+      "depth_edge_overlap_iou": 0.09007400957771006,
+      "depth_edge_transition_width_px": 29.343629343629342,
+      "rgb_edge_transition_width_px": 9.266409266409266
+    },
+    {
+      "view": 8,
+      "shot_id": "SHOT_240",
+      "depth_edge_count": 1039,
+      "rgb_edge_count": 7741,
+      "depth_edge_offset_518_p95": 144.6749267578125,
+      "depth_edge_offset_physical_p95_px": 1117.1809016047296,
+      "depth_edge_overlap_iou": 0.0722900499233849,
+      "depth_edge_transition_width_px": 29.343629343629342,
+      "rgb_edge_transition_width_px": 9.266409266409266
+    },
+    {
+      "view": 9,
+      "shot_id": "SHOT_270",
+      "depth_edge_count": 1036,
+      "rgb_edge_count": 6572,
+      "depth_edge_offset_518_p95": 13.369999885559082,
+      "depth_edge_offset_physical_p95_px": 103.24324235952959,
+      "depth_edge_overlap_iou": 0.09308435504830781,
+      "depth_edge_transition_width_px": 29.343629343629342,
+      "rgb_edge_transition_width_px": 9.266409266409266
+    },
+    {
+      "view": 10,
+      "shot_id": "SHOT_300",
+      "depth_edge_count": 1036,
+      "rgb_edge_count": 2910,
+      "depth_edge_offset_518_p95": 15.279999732971191,
+      "depth_edge_offset_physical_p95_px": 117.99227593027946,
+      "depth_edge_overlap_iou": 0.14927041985799744,
+      "depth_edge_transition_width_px": 29.343629343629342,
+      "rgb_edge_transition_width_px": 9.266409266409266
+    },
+    {
+      "view": 11,
+      "shot_id": "SHOT_330",
+      "depth_edge_count": 1075,
+      "rgb_edge_count": 9221,
+      "depth_edge_offset_518_p95": 76.28551483154297,
+      "depth_edge_offset_physical_p95_px": 589.0773346065093,
+      "depth_edge_overlap_iou": 0.0533789493209126,
+      "depth_edge_transition_width_px": 29.343629343629342,
+      "rgb_edge_transition_width_px": 9.266409266409266
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "audit_phase": "7C.2R4P4.2",
+  "sections": "24",
+  "method": "HoughLinesP on RGB Canny edges, backproject through depth, fit 3D line, measure residual",
+  "STRUCTURAL_3D_LINE_RESIDUAL_MEAN": 0.00137368,
+  "STRUCTURAL_3D_LINE_RESIDUAL_P95": 0.00319882,
+  "per_camera": [
+    {
+      "cam": 0,
+      "n_vertical_lines": 29,
+      "mean_3d_line_residual": 0.0007877989511125654
+    },
+    {
+      "cam": 1,
+      "n_vertical_lines": 29,
+      "mean_3d_line_residual": 0.0010072658519251888
+    },
+    {
+      "cam": 2,
+      "n_vertical_lines": 28,
+      "mean_3d_line_residual": 0.0018955000478335115
+    },
+    {
+      "cam": 3,
+      "n_vertical_lines": 29,
+      "mean_3d_line_residual": 0.0013709523001173309
+    },
+    {
+      "cam": 4,
+      "n_vertical_lines": 28,
+      "mean_3d_line_residual": 0.0016090122050503451
+    },
+    {
+      "cam": 5,
+      "n_vertical_lines": 14,
+      "mean_3d_line_residual": 0.0018153893461645108
+    },
+    {
+      "cam": 6,
+      "n_vertical_lines": 12,
+      "mean_3d_line_residual": 0.0010909393383098196
+    },
+    {
+      "cam": 7,
+      "n_vertical_lines": 2,
+      "mean_3d_line_residual": 0.0027454506456206715
+    },
+    {
+      "cam": 8,
+      "n_vertical_lines": 22,
+      "mean_3d_line_residual": 0.001179454095297113
+    },
+    {
+      "cam": 9,
+      "n_vertical_lines": 29,
+      "mean_3d_line_residual": 0.0017296162557876153
+    },
+    {
+      "cam": 10,
+      "n_vertical_lines": 9,
+      "mean_3d_line_residual": 0.0018749534740184685
+    },
+    {
+      "cam": 11,
+      "n_vertical_lines": 29,
+      "mean_3d_line_residual": 0.0010426492132482193
+    }
+  ],
+  "notes": [
+    "Residual in depth units (normalized 0-1.26 range)",
+    "High residual = depth surface is not planar/straight along detected vertical edges",
+    "Indicates vertical structure bending in 3D space"
+  ]
+}

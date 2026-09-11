@@ -1,0 +1,166 @@
+{
+  "audit_phase": "7C.2R4P4.2",
+  "section": "46_50_51",
+  "R4P4_CORE_IMPLEMENTATION_COMMIT": "10db8ab397ce03cd57ae73e10ca59b2e8052f05b",
+  "R4P4_VIEWER_ROUTING_FIX_COMMIT": "d5fda57e2deff191fe89e893ce14fa6391462d11",
+  "OWNER_VISUAL_ACCEPTANCE": false,
+  "CUSTOMER_DEFAULT": "P2R13",
+  "VERTICAL_LINE_BEND_GATE_STATUS": "NOT_PROVEN",
+  "confirmed_root_causes": [
+    {
+      "id": "RC1",
+      "name": "DEPTH_EDGE_BLEED",
+      "status": "CONFIRMED",
+      "evidence": {
+        "avg_depth_edge_offset_p95_px": 352.97,
+        "max_depth_edge_offset_p95_px": 1117.18,
+        "depth_rgb_edge_iou": 0.0717,
+        "worst_camera": "SHOT_240 (CAM08)",
+        "structural_edge_crossing_pct": 89.4
+      },
+      "mechanism": "VGGT depth map at 518x518 has 7.72 physical pixels per sample. Depth boundaries are massively blurred relative to RGB edges. When mesh is rasterized, the depth boundary triangle does not align with the physical RGB edge, producing a ~353 px feathered zone where wrong-camera color samples are blended.",
+      "visual_symptoms": [
+        "jagged white/pink vertical artifacts",
+        "soft/blended seams"
+      ],
+      "affected_regions": [
+        "YAW_150 (CAM05)",
+        "YAW_240 (CAM08)",
+        "YAW_060 (CAM02)"
+      ]
+    },
+    {
+      "id": "RC2",
+      "name": "MESH_DENSITY_LIMIT",
+      "status": "CONFIRMED",
+      "evidence": {
+        "depth_resolution": "518x518",
+        "pano_12k_px_per_triangle": 500.21,
+        "physical_px_per_triangle": 29.81,
+        "triangle_accepted_pct": 75.05,
+        "depth_gradient_p95": 0.001506
+      },
+      "mechanism": "Each triangle in the mesh covers ~500 panorama pixels and ~30 physical pixels. Any scene detail smaller than 8 physical pixels cannot be represented. The polygon banding and faceted appearance of structure surfaces is a direct consequence of this resolution limit.",
+      "visual_symptoms": [
+        "vertical structure bending",
+        "window/cabinet width instability",
+        "local geometry waviness"
+      ],
+      "affected_regions": [
+        "global \u2014 all cameras"
+      ]
+    }
+  ],
+  "partial_root_causes": [
+    {
+      "id": "RC3",
+      "name": "LOCAL_DEPTH_SCALE_INCONSISTENCY",
+      "status": "PARTIAL \u2014 worst pairs 02-03 and 03-04",
+      "evidence": {
+        "adj_rel_depth_diff_p95_mean": 0.2033,
+        "worst_pair_02_03_p95": 0.5416,
+        "worst_pair_03_04_p95": 0.3977,
+        "second_neighbor_data": "INSUFFICIENT_OVERLAP \u2014 not measurable in model space"
+      },
+      "mechanism": "Pairs 02\u219203 (CAM02=60\u00b0 and CAM03=90\u00b0) show p95 relative depth difference 0.54, well above FAIL threshold. This indicates the VGGT depth scale for these two cameras is mutually inconsistent \u2014 consistent with the observed discontinuity around YAW 60-90\u00b0.",
+      "visual_symptoms": [
+        "remaining structural discontinuities around 60\u00b0"
+      ],
+      "affected_regions": [
+        "YAW_060-090 (CAM02-03)"
+      ],
+      "note": "Second-neighbor consistency not measurable due to camera FoV \u2014 no overlap in model space"
+    }
+  ],
+  "not_confirmed": [
+    {
+      "id": "RC4",
+      "name": "VERTICAL_LINE_BEND_FROM_BA",
+      "status": "NOT_CONFIRMED",
+      "evidence": {
+        "VERTICAL_LINE_BEND_GATE_STATUS": "NOT_PROVEN",
+        "3d_line_residual_mean": 0.00137368,
+        "3d_line_residual_p95": 0.00319882,
+        "note": "3D line residual is very small in depth units; visual bend may be a rendering artifact of depth bleed rather than a true BA-induced pose error"
+      },
+      "mechanism": "Cannot be confirmed without ground truth vertical structure measurements"
+    }
+  ],
+  "decision_matrix": {
+    "title": "R4P4 vs Candidate Remediation",
+    "options": [
+      {
+        "option": "A \u2014 BASELINE (no change)",
+        "impact_jagged": "NONE",
+        "impact_bend": "NONE",
+        "impact_sharpness": "NONE",
+        "risk": "NONE",
+        "recommendation": "Baseline reference only"
+      },
+      {
+        "option": "B \u2014 2x mesh density",
+        "impact_jagged": "LOW \u2014 reduces polygon banding, not edge bleed",
+        "impact_bend": "NONE",
+        "impact_sharpness": "LOW",
+        "risk": "LOW \u2014 pure upsampling, no new data",
+        "recommendation": "Render and compare"
+      },
+      {
+        "option": "C \u2014 edge-aware depth upsample 2x",
+        "impact_jagged": "MEDIUM \u2014 depth edges closer to RGB edges",
+        "impact_bend": "LOW",
+        "impact_sharpness": "MEDIUM",
+        "risk": "MEDIUM \u2014 guided filter may hallucinate at complex boundaries",
+        "recommendation": "Render and compare \u2014 highest expected improvement"
+      },
+      {
+        "option": "D \u2014 confidence gating 1x",
+        "impact_jagged": "MEDIUM \u2014 masks problem triangles at boundaries",
+        "impact_bend": "NONE",
+        "impact_sharpness": "NONE",
+        "risk": "MEDIUM \u2014 may increase visible cracks",
+        "recommendation": "Render and compare"
+      },
+      {
+        "option": "E \u2014 edge-aware 2x + confidence gating",
+        "impact_jagged": "HIGH \u2014 best combined approach",
+        "impact_bend": "LOW",
+        "impact_sharpness": "HIGH",
+        "risk": "HIGH \u2014 may cause unexpected artifacts at complex seams",
+        "recommendation": "Render and compare \u2014 deploy only if owner approves"
+      }
+    ]
+  },
+  "phase_status": {
+    "part1_depth_rgb_alignment": "COMPLETE",
+    "part1_depth_edge_forensics": "COMPLETE",
+    "part2_mesh_topology": "COMPLETE",
+    "part2_cross_view_consistency": "COMPLETE",
+    "part2_structural_3d_lines": "COMPLETE",
+    "part2_diagnostic_pngs": "COMPLETE",
+    "part3_representation_comparison": "COMPLETE",
+    "part3_root_cause_report": "COMPLETE",
+    "candidate_panoramas_A_E": "PENDING \u2014 requires Modal render",
+    "viewer_modes_r4p42_a_e": "PENDING \u2014 requires candidate panoramas",
+    "railway_deployment_internal_qa": "PENDING",
+    "headless_verification": "PENDING",
+    "owner_visual_acceptance": false
+  },
+  "pending_next_steps": [
+    "Generate candidate 4K panoramas A-E on Modal (B: bilinear 2x, C: guided-filter 2x, D: confidence-gated 1x, E: guided+gated 2x)",
+    "Patch viewer with quality-ai-r4p42-a through quality-ai-r4p42-e routes",
+    "Deploy to Railway internal QA (DO NOT change CUSTOMER_DEFAULT from P2R13)",
+    "Headless verification at YAW 60/150/240 flat 1:1",
+    "Owner visual review of candidates B-E"
+  ],
+  "hard_constraints_active": {
+    "VGGT_FORWARD_COUNT": 0,
+    "ROMA_INFERENCE_COUNT": 0,
+    "BA_EXECUTION_COUNT": 0,
+    "DEPTH_MODEL_EXECUTION_COUNT": 0,
+    "TOUCH_MASTER": false,
+    "CUSTOMER_DEFAULT": "P2R13",
+    "MODIFY_R4P4_CAMERAS": false,
+    "RERASTERIZE_12K": false
+  }
+}

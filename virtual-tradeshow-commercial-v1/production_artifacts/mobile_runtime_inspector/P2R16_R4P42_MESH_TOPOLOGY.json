@@ -1,0 +1,111 @@
+{
+  "audit_phase": "7C.2R4P4.2",
+  "sections": "13-15",
+  "MESH_GRID_WIDTH": 518,
+  "MESH_GRID_HEIGHT": 518,
+  "QUADS_PER_VIEW": 267289,
+  "TRIS_PER_VIEW": 534578,
+  "TOTAL_TRIS_12_CAMS": 6414936,
+  "PHYSICAL_PX_PER_DEPTH_SAMPLE": 7.722,
+  "PHYSICAL_PX_PER_TRIANGLE": 29.8147,
+  "PANO_12K_PX_PER_DEPTH_SAMPLE": 31.6293,
+  "PANO_12K_PX_PER_TRIANGLE": 500.2077,
+  "TRIANGLE_ACCEPTED_PCT": 75.0484,
+  "DEPTH_GRADIENT_P95": 0.00150633,
+  "REL_DEPTH_REJECTION_THRESHOLD": 0.2,
+  "STRUCTURAL_EDGE_CROSSING_TOTAL": 103640,
+  "PLANAR_RESIDUAL_LAPLACIAN_P95": 0.00607824,
+  "per_camera": [
+    {
+      "cam": 0,
+      "tri_accepted": 401192,
+      "tri_total": 534578,
+      "tri_accepted_pct": 75.05,
+      "edge_crossings": 11203
+    },
+    {
+      "cam": 1,
+      "tri_accepted": 401192,
+      "tri_total": 534578,
+      "tri_accepted_pct": 75.05,
+      "edge_crossings": 8855
+    },
+    {
+      "cam": 2,
+      "tri_accepted": 401192,
+      "tri_total": 534578,
+      "tri_accepted_pct": 75.05,
+      "edge_crossings": 13945
+    },
+    {
+      "cam": 3,
+      "tri_accepted": 401192,
+      "tri_total": 534578,
+      "tri_accepted_pct": 75.05,
+      "edge_crossings": 14976
+    },
+    {
+      "cam": 4,
+      "tri_accepted": 401192,
+      "tri_total": 534578,
+      "tri_accepted_pct": 75.05,
+      "edge_crossings": 14465
+    },
+    {
+      "cam": 5,
+      "tri_accepted": 401192,
+      "tri_total": 534578,
+      "tri_accepted_pct": 75.05,
+      "edge_crossings": 8784
+    },
+    {
+      "cam": 6,
+      "tri_accepted": 401192,
+      "tri_total": 534578,
+      "tri_accepted_pct": 75.05,
+      "edge_crossings": 3702
+    },
+    {
+      "cam": 7,
+      "tri_accepted": 401192,
+      "tri_total": 534578,
+      "tri_accepted_pct": 75.05,
+      "edge_crossings": 3927
+    },
+    {
+      "cam": 8,
+      "tri_accepted": 401192,
+      "tri_total": 534578,
+      "tri_accepted_pct": 75.05,
+      "edge_crossings": 7283
+    },
+    {
+      "cam": 9,
+      "tri_accepted": 401192,
+      "tri_total": 534578,
+      "tri_accepted_pct": 75.05,
+      "edge_crossings": 5882
+    },
+    {
+      "cam": 10,
+      "tri_accepted": 401192,
+      "tri_total": 534578,
+      "tri_accepted_pct": 75.05,
+      "edge_crossings": 2283
+    },
+    {
+      "cam": 11,
+      "tri_accepted": 401192,
+      "tri_total": 534578,
+      "tri_accepted_pct": 75.05,
+      "edge_crossings": 8335
+    }
+  ],
+  "classification": "MESH_DENSITY_LIMIT_CONFIRMED",
+  "notes": [
+    "Each depth sample controls 7.72x7.72 physical px",
+    "Each triangle controls ~29.8 physical px \u2014 very coarse for 12K output",
+    "PANO_12K triangles span ~500.2 panorama pixels each",
+    "Structural edge crossings confirm depth does not follow RGB structure boundaries"
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "DEPTH_MODEL_NATIVE_WIDTH": 518,
+  "DEPTH_MODEL_NATIVE_HEIGHT": 518,
+  "DEPTH_STORED_WIDTH": 518,
+  "DEPTH_STORED_HEIGHT": 518,
+  "DEPTH_UPSAMPLE_WIDTH": 518,
+  "DEPTH_UPSAMPLE_HEIGHT": 518,
+  "DEPTH_INTERPOLATION_METHOD": "TRIANGLE_VERTEX_LINEAR",
+  "DEPTH_COORDINATE_SYSTEM": "CAMERA_CANONICAL_Z",
+  "DEPTH_VALUE_TYPE": "FLOAT32_METERS_CANONICAL",
+  "DEPTH_CONFIDENCE_AVAILABLE": false,
+  "PHYSICAL_RGB_WIDTH": 3000,
+  "PHYSICAL_RGB_HEIGHT": 4000,
+  "PHYSICAL_RGB_PIXELS_PER_DEPTH_SAMPLE_X": 7.722007722007722,
+  "PHYSICAL_RGB_PIXELS_PER_DEPTH_SAMPLE_Y": 7.722007722007722,
+  "PHYSICAL_RGB_AREA_PER_DEPTH_SAMPLE": 59.62940325874688,
+  "LOW_RES_DEPTH_GEOMETRY_LIMIT": true,
+  "DEPTH_RGB_ORIENTATION_MATCH": true,
+  "DEPTH_RGB_ROUNDTRIP_MAX_ERROR_PX": 0.0,
+  "TEST_POINTS": [
+    {
+      "name": "TOP",
+      "u_rgb": 1500.0,
+      "v_rgb": 0.0,
+      "error_px": 0.0
+    },
+    {
+      "name": "CENTER",
+      "u_rgb": 1500.0,
+      "v_rgb": 2000.0,
+      "error_px": 0.0
+    },
+    {
+      "name": "BOTTOM",
+      "u_rgb": 1500.0,
+      "v_rgb": 3999.0,
+      "error_px": 0.0
+    },
+    {
+      "name": "LEFT",
+      "u_rgb": 0.0,
+      "v_rgb": 2000.0,
+      "error_px": 0.0
+    },
+    {
+      "name": "RIGHT",
+      "u_rgb": 2999.0,
+      "v_rgb": 2000.0,
+      "error_px": 0.0
+    },
+    {
+      "name": "CORNER_TL",
+      "u_rgb": 0.0,
+      "v_rgb": 0.0,
+      "error_px": 0.0
+    },
+    {
+      "name": "CORNER_TR",
+      "u_rgb": 2999.0,
+      "v_rgb": 0.0,
+      "error_px": 0.0
+    },
+    {
+      "name": "CORNER_BL",
+      "u_rgb": 0.0,
+      "v_rgb": 3999.0,
+      "error_px": 0.0
+    },
+    {
+      "name": "CORNER_BR",
+      "u_rgb": 2999.0,
+      "v_rgb": 3999.0,
+      "error_px": 0.0
+    }
+  ]
+}

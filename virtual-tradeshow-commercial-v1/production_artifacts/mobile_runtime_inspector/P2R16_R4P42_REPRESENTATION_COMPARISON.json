@@ -1,0 +1,82 @@
+{
+  "audit_phase": "7C.2R4P4.2",
+  "section": "46",
+  "purpose": "Compare depth/geometry representation options and their limitations",
+  "current_representation": {
+    "name": "VGGT_518x518_MESH",
+    "depth_resolution": "518x518",
+    "physical_px_per_sample": 7.722007722007722,
+    "pano_12k_px_per_triangle": 500.2077,
+    "triangle_accepted_pct": 75.0484,
+    "depth_edge_bleed_avg_p95_px": 352.96642519485687,
+    "depth_rgb_iou": 0.07170591594853028,
+    "structural_edge_crossing_pct": 89.4,
+    "crossview_adj_rel_depth_diff_p95_mean": 0.20334,
+    "3d_line_residual_mean": 0.00137368,
+    "defects": [
+      "DEPTH_EDGE_BLEED: avg 352.97 px offset from RGB edges",
+      "MESH_DENSITY_LIMIT: 500 pano-px per triangle is extremely coarse",
+      "25% triangle rejection at depth discontinuities leaves cracks",
+      "89.4% of RGB structural edges have no corresponding depth edge",
+      "Depth map at 518x518 cannot represent sub-8px scene structure"
+    ]
+  },
+  "candidate_improvements": [
+    {
+      "id": "A",
+      "name": "BASELINE_R4P4",
+      "description": "Current R4P4 output \u2014 baseline for comparison",
+      "depth_resolution": "518x518",
+      "mesh_density": "1x (518x518 grid)",
+      "expected_improvement": "NONE (baseline)",
+      "viewer_mode": "quality-ai-r4p4",
+      "status": "DEPLOYED"
+    },
+    {
+      "id": "B",
+      "name": "2X_MESH_DENSITY",
+      "description": "Same depth, bilinear-upsampled to 1036x1036 grid \u2014 denser triangulation",
+      "depth_resolution": "518x518 upsampled to 1036x1036",
+      "mesh_density": "2x",
+      "expected_improvement": "Reduces pano-px/triangle from 500 to 125 \u2014 may reduce polygon banding",
+      "expected_limitation": "Depth edge bleed does not improve \u2014 zigzag boundary unchanged",
+      "viewer_mode": "quality-ai-r4p42-b",
+      "status": "PENDING_RENDER"
+    },
+    {
+      "id": "C",
+      "name": "EDGE_AWARE_UPSAMPLE_2X",
+      "description": "Guided-filter upsampled depth (using RGB as guidance) at 1036x1036",
+      "depth_resolution": "1036x1036 (guided bilateral from RGB)",
+      "mesh_density": "2x",
+      "expected_improvement": "Depth edges align better with RGB edges \u2014 reduces edge bleed",
+      "expected_limitation": "Guided filter can hallucinate depth at complex boundaries",
+      "viewer_mode": "quality-ai-r4p42-c",
+      "status": "PENDING_RENDER"
+    },
+    {
+      "id": "D",
+      "name": "CONFIDENCE_GATED_1X",
+      "description": "Mask low-confidence depth (high gradient regions) \u2014 hole-fill from neighbors",
+      "depth_resolution": "518x518 with confidence gating",
+      "mesh_density": "1x",
+      "expected_improvement": "Reduces jagged artifacts at depth discontinuities",
+      "expected_limitation": "May increase visible cracks near sharp boundaries",
+      "viewer_mode": "quality-ai-r4p42-d",
+      "status": "PENDING_RENDER"
+    },
+    {
+      "id": "E",
+      "name": "EDGE_AWARE_UPSAMPLE_2X_GATED",
+      "description": "Combination of C (guided upsample) + D (confidence gating)",
+      "depth_resolution": "1036x1036 guided + gated",
+      "mesh_density": "2x with gating",
+      "expected_improvement": "Best candidate for reducing both edge bleed and jagged artifacts",
+      "expected_limitation": "Highest computational cost \u2014 Modal render required",
+      "viewer_mode": "quality-ai-r4p42-e",
+      "status": "PENDING_RENDER"
+    }
+  ],
+  "render_environment": "Modal (GPU required for 12K rasterization)",
+  "render_constraint": "DO NOT use existing R4P4 rasterizer on local machine \u2014 requires Modal L40S"
+}
