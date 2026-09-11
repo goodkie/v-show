@@ -1,26 +1,60 @@
 {
   "PHASE": "7C.2R4P3",
-  "COMMIT_B": "404549fbd2a4dd4cbed67b1ef594d8e88f781cfa",
-  "RAILWAY_DEPLOY_ID": "UNKNOWN",
+  "COMMIT_B": "cc6f104ae449d6262b97768c4a82d14d2e734b86",
+  "RAILWAY_DEPLOY_ID": "548b4dfb-58d0-45f1-8ac3-62975024be0d",
+  "RAILWAY_STATUS": "SUCCESS",
   "DEPLOY_URL": "https://v-show-commercial-v1-production.up.railway.app",
-  "TIMESTAMP": "2026-09-11T00:30:21Z",
+  "TIMESTAMP": "2026-09-11T00:53:06Z",
   "HEADLESS_VERIFY": {
     "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png": {
       "status": 200,
-      "content-length": "5036291"
+      "content-length": "25193498",
+      "match": "EXACT"
     },
     "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY_OWNER_REVIEW.jpg": {
       "status": 200,
-      "content-length": "5036291"
+      "content-length": "6444984",
+      "match": "EXACT"
     },
     "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SOURCE_OWNERSHIP.png": {
       "status": 200,
-      "content-length": "5036291"
+      "content-length": "140493",
+      "match": "EXACT"
+    },
+    "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_COST_MAP.png": {
+      "status": 200,
+      "content-length": "74173",
+      "match": "EXACT"
+    },
+    "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_STRUCTURAL_EDGE_MAP.png": {
+      "status": 200,
+      "content-length": "55782",
+      "match": "EXACT"
+    },
+    "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_CRACK_RECOVERY_MAP.png": {
+      "status": 200,
+      "content-length": "70957",
+      "match": "EXACT"
+    },
+    "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_R4P3_FORENSICS.json": {
+      "status": 200,
+      "content-length": "1673",
+      "match": "EXACT"
     },
     "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY.png": {
       "status": 200,
-      "content-length": "25188855"
+      "content-length": "25188855",
+      "match": "EXACT_INTACT"
     }
+  },
+  "TELEMETRY_GATES": {
+    "R4P3_ACTIVE": true,
+    "DIRECT_GEOMETRIC_COVERAGE": 1.0,
+    "TEXTURE_LOAD_SUCCESS": true,
+    "ACTIVE_TEXTURE_WIDTH": 12288,
+    "ACTIVE_TEXTURE_HEIGHT": 1869,
+    "CUSTOMER_DEFAULT": "P2R13",
+    "MODE_LOCK_MATCH": true
   },
   "ALL_VERIFY_OK": true
 }
