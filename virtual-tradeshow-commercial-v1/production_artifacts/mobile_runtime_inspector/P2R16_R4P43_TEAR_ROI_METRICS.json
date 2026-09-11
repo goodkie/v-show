@@ -1,0 +1,187 @@
+{
+  "PHASE": "7C.2R4P4.3.1",
+  "SECTION": 7,
+  "NOTE": "Fixed ROI measurement \u2014 ROI defined from F0 capture, not tuned per candidate",
+  "ROI_DEFINITION": {
+    "YAW150": {
+      "x_frac": [
+        0.55,
+        0.72
+      ],
+      "y_frac": [
+        0.2,
+        0.9
+      ]
+    },
+    "YAW240": {
+      "x_frac": [
+        0.28,
+        0.46
+      ],
+      "y_frac": [
+        0.2,
+        0.9
+      ]
+    }
+  },
+  "YAW150": {
+    "F0": {
+      "WHITE_PINK_TEAR_AREA_PX": 37352,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 37277,
+      "BOUNDARY_DISCONTINUITY_LENGTH_PX": 346,
+      "EDGE_OFFSET_P95": 15.665499687194824,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 53,
+      "SOURCE_IMAGE": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\d83397bc-3323-46b8-a23f-951c5d5d9f30\\P2R16_R4P43_F0_YAW150_LIVE_HFOV85.png",
+      "ROI_PX": {
+        "x0": 1056,
+        "x1": 1382,
+        "y0": 216,
+        "y1": 972
+      }
+    },
+    "F1": {
+      "WHITE_PINK_TEAR_AREA_PX": 37352,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 37277,
+      "BOUNDARY_DISCONTINUITY_LENGTH_PX": 340,
+      "EDGE_OFFSET_P95": 15.806500434875488,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 53,
+      "SOURCE_IMAGE": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\d83397bc-3323-46b8-a23f-951c5d5d9f30\\P2R16_R4P43_F1_YAW150_LIVE_HFOV85.png",
+      "ROI_PX": {
+        "x0": 1056,
+        "x1": 1382,
+        "y0": 216,
+        "y1": 972
+      },
+      "WHITE_PINK_REDUCTION_VS_F0": "0.0%",
+      "EDGE_AREA_REDUCTION_VS_F0": "0.0%"
+    },
+    "F2": {
+      "WHITE_PINK_TEAR_AREA_PX": 37352,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 37277,
+      "BOUNDARY_DISCONTINUITY_LENGTH_PX": 340,
+      "EDGE_OFFSET_P95": 15.805000305175781,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 53,
+      "SOURCE_IMAGE": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\d83397bc-3323-46b8-a23f-951c5d5d9f30\\P2R16_R4P43_F2_YAW150_LIVE_HFOV85.png",
+      "ROI_PX": {
+        "x0": 1056,
+        "x1": 1382,
+        "y0": 216,
+        "y1": 972
+      },
+      "WHITE_PINK_REDUCTION_VS_F0": "0.0%",
+      "EDGE_AREA_REDUCTION_VS_F0": "0.0%"
+    },
+    "F3": {
+      "WHITE_PINK_TEAR_AREA_PX": 37352,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 37277,
+      "BOUNDARY_DISCONTINUITY_LENGTH_PX": 340,
+      "EDGE_OFFSET_P95": 15.806500434875488,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 53,
+      "SOURCE_IMAGE": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\d83397bc-3323-46b8-a23f-951c5d5d9f30\\P2R16_R4P43_F3_YAW150_LIVE_HFOV85.png",
+      "ROI_PX": {
+        "x0": 1056,
+        "x1": 1382,
+        "y0": 216,
+        "y1": 972
+      },
+      "WHITE_PINK_REDUCTION_VS_F0": "0.0%",
+      "EDGE_AREA_REDUCTION_VS_F0": "0.0%"
+    },
+    "F4": {
+      "WHITE_PINK_TEAR_AREA_PX": 37352,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 37277,
+      "BOUNDARY_DISCONTINUITY_LENGTH_PX": 340,
+      "EDGE_OFFSET_P95": 15.806500434875488,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 53,
+      "SOURCE_IMAGE": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\d83397bc-3323-46b8-a23f-951c5d5d9f30\\P2R16_R4P43_F4_YAW150_LIVE_HFOV85.png",
+      "ROI_PX": {
+        "x0": 1056,
+        "x1": 1382,
+        "y0": 216,
+        "y1": 972
+      },
+      "WHITE_PINK_REDUCTION_VS_F0": "0.0%",
+      "EDGE_AREA_REDUCTION_VS_F0": "0.0%"
+    }
+  },
+  "YAW240": {
+    "F0": {
+      "WHITE_PINK_TEAR_AREA_PX": 5288,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 5261,
+      "BOUNDARY_DISCONTINUITY_LENGTH_PX": 395,
+      "EDGE_OFFSET_P95": 8.788599967956543,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 17,
+      "SOURCE_IMAGE": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\d83397bc-3323-46b8-a23f-951c5d5d9f30\\P2R16_R4P43_F0_YAW240_LIVE_HFOV85.png",
+      "ROI_PX": {
+        "x0": 537,
+        "x1": 883,
+        "y0": 216,
+        "y1": 972
+      }
+    },
+    "F1": {
+      "WHITE_PINK_TEAR_AREA_PX": 5290,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 5263,
+      "BOUNDARY_DISCONTINUITY_LENGTH_PX": 394,
+      "EDGE_OFFSET_P95": 8.796500205993652,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 17,
+      "SOURCE_IMAGE": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\d83397bc-3323-46b8-a23f-951c5d5d9f30\\P2R16_R4P43_F1_YAW240_LIVE_HFOV85.png",
+      "ROI_PX": {
+        "x0": 537,
+        "x1": 883,
+        "y0": 216,
+        "y1": 972
+      },
+      "WHITE_PINK_REDUCTION_VS_F0": "-0.0%",
+      "EDGE_AREA_REDUCTION_VS_F0": "-0.0%"
+    },
+    "F2": {
+      "WHITE_PINK_TEAR_AREA_PX": 5297,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 5270,
+      "BOUNDARY_DISCONTINUITY_LENGTH_PX": 395,
+      "EDGE_OFFSET_P95": 8.779999732971191,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 17,
+      "SOURCE_IMAGE": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\d83397bc-3323-46b8-a23f-951c5d5d9f30\\P2R16_R4P43_F2_YAW240_LIVE_HFOV85.png",
+      "ROI_PX": {
+        "x0": 537,
+        "x1": 883,
+        "y0": 216,
+        "y1": 972
+      },
+      "WHITE_PINK_REDUCTION_VS_F0": "-0.2%",
+      "EDGE_AREA_REDUCTION_VS_F0": "-0.2%"
+    },
+    "F3": {
+      "WHITE_PINK_TEAR_AREA_PX": 5297,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 5270,
+      "BOUNDARY_DISCONTINUITY_LENGTH_PX": 395,
+      "EDGE_OFFSET_P95": 8.786100387573242,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 17,
+      "SOURCE_IMAGE": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\d83397bc-3323-46b8-a23f-951c5d5d9f30\\P2R16_R4P43_F3_YAW240_LIVE_HFOV85.png",
+      "ROI_PX": {
+        "x0": 537,
+        "x1": 883,
+        "y0": 216,
+        "y1": 972
+      },
+      "WHITE_PINK_REDUCTION_VS_F0": "-0.2%",
+      "EDGE_AREA_REDUCTION_VS_F0": "-0.2%"
+    },
+    "F4": {
+      "WHITE_PINK_TEAR_AREA_PX": 5294,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 5267,
+      "BOUNDARY_DISCONTINUITY_LENGTH_PX": 395,
+      "EDGE_OFFSET_P95": 8.779600143432617,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 17,
+      "SOURCE_IMAGE": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\d83397bc-3323-46b8-a23f-951c5d5d9f30\\P2R16_R4P43_F4_YAW240_LIVE_HFOV85.png",
+      "ROI_PX": {
+        "x0": 537,
+        "x1": 883,
+        "y0": 216,
+        "y1": 972
+      },
+      "WHITE_PINK_REDUCTION_VS_F0": "-0.1%",
+      "EDGE_AREA_REDUCTION_VS_F0": "-0.1%"
+    }
+  }
+}
