@@ -1,0 +1,141 @@
+{
+  "phase": "7C.2R4P4",
+  "selected_rung": "B",
+  "description": "Pose-Only BA with true RoMa correspondences, 100% physical lens intrinsics preserved",
+  "per_camera_deltas": [
+    {
+      "camera_idx": 0,
+      "shot_id": "SHOT_000",
+      "rotation_delta_deg": 2.588175141206612,
+      "translation_delta_norm": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 1,
+      "shot_id": "SHOT_030",
+      "rotation_delta_deg": 3.57093601174821,
+      "translation_delta_norm": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 2,
+      "shot_id": "SHOT_060",
+      "rotation_delta_deg": 4.3656511548305845,
+      "translation_delta_norm": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 3,
+      "shot_id": "SHOT_090",
+      "rotation_delta_deg": 4.593721854633451,
+      "translation_delta_norm": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 4,
+      "shot_id": "SHOT_120",
+      "rotation_delta_deg": 9.821877029474331,
+      "translation_delta_norm": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 5,
+      "shot_id": "SHOT_150",
+      "rotation_delta_deg": 9.907917212061188,
+      "translation_delta_norm": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 6,
+      "shot_id": "SHOT_180",
+      "rotation_delta_deg": 1.3118612162471948,
+      "translation_delta_norm": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 7,
+      "shot_id": "SHOT_210",
+      "rotation_delta_deg": 6.874489668891197,
+      "translation_delta_norm": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 8,
+      "shot_id": "SHOT_240",
+      "rotation_delta_deg": 5.959928894762015,
+      "translation_delta_norm": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 9,
+      "shot_id": "SHOT_270",
+      "rotation_delta_deg": 5.947281168650299,
+      "translation_delta_norm": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 10,
+      "shot_id": "SHOT_300",
+      "rotation_delta_deg": 5.444048369464246,
+      "translation_delta_norm": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 11,
+      "shot_id": "SHOT_330",
+      "rotation_delta_deg": 5.4079934250550945,
+      "translation_delta_norm": 0.0,
+      "focal_delta_px": 0.0
+    }
+  ],
+  "adjacent_pair_relative_deltas": [
+    {
+      "pair": "00_01",
+      "relative_rotation_delta_deg": 5.749660912469406
+    },
+    {
+      "pair": "01_02",
+      "relative_rotation_delta_deg": 0.9632336140364934
+    },
+    {
+      "pair": "02_03",
+      "relative_rotation_delta_deg": 0.299633206488005
+    },
+    {
+      "pair": "03_04",
+      "relative_rotation_delta_deg": 5.89690429528514
+    },
+    {
+      "pair": "04_05",
+      "relative_rotation_delta_deg": 0.3172828745391685
+    },
+    {
+      "pair": "05_06",
+      "relative_rotation_delta_deg": 9.664638317959296
+    },
+    {
+      "pair": "06_07",
+      "relative_rotation_delta_deg": 6.938367055276784
+    },
+    {
+      "pair": "07_08",
+      "relative_rotation_delta_deg": 1.0887907080234769
+    },
+    {
+      "pair": "08_09",
+      "relative_rotation_delta_deg": 1.9062852257351266
+    },
+    {
+      "pair": "09_10",
+      "relative_rotation_delta_deg": 0.8136397168453917
+    },
+    {
+      "pair": "10_11",
+      "relative_rotation_delta_deg": 0.933216500138116
+    },
+    {
+      "pair": "11_00",
+      "relative_rotation_delta_deg": 3.0669309900881645
+    }
+  ]
+}

@@ -393,6 +393,10 @@
 
       <!-- Mode Switcher -->
       <div class="mode-switch-container">
+                <button id="btn-mode-quality-r4p4" class="mode-btn" onclick="switchMode('quality-ai-r4p4')" style="border-color: #38bdf8; color: #38bdf8;">
+          <i class="fa-solid fa-compass-drafting"></i>
+          <span>Quality R4.4 Refined</span>
+        </button>
         <button id="btn-mode-quality-r4p3" class="mode-btn active-quality-ai" onclick="switchMode('quality-ai-r4p3')" style="border-color: #f59e0b; color: #f59e0b;">
           <i class="fa-solid fa-scissors"></i>
           <span>Quality R4.3 Seam</span>
@@ -448,6 +452,10 @@
     <button class="bm-btn" onclick="jumpTo(240, 0)" title="R4P3 Seam Transition Zone 3">240° (Seam 3)</button>
     <button class="bm-btn" onclick="jumpTo(270, 0)">270° (Shot 270)</button>
     <button class="bm-btn" onclick="jumpTo(345, 0)" title="Loop Closure Seam">Closure (345°)</button>
+    <button class="bm-btn" onclick="jumpTo(165, 0)" title="Worst Geometry Zone 1 (was 9.3deg off, now resolved)" style="border-color: #38bdf8;">Zone 1 (165°)</button>
+    <button class="bm-btn" onclick="jumpTo(195, 0)" title="Worst Geometry Zone 2 (Door Frame, now resolved)" style="border-color: #38bdf8;">Zone 2 (195°)</button>
+    <button class="bm-btn" onclick="jumpTo(105, 0)" title="Worst Geometry Zone 3 (Window Frame, now resolved)" style="border-color: #38bdf8;">Zone 3 (105°)</button>
+
   </div>
 
   <!-- Coverage Display Bar (Phase 7C.2R2.2C Exact Modes) -->
@@ -459,6 +467,9 @@
     <button id="btn-cov-owner" class="cov-btn" onclick="setCoverageMode('source-ownership')" title="Camera Source Ownership (12 discrete colors)">SOURCE OWNERSHIP</button>
     <button id="btn-cov-seam" class="cov-btn" onclick="setCoverageMode('seam-cost')" title="R4P3 Seam Transition Cost Map">SEAM COST</button>
     <button id="btn-cov-edge" class="cov-btn" onclick="setCoverageMode('structural-edge')" title="R4P3 Structural Edge Boundary Map">EDGE MAP</button>
+        <button id="btn-cov-baseline-r4p3" class="cov-btn" onclick="setCoverageMode('baseline-r4p3')" title="Baseline R4P3 Seam Optimized Identity (b8036b8d...)">BASELINE R4P3</button>
+    <button id="btn-cov-edge-residual" class="cov-btn" onclick="setCoverageMode('edge-residual')" title="R4P4 Epipolar Edge Residual Heatmap">EDGE RESIDUAL</button>
+    <button id="btn-cov-structural-lines" class="cov-btn" onclick="setCoverageMode('structural-lines')" title="LSD Structural Line Alignment">STRUCTURAL LINES</button>
     <button id="btn-cov-crack" class="cov-btn" onclick="setCoverageMode('crack-recovery')" title="R4P3 Crack Recovery Map (11,272 R4P2 cracks resolved)">CRACK RECOVERY</button>
     <button id="btn-cov-hole" class="cov-btn" onclick="setCoverageMode('hole-classification')" title="Hole Topology Classification (Red=Crack, Blue=Edge, Orange=Large, Yellow=Interior)">HOLE TOPOLOGY</button>
     <button id="btn-cov-overlay" class="cov-btn" onclick="setCoverageMode('inpaint-overlay')" title="Final RGB with exact missing-mask pixels highlighted in amber">INPAINT OVERLAY</button>
@@ -597,10 +608,44 @@
     // =============================================================================
     // SECTION 5: CENTRAL MODE METADATA (SINGLE AUTHORITATIVE SOURCE OF TRUTH)
     // =============================================================================
+        const CACHE_BUST_KEY_R4P4 = 'b3add855b4187013';
+    const CACHE_BUST_KEY_R4P4_JPG = 'f45060e2352a3487';
     const CACHE_BUST_KEY_R4P3 = 'b8036b8d0ac02c41';
     const CACHE_BUST_KEY_R4P3_JPG = '0fb100025255a42f';
 
     const MODE_METADATA = {
+            'quality-ai-r4p4': {
+        shortName: 'Quality R4.4 Refined',
+        title: 'QUALITY AI — COMMERCIAL VGGT 12-VIEW | R4P4 LOCAL GEOMETRY REFINED | 12K OWNER QA',
+        docTitle: 'C12.9-P2R16 — R4P4 Local Geometry Refined — 12K Owner QA',
+        width: 12288,
+        height: 1869,
+        directCoverage: 1.000000,
+        blackCrackPixels: 0,
+        inpaintFraction: 0.000000,
+        inpaintUsed: false,
+        singleSourceOwner: true,
+        textureFilename: 'P2R16_QUALITY12_R4P4_LOCAL_GEOMETRY_IDENTITY.png',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4_LOCAL_GEOMETRY_IDENTITY.png?r4p4=' + CACHE_BUST_KEY_R4P4,
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4_LOCAL_GEOMETRY_IDENTITY_OWNER_REVIEW.jpg?r4p4=' + CACHE_BUST_KEY_R4P4_JPG,
+        expectedSha256: 'b3add855b41870134389c80bfd502270df5bc2a4fd6291d1152bcbf1a0cbd2f6',
+        bounds: [-26.38, 28.39],
+        minPitchDeg: -26.38,
+        maxPitchDeg: 28.39,
+        vaovDeg: 54.77,
+        label: 'QUALITY AI R4P4 (LOCAL GEOMETRY REFINED — POSE-ONLY BA)',
+        coverageTextures: {
+          'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4_LOCAL_GEOMETRY_IDENTITY.png?r4p4=' + CACHE_BUST_KEY_R4P4,
+          'review-jpg': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4_LOCAL_GEOMETRY_IDENTITY_OWNER_REVIEW.jpg?r4p4=' + CACHE_BUST_KEY_R4P4_JPG,
+          'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4_SOURCE_OWNERSHIP.png',
+          'seam-cost': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4_SEAM_COST_MAP.png',
+          'structural-edge': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4_STRUCTURAL_EDGE_MAP.png',
+          'crack-recovery': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4_CRACK_RECOVERY_MAP.png',
+          'baseline-r4p3': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png',
+          'edge-residual': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P4_EDGE_RESIDUAL_HEATMAP.png',
+          'structural-lines': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P4_LINE_ALIGNMENT_AFTER.png'
+        }
+      },
       'quality-ai-r4p3': {
         shortName: 'Quality R4.3 Seam',
         title: 'QUALITY AI — COMMERCIAL VGGT 12-VIEW | R4P3 SEAM OPTIMIZED PHYSICAL TEXTURE | 12K OWNER QA',
@@ -783,7 +828,7 @@
     const MODE_BAND_CONFIG = MODE_METADATA;
 
     function updateModePresentation() {
-      const meta = MODE_METADATA[currentMode] || MODE_METADATA['quality-ai-r4p3'];
+      const meta = MODE_METADATA[currentMode] || MODE_METADATA['quality-ai-r4p4', 'quality-ai-r4p3'];
       document.title = meta.docTitle || ('C12.9-P2R16 — ' + (meta.shortName || currentMode));
       
       const titleEl = document.getElementById('mode-title-text');
@@ -900,7 +945,7 @@
     const urlParamsGlobal = (typeof window !== 'undefined' && window.location) ? new URLSearchParams(window.location.search) : null;
     const qModeGlobal = urlParamsGlobal ? urlParamsGlobal.get('mode') : null;
     let currentMode = 'quality-ai-r4p3';
-    if (qModeGlobal && ['quality-ai-r4p3', 'quality-ai-r4p2', 'quality-ai-r4p1', 'quality-ai-r4', 'quality-ai-r31', 'quality-ai-r3', 'quality-ai-12view', 'quality-ai'].includes(qModeGlobal)) {
+    if (qModeGlobal && ['quality-ai-r4p4', 'quality-ai-r4p3', 'quality-ai-r4p2', 'quality-ai-r4p1', 'quality-ai-r4', 'quality-ai-r31', 'quality-ai-r3', 'quality-ai-12view', 'quality-ai'].includes(qModeGlobal)) {
       currentMode = qModeGlobal;
     }
     let userSelectedTier = 'AUTO';
@@ -1183,9 +1228,18 @@
       let targetW = 0, targetH = 0;
 
                   
-      if (currentMode === 'quality-ai-r4p3') {
+            if (currentMode === 'quality-ai-r4p4') {
         activeTier = '12K';
-        const r4p3Meta = MODE_METADATA['quality-ai-r4p3'];
+        const r4p4Meta = MODE_METADATA['quality-ai-r4p4'];
+        targetUrl = (coverageMode === 'review-jpg')
+          ? r4p4Meta.reviewJpg
+          : (r4p4Meta.coverageTextures[coverageMode] || r4p4Meta.texture);
+        targetLabel = '12K R4P4 REFINED (' + coverageMode.toUpperCase() + ')';
+        targetW = 12288;
+        targetH = 1869;
+      } else if (currentMode === 'quality-ai-r4p3') {
+        activeTier = '12K';
+        const r4p3Meta = MODE_METADATA['quality-ai-r4p4', 'quality-ai-r4p3'];
         targetUrl = (coverageMode === 'review-jpg')
           ? r4p3Meta.reviewJpg
           : (r4p3Meta.coverageTextures[coverageMode] || r4p3Meta.texture);
@@ -1298,20 +1352,22 @@
             texture.wrapT = THREE.ClampToEdgeWrapping;
             window.__VIEWER_TELEMETRY__.UV_MAPPING_TYPE = 'FULL_BAND_DIRECT';
             window.__VIEWER_TELEMETRY__.VIEWER_VERTICAL_ANGULAR_DISTORTION = false;
-            const currentMeta = MODE_METADATA[currentMode] || MODE_METADATA['quality-ai-r4p3'];
+            const currentMeta = MODE_METADATA[currentMode] || MODE_METADATA['quality-ai-r4p4', 'quality-ai-r4p3'];
             window.__VIEWER_TELEMETRY__.REQUESTED_MODE = qModeGlobal || currentMode;
             window.__VIEWER_TELEMETRY__.RESOLVED_MODE = currentMode;
             window.__VIEWER_TELEMETRY__.CURRENT_MODE = currentMode;
+            window.__VIEWER_TELEMETRY__.R4P4_ACTIVE = (currentMode === 'quality-ai-r4p4');
             window.__VIEWER_TELEMETRY__.R4P3_ACTIVE = (currentMode === 'quality-ai-r4p3');
             window.__VIEWER_TELEMETRY__.R4P2_ACTIVE = (currentMode === 'quality-ai-r4p2');
             window.__VIEWER_TELEMETRY__.R4_ACTIVE = (currentMode === 'quality-ai-r4');
             window.__VIEWER_TELEMETRY__.R31_ACTIVE = (currentMode === 'quality-ai-r31');
-            window.__VIEWER_TELEMETRY__.INPAINT_USED = (currentMode === 'quality-ai-r4p3' || currentMode === 'quality-ai-r4p2' || currentMode === 'quality-ai-r4') ? false : true;
+            window.__VIEWER_TELEMETRY__.INPAINT_USED = (currentMode === 'quality-ai-r4p4' || currentMode === 'quality-ai-r4p3' || currentMode === 'quality-ai-r4p2' || currentMode === 'quality-ai-r4') ? false : true;
             window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE = currentMeta.directCoverage !== undefined ? currentMeta.directCoverage : 0.918484;
             window.__VIEWER_TELEMETRY__.BLACK_CRACK_PIXELS = currentMeta.blackCrackPixels !== undefined ? currentMeta.blackCrackPixels : 0;
-            window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_FILENAME = (currentMode === 'quality-ai-r4p3') ? 'P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png' : (currentMode === 'quality-ai-r4p2' ? 'P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY.png' : targetUrl.split('/').pop().split('?')[0]);
+            window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_FILENAME = (currentMode === 'quality-ai-r4p4') ? 'P2R16_QUALITY12_R4P4_LOCAL_GEOMETRY_IDENTITY.png' : (currentMode === 'quality-ai-r4p3') ? 'P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png' : (currentMode === 'quality-ai-r4p2' ? 'P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY.png' : targetUrl.split('/').pop().split('?')[0]);
             window.__VIEWER_TELEMETRY__.EXPECTED_TEXTURE_SHA256 = currentMeta.expectedSha256 || '';
             window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH = (window.__VIEWER_TELEMETRY__.REQUESTED_MODE === currentMode && window.__VIEWER_TELEMETRY__.RESOLVED_MODE === currentMode && window.__VIEWER_TELEMETRY__.CURRENT_MODE === currentMode && (currentMode !== 'quality-ai-r4p3' || (window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_FILENAME === 'P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png' && targetW === 12288 && targetH === 1869)));
+            window.__VIEWER_TELEMETRY__.R4P4_OWNER_REVIEW_ELIGIBLE = (currentMode === 'quality-ai-r4p4' && window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH === true && window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE === 1.0 && window.__VIEWER_TELEMETRY__.BLACK_CRACK_PIXELS === 0 && window.__VIEWER_TELEMETRY__.INPAINT_USED === false);
             window.__VIEWER_TELEMETRY__.R4P3_OWNER_REVIEW_ELIGIBLE = (currentMode === 'quality-ai-r4p3' && window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH === true && window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE === 1.0 && window.__VIEWER_TELEMETRY__.BLACK_CRACK_PIXELS === 0 && window.__VIEWER_TELEMETRY__.INPAINT_USED === false);
             window.__VIEWER_TELEMETRY__.CACHE_BUST_KEY = CACHE_BUST_KEY_R4P3;
             window.__VIEWER_TELEMETRY__.CUSTOMER_DEFAULT = 'P2R13';
@@ -1440,6 +1496,8 @@
     function updateUiModeIndicator() {
       const btnQA = document.getElementById('btn-mode-quality-ai');
       const btnR3 = document.getElementById('btn-mode-quality-r3');
+            const btnR4p4 = document.getElementById('btn-mode-quality-r4p4');
+      if (btnR4p4) btnR4p4.className = (currentMode === 'quality-ai-r4p4') ? 'mode-btn active-quality-ai' : 'mode-btn';
       const btnR4p3 = document.getElementById('btn-mode-quality-r4p3');
       const btnR4p2 = document.getElementById('btn-mode-quality-r4p2');
         const btnR4p1 = document.getElementById('btn-mode-quality-r4p1');
