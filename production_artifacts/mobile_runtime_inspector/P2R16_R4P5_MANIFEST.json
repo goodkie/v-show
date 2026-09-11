@@ -1,0 +1,40 @@
+{
+  "PHASE": "7C.2R4P5",
+  "DESCRIPTION": "Phase 7C.2R4P5 High-Resolution Multi-View Boundary Geometry Manifest",
+  "SOURCE_COMMIT": "eb8e62d4de0063b8b4974ca1da9bc3d2b6ac56e6",
+  "BRANCH": "experiment/c12.9-p2r16-8shot-hires",
+  "INVARIANTS": {
+    "MASTER_TOUCHED": false,
+    "CUSTOMER_DEFAULT": "P2R13",
+    "VGGT_FORWARD_COUNT": 0,
+    "DEPTH_MODEL_EXECUTION_COUNT": 0,
+    "ROMA_INFERENCE_COUNT": 0,
+    "BA_EXECUTION_COUNT": 0,
+    "CAMERA_GEOMETRY_FROZEN": true,
+    "RGB_INPAINT_USED": false,
+    "GENERATIVE_PIXEL_COUNT": 0,
+    "12K_RENDER_EXECUTED": false,
+    "OWNER_VISUAL_ACCEPTANCE": false
+  },
+  "METRIC_DEPTH_OBSERVABILITY": "MARGINAL",
+  "BEST_TECHNICAL_CANDIDATE": "D",
+  "REPRESENTATION_SUMMARY": {
+    "A": "Baseline control (R4P4/F2 reference geometry, 518 grid, MV+1px local)",
+    "B": "High-resolution narrow-band multi-view depth refinement along boundaries",
+    "C": "Layered 2.5D geometry (FG/BG separation, disconnected mesh at step edges)",
+    "D": "Hybrid (metric depth where observable + layered 2.5D at strong occlusions)",
+    "E": "Conservative (Hybrid refinement strictly within ±16px of defect boundaries)"
+  },
+  "COVERAGE": {
+    "DIRECT_GEOMETRIC_COVERAGE": 0.999315,
+    "FINAL_COVERAGE": 1.0,
+    "PROVENANCE_VALID_RATIO": 1.0
+  },
+  "ROUTES": {
+    "A": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p5-a",
+    "B": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p5-b",
+    "C": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p5-c",
+    "D": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p5-d",
+    "E": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p5-e"
+  }
+}
