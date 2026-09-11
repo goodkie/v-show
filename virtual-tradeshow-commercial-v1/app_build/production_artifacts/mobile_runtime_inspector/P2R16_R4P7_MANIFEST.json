@@ -1,7 +1,7 @@
 {
   "PHASE": "7C.2R4P7",
   "DESCRIPTION": "Phase 7C.2R4P7 Rotation-Dominant Structure-Preserving Panorama Manifest",
-  "SOURCE_COMMIT": "PENDING_COMMIT_B",
+  "SOURCE_COMMIT": "aa30eced2e7d6208321aebaabb228c089b4de56d",
   "BRANCH": "experiment/c12.9-p2r16-8shot-hires",
   "INVARIANTS": {
     "MASTER_TOUCHED": false,
@@ -60,5 +60,7 @@
     "C": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p7-c",
     "D": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p7-d",
     "REF": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai"
-  }
+  },
+  "DEPLOYMENT_ID": "d6cbaa95-7fbf-4c8b-b25e-5af63f82a192",
+  "LIVE_VERIFICATION_STATUS": "PASS"
 }
