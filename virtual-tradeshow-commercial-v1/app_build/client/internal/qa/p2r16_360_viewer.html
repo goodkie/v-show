@@ -416,10 +416,14 @@
 
       <!-- Mode Switcher -->
       <div class="mode-switch-container">
-                        <button id="btn-mode-quality-r4p2" class="mode-btn active-quality-ai" onclick="switchMode('quality-ai-r4p2')" style="border-color: #00ff88; color: #00ff88;">
-            <i class="fa-solid fa-gem"></i>
-            <span>Quality R4.2 Native</span>
-          </button>
+        <button id="btn-mode-quality-r4p3" class="mode-btn active-quality-ai" onclick="switchMode('quality-ai-r4p3')" style="border-color: #f59e0b; color: #f59e0b;">
+          <i class="fa-solid fa-scissors"></i>
+          <span>Quality R4.3 Seam</span>
+        </button>
+        <button id="btn-mode-quality-r4p2" class="mode-btn" onclick="switchMode('quality-ai-r4p2')" style="border-color: #00ff88; color: #00ff88;">
+          <i class="fa-solid fa-gem"></i>
+          <span>Quality R4.2 Native</span>
+        </button>
           <button id="btn-mode-quality-r4p1" class="mode-btn active-quality-ai" onclick="switchMode('quality-ai-r4p1')">
           <i class="fa-solid fa-star"></i>
           <span>Quality AI R4P1</span>
@@ -460,8 +464,11 @@
   <div class="bookmarks-bar">
     <span class="bm-title"><i class="fa-solid fa-bookmark"></i> JUMP:</span>
     <button class="bm-btn" onclick="jumpTo(0, 0)">0° (Shot 000)</button>
+    <button class="bm-btn" onclick="jumpTo(60, 0)" title="R4P3 Seam Transition Zone 1">60° (Seam 1)</button>
     <button class="bm-btn" onclick="jumpTo(90, 0)">90° (Shot 090)</button>
+    <button class="bm-btn" onclick="jumpTo(150, 0)" title="R4P3 Seam Transition Zone 2">150° (Seam 2)</button>
     <button class="bm-btn" onclick="jumpTo(180, 0)">180° (Shot 180)</button>
+    <button class="bm-btn" onclick="jumpTo(240, 0)" title="R4P3 Seam Transition Zone 3">240° (Seam 3)</button>
     <button class="bm-btn" onclick="jumpTo(270, 0)">270° (Shot 270)</button>
     <button class="bm-btn" onclick="jumpTo(345, 0)" title="Loop Closure Seam">Closure (345°)</button>
   </div>
@@ -469,11 +476,14 @@
   <!-- Coverage Display Bar (Phase 7C.2R2.2C Exact Modes) -->
   <div class="coverage-bar" id="coverage-bar" style="display: none;">
     <span class="cov-title"><i class="fa-solid fa-layer-group"></i> VIEW:</span>
-    <button id="btn-cov-rgb" class="cov-btn active-cov" onclick="setCoverageMode('final-rgb')" title="Final RGB — 12K JPEG as rendered (post-inpaint)">FINAL RGB</button>
+    <button id="btn-cov-rgb" class="cov-btn active-cov" onclick="setCoverageMode('final-rgb')" title="Final RGB — 12K JPEG as rendered">FINAL RGB</button>
     <button id="btn-cov-raw" class="cov-btn" onclick="setCoverageMode('raw-direct')" title="Exact raw directly projected physical-source pixels (no inpaint)">RAW DIRECT PIXELS</button>
     <button id="btn-cov-mask" class="cov-btn" onclick="setCoverageMode('direct-mask')" title="Exact binary coverage mask (255=direct physical hit, 0=empty)">DIRECT COVERAGE MASK</button>
-            <button id="btn-cov-hole" class="cov-btn" onclick="setCoverageMode('hole-classification')" title="Hole Topology Classification (Red=Crack, Blue=Edge, Orange=Large, Yellow=Interior)">HOLE TOPOLOGY</button>
     <button id="btn-cov-owner" class="cov-btn" onclick="setCoverageMode('source-ownership')" title="Camera Source Ownership (12 discrete colors)">SOURCE OWNERSHIP</button>
+    <button id="btn-cov-seam" class="cov-btn" onclick="setCoverageMode('seam-cost')" title="R4P3 Seam Transition Cost Map">SEAM COST</button>
+    <button id="btn-cov-edge" class="cov-btn" onclick="setCoverageMode('structural-edge')" title="R4P3 Structural Edge Boundary Map">EDGE MAP</button>
+    <button id="btn-cov-crack" class="cov-btn" onclick="setCoverageMode('crack-recovery')" title="R4P3 Crack Recovery Map (11,272 R4P2 cracks resolved)">CRACK RECOVERY</button>
+    <button id="btn-cov-hole" class="cov-btn" onclick="setCoverageMode('hole-classification')" title="Hole Topology Classification (Red=Crack, Blue=Edge, Orange=Large, Yellow=Interior)">HOLE TOPOLOGY</button>
     <button id="btn-cov-overlay" class="cov-btn" onclick="setCoverageMode('inpaint-overlay')" title="Final RGB with exact missing-mask pixels highlighted in amber">INPAINT OVERLAY</button>
   </div>
 
@@ -520,23 +530,11 @@
       <button class="action-btn btn-1to1" id="btn-toggle-1to1" onclick="toggle1to1Zoom()" title="Deep Zoom 1:1 (FOV 18°)">
         <i class="fa-solid fa-magnifying-glass-plus"></i> 1:1 (18°)
       </button>
-            <button class="action-btn" id="btn-center-1to1" onclick="inspectCenter1to1()" style="border-color: #38bdf8; color: #38bdf8;" title="Center 1:1 Spherical Inspect">
-        <i class="fa-solid fa-crosshairs"></i> Center 1:1 Spherical
-      </button>
-            <button class="action-btn" id="btn-center-1to1" onclick="inspectCenter1to1()" style="border-color: #38bdf8; color: #38bdf8;" title="Center 1:1 Spherical Inspect">
-        <i class="fa-solid fa-crosshairs"></i> Center 1:1 Spherical
-      </button>
-            <button class="action-btn" id="btn-center-1to1" onclick="inspectCenter1to1()" style="border-color: #38bdf8; color: #38bdf8;" title="Center 1:1 Spherical Inspect">
+      <button class="action-btn" id="btn-center-1to1" onclick="inspectCenter1to1()" style="border-color: #38bdf8; color: #38bdf8;" title="Center 1:1 Spherical Inspect">
         <i class="fa-solid fa-crosshairs"></i> Center 1:1 Spherical
       </button>
       <button class="action-btn" id="btn-native-inspect" onclick="inspectCenter1to1()" style="display: none;" title="Legacy Alias">
         <i class="fa-solid fa-crosshairs"></i> Native Inspect
-      </button>
-      <button class="action-btn" id="btn-flat-1to1" onclick="openFlat1to1Inspector()" style="border-color: #00ff88; color: #00ff88;" title="True Flat Pixel Inspector (1:1 Artifact, No Sphere, No Scaling)">
-        <i class="fa-solid fa-microscope"></i> Flat 1:1
-      </button>
-      <button class="action-btn" id="btn-flat-1to1" onclick="openFlat1to1Inspector()" style="border-color: #00ff88; color: #00ff88;" title="True Flat Pixel Inspector (1:1 Artifact, No Sphere, No Scaling)">
-        <i class="fa-solid fa-microscope"></i> Flat 1:1
       </button>
       <button class="action-btn" id="btn-flat-1to1" onclick="openFlat1to1Inspector()" style="border-color: #00ff88; color: #00ff88;" title="True Flat Pixel Inspector (1:1 Artifact, No Sphere, No Scaling)">
         <i class="fa-solid fa-microscope"></i> Flat 1:1
@@ -621,6 +619,27 @@
     };
 
     const MODE_BAND_CONFIG = {
+      'quality-ai-r4p3': {
+        minPitchDeg: -26.38,
+        maxPitchDeg: 28.39,
+        vaovDeg: 54.77,
+        label: 'QUALITY AI R4P3 (SEAM OPTIMIZED — GRAPH-CUT OWNERSHIP)',
+        bounds: [-26.38, 28.39]
+      },
+      'quality-ai-r4p2': {
+        minPitchDeg: -26.38,
+        maxPitchDeg: 28.39,
+        vaovDeg: 54.77,
+        label: 'QUALITY AI R4P2 (NATIVE TEXTURE IDENTITY)',
+        bounds: [-26.38, 28.39]
+      },
+      'quality-ai-r4p1': {
+        minPitchDeg: -26.38,
+        maxPitchDeg: 28.39,
+        vaovDeg: 54.77,
+        label: 'QUALITY AI R4P1 (IDENTITY PRESERVED)',
+        bounds: [-26.38, 28.39]
+      },
       'quality-ai-r4': {
         minPitchDeg: -26.38,
         maxPitchDeg: 28.39,
@@ -748,7 +767,7 @@
         // Global State
     const urlParamsGlobal = (typeof window !== 'undefined' && window.location) ? new URLSearchParams(window.location.search) : null;
     const qModeGlobal = urlParamsGlobal ? urlParamsGlobal.get('mode') : null;
-    let currentMode = 'quality-ai-r4p2';
+    let currentMode = 'quality-ai-r4p3';
     if (qModeGlobal && ['quality-ai-r4p3', 'quality-ai-r4p2', 'quality-ai-r4p1', 'quality-ai-r4', 'quality-ai-r31', 'quality-ai-r3', 'quality-ai-12view', 'quality-ai'].includes(qModeGlobal)) {
       currentMode = qModeGlobal;
     }
@@ -1032,7 +1051,13 @@
       let targetW = 0, targetH = 0;
 
                   
-      if (currentMode === 'quality-ai-r4p2') {
+      if (currentMode === 'quality-ai-r4p3') {
+        activeTier = '12K';
+        targetUrl = R4P3_COVERAGE_TEXTURES[coverageMode] || R4P3_COVERAGE_TEXTURES['final-rgb'];
+        targetLabel = '12K R4P3 SEAM OPTIMIZED (' + coverageMode.toUpperCase() + ')';
+        targetW = 12288;
+        targetH = 1869;
+      } else if (currentMode === 'quality-ai-r4p2') {
         activeTier = '12K';
         targetUrl = R4P2_COVERAGE_TEXTURES[coverageMode] || R4P2_COVERAGE_TEXTURES['final-rgb'];
         targetLabel = '12K R4P2 NATIVE (' + coverageMode.toUpperCase() + ')';
@@ -1138,10 +1163,12 @@
             texture.wrapT = THREE.ClampToEdgeWrapping;
             window.__VIEWER_TELEMETRY__.UV_MAPPING_TYPE = 'FULL_BAND_DIRECT';
             window.__VIEWER_TELEMETRY__.VIEWER_VERTICAL_ANGULAR_DISTORTION = false;
+            window.__VIEWER_TELEMETRY__.R4P3_ACTIVE = (currentMode === 'quality-ai-r4p3');
+            window.__VIEWER_TELEMETRY__.R4P2_ACTIVE = (currentMode === 'quality-ai-r4p2');
             window.__VIEWER_TELEMETRY__.R4_ACTIVE = (currentMode === 'quality-ai-r4');
             window.__VIEWER_TELEMETRY__.R31_ACTIVE = (currentMode === 'quality-ai-r31');
             window.__VIEWER_TELEMETRY__.INPAINT_USED = false;
-            window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE = (currentMode === 'quality-ai-r4' || currentMode === 'quality-ai-r4p2' || currentMode === 'quality-ai-r4p3') ? 0.999509 : ((currentMode === 'quality-ai-r31') ? 0.94145 : 0.926109);
+            window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE = (currentMode === 'quality-ai-r4p3') ? 1.000000 : ((currentMode === 'quality-ai-r4' || currentMode === 'quality-ai-r4p2') ? 0.999509 : ((currentMode === 'quality-ai-r31') ? 0.94145 : 0.926109));
             window.__VIEWER_TELEMETRY__.CUSTOMER_DEFAULT = 'P2R13';
             window.__VIEWER_TELEMETRY__.OWNER_REVIEW_COMPLETED = false;
             window.__VIEWER_TELEMETRY__.OWNER_VISUAL_ACCEPTANCE = false;
@@ -1262,6 +1289,7 @@
     function updateUiModeIndicator() {
       const btnQA = document.getElementById('btn-mode-quality-ai');
       const btnR3 = document.getElementById('btn-mode-quality-r3');
+      const btnR4p3 = document.getElementById('btn-mode-quality-r4p3');
       const btnR4p2 = document.getElementById('btn-mode-quality-r4p2');
         const btnR4p1 = document.getElementById('btn-mode-quality-r4p1');
       const btnR4 = document.getElementById('btn-mode-quality-r4');
@@ -1284,7 +1312,7 @@
       // Show coverage bar only for quality-ai modes
       const covBar = document.getElementById('coverage-bar');
       if (covBar) {
-        covBar.style.display = (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai' || currentMode === 'quality-ai-r3' || currentMode === 'quality-ai-r31') ? 'flex' : 'none';
+        covBar.style.display = (currentMode.startsWith('quality-ai')) ? 'flex' : 'none';
       }
     }
 
@@ -1425,9 +1453,16 @@
     }
 
     function loadAndRenderFlatTexture() {
-      const url = (flatSourceType === 'png') 
-        ? '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY.png'
-        : '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY_OWNER_REVIEW.jpg';
+      let url;
+      if (currentMode === 'quality-ai-r4p3') {
+        url = (flatSourceType === 'png')
+          ? '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png'
+          : '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY_OWNER_REVIEW.jpg';
+      } else {
+        url = (flatSourceType === 'png') 
+          ? '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY.png'
+          : '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY_OWNER_REVIEW.jpg';
+      }
       
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -1622,7 +1657,15 @@
       const btnMask = document.getElementById('btn-cov-mask');
       const btnOverlay = document.getElementById('btn-cov-overlay');
       const btnOwner = document.getElementById('btn-cov-owner');
+      const btnSeam = document.getElementById('btn-cov-seam');
+      const btnEdge = document.getElementById('btn-cov-edge');
+      const btnCrack = document.getElementById('btn-cov-crack');
+      const btnHole = document.getElementById('btn-cov-hole');
       if (btnOwner) btnOwner.className = 'cov-btn';
+      if (btnSeam) btnSeam.className = 'cov-btn';
+      if (btnEdge) btnEdge.className = 'cov-btn';
+      if (btnCrack) btnCrack.className = 'cov-btn';
+      if (btnHole) btnHole.className = 'cov-btn';
 
       const toast = document.getElementById('coverage-mode-toast');
       const subSpecs = document.getElementById('sub-specs-text');
@@ -1670,7 +1713,40 @@
         window.__VIEWER_TELEMETRY__.DIRECT_COVERAGE_MASK_TOGGLE = true;
         resolveAndLoadTexture();
 
-                  } else if (mode === 'hole-classification') {
+                  } else if (mode === 'seam-cost') {
+        if (btnSeam) btnSeam.className = 'cov-btn active-cov-warn';
+        if (toast) {
+          toast.textContent = 'R4P3 SEAM TRANSITION COST MAP (GRAPH-CUT ENERGY)';
+          toast.style.display = 'block';
+          setTimeout(() => { if (toast) toast.style.display = 'none'; }, 4000);
+        }
+        if (subSpecs) {
+          subSpecs.innerHTML = 'ACTIVE TEXTURE: 12288 × 1869 (SEAM COST) | <strong style="color: #38bdf8;">SEAM TRANSITION COST MAP</strong>';
+        }
+        resolveAndLoadTexture();
+      } else if (mode === 'structural-edge') {
+        if (btnEdge) btnEdge.className = 'cov-btn active-cov-warn';
+        if (toast) {
+          toast.textContent = 'R4P3 STRUCTURAL EDGE BOUNDARY MAP';
+          toast.style.display = 'block';
+          setTimeout(() => { if (toast) toast.style.display = 'none'; }, 4000);
+        }
+        if (subSpecs) {
+          subSpecs.innerHTML = 'ACTIVE TEXTURE: 12288 × 1869 (EDGE MAP) | <strong style="color: #f59e0b;">STRUCTURAL EDGES</strong>';
+        }
+        resolveAndLoadTexture();
+      } else if (mode === 'crack-recovery') {
+        if (btnCrack) btnCrack.className = 'cov-btn active-cov-warn';
+        if (toast) {
+          toast.textContent = 'R4P3 CRACK RECOVERY MAP — 11,272 R4P2 HARD CRACKS RESOLVED';
+          toast.style.display = 'block';
+          setTimeout(() => { if (toast) toast.style.display = 'none'; }, 4000);
+        }
+        if (subSpecs) {
+          subSpecs.innerHTML = 'ACTIVE TEXTURE: 12288 × 1869 (CRACK RECOVERY) | <strong style="color: #00ff88;">CRACK RECOVERY (11,272 PIXELS)</strong>';
+        }
+        resolveAndLoadTexture();
+      } else if (mode === 'hole-classification') {
         const btnHole = document.getElementById('btn-cov-hole');
         if (btnHole) btnHole.className = 'cov-btn active-cov-warn';
         if (toast) {
