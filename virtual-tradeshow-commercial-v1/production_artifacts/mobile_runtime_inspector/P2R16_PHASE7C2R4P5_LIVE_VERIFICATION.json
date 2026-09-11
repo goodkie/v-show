@@ -1,0 +1,73 @@
+{
+  "PHASE": "7C.2R4P5",
+  "LIVE_URL": "https://v-show-commercial-v1-production.up.railway.app",
+  "DEPLOYMENT_SHA": "12e042473594f96b309ee0556e49d92e73b33a0d",
+  "TIMESTAMP": "2026-09-11T18:50:27.561Z",
+  "RESULTS": {
+    "quality-ai-r4p5-a": {
+      "status": "PASS",
+      "telemetry": {
+        "REQUESTED_MODE": "quality-ai-r4p5-a",
+        "MODE_LOCK_MATCH": true,
+        "TEXTURE_LOAD_SUCCESS": true,
+        "HTTP_STATUS": 200,
+        "CONTENT_LENGTH": 540355,
+        "CUSTOMER_DEFAULT": "P2R13",
+        "texWidth": 4096,
+        "texHeight": 623
+      }
+    },
+    "quality-ai-r4p5-b": {
+      "status": "PASS",
+      "telemetry": {
+        "REQUESTED_MODE": "quality-ai-r4p5-b",
+        "MODE_LOCK_MATCH": true,
+        "TEXTURE_LOAD_SUCCESS": true,
+        "HTTP_STATUS": 200,
+        "CONTENT_LENGTH": 562162,
+        "CUSTOMER_DEFAULT": "P2R13",
+        "texWidth": 4096,
+        "texHeight": 623
+      }
+    },
+    "quality-ai-r4p5-c": {
+      "status": "PASS",
+      "telemetry": {
+        "REQUESTED_MODE": "quality-ai-r4p5-c",
+        "MODE_LOCK_MATCH": true,
+        "TEXTURE_LOAD_SUCCESS": true,
+        "HTTP_STATUS": 200,
+        "CONTENT_LENGTH": 561910,
+        "CUSTOMER_DEFAULT": "P2R13",
+        "texWidth": 4096,
+        "texHeight": 623
+      }
+    },
+    "quality-ai-r4p5-d": {
+      "status": "PASS",
+      "telemetry": {
+        "REQUESTED_MODE": "quality-ai-r4p5-d",
+        "MODE_LOCK_MATCH": true,
+        "TEXTURE_LOAD_SUCCESS": true,
+        "HTTP_STATUS": 200,
+        "CONTENT_LENGTH": 558994,
+        "CUSTOMER_DEFAULT": "P2R13",
+        "texWidth": 4096,
+        "texHeight": 623
+      }
+    },
+    "quality-ai-r4p5-e": {
+      "status": "PASS",
+      "telemetry": {
+        "REQUESTED_MODE": "quality-ai-r4p5-e",
+        "MODE_LOCK_MATCH": true,
+        "TEXTURE_LOAD_SUCCESS": true,
+        "HTTP_STATUS": 200,
+        "CONTENT_LENGTH": 540539,
+        "CUSTOMER_DEFAULT": "P2R13",
+        "texWidth": 4096,
+        "texHeight": 623
+      }
+    }
+  }
+}
