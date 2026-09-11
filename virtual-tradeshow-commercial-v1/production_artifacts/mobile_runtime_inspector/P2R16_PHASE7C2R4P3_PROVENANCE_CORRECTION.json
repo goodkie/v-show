@@ -1,0 +1,20 @@
+{
+  "PHASE": "7C.2R4P3.1",
+  "TIMESTAMP": "2026-09-11T01:00:00Z",
+  "AUTHORITATIVE_PROVENANCE": {
+    "R4P3_SEAM_IMPLEMENTATION_COMMIT": "231fa19f3ee2df4fa4387ea37b6001adf60230ea",
+    "R4P3_VIEWER_INTEGRATION_COMMIT": "2524a833c40653ee9a5e39f2807d64c5a262fea1",
+    "R4P3_TELEMETRY_FIX_COMMIT": "9e3e75fd6b0dde3df38018fa629811a46704f03e",
+    "R4P3_FINAL_MANIFEST_COMMIT": "cc6f104ae449d6262b97768c4a82d14d2e734b86",
+    "R4P3_FINAL_DEPLOY_RECORD_COMMIT": "ad920692b9820b49bffd91dc41a7f0ec2deee4d4"
+  },
+  "PROVENANCE_NOTES": [
+    "Commit 231fa19f3ee2 is the actual R4P3 seam optimization implementation that computed graph-cut seam costs, crack recovery, and generated the texture artifacts.",
+    "Commit 2524a833c406 integrated the R4P3 viewer mode button, resolveAndLoadTexture routing, and seam bookmarks into p2r16_360_viewer.html across all 4 copies.",
+    "Commit 9e3e75fd6b0d corrected startup MODE_LOCK_MATCH telemetry to cover all quality-ai modes (do not call this commit the implementation commit).",
+    "Commit cc6f104ae449 is the manifest stamp commit deployed to Railway.",
+    "Commit ad920692b982 is the final deployment verification record recording deployId 548b4dfb-58d0-45f1-8ac3-62975024be0d."
+  ],
+  "CUSTOMER_DEFAULT": "P2R13",
+  "OWNER_VISUAL_ACCEPTANCE": false
+}
