@@ -1,0 +1,43 @@
+{
+  "PHASE": "7C.2R4P7",
+  "SECTION": "REFERENCE LINEAGE FORENSICS",
+  "REFERENCE_REQUESTED_MODE": "quality-ai-reference",
+  "REFERENCE_RESOLVED_MODE": "quality-ai-12view",
+  "REFERENCE_CURRENT_MODE": "quality-ai-12view",
+  "REFERENCE_MODE_LOCK_MATCH": true,
+  "ACTIVE_TIER_DEFAULT": "12K",
+  "REFERENCE_TEXTURES": {
+    "12K": {
+      "filename": "P2R16_QUALITY12_COMMERCIAL_VGGT_R1_QA_12K.jpg",
+      "width": 12288,
+      "height": 1827,
+      "byte_size": 7048447,
+      "sha256": "891b71739a18c866c1604f24d33495a421576d162b3df609b73f7e8f57b87203",
+      "generation_commit": "8af5c782e47b63ddf60ff23a779e6535df4b7832",
+      "generation_script": "scratch/modal_phase7c2r22_pipeline.py",
+      "pipeline_stage": "PHASE_7C.2R2.2 (16K/12K/8K Re-rasterization)"
+    },
+    "4K": {
+      "filename": "P2R16_QUALITY12_TRUE_COMMERCIAL_VGGT_12VIEW_R1_OWNER_REVIEW.jpg",
+      "width": 4096,
+      "height": 608,
+      "byte_size": 1127209,
+      "sha256": "c614d1f3c1250f5aee7738a5163fbc8598f17ad196eb4c4e296f9419b4cb7918",
+      "generation_commit": "00e11008eba1c5c30b5dbe1a9ccc6465d7646d51",
+      "generation_script": "scratch/modal_phase7c2r1_pipeline.py",
+      "pipeline_stage": "PHASE_7C.2R1 (Commercial VGGT Forward Pass + RoMa BA)"
+    }
+  },
+  "REFERENCE_SOURCE_ARTIFACTS": [
+    "P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01 (12 normalized portrait stills 3000x4000)",
+    "VGGT-1B-Commercial checkpoint (/cache/VGGT-1B-Commercial/model.safetensors)"
+  ],
+  "REFERENCE_CAMERA_ARTIFACT": "P2R16_FROZEN_EXTRINSICS_BA.npy",
+  "REFERENCE_INTRINSICS_ARTIFACT": "P2R16_FROZEN_INTRINSICS.npy",
+  "REFERENCE_DEPTH_ARTIFACT": "P2R16_FROZEN_GEOMETRY_DEPTH.npz (12x518x518 VGGT commercial depth)",
+  "REFERENCE_OWNER_MAP_ARTIFACT": "Generated dynamically during Z-buffer forward point splatting",
+  "REFERENCE_WARP_ARTIFACT": "Direct forward equirectangular projection of 3D point cloud (no parametric 2D warp field)",
+  "REFERENCE_LINEAGE_STATUS": "CODE_BACKED_COMPLETE",
+  "REFERENCE_TRANSFER_ALLOWED": true,
+  "REFERENCE_MECHANISM_SUMMARY": "Point cloud Z-buffer splatting with cv2.INPAINT_TELEA filling for empty pinhole pixels. Avoids continuous mesh rubber-sheet triangles at depth edges, but introduces Telea inpainting (8.15% of 12K pixels) and point-spread blurring."
+}
