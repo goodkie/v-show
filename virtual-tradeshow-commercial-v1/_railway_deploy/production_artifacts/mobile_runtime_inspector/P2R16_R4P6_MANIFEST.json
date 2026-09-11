@@ -1,0 +1,49 @@
+{
+  "PHASE": "7C.2R4P6",
+  "DESCRIPTION": "Phase 7C.2R4P6 Structure-First Multi-View Reconstruction Manifest",
+  "SOURCE_COMMIT": "d00cee7aac9134921495660c1f6110a3850ca464",
+  "BRANCH": "experiment/c12.9-p2r16-8shot-hires",
+  "INVARIANTS": {
+    "MASTER_TOUCHED": false,
+    "CUSTOMER_DEFAULT": "P2R13",
+    "VGGT_FORWARD_COUNT": 0,
+    "DEPTH_MODEL_EXECUTION_COUNT": 0,
+    "ROMA_INFERENCE_COUNT": 0,
+    "BA_EXECUTION_COUNT": 0,
+    "CAMERA_GEOMETRY_FROZEN": true,
+    "RGB_INPAINT_USED": false,
+    "GENERATIVE_PIXEL_COUNT": 0,
+    "CROSS_OCCLUSION_TRIANGLE_COUNT": 0,
+    "12K_RENDER_EXECUTED": false,
+    "OWNER_VISUAL_ACCEPTANCE": false
+  },
+  "STRUCTURAL_ELEMENTS": {
+    "STRUCTURAL_LINE_TRACKS": 1843,
+    "TRI_VIEW_TRACKS": 1843,
+    "ARCHITECTURAL_PLANES": 6,
+    "VISIBILITY_GRAPH_NODES": 5,
+    "VISIBILITY_GRAPH_EDGES": 2,
+    "VISIBILITY_GRAPH_CYCLES": 0
+  },
+  "BEST_TECHNICAL_CANDIDATE": "D",
+  "REPRESENTATION_SUMMARY": {
+    "A": "Control baseline (R4P5-A / R4P4-F2 reference geometry)",
+    "B": "Structural lines only (1,843 3D line tracks constrained)",
+    "C": "Line + plane structure (6 architectural planes, topology split at depth edges)",
+    "D": "Structure + visibility graph (DAG visibility, FG/BG layers, strict camera ownership)",
+    "E": "Conservative structure hybrid (Candidate D in defect zones, baseline elsewhere)"
+  },
+  "COVERAGE": {
+    "DIRECT_GEOMETRIC_COVERAGE": 0.999315,
+    "FINAL_COVERAGE": 1.0,
+    "PROVENANCE_VALID_RATIO": 1.0,
+    "EDGE_PROVENANCE_VALID_RATIO": 1.0
+  },
+  "ROUTES": {
+    "A": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p6-a",
+    "B": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p6-b",
+    "C": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p6-c",
+    "D": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p6-d",
+    "E": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p6-e"
+  }
+}
