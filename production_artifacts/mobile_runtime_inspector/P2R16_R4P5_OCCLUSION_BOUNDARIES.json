@@ -1,0 +1,167 @@
+{
+  "PHASE": "7C.2R4P5",
+  "SECTIONS": "9, 10, 18",
+  "TOTAL_CAMERAS": 12,
+  "SOURCE_RESOLUTION": [
+    3000,
+    4000
+  ],
+  "CAMERAS": {
+    "cam_00": {
+      "shot_id": "SHOT_000",
+      "yaw_deg": 0.0,
+      "total_lines": 1478,
+      "counts": {
+        "LIKELY_DEPTH_DISCONTINUITY": 64,
+        "LIKELY_TEXTURE_EDGE": 99,
+        "LIKELY_STRUCTURAL_LINE": 1311,
+        "UNCERTAIN": 4
+      },
+      "occlusion_edge_count": 64,
+      "structural_line_count": 1311
+    },
+    "cam_01": {
+      "shot_id": "SHOT_030",
+      "yaw_deg": 30.0,
+      "total_lines": 1264,
+      "counts": {
+        "LIKELY_DEPTH_DISCONTINUITY": 132,
+        "LIKELY_TEXTURE_EDGE": 84,
+        "LIKELY_STRUCTURAL_LINE": 1018,
+        "UNCERTAIN": 30
+      },
+      "occlusion_edge_count": 132,
+      "structural_line_count": 1018
+    },
+    "cam_02": {
+      "shot_id": "SHOT_060",
+      "yaw_deg": 60.0,
+      "total_lines": 2281,
+      "counts": {
+        "LIKELY_DEPTH_DISCONTINUITY": 536,
+        "LIKELY_TEXTURE_EDGE": 72,
+        "LIKELY_STRUCTURAL_LINE": 1617,
+        "UNCERTAIN": 56
+      },
+      "occlusion_edge_count": 536,
+      "structural_line_count": 1617
+    },
+    "cam_03": {
+      "shot_id": "SHOT_090",
+      "yaw_deg": 90.0,
+      "total_lines": 2135,
+      "counts": {
+        "LIKELY_DEPTH_DISCONTINUITY": 562,
+        "LIKELY_TEXTURE_EDGE": 67,
+        "LIKELY_STRUCTURAL_LINE": 1451,
+        "UNCERTAIN": 55
+      },
+      "occlusion_edge_count": 562,
+      "structural_line_count": 1451
+    },
+    "cam_04": {
+      "shot_id": "SHOT_120",
+      "yaw_deg": 120.0,
+      "total_lines": 2142,
+      "counts": {
+        "LIKELY_DEPTH_DISCONTINUITY": 180,
+        "LIKELY_TEXTURE_EDGE": 105,
+        "LIKELY_STRUCTURAL_LINE": 1837,
+        "UNCERTAIN": 20
+      },
+      "occlusion_edge_count": 180,
+      "structural_line_count": 1837
+    },
+    "cam_05": {
+      "shot_id": "SHOT_150",
+      "yaw_deg": 150.0,
+      "total_lines": 1567,
+      "counts": {
+        "LIKELY_DEPTH_DISCONTINUITY": 1,
+        "LIKELY_TEXTURE_EDGE": 73,
+        "LIKELY_STRUCTURAL_LINE": 1493,
+        "UNCERTAIN": 0
+      },
+      "occlusion_edge_count": 1,
+      "structural_line_count": 1493
+    },
+    "cam_06": {
+      "shot_id": "SHOT_180",
+      "yaw_deg": 180.0,
+      "total_lines": 803,
+      "counts": {
+        "LIKELY_DEPTH_DISCONTINUITY": 3,
+        "LIKELY_TEXTURE_EDGE": 38,
+        "LIKELY_STRUCTURAL_LINE": 762,
+        "UNCERTAIN": 0
+      },
+      "occlusion_edge_count": 3,
+      "structural_line_count": 762
+    },
+    "cam_07": {
+      "shot_id": "SHOT_210",
+      "yaw_deg": 210.0,
+      "total_lines": 871,
+      "counts": {
+        "LIKELY_DEPTH_DISCONTINUITY": 2,
+        "LIKELY_TEXTURE_EDGE": 46,
+        "LIKELY_STRUCTURAL_LINE": 823,
+        "UNCERTAIN": 0
+      },
+      "occlusion_edge_count": 2,
+      "structural_line_count": 823
+    },
+    "cam_08": {
+      "shot_id": "SHOT_240",
+      "yaw_deg": 240.0,
+      "total_lines": 1549,
+      "counts": {
+        "LIKELY_DEPTH_DISCONTINUITY": 237,
+        "LIKELY_TEXTURE_EDGE": 84,
+        "LIKELY_STRUCTURAL_LINE": 1225,
+        "UNCERTAIN": 3
+      },
+      "occlusion_edge_count": 237,
+      "structural_line_count": 1225
+    },
+    "cam_09": {
+      "shot_id": "SHOT_270",
+      "yaw_deg": 270.0,
+      "total_lines": 1119,
+      "counts": {
+        "LIKELY_DEPTH_DISCONTINUITY": 362,
+        "LIKELY_TEXTURE_EDGE": 19,
+        "LIKELY_STRUCTURAL_LINE": 732,
+        "UNCERTAIN": 6
+      },
+      "occlusion_edge_count": 362,
+      "structural_line_count": 732
+    },
+    "cam_10": {
+      "shot_id": "SHOT_300",
+      "yaw_deg": 300.0,
+      "total_lines": 585,
+      "counts": {
+        "LIKELY_DEPTH_DISCONTINUITY": 31,
+        "LIKELY_TEXTURE_EDGE": 8,
+        "LIKELY_STRUCTURAL_LINE": 544,
+        "UNCERTAIN": 2
+      },
+      "occlusion_edge_count": 31,
+      "structural_line_count": 544
+    },
+    "cam_11": {
+      "shot_id": "SHOT_330",
+      "yaw_deg": 330.0,
+      "total_lines": 1340,
+      "counts": {
+        "LIKELY_DEPTH_DISCONTINUITY": 181,
+        "LIKELY_TEXTURE_EDGE": 42,
+        "LIKELY_STRUCTURAL_LINE": 1090,
+        "UNCERTAIN": 27
+      },
+      "occlusion_edge_count": 181,
+      "structural_line_count": 1090
+    }
+  }
+}

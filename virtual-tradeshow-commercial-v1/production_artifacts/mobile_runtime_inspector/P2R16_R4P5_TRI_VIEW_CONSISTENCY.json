@@ -1,0 +1,93 @@
+{
+  "PHASE": "7C.2R4P5",
+  "SECTION": "29 TRI-VIEW CONSISTENCY",
+  "TRI_VIEW_POINT_SPREAD_P50": 0.6521,
+  "TRI_VIEW_POINT_SPREAD_P95": 1.5216,
+  "TRIPLETS_EVALUATED": 12,
+  "PER_TRIPLET_STATS": [
+    {
+      "triplet": "00_01_02",
+      "has_second_neighbor_ik": true,
+      "tri_view_spread_p50_m": 0.8113,
+      "tri_view_spread_p95_m": 0.8406,
+      "in_view_fraction": 0.0
+    },
+    {
+      "triplet": "01_02_03",
+      "has_second_neighbor_ik": true,
+      "tri_view_spread_p50_m": 1.1296,
+      "tri_view_spread_p95_m": 1.3222,
+      "in_view_fraction": 0.0
+    },
+    {
+      "triplet": "02_03_04",
+      "has_second_neighbor_ik": true,
+      "tri_view_spread_p50_m": 1.407,
+      "tri_view_spread_p95_m": 1.6747,
+      "in_view_fraction": 0.0
+    },
+    {
+      "triplet": "03_04_05",
+      "has_second_neighbor_ik": true,
+      "tri_view_spread_p50_m": 1.6617,
+      "tri_view_spread_p95_m": 1.7776,
+      "in_view_fraction": 0.0
+    },
+    {
+      "triplet": "04_05_06",
+      "has_second_neighbor_ik": false,
+      "tri_view_spread_p50_m": 0.042,
+      "tri_view_spread_p95_m": 0.118,
+      "in_view_fraction": 0.0
+    },
+    {
+      "triplet": "05_06_07",
+      "has_second_neighbor_ik": true,
+      "tri_view_spread_p50_m": 0.5373,
+      "tri_view_spread_p95_m": 0.5518,
+      "in_view_fraction": 0.0
+    },
+    {
+      "triplet": "06_07_08",
+      "has_second_neighbor_ik": false,
+      "tri_view_spread_p50_m": 0.042,
+      "tri_view_spread_p95_m": 0.118,
+      "in_view_fraction": 0.0
+    },
+    {
+      "triplet": "07_08_09",
+      "has_second_neighbor_ik": true,
+      "tri_view_spread_p50_m": 0.5097,
+      "tri_view_spread_p95_m": 0.5312,
+      "in_view_fraction": 0.0
+    },
+    {
+      "triplet": "08_09_10",
+      "has_second_neighbor_ik": true,
+      "tri_view_spread_p50_m": 0.8403,
+      "tri_view_spread_p95_m": 1.0461,
+      "in_view_fraction": 0.004
+    },
+    {
+      "triplet": "09_10_11",
+      "has_second_neighbor_ik": true,
+      "tri_view_spread_p50_m": 0.4722,
+      "tri_view_spread_p95_m": 0.4911,
+      "in_view_fraction": 0.0
+    },
+    {
+      "triplet": "10_11_00",
+      "has_second_neighbor_ik": false,
+      "tri_view_spread_p50_m": 0.042,
+      "tri_view_spread_p95_m": 0.118,
+      "in_view_fraction": 0.0
+    },
+    {
+      "triplet": "11_00_01",
+      "has_second_neighbor_ik": true,
+      "tri_view_spread_p50_m": 0.7669,
+      "tri_view_spread_p95_m": 0.9158,
+      "in_view_fraction": 0.0
+    }
+  ]
+}

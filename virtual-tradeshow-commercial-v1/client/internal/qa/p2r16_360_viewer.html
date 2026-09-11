@@ -397,7 +397,27 @@
           <i class="fa-solid fa-compass-drafting"></i>
           <span>Quality R4.4 Refined</span>
         </button>
-                <button id="btn-mode-quality-r4p43-f0" class="mode-btn" onclick="switchMode('quality-ai-r4p43-f0')" style="border-color: #38bdf8; color: #38bdf8;">
+                        <button id="btn-mode-quality-r4p5-a" class="mode-btn" onclick="switchMode('quality-ai-r4p5-a')" style="border-color: #38bdf8; color: #38bdf8;">
+          <i class="fa-solid fa-flask"></i>
+          <span>R4P5 A (Base)</span>
+        </button>
+        <button id="btn-mode-quality-r4p5-b" class="mode-btn" onclick="switchMode('quality-ai-r4p5-b')" style="border-color: #a855f7; color: #a855f7;">
+          <i class="fa-solid fa-draw-polygon"></i>
+          <span>R4P5 B (Bnd)</span>
+        </button>
+        <button id="btn-mode-quality-r4p5-c" class="mode-btn" onclick="switchMode('quality-ai-r4p5-c')" style="border-color: #ec4899; color: #ec4899;">
+          <i class="fa-solid fa-layer-group"></i>
+          <span>R4P5 C (2.5D)</span>
+        </button>
+        <button id="btn-mode-quality-r4p5-d" class="mode-btn" onclick="switchMode('quality-ai-r4p5-d')" style="border-color: #00ff88; color: #00ff88; font-weight: bold;">
+          <i class="fa-solid fa-gem"></i>
+          <span>R4P5 D (Hybrid)</span>
+        </button>
+        <button id="btn-mode-quality-r4p5-e" class="mode-btn" onclick="switchMode('quality-ai-r4p5-e')" style="border-color: #f59e0b; color: #f59e0b;">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>R4P5 E (Conserv)</span>
+        </button>
+        <button id="btn-mode-quality-r4p43-f0" class="mode-btn" onclick="switchMode('quality-ai-r4p43-f0')" style="border-color: #38bdf8; color: #38bdf8;">
           <i class="fa-solid fa-flask"></i>
           <span>R4P4.3 F0 (D Base)</span>
         </button>
@@ -685,6 +705,106 @@
           'edge-residual': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P4_EDGE_RESIDUAL_HEATMAP.png',
           'structural-lines': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P4_LINE_ALIGNMENT_AFTER.png'
         }
+      },
+      'quality-ai-r4p5-a': {
+        shortName: 'R4P5 A Baseline',
+        title: 'QUALITY AI — P2R16 | R4P5 A — R4P4/F2 BASELINE CONTROL | 4K INTERNAL QA',
+        docTitle: 'C12.9-P2R16 — R4P5 A Baseline Control — 4K Internal QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999315, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P5_CANDIDATE_A_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P5_CANDIDATE_A_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P5_CANDIDATE_A_4K.jpg',
+        expectedSha256: '9f0133965c3d2dca',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P5 A — R4P4/F2 BASELINE CONTROL (4K)',
+        depthObservability: 'MARGINAL',
+        geometryMode: 'R4P4_F2_CONTROL',
+        boundaryRes: '518_CONTROL',
+        secondNeighborError: '1.27px',
+        yaw150Tear: 'UNRESOLVED (0.49)',
+        yaw240Tear: 'UNRESOLVED (0.46)',
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P5_CANDIDATE_A_4K.jpg' }
+      },
+      'quality-ai-r4p5-b': {
+        shortName: 'R4P5 B Boundary',
+        title: 'QUALITY AI — P2R16 | R4P5 B — HIGH-RES DEPTH BOUNDARY | 4K INTERNAL QA',
+        docTitle: 'C12.9-P2R16 — R4P5 B High-Res Depth Boundary — 4K Internal QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999315, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P5_CANDIDATE_B_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P5_CANDIDATE_B_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P5_CANDIDATE_B_4K.jpg',
+        expectedSha256: '0fde3593d12ecc34',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P5 B — HIGH-RES NARROW-BAND DEPTH REFINEMENT',
+        depthObservability: 'MARGINAL',
+        geometryMode: 'HIGHRES_DEPTH_BOUNDARY',
+        boundaryRes: '1500x2000',
+        secondNeighborError: '1.18px',
+        yaw150Tear: 'IMPROVED (0.31)',
+        yaw240Tear: 'IMPROVED (0.28)',
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P5_CANDIDATE_B_4K.jpg' }
+      },
+      'quality-ai-r4p5-c': {
+        shortName: 'R4P5 C Layered',
+        title: 'QUALITY AI — P2R16 | R4P5 C — LAYERED 2.5D GEOMETRY | 4K INTERNAL QA',
+        docTitle: 'C12.9-P2R16 — R4P5 C Layered 2.5D Geometry — 4K Internal QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999315, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P5_CANDIDATE_C_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P5_CANDIDATE_C_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P5_CANDIDATE_C_4K.jpg',
+        expectedSha256: 'cec1f05bc9176848',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P5 C — LAYERED MULTI-VIEW 2.5D GEOMETRY',
+        depthObservability: 'MARGINAL',
+        geometryMode: 'LAYERED_2P5D',
+        boundaryRes: '1500x2000',
+        secondNeighborError: '1.12px',
+        yaw150Tear: 'REDUCED (0.24)',
+        yaw240Tear: 'REDUCED (0.21)',
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P5_CANDIDATE_C_4K.jpg' }
+      },
+      'quality-ai-r4p5-d': {
+        shortName: 'R4P5 D Hybrid',
+        title: 'QUALITY AI — P2R16 | R4P5 D — HIGH-RES MULTI-VIEW HYBRID GEOMETRY | 4K INTERNAL QA',
+        docTitle: 'C12.9-P2R16 — R4P5 D High-Res Hybrid — 4K Internal QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999315, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P5_CANDIDATE_D_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P5_CANDIDATE_D_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P5_CANDIDATE_D_4K.jpg',
+        expectedSha256: '2b90d9051a230685',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P5 D — HIGH-RES MULTI-VIEW HYBRID GEOMETRY',
+        depthObservability: 'MARGINAL',
+        geometryMode: 'HYBRID_METRIC_LAYERED',
+        boundaryRes: '1500x2000',
+        secondNeighborError: '1.09px',
+        yaw150Tear: 'BEST (0.19)',
+        yaw240Tear: 'BEST (0.17)',
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P5_CANDIDATE_D_4K.jpg' }
+      },
+      'quality-ai-r4p5-e': {
+        shortName: 'R4P5 E Conserv',
+        title: 'QUALITY AI — P2R16 | R4P5 E — CONSERVATIVE BOUNDARY HYBRID | 4K INTERNAL QA',
+        docTitle: 'C12.9-P2R16 — R4P5 E Conservative Hybrid — 4K Internal QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999315, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P5_CANDIDATE_E_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P5_CANDIDATE_E_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P5_CANDIDATE_E_4K.jpg',
+        expectedSha256: '55001fb504b65727',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P5 E — CONSERVATIVE ZONE HYBRID (±16px)',
+        depthObservability: 'MARGINAL',
+        geometryMode: 'CONSERVATIVE_HYBRID',
+        boundaryRes: '1500x2000',
+        secondNeighborError: '1.14px',
+        yaw150Tear: 'IMPROVED (0.28)',
+        yaw240Tear: 'IMPROVED (0.25)',
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P5_CANDIDATE_E_4K.jpg' }
       },
       'quality-ai-r4p43-f0': {
         shortName: 'R4P4.3 F0 Baseline',
@@ -1034,7 +1154,15 @@
         const fovVal = Math.round(currentFov);
         const yawVal = currentYaw.toFixed(1);
         const pitchVal = (currentPitch >= 0 ? '+' : '') + currentPitch.toFixed(1);
-        if (currentMode.startsWith('quality-ai-r4p43-')) {
+        if (currentMode.startsWith('quality-ai-r4p5-')) {
+          const obsStr = meta.depthObservability || 'MARGINAL';
+          const modeStr = meta.geometryMode || 'HYBRID';
+          const bndStr = meta.boundaryRes || '1500x2000';
+          const snErr = meta.secondNeighborError || '1.09px';
+          const y150T = meta.yaw150Tear || 'BEST';
+          const y240T = meta.yaw240Tear || 'BEST';
+          subSpecsEl.innerHTML = `TEXTURE: 4096×623 | OBSERVABILITY: <span style="color:#00ff88">${obsStr}</span> | MODE: <span style="color:#38bdf8">${modeStr}</span> | BND RES: ${bndStr} | DIRECT COV: ${covStr} | SN ERR: ${snErr} | YAW150: ${y150T} | YAW240: ${y240T} | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
+        } else if (currentMode.startsWith('quality-ai-r4p43-')) {
           const depthRecStr = meta.depthRecoveryPct || '0.00%';
           subSpecsEl.innerHTML = `ACTIVE TEXTURE: ${meta.width || 4096} × ${meta.height || 623} | DIRECT GEOMETRIC COVERAGE: ${covStr} | BLACK CRACK PIXELS: ${cracks} | RGB INPAINT: 0.00% | DEPTH RECOVERY: ${depthRecStr} | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
         } else {
@@ -1432,7 +1560,7 @@
         targetLabel = '12K R4P4 REFINED (' + coverageMode.toUpperCase() + ')';
         targetW = 12288;
         targetH = 1869;
-      } else if (currentMode.startsWith('quality-ai-r4p43-') || currentMode.startsWith('quality-ai-r4p42-')) {
+      } else if (currentMode.startsWith('quality-ai-r4p5-') || currentMode.startsWith('quality-ai-r4p43-') || currentMode.startsWith('quality-ai-r4p42-')) {
         activeTier = '4K';
         const candMeta = MODE_METADATA[currentMode];
         targetUrl = candMeta.texture;
@@ -1700,6 +1828,10 @@
       const btnR3 = document.getElementById('btn-mode-quality-r3');
             const btnR4p4 = document.getElementById('btn-mode-quality-r4p4');
       if (btnR4p4) btnR4p4.className = (currentMode === 'quality-ai-r4p4') ? 'mode-btn active-quality-ai' : 'mode-btn';
+      ['a', 'b', 'c', 'd', 'e'].forEach(cand => {
+        const btn = document.getElementById('btn-mode-quality-r4p5-' + cand);
+        if (btn) btn.className = (currentMode === 'quality-ai-r4p5-' + cand) ? 'mode-btn active-quality-ai' : 'mode-btn';
+      });
       ['f0', 'f1', 'f2', 'f3', 'f4'].forEach(f => {
         const btn = document.getElementById('btn-mode-quality-r4p43-' + f);
         if (btn) btn.className = (currentMode === 'quality-ai-r4p43-' + f) ? 'mode-btn active-quality-ai' : 'mode-btn';

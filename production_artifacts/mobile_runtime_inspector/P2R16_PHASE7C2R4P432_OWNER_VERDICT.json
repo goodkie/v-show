@@ -1,0 +1,199 @@
+{
+  "DOCUMENT": "P2R16_PHASE7C2R4P432_OWNER_VERDICT",
+  "PHASE": "7C.2R4P4.3.2",
+  "GENERATED_AT": "2026-09-11T18:22:25Z",
+
+  "_section_1": "OWNER VISUAL REVIEW STATUS",
+  "OWNER_REVIEW_COMPLETED": true,
+  "REVIEW_POSITIONS": ["YAW_60", "YAW_150", "YAW_240"],
+  "PITCH": 0.0,
+  "HFOV": 85.0,
+  "COMPARED": ["F0 (Candidate D baseline)", "F2 (Multi-view + 1px same-surface local depth recovery)", "Quality AI Reference"],
+
+  "_section_2": "AUTHORITATIVE OWNER FINDINGS",
+  "YAW_60": {
+    "F2_60_NOT_WORSE_THAN_F0": true,
+    "FINDING": "F2 preserves relatively good continuity already present in the Candidate-D family. No material visual regression at 60°."
+  },
+  "YAW_150": {
+    "F2_150_BETTER_THAN_F0": false,
+    "F2_150_BETTER_THAN_QUALITY_AI": false,
+    "FINDING": "Large white/pink jagged tear around window/wall/occlusion boundary remains visibly present. Multi-view + 1px recovery policy does not remove structural tear to a degree sufficient for Owner acceptance. Quality AI Reference shows more natural seam continuity at this location, although Quality AI still has blur/geometry limitations."
+  },
+  "YAW_240": {
+    "F2_240_BETTER_THAN_F0": "NOT_PROVEN",
+    "F2_240_BETTER_THAN_QUALITY_AI": false,
+    "FINDING": "Edge tear/discontinuity around window/wall/furniture boundary remains visible. Any improvement over F0 is too small or ambiguous to justify promotion. Quality AI Reference remains visually more continuous at this location."
+  },
+
+  "_section_3": "FINAL F2 OWNER DECISION",
+  "BEST_TECHNICAL_CANDIDATE": "F2",
+  "BEST_VISUAL_REFERENCE": "QUALITY_AI_REFERENCE",
+  "BEST_VISUAL_REFERENCE_NOTE": "BEST_VISUAL_REFERENCE does NOT mean OWNER_VISUAL_ACCEPTANCE=true and does NOT mean PROMOTE_QUALITY_AI_TO_CUSTOMER_DEFAULT=true. Quality AI Reference is only the better current visual comparison for seam continuity at 150° and 240°.",
+  "OWNER_SELECTS_F2": false,
+  "F2_FINALIZATION_APPROVED": false,
+  "F2_12K_PROMOTION_APPROVED": false,
+  "12K_RENDER_EXECUTED": false,
+
+  "_section_4": "WHY F2 IS REJECTED",
+  "F2_PROVENANCE_QA": "PASS",
+  "F2_VISUAL_STRUCTURE_QA": "FAIL",
+  "F2_OWNER_SELECTION": "REJECTED",
+  "F2_PASS_CRITERIA": {
+    "MULTI_VIEW_PHYSICAL_SUPPORT_USED": true,
+    "LOCAL_FILL_LIMITED_TO_1PX": true,
+    "CROSS_DEPTH_EDGE_FILLS": 0,
+    "RGB_INPAINT": false
+  },
+  "F2_FAIL_REASONS": [
+    "persistent jagged structural tear at YAW 150",
+    "persistent boundary discontinuity at YAW 240",
+    "vertical structure remains unstable",
+    "depth boundary location remains inaccurate",
+    "seam continuity still inferior to Quality AI Reference at critical angles",
+    "perceived sharpness remains poor"
+  ],
+  "F2_CONCLUSION": "Technical correctness did not translate into sufficient visual improvement.",
+
+  "_section_5": "ROOT CAUSE ESCALATION",
+  "PRIMARY_ROOT_CAUSE": "LOW_RESOLUTION_DEPTH_BOUNDARY_GEOMETRY",
+  "SECONDARY_ROOT_CAUSE": "OCCLUSION_BOUNDARY_GEOMETRY_ERROR",
+  "TERTIARY_ROOT_CAUSE": "GLOBAL_MULTI_VIEW_DEPTH_INCONSISTENCY",
+  "POSSIBLE_ADDITIONAL_LIMIT": "518_DEPTH_REPRESENTATION_LIMIT",
+  "FORBIDDEN_NEXT_ACTIONS": [
+    "local fill radius tuning",
+    "EDT fill",
+    "same-surface fill radius tuning",
+    "seam feather width",
+    "camera pose BA",
+    "intrinsics optimization",
+    "photometric blending",
+    "proceed to F3 or F4",
+    "wider local depth filling"
+  ],
+
+  "_section_6": "R4P4 FAMILY STATUS",
+  "ADJACENT_ALIGNMENT_QA": "PASS_IMPROVED",
+  "EDGE_ALIGNMENT_QA": "PASS_IMPROVED",
+  "GLOBAL_MULTI_VIEW_CONSISTENCY": "NOT_PROVEN",
+  "VERTICAL_STRUCTURE_QA": "FAIL",
+  "VISUAL_WARP_QA": "FAIL",
+  "QUALITY_GHOSTING_QA": "FAIL",
+  "SHARPNESS_QA": "FAIL",
+  "STRUCTURAL_ALIGNMENT_QA": "FAIL_IMPROVED",
+  "GLOBAL_GEOMETRY_QA": "FAIL_IMPROVED",
+
+  "_section_7": "F0-F4 ARTIFACT FREEZE",
+  "F0_FROZEN": true,
+  "F1_FROZEN": true,
+  "F2_FROZEN": true,
+  "F3_FROZEN": true,
+  "F4_FROZEN": true,
+  "F2_ROLE": "BEST_TECHNICAL_4K_DEPTH_RECOVERY_CANDIDATE — forensic reference only. Do not promote.",
+
+  "_section_8": "QUALITY AI REFERENCE POLICY",
+  "QUALITY_AI_REFERENCE_ROLE": "VISUAL_REFERENCE_FOR_SEAM_CONTINUITY only",
+  "QUALITY_AI_PIXELS_USED": false,
+  "QUALITY_AI_DEPTH_USED": false,
+  "QUALITY_AI_WARP_USED": false,
+
+  "_section_9": "NEXT PHASE AUTHORIZATION",
+  "NEXT_PHASE": "PHASE_7C2R4P5_HIGHER_RESOLUTION_MULTI_VIEW_GEOMETRY",
+  "NEXT_PHASE_GOALS": [
+    "1. Obtain materially higher spatial geometry resolution than 518x518",
+    "2. Reconstruct architectural depth boundaries more accurately",
+    "3. Preserve door/window/cabinet straight edges",
+    "4. Improve foreground/background occlusion boundaries",
+    "5. Improve adjacent AND second-neighbor multi-view consistency",
+    "6. Preserve original 3000x4000 physical RGB",
+    "7. Avoid generative final pixels",
+    "8. Eliminate 150° and 240° structural tear at geometry level"
+  ],
+
+  "_section_10": "R4P5 DESIGN REQUIREMENTS",
+  "R4P5_FORBIDDEN_APPROACHES": [
+    "bilinear-only depth upsample",
+    "guided blur presented as new geometry",
+    "nearest-neighbor enlargement",
+    "cosmetic seam masking",
+    "larger depth hole fill"
+  ],
+  "R4P5_CANDIDATE_APPROACHES": [
+    "high-resolution multi-view depth refinement",
+    "full-resolution correspondence-constrained depth",
+    "edge-aware multi-view depth boundary optimization",
+    "depth discontinuity refinement from multiple physical views",
+    "layered foreground/background surface representation",
+    "higher-resolution mesh driven by real multi-view observations"
+  ],
+  "GENERATIVE_ROOM_RECONSTRUCTION": false,
+
+  "_section_11": "MULTI-VIEW REQUIREMENT",
+  "R4P5_MUST_EVALUATE": ["12 adjacent cyclic pairs", "successful second-neighbor pairs"],
+  "REQUIRED_DIAGNOSTICS": [
+    "ADJACENT_GEOMETRY_CONSISTENCY",
+    "SECOND_NEIGHBOR_GEOMETRY_CONSISTENCY",
+    "TRI_VIEW_SURFACE_SPREAD",
+    "CLOSURE_CONSISTENCY"
+  ],
+
+  "_section_12": "STRUCTURAL GATES FOR R4P5",
+  "R4P5_MUST_IMPROVE_OVER_R4P4_F2": [
+    "VERTICAL_LINE_BEND_P95",
+    "3D_LINE_RESIDUAL_P95",
+    "DEPTH_EDGE_OFFSET_P95",
+    "SECOND_NEIGHBOR_DEPTH_CONSISTENCY",
+    "OCCLUSION_BOUNDARY_ALIGNMENT"
+  ],
+  "R4P5_MINIMUM_TARGETS": {
+    "VERTICAL_LINE_BEND_IMPROVEMENT_MIN": ">=25%",
+    "3D_LINE_RESIDUAL_IMPROVEMENT_MIN": ">=25%",
+    "DEPTH_EDGE_OFFSET_IMPROVEMENT_MIN": ">=25%",
+    "SECOND_NEIGHBOR_REGRESSION": false,
+    "COVERAGE_MIN": ">=99.5%",
+    "RGB_INPAINT": false,
+    "GENERATIVE_FILL": false
+  },
+
+  "_section_13": "CRITICAL OWNER TEST ZONES",
+  "R4P5_MANDATORY_REVIEW_POSITIONS": [60, 150, 240, 0, 90, 180, 270, 345],
+  "PRIORITY_STRUCTURAL_ZONES": [
+    "YAW150_WINDOW_WALL_BOUNDARY",
+    "YAW240_WINDOW_FURNITURE_BOUNDARY",
+    "YAW60_CABINET_STRUCTURE"
+  ],
+
+  "_section_14": "12K POLICY",
+  "R4P5_4K_CANDIDATES_FIRST": true,
+  "R4P5_12K_RENDER_EXECUTED": false,
+  "R4P5_12K_UNLOCK_CONDITIONS": ["technical structural gates pass", "Owner visual review confirms improvement"],
+
+  "_section_15": "CUSTOMER SAFETY STATE",
+  "CUSTOMER_DEFAULT": "P2R13",
+  "MASTER_TOUCHED": false,
+  "OWNER_VISUAL_ACCEPTANCE": false,
+
+  "_section_16": "FINAL OFFICIAL STATE",
+  "R4P43_OWNER_REVIEW_COMPLETED": true,
+  "F2_60_NOT_WORSE_THAN_F0": true,
+  "F2_150_BETTER_THAN_F0": false,
+  "F2_150_BETTER_THAN_QUALITY_AI": false,
+  "F2_240_BETTER_THAN_F0": "NOT_PROVEN",
+  "F2_240_BETTER_THAN_QUALITY_AI": false,
+  "BEST_TECHNICAL_CANDIDATE": "F2",
+  "BEST_VISUAL_REFERENCE": "QUALITY_AI_REFERENCE",
+  "F2_OWNER_SELECTED": false,
+  "F2_FINALIZATION_APPROVED": false,
+  "F2_12K_PROMOTION_APPROVED": false,
+  "12K_RENDER_EXECUTED": false,
+  "PRIMARY_ROOT_CAUSE": "LOW_RESOLUTION_DEPTH_BOUNDARY_GEOMETRY",
+  "NEXT_PHASE": "PHASE_7C2R4P5_HIGHER_RESOLUTION_MULTI_VIEW_GEOMETRY",
+  "GLOBAL_GEOMETRY_QA": "FAIL_IMPROVED",
+  "VISUAL_WARP_QA": "FAIL",
+  "STRUCTURAL_ALIGNMENT_QA": "FAIL_IMPROVED",
+  "QUALITY_GHOSTING_QA": "FAIL",
+  "SHARPNESS_QA": "FAIL",
+  "OWNER_VISUAL_ACCEPTANCE": false,
+  "CUSTOMER_DEFAULT": "P2R13",
+  "MASTER_TOUCHED": false
+}

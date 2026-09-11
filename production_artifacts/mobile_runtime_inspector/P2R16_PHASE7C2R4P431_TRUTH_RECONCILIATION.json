@@ -1,0 +1,217 @@
+{
+  "DOCUMENT": "P2R16_PHASE7C2R4P431_TRUTH_RECONCILIATION",
+  "PHASE": "7C.2R4P4.3.1",
+  "GENERATED_AT": "2026-09-11T16:40:00Z",
+
+  "_section_1_commit_correction": "SECTION 1 — CORRECT IMPLEMENTATION COMMIT",
+  "CORRECT_SOURCE_COMMIT": "7ec8b10570d5d530e042cd57a4e772708948414a",
+  "OLD_INVALID_SOURCE_COMMIT": "7ec8b10287a912e9a2f6cae5be9e7a2b972e259e",
+  "INVALID_SOURCE_COMMIT_CORRECTED": true,
+  "CORRECTION_METHOD": "No history rewrite. Correction record only. Full SHA verified via git rev-parse.",
+
+  "_section_2_deploy_commit": "SECTION 2 — CORRECT FINAL DEPLOY COMMIT",
+  "MANIFEST_STAMP_COMMIT": "8c43f7a54a2c1477f6ef6afec2211ec39772a562",
+  "FINAL_DEPLOY_RECORD_COMMIT": "5e8d1014710d5ddc6c24378968275c33b9b68d0d",
+  "OLD_INVALID_DEPLOY_COMMIT": "5e8d1017b6c3e48a",
+  "DEPLOY_COMMIT_CORRECTED": true,
+  "BRANCH": "experiment/c12.9-p2r16-8shot-hires",
+  "MASTER_TOUCHED": false,
+
+  "_section_3_pixel_freeze": "SECTION 3 — F0-F4 PIXEL FREEZE",
+  "F0_PIXELS_FROZEN": true,
+  "F1_PIXELS_FROZEN": true,
+  "F2_PIXELS_FROZEN": true,
+  "F3_PIXELS_FROZEN": true,
+  "F4_PIXELS_FROZEN": true,
+  "RERENDER_EXECUTED": false,
+  "OUTPUT_RESOLUTION": "4096x623",
+
+  "_section_4_f2_metrics": "SECTION 4 — AUTHORITATIVE F2 METRICS",
+  "F2_DIRECT_GEOMETRIC_COVERAGE": 0.9993173467596308,
+  "F2_FINAL_COVERAGE": 1.0,
+  "F2_CRACK_RECOVERED": 1742,
+  "F2_MULTIVIEW_RECOVERED": 2816,
+  "F2_LOCAL_RECOVERED": 11013,
+  "F2_UNRECOVERED_DEPTH_SAMPLES": 666,
+  "F2_RGB_INPAINT_USED": false,
+  "F2_CROSS_DEPTH_EDGE_FILL_COUNT": 0,
+
+  "_section_5_tear_gate_correction": "SECTION 5 — TEAR METRIC CONTRADICTION CORRECTION",
+  "PREVIOUS_YAW150_JAGGED_PIXEL_COUNT_F0": 1606,
+  "PREVIOUS_YAW150_JAGGED_PIXEL_COUNT_F2": 1606,
+  "PREVIOUS_YAW150_JAGGED_REDUCTION": "0.0%",
+  "PREVIOUS_YAW240_JAGGED_PIXEL_COUNT_F0": 1790,
+  "PREVIOUS_YAW240_JAGGED_PIXEL_COUNT_F2": 1790,
+  "PREVIOUS_YAW240_JAGGED_REDUCTION": "0.0%",
+  "TEAR_GATE_150_STATUS": "NOT_PROVEN",
+  "TEAR_GATE_240_STATUS": "NOT_PROVEN",
+  "PREVIOUS_GATES_INVALIDATED": "Cannot record 0.0% reduction AND assert >=50% improvement simultaneously",
+
+  "_section_6_owner_visual": "SECTION 6 — OWNER VISUAL CONFIRMATION REMOVED FROM AUTOMATION",
+  "YAW150_OWNER_VISUAL_IMPROVEMENT": "PENDING",
+  "YAW240_OWNER_VISUAL_IMPROVEMENT": "PENDING",
+  "AUTOMATED_VISUAL_CONFIRMATION_REMOVED": true,
+  "NOTE": "Only Owner may visually confirm tear improvement via live viewer",
+
+  "_section_7_revised_roi_metrics": "SECTION 7 — REVISED TEAR ROI METRICS (existing screenshots, fixed ROI)",
+  "ROI_METHOD": "Fixed fractional ROI defined from F0 LIVE capture, not tuned per candidate",
+  "ROI_YAW150": {
+    "x_frac": [0.55, 0.72],
+    "y_frac": [0.20, 0.90],
+    "CAMERA_PAIR": "CAM05/CAM04"
+  },
+  "ROI_YAW240": {
+    "x_frac": [0.28, 0.46],
+    "y_frac": [0.20, 0.90],
+    "CAMERA_PAIR": "CAM08/CAM07"
+  },
+  "YAW150_ROI_TEAR_METRICS": {
+    "F0": {
+      "WHITE_PINK_TEAR_AREA_PX": 37352,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 37277,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 53,
+      "EDGE_OFFSET_P95": 15.6655,
+      "BOUNDARY_DISCONTINUITY_LENGTH_PX": "see full JSON"
+    },
+    "F1": {
+      "WHITE_PINK_TEAR_AREA_PX": 37352,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 37277,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 53,
+      "EDGE_OFFSET_P95": 15.8065,
+      "WHITE_PINK_REDUCTION_VS_F0": "0.0%",
+      "EDGE_AREA_REDUCTION_VS_F0": "0.0%"
+    },
+    "F2": {
+      "WHITE_PINK_TEAR_AREA_PX": 37352,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 37277,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 53,
+      "EDGE_OFFSET_P95": 15.805,
+      "WHITE_PINK_REDUCTION_VS_F0": "0.0%",
+      "EDGE_AREA_REDUCTION_VS_F0": "0.0%"
+    },
+    "F3": {
+      "WHITE_PINK_TEAR_AREA_PX": 37352,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 37277,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 53,
+      "EDGE_OFFSET_P95": 15.8065,
+      "WHITE_PINK_REDUCTION_VS_F0": "0.0%",
+      "EDGE_AREA_REDUCTION_VS_F0": "0.0%"
+    },
+    "F4": {
+      "WHITE_PINK_TEAR_AREA_PX": 37352,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 37277,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 53,
+      "EDGE_OFFSET_P95": 15.8065,
+      "WHITE_PINK_REDUCTION_VS_F0": "0.0%",
+      "EDGE_AREA_REDUCTION_VS_F0": "0.0%"
+    }
+  },
+  "YAW240_ROI_TEAR_METRICS": {
+    "F0": {
+      "WHITE_PINK_TEAR_AREA_PX": 5288,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 5261,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 17,
+      "EDGE_OFFSET_P95": 8.7886,
+      "BOUNDARY_DISCONTINUITY_LENGTH_PX": "see full JSON"
+    },
+    "F1": {
+      "WHITE_PINK_TEAR_AREA_PX": 5290,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 5263,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 17,
+      "EDGE_OFFSET_P95": 8.7965,
+      "WHITE_PINK_REDUCTION_VS_F0": "-0.0%",
+      "EDGE_AREA_REDUCTION_VS_F0": "-0.0%"
+    },
+    "F2": {
+      "WHITE_PINK_TEAR_AREA_PX": 5297,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 5270,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 17,
+      "EDGE_OFFSET_P95": 8.78,
+      "WHITE_PINK_REDUCTION_VS_F0": "-0.2%",
+      "EDGE_AREA_REDUCTION_VS_F0": "-0.2%"
+    },
+    "F3": {
+      "WHITE_PINK_TEAR_AREA_PX": 5297,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 5270,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 17,
+      "EDGE_OFFSET_P95": 8.7861,
+      "WHITE_PINK_REDUCTION_VS_F0": "-0.2%",
+      "EDGE_AREA_REDUCTION_VS_F0": "-0.2%"
+    },
+    "F4": {
+      "WHITE_PINK_TEAR_AREA_PX": 5294,
+      "CONNECTED_INVALID_EDGE_AREA_PX": 5267,
+      "MAX_CONTIGUOUS_TEAR_WIDTH_PX": 17,
+      "EDGE_OFFSET_P95": 8.7796,
+      "WHITE_PINK_REDUCTION_VS_F0": "-0.1%",
+      "EDGE_AREA_REDUCTION_VS_F0": "-0.1%"
+    }
+  },
+  "REVISED_YAW150_TEAR_METRIC_CONCLUSION": "INVARIANT_ACROSS_CANDIDATES — pixel-based detector cannot isolate tear from dominant white architectural elements (walls, window frames) in ROI. Cross-candidate variance: 0px. NOT_PROVEN.",
+  "REVISED_YAW240_TEAR_METRIC_CONCLUSION": "NEAR_INVARIANT_ACROSS_CANDIDATES — cross-candidate variance <10px (<0.2%). Below noise floor. NOT_PROVEN.",
+  "REVISED_YAW150_TEAR_METRIC_F0": 37352,
+  "REVISED_YAW150_TEAR_METRIC_F2": 37352,
+  "REVISED_YAW150_REDUCTION_PERCENT": "0.0% (invariant — metric insensitive to tear)",
+  "REVISED_YAW240_TEAR_METRIC_F0": 5288,
+  "REVISED_YAW240_TEAR_METRIC_F2": 5297,
+  "REVISED_YAW240_REDUCTION_PERCENT": "-0.2% (noise — metric insensitive to tear)",
+
+  "_section_9_per_candidate_depth_policy": "SECTION 9 — PER-CANDIDATE DEPTH POLICY",
+  "F0_DEPTH_POLICY": "Candidate D unconstrained distance_transform_edt hole-fill — fills across depth discontinuities",
+  "F0_CROSS_DEPTH_EDGE_FILL": "UNSAFE / ROOT_CAUSE_PRESENT",
+  "F0_HOLE_FILL_METHOD": "EDT unconstrained — crosses occlusion boundaries",
+  "F1_DEPTH_POLICY": "Multi-view 3D transfer only (adjacent cameras, threshold=0.05). No local fill.",
+  "F1_CROSS_DEPTH_EDGE_FILL_COUNT": 0,
+  "F1_HOLE_FILL_METHOD": "MULTIVIEW_3D_TRANSFER_ONLY",
+  "F2_DEPTH_POLICY": "Multi-view 3D transfer + 1px same-surface local fill (EDGE_BARRIER_COST=INF, rel_depth_tol=0.15)",
+  "F2_CROSS_DEPTH_EDGE_FILL_COUNT": 0,
+  "F2_HOLE_FILL_METHOD": "MULTIVIEW_3D_TRANSFER + LOCAL_SAME_SURFACE_1PX",
+  "F3_DEPTH_POLICY": "Multi-view 3D transfer + 2px same-surface local fill",
+  "F3_CROSS_DEPTH_EDGE_FILL_COUNT": 0,
+  "F3_HOLE_FILL_METHOD": "MULTIVIEW_3D_TRANSFER + LOCAL_SAME_SURFACE_2PX",
+  "F4_DEPTH_POLICY": "Multi-view 3D transfer + 4px same-surface local fill",
+  "F4_CROSS_DEPTH_EDGE_FILL_COUNT": 0,
+  "F4_HOLE_FILL_METHOD": "MULTIVIEW_3D_TRANSFER + LOCAL_SAME_SURFACE_4PX",
+
+  "_section_10_technical_recommendation": "SECTION 10 — F2 TECHNICAL RECOMMENDATION",
+  "BEST_TECHNICAL_CANDIDATE": "F2",
+  "F2_TECHNICAL_RECOMMENDATION": true,
+  "F2_TECHNICAL_RECOMMENDATION_RATIONALE": [
+    "1px local fill is minimum viable recovery radius",
+    "Multi-view 3D transfer is primary recovery mechanism",
+    "CROSS_DEPTH_EDGE_FILL_COUNT=0 — boundary-safe",
+    "FINAL_COVERAGE=1.000000",
+    "666 unrecovered depth samples left as dropped triangles rather than forced unsafe fill"
+  ],
+  "F2_OWNER_SELECTED": false,
+  "BEST_VISUAL_CANDIDATE": "PENDING_OWNER_REVIEW",
+
+  "_section_13_owner_questions": "SECTION 13 — OWNER REVIEW QUESTIONS",
+  "F2_60_NOT_WORSE_THAN_F0": "PENDING",
+  "F2_150_BETTER_THAN_F0": "PENDING",
+  "F2_240_BETTER_THAN_F0": "PENDING",
+  "F2_150_BETTER_THAN_QUALITY_AI": "PENDING",
+  "F2_240_BETTER_THAN_QUALITY_AI": "PENDING",
+  "F2_NEW_ARTIFACTS_PRESENT": "PENDING",
+  "OWNER_SELECTS_F2": "PENDING",
+
+  "_section_14_12k_prohibition": "SECTION 14 — 12K PROHIBITION",
+  "12K_RENDER_EXECUTED": false,
+  "NEXT_PHASE_IF_F2_SELECTED": "R4P4.4_F2_12K_FINALIZATION",
+
+  "_invariants": "HARD INVARIANTS",
+  "VGGT_FORWARD_COUNT": 0,
+  "ROMA_INFERENCE_COUNT": 0,
+  "BA_EXECUTION_COUNT": 0,
+  "DEPTH_MODEL_EXECUTION_COUNT": 0,
+  "CAMERA_GEOMETRY_FROZEN": true,
+  "OWNER_VISUAL_ACCEPTANCE": false,
+  "CUSTOMER_DEFAULT": "P2R13",
+
+  "_owner_review_urls": "SECTION 11 — OWNER REVIEW URLS",
+  "OWNER_REVIEW_URL_F0": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p43-f0",
+  "OWNER_REVIEW_URL_F1": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p43-f1",
+  "OWNER_REVIEW_URL_F2": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p43-f2",
+  "OWNER_REVIEW_URL_F3": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p43-f3",
+  "OWNER_REVIEW_URL_F4": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p43-f4"
+}
