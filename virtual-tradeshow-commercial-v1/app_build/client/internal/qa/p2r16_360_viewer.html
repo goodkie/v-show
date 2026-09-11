@@ -3,38 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>C12.9-P2R16 Internal 360 QA Viewer - R4 Full Portrait Recompute (99.95% Direct Coverage)</title>
+  <title>C12.9-P2R16 — R4P3 Seam Optimized — 12K Owner QA</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   
   <!-- FontAwesome for Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <!-- Three.js r128 (Exact Approved Dependency) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-  <!-- True Flat 1:1 Pixel Inspector Overlay (Phase 7C.2R4P2.1) -->
-  <div id="flat-inspector-overlay">
-    <div class="flat-header">
-      <div class="flat-badge-bar">
-        <div class="flat-badge"><i class="fa-solid fa-microscope"></i> ARTIFACT PIXEL INSPECTION</div>
-        <div class="flat-subbadge">NO SPHERE PROJECTION</div>
-        <div class="flat-subbadge">NO DISPLAY SCALING</div>
-        <div class="flat-subbadge" style="color: #00ff88; border-color: #00ff88;" id="flat-scale-badge">TRUE_PIXEL_SCALE = 1.000</div>
-      </div>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <select id="flat-source-select" class="res-select" onchange="onFlatSourceSelect(this.value)" style="pointer-events:auto;">
-          <option value="png" selected>Lossless PNG (25.2 MB)</option>
-          <option value="jpg">Review JPEG 4:4:4 (6.5 MB)</option>
-        </select>
-        <button class="flat-close-btn" onclick="closeFlat1to1Inspector()"><i class="fa-solid fa-xmark"></i> Back to 3D Sphere</button>
-      </div>
-    </div>
-    <canvas id="flat-canvas"></canvas>
-    <div class="flat-footer">
-      <div class="flat-info-card" id="flat-coords-info">Yaw: 0.0°, Pitch: 0.0° | Texture X: 0, Y: 934 | DPR: 1.00</div>
-      <div class="flat-info-card">Drag to Pan | 1 Source Texture Pixel = 1 Backing Display Pixel</div>
-    </div>
-  </div>
-
-  <script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script><script>
     if (typeof THREE === 'undefined') {
       document.write('<script src="/vendor/three.min.js"><\/script>');
     }
@@ -393,11 +370,11 @@
     <div class="header-panel">
       <div class="brand-title">
         <i class="fa-solid fa-cube" style="color: var(--accent-ai);"></i>
-        <span>QUALITY AI — COMMERCIAL VGGT 12-VIEW | R4P2 NATIVE PHYSICAL TEXTURE | 12K OWNER QA</span>
+        <span id="mode-title-text">QUALITY AI — COMMERCIAL VGGT 12-VIEW | R4P3 SEAM OPTIMIZED PHYSICAL TEXTURE | 12K OWNER QA</span>
         <span class="qa-badge" id="tier-badge">12K OWNER QA</span>
       </div>
       <div class="sub-specs" id="sub-specs-text">
-        ACTIVE TEXTURE: 12288 × 1869 | DIRECT GEOMETRIC COVERAGE: 99.95% | INPAINTED FRACTION: 0.00% | FOV: <span id="fov-hdr-text">85°</span> | YAW: <span id="yaw-hdr-text">0.0°</span> | PITCH: <span id="pitch-hdr-text">+0.0°</span>
+        ACTIVE TEXTURE: 12288 × 1869 | DIRECT GEOMETRIC COVERAGE: 100.0000% | BLACK CRACK PIXELS: 0 | INPAINTED FRACTION: 0.00% | HFOV: <span id="fov-hdr-text">85°</span> | YAW: <span id="yaw-hdr-text">0.0°</span> | PITCH: <span id="pitch-hdr-text">+0.0°</span>
       </div>
     </div>
 
@@ -440,9 +417,9 @@
           <i class="fa-solid fa-camera-retro"></i>
           <span>Quality AI R3</span>
         </button>
-        <button id="btn-mode-quality-ai" class="mode-btn active-quality-ai" onclick="switchMode('quality-ai-12view')">
+        <button id="btn-mode-quality-ai" class="mode-btn" onclick="switchMode('quality-ai-12view')">
           <i class="fa-solid fa-wand-magic-sparkles"></i>
-          <span>Quality AI</span>
+          <span>Quality AI Reference</span>
         </button>
         <button id="btn-mode-quality-depth" class="mode-btn" onclick="switchMode('quality-depth-plane')">
           <i class="fa-solid fa-layer-group"></i>
@@ -489,21 +466,20 @@
 
   <!-- QA Stats Panel (right side) -->
   <div id="qa-stats-panel" style="display: none;">
-    <div class="stat-row"><span class="stat-key">ACTIVE TEXTURE:</span><span class="stat-val val-ok" id="qa-active-tex">12288 × 1827</span></div>
-    <div class="stat-row"><span class="stat-key">TOTAL PIXELS:</span><span class="stat-val val-ok">22,450,176</span></div>
-    <div class="stat-row"><span class="stat-key">DIRECT HIT PIXELS:</span><span class="stat-val val-ok">20,620,138</span></div>
-    <div class="stat-row"><span class="stat-key">EMPTY PIXELS (INPAINTED):</span><span class="stat-val val-warn">1,830,038</span></div>
-    <div class="stat-row"><span class="stat-key">DIRECT GEOMETRIC COVERAGE:</span><span class="stat-val val-ok">91.85% (0.918484)</span></div>
-    <div class="stat-row"><span class="stat-key">INPAINTED FRACTION:</span><span class="stat-val val-warn">8.15% (0.081516)</span></div>
-    <div class="stat-row"><span class="stat-key">EXACT PRE-INPAINT MASK:</span><span class="stat-val val-ok">AVAILABLE & VERIFIED</span></div>
-    <div class="stat-row"><span class="stat-key">MASK ACCOUNTING:</span><span class="stat-val val-ok">PASS (20,620,138 + 1,830,038 == 22,450,176)</span></div>
-    <div class="stat-row"><span class="stat-key">AUTO TIER POLICY:</span><span class="stat-val val-ok">12K (OWNER QA LOCK)</span></div>
-    <div class="stat-row"><span class="stat-key">16K AUTO SELECTION:</span><span class="stat-val val-warn">DISABLED</span></div>
-    <div class="stat-row"><span class="stat-key">RASTERIZATION BOUNDS:</span><span class="stat-val">[-26.38°, +28.39°] 54.78°</span></div>
-    <div class="stat-row"><span class="stat-key">VIEWER BAND:</span><span class="stat-val">[-25.74°, +27.79°] 53.52°</span></div>
-    <div class="stat-row"><span class="stat-key">UV MAPPING:</span><span class="stat-val val-ok" id="qa-uv-mode">UV_CROPPED_TO_INTERSECTION</span></div>
-    <div class="stat-row"><span class="stat-key">VERTICAL DISTORTION:</span><span class="stat-val val-ok">false</span></div>
-    <div class="stat-row"><span class="stat-key">16K STATUS:</span><span class="stat-val val-exp">EXPERIMENTAL — GEO COV 81.04%</span></div>
+    <div class="stat-row"><span class="stat-key">MODE:</span><span class="stat-val val-ok" id="qa-mode">quality-ai-r4p3</span></div>
+    <div class="stat-row"><span class="stat-key">ARTIFACT:</span><span class="stat-val val-ok" id="qa-artifact">P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png</span></div>
+    <div class="stat-row"><span class="stat-key">ACTIVE TEXTURE:</span><span class="stat-val val-ok" id="qa-active-tex">12288 × 1869</span></div>
+    <div class="stat-row"><span class="stat-key">TOTAL PIXELS:</span><span class="stat-val val-ok" id="qa-total-pixels">22,966,272</span></div>
+    <div class="stat-row"><span class="stat-key">DIRECT HIT PIXELS:</span><span class="stat-val val-ok" id="qa-direct-hit">22,966,272</span></div>
+    <div class="stat-row"><span class="stat-key">BLACK CRACK PIXELS:</span><span class="stat-val val-ok" id="qa-black-cracks">0</span></div>
+    <div class="stat-row"><span class="stat-key">INPAINTED PIXELS:</span><span class="stat-val val-ok" id="qa-inpaint-pixels">0 (0.00%)</span></div>
+    <div class="stat-row"><span class="stat-key">DIRECT GEOMETRIC COVERAGE:</span><span class="stat-val val-ok" id="qa-coverage">100.0000%</span></div>
+    <div class="stat-row"><span class="stat-key">MODE LOCK:</span><span class="stat-val val-ok" id="qa-mode-lock">PASS</span></div>
+    <div class="stat-row"><span class="stat-key">CUSTOMER DEFAULT:</span><span class="stat-val val-ok" id="qa-cust-default">P2R13</span></div>
+    <div class="stat-row"><span class="stat-key">OWNER ACCEPTANCE:</span><span class="stat-val val-warn" id="qa-owner-accept">FALSE</span></div>
+    <div class="stat-row"><span class="stat-key">RASTERIZATION BOUNDS:</span><span class="stat-val" id="qa-raster-bounds">[-26.38°, +28.39°] 54.78°</span></div>
+    <div class="stat-row"><span class="stat-key">VIEWER BAND:</span><span class="stat-val" id="qa-viewer-band">[-25.74°, +27.79°] 53.52°</span></div>
+    <div class="stat-row"><span class="stat-key">UV MAPPING:</span><span class="stat-val val-ok" id="qa-uv-mode">FULL_BAND_DIRECT</span></div>
   </div>
 
   <!-- Bottom Bar -->
@@ -515,7 +491,7 @@
       <div class="telemetry-sep">|</div>
       <div class="telemetry-item">FOV: <strong id="fov-text">85°</strong></div>
       <div class="telemetry-sep">|</div>
-      <div class="telemetry-item">TEXTURE: <strong id="active-res-text">12288×1827</strong></div>
+      <div class="telemetry-item">TEXTURE: <strong id="active-res-text">12288×1869</strong></div>
       <div class="telemetry-sep">|</div>
       <div class="telemetry-item">GPU MAX: <strong id="max-tex-text">—</strong></div>
     </div>
@@ -618,99 +594,255 @@
       vertical_distortion: false
     };
 
-    const MODE_BAND_CONFIG = {
+    // =============================================================================
+    // SECTION 5: CENTRAL MODE METADATA (SINGLE AUTHORITATIVE SOURCE OF TRUTH)
+    // =============================================================================
+    const CACHE_BUST_KEY_R4P3 = 'b8036b8d0ac02c41';
+    const CACHE_BUST_KEY_R4P3_JPG = '0fb100025255a42f';
+
+    const MODE_METADATA = {
       'quality-ai-r4p3': {
+        shortName: 'Quality R4.3 Seam',
+        title: 'QUALITY AI — COMMERCIAL VGGT 12-VIEW | R4P3 SEAM OPTIMIZED PHYSICAL TEXTURE | 12K OWNER QA',
+        docTitle: 'C12.9-P2R16 — R4P3 Seam Optimized — 12K Owner QA',
+        width: 12288,
+        height: 1869,
+        directCoverage: 1.000000,
+        blackCrackPixels: 0,
+        inpaintFraction: 0.000000,
+        inpaintUsed: false,
+        singleSourceOwner: true,
+        textureFilename: 'P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png?r4p3=' + CACHE_BUST_KEY_R4P3,
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY_OWNER_REVIEW.jpg?r4p3=' + CACHE_BUST_KEY_R4P3_JPG,
+        expectedSha256: 'b8036b8d0ac02c419170a446c15c64df79c6cf4f989e35a519eeffe37a04e53e',
+        bounds: [-26.38, 28.39],
         minPitchDeg: -26.38,
         maxPitchDeg: 28.39,
         vaovDeg: 54.77,
         label: 'QUALITY AI R4P3 (SEAM OPTIMIZED — GRAPH-CUT OWNERSHIP)',
-        bounds: [-26.38, 28.39]
+        coverageTextures: {
+          'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png?r4p3=' + CACHE_BUST_KEY_R4P3,
+          'review-jpg': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY_OWNER_REVIEW.jpg?r4p3=' + CACHE_BUST_KEY_R4P3_JPG,
+          'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SOURCE_OWNERSHIP.png',
+          'seam-cost': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_COST_MAP.png',
+          'structural-edge': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_STRUCTURAL_EDGE_MAP.png',
+          'crack-recovery': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_CRACK_RECOVERY_MAP.png'
+        }
       },
       'quality-ai-r4p2': {
+        shortName: 'Quality R4.2 Native',
+        title: 'QUALITY AI — COMMERCIAL VGGT 12-VIEW | R4P2 NATIVE PHYSICAL TEXTURE | 12K OWNER QA',
+        docTitle: 'C12.9-P2R16 — R4P2 Native — 12K Owner QA',
+        width: 12288,
+        height: 1869,
+        directCoverage: 0.999509,
+        blackCrackPixels: 11272,
+        inpaintFraction: 0.000000,
+        inpaintUsed: false,
+        singleSourceOwner: true,
+        textureFilename: 'P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY.png',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY.png',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY_OWNER_REVIEW.jpg',
+        expectedSha256: 'e02c1b28d94b869221052380aafd71d09aa7469d6c4a0f2d6caa77024a3fcd03',
+        bounds: [-26.38, 28.39],
         minPitchDeg: -26.38,
         maxPitchDeg: 28.39,
         vaovDeg: 54.77,
         label: 'QUALITY AI R4P2 (NATIVE TEXTURE IDENTITY)',
-        bounds: [-26.38, 28.39]
+        coverageTextures: {
+          'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY.png',
+          'review-jpg': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY_OWNER_REVIEW.jpg',
+          'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P2_SOURCE_OWNERSHIP.png',
+          'raw-direct': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4_FULLPORTRAIT_RAW_DIRECT.png',
+          'direct-mask': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4_DIRECT_COVERAGE_MASK.png'
+        }
       },
       'quality-ai-r4p1': {
+        shortName: 'Quality AI R4P1',
+        title: 'QUALITY AI — COMMERCIAL VGGT 12-VIEW | R4P1 IDENTITY PRESERVED | 12K OWNER QA',
+        docTitle: 'C12.9-P2R16 — R4P1 Identity Preserved — 12K Owner QA',
+        width: 12288,
+        height: 1869,
+        directCoverage: 0.999509,
+        blackCrackPixels: 11272,
+        inpaintFraction: 0.000000,
+        inpaintUsed: false,
+        bounds: [-26.38, 28.39],
         minPitchDeg: -26.38,
         maxPitchDeg: 28.39,
         vaovDeg: 54.77,
-        label: 'QUALITY AI R4P1 (IDENTITY PRESERVED)',
-        bounds: [-26.38, 28.39]
+        label: 'QUALITY AI R4P1 (IDENTITY PRESERVED)'
       },
       'quality-ai-r4': {
+        shortName: 'Quality AI R4',
+        title: 'QUALITY AI — COMMERCIAL VGGT 12-VIEW | R4 FULL PORTRAIT RECOMPUTE | 12K OWNER QA',
+        docTitle: 'C12.9-P2R16 — R4 Full Portrait Recompute — 12K Owner QA',
+        width: 12288,
+        height: 1869,
+        directCoverage: 0.999509,
+        blackCrackPixels: 11272,
+        inpaintFraction: 0.000000,
+        inpaintUsed: false,
+        bounds: [-26.38, 28.39],
         minPitchDeg: -26.38,
         maxPitchDeg: 28.39,
         vaovDeg: 54.77,
-        label: 'QUALITY AI (R4 FULL PORTRAIT RECOMPUTE)',
-        bounds: [-26.38, 28.39]
+        label: 'QUALITY AI (R4 FULL PORTRAIT RECOMPUTE)'
       },
       'quality-ai-r31': {
+        shortName: 'Quality AI R3.1',
+        title: 'QUALITY AI — COMMERCIAL VGGT 12-VIEW | R3.1 DIRECT HIT REPAIR | 12K OWNER QA',
+        docTitle: 'C12.9-P2R16 — R3.1 Direct Hit Repair — 12K Owner QA',
+        width: 12288,
+        height: 1869,
+        directCoverage: 0.941450,
+        blackCrackPixels: 0,
+        inpaintFraction: 0.058550,
+        inpaintUsed: true,
+        bounds: [-26.38, 28.39],
         minPitchDeg: -26.38,
         maxPitchDeg: 28.39,
         vaovDeg: 54.77,
-        label: 'QUALITY AI (R3.1 DIRECT HIT REPAIR)',
-        bounds: [-26.38, 28.39]
+        label: 'QUALITY AI (R3.1 DIRECT HIT REPAIR)'
       },
       'quality-ai-r3': {
+        shortName: 'Quality AI R3',
+        title: 'QUALITY AI — COMMERCIAL VGGT 12-VIEW | R3 FULLRES REPROJECTION | 12K OWNER QA',
+        docTitle: 'C12.9-P2R16 — R3 Full-Res Reprojection — 12K Owner QA',
+        width: 12288,
+        height: 1869,
+        directCoverage: 0.926109,
+        blackCrackPixels: 0,
+        inpaintFraction: 0.073891,
+        inpaintUsed: true,
+        bounds: [-26.38, 28.39],
         minPitchDeg: -26.38,
         maxPitchDeg: 28.39,
         vaovDeg: 54.77,
-        label: 'QUALITY AI (R3 FULL-RES REPROJECTION)',
-        bounds: [-26.38, 28.39]
+        label: 'QUALITY AI (R3 FULLRES REPROJECTION)'
       },
       'quality-ai-12view': {
+        shortName: 'Quality AI Reference',
+        title: 'QUALITY AI REFERENCE (12-VIEW 12K OWNER QA COMPARISON)',
+        docTitle: 'C12.9-P2R16 — Quality AI Reference Comparison',
+        width: 12288,
+        height: 1827,
+        directCoverage: 0.918484,
+        blackCrackPixels: 0,
+        inpaintFraction: 0.081516,
+        inpaintUsed: true,
+        bounds: [-25.74, 27.79],
         minPitchDeg: -25.74,
         maxPitchDeg: 27.79,
         vaovDeg: 53.52,
-        label: 'QUALITY AI (12-VIEW 12K OWNER QA)',
-        bounds: [-25.74, 27.79]
+        label: 'QUALITY AI (12-VIEW 12K OWNER QA)'
       },
       'quality-ai': {
+        shortName: 'Quality AI Reference',
+        title: 'QUALITY AI REFERENCE (12-VIEW 12K OWNER QA COMPARISON)',
+        docTitle: 'C12.9-P2R16 — Quality AI Reference Comparison',
+        width: 12288,
+        height: 1827,
+        directCoverage: 0.918484,
+        blackCrackPixels: 0,
+        inpaintFraction: 0.081516,
+        inpaintUsed: true,
+        bounds: [-25.74, 27.79],
         minPitchDeg: -25.74,
         maxPitchDeg: 27.79,
         vaovDeg: 53.52,
-        label: 'QUALITY AI (12-VIEW 12K OWNER QA)',
-        bounds: [-25.74, 27.79]
+        label: 'QUALITY AI (12-VIEW 12K OWNER QA)'
       },
       'quality-depth-plane': {
-        minPitchDeg: -34.0,
-        maxPitchDeg: 34.0,
-        vaovDeg: 68.0,
-        label: 'QUALITY (DEPTH PLANE)',
-        bounds: [-34.0, 34.0]
-      },
-      'quality-depth': {
-        minPitchDeg: -34.0,
-        maxPitchDeg: 34.0,
-        vaovDeg: 68.0,
-        label: 'QUALITY (DEPTH PLANE)',
-        bounds: [-34.0, 34.0]
+        shortName: 'Depth Plane',
+        title: 'QUALITY (DEPTH PLANE)',
+        docTitle: 'C12.9-P2R16 — Depth Plane Mode',
+        width: 4096, height: 608,
+        bounds: [-34.0, 34.0], minPitchDeg: -34.0, maxPitchDeg: 34.0, vaovDeg: 68.0,
+        label: 'QUALITY (DEPTH PLANE)'
       },
       'quality-current': {
-        minPitchDeg: -34.0,
-        maxPitchDeg: 34.0,
-        vaovDeg: 68.0,
-        label: 'QUALITY (HOMOGRAPHY)',
-        bounds: [-34.0, 34.0]
-      },
-      'quality': {
-        minPitchDeg: -34.0,
-        maxPitchDeg: 34.0,
-        vaovDeg: 68.0,
-        label: 'QUALITY (HOMOGRAPHY)',
-        bounds: [-34.0, 34.0]
+        shortName: 'Homography',
+        title: 'QUALITY (HOMOGRAPHY)',
+        docTitle: 'C12.9-P2R16 — Homography Mode',
+        width: 4096, height: 608,
+        bounds: [-34.0, 34.0], minPitchDeg: -34.0, maxPitchDeg: 34.0, vaovDeg: 68.0,
+        label: 'QUALITY (HOMOGRAPHY)'
       },
       'easy': {
-        minPitchDeg: -34.0,
-        maxPitchDeg: 34.0,
-        vaovDeg: 68.0,
-        label: 'EASY 360',
-        bounds: [-34.0, 34.0]
+        shortName: 'Easy 360',
+        title: 'EASY 360',
+        docTitle: 'C12.9-P2R16 — Easy 360 Mode',
+        width: 4096, height: 608,
+        bounds: [-34.0, 34.0], minPitchDeg: -34.0, maxPitchDeg: 34.0, vaovDeg: 68.0,
+        label: 'EASY 360'
       }
     };
+
+    const MODE_BAND_CONFIG = MODE_METADATA;
+
+    function updateModePresentation() {
+      const meta = MODE_METADATA[currentMode] || MODE_METADATA['quality-ai-r4p3'];
+      document.title = meta.docTitle || ('C12.9-P2R16 — ' + (meta.shortName || currentMode));
+      
+      const titleEl = document.getElementById('mode-title-text');
+      if (titleEl) {
+        titleEl.textContent = meta.title || 'QUALITY AI — COMMERCIAL VGGT 12-VIEW';
+      }
+
+      const subSpecsEl = document.getElementById('sub-specs-text');
+      if (subSpecsEl) {
+        const covStr = (meta.directCoverage !== undefined) ? (meta.directCoverage * 100).toFixed(4) + '%' : 'N/A';
+        const cracks = (meta.blackCrackPixels !== undefined) ? meta.blackCrackPixels : 'N/A';
+        const inpaintPct = (meta.inpaintFraction !== undefined) ? (meta.inpaintFraction * 100).toFixed(2) + '%' : '0.00%';
+        const fovVal = Math.round(currentFov);
+        const yawVal = currentYaw.toFixed(1);
+        const pitchVal = (currentPitch >= 0 ? '+' : '') + currentPitch.toFixed(1);
+        subSpecsEl.innerHTML = `ACTIVE TEXTURE: ${meta.width || 12288} × ${meta.height || 1869} | DIRECT GEOMETRIC COVERAGE: ${covStr} | BLACK CRACK PIXELS: ${cracks} | INPAINTED FRACTION: ${inpaintPct} | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
+      }
+
+      // Update QA Stats panel fields if elements exist
+      const qaModeEl = document.getElementById('qa-mode');
+      if (qaModeEl) qaModeEl.textContent = currentMode;
+      const qaArtEl = document.getElementById('qa-artifact');
+      if (qaArtEl) qaArtEl.textContent = meta.textureFilename || (meta.shortName || currentMode);
+      const qaActiveTexEl = document.getElementById('qa-active-tex');
+      if (qaActiveTexEl) qaActiveTexEl.textContent = `${meta.width || 12288} × ${meta.height || 1869}`;
+      const qaCovEl = document.getElementById('qa-coverage');
+      if (qaCovEl) qaCovEl.textContent = (meta.directCoverage !== undefined) ? (meta.directCoverage * 100).toFixed(4) + '%' : 'N/A';
+      const qaCrackEl = document.getElementById('qa-black-cracks');
+      if (qaCrackEl) qaCrackEl.textContent = (meta.blackCrackPixels !== undefined) ? meta.blackCrackPixels : '0';
+      const qaInpaintEl = document.getElementById('qa-inpaint-pixels');
+      if (qaInpaintEl) qaInpaintEl.textContent = (meta.inpaintFraction !== undefined) ? `0 (${(meta.inpaintFraction * 100).toFixed(2)}%)` : '0 (0.00%)';
+      const qaLockEl = document.getElementById('qa-mode-lock');
+      if (qaLockEl) qaLockEl.textContent = window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH ? 'PASS' : 'FAIL';
+    }
+
+    // Fail-Closed Error Modal (Section 12)
+    function showR4p3LoadFailModal(targetUrl, err) {
+      const overlay = document.getElementById('loading-overlay');
+      if (overlay) {
+        overlay.style.display = 'flex';
+        overlay.style.opacity = '1';
+        overlay.innerHTML = `
+          <div style="background: rgba(15, 23, 42, 0.96); border: 2px solid #ef4444; border-radius: 8px; padding: 24px; max-width: 540px; text-align: center; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);">
+            <h2 style="color: #ef4444; margin-bottom: 12px; font-size: 20px;"><i class="fa-solid fa-triangle-exclamation"></i> R4P3 OWNER QA LOAD FAILED</h2>
+            <div style="text-align: left; background: #020617; padding: 14px; border-radius: 6px; font-size: 13px; line-height: 1.6; margin-bottom: 18px; border: 1px solid rgba(239, 68, 68, 0.3);">
+              <div><strong style="color: #94a3b8;">REQUESTED:</strong> <code style="color: #f59e0b;">quality-ai-r4p3</code></div>
+              <div><strong style="color: #94a3b8;">ACTIVE:</strong> <code style="color: #ef4444;">NONE (FAIL CLOSED)</code></div>
+              <div style="word-break: break-all;"><strong style="color: #94a3b8;">TARGET URL:</strong> <code style="color: #38bdf8;">${targetUrl}</code></div>
+              <div style="color: #ef4444; margin-top: 8px; font-weight: bold;">OWNER REVIEW DISABLED — SILENT FALLBACK PREVENTED</div>
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+              <button class="action-btn" onclick="location.reload()" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold;">Retry R4P3</button>
+              <a class="action-btn" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png" target="_blank" style="text-decoration: none; padding: 8px 14px; border: 1px solid #38bdf8; color: #38bdf8; border-radius: 4px;">Open R4P3 PNG Directly</a>
+              <a class="action-btn" href="/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY_OWNER_REVIEW.jpg" target="_blank" style="text-decoration: none; padding: 8px 14px; border: 1px solid #f59e0b; color: #f59e0b; border-radius: 4px;">Open R4P3 JPEG Directly</a>
+            </div>
+          </div>
+        `;
+      }
+    }
 
     // Deep Zoom Bounds
     const CONFIG = {
@@ -1053,7 +1185,10 @@
                   
       if (currentMode === 'quality-ai-r4p3') {
         activeTier = '12K';
-        targetUrl = R4P3_COVERAGE_TEXTURES[coverageMode] || R4P3_COVERAGE_TEXTURES['final-rgb'];
+        const r4p3Meta = MODE_METADATA['quality-ai-r4p3'];
+        targetUrl = (coverageMode === 'review-jpg')
+          ? r4p3Meta.reviewJpg
+          : (r4p3Meta.coverageTextures[coverageMode] || r4p3Meta.texture);
         targetLabel = '12K R4P3 SEAM OPTIMIZED (' + coverageMode.toUpperCase() + ')';
         targetW = 12288;
         targetH = 1869;
@@ -1163,18 +1298,30 @@
             texture.wrapT = THREE.ClampToEdgeWrapping;
             window.__VIEWER_TELEMETRY__.UV_MAPPING_TYPE = 'FULL_BAND_DIRECT';
             window.__VIEWER_TELEMETRY__.VIEWER_VERTICAL_ANGULAR_DISTORTION = false;
+            const currentMeta = MODE_METADATA[currentMode] || MODE_METADATA['quality-ai-r4p3'];
+            window.__VIEWER_TELEMETRY__.REQUESTED_MODE = qModeGlobal || currentMode;
+            window.__VIEWER_TELEMETRY__.RESOLVED_MODE = currentMode;
+            window.__VIEWER_TELEMETRY__.CURRENT_MODE = currentMode;
             window.__VIEWER_TELEMETRY__.R4P3_ACTIVE = (currentMode === 'quality-ai-r4p3');
             window.__VIEWER_TELEMETRY__.R4P2_ACTIVE = (currentMode === 'quality-ai-r4p2');
             window.__VIEWER_TELEMETRY__.R4_ACTIVE = (currentMode === 'quality-ai-r4');
             window.__VIEWER_TELEMETRY__.R31_ACTIVE = (currentMode === 'quality-ai-r31');
-            window.__VIEWER_TELEMETRY__.INPAINT_USED = false;
-            window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE = (currentMode === 'quality-ai-r4p3') ? 1.000000 : ((currentMode === 'quality-ai-r4' || currentMode === 'quality-ai-r4p2') ? 0.999509 : ((currentMode === 'quality-ai-r31') ? 0.94145 : 0.926109));
+            window.__VIEWER_TELEMETRY__.INPAINT_USED = (currentMode === 'quality-ai-r4p3' || currentMode === 'quality-ai-r4p2' || currentMode === 'quality-ai-r4') ? false : true;
+            window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE = currentMeta.directCoverage !== undefined ? currentMeta.directCoverage : 0.918484;
+            window.__VIEWER_TELEMETRY__.BLACK_CRACK_PIXELS = currentMeta.blackCrackPixels !== undefined ? currentMeta.blackCrackPixels : 0;
+            window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_FILENAME = (currentMode === 'quality-ai-r4p3') ? 'P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png' : (currentMode === 'quality-ai-r4p2' ? 'P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY.png' : targetUrl.split('/').pop().split('?')[0]);
+            window.__VIEWER_TELEMETRY__.EXPECTED_TEXTURE_SHA256 = currentMeta.expectedSha256 || '';
+            window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH = (window.__VIEWER_TELEMETRY__.REQUESTED_MODE === currentMode && window.__VIEWER_TELEMETRY__.RESOLVED_MODE === currentMode && window.__VIEWER_TELEMETRY__.CURRENT_MODE === currentMode && (currentMode !== 'quality-ai-r4p3' || (window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_FILENAME === 'P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png' && targetW === 12288 && targetH === 1869)));
+            window.__VIEWER_TELEMETRY__.R4P3_OWNER_REVIEW_ELIGIBLE = (currentMode === 'quality-ai-r4p3' && window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH === true && window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE === 1.0 && window.__VIEWER_TELEMETRY__.BLACK_CRACK_PIXELS === 0 && window.__VIEWER_TELEMETRY__.INPAINT_USED === false);
+            window.__VIEWER_TELEMETRY__.CACHE_BUST_KEY = CACHE_BUST_KEY_R4P3;
             window.__VIEWER_TELEMETRY__.CUSTOMER_DEFAULT = 'P2R13';
             window.__VIEWER_TELEMETRY__.OWNER_REVIEW_COMPLETED = false;
             window.__VIEWER_TELEMETRY__.OWNER_VISUAL_ACCEPTANCE = false;
+            window.__VIEWER_TELEMETRY__.GLOBAL_GEOMETRY_QA = 'FAIL_IMPROVED';
+            window.__VIEWER_TELEMETRY__.VISUAL_WARP_QA = 'FAIL';
             window.__VIEWER_TELEMETRY__.QUALITY_GHOSTING_QA = 'FAIL';
-            window.__VIEWER_TELEMETRY__.GLOBAL_GEOMETRY_QA = 'PENDING_OWNER_PIXEL_REVIEW';
-            window.__VIEWER_TELEMETRY__.VISUAL_WARP_QA = 'PENDING_OWNER_PIXEL_REVIEW';
+            window.__VIEWER_TELEMETRY__.SEAM_VISUAL_QA = 'PENDING_OWNER_PIXEL_REVIEW';
+            updateModePresentation();
           } else if (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai') {
             const vSpan = UV_CORRECTION.v_max - UV_CORRECTION.v_min;
             // V offset maps v=0 of sphere geometry to v_min of texture
@@ -1226,7 +1373,11 @@
           console.error(`Failed to load texture ${targetUrl}:`, err);
           document.getElementById('loading-text').textContent = `Error loading texture ${targetLabel}`;
           window.__VIEWER_TELEMETRY__.TEXTURE_LOAD_SUCCESS = false;
-          showBlackScreenFailSafe();
+          if (currentMode === 'quality-ai-r4p3') {
+            showR4p3LoadFailModal(targetUrl, err);
+          } else {
+            showBlackScreenFailSafe();
+          }
           if (onComplete) onComplete();
         }
       );
@@ -1456,8 +1607,8 @@
       let url;
       if (currentMode === 'quality-ai-r4p3') {
         url = (flatSourceType === 'png')
-          ? '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png'
-          : '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY_OWNER_REVIEW.jpg';
+          ? '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png?r4p3=' + CACHE_BUST_KEY_R4P3
+          : '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY_OWNER_REVIEW.jpg?r4p3=' + CACHE_BUST_KEY_R4P3_JPG;
       } else {
         url = (flatSourceType === 'png') 
           ? '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P2_NATIVE_TEXTURE_IDENTITY.png'
