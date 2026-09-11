@@ -1,0 +1,223 @@
+{
+  "PHASE": "7C.2R4P4.1",
+  "STATUS": "RECONCILIATION_COMPLETED",
+  "CORE_IMPLEMENTATION_COMMIT": "10db8ab397ce03cd57ae73e10ca59b2e8052f05b",
+  "VIEWER_FIX_COMMIT": "d5fda57e2deff191fe89e893ce14fa6391462d11",
+  "SELECTED_RUNG": "B",
+  "SELECTED_RUNG_TRAIN_RMS": 7.901444524300992,
+  "SELECTED_RUNG_HELD_RMS": 13.447647629578787,
+  "R4_HELD_RMS": 91.09367724922959,
+  "ABSOLUTE_HELD_REDUCTION_PX": 77.6460296196508,
+  "HELD_REDUCTION_PERCENT": 85.23755047806551,
+  "RUNG_B_BA_USED_ADJACENT_PAIRS_ONLY": true,
+  "SECOND_NEIGHBOR_PAIRS_USED_FOR_BA": false,
+  "ADJACENT_PAIR_COUNT": 12,
+  "ADJACENT_PAIR_SUCCESS": 12,
+  "SECOND_NEIGHBOR_PAIR_COUNT": 12,
+  "SECOND_NEIGHBOR_PAIR_SUCCESS": 9,
+  "ADJACENT_HELD_METRICS": {
+    "PAIR_COUNT": 12,
+    "PAIR_SUCCESS": 12,
+    "AUTHORITATIVE_LADDER": {
+      "R4_HELD_RMS": 91.09367724922959,
+      "R4P4_HELD_RMS": 13.447647629578787,
+      "ABSOLUTE_REDUCTION_PX": 77.6460296196508,
+      "REDUCTION_PERCENT": 85.23755047806551
+    },
+    "ALL_HELD_UNWEIGHTED": {
+      "R4_HELD_RMS": 94.305402,
+      "R4P4_HELD_RMS": 20.371347,
+      "ABSOLUTE_REDUCTION_PX": 73.934056,
+      "REDUCTION_PERCENT": 78.4
+    }
+  },
+  "SECOND_NEIGHBOR_HELD_METRICS": {
+    "PAIR_COUNT": 12,
+    "PAIR_SUCCESS": 9,
+    "MISSING_ROMA_PAIRS": [
+      "04_06",
+      "06_08",
+      "10_00"
+    ],
+    "ALL_HELD_UNWEIGHTED": {
+      "R4_HELD_RMS": 833.728679,
+      "R4P4_HELD_RMS": 859.631286,
+      "ABSOLUTE_REDUCTION_PX": -25.902608,
+      "REDUCTION_PERCENT": -3.11
+    }
+  },
+  "COMBINED_HELD_METRICS": {
+    "PAIR_COUNT": 21,
+    "ALL_HELD_UNWEIGHTED": {
+      "R4_HELD_RMS": 239.080496,
+      "R4P4_HELD_RMS": 228.828481,
+      "ABSOLUTE_REDUCTION_PX": 10.252015,
+      "REDUCTION_PERCENT": 4.29
+    }
+  },
+  "ROTATION_SANITY_AUDIT": {
+    "MEAN_CAMERA_ROTATION_DELTA_DEG": 5.482823,
+    "MAX_CAMERA_ROTATION_DELTA_DEG": 9.907917,
+    "CAMERAS_OVER_5_DEG": [
+      "SHOT_120",
+      "SHOT_150",
+      "SHOT_210",
+      "SHOT_240",
+      "SHOT_270",
+      "SHOT_300",
+      "SHOT_330"
+    ],
+    "ALL_12_CAMERAS": [
+      {
+        "camera_idx": 0,
+        "shot_id": "SHOT_000",
+        "rotation_delta_deg": 2.588175,
+        "classification": "NOMINAL (<3 deg)"
+      },
+      {
+        "camera_idx": 1,
+        "shot_id": "SHOT_030",
+        "rotation_delta_deg": 3.570936,
+        "classification": "ELEVATED (>3 deg)"
+      },
+      {
+        "camera_idx": 2,
+        "shot_id": "SHOT_060",
+        "rotation_delta_deg": 4.365651,
+        "classification": "ELEVATED (>3 deg)"
+      },
+      {
+        "camera_idx": 3,
+        "shot_id": "SHOT_090",
+        "rotation_delta_deg": 4.593722,
+        "classification": "ELEVATED (>3 deg)"
+      },
+      {
+        "camera_idx": 4,
+        "shot_id": "SHOT_120",
+        "rotation_delta_deg": 9.821877,
+        "classification": "OWNER_REVIEW_REQUIRED (>5 deg)"
+      },
+      {
+        "camera_idx": 5,
+        "shot_id": "SHOT_150",
+        "rotation_delta_deg": 9.907917,
+        "classification": "OWNER_REVIEW_REQUIRED (>5 deg) [MAX]"
+      },
+      {
+        "camera_idx": 6,
+        "shot_id": "SHOT_180",
+        "rotation_delta_deg": 1.311861,
+        "classification": "NOMINAL (<3 deg)"
+      },
+      {
+        "camera_idx": 7,
+        "shot_id": "SHOT_210",
+        "rotation_delta_deg": 6.87449,
+        "classification": "OWNER_REVIEW_REQUIRED (>5 deg)"
+      },
+      {
+        "camera_idx": 8,
+        "shot_id": "SHOT_240",
+        "rotation_delta_deg": 5.959929,
+        "classification": "OWNER_REVIEW_REQUIRED (>5 deg)"
+      },
+      {
+        "camera_idx": 9,
+        "shot_id": "SHOT_270",
+        "rotation_delta_deg": 5.947281,
+        "classification": "OWNER_REVIEW_REQUIRED (>5 deg)"
+      },
+      {
+        "camera_idx": 10,
+        "shot_id": "SHOT_300",
+        "rotation_delta_deg": 5.444048,
+        "classification": "OWNER_REVIEW_REQUIRED (>5 deg)"
+      },
+      {
+        "camera_idx": 11,
+        "shot_id": "SHOT_330",
+        "rotation_delta_deg": 5.407993,
+        "classification": "OWNER_REVIEW_REQUIRED (>5 deg)"
+      }
+    ]
+  },
+  "PAIR_05_06_RECONCILIATION": {
+    "PAIR_05_06_APPLIED_RELATIVE_ROTATION_CORRECTION_DEG": 9.664673,
+    "PAIR_05_06_RESIDUAL_ERROR_BEFORE_DEG": 9.323913,
+    "PAIR_05_06_RESIDUAL_ERROR_AFTER_DEG": 0.616439,
+    "EXPLANATION": "Applied relative rotation correction is the transformation applied between cam 5 and cam 6. Residual errors before and after measure deviation against RANSAC essential matrix ground truth."
+  },
+  "VERTICAL_LINE_BEND_RECONCILIATION": {
+    "R4_VERTICAL_LINE_BEND_P95": 0.11,
+    "R4P4_VERTICAL_LINE_BEND_P95": 0.11,
+    "VERTICAL_LINE_BEND_IMPROVEMENT_PERCENT": 0.0,
+    "GATE_THRESHOLD_PERCENT": 25.0,
+    "VERTICAL_LINE_BEND_GATE_STATUS": "NOT_PROVEN",
+    "RATIONALE": "Rung B is Pose-Only BA which preserves 100% of camera intrinsics K and ray geometries. Intrinsics-based vertical ray bend deviation did not change. Per Section 10 instruction, gate is strictly recorded as NOT_PROVEN rather than fabricated PASS."
+  },
+  "EDGE_ALIGNMENT_RECONCILIATION": {
+    "R4_EDGE_ALIGNMENT_P95_PX": 18.42,
+    "R4P4_EDGE_ALIGNMENT_P95_PX": 2.46,
+    "EDGE_ALIGNMENT_REDUCTION_PERCENT": 86.644951,
+    "UNSCALED_SAMPSON_P95_BEFORE_PX": 319.0,
+    "UNSCALED_SAMPSON_P95_AFTER_PX": 42.62,
+    "UNSCALED_REDUCTION_PERCENT": 86.639498
+  },
+  "INVARIANTS_AND_GATE_STATUS": {
+    "MASTER_TOUCHED": false,
+    "CUSTOMER_DEFAULT": "P2R13",
+    "R4P4_ARTIFACT_MODIFIED": false,
+    "GEOMETRY_MODIFIED": false,
+    "VGGT_FORWARD_COUNT": 0,
+    "DEPTH_MODEL_EXECUTION_COUNT": 0,
+    "ROMA_RERUN": false,
+    "BA_RERUN": false,
+    "RERASTERIZATION": false,
+    "NEW_PANORAMA_GENERATED": false,
+    "GLOBAL_GEOMETRY_QA": "PENDING_OWNER_PIXEL_REVIEW",
+    "VISUAL_WARP_QA": "PENDING_OWNER_PIXEL_REVIEW",
+    "STRUCTURAL_ALIGNMENT_QA": "PENDING_OWNER_PIXEL_REVIEW",
+    "QUALITY_GHOSTING_QA": "FAIL",
+    "SHARPNESS_QA": "FAIL",
+    "OWNER_VISUAL_ACCEPTANCE": false
+  },
+  "LIVE_OWNER_REVIEW": {
+    "URL": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p4",
+    "CONFIRMED_HEADER": "R4P4 LOCAL GEOMETRY REFINED",
+    "TEXTURE_DIMS": "12288 x 1869",
+    "DIRECT_GEOMETRIC_COVERAGE": "100.0000%",
+    "BLACK_CRACK_PIXELS": 0,
+    "INPAINT_PERCENT": "0.00%",
+    "PRIORITY_A_B_POSITIONS": [
+      {
+        "yaw": 60,
+        "pitch": 0,
+        "hfov": 85,
+        "priority": "CRITICAL"
+      },
+      {
+        "yaw": 150,
+        "pitch": 0,
+        "hfov": 85,
+        "priority": "CRITICAL (Pair 05_06 Seam)"
+      },
+      {
+        "yaw": 240,
+        "pitch": 0,
+        "hfov": 85,
+        "priority": "CRITICAL"
+      }
+    ],
+    "ALL_A_B_POSITIONS": [
+      0,
+      60,
+      90,
+      150,
+      180,
+      240,
+      270,
+      345
+    ]
+  }
+}
