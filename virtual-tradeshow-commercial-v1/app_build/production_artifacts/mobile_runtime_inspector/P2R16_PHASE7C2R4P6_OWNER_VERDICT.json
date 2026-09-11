@@ -1,0 +1,68 @@
+{
+  "DOCUMENT": "P2R16_PHASE7C2R4P6_OWNER_VERDICT",
+  "PHASE": "7C.2R4P6",
+  "GENERATED_AT": "2026-09-11T20:00:30Z",
+
+  "OWNER_REVIEW_STATUS": {
+    "OWNER_REVIEW_COMPLETED": true,
+    "REVIEW_POSITIONS": ["YAW_60", "YAW_150", "YAW_240"],
+    "PITCH": 0.0,
+    "HFOV": 85.0,
+    "COMPARED": [
+      "Candidate A (Control baseline)",
+      "Candidate B (Structural lines only)",
+      "Candidate C (Lines + Planes)",
+      "Candidate D (Structure + Visibility graph)",
+      "Candidate E (Conservative structure hybrid)",
+      "Quality AI Reference"
+    ]
+  },
+
+  "AUTHORITATIVE_OWNER_FINDINGS": {
+    "YAW_150": {
+      "R4P6_D_150_BETTER_THAN_CONTROL": "NOT_PROVEN",
+      "R4P6_D_150_BETTER_THAN_QUALITY_AI": false,
+      "FINDING": "Cabinet/window occlusion boundary discontinuity remains visible. Structure + visibility graph does not resolve the boundary tear relative to Quality AI reference."
+    },
+    "YAW_240": {
+      "R4P6_D_240_BETTER_THAN_CONTROL": "NOT_PROVEN",
+      "R4P6_D_240_BETTER_THAN_QUALITY_AI": false,
+      "FINDING": "Window/furniture/wall boundary discontinuity remains visible. Improvement over control is not proven; Quality AI reference remains visually superior."
+    }
+  },
+
+  "CANDIDATE_D_OWNER_DECISION": {
+    "R4P6_D_VISIBILITY_GRAPH_TECHNICAL_QA": "PASS_PARTIAL",
+    "R4P6_D_VISUAL_STRUCTURE_QA": "FAIL",
+    "R4P6_D_OCCLUSION_BOUNDARY_QA": "FAIL",
+    "R4P6_D_GEOMETRY_STABILITY_QA": "FAIL",
+    "R4P6_D_OWNER_SELECTION": "REJECTED",
+    "R4P6_D_OWNER_SELECTED": false,
+    "R4P6_D_12K_PROMOTION_APPROVED": false,
+    "12K_RENDER_EXECUTED": false,
+    "BEST_VISUAL_REFERENCE": "QUALITY_AI_REFERENCE",
+    "BEST_VISUAL_REFERENCE_NOTE": "BEST_VISUAL_REFERENCE does NOT mean OWNER_VISUAL_ACCEPTANCE=true and does NOT promote Quality AI to CUSTOMER_DEFAULT."
+  },
+
+  "ROOT_CAUSE_ANALYSIS": {
+    "PRIMARY_ROOT_CAUSE": "DEPTH_AND_OCCLUSION_GEOMETRY_MISMATCH",
+    "SECONDARY_ROOT_CAUSE": "MULTI_VIEW_GEOMETRY_NOT_PRESERVING_PHYSICAL_STRUCTURE",
+    "TERTIARY_ROOT_CAUSE": "LOCAL_PROJECTIVE_STRETCH_ACROSS_DEPTH_BOUNDARIES"
+  },
+
+  "QUALITY_AUDIT_VERDICT": {
+    "GLOBAL_GEOMETRY_QA": "FAIL_IMPROVED",
+    "VISUAL_WARP_QA": "FAIL",
+    "STRUCTURAL_ALIGNMENT_QA": "FAIL_IMPROVED",
+    "QUALITY_GHOSTING_QA": "FAIL",
+    "SHARPNESS_QA": "FAIL"
+  },
+
+  "SYSTEM_INVARIANTS": {
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "CUSTOMER_DEFAULT": "P2R13",
+    "MASTER_TOUCHED": false,
+    "BRANCH": "experiment/c12.9-p2r16-8shot-hires",
+    "R4P6_FAMILY_FROZEN": true
+  }
+}
