@@ -1,0 +1,67 @@
+{
+  "quality-ai-r4p43-f0": {
+    "status": "PASS",
+    "telemetry": {
+      "REQUESTED_MODE": "quality-ai-r4p43-f0",
+      "MODE_LOCK_MATCH": true,
+      "TEXTURE_LOAD_SUCCESS": true,
+      "HTTP_STATUS": 200,
+      "CONTENT_LENGTH": 1137503,
+      "CUSTOMER_DEFAULT": "P2R13",
+      "texWidth": 4096,
+      "texHeight": 623
+    }
+  },
+  "quality-ai-r4p43-f1": {
+    "status": "PASS",
+    "telemetry": {
+      "REQUESTED_MODE": "quality-ai-r4p43-f1",
+      "MODE_LOCK_MATCH": true,
+      "TEXTURE_LOAD_SUCCESS": true,
+      "HTTP_STATUS": 200,
+      "CONTENT_LENGTH": 1138171,
+      "CUSTOMER_DEFAULT": "P2R13",
+      "texWidth": 4096,
+      "texHeight": 623
+    }
+  },
+  "quality-ai-r4p43-f2": {
+    "status": "PASS",
+    "telemetry": {
+      "REQUESTED_MODE": "quality-ai-r4p43-f2",
+      "MODE_LOCK_MATCH": true,
+      "TEXTURE_LOAD_SUCCESS": true,
+      "HTTP_STATUS": 200,
+      "CONTENT_LENGTH": 1137529,
+      "CUSTOMER_DEFAULT": "P2R13",
+      "texWidth": 4096,
+      "texHeight": 623
+    }
+  },
+  "quality-ai-r4p43-f3": {
+    "status": "PASS",
+    "telemetry": {
+      "REQUESTED_MODE": "quality-ai-r4p43-f3",
+      "MODE_LOCK_MATCH": true,
+      "TEXTURE_LOAD_SUCCESS": true,
+      "HTTP_STATUS": 200,
+      "CONTENT_LENGTH": 1137700,
+      "CUSTOMER_DEFAULT": "P2R13",
+      "texWidth": 4096,
+      "texHeight": 623
+    }
+  },
+  "quality-ai-r4p43-f4": {
+    "status": "PASS",
+    "telemetry": {
+      "REQUESTED_MODE": "quality-ai-r4p43-f4",
+      "MODE_LOCK_MATCH": true,
+      "TEXTURE_LOAD_SUCCESS": true,
+      "HTTP_STATUS": 200,
+      "CONTENT_LENGTH": 1137637,
+      "CUSTOMER_DEFAULT": "P2R13",
+      "texWidth": 4096,
+      "texHeight": 623
+    }
+  }
+}
