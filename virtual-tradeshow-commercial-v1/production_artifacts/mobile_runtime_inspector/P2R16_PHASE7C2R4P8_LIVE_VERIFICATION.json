@@ -1,0 +1,92 @@
+{
+  "PHASE": "7C.2R4P8",
+  "DEPLOYMENT_SHA": "e4640a6a711091f6e264ac65ecc7f9e09a212451",
+  "LIVE_URL": "https://v-show-commercial-v1-production.up.railway.app",
+  "TIMESTAMP": "2026-09-12T01:55:07.441Z",
+  "OVERALL_STATUS": "PASS",
+  "RESULTS": {
+    "BASE_LOAD": {
+      "HTTP_STATUS": 200,
+      "PASS_HTTP": true,
+      "JS_ERRORS_COUNT": 0,
+      "PASS_JS_ERRORS": true,
+      "WEBGL_ACTIVE": true,
+      "TEXTURE_LOAD_SUCCESS": true,
+      "REQUESTED_MODE": "quality-ai-r4p8-d",
+      "RESOLVED_MODE": "quality-ai-r4p8-d",
+      "MODE_LOCK_MATCH": true,
+      "ACTIVE_TEXTURE_FILENAME": "P2R16_R4P8_D_STRUCTURE_SAFE_GRAPH_CUT_4K.jpg",
+      "PASS_TEXTURE_FILE": true,
+      "PASS_R4P8_ACTIVE": true,
+      "PASS_SO3": true,
+      "PASS_COVERAGE": true,
+      "PASS_YAW_OFFSET": true
+    },
+    "DIRECT_INITIALIZATION": {
+      "YAW_60": {
+        "TARGET_YAW": 60,
+        "ACTUAL_YAW": 60,
+        "YAW_DIFF": 0,
+        "PASS_INIT": true,
+        "PITCH": 0,
+        "HFOV": 85,
+        "SCREENSHOT": "P2R16_R4P8_LIVE_INIT_YAW60.png"
+      },
+      "YAW_150": {
+        "TARGET_YAW": 150,
+        "ACTUAL_YAW": 150,
+        "YAW_DIFF": 0,
+        "PASS_INIT": true,
+        "PITCH": 0,
+        "HFOV": 85,
+        "SCREENSHOT": "P2R16_R4P8_LIVE_INIT_YAW150.png"
+      },
+      "YAW_240": {
+        "TARGET_YAW": 240,
+        "ACTUAL_YAW": 240,
+        "YAW_DIFF": 0,
+        "PASS_INIT": true,
+        "PITCH": 0,
+        "HFOV": 85,
+        "SCREENSHOT": "P2R16_R4P8_LIVE_INIT_YAW240.png"
+      }
+    },
+    "CANDIDATES_LIVE": {
+      "CANDIDATE_A": {
+        "MODE": "quality-ai-r4p8-a",
+        "SUCCESS": true,
+        "TEXTURE": "P2R16_R4P8_A_R4P71_CONTROL_4K.jpg",
+        "COVERAGE": 0.999715
+      },
+      "CANDIDATE_B": {
+        "MODE": "quality-ai-r4p8-b",
+        "SUCCESS": true,
+        "TEXTURE": "P2R16_R4P8_B_SO3_ROTATION_4K.jpg",
+        "COVERAGE": 0.9267
+      },
+      "CANDIDATE_C": {
+        "MODE": "quality-ai-r4p8-c",
+        "SUCCESS": true,
+        "TEXTURE": "P2R16_R4P8_C_SO3_INTRINSICS_4K.jpg",
+        "COVERAGE": 1
+      }
+    },
+    "TOGGLE_ROUND_TRIP": {
+      "INITIAL_YAW": 150,
+      "INITIAL_PITCH": 0,
+      "INITIAL_HFOV": 85,
+      "MID_REFERENCE_YAW": 150,
+      "RETURN_YAW": 150,
+      "YAW_DRIFT_DEG": 0,
+      "PITCH_DRIFT_DEG": 0,
+      "HFOV_DRIFT_DEG": 0,
+      "PASS_DRIFT": true
+    },
+    "360_SPIN_DRIFT": {
+      "INITIAL_YAW": 150,
+      "FINAL_YAW": 150,
+      "DRIFT_DEG": 0,
+      "PASS": true
+    }
+  }
+}
