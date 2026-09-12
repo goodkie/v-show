@@ -393,6 +393,22 @@
 
       <!-- Mode Switcher -->
       <div class="mode-switch-container">
+        <button id="btn-mode-quality-r4p82r2-d" class="mode-btn" onclick="switchMode('quality-ai-r4p82r2-d')" style="border-color: #ffd700; color: #ffd700; font-weight: 800; background: rgba(255, 215, 0, 0.25); box-shadow: 0 0 16px rgba(255, 215, 0, 0.4);">
+          <i class="fa-solid fa-crown"></i>
+          <span>R4P8.2R2 D (Owner Cand)</span>
+        </button>
+        <button id="btn-mode-quality-r4p82r2-c" class="mode-btn" onclick="switchMode('quality-ai-r4p82r2-c')" style="border-color: #ffd700; color: #ffd700;">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>R4P8.2R2 C (Structure-Avoid)</span>
+        </button>
+        <button id="btn-mode-quality-r4p82r2-b" class="mode-btn" onclick="switchMode('quality-ai-r4p82r2-b')" style="border-color: #ffd700; color: #ffd700;">
+          <i class="fa-solid fa-arrows-split-up-and-left"></i>
+          <span>R4P8.2R2 B (Parallax-Aware)</span>
+        </button>
+        <button id="btn-mode-quality-r4p82r2-a" class="mode-btn" onclick="switchMode('quality-ai-r4p82r2-a')" style="border-color: #ffd700; color: #ffd700;">
+          <i class="fa-solid fa-cube"></i>
+          <span>R4P8.2R2 A (Control)</span>
+        </button>
         <button id="btn-mode-quality-r4p82-d" class="mode-btn" onclick="switchMode('quality-ai-r4p82-d')" style="border-color: #00e5ff; color: #00e5ff; font-weight: 800; background: rgba(0, 229, 255, 0.25); box-shadow: 0 0 16px rgba(0, 229, 255, 0.4);">
           <i class="fa-solid fa-wand-magic-sparkles"></i>
           <span>R4P8.2 D (Combined)</span>
@@ -750,6 +766,106 @@
     const CACHE_BUST_KEY_R4P3_JPG = '0fb100025255a42f';
 
     const MODE_METADATA = {
+      'quality-ai-r4p82r2-a': {
+        shortName: 'R4P8.2R2 A (Control)',
+        title: 'QUALITY AI — P2R16 | R4P8.2R2 A — CONTROL BASELINE OWNERSHIP | 4K OWNER CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P8.2R2 A Control — 4K Owner Review',
+        width: 4096, height: 623,
+        directCoverage: 1.000000, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P82R2_A_CONTROL_4K.png',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_A_CONTROL_4K.png',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_A_CONTROL_4K.png',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P8.2R2 A — CONTROL (4096x623)',
+        geometryMode: 'FROZEN_ROTATIONS_BILINEAR_4K',
+        candidate: 'A',
+        sampler: 'BILINEAR',
+        rotationModel: 'FROZEN_R4P81',
+        globalYawOffsetDeg: 0.0,
+        coverageTextures: {
+          'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_A_CONTROL_4K.png',
+          'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SOURCE_OWNERSHIP_A.png',
+          'seam-cost': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SEAM_COST_MAPS.png',
+          'seam-path': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SOURCE_OWNERSHIP_A.png',
+          'parallax-risk': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SEAM_COST_MAPS.png',
+          'structural-exclusion': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SEAM_COST_MAPS.png'
+        }
+      },
+      'quality-ai-r4p82r2-b': {
+        shortName: 'R4P8.2R2 B (Parallax-Aware)',
+        title: 'QUALITY AI — P2R16 | R4P8.2R2 B — PARALLAX-AWARE HARD OWNERSHIP | 4K OWNER CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P8.2R2 B Parallax-Aware — 4K Owner Review',
+        width: 4096, height: 623,
+        directCoverage: 1.000000, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P82R2_B_PARALLAX_OWNERSHIP_4K.png',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_B_PARALLAX_OWNERSHIP_4K.png',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_B_PARALLAX_OWNERSHIP_4K.png',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P8.2R2 B — PARALLAX-AWARE (4096x623)',
+        geometryMode: 'PARALLAX_AWARE_HARD_SEAM_4K',
+        candidate: 'B',
+        sampler: 'BILINEAR',
+        rotationModel: 'FROZEN_R4P81',
+        globalYawOffsetDeg: 0.0,
+        coverageTextures: {
+          'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_B_PARALLAX_OWNERSHIP_4K.png',
+          'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SOURCE_OWNERSHIP_B.png',
+          'seam-cost': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SEAM_COST_MAPS.png',
+          'seam-path': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SOURCE_OWNERSHIP_B.png',
+          'parallax-risk': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SEAM_COST_MAPS.png',
+          'structural-exclusion': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SEAM_COST_MAPS.png'
+        }
+      },
+      'quality-ai-r4p82r2-c': {
+        shortName: 'R4P8.2R2 C (Structure-Avoid)',
+        title: 'QUALITY AI — P2R16 | R4P8.2R2 C — STRUCTURE-AVOIDING HARD OWNERSHIP | 4K OWNER CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P8.2R2 C Structure-Avoid — 4K Owner Review',
+        width: 4096, height: 623,
+        directCoverage: 1.000000, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P82R2_C_STRUCTURE_AVOID_4K.png',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_C_STRUCTURE_AVOID_4K.png',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_C_STRUCTURE_AVOID_4K.png',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P8.2R2 C — STRUCTURE-AVOID (4096x623)',
+        geometryMode: 'STRUCTURE_AVOIDING_HARD_SEAM_4K',
+        candidate: 'C',
+        sampler: 'BILINEAR',
+        rotationModel: 'FROZEN_R4P81',
+        globalYawOffsetDeg: 0.0,
+        coverageTextures: {
+          'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_C_STRUCTURE_AVOID_4K.png',
+          'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SOURCE_OWNERSHIP_C.png',
+          'seam-cost': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SEAM_COST_MAPS.png',
+          'seam-path': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SOURCE_OWNERSHIP_C.png',
+          'parallax-risk': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SEAM_COST_MAPS.png',
+          'structural-exclusion': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SEAM_COST_MAPS.png'
+        }
+      },
+      'quality-ai-r4p82r2-d': {
+        shortName: 'R4P8.2R2 D (Owner Candidate)',
+        title: 'QUALITY AI — P2R16 | R4P8.2R2 D — STRUCTURE-AWARE HARD OWNERSHIP | 4K OWNER CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P8.2R2 D Structure-Coherent — 4K Owner Review',
+        width: 4096, height: 623,
+        directCoverage: 1.000000, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P82R2_D_STRUCTURE_COHERENT_4K.png',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_D_STRUCTURE_COHERENT_4K.png',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_D_STRUCTURE_COHERENT_4K.png',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P8.2R2 D — STRUCTURE-COHERENT (4096x623)',
+        geometryMode: 'STRUCTURE_COHERENT_HARD_SEAM_4K',
+        candidate: 'D',
+        sampler: 'BILINEAR',
+        rotationModel: 'FROZEN_R4P81',
+        globalYawOffsetDeg: 0.0,
+        coverageTextures: {
+          'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_D_STRUCTURE_COHERENT_4K.png',
+          'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SOURCE_OWNERSHIP_D.png',
+          'seam-cost': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SEAM_COST_MAPS.png',
+          'seam-path': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SOURCE_OWNERSHIP_D.png',
+          'parallax-risk': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SEAM_COST_MAPS.png',
+          'structural-exclusion': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R2_SEAM_COST_MAPS.png'
+        }
+      },
       'quality-ai-r4p82-a': {
         shortName: 'R4P8.2 A (Control)',
         title: 'QUALITY AI — P2R16 | R4P8.2 A — CONTROL (BILINEAR + FROZEN ROTATIONS) | 4K CAUSAL CANDIDATE',
@@ -1577,7 +1693,9 @@
         const fovVal = Math.round(currentFov);
         const yawVal = currentYaw.toFixed(1);
         const pitchVal = (currentPitch >= 0 ? '+' : '') + currentPitch.toFixed(1);
-        if (currentMode.startsWith('quality-ai-r4p82-')) {
+        if (currentMode.startsWith('quality-ai-r4p82r2-')) {
+          subSpecsEl.innerHTML = `RGB: ORIGINAL 3000x4000 PHYSICAL | SAMPLER: BILINEAR | DEPTH: NONE | TRANSLATION: NONE | LOCAL WARP: NONE | INPAINT: 0% | GENERATIVE: 0 | SECOND-NEIGHBOR MATCHES: 0 | HARD SOURCE OWNERSHIP: ACTIVE | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
+        } else if (currentMode.startsWith('quality-ai-r4p82-')) {
           const directCov = (meta.directCoverage * 100.0).toFixed(4) + '%';
           subSpecsEl.innerHTML = `CANDIDATE: ${meta.candidate} | SAMPLER: ${meta.sampler} | ROTATION: ${meta.rotationModel} | TEXTURE: 4096×623 | RGB: ORIGINAL PHYSICAL | DEPTH: NONE | LOCAL WARP: NONE | INPAINT: 0% | DIRECT COVERAGE: ${directCov} | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
         } else if (currentMode === 'quality-ai-r4p81-d') {
@@ -2170,6 +2288,32 @@
             window.__VIEWER_TELEMETRY__.VISUAL_WARP_QA = 'FAIL';
             window.__VIEWER_TELEMETRY__.QUALITY_GHOSTING_QA = 'FAIL';
             window.__VIEWER_TELEMETRY__.SEAM_VISUAL_QA = 'PENDING_OWNER_PIXEL_REVIEW';
+            updateModePresentation();
+          } else if (currentMode.startsWith('quality-ai-r4p82r2-')) {
+            texture.offset.set(0, 0);
+            texture.repeat.set(1, 1);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.ClampToEdgeWrapping;
+            const candMeta = MODE_METADATA[currentMode];
+            window.__VIEWER_TELEMETRY__.R4P82R2_CANDIDATE_ACTIVE = true;
+            window.__VIEWER_TELEMETRY__.MODE = currentMode;
+            window.__VIEWER_TELEMETRY__.CANDIDATE = candMeta.candidate;
+            window.__VIEWER_TELEMETRY__.SAMPLER = 'BILINEAR';
+            window.__VIEWER_TELEMETRY__.ROTATION_MODEL = 'FROZEN_R4P81';
+            window.__VIEWER_TELEMETRY__.DIMENSIONS = '4096x623';
+            window.__VIEWER_TELEMETRY__.GLOBAL_YAW_OFFSET_DEG = 0.0;
+            window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_FILENAME = candMeta.textureFilename;
+            window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE = candMeta.directCoverage;
+            window.__VIEWER_TELEMETRY__.BLACK_CRACK_PIXELS = candMeta.blackCrackPixels;
+            window.__VIEWER_TELEMETRY__.TRANSLATION_OPTIMIZED = false;
+            window.__VIEWER_TELEMETRY__.DEPTH_USED = false;
+            window.__VIEWER_TELEMETRY__.LOCAL_PROJECTIVE_WARP_USED = false;
+            window.__VIEWER_TELEMETRY__.RGB_INPAINT_USED = false;
+            window.__VIEWER_TELEMETRY__.GENERATIVE_PIXEL_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.REFERENCE_RGB_PIXEL_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.SECOND_NEIGHBOR_MATCHES = 0;
+            window.__VIEWER_TELEMETRY__.HARD_SOURCE_OWNERSHIP = 'ACTIVE';
+            window.__VIEWER_TELEMETRY__.PASS_4K_GATES = false;
             updateModePresentation();
           } else if (currentMode.startsWith('quality-ai-r4p82-')) {
             texture.offset.set(0, 0);
