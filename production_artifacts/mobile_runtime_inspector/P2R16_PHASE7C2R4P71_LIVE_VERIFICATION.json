@@ -1,0 +1,63 @@
+{
+  "PHASE": "7C.2R4P7.1",
+  "DEPLOYMENT_SHA": "2e387d2ab94325b44d63d61812162967fb2a6c2b",
+  "LIVE_URL": "https://v-show-commercial-v1-production.up.railway.app",
+  "TIMESTAMP": "2026-09-12T00:09:54.762Z",
+  "OVERALL_STATUS": "PASS",
+  "RESULTS": {
+    "BASE_LOAD": {
+      "HTTP_STATUS": 200,
+      "PASS_HTTP": true,
+      "JS_ERRORS_COUNT": 0,
+      "PASS_JS_ERRORS": true,
+      "WEBGL_ACTIVE": true,
+      "TEXTURE_LOAD_SUCCESS": true,
+      "REQUESTED_MODE": "quality-ai-r4p71-d",
+      "RESOLVED_MODE": "quality-ai-r4p71-d",
+      "MODE_LOCK_MATCH": true,
+      "PANORAMA_RERENDERED": false,
+      "ACTIVE_TEXTURE_FILENAME": "P2R16_R4P7_D_STRUCTURE_PRESERVING_4K.jpg",
+      "PASS_TEXTURE_FROZEN": true
+    },
+    "DIRECT_INITIALIZATION": {
+      "YAW_60": {
+        "TARGET_YAW": 60,
+        "ACTUAL_YAW": 60,
+        "YAW_DIFF": 0,
+        "PASS_INIT": true,
+        "PITCH": 0,
+        "HFOV": 85,
+        "SCREENSHOT": "P2R16_R4P71_LIVE_INIT_YAW60.png"
+      },
+      "YAW_150": {
+        "TARGET_YAW": 150,
+        "ACTUAL_YAW": 150,
+        "YAW_DIFF": 0,
+        "PASS_INIT": true,
+        "PITCH": 0,
+        "HFOV": 85,
+        "SCREENSHOT": "P2R16_R4P71_LIVE_INIT_YAW150.png"
+      },
+      "YAW_240": {
+        "TARGET_YAW": 240,
+        "ACTUAL_YAW": 240,
+        "YAW_DIFF": 0,
+        "PASS_INIT": true,
+        "PITCH": 0,
+        "HFOV": 85,
+        "SCREENSHOT": "P2R16_R4P71_LIVE_INIT_YAW240.png"
+      }
+    },
+    "TOGGLE_ROUND_TRIP": {
+      "INITIAL_YAW": 150,
+      "INITIAL_PITCH": 0,
+      "INITIAL_HFOV": 85,
+      "MID_REFERENCE_YAW": 150,
+      "RETURN_YAW": 150,
+      "YAW_DRIFT_DEG": 0,
+      "PITCH_DRIFT_DEG": 0,
+      "HFOV_DRIFT_DEG": 0,
+      "PASS_DRIFT": true
+    }
+  }
+}
