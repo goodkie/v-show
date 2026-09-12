@@ -1,0 +1,191 @@
+{
+  "PHASE": "7C.2R4P8.2R2",
+  "TIMESTAMP": "2026-09-12T10:15:39.376Z",
+  "DEPLOY_COMMIT": "d6bdb3f2522ccf88ab71faa185469d51c7a2e79d",
+  "DEPLOYMENT_ID": "397728e8-25ab-4323-80de-2d2c21bb4454",
+  "BASE_URL": "https://v-show-commercial-v1-production.up.railway.app",
+  "RESULTS": {
+    "quality-ai-r4p82r2-a": {
+      "CANDIDATE": "A",
+      "NAME": "CONTROL",
+      "MODE": "quality-ai-r4p82r2-a",
+      "HTTP_STATUS": 200,
+      "TELEMETRY": {
+        "CURRENT_MODE": "quality-ai-r4p82r2-a",
+        "REQUESTED_MODE": "quality-ai-r4p82r2-a",
+        "RESOLVED_MODE": "quality-ai-r4p82r2-a",
+        "MODE_LOCK_MATCH": true,
+        "TEXTURE_LOAD_SUCCESS": true,
+        "webglContextOk": true,
+        "HTTP_STATUS": 200,
+        "ACTIVE_TEXTURE_FILENAME": "P2R16_R4P82R2_A_CONTROL_4K.png",
+        "R4P82R2_CANDIDATE_ACTIVE": true,
+        "CANDIDATE": "A",
+        "SAMPLER": "BILINEAR",
+        "ROTATION_MODEL": "FROZEN_R4P81",
+        "DIMENSIONS": "4096x623",
+        "DIRECT_GEOMETRIC_COVERAGE": 1,
+        "BLACK_CRACK_PIXELS": 0,
+        "HARD_SOURCE_OWNERSHIP": "ACTIVE",
+        "TRANSLATION_OPTIMIZED": false,
+        "DEPTH_USED": false,
+        "LOCAL_PROJECTIVE_WARP_USED": false,
+        "RGB_INPAINT_USED": false,
+        "GENERATIVE_PIXEL_COUNT": 0,
+        "REFERENCE_RGB_PIXEL_COUNT": 0,
+        "SECOND_NEIGHBOR_MATCHES": 0,
+        "PASS_4K_GATES": false,
+        "texWidth": 4096,
+        "texHeight": 623
+      },
+      "PASS": true
+    },
+    "quality-ai-r4p82r2-b": {
+      "CANDIDATE": "B",
+      "NAME": "PARALLAX_AWARE",
+      "MODE": "quality-ai-r4p82r2-b",
+      "HTTP_STATUS": 200,
+      "TELEMETRY": {
+        "CURRENT_MODE": "quality-ai-r4p82r2-b",
+        "REQUESTED_MODE": "quality-ai-r4p82r2-b",
+        "RESOLVED_MODE": "quality-ai-r4p82r2-b",
+        "MODE_LOCK_MATCH": true,
+        "TEXTURE_LOAD_SUCCESS": true,
+        "webglContextOk": true,
+        "HTTP_STATUS": 200,
+        "ACTIVE_TEXTURE_FILENAME": "P2R16_R4P82R2_B_PARALLAX_OWNERSHIP_4K.png",
+        "R4P82R2_CANDIDATE_ACTIVE": true,
+        "CANDIDATE": "B",
+        "SAMPLER": "BILINEAR",
+        "ROTATION_MODEL": "FROZEN_R4P81",
+        "DIMENSIONS": "4096x623",
+        "DIRECT_GEOMETRIC_COVERAGE": 1,
+        "BLACK_CRACK_PIXELS": 0,
+        "HARD_SOURCE_OWNERSHIP": "ACTIVE",
+        "TRANSLATION_OPTIMIZED": false,
+        "DEPTH_USED": false,
+        "LOCAL_PROJECTIVE_WARP_USED": false,
+        "RGB_INPAINT_USED": false,
+        "GENERATIVE_PIXEL_COUNT": 0,
+        "REFERENCE_RGB_PIXEL_COUNT": 0,
+        "SECOND_NEIGHBOR_MATCHES": 0,
+        "PASS_4K_GATES": false,
+        "texWidth": 4096,
+        "texHeight": 623
+      },
+      "PASS": true
+    },
+    "quality-ai-r4p82r2-c": {
+      "CANDIDATE": "C",
+      "NAME": "STRUCTURE_AVOIDING",
+      "MODE": "quality-ai-r4p82r2-c",
+      "HTTP_STATUS": 200,
+      "TELEMETRY": {
+        "CURRENT_MODE": "quality-ai-r4p82r2-c",
+        "REQUESTED_MODE": "quality-ai-r4p82r2-c",
+        "RESOLVED_MODE": "quality-ai-r4p82r2-c",
+        "MODE_LOCK_MATCH": true,
+        "TEXTURE_LOAD_SUCCESS": true,
+        "webglContextOk": true,
+        "HTTP_STATUS": 200,
+        "ACTIVE_TEXTURE_FILENAME": "P2R16_R4P82R2_C_STRUCTURE_AVOID_4K.png",
+        "R4P82R2_CANDIDATE_ACTIVE": true,
+        "CANDIDATE": "C",
+        "SAMPLER": "BILINEAR",
+        "ROTATION_MODEL": "FROZEN_R4P81",
+        "DIMENSIONS": "4096x623",
+        "DIRECT_GEOMETRIC_COVERAGE": 1,
+        "BLACK_CRACK_PIXELS": 0,
+        "HARD_SOURCE_OWNERSHIP": "ACTIVE",
+        "TRANSLATION_OPTIMIZED": false,
+        "DEPTH_USED": false,
+        "LOCAL_PROJECTIVE_WARP_USED": false,
+        "RGB_INPAINT_USED": false,
+        "GENERATIVE_PIXEL_COUNT": 0,
+        "REFERENCE_RGB_PIXEL_COUNT": 0,
+        "SECOND_NEIGHBOR_MATCHES": 0,
+        "PASS_4K_GATES": false,
+        "texWidth": 4096,
+        "texHeight": 623
+      },
+      "PASS": true
+    },
+    "quality-ai-r4p82r2-d": {
+      "CANDIDATE": "D",
+      "NAME": "STRUCTURE_COHERENT",
+      "MODE": "quality-ai-r4p82r2-d",
+      "HTTP_STATUS": 200,
+      "TELEMETRY": {
+        "CURRENT_MODE": "quality-ai-r4p82r2-d",
+        "REQUESTED_MODE": "quality-ai-r4p82r2-d",
+        "RESOLVED_MODE": "quality-ai-r4p82r2-d",
+        "MODE_LOCK_MATCH": true,
+        "TEXTURE_LOAD_SUCCESS": true,
+        "webglContextOk": true,
+        "HTTP_STATUS": 200,
+        "ACTIVE_TEXTURE_FILENAME": "P2R16_R4P82R2_D_STRUCTURE_COHERENT_4K.png",
+        "R4P82R2_CANDIDATE_ACTIVE": true,
+        "CANDIDATE": "D",
+        "SAMPLER": "BILINEAR",
+        "ROTATION_MODEL": "FROZEN_R4P81",
+        "DIMENSIONS": "4096x623",
+        "DIRECT_GEOMETRIC_COVERAGE": 1,
+        "BLACK_CRACK_PIXELS": 0,
+        "HARD_SOURCE_OWNERSHIP": "ACTIVE",
+        "TRANSLATION_OPTIMIZED": false,
+        "DEPTH_USED": false,
+        "LOCAL_PROJECTIVE_WARP_USED": false,
+        "RGB_INPAINT_USED": false,
+        "GENERATIVE_PIXEL_COUNT": 0,
+        "REFERENCE_RGB_PIXEL_COUNT": 0,
+        "SECOND_NEIGHBOR_MATCHES": 0,
+        "PASS_4K_GATES": false,
+        "texWidth": 4096,
+        "texHeight": 623
+      },
+      "PASS": true
+    }
+  },
+  "YAW_CHECKS": {
+    "yaw_60": {
+      "yaw": 60,
+      "pitch": 0,
+      "hfov": 85
+    },
+    "yaw_150": {
+      "yaw": 150,
+      "pitch": 0,
+      "hfov": 85
+    },
+    "yaw_240": {
+      "yaw": 240,
+      "pitch": 0,
+      "hfov": 85
+    },
+    "yaw_345": {
+      "yaw": 345,
+      "pitch": 0,
+      "hfov": 85
+    }
+  },
+  "DIAGNOSTIC_LAYERS": {
+    "final-rgb": {
+      "active": true
+    },
+    "source-ownership": {
+      "active": true
+    },
+    "seam-cost": {
+      "active": true
+    },
+    "parallax-risk": {
+      "active": true
+    },
+    "structural-exclusion": {
+      "active": true
+    }
+  },
+  "JS_ERRORS": [],
+  "ALL_MODES_PASS": true,
+  "GATE_STATUS": "PASS"
+}
