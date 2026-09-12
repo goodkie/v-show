@@ -1448,25 +1448,7 @@
         if (currentMode.startsWith('quality-ai-r4p8-')) {
           const directCov = (meta.directCoverage * 100.0).toFixed(2) + '%';
           subSpecsEl.innerHTML = `RGB: ORIGINAL 3000x4000 PHYSICAL | DEPTH: NONE | TRANSLATION: NONE | LOCAL WARP: NONE | INPAINT: 0% | GENERATIVE: 0 | DIRECT COVERAGE: ${directCov} | SO3: ACTIVE | GRAPH CUT: ACTIVE | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
-        } else if (currentMode.startsWith('quality-ai-r4p8-')) {
-            texture.offset.set(0, 0);
-            texture.repeat.set(1, 1);
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.ClampToEdgeWrapping;
-            const candMeta = MODE_METADATA[currentMode];
-            window.__VIEWER_TELEMETRY__.R4P8_ACTIVE = true;
-            window.__VIEWER_TELEMETRY__.R4P8_D_ACTIVE = (currentMode === 'quality-ai-r4p8-d');
-            window.__VIEWER_TELEMETRY__.GLOBAL_YAW_OFFSET_DEG = 0.0;
-            window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_FILENAME = candMeta.textureFilename;
-            window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE = candMeta.directCoverage;
-            window.__VIEWER_TELEMETRY__.TRANSLATION_OPTIMIZED = false;
-            window.__VIEWER_TELEMETRY__.DEPTH_USED = false;
-            window.__VIEWER_TELEMETRY__.LOCAL_PROJECTIVE_WARP_USED = false;
-            window.__VIEWER_TELEMETRY__.RGB_INPAINT_USED = false;
-            window.__VIEWER_TELEMETRY__.GENERATIVE_PIXEL_COUNT = 0;
-            window.__VIEWER_TELEMETRY__.SO3_ACTIVE = true;
-            window.__VIEWER_TELEMETRY__.GRAPH_CUT_ACTIVE = (currentMode === 'quality-ai-r4p8-d');
-          } else if (currentMode === 'quality-ai-r4p71-d') {
+        } else if (currentMode === 'quality-ai-r4p71-d') {
           subSpecsEl.innerHTML = `GLOBAL YAW OFFSET: -179.48° | REGISTRATION LANDMARKS: 7 | MEDIAN RESIDUAL: 0.85° | P95 RESIDUAL: 1.73° | PANORAMA RERENDERED: NO | RGB: ORIGINAL 3000×4000 PHYSICAL | GEOMETRY: R4P7-D FROZEN | INPAINT: 0% | GENERATIVE PIXELS: 0 | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
         } else if (currentMode.startsWith('quality-ai-r4p7-')) {
           const directCov = (meta.directCoverage * 100.0).toFixed(4) + '%';
@@ -2043,6 +2025,25 @@
             window.__VIEWER_TELEMETRY__.VISUAL_WARP_QA = 'FAIL';
             window.__VIEWER_TELEMETRY__.QUALITY_GHOSTING_QA = 'FAIL';
             window.__VIEWER_TELEMETRY__.SEAM_VISUAL_QA = 'PENDING_OWNER_PIXEL_REVIEW';
+            updateModePresentation();
+          } else if (currentMode.startsWith('quality-ai-r4p8-')) {
+            texture.offset.set(0, 0);
+            texture.repeat.set(1, 1);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.ClampToEdgeWrapping;
+            const candMeta = MODE_METADATA[currentMode];
+            window.__VIEWER_TELEMETRY__.R4P8_ACTIVE = true;
+            window.__VIEWER_TELEMETRY__.R4P8_D_ACTIVE = (currentMode === 'quality-ai-r4p8-d');
+            window.__VIEWER_TELEMETRY__.GLOBAL_YAW_OFFSET_DEG = 0.0;
+            window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_FILENAME = candMeta.textureFilename;
+            window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE = candMeta.directCoverage;
+            window.__VIEWER_TELEMETRY__.TRANSLATION_OPTIMIZED = false;
+            window.__VIEWER_TELEMETRY__.DEPTH_USED = false;
+            window.__VIEWER_TELEMETRY__.LOCAL_PROJECTIVE_WARP_USED = false;
+            window.__VIEWER_TELEMETRY__.RGB_INPAINT_USED = false;
+            window.__VIEWER_TELEMETRY__.GENERATIVE_PIXEL_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.SO3_ACTIVE = true;
+            window.__VIEWER_TELEMETRY__.GRAPH_CUT_ACTIVE = (currentMode === 'quality-ai-r4p8-d');
             updateModePresentation();
           } else if (currentMode === 'quality-ai-r4p71-d') {
             texture.offset.set(0, 0);
