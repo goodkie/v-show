@@ -1,0 +1,47 @@
+{
+  "PHASE": "7C.2R4P7.1",
+  "DESCRIPTION": "Phase 7C.2R4P7.1 Global Yaw Registration & Synchronized Review Manifest",
+  "SOURCE_COMMIT": "54057da1dc3554aae4361790e72aae5c25a5f280",
+  "BRANCH": "experiment/c12.9-p2r16-8shot-hires",
+  "INVARIANTS": {
+    "MASTER_TOUCHED": false,
+    "CUSTOMER_DEFAULT": "P2R13",
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "R4P7_D_TEXTURE_FROZEN": true,
+    "R4P7_D_GEOMETRY_FROZEN": true,
+    "R4P7_D_RGB_FROZEN": true,
+    "QUALITY_AI_REFERENCE_UNCHANGED": true,
+    "PANORAMA_RERENDERED": false,
+    "VGGT_FORWARD_COUNT": 0,
+    "ROMA_INFERENCE_COUNT": 0,
+    "BA_EXECUTION_COUNT": 0,
+    "DEPTH_MODEL_EXECUTION_COUNT": 0,
+    "RGB_INPAINT_USED_BY_R4P71": false,
+    "GENERATIVE_PIXEL_COUNT": 0,
+    "GLOBAL_YAW_OFFSET_ONLY": true,
+    "PER_ZONE_YAW_CORRECTION": false,
+    "PER_BOOKMARK_YAW_CORRECTION": false,
+    "LOCAL_WARP_CORRECTION": false,
+    "12K_RENDER_EXECUTED": false,
+    "R4P7_D_12K_PROMOTION_APPROVED": false
+  },
+  "TEXTURE_PROVENANCE": {
+    "CANDIDATE_D_TEXTURE": "P2R16_R4P7_D_STRUCTURE_PRESERVING_4K.jpg",
+    "CANDIDATE_D_SHA256": "16fd00c9ac5f7c8776afff8037b562883e6960c01893f5ee704d42a6a8dcf115",
+    "BYTE_IDENTICAL_TO_R4P7_D": true
+  },
+  "REGISTRATION": {
+    "GLOBAL_YAW_OFFSET_DEG": -179.4827,
+    "LANDMARK_COUNT": 7,
+    "MEDIAN_ABS_YAW_RESIDUAL_DEG": 0.8525,
+    "P95_ABS_YAW_RESIDUAL_DEG": 1.7344,
+    "MAX_ABS_YAW_RESIDUAL_DEG": 1.9443,
+    "SINGLE_CONSTANT_MODEL_PASS": true,
+    "R4P71_SYNC_VALIDATION": "PASS",
+    "OWNER_QUALITY_COMPARISON_ELIGIBLE": true
+  },
+  "ROUTES": {
+    "R4P71_D": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p71-d",
+    "REFERENCE": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai"
+  }
+}
