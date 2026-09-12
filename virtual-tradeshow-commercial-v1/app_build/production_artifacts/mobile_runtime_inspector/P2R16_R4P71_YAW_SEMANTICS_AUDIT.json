@@ -1,0 +1,37 @@
+{
+  "PHASE": "7C.2R4P7.1",
+  "SECTION": "VIEWER YAW SEMANTICS FORENSIC AUDIT",
+  "AUDIT_TIMESTAMP": "2026-09-11T19:58:00Z",
+  "r4p7_d": {
+    "display_yaw_formula": "currentYaw = (onPointerDownLon + dx) % 360",
+    "texture_longitude_formula": "u = (yaw_deg / 360.0) % 1.0; col = u * 4096",
+    "mesh_geometry": "THREE.SphereGeometry(500, 64, 32, 0, 2*PI, degToRad(90 - 28.39), degToRad(54.77))",
+    "mesh_scale": [-1, 1, 1],
+    "mesh_rotation_y_deg": 0.0,
+    "texture_offset_u": 0.0,
+    "texture_repeat_u": 1.0,
+    "texture_flip_y": true,
+    "camera_initial_target": "(500 * sin(phi) * cos(theta), 500 * cos(phi), 500 * sin(phi) * sin(theta)) where theta=degToRad(currentYaw)",
+    "additional_yaw_offset_deg": 0.0,
+    "coordinate_convention": "Equirectangular ray_x = cos(theta)*sin(phi), ray_z = cos(theta)*cos(phi); col 0 corresponds to world +Z axis (phi=0)."
+  },
+  "quality_ai_reference": {
+    "display_yaw_formula": "currentYaw = (onPointerDownLon + dx) % 360",
+    "texture_longitude_formula": "u = (yaw_deg / 360.0) % 1.0; col = u * 4096 (or 12288)",
+    "mesh_geometry": "THREE.SphereGeometry(500, 64, 32, 0, 2*PI, degToRad(90 - 27.79), degToRad(53.52))",
+    "mesh_scale": [-1, 1, 1],
+    "mesh_rotation_y_deg": 0.0,
+    "texture_offset_u": 0.0,
+    "texture_offset_v": 0.0211,
+    "texture_repeat_u": 1.0,
+    "texture_repeat_v": 0.9578,
+    "texture_flip_y": true,
+    "camera_initial_target": "(500 * sin(phi) * cos(theta), 500 * cos(phi), 500 * sin(phi) * sin(theta)) where theta=degToRad(currentYaw)",
+    "additional_yaw_offset_deg": 0.0,
+    "coordinate_convention": "Equirectangular point cloud projection col = round((atan2(X, Z) + pi)/(2*pi) * (W-1)); col 0 corresponds to world -Z axis (atan2=-pi), col 2048 corresponds to world +Z axis (atan2=0)."
+  },
+  "ROOT_CAUSE_ANALYSIS": "In the generation pipeline for QUALITY_AI_REFERENCE (modal_phase7c2r22_pipeline.py:392), equirectangular longitude was parameterized as (atan2(X, Z) + pi)/(2*pi), placing the world +Z vector at column W/2 (longitude 180°). In R4P7-D (execute_phase7c2r4p7_candidates.py:102-110), equirectangular rays were parameterized with phi in [0, 2*pi), where phi=0 maps directly to the world +Z vector at column 0 (longitude 0°). Both textures were loaded into Three.js with identical mesh_rotation_y=0 and texture_offset_u=0, causing a 179.48° physical angular discrepancy for the same numeric displayed yaw value.",
+  "difference_explainable_by_single_constant": true,
+  "GLOBAL_YAW_OFFSET_DEG": -179.4827,
+  "TRANSFORM_FORMULA": "REFERENCE_DISPLAY_YAW = wrap360(R4P7_D_NATIVE_YAW - 179.4827)"
+}

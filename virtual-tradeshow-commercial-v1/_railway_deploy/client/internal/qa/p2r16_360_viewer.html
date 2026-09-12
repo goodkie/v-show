@@ -397,7 +397,11 @@
           <i class="fa-solid fa-compass-drafting"></i>
           <span>Quality R4.4 Refined</span>
         </button>
-                                        <button id="btn-mode-quality-r4p7-a" class="mode-btn" onclick="switchMode('quality-ai-r4p7-a')" style="border-color: #38bdf8; color: #38bdf8;">
+                                                <button id="btn-mode-quality-r4p71-d" class="mode-btn" onclick="switchMode('quality-ai-r4p71-d')" style="border-color: #00ff88; color: #00ff88; font-weight: bold; background: rgba(0, 255, 136, 0.1);">
+          <i class="fa-solid fa-compass"></i>
+          <span>R4P7.1 D (Registered)</span>
+        </button>
+<button id="btn-mode-quality-r4p7-a" class="mode-btn" onclick="switchMode('quality-ai-r4p7-a')" style="border-color: #38bdf8; color: #38bdf8;">
           <i class="fa-solid fa-cube"></i>
           <span>R4P7 A (Control)</span>
         </button>
@@ -741,6 +745,22 @@
           'edge-residual': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P4_EDGE_RESIDUAL_HEATMAP.png',
           'structural-lines': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P4_LINE_ALIGNMENT_AFTER.png'
         }
+      },
+      'quality-ai-r4p71-d': {
+        shortName: 'R4P7.1 D Registered',
+        title: 'QUALITY AI — R4P7.1 D | GLOBAL YAW REGISTERED | 4K OWNER QA',
+        docTitle: 'C12.9-P2R16 — R4P7.1 D Registered — 4K Owner QA',
+        width: 4096, height: 623,
+        directCoverage: 0.999715, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P7_D_STRUCTURE_PRESERVING_4K.jpg',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P7_D_STRUCTURE_PRESERVING_4K.jpg',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P7_D_STRUCTURE_PRESERVING_4K.jpg',
+        expectedSha256: '16fd00c9ac5f7c87',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P7.1 D — REGISTERED (4K)',
+        geometryMode: 'STRUCTURE_PRESERVING_YAW_REGISTERED',
+        globalYawOffsetDeg: -179.4827,
+        coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P7_D_STRUCTURE_PRESERVING_4K.jpg' }
       },
       'quality-ai-r4p7-a': {
         shortName: 'R4P7 A Control',
@@ -1340,7 +1360,9 @@
         const fovVal = Math.round(currentFov);
         const yawVal = currentYaw.toFixed(1);
         const pitchVal = (currentPitch >= 0 ? '+' : '') + currentPitch.toFixed(1);
-        if (currentMode.startsWith('quality-ai-r4p7-')) {
+        if (currentMode === 'quality-ai-r4p71-d') {
+          subSpecsEl.innerHTML = `GLOBAL YAW OFFSET: -179.48° | REGISTRATION LANDMARKS: 7 | MEDIAN RESIDUAL: 0.85° | P95 RESIDUAL: 1.73° | PANORAMA RERENDERED: NO | RGB: ORIGINAL 3000×4000 PHYSICAL | GEOMETRY: R4P7-D FROZEN | INPAINT: 0% | GENERATIVE PIXELS: 0 | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
+        } else if (currentMode.startsWith('quality-ai-r4p7-')) {
           const directCov = (meta.directCoverage * 100.0).toFixed(4) + '%';
           subSpecsEl.innerHTML = `TEXTURE: 4096 x 623 | RGB: ORIGINAL 3000x4000 PHYSICAL | GEOMETRY: ROTATION-DOMINANT PANORAMA | DIRECT COVERAGE: ${directCov} | RGB INPAINT: 0 | GENERATIVE PIXELS: 0 | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
         } else if (currentMode.startsWith('quality-ai-r4p6-')) {
@@ -1639,9 +1661,25 @@
       // Update resolution dropdown disabled states
       updateResolutionOptions();
 
-      // 2. Read URL mode
+      // 2. Read URL mode & deterministic navigation parameters (Phase 7C.2R4P7.1)
       const urlParams = new URLSearchParams(window.location.search);
       const qMode = urlParams.get('mode');
+      const qYaw = urlParams.get('yaw');
+      if (qYaw !== null && !isNaN(parseFloat(qYaw))) {
+        currentYaw = (parseFloat(qYaw) % 360.0 + 360.0) % 360.0;
+      }
+      const qPitch = urlParams.get('pitch');
+      if (qPitch !== null && !isNaN(parseFloat(qPitch))) {
+        currentPitch = Math.max(CONFIG.minPitchDeg, Math.min(CONFIG.maxPitchDeg, parseFloat(qPitch)));
+      }
+      const qHfov = urlParams.get('hfov');
+      if (qHfov !== null && !isNaN(parseFloat(qHfov))) {
+        currentFov = Math.max(CONFIG.minFovDeg, Math.min(CONFIG.maxFovDeg, parseFloat(qHfov)));
+      }
+      const qView = urlParams.get('view');
+      if (qView === 'center1to1' || qView === '1to1') {
+        setTimeout(() => { if (typeof inspectCenter1to1 === 'function') inspectCenter1to1(); }, 250);
+      }
       if (qMode && MODE_BAND_CONFIG[qMode]) {
         currentMode = qMode;
       } else {
@@ -1752,7 +1790,7 @@
         targetLabel = '12K R4P4 REFINED (' + coverageMode.toUpperCase() + ')';
         targetW = 12288;
         targetH = 1869;
-      } else if (currentMode.startsWith('quality-ai-r4p7-') || currentMode.startsWith('quality-ai-r4p6-') || currentMode.startsWith('quality-ai-r4p5-') || currentMode.startsWith('quality-ai-r4p43-') || currentMode.startsWith('quality-ai-r4p42-')) {
+      } else if (currentMode === 'quality-ai-r4p71-d' || currentMode.startsWith('quality-ai-r4p7-') || currentMode.startsWith('quality-ai-r4p6-') || currentMode.startsWith('quality-ai-r4p5-') || currentMode.startsWith('quality-ai-r4p43-') || currentMode.startsWith('quality-ai-r4p42-')) {
         activeTier = '4K';
         const candMeta = MODE_METADATA[currentMode];
         targetUrl = candMeta.texture;
@@ -1900,6 +1938,15 @@
             window.__VIEWER_TELEMETRY__.QUALITY_GHOSTING_QA = 'FAIL';
             window.__VIEWER_TELEMETRY__.SEAM_VISUAL_QA = 'PENDING_OWNER_PIXEL_REVIEW';
             updateModePresentation();
+          } else if (currentMode === 'quality-ai-r4p71-d') {
+            texture.offset.set(0, 0);
+            texture.repeat.set(1, 1);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.ClampToEdgeWrapping;
+            window.__VIEWER_TELEMETRY__.R4P71_D_ACTIVE = true;
+            window.__VIEWER_TELEMETRY__.GLOBAL_YAW_OFFSET_DEG = -179.4827;
+            window.__VIEWER_TELEMETRY__.PANORAMA_RERENDERED = false;
+            window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_FILENAME = 'P2R16_R4P7_D_STRUCTURE_PRESERVING_4K.jpg';
           } else if (currentMode === 'quality-ai-12view' || currentMode === 'quality-ai') {
             const vSpan = UV_CORRECTION.v_max - UV_CORRECTION.v_min;
             // V offset maps v=0 of sphere geometry to v_min of texture
@@ -1920,6 +1967,10 @@
 
           window.__VIEWER_TELEMETRY__.TEXTURE_LOAD_SUCCESS = true;
           window.__VIEWER_TELEMETRY__.panoramaTextureLoaded = true;
+          window.__VIEWER_TELEMETRY__.CURRENT_MODE = currentMode;
+          window.__VIEWER_TELEMETRY__.RESOLVED_MODE = currentMode;
+          window.__VIEWER_TELEMETRY__.REQUESTED_MODE = currentMode;
+          window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH = currentMode.startsWith('quality-ai');
           window.__VIEWER_TELEMETRY__['texture.image.width'] = texture.image ? (texture.image.naturalWidth || texture.image.width) : 0;
           window.__VIEWER_TELEMETRY__['texture.image.height'] = texture.image ? (texture.image.naturalHeight || texture.image.height) : 0;
           window.__VIEWER_TELEMETRY__['texture.encoding'] = 'sRGB';
@@ -1997,12 +2048,19 @@
         const newGeo = new THREE.SphereGeometry(radius, 64, 32, phiStart, phiLength, thetaStart, thetaLength);
         newGeo.scale(-1, 1, 1);
         sphereMesh.geometry = newGeo;
+        if (mode === 'quality-ai-r4p71-d') {
+          sphereMesh.rotation.y = THREE.MathUtils.degToRad(179.4827);
+        } else {
+          sphereMesh.rotation.y = 0.0;
+        }
       }
     }
 
     function switchMode(newMode) {
       if (newMode === currentMode && window.__VIEWER_TELEMETRY__.panoramaTextureLoaded) return;
       currentMode = newMode;
+      window.__VIEWER_TELEMETRY__.TEXTURE_LOAD_SUCCESS = false;
+      window.__VIEWER_TELEMETRY__.panoramaTextureLoaded = false;
       window.__VIEWER_TELEMETRY__.REQUESTED_MODE = newMode;
       window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH = (newMode.startsWith('quality-ai'));
 
@@ -2020,6 +2078,8 @@
       const btnR3 = document.getElementById('btn-mode-quality-r3');
             const btnR4p4 = document.getElementById('btn-mode-quality-r4p4');
       if (btnR4p4) btnR4p4.className = (currentMode === 'quality-ai-r4p4') ? 'mode-btn active-quality-ai' : 'mode-btn';
+      const btnR4p71d = document.getElementById('btn-mode-quality-r4p71-d');
+      if (btnR4p71d) btnR4p71d.className = (currentMode === 'quality-ai-r4p71-d') ? 'mode-btn active-quality-ai' : 'mode-btn';
       ['a', 'b', 'c', 'd'].forEach(cand => {
         const btn = document.getElementById('btn-mode-quality-r4p7-' + cand);
         if (btn) btn.className = (currentMode === 'quality-ai-r4p7-' + cand) ? 'mode-btn active-quality-ai' : 'mode-btn';

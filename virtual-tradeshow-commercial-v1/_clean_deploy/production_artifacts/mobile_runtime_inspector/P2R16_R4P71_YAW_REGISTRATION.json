@@ -1,0 +1,93 @@
+{
+  "PHASE": "7C.2R4P7.1",
+  "SOURCE_R4P7_D_SHA256": "16fd00c9ac5f7c8776afff8037b562883e6960c01893f5ee704d42a6a8dcf115",
+  "REFERENCE_SHA256": "c614d1f3c1250f5aee7738a5163fbc8598f17ad196eb4c4e296f9419b4cb7918",
+  "LANDMARK_COUNT": 7,
+  "landmarks": [
+    {
+      "id": "LM1_DOOR_FRAME_LEFT",
+      "description": "Entry door left vertical jamb",
+      "d_col": 46.06,
+      "r4p7_d_native_yaw_deg": 4.0482,
+      "ref_col": 2092.81,
+      "reference_yaw_deg": 183.9388,
+      "individual_offset_deg": 179.8906,
+      "residual_deg": 0.6267
+    },
+    {
+      "id": "LM2_DOOR_FRAME_RIGHT",
+      "description": "Entry door right vertical jamb",
+      "d_col": 314.13,
+      "r4p7_d_native_yaw_deg": 27.6091,
+      "ref_col": 2360.74,
+      "reference_yaw_deg": 207.4869,
+      "individual_offset_deg": 179.8778,
+      "residual_deg": 0.6395
+    },
+    {
+      "id": "LM3_WALL_CORNER",
+      "description": "Right wall / window wall vertical corner",
+      "d_col": 1042.59,
+      "r4p7_d_native_yaw_deg": 91.6339,
+      "ref_col": 3086.78,
+      "reference_yaw_deg": 271.2987,
+      "individual_offset_deg": 179.6648,
+      "residual_deg": 0.8525
+    },
+    {
+      "id": "LM4_CABINET_LEFT_EDGE",
+      "description": "Wood cabinet left vertical corner edge",
+      "d_col": 1690.95,
+      "r4p7_d_native_yaw_deg": 148.6182,
+      "ref_col": 3730.67,
+      "reference_yaw_deg": 327.891,
+      "individual_offset_deg": 179.2728,
+      "residual_deg": 1.2445
+    },
+    {
+      "id": "LM5_SOUTH_WINDOW_MULLION",
+      "description": "South window main vertical mullion",
+      "d_col": 2077.16,
+      "r4p7_d_native_yaw_deg": 182.5628,
+      "ref_col": 38.26,
+      "reference_yaw_deg": 3.3625,
+      "individual_offset_deg": -179.2002,
+      "residual_deg": 0.2825
+    },
+    {
+      "id": "LM6_FURNITURE_FRAME_EDGE",
+      "description": "Fixed furniture vertical frame boundary",
+      "d_col": 2725.84,
+      "r4p7_d_native_yaw_deg": 239.5761,
+      "ref_col": 705.85,
+      "reference_yaw_deg": 62.0377,
+      "individual_offset_deg": -177.5384,
+      "residual_deg": 1.9443
+    },
+    {
+      "id": "LM7_CLOSURE_DOOR_TRIM",
+      "description": "Door trim vertical line in closure vicinity",
+      "d_col": 3926.15,
+      "r4p7_d_native_yaw_deg": 345.0717,
+      "ref_col": 1896.97,
+      "reference_yaw_deg": 166.7257,
+      "individual_offset_deg": -178.346,
+      "residual_deg": 1.1367
+    }
+  ],
+  "GLOBAL_YAW_OFFSET_DEG": -179.4827,
+  "MEDIAN_ABS_YAW_RESIDUAL_DEG": 0.8525,
+  "P95_ABS_YAW_RESIDUAL_DEG": 1.7344,
+  "MAX_ABS_YAW_RESIDUAL_DEG": 1.9443,
+  "SINGLE_CONSTANT_MODEL_PASS": true,
+  "PANORAMA_RERENDERED": false,
+  "GEOMETRY_MODIFIED": false,
+  "RGB_MODIFIED": false,
+  "VGGT_FORWARD_COUNT": 0,
+  "ROMA_INFERENCE_COUNT": 0,
+  "BA_EXECUTION_COUNT": 0,
+  "DEPTH_MODEL_EXECUTION_COUNT": 0,
+  "OWNER_VISUAL_ACCEPTANCE": false,
+  "CUSTOMER_DEFAULT": "P2R13",
+  "MASTER_TOUCHED": false
+}
