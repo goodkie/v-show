@@ -1,0 +1,61 @@
+{
+  "PHASE": "7C.2R4P8.2",
+  "AUDIT_TARGET": "R4P8.1 12K Physical RGB Pipeline (execute_phase7c2r4p81_12k.py)",
+  "R4P81_SOURCE_RGB_ACTUAL_DIMENSIONS": "3000x4000x3",
+  "R4P81_INTERMEDIATE_RGB_DIMENSIONS": [],
+  "R4P81_RGB_RESIZE_COUNT": 0,
+  "R4P81_RGB_REMAP_COUNT": 0,
+  "R4P81_FINAL_RESAMPLE_COUNT": 1,
+  "R4P81_4K_USED_AS_12K_INPUT": false,
+  "R4P81_PROXY_RGB_USED": false,
+  "R4P81_2048_RGB_USED": false,
+  "R4P81_518_RGB_USED": false,
+  "R4P81_ORIGINAL_3000x4000_DIRECT_SOURCE_USED": true,
+  "STAGES": [
+    {
+      "STAGE": 1,
+      "DESCRIPTION": "Load 12 physical stills from disk into memory",
+      "INPUT_FILENAME": "SHOT_000.jpg ... SHOT_330.jpg",
+      "INPUT_DIRECTORY": "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED",
+      "INPUT_DIMENSIONS": "3000x4000",
+      "INPUT_DTYPE": "uint8",
+      "OUTPUT_DIMENSIONS": "3000x4000",
+      "INTERPOLATION_KERNEL": "NONE (Lossless byte read + PIL convert RGB)",
+      "RESIZE_OCCURRED": false,
+      "REMAP_OCCURRED": false,
+      "INTERMEDIATE_FILE_USED": false
+    },
+    {
+      "STAGE": 2,
+      "DESCRIPTION": "Direct Analytic Spherical Projection to Source Coordinates on GPU",
+      "INPUT_DIMENSIONS": "12288x1869 equirectangular ray grid",
+      "INPUT_DTYPE": "float32",
+      "OPERATION": "r_cam = R_v @ r_world; u = fx*(r_cam_x/r_cam_z)+cx; v = fy*(r_cam_y/r_cam_z)+cy",
+      "OUTPUT_DIMENSIONS": "12288x1869 (floating point normalized coords in [-1, 1])",
+      "INTERPOLATION_KERNEL": "Analytic closed-form pinhole camera model",
+      "RESIZE_OCCURRED": false,
+      "REMAP_OCCURRED": false
+    },
+    {
+      "STAGE": 3,
+      "DESCRIPTION": "Single-pass PyTorch GPU Texture Sampling",
+      "INPUT_SOURCE": "stills_tensor (12, 4000, 3000, 3) uint8 -> float",
+      "SAMPLER_FUNCTION": "torch.nn.functional.grid_sample(mode='bilinear', padding_mode='border', align_corners=True)",
+      "OUTPUT_DIMENSIONS": "12288x1869x3",
+      "OUTPUT_DTYPE": "uint8",
+      "GPU_TEXTURE_RESIZE_OCCURRED": false,
+      "FINAL_WRITE_DIMENSIONS": "12288x1869",
+      "FINAL_RESAMPLE_COUNT": 1
+    }
+  ],
+  "EXPLICIT_FUNCTION_SEARCH": {
+    "cv2.resize": "NONE in RGB pipeline (only used in offline diagnostic downsampling)",
+    "cv2.remap": "NONE",
+    "PIL.Image.resize": "NONE",
+    "torch.nn.functional.interpolate": "NONE",
+    "skimage.transform.resize": "NONE",
+    "numpy_resampling": "NONE",
+    "4K_artifact_reuse": "SEAM_PATH_COORDINATES_SCALED_3X_ONLY (no RGB copied from 4K)",
+    "proxy_reuse": "NONE"
+  }
+}

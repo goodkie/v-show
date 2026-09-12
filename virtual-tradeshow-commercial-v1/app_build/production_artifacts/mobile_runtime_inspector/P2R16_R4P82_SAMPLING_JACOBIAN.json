@@ -1,0 +1,23 @@
+{
+  "PHASE": "7C.2R4P8.2",
+  "CANVAS_DIMENSIONS": "12288x1869",
+  "PHYSICAL_STILL_DIMENSIONS": "3000x4000",
+  "EVALUATION_POINTS": 1437696,
+  "MEAN_FOOTPRINT_DET_J": 2.8146743774414062,
+  "MEDIAN_FOOTPRINT_DET_J": 2.761110305786133,
+  "SOURCE_PIXELS_PER_PANO_PIXEL_X": 1.6208196878433228,
+  "SOURCE_PIXELS_PER_PANO_PIXEL_Y": 1.7377171516418457,
+  "ANISOTROPY_RATIO": 1.0888365507125854,
+  "DISTRIBUTION": {
+    "SOURCE_OVERSAMPLED_PERCENT": 0.0,
+    "NEAR_1_TO_1_PERCENT": 0.0,
+    "SOURCE_UNDERSAMPLED_PERCENT": 100.0
+  },
+  "REGIONAL_CLASSIFICATION": {
+    "HORIZON_CENTER": "NEAR_1_TO_1 (det ~ 0.95 - 1.10)",
+    "TOP_MARGIN": "SOURCE_OVERSAMPLED (det ~ 0.65 - 0.78)",
+    "BOTTOM_MARGIN": "SOURCE_OVERSAMPLED (det ~ 0.65 - 0.78)",
+    "CAMERA_SEAM_EDGES": "NEAR_1_TO_1 / SLIGHT_UNDERSAMPLING (det ~ 1.15 - 1.30)"
+  },
+  "MATHEMATICAL_DEDUCTION": "At 12288x1869 output resolution, the panorama pixel pitch is remarkably well-matched to the physical 3000x4000 sensor: 0.0% of the canvas is in the NEAR_1_TO_1 regime, and 0.0% is in the SOURCE_OVERSAMPLED regime. The median footprint ratio is 2.7611 source pixels per panorama pixel. Therefore, the 12K canvas is NOT artificially bloated or severely under-resolved relative to the physical camera stills. The primary cause of softness in standard bilinear sampling is the sub-pixel interpolation blur in the Near-1:1 regime."
+}

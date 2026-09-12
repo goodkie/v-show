@@ -1,0 +1,58 @@
+{
+  "PHASE": "7C.2R4P8.2",
+  "WEBGL_CONFIGURATION": {
+    "MAX_TEXTURE_SIZE": 16384,
+    "MAX_VIEWPORT_DIMS": [
+      32767,
+      32767
+    ],
+    "MAX_RENDERBUFFER_SIZE": 16384,
+    "CANVAS_BACKING_WIDTH": 1920,
+    "CANVAS_BACKING_HEIGHT": 1080,
+    "CANVAS_CLIENT_WIDTH": 1920,
+    "CANVAS_CLIENT_HEIGHT": 1080,
+    "DEVICE_PIXEL_RATIO": 1,
+    "THREE_PIXEL_RATIO": 1,
+    "TEXTURE_WIDTH": 12288,
+    "TEXTURE_HEIGHT": 1869,
+    "TEXTURE_MIN_FILTER": "LinearFilter",
+    "TEXTURE_MAG_FILTER": "LinearFilter",
+    "GENERATE_MIPMAPS": false,
+    "ANISOTROPY": 16,
+    "COLOR_SPACE": "sRGBEncoding",
+    "FLIP_Y": true
+  },
+  "MAX_TEXTURE_SIZE_PASS": true,
+  "MIPMAP_BLUR_POSSIBLE": false,
+  "VIEWPORT_TESTS": {
+    "YAW_60_HFOV_85": {
+      "YAW": 60,
+      "HFOV": 85,
+      "PITCH": 0,
+      "SCREENSHOT": "P2R16_R4P82_WEBGL_YAW60_HFOV85.png"
+    },
+    "YAW_150_HFOV_26": {
+      "YAW": 150,
+      "HFOV": 26,
+      "PITCH": 0,
+      "SCREENSHOT": "P2R16_R4P82_WEBGL_YAW150_HFOV26.png"
+    },
+    "YAW_240_HFOV_26": {
+      "YAW": 240,
+      "HFOV": 26,
+      "PITCH": 0,
+      "SCREENSHOT": "P2R16_R4P82_WEBGL_YAW240_HFOV26.png"
+    },
+    "YAW_345_HFOV_85": {
+      "YAW": 345,
+      "HFOV": 85,
+      "PITCH": 0,
+      "SCREENSHOT": "P2R16_R4P82_WEBGL_YAW345_HFOV85.png"
+    }
+  },
+  "CLASSIFICATION": {
+    "ARTIFACT_SHARPNESS_LIMIT": true,
+    "VIEWER_FILTERING_SHARPNESS_LIMIT": false,
+    "REASONING": "Three.js is configured with generateMipmaps=false and LinearFilter on level 0 texture, with MAX_TEXTURE_SIZE=16384 (>= 12288). The 12K texture is uploaded at full 12288x1869 resolution without downsampling. Therefore, viewer texture filtering is NOT the primary sharpness bottleneck; the detail limitation is baked directly into the artifact pixels during single-pass bilinear sampling from the minified physical sensor stills."
+  }
+}
