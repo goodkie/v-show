@@ -1,0 +1,133 @@
+{
+  "PHASE": "7C.2R4P8.2",
+  "TIMESTAMP": "2026-09-12T04:37:43.131Z",
+  "DEPLOY_COMMIT": "c0827aaa54695958c0548b4974fd148e3b734391",
+  "BASE_URL": "https://v-show-commercial-v1-production.up.railway.app",
+  "RESULTS": {
+    "quality-ai-r4p82-a": {
+      "CANDIDATE": "A",
+      "MODE": "quality-ai-r4p82-a",
+      "HTTP_STATUS": 200,
+      "TELEMETRY": {
+        "CURRENT_MODE": "quality-ai-r4p82-a",
+        "REQUESTED_MODE": "quality-ai-r4p82-a",
+        "RESOLVED_MODE": "quality-ai-r4p82-a",
+        "MODE_LOCK_MATCH": true,
+        "TEXTURE_LOAD_SUCCESS": true,
+        "webglContextOk": true,
+        "HTTP_STATUS": 200,
+        "ACTIVE_TEXTURE_FILENAME": "P2R16_R4P82_A_CONTROL_4K.jpg",
+        "R4P82_CANDIDATE_ACTIVE": true,
+        "CANDIDATE": "A",
+        "SAMPLER": "BILINEAR",
+        "ROTATION_MODEL": "FROZEN_R4P81",
+        "DIMENSIONS": "4096x623",
+        "DIRECT_GEOMETRIC_COVERAGE": 1,
+        "BLACK_CRACK_PIXELS": 0,
+        "PASS_4K_GATES": true,
+        "texWidth": 4096,
+        "texHeight": 623
+      },
+      "PASS": true
+    },
+    "quality-ai-r4p82-b": {
+      "CANDIDATE": "B",
+      "MODE": "quality-ai-r4p82-b",
+      "HTTP_STATUS": 200,
+      "TELEMETRY": {
+        "CURRENT_MODE": "quality-ai-r4p82-b",
+        "REQUESTED_MODE": "quality-ai-r4p82-b",
+        "RESOLVED_MODE": "quality-ai-r4p82-b",
+        "MODE_LOCK_MATCH": true,
+        "TEXTURE_LOAD_SUCCESS": true,
+        "webglContextOk": true,
+        "HTTP_STATUS": 200,
+        "ACTIVE_TEXTURE_FILENAME": "P2R16_R4P82_B_SAMPLING_ONLY_4K.jpg",
+        "R4P82_CANDIDATE_ACTIVE": true,
+        "CANDIDATE": "B",
+        "SAMPLER": "BICUBIC",
+        "ROTATION_MODEL": "FROZEN_R4P81",
+        "DIMENSIONS": "4096x623",
+        "DIRECT_GEOMETRIC_COVERAGE": 1,
+        "BLACK_CRACK_PIXELS": 0,
+        "PASS_4K_GATES": true,
+        "texWidth": 4096,
+        "texHeight": 623
+      },
+      "PASS": true
+    },
+    "quality-ai-r4p82-c": {
+      "CANDIDATE": "C",
+      "MODE": "quality-ai-r4p82-c",
+      "HTTP_STATUS": 200,
+      "TELEMETRY": {
+        "CURRENT_MODE": "quality-ai-r4p82-c",
+        "REQUESTED_MODE": "quality-ai-r4p82-c",
+        "RESOLVED_MODE": "quality-ai-r4p82-c",
+        "MODE_LOCK_MATCH": true,
+        "TEXTURE_LOAD_SUCCESS": true,
+        "webglContextOk": true,
+        "HTTP_STATUS": 200,
+        "ACTIVE_TEXTURE_FILENAME": "P2R16_R4P82_C_REGISTRATION_ONLY_4K.jpg",
+        "R4P82_CANDIDATE_ACTIVE": true,
+        "CANDIDATE": "C",
+        "SAMPLER": "BILINEAR",
+        "ROTATION_MODEL": "SO3_MICRO_REGISTRATION",
+        "DIMENSIONS": "4096x623",
+        "DIRECT_GEOMETRIC_COVERAGE": 1,
+        "BLACK_CRACK_PIXELS": 0,
+        "PASS_4K_GATES": true,
+        "texWidth": 4096,
+        "texHeight": 623
+      },
+      "PASS": true
+    },
+    "quality-ai-r4p82-d": {
+      "CANDIDATE": "D",
+      "MODE": "quality-ai-r4p82-d",
+      "HTTP_STATUS": 200,
+      "TELEMETRY": {
+        "CURRENT_MODE": "quality-ai-r4p82-d",
+        "REQUESTED_MODE": "quality-ai-r4p82-d",
+        "RESOLVED_MODE": "quality-ai-r4p82-d",
+        "MODE_LOCK_MATCH": true,
+        "TEXTURE_LOAD_SUCCESS": true,
+        "webglContextOk": true,
+        "HTTP_STATUS": 200,
+        "ACTIVE_TEXTURE_FILENAME": "P2R16_R4P82_D_COMBINED_4K.jpg",
+        "R4P82_CANDIDATE_ACTIVE": true,
+        "CANDIDATE": "D",
+        "SAMPLER": "BICUBIC",
+        "ROTATION_MODEL": "SO3_MICRO_REGISTRATION",
+        "DIMENSIONS": "4096x623",
+        "DIRECT_GEOMETRIC_COVERAGE": 1,
+        "BLACK_CRACK_PIXELS": 0,
+        "PASS_4K_GATES": true,
+        "texWidth": 4096,
+        "texHeight": 623
+      },
+      "PASS": true
+    }
+  },
+  "YAW_CHECKS": {
+    "yaw_60": {
+      "pitch": 0,
+      "hfov": 85
+    },
+    "yaw_150": {
+      "pitch": 0,
+      "hfov": 85
+    },
+    "yaw_240": {
+      "pitch": 0,
+      "hfov": 85
+    },
+    "yaw_345": {
+      "pitch": 0,
+      "hfov": 85
+    }
+  },
+  "JS_ERRORS": [],
+  "ALL_MODES_PASS": true,
+  "GATE_STATUS": "PASS"
+}
