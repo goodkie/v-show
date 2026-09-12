@@ -1,0 +1,74 @@
+{
+  "PHASE": "7C.2R4P8.1",
+  "DESCRIPTION": "Phase 7C.2R4P8.1 12K Physical RGB Owner Candidate Manifest",
+  "SOURCE_COMMIT": "6c71a6dd2c9f5be1c38ab69ea698b483d67d4a74",
+  "BRANCH": "experiment/c12.9-p2r16-8shot-hires",
+  "INVARIANTS": {
+    "MASTER_TOUCHED": false,
+    "CUSTOMER_DEFAULT": "P2R13",
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "R4P6_FAMILY_FROZEN": true,
+    "R4P7_FAMILY_FROZEN": true,
+    "R4P71_TEXTURE_FROZEN": true,
+    "R4P8_FAMILY_FROZEN": true,
+    "R4P81_12K_PROMOTION_APPROVED": true,
+    "R4P81_12K_RENDER_EXECUTED": true,
+    "TRANSLATION_OPTIMIZED": false,
+    "DEPTH_USED": false,
+    "TRIANGLE_DEPTH_MESH_USED": false,
+    "DEPTH_EXTRAPOLATION_USED": false,
+    "LOCAL_PROJECTIVE_WARP_USED": false,
+    "APAP_USED": false,
+    "B_SPLINE_WARP_USED": false,
+    "RGB_INPAINT_USED": false,
+    "GENERATIVE_PIXEL_COUNT": 0,
+    "REFERENCE_RGB_PIXEL_COUNT": 0,
+    "PHYSICAL_SOURCE_COUNT": 12,
+    "PHYSICAL_SOURCE_DIMENSIONS": "3000x4000",
+    "INTERMEDIATE_RGB_PROXY_USED": false,
+    "CANONICAL_LONGITUDE_CONVENTION": "u = (atan2(X, Z) + pi) / (2*pi)",
+    "VIEWER_YAW_OFFSET_DEG": 0.0
+  },
+  "CANDIDATE_D_12K": {
+    "NAME": "R4P8.1-D",
+    "DESCRIPTION": "12K Physical RGB Owner Candidate (SO(3) + shared intrinsics + structure-safe graph-cut)",
+    "FILENAME_JPG": "P2R16_R4P81_D_STRUCTURE_SAFE_GRAPH_CUT_12K.jpg",
+    "SHA256_JPG": "36c358155adaf86455ffcb3a7027fb459ef732b13076115967b5790c88319690",
+    "FILENAME_PNG": "P2R16_R4P81_D_STRUCTURE_SAFE_GRAPH_CUT_12K.png",
+    "SHA256_PNG": "2660695e0a5cf36e2f1e67041c2c3175440798e470a1a5bdfc516f4369e80eec",
+    "DIMENSIONS": "12288x1869",
+    "TOTAL_PIXELS": 22966272,
+    "DIRECT_GEOMETRIC_COVERAGE": 1.0,
+    "BLACK_CRACK_PIXELS": 0,
+    "INPAINT_FRACTION": 0.0,
+    "SINGLE_SOURCE_OWNER": true,
+    "MAX_SEAM_DISPLACEMENT_PX": 0.0,
+    "SEAM_DISPLACEMENT_GATE_PASS": true,
+    "PROVENANCE_VALID_RATIO": 1.0,
+    "ALIASES": [
+      "P2R16_QUALITY12_R4P81_D_OWNER_REVIEW.jpg",
+      "P2R16_QUALITY12_R4P81_D_STRUCTURE_SAFE_IDENTITY.png"
+    ]
+  },
+  "REVIEWS": {
+    "REVIEW_ANGLES": [
+      60,
+      150,
+      240,
+      345
+    ],
+    "CENTER_1TO1_ANGLES": [
+      150,
+      240
+    ],
+    "CENTER_1TO1_YAW150_AVAILABLE": true,
+    "CENTER_1TO1_YAW240_AVAILABLE": true,
+    "ALL_PHYSICAL_DIRECTIONS_MATCH": true,
+    "R4P81_12K_SYNC_VALIDATION": "PASS",
+    "OWNER_12K_QUALITY_COMPARISON_ELIGIBLE": true
+  },
+  "ROUTES": {
+    "R4P81_D_12K": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p81-d",
+    "REFERENCE_12K": "https://v-show-commercial-v1-production.up.railway.app/internal/qa/p2r16_360_viewer.html?mode=quality-ai"
+  }
+}
