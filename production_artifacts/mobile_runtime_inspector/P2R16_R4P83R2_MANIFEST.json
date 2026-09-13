@@ -1,0 +1,109 @@
+{
+  "phase": "7C.2R4P8.3R2",
+  "timestamp": "2026-09-13T23:05:00Z",
+  "commit_a_sha": "0ebd1de96e080afedfe54da2f996c298349d89f8",
+  "branch": "experiment/c12.9-p2r16-8shot-hires",
+  "status": "12K_NATIVE_PHYSICAL_EVALUATION_STAMPED",
+  "candidate": "B",
+  "output_dimensions": [
+    12288,
+    1869
+  ],
+  "native_reraster_proven": true,
+  "direct_coverage": 1.0,
+  "black_crack_pixels": 0,
+  "inpaint_used": false,
+  "generative_pixel_count": 0,
+  "owner_visual_review_completed": false,
+  "owner_visual_acceptance": false,
+  "12k_final_promotion_approved": false,
+  "best_physical_only_candidate": "R4P8.1_D",
+  "customer_default": "P2R13",
+  "master_touched": false,
+  "artifacts": {
+    "P2R16_QUALITY_PHASE7C2R4P83R2_DIAGNOSTICS.json": {
+      "sha256": "689b3621bd38336e03e2206c8c12a8c80ad7882f3b4a57af2a1957955c932fc7",
+      "size_bytes": 14126
+    },
+    "P2R16_R4P83R2_COMPARE_YAW000.png": {
+      "sha256": "7939b6a9886b1499cc8149c6bb91cd3f74666bbec2a035ca096a585db35fecc1",
+      "size_bytes": 1943232
+    },
+    "P2R16_R4P83R2_COMPARE_YAW060.png": {
+      "sha256": "81d262877cbf11b5cb623b027dec20a4dba2aa33e093ea82dfac2625ea0bd203",
+      "size_bytes": 1993606
+    },
+    "P2R16_R4P83R2_COMPARE_YAW150.png": {
+      "sha256": "eebf62212ee99944d7f4fe1dea4daab37298722910d89bf3bba88cb4468f11d0",
+      "size_bytes": 1995913
+    },
+    "P2R16_R4P83R2_COMPARE_YAW240.png": {
+      "sha256": "b2b658ebbd0197fb533e1c834e4048a3ff336b85883320d6cfa87409e0661680",
+      "size_bytes": 2043406
+    },
+    "P2R16_R4P83R2_COMPARE_YAW345.png": {
+      "sha256": "395769ece23d5224a7e11ff808833543584c319e41ac414f6b0ed470f495f572",
+      "size_bytes": 2006302
+    },
+    "P2R16_R4P83R2_DETAIL_RETENTION.json": {
+      "sha256": "c80eee256bebb268e8d92c22abf7573f3ccc2f86665e660b3035a10719221dd0",
+      "size_bytes": 4822
+    },
+    "P2R16_R4P83R2_DETAIL_YAW150.png": {
+      "sha256": "779ad21dae49e90ce6e79d5d55303aa7267b3727118208761b420b301bc6bc6b",
+      "size_bytes": 1566459
+    },
+    "P2R16_R4P83R2_DETAIL_YAW240.png": {
+      "sha256": "e5dae8e18f1465ce9f31f1b6dbe7faed54821a21b9e509c2ab258fbb4b1e6849",
+      "size_bytes": 1697569
+    },
+    "P2R16_R4P83R2_DETAIL_YAW345.png": {
+      "sha256": "4a55ace9ec36a47681983378eff227ec7d13cce0243b1a081c4a970c53bf03f4",
+      "size_bytes": 1557494
+    },
+    "P2R16_R4P83R2_DIRECT_COVERAGE_MASK_12K.png": {
+      "sha256": "bf6a2d5c4e38b378bba01ba825d3834393842b7bba177dfd410348fda5694d02",
+      "size_bytes": 26593
+    },
+    "P2R16_R4P83R2_NATIVE1TO1_YAW000.png": {
+      "sha256": "fe041ce3a8195932431540d832c131de59758f70cb4636f4afa227f1b6f7411f",
+      "size_bytes": 540753
+    },
+    "P2R16_R4P83R2_NATIVE1TO1_YAW060.png": {
+      "sha256": "da59c6e3b573109e131bcda760ac894e9aec4979af479e9ea3455777f5030d7a",
+      "size_bytes": 564651
+    },
+    "P2R16_R4P83R2_NATIVE1TO1_YAW150.png": {
+      "sha256": "fafb72c69fb4651d53d1812f6f12a1c58336705eda1a8d00e8050331e81d811a",
+      "size_bytes": 539816
+    },
+    "P2R16_R4P83R2_NATIVE1TO1_YAW240.png": {
+      "sha256": "12e7f9fd1723c04cc265be1b26367348a81d9825537240179893ebb51915356d",
+      "size_bytes": 580532
+    },
+    "P2R16_R4P83R2_NATIVE1TO1_YAW345.png": {
+      "sha256": "605508e31e7f80d10adceb9d8d2f09281042f5d119ad99eccce45da952ef9a54",
+      "size_bytes": 531766
+    },
+    "P2R16_R4P83R2_SEAM_PHOTOMETRIC_DIAGNOSTICS.json": {
+      "sha256": "49fea0106cf27dcddcf682691b76cefa12c297c1f0e1c18fe003eb643d79423f",
+      "size_bytes": 3049
+    },
+    "P2R16_R4P83R2_SELECTED_12K_OWNER_REVIEW.jpg": {
+      "sha256": "1c005121240485b1927ab21c0e723605b8382376bd1649025920945ffbe0ad29",
+      "size_bytes": 6322960
+    },
+    "P2R16_R4P83R2_SELECTED_12K_PHYSICAL_IDENTITY.png": {
+      "sha256": "04dbcdddb8f182f5819565b5d9f43e11ff1031ea7ea9b9be9fa41998d0cf292f",
+      "size_bytes": 32269014
+    },
+    "P2R16_R4P83R2_SELECTED_SEAM_OVERLAY_12K.png": {
+      "sha256": "6fc99782ae9dde1cfbd95c18109a8e0bf6bdf7f4e4bf605df94a2e679ef6fb77",
+      "size_bytes": 32518459
+    },
+    "P2R16_R4P83R2_SOURCE_OWNERSHIP_12K.png": {
+      "sha256": "d943bb53f6e001891df55a165e993a45c11c8f7c9bb3c5c7a6566cb4f1e8ee2b",
+      "size_bytes": 170411
+    }
+  }
+}
