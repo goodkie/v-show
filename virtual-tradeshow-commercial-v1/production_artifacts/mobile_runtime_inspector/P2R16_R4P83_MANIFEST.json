@@ -1,0 +1,254 @@
+{
+  "phase": "7C.2R4P8.3",
+  "timestamp": "2026-09-13T16:30:00-04:00",
+  "artifacts": {
+    "P2R16_QUALITY_PHASE7C2R4P83_DIAGNOSTICS.json": {
+      "filename": "P2R16_QUALITY_PHASE7C2R4P83_DIAGNOSTICS.json",
+      "bytes": 12750,
+      "sha256": "e80b7a3eb5d477aebc66c99d1caea5f2c78780944c404009070b8a040ae0a802"
+    },
+    "P2R16_R4P83_A_CONTROL_4K.png": {
+      "filename": "P2R16_R4P83_A_CONTROL_4K.png",
+      "bytes": 4743751,
+      "sha256": "cde512e28fb4edda21dc163934728ac094b9eaee6bbd770452989320b898f1f4",
+      "dimensions": [
+        4096,
+        623
+      ]
+    },
+    "P2R16_R4P83_B_SHARED_FOCAL_4K.png": {
+      "filename": "P2R16_R4P83_B_SHARED_FOCAL_4K.png",
+      "bytes": 4712948,
+      "sha256": "8ed753729b837a844bd955822ba9bd7ddfd49e3d3d4c1188e8b20423860ce1f5",
+      "dimensions": [
+        4096,
+        623
+      ]
+    },
+    "P2R16_R4P83_C_FOCAL_ROTATION_4K.png": {
+      "filename": "P2R16_R4P83_C_FOCAL_ROTATION_4K.png",
+      "bytes": 4714230,
+      "sha256": "8239e96d1bead3a0331baa631cf7080446725bbe74859e4a5cc7034bdff0c982",
+      "dimensions": [
+        4096,
+        623
+      ]
+    },
+    "P2R16_R4P83_D_FOCAL_K1_ROTATION_4K.png": {
+      "filename": "P2R16_R4P83_D_FOCAL_K1_ROTATION_4K.png",
+      "bytes": 4713927,
+      "sha256": "1eb169f56e62007c5d11f7d98d66c6812ac14faa3c16f9319b0cfc8b3a53d6de",
+      "dimensions": [
+        4096,
+        623
+      ]
+    },
+    "P2R16_R4P83_E_FOCAL_K1_K2_ROTATION_4K.png": {
+      "filename": "P2R16_R4P83_E_FOCAL_K1_K2_ROTATION_4K.png",
+      "bytes": 4713801,
+      "sha256": "15d7ce212428045f87c7f87cb18b3d1f42a368e22ade226ccad368e0e2d37625",
+      "dimensions": [
+        4096,
+        623
+      ]
+    },
+    "P2R16_R4P83_SELECTED_4K.png": {
+      "filename": "P2R16_R4P83_SELECTED_4K.png",
+      "bytes": 4712948,
+      "sha256": "8ed753729b837a844bd955822ba9bd7ddfd49e3d3d4c1188e8b20423860ce1f5",
+      "dimensions": [
+        4096,
+        623
+      ]
+    },
+    "P2R16_R4P83_SELECTED_SOURCE_OWNERSHIP.png": {
+      "filename": "P2R16_R4P83_SELECTED_SOURCE_OWNERSHIP.png",
+      "bytes": 40824,
+      "sha256": "e54c42b894376fd9fa4bb7392d3673986ccff1e66b0865a04531241e29c8135f",
+      "dimensions": [
+        4096,
+        623
+      ]
+    },
+    "P2R16_R4P83_SELECTED_SEAM_OVERLAY.png": {
+      "filename": "P2R16_R4P83_SELECTED_SEAM_OVERLAY.png",
+      "bytes": 4758589,
+      "sha256": "a44a69a553437938e357850c7d6228ba45fbad160fc8abd036f7584040c5df08",
+      "dimensions": [
+        4096,
+        623
+      ]
+    },
+    "P2R16_R4P83_COMPARE_YAW060.png": {
+      "filename": "P2R16_R4P83_COMPARE_YAW060.png",
+      "bytes": 1068274,
+      "sha256": "b59ad0d5856ef277136a8723ee854cb5973d882b082a717694eb8269be025c68",
+      "dimensions": [
+        1620,
+        408
+      ]
+    },
+    "P2R16_R4P83_COMPARE_YAW150.png": {
+      "filename": "P2R16_R4P83_COMPARE_YAW150.png",
+      "bytes": 1055203,
+      "sha256": "a47af9ab8d96b287fc9c6b9edcd306931ead3df1018b7e997855e236d3226622",
+      "dimensions": [
+        1620,
+        408
+      ]
+    },
+    "P2R16_R4P83_COMPARE_YAW240.png": {
+      "filename": "P2R16_R4P83_COMPARE_YAW240.png",
+      "bytes": 1081289,
+      "sha256": "5e778117d465d5e5c301d6d3f9e14cce2f5029304d37329386cd1180d977a5f7",
+      "dimensions": [
+        1620,
+        408
+      ]
+    },
+    "P2R16_R4P83_COMPARE_YAW345.png": {
+      "filename": "P2R16_R4P83_COMPARE_YAW345.png",
+      "bytes": 1072723,
+      "sha256": "401c8384429bbb0c505cc79194f9c1edeff75c1d599b369c3fe869d18a6cf6f8",
+      "dimensions": [
+        1620,
+        408
+      ]
+    },
+    "P2R16_R4P83_CENTER1TO1_YAW060.png": {
+      "filename": "P2R16_R4P83_CENTER1TO1_YAW060.png",
+      "bytes": 859739,
+      "sha256": "c30293f8d57a13ee5e60df2ff729ed04ef0522fca905a5b1c4a9b18461e29867",
+      "dimensions": [
+        1200,
+        440
+      ]
+    },
+    "P2R16_R4P83_CENTER1TO1_YAW150.png": {
+      "filename": "P2R16_R4P83_CENTER1TO1_YAW150.png",
+      "bytes": 816274,
+      "sha256": "9516cd7dd1f90a3135d366f5f512eb6b9847d2efcad7f685504e48386916cb00",
+      "dimensions": [
+        1200,
+        440
+      ]
+    },
+    "P2R16_R4P83_CENTER1TO1_YAW240.png": {
+      "filename": "P2R16_R4P83_CENTER1TO1_YAW240.png",
+      "bytes": 878302,
+      "sha256": "7f4ef4469f786593f9e634c244876b78f1d73d3c33b1638966f9ec00d047c247",
+      "dimensions": [
+        1200,
+        440
+      ]
+    },
+    "P2R16_R4P83_CENTER1TO1_YAW345.png": {
+      "filename": "P2R16_R4P83_CENTER1TO1_YAW345.png",
+      "bytes": 825574,
+      "sha256": "bc7e19e04394d3223109d8d8ec3ea535edcdc290405ffe298e09916b55fa889f",
+      "dimensions": [
+        1200,
+        440
+      ]
+    },
+    "P2R16_R4P83_RING_HOLONOMY_VS_MODEL.png": {
+      "filename": "P2R16_R4P83_RING_HOLONOMY_VS_MODEL.png",
+      "bytes": 54876,
+      "sha256": "e17182179d0acf1b31e4f13f4e7a898b04bf6cc008b50fd2a27a985a4a37ac23",
+      "dimensions": [
+        1350,
+        825
+      ]
+    },
+    "P2R16_R4P83_FOCAL_GLOBAL_P95_CURVE.png": {
+      "filename": "P2R16_R4P83_FOCAL_GLOBAL_P95_CURVE.png",
+      "bytes": 115804,
+      "sha256": "cba4f67fd6bfc67dd91dcc744f0ac0198e8052f0b69ac47edbd780979110d4c6",
+      "dimensions": [
+        1500,
+        825
+      ]
+    },
+    "P2R16_R4P83_FOCAL_HELDOUT_P95_CURVE.png": {
+      "filename": "P2R16_R4P83_FOCAL_HELDOUT_P95_CURVE.png",
+      "bytes": 119139,
+      "sha256": "549bca66f06cd3a57e791a24c18a49fe0e99dc2fae59dcd0793524a5a78be773",
+      "dimensions": [
+        1500,
+        825
+      ]
+    },
+    "P2R16_R4P83_F_K1_HELDOUT_P95_HEATMAP.png": {
+      "filename": "P2R16_R4P83_F_K1_HELDOUT_P95_HEATMAP.png",
+      "bytes": 60101,
+      "sha256": "51acb7e6a760e33d56bdc5f9109847106de425086e8e2fc8e865b5b1ebbb61b9",
+      "dimensions": [
+        1350,
+        900
+      ]
+    },
+    "P2R16_R4P83_F_K1_CLOSURE_HEATMAP.png": {
+      "filename": "P2R16_R4P83_F_K1_CLOSURE_HEATMAP.png",
+      "bytes": 64736,
+      "sha256": "7cb29a00b17653391a3c18d55a12c321f7250cff5c451fccd21a394ee1150545",
+      "dimensions": [
+        1350,
+        900
+      ]
+    },
+    "P2R16_R4P83_F_K1_WORST_SEAM_HEATMAP.png": {
+      "filename": "P2R16_R4P83_F_K1_WORST_SEAM_HEATMAP.png",
+      "bytes": 62783,
+      "sha256": "e94ea34e2464ecef11bb513c6a00afe9a753b55cc96cdf274c392135a91422c8",
+      "dimensions": [
+        1350,
+        900
+      ]
+    },
+    "P2R16_R4P83_GLOBAL_RESIDUAL_CDF.png": {
+      "filename": "P2R16_R4P83_GLOBAL_RESIDUAL_CDF.png",
+      "bytes": 135880,
+      "sha256": "11ce6da2c5b4f6bb00ea863a7077cb61a12d060f5af4ab9f53b9a87f607e6230",
+      "dimensions": [
+        1500,
+        900
+      ]
+    },
+    "P2R16_R4P83_GLOBAL_RESIDUAL_TAIL_90_100.png": {
+      "filename": "P2R16_R4P83_GLOBAL_RESIDUAL_TAIL_90_100.png",
+      "bytes": 112252,
+      "sha256": "9e81309ec4e4c902837e8795ddfc72bfdedcbbb955df2e46ef99a5b03aabb6cc",
+      "dimensions": [
+        1500,
+        825
+      ]
+    },
+    "P2R16_R4P83_PER_SEAM_P95_COMPARISON.png": {
+      "filename": "P2R16_R4P83_PER_SEAM_P95_COMPARISON.png",
+      "bytes": 88370,
+      "sha256": "8026f16b8b7b36188eefad88478daf9e858c258c6b8a496688141a73c90fd3c9",
+      "dimensions": [
+        1800,
+        900
+      ]
+    },
+    "P2R16_R4P83_RADIAL_PIXEL_DISPLACEMENT_MAP.png": {
+      "filename": "P2R16_R4P83_RADIAL_PIXEL_DISPLACEMENT_MAP.png",
+      "bytes": 71298,
+      "sha256": "eeeb738cd4e8d7330d0753decde81a41485cec8a9c0339c3ac0a70ce26d6232f",
+      "dimensions": [
+        1200,
+        1500
+      ]
+    },
+    "P2R16_R4P83_RADIAL_DISPLACEMENT_PROFILE.png": {
+      "filename": "P2R16_R4P83_RADIAL_DISPLACEMENT_PROFILE.png",
+      "bytes": 63308,
+      "sha256": "56ec565a347b9ac290f0637f3272eae88770bda666d11c141b9903b88770b814",
+      "dimensions": [
+        1350,
+        750
+      ]
+    }
+  }
+}
