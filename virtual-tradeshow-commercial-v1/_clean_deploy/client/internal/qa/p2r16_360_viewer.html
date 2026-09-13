@@ -393,7 +393,23 @@
 
       <!-- Mode Switcher -->
       <div class="mode-switch-container">
-                <button id="btn-mode-quality-r4p82r3-d" class="mode-btn" onclick="switchMode('quality-ai-r4p82r3-d')" style="border-color: #00ffcc; color: #00ffcc; font-weight: 800; background: rgba(0, 255, 204, 0.25); box-shadow: 0 0 16px rgba(0, 255, 204, 0.4);">
+                        <button id="btn-mode-quality-r4p82r4-d" class="mode-btn" onclick="switchMode('quality-ai-r4p82r4-d')" style="border-color: #00ffaa; color: #00ffaa; font-weight: 800; background: rgba(0, 255, 170, 0.25); box-shadow: 0 0 16px rgba(0, 255, 170, 0.4);">
+          <i class="fa-solid fa-crown"></i>
+          <span>R4P8.2R4 D (Owner Cand)</span>
+        </button>
+        <button id="btn-mode-quality-r4p82r4-c" class="mode-btn" onclick="switchMode('quality-ai-r4p82r4-c')" style="border-color: #00ffaa; color: #00ffaa;">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>R4P8.2R4 C (Seam-Local Reg)</span>
+        </button>
+        <button id="btn-mode-quality-r4p82r4-b" class="mode-btn" onclick="switchMode('quality-ai-r4p82r4-b')" style="border-color: #00ffaa; color: #00ffaa;">
+          <i class="fa-solid fa-arrows-split-up-and-left"></i>
+          <span>R4P8.2R4 B (Global Reg)</span>
+        </button>
+        <button id="btn-mode-quality-r4p82r4-a" class="mode-btn" onclick="switchMode('quality-ai-r4p82r4-a')" style="border-color: #00ffaa; color: #00ffaa;">
+          <i class="fa-solid fa-cube"></i>
+          <span>R4P8.2R4 A (Control)</span>
+        </button>
+        <button id="btn-mode-quality-r4p82r3-d" class="mode-btn" onclick="switchMode('quality-ai-r4p82r3-d')" style="border-color: #00ffcc; color: #00ffcc; font-weight: 800; background: rgba(0, 255, 204, 0.25); box-shadow: 0 0 16px rgba(0, 255, 204, 0.4);">
           <i class="fa-solid fa-crown"></i>
           <span>R4P8.2R3 D (Owner Cand)</span>
         </button>
@@ -782,7 +798,101 @@
     const CACHE_BUST_KEY_R4P3_JPG = '0fb100025255a42f';
 
     const MODE_METADATA = {
-            'quality-ai-r4p82r3-a': {
+            'quality-ai-r4p82r4-a': {
+        shortName: 'R4P8.2R4 A (Control)',
+        title: 'QUALITY AI — P2R16 | R4P8.2R4 A — CONTROL (FROZEN R4P8.1 GEOMETRY) | 4K CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P8.2R4 A Control — 4K Owner Candidate Gate',
+        width: 4096, height: 623,
+        directCoverage: 1.000000, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P82R4_A_CONTROL_4K.png',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_A_CONTROL_4K.png',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_A_CONTROL_4K.png',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P8.2R4 A — CONTROL (4096x623)',
+        geometryMode: 'TOPOLOGY_LOCKED_ROTATION_REGISTRATION_4K',
+        candidate: 'A',
+        sampler: 'BILINEAR',
+        rotationModel: 'FROZEN_R4P81',
+        maxRotDeltaDeg: 0.0,
+        globalYawOffsetDeg: 0.0,
+        coverageTextures: {
+          'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_A_CONTROL_4K.png',
+          'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_A_SOURCE_OWNERSHIP.png',
+          'seam-path': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_A_SEAM_OVERLAY.png'
+        }
+      },
+      'quality-ai-r4p82r4-b': {
+        shortName: 'R4P8.2R4 B (Global Reg)',
+        title: 'QUALITY AI — P2R16 | R4P8.2R4 B — GLOBAL UNIFORM ROTATION REGISTRATION | 4K CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P8.2R4 B Global Reg — 4K Owner Candidate Gate',
+        width: 4096, height: 623,
+        directCoverage: 1.000000, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P82R4_B_GLOBAL_REGISTRATION_4K.png',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_B_GLOBAL_REGISTRATION_4K.png',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_B_GLOBAL_REGISTRATION_4K.png',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P8.2R4 B — GLOBAL REG (4096x623)',
+        geometryMode: 'TOPOLOGY_LOCKED_ROTATION_REGISTRATION_4K',
+        candidate: 'B',
+        sampler: 'BILINEAR',
+        rotationModel: 'GLOBAL_UNIFORM_ROTATION',
+        maxRotDeltaDeg: 0.697,
+        globalYawOffsetDeg: 0.0,
+        coverageTextures: {
+          'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_B_GLOBAL_REGISTRATION_4K.png',
+          'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_B_SOURCE_OWNERSHIP.png',
+          'seam-path': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_B_SEAM_OVERLAY.png'
+        }
+      },
+      'quality-ai-r4p82r4-c': {
+        shortName: 'R4P8.2R4 C (Seam-Local Reg)',
+        title: 'QUALITY AI — P2R16 | R4P8.2R4 C — SEAM-LOCAL WEIGHTED ROTATION REGISTRATION | 4K CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P8.2R4 C Seam-Local Reg — 4K Owner Candidate Gate',
+        width: 4096, height: 623,
+        directCoverage: 1.000000, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P82R4_C_SEAM_LOCAL_REGISTRATION_4K.png',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_C_SEAM_LOCAL_REGISTRATION_4K.png',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_C_SEAM_LOCAL_REGISTRATION_4K.png',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P8.2R4 C — SEAM-LOCAL REG (4096x623)',
+        geometryMode: 'TOPOLOGY_LOCKED_ROTATION_REGISTRATION_4K',
+        candidate: 'C',
+        sampler: 'BILINEAR',
+        rotationModel: 'SEAM_LOCAL_WEIGHTED_ROTATION',
+        maxRotDeltaDeg: 0.748,
+        globalYawOffsetDeg: 0.0,
+        coverageTextures: {
+          'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_C_SEAM_LOCAL_REGISTRATION_4K.png',
+          'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_C_SOURCE_OWNERSHIP.png',
+          'seam-path': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_C_SEAM_OVERLAY.png'
+        }
+      },
+      'quality-ai-r4p82r4-d': {
+        shortName: 'R4P8.2R4 D (Owner Candidate)',
+        title: 'QUALITY AI — P2R16 | R4P8.2R4 D — CONSERVATIVE STRUCTURE-SAFE ROTATION | 4K OWNER CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P8.2R4 D Conservative Structure-Safe — 4K Owner Review',
+        width: 4096, height: 623,
+        directCoverage: 1.000000, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P82R4_D_CONSERVATIVE_STRUCTURE_4K.png',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_D_CONSERVATIVE_STRUCTURE_4K.png',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_D_CONSERVATIVE_STRUCTURE_4K.png',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P8.2R4 D — STRUCTURE-SAFE ROTATION (4096x623)',
+        geometryMode: 'TOPOLOGY_LOCKED_ROTATION_REGISTRATION_4K',
+        candidate: 'D',
+        sampler: 'BILINEAR',
+        rotationModel: 'CONSERVATIVE_STRUCTURE_SAFE_ROTATION',
+        maxRotDeltaDeg: 0.740,
+        globalYawOffsetDeg: 0.0,
+        coverageTextures: {
+          'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_D_CONSERVATIVE_STRUCTURE_4K.png',
+          'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_D_SOURCE_OWNERSHIP.png',
+          'seam-path': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_D_SEAM_OVERLAY.png',
+          'topology-diagnostic': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_D_SEAM_TOPOLOGY.png',
+          'cost-diagnostic': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R4_D_SEAM_COST.png'
+        }
+      },
+      'quality-ai-r4p82r3-a': {
         shortName: 'R4P8.2R3 A (Control)',
         title: 'QUALITY AI — P2R16 | R4P8.2R3 A — CONTROL (FROZEN R4P8.1 MAPPING) | 4K CANDIDATE',
         docTitle: 'C12.9-P2R16 — R4P8.2R3 A Control — 4K Owner Candidate Gate',
@@ -1801,7 +1911,11 @@
         const fovVal = Math.round(currentFov);
         const yawVal = currentYaw.toFixed(1);
         const pitchVal = (currentPitch >= 0 ? '+' : '') + currentPitch.toFixed(1);
-                if (currentMode.startsWith('quality-ai-r4p82r3-')) {
+                if (currentMode.startsWith('quality-ai-r4p82r4-')) {
+          const candMeta = MODE_METADATA[currentMode];
+          const maxDelta = candMeta?.maxRotDeltaDeg !== undefined ? candMeta.maxRotDeltaDeg.toFixed(3) : '0.000';
+          subSpecsEl.innerHTML = `RGB: ORIGINAL 3000x4000 PHYSICAL | DEPTH: NONE | TRANSLATION: NONE | LOCAL WARP: NONE | INPAINT: 0% | GENERATIVE: 0 | ROTATION MICRO-REG: ACTIVE | MAX ROT DELTA: ${maxDelta} deg | DIRECT COVERAGE: 100% | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
+        } else if (currentMode.startsWith('quality-ai-r4p82r4-') || currentMode.startsWith('quality-ai-r4p82r3-')) {
           subSpecsEl.innerHTML = `RGB: ORIGINAL 3000x4000 PHYSICAL | SAMPLER: BILINEAR | TOPOLOGY: MONOTONIC CORRIDOR (12 SEAMS) | CYLINDRICAL COMPONENTS: 1/SRC | ISLANDS: 0 | BRANCHES: 0 | WEDGES: 0 | INPAINT: 0% | GENERATIVE: 0 | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
         } else if (currentMode.startsWith('quality-ai-r4p82r2-')) {
           subSpecsEl.innerHTML = `RGB: ORIGINAL 3000x4000 PHYSICAL | SAMPLER: BILINEAR | DEPTH: NONE | TRANSLATION: NONE | LOCAL WARP: NONE | INPAINT: 0% | GENERATIVE: 0 | SECOND-NEIGHBOR MATCHES: 0 | HARD SOURCE OWNERSHIP: ACTIVE | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
@@ -1936,7 +2050,7 @@
     const urlParamsGlobal = (typeof window !== 'undefined' && window.location) ? new URLSearchParams(window.location.search) : null;
     const qModeGlobal = urlParamsGlobal ? urlParamsGlobal.get('mode') : null;
     let currentMode = 'quality-ai-r4p3';
-    if (qModeGlobal && ['quality-ai-r4p82r3-a', 'quality-ai-r4p82r3-b', 'quality-ai-r4p82r3-c', 'quality-ai-r4p82r3-d', 'quality-ai-r4p82r2-a', 'quality-ai-r4p82r2-b', 'quality-ai-r4p82r2-c', 'quality-ai-r4p82r2-d', 'quality-ai-r4p82-a', 'quality-ai-r4p82-b', 'quality-ai-r4p82-c', 'quality-ai-r4p82-d', 'quality-ai-r4p81-d', 'quality-ai-r4p8-a', 'quality-ai-r4p8-b', 'quality-ai-r4p8-c', 'quality-ai-r4p8-d', 'quality-ai-r4p71-d', 'quality-ai-r4p7-a', 'quality-ai-r4p7-b', 'quality-ai-r4p7-c', 'quality-ai-r4p7-d', 'quality-ai-r4p43-f0', 'quality-ai-r4p43-f1', 'quality-ai-r4p43-f2', 'quality-ai-r4p43-f3', 'quality-ai-r4p43-f4', 'quality-ai-r4p4', 'quality-ai-r4p42-a', 'quality-ai-r4p42-b', 'quality-ai-r4p42-c', 'quality-ai-r4p42-d', 'quality-ai-r4p42-e', 'quality-ai-r4p3', 'quality-ai-r4p2', 'quality-ai-r4p1', 'quality-ai-r4', 'quality-ai-r31', 'quality-ai-r3', 'quality-ai-12view', 'quality-ai'].includes(qModeGlobal)) {
+    if (qModeGlobal && ['quality-ai-r4p82r4-a', 'quality-ai-r4p82r4-b', 'quality-ai-r4p82r4-c', 'quality-ai-r4p82r4-d', 'quality-ai-r4p82r3-a', 'quality-ai-r4p82r3-b', 'quality-ai-r4p82r3-c', 'quality-ai-r4p82r3-d', 'quality-ai-r4p82r2-a', 'quality-ai-r4p82r2-b', 'quality-ai-r4p82r2-c', 'quality-ai-r4p82r2-d', 'quality-ai-r4p82-a', 'quality-ai-r4p82-b', 'quality-ai-r4p82-c', 'quality-ai-r4p82-d', 'quality-ai-r4p81-d', 'quality-ai-r4p8-a', 'quality-ai-r4p8-b', 'quality-ai-r4p8-c', 'quality-ai-r4p8-d', 'quality-ai-r4p71-d', 'quality-ai-r4p7-a', 'quality-ai-r4p7-b', 'quality-ai-r4p7-c', 'quality-ai-r4p7-d', 'quality-ai-r4p43-f0', 'quality-ai-r4p43-f1', 'quality-ai-r4p43-f2', 'quality-ai-r4p43-f3', 'quality-ai-r4p43-f4', 'quality-ai-r4p4', 'quality-ai-r4p42-a', 'quality-ai-r4p42-b', 'quality-ai-r4p42-c', 'quality-ai-r4p42-d', 'quality-ai-r4p42-e', 'quality-ai-r4p3', 'quality-ai-r4p2', 'quality-ai-r4p1', 'quality-ai-r4', 'quality-ai-r31', 'quality-ai-r3', 'quality-ai-12view', 'quality-ai'].includes(qModeGlobal)) {
       currentMode = qModeGlobal;
     }
     let userSelectedTier = 'AUTO';
@@ -2399,7 +2513,38 @@
             window.__VIEWER_TELEMETRY__.QUALITY_GHOSTING_QA = 'FAIL';
             window.__VIEWER_TELEMETRY__.SEAM_VISUAL_QA = 'PENDING_OWNER_PIXEL_REVIEW';
             updateModePresentation();
-                    } else if (currentMode.startsWith('quality-ai-r4p82r3-')) {
+                    } else if (currentMode.startsWith('quality-ai-r4p82r4-')) {
+            texture.offset.set(0, 0);
+            texture.repeat.set(1, 1);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.ClampToEdgeWrapping;
+            const candMeta = MODE_METADATA[currentMode];
+            window.__VIEWER_TELEMETRY__.R4P82R4_CANDIDATE_ACTIVE = true;
+            window.__VIEWER_TELEMETRY__.MODE = currentMode;
+            window.__VIEWER_TELEMETRY__.CANDIDATE = candMeta.candidate;
+            window.__VIEWER_TELEMETRY__.SAMPLER = 'BILINEAR';
+            window.__VIEWER_TELEMETRY__.ROTATION_MODEL = candMeta.rotationModel;
+            window.__VIEWER_TELEMETRY__.MAX_ROTATION_DELTA_DEG = candMeta.maxRotDeltaDeg;
+            window.__VIEWER_TELEMETRY__.DIMENSIONS = '4096x623';
+            window.__VIEWER_TELEMETRY__.GLOBAL_YAW_OFFSET_DEG = 0.0;
+            window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_FILENAME = candMeta.textureFilename;
+            window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE = candMeta.directCoverage;
+            window.__VIEWER_TELEMETRY__.BLACK_CRACK_PIXELS = candMeta.blackCrackPixels;
+            window.__VIEWER_TELEMETRY__.SEAM_COUNT = 12;
+            window.__VIEWER_TELEMETRY__.SEAM_BRANCH_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.SEAM_LOOP_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.OWNERSHIP_ISLAND_COUNT_CYLINDRICAL = 0;
+            window.__VIEWER_TELEMETRY__.TRANSLATION_OPTIMIZED = false;
+            window.__VIEWER_TELEMETRY__.DEPTH_USED = false;
+            window.__VIEWER_TELEMETRY__.LOCAL_PROJECTIVE_WARP_USED = false;
+            window.__VIEWER_TELEMETRY__.RGB_INPAINT_USED = false;
+            window.__VIEWER_TELEMETRY__.GENERATIVE_PIXEL_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.REFERENCE_RGB_PIXEL_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.HARD_SOURCE_OWNERSHIP = 'ACTIVE';
+            window.__VIEWER_TELEMETRY__.TECHNICAL_GATE_D = 'PASS';
+            window.__VIEWER_TELEMETRY__.SEAM_VISUAL_QA = 'PENDING_OWNER_PIXEL_REVIEW';
+            updateModePresentation();
+          } else if (currentMode.startsWith('quality-ai-r4p82r3-')) {
             texture.offset.set(0, 0);
             texture.repeat.set(1, 1);
             texture.wrapS = THREE.RepeatWrapping;
@@ -2660,6 +2805,10 @@
       const btnR3 = document.getElementById('btn-mode-quality-r3');
             const btnR4p4 = document.getElementById('btn-mode-quality-r4p4');
       if (btnR4p4) btnR4p4.className = (currentMode === 'quality-ai-r4p4') ? 'mode-btn active-quality-ai' : 'mode-btn';
+            ['a', 'b', 'c', 'd'].forEach(cand => {
+        const btn82r4 = document.getElementById('btn-mode-quality-r4p82r4-' + cand);
+        if (btn82r4) btn82r4.className = (currentMode === 'quality-ai-r4p82r4-' + cand) ? 'mode-btn active-quality-ai' : 'mode-btn';
+      });
       ['a', 'b', 'c', 'd'].forEach(cand => {
         const btn82 = document.getElementById('btn-mode-quality-r4p82-' + cand);
         if (btn82) btn82.className = (currentMode === 'quality-ai-r4p82-' + cand) ? 'mode-btn active-quality-ai' : 'mode-btn';
