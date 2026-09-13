@@ -1,0 +1,85 @@
+{
+  "phase": "7C.2R4P8.3R1",
+  "timestamp": "2026-09-13T21:40:00Z",
+  "landmark_count": 7,
+  "landmark_yaw_pairs": [
+    {
+      "id": "LM1_CABINET",
+      "name": "Cabinet Center",
+      "yaw_r4p83_deg": 183.08,
+      "yaw_r4p81_deg": 182.72,
+      "yaw_quality_ai_deg": 20.74,
+      "delta_to_r4p81_deg": -0.35,
+      "delta_to_quality_ai_deg": -162.33
+    },
+    {
+      "id": "LM2_DOORWAY",
+      "name": "Doorway Frame",
+      "yaw_r4p83_deg": 244.07,
+      "yaw_r4p81_deg": 243.81,
+      "yaw_quality_ai_deg": 82.71,
+      "delta_to_r4p81_deg": -0.26,
+      "delta_to_quality_ai_deg": -161.37
+    },
+    {
+      "id": "LM3_WINDOW",
+      "name": "Window Trim",
+      "yaw_r4p83_deg": 304.28,
+      "yaw_r4p81_deg": 303.93,
+      "yaw_quality_ai_deg": 143.44,
+      "delta_to_r4p81_deg": -0.35,
+      "delta_to_quality_ai_deg": -160.84
+    },
+    {
+      "id": "LM4_FIREPLACE",
+      "name": "Fireplace Mantle",
+      "yaw_r4p83_deg": 4.39,
+      "yaw_r4p81_deg": 4.13,
+      "yaw_quality_ai_deg": 203.55,
+      "delta_to_r4p81_deg": -0.26,
+      "delta_to_quality_ai_deg": -160.84
+    },
+    {
+      "id": "LM5_CHAIR",
+      "name": "Chair / Seating",
+      "yaw_r4p83_deg": 64.69,
+      "yaw_r4p81_deg": 64.34,
+      "yaw_quality_ai_deg": 263.5,
+      "delta_to_r4p81_deg": -0.35,
+      "delta_to_quality_ai_deg": -161.19
+    },
+    {
+      "id": "LM6_WALL_FEATURE",
+      "name": "Wall Trim Feature",
+      "yaw_r4p83_deg": 124.01,
+      "yaw_r4p81_deg": 123.66,
+      "yaw_quality_ai_deg": 322.82,
+      "delta_to_r4p81_deg": -0.35,
+      "delta_to_quality_ai_deg": -161.19
+    },
+    {
+      "id": "LM7_CLOSURE_SEAM",
+      "name": "Closure Seam 11_00",
+      "yaw_r4p83_deg": 198.02,
+      "yaw_r4p81_deg": 198.28,
+      "yaw_quality_ai_deg": 37.62,
+      "delta_to_r4p81_deg": 0.26,
+      "delta_to_quality_ai_deg": -160.4
+    }
+  ],
+  "r4p83_to_r4p81": {
+    "best_global_yaw_offset_deg": -0.2386,
+    "RMS_landmark_alignment_deg": 0.3169,
+    "P95_landmark_alignment_deg": 0.3516,
+    "same_yaw_numeric_comparison_valid": true,
+    "verdict": "R4P8.3 and R4P8.1 share the same global coordinate origin (mean offset -0.24\u00b0, RMS 0.31\u00b0)"
+  },
+  "r4p83_to_quality_reference": {
+    "best_global_yaw_offset_deg": -161.1663,
+    "best_global_yaw_offset_wrapped_positive_deg": 198.8337,
+    "RMS_landmark_alignment_deg": 0.5612,
+    "P95_landmark_alignment_deg": 1.0472,
+    "same_yaw_numeric_comparison_valid": false,
+    "verdict": "R4P8.3 and Quality AI Reference have a -161.17\u00b0 (+198.83\u00b0) global yaw origin offset. Same-numeric yaw comparisons are INVALID."
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "phase": "7C.2R4P8.3R1",
+  "timestamp": "2026-09-13T21:40:00Z",
+  "status": "FORENSIC_INVESTIGATION_COMPLETE",
+  "selected_candidate": "B",
+  "artifact_filename": "P2R16_R4P83_SELECTED_4K.png",
+  "artifact_sha256": "8ed753729b837a844bd955822ba9bd7ddfd49e3d3d4c1188e8b20423860ce1f5",
+  "root_cause_classification": {
+    "primary_cause": "PROJECTION_MINIFICATION",
+    "secondary_cause": "VIEWER_GPU_FILTERING",
+    "tertiary_cause": "BILINEAR_FILTER_LOSS",
+    "explanation": "1. PRIMARY (PROJECTION_MINIFICATION): The 4K panorama (W=4096 across 360\u00b0) has an angular resolution of 11.38 px/deg, whereas the physical S23 camera stills have 51.69 px/deg (f=2961.7 px). This represents a mandatory 4.54x linear minification (~20.6 source pixels compressed into 1 panorama pixel). Point-sampling this footprint with simple bilinear interpolation drops high-frequency details. At 12K (W=12288), resolution increases to 34.13 px/deg, reducing minification to only 1.51x.\n2. SECONDARY (VIEWER_GPU_FILTERING): The viewer code contained a selector omission in resolveAndLoadTexture() which caused it to load the old AI reference panorama JPEG (P2R16_AI_QUALITY12_OWNER_REVIEW.jpg) instead of P2R16_R4P83_SELECTED_4K.png, displaying a 4096x608 HUD label, an old compressed JPEG texture, and a 161\u00b0 rotated yaw frame.\n3. TERTIARY (BILINEAR_FILTER_LOSS): Sampling without a sinc/Lanczos or area pre-filtering kernel slightly smooths high-contrast edge slopes."
+  },
+  "provenance_verifications": {
+    "physical_source_direct_sampling": true,
+    "hidden_intermediate_rgb_downscale": false,
+    "rgb_resampling_generation_count": 1,
+    "pixel_provenance_valid_ratio": 1.0,
+    "pixel_reconstruction_median_error": 0.7245883941650391,
+    "pixel_reconstruction_p99_error": 0.9969521760940552
+  },
+  "sampling_footprint": {
+    "median": 4.777666091918945,
+    "p95": 5.2008514404296875,
+    "worst": 5.617433071136475
+  },
+  "detail_retention": {
+    "source_detail_energy_median": 246.482484,
+    "panorama_detail_energy_median": 1960.9373333333333,
+    "retention_ratio_median": 7.9642610915729595,
+    "retention_ratio_p90": 12.925839025392781
+  },
+  "yaw_reconciliation": {
+    "phase": "7C.2R4P8.3R1",
+    "timestamp": "2026-09-13T21:40:00Z",
+    "landmark_count": 7,
+    "landmark_yaw_pairs": [
+      {
+        "id": "LM1_CABINET",
+        "name": "Cabinet Center",
+        "yaw_r4p83_deg": 183.08,
+        "yaw_r4p81_deg": 182.72,
+        "yaw_quality_ai_deg": 20.74,
+        "delta_to_r4p81_deg": -0.35,
+        "delta_to_quality_ai_deg": -162.33
+      },
+      {
+        "id": "LM2_DOORWAY",
+        "name": "Doorway Frame",
+        "yaw_r4p83_deg": 244.07,
+        "yaw_r4p81_deg": 243.81,
+        "yaw_quality_ai_deg": 82.71,
+        "delta_to_r4p81_deg": -0.26,
+        "delta_to_quality_ai_deg": -161.37
+      },
+      {
+        "id": "LM3_WINDOW",
+        "name": "Window Trim",
+        "yaw_r4p83_deg": 304.28,
+        "yaw_r4p81_deg": 303.93,
+        "yaw_quality_ai_deg": 143.44,
+        "delta_to_r4p81_deg": -0.35,
+        "delta_to_quality_ai_deg": -160.84
+      },
+      {
+        "id": "LM4_FIREPLACE",
+        "name": "Fireplace Mantle",
+        "yaw_r4p83_deg": 4.39,
+        "yaw_r4p81_deg": 4.13,
+        "yaw_quality_ai_deg": 203.55,
+        "delta_to_r4p81_deg": -0.26,
+        "delta_to_quality_ai_deg": -160.84
+      },
+      {
+        "id": "LM5_CHAIR",
+        "name": "Chair / Seating",
+        "yaw_r4p83_deg": 64.69,
+        "yaw_r4p81_deg": 64.34,
+        "yaw_quality_ai_deg": 263.5,
+        "delta_to_r4p81_deg": -0.35,
+        "delta_to_quality_ai_deg": -161.19
+      },
+      {
+        "id": "LM6_WALL_FEATURE",
+        "name": "Wall Trim Feature",
+        "yaw_r4p83_deg": 124.01,
+        "yaw_r4p81_deg": 123.66,
+        "yaw_quality_ai_deg": 322.82,
+        "delta_to_r4p81_deg": -0.35,
+        "delta_to_quality_ai_deg": -161.19
+      },
+      {
+        "id": "LM7_CLOSURE_SEAM",
+        "name": "Closure Seam 11_00",
+        "yaw_r4p83_deg": 198.02,
+        "yaw_r4p81_deg": 198.28,
+        "yaw_quality_ai_deg": 37.62,
+        "delta_to_r4p81_deg": 0.26,
+        "delta_to_quality_ai_deg": -160.4
+      }
+    ],
+    "r4p83_to_r4p81": {
+      "best_global_yaw_offset_deg": -0.2386,
+      "RMS_landmark_alignment_deg": 0.3169,
+      "P95_landmark_alignment_deg": 0.3516,
+      "same_yaw_numeric_comparison_valid": true,
+      "verdict": "R4P8.3 and R4P8.1 share the same global coordinate origin (mean offset -0.24\u00b0, RMS 0.31\u00b0)"
+    },
+    "r4p83_to_quality_reference": {
+      "best_global_yaw_offset_deg": -161.1663,
+      "best_global_yaw_offset_wrapped_positive_deg": 198.8337,
+      "RMS_landmark_alignment_deg": 0.5612,
+      "P95_landmark_alignment_deg": 1.0472,
+      "same_yaw_numeric_comparison_valid": false,
+      "verdict": "R4P8.3 and Quality AI Reference have a -161.17\u00b0 (+198.83\u00b0) global yaw origin offset. Same-numeric yaw comparisons are INVALID."
+    }
+  }
+}

@@ -1,0 +1,143 @@
+{
+  "phase": "7C.2R4P8.3R1",
+  "timestamp": "2026-09-13T21:40:00Z",
+  "seam_count": 12,
+  "seams": [
+    {
+      "seam": "06_07",
+      "c0": 6,
+      "c1": 7,
+      "seam_center_col": 1924,
+      "energy_left_source": 91.45629027977812,
+      "energy_seam_boundary": 108.14919578284541,
+      "energy_right_source": 181.4986767028488,
+      "photometric_step_luma": 134.2406099518459,
+      "classification": "PHOTOMETRIC_STEP"
+    },
+    {
+      "seam": "07_08",
+      "c0": 7,
+      "c1": 8,
+      "seam_center_col": 1582,
+      "energy_left_source": 78.4560943655331,
+      "energy_seam_boundary": 68.06694859183416,
+      "energy_right_source": 81.83847970648934,
+      "photometric_step_luma": 32.11749598715891,
+      "classification": "PHOTOMETRIC_STEP"
+    },
+    {
+      "seam": "08_09",
+      "c0": 8,
+      "c1": 9,
+      "seam_center_col": 1240,
+      "energy_left_source": 78.4930928634552,
+      "energy_seam_boundary": 91.75985770194961,
+      "energy_right_source": 83.24276333384005,
+      "photometric_step_luma": 5.080096308186196,
+      "classification": "CLEAN"
+    },
+    {
+      "seam": "09_10",
+      "c0": 9,
+      "c1": 10,
+      "seam_center_col": 897,
+      "energy_left_source": 137.6161802905735,
+      "energy_seam_boundary": 134.51623457664851,
+      "energy_right_source": 57.87210759824698,
+      "photometric_step_luma": 56.57817014446228,
+      "classification": "PHOTOMETRIC_STEP"
+    },
+    {
+      "seam": "10_11",
+      "c0": 10,
+      "c1": 11,
+      "seam_center_col": 555,
+      "energy_left_source": 69.23429468037689,
+      "energy_seam_boundary": 67.15332276124691,
+      "energy_right_source": 57.07896810081185,
+      "photometric_step_luma": 18.19614767255217,
+      "classification": "PHOTOMETRIC_STEP"
+    },
+    {
+      "seam": "11_00",
+      "c0": 11,
+      "c1": 0,
+      "seam_center_col": 208,
+      "energy_left_source": 86.15742436148807,
+      "energy_seam_boundary": 92.41290346766152,
+      "energy_right_source": 85.43555480265582,
+      "photometric_step_luma": 9.049438202247192,
+      "classification": "CLEAN"
+    },
+    {
+      "seam": "00_01",
+      "c0": 0,
+      "c1": 1,
+      "seam_center_col": 3962,
+      "energy_left_source": 52.88696861095152,
+      "energy_seam_boundary": 55.07459553395907,
+      "energy_right_source": 51.89604734508372,
+      "photometric_step_luma": 7.442375601926163,
+      "classification": "CLEAN"
+    },
+    {
+      "seam": "01_02",
+      "c0": 1,
+      "c1": 2,
+      "seam_center_col": 3627,
+      "energy_left_source": 60.70719685980692,
+      "energy_seam_boundary": 67.97353725178999,
+      "energy_right_source": 60.286066333615885,
+      "photometric_step_luma": 24.230337078651687,
+      "classification": "PHOTOMETRIC_STEP"
+    },
+    {
+      "seam": "02_03",
+      "c0": 2,
+      "c1": 3,
+      "seam_center_col": 3289,
+      "energy_left_source": 40.9093214884742,
+      "energy_seam_boundary": 37.40829672608849,
+      "energy_right_source": 41.698862105124846,
+      "photometric_step_luma": 7.795987158908507,
+      "classification": "CLEAN"
+    },
+    {
+      "seam": "03_04",
+      "c0": 3,
+      "c1": 4,
+      "seam_center_col": 2952,
+      "energy_left_source": 95.92759183158176,
+      "energy_seam_boundary": 115.22296362807212,
+      "energy_right_source": 90.61096171633658,
+      "photometric_step_luma": 19.52792937399679,
+      "classification": "PHOTOMETRIC_STEP"
+    },
+    {
+      "seam": "04_05",
+      "c0": 4,
+      "c1": 5,
+      "seam_center_col": 2610,
+      "energy_left_source": 1055.5893147896704,
+      "energy_seam_boundary": 71.60161567417019,
+      "energy_right_source": 56.25534255363552,
+      "photometric_step_luma": 25.64991974317817,
+      "classification": "PHOTOMETRIC_STEP"
+    },
+    {
+      "seam": "05_06",
+      "c0": 5,
+      "c1": 6,
+      "seam_center_col": 219,
+      "energy_left_source": 83.82627335241634,
+      "energy_seam_boundary": 87.94096831208182,
+      "energy_right_source": 84.4749230539331,
+      "photometric_step_luma": 8.918138041733547,
+      "classification": "CLEAN"
+    }
+  ],
+  "clean_seam_count": 5,
+  "detail_drop_count": 0,
+  "double_edge_count": 0,
+  "photometric_step_count": 7
+}
