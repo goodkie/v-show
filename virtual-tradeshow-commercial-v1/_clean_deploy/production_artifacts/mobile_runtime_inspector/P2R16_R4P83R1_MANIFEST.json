@@ -1,0 +1,92 @@
+{
+  "phase": "7C.2R4P8.3R1",
+  "timestamp": "2026-09-13T21:45:00Z",
+  "commit_a_sha": "0cdcfb67d837c3d1c6f1439823a268d046a76c24",
+  "branch": "experiment/c12.9-p2r16-8shot-hires",
+  "status": "FORENSICS_AND_PROVENANCE_STAMPED",
+  "selected_candidate": "B",
+  "selected_candidate_artifact": "P2R16_R4P83_SELECTED_4K.png",
+  "physical_sources_verified": 12,
+  "pixel_provenance_verified": true,
+  "dimension_provenance_reconciled": true,
+  "yaw_frame_reconciled": true,
+  "detail_retention_classified": true,
+  "artifacts": {
+    "P2R16_R4P83R1_DIMENSION_PROVENANCE.json": {
+      "sha256": "f600f79ed8aa1c7074fea822b6deae9472483035756e1ac337d682e5a697ef66",
+      "size_bytes": 1779
+    },
+    "P2R16_R4P83R1_PHYSICAL_SOURCE_MANIFEST.json": {
+      "sha256": "6838689489cd3d5a30a62dfef359563d06bacbc7063ab033b561be79c2c8f6c9",
+      "size_bytes": 6141
+    },
+    "P2R16_R4P83R1_PIXEL_PROVENANCE.npz": {
+      "sha256": "d98673ce5cbc78a831f97b1cefe852fec4e215cd124581cf61d708af4a61d766",
+      "size_bytes": 485273
+    },
+    "P2R16_R4P83R1_SAMPLER_COMPARISON.png": {
+      "sha256": "9b4acf8e0eeebb4f37b6656e4c38c1c1a43979626c5280b74b82cb6be2f56ce8",
+      "size_bytes": 1691786
+    },
+    "P2R16_R4P83R1_SAMPLING_FOOTPRINT_HEATMAP.png": {
+      "sha256": "dc2e53c994ede907d2235ad6d2c62654aee2247140f4d4fe91d55e5594c57be1",
+      "size_bytes": 512482
+    },
+    "P2R16_R4P83R1_YAW_FRAME_RECONCILIATION.json": {
+      "sha256": "0b6a3856e25190065181667070308d422b52d57884d14c683b9c3078ade2d0a4",
+      "size_bytes": 2679
+    },
+    "P2R16_R4P83R1_SEAM_DETAIL_FORENSICS.json": {
+      "sha256": "77b8fcf32c655aafc784e7a77d35b595c87ff83d18e31bda1c0ae9c7668f91ed",
+      "size_bytes": 4311
+    },
+    "P2R16_R4P83R1_SYNC_COMPARE_LANDMARK_01.png": {
+      "sha256": "b829e35e746384e088b3e6c257964c5650483cd716b690182e41e6cef608d0cd",
+      "size_bytes": 1645718
+    },
+    "P2R16_R4P83R1_SYNC_COMPARE_LANDMARK_02.png": {
+      "sha256": "e29688ecf245a9f3513a6394fa678d2643145b25a75111c0012b53b08facb067",
+      "size_bytes": 1704744
+    },
+    "P2R16_R4P83R1_SYNC_COMPARE_LANDMARK_03.png": {
+      "sha256": "a6b252043cd67e1a181079b2e832187fddc961bdda08314a8bf8a37a17a5974a",
+      "size_bytes": 1715880
+    },
+    "P2R16_R4P83R1_SYNC_COMPARE_LANDMARK_04.png": {
+      "sha256": "16cbe3215f630a4cbe32978ecd81417e04e9a5a078e111988b69283e67c89f7e",
+      "size_bytes": 1659579
+    },
+    "P2R16_R4P83R1_SYNC_COMPARE_LANDMARK_05.png": {
+      "sha256": "271e442c81d71e4575c1d62642db04ae7e6d95a857052c81e058d64b57fc2186",
+      "size_bytes": 1654687
+    },
+    "P2R16_R4P83R1_SYNC_DETAIL_LANDMARK_01.png": {
+      "sha256": "8e1ade6726afde3004a953276319e1b3fb5aa5064703d0fcf0148f54424f881e",
+      "size_bytes": 1410205
+    },
+    "P2R16_R4P83R1_SYNC_DETAIL_LANDMARK_02.png": {
+      "sha256": "e5811212efa01e39b528f23918ce51cb06246d22f7b342bc0be7fee5347f18d1",
+      "size_bytes": 1491741
+    },
+    "P2R16_R4P83R1_SYNC_DETAIL_LANDMARK_03.png": {
+      "sha256": "4bd142eadd1ab727de27f256e084e988ebbdf1d7f5202c86ff20a4e1cd0a1dc5",
+      "size_bytes": 1475303
+    },
+    "P2R16_R4P83R1_SYNC_DETAIL_LANDMARK_04.png": {
+      "sha256": "717726f44b8a853eaa03fd65ffb4323123e25e470ae71475a67bffb8686eee0f",
+      "size_bytes": 1387388
+    },
+    "P2R16_R4P83R1_SYNC_DETAIL_LANDMARK_05.png": {
+      "sha256": "2fb0cba4c8c4fafdf267ceda5bf0ba1cc747ce22fef3eeb996a544c97c1d5fbb",
+      "size_bytes": 1230683
+    },
+    "P2R16_R4P83R1_DETAIL_RETENTION_REPORT.json": {
+      "sha256": "160276584bf68e17dd945459542ca67f96e13371b32acd8f62ac714dd92b0ba2",
+      "size_bytes": 5062
+    },
+    "P2R16_QUALITY_PHASE7C2R4P83R1_DIAGNOSTICS.json": {
+      "sha256": "359879359370b857986eb890dfe80dcc72de81fba7fb00d6c7debfe1970adacb",
+      "size_bytes": 4749
+    }
+  }
+}
