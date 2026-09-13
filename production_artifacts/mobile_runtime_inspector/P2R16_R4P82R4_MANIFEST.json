@@ -1,0 +1,47 @@
+{
+  "phase": "7C.2R4P8.2R4",
+  "timestamp": "2026-09-13T13:52:00-04:00",
+  "candidates": {
+    "A": {
+      "file": "P2R16_R4P82R4_A_CONTROL_4K.png",
+      "sha256": "c2cd71fda1907371c8b99c5443f35f8c0abc85e7bc9b14bf88977f90e3927a8b",
+      "mode": "quality-ai-r4p82r4-a"
+    },
+    "B": {
+      "file": "P2R16_R4P82R4_B_GLOBAL_REGISTRATION_4K.png",
+      "sha256": "e4a19b0aecc54f1630480997d24a00e36abb010e43f58c99e058fcf0f3d0b611",
+      "mode": "quality-ai-r4p82r4-b"
+    },
+    "C": {
+      "file": "P2R16_R4P82R4_C_SEAM_LOCAL_REGISTRATION_4K.png",
+      "sha256": "00d3ef42a28fa14a87022680d1dd6a08f982daaf74c315837af9231fc71bcc38",
+      "mode": "quality-ai-r4p82r4-c"
+    },
+    "D": {
+      "file": "P2R16_R4P82R4_D_CONSERVATIVE_STRUCTURE_4K.png",
+      "sha256": "02b2a3c097a96ed31d52734d970c7a7f95b6ea0545b9328f15c5d82c669e9c7a",
+      "mode": "quality-ai-r4p82r4-d"
+    }
+  },
+  "diagnostics": "P2R16_QUALITY_PHASE7C2R4P82R4_DIAGNOSTICS.json",
+  "camera_rotation_deltas": "P2R16_R4P82R4_CAMERA_ROTATION_DELTAS.json",
+  "rotation_delta_graph": "P2R16_R4P82R4_ROTATION_DELTA_GRAPH.png",
+  "comparison_sheets": [
+    "P2R16_R4P82R4_COMPARE_YAW060.png",
+    "P2R16_R4P82R4_COMPARE_YAW150.png",
+    "P2R16_R4P82R4_COMPARE_YAW240.png",
+    "P2R16_R4P82R4_COMPARE_YAW345.png"
+  ],
+  "center1to1_sheets": [
+    "P2R16_R4P82R4_CENTER1TO1_YAW060_A_D.png",
+    "P2R16_R4P82R4_CENTER1TO1_YAW150_A_D.png",
+    "P2R16_R4P82R4_CENTER1TO1_YAW240_A_D.png",
+    "P2R16_R4P82R4_CENTER1TO1_YAW345_A_D.png"
+  ],
+  "seam_residual_sheets": [
+    "P2R16_R4P82R4_SEAM_RESIDUAL_BEFORE_AFTER_YAW060.png",
+    "P2R16_R4P82R4_SEAM_RESIDUAL_BEFORE_AFTER_YAW150.png",
+    "P2R16_R4P82R4_SEAM_RESIDUAL_BEFORE_AFTER_YAW240.png",
+    "P2R16_R4P82R4_SEAM_RESIDUAL_BEFORE_AFTER_YAW345.png"
+  ]
+}
