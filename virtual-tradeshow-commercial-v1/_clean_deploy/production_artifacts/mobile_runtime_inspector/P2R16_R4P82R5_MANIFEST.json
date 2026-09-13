@@ -1,0 +1,31 @@
+{
+  "phase": "7C.2R4P8.2R5",
+  "timestamp": "2026-09-13T14:50:00-04:00",
+  "artifacts": {
+    "P2R16_R4P82R5_OBSERVATION_SPLIT.npz": {
+      "filename": "P2R16_R4P82R5_OBSERVATION_SPLIT.npz",
+      "bytes": 40132,
+      "sha256": "9b529f5a7d3502a0f3a7569967f8e57076bf4cd70008c58b07e79be28e09af5a"
+    },
+    "P2R16_R4P82R5_GLOBAL_RESIDUAL_CDF.png": {
+      "filename": "P2R16_R4P82R5_GLOBAL_RESIDUAL_CDF.png",
+      "bytes": 203205,
+      "sha256": "4ea9ed7d45b6440bbe7f0b787e31ddf1c3a71991d35ca0b0b649465d1151f377"
+    },
+    "P2R16_R4P82R5_GLOBAL_RESIDUAL_TAIL_90_100.png": {
+      "filename": "P2R16_R4P82R5_GLOBAL_RESIDUAL_TAIL_90_100.png",
+      "bytes": 184472,
+      "sha256": "7f5ff8b6562a26d60ece28a267c13fcca782afa196f25bb8992ad1ada47e2688"
+    },
+    "P2R16_R4P82R5_PER_SEAM_P95_BEFORE_AFTER.png": {
+      "filename": "P2R16_R4P82R5_PER_SEAM_P95_BEFORE_AFTER.png",
+      "bytes": 132009,
+      "sha256": "d8fda03aeb3916c689a16b4f1e4bbd047ecc3843ac7ec99983c58c1e1cfd2b93"
+    },
+    "P2R16_QUALITY_PHASE7C2R4P82R5_DIAGNOSTICS.json": {
+      "filename": "P2R16_QUALITY_PHASE7C2R4P82R5_DIAGNOSTICS.json",
+      "bytes": 24796,
+      "sha256": "9bcb1bc42673e744e022a33d6bb1aeba92b379041ade8aa3cacc7235caae5be6"
+    }
+  }
+}
