@@ -1803,39 +1803,9 @@
         const pitchVal = (currentPitch >= 0 ? '+' : '') + currentPitch.toFixed(1);
                 if (currentMode.startsWith('quality-ai-r4p82r3-')) {
           subSpecsEl.innerHTML = `RGB: ORIGINAL 3000x4000 PHYSICAL | SAMPLER: BILINEAR | TOPOLOGY: MONOTONIC CORRIDOR (12 SEAMS) | CYLINDRICAL COMPONENTS: 1/SRC | ISLANDS: 0 | BRANCHES: 0 | WEDGES: 0 | INPAINT: 0% | GENERATIVE: 0 | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
-                  } else if (currentMode.startsWith('quality-ai-r4p82r3-')) {
-            texture.offset.set(0, 0);
-            texture.repeat.set(1, 1);
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.ClampToEdgeWrapping;
-            const candMeta = MODE_METADATA[currentMode];
-            window.__VIEWER_TELEMETRY__.R4P82R3_CANDIDATE_ACTIVE = true;
-            window.__VIEWER_TELEMETRY__.MODE = currentMode;
-            window.__VIEWER_TELEMETRY__.CANDIDATE = candMeta.candidate;
-            window.__VIEWER_TELEMETRY__.SAMPLER = 'BILINEAR';
-            window.__VIEWER_TELEMETRY__.ROTATION_MODEL = 'FROZEN_R4P81';
-            window.__VIEWER_TELEMETRY__.DIMENSIONS = '4096x623';
-            window.__VIEWER_TELEMETRY__.GLOBAL_YAW_OFFSET_DEG = 0.0;
-            window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_FILENAME = candMeta.textureFilename;
-            window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE = candMeta.directCoverage;
-            window.__VIEWER_TELEMETRY__.BLACK_CRACK_PIXELS = candMeta.blackCrackPixels;
-            window.__VIEWER_TELEMETRY__.SEAM_COUNT = 12;
-            window.__VIEWER_TELEMETRY__.SEAM_BRANCH_COUNT = 0;
-            window.__VIEWER_TELEMETRY__.SEAM_LOOP_COUNT = 0;
-            window.__VIEWER_TELEMETRY__.OWNERSHIP_ISLAND_COUNT_CYLINDRICAL = 0;
-            window.__VIEWER_TELEMETRY__.WEDGE_CANDIDATE_COUNT = 0;
-            window.__VIEWER_TELEMETRY__.TRANSLATION_OPTIMIZED = false;
-            window.__VIEWER_TELEMETRY__.DEPTH_USED = false;
-            window.__VIEWER_TELEMETRY__.LOCAL_PROJECTIVE_WARP_USED = false;
-            window.__VIEWER_TELEMETRY__.RGB_INPAINT_USED = false;
-            window.__VIEWER_TELEMETRY__.GENERATIVE_PIXEL_COUNT = 0;
-            window.__VIEWER_TELEMETRY__.REFERENCE_RGB_PIXEL_COUNT = 0;
-            window.__VIEWER_TELEMETRY__.HARD_SOURCE_OWNERSHIP = 'ACTIVE';
-            window.__VIEWER_TELEMETRY__.TECHNICAL_GATE_D = 'PASS';
-            updateModePresentation();
-} else if (currentMode.startsWith('quality-ai-r4p82r2-')) {
+        } else if (currentMode.startsWith('quality-ai-r4p82r2-')) {
           subSpecsEl.innerHTML = `RGB: ORIGINAL 3000x4000 PHYSICAL | SAMPLER: BILINEAR | DEPTH: NONE | TRANSLATION: NONE | LOCAL WARP: NONE | INPAINT: 0% | GENERATIVE: 0 | SECOND-NEIGHBOR MATCHES: 0 | HARD SOURCE OWNERSHIP: ACTIVE | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
-        } else if (currentMode.startsWith('quality-ai-r4p82r2-') || currentMode.startsWith('quality-ai-r4p82-')) {
+        } else if (currentMode.startsWith('quality-ai-r4p82-')) {
           const directCov = (meta.directCoverage * 100.0).toFixed(4) + '%';
           subSpecsEl.innerHTML = `CANDIDATE: ${meta.candidate} | SAMPLER: ${meta.sampler} | ROTATION: ${meta.rotationModel} | TEXTURE: 4096×623 | RGB: ORIGINAL PHYSICAL | DEPTH: NONE | LOCAL WARP: NONE | INPAINT: 0% | DIRECT COVERAGE: ${directCov} | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
         } else if (currentMode === 'quality-ai-r4p81-d') {
@@ -1966,7 +1936,7 @@
     const urlParamsGlobal = (typeof window !== 'undefined' && window.location) ? new URLSearchParams(window.location.search) : null;
     const qModeGlobal = urlParamsGlobal ? urlParamsGlobal.get('mode') : null;
     let currentMode = 'quality-ai-r4p3';
-    if (qModeGlobal && ['quality-ai-r4p82r2-a', 'quality-ai-r4p82r2-b', 'quality-ai-r4p82r2-c', 'quality-ai-r4p82r2-d', 'quality-ai-r4p82-a', 'quality-ai-r4p82-b', 'quality-ai-r4p82-c', 'quality-ai-r4p82-d', 'quality-ai-r4p81-d', 'quality-ai-r4p8-a', 'quality-ai-r4p8-b', 'quality-ai-r4p8-c', 'quality-ai-r4p8-d', 'quality-ai-r4p71-d', 'quality-ai-r4p7-a', 'quality-ai-r4p7-b', 'quality-ai-r4p7-c', 'quality-ai-r4p7-d', 'quality-ai-r4p43-f0', 'quality-ai-r4p43-f1', 'quality-ai-r4p43-f2', 'quality-ai-r4p43-f3', 'quality-ai-r4p43-f4', 'quality-ai-r4p4', 'quality-ai-r4p42-a', 'quality-ai-r4p42-b', 'quality-ai-r4p42-c', 'quality-ai-r4p42-d', 'quality-ai-r4p42-e', 'quality-ai-r4p3', 'quality-ai-r4p2', 'quality-ai-r4p1', 'quality-ai-r4', 'quality-ai-r31', 'quality-ai-r3', 'quality-ai-12view', 'quality-ai'].includes(qModeGlobal)) {
+    if (qModeGlobal && ['quality-ai-r4p82r3-a', 'quality-ai-r4p82r3-b', 'quality-ai-r4p82r3-c', 'quality-ai-r4p82r3-d', 'quality-ai-r4p82r2-a', 'quality-ai-r4p82r2-b', 'quality-ai-r4p82r2-c', 'quality-ai-r4p82r2-d', 'quality-ai-r4p82-a', 'quality-ai-r4p82-b', 'quality-ai-r4p82-c', 'quality-ai-r4p82-d', 'quality-ai-r4p81-d', 'quality-ai-r4p8-a', 'quality-ai-r4p8-b', 'quality-ai-r4p8-c', 'quality-ai-r4p8-d', 'quality-ai-r4p71-d', 'quality-ai-r4p7-a', 'quality-ai-r4p7-b', 'quality-ai-r4p7-c', 'quality-ai-r4p7-d', 'quality-ai-r4p43-f0', 'quality-ai-r4p43-f1', 'quality-ai-r4p43-f2', 'quality-ai-r4p43-f3', 'quality-ai-r4p43-f4', 'quality-ai-r4p4', 'quality-ai-r4p42-a', 'quality-ai-r4p42-b', 'quality-ai-r4p42-c', 'quality-ai-r4p42-d', 'quality-ai-r4p42-e', 'quality-ai-r4p3', 'quality-ai-r4p2', 'quality-ai-r4p1', 'quality-ai-r4', 'quality-ai-r31', 'quality-ai-r3', 'quality-ai-12view', 'quality-ai'].includes(qModeGlobal)) {
       currentMode = qModeGlobal;
     }
     let userSelectedTier = 'AUTO';
@@ -2281,7 +2251,7 @@
         targetLabel = candMeta.label;
         targetW = candMeta.width;
         targetH = candMeta.height;
-      } else if (currentMode.startsWith('quality-ai-r4p82r2-') || currentMode.startsWith('quality-ai-r4p82-') || currentMode.startsWith('quality-ai-r4p8-') || currentMode === 'quality-ai-r4p71-d' || currentMode.startsWith('quality-ai-r4p7-') || currentMode.startsWith('quality-ai-r4p6-') || currentMode.startsWith('quality-ai-r4p5-') || currentMode.startsWith('quality-ai-r4p43-') || currentMode.startsWith('quality-ai-r4p42-')) {
+      } else if (currentMode.startsWith('quality-ai-r4p82r3-') || currentMode.startsWith('quality-ai-r4p82r2-') || currentMode.startsWith('quality-ai-r4p82-') || currentMode.startsWith('quality-ai-r4p8-') || currentMode === 'quality-ai-r4p71-d' || currentMode.startsWith('quality-ai-r4p7-') || currentMode.startsWith('quality-ai-r4p6-') || currentMode.startsWith('quality-ai-r4p5-') || currentMode.startsWith('quality-ai-r4p43-') || currentMode.startsWith('quality-ai-r4p42-')) {
         activeTier = '4K';
         const candMeta = MODE_METADATA[currentMode];
         targetUrl = (candMeta.coverageTextures && candMeta.coverageTextures[coverageMode]) ? candMeta.coverageTextures[coverageMode] : candMeta.texture;
@@ -2428,6 +2398,36 @@
             window.__VIEWER_TELEMETRY__.VISUAL_WARP_QA = 'FAIL';
             window.__VIEWER_TELEMETRY__.QUALITY_GHOSTING_QA = 'FAIL';
             window.__VIEWER_TELEMETRY__.SEAM_VISUAL_QA = 'PENDING_OWNER_PIXEL_REVIEW';
+            updateModePresentation();
+                    } else if (currentMode.startsWith('quality-ai-r4p82r3-')) {
+            texture.offset.set(0, 0);
+            texture.repeat.set(1, 1);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.ClampToEdgeWrapping;
+            const candMeta = MODE_METADATA[currentMode];
+            window.__VIEWER_TELEMETRY__.R4P82R3_CANDIDATE_ACTIVE = true;
+            window.__VIEWER_TELEMETRY__.MODE = currentMode;
+            window.__VIEWER_TELEMETRY__.CANDIDATE = candMeta.candidate;
+            window.__VIEWER_TELEMETRY__.SAMPLER = 'BILINEAR';
+            window.__VIEWER_TELEMETRY__.ROTATION_MODEL = 'FROZEN_R4P81';
+            window.__VIEWER_TELEMETRY__.DIMENSIONS = '4096x623';
+            window.__VIEWER_TELEMETRY__.GLOBAL_YAW_OFFSET_DEG = 0.0;
+            window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_FILENAME = candMeta.textureFilename;
+            window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE = candMeta.directCoverage;
+            window.__VIEWER_TELEMETRY__.BLACK_CRACK_PIXELS = candMeta.blackCrackPixels;
+            window.__VIEWER_TELEMETRY__.SEAM_COUNT = 12;
+            window.__VIEWER_TELEMETRY__.SEAM_BRANCH_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.SEAM_LOOP_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.OWNERSHIP_ISLAND_COUNT_CYLINDRICAL = 0;
+            window.__VIEWER_TELEMETRY__.WEDGE_CANDIDATE_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.TRANSLATION_OPTIMIZED = false;
+            window.__VIEWER_TELEMETRY__.DEPTH_USED = false;
+            window.__VIEWER_TELEMETRY__.LOCAL_PROJECTIVE_WARP_USED = false;
+            window.__VIEWER_TELEMETRY__.RGB_INPAINT_USED = false;
+            window.__VIEWER_TELEMETRY__.GENERATIVE_PIXEL_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.REFERENCE_RGB_PIXEL_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.HARD_SOURCE_OWNERSHIP = 'ACTIVE';
+            window.__VIEWER_TELEMETRY__.TECHNICAL_GATE_D = 'PASS';
             updateModePresentation();
           } else if (currentMode.startsWith('quality-ai-r4p82r2-')) {
             texture.offset.set(0, 0);
