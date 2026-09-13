@@ -2195,13 +2195,8 @@
           const directCov = (meta.directCoverage * 100.0).toFixed(4) + '%';
           subSpecsEl.innerHTML = `CANDIDATE: ${meta.candidate} | SAMPLER: ${meta.sampler} | ROTATION: ${meta.rotationModel} | TEXTURE: 4096×623 | RGB: ORIGINAL PHYSICAL | DEPTH: NONE | LOCAL WARP: NONE | INPAINT: 0% | DIRECT COVERAGE: ${directCov} | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
               } else if (currentMode === 'quality-ai-r4p83r2-12k') {
-        activeTier = '12K';
-        const candMeta = MODE_METADATA[currentMode];
-        targetUrl = (coverageMode === 'review-jpg') ? candMeta.reviewJpg : (candMeta.coverageTextures[coverageMode] || candMeta.texture);
-        targetLabel = candMeta.label;
-        targetW = candMeta.width;
-        targetH = candMeta.height;
-} else if (currentMode === 'quality-ai-r4p81-d') {
+        subSpecsEl.innerHTML = `RGB: ORIGINAL 3000x4000 PHYSICAL | 12K NATIVE RASTER (12288x1869) | DEPTH: NONE | TRANSLATION: NONE | LOCAL WARP: NONE | INPAINT: 0% | GENERATIVE: 0 | CAMERA MODEL: SHARED PINHOLE | FOCAL: 2961.7 px | HFOV: 53.72° | K1: 0.00000 | K2: 0.00000 | ROTATION MICRO-REG: FROZEN R4P8.1 ZERO DELTA | GLOBAL P95: 0.670° (+57.5%) | HELDOUT P95: 0.671° | CLOSURE 11_00: 0.757° | DIRECT COVERAGE: 100% | OWNER ACCEPTANCE: PENDING | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
+      } else if (currentMode === 'quality-ai-r4p81-d') {
           const directCov = (meta.directCoverage * 100.0).toFixed(4) + '%';
           subSpecsEl.innerHTML = `TEXTURE: 12288×1869 | RGB: ORIGINAL 3000x4000 PHYSICAL | DEPTH: NONE | TRANSLATION: NONE | LOCAL WARP: NONE | INPAINT: 0% | GENERATIVE: 0 | DIRECT COVERAGE: ${directCov} | SO3: ACTIVE | GRAPH CUT: ACTIVE | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
         } else if (currentMode.startsWith('quality-ai-r4p8-')) {
@@ -2329,7 +2324,7 @@
     const urlParamsGlobal = (typeof window !== 'undefined' && window.location) ? new URLSearchParams(window.location.search) : null;
     const qModeGlobal = urlParamsGlobal ? urlParamsGlobal.get('mode') : null;
     let currentMode = 'quality-ai-r4p3';
-    if (qModeGlobal && ['quality-ai-r4p83-selected', 'quality-ai-r4p83-a', 'quality-ai-r4p83-b', 'quality-ai-r4p83-c', 'quality-ai-r4p83-d', 'quality-ai-r4p83-e', 'quality-ai-r4p82r4-a', 'quality-ai-r4p82r4-b', 'quality-ai-r4p82r4-c', 'quality-ai-r4p82r4-d', 'quality-ai-r4p82r3-a', 'quality-ai-r4p82r3-b', 'quality-ai-r4p82r3-c', 'quality-ai-r4p82r3-d', 'quality-ai-r4p82r2-a', 'quality-ai-r4p82r2-b', 'quality-ai-r4p82r2-c', 'quality-ai-r4p82r2-d', 'quality-ai-r4p82-a', 'quality-ai-r4p82-b', 'quality-ai-r4p82-c', 'quality-ai-r4p82-d', 'quality-ai-r4p81-d', 'quality-ai-r4p8-a', 'quality-ai-r4p8-b', 'quality-ai-r4p8-c', 'quality-ai-r4p8-d', 'quality-ai-r4p71-d', 'quality-ai-r4p7-a', 'quality-ai-r4p7-b', 'quality-ai-r4p7-c', 'quality-ai-r4p7-d', 'quality-ai-r4p43-f0', 'quality-ai-r4p43-f1', 'quality-ai-r4p43-f2', 'quality-ai-r4p43-f3', 'quality-ai-r4p43-f4', 'quality-ai-r4p4', 'quality-ai-r4p42-a', 'quality-ai-r4p42-b', 'quality-ai-r4p42-c', 'quality-ai-r4p42-d', 'quality-ai-r4p42-e', 'quality-ai-r4p3', 'quality-ai-r4p2', 'quality-ai-r4p1', 'quality-ai-r4', 'quality-ai-r31', 'quality-ai-r3', 'quality-ai-12view', 'quality-ai'].includes(qModeGlobal)) {
+    if (qModeGlobal && ['quality-ai-r4p83r2-12k', 'quality-ai-r4p83r1', 'quality-ai-r4p83-selected', 'quality-ai-r4p83-a', 'quality-ai-r4p83-b', 'quality-ai-r4p83-c', 'quality-ai-r4p83-d', 'quality-ai-r4p83-e', 'quality-ai-r4p82r4-a', 'quality-ai-r4p82r4-b', 'quality-ai-r4p82r4-c', 'quality-ai-r4p82r4-d', 'quality-ai-r4p82r3-a', 'quality-ai-r4p82r3-b', 'quality-ai-r4p82r3-c', 'quality-ai-r4p82r3-d', 'quality-ai-r4p82r2-a', 'quality-ai-r4p82r2-b', 'quality-ai-r4p82r2-c', 'quality-ai-r4p82r2-d', 'quality-ai-r4p82-a', 'quality-ai-r4p82-b', 'quality-ai-r4p82-c', 'quality-ai-r4p82-d', 'quality-ai-r4p81-d', 'quality-ai-r4p8-a', 'quality-ai-r4p8-b', 'quality-ai-r4p8-c', 'quality-ai-r4p8-d', 'quality-ai-r4p71-d', 'quality-ai-r4p7-a', 'quality-ai-r4p7-b', 'quality-ai-r4p7-c', 'quality-ai-r4p7-d', 'quality-ai-r4p43-f0', 'quality-ai-r4p43-f1', 'quality-ai-r4p43-f2', 'quality-ai-r4p43-f3', 'quality-ai-r4p43-f4', 'quality-ai-r4p4', 'quality-ai-r4p42-a', 'quality-ai-r4p42-b', 'quality-ai-r4p42-c', 'quality-ai-r4p42-d', 'quality-ai-r4p42-e', 'quality-ai-r4p3', 'quality-ai-r4p2', 'quality-ai-r4p1', 'quality-ai-r4', 'quality-ai-r31', 'quality-ai-r3', 'quality-ai-12view', 'quality-ai'].includes(qModeGlobal)) {
       currentMode = qModeGlobal;
     }
     let userSelectedTier = 'AUTO';
@@ -2628,7 +2623,14 @@
       let targetW = 0, targetH = 0;
 
                   
-            if (currentMode === 'quality-ai-r4p4') {
+            if (currentMode === 'quality-ai-r4p83r2-12k') {
+        activeTier = '12K';
+        const candMeta = MODE_METADATA[currentMode];
+        targetUrl = (coverageMode === 'review-jpg') ? candMeta.reviewJpg : (candMeta.coverageTextures[coverageMode] || candMeta.texture);
+        targetLabel = candMeta.label;
+        targetW = candMeta.width;
+        targetH = candMeta.height;
+      } else if (currentMode === 'quality-ai-r4p4') {
         activeTier = '12K';
         const r4p4Meta = MODE_METADATA['quality-ai-r4p4'];
         targetUrl = (coverageMode === 'review-jpg')
@@ -2760,7 +2762,54 @@
           // angular distortion. The 54.78° raster is not stretched; we crop
           // exactly to the [-25.74°, +27.79°] sub-band via UV repeat/offset.
                       
-          if (currentMode === 'quality-ai-r4p4' || currentMode.startsWith('quality-ai-r4p42-') || currentMode === 'quality-ai-r4p3' || currentMode === 'quality-ai-r4p2' || currentMode === 'quality-ai-r4p1' || currentMode === 'quality-ai-r4' || currentMode === 'quality-ai-r31' || currentMode === 'quality-ai-r3') {
+          if (currentMode === 'quality-ai-r4p83r2-12k') {
+            texture.offset.set(0, 0);
+            texture.repeat.set(1, 1);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.ClampToEdgeWrapping;
+            const candMeta = MODE_METADATA[currentMode];
+            window.__VIEWER_TELEMETRY__.R4P83R2_12K_ACTIVE = true;
+            window.__VIEWER_TELEMETRY__.TEXTURE_LOADED = true;
+            window.__VIEWER_TELEMETRY__.TEXTURE_LOAD_SUCCESS = true;
+            window.__VIEWER_TELEMETRY__.TEXTURE_WIDTH = candMeta.width;
+            window.__VIEWER_TELEMETRY__.TEXTURE_HEIGHT = candMeta.height;
+            window.__VIEWER_TELEMETRY__.MODE = currentMode;
+            window.__VIEWER_TELEMETRY__.CURRENT_MODE = currentMode;
+            window.__VIEWER_TELEMETRY__.REQUESTED_MODE = qModeGlobal || currentMode;
+            window.__VIEWER_TELEMETRY__.RESOLVED_MODE = currentMode;
+            window.__VIEWER_TELEMETRY__.CANDIDATE = candMeta.candidate;
+            window.__VIEWER_TELEMETRY__.SAMPLER = 'BILINEAR';
+            window.__VIEWER_TELEMETRY__.CAMERA_MODEL = 'SHARED_PINHOLE';
+            window.__VIEWER_TELEMETRY__.FOCAL_LENGTH_PX = candMeta.focalLengthPx;
+            window.__VIEWER_TELEMETRY__.DERIVED_HFOV_DEG = candMeta.hfovDeg;
+            window.__VIEWER_TELEMETRY__.K1 = candMeta.k1;
+            window.__VIEWER_TELEMETRY__.K2 = candMeta.k2;
+            window.__VIEWER_TELEMETRY__.ROTATION_MODEL = candMeta.rotationModel;
+            window.__VIEWER_TELEMETRY__.MAX_ROTATION_DELTA_DEG = candMeta.maxRotDeltaDeg;
+            window.__VIEWER_TELEMETRY__.GLOBAL_P95_DEG = candMeta.globalP95Deg;
+            window.__VIEWER_TELEMETRY__.DIMENSIONS = `${candMeta.width}x${candMeta.height}`;
+            window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_FILENAME = candMeta.textureFilename;
+            window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE = candMeta.directCoverage;
+            window.__VIEWER_TELEMETRY__.BLACK_CRACK_PIXELS = candMeta.blackCrackPixels;
+            window.__VIEWER_TELEMETRY__.SEAM_COUNT = 12;
+            window.__VIEWER_TELEMETRY__.SEAM_BRANCH_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.SEAM_LOOP_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.OWNERSHIP_ISLAND_COUNT_CYLINDRICAL = 0;
+            window.__VIEWER_TELEMETRY__.TRANSLATION_OPTIMIZED = false;
+            window.__VIEWER_TELEMETRY__.DEPTH_USED = false;
+            window.__VIEWER_TELEMETRY__.LOCAL_PROJECTIVE_WARP_USED = false;
+            window.__VIEWER_TELEMETRY__.RGB_INPAINT_USED = false;
+            window.__VIEWER_TELEMETRY__.GENERATIVE_PIXEL_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.REFERENCE_RGB_PIXEL_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.HARD_SOURCE_OWNERSHIP = 'ACTIVE';
+            window.__VIEWER_TELEMETRY__.MODE_LOCK_MATCH = true;
+            window.__VIEWER_TELEMETRY__.TECHNICAL_ADOPTION_GATE = 'PASS';
+            window.__VIEWER_TELEMETRY__.OWNER_ACCEPTANCE = 'PENDING';
+            window.__VIEWER_TELEMETRY__.CUSTOMER_DEFAULT = 'P2R13';
+            window.__VIEWER_TELEMETRY__.MASTER_TOUCHED = false;
+            window.__VIEWER_TELEMETRY__.BEST_PHYSICAL_ONLY_CANDIDATE = 'R4P8.1_D';
+            updateModePresentation();
+          } else if (currentMode === 'quality-ai-r4p4' || currentMode.startsWith('quality-ai-r4p42-') || currentMode === 'quality-ai-r4p3' || currentMode === 'quality-ai-r4p2' || currentMode === 'quality-ai-r4p1' || currentMode === 'quality-ai-r4' || currentMode === 'quality-ai-r31' || currentMode === 'quality-ai-r3') {
             texture.offset.set(0, 0);
             texture.repeat.set(1, 1);
             texture.wrapT = THREE.ClampToEdgeWrapping;

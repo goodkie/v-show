@@ -1,0 +1,416 @@
+{
+  "phase": "PHASE_7C2R4P83R2",
+  "branch": "experiment/c12.9-p2r16-8shot-hires",
+  "source_commit": "14a0d282ae2f9fd389280c2e03e0f036417d7f06",
+  "master_sha": "5218235b8dbe1cd3b401bbbdef0b1c8ba3483d6e",
+  "master_touched": false,
+  "customer_default": "P2R13",
+  "r4p83_selected_solution_reused": true,
+  "exact_r4p83_selected_intrinsics": {
+    "focal": 2961.672718886868,
+    "k1": 0.0,
+    "k2": 0.0,
+    "cx": 1530.0,
+    "cy": 100,
+    "hfov_deg": 53.72174178508982
+  },
+  "rotation_delta_source": "FROZEN_R4P81_ZERO_DELTA",
+  "geometry_reused": true,
+  "model_execution_counts": {
+    "vggt_forward_count": 0,
+    "roma_forward_count": 0,
+    "depth_model_execution_count": 0,
+    "ba_execution_count": 0,
+    "intrinsics_optimization_count": 0,
+    "radial_optimization_count": 0
+  },
+  "physical_source_count": 12,
+  "physical_source_dimensions": [
+    3000,
+    4000
+  ],
+  "physical_source_hashes": {
+    "SHOT_000.jpg": {
+      "sha256": "917188a5c1d4b5aec329b707cc139b9c5a58d570c6a3f1cb7215776925ee5839",
+      "width": 3000,
+      "height": 4000,
+      "normalization": "DERIVED_ORIENTATION_NORMALIZED"
+    },
+    "SHOT_030.jpg": {
+      "sha256": "e118b7ae861c9b174719fbbca12fe7890d7c09d95fda2b1b3307d1839d78623e",
+      "width": 3000,
+      "height": 4000,
+      "normalization": "DERIVED_ORIENTATION_NORMALIZED"
+    },
+    "SHOT_060.jpg": {
+      "sha256": "ed8e2c6bbda2f23565bb7533a81d23462c292ff1c3c9730e8f2c8c4d3b4acddb",
+      "width": 3000,
+      "height": 4000,
+      "normalization": "DERIVED_ORIENTATION_NORMALIZED"
+    },
+    "SHOT_090.jpg": {
+      "sha256": "233db00a0087893fd1d5d63e54ac35487a8a9a6671754d8bbb50144d0c090c57",
+      "width": 3000,
+      "height": 4000,
+      "normalization": "DERIVED_ORIENTATION_NORMALIZED"
+    },
+    "SHOT_120.jpg": {
+      "sha256": "9e70c9c06a7b4794ea1f0c173d8bf05e76ff19d41de37019eaea24ebf6703583",
+      "width": 3000,
+      "height": 4000,
+      "normalization": "DERIVED_ORIENTATION_NORMALIZED"
+    },
+    "SHOT_150.jpg": {
+      "sha256": "c66b0d5cfd4dc44206e4e83e741bcd6eecceb258150a715c4d3e1e6e2f04e486",
+      "width": 3000,
+      "height": 4000,
+      "normalization": "DERIVED_ORIENTATION_NORMALIZED"
+    },
+    "SHOT_180.jpg": {
+      "sha256": "5165aeacde73a5eac8819dac8cd841f1f5807505fda167ec11f812e6178d3bc0",
+      "width": 3000,
+      "height": 4000,
+      "normalization": "DERIVED_ORIENTATION_NORMALIZED"
+    },
+    "SHOT_210.jpg": {
+      "sha256": "2f76ea6c870ccac155702b46b1075bf3f2a836eff855eaa3f3dc1aadd94c8a08",
+      "width": 3000,
+      "height": 4000,
+      "normalization": "DERIVED_ORIENTATION_NORMALIZED"
+    },
+    "SHOT_240.jpg": {
+      "sha256": "e9805e46df337c193a5a5952572e7353139cee8ad8dff8fc8ebf25d2e16aee70",
+      "width": 3000,
+      "height": 4000,
+      "normalization": "DERIVED_ORIENTATION_NORMALIZED"
+    },
+    "SHOT_270.jpg": {
+      "sha256": "140e19b479b8b0b3ee431790c1d42ba712f12dad4a0015d98192d37444c06d5c",
+      "width": 3000,
+      "height": 4000,
+      "normalization": "DERIVED_ORIENTATION_NORMALIZED"
+    },
+    "SHOT_300.jpg": {
+      "sha256": "b5c5974c0253744b6056d394edb1e7a22b3eefebae6d9fabf1f4db7c69b6e4df",
+      "width": 3000,
+      "height": 4000,
+      "normalization": "DERIVED_ORIENTATION_NORMALIZED"
+    },
+    "SHOT_330.jpg": {
+      "sha256": "261cc6118ed94c6be524faa85b302637544dfa0a7861540113c124c53aa4605a",
+      "width": 3000,
+      "height": 4000,
+      "normalization": "DERIVED_ORIENTATION_NORMALIZED"
+    }
+  },
+  "output_dimensions": [
+    12288,
+    1869
+  ],
+  "scale_from_4k_coordinate_grid": 3.0,
+  "sampler": {
+    "name": "torch.nn.functional.grid_sample",
+    "kernel": "bilinear",
+    "support": "2x2",
+    "colorspace_of_interpolation": "sRGB",
+    "align_corners": true,
+    "padding_mode": "border"
+  },
+  "direct_coverage": 1.0,
+  "black_crack_pixels": 0,
+  "inpaint_used": false,
+  "generative_pixel_count": 0,
+  "reference_rgb_pixel_count": 0,
+  "proxy_rgb_pixel_count": 0,
+  "previous_panorama_rgb_pixel_count": 0,
+  "mapping_identity_metrics": {
+    "test_rays_count": 50000,
+    "owner_source_index_match_ratio": 1.0,
+    "geometry_mapping_match_ratio": 1.0,
+    "normalized_max_seam_displacement_4k_px": 4.547473508864641e-13,
+    "normalized_mean_seam_displacement_4k_px": 5.33635716120168e-15
+  },
+  "resolution_forensics": {
+    "downsampled_4k_vs_canonical_mean_diff": 1.4671409130096436,
+    "canonical_4k_laplacian_var": 81.92375281692877,
+    "upscaled_4k_laplacian_var": 3.4572058102935803,
+    "native_12k_laplacian_var": 23.25999709234543,
+    "native_12k_vs_upscaled_ratio": 6.727975818821799,
+    "r4p83r2_12k_is_native_reraster": true
+  },
+  "per_seam_metrics": {
+    "06_07": {
+      "c0": 6,
+      "c1": 7,
+      "rgb_mean_step": 3.613518714904785,
+      "rgb_median_step": 2.0,
+      "luma_step": 2.6997580528259277,
+      "gradient_discontinuity": 0.03665900230407715,
+      "geometric_p95_deg": 0.24531925194833906
+    },
+    "07_08": {
+      "c0": 7,
+      "c1": 8,
+      "rgb_mean_step": 2.9976813793182373,
+      "rgb_median_step": 2.0,
+      "luma_step": 2.130457878112793,
+      "gradient_discontinuity": 0.006877899169921875,
+      "geometric_p95_deg": 0.20786145070982245
+    },
+    "08_09": {
+      "c0": 8,
+      "c1": 9,
+      "rgb_mean_step": 5.214731693267822,
+      "rgb_median_step": 4.0,
+      "luma_step": 3.200315475463867,
+      "gradient_discontinuity": 0.03362715244293213,
+      "geometric_p95_deg": 0.1875805434224353
+    },
+    "09_10": {
+      "c0": 9,
+      "c1": 10,
+      "rgb_mean_step": 2.8699839115142822,
+      "rgb_median_step": 2.0,
+      "luma_step": 1.7962895631790161,
+      "gradient_discontinuity": 0.011297345161437988,
+      "geometric_p95_deg": 0.22389737247257982
+    },
+    "10_11": {
+      "c0": 10,
+      "c1": 11,
+      "rgb_mean_step": 8.30854320526123,
+      "rgb_median_step": 6.0,
+      "luma_step": 4.1271257400512695,
+      "gradient_discontinuity": 0.048490047454833984,
+      "geometric_p95_deg": 0.38217222130176487
+    },
+    "11_00": {
+      "c0": 11,
+      "c1": 0,
+      "rgb_mean_step": 4.370965003967285,
+      "rgb_median_step": 3.0,
+      "luma_step": 2.4803600311279297,
+      "gradient_discontinuity": 0.017052412033081055,
+      "geometric_p95_deg": 0.7574309742993912
+    },
+    "00_01": {
+      "c0": 0,
+      "c1": 1,
+      "rgb_mean_step": 7.38006067276001,
+      "rgb_median_step": 3.0,
+      "luma_step": 5.418403625488281,
+      "gradient_discontinuity": 0.022039294242858887,
+      "geometric_p95_deg": 1.1013951053215116
+    },
+    "01_02": {
+      "c0": 1,
+      "c1": 2,
+      "rgb_mean_step": 4.310861587524414,
+      "rgb_median_step": 3.0,
+      "luma_step": 3.154890537261963,
+      "gradient_discontinuity": 0.025581955909729004,
+      "geometric_p95_deg": 0.639177827943257
+    },
+    "02_03": {
+      "c0": 2,
+      "c1": 3,
+      "rgb_mean_step": 5.370786666870117,
+      "rgb_median_step": 3.0,
+      "luma_step": 4.583208084106445,
+      "gradient_discontinuity": 0.036228179931640625,
+      "geometric_p95_deg": 0.5833554424816136
+    },
+    "03_04": {
+      "c0": 3,
+      "c1": 4,
+      "rgb_mean_step": 6.546994686126709,
+      "rgb_median_step": 4.0,
+      "luma_step": 6.022087574005127,
+      "gradient_discontinuity": 0.024079322814941406,
+      "geometric_p95_deg": 0.5906974942434432
+    },
+    "04_05": {
+      "c0": 4,
+      "c1": 5,
+      "rgb_mean_step": 4.106295585632324,
+      "rgb_median_step": 3.0,
+      "luma_step": 4.01362943649292,
+      "gradient_discontinuity": 0.061316490173339844,
+      "geometric_p95_deg": 0.41186850517253143
+    },
+    "05_06": {
+      "c0": 5,
+      "c1": 6,
+      "rgb_mean_step": 5.4961652755737305,
+      "rgb_median_step": 4.0,
+      "luma_step": 3.6926722526550293,
+      "gradient_discontinuity": 0.06551027297973633,
+      "geometric_p95_deg": 0.6129629464403772
+    }
+  },
+  "worst_seam": "10_11",
+  "worst_seam_step_levels": 8.30854320526123,
+  "detail_retention_metrics": {
+    "aggregate": {
+      "R4P83R2_DETAIL_RETENTION_MEDIAN": 1.7777777777777777,
+      "R4P83R2_DETAIL_RETENTION_P10": 1.2042105263157894,
+      "R4P83R2_DETAIL_RETENTION_P90": 3.0487394957983196
+    },
+    "zones": {
+      "A": {
+        "zone": "A",
+        "name": "Yaw 000 (Fireplace / Cabinet Trim)",
+        "yaw_deg": 0.0,
+        "owner_camera": 0,
+        "source_coord": [
+          1690.25,
+          2023.78
+        ],
+        "source_fwhm_px": 6.0,
+        "pano_12k_fwhm_px": 5.0,
+        "pano_4k_fwhm_px": 3.0,
+        "source_mtf50": 0.1111111111111111,
+        "pano_12k_mtf50": 0.13333333333333333,
+        "pano_4k_mtf50": 0.2222222222222222,
+        "mtf_retention_ratio": 1.2,
+        "source_laplacian_var": 31.405883573455267,
+        "pano_12k_laplacian_var": 22.77235329580247,
+        "pano_4k_laplacian_var": 101.61683900000001,
+        "grad_energy_ratio_12k_vs_src": 1.201373441914961,
+        "contrast_ratio_12k_vs_src": 0.997732753993093,
+        "source_px_per_pano_px_12k": 1.514383016925829,
+        "output_samples_per_src_px_12k": 0.6603349277053981,
+        "classification": "DETAIL_RETENTION_GOOD"
+      },
+      "B": {
+        "zone": "B",
+        "name": "Yaw 060 (Doorway Vertical Molding)",
+        "yaw_deg": 60.0,
+        "owner_camera": 2,
+        "source_coord": [
+          1741.49,
+          109.77
+        ],
+        "source_fwhm_px": 16.0,
+        "pano_12k_fwhm_px": 9.0,
+        "pano_4k_fwhm_px": 8.0,
+        "source_mtf50": 0.041666666666666664,
+        "pano_12k_mtf50": 0.07407407407407407,
+        "pano_4k_mtf50": 0.08333333333333333,
+        "mtf_retention_ratio": 1.7777777777777777,
+        "source_laplacian_var": 31.93726842174059,
+        "pano_12k_laplacian_var": 24.82534434061728,
+        "pano_4k_laplacian_var": 115.22776775,
+        "grad_energy_ratio_12k_vs_src": 1.2789205719789012,
+        "contrast_ratio_12k_vs_src": 1.0871556782200769,
+        "source_px_per_pano_px_12k": 1.514383016925829,
+        "output_samples_per_src_px_12k": 0.6603349277053981,
+        "classification": "DETAIL_RETENTION_GOOD"
+      },
+      "C": {
+        "zone": "C",
+        "name": "Yaw 150 (Cabinet Edge + Window Frame)",
+        "yaw_deg": 150.0,
+        "owner_camera": 5,
+        "source_coord": [
+          1740.71,
+          78.37
+        ],
+        "source_fwhm_px": 54.0,
+        "pano_12k_fwhm_px": 17.0,
+        "pano_4k_fwhm_px": 24.0,
+        "source_mtf50": 0.012345679012345678,
+        "pano_12k_mtf50": 0.0392156862745098,
+        "pano_4k_mtf50": 0.027777777777777776,
+        "mtf_retention_ratio": 3.1764705882352944,
+        "source_laplacian_var": 31.703217868398113,
+        "pano_12k_laplacian_var": 21.038264383209874,
+        "pano_4k_laplacian_var": 54.07433276,
+        "grad_energy_ratio_12k_vs_src": 1.0671212382150603,
+        "contrast_ratio_12k_vs_src": 0.641718140694885,
+        "source_px_per_pano_px_12k": 1.514383016925829,
+        "output_samples_per_src_px_12k": 0.6603349277053981,
+        "classification": "DETAIL_RETENTION_GOOD"
+      },
+      "D": {
+        "zone": "D",
+        "name": "Yaw 240 (Dining Verticals / Doorway)",
+        "yaw_deg": 240.0,
+        "owner_camera": 8,
+        "source_coord": [
+          1750.78,
+          -12.28
+        ],
+        "source_fwhm_px": 20.0,
+        "pano_12k_fwhm_px": 7.0,
+        "pano_4k_fwhm_px": 5.0,
+        "source_mtf50": 0.03333333333333333,
+        "pano_12k_mtf50": 0.09523809523809523,
+        "pano_4k_mtf50": 0.13333333333333333,
+        "mtf_retention_ratio": 2.857142857142857,
+        "source_laplacian_var": 31.949307604060355,
+        "pano_12k_laplacian_var": 24.203541283950614,
+        "pano_4k_laplacian_var": 98.31705511,
+        "grad_energy_ratio_12k_vs_src": 1.1982918327696064,
+        "contrast_ratio_12k_vs_src": 1.3307444671315078,
+        "source_px_per_pano_px_12k": 1.514383016925829,
+        "output_samples_per_src_px_12k": 0.6603349277053981,
+        "classification": "DETAIL_RETENTION_GOOD"
+      },
+      "E": {
+        "zone": "E",
+        "name": "Yaw 345 (Closure 11_00 / Cabinet Molding)",
+        "yaw_deg": 345.0,
+        "owner_camera": 0,
+        "source_coord": [
+          905.62,
+          149.77
+        ],
+        "source_fwhm_px": 23.0,
+        "pano_12k_fwhm_px": 19.0,
+        "pano_4k_fwhm_px": 6.0,
+        "source_mtf50": 0.028985507246376812,
+        "pano_12k_mtf50": 0.03508771929824561,
+        "pano_4k_mtf50": 0.1111111111111111,
+        "mtf_retention_ratio": 1.2105263157894737,
+        "source_laplacian_var": 30.496360317634505,
+        "pano_12k_laplacian_var": 20.845810882839505,
+        "pano_4k_laplacian_var": 43.853756440000005,
+        "grad_energy_ratio_12k_vs_src": 0.9740526901275789,
+        "contrast_ratio_12k_vs_src": 0.9941208185913049,
+        "source_px_per_pano_px_12k": 1.514383016925829,
+        "output_samples_per_src_px_12k": 0.6603349277053981,
+        "classification": "DETAIL_RETENTION_GOOD"
+      }
+    }
+  },
+  "artifact_hashes": {
+    "P2R16_R4P83R2_SELECTED_12K_PHYSICAL_IDENTITY.png": {
+      "sha256": "04dbcdddb8f182f5819565b5d9f43e11ff1031ea7ea9b9be9fa41998d0cf292f",
+      "bytes": 32269014,
+      "dimensions": [
+        12288,
+        1869
+      ]
+    },
+    "P2R16_R4P83R2_SELECTED_12K_OWNER_REVIEW.jpg": {
+      "sha256": "1c005121240485b1927ab21c0e723605b8382376bd1649025920945ffbe0ad29",
+      "bytes": 6322960,
+      "dimensions": [
+        12288,
+        1869
+      ]
+    }
+  },
+  "offsets": {
+    "r4p83_to_r4p81_deg": -0.24,
+    "r4p83_to_quality_reference_deg": -161.17,
+    "r4p83_to_quality_reference_wrapped_deg": 198.83
+  },
+  "owner_review_state": {
+    "r4p83r2_owner_visual_review_completed": false,
+    "owner_visual_acceptance": false,
+    "12k_final_promotion_approved": false,
+    "best_physical_only_candidate": "R4P8.1_D"
+  }
+}

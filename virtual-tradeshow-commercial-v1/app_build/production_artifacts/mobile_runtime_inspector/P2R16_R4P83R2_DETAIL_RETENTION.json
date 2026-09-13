@@ -1,0 +1,134 @@
+{
+  "aggregate": {
+    "R4P83R2_DETAIL_RETENTION_MEDIAN": 1.7777777777777777,
+    "R4P83R2_DETAIL_RETENTION_P10": 1.2042105263157894,
+    "R4P83R2_DETAIL_RETENTION_P90": 3.0487394957983196
+  },
+  "zones": {
+    "A": {
+      "zone": "A",
+      "name": "Yaw 000 (Fireplace / Cabinet Trim)",
+      "yaw_deg": 0.0,
+      "owner_camera": 0,
+      "source_coord": [
+        1690.25,
+        2023.78
+      ],
+      "source_fwhm_px": 6.0,
+      "pano_12k_fwhm_px": 5.0,
+      "pano_4k_fwhm_px": 3.0,
+      "source_mtf50": 0.1111111111111111,
+      "pano_12k_mtf50": 0.13333333333333333,
+      "pano_4k_mtf50": 0.2222222222222222,
+      "mtf_retention_ratio": 1.2,
+      "source_laplacian_var": 31.405883573455267,
+      "pano_12k_laplacian_var": 22.77235329580247,
+      "pano_4k_laplacian_var": 101.61683900000001,
+      "grad_energy_ratio_12k_vs_src": 1.201373441914961,
+      "contrast_ratio_12k_vs_src": 0.997732753993093,
+      "source_px_per_pano_px_12k": 1.514383016925829,
+      "output_samples_per_src_px_12k": 0.6603349277053981,
+      "classification": "DETAIL_RETENTION_GOOD"
+    },
+    "B": {
+      "zone": "B",
+      "name": "Yaw 060 (Doorway Vertical Molding)",
+      "yaw_deg": 60.0,
+      "owner_camera": 2,
+      "source_coord": [
+        1741.49,
+        109.77
+      ],
+      "source_fwhm_px": 16.0,
+      "pano_12k_fwhm_px": 9.0,
+      "pano_4k_fwhm_px": 8.0,
+      "source_mtf50": 0.041666666666666664,
+      "pano_12k_mtf50": 0.07407407407407407,
+      "pano_4k_mtf50": 0.08333333333333333,
+      "mtf_retention_ratio": 1.7777777777777777,
+      "source_laplacian_var": 31.93726842174059,
+      "pano_12k_laplacian_var": 24.82534434061728,
+      "pano_4k_laplacian_var": 115.22776775,
+      "grad_energy_ratio_12k_vs_src": 1.2789205719789012,
+      "contrast_ratio_12k_vs_src": 1.0871556782200769,
+      "source_px_per_pano_px_12k": 1.514383016925829,
+      "output_samples_per_src_px_12k": 0.6603349277053981,
+      "classification": "DETAIL_RETENTION_GOOD"
+    },
+    "C": {
+      "zone": "C",
+      "name": "Yaw 150 (Cabinet Edge + Window Frame)",
+      "yaw_deg": 150.0,
+      "owner_camera": 5,
+      "source_coord": [
+        1740.71,
+        78.37
+      ],
+      "source_fwhm_px": 54.0,
+      "pano_12k_fwhm_px": 17.0,
+      "pano_4k_fwhm_px": 24.0,
+      "source_mtf50": 0.012345679012345678,
+      "pano_12k_mtf50": 0.0392156862745098,
+      "pano_4k_mtf50": 0.027777777777777776,
+      "mtf_retention_ratio": 3.1764705882352944,
+      "source_laplacian_var": 31.703217868398113,
+      "pano_12k_laplacian_var": 21.038264383209874,
+      "pano_4k_laplacian_var": 54.07433276,
+      "grad_energy_ratio_12k_vs_src": 1.0671212382150603,
+      "contrast_ratio_12k_vs_src": 0.641718140694885,
+      "source_px_per_pano_px_12k": 1.514383016925829,
+      "output_samples_per_src_px_12k": 0.6603349277053981,
+      "classification": "DETAIL_RETENTION_GOOD"
+    },
+    "D": {
+      "zone": "D",
+      "name": "Yaw 240 (Dining Verticals / Doorway)",
+      "yaw_deg": 240.0,
+      "owner_camera": 8,
+      "source_coord": [
+        1750.78,
+        -12.28
+      ],
+      "source_fwhm_px": 20.0,
+      "pano_12k_fwhm_px": 7.0,
+      "pano_4k_fwhm_px": 5.0,
+      "source_mtf50": 0.03333333333333333,
+      "pano_12k_mtf50": 0.09523809523809523,
+      "pano_4k_mtf50": 0.13333333333333333,
+      "mtf_retention_ratio": 2.857142857142857,
+      "source_laplacian_var": 31.949307604060355,
+      "pano_12k_laplacian_var": 24.203541283950614,
+      "pano_4k_laplacian_var": 98.31705511,
+      "grad_energy_ratio_12k_vs_src": 1.1982918327696064,
+      "contrast_ratio_12k_vs_src": 1.3307444671315078,
+      "source_px_per_pano_px_12k": 1.514383016925829,
+      "output_samples_per_src_px_12k": 0.6603349277053981,
+      "classification": "DETAIL_RETENTION_GOOD"
+    },
+    "E": {
+      "zone": "E",
+      "name": "Yaw 345 (Closure 11_00 / Cabinet Molding)",
+      "yaw_deg": 345.0,
+      "owner_camera": 0,
+      "source_coord": [
+        905.62,
+        149.77
+      ],
+      "source_fwhm_px": 23.0,
+      "pano_12k_fwhm_px": 19.0,
+      "pano_4k_fwhm_px": 6.0,
+      "source_mtf50": 0.028985507246376812,
+      "pano_12k_mtf50": 0.03508771929824561,
+      "pano_4k_mtf50": 0.1111111111111111,
+      "mtf_retention_ratio": 1.2105263157894737,
+      "source_laplacian_var": 30.496360317634505,
+      "pano_12k_laplacian_var": 20.845810882839505,
+      "pano_4k_laplacian_var": 43.853756440000005,
+      "grad_energy_ratio_12k_vs_src": 0.9740526901275789,
+      "contrast_ratio_12k_vs_src": 0.9941208185913049,
+      "source_px_per_pano_px_12k": 1.514383016925829,
+      "output_samples_per_src_px_12k": 0.6603349277053981,
+      "classification": "DETAIL_RETENTION_GOOD"
+    }
+  }
+}
