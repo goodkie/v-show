@@ -1,0 +1,49 @@
+{
+  "phase": "7C.2R4P8.3R1",
+  "timestamp": "2026-09-13T21:51:24.879Z",
+  "baseUrl": "https://v-show-commercial-v1-production.up.railway.app",
+  "deployCommit": "713ad9f9c4bcc5b2a1bf27e515dd5d44e09d61d6",
+  "jsErrors": [],
+  "results": {
+    "quality-ai-r4p83r1": {
+      "mode": "quality-ai-r4p83r1",
+      "name": "FORENSIC_QA",
+      "httpStatus": 200,
+      "hudRes": "4096×623",
+      "naturalW": 4096,
+      "naturalH": 623,
+      "texW": 4096,
+      "texH": 623,
+      "modeLockMatch": true,
+      "activeTextureFilename": "P2R16_R4P83_SELECTED_4K.png",
+      "pass": true
+    },
+    "quality-ai-r4p83-selected": {
+      "mode": "quality-ai-r4p83-selected",
+      "name": "SELECTED",
+      "httpStatus": 200,
+      "hudRes": "4096×623",
+      "naturalW": 4096,
+      "naturalH": 623,
+      "texW": 4096,
+      "texH": 623,
+      "modeLockMatch": true,
+      "activeTextureFilename": "P2R16_R4P83_SELECTED_4K.png",
+      "pass": true
+    },
+    "quality-ai-r4p83-a": {
+      "mode": "quality-ai-r4p83-a",
+      "name": "CONTROL",
+      "httpStatus": 200,
+      "hudRes": "4096×623",
+      "naturalW": 4096,
+      "naturalH": 623,
+      "texW": 4096,
+      "texH": 623,
+      "modeLockMatch": true,
+      "activeTextureFilename": "P2R16_R4P83_A_CONTROL_4K.png",
+      "pass": true
+    }
+  },
+  "allPassed": true
+}
