@@ -393,7 +393,11 @@
 
       <!-- Mode Switcher -->
       <div class="mode-switch-container">
-                                        <button id="btn-mode-quality-r4p83r1" class="mode-btn" onclick="switchMode('quality-ai-r4p83r1')" style="border-color: #38bdf8; color: #38bdf8; font-weight: 800; background: rgba(56, 189, 248, 0.25); box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);">
+                                                <button id="btn-mode-quality-r4p83r2-12k" class="mode-btn" onclick="switchMode('quality-ai-r4p83r2-12k')" style="border-color: #f59e0b; color: #f59e0b; font-weight: 800; background: rgba(245, 158, 11, 0.25); box-shadow: 0 0 16px rgba(245, 158, 11, 0.4);">
+          <i class="fa-solid fa-gem"></i>
+          <span>R4P8.3R2 12K Owner Eval</span>
+        </button>
+        <button id="btn-mode-quality-r4p83r1" class="mode-btn" onclick="switchMode('quality-ai-r4p83r1')" style="border-color: #38bdf8; color: #38bdf8; font-weight: 800; background: rgba(56, 189, 248, 0.25); box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);">
           <i class="fa-solid fa-magnifying-glass"></i>
           <span>R4P8.3R1 Forensic QA</span>
         </button>
@@ -826,7 +830,34 @@
     const CACHE_BUST_KEY_R4P3_JPG = '0fb100025255a42f';
 
     const MODE_METADATA = {
-                  'quality-ai-r4p83r1': {
+                        'quality-ai-r4p83r2-12k': {
+        shortName: 'R4P8.3R2 12K Owner Eval',
+        title: 'QUALITY AI — P2R16 | R4P8.3R2 — FROZEN SHARED INTRINSICS | 12K PHYSICAL RGB OWNER EVALUATION',
+        docTitle: 'C12.9-P2R16 — R4P8.3R2 12K Physical RGB Owner Evaluation',
+        width: 12288, height: 1869,
+        directCoverage: 1.000000, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P83R2_SELECTED_12K_PHYSICAL_IDENTITY.png',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P83R2_SELECTED_12K_PHYSICAL_IDENTITY.png',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P83R2_SELECTED_12K_OWNER_REVIEW.jpg',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P8.3R2 12K (12288x1869)',
+        geometryMode: 'FROZEN_R4P83_SELECTED',
+        cameraModel: 'SHARED PINHOLE',
+        candidate: 'B',
+        focalLengthPx: 2961.67,
+        hfovDeg: 53.72,
+        k1: 0.0,
+        k2: 0.0,
+        rotationModel: 'FROZEN_R4P81_ZERO_DELTA',
+        maxRotDeltaDeg: 0.00,
+        globalP95Deg: 0.6703,
+        coverageTextures: {
+          'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P83R2_SELECTED_12K_PHYSICAL_IDENTITY.png',
+          'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P83R2_SOURCE_OWNERSHIP_12K.png',
+          'seam-path': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P83R2_SELECTED_SEAM_OVERLAY_12K.png'
+        }
+      },
+      'quality-ai-r4p83r1': {
         shortName: 'R4P8.3R1 Forensic QA',
         title: 'QUALITY AI — P2R16 | R4P8.3R1 PROVENANCE & DETAIL FORENSICS | 4K FORENSIC QA',
         docTitle: 'C12.9-P2R16 — R4P8.3R1 Provenance & Detail Forensics — 4K QA',
@@ -2163,7 +2194,14 @@
         } else if (currentMode.startsWith('quality-ai-r4p82-')) {
           const directCov = (meta.directCoverage * 100.0).toFixed(4) + '%';
           subSpecsEl.innerHTML = `CANDIDATE: ${meta.candidate} | SAMPLER: ${meta.sampler} | ROTATION: ${meta.rotationModel} | TEXTURE: 4096×623 | RGB: ORIGINAL PHYSICAL | DEPTH: NONE | LOCAL WARP: NONE | INPAINT: 0% | DIRECT COVERAGE: ${directCov} | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
-        } else if (currentMode === 'quality-ai-r4p81-d') {
+              } else if (currentMode === 'quality-ai-r4p83r2-12k') {
+        activeTier = '12K';
+        const candMeta = MODE_METADATA[currentMode];
+        targetUrl = (coverageMode === 'review-jpg') ? candMeta.reviewJpg : (candMeta.coverageTextures[coverageMode] || candMeta.texture);
+        targetLabel = candMeta.label;
+        targetW = candMeta.width;
+        targetH = candMeta.height;
+} else if (currentMode === 'quality-ai-r4p81-d') {
           const directCov = (meta.directCoverage * 100.0).toFixed(4) + '%';
           subSpecsEl.innerHTML = `TEXTURE: 12288×1869 | RGB: ORIGINAL 3000x4000 PHYSICAL | DEPTH: NONE | TRANSLATION: NONE | LOCAL WARP: NONE | INPAINT: 0% | GENERATIVE: 0 | DIRECT COVERAGE: ${directCov} | SO3: ACTIVE | GRAPH CUT: ACTIVE | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
         } else if (currentMode.startsWith('quality-ai-r4p8-')) {
@@ -3085,7 +3123,9 @@
       const btnR3 = document.getElementById('btn-mode-quality-r3');
             const btnR4p4 = document.getElementById('btn-mode-quality-r4p4');
       if (btnR4p4) btnR4p4.className = (currentMode === 'quality-ai-r4p4') ? 'mode-btn active-quality-ai' : 'mode-btn';
-                  const btn83r1 = document.getElementById('btn-mode-quality-r4p83r1');
+                  const btn83r2 = document.getElementById('btn-mode-quality-r4p83r2-12k');
+      if (btn83r2) btn83r2.className = (currentMode === 'quality-ai-r4p83r2-12k') ? 'mode-btn active-quality-ai' : 'mode-btn';
+      const btn83r1 = document.getElementById('btn-mode-quality-r4p83r1');
       if (btn83r1) btn83r1.className = (currentMode === 'quality-ai-r4p83r1') ? 'mode-btn active-quality-ai' : 'mode-btn';
       ['selected', 'a', 'b', 'c', 'd', 'e'].forEach(cand => {
         const btn83 = document.getElementById('btn-mode-quality-r4p83-' + cand);
