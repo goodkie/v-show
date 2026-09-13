@@ -1915,7 +1915,7 @@
           const candMeta = MODE_METADATA[currentMode];
           const maxDelta = candMeta?.maxRotDeltaDeg !== undefined ? candMeta.maxRotDeltaDeg.toFixed(3) : '0.000';
           subSpecsEl.innerHTML = `RGB: ORIGINAL 3000x4000 PHYSICAL | DEPTH: NONE | TRANSLATION: NONE | LOCAL WARP: NONE | INPAINT: 0% | GENERATIVE: 0 | ROTATION MICRO-REG: ACTIVE | MAX ROT DELTA: ${maxDelta} deg | DIRECT COVERAGE: 100% | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
-        } else if (currentMode.startsWith('quality-ai-r4p82r4-') || currentMode.startsWith('quality-ai-r4p82r3-')) {
+        } else if (currentMode.startsWith('quality-ai-r4p82r3-')) {
           subSpecsEl.innerHTML = `RGB: ORIGINAL 3000x4000 PHYSICAL | SAMPLER: BILINEAR | TOPOLOGY: MONOTONIC CORRIDOR (12 SEAMS) | CYLINDRICAL COMPONENTS: 1/SRC | ISLANDS: 0 | BRANCHES: 0 | WEDGES: 0 | INPAINT: 0% | GENERATIVE: 0 | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
         } else if (currentMode.startsWith('quality-ai-r4p82r2-')) {
           subSpecsEl.innerHTML = `RGB: ORIGINAL 3000x4000 PHYSICAL | SAMPLER: BILINEAR | DEPTH: NONE | TRANSLATION: NONE | LOCAL WARP: NONE | INPAINT: 0% | GENERATIVE: 0 | SECOND-NEIGHBOR MATCHES: 0 | HARD SOURCE OWNERSHIP: ACTIVE | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
@@ -2365,7 +2365,7 @@
         targetLabel = candMeta.label;
         targetW = candMeta.width;
         targetH = candMeta.height;
-      } else if (currentMode.startsWith('quality-ai-r4p82r3-') || currentMode.startsWith('quality-ai-r4p82r2-') || currentMode.startsWith('quality-ai-r4p82-') || currentMode.startsWith('quality-ai-r4p8-') || currentMode === 'quality-ai-r4p71-d' || currentMode.startsWith('quality-ai-r4p7-') || currentMode.startsWith('quality-ai-r4p6-') || currentMode.startsWith('quality-ai-r4p5-') || currentMode.startsWith('quality-ai-r4p43-') || currentMode.startsWith('quality-ai-r4p42-')) {
+      } else if (currentMode.startsWith('quality-ai-r4p82r4-') || currentMode.startsWith('quality-ai-r4p82r3-') || currentMode.startsWith('quality-ai-r4p82r2-') || currentMode.startsWith('quality-ai-r4p82-') || currentMode.startsWith('quality-ai-r4p8-') || currentMode === 'quality-ai-r4p71-d' || currentMode.startsWith('quality-ai-r4p7-') || currentMode.startsWith('quality-ai-r4p6-') || currentMode.startsWith('quality-ai-r4p5-') || currentMode.startsWith('quality-ai-r4p43-') || currentMode.startsWith('quality-ai-r4p42-')) {
         activeTier = '4K';
         const candMeta = MODE_METADATA[currentMode];
         targetUrl = (candMeta.coverageTextures && candMeta.coverageTextures[coverageMode]) ? candMeta.coverageTextures[coverageMode] : candMeta.texture;
