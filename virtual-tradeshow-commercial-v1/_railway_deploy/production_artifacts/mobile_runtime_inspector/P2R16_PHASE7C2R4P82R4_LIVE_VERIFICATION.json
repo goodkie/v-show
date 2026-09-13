@@ -1,0 +1,308 @@
+{
+  "PHASE": "7C.2R4P8.2R4",
+  "TIMESTAMP": "2026-09-13T18:21:06.447Z",
+  "BASE_URL": "https://v-show-commercial-v1-production.up.railway.app",
+  "DEPLOY_COMMIT": "5a8bfd81c09ad00d74da2e13b15d52334647ec49",
+  "RAILWAY_DEPLOYMENT_ID": "f0773ed2-2431-49f0-aded-21c1f90deff4",
+  "OVERALL_VERIFICATION_STATUS": "PASS",
+  "JS_ERRORS_COUNT": 0,
+  "JS_ERRORS": [],
+  "RESULTS_PER_MODE": {
+    "quality-ai-r4p82r4-a": {
+      "CANDIDATE": "A",
+      "NAME": "CONTROL",
+      "MODE": "quality-ai-r4p82r4-a",
+      "HTTP_STATUS": 200,
+      "TELEMETRY": {
+        "CURRENT_MODE": "quality-ai-r4p82r4-a",
+        "REQUESTED_MODE": "quality-ai-r4p82r4-a",
+        "RESOLVED_MODE": "quality-ai-r4p82r4-a",
+        "MODE_LOCK_MATCH": true,
+        "TEXTURE_LOAD_SUCCESS": true,
+        "webglContextOk": true,
+        "HTTP_STATUS": 200,
+        "ACTIVE_TEXTURE_FILENAME": "P2R16_R4P82R4_A_CONTROL_4K.png",
+        "R4P82R4_CANDIDATE_ACTIVE": true,
+        "CANDIDATE": "A",
+        "SAMPLER": "BILINEAR",
+        "ROTATION_MODEL": "FROZEN_R4P81",
+        "MAX_ROTATION_DELTA_DEG": 0,
+        "DIMENSIONS": "4096x623",
+        "DIRECT_GEOMETRIC_COVERAGE": 1,
+        "BLACK_CRACK_PIXELS": 0,
+        "SEAM_COUNT": 12,
+        "SEAM_BRANCH_COUNT": 0,
+        "SEAM_LOOP_COUNT": 0,
+        "OWNERSHIP_ISLAND_COUNT_CYLINDRICAL": 0,
+        "HARD_SOURCE_OWNERSHIP": "ACTIVE",
+        "TECHNICAL_GATE_D": "PASS",
+        "TRANSLATION_OPTIMIZED": false,
+        "DEPTH_USED": false,
+        "LOCAL_PROJECTIVE_WARP_USED": false,
+        "RGB_INPAINT_USED": false,
+        "GENERATIVE_PIXEL_COUNT": 0,
+        "REFERENCE_RGB_PIXEL_COUNT": 0,
+        "texWidth": 4096,
+        "texHeight": 623
+      },
+      "YAW_CHECKS": {
+        "YAW_60": {
+          "yaw": 60,
+          "pitch": 0,
+          "fov": 85
+        },
+        "YAW_150": {
+          "yaw": 150,
+          "pitch": 0,
+          "fov": 85
+        },
+        "YAW_240": {
+          "yaw": 240,
+          "pitch": 0,
+          "fov": 85
+        },
+        "YAW_345": {
+          "yaw": 345,
+          "pitch": 0,
+          "fov": 85
+        }
+      },
+      "PASS": true
+    },
+    "quality-ai-r4p82r4-b": {
+      "CANDIDATE": "B",
+      "NAME": "GLOBAL_REG",
+      "MODE": "quality-ai-r4p82r4-b",
+      "HTTP_STATUS": 200,
+      "TELEMETRY": {
+        "CURRENT_MODE": "quality-ai-r4p82r4-b",
+        "REQUESTED_MODE": "quality-ai-r4p82r4-b",
+        "RESOLVED_MODE": "quality-ai-r4p82r4-b",
+        "MODE_LOCK_MATCH": true,
+        "TEXTURE_LOAD_SUCCESS": true,
+        "webglContextOk": true,
+        "HTTP_STATUS": 200,
+        "ACTIVE_TEXTURE_FILENAME": "P2R16_R4P82R4_B_GLOBAL_REGISTRATION_4K.png",
+        "R4P82R4_CANDIDATE_ACTIVE": true,
+        "CANDIDATE": "B",
+        "SAMPLER": "BILINEAR",
+        "ROTATION_MODEL": "GLOBAL_UNIFORM_ROTATION",
+        "MAX_ROTATION_DELTA_DEG": 0.697,
+        "DIMENSIONS": "4096x623",
+        "DIRECT_GEOMETRIC_COVERAGE": 1,
+        "BLACK_CRACK_PIXELS": 0,
+        "SEAM_COUNT": 12,
+        "SEAM_BRANCH_COUNT": 0,
+        "SEAM_LOOP_COUNT": 0,
+        "OWNERSHIP_ISLAND_COUNT_CYLINDRICAL": 0,
+        "HARD_SOURCE_OWNERSHIP": "ACTIVE",
+        "TECHNICAL_GATE_D": "PASS",
+        "TRANSLATION_OPTIMIZED": false,
+        "DEPTH_USED": false,
+        "LOCAL_PROJECTIVE_WARP_USED": false,
+        "RGB_INPAINT_USED": false,
+        "GENERATIVE_PIXEL_COUNT": 0,
+        "REFERENCE_RGB_PIXEL_COUNT": 0,
+        "texWidth": 4096,
+        "texHeight": 623
+      },
+      "YAW_CHECKS": {
+        "YAW_60": {
+          "yaw": 60,
+          "pitch": 0,
+          "fov": 85
+        },
+        "YAW_150": {
+          "yaw": 150,
+          "pitch": 0,
+          "fov": 85
+        },
+        "YAW_240": {
+          "yaw": 240,
+          "pitch": 0,
+          "fov": 85
+        },
+        "YAW_345": {
+          "yaw": 345,
+          "pitch": 0,
+          "fov": 85
+        }
+      },
+      "PASS": true
+    },
+    "quality-ai-r4p82r4-c": {
+      "CANDIDATE": "C",
+      "NAME": "SEAM_LOCAL_REG",
+      "MODE": "quality-ai-r4p82r4-c",
+      "HTTP_STATUS": 200,
+      "TELEMETRY": {
+        "CURRENT_MODE": "quality-ai-r4p82r4-c",
+        "REQUESTED_MODE": "quality-ai-r4p82r4-c",
+        "RESOLVED_MODE": "quality-ai-r4p82r4-c",
+        "MODE_LOCK_MATCH": true,
+        "TEXTURE_LOAD_SUCCESS": true,
+        "webglContextOk": true,
+        "HTTP_STATUS": 200,
+        "ACTIVE_TEXTURE_FILENAME": "P2R16_R4P82R4_C_SEAM_LOCAL_REGISTRATION_4K.png",
+        "R4P82R4_CANDIDATE_ACTIVE": true,
+        "CANDIDATE": "C",
+        "SAMPLER": "BILINEAR",
+        "ROTATION_MODEL": "SEAM_LOCAL_WEIGHTED_ROTATION",
+        "MAX_ROTATION_DELTA_DEG": 0.748,
+        "DIMENSIONS": "4096x623",
+        "DIRECT_GEOMETRIC_COVERAGE": 1,
+        "BLACK_CRACK_PIXELS": 0,
+        "SEAM_COUNT": 12,
+        "SEAM_BRANCH_COUNT": 0,
+        "SEAM_LOOP_COUNT": 0,
+        "OWNERSHIP_ISLAND_COUNT_CYLINDRICAL": 0,
+        "HARD_SOURCE_OWNERSHIP": "ACTIVE",
+        "TECHNICAL_GATE_D": "PASS",
+        "TRANSLATION_OPTIMIZED": false,
+        "DEPTH_USED": false,
+        "LOCAL_PROJECTIVE_WARP_USED": false,
+        "RGB_INPAINT_USED": false,
+        "GENERATIVE_PIXEL_COUNT": 0,
+        "REFERENCE_RGB_PIXEL_COUNT": 0,
+        "texWidth": 4096,
+        "texHeight": 623
+      },
+      "YAW_CHECKS": {
+        "YAW_60": {
+          "yaw": 60,
+          "pitch": 0,
+          "fov": 85
+        },
+        "YAW_150": {
+          "yaw": 150,
+          "pitch": 0,
+          "fov": 85
+        },
+        "YAW_240": {
+          "yaw": 240,
+          "pitch": 0,
+          "fov": 85
+        },
+        "YAW_345": {
+          "yaw": 345,
+          "pitch": 0,
+          "fov": 85
+        }
+      },
+      "PASS": true
+    },
+    "quality-ai-r4p82r4-d": {
+      "CANDIDATE": "D",
+      "NAME": "CONSERVATIVE_STRUCTURE_SAFE",
+      "MODE": "quality-ai-r4p82r4-d",
+      "HTTP_STATUS": 200,
+      "TELEMETRY": {
+        "CURRENT_MODE": "quality-ai-r4p82r4-d",
+        "REQUESTED_MODE": "quality-ai-r4p82r4-d",
+        "RESOLVED_MODE": "quality-ai-r4p82r4-d",
+        "MODE_LOCK_MATCH": true,
+        "TEXTURE_LOAD_SUCCESS": true,
+        "webglContextOk": true,
+        "HTTP_STATUS": 200,
+        "ACTIVE_TEXTURE_FILENAME": "P2R16_R4P82R4_D_CONSERVATIVE_STRUCTURE_4K.png",
+        "R4P82R4_CANDIDATE_ACTIVE": true,
+        "CANDIDATE": "D",
+        "SAMPLER": "BILINEAR",
+        "ROTATION_MODEL": "CONSERVATIVE_STRUCTURE_SAFE_ROTATION",
+        "MAX_ROTATION_DELTA_DEG": 0.74,
+        "DIMENSIONS": "4096x623",
+        "DIRECT_GEOMETRIC_COVERAGE": 1,
+        "BLACK_CRACK_PIXELS": 0,
+        "SEAM_COUNT": 12,
+        "SEAM_BRANCH_COUNT": 0,
+        "SEAM_LOOP_COUNT": 0,
+        "OWNERSHIP_ISLAND_COUNT_CYLINDRICAL": 0,
+        "HARD_SOURCE_OWNERSHIP": "ACTIVE",
+        "TECHNICAL_GATE_D": "PASS",
+        "TRANSLATION_OPTIMIZED": false,
+        "DEPTH_USED": false,
+        "LOCAL_PROJECTIVE_WARP_USED": false,
+        "RGB_INPAINT_USED": false,
+        "GENERATIVE_PIXEL_COUNT": 0,
+        "REFERENCE_RGB_PIXEL_COUNT": 0,
+        "texWidth": 4096,
+        "texHeight": 623
+      },
+      "YAW_CHECKS": {
+        "YAW_60": {
+          "yaw": 60,
+          "pitch": 0,
+          "fov": 85
+        },
+        "YAW_150": {
+          "yaw": 150,
+          "pitch": 0,
+          "fov": 85
+        },
+        "YAW_240": {
+          "yaw": 240,
+          "pitch": 0,
+          "fov": 85
+        },
+        "YAW_345": {
+          "yaw": 345,
+          "pitch": 0,
+          "fov": 85
+        }
+      },
+      "PASS": true
+    }
+  },
+  "SWITCH_DRIFT_TEST": {
+    "PASS": true,
+    "YAW_AFTER_D": 345,
+    "YAW_AFTER_A": 345,
+    "DRIFT_DEG": 0
+  },
+  "INTERACTIVE_360_SPIN": {
+    "PASS": true
+  },
+  "CENTER_1TO1_VIEWS": {
+    "CENTER_YAW_60": {
+      "yaw": 60,
+      "fov": 26
+    },
+    "CENTER_YAW_150": {
+      "yaw": 150,
+      "fov": 26
+    },
+    "CENTER_YAW_240": {
+      "yaw": 240,
+      "fov": 26
+    },
+    "CENTER_YAW_345": {
+      "yaw": 345,
+      "fov": 26
+    }
+  },
+  "COVERAGE_LAYER_TESTS": {
+    "source-ownership": true,
+    "seam-path": true,
+    "topology-diagnostic": true
+  },
+  "TELEMETRY_LOCK": {
+    "FROZEN_ROTATIONS": false,
+    "ROTATION_MICRO_REGISTRATION": true,
+    "MAX_ROTATION_DELTA_DEG": 0.74,
+    "MAX_ROTATION_BOUND_DEG": 0.75,
+    "TRANSLATION_OPTIMIZED": false,
+    "DEPTH_USED": false,
+    "LOCAL_PROJECTIVE_WARP_USED": false,
+    "RGB_INPAINT_USED": false,
+    "GENERATIVE_PIXEL_COUNT": 0,
+    "REFERENCE_RGB_PIXEL_COUNT": 0,
+    "PHYSICAL_RGB_ONLY": true,
+    "CYLINDRICAL_MONOTONIC_SEAMS": 12,
+    "CYLINDRICAL_COMPONENTS_PER_SOURCE": 1,
+    "OWNERSHIP_ISLANDS": 0,
+    "BRANCHES": 0,
+    "LOOPS": 0,
+    "DIRECT_GEOMETRIC_COVERAGE": 1,
+    "BLACK_CRACK_PIXELS": 0
+  }
+}
