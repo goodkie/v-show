@@ -393,6 +393,22 @@
 
       <!-- Mode Switcher -->
       <div class="mode-switch-container">
+                <button id="btn-mode-quality-r4p82r3-d" class="mode-btn" onclick="switchMode('quality-ai-r4p82r3-d')" style="border-color: #00ffcc; color: #00ffcc; font-weight: 800; background: rgba(0, 255, 204, 0.25); box-shadow: 0 0 16px rgba(0, 255, 204, 0.4);">
+          <i class="fa-solid fa-crown"></i>
+          <span>R4P8.2R3 D (Owner Cand)</span>
+        </button>
+        <button id="btn-mode-quality-r4p82r3-c" class="mode-btn" onclick="switchMode('quality-ai-r4p82r3-c')" style="border-color: #00ffcc; color: #00ffcc;">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>R4P8.2R3 C (Structure-Monotonic)</span>
+        </button>
+        <button id="btn-mode-quality-r4p82r3-b" class="mode-btn" onclick="switchMode('quality-ai-r4p82r3-b')" style="border-color: #00ffcc; color: #00ffcc;">
+          <i class="fa-solid fa-arrows-split-up-and-left"></i>
+          <span>R4P8.2R3 B (Monotonic-Photo)</span>
+        </button>
+        <button id="btn-mode-quality-r4p82r3-a" class="mode-btn" onclick="switchMode('quality-ai-r4p82r3-a')" style="border-color: #00ffcc; color: #00ffcc;">
+          <i class="fa-solid fa-cube"></i>
+          <span>R4P8.2R3 A (Control)</span>
+        </button>
         <button id="btn-mode-quality-r4p82r2-d" class="mode-btn" onclick="switchMode('quality-ai-r4p82r2-d')" style="border-color: #ffd700; color: #ffd700; font-weight: 800; background: rgba(255, 215, 0, 0.25); box-shadow: 0 0 16px rgba(255, 215, 0, 0.4);">
           <i class="fa-solid fa-crown"></i>
           <span>R4P8.2R2 D (Owner Cand)</span>
@@ -766,6 +782,98 @@
     const CACHE_BUST_KEY_R4P3_JPG = '0fb100025255a42f';
 
     const MODE_METADATA = {
+            'quality-ai-r4p82r3-a': {
+        shortName: 'R4P8.2R3 A (Control)',
+        title: 'QUALITY AI — P2R16 | R4P8.2R3 A — CONTROL (FROZEN R4P8.1 MAPPING) | 4K CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P8.2R3 A Control — 4K Owner Candidate Gate',
+        width: 4096, height: 623,
+        directCoverage: 1.000000, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P82R3_A_CONTROL_4K.png',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_A_CONTROL_4K.png',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_A_CONTROL_4K.png',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P8.2R3 A — CONTROL (4096x623)',
+        geometryMode: 'MONOTONIC_CYLINDRICAL_HARD_SEAM_4K',
+        candidate: 'A',
+        sampler: 'BILINEAR',
+        rotationModel: 'FROZEN_R4P81',
+        globalYawOffsetDeg: 0.0,
+        coverageTextures: {
+          'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_A_CONTROL_4K.png',
+          'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_A_SOURCE_OWNERSHIP.png',
+          'seam-path': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_A_SEAM_OVERLAY.png',
+          'topology-diagnostic': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_A_TOPOLOGY_DIAGNOSTIC.png'
+        }
+      },
+      'quality-ai-r4p82r3-b': {
+        shortName: 'R4P8.2R3 B (Monotonic Photo)',
+        title: 'QUALITY AI — P2R16 | R4P8.2R3 B — MONOTONIC PHOTO ENERGY | 4K CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P8.2R3 B Monotonic Photo — 4K Owner Candidate Gate',
+        width: 4096, height: 623,
+        directCoverage: 1.000000, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P82R3_B_MONOTONIC_PHOTO_4K.png',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_B_MONOTONIC_PHOTO_4K.png',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_B_MONOTONIC_PHOTO_4K.png',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P8.2R3 B — MONOTONIC PHOTO (4096x623)',
+        geometryMode: 'MONOTONIC_CYLINDRICAL_HARD_SEAM_4K',
+        candidate: 'B',
+        sampler: 'BILINEAR',
+        rotationModel: 'FROZEN_R4P81',
+        globalYawOffsetDeg: 0.0,
+        coverageTextures: {
+          'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_B_MONOTONIC_PHOTO_4K.png',
+          'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_B_SOURCE_OWNERSHIP.png',
+          'seam-path': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_B_SEAM_OVERLAY.png',
+          'topology-diagnostic': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_B_TOPOLOGY_DIAGNOSTIC.png'
+        }
+      },
+      'quality-ai-r4p82r3-c': {
+        shortName: 'R4P8.2R3 C (Structure Monotonic)',
+        title: 'QUALITY AI — P2R16 | R4P8.2R3 C — STRUCTURE MONOTONIC SEAM | 4K CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P8.2R3 C Structure Monotonic — 4K Owner Candidate Gate',
+        width: 4096, height: 623,
+        directCoverage: 1.000000, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P82R3_C_STRUCTURE_MONOTONIC_4K.png',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_C_STRUCTURE_MONOTONIC_4K.png',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_C_STRUCTURE_MONOTONIC_4K.png',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P8.2R3 C — STRUCTURE MONOTONIC (4096x623)',
+        geometryMode: 'MONOTONIC_CYLINDRICAL_HARD_SEAM_4K',
+        candidate: 'C',
+        sampler: 'BILINEAR',
+        rotationModel: 'FROZEN_R4P81',
+        globalYawOffsetDeg: 0.0,
+        coverageTextures: {
+          'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_C_STRUCTURE_MONOTONIC_4K.png',
+          'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_C_SOURCE_OWNERSHIP.png',
+          'seam-path': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_C_SEAM_OVERLAY.png',
+          'topology-diagnostic': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_C_TOPOLOGY_DIAGNOSTIC.png'
+        }
+      },
+      'quality-ai-r4p82r3-d': {
+        shortName: 'R4P8.2R3 D (Owner Candidate)',
+        title: 'QUALITY AI — P2R16 | R4P8.2R3 D — CONSERVATIVE TOPOLOGY LOCK | 4K OWNER CANDIDATE',
+        docTitle: 'C12.9-P2R16 — R4P8.2R3 D Conservative Topology Lock — 4K Owner Review',
+        width: 4096, height: 623,
+        directCoverage: 1.000000, blackCrackPixels: 0, inpaintFraction: 0.0, inpaintUsed: false, singleSourceOwner: true,
+        textureFilename: 'P2R16_R4P82R3_D_CONSERVATIVE_TOPOLOGY_4K.png',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_D_CONSERVATIVE_TOPOLOGY_4K.png',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_D_CONSERVATIVE_TOPOLOGY_4K.png',
+        bounds: [-26.38, 28.39], minPitchDeg: -26.38, maxPitchDeg: 28.39, vaovDeg: 54.77,
+        label: 'R4P8.2R3 D — TOPOLOGY LOCK (4096x623)',
+        geometryMode: 'MONOTONIC_CYLINDRICAL_HARD_SEAM_4K',
+        candidate: 'D',
+        sampler: 'BILINEAR',
+        rotationModel: 'FROZEN_R4P81',
+        globalYawOffsetDeg: 0.0,
+        coverageTextures: {
+          'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_D_CONSERVATIVE_TOPOLOGY_4K.png',
+          'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_D_SOURCE_OWNERSHIP.png',
+          'seam-path': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_D_SEAM_OVERLAY.png',
+          'topology-diagnostic': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P82R3_D_TOPOLOGY_DIAGNOSTIC.png'
+        }
+      },
       'quality-ai-r4p82r2-a': {
         shortName: 'R4P8.2R2 A (Control)',
         title: 'QUALITY AI — P2R16 | R4P8.2R2 A — CONTROL BASELINE OWNERSHIP | 4K OWNER CANDIDATE',
@@ -1693,7 +1801,39 @@
         const fovVal = Math.round(currentFov);
         const yawVal = currentYaw.toFixed(1);
         const pitchVal = (currentPitch >= 0 ? '+' : '') + currentPitch.toFixed(1);
-        if (currentMode.startsWith('quality-ai-r4p82r2-')) {
+                if (currentMode.startsWith('quality-ai-r4p82r3-')) {
+          subSpecsEl.innerHTML = `RGB: ORIGINAL 3000x4000 PHYSICAL | SAMPLER: BILINEAR | TOPOLOGY: MONOTONIC CORRIDOR (12 SEAMS) | CYLINDRICAL COMPONENTS: 1/SRC | ISLANDS: 0 | BRANCHES: 0 | WEDGES: 0 | INPAINT: 0% | GENERATIVE: 0 | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
+                  } else if (currentMode.startsWith('quality-ai-r4p82r3-')) {
+            texture.offset.set(0, 0);
+            texture.repeat.set(1, 1);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.ClampToEdgeWrapping;
+            const candMeta = MODE_METADATA[currentMode];
+            window.__VIEWER_TELEMETRY__.R4P82R3_CANDIDATE_ACTIVE = true;
+            window.__VIEWER_TELEMETRY__.MODE = currentMode;
+            window.__VIEWER_TELEMETRY__.CANDIDATE = candMeta.candidate;
+            window.__VIEWER_TELEMETRY__.SAMPLER = 'BILINEAR';
+            window.__VIEWER_TELEMETRY__.ROTATION_MODEL = 'FROZEN_R4P81';
+            window.__VIEWER_TELEMETRY__.DIMENSIONS = '4096x623';
+            window.__VIEWER_TELEMETRY__.GLOBAL_YAW_OFFSET_DEG = 0.0;
+            window.__VIEWER_TELEMETRY__.ACTIVE_TEXTURE_FILENAME = candMeta.textureFilename;
+            window.__VIEWER_TELEMETRY__.DIRECT_GEOMETRIC_COVERAGE = candMeta.directCoverage;
+            window.__VIEWER_TELEMETRY__.BLACK_CRACK_PIXELS = candMeta.blackCrackPixels;
+            window.__VIEWER_TELEMETRY__.SEAM_COUNT = 12;
+            window.__VIEWER_TELEMETRY__.SEAM_BRANCH_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.SEAM_LOOP_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.OWNERSHIP_ISLAND_COUNT_CYLINDRICAL = 0;
+            window.__VIEWER_TELEMETRY__.WEDGE_CANDIDATE_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.TRANSLATION_OPTIMIZED = false;
+            window.__VIEWER_TELEMETRY__.DEPTH_USED = false;
+            window.__VIEWER_TELEMETRY__.LOCAL_PROJECTIVE_WARP_USED = false;
+            window.__VIEWER_TELEMETRY__.RGB_INPAINT_USED = false;
+            window.__VIEWER_TELEMETRY__.GENERATIVE_PIXEL_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.REFERENCE_RGB_PIXEL_COUNT = 0;
+            window.__VIEWER_TELEMETRY__.HARD_SOURCE_OWNERSHIP = 'ACTIVE';
+            window.__VIEWER_TELEMETRY__.TECHNICAL_GATE_D = 'PASS';
+            updateModePresentation();
+} else if (currentMode.startsWith('quality-ai-r4p82r2-')) {
           subSpecsEl.innerHTML = `RGB: ORIGINAL 3000x4000 PHYSICAL | SAMPLER: BILINEAR | DEPTH: NONE | TRANSLATION: NONE | LOCAL WARP: NONE | INPAINT: 0% | GENERATIVE: 0 | SECOND-NEIGHBOR MATCHES: 0 | HARD SOURCE OWNERSHIP: ACTIVE | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
         } else if (currentMode.startsWith('quality-ai-r4p82r2-') || currentMode.startsWith('quality-ai-r4p82-')) {
           const directCov = (meta.directCoverage * 100.0).toFixed(4) + '%';
