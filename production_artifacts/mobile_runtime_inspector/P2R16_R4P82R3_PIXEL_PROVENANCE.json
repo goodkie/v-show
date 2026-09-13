@@ -1,0 +1,1312 @@
+{
+  "PHASE": "7C.2R4P8.2R3",
+  "TIMESTAMP": "2026-09-13T12:34:41Z",
+  "SAMPLER": "BILINEAR",
+  "TOTAL_SAMPLES": 10000,
+  "PROVENANCE_VALID_RATIO": 1.0,
+  "REFERENCE_RGB_PIXEL_COUNT": 0,
+  "GENERATIVE_PIXEL_COUNT": 0,
+  "RGB_INPAINT_USED": false,
+  "SAMPLES_SUBSET": [
+    {
+      "pano_x": 3174,
+      "pano_y": 512,
+      "owner_source_id": 3,
+      "source_filename": "SHOT_090.jpg",
+      "source_u": 2237.19,
+      "source_v": 2953.4,
+      "rendered_rgb": [
+        147,
+        98,
+        116
+      ]
+    },
+    {
+      "pano_x": 3507,
+      "pano_y": 12,
+      "owner_source_id": 4,
+      "source_filename": "SHOT_120.jpg",
+      "source_u": 2184.36,
+      "source_v": 319.55,
+      "rendered_rgb": [
+        177,
+        193,
+        192
+      ]
+    },
+    {
+      "pano_x": 860,
+      "pano_y": 559,
+      "owner_source_id": 9,
+      "source_filename": "SHOT_270.jpg",
+      "source_u": 918.69,
+      "source_v": 3039.07,
+      "rendered_rgb": [
+        118,
+        118,
+        126
+      ]
+    },
+    {
+      "pano_x": 1294,
+      "pano_y": 370,
+      "owner_source_id": 10,
+      "source_filename": "SHOT_300.jpg",
+      "source_u": 1411.01,
+      "source_v": 2143.52,
+      "rendered_rgb": [
+        149,
+        127,
+        105
+      ]
+    },
+    {
+      "pano_x": 1130,
+      "pano_y": 290,
+      "owner_source_id": 9,
+      "source_filename": "SHOT_270.jpg",
+      "source_u": 2256.98,
+      "source_v": 1739.67,
+      "rendered_rgb": [
+        149,
+        110,
+        81
+      ]
+    },
+    {
+      "pano_x": 1095,
+      "pano_y": 331,
+      "owner_source_id": 9,
+      "source_filename": "SHOT_270.jpg",
+      "source_u": 2076.08,
+      "source_v": 1933.91,
+      "rendered_rgb": [
+        149,
+        111,
+        88
+      ]
+    },
+    {
+      "pano_x": 3772,
+      "pano_y": 605,
+      "owner_source_id": 5,
+      "source_filename": "SHOT_150.jpg",
+      "source_u": 1847.51,
+      "source_v": 3383.26,
+      "rendered_rgb": [
+        5,
+        20,
+        51
+      ]
+    },
+    {
+      "pano_x": 3092,
+      "pano_y": 260,
+      "owner_source_id": 3,
+      "source_filename": "SHOT_090.jpg",
+      "source_u": 1855.03,
+      "source_v": 1694.48,
+      "rendered_rgb": [
+        221,
+        221,
+        229
+      ]
+    },
+    {
+      "pano_x": 1638,
+      "pano_y": 204,
+      "owner_source_id": 11,
+      "source_filename": "SHOT_330.jpg",
+      "source_u": 1421.01,
+      "source_v": 1406.11,
+      "rendered_rgb": [
+        84,
+        82,
+        103
+      ]
+    },
+    {
+      "pano_x": 2169,
+      "pano_y": 386,
+      "owner_source_id": 0,
+      "source_filename": "SHOT_000.jpg",
+      "source_u": 2288.0,
+      "source_v": 2341.9,
+      "rendered_rgb": [
+        165,
+        140,
+        160
+      ]
+    },
+    {
+      "pano_x": 466,
+      "pano_y": 467,
+      "owner_source_id": 7,
+      "source_filename": "SHOT_210.jpg",
+      "source_u": 2340.81,
+      "source_v": 2587.24,
+      "rendered_rgb": [
+        109,
+        34,
+        13
+      ]
+    },
+    {
+      "pano_x": 1238,
+      "pano_y": 414,
+      "owner_source_id": 10,
+      "source_filename": "SHOT_300.jpg",
+      "source_u": 1140.97,
+      "source_v": 2353.48,
+      "rendered_rgb": [
+        150,
+        126,
+        114
+      ]
+    },
+    {
+      "pano_x": 330,
+      "pano_y": 68,
+      "owner_source_id": 7,
+      "source_filename": "SHOT_210.jpg",
+      "source_u": 1700.25,
+      "source_v": 568.79,
+      "rendered_rgb": [
+        79,
+        37,
+        18
+      ]
+    },
+    {
+      "pano_x": 1482,
+      "pano_y": 471,
+      "owner_source_id": 10,
+      "source_filename": "SHOT_300.jpg",
+      "source_u": 2308.47,
+      "source_v": 2669.78,
+      "rendered_rgb": [
+        102,
+        49,
+        27
+      ]
+    },
+    {
+      "pano_x": 2135,
+      "pano_y": 103,
+      "owner_source_id": 0,
+      "source_filename": "SHOT_000.jpg",
+      "source_u": 2121.1,
+      "source_v": 931.54,
+      "rendered_rgb": [
+        145,
+        90,
+        145
+      ]
+    },
+    {
+      "pano_x": 3444,
+      "pano_y": 160,
+      "owner_source_id": 4,
+      "source_filename": "SHOT_120.jpg",
+      "source_u": 1908.02,
+      "source_v": 1173.25,
+      "rendered_rgb": [
+        156,
+        169,
+        211
+      ]
+    },
+    {
+      "pano_x": 3171,
+      "pano_y": 199,
+      "owner_source_id": 3,
+      "source_filename": "SHOT_090.jpg",
+      "source_u": 2244.76,
+      "source_v": 1391.39,
+      "rendered_rgb": [
+        180,
+        174,
+        187
+      ]
+    },
+    {
+      "pano_x": 2919,
+      "pano_y": 215,
+      "owner_source_id": 3,
+      "source_filename": "SHOT_090.jpg",
+      "source_u": 1033.12,
+      "source_v": 1458.98,
+      "rendered_rgb": [
+        163,
+        135,
+        95
+      ]
+    },
+    {
+      "pano_x": 3735,
+      "pano_y": 211,
+      "owner_source_id": 5,
+      "source_filename": "SHOT_150.jpg",
+      "source_u": 1656.65,
+      "source_v": 1412.43,
+      "rendered_rgb": [
+        17,
+        14,
+        21
+      ]
+    },
+    {
+      "pano_x": 130,
+      "pano_y": 507,
+      "owner_source_id": 7,
+      "source_filename": "SHOT_210.jpg",
+      "source_u": 723.17,
+      "source_v": 2780.97,
+      "rendered_rgb": [
+        89,
+        32,
+        16
+      ]
+    },
+    {
+      "pano_x": 1685,
+      "pano_y": 15,
+      "owner_source_id": 11,
+      "source_filename": "SHOT_330.jpg",
+      "source_u": 1690.05,
+      "source_v": 408.76,
+      "rendered_rgb": [
+        45,
+        34,
+        28
+      ]
+    },
+    {
+      "pano_x": 3380,
+      "pano_y": 497,
+      "owner_source_id": 4,
+      "source_filename": "SHOT_120.jpg",
+      "source_u": 1664.0,
+      "source_v": 2828.98,
+      "rendered_rgb": [
+        52,
+        45,
+        57
+      ]
+    },
+    {
+      "pano_x": 769,
+      "pano_y": 331,
+      "owner_source_id": 8,
+      "source_filename": "SHOT_240.jpg",
+      "source_u": 2179.97,
+      "source_v": 1891.25,
+      "rendered_rgb": [
+        61,
+        58,
+        42
+      ]
+    },
+    {
+      "pano_x": 2391,
+      "pano_y": 550,
+      "owner_source_id": 1,
+      "source_filename": "SHOT_030.jpg",
+      "source_u": 1723.02,
+      "source_v": 3150.45,
+      "rendered_rgb": [
+        99,
+        77,
+        53
+      ]
+    },
+    {
+      "pano_x": 1515,
+      "pano_y": 600,
+      "owner_source_id": 11,
+      "source_filename": "SHOT_330.jpg",
+      "source_u": 730.94,
+      "source_v": 3391.87,
+      "rendered_rgb": [
+        75,
+        50,
+        10
+      ]
+    },
+    {
+      "pano_x": 3485,
+      "pano_y": 255,
+      "owner_source_id": 4,
+      "source_filename": "SHOT_120.jpg",
+      "source_u": 2125.17,
+      "source_v": 1632.17,
+      "rendered_rgb": [
+        162,
+        180,
+        215
+      ]
+    },
+    {
+      "pano_x": 2853,
+      "pano_y": 171,
+      "owner_source_id": 3,
+      "source_filename": "SHOT_090.jpg",
+      "source_u": 709.6,
+      "source_v": 1217.45,
+      "rendered_rgb": [
+        223,
+        223,
+        223
+      ]
+    },
+    {
+      "pano_x": 2433,
+      "pano_y": 497,
+      "owner_source_id": 1,
+      "source_filename": "SHOT_030.jpg",
+      "source_u": 1926.54,
+      "source_v": 2876.33,
+      "rendered_rgb": [
+        102,
+        68,
+        68
+      ]
+    },
+    {
+      "pano_x": 1215,
+      "pano_y": 470,
+      "owner_source_id": 10,
+      "source_filename": "SHOT_300.jpg",
+      "source_u": 1026.39,
+      "source_v": 2631.28,
+      "rendered_rgb": [
+        140,
+        117,
+        88
+      ]
+    },
+    {
+      "pano_x": 955,
+      "pano_y": 383,
+      "owner_source_id": 9,
+      "source_filename": "SHOT_270.jpg",
+      "source_u": 1398.9,
+      "source_v": 2158.7,
+      "rendered_rgb": [
+        185,
+        208,
+        224
+      ]
+    },
+    {
+      "pano_x": 2324,
+      "pano_y": 588,
+      "owner_source_id": 1,
+      "source_filename": "SHOT_030.jpg",
+      "source_u": 1401.74,
+      "source_v": 3358.65,
+      "rendered_rgb": [
+        66,
+        32,
+        23
+      ]
+    },
+    {
+      "pano_x": 1184,
+      "pano_y": 506,
+      "owner_source_id": 10,
+      "source_filename": "SHOT_300.jpg",
+      "source_u": 872.63,
+      "source_v": 2820.35,
+      "rendered_rgb": [
+        146,
+        106,
+        113
+      ]
+    },
+    {
+      "pano_x": 459,
+      "pano_y": 526,
+      "owner_source_id": 7,
+      "source_filename": "SHOT_210.jpg",
+      "source_u": 2300.78,
+      "source_v": 2890.58,
+      "rendered_rgb": [
+        103,
+        33,
+        7
+      ]
+    },
+    {
+      "pano_x": 3385,
+      "pano_y": 324,
+      "owner_source_id": 4,
+      "source_filename": "SHOT_120.jpg",
+      "source_u": 1656.27,
+      "source_v": 1984.85,
+      "rendered_rgb": [
+        21,
+        16,
+        35
+      ]
+    },
+    {
+      "pano_x": 21,
+      "pano_y": 213,
+      "owner_source_id": 6,
+      "source_filename": "SHOT_180.jpg",
+      "source_u": 1848.77,
+      "source_v": 1361.55,
+      "rendered_rgb": [
+        4,
+        5,
+        17
+      ]
+    },
+    {
+      "pano_x": 2300,
+      "pano_y": 207,
+      "owner_source_id": 1,
+      "source_filename": "SHOT_030.jpg",
+      "source_u": 1301.15,
+      "source_v": 1457.17,
+      "rendered_rgb": [
+        162,
+        130,
+        110
+      ]
+    },
+    {
+      "pano_x": 747,
+      "pano_y": 168,
+      "owner_source_id": 8,
+      "source_filename": "SHOT_240.jpg",
+      "source_u": 2070.67,
+      "source_v": 1083.11,
+      "rendered_rgb": [
+        111,
+        88,
+        105
+      ]
+    },
+    {
+      "pano_x": 2904,
+      "pano_y": 329,
+      "owner_source_id": 3,
+      "source_filename": "SHOT_090.jpg",
+      "source_u": 950.5,
+      "source_v": 2010.96,
+      "rendered_rgb": [
+        21,
+        23,
+        20
+      ]
+    },
+    {
+      "pano_x": 3632,
+      "pano_y": 279,
+      "owner_source_id": 5,
+      "source_filename": "SHOT_150.jpg",
+      "source_u": 1168.66,
+      "source_v": 1743.93,
+      "rendered_rgb": [
+        35,
+        30,
+        81
+      ]
+    },
+    {
+      "pano_x": 474,
+      "pano_y": 304,
+      "owner_source_id": 7,
+      "source_filename": "SHOT_210.jpg",
+      "source_u": 2394.85,
+      "source_v": 1778.75,
+      "rendered_rgb": [
+        124,
+        46,
+        34
+      ]
+    },
+    {
+      "pano_x": 1082,
+      "pano_y": 145,
+      "owner_source_id": 9,
+      "source_filename": "SHOT_270.jpg",
+      "source_u": 2047.58,
+      "source_v": 1007.6,
+      "rendered_rgb": [
+        136,
+        100,
+        75
+      ]
+    },
+    {
+      "pano_x": 2558,
+      "pano_y": 515,
+      "owner_source_id": 2,
+      "source_filename": "SHOT_060.jpg",
+      "source_u": 941.56,
+      "source_v": 2955.0,
+      "rendered_rgb": [
+        79,
+        49,
+        43
+      ]
+    },
+    {
+      "pano_x": 3753,
+      "pano_y": 89,
+      "owner_source_id": 5,
+      "source_filename": "SHOT_150.jpg",
+      "source_u": 1737.75,
+      "source_v": 782.49,
+      "rendered_rgb": [
+        14,
+        14,
+        12
+      ]
+    },
+    {
+      "pano_x": 2047,
+      "pano_y": 452,
+      "owner_source_id": 0,
+      "source_filename": "SHOT_000.jpg",
+      "source_u": 1692.29,
+      "source_v": 2653.45,
+      "rendered_rgb": [
+        235,
+        237,
+        236
+      ]
+    },
+    {
+      "pano_x": 3547,
+      "pano_y": 59,
+      "owner_source_id": 5,
+      "source_filename": "SHOT_150.jpg",
+      "source_u": 740.01,
+      "source_v": 585.32,
+      "rendered_rgb": [
+        145,
+        171,
+        194
+      ]
+    },
+    {
+      "pano_x": 2747,
+      "pano_y": 310,
+      "owner_source_id": 2,
+      "source_filename": "SHOT_060.jpg",
+      "source_u": 1831.01,
+      "source_v": 1919.66,
+      "rendered_rgb": [
+        97,
+        67,
+        56
+      ]
+    },
+    {
+      "pano_x": 975,
+      "pano_y": 527,
+      "owner_source_id": 9,
+      "source_filename": "SHOT_270.jpg",
+      "source_u": 1470.5,
+      "source_v": 2869.45,
+      "rendered_rgb": [
+        225,
+        232,
+        242
+      ]
+    },
+    {
+      "pano_x": 1806,
+      "pano_y": 226,
+      "owner_source_id": 11,
+      "source_filename": "SHOT_330.jpg",
+      "source_u": 2222.55,
+      "source_v": 1540.25,
+      "rendered_rgb": [
+        145,
+        117,
+        92
+      ]
+    },
+    {
+      "pano_x": 189,
+      "pano_y": 473,
+      "owner_source_id": 7,
+      "source_filename": "SHOT_210.jpg",
+      "source_u": 1013.5,
+      "source_v": 2593.31,
+      "rendered_rgb": [
+        90,
+        39,
+        37
+      ]
+    },
+    {
+      "pano_x": 3005,
+      "pano_y": 540,
+      "owner_source_id": 3,
+      "source_filename": "SHOT_090.jpg",
+      "source_u": 1419.46,
+      "source_v": 3063.54,
+      "rendered_rgb": [
+        79,
+        55,
+        45
+      ]
+    },
+    {
+      "pano_x": 2734,
+      "pano_y": 78,
+      "owner_source_id": 2,
+      "source_filename": "SHOT_060.jpg",
+      "source_u": 1750.04,
+      "source_v": 759.37,
+      "rendered_rgb": [
+        110,
+        108,
+        132
+      ]
+    },
+    {
+      "pano_x": 3005,
+      "pano_y": 432,
+      "owner_source_id": 3,
+      "source_filename": "SHOT_090.jpg",
+      "source_u": 1428.26,
+      "source_v": 2513.16,
+      "rendered_rgb": [
+        78,
+        45,
+        27
+      ]
+    },
+    {
+      "pano_x": 562,
+      "pano_y": 152,
+      "owner_source_id": 8,
+      "source_filename": "SHOT_240.jpg",
+      "source_u": 1176.59,
+      "source_v": 1013.92,
+      "rendered_rgb": [
+        139,
+        106,
+        75
+      ]
+    },
+    {
+      "pano_x": 1899,
+      "pano_y": 400,
+      "owner_source_id": 0,
+      "source_filename": "SHOT_000.jpg",
+      "source_u": 984.02,
+      "source_v": 2399.49,
+      "rendered_rgb": [
+        120,
+        99,
+        107
+      ]
+    },
+    {
+      "pano_x": 3638,
+      "pano_y": 278,
+      "owner_source_id": 5,
+      "source_filename": "SHOT_150.jpg",
+      "source_u": 1197.44,
+      "source_v": 1739.11,
+      "rendered_rgb": [
+        14,
+        27,
+        64
+      ]
+    },
+    {
+      "pano_x": 1267,
+      "pano_y": 56,
+      "owner_source_id": 10,
+      "source_filename": "SHOT_300.jpg",
+      "source_u": 1304.66,
+      "source_v": 559.32,
+      "rendered_rgb": [
+        145,
+        120,
+        81
+      ]
+    },
+    {
+      "pano_x": 2879,
+      "pano_y": 185,
+      "owner_source_id": 3,
+      "source_filename": "SHOT_090.jpg",
+      "source_u": 839.0,
+      "source_v": 1298.46,
+      "rendered_rgb": [
+        77,
+        44,
+        73
+      ]
+    },
+    {
+      "pano_x": 1528,
+      "pano_y": 397,
+      "owner_source_id": 11,
+      "source_filename": "SHOT_330.jpg",
+      "source_u": 846.46,
+      "source_v": 2313.97,
+      "rendered_rgb": [
+        105,
+        74,
+        112
+      ]
+    },
+    {
+      "pano_x": 3202,
+      "pano_y": 604,
+      "owner_source_id": 3,
+      "source_filename": "SHOT_090.jpg",
+      "source_u": 2371.44,
+      "source_v": 3488.78,
+      "rendered_rgb": [
+        144,
+        109,
+        90
+      ]
+    },
+    {
+      "pano_x": 3556,
+      "pano_y": 157,
+      "owner_source_id": 5,
+      "source_filename": "SHOT_150.jpg",
+      "source_u": 790.52,
+      "source_v": 1127.96,
+      "rendered_rgb": [
+        181,
+        194,
+        201
+      ]
+    },
+    {
+      "pano_x": 3890,
+      "pano_y": 358,
+      "owner_source_id": 6,
+      "source_filename": "SHOT_180.jpg",
+      "source_u": 784.0,
+      "source_v": 2100.7,
+      "rendered_rgb": [
+        150,
+        133,
+        79
+      ]
+    },
+    {
+      "pano_x": 646,
+      "pano_y": 439,
+      "owner_source_id": 8,
+      "source_filename": "SHOT_240.jpg",
+      "source_u": 1590.75,
+      "source_v": 2411.19,
+      "rendered_rgb": [
+        194,
+        155,
+        51
+      ]
+    },
+    {
+      "pano_x": 2068,
+      "pano_y": 588,
+      "owner_source_id": 0,
+      "source_filename": "SHOT_000.jpg",
+      "source_u": 1790.18,
+      "source_v": 3379.42,
+      "rendered_rgb": [
+        208,
+        194,
+        232
+      ]
+    },
+    {
+      "pano_x": 2888,
+      "pano_y": 465,
+      "owner_source_id": 3,
+      "source_filename": "SHOT_090.jpg",
+      "source_u": 860.08,
+      "source_v": 2682.67,
+      "rendered_rgb": [
+        39,
+        28,
+        26
+      ]
+    },
+    {
+      "pano_x": 2214,
+      "pano_y": 445,
+      "owner_source_id": 1,
+      "source_filename": "SHOT_030.jpg",
+      "source_u": 874.42,
+      "source_v": 2612.95,
+      "rendered_rgb": [
+        126,
+        82,
+        79
+      ]
+    },
+    {
+      "pano_x": 1297,
+      "pano_y": 487,
+      "owner_source_id": 10,
+      "source_filename": "SHOT_300.jpg",
+      "source_u": 1416.87,
+      "source_v": 2713.58,
+      "rendered_rgb": [
+        156,
+        122,
+        84
+      ]
+    },
+    {
+      "pano_x": 2435,
+      "pano_y": 529,
+      "owner_source_id": 1,
+      "source_filename": "SHOT_030.jpg",
+      "source_u": 1935.44,
+      "source_v": 3045.57,
+      "rendered_rgb": [
+        21,
+        10,
+        15
+      ]
+    },
+    {
+      "pano_x": 600,
+      "pano_y": 72,
+      "owner_source_id": 8,
+      "source_filename": "SHOT_240.jpg",
+      "source_u": 1355.84,
+      "source_v": 580.98,
+      "rendered_rgb": [
+        114,
+        75,
+        42
+      ]
+    },
+    {
+      "pano_x": 2363,
+      "pano_y": 16,
+      "owner_source_id": 1,
+      "source_filename": "SHOT_030.jpg",
+      "source_u": 1605.97,
+      "source_v": 450.09,
+      "rendered_rgb": [
+        158,
+        124,
+        127
+      ]
+    },
+    {
+      "pano_x": 2061,
+      "pano_y": 530,
+      "owner_source_id": 0,
+      "source_filename": "SHOT_000.jpg",
+      "source_u": 1757.71,
+      "source_v": 3056.93,
+      "rendered_rgb": [
+        164,
+        129,
+        196
+      ]
+    },
+    {
+      "pano_x": 241,
+      "pano_y": 325,
+      "owner_source_id": 7,
+      "source_filename": "SHOT_210.jpg",
+      "source_u": 1265.38,
+      "source_v": 1874.01,
+      "rendered_rgb": [
+        154,
+        79,
+        46
+      ]
+    },
+    {
+      "pano_x": 2041,
+      "pano_y": 612,
+      "owner_source_id": 0,
+      "source_filename": "SHOT_000.jpg",
+      "source_u": 1659.93,
+      "source_v": 3515.15,
+      "rendered_rgb": [
+        28,
+        19,
+        16
+      ]
+    },
+    {
+      "pano_x": 2824,
+      "pano_y": 545,
+      "owner_source_id": 2,
+      "source_filename": "SHOT_060.jpg",
+      "source_u": 2225.76,
+      "source_v": 3101.54,
+      "rendered_rgb": [
+        29,
+        30,
+        24
+      ]
+    },
+    {
+      "pano_x": 3417,
+      "pano_y": 595,
+      "owner_source_id": 4,
+      "source_filename": "SHOT_120.jpg",
+      "source_u": 1860.29,
+      "source_v": 3355.26,
+      "rendered_rgb": [
+        119,
+        127,
+        195
+      ]
+    },
+    {
+      "pano_x": 2612,
+      "pano_y": 201,
+      "owner_source_id": 2,
+      "source_filename": "SHOT_060.jpg",
+      "source_u": 1180.32,
+      "source_v": 1402.48,
+      "rendered_rgb": [
+        235,
+        234,
+        239
+      ]
+    },
+    {
+      "pano_x": 2945,
+      "pano_y": 343,
+      "owner_source_id": 3,
+      "source_filename": "SHOT_090.jpg",
+      "source_u": 1148.6,
+      "source_v": 2080.85,
+      "rendered_rgb": [
+        74,
+        52,
+        39
+      ]
+    },
+    {
+      "pano_x": 1363,
+      "pano_y": 522,
+      "owner_source_id": 10,
+      "source_filename": "SHOT_300.jpg",
+      "source_u": 1726.03,
+      "source_v": 2898.56,
+      "rendered_rgb": [
+        139,
+        121,
+        73
+      ]
+    },
+    {
+      "pano_x": 2139,
+      "pano_y": 399,
+      "owner_source_id": 0,
+      "source_filename": "SHOT_000.jpg",
+      "source_u": 2138.32,
+      "source_v": 2401.92,
+      "rendered_rgb": [
+        129,
+        77,
+        125
+      ]
+    },
+    {
+      "pano_x": 1390,
+      "pano_y": 217,
+      "owner_source_id": 10,
+      "source_filename": "SHOT_300.jpg",
+      "source_u": 1879.82,
+      "source_v": 1414.28,
+      "rendered_rgb": [
+        88,
+        31,
+        15
+      ]
+    },
+    {
+      "pano_x": 3003,
+      "pano_y": 444,
+      "owner_source_id": 3,
+      "source_filename": "SHOT_090.jpg",
+      "source_u": 1417.81,
+      "source_v": 2572.07,
+      "rendered_rgb": [
+        70,
+        55,
+        22
+      ]
+    },
+    {
+      "pano_x": 1478,
+      "pano_y": 221,
+      "owner_source_id": 10,
+      "source_filename": "SHOT_300.jpg",
+      "source_u": 2312.39,
+      "source_v": 1428.54,
+      "rendered_rgb": [
+        82,
+        45,
+        29
+      ]
+    },
+    {
+      "pano_x": 3499,
+      "pano_y": 382,
+      "owner_source_id": 4,
+      "source_filename": "SHOT_120.jpg",
+      "source_u": 2217.87,
+      "source_v": 2247.36,
+      "rendered_rgb": [
+        183,
+        217,
+        219
+      ]
+    },
+    {
+      "pano_x": 2556,
+      "pano_y": 591,
+      "owner_source_id": 2,
+      "source_filename": "SHOT_060.jpg",
+      "source_u": 938.02,
+      "source_v": 3376.31,
+      "rendered_rgb": [
+        67,
+        40,
+        47
+      ]
+    },
+    {
+      "pano_x": 775,
+      "pano_y": 6,
+      "owner_source_id": 8,
+      "source_filename": "SHOT_240.jpg",
+      "source_u": 2210.43,
+      "source_v": 139.01,
+      "rendered_rgb": [
+        46,
+        50,
+        37
+      ]
+    },
+    {
+      "pano_x": 4014,
+      "pano_y": 271,
+      "owner_source_id": 6,
+      "source_filename": "SHOT_180.jpg",
+      "source_u": 1371.35,
+      "source_v": 1661.75,
+      "rendered_rgb": [
+        195,
+        159,
+        124
+      ]
+    },
+    {
+      "pano_x": 34,
+      "pano_y": 15,
+      "owner_source_id": 6,
+      "source_filename": "SHOT_180.jpg",
+      "source_u": 1879.45,
+      "source_v": 278.13,
+      "rendered_rgb": [
+        16,
+        13,
+        23
+      ]
+    },
+    {
+      "pano_x": 2253,
+      "pano_y": 423,
+      "owner_source_id": 1,
+      "source_filename": "SHOT_030.jpg",
+      "source_u": 1066.94,
+      "source_v": 2498.33,
+      "rendered_rgb": [
+        145,
+        114,
+        93
+      ]
+    },
+    {
+      "pano_x": 3152,
+      "pano_y": 523,
+      "owner_source_id": 3,
+      "source_filename": "SHOT_090.jpg",
+      "source_u": 2127.02,
+      "source_v": 3003.32,
+      "rendered_rgb": [
+        122,
+        89,
+        79
+      ]
+    },
+    {
+      "pano_x": 1955,
+      "pano_y": 20,
+      "owner_source_id": 0,
+      "source_filename": "SHOT_000.jpg",
+      "source_u": 1267.89,
+      "source_v": 481.24,
+      "rendered_rgb": [
+        184,
+        171,
+        214
+      ]
+    },
+    {
+      "pano_x": 1585,
+      "pano_y": 227,
+      "owner_source_id": 11,
+      "source_filename": "SHOT_330.jpg",
+      "source_u": 1163.02,
+      "source_v": 1503.45,
+      "rendered_rgb": [
+        138,
+        81,
+        81
+      ]
+    },
+    {
+      "pano_x": 3943,
+      "pano_y": 287,
+      "owner_source_id": 6,
+      "source_filename": "SHOT_180.jpg",
+      "source_u": 1032.85,
+      "source_v": 1747.6,
+      "rendered_rgb": [
+        191,
+        161,
+        133
+      ]
+    },
+    {
+      "pano_x": 3459,
+      "pano_y": 133,
+      "owner_source_id": 4,
+      "source_filename": "SHOT_120.jpg",
+      "source_u": 1975.15,
+      "source_v": 1028.51,
+      "rendered_rgb": [
+        163,
+        195,
+        210
+      ]
+    },
+    {
+      "pano_x": 3073,
+      "pano_y": 282,
+      "owner_source_id": 3,
+      "source_filename": "SHOT_090.jpg",
+      "source_u": 1762.62,
+      "source_v": 1799.2,
+      "rendered_rgb": [
+        36,
+        30,
+        32
+      ]
+    },
+    {
+      "pano_x": 1021,
+      "pano_y": 403,
+      "owner_source_id": 9,
+      "source_filename": "SHOT_270.jpg",
+      "source_u": 1708.01,
+      "source_v": 2265.0,
+      "rendered_rgb": [
+        65,
+        66,
+        96
+      ]
+    },
+    {
+      "pano_x": 3461,
+      "pano_y": 65,
+      "owner_source_id": 4,
+      "source_filename": "SHOT_120.jpg",
+      "source_u": 1970.92,
+      "source_v": 659.6,
+      "rendered_rgb": [
+        158,
+        183,
+        203
+      ]
+    },
+    {
+      "pano_x": 2613,
+      "pano_y": 603,
+      "owner_source_id": 2,
+      "source_filename": "SHOT_060.jpg",
+      "source_u": 1216.23,
+      "source_v": 3422.63,
+      "rendered_rgb": [
+        175,
+        140,
+        134
+      ]
+    },
+    {
+      "pano_x": 1129,
+      "pano_y": 436,
+      "owner_source_id": 9,
+      "source_filename": "SHOT_270.jpg",
+      "source_u": 2223.37,
+      "source_v": 2454.52,
+      "rendered_rgb": [
+        149,
+        130,
+        108
+      ]
+    },
+    {
+      "pano_x": 3843,
+      "pano_y": 258,
+      "owner_source_id": 5,
+      "source_filename": "SHOT_150.jpg",
+      "source_u": 2180.35,
+      "source_v": 1629.99,
+      "rendered_rgb": [
+        175,
+        141,
+        116
+      ]
+    },
+    {
+      "pano_x": 3893,
+      "pano_y": 102,
+      "owner_source_id": 6,
+      "source_filename": "SHOT_180.jpg",
+      "source_u": 749.93,
+      "source_v": 797.99,
+      "rendered_rgb": [
+        159,
+        124,
+        94
+      ]
+    },
+    {
+      "pano_x": 1500,
+      "pano_y": 566,
+      "owner_source_id": 10,
+      "source_filename": "SHOT_300.jpg",
+      "source_u": 2389.47,
+      "source_v": 3187.22,
+      "rendered_rgb": [
+        125,
+        60,
+        36
+      ]
+    }
+  ]
+}
