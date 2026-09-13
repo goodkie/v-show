@@ -632,7 +632,7 @@
     "source_reentry": 0
   },
   "visual_wedge_heuristic_count": 3,
-  "candidate_adoption_gate": "PASS",
+  "candidate_adoption_gate": "FAIL",
   "gate_breakdown": {
     "global_p95_imp_ge_20pct": 0,
     "yaw345_imp_ge_30pct": 1,
@@ -666,5 +666,6 @@
   },
   "12k_render_executed": 0,
   "12k_render_allowed": 0,
-  "owner_review_required": 1
+  "owner_review_required": 1,
+  "gate_failure_reason": "GLOBAL_P95_IMPROVEMENT_BELOW_REQUIRED_20_PERCENT"
 }
