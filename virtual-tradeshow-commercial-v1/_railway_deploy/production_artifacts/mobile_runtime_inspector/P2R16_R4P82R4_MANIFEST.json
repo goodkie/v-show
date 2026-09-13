@@ -43,5 +43,7 @@
     "P2R16_R4P82R4_SEAM_RESIDUAL_BEFORE_AFTER_YAW150.png",
     "P2R16_R4P82R4_SEAM_RESIDUAL_BEFORE_AFTER_YAW240.png",
     "P2R16_R4P82R4_SEAM_RESIDUAL_BEFORE_AFTER_YAW345.png"
-  ]
+  ],
+  "git_commit": "b90d8e1bd1c7afcdff0d207d7d1c0798fddf3cac",
+  "commit_a": "b90d8e1bd1c7afcdff0d207d7d1c0798fddf3cac"
 }
