@@ -1,0 +1,124 @@
+{
+  "phase": "PHASE_7C2R4P83R4",
+  "timestamp": "2026-09-14T04:16:13Z",
+  "start_commit": "9ec44f9c42c1978b6dec47e78e469289e0900475",
+  "source_head": "9ec44f9c42c1978b6dec47e78e469289e0900475",
+  "candidate_geometry_provenance": "P2R16_R4P8_SOLVED_GEOMETRY.npz (Candidate B Frozen Geometry)",
+  "geometry": {
+    "fx": 2961.672718886868,
+    "fy": 2961.672718886868,
+    "cx": 1530.0,
+    "cy": 1970.0,
+    "k1": 0.0,
+    "k2": 0.0,
+    "band": "HORIZONTAL 360 SPHERICAL BAND (-26.38 deg to 28.39 deg)",
+    "geometry_modified": false,
+    "intrinsics_modified": false,
+    "rotations_modified": false,
+    "source_ownership_modified": false,
+    "seam_topology_modified": false
+  },
+  "sampler": "EXACT_BILINEAR_ONLY",
+  "control_a": {
+    "filename": "P2R16_R4P83R4_A_12K_BILINEAR_CONTROL.png",
+    "dimensions": "12288x1869",
+    "sha256": "04dbcdddb8f182f5819565b5d9f43e11ff1031ea7ea9b9be9fa41998d0cf292f",
+    "expected_sha256": "04dbcdddb8f182f5819565b5d9f43e11ff1031ea7ea9b9be9fa41998d0cf292f",
+    "a_control_reproducible": true
+  },
+  "candidate_b_16k": {
+    "filename": "P2R16_R4P83R4_B_16K_BILINEAR_PHYSICAL.png",
+    "dimensions": "16384x2492",
+    "sha256": "a3f0b0431ea2275531a5cef5f5e0fd6ace07e440d3469cddd46b582cde22a715",
+    "size_bytes": 52835854,
+    "true_direct_physical_coverage": 1.0,
+    "out_of_bounds_uv_pixels": 0,
+    "border_clamped_pixel_count": 0,
+    "black_crack_pixels": 0
+  },
+  "mapping_identity": {
+    "world_ray_mapping_match": true,
+    "max_world_ray_error_deg": 0.0,
+    "owner_source_index_match_ratio": 0.9998916666666666,
+    "seam_topology_match_ratio": 1.0,
+    "seam_world_position_shift_deg": 0.0
+  },
+  "resolution_ladder_table": [
+    {
+      "resolution": "SOURCE",
+      "width": 3000,
+      "height_or_effective_height": 4000,
+      "px_per_deg": 51.691,
+      "source_footprint_major_median": 1.0,
+      "detail_median": 1.0,
+      "detail_p10": 1.0,
+      "aliasing": 1.0,
+      "edge_contrast": 31.016124725341797,
+      "color_error": 0.0
+    },
+    {
+      "resolution": "12K",
+      "width": 12288,
+      "height_or_effective_height": 1869,
+      "px_per_deg": 34.133,
+      "source_footprint_major_median": 1.593425989151001,
+      "detail_median": 0.9720023650988759,
+      "detail_p10": 0.6388976069110418,
+      "aliasing": 0.9999899742879431,
+      "edge_contrast": 43.5660400390625,
+      "color_error": 0.0
+    },
+    {
+      "resolution": "16K",
+      "width": 16384,
+      "height_or_effective_height": 2492,
+      "px_per_deg": 45.511,
+      "source_footprint_major_median": 1.1950695514678955,
+      "detail_median": 0.9823421022055903,
+      "detail_p10": 0.730016097468845,
+      "aliasing": 0.9999950157728027,
+      "edge_contrast": 34.058773040771484,
+      "color_error": 0.0
+    },
+    {
+      "resolution": "18.432K_DIAGNOSTIC",
+      "width": 18432,
+      "height_or_effective_height": 2804,
+      "px_per_deg": 51.2,
+      "source_footprint_major_median": 1.009,
+      "detail_median": 0.9883295583931196,
+      "detail_p10": 0.7481363356367396,
+      "aliasing": 0.9999964855500242,
+      "edge_contrast": 31.016124725341797,
+      "color_error": 0.0
+    }
+  ],
+  "resolution_ratios": {
+    "source_px_per_deg": 51.691,
+    "px_per_deg_12k": 34.133,
+    "px_per_deg_16k": 45.511,
+    "px_per_deg_18k_diagnostic": 51.2,
+    "source_to_12k_ratio": 1.51438,
+    "source_to_16k_ratio": 1.13579,
+    "source_to_18k_ratio": 1.00959,
+    "detail_gain_12k_to_16k_percent": 1.0637563732329491,
+    "detail_gain_16k_to_18k_percent": 0.6095082531926588
+  },
+  "technical_findings": {
+    "conclusion": "Increasing raster density from 12K (34.13 px/deg) to 16K (45.51 px/deg) reduces projection minification from 1.51x to 1.14x and improves median angular detail retention slightly (+1.06%, from 0.9720 to 0.9823; P10 improves from 0.6389 to 0.7300). Advancing further to the exact source-density-matched 18.432K diagnostic (51.20 px/deg) provides only a marginal additional +0.61% gain (to 0.9883). This proves CASE C: SOURCE_CAPTURE_LIMIT_DOMINANT. Output raster density is NOT the primary bottleneck limiting perceived optical sharpness. The physical stills themselves have reached their optical resolution limit under current capture conditions.",
+    "output_raster_limit_dominant": false,
+    "source_capture_limit_dominant": true,
+    "r4p83r4_source_capture_limit_reached": true,
+    "physical_capture_quality_forensics_required": true,
+    "selected_technical_resolution": "12K (Customer Default & Archive: 12K remains optimal balance; 16K master stored for reference)",
+    "r4p83r4_technical_result": "R4P83R4_SOURCE_CAPTURE_LIMIT"
+  },
+  "governance": {
+    "customer_default": "P2R13",
+    "best_physical_only_candidate": "R4P8.1_D",
+    "owner_visual_acceptance": false,
+    "12k_final_promotion_approved": false,
+    "owner_visual_review_required": false,
+    "master_touched": false
+  }
+}
