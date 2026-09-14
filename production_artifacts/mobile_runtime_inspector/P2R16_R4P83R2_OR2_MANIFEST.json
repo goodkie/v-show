@@ -13,7 +13,8 @@
     "commit_r3_a": "cb914f88510b64d6b1916eaa48e4be9676844c7b",
     "commit_r4_a": "35b3e86149ff85dc929232c76b7e120ccc1b5e7c",
     "commit_r5_a": "198f15156540fa1c09dee62bffb37545da53ff64",
-    "commit_r5g1_a": "e3b6af3ad1453edc2cade8842813bb0fc27bae4a"
+    "commit_r5g1_a": "e3b6af3ad1453edc2cade8842813bb0fc27bae4a",
+    "commit_r5g2_a": "a06e0419d26be76e27a69c0d38a0653d9e334e3a"
   },
   "governance": {
     "CUSTOMER_DEFAULT": "P2R13",
@@ -30,7 +31,12 @@
     "r5_original_report_superseded": true,
     "recapture_protocol_status": "HOLD_PENDING_CAPTURE_CONTROL_TEST",
     "corrected_root_cause_state": "SOURCE_SOFTNESS_CAUSE_INCONCLUSIVE",
-    "corrected_primary_source_limit": "SOFT_SOURCE_CAUSE_NOT_SEPARABLE"
+    "corrected_primary_source_limit": "SOFT_SOURCE_CAUSE_NOT_SEPARABLE",
+    "r5g2_qa_test_page_ready": true,
+    "r5g2_status": "READY_FOR_PHYSICAL_CAPTURE_CONTROL_TEST",
+    "physical_test_executed": false,
+    "full_360_recapture_performed": false,
+    "physical_recapture_authorized": false
   },
   "inputs": {
     "CANDIDATE_B_12K_PNG_SHA256": "04dbcdddb8f182f5819565b5d9f43e11ff1031ea7ea9b9be9fa41998d0cf292f",
