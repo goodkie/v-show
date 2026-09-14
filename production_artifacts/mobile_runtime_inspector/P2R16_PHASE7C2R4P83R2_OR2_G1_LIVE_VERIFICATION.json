@@ -1,0 +1,270 @@
+{
+  "phase": "PHASE_7C2R4P83R2_OR2_G1",
+  "timestamp": "2026-09-14T02:45:57.624Z",
+  "baseUrl": "https://v-show-commercial-v1-production.up.railway.app",
+  "deployCommit": "ecccf64d1c02684cc5133d1c43855a4f0fb009f0",
+  "artifactsVerification": {
+    "passed": true,
+    "results": {
+      "P2R16_R4P83R2_OR2_OWNER_REVIEW_INDEX.html": {
+        "url": "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_R4P83R2_OR2_OWNER_REVIEW_INDEX.html",
+        "statusCode": 200,
+        "bytes": 20197,
+        "contentType": "text/html; charset=UTF-8",
+        "ok": true
+      },
+      "P2R16_R4P83R2_OR2_MANIFEST.json": {
+        "url": "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_R4P83R2_OR2_MANIFEST.json",
+        "statusCode": 200,
+        "bytes": 12436,
+        "contentType": "application/json; charset=UTF-8",
+        "ok": true
+      },
+      "P2R16_R4P83R2_OR2_G1_PROVENANCE_RECONCILIATION.json": {
+        "url": "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_R4P83R2_OR2_G1_PROVENANCE_RECONCILIATION.json",
+        "statusCode": 200,
+        "bytes": 5234,
+        "contentType": "application/json; charset=UTF-8",
+        "ok": true
+      },
+      "P2R16_R4P83R2_OR2_OWNER_VERDICT_TEMPLATE.json": {
+        "url": "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_R4P83R2_OR2_OWNER_VERDICT_TEMPLATE.json",
+        "statusCode": 200,
+        "bytes": 1313,
+        "contentType": "application/json; charset=UTF-8",
+        "ok": true
+      },
+      "P2R16_R4P83R2_OR2_STRUCTURAL_LINE_METRICS.json": {
+        "url": "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_R4P83R2_OR2_STRUCTURAL_LINE_METRICS.json",
+        "statusCode": 200,
+        "bytes": 3330,
+        "contentType": "application/json; charset=UTF-8",
+        "ok": true
+      },
+      "P2R16_R4P83R2_OR2_SEAM_METRICS.json": {
+        "url": "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_R4P83R2_OR2_SEAM_METRICS.json",
+        "statusCode": 200,
+        "bytes": 1384,
+        "contentType": "application/json; charset=UTF-8",
+        "ok": true
+      },
+      "P2R16_R4P83R2_OR2_COMPARE_YAW000.png": {
+        "url": "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_R4P83R2_OR2_COMPARE_YAW000.png",
+        "statusCode": 200,
+        "bytes": 1567432,
+        "contentType": "image/png",
+        "ok": true
+      },
+      "P2R16_R4P83R2_OR2_CLOSURE_345_FORENSIC.png": {
+        "url": "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_R4P83R2_OR2_CLOSURE_345_FORENSIC.png",
+        "statusCode": 200,
+        "bytes": 2638518,
+        "contentType": "image/png",
+        "ok": true
+      },
+      "P2R16_R4P83R2_OR2_NATIVE1TO1_YAW000_COMPARE.png": {
+        "url": "https://v-show-commercial-v1-production.up.railway.app/production_artifacts/mobile_runtime_inspector/P2R16_R4P83R2_OR2_NATIVE1TO1_YAW000_COMPARE.png",
+        "statusCode": 200,
+        "bytes": 1091851,
+        "contentType": "image/png",
+        "ok": true
+      }
+    }
+  },
+  "viewsVerification": {
+    "passed": true,
+    "results": [
+      {
+        "view": "Yaw 000 Full Context (HFOV 85)",
+        "yaw": 0,
+        "pitch": 0,
+        "hfov": 85,
+        "httpStatus": 200,
+        "mode": "quality-ai-r4p83r2-owner-final",
+        "textureWidth": 12288,
+        "textureHeight": 1869,
+        "textureLoaded": true,
+        "framebufferNonblack": 0.9738,
+        "framebufferLuma": 66.16,
+        "blackScreen": false,
+        "hudBandIndicator": true,
+        "pass": true,
+        "jsErrors": []
+      },
+      {
+        "view": "Yaw 060 Full Context (HFOV 85)",
+        "yaw": 60,
+        "pitch": 0,
+        "hfov": 85,
+        "httpStatus": 200,
+        "mode": "quality-ai-r4p83r2-owner-final",
+        "textureWidth": 12288,
+        "textureHeight": 1869,
+        "textureLoaded": true,
+        "framebufferNonblack": 0.9984,
+        "framebufferLuma": 93.24,
+        "blackScreen": false,
+        "hudBandIndicator": true,
+        "pass": true,
+        "jsErrors": []
+      },
+      {
+        "view": "Yaw 090 Full Context (HFOV 85)",
+        "yaw": 90,
+        "pitch": 0,
+        "hfov": 85,
+        "httpStatus": 200,
+        "mode": "quality-ai-r4p83r2-owner-final",
+        "textureWidth": 12288,
+        "textureHeight": 1869,
+        "textureLoaded": true,
+        "framebufferNonblack": 0.998,
+        "framebufferLuma": 102.87,
+        "blackScreen": false,
+        "hudBandIndicator": true,
+        "pass": true,
+        "jsErrors": []
+      },
+      {
+        "view": "Yaw 150 Full Context (HFOV 85)",
+        "yaw": 150,
+        "pitch": 0,
+        "hfov": 85,
+        "httpStatus": 200,
+        "mode": "quality-ai-r4p83r2-owner-final",
+        "textureWidth": 12288,
+        "textureHeight": 1869,
+        "textureLoaded": true,
+        "framebufferNonblack": 0.9989,
+        "framebufferLuma": 112.63,
+        "blackScreen": false,
+        "hudBandIndicator": true,
+        "pass": true,
+        "jsErrors": []
+      },
+      {
+        "view": "Yaw 180 Full Context (HFOV 85)",
+        "yaw": 180,
+        "pitch": 0,
+        "hfov": 85,
+        "httpStatus": 200,
+        "mode": "quality-ai-r4p83r2-owner-final",
+        "textureWidth": 12288,
+        "textureHeight": 1869,
+        "textureLoaded": true,
+        "framebufferNonblack": 0.9889,
+        "framebufferLuma": 117.63,
+        "blackScreen": false,
+        "hudBandIndicator": true,
+        "pass": true,
+        "jsErrors": []
+      },
+      {
+        "view": "Yaw 240 Full Context (HFOV 85)",
+        "yaw": 240,
+        "pitch": 0,
+        "hfov": 85,
+        "httpStatus": 200,
+        "mode": "quality-ai-r4p83r2-owner-final",
+        "textureWidth": 12288,
+        "textureHeight": 1869,
+        "textureLoaded": true,
+        "framebufferNonblack": 0.9872,
+        "framebufferLuma": 117.34,
+        "blackScreen": false,
+        "hudBandIndicator": true,
+        "pass": true,
+        "jsErrors": []
+      },
+      {
+        "view": "Yaw 270 Full Context (HFOV 85)",
+        "yaw": 270,
+        "pitch": 0,
+        "hfov": 85,
+        "httpStatus": 200,
+        "mode": "quality-ai-r4p83r2-owner-final",
+        "textureWidth": 12288,
+        "textureHeight": 1869,
+        "textureLoaded": true,
+        "framebufferNonblack": 0.9993,
+        "framebufferLuma": 116.73,
+        "blackScreen": false,
+        "hudBandIndicator": true,
+        "pass": true,
+        "jsErrors": []
+      },
+      {
+        "view": "Yaw 345 Full Context (HFOV 85)",
+        "yaw": 345,
+        "pitch": 0,
+        "hfov": 85,
+        "httpStatus": 200,
+        "mode": "quality-ai-r4p83r2-owner-final",
+        "textureWidth": 12288,
+        "textureHeight": 1869,
+        "textureLoaded": true,
+        "framebufferNonblack": 0.9709,
+        "framebufferLuma": 85.59,
+        "blackScreen": false,
+        "hudBandIndicator": true,
+        "pass": true,
+        "jsErrors": []
+      },
+      {
+        "view": "Yaw 150 High Magnification (HFOV 25)",
+        "yaw": 150,
+        "pitch": 0,
+        "hfov": 25,
+        "httpStatus": 200,
+        "mode": "quality-ai-r4p83r2-owner-final",
+        "textureWidth": 12288,
+        "textureHeight": 1869,
+        "textureLoaded": true,
+        "framebufferNonblack": 0.9989,
+        "framebufferLuma": 112.63,
+        "blackScreen": false,
+        "hudBandIndicator": true,
+        "pass": true,
+        "jsErrors": []
+      },
+      {
+        "view": "Yaw 240 High Magnification (HFOV 25)",
+        "yaw": 240,
+        "pitch": 0,
+        "hfov": 25,
+        "httpStatus": 200,
+        "mode": "quality-ai-r4p83r2-owner-final",
+        "textureWidth": 12288,
+        "textureHeight": 1869,
+        "textureLoaded": true,
+        "framebufferNonblack": 0.9872,
+        "framebufferLuma": 117.34,
+        "blackScreen": false,
+        "hudBandIndicator": true,
+        "pass": true,
+        "jsErrors": []
+      },
+      {
+        "view": "Yaw 345 Deep Perspective (HFOV 18)",
+        "yaw": 345,
+        "pitch": 0,
+        "hfov": 18,
+        "httpStatus": 200,
+        "mode": "quality-ai-r4p83r2-owner-final",
+        "textureWidth": 12288,
+        "textureHeight": 1869,
+        "textureLoaded": true,
+        "framebufferNonblack": 0.9709,
+        "framebufferLuma": 85.59,
+        "blackScreen": false,
+        "hudBandIndicator": true,
+        "pass": true,
+        "jsErrors": []
+      }
+    ]
+  },
+  "abToggleVerification": {
+    "passed": true
+  },
+  "overallLiveVerification": "PASS"
+}
