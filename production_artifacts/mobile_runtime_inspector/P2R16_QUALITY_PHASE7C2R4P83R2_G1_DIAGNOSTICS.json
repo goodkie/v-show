@@ -1,0 +1,522 @@
+{
+  "phase": "PHASE_7C2R4P83R2_G1",
+  "timestamp": "2026-09-14T01:31:21Z",
+  "intrinsics_provenance": {
+    "optimizer_f": 2961.672718886868,
+    "optimizer_cx": 1530.0,
+    "optimizer_cy": 1970.0,
+    "optimizer_k1": 0.0,
+    "optimizer_k2": 0.0,
+    "persisted_f": 2961.672718886868,
+    "persisted_cx": 1530.0,
+    "persisted_cy": 1970.0,
+    "renderer_4k_f": 2961.672718886868,
+    "renderer_4k_cx": 1530.0,
+    "renderer_4k_cy": 1970.0,
+    "renderer_12k_f": 2961.672718886868,
+    "renderer_12k_cx": 1530.0,
+    "renderer_12k_cy": 1970.0,
+    "diagnostics_f": 2961.672718886868,
+    "diagnostics_cx": 1530.0,
+    "diagnostics_cy": 100.0,
+    "viewer_hud_f": 2961.67,
+    "viewer_hud_cx": 1530.0,
+    "viewer_hud_cy": 1970.0,
+    "all_renderers_used_canonical_intrinsics": true,
+    "diagnostics_cy_was_metadata_only_corruption": true,
+    "corruption_root_cause": "Variable shadowing in execute_phase7c2r4p83r2_master.py line 635 (cy, cx_p = p4_crop.shape[:2] where p4_crop was 100x100) overwrote global cy before JSON serialization at line 853",
+    "canonical_intrinsics": {
+      "f": 2961.672718886868,
+      "cx": 1530.0,
+      "cy": 1970.0,
+      "k1": 0.0,
+      "k2": 0.0,
+      "hfov_deg": 53.72174178508982
+    }
+  },
+  "true_uv_coverage": {
+    "total_pixels": 22966272,
+    "true_valid_uv_pixels": 22966272,
+    "out_of_bounds_uv_pixels": 0,
+    "border_clamped_pixel_count": 0,
+    "true_direct_physical_coverage": 1.0,
+    "coverage_pass": true,
+    "per_camera_metrics": {
+      "camera_00": {
+        "camera_index": 0,
+        "total_pixels": 1908141,
+        "true_valid_pixels": 1908141,
+        "out_of_bounds_pixels": 0,
+        "border_clamped_pixels": 0,
+        "valid_ratio": 1.0,
+        "u_range": [
+          669.0281372070312,
+          2290.96142578125
+        ],
+        "v_range": [
+          365.3551025390625,
+          3558.10205078125
+        ]
+      },
+      "camera_01": {
+        "camera_index": 1,
+        "total_pixels": 1880187,
+        "true_valid_pixels": 1880187,
+        "out_of_bounds_pixels": 0,
+        "border_clamped_pixels": 0,
+        "valid_ratio": 1.0,
+        "u_range": [
+          701.3262939453125,
+          2292.52392578125
+        ],
+        "v_range": [
+          356.784912109375,
+          3539.115234375
+        ]
+      },
+      "camera_02": {
+        "camera_index": 2,
+        "total_pixels": 1899153,
+        "true_valid_pixels": 1899153,
+        "out_of_bounds_pixels": 0,
+        "border_clamped_pixels": 0,
+        "valid_ratio": 1.0,
+        "u_range": [
+          673.7809448242188,
+          2400.6708984375
+        ],
+        "v_range": [
+          327.79443359375,
+          3532.6669921875
+        ]
+      },
+      "camera_03": {
+        "camera_index": 3,
+        "total_pixels": 1919523,
+        "true_valid_pixels": 1919523,
+        "out_of_bounds_pixels": 0,
+        "border_clamped_pixels": 0,
+        "valid_ratio": 1.0,
+        "u_range": [
+          667.4577026367188,
+          2341.42626953125
+        ],
+        "v_range": [
+          312.8946533203125,
+          3513.82763671875
+        ]
+      },
+      "camera_04": {
+        "camera_index": 4,
+        "total_pixels": 1900257,
+        "true_valid_pixels": 1900257,
+        "out_of_bounds_pixels": 0,
+        "border_clamped_pixels": 0,
+        "valid_ratio": 1.0,
+        "u_range": [
+          680.2883911132812,
+          2410.526123046875
+        ],
+        "v_range": [
+          297.0472412109375,
+          3541.556884765625
+        ]
+      },
+      "camera_05": {
+        "camera_index": 5,
+        "total_pixels": 1928688,
+        "true_valid_pixels": 1928688,
+        "out_of_bounds_pixels": 0,
+        "border_clamped_pixels": 0,
+        "valid_ratio": 1.0,
+        "u_range": [
+          650.7285766601562,
+          2318.05224609375
+        ],
+        "v_range": [
+          283.166748046875,
+          3482.376953125
+        ]
+      },
+      "camera_06": {
+        "camera_index": 6,
+        "total_pixels": 1950237,
+        "true_valid_pixels": 1950237,
+        "out_of_bounds_pixels": 0,
+        "border_clamped_pixels": 0,
+        "valid_ratio": 1.0,
+        "u_range": [
+          669.0275268554688,
+          2365.11572265625
+        ],
+        "v_range": [
+          195.5899658203125,
+          3439.36083984375
+        ]
+      },
+      "camera_07": {
+        "camera_index": 7,
+        "total_pixels": 1883283,
+        "true_valid_pixels": 1883283,
+        "out_of_bounds_pixels": 0,
+        "border_clamped_pixels": 0,
+        "valid_ratio": 1.0,
+        "u_range": [
+          718.9703369140625,
+          2339.308349609375
+        ],
+        "v_range": [
+          171.901123046875,
+          3365.451171875
+        ]
+      },
+      "camera_08": {
+        "camera_index": 8,
+        "total_pixels": 1905165,
+        "true_valid_pixels": 1905165,
+        "out_of_bounds_pixels": 0,
+        "border_clamped_pixels": 0,
+        "valid_ratio": 1.0,
+        "u_range": [
+          616.3304443359375,
+          2317.384765625
+        ],
+        "v_range": [
+          159.3902587890625,
+          3361.1845703125
+        ]
+      },
+      "camera_09": {
+        "camera_index": 9,
+        "total_pixels": 1926615,
+        "true_valid_pixels": 1926615,
+        "out_of_bounds_pixels": 0,
+        "border_clamped_pixels": 0,
+        "valid_ratio": 1.0,
+        "u_range": [
+          665.0045776367188,
+          2312.98828125
+        ],
+        "v_range": [
+          157.1363525390625,
+          3402.25244140625
+        ]
+      },
+      "camera_10": {
+        "camera_index": 10,
+        "total_pixels": 1924122,
+        "true_valid_pixels": 1924122,
+        "out_of_bounds_pixels": 0,
+        "border_clamped_pixels": 0,
+        "valid_ratio": 1.0,
+        "u_range": [
+          690.3019409179688,
+          2335.82470703125
+        ],
+        "v_range": [
+          225.4307861328125,
+          3446.974609375
+        ]
+      },
+      "camera_11": {
+        "camera_index": 11,
+        "total_pixels": 1940901,
+        "true_valid_pixels": 1940901,
+        "out_of_bounds_pixels": 0,
+        "border_clamped_pixels": 0,
+        "valid_ratio": 1.0,
+        "u_range": [
+          619.3823852539062,
+          2337.72314453125
+        ],
+        "v_range": [
+          272.651611328125,
+          3540.8046875
+        ]
+      }
+    }
+  },
+  "physical_source_identity": {
+    "audit_timestamp": "2026-09-14T01:30:53Z",
+    "source_directory": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01\\DERIVED_ORIENTATION_NORMALIZED",
+    "sources": {
+      "SHOT_000.jpg": {
+        "filename": "SHOT_000.jpg",
+        "file_sha256": "917188a5c1d4b5aec329b707cc139b9c5a58d570c6a3f1cb7215776925ee5839",
+        "decoded_rgb_sha256": "2f32a273bdc0e06e896a96fbe67c5f7ab83b66f29aec811cee2fdf70c604151f",
+        "width": 3000,
+        "height": 4000,
+        "classification": "BYTE_IDENTICAL"
+      },
+      "SHOT_030.jpg": {
+        "filename": "SHOT_030.jpg",
+        "file_sha256": "e118b7ae861c9b174719fbbca12fe7890d7c09d95fda2b1b3307d1839d78623e",
+        "decoded_rgb_sha256": "2c49dc6a0924e50d4c4b8c3fff5322fb8c17658f411bb262f72d1fe38196cc58",
+        "width": 3000,
+        "height": 4000,
+        "classification": "BYTE_IDENTICAL"
+      },
+      "SHOT_060.jpg": {
+        "filename": "SHOT_060.jpg",
+        "file_sha256": "ed8e2c6bbda2f23565bb7533a81d23462c292ff1c3c9730e8f2c8c4d3b4acddb",
+        "decoded_rgb_sha256": "c659839b1b0abba0ec32d1e04bdaf5e52059f72c6a8989e636eb499e7a478c2b",
+        "width": 3000,
+        "height": 4000,
+        "classification": "BYTE_IDENTICAL"
+      },
+      "SHOT_090.jpg": {
+        "filename": "SHOT_090.jpg",
+        "file_sha256": "233db00a0087893fd1d5d63e54ac35487a8a9a6671754d8bbb50144d0c090c57",
+        "decoded_rgb_sha256": "4a9f5de11b4f3d5e38f28ce1e61ab2998d501876ec0f7c5dae3228da7c389934",
+        "width": 3000,
+        "height": 4000,
+        "classification": "BYTE_IDENTICAL"
+      },
+      "SHOT_120.jpg": {
+        "filename": "SHOT_120.jpg",
+        "file_sha256": "9e70c9c06a7b4794ea1f0c173d8bf05e76ff19d41de37019eaea24ebf6703583",
+        "decoded_rgb_sha256": "e1701fdca7886b333022a333abc0d1f169b2d1e23112833da30b10b881f16c6b",
+        "width": 3000,
+        "height": 4000,
+        "classification": "BYTE_IDENTICAL"
+      },
+      "SHOT_150.jpg": {
+        "filename": "SHOT_150.jpg",
+        "file_sha256": "c66b0d5cfd4dc44206e4e83e741bcd6eecceb258150a715c4d3e1e6e2f04e486",
+        "decoded_rgb_sha256": "d168d218d12f6a2a51dd325fadd89702e5034841da1efadc5aab5a0dcc255b1c",
+        "width": 3000,
+        "height": 4000,
+        "classification": "BYTE_IDENTICAL"
+      },
+      "SHOT_180.jpg": {
+        "filename": "SHOT_180.jpg",
+        "file_sha256": "5165aeacde73a5eac8819dac8cd841f1f5807505fda167ec11f812e6178d3bc0",
+        "decoded_rgb_sha256": "883adb4ca793013b6942a4e8f26754b9a67bd9eaaac8da5e77176315cbb92197",
+        "width": 3000,
+        "height": 4000,
+        "classification": "BYTE_IDENTICAL"
+      },
+      "SHOT_210.jpg": {
+        "filename": "SHOT_210.jpg",
+        "file_sha256": "2f76ea6c870ccac155702b46b1075bf3f2a836eff855eaa3f3dc1aadd94c8a08",
+        "decoded_rgb_sha256": "ce468a264b65f5e2d595c5f5461733893e88450892f74517aa2275f988b4260e",
+        "width": 3000,
+        "height": 4000,
+        "classification": "BYTE_IDENTICAL"
+      },
+      "SHOT_240.jpg": {
+        "filename": "SHOT_240.jpg",
+        "file_sha256": "e9805e46df337c193a5a5952572e7353139cee8ad8dff8fc8ebf25d2e16aee70",
+        "decoded_rgb_sha256": "5bad0f86bf6f08bc191d1fa6a5618aad696095bd9c6b288a71ef1d2d689627d9",
+        "width": 3000,
+        "height": 4000,
+        "classification": "BYTE_IDENTICAL"
+      },
+      "SHOT_270.jpg": {
+        "filename": "SHOT_270.jpg",
+        "file_sha256": "140e19b479b8b0b3ee431790c1d42ba712f12dad4a0015d98192d37444c06d5c",
+        "decoded_rgb_sha256": "f0add2a86a017ffc9de79d10eab5b94393ea98ec9cf9b161916343fe202c15a0",
+        "width": 3000,
+        "height": 4000,
+        "classification": "BYTE_IDENTICAL"
+      },
+      "SHOT_300.jpg": {
+        "filename": "SHOT_300.jpg",
+        "file_sha256": "b5c5974c0253744b6056d394edb1e7a22b3eefebae6d9fabf1f4db7c69b6e4df",
+        "decoded_rgb_sha256": "aa37990b6168fb8b40bca51c77d4d95a28dcbd31c3a805c225554b186d34257f",
+        "width": 3000,
+        "height": 4000,
+        "classification": "BYTE_IDENTICAL"
+      },
+      "SHOT_330.jpg": {
+        "filename": "SHOT_330.jpg",
+        "file_sha256": "261cc6118ed94c6be524faa85b302637544dfa0a7861540113c124c53aa4605a",
+        "decoded_rgb_sha256": "47e0e6dad6bf1d59f29ca7b51f1f002a6342519ca39e1a2761681c59a78fdbe6",
+        "width": 3000,
+        "height": 4000,
+        "classification": "BYTE_IDENTICAL"
+      }
+    },
+    "all_sources_pixel_identical": true,
+    "status": "PASS"
+  },
+  "angular_detail_retention": {
+    "methodology": "ANGULAR_MTF50_JACOBIAN_NORMALIZED",
+    "pano_px_per_deg": 34.13333333333333,
+    "source_on_axis_px_per_deg": 51.690940311068296,
+    "sampling_density_ratio_src_over_pano12k": 1.514383016925829,
+    "zones": {
+      "A": {
+        "zone": "A",
+        "name": "Fireplace / Cabinet Trim",
+        "yaw_deg": 0.0,
+        "pitch_deg": 0.0,
+        "owner_camera": 0,
+        "source_coord": [
+          1690.2525807626505,
+          2023.7813241448507
+        ],
+        "source_coord_in_bounds": true,
+        "local_jacobian_src_px_per_deg": 51.85932438578777,
+        "local_pano_px_per_deg": 34.13333333333333,
+        "sampling_ratio_src_over_pano": 1.5193161441148761,
+        "source_fwhm_px": 1.7306177835395034,
+        "pano_12k_fwhm_px": 2.2399757676725605,
+        "source_mtf50_cyc_per_px": 0.40071313411978376,
+        "pano12k_mtf50_cyc_per_px": 0.30959320453993455,
+        "source_mtf50_cycles_per_deg": 20.78071240796355,
+        "pano12k_mtf50_cycles_per_deg": 10.567448048296432,
+        "angular_mtf_retention_ratio": 0.508521933263789,
+        "source_edge_width_deg": 0.033371390854713585,
+        "pano_edge_width_deg": 0.06562429006853204,
+        "contrast_retention": 0.9870487451553345,
+        "gradient_energy_normalized": 1.557733178138733,
+        "classification": "DETAIL_RETENTION_GOOD"
+      },
+      "B": {
+        "zone": "B",
+        "name": "Doorway Vertical Molding",
+        "yaw_deg": 60.0,
+        "pitch_deg": 0.0,
+        "owner_camera": 2,
+        "source_coord": [
+          1741.493838359573,
+          1979.7712579610627
+        ],
+        "source_coord_in_bounds": true,
+        "local_jacobian_src_px_per_deg": 51.95509709875707,
+        "local_pano_px_per_deg": 34.13333333333333,
+        "sampling_ratio_src_over_pano": 1.5221219853151486,
+        "source_fwhm_px": 1.9264483747041403,
+        "pano_12k_fwhm_px": 2.057092585851232,
+        "source_mtf50_cyc_per_px": 0.3599791643064669,
+        "pano12k_mtf50_cyc_per_px": 0.33711719189274264,
+        "source_mtf50_cycles_per_deg": 18.702752435071915,
+        "pano12k_mtf50_cycles_per_deg": 11.506933483272283,
+        "angular_mtf_retention_ratio": 0.6152534779690589,
+        "source_edge_width_deg": 0.03707910257664068,
+        "pano_edge_width_deg": 0.06026638435111031,
+        "contrast_retention": 0.9971458315849304,
+        "gradient_energy_normalized": 1.7363958358764648,
+        "classification": "DETAIL_RETENTION_GOOD"
+      },
+      "C": {
+        "zone": "C",
+        "name": "Cabinet Edge / Window Frame / Chair Rail",
+        "yaw_deg": 150.0,
+        "pitch_deg": 0.0,
+        "owner_camera": 5,
+        "source_coord": [
+          1740.7130122236874,
+          1948.374171464453
+        ],
+        "source_coord_in_bounds": true,
+        "local_jacobian_src_px_per_deg": 51.955347723404415,
+        "local_pano_px_per_deg": 34.13333333333333,
+        "sampling_ratio_src_over_pano": 1.5221293278341137,
+        "source_fwhm_px": 2.742621556180878,
+        "pano_12k_fwhm_px": 2.07379569525111,
+        "source_mtf50_cyc_per_px": 0.2528534330384342,
+        "pano12k_mtf50_cyc_per_px": 0.33440192666692564,
+        "source_mtf50_cycles_per_deg": 13.137088036568404,
+        "pano12k_mtf50_cycles_per_deg": 11.414252430231063,
+        "angular_mtf_retention_ratio": 0.8688571164673895,
+        "source_edge_width_deg": 0.05278805120854584,
+        "pano_edge_width_deg": 0.060755733259309865,
+        "contrast_retention": 0.9848406910896301,
+        "gradient_energy_normalized": 1.1778508424758911,
+        "classification": "DETAIL_RETENTION_GOOD"
+      },
+      "D": {
+        "zone": "D",
+        "name": "Dining Verticals / Doorway / Trim",
+        "yaw_deg": 240.0,
+        "pitch_deg": 0.0,
+        "owner_camera": 8,
+        "source_coord": [
+          1750.7766334685673,
+          1857.7230733209803
+        ],
+        "source_coord_in_bounds": true,
+        "local_jacobian_src_px_per_deg": 52.05246982451608,
+        "local_pano_px_per_deg": 34.13333333333333,
+        "sampling_ratio_src_over_pano": 1.5249747018901196,
+        "source_fwhm_px": 1.8387739218020327,
+        "pano_12k_fwhm_px": 1.5919525104541334,
+        "source_mtf50_cyc_per_px": 0.37714330608187185,
+        "pano12k_mtf50_cyc_per_px": 0.4356168110867326,
+        "source_mtf50_cycles_per_deg": 19.631240559344867,
+        "pano12k_mtf50_cycles_per_deg": 14.86905381842714,
+        "angular_mtf_retention_ratio": 0.7574179417484225,
+        "source_edge_width_deg": 0.03532539239734581,
+        "pano_edge_width_deg": 0.046639233704710945,
+        "contrast_retention": 0.9979051351547241,
+        "gradient_energy_normalized": 1.5090662240982056,
+        "classification": "DETAIL_RETENTION_GOOD"
+      },
+      "E": {
+        "zone": "E",
+        "name": "Closure 11_00 / Cabinet Molding",
+        "yaw_deg": 345.0,
+        "pitch_deg": 0.0,
+        "owner_camera": 0,
+        "source_coord": [
+          905.620818382764,
+          2019.7688138404412
+        ],
+        "source_coord_in_bounds": true,
+        "local_jacobian_src_px_per_deg": 54.00293973822303,
+        "local_pano_px_per_deg": 34.13333333333333,
+        "sampling_ratio_src_over_pano": 1.5821173751432527,
+        "source_fwhm_px": 1.5,
+        "pano_12k_fwhm_px": 1.5,
+        "source_mtf50_cyc_per_px": 0.46232085067036527,
+        "pano12k_mtf50_cyc_per_px": 0.46232085067036527,
+        "source_mtf50_cycles_per_deg": 24.96668503847574,
+        "pano12k_mtf50_cycles_per_deg": 15.780551702881802,
+        "angular_mtf_retention_ratio": 0.6320643561034497,
+        "source_edge_width_deg": 0.02777626564907738,
+        "pano_edge_width_deg": 0.0439453125,
+        "contrast_retention": 0.9990863800048828,
+        "gradient_energy_normalized": 1.3995978832244873,
+        "classification": "DETAIL_RETENTION_GOOD"
+      }
+    },
+    "aggregate": {
+      "ANGULAR_DETAIL_RETENTION_MEDIAN": 0.6320643561034497,
+      "ANGULAR_DETAIL_RETENTION_P10": 0.551214551145897,
+      "ANGULAR_DETAIL_RETENTION_P90": 0.8242814465798027,
+      "all_landmarks_valid_coordinates": true,
+      "angular_scale_normalized": true
+    }
+  },
+  "q95_owner_jpeg": {
+    "filename": "P2R16_R4P83R2_SELECTED_12K_OWNER_REVIEW_Q95.jpg",
+    "size_bytes": 6322960,
+    "sha256": "1c005121240485b1927ab21c0e723605b8382376bd1649025920945ffbe0ad29",
+    "quality": 95,
+    "chroma_subsampling": "4:4:4"
+  },
+  "technical_gate": {
+    "INTRINSICS_RENDER_PROVEN": true,
+    "TRUE_DIRECT_PHYSICAL_COVERAGE": 1.0,
+    "BORDER_CLAMPED_PIXEL_COUNT": 0,
+    "PHYSICAL_SOURCE_PIXEL_IDENTITY": "PASS",
+    "NO_AI": true,
+    "NO_DEPTH": true,
+    "NO_LOCAL_WARP": true,
+    "NO_INPAINT": true,
+    "NO_GENERATIVE_PIXELS": true,
+    "ANGULAR_DETAIL_FORENSICS_VALID": true,
+    "G1_TECHNICAL_GATE": "PASS"
+  },
+  "governance": {
+    "R4P83R2_OWNER_REVIEW_ALLOWED": true,
+    "R4P83R2_OWNER_VISUAL_REVIEW_COMPLETED": false,
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "12K_FINAL_PROMOTION_APPROVED": false,
+    "BEST_PHYSICAL_ONLY_CANDIDATE": "R4P8.1_D",
+    "CUSTOMER_DEFAULT": "P2R13",
+    "MASTER_TOUCHED": false
+  }
+}

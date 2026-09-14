@@ -11,7 +11,7 @@
     "k1": 0.0,
     "k2": 0.0,
     "cx": 1530.0,
-    "cy": 100,
+    "cy": 1970.0,
     "hfov_deg": 53.72174178508982
   },
   "rotation_delta_source": "FROZEN_R4P81_ZERO_DELTA",
@@ -412,5 +412,15 @@
     "owner_visual_acceptance": false,
     "12k_final_promotion_approved": false,
     "best_physical_only_candidate": "R4P8.1_D"
+  },
+  "intrinsics_audit": {
+    "canonical_focal": 2961.672718886868,
+    "canonical_cx": 1530.0,
+    "canonical_cy": 1970.0,
+    "canonical_k1": 0.0,
+    "canonical_k2": 0.0,
+    "R4P83R2_INTRINSICS_RENDER_VALID": true,
+    "R4P83R2_DIAGNOSTIC_METADATA_ERROR": true,
+    "cy_corruption_root_cause": "Variable shadowing in execute_phase7c2r4p83r2_master.py line 635 (panel height 100) overwrote global cy before serialization at line 853. Renderer lines 212-213 executed prior and used canonical 1970.0."
   }
 }

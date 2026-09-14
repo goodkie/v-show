@@ -1,0 +1,202 @@
+{
+  "total_pixels": 22966272,
+  "true_valid_uv_pixels": 22966272,
+  "out_of_bounds_uv_pixels": 0,
+  "border_clamped_pixel_count": 0,
+  "true_direct_physical_coverage": 1.0,
+  "coverage_pass": true,
+  "per_camera_metrics": {
+    "camera_00": {
+      "camera_index": 0,
+      "total_pixels": 1908141,
+      "true_valid_pixels": 1908141,
+      "out_of_bounds_pixels": 0,
+      "border_clamped_pixels": 0,
+      "valid_ratio": 1.0,
+      "u_range": [
+        669.0281372070312,
+        2290.96142578125
+      ],
+      "v_range": [
+        365.3551025390625,
+        3558.10205078125
+      ]
+    },
+    "camera_01": {
+      "camera_index": 1,
+      "total_pixels": 1880187,
+      "true_valid_pixels": 1880187,
+      "out_of_bounds_pixels": 0,
+      "border_clamped_pixels": 0,
+      "valid_ratio": 1.0,
+      "u_range": [
+        701.3262939453125,
+        2292.52392578125
+      ],
+      "v_range": [
+        356.784912109375,
+        3539.115234375
+      ]
+    },
+    "camera_02": {
+      "camera_index": 2,
+      "total_pixels": 1899153,
+      "true_valid_pixels": 1899153,
+      "out_of_bounds_pixels": 0,
+      "border_clamped_pixels": 0,
+      "valid_ratio": 1.0,
+      "u_range": [
+        673.7809448242188,
+        2400.6708984375
+      ],
+      "v_range": [
+        327.79443359375,
+        3532.6669921875
+      ]
+    },
+    "camera_03": {
+      "camera_index": 3,
+      "total_pixels": 1919523,
+      "true_valid_pixels": 1919523,
+      "out_of_bounds_pixels": 0,
+      "border_clamped_pixels": 0,
+      "valid_ratio": 1.0,
+      "u_range": [
+        667.4577026367188,
+        2341.42626953125
+      ],
+      "v_range": [
+        312.8946533203125,
+        3513.82763671875
+      ]
+    },
+    "camera_04": {
+      "camera_index": 4,
+      "total_pixels": 1900257,
+      "true_valid_pixels": 1900257,
+      "out_of_bounds_pixels": 0,
+      "border_clamped_pixels": 0,
+      "valid_ratio": 1.0,
+      "u_range": [
+        680.2883911132812,
+        2410.526123046875
+      ],
+      "v_range": [
+        297.0472412109375,
+        3541.556884765625
+      ]
+    },
+    "camera_05": {
+      "camera_index": 5,
+      "total_pixels": 1928688,
+      "true_valid_pixels": 1928688,
+      "out_of_bounds_pixels": 0,
+      "border_clamped_pixels": 0,
+      "valid_ratio": 1.0,
+      "u_range": [
+        650.7285766601562,
+        2318.05224609375
+      ],
+      "v_range": [
+        283.166748046875,
+        3482.376953125
+      ]
+    },
+    "camera_06": {
+      "camera_index": 6,
+      "total_pixels": 1950237,
+      "true_valid_pixels": 1950237,
+      "out_of_bounds_pixels": 0,
+      "border_clamped_pixels": 0,
+      "valid_ratio": 1.0,
+      "u_range": [
+        669.0275268554688,
+        2365.11572265625
+      ],
+      "v_range": [
+        195.5899658203125,
+        3439.36083984375
+      ]
+    },
+    "camera_07": {
+      "camera_index": 7,
+      "total_pixels": 1883283,
+      "true_valid_pixels": 1883283,
+      "out_of_bounds_pixels": 0,
+      "border_clamped_pixels": 0,
+      "valid_ratio": 1.0,
+      "u_range": [
+        718.9703369140625,
+        2339.308349609375
+      ],
+      "v_range": [
+        171.901123046875,
+        3365.451171875
+      ]
+    },
+    "camera_08": {
+      "camera_index": 8,
+      "total_pixels": 1905165,
+      "true_valid_pixels": 1905165,
+      "out_of_bounds_pixels": 0,
+      "border_clamped_pixels": 0,
+      "valid_ratio": 1.0,
+      "u_range": [
+        616.3304443359375,
+        2317.384765625
+      ],
+      "v_range": [
+        159.3902587890625,
+        3361.1845703125
+      ]
+    },
+    "camera_09": {
+      "camera_index": 9,
+      "total_pixels": 1926615,
+      "true_valid_pixels": 1926615,
+      "out_of_bounds_pixels": 0,
+      "border_clamped_pixels": 0,
+      "valid_ratio": 1.0,
+      "u_range": [
+        665.0045776367188,
+        2312.98828125
+      ],
+      "v_range": [
+        157.1363525390625,
+        3402.25244140625
+      ]
+    },
+    "camera_10": {
+      "camera_index": 10,
+      "total_pixels": 1924122,
+      "true_valid_pixels": 1924122,
+      "out_of_bounds_pixels": 0,
+      "border_clamped_pixels": 0,
+      "valid_ratio": 1.0,
+      "u_range": [
+        690.3019409179688,
+        2335.82470703125
+      ],
+      "v_range": [
+        225.4307861328125,
+        3446.974609375
+      ]
+    },
+    "camera_11": {
+      "camera_index": 11,
+      "total_pixels": 1940901,
+      "true_valid_pixels": 1940901,
+      "out_of_bounds_pixels": 0,
+      "border_clamped_pixels": 0,
+      "valid_ratio": 1.0,
+      "u_range": [
+        619.3823852539062,
+        2337.72314453125
+      ],
+      "v_range": [
+        272.651611328125,
+        3540.8046875
+      ]
+    }
+  }
+}

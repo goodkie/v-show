@@ -1,0 +1,104 @@
+{
+  "audit_timestamp": "2026-09-14T01:30:53Z",
+  "source_directory": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01\\DERIVED_ORIENTATION_NORMALIZED",
+  "sources": {
+    "SHOT_000.jpg": {
+      "filename": "SHOT_000.jpg",
+      "file_sha256": "917188a5c1d4b5aec329b707cc139b9c5a58d570c6a3f1cb7215776925ee5839",
+      "decoded_rgb_sha256": "2f32a273bdc0e06e896a96fbe67c5f7ab83b66f29aec811cee2fdf70c604151f",
+      "width": 3000,
+      "height": 4000,
+      "classification": "BYTE_IDENTICAL"
+    },
+    "SHOT_030.jpg": {
+      "filename": "SHOT_030.jpg",
+      "file_sha256": "e118b7ae861c9b174719fbbca12fe7890d7c09d95fda2b1b3307d1839d78623e",
+      "decoded_rgb_sha256": "2c49dc6a0924e50d4c4b8c3fff5322fb8c17658f411bb262f72d1fe38196cc58",
+      "width": 3000,
+      "height": 4000,
+      "classification": "BYTE_IDENTICAL"
+    },
+    "SHOT_060.jpg": {
+      "filename": "SHOT_060.jpg",
+      "file_sha256": "ed8e2c6bbda2f23565bb7533a81d23462c292ff1c3c9730e8f2c8c4d3b4acddb",
+      "decoded_rgb_sha256": "c659839b1b0abba0ec32d1e04bdaf5e52059f72c6a8989e636eb499e7a478c2b",
+      "width": 3000,
+      "height": 4000,
+      "classification": "BYTE_IDENTICAL"
+    },
+    "SHOT_090.jpg": {
+      "filename": "SHOT_090.jpg",
+      "file_sha256": "233db00a0087893fd1d5d63e54ac35487a8a9a6671754d8bbb50144d0c090c57",
+      "decoded_rgb_sha256": "4a9f5de11b4f3d5e38f28ce1e61ab2998d501876ec0f7c5dae3228da7c389934",
+      "width": 3000,
+      "height": 4000,
+      "classification": "BYTE_IDENTICAL"
+    },
+    "SHOT_120.jpg": {
+      "filename": "SHOT_120.jpg",
+      "file_sha256": "9e70c9c06a7b4794ea1f0c173d8bf05e76ff19d41de37019eaea24ebf6703583",
+      "decoded_rgb_sha256": "e1701fdca7886b333022a333abc0d1f169b2d1e23112833da30b10b881f16c6b",
+      "width": 3000,
+      "height": 4000,
+      "classification": "BYTE_IDENTICAL"
+    },
+    "SHOT_150.jpg": {
+      "filename": "SHOT_150.jpg",
+      "file_sha256": "c66b0d5cfd4dc44206e4e83e741bcd6eecceb258150a715c4d3e1e6e2f04e486",
+      "decoded_rgb_sha256": "d168d218d12f6a2a51dd325fadd89702e5034841da1efadc5aab5a0dcc255b1c",
+      "width": 3000,
+      "height": 4000,
+      "classification": "BYTE_IDENTICAL"
+    },
+    "SHOT_180.jpg": {
+      "filename": "SHOT_180.jpg",
+      "file_sha256": "5165aeacde73a5eac8819dac8cd841f1f5807505fda167ec11f812e6178d3bc0",
+      "decoded_rgb_sha256": "883adb4ca793013b6942a4e8f26754b9a67bd9eaaac8da5e77176315cbb92197",
+      "width": 3000,
+      "height": 4000,
+      "classification": "BYTE_IDENTICAL"
+    },
+    "SHOT_210.jpg": {
+      "filename": "SHOT_210.jpg",
+      "file_sha256": "2f76ea6c870ccac155702b46b1075bf3f2a836eff855eaa3f3dc1aadd94c8a08",
+      "decoded_rgb_sha256": "ce468a264b65f5e2d595c5f5461733893e88450892f74517aa2275f988b4260e",
+      "width": 3000,
+      "height": 4000,
+      "classification": "BYTE_IDENTICAL"
+    },
+    "SHOT_240.jpg": {
+      "filename": "SHOT_240.jpg",
+      "file_sha256": "e9805e46df337c193a5a5952572e7353139cee8ad8dff8fc8ebf25d2e16aee70",
+      "decoded_rgb_sha256": "5bad0f86bf6f08bc191d1fa6a5618aad696095bd9c6b288a71ef1d2d689627d9",
+      "width": 3000,
+      "height": 4000,
+      "classification": "BYTE_IDENTICAL"
+    },
+    "SHOT_270.jpg": {
+      "filename": "SHOT_270.jpg",
+      "file_sha256": "140e19b479b8b0b3ee431790c1d42ba712f12dad4a0015d98192d37444c06d5c",
+      "decoded_rgb_sha256": "f0add2a86a017ffc9de79d10eab5b94393ea98ec9cf9b161916343fe202c15a0",
+      "width": 3000,
+      "height": 4000,
+      "classification": "BYTE_IDENTICAL"
+    },
+    "SHOT_300.jpg": {
+      "filename": "SHOT_300.jpg",
+      "file_sha256": "b5c5974c0253744b6056d394edb1e7a22b3eefebae6d9fabf1f4db7c69b6e4df",
+      "decoded_rgb_sha256": "aa37990b6168fb8b40bca51c77d4d95a28dcbd31c3a805c225554b186d34257f",
+      "width": 3000,
+      "height": 4000,
+      "classification": "BYTE_IDENTICAL"
+    },
+    "SHOT_330.jpg": {
+      "filename": "SHOT_330.jpg",
+      "file_sha256": "261cc6118ed94c6be524faa85b302637544dfa0a7861540113c124c53aa4605a",
+      "decoded_rgb_sha256": "47e0e6dad6bf1d59f29ca7b51f1f002a6342519ca39e1a2761681c59a78fdbe6",
+      "width": 3000,
+      "height": 4000,
+      "classification": "BYTE_IDENTICAL"
+    }
+  },
+  "all_sources_pixel_identical": true,
+  "status": "PASS"
+}

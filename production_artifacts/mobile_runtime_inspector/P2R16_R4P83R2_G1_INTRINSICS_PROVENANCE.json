@@ -1,0 +1,33 @@
+{
+  "optimizer_f": 2961.672718886868,
+  "optimizer_cx": 1530.0,
+  "optimizer_cy": 1970.0,
+  "optimizer_k1": 0.0,
+  "optimizer_k2": 0.0,
+  "persisted_f": 2961.672718886868,
+  "persisted_cx": 1530.0,
+  "persisted_cy": 1970.0,
+  "renderer_4k_f": 2961.672718886868,
+  "renderer_4k_cx": 1530.0,
+  "renderer_4k_cy": 1970.0,
+  "renderer_12k_f": 2961.672718886868,
+  "renderer_12k_cx": 1530.0,
+  "renderer_12k_cy": 1970.0,
+  "diagnostics_f": 2961.672718886868,
+  "diagnostics_cx": 1530.0,
+  "diagnostics_cy": 100.0,
+  "viewer_hud_f": 2961.67,
+  "viewer_hud_cx": 1530.0,
+  "viewer_hud_cy": 1970.0,
+  "all_renderers_used_canonical_intrinsics": true,
+  "diagnostics_cy_was_metadata_only_corruption": true,
+  "corruption_root_cause": "Variable shadowing in execute_phase7c2r4p83r2_master.py line 635 (cy, cx_p = p4_crop.shape[:2] where p4_crop was 100x100) overwrote global cy before JSON serialization at line 853",
+  "canonical_intrinsics": {
+    "f": 2961.672718886868,
+    "cx": 1530.0,
+    "cy": 1970.0,
+    "k1": 0.0,
+    "k2": 0.0,
+    "hfov_deg": 53.72174178508982
+  }
+}
