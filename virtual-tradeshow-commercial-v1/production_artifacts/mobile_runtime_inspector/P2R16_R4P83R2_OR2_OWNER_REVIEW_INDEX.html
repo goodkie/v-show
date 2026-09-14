@@ -40,11 +40,19 @@
   
   <div class="badge-bar">
     <span class="badge pass">G1 TECHNICAL GATE: PASS</span>
-    <span class="badge">CANONICAL INTRINSICS: f=2961.67px | cx=1530 | cy=1970</span>
+    <span class="badge">R4P8.1_D INTRINSICS: f=3091.55px</span>
+    <span class="badge">R4P8.3R2 INTRINSICS: f=2961.67px (cx=1530, cy=1970)</span>
     <span class="badge">COVERAGE: 100.0000% (0 CLAMPED)</span>
     <span class="badge alert">OWNER ACCEPTANCE: PENDING</span>
     <span class="badge">CUSTOMER DEFAULT: P2R13</span>
     <span class="badge">BASELINE: R4P8.1_D</span>
+  </div>
+
+    <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; line-height: 1.6;">
+    <strong style="color: #38bdf8;">PROVENANCED INTRINSICS & GEOMETRY ARCHITECTURE:</strong><br>
+    &bull; <strong>R4P8.1_D (Baseline):</strong> Solved native intrinsics: <code>fx = 3091.55 px, fy = 3091.55 px, cx = 1530, cy = 1970, HFOV = 51.76&deg;</code> (from <code>P2R16_R4P8_SOLVED_GEOMETRY.npz</code>).<br>
+    &bull; <strong>R4P8.3R2 (Candidate B):</strong> Shared focal candidate: <code>fx = 2961.67 px, fy = 2961.67 px, cx = 1530, cy = 1970, HFOV = 53.72&deg;</code> (from <code>P2R16_R4P83R2_G1_INTRINSICS_PROVENANCE.json</code>).<br>
+    &bull; <strong>Distinct Immutable Inputs:</strong> Both 12K PNG inputs are distinct, frozen physical textures (Candidate: <code>04dbcddd...</code>, Baseline: <code>2660695e...</code>). Different focal lengths are an intentional candidate model difference. A/B comparison synchronizes physical azimuth only (offset: <code>-0.2400&deg;</code>).
   </div>
 
   <div class="label-banner">
@@ -307,7 +315,7 @@
           <th>Angle Deviation (deg)</th>
           <th>Horizontal Bend P95 (px)</th>
           <th>Double Edges</th>
-          <th>Local Scale Delta</th>
+          <th>Relative Vertical Bend Delta (%)<br><small style="color:#94a3b8; font-weight:normal;">[True Focal Scale Ratio: 1.044x / 4.38%]</small></th>
         </tr>
       </thead>
       <tbody>

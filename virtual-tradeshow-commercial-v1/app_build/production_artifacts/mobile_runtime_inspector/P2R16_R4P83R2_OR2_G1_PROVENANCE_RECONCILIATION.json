@@ -1,0 +1,123 @@
+{
+  "phase": "PHASE_7C2R4P83R2_OR2_G1",
+  "timestamp": "2026-09-14T02:35:00Z",
+  "description": "Owner Package Provenance Reconciliation + Baseline Intrinsics Correction + JPEG Forensic Correction + A/B Sync Audit",
+  "R4P83R2_INTRINSICS": {
+    "fx": 2961.672718886868,
+    "fy": 2961.672718886868,
+    "cx": 1530.0,
+    "cy": 1970.0,
+    "k1": 0.0,
+    "k2": 0.0,
+    "hfov_deg": 53.719875,
+    "source_evidence": "P2R16_R4P83R2_G1_INTRINSICS_PROVENANCE.json"
+  },
+  "R4P81D_INTRINSICS": {
+    "fx": 3091.547,
+    "fy": 3091.547,
+    "cx": 1530.0,
+    "cy": 1970.0,
+    "k1": 0.0,
+    "k2": 0.0,
+    "hfov_deg": 51.764765,
+    "source_evidence": "P2R16_R4P8_SOLVED_GEOMETRY.npz (K_best / Candidate C)"
+  },
+  "INTRINSICS_IDENTICAL": false,
+  "CANDIDATE_SHA": "04dbcdddb8f182f5819565b5d9f43e11ff1031ea7ea9b9be9fa41998d0cf292f",
+  "BASELINE_SHA": "2660695e0a5cf36effe622146a8459212bb42d72b49fda5604b5d2359e2a3e0f",
+  "BYTE_IDENTICAL": false,
+  "CANDIDATE_BASELINE_DIMENSIONS_EQUAL": true,
+  "DIMENSIONS": "12288x1869",
+  "JPEG_SHA": "1c005121240485b1927ab21c0e723605b8382376bd1649025920945ffbe0ad29",
+  "JPEG_444_CONFIRMED": true,
+  "JPEG_QUANT_TABLES": "DQT0 (Luma) & DQT1 (Chroma) 64-element bit-exact match to standard IJG Q=95.0",
+  "JPEG_QUALITY_ESTIMATE_METHOD": "Bitstream DQT 64-entry comparison against standard IJG quantization matrix",
+  "JPEG_QUALITY_NUMERICALLY_VERIFIED": true,
+  "JPEG_QUALITY_LABEL": "Q95.0_444",
+  "A_B_COMPARISON_GEOMETRY": {
+    "R4P81D_NATIVE_GEOMETRY_PRESERVED": true,
+    "R4P83R2_NATIVE_GEOMETRY_PRESERVED": true,
+    "PANORAMA_PIXELS_MODIFIED": false,
+    "GEOMETRY_MODIFIED": false
+  },
+  "SYNC_OFFSET": -0.24,
+  "LANDMARK_SYNC_RESULTS": [
+    {
+      "candidate_yaw": 0.0,
+      "baseline_yaw": 359.76,
+      "landmark_name": "Fireplace Mantel Left Edge / Vertical Surround",
+      "residual_alignment_deg": 0.264
+    },
+    {
+      "candidate_yaw": 60.0,
+      "baseline_yaw": 59.76,
+      "landmark_name": "Doorway Vertical Molding / Casing Edge",
+      "residual_alignment_deg": 0.008
+    },
+    {
+      "candidate_yaw": 90.0,
+      "baseline_yaw": 89.76,
+      "landmark_name": "Far Wall Corner Seam / Ceiling Molding",
+      "residual_alignment_deg": 0.04
+    },
+    {
+      "candidate_yaw": 150.0,
+      "baseline_yaw": 149.76,
+      "landmark_name": "Cabinet Corner Vertical Edge / Window Jamb",
+      "residual_alignment_deg": 0.113
+    },
+    {
+      "candidate_yaw": 180.0,
+      "baseline_yaw": 179.76,
+      "landmark_name": "Rear Window Central Divider / Vertical Bar",
+      "residual_alignment_deg": 0.026
+    },
+    {
+      "candidate_yaw": 240.0,
+      "baseline_yaw": 239.76,
+      "landmark_name": "Dining Door Frame Left Jamb / Wall Trim",
+      "residual_alignment_deg": 0.073
+    },
+    {
+      "candidate_yaw": 270.0,
+      "baseline_yaw": 269.76,
+      "landmark_name": "Kitchen Pass-Through Left Pillar / Trim",
+      "residual_alignment_deg": 0.076
+    },
+    {
+      "candidate_yaw": 345.0,
+      "baseline_yaw": 344.76,
+      "landmark_name": "Loop Closure Seam 11_00 / Upper Cabinet Crown",
+      "residual_alignment_deg": 0.471
+    }
+  ],
+  "LANDMARK_SYNC_VALID": true,
+  "MAX_LANDMARK_SYNC_RESIDUAL_DEG": 0.471,
+  "MEAN_NON_CLOSURE_RESIDUAL_DEG": 0.056,
+  "LOCAL_SCALE_AUDIT": {
+    "TRUE_FOCAL_SCALE_RATIO": 1.04385,
+    "TRUE_FOCAL_SCALE_DELTA_PERCENT": 4.385,
+    "LOCAL_SCALE_YAW000_CAUSE": "METRIC_IMPLEMENTATION_ERROR (Relative P95 vertical bend difference mislabeled as scale change)",
+    "LOCAL_SCALE_YAW060_CAUSE": "METRIC_IMPLEMENTATION_ERROR (Relative P95 vertical bend difference mislabeled as scale change)",
+    "LOCAL_SCALE_YAW150_CAUSE": "METRIC_IMPLEMENTATION_ERROR (Relative P95 vertical bend difference mislabeled as scale change)",
+    "LOCAL_SCALE_YAW240_CAUSE": "METRIC_IMPLEMENTATION_ERROR (Relative P95 vertical bend difference mislabeled as scale change: 2.5px vs 4.4px on small denominator inflated to 76.0%)",
+    "LOCAL_SCALE_YAW345_CAUSE": "METRIC_IMPLEMENTATION_ERROR (Relative P95 vertical bend difference mislabeled as scale change: 3.0px vs 4.1px on small denominator inflated to 36.7%)"
+  },
+  "GOVERNANCE": {
+    "CUSTOMER_DEFAULT": "P2R13",
+    "BEST_PHYSICAL_ONLY_CANDIDATE": "R4P8.1_D",
+    "OWNER_REVIEW_COMPLETED": false,
+    "OWNER_SELECTED_CANDIDATE": "NONE",
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "12K_FINAL_PROMOTION_APPROVED": false,
+    "MASTER_TOUCHED": false
+  },
+  "LOCAL_SCALE_YAW000_CAUSE": "METRIC_IMPLEMENTATION_ERROR (Relative P95 vertical bend difference mislabeled as scale change)",
+  "LOCAL_SCALE_YAW060_CAUSE": "METRIC_IMPLEMENTATION_ERROR (Relative P95 vertical bend difference mislabeled as scale change)",
+  "LOCAL_SCALE_YAW150_CAUSE": "METRIC_IMPLEMENTATION_ERROR (Relative P95 vertical bend difference mislabeled as scale change)",
+  "LOCAL_SCALE_YAW240_CAUSE": "METRIC_IMPLEMENTATION_ERROR (Relative P95 vertical bend difference mislabeled as scale change: 2.5px vs 4.4px on small denominator inflated to 76.0%)",
+  "LOCAL_SCALE_YAW345_CAUSE": "METRIC_IMPLEMENTATION_ERROR (Relative P95 vertical bend difference mislabeled as scale change: 3.0px vs 4.1px on small denominator inflated to 36.7%)",
+  "OWNER_VISUAL_ACCEPTANCE": false,
+  "CUSTOMER_DEFAULT": "P2R13",
+  "MASTER_TOUCHED": false
+}
