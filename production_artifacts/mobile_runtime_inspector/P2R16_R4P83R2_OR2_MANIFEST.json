@@ -6,7 +6,9 @@
     "branch": "experiment/c12.9-p2r16-8shot-hires",
     "start_commit": "ac08901e2ed4c446715004d3cb63d5fda980d8ba",
     "master_commit": "5218235b8dbe1cd3b401bbbdef0b1c8ba3483d6e",
-    "master_touched": false
+    "master_touched": false,
+    "source_head": "c20b502d92e5d27646268a8a447f6ba2c8d0ea9a",
+    "commit_g1_a": "685809531e38b446b986bcb08b5a4a46c2816179"
   },
   "governance": {
     "CUSTOMER_DEFAULT": "P2R13",
@@ -29,7 +31,34 @@
       "k2": 0.0
     },
     "TRUE_UV_COVERAGE_PERCENT": 100.0,
-    "BORDER_CLAMP_PIXELS": 0
+    "BORDER_CLAMP_PIXELS": 0,
+    "R4P81D_INTRINSICS": {
+      "fx": 3091.547,
+      "fy": 3091.547,
+      "cx": 1530.0,
+      "cy": 1970.0,
+      "k1": 0.0,
+      "k2": 0.0,
+      "hfov_deg": 51.764765,
+      "source": "P2R16_R4P8_SOLVED_GEOMETRY.npz (K_best)"
+    },
+    "R4P83R2_INTRINSICS": {
+      "fx": 2961.672718886868,
+      "fy": 2961.672718886868,
+      "cx": 1530.0,
+      "cy": 1970.0,
+      "k1": 0.0,
+      "k2": 0.0,
+      "hfov_deg": 53.719875,
+      "source": "P2R16_R4P83R2_G1_INTRINSICS_PROVENANCE.json"
+    },
+    "INTRINSICS_IDENTICAL": false,
+    "CANDIDATE_BASELINE_BYTE_IDENTICAL": false,
+    "CANDIDATE_BASELINE_DIMENSIONS_EQUAL": true,
+    "JPEG_QUALITY_NUMERICALLY_VERIFIED": true,
+    "JPEG_QUALITY_LABEL": "Q95.0_444",
+    "MAX_LANDMARK_SYNC_RESIDUAL_DEG": 0.471,
+    "LANDMARK_SYNC_VALID": true
   },
   "structural_summary": {
     "zone_000": {
@@ -231,7 +260,8 @@
     "P2R16_R4P83R2_OR2_OWNER_VERDICT_TEMPLATE.json": "3e66fb80358c4dc8bf58eda87370e26cbe99689a33363419eb6d215e6a8bd03a",
     "P2R16_R4P83R2_OR2_STRUCTURAL_LINE_METRICS.json": "1ac792f1f213a7bbf83cead399ce6c8850f1af0fe8410b6766cf7b466b2b8b8c",
     "P2R16_R4P83R2_OR2_SEAM_METRICS.json": "71bad265c6d40e8076e4bbe54775ff5efbc807100cf9df2d9adf1340599f0d34",
-    "P2R16_R4P83R2_OR2_OWNER_REVIEW_INDEX.html": "a0b1446c257738289c79efe589f4c3a66bfdef30747f7fc857693a1620bc87be"
+    "P2R16_R4P83R2_OR2_OWNER_REVIEW_INDEX.html": "f81931ee28cff9b4bdfd4a553a2f6b045c87fd8f38a6e8b60e28bd4075b17047",
+    "P2R16_R4P83R2_OR2_G1_PROVENANCE_RECONCILIATION.json": "8fc94316fa27d4657a8f74de19cc6c588a2bb7ef8f6bfa49a4def04dc3936fec"
   },
   "artifact_count": 44
 }
