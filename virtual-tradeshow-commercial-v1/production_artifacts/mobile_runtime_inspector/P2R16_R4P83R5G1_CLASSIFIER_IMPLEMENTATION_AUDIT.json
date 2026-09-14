@@ -1,0 +1,98 @@
+{
+  "phase": "PHASE_7C2R4P83R5G1",
+  "timestamp": "2026-09-14T04:56:21Z",
+  "classifier_implementation_status": "SCENE_STRUCTURE_CONTAMINATED",
+  "implementation_details": {
+    "method": "2D Autocorrelation on 512x512 central image crop followed by contour ellipse fitting at 0.7 correlation threshold",
+    "fatal_flaw": "The 512x512 patch contained macroscopic architectural structures (door jambs, cabinet edges, window frames, mantel vertical pilasters). The 2D autocorrelation was dominated by the aspect ratio and spatial orientation of the room's architectural lines rather than an isolated point-spread function (PSF).",
+    "contamination_evidence": "Fitted ellipse angles clustered strictly around 0 deg (vertical architectural lines) and 90 deg (horizontal edges), producing artificial anisotropy ratios up to 84.96 in SHOT_300 and 57.48 in SHOT_000.",
+    "r5_historical_anisotropy_metric_valid": false,
+    "corrected_label": "SCENE_STRUCTURE_AUTOCORRELATION_ASPECT_RATIO"
+  },
+  "historical_values_audit": [
+    {
+      "yaw_deg": 0,
+      "historical_ratio": 57.482636567037666,
+      "historical_angle_deg": 2.625523620736203e-06,
+      "valid_psf_metric": false,
+      "scene_content_driver": "Vertical door jambs / mantel structure"
+    },
+    {
+      "yaw_deg": 30,
+      "historical_ratio": 2.4476804905989775,
+      "historical_angle_deg": 2.2465059757232666,
+      "valid_psf_metric": false,
+      "scene_content_driver": "Vertical door jambs / mantel structure"
+    },
+    {
+      "yaw_deg": 60,
+      "historical_ratio": 9.897874726829803,
+      "historical_angle_deg": 0.11984163522720337,
+      "valid_psf_metric": false,
+      "scene_content_driver": "Vertical door jambs / mantel structure"
+    },
+    {
+      "yaw_deg": 90,
+      "historical_ratio": 4.044933518348502,
+      "historical_angle_deg": 90.057861328125,
+      "valid_psf_metric": false,
+      "scene_content_driver": "Horizontal trim / baseboard"
+    },
+    {
+      "yaw_deg": 120,
+      "historical_ratio": 2.119541168362419,
+      "historical_angle_deg": 4.579854488372803,
+      "valid_psf_metric": false,
+      "scene_content_driver": "Vertical door jambs / mantel structure"
+    },
+    {
+      "yaw_deg": 150,
+      "historical_ratio": 4.215329747367752,
+      "historical_angle_deg": 0.8765701651573181,
+      "valid_psf_metric": false,
+      "scene_content_driver": "Vertical door jambs / mantel structure"
+    },
+    {
+      "yaw_deg": 180,
+      "historical_ratio": 2.724157009155111,
+      "historical_angle_deg": 0.05575045570731163,
+      "valid_psf_metric": false,
+      "scene_content_driver": "Vertical door jambs / mantel structure"
+    },
+    {
+      "yaw_deg": 210,
+      "historical_ratio": 6.595879000354267,
+      "historical_angle_deg": 88.9517822265625,
+      "valid_psf_metric": false,
+      "scene_content_driver": "Horizontal trim / baseboard"
+    },
+    {
+      "yaw_deg": 240,
+      "historical_ratio": 1.1,
+      "historical_angle_deg": null,
+      "valid_psf_metric": false,
+      "scene_content_driver": "Featureless / low contour"
+    },
+    {
+      "yaw_deg": 270,
+      "historical_ratio": 2.9385456717525624,
+      "historical_angle_deg": 179.78457641601562,
+      "valid_psf_metric": false,
+      "scene_content_driver": "Vertical door jambs / mantel structure"
+    },
+    {
+      "yaw_deg": 300,
+      "historical_ratio": 84.96264681907293,
+      "historical_angle_deg": 0.0028560450300574303,
+      "valid_psf_metric": false,
+      "scene_content_driver": "Vertical door jambs / mantel structure"
+    },
+    {
+      "yaw_deg": 330,
+      "historical_ratio": 5.518776930690575,
+      "historical_angle_deg": 0.42130112648010254,
+      "valid_psf_metric": false,
+      "scene_content_driver": "Vertical door jambs / mantel structure"
+    }
+  ]
+}

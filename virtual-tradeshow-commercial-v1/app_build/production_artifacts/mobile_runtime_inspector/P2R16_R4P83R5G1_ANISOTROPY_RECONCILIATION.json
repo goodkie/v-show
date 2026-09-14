@@ -1,0 +1,6 @@
+{
+  "phase": "PHASE_7C2R4P83R5G1",
+  "timestamp": "2026-09-14T04:56:21Z",
+  "r5_historical_anisotropy_metric_valid": false,
+  "verdict": "Historical values ranging from 1.1 to 84.96 do NOT represent optical point-spread function anisotropy. They represent the autocorrelation elongation of dominant architectural scene geometry within the 512x512 analysis window. The historical metric is scientifically invalid for blur classification."
+}

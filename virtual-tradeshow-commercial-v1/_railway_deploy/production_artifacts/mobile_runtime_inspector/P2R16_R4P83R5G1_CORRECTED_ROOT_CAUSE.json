@@ -1,0 +1,22 @@
+{
+  "phase": "PHASE_7C2R4P83R5G1",
+  "timestamp": "2026-09-14T04:57:12Z",
+  "evidence_strengths": {
+    "motion_blur": "WEAK",
+    "defocus": "MODERATE",
+    "camera_processing": "MODERATE",
+    "jpeg": "NOT_SUPPORTED",
+    "normalization": "NOT_SUPPORTED",
+    "lens_sensor_mtf": "MODERATE",
+    "capture_pipeline_resize": "NOT_SUPPORTED"
+  },
+  "corrected_primary_source_limit": "SOFT_SOURCE_CAUSE_NOT_SEPARABLE",
+  "corrected_secondary_source_limit": "CAMERA_PROCESSING",
+  "corrected_root_cause_state": "SOURCE_SOFTNESS_CAUSE_INCONCLUSIVE",
+  "r5_original_report_superseded": true,
+  "scientific_rationale": "Because the scene is heavily dominated by vertical architectural lines, genuine isolated edges across diverse angles are insufficient to prove directional motion smear. Furthermore, absent synchronized exposure time and hardware focus distance telemetry, it is scientifically unsound to definitively distinguish optical defocus from the S23 Ultra f/1.7 lens MTF limit or computational denoise smearing. The physical source softness cause is not rigorously separable without controlled runtime device testing.",
+  "recapture_required": true,
+  "physical_recapture_recommended": false,
+  "physical_recapture_authorized": false,
+  "recapture_protocol_status": "HOLD_PENDING_CAPTURE_CONTROL_TEST"
+}

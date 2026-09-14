@@ -1,0 +1,11 @@
+{
+  "phase": "PHASE_7C2R4P83R5G1",
+  "timestamp": "2026-09-14T04:57:12Z",
+  "turn_speed_shutter_synchronized": false,
+  "turn_speed_telemetry_source": "metadata.json / event_log.json STABILITY_ACHIEVED event",
+  "turn_speed_measurement_timestamp": "Pre-capture dwell stabilization window (recorded ~60ms prior to takePhoto invocation)",
+  "shutter_duration_exposure_timestamped": false,
+  "exposure_time_proven": false,
+  "assumed_exposure_time": "1/60s (NOT PROVEN, EXIF metadata absent)",
+  "audit_verdict": "turnSpeedDps = 0.35 deg/s was captured during the pre-shutter orientation dwell check, not continuously streamed during sensor exposure. Because exposure duration and in-shutter motion velocity were not synchronized, motion blur cannot be mathematically ruled out on telemetry alone."
+}

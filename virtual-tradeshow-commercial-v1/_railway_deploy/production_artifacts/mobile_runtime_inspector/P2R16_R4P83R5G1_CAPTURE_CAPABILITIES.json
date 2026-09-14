@@ -1,0 +1,32 @@
+{
+  "phase": "PHASE_7C2R4P83R5G1",
+  "timestamp": "2026-09-14T04:57:12Z",
+  "environment": {
+    "device": "Samsung Galaxy S23 Ultra (SM-S918U)",
+    "browser": "Chrome Mobile 128.0.6613.88",
+    "api": "navigator.mediaDevices.getUserMedia / ImageCapture"
+  },
+  "audited_controls": {
+    "manual_focus_supported": "not_proven",
+    "focus_distance_control_supported": "not_proven",
+    "manual_exposure_supported": "not_proven",
+    "exposure_time_control_supported": "not_proven",
+    "iso_control_supported": "not_proven"
+  },
+  "photo_capabilities_recorded": {
+    "imageWidth": {
+      "min": 1920,
+      "max": 4000,
+      "step": 1
+    },
+    "imageHeight": {
+      "min": 1080,
+      "max": 3000,
+      "step": 1
+    },
+    "exposureMode": "continuous",
+    "whiteBalanceMode": "continuous",
+    "focusMode": "continuous"
+  },
+  "technical_implication": "Chrome Mobile ImageCapture API on Android exposes only 'continuous' mode for focus and exposure. Manual focus distance (e.g. 2.5m) and manual exposure time (1/125s) are not exposed by the browser photoCapabilities. Recapture protocols requiring manual focus distance cannot be fulfilled via browser Web APIs without runtime device testing of MediaStreamTrack constraints or a fallback focus-settle gate."
+}

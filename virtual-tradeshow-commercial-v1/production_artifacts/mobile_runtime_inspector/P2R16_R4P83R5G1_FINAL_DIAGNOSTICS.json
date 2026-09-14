@@ -1,0 +1,61 @@
+{
+  "phase": "PHASE_7C2R4P83R5G1",
+  "status": "PASS",
+  "timestamp": "2026-09-14T04:57:12Z",
+  "audits": {
+    "r5_blur_summary_matches_frame_array": false,
+    "r5_original_summary_motion_count": 0,
+    "r5_original_summary_defocus_count": 12,
+    "r5_original_frame_array_motion_count": 11,
+    "r5_original_frame_array_defocus_count": 1,
+    "classifier_implementation_status": "SCENE_STRUCTURE_CONTAMINATED",
+    "r5_historical_anisotropy_metric_valid": false,
+    "mtf_estimator_synthetic_validation": "PASS",
+    "blur_classifier_synthetic_validation": "PASS",
+    "turn_speed_shutter_synchronized": false,
+    "exposure_time_proven": false,
+    "focus_mode_continuous_proven": true,
+    "autofocus_hunting_proven": false,
+    "misfocus_at_shutter_proven": false,
+    "focus_distance_at_shutter_available": false,
+    "camera_denoise_effect_measured": true,
+    "samsung_multi_frame_denoise_specifically_proven": false,
+    "laplacian_used_for_root_cause": false,
+    "tenengrad_used_for_root_cause": false
+  },
+  "recomputed_counts": {
+    "recomputed_motion_blur_frame_count": 0,
+    "recomputed_defocus_frame_count": 0,
+    "recomputed_mixed_blur_frame_count": 0,
+    "recomputed_sharp_frame_count": 0,
+    "recomputed_inconclusive_frame_count": 12
+  },
+  "evidence_strengths": {
+    "motion_evidence_strength": "WEAK",
+    "defocus_evidence_strength": "MODERATE",
+    "camera_processing_evidence_strength": "MODERATE"
+  },
+  "corrected_decisions": {
+    "corrected_primary_source_limit": "SOFT_SOURCE_CAUSE_NOT_SEPARABLE",
+    "corrected_secondary_source_limit": "CAMERA_PROCESSING",
+    "corrected_root_cause_state": "SOURCE_SOFTNESS_CAUSE_INCONCLUSIVE",
+    "r5_original_report_superseded": true
+  },
+  "capabilities": {
+    "manual_focus_supported": "not_proven",
+    "focus_distance_control_supported": "not_proven",
+    "manual_exposure_supported": "not_proven",
+    "exposure_time_control_supported": "not_proven",
+    "iso_control_supported": "not_proven"
+  },
+  "governance": {
+    "recapture_protocol_status": "HOLD_PENDING_CAPTURE_CONTROL_TEST",
+    "physical_recapture_recommended": false,
+    "physical_recapture_authorized": false,
+    "owner_visual_acceptance": false,
+    "12k_final_promotion_approved": false,
+    "best_physical_only_candidate": "R4P8.1_D",
+    "customer_default": "P2R13",
+    "master_touched": false
+  }
+}
