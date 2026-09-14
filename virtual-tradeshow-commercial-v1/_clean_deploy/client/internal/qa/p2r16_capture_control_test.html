@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>3D2 — P2R16 Quality360 Capture Control Test</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <style>
+    :root {
+      --bg: #070a13;
+      --panel-bg: rgba(15, 23, 42, 0.94);
+      --border: rgba(56, 189, 248, 0.28);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-green: #10b981;
+      --accent-cyan: #06b6d4;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-purple: #a855f7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    html, body {
+      width: 100%; height: 100%; background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow-x: hidden; overflow-y: auto;
+    }
+    .container {
+      max-width: 640px; margin: 0 auto; padding: 16px 14px 40px; display: flex; flex-direction: column; gap: 14px;
+    }
+
+    /* Header */
+    .header {
+      background: var(--panel-bg); border: 1px solid var(--border); border-radius: 14px;
+      padding: 14px 16px; backdrop-filter: blur(12px); box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    .header-top {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+    }
+    .brand-title {
+      font-size: 14px; font-weight: 800; letter-spacing: 0.04em; color: var(--accent-cyan);
+    }
+    .mode-badge {
+      background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan);
+      border: 1px solid rgba(6, 182, 212, 0.4); font-size: 10px; font-weight: 700;
+      padding: 3px 8px; border-radius: 6px; letter-spacing: 0.05em;
+    }
+    .header h1 {
+      font-size: 18px; font-weight: 800; line-height: 1.3; color: #fff; margin-bottom: 4px;
+    }
+    .header .subtitle {
+      font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+
+    /* Warning Notice */
+    .notice-box {
+      background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4);
+      border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;
+    }
+    .notice-title {
+      font-size: 12px; font-weight: 800; color: var(--accent-amber); display: flex; align-items: center; gap: 6px;
+    }
+    .notice-body {
+      font-size: 11px; color: #fde68a; line-height: 1.4;
+    }
+
+    /* Progress Stepper */
+    .stepper-card {
+      background: var(--panel-bg); border: 1px solid var(--border); border-radius: 14px;
+      padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .stepper-header {
+      display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700;
+    }
+    .step-counter {
+      color: var(--accent-cyan); font-weight: 800;
+    }
+    .progress-bar-bg {
+      width: 100%; height: 8px; background: rgba(30, 41, 59, 0.8); border-radius: 4px; overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%; width: 10%; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
+      transition: width 0.3s ease;
+    }
+
+    /* Camera Viewport */
+    .viewport-card {
+      position: relative; width: 100%; aspect-ratio: 4 / 3; background: #000;
+      border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;
+    }
+    #camera-video {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    #offscreen-canvas {
+      display: none;
+    }
+    .viewport-reticle {
+      position: absolute; inset: 0; pointer-events: none;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .crosshair-h, .crosshair-v {
+      position: absolute; background: rgba(255, 255, 255, 0.3);
+    }
+    .crosshair-h { width: 60px; height: 1.5px; }
+    .crosshair-v { width: 1.5px; height: 60px; }
+    .reticle-box {
+      width: 140px; height: 140px; border: 1.5px dashed rgba(6, 182, 212, 0.6);
+      border-radius: 10px; position: relative; transition: border-color 0.2s;
+    }
+    .reticle-box.aligned {
+      border-color: var(--accent-green); border-style: solid; box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+    }
+
+    /* Viewport Flash */
+    .flash-overlay {
+      position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.15s;
+    }
+    .flash-overlay.active {
+      opacity: 0.8;
+    }
+
+    /* Dwell Countdown Overlay */
+    .countdown-overlay {
+      position: absolute; bottom: 12px; left: 12px; right: 12px;
+      background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px; padding: 8px 12px; display: none; flex-direction: column; gap: 4px;
+      backdrop-filter: blur(8px);
+    }
+    .countdown-header {
+      display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #fff;
+    }
+    .countdown-bar-bg {
+      width: 100%; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; overflow: hidden;
+    }
+    .countdown-bar-fill {
+      height: 100%; width: 0%; background: var(--accent-green); transition: width 0.05s linear;
+    }
+
+    /* Live Telemetry Grid */
+    .telemetry-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    }
+    .tele-cell {
+      background: var(--panel-bg); border: 1px solid var(--border); border-radius: 10px;
+      padding: 8px 10px; display: flex; flex-direction: column; gap: 2px;
+    }
+    .tele-label {
+      font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;
+    }
+    .tele-value {
+      font-size: 13px; font-weight: 800; font-family: ui-monospace, monospace; color: #fff;
+    }
+    .badge-stable { color: var(--accent-green); }
+    .badge-moving { color: var(--accent-red); }
+
+    /* Action Control Card */
+    .action-card {
+      background: var(--panel-bg); border: 1px solid var(--border); border-radius: 14px;
+      padding: 16px; display: flex; flex-direction: column; gap: 12px;
+    }
+    .step-prompt {
+      font-size: 13px; font-weight: 700; line-height: 1.4; color: #fff;
+    }
+    .step-subprompt {
+      font-size: 11px; color: var(--text-muted); line-height: 1.4;
+    }
+    .btn {
+      width: 100%; padding: 14px 16px; border-radius: 10px; font-size: 14px; font-weight: 800;
+      border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7, #06b6d4); color: #fff; box-shadow: 0 4px 16px rgba(6, 182, 212, 0.35);
+    }
+    .btn-success {
+      background: linear-gradient(135deg, #059669, #10b981); color: #fff; box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
+    }
+    .btn-warning {
+      background: linear-gradient(135deg, #d97706, #f59e0b); color: #000; font-weight: 800;
+    }
+    .btn-secondary {
+      background: rgba(30, 41, 59, 0.8); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.15);
+    }
+    .btn:disabled {
+      opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none;
+    }
+
+    /* Diagnostics Drawer */
+    .diag-drawer {
+      background: var(--panel-bg); border: 1px solid var(--border); border-radius: 14px;
+      padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .diag-toggle {
+      display: flex; justify-content: space-between; align-items: center; font-size: 12px;
+      font-weight: 700; color: var(--accent-cyan); cursor: pointer;
+    }
+    .diag-content {
+      display: none; flex-direction: column; gap: 8px; font-family: ui-monospace, monospace;
+      font-size: 11px; max-height: 280px; overflow-y: auto; background: rgba(0,0,0,0.5);
+      border-radius: 8px; padding: 10px; line-height: 1.4; color: #cbd5e1;
+    }
+    .diag-content.open { display: flex; }
+    .diag-item { border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; }
+
+    /* Results Summary Table */
+    .results-card {
+      background: var(--panel-bg); border: 1px solid var(--border); border-radius: 14px;
+      padding: 14px; display: none; flex-direction: column; gap: 10px;
+    }
+    .results-table {
+      width: 100%; border-collapse: collapse; font-size: 11px;
+    }
+    .results-table th, .results-table td {
+      padding: 6px 8px; border: 1px solid rgba(255,255,255,0.1); text-align: left;
+    }
+    .results-table th { background: rgba(30, 41, 59, 0.7); font-weight: 700; color: var(--accent-cyan); }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-top">
+        <span class="brand-title">3D2 — P2R16</span>
+        <span class="mode-badge">P2R16_R5G2_CAPTURE_CONTROL</span>
+      </div>
+      <h1>QUALITY360 CAPTURE CONTROL TEST</h1>
+      <div class="subtitle">S23 PHYSICAL STILL DIAGNOSTIC (CONTINUOUS-AF SETTLE STUDY)</div>
+    </header>
+
+    <!-- Strict Instruction Notice -->
+    <div class="notice-box">
+      <div class="notice-title">
+        <span>⚠️ MANDATORY TEST NOTICE</span>
+      </div>
+      <div class="notice-body">
+        <strong>THIS IS NOT A 360 CAPTURE.</strong><br/>
+        This test captures <strong>ONE static scene repeatedly</strong> from the exact same viewpoint to determine whether camera dwell time (150ms, 600ms, 1200ms, 2000ms) or repeated burst captures improve full-resolution physical image sharpness.
+      </div>
+    </div>
+
+    <!-- Step Progress Tracker -->
+    <div class="stepper-card">
+      <div class="stepper-header">
+        <span id="step-name">STEP 1: CAMERA INITIALIZATION</span>
+        <span class="step-counter" id="step-num">Step 1 of 10</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-fill" style="width: 10%;"></div>
+      </div>
+    </div>
+
+    <!-- Live Viewport & Reticle -->
+    <div class="viewport-card" id="viewport-box">
+      <video id="camera-video" playsinline autoplay muted></video>
+      <canvas id="offscreen-canvas" width="320" height="240"></canvas>
+      
+      <div class="viewport-reticle">
+        <div class="crosshair-h"></div>
+        <div class="crosshair-v"></div>
+        <div class="reticle-box" id="reticle-box"></div>
+      </div>
+
+      <div class="flash-overlay" id="flash-overlay"></div>
+
+      <div class="countdown-overlay" id="countdown-overlay">
+        <div class="countdown-header">
+          <span id="countdown-label">SETTLING...</span>
+          <span id="countdown-time">0 ms</span>
+        </div>
+        <div class="countdown-bar-bg">
+          <div class="countdown-bar-fill" id="countdown-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Telemetry Display -->
+    <div class="telemetry-grid">
+      <div class="tele-cell">
+        <span class="tele-label">ANGULAR VELOCITY</span>
+        <span class="tele-value" id="tele-gyro">0.00°/s</span>
+      </div>
+      <div class="tele-cell">
+        <span class="tele-label">STABILITY</span>
+        <span class="tele-value badge-stable" id="tele-status">IDLE</span>
+      </div>
+      <div class="tele-cell">
+        <span class="tele-label">ALIGNMENT ERROR</span>
+        <span class="tele-value" id="tele-align">--</span>
+      </div>
+      <div class="tele-cell">
+        <span class="tele-label">CURRENT POSE</span>
+        <span class="tele-value" id="tele-pose">Y:0° P:0°</span>
+      </div>
+      <div class="tele-cell">
+        <span class="tele-label">PREVIEW SHARPNESS</span>
+        <span class="tele-value" id="tele-sharp">--</span>
+      </div>
+      <div class="tele-cell">
+        <span class="tele-label">CAPTURED STILLS</span>
+        <span class="tele-value" id="tele-count">0 / 15</span>
+      </div>
+    </div>
+
+    <!-- Primary User Action Area -->
+    <div class="action-card" id="action-box">
+      <div class="step-prompt" id="action-prompt">Grant camera and device motion permissions to begin diagnostic test.</div>
+      <div class="step-subprompt" id="action-subprompt">The phone should be mounted or held firmly aiming at a static indoor architectural scene.</div>
+
+      <button class="btn btn-primary" id="btn-primary" onclick="handlePrimaryAction()">
+        START CAMERA INSPECTION
+      </button>
+
+      <button class="btn btn-secondary" id="btn-override" style="display: none;" onclick="handleManualOverride()">
+        OVERRIDE ORIENTATION / CAPTURE NOW
+      </button>
+    </div>
+
+    <!-- Diagnostic Details Drawer -->
+    <div class="diag-drawer">
+      <div class="diag-toggle" onclick="toggleDiagnostics()">
+        <span>ADVANCED DIAGNOSTICS & TELEMETRY</span>
+        <span id="diag-arrow">▼</span>
+      </div>
+      <div class="diag-content" id="diag-content">
+        <div class="diag-item" id="diag-device">Device: Initializing...</div>
+        <div class="diag-item" id="diag-capabilities">Capabilities: Awaiting camera...</div>
+        <div class="diag-item" id="diag-roundtrip">Round-Trip: Awaiting inspection...</div>
+        <div class="diag-item" id="diag-log">Logs: Ready.</div>
+      </div>
+    </div>
+
+    <!-- Final Results Summary Card -->
+    <div class="results-card" id="results-card">
+      <div style="font-size: 14px; font-weight: 800; color: var(--accent-green);">
+        ✓ DIAGNOSTIC CAPTURE SEQUENCE COMPLETE
+      </div>
+      <div style="font-size: 11px; color: var(--text-muted);">
+        All 15 physical stills captured at full sensor resolution without compression degradation.
+      </div>
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>Condition</th>
+            <th>Dwell</th>
+            <th>Stills</th>
+            <th>Preview Sharpness</th>
+          </tr>
+        </thead>
+        <tbody id="results-table-body"></tbody>
+      </table>
+
+      <button class="btn btn-success" id="btn-upload" onclick="uploadSessionData()">
+        UPLOAD ALL 15 STILLS & DIAGNOSTICS
+      </button>
+      <button class="btn btn-secondary" id="btn-download-json" onclick="downloadSessionJson()">
+        DOWNLOAD TELEMETRY JSON BACKUP
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    /* ======================================================================
+       PHASE 7C.2R4P8.3R5-G2 CAPTURE CONTROL DIAGNOSTIC STATE MACHINE
+       ====================================================================== */
+    
+    const STATE = {
+      step: 1, // 1..10
+      stream: null,
+      track: null,
+      imageCapture: null,
+      deviceInfo: {},
+      capabilities: {},
+      settings: {},
+      photoCapabilities: {},
+      photoSettings: {},
+      roundtripResults: [],
+      calibratedPose: null, // { yaw, pitch }
+      currentPose: { yaw: 0, pitch: 0, roll: 0 },
+      angularVelocity: 0, // deg/s
+      isStable: false,
+      lastOrientTime: 0,
+      lastAngles: { alpha: 0, beta: 0, gamma: 0 },
+      
+      // Test matrix
+      conditions: [
+        { id: 'C0', dwellMs: 150, reps: 3, label: '150 ms Stationary Dwell' },
+        { id: 'C1', dwellMs: 600, reps: 3, label: '600 ms Stationary Dwell' },
+        { id: 'C2', dwellMs: 1200, reps: 3, label: '1200 ms Stationary Dwell' },
+        { id: 'C3', dwellMs: 2000, reps: 3, label: '2000 ms Stationary Dwell' }
+      ],
+      currentCondIdx: 0,
+      currentRep: 1,
+      inReacquisition: false,
+      hasReacquired15Deg: false,
+      
+      // Preview Sharpness Telemetry
+      previewTrace: [],
+      currentDwellSamples: [],
+      previewInterval: null,
+      latestSharpness: 0,
+
+      // Captured stills: direct blobs
+      capturedStills: [], // { id, condition, rep, blob, size, previewTrace, timestamp }
+      burstStills: []
+    };
+
+    const videoEl = document.getElementById('camera-video');
+    const offCanvas = document.getElementById('offscreen-canvas');
+    const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+
+    function logDiag(msg) {
+      console.log('[R5G2]', msg);
+      const logEl = document.getElementById('diag-log');
+      if (logEl) {
+        logEl.innerHTML += `<br/>[${new Date().toLocaleTimeString()}] ${msg}`;
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+    }
+
+    function toggleDiagnostics() {
+      const el = document.getElementById('diag-content');
+      const arrow = document.getElementById('diag-arrow');
+      el.classList.toggle('open');
+      arrow.textContent = el.classList.contains('open') ? '▲' : '▼';
+    }
+
+    /* --- STEP 1: INITIALIZATION & PERMISSIONS --- */
+    async function initCamera() {
+      try {
+        logDiag('Requesting camera & sensor access...');
+        
+        // Record device environment
+        STATE.deviceInfo = {
+          userAgent: navigator.userAgent,
+          platform: navigator.platform,
+          devicePixelRatio: window.devicePixelRatio || 1,
+          screenWidth: window.screen.width,
+          screenHeight: window.screen.height,
+          timestamp: new Date().toISOString()
+        };
+        document.getElementById('diag-device').innerHTML = `<strong>Device:</strong> ${STATE.deviceInfo.userAgent}<br/>DPR: ${STATE.deviceInfo.devicePixelRatio} | Screen: ${STATE.deviceInfo.screenWidth}x${STATE.deviceInfo.screenHeight}`;
+
+        // Request Orientation permissions if iOS 13+
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+          try {
+            await DeviceOrientationEvent.requestPermission();
+          } catch (e) {
+            logDiag('Orientation permission notice: ' + e.message);
+          }
+        }
+        window.addEventListener('deviceorientation', handleOrientation);
+        window.addEventListener('devicemotion', handleMotion);
+
+        // Get Camera Stream (Back camera, highest resolution)
+        const constraints = {
+          audio: false,
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 4000 },
+            height: { ideal: 3000 }
+          }
+        };
+        STATE.stream = await navigator.mediaDevices.getUserMedia(constraints);
+        videoEl.srcObject = STATE.stream;
+        await videoEl.play();
+
+        STATE.track = STATE.stream.getVideoTracks()[0];
+        logDiag(`Camera track started: ${STATE.track.label}`);
+
+        // Setup ImageCapture
+        if (window.ImageCapture) {
+          STATE.imageCapture = new ImageCapture(STATE.track);
+          logDiag('ImageCapture API initialized successfully.');
+        } else {
+          logDiag('WARNING: window.ImageCapture not available in this browser context.');
+        }
+
+        // Start live preview sharpness monitor
+        startPreviewMonitor();
+
+        advanceStep(2);
+      } catch (err) {
+        logDiag('Camera initialization failed: ' + err.message);
+        alert('Camera Error: ' + err.message + '\nPlease ensure camera permission is granted in Chrome.');
+      }
+    }
+
+    /* --- SENSOR & MOTION HANDLERS --- */
+    function handleOrientation(e) {
+      const now = performance.now();
+      const alpha = e.alpha || 0;
+      const beta = e.beta || 0;
+      const gamma = e.gamma || 0;
+
+      STATE.currentPose = { yaw: alpha, pitch: beta, roll: gamma };
+      document.getElementById('tele-pose').textContent = `Y:${alpha.toFixed(1)}° P:${beta.toFixed(1)}°`;
+
+      if (STATE.lastOrientTime > 0) {
+        const dt = (now - STATE.lastOrientTime) / 1000;
+        if (dt > 0.01) {
+          const dyaw = Math.abs(alpha - STATE.lastAngles.alpha);
+          const dpitch = Math.abs(beta - STATE.lastAngles.beta);
+          const ddeg = Math.sqrt(dyaw*dyaw + dpitch*dpitch);
+          // Simple low-pass filter on angular velocity
+          const instDps = ddeg / dt;
+          STATE.angularVelocity = STATE.angularVelocity * 0.7 + instDps * 0.3;
+        }
+      }
+      STATE.lastAngles = { alpha, beta, gamma };
+      STATE.lastOrientTime = now;
+
+      updateStabilityUI();
+    }
+
+    function handleMotion(e) {
+      if (e.rotationRate) {
+        const alpha = Math.abs(e.rotationRate.alpha || 0);
+        const beta = Math.abs(e.rotationRate.beta || 0);
+        const gamma = Math.abs(e.rotationRate.gamma || 0);
+        const rotDps = Math.sqrt(alpha*alpha + beta*beta + gamma*gamma);
+        if (rotDps > 0) {
+          STATE.angularVelocity = STATE.angularVelocity * 0.6 + rotDps * 0.4;
+        }
+      }
+      updateStabilityUI();
+    }
+
+    function updateStabilityUI() {
+      const gyroEl = document.getElementById('tele-gyro');
+      const statusEl = document.getElementById('tele-status');
+      const alignEl = document.getElementById('tele-align');
+      const reticleBox = document.getElementById('reticle-box');
+
+      const dps = STATE.angularVelocity;
+      gyroEl.textContent = `${dps.toFixed(2)}°/s`;
+
+      // 0.20 deg/s threshold from spec
+      const isStable = dps <= 0.20;
+      STATE.isStable = isStable;
+
+      if (isStable) {
+        statusEl.textContent = 'STABLE';
+        statusEl.className = 'tele-value badge-stable';
+      } else {
+        statusEl.textContent = 'MOVING';
+        statusEl.className = 'tele-value badge-moving';
+      }
+
+      // Check alignment if calibrated
+      if (STATE.calibratedPose) {
+        let dyaw = Math.abs(STATE.currentPose.yaw - STATE.calibratedPose.yaw);
+        if (dyaw > 180) dyaw = 360 - dyaw;
+        const dpitch = Math.abs(STATE.currentPose.pitch - STATE.calibratedPose.pitch);
+        const err = Math.sqrt(dyaw*dyaw + dpitch*dpitch);
+
+        alignEl.textContent = `Δ ${err.toFixed(1)}°`;
+        const isAligned = err <= 1.0;
+
+        if (isAligned) {
+          alignEl.style.color = 'var(--accent-green)';
+          reticleBox.classList.add('aligned');
+        } else {
+          alignEl.style.color = 'var(--accent-amber)';
+          reticleBox.classList.remove('aligned');
+        }
+
+        // Reacquisition guidance during test
+        if (STATE.inReacquisition) {
+          if (!STATE.hasReacquired15Deg) {
+            if (err >= 12.0) {
+              STATE.hasReacquired15Deg = true;
+              document.getElementById('action-prompt').textContent = 'Step B: Now rotate back to the target view (within 1.0°).';
+              document.getElementById('action-prompt').style.color = 'var(--accent-cyan)';
+            }
+          } else {
+            if (isAligned && isStable) {
+              // Trigger countdown dwell
+              onAlignedAndStable();
+            }
+          }
+        }
+      }
+    }
+
+    /* --- PREVIEW SHARPNESS TELEMETRY ENGINE (Laplacian Variance) --- */
+    function startPreviewMonitor() {
+      if (STATE.previewInterval) clearInterval(STATE.previewInterval);
+      STATE.previewInterval = setInterval(() => {
+        if (!videoEl.videoWidth) return;
+        try {
+          offCtx.drawImage(videoEl, 0, 0, 320, 240);
+          const imgData = offCtx.getImageData(0, 0, 320, 240);
+          const d = imgData.data;
+          
+          // Fast grayscale Laplacian variance on central 160x120 crop
+          let sum = 0, sumSq = 0, count = 0;
+          const w = 320;
+          for (let y = 60; y < 180; y += 2) {
+            for (let x = 80; x < 240; x += 2) {
+              const idx = (y * w + x) * 4;
+              const c = 0.299 * d[idx] + 0.587 * d[idx+1] + 0.114 * d[idx+2];
+              const top = 0.299 * d[idx - w*4] + 0.587 * d[idx - w*4 + 1] + 0.114 * d[idx - w*4 + 2];
+              const bot = 0.299 * d[idx + w*4] + 0.587 * d[idx + w*4 + 1] + 0.114 * d[idx + w*4 + 2];
+              const lft = 0.299 * d[idx - 4] + 0.587 * d[idx - 3] + 0.114 * d[idx - 2];
+              const rgt = 0.299 * d[idx + 4] + 0.587 * d[idx + 5] + 0.114 * d[idx + 6];
+
+              const lap = (4 * c) - top - bot - lft - rgt;
+              sum += lap;
+              sumSq += lap * lap;
+              count++;
+            }
+          }
+          const mean = sum / count;
+          const variance = (sumSq / count) - (mean * mean);
+          STATE.latestSharpness = Math.max(0, variance);
+          document.getElementById('tele-sharp').textContent = STATE.latestSharpness.toFixed(1);
+
+          // If tracking pre-shutter dwell samples
+          if (STATE.currentDwellSamples) {
+            STATE.currentDwellSamples.push({
+              t: performance.now(),
+              sharpness: STATE.latestSharpness,
+              gyro: STATE.angularVelocity,
+              yaw: STATE.currentPose.yaw,
+              pitch: STATE.currentPose.pitch
+            });
+          }
+        } catch (e) {}
+      }, 50); // 20 Hz sampling
+    }
+
+    /* --- STEP 2: CAPABILITY PROBE & CONSTRAINT ROUNDTRIP --- */
+    async function runCapabilityInspection() {
+      logDiag('Inspecting runtime camera capabilities...');
+      const track = STATE.track;
+      STATE.capabilities = track.getCapabilities ? track.getCapabilities() : {};
+      STATE.settings = track.getSettings ? track.getSettings() : {};
+
+      if (STATE.imageCapture) {
+        try {
+          if (STATE.imageCapture.getPhotoCapabilities) {
+            STATE.photoCapabilities = await STATE.imageCapture.getPhotoCapabilities();
+          }
+          if (STATE.imageCapture.getPhotoSettings) {
+            STATE.photoSettings = await STATE.imageCapture.getPhotoSettings();
+          }
+        } catch (e) {
+          logDiag('PhotoCapabilities query: ' + e.message);
+        }
+      }
+
+      // Display capabilities
+      const capEl = document.getElementById('diag-capabilities');
+      capEl.innerHTML = `<strong>Capabilities:</strong><br/>` +
+        `focusMode: ${JSON.stringify(STATE.capabilities.focusMode || 'NOT_EXPOSED')}<br/>` +
+        `focusDistance: ${JSON.stringify(STATE.capabilities.focusDistance || 'NOT_EXPOSED')}<br/>` +
+        `exposureMode: ${JSON.stringify(STATE.capabilities.exposureMode || 'NOT_EXPOSED')}<br/>` +
+        `exposureTime: ${JSON.stringify(STATE.capabilities.exposureTime || 'NOT_EXPOSED')}<br/>` +
+        `iso: ${JSON.stringify(STATE.capabilities.iso || 'NOT_EXPOSED')}<br/>` +
+        `photoCap: ${STATE.photoCapabilities.imageWidth ? STATE.photoCapabilities.imageWidth.max + 'x' + STATE.photoCapabilities.imageHeight.max : 'Standard'}`;
+
+      // Run constraint round-trip test
+      await testConstraintRoundtrips();
+
+      advanceStep(3);
+    }
+
+    async function testConstraintRoundtrips() {
+      logDiag('Testing constraint round-trips for exposed properties...');
+      const props = ['focusMode', 'focusDistance', 'exposureMode', 'exposureTime', 'exposureCompensation', 'whiteBalanceMode'];
+      STATE.roundtripResults = [];
+
+      for (const p of props) {
+        if (p in STATE.capabilities) {
+          const cap = STATE.capabilities[p];
+          let testVal = null;
+          if (Array.isArray(cap) && cap.length > 1) {
+            testVal = cap.find(v => v !== STATE.settings[p]) || cap[0];
+          } else if (typeof cap === 'object' && cap.min !== undefined && cap.max !== undefined) {
+            testVal = (cap.min + cap.max) / 2;
+          }
+
+          if (testVal !== null) {
+            const before = STATE.track.getSettings()[p];
+            let applyOk = false;
+            let after = before;
+            try {
+              const c = {}; c[p] = testVal;
+              await STATE.track.applyConstraints({ advanced: [c] });
+              after = STATE.track.getSettings()[p];
+              applyOk = (after === testVal);
+            } catch (e) {
+              applyOk = false;
+            }
+            STATE.roundtripResults.push({
+              property: p,
+              capability: cap,
+              requested: testVal,
+              before,
+              after,
+              verified: applyOk
+            });
+          }
+        } else {
+          STATE.roundtripResults.push({
+            property: p,
+            status: 'NOT_EXPOSED'
+          });
+        }
+      }
+
+      document.getElementById('diag-roundtrip').innerHTML = `<strong>Round-Trip Results:</strong><br/>` +
+        STATE.roundtripResults.map(r => `${r.property}: ${r.status || (r.verified ? 'VERIFIED' : 'APPLY_FAILED')}`).join('<br/>');
+      logDiag(`Constraint round-trip completed (${STATE.roundtripResults.length} properties).`);
+    }
+
+    /* --- STEP 3 & 4: CALIBRATE TARGET SCENE POSE --- */
+    function calibrateTargetPose() {
+      STATE.calibratedPose = {
+        yaw: STATE.currentPose.yaw,
+        pitch: STATE.currentPose.pitch,
+        timestamp: new Date().toISOString()
+      };
+      logDiag(`Target pose calibrated: Yaw=${STATE.calibratedPose.yaw.toFixed(1)}°, Pitch=${STATE.calibratedPose.pitch.toFixed(1)}°`);
+      advanceStep(4);
+    }
+
+    /* --- STEP 5-8: SETTLE-TIME TEST MATRIX (C0 to C3) --- */
+    function startConditionSequence(condIdx) {
+      STATE.currentCondIdx = condIdx;
+      STATE.currentRep = 1;
+      prepareNextTrial();
+    }
+
+    function prepareNextTrial() {
+      const cond = STATE.conditions[STATE.currentCondIdx];
+      const promptEl = document.getElementById('action-prompt');
+      const subpromptEl = document.getElementById('action-subprompt');
+      const btnPrimary = document.getElementById('btn-primary');
+      const btnOverride = document.getElementById('btn-override');
+
+      STATE.inReacquisition = true;
+      STATE.hasReacquired15Deg = false;
+      document.getElementById('reticle-box').classList.remove('aligned');
+      document.getElementById('countdown-overlay').style.display = 'none';
+
+      promptEl.textContent = `Condition ${cond.id} (${cond.dwellMs}ms) — Repetition ${STATE.currentRep} of ${cond.reps}`;
+      promptEl.style.color = '#fff';
+      subpromptEl.textContent = 'Step A: Rotate camera ~15° to 25° away from the target scene to reset autofocus.';
+      
+      btnPrimary.style.display = 'none';
+      btnOverride.style.display = 'block';
+    }
+
+    let isDwellTriggered = false;
+
+    async function onAlignedAndStable() {
+      if (isDwellTriggered) return;
+      isDwellTriggered = true;
+      STATE.inReacquisition = false;
+
+      const cond = STATE.conditions[STATE.currentCondIdx];
+      const dwellMs = cond.dwellMs;
+      logDiag(`Target aligned & stable. Starting ${dwellMs}ms dwell countdown...`);
+
+      const countdownOverlay = document.getElementById('countdown-overlay');
+      const countdownLabel = document.getElementById('countdown-label');
+      const countdownTime = document.getElementById('countdown-time');
+      const countdownFill = document.getElementById('countdown-fill');
+
+      countdownOverlay.style.display = 'flex';
+      countdownLabel.textContent = `SETTLING (${cond.id} - ${dwellMs}ms)...`;
+      countdownFill.style.width = '0%';
+
+      STATE.currentDwellSamples = [];
+      const startTime = performance.now();
+
+      // Countdown loop
+      const dwellPromise = new Promise((resolve) => {
+        const timer = setInterval(() => {
+          const elapsed = performance.now() - startTime;
+          const pct = Math.min(100, (elapsed / dwellMs) * 100);
+          countdownFill.style.width = pct + '%';
+          countdownTime.textContent = `${Math.round(elapsed)} ms`;
+
+          if (elapsed >= dwellMs) {
+            clearInterval(timer);
+            resolve();
+          }
+        }, 16);
+      });
+
+      await dwellPromise;
+
+      // Shutter Trigger!
+      await triggerStillCapture(cond.id, STATE.currentRep, dwellMs);
+
+      countdownOverlay.style.display = 'none';
+      isDwellTriggered = false;
+
+      // Next trial or condition
+      if (STATE.currentRep < cond.reps) {
+        STATE.currentRep++;
+        setTimeout(prepareNextTrial, 600);
+      } else {
+        // Move to next condition
+        if (STATE.currentCondIdx < STATE.conditions.length - 1) {
+          advanceStep(STATE.step + 1);
+        } else {
+          // All C0-C3 complete! Move to Burst Test (Step 9)
+          advanceStep(9);
+        }
+      }
+    }
+
+    function handleManualOverride() {
+      logDiag('Manual override clicked: forcing instant dwell & capture.');
+      onAlignedAndStable();
+    }
+
+    async function triggerStillCapture(condId, rep, dwellMs) {
+      logDiag(`Triggering ImageCapture.takePhoto() for ${condId}_R${rep}...`);
+      
+      // Flash screen & haptic
+      const flash = document.getElementById('flash-overlay');
+      flash.classList.add('active');
+      if (navigator.vibrate) navigator.vibrate([100]);
+      setTimeout(() => flash.classList.remove('active'), 150);
+
+      try {
+        let blob = null;
+        if (STATE.imageCapture) {
+          blob = await STATE.imageCapture.takePhoto();
+        } else {
+          // Fallback offscreen grab if ImageCapture missing
+          blob = await new Promise(r => offCanvas.toBlob(r, 'image/jpeg', 0.95));
+        }
+
+        const stillRecord = {
+          id: `R5G2_${condId}_R${rep}`,
+          condition: condId,
+          rep: rep,
+          dwellMs: dwellMs,
+          blob: blob,
+          mime: blob.type || 'image/jpeg',
+          size: blob.size,
+          timestamp: new Date().toISOString(),
+          previewTrace: [...STATE.currentDwellSamples],
+          finalSharpness: STATE.latestSharpness,
+          finalPose: { ...STATE.currentPose },
+          finalGyro: STATE.angularVelocity
+        };
+        STATE.capturedStills.push(stillRecord);
+
+        logDiag(`Captured ${stillRecord.id}: ${blob.size} bytes (${blob.type})`);
+        document.getElementById('tele-count').textContent = `${STATE.capturedStills.length} / 15`;
+
+      } catch (err) {
+        logDiag(`Capture error on ${condId}_R${rep}: ` + err.message);
+      }
+    }
+
+    /* --- STEP 9: STATIONARY BURST TEST --- */
+    async function runStationaryBurst() {
+      const promptEl = document.getElementById('action-prompt');
+      const subpromptEl = document.getElementById('action-subprompt');
+      const btnPrimary = document.getElementById('btn-primary');
+
+      btnPrimary.disabled = true;
+      promptEl.textContent = 'Hold camera completely stationary for 1200ms dwell...';
+      subpromptEl.textContent = 'The system will fire 3 consecutive still photos (300ms interval).';
+
+      // 1200ms stable dwell
+      await new Promise(r => setTimeout(r, 1200));
+
+      for (let b = 1; b <= 3; b++) {
+        promptEl.textContent = `Firing Burst Photo ${b} of 3...`;
+        await triggerStillCapture('BURST', b, 1200);
+        if (b < 3) await new Promise(r => setTimeout(r, 300));
+      }
+
+      logDiag('Stationary burst test complete (3 shots).');
+      advanceStep(10);
+    }
+
+    /* --- STEP 10: COMPLETION & UPLOAD --- */
+    function showFinalResults() {
+      document.getElementById('action-box').style.display = 'none';
+      const resultsCard = document.getElementById('results-card');
+      resultsCard.style.display = 'flex';
+
+      const tbody = document.getElementById('results-table-body');
+      tbody.innerHTML = '';
+
+      STATE.conditions.forEach(c => {
+        const stills = STATE.capturedStills.filter(s => s.condition === c.id);
+        const avgSharp = stills.length ? (stills.reduce((a,b) => a + (b.finalSharpness||0), 0) / stills.length).toFixed(1) : '--';
+        tbody.innerHTML += `<tr>
+          <td><strong>${c.id}</strong></td>
+          <td>${c.dwellMs} ms</td>
+          <td>${stills.length} / ${c.reps}</td>
+          <td>${avgSharp}</td>
+        </tr>`;
+      });
+
+      const bursts = STATE.capturedStills.filter(s => s.condition === 'BURST');
+      tbody.innerHTML += `<tr>
+        <td><strong>BURST</strong></td>
+        <td>1200 ms</td>
+        <td>${bursts.length} / 3</td>
+        <td>${bursts.map(b => (b.finalSharpness||0).toFixed(0)).join(', ')}</td>
+      </tr>`;
+    }
+
+    async function uploadSessionData() {
+      const btnUpload = document.getElementById('btn-upload');
+      btnUpload.disabled = true;
+      btnUpload.textContent = 'UPLOADING TEST DATA...';
+
+      try {
+        const formData = new FormData();
+        
+        // Build session JSON
+        const sessionPayload = {
+          phase: 'PHASE_7C2R4P83R5G2',
+          deviceInfo: STATE.deviceInfo,
+          capabilities: STATE.capabilities,
+          settings: STATE.settings,
+          photoCapabilities: STATE.photoCapabilities,
+          photoSettings: STATE.photoSettings,
+          roundtripResults: STATE.roundtripResults,
+          calibratedPose: STATE.calibratedPose,
+          stillsSummary: STATE.capturedStills.map(s => ({
+            id: s.id,
+            condition: s.condition,
+            rep: s.rep,
+            dwellMs: s.dwellMs,
+            size: s.size,
+            mime: s.mime,
+            timestamp: s.timestamp,
+            finalSharpness: s.finalSharpness,
+            finalPose: s.finalPose,
+            finalGyro: s.finalGyro,
+            previewSamplesCount: (s.previewTrace || []).length
+          })),
+          previewTraces: STATE.capturedStills.map(s => ({
+            id: s.id,
+            trace: s.previewTrace
+          }))
+        };
+
+        formData.append('session_data', JSON.stringify(sessionPayload, null, 2));
+
+        // Append all 15 Blobs
+        STATE.capturedStills.forEach((s) => {
+          const filename = `${s.id}.jpg`;
+          formData.append('photos', s.blob, filename);
+        });
+
+        logDiag(`Posting ${STATE.capturedStills.length} photos to /api/p2r16/capture-control/upload...`);
+        const res = await fetch('/api/p2r16/capture-control/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        const resData = await res.json();
+        if (res.ok && resData.success) {
+          btnUpload.style.background = 'var(--accent-green)';
+          btnUpload.textContent = '✓ UPLOAD SUCCESSFUL!';
+          alert('Test data successfully uploaded to server!\nYou may now close this page.');
+        } else {
+          throw new Error(resData.error || 'Server returned error ' + res.status);
+        }
+      } catch (err) {
+        logDiag('Upload error: ' + err.message);
+        btnUpload.disabled = false;
+        btnUpload.textContent = 'RETRY UPLOAD';
+        alert('Upload failed: ' + err.message + '\nPlease download the telemetry JSON backup.');
+      }
+    }
+
+    function downloadSessionJson() {
+      const sessionPayload = {
+        phase: 'PHASE_7C2R4P83R5G2',
+        deviceInfo: STATE.deviceInfo,
+        capabilities: STATE.capabilities,
+        settings: STATE.settings,
+        photoCapabilities: STATE.photoCapabilities,
+        photoSettings: STATE.photoSettings,
+        roundtripResults: STATE.roundtripResults,
+        calibratedPose: STATE.calibratedPose,
+        stills: STATE.capturedStills.map(s => ({
+          id: s.id,
+          condition: s.condition,
+          rep: s.rep,
+          dwellMs: s.dwellMs,
+          size: s.size,
+          timestamp: s.timestamp,
+          finalSharpness: s.finalSharpness,
+          previewTrace: s.previewTrace
+        }))
+      };
+      const blob = new Blob([JSON.stringify(sessionPayload, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `P2R16_R4P83R5G2_SESSION_${Date.now()}.json`;
+      a.click();
+    }
+
+    /* --- STEP MACHINE ADVANCE --- */
+    function advanceStep(newStep) {
+      STATE.step = newStep;
+      const stepNameEl = document.getElementById('step-name');
+      const stepNumEl = document.getElementById('step-num');
+      const progressFill = document.getElementById('progress-fill');
+      const promptEl = document.getElementById('action-prompt');
+      const subpromptEl = document.getElementById('action-subprompt');
+      const btnPrimary = document.getElementById('btn-primary');
+      const btnOverride = document.getElementById('btn-override');
+
+      stepNumEl.textContent = `Step ${newStep} of 10`;
+      progressFill.style.width = `${newStep * 10}%`;
+
+      btnOverride.style.display = 'none';
+      btnPrimary.style.display = 'block';
+      btnPrimary.disabled = false;
+
+      switch (newStep) {
+        case 2:
+          stepNameEl.textContent = 'STEP 2: CAPABILITY PROBE';
+          promptEl.textContent = 'Inspect camera hardware controls & test constraint round-trips.';
+          subpromptEl.textContent = 'Checks whether manual focus distance, exposure time, or ISO are supported.';
+          btnPrimary.textContent = 'RUN CAPABILITY INSPECTION';
+          break;
+        case 3:
+          stepNameEl.textContent = 'STEP 3: AIM AT TARGET SCENE';
+          promptEl.textContent = 'Frame an indoor architectural scene with high-contrast vertical & horizontal edges.';
+          subpromptEl.textContent = 'Door frame, window frame, cabinet trim, or wall molding. Keep phone mounted or held steady.';
+          btnPrimary.textContent = 'SET CURRENT VIEW AS TARGET';
+          break;
+        case 4:
+          stepNameEl.textContent = 'STEP 4: CALIBRATION CONFIRMATION';
+          promptEl.textContent = 'Target orientation locked. Ready to start settle-time matrix.';
+          subpromptEl.textContent = 'You will be guided through C0 (150ms), C1 (600ms), C2 (1200ms), C3 (2000ms), and Burst captures.';
+          btnPrimary.textContent = 'START SETTLE-TIME EXPERIMENT';
+          break;
+        case 5:
+          stepNameEl.textContent = 'STEP 5: CONDITION C0 (150 MS)';
+          startConditionSequence(0);
+          break;
+        case 6:
+          stepNameEl.textContent = 'STEP 6: CONDITION C1 (600 MS)';
+          startConditionSequence(1);
+          break;
+        case 7:
+          stepNameEl.textContent = 'STEP 7: CONDITION C2 (1200 MS)';
+          startConditionSequence(2);
+          break;
+        case 8:
+          stepNameEl.textContent = 'STEP 8: CONDITION C3 (2000 MS)';
+          startConditionSequence(3);
+          break;
+        case 9:
+          stepNameEl.textContent = 'STEP 9: 1200 MS STATIONARY BURST';
+          promptEl.textContent = 'Stationary Burst Test: 3 consecutive physical stills with 300ms pause.';
+          subpromptEl.textContent = 'Tests whether repeated captures in the exact same stance exhibit sharpness variance.';
+          btnPrimary.textContent = 'FIRE 3-SHOT BURST';
+          break;
+        case 10:
+          stepNameEl.textContent = 'STEP 10: COMPLETE & UPLOAD';
+          showFinalResults();
+          break;
+      }
+    }
+
+    function handlePrimaryAction() {
+      switch (STATE.step) {
+        case 1:
+          initCamera();
+          break;
+        case 2:
+          runCapabilityInspection();
+          break;
+        case 3:
+          calibrateTargetPose();
+          break;
+        case 4:
+          advanceStep(5);
+          break;
+        case 9:
+          runStationaryBurst();
+          break;
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1136,6 +1136,126 @@ app.get('/internal-assets/p2r16/viewer/:file', (req, res) => {
   res.status(404).send('Proxy not found');
 });
 
+
+// ── C12.9-P2R16 Phase 7C.2R4P8.3R5-G2: S23 Runtime Capture Control Diagnostic Routes ──
+const r5g2Base = productionArtifactDirs.find(d => fs.existsSync(d)) || path.join(process.cwd(), 'production_artifacts');
+const r5g2CaptureDir = path.join(r5g2Base, 'mobile_runtime_inspector', 'P2R16_R5G2_CAPTURE');
+if (!fs.existsSync(r5g2CaptureDir)) {
+  try { fs.mkdirSync(r5g2CaptureDir, { recursive: true }); } catch(e) {}
+}
+
+const r5g2Storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    if (!fs.existsSync(r5g2CaptureDir)) {
+      try { fs.mkdirSync(r5g2CaptureDir, { recursive: true }); } catch(e) {}
+    }
+    cb(null, r5g2CaptureDir);
+  },
+  filename: function (req, file, cb) {
+    const cleanName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_');
+    cb(null, cleanName);
+  }
+});
+const r5g2Upload = multer({
+  storage: r5g2Storage,
+  limits: { fileSize: 50 * 1024 * 1024, files: 30 }
+});
+
+app.get(['/internal/qa/p2r16_capture_control_test.html', '/internal/qa/p2r16_capture_control_test'], (req, res) => {
+  const candidates = [
+    path.join(__dirname, '..', 'client', 'internal', 'qa', 'p2r16_capture_control_test.html'),
+    path.join(__dirname, '..', 'app_build', 'client', 'internal', 'qa', 'p2r16_capture_control_test.html'),
+    path.join(__dirname, '..', '_clean_deploy', 'client', 'internal', 'qa', 'p2r16_capture_control_test.html'),
+    path.join(__dirname, '..', '_railway_deploy', 'client', 'internal', 'qa', 'p2r16_capture_control_test.html'),
+    path.join(__dirname, '..', 'internal', 'qa', 'p2r16_capture_control_test.html'),
+    path.join(process.cwd(), 'virtual-tradeshow-commercial-v1', 'client', 'internal', 'qa', 'p2r16_capture_control_test.html')
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      res.setHeader('Content-Type', 'text/html; charset=UTF-8');
+      return res.sendFile(p);
+    }
+  }
+  res.status(404).send('QA Test Page not found');
+});
+
+app.post('/api/p2r16/capture-control/upload', r5g2Upload.any(), (req, res) => {
+  try {
+    const uploadedFiles = req.files || [];
+    let sessionData = {};
+    if (req.body && req.body.session_data) {
+      try {
+        sessionData = typeof req.body.session_data === 'string' ? JSON.parse(req.body.session_data) : req.body.session_data;
+      } catch (e) {
+        sessionData = { raw: req.body.session_data, parse_error: e.message };
+      }
+    }
+
+    const sessionJsonPath = path.join(r5g2CaptureDir, 'P2R16_R4P83R5G2_SESSION_DATA.json');
+    const enrichedSession = {
+      ...sessionData,
+      upload_received_at: new Date().toISOString(),
+      file_count: uploadedFiles.length,
+      files: uploadedFiles.map(f => ({
+        originalname: f.originalname,
+        filename: f.filename,
+        size: f.size,
+        mimetype: f.mimetype
+      }))
+    };
+    try {
+      fs.writeFileSync(sessionJsonPath, JSON.stringify(enrichedSession, null, 2), 'utf-8');
+    } catch(e) {}
+
+    const mirrorDirs = [
+      path.join(__dirname, '..', 'production_artifacts', 'mobile_runtime_inspector', 'P2R16_R5G2_CAPTURE'),
+      path.join(__dirname, '..', '_clean_deploy', 'production_artifacts', 'mobile_runtime_inspector', 'P2R16_R5G2_CAPTURE'),
+      path.join(__dirname, '..', '_railway_deploy', 'production_artifacts', 'mobile_runtime_inspector', 'P2R16_R5G2_CAPTURE'),
+      path.join(__dirname, '..', 'app_build', 'production_artifacts', 'mobile_runtime_inspector', 'P2R16_R5G2_CAPTURE')
+    ];
+    mirrorDirs.forEach(dir => {
+      try {
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(path.join(dir, 'P2R16_R4P83R5G2_SESSION_DATA.json'), JSON.stringify(enrichedSession, null, 2), 'utf-8');
+        uploadedFiles.forEach(f => {
+          const src = path.join(r5g2CaptureDir, f.filename);
+          const dst = path.join(dir, f.filename);
+          if (fs.existsSync(src) && src !== dst) {
+            fs.copyFileSync(src, dst);
+          }
+        });
+      } catch (err) {}
+    });
+
+    console.log(`[R5G2 UPLOAD] Received ${uploadedFiles.length} files and session JSON.`);
+    res.json({
+      success: true,
+      received_files: uploadedFiles.length,
+      session_saved: true,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('[R5G2 UPLOAD ERROR]', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/p2r16/capture-control/status', (req, res) => {
+  const sessionJsonPath = path.join(r5g2CaptureDir, 'P2R16_R4P83R5G2_SESSION_DATA.json');
+  const exists = fs.existsSync(sessionJsonPath);
+  let fileList = [];
+  if (fs.existsSync(r5g2CaptureDir)) {
+    try { fileList = fs.readdirSync(r5g2CaptureDir); } catch(e) {}
+  }
+  res.json({
+    status: 'ACTIVE',
+    capture_dir: r5g2CaptureDir,
+    session_json_present: exists,
+    file_count: fileList.length,
+    files: fileList
+  });
+});
+
 app.get('/internal/qa/p2r16/360-viewer', (req, res) => {
   const candidates = [
     path.join(__dirname, '..', 'client', 'internal', 'qa', 'p2r16_360_viewer.html'),
