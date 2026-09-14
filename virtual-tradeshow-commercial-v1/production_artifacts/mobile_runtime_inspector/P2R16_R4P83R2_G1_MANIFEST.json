@@ -1,0 +1,134 @@
+{
+  "phase": "PHASE_7C2R4P83R2_G1",
+  "timestamp": "2026-09-14T01:33:29Z",
+  "branch": "experiment/c12.9-p2r16-8shot-hires",
+  "commit_g1_a": "c9e395726f49de3bc341430801aacbeee3857839",
+  "master_sha": "5218235b8dbe1cd3b401bbbdef0b1c8ba3483d6e",
+  "master_touched": false,
+  "customer_default": "P2R13",
+  "canonical_intrinsics": {
+    "focal": 2961.672718886868,
+    "cx": 1530.0,
+    "cy": 1970.0,
+    "k1": 0.0,
+    "k2": 0.0,
+    "hfov_deg": 53.72174178508982
+  },
+  "render_intrinsics_verified": {
+    "renderer_4k": {
+      "f": 2961.672718886868,
+      "cx": 1530.0,
+      "cy": 1970.0
+    },
+    "renderer_12k": {
+      "f": 2961.672718886868,
+      "cx": 1530.0,
+      "cy": 1970.0
+    },
+    "status": "IDENTICAL_TO_CANONICAL"
+  },
+  "intrinsics_audit": {
+    "R4P83R2_INTRINSICS_RENDER_VALID": true,
+    "R4P83R2_DIAGNOSTIC_METADATA_ERROR": true,
+    "cy_corruption_root_cause": "Variable shadowing in execute_phase7c2r4p83r2_master.py line 635 (panel height 100) overwrote global cy before serialization at line 853. Renderer lines 212-213 executed prior and used canonical 1970.0."
+  },
+  "coverage_summary": {
+    "total_pixels": 22966272,
+    "true_valid_uv_pixels": 22966272,
+    "out_of_bounds_uv_pixels": 0,
+    "border_clamped_pixel_count": 0,
+    "true_direct_physical_coverage": 1.0,
+    "status": "PASS"
+  },
+  "physical_source_identity": "PASS",
+  "angular_detail_retention": {
+    "yaw000": 0.5087,
+    "yaw060": 0.6154,
+    "yaw150": 0.8687,
+    "yaw240": 0.7573,
+    "yaw345": 0.6318,
+    "median": 0.6318
+  },
+  "technical_gate": {
+    "INTRINSICS_RENDER_PROVEN": true,
+    "TRUE_DIRECT_PHYSICAL_COVERAGE": 1.0,
+    "BORDER_CLAMPED_PIXEL_COUNT": 0,
+    "PHYSICAL_SOURCE_PIXEL_IDENTITY": "PASS",
+    "NO_AI": true,
+    "NO_DEPTH": true,
+    "NO_LOCAL_WARP": true,
+    "NO_INPAINT": true,
+    "NO_GENERATIVE_PIXELS": true,
+    "ANGULAR_DETAIL_FORENSICS_VALID": true,
+    "VGGT_FORWARD_COUNT": 0,
+    "ROMA_FORWARD_COUNT": 0,
+    "BA_EXECUTION_COUNT": 0,
+    "DEPTH_MODEL_EXECUTION_COUNT": 0,
+    "INTRINSICS_OPTIMIZATION_COUNT": 0,
+    "RADIAL_OPTIMIZATION_COUNT": 0,
+    "G1_TECHNICAL_GATE": "PASS"
+  },
+  "governance": {
+    "R4P83R2_OWNER_REVIEW_ALLOWED": true,
+    "R4P83R2_OWNER_VISUAL_REVIEW_COMPLETED": false,
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "12K_FINAL_PROMOTION_APPROVED": false,
+    "BEST_PHYSICAL_ONLY_CANDIDATE": "R4P8.1_D",
+    "CUSTOMER_DEFAULT": "P2R13",
+    "MASTER_TOUCHED": false
+  },
+  "artifacts": {
+    "P2R16_R4P83R2_G1_INTRINSICS_PROVENANCE.json": {
+      "sha256": "e01f0bfab52444bd11edcfa862e11b0bab95f2ff6826133a3ef563733358f35f",
+      "size_bytes": 1098
+    },
+    "P2R16_R4P83R2_G1_TRUE_UV_COVERAGE.json": {
+      "sha256": "46f137fb1fc3d5f1376e445fdde76c1d6d908dc11b369884d331376c335faa40",
+      "size_bytes": 4848
+    },
+    "P2R16_R4P83R2_G1_TRUE_UV_VALIDITY_MASK.png": {
+      "sha256": "bf6a2d5c4e38b378bba01ba825d3834393842b7bba177dfd410348fda5694d02",
+      "size_bytes": 26593
+    },
+    "P2R16_R4P83R2_G1_BORDER_CLAMP_MAP.png": {
+      "sha256": "ede6c304b97bb7d66b6939707402d0005a6c3b91060527cb4ef79d171fbb42dc",
+      "size_bytes": 25655
+    },
+    "P2R16_R4P83R2_G1_PHYSICAL_SOURCE_IDENTITY.json": {
+      "sha256": "54e437d4a9b964383239d8147125143d03a75c7ee54c63ea4c506cf847c43c2c",
+      "size_bytes": 4378
+    },
+    "P2R16_R4P83R2_G1_ANGULAR_DETAIL_RETENTION.json": {
+      "sha256": "0ea7948b74618d69d4c4569433f4e96fcbcc52c78a38eb1d6fdda3c58155da18",
+      "size_bytes": 5976
+    },
+    "P2R16_R4P83R2_G1_NATIVE1TO1_YAW000.png": {
+      "sha256": "4ec2bcbe369bfa0a6b859c37eb3851f405c27bb1413726a21ab7d91153cfbc64",
+      "size_bytes": 477018
+    },
+    "P2R16_R4P83R2_G1_NATIVE1TO1_YAW060.png": {
+      "sha256": "783da50be5b6b2c0d8e618ca57377b22c25dd1217bdf784c909052655a87e711",
+      "size_bytes": 544642
+    },
+    "P2R16_R4P83R2_G1_NATIVE1TO1_YAW150.png": {
+      "sha256": "f45bcb9f96f527cb554481b5e7a66edc07db1c2d61e0b187d80a652f6bb4d96f",
+      "size_bytes": 520076
+    },
+    "P2R16_R4P83R2_G1_NATIVE1TO1_YAW240.png": {
+      "sha256": "651314e1d94670fc861895c81834eaf4ba6ccf7542ec2722844f0d698224caa1",
+      "size_bytes": 539478
+    },
+    "P2R16_R4P83R2_G1_NATIVE1TO1_YAW345.png": {
+      "sha256": "fe16d82c9699941dd9085393a9bfb88bff91ac46d03113cfc82d8dd4bb520b93",
+      "size_bytes": 503558
+    },
+    "P2R16_QUALITY_PHASE7C2R4P83R2_G1_DIAGNOSTICS.json": {
+      "sha256": "efa9c8171f2bdafd8f2dc7632b017e100160ae700fa807853c623fcb0019c623",
+      "size_bytes": 18453
+    },
+    "P2R16_R4P83R2_SELECTED_12K_OWNER_REVIEW_Q95.jpg": {
+      "sha256": "1c005121240485b1927ab21c0e723605b8382376bd1649025920945ffbe0ad29",
+      "size_bytes": 6322960
+    }
+  }
+}
