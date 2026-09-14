@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>3D2 C12.9 P2R16 — Phase 7C.2R4P8.3R2-OR2 Final Owner Review</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #090d16;
+      color: #e2e8f0;
+      margin: 0;
+      padding: 24px;
+      line-height: 1.5;
+    }
+    h1, h2, h3 { color: #f8fafc; font-weight: 700; }
+    h1 { font-size: 24px; margin-bottom: 4px; border-bottom: 2px solid #3b82f6; padding-bottom: 8px; }
+    .badge-bar { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .badge { background: #1e293b; color: #38bdf8; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; border: 1px solid #334155; }
+    .badge.alert { color: #f59e0b; border-color: #78350f; }
+    .badge.pass { color: #10b981; border-color: #064e3b; }
+    .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 20px; margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
+    .label-banner { background: #1e293b; padding: 12px 16px; border-radius: 6px; font-weight: 700; font-size: 15px; color: #f8fafc; margin-bottom: 16px; border-left: 4px solid #38bdf8; display: flex; justify-content: space-between; }
+    .comparison-grid { display: flex; flex-direction: column; gap: 24px; }
+    .comp-item { background: #1e293b; border-radius: 6px; padding: 14px; border: 1px solid #334155; }
+    .comp-item h4 { margin: 0 0 10px 0; font-size: 16px; color: #38bdf8; }
+    .comp-img { width: 100%; height: auto; border-radius: 4px; border: 1px solid #475569; display: block; }
+    .nav-bar { position: sticky; top: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); padding: 10px 0; border-bottom: 1px solid #334155; z-index: 100; margin-bottom: 20px; display: flex; gap: 12px; overflow-x: auto; }
+    .nav-link { color: #94a3b8; text-decoration: none; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 4px; }
+    .nav-link:hover { background: #334155; color: #f8fafc; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+    th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #334155; }
+    th { background: #1e293b; color: #94a3b8; font-weight: 600; }
+    code { background: #1e293b; padding: 2px 6px; border-radius: 3px; font-family: monospace; color: #38bdf8; font-size: 12px; }
+  </style>
+</head>
+<body>
+
+  <h1>3D2 C12.9 — P2R16 PHASE 7C.2R4P8.3R2-OR2</h1>
+  <h2>Final 12K Owner Visual Adjudication Package</h2>
+  
+  <div class="badge-bar">
+    <span class="badge pass">G1 TECHNICAL GATE: PASS</span>
+    <span class="badge">CANONICAL INTRINSICS: f=2961.67px | cx=1530 | cy=1970</span>
+    <span class="badge">COVERAGE: 100.0000% (0 CLAMPED)</span>
+    <span class="badge alert">OWNER ACCEPTANCE: PENDING</span>
+    <span class="badge">CUSTOMER DEFAULT: P2R13</span>
+    <span class="badge">BASELINE: R4P8.1_D</span>
+  </div>
+
+  <div class="label-banner">
+    <span>LEFT = R4P8.1_D BASELINE (12K PNG)</span>
+    <span>SYNCHRONIZED PHYSICAL AZIMUTH (OFFSET: -0.24°)</span>
+    <span>RIGHT = R4P8.3R2 CANDIDATE B (12K PNG)</span>
+  </div>
+
+  <div class="nav-bar">
+    <a class="nav-link" href="#section-viewer">Live 360 Viewer</a>
+    <a class="nav-link" href="#section-full-context">1. Full Context A/B</a>
+    <a class="nav-link" href="#section-detail-25">2. Structural Detail 25°</a>
+    <a class="nav-link" href="#section-detail-18">3. Deep Magnification 18°</a>
+    <a class="nav-link" href="#section-native-1to1">4. Native 1:1 Pixel Review</a>
+    <a class="nav-link" href="#section-source-ref">5. Source Reference</a>
+    <a class="nav-link" href="#section-closure">6. Closure 345° Gate</a>
+    <a class="nav-link" href="#section-line-metrics">7. Line Forensics</a>
+    <a class="nav-link" href="#section-verdict">8. Owner Decision Form</a>
+  </div>
+
+  <!-- VIEWER LINK -->
+  <div class="card" id="section-viewer">
+    <h3>Live WebGL 360 Viewer (Synchronized A/B Switching)</h3>
+    <p>The viewer preserves exact physical landmark orientation, pitch, and zoom when toggling between R4P8.1_D and R4P8.3R2:</p>
+    <p>
+      <a href="/internal/qa/p2r16_360_viewer.html?mode=quality-ai-r4p83r2-owner-final" target="_blank" style="display:inline-block; background:#2563eb; color:white; padding:10px 18px; border-radius:6px; text-decoration:none; font-weight:700;">
+        Open Interactive Final Owner Review Viewer
+      </a>
+    </p>
+  </div>
+
+  <!-- SECTION 1: FULL CONTEXT A/B -->
+  <div class="card" id="section-full-context">
+    <h3>1. Full Context Comparison (HFOV = 85°, Pitch = 0°)</h3>
+    <p>8 synchronized azimuth angles spanning the entire room:</p>
+    <div class="comparison-grid">
+
+      <div class="comp-item">
+        <h4>Yaw 000° (Fireplace / Cabinet Trim)</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_COMPARE_YAW000.png" alt="Yaw 000° (Fireplace / Cabinet Trim)">
+      </div>
+
+      <div class="comp-item">
+        <h4>Yaw 060° (Doorway Vertical Molding)</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_COMPARE_YAW060.png" alt="Yaw 060° (Doorway Vertical Molding)">
+      </div>
+
+      <div class="comp-item">
+        <h4>Yaw 090° (Corner Transition & Wall Surface)</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_COMPARE_YAW090.png" alt="Yaw 090° (Corner Transition & Wall Surface)">
+      </div>
+
+      <div class="comp-item">
+        <h4>Yaw 150° (Cabinet Edge / Window Frame / Chair Rail)</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_COMPARE_YAW150.png" alt="Yaw 150° (Cabinet Edge / Window Frame / Chair Rail)">
+      </div>
+
+      <div class="comp-item">
+        <h4>Yaw 180° (Back Wall & Interior Depth)</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_COMPARE_YAW180.png" alt="Yaw 180° (Back Wall & Interior Depth)">
+      </div>
+
+      <div class="comp-item">
+        <h4>Yaw 240° (Dining Verticals / Doorway / Trim)</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_COMPARE_YAW240.png" alt="Yaw 240° (Dining Verticals / Doorway / Trim)">
+      </div>
+
+      <div class="comp-item">
+        <h4>Yaw 270° (Corridor / Side Elevation)</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_COMPARE_YAW270.png" alt="Yaw 270° (Corridor / Side Elevation)">
+      </div>
+
+      <div class="comp-item">
+        <h4>Yaw 345° (Closure Seam 11_00 / Cabinet Molding)</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_COMPARE_YAW345.png" alt="Yaw 345° (Closure Seam 11_00 / Cabinet Molding)">
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SECTION 2: STRUCTURAL DETAIL 25 -->
+  <div class="card" id="section-detail-25">
+    <h3>2. High-Magnification Structural Detail (HFOV = 25°, Pitch = 0°)</h3>
+    <p>Critical structural junctions magnified at HFOV 25°:</p>
+    <div class="comparison-grid">
+
+      <div class="comp-item">
+        <h4>Zone A: Fireplace / Cabinet Trim</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_DETAIL25_YAW000.png" alt="Zone A: Fireplace / Cabinet Trim">
+      </div>
+
+      <div class="comp-item">
+        <h4>Zone B: Doorway Vertical Molding</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_DETAIL25_YAW060.png" alt="Zone B: Doorway Vertical Molding">
+      </div>
+
+      <div class="comp-item">
+        <h4>Zone C: Cabinet Edge / Window Frame / Chair Rail</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_DETAIL25_YAW150.png" alt="Zone C: Cabinet Edge / Window Frame / Chair Rail">
+      </div>
+
+      <div class="comp-item">
+        <h4>Zone D: Dining Verticals / Doorway / Trim</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_DETAIL25_YAW240.png" alt="Zone D: Dining Verticals / Doorway / Trim">
+      </div>
+
+      <div class="comp-item">
+        <h4>Zone E: Closure Seam 11_00 / Cabinet Molding</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_DETAIL25_YAW345.png" alt="Zone E: Closure Seam 11_00 / Cabinet Molding">
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SECTION 3: DEEP MAGNIFICATION 18 -->
+  <div class="card" id="section-detail-18">
+    <h3>3. Deep Perspective Magnification (HFOV = 18°, Pitch = 0°)</h3>
+    <p>Maximum perspective zoom on architectural trim, window mullions, and door frames:</p>
+    <div class="comparison-grid">
+
+      <div class="comp-item">
+        <h4>Zone A: Fireplace / Cabinet Trim</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_DETAIL18_YAW000.png" alt="Zone A: Fireplace / Cabinet Trim">
+      </div>
+
+      <div class="comp-item">
+        <h4>Zone B: Doorway Vertical Molding</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_DETAIL18_YAW060.png" alt="Zone B: Doorway Vertical Molding">
+      </div>
+
+      <div class="comp-item">
+        <h4>Zone C: Cabinet Edge / Window Frame / Chair Rail</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_DETAIL18_YAW150.png" alt="Zone C: Cabinet Edge / Window Frame / Chair Rail">
+      </div>
+
+      <div class="comp-item">
+        <h4>Zone D: Dining Verticals / Doorway / Trim</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_DETAIL18_YAW240.png" alt="Zone D: Dining Verticals / Doorway / Trim">
+      </div>
+
+      <div class="comp-item">
+        <h4>Zone E: Closure Seam 11_00 / Cabinet Molding</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_DETAIL18_YAW345.png" alt="Zone E: Closure Seam 11_00 / Cabinet Molding">
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SECTION 4: NATIVE 1:1 PIXEL REVIEW -->
+  <div class="card" id="section-native-1to1">
+    <h3>4. Native 1:1 Pixel Review (Literal 1 Image Pixel = 1 Output Pixel)</h3>
+    <p>Extracted directly from the lossless 12K PNG texture grids. Zero resize, zero browser interpolation:</p>
+    <div class="comparison-grid">
+
+      <div class="comp-item">
+        <h4>Zone A: Fireplace / Cabinet Trim (1:1 Native Pixel Crop)</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_NATIVE1TO1_YAW000_COMPARE.png" alt="Zone A: Fireplace / Cabinet Trim 1:1">
+        <p style="margin-top:8px; font-size:12px;">
+          Standalone Raw PNGs: 
+          <a href="P2R16_R4P83R2_OR2_NATIVE1TO1_YAW000_R4P81.png" target="_blank" style="color:#38bdf8;">R4P8.1_D Raw PNG Crop</a> | 
+          <a href="P2R16_R4P83R2_OR2_NATIVE1TO1_YAW000_R4P83.png" target="_blank" style="color:#10b981;">R4P8.3R2 Raw PNG Crop</a>
+        </p>
+      </div>
+
+      <div class="comp-item">
+        <h4>Zone B: Doorway Vertical Molding (1:1 Native Pixel Crop)</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_NATIVE1TO1_YAW060_COMPARE.png" alt="Zone B: Doorway Vertical Molding 1:1">
+        <p style="margin-top:8px; font-size:12px;">
+          Standalone Raw PNGs: 
+          <a href="P2R16_R4P83R2_OR2_NATIVE1TO1_YAW060_R4P81.png" target="_blank" style="color:#38bdf8;">R4P8.1_D Raw PNG Crop</a> | 
+          <a href="P2R16_R4P83R2_OR2_NATIVE1TO1_YAW060_R4P83.png" target="_blank" style="color:#10b981;">R4P8.3R2 Raw PNG Crop</a>
+        </p>
+      </div>
+
+      <div class="comp-item">
+        <h4>Zone C: Cabinet Edge / Window Frame / Chair Rail (1:1 Native Pixel Crop)</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_NATIVE1TO1_YAW150_COMPARE.png" alt="Zone C: Cabinet Edge / Window Frame / Chair Rail 1:1">
+        <p style="margin-top:8px; font-size:12px;">
+          Standalone Raw PNGs: 
+          <a href="P2R16_R4P83R2_OR2_NATIVE1TO1_YAW150_R4P81.png" target="_blank" style="color:#38bdf8;">R4P8.1_D Raw PNG Crop</a> | 
+          <a href="P2R16_R4P83R2_OR2_NATIVE1TO1_YAW150_R4P83.png" target="_blank" style="color:#10b981;">R4P8.3R2 Raw PNG Crop</a>
+        </p>
+      </div>
+
+      <div class="comp-item">
+        <h4>Zone D: Dining Verticals / Doorway / Trim (1:1 Native Pixel Crop)</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_NATIVE1TO1_YAW240_COMPARE.png" alt="Zone D: Dining Verticals / Doorway / Trim 1:1">
+        <p style="margin-top:8px; font-size:12px;">
+          Standalone Raw PNGs: 
+          <a href="P2R16_R4P83R2_OR2_NATIVE1TO1_YAW240_R4P81.png" target="_blank" style="color:#38bdf8;">R4P8.1_D Raw PNG Crop</a> | 
+          <a href="P2R16_R4P83R2_OR2_NATIVE1TO1_YAW240_R4P83.png" target="_blank" style="color:#10b981;">R4P8.3R2 Raw PNG Crop</a>
+        </p>
+      </div>
+
+      <div class="comp-item">
+        <h4>Zone E: Closure Seam 11_00 / Cabinet Molding (1:1 Native Pixel Crop)</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_NATIVE1TO1_YAW345_COMPARE.png" alt="Zone E: Closure Seam 11_00 / Cabinet Molding 1:1">
+        <p style="margin-top:8px; font-size:12px;">
+          Standalone Raw PNGs: 
+          <a href="P2R16_R4P83R2_OR2_NATIVE1TO1_YAW345_R4P81.png" target="_blank" style="color:#38bdf8;">R4P8.1_D Raw PNG Crop</a> | 
+          <a href="P2R16_R4P83R2_OR2_NATIVE1TO1_YAW345_R4P83.png" target="_blank" style="color:#10b981;">R4P8.3R2 Raw PNG Crop</a>
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SECTION 5: SOURCE REFERENCE -->
+  <div class="card" id="section-source-ref">
+    <h3>5. Source Photo Reference Panels</h3>
+    <p>Shows physical camera frame alongside both panorama crops with sampling density context:</p>
+    <div class="comparison-grid">
+
+      <div class="comp-item">
+        <h4>Zone A: Fireplace / Cabinet Trim</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_SOURCE_COMPARE_YAW000.png" alt="Zone A: Fireplace / Cabinet Trim Source Reference">
+      </div>
+
+      <div class="comp-item">
+        <h4>Zone B: Doorway Vertical Molding</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_SOURCE_COMPARE_YAW060.png" alt="Zone B: Doorway Vertical Molding Source Reference">
+      </div>
+
+      <div class="comp-item">
+        <h4>Zone C: Cabinet Edge / Window Frame / Chair Rail</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_SOURCE_COMPARE_YAW150.png" alt="Zone C: Cabinet Edge / Window Frame / Chair Rail Source Reference">
+      </div>
+
+      <div class="comp-item">
+        <h4>Zone D: Dining Verticals / Doorway / Trim</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_SOURCE_COMPARE_YAW240.png" alt="Zone D: Dining Verticals / Doorway / Trim Source Reference">
+      </div>
+
+      <div class="comp-item">
+        <h4>Zone E: Closure Seam 11_00 / Cabinet Molding</h4>
+        <img class="comp-img" src="P2R16_R4P83R2_OR2_SOURCE_COMPARE_YAW345.png" alt="Zone E: Closure Seam 11_00 / Cabinet Molding Source Reference">
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SECTION 6: CLOSURE 345 -->
+  <div class="card" id="section-closure">
+    <h3>6. Mandatory Closure 345° Independent Gate</h3>
+    <p>Comprehensive multi-zoom and flat 1:1 texture analysis of the 330° &rarr; 0° (seam 11_00) ring closure:</p>
+    <div class="comp-item">
+      <img class="comp-img" src="P2R16_R4P83R2_OR2_CLOSURE_345_FORENSIC.png" alt="Closure 345 Analysis">
+    </div>
+  </div>
+
+  <!-- SECTION 7: LINE FORENSICS -->
+  <div class="card" id="section-line-metrics">
+    <h3>7. Structural Line Forensics (Image-Space Geometry Diagnostics)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Zone</th>
+          <th>Model</th>
+          <th>Vertical Bend P95 (px)</th>
+          <th>Angle Deviation (deg)</th>
+          <th>Horizontal Bend P95 (px)</th>
+          <th>Double Edges</th>
+          <th>Local Scale Delta</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <tr>
+          <td rowspan="2"><strong>Zone A: Fireplace / Cabinet Trim</strong></td>
+          <td><code>R4P8.1_D (Baseline)</code></td>
+          <td>2.25 px</td>
+          <td>2.06°</td>
+          <td>0.50 px</td>
+          <td>22</td>
+          <td rowspan="2">2.2%</td>
+        </tr>
+        <tr>
+          <td><code style="color:#10b981;">R4P8.3R2 (Candidate)</code></td>
+          <td>2.30 px</td>
+          <td>3.01°</td>
+          <td>0.50 px</td>
+          <td>20</td>
+        </tr>
+
+        <tr>
+          <td rowspan="2"><strong>Zone B: Doorway Vertical Molding</strong></td>
+          <td><code>R4P8.1_D (Baseline)</code></td>
+          <td>2.10 px</td>
+          <td>1.32°</td>
+          <td>0.50 px</td>
+          <td>18</td>
+          <td rowspan="2">9.5%</td>
+        </tr>
+        <tr>
+          <td><code style="color:#10b981;">R4P8.3R2 (Candidate)</code></td>
+          <td>1.90 px</td>
+          <td>1.86°</td>
+          <td>0.50 px</td>
+          <td>21</td>
+        </tr>
+
+        <tr>
+          <td rowspan="2"><strong>Zone C: Cabinet Edge / Window Frame / Chair Rail</strong></td>
+          <td><code>R4P8.1_D (Baseline)</code></td>
+          <td>0.50 px</td>
+          <td>0.50°</td>
+          <td>0.50 px</td>
+          <td>4</td>
+          <td rowspan="2">0.0%</td>
+        </tr>
+        <tr>
+          <td><code style="color:#10b981;">R4P8.3R2 (Candidate)</code></td>
+          <td>0.50 px</td>
+          <td>0.50°</td>
+          <td>0.50 px</td>
+          <td>4</td>
+        </tr>
+
+        <tr>
+          <td rowspan="2"><strong>Zone D: Dining Verticals / Doorway / Trim</strong></td>
+          <td><code>R4P8.1_D (Baseline)</code></td>
+          <td>2.50 px</td>
+          <td>2.59°</td>
+          <td>0.50 px</td>
+          <td>11</td>
+          <td rowspan="2">76.0%</td>
+        </tr>
+        <tr>
+          <td><code style="color:#10b981;">R4P8.3R2 (Candidate)</code></td>
+          <td>4.40 px</td>
+          <td>3.49°</td>
+          <td>0.50 px</td>
+          <td>11</td>
+        </tr>
+
+        <tr>
+          <td rowspan="2"><strong>Zone E: Closure Seam 11_00 / Cabinet Molding</strong></td>
+          <td><code>R4P8.1_D (Baseline)</code></td>
+          <td>3.00 px</td>
+          <td>2.94°</td>
+          <td>0.50 px</td>
+          <td>13</td>
+          <td rowspan="2">36.7%</td>
+        </tr>
+        <tr>
+          <td><code style="color:#10b981;">R4P8.3R2 (Candidate)</code></td>
+          <td>4.10 px</td>
+          <td>3.27°</td>
+          <td>0.50 px</td>
+          <td>9</td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 8: OWNER DECISION FORM -->
+  <div class="card" id="section-verdict">
+    <h3>8. Owner Verdict Template</h3>
+    <p>Saved to: <code>P2R16_R4P83R2_OR2_OWNER_VERDICT_TEMPLATE.json</code></p>
+    <pre style="background:#020617; padding:14px; border-radius:6px; color:#38bdf8; font-size:12px; overflow-x:auto;">
+{
+  "OWNER_REVIEW_COMPLETED": false,
+  "YAW000_STRUCTURE": "PENDING_OWNER",
+  "YAW060_STRUCTURE": "PENDING_OWNER",
+  "YAW150_STRUCTURE": "PENDING_OWNER",
+  "YAW240_STRUCTURE": "PENDING_OWNER",
+  "YAW345_CLOSURE": "PENDING_OWNER",
+  "R4P83R2_STRUCTURE_VS_R4P81": "PENDING_OWNER",
+  "R4P83R2_SEAM_VS_R4P81": "PENDING_OWNER",
+  "R4P83R2_CLOSURE_VS_R4P81": "PENDING_OWNER",
+  "R4P83R2_SHARPNESS_VS_R4P81": "PENDING_OWNER",
+  "R4P83R2_DETAIL_VS_R4P81": "PENDING_OWNER",
+  "R4P83R2_COLOR_CONTINUITY_VS_R4P81": "PENDING_OWNER",
+  "OWNER_SELECTED_CANDIDATE": "NONE",
+  "OWNER_VISUAL_ACCEPTANCE": false,
+  "12K_FINAL_PROMOTION_APPROVED": false,
+  "OWNER_COMMENTS": ""
+}
+    </pre>
+  </div>
+
+</body>
+</html>

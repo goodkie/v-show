@@ -1,0 +1,36 @@
+{
+  "phase": "PHASE_7C2R4P83R2_OR2",
+  "timestamp": "2026-09-14T01:48:10Z",
+  "description": "Authoritative Human Owner Visual Adjudication Form for C12.9-P2R16",
+  "evaluation_rules": "Automated metrics NEVER set Owner acceptance. Fill only from visual inspection of the authoritative 12K comparison sheets.",
+  "allowed_verdict_values": [
+    "R4P83R2_CLEARLY_BETTER",
+    "R4P83R2_PARTIALLY_BETTER",
+    "EQUIVALENT",
+    "R4P81_D_BETTER",
+    "INCONCLUSIVE"
+  ],
+  "fields": {
+    "OWNER_REVIEW_COMPLETED": false,
+    "YAW000_STRUCTURE": "PENDING_OWNER",
+    "YAW060_STRUCTURE": "PENDING_OWNER",
+    "YAW150_STRUCTURE": "PENDING_OWNER",
+    "YAW240_STRUCTURE": "PENDING_OWNER",
+    "YAW345_CLOSURE": "PENDING_OWNER",
+    "R4P83R2_STRUCTURE_VS_R4P81": "PENDING_OWNER",
+    "R4P83R2_SEAM_VS_R4P81": "PENDING_OWNER",
+    "R4P83R2_CLOSURE_VS_R4P81": "PENDING_OWNER",
+    "R4P83R2_SHARPNESS_VS_R4P81": "PENDING_OWNER",
+    "R4P83R2_DETAIL_VS_R4P81": "PENDING_OWNER",
+    "R4P83R2_COLOR_CONTINUITY_VS_R4P81": "PENDING_OWNER",
+    "OWNER_SELECTED_CANDIDATE": "NONE",
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "12K_FINAL_PROMOTION_APPROVED": false,
+    "OWNER_COMMENTS": ""
+  },
+  "governance_locks": {
+    "BEST_PHYSICAL_ONLY_CANDIDATE": "R4P8.1_D",
+    "CUSTOMER_DEFAULT": "P2R13",
+    "MASTER_TOUCHED": false
+  }
+}
