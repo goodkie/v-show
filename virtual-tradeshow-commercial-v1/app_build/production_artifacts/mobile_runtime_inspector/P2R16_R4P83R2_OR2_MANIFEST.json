@@ -8,14 +8,21 @@
     "master_commit": "5218235b8dbe1cd3b401bbbdef0b1c8ba3483d6e",
     "master_touched": false,
     "source_head": "c20b502d92e5d27646268a8a447f6ba2c8d0ea9a",
-    "commit_g1_a": "685809531e38b446b986bcb08b5a4a46c2816179"
+    "commit_g1_a": "685809531e38b446b986bcb08b5a4a46c2816179",
+    "commit_o1_a": "e2c68abe52332c414a92a39f61894c5e8fcd3bce"
   },
   "governance": {
     "CUSTOMER_DEFAULT": "P2R13",
     "BEST_PHYSICAL_ONLY_CANDIDATE": "R4P8.1_D",
     "OWNER_VISUAL_ACCEPTANCE": false,
     "12K_FINAL_PROMOTION_APPROVED": false,
-    "R4P83R2_OWNER_VISUAL_REVIEW_COMPLETED": false
+    "R4P83R2_OWNER_VISUAL_REVIEW_COMPLETED": false,
+    "owner_review_completed": true,
+    "owner_selected_candidate": "NONE",
+    "owner_visual_acceptance": false,
+    "12k_final_promotion_approved": false,
+    "best_physical_only_candidate": "R4P8.1_D",
+    "customer_default": "P2R13"
   },
   "inputs": {
     "CANDIDATE_B_12K_PNG_SHA256": "04dbcdddb8f182f5819565b5d9f43e11ff1031ea7ea9b9be9fa41998d0cf292f",
@@ -261,7 +268,8 @@
     "P2R16_R4P83R2_OR2_STRUCTURAL_LINE_METRICS.json": "1ac792f1f213a7bbf83cead399ce6c8850f1af0fe8410b6766cf7b466b2b8b8c",
     "P2R16_R4P83R2_OR2_SEAM_METRICS.json": "71bad265c6d40e8076e4bbe54775ff5efbc807100cf9df2d9adf1340599f0d34",
     "P2R16_R4P83R2_OR2_OWNER_REVIEW_INDEX.html": "f81931ee28cff9b4bdfd4a553a2f6b045c87fd8f38a6e8b60e28bd4075b17047",
-    "P2R16_R4P83R2_OR2_G1_PROVENANCE_RECONCILIATION.json": "8fc94316fa27d4657a8f74de19cc6c588a2bb7ef8f6bfa49a4def04dc3936fec"
+    "P2R16_R4P83R2_OR2_G1_PROVENANCE_RECONCILIATION.json": "8fc94316fa27d4657a8f74de19cc6c588a2bb7ef8f6bfa49a4def04dc3936fec",
+    "P2R16_R4P83R2_OR2_O1_OWNER_VERDICT.json": "471bc6fe703190729251cb525883a394d0d2b202646dca064fc87a8dbef8460a"
   },
-  "artifact_count": 44
+  "artifact_count": 45
 }
