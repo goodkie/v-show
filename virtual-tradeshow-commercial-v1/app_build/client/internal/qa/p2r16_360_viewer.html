@@ -685,7 +685,8 @@
     <button id="btn-ab-cand" class="ab-btn" onclick="toggleOwnerCandidateBaseline('candidate')" style="background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #f59e0b; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; cursor: pointer;">[R4P8.3R2 CANDIDATE]</button>
     <span style="font-size: 10px; color: #38bdf8; font-weight: 700; margin-left: 4px;">HORIZONTAL 360 SPHERICAL BAND</span>
   </div>
-
+
+
   <!-- Coverage Display Bar (Phase 7C.2R2.2C Exact Modes) -->
   <div class="coverage-bar" id="coverage-bar" style="display: none;">
     <span class="cov-title"><i class="fa-solid fa-layer-group"></i> VIEW:</span>
@@ -2235,10 +2236,10 @@
           const directCov = (meta.directCoverage * 100.0).toFixed(4) + '%';
           subSpecsEl.innerHTML = `CANDIDATE: ${meta.candidate} | SAMPLER: ${meta.sampler} | ROTATION: ${meta.rotationModel} | TEXTURE: 4096×623 | RGB: ORIGINAL PHYSICAL | DEPTH: NONE | LOCAL WARP: NONE | INPAINT: 0% | DIRECT COVERAGE: ${directCov} | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
               } else if (currentMode === 'quality-ai-r4p83r2-owner-final' || currentMode === 'quality-ai-r4p83r2-12k') {
-        subSpecsEl.innerHTML = `RGB: ORIGINAL 3000x4000 PHYSICAL | 12K NATIVE RASTER (12288x1869) | DEPTH: NONE | TRANSLATION: NONE | LOCAL WARP: NONE | INPAINT: 0% | GENERATIVE: 0 | CAMERA MODEL: SHARED PINHOLE | FOCAL: 2961.7 px | HFOV: 53.72° | K1: 0.00000 | K2: 0.00000 | ROTATION MICRO-REG: FROZEN R4P8.1 ZERO DELTA | GLOBAL P95: 0.670° (+57.5%) | HELDOUT P95: 0.671° | CLOSURE 11_00: 0.757° | DIRECT COVERAGE: 100% | OWNER ACCEPTANCE: PENDING | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
+        subSpecsEl.innerHTML = `RGB: ORIGINAL 3000x4000 PHYSICAL | 12K NATIVE RASTER (12288x1869) | DEPTH: NONE | TRANSLATION: NONE | LOCAL WARP: NONE | INPAINT: 0% | GENERATIVE: 0 | CAMERA MODEL: SHARED PINHOLE | FOCAL: 2961.7 px | HFOV: 53.72° | K1: 0.00000 | K2: 0.00000 | ROTATION MICRO-REG: FROZEN R4P8.1 ZERO DELTA | GLOBAL P95: 0.670° (+57.5%) | HELDOUT P95: 0.671° | CLOSURE 11_00: 0.757° | DIRECT COVERAGE: 100% | BAND: HORIZONTAL 360 SPHERICAL BAND | OWNER ACCEPTANCE: PENDING | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
       } else if (currentMode === 'quality-ai-r4p81-d') {
           const directCov = (meta.directCoverage * 100.0).toFixed(4) + '%';
-          subSpecsEl.innerHTML = `TEXTURE: 12288×1869 | RGB: ORIGINAL 3000x4000 PHYSICAL | DEPTH: NONE | TRANSLATION: NONE | LOCAL WARP: NONE | INPAINT: 0% | GENERATIVE: 0 | DIRECT COVERAGE: ${directCov} | SO3: ACTIVE | GRAPH CUT: ACTIVE | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
+          subSpecsEl.innerHTML = `TEXTURE: 12288×1869 | RGB: ORIGINAL 3000x4000 PHYSICAL | DEPTH: NONE | TRANSLATION: NONE | LOCAL WARP: NONE | INPAINT: 0% | GENERATIVE: 0 | DIRECT COVERAGE: ${directCov} | BAND: HORIZONTAL 360 SPHERICAL BAND | SO3: ACTIVE | GRAPH CUT: ACTIVE | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
         } else if (currentMode.startsWith('quality-ai-r4p8-')) {
           const directCov = (meta.directCoverage * 100.0).toFixed(2) + '%';
           subSpecsEl.innerHTML = `RGB: ORIGINAL 3000x4000 PHYSICAL | DEPTH: NONE | TRANSLATION: NONE | LOCAL WARP: NONE | INPAINT: 0% | GENERATIVE: 0 | DIRECT COVERAGE: ${directCov} | SO3: ACTIVE | GRAPH CUT: ACTIVE | HFOV: <span id="fov-hdr-text">${fovVal}°</span> | YAW: <span id="yaw-hdr-text">${yawVal}°</span> | PITCH: <span id="pitch-hdr-text">${pitchVal}°</span>`;
@@ -2808,8 +2809,10 @@
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.ClampToEdgeWrapping;
             const candMeta = MODE_METADATA[currentMode];
-            window.__VIEWER_TELEMETRY__.R4P83R2_12K_ACTIVE = true;
-            window.__VIEWER_TELEMETRY__.R4P83R2_OWNER_FINAL_ACTIVE = (currentMode === 'quality-ai-r4p83r2-owner-final');
+            window.__VIEWER_TELEMETRY__.R4P83R2_12K_ACTIVE = true;
+
+            window.__VIEWER_TELEMETRY__.R4P83R2_OWNER_FINAL_ACTIVE = (currentMode === 'quality-ai-r4p83r2-owner-final');
+
             window.__VIEWER_TELEMETRY__.SPHERICAL_BAND_TYPE = 'HORIZONTAL 360 SPHERICAL BAND';
             window.__VIEWER_TELEMETRY__.TEXTURE_LOADED = true;
             window.__VIEWER_TELEMETRY__.TEXTURE_LOAD_SUCCESS = true;
@@ -3214,8 +3217,10 @@
       const btnR3 = document.getElementById('btn-mode-quality-r3');
             const btnR4p4 = document.getElementById('btn-mode-quality-r4p4');
       if (btnR4p4) btnR4p4.className = (currentMode === 'quality-ai-r4p4') ? 'mode-btn active-quality-ai' : 'mode-btn';
-                  const btnFinal = document.getElementById('btn-mode-quality-r4p83r2-owner-final');
-      if (btnFinal) btnFinal.className = (currentMode === 'quality-ai-r4p83r2-owner-final') ? 'mode-btn active-quality-ai' : 'mode-btn';
+                  const btnFinal = document.getElementById('btn-mode-quality-r4p83r2-owner-final');
+
+      if (btnFinal) btnFinal.className = (currentMode === 'quality-ai-r4p83r2-owner-final') ? 'mode-btn active-quality-ai' : 'mode-btn';
+
       const btn83r2 = document.getElementById('btn-mode-quality-r4p83r2-12k');
       if (btn83r2) btn83r2.className = (currentMode === 'quality-ai-r4p83r2-12k') ? 'mode-btn active-quality-ai' : 'mode-btn';
       const btn83r1 = document.getElementById('btn-mode-quality-r4p83r1');
@@ -3287,12 +3292,12 @@
       }
     }
 
-        function toggleOwnerCandidateBaseline(target) {
+            function toggleOwnerCandidateBaseline(target) {
       if (target === 'baseline') {
         if (currentMode !== 'quality-ai-r4p81-d') {
           currentYaw = ((currentYaw - 0.24) % 360.0 + 360.0) % 360.0;
           window.currentYaw = currentYaw;
-          window.__VIEWER_TELEMETRY__.currentYaw = currentYaw;
+          if (window.__VIEWER_TELEMETRY__) window.__VIEWER_TELEMETRY__.currentYaw = currentYaw;
           switchMode('quality-ai-r4p81-d');
         }
       } else if (target === 'candidate') {
@@ -3301,10 +3306,11 @@
             currentYaw = (currentYaw + 0.24) % 360.0;
           }
           window.currentYaw = currentYaw;
-          window.__VIEWER_TELEMETRY__.currentYaw = currentYaw;
+          if (window.__VIEWER_TELEMETRY__) window.__VIEWER_TELEMETRY__.currentYaw = currentYaw;
           switchMode('quality-ai-r4p83r2-owner-final');
         }
       }
+      window.currentMode = currentMode;
     }
 
     function jumpTo(yaw, pitch) {
