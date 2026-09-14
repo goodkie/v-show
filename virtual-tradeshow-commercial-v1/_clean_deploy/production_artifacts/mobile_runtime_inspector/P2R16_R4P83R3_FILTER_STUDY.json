@@ -1,0 +1,276 @@
+{
+  "phase": "PHASE_7C2R4P83R3",
+  "timestamp": "2026-09-14T03:59:48Z",
+  "source_commit": "a8ed67b6278123914f6c4f83849a3f7fb135dc42",
+  "source_head": "a8ed67b6278123914f6c4f83849a3f7fb135dc42",
+  "candidate_geometry_provenance": "P2R16_R4P8_SOLVED_GEOMETRY.npz (K_shared_opt Candidate B)",
+  "geometry_frozen": {
+    "fx": 2961.672718886868,
+    "fy": 2961.672718886868,
+    "cx": 1530.0,
+    "cy": 1970.0,
+    "k1": 0.0,
+    "k2": 0.0,
+    "dimensions": "12288x1869",
+    "band": "horizontal 360 spherical band (-26.38 deg to 28.39 deg)",
+    "geometry_modified": false,
+    "intrinsics_modified": false,
+    "rotations_modified": false,
+    "source_ownership_modified": false,
+    "seam_topology_modified": false
+  },
+  "canonical_a_control": {
+    "filename": "P2R16_R4P83R2_SELECTED_12K_PHYSICAL_IDENTITY.png",
+    "expected_sha256": "04dbcdddb8f182f5819565b5d9f43e11ff1031ea7ea9b9be9fa41998d0cf292f",
+    "reproduced_sha256": "04dbcdddb8f182f5819565b5d9f43e11ff1031ea7ea9b9be9fa41998d0cf292f",
+    "a_control_reproducible": true
+  },
+  "sampling_ratio": {
+    "source_px_per_deg": 51.691,
+    "panorama_px_per_deg": 34.133,
+    "median_source_footprint": 1.6388,
+    "minification_ratio": 1.5144
+  },
+  "jacobian_statistics": {
+    "method": "symmetric_finite_differences",
+    "footprint_area_median": 7.967367172241211,
+    "footprint_area_min": 7.211979389190674,
+    "footprint_area_max": 11.280983924865723,
+    "footprint_major_axis_median": 1.6404023170471191,
+    "footprint_minor_axis_median": 1.535475254058838,
+    "anisotropy_ratio_median": 1.0629326105117798,
+    "anisotropy_ratio_max": 1.3226410150527954
+  },
+  "linear_light_used": true,
+  "physical_source_hashes": {
+    "SHOT_000.jpg": "917188a5c1d4b5aec329b707cc139b9c5a58d570c6a3f1cb7215776925ee5839",
+    "SHOT_030.jpg": "e118b7ae861c9b174719fbbca12fe7890d7c09d95fda2b1b3307d1839d78623e",
+    "SHOT_060.jpg": "ed8e2c6bbda2f23565bb7533a81d23462c292ff1c3c9730e8f2c8c4d3b4acddb",
+    "SHOT_090.jpg": "233db00a0087893fd1d5d63e54ac35487a8a9a6671754d8bbb50144d0c090c57",
+    "SHOT_120.jpg": "9e70c9c06a7b4794ea1f0c173d8bf05e76ff19d41de37019eaea24ebf6703583",
+    "SHOT_150.jpg": "c66b0d5cfd4dc44206e4e83e741bcd6eecceb258150a715c4d3e1e6e2f04e486",
+    "SHOT_180.jpg": "5165aeacde73a5eac8819dac8cd841f1f5807505fda167ec11f812e6178d3bc0",
+    "SHOT_210.jpg": "2f76ea6c870ccac155702b46b1075bf3f2a836eff855eaa3f3dc1aadd94c8a08",
+    "SHOT_240.jpg": "e9805e46df337c193a5a5952572e7353139cee8ad8dff8fc8ebf25d2e16aee70",
+    "SHOT_270.jpg": "140e19b479b8b0b3ee431790c1d42ba712f12dad4a0015d98192d37444c06d5c",
+    "SHOT_300.jpg": "b5c5974c0253744b6056d394edb1e7a22b3eefebae6d9fabf1f4db7c69b6e4df",
+    "SHOT_330.jpg": "261cc6118ed94c6be524faa85b302637544dfa0a7861540113c124c53aa4605a"
+  },
+  "filter_definitions": {
+    "A_BILINEAR": "Authoritative PyTorch bilinear grid sample (align_corners=True)",
+    "B_BICUBIC_MITCHELL": "Cubic spline (Mitchell-Netravali B=1/3, C=1/3) in linear-light RGB with boundary tap truncation & renormalization",
+    "C_LANCZOS3": "Separable 3-lobe windowed sinc kernel (support [-3, 3] source px) in linear-light RGB with boundary tap truncation & renormalization",
+    "D_EWA_GAUSSIAN": "Heckbert Jacobian-aware Elliptical Weighted Average Gaussian (sigma_o=0.5, sigma_i=0.5, q_max=9.0) in linear-light RGB",
+    "E_EWA_LANCZOS": "Jacobian-aware Elliptical Weighted Average Lanczos (3-lobe radial windowed sinc) in linear-light RGB"
+  },
+  "per_filter_summary": {
+    "A_BILINEAR": {
+      "median_angular_retention": 0.7211823991895112,
+      "mean_angular_retention": 0.7101717771145063,
+      "p10_angular_retention": 0.2305861800641647,
+      "p90_angular_retention": 0.9918114577740119,
+      "ringing_overshoot_p95": 0.0,
+      "ringing_undershoot_p95": 0.0,
+      "aliasing_score": 0.9999903571447118,
+      "color_delta_e": 0.0,
+      "gradient_energy_mean": 449.5636672973633
+    },
+    "B_BICUBIC_MITCHELL": {
+      "median_angular_retention": 0.7512941809641399,
+      "mean_angular_retention": 0.7162868115453941,
+      "p10_angular_retention": 0.22971283314131685,
+      "p90_angular_retention": 0.9828482928666226,
+      "ringing_overshoot_p95": 6.819330215454098,
+      "ringing_undershoot_p95": 0.0,
+      "aliasing_score": 0.9999887371622379,
+      "color_delta_e": 0.8015310764312744,
+      "gradient_energy_mean": 454.08006927490237
+    },
+    "C_LANCZOS3": {
+      "median_angular_retention": 0.7560784725467036,
+      "mean_angular_retention": 0.7184967911223602,
+      "p10_angular_retention": 0.2313869058043022,
+      "p90_angular_retention": 0.9907140209531466,
+      "ringing_overshoot_p95": 6.4501862525939915,
+      "ringing_undershoot_p95": 0.0,
+      "aliasing_score": 0.9999756109470977,
+      "color_delta_e": 0.8136062622070312,
+      "gradient_energy_mean": 472.14780853271486
+    },
+    "D_EWA_GAUSSIAN": {
+      "median_angular_retention": 0.7412463910868581,
+      "mean_angular_retention": 0.7025697555664938,
+      "p10_angular_retention": 0.23280711421672085,
+      "p90_angular_retention": 0.9539395710240236,
+      "ringing_overshoot_p95": 12.539028549194327,
+      "ringing_undershoot_p95": 6.237349128723141,
+      "aliasing_score": 0.9999986142268454,
+      "color_delta_e": 1.027173638343811,
+      "gradient_energy_mean": 398.033616027832
+    },
+    "E_EWA_LANCZOS": {
+      "median_angular_retention": 0.7207471614227453,
+      "mean_angular_retention": 0.6869094093316813,
+      "p10_angular_retention": 0.17450921342532116,
+      "p90_angular_retention": 1.006149663635689,
+      "ringing_overshoot_p95": 12.05798320770263,
+      "ringing_undershoot_p95": 8.554925727844235,
+      "aliasing_score": 0.9999330357443773,
+      "color_delta_e": 1.5024003982543945,
+      "gradient_energy_mean": 545.1803289794922
+    }
+  },
+  "filter_adoption_gate_results": {
+    "A_BILINEAR": {
+      "passed": true,
+      "detail_gte_110_pct": true,
+      "p10_gte_base": true,
+      "ringing_ov_lte_5pct": true,
+      "ringing_un_lte_5pct": true,
+      "aliasing_lte_105_pct": true,
+      "color_delta_e_ok": true
+    },
+    "B_BICUBIC_MITCHELL": {
+      "passed": false,
+      "detail_gte_110_pct": false,
+      "p10_gte_base": false,
+      "ringing_ov_lte_5pct": false,
+      "ringing_un_lte_5pct": true,
+      "aliasing_lte_105_pct": true,
+      "color_delta_e_ok": true
+    },
+    "C_LANCZOS3": {
+      "passed": false,
+      "detail_gte_110_pct": false,
+      "p10_gte_base": true,
+      "ringing_ov_lte_5pct": false,
+      "ringing_un_lte_5pct": true,
+      "aliasing_lte_105_pct": true,
+      "color_delta_e_ok": true
+    },
+    "D_EWA_GAUSSIAN": {
+      "passed": false,
+      "detail_gte_110_pct": false,
+      "p10_gte_base": true,
+      "ringing_ov_lte_5pct": false,
+      "ringing_un_lte_5pct": false,
+      "aliasing_lte_105_pct": true,
+      "color_delta_e_ok": true
+    },
+    "E_EWA_LANCZOS": {
+      "passed": false,
+      "detail_gte_110_pct": false,
+      "p10_gte_base": false,
+      "ringing_ov_lte_5pct": false,
+      "ringing_un_lte_5pct": false,
+      "aliasing_lte_105_pct": true,
+      "color_delta_e_ok": false
+    }
+  },
+  "per_seam_metrics": {
+    "06_07": {
+      "mean_luma_step": 2.8022598870056497,
+      "p95_luma_step": 10.0,
+      "seam_displacement_px": 0.0,
+      "geometry_displacement": 0.0
+    },
+    "07_08": {
+      "mean_luma_step": 2.0451977401129944,
+      "p95_luma_step": 6.0,
+      "seam_displacement_px": 0.0,
+      "geometry_displacement": 0.0
+    },
+    "08_09": {
+      "mean_luma_step": 3.251412429378531,
+      "p95_luma_step": 8.0,
+      "seam_displacement_px": 0.0,
+      "geometry_displacement": 0.0
+    },
+    "09_10": {
+      "mean_luma_step": 1.6610169491525424,
+      "p95_luma_step": 4.349999999999966,
+      "seam_displacement_px": 0.0,
+      "geometry_displacement": 0.0
+    },
+    "10_11": {
+      "mean_luma_step": 4.248587570621469,
+      "p95_luma_step": 12.0,
+      "seam_displacement_px": 0.0,
+      "geometry_displacement": 0.0
+    },
+    "11_00": {
+      "mean_luma_step": 2.5903954802259888,
+      "p95_luma_step": 7.0,
+      "seam_displacement_px": 0.0,
+      "geometry_displacement": 0.0
+    },
+    "00_01": {
+      "mean_luma_step": 5.200564971751413,
+      "p95_luma_step": 18.0,
+      "seam_displacement_px": 0.0,
+      "geometry_displacement": 0.0
+    },
+    "01_02": {
+      "mean_luma_step": 3.1864406779661016,
+      "p95_luma_step": 8.0,
+      "seam_displacement_px": 0.0,
+      "geometry_displacement": 0.0
+    },
+    "02_03": {
+      "mean_luma_step": 4.370056497175141,
+      "p95_luma_step": 18.0,
+      "seam_displacement_px": 0.0,
+      "geometry_displacement": 0.0
+    },
+    "03_04": {
+      "mean_luma_step": 6.192090395480226,
+      "p95_luma_step": 18.0,
+      "seam_displacement_px": 0.0,
+      "geometry_displacement": 0.0
+    },
+    "04_05": {
+      "mean_luma_step": 4.062146892655368,
+      "p95_luma_step": 12.0,
+      "seam_displacement_px": 0.0,
+      "geometry_displacement": 0.0
+    },
+    "05_06": {
+      "mean_luma_step": 3.615819209039548,
+      "p95_luma_step": 11.0,
+      "seam_displacement_px": 0.0,
+      "geometry_displacement": 0.0
+    }
+  },
+  "worst_seam": {
+    "seam": "03_04",
+    "mean_luma_step": 6.192090395480226,
+    "worst_seam_luma_regression": 0.0
+  },
+  "seam_safety": {
+    "seam_geometry_displacement_px": 0.0,
+    "cross_camera_filter_sample_count": 0,
+    "border_synthesis_used": false,
+    "out_of_bounds_filter_taps": 0
+  },
+  "full_image_mapping_identity": {
+    "geometry_mapping_match_ratio": 1.0,
+    "owner_source_index_match_ratio": 1.0,
+    "seam_path_match_ratio": 1.0,
+    "panorama_dimensions": "12288x1869"
+  },
+  "technical_findings": {
+    "conclusion": "Bicubic Mitchell and Lanczos3 resamplers achieve modest local MTF50 increases (+4.17% and +4.84% respectively over Bilinear) and meet the preferred 0.75 target (0.7513 and 0.7561). However, neither filter reaches the mandatory +10% adoption gate ceiling (required >= 0.7933), and higher-order kernels induce elevated edge ringing (P95 overshoot 6.45% - 6.82% exceeding 5.0% threshold) as well as substantial EWA ringing (12.5%). Consequently, Candidate A (Bilinear Control) remains the most robust, artifact-free physical representation. The physical source sampling ceiling has been reached under the frozen R4P8.3R2 geometry.",
+    "technical_outcome_state": "R4P83R3_SOURCE_LIMITED",
+    "r4p83r3_source_or_resolution_limit_reached": true,
+    "selected_filter": "A_BILINEAR",
+    "selected_filter_reason": "Bilinear Control (Candidate A) is bit-for-bit exact to the canonical frozen PNG, introduces zero ringing artifacts (0.00% overshoot/undershoot), maintains 100% seam integrity, and avoids artificial haloing. Higher-order filters fail the +10% improvement threshold and exceed ringing tolerances."
+  },
+  "governance": {
+    "customer_default": "P2R13",
+    "best_physical_only_candidate": "R4P8.1_D",
+    "owner_visual_acceptance": false,
+    "12k_final_promotion_approved": false,
+    "owner_visual_review_required": false,
+    "master_touched": false
+  }
+}
