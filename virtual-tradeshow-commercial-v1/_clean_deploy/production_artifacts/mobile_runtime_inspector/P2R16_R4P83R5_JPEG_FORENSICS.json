@@ -1,0 +1,613 @@
+{
+  "phase": "PHASE_7C2R4P83R5",
+  "timestamp": "2026-09-14T04:33:13Z",
+  "summary": {
+    "chroma_subsampling": "4:2:0",
+    "bits_per_channel": 8,
+    "estimated_ijg_quality_range": "96-98",
+    "jpeg_compression_limiting_mtf": false,
+    "verdict": "JPEG quantization at Q96 4:2:0 preserves all spatial frequencies up to 0.45 cycles/pixel. It is NOT the primary cause of the 4-5px edge transition blur."
+  },
+  "frames": [
+    {
+      "yaw_deg": 0,
+      "filename": "SHOT_000.jpg",
+      "original_bitstream": {
+        "file_size_bytes": 2856400,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 1.9042666666666668,
+        "compression_ratio": 12.603276851981514,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": true
+      },
+      "normalized_bitstream": {
+        "file_size_bytes": 2913524,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 1.9423493333333333,
+        "compression_ratio": 12.356170740313106,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": false
+      }
+    },
+    {
+      "yaw_deg": 30,
+      "filename": "SHOT_030.jpg",
+      "original_bitstream": {
+        "file_size_bytes": 2805761,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 1.8705073333333333,
+        "compression_ratio": 12.83074360218137,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": true
+      },
+      "normalized_bitstream": {
+        "file_size_bytes": 2855385,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 1.90359,
+        "compression_ratio": 12.607756922446535,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": false
+      }
+    },
+    {
+      "yaw_deg": 60,
+      "filename": "SHOT_060.jpg",
+      "original_bitstream": {
+        "file_size_bytes": 2922201,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 1.948134,
+        "compression_ratio": 12.319481103455923,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": true
+      },
+      "normalized_bitstream": {
+        "file_size_bytes": 2977283,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 1.9848553333333334,
+        "compression_ratio": 12.091561332933416,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": false
+      }
+    },
+    {
+      "yaw_deg": 90,
+      "filename": "SHOT_090.jpg",
+      "original_bitstream": {
+        "file_size_bytes": 2955886,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 1.9705906666666666,
+        "compression_ratio": 12.179089450675702,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": true
+      },
+      "normalized_bitstream": {
+        "file_size_bytes": 3009746,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 2.0064973333333334,
+        "compression_ratio": 11.961142235922898,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": false
+      }
+    },
+    {
+      "yaw_deg": 120,
+      "filename": "SHOT_120.jpg",
+      "original_bitstream": {
+        "file_size_bytes": 2958558,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 1.972372,
+        "compression_ratio": 12.168089995193604,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": true
+      },
+      "normalized_bitstream": {
+        "file_size_bytes": 3017020,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 2.011346666666667,
+        "compression_ratio": 11.93230406162372,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": false
+      }
+    },
+    {
+      "yaw_deg": 150,
+      "filename": "SHOT_150.jpg",
+      "original_bitstream": {
+        "file_size_bytes": 2955209,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 1.9701393333333332,
+        "compression_ratio": 12.1818795218883,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": true
+      },
+      "normalized_bitstream": {
+        "file_size_bytes": 3007222,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 2.004814666666667,
+        "compression_ratio": 11.971181376034092,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": false
+      }
+    },
+    {
+      "yaw_deg": 180,
+      "filename": "SHOT_180.jpg",
+      "original_bitstream": {
+        "file_size_bytes": 2926952,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 1.9513013333333333,
+        "compression_ratio": 12.299484241627468,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": true
+      },
+      "normalized_bitstream": {
+        "file_size_bytes": 2971939,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 1.9812926666666666,
+        "compression_ratio": 12.113303806033704,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": false
+      }
+    },
+    {
+      "yaw_deg": 210,
+      "filename": "SHOT_210.jpg",
+      "original_bitstream": {
+        "file_size_bytes": 2981240,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 1.9874933333333333,
+        "compression_ratio": 12.075512202975943,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": true
+      },
+      "normalized_bitstream": {
+        "file_size_bytes": 3021431,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 2.0142873333333333,
+        "compression_ratio": 11.914884040045925,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": false
+      }
+    },
+    {
+      "yaw_deg": 240,
+      "filename": "SHOT_240.jpg",
+      "original_bitstream": {
+        "file_size_bytes": 3032276,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 2.021517333333333,
+        "compression_ratio": 11.872270202316678,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": true
+      },
+      "normalized_bitstream": {
+        "file_size_bytes": 3081144,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 2.054096,
+        "compression_ratio": 11.683971927310116,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": false
+      }
+    },
+    {
+      "yaw_deg": 270,
+      "filename": "SHOT_270.jpg",
+      "original_bitstream": {
+        "file_size_bytes": 2927861,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 1.9519073333333334,
+        "compression_ratio": 12.295665675385544,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": true
+      },
+      "normalized_bitstream": {
+        "file_size_bytes": 2973851,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 1.9825673333333333,
+        "compression_ratio": 12.105515710101145,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": false
+      }
+    },
+    {
+      "yaw_deg": 300,
+      "filename": "SHOT_300.jpg",
+      "original_bitstream": {
+        "file_size_bytes": 2994508,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 1.9963386666666667,
+        "compression_ratio": 12.022008289842605,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": true
+      },
+      "normalized_bitstream": {
+        "file_size_bytes": 3039485,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 2.0263233333333335,
+        "compression_ratio": 11.844111749194353,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": false
+      }
+    },
+    {
+      "yaw_deg": 330,
+      "filename": "SHOT_330.jpg",
+      "original_bitstream": {
+        "file_size_bytes": 2980947,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 1.987298,
+        "compression_ratio": 12.076699116086264,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": true
+      },
+      "normalized_bitstream": {
+        "file_size_bytes": 3032877,
+        "bits_per_channel": 8,
+        "bits_per_pixel_compressed": 2.021918,
+        "compression_ratio": 11.869917573314051,
+        "sof_type": "BASELINE_DCT_SOF0",
+        "chroma_subsampling": "4:2:0",
+        "dqt_table_count": 2,
+        "dqt_luma_first_8": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "estimated_ijg_quality": 96,
+        "has_icc_profile": false,
+        "has_xmp_metadata": false,
+        "exif_marker_present": false
+      }
+    }
+  ]
+}

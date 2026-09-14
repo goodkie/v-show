@@ -1,0 +1,27 @@
+{
+  "phase": "PHASE_7C2R4P83R5",
+  "reconciliation_target": "P2R16_R4P83R4_RESOLUTION_STUDY.json",
+  "timestamp": "2026-09-14T04:32:54Z",
+  "observed_discrepancy": {
+    "12k_footprint_major_median": {
+      "committed_json_value": 1.593425989151001,
+      "report_text_value": 1.6388,
+      "delta": 0.04537401084899906
+    },
+    "16k_footprint_major_median": {
+      "committed_json_value": 1.1950695514678955,
+      "report_text_value": 1.2291,
+      "delta": 0.034030448532104574
+    },
+    "18k_footprint_major_median": {
+      "committed_json_value": 1.009,
+      "report_text_value": 1.009,
+      "delta": 0.0
+    }
+  },
+  "classification": "REPORT_COPY_ERROR",
+  "secondary_factor": "DIFFERENT_SAMPLE_SET",
+  "exact_cause": "The report text summary table populated the source footprint major median column using the R3 reference central ROI Jacobian value (1.6388 at 12K, and 1.6388 * (12/16) = 1.2291 at 16K, as documented in P2R16_R4P83R3_FILTER_STUDY.json). In contrast, the R4 Python pipeline computed the footprint array directly via finite differences across the full 360-degree cylindrical band (4096x623), where the full-band median evaluated to 1.5934 at 12K and 1.1951 at 16K. Both metrics agree that projection minification drops from ~1.51-1.64x to ~1.14-1.23x, and both confirm diminishing MTF detail returns (+1.06% at 16K, +0.61% at 18.432K).",
+  "r4_decision_affected": false,
+  "status": "PASS"
+}

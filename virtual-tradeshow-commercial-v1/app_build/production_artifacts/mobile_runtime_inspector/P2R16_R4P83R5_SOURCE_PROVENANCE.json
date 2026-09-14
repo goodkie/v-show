@@ -1,0 +1,237 @@
+{
+  "phase": "PHASE_7C2R4P83R5",
+  "session_id": "P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01",
+  "total_shots": 12,
+  "original_directory": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01\\ORIGINAL",
+  "normalized_directory": "e:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01\\DERIVED_ORIENTATION_NORMALIZED",
+  "frames": [
+    {
+      "yaw_deg": 0,
+      "filename": "SHOT_000.jpg",
+      "original": {
+        "encoded_dimensions": "4000x3000",
+        "width": 4000,
+        "height": 3000,
+        "bytes": 2856400,
+        "sha256": "c452be35c0ec95435dcd343b25f13c3952efccbb1a13bfdb03e65f8e76458588",
+        "exif_orientation": 6
+      },
+      "normalized": {
+        "dimensions": "3000x4000",
+        "width": 3000,
+        "height": 4000,
+        "bytes": 2913524,
+        "sha256": "917188a5c1d4b5aec329b707cc139b9c5a58d570c6a3f1cb7215776925ee5839"
+      }
+    },
+    {
+      "yaw_deg": 30,
+      "filename": "SHOT_030.jpg",
+      "original": {
+        "encoded_dimensions": "4000x3000",
+        "width": 4000,
+        "height": 3000,
+        "bytes": 2805761,
+        "sha256": "5d408c60085f759be7e58cb9ddf047669f663d31848a68faf3d76578fa238d05",
+        "exif_orientation": 6
+      },
+      "normalized": {
+        "dimensions": "3000x4000",
+        "width": 3000,
+        "height": 4000,
+        "bytes": 2855385,
+        "sha256": "e118b7ae861c9b174719fbbca12fe7890d7c09d95fda2b1b3307d1839d78623e"
+      }
+    },
+    {
+      "yaw_deg": 60,
+      "filename": "SHOT_060.jpg",
+      "original": {
+        "encoded_dimensions": "4000x3000",
+        "width": 4000,
+        "height": 3000,
+        "bytes": 2922201,
+        "sha256": "c9f50ed5bcc70ba3b3eb856edb4235551c6a2eb634c0f1c492034a294a6dd3a1",
+        "exif_orientation": 6
+      },
+      "normalized": {
+        "dimensions": "3000x4000",
+        "width": 3000,
+        "height": 4000,
+        "bytes": 2977283,
+        "sha256": "ed8e2c6bbda2f23565bb7533a81d23462c292ff1c3c9730e8f2c8c4d3b4acddb"
+      }
+    },
+    {
+      "yaw_deg": 90,
+      "filename": "SHOT_090.jpg",
+      "original": {
+        "encoded_dimensions": "4000x3000",
+        "width": 4000,
+        "height": 3000,
+        "bytes": 2955886,
+        "sha256": "085ea4b5ffb45923a4e23ec13316caa709c9c66b9cdfcfe46db05cf4e4f3cf06",
+        "exif_orientation": 6
+      },
+      "normalized": {
+        "dimensions": "3000x4000",
+        "width": 3000,
+        "height": 4000,
+        "bytes": 3009746,
+        "sha256": "233db00a0087893fd1d5d63e54ac35487a8a9a6671754d8bbb50144d0c090c57"
+      }
+    },
+    {
+      "yaw_deg": 120,
+      "filename": "SHOT_120.jpg",
+      "original": {
+        "encoded_dimensions": "4000x3000",
+        "width": 4000,
+        "height": 3000,
+        "bytes": 2958558,
+        "sha256": "a1e855536c3a1cbd94610c47d121ea1ef145f08b4fad528aa887de90118fb87a",
+        "exif_orientation": 6
+      },
+      "normalized": {
+        "dimensions": "3000x4000",
+        "width": 3000,
+        "height": 4000,
+        "bytes": 3017020,
+        "sha256": "9e70c9c06a7b4794ea1f0c173d8bf05e76ff19d41de37019eaea24ebf6703583"
+      }
+    },
+    {
+      "yaw_deg": 150,
+      "filename": "SHOT_150.jpg",
+      "original": {
+        "encoded_dimensions": "4000x3000",
+        "width": 4000,
+        "height": 3000,
+        "bytes": 2955209,
+        "sha256": "800f13c569a4d96e748dfbb457c4007f7cba15e3250473b5ebd74693340cd683",
+        "exif_orientation": 6
+      },
+      "normalized": {
+        "dimensions": "3000x4000",
+        "width": 3000,
+        "height": 4000,
+        "bytes": 3007222,
+        "sha256": "c66b0d5cfd4dc44206e4e83e741bcd6eecceb258150a715c4d3e1e6e2f04e486"
+      }
+    },
+    {
+      "yaw_deg": 180,
+      "filename": "SHOT_180.jpg",
+      "original": {
+        "encoded_dimensions": "4000x3000",
+        "width": 4000,
+        "height": 3000,
+        "bytes": 2926952,
+        "sha256": "c52171dbe3db2541dc9c3da1023e219a8b723a227c5a3c86d78f0238abebb163",
+        "exif_orientation": 6
+      },
+      "normalized": {
+        "dimensions": "3000x4000",
+        "width": 3000,
+        "height": 4000,
+        "bytes": 2971939,
+        "sha256": "5165aeacde73a5eac8819dac8cd841f1f5807505fda167ec11f812e6178d3bc0"
+      }
+    },
+    {
+      "yaw_deg": 210,
+      "filename": "SHOT_210.jpg",
+      "original": {
+        "encoded_dimensions": "4000x3000",
+        "width": 4000,
+        "height": 3000,
+        "bytes": 2981240,
+        "sha256": "d94c8e78181f206333a52b74e3c30c4de3bc6512b4dc216a713a0ec4d60171c2",
+        "exif_orientation": 6
+      },
+      "normalized": {
+        "dimensions": "3000x4000",
+        "width": 3000,
+        "height": 4000,
+        "bytes": 3021431,
+        "sha256": "2f76ea6c870ccac155702b46b1075bf3f2a836eff855eaa3f3dc1aadd94c8a08"
+      }
+    },
+    {
+      "yaw_deg": 240,
+      "filename": "SHOT_240.jpg",
+      "original": {
+        "encoded_dimensions": "4000x3000",
+        "width": 4000,
+        "height": 3000,
+        "bytes": 3032276,
+        "sha256": "d6219071023bd41f9de1367e5e93c27265dd26d1ea00cd525516593948b4f896",
+        "exif_orientation": 6
+      },
+      "normalized": {
+        "dimensions": "3000x4000",
+        "width": 3000,
+        "height": 4000,
+        "bytes": 3081144,
+        "sha256": "e9805e46df337c193a5a5952572e7353139cee8ad8dff8fc8ebf25d2e16aee70"
+      }
+    },
+    {
+      "yaw_deg": 270,
+      "filename": "SHOT_270.jpg",
+      "original": {
+        "encoded_dimensions": "4000x3000",
+        "width": 4000,
+        "height": 3000,
+        "bytes": 2927861,
+        "sha256": "50918f7a7928e7ce6ca0fbaa3bb23cabfca1d15ab6eca7dac2a18b223da6d860",
+        "exif_orientation": 6
+      },
+      "normalized": {
+        "dimensions": "3000x4000",
+        "width": 3000,
+        "height": 4000,
+        "bytes": 2973851,
+        "sha256": "140e19b479b8b0b3ee431790c1d42ba712f12dad4a0015d98192d37444c06d5c"
+      }
+    },
+    {
+      "yaw_deg": 300,
+      "filename": "SHOT_300.jpg",
+      "original": {
+        "encoded_dimensions": "4000x3000",
+        "width": 4000,
+        "height": 3000,
+        "bytes": 2994508,
+        "sha256": "d2d83dfa3195f7be408af78dd429d8d3e4e710c7fd7886e9b22b7e94e09d5e1f",
+        "exif_orientation": 6
+      },
+      "normalized": {
+        "dimensions": "3000x4000",
+        "width": 3000,
+        "height": 4000,
+        "bytes": 3039485,
+        "sha256": "b5c5974c0253744b6056d394edb1e7a22b3eefebae6d9fabf1f4db7c69b6e4df"
+      }
+    },
+    {
+      "yaw_deg": 330,
+      "filename": "SHOT_330.jpg",
+      "original": {
+        "encoded_dimensions": "4000x3000",
+        "width": 4000,
+        "height": 3000,
+        "bytes": 2980947,
+        "sha256": "265d0c343a71d685cbafcbab1a7a279bc4fd0d3ab3cf27b7073434e40097f046",
+        "exif_orientation": 6
+      },
+      "normalized": {
+        "dimensions": "3000x4000",
+        "width": 3000,
+        "height": 4000,
+        "bytes": 3032877,
+        "sha256": "261cc6118ed94c6be524faa85b302637544dfa0a7861540113c124c53aa4605a"
+      }
+    }
+  ]
+}

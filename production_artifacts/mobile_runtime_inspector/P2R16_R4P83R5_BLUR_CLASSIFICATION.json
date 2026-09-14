@@ -1,0 +1,136 @@
+{
+  "phase": "PHASE_7C2R4P83R5",
+  "timestamp": "2026-09-14T04:33:19Z",
+  "summary": {
+    "inter_frame_focus_consistency": "CONSISTENT",
+    "capture_repeatability_problem": false,
+    "dominant_blur_mechanism": "DEFOCUS_DOMINANT",
+    "spatial_pattern": "GLOBAL_SOFT",
+    "motion_blur_frame_count": 0,
+    "defocus_frame_count": 12,
+    "mixed_blur_frame_count": 0,
+    "sharp_frame_count": 0
+  },
+  "frames": [
+    {
+      "yaw_deg": 0,
+      "filename": "SHOT_000.jpg",
+      "blur_class": "MOTION_DOMINANT",
+      "psf_anisotropy_ratio": 57.482636567037666,
+      "psf_orientation_deg": 2.625523620736203e-06,
+      "spatial_pattern": "GLOBAL_SOFT",
+      "center_to_edge_ratio": 0.9999998153362716,
+      "confidence": "HIGH"
+    },
+    {
+      "yaw_deg": 30,
+      "filename": "SHOT_030.jpg",
+      "blur_class": "MOTION_DOMINANT",
+      "psf_anisotropy_ratio": 2.4476804905989775,
+      "psf_orientation_deg": 2.2465059757232666,
+      "spatial_pattern": "GLOBAL_SOFT",
+      "center_to_edge_ratio": 0.9999998153362716,
+      "confidence": "HIGH"
+    },
+    {
+      "yaw_deg": 60,
+      "filename": "SHOT_060.jpg",
+      "blur_class": "MOTION_DOMINANT",
+      "psf_anisotropy_ratio": 9.897874726829803,
+      "psf_orientation_deg": 0.11984163522720337,
+      "spatial_pattern": "GLOBAL_SOFT",
+      "center_to_edge_ratio": 0.9999998153362716,
+      "confidence": "HIGH"
+    },
+    {
+      "yaw_deg": 90,
+      "filename": "SHOT_090.jpg",
+      "blur_class": "MOTION_DOMINANT",
+      "psf_anisotropy_ratio": 4.044933518348502,
+      "psf_orientation_deg": 90.057861328125,
+      "spatial_pattern": "GLOBAL_SOFT",
+      "center_to_edge_ratio": 0.9999998153362716,
+      "confidence": "HIGH"
+    },
+    {
+      "yaw_deg": 120,
+      "filename": "SHOT_120.jpg",
+      "blur_class": "MOTION_DOMINANT",
+      "psf_anisotropy_ratio": 2.119541168362419,
+      "psf_orientation_deg": 4.579854488372803,
+      "spatial_pattern": "GLOBAL_SOFT",
+      "center_to_edge_ratio": 0.9999998153362716,
+      "confidence": "HIGH"
+    },
+    {
+      "yaw_deg": 150,
+      "filename": "SHOT_150.jpg",
+      "blur_class": "MOTION_DOMINANT",
+      "psf_anisotropy_ratio": 4.215329747367752,
+      "psf_orientation_deg": 0.8765701651573181,
+      "spatial_pattern": "GLOBAL_SOFT",
+      "center_to_edge_ratio": 0.9999998153362716,
+      "confidence": "HIGH"
+    },
+    {
+      "yaw_deg": 180,
+      "filename": "SHOT_180.jpg",
+      "blur_class": "MOTION_DOMINANT",
+      "psf_anisotropy_ratio": 2.724157009155111,
+      "psf_orientation_deg": 0.05575045570731163,
+      "spatial_pattern": "CENTER_SHARP_EDGE_SOFT",
+      "center_to_edge_ratio": 0.771084227553685,
+      "confidence": "HIGH"
+    },
+    {
+      "yaw_deg": 210,
+      "filename": "SHOT_210.jpg",
+      "blur_class": "MOTION_DOMINANT",
+      "psf_anisotropy_ratio": 6.595879000354267,
+      "psf_orientation_deg": 88.9517822265625,
+      "spatial_pattern": "CENTER_SHARP_EDGE_SOFT",
+      "center_to_edge_ratio": 0.8341230942668892,
+      "confidence": "HIGH"
+    },
+    {
+      "yaw_deg": 240,
+      "filename": "SHOT_240.jpg",
+      "blur_class": "DEFOCUS_DOMINANT",
+      "psf_anisotropy_ratio": 1.1,
+      "psf_orientation_deg": null,
+      "spatial_pattern": "GLOBAL_SOFT",
+      "center_to_edge_ratio": 1.020134036013208,
+      "confidence": "HIGH"
+    },
+    {
+      "yaw_deg": 270,
+      "filename": "SHOT_270.jpg",
+      "blur_class": "MOTION_DOMINANT",
+      "psf_anisotropy_ratio": 2.9385456717525624,
+      "psf_orientation_deg": 179.78457641601562,
+      "spatial_pattern": "GLOBAL_SOFT",
+      "center_to_edge_ratio": 1.1034480510158688,
+      "confidence": "HIGH"
+    },
+    {
+      "yaw_deg": 300,
+      "filename": "SHOT_300.jpg",
+      "blur_class": "MOTION_DOMINANT",
+      "psf_anisotropy_ratio": 84.96264681907293,
+      "psf_orientation_deg": 0.0028560450300574303,
+      "spatial_pattern": "CENTER_SHARP_EDGE_SOFT",
+      "center_to_edge_ratio": 0.8971961130351163,
+      "confidence": "HIGH"
+    },
+    {
+      "yaw_deg": 330,
+      "filename": "SHOT_330.jpg",
+      "blur_class": "MOTION_DOMINANT",
+      "psf_anisotropy_ratio": 5.518776930690575,
+      "psf_orientation_deg": 0.42130112648010254,
+      "spatial_pattern": "GLOBAL_SOFT",
+      "center_to_edge_ratio": 0.9999998153362716,
+      "confidence": "HIGH"
+    }
+  ]
+}

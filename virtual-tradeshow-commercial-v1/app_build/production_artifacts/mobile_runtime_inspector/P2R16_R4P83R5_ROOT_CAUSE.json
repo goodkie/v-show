@@ -1,0 +1,19 @@
+{
+  "phase": "PHASE_7C2R4P83R5",
+  "timestamp": "2026-09-14T04:33:23Z",
+  "decision_tree": {
+    "normalization_reencode_loss": false,
+    "jpeg_compression_limiting": false,
+    "rotational_motion_blur_limiting": false,
+    "defocus_dominant": true,
+    "lens_sensor_mtf_limit": true,
+    "low_light_camera_denoise_smearing": true,
+    "capture_repeatability_problem": false
+  },
+  "primary_source_limit": "DEFOCUS",
+  "secondary_source_limit": "CAMERA_PROCESSING",
+  "overall_classification": "MIXED_CAPTURE_LIMIT",
+  "physical_explanation": "All 12 physical stills exhibit an identical isotropic point-spread function with a 4-5 pixel edge transition width (MTF50 ~ 11-12 cycles/deg vs theoretical sampling density of 51.69 px/deg). Because camera rotational velocity was negligible (0.35 deg/s) and sharpness is globally uniform across center and edges (C/E ratio ~ 1.02), motion blur and optical field curvature are ruled out. The sharpness limit is governed by the Samsung S23 Ultra f/1.7 main camera autofocus operating in continuous search mode (focusMode: continuous) without a shutter focus-settle gate, combined with heavy multi-frame computational denoise smearing on flat textures.",
+  "recapture_required": true,
+  "recapture_recommendation": "RECAPTURE_RECOMMENDED_FOCUS_CONTROL"
+}

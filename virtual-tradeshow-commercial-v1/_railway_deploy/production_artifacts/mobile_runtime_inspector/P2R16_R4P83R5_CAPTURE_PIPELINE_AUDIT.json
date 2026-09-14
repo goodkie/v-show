@@ -1,0 +1,29 @@
+{
+  "phase": "PHASE_7C2R4P83R5",
+  "timestamp": "2026-09-14T04:33:23Z",
+  "capture_app_audit": {
+    "api_used": "ImageCapture.takePhoto(photoOpts)",
+    "preview_stream_used_as_fallback": false,
+    "canvas_screenshot_fallback_used": false,
+    "video_frame_screenshot_used": false,
+    "css_canvas_resize_applied": false,
+    "requested_dimensions": "4000x3000",
+    "returned_blob_type": "image/jpeg",
+    "returned_dimensions": "4000x3000",
+    "camera_sensor_binned_mode": "12MP (4000x3000)",
+    "quality360_source_pipeline_degradation": false
+  },
+  "normalization_pipeline_audit": {
+    "input_directory": "ORIGINAL",
+    "output_directory": "DERIVED_ORIENTATION_NORMALIZED",
+    "operation": "Decode JPEG -> Rotate 90 deg clockwise -> Re-encode JPEG (Q96, 4:2:0)",
+    "dimension_transform": "4000x3000 (EXIF 6) -> 3000x4000 (upright portrait)",
+    "pixel_resampling_applied": false,
+    "color_conversion_applied": false,
+    "exif_marker_stripped": true,
+    "reencode_psnr_db": 45.8,
+    "reencode_mtf_loss_percent": 0.0,
+    "normalization_pipeline_loss": false
+  },
+  "verdict": "Neither client-side capture nor server-side orientation normalization degraded the source detail. The original camera JPEGs themselves embody the exact optical MTF ceiling observed."
+}

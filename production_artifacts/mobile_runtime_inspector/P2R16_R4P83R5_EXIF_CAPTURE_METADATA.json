@@ -1,0 +1,39 @@
+{
+  "phase": "PHASE_7C2R4P83R5",
+  "timestamp": "2026-09-14T04:33:13Z",
+  "exif_inspection": {
+    "ExposureTime": "METADATA_ABSENT",
+    "FNumber": "METADATA_ABSENT",
+    "ISO": "METADATA_ABSENT",
+    "FocalLength": "METADATA_ABSENT",
+    "FocalLengthIn35mmFilm": "METADATA_ABSENT",
+    "DigitalZoomRatio": "METADATA_ABSENT",
+    "ExposureBias": "METADATA_ABSENT",
+    "MeteringMode": "METADATA_ABSENT",
+    "WhiteBalance": "METADATA_ABSENT",
+    "Flash": "METADATA_ABSENT",
+    "DateTimeOriginal": "METADATA_ABSENT",
+    "SubSecTimeOriginal": "METADATA_ABSENT",
+    "LensModel": "METADATA_ABSENT",
+    "FocusDistance": "METADATA_ABSENT",
+    "Orientation": "METADATA_PRESENT"
+  },
+  "browser_telemetry_inspection": {
+    "ImageCapture_takePhoto_used": "METADATA_PRESENT (true)",
+    "requested_width": "METADATA_PRESENT (4000)",
+    "requested_height": "METADATA_PRESENT (3000)",
+    "actual_width": "METADATA_PRESENT (4000)",
+    "actual_height": "METADATA_PRESENT (3000)",
+    "preview_resolution": "METADATA_PRESENT (1080x1920)",
+    "focusMode": "METADATA_PRESENT (continuous)",
+    "exposureMode": "METADATA_PRESENT (continuous)",
+    "whiteBalanceMode": "METADATA_PRESENT (continuous)",
+    "camera_facingMode": "METADATA_PRESENT (environment)",
+    "device_model": "METADATA_PRESENT (Samsung Galaxy S23 Ultra SM-S918U)",
+    "browser": "METADATA_PRESENT (Chrome Mobile 128.0.6613.88)",
+    "focalLengthPixels": "METADATA_PRESENT (2965.174)",
+    "turnSpeedDps": "METADATA_PRESENT (0.35)",
+    "capture_latency_ms": "METADATA_PRESENT (280ms)"
+  },
+  "findings": "Chrome Mobile 128 implementation of ImageCapture.takePhoto() writes a minimal EXIF header containing exclusively the Orientation tag (0x0112 = 6). Optical capture parameters (exposure time, aperture, ISO, focus distance) were not serialized into JPEG APP1 markers by the browser engine. However, session telemetry confirms continuous autofocus, continuous autoexposure, 4000x3000 photo capture, and 0.35 deg/s stability."
+}
