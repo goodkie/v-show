@@ -1,0 +1,19 @@
+{
+  "protocol": "P2R19_P1_12K_TRUE_PIXEL_EVAL",
+  "timestamp": "2026-09-15T13:58:00Z",
+  "phase": "7C.5-P1",
+  "domain": "SOURCE_IMAGE_SPACE_3000x4000_RESOLUTION_INVARIANT",
+  "metrics": {
+    "TRUE_PIXEL_RMS": 158.4215,
+    "TRUE_PIXEL_MEDIAN": 111.45,
+    "TRUE_PIXEL_P95": 377.82
+  },
+  "gates": {
+    "rms_regression_vs_r4p4r1_percent": -1.0504,
+    "rms_max_allowed_regression_percent": 5.0,
+    "rms_gate": "PASS",
+    "replication_relative_diff_rms_percent": 0.0,
+    "rms_tolerance_max_percent": 0.5,
+    "replication_gate": "PASS"
+  }
+}

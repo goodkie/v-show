@@ -1,0 +1,40 @@
+{
+  "protocol": "P2R19_P1_12K_VERTICAL_EVAL",
+  "timestamp": "2026-09-15T13:58:00Z",
+  "phase": "7C.5-P1",
+  "metrics": {
+    "VERTICAL_P95_NATIVE_12K": 25.4457,
+    "VERTICAL_P95_4K_EQUIVALENT": 8.4819,
+    "VERTICAL_SCALE_REPLICATION_DELTA": 0.0,
+    "IMPROVEMENT_VS_R4P3_PERCENT": 27.1909
+  },
+  "per_roi": {
+    "ROI_01_DOOR_FRAME": {
+      "native_12k_px": 25.4457,
+      "four_k_equivalent_px": 8.4819
+    },
+    "ROI_02_WINDOW_MULLION": {
+      "native_12k_px": 7.146,
+      "four_k_equivalent_px": 2.382
+    },
+    "ROI_03_CABINET_LATCH_EDGE": {
+      "native_12k_px": 22.9488,
+      "four_k_equivalent_px": 7.6496
+    },
+    "ROI_06_WALL_CORNER": {
+      "native_12k_px": 13.743,
+      "four_k_equivalent_px": 4.581
+    }
+  },
+  "gates": {
+    "target_4k_equivalent_max": 8.737125,
+    "target_native_12k_max": 26.211375,
+    "target_gate": "PASS",
+    "min_improvement_vs_r4p3_percent": 25.0,
+    "improvement_gate": "PASS",
+    "scale_replication_max_delta_px": 0.2,
+    "scale_replication_gate": "PASS",
+    "roi03_tolerance_max_px": 0.25,
+    "roi03_tolerance_gate": "PASS"
+  }
+}

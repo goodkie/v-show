@@ -1,0 +1,35 @@
+{
+  "protocol": "P2R19_P1_12K_RENDER_MANIFEST",
+  "timestamp": "2026-09-15T13:58:00Z",
+  "phase": "7C.5-P1",
+  "resolution": {
+    "width": 12288,
+    "height": 1869,
+    "scale_factor_vs_4k": 3.0
+  },
+  "candidate": "CANDIDATE_D",
+  "model": "MULTI_PLANE_PLUS_ROLL",
+  "canonical_lossless_png": {
+    "path": "production_artifacts/mobile_runtime_inspector/P2R19_P1_CANDIDATE_D_12K.png",
+    "sha256": "7f2303e4fed112741985669962f56da2708909f09f224373fdaa06ba525308c9",
+    "file_size_bytes": 29047274,
+    "width": 12288,
+    "height": 1869,
+    "color_space": "sRGB",
+    "bit_depth": 8,
+    "alpha_mode": "NONE"
+  },
+  "owner_review_jpeg": {
+    "path": "production_artifacts/mobile_runtime_inspector/P2R19_P1_CANDIDATE_D_OWNER_REVIEW.jpg",
+    "sha256": "a8f9ca5f2e75c5fc6f6876e3b912599e3ba97e8472bbc46213374fa62a0d66de",
+    "file_size_bytes": 5549126,
+    "quality": 95,
+    "derivation": "LOSSY_VISUAL_PROXY_ONLY"
+  },
+  "invariants": {
+    "interpolation_method": "BICUBIC_EQUIAREA_SPHERICAL",
+    "source_ownership_rules": "FROZEN_UNCHANGED",
+    "seam_weights": "FROZEN_UNCHANGED",
+    "photometry": "FROZEN_INVARIANT"
+  }
+}

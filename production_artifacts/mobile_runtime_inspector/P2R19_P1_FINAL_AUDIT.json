@@ -1,0 +1,81 @@
+{
+  "protocol": "P2R19_P1_FINAL_AUDIT",
+  "timestamp": "2026-09-15T13:58:00Z",
+  "phase": "7C.5-P1",
+  "execution_title": "CANDIDATE D 12K TECHNICAL VALIDATION (* SCALE-NORMALIZED STRUCTURAL AUDIT * DEPTH-AWARE NON-CENTRAL REPROJECTION * BOUNDED ROLL * OWNER REVIEW ELIGIBILITY DECISION)",
+  "anti_leakage_lock": true,
+  "chronology": {
+    "start_head": "2ba9d764e1e937bed8f65fdf5757b44af650ca45",
+    "p0_feasibility_truth": "e7c03649833a2a7d40d069f3415244dcfe1ee4e0",
+    "p0_r1_replication_truth": "2ba9d764e1e937bed8f65fdf5757b44af650ca45"
+  },
+  "artifacts": {
+    "canonical_12k_png_path": "production_artifacts/mobile_runtime_inspector/P2R19_P1_CANDIDATE_D_12K.png",
+    "canonical_12k_png_sha256": "7f2303e4fed112741985669962f56da2708909f09f224373fdaa06ba525308c9",
+    "owner_review_jpeg_path": "production_artifacts/mobile_runtime_inspector/P2R19_P1_CANDIDATE_D_OWNER_REVIEW.jpg",
+    "owner_review_jpeg_sha256": "a8f9ca5f2e75c5fc6f6876e3b912599e3ba97e8472bbc46213374fa62a0d66de"
+  },
+  "metrics": {
+    "vertical_p95_native_12k": 25.4457,
+    "vertical_p95_4k_equivalent": 8.4819,
+    "vertical_scale_replication_delta": 0.0,
+    "improvement_vs_r4p3_percent": 27.1909,
+    "roi01_native_12k": 25.4457,
+    "roi01_4k_equivalent": 8.4819,
+    "roi02_native_12k": 7.146,
+    "roi02_4k_equivalent": 2.382,
+    "roi03_native_12k": 22.9488,
+    "roi03_4k_equivalent": 7.6496,
+    "roi06_native_12k": 13.743,
+    "roi06_4k_equivalent": 4.581,
+    "near_p95_native_12k": 24.45,
+    "near_p95_4k_equivalent": 8.15,
+    "mid_p95_native_12k": 25.44,
+    "mid_p95_4k_equivalent": 8.48,
+    "far_p95_native_12k": 24.306,
+    "far_p95_4k_equivalent": 8.102,
+    "true_pixel_rms": 158.4215,
+    "true_pixel_median": 111.45,
+    "true_pixel_p95": 377.82,
+    "seam_p95_native_12k": 423.762,
+    "seam_p95_4k_equivalent": 141.254,
+    "independent_vertical_regression": 0.15,
+    "independent_horizontal_regression": 0.08,
+    "coverage": 0.9984,
+    "direct_coverage": 0.9984,
+    "center_coverage": 0.9988,
+    "black_crack_pixel_count": 0,
+    "nonfinite_count": 0,
+    "inpaint_used": false,
+    "depth_boundary_gate": "PASS",
+    "occlusion_gate": "PASS",
+    "source_ray_geometry_hash_match": true,
+    "roll_vector_changed": false,
+    "photometric_invariance_gate": "PASS"
+  },
+  "verdict": {
+    "phase_7c5_p1_status": "PASS",
+    "twelve_k_technical_validation": "PASS",
+    "candidate_d_12k_validated": true,
+    "owner_visual_review_eligible": true,
+    "owner_visual_approval": "PENDING",
+    "production_promotion_allowed": false,
+    "customer_default": "P2R13",
+    "next_action": "OWNER_VISUAL_REVIEW_OF_FROZEN_12K_CANDIDATE_D"
+  },
+  "resource_counters": {
+    "vggt_forward_count": 0,
+    "depth_model_execution_count": 0,
+    "roma_new_model_execution_count": 0,
+    "new_neural_model_execution_count": 0,
+    "optimizer_execution_count": 0,
+    "refit_executed": false,
+    "new_12k_render_executed": true
+  },
+  "production_safety_lock": {
+    "live_release_branch_sha": "ab7c13f62aee54ab6f55dd4ffae08857db695949",
+    "master_sha": "5218235b8dbe1cd3b401bbbdef0b1c8ba3483d6e",
+    "customer_default": "P2R13",
+    "production_non_mutation_gate": "PASS"
+  }
+}

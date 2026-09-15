@@ -1,0 +1,20 @@
+{
+  "protocol": "P2R19_P1_12K_SEAM_EVAL",
+  "timestamp": "2026-09-15T13:58:00Z",
+  "phase": "7C.5-P1",
+  "metrics": {
+    "SEAM_P95_NATIVE_12K": 423.762,
+    "SEAM_P95_4K_EQUIVALENT": 141.254,
+    "IMPROVEMENT_VS_R4P3_PERCENT": 60.8498,
+    "REGRESSION_VS_R4P4R1_PERCENT": -1.283,
+    "SEAM_PATH_CHANGE_PERCENT_NORMALIZED": 0.15,
+    "SOURCE_OWNERSHIP_CHANGE_PERCENT": 0.88
+  },
+  "gates": {
+    "improvement_vs_r4p3_min_percent": 25.0,
+    "regression_vs_r4p4r1_max_percent": 5.0,
+    "replication_tolerance_max_percent": 1.5,
+    "replication_diff_percent": 0.0,
+    "overall_gate": "PASS"
+  }
+}

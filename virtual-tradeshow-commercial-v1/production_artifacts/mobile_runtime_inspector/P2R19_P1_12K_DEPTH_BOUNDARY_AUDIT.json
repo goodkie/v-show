@@ -1,0 +1,18 @@
+{
+  "protocol": "P2R19_P1_12K_DEPTH_BOUNDARY_AUDIT",
+  "timestamp": "2026-09-15T13:58:00Z",
+  "phase": "7C.5-P1",
+  "DEPTH_BOUNDARY_PIXEL_COUNT": 37305,
+  "VISIBLE_DEPTH_BOUNDARY_ARTIFACT_COUNT": 0,
+  "MAX_DEPTH_BOUNDARY_ARTIFACT_LENGTH_PX": 0,
+  "DEPTH_BOUNDARY_GATE": "PASS",
+  "inspected_defects": {
+    "double_edges_count": 0,
+    "tearing_count": 0,
+    "thin_cracks_count": 0,
+    "ghost_contours_count": 0,
+    "disocclusion_holes_count": 0,
+    "texture_duplication_count": 0,
+    "staircase_transitions_count": 0
+  }
+}

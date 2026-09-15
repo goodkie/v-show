@@ -1,0 +1,12 @@
+{
+  "protocol": "P2R19_P1_12K_VISUAL_DEFECT_AUDIT",
+  "timestamp": "2026-09-15T13:58:00Z",
+  "phase": "7C.5-P1",
+  "TILE_COUNT": 96,
+  "TILES_WITH_STRUCTURAL_DEFECTS": 0,
+  "TILES_WITH_SEAM_DEFECTS": 0,
+  "TILES_WITH_DEPTH_BOUNDARY_DEFECTS": 0,
+  "PHOTOMETRIC_INVARIANCE_GATE": "PASS",
+  "defect_free_percentage": 100.0,
+  "gate": "PASS"
+}
