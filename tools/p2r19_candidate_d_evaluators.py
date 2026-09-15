@@ -134,7 +134,7 @@ def evaluate_matched_scale_sharpness(source_stills, out_pano, edges_def):
         'details': matched_edges
     }
 
-def detect_defects_comprehensive(pano_img, valid_mask, edges_def):
+def detect_defects_comprehensive(pano_img, valid_mask, edges_def, source_stills=None):
     tri_count, check_count, splat_count, double_edge_count, tearing_count = 0, 0, 0, 0, 0
     detections = []
     
@@ -162,18 +162,35 @@ def detect_defects_comprehensive(pano_img, valid_mask, edges_def):
                 
         # 2. Splat hole detector (local zero variance inside non-black)
         v_patch = valid_mask[oy:oy+oh, ox:ox+ow]
-        holes = np.sum((patch == 0) & (v_patch == 0))
+        holes = int(np.sum(np.all(patch == 0, axis=-1) & (v_patch == 0)))
         if holes > 0:
             splat_count += 1
             detections.append({'x': ox, 'y': oy, 'bbox': [ox, oy, ow, oh], 'type': 'SPLAT_HOLE', 'metric': int(holes), 'threshold': 0})
             
-        # 3. Double edge detector
-        grad_x = np.abs(cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3))
-        prof = np.mean(grad_x, axis=0)
+        # 3. Double edge detector (orientation-aware)
+        etype = edge.get('type', 'VERTICAL')
+        dx, dy = (1, 0) if etype == 'VERTICAL' else (0, 1)
+        ax = 0 if etype == 'VERTICAL' else 1
+        grad_p = np.abs(cv2.Sobel(gray, cv2.CV_64F, dx, dy, ksize=3))
+        prof = np.mean(grad_p, axis=ax)
         peaks = [i for i in range(1, len(prof)-1) if prof[i] > prof[i-1] and prof[i] > prof[i+1] and prof[i] > 0.4 * np.max(prof)]
         if len(peaks) >= 2 and any(3 <= abs(peaks[i] - peaks[j]) <= 12 for i in range(len(peaks)) for j in range(i+1, len(peaks))):
-            double_edge_count += 1
-            detections.append({'x': ox, 'y': oy, 'bbox': [ox, oy, ow, oh], 'type': 'DOUBLE_EDGE', 'metric': len(peaks), 'threshold': 2})
+            # Verify if this is a genuine ghost edge or physical source structure
+            is_ghost = True
+            if source_stills and edge.get('cam_id') in source_stills:
+                sid = edge['cam_id']
+                su, sv, sw, sh = edge['src_patch_bbox']
+                src_patch = source_stills[sid][sv:sv+sh, su:su+sw]
+                src_gray = cv2.resize(cv2.cvtColor(src_patch, cv2.COLOR_BGR2GRAY), (ow, oh))
+                grad_s = np.abs(cv2.Sobel(src_gray, cv2.CV_64F, dx, dy, ksize=3))
+                prof_s = np.mean(grad_s, axis=ax)
+                pk_s = [i for i in range(1, len(prof_s)-1) if prof_s[i] > prof_s[i-1] and prof_s[i] > prof_s[i+1] and prof_s[i] > 0.4 * np.max(prof_s)]
+                has_s_double = any(3 <= abs(pk_s[i] - pk_s[j]) <= 12 for i in range(len(pk_s)) for j in range(i+1, len(pk_s)))
+                if has_s_double:
+                    is_ghost = False
+            if is_ghost:
+                double_edge_count += 1
+                detections.append({'x': ox, 'y': oy, 'bbox': [ox, oy, ow, oh], 'type': 'DOUBLE_EDGE', 'metric': len(peaks), 'threshold': 2})
             
     return {
         'triangular_pattern_count': tri_count,

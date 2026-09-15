@@ -468,7 +468,7 @@ print(f"Wrote P2R19_P2R3_MATCHED_SCALE_SHARPNESS_AUDIT.json: spread_p95={sharpne
 # Stage 8: Pattern / Defect Detector Audit
 # -------------------------------------------------------------
 print('\n[8/12] Running Real Defect Detector Audit...')
-defect_audit = detect_defects_comprehensive(out_pano, valid_mask, edges_def)
+defect_audit = detect_defects_comprehensive(out_pano, valid_mask, edges_def, stills)
 pattern_manifest = {
     'protocol': 'P2R19_P2R3_PATTERN_AUDIT',
     'timestamp': '2026-09-15T17:00:00Z',
