@@ -1,16 +1,24 @@
 {
   "protocol": "P2R17_P0_TRAINING_STRUCTURE_MANIFEST",
   "date": "2026-09-15",
-  "status": "INITIALIZED",
+  "status": "FROZEN_PRE_OPTIMIZATION",
+  "physical_capture_session_id": "P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01",
+  "frozen_geometry_sha256": "14a20ff4857a35f11a59adf0798b376ca9aae6f261bd563bbe97ef1d337878b3",
   "heldOutAnchorsExcluded": [
     "ROI_01",
     "ROI_02",
     "ROI_03",
     "ROI_06"
   ],
-  "heldOutContaminationCheck": "ZERO_CONTAMINATION",
+  "heldout_exclusion_overlap_with_training_features": 0,
   "canonicalAnchorsUsedForOptimization": false,
-  "trainingStructureDataset": "LLST42 physical 8-shot multi-view sequence (excluding canonical held-out anchors)",
+  "training_structure_count": 1068,
+  "training_vertical_count": 1056,
+  "training_horizontal_count": 1,
+  "training_other_count": 11,
+  "independent_vertical_control_count": 40,
+  "independent_horizontal_control_count": 10,
+  "trainingStructureDataset": "P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01 12-shot physical sequence (excluding canonical held-out anchors)",
   "anchorFeatures": "Pinned RoMa vertical structural lines and corner correspondences",
   "warpFieldSpecification": "Invertible low-frequency spherical spline mesh warp",
   "frozenGeometryBase": "ed398c8511e0355665a383ff3d2d360f9894f1dc"

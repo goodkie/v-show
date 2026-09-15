@@ -1,0 +1,45 @@
+{
+  "protocol": "P2R17_P0_SOURCE_DATA_IDENTITY_AUDIT",
+  "timestamp": "2026-09-15T05:00:00Z",
+  "physical_capture_session_id": "P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01",
+  "frozen_geometry_artifact_path": "production_artifacts/mobile_runtime_inspector/P2R16_R4P4R1_BOUNDED_POSE_GEOMETRY.npz",
+  "frozen_geometry_sha256": "14a20ff4857a35f11a59adf0798b376ca9aae6f261bd563bbe97ef1d337878b3",
+  "source_image_count": 12,
+  "source_image_ids": [
+    "SHOT_000",
+    "SHOT_030",
+    "SHOT_060",
+    "SHOT_090",
+    "SHOT_120",
+    "SHOT_150",
+    "SHOT_180",
+    "SHOT_210",
+    "SHOT_240",
+    "SHOT_270",
+    "SHOT_300",
+    "SHOT_330"
+  ],
+  "source_image_dimensions": "3000x4000",
+  "training_image_ids": [
+    "SHOT_000",
+    "SHOT_030",
+    "SHOT_060",
+    "SHOT_090",
+    "SHOT_120",
+    "SHOT_150",
+    "SHOT_180",
+    "SHOT_210",
+    "SHOT_240",
+    "SHOT_270",
+    "SHOT_300",
+    "SHOT_330"
+  ],
+  "heldout_support_image_ids": [
+    "SHOT_000",
+    "SHOT_060",
+    "SHOT_090",
+    "SHOT_180"
+  ],
+  "subset_derivation_explanation": "LLST42 was the legacy 8-shot landscape sequence from early Phase 7C.2 contracts. In Phase 7C.2R4/R4P4, the project captured authentic physical 12-shot portrait sequence P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01. The frozen geometry P2R16_R4P4R1_BOUNDED_POSE_GEOMETRY.npz strictly contains 12 camera poses. All 12 physical images are used for 4K composition (4096x623, [-26.38 deg, +28.39 deg]). Held-out support images are the 4 source frames containing canonical anchors ROI_01, ROI_02, ROI_06, and ROI_03.",
+  "reconciliation_status": "UNAMBIGUOUS_RECONCILED"
+}
