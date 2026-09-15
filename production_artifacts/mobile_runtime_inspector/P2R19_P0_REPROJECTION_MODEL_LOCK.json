@@ -1,0 +1,108 @@
+{
+  "protocol": "P2R19_P0_REPROJECTION_MODEL_LOCK",
+  "timestamp": "2026-09-15T10:35:00Z",
+  "phase": "7C.5-P0",
+  "depth_source": {
+    "artifact_path": "production_artifacts/mobile_runtime_inspector/P2R16_FROZEN_GEOMETRY_DEPTH.npz",
+    "sha256": "c5375de0dcf3b7c7119ff9cb962f60091a0923a6645eff063cb868ee5d9ac71f",
+    "model_origin": "VGGT commercial depth (frozen checkpoint)",
+    "metric_scale_available": true
+  },
+  "plane_construction": {
+    "representation": "LOW_COMPLEXITY_DEPTH_STRATIFIED_SOURCE_RAY_REPROJECTION",
+    "plane_count": 3,
+    "strata_definitions": {
+      "NEAR": {
+        "depth_min_m": 0.0,
+        "depth_max_m": 1.5,
+        "description": "Near-field structures sensitive to translation baseline"
+      },
+      "MID": {
+        "depth_min_m": 1.5,
+        "depth_max_m": 3.5,
+        "description": "Intermediate transition structures"
+      },
+      "FAR": {
+        "depth_min_m": 3.5,
+        "depth_max_m": Infinity,
+        "description": "Far architectural structures naturally aligned"
+      }
+    },
+    "assignment_policy": "CONTINUOUS_DEPTH_AWARE_RAY_PROJECTION",
+    "depth_thresholds_frozen_before_heldout": true
+  },
+  "reference_frame": {
+    "reference_center_policy": "FIXED_VIRTUAL_ORIGIN_AT_SESSION_CENTROID",
+    "reference_center_coordinates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference_rotation_policy": "FIXED_IDENTITY_WORLD_FRAME",
+    "reference_plane_policy": "SPHERICAL_EQUIRECTANGULAR_CANONICAL"
+  },
+  "occlusion_safety": {
+    "inpaint_used": false,
+    "generative_fill_used": false,
+    "unsupported_region_handling": "SOURCE_FALLTHROUGH_OR_INVALID",
+    "coverage_gate_minimum": 0.995,
+    "black_crack_pixel_count_allowed": 0,
+    "nonfinite_count_allowed": 0
+  },
+  "source_ownership_and_seam_policy": {
+    "source_ownership_weights": "UNCHANGED_FROZEN_R4P4R1",
+    "seam_scoring_rules": "UNCHANGED_FROZEN_GRAPH_CUT_ENERGY",
+    "seam_optimization_allowed": false
+  },
+  "roll_correction_bounds": {
+    "max_abs_roll_delta_deg": 0.1,
+    "preferred_abs_roll_delta_deg": 0.09,
+    "pitch_optimization_allowed": false,
+    "yaw_optimization_allowed": false,
+    "translation_optimization_allowed": false,
+    "heldout_anchor_roll_tuning_allowed": false
+  },
+  "optimization_objective": {
+    "allowed_terms": [
+      "training_structural_alignment",
+      "multi_view_ray_consistency",
+      "training_vertical_consistency",
+      "training_horizontal_consistency",
+      "depth_plane_consistency",
+      "small_roll_regularization",
+      "reprojection_smoothness",
+      "coverage_preservation"
+    ],
+    "forbidden_terms": [
+      "ROI_01_result",
+      "ROI_02_result",
+      "ROI_03_result",
+      "ROI_06_result",
+      "heldout_8.737125_target_feedback",
+      "owner_visual_preference"
+    ]
+  },
+  "acceptance_gates": {
+    "primary_vertical_p95_target": 8.737125,
+    "primary_vertical_improvement_vs_r4p3_min_percent": 25.0,
+    "near_field_structural_improvement": "MATERIAL_POSITIVE",
+    "mid_stratum_regression_max_percent": 5.0,
+    "far_stratum_regression_max_percent": 5.0,
+    "true_pixel_reprojection_rms_regression_max_percent": 5.0,
+    "seam_edge_p95_improvement_vs_r4p3_min_percent": 25.0,
+    "seam_edge_p95_regression_vs_r4p4r1_max_percent": 5.0,
+    "independent_vertical_regression_max_percent": 5.0,
+    "independent_horizontal_regression_max_percent": 5.0,
+    "coverage_min": 0.995,
+    "black_crack_pixel_count": 0,
+    "nonfinite_count": 0,
+    "inpaint_used": false,
+    "roll_bound_max_abs_deg": 0.1
+  },
+  "selection_order": [
+    "CANDIDATE_A",
+    "CANDIDATE_B",
+    "CANDIDATE_C",
+    "CANDIDATE_D"
+  ]
+}

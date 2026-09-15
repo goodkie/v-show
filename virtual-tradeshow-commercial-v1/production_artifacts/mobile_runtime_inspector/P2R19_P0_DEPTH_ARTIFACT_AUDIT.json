@@ -1,0 +1,42 @@
+{
+  "protocol": "P2R19_P0_DEPTH_ARTIFACT_AUDIT",
+  "timestamp": "2026-09-15T10:35:00Z",
+  "phase": "7C.5-P0",
+  "depth_artifact_path": "production_artifacts/mobile_runtime_inspector/P2R16_FROZEN_GEOMETRY_DEPTH.npz",
+  "depth_artifact_sha256": "c5375de0dcf3b7c7119ff9cb962f60091a0923a6645eff063cb868ee5d9ac71f",
+  "depth_source_image_ids": [
+    "SHOT_000",
+    "SHOT_030",
+    "SHOT_060",
+    "SHOT_090",
+    "SHOT_120",
+    "SHOT_150",
+    "SHOT_180",
+    "SHOT_210",
+    "SHOT_240",
+    "SHOT_270",
+    "SHOT_300",
+    "SHOT_330"
+  ],
+  "depth_model_origin": "VGGT commercial depth (P2R16 / Phase 7C.2R1 frozen checkpoint)",
+  "depth_scale_type": "FLOAT32_METERS_CANONICAL",
+  "depth_metric_scale_available": true,
+  "depth_coverage_percent": 100.0,
+  "depth_artifact_compatible": true,
+  "depth_summary_statistics": {
+    "min_depth_m": 0.4284,
+    "max_depth_m": 3.8938,
+    "median_depth_m": 0.7773,
+    "strata_distribution": {
+      "near_pct": 72.8,
+      "mid_pct": 24.5,
+      "far_pct": 2.7
+    }
+  },
+  "resource_counters": {
+    "vggt_forward_count": 0,
+    "depth_model_execution_count": 0,
+    "roma_new_model_execution_count": 0,
+    "new_neural_model_execution_count": 0
+  }
+}
