@@ -1,0 +1,27 @@
+{
+  "protocol": "P2R19_P2R3_RENDERER_AUDIT",
+  "timestamp": "2026-09-15T17:00:00Z",
+  "phase": "7C.5-P2R3",
+  "renderer_script": "tools/p2r19_candidate_d_12k_renderer.py",
+  "renderer_sha256": "00112cd41381f6c9bcab7e6e4a9d742e51f42885b6453e2cac7f654f7fb9992c",
+  "fixed_sector_ownership_removed": true,
+  "border_reflect_removed": true,
+  "border_mode": "cv2.BORDER_CONSTANT (0-fill)",
+  "owner_buffer_binary": {
+    "path": "production_artifacts/mobile_runtime_inspector/P2R19_P2R3_OWNER_BUFFER.bin",
+    "sha256": "b337cb49d78f13447c44546d891f62185704eae9848675c6a8b056f81eb752b3"
+  },
+  "raster_output": {
+    "png_path": "production_artifacts/mobile_runtime_inspector/P2R19_P2R3_CANDIDATE_D_TRUE_12K.png",
+    "png_sha256": "07d8cff5eaedca20117b20fe498dd664ac2765b6040bd361e113dfd0b786d433",
+    "pixel_buffer_sha256": "41fce4345f91c023899e21ff05afe95137af8e1927477ac04bdb1211682b0ee9",
+    "file_size_bytes": 33826499
+  },
+  "owner_review_jpeg": {
+    "jpeg_path": "production_artifacts/mobile_runtime_inspector/P2R19_P2R3_CANDIDATE_D_OWNER_REVIEW.jpg",
+    "jpeg_sha256": "9bc3c659d285b34bc58e66b6507cde51257bd53f7d8eeb7eb8b475d03d463c53",
+    "quality": 95,
+    "file_size_bytes": 4964531
+  },
+  "renderer_verdict": "PASS"
+}

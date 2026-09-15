@@ -1,0 +1,75 @@
+{
+  "protocol": "P2R19_P2R3_ACTUAL_SOURCE_OWNERSHIP",
+  "timestamp": "2026-09-15T17:00:00Z",
+  "phase": "7C.5-P2R3",
+  "total_pixels": 22966272,
+  "source_image_count": 12,
+  "synthetic_equal_partition_detected": false,
+  "fixed_sector_ownership_removed": true,
+  "raster_owner_buffer": {
+    "path": "production_artifacts/mobile_runtime_inspector/P2R19_P2R3_OWNER_BUFFER.bin",
+    "sha256": "b337cb49d78f13447c44546d891f62185704eae9848675c6a8b056f81eb752b3"
+  },
+  "ownership_by_camera": {
+    "SHOT_000": {
+      "camera_index": 0,
+      "owned_pixel_count": 1882159,
+      "percentage": 8.195
+    },
+    "SHOT_030": {
+      "camera_index": 1,
+      "owned_pixel_count": 1846794,
+      "percentage": 8.041
+    },
+    "SHOT_060": {
+      "camera_index": 2,
+      "owned_pixel_count": 1860950,
+      "percentage": 8.103
+    },
+    "SHOT_090": {
+      "camera_index": 3,
+      "owned_pixel_count": 1808143,
+      "percentage": 7.873
+    },
+    "SHOT_120": {
+      "camera_index": 4,
+      "owned_pixel_count": 1769117,
+      "percentage": 7.703
+    },
+    "SHOT_150": {
+      "camera_index": 5,
+      "owned_pixel_count": 1991719,
+      "percentage": 8.672
+    },
+    "SHOT_180": {
+      "camera_index": 6,
+      "owned_pixel_count": 2245752,
+      "percentage": 9.778
+    },
+    "SHOT_210": {
+      "camera_index": 7,
+      "owned_pixel_count": 2200895,
+      "percentage": 9.583
+    },
+    "SHOT_240": {
+      "camera_index": 8,
+      "owned_pixel_count": 1939434,
+      "percentage": 8.445
+    },
+    "SHOT_270": {
+      "camera_index": 9,
+      "owned_pixel_count": 1877898,
+      "percentage": 8.177
+    },
+    "SHOT_300": {
+      "camera_index": 10,
+      "owned_pixel_count": 1821412,
+      "percentage": 7.931
+    },
+    "SHOT_330": {
+      "camera_index": 11,
+      "owned_pixel_count": 1721999,
+      "percentage": 7.498
+    }
+  }
+}

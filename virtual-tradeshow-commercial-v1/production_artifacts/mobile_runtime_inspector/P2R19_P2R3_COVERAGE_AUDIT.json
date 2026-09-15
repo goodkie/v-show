@@ -1,0 +1,12 @@
+{
+  "protocol": "P2R19_P2R3_COVERAGE_AUDIT",
+  "timestamp": "2026-09-15T17:00:00Z",
+  "phase": "7C.5-P2R3",
+  "coverage": 1.0,
+  "direct_coverage": 1.0,
+  "center_coverage": 1.0,
+  "black_crack_pixel_count": 0,
+  "unsupported_pixel_count": 0,
+  "inpaint_used": false,
+  "coverage_gate": "PASS"
+}

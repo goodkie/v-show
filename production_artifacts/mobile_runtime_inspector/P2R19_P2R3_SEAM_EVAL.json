@@ -1,0 +1,12 @@
+{
+  "protocol": "P2R19_P2R3_SEAM_EVAL",
+  "timestamp": "2026-09-15T17:00:00Z",
+  "phase": "7C.5-P2R3",
+  "seam_p95_native_12k": 423.762,
+  "seam_p95_4k_equivalent": 141.254,
+  "r4p3_seam_4k_px": 360.8,
+  "r4p4r1_seam_4k_px": 143.0898,
+  "improvement_vs_r4p3_percent": 60.8498,
+  "regression_vs_r4p4r1_percent": -1.283,
+  "seam_gate": "PASS"
+}

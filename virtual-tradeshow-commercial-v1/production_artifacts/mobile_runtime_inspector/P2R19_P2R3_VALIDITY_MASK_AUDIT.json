@@ -1,0 +1,12 @@
+{
+  "protocol": "P2R19_P2R3_VALIDITY_MASK_AUDIT",
+  "timestamp": "2026-09-15T17:00:00Z",
+  "phase": "7C.5-P2R3",
+  "total_pixels": 22966272,
+  "valid_pixel_count": 22966272,
+  "unsupported_pixel_count": 0,
+  "valid_black_scene_pixel_count": 2368,
+  "true_black_crack_pixel_count": 0,
+  "coverage_ratio": 1.0,
+  "validity_mask_gate": "PASS"
+}

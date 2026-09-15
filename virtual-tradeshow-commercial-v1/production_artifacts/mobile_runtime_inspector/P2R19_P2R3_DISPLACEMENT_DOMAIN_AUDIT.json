@@ -1,0 +1,29 @@
+{
+  "protocol": "P2R19_P2R3_DISPLACEMENT_DOMAIN_AUDIT",
+  "timestamp": "2026-09-15T17:00:00Z",
+  "phase": "7C.5-P2R3",
+  "artificial_clamping_applied": false,
+  "source_sensor_delta": {
+    "unit": "source_sensor_pixels",
+    "mean": 217.349,
+    "p50": 165.703,
+    "p95": 595.152,
+    "max": 1105.126
+  },
+  "angular_delta": {
+    "unit": "degrees",
+    "mean": 3.433,
+    "p50": 2.728,
+    "p95": 8.7668,
+    "max": 16.5681
+  },
+  "output_12k_delta": {
+    "unit": "panorama_12k_pixels",
+    "mean": 117.179,
+    "p50": 93.116,
+    "p95": 299.242,
+    "max": 565.525
+  },
+  "four_k_equivalent_delta_p95": 99.747,
+  "mathematical_reconciliation": "The true physical non-central parallax displacement from rig radius translation t_i / Z produces physical sensor shifts of mean ~217px (P95 ~595px on a 3000x4000 sensor, focal=3265px), angular shifts of mean ~3.43 deg (P95 ~8.77 deg), and 12K output deltas of mean ~117px (P95 ~299px). In P2R2, an artificial clamp to 31.2px was applied to artificially emulate historic 2D reference figures. Reporting true unclipped values restores complete physical and mathematical truth."
+}
