@@ -1,0 +1,51 @@
+{
+  "phase": "7C.2R4P4-R3-R2",
+  "protocol": "CANDIDATE_CONTRACTUAL_VALIDITY_AUDIT",
+  "evaluation_rules": {
+    "contract_validity_requires": [
+      "MAX_TOTAL_ROTATION_DELTA_FROM_R4_DEG <= 3.0",
+      "MAX_CAMERA_CENTER_DELTA_M <= 0.030000000 (with 0.0 tolerance)",
+      "GEOMETRY_FOLDOVER_COUNT == 0",
+      "BLACK_CRACK_PIXEL_COUNT == 0",
+      "INPAINT_USED == false",
+      "GAUGE_FAILURE == false"
+    ]
+  },
+  "candidates": {
+    "CANDIDATE_A": {
+      "name": "R4P4R1_BOUNDED_REFERENCE",
+      "rotation_bound_gate": "PASS",
+      "translation_bound_gate": "PASS",
+      "geometric_integrity_gate": "PASS",
+      "contract_candidate_status": "VALID_CONTRACT_CANDIDATE",
+      "technical_acceptance": "FAIL (Anchored vertical improvement 10.7872% < 25.0%)"
+    },
+    "CANDIDATE_B": {
+      "name": "TRANSLATION_ONLY_LOCAL",
+      "rotation_bound_gate": "PASS",
+      "translation_bound_gate": "FAIL (2 cameras exceed 0.03m by up to 0.15mm)",
+      "geometric_integrity_gate": "PASS",
+      "contract_candidate_status": "HARD_BOUND_NONCOMPLIANT_EXPERIMENTAL",
+      "technical_acceptance": "FAIL (Bound noncompliant & anchored vertical improvement 10.7872% < 25.0%)"
+    },
+    "CANDIDATE_C": {
+      "name": "ROTATION_PLUS_TRANSLATION_LOCAL",
+      "rotation_bound_gate": "PASS",
+      "translation_bound_gate": "FAIL (4 cameras exceed 0.03m by up to 0.10mm)",
+      "geometric_integrity_gate": "PASS",
+      "contract_candidate_status": "HARD_BOUND_NONCOMPLIANT_EXPERIMENTAL",
+      "technical_acceptance": "FAIL (Bound noncompliant & anchored vertical improvement 11.4280% < 25.0%)"
+    },
+    "CANDIDATE_D": {
+      "name": "SEAM_OWNERSHIP_ONLY_CONTROL",
+      "contract_candidate_status": "DIAGNOSTIC_CONTROL_ONLY",
+      "technical_acceptance": "N/A (Diagnostic)"
+    }
+  },
+  "summary": {
+    "valid_contract_candidates_count": 1,
+    "noncompliant_experimental_count": 2,
+    "SELECTED_CANDIDATE": "NONE",
+    "NO_TESTED_CONTRACT_VALID_R3_CANDIDATE_ACHIEVED_GATE": true
+  }
+}

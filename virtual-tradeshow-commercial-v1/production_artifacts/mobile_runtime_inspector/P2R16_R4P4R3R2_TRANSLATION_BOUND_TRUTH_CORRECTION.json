@@ -1,0 +1,74 @@
+{
+  "phase": "7C.2R4P4-R3-R2",
+  "protocol": "TRANSLATION_HARD_BOUND_TRUTH_CORRECTION",
+  "preceding_truth_commit_sha": "2dff33b7e2a0615bcabfbc5733dad69768a8609f",
+  "bound_limit_m": 0.03,
+  "correction_rationale": "Reconciled internal logical contradiction in R3-R1 translation audit where summary gate reported PASS despite full-precision per-camera evidence showing active bound deltas > 0.03 m. The contractual bound limit of 0.030000000 m is strictly enforced without post-hoc numerical tolerance.",
+  "candidate_b": {
+    "candidate_id": "CANDIDATE_B",
+    "name": "TRANSLATION_ONLY_LOCAL",
+    "active_reference": "R4P4R1_CAMERA_CENTERS",
+    "BOUND_LIMIT_M": 0.03,
+    "MAX_ACTIVE_DELTA_M": 0.03014986,
+    "MAX_VIOLATION_M": 0.00014986,
+    "CANDIDATE_B_BOUND_VIOLATION_COUNT": 2,
+    "CANDIDATE_B_TRANSLATION_BOUND_GATE": "FAIL",
+    "violating_cameras": [
+      {
+        "camera_index": 2,
+        "shot_id": "SHOT_060",
+        "ACTIVE_BOUND_DELTA_M": 0.03014986,
+        "BOUND_VIOLATION_M": 0.00014986,
+        "HARD_BOUND_PASS": false
+      },
+      {
+        "camera_index": 5,
+        "shot_id": "SHOT_150",
+        "ACTIVE_BOUND_DELTA_M": 0.03003363,
+        "BOUND_VIOLATION_M": 3.363e-05,
+        "HARD_BOUND_PASS": false
+      }
+    ]
+  },
+  "candidate_c": {
+    "candidate_id": "CANDIDATE_C",
+    "name": "ROTATION_PLUS_TRANSLATION_LOCAL",
+    "active_reference": "R4_CAMERA_CENTERS",
+    "BOUND_LIMIT_M": 0.03,
+    "MAX_ACTIVE_DELTA_M": 0.03010013,
+    "MAX_VIOLATION_M": 0.00010013,
+    "CANDIDATE_C_BOUND_VIOLATION_COUNT": 4,
+    "CANDIDATE_C_TRANSLATION_BOUND_GATE": "FAIL",
+    "violating_cameras": [
+      {
+        "camera_index": 3,
+        "shot_id": "SHOT_090",
+        "ACTIVE_BOUND_DELTA_M": 0.03010013,
+        "BOUND_VIOLATION_M": 0.00010013,
+        "HARD_BOUND_PASS": false
+      },
+      {
+        "camera_index": 5,
+        "shot_id": "SHOT_150",
+        "ACTIVE_BOUND_DELTA_M": 0.03001634,
+        "BOUND_VIOLATION_M": 1.634e-05,
+        "HARD_BOUND_PASS": false
+      },
+      {
+        "camera_index": 7,
+        "shot_id": "SHOT_210",
+        "ACTIVE_BOUND_DELTA_M": 0.03001682,
+        "BOUND_VIOLATION_M": 1.682e-05,
+        "HARD_BOUND_PASS": false
+      },
+      {
+        "camera_index": 8,
+        "shot_id": "SHOT_240",
+        "ACTIVE_BOUND_DELTA_M": 0.03009952,
+        "BOUND_VIOLATION_M": 9.952e-05,
+        "HARD_BOUND_PASS": false
+      }
+    ]
+  },
+  "verdict": "TRANSLATION_BOUND_GATE_AUDIT_STRICTLY_RECONCILED"
+}

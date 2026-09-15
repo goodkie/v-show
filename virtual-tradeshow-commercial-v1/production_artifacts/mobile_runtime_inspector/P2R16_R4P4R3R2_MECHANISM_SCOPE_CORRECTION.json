@@ -1,0 +1,15 @@
+{
+  "phase": "7C.2R4P4-R3-R2",
+  "protocol": "MECHANISM_ATTRIBUTION_SCOPE_CORRECTION",
+  "scope_limitations": "Because Candidates B and C violated their declared hard translation bounds (by up to 0.15 mm and 0.10 mm respectively), their experimental results cannot be cited as definitive proof of what a strictly compliant (<= 0.030000 m) configuration can or cannot achieve. Their results remain informative experimental evidence, but formal causal conclusions under strict bounds are inconclusive.",
+  "allowed_statements": [
+    "Candidate B experimental result showed no anchored vertical gain (10.7872% vs Candidate A 10.7872%).",
+    "Candidate C experimental result showed only marginal anchored vertical gain (11.4280% vs Candidate A 10.7872%).",
+    "NO_TESTED_CONTRACT_VALID_R3_CANDIDATE_ACHIEVED_GATE = true."
+  ],
+  "authoritative_classifications": {
+    "TRANSLATION_CAUSAL_EFFECT": "INCONCLUSIVE_UNDER_STRICT_BOUND",
+    "ROTATION_PLUS_TRANSLATION_CAUSAL_EFFECT": "INCONCLUSIVE_UNDER_STRICT_BOUND",
+    "SEAM_CAUSAL_EFFECT": "SUPPORTED_STRUCTURAL_MODULATOR"
+  }
+}
