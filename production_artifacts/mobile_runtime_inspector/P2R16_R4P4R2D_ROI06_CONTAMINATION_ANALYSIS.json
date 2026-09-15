@@ -1,0 +1,14 @@
+{
+  "phase": "7C.2R4P4-R2D",
+  "protocol": "ROI06_CONTAMINATION_IMPACT_ANALYSIS",
+  "OLD_R2B_GLOBAL_VERTICAL_P95_R4P3": 12.8753,
+  "OLD_R2B_GLOBAL_VERTICAL_P95_BOUNDED": 17.1391,
+  "OLD_R2B_GLOBAL_IMPROVEMENT_PERCENT": -33.1169,
+  "ANCHORED_GLOBAL_VERTICAL_P95_R4P3": 11.6495,
+  "ANCHORED_GLOBAL_VERTICAL_P95_BOUNDED": 10.3928,
+  "ANCHORED_GLOBAL_IMPROVEMENT_PERCENT": 10.7872,
+  "ROI06_CONTAMINATION_CONTRIBUTION_PX": 6.7463,
+  "ROI06_CONTAMINATION_CONTRIBUTION_PERCENT_POINTS": 43.9,
+  "ROI06_CONTAMINATION_RELATIVE_PERCENT": 39.36,
+  "findings": "The feature-switching defect on ROI_06 artificially inflated the Bounded error by 6.7463 px (39.4% relative artifact) and distorted the improvement rate by +43.90 percentage points. Decontaminating the detector restores physical tracking: true bounded vertical error is 10.3928 px (an improvement of +10.79%). However, because +10.79% remains below the required +25.0% contract, the technical FAIL verdict is preserved."
+}

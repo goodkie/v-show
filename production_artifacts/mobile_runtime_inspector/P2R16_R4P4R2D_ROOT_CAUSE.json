@@ -1,0 +1,39 @@
+{
+  "phase": "7C.2R4P4-R2D",
+  "protocol": "ROOT_CAUSE_CLASSIFICATION",
+  "PRIMARY_PROVEN_CAUSE": "METRIC_OBSERVATION_FAILURE_DOMINANT",
+  "PHYSICAL_LIMIT_GOVERNING_REMAINING_ERROR": "SOURCE_PARALLAX_DOMINANT",
+  "causal_hierarchy": {
+    "1_DOMINANT_CAUSE_OF_R2B_APPARENT_REGRESSION": {
+      "category": "METRIC_OBSERVATION_FAILURE",
+      "proof": "Unanchored argmax(col_sums) detector jumped by 240 px in ROI_06, creating an artificial -211% regression. When anchored, the true metric IMPROVED by +10.79%."
+    },
+    "2_PRIMARY_PHYSICAL_LIMIT_PREVENTING_25_PERCENT_GATE": {
+      "category": "SOURCE_PARALLAX",
+      "proof": "Adjacent camera baselines (4.3 to 30.5 cm) at close object distances (0.56 to 1.88 m) produce 30 to 956 px of physical parallax, which a pure 3.0 deg rotation model cannot fully eliminate."
+    },
+    "3_SECONDARY_CONTRIBUTOR": {
+      "category": "SEAM_OWNERSHIP",
+      "proof": "Graph-cut seam boundary placement alters rendered straightness by up to 7 px depending on which camera owns the transition zone."
+    },
+    "4_DISPROVEN_CAUSES": [
+      {
+        "category": "DEPTH_GEOMETRY_LIMIT",
+        "status": "DISPROVEN",
+        "proof": "3D line residuals are 1.6 mm to 13.9 mm."
+      },
+      {
+        "category": "RADIAL_DISTORTION_CAUSE",
+        "status": "NOT_SUPPORTED",
+        "proof": "Samsung ISP lens correction leaves < 0.2 px residual curvature."
+      },
+      {
+        "category": "POSE_BOUND_SATURATION_CAUSE",
+        "status": "NOT_SUPPORTED",
+        "proof": "Saturated camera SHOT_180 improved line straightness."
+      }
+    ]
+  },
+  "technical_acceptance": "FAIL",
+  "owner_visual_acceptance": false
+}

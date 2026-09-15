@@ -1,0 +1,106 @@
+{
+  "phase": "7C.2R4P4-R2D",
+  "protocol": "R2C_CAUSAL_SEMANTICS_AND_BASELINE_CORRECTION",
+  "proven_causal_semantics": {
+    "METRIC_OBSERVATION_FAILURE": true,
+    "ROI_06_EDGE_TRACKING_VALID": false,
+    "SEAM_OWNERSHIP_AS_SOLE_CAUSE": false,
+    "DEPTH_GEOMETRY_PRIMARY_CAUSE_NOT_SUPPORTED": true
+  },
+  "corrected_provisional_semantics": {
+    "SOURCE_PARALLAX_PRESENT": true,
+    "SOURCE_PARALLAX_CAUSAL_CONTRIBUTION": "UNQUANTIFIED_PENDING_R2D",
+    "SOURCE_IMAGE_LINE_CURVATURE_PRESENT": true,
+    "RADIAL_DISTORTION_CAUSE": "UNPROVEN_PENDING_R2D",
+    "PRIMARY_PROVEN_CAUSE": "METRIC_OBSERVATION_FAILURE",
+    "PHYSICAL_CONTRIBUTORS_UNDER_INVESTIGATION": [
+      "SOURCE_PARALLAX",
+      "SOURCE_OPTICS",
+      "POSE_BOUND_SATURATION",
+      "SEAM_OWNERSHIP"
+    ]
+  },
+  "adjacent_camera_baseline_truth": {
+    "explanation": "In R2C, adjacent baselines were reported using translation vector differences norm(delta t) which ranged from 0.0128 m to 0.1731 m. The exact underlying physical camera-center distances norm(C_i - C_j) (where C = -R^T t) range from 0.0088 m (SHOT_300-330) up to 0.3046 m (SHOT_180-210), reflecting natural handheld capture translation.",
+    "all_adjacent_baselines": [
+      {
+        "camera_pair": "SHOT_000-SHOT_030",
+        "camera_center_distance_m": 0.0432,
+        "translation_norm_m": 0.043
+      },
+      {
+        "camera_pair": "SHOT_030-SHOT_060",
+        "camera_center_distance_m": 0.0262,
+        "translation_norm_m": 0.0128
+      },
+      {
+        "camera_pair": "SHOT_060-SHOT_090",
+        "camera_center_distance_m": 0.0493,
+        "translation_norm_m": 0.0664
+      },
+      {
+        "camera_pair": "SHOT_090-SHOT_120",
+        "camera_center_distance_m": 0.0583,
+        "translation_norm_m": 0.0168
+      },
+      {
+        "camera_pair": "SHOT_120-SHOT_150",
+        "camera_center_distance_m": 0.0514,
+        "translation_norm_m": 0.0811
+      },
+      {
+        "camera_pair": "SHOT_150-SHOT_180",
+        "camera_center_distance_m": 0.0719,
+        "translation_norm_m": 0.0895
+      },
+      {
+        "camera_pair": "SHOT_180-SHOT_210",
+        "camera_center_distance_m": 0.3046,
+        "translation_norm_m": 0.1554
+      },
+      {
+        "camera_pair": "SHOT_210-SHOT_240",
+        "camera_center_distance_m": 0.2105,
+        "translation_norm_m": 0.1731
+      },
+      {
+        "camera_pair": "SHOT_240-SHOT_270",
+        "camera_center_distance_m": 0.0545,
+        "translation_norm_m": 0.0421
+      },
+      {
+        "camera_pair": "SHOT_270-SHOT_300",
+        "camera_center_distance_m": 0.0203,
+        "translation_norm_m": 0.0329
+      },
+      {
+        "camera_pair": "SHOT_300-SHOT_330",
+        "camera_center_distance_m": 0.0088,
+        "translation_norm_m": 0.0387
+      },
+      {
+        "camera_pair": "SHOT_330-SHOT_000",
+        "camera_center_distance_m": 0.0824,
+        "translation_norm_m": 0.0822
+      }
+    ],
+    "roi_specific_underlying_baselines": {
+      "ROI_01 (SHOT_000-SHOT_030)": {
+        "camera_center_distance_m": 0.0432,
+        "delta_t_m": 0.043
+      },
+      "ROI_02 (SHOT_060-SHOT_090)": {
+        "camera_center_distance_m": 0.0493,
+        "delta_t_m": 0.0664
+      },
+      "ROI_03 (SHOT_180-SHOT_210)": {
+        "camera_center_distance_m": 0.3046,
+        "delta_t_m": 0.1554
+      },
+      "ROI_06 (SHOT_090-SHOT_120)": {
+        "camera_center_distance_m": 0.0583,
+        "delta_t_m": 0.0168
+      }
+    }
+  }
+}

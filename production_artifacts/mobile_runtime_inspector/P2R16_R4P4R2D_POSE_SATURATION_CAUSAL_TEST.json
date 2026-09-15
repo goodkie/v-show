@@ -1,0 +1,40 @@
+{
+  "phase": "7C.2R4P4-R2D",
+  "protocol": "POSE_SATURATION_CAUSAL_TEST",
+  "POSE_SATURATION_CAUSAL_STATUS": "NOT_SUPPORTED",
+  "rois": [
+    {
+      "roi_id": "ROI_01_DOOR_FRAME",
+      "primary_camera": "SHOT_000",
+      "rotation_delta_deg": 0.0,
+      "is_saturated": false,
+      "anchored_line_improvement_percent": 7.86,
+      "saturation_correlates_with_regression": true
+    },
+    {
+      "roi_id": "ROI_02_WINDOW_MULLION",
+      "primary_camera": "SHOT_060",
+      "rotation_delta_deg": 2.0185,
+      "is_saturated": false,
+      "anchored_line_improvement_percent": 82.15,
+      "saturation_correlates_with_regression": true
+    },
+    {
+      "roi_id": "ROI_03_CABINET_LATCH_EDGE",
+      "primary_camera": "SHOT_180",
+      "rotation_delta_deg": 3.0001,
+      "is_saturated": true,
+      "anchored_line_improvement_percent": 13.64,
+      "saturation_correlates_with_regression": false
+    },
+    {
+      "roi_id": "ROI_06_WALL_CORNER",
+      "primary_camera": "SHOT_090",
+      "rotation_delta_deg": 2.0543,
+      "is_saturated": false,
+      "anchored_line_improvement_percent": -3.35,
+      "saturation_correlates_with_regression": true
+    }
+  ],
+  "conclusion": "Pose saturation does not correlate with line straightness degradation. In ROI_03 (cabinet latch), SHOT_180 is 100% saturated at 3.000 deg, yet its anchored line straightness improved by +13.64%. Conversely, ROI_06 camera (SHOT_090) rotated by only 2.054 deg (unsaturated) and stayed flat (-3.35%). Pose-bound saturation is therefore NOT the cause of the remaining structural error."
+}

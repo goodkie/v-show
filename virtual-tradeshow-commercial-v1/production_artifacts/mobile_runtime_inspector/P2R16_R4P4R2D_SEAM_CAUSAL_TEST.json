@@ -1,0 +1,48 @@
+{
+  "phase": "7C.2R4P4-R2D",
+  "protocol": "SEAM_OWNERSHIP_CAUSAL_QUANTIFICATION",
+  "SEAM_OWNERSHIP_CAUSAL_STATUS": "SUPPORTED",
+  "rois": [
+    {
+      "roi_id": "ROI_01_DOOR_FRAME",
+      "FIXED_SOURCE_R4P3": 11.5764,
+      "FIXED_SOURCE_BOUNDED": 11.5764,
+      "STITCHED_R4P3": 12.4327,
+      "STITCHED_BOUNDED": 11.4555,
+      "POSE_EFFECT": 0.0,
+      "SEAM_EFFECT_R4P3": 0.8564,
+      "SEAM_EFFECT_BOUNDED": -0.1209
+    },
+    {
+      "roi_id": "ROI_02_WINDOW_MULLION",
+      "FIXED_SOURCE_R4P3": 9.5218,
+      "FIXED_SOURCE_BOUNDED": 9.217,
+      "STITCHED_R4P3": 13.3591,
+      "STITCHED_BOUNDED": 2.3847,
+      "POSE_EFFECT": -0.3048,
+      "SEAM_EFFECT_R4P3": 3.8373,
+      "SEAM_EFFECT_BOUNDED": -6.8323
+    },
+    {
+      "roi_id": "ROI_03_CABINET_LATCH_EDGE",
+      "FIXED_SOURCE_R4P3": 12.7086,
+      "FIXED_SOURCE_BOUNDED": 13.0218,
+      "STITCHED_R4P3": 11.2087,
+      "STITCHED_BOUNDED": 9.6796,
+      "POSE_EFFECT": 0.3132,
+      "SEAM_EFFECT_R4P3": -1.4999,
+      "SEAM_EFFECT_BOUNDED": -3.3422
+    },
+    {
+      "roi_id": "ROI_06_WALL_CORNER",
+      "FIXED_SOURCE_R4P3": 12.1611,
+      "FIXED_SOURCE_BOUNDED": 11.6482,
+      "STITCHED_R4P3": 4.5003,
+      "STITCHED_BOUNDED": 4.6511,
+      "POSE_EFFECT": -0.5129,
+      "SEAM_EFFECT_R4P3": -7.6608,
+      "SEAM_EFFECT_BOUNDED": -6.9971
+    }
+  ],
+  "conclusion": "Under anchored tracking, pure pose effect (B - A) is negligible across all ROIs (-0.51 to +0.31 px). Stitched seam ownership effect (D - B) accounts for -6.8 px improvement on ROI_02, -3.3 px on ROI_03, and -7.0 px on ROI_06, confirming seam placement interacts favorably with bounded geometry."
+}
