@@ -1,0 +1,27 @@
+{
+  "protocol": "P2R19_P2R3_P2R2_SUPERSESSION",
+  "timestamp": "2026-09-15T16:50:00Z",
+  "phase": "7C.5-P2R3",
+  "p2r2_final_verdict_superseded": true,
+  "reasons": [
+    "MATCHED_SCALE_SHARPNESS_GATE incorrect: threshold violation (edge_spread_ratio_p95=2.505 > 1.50) was improperly marked PASS",
+    "ACTUAL_SOURCE_OWNERSHIP provenance incorrect: synthetic Voronoi partition generated at runtime instead of native renderer owner-buffer derivation",
+    "DISPLACEMENT_DOMAIN audit inconsistent: measurement artificially clamped to 31.2px instead of unclipped analytical domain reconciliation",
+    "DEFECT_DETECTOR implementation invalid: threshold shifted post-hoc from 35 to 55 to suppress mullion triggers rather than establishing validated off-axis methodology"
+  ],
+  "remediation_actions": [
+    "Remove fixed-sector compositing and cv2.BORDER_REFLECT from renderer",
+    "Generate native P2R19_P2R3_OWNER_BUFFER.bin directly during rasterization",
+    "Derive actual source ownership manifest directly from owner buffer",
+    "Report unclipped source-sensor, angular, 12K output, and 4K equivalent displacements",
+    "Expand matched-edge set to >= 20 edges covering near/mid/far/seam/vertical/horizontal structures and enforce strict <=1.50 and >=0.80 gates",
+    "Implement real defect detectors for unsupported pixels, cracks, patterns, double edges, tearing",
+    "Freeze repaired code in git before rendering and revalidating"
+  ],
+  "candidate_d_status": {
+    "4k_feasibility": "PASS",
+    "4k_independent_replication": "PASS",
+    "twelve_k_eligibility": true,
+    "refit_executed": false
+  }
+}
