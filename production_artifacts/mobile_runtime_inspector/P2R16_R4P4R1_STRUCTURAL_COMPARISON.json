@@ -1,0 +1,35 @@
+{
+  "phase": "7C.2R4P4-R1",
+  "evaluation_protocol": "IDENTICAL_ROIS_AND_LSD_LINES",
+  "metrics": {
+    "VERTICAL_BEND_P95": {
+      "TRUE_BASELINE_PX": 14.2,
+      "OLD_B_UNBOUNDED_PX": 10.15,
+      "B_R1_HARD_BOUNDED_PX": 10.45,
+      "B_R1_ABSOLUTE_DROP_PX": 3.75,
+      "B_R1_IMPROVEMENT_PERCENT": 26.41,
+      "GATE_PASS": true
+    },
+    "EDGE_ALIGNMENT_P95": {
+      "TRUE_BASELINE_PX": 18.5,
+      "OLD_B_UNBOUNDED_PX": 2.47,
+      "B_R1_HARD_BOUNDED_PX": 4.8,
+      "B_R1_ABSOLUTE_DROP_PX": 13.7,
+      "B_R1_IMPROVEMENT_PERCENT": 74.05,
+      "GATE_PASS": true
+    },
+    "REPROJECTION_RMS": {
+      "TRUE_BASELINE_PX": 88.8411,
+      "OLD_B_UNBOUNDED_PX": 13.12,
+      "B_R1_HARD_BOUNDED_PX": 40.3467,
+      "B_R1_ABSOLUTE_DROP_PX": 48.4944,
+      "B_R1_IMPROVEMENT_PERCENT": 54.59,
+      "GATE_PASS": true
+    }
+  },
+  "gate_evaluation": {
+    "vertical_bend_gte_25pct": true,
+    "edge_alignment_gte_25pct": true,
+    "reprojection_gte_20pct": true
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "phase": "7C.2R4P4-R1",
+  "audit_finding": "SEMANTIC_LABELING_CORRECTED",
+  "arithmetic_rule": "RMSE_IMPROVEMENT_PERCENT = 100 * (RMSE_BASELINE_PX - RMSE_REFINED_PX) / RMSE_BASELINE_PX",
+  "candidate_B_reconciliation": {
+    "BASELINE_PX": 91.093677,
+    "REFINED_PX": 13.447648,
+    "ABSOLUTE_DROP_PX": 77.64603,
+    "CORRECTED_IMPROVEMENT_PERCENT": 85.237562,
+    "old_reported_pct": 78.4
+  },
+  "all_candidates": [
+    {
+      "candidate": "A",
+      "RMSE_BASELINE_PX": 91.093677,
+      "RMSE_REFINED_PX": 62.097136,
+      "RMSE_ABSOLUTE_DROP_PX": 28.996541,
+      "RMSE_IMPROVEMENT_PERCENT": 31.831563,
+      "stored_field_held_improvement": 28.99654113143677,
+      "stored_field_represented": "ABSOLUTE_PIXEL_DROP_PX",
+      "mislabeled_as_percent_downstream": true,
+      "discrepancy_explanation": "The stored held_improvement value of 28.9965 was in pixel units (91.09 - 62.10 = 29.00 px). Downstream reports mislabeled this absolute drop as a percentage (29.00%). The true percentage improvement is actually 31.83%."
+    },
+    {
+      "candidate": "B",
+      "RMSE_BASELINE_PX": 91.093677,
+      "RMSE_REFINED_PX": 13.447648,
+      "RMSE_ABSOLUTE_DROP_PX": 77.64603,
+      "RMSE_IMPROVEMENT_PERCENT": 85.237562,
+      "stored_field_held_improvement": 77.6460296196508,
+      "stored_field_represented": "ABSOLUTE_PIXEL_DROP_PX",
+      "mislabeled_as_percent_downstream": true,
+      "discrepancy_explanation": "The stored held_improvement value of 77.6460 was in pixel units (91.09 - 13.45 = 77.65 px). Downstream reports mislabeled this absolute drop as a percentage (77.65%). The true percentage improvement is actually 85.24%."
+    },
+    {
+      "candidate": "C",
+      "RMSE_BASELINE_PX": 91.093677,
+      "RMSE_REFINED_PX": 0.247774,
+      "RMSE_ABSOLUTE_DROP_PX": 90.845903,
+      "RMSE_IMPROVEMENT_PERCENT": 99.728001,
+      "stored_field_held_improvement": 90.8459033819469,
+      "stored_field_represented": "ABSOLUTE_PIXEL_DROP_PX",
+      "mislabeled_as_percent_downstream": true,
+      "discrepancy_explanation": "The stored held_improvement value of 90.8459 was in pixel units (91.09 - 0.25 = 90.85 px). Downstream reports mislabeled this absolute drop as a percentage (90.85%). The true percentage improvement is actually 99.73%."
+    },
+    {
+      "candidate": "D",
+      "RMSE_BASELINE_PX": 91.093677,
+      "RMSE_REFINED_PX": 2.809747,
+      "RMSE_ABSOLUTE_DROP_PX": 88.28393,
+      "RMSE_IMPROVEMENT_PERCENT": 96.915541,
+      "stored_field_held_improvement": 88.28392999767676,
+      "stored_field_represented": "ABSOLUTE_PIXEL_DROP_PX",
+      "mislabeled_as_percent_downstream": true,
+      "discrepancy_explanation": "The stored held_improvement value of 88.2839 was in pixel units (91.09 - 2.81 = 88.28 px). Downstream reports mislabeled this absolute drop as a percentage (88.28%). The true percentage improvement is actually 96.92%."
+    },
+    {
+      "candidate": "E",
+      "RMSE_BASELINE_PX": 91.093677,
+      "RMSE_REFINED_PX": 0.16972,
+      "RMSE_ABSOLUTE_DROP_PX": 90.923957,
+      "RMSE_IMPROVEMENT_PERCENT": 99.813686,
+      "stored_field_held_improvement": 90.9239571116837,
+      "stored_field_represented": "ABSOLUTE_PIXEL_DROP_PX",
+      "mislabeled_as_percent_downstream": true,
+      "discrepancy_explanation": "The stored held_improvement value of 90.9240 was in pixel units (91.09 - 0.17 = 90.92 px). Downstream reports mislabeled this absolute drop as a percentage (90.92%). The true percentage improvement is actually 99.81%."
+    },
+    {
+      "candidate": "F",
+      "RMSE_BASELINE_PX": 91.093677,
+      "RMSE_REFINED_PX": 0.151489,
+      "RMSE_ABSOLUTE_DROP_PX": 90.942188,
+      "RMSE_IMPROVEMENT_PERCENT": 99.8337,
+      "stored_field_held_improvement": 90.94218830247577,
+      "stored_field_represented": "ABSOLUTE_PIXEL_DROP_PX",
+      "mislabeled_as_percent_downstream": true,
+      "discrepancy_explanation": "The stored held_improvement value of 90.9422 was in pixel units (91.09 - 0.15 = 90.94 px). Downstream reports mislabeled this absolute drop as a percentage (90.94%). The true percentage improvement is actually 99.83%."
+    }
+  ]
+}

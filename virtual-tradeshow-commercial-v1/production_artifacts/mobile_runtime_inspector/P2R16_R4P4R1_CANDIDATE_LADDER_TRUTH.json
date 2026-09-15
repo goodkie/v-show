@@ -1,0 +1,92 @@
+{
+  "phase": "7C.2R4P4-R1",
+  "ladder_reconstruction": [
+    {
+      "candidate": "A",
+      "true_identity": "TRUE_R4_BASELINE",
+      "free_parameter_count": 0,
+      "parameter_names": [],
+      "parameter_bounds": [],
+      "initial_values": [],
+      "optimized_values": [],
+      "fixed_values": [
+        "ALL_R4_EXTRINSICS",
+        "ALL_R4_INTRINSICS",
+        "ALL_R4_DEPTH"
+      ],
+      "evaluation_metric_rmse_px": 88.8411
+    },
+    {
+      "candidate": "A_HISTORICAL_FOCAL",
+      "true_identity": "INTRINSIC_FOCAL_OFFSET_ONLY",
+      "free_parameter_count": 4,
+      "parameter_names": [
+        "dfx",
+        "dfy",
+        "dcx",
+        "dcy"
+      ],
+      "parameter_bounds": [
+        "unbounded"
+      ],
+      "initial_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "optimized_values": [
+        -52.84,
+        -52.84,
+        0.0,
+        0.0
+      ],
+      "fixed_values": [
+        "ALL_EXTRINSICS",
+        "ALL_DEPTH"
+      ],
+      "evaluation_metric_rmse_px": 62.0971
+    },
+    {
+      "candidate": "B_HISTORICAL_UNBOUNDED",
+      "true_identity": "POSE_ONLY_UNBOUNDED",
+      "free_parameter_count": 36,
+      "parameter_names": [
+        "rvec_00..rvec_11"
+      ],
+      "parameter_bounds": [
+        "unbounded (soft prior lambda=50)"
+      ],
+      "initial_values": "36 zeros",
+      "max_rotation_delta_deg": 9.9079,
+      "mean_rotation_delta_deg": 5.48,
+      "fixed_values": [
+        "ALL_INTRINSICS",
+        "ALL_TRANSLATIONS",
+        "ALL_DEPTH"
+      ],
+      "evaluation_metric_rmse_px": 13.4476
+    },
+    {
+      "candidate": "B-R1",
+      "true_identity": "HARD_BOUNDED_POSE_ONLY",
+      "free_parameter_count": 33,
+      "parameter_names": [
+        "rvec_01..rvec_11 (camera 0 locked)"
+      ],
+      "parameter_bounds": [
+        "||delta_theta_i|| <= 3.0 deg"
+      ],
+      "initial_values": "33 zeros",
+      "max_rotation_delta_deg": 3.0,
+      "mean_rotation_delta_deg": 1.7785,
+      "fixed_values": [
+        "CAMERA_0_ROTATION",
+        "ALL_INTRINSICS",
+        "ALL_TRANSLATIONS",
+        "ALL_DEPTH"
+      ],
+      "evaluation_metric_rmse_px": 40.3467
+    }
+  ]
+}

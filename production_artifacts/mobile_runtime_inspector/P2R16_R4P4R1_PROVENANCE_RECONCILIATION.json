@@ -1,0 +1,18 @@
+{
+  "phase": "7C.2R4P4-R1",
+  "R4P4_IMPLEMENTATION_COMMIT": "10db8ab397ce03cd57ae73e10ca59b2e8052f05b",
+  "R4P4_REVIEWED_DEPLOYMENT_HEAD": "5b61c6f88650988fc4da35e7bcf05dc41c9aef83",
+  "conflation_audit": {
+    "status": "RECONCILED",
+    "explanation": "Commit 10db8ab introduced the original Phase 7C.2R4P4 optimization code, candidate outputs, and 12K render. Commit 5b61c6f was the subsequent documentation and provenance stamp head on experiment/c12.9-p2r16-8shot-hires deployed to Railway. Both commits are distinct and now explicitly separated."
+  },
+  "locks": {
+    "BRANCH": "experiment/c12.9-p2r16-8shot-hires",
+    "MASTER_TOUCHED": false,
+    "CUSTOMER_DEFAULT": "P2R13",
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "VGGT_FORWARD_COUNT": 0,
+    "DEPTH_MODEL_EXECUTION_COUNT": 0,
+    "ROMA_NEW_MODEL_EXECUTION_COUNT": 0
+  }
+}

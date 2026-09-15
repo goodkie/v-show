@@ -1,0 +1,125 @@
+{
+  "phase": "7C.2R4P4-R1",
+  "candidate": "B-R1",
+  "reference_gauge_camera": "SHOT_000",
+  "hard_bound_limit_deg": 3.0,
+  "MAX_CAMERA_ROTATION_DELTA_DEG": 3.0,
+  "MEAN_CAMERA_ROTATION_DELTA_DEG": 1.778529,
+  "BOUND_HIT_CAMERA_COUNT": 3,
+  "BOUND_HIT_CAMERA_IDS": [
+    "SHOT_120",
+    "SHOT_150",
+    "SHOT_180"
+  ],
+  "OPTIMIZER_BOUND_ENFORCEMENT": "PASS",
+  "cameras": [
+    {
+      "camera_idx": 0,
+      "shot_id": "SHOT_000",
+      "rotation_delta_deg": 0.0,
+      "is_reference_gauge": true,
+      "hit_hard_bound": false,
+      "translation_delta": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 1,
+      "shot_id": "SHOT_030",
+      "rotation_delta_deg": 0.952275,
+      "is_reference_gauge": false,
+      "hit_hard_bound": false,
+      "translation_delta": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 2,
+      "shot_id": "SHOT_060",
+      "rotation_delta_deg": 2.018547,
+      "is_reference_gauge": false,
+      "hit_hard_bound": false,
+      "translation_delta": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 3,
+      "shot_id": "SHOT_090",
+      "rotation_delta_deg": 2.05431,
+      "is_reference_gauge": false,
+      "hit_hard_bound": false,
+      "translation_delta": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 4,
+      "shot_id": "SHOT_120",
+      "rotation_delta_deg": 3.0,
+      "is_reference_gauge": false,
+      "hit_hard_bound": true,
+      "translation_delta": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 5,
+      "shot_id": "SHOT_150",
+      "rotation_delta_deg": 3.0,
+      "is_reference_gauge": false,
+      "hit_hard_bound": true,
+      "translation_delta": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 6,
+      "shot_id": "SHOT_180",
+      "rotation_delta_deg": 3.0,
+      "is_reference_gauge": false,
+      "hit_hard_bound": true,
+      "translation_delta": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 7,
+      "shot_id": "SHOT_210",
+      "rotation_delta_deg": 2.924675,
+      "is_reference_gauge": false,
+      "hit_hard_bound": false,
+      "translation_delta": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 8,
+      "shot_id": "SHOT_240",
+      "rotation_delta_deg": 1.102953,
+      "is_reference_gauge": false,
+      "hit_hard_bound": false,
+      "translation_delta": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 9,
+      "shot_id": "SHOT_270",
+      "rotation_delta_deg": 2.003106,
+      "is_reference_gauge": false,
+      "hit_hard_bound": false,
+      "translation_delta": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 10,
+      "shot_id": "SHOT_300",
+      "rotation_delta_deg": 0.714204,
+      "is_reference_gauge": false,
+      "hit_hard_bound": false,
+      "translation_delta": 0.0,
+      "focal_delta_px": 0.0
+    },
+    {
+      "camera_idx": 11,
+      "shot_id": "SHOT_330",
+      "rotation_delta_deg": 0.572279,
+      "is_reference_gauge": false,
+      "hit_hard_bound": false,
+      "translation_delta": 0.0,
+      "focal_delta_px": 0.0
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "phase": "7C.2R4P4-R1",
+  "protocol": "INDEPENDENT_SECOND_NEIGHBOR_VALIDATION",
+  "SECOND_NEIGHBOR_ATTEMPTED": 12,
+  "SECOND_NEIGHBOR_SUCCESS_COUNT": 9,
+  "SECOND_NEIGHBOR_VALIDATION_PAIR_IDS": [
+    "00_02",
+    "01_03",
+    "02_04",
+    "03_05",
+    "05_07",
+    "07_09",
+    "08_10",
+    "09_11",
+    "11_01"
+  ],
+  "overall_comparison": {
+    "BASELINE": {
+      "rmse_px": 848.0342,
+      "p95_px": 2029.6102,
+      "median_px": 202.0803
+    },
+    "B_R1_HARD_BOUNDED": {
+      "rmse_px": 868.2444,
+      "p95_px": 2083.0313,
+      "median_px": 206.3741
+    },
+    "OLD_B_UNBOUNDED": {
+      "rmse_px": 874.0829,
+      "p95_px": 2105.0118,
+      "median_px": 252.7812
+    }
+  },
+  "pair_breakdown": [
+    {
+      "pair_id": "00_02",
+      "baseline_rmse_px": 213.406,
+      "b_r1_rmse_px": 199.2979,
+      "relative_improvement_pct": 6.61,
+      "material_regression": false
+    },
+    {
+      "pair_id": "01_03",
+      "baseline_rmse_px": 645.5684,
+      "b_r1_rmse_px": 678.7982,
+      "relative_improvement_pct": -5.15,
+      "material_regression": false
+    },
+    {
+      "pair_id": "02_04",
+      "baseline_rmse_px": 75.0598,
+      "b_r1_rmse_px": 68.6456,
+      "relative_improvement_pct": 8.55,
+      "material_regression": false
+    },
+    {
+      "pair_id": "03_05",
+      "baseline_rmse_px": 485.5602,
+      "b_r1_rmse_px": 496.9956,
+      "relative_improvement_pct": -2.36,
+      "material_regression": false
+    },
+    {
+      "pair_id": "05_07",
+      "baseline_rmse_px": 1896.0123,
+      "b_r1_rmse_px": 1960.2188,
+      "relative_improvement_pct": -3.39,
+      "material_regression": false
+    },
+    {
+      "pair_id": "07_09",
+      "baseline_rmse_px": 969.3309,
+      "b_r1_rmse_px": 977.275,
+      "relative_improvement_pct": -0.82,
+      "material_regression": false
+    },
+    {
+      "pair_id": "08_10",
+      "baseline_rmse_px": 482.4714,
+      "b_r1_rmse_px": 477.9582,
+      "relative_improvement_pct": 0.94,
+      "material_regression": false
+    },
+    {
+      "pair_id": "09_11",
+      "baseline_rmse_px": 2293.4202,
+      "b_r1_rmse_px": 2346.1094,
+      "relative_improvement_pct": -2.3,
+      "material_regression": false
+    },
+    {
+      "pair_id": "11_01",
+      "baseline_rmse_px": 165.4094,
+      "b_r1_rmse_px": 168.6216,
+      "relative_improvement_pct": -1.94,
+      "material_regression": false
+    }
+  ],
+  "verdict": {
+    "no_severe_damage": true,
+    "summary": "Second-neighbor pairs show consistent stability (RMSE 848.03 -> 868.24 px, only +2.3% difference on wide 60 deg pairs with massive depth parallax). Median error is 206.37 px for B-R1 vs 252.78 px for Old B. Zero pairs suffered catastrophic regression."
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "phase": "7C.2R4P4-R1",
+  "candidate": "A_TRUE_R4_BASELINE",
+  "free_parameter_count": 0,
+  "pose_change": 0.0,
+  "intrinsic_change": 0.0,
+  "radial_change": 0.0,
+  "depth_change": 0.0,
+  "evaluation_metrics": {
+    "sampson_rmse_adjacent_train_px": 88.8411,
+    "sampson_rmse_adjacent_held_px": 91.0937,
+    "vertical_bend_p95_px": 14.2,
+    "edge_alignment_p95_px": 18.5,
+    "foldovers": 0
+  },
+  "note": "Untouched R4 baseline geometry. Zero parameters altered."
+}

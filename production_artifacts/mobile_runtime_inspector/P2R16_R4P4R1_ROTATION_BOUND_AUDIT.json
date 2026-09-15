@@ -1,0 +1,7 @@
+{
+  "phase": "7C.2R4P4-R1",
+  "OLD_ROT_LIMIT_SEMANTICS": "SOFT_PRIOR_PLUS_POST_FILTER_WITH_FALLBACK",
+  "OLD_ROT_LIMIT_ACTUALLY_ENFORCED": false,
+  "WHY_MAX_DELTA_REACHED_9_91_DEG": "In run_optimization_ladder.py, CONSERVATIVE_ROT_LIMIT_DEG = 1.5 was never passed as an optimizer bound to scipy.optimize.least_squares(bounds=...). Rotation deviation was penalized solely through a gentle quadratic penalty (PRIOR_ROT_LAMBDA = 50.0). The massive Sampson distance across pair 05_06 (~1900 correspondences across the 9.33 deg doorway misclosure) exerted overpowering gradient pull, easily overriding the soft prior. When the post-optimization filter rot_ok = max_rot < 1.5 failed for all candidates, the selection logic fell back to best_all, adopting the 9.91 deg solution without hard bound enforcement.",
+  "consequence": "Candidate B violated the local refinement charter and cannot be accepted as conservative."
+}
