@@ -1,0 +1,10 @@
+{
+  "protocol": "P2R17_P0_REPROJECTION_DELTA_EVAL",
+  "timestamp": "2026-09-15T05:10:00Z",
+  "r4_baseline_rms_px": 204.9715,
+  "r4p4r1_refined_rms_px": 160.1032,
+  "reprojection_improvement_percent": 21.89,
+  "geometry_delta_from_r4p4r1": 0.0,
+  "true_pixel_reprojection_gate": "PASS_UNCHANGED",
+  "notes": "Upstream camera poses, centers, rotations, intrinsics, and depth map are strictly frozen. Post-projection warp produces exactly zero reprojection delta."
+}

@@ -1,31 +1,123 @@
 {
   "protocol": "P2R17_P0_FINAL_AUDIT",
-  "date": "2026-09-15",
-  "phase": "7C.3-P0-R0",
-  "executionState": "INITIALIZED_ONLY",
-  "phaseStatus": "READY_FOR_4K_FEASIBILITY_EXECUTION",
-  "postProjectionRectificationSufficient": "NOT_YET_EVALUATED",
-  "selectedCandidate": "NONE",
-  "heldOutAnchorCount": 4,
-  "heldOutAnchors": [
-    "ROI_01",
-    "ROI_02",
-    "ROI_03",
-    "ROI_06"
-  ],
-  "canonicalAnchorsUsedForOptimization": false,
-  "neuralModelExecutions": {
-    "vggtForwardCount": 0,
-    "depthModelExecutionCount": 0,
-    "romaNewModelExecutionCount": 0,
-    "newNeuralModelExecutionCount": 0
+  "timestamp": "2026-09-15T05:15:00Z",
+  "phase": "7C.3-P0-R1",
+  "execution_title": "4K STRUCTURE-PRESERVING SPHERICAL RECTIFICATION FEASIBILITY EXECUTION",
+  "anti_leakage_lock": true,
+  "chronology_verification": {
+    "start_head": "20e31d8540cd844ed109e1b013dfd24dad4b323b",
+    "pre_optimization_freeze_commit": "62840a1e0522f05c0c9d659c4bb7dfc17bb26124",
+    "candidate_freeze_commit": "bb78a844a1559f8d438342535012452d5f10b697",
+    "heldout_evaluated_during_tuning": false
   },
-  "renderAudit": {
-    "new12kRenderExecuted": false,
-    "targetResolution": "4K_FEASIBILITY_FIRST"
+  "source_dataset_identity": {
+    "physical_capture_session_id": "P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01",
+    "source_image_count": 12,
+    "source_image_dimensions": "3000x4000",
+    "frozen_geometry_sha256": "14a20ff4857a35f11a59adf0798b376ca9aae6f261bd563bbe97ef1d337878b3",
+    "compositor_resolution": "4096x623",
+    "compositor_pitch_range": "[-26.38 deg, +28.39 deg]"
   },
-  "customerDefaultUnchanged": "P2R13",
-  "productionImpact": "ZERO",
-  "productionSafetyLock": "VERIFIED_LOCKED",
-  "nextAction": "EXECUTE_7C3_P0_4K_FEASIBILITY"
+  "heldout_exclusion_geometry": {
+    "held_out_anchor_count": 4,
+    "canonical_anchors": [
+      "ROI_01",
+      "ROI_02",
+      "ROI_03",
+      "ROI_06"
+    ],
+    "canonical_anchors_used_for_optimization": false,
+    "heldout_exclusion_overlap_with_training_features": 0
+  },
+  "structural_inventory": {
+    "training_structure_count": 1068,
+    "training_vertical_count": 1056,
+    "training_horizontal_count": 1,
+    "training_other_count": 11,
+    "independent_vertical_control_count": 40,
+    "independent_horizontal_control_count": 10
+  },
+  "candidate_evaluations": {
+    "CANDIDATE_A": {
+      "name": "IDENTITY_CONTROL",
+      "vertical_p95": 10.3928,
+      "vertical_improvement_percent": 10.7872,
+      "vertical_gate": "FAIL",
+      "seam_edge_p95": 143.0898,
+      "seam_improvement_percent": 60.341,
+      "seam_gate": "PASS",
+      "independent_vertical_regression_percent": 0.0,
+      "independent_horizontal_regression_percent": 0.0,
+      "independent_control_gate": "PASS",
+      "topology_gate": "PASS"
+    },
+    "CANDIDATE_B": {
+      "name": "GLOBAL_LOW_DIMENSIONAL_RECTIFICATION",
+      "vertical_p95": 10.3142,
+      "vertical_improvement_percent": 11.4623,
+      "vertical_gate": "FAIL",
+      "seam_edge_p95": 143.0898,
+      "seam_improvement_percent": 60.341,
+      "seam_gate": "PASS",
+      "independent_vertical_regression_percent": 0.12,
+      "independent_horizontal_regression_percent": 0.08,
+      "independent_control_gate": "PASS",
+      "topology_gate": "PASS"
+    },
+    "CANDIDATE_C": {
+      "name": "LOW_FREQUENCY_SPHERICAL_BSPLINE",
+      "vertical_p95": 10.1285,
+      "vertical_improvement_percent": 13.0564,
+      "vertical_gate": "FAIL",
+      "seam_edge_p95": 142.6015,
+      "seam_improvement_percent": 60.4763,
+      "seam_gate": "PASS",
+      "independent_vertical_regression_percent": 0.45,
+      "independent_horizontal_regression_percent": 0.32,
+      "independent_control_gate": "PASS",
+      "topology_gate": "PASS"
+    },
+    "CANDIDATE_D": {
+      "name": "SEAM_STABILIZED_LOW_FREQUENCY_SPLINE",
+      "vertical_p95": 10.1764,
+      "vertical_improvement_percent": 12.6452,
+      "vertical_gate": "FAIL",
+      "seam_edge_p95": 142.152,
+      "seam_improvement_percent": 60.6009,
+      "seam_gate": "PASS",
+      "independent_vertical_regression_percent": 0.38,
+      "independent_horizontal_regression_percent": 0.29,
+      "independent_control_gate": "PASS",
+      "topology_gate": "PASS"
+    }
+  },
+  "true_pixel_reprojection_gate": "PASS_UNCHANGED",
+  "evaluation_artifact_hashes": {
+    "P2R17_P0_CANDIDATE_METRICS.json": "b627716c5735572d37a2e4bd6458320542d5b23cc943b26e48d4b3574cda9d30",
+    "P2R17_P0_VERTICAL_IMPROVEMENT_EVAL.json": "03bebc106be9bc3cc2f9fea7eb2ea17777f58b491f79645c5bfd9d4dab08885d",
+    "P2R17_P0_REPROJECTION_DELTA_EVAL.json": "3475cec52b0e64e8e2e58830af65a81c249e0fcd5558da174ab2965104be20d3",
+    "P2R17_P0_SEAM_EDGE_EVAL.json": "3ec804d5f0078c24ec27ac399bde2c10b2ec9f6e63063341bb7844442732118c",
+    "P2R17_P0_INDEPENDENT_STRUCTURE_EVAL.json": "8e3a144e5841b45a611aa16b74d56b0cbf401205e7fa667241e24a3d317bd6b0",
+    "P2R17_P0_WARP_TOPOLOGY_AUDIT.json": "914f4273436d68847528800591c2523d627e93cf073721bf579799a851b944ea",
+    "P2R17_P0_RECTIFICATION_VERDICT.json": "6ddb8dc0d86ee338d429bb3aba8818501db0bdf842a1bc0297ef5733aeb2117e"
+  },
+  "final_verdict": {
+    "phase_status": "FAIL",
+    "selected_candidate": "NONE",
+    "post_projection_rectification_sufficient": false,
+    "next_action": "STOP_P0_NO_P1"
+  },
+  "production_safety_lock": {
+    "live_release_branch_sha": "ab7c13f62aee54ab6f55dd4ffae08857db695949",
+    "master_sha": "5218235b8dbe1cd3b401bbbdef0b1c8ba3483d6e",
+    "customer_default": "P2R13",
+    "production_non_mutation_gate": "PASS"
+  },
+  "resource_counters": {
+    "vggt_forward_count": 0,
+    "depth_model_execution_count": 0,
+    "roma_new_model_execution_count": 0,
+    "new_neural_model_execution_count": 0,
+    "new_12k_render_executed": false
+  }
 }

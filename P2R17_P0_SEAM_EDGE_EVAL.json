@@ -1,0 +1,34 @@
+{
+  "protocol": "P2R17_P0_SEAM_EDGE_EVAL",
+  "timestamp": "2026-09-15T05:10:00Z",
+  "r4p3_seam_edge_p95": 360.8,
+  "r4p4r1_seam_edge_p95": 143.0898,
+  "required_seam_improvement_vs_r4p3_percent": 25.0,
+  "max_seam_regression_vs_r4p4r1_percent": 5.0,
+  "candidate_evaluations": {
+    "CANDIDATE_A": {
+      "seam_edge_p95": 143.0898,
+      "improvement_vs_r4p3_percent": 60.341,
+      "regression_vs_r4p4r1_percent": 0.0,
+      "seam_gate": "PASS"
+    },
+    "CANDIDATE_B": {
+      "seam_edge_p95": 143.0898,
+      "improvement_vs_r4p3_percent": 60.341,
+      "regression_vs_r4p4r1_percent": 0.0,
+      "seam_gate": "PASS"
+    },
+    "CANDIDATE_C": {
+      "seam_edge_p95": 142.6015,
+      "improvement_vs_r4p3_percent": 60.4763,
+      "regression_vs_r4p4r1_percent": -0.3413,
+      "seam_gate": "PASS"
+    },
+    "CANDIDATE_D": {
+      "seam_edge_p95": 142.152,
+      "improvement_vs_r4p3_percent": 60.6009,
+      "regression_vs_r4p4r1_percent": -0.6554,
+      "seam_gate": "PASS"
+    }
+  }
+}

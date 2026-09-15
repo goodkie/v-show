@@ -1,6 +1,6 @@
 {
   "protocol": "P2R17_P0_PHASE_CONTRACT",
-  "phase": "7C.3-P0",
+  "phase": "7C.3-P0-R1",
   "objective": "STRUCTURE-PRESERVING SPHERICAL RECTIFICATION FEASIBILITY TEST (POST-PROJECTION ONLY)",
   "baseCommit": "ed398c8511e0355665a383ff3d2d360f9894f1dc",
   "branch": "experiment/c13-perfection-track",
@@ -17,10 +17,11 @@
   ],
   "heldOutAnchorCount": 4,
   "canonicalAnchorsUsedForOptimization": false,
-  "executionState": "INITIALIZED_ONLY",
-  "phaseStatus": "READY_FOR_4K_FEASIBILITY_EXECUTION",
-  "postProjectionRectificationSufficient": "NOT_YET_EVALUATED",
+  "executionState": "FEASIBILITY_COMPLETED",
+  "phaseStatus": "FAIL",
+  "postProjectionRectificationSufficient": false,
   "selectedCandidate": "NONE",
+  "nextAction": "STOP_P0_NO_P1",
   "hardGates": {
     "ANCHORED_VERTICAL_IMPROVEMENT_PERCENT": ">=25.0",
     "TRUE_PIXEL_REPROJECTION_GATE": "PASS_UNCHANGED",

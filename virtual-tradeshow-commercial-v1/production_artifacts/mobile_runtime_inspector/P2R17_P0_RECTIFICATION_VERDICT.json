@@ -1,0 +1,44 @@
+{
+  "protocol": "P2R17_P0_RECTIFICATION_VERDICT",
+  "timestamp": "2026-09-15T05:10:00Z",
+  "phase": "7C.3-P0-R1",
+  "phase_status": "FAIL",
+  "selected_candidate": "NONE",
+  "post_projection_rectification_sufficient": false,
+  "candidate_verdicts": {
+    "CANDIDATE_A": {
+      "anchored_vertical_gate": "FAIL",
+      "seam_edge_gate": "PASS",
+      "independent_control_gate": "PASS",
+      "topology_gate": "PASS",
+      "true_pixel_reprojection_gate": "PASS_UNCHANGED",
+      "overall_candidate_pass": false
+    },
+    "CANDIDATE_B": {
+      "anchored_vertical_gate": "FAIL",
+      "seam_edge_gate": "PASS",
+      "independent_control_gate": "PASS",
+      "topology_gate": "PASS",
+      "true_pixel_reprojection_gate": "PASS_UNCHANGED",
+      "overall_candidate_pass": false
+    },
+    "CANDIDATE_C": {
+      "anchored_vertical_gate": "FAIL",
+      "seam_edge_gate": "PASS",
+      "independent_control_gate": "PASS",
+      "topology_gate": "PASS",
+      "true_pixel_reprojection_gate": "PASS_UNCHANGED",
+      "overall_candidate_pass": false
+    },
+    "CANDIDATE_D": {
+      "anchored_vertical_gate": "FAIL",
+      "seam_edge_gate": "PASS",
+      "independent_control_gate": "PASS",
+      "topology_gate": "PASS",
+      "true_pixel_reprojection_gate": "PASS_UNCHANGED",
+      "overall_candidate_pass": false
+    }
+  },
+  "dominant_failure_attribution": "Post-projection smooth spherical rectification under strict anti-leakage regularization (max angular displacement <= 0.25 deg) cannot reach the 25% vertical improvement gate (P95 <= 8.7371 px) on held-out canonical anchors (ROI_01=11.46px, ROI_03=9.68px, Candidate C achieves 10.13px / 13.06% improvement; Candidate D achieves 10.18px / 12.65% improvement). The residual structural bend is physically optical and parallax-driven in 3D camera geometry and cannot be rectified purely via 2D post-projection warping without extreme local distortion or held-out leakage.",
+  "next_action": "STOP_P0_NO_P1"
+}

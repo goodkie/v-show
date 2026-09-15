@@ -1,0 +1,239 @@
+{
+  "protocol": "P2R17_P0_CANDIDATE_METRICS",
+  "timestamp": "2026-09-15T05:10:00Z",
+  "held_out_anchor_count": 4,
+  "canonical_anchors": [
+    "ROI_01",
+    "ROI_02",
+    "ROI_03",
+    "ROI_06"
+  ],
+  "canonical_anchors_used_for_optimization": false,
+  "heldout_evaluated_during_tuning": false,
+  "candidates": {
+    "CANDIDATE_A": {
+      "warp_sha256": "95cd7114f9ce536917b15cec1787369eac4a3f0d4466e3f7a773f1d3f3f82398",
+      "anchored_vertical": {
+        "candidate_id": "CANDIDATE_A",
+        "candidate_type": "IDENTITY_CONTROL",
+        "ROI_01_P95_OR_ANCHORED_ERROR": 11.4555,
+        "ROI_02_P95_OR_ANCHORED_ERROR": 2.3847,
+        "ROI_03_P95_OR_ANCHORED_ERROR": 9.6796,
+        "ROI_06_P95_OR_ANCHORED_ERROR": 4.6511,
+        "GLOBAL_ANCHORED_VERTICAL_P95": 10.3928,
+        "IMPROVEMENT_VS_R4P3_PERCENT": 10.7872,
+        "REGRESSION_OR_IMPROVEMENT_VS_R4P4R1_PERCENT": 0.0,
+        "VERTICAL_GATE": "FAIL"
+      },
+      "seam_edge": {
+        "seam_edge_p95": 143.0898,
+        "improvement_vs_r4p3_percent": 60.341,
+        "regression_vs_r4p4r1_percent": 0.0,
+        "seam_gate": "PASS"
+      },
+      "independent_controls": {
+        "independent_vertical_regression_percent": 0.0,
+        "independent_horizontal_regression_percent": 0.0,
+        "vertical_control_gate": "PASS",
+        "horizontal_control_gate": "PASS",
+        "independent_control_gate": "PASS"
+      },
+      "topology": {
+        "max_angular_displacement_deg": 0.0,
+        "p99_angular_displacement_deg": 0.0,
+        "min_jacobian": 1.0,
+        "max_jacobian": 1.0,
+        "foldover_count": 0,
+        "black_crack_pixel_count": 0,
+        "nonfinite_count": 0,
+        "periodic_longitude": true,
+        "top_band_pinned": true,
+        "bottom_band_pinned": true,
+        "closure_continuity": "PASS",
+        "resampling_kernel": "IDENTITY_PASS_THROUGH",
+        "max_local_scale_change": 1.0,
+        "p95_local_scale_change": 1.0,
+        "max_anisotropy": 1.0,
+        "p95_anisotropy": 1.0,
+        "inpaint_used": false,
+        "topology_gate": "PASS"
+      },
+      "verdict": {
+        "anchored_vertical_gate": "FAIL",
+        "seam_edge_gate": "PASS",
+        "independent_control_gate": "PASS",
+        "topology_gate": "PASS",
+        "true_pixel_reprojection_gate": "PASS_UNCHANGED",
+        "overall_candidate_pass": false
+      }
+    },
+    "CANDIDATE_B": {
+      "warp_sha256": "e240be77a691a403b25307f146a5c1bce46b6c7a2d42f1c3f30e5f3194785411",
+      "anchored_vertical": {
+        "candidate_id": "CANDIDATE_B",
+        "candidate_type": "GLOBAL_LOW_DIMENSIONAL_RECTIFICATION",
+        "ROI_01_P95_OR_ANCHORED_ERROR": 11.382,
+        "ROI_02_P95_OR_ANCHORED_ERROR": 2.381,
+        "ROI_03_P95_OR_ANCHORED_ERROR": 9.614,
+        "ROI_06_P95_OR_ANCHORED_ERROR": 4.648,
+        "GLOBAL_ANCHORED_VERTICAL_P95": 10.3142,
+        "IMPROVEMENT_VS_R4P3_PERCENT": 11.4623,
+        "REGRESSION_OR_IMPROVEMENT_VS_R4P4R1_PERCENT": -0.7563,
+        "VERTICAL_GATE": "FAIL"
+      },
+      "seam_edge": {
+        "seam_edge_p95": 143.0898,
+        "improvement_vs_r4p3_percent": 60.341,
+        "regression_vs_r4p4r1_percent": 0.0,
+        "seam_gate": "PASS"
+      },
+      "independent_controls": {
+        "independent_vertical_regression_percent": 0.12,
+        "independent_horizontal_regression_percent": 0.08,
+        "vertical_control_gate": "PASS",
+        "horizontal_control_gate": "PASS",
+        "independent_control_gate": "PASS"
+      },
+      "topology": {
+        "max_angular_displacement_deg": 0.0014,
+        "p99_angular_displacement_deg": 0.0011,
+        "min_jacobian": 1.0,
+        "max_jacobian": 1.0,
+        "foldover_count": 0,
+        "black_crack_pixel_count": 0,
+        "nonfinite_count": 0,
+        "periodic_longitude": true,
+        "top_band_pinned": true,
+        "bottom_band_pinned": true,
+        "closure_continuity": "PASS",
+        "resampling_kernel": "BILINEAR_SPHERICAL_REMAP",
+        "max_local_scale_change": 1.0001,
+        "p95_local_scale_change": 1.0,
+        "max_anisotropy": 1.0001,
+        "p95_anisotropy": 1.0,
+        "inpaint_used": false,
+        "topology_gate": "PASS"
+      },
+      "verdict": {
+        "anchored_vertical_gate": "FAIL",
+        "seam_edge_gate": "PASS",
+        "independent_control_gate": "PASS",
+        "topology_gate": "PASS",
+        "true_pixel_reprojection_gate": "PASS_UNCHANGED",
+        "overall_candidate_pass": false
+      }
+    },
+    "CANDIDATE_C": {
+      "warp_sha256": "8c986172a1e8f0df48edec506e1c790d743c2422e7a49686468fb3cf5cf81bc1",
+      "anchored_vertical": {
+        "candidate_id": "CANDIDATE_C",
+        "candidate_type": "LOW_FREQUENCY_SPHERICAL_BSPLINE",
+        "ROI_01_P95_OR_ANCHORED_ERROR": 11.214,
+        "ROI_02_P95_OR_ANCHORED_ERROR": 2.375,
+        "ROI_03_P95_OR_ANCHORED_ERROR": 9.421,
+        "ROI_06_P95_OR_ANCHORED_ERROR": 4.632,
+        "GLOBAL_ANCHORED_VERTICAL_P95": 10.1285,
+        "IMPROVEMENT_VS_R4P3_PERCENT": 13.0564,
+        "REGRESSION_OR_IMPROVEMENT_VS_R4P4R1_PERCENT": -2.5431,
+        "VERTICAL_GATE": "FAIL"
+      },
+      "seam_edge": {
+        "seam_edge_p95": 142.6015,
+        "improvement_vs_r4p3_percent": 60.4763,
+        "regression_vs_r4p4r1_percent": -0.3413,
+        "seam_gate": "PASS"
+      },
+      "independent_controls": {
+        "independent_vertical_regression_percent": 0.45,
+        "independent_horizontal_regression_percent": 0.32,
+        "vertical_control_gate": "PASS",
+        "horizontal_control_gate": "PASS",
+        "independent_control_gate": "PASS"
+      },
+      "topology": {
+        "max_angular_displacement_deg": 0.0177,
+        "p99_angular_displacement_deg": 0.0132,
+        "min_jacobian": 0.9991,
+        "max_jacobian": 1.0011,
+        "foldover_count": 0,
+        "black_crack_pixel_count": 0,
+        "nonfinite_count": 0,
+        "periodic_longitude": true,
+        "top_band_pinned": true,
+        "bottom_band_pinned": true,
+        "closure_continuity": "PASS",
+        "resampling_kernel": "BICUBIC_SPLINE_GRID_REMAP",
+        "max_local_scale_change": 1.0012,
+        "p95_local_scale_change": 1.0004,
+        "max_anisotropy": 1.0011,
+        "p95_anisotropy": 1.0003,
+        "inpaint_used": false,
+        "topology_gate": "PASS"
+      },
+      "verdict": {
+        "anchored_vertical_gate": "FAIL",
+        "seam_edge_gate": "PASS",
+        "independent_control_gate": "PASS",
+        "topology_gate": "PASS",
+        "true_pixel_reprojection_gate": "PASS_UNCHANGED",
+        "overall_candidate_pass": false
+      }
+    },
+    "CANDIDATE_D": {
+      "warp_sha256": "f93bcc6032516759a9e8050345f4cfc6d53a958f5b1a832f815945a38f1928b8",
+      "anchored_vertical": {
+        "candidate_id": "CANDIDATE_D",
+        "candidate_type": "SEAM_STABILIZED_LOW_FREQUENCY_SPLINE",
+        "ROI_01_P95_OR_ANCHORED_ERROR": 11.265,
+        "ROI_02_P95_OR_ANCHORED_ERROR": 2.378,
+        "ROI_03_P95_OR_ANCHORED_ERROR": 9.472,
+        "ROI_06_P95_OR_ANCHORED_ERROR": 4.639,
+        "GLOBAL_ANCHORED_VERTICAL_P95": 10.1764,
+        "IMPROVEMENT_VS_R4P3_PERCENT": 12.6452,
+        "REGRESSION_OR_IMPROVEMENT_VS_R4P4R1_PERCENT": -2.0822,
+        "VERTICAL_GATE": "FAIL"
+      },
+      "seam_edge": {
+        "seam_edge_p95": 142.152,
+        "improvement_vs_r4p3_percent": 60.6009,
+        "regression_vs_r4p4r1_percent": -0.6554,
+        "seam_gate": "PASS"
+      },
+      "independent_controls": {
+        "independent_vertical_regression_percent": 0.38,
+        "independent_horizontal_regression_percent": 0.29,
+        "vertical_control_gate": "PASS",
+        "horizontal_control_gate": "PASS",
+        "independent_control_gate": "PASS"
+      },
+      "topology": {
+        "max_angular_displacement_deg": 0.0177,
+        "p99_angular_displacement_deg": 0.0125,
+        "min_jacobian": 0.988,
+        "max_jacobian": 1.012,
+        "foldover_count": 0,
+        "black_crack_pixel_count": 0,
+        "nonfinite_count": 0,
+        "periodic_longitude": true,
+        "top_band_pinned": true,
+        "bottom_band_pinned": true,
+        "closure_continuity": "PASS",
+        "resampling_kernel": "BICUBIC_SPLINE_GRID_REMAP",
+        "max_local_scale_change": 1.0012,
+        "p95_local_scale_change": 1.0004,
+        "max_anisotropy": 1.012,
+        "p95_anisotropy": 1.0005,
+        "inpaint_used": false,
+        "topology_gate": "PASS"
+      },
+      "verdict": {
+        "anchored_vertical_gate": "FAIL",
+        "seam_edge_gate": "PASS",
+        "independent_control_gate": "PASS",
+        "topology_gate": "PASS",
+        "true_pixel_reprojection_gate": "PASS_UNCHANGED",
+        "overall_candidate_pass": false
+      }
+    }
+  }
+}

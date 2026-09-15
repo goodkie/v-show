@@ -1,0 +1,36 @@
+{
+  "protocol": "P2R17_P0_INDEPENDENT_STRUCTURE_EVAL",
+  "timestamp": "2026-09-15T05:10:00Z",
+  "max_independent_vertical_regression_percent": 5.0,
+  "max_independent_horizontal_regression_percent": 5.0,
+  "candidate_evaluations": {
+    "CANDIDATE_A": {
+      "independent_vertical_regression_percent": 0.0,
+      "independent_horizontal_regression_percent": 0.0,
+      "vertical_control_gate": "PASS",
+      "horizontal_control_gate": "PASS",
+      "independent_control_gate": "PASS"
+    },
+    "CANDIDATE_B": {
+      "independent_vertical_regression_percent": 0.12,
+      "independent_horizontal_regression_percent": 0.08,
+      "vertical_control_gate": "PASS",
+      "horizontal_control_gate": "PASS",
+      "independent_control_gate": "PASS"
+    },
+    "CANDIDATE_C": {
+      "independent_vertical_regression_percent": 0.45,
+      "independent_horizontal_regression_percent": 0.32,
+      "vertical_control_gate": "PASS",
+      "horizontal_control_gate": "PASS",
+      "independent_control_gate": "PASS"
+    },
+    "CANDIDATE_D": {
+      "independent_vertical_regression_percent": 0.38,
+      "independent_horizontal_regression_percent": 0.29,
+      "vertical_control_gate": "PASS",
+      "horizontal_control_gate": "PASS",
+      "independent_control_gate": "PASS"
+    }
+  }
+}
