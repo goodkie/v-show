@@ -1,0 +1,64 @@
+{
+  "phase": "7C.2R4P4-FINAL",
+  "protocol": "HISTORICAL_ARTIFACT_MANIFEST_AND_CLASSIFICATION",
+  "artifacts": [
+    {
+      "filename": "P2R16_R4P4_REFINED_GEOMETRY.npz",
+      "classification": "FORENSIC_EXPERIMENTAL",
+      "status_notes": "Original unbounded optimization output (max rotation 9.91 deg). Invalidated as conservative refinement."
+    },
+    {
+      "filename": "P2R16_R4P4R1_BOUNDED_POSE_GEOMETRY.npz",
+      "classification": "AUTHORITATIVE_TRUTH_ARTIFACT",
+      "status_notes": "Hard-bounded pose geometry (max rotation <= 3.0 deg). Valid bounded geometry benchmark, but fails rendered vertical gate."
+    },
+    {
+      "filename": "P2R16_QUALITY12_R4P4R1_BOUNDED_IDENTITY.png",
+      "classification": "FORENSIC_EXPERIMENTAL",
+      "sha256": "8d7ef298d30986b78e048fc6fc3edf37275e85e0450e6bb09a7caed13b67eb68",
+      "status_notes": "Historical 12K bounded stitch render. Preserved for forensics; not customer default, not owner accepted."
+    },
+    {
+      "filename": "P2R16_QUALITY12_R4P4R1_BOUNDED_OWNER_REVIEW.jpg",
+      "classification": "OWNER_REVIEW_REFERENCE_ONLY",
+      "sha256": "58b2308bbb6f9a17c70bc14b91e1594c61c3511ff114367a987ad1bdbafb92f1",
+      "status_notes": "Historical 12K owner preview JPEG. Reference only; owner visual acceptance remains false."
+    },
+    {
+      "filename": "P2R16_QUALITY12_R4P4_LOCAL_GEOMETRY_IDENTITY.png",
+      "classification": "FORENSIC_EXPERIMENTAL",
+      "sha256": "b3add855b41870134389c80bfd502270df5bc2a4fd6291d1152bcbf1a0cbd2f6",
+      "status_notes": "Original unbounded 12K render. Invalidated."
+    },
+    {
+      "filename": "P2R16_R4P4R2_PIXEL_REPROJECTION.json",
+      "classification": "AUTHORITATIVE_TRUTH_ARTIFACT",
+      "status_notes": "True depth-backed pixel reprojection truth artifact (204.97 -> 160.10 px, +21.89%)."
+    },
+    {
+      "filename": "P2R16_R4P4R2B_RECTIFIED_STRUCTURAL_METRICS.json",
+      "classification": "AUTHORITATIVE_TRUTH_ARTIFACT",
+      "status_notes": "Projection-correct rectified structural acceptance metrics definition and initial evaluation."
+    },
+    {
+      "filename": "P2R16_R4P4R2C_ROOT_CAUSE.json",
+      "classification": "DIAGNOSTIC_ONLY",
+      "status_notes": "Root cause diagnostic isolating ROI_06 metric detector failure."
+    },
+    {
+      "filename": "P2R16_R4P4R2D_ANCHORED_LINE_MANIFEST.json",
+      "classification": "AUTHORITATIVE_TRUTH_ARTIFACT",
+      "status_notes": "Physical source-anchored line definition manifest."
+    },
+    {
+      "filename": "P2R16_R4P4R3_CANDIDATE_B_METRICS.json",
+      "classification": "HARD_BOUND_NONCOMPLIANT_EXPERIMENTAL",
+      "status_notes": "Experimental translation-only test (exceeded 0.03m by up to 0.15mm)."
+    },
+    {
+      "filename": "P2R16_R4P4R3_CANDIDATE_C_METRICS.json",
+      "classification": "HARD_BOUND_NONCOMPLIANT_EXPERIMENTAL",
+      "status_notes": "Experimental joint rotation/translation test (exceeded 0.03m by up to 0.10mm)."
+    }
+  ]
+}

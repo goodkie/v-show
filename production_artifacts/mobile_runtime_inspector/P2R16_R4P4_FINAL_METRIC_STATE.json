@@ -1,0 +1,33 @@
+{
+  "phase": "7C.2R4P4-FINAL",
+  "protocol": "FINAL_METRIC_STATE",
+  "authoritative_results": {
+    "true_pixel_reprojection": {
+      "R4_BASELINE_RMS_PX": 204.9715,
+      "R4P4R1_BOUNDED_RMS_PX": 160.1032,
+      "IMPROVEMENT_PERCENT": 21.89,
+      "GATE_REQUIRED_PERCENT": 20.0,
+      "GATE_STATUS": "PASS"
+    },
+    "rectified_seam_edge_discontinuity": {
+      "R4P3_BASELINE_P95_PX": 360.8,
+      "R4P4R1_BOUNDED_P95_PX": 143.0898,
+      "IMPROVEMENT_PERCENT": 60.341,
+      "GATE_REQUIRED_PERCENT": 25.0,
+      "GATE_STATUS": "PASS"
+    },
+    "anchored_rectified_vertical": {
+      "R4P3_BASELINE_P95_PX": 11.6495,
+      "R4P4R1_BOUNDED_P95_PX": 10.3928,
+      "IMPROVEMENT_PERCENT": 10.7872,
+      "GATE_REQUIRED_PERCENT": 25.0,
+      "GATE_STATUS": "FAIL"
+    }
+  },
+  "technical_verdict": {
+    "R4P4_GEOMETRY_REFINEMENT_SUFFICIENT": false,
+    "R4P4_FINAL_TECHNICAL_ACCEPTANCE": "FAIL",
+    "FINAL_FAILURE_CLASS": "ANCHORED_VERTICAL_STRUCTURAL_GATE_UNMET",
+    "PHYSICAL_DOMINANT_CAUSE": "UNRESOLVED"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "phase": "7C.2R4P4-FINAL",
+  "protocol": "IMMUTABLE_BASELINE_HASH_AUDIT",
+  "R4P3_RENDER_HASH_LOCK": "PASS",
+  "R4_GEOMETRY_HASH_LOCK": "PASS",
+  "all_baselines_verified": true,
+  "baselines": [
+    {
+      "artifact": "P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png",
+      "expected_sha256": "b8036b8d0ac02c419170a446c15c64df79c6cf4f989e35a519eeffe37a04e53e",
+      "actual_sha256": "b8036b8d0ac02c419170a446c15c64df79c6cf4f989e35a519eeffe37a04e53e",
+      "match": true
+    },
+    {
+      "artifact": "P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY_OWNER_REVIEW.jpg",
+      "expected_sha256": "0fb100025255a42f34278b27b36eba020c68a0e558aa0366a24fd26ec4293fb6",
+      "actual_sha256": "0fb100025255a42f34278b27b36eba020c68a0e558aa0366a24fd26ec4293fb6",
+      "match": true
+    },
+    {
+      "artifact": "P2R16_R4_EXTRINSICS_BA.npy",
+      "expected_sha256": "a2a4e0f67b09abb5722b2ebceaa00c268788efffa7d2f4ec9efa8abe9ab73f71",
+      "actual_sha256": "a2a4e0f67b09abb5722b2ebceaa00c268788efffa7d2f4ec9efa8abe9ab73f71",
+      "match": true
+    },
+    {
+      "artifact": "P2R16_R4_INTRINSICS_ORIGINAL.npy",
+      "expected_sha256": "a519fdd0c09faa8c35bd9860342c31a9e911cf02f054bb36afde5fab67973a53",
+      "actual_sha256": "a519fdd0c09faa8c35bd9860342c31a9e911cf02f054bb36afde5fab67973a53",
+      "match": true
+    },
+    {
+      "artifact": "P2R16_R4_GEOMETRY_DEPTH.npz",
+      "expected_sha256": "25ba9ebb20a59fb4dda47b3e64b3f3a6cc087927b3a82d1312add3370b194e36",
+      "actual_sha256": "25ba9ebb20a59fb4dda47b3e64b3f3a6cc087927b3a82d1312add3370b194e36",
+      "match": true
+    },
+    {
+      "artifact": "P2R16_R4_CONTENT_MASKS.npz",
+      "expected_sha256": "32afe72be3a58f0bef451db0f665c2fa88d28d8ebeb70888ef73d012f8c431d4",
+      "actual_sha256": "32afe72be3a58f0bef451db0f665c2fa88d28d8ebeb70888ef73d012f8c431d4",
+      "match": true
+    }
+  ]
+}

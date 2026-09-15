@@ -1,0 +1,75 @@
+{
+  "phase": "7C.2R4P4-FINAL",
+  "protocol": "AUTHORITATIVE_TRUTH_CHAIN_CONSOLIDATION",
+  "branch": "experiment/c12.9-p2r16-8shot-hires",
+  "chain": [
+    {
+      "step": 1,
+      "phase": "7C.2R4P4",
+      "commit_sha": "10db8ab397ce03cd57ae73e10ca59b2e8052f05b",
+      "description": "Initial local geometry refinement with RoMa matching, soft prior optimization, and initial 12K render."
+    },
+    {
+      "step": 2,
+      "phase": "7C.2R4P4-R1",
+      "commit_sha": "3f1805aabb57d8a6b715f1ea8f55e5abb6070a50",
+      "description": "Truth reconciliation, rotation bound forensics, and hard-bounded pose optimization (3.0 deg)."
+    },
+    {
+      "step": 3,
+      "phase": "7C.2R4P4-R2A",
+      "commit_sha": "75a6a4eb90cf2b511d539308e928de62370462e1",
+      "description": "Rendered structural gate reconciliation, metric provenance audit, and R2 truth lock."
+    },
+    {
+      "step": 4,
+      "phase": "7C.2R4P4-R2B (SPEC)",
+      "commit_sha": "c75e185eaddbb3ef6fef828f7ae4f4906c479f3d",
+      "description": "Projection-correct structural acceptance metric specification, canonical ROI manifest, synthetic validation."
+    },
+    {
+      "step": 5,
+      "phase": "7C.2R4P4-R2B (TRUTH)",
+      "commit_sha": "7198332e16c7d7cb519208773902ebbe6c1d7fab",
+      "description": "Canonical ROI gnomonic projection, rectified structural metrics evaluation, and initial FAIL verdict."
+    },
+    {
+      "step": 6,
+      "phase": "7C.2R4P4-R2C",
+      "commit_sha": "8b2f35892807eb56de1f0c84eee2db3817d01d81",
+      "description": "Vertical structural regression root-cause isolation and discovery of ROI_06 detector edge jump."
+    },
+    {
+      "step": 7,
+      "phase": "7C.2R4P4-R2D",
+      "commit_sha": "ee56918615e97732172695106ae782851ba8c4dd",
+      "description": "Anchored structural feature tracking, decontaminated metrics (+10.79%), and causal tests."
+    },
+    {
+      "step": 8,
+      "phase": "7C.2R4P4-R2D-R1",
+      "commit_sha": "4c64eaaf58dce85634acfa079e070ea0ae5a986a",
+      "description": "Truth reconciliation prior to R3, reprojection gate correction (20%), and parallax dominance downgrade."
+    },
+    {
+      "step": 9,
+      "phase": "7C.2R4P4-R3",
+      "commit_sha": "6347e4119c4f11f75b3747a35bf91b8eb6cbe410",
+      "description": "Mechanism-separated candidate evaluation (Candidates A, B, C, D) and parallax translation test."
+    },
+    {
+      "step": 10,
+      "phase": "7C.2R4P4-R3-R1",
+      "commit_sha": "2dff33b7e2a0615bcabfbc5733dad69768a8609f",
+      "description": "Metric namespace reconciliation (Sampson vs true pixel), true pixel replay (+21.89%), and translation audit."
+    },
+    {
+      "step": 11,
+      "phase": "7C.2R4P4-R3-R2",
+      "commit_sha": "7905230d49d5e77ec4112b0a0c80004f61544427",
+      "description": "Hard translation bound truth correction, elimination of internal contradiction, and candidate validity lock."
+    }
+  ],
+  "TRUTH_CHAIN_CONTIGUOUS": true,
+  "TRUTH_CHAIN_MISSING_COMMITS": []
+}

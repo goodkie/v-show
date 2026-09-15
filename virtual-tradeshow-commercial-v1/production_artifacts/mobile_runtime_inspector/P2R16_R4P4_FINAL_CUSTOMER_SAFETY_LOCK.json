@@ -1,0 +1,14 @@
+{
+  "phase": "7C.2R4P4-FINAL",
+  "protocol": "CUSTOMER_SAFETY_AND_PRODUCTION_LOCK",
+  "locks": {
+    "CUSTOMER_DEFAULT": "P2R13",
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "R4P4_PROMOTED_TO_CUSTOMER": false,
+    "R4P4_PRODUCTION_REPLACEMENT_DEPLOYED": false,
+    "MASTER_TOUCHED": false,
+    "MASTER_HEAD": "5218235b8dbe1cd3b401bbbdef0b1c8ba3483d6e",
+    "CURRENT_BRANCH": "experiment/c12.9-p2r16-8shot-hires"
+  },
+  "enforcement": "Zero production routing, viewer defaults, or master branch commits have been touched."
+}

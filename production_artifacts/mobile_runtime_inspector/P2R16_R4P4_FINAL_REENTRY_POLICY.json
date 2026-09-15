@@ -1,0 +1,13 @@
+{
+  "phase": "7C.2R4P4-FINAL",
+  "protocol": "FUTURE_REENTRY_POLICY",
+  "R4P4_EXPERIMENT_STATE": "CLOSED_NO_PROMOTION",
+  "R4P4_AUTOMATIC_REENTRY_ALLOWED": false,
+  "policy_rules": [
+    "Phase 7C.2R4P4 is permanently closed with status FAIL.",
+    "Future work may NOT continue automatically as R4P4-R4 or R4P5.",
+    "Any future investigation into structural alignment must be chartered under an explicitly new approved phase identifier.",
+    "A future phase proposal must pre-declare: NEW_PHASE_ID, NEW_HYPOTHESIS, FROZEN_BASELINE, FROZEN_METRIC_NAMESPACE, FROZEN_HARD_BOUNDS, and PREDECLARED_ACCEPTANCE_GATES.",
+    "No future phase may assume as an inherited fact that parallax is dominant, nor that rigid geometry is definitively unrecoverable."
+  ]
+}
