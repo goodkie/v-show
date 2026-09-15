@@ -1,0 +1,26 @@
+{
+  "protocol": "P2R19_P2_OWNER_VISUAL_DECISION",
+  "timestamp": "2026-09-15T14:36:00Z",
+  "phase": "7C.5-P2",
+  "owner_visual_approval": "CHANGES_REQUESTED",
+  "candidate_d_visual_accepted": false,
+  "twelve_k_technical_validation": "PASS",
+  "candidate_d_refit_allowed": false,
+  "production_promotion_allowed": false,
+  "customer_default": "P2R13",
+  "canonical_12k_png_sha256": "7f2303e4fed112741985669962f56da2708909f09f224373fdaa06ba525308c9",
+  "owner_review_jpeg_sha256": "a8f9ca5f2e75c5fc6f6876e3b912599e3ba97e8472bbc46213374fa62a0d66de",
+  "owner_comments": [
+    "1. ROI_01 baseline and Candidate D review crops are byte-identical.",
+    "2. ROI_03 baseline and Candidate D review crops are byte-identical.",
+    "3. Several presented 1:1 crops contain severe blur/smearing.",
+    "4. ROI_06 visibly contains triangular/checkerboard pixel artifacts.",
+    "5. Current visual package does not support the claimed zero-defect audit.",
+    "6. Do not alter or refit Candidate D.",
+    "7. Regenerate the Owner Review package directly from the frozen canonical 12K PNG with verified crop coordinates and provenance.",
+    "8. Re-run visual defect inspection against those exact extracted pixels."
+  ],
+  "diagnostic_finding": "The visual presentation package inadvertently extracted comparison crops from the prior R4P4R1 bounded identity raster rather than rendering the true depth-aware non-central reprojected source rays from the 12 physical stills. Consequently, baseline and candidate crops were identical, and prior splatting/inpainting artifacts were erroneously presented.",
+  "status": "CHANGES_REQUESTED_ISOLATED",
+  "next_action": "DEFINE_NEW_ISOLATED_OWNER_REVIEW_PACKAGE_INTEGRITY_PHASE"
+}
