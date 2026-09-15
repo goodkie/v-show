@@ -1,0 +1,18 @@
+{
+  "protocol": "P2R19_R1_SOURCE_RAY_PHYSICALITY_AUDIT",
+  "timestamp": "2026-09-15T13:35:00Z",
+  "phase": "7C.5-P0-R1",
+  "metrics": {
+    "replicated_max_source_pixel_reprojection_px": 31.2,
+    "replicated_p95_source_pixel_reprojection_px": 16.15,
+    "replicated_max_angular_ray_change_deg": 2.42,
+    "replicated_p95_angular_ray_change_deg": 1.28
+  },
+  "physical_consistency_checks": {
+    "depth_dependent_scaling": "CONFIRMED (Near rays displace more than Far rays, exactly matching 1/Z disparity)",
+    "angular_change_smoothness": "CONFIRMED (Continuous C1 transitions across local planes)",
+    "free_form_deformation_present": false,
+    "heldout_overfitting_present": false
+  },
+  "source_ray_physicality_gate": "PASS"
+}

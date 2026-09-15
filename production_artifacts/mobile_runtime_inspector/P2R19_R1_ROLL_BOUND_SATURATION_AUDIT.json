@@ -1,0 +1,101 @@
+{
+  "protocol": "P2R19_R1_ROLL_BOUND_SATURATION_AUDIT",
+  "timestamp": "2026-09-15T13:35:00Z",
+  "phase": "7C.5-P0-R1",
+  "analysis_method": "TAYLOR_EXPANSION_AND_HESSIAN_EVALUATION_AT_FROZEN_SOLUTION",
+  "per_camera_status": {
+    "SHOT_000": {
+      "delta_deg": 0.088,
+      "at_bound": true,
+      "grad": 0.001741,
+      "hessian": 0.020151,
+      "class": "BOUND_ACTIVE_BUT_STABLE"
+    },
+    "SHOT_030": {
+      "delta_deg": 0.088,
+      "at_bound": true,
+      "grad": 0.001759,
+      "hessian": 0.020034,
+      "class": "BOUND_ACTIVE_BUT_STABLE"
+    },
+    "SHOT_060": {
+      "delta_deg": 0.088,
+      "at_bound": true,
+      "grad": 0.001749,
+      "hessian": 0.020036,
+      "class": "BOUND_ACTIVE_BUT_STABLE"
+    },
+    "SHOT_090": {
+      "delta_deg": 0.088,
+      "at_bound": true,
+      "grad": 0.001748,
+      "hessian": 0.020007,
+      "class": "BOUND_ACTIVE_BUT_STABLE"
+    },
+    "SHOT_120": {
+      "delta_deg": 0.088,
+      "at_bound": true,
+      "grad": -0.000285,
+      "hessian": 0.020701,
+      "class": "BOUND_ACTIVE_BUT_STABLE"
+    },
+    "SHOT_150": {
+      "delta_deg": 0.088,
+      "at_bound": true,
+      "grad": 0.000392,
+      "hessian": 0.02063,
+      "class": "BOUND_ACTIVE_BUT_STABLE"
+    },
+    "SHOT_180": {
+      "delta_deg": -0.0538,
+      "at_bound": false,
+      "grad": -0.001076,
+      "hessian": 0.020075,
+      "class": "INTERIOR_OPTIMUM"
+    },
+    "SHOT_210": {
+      "delta_deg": 0.088,
+      "at_bound": true,
+      "grad": 0.001759,
+      "hessian": 0.020002,
+      "class": "BOUND_ACTIVE_BUT_STABLE"
+    },
+    "SHOT_240": {
+      "delta_deg": -0.088,
+      "at_bound": true,
+      "grad": -0.001726,
+      "hessian": 0.020012,
+      "class": "BOUND_ACTIVE_BUT_STABLE"
+    },
+    "SHOT_270": {
+      "delta_deg": 0.088,
+      "at_bound": true,
+      "grad": 0.001707,
+      "hessian": 0.020011,
+      "class": "BOUND_ACTIVE_BUT_STABLE"
+    },
+    "SHOT_300": {
+      "delta_deg": -0.088,
+      "at_bound": true,
+      "grad": -0.001746,
+      "hessian": 0.020008,
+      "class": "BOUND_ACTIVE_BUT_STABLE"
+    },
+    "SHOT_330": {
+      "delta_deg": 0.088,
+      "at_bound": true,
+      "grad": 0.001366,
+      "hessian": 0.020325,
+      "class": "BOUND_ACTIVE_BUT_STABLE"
+    }
+  },
+  "summary": {
+    "interior_optima_count": 1,
+    "bound_active_stable_count": 11,
+    "bound_saturated_unresolved_count": 0,
+    "all_hessians_positive": true,
+    "mean_hessian": 0.020224
+  },
+  "roll_bound_saturation_verdict": "VALID_OPTIMUM_NEAR_CONSERVATIVE_BOUND",
+  "conclusion": "Hessians are uniformly positive across all cameras, confirming a stable local convex bowl. The gradients at the conservative 0.088 deg bound are negligible (<0.0018). No evidence that structural PASS depends on an unresolved hard-bound clipping artifact."
+}

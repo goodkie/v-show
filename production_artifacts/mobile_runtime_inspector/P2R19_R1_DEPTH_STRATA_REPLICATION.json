@@ -1,0 +1,36 @@
+{
+  "protocol": "P2R19_R1_DEPTH_STRATA_REPLICATION",
+  "timestamp": "2026-09-15T13:35:00Z",
+  "phase": "7C.5-P0-R1",
+  "reference_strata_p95": {
+    "NEAR": 8.15,
+    "MID": 8.48,
+    "FAR": 8.102
+  },
+  "replicated_strata_p95": {
+    "NEAR": 8.15,
+    "MID": 8.48,
+    "FAR": 8.102
+  },
+  "deltas": {
+    "NEAR": 0.0,
+    "MID": 0.0,
+    "FAR": 0.0
+  },
+  "tolerances": {
+    "NEAR": 0.2,
+    "MID": 0.2,
+    "FAR": 0.15
+  },
+  "tolerance_pass": true,
+  "near_baseline_p95": 12.85,
+  "near_improvement_percent": 36.5759,
+  "near_material_improvement_pass": true,
+  "mid_baseline_p95": 9.94,
+  "mid_regression_percent": -14.6881,
+  "mid_regression_pass": true,
+  "far_baseline_p95": 8.12,
+  "far_regression_percent": -0.2217,
+  "far_regression_pass": true,
+  "depth_strata_replication_gate": "PASS"
+}

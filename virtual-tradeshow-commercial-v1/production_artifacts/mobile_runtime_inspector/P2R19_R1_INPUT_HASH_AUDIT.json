@@ -1,0 +1,49 @@
+{
+  "protocol": "P2R19_R1_INPUT_HASH_AUDIT",
+  "timestamp": "2026-09-15T13:35:00Z",
+  "phase": "7C.5-P0-R1",
+  "inputs": {
+    "geometry": {
+      "path": "production_artifacts/mobile_runtime_inspector/P2R16_R4P4R1_BOUNDED_POSE_GEOMETRY.npz",
+      "expected_sha256": "14a20ff4857a35f11a59adf0798b376ca9aae6f261bd563bbe97ef1d337878b3",
+      "actual_sha256": "14a20ff4857a35f11a59adf0798b376ca9aae6f261bd563bbe97ef1d337878b3",
+      "status": "PASS"
+    },
+    "depth": {
+      "path": "production_artifacts/mobile_runtime_inspector/P2R16_FROZEN_GEOMETRY_DEPTH.npz",
+      "expected_sha256": "c5375de0dcf3b7c7119ff9cb962f60091a0923a6645eff063cb868ee5d9ac71f",
+      "actual_sha256": "c5375de0dcf3b7c7119ff9cb962f60091a0923a6645eff063cb868ee5d9ac71f",
+      "status": "PASS"
+    },
+    "candidate_d": {
+      "path": "production_artifacts/mobile_runtime_inspector/P2R19_P0_CANDIDATE_D.json",
+      "expected_sha256": "7a29b5be826205f8939373d192f9ce4a78aadfe449f408e2d69e178734b86d62",
+      "actual_sha256": "7a29b5be826205f8939373d192f9ce4a78aadfe449f408e2d69e178734b86d62",
+      "status": "PASS"
+    },
+    "training_structures": {
+      "path": "production_artifacts/mobile_runtime_inspector/P2R17_P0_TRAINING_STRUCTURE_FREEZE.json",
+      "expected_sha256": "af75f98035dbbc35a21276627e8ada3e3a37547e34d79d8d1710fe6b1151c30a",
+      "actual_sha256": "af75f98035dbbc35a21276627e8ada3e3a37547e34d79d8d1710fe6b1151c30a",
+      "status": "PASS"
+    },
+    "independent_controls": {
+      "path": "production_artifacts/mobile_runtime_inspector/P2R17_P0_INDEPENDENT_CONTROL_LOCK.json",
+      "expected_sha256": "01ed5b307434d1ca1e6e88b33f5477ac5cb1fa92defc52dde5d37510d642f900",
+      "actual_sha256": "01ed5b307434d1ca1e6e88b33f5477ac5cb1fa92defc52dde5d37510d642f900",
+      "status": "PASS"
+    },
+    "heldout_exclusion": {
+      "path": "production_artifacts/mobile_runtime_inspector/P2R17_P0_HELDOUT_EXCLUSION_GEOMETRY.json",
+      "expected_sha256": "2daee099a96ae6e6ea40886c5e7ea1020a0cff47e9a69b9858186c3bf2f44685",
+      "actual_sha256": "2daee099a96ae6e6ea40886c5e7ea1020a0cff47e9a69b9858186c3bf2f44685",
+      "status": "PASS"
+    },
+    "source_images_12shots": {
+      "count": 12,
+      "all_hashes_verified": true,
+      "status": "PASS"
+    }
+  },
+  "overall_status": "PASS"
+}

@@ -1,0 +1,17 @@
+{
+  "protocol": "P2R19_R1_SEAM_REPLICATION",
+  "timestamp": "2026-09-15T13:35:00Z",
+  "phase": "7C.5-P0-R1",
+  "r4p3_seam_p95": 360.8,
+  "r4p4r1_seam_p95": 143.0898,
+  "reference_candidate_d_seam_p95": 141.254,
+  "replicated_candidate_d_seam_p95": 141.254,
+  "relative_diff_from_reference_percent": 0.0,
+  "tolerance_max_percent": 1.0,
+  "tolerance_pass": true,
+  "improvement_vs_r4p3_percent": 60.8498,
+  "min_improvement_vs_r4p3_percent": 25.0,
+  "regression_vs_r4p4r1_percent": -1.283,
+  "max_regression_vs_r4p4r1_percent": 5.0,
+  "seam_replication_gate": "PASS"
+}

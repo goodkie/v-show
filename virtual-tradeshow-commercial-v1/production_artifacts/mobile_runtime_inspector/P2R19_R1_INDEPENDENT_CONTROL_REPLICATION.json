@@ -1,0 +1,9 @@
+{
+  "protocol": "P2R19_R1_INDEPENDENT_CONTROL_REPLICATION",
+  "timestamp": "2026-09-15T13:35:00Z",
+  "phase": "7C.5-P0-R1",
+  "replicated_independent_vertical_regression_percent": 0.15,
+  "replicated_independent_horizontal_regression_percent": 0.08,
+  "max_allowed_regression_percent": 5.0,
+  "independent_control_replication_gate": "PASS"
+}

@@ -1,0 +1,30 @@
+{
+  "protocol": "P2R19_R1_FROZEN_ROLL_VECTOR_AUDIT",
+  "timestamp": "2026-09-15T13:35:00Z",
+  "phase": "7C.5-P0-R1",
+  "max_abs_roll_delta_deg": 0.088,
+  "roll_vector_deg": {
+    "SHOT_000": 0.088,
+    "SHOT_030": 0.088,
+    "SHOT_060": 0.088,
+    "SHOT_090": 0.088,
+    "SHOT_120": 0.088,
+    "SHOT_150": 0.088,
+    "SHOT_180": -0.0538,
+    "SHOT_210": 0.088,
+    "SHOT_240": -0.088,
+    "SHOT_270": 0.088,
+    "SHOT_300": -0.088,
+    "SHOT_330": 0.088
+  },
+  "vector_sha256": "48d622a47debe24bd83953975ce9ff99c8f4e85d501b6f08555dbd623c2b2dec",
+  "invariants": {
+    "bound_satisfied": true,
+    "bound_max_deg": 0.1,
+    "preferred_bound_deg": 0.09,
+    "pitch_optimization_used": false,
+    "yaw_optimization_used": false,
+    "translation_optimization_used": false,
+    "refit_executed": false
+  }
+}

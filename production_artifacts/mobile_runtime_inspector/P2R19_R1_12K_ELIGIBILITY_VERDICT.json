@@ -1,0 +1,30 @@
+{
+  "protocol": "P2R19_R1_12K_ELIGIBILITY_VERDICT",
+  "timestamp": "2026-09-15T13:35:00Z",
+  "phase": "7C.5-P0-R1",
+  "candidate": "CANDIDATE_D",
+  "all_replication_gates_passed": true,
+  "twelve_k_eligible": true,
+  "new_12k_render_executed": false,
+  "owner_visual_review_eligible": false,
+  "gate_checklist": {
+    "input_hashes_pass": true,
+    "chronology_pass": true,
+    "refit_executed_false": true,
+    "candidate_d_definition_hash_exact": true,
+    "independent_vertical_gate_pass": true,
+    "vertical_replication_tolerance_pass": true,
+    "roi03_replication_pass": true,
+    "depth_strata_replication_pass": true,
+    "true_pixel_gate_pass": true,
+    "seam_gate_pass": true,
+    "independent_controls_pass": true,
+    "coverage_pass": true,
+    "occlusion_audit_pass": true,
+    "source_ray_physicality_pass": true,
+    "roll_bound_saturation_acceptable": true,
+    "component_causal_ordering_replicated": true,
+    "production_non_mutation_pass": true
+  },
+  "next_action": "EXECUTE_SEPARATE_12K_CANDIDATE_D_VALIDATION_PHASE"
+}

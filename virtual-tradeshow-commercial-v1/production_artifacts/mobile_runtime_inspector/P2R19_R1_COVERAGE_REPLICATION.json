@@ -1,0 +1,14 @@
+{
+  "protocol": "P2R19_R1_COVERAGE_REPLICATION",
+  "timestamp": "2026-09-15T13:35:00Z",
+  "phase": "7C.5-P0-R1",
+  "reference_coverage": 0.9984,
+  "replicated_coverage": 0.9984,
+  "replicated_direct_coverage": 0.9984,
+  "replicated_center_coverage": 0.9988,
+  "black_crack_pixel_count": 0,
+  "nonfinite_count": 0,
+  "inpaint_used": false,
+  "coverage_gate_minimum": 0.995,
+  "coverage_replication_gate": "PASS"
+}

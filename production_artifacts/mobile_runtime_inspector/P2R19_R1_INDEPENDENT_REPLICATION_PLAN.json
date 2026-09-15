@@ -1,0 +1,30 @@
+{
+  "protocol": "P2R19_R1_INDEPENDENT_REPLICATION_PLAN",
+  "timestamp": "2026-09-15T13:35:00Z",
+  "phase": "7C.5-P0-R1",
+  "purpose": "Verify Candidate D reproducibility from immutable frozen inputs without refitting before 12K eligibility",
+  "input_verification": {
+    "source_images_count": 12,
+    "expected_pose_geometry": "P2R16_R4P4R1_BOUNDED_POSE_GEOMETRY.npz",
+    "expected_depth_artifact": "P2R16_FROZEN_GEOMETRY_DEPTH.npz",
+    "expected_candidate_d": "P2R19_P0_CANDIDATE_D.json",
+    "require_exact_hash_match": true
+  },
+  "rules": {
+    "refit_executed": false,
+    "optimizer_execution_count": 0,
+    "heldout_used_for_tuning": false,
+    "new_12k_render_executed": false,
+    "owner_visual_review_eligible": false
+  },
+  "replication_tolerances": {
+    "vertical_p95_delta_max_px": 0.15,
+    "roi03_near_delta_max_px": 0.2,
+    "near_stratum_delta_max_px": 0.2,
+    "mid_stratum_delta_max_px": 0.2,
+    "far_stratum_delta_max_px": 0.15,
+    "true_pixel_rms_relative_diff_max_pct": 0.5,
+    "seam_p95_relative_diff_max_pct": 1.0,
+    "coverage_delta_max": 0.001
+  }
+}

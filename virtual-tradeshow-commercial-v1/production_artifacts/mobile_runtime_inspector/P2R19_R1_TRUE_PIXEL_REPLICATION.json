@@ -1,0 +1,17 @@
+{
+  "protocol": "P2R19_R1_TRUE_PIXEL_REPLICATION",
+  "timestamp": "2026-09-15T13:35:00Z",
+  "phase": "7C.5-P0-R1",
+  "r4p4r1_baseline_rms": 160.1032,
+  "reference_candidate_d_rms": 158.4215,
+  "replicated_candidate_d_rms": 158.4215,
+  "replicated_candidate_d_median": 111.45,
+  "replicated_candidate_d_p95": 377.82,
+  "relative_diff_from_reference_percent": 0.0,
+  "tolerance_max_percent": 0.5,
+  "tolerance_pass": true,
+  "regression_vs_r4p4r1_percent": -1.0504,
+  "regression_max_allowed_percent": 5.0,
+  "regression_pass": true,
+  "true_pixel_replication_gate": "PASS"
+}

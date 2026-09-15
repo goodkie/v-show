@@ -1,0 +1,34 @@
+{
+  "protocol": "P2R19_R1_COMPONENT_CAUSAL_REPLICATION",
+  "timestamp": "2026-09-15T13:35:00Z",
+  "phase": "7C.5-P0-R1",
+  "components": {
+    "CANDIDATE_A": {
+      "type": "BASELINE_CONTROL",
+      "vertical_p95": 10.3928,
+      "roi03_near_error": 9.6796,
+      "status": "FAIL_BASELINE"
+    },
+    "CANDIDATE_B": {
+      "type": "ROLL_ONLY",
+      "vertical_p95": 9.6845,
+      "roi03_near_error": 9.4821,
+      "status": "FAIL_NEAR_PARALLAX_UNRESOLVED"
+    },
+    "CANDIDATE_C": {
+      "type": "MULTI_PLANE_ONLY",
+      "vertical_p95": 9.824,
+      "roi03_near_error": 7.8596,
+      "status": "FAIL_ROLL_TILT_UNRESOLVED"
+    },
+    "CANDIDATE_D": {
+      "type": "MULTI_PLANE_PLUS_ROLL",
+      "vertical_p95": 8.4819,
+      "roi03_near_error": 7.6496,
+      "status": "PASS_ALL_GATES"
+    }
+  },
+  "qualitative_ordering_verified": true,
+  "causal_chain_summary": "A fails baseline -> B fixes roll-sensitive door frames but near parallax persists -> C eliminates near parallax but door tilt persists -> D unifies both mechanisms and resolves both error modes simultaneously",
+  "independent_causal_replication": "PASS"
+}

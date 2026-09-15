@@ -1,0 +1,68 @@
+{
+  "protocol": "P2R19_R1_FINAL_AUDIT",
+  "timestamp": "2026-09-15T13:35:00Z",
+  "phase": "7C.5-P0-R1",
+  "execution_title": "INDEPENDENT REPLICATION (* CANDIDATE D REPRODUCIBILITY * BOUND-SATURATION AUDIT + 12K ELIGIBILITY DECISION)",
+  "anti_leakage_lock": true,
+  "chronology": {
+    "start_head": "e7c03649833a2a7d40d069f3415244dcfe1ee4e0",
+    "model_freeze_commit": "5b981ac64fea631682794da839b29c8e8cb39dfa",
+    "candidate_freeze_commit": "2a1815c8e53ccdceb3886c60cfa71ec2a83a34d0",
+    "p2r19_p0_final_truth_commit": "e7c03649833a2a7d40d069f3415244dcfe1ee4e0"
+  },
+  "ancestry_verification": {
+    "model_freeze_ancestry_pass": true,
+    "candidate_freeze_ancestry_pass": true,
+    "anti_leakage_chronology_pass": true
+  },
+  "replicated_metrics": {
+    "candidate_d_vertical_p95": 8.4819,
+    "vertical_replication_delta_px": 0.0,
+    "improvement_vs_r4p3_percent": 27.1909,
+    "roi03_near_error": 7.6496,
+    "near_p95": 8.15,
+    "mid_p95": 8.48,
+    "far_p95": 8.102,
+    "true_pixel_rms": 158.4215,
+    "true_pixel_median": 111.45,
+    "true_pixel_p95": 377.82,
+    "seam_p95": 141.254,
+    "independent_vertical_regression": 0.15,
+    "independent_horizontal_regression": 0.08,
+    "coverage": 0.9984,
+    "direct_coverage": 0.9984,
+    "center_coverage": 0.9988,
+    "black_crack_pixel_count": 0,
+    "nonfinite_count": 0,
+    "inpaint_used": false,
+    "max_source_pixel_reprojection_px": 31.2,
+    "p95_source_pixel_reprojection_px": 16.15,
+    "max_angular_ray_change_deg": 2.42,
+    "p95_angular_ray_change_deg": 1.28,
+    "roll_bound_saturation_verdict": "VALID_OPTIMUM_NEAR_CONSERVATIVE_BOUND",
+    "source_ray_physicality_gate": "PASS",
+    "occlusion_boundary_gate": "PASS",
+    "independent_causal_replication": "PASS"
+  },
+  "verdict": {
+    "phase_7c5_p0_r1_status": "PASS",
+    "twelve_k_eligible": true,
+    "new_12k_render_executed": false,
+    "owner_visual_review_eligible": false,
+    "next_action": "EXECUTE_SEPARATE_12K_CANDIDATE_D_VALIDATION_PHASE"
+  },
+  "resource_counters": {
+    "vggt_forward_count": 0,
+    "depth_model_execution_count": 0,
+    "roma_new_model_execution_count": 0,
+    "new_neural_model_execution_count": 0,
+    "optimizer_execution_count": 0,
+    "refit_executed": false
+  },
+  "production_safety_lock": {
+    "live_release_branch_sha": "ab7c13f62aee54ab6f55dd4ffae08857db695949",
+    "master_sha": "5218235b8dbe1cd3b401bbbdef0b1c8ba3483d6e",
+    "customer_default": "P2R13",
+    "production_non_mutation_gate": "PASS"
+  }
+}

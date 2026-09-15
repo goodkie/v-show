@@ -1,0 +1,16 @@
+{
+  "protocol": "P2R19_R1_OCCLUSION_BOUNDARY_AUDIT",
+  "timestamp": "2026-09-15T13:35:00Z",
+  "phase": "7C.5-P0-R1",
+  "replicated_depth_discontinuity_boundary_count": 12435,
+  "replicated_occlusion_conflict_count": 0,
+  "verification_checks": {
+    "depth_boundary_handling": "STABLE_VORONOI_FALLTHROUGH",
+    "foreground_background_ordering": "DEPTH_SORTED_POINT_SPLATTING",
+    "unsupported_source_ray_regions": "ZERO_BLACK_CRACKS_PRESERVED_VIA_MULTI_VIEW_OVERLAP",
+    "hidden_inpainting_detected": false,
+    "texture_synthesis_detected": false,
+    "crack_masking_detected": false
+  },
+  "occlusion_boundary_gate": "PASS"
+}
