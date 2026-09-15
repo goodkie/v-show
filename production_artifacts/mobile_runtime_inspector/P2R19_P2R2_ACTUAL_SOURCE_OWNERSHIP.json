@@ -1,0 +1,95 @@
+{
+  "protocol": "P2R19_P2R2_ACTUAL_SOURCE_OWNERSHIP",
+  "timestamp": "2026-09-15T16:20:00Z",
+  "phase": "7C.5-P2R2",
+  "total_pixels": 22966272,
+  "source_image_count": 12,
+  "synthetic_equal_partition_detected": false,
+  "ownership_model": "SPHERICAL_VORONOI_MAX_OPTICAL_ALIGNMENT",
+  "ownership_by_camera": {
+    "SHOT_000": {
+      "camera_index": 0,
+      "owned_pixel_count": 2012064,
+      "blended_pixel_weight_sum": 2012064.0,
+      "unique_contribution_count": 2012064,
+      "percentage": 8.761
+    },
+    "SHOT_030": {
+      "camera_index": 1,
+      "owned_pixel_count": 1893584,
+      "blended_pixel_weight_sum": 1893584.0,
+      "unique_contribution_count": 1893584,
+      "percentage": 8.245
+    },
+    "SHOT_060": {
+      "camera_index": 2,
+      "owned_pixel_count": 1802569,
+      "blended_pixel_weight_sum": 1802569.0,
+      "unique_contribution_count": 1802569,
+      "percentage": 7.849
+    },
+    "SHOT_090": {
+      "camera_index": 3,
+      "owned_pixel_count": 1829214,
+      "blended_pixel_weight_sum": 1829214.0,
+      "unique_contribution_count": 1829214,
+      "percentage": 7.965
+    },
+    "SHOT_120": {
+      "camera_index": 4,
+      "owned_pixel_count": 1759195,
+      "blended_pixel_weight_sum": 1759195.0,
+      "unique_contribution_count": 1759195,
+      "percentage": 7.66
+    },
+    "SHOT_150": {
+      "camera_index": 5,
+      "owned_pixel_count": 1719412,
+      "blended_pixel_weight_sum": 1719412.0,
+      "unique_contribution_count": 1719412,
+      "percentage": 7.487
+    },
+    "SHOT_180": {
+      "camera_index": 6,
+      "owned_pixel_count": 2295750,
+      "blended_pixel_weight_sum": 2295750.0,
+      "unique_contribution_count": 2295750,
+      "percentage": 9.996
+    },
+    "SHOT_210": {
+      "camera_index": 7,
+      "owned_pixel_count": 2366428,
+      "blended_pixel_weight_sum": 2366428.0,
+      "unique_contribution_count": 2366428,
+      "percentage": 10.304
+    },
+    "SHOT_240": {
+      "camera_index": 8,
+      "owned_pixel_count": 1935706,
+      "blended_pixel_weight_sum": 1935706.0,
+      "unique_contribution_count": 1935706,
+      "percentage": 8.428
+    },
+    "SHOT_270": {
+      "camera_index": 9,
+      "owned_pixel_count": 1763525,
+      "blended_pixel_weight_sum": 1763525.0,
+      "unique_contribution_count": 1763525,
+      "percentage": 7.679
+    },
+    "SHOT_300": {
+      "camera_index": 10,
+      "owned_pixel_count": 1703392,
+      "blended_pixel_weight_sum": 1703392.0,
+      "unique_contribution_count": 1703392,
+      "percentage": 7.417
+    },
+    "SHOT_330": {
+      "camera_index": 11,
+      "owned_pixel_count": 1885433,
+      "blended_pixel_weight_sum": 1885433.0,
+      "unique_contribution_count": 1885433,
+      "percentage": 8.21
+    }
+  }
+}

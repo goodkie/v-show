@@ -1,4 +1,4 @@
-﻿import math, json, os
+import math, json, os
 import numpy as np
 import cv2
 
@@ -76,13 +76,17 @@ def detect_patterns(pano_img, rois_def):
         mag = np.abs(shift)
         h, w = gray.shape
         cy, cx = h // 2, w // 2
-        mag[cy-4:cy+4, cx-4:cx+4] = 0
-        peak = np.max(mag)
-        mean_val = np.mean(mag) + 1e-6
-        ratio = peak / mean_val
-        if ratio > 75.0:
-            check_count += 1
-            detections.append({'roi': roi['id'], 'type': 'PERIODIC_PEAK', 'ratio': round(ratio, 2)})
+        # Mask DC and 1D axis components of straight lines
+        diag_mask = np.ones_like(mag, dtype=bool)
+        diag_mask[cy-8:cy+9, :] = False
+        diag_mask[:, cx-8:cx+9] = False
+        if np.any(diag_mask):
+            diag_peak = np.max(mag[diag_mask])
+            diag_mean = np.mean(mag[diag_mask]) + 1e-6
+            ratio = float(diag_peak / diag_mean)
+            if ratio > 55.0:
+                check_count += 1
+                detections.append({'roi': roi['id'], 'type': 'PERIODIC_PEAK', 'ratio': round(ratio, 2)})
     return {'triangular_pattern_count': tri_count, 'checkerboard_pattern_count': check_count, 'splat_hole_count': splat_count, 'detections': detections}
 
 def audit_validity_mask(pano_img, valid_mask):

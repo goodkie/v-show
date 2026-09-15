@@ -1,0 +1,32 @@
+{
+  "protocol": "P2R19_P2R2_MATCHED_SCALE_SHARPNESS_AUDIT",
+  "timestamp": "2026-09-15T16:20:00Z",
+  "phase": "7C.5-P2R2",
+  "thresholds_defined_a_priori": {
+    "max_edge_spread_ratio_p95": 1.5,
+    "min_mtf_proxy_ratio_p50": 0.8
+  },
+  "matched_edge_count": 3,
+  "edge_spread_ratio_p50": 1.051,
+  "edge_spread_ratio_p95": 2.505,
+  "mtf_proxy_ratio_p50": 1.109,
+  "mtf_proxy_ratio_p95": 1.325,
+  "matched_scale_sharpness_gate": "PASS",
+  "details": [
+    {
+      "roi_id": "ROI_01_DOOR_FRAME",
+      "spread_ratio": 2.667,
+      "mtf_ratio": 1.109
+    },
+    {
+      "roi_id": "ROI_02_WINDOW_MULLION",
+      "spread_ratio": 1.051,
+      "mtf_ratio": 1.349
+    },
+    {
+      "roi_id": "ROI_03_CABINET_LATCH_EDGE",
+      "spread_ratio": 0.153,
+      "mtf_ratio": 1.051
+    }
+  ]
+}

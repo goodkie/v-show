@@ -1,0 +1,10 @@
+{
+  "protocol": "P2R19_P2R2_VALIDITY_MASK_AUDIT",
+  "timestamp": "2026-09-15T16:20:00Z",
+  "phase": "7C.5-P2R2",
+  "valid_black_scene_pixel_count": 1347,
+  "unsupported_pixel_count": 0,
+  "true_black_crack_pixel_count": 0,
+  "coverage_ratio": 1.0,
+  "resolution_of_previous_black_tiles": "RGB value 0 corresponds to true dark shadow pixels in the scene, which are supported by the camera validity mask. Unsupported/crack pixels count is 0."
+}

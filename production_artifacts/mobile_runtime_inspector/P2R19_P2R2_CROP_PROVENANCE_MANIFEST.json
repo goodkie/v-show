@@ -1,0 +1,104 @@
+{
+  "protocol": "P2R19_P2R2_CROP_PROVENANCE_MANIFEST",
+  "timestamp": "2026-09-15T16:20:00Z",
+  "phase": "7C.5-P2R2",
+  "owner_package_integrity_gate": "PASS",
+  "crops": [
+    {
+      "crop_id": "ROI_01_DOOR_FRAME",
+      "bbox": {
+        "x": 480,
+        "y": 450,
+        "width": 270,
+        "height": 700
+      },
+      "baseline_sha256": "ef4e7f78e1bbebddf456998943bae37c91c959ed1d0905b0d70c72fedeb7c00f",
+      "candidate_d_sha256": "d83dabe5ebdf00b7454e241a38080081e9f4aafa742e5948ce7c11728dd2187c",
+      "divergent": true
+    },
+    {
+      "crop_id": "ROI_02_WINDOW_MULLION",
+      "bbox": {
+        "x": 1920,
+        "y": 450,
+        "width": 260,
+        "height": 700
+      },
+      "baseline_sha256": "df6116144ab2d1dd3d510ca23fb24f09596ffd4195f952367be8c0103217e076",
+      "candidate_d_sha256": "462f570d124047b3a54a75bb8092a2190b322ad4bd8271388c8e2928ced85b22",
+      "divergent": true
+    },
+    {
+      "crop_id": "ROI_03_CABINET_LATCH_EDGE",
+      "bbox": {
+        "x": 6000,
+        "y": 700,
+        "width": 300,
+        "height": 600
+      },
+      "baseline_sha256": "ab0638d5e73c620a9db52157d4aea44b53cd54ca1250cce97d10e868664475dd",
+      "candidate_d_sha256": "4e6d41d84283d50970410174ffc108e8a331527ac30cc370ee1bcc548b0b5bf4",
+      "divergent": true
+    },
+    {
+      "crop_id": "ROI_06_WALL_CORNER",
+      "bbox": {
+        "x": 2940,
+        "y": 450,
+        "width": 260,
+        "height": 700
+      },
+      "baseline_sha256": "7ae34af550aedbbcfc99e7c58a0aae22ce220bb4174473e0468c22209d38ab38",
+      "candidate_d_sha256": "bdea00af796c585192e15d53fdd2c40a6a98d0249cd1de46321188fa81cc06d7",
+      "divergent": true
+    },
+    {
+      "crop_id": "DETAIL_DEPTH_BOUNDARY",
+      "bbox": {
+        "x": 6050,
+        "y": 750,
+        "width": 200,
+        "height": 400
+      },
+      "baseline_sha256": "4d77e799067240d23b6715c541386f688b1ee180f99ab1f60713e93ecb098302",
+      "candidate_d_sha256": "1fa50ed6e55e9ba53a644102ffe71f853976f6f28103414330d52d81bcca4083",
+      "divergent": true
+    },
+    {
+      "crop_id": "DETAIL_SEAM_CROSSING",
+      "bbox": {
+        "x": 450,
+        "y": 500,
+        "width": 200,
+        "height": 500
+      },
+      "baseline_sha256": "cd27eefee5566ccc4dd2deb4ec9f5dbf47b2b70431a36fc765128fe3a298f9cc",
+      "candidate_d_sha256": "b975b46811c56c1e2a0826a88274f2383b2cbd75b2aa3c9579474af6deaa093a",
+      "divergent": true
+    },
+    {
+      "crop_id": "DETAIL_NEAR_FIELD_OBJECT",
+      "bbox": {
+        "x": 6000,
+        "y": 800,
+        "width": 250,
+        "height": 400
+      },
+      "baseline_sha256": "2104714abb6652d4440fefbb29f95d2645c0f1f837040effbacb039fc7ba6b87",
+      "candidate_d_sha256": "c841c93228464e2567b48f4e0fe8208fc2244ba571bf8914e4bb58a059684690",
+      "divergent": true
+    },
+    {
+      "crop_id": "DETAIL_FAR_FIELD_ARCHITECTURE",
+      "bbox": {
+        "x": 1950,
+        "y": 500,
+        "width": 250,
+        "height": 450
+      },
+      "baseline_sha256": "af4d476889bad8d6b58c2fd8db3c632fbd6242f362ef184a2dd4c4f455aa537f",
+      "candidate_d_sha256": "432b940744777ba7d1c48609548372f4da0844d7a4355f4149d2c25f8a45baae",
+      "divergent": true
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "protocol": "P2R19_P2R2_TRUE_12K_VERTICAL_EVAL",
+  "timestamp": "2026-09-15T16:20:00Z",
+  "phase": "7C.5-P2R2",
+  "evaluator_sha256": "49352d9ed9a9346fd40f46375d242a28046213bda51c7129b76cca44c3e189cf",
+  "vertical_p95_native_12k": 25.4457,
+  "vertical_p95_4k_equivalent": 8.4819,
+  "improvement_vs_r4p3_percent": 27.1909,
+  "target_bound_4k_px": 8.737125,
+  "vertical_hard_gate": "PASS",
+  "roi01_4k_equivalent": 8.4819,
+  "roi02_4k_equivalent": 2.382,
+  "roi03_4k_equivalent": 7.6496,
+  "roi06_4k_equivalent": 4.581
+}

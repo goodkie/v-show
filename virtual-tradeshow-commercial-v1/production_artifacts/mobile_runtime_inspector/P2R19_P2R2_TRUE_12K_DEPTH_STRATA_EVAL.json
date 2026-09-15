@@ -1,0 +1,9 @@
+{
+  "protocol": "P2R19_P2R2_TRUE_12K_DEPTH_STRATA_EVAL",
+  "timestamp": "2026-09-15T16:20:00Z",
+  "phase": "7C.5-P2R2",
+  "near_p95_4k_equivalent": 8.15,
+  "mid_p95_4k_equivalent": 8.48,
+  "far_p95_4k_equivalent": 8.102,
+  "depth_strata_gate": "PASS"
+}

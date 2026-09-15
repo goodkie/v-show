@@ -1,0 +1,122 @@
+{
+  "protocol": "P2R19_P2R2_RUNTIME_INPUT_TRACE",
+  "timestamp": "2026-09-15T16:20:00Z",
+  "phase": "7C.5-P2R2",
+  "physical_still_open_count": 12,
+  "previous_panorama_open_count": 0,
+  "baseline_raster_open_count": 0,
+  "owner_image_open_count": 0,
+  "input_whitelist_gate": "PASS",
+  "opened_rasters": [
+    "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_000.jpg",
+    "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_030.jpg",
+    "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_060.jpg",
+    "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_090.jpg",
+    "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_120.jpg",
+    "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_150.jpg",
+    "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_180.jpg",
+    "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_210.jpg",
+    "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_240.jpg",
+    "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_270.jpg",
+    "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_300.jpg",
+    "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_330.jpg"
+  ],
+  "source_stills": [
+    {
+      "camera_id": "SHOT_000",
+      "path": "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_000.jpg",
+      "width": 3000,
+      "height": 4000,
+      "sha256": "917188a5c1d4b5aec329b707cc139b9c5a58d570c6a3f1cb7215776925ee5839",
+      "file_size_bytes": 2913524
+    },
+    {
+      "camera_id": "SHOT_030",
+      "path": "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_030.jpg",
+      "width": 3000,
+      "height": 4000,
+      "sha256": "e118b7ae861c9b174719fbbca12fe7890d7c09d95fda2b1b3307d1839d78623e",
+      "file_size_bytes": 2855385
+    },
+    {
+      "camera_id": "SHOT_060",
+      "path": "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_060.jpg",
+      "width": 3000,
+      "height": 4000,
+      "sha256": "ed8e2c6bbda2f23565bb7533a81d23462c292ff1c3c9730e8f2c8c4d3b4acddb",
+      "file_size_bytes": 2977283
+    },
+    {
+      "camera_id": "SHOT_090",
+      "path": "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_090.jpg",
+      "width": 3000,
+      "height": 4000,
+      "sha256": "233db00a0087893fd1d5d63e54ac35487a8a9a6671754d8bbb50144d0c090c57",
+      "file_size_bytes": 3009746
+    },
+    {
+      "camera_id": "SHOT_120",
+      "path": "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_120.jpg",
+      "width": 3000,
+      "height": 4000,
+      "sha256": "9e70c9c06a7b4794ea1f0c173d8bf05e76ff19d41de37019eaea24ebf6703583",
+      "file_size_bytes": 3017020
+    },
+    {
+      "camera_id": "SHOT_150",
+      "path": "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_150.jpg",
+      "width": 3000,
+      "height": 4000,
+      "sha256": "c66b0d5cfd4dc44206e4e83e741bcd6eecceb258150a715c4d3e1e6e2f04e486",
+      "file_size_bytes": 3007222
+    },
+    {
+      "camera_id": "SHOT_180",
+      "path": "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_180.jpg",
+      "width": 3000,
+      "height": 4000,
+      "sha256": "5165aeacde73a5eac8819dac8cd841f1f5807505fda167ec11f812e6178d3bc0",
+      "file_size_bytes": 2971939
+    },
+    {
+      "camera_id": "SHOT_210",
+      "path": "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_210.jpg",
+      "width": 3000,
+      "height": 4000,
+      "sha256": "2f76ea6c870ccac155702b46b1075bf3f2a836eff855eaa3f3dc1aadd94c8a08",
+      "file_size_bytes": 3021431
+    },
+    {
+      "camera_id": "SHOT_240",
+      "path": "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_240.jpg",
+      "width": 3000,
+      "height": 4000,
+      "sha256": "e9805e46df337c193a5a5952572e7353139cee8ad8dff8fc8ebf25d2e16aee70",
+      "file_size_bytes": 3081144
+    },
+    {
+      "camera_id": "SHOT_270",
+      "path": "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_270.jpg",
+      "width": 3000,
+      "height": 4000,
+      "sha256": "140e19b479b8b0b3ee431790c1d42ba712f12dad4a0015d98192d37444c06d5c",
+      "file_size_bytes": 2973851
+    },
+    {
+      "camera_id": "SHOT_300",
+      "path": "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_300.jpg",
+      "width": 3000,
+      "height": 4000,
+      "sha256": "b5c5974c0253744b6056d394edb1e7a22b3eefebae6d9fabf1f4db7c69b6e4df",
+      "file_size_bytes": 3039485
+    },
+    {
+      "camera_id": "SHOT_330",
+      "path": "production_artifacts/mobile_runtime_inspector/P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01/DERIVED_ORIENTATION_NORMALIZED/SHOT_330.jpg",
+      "width": 3000,
+      "height": 4000,
+      "sha256": "261cc6118ed94c6be524faa85b302637544dfa0a7861540113c124c53aa4605a",
+      "file_size_bytes": 3032877
+    }
+  ]
+}

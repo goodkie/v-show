@@ -1,0 +1,24 @@
+{
+  "protocol": "P2R19_P2R2_OWNER_REVIEW_MANIFEST",
+  "timestamp": "2026-09-15T16:20:00Z",
+  "phase": "7C.5-P2R2",
+  "canonical_lossless_png": {
+    "path": "production_artifacts/mobile_runtime_inspector/P2R19_P2R2_CANDIDATE_D_TRUE_12K.png",
+    "sha256": "c1843b01c05dcefc1dafed70cfc5b7bbeebdc34554924028d33efffec74cae35",
+    "pixel_buffer_sha256": "f146c7f3edb6635b0f42a867db795085b1c5b147596aaf34c1818af378234032",
+    "resolution": "12288x1869",
+    "file_size_bytes": 33866323
+  },
+  "owner_review_jpeg": {
+    "path": "production_artifacts/mobile_runtime_inspector/P2R19_P2R2_CANDIDATE_D_OWNER_REVIEW.jpg",
+    "sha256": "3fda96842109181d1a84fc610f35d2049dc3673e4655ca95a4d0883090cc737b",
+    "resolution": "12288x1869",
+    "quality": 95,
+    "file_size_bytes": 4973069
+  },
+  "owner_package_integrity_gate": "PASS",
+  "true_12k_technical_validation": "PASS",
+  "owner_visual_review_eligible": true,
+  "owner_visual_approval": "PENDING",
+  "candidate_d_visual_accepted": false
+}

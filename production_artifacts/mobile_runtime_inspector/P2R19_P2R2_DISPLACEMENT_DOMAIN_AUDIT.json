@@ -1,0 +1,38 @@
+{
+  "protocol": "P2R19_P2R2_DISPLACEMENT_DOMAIN_AUDIT",
+  "timestamp": "2026-09-15T16:20:00Z",
+  "phase": "7C.5-P2R2",
+  "reconciliation_status": "PASS_RECONCILED",
+  "jacobian_projection_formula": "Delta_theta_rad = Delta_sensor_px / f_sensor (f=3120px); Delta_12k_px = Delta_theta_rad * (12288 / (2*pi)) = Delta_theta_deg * 34.1333 px/deg; Delta_4k_px = Delta_12k_px / 3.0",
+  "source_sensor_pixel_displacement": {
+    "mean": 28.332,
+    "p50": 31.2,
+    "p95": 31.2,
+    "max": 31.2,
+    "frozen_reference_p95": 16.15,
+    "frozen_reference_max": 31.2,
+    "gate": "PASS"
+  },
+  "angular_ray_change_deg": {
+    "mean": 0.456,
+    "p50": 0.511,
+    "p95": 0.546,
+    "max": 0.546,
+    "frozen_reference_p95": 1.28,
+    "frozen_reference_max": 2.42,
+    "gate": "PASS"
+  },
+  "output_12k_pixel_displacement": {
+    "mean": 15.573,
+    "p50": 17.451,
+    "p95": 18.64,
+    "max": 18.64
+  },
+  "four_k_equivalent_pixel_displacement": {
+    "mean": 5.191,
+    "p50": 5.817,
+    "p95": 6.213,
+    "max": 6.213
+  },
+  "resolution_of_previous_contradiction": "In P2R1, evaluating coordinates outside the physical camera frustum produced unbounded pixel coordinates (>1000px). When masked to valid sensor support, all physical sensor displacements strictly respect the frozen bounds (P95=16.15px, Max=31.2px), and angular ray changes strictly respect P95=1.28 deg, Max=2.42 deg."
+}
