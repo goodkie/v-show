@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>3D2R — Official Release</title>
+  <link rel="icon" type="image/png" href="/assets/3d2r-logo-source.png"/>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      background: #050505;
+      color: #f6f6f3;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    button { font: inherit; color: inherit; }
+    #app {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 50% 48%, #121212 0, #080808 30%, #050505 68%);
+      isolation: isolate;
+    }
+    canvas#p {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .vignette {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      background: radial-gradient(circle at center, transparent 0 22%, rgba(0,0,0,.3) 62%, rgba(0,0,0,.9) 100%);
+    }
+
+    /* Top Brand Logo Contract */
+    .brand-logo-only {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .brand-logo-only img {
+      display: block;
+      width: 21px;
+      height: auto;
+      object-fit: contain;
+      background: transparent;
+      image-rendering: -webkit-optimize-contrast;
+    }
+    @media (max-width: 640px) {
+      .brand-logo-only { top: 18px; }
+      .brand-logo-only img { width: 18px; }
+    }
+
+    /* Bottom Microcopy Contract */
+    .tiny-footer {
+      position: absolute;
+      bottom: 26px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 3;
+      font-size: 9px;
+      letter-spacing: .28em;
+      color: #777;
+      white-space: nowrap;
+      text-transform: uppercase;
+      pointer-events: none;
+      user-select: none;
+    }
+    @media (max-width: 640px) {
+      .tiny-footer { bottom: 20px; font-size: 8px; letter-spacing: .22em; }
+    }
+
+    /* Center CTA: StartPortal Interaction Contract */
+    .start-portal {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      width: 190px;
+      height: 190px;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .portal-grow-ring {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, .34);
+      background: rgba(8, 8, 8, .28);
+      transform: translate(-50%, -50%);
+      transition: width .44s cubic-bezier(.2, .8, .2, 1),
+                  height .44s cubic-bezier(.2, .8, .2, 1),
+                  border-color .44s ease,
+                  background .44s ease;
+      pointer-events: none;
+    }
+    .portal-label {
+      position: relative;
+      z-index: 2;
+      font-size: 13px;
+      font-weight: 650;
+      letter-spacing: .31em;
+      margin-left: .31em;
+      color: rgba(255, 255, 255, .92);
+      transition: color .28s ease;
+      pointer-events: none;
+    }
+
+    /* Hover & Keyboard Focus States */
+    .start-portal:hover .portal-grow-ring,
+    .start-portal:focus-visible .portal-grow-ring,
+    .start-portal.is-active .portal-grow-ring {
+      width: 148px;
+      height: 148px;
+      border-color: #ffffff;
+      background: #ffffff;
+    }
+    .start-portal:hover .portal-label,
+    .start-portal:focus-visible .portal-label,
+    .start-portal.is-active .portal-label {
+      color: #050505;
+    }
+    .start-portal:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.4);
+      outline-offset: 4px;
+      border-radius: 50%;
+    }
+    @media (max-width: 740px) {
+      .start-portal { width: 170px; height: 170px; }
+      .start-portal:hover .portal-grow-ring,
+      .start-portal:focus-visible .portal-grow-ring,
+      .start-portal.is-active .portal-grow-ring {
+        width: 136px;
+        height: 136px;
+      }
+    }
+
+    /* Portal Expansion Transition Animation */
+    .portal-expansion {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 168px;
+      height: 168px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%) scale(.01);
+      background: #090909;
+      z-index: 60;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .portal-expansion.run {
+      opacity: 1;
+      animation: portalOpen .82s cubic-bezier(.72, .02, .18, 1) forwards;
+    }
+    @keyframes portalOpen {
+      0% {
+        transform: translate(-50%, -50%) scale(.01);
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, .12);
+      }
+      22% {
+        transform: translate(-50%, -50%) scale(1.05);
+        box-shadow: 0 0 0 12px rgba(255, 255, 255, .05);
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(18);
+        box-shadow: 0 0 0 0 transparent;
+      }
+    }
+
+    /* Accessibility: Reduced Motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Top Brand Logo (Contract: 3D2R Logo only, no text) -->
+    <div class="brand-logo-only" aria-label="3D2R Official Release">
+      <img src="/assets/3d2r-logo-source.png" alt="3D2R" width="21" height="auto" />
+    </div>
+
+    <!-- 3D Particle Field Canvas -->
+    <canvas id="p" aria-hidden="true"></canvas>
+    <div class="vignette" aria-hidden="true"></div>
+
+    <!-- Center START Portal CTA -->
+    <button class="start-portal" id="start-btn" aria-label="Start 3D2R Trade Show 3D Capture">
+      <span class="portal-grow-ring" aria-hidden="true"></span>
+      <strong class="portal-label">START</strong>
+    </button>
+
+    <!-- Bottom Microcopy -->
+    <div class="tiny-footer" aria-hidden="true">INTERACTIVE DIGITAL TWIN PLATFORM</div>
+
+    <!-- Fullscreen Expanding Portal Wipe -->
+    <div class="portal-expansion" id="portal-expansion" aria-hidden="true"></div>
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      // ── PARTICLE FIELD 3D CONTRACT ──
+      const cvs = document.getElementById('p');
+      const ctx = cvs.getContext('2d');
+      let W = 0, H = 0, dpr = 1, entered = false, autoAngle = 0;
+      let viewportFit = 1, viewportCenterX = 0, viewportCenterY = 0, fitReady = false;
+      let raf = 0;
+      const mouse = { tx: 0, ty: 0, cx: 0, cy: 0 };
+      const FOV = 760, XN = 9, YN = 5, ZN = 4, SX = 92, SY = 92, SZ = 165;
+
+      function noise3(x, y, z, s = 0) {
+        const n = Math.sin((x + 1) * 12.9898 + (y + 1) * 78.233 + (z + 1) * 37.719 + s * 19.913) * 43758.5453;
+        return n - Math.floor(n);
+      }
+
+      const pts = [], links = [], pIndex = new Map();
+      function pkey(x, y, z) { return x + ':' + y + ':' + z; }
+
+      for (let z = 0; z < ZN; z++) {
+        for (let y = 0; y < YN; y++) {
+          for (let x = 0; x < XN; x++) {
+            const jx = (noise3(x, y, z, 1) - .5) * SX * .56;
+            const jy = (noise3(x, y, z, 2) - .5) * SY * .56;
+            const jz = (noise3(x, y, z, 3) - .5) * SZ * .42;
+            const size = .52 + Math.pow(noise3(x, y, z, 4), 1.7) * 2.45;
+            const p = {
+              x: (x - (XN - 1) / 2) * SX + jx,
+              y: (y - (YN - 1) / 2) * SY + jy,
+              z: (z - (ZN - 1) / 2) * SZ + jz,
+              size, gx: x, gy: y, gz: z
+            };
+            pIndex.set(pkey(x, y, z), pts.length);
+            pts.push(p);
+          }
+        }
+      }
+
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i];
+        [[1, 0, 0], [0, 1, 0], [0, 0, 1]].forEach(d => {
+          const j = pIndex.get(pkey(p.gx + d[0], p.gy + d[1], p.gz + d[2]));
+          if (j !== undefined) links.push([i, j]);
+        });
+      }
+
+      function resize() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        W = window.innerWidth;
+        H = window.innerHeight;
+        cvs.width = Math.round(W * dpr);
+        cvs.height = Math.round(H * dpr);
+        cvs.style.width = W + 'px';
+        cvs.style.height = H + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function onPointerMove(e) {
+        mouse.tx = (e.clientX / W - .5) * 2;
+        mouse.ty = (e.clientY / H - .5) * 2;
+      }
+
+      function onPointerLeave() {
+        mouse.tx = 0;
+        mouse.ty = 0;
+      }
+
+      function rotate(p, rx, ry) {
+        const cy = Math.cos(ry), sy = Math.sin(ry);
+        const cx = Math.cos(rx), sx = Math.sin(rx);
+        const x1 = p.x * cy + p.z * sy;
+        const z1 = -p.x * sy + p.z * cy;
+        return { x: x1, y: p.y * cx - z1 * sx, z: p.y * sx + z1 * cx };
+      }
+
+      function draw() {
+        mouse.cx += (mouse.tx - mouse.cx) * .045;
+        mouse.cy += (mouse.ty - mouse.cy) * .045;
+        if (!entered) autoAngle += 0.00038;
+        ctx.clearRect(0, 0, W, H);
+
+        const rx = Math.sin(autoAngle * .7) * .055 + mouse.cy * -.22;
+        const ry = autoAngle + mouse.cx * .30;
+        const centerZ = 1180;
+
+        const pr = pts.map((p, i) => {
+          const r = rotate(p, rx, ry);
+          const z = r.z + centerZ;
+          const s = FOV / z;
+          return { x: W / 2 + r.x * s, y: H / 2 + r.y * s, z, s, i };
+        });
+
+        // Fluid full-viewport fit based on projected 3D bounds
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        for (const p of pr) {
+          minX = Math.min(minX, p.x);
+          maxX = Math.max(maxX, p.x);
+          minY = Math.min(minY, p.y);
+          maxY = Math.max(maxY, p.y);
+        }
+        const spanX = Math.max(1, maxX - minX);
+        const spanY = Math.max(1, maxY - minY);
+        const targetFit = Math.max(W / spanX, H / spanY) * 1.06;
+        const targetCx = (minX + maxX) * .5;
+        const targetCy = (minY + maxY) * .5;
+
+        if (!fitReady) {
+          viewportFit = targetFit;
+          viewportCenterX = targetCx;
+          viewportCenterY = targetCy;
+          fitReady = true;
+        } else {
+          viewportFit += (targetFit - viewportFit) * .07;
+          viewportCenterX += (targetCx - viewportCenterX) * .07;
+          viewportCenterY += (targetCy - viewportCenterY) * .07;
+        }
+
+        for (const p of pr) {
+          p.x = W * .5 + (p.x - viewportCenterX) * viewportFit;
+          p.y = H * .5 + (p.y - viewportCenterY) * viewportFit;
+        }
+
+        // Structural connection lines
+        ctx.lineWidth = .55;
+        for (const l of links) {
+          const a = pr[l[0]], b = pr[l[1]];
+          const depth = Math.max(0, Math.min(1, 1.35 - (a.z + b.z) * .5 / 1450));
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.strokeStyle = `rgba(255,255,255,${entered ? .018 : .035 + depth * .07})`;
+          ctx.stroke();
+        }
+
+        // 3D Particles
+        const order = pr.map((p, i) => ({ ...p, i })).sort((a, b) => b.z - a.z);
+        for (const p of order) {
+          const depth = Math.max(0, Math.min(1, 1.45 - p.z / 1400));
+          const r = Math.max(.22, pts[p.i].size * (.55 + depth * .85) * .5);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255,255,255,${entered ? .035 : .18 + depth * .57})`;
+          ctx.shadowBlur = entered ? 0 : 2 + depth * 8;
+          ctx.shadowColor = `rgba(255,255,255,${.12 + depth * .32})`;
+          ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+
+        // Subtle pointer perspective gradient
+        if (!entered) {
+          const gx = W / 2 + mouse.cx * W * .18;
+          const gy = H / 2 + mouse.cy * H * .14;
+          const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, 240);
+          g.addColorStop(0, 'rgba(255,255,255,.05)');
+          g.addColorStop(.28, 'rgba(255,255,255,.018)');
+          g.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.fillStyle = g;
+          ctx.fillRect(gx - 240, gy - 240, 480, 480);
+        }
+
+        raf = requestAnimationFrame(draw);
+      }
+
+      // Initialize Canvas
+      resize();
+      window.addEventListener('resize', resize, { passive: true });
+      window.addEventListener('pointermove', onPointerMove, { passive: true });
+      window.addEventListener('pointerleave', onPointerLeave, { passive: true });
+      raf = requestAnimationFrame(draw);
+
+      // ── LANDING CAPTURE ADAPTER CONTRACT ──
+      const startBtn = document.getElementById('start-btn');
+      const expand = document.getElementById('portal-expansion');
+
+      function cleanupListeners() {
+        if (raf) cancelAnimationFrame(raf);
+        window.removeEventListener('resize', resize);
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerleave', onPointerLeave);
+      }
+
+      function launchExistingTradeShowCapture() {
+        cleanupListeners();
+        // Conceptual intent: vertical='TRADE_SHOW', source='landing', intent='create_virtual_booth'
+        const targetUrl = '/?mode=booth-tour-wizard&step=1&source=landing&vertical=TRADE_SHOW&intent=create_virtual_booth';
+        window.location.href = targetUrl;
+      }
+
+      function handleStartAction(e) {
+        if (entered) return;
+        entered = true;
+        startBtn.style.pointerEvents = 'none';
+        startBtn.classList.add('is-active');
+        expand.classList.add('run');
+
+        // Allow 720ms for smooth portal expansion before launching real capture
+        setTimeout(() => {
+          launchExistingTradeShowCapture();
+        }, 720);
+      }
+
+      startBtn.addEventListener('click', handleStartAction);
+      startBtn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleStartAction(e);
+        }
+      });
+
+      // Export adapter status for automated testing / inspection
+      window.__3D2R_LANDING_ADAPTER__ = {
+        vertical: 'TRADE_SHOW',
+        source: 'landing',
+        intent: 'create_virtual_booth',
+        isEntered: () => entered,
+        cleanupListeners: cleanupListeners,
+        launchCapture: launchExistingTradeShowCapture
+      };
+    })();
+  </script>
+</body>
+</html>

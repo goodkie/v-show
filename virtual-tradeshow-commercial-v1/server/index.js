@@ -6582,6 +6582,15 @@ app.get('/demo-splat.html', (req, res) => {
   res.status(404).send('3DGS viewer not yet deployed. Please check back soon.');
 });
 
+// ── 3D2R Official Landing Preview Route (Section 19 / 31) ──
+app.get(['/landing-preview', '/landing-preview.html'], (req, res) => {
+  const landingFile = path.join(__dirname, '..', 'client', 'landing-preview.html');
+  if (fs.existsSync(landingFile)) {
+    return res.sendFile(landingFile, { headers: { 'Cache-Control': 'no-cache' } });
+  }
+  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
+});
+
 // ── Explicit Index Route (forces no-cache on index.html) ──
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'client', 'index.html'), { headers: { 'Cache-Control': 'no-cache' } });
