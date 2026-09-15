@@ -1,0 +1,34 @@
+{
+  "phase": "7C.2R4P4-R3-R1",
+  "protocol": "METRIC_NAMESPACE_RECONCILIATION",
+  "findings": {
+    "sampson_error_conflation": "Phase 7C.2R4P4-R3 incorrectly labeled epipolar Sampson distance quantities (40.3467, 4.3148, 1.3360) as PIXEL_REPROJECTION_RMS. In addition, Candidate A's Sampson error (40.3467) was erroneously paired with the true-pixel improvement percentage (21.89%). These metrics belong to distinct mathematical namespaces and are now formally decoupled."
+  },
+  "namespace_definitions": {
+    "SAMPSON_ERROR": {
+      "quantity_name": "SAMPSON_RMS",
+      "improvement_name": "SAMPSON_IMPROVEMENT_PERCENT",
+      "domain": "Pairwise epipolar algebraic distance x_2^T F x_1 / (J_F)",
+      "baseline_r4_rms": 88.8411,
+      "candidate_a_rms": 40.3467,
+      "candidate_a_improvement_percent": 54.5855,
+      "candidate_b_rms": 4.3148,
+      "candidate_b_improvement_percent": 95.1432,
+      "candidate_c_rms": 1.336,
+      "candidate_c_improvement_percent": 98.4962
+    },
+    "TRUE_PIXEL_REPROJECTION": {
+      "quantity_name": "TRUE_PIXEL_REPROJECTION_RMS",
+      "improvement_name": "TRUE_PIXEL_REPROJECTION_IMPROVEMENT_PERCENT",
+      "domain": "Depth-backed 3D backprojection and camera-to-camera forward/reverse pixel reprojection",
+      "baseline_r4_rms": 204.9715,
+      "candidate_a_rms": 160.1032,
+      "candidate_a_improvement_percent": 21.89,
+      "candidate_b_rms": 156.6576,
+      "candidate_b_improvement_percent": 23.571,
+      "candidate_c_rms": 158.5164,
+      "candidate_c_improvement_percent": 22.6642
+    }
+  },
+  "verdict": "NAMESPACES_FORMALLY_SEPARATED"
+}

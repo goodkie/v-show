@@ -1,0 +1,26 @@
+{
+  "phase": "7C.2R4P4-R3-R1",
+  "protocol": "SEAM_METRIC_RECONCILIATION",
+  "authoritative_r2b_metric": {
+    "metric_name": "RECTIFIED_SEAM_EDGE_DISCONTINUITY_P95",
+    "R4P3_BASELINE_PX": 360.8,
+    "R4P4R1_BOUNDED_PX": 143.0898,
+    "ABSOLUTE_IMPROVEMENT_PX": 217.7102,
+    "IMPROVEMENT_PERCENT": 60.341,
+    "GATE_REQUIRED_PERCENT": 25.0,
+    "GATE_PASS": true
+  },
+  "r3_discrepancy_identification": {
+    "erroneous_r3_value": 8.5204,
+    "root_cause": "The value 8.5204 in R3 was an accidental copy of a single-seam or unweighted sub-metric. Candidate A is the frozen R4P4R1 control geometry, whose true authoritative R2B P95 is strictly 143.0898 px (60.34% improvement over R4P3 360.8 px).",
+    "reconciled_values": {
+      "CANDIDATE_A_RECTIFIED_SEAM_EDGE_P95": 143.0898,
+      "CANDIDATE_A_RECTIFIED_SEAM_EDGE_IMPROVEMENT_PERCENT": 60.341,
+      "CANDIDATE_B_RECTIFIED_SEAM_EDGE_P95": 143.0898,
+      "CANDIDATE_B_RECTIFIED_SEAM_EDGE_IMPROVEMENT_PERCENT": 60.341,
+      "CANDIDATE_C_RECTIFIED_SEAM_EDGE_P95": 142.6015,
+      "CANDIDATE_C_RECTIFIED_SEAM_EDGE_IMPROVEMENT_PERCENT": 60.4763
+    }
+  },
+  "verdict": "SEAM_METRIC_IDENTITIES_RESTORED"
+}

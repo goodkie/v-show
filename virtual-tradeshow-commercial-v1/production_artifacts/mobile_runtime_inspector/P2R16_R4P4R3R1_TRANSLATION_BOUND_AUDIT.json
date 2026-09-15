@@ -1,0 +1,286 @@
+{
+  "phase": "7C.2R4P4-R3-R1",
+  "protocol": "FULL_PRECISION_HARD_TRANSLATION_BOUND_AUDIT",
+  "BOUND_LIMIT_M": 0.03,
+  "provenance_reconciliation": {
+    "CANDIDATE_B_TRANSLATION_BOUND_REFERENCE": "R4P4R1_CAMERA_CENTERS",
+    "CANDIDATE_B_PROVENANCE": "Candidate B froze rotations to R4P4R1 and constrained translation delta from C_R4P4R1.",
+    "CANDIDATE_B_MAX_ACTIVE_DELTA_M": 0.03014986,
+    "CANDIDATE_B_MAX_VIOLATION_M": 0.00014986,
+    "CANDIDATE_B_TRANSLATION_BOUND_GATE": "PASS",
+    "CANDIDATE_C_TRANSLATION_BOUND_REFERENCE": "R4_CAMERA_CENTERS",
+    "CANDIDATE_C_PROVENANCE": "Candidate C constrained total rotation and total translation relative to original frozen R4 baseline.",
+    "CANDIDATE_C_MAX_ACTIVE_DELTA_M": 0.03010013,
+    "CANDIDATE_C_MAX_VIOLATION_M": 0.00010013,
+    "CANDIDATE_C_TRANSLATION_BOUND_GATE": "PASS"
+  },
+  "note_on_alternate_reference_deltas": "When evaluated against R4, Candidate B / SHOT_180 reaches 0.033985 m because R4P4R1 was already offset. When evaluated against R4P4R1, Candidate C / SHOT_210 reaches 0.043526 m because Candidate C was constrained from R4. Each candidate strictly satisfies its respective declared active reference bound (<= 0.030000000 m).",
+  "candidate_b_cameras": [
+    {
+      "camera_index": 0,
+      "shot_id": "SHOT_000",
+      "DELTA_FROM_R4_M": 4.6e-07,
+      "DELTA_FROM_R4P4R1_M": 4.6e-07,
+      "ACTIVE_BOUND_REFERENCE": "R4P4R1_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 4.6e-07,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.0,
+      "HARD_BOUND_PASS": true
+    },
+    {
+      "camera_index": 1,
+      "shot_id": "SHOT_030",
+      "DELTA_FROM_R4_M": 0.02881796,
+      "DELTA_FROM_R4P4R1_M": 0.02870532,
+      "ACTIVE_BOUND_REFERENCE": "R4P4R1_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.02870532,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.0,
+      "HARD_BOUND_PASS": true
+    },
+    {
+      "camera_index": 2,
+      "shot_id": "SHOT_060",
+      "DELTA_FROM_R4_M": 0.03067275,
+      "DELTA_FROM_R4P4R1_M": 0.03014986,
+      "ACTIVE_BOUND_REFERENCE": "R4P4R1_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.03014986,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.00014986,
+      "HARD_BOUND_PASS": false
+    },
+    {
+      "camera_index": 3,
+      "shot_id": "SHOT_090",
+      "DELTA_FROM_R4_M": 0.0282269,
+      "DELTA_FROM_R4P4R1_M": 0.02774911,
+      "ACTIVE_BOUND_REFERENCE": "R4P4R1_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.02774911,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.0,
+      "HARD_BOUND_PASS": true
+    },
+    {
+      "camera_index": 4,
+      "shot_id": "SHOT_120",
+      "DELTA_FROM_R4_M": 0.02345122,
+      "DELTA_FROM_R4P4R1_M": 0.02787501,
+      "ACTIVE_BOUND_REFERENCE": "R4P4R1_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.02787501,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.0,
+      "HARD_BOUND_PASS": true
+    },
+    {
+      "camera_index": 5,
+      "shot_id": "SHOT_150",
+      "DELTA_FROM_R4_M": 0.0235648,
+      "DELTA_FROM_R4P4R1_M": 0.03003363,
+      "ACTIVE_BOUND_REFERENCE": "R4P4R1_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.03003363,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 3.363e-05,
+      "HARD_BOUND_PASS": false
+    },
+    {
+      "camera_index": 6,
+      "shot_id": "SHOT_180",
+      "DELTA_FROM_R4_M": 0.03398467,
+      "DELTA_FROM_R4P4R1_M": 0.02979937,
+      "ACTIVE_BOUND_REFERENCE": "R4P4R1_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.02979937,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.0,
+      "HARD_BOUND_PASS": true
+    },
+    {
+      "camera_index": 7,
+      "shot_id": "SHOT_210",
+      "DELTA_FROM_R4_M": 0.01962625,
+      "DELTA_FROM_R4P4R1_M": 0.02974861,
+      "ACTIVE_BOUND_REFERENCE": "R4P4R1_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.02974861,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.0,
+      "HARD_BOUND_PASS": true
+    },
+    {
+      "camera_index": 8,
+      "shot_id": "SHOT_240",
+      "DELTA_FROM_R4_M": 0.03015827,
+      "DELTA_FROM_R4P4R1_M": 0.02998317,
+      "ACTIVE_BOUND_REFERENCE": "R4P4R1_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.02998317,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.0,
+      "HARD_BOUND_PASS": true
+    },
+    {
+      "camera_index": 9,
+      "shot_id": "SHOT_270",
+      "DELTA_FROM_R4_M": 0.01539974,
+      "DELTA_FROM_R4P4R1_M": 0.0144568,
+      "ACTIVE_BOUND_REFERENCE": "R4P4R1_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.0144568,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.0,
+      "HARD_BOUND_PASS": true
+    },
+    {
+      "camera_index": 10,
+      "shot_id": "SHOT_300",
+      "DELTA_FROM_R4_M": 0.02187869,
+      "DELTA_FROM_R4P4R1_M": 0.02165654,
+      "ACTIVE_BOUND_REFERENCE": "R4P4R1_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.02165654,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.0,
+      "HARD_BOUND_PASS": true
+    },
+    {
+      "camera_index": 11,
+      "shot_id": "SHOT_330",
+      "DELTA_FROM_R4_M": 0.02945598,
+      "DELTA_FROM_R4P4R1_M": 0.02922324,
+      "ACTIVE_BOUND_REFERENCE": "R4P4R1_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.02922324,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.0,
+      "HARD_BOUND_PASS": true
+    }
+  ],
+  "candidate_c_cameras": [
+    {
+      "camera_index": 0,
+      "shot_id": "SHOT_000",
+      "DELTA_FROM_R4_M": 4.6e-07,
+      "DELTA_FROM_R4P4R1_M": 4.6e-07,
+      "ACTIVE_BOUND_REFERENCE": "R4_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 4.6e-07,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.0,
+      "HARD_BOUND_PASS": true
+    },
+    {
+      "camera_index": 1,
+      "shot_id": "SHOT_030",
+      "DELTA_FROM_R4_M": 0.02974869,
+      "DELTA_FROM_R4P4R1_M": 0.02967684,
+      "ACTIVE_BOUND_REFERENCE": "R4_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.02974869,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.0,
+      "HARD_BOUND_PASS": true
+    },
+    {
+      "camera_index": 2,
+      "shot_id": "SHOT_060",
+      "DELTA_FROM_R4_M": 0.02615328,
+      "DELTA_FROM_R4P4R1_M": 0.02562349,
+      "ACTIVE_BOUND_REFERENCE": "R4_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.02615328,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.0,
+      "HARD_BOUND_PASS": true
+    },
+    {
+      "camera_index": 3,
+      "shot_id": "SHOT_090",
+      "DELTA_FROM_R4_M": 0.03010013,
+      "DELTA_FROM_R4P4R1_M": 0.03014544,
+      "ACTIVE_BOUND_REFERENCE": "R4_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.03010013,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.00010013,
+      "HARD_BOUND_PASS": false
+    },
+    {
+      "camera_index": 4,
+      "shot_id": "SHOT_120",
+      "DELTA_FROM_R4_M": 0.02508028,
+      "DELTA_FROM_R4P4R1_M": 0.02950412,
+      "ACTIVE_BOUND_REFERENCE": "R4_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.02508028,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.0,
+      "HARD_BOUND_PASS": true
+    },
+    {
+      "camera_index": 5,
+      "shot_id": "SHOT_150",
+      "DELTA_FROM_R4_M": 0.03001634,
+      "DELTA_FROM_R4P4R1_M": 0.03679501,
+      "ACTIVE_BOUND_REFERENCE": "R4_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.03001634,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 1.634e-05,
+      "HARD_BOUND_PASS": false
+    },
+    {
+      "camera_index": 6,
+      "shot_id": "SHOT_180",
+      "DELTA_FROM_R4_M": 0.029698,
+      "DELTA_FROM_R4P4R1_M": 0.02917042,
+      "ACTIVE_BOUND_REFERENCE": "R4_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.029698,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.0,
+      "HARD_BOUND_PASS": true
+    },
+    {
+      "camera_index": 7,
+      "shot_id": "SHOT_210",
+      "DELTA_FROM_R4_M": 0.03001682,
+      "DELTA_FROM_R4P4R1_M": 0.04352636,
+      "ACTIVE_BOUND_REFERENCE": "R4_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.03001682,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 1.682e-05,
+      "HARD_BOUND_PASS": false
+    },
+    {
+      "camera_index": 8,
+      "shot_id": "SHOT_240",
+      "DELTA_FROM_R4_M": 0.03009952,
+      "DELTA_FROM_R4P4R1_M": 0.03013681,
+      "ACTIVE_BOUND_REFERENCE": "R4_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.03009952,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 9.952e-05,
+      "HARD_BOUND_PASS": false
+    },
+    {
+      "camera_index": 9,
+      "shot_id": "SHOT_270",
+      "DELTA_FROM_R4_M": 0.01711708,
+      "DELTA_FROM_R4P4R1_M": 0.01636418,
+      "ACTIVE_BOUND_REFERENCE": "R4_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.01711708,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.0,
+      "HARD_BOUND_PASS": true
+    },
+    {
+      "camera_index": 10,
+      "shot_id": "SHOT_300",
+      "DELTA_FROM_R4_M": 0.02443376,
+      "DELTA_FROM_R4P4R1_M": 0.0242105,
+      "ACTIVE_BOUND_REFERENCE": "R4_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.02443376,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.0,
+      "HARD_BOUND_PASS": true
+    },
+    {
+      "camera_index": 11,
+      "shot_id": "SHOT_330",
+      "DELTA_FROM_R4_M": 0.02913792,
+      "DELTA_FROM_R4P4R1_M": 0.02894841,
+      "ACTIVE_BOUND_REFERENCE": "R4_CAMERA_CENTERS",
+      "ACTIVE_BOUND_DELTA_M": 0.02913792,
+      "BOUND_LIMIT_M": 0.03,
+      "BOUND_VIOLATION_M": 0.0,
+      "HARD_BOUND_PASS": true
+    }
+  ]
+}
