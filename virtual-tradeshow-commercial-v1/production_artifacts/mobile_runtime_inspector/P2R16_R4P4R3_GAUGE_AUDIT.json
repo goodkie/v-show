@@ -1,0 +1,17 @@
+{
+  "phase": "7C.2R4P4-R3",
+  "protocol": "GAUGE_LOCK_AUDIT",
+  "reference_camera": "SHOT_000",
+  "gauge_checks": {
+    "reference_camera_rotation_locked": true,
+    "reference_camera_rotation_delta_deg": 0.0,
+    "reference_camera_center_locked": true,
+    "reference_camera_center_delta_m": 0.0,
+    "global_orientation_locked": true,
+    "global_translation_locked": true,
+    "depth_scale_locked": true,
+    "similarity_gauge_drift_detected": false
+  },
+  "GAUGE_FAILURE": false,
+  "verdict": "PASS"
+}

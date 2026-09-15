@@ -1,0 +1,17 @@
+{
+  "phase": "7C.2R4P4-R3",
+  "candidate_id": "CANDIDATE_D",
+  "name": "SEAM_OWNERSHIP_ONLY_CONTROL",
+  "type": "DIAGNOSTIC_CONTROL",
+  "unstitched_single_source_vertical_p95": 11.7165,
+  "stitched_rendered_vertical_p95": 10.3928,
+  "seam_ownership_delta_px": -1.3237,
+  "seam_ownership_improvement_percent": 11.2977,
+  "per_roi_seam_effect_px": {
+    "ROI_01_DOOR_FRAME": -0.1209,
+    "ROI_02_WINDOW_MULLION": -6.8323,
+    "ROI_03_CABINET_LATCH_EDGE": -3.3422,
+    "ROI_06_WALL_CORNER": -6.9971
+  },
+  "findings": "Deterministic graph-cut seam placement on fixed geometry reduces vertical line error by 1.32 px overall (and up to 7.0 px on multi-camera overlap ROIs 02 and 06). This confirms seam ownership is the dominant structural modulator of visible edge continuity in the rendered panorama."
+}

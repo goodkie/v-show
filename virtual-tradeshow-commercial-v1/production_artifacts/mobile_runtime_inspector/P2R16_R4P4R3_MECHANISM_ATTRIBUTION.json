@@ -1,0 +1,37 @@
+{
+  "phase": "7C.2R4P4-R3",
+  "protocol": "MECHANISM_ATTRIBUTION_ANALYSIS",
+  "comparisons": {
+    "A_vs_B_translation_only": {
+      "translation_delta_m": 0.03,
+      "reprojection_rmse_change_px": -36.0319,
+      "reprojection_improvement_percent": 95.14,
+      "single_source_vertical_p95_change_px": 0.0,
+      "stitched_vertical_p95_change_px": 0.0,
+      "structural_improvement_percent": 0.0,
+      "verdict": "Translation within 3cm drastically reduces epipolar Sampson error on adjacent pairs, but has zero effect on single-source straightness and zero effect on rendered vertical P95."
+    },
+    "A_vs_C_joint_rotation_translation": {
+      "rotation_delta_deg": 3.0,
+      "translation_delta_m": 0.03,
+      "reprojection_rmse_change_px": -39.0107,
+      "reprojection_improvement_percent": 98.5,
+      "single_source_vertical_p95_change_px": -0.4042,
+      "stitched_vertical_p95_change_px": -0.0746,
+      "structural_improvement_percent": 0.7178,
+      "verdict": "Joint rotation and translation yields marginal sub-pixel vertical improvement (0.07 px stitched, total 11.43% vs R4P3), remaining far below the required 25.0% threshold."
+    },
+    "A_vs_D_seam_ownership": {
+      "geometry_change": 0.0,
+      "stitched_vs_unstitched_delta_px": -1.3237,
+      "structural_improvement_percent": 11.2977,
+      "verdict": "Graph-cut seam boundary placement reduces vertical edge error by 1.32 px overall, acting as the primary driver of rendered line quality."
+    }
+  },
+  "causal_classifications": {
+    "TRANSLATION_CAUSAL_EFFECT": "INSUFFICIENT_TO_RESOLVE_STRUCTURAL_FAILURE",
+    "ROTATION_CAUSAL_EFFECT": "MARGINAL_LOCAL_IMPROVEMENT_INSUFFICIENT_FOR_GATE",
+    "SEAM_CAUSAL_EFFECT": "DOMINANT_STRUCTURAL_MODULATOR"
+  },
+  "governing_physical_insight": "Camera baselines in the physical capture ring range from 4.3 cm to 30.5 cm, producing 30 to 956 px of optical parallax on nearby features (0.56m to 1.88m). Conservative translation (<= 3 cm) and rotation (<= 3 deg) bounds cannot eliminate this physical parallax. Furthermore, Camera 0 is strictly gauge-locked, fixing ROI_01 error at 11.45 px. Therefore, no conservative rigid geometry change can achieve the contractual 25% vertical improvement gate."
+}

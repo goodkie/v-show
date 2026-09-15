@@ -1,0 +1,18 @@
+{
+  "phase": "7C.2R4P4-R3",
+  "protocol": "MODEL_SELECTION",
+  "candidates_evaluated": [
+    "CANDIDATE_A",
+    "CANDIDATE_B",
+    "CANDIDATE_C"
+  ],
+  "candidate_outcomes": {
+    "CANDIDATE_A": "FAIL (Anchored vertical improvement 10.79% < 25.0%)",
+    "CANDIDATE_B": "FAIL (Anchored vertical improvement 10.79% < 25.0%)",
+    "CANDIDATE_C": "FAIL (Anchored vertical improvement 11.43% < 25.0%)"
+  },
+  "SELECTED_CANDIDATE": "NONE_ALL_FAIL_VERTICAL_GATE",
+  "retained_reference_geometry": "CANDIDATE_A_R4P4R1_RETAINED_AS_UNACCEPTED_BENCHMARK",
+  "customer_default_status": "P2R13_REMAINS_ACTIVE_CUSTOMER_DEFAULT",
+  "rationale": "All candidates fail the mandatory anchored rectified vertical gate (>= 25.0%). Under the frozen pass contract, no candidate is accepted, bounds are not expanded, and no replacement customer geometry is deployed."
+}

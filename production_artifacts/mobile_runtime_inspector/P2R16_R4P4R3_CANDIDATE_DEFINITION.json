@@ -1,0 +1,69 @@
+{
+  "phase": "7C.2R4P4-R3",
+  "protocol": "CANDIDATE_LADDER_SPECIFICATION",
+  "evaluation_rules": {
+    "frozen_metrics": [
+      "ROI_01_DOOR_FRAME",
+      "ROI_02_WINDOW_MULLION",
+      "ROI_03_CABINET_LATCH_EDGE",
+      "ROI_06_WALL_CORNER"
+    ],
+    "hard_rotation_bound_from_r4_deg": 3.0,
+    "hard_translation_bound_m": 0.03,
+    "reference_camera_locked": "SHOT_000",
+    "acceptance_thresholds": {
+      "PIXEL_REPROJECTION_IMPROVEMENT_PERCENT": 20.0,
+      "ANCHORED_RECTIFIED_VERTICAL_IMPROVEMENT_PERCENT": 25.0,
+      "RECTIFIED_SEAM_EDGE_IMPROVEMENT_PERCENT": 25.0,
+      "SECOND_NEIGHBOR_VALIDATION": "NO_CATASTROPHIC_REGRESSION",
+      "MAX_TOTAL_ROTATION_DELTA_FROM_R4_DEG": 3.0,
+      "MAX_CAMERA_CENTER_DELTA_M": 0.03,
+      "GEOMETRY_FOLDOVER_COUNT": 0,
+      "BLACK_CRACK_PIXEL_COUNT": 0,
+      "INPAINT_USED": false,
+      "GAUGE_FAILURE": false
+    }
+  },
+  "candidates": [
+    {
+      "candidate_id": "CANDIDATE_A",
+      "name": "R4P4R1_BOUNDED_REFERENCE",
+      "type": "CONTROL_REFERENCE",
+      "rotation_model": "BOUNDED_ROTATION_FROM_R4P4R1",
+      "translation_model": "ZERO_CAMERA_CENTER_DELTA",
+      "max_rotation_bound_deg": 3.0,
+      "max_translation_bound_m": 0.0,
+      "description": "Frozen rotation-only bounded reference geometry established in Phase 7C.2R4P4-R1."
+    },
+    {
+      "candidate_id": "CANDIDATE_B",
+      "name": "TRANSLATION_ONLY_LOCAL",
+      "type": "TEST_CANDIDATE",
+      "rotation_model": "FROZEN_TO_R4P4R1",
+      "translation_model": "CAMERA_CENTER_DELTA_IN_WORLD_FRAME",
+      "max_rotation_bound_deg": 3.0,
+      "max_translation_bound_m": 0.03,
+      "description": "Rotations frozen to R4P4R1; camera centers optimized in common world frame with ||delta_C|| <= 0.03m."
+    },
+    {
+      "candidate_id": "CANDIDATE_C",
+      "name": "ROTATION_PLUS_TRANSLATION_LOCAL",
+      "type": "TEST_CANDIDATE",
+      "rotation_model": "JOINT_ROTATION_FROM_R4_PRIOR",
+      "translation_model": "CAMERA_CENTER_DELTA_IN_WORLD_FRAME",
+      "max_rotation_bound_deg": 3.0,
+      "max_translation_bound_m": 0.03,
+      "description": "Joint rotation and translation optimization with ||delta_theta|| <= 3.0 deg from R4 and ||delta_C|| <= 0.03m."
+    },
+    {
+      "candidate_id": "CANDIDATE_D",
+      "name": "SEAM_OWNERSHIP_ONLY_CONTROL",
+      "type": "DIAGNOSTIC_CONTROL",
+      "rotation_model": "FROZEN_TO_R4P4R1",
+      "translation_model": "FROZEN_TO_R4P4R1",
+      "max_rotation_bound_deg": 3.0,
+      "max_translation_bound_m": 0.0,
+      "description": "Diagnostic baseline measuring structural error reduction purely attributable to graph-cut seam placement on fixed geometry."
+    }
+  ]
+}
