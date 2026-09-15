@@ -1,0 +1,9 @@
+{
+  "protocol": "P2R18_P0_ROLLING_SHUTTER_DIAGNOSTIC",
+  "timestamp": "2026-09-15T10:10:00Z",
+  "row_dependent_effect_size_px": 0.42,
+  "row_dependent_r2": 0.018,
+  "consistency_across_shots": "LOW",
+  "attribution_evidence": "DISFAVORED",
+  "conclusion": "Regression of line residual against sensor row yields R2 = 0.018 (negligible). Static still-capture protocol stabilized rotation during individual frame acquisition, ruling out rolling shutter as a primary cause."
+}

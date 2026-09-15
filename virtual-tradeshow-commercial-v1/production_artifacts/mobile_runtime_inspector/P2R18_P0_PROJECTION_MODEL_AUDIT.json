@@ -1,0 +1,12 @@
+{
+  "protocol": "P2R18_P0_PROJECTION_MODEL_AUDIT",
+  "timestamp": "2026-09-15T10:10:00Z",
+  "equirectangular_band": "[-26.38 deg, +28.39 deg]",
+  "mathematical_properties": {
+    "meridians_vertical": true,
+    "great_circles_curved_in_erp": true,
+    "gnomonic_reprojection_straightens_3d_lines": true
+  },
+  "attribution_evidence": "DISFAVORED_AS_PRIMARY_DEFECT",
+  "conclusion": "The gnomonic pinhole patch extraction mathematically linearizes true 3D planes. ERP projection distortion is fully accounted for by the metric framework and does not explain residual non-straightness."
+}

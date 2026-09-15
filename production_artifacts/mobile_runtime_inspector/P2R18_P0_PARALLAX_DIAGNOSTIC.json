@@ -1,0 +1,26 @@
+{
+  "protocol": "P2R18_P0_PARALLAX_DIAGNOSTIC",
+  "timestamp": "2026-09-15T10:10:00Z",
+  "correlations": {
+    "vertical_error_vs_depth_correlation": -0.684,
+    "vertical_error_vs_baseline_correlation": 0.612,
+    "vertical_error_vs_seam_distance_correlation": -0.245,
+    "vertical_error_vs_translation_sensitivity": "STRONG"
+  },
+  "depth_strata_breakdown": {
+    "NEAR_lt_1_5m": {
+      "sample_count": 142,
+      "p95_error_px": 12.85
+    },
+    "MID_1_5_to_3_5m": {
+      "sample_count": 486,
+      "p95_error_px": 9.94
+    },
+    "FAR_gt_3_5m": {
+      "sample_count": 440,
+      "p95_error_px": 8.12
+    }
+  },
+  "attribution_evidence": "STRONG_PARALLAX_DEPENDENCE",
+  "conclusion": "Near structures (<1.5m) exhibit substantially higher vertical error (12.85 px) than far structures (>3.5m, 8.12 px, which actually beats the 8.73 px target). Hand-held optical center translation baseline produces strong depth-dependent parallax error."
+}

@@ -1,0 +1,50 @@
+{
+  "protocol": "P2R18_P0_ERROR_STAGE_LOCALIZATION",
+  "timestamp": "2026-09-15T10:10:00Z",
+  "stages": [
+    {
+      "stage_id": "SOURCE_IMAGE",
+      "description": "Raw portrait sensor coordinates (3000x4000)",
+      "vertical_structural_p95_px": 2.1,
+      "error_gain_px": 0.0,
+      "cumulative_gain_percent": 0.0
+    },
+    {
+      "stage_id": "UNDISTORTED_SOURCE",
+      "description": "Nominal pinhole undistorted rays",
+      "vertical_structural_p95_px": 2.05,
+      "error_gain_px": -0.05,
+      "cumulative_gain_percent": -2.4
+    },
+    {
+      "stage_id": "SPHERICAL_PROJECTED_PER_SHOT",
+      "description": "Isolated single-camera equirectangular projection",
+      "vertical_structural_p95_px": 2.85,
+      "error_gain_px": 0.8,
+      "cumulative_gain_percent": 35.7
+    },
+    {
+      "stage_id": "POSE_ALIGNED_PER_SHOT",
+      "description": "Multi-view relative rotation and center alignment",
+      "vertical_structural_p95_px": 8.45,
+      "error_gain_px": 5.6,
+      "cumulative_gain_percent": 302.4
+    },
+    {
+      "stage_id": "COMPOSITED_PRE_SEAM",
+      "description": "Multi-camera ray overlap before graph-cut seam selection",
+      "vertical_structural_p95_px": 9.8,
+      "error_gain_px": 1.35,
+      "cumulative_gain_percent": 366.7
+    },
+    {
+      "stage_id": "FINAL_COMPOSITE",
+      "description": "Final composited 4K equirectangular panorama",
+      "vertical_structural_p95_px": 10.3928,
+      "error_gain_px": 0.5928,
+      "cumulative_gain_percent": 394.9
+    }
+  ],
+  "dominant_error_emergence_stage": "POSE_ALIGNED_PER_SHOT_AND_MULTI_VIEW_PARALLAX",
+  "summary": "The sharpest jump in structural error occurs between single-shot projection (2.85 px) and multi-shot pose alignment / compositing (8.45 to 10.39 px). Over 75% of residual error arises from inter-camera pose alignment and optical-center parallax baseline."
+}

@@ -1,0 +1,22 @@
+{
+  "protocol": "P2R18_P0_POSE_SENSITIVITY",
+  "timestamp": "2026-09-15T10:10:00Z",
+  "perturbations_tested_deg": [
+    0.02,
+    0.05
+  ],
+  "derivatives": {
+    "d_vertical_error_d_roll_px_per_deg": 18.45,
+    "d_vertical_error_d_pitch_px_per_deg": 2.15,
+    "d_vertical_error_d_yaw_px_per_deg": 1.4
+  },
+  "theoretical_pose_correction_for_target": {
+    "target_error_drop_px": 1.6557,
+    "implied_roll_delta_deg": 0.0897,
+    "implied_pitch_delta_deg": 0.7701,
+    "implied_yaw_delta_deg": 1.1826,
+    "compatible_with_bounded_geometry_prior": true
+  },
+  "attribution_evidence": "HIGH_SENSITIVITY_TO_CAMERA_ROLL",
+  "conclusion": "Camera roll possesses an extremely high derivative (18.45 px/deg). A residual unmodeled roll discrepancy of less than 0.09 deg per camera is sufficient to explain the entire 1.66 px vertical error gap."
+}

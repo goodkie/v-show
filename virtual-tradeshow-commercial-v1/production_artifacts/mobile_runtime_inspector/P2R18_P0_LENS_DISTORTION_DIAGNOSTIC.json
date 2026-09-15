@@ -1,0 +1,21 @@
+{
+  "protocol": "P2R18_P0_LENS_DISTORTION_DIAGNOSTIC",
+  "timestamp": "2026-09-15T10:10:00Z",
+  "spatial_distribution": {
+    "center_radius_lt_1000px": {
+      "p95_error_px": 9.65
+    },
+    "mid_radius_1000_to_2000px": {
+      "p95_error_px": 10.22
+    },
+    "outer_radius_gt_2000px": {
+      "p95_error_px": 11.45
+    }
+  },
+  "radial_derivative": {
+    "d_error_d_k1": 12.8,
+    "d_error_d_k2": 3.4
+  },
+  "attribution_evidence": "MODERATE_CONTRIBUTOR",
+  "conclusion": "Outer sensor regions have higher residual error (+1.8 px vs center), indicating residual higher-order radial distortion contributes moderately to peripheral line bending."
+}

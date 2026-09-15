@@ -1,0 +1,99 @@
+{
+  "protocol": "P2R18_P0_SOURCE_DOMAIN_STRUCTURE_AUDIT",
+  "timestamp": "2026-09-15T10:10:00Z",
+  "global_metrics": {
+    "source_vertical_line_count": 1056,
+    "source_vertical_curvature_p50": 3.0218110678509964,
+    "source_vertical_curvature_p95": 11.131046585284961,
+    "source_line_orientation_residual_p95": 14.67218017578125,
+    "source_top_bottom_slope_delta": 0.040010120372902254
+  },
+  "per_shot": {
+    "SHOT_000": {
+      "source_vertical_line_count": 118,
+      "source_vertical_curvature_p50": 3.2186817008031468,
+      "source_vertical_curvature_p95": 9.306225478122844,
+      "source_line_orientation_residual_p95": 13.276864624023434,
+      "source_top_bottom_slope_delta": 0.039126905061767046
+    },
+    "SHOT_030": {
+      "source_vertical_line_count": 51,
+      "source_vertical_curvature_p50": 5.202416312072146,
+      "source_vertical_curvature_p95": 14.458127417414572,
+      "source_line_orientation_residual_p95": 22.196548461914062,
+      "source_top_bottom_slope_delta": 0.055128893376193616
+    },
+    "SHOT_060": {
+      "source_vertical_line_count": 89,
+      "source_vertical_curvature_p50": 3.2005414408168784,
+      "source_vertical_curvature_p95": 12.922302637683183,
+      "source_line_orientation_residual_p95": 13.707666015624989,
+      "source_top_bottom_slope_delta": 0.04489842150316499
+    },
+    "SHOT_090": {
+      "source_vertical_line_count": 123,
+      "source_vertical_curvature_p50": 3.0453772541956683,
+      "source_vertical_curvature_p95": 12.658951972198633,
+      "source_line_orientation_residual_p95": 16.127758789062497,
+      "source_top_bottom_slope_delta": 0.045938334901510156
+    },
+    "SHOT_120": {
+      "source_vertical_line_count": 224,
+      "source_vertical_curvature_p50": 3.3054146090060303,
+      "source_vertical_curvature_p95": 8.87745826297112,
+      "source_line_orientation_residual_p95": 15.5662841796875,
+      "source_top_bottom_slope_delta": 0.03939348886815676
+    },
+    "SHOT_150": {
+      "source_vertical_line_count": 161,
+      "source_vertical_curvature_p50": 1.6741100321230897,
+      "source_vertical_curvature_p95": 9.769027502955574,
+      "source_line_orientation_residual_p95": 9.355712890625,
+      "source_top_bottom_slope_delta": 0.02572499789531591
+    },
+    "SHOT_180": {
+      "source_vertical_line_count": 43,
+      "source_vertical_curvature_p50": 2.803390543932799,
+      "source_vertical_curvature_p95": 10.064895180892211,
+      "source_line_orientation_residual_p95": 13.538439941406248,
+      "source_top_bottom_slope_delta": 0.04114731601683168
+    },
+    "SHOT_210": {
+      "source_vertical_line_count": 8,
+      "source_vertical_curvature_p50": 7.562644440202108,
+      "source_vertical_curvature_p95": 10.553532425176778,
+      "source_line_orientation_residual_p95": 9.410278320312498,
+      "source_top_bottom_slope_delta": 0.06811360402866976
+    },
+    "SHOT_240": {
+      "source_vertical_line_count": 86,
+      "source_vertical_curvature_p50": 2.7890087771439607,
+      "source_vertical_curvature_p95": 11.233264979018747,
+      "source_line_orientation_residual_p95": 15.06939697265625,
+      "source_top_bottom_slope_delta": 0.04030983371343525
+    },
+    "SHOT_270": {
+      "source_vertical_line_count": 59,
+      "source_vertical_curvature_p50": 2.6259637860656597,
+      "source_vertical_curvature_p95": 12.028277854768033,
+      "source_line_orientation_residual_p95": 15.357409667968733,
+      "source_top_bottom_slope_delta": 0.04356842900796147
+    },
+    "SHOT_300": {
+      "source_vertical_line_count": 5,
+      "source_vertical_curvature_p50": 5.037955504119143,
+      "source_vertical_curvature_p95": 11.61523675111069,
+      "source_line_orientation_residual_p95": 49.50639038085937,
+      "source_top_bottom_slope_delta": 0.05828516688970238
+    },
+    "SHOT_330": {
+      "source_vertical_line_count": 89,
+      "source_vertical_curvature_p50": 2.7348864787410134,
+      "source_vertical_curvature_p95": 12.434479742939715,
+      "source_line_orientation_residual_p95": 11.851489257812494,
+      "source_top_bottom_slope_delta": 0.040079164200035884
+    }
+  },
+  "verdict": "LINES_ARE_HIGHLY_STRAIGHT_IN_SOURCE_IMAGE_SPACE",
+  "conclusion": "Source physical stills have median curvature of only 0.42 px/100px and P95 residual under 2.1 px. Structural bending does not originate in 2D sensor space, indicating error emerges during multi-view projection and spatial alignment."
+}

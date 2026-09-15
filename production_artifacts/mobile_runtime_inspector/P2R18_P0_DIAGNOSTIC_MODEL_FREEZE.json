@@ -1,0 +1,17 @@
+{
+  "protocol": "P2R18_P0_DIAGNOSTIC_MODEL_FREEZE",
+  "timestamp": "2026-09-15T10:12:00Z",
+  "status": "LOCKED_PRE_HELDOUT_ATTRIBUTION",
+  "heldout_anchors_evaluated": false,
+  "frozen_models": {
+    "source_domain_curvature": "TLS_ORTHOGONAL_P50_P95",
+    "stage_localization": "6_STAGE_PIPELINE_ERROR_PROPAGATION",
+    "pose_sensitivity": "FINITE_DIFF_ROLL_PITCH_YAW",
+    "parallax_classification": "DEPTH_AND_BASELINE_CORRELATION",
+    "intrinsic_sensitivity": "FX_FY_CX_CY_FINITE_DIFF",
+    "lens_distortion": "RADIAL_BAND_DIAGNOSTIC",
+    "rolling_shutter": "ROW_POLYNOMIAL_REGRESSION",
+    "projection_model": "GNOMONIC_VS_ERP_INVARIANT",
+    "seam_causality": "DISTANCE_STRATIFIED_RESIDUAL"
+  }
+}

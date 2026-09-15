@@ -1,0 +1,17 @@
+{
+  "protocol": "P2R18_P0_INTRINSIC_SENSITIVITY",
+  "timestamp": "2026-09-15T10:10:00Z",
+  "derivatives": {
+    "d_vertical_error_d_fx_px_per_percent": 0.35,
+    "d_vertical_error_d_fy_px_per_percent": 0.38,
+    "d_vertical_error_d_cx_px_per_px": 0.08,
+    "d_vertical_error_d_cy_px_per_px": 0.05
+  },
+  "implied_delta_for_target": {
+    "implied_focal_length_shift_percent": 4.4,
+    "implied_principal_point_shift_px": 20.7,
+    "compatible_with_physical_lens": false
+  },
+  "attribution_evidence": "LOW_TO_MODERATE",
+  "conclusion": "Intrinsics alone cannot bridge the gap without an implausible 4.4% focal length shift, which is ruled out by verified EXIF and factory Galaxy S23 lens calibration."
+}

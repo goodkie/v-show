@@ -1,0 +1,28 @@
+{
+  "protocol": "P2R18_P0_SEAM_CAUSAL_AUDIT",
+  "timestamp": "2026-09-15T10:10:00Z",
+  "distance_bins": {
+    "NEAR_SEAM_lt_100px": {
+      "p95_error_px": 10.85,
+      "sample_count": 218
+    },
+    "TRANSITION_100_to_300px": {
+      "p95_error_px": 10.42,
+      "sample_count": 394
+    },
+    "FAR_FROM_SEAM_gt_300px": {
+      "p95_error_px": 10.15,
+      "sample_count": 456
+    }
+  },
+  "single_vs_multi_source": {
+    "SINGLE_SOURCE": {
+      "p95_error_px": 10.2
+    },
+    "SEAM_CROSSING": {
+      "p95_error_px": 11.12
+    }
+  },
+  "attribution_evidence": "WEAKLY_SUPPORTED_CONTRIBUTOR",
+  "conclusion": "Seam crossing increases error slightly (+0.92 px), but structures far from any seam still show 10.15 px error. Seam placement is an aggravating factor but not the root cause."
+}
