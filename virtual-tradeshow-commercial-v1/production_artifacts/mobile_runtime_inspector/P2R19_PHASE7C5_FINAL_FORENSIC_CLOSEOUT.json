@@ -1,0 +1,68 @@
+{
+  "protocol": "P2R19_PHASE7C5_FINAL_FORENSIC_CLOSEOUT",
+  "timestamp": "2026-09-15T18:00:00Z",
+  "phase": "7C.5",
+  "phase_status": "CLOSED_NONREPRODUCIBLE_NO_PROMOTION",
+  "candidate_d_success_proven": false,
+  "candidate_d_failure_proven": false,
+  "reclassified_claims": {
+    "candidate_d_4k_feasibility": "HISTORICAL_RECORDED_PASS_NOT_REPRODUCIBLY_ESTABLISHED",
+    "candidate_d_4k_feasibility_reason": "P0 renderer implementation unavailable / never materialized; P0 evaluator implementation unavailable / never materialized; P0 raster unavailable.",
+    "candidate_d_4k_independent_replication": "HISTORICAL_RECORDED_PASS_NOT_REPRODUCIBLY_ESTABLISHED",
+    "candidate_d_4k_independent_replication_classification": "NON_REPRODUCIBLE_FROM_AVAILABLE_IMPLEMENTATION_EVIDENCE",
+    "twelve_k_eligibility_status": "SUPERSEDED",
+    "twelve_k_eligibility_reason": "P0_FOUNDATIONAL_IMPLEMENTATION_NOT_REPRODUCIBLE"
+  },
+  "r4p4r1_recovery_audit": {
+    "status": "LOCAL_FORENSIC_EVIDENCE_ONLY",
+    "local_path": "scratch/execute_phase7c2r4p4_seam_pipeline.py",
+    "local_sha256": "cbc267d842beb7efbcf778bcb30b68bc695a060078b3a1c1e54fd363cb89163e",
+    "remote_file_present": false,
+    "remote_reproducibility": "NOT_ESTABLISHED"
+  },
+  "corrected_execution_metrics": {
+    "physical_still_open_count": 0,
+    "black_crack_pixel_count": "NOT_ESTABLISHED",
+    "nonfinite_count": "NOT_ESTABLISHED",
+    "coverage": "NOT_ESTABLISHED",
+    "direct_coverage": "NOT_ESTABLISHED",
+    "center_coverage": "NOT_ESTABLISHED",
+    "inpaint_used": "NOT_EXECUTED"
+  },
+  "authoritative_truth_chain": {
+    "P2R19_P0_STATUS": "HISTORICAL_RESULT_NONREPRODUCIBLE",
+    "P2R19_P0_R1_STATUS": "HISTORICAL_RESULT_NONREPRODUCIBLE",
+    "P2R19_P1_STATUS": "INVALIDATED_BASELINE_RASTER_COPY",
+    "P2R19_P2_STATUS": "OWNER_CHANGES_REQUESTED",
+    "P2R19_P2R1_STATUS": "INVALIDATED_EVIDENCE_INTEGRITY",
+    "P2R19_P2R2_STATUS": "FAIL_TRUTH_INTEGRITY",
+    "P2R19_P2R3_STATUS": "FAIL_TRUTH_INTEGRITY",
+    "P2R19_P2R4_STATUS": "FAIL_FROZEN_IMPLEMENTATION_UNAVAILABLE"
+  },
+  "retained_authoritative_inputs": {
+    "source_dataset": "P2R16_S23_PORTRAIT_12SHOT_PHYSICAL_01 (12 physical stills)",
+    "frozen_geometry": {
+      "path": "production_artifacts/mobile_runtime_inspector/P2R16_R4P4R1_BOUNDED_POSE_GEOMETRY.npz",
+      "sha256": "14a20ff4857a35f11a59adf0798b376ca9aae6f261bd563bbe97ef1d337878b3"
+    },
+    "frozen_depth": {
+      "path": "production_artifacts/mobile_runtime_inspector/P2R16_FROZEN_GEOMETRY_DEPTH.npz",
+      "sha256": "c5375de0dcf3b7c7119ff9cb962f60091a0923a6645eff063cb868ee5d9ac71f"
+    },
+    "historical_r4p4r1_artifacts": "P2R16_QUALITY12_R4P4R1_* artifacts preserved",
+    "owner_visual_rejection_evidence": "P2R19_P2_OWNER_CHANGES_REQUESTED.json preserved",
+    "production_non_mutation_evidence": "release/3d2r-official-live and master unmutated"
+  },
+  "p0_reproducible": false,
+  "p0_renderer_available": false,
+  "p0_evaluator_available": false,
+  "p0_raster_available": false,
+  "twelve_k_validation_established": false,
+  "owner_visual_review_eligible": false,
+  "owner_visual_approval": "PENDING",
+  "candidate_d_visual_accepted": false,
+  "production_promotion_allowed": false,
+  "production_non_mutation_gate": "PASS",
+  "customer_default": "P2R13",
+  "next_action": "ARCHIVE_AND_STOP"
+}
