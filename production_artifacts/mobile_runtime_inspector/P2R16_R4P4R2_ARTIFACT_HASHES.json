@@ -1,0 +1,34 @@
+{
+  "phase": "7C.2R4P4-R2",
+  "timestamp": "2026-09-15T02:40:00Z",
+  "artifacts": {
+    "P2R16_QUALITY12_R4P4R1_BOUNDED_IDENTITY.png": {
+      "bytes": 28428687,
+      "sha256": "8d7ef298d30986b78e048fc6fc3edf37275e85e0450e6bb09a7caed13b67eb68"
+    },
+    "P2R16_QUALITY12_R4P4R1_BOUNDED_OWNER_REVIEW.jpg": {
+      "bytes": 8053949,
+      "sha256": "58b2308bbb6f9a17c70bc14b91e1594c61c3511ff114367a987ad1bdbafb92f1"
+    },
+    "P2R16_QUALITY4_R4P4R1_BOUNDED_PREVIEW.jpg": {
+      "bytes": 1087098,
+      "sha256": "234422e1ea44863186302daed26fa3d3554cd8ad505d9397a87a6e657dcdf3da"
+    },
+    "P2R16_QUALITY12_R4P4R1_SOURCE_OWNERSHIP.png": {
+      "bytes": 1513123,
+      "sha256": "a56b9842de897c5ab5c563c1888f81131674e6c8eeed96cc6292628bc8da64c0"
+    },
+    "P2R16_QUALITY12_R4P4R1_SEAM_COST_MAP.png": {
+      "bytes": 73488,
+      "sha256": "69820a7bd60156ec76782af685460f60ac1aee170a343dd9ade5cfcc6567d837"
+    },
+    "P2R16_QUALITY12_R4P4R1_STRUCTURAL_EDGE_MAP.png": {
+      "bytes": 55058,
+      "sha256": "0c847bc6a48081cb9dfe293d6841c282e3173bcdcbaaa989f7983620d33063b9"
+    },
+    "P2R16_QUALITY12_R4P4R1_CRACK_RECOVERY_MAP.png": {
+      "bytes": 71426,
+      "sha256": "161f4120a95fb073dae8840e5fa8cb91d154add451f95381674f12fc8fdea88a"
+    }
+  }
+}

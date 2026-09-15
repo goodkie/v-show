@@ -1,0 +1,81 @@
+{
+  "phase": "7C.2R4P4-R2",
+  "GEOMETRY_SPACE": {
+    "SAMPSON_RMS": {
+      "TRUE_BASELINE_PX": 88.8411,
+      "BOUNDED_PX": 40.3467,
+      "ABSOLUTE_DROP_PX": 48.4944,
+      "IMPROVEMENT_PERCENT": 54.5855,
+      "GATE_PASS": true
+    },
+    "PIXEL_REPROJECTION_RMS": {
+      "TRUE_BASELINE_PX": 204.9715,
+      "BOUNDED_PX": 160.1032,
+      "ABSOLUTE_DROP_PX": 44.8683,
+      "IMPROVEMENT_PERCENT": 21.89,
+      "GATE_PASS": true
+    },
+    "VERTICAL_BEND_P95_GEOMETRY": {
+      "TRUE_BASELINE_PX": 14.2,
+      "OLD_UNBOUNDED_PX": 10.15,
+      "BOUNDED_PX": 10.45,
+      "IMPROVEMENT_PERCENT": 26.41,
+      "GATE_PASS": true
+    },
+    "EDGE_ALIGNMENT_P95_GEOMETRY": {
+      "TRUE_BASELINE_PX": 18.5,
+      "OLD_UNBOUNDED_PX": 2.47,
+      "BOUNDED_PX": 4.8,
+      "IMPROVEMENT_PERCENT": 74.05,
+      "GATE_PASS": true
+    }
+  },
+  "RENDER_SPACE": {
+    "VERTICAL_BEND_P95_RENDERED": {
+      "R4P3_BASELINE_PX": 9.48,
+      "OLD_UNBOUNDED_PX": 10.46,
+      "R4P4R1_BOUNDED_PX": 10.55,
+      "ABSOLUTE_DELTA_PX": 1.07,
+      "IMPROVEMENT_PERCENT": -11.29,
+      "GATE_REQUIRED_PERCENT": 25.0,
+      "GATE_PASS": false
+    },
+    "EDGE_ALIGNMENT_P95_RENDERED": {
+      "R4P3_BASELINE_PX": 8.42,
+      "OLD_UNBOUNDED_PX": 9.87,
+      "R4P4R1_BOUNDED_PX": 7.42,
+      "ABSOLUTE_DELTA_PX": -1.0,
+      "IMPROVEMENT_PERCENT": 11.88,
+      "GATE_REQUIRED_PERCENT": 25.0,
+      "GATE_PASS": false
+    },
+    "DOOR_FRAME_BEND_RENDERED": {
+      "R4P3_BASELINE_PX": 10.97,
+      "OLD_UNBOUNDED_PX": 0.0,
+      "R4P4R1_BOUNDED_PX": 0.0,
+      "STATUS": "IMPROVED"
+    },
+    "WINDOW_FRAME_BEND_RENDERED": {
+      "R4P3_BASELINE_PX": 0.0,
+      "OLD_UNBOUNDED_PX": 0.0,
+      "R4P4R1_BOUNDED_PX": 0.0,
+      "STATUS": "ZERO_DISTORTION"
+    },
+    "CABINET_WIDTH_STABILITY_RENDERED": {
+      "R4P3_BASELINE_PX": 33.55,
+      "OLD_UNBOUNDED_PX": 33.27,
+      "R4P4R1_BOUNDED_PX": 11.39,
+      "STATUS": "HIGH_STABILITY"
+    },
+    "CLOSURE_ALIGNMENT_RENDERED": {
+      "R4P3_BASELINE_RMS": 100.17,
+      "OLD_UNBOUNDED_RMS": 101.88,
+      "R4P4R1_BOUNDED_RMS": 94.41,
+      "STATUS": "IMPROVED"
+    }
+  },
+  "technical_gate_verdict": {
+    "R4P4R2_RENDERED_STRUCTURAL_GATE": "FAIL",
+    "REASON": "Render-space vertical bend regressed by -11.29% (9.48 -> 10.55 px) and edge alignment improved by 11.88% (8.42 -> 7.42 px), failing the required >=25% contract."
+  }
+}

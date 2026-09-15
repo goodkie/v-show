@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>P2R16 Phase 7C.2R4P4-R2 Synchronized Owner Review</title>
+<style>
+  body { margin: 0; padding: 0; background: #0f172a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  header { background: #1e293b; padding: 16px 24px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+  h1 { margin: 0; font-size: 18px; font-weight: 700; color: #38bdf8; }
+  .badge { background: rgba(0, 255, 136, 0.15); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.4); padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+  .bookmarks { background: #1e293b; padding: 12px 24px; border-bottom: 1px solid #334155; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .bm-btn { background: #334155; color: #f1f5f9; border: 1px solid #475569; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .bm-btn:hover { background: #38bdf8; color: #0f172a; }
+  .bm-btn.active { background: #00ff88; color: #0f172a; border-color: #00ff88; }
+  .viewer-container { padding: 24px; display: flex; flex-direction: column; align-items: center; }
+  .panel-img { width: 100%; max-width: 1440px; border-radius: 8px; border: 1px solid #334155; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+  .metrics-table { width: 100%; max-width: 1440px; margin-top: 24px; border-collapse: collapse; font-size: 13px; background: #1e293b; border-radius: 8px; overflow: hidden; border: 1px solid #334155; }
+  .metrics-table th, .metrics-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #334155; }
+  .metrics-table th { background: #0f172a; color: #94a3b8; text-transform: uppercase; font-size: 11px; }
+  .pass-text { color: #00ff88; font-weight: bold; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Phase 7C.2R4P4-R2: Synchronized 3-Way Owner Comparison</h1>
+    <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">R4P3 Baseline vs R4P4 Unbounded Experimental (9.91°) vs R4P4R1 Hard-Bounded (≤3.0°)</div>
+  </div>
+  <div class="badge">OWNER_REVIEW_CANDIDATE</div>
+</header>
+
+<div class="bookmarks">
+  <span style="font-size: 12px; font-weight: bold; color: #94a3b8; margin-right: 6px;">BOOKMARKS:</span>
+  <button class="bm-btn active" onclick="loadAngle('000')">Yaw 000°</button>
+  <button class="bm-btn" onclick="loadAngle('060')">Yaw 060° (Worst 3)</button>
+  <button class="bm-btn" onclick="loadAngle('090')">Yaw 090°</button>
+  <button class="bm-btn" onclick="loadAngle('120')">Yaw 120° (Bound Hit)</button>
+  <button class="bm-btn" onclick="loadAngle('150')">Yaw 150° (Worst 1 / Bound Hit)</button>
+  <button class="bm-btn" onclick="loadAngle('180')">Yaw 180° (Bound Hit)</button>
+  <button class="bm-btn" onclick="loadAngle('210')">Yaw 210°</button>
+  <button class="bm-btn" onclick="loadAngle('240')">Yaw 240° (Worst 2)</button>
+  <button class="bm-btn" onclick="loadAngle('270')">Yaw 270°</button>
+  <button class="bm-btn" onclick="loadAngle('300')">Yaw 300°</button>
+  <button class="bm-btn" onclick="loadAngle('330')">Yaw 330°</button>
+  <button class="bm-btn" onclick="loadAngle('345')">Yaw 345°</button>
+</div>
+
+<div class="viewer-container">
+  <img id="comparison-display" class="panel-img" src="P2R16_R4P4R2_COMPARE_YAW_000.png" alt="Comparison Panel">
+
+  <table class="metrics-table">
+    <thead>
+      <tr>
+        <th>Candidate Geometry</th>
+        <th>Max Rot Delta</th>
+        <th>Mean Rot Delta</th>
+        <th>Sampson RMS</th>
+        <th>Pixel Reproj RMS</th>
+        <th>Direct Coverage</th>
+        <th>Black Cracks</th>
+        <th>Technical Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>R4P3 Baseline</strong></td>
+        <td>0.00°</td>
+        <td>0.00°</td>
+        <td>88.84 px</td>
+        <td>204.97 px</td>
+        <td>100.0%</td>
+        <td>0</td>
+        <td>BASELINE (Frozen Prior)</td>
+      </tr>
+      <tr>
+        <td><strong>R4P4 Unbounded (Old B)</strong></td>
+        <td>9.91°</td>
+        <td>5.48°</td>
+        <td>13.45 px</td>
+        <td>138.20 px</td>
+        <td>100.0%</td>
+        <td>0</td>
+        <td style="color: #f87171;">EXCEEDED BOUND (Experimental)</td>
+      </tr>
+      <tr>
+        <td><strong>R4P4R1 Bounded (B-R1)</strong></td>
+        <td>3.00°</td>
+        <td>1.78°</td>
+        <td>40.35 px</td>
+        <td>160.10 px</td>
+        <td>100.0%</td>
+        <td>0</td>
+        <td class="pass-text">PASS (≤3.0° Physical Limit)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+function loadAngle(yaw) {
+  document.querySelectorAll('.bm-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('comparison-display').src = 'P2R16_R4P4R2_COMPARE_YAW_' + yaw + '.png';
+}
+</script>
+</body>
+</html>

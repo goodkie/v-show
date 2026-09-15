@@ -1,0 +1,31 @@
+{
+  "phase": "7C.2R4P4-R2",
+  "status": "RENDER_COMPLETE",
+  "candidate": "B-R1",
+  "candidate_label": "R4P4R1_BOUNDED",
+  "geometry_artifact": "P2R16_R4P4R1_BOUNDED_POSE_GEOMETRY.npz",
+  "seam_pipeline": {
+    "engine": "Modal L40S GPU / PyMaxflow Alpha-Expansion",
+    "feather_width_px": 6,
+    "potts_lambda": 12.0,
+    "structural_boost": 8.0,
+    "weights": {
+      "depth": 0.25,
+      "angle": 0.15,
+      "resolution": 0.1,
+      "center": 0.1,
+      "gradient": 0.15,
+      "structural": 0.25
+    }
+  },
+  "coverage_metrics": {
+    "DIRECT_COVERAGE": 1.0,
+    "CENTER_COVERAGE": 0.99991,
+    "CLOSURE_COVERAGE": 0.999069,
+    "BLACK_CRACK_PIXELS": 0,
+    "RECOVERED_CRACK_PIXELS": 9094,
+    "OWNERSHIP_CHANGED_PIXELS": 2137,
+    "INPAINT_PIXEL_COUNT": 0,
+    "PIXEL_PROVENANCE_VALID_RATIO": 0.999902
+  }
+}

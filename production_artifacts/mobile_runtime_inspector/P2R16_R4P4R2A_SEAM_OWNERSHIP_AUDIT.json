@@ -1,0 +1,45 @@
+{
+  "phase": "7C.2R4P4-R2A",
+  "seam_free_render_control": {
+    "description": "Ablation separating pure geometric camera rotation from seam selection and feathering",
+    "A_single_source_r4p3": {
+      "vertical_bend_px": 9.48,
+      "edge_alignment_px": 8.42
+    },
+    "B_single_source_bounded": {
+      "vertical_bend_px": 9.52,
+      "edge_alignment_px": 8.35,
+      "GEOMETRY_ONLY_STRUCTURAL_CHANGE": "Virtually zero geometric bend change (+0.04 px) when single-source projected"
+    },
+    "C_normal_r4p3_seam": {
+      "vertical_bend_px": 9.48,
+      "edge_alignment_px": 8.42
+    },
+    "D_normal_bounded_seam": {
+      "vertical_bend_px": 10.55,
+      "edge_alignment_px": 7.42,
+      "SEAM_OWNERSHIP_STRUCTURAL_CHANGE": "The graph-cut seam boundary shifted across slightly different edge textures, causing +1.07 px change in equirectangular edge detection."
+    }
+  },
+  "feather_diagnostic": {
+    "FORENSIC_ABLATION_ONLY": true,
+    "feather_0px": {
+      "vertical_bend_p95_px": 10.58,
+      "edge_alignment_p95_px": 7.4
+    },
+    "feather_6px_production": {
+      "vertical_bend_p95_px": 10.55,
+      "edge_alignment_p95_px": 7.42
+    },
+    "conclusion": "Feathering (0px vs 6px) causes less than 0.03 px variation. Feathering is NOT the cause of the measured difference."
+  },
+  "alternate_source_recovery_audit": {
+    "TOTAL_RECOVERED_CRACK_PIXELS": 9094,
+    "TOTAL_STRUCTURAL_EDGE_PIXELS": 128371,
+    "RECOVERED_PIXELS_IN_STRUCTURAL_ROIS": 348,
+    "RECOVERED_PIXELS_ON_VERTICAL_LINES": 112,
+    "RECOVERED_PIXELS_ON_EDGE_ALIGNMENT_ROIS": 86,
+    "PERCENT_STRUCTURAL_EDGE_RECOVERED": 0.271,
+    "conclusion": "Alternate source recovery affects only 0.27% of structural edges and does not materially alter measured structural straightness."
+  }
+}

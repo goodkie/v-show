@@ -1,0 +1,73 @@
+{
+  "phase": "7C.2R4P4-R2",
+  "SECOND_NEIGHBOR_VALIDATION": "STABLE_WITH_SMALL_GLOBAL_REGRESSION",
+  "SECOND_NEIGHBOR_GLOBAL_CHANGE_PERCENT": 2.3832,
+  "WORST_SECOND_NEIGHBOR_REGRESSION_PERCENT": 5.14,
+  "WORST_SECOND_NEIGHBOR_PAIR": "01_03",
+  "CATASTROPHIC_PAIR_COUNT": 0,
+  "pairs_table": [
+    {
+      "pair": "00_02",
+      "baseline_rms": 213.68,
+      "bounded_rms": 199.55,
+      "rel_change_pct": -6.61,
+      "status": "IMPROVED"
+    },
+    {
+      "pair": "01_03",
+      "baseline_rms": 646.42,
+      "bounded_rms": 679.67,
+      "rel_change_pct": 5.14,
+      "status": "SLIGHT_REGRESSION"
+    },
+    {
+      "pair": "02_04",
+      "baseline_rms": 75.15,
+      "bounded_rms": 68.73,
+      "rel_change_pct": -8.55,
+      "status": "IMPROVED"
+    },
+    {
+      "pair": "03_05",
+      "baseline_rms": 485.98,
+      "bounded_rms": 497.4,
+      "rel_change_pct": 2.35,
+      "status": "STABLE"
+    },
+    {
+      "pair": "05_07",
+      "baseline_rms": 1896.14,
+      "bounded_rms": 1960.36,
+      "rel_change_pct": 3.39,
+      "status": "STABLE"
+    },
+    {
+      "pair": "07_09",
+      "baseline_rms": 969.45,
+      "bounded_rms": 977.39,
+      "rel_change_pct": 0.82,
+      "status": "STABLE"
+    },
+    {
+      "pair": "08_10",
+      "baseline_rms": 482.89,
+      "bounded_rms": 478.36,
+      "rel_change_pct": -0.94,
+      "status": "IMPROVED"
+    },
+    {
+      "pair": "09_11",
+      "baseline_rms": 2315.2,
+      "bounded_rms": 2365.53,
+      "rel_change_pct": 2.17,
+      "status": "STABLE"
+    },
+    {
+      "pair": "11_01",
+      "baseline_rms": 165.44,
+      "bounded_rms": 168.66,
+      "rel_change_pct": 1.94,
+      "status": "STABLE"
+    }
+  ]
+}

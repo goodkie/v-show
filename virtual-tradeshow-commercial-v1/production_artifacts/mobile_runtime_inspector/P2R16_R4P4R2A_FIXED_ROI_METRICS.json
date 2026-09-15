@@ -1,0 +1,217 @@
+{
+  "phase": "7C.2R4P4-R2A",
+  "protocol": "FIXED_ARCHITECTURAL_ROI_VERIFICATION",
+  "rois": [
+    {
+      "roi_id": "door_frame",
+      "physical_structure": "Office entrance door vertical frame",
+      "source_camera_owner": "SHOT_000",
+      "yaw_deg": 18.0,
+      "pitch_deg": 5.0,
+      "panorama_pixel_bounds": {
+        "x0": 514,
+        "x1": 714,
+        "y0": 498,
+        "y1": 1098,
+        "width": 200,
+        "height": 600
+      },
+      "source_physical_pixel_center": {
+        "u": 2563,
+        "v": 1715,
+        "raw_image": "SHOT_000.jpg (3000x4000)"
+      },
+      "pixel_provenance_verified": true
+    },
+    {
+      "roi_id": "window_frame",
+      "physical_structure": "Exterior window frame mullion",
+      "source_camera_owner": "SHOT_060",
+      "yaw_deg": 62.0,
+      "pitch_deg": -5.0,
+      "panorama_pixel_bounds": {
+        "x0": 2016,
+        "x1": 2216,
+        "y0": 839,
+        "y1": 1439,
+        "width": 200,
+        "height": 600
+      },
+      "source_physical_pixel_center": {
+        "u": 1614,
+        "v": 2285,
+        "raw_image": "SHOT_060.jpg (3000x4000)"
+      },
+      "pixel_provenance_verified": true
+    },
+    {
+      "roi_id": "cabinet_vertical_edge",
+      "physical_structure": "Kitchen cabinet dark vertical latch",
+      "source_camera_owner": "SHOT_180",
+      "yaw_deg": 182.0,
+      "pitch_deg": 3.0,
+      "panorama_pixel_bounds": {
+        "x0": 6137,
+        "x1": 6287,
+        "y0": 616,
+        "y1": 1116,
+        "width": 150,
+        "height": 500
+      },
+      "source_physical_pixel_center": {
+        "u": 1614,
+        "v": 1829,
+        "raw_image": "SHOT_180.jpg (3000x4000)"
+      },
+      "pixel_provenance_verified": true
+    },
+    {
+      "roi_id": "cabinet_width_reference",
+      "physical_structure": "Full cabinet horizontal frame width",
+      "source_camera_owner": "SHOT_180",
+      "yaw_deg": 180.0,
+      "pitch_deg": 0.0,
+      "panorama_pixel_bounds": {
+        "x0": 5894,
+        "x1": 6394,
+        "y0": 768,
+        "y1": 1168,
+        "width": 500,
+        "height": 400
+      },
+      "source_physical_pixel_center": {
+        "u": 1500,
+        "v": 2000,
+        "raw_image": "SHOT_180.jpg (3000x4000)"
+      },
+      "pixel_provenance_verified": true
+    },
+    {
+      "roi_id": "baseboard",
+      "physical_structure": "Floor wall baseboard boundary",
+      "source_camera_owner": "SHOT_120",
+      "yaw_deg": 120.0,
+      "pitch_deg": -20.0,
+      "panorama_pixel_bounds": {
+        "x0": 3896,
+        "x1": 4296,
+        "y0": 1575,
+        "y1": 1725,
+        "width": 400,
+        "height": 150
+      },
+      "source_physical_pixel_center": {
+        "u": 1500,
+        "v": 3185,
+        "raw_image": "SHOT_120.jpg (3000x4000)"
+      },
+      "pixel_provenance_verified": true
+    },
+    {
+      "roi_id": "wall_corner",
+      "physical_structure": "Interior drywall vertical corner",
+      "source_camera_owner": "SHOT_090",
+      "yaw_deg": 90.0,
+      "pitch_deg": 10.0,
+      "panorama_pixel_bounds": {
+        "x0": 2972,
+        "x1": 3172,
+        "y0": 327,
+        "y1": 927,
+        "width": 200,
+        "height": 600
+      },
+      "source_physical_pixel_center": {
+        "u": 1500,
+        "v": 1426,
+        "raw_image": "SHOT_090.jpg (3000x4000)"
+      },
+      "pixel_provenance_verified": true
+    },
+    {
+      "roi_id": "closure_region",
+      "physical_structure": "Ring closure boundary seam",
+      "source_camera_owner": "SHOT_000",
+      "yaw_deg": 358.0,
+      "pitch_deg": 8.0,
+      "panorama_pixel_bounds": {
+        "x0": 12070,
+        "x1": 82,
+        "y0": 445,
+        "y1": 945,
+        "width": 300,
+        "height": 500
+      },
+      "source_physical_pixel_center": {
+        "u": 1386,
+        "v": 1542,
+        "raw_image": "SHOT_000.jpg (3000x4000)"
+      },
+      "pixel_provenance_verified": true
+    },
+    {
+      "roi_id": "yaw_060_structural_zone",
+      "physical_structure": "Worst sector 3 structural seam",
+      "source_camera_owner": "SHOT_060",
+      "yaw_deg": 60.0,
+      "pitch_deg": 0.0,
+      "panorama_pixel_bounds": {
+        "x0": 1848,
+        "x1": 2248,
+        "y0": 668,
+        "y1": 1268,
+        "width": 400,
+        "height": 600
+      },
+      "source_physical_pixel_center": {
+        "u": 1500,
+        "v": 2000,
+        "raw_image": "SHOT_060.jpg (3000x4000)"
+      },
+      "pixel_provenance_verified": true
+    },
+    {
+      "roi_id": "yaw_150_structural_zone",
+      "physical_structure": "Worst sector 1 (bound hit) seam",
+      "source_camera_owner": "SHOT_150",
+      "yaw_deg": 150.0,
+      "pitch_deg": 0.0,
+      "panorama_pixel_bounds": {
+        "x0": 4920,
+        "x1": 5320,
+        "y0": 668,
+        "y1": 1268,
+        "width": 400,
+        "height": 600
+      },
+      "source_physical_pixel_center": {
+        "u": 1500,
+        "v": 2000,
+        "raw_image": "SHOT_150.jpg (3000x4000)"
+      },
+      "pixel_provenance_verified": true
+    },
+    {
+      "roi_id": "yaw_240_structural_zone",
+      "physical_structure": "Worst sector 2 structural seam",
+      "source_camera_owner": "SHOT_240",
+      "yaw_deg": 240.0,
+      "pitch_deg": 0.0,
+      "panorama_pixel_bounds": {
+        "x0": 7992,
+        "x1": 8392,
+        "y0": 668,
+        "y1": 1268,
+        "width": 400,
+        "height": 600
+      },
+      "source_physical_pixel_center": {
+        "u": 1500,
+        "v": 2000,
+        "raw_image": "SHOT_240.jpg (3000x4000)"
+      },
+      "pixel_provenance_verified": true
+    }
+  ],
+  "proof_of_physical_correspondence": "All 10 ROIs map to identical physical scene structures with confirmed ray angles and source image coordinates."
+}

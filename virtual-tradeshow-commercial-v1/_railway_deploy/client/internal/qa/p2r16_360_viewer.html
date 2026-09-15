@@ -513,9 +513,13 @@
           <i class="fa-solid fa-cube"></i>
           <span>R4P8 A (Control)</span>
         </button>
-                <button id="btn-mode-quality-r4p4" class="mode-btn" onclick="switchMode('quality-ai-r4p4')" style="border-color: #38bdf8; color: #38bdf8;">
+                        <button id="btn-mode-quality-r4p4r1" class="mode-btn" onclick="switchMode('quality-ai-r4p4r1')" style="border-color: #00ff88; color: #00ff88; font-weight: bold; background: rgba(0, 255, 136, 0.1);">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>R4P4R1 Bounded (QA)</span>
+        </button>
+        <button id="btn-mode-quality-r4p4" class="mode-btn" onclick="switchMode('quality-ai-r4p4')" style="border-color: #38bdf8; color: #38bdf8;">
           <i class="fa-solid fa-compass-drafting"></i>
-          <span>Quality R4.4 Refined</span>
+          <span>R4P4 Unbounded Exp</span>
         </button>
                                                 <button id="btn-mode-quality-r4p71-d" class="mode-btn" onclick="switchMode('quality-ai-r4p71-d')" style="border-color: #00ff88; color: #00ff88; font-weight: bold; background: rgba(0, 255, 136, 0.1);">
           <i class="fa-solid fa-compass"></i>
@@ -1565,9 +1569,39 @@
         globalYawOffsetDeg: 0.0,
         coverageTextures: { 'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_R4P8_A_R4P71_CONTROL_4K.jpg' }
       },
-            'quality-ai-r4p4': {
+                  'quality-ai-r4p4r1': {
+        shortName: 'R4P4R1 Bounded',
+        title: 'QUALITY AI — R4P4R1 BOUNDED POSE — OWNER QA | 12K OWNER REVIEW',
+        docTitle: 'C12.9-P2R16 — R4P4R1 Bounded Pose — 12K Owner QA',
+        width: 12288,
+        height: 1869,
+        directCoverage: 1.000000,
+        blackCrackPixels: 0,
+        inpaintFraction: 0.000000,
+        inpaintUsed: false,
+        singleSourceOwner: true,
+        textureFilename: 'P2R16_QUALITY12_R4P4R1_BOUNDED_IDENTITY.png',
+        texture: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4R1_BOUNDED_IDENTITY.png',
+        reviewJpg: '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4R1_BOUNDED_OWNER_REVIEW.jpg',
+        expectedSha256: '8d7ef298d30986b78e048fc6fc3edf37275e85e0450e6bb09a7caed13b67eb68',
+        bounds: [-26.38, 28.39],
+        minPitchDeg: -26.38,
+        maxPitchDeg: 28.39,
+        vaovDeg: 54.77,
+        label: 'R4P4R1 BOUNDED POSE — OWNER QA',
+        coverageTextures: {
+          'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4R1_BOUNDED_IDENTITY.png',
+          'review-jpg': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4R1_BOUNDED_OWNER_REVIEW.jpg',
+          'source-ownership': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4R1_SOURCE_OWNERSHIP.png',
+          'seam-cost': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4R1_SEAM_COST_MAP.png',
+          'structural-edge': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4R1_STRUCTURAL_EDGE_MAP.png',
+          'crack-recovery': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4R1_CRACK_RECOVERY_MAP.png',
+          'baseline-r4p3': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P3_SEAM_OPTIMIZED_IDENTITY.png'
+        }
+      },
+      'quality-ai-r4p4': {
         shortName: 'Quality R4.4 Refined',
-        title: 'QUALITY AI — COMMERCIAL VGGT 12-VIEW | R4P4 LOCAL GEOMETRY REFINED | 12K OWNER QA',
+        title: 'QUALITY AI — R4P4 UNBOUNDED EXPERIMENTAL | 12K OWNER QA',
         docTitle: 'C12.9-P2R16 — R4P4 Local Geometry Refined — 12K Owner QA',
         width: 12288,
         height: 1869,
@@ -1584,7 +1618,7 @@
         minPitchDeg: -26.38,
         maxPitchDeg: 28.39,
         vaovDeg: 54.77,
-        label: 'QUALITY AI R4P4 (LOCAL GEOMETRY REFINED — POSE-ONLY BA)',
+        label: 'R4P4 UNBOUNDED EXPERIMENTAL',
         coverageTextures: {
           'final-rgb': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4_LOCAL_GEOMETRY_IDENTITY.png?r4p4=' + CACHE_BUST_KEY_R4P4,
           'review-jpg': '/production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4_LOCAL_GEOMETRY_IDENTITY_OWNER_REVIEW.jpg?r4p4=' + CACHE_BUST_KEY_R4P4_JPG,
@@ -3312,7 +3346,8 @@
       }
       window.currentMode = currentMode;
     }
-
+
+
     function jumpTo(yaw, pitch) {
       currentYaw = yaw % 360;
       if (currentYaw < 0) currentYaw += 360;

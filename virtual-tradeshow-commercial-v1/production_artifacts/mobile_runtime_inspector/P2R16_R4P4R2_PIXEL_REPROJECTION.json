@@ -1,0 +1,21 @@
+{
+  "phase": "7C.2R4P4-R2",
+  "protocol": "GEOMETRY_BACKED_FROZEN_DEPTH_PROJECTION",
+  "description": "True 3D backprojection via frozen depth maps and forward/reverse relative projection to RoMa observations",
+  "TRUE_R4_BASELINE": {
+    "SYMMETRIC_PIXEL_REPROJECTION_RMS_PX": 204.9715,
+    "SYMMETRIC_PIXEL_REPROJECTION_MEDIAN_PX": 14.4954,
+    "SYMMETRIC_PIXEL_REPROJECTION_P95_PX": 588.3461
+  },
+  "R4P4R1_BOUNDED": {
+    "SYMMETRIC_PIXEL_REPROJECTION_RMS_PX": 160.1032,
+    "SYMMETRIC_PIXEL_REPROJECTION_MEDIAN_PX": 63.1564,
+    "SYMMETRIC_PIXEL_REPROJECTION_P95_PX": 386.9208
+  },
+  "comparison": {
+    "ABSOLUTE_DROP_PX": 44.8683,
+    "IMPROVEMENT_PERCENT": 21.89,
+    "GATE_MINIMUM_PERCENT": 20.0,
+    "GATE_PASS": true
+  }
+}

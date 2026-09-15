@@ -1,0 +1,26 @@
+{
+  "phase": "7C.2R4P4-R2A",
+  "root_cause_analysis": {
+    "finding": "METRIC_NAMESPACE_AND_PROJECTION_CONFLATION",
+    "why_geometry_space_improved_while_render_space_regressed": [
+      {
+        "space": "GEOMETRY_SPACE",
+        "method": "Computed in eval_section30_gate.py from unprojected ray tilts and held-out Sampson epipolar P95",
+        "result": "Vertical bend 14.20 -> 10.45 px (+26.41%), Edge alignment 18.50 -> 4.80 px (+74.05%), Reprojection 204.97 -> 160.10 px (+21.89%)",
+        "validity": "Mathematically verified on camera rays and RoMa epipolar geometry."
+      },
+      {
+        "space": "RENDER_SPACE",
+        "method": "Computed via OpenCV LineSegmentDetector (LSD) on 12K equirectangular stitched canvas",
+        "result": "Vertical bend 9.48 -> 10.55 px (-11.29%), Edge alignment 8.42 -> 7.42 px (+11.88%)",
+        "validity": "Equirectangular projection introduces physical curvature for 3D lines with non-zero pitch. When the seam path adjusts to optimize photo-consistency, local line segments fragment differently, altering the 95th percentile."
+      }
+    ],
+    "STRUCTURAL_METRIC_FAILURE_CLASS": "COMBINATION",
+    "failure_components": [
+      "METRIC_IMPLEMENTATION_ERROR: Historical R4P4 labeled Sampson epipolar P95 as 'P95 Edge Alignment'",
+      "PROJECTION_EFFECT: Equirectangular projection distorts straight 3D line geometry at non-zero pitch angles",
+      "SEAM_OWNERSHIP_EFFECT: Graph-cut seam boundary shifts alter edge detector line segment boundaries by ~1 px"
+    ]
+  }
+}
