@@ -1,0 +1,55 @@
+{
+  "protocol": "P2R19_P0_ROLL_CORRECTION_AUDIT",
+  "timestamp": "2026-09-15T10:40:00Z",
+  "phase": "7C.5-P0",
+  "max_abs_roll_bound_deg": 0.1,
+  "preferred_roll_bound_deg": 0.09,
+  "candidate_b": {
+    "per_camera_roll_delta_deg": {
+      "SHOT_000": 0.088,
+      "SHOT_030": 0.088,
+      "SHOT_060": 0.088,
+      "SHOT_090": 0.088,
+      "SHOT_120": 0.088,
+      "SHOT_150": 0.088,
+      "SHOT_180": -0.0538,
+      "SHOT_210": 0.088,
+      "SHOT_240": -0.088,
+      "SHOT_270": 0.088,
+      "SHOT_300": -0.088,
+      "SHOT_330": 0.088
+    },
+    "max_abs_roll_delta_deg": 0.088,
+    "roll_bound_gate": "PASS",
+    "training_vertical_improvement_percent": 7.24,
+    "heldout_roi01_delta_px": -1.6236,
+    "heldout_roi03_delta_px": -0.1975
+  },
+  "candidate_d": {
+    "per_camera_roll_delta_deg": {
+      "SHOT_000": 0.088,
+      "SHOT_030": 0.088,
+      "SHOT_060": 0.088,
+      "SHOT_090": 0.088,
+      "SHOT_120": 0.088,
+      "SHOT_150": 0.088,
+      "SHOT_180": -0.0538,
+      "SHOT_210": 0.088,
+      "SHOT_240": -0.088,
+      "SHOT_270": 0.088,
+      "SHOT_300": -0.088,
+      "SHOT_330": 0.088
+    },
+    "max_abs_roll_delta_deg": 0.088,
+    "roll_bound_gate": "PASS",
+    "training_vertical_improvement_percent": 19.32,
+    "heldout_roi01_delta_px": -2.9736,
+    "heldout_roi03_delta_px": -2.03
+  },
+  "invariants": {
+    "pitch_optimization_used": false,
+    "yaw_optimization_used": false,
+    "translation_optimization_used": false,
+    "heldout_based_roll_tuning_used": false
+  }
+}

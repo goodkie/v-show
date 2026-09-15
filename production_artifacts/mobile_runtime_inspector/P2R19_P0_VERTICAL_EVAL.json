@@ -1,0 +1,57 @@
+{
+  "protocol": "P2R19_P0_VERTICAL_EVAL",
+  "timestamp": "2026-09-15T10:40:00Z",
+  "phase": "7C.5-P0",
+  "historical_baselines": {
+    "r4p3_vertical_p95": 11.6495,
+    "r4p4r1_vertical_p95": 10.3928,
+    "required_target_p95": 8.737125,
+    "required_improvement_percent": 25.0
+  },
+  "candidate_evaluations": {
+    "CANDIDATE_A": {
+      "name": "BASELINE_CONTROL",
+      "ROI_01": 11.4555,
+      "ROI_02": 2.3847,
+      "ROI_03": 9.6796,
+      "ROI_06": 4.6511,
+      "vertical_p95": 10.3928,
+      "improvement_vs_r4p3_percent": 10.7872,
+      "regression_or_improvement_vs_r4p4r1_percent": 0.0,
+      "vertical_gate": "FAIL"
+    },
+    "CANDIDATE_B": {
+      "name": "ROLL_ONLY",
+      "ROI_01": 9.8319,
+      "ROI_02": 2.3812,
+      "ROI_03": 9.4821,
+      "ROI_06": 4.6205,
+      "vertical_p95": 9.6845,
+      "improvement_vs_r4p3_percent": 16.8677,
+      "regression_or_improvement_vs_r4p4r1_percent": -6.8153,
+      "vertical_gate": "FAIL"
+    },
+    "CANDIDATE_C": {
+      "name": "MULTI_PLANE_ONLY",
+      "ROI_01": 11.1055,
+      "ROI_02": 2.3855,
+      "ROI_03": 7.8596,
+      "ROI_06": 4.641,
+      "vertical_p95": 9.824,
+      "improvement_vs_r4p3_percent": 15.6702,
+      "regression_or_improvement_vs_r4p4r1_percent": -5.473,
+      "vertical_gate": "FAIL"
+    },
+    "CANDIDATE_D": {
+      "name": "MULTI_PLANE_PLUS_ROLL",
+      "ROI_01": 8.4819,
+      "ROI_02": 2.382,
+      "ROI_03": 7.6496,
+      "ROI_06": 4.581,
+      "vertical_p95": 8.4819,
+      "improvement_vs_r4p3_percent": 27.1909,
+      "regression_or_improvement_vs_r4p4r1_percent": -18.3868,
+      "vertical_gate": "PASS"
+    }
+  }
+}

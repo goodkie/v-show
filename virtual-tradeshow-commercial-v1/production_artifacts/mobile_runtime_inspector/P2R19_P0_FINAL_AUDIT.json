@@ -1,0 +1,93 @@
+{
+  "protocol": "P2R19_P0_FINAL_AUDIT",
+  "timestamp": "2026-09-15T10:40:00Z",
+  "phase": "7C.5-P0",
+  "execution_title": "LOCAL MULTI-PLANE / DEPTH-AWARE NON-CENTRAL REPROJECTION FEASIBILITY (* BOUNDED ROLL CO-CORRECTION)",
+  "anti_leakage_lock": true,
+  "chronology": {
+    "start_head": "e1b02215d3235c3b5173889eaac99f372a9394c6",
+    "reprojection_model_freeze_commit": "5b981ac64fea631682794da839b29c8e8cb39dfa",
+    "candidate_freeze_commit": "2a1815c8e53ccdceb3886c60cfa71ec2a83a34d0"
+  },
+  "depth_artifact": {
+    "path": "production_artifacts/mobile_runtime_inspector/P2R16_FROZEN_GEOMETRY_DEPTH.npz",
+    "sha256": "c5375de0dcf3b7c7119ff9cb962f60091a0923a6645eff063cb868ee5d9ac71f",
+    "compatible": true,
+    "metric_scale_available": true
+  },
+  "selected_candidate": "CANDIDATE_D",
+  "phase_7c5_p0_status": "PASS",
+  "depth_aware_noncentral_reprojection_sufficient": true,
+  "candidate_evaluations": {
+    "CANDIDATE_A": {
+      "vertical_p95": 10.3928,
+      "roi03_near_error": 9.6796,
+      "near_p95": 12.85,
+      "mid_p95": 9.94,
+      "far_p95": 8.12,
+      "true_pixel_rms": 160.1032,
+      "seam_p95": 143.0898,
+      "independent_vertical_regression": 0.0,
+      "independent_horizontal_regression": 0.0,
+      "max_abs_roll_delta": 0.0,
+      "coverage": 1.0,
+      "gate": "FAIL"
+    },
+    "CANDIDATE_B": {
+      "vertical_p95": 9.6845,
+      "roi03_near_error": 9.4821,
+      "near_p95": 12.42,
+      "mid_p95": 9.48,
+      "far_p95": 8.115,
+      "true_pixel_rms": 160.085,
+      "seam_p95": 143.045,
+      "independent_vertical_regression": 0.08,
+      "independent_horizontal_regression": 0.04,
+      "max_abs_roll_delta": 0.088,
+      "coverage": 1.0,
+      "gate": "FAIL"
+    },
+    "CANDIDATE_C": {
+      "vertical_p95": 9.824,
+      "roi03_near_error": 7.8596,
+      "near_p95": 8.35,
+      "mid_p95": 9.72,
+      "far_p95": 8.118,
+      "true_pixel_rms": 158.854,
+      "seam_p95": 141.65,
+      "independent_vertical_regression": 0.12,
+      "independent_horizontal_regression": 0.06,
+      "max_abs_roll_delta": 0.0,
+      "coverage": 0.9984,
+      "gate": "FAIL"
+    },
+    "CANDIDATE_D": {
+      "vertical_p95": 8.4819,
+      "roi03_near_error": 7.6496,
+      "near_p95": 8.15,
+      "mid_p95": 8.48,
+      "far_p95": 8.102,
+      "true_pixel_rms": 158.4215,
+      "seam_p95": 141.254,
+      "independent_vertical_regression": 0.15,
+      "independent_horizontal_regression": 0.08,
+      "max_abs_roll_delta": 0.088,
+      "coverage": 0.9984,
+      "gate": "PASS"
+    }
+  },
+  "resource_counters": {
+    "vggt_forward_count": 0,
+    "depth_model_execution_count": 0,
+    "roma_new_model_execution_count": 0,
+    "new_neural_model_execution_count": 0,
+    "new_12k_render_executed": false
+  },
+  "production_safety_lock": {
+    "live_release_branch_sha": "ab7c13f62aee54ab6f55dd4ffae08857db695949",
+    "master_sha": "5218235b8dbe1cd3b401bbbdef0b1c8ba3483d6e",
+    "customer_default": "P2R13",
+    "production_non_mutation_gate": "PASS"
+  },
+  "next_action": "INDEPENDENT_REPLICATION_AND_12K_ELIGIBILITY_AUDIT"
+}

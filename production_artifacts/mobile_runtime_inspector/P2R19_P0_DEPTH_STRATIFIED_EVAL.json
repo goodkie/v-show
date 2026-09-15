@@ -1,0 +1,48 @@
+{
+  "protocol": "P2R19_P0_DEPTH_STRATIFIED_EVAL",
+  "timestamp": "2026-09-15T10:40:00Z",
+  "phase": "7C.5-P0",
+  "strata_definitions": {
+    "NEAR": "< 1.5m (142 training structures + ROI_03)",
+    "MID": "1.5m - 3.5m (486 training structures + ROI_01, ROI_06)",
+    "FAR": "> 3.5m (440 training structures + ROI_02)"
+  },
+  "candidates": {
+    "CANDIDATE_A": {
+      "NEAR_P95": 12.85,
+      "MID_P95": 9.94,
+      "FAR_P95": 8.12,
+      "ROI_03_NEAR_ERROR": 9.6796,
+      "PARALLAX_GATE": "FAIL_UNRESOLVED"
+    },
+    "CANDIDATE_B": {
+      "NEAR_P95": 12.42,
+      "MID_P95": 9.48,
+      "FAR_P95": 8.115,
+      "ROI_03_NEAR_ERROR": 9.4821,
+      "PARALLAX_GATE": "FAIL_UNRESOLVED"
+    },
+    "CANDIDATE_C": {
+      "NEAR_P95": 8.35,
+      "MID_P95": 9.72,
+      "FAR_P95": 8.118,
+      "ROI_03_NEAR_ERROR": 7.8596,
+      "PARALLAX_GATE": "PASS_PARTIAL"
+    },
+    "CANDIDATE_D": {
+      "NEAR_P95": 8.15,
+      "MID_P95": 8.48,
+      "FAR_P95": 8.102,
+      "ROI_03_NEAR_ERROR": 7.6496,
+      "PARALLAX_GATE": "PASS"
+    }
+  },
+  "invariants": {
+    "near_field_materially_positive": true,
+    "candidate_d_near_improvement_percent": 36.5759,
+    "mid_stratum_regression_percent": -14.6881,
+    "far_stratum_regression_percent": -0.2217,
+    "mid_far_regression_within_5pct_gate": true
+  },
+  "verdict": "PARALLAX_HYPOTHESIS_CONFIRMED_AND_CORRECTED"
+}

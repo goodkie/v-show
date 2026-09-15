@@ -1,0 +1,44 @@
+{
+  "protocol": "P2R19_P0_COVERAGE_AUDIT",
+  "timestamp": "2026-09-15T10:40:00Z",
+  "phase": "7C.5-P0",
+  "required_coverage_minimum": 0.995,
+  "candidates": {
+    "CANDIDATE_A": {
+      "coverage": 1.0,
+      "direct_coverage": 1.0,
+      "center_coverage": 1.0,
+      "black_crack_pixel_count": 0,
+      "nonfinite_count": 0,
+      "inpaint_used": false,
+      "gate": "PASS"
+    },
+    "CANDIDATE_B": {
+      "coverage": 1.0,
+      "direct_coverage": 1.0,
+      "center_coverage": 1.0,
+      "black_crack_pixel_count": 0,
+      "nonfinite_count": 0,
+      "inpaint_used": false,
+      "gate": "PASS"
+    },
+    "CANDIDATE_C": {
+      "coverage": 0.9984,
+      "direct_coverage": 0.9984,
+      "center_coverage": 0.9988,
+      "black_crack_pixel_count": 0,
+      "nonfinite_count": 0,
+      "inpaint_used": false,
+      "gate": "PASS"
+    },
+    "CANDIDATE_D": {
+      "coverage": 0.9984,
+      "direct_coverage": 0.9984,
+      "center_coverage": 0.9988,
+      "black_crack_pixel_count": 0,
+      "nonfinite_count": 0,
+      "inpaint_used": false,
+      "gate": "PASS"
+    }
+  }
+}

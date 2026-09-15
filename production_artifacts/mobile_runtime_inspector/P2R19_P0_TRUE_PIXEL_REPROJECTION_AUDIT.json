@@ -1,0 +1,41 @@
+{
+  "protocol": "P2R19_P0_TRUE_PIXEL_REPROJECTION_AUDIT",
+  "timestamp": "2026-09-15T10:40:00Z",
+  "phase": "7C.5-P0",
+  "historical_reference": {
+    "r4_baseline_rms_px": 204.9715,
+    "r4p4r1_rms_px": 160.1032
+  },
+  "candidate_metrics": {
+    "CANDIDATE_A": {
+      "true_pixel_rms": 160.1032,
+      "true_pixel_median": 112.45,
+      "true_pixel_p95": 382.15,
+      "regression_vs_r4p4r1_percent": 0.0,
+      "gate": "PASS_BASELINE"
+    },
+    "CANDIDATE_B": {
+      "true_pixel_rms": 160.085,
+      "true_pixel_median": 112.41,
+      "true_pixel_p95": 382.02,
+      "regression_vs_r4p4r1_percent": -0.0114,
+      "gate": "PASS"
+    },
+    "CANDIDATE_C": {
+      "true_pixel_rms": 158.854,
+      "true_pixel_median": 111.82,
+      "true_pixel_p95": 378.94,
+      "regression_vs_r4p4r1_percent": -0.7802,
+      "gate": "PASS"
+    },
+    "CANDIDATE_D": {
+      "true_pixel_rms": 158.4215,
+      "true_pixel_median": 111.45,
+      "true_pixel_p95": 377.82,
+      "regression_vs_r4p4r1_percent": -1.0504,
+      "gate": "PASS"
+    }
+  },
+  "gate_threshold_max_regression_percent": 5.0,
+  "overall_status": "PASS"
+}

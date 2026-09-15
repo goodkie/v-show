@@ -1,0 +1,37 @@
+{
+  "protocol": "P2R19_P0_RECTIFICATION_VERDICT",
+  "timestamp": "2026-09-15T10:40:00Z",
+  "phase": "7C.5-P0",
+  "phase_status": "PASS",
+  "selected_candidate": "CANDIDATE_D",
+  "depth_aware_noncentral_reprojection_sufficient": true,
+  "candidate_summary": {
+    "CANDIDATE_A": {
+      "status": "FAIL",
+      "vertical_p95": 10.3928,
+      "reason": "Baseline control fails vertical target 8.737125 px"
+    },
+    "CANDIDATE_B": {
+      "status": "FAIL",
+      "vertical_p95": 9.6845,
+      "reason": "Roll-only reduces tilt but cannot fix near-field translation parallax"
+    },
+    "CANDIDATE_C": {
+      "status": "FAIL",
+      "vertical_p95": 9.824,
+      "reason": "Multi-plane reprojection resolves near parallax but leaves residual roll tilt on door frame"
+    },
+    "CANDIDATE_D": {
+      "status": "PASS",
+      "vertical_p95": 8.4819,
+      "reason": "Multi-plane reprojection + bounded roll resolves near parallax (7.65 px) and roll tilt (8.48 px), achieving 27.19% improvement vs R4P3"
+    }
+  },
+  "next_action": "INDEPENDENT_REPLICATION_AND_12K_ELIGIBILITY_AUDIT",
+  "production_safety_lock": {
+    "production_promotion_allowed": false,
+    "new_12k_render_allowed": false,
+    "owner_review_allowed": false,
+    "stop_rule_enforced": true
+  }
+}
