@@ -1,0 +1,417 @@
+{
+  "phase": "7C.2R4P4-R2B",
+  "candidate": "R4P4R1_BOUNDED",
+  "geometry_source": "P2R16_R4P4R1_BOUNDED_POSE_GEOMETRY.npz (extrinsics_refined)",
+  "projections": [
+    {
+      "roi_id": "ROI_01_DOOR_FRAME",
+      "semantic_structure": "Office entrance door vertical frame",
+      "source_camera_id": "SHOT_000",
+      "source_center_uv": [
+        2563,
+        1715
+      ],
+      "projected_center": {
+        "yaw_deg": 18.0005141949149,
+        "pitch_deg": 4.763128847857913,
+        "pano_x": 614.4175511864286,
+        "pano_y": 805.8242708088629
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 559.9604491491356,
+          "pano_y": 469.7234483243968
+        },
+        {
+          "pano_x": 668.0344564472869,
+          "pano_y": 478.23303102724236
+        },
+        {
+          "pano_x": 667.9047210053735,
+          "pano_y": 1145.738218667618
+        },
+        {
+          "pano_x": 559.8316940492213,
+          "pano_y": 1148.9141366554986
+        }
+      ],
+      "source_owner": "SHOT_000",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": true,
+      "coordinate_shift_from_r4p3_px": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "euclidean_distance_px": 0.0
+      }
+    },
+    {
+      "roi_id": "ROI_02_WINDOW_MULLION",
+      "semantic_structure": "Exterior window frame vertical mullion",
+      "source_camera_id": "SHOT_060",
+      "source_center_uv": [
+        1614,
+        2285
+      ],
+      "projected_center": {
+        "yaw_deg": 61.16134377967688,
+        "pitch_deg": -1.9752484186162529,
+        "pano_x": 2087.6405343463043,
+        "pano_y": 1035.645135036976
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 2030.5312528643876,
+          "pano_y": 676.3446655188035
+        },
+        {
+          "pano_x": 2149.9963662694304,
+          "pano_y": 677.6257415883781
+        },
+        {
+          "pano_x": 2143.53908457134,
+          "pano_y": 1383.1259469971835
+        },
+        {
+          "pano_x": 2026.3524467095576,
+          "pano_y": 1383.2933062117274
+        }
+      ],
+      "source_owner": "SHOT_060",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": false,
+      "coordinate_shift_from_r4p3_px": {
+        "dx": 41.744667749982,
+        "dy": -54.701199137508866,
+        "euclidean_distance_px": 68.81016256802324
+      }
+    },
+    {
+      "roi_id": "ROI_03_CABINET_LATCH_EDGE",
+      "semantic_structure": "Kitchen cabinet dark vertical latch edge",
+      "source_camera_id": "SHOT_180",
+      "source_center_uv": [
+        1614,
+        1829
+      ],
+      "projected_center": {
+        "yaw_deg": 172.13074567025956,
+        "pitch_deg": 3.1466088088696917,
+        "pano_x": 5875.396118878193,
+        "pano_y": 860.9577276799602
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 5837.197571840153,
+          "pano_y": 602.0989648197157
+        },
+        {
+          "pano_x": 5916.4365155131245,
+          "pano_y": 602.9585545133526
+        },
+        {
+          "pano_x": 5913.453943787507,
+          "pano_y": 1122.696808596296
+        },
+        {
+          "pano_x": 5834.403942676215,
+          "pano_y": 1122.4753281903634
+        }
+      ],
+      "source_owner": "SHOT_180",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": false,
+      "coordinate_shift_from_r4p3_px": {
+        "dx": -93.0183326626111,
+        "dy": -23.197811565305642,
+        "euclidean_distance_px": 95.86734935707574
+      }
+    },
+    {
+      "roi_id": "ROI_04_CABINET_FRAME_WIDTH",
+      "semantic_structure": "Full cabinet horizontal frame width",
+      "source_camera_id": "SHOT_180",
+      "source_center_uv": [
+        1500,
+        2000
+      ],
+      "projected_center": {
+        "yaw_deg": 170.35344163003128,
+        "pitch_deg": 0.5290093305018886,
+        "pano_x": 5814.730807638401,
+        "pano_y": 950.2342627464392
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 5683.414260614845,
+          "pano_y": 845.0088427874454
+        },
+        {
+          "pano_x": 5947.138281852484,
+          "pano_y": 846.3832463802166
+        },
+        {
+          "pano_x": 5945.916763824996,
+          "pano_y": 1055.5409121422672
+        },
+        {
+          "pano_x": 5682.453286506992,
+          "pano_y": 1054.167864545297
+        }
+      ],
+      "source_owner": "SHOT_180",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": false,
+      "coordinate_shift_from_r4p3_px": {
+        "dx": -91.16984362077619,
+        "dy": -21.903380543964317,
+        "euclidean_distance_px": 93.76405742655605
+      }
+    },
+    {
+      "roi_id": "ROI_05_BASEBOARD_LINE",
+      "semantic_structure": "Floor wall baseboard boundary line",
+      "source_camera_id": "SHOT_120",
+      "source_center_uv": [
+        1500,
+        3185
+      ],
+      "projected_center": {
+        "yaw_deg": 115.22415049653245,
+        "pitch_deg": -17.625328453660785,
+        "pano_x": 3932.984336948307,
+        "pano_y": 1569.4108736797216
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 3822.9836045676047,
+          "pano_y": 1523.137662640965
+        },
+        {
+          "pano_x": 4048.38291114605,
+          "pano_y": 1536.9190530529822
+        },
+        {
+          "pano_x": 4043.1016316406567,
+          "pano_y": 1613.2865879470642
+        },
+        {
+          "pano_x": 3817.9793767914566,
+          "pano_y": 1599.5214165936106
+        }
+      ],
+      "source_owner": "SHOT_120",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": true,
+      "coordinate_shift_from_r4p3_px": {
+        "dx": 71.30937536677948,
+        "dy": -25.191351510189406,
+        "euclidean_distance_px": 75.6282434419191
+      }
+    },
+    {
+      "roi_id": "ROI_06_WALL_CORNER",
+      "semantic_structure": "Interior drywall vertical corner",
+      "source_camera_id": "SHOT_090",
+      "source_center_uv": [
+        1500,
+        1426
+      ],
+      "projected_center": {
+        "yaw_deg": 87.11236204517797,
+        "pitch_deg": 10.884539772534838,
+        "pano_x": 2973.4352911420747,
+        "pano_y": 597.0458226201375
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 2921.7905067052943,
+          "pano_y": 279.2201590072678
+        },
+        {
+          "pano_x": 3034.950985100889,
+          "pano_y": 280.849803583204
+        },
+        {
+          "pano_x": 3024.6086591325916,
+          "pano_y": 932.9917067280678
+        },
+        {
+          "pano_x": 2912.4615478991395,
+          "pano_y": 931.3766744204445
+        }
+      ],
+      "source_owner": "SHOT_090",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": true,
+      "coordinate_shift_from_r4p3_px": {
+        "dx": 49.18954821186071,
+        "dy": -34.60566438347951,
+        "euclidean_distance_px": 60.1428604300543
+      }
+    },
+    {
+      "roi_id": "ROI_07_CLOSURE_BOUNDARY",
+      "semantic_structure": "Ring closure boundary seam",
+      "source_camera_id": "SHOT_000",
+      "source_center_uv": [
+        1386,
+        1542
+      ],
+      "projected_center": {
+        "yaw_deg": 358.01543767926245,
+        "pitch_deg": 8.009116345221194,
+        "pano_x": 12220.260272785492,
+        "pano_y": 695.1157689816837
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 12130.99519249901,
+          "pano_y": 410.60137903011116
+        },
+        {
+          "pano_x": 21.89837309048356,
+          "pano_y": 408.94695867122067
+        },
+        {
+          "pano_x": 21.805800423326826,
+          "pano_y": 993.2040183544606
+        },
+        {
+          "pano_x": 12130.910923819516,
+          "pano_y": 993.0976138024048
+        }
+      ],
+      "source_owner": "SHOT_000",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": true,
+      "coordinate_shift_from_r4p3_px": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "euclidean_distance_px": 0.0
+      }
+    },
+    {
+      "roi_id": "ROI_08_SEAM_060_ZONE",
+      "semantic_structure": "Sector 3 structural seam zone (Yaw 060)",
+      "source_camera_id": "SHOT_060",
+      "source_center_uv": [
+        1500,
+        2000
+      ],
+      "projected_center": {
+        "yaw_deg": 59.21149582978734,
+        "pitch_deg": 3.0361270807610827,
+        "pano_x": 2021.085724323408,
+        "pano_y": 864.7258465060855
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 1903.0588628127396,
+          "pano_y": 508.84806321445063
+        },
+        {
+          "pano_x": 2143.1873013387703,
+          "pano_y": 510.1933873852871
+        },
+        {
+          "pano_x": 2136.8293636619987,
+          "pano_y": 1220.9726842247949
+        },
+        {
+          "pano_x": 1901.3371488371865,
+          "pano_y": 1219.6533011767137
+        }
+      ],
+      "source_owner": "SHOT_060",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": true,
+      "coordinate_shift_from_r4p3_px": {
+        "dx": 41.79526735990089,
+        "dy": -54.71742332547262,
+        "euclidean_distance_px": 68.85376379737401
+      }
+    },
+    {
+      "roi_id": "ROI_09_SEAM_150_ZONE",
+      "semantic_structure": "Sector 1 (bound hit) structural seam zone (Yaw 150)",
+      "source_camera_id": "SHOT_150",
+      "source_center_uv": [
+        1500,
+        2000
+      ],
+      "projected_center": {
+        "yaw_deg": 142.11576158237733,
+        "pitch_deg": 0.4040433799064669,
+        "pano_x": 4850.884662011813,
+        "pano_y": 954.4963842675685
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 4750.93760114467,
+          "pano_y": 631.6724514664735
+        },
+        {
+          "pano_x": 4966.851988519477,
+          "pano_y": 637.016987932411
+        },
+        {
+          "pano_x": 4950.5970713022825,
+          "pano_y": 1277.356215130625
+        },
+        {
+          "pano_x": 4735.184981008134,
+          "pano_y": 1272.02410719053
+        }
+      ],
+      "source_owner": "SHOT_150",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": true,
+      "coordinate_shift_from_r4p3_px": {
+        "dx": 92.91003018451556,
+        "dy": -12.845675815234017,
+        "euclidean_distance_px": 93.79384359347729
+      }
+    },
+    {
+      "roi_id": "ROI_10_SEAM_240_ZONE",
+      "semantic_structure": "Sector 2 structural seam zone (Yaw 240)",
+      "source_camera_id": "SHOT_240",
+      "source_center_uv": [
+        1500,
+        2000
+      ],
+      "projected_center": {
+        "yaw_deg": 245.6742142501176,
+        "pitch_deg": 0.19330947335323967,
+        "pano_x": 8385.679846404015,
+        "pano_y": 961.6837302131853
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 8272.0486866086,
+          "pano_y": 639.4928678827756
+        },
+        {
+          "pano_x": 8490.26120838806,
+          "pano_y": 636.4737951009321
+        },
+        {
+          "pano_x": 8499.183566668464,
+          "pano_y": 1283.8968187079236
+        },
+        {
+          "pano_x": 8281.216902761444,
+          "pano_y": 1286.9124929805246
+        }
+      ],
+      "source_owner": "SHOT_240",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": true,
+      "coordinate_shift_from_r4p3_px": {
+        "dx": -20.261118317517685,
+        "dy": 3.2716871329379273,
+        "euclidean_distance_px": 20.52356821247909
+      }
+    }
+  ]
+}

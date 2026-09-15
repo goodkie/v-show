@@ -1,0 +1,38 @@
+{
+  "phase": "7C.2R4P4-R2B",
+  "status": "FAIL_PENDING_NEXT_STAGE_CATEGORIZATION",
+  "technical_acceptance": "FAIL",
+  "failure_category": "SEAM_OWNERSHIP_STRUCTURAL_CONSTRAINT",
+  "failure_details": "Rectified vertical improvement (-33.12%) or seam discontinuity improvement (+60.34%) did not meet the >= 25.0% structural threshold. Seam boundary geometry is governed by seam placement over residual parallax.",
+  "owner_review_semantics": {
+    "OWNER_REVIEW_ROLE": "QUALITATIVE_COMPARISON_ONLY",
+    "OWNER_VISUAL_ACCEPTANCE": false
+  },
+  "audit_summary": {
+    "CANONICAL_ROI_COUNT": 10,
+    "ROI_PROVENANCE_RECONCILED": true,
+    "SYNTHETIC_METRIC_VALIDATION": "PASS",
+    "PIXEL_REPROJECTION_RMS_IMPROVEMENT_PERCENT": 21.89,
+    "RECTIFIED_VERTICAL_P95_R4P3": 12.8753,
+    "RECTIFIED_VERTICAL_P95_BOUNDED": 17.1391,
+    "RECTIFIED_VERTICAL_IMPROVEMENT_PERCENT": -33.1169,
+    "RECTIFIED_VERTICAL_GATE": "FAIL",
+    "RECTIFIED_SEAM_EDGE_P95_R4P3": 360.8,
+    "RECTIFIED_SEAM_EDGE_P95_BOUNDED": 143.0898,
+    "RECTIFIED_SEAM_EDGE_IMPROVEMENT_PERCENT": 60.341,
+    "RECTIFIED_SEAM_EDGE_GATE": "PASS",
+    "SECOND_NEIGHBOR_VALIDATION": "STABLE_WITH_SMALL_GLOBAL_REGRESSION",
+    "MAX_ROTATION_DELTA_DEG": 3.0,
+    "GEOMETRY_FOLDOVER_COUNT": 0,
+    "BLACK_CRACK_PIXEL_COUNT": 0,
+    "INPAINT_USED": false
+  },
+  "immutable_locks": {
+    "MASTER_TOUCHED": false,
+    "CUSTOMER_DEFAULT": "P2R13",
+    "OWNER_VISUAL_ACCEPTANCE": false,
+    "VGGT_FORWARD_COUNT": 0,
+    "DEPTH_MODEL_EXECUTION_COUNT": 0,
+    "ROMA_NEW_MODEL_EXECUTION_COUNT": 0
+  }
+}

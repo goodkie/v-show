@@ -1,0 +1,367 @@
+{
+  "phase": "7C.2R4P4-R2B",
+  "candidate": "R4P3_BASELINE",
+  "geometry_source": "P2R16_R4P4R1_BOUNDED_POSE_GEOMETRY.npz (extrinsics_prior)",
+  "projections": [
+    {
+      "roi_id": "ROI_01_DOOR_FRAME",
+      "semantic_structure": "Office entrance door vertical frame",
+      "source_camera_id": "SHOT_000",
+      "source_center_uv": [
+        2563,
+        1715
+      ],
+      "projected_center": {
+        "yaw_deg": 18.0005141949149,
+        "pitch_deg": 4.763128847857913,
+        "pano_x": 614.4175511864286,
+        "pano_y": 805.8242708088629
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 559.9604491491356,
+          "pano_y": 469.7234483243968
+        },
+        {
+          "pano_x": 668.0344564472869,
+          "pano_y": 478.23303102724236
+        },
+        {
+          "pano_x": 667.9047210053735,
+          "pano_y": 1145.738218667618
+        },
+        {
+          "pano_x": 559.8316940492213,
+          "pano_y": 1148.9141366554986
+        }
+      ],
+      "source_owner": "SHOT_000",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": true
+    },
+    {
+      "roi_id": "ROI_02_WINDOW_MULLION",
+      "semantic_structure": "Exterior window frame vertical mullion",
+      "source_camera_id": "SHOT_060",
+      "source_center_uv": [
+        1614,
+        2285
+      ],
+      "projected_center": {
+        "yaw_deg": 59.93835546668913,
+        "pitch_deg": -3.579094605319342,
+        "pano_x": 2045.8958665963223,
+        "pano_y": 1090.3463341744848
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 1988.7441872572253,
+          "pano_y": 731.0636474622312
+        },
+        {
+          "pano_x": 2107.7566983938195,
+          "pano_y": 732.2546634783072
+        },
+        {
+          "pano_x": 2102.412521828447,
+          "pano_y": 1437.7641054224018
+        },
+        {
+          "pano_x": 1984.4682678164702,
+          "pano_y": 1438.0117483400952
+        }
+      ],
+      "source_owner": "SHOT_060",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": false
+    },
+    {
+      "roi_id": "ROI_03_CABINET_LATCH_EDGE",
+      "semantic_structure": "Kitchen cabinet dark vertical latch edge",
+      "source_camera_id": "SHOT_180",
+      "source_center_uv": [
+        1614,
+        1829
+      ],
+      "projected_center": {
+        "yaw_deg": 174.85589213498451,
+        "pitch_deg": 2.4664459933280463,
+        "pano_x": 5968.414451540804,
+        "pano_y": 884.1555392452658
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 5935.7823074285325,
+          "pano_y": 624.5552205620659
+        },
+        {
+          "pano_x": 6014.812256722963,
+          "pano_y": 627.0613611315258
+        },
+        {
+          "pano_x": 6001.029157601095,
+          "pano_y": 1146.626982463039
+        },
+        {
+          "pano_x": 5921.921603952627,
+          "pano_y": 1144.7561018621436
+        }
+      ],
+      "source_owner": "SHOT_180",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": false
+    },
+    {
+      "roi_id": "ROI_04_CABINET_FRAME_WIDTH",
+      "semantic_structure": "Full cabinet horizontal frame width",
+      "source_camera_id": "SHOT_180",
+      "source_center_uv": [
+        1500,
+        2000
+      ],
+      "projected_center": {
+        "yaw_deg": 173.0244331423587,
+        "pitch_deg": -0.11320060118597049,
+        "pano_x": 5905.900651259177,
+        "pano_y": 972.1376432904035
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 5776.930247304038,
+          "pano_y": 864.107136860387
+        },
+        {
+          "pano_x": 6040.396681602117,
+          "pano_y": 871.0622119021467
+        },
+        {
+          "pano_x": 6034.899237525704,
+          "pano_y": 1080.15136174258
+        },
+        {
+          "pano_x": 5771.377128915803,
+          "pano_y": 1073.194818318311
+        }
+      ],
+      "source_owner": "SHOT_180",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": false
+    },
+    {
+      "roi_id": "ROI_05_BASEBOARD_LINE",
+      "semantic_structure": "Floor wall baseboard boundary line",
+      "source_camera_id": "SHOT_120",
+      "source_center_uv": [
+        1500,
+        3185
+      ],
+      "projected_center": {
+        "yaw_deg": 113.13500864008381,
+        "pitch_deg": -18.363942116515744,
+        "pano_x": 3861.6749615815274,
+        "pano_y": 1594.602225189911
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 3750.01273720688,
+          "pano_y": 1551.0032770736204
+        },
+        {
+          "pano_x": 3976.5861791515263,
+          "pano_y": 1559.246184361942
+        },
+        {
+          "pano_x": 3973.4258564721713,
+          "pano_y": 1635.72018008575
+        },
+        {
+          "pano_x": 3746.9938224048447,
+          "pano_y": 1627.482254804317
+        }
+      ],
+      "source_owner": "SHOT_120",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": true
+    },
+    {
+      "roi_id": "ROI_06_WALL_CORNER",
+      "semantic_structure": "Interior drywall vertical corner",
+      "source_camera_id": "SHOT_090",
+      "source_center_uv": [
+        1500,
+        1426
+      ],
+      "projected_center": {
+        "yaw_deg": 85.67126199990861,
+        "pitch_deg": 9.869897246687312,
+        "pano_x": 2924.245742930214,
+        "pano_y": 631.651487003617
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 2865.069170300942,
+          "pano_y": 315.0919154651309
+        },
+        {
+          "pano_x": 2977.524515805351,
+          "pano_y": 314.11514379340315
+        },
+        {
+          "pano_x": 2983.2588278564003,
+          "pano_y": 966.3111218536321
+        },
+        {
+          "pano_x": 2871.1234074264976,
+          "pano_y": 967.2851111204716
+        }
+      ],
+      "source_owner": "SHOT_090",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": true
+    },
+    {
+      "roi_id": "ROI_07_CLOSURE_BOUNDARY",
+      "semantic_structure": "Ring closure boundary seam",
+      "source_camera_id": "SHOT_000",
+      "source_center_uv": [
+        1386,
+        1542
+      ],
+      "projected_center": {
+        "yaw_deg": 358.01543767926245,
+        "pitch_deg": 8.009116345221194,
+        "pano_x": 12220.260272785492,
+        "pano_y": 695.1157689816837
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 12130.99519249901,
+          "pano_y": 410.60137903011116
+        },
+        {
+          "pano_x": 21.89837309048356,
+          "pano_y": 408.94695867122067
+        },
+        {
+          "pano_x": 21.805800423326826,
+          "pano_y": 993.2040183544606
+        },
+        {
+          "pano_x": 12130.910923819516,
+          "pano_y": 993.0976138024048
+        }
+      ],
+      "source_owner": "SHOT_000",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": true
+    },
+    {
+      "roi_id": "ROI_08_SEAM_060_ZONE",
+      "semantic_structure": "Sector 3 structural seam zone (Yaw 060)",
+      "source_camera_id": "SHOT_060",
+      "source_center_uv": [
+        1500,
+        2000
+      ],
+      "projected_center": {
+        "yaw_deg": 57.987025106352746,
+        "pitch_deg": 1.4318051987824187,
+        "pano_x": 1979.290456963507,
+        "pano_y": 919.4432698315582
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 1862.0879610901193,
+          "pano_y": 563.4392503171138
+        },
+        {
+          "pano_x": 2100.7125449592577,
+          "pano_y": 564.833101468106
+        },
+        {
+          "pano_x": 2095.4189264546226,
+          "pano_y": 1275.6209432704861
+        },
+        {
+          "pano_x": 1858.9766037299046,
+          "pano_y": 1274.239821429918
+        }
+      ],
+      "source_owner": "SHOT_060",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": true
+    },
+    {
+      "roi_id": "ROI_09_SEAM_150_ZONE",
+      "semantic_structure": "Sector 1 (bound hit) structural seam zone (Yaw 150)",
+      "source_camera_id": "SHOT_150",
+      "source_center_uv": [
+        1500,
+        2000
+      ],
+      "projected_center": {
+        "yaw_deg": 139.39378804181536,
+        "pitch_deg": 0.02740651459577874,
+        "pano_x": 4757.974631827297,
+        "pano_y": 967.3420600828025
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 4651.262387078888,
+          "pano_y": 646.687201637023
+        },
+        {
+          "pano_x": 4867.005314709968,
+          "pano_y": 647.4605841181642
+        },
+        {
+          "pano_x": 4864.66998266808,
+          "pano_y": 1287.999700513298
+        },
+        {
+          "pano_x": 4648.961167212269,
+          "pano_y": 1287.2264399749722
+        }
+      ],
+      "source_owner": "SHOT_150",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": true
+    },
+    {
+      "roi_id": "ROI_10_SEAM_240_ZONE",
+      "semantic_structure": "Sector 2 structural seam zone (Yaw 240)",
+      "source_camera_id": "SHOT_240",
+      "source_center_uv": [
+        1500,
+        2000
+      ],
+      "projected_center": {
+        "yaw_deg": 246.2678017008261,
+        "pitch_deg": 0.2892357604362216,
+        "pano_x": 8405.940964721533,
+        "pano_y": 958.4120430802474
+      },
+      "projected_polygon": [
+        {
+          "pano_x": 8297.55359915613,
+          "pano_y": 634.4324859388234
+        },
+        {
+          "pano_x": 8515.850244264193,
+          "pano_y": 634.9402200646136
+        },
+        {
+          "pano_x": 8514.145461489956,
+          "pano_y": 1282.4218406130888
+        },
+        {
+          "pano_x": 8296.216823480605,
+          "pano_y": 1281.9149617775076
+        }
+      ],
+      "source_owner": "SHOT_240",
+      "projection_validity": "VALID_INTERSECTS_CONE",
+      "seam_intersection_status": true
+    }
+  ]
+}

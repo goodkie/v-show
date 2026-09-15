@@ -1,0 +1,177 @@
+{
+  "phase": "7C.2R4P4-R2B",
+  "protocol": "CANONICAL_PHYSICAL_ROI_PER_STRUCTURE_METRICS",
+  "total_rois_evaluated": 10,
+  "rois": [
+    {
+      "physical_roi_id": "ROI_01_DOOR_FRAME",
+      "semantic_structure": "Office entrance door vertical frame",
+      "orientation_class": "VERTICAL",
+      "source_owner": "SHOT_000",
+      "intersects_seam": true,
+      "rectified_vertical_error_px": {
+        "r4p3": 6.3735,
+        "bounded": 8.8907,
+        "improvement_percent": -39.49
+      },
+      "rectified_seam_edge_discontinuity_px": {
+        "r4p3": 0.0,
+        "bounded": 0.0,
+        "improvement_percent": 0.0
+      }
+    },
+    {
+      "physical_roi_id": "ROI_02_WINDOW_MULLION",
+      "semantic_structure": "Exterior window frame vertical mullion",
+      "orientation_class": "VERTICAL",
+      "source_owner": "SHOT_060",
+      "intersects_seam": false,
+      "rectified_vertical_error_px": {
+        "r4p3": 20.1186,
+        "bounded": 23.371,
+        "improvement_percent": -16.17
+      },
+      "rectified_seam_edge_discontinuity_px": {
+        "r4p3": 0.0,
+        "bounded": 0.0,
+        "improvement_percent": 0.0
+      }
+    },
+    {
+      "physical_roi_id": "ROI_03_CABINET_LATCH_EDGE",
+      "semantic_structure": "Kitchen cabinet dark vertical latch edge",
+      "orientation_class": "VERTICAL",
+      "source_owner": "SHOT_180",
+      "intersects_seam": false,
+      "rectified_vertical_error_px": {
+        "r4p3": 6.73,
+        "bounded": 6.7496,
+        "improvement_percent": -0.29
+      },
+      "rectified_seam_edge_discontinuity_px": {
+        "r4p3": 0.0,
+        "bounded": 0.0,
+        "improvement_percent": 0.0
+      }
+    },
+    {
+      "physical_roi_id": "ROI_04_CABINET_FRAME_WIDTH",
+      "semantic_structure": "Full cabinet horizontal frame width",
+      "orientation_class": "HORIZONTAL",
+      "source_owner": "SHOT_180",
+      "intersects_seam": false,
+      "rectified_vertical_error_px": {
+        "r4p3": 18.6382,
+        "bounded": 18.2414,
+        "improvement_percent": 2.13
+      },
+      "rectified_seam_edge_discontinuity_px": {
+        "r4p3": 0.0,
+        "bounded": 0.0,
+        "improvement_percent": 0.0
+      }
+    },
+    {
+      "physical_roi_id": "ROI_05_BASEBOARD_LINE",
+      "semantic_structure": "Floor wall baseboard boundary line",
+      "orientation_class": "HORIZONTAL",
+      "source_owner": "SHOT_120",
+      "intersects_seam": true,
+      "rectified_vertical_error_px": {
+        "r4p3": 18.862,
+        "bounded": 20.4404,
+        "improvement_percent": -8.37
+      },
+      "rectified_seam_edge_discontinuity_px": {
+        "r4p3": 0.0,
+        "bounded": 0.0,
+        "improvement_percent": 0.0
+      }
+    },
+    {
+      "physical_roi_id": "ROI_06_WALL_CORNER",
+      "semantic_structure": "Interior drywall vertical corner",
+      "orientation_class": "VERTICAL",
+      "source_owner": "SHOT_090",
+      "intersects_seam": true,
+      "rectified_vertical_error_px": {
+        "r4p3": 5.4351,
+        "bounded": 16.9038,
+        "improvement_percent": -211.01
+      },
+      "rectified_seam_edge_discontinuity_px": {
+        "r4p3": 0.0,
+        "bounded": 0.0,
+        "improvement_percent": 0.0
+      }
+    },
+    {
+      "physical_roi_id": "ROI_07_CLOSURE_BOUNDARY",
+      "semantic_structure": "Ring closure boundary seam",
+      "orientation_class": "SEAM",
+      "source_owner": "SHOT_000",
+      "intersects_seam": true,
+      "rectified_vertical_error_px": {
+        "r4p3": 0.0,
+        "bounded": 0.0,
+        "improvement_percent": 0.0
+      },
+      "rectified_seam_edge_discontinuity_px": {
+        "r4p3": 3.8545,
+        "bounded": 2.2746,
+        "improvement_percent": 40.99
+      }
+    },
+    {
+      "physical_roi_id": "ROI_08_SEAM_060_ZONE",
+      "semantic_structure": "Sector 3 structural seam zone (Yaw 060)",
+      "orientation_class": "SEAM",
+      "source_owner": "SHOT_060",
+      "intersects_seam": true,
+      "rectified_vertical_error_px": {
+        "r4p3": 0.0,
+        "bounded": 0.0,
+        "improvement_percent": 0.0
+      },
+      "rectified_seam_edge_discontinuity_px": {
+        "r4p3": 152.875,
+        "bounded": 146.0777,
+        "improvement_percent": 4.45
+      }
+    },
+    {
+      "physical_roi_id": "ROI_09_SEAM_150_ZONE",
+      "semantic_structure": "Sector 1 (bound hit) structural seam zone (Yaw 150)",
+      "orientation_class": "SEAM",
+      "source_owner": "SHOT_150",
+      "intersects_seam": true,
+      "rectified_vertical_error_px": {
+        "r4p3": 0.0,
+        "bounded": 0.0,
+        "improvement_percent": 0.0
+      },
+      "rectified_seam_edge_discontinuity_px": {
+        "r4p3": 397.4926,
+        "bounded": 34.962,
+        "improvement_percent": 91.2
+      }
+    },
+    {
+      "physical_roi_id": "ROI_10_SEAM_240_ZONE",
+      "semantic_structure": "Sector 2 structural seam zone (Yaw 240)",
+      "orientation_class": "SEAM",
+      "source_owner": "SHOT_240",
+      "intersects_seam": true,
+      "rectified_vertical_error_px": {
+        "r4p3": 0.0,
+        "bounded": 0.0,
+        "improvement_percent": 0.0
+      },
+      "rectified_seam_edge_discontinuity_px": {
+        "r4p3": 127.1727,
+        "bounded": 126.1581,
+        "improvement_percent": 0.8
+      }
+    }
+  ]
+}
