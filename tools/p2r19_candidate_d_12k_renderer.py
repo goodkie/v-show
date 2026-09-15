@@ -1,12 +1,24 @@
 # Authoritative Phase 7C.5-P2R3 Pipeline: Renderer/Evaluator Truth Repair & Fresh True Candidate D 12K Validation
 import os, sys, json, math, hashlib, shutil, time
+
+repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
+
 import numpy as np
 import cv2
-from tools.p2r19_candidate_d_evaluators import (
-    evaluate_matched_scale_sharpness,
-    detect_defects_comprehensive,
-    audit_tiles_full_res
-)
+try:
+    from tools.p2r19_candidate_d_evaluators import (
+        evaluate_matched_scale_sharpness,
+        detect_defects_comprehensive,
+        audit_tiles_full_res
+    )
+except ModuleNotFoundError:
+    from p2r19_candidate_d_evaluators import (
+        evaluate_matched_scale_sharpness,
+        detect_defects_comprehensive,
+        audit_tiles_full_res
+    )
 
 PROD_DIR = 'production_artifacts/mobile_runtime_inspector'
 COMM_DIR = 'virtual-tradeshow-commercial-v1/production_artifacts/mobile_runtime_inspector'
