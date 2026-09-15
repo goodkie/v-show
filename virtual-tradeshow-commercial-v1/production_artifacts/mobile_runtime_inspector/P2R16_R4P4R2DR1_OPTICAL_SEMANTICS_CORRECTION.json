@@ -1,0 +1,36 @@
+{
+  "phase": "7C.2R4P4-R2D-R1",
+  "protocol": "OPTICAL_SEMANTICS_CORRECTION",
+  "RADIAL_DISTORTION_CAUSE": "NOT_SUPPORTED",
+  "semantic_rule": "Do NOT report raw source residual = 0.12 to 0.18 px. Repository truth records RAW P95 between 11.58 px and 12.87 px. RADIAL_DISTORTION_CAUSE is NOT_SUPPORTED because the forensic radial model produces 0.0% material improvement over raw measured source deviations.",
+  "rois": [
+    {
+      "roi_id": "ROI_01_DOOR_FRAME",
+      "camera": "SHOT_000",
+      "RAW_SOURCE_LINE_P95": 11.9345,
+      "DIAGNOSTIC_UNDISTORTED_LINE_P95": 11.9345,
+      "IMPROVEMENT_PERCENT": 0.0
+    },
+    {
+      "roi_id": "ROI_02_WINDOW_MULLION",
+      "camera": "SHOT_060",
+      "RAW_SOURCE_LINE_P95": 12.8651,
+      "DIAGNOSTIC_UNDISTORTED_LINE_P95": 12.8651,
+      "IMPROVEMENT_PERCENT": 0.0
+    },
+    {
+      "roi_id": "ROI_03_CABINET_LATCH_EDGE",
+      "camera": "SHOT_180",
+      "RAW_SOURCE_LINE_P95": 11.5826,
+      "DIAGNOSTIC_UNDISTORTED_LINE_P95": 11.5826,
+      "IMPROVEMENT_PERCENT": 0.0
+    },
+    {
+      "roi_id": "ROI_06_WALL_CORNER",
+      "camera": "SHOT_090",
+      "RAW_SOURCE_LINE_P95": 12.3213,
+      "DIAGNOSTIC_UNDISTORTED_LINE_P95": 12.3213,
+      "IMPROVEMENT_PERCENT": 0.0
+    }
+  ]
+}

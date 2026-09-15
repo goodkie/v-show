@@ -1,0 +1,32 @@
+{
+  "phase": "7C.2R4P4-R2D-R1",
+  "protocol": "HUMAN_READABLE_REPORT_CORRECTIONS",
+  "preceding_truth_commit_sha": "ee56918615e97732172695106ae782851ba8c4dd",
+  "corrections": {
+    "reprojection_gate": {
+      "previous_reported_required_percent": 10.0,
+      "contract_required_percent": 20.0,
+      "achieved_improvement_percent": 21.89,
+      "gate_status": "PASS",
+      "impact_on_overall_acceptance": "NONE_OVERALL_REMAINS_FAIL"
+    },
+    "anchor_provenance": {
+      "finding": "Markdown summary inadvertently noted ROI_01 camera as SHOT_300; repository truth manifest strictly defines ROI_01 as SHOT_000. All narrative references are reconciled to match P2R16_R4P4R2D_ANCHORED_LINE_MANIFEST.json.",
+      "canonical_matches_verified": true
+    },
+    "anchor_transfer_semantics": {
+      "finding": "Narrative refinement delta (0.00 px) reflected initial projection center offset rather than local search refinement. Canonical refinement deltas are: ROI_01=20px, ROI_02=17px, ROI_03=15px, ROI_06=20px. Search window boundary was reached on ROI_01 and ROI_06.",
+      "bound_hit_count": 2
+    },
+    "optical_distortion_semantics": {
+      "finding": "Removed inaccurate claim of residual curvature < 0.2 px. Correct semantic reason for RADIAL_DISTORTION_CAUSE = NOT_SUPPORTED is that forensic undistortion produces 0.0% material improvement over raw measured source deviations (~11.6 to ~12.9 px).",
+      "radial_distortion_cause": "NOT_SUPPORTED"
+    },
+    "parallax_causality": {
+      "finding": "Downgraded SOURCE_PARALLAX_DOMINANT to SUPPORTED_AS_PHYSICAL_CONTRIBUTOR. PARALLAX_DOMINANT_CAUSE is NOT_PROVEN because individual ROI predicted vs observed shifts do not correlate cleanly (e.g. ROI_01 observed 0.0 px vs predicted 91.2 px; ROI_03 directional mismatch).",
+      "parallax_causal_status": "SUPPORTED_AS_PHYSICAL_CONTRIBUTOR",
+      "parallax_dominant_cause": "NOT_PROVEN",
+      "physical_dominant_cause": "UNRESOLVED"
+    }
+  }
+}

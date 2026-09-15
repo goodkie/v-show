@@ -1,0 +1,238 @@
+{
+  "phase": "7C.2R4P4-R2D-R1",
+  "protocol": "ANCHOR_PROVENANCE_AUDIT",
+  "ANCHOR_PROVENANCE_MATCHES_REPOSITORY": true,
+  "ANCHOR_BOUND_HIT_COUNT": 2,
+  "total_anchors": 4,
+  "anchors": [
+    {
+      "roi_id": "ROI_01_DOOR_FRAME",
+      "source_camera": "SHOT_000",
+      "source_image_sha256": "917188a5c1d4b5aec329b707cc139b9c5a58d570c6a3f1cb7215776925ee5839",
+      "physical_line_id": "LINE_ANCHOR_DOOR_JAMB_VERTICAL",
+      "anchor_endpoints_source_uv": [
+        [
+          2563.0,
+          1115.0
+        ],
+        [
+          2563.0,
+          2315.0
+        ]
+      ],
+      "support_polygon_uv": [
+        [
+          2463,
+          1115
+        ],
+        [
+          2663,
+          1115
+        ],
+        [
+          2663,
+          2315
+        ],
+        [
+          2463,
+          2315
+        ]
+      ],
+      "expected_polarity": "DARK_TO_LIGHT",
+      "expected_local_orientation": "VERTICAL",
+      "adjacent_parallel_edge_exclusion_zones": [
+        {
+          "label": "door_trim_outer_edge",
+          "source_u_range": [
+            2610,
+            2640
+          ]
+        },
+        {
+          "label": "wall_interior_shadow",
+          "source_u_range": [
+            2480,
+            2520
+          ]
+        }
+      ],
+      "LOCAL_REFINEMENT_DELTA_PX": 20,
+      "MAX_PERMITTED_REFINEMENT_WINDOW_PX": 20,
+      "LOCAL_REFINEMENT_BOUND_HIT": true,
+      "POLARITY_VERIFIED": true,
+      "ORIENTATION_VERIFIED": true,
+      "EXCLUSION_ZONE_COMPLIANT": true,
+      "FEATURE_IDENTITY_PROVEN": true
+    },
+    {
+      "roi_id": "ROI_02_WINDOW_MULLION",
+      "source_camera": "SHOT_060",
+      "source_image_sha256": "ed8e2c6bbda2f23565bb7533a81d23462c292ff1c3c9730e8f2c8c4d3b4acddb",
+      "physical_line_id": "LINE_ANCHOR_WINDOW_MULLION_VERTICAL",
+      "anchor_endpoints_source_uv": [
+        [
+          1614.0,
+          1685.0
+        ],
+        [
+          1614.0,
+          2885.0
+        ]
+      ],
+      "support_polygon_uv": [
+        [
+          1514,
+          1685
+        ],
+        [
+          1714,
+          1685
+        ],
+        [
+          1714,
+          2885
+        ],
+        [
+          1514,
+          2885
+        ]
+      ],
+      "expected_polarity": "LIGHT_TO_DARK",
+      "expected_local_orientation": "VERTICAL",
+      "adjacent_parallel_edge_exclusion_zones": [
+        {
+          "label": "outer_window_frame_jamb",
+          "source_u_range": [
+            1680,
+            1720
+          ]
+        },
+        {
+          "label": "glass_reflection_edge",
+          "source_u_range": [
+            1520,
+            1550
+          ]
+        }
+      ],
+      "LOCAL_REFINEMENT_DELTA_PX": 17,
+      "MAX_PERMITTED_REFINEMENT_WINDOW_PX": 20,
+      "LOCAL_REFINEMENT_BOUND_HIT": false,
+      "POLARITY_VERIFIED": true,
+      "ORIENTATION_VERIFIED": true,
+      "EXCLUSION_ZONE_COMPLIANT": true,
+      "FEATURE_IDENTITY_PROVEN": true
+    },
+    {
+      "roi_id": "ROI_03_CABINET_LATCH_EDGE",
+      "source_camera": "SHOT_180",
+      "source_image_sha256": "5165aeacde73a5eac8819dac8cd841f1f5807505fda167ec11f812e6178d3bc0",
+      "physical_line_id": "LINE_ANCHOR_CABINET_LATCH_VERTICAL",
+      "anchor_endpoints_source_uv": [
+        [
+          1614.0,
+          1329.0
+        ],
+        [
+          1614.0,
+          2329.0
+        ]
+      ],
+      "support_polygon_uv": [
+        [
+          1539,
+          1329
+        ],
+        [
+          1689,
+          1329
+        ],
+        [
+          1689,
+          2329
+        ],
+        [
+          1539,
+          2329
+        ]
+      ],
+      "expected_polarity": "LIGHT_TO_DARK",
+      "expected_local_orientation": "VERTICAL",
+      "adjacent_parallel_edge_exclusion_zones": [
+        {
+          "label": "adjacent_door_reveal_gap",
+          "source_u_range": [
+            1650,
+            1680
+          ]
+        }
+      ],
+      "LOCAL_REFINEMENT_DELTA_PX": 15,
+      "MAX_PERMITTED_REFINEMENT_WINDOW_PX": 20,
+      "LOCAL_REFINEMENT_BOUND_HIT": false,
+      "POLARITY_VERIFIED": true,
+      "ORIENTATION_VERIFIED": true,
+      "EXCLUSION_ZONE_COMPLIANT": true,
+      "FEATURE_IDENTITY_PROVEN": true
+    },
+    {
+      "roi_id": "ROI_06_WALL_CORNER",
+      "source_camera": "SHOT_090",
+      "source_image_sha256": "233db00a0087893fd1d5d63e54ac35487a8a9a6671754d8bbb50144d0c090c57",
+      "physical_line_id": "LINE_ANCHOR_WALL_CORNER_VERTICAL",
+      "anchor_endpoints_source_uv": [
+        [
+          1500.0,
+          826.0
+        ],
+        [
+          1500.0,
+          2026.0
+        ]
+      ],
+      "support_polygon_uv": [
+        [
+          1400,
+          826
+        ],
+        [
+          1600,
+          826
+        ],
+        [
+          1600,
+          2026
+        ],
+        [
+          1400,
+          2026
+        ]
+      ],
+      "expected_polarity": "DARK_TO_LIGHT",
+      "expected_local_orientation": "VERTICAL",
+      "adjacent_parallel_edge_exclusion_zones": [
+        {
+          "label": "secondary_shadow_edge",
+          "source_u_range": [
+            1200,
+            1300
+          ]
+        },
+        {
+          "label": "trim_baseboard_corner",
+          "source_u_range": [
+            1350,
+            1420
+          ]
+        }
+      ],
+      "LOCAL_REFINEMENT_DELTA_PX": 20,
+      "MAX_PERMITTED_REFINEMENT_WINDOW_PX": 20,
+      "LOCAL_REFINEMENT_BOUND_HIT": true,
+      "POLARITY_VERIFIED": true,
+      "ORIENTATION_VERIFIED": true,
+      "EXCLUSION_ZONE_COMPLIANT": true,
+      "FEATURE_IDENTITY_PROVEN": true
+    }
+  ]
+}
