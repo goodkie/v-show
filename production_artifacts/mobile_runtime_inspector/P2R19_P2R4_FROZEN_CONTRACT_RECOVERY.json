@@ -1,0 +1,106 @@
+{
+  "protocol": "P2R19_P2R4_FROZEN_CONTRACT_RECOVERY",
+  "timestamp": "2026-09-15T17:50:00Z",
+  "phase": "7C.5-P2R4",
+  "contract_recovery_status": "FAIL_FROZEN_IMPLEMENTATION_UNAVAILABLE",
+  "immutable_inputs": {
+    "candidate_d": {
+      "path": "production_artifacts/mobile_runtime_inspector/P2R19_P0_CANDIDATE_D.json",
+      "sha256": "7a29b5be826205f8939373d192f9ce4a78aadfe449f408e2d69e178734b86d62"
+    },
+    "geometry": {
+      "path": "production_artifacts/mobile_runtime_inspector/P2R16_R4P4R1_BOUNDED_POSE_GEOMETRY.npz",
+      "sha256": "14a20ff4857a35f11a59adf0798b376ca9aae6f261bd563bbe97ef1d337878b3"
+    },
+    "depth": {
+      "path": "production_artifacts/mobile_runtime_inspector/P2R16_FROZEN_GEOMETRY_DEPTH.npz",
+      "sha256": "c5375de0dcf3b7c7119ff9cb962f60091a0923a6645eff063cb868ee5d9ac71f"
+    }
+  },
+  "p0_renderer_recovery": {
+    "available": false,
+    "p0_renderer_commit": null,
+    "p0_renderer_path": "UNAVAILABLE_NEVER_IMPLEMENTED",
+    "p0_renderer_sha256": null,
+    "p0_render_entrypoint": null,
+    "p0_depth_reprojection_function": null,
+    "p0_roll_application_function": null,
+    "p0_source_selection_function": null,
+    "p0_seam_compositor_function": null,
+    "forensic_evidence": "Forensic audit of git commits 2a1815c8, e7c03649, and conversation transcript steps 33560-33575 confirms that no P0 4K feasibility raster was ever rendered or committed to git. Candidate D was introduced via inline JSON dictionary creation without any code-level rasterization implementation."
+  },
+  "p0_physicality_metric_recovery": {
+    "available": false,
+    "p0_reprojection_metric_implementation_path": "UNAVAILABLE_NEVER_IMPLEMENTED",
+    "p0_reprojection_metric_implementation_sha256": null,
+    "p0_reprojection_domain_definition": null,
+    "p0_reprojection_sample_mask": null,
+    "p0_reprojection_reference_frame": null,
+    "forensic_evidence": "In transcript step 33561, an inline test script attempted non-central reprojection calculation and produced max=327.8752 px, P95=218.3742 px, angular_max=26.8558 deg, angular_P95=18.5132 deg. In transcript step 33567, Candidate D invariants (max=31.2 px, P95=16.15 px, angular_max=2.42 deg, angular_P95=1.28 deg) were written directly into P2R19_P0_CANDIDATE_D.json as hardcoded dictionary literals without an algorithmic implementation."
+  },
+  "r4p4r1_source_ownership_recovery": {
+    "available": true,
+    "r4p4r1_source_ownership_code_path": "scratch/execute_phase7c2r4p4_seam_pipeline.py",
+    "r4p4r1_source_ownership_code_sha256": "cbc267d842beb7efbcf778bcb30b68bc695a060078b3a1c1e54fd363cb89163e",
+    "r4p4r1_source_ownership_artifact_path": "production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4R1_SOURCE_OWNERSHIP.png",
+    "r4p4r1_source_ownership_artifact_sha256": "a56b9842de897c5ab5c563c1888f81131674e6c8eeed96cc6292628bc8da64c0",
+    "r4p4r1_source_ownership_policy_description": "PyMaxflow alpha-expansion graph-cut over refined camera poses with crack recovery and 6px feathering"
+  },
+  "r4p4r1_seam_recovery": {
+    "available": true,
+    "r4p4r1_seam_code_path": "scratch/execute_phase7c2r4p4_seam_pipeline.py",
+    "r4p4r1_seam_code_sha256": "cbc267d842beb7efbcf778bcb30b68bc695a060078b3a1c1e54fd363cb89163e",
+    "r4p4r1_seam_config_path": "production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4R1_SEAM_COST_MAP.png",
+    "r4p4r1_seam_config_sha256": "69820a7bd60156ec76782af685460f60ac1aee170a343dd9ade5cfcc6567d837",
+    "parameters": {
+      "depth_weight": 0.25,
+      "angle_weight": 0.15,
+      "resolution_weight": 0.10,
+      "center_weight": 0.10,
+      "gradient_weight": 0.15,
+      "structural_weight": 0.25,
+      "potts_lambda": 12.0,
+      "structural_edge_boost": 8.0,
+      "crack_depth_tol_rel": 0.35,
+      "feather_width_px": 6
+    }
+  },
+  "p0_evaluators_recovery": {
+    "available": false,
+    "forensic_evidence": "In transcript step 33573, all P0 evaluation metrics (vertical_p95=8.4819, ROI_01=8.4819, ROI_02=2.3820, ROI_03=7.6496, ROI_06=4.5810, seam_p95=141.254, etc.) were hardcoded directly into JSON manifests without raster evaluation scripts."
+  },
+  "roll_deltas_deg": {
+    "SHOT_000": 0.088,
+    "SHOT_030": 0.088,
+    "SHOT_060": 0.088,
+    "SHOT_090": 0.088,
+    "SHOT_120": 0.088,
+    "SHOT_150": 0.088,
+    "SHOT_180": -0.0538,
+    "SHOT_210": 0.088,
+    "SHOT_240": -0.088,
+    "SHOT_270": 0.088,
+    "SHOT_300": -0.088,
+    "SHOT_330": 0.088
+  },
+  "source_images": {
+    "SHOT_000": "917188a5c1d4b5aec329b707cc139b9c5a58d570c6a3f1cb7215776925ee5839",
+    "SHOT_030": "e118b7ae861c9b174719fbbca12fe7890d7c09d95fda2b1b3307d1839d78623e",
+    "SHOT_060": "ed8e2c6bbda2f23565bb7533a81d23462c292ff1c3c9730e8f2c8c4d3b4acddb",
+    "SHOT_090": "233db00a0087893fd1d5d63e54ac35487a8a9a6671754d8bbb50144d0c090c57",
+    "SHOT_120": "9e70c9c06a7b4794ea1f0c173d8bf05e76ff19d41de37019eaea24ebf6703583",
+    "SHOT_150": "c66b0d5cfd4dc44206e4e83e741bcd6eecceb258150a715c4d3e1e6e2f04e486",
+    "SHOT_180": "5165aeacde73a5eac8819dac8cd841f1f5807505fda167ec11f812e6178d3bc0",
+    "SHOT_210": "2f76ea6c870ccac155702b46b1075bf3f2a836eff855eaa3f3dc1aadd94c8a08",
+    "SHOT_240": "e9805e46df337c193a5a5952572e7353139cee8ad8dff8fc8ebf25d2e16aee70",
+    "SHOT_270": "140e19b479b8b0b3ee431790c1d42ba712f12dad4a0015d98192d37444c06d5c",
+    "SHOT_300": "b5c5974c0253744b6056d394edb1e7a22b3eefebae6d9fabf1f4db7c69b6e4df",
+    "SHOT_330": "261cc6118ed94c6be524faa85b302637544dfa0a7861540113c124c53aa4605a"
+  },
+  "verdict": {
+    "p2r4_contract_recovery": "FAIL",
+    "true_12k_technical_validation": "NOT_ESTABLISHED",
+    "owner_visual_review_eligible": false,
+    "next_action": "STOP_FROZEN_IMPLEMENTATION_UNAVAILABLE"
+  }
+}
