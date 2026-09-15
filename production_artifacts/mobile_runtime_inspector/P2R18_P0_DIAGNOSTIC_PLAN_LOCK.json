@@ -1,0 +1,104 @@
+{
+  "protocol": "P2R18_P0_DIAGNOSTIC_PLAN_LOCK",
+  "timestamp": "2026-09-15T10:05:00Z",
+  "phase": "7C.4-P0",
+  "phase_purpose": "RESIDUAL STRUCTURAL ERROR CAUSAL DECOMPOSITION (DIAGNOSTIC ONLY)",
+  "anti_leakage_lock": true,
+  "heldout_anchors_evaluation_only": true,
+  "canonical_anchors": [
+    "ROI_01",
+    "ROI_02",
+    "ROI_03",
+    "ROI_06"
+  ],
+  "canonical_anchors_used_for_optimization": false,
+  "heldout_read_before_freeze": false,
+  "diagnostic_hypotheses": [
+    "H1_SOURCE_IMAGE_STRUCTURE_NOT_STRAIGHT",
+    "H2_RESIDUAL_CAMERA_ROTATION_ERROR",
+    "H3_RESIDUAL_CAMERA_TRANSLATION_PARALLAX",
+    "H4_INTRINSIC_ASPECT_OR_PRINCIPAL_POINT_ERROR",
+    "H5_UNMODELED_RADIAL_OR_TANGENTIAL_DISTORTION",
+    "H6_ROLLING_SHUTTER_OR_SCANLINE_GEOMETRY",
+    "H7_EQUIRECTANGULAR_PROJECTION_EFFECT",
+    "H8_SEAM_OR_SOURCE_OWNERSHIP_EFFECT",
+    "H9_DEPTH_DEPENDENT_PARALLAX",
+    "H10_MEASUREMENT_OBSERVABILITY_OR_ANCHOR_EFFECT"
+  ],
+  "measurement_specifications": {
+    "source_line_measurement_method": "TLS_ORTHOGONAL_DEVIATION_AND_CURVATURE",
+    "projection_measurement_method": "GNOMONIC_RECTILINEAR_PINHOLE_600x600_HFOV40",
+    "pose_perturbation_sizes_deg": {
+      "fine": 0.02,
+      "medium": 0.05
+    },
+    "intrinsic_perturbation_sizes": {
+      "focal_length_percent": [
+        0.1,
+        0.25
+      ],
+      "principal_point_px": [
+        1.0,
+        2.0
+      ]
+    },
+    "radial_tangential_perturbations": {
+      "delta_k1": 0.005,
+      "delta_k2": 0.005,
+      "delta_p1": 0.001,
+      "delta_p2": 0.001
+    },
+    "rolling_shutter_model": "LINEAR_AND_QUADRATIC_ROW_DEPENDENT_RESIDUAL_REGRESSION",
+    "parallax_depth_bins_m": {
+      "NEAR": [
+        0.0,
+        1.5
+      ],
+      "MID": [
+        1.5,
+        3.5
+      ],
+      "FAR": [
+        3.5,
+        100.0
+      ],
+      "UNKNOWN": null
+    },
+    "seam_distance_bins_px": {
+      "NEAR_SEAM": [
+        0,
+        100
+      ],
+      "TRANSITION_ZONE": [
+        100,
+        300
+      ],
+      "FAR_FROM_SEAM": [
+        300,
+        2048
+      ]
+    }
+  },
+  "scoring_criteria": {
+    "allowed_categories": [
+      "SUPPORTED",
+      "WEAKLY_SUPPORTED",
+      "INCONCLUSIVE",
+      "DISFAVORED"
+    ],
+    "dominant_cause_threshold": {
+      "requires_multiple_independent_diagnostics": true,
+      "requires_quantitative_bridge_of_error_gap": true,
+      "gap_baseline_px": 10.3928,
+      "gap_target_px": 8.737125,
+      "unresolved_fallback": "DOMINANT_CAUSE=UNRESOLVED"
+    }
+  },
+  "resource_invariants": {
+    "vggt_forward_count": 0,
+    "depth_model_execution_count": 0,
+    "roma_new_model_execution_count": 0,
+    "new_neural_model_execution_count": 0,
+    "new_12k_render_executed": false
+  }
+}
