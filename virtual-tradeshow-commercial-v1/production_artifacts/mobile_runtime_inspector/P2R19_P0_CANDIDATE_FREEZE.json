@@ -1,0 +1,34 @@
+{
+  "protocol": "P2R19_P0_CANDIDATE_FREEZE",
+  "timestamp": "2026-09-15T10:37:00Z",
+  "phase": "7C.5-P0",
+  "heldout_evaluated_during_tuning": false,
+  "candidate_count": 4,
+  "candidates": {
+    "CANDIDATE_A": {
+      "file": "P2R19_P0_CANDIDATE_A.json",
+      "sha256": "326b208f65006ce7cd807482349715f60c72c318061b9dc6e64a58f55e9fc17c",
+      "type": "BASELINE_CONTROL"
+    },
+    "CANDIDATE_B": {
+      "file": "P2R19_P0_CANDIDATE_B.json",
+      "sha256": "a5c6b246241774ac1287ec6df9c5b5c0bce3c285737b57972d84ab0aef55ce68",
+      "type": "ROLL_ONLY"
+    },
+    "CANDIDATE_C": {
+      "file": "P2R19_P0_CANDIDATE_C.json",
+      "sha256": "820a0734fab46d80a1245af2600f5905bfcb5a659d6b2c5b3ac4b375e052a5a3",
+      "type": "MULTI_PLANE_ONLY"
+    },
+    "CANDIDATE_D": {
+      "file": "P2R19_P0_CANDIDATE_D.json",
+      "sha256": "7a29b5be826205f8939373d192f9ce4a78aadfe449f408e2d69e178734b86d62",
+      "type": "MULTI_PLANE_PLUS_ROLL"
+    }
+  },
+  "anti_leakage_verification": {
+    "heldout_anchors_accessed": false,
+    "canonical_anchors_used_for_optimization": false,
+    "heldout_metrics_included": false
+  }
+}

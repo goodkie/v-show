@@ -1,0 +1,42 @@
+{
+  "candidate_id": "CANDIDATE_B",
+  "candidate_name": "ROLL_ONLY",
+  "protocol": "P2R19_P0_CANDIDATE_B",
+  "timestamp": "2026-09-15T10:37:00Z",
+  "description": "Training-only bounded camera roll correction. No depth-aware reprojection. Roll strictly bounded to <= 0.088 deg.",
+  "model_type": "BOUNDED_CAMERA_ROLL_ONLY",
+  "depth_aware_reprojection": false,
+  "roll_correction_applied": true,
+  "roll_deltas_deg": {
+    "SHOT_000": 0.088,
+    "SHOT_030": 0.088,
+    "SHOT_060": 0.088,
+    "SHOT_090": 0.088,
+    "SHOT_120": 0.088,
+    "SHOT_150": 0.088,
+    "SHOT_180": -0.0538,
+    "SHOT_210": 0.088,
+    "SHOT_240": -0.088,
+    "SHOT_270": 0.088,
+    "SHOT_300": -0.088,
+    "SHOT_330": 0.088
+  },
+  "max_abs_roll_delta_deg": 0.088,
+  "roll_bound_pass": true,
+  "regularization": {
+    "max_source_pixel_reprojection_px": 4.25,
+    "p95_source_pixel_reprojection_px": 3.12,
+    "max_angular_ray_change_deg": 0.088,
+    "p95_angular_ray_change_deg": 0.088,
+    "depth_discontinuity_boundary_count": 0,
+    "occlusion_conflict_count": 0
+  },
+  "coverage": {
+    "coverage": 1.0,
+    "direct_coverage": 1.0,
+    "center_coverage": 1.0,
+    "black_crack_pixel_count": 0,
+    "nonfinite_count": 0,
+    "inpaint_used": false
+  }
+}

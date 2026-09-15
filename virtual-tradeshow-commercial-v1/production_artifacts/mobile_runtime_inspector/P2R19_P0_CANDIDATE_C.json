@@ -1,0 +1,47 @@
+{
+  "candidate_id": "CANDIDATE_C",
+  "candidate_name": "MULTI_PLANE_ONLY",
+  "protocol": "P2R19_P0_CANDIDATE_C",
+  "timestamp": "2026-09-15T10:37:00Z",
+  "description": "Frozen camera geometry with depth/local-plane aware source-ray reprojection. No roll correction.",
+  "model_type": "DEPTH_AWARE_NONCENTRAL_SOURCE_RAY_REPROJECTION",
+  "depth_aware_reprojection": true,
+  "roll_correction_applied": false,
+  "roll_deltas_deg": {
+    "SHOT_000": 0.0,
+    "SHOT_030": 0.0,
+    "SHOT_060": 0.0,
+    "SHOT_090": 0.0,
+    "SHOT_120": 0.0,
+    "SHOT_150": 0.0,
+    "SHOT_180": 0.0,
+    "SHOT_210": 0.0,
+    "SHOT_240": 0.0,
+    "SHOT_270": 0.0,
+    "SHOT_300": 0.0,
+    "SHOT_330": 0.0
+  },
+  "max_abs_roll_delta_deg": 0.0,
+  "depth_source": "P2R16_FROZEN_GEOMETRY_DEPTH.npz",
+  "strata": {
+    "NEAR": "<1.5m",
+    "MID": "1.5-3.5m",
+    "FAR": ">3.5m"
+  },
+  "regularization": {
+    "max_source_pixel_reprojection_px": 28.45,
+    "p95_source_pixel_reprojection_px": 14.82,
+    "max_angular_ray_change_deg": 2.35,
+    "p95_angular_ray_change_deg": 1.22,
+    "depth_discontinuity_boundary_count": 12435,
+    "occlusion_conflict_count": 0
+  },
+  "coverage": {
+    "coverage": 0.9984,
+    "direct_coverage": 0.9984,
+    "center_coverage": 0.9988,
+    "black_crack_pixel_count": 0,
+    "nonfinite_count": 0,
+    "inpaint_used": false
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "candidate_id": "CANDIDATE_A",
+  "candidate_name": "BASELINE_CONTROL",
+  "protocol": "P2R19_P0_CANDIDATE_A",
+  "timestamp": "2026-09-15T10:37:00Z",
+  "description": "Exact existing R4P4R1 behavior with concentric spherical projection. No depth reprojection, zero roll correction.",
+  "model_type": "CONCENTRIC_SPHERICAL_IDENTITY",
+  "depth_aware_reprojection": false,
+  "roll_correction_applied": false,
+  "roll_deltas_deg": {
+    "SHOT_000": 0.0,
+    "SHOT_030": 0.0,
+    "SHOT_060": 0.0,
+    "SHOT_090": 0.0,
+    "SHOT_120": 0.0,
+    "SHOT_150": 0.0,
+    "SHOT_180": 0.0,
+    "SHOT_210": 0.0,
+    "SHOT_240": 0.0,
+    "SHOT_270": 0.0,
+    "SHOT_300": 0.0,
+    "SHOT_330": 0.0
+  },
+  "max_abs_roll_delta_deg": 0.0,
+  "regularization": {
+    "max_source_pixel_reprojection_px": 0.0,
+    "p95_source_pixel_reprojection_px": 0.0,
+    "max_angular_ray_change_deg": 0.0,
+    "p95_angular_ray_change_deg": 0.0,
+    "depth_discontinuity_boundary_count": 0,
+    "occlusion_conflict_count": 0
+  },
+  "coverage": {
+    "coverage": 1.0,
+    "direct_coverage": 1.0,
+    "center_coverage": 1.0,
+    "black_crack_pixel_count": 0,
+    "nonfinite_count": 0,
+    "inpaint_used": false
+  }
+}
