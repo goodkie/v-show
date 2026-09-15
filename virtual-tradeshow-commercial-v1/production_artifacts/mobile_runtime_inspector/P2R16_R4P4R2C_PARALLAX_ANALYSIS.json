@@ -1,0 +1,69 @@
+{
+  "phase": "7C.2R4P4-R2C",
+  "protocol": "CAMERA_BOUNDARY_AND_PARALLAX_ANALYSIS",
+  "SOURCE_PARALLAX_CONTRIBUTOR": true,
+  "rois": [
+    {
+      "roi_id": "ROI_01_DOOR_FRAME",
+      "canonical_camera": "SHOT_000",
+      "distance_to_image_center_px": 1100.5,
+      "distance_to_image_boundary_px": 437,
+      "angular_distance_to_optical_axis_deg": 18.59,
+      "adjacent_camera_baseline_m": 0.043,
+      "depth_at_line_m": 0.869,
+      "estimated_parallax_angle_deg": 2.835,
+      "ownership_transition_count": 0,
+      "owner_pixel_distribution_percent": {
+        "189": 100.0
+      }
+    },
+    {
+      "roi_id": "ROI_02_WINDOW_MULLION",
+      "canonical_camera": "SHOT_060",
+      "distance_to_image_center_px": 307.0,
+      "distance_to_image_boundary_px": 1386,
+      "angular_distance_to_optical_axis_deg": 5.38,
+      "adjacent_camera_baseline_m": 0.0664,
+      "depth_at_line_m": 1.735,
+      "estimated_parallax_angle_deg": 2.191,
+      "ownership_transition_count": 4,
+      "owner_pixel_distribution_percent": {
+        "210": 0.4,
+        "213": 99.6
+      }
+    },
+    {
+      "roi_id": "ROI_03_CABINET_LATCH_EDGE",
+      "canonical_camera": "SHOT_180",
+      "distance_to_image_center_px": 205.5,
+      "distance_to_image_boundary_px": 1386,
+      "angular_distance_to_optical_axis_deg": 3.16,
+      "adjacent_camera_baseline_m": 0.1554,
+      "depth_at_line_m": 0.563,
+      "estimated_parallax_angle_deg": 15.427,
+      "ownership_transition_count": 0,
+      "owner_pixel_distribution_percent": {
+        "91": 100.0
+      }
+    },
+    {
+      "roi_id": "ROI_06_WALL_CORNER",
+      "canonical_camera": "SHOT_090",
+      "distance_to_image_center_px": 574.0,
+      "distance_to_image_boundary_px": 1500,
+      "angular_distance_to_optical_axis_deg": 9.4,
+      "adjacent_camera_baseline_m": 0.0168,
+      "depth_at_line_m": 1.89,
+      "estimated_parallax_angle_deg": 0.509,
+      "ownership_transition_count": 4,
+      "owner_pixel_distribution_percent": {
+        "210": 0.4,
+        "213": 99.6
+      }
+    }
+  ],
+  "correlations": {
+    "boundary_proximity_vs_seam_effect": "Strong correlation: ROI_01 is 437 px from image boundary (18.6 deg off-axis), forcing high seam ownership sensitivity.",
+    "parallax_vs_depth": "Near-field structures (< 1.0 m, such as ROI_01 door jamb at 0.87m and ROI_03 cabinet at 0.56m) experience 1.5x-3x higher parallax per mm of nodal displacement than far structures (ROI_02 at 1.73m, ROI_06 at 1.88m)."
+  }
+}

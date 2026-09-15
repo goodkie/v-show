@@ -1,0 +1,44 @@
+{
+  "phase": "7C.2R4P4-R2C",
+  "protocol": "EDGE_TRACKING_ROBUSTNESS_AUDIT",
+  "METRIC_OBSERVATION_FAILURE": true,
+  "rois": [
+    {
+      "roi_id": "ROI_01_DOOR_FRAME",
+      "r4p3_tracked_column_mean": 120.3,
+      "bounded_tracked_column_mean": 78.5,
+      "delta_tracked_column_px": -41.8,
+      "EDGE_TRACKING_VALID": true,
+      "failure_mode": "NONE",
+      "notes": "Detector consistently tracked the identical physical structure in both candidates."
+    },
+    {
+      "roi_id": "ROI_02_WINDOW_MULLION",
+      "r4p3_tracked_column_mean": 504.2,
+      "bounded_tracked_column_mean": 474.1,
+      "delta_tracked_column_px": -30.1,
+      "EDGE_TRACKING_VALID": true,
+      "failure_mode": "NONE",
+      "notes": "Detector consistently tracked the identical physical structure in both candidates."
+    },
+    {
+      "roi_id": "ROI_03_CABINET_LATCH_EDGE",
+      "r4p3_tracked_column_mean": 368.3,
+      "bounded_tracked_column_mean": 407.7,
+      "delta_tracked_column_px": 39.5,
+      "EDGE_TRACKING_VALID": true,
+      "failure_mode": "NONE",
+      "notes": "Detector consistently tracked the identical physical structure in both candidates."
+    },
+    {
+      "roi_id": "ROI_06_WALL_CORNER",
+      "r4p3_tracked_column_mean": 334.3,
+      "bounded_tracked_column_mean": 94.0,
+      "delta_tracked_column_px": -240.2,
+      "EDGE_TRACKING_VALID": false,
+      "failure_mode": "FEATURE_SWITCHING_OR_AMBIGUITY",
+      "notes": "Detector jumped by -240.2 px between candidates! In R4P3 it locked onto the drywall corner (col 334), whereas in Bounded it locked onto an unrelated edge at col 94. The -211% regression is driven by selector jumping."
+    }
+  ],
+  "summary": "In ROI_06_WALL_CORNER, EDGE_TRACKING_VALID is FALSE. The automated column-sum gradient selector jumped from the actual drywall corner (col 334 in R4P3) to an unrelated edge (col 94 in Bounded), creating an artificial -211% regression (5.44 -> 16.90 px). The other three ROIs tracked the same physical structures within expected pose-induced shifts."
+}

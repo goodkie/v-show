@@ -1,0 +1,45 @@
+{
+  "phase": "7C.2R4P4-R2C",
+  "protocol": "SOURCE_SPACE_STRAIGHTNESS_CONTROL",
+  "description": "Measurement of raw physical line straightness directly in canonical 3000x4000 stills without projection",
+  "SOURCE_CAPTURE_CONTRIBUTOR": true,
+  "rois": [
+    {
+      "roi_id": "ROI_01_DOOR_FRAME",
+      "source_camera_id": "SHOT_000",
+      "source_crop_size": "200x1200",
+      "detected_edge_points": 1175,
+      "SOURCE_VERTICAL_DEVIATION_P95_PX": 24.5407,
+      "SOURCE_VERTICAL_DEVIATION_RMS_PX": 14.9778,
+      "relative_distortion_percent": 2.045
+    },
+    {
+      "roi_id": "ROI_02_WINDOW_MULLION",
+      "source_camera_id": "SHOT_060",
+      "source_crop_size": "200x1200",
+      "detected_edge_points": 1180,
+      "SOURCE_VERTICAL_DEVIATION_P95_PX": 22.6103,
+      "SOURCE_VERTICAL_DEVIATION_RMS_PX": 12.4732,
+      "relative_distortion_percent": 1.884
+    },
+    {
+      "roi_id": "ROI_03_CABINET_LATCH_EDGE",
+      "source_camera_id": "SHOT_180",
+      "source_crop_size": "150x1000",
+      "detected_edge_points": 975,
+      "SOURCE_VERTICAL_DEVIATION_P95_PX": 21.6582,
+      "SOURCE_VERTICAL_DEVIATION_RMS_PX": 12.9599,
+      "relative_distortion_percent": 2.166
+    },
+    {
+      "roi_id": "ROI_06_WALL_CORNER",
+      "source_camera_id": "SHOT_090",
+      "source_crop_size": "200x1200",
+      "detected_edge_points": 1179,
+      "SOURCE_VERTICAL_DEVIATION_P95_PX": 25.1913,
+      "SOURCE_VERTICAL_DEVIATION_RMS_PX": 14.0175,
+      "relative_distortion_percent": 2.099
+    }
+  ],
+  "conclusion": "All physical source lines exhibit ~21-25 px deviation across 1000-1200 px in sensor space (~1.8-2.1% relative sagitta), characteristic of unrectified wide-angle lens radial distortion on the smartphone sensor. Source capture optical distortion is therefore an intrinsic contributor to non-zero line deviation, explaining why baseline deviations like ROI_02 (window mullion) are ~20 px even inside a single camera."
+}

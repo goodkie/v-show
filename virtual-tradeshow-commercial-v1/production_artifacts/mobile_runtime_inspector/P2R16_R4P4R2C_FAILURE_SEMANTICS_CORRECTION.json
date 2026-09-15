@@ -1,0 +1,16 @@
+{
+  "phase": "7C.2R4P4-R2C",
+  "protocol": "FAILURE_SEMANTICS_CORRECTION",
+  "prior_incorrect_status": "SEAM_OWNERSHIP_STRUCTURAL_CONSTRAINT",
+  "authoritative_corrected_status": "UNRESOLVED_VERTICAL_STRUCTURE_REGRESSION",
+  "correction_rationale": "In Phase 7C.2R4P4-R2B, RECTIFIED_SEAM_EDGE_DISCONTINUITY_P95 improved by +60.34% (360.80 -> 143.09 px), decisively PASSING the required >= 25.0% threshold. Only RECTIFIED_VERTICAL_LINE_DEVIATION_P95 regressed by -33.12% (12.88 -> 17.14 px). Therefore, seam discontinuity is NOT the failed acceptance metric. Labeling the failure as SEAM_OWNERSHIP_STRUCTURAL_CONSTRAINT before isolating vertical root cause was premature.",
+  "technical_metrics_summary": {
+    "RECTIFIED_SEAM_EDGE_P95_IMPROVEMENT_PERCENT": 60.34,
+    "RECTIFIED_SEAM_EDGE_GATE": "PASS",
+    "RECTIFIED_VERTICAL_P95_IMPROVEMENT_PERCENT": -33.12,
+    "RECTIFIED_VERTICAL_GATE": "FAIL",
+    "PIXEL_REPROJECTION_RMS_IMPROVEMENT_PERCENT": 21.89,
+    "PIXEL_REPROJECTION_GATE": "PASS",
+    "OVERALL_TECHNICAL_ACCEPTANCE": "FAIL"
+  }
+}

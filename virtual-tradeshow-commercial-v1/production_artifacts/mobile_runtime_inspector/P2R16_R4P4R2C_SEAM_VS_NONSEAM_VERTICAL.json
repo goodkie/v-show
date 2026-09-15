@@ -1,0 +1,56 @@
+{
+  "phase": "7C.2R4P4-R2C",
+  "protocol": "SEAM_VS_NONSEAM_VERTICAL_SPLIT",
+  "seam_intersecting_group": {
+    "rois": [
+      "ROI_01_DOOR_FRAME",
+      "ROI_06_WALL_CORNER"
+    ],
+    "VERTICAL_P95_SEAM_INTERSECTING_R4P3": 5.6156,
+    "VERTICAL_P95_SEAM_INTERSECTING_BOUNDED": 16.4044,
+    "SEAM_VERTICAL_CHANGE_PERCENT": -192.12
+  },
+  "non_seam_group": {
+    "rois": [
+      "ROI_02_WINDOW_MULLION",
+      "ROI_03_CABINET_LATCH_EDGE"
+    ],
+    "VERTICAL_P95_NON_SEAM_R4P3": 16.895,
+    "VERTICAL_P95_NON_SEAM_BOUNDED": 21.065,
+    "NON_SEAM_VERTICAL_CHANGE_PERCENT": -24.68
+  },
+  "per_roi_records": [
+    {
+      "roi_id": "ROI_01_DOOR_FRAME",
+      "is_seam_intersecting": true,
+      "r4p3_p95_px": 6.3735,
+      "bounded_p95_px": 8.8907,
+      "change_percent": -39.49
+    },
+    {
+      "roi_id": "ROI_02_WINDOW_MULLION",
+      "is_seam_intersecting": false,
+      "r4p3_p95_px": 20.1186,
+      "bounded_p95_px": 23.371,
+      "change_percent": -16.17
+    },
+    {
+      "roi_id": "ROI_03_CABINET_LATCH_EDGE",
+      "is_seam_intersecting": false,
+      "r4p3_p95_px": 6.73,
+      "bounded_p95_px": 6.7496,
+      "change_percent": -0.29
+    },
+    {
+      "roi_id": "ROI_06_WALL_CORNER",
+      "is_seam_intersecting": true,
+      "r4p3_p95_px": 5.4351,
+      "bounded_p95_px": 16.9038,
+      "change_percent": -211.01
+    }
+  ],
+  "causality_deduction": {
+    "SEAM_OWNERSHIP_CANNOT_BE_PRIMARY_SOLE_CAUSE": true,
+    "reasoning": "Non-seam ROIs also regressed materially (-24.68%). Specifically, ROI_02 (window mullion, strictly internal to SHOT_060) regressed by -16.17%. Because non-seam structures regress without any seam boundary crossing, seam ownership cannot be the sole cause."
+  }
+}

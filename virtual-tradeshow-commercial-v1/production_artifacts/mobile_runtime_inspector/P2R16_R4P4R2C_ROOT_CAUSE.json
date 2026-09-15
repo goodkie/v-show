@@ -1,0 +1,42 @@
+{
+  "phase": "7C.2R4P4-R2C",
+  "protocol": "ROOT_CAUSE_DECISION_MATRIX",
+  "PRIMARY_ROOT_CAUSE": "COMBINED",
+  "PRIMARY_ROOT_CAUSE_COMPONENTS": [
+    "METRIC_OBSERVATION_FAILURE",
+    "SOURCE_PARALLAX_LIMIT"
+  ],
+  "SECONDARY_CONTRIBUTORS": [
+    "SEAM_OWNERSHIP_CONTRIBUTOR",
+    "SOURCE_CAPTURE_CONTRIBUTOR",
+    "POSE_BOUND_SATURATION_CONTRIBUTOR"
+  ],
+  "DISPROVEN_HYPOTHESES": [
+    {
+      "category": "SEAM_OWNERSHIP_AS_SOLE_CAUSE",
+      "verdict": "DISPROVEN",
+      "proof": "Non-seam ROIs also regressed materially (-16.17% on ROI_02 window mullion) without crossing any seam boundary."
+    },
+    {
+      "category": "DEPTH_GEOMETRY_LIMIT",
+      "verdict": "DISPROVEN",
+      "proof": "3D line residuals from frozen depth maps are between 1.6 mm and 13.9 mm, confirming 3D depth geometry is straight."
+    }
+  ],
+  "proven_causal_factors": {
+    "1_METRIC_OBSERVATION_FAILURE": "ROI_06 -211% regression was caused by the edge selector switching between two parallel edges separated by 240 px in the rectilinear patch.",
+    "2_SOURCE_PARALLAX_LIMIT": "Because physical camera nodal centers do not coincide (adjacent baselines 1.5 - 4.5 cm), rotating cameras without translating causes off-axis lines to tilt relative to monocular rays.",
+    "3_SEAM_OWNERSHIP_CONTRIBUTOR": "For seam-crossing structures like ROI_01 (door jamb), unstitched line error is 0.37 px, but stitched error is 6.37 px (R4P3) and 8.89 px (Bounded), demonstrating +6.0 to +8.5 px seam ownership penalty.",
+    "4_SOURCE_CAPTURE_CONTRIBUTOR": "Raw 3000x4000 stills exhibit ~21-25 px line curvature across 1200 px due to smartphone lens radial distortion, establishing a non-zero physical floor.",
+    "5_POSE_BOUND_SATURATION_CONTRIBUTOR": "Cameras SHOT_120, SHOT_150, SHOT_180 saturated the hard 3.0 degree bound."
+  },
+  "worst_roi": {
+    "roi_id": "ROI_06_WALL_CORNER",
+    "r4p3_px": 5.4351,
+    "bounded_px": 16.9038,
+    "change_percent": -211.01,
+    "WORST_ROI_ROOT_CAUSE": "METRIC_OBSERVATION_FAILURE"
+  },
+  "technical_acceptance": "FAIL",
+  "owner_visual_acceptance": false
+}

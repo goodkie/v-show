@@ -1,0 +1,138 @@
+{
+  "phase": "7C.2R4P4-R2C",
+  "protocol": "POSE_BOUND_SATURATION_DIAGNOSTIC",
+  "POSE_BOUND_SATURATION_CONTRIBUTOR": true,
+  "all_camera_rotation_deltas": [
+    {
+      "camera_index": 0,
+      "camera_id": "SHOT_000",
+      "rotation_delta_deg": 0.0,
+      "hit_3deg_bound": false,
+      "within_0_1deg_of_bound": false
+    },
+    {
+      "camera_index": 1,
+      "camera_id": "SHOT_030",
+      "rotation_delta_deg": 0.9522,
+      "hit_3deg_bound": false,
+      "within_0_1deg_of_bound": false
+    },
+    {
+      "camera_index": 2,
+      "camera_id": "SHOT_060",
+      "rotation_delta_deg": 2.0185,
+      "hit_3deg_bound": false,
+      "within_0_1deg_of_bound": false
+    },
+    {
+      "camera_index": 3,
+      "camera_id": "SHOT_090",
+      "rotation_delta_deg": 2.0543,
+      "hit_3deg_bound": false,
+      "within_0_1deg_of_bound": false
+    },
+    {
+      "camera_index": 4,
+      "camera_id": "SHOT_120",
+      "rotation_delta_deg": 3.0,
+      "hit_3deg_bound": true,
+      "within_0_1deg_of_bound": true
+    },
+    {
+      "camera_index": 5,
+      "camera_id": "SHOT_150",
+      "rotation_delta_deg": 3.0001,
+      "hit_3deg_bound": true,
+      "within_0_1deg_of_bound": true
+    },
+    {
+      "camera_index": 6,
+      "camera_id": "SHOT_180",
+      "rotation_delta_deg": 3.0001,
+      "hit_3deg_bound": true,
+      "within_0_1deg_of_bound": true
+    },
+    {
+      "camera_index": 7,
+      "camera_id": "SHOT_210",
+      "rotation_delta_deg": 2.9246,
+      "hit_3deg_bound": false,
+      "within_0_1deg_of_bound": true
+    },
+    {
+      "camera_index": 8,
+      "camera_id": "SHOT_240",
+      "rotation_delta_deg": 1.103,
+      "hit_3deg_bound": false,
+      "within_0_1deg_of_bound": false
+    },
+    {
+      "camera_index": 9,
+      "camera_id": "SHOT_270",
+      "rotation_delta_deg": 2.0032,
+      "hit_3deg_bound": false,
+      "within_0_1deg_of_bound": false
+    },
+    {
+      "camera_index": 10,
+      "camera_id": "SHOT_300",
+      "rotation_delta_deg": 0.7142,
+      "hit_3deg_bound": false,
+      "within_0_1deg_of_bound": false
+    },
+    {
+      "camera_index": 11,
+      "camera_id": "SHOT_330",
+      "rotation_delta_deg": 0.5725,
+      "hit_3deg_bound": false,
+      "within_0_1deg_of_bound": false
+    }
+  ],
+  "saturated_cameras": [
+    "SHOT_120",
+    "SHOT_150",
+    "SHOT_180"
+  ],
+  "near_saturated_cameras": [
+    "SHOT_210"
+  ],
+  "vertical_roi_status": [
+    {
+      "roi_id": "ROI_01_DOOR_FRAME",
+      "primary_camera": "SHOT_000 (0.000 deg)",
+      "adjacent_cameras": [
+        "SHOT_330 (0.572 deg)",
+        "SHOT_030 (0.952 deg)"
+      ],
+      "ROI_BOUND_SATURATION_STATUS": "NOT_SATURATED"
+    },
+    {
+      "roi_id": "ROI_02_WINDOW_MULLION",
+      "primary_camera": "SHOT_060 (2.018 deg)",
+      "adjacent_cameras": [
+        "SHOT_030 (0.952 deg)",
+        "SHOT_090 (2.054 deg)"
+      ],
+      "ROI_BOUND_SATURATION_STATUS": "NOT_SATURATED"
+    },
+    {
+      "roi_id": "ROI_03_CABINET_LATCH_EDGE",
+      "primary_camera": "SHOT_180 (3.000 deg)",
+      "adjacent_cameras": [
+        "SHOT_150 (3.000 deg)",
+        "SHOT_210 (2.925 deg)"
+      ],
+      "ROI_BOUND_SATURATION_STATUS": "PRIMARY_SATURATED"
+    },
+    {
+      "roi_id": "ROI_06_WALL_CORNER",
+      "primary_camera": "SHOT_090 (2.054 deg)",
+      "adjacent_cameras": [
+        "SHOT_060 (2.018 deg)",
+        "SHOT_120 (3.000 deg)"
+      ],
+      "ROI_BOUND_SATURATION_STATUS": "ADJACENT_SATURATED"
+    }
+  ],
+  "finding": "Three consecutive cameras (SHOT_120, SHOT_150, SHOT_180) hit the hard 3.0 degree bound. Sector 1 (yaw 120-210) is constrained by the pose limit, while Sector 0 (yaw 0-90) is well within the bound."
+}

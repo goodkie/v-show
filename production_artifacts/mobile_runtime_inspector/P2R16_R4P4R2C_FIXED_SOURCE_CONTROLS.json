@@ -1,0 +1,57 @@
+{
+  "phase": "7C.2R4P4-R2C",
+  "protocol": "FIXED_SOURCE_FINAL_RENDER_CONTROL",
+  "conditions": {
+    "A": "R4P3 geometry, canonical source camera only (unstitched)",
+    "B": "Bounded geometry, same canonical source camera only (unstitched)",
+    "C": "R4P3 final stitched ownership",
+    "D": "Bounded final stitched ownership"
+  },
+  "rois": [
+    {
+      "roi_id": "ROI_01_DOOR_FRAME",
+      "canonical_source_camera": "SHOT_000",
+      "A_VERTICAL_ERROR": 0.3706,
+      "B_VERTICAL_ERROR": 0.3706,
+      "C_VERTICAL_ERROR": 6.3735,
+      "D_VERTICAL_ERROR": 8.8907,
+      "POSE_PROJECTION_EFFECT": 0.0,
+      "SEAM_OWNERSHIP_EFFECT_R4P3": 6.0029,
+      "SEAM_OWNERSHIP_EFFECT_BOUNDED": 8.5201
+    },
+    {
+      "roi_id": "ROI_02_WINDOW_MULLION",
+      "canonical_source_camera": "SHOT_060",
+      "A_VERTICAL_ERROR": 20.3262,
+      "B_VERTICAL_ERROR": 25.0733,
+      "C_VERTICAL_ERROR": 20.1186,
+      "D_VERTICAL_ERROR": 23.371,
+      "POSE_PROJECTION_EFFECT": 4.7471,
+      "SEAM_OWNERSHIP_EFFECT_R4P3": -0.2076,
+      "SEAM_OWNERSHIP_EFFECT_BOUNDED": -1.7024
+    },
+    {
+      "roi_id": "ROI_03_CABINET_LATCH_EDGE",
+      "canonical_source_camera": "SHOT_180",
+      "A_VERTICAL_ERROR": 5.7047,
+      "B_VERTICAL_ERROR": 3.5373,
+      "C_VERTICAL_ERROR": 6.73,
+      "D_VERTICAL_ERROR": 6.7496,
+      "POSE_PROJECTION_EFFECT": -2.1674,
+      "SEAM_OWNERSHIP_EFFECT_R4P3": 1.0253,
+      "SEAM_OWNERSHIP_EFFECT_BOUNDED": 3.2123
+    },
+    {
+      "roi_id": "ROI_06_WALL_CORNER",
+      "canonical_source_camera": "SHOT_090",
+      "A_VERTICAL_ERROR": 5.8468,
+      "B_VERTICAL_ERROR": 11.4608,
+      "C_VERTICAL_ERROR": 5.4351,
+      "D_VERTICAL_ERROR": 16.9038,
+      "POSE_PROJECTION_EFFECT": 5.614,
+      "SEAM_OWNERSHIP_EFFECT_R4P3": -0.4117,
+      "SEAM_OWNERSHIP_EFFECT_BOUNDED": 5.443
+    }
+  ],
+  "findings": "1. For ROI_01, unstitched line deviation is near-zero (0.371 px) in both A and B (Pose Effect = 0.000 px), proving the error in stitched rendering is entirely SEAM_OWNERSHIP_EFFECT (+6.003 px in R4P3, +8.520 px in Bounded). 2. For ROI_02, unstitched error is already high in both A (20.326 px) and B (25.073 px), matching stitched output. 3. For ROI_03, pose refinement improves unstitched error from 5.705 -> 3.537 px (-2.167 px). 4. For ROI_06, pose change alters unstitched error from 5.847 -> 11.461 px (+5.614 px)."
+}
