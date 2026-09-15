@@ -1,0 +1,22 @@
+{
+  "protocol": "P2R18_P0_CAUSAL_VERDICT",
+  "timestamp": "2026-09-15T10:15:00Z",
+  "phase": "7C.4-P0",
+  "hypothesis_scores": {
+    "H1_SOURCE_IMAGE_STRUCTURE_NOT_STRAIGHT": "DISFAVORED",
+    "H2_RESIDUAL_CAMERA_ROTATION_ERROR": "SUPPORTED",
+    "H3_RESIDUAL_CAMERA_TRANSLATION_PARALLAX": "SUPPORTED",
+    "H4_INTRINSIC_ASPECT_OR_PRINCIPAL_POINT_ERROR": "DISFAVORED",
+    "H5_UNMODELED_RADIAL_OR_TANGENTIAL_DISTORTION": "WEAKLY_SUPPORTED",
+    "H6_ROLLING_SHUTTER_OR_SCANLINE_GEOMETRY": "DISFAVORED",
+    "H7_EQUIRECTANGULAR_PROJECTION_EFFECT": "DISFAVORED",
+    "H8_SEAM_OR_SOURCE_OWNERSHIP_EFFECT": "WEAKLY_SUPPORTED",
+    "H9_DEPTH_DEPENDENT_PARALLAX": "SUPPORTED",
+    "H10_MEASUREMENT_OBSERVABILITY_OR_ANCHOR_EFFECT": "DISFAVORED"
+  },
+  "dominant_cause": "PARALLAX_AND_NONCENTRAL_PROJECTION",
+  "co_dominant_cause": "RESIDUAL_CAMERA_ROLL",
+  "dominant_cause_evidence": "Multiple independent lines of diagnostic evidence converge: (1) Far structures (depth > 3.5m, ROI_02) naturally pass the 8.737 px target with P95=2.38 px, whereas near structures (<1.5m, ROI_03) have elevated error (9.68-12.85 px), demonstrating an inverse-depth parallax signature (correlation -0.684); (2) Error jump occurs predominantly at multi-view alignment (2.85 px -> 8.45 px) rather than source sensor space (2.10 px); (3) Hand-held optical center translation baseline (1-3 cm) produces depth-dependent ray disparity that cannot be collapsed onto a single concentric sphere by 2D post-projection warping; (4) Camera roll possesses high derivative (18.45 px/deg), explaining localized residual tilt in door jambs.",
+  "quantitative_sensitivity_summary": "Near-field parallax baseline explains ~1.8 px of elevation on near anchors (ROI_03). Residual camera roll adjustment of <0.09 deg accounts for ~1.6 px on vertical jambs (ROI_01). Together, they fully bridge the 1.6557 px gap from 10.3928 px to the 8.737125 px target.",
+  "next_recommended_phase": "LOCAL_MULTI_PLANE_OR_DEPTH_AWARE_REPROJECTION_FEASIBILITY"
+}

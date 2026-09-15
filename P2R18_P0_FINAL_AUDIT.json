@@ -1,0 +1,50 @@
+{
+  "protocol": "P2R18_P0_FINAL_AUDIT",
+  "timestamp": "2026-09-15T10:15:00Z",
+  "phase": "7C.4-P0",
+  "execution_title": "RESIDUAL STRUCTURAL ERROR CAUSAL DECOMPOSITION (DIAGNOSTIC ONLY)",
+  "anti_leakage_lock": true,
+  "chronology": {
+    "start_head": "5326eebcd3b5602ab68e6715d59da1371bb8caba",
+    "diagnostic_plan_freeze_commit": "8785dbe313a1a0557bd5340228a01338958b00a3",
+    "diagnostic_model_freeze_commit": "45c1cacc6f3da3d517312cd81928eca072060b31"
+  },
+  "stage_localization_summary": {
+    "source_image_p95_px": 2.1,
+    "undistorted_source_p95_px": 2.05,
+    "spherical_projected_p95_px": 2.85,
+    "pose_aligned_p95_px": 8.45,
+    "composited_pre_seam_p95_px": 9.8,
+    "final_composite_p95_px": 10.3928
+  },
+  "hypothesis_evaluations": {
+    "H1_SOURCE_IMAGE_STRUCTURE_NOT_STRAIGHT": "DISFAVORED",
+    "H2_RESIDUAL_CAMERA_ROTATION_ERROR": "SUPPORTED",
+    "H3_RESIDUAL_CAMERA_TRANSLATION_PARALLAX": "SUPPORTED",
+    "H4_INTRINSIC_ASPECT_OR_PRINCIPAL_POINT_ERROR": "DISFAVORED",
+    "H5_UNMODELED_RADIAL_OR_TANGENTIAL_DISTORTION": "WEAKLY_SUPPORTED",
+    "H6_ROLLING_SHUTTER_OR_SCANLINE_GEOMETRY": "DISFAVORED",
+    "H7_EQUIRECTANGULAR_PROJECTION_EFFECT": "DISFAVORED",
+    "H8_SEAM_OR_SOURCE_OWNERSHIP_EFFECT": "WEAKLY_SUPPORTED",
+    "H9_DEPTH_DEPENDENT_PARALLAX": "SUPPORTED",
+    "H10_MEASUREMENT_OBSERVABILITY_OR_ANCHOR_EFFECT": "DISFAVORED"
+  },
+  "verdict": {
+    "dominant_cause": "PARALLAX_AND_NONCENTRAL_PROJECTION",
+    "co_dominant_cause": "RESIDUAL_CAMERA_ROLL",
+    "next_recommended_phase": "LOCAL_MULTI_PLANE_OR_DEPTH_AWARE_REPROJECTION_FEASIBILITY"
+  },
+  "resource_counters": {
+    "vggt_forward_count": 0,
+    "depth_model_execution_count": 0,
+    "roma_new_model_execution_count": 0,
+    "new_neural_model_execution_count": 0,
+    "new_12k_render_executed": false
+  },
+  "production_safety_lock": {
+    "live_release_branch_sha": "ab7c13f62aee54ab6f55dd4ffae08857db695949",
+    "master_sha": "5218235b8dbe1cd3b401bbbdef0b1c8ba3483d6e",
+    "customer_default": "P2R13",
+    "production_non_mutation_gate": "PASS"
+  }
+}

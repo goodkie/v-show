@@ -1,0 +1,85 @@
+{
+  "protocol": "P2R18_P0_HELDOUT_CAUSAL_ATTRIBUTION",
+  "timestamp": "2026-09-15T10:15:00Z",
+  "phase": "7C.4-P0",
+  "canonical_anchors_evaluated": {
+    "ROI_01_DOOR_FRAME": {
+      "source_image": "SHOT_000",
+      "baseline_p95_px": 11.4555,
+      "estimated_depth_m": 2.1,
+      "depth_stratum": "MID",
+      "distance_to_nearest_seam_px": 145,
+      "causal_attributions": {
+        "pose_roll_sensitivity": "STRONG (derivative 18.45 px/deg; +0.06 deg roll shift drops error by 2.53 px)",
+        "translation_parallax": "STRONG (non-concentric optical center shift of 1.8 cm produces 1.2 px disparity)",
+        "intrinsics": "LOW (<0.2 px impact under plausible calibration shift)",
+        "lens_distortion": "MODERATE (outer sensor region u=2563 contributes ~0.8 px radial bending)",
+        "rolling_shutter": "DISFAVORED (row trend negligible, R2=0.018)",
+        "projection": "DISFAVORED (gnomonic linearization verified)",
+        "seam": "WEAK (located in transition zone, seam discontinuity adds ~0.3 px)"
+      },
+      "primary_mechanisms": [
+        "RESIDUAL_CAMERA_ROLL",
+        "NONCENTRAL_TRANSLATION_PARALLAX"
+      ]
+    },
+    "ROI_02_WINDOW_MULLION": {
+      "source_image": "SHOT_060",
+      "baseline_p95_px": 2.3847,
+      "estimated_depth_m": 4.8,
+      "depth_stratum": "FAR",
+      "distance_to_nearest_seam_px": 420,
+      "causal_attributions": {
+        "pose_roll_sensitivity": "MODERATE (well-aligned in SHOT_060)",
+        "translation_parallax": "NEGLIGIBLE (far depth 4.8m renders 1.8 cm baseline disparity imperceptible)",
+        "intrinsics": "LOW",
+        "lens_distortion": "LOW (mid sensor region)",
+        "rolling_shutter": "DISFAVORED",
+        "projection": "DISFAVORED",
+        "seam": "DISFAVORED (far from seam)"
+      },
+      "primary_mechanisms": [
+        "NATURALLY_ALIGNED_FAR_FIELD_STRUCTURE (P95=2.38 px passes target comfortably)"
+      ]
+    },
+    "ROI_03_CABINET_LATCH_EDGE": {
+      "source_image": "SHOT_180",
+      "baseline_p95_px": 9.6796,
+      "estimated_depth_m": 1.4,
+      "depth_stratum": "NEAR",
+      "distance_to_nearest_seam_px": 85,
+      "causal_attributions": {
+        "pose_roll_sensitivity": "MODERATE",
+        "translation_parallax": "DOMINANT (near distance 1.4m severely magnifies hand-held baseline offset)",
+        "intrinsics": "LOW",
+        "lens_distortion": "LOW (central sensor region u=1614)",
+        "rolling_shutter": "DISFAVORED",
+        "projection": "DISFAVORED",
+        "seam": "MODERATE (near seam 85 px adds ~0.7 px)"
+      },
+      "primary_mechanisms": [
+        "DEPTH_DEPENDENT_NEAR_PARALLAX",
+        "SEAM_PROXIMITY"
+      ]
+    },
+    "ROI_06_WALL_CORNER": {
+      "source_image": "SHOT_090",
+      "baseline_p95_px": 4.6511,
+      "estimated_depth_m": 2.8,
+      "depth_stratum": "MID",
+      "distance_to_nearest_seam_px": 380,
+      "causal_attributions": {
+        "pose_roll_sensitivity": "LOW (already well aligned in SHOT_090)",
+        "translation_parallax": "LOW",
+        "intrinsics": "LOW",
+        "lens_distortion": "LOW",
+        "rolling_shutter": "DISFAVORED",
+        "projection": "DISFAVORED",
+        "seam": "DISFAVORED"
+      },
+      "primary_mechanisms": [
+        "CLEAN_STRUCTURAL_CORNER (P95=4.65 px passes target)"
+      ]
+    }
+  }
+}
