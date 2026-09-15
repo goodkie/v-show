@@ -1,0 +1,126 @@
+{
+  "protocol": "P2R17_P0_CANDIDATE_FREEZE",
+  "timestamp": "2026-09-15T05:04:00Z",
+  "phase": "7C.3-P0-R1",
+  "anti_leakage_lock": true,
+  "heldout_evaluated_during_tuning": false,
+  "candidates": [
+    {
+      "candidate_id": "CANDIDATE_A",
+      "candidate_name": "CANDIDATE_A",
+      "candidate_type": "IDENTITY",
+      "warp_artifact_path": "P2R17_P0_CANDIDATE_1_WARP.npz",
+      "warp_sha256": "95cd7114f9ce536917b15cec1787369eac4a3f0d4466e3f7a773f1d3f3f82398",
+      "parameter_count": 0,
+      "regularization_parameters": {},
+      "training_objective_value": 0.0,
+      "topology_analysis": {
+        "candidate": "CANDIDATE_A",
+        "max_angular_displacement_deg": 0.0,
+        "p99_angular_displacement_deg": 0.0,
+        "p95_angular_displacement_deg": 0.0,
+        "min_jacobian": 1.0,
+        "max_jacobian": 1.0,
+        "foldover_count": 0,
+        "nonfinite_count": 0,
+        "periodic_longitude": true,
+        "top_band_pinned": true,
+        "bottom_band_pinned": true,
+        "no_crop": true,
+        "no_inpaint": true,
+        "topology_gate": "PASS"
+      },
+      "heldout_evaluation_status": "LOCKED_PRE_EVALUATION"
+    },
+    {
+      "candidate_id": "CANDIDATE_B",
+      "candidate_name": "CANDIDATE_B",
+      "candidate_type": "GLOBAL_LOW_DIMENSIONAL_RECTIFICATION",
+      "warp_artifact_path": "P2R17_P0_CANDIDATE_2_WARP.npz",
+      "warp_sha256": "e240be77a691a403b25307f146a5c1bce46b6c7a2d42f1c3f30e5f3194785411",
+      "parameter_count": 4,
+      "regularization_parameters": {
+        "ridge_reg": 100.0,
+        "scale": 1.0
+      },
+      "training_objective_value": 0.0028,
+      "topology_analysis": {
+        "candidate": "CANDIDATE_B",
+        "max_angular_displacement_deg": 0.0013596456265076995,
+        "p99_angular_displacement_deg": 0.0012947166105732322,
+        "p95_angular_displacement_deg": 0.00105344969779253,
+        "min_jacobian": 0.9999714493751526,
+        "max_jacobian": 1.0000301599502563,
+        "foldover_count": 0,
+        "nonfinite_count": 0,
+        "periodic_longitude": true,
+        "top_band_pinned": true,
+        "bottom_band_pinned": true,
+        "no_crop": true,
+        "no_inpaint": true,
+        "topology_gate": "PASS"
+      },
+      "heldout_evaluation_status": "LOCKED_PRE_EVALUATION"
+    },
+    {
+      "candidate_id": "CANDIDATE_C",
+      "candidate_name": "CANDIDATE_C",
+      "candidate_type": "LOW_FREQUENCY_SPHERICAL_BSPLINE",
+      "warp_artifact_path": "P2R17_P0_CANDIDATE_3_WARP.npz",
+      "warp_sha256": "8c986172a1e8f0df48edec506e1c790d743c2422e7a49686468fb3cf5cf81bc1",
+      "parameter_count": 48,
+      "regularization_parameters": {
+        "grid": "12x4",
+        "spline_order": 2
+      },
+      "training_objective_value": 0.0019,
+      "topology_analysis": {
+        "candidate": "CANDIDATE_C",
+        "max_angular_displacement_deg": 0.017712406814098358,
+        "p99_angular_displacement_deg": 0.015443279407918453,
+        "p95_angular_displacement_deg": 0.010642701759934425,
+        "min_jacobian": 0.9990898370742798,
+        "max_jacobian": 1.0010710954666138,
+        "foldover_count": 0,
+        "nonfinite_count": 0,
+        "periodic_longitude": true,
+        "top_band_pinned": true,
+        "bottom_band_pinned": true,
+        "no_crop": true,
+        "no_inpaint": true,
+        "topology_gate": "PASS"
+      },
+      "heldout_evaluation_status": "LOCKED_PRE_EVALUATION"
+    },
+    {
+      "candidate_id": "CANDIDATE_D",
+      "candidate_name": "CANDIDATE_D",
+      "candidate_type": "SEAM_STABILIZED_LOW_FREQUENCY_SPLINE",
+      "warp_artifact_path": "P2R17_P0_CANDIDATE_4_WARP.npz",
+      "warp_sha256": "f93bcc6032516759a9e8050345f4cfc6d53a958f5b1a832f815945a38f1928b8",
+      "parameter_count": 48,
+      "regularization_parameters": {
+        "grid": "12x4",
+        "seam_penalty": 50.0
+      },
+      "training_objective_value": 0.0022,
+      "topology_analysis": {
+        "candidate": "CANDIDATE_D",
+        "max_angular_displacement_deg": 0.01771162450313568,
+        "p99_angular_displacement_deg": 0.015119034796953201,
+        "p95_angular_displacement_deg": 0.010633504949510098,
+        "min_jacobian": 0.9880024790763855,
+        "max_jacobian": 1.0119982957839966,
+        "foldover_count": 0,
+        "nonfinite_count": 0,
+        "periodic_longitude": true,
+        "top_band_pinned": true,
+        "bottom_band_pinned": true,
+        "no_crop": true,
+        "no_inpaint": true,
+        "topology_gate": "PASS"
+      },
+      "heldout_evaluation_status": "LOCKED_PRE_EVALUATION"
+    }
+  ]
+}
