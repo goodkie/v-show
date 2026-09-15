@@ -1,0 +1,16 @@
+{
+  "phase": "7C.2R4P4-R2B",
+  "synthetic_validation_status": "PASS",
+  "metric_a_straight_line_p95_px": 0.0,
+  "metric_a_curved_line_p95_px": 4.530390646700859,
+  "metric_a_3d_erp_reprojected_p95_px": 0.0,
+  "metric_b_controlled_offsets_px": {
+    "offset_0.0px": 2.842170943040401e-14,
+    "offset_1.0px": 1.0000000000000568,
+    "offset_2.0px": 2.000000000000057,
+    "offset_5.0px": 5.000000000000085,
+    "offset_10.0px": 10.000000000000028
+  },
+  "metric_b_strictly_monotonic": true,
+  "conclusion": "Synthetic metric validation passed all requirements. Metric A reliably discriminates straight from curved lines and restores physical line straightness under gnomonic reprojection. Metric B responds strictly monotonically to controlled seam offsets."
+}
