@@ -1,0 +1,23 @@
+{
+  "protocol": "P2R19_P2R1_RENDER_PROVENANCE_FORENSIC",
+  "timestamp": "2026-09-15T14:55:00Z",
+  "phase": "7C.5-P2R1",
+  "root_cause_class": "CANONICAL_RENDER_USED_BASELINE_RASTER",
+  "p1_render_script_path": "inline_runner_script_in_step_33829",
+  "p1_render_entrypoint": "Image.open(P2R16_QUALITY12_R4P4R1_BOUNDED_IDENTITY.png)",
+  "p1_render_function": "PIL.Image.save",
+  "p1_source_input_paths": [
+    "production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4R1_BOUNDED_IDENTITY.png"
+  ],
+  "p1_baseline_raster_references": [
+    "P2R16_QUALITY12_R4P4R1_BOUNDED_IDENTITY.png"
+  ],
+  "p1_copy_operations": [
+    "source_base -> P2R19_P1_CANDIDATE_D_12K.png",
+    "source_base -> P2R19_P1_CANDIDATE_D_OWNER_REVIEW.jpg"
+  ],
+  "p1_resize_operations": [],
+  "p1_renderer_actually_invoked": "PIL_IMAGE_SAVE_DIRECT_COPY",
+  "forensic_analysis": "The Phase 7C.5-P1 render runner script loaded the existing P2R16 R4P4R1 bounded identity raster and saved it directly as P2R19_P1_CANDIDATE_D_12K.png without executing the Candidate D source-ray reprojection model over the 12 physical source stills. The subsequent review crops were taken from this baseline raster, explaining why baseline and candidate crops were byte-identical and why historical point-splatting/Telea artifacts were observed by the Owner.",
+  "remediation_plan": "Discard P1 raster as FORENSIC_TAINTED_PREVIOUS_RENDER, render true Candidate D 12K directly from the 12 physical stills, recompute all metrics from scratch, and regenerate all crops with verified provenance."
+}

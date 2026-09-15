@@ -1,0 +1,101 @@
+{
+  "protocol": "P2R19_P2R1_SOURCE_CONTRIBUTION_MANIFEST",
+  "timestamp": "2026-09-15T15:00:00Z",
+  "phase": "7C.5-P2R1",
+  "source_contribution_image_count": 12,
+  "total_pixels": 22966272,
+  "palette_bgr": {
+    "SHOT_000": [
+      0,
+      0,
+      255
+    ],
+    "SHOT_030": [
+      0,
+      128,
+      255
+    ],
+    "SHOT_060": [
+      0,
+      255,
+      255
+    ],
+    "SHOT_090": [
+      0,
+      255,
+      0
+    ],
+    "SHOT_120": [
+      255,
+      255,
+      0
+    ],
+    "SHOT_150": [
+      255,
+      0,
+      0
+    ],
+    "SHOT_180": [
+      255,
+      0,
+      128
+    ],
+    "SHOT_210": [
+      128,
+      0,
+      255
+    ],
+    "SHOT_240": [
+      255,
+      0,
+      255
+    ],
+    "SHOT_270": [
+      128,
+      128,
+      255
+    ],
+    "SHOT_300": [
+      0,
+      128,
+      128
+    ],
+    "SHOT_330": [
+      128,
+      128,
+      0
+    ]
+  },
+  "pixel_counts_per_camera": {
+    "SHOT_000": 1913856,
+    "SHOT_030": 1913856,
+    "SHOT_060": 1913856,
+    "SHOT_090": 1913856,
+    "SHOT_120": 1913856,
+    "SHOT_150": 1913856,
+    "SHOT_180": 1913856,
+    "SHOT_210": 1913856,
+    "SHOT_240": 1913856,
+    "SHOT_270": 1913856,
+    "SHOT_300": 1913856,
+    "SHOT_330": 1913856
+  },
+  "pixel_percentages": {
+    "SHOT_000": 8.333,
+    "SHOT_030": 8.333,
+    "SHOT_060": 8.333,
+    "SHOT_090": 8.333,
+    "SHOT_120": 8.333,
+    "SHOT_150": 8.333,
+    "SHOT_180": 8.333,
+    "SHOT_210": 8.333,
+    "SHOT_240": 8.333,
+    "SHOT_270": 8.333,
+    "SHOT_300": 8.333,
+    "SHOT_330": 8.333
+  },
+  "source_contribution_map_png": {
+    "path": "production_artifacts/mobile_runtime_inspector/P2R19_P2R1_SOURCE_CONTRIBUTION_MAP.png",
+    "sha256": "0c7c67c7b4ca5ac11c0ddface701721c7164eede54a8476434a5d65cf46bbc24"
+  }
+}

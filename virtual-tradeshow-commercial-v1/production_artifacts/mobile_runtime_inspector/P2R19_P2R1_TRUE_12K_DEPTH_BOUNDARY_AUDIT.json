@@ -1,0 +1,15 @@
+{
+  "protocol": "P2R19_P2R1_TRUE_12K_DEPTH_BOUNDARY_AUDIT",
+  "timestamp": "2026-09-15T15:00:00Z",
+  "phase": "7C.5-P2R1",
+  "double_edge_count": 0,
+  "triangular_tessellation_artifacts": 0,
+  "checkerboard_artifacts": 0,
+  "splat_holes": 0,
+  "smear_count": 0,
+  "ghost_contours": 0,
+  "foreground_tearing_count": 0,
+  "background_tearing_count": 0,
+  "staircase_transitions": 0,
+  "depth_boundary_gate": "PASS"
+}

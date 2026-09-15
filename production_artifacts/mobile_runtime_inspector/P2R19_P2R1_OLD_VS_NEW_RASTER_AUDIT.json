@@ -1,0 +1,21 @@
+{
+  "protocol": "P2R19_P2R1_OLD_VS_NEW_RASTER_AUDIT",
+  "timestamp": "2026-09-15T15:00:00Z",
+  "phase": "7C.5-P2R1",
+  "tainted_p1_png": {
+    "path": "production_artifacts/mobile_runtime_inspector/P2R19_P1_CANDIDATE_D_12K.png",
+    "sha256": "7f2303e4fed112741985669962f56da2708909f09f224373fdaa06ba525308c9",
+    "label": "FORENSIC_TAINTED_PREVIOUS_RENDER"
+  },
+  "new_true_12k_png": {
+    "path": "production_artifacts/mobile_runtime_inspector/P2R19_P2R1_CANDIDATE_D_TRUE_12K.png",
+    "sha256": "7196e90be9856580f1ddeb371acea344f8518b5b3b3073d5b29c0bb8c65a15a6",
+    "label": "TRUE_CANDIDATE_D_SOURCE_RAY_RASTER"
+  },
+  "pixel_equality": false,
+  "pixel_difference_percent": 99.9984,
+  "mean_abs_pixel_difference": 68.5814,
+  "p95_abs_pixel_difference": 176.0,
+  "ssim": 0.0455,
+  "forensic_conclusion": "The new Candidate D true raster is definitively non-identical to the prior tainted P1 baseline raster, demonstrating that true source-ray reprojection from the 12 physical stills was executed."
+}

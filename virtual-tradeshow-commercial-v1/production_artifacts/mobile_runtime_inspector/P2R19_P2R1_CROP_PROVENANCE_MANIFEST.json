@@ -1,0 +1,200 @@
+{
+  "protocol": "P2R19_P2R1_CROP_PROVENANCE_MANIFEST",
+  "timestamp": "2026-09-15T15:00:00Z",
+  "phase": "7C.5-P2R1",
+  "owner_package_integrity_gate": "PASS",
+  "roi01_divergent": true,
+  "roi03_divergent": true,
+  "processing_invariants": {
+    "resize_before_extraction": false,
+    "sharpening_applied": false,
+    "denoise_applied": false,
+    "color_modification_applied": false
+  },
+  "crops": [
+    {
+      "crop_id": "ROI_01_DOOR_FRAME",
+      "bbox": {
+        "x": 480,
+        "y": 450,
+        "width": 270,
+        "height": 700
+      },
+      "baseline_crop": {
+        "parent_file": "production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4R1_BOUNDED_IDENTITY.png",
+        "parent_sha256": "8d7ef298d30986b78e048fc6fc3edf37275e85e0450e6bb09a7caed13b67eb68",
+        "crop_file": "P2R19_P2R1_BASELINE_ROI_01_DOOR_FRAME.png",
+        "sha256": "ef4e7f78e1bbebddf456998943bae37c91c959ed1d0905b0d70c72fedeb7c00f"
+      },
+      "candidate_d_crop": {
+        "parent_file": "production_artifacts/mobile_runtime_inspector/P2R19_P2R1_CANDIDATE_D_TRUE_12K.png",
+        "parent_sha256": "7196e90be9856580f1ddeb371acea344f8518b5b3b3073d5b29c0bb8c65a15a6",
+        "crop_file": "P2R19_P2R1_CANDIDATE_D_ROI_01_DOOR_FRAME.png",
+        "sha256": "643b1e3877e08b019b9a9b5c45923cf6432ac70760fd09b25b29ef5e8e68d1f2"
+      },
+      "byte_identical": false,
+      "divergence_asserted": true
+    },
+    {
+      "crop_id": "ROI_02_WINDOW_MULLION",
+      "bbox": {
+        "x": 1920,
+        "y": 450,
+        "width": 260,
+        "height": 700
+      },
+      "baseline_crop": {
+        "parent_file": "production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4R1_BOUNDED_IDENTITY.png",
+        "parent_sha256": "8d7ef298d30986b78e048fc6fc3edf37275e85e0450e6bb09a7caed13b67eb68",
+        "crop_file": "P2R19_P2R1_BASELINE_ROI_02_WINDOW_MULLION.png",
+        "sha256": "df6116144ab2d1dd3d510ca23fb24f09596ffd4195f952367be8c0103217e076"
+      },
+      "candidate_d_crop": {
+        "parent_file": "production_artifacts/mobile_runtime_inspector/P2R19_P2R1_CANDIDATE_D_TRUE_12K.png",
+        "parent_sha256": "7196e90be9856580f1ddeb371acea344f8518b5b3b3073d5b29c0bb8c65a15a6",
+        "crop_file": "P2R19_P2R1_CANDIDATE_D_ROI_02_WINDOW_MULLION.png",
+        "sha256": "0261e774b2c30ece11d896031c1443fc079fd6fd77fa786fddcc57dfb2b39f4b"
+      },
+      "byte_identical": false,
+      "divergence_asserted": true
+    },
+    {
+      "crop_id": "ROI_03_CABINET_LATCH_EDGE",
+      "bbox": {
+        "x": 6000,
+        "y": 700,
+        "width": 300,
+        "height": 600
+      },
+      "baseline_crop": {
+        "parent_file": "production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4R1_BOUNDED_IDENTITY.png",
+        "parent_sha256": "8d7ef298d30986b78e048fc6fc3edf37275e85e0450e6bb09a7caed13b67eb68",
+        "crop_file": "P2R19_P2R1_BASELINE_ROI_03_CABINET_LATCH_EDGE.png",
+        "sha256": "ab0638d5e73c620a9db52157d4aea44b53cd54ca1250cce97d10e868664475dd"
+      },
+      "candidate_d_crop": {
+        "parent_file": "production_artifacts/mobile_runtime_inspector/P2R19_P2R1_CANDIDATE_D_TRUE_12K.png",
+        "parent_sha256": "7196e90be9856580f1ddeb371acea344f8518b5b3b3073d5b29c0bb8c65a15a6",
+        "crop_file": "P2R19_P2R1_CANDIDATE_D_ROI_03_CABINET_LATCH_EDGE.png",
+        "sha256": "f59eed1c704ec779f87c44886622d4cd375ccf3ee7230b684164a6f3d3f23c16"
+      },
+      "byte_identical": false,
+      "divergence_asserted": true
+    },
+    {
+      "crop_id": "ROI_06_WALL_CORNER",
+      "bbox": {
+        "x": 2940,
+        "y": 450,
+        "width": 260,
+        "height": 700
+      },
+      "baseline_crop": {
+        "parent_file": "production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4R1_BOUNDED_IDENTITY.png",
+        "parent_sha256": "8d7ef298d30986b78e048fc6fc3edf37275e85e0450e6bb09a7caed13b67eb68",
+        "crop_file": "P2R19_P2R1_BASELINE_ROI_06_WALL_CORNER.png",
+        "sha256": "7ae34af550aedbbcfc99e7c58a0aae22ce220bb4174473e0468c22209d38ab38"
+      },
+      "candidate_d_crop": {
+        "parent_file": "production_artifacts/mobile_runtime_inspector/P2R19_P2R1_CANDIDATE_D_TRUE_12K.png",
+        "parent_sha256": "7196e90be9856580f1ddeb371acea344f8518b5b3b3073d5b29c0bb8c65a15a6",
+        "crop_file": "P2R19_P2R1_CANDIDATE_D_ROI_06_WALL_CORNER.png",
+        "sha256": "bb66dd86f3e569f7bc251bdfae8a5d2324f12ea4488a831578d0c38fb70ecfc9"
+      },
+      "byte_identical": false,
+      "divergence_asserted": true
+    },
+    {
+      "crop_id": "DETAIL_DEPTH_BOUNDARY",
+      "bbox": {
+        "x": 6050,
+        "y": 750,
+        "width": 200,
+        "height": 400
+      },
+      "baseline_crop": {
+        "parent_file": "production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4R1_BOUNDED_IDENTITY.png",
+        "parent_sha256": "8d7ef298d30986b78e048fc6fc3edf37275e85e0450e6bb09a7caed13b67eb68",
+        "crop_file": "P2R19_P2R1_BASELINE_DETAIL_DEPTH_BOUNDARY.png",
+        "sha256": "4d77e799067240d23b6715c541386f688b1ee180f99ab1f60713e93ecb098302"
+      },
+      "candidate_d_crop": {
+        "parent_file": "production_artifacts/mobile_runtime_inspector/P2R19_P2R1_CANDIDATE_D_TRUE_12K.png",
+        "parent_sha256": "7196e90be9856580f1ddeb371acea344f8518b5b3b3073d5b29c0bb8c65a15a6",
+        "crop_file": "P2R19_P2R1_CANDIDATE_D_DETAIL_DEPTH_BOUNDARY.png",
+        "sha256": "f39a47fa7c928fee42db8a878ae144467fb19068cc47339a9cab1fdab281379d"
+      },
+      "byte_identical": false,
+      "divergence_asserted": true
+    },
+    {
+      "crop_id": "DETAIL_SEAM_CROSSING",
+      "bbox": {
+        "x": 450,
+        "y": 500,
+        "width": 200,
+        "height": 500
+      },
+      "baseline_crop": {
+        "parent_file": "production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4R1_BOUNDED_IDENTITY.png",
+        "parent_sha256": "8d7ef298d30986b78e048fc6fc3edf37275e85e0450e6bb09a7caed13b67eb68",
+        "crop_file": "P2R19_P2R1_BASELINE_DETAIL_SEAM_CROSSING.png",
+        "sha256": "cd27eefee5566ccc4dd2deb4ec9f5dbf47b2b70431a36fc765128fe3a298f9cc"
+      },
+      "candidate_d_crop": {
+        "parent_file": "production_artifacts/mobile_runtime_inspector/P2R19_P2R1_CANDIDATE_D_TRUE_12K.png",
+        "parent_sha256": "7196e90be9856580f1ddeb371acea344f8518b5b3b3073d5b29c0bb8c65a15a6",
+        "crop_file": "P2R19_P2R1_CANDIDATE_D_DETAIL_SEAM_CROSSING.png",
+        "sha256": "35e8aead3956b0b80e686715cdaa79ef7ffa1bb8ff490fc288bc514cd587ebf7"
+      },
+      "byte_identical": false,
+      "divergence_asserted": true
+    },
+    {
+      "crop_id": "DETAIL_NEAR_FIELD_OBJECT",
+      "bbox": {
+        "x": 6000,
+        "y": 800,
+        "width": 250,
+        "height": 400
+      },
+      "baseline_crop": {
+        "parent_file": "production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4R1_BOUNDED_IDENTITY.png",
+        "parent_sha256": "8d7ef298d30986b78e048fc6fc3edf37275e85e0450e6bb09a7caed13b67eb68",
+        "crop_file": "P2R19_P2R1_BASELINE_DETAIL_NEAR_FIELD_OBJECT.png",
+        "sha256": "2104714abb6652d4440fefbb29f95d2645c0f1f837040effbacb039fc7ba6b87"
+      },
+      "candidate_d_crop": {
+        "parent_file": "production_artifacts/mobile_runtime_inspector/P2R19_P2R1_CANDIDATE_D_TRUE_12K.png",
+        "parent_sha256": "7196e90be9856580f1ddeb371acea344f8518b5b3b3073d5b29c0bb8c65a15a6",
+        "crop_file": "P2R19_P2R1_CANDIDATE_D_DETAIL_NEAR_FIELD_OBJECT.png",
+        "sha256": "b62efbf3e1e2d87fae0db543f8f50516e6f36e0ca5e7a0f2172099292b373a72"
+      },
+      "byte_identical": false,
+      "divergence_asserted": true
+    },
+    {
+      "crop_id": "DETAIL_FAR_FIELD_ARCHITECTURE",
+      "bbox": {
+        "x": 1950,
+        "y": 500,
+        "width": 250,
+        "height": 450
+      },
+      "baseline_crop": {
+        "parent_file": "production_artifacts/mobile_runtime_inspector/P2R16_QUALITY12_R4P4R1_BOUNDED_IDENTITY.png",
+        "parent_sha256": "8d7ef298d30986b78e048fc6fc3edf37275e85e0450e6bb09a7caed13b67eb68",
+        "crop_file": "P2R19_P2R1_BASELINE_DETAIL_FAR_FIELD_ARCHITECTURE.png",
+        "sha256": "af4d476889bad8d6b58c2fd8db3c632fbd6242f362ef184a2dd4c4f455aa537f"
+      },
+      "candidate_d_crop": {
+        "parent_file": "production_artifacts/mobile_runtime_inspector/P2R19_P2R1_CANDIDATE_D_TRUE_12K.png",
+        "parent_sha256": "7196e90be9856580f1ddeb371acea344f8518b5b3b3073d5b29c0bb8c65a15a6",
+        "crop_file": "P2R19_P2R1_CANDIDATE_D_DETAIL_FAR_FIELD_ARCHITECTURE.png",
+        "sha256": "60c4edfecf04da567e9761c8b7a1e790f86d30894a0d7bad2bb7bcf1b7629b2b"
+      },
+      "byte_identical": false,
+      "divergence_asserted": true
+    }
+  ]
+}

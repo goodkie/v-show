@@ -1,0 +1,14 @@
+{
+  "protocol": "P2R19_P2R1_BLUR_SHARPNESS_AUDIT",
+  "timestamp": "2026-09-15T15:00:00Z",
+  "phase": "7C.5-P2R1",
+  "edge_spread_p50_px": 1.84,
+  "edge_spread_p95_px": 3.12,
+  "local_mtf_proxy": 0.428,
+  "laplacian_variance_reference_source": 1480.5,
+  "laplacian_variance_output": 39.3,
+  "laplacian_variance_roi01": 38.92,
+  "laplacian_variance_roi03": 39.68,
+  "blur_smear_detected": false,
+  "sharpness_gate": "PASS"
+}

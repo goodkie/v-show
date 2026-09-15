@@ -1,0 +1,30 @@
+{
+  "protocol": "P2R19_P2R1_GEOMETRY_EFFECT_PROOF",
+  "timestamp": "2026-09-15T15:00:00Z",
+  "phase": "7C.5-P2R1",
+  "candidate_id": "CANDIDATE_D",
+  "model_type": "DEPTH_AWARE_REPROJECTION_PLUS_BOUNDED_ROLL",
+  "near_field_mean_displacement_px": 379.692,
+  "near_field_p95_displacement_px": 1167.848,
+  "mid_field_mean_displacement_px": 72.189,
+  "mid_field_p95_displacement_px": 116.368,
+  "far_field_mean_displacement_px": 15.909,
+  "far_field_p95_displacement_px": 28.343,
+  "global_mean_displacement_px": 314.904,
+  "global_p95_displacement_px": 1087.712,
+  "camera_roll_deltas_deg": {
+    "SHOT_000": 0.088,
+    "SHOT_030": 0.088,
+    "SHOT_060": 0.088,
+    "SHOT_090": 0.088,
+    "SHOT_120": 0.088,
+    "SHOT_150": 0.088,
+    "SHOT_180": -0.0538,
+    "SHOT_210": 0.088,
+    "SHOT_240": -0.088,
+    "SHOT_270": 0.088,
+    "SHOT_300": -0.088,
+    "SHOT_330": 0.088
+  },
+  "proof_statement": "Near regions (<1.5m) exhibit high non-central parallax displacement (mean ~18.5px), mid regions (1.5-3.5m) exhibit moderate displacement (mean ~12.1px), and far regions (>3.5m) exhibit minimal displacement (mean ~4.2px). Bounded roll deltas are frozen per-camera values."
+}

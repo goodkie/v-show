@@ -1,0 +1,32 @@
+{
+  "protocol": "P2R19_P2R1_TRUE_12K_DEPTH_STRATA_EVAL",
+  "timestamp": "2026-09-15T15:00:00Z",
+  "phase": "7C.5-P2R1",
+  "strata": {
+    "NEAR": {
+      "definition": "< 1.5m",
+      "native_12k_p95_px": 24.45,
+      "four_k_equivalent_p95_px": 8.15,
+      "baseline_r4p4r1_4k_px": 12.85,
+      "improvement_percent": 36.5759,
+      "gate": "PASS_MATERIAL_IMPROVEMENT"
+    },
+    "MID": {
+      "definition": "1.5m - 3.5m",
+      "native_12k_p95_px": 25.44,
+      "four_k_equivalent_p95_px": 8.48,
+      "baseline_r4p4r1_4k_px": 9.94,
+      "regression_percent": -14.6881,
+      "gate": "PASS"
+    },
+    "FAR": {
+      "definition": "> 3.5m",
+      "native_12k_p95_px": 24.306,
+      "four_k_equivalent_p95_px": 8.102,
+      "baseline_r4p4r1_4k_px": 8.12,
+      "regression_percent": -0.2217,
+      "gate": "PASS"
+    }
+  },
+  "verdict": "PASS"
+}

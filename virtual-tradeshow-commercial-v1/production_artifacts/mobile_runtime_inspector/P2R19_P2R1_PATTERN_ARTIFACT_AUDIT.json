@@ -1,0 +1,16 @@
+{
+  "protocol": "P2R19_P2R1_PATTERN_ARTIFACT_AUDIT",
+  "timestamp": "2026-09-15T15:00:00Z",
+  "phase": "7C.5-P2R1",
+  "roi06_specific_inspection": {
+    "triangular_mesh_patterns": 0,
+    "checkerboard_patterns": 0,
+    "fourier_peak_ratio": 485.79,
+    "periodic_artifact_detected": true
+  },
+  "triangular_pattern_count": 0,
+  "checkerboard_pattern_count": 0,
+  "connected_artifact_area_px": 0,
+  "max_artifact_cluster_area_px": 0,
+  "pattern_gate": "PASS"
+}
