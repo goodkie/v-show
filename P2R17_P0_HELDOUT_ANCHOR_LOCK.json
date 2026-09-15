@@ -1,0 +1,17 @@
+{
+  "protocol": "P2R17_P0_HELDOUT_ANCHOR_LOCK",
+  "date": "2026-09-15",
+  "status": "LOCKED",
+  "baselineTruthCommit": "ed398c8511e0355665a383ff3d2d360f9894f1dc",
+  "heldOutAnchors": [
+    "ROI_01",
+    "ROI_02",
+    "ROI_03",
+    "ROI_06"
+  ],
+  "heldOutAnchorCount": 4,
+  "canonicalAnchorsUsedForOptimization": false,
+  "canonicalR4P4R1Geometry": "FROZEN",
+  "heldOutStructuralGate": "LOCKED_PRE_RECTIFICATION",
+  "perfectionWorkPaused": false
+}

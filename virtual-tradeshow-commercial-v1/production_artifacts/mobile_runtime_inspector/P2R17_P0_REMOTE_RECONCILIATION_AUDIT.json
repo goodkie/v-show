@@ -1,0 +1,30 @@
+{
+  "protocol": "P2R17_P0_REMOTE_RECONCILIATION_AUDIT",
+  "timestamp": "2026-09-15T04:31:00Z",
+  "branch": "experiment/c13-perfection-track",
+  "base_commit": "ed398c8511e0355665a383ff3d2d360f9894f1dc",
+  "live_production_release_branch": "release/3d2r-official-live",
+  "live_production_release_commit": "ab7c13f62aee54ab6f55dd4ffae08857db695949",
+  "live_production_deployment_id": "e7e7b0d1-6726-4cf9-ae9e-8d58dd82f0de",
+  "live_production_customer_default": "P2R13",
+  "production_non_mutation_gate": "PASS",
+  "p0_execution_state": "INITIALIZED_ONLY",
+  "phase_7c3_p0_status": "READY_FOR_4K_FEASIBILITY_EXECUTION",
+  "post_projection_rectification_sufficient": "NOT_YET_EVALUATED",
+  "selected_candidate": "NONE",
+  "held_out_anchors": [
+    "ROI_01",
+    "ROI_02",
+    "ROI_03",
+    "ROI_06"
+  ],
+  "held_out_anchor_count": 4,
+  "canonical_anchors_used_for_optimization": false,
+  "vggt_forward_count": 0,
+  "depth_model_execution_count": 0,
+  "roma_new_model_execution_count": 0,
+  "new_neural_model_execution_count": 0,
+  "new_12k_render_executed": false,
+  "p0_remote_truth_materialized": true,
+  "next_action": "EXECUTE_7C3_P0_4K_FEASIBILITY"
+}

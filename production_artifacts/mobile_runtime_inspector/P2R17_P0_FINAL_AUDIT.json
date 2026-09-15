@@ -1,0 +1,31 @@
+{
+  "protocol": "P2R17_P0_FINAL_AUDIT",
+  "date": "2026-09-15",
+  "phase": "7C.3-P0-R0",
+  "executionState": "INITIALIZED_ONLY",
+  "phaseStatus": "READY_FOR_4K_FEASIBILITY_EXECUTION",
+  "postProjectionRectificationSufficient": "NOT_YET_EVALUATED",
+  "selectedCandidate": "NONE",
+  "heldOutAnchorCount": 4,
+  "heldOutAnchors": [
+    "ROI_01",
+    "ROI_02",
+    "ROI_03",
+    "ROI_06"
+  ],
+  "canonicalAnchorsUsedForOptimization": false,
+  "neuralModelExecutions": {
+    "vggtForwardCount": 0,
+    "depthModelExecutionCount": 0,
+    "romaNewModelExecutionCount": 0,
+    "newNeuralModelExecutionCount": 0
+  },
+  "renderAudit": {
+    "new12kRenderExecuted": false,
+    "targetResolution": "4K_FEASIBILITY_FIRST"
+  },
+  "customerDefaultUnchanged": "P2R13",
+  "productionImpact": "ZERO",
+  "productionSafetyLock": "VERIFIED_LOCKED",
+  "nextAction": "EXECUTE_7C3_P0_4K_FEASIBILITY"
+}

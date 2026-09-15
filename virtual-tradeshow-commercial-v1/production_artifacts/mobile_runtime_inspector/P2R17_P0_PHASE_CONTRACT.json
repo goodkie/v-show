@@ -1,0 +1,35 @@
+{
+  "protocol": "P2R17_P0_PHASE_CONTRACT",
+  "phase": "7C.3-P0",
+  "objective": "STRUCTURE-PRESERVING SPHERICAL RECTIFICATION FEASIBILITY TEST (POST-PROJECTION ONLY)",
+  "baseCommit": "ed398c8511e0355665a383ff3d2d360f9894f1dc",
+  "branch": "experiment/c13-perfection-track",
+  "customerVisible": false,
+  "autoDeploy": false,
+  "autoMerge": false,
+  "releaseBlocker": false,
+  "physicalCaptureRecapture": false,
+  "heldOutEvaluationAnchors": [
+    "ROI_01",
+    "ROI_02",
+    "ROI_03",
+    "ROI_06"
+  ],
+  "heldOutAnchorCount": 4,
+  "canonicalAnchorsUsedForOptimization": false,
+  "executionState": "INITIALIZED_ONLY",
+  "phaseStatus": "READY_FOR_4K_FEASIBILITY_EXECUTION",
+  "postProjectionRectificationSufficient": "NOT_YET_EVALUATED",
+  "selectedCandidate": "NONE",
+  "hardGates": {
+    "ANCHORED_VERTICAL_IMPROVEMENT_PERCENT": ">=25.0",
+    "TRUE_PIXEL_REPROJECTION_GATE": "PASS_UNCHANGED",
+    "SEAM_EDGE_GATE": "PASS",
+    "INDEPENDENT_STRUCTURE_REGRESSION": "<=5%",
+    "NO_FOLDOVER": true,
+    "NO_BLACK_CRACKS": true,
+    "NO_INPAINT": true,
+    "NO_NEW_NEURAL_MODEL_REQUIRED": true,
+    "RESOLUTION": "4K_FEASIBILITY_FIRST"
+  }
+}

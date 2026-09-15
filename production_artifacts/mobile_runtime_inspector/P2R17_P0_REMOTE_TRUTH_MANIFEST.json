@@ -1,0 +1,85 @@
+{
+  "protocol": "P2R17_P0_REMOTE_TRUTH_MANIFEST",
+  "date": "2026-09-15",
+  "branch": "experiment/c13-perfection-track",
+  "base_commit": "ed398c8511e0355665a383ff3d2d360f9894f1dc",
+  "p0_execution_state": "INITIALIZED_ONLY",
+  "phase_7c3_p0_status": "READY_FOR_4K_FEASIBILITY_EXECUTION",
+  "post_projection_rectification_sufficient": "NOT_YET_EVALUATED",
+  "selected_candidate": "NONE",
+  "held_out_anchor_count": 4,
+  "canonical_anchors": [
+    "ROI_01",
+    "ROI_02",
+    "ROI_03",
+    "ROI_06"
+  ],
+  "canonical_anchors_used_for_optimization": false,
+  "neural_model_metrics": {
+    "vggt_forward_count": 0,
+    "depth_model_execution_count": 0,
+    "roma_new_model_execution_count": 0,
+    "new_neural_model_execution_count": 0
+  },
+  "render_metrics": {
+    "new_12k_render_executed": false,
+    "target_resolution": "4K_FEASIBILITY_FIRST"
+  },
+  "inventory_audit": {
+    "total_expected_artifacts": 14,
+    "existing_artifacts_count": 4,
+    "missing_artifacts_count": 10,
+    "existing_artifacts": [
+      "P2R17_P0_PHASE_CONTRACT.json",
+      "P2R17_P0_TRAINING_STRUCTURE_MANIFEST.json",
+      "P2R17_P0_HELDOUT_ANCHOR_LOCK.json",
+      "P2R17_P0_FINAL_AUDIT.json"
+    ],
+    "missing_artifacts": [
+      "P2R17_P0_CANDIDATE_1_WARP.npz",
+      "P2R17_P0_CANDIDATE_2_WARP.npz",
+      "P2R17_P0_CANDIDATE_3_WARP.npz",
+      "P2R17_P0_CANDIDATE_4_WARP.npz",
+      "P2R17_P0_CANDIDATE_METRICS.json",
+      "P2R17_P0_VERTICAL_IMPROVEMENT_EVAL.json",
+      "P2R17_P0_REPROJECTION_DELTA_EVAL.json",
+      "P2R17_P0_SEAM_EDGE_EVAL.json",
+      "P2R17_P0_INDEPENDENT_STRUCTURE_EVAL.json",
+      "P2R17_P0_RECTIFICATION_VERDICT.json"
+    ]
+  },
+  "artifacts": [
+    {
+      "artifact_name": "P2R17_P0_PHASE_CONTRACT.json",
+      "source_local_path": "P2R17_P0_PHASE_CONTRACT.json",
+      "committed_repository_path": "production_artifacts/mobile_runtime_inspector/P2R17_P0_PHASE_CONTRACT.json",
+      "sha256": "90544c43ab0769347f43088e7362f17b30ff3cc9f425e043dba10b6514ba1878",
+      "artifact_role": "INITIALIZATION_AND_CONTRACT",
+      "execution_state": "INITIALIZED_ONLY"
+    },
+    {
+      "artifact_name": "P2R17_P0_TRAINING_STRUCTURE_MANIFEST.json",
+      "source_local_path": "P2R17_P0_TRAINING_STRUCTURE_MANIFEST.json",
+      "committed_repository_path": "production_artifacts/mobile_runtime_inspector/P2R17_P0_TRAINING_STRUCTURE_MANIFEST.json",
+      "sha256": "5fa6a812beb00b4f359a078656f66e894d5412e959179246eeccaf4b141f3f76",
+      "artifact_role": "INITIALIZATION_AND_CONTRACT",
+      "execution_state": "INITIALIZED_ONLY"
+    },
+    {
+      "artifact_name": "P2R17_P0_HELDOUT_ANCHOR_LOCK.json",
+      "source_local_path": "P2R17_P0_HELDOUT_ANCHOR_LOCK.json",
+      "committed_repository_path": "production_artifacts/mobile_runtime_inspector/P2R17_P0_HELDOUT_ANCHOR_LOCK.json",
+      "sha256": "676e76235edd7c6cfd7c7277f5b31d8555bedd5069db02e33209bed9ea18f165",
+      "artifact_role": "INITIALIZATION_AND_CONTRACT",
+      "execution_state": "INITIALIZED_ONLY"
+    },
+    {
+      "artifact_name": "P2R17_P0_FINAL_AUDIT.json",
+      "source_local_path": "P2R17_P0_FINAL_AUDIT.json",
+      "committed_repository_path": "production_artifacts/mobile_runtime_inspector/P2R17_P0_FINAL_AUDIT.json",
+      "sha256": "f2c7267a7e3fd44b3c9ad15986284fe3079c9d520962f99cd2aa54c9125a7fff",
+      "artifact_role": "INITIALIZATION_AND_CONTRACT",
+      "execution_state": "INITIALIZED_ONLY"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "protocol": "P2R17_P0_TRAINING_STRUCTURE_MANIFEST",
+  "date": "2026-09-15",
+  "status": "INITIALIZED",
+  "heldOutAnchorsExcluded": [
+    "ROI_01",
+    "ROI_02",
+    "ROI_03",
+    "ROI_06"
+  ],
+  "heldOutContaminationCheck": "ZERO_CONTAMINATION",
+  "canonicalAnchorsUsedForOptimization": false,
+  "trainingStructureDataset": "LLST42 physical 8-shot multi-view sequence (excluding canonical held-out anchors)",
+  "anchorFeatures": "Pinned RoMa vertical structural lines and corner correspondences",
+  "warpFieldSpecification": "Invertible low-frequency spherical spline mesh warp",
+  "frozenGeometryBase": "ed398c8511e0355665a383ff3d2d360f9894f1dc"
+}
