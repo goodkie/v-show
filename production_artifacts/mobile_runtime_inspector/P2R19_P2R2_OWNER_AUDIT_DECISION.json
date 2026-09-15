@@ -1,0 +1,28 @@
+{
+  "protocol": "P2R19_P2R2_OWNER_AUDIT_DECISION",
+  "timestamp": "2026-09-15T16:39:00Z",
+  "phase": "7C.5-P2R2",
+  "phase_7c5_p2r2_status": "FAIL_TRUTH_INTEGRITY",
+  "candidate_d_status": {
+    "candidate_d_4k_feasibility": "PASS",
+    "candidate_d_4k_independent_replication": "PASS",
+    "twelve_k_eligibility": true,
+    "candidate_d_itself_failed": false
+  },
+  "audit_findings": {
+    "p2r2_render_executed": true,
+    "p2r2_render_provenance_partial_pass": true,
+    "matched_scale_sharpness_gate": "FAIL",
+    "actual_source_ownership_provenance": "FAIL",
+    "displacement_domain_audit": "FAIL_INCONSISTENT",
+    "defect_detector_validity": "FAIL"
+  },
+  "verdict": {
+    "true_12k_technical_validation": "NOT_ESTABLISHED",
+    "owner_visual_review_eligible": false,
+    "owner_visual_approval": "PENDING",
+    "candidate_d_visual_accepted": false,
+    "production_promotion_allowed": false,
+    "customer_default": "P2R13"
+  }
+}
