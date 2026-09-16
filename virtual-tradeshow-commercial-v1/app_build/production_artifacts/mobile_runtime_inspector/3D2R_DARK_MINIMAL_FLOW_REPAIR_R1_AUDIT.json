@@ -1,10 +1,11 @@
 {
   "phase": "3D2R_DARK_MINIMAL_FLOW_REPAIR_R1",
-  "audit_timestamp": "2026-09-16T04:25:00Z",
+  "audit_timestamp": "2026-09-16T04:34:00Z",
   "feature_branch": "feature/3d2r-dark-minimal-flow",
   "start_head": "c4a32589ec8cc0ae407762a06e28b4a651e14600",
+  "feature_head": "0135e777e48b8bf5ce981c251d52033626e257db",
   "owner_visual_approval_status": "CHANGES_REQUESTED_REPAIRED",
-  "dark_minimal_flow_preview_status": "REPAIRED_AWAITING_OWNER_REVIEW",
+  "dark_minimal_flow_preview_status": "PASS_REPAIR_R1_AWAITING_OWNER_REVIEW",
   "customer_default": "P2R13",
   "production_promotion_allowed": false,
   "hard_safety_lock": {
@@ -22,19 +23,38 @@
     "reason_1_functional_flow_reconnection": {
       "rejection_status": "RESOLVED",
       "action_taken": "Removed all fake/standalone camera views (minimalCameraView, minimalProcessingView, minimalResultView, fake camera shims). Reconnected START radial expansion directly to the REAL existing product launcher (window.setupWizard.open(6) / window.setupWizard.startGuidedCapture()) with exact contract: /?mode=booth-tour-wizard&step=6&source=landing&vertical=TRADE_SHOW&intent=create_virtual_booth. Wired close hook to return to landing view.",
-      "e2e_verification_status": "PASS"
+      "live_verification_status": "PASS"
     },
     "reason_2_mouse_reactive_particle_restoration": {
       "rejection_status": "RESOLVED",
       "action_taken": "Restored exact Package 45 3D lattice particle network with 180 points (XN=9, YN=5, ZN=4), noise3 3D distribution, projected lattice links, and active pointermove/touchmove easing parallax (mouse.cx += (mouse.tx - mouse.cx) * 0.045). Particle script isolated in dedicated script block.",
-      "e2e_verification_status": "PASS"
+      "live_verification_status": "PASS"
     }
   },
-  "automated_e2e_verification": {
-    "test_runner": "Puppeteer Headless Chrome (Local Harness)",
-    "timestamp": "2026-09-16T04:24:31.000Z",
+  "railway_preview_deployment": {
+    "service_name": "3d2r-dark-minimal-flow-preview",
+    "service_id": "7c449d16-6765-4006-81d5-d75b1b19ddab",
+    "deployment_id": "626c3fc2-6053-46b6-869f-bdcf3f42673a",
+    "deployment_status": "SUCCESS",
+    "live_url": "https://3d2r-dark-minimal-flow-preview-production.up.railway.app",
+    "deployed_commit": "0135e777e48b8bf5ce981c251d52033626e257db",
+    "deployed_branch": "feature/3d2r-dark-minimal-flow"
+  },
+  "live_e2e_verification_suite": {
+    "test_runner": "Puppeteer Headless Chrome (Independent Live Test)",
+    "timestamp": "2026-09-16T04:33:35.000Z",
+    "live_url": "https://3d2r-dark-minimal-flow-preview-production.up.railway.app",
+    "http_endpoints": {
+      "/": 200,
+      "/overview": 200,
+      "/landing-preview": 200,
+      "/health": 200,
+      "/assets/3d2r-logo.png": 200,
+      "/assets/3d2r-landing-bg-45.jpg": 200
+    },
     "metrics": {
       "PTS_COUNT_180": true,
+      "NO_FAKE_CAMERA_VIEWS": true,
       "POINTER_EVENT_RECEIVED": true,
       "PARTICLE_STATE_CHANGED_FROM_POINTER": true,
       "POINTER_DELTA_NONZERO": true,
@@ -43,46 +63,56 @@
       "REAL_PRODUCT_LAUNCHER_CALLED": true,
       "CANONICAL_QUERY_PARAM_CONTRACT_SATISFIED": true,
       "WIZARD_STEP_6_RENDERED": true,
-      "GUIDED_CAPTURE_WHEEL_MOUNTED": true
+      "GUIDED_CAPTURE_WHEEL_MOUNTED": true,
+      "HTTP_ENDPOINTS_PASS": true,
+      "OVERALL_PASS": true
     },
-    "pointer_data": {
-      "initial_mouse": { "tx": 0, "ty": 0, "cx": 0, "cy": 0 },
-      "dispatched_pointer_coords": { "clientX": 640, "clientY": 200 },
-      "target_mouse": { "tx": 0, "ty": -0.5 },
-      "eased_mouse_after_pointer": { "cx": 0, "cy": -0.3684569884876901 },
-      "rotation_rx_shift": 0.08148478855008068
-    },
-    "handoff_contract_state": {
-      "targetStep": 6,
-      "realProductLaunched": true,
-      "landingAdapter": {
-        "vertical": "TRADE_SHOW",
-        "source": "landing",
-        "intent": "create_virtual_booth",
-        "targetStep": 6
+    "live_interaction_proof": {
+      "initial_particle_state": {
+        "ptsCount": 180,
+        "linksCount": 439,
+        "mouse": { "tx": 0, "ty": 0, "cx": 0, "cy": 0 },
+        "autoAngle": 0.1444,
+        "rx": 0.0055499,
+        "ry": 0.1444
       },
-      "url": "/?mode=booth-tour-wizard&step=6&source=landing&vertical=TRADE_SHOW&intent=create_virtual_booth",
-      "modalDisplay": "flex",
-      "currentStep": 6,
-      "guidedVideoExists": true,
-      "guidedCircleExists": true
-    },
-    "overall_pass": true
+      "dispatched_pointer_event": {
+        "clientX": 640,
+        "clientY": 200,
+        "tx": 0,
+        "ty": -0.5,
+        "timestamp": 12038
+      },
+      "particle_state_after_pointer": {
+        "ptsCount": 180,
+        "linksCount": 439,
+        "mouse": { "tx": 0, "ty": -0.5, "cx": 0, "cy": -0.34897 },
+        "autoAngle": 0.15466,
+        "rx": 0.082716,
+        "ry": 0.15466
+      },
+      "live_handoff_contract": {
+        "realProductLaunched": true,
+        "landingAdapter": {
+          "vertical": "TRADE_SHOW",
+          "source": "landing",
+          "intent": "create_virtual_booth",
+          "targetStep": 6,
+          "timestamp": "2026-09-16T04:33:34.638Z"
+        },
+        "url": "https://3d2r-dark-minimal-flow-preview-production.up.railway.app/?mode=booth-tour-wizard&step=6&source=landing&vertical=TRADE_SHOW&intent=create_virtual_booth",
+        "modalDisplay": "flex",
+        "currentStep": 6,
+        "guidedVideoExists": true,
+        "guidedCircleExists": true
+      }
+    }
   },
-  "deployment_targets_synced": [
-    "virtual-tradeshow-commercial-v1/client/index.html",
-    "virtual-tradeshow-commercial-v1/client/landing-preview.html",
-    "_clean_deploy/client/index.html",
-    "_clean_deploy/client/landing-preview.html",
-    "_railway_deploy/client/index.html",
-    "_railway_deploy/client/landing-preview.html",
-    "app_build/client/index.html",
-    "app_build/client/landing-preview.html"
-  ],
-  "railway_preview_target": {
-    "service_id": "7c449d16-6765-4006-81d5-d75b1b19ddab",
-    "service_name": "3d2r-dark-minimal-flow-preview",
-    "live_url": "https://3d2r-dark-minimal-flow-preview-production.up.railway.app"
-  },
-  "final_recommendation": "HARD STOP FOR OWNER VISUAL & FUNCTIONAL REVIEW"
+  "final_verdict": {
+    "repair_r1_status": "PASS",
+    "ready_for_owner_review": true,
+    "production_promotion_allowed": false,
+    "customer_default": "P2R13",
+    "next_action": "HARD_STOP_FOR_OWNER_VISUAL_AND_FUNCTIONAL_REVIEW"
+  }
 }
