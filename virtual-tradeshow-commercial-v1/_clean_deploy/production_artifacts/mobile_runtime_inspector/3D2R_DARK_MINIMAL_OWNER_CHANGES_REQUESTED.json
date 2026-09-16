@@ -1,0 +1,23 @@
+{
+  "phase": "3D2R — DARK MINIMAL PRODUCT FLOW RESTRUCTURE — FUNCTIONAL REPAIR R1",
+  "recordTimestamp": "2026-09-16T04:18:00Z",
+  "project": "goodkie/v-show",
+  "localRoot": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1",
+  "branch": "feature/3d2r-dark-minimal-flow",
+  "startHead": "c4a32589ec8cc0ae407762a06e28b4a651e14600",
+  "owner_visual_approval": "CHANGES_REQUESTED",
+  "dark_minimal_flow_preview_status": "FAIL_OWNER_REVIEW",
+  "functional_connection_gate": "FAIL",
+  "mouse_particle_interaction_gate": "FAIL",
+  "production_promotion_allowed": false,
+  "customer_default": "P2R13",
+  "failure_reasons": [
+    "FUNCTIONAL_FLOW_NOT_CONNECTED",
+    "MOUSE_REACTIVE_PARTICLE_INTERACTION_MISSING"
+  ],
+  "owner_feedback": "Dark Minimal Flow Preview has no functional product flow connected and the mouse-reactive particle interaction is missing.",
+  "historical_evidence_preserved": {
+    "previous_pass_audit": "3D2R_DARK_MINIMAL_FLOW_AUDIT.json",
+    "previous_verification": "3D2R_RAILWAY_PREVIEW_VERIFICATION.json"
+  }
+}
