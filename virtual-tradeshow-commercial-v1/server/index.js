@@ -6582,6 +6582,15 @@ app.get('/demo-splat.html', (req, res) => {
   res.status(404).send('3DGS viewer not yet deployed. Please check back soon.');
 });
 
+// ── Preserved Legacy Information-Rich Home Route (Section 6/7) ──
+app.get(['/overview', '/overview.html'], (req, res) => {
+  const overviewFile = path.join(__dirname, '..', 'client', 'overview.html');
+  if (fs.existsSync(overviewFile)) {
+    return res.sendFile(overviewFile, { headers: { 'Cache-Control': 'no-cache' } });
+  }
+  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
+});
+
 // ── 3D2R Official Landing Preview Route (Section 19 / 31) ──
 app.get(['/landing-preview', '/landing-preview.html'], (req, res) => {
   const landingFile = path.join(__dirname, '..', 'client', 'landing-preview.html');
