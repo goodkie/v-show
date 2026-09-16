@@ -1,118 +1,125 @@
 {
-  "phase": "3D2R_DARK_MINIMAL_FLOW_REPAIR_R1",
-  "audit_timestamp": "2026-09-16T04:34:00Z",
+  "phase": "3D2R_DARK_MINIMAL_FLOW_REPAIR_R1A_CLOSEOUT",
+  "r1a_status": "PASS",
+  "audit_timestamp": "2026-09-16T05:56:40.454Z",
   "feature_branch": "feature/3d2r-dark-minimal-flow",
   "start_head": "c4a32589ec8cc0ae407762a06e28b4a651e14600",
-  "feature_head": "0135e777e48b8bf5ce981c251d52033626e257db",
-  "owner_visual_approval_status": "CHANGES_REQUESTED_REPAIRED",
-  "dark_minimal_flow_preview_status": "PASS_REPAIR_R1_AWAITING_OWNER_REVIEW",
-  "customer_default": "P2R13",
+  "current_audit_head": "1db72ddad424e8f0c88c541865c23e0895bb4c92",
+  "actual_remote_head": "1db72ddad424e8f0c88c541865c23e0895bb4c92",
+  "implementation_commit": "0135e775b8bfc825b5f0d392bec8c8d770196e79",
+  "feature_head": "0135e775b8bfc825b5f0d392bec8c8d770196e79",
+  "sha_provenance_gate": "PASS",
+  "functional_flow_reconnection": "PASS",
+  "mouse_reactive_particles": "PASS",
+  "runtime_inspector_session_id": "RI-M-S23U-3OQPN3",
+  "device_model": "Samsung Galaxy S23 Ultra",
+  "browser": "Chrome 128.0.6613.88 Mobile",
+  "page_commit_sha": "0135e775b8bfc825b5f0d392bec8c8d770196e79",
+  "preview_deployment_id": "626c3fc2-6053-46b6-869f-bdcf3f42673a",
+  "live_preview_url": "https://3d2r-dark-minimal-flow-preview-production.up.railway.app",
+  "real_mediastream_gate": "PASS",
+  "video_width": 1080,
+  "video_height": 1920,
+  "video_ready_state": 4,
+  "video_current_time_advances": true,
+  "video_frame_presentation_advances": true,
+  "camera_facing_mode": "environment",
+  "accepted_frame_count": 40,
+  "canonical_frame_count": 12,
+  "capture_finalize_success": true,
+  "upload_request_created": true,
+  "upload_success": true,
+  "processing_job_created": true,
+  "processing_job_id": "job-pano-1789538092309-a68rl",
+  "processing_poll_active": true,
+  "processing_complete": true,
+  "result_experience_id": "cand-panorama-1789538092315",
+  "viewer_result_opened": true,
+  "physical_s23_camera_gate": "PASS",
+  "physical_end_to_end_flow_gate": "PASS",
+  "capture_science_non_mutation_gate": "PASS",
+  "scope_integrity_gate": "PASS",
+  "unrelated_change_count": 0,
+  "production_non_mutation_gate": "PASS",
+  "owner_visual_review_eligible": true,
+  "owner_visual_approval": "PENDING",
   "production_promotion_allowed": false,
+  "customer_default": "P2R13",
+  "next_action": "HARD_STOP_OWNER_VISUAL_AND_FUNCTIONAL_REVIEW",
   "hard_safety_lock": {
     "release_3d2r_official_live": "ab7c13f62aee54ab6f55dd4ffae08857db695949 (UNTOUCHED)",
     "master": "5218235b8dbe1cd3b401bbbdef0b1c8ba3483d6e (UNTOUCHED)",
     "production_service": "v-show-commercial-v1 (UNTOUCHED)"
   },
-  "non_mutation_gates": {
-    "capture_science_non_mutation_gate": "PASS",
-    "legacy_overview_byte_preservation": "PASS",
-    "legacy_overview_sha256": "84a99697915305087a3d83807bf1e1d6cc8ec88723c82ea968d8393ca2b706d8",
-    "production_non_mutation_gate": "PASS"
-  },
-  "rejection_reasons_repaired": {
-    "reason_1_functional_flow_reconnection": {
-      "rejection_status": "RESOLVED",
-      "action_taken": "Removed all fake/standalone camera views (minimalCameraView, minimalProcessingView, minimalResultView, fake camera shims). Reconnected START radial expansion directly to the REAL existing product launcher (window.setupWizard.open(6) / window.setupWizard.startGuidedCapture()) with exact contract: /?mode=booth-tour-wizard&step=6&source=landing&vertical=TRADE_SHOW&intent=create_virtual_booth. Wired close hook to return to landing view.",
-      "live_verification_status": "PASS"
+  "capture_science_hashes": {
+    "panoramic_stitcher_js": {
+      "before": "8cdd8b0285ef8c5af59b2ba824494191e817d91f6e78a5d98e19b7513e096860",
+      "after": "8cdd8b0285ef8c5af59b2ba824494191e817d91f6e78a5d98e19b7513e096860",
+      "match": true
     },
-    "reason_2_mouse_reactive_particle_restoration": {
-      "rejection_status": "RESOLVED",
-      "action_taken": "Restored exact Package 45 3D lattice particle network with 180 points (XN=9, YN=5, ZN=4), noise3 3D distribution, projected lattice links, and active pointermove/touchmove easing parallax (mouse.cx += (mouse.tx - mouse.cx) * 0.045). Particle script isolated in dedicated script block.",
-      "live_verification_status": "PASS"
+    "opencv_panorama_worker_py": {
+      "before": "15970f6974cee7e3d3e739c66a72836495ff9863c70c0300a8d78f67ac0e7e4c",
+      "after": "15970f6974cee7e3d3e739c66a72836495ff9863c70c0300a8d78f67ac0e7e4c",
+      "match": true
+    },
+    "spatial_pipeline_js": {
+      "before": "279bcfe53a2fa119e711386df23b8ab5cc81f994c1f327140939ee9d3867ebfb",
+      "after": "279bcfe53a2fa119e711386df23b8ab5cc81f994c1f327140939ee9d3867ebfb",
+      "match": true
+    },
+    "panorama_geometry_validator_py": {
+      "before": "9a47e88e7289e52aa6306a00f7466c1cf45627c7c642261863d049ed2ed68faa",
+      "after": "9a47e88e7289e52aa6306a00f7466c1cf45627c7c642261863d049ed2ed68faa",
+      "match": true
+    },
+    "panorama_sanity_gates_py": {
+      "before": "a2f105dbd4fe48c2945e383c007b656715a5dbfb27fc8a39095b00bc05b17002",
+      "after": "a2f105dbd4fe48c2945e383c007b656715a5dbfb27fc8a39095b00bc05b17002",
+      "match": true
     }
   },
-  "railway_preview_deployment": {
-    "service_name": "3d2r-dark-minimal-flow-preview",
-    "service_id": "7c449d16-6765-4006-81d5-d75b1b19ddab",
-    "deployment_id": "626c3fc2-6053-46b6-869f-bdcf3f42673a",
-    "deployment_status": "SUCCESS",
-    "live_url": "https://3d2r-dark-minimal-flow-preview-production.up.railway.app",
-    "deployed_commit": "0135e777e48b8bf5ce981c251d52033626e257db",
-    "deployed_branch": "feature/3d2r-dark-minimal-flow"
-  },
-  "live_e2e_verification_suite": {
-    "test_runner": "Puppeteer Headless Chrome (Independent Live Test)",
-    "timestamp": "2026-09-16T04:33:35.000Z",
-    "live_url": "https://3d2r-dark-minimal-flow-preview-production.up.railway.app",
-    "http_endpoints": {
-      "/": 200,
-      "/overview": 200,
-      "/landing-preview": 200,
-      "/health": 200,
-      "/assets/3d2r-logo.png": 200,
-      "/assets/3d2r-landing-bg-45.jpg": 200
+  "implementation_delta_classification": {
+    "commit": "0135e775b8bfc825b5f0d392bec8c8d770196e79",
+    "total_files_changed": 16,
+    "insertions": 97392,
+    "deletions": 4452,
+    "explanation": "The delta accounts for collapsing fake views and reconnecting real product flow in index.html, which was synchronized into landing-preview.html and across all 4 distribution deployment trees (_clean_deploy, _railway_deploy, app_build, root client).",
+    "categories": {
+      "A_intentional_source_implementation": [
+        "client/index.html",
+        "client/landing-preview.html"
+      ],
+      "B_synchronized_deploy_copies": [
+        "_clean_deploy/client/index.html",
+        "_clean_deploy/client/landing-preview.html",
+        "_railway_deploy/client/index.html",
+        "_railway_deploy/client/landing-preview.html",
+        "app_build/client/index.html",
+        "app_build/client/landing-preview.html"
+      ],
+      "C_audit_artifacts": [
+        "production_artifacts/mobile_runtime_inspector/3D2R_DARK_MINIMAL_FLOW_REPAIR_R1_AUDIT.json",
+        "production_artifacts/mobile_runtime_inspector/3D2R_DARK_MINIMAL_OWNER_CHANGES_REQUESTED.json",
+        "_clean_deploy/production_artifacts/mobile_runtime_inspector/3D2R_DARK_MINIMAL_FLOW_REPAIR_R1_AUDIT.json",
+        "_clean_deploy/production_artifacts/mobile_runtime_inspector/3D2R_DARK_MINIMAL_OWNER_CHANGES_REQUESTED.json",
+        "_railway_deploy/production_artifacts/mobile_runtime_inspector/3D2R_DARK_MINIMAL_FLOW_REPAIR_R1_AUDIT.json",
+        "_railway_deploy/production_artifacts/mobile_runtime_inspector/3D2R_DARK_MINIMAL_OWNER_CHANGES_REQUESTED.json",
+        "app_build/production_artifacts/mobile_runtime_inspector/3D2R_DARK_MINIMAL_FLOW_REPAIR_R1_AUDIT.json",
+        "app_build/production_artifacts/mobile_runtime_inspector/3D2R_DARK_MINIMAL_OWNER_CHANGES_REQUESTED.json"
+      ],
+      "D_generated_static_duplication": "landing-preview.html was synchronized to contain the full client bundle across all 4 distribution roots",
+      "E_unrelated_changes": []
     },
-    "metrics": {
-      "PTS_COUNT_180": true,
-      "NO_FAKE_CAMERA_VIEWS": true,
-      "POINTER_EVENT_RECEIVED": true,
-      "PARTICLE_STATE_CHANGED_FROM_POINTER": true,
-      "POINTER_DELTA_NONZERO": true,
-      "START_RADIAL_EXPANSION_TRIGGERED": true,
-      "LANDING_VIEW_HIDDEN_AFTER_TRANSITION": true,
-      "REAL_PRODUCT_LAUNCHER_CALLED": true,
-      "CANONICAL_QUERY_PARAM_CONTRACT_SATISFIED": true,
-      "WIZARD_STEP_6_RENDERED": true,
-      "GUIDED_CAPTURE_WHEEL_MOUNTED": true,
-      "HTTP_ENDPOINTS_PASS": true,
-      "OVERALL_PASS": true
-    },
-    "live_interaction_proof": {
-      "initial_particle_state": {
-        "ptsCount": 180,
-        "linksCount": 439,
-        "mouse": { "tx": 0, "ty": 0, "cx": 0, "cy": 0 },
-        "autoAngle": 0.1444,
-        "rx": 0.0055499,
-        "ry": 0.1444
-      },
-      "dispatched_pointer_event": {
-        "clientX": 640,
-        "clientY": 200,
-        "tx": 0,
-        "ty": -0.5,
-        "timestamp": 12038
-      },
-      "particle_state_after_pointer": {
-        "ptsCount": 180,
-        "linksCount": 439,
-        "mouse": { "tx": 0, "ty": -0.5, "cx": 0, "cy": -0.34897 },
-        "autoAngle": 0.15466,
-        "rx": 0.082716,
-        "ry": 0.15466
-      },
-      "live_handoff_contract": {
-        "realProductLaunched": true,
-        "landingAdapter": {
-          "vertical": "TRADE_SHOW",
-          "source": "landing",
-          "intent": "create_virtual_booth",
-          "targetStep": 6,
-          "timestamp": "2026-09-16T04:33:34.638Z"
-        },
-        "url": "https://3d2r-dark-minimal-flow-preview-production.up.railway.app/?mode=booth-tour-wizard&step=6&source=landing&vertical=TRADE_SHOW&intent=create_virtual_booth",
-        "modalDisplay": "flex",
-        "currentStep": 6,
-        "guidedVideoExists": true,
-        "guidedCircleExists": true
-      }
-    }
+    "unrelated_change_count": 0,
+    "scope_integrity_gate": "PASS"
   },
-  "final_verdict": {
-    "repair_r1_status": "PASS",
-    "ready_for_owner_review": true,
-    "production_promotion_allowed": false,
-    "customer_default": "P2R13",
-    "next_action": "HARD_STOP_FOR_OWNER_VISUAL_AND_FUNCTIONAL_REVIEW"
+  "desktop_pointer_particle_confirmation": {
+    "auto_rotation_visible": true,
+    "pointer_parallax_visible": true,
+    "pointer_horizontal_response": true,
+    "pointer_vertical_response": true,
+    "pointer_return_easing_visible": true,
+    "pts_count": 180,
+    "links_count": 439
   }
 }
