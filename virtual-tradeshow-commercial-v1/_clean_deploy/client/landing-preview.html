@@ -2227,7 +2227,7 @@ html, body {
 }
 
 #captureGuideCountdown {
-  display: flex;
+  display: none !important;
   align-items: baseline;
   gap: 8px;
   padding-top: max(8px, env(safe-area-inset-top, 8px));
@@ -2694,15 +2694,15 @@ html, body {
        ══════════════════════════════════════════════════════════════════════ -->
   <div id="captureGuideInterstitial" class="cg-hidden" aria-hidden="true">
     <div id="captureGuideStage">
-      <div id="captureGuideCountdown">
+      <div id="captureGuideCountdown" style="display: none !important;">
         <span class="cg-countdown-label">STARTING IN</span>
-        <span id="captureGuideCountdownNum" class="cg-countdown-num">10</span>
+        <span id="captureGuideCountdownNum" class="cg-countdown-num">15</span>
       </div>
       
       <div class="cg-poster-container">
         <img
           id="captureGuidePoster"
-          src="/assets/3d2r-capture-guide.png"
+          src="/assets/3d2r-capture-guide.png?v=20260916-r4"
           alt="How to capture a 360 degree space"
           tabindex="0"
           role="button"
@@ -19468,6 +19468,15 @@ function openAiEnhanceBoothModal() {
   </div>
 </div>
 
+<!-- 3D2R "HOW TO CAPTURE" POPUP MODAL (STEP 6 GUIDE REFERENCE) -->
+<div id="howToCaptureModal" style="display: none; position: fixed; inset: 0; z-index: 100000; background: rgba(0, 0, 0, 0.88); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 16px;">
+  <div style="position: relative; max-width: 92vw; max-height: 92vh; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+    <button type="button" onclick="window.setupWizard ? window.setupWizard.closeHowToCaptureModal() : (document.getElementById('howToCaptureModal').style.display='none')" style="position: absolute; top: -38px; right: 0; background: rgba(255, 255, 255, 0.2); border: none; color: #fff; font-size: 22px; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;" aria-label="Close Guide">&times;</button>
+    <img id="howToCapturePopupImg" src="/assets/3d2r-capture-guide.png?v=20260916-r4" alt="How to Capture" style="max-width: 90vw; max-height: 80vh; object-fit: contain; border-radius: 12px; box-shadow: 0 12px 48px rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.18);" />
+    <button type="button" onclick="window.setupWizard ? window.setupWizard.closeHowToCaptureModal() : (document.getElementById('howToCaptureModal').style.display='none')" style="margin-top: 12px; background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; color: #fff; font-size: 13px; font-weight: 700; border-radius: 8px; padding: 8px 24px; cursor: pointer;">Got It</button>
+  </div>
+</div>
+
 <!-- C12.0-P0: ONE-QUESTION SETUP WIZARD MODAL -->
 <div id="setupWizardModal" style="display: none; position: fixed; inset: 0; z-index: 220; background: rgba(2, 6, 23, 0.88); backdrop-filter: blur(12px); align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif;">
   <div style="background: #09101d; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 16px; width: 95%; max-width: 680px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.85);">
@@ -22614,7 +22623,32 @@ class SetupWizardController {
   close() {
     document.body.style.overflow = '';
     if (this.modal) this.modal.style.display = 'none';
+    if (window.guidedCaptureController) {
+      try {
+        window.guidedCaptureController.resetCaptureForRetry('WIZARD_CLOSED');
+      } catch (e) {
+        console.warn('[SetupWizard] Error resetting controller on close:', e);
+      }
+    }
+    const video = document.getElementById('guidedCaptureVideo');
+    if (video && video.srcObject) {
+      try {
+        video.srcObject.getTracks().forEach(t => t.stop());
+      } catch (e) {}
+      video.srcObject = null;
+    }
+    this.closeHowToCaptureModal();
     this.saveState();
+  }
+
+  openHowToCaptureModal() {
+    const m = document.getElementById('howToCaptureModal');
+    if (m) m.style.display = 'flex';
+  }
+
+  closeHowToCaptureModal() {
+    const m = document.getElementById('howToCaptureModal');
+    if (m) m.style.display = 'none';
   }
 
   async saveState() {
@@ -22950,9 +22984,15 @@ class SetupWizardController {
         </div>
 
         <!-- CONTROLS & DIAGNOSTICS -->
-        <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+        <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center;">
           <button type="button" id="btnStartGuidedCapture" onclick="setupWizard.startGuidedCapture()" style="background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; color: #fff; font-size: 13px; font-weight: 800; border-radius: 8px; padding: 10px 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
             <i class="fa-solid fa-play"></i> START 360° CAPTURE
+          </button>
+          <button type="button" id="btnRetakeCapture" onclick="setupWizard.retryGuidedCapture()" style="background: rgba(30, 41, 59, 0.8); border: 1px solid #475569; color: #cbd5e1; font-size: 13px; font-weight: 700; border-radius: 8px; padding: 10px 18px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-rotate-right"></i> RETAKE
+          </button>
+          <button type="button" id="btnHowToCapture" onclick="setupWizard.openHowToCaptureModal()" style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; font-size: 13px; font-weight: 700; border-radius: 8px; padding: 10px 18px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-circle-question"></i> How to Capture
           </button>
           <!-- C12.9-P2R6: Demo Stitch removed from physical path -->
         </div>
@@ -24276,7 +24316,7 @@ if (typeof origInitProject === 'function') {
   window.__3D2R_REAL_MEDIASTREAM_ACTIVE__ = false;
 
   const preloadGuideImg = new Image();
-  preloadGuideImg.src = '/assets/3d2r-capture-guide.png';
+  preloadGuideImg.src = '/assets/3d2r-capture-guide.png?v=20260916-r4';
   if (typeof preloadGuideImg.decode === 'function') {
     preloadGuideImg.decode().then(function() {
       guideImageDecoded = true;
@@ -24464,7 +24504,7 @@ if (typeof origInitProject === 'function') {
 
     window.__3D2R_GUIDE_VISIBLE__ = true;
     window.__3D2R_GUIDE_VISIBLE_TS__ = performance.now();
-    window.__3D2R_GUIDE_DEADLINE_TS__ = window.__3D2R_GUIDE_VISIBLE_TS__ + 10000;
+    window.__3D2R_GUIDE_DEADLINE_TS__ = window.__3D2R_GUIDE_VISIBLE_TS__ + 15000;
 
     // Countdown tick loop using monotonic performance.now()
     function tickCountdown() {
@@ -24478,7 +24518,7 @@ if (typeof origInitProject === 'function') {
         countdownNumEl.textContent = String(Math.max(1, secondsLeft));
       }
       if (progressBarEl) {
-        const pct = Math.min(100, (elapsed / 10000) * 100);
+        const pct = Math.min(100, (elapsed / 15000) * 100);
         progressBarEl.style.width = pct.toFixed(1) + '%';
       }
 
@@ -24572,7 +24612,7 @@ if (typeof origInitProject === 'function') {
             interstitial.setAttribute('aria-hidden', 'true');
           }
           const countdownNumEl = document.getElementById('captureGuideCountdownNum');
-          if (countdownNumEl) countdownNumEl.textContent = '10';
+          if (countdownNumEl) countdownNumEl.textContent = '15';
           const progressBarEl = document.getElementById('captureGuideProgressBar');
           if (progressBarEl) progressBarEl.style.width = '0%';
           window.__3D2R_GUIDE_VISIBLE__ = false;
