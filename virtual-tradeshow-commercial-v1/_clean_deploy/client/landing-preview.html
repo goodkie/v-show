@@ -24263,11 +24263,12 @@ if (typeof origInitProject === 'function') {
   window.launchRealProductFlow = launchRealProductFlow;
 
 
-  // --- CAPTURE GUIDE PRELOAD & DECODE (R2A) ---
+  // --- CAPTURE GUIDE PRELOAD & DECODE (R2A.1) ---
   let guideImagePreloaded = false;
   let guideImageDecoded = false;
   window.__3D2R_GUIDE_IMAGE_PRELOADED__ = false;
   window.__3D2R_GUIDE_IMAGE_DECODED__ = false;
+  window.__3D2R_GUIDE_IMAGE_DECODE_ERROR__ = false;
   window.__3D2R_GUIDE_VISIBLE__ = false;
   window.__3D2R_CAPTURE_LAUNCH_COMMITTED__ = false;
   window.__3D2R_REAL_PRODUCT_LAUNCH_COUNT__ = 0;
@@ -24282,11 +24283,14 @@ if (typeof origInitProject === 'function') {
       guideImagePreloaded = true;
       window.__3D2R_GUIDE_IMAGE_DECODED__ = true;
       window.__3D2R_GUIDE_IMAGE_PRELOADED__ = true;
-    }).catch(function() {
-      guideImagePreloaded = true;
-      guideImageDecoded = true;
-      window.__3D2R_GUIDE_IMAGE_DECODED__ = true;
-      window.__3D2R_GUIDE_IMAGE_PRELOADED__ = true;
+      window.__3D2R_GUIDE_IMAGE_DECODE_ERROR__ = false;
+    }).catch(function(err) {
+      guideImageDecoded = false;
+      guideImagePreloaded = false;
+      window.__3D2R_GUIDE_IMAGE_DECODED__ = false;
+      window.__3D2R_GUIDE_IMAGE_PRELOADED__ = false;
+      window.__3D2R_GUIDE_IMAGE_DECODE_ERROR__ = true;
+      console.warn('[3D2R] Guide image decode rejection:', err);
     });
   } else {
     preloadGuideImg.onload = function() {
@@ -24294,8 +24298,71 @@ if (typeof origInitProject === 'function') {
       guideImageDecoded = true;
       window.__3D2R_GUIDE_IMAGE_DECODED__ = true;
       window.__3D2R_GUIDE_IMAGE_PRELOADED__ = true;
+      window.__3D2R_GUIDE_IMAGE_DECODE_ERROR__ = false;
+    };
+    preloadGuideImg.onerror = function() {
+      guideImageDecoded = false;
+      guideImagePreloaded = false;
+      window.__3D2R_GUIDE_IMAGE_DECODED__ = false;
+      window.__3D2R_GUIDE_IMAGE_PRELOADED__ = false;
+      window.__3D2R_GUIDE_IMAGE_DECODE_ERROR__ = true;
     };
   }
+
+  async function ensureCaptureGuideReady() {
+    const poster = document.getElementById('captureGuidePoster');
+    if (!poster) {
+      guideImageDecoded = false;
+      guideImagePreloaded = false;
+      window.__3D2R_GUIDE_IMAGE_DECODED__ = false;
+      window.__3D2R_GUIDE_IMAGE_PRELOADED__ = false;
+      window.__3D2R_GUIDE_IMAGE_DECODE_ERROR__ = true;
+      return false;
+    }
+
+    if (!poster.complete) {
+      await new Promise(function(resolve) {
+        const onDone = function() {
+          poster.removeEventListener('load', onDone);
+          poster.removeEventListener('error', onDone);
+          resolve();
+        };
+        poster.addEventListener('load', onDone);
+        poster.addEventListener('error', onDone);
+      });
+    }
+
+    if (!poster.complete || poster.naturalWidth <= 0 || poster.naturalHeight <= 0) {
+      guideImageDecoded = false;
+      guideImagePreloaded = false;
+      window.__3D2R_GUIDE_IMAGE_DECODED__ = false;
+      window.__3D2R_GUIDE_IMAGE_PRELOADED__ = false;
+      window.__3D2R_GUIDE_IMAGE_DECODE_ERROR__ = true;
+      return false;
+    }
+
+    if (typeof poster.decode === 'function') {
+      try {
+        await poster.decode();
+      } catch (err) {
+        guideImageDecoded = false;
+        guideImagePreloaded = false;
+        window.__3D2R_GUIDE_IMAGE_DECODED__ = false;
+        window.__3D2R_GUIDE_IMAGE_PRELOADED__ = false;
+        window.__3D2R_GUIDE_IMAGE_DECODE_ERROR__ = true;
+        console.warn('[3D2R] Poster decode failed:', err);
+        return false;
+      }
+    }
+
+    guideImagePreloaded = true;
+    guideImageDecoded = true;
+    window.__3D2R_GUIDE_IMAGE_PRELOADED__ = true;
+    window.__3D2R_GUIDE_IMAGE_DECODED__ = true;
+    window.__3D2R_GUIDE_IMAGE_DECODE_ERROR__ = false;
+    return true;
+  }
+  window.ensureCaptureGuideReady = ensureCaptureGuideReady;
 
   let guideRafId = null;
   let captureLaunchCommitted = false;
@@ -24364,7 +24431,7 @@ if (typeof origInitProject === 'function') {
 
   window.proceedToCapture = proceedToCapture;
 
-  function showCaptureGuide() {
+  async function showCaptureGuide() {
     const interstitial = document.getElementById('captureGuideInterstitial');
     const countdownNumEl = document.getElementById('captureGuideCountdownNum');
     const progressBarEl = document.getElementById('captureGuideProgressBar');
@@ -24378,13 +24445,21 @@ if (typeof origInitProject === 'function') {
     captureLaunchCommitted = false;
     window.__3D2R_CAPTURE_LAUNCH_COMMITTED__ = false;
 
+    // START transition
     interstitial.classList.remove('cg-hidden', 'cg-exiting', 'cg-exiting-final');
     interstitial.classList.add('cg-visible');
     interstitial.setAttribute('aria-hidden', 'false');
 
-    // Force reflow for smooth animation
-    void interstitial.offsetWidth;
+    // Await guide image ready before mounting poster visibly and starting timer
+    const isReady = await ensureCaptureGuideReady();
+    if (!isReady) {
+      window.__3D2R_R2A_STATUS__ = 'FAIL_GUIDE_ASSET_DECODE';
+      console.error('[3D2R] Guide asset decode failed. Countdown and auto-launch aborted.');
+      return;
+    }
 
+    // Mount poster visibly
+    void interstitial.offsetWidth;
     interstitial.classList.add('cg-mounted');
 
     window.__3D2R_GUIDE_VISIBLE__ = true;
@@ -24470,7 +24545,7 @@ if (typeof origInitProject === 'function') {
           expand.style.opacity = '';
         }, 300);
 
-        showCaptureGuide();
+        await showCaptureGuide();
       }, 780);
     };
   }
