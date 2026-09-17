@@ -2702,26 +2702,20 @@ html, body {
       <div class="cg-poster-container">
         <img
           id="captureGuidePoster"
-          src="/assets/3d2r-capture-guide.png?v=20260916-r5"
+          src="/assets/3d2r-capture-guide.png?v=20260916-r4"
           alt="How to capture a 360 degree space"
           tabindex="0"
           role="button"
-          aria-label="I'm ready to capture. Tap to start capture immediately."
+          aria-label="I'm ready to shoot. Tap to start capture immediately."
         />
         <div class="cg-focus-scan" aria-hidden="true"></div>
       </div>
-
+      
       <div id="captureGuideProgress">
         <div id="captureGuideProgressBar" class="cg-progress-fill"></div>
       </div>
-
-      <div class="cg-action-container" style="margin-top: 14px; text-align: center;">
-        <button id="btnReadyToCapture" class="cg-ready-btn" type="button" onclick="proceedToCapture('owner_button')" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #ffffff; color: #000000; font-family: inherit; font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; padding: 12px 28px; border-radius: 9999px; border: none; cursor: pointer; box-shadow: 0 4px 20px rgba(255,255,255,0.25); transition: transform 0.15s ease, box-shadow 0.15s ease;">
-          <i class="fa-solid fa-camera"></i> I'M READY TO CAPTURE
-        </button>
-      </div>
-
-      <div class="cg-helper-text">Tap anywhere on the guide or button to start now</div>
+      
+      <div class="cg-helper-text">Tap anywhere on the guide to start now</div>
     </div>
     
     <div class="cg-aperture" id="captureGuideAperture" aria-hidden="true"></div>
@@ -19478,7 +19472,7 @@ function openAiEnhanceBoothModal() {
 <div id="howToCaptureModal" style="display: none; position: fixed; inset: 0; z-index: 100000; background: rgba(0, 0, 0, 0.88); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 16px;">
   <div style="position: relative; max-width: 92vw; max-height: 92vh; display: flex; flex-direction: column; align-items: center; justify-content: center;">
     <button type="button" onclick="window.setupWizard ? window.setupWizard.closeHowToCaptureModal() : (document.getElementById('howToCaptureModal').style.display='none')" style="position: absolute; top: -38px; right: 0; background: rgba(255, 255, 255, 0.2); border: none; color: #fff; font-size: 22px; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;" aria-label="Close Guide">&times;</button>
-    <img id="howToCapturePopupImg" src="/assets/3d2r-capture-guide.png?v=20260916-r5" alt="How to Capture" style="max-width: 90vw; max-height: 80vh; object-fit: contain; border-radius: 12px; box-shadow: 0 12px 48px rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.18);" />
+    <img id="howToCapturePopupImg" src="/assets/3d2r-capture-guide.png?v=20260916-r4" alt="How to Capture" style="max-width: 90vw; max-height: 80vh; object-fit: contain; border-radius: 12px; box-shadow: 0 12px 48px rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.18);" />
     <button type="button" onclick="window.setupWizard ? window.setupWizard.closeHowToCaptureModal() : (document.getElementById('howToCaptureModal').style.display='none')" style="margin-top: 12px; background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; color: #fff; font-size: 13px; font-weight: 700; border-radius: 8px; padding: 8px 24px; cursor: pointer;">Got It</button>
   </div>
 </div>
@@ -19489,6 +19483,9 @@ function openAiEnhanceBoothModal() {
     
     <div style="padding: 16px 22px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.5);">
       <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="background: linear-gradient(135deg, #10b981, #0284c7); border-radius: 8px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px;">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+        </span>
         <div>
           <div style="font-size: 13px; font-weight: 800; color: #f8fafc; letter-spacing: 0.3px;">360° BOOTH TOUR WIZARD</div>
           <div id="wizardStepIndicator" style="font-size: 10.5px; font-weight: 600; color: #38bdf8;">Step 1 of 12 — Welcome</div>
@@ -22624,10 +22621,6 @@ class SetupWizardController {
   }
 
   close() {
-    if (this.currentStep === 6 && this._capture12State && this._capture12State.capturedFrames && this._capture12State.capturedFrames.length > 0 && !this._capture12State.isProcessing) {
-      if (!confirm('Discard captured photos and exit?')) return;
-    }
-    this.teardownCaptureEngine();
     document.body.style.overflow = '';
     if (this.modal) this.modal.style.display = 'none';
     if (window.guidedCaptureController) {
@@ -22952,945 +22945,196 @@ class SetupWizardController {
     `;
   }
 
-  init12PointState() {
-    this._capture12State = {
-      stream: null,
-      active: false,
-      startHeading: null,
-      currentHeading: null,
-      relativeAngle: 0,
-      currentTargetIndex: 0,
-      capturedFrames: [],
-      isStable: false,
-      stableStartTime: null,
-      lastHeadingSample: null,
-      lastHeadingTs: null,
-      autoCaptureTimer: null,
-      orientationHandler: null,
-      sensorAvailable: false,
-      isProcessing: false,
-      selectedAlbumFiles: []
-    };
-  }
-
   renderStep6CaptureWheel() {
-    this.init12PointState();
-    if (this.btnPrimary) {
-      this.btnPrimary.style.display = 'none';
-    }
-
+    this.btnPrimary.innerHTML = '<span>Looks Good - Next Viewpoint</span> <i class="fa-solid fa-arrow-right"></i>';
+    const vp = this.state.viewpoints[0];
     this.content.innerHTML = `
-      <style>
-        @keyframes neonPulseYellow {
-          0%, 100% { filter: drop-shadow(0 0 4px rgba(255, 230, 0, 0.7)); }
-          50% { filter: drop-shadow(0 0 14px rgba(255, 230, 0, 1)); }
-        }
-        @keyframes neonPulseBlue {
-          0%, 100% { filter: drop-shadow(0 0 4px rgba(0, 212, 255, 0.7)); }
-          50% { filter: drop-shadow(0 0 16px rgba(0, 212, 255, 1)); }
-        }
-        @keyframes spinRing {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        .cg12-dot-pending {
-          fill: rgba(255, 255, 255, 0.25);
-          transition: fill 0.2s ease, filter 0.2s ease;
-        }
-        .cg12-dot-target {
-          fill: #ffe600;
-          stroke: #ffffff;
-          stroke-width: 1.5;
-          animation: neonPulseYellow 1.2s infinite ease-in-out;
-        }
-        .cg12-dot-captured {
-          fill: #00d4ff;
-          stroke: #ffffff;
-          stroke-width: 1.5;
-          filter: drop-shadow(0 0 6px #00d4ff);
-        }
-        .cg12-shutter-btn:active {
-          transform: scale(0.92);
-        }
-      </style>
-
-      <div id="step6CaptureContainer" style="display: flex; flex-direction: column; align-items: center; justify-content: space-between; width: 100%; max-width: 440px; margin: 0 auto; color: #ffffff; font-family: inherit; user-select: none; box-sizing: border-box; overflow: hidden;">
-
-        <!-- Top Compact Bar -->
-        <div style="text-align: center; margin-bottom: 4px;">
-          <div style="font-size: 10.5px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.12em;">
-            STEP 6 OF 12: 12-POINT 360° CAPTURE
-          </div>
-          <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">
-            Hold phone upright &amp; turn clockwise in 30° steps
-          </div>
+      <div style="text-align: center; max-width: 580px; margin: 0 auto;">
+        <div style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">
+          <i class="fa-solid fa-compass" style="margin-right: 6px;"></i> STEP 6 OF 12: 360° GUIDED CAPTURE
         </div>
+        <h2 style="font-size: 22px; font-weight: 800; color: #fff; margin: 0 0 6px 0; letter-spacing: -0.02em;">
+          Guided Continuous 360° Capture
+        </h2>
+        <p style="font-size: 13px; color: #94a3b8; margin: 0 0 16px 0; line-height: 1.5;">
+          Stand in one spot and slowly turn in a full circle. Guided capture tracks rotational progress, speed, and automatically selects canonical keyframes.
+        </p>
 
-        <!-- Central 12-Point Capture Viewport -->
-        <div style="position: relative; width: min(280px, 68vw); height: min(280px, 68vw); margin: 6px auto; border-radius: 50%; overflow: hidden; background: #060606; border: 1.5px solid rgba(255, 255, 255, 0.1); box-shadow: 0 0 35px rgba(0, 0, 0, 0.85); display: flex; align-items: center; justify-content: center;">
-          <!-- Camera Feed -->
-          <video id="guidedCaptureVideo" playsinline autoplay muted style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1;"></video>
-
-          <!-- Shutter Flash Overlay -->
-          <div id="captureFlashOverlay" style="position: absolute; inset: 0; background: #ffffff; opacity: 0; pointer-events: none; z-index: 8; transition: opacity 0.15s ease-out;"></div>
-
-          <!-- 12-Point SVG Guidance Overlay -->
-          <svg id="capture12Svg" viewBox="0 0 200 200" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none;">
-            <!-- Outer Track Ring -->
-            <circle cx="100" cy="100" r="88" fill="none" stroke="rgba(255, 255, 255, 0.08)" stroke-width="6" />
-            <!-- Stability Arc -->
-            <circle id="captureStabilityRing" cx="100" cy="100" r="82" fill="none" stroke="#00d4ff" stroke-width="3" stroke-dasharray="515.22" stroke-dashoffset="515.22" stroke-linecap="round" style="transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 0.08s linear;" />
-            <!-- 12 Point Dots & Target Markers -->
-            <g id="capture12PointsGroup"></g>
-            <!-- Current Rotation Needle Indicator -->
-            <g id="captureHeadingNeedle" style="transform-origin: 100px 100px; transform: rotate(0deg); transition: transform 0.08s ease-out;">
-              <line x1="100" y1="100" x2="100" y2="24" stroke="#ffe600" stroke-width="2.5" stroke-linecap="round" filter="drop-shadow(0 0 6px rgba(255, 230, 0, 0.85))" />
-              <polygon points="100,14 95,26 105,26" fill="#ffe600" filter="drop-shadow(0 0 6px rgba(255, 230, 0, 0.85))" />
-              <circle cx="100" cy="100" r="5" fill="#ffe600" />
-            </g>
+        <!-- CAMERA VIEWPORT / CAPTURE WHEEL -->
+        <div style="position: relative; width: 280px; height: 280px; margin: 0 auto 16px; border-radius: 50%; background: #020617; border: 2px solid rgba(56, 189, 248, 0.4); box-shadow: 0 0 40px rgba(2, 132, 199, 0.25); overflow: hidden; display: flex; align-items: center; justify-content: center;">
+          <video id="guidedCaptureVideo" playsinline autoplay muted style="position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: 0.85; z-index: 1; transform: scaleX(1);"></video>
+          
+          <svg id="guidedCaptureWheelSvg" viewBox="0 0 200 200" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none;">
+            <circle cx="100" cy="100" r="90" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="8" />
+            <circle id="guidedProgressCircle" cx="100" cy="100" r="90" fill="none" stroke="#38bdf8" stroke-width="8" stroke-dasharray="565.48" stroke-dashoffset="565.48" stroke-linecap="round" style="transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 0.15s ease;" />
+            <g id="guidedWheelSegments"></g>
           </svg>
 
-          <!-- Center HUD / Reticle -->
-          <div id="captureCenterHUD" style="position: relative; z-index: 5; text-align: center; pointer-events: none;">
-            <div id="captureHudCountdown" style="display: none; font-size: 32px; font-weight: 900; color: #00d4ff; text-shadow: 0 0 16px rgba(0,212,255,0.9); line-height: 1;">3</div>
-            <div id="captureHudAngle" style="font-size: 14px; font-weight: 800; color: #ffffff; text-shadow: 0 2px 10px rgba(0,0,0,0.9); letter-spacing: 0.04em;">0°</div>
-            <div id="captureHudTarget" style="font-size: 10px; font-weight: 700; color: #ffe600; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px;">TARGET 0°</div>
-          </div>
-
-          <!-- Circular Generation Progress Overlay -->
-          <div id="captureProcessingOverlay" style="display: none; position: absolute; inset: 0; z-index: 10; background: rgba(5, 5, 8, 0.92); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 18px;">
-            <div style="width: 58px; height: 58px; border-radius: 50%; border: 3px solid rgba(0, 212, 255, 0.25); border-top-color: #00d4ff; border-right-color: #c084fc; animation: spinRing 1s linear infinite; margin-bottom: 12px; box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);"></div>
-            <div style="font-size: 12px; font-weight: 800; color: #00d4ff; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 4px;">CREATING 3D BOOTH · PLEASE WAIT</div>
-            <div id="captureProcessStage" style="font-size: 11px; color: #94a3b8; margin-bottom: 10px;">Queueing 12 angles...</div>
-            <div style="width: 160px; height: 5px; background: rgba(255,255,255,0.1); border-radius: 9999px; overflow: hidden; margin-bottom: 6px;">
-              <div id="captureProcessBar" style="width: 10%; height: 100%; background: linear-gradient(90deg, #00d4ff, #c084fc); transition: width 0.3s ease;"></div>
-            </div>
-            <div id="captureProcessPercent" style="font-size: 12px; font-weight: 800; color: #ffffff;">10%</div>
+          <!-- Center reticle and status -->
+          <div style="position: relative; z-index: 4; text-align: center; pointer-events: none;">
+            <div id="guidedPercentText" style="font-size: 32px; font-weight: 900; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.8); line-height: 1;">0%</div>
+            <div id="guidedRotText" style="font-size: 11px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px;">0° ROTATION</div>
           </div>
         </div>
 
-        <!-- Guidance / Status Pill -->
-        <div id="captureStatusPill" style="display: inline-flex; align-items: center; gap: 7px; padding: 6px 16px; border-radius: 9999px; font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; background: rgba(255, 230, 0, 0.12); color: #ffe600; border: 1px solid rgba(255, 230, 0, 0.35); box-shadow: 0 0 14px rgba(255, 230, 0, 0.2); margin-top: 4px;">
-          <span id="captureStatusDot" style="width: 7px; height: 7px; border-radius: 50%; background: #ffe600; box-shadow: 0 0 6px #ffe600;"></span>
-          <span id="captureStatusText">SLOWLY TURN CLOCKWISE ↻</span>
+        <!-- SPEED & GUIDANCE PILL -->
+        <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 6px 16px; margin-bottom: 16px;">
+          <span id="guidedSpeedDot" style="width: 8px; height: 8px; border-radius: 50%; background: #34d399; box-shadow: 0 0 8px #34d399;"></span>
+          <span id="guidedStatusPill" style="font-size: 12px; font-weight: 700; color: #f8fafc;">Ready to start circle</span>
         </div>
 
-        <!-- Counter & Thumbnail Strip -->
-        <div style="margin-top: 6px; text-align: center;">
-          <div id="captureCounterBadge" style="font-size: 11px; font-weight: 800; color: #94a3b8; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px;">
-            <span id="captureCounterNum" style="color: #00d4ff; font-weight: 900;">0</span>/12 CAPTURED
-          </div>
-          <div id="captureThumbStrip" style="display: flex; gap: 3px; justify-content: center; align-items: center; min-height: 20px; max-width: 90vw; overflow-x: auto; padding: 2px 0;"></div>
-        </div>
-
-        <!-- Shutter & Controls Area -->
-        <div style="display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 8px;">
-          <button type="button" id="btnRetakeCapture" onclick="setupWizard.retryGuidedCapture()" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #94a3b8; font-size: 11px; font-weight: 700; border-radius: 8px; padding: 8px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+        <!-- CONTROLS & DIAGNOSTICS -->
+        <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center;">
+          <button type="button" id="btnStartGuidedCapture" onclick="setupWizard.startGuidedCapture()" style="background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; color: #fff; font-size: 13px; font-weight: 800; border-radius: 8px; padding: 10px 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-play"></i> START 360° CAPTURE
+          </button>
+          <button type="button" id="btnRetakeCapture" onclick="setupWizard.retryGuidedCapture()" style="background: rgba(30, 41, 59, 0.8); border: 1px solid #475569; color: #cbd5e1; font-size: 13px; font-weight: 700; border-radius: 8px; padding: 10px 18px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
             <i class="fa-solid fa-rotate-right"></i> RETAKE
           </button>
-
-          <button type="button" id="btnShutterCapture" onclick="setupWizard.triggerManualCapture()" class="cg12-shutter-btn" style="width: 52px; height: 52px; border-radius: 50%; background: transparent; border: 3px solid #ffffff; padding: 3px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 16px rgba(255,255,255,0.25); outline: none;" title="Tap to capture current angle">
-            <div style="width: 100%; height: 100%; border-radius: 50%; background: #ffffff;"></div>
+          <button type="button" id="btnHowToCapture" onclick="setupWizard.openHowToCaptureModal()" style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; font-size: 13px; font-weight: 700; border-radius: 8px; padding: 10px 18px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-circle-question"></i> How to Capture
           </button>
-
-          <button type="button" id="btnHowToCapture" onclick="setupWizard.openHowToCaptureModal()" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(56,189,248,0.3); color: #38bdf8; font-size: 11px; font-weight: 700; border-radius: 8px; padding: 8px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-circle-question"></i> GUIDE
-          </button>
+          <!-- C12.9-P2R6: Demo Stitch removed from physical path -->
         </div>
-
-        <!-- Alternative Action: Select from Album -->
-        <div style="text-align: center; margin-top: 8px;">
-          <button type="button" id="btnAlbumUploadLink" onclick="setupWizard.openPhotoAlbumPicker()" style="background: none; border: none; color: #38bdf8; font-size: 11px; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; opacity: 0.85;">
-            <i class="fa-solid fa-images" style="margin-right: 4px;"></i> Select from album / Upload photos
-          </button>
-          <input type="file" id="step6PhotoInput" multiple accept="image/jpeg,image/png,image/webp" style="display: none;" onchange="setupWizard.onPhotosSelected(this)">
-
-          <div id="albumUploadStatus" style="display: none; font-size: 11px; color: #cbd5e1; margin-top: 6px; align-items: center; justify-content: center; gap: 8px;">
-            <span id="albumUploadCount">0/12 PHOTOS</span>
-            <button type="button" id="btnCreateBoothAlbum" onclick="setupWizard.create3dBoothFromPhotos()" style="background: linear-gradient(135deg, #0284c7, #10b981); border: 1px solid #38bdf8; color: #fff; font-size: 11px; font-weight: 800; border-radius: 6px; padding: 4px 12px; cursor: not-allowed; opacity: 0.5;" disabled>CREATE 3D BOOTH</button>
-          </div>
-        </div>
-
       </div>
     `;
-
-    this.render12WheelPoints();
-    this.start12PointCapture();
+    this.renderWheelSegments();
   }
 
-  render12WheelPoints() {
-    const group = document.getElementById('capture12PointsGroup');
-    if (!group) return;
-    group.innerHTML = '';
-
-    for (let k = 0; k < 12; k++) {
-      const angleDeg = k * 30;
-      const rad = (angleDeg * Math.PI) / 180;
-      const cx = 100 + 88 * Math.sin(rad);
-      const cy = 100 - 88 * Math.cos(rad);
-
-      const ptG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      ptG.setAttribute('id', 'cg12_point_' + k);
-      ptG.style.cursor = 'pointer';
-      ptG.onclick = () => {
-        if (this._capture12State && !this._capture12State.isProcessing) {
-          this._capture12State.currentTargetIndex = k;
-          this.updateWheelVisuals();
-        }
-      };
-
+  renderWheelSegments() {
+    const g = document.getElementById('guidedWheelSegments');
+    if (!g) return;
+    g.innerHTML = '';
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * 45) * Math.PI / 180;
+      const x = 100 + 90 * Math.sin(angle);
+      const y = 100 - 90 * Math.cos(angle);
       const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      dot.setAttribute('id', 'cg12_dot_' + k);
-      dot.setAttribute('cx', cx.toFixed(2));
-      dot.setAttribute('cy', cy.toFixed(2));
-      dot.setAttribute('r', '4.5');
-      dot.setAttribute('class', k === 0 ? 'cg12-dot-target' : 'cg12-dot-pending');
-
-      ptG.appendChild(dot);
-      group.appendChild(ptG);
-    }
-  }
-
-  updateWheelVisuals() {
-    const s = this._capture12State;
-    if (!s) return;
-
-    for (let k = 0; k < 12; k++) {
-      const dot = document.getElementById('cg12_dot_' + k);
-      if (!dot) continue;
-
-      const isCaptured = s.capturedFrames.some(f => f.index === k);
-      if (isCaptured) {
-        dot.setAttribute('class', 'cg12-dot-captured');
-      } else if (k === s.currentTargetIndex) {
-        dot.setAttribute('class', 'cg12-dot-target');
-      } else {
-        dot.setAttribute('class', 'cg12-dot-pending');
-      }
-    }
-
-    const hudTarget = document.getElementById('captureHudTarget');
-    if (hudTarget) {
-      hudTarget.textContent = 'TARGET ' + (s.currentTargetIndex * 30) + '°';
-    }
-  }
-
-  async start12PointCapture() {
-    const s = this._capture12State;
-    if (!s) return;
-    s.active = true;
-
-    const video = document.getElementById('guidedCaptureVideo');
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: 'environment',
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
-          }
-        });
-        s.stream = stream;
-        if (video) {
-          video.srcObject = stream;
-          await video.play().catch(() => {});
-        }
-      }
-    } catch (err) {
-      console.warn('[12PointCapture] Camera access note:', err);
-    }
-
-    // Request iOS orientation permission if required
-    try {
-      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        const perm = await DeviceOrientationEvent.requestPermission().catch(() => 'denied');
-        if (perm === 'granted') {
-          s.sensorAvailable = true;
-        }
-      } else if ('ondeviceorientation' in window) {
-        s.sensorAvailable = true;
-      }
-    } catch (e) {
-      console.warn('[12PointCapture] Sensor permission note:', e);
-    }
-
-    // Attach orientation event listener
-    s.orientationHandler = (e) => this.handleOrientation(e);
-    window.addEventListener('deviceorientation', s.orientationHandler, true);
-    if ('ondeviceorientationabsolute' in window) {
-      window.addEventListener('deviceorientationabsolute', s.orientationHandler, true);
-    }
-
-    this.updateWheelVisuals();
-  }
-
-  handleOrientation(e) {
-    const s = this._capture12State;
-    if (!s || !s.active || s.isProcessing) return;
-
-    let heading = null;
-    if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
-      heading = e.webkitCompassHeading;
-    } else if (e.alpha !== undefined && e.alpha !== null) {
-      heading = (360 - e.alpha) % 360;
-    }
-
-    if (heading === null) return;
-    s.sensorAvailable = true;
-    s.currentHeading = heading;
-
-    if (s.startHeading === null) {
-      s.startHeading = heading;
-    }
-
-    const relAngle = (heading - s.startHeading + 360) % 360;
-    s.relativeAngle = relAngle;
-
-    // Rotate needle
-    const needle = document.getElementById('captureHeadingNeedle');
-    if (needle) {
-      needle.style.transform = 'rotate(' + relAngle.toFixed(1) + 'deg)';
-    }
-
-    // Update center HUD angle
-    const hudAngle = document.getElementById('captureHudAngle');
-    if (hudAngle) {
-      hudAngle.textContent = Math.round(relAngle) + '°';
-    }
-
-    // Check target alignment
-    const targetAngle = s.currentTargetIndex * 30;
-    const diff = (relAngle - targetAngle + 540) % 360 - 180;
-
-    const pill = document.getElementById('captureStatusPill');
-    const pillText = document.getElementById('captureStatusText');
-    const pillDot = document.getElementById('captureStatusDot');
-    const stabilityRing = document.getElementById('captureStabilityRing');
-
-    const now = performance.now();
-    const isAligned = Math.abs(diff) <= 7;
-
-    if (isAligned) {
-      let isSpeedStable = true;
-      if (s.lastHeadingTs && s.lastHeadingSample !== null) {
-        const dt = (now - s.lastHeadingTs) / 1000;
-        if (dt > 0.05) {
-          const dAngle = Math.abs((heading - s.lastHeadingSample + 540) % 360 - 180);
-          const rate = dAngle / dt;
-          if (rate > 5.0) isSpeedStable = false;
-        }
-      }
-      s.lastHeadingSample = heading;
-      s.lastHeadingTs = now;
-
-      if (isSpeedStable) {
-        if (!s.stableStartTime) {
-          s.stableStartTime = now;
-          if (navigator.vibrate) navigator.vibrate(50);
-        }
-        const stableElapsed = now - s.stableStartTime;
-
-        const progress = Math.min(1, stableElapsed / 500);
-        if (stabilityRing) {
-          const offset = 515.22 * (1 - progress);
-          stabilityRing.setAttribute('stroke-dashoffset', offset.toFixed(1));
-        }
-
-        if (pill) {
-          pill.style.background = 'rgba(0, 212, 255, 0.15)';
-          pill.style.color = '#00d4ff';
-          pill.style.border = '1px solid rgba(0, 212, 255, 0.5)';
-          pill.style.boxShadow = '0 0 16px rgba(0, 212, 255, 0.4)';
-        }
-        if (pillDot) {
-          pillDot.style.background = '#00d4ff';
-          pillDot.style.boxShadow = '0 0 8px #00d4ff';
-        }
-        if (pillText && !s.autoCaptureTimer) {
-          pillText.textContent = 'STOP';
-        }
-
-        if (stableElapsed >= 500 && !s.autoCaptureTimer) {
-          this.startAutoCaptureCountdown();
-        }
-      } else {
-        this.resetStability();
-      }
-    } else {
-      this.resetStability();
-      if (diff < -15) {
-        if (pillText) pillText.textContent = 'TURN CLOCKWISE ↻';
-      } else {
-        if (pillText) pillText.textContent = 'SLOWLY TURN CLOCKWISE ↻';
-      }
-      if (pill) {
-        pill.style.background = 'rgba(255, 230, 0, 0.12)';
-        pill.style.color = '#ffe600';
-        pill.style.border = '1px solid rgba(255, 230, 0, 0.35)';
-        pill.style.boxShadow = '0 0 12px rgba(255, 230, 0, 0.2)';
-      }
-      if (pillDot) {
-        pillDot.style.background = '#ffe600';
-        pillDot.style.boxShadow = '0 0 6px #ffe600';
-      }
-    }
-  }
-
-  resetStability() {
-    const s = this._capture12State;
-    if (!s) return;
-    s.countdownToken = (s.countdownToken || 0) + 1;
-    s.stableStartTime = null;
-    const stabilityRing = document.getElementById('captureStabilityRing');
-    if (stabilityRing) {
-      stabilityRing.setAttribute('stroke-dashoffset', '515.22');
-    }
-    if (s.autoCaptureTimer) {
-      clearTimeout(s.autoCaptureTimer);
-      s.autoCaptureTimer = null;
-    }
-    const hudCountdown = document.getElementById('captureHudCountdown');
-    if (hudCountdown) {
-      hudCountdown.style.display = 'none';
-    }
-  }
-
-  startAutoCaptureCountdown() {
-    const s = this._capture12State;
-    if (!s || s.autoCaptureTimer || s.isProcessing) return;
-
-    const currentToken = (s.countdownToken || 0) + 1;
-    s.countdownToken = currentToken;
-
-    const hudCountdown = document.getElementById('captureHudCountdown');
-    const pillText = document.getElementById('captureStatusText');
-
-    let count = 3;
-    if (hudCountdown) {
-      hudCountdown.textContent = count;
-      hudCountdown.style.display = 'block';
-    }
-    if (pillText) pillText.textContent = 'AUTO CAPTURE · ' + count;
-
-    const tick = () => {
-      if (!this._capture12State || this._capture12State.countdownToken !== currentToken) {
-        return;
-      }
-      count--;
-      if (count > 0) {
-        if (hudCountdown) hudCountdown.textContent = count;
-        if (pillText) pillText.textContent = 'AUTO CAPTURE · ' + count;
-        s.autoCaptureTimer = setTimeout(tick, 1000);
-      } else {
-        if (hudCountdown) hudCountdown.style.display = 'none';
-        s.autoCaptureTimer = null;
-        this.executeStillCapture();
-      }
-    };
-    s.autoCaptureTimer = setTimeout(tick, 1000);
-  }
-
-  triggerManualCapture() {
-    const s = this._capture12State;
-    if (!s || s.isProcessing) return;
-    this.resetStability();
-    this.executeStillCapture();
-  }
-
-  playSyntheticShutterSound() {
-    try {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContextClass) return;
-      const ctx = new AudioContextClass();
-      const now = ctx.currentTime;
-
-      const osc1 = ctx.createOscillator();
-      const gain1 = ctx.createGain();
-      osc1.type = 'triangle';
-      osc1.frequency.setValueAtTime(1400, now);
-      osc1.frequency.exponentialRampToValueAtTime(80, now + 0.04);
-      gain1.gain.setValueAtTime(0.35, now);
-      gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
-      osc1.connect(gain1);
-      gain1.connect(ctx.destination);
-      osc1.start(now);
-      osc1.stop(now + 0.04);
-
-      const osc2 = ctx.createOscillator();
-      const gain2 = ctx.createGain();
-      osc2.type = 'triangle';
-      osc2.frequency.setValueAtTime(900, now + 0.05);
-      osc2.frequency.exponentialRampToValueAtTime(50, now + 0.11);
-      gain2.gain.setValueAtTime(0.3, now + 0.05);
-      gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.11);
-      osc2.connect(gain2);
-      gain2.connect(ctx.destination);
-      osc2.start(now + 0.05);
-      osc2.stop(now + 0.11);
-    } catch (e) {}
-  }
-
-  executeStillCapture() {
-    const s = this._capture12State;
-    if (!s || s.isProcessing || s._isCapturing) return;
-    s._isCapturing = true;
-
-    const video = document.getElementById('guidedCaptureVideo');
-    const flash = document.getElementById('captureFlashOverlay');
-
-    if (flash) {
-      flash.style.opacity = '0.85';
-      setTimeout(() => { flash.style.opacity = '0'; }, 150);
-    }
-
-    this.playSyntheticShutterSound();
-    if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
-
-    const w = (video && video.videoWidth) || 1920;
-    const h = (video && video.videoHeight) || 1080;
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext('2d');
-    if (video) {
-      ctx.drawImage(video, 0, 0, w, h);
-    } else {
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(0, 0, w, h);
-    }
-
-    const currentTarget = s.currentTargetIndex;
-    const angleDeg = currentTarget * 30;
-
-    canvas.toBlob((blob) => {
-      s._isCapturing = false;
-      if (!blob) return;
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-
-      s.capturedFrames.push({
-        index: currentTarget,
-        angle: angleDeg,
-        blob: blob,
-        dataUrl: dataUrl,
-        timestamp: Date.now()
-      });
-
-      const strip = document.getElementById('captureThumbStrip');
-      if (strip) {
-        const img = document.createElement('img');
-        img.src = dataUrl;
-        img.style.cssText = 'width: 22px; height: 22px; border-radius: 4px; object-fit: cover; border: 1.5px solid #00d4ff; box-shadow: 0 0 6px rgba(0,212,255,0.5);';
-        img.title = angleDeg + '°';
-        strip.appendChild(img);
-      }
-
-      const count = s.capturedFrames.length;
-      const counterEl = document.getElementById('captureCounterNum');
-      if (counterEl) counterEl.textContent = count;
-
-      const pillText = document.getElementById('captureStatusText');
-      if (pillText) pillText.textContent = count + '/12 CAPTURED';
-
-      if (count < 12) {
-        let nextIdx = (currentTarget + 1) % 12;
-        while (s.capturedFrames.some(f => f.index === nextIdx) && s.capturedFrames.length < 12) {
-          nextIdx = (nextIdx + 1) % 12;
-        }
-        s.currentTargetIndex = nextIdx;
-        this.updateWheelVisuals();
-        this.resetStability();
-      } else {
-        this.onAllAnglesCaptured();
-      }
-    }, 'image/jpeg', 0.92);
-  }
-
-  onAllAnglesCaptured() {
-    const s = this._capture12State;
-    if (!s) return;
-    s.isProcessing = true;
-
-    if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 120]);
-
-    const pill = document.getElementById('captureStatusPill');
-    const pillText = document.getElementById('captureStatusText');
-    const pillDot = document.getElementById('captureStatusDot');
-    if (pill) {
-      pill.style.background = 'rgba(0, 212, 255, 0.2)';
-      pill.style.color = '#00d4ff';
-      pill.style.border = '1px solid #00d4ff';
-      pill.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.6)';
-    }
-    if (pillDot) {
-      pillDot.style.background = '#00d4ff';
-    }
-    if (pillText) {
-      pillText.textContent = 'ALL 12 ANGLES CAPTURED';
-    }
-
-    setTimeout(() => {
-      this.create3dBoothFromCapturedFrames();
-    }, 600);
-  }
-
-  async create3dBoothFromCapturedFrames() {
-    const s = this._capture12State;
-    if (!s) return;
-
-    const overlay = document.getElementById('captureProcessingOverlay');
-    const video = document.getElementById('guidedCaptureVideo');
-    if (overlay) overlay.style.display = 'flex';
-    if (video) video.style.filter = 'blur(10px) brightness(0.4)';
-
-    const pBar = document.getElementById('captureProcessBar');
-    const pPct = document.getElementById('captureProcessPercent');
-    const pStage = document.getElementById('captureProcessStage');
-
-    if (pStage) pStage.textContent = 'Packaging 12 angles...';
-    if (pBar) pBar.style.width = '15%';
-    if (pPct) pPct.textContent = '15%';
-
-    try {
-      const formData = new FormData();
-      s.capturedFrames.forEach((f, idx) => {
-        formData.append('photos', f.blob, 'angle_' + f.angle + '.jpg');
-        formData.append('slot_' + idx, 'SLOT_' + idx);
-      });
-      formData.append('metadata', JSON.stringify({
-        angles: s.capturedFrames.map(f => f.angle),
-        timestamp: Date.now(),
-        deviceOrientation: Boolean(s.sensorAvailable)
-      }));
-
-      const projectId = this.getProjectId();
-      if (pStage) pStage.textContent = 'Uploading to 3D pipeline...';
-      if (pBar) pBar.style.width = '25%';
-      if (pPct) pPct.textContent = '25%';
-
-      const res = await fetch('/api/projects/' + projectId + '/spatial/start', {
-        method: 'POST',
-        body: formData
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.jobId) {
-        throw new Error(data.message || data.error || 'Failed to start 3D booth creation');
-      }
-
-      const jobId = data.jobId;
-      if (pStage) pStage.textContent = '3D Reconstruction starting...';
-      if (pBar) pBar.style.width = '40%';
-      if (pPct) pPct.textContent = '40%';
-
-      await this.pollSpatialGenerationJob(jobId);
-    } catch (err) {
-      console.error('[12PointCapture] 3D Booth generation error:', err);
-      if (pStage) pStage.textContent = 'Creation error: ' + (err.message || 'Please try again');
-      const retakeBtn = document.getElementById('btnRetakeCapture');
-      if (retakeBtn) {
-        retakeBtn.style.border = '1px solid #38bdf8';
-        retakeBtn.style.color = '#38bdf8';
-      }
-    }
-  }
-
-  async pollSpatialGenerationJob(jobId) {
-    const pBar = document.getElementById('captureProcessBar');
-    const pPct = document.getElementById('captureProcessPercent');
-    const pStage = document.getElementById('captureProcessStage');
-    const projectId = this.getProjectId();
-
-    const maxWaitMs = 120000;
-    const startTs = Date.now();
-
-    const poll = async () => {
-      if (Date.now() - startTs > maxWaitMs) {
-        throw new Error('3D Reconstruction timed out. Please try again.');
-      }
-
-      const res = await fetch('/api/spatial-jobs/' + jobId);
-      if (!res.ok) {
-        setTimeout(poll, 1500);
-        return;
-      }
-      const data = await res.json();
-      const job = data.job;
-      if (!job) {
-        setTimeout(poll, 1500);
-        return;
-      }
-
-      const progress = Math.max(40, Math.min(95, job.progress || 50));
-      if (pBar) pBar.style.width = progress + '%';
-      if (pPct) pPct.textContent = progress + '%';
-      if (pStage) pStage.textContent = job.stageLabel || job.currentStage || 'Creating 3D spatial geometry...';
-
-      if (job.status === 'READY') {
-        if (pBar) pBar.style.width = '100%';
-        if (pPct) pPct.textContent = '100%';
-        if (pStage) pStage.textContent = '3D Booth Ready! Applying...';
-
-        const candidateId = job.candidateId || (job.candidate && job.candidate.id);
-        if (candidateId) {
-          try {
-            await fetch('/api/projects/' + projectId + '/spatial/apply', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ candidateId })
-            });
-          } catch (applyErr) {
-            console.warn('[12PointCapture] Apply warning:', applyErr);
-          }
-        }
-
-        this.state.currentPanoramaJobId = jobId;
-        this.state.currentPanoramaJob = job;
-        this.state.panoramaJobStatus = 'READY';
-        const vp = this.state.viewpoints && this.state.viewpoints[0];
-        if (vp) {
-          vp.status = 'STITCHED';
-          if (job.candidate?.stitchedPanoramaUrl) vp.panoramaUrl = job.candidate.stitchedPanoramaUrl;
-        }
-
-        this.teardownCaptureEngine();
-        this.renderStep7ViewpointReady();
-      } else if (job.status === 'FAILED') {
-        throw new Error(job.error || '3D Booth generation failed on server');
-      } else {
-        setTimeout(poll, 1200);
-      }
-    };
-
-    await poll();
-  }
-
-  openPhotoAlbumPicker() {
-    const input = document.getElementById('step6PhotoInput');
-    if (input) input.click();
-  }
-
-  onPhotosSelected(input) {
-    const rawFiles = Array.from(input.files || []);
-    if (!rawFiles.length) return;
-
-    const validMimes = ['image/jpeg', 'image/png', 'image/webp'];
-    const validExts = /\.(jpe?g|png|webp)$/i;
-    const validFiles = rawFiles.filter(f => {
-      return (f.type && validMimes.includes(f.type.toLowerCase())) || validExts.test(f.name || '');
-    });
-
-    const statusDiv = document.getElementById('albumUploadStatus');
-    const countEl = document.getElementById('albumUploadCount');
-    const createBtn = document.getElementById('btnCreateBoothAlbum');
-    const strip = document.getElementById('captureThumbStrip');
-
-    if (!validFiles.length) {
-      alert('Please select valid JPEG, PNG, or WebP images.');
-      input.value = '';
-      if (createBtn) {
-        createBtn.disabled = true;
-        createBtn.style.opacity = '0.5';
-        createBtn.style.cursor = 'not-allowed';
-      }
-      return;
-    }
-
-    let filesToUse = validFiles;
-    let exceededMax = false;
-    if (validFiles.length > 12) {
-      filesToUse = validFiles.slice(0, 12);
-      exceededMax = true;
-    }
-
-    this._capture12State.selectedAlbumFiles = filesToUse;
-
-    if (statusDiv) statusDiv.style.display = 'inline-flex';
-
-    const count = filesToUse.length;
-    if (countEl) {
-      countEl.textContent = count + '/12 PHOTOS';
-    }
-
-    if (createBtn) {
-      if (count >= 8 && count <= 12) {
-        createBtn.disabled = false;
-        createBtn.style.opacity = '1';
-        createBtn.style.cursor = 'pointer';
-      } else {
-        createBtn.disabled = true;
-        createBtn.style.opacity = '0.5';
-        createBtn.style.cursor = 'not-allowed';
-      }
-    }
-
-    if (strip) {
-      strip.innerHTML = '';
-      filesToUse.forEach((file, i) => {
-        const url = URL.createObjectURL(file);
-        const img = document.createElement('img');
-        img.src = url;
-        img.style.cssText = 'width: 22px; height: 22px; border-radius: 4px; object-fit: cover; border: 1.5px solid #38bdf8; box-shadow: 0 0 6px rgba(56,189,248,0.5);';
-        img.title = 'Photo ' + (i + 1);
-        strip.appendChild(img);
-      });
-    }
-
-    const counterEl = document.getElementById('captureCounterNum');
-    if (counterEl) counterEl.textContent = count;
-
-    if (exceededMax) {
-      alert('You can upload up to 12 photos.');
-    }
-  }
-
-  async create3dBoothFromPhotos() {
-    const s = this._capture12State;
-    if (!s || s.isProcessing) return;
-
-    const files = s.selectedAlbumFiles;
-    if (!files || files.length < 8 || files.length > 12) {
-      alert('Please select between 8 and 12 photos.');
-      return;
-    }
-
-    s.isProcessing = true;
-    const createBtn = document.getElementById('btnCreateBoothAlbum');
-    if (createBtn) {
-      createBtn.disabled = true;
-      createBtn.style.opacity = '0.5';
-      createBtn.style.cursor = 'not-allowed';
-    }
-
-    const overlay = document.getElementById('captureProcessingOverlay');
-    const video = document.getElementById('guidedCaptureVideo');
-    if (overlay) overlay.style.display = 'flex';
-    if (video) video.style.filter = 'blur(10px) brightness(0.4)';
-
-    const pBar = document.getElementById('captureProcessBar');
-    const pPct = document.getElementById('captureProcessPercent');
-    const pStage = document.getElementById('captureProcessStage');
-
-    if (pStage) pStage.textContent = 'Uploading ' + files.length + ' photos...';
-    if (pBar) pBar.style.width = '20%';
-    if (pPct) pPct.textContent = '20%';
-
-    try {
-      const formData = new FormData();
-      files.slice(0, 12).forEach((file, idx) => {
-        formData.append('photos', file, file.name || ('album_photo_' + idx + '.jpg'));
-        formData.append('slot_' + idx, 'SLOT_' + idx);
-      });
-      formData.append('metadata', JSON.stringify({
-        source: 'ALBUM_UPLOAD',
-        count: Math.min(files.length, 12),
-        timestamp: Date.now()
-      }));
-
-      const projectId = this.getProjectId();
-      const res = await fetch('/api/projects/' + projectId + '/spatial/start', {
-        method: 'POST',
-        body: formData
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.jobId) {
-        throw new Error(data.message || data.error || 'Failed to start 3D booth creation');
-      }
-
-      await this.pollSpatialGenerationJob(data.jobId);
-    } catch (err) {
-      console.error('[AlbumUpload] 3D Booth generation error:', err);
-      if (pStage) pStage.textContent = 'Upload error: ' + (err.message || 'Please try again');
-      s.isProcessing = false;
-      if (createBtn) {
-        createBtn.disabled = false;
-        createBtn.style.opacity = '1';
-        createBtn.style.cursor = 'pointer';
-      }
-    }
-  }
-
-  retryGuidedCapture() {
-    console.log('[SetupWizard] Resetting 12-point guided capture...');
-    this.resetStability();
-    const s = this._capture12State;
-    if (s) {
-      s.capturedFrames = [];
-      s.currentTargetIndex = 0;
-      s.startHeading = s.currentHeading;
-      s.isProcessing = false;
-      s._isCapturing = false;
-      s.selectedAlbumFiles = [];
-    }
-
-    const strip = document.getElementById('captureThumbStrip');
-    if (strip) strip.innerHTML = '';
-    const counterEl = document.getElementById('captureCounterNum');
-    if (counterEl) counterEl.textContent = '0';
-    const input = document.getElementById('step6PhotoInput');
-    if (input) input.value = '';
-    const countEl = document.getElementById('albumUploadCount');
-    if (countEl) countEl.textContent = '0/12 PHOTOS';
-    const createBtn = document.getElementById('btnCreateBoothAlbum');
-    if (createBtn) {
-      createBtn.disabled = true;
-      createBtn.style.opacity = '0.5';
-      createBtn.style.cursor = 'not-allowed';
-    }
-    const statusDiv = document.getElementById('albumUploadStatus');
-    if (statusDiv) statusDiv.style.display = 'none';
-    const overlay = document.getElementById('captureProcessingOverlay');
-    if (overlay) overlay.style.display = 'none';
-    const video = document.getElementById('guidedCaptureVideo');
-    if (video) video.style.filter = '';
-
-    const pill = document.getElementById('captureStatusPill');
-    const pillText = document.getElementById('captureStatusText');
-    const pillDot = document.getElementById('captureStatusDot');
-    if (pill) {
-      pill.style.background = 'rgba(255, 230, 0, 0.12)';
-      pill.style.color = '#ffe600';
-      pill.style.border = '1px solid rgba(255, 230, 0, 0.35)';
-      pill.style.boxShadow = '0 0 12px rgba(255, 230, 0, 0.2)';
-    }
-    if (pillDot) {
-      pillDot.style.background = '#ffe600';
-      pillDot.style.boxShadow = '0 0 6px #ffe600';
-    }
-    if (pillText) pillText.textContent = 'SLOWLY TURN CLOCKWISE ↻';
-
-    this.updateWheelVisuals();
-  }
-
-  teardownCaptureEngine() {
-    const s = this._capture12State;
-    if (!s) return;
-    s.active = false;
-    this.resetStability();
-
-    if (s.stream) {
-      try {
-        s.stream.getTracks().forEach(track => track.stop());
-      } catch (e) {}
-      s.stream = null;
-    }
-
-    if (s.orientationHandler) {
-      window.removeEventListener('deviceorientation', s.orientationHandler, true);
-      window.removeEventListener('deviceorientationabsolute', s.orientationHandler, true);
-      s.orientationHandler = null;
+      dot.setAttribute('cx', x);
+      dot.setAttribute('cy', y);
+      dot.setAttribute('r', '3');
+      dot.setAttribute('fill', 'rgba(255,255,255,0.4)');
+      g.appendChild(dot);
     }
   }
 
   async startGuidedCapture() {
-    if (!this._capture12State || !this._capture12State.active) {
-      return this.renderStep6CaptureWheel();
+    const video = document.getElementById('guidedCaptureVideo');
+    const btn = document.getElementById('btnStartGuidedCapture');
+    const pill = document.getElementById('guidedStatusPill');
+    const pText = document.getElementById('guidedPercentText');
+    const rText = document.getElementById('guidedRotText');
+    const pCircle = document.getElementById('guidedProgressCircle');
+
+    if (!window.guidedCaptureController) {
+      window.guidedCaptureController = new GuidedCaptureController();
     }
-    return Promise.resolve();
+    const controller = window.guidedCaptureController;
+
+    // C12.9-P1R3: If controller is in error or retry state, auto-reset cleanly for fresh attempt
+    if (controller.state === 'CAPTURE_NEEDS_RETRY' || controller.state === 'NEEDS_ATTENTION' || controller.state === 'ERROR') {
+      controller.resetCaptureForRetry('USER_EXPLICIT_RETRY');
+    }
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Initializing Camera...';
+    }
+
+    controller.onProgress = (info) => {
+      const pct = Math.min(100, Math.round(info.progressPercent || 0));
+      if (pText) pText.textContent = pct + '%';
+      const rotVal = Math.round(info.normalizedSensorRotationDeg !== undefined ? info.normalizedSensorRotationDeg : (info.accumulatedRotation || info.integratedYawDeg || 0));
+      if (rText) rText.textContent = rotVal + '° ROTATION';
+      if (pCircle) {
+        const offset = 565.48 - (565.48 * (pct / 100));
+        pCircle.setAttribute('stroke-dashoffset', offset);
+      }
+      if (pill) {
+        pill.textContent = info.speedStatus === 'TOO_FAST' ? 'Slow down turning' : (pct >= 100 ? 'Circle Complete!' : 'Turn slowly in a circle...');
+      }
+    };
+
+    controller.onComplete = async (result) => {
+      if (result && result.canonicalKeyframeCount >= 8 && result.closureConfirmed) {
+        if (pill) pill.textContent = 'Circle Complete! ' + result.canonicalKeyframeCount + ' keyframes ready. Processing panorama...';
+        try {
+          await this.startPanoramaFromGuidedCapture(result);
+        } catch (err) {
+          console.error('[SetupWizard] Panorama trigger error:', err);
+          if (pill) pill.textContent = 'Panorama error: ' + (err.message || 'Please try again');
+          // C12.9-P2R6: Guarantee Mobile RI Report button visibility on error state
+          if (window.__MOBILE_RI_INSTANCE__ && window.__MOBILE_RI_INSTANCE__.ui) {
+            window.__MOBILE_RI_INSTANCE__.ui.mount();
+          } else if (typeof window.MobileRuntimeInspector === 'function') {
+            try {
+              window.__MOBILE_RI_INSTANCE__ = new window.MobileRuntimeInspector({});
+              window.__MOBILE_RI_INSTANCE__.start();
+            } catch(e){}
+          }
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Retry Panorama';
+            btn.onclick = () => this.startPanoramaFromGuidedCapture(result);
+          }
+        }
+      } else {
+        console.warn('[SetupWizard] onComplete blocked: closureConfirmed not true or keyframes < 8', result);
+      }
+    };
+
+    controller.onAttention = (attn) => {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> TRY AGAIN';
+        btn.onclick = () => this.retryGuidedCapture();
+      }
+      if (pill) {
+        pill.textContent = attn.message || 'Starting view not recognized. Continue a little farther or try again.';
+      }
+      // C12.9-P2R2 fix: ALWAYS derive display values from controller state.
+      // The old conditional (attn.finalRotationDeg !== undefined) left stale 100%/0° on screen
+      // when CLOSURE_OR_KEYFRAMES_INSUFFICIENT omitted those fields.
+      const displayState = controller.getGuidedCaptureDisplayState(controller.failedAttemptSnapshot || null);
+      if (rText) rText.textContent = displayState.rotationDeg + '° ROTATION';
+      if (pText) pText.textContent = displayState.progressPercent + '%';
+      if (pCircle) {
+        const offset = 565.48 - (565.48 * (displayState.progressPercent / 100));
+        pCircle.setAttribute('stroke-dashoffset', offset);
+      }
+    };
+
+    try {
+      await controller.start({ videoElement: video });
+      if (btn) btn.innerHTML = '<i class="fa-solid fa-arrows-spin fa-spin"></i> Capturing 360° Circle...';
+      if (pill) pill.textContent = 'Stand in one spot. Rotate slowly...';
+    } catch(err) {
+      console.warn('[GuidedCapture Start Error]', err);
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Try Again';
+      }
+      if (pill) pill.textContent = 'Camera start note: ' + (err.message || 'Permission required');
+    }
+  }
+
+  retryGuidedCapture() {
+    console.log('[SetupWizard] Initiating clean idempotent guided capture retry...');
+    if (window.guidedCaptureController) {
+      window.guidedCaptureController.resetCaptureForRetry('USER_EXPLICIT_RETRY');
+    }
+    // C12.9-P2R2 fix: Do NOT pre-reset DOM to 0%/0° here.
+    // The previous failure screen correctly shows the snapshot values.
+    // startGuidedCapture() re-attaches onProgress; the first tick will update to 0% naturally
+    // without a visible stale-to-zero flash on retry tap.
+    this.startGuidedCapture();
   }
 
   reviewSavedViews() {
-    console.log('[SetupWizard] Reviewing saved views...');
+    console.log('[SetupWizard] Reviewing saved views from candidate pool...');
+    if (window.guidedCaptureController && window.guidedCaptureController.diagnosticSessionId) {
+      window.open('/api/projects/' + this.getProjectId() + '/guided-capture/candidate-pool/' + window.guidedCaptureController.diagnosticSessionId, '_blank');
+    }
   }
 
   simulateStitch() {
@@ -25072,7 +24316,7 @@ if (typeof origInitProject === 'function') {
   window.__3D2R_REAL_MEDIASTREAM_ACTIVE__ = false;
 
   const preloadGuideImg = new Image();
-  preloadGuideImg.src = '/assets/3d2r-capture-guide.png?v=20260916-r5';
+  preloadGuideImg.src = '/assets/3d2r-capture-guide.png?v=20260916-r4';
   if (typeof preloadGuideImg.decode === 'function') {
     preloadGuideImg.decode().then(function() {
       guideImageDecoded = true;
@@ -25180,7 +24424,7 @@ if (typeof origInitProject === 'function') {
       if (window.__3D2R_GUIDE_VISIBLE_TS__) {
         window.__3D2R_AUTO_GUIDE_DURATION_MS__ = window.__3D2R_GUIDE_EXIT_REQUEST_TS__ - window.__3D2R_GUIDE_VISIBLE_TS__;
       }
-    } else if (reason === 'owner_tap' || reason === 'owner_button') {
+    } else if (reason === 'owner_tap') {
       window.__3D2R_EARLY_TAP_RECEIVED__ = true;
       const tapTrigger = window.__3D2R_TAP_TRIGGER_TS__ || window.__3D2R_GUIDE_EXIT_REQUEST_TS__;
       window.__3D2R_EARLY_TAP_LATENCY_MS__ = Math.max(0, performance.now() - tapTrigger);
@@ -25286,7 +24530,7 @@ if (typeof origInitProject === 'function') {
     }
     guideRafId = requestAnimationFrame(tickCountdown);
 
-    // Bind tap / click / keyboard to poster & ready button
+    // Bind tap / click / keyboard to poster
     if (guidePoster && !guidePoster.__tapBound) {
       const onEarlyTap = function(e) {
         if (e) {
@@ -25305,21 +24549,6 @@ if (typeof origInitProject === 'function') {
         }
       });
       guidePoster.__tapBound = true;
-    }
-
-    const readyBtn = document.getElementById('btnReadyToCapture');
-    if (readyBtn && !readyBtn.__tapBound) {
-      const onBtnTap = function(e) {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        window.__3D2R_TAP_TRIGGER_TS__ = performance.now();
-        proceedToCapture('owner_button');
-      };
-      readyBtn.addEventListener('pointerup', onBtnTap);
-      readyBtn.addEventListener('click', onBtnTap);
-      readyBtn.__tapBound = true;
     }
   }
 
