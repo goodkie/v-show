@@ -1082,7 +1082,7 @@ const healthHandler = (req, res) => {
     schemaVersion: 5,
     stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
-    uiVersion: '3D2-C12.9-P2R17-DEV6',
+    uiVersion: '3D2-C12.9-P2R17-DEV7',
     storageRoot: GUIDED_CAPTURE_STORAGE_ROOT,
     storageRootExists: STORAGE_ROOT_EXISTS,
     storageRootWritable: STORAGE_ROOT_WRITABLE,
@@ -1108,20 +1108,55 @@ try {
       MobileRedactionEngine = require('../tools/runtime-inspector/core/redaction').RedactionEngine;
     } catch (e3) {
       class FallbackRedactor {
-        constructor() { this.redactionCount = 0; }
+        constructor() {
+          this.redactionCount = 0;
+          this.pemRegex = /(?:%2D%2D%2D%2D%2D|-----)BEGIN(?:\s|%20|\\n)+([A-Z0-9_\-]+(?:\s|%20|\\n)+)?PRIVATE(?:\s|%20|\\n)+KEY(?:%2D%2D%2D%2D%2D|-----)(?:[\s\S]|\\n|%0A|%0D)*?(?:%2D%2D%2D%2D%2D|-----)END(?:\s|%20|\\n)+([A-Z0-9_\-]+(?:\s|%20|\\n)+)?PRIVATE(?:\s|%20|\\n)+KEY(?:%2D%2D%2D%2D%2D|-----)/gi;
+        }
+        hasPrivateKeyBlock(text) {
+          if (typeof text !== 'string') return false;
+          this.pemRegex.lastIndex = 0;
+          if (this.pemRegex.test(text)) return true;
+          const raw = /-----BEGIN\s+(?:[A-Z0-9_-]+\s+)?PRIVATE\s+KEY-----[\s\S]*?-----END\s+(?:[A-Z0-9_-]+\s+)?PRIVATE\s+KEY-----/i;
+          return raw.test(text);
+        }
+        safeCheckPrivateKey(val) {
+          if (typeof val !== 'string') return false;
+          if (this.hasPrivateKeyBlock(val)) return true;
+          try {
+            const dec = decodeURIComponent(val);
+            if (dec !== val && this.hasPrivateKeyBlock(dec)) return true;
+          } catch (e) {}
+          return false;
+        }
         sanitizeString(s) {
           if (typeof s !== 'string') return s;
-          const pemRegex = /(?:%2D%2D%2D%2D%2D|-----)BEGIN(?:[A-Z0-9_\- ]+)?PRIVATE(?:[A-Z0-9_\- ]+)?KEY(?:%2D%2D%2D%2D%2D|-----)(?:[\s\S]|\\n|%0A|%0D)*?(?:%2D%2D%2D%2D%2D|-----)END(?:[A-Z0-9_\- ]+)?PRIVATE(?:[A-Z0-9_\- ]+)?KEY(?:%2D%2D%2D%2D%2D|-----)/gi;
-          return s.replace(pemRegex, '[REDACTED_PRIVATE_KEY]')
-                  .replace(/eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}/g, '[REDACTED_JWT]')
-                  .replace(/Bearer\s+[^\s]+/gi, 'Bearer [REDACTED_TOKEN]')
-                  .replace(/tok-cap-[a-zA-Z0-9-]+/gi, '[REDACTED_TOKEN]')
-                  .replace(/(?:api[_-]?key(?:[_-]?secret)?|sk_live|rk_live)[_-][a-zA-Z0-9_\-]+/gi, '[REDACTED_API_KEY]')
-                  .replace(/(?:cookie|session_id_cookie)=[a-zA-Z0-9_\-]+/gi, 'cookie=[REDACTED_COOKIE]');
+          let sanitized = s;
+          if (this.safeCheckPrivateKey(sanitized)) {
+            sanitized = sanitized.replace(this.pemRegex, '[REDACTED_PRIVATE_KEY]');
+            if (this.safeCheckPrivateKey(sanitized)) {
+              return '[REDACTED_PRIVATE_KEY]';
+            }
+          }
+          return sanitized.replace(/eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}/g, '[REDACTED_JWT]')
+                          .replace(/Bearer\s+[^\s]+/gi, 'Bearer [REDACTED_TOKEN]')
+                          .replace(/tok-cap-[a-zA-Z0-9-]+/gi, '[REDACTED_TOKEN]')
+                          .replace(/(?:api[_-]?key(?:[_-]?secret)?|sk_live|rk_live)[_-][a-zA-Z0-9_\-]+/gi, '[REDACTED_API_KEY]')
+                          .replace(/(?:cookie|session_id_cookie)=[a-zA-Z0-9_\-]+/gi, 'cookie=[REDACTED_COOKIE]');
         }
         sanitizeUrl(u) {
           if (!u || typeof u !== 'string') return u;
-          return u.replace(/([?&](?:token|key|secret|auth|signature|cookie|session|credential|private)=)[^&]+/gi, '$1[REDACTED]');
+          let sanitized = u.replace(/([?&](?:token|key|secret|auth|signature|cookie|session|credential|private)=)[^&]+/gi, '$1[REDACTED]');
+          try {
+            const dummy = 'https://runtime-inspector.internal';
+            const parsed = new URL(sanitized, dummy);
+            parsed.searchParams.forEach((val, key) => {
+              if (this.safeCheckPrivateKey(val)) {
+                parsed.searchParams.set(key, '[REDACTED_PRIVATE_KEY]');
+              }
+            });
+            sanitized = (u.startsWith('http://') || u.startsWith('https://')) ? parsed.toString() : (parsed.pathname + parsed.search + parsed.hash);
+          } catch (e) {}
+          return this.sanitizeString(sanitized);
         }
         sanitizeObject(o) {
           if (!o || typeof o !== 'object') return typeof o === 'string' ? this.sanitizeString(o) : o;
@@ -1129,6 +1164,8 @@ try {
           for (const [k, v] of Object.entries(o)) {
             if (/token|secret|password|auth|cookie|key|jwt|private/i.test(k) && typeof v === 'string') {
               res[k] = '[REDACTED_SECRET]';
+            } else if (typeof v === 'string' && this.safeCheckPrivateKey(v)) {
+              res[k] = '[REDACTED_PRIVATE_KEY]';
             } else if (typeof v === 'string') {
               res[k] = this.sanitizeUrl(this.sanitizeString(v));
             } else if (typeof v === 'object') {
