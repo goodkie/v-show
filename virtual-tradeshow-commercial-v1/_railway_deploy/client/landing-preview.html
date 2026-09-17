@@ -19494,13 +19494,178 @@ function openAiEnhanceBoothModal() {
   </div>
 </div>
 
+
+<style id="wizard-compact-responsive-styles">
+  /* Base modal rules: ensure modal never collides with fixed bottom-right Mobile RI report button */
+  @media (max-width: 600px) {
+    #setupWizardModal {
+      padding-bottom: 68px !important;
+      box-sizing: border-box !important;
+    }
+  }
+
+  /* Height-sensitive compact mobile layout for 360x740 and small screens */
+  @media (max-width: 380px) and (max-height: 760px) {
+    #setupWizardModal {
+      align-items: flex-start !important;
+      padding: 6px 6px 68px 6px !important;
+    }
+    #setupWizardModal .wizard-dialog-box {
+      max-height: calc(100vh - 76px) !important;
+      width: 100% !important;
+      max-width: 348px !important;
+      border-radius: 12px !important;
+      margin: 0 auto !important;
+    }
+    #setupWizardModal .wizard-header-bar {
+      padding: 8px 12px !important;
+    }
+    #setupWizardModal .wizard-main-title {
+      font-size: 11.5px !important;
+    }
+    #setupWizardModal #wizardStepIndicator {
+      font-size: 9.5px !important;
+    }
+    #setupWizardModal #wizardStepContent {
+      padding: 6px 10px !important;
+      min-height: unset !important;
+    }
+    #setupWizardModal .wizard-footer-bar {
+      padding: 6px 10px !important;
+    }
+    #setupWizardModal #wizardBtnBack {
+      padding: 5px 10px !important;
+      font-size: 11px !important;
+    }
+    #setupWizardModal #wizardBtnLater {
+      padding: 5px 8px !important;
+      font-size: 11px !important;
+    }
+    #setupWizardModal #wizardBtnPrimary {
+      padding: 6px 12px !important;
+      font-size: 11px !important;
+    }
+
+    /* Compact capture wheel layout */
+    .wizard-capture-header-step {
+      font-size: 9.5px !important;
+      margin-bottom: 2px !important;
+    }
+    .wizard-capture-title {
+      font-size: 15px !important;
+      margin: 0 0 2px 0 !important;
+    }
+    .wizard-capture-desc {
+      font-size: 11px !important;
+      margin: 0 0 6px 0 !important;
+    }
+    .wizard-capture-wheel-box {
+      width: 172px !important;
+      height: 172px !important;
+      margin: 0 auto 6px !important;
+    }
+    .wizard-capture-wheel-box #guidedPercentText {
+      font-size: 24px !important;
+    }
+    .wizard-capture-wheel-box #guidedRotText {
+      font-size: 9.5px !important;
+      margin-top: 2px !important;
+    }
+    .wizard-speed-pill-box {
+      padding: 3px 10px !important;
+      margin-bottom: 6px !important;
+    }
+    .wizard-speed-pill-box span#guidedStatusPill {
+      font-size: 10.5px !important;
+    }
+    .wizard-capture-buttons-box {
+      gap: 5px !important;
+      max-width: 320px !important;
+      margin: 0 auto !important;
+    }
+    .wizard-capture-buttons-box button {
+      padding: 6px 8px !important;
+      font-size: 11px !important;
+      height: 32px !important;
+    }
+    .wizard-capture-buttons-box #btnStartGuidedCapture {
+      width: 100% !important;
+      padding: 7px 12px !important;
+      font-size: 11.5px !important;
+      height: 34px !important;
+    }
+    .wizard-capture-sub-buttons-row {
+      display: flex !important;
+      gap: 5px !important;
+      width: 100% !important;
+    }
+    .wizard-capture-sub-buttons-row button {
+      flex: 1 !important;
+    }
+    .wizard-capture-buttons-box #btnUploadPhotos {
+      width: 100% !important;
+    }
+
+    /* Compact upload layout */
+    .wizard-upload-header-step {
+      font-size: 9.5px !important;
+      margin-bottom: 2px !important;
+    }
+    .wizard-upload-title {
+      font-size: 15px !important;
+      margin: 0 0 2px 0 !important;
+    }
+    .wizard-upload-desc {
+      font-size: 11px !important;
+      margin: 0 0 4px 0 !important;
+    }
+    .wizard-upload-circle-box {
+      width: 116px !important;
+      height: 116px !important;
+      margin: 0 auto 4px !important;
+    }
+    .wizard-upload-circle-box #uploadCountBadge {
+      font-size: 19px !important;
+    }
+    .wizard-upload-circle-box div:nth-child(2) {
+      font-size: 8px !important;
+      margin-top: 1px !important;
+    }
+    .wizard-upload-circle-box #uploadStatusSubtext {
+      font-size: 7.5px !important;
+      margin-top: 1px !important;
+    }
+    #uploadThumbnailStrip {
+      max-width: 310px !important;
+      margin: 0 auto 4px !important;
+      gap: 3px !important;
+    }
+    .wizard-upload-actions-box {
+      max-width: 310px !important;
+      gap: 4px !important;
+    }
+    #btnSelectPhotos {
+      height: 30px !important;
+      font-size: 11px !important;
+    }
+    #btnCreate3dBooth {
+      height: 32px !important;
+      font-size: 11.5px !important;
+    }
+    #btnResetPhotos, #btnBackToCapture {
+      height: 28px !important;
+      font-size: 10.5px !important;
+    }
+  }
+</style>
+
 <!-- C12.0-P0: ONE-QUESTION SETUP WIZARD MODAL -->
 <div id="setupWizardModal" style="display: none; position: fixed; inset: 0; z-index: 220; background: rgba(2, 6, 23, 0.88); backdrop-filter: blur(12px); align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif;">
-  <div style="background: #09101d; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 16px; width: 95%; max-width: 680px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.85);">
+  <div class="wizard-dialog-box" style="background: #09101d; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 16px; width: 95%; max-width: 680px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.85);">
 
-    <div style="padding: 16px 22px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.5);">
+    <div class="wizard-header-bar" style="padding: 16px 22px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.5);">
       <div>
-        <div style="font-size: 13px; font-weight: 800; color: #f8fafc; letter-spacing: 0.3px;">360° BOOTH TOUR WIZARD</div>
+        <div class="wizard-main-title" style="font-size: 13px; font-weight: 800; color: #f8fafc; letter-spacing: 0.3px;">360° BOOTH TOUR WIZARD</div>
         <div id="wizardStepIndicator" style="font-size: 10.5px; font-weight: 600; color: #38bdf8;">Step 1 of 12 — Welcome</div>
       </div>
       <div style="display: flex; align-items: center; gap: 12px;">
@@ -19516,7 +19681,7 @@ function openAiEnhanceBoothModal() {
     <div id="wizardStepContent" style="padding: 24px 28px; flex: 1; overflow-y: auto; color: #e2e8f0; min-height: 380px;">
     </div>
 
-    <div style="padding: 14px 24px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.4);">
+    <div class="wizard-footer-bar" style="padding: 14px 24px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.4);">
       <button type="button" id="wizardBtnBack" onclick="setupWizard.prevStep()" style="padding: 8px 16px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 8px; cursor: pointer; display: none;">
         <i class="fa-solid fa-arrow-left"></i> Back
       </button>
@@ -22735,18 +22900,18 @@ class SetupWizardController {
 
     this.content.innerHTML = `
       <div id="dedicatedUploadPage" style="text-align: center; max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; padding: 0 8px;">
-        <div style="font-size: 11px; font-weight: 800; color: #06b6d4; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">
+        <div class="wizard-upload-header-step" style="font-size: 11px; font-weight: 800; color: #06b6d4; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">
           <i class="fa-solid fa-cloud-arrow-up" style="margin-right: 6px;"></i> STEP 6 OF 12: PHOTO UPLOAD
         </div>
-        <h2 style="font-size: 20px; font-weight: 800; color: #fff; margin: 0 0 4px 0; letter-spacing: -0.02em;">
+        <h2 class="wizard-upload-title" style="font-size: 20px; font-weight: 800; color: #fff; margin: 0 0 4px 0; letter-spacing: -0.02em;">
           UPLOAD PHOTOS
         </h2>
-        <p style="font-size: 13px; color: #94a3b8; margin: 0 0 12px 0; line-height: 1.4;">
+        <p class="wizard-upload-desc" style="font-size: 13px; color: #94a3b8; margin: 0 0 12px 0; line-height: 1.4;">
           Add 8–12 views of your booth.
         </p>
 
         <!-- 12-Segment Circular Photo Indicator -->
-        <div style="position: relative; width: 190px; height: 190px; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center;">
+        <div class="wizard-upload-circle-box" style="position: relative; width: 190px; height: 190px; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center;">
           <svg id="uploadSegmentsSvg" viewBox="0 0 200 200" style="width: 100%; height: 100%; transform: rotate(-90deg);">
             ${segmentsSvg}
           </svg>
@@ -22778,7 +22943,7 @@ class SetupWizardController {
         <input type="file" id="uploadSlotFileInput" accept="image/jpeg,image/png,image/webp" style="display: none;" onchange="setupWizard.handleSlotFileReplace(event)">
 
         <!-- Action Buttons -->
-        <div style="display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 360px; margin: 0 auto;">
+        <div class="wizard-upload-actions-box" style="display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 360px; margin: 0 auto;">
           <button type="button" id="btnSelectPhotos" onclick="document.getElementById('uploadFileInput').click()" style="width: 100%; height: 42px; background: rgba(6, 182, 212, 0.15); border: 1px solid #06b6d4; border-radius: 8px; color: #22d3ee; font-size: 13px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-transform: uppercase;">
             <i class="fa-solid fa-images"></i> SELECT PHOTOS
           </button>
@@ -23261,18 +23426,18 @@ class SetupWizardController {
     const vp = this.state.viewpoints[0];
     this.content.innerHTML = `
       <div style="text-align: center; max-width: 580px; margin: 0 auto;">
-        <div style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">
+        <div class="wizard-capture-header-step" style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">
           <i class="fa-solid fa-compass" style="margin-right: 6px;"></i> STEP 6 OF 12: 360° GUIDED CAPTURE
         </div>
-        <h2 style="font-size: 20px; font-weight: 800; color: #fff; margin: 0 0 4px 0; letter-spacing: -0.02em;">
+        <h2 class="wizard-capture-title" style="font-size: 20px; font-weight: 800; color: #fff; margin: 0 0 4px 0; letter-spacing: -0.02em;">
           360° CAPTURE
         </h2>
-        <p style="font-size: 13px; color: #94a3b8; margin: 0 0 14px 0; line-height: 1.4;">
+        <p class="wizard-capture-desc" style="font-size: 13px; color: #94a3b8; margin: 0 0 14px 0; line-height: 1.4;">
           Follow the guide to capture your booth.
         </p>
 
         <!-- CAMERA VIEWPORT / CAPTURE WHEEL -->
-        <div style="position: relative; width: 280px; height: 280px; margin: 0 auto 16px; border-radius: 50%; background: #020617; border: 2px solid rgba(56, 189, 248, 0.4); box-shadow: 0 0 40px rgba(2, 132, 199, 0.25); overflow: hidden; display: flex; align-items: center; justify-content: center;">
+        <div class="wizard-capture-wheel-box" style="position: relative; width: 280px; height: 280px; margin: 0 auto 16px; border-radius: 50%; background: #020617; border: 2px solid rgba(56, 189, 248, 0.4); box-shadow: 0 0 40px rgba(2, 132, 199, 0.25); overflow: hidden; display: flex; align-items: center; justify-content: center;">
           <video id="guidedCaptureVideo" playsinline autoplay muted style="position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: 0.85; z-index: 1; transform: scaleX(1);"></video>
 
           <svg id="guidedCaptureWheelSvg" viewBox="0 0 200 200" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none;">
@@ -23289,22 +23454,24 @@ class SetupWizardController {
         </div>
 
         <!-- SPEED & GUIDANCE PILL -->
-        <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 6px 16px; margin-bottom: 16px;">
+        <div class="wizard-speed-pill-box" style="display: inline-flex; align-items: center; gap: 8px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 6px 16px; margin-bottom: 16px;">
           <span id="guidedSpeedDot" style="width: 8px; height: 8px; border-radius: 50%; background: #34d399; box-shadow: 0 0 8px #34d399;"></span>
           <span id="guidedStatusPill" style="font-size: 12px; font-weight: 700; color: #f8fafc;">Ready to start circle</span>
         </div>
 
         <!-- CONTROLS & DIAGNOSTICS -->
-        <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center;">
+        <div class="wizard-capture-buttons-box" style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center;">
           <button type="button" id="btnStartGuidedCapture" onclick="setupWizard.startGuidedCapture()" style="background: linear-gradient(135deg, #0284c7, #2563eb); border: 1px solid #38bdf8; color: #fff; font-size: 13px; font-weight: 800; border-radius: 8px; padding: 10px 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
             <i class="fa-solid fa-play"></i> START 360° CAPTURE
           </button>
-          <button type="button" id="btnRetakeCapture" onclick="setupWizard.retryGuidedCapture()" style="background: rgba(30, 41, 59, 0.8); border: 1px solid #475569; color: #cbd5e1; font-size: 13px; font-weight: 700; border-radius: 8px; padding: 10px 18px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
-            <i class="fa-solid fa-rotate-right"></i> RETAKE
-          </button>
-          <button type="button" id="btnHowToCapture" onclick="setupWizard.openHowToCaptureModal()" style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; font-size: 13px; font-weight: 700; border-radius: 8px; padding: 10px 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
-            <i class="fa-solid fa-circle-question"></i> How to Capture
-          </button>
+          <div class="wizard-capture-sub-buttons-row" style="display: flex; gap: 10px;">
+            <button type="button" id="btnRetakeCapture" onclick="setupWizard.retryGuidedCapture()" style="background: rgba(30, 41, 59, 0.8); border: 1px solid #475569; color: #cbd5e1; font-size: 13px; font-weight: 700; border-radius: 8px; padding: 10px 18px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-rotate-right"></i> RETAKE
+            </button>
+            <button type="button" id="btnHowToCapture" onclick="setupWizard.openHowToCaptureModal()" style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; font-size: 13px; font-weight: 700; border-radius: 8px; padding: 10px 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-circle-question"></i> How to Capture
+            </button>
+          </div>
           <button type="button" id="btnUploadPhotos" onclick="setupWizard.openDedicatedUploadPage()" style="background: rgba(6, 182, 212, 0.15); border: 1px solid #06b6d4; color: #22d3ee; font-size: 13px; font-weight: 700; border-radius: 8px; padding: 10px 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
             <i class="fa-solid fa-cloud-arrow-up"></i> UPLOAD PHOTOS
           </button>
