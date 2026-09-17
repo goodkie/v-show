@@ -100,6 +100,18 @@ var RedactionEngine = class RedactionEngine {
       return `${p1}=[REDACTED_SECRET]`;
     });
 
+    // Always redact API keys and secrets (sk_live_, rk_live_, api_key_, etc.)
+    sanitized = sanitized.replace(/(?:api[_-]?key(?:[_-]?secret)?|sk_live|rk_live)[_-][a-zA-Z0-9_\-]+/gi, () => {
+      this.redactionCount++;
+      return '[REDACTED_API_KEY]';
+    });
+
+    // Redact raw cookies in strings or headers
+    sanitized = sanitized.replace(/(?:cookie|session_id_cookie)=[a-zA-Z0-9_\-]+/gi, () => {
+      this.redactionCount++;
+      return 'cookie=[REDACTED_COOKIE]';
+    });
+
     // Always redact Bearer tokens
     sanitized = sanitized.replace(this.bearerRegex, () => {
       this.redactionCount++;
@@ -132,7 +144,7 @@ var RedactionEngine = class RedactionEngine {
       const dummyBase = 'https://runtime-inspector.internal';
       const parsed = new URL(rawUrl, dummyBase);
 
-      const sensitiveParams = ['token', 'key', 'auth', 'signature', 'sig', 'secret', 'password', 'code', 'session'];
+      const sensitiveParams = ['token', 'key', 'auth', 'signature', 'sig', 'secret', 'password', 'code', 'session', 'cookie', 'sess'];
       parsed.searchParams.forEach((val, key) => {
         if (sensitiveParams.some(p => key.toLowerCase().includes(p)) || this.privacyMode === 'STRICT') {
           parsed.searchParams.set(key, '[REDACTED]');
@@ -140,10 +152,10 @@ var RedactionEngine = class RedactionEngine {
         }
       });
 
-      if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
-        return parsed.toString();
-      }
-      return parsed.pathname + parsed.search + parsed.hash;
+      const formatted = (rawUrl.startsWith('http://') || rawUrl.startsWith('https://'))
+        ? parsed.toString()
+        : (parsed.pathname + parsed.search + parsed.hash);
+      return this.sanitizeString(formatted);
     } catch (e) {
       return this.sanitizeString(rawUrl);
     }

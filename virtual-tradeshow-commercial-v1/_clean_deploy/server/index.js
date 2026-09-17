@@ -1082,7 +1082,7 @@ const healthHandler = (req, res) => {
     schemaVersion: 5,
     stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
-    uiVersion: '3D2-C12.9-P2R17-DEV4',
+    uiVersion: '3D2-C12.9-P2R17-DEV5',
     storageRoot: GUIDED_CAPTURE_STORAGE_ROOT,
     storageRootExists: STORAGE_ROOT_EXISTS,
     storageRootWritable: STORAGE_ROOT_WRITABLE,
@@ -1113,11 +1113,13 @@ try {
           if (typeof s !== 'string') return s;
           return s.replace(/eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}/g, '[REDACTED_JWT]')
                   .replace(/Bearer\s+[^\s]+/gi, 'Bearer [REDACTED_TOKEN]')
-                  .replace(/tok-cap-[a-zA-Z0-9-]+/gi, '[REDACTED_TOKEN]');
+                  .replace(/tok-cap-[a-zA-Z0-9-]+/gi, '[REDACTED_TOKEN]')
+                  .replace(/(?:api[_-]?key(?:[_-]?secret)?|sk_live|rk_live)[_-][a-zA-Z0-9_\-]+/gi, '[REDACTED_API_KEY]')
+                  .replace(/(?:cookie|session_id_cookie)=[a-zA-Z0-9_\-]+/gi, 'cookie=[REDACTED_COOKIE]');
         }
         sanitizeUrl(u) {
           if (!u || typeof u !== 'string') return u;
-          return u.replace(/([?&](?:token|key|secret|auth|signature)=)[^&]+/gi, '$1[REDACTED]');
+          return u.replace(/([?&](?:token|key|secret|auth|signature|cookie|session)=)[^&]+/gi, '$1[REDACTED]');
         }
         sanitizeObject(o) {
           if (!o || typeof o !== 'object') return typeof o === 'string' ? this.sanitizeString(o) : o;
