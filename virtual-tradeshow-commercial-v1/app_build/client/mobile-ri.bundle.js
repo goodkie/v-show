@@ -40,6 +40,7 @@
         // Hardcoded secret keywords that must NEVER leak in ANY privacy mode
         this.secretKeyPatterns = [
           /authorization/i,
+          /\bauth/i,
           /bearer/i,
           /cookie/i,
           /set-cookie/i,
@@ -49,12 +50,13 @@
           /passcode/i,
           /otp/i,
           /passwd/i,
+          /api[_-]?key/i,
           /apikey/i,
-          /api_key/i,
-          /private_key/i,
+          /private[_-]?key/i,
+          /privatekey/i,
           /credential/i,
-          /session_token/i,
-          /session_secret/i,
+          /session[_-]?token/i,
+          /session[_-]?secret/i,
           /sessiontoken/i,
           /jwt/i,
           /stripe/i,
@@ -115,6 +117,14 @@
           return '[REDACTED_TOKEN]';
         });
 
+        // Always redact PEM private key blocks (RSA, EC, OPENSSH, DSA, PRIVATE KEY)
+        // Supports raw newlines, JSON-escaped newlines (\n, \\n), and URL-encoded newlines (%0A, %0D)
+        const pemRegex = /(?:%2D%2D%2D%2D%2D|-----)BEGIN(?:[A-Z0-9_\- ]+)?PRIVATE(?:[A-Z0-9_\- ]+)?KEY(?:%2D%2D%2D%2D%2D|-----)(?:[\s\S]|\\n|%0A|%0D)*?(?:%2D%2D%2D%2D%2D|-----)END(?:[A-Z0-9_\- ]+)?PRIVATE(?:[A-Z0-9_\- ]+)?KEY(?:%2D%2D%2D%2D%2D|-----)/gi;
+        sanitized = sanitized.replace(pemRegex, () => {
+          this.redactionCount++;
+          return '[REDACTED_PRIVATE_KEY]';
+        });
+
         // Redact inline key=value secret patterns
         sanitized = sanitized.replace(this.inlineSecretRegex, (match, p1) => {
           this.redactionCount++;
@@ -161,11 +171,15 @@
       sanitizeUrl(rawUrl) {
         if (!rawUrl || typeof rawUrl !== 'string') return rawUrl;
         try {
+          // Decode check for URL-encoded secrets
+          let decoded = rawUrl;
+          try { decoded = decodeURIComponent(rawUrl); } catch (e) {}
+
           // Parse relative or absolute
           const dummyBase = 'https://runtime-inspector.internal';
           const parsed = new URL(rawUrl, dummyBase);
 
-          const sensitiveParams = ['token', 'key', 'auth', 'signature', 'sig', 'secret', 'password', 'code', 'session', 'cookie', 'sess'];
+          const sensitiveParams = ['token', 'key', 'auth', 'signature', 'sig', 'secret', 'password', 'code', 'session', 'cookie', 'sess', 'credential', 'private'];
           parsed.searchParams.forEach((val, key) => {
             if (sensitiveParams.some(p => key.toLowerCase().includes(p)) || this.privacyMode === 'STRICT') {
               parsed.searchParams.set(key, '[REDACTED]');

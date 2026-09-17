@@ -1082,7 +1082,7 @@ const healthHandler = (req, res) => {
     schemaVersion: 5,
     stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
-    uiVersion: '3D2-C12.9-P2R17-DEV5',
+    uiVersion: '3D2-C12.9-P2R17-DEV6',
     storageRoot: GUIDED_CAPTURE_STORAGE_ROOT,
     storageRootExists: STORAGE_ROOT_EXISTS,
     storageRootWritable: STORAGE_ROOT_WRITABLE,
@@ -1111,7 +1111,9 @@ try {
         constructor() { this.redactionCount = 0; }
         sanitizeString(s) {
           if (typeof s !== 'string') return s;
-          return s.replace(/eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}/g, '[REDACTED_JWT]')
+          const pemRegex = /(?:%2D%2D%2D%2D%2D|-----)BEGIN(?:[A-Z0-9_\- ]+)?PRIVATE(?:[A-Z0-9_\- ]+)?KEY(?:%2D%2D%2D%2D%2D|-----)(?:[\s\S]|\\n|%0A|%0D)*?(?:%2D%2D%2D%2D%2D|-----)END(?:[A-Z0-9_\- ]+)?PRIVATE(?:[A-Z0-9_\- ]+)?KEY(?:%2D%2D%2D%2D%2D|-----)/gi;
+          return s.replace(pemRegex, '[REDACTED_PRIVATE_KEY]')
+                  .replace(/eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}/g, '[REDACTED_JWT]')
                   .replace(/Bearer\s+[^\s]+/gi, 'Bearer [REDACTED_TOKEN]')
                   .replace(/tok-cap-[a-zA-Z0-9-]+/gi, '[REDACTED_TOKEN]')
                   .replace(/(?:api[_-]?key(?:[_-]?secret)?|sk_live|rk_live)[_-][a-zA-Z0-9_\-]+/gi, '[REDACTED_API_KEY]')
@@ -1119,13 +1121,13 @@ try {
         }
         sanitizeUrl(u) {
           if (!u || typeof u !== 'string') return u;
-          return u.replace(/([?&](?:token|key|secret|auth|signature|cookie|session)=)[^&]+/gi, '$1[REDACTED]');
+          return u.replace(/([?&](?:token|key|secret|auth|signature|cookie|session|credential|private)=)[^&]+/gi, '$1[REDACTED]');
         }
         sanitizeObject(o) {
           if (!o || typeof o !== 'object') return typeof o === 'string' ? this.sanitizeString(o) : o;
           const res = Array.isArray(o) ? [] : {};
           for (const [k, v] of Object.entries(o)) {
-            if (/token|secret|password|auth|cookie|key|jwt/i.test(k) && typeof v === 'string') {
+            if (/token|secret|password|auth|cookie|key|jwt|private/i.test(k) && typeof v === 'string') {
               res[k] = '[REDACTED_SECRET]';
             } else if (typeof v === 'string') {
               res[k] = this.sanitizeUrl(this.sanitizeString(v));
