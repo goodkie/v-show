@@ -23106,8 +23106,8 @@ class SetupWizardController {
           <input type="file" id="step6PhotoInput" multiple accept="image/jpeg,image/png,image/webp" style="display: none;" onchange="setupWizard.onPhotosSelected(this)">
 
           <div id="albumUploadStatus" style="display: none; font-size: 11px; color: #cbd5e1; margin-top: 6px; align-items: center; justify-content: center; gap: 8px;">
-            <span id="albumUploadCount">0 photos selected</span>
-            <button type="button" id="btnCreateBoothAlbum" onclick="setupWizard.create3dBoothFromPhotos()" style="background: linear-gradient(135deg, #0284c7, #10b981); border: 1px solid #38bdf8; color: #fff; font-size: 11px; font-weight: 800; border-radius: 6px; padding: 4px 12px; cursor: pointer;">CREATE 3D BOOTH</button>
+            <span id="albumUploadCount">0/12 PHOTOS</span>
+            <button type="button" id="btnCreateBoothAlbum" onclick="setupWizard.create3dBoothFromPhotos()" style="background: linear-gradient(135deg, #0284c7, #10b981); border: 1px solid #38bdf8; color: #fff; font-size: 11px; font-weight: 800; border-radius: 6px; padding: 4px 12px; cursor: not-allowed; opacity: 0.5;" disabled>CREATE 3D BOOTH</button>
           </div>
         </div>
 
@@ -23306,7 +23306,7 @@ class SetupWizardController {
           pillDot.style.background = '#00d4ff';
           pillDot.style.boxShadow = '0 0 8px #00d4ff';
         }
-        if (pillText) {
+        if (pillText && !s.autoCaptureTimer) {
           pillText.textContent = 'STOP';
         }
 
@@ -23339,6 +23339,7 @@ class SetupWizardController {
   resetStability() {
     const s = this._capture12State;
     if (!s) return;
+    s.countdownToken = (s.countdownToken || 0) + 1;
     s.stableStartTime = null;
     const stabilityRing = document.getElementById('captureStabilityRing');
     if (stabilityRing) {
@@ -23356,31 +23357,37 @@ class SetupWizardController {
 
   startAutoCaptureCountdown() {
     const s = this._capture12State;
-    if (!s || s.autoCaptureTimer) return;
+    if (!s || s.autoCaptureTimer || s.isProcessing) return;
+
+    const currentToken = (s.countdownToken || 0) + 1;
+    s.countdownToken = currentToken;
 
     const hudCountdown = document.getElementById('captureHudCountdown');
     const pillText = document.getElementById('captureStatusText');
 
-    let count = 2;
+    let count = 3;
     if (hudCountdown) {
       hudCountdown.textContent = count;
       hudCountdown.style.display = 'block';
     }
-    if (pillText) pillText.textContent = 'HOLD STILL · ' + count;
+    if (pillText) pillText.textContent = 'AUTO CAPTURE · ' + count;
 
     const tick = () => {
+      if (!this._capture12State || this._capture12State.countdownToken !== currentToken) {
+        return;
+      }
       count--;
       if (count > 0) {
         if (hudCountdown) hudCountdown.textContent = count;
-        if (pillText) pillText.textContent = 'HOLD STILL · ' + count;
-        s.autoCaptureTimer = setTimeout(tick, 350);
+        if (pillText) pillText.textContent = 'AUTO CAPTURE · ' + count;
+        s.autoCaptureTimer = setTimeout(tick, 1000);
       } else {
         if (hudCountdown) hudCountdown.style.display = 'none';
         s.autoCaptureTimer = null;
         this.executeStillCapture();
       }
     };
-    s.autoCaptureTimer = setTimeout(tick, 350);
+    s.autoCaptureTimer = setTimeout(tick, 1000);
   }
 
   triggerManualCapture() {
@@ -23425,7 +23432,8 @@ class SetupWizardController {
 
   executeStillCapture() {
     const s = this._capture12State;
-    if (!s || s.isProcessing) return;
+    if (!s || s.isProcessing || s._isCapturing) return;
+    s._isCapturing = true;
 
     const video = document.getElementById('guidedCaptureVideo');
     const flash = document.getElementById('captureFlashOverlay');
@@ -23455,6 +23463,7 @@ class SetupWizardController {
     const angleDeg = currentTarget * 30;
 
     canvas.toBlob((blob) => {
+      s._isCapturing = false;
       if (!blob) return;
       const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
 
@@ -23478,6 +23487,9 @@ class SetupWizardController {
       const count = s.capturedFrames.length;
       const counterEl = document.getElementById('captureCounterNum');
       if (counterEl) counterEl.textContent = count;
+
+      const pillText = document.getElementById('captureStatusText');
+      if (pillText) pillText.textContent = count + '/12 CAPTURED';
 
       if (count < 12) {
         let nextIdx = (currentTarget + 1) % 12;
@@ -23658,32 +23670,62 @@ class SetupWizardController {
   }
 
   onPhotosSelected(input) {
-    const files = Array.from(input.files || []);
-    if (!files.length) return;
+    const rawFiles = Array.from(input.files || []);
+    if (!rawFiles.length) return;
+
+    const validMimes = ['image/jpeg', 'image/png', 'image/webp'];
+    const validExts = /\.(jpe?g|png|webp)$/i;
+    const validFiles = rawFiles.filter(f => {
+      return (f.type && validMimes.includes(f.type.toLowerCase())) || validExts.test(f.name || '');
+    });
 
     const statusDiv = document.getElementById('albumUploadStatus');
     const countEl = document.getElementById('albumUploadCount');
     const createBtn = document.getElementById('btnCreateBoothAlbum');
     const strip = document.getElementById('captureThumbStrip');
 
-    if (files.length < 8) {
-      alert('Please select at least 8 photos (8–12 recommended for full 360° coverage).');
-      return;
-    }
-    if (files.length > 16) {
-      alert('Maximum 16 photos allowed. Please select between 8 and 16 photos.');
+    if (!validFiles.length) {
+      alert('Please select valid JPEG, PNG, or WebP images.');
+      input.value = '';
+      if (createBtn) {
+        createBtn.disabled = true;
+        createBtn.style.opacity = '0.5';
+        createBtn.style.cursor = 'not-allowed';
+      }
       return;
     }
 
-    this._capture12State.selectedAlbumFiles = files;
+    let filesToUse = validFiles;
+    let exceededMax = false;
+    if (validFiles.length > 12) {
+      filesToUse = validFiles.slice(0, 12);
+      exceededMax = true;
+    }
+
+    this._capture12State.selectedAlbumFiles = filesToUse;
 
     if (statusDiv) statusDiv.style.display = 'inline-flex';
-    if (countEl) countEl.textContent = files.length + ' photos selected (8–12 recommended)';
-    if (createBtn) createBtn.disabled = false;
+
+    const count = filesToUse.length;
+    if (countEl) {
+      countEl.textContent = count + '/12 PHOTOS';
+    }
+
+    if (createBtn) {
+      if (count >= 8 && count <= 12) {
+        createBtn.disabled = false;
+        createBtn.style.opacity = '1';
+        createBtn.style.cursor = 'pointer';
+      } else {
+        createBtn.disabled = true;
+        createBtn.style.opacity = '0.5';
+        createBtn.style.cursor = 'not-allowed';
+      }
+    }
 
     if (strip) {
       strip.innerHTML = '';
-      files.slice(0, 12).forEach((file, i) => {
+      filesToUse.forEach((file, i) => {
         const url = URL.createObjectURL(file);
         const img = document.createElement('img');
         img.src = url;
@@ -23694,18 +23736,30 @@ class SetupWizardController {
     }
 
     const counterEl = document.getElementById('captureCounterNum');
-    if (counterEl) counterEl.textContent = files.length;
+    if (counterEl) counterEl.textContent = count;
+
+    if (exceededMax) {
+      alert('You can upload up to 12 photos.');
+    }
   }
 
   async create3dBoothFromPhotos() {
-    const files = this._capture12State && this._capture12State.selectedAlbumFiles;
-    if (!files || files.length < 8) {
-      alert('Please select at least 8 photos.');
+    const s = this._capture12State;
+    if (!s || s.isProcessing) return;
+
+    const files = s.selectedAlbumFiles;
+    if (!files || files.length < 8 || files.length > 12) {
+      alert('Please select between 8 and 12 photos.');
       return;
     }
 
-    const s = this._capture12State;
     s.isProcessing = true;
+    const createBtn = document.getElementById('btnCreateBoothAlbum');
+    if (createBtn) {
+      createBtn.disabled = true;
+      createBtn.style.opacity = '0.5';
+      createBtn.style.cursor = 'not-allowed';
+    }
 
     const overlay = document.getElementById('captureProcessingOverlay');
     const video = document.getElementById('guidedCaptureVideo');
@@ -23722,13 +23776,13 @@ class SetupWizardController {
 
     try {
       const formData = new FormData();
-      files.forEach((file, idx) => {
+      files.slice(0, 12).forEach((file, idx) => {
         formData.append('photos', file, file.name || ('album_photo_' + idx + '.jpg'));
         formData.append('slot_' + idx, 'SLOT_' + idx);
       });
       formData.append('metadata', JSON.stringify({
         source: 'ALBUM_UPLOAD',
-        count: files.length,
+        count: Math.min(files.length, 12),
         timestamp: Date.now()
       }));
 
@@ -23747,6 +23801,12 @@ class SetupWizardController {
     } catch (err) {
       console.error('[AlbumUpload] 3D Booth generation error:', err);
       if (pStage) pStage.textContent = 'Upload error: ' + (err.message || 'Please try again');
+      s.isProcessing = false;
+      if (createBtn) {
+        createBtn.disabled = false;
+        createBtn.style.opacity = '1';
+        createBtn.style.cursor = 'pointer';
+      }
     }
   }
 
@@ -23759,6 +23819,7 @@ class SetupWizardController {
       s.currentTargetIndex = 0;
       s.startHeading = s.currentHeading;
       s.isProcessing = false;
+      s._isCapturing = false;
       s.selectedAlbumFiles = [];
     }
 
@@ -23766,6 +23827,16 @@ class SetupWizardController {
     if (strip) strip.innerHTML = '';
     const counterEl = document.getElementById('captureCounterNum');
     if (counterEl) counterEl.textContent = '0';
+    const input = document.getElementById('step6PhotoInput');
+    if (input) input.value = '';
+    const countEl = document.getElementById('albumUploadCount');
+    if (countEl) countEl.textContent = '0/12 PHOTOS';
+    const createBtn = document.getElementById('btnCreateBoothAlbum');
+    if (createBtn) {
+      createBtn.disabled = true;
+      createBtn.style.opacity = '0.5';
+      createBtn.style.cursor = 'not-allowed';
+    }
     const statusDiv = document.getElementById('albumUploadStatus');
     if (statusDiv) statusDiv.style.display = 'none';
     const overlay = document.getElementById('captureProcessingOverlay');
