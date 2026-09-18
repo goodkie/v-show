@@ -19709,6 +19709,128 @@ function openAiEnhanceBoothModal() {
       font-size: 11px !important;
     }
   }
+
+  /* V4.4 Two-column compact dedicated upload layout for short mobile-landscape screens (844x390, 568x320, 667x375, 740x360, 915x412) */
+  @media (max-height: 500px) and (orientation: landscape), (max-height: 480px) and (min-width: 480px) {
+    #setupWizardModal.wizard-photo-upload-active {
+      padding: 2px 6px !important;
+      align-items: center !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active .wizard-dialog-box {
+      max-height: calc(100vh - 4px) !important;
+      width: 98% !important;
+      max-width: 820px !important;
+      border-radius: 8px !important;
+      margin: auto !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active .wizard-header-bar {
+      padding: 4px 12px !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active .wizard-main-title {
+      font-size: 11px !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active #wizardStepIndicator {
+      font-size: 9px !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active #wizardStepContent {
+      padding: 4px 12px !important;
+      min-height: unset !important;
+      overflow: hidden !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active .wizard-footer-bar {
+      padding: 4px 12px !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active #wizardBtnLater {
+      padding: 3px 8px !important;
+      font-size: 10px !important;
+    }
+
+    /* Two column grid on dedicatedUploadPage */
+    #setupWizardModal.wizard-photo-upload-active #dedicatedUploadPage {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      grid-column-gap: 16px !important;
+      grid-row-gap: 1px !important;
+      max-width: 760px !important;
+      margin: 0 auto !important;
+      padding: 0 4px !important;
+      align-items: center !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active .wizard-upload-header-step {
+      grid-column: 1 !important;
+      font-size: 8.5px !important;
+      margin-bottom: 0px !important;
+      line-height: 1.1 !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active .wizard-upload-title {
+      grid-column: 1 !important;
+      font-size: 13px !important;
+      margin: 0 0 1px 0 !important;
+      line-height: 1.1 !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active .wizard-upload-desc {
+      grid-column: 1 !important;
+      font-size: 9.5px !important;
+      margin: 0 0 2px 0 !important;
+      line-height: 1.1 !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active .wizard-upload-circle-box {
+      grid-column: 1 !important;
+      width: 68px !important;
+      height: 68px !important;
+      margin: 0 auto 2px !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active .wizard-upload-circle-box #uploadCountBadge {
+      font-size: 14px !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active .wizard-upload-circle-box div:nth-child(2) {
+      font-size: 7px !important;
+      margin-top: 0px !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active .wizard-upload-circle-box #uploadStatusSubtext {
+      display: none !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active #uploadNoticeAlert {
+      grid-column: 1 !important;
+      padding: 2px 6px !important;
+      font-size: 9px !important;
+      margin-bottom: 2px !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active #uploadThumbnailStrip {
+      grid-column: 1 !important;
+      max-width: 300px !important;
+      margin: 0 auto 0 !important;
+      gap: 2px !important;
+      padding: 0 !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active #uploadThumbnailStrip > div {
+      border-radius: 4px !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active .wizard-upload-actions-box {
+      grid-column: 2 !important;
+      grid-row: 1 / span 7 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+      max-width: 280px !important;
+      gap: 6px !important;
+      margin: auto !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active #btnSelectPhotos {
+      height: 30px !important;
+      font-size: 11px !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active #btnCreate3dBooth {
+      height: 32px !important;
+      font-size: 11.5px !important;
+    }
+    #setupWizardModal.wizard-photo-upload-active #btnResetPhotos,
+    #setupWizardModal.wizard-photo-upload-active #btnBackToCapture {
+      height: 26px !important;
+      font-size: 10px !important;
+    }
+  }
+
 </style>
 
 <!-- C12.0-P0: ONE-QUESTION SETUP WIZARD MODAL -->
