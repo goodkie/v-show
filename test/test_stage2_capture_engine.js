@@ -397,7 +397,7 @@ test('[T14] Manual upload normalization: UNKNOWN orientation, null yaw, schema 5
   const manifest = Stage2CaptureEngine.normalizeManualUploads(mockUploads);
 
   assert.strictEqual(manifest.schemaVersion, 5);
-  assert.strictEqual(manifest.sourceType, 'MANUAL_PHOTO_UPLOAD');
+  assert.strictEqual(manifest.sourceType, 'MANUAL_UPLOAD');
   assert.strictEqual(manifest.frameCount, 8);
   assert.strictEqual(manifest.c12_7_ringConstraintPreserved, true);
 

@@ -495,7 +495,7 @@ class Stage2CaptureEngine {
       const nextIdx = (idx + 1) % total;
       return {
         frameId: `upld-${String(idx + 1).padStart(2, '0')}`,
-        source: 'MANUAL_PHOTO_UPLOAD',
+        source: 'MANUAL_UPLOAD',
         order: idx + 1,
         imageHash: file.imageHash || `sha256:upload-${idx}-${Date.now()}`,
         timestamp: file.lastModified || Date.now(),
@@ -518,7 +518,7 @@ class Stage2CaptureEngine {
       $schema: 'https://vivshow.com/schemas/v1/normalized-capture-manifest.json',
       schemaVersion: 5,
       captureId: `cap-upload-${Date.now().toString(16)}`,
-      sourceType: 'MANUAL_PHOTO_UPLOAD',
+      sourceType: 'MANUAL_UPLOAD',
       createdAt: new Date().toISOString(),
       frameCount: total,
       c12_7_ringConstraintPreserved: true,

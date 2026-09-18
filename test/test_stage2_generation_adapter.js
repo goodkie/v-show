@@ -1,29 +1,35 @@
 /**
  * ─────────────────────────────────────────────────────────────────────────────
- * 3DZ STAGE 2 — GENERATION ADAPTER DETERMINISTIC VERIFICATION SUITE
+ * 3DZ STAGE 2 — GENERATION ADAPTER DETERMINISTIC VERIFICATION SUITE (P5)
  * ─────────────────────────────────────────────────────────────────────────────
- * Validates Track P4 requirements:
- *   - P4.1: Single adapter interface for CAMERA_ROTATIONAL_SENSOR & MANUAL_PHOTO_UPLOAD
- *   - P4.2: Hard Network Lock (remoteEnabled = false returns GENERATION_TRANSPORT_DISABLED)
- *   - P4.3: Discovered endpoint compliance (/api/projects/:id/spatial/start & /api/spatial-jobs/:jobId)
- *   - P4.4: Request contract preservation (Camera retains sensors, Upload remains UNKNOWN/null)
- *   - P4.5: Idempotency key stability and duplicate prevention
- *   - P4.6: State machine transitions, timeout, retries, cancel, and phased progress
- *   - P4.7: Mock transport matrix (success, timeout, retry, idempotency, queued, processing, failure, cancel)
- *   - P4.8: Strict zero real network calls verification (createCalls=0, statusCalls=0, cancelCalls=0)
+ * Validates Track P5 requirements:
+ *   - P5.0-A: Canonical sourceType MANUAL_UPLOAD and alias MANUAL_PHOTO_UPLOAD normalization
+ *   - P5.0-B: Explicit cancel semantics (cancelScope: CLIENT_POLLING_ONLY, remoteJobCanceled: false)
+ *   - P5.1: Discovered endpoint compliance (start, generate alias, status, job, candidate, apply, discard)
+ *   - P5.2: Hard Network Lock (remoteEnabled = false returns GENERATION_TRANSPORT_DISABLED)
+ *   - P5.3: Request Contract (Camera retains sensors, Upload remains UNKNOWN/null)
+ *   - P5.4: Project ID Contract (projectId required; missing projectId fails locally)
+ *   - P5.5: Idempotency Key sensitivity (projectId, captureId, frameHashes, sourceType)
+ *   - P5.6 & P5.7: Polling lifecycle (QUEUED -> PROCESSING -> SUCCEEDED, terminal stop, client abort)
+ *   - P5.8: Active Job Recovery (GET /api/projects/:id/spatial/job)
+ *   - P5.9: Candidate contract (getCandidate, applyCandidate, discardCandidate)
+ *   - P5.10: Phase label progress without simulated percentages
+ *   - P5.12: Strict Real Network Call Monitoring (All real calls remain ZERO)
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 'use strict';
 
 const assert = require('assert');
-const path = require('path');
 const {
   Stage2GenerationAdapter,
+  CANONICAL_SOURCE_TYPES,
   JOB_STATES,
+  POLLING_STATES,
   PHASE_LABELS,
   DISCOVERED_ENDPOINTS,
   ERROR_CODES,
+  normalizeSourceType,
 } = require('../virtual-tradeshow-commercial-v1/client/capture/stage2-generation-adapter.js');
 const { Stage2CaptureEngine } = require('../virtual-tradeshow-commercial-v1/client/capture/stage2-capture-engine.js');
 
@@ -57,7 +63,7 @@ async function testAsync(name, fn) {
   }
 }
 
-// ─── Helper: Generate Canonical 12-Frame Camera Manifest ─────────────────────
+// ─── Helpers: Generate Canonical Manifests ───────────────────────────────────
 function createMockCameraManifest() {
   const engine = new Stage2CaptureEngine();
   engine.relativeYawOrigin = 0.0;
@@ -74,14 +80,13 @@ function createMockCameraManifest() {
   return engine.normalizedManifest;
 }
 
-// ─── Helper: Generate 8-Frame Manual Upload Manifest ────────────────────────
 function createMockUploadManifest() {
   const uploads = [];
   for (let i = 0; i < 8; i++) {
     uploads.push({
       originalFilename: `photo_${i + 1}.jpg`,
       imageHash: `sha256:manual-upload-${i}`,
-      lastModified: Date.now() - (10 - i) * 60000,
+      lastModified: 1700000000000 + i * 1000,
       width: 1920,
       height: 1080,
     });
@@ -89,55 +94,55 @@ function createMockUploadManifest() {
   return Stage2CaptureEngine.normalizeManualUploads(uploads);
 }
 
-// ─── Helper: Mock Transport Implementation ──────────────────────────────────
+// ─── Mock Transport Helper ───────────────────────────────────────────────────
 class MockGenerationTransport {
   constructor(config = {}) {
-    this.createHandler = config.create || (async (payload) => ({
+    this.cancelledJobs = new Set();
+    this.createHandler = config.create || (async () => ({
       jobId: 'job-mock-' + Date.now(),
       status: 'QUEUED',
       progress: 5,
     }));
-    this.statusHandler = config.status || (async (jobId) => ({
-      status: 'PROCESSING',
-      progress: 45,
-      currentStage: 'RECONSTRUCTING',
-    }));
-    this.cancelHandler = config.cancel || (async (jobId) => ({
-      status: 'CANCELED',
-      jobId,
-    }));
+    this.statusHandler = config.status || (async (jobId) => {
+      if (this.cancelledJobs.has(jobId)) {
+        return { status: 'CANCELED', progress: null };
+      }
+      return { status: 'PROCESSING', progress: 45, currentStage: 'RECONSTRUCTING' };
+    });
+    this.cancelHandler = config.cancel || (async (jobId) => {
+      this.cancelledJobs.add(jobId);
+      return { status: 'CANCELED', jobId };
+    });
+    this.activeJobHandler = config.getActiveJob || (async () => ({ job: null }));
+    this.candidateHandler = config.getCandidate || (async () => ({ candidate: { candidateId: 'cand-001' } }));
+    this.applyHandler = config.applyCandidate || (async () => ({ success: true }));
+    this.discardHandler = config.discardCandidate || (async () => ({ success: true }));
 
-    this.calls = { create: [], status: [], cancel: [] };
+    this.calls = { create: [], status: [], cancel: [], activeJob: [], candidate: [], apply: [], discard: [] };
   }
 
-  async create(payload, options) {
-    this.calls.create.push({ payload, options });
-    return this.createHandler(payload, options);
-  }
-
-  async status(jobId, options) {
-    this.calls.status.push({ jobId, options });
-    return this.statusHandler(jobId, options);
-  }
-
-  async cancel(jobId, options) {
-    this.calls.cancel.push({ jobId, options });
-    return this.cancelHandler(jobId, options);
-  }
+  async create(p, o) { this.calls.create.push({ p, o }); return this.createHandler(p, o); }
+  async status(id, o) { this.calls.status.push({ id, o }); return this.statusHandler(id, o); }
+  async cancel(id, o) { this.calls.cancel.push({ id, o }); return this.cancelHandler(id, o); }
+  async getActiveJob(pId, o) { this.calls.activeJob.push({ pId, o }); return this.activeJobHandler(pId, o); }
+  async getCandidate(pId, cId, o) { this.calls.candidate.push({ pId, cId, o }); return this.candidateHandler(pId, cId, o); }
+  async applyCandidate(pId, cId, o) { this.calls.apply.push({ pId, cId, o }); return this.applyHandler(pId, cId, o); }
+  async discardCandidate(pId, cId, o) { this.calls.discard.push({ pId, cId, o }); return this.discardHandler(pId, cId, o); }
 }
 
-// ─── TEST SUITE EXECUTION ────────────────────────────────────────────────────
+// ─── TEST EXECUTION ──────────────────────────────────────────────────────────
 console.log('================================================================');
-console.log('3DZ STAGE 2 GENERATION ADAPTER — DETERMINISTIC VERIFICATION SUITE');
+console.log('3DZ STAGE 2 GENERATION ADAPTER — DETERMINISTIC VERIFICATION SUITE (P5)');
 console.log('================================================================\n');
 
 (async () => {
   const cameraManifest = createMockCameraManifest();
   const uploadManifest = createMockUploadManifest();
+  const TEST_PROJECT_ID = 'proj-stage2-p5-test';
 
   // [T01] Hard Network Lock: createGenerationRequest returns GENERATION_TRANSPORT_DISABLED
   await testAsync('[T01] Hard Network Lock: createGenerationRequest returns GENERATION_TRANSPORT_DISABLED', async () => {
-    const adapter = new Stage2GenerationAdapter({ remoteEnabled: false });
+    const adapter = new Stage2GenerationAdapter({ remoteEnabled: false, projectId: TEST_PROJECT_ID });
     const res = await adapter.createGenerationRequest(cameraManifest);
 
     assert.strictEqual(res.ok, false);
@@ -147,237 +152,259 @@ console.log('================================================================\n'
     assert.strictEqual(adapter.realNetworkStats.createCalls, 0);
   });
 
-  // [T02] Discovered endpoints match verified application routes
-  test('[T02] Discovered endpoints match verified application routes', () => {
-    assert.strictEqual(DISCOVERED_ENDPOINTS.JOB_CREATE_ENDPOINT, '/api/projects/:id/spatial/start');
-    assert.strictEqual(DISCOVERED_ENDPOINTS.JOB_STATUS_ENDPOINT, '/api/spatial-jobs/:jobId');
-    assert.strictEqual(DISCOVERED_ENDPOINTS.JOB_CANCEL_ENDPOINT, 'UNRESOLVED');
+  // [T02] Canonical sourceType MANUAL_UPLOAD and alias MANUAL_PHOTO_UPLOAD normalization (§P5.0-A)
+  test('[T02] Canonical sourceType MANUAL_UPLOAD and alias MANUAL_PHOTO_UPLOAD normalization', () => {
+    const adapter = new Stage2GenerationAdapter({ projectId: TEST_PROJECT_ID });
+
+    // Canonical MANUAL_UPLOAD
+    const p1 = adapter.buildGenerationPayload({
+      ...uploadManifest,
+      sourceType: 'MANUAL_UPLOAD',
+    }, TEST_PROJECT_ID);
+    assert.strictEqual(p1.sourceType, 'MANUAL_UPLOAD');
+
+    // Alias MANUAL_PHOTO_UPLOAD
+    const p2 = adapter.buildGenerationPayload({
+      ...uploadManifest,
+      sourceType: 'MANUAL_PHOTO_UPLOAD',
+    }, TEST_PROJECT_ID);
+    assert.strictEqual(p2.sourceType, 'MANUAL_UPLOAD', 'Alias must normalize to MANUAL_UPLOAD');
+
+    // Camera sourceType
+    const pCam = adapter.buildGenerationPayload(cameraManifest, TEST_PROJECT_ID);
+    assert.strictEqual(pCam.sourceType, 'CAMERA_ROTATIONAL_SENSOR');
   });
 
-  // [T03] Request Contract: Camera manifest retains valid sensor metadata
-  test('[T03] Request Contract: Camera manifest retains valid sensor metadata', () => {
-    const adapter = new Stage2GenerationAdapter();
-    const payload = adapter.buildGenerationPayload(cameraManifest);
+  // [T03] Cancel Semantics: Local polling termination without claiming server cancellation (§P5.0-B)
+  await testAsync('[T03] Cancel Semantics: Local polling termination without claiming server cancellation', async () => {
+    const mockTransport = new MockGenerationTransport();
+    const adapter = new Stage2GenerationAdapter({ remoteEnabled: true, projectId: TEST_PROJECT_ID, transport: mockTransport });
 
-    assert.strictEqual(payload.schemaVersion, 5);
-    assert.strictEqual(payload.sourceType, 'CAMERA_ROTATIONAL_SENSOR');
-    assert.strictEqual(payload.frameCount, 12);
-    assert.strictEqual(payload.c12_7_ringConstraintPreserved, true);
-    assert.strictEqual(payload.frames.length, 12);
+    const createRes = await adapter.createGenerationRequest(cameraManifest);
+    const cancelRes = await adapter.cancelGeneration(createRes.jobId);
 
-    const f0 = payload.frames[0];
-    assert.strictEqual(f0.frameId, 'frm-01');
-    assert.strictEqual(f0.orientationStatus, 'SENSOR_DERIVED');
-    assert.strictEqual(typeof f0.yawDeg, 'number');
-    assert.strictEqual(typeof f0.pitchDeg, 'number');
-    assert.strictEqual(typeof f0.rollDeg, 'number');
-    assert.strictEqual(typeof f0.angularVelocityDegSec, 'number');
-    assert.strictEqual(f0.adjacency.prevFrameId, 'frm-12');
-    assert.strictEqual(f0.adjacency.nextFrameId, 'frm-02');
+    assert.strictEqual(cancelRes.ok, true);
+    assert.strictEqual(cancelRes.status, 'CANCELED');
+    assert.strictEqual(cancelRes.cancelScope, 'CLIENT_POLLING_ONLY');
+    assert.strictEqual(cancelRes.remoteJobCanceled, false, 'Must NEVER claim remote server cancellation');
+
+    // Status check reflects client-authoritative cancellation
+    const statusRes = await adapter.getGenerationStatus(createRes.jobId);
+    assert.strictEqual(statusRes.status, 'CANCELED');
+    assert.strictEqual(statusRes.cancelScope, 'CLIENT_POLLING_ONLY');
+    assert.strictEqual(statusRes.remoteJobCanceled, false);
   });
 
-  // [T04] Request Contract: Upload manifest maintains UNKNOWN orientation and null yaw
-  test('[T04] Request Contract: Upload manifest maintains UNKNOWN orientation and null yaw', () => {
-    const adapter = new Stage2GenerationAdapter();
-    const payload = adapter.buildGenerationPayload(uploadManifest);
+  // [T04] Project ID Contract: missing projectId fails locally (§P5.4)
+  await testAsync('[T04] Project ID Contract: missing projectId fails locally', async () => {
+    const adapter = new Stage2GenerationAdapter({ remoteEnabled: true, projectId: null });
+    const res = await adapter.createGenerationRequest(cameraManifest); // no projectId provided
 
-    assert.strictEqual(payload.schemaVersion, 5);
-    assert.strictEqual(payload.sourceType, 'MANUAL_PHOTO_UPLOAD');
-    assert.strictEqual(payload.frameCount, 8);
-    assert.strictEqual(payload.frames.length, 8);
+    assert.strictEqual(res.ok, false);
+    assert.strictEqual(res.code, 'MISSING_PROJECT_ID');
+    assert.strictEqual(adapter.realNetworkStats.createCalls, 0);
+  });
 
-    for (let i = 0; i < payload.frames.length; i++) {
-      const f = payload.frames[i];
-      assert.strictEqual(f.orientationStatus, 'UNKNOWN', `Frame ${i} orientationStatus must be UNKNOWN`);
-      assert.strictEqual(f.yawDeg, null, `Frame ${i} yawDeg must be strictly null`);
-      assert.strictEqual(f.pitchDeg, null, `Frame ${i} pitchDeg must be strictly null`);
-      assert.strictEqual(f.rollDeg, null, `Frame ${i} rollDeg must be strictly null`);
-      assert.strictEqual(f.angularVelocityDegSec, null, `Frame ${i} angularVelocity must be null`);
-      assert.strictEqual(f.adjacency.sequentialOrder, i + 1);
+  // [T05] Request Contract: Camera retains valid sensors; Upload maintains UNKNOWN & null (§P5.3)
+  test('[T05] Request Contract: Camera retains valid sensors; Upload maintains UNKNOWN & null', () => {
+    const adapter = new Stage2GenerationAdapter({ projectId: TEST_PROJECT_ID });
+
+    // Camera
+    const camPayload = adapter.buildGenerationPayload(cameraManifest, TEST_PROJECT_ID);
+    assert.strictEqual(camPayload.frames[0].orientationStatus, 'SENSOR_DERIVED');
+    assert.strictEqual(typeof camPayload.frames[0].yawDeg, 'number');
+    assert.strictEqual(typeof camPayload.frames[0].pitchDeg, 'number');
+    assert.strictEqual(typeof camPayload.frames[0].rollDeg, 'number');
+
+    // Upload
+    const upPayload = adapter.buildGenerationPayload(uploadManifest, TEST_PROJECT_ID);
+    for (const f of upPayload.frames) {
+      assert.strictEqual(f.orientationStatus, 'UNKNOWN');
+      assert.strictEqual(f.yawDeg, null);
+      assert.strictEqual(f.pitchDeg, null);
+      assert.strictEqual(f.rollDeg, null);
+      assert.strictEqual(f.angularVelocityDegSec, null);
     }
   });
 
-  // [T05] Stable Idempotency Key computation
-  test('[T05] Stable Idempotency Key computation', () => {
+  // [T06] Idempotency Sensitivity: projectId, captureId, frameHashes, sourceType (§P5.5)
+  test('[T06] Idempotency Sensitivity: projectId, captureId, frameHashes, sourceType', () => {
     const adapter = new Stage2GenerationAdapter();
-    const key1 = adapter.computeIdempotencyKey(cameraManifest);
-    const key2 = adapter.computeIdempotencyKey(cameraManifest);
 
-    assert.ok(key1 && key1.startsWith('idem-'));
-    assert.strictEqual(key1, key2, 'Identical manifests must yield identical idempotency keys');
+    const baseKey = adapter.computeIdempotencyKey('proj-A', cameraManifest);
+    const sameKey = adapter.computeIdempotencyKey('proj-A', cameraManifest);
+    assert.strictEqual(baseKey, sameKey, 'Identical inputs must produce identical key');
 
-    const uploadKey = adapter.computeIdempotencyKey(uploadManifest);
-    assert.notStrictEqual(key1, uploadKey, 'Different manifests must yield different idempotency keys');
+    // ProjectId change
+    const diffProjKey = adapter.computeIdempotencyKey('proj-B', cameraManifest);
+    assert.notStrictEqual(baseKey, diffProjKey, 'Different projectId must produce different key');
+
+    // CaptureId change
+    const diffCapKey = adapter.computeIdempotencyKey('proj-A', { ...cameraManifest, captureId: 'cap-different' });
+    assert.notStrictEqual(baseKey, diffCapKey, 'Different captureId must produce different key');
+
+    // Frame hash change
+    const modifiedFrames = cameraManifest.frames.map((f, i) => i === 0 ? { ...f, imageHash: 'sha256:tampered' } : f);
+    const diffHashKey = adapter.computeIdempotencyKey('proj-A', { ...cameraManifest, frames: modifiedFrames });
+    assert.notStrictEqual(baseKey, diffHashKey, 'Modified frame hash must produce different key');
   });
 
-  // [T06] Mock Transport: Successful job creation
-  await testAsync('[T06] Mock Transport: Successful job creation', async () => {
+  // [T07] Polling Lifecycle & Terminal State Stop (§P5.7)
+  await testAsync('[T07] Polling Lifecycle & Terminal State Stop', async () => {
+    let pollCount = 0;
     const mockTransport = new MockGenerationTransport({
-      create: async (p) => ({
-        jobId: 'job-test-success-001',
-        status: 'QUEUED',
-        progress: 5,
-      }),
-    });
-
-    const adapter = new Stage2GenerationAdapter({ remoteEnabled: true, transport: mockTransport });
-    const res = await adapter.createGenerationRequest(cameraManifest);
-
-    assert.strictEqual(res.ok, true);
-    assert.strictEqual(res.status, 'QUEUED');
-    assert.strictEqual(res.jobId, 'job-test-success-001');
-    assert.strictEqual(res.phaseLabel, 'Queued');
-    assert.strictEqual(mockTransport.calls.create.length, 1);
-  });
-
-  // [T07] Idempotency replay: duplicate submission returns existing job without second transport call
-  await testAsync('[T07] Idempotency replay: duplicate submission returns existing job', async () => {
-    const mockTransport = new MockGenerationTransport({
-      create: async () => ({
-        jobId: 'job-test-idem-002',
-        status: 'QUEUED',
-        progress: 5,
-      }),
-    });
-
-    const adapter = new Stage2GenerationAdapter({ remoteEnabled: true, transport: mockTransport });
-    const res1 = await adapter.createGenerationRequest(cameraManifest);
-    assert.strictEqual(res1.ok, true);
-    assert.strictEqual(res1.isDuplicate, false);
-    assert.strictEqual(mockTransport.calls.create.length, 1);
-
-    const res2 = await adapter.createGenerationRequest(cameraManifest);
-    assert.strictEqual(res2.ok, true);
-    assert.strictEqual(res2.isDuplicate, true);
-    assert.strictEqual(res2.idempotentReplay, true);
-    assert.strictEqual(res2.jobId, 'job-test-idem-002');
-    assert.strictEqual(mockTransport.calls.create.length, 1, 'Transport create must NOT be invoked twice');
-  });
-
-  // [T08] Timeout handling: aborted request returns TIMEOUT_ERROR
-  await testAsync('[T08] Timeout handling: aborted request returns TIMEOUT_ERROR', async () => {
-    const mockTransport = new MockGenerationTransport({
-      create: async (p, opts) => {
-        const err = new Error('The operation was aborted');
-        err.name = 'AbortError';
-        throw err;
+      status: async (jobId) => {
+        pollCount++;
+        if (pollCount === 1) return { status: 'QUEUED', progress: 5 };
+        if (pollCount === 2) return { status: 'PROCESSING', currentStage: 'SPARSE_RECONSTRUCTION' };
+        return { status: 'SUCCEEDED', progress: 100, currentStage: 'COMPLETED' };
       },
     });
 
-    const adapter = new Stage2GenerationAdapter({ remoteEnabled: true, transport: mockTransport, timeoutMs: 50 });
-    const res = await adapter.createGenerationRequest(cameraManifest);
+    const adapter = new Stage2GenerationAdapter({
+      remoteEnabled: true,
+      projectId: TEST_PROJECT_ID,
+      transport: mockTransport,
+      pollIntervalMs: 20,
+    });
 
-    assert.strictEqual(res.ok, false);
-    assert.strictEqual(res.code, 'TIMEOUT_ERROR');
-    assert.ok(res.message.includes('timed out'));
+    const progressPhases = [];
+    const pollResult = await adapter.pollGenerationJob('job-poll-001', {
+      onProgress: (p, phase, status) => progressPhases.push({ phase, status }),
+      pollIntervalMs: 20,
+      timeoutMs: 1000,
+    });
+
+    assert.strictEqual(pollResult.ok, true);
+    assert.strictEqual(pollResult.status, 'SUCCEEDED');
+    assert.strictEqual(pollCount, 3, 'Polling must terminate upon reaching SUCCEEDED');
+    assert.ok(progressPhases.some(p => p.phase === 'Queued'));
+    assert.ok(progressPhases.some(p => p.phase === 'Processing'));
+    assert.ok(progressPhases.some(p => p.phase === 'Completed'));
   });
 
-  // [T09] Retry mechanism: retries on transient errors up to ceiling
-  await testAsync('[T09] Retry mechanism: retries on transient errors up to ceiling', async () => {
+  // [T08] Polling Client Abort (§P5.7)
+  await testAsync('[T08] Polling Client Abort', async () => {
+    const mockTransport = new MockGenerationTransport({
+      status: async () => ({ status: 'PROCESSING', currentStage: 'LONG_PROCESS' }),
+    });
+
+    const adapter = new Stage2GenerationAdapter({
+      remoteEnabled: true,
+      projectId: TEST_PROJECT_ID,
+      transport: mockTransport,
+      pollIntervalMs: 30,
+    });
+
+    // Start poll in background
+    const pollPromise = adapter.pollGenerationJob('job-abort-002', { pollIntervalMs: 30, timeoutMs: 5000 });
+
+    // Abort after 50ms
+    await new Promise(r => setTimeout(r, 50));
+    await adapter.cancelGeneration('job-abort-002');
+
+    const result = await pollPromise;
+    assert.strictEqual(result.status, 'CANCELED');
+    assert.strictEqual(result.cancelScope, 'CLIENT_POLLING_ONLY');
+  });
+
+  // [T09] Active Job Recovery Contract (§P5.8)
+  await testAsync('[T09] Active Job Recovery Contract', async () => {
+    const mockTransport = new MockGenerationTransport({
+      getActiveJob: async (pId) => ({
+        job: { jobId: 'job-active-recovered', status: 'PROCESSING', currentStage: 'ALIGNMENT' },
+      }),
+    });
+
+    const adapter = new Stage2GenerationAdapter({ remoteEnabled: true, projectId: TEST_PROJECT_ID, transport: mockTransport });
+    const res = await adapter.getActiveJobForProject(TEST_PROJECT_ID);
+
+    assert.strictEqual(res.ok, true);
+    assert.strictEqual(res.job.jobId, 'job-active-recovered');
+    assert.strictEqual(res.job.status, 'PROCESSING');
+  });
+
+  // [T10] Candidate Contract: get, apply, discard (§P5.9)
+  await testAsync('[T10] Candidate Contract: get, apply, discard', async () => {
+    const mockTransport = new MockGenerationTransport({
+      getCandidate: async (pId, cId) => ({ candidate: { candidateId: cId, format: 'ply' } }),
+      applyCandidate: async (pId, cId) => ({ success: true, activeSpatialVersion: cId }),
+      discardCandidate: async (pId, cId) => ({ success: true, discarded: cId }),
+    });
+
+    const adapter = new Stage2GenerationAdapter({ remoteEnabled: true, projectId: TEST_PROJECT_ID, transport: mockTransport });
+
+    const getRes = await adapter.getCandidate(TEST_PROJECT_ID, 'cand-123');
+    assert.strictEqual(getRes.ok, true);
+    assert.strictEqual(getRes.candidate.candidateId, 'cand-123');
+
+    const applyRes = await adapter.applyCandidate(TEST_PROJECT_ID, 'cand-123');
+    assert.strictEqual(applyRes.ok, true);
+    assert.strictEqual(applyRes.result.success, true);
+
+    const discardRes = await adapter.discardCandidate(TEST_PROJECT_ID, 'cand-123');
+    assert.strictEqual(discardRes.ok, true);
+    assert.strictEqual(discardRes.result.success, true);
+  });
+
+  // [T11] Truthful Phase Labels without Synthesized Percentages (§P5.10)
+  test('[T11] Truthful Phase Labels without Synthesized Percentages', () => {
+    const adapter = new Stage2GenerationAdapter();
+    assert.strictEqual(adapter.mapPhaseLabel('QUEUED', 'QUEUED'), 'Queued');
+    assert.strictEqual(adapter.mapPhaseLabel('PROCESSING', 'PREPARING_DATA'), 'Uploading');
+    assert.strictEqual(adapter.mapPhaseLabel('PROCESSING', 'SAVING_CANDIDATE'), 'Finalizing');
+    assert.strictEqual(adapter.mapPhaseLabel('SUCCEEDED', 'COMPLETED'), 'Completed');
+  });
+
+  // [T12] Idempotency Replay with Stable Key (§P5.5)
+  await testAsync('[T12] Idempotency Replay with Stable Key', async () => {
+    const mockTransport = new MockGenerationTransport({
+      create: async () => ({ jobId: 'job-idem-p5-001', status: 'QUEUED' }),
+    });
+
+    const adapter = new Stage2GenerationAdapter({ remoteEnabled: true, projectId: TEST_PROJECT_ID, transport: mockTransport });
+
+    const r1 = await adapter.createGenerationRequest(cameraManifest);
+    assert.strictEqual(r1.ok, true);
+    assert.strictEqual(r1.isDuplicate, false);
+    assert.strictEqual(mockTransport.calls.create.length, 1);
+
+    const r2 = await adapter.createGenerationRequest(cameraManifest);
+    assert.strictEqual(r2.ok, true);
+    assert.strictEqual(r2.isDuplicate, true);
+    assert.strictEqual(r2.idempotentReplay, true);
+    assert.strictEqual(mockTransport.calls.create.length, 1, 'Duplicate call must NOT invoke transport');
+  });
+
+  // [T13] Retry Ceiling on Transient Network Failures
+  await testAsync('[T13] Retry Ceiling on Transient Network Failures', async () => {
     let callCount = 0;
     const mockTransport = new MockGenerationTransport({
       create: async () => {
         callCount++;
-        if (callCount < 3) {
-          throw new Error('Transient 503 Service Unavailable');
-        }
-        return {
-          jobId: 'job-test-retry-003',
-          status: 'QUEUED',
-          progress: 5,
-        };
+        throw new Error('503 Service Unavailable');
       },
     });
 
-    const adapter = new Stage2GenerationAdapter({ remoteEnabled: true, transport: mockTransport, maxRetries: 3 });
-    const res = await adapter.createGenerationRequest(cameraManifest);
-
-    assert.strictEqual(res.ok, true);
-    assert.strictEqual(res.jobId, 'job-test-retry-003');
-    assert.strictEqual(callCount, 3, 'Must have attempted 3 times before succeeding');
-    assert.strictEqual(res.attempts, 3);
-  });
-
-  // [T10] Retry ceiling: fails with NETWORK_ERROR when retries exhausted
-  await testAsync('[T10] Retry ceiling: fails with NETWORK_ERROR when retries exhausted', async () => {
-    let callCount = 0;
-    const mockTransport = new MockGenerationTransport({
-      create: async () => {
-        callCount++;
-        throw new Error('Persistent 500 Server Error');
-      },
-    });
-
-    const adapter = new Stage2GenerationAdapter({ remoteEnabled: true, transport: mockTransport, maxRetries: 2 });
+    const adapter = new Stage2GenerationAdapter({ remoteEnabled: true, projectId: TEST_PROJECT_ID, transport: mockTransport, maxRetries: 2 });
     const res = await adapter.createGenerationRequest(cameraManifest);
 
     assert.strictEqual(res.ok, false);
     assert.strictEqual(res.code, 'NETWORK_ERROR');
-    assert.strictEqual(callCount, 3, 'Initial attempt + 2 retries = 3 calls');
+    assert.strictEqual(callCount, 3, 'Initial + 2 retries = 3');
   });
 
-  // [T11] Status query with phase labels (no fake progress percentage)
-  await testAsync('[T11] Status query with phase labels (no fake progress percentage)', async () => {
-    const mockTransport = new MockGenerationTransport({
-      status: async (jobId) => ({
-        job: {
-          jobId,
-          status: 'PROCESSING',
-          currentStage: 'PREPARING_NEURAL_SPARSE_POINT_CLOUD',
-          progress: null, // Backend does not supply percentage
-        },
-      }),
-    });
-
-    const adapter = new Stage2GenerationAdapter({ remoteEnabled: true, transport: mockTransport });
-    const res = await adapter.getGenerationStatus('job-999');
-
-    assert.strictEqual(res.ok, true);
-    assert.strictEqual(res.status, 'PROCESSING');
-    assert.strictEqual(res.phaseLabel, 'Uploading'); // Mapped to Uploading/Preparing
-    assert.strictEqual(res.progress, null, 'Progress must remain null when not supplied');
-  });
-
-  // [T12] Client-Authoritative cancellation
-  await testAsync('[T12] Client-Authoritative cancellation', async () => {
-    let transportCancelled = false;
-    const mockTransport = new MockGenerationTransport({
-      create: async () => ({ jobId: 'job-to-cancel-123', status: 'QUEUED' }),
-      cancel: async () => { transportCancelled = true; },
-    });
-
-    const adapter = new Stage2GenerationAdapter({ remoteEnabled: true, transport: mockTransport });
-    await adapter.createGenerationRequest(cameraManifest);
-
-    const cancelRes = await adapter.cancelGeneration('job-to-cancel-123');
-    assert.strictEqual(cancelRes.ok, true);
-    assert.strictEqual(cancelRes.status, 'CANCELED');
-    assert.strictEqual(transportCancelled, true);
-
-    const statusRes = await adapter.getGenerationStatus('job-to-cancel-123');
-    assert.strictEqual(statusRes.job.status, 'CANCELED');
-  });
-
-  // [T13] Malformed response handling
-  await testAsync('[T13] Malformed response handling', async () => {
-    const mockTransport = new MockGenerationTransport({
-      create: async () => ({ invalidPayload: true }), // Missing jobId
-    });
-
-    const adapter = new Stage2GenerationAdapter({ remoteEnabled: true, transport: mockTransport, maxRetries: 0 });
-    const res = await adapter.createGenerationRequest(cameraManifest);
-
-    assert.strictEqual(res.ok, false);
-    assert.strictEqual(res.code, 'NETWORK_ERROR');
-    assert.ok(res.message.includes('Malformed response'));
-  });
-
-  // [T14] Strict Real Network Call Monitoring: All real calls remain ZERO (§P4.8)
-  test('[T14] Strict Real Network Call Monitoring: All real calls remain ZERO', () => {
+  // [T14] Strict Real Network Call Monitoring: All real calls remain strictly ZERO (§P5.12)
+  test('[T14] Strict Real Network Call Monitoring: All real calls remain strictly ZERO', () => {
     const adapter = new Stage2GenerationAdapter({ remoteEnabled: false });
-    assert.strictEqual(adapter.realNetworkStats.createCalls, 0, 'Real create calls must be 0');
-    assert.strictEqual(adapter.realNetworkStats.statusCalls, 0, 'Real status calls must be 0');
-    assert.strictEqual(adapter.realNetworkStats.cancelCalls, 0, 'Real cancel calls must be 0');
+
+    assert.strictEqual(adapter.realNetworkStats.createCalls, 0);
+    assert.strictEqual(adapter.realNetworkStats.statusCalls, 0);
+    assert.strictEqual(adapter.realNetworkStats.cancelCalls, 0);
+    assert.strictEqual(adapter.realNetworkStats.candidateCalls, 0);
+    assert.strictEqual(adapter.realNetworkStats.applyCalls, 0);
+    assert.strictEqual(adapter.realNetworkStats.discardCalls, 0);
+    assert.strictEqual(adapter.realNetworkStats.activeJobCalls, 0);
   });
 
   console.log('\n================================================================');

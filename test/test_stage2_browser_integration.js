@@ -495,7 +495,7 @@ async function runBrowserIntegrationSuite() {
     const uploadManifest = await page.evaluate(() => window.__STAGE2_UPLOAD_NORMALIZED_MANIFEST__);
     assert.ok(uploadManifest, 'Upload manifest must exist');
     assert.strictEqual(uploadManifest.schemaVersion, 5);
-    assert.strictEqual(uploadManifest.sourceType, 'MANUAL_PHOTO_UPLOAD');
+    assert.strictEqual(uploadManifest.sourceType, 'MANUAL_UPLOAD');
     assert.strictEqual(uploadManifest.frameCount, 8);
     assert.strictEqual(uploadManifest.c12_7_ringConstraintPreserved, true);
 
