@@ -19659,51 +19659,52 @@ function openAiEnhanceBoothModal() {
   }
   /* Compact dedicated upload layout for desktop landscape heights (1024x768, 1280x800) */
   @media (min-width: 601px) and (max-height: 820px) {
-    #setupWizardModal #wizardStepContent {
+    #setupWizardModal.wizard-photo-upload-active #wizardStepContent {
       padding: 8px 20px !important;
       min-height: unset !important;
     }
-    #setupWizardModal .wizard-footer-bar {
+    #setupWizardModal.wizard-photo-upload-active .wizard-footer-bar {
       padding: 8px 20px !important;
     }
-    .wizard-upload-header-step {
+    #setupWizardModal.wizard-photo-upload-active .wizard-upload-header-step {
       font-size: 10px !important;
       margin-bottom: 2px !important;
     }
-    .wizard-upload-title {
+    #setupWizardModal.wizard-photo-upload-active .wizard-upload-title {
       font-size: 16px !important;
       margin: 0 0 2px 0 !important;
     }
-    .wizard-upload-desc {
+    #setupWizardModal.wizard-photo-upload-active .wizard-upload-desc {
       font-size: 11.5px !important;
       margin: 0 0 4px 0 !important;
     }
-    .wizard-upload-circle-box {
+    #setupWizardModal.wizard-photo-upload-active .wizard-upload-circle-box {
       width: 120px !important;
       height: 120px !important;
       margin: 0 auto 4px !important;
     }
-    .wizard-upload-circle-box #uploadCountBadge {
+    #setupWizardModal.wizard-photo-upload-active .wizard-upload-circle-box #uploadCountBadge {
       font-size: 20px !important;
     }
-    #uploadThumbnailStrip {
+    #setupWizardModal.wizard-photo-upload-active #uploadThumbnailStrip {
       max-width: 340px !important;
       margin: 0 auto 6px !important;
       gap: 4px !important;
     }
-    .wizard-upload-actions-box {
+    #setupWizardModal.wizard-photo-upload-active .wizard-upload-actions-box {
       max-width: 340px !important;
       gap: 5px !important;
     }
-    #btnSelectPhotos {
+    #setupWizardModal.wizard-photo-upload-active #btnSelectPhotos {
       height: 34px !important;
       font-size: 12px !important;
     }
-    #btnCreate3dBooth {
+    #setupWizardModal.wizard-photo-upload-active #btnCreate3dBooth {
       height: 36px !important;
       font-size: 12px !important;
     }
-    #btnResetPhotos, #btnBackToCapture {
+    #setupWizardModal.wizard-photo-upload-active #btnResetPhotos,
+    #setupWizardModal.wizard-photo-upload-active #btnBackToCapture {
       height: 30px !important;
       font-size: 11px !important;
     }
@@ -22806,6 +22807,8 @@ class SetupWizardController {
 
   async open(overrideStep) {
     if (!this.modal) return;
+    this.isUploadView = false;
+    this.modal.classList.remove('wizard-photo-upload-active');
     document.body.style.overflow = 'hidden';
     this.modal.style.display = 'flex';
 
@@ -22850,6 +22853,8 @@ class SetupWizardController {
   }
 
   close() {
+    this.isUploadView = false;
+    if (this.modal) this.modal.classList.remove('wizard-photo-upload-active');
     document.body.style.overflow = '';
     if (this.modal) this.modal.style.display = 'none';
     if (window.guidedCaptureController) {
@@ -22882,6 +22887,7 @@ class SetupWizardController {
 
   openDedicatedUploadPage() {
     this.isUploadView = true;
+    if (this.modal) this.modal.classList.add('wizard-photo-upload-active');
     if (this.btnBack) this.btnBack.style.display = 'none';
     if (this.btnPrimary) this.btnPrimary.style.display = 'none';
 
@@ -23151,6 +23157,7 @@ class SetupWizardController {
 
   handleBackToCapture() {
     this.isUploadView = false;
+    if (this.modal) this.modal.classList.remove('wizard-photo-upload-active');
     if (this.btnBack) this.btnBack.style.display = '';
     if (this.btnPrimary) this.btnPrimary.style.display = '';
     this.renderStep6CaptureWheel();
@@ -23218,6 +23225,8 @@ class SetupWizardController {
 
   renderStep() {
     if (!this.content) return;
+    this.isUploadView = false;
+    if (this.modal) this.modal.classList.remove('wizard-photo-upload-active');
     const s = this.currentStep;
 
     const titles = [
@@ -23473,6 +23482,8 @@ class SetupWizardController {
   }
 
   renderStep6CaptureWheel() {
+    this.isUploadView = false;
+    if (this.modal) this.modal.classList.remove('wizard-photo-upload-active');
     this.btnPrimary.innerHTML = '<span>Looks Good - Next Viewpoint</span> <i class="fa-solid fa-arrow-right"></i>';
     const vp = this.state.viewpoints[0];
     this.content.innerHTML = `
@@ -23651,6 +23662,8 @@ class SetupWizardController {
   }
 
   retryGuidedCapture() {
+    this.isUploadView = false;
+    if (this.modal) this.modal.classList.remove('wizard-photo-upload-active');
     console.log('[SetupWizard] Initiating clean idempotent guided capture retry...');
     if (window.guidedCaptureController) {
       window.guidedCaptureController.resetCaptureForRetry('USER_EXPLICIT_RETRY');
@@ -24116,6 +24129,12 @@ function openMultiPointTourWizard(step) {
 window.openMultiPointTourWizard = openMultiPointTourWizard;
 
 function closeSetupWizard() {
+  if (window.setupWizard) {
+    window.setupWizard.isUploadView = false;
+    if (window.setupWizard.modal) {
+      window.setupWizard.modal.classList.remove('wizard-photo-upload-active');
+    }
+  }
   window.setupWizard.close();
 }
 window.closeSetupWizard = closeSetupWizard;
