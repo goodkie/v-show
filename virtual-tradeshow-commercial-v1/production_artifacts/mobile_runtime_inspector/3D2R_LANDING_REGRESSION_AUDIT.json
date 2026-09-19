@@ -1,0 +1,44 @@
+{
+  "protocol": "3D2R_LANDING_REGRESSION_AUDIT",
+  "date": "2026-09-15",
+  "status": "PASS",
+  "customerDefault": "P2R13",
+  "customerDefaultPreserved": true,
+  "experimentalRouteExposedToCustomer": false,
+  "gates": {
+    "CORE_E2E_GATE": "PASS",
+    "PHYSICAL_CAMERA_GATE": "PASS",
+    "CAMERA_PERMISSION_GATE": "PASS",
+    "CAMERA_READINESS_GATE": "PASS",
+    "S23_ANDROID_CHROME_GATE": "PASS",
+    "CAMERA_RETRY_IDEMPOTENCY_GATE": "PASS",
+    "CAPTURE_CHECKPOINT_GATE": "PASS",
+    "CAPTURE_COMPLETION_GATE": "PASS",
+    "UPLOAD_GATE": "PASS",
+    "PROCESSING_GATE": "PASS",
+    "VIEWER_SHARE_GATE": "PASS",
+    "AUTH_GATE": "PASS",
+    "TENANT_ISOLATION_RELEASE_GATE": "PASS",
+    "EVENT_FLOW_GATE": "PASS",
+    "EXHIBITOR_FLOW_GATE": "PASS",
+    "BOOTH_FLOW_GATE": "PASS",
+    "PRODUCT_FLOW_GATE": "PASS",
+    "LEAD_GATE": "PASS",
+    "RFQ_GATE": "PASS",
+    "SAMPLE_REQUEST_GATE": "PASS",
+    "APPOINTMENT_GATE": "PASS",
+    "OBSERVABILITY_GATE": "PASS",
+    "ROLLBACK_PATH_VERIFIED": true
+  },
+  "openBlockers": {
+    "OPEN_P0_BLOCKERS": 0,
+    "OPEN_P1_BLOCKERS": 0
+  },
+  "gateEvidence": {
+    "CORE_E2E": "LLST42 physical capture source verified through P2R13 pipeline, viewer load, share link reload without regression",
+    "PHYSICAL_CAMERA": "Camera constraints, rear-facing preference, exposure/focus locks preserved",
+    "TENANT_ISOLATION": "Token verification, project ownership bounds strictly enforced with 403 on mismatch",
+    "OBSERVABILITY": "Health endpoints and funnel event logging operational",
+    "ROLLBACK": "Restore point 5218235b8dbe1cd3b401bbbdef0b1c8ba3483d6e / Railway 5e9b6f43-52ce-4bd7-848b-8f6582aa4f0b verified"
+  }
+}

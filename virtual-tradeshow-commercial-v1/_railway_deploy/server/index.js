@@ -813,7 +813,7 @@ const workerIntegrityHandler = (req, res) => {
   }
   res.json({
     ok: true,
-    uiVersion: '3D2-C12.9-P2R12',
+    uiVersion: '3D2-C12.9-P2R13',
     gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || P315_BUILD_INFO.gitCommit,
     pythonVersion,
     opencvVersion,
@@ -1061,6 +1061,24 @@ app.get('/api/debug/video-assets', (req, res) => {
 });
 
 
+// ── C12.9-P2R17: Single-Switch Flag for Owner Mobile Runtime Inspector ──
+const ENABLE_OWNER_RI = process.env.ENABLE_OWNER_RI !== 'false';
+
+// Intercept /owner-ri.js BEFORE static middleware to honor retirement switch
+app.get(['/owner-ri.js', '/client/owner-ri.js'], (req, res) => {
+  if (!ENABLE_OWNER_RI) {
+    res.setHeader('Content-Type', 'application/javascript');
+    return res.status(404).send('/* ENABLE_OWNER_RI=false: Module excluded */');
+  }
+  const targetPath = path.join(__dirname, '..', 'client', 'owner-ri.js');
+  if (fs.existsSync(targetPath)) {
+    res.setHeader('Content-Type', 'application/javascript');
+    return res.sendFile(targetPath);
+  }
+  res.setHeader('Content-Type', 'application/javascript');
+  return res.status(404).send('/* owner-ri.js not found */');
+});
+
 // ── Explicit Root Route with strict no-cache headers ──
 app.get(['/', '/index.html'], (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -1082,7 +1100,7 @@ const healthHandler = (req, res) => {
     schemaVersion: 5,
     stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
-    uiVersion: '3D2-C12.9-P2R12',
+    uiVersion: '3D2-C12.9-P2R17-DEV11',
     storageRoot: GUIDED_CAPTURE_STORAGE_ROOT,
     storageRootExists: STORAGE_ROOT_EXISTS,
     storageRootWritable: STORAGE_ROOT_WRITABLE,
@@ -1108,23 +1126,64 @@ try {
       MobileRedactionEngine = require('../tools/runtime-inspector/core/redaction').RedactionEngine;
     } catch (e3) {
       class FallbackRedactor {
-        constructor() { this.redactionCount = 0; }
+        constructor() {
+          this.redactionCount = 0;
+          this.pemRegex = /(?:%2D%2D%2D%2D%2D|-----)BEGIN(?:\s|%20|\\n)+([A-Z0-9_\-]+(?:\s|%20|\\n)+)?PRIVATE(?:\s|%20|\\n)+KEY(?:%2D%2D%2D%2D%2D|-----)(?:[\s\S]|\\n|%0A|%0D)*?(?:%2D%2D%2D%2D%2D|-----)END(?:\s|%20|\\n)+([A-Z0-9_\-]+(?:\s|%20|\\n)+)?PRIVATE(?:\s|%20|\\n)+KEY(?:%2D%2D%2D%2D%2D|-----)/gi;
+        }
+        hasPrivateKeyBlock(text) {
+          if (typeof text !== 'string') return false;
+          this.pemRegex.lastIndex = 0;
+          if (this.pemRegex.test(text)) return true;
+          const raw = /-----BEGIN\s+(?:[A-Z0-9_-]+\s+)?PRIVATE\s+KEY-----[\s\S]*?-----END\s+(?:[A-Z0-9_-]+\s+)?PRIVATE\s+KEY-----/i;
+          return raw.test(text);
+        }
+        safeCheckPrivateKey(val) {
+          if (typeof val !== 'string') return false;
+          if (this.hasPrivateKeyBlock(val)) return true;
+          try {
+            const dec = decodeURIComponent(val);
+            if (dec !== val && this.hasPrivateKeyBlock(dec)) return true;
+          } catch (e) {}
+          return false;
+        }
         sanitizeString(s) {
           if (typeof s !== 'string') return s;
-          return s.replace(/eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}/g, '[REDACTED_JWT]')
-                  .replace(/Bearer\s+[^\s]+/gi, 'Bearer [REDACTED_TOKEN]')
-                  .replace(/tok-cap-[a-zA-Z0-9-]+/gi, '[REDACTED_TOKEN]');
+          let sanitized = s;
+          if (this.safeCheckPrivateKey(sanitized)) {
+            sanitized = sanitized.replace(this.pemRegex, '[REDACTED_PRIVATE_KEY]');
+            if (this.safeCheckPrivateKey(sanitized)) {
+              return '[REDACTED_PRIVATE_KEY]';
+            }
+          }
+          return sanitized.replace(/eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}/g, '[REDACTED_JWT]')
+                          .replace(/Bearer\s+[^\s]+/gi, 'Bearer [REDACTED_TOKEN]')
+                          .replace(/tok-cap-[a-zA-Z0-9-]+/gi, '[REDACTED_TOKEN]')
+                          .replace(/(?:api[_-]?key(?:[_-]?secret)?|sk_live|rk_live)[_-][a-zA-Z0-9_\-]+/gi, '[REDACTED_API_KEY]')
+                          .replace(/(?:cookie|session_id_cookie)=[a-zA-Z0-9_\-]+/gi, 'cookie=[REDACTED_COOKIE]');
         }
         sanitizeUrl(u) {
           if (!u || typeof u !== 'string') return u;
-          return u.replace(/([?&](?:token|key|secret|auth|signature)=)[^&]+/gi, '$1[REDACTED]');
+          let sanitized = u.replace(/([?&](?:token|key|secret|auth|signature|cookie|session|credential|private)=)[^&]+/gi, '$1[REDACTED]');
+          try {
+            const dummy = 'https://runtime-inspector.internal';
+            const parsed = new URL(sanitized, dummy);
+            parsed.searchParams.forEach((val, key) => {
+              if (this.safeCheckPrivateKey(val)) {
+                parsed.searchParams.set(key, '[REDACTED_PRIVATE_KEY]');
+              }
+            });
+            sanitized = (u.startsWith('http://') || u.startsWith('https://')) ? parsed.toString() : (parsed.pathname + parsed.search + parsed.hash);
+          } catch (e) {}
+          return this.sanitizeString(sanitized);
         }
         sanitizeObject(o) {
           if (!o || typeof o !== 'object') return typeof o === 'string' ? this.sanitizeString(o) : o;
           const res = Array.isArray(o) ? [] : {};
           for (const [k, v] of Object.entries(o)) {
-            if (/token|secret|password|auth|cookie|key|jwt/i.test(k) && typeof v === 'string') {
+            if (/token|secret|password|auth|cookie|key|jwt|private/i.test(k) && typeof v === 'string') {
               res[k] = '[REDACTED_SECRET]';
+            } else if (typeof v === 'string' && this.safeCheckPrivateKey(v)) {
+              res[k] = '[REDACTED_PRIVATE_KEY]';
             } else if (typeof v === 'string') {
               res[k] = this.sanitizeUrl(this.sanitizeString(v));
             } else if (typeof v === 'object') {
@@ -1183,6 +1242,13 @@ function loadDurableQaSessions() {
 }
 loadDurableQaSessions();
 
+function getReqCookie(req, name) {
+  const header = req.headers && req.headers.cookie;
+  if (!header) return null;
+  const match = header.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()\\[\\]\\\\\/+^])/g, '\\$1') + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 // C12.9-P2R6: Auto-provision and Seed Authoritative Owner QA Project
 function ensureAuthoritativeQaProject(targetProjectId = 'prj-free-b0c6f3ea') {
   try {
@@ -1229,12 +1295,19 @@ ensureAuthoritativeQaProject('prj-free-b0c6f3ea');
 
 
 function verifyQaAccess(req) {
-  // 1. Check QA browser session token (x-qa-session header or query param)
-  const qaSessionToken = (req.headers && req.headers['x-qa-session']) || (req.query && req.query.qaSessionToken) || (req.body && req.body.qaSessionToken);
-  if (qaSessionToken && qaBrowserSessions.has(qaSessionToken)) {
-    const sess = qaBrowserSessions.get(qaSessionToken);
-    if (sess.status === 'AUTHORIZED' && new Date(sess.expiresAt).getTime() > Date.now()) {
-      return sess;
+  if (!ENABLE_OWNER_RI) return null;
+
+  // 1. Check QA browser session token (x-qa-session header, query param, body, or cookie)
+  const qaSessionToken = (req.headers && req.headers['x-qa-session']) || (req.query && req.query.qaSessionToken) || (req.body && req.body.qaSessionToken) || getReqCookie(req, 'qa_session_token');
+  if (qaSessionToken) {
+    if (!qaBrowserSessions.has(qaSessionToken)) {
+      loadDurableQaSessions();
+    }
+    if (qaBrowserSessions.has(qaSessionToken)) {
+      const sess = qaBrowserSessions.get(qaSessionToken);
+      if (sess.status === 'AUTHORIZED' && new Date(sess.expiresAt).getTime() > Date.now()) {
+        return sess;
+      }
     }
   }
 
@@ -1328,9 +1401,107 @@ app.post('/api/internal-qa/auth/redeem-session', express.json(), (req, res) => {
   }
 });
 
+// ── Secure Owner QA Authentication (Single Gate) ──
+// Requires configured process.env.OWNER_QA_SECRET. Fails closed if unset.
+// Issues short-lived (8h) HttpOnly session cookie without leaking token to client.
+app.post('/api/internal-qa/auth/owner-login', express.json(), (req, res) => {
+  if (!ENABLE_OWNER_RI) {
+    return res.status(403).json({ ok: false, error: 'OWNER_RI_DISABLED' });
+  }
+
+  const configuredSecret = process.env.OWNER_QA_SECRET;
+  if (!configuredSecret || typeof configuredSecret !== 'string' || configuredSecret.length < 8) {
+    return res.status(503).json({ ok: false, error: 'OWNER_QA_SECRET_NOT_CONFIGURED' });
+  }
+
+  const providedSecret = req.body && req.body.ownerSecret;
+  if (!providedSecret || typeof providedSecret !== 'string') {
+    return res.status(401).json({ ok: false, error: 'OWNER_SECRET_REQUIRED' });
+  }
+
+  const crypto = require('crypto');
+  const bufA = Buffer.from(providedSecret, 'utf8');
+  const bufB = Buffer.from(configuredSecret, 'utf8');
+  if (bufA.length !== bufB.length || !crypto.timingSafeEqual(bufA, bufB)) {
+    return res.status(403).json({ ok: false, error: 'INVALID_OWNER_SECRET' });
+  }
+
+  const token = 'qa-sess-owner-' + crypto.randomBytes(24).toString('hex');
+  const expiresAt = new Date(Date.now() + 8 * 3600 * 1000).toISOString();
+  const session = {
+    qaSessionToken: token,
+    projectId: 'prj-free-b0c6f3ea',
+    createdAt: new Date().toISOString(),
+    expiresAt,
+    status: 'AUTHORIZED',
+    role: 'OWNER_QA'
+  };
+
+  qaBrowserSessions.set(token, session);
+  saveDurableQaSessions();
+
+  const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  res.setHeader('Set-Cookie', `qa_session_token=${token}; Path=/; Max-Age=28800; HttpOnly; SameSite=Lax${isSecure ? '; Secure' : ''}`);
+  res.json({
+    ok: true,
+    authorized: true,
+    role: 'OWNER_QA',
+    expiresAt
+  });
+});
+
+// Owner direct link / QR code activation route
+app.get('/qa', (req, res) => {
+  if (!ENABLE_OWNER_RI) {
+    return res.status(404).send('Not Found');
+  }
+
+  const configuredSecret = process.env.OWNER_QA_SECRET;
+  const providedSecret = req.query && req.query.secret;
+
+  if (!configuredSecret || !providedSecret) {
+    return res.status(403).send('<html><body style="font-family:sans-serif;padding:40px;background:#0f172a;color:#f8fafc;"><h2>Owner QA Authentication Required</h2><p>Please provide a valid secret parameter.</p></body></html>');
+  }
+
+  const crypto = require('crypto');
+  const bufA = Buffer.from(providedSecret, 'utf8');
+  const bufB = Buffer.from(configuredSecret, 'utf8');
+  if (bufA.length !== bufB.length || !crypto.timingSafeEqual(bufA, bufB)) {
+    return res.status(403).send('<html><body style="font-family:sans-serif;padding:40px;background:#0f172a;color:#ef4444;"><h2>Invalid Owner Secret</h2></body></html>');
+  }
+
+  const token = 'qa-sess-owner-' + crypto.randomBytes(24).toString('hex');
+  const expiresAt = new Date(Date.now() + 8 * 3600 * 1000).toISOString();
+  const session = {
+    qaSessionToken: token,
+    projectId: 'prj-free-b0c6f3ea',
+    createdAt: new Date().toISOString(),
+    expiresAt,
+    status: 'AUTHORIZED',
+    role: 'OWNER_QA'
+  };
+
+  qaBrowserSessions.set(token, session);
+  saveDurableQaSessions();
+
+  const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  res.setHeader('Set-Cookie', `qa_session_token=${token}; Path=/; Max-Age=28800; HttpOnly; SameSite=Lax${isSecure ? '; Secure' : ''}`);
+  res.redirect('/');
+});
+
 // ── Endpoint 2: Server-Authoritative Capability Verification ──
 app.get('/api/internal-qa/capabilities', (req, res) => {
   try {
+    if (!ENABLE_OWNER_RI) {
+      return res.status(200).json({
+        ok: true,
+        authorized: false,
+        mobileRuntimeInspector: false,
+        enabled: false,
+        reason: 'OWNER_RI_DISABLED'
+      });
+    }
+
     const auth = verifyQaAccess(req);
     if (!auth) {
       return res.status(200).json({
@@ -1346,6 +1517,9 @@ app.get('/api/internal-qa/capabilities', (req, res) => {
       mobileRuntimeInspector: true,
       role: auth.role || 'OWNER_QA',
       projectId: auth.projectId || 'prj-free-b0c6f3ea',
+      buildSha: '9196e0b',
+      uiVersion: '3D2-C12.9-P2R17-DEV11',
+      environment: process.env.NODE_ENV || 'development',
       expiresAt: auth.expiresAt
     });
   } catch (err) {
@@ -1376,7 +1550,7 @@ app.post('/api/internal-qa/mobile-ri/report', express.json({ limit: '25mb' }), a
     sanitized.isTest = true;
     sanitized.receivedAt = new Date().toISOString();
 
-    const baseDir = path.join(process.cwd(), 'production_artifacts', 'mobile_runtime_inspector', sessionId);
+    const baseDir = path.join(PERSISTENT_VOLUME_ROOT, 'mobile_runtime_inspector', sessionId);
     fs.mkdirSync(baseDir, { recursive: true });
 
     const filesSaved = [];
@@ -1472,7 +1646,11 @@ app.get('/api/internal-qa/mobile-ri/session/:sessionId', (req, res) => {
     }
 
     const sessionId = (req.params.sessionId || '').replace(/[^a-zA-Z0-9_-]/g, '');
-    const baseDir = path.join(process.cwd(), 'production_artifacts', 'mobile_runtime_inspector', sessionId);
+    let baseDir = path.join(PERSISTENT_VOLUME_ROOT, 'mobile_runtime_inspector', sessionId);
+    if (!fs.existsSync(baseDir)) {
+      const legacyDir = path.join(process.cwd(), 'production_artifacts', 'mobile_runtime_inspector', sessionId);
+      if (fs.existsSync(legacyDir)) baseDir = legacyDir;
+    }
     if (!fs.existsSync(baseDir)) {
       return res.status(404).json({ ok: false, error: 'Session not found' });
     }
@@ -6582,6 +6760,24 @@ app.get('/demo-splat.html', (req, res) => {
   res.status(404).send('3DGS viewer not yet deployed. Please check back soon.');
 });
 
+// ── Preserved Legacy Information-Rich Home Route (Section 6/7) ──
+app.get(['/overview', '/overview.html'], (req, res) => {
+  const overviewFile = path.join(__dirname, '..', 'client', 'overview.html');
+  if (fs.existsSync(overviewFile)) {
+    return res.sendFile(overviewFile, { headers: { 'Cache-Control': 'no-cache' } });
+  }
+  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
+});
+
+// ── 3D2R Official Landing Preview Route (Section 19 / 31) ──
+app.get(['/landing-preview', '/landing-preview.html'], (req, res) => {
+  const landingFile = path.join(__dirname, '..', 'client', 'landing-preview.html');
+  if (fs.existsSync(landingFile)) {
+    return res.sendFile(landingFile, { headers: { 'Cache-Control': 'no-cache' } });
+  }
+  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
+});
+
 // ── Explicit Index Route (forces no-cache on index.html) ──
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'client', 'index.html'), { headers: { 'Cache-Control': 'no-cache' } });
@@ -10520,7 +10716,15 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
     // but MUST NOT bypass panorama-level ring/graph validation or mark full 360 valid.
     const CAPTURE_CLOSURE_BYPASSES_RING_PREFLIGHT = false;
     console.log(`[CAPTURE_QUALITY_GATE] Validating capture ring for ${sourceList.length} photos (bypass=${CAPTURE_CLOSURE_BYPASSES_RING_PREFLIGHT})...`);
-    const ringValidation = defaultPanoramicStitcher.validateCaptureRing(sourceList);
+    const rawRingValidation = defaultPanoramicStitcher.validateCaptureRing(sourceList);
+    const ringValidation = rawRingValidation || {
+      ok: false,
+      allPass: false,
+      ringStatus: 'BROKEN',
+      failedPairs: [],
+      weakPairs: [],
+      pairResults: []
+    };
     console.log(`[CAPTURE_QUALITY_GATE] Result: ringStatus=${ringValidation.ringStatus} allPass=${ringValidation.allPass} failedPairs=${(ringValidation.failedPairs || []).join(',')}`);
 
     // If source photos failed ring connection and this is NOT an authorized guided capture with physical closure, block immediately.

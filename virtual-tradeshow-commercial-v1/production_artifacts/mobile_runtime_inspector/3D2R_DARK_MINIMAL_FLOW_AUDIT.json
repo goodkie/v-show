@@ -1,0 +1,85 @@
+{
+  "phase": "3D2R \u2014 DARK MINIMAL PRODUCT FLOW RESTRUCTURE",
+  "auditTimestamp": "2026-09-16T03:34:00Z",
+  "project": "goodkie/v-show",
+  "localRoot": "E:\\vivpr\\ai\\v-show\\virtual-tradeshow-commercial-v1",
+  "authoritativeLiveBranch": "release/3d2r-official-live",
+  "authoritativeLiveSha": "ab7c13f62aee54ab6f55dd4ffae08857db695949",
+  "featureBranch": "feature/3d2r-dark-minimal-flow",
+  "featureStartSha": "ab7c13f62aee54ab6f55dd4ffae08857db695949",
+  "featureDeployedSha": "2cc691365ff962a39a9fb66cc43b332553ad5893",
+  "backupBranch": "backup/3d2r-pre-dark-minimal-ui-2026-09-15",
+  "backupTag": "3d2r-pre-dark-minimal-ui-restore-2026-09-15",
+  "offlineBundle": "E:\\vivpr\\ai\\v-show\\3D2R_PRE_DARK_MINIMAL_UI_RESTORE_2026-09-15.bundle",
+  "offlineBundleSha256": "23c7457dc2ab0ed44d4dc884feb7ff62023c58651454621d5475ed0176dc161e",
+  "worktreePatch": "E:\\vivpr\\ai\\v-show\\PRE_UI_RESTRUCTURE_WORKTREE.patch",
+  "untrackedManifest": "E:\\vivpr\\ai\\v-show\\PRE_UI_RESTRUCTURE_UNTRACKED.txt",
+  "packageLandingPreservation": {
+    "packageZip": "3D2R_Landing_Agent_Package_45.zip",
+    "packageSourceOfTruth": "3D2R_Landing_Agent_Package_45/02_SOURCE/index.html",
+    "packageSourceSha256": "d4c3ab526ee19b81de03c384a993156372802168ff6a811ebd0beedab869692c",
+    "packageVisualReference": "3D2R_Landing_Agent_Package_45/01_FINAL_REFERENCE/preview.html",
+    "packageVisualReferenceSha256": "22bd2e2458952c34fa5d8e52a02141b6551db09d7591b1794fde87c21f243a0d",
+    "landingPreviewHtmlSha256": "22bd2e2458952c34fa5d8e52a02141b6551db09d7591b1794fde87c21f243a0d",
+    "bgImageSha256": "909eff9770f3aef6d7f1ac17ce7bd2ca3e0aab410d4f9a824cc42b2e6f84a25a",
+    "logoImageSha256": "ff9367ec592785333b49ea36f7a5449b8ae4174bfb68098babb8e16e99356970"
+  },
+  "legacyOverviewPreservation": {
+    "legacyComponentPath": "virtual-tradeshow-commercial-v1/client/overview.html",
+    "legacyComponentSha256": "84a99697915305087a3d83807bf1e1d6cc8ec88723c82ea968d8393ca2b706d8",
+    "preEditIndexHtmlSha256": "84a99697915305087a3d83807bf1e1d6cc8ec88723c82ea968d8393ca2b706d8",
+    "legacyInfoHomeNonMutationGate": true,
+    "overviewRoute": "/overview",
+    "overviewHttpCode": 200
+  },
+  "radialTransition": {
+    "labelFadeMs": 180,
+    "radialDurationMs": 900,
+    "cubicBezier": "cubic-bezier(0.19, 1, 0.22, 1)",
+    "scaleFormula": "Math.ceil(Math.hypot(window.innerWidth, window.innerHeight) / 168 * 2.2)",
+    "viewportCoverageGuarantee": "100% full viewport coverage without corner gap across all 7 viewports"
+  },
+  "cameraFlowIntegration": {
+    "cameraCoreChanged": false,
+    "fakeCameraLayerUsed": false,
+    "streamReused": true,
+    "landingCaptureAdapter": {
+      "vertical": "TRADE_SHOW",
+      "source": "landing",
+      "intent": "create_virtual_booth"
+    },
+    "collapsedWorkflow": "LANDING -> START_RADIAL_EXPANSION -> CAMERA -> CAPTURE -> PROCESSING -> RESULT",
+    "serverCapturePathUnchanged": true
+  },
+  "deployTargetsSync": {
+    "cleanDeploy": "PASS",
+    "railwayDeploy": "PASS",
+    "appBuild": "PASS"
+  },
+  "railwayDeployment": {
+    "previewServiceName": "3d2r-dark-minimal-flow-preview",
+    "previewServiceId": "7c449d16-6765-4006-81d5-d75b1b19ddab",
+    "previewDeploymentId": "2466741a-070f-4ffa-bab2-5e671889ab65",
+    "previewUrl": "https://3d2r-dark-minimal-flow-preview-production.up.railway.app",
+    "previewStatus": "SUCCESS",
+    "previewEndpoints": {
+      "/": 200,
+      "/overview": 200,
+      "/landing-preview": 200,
+      "/health": 200
+    },
+    "productionServiceName": "v-show-commercial-v1",
+    "productionServiceId": "8e807076-c4bf-4f0a-8bdc-e56d9ecb2016",
+    "productionActiveSha": "ab7c13f62aee54ab6f55dd4ffae08857db695949",
+    "productionStatus": "SUCCESS",
+    "productionNonMutationGate": "PASS",
+    "railwayPreviewIndependentlyVerified": true,
+    "independentVerificationReport": "3D2R_RAILWAY_PREVIEW_VERIFICATION.json"
+  },
+  "verdict": {
+    "darkMinimalFlowComplete": true,
+    "productionPromotionAllowed": false,
+    "customerDefault": "P2R13",
+    "nextAction": "HARD_STOP_OWNER_PREVIEW_REVIEW"
+  }
+}

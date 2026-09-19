@@ -1,0 +1,27 @@
+{
+  "protocol": "3D2R_LANDING_VISUAL_ACCEPTANCE",
+  "date": "2026-09-15",
+  "status": "PASS",
+  "VISUAL_REFERENCE_MATCH": "PASS",
+  "screenshots": {
+    "390x844": "E:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\3D2R_LANDING_390x844.png",
+    "844x390": "E:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\3D2R_LANDING_844x390.png",
+    "1440x900": "E:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\3D2R_LANDING_1440x900.png",
+    "1920x1080": "E:\\vivpr\\ai\\v-show\\production_artifacts\\mobile_runtime_inspector\\3D2R_LANDING_1920x1080.png"
+  },
+  "visualEvaluation": {
+    "particleDensity": "HIGH_DENSITY_MATCH",
+    "particleSpread": "FULL_VIEWPORT_MATCH",
+    "pointSize": "FIXED_PER_NODE_PERSPECTIVE_SCALE",
+    "lineOpacity": "SUBTLE_DEPTH_WEIGHTED_MATCH",
+    "depthImpression": "RIGID_3D_LATTICE_MATCH",
+    "logoScale": "21PX_DESKTOP_18PX_MOBILE_MATCH",
+    "startBehavior": "WHITE_FILL_EXPANSION_MATCH",
+    "portalExpansion": "SCALE_18X_WIPE_MATCH",
+    "footerPosition": "CENTERED_BOTTOM_26PX_MATCH"
+  },
+  "intentionalDeviations": [
+    "Top brand uses supplied 3D2R logo image only (no separate text title) per Section 13 contract",
+    "START button launches real production capture flow instead of fake demo shutter per Section 17 contract"
+  ]
+}

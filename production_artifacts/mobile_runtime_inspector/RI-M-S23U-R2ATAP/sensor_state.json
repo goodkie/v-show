@@ -1,0 +1,8 @@
+{
+  "hasOrientation": true,
+  "hasMotion": true,
+  "eventsReceived": 45,
+  "accumulatedRotationDeg": 90,
+  "speedStatus": "NORMAL",
+  "directionLocked": true
+}
