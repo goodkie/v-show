@@ -25,7 +25,9 @@
 const DEFAULT_STAGE2_CONFIG = Object.freeze({
   targetCount: 12,
   targetSpacingDeg: 30.0,
-  targetToleranceDeg: 3.5,
+  targetToleranceDeg: 4.5,
+  holdToleranceDeg: 6.5,
+  cancelToleranceDeg: 8.0,
   stableHoldMs: 350,
   countdownSeconds: 3,
   maxAngularVelocityDegSec: 15.0,
@@ -179,6 +181,12 @@ class Stage2CaptureEngine {
     if (!this.sensorListenerAttached) {
       if (typeof win.addEventListener === 'function') {
         win.addEventListener('deviceorientation', this.boundOrientationHandler);
+        // CRITICAL FOR PHYSICAL ANDROID (Z Fold4 / Galaxy S23 / Android Chrome):
+        // Standard deviceorientation on Android often delivers relative or uncalibrated values,
+        // while deviceorientationabsolute delivers true absolute compass heading.
+        if ('ondeviceorientationabsolute' in win) {
+          win.addEventListener('deviceorientationabsolute', this.boundOrientationHandler, true);
+        }
       }
       this.sensorListenerAttached = true;
       this.attachedTargetWindow = win;
@@ -192,6 +200,9 @@ class Stage2CaptureEngine {
     if (win && this.sensorListenerAttached) {
       if (typeof win.removeEventListener === 'function') {
         win.removeEventListener('deviceorientation', this.boundOrientationHandler);
+        if ('ondeviceorientationabsolute' in win) {
+          win.removeEventListener('deviceorientationabsolute', this.boundOrientationHandler, true);
+        }
       }
     }
     this.sensorListenerAttached = false;
@@ -201,18 +212,46 @@ class Stage2CaptureEngine {
   // ─── Orientation Processing & Continuous Yaw Unwrap ─────────────────────────
   handleDeviceOrientation(event) {
     if (!event) return;
-    const alpha = event.alpha !== null && event.alpha !== undefined ? event.alpha : 0;
-    const beta  = event.beta  !== null && event.beta  !== undefined ? event.beta  : 0;
-    const gamma = event.gamma !== null && event.gamma !== undefined ? event.gamma : 0;
-    const ts    = event.timeStamp || Date.now();
 
-    this.processSensorInput({ alpha, beta, gamma, timestamp: ts });
+    let alpha = null;
+    if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
+      alpha = (360 - event.webkitCompassHeading) % 360;
+    } else if (event.alpha !== undefined && event.alpha !== null) {
+      alpha = event.alpha;
+    }
+    // If event provides no alpha/heading, ignore it (do not poison state with alpha=0)
+    if (alpha === null) return;
+
+    let rawBeta = event.beta !== null && event.beta !== undefined ? event.beta : 0;
+    let rawGamma = event.gamma !== null && event.gamma !== undefined ? event.gamma : 0;
+
+    // Upright portrait pose: optical axis is horizontal when beta is 90° and gamma is 0°.
+    // Linear deviation from upright vertical plane:
+    const pitchDev = rawBeta - 90.0;
+    const rollDev = rawGamma;
+
+    const ts = event.timeStamp || Date.now();
+    this.processSensorInput({
+      alpha,
+      beta: pitchDev,
+      gamma: rollDev,
+      rawBeta,
+      rawGamma,
+      source: event.type || 'deviceorientation',
+      timestamp: ts
+    });
   }
 
-  processSensorInput({ alpha, beta, gamma, timestamp }) {
+  processSensorInput({ alpha, beta, gamma, rawBeta, rawGamma, source, timestamp }) {
     this.sensorAvailable = true;
     this.currentPitch = beta;
     this.currentRoll = gamma;
+    this.rawBeta = rawBeta !== undefined ? rawBeta : beta;
+    this.rawGamma = rawGamma !== undefined ? rawGamma : gamma;
+    this.sensorSource = source || (this.sensorSource || 'unknown');
+    this.sensorSampleCount = (this.sensorSampleCount || 0) + 1;
+    if (alpha !== null && alpha !== undefined) this.validAlphaCount = (this.validAlphaCount || 0) + 1;
+    if (beta !== null && beta !== undefined) this.validBetaCount = (this.validBetaCount || 0) + 1;
 
     // Session-relative yaw origin initialization (§C3)
     if (this.relativeYawOrigin === null) {
@@ -276,16 +315,18 @@ class Stage2CaptureEngine {
     const targetAngle = this.currentTargetIndex * this.config.targetSpacingDeg;
     const angularDiff = Math.abs(this.getAngularDistance(this.normalizedYaw, targetAngle));
 
-    const isWithinTolerance = angularDiff <= this.config.targetToleranceDeg;
+    const enterTolerance = this.config.targetToleranceDeg || 4.5;
+    const isWithinTolerance = angularDiff <= enterTolerance;
     const isStationary = this.currentAngularVelocity <= this.config.maxAngularVelocityDegSec;
     const isStable = isWithinTolerance && isStationary && orientationSafe;
 
-    // Fail-Closed Countdown Check (§C5)
+    // Fail-Closed Countdown Check (§C5) with Hysteresis
     if (this.isCountdownState()) {
-      if (!isStable) {
+      const cancelTolerance = this.config.cancelToleranceDeg || 8.0;
+      if (angularDiff > cancelTolerance || !orientationSafe || this.currentAngularVelocity > (this.config.maxAngularVelocityDegSec * 1.5)) {
         // Stability lost: immediate fail-closed cancellation
         this.cancelCountdown();
-        this.transitionTo(angularDiff <= 10.0 ? STATES.APPROACHING_TARGET : STATES.TURN_CLOCKWISE);
+        this.transitionTo(angularDiff <= 12.0 ? STATES.APPROACHING_TARGET : STATES.TURN_CLOCKWISE);
         return;
       }
       return;
@@ -303,7 +344,7 @@ class Stage2CaptureEngine {
       }
     } else {
       this.stabilityStartTime = null;
-      if (angularDiff <= 10.0 && orientationSafe) {
+      if (angularDiff <= 12.0 && orientationSafe) {
         this.transitionTo(STATES.APPROACHING_TARGET);
       } else {
         this.transitionTo(STATES.TURN_CLOCKWISE);
@@ -709,6 +750,34 @@ class Stage2CaptureEngine {
       const rot = Math.round(this.normalizedYaw);
       this.boundUI.rotText.textContent = `${rot}° ROTATION`;
     }
+
+    // 6. Real-time Heading Needle and HUD angle
+    if (this.boundUI.needle) {
+      this.boundUI.needle.style.transform = `rotate(${this.normalizedYaw.toFixed(1)}deg)`;
+    } else if (typeof document !== 'undefined') {
+      const needle = document.getElementById('captureHeadingNeedle');
+      if (needle) needle.style.transform = `rotate(${this.normalizedYaw.toFixed(1)}deg)`;
+    }
+    if (this.boundUI.hudAngle) {
+      this.boundUI.hudAngle.textContent = `${Math.round(this.normalizedYaw)}°`;
+    } else if (typeof document !== 'undefined') {
+      const ha = document.getElementById('captureHudAngle');
+      if (ha) ha.textContent = `${Math.round(this.normalizedYaw)}°`;
+    }
+    if (this.boundUI.hudTarget) {
+      this.boundUI.hudTarget.textContent = `TARGET ${this.currentTargetIndex * this.config.targetSpacingDeg}°`;
+    } else if (typeof document !== 'undefined') {
+      const ht = document.getElementById('captureHudTarget');
+      if (ht) ht.textContent = `TARGET ${this.currentTargetIndex * this.config.targetSpacingDeg}°`;
+    }
+  }
+
+  triggerManualCapture() {
+    if (this.state === STATES.IDLE || this.state === STATES.CAPTURE_COMPLETE || this.state === STATES.GENERATION_READY) {
+      return false;
+    }
+    this.cancelCountdown();
+    return this.executeCapture();
   }
 
   render12CheckpointsSvg(gElement) {
@@ -748,8 +817,101 @@ class Stage2CaptureEngine {
     };
   }
 
+  // ─── Lightweight Stage 2 Mobile RI Telemetry Adapter (§RI-S2) ───────────────
+  initTelemetry(qaSessionToken = null, projectId = 'prj-free-b0c6f3ea') {
+    this.telemetry = {
+      sessionId: 'RI-S2-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase(),
+      qaSessionToken: qaSessionToken,
+      projectId: projectId,
+      startTime: Date.now(),
+      stateTransitions: [],
+      camera: {
+        trackReady: !!(this.activeStream && this.activeStream.active),
+        streamCount: this.streamCount,
+      }
+    };
+    this.recordTelemetryEvent('INIT', { state: this.state });
+    return this.telemetry.sessionId;
+  }
+
+  recordTelemetryEvent(type, payload = {}) {
+    if (!this.telemetry) return;
+    this.telemetry.stateTransitions.push({
+      t: Date.now() - this.telemetry.startTime,
+      type,
+      state: this.state,
+      yaw: this.normalizedYaw,
+      target: this.currentTargetIndex,
+      ...payload
+    });
+    // Keep bounded rolling buffer of last 100 transitions
+    if (this.telemetry.stateTransitions.length > 100) {
+      this.telemetry.stateTransitions.shift();
+    }
+  }
+
+  async sendTelemetryReport(endpointUrl = '/api/internal-qa/mobile-ri/report') {
+    if (!this.telemetry) return false;
+    try {
+      const payload = {
+        sessionId: this.telemetry.sessionId,
+        qaSessionToken: this.telemetry.qaSessionToken,
+        projectId: this.telemetry.projectId,
+        summary: {
+          sampleCount: this.sensorSampleCount || 0,
+          validAlphaCount: this.validAlphaCount || 0,
+          validBetaCount: this.validBetaCount || 0,
+          sensorSource: this.sensorSource || 'unknown',
+          targetCompleted: this.canonicalFrames.length,
+          frameCount: this.canonicalFrames.length,
+          deviceOrientationAvailable: this.sensorAvailable,
+          currentPitch: this.currentPitch,
+          currentRoll: this.currentRoll,
+        },
+        timeline: this.telemetry.stateTransitions,
+        runtimeState: {
+          state: this.state,
+          currentTargetIndex: this.currentTargetIndex,
+          normalizedYaw: this.normalizedYaw,
+          currentPitch: this.currentPitch,
+          currentRoll: this.currentRoll,
+          camera: this.telemetry.camera,
+        },
+        frames: this.canonicalFrames.map(f => ({
+          targetIndex: f.targetIndex,
+          targetYaw: f.targetYaw,
+          capturedYaw: f.capturedYaw,
+          yawError: f.yawError,
+          qualityScore: f.qualityScore,
+          hash: f.hash,
+          byteSize: f.byteSize || 0
+        }))
+      };
+
+      const headers = { 'Content-Type': 'application/json' };
+      if (this.telemetry.qaSessionToken) {
+        headers['x-qa-session'] = this.telemetry.qaSessionToken;
+      }
+
+      if (typeof fetch === 'function') {
+        const res = await fetch(endpointUrl, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload)
+        });
+        return res.ok;
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   transitionTo(newState) {
     this.state = newState;
+    if (this.telemetry) {
+      this.recordTelemetryEvent('STATE_TRANSITION', { toState: newState });
+    }
     if (typeof this.onStateChange === 'function') {
       this.onStateChange(newState, this.getNeonState(), this);
     }

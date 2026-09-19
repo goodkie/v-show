@@ -453,6 +453,60 @@ test('[T16] Generation network submission disabled boundary (call count = 0)', (
   assert.strictEqual(engine.generationNetworkCallCount, 0);
 });
 
+test('[T17] Explicit upright portrait pose boundary test (flat desk rejected, upright accepted)', () => {
+  const engine = new Stage2CaptureEngine();
+  engine.startCamera(createMockStream());
+  const win = createMockWindow();
+  engine.attachSensorListeners(win);
+
+  // 1. Establish origin
+  win.emit('deviceorientation', { alpha: 180, beta: 90, gamma: 0, timeStamp: 1000 });
+  assert.strictEqual(engine.currentPitch, 0.0, 'Beta=90 produces 0° upright pitch deviation');
+
+  // 2. Phone lying flat on desk (beta=0): pitch deviation = -90°. Must be rejected.
+  win.emit('deviceorientation', { alpha: 180, beta: 0, gamma: 0, timeStamp: 1100 });
+  assert.strictEqual(engine.currentPitch, -90.0);
+  assert.notStrictEqual(engine.state, STATES.STABILIZING, 'Flat desk must be rejected as UNSAFE pitch');
+
+  // 3. Phone tilted 45°: pitch deviation = -45°. Must be rejected.
+  win.emit('deviceorientation', { alpha: 180, beta: 45, gamma: 0, timeStamp: 1200 });
+  assert.strictEqual(engine.currentPitch, -45.0);
+  assert.notStrictEqual(engine.state, STATES.STABILIZING, '45° tilt must be rejected');
+
+  // 4. Phone upright within limit (beta=76°, deviation = -14° <= 15°): accepted.
+  win.emit('deviceorientation', { alpha: 180, beta: 76, gamma: 0, timeStamp: 1300 });
+  assert.strictEqual(engine.currentPitch, -14.0);
+  assert.strictEqual(engine.state, STATES.STABILIZING, '76° beta (14° deviation <= 15°) must be accepted as SAFE');
+
+  // 5. Phone upright past limit (beta=74°, deviation = -16° > 15°): rejected.
+  win.emit('deviceorientation', { alpha: 180, beta: 74, gamma: 0, timeStamp: 1400 });
+  assert.strictEqual(engine.currentPitch, -16.0);
+  assert.notStrictEqual(engine.state, STATES.STABILIZING, '74° beta (16° deviation > 15°) must be rejected as UNSAFE');
+});
+
+test('[T18] Lightweight Stage 2 RI telemetry recording & sample metrics', async () => {
+  const engine = new Stage2CaptureEngine();
+  const sessionId = engine.initTelemetry('qa-sess-test-token', 'prj-test-01');
+
+  assert.ok(sessionId.startsWith('RI-S2-'), 'Session ID must follow RI-S2 prefix');
+  assert.strictEqual(engine.telemetry.qaSessionToken, 'qa-sess-test-token');
+
+  // Record orientation samples
+  engine.processSensorInput({ alpha: 180, beta: 0, gamma: 0, rawBeta: 90, rawGamma: 0, source: 'deviceorientationabsolute', timestamp: 1000 });
+  engine.processSensorInput({ alpha: 150, beta: 2, gamma: 1, rawBeta: 92, rawGamma: 1, source: 'deviceorientationabsolute', timestamp: 1100 });
+
+  assert.strictEqual(engine.sensorSampleCount, 2);
+  assert.strictEqual(engine.validAlphaCount, 2);
+  assert.strictEqual(engine.validBetaCount, 2);
+  assert.strictEqual(engine.sensorSource, 'deviceorientationabsolute');
+  assert.ok(engine.telemetry.stateTransitions.length > 0, 'Transitions must be recorded in telemetry buffer');
+
+  // Send report without actual network call
+  const sendResult = await engine.sendTelemetryReport('/api/internal-qa/mobile-ri/report');
+  assert.strictEqual(sendResult, true, 'Telemetry report serialization must succeed');
+});
+
+
 console.log('\n================================================================');
 console.log(`TEST EXECUTION COMPLETE: ${passCount} PASSED, ${failCount} FAILED`);
 console.log('================================================================');
