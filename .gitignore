@@ -53,3 +53,8 @@ virtual-tradeshow-commercial-v1/offsite_dr_restore_isolated_test/
 
 offsite_r2_restore_drill_isolated/
 virtual-tradeshow-commercial-v1/offsite_r2_restore_drill_isolated/
+
+# Runtime QA Sessions & Mobile RI Artifacts
+**/data/mobile_runtime_inspector/**
+**/data/qa_sessions.json
+**/data/guided_capture/**

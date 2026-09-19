@@ -501,9 +501,33 @@ test('[T18] Lightweight Stage 2 RI telemetry recording & sample metrics', async 
   assert.strictEqual(engine.sensorSource, 'deviceorientationabsolute');
   assert.ok(engine.telemetry.stateTransitions.length > 0, 'Transitions must be recorded in telemetry buffer');
 
-  // Send report without actual network call
+  // Mock fetch to verify header auth and zero token in body
+  let capturedHeaders = null;
+  let capturedBody = null;
+  const originalFetch = global.fetch;
+  global.fetch = async (url, opts) => {
+    capturedHeaders = opts.headers;
+    capturedBody = JSON.parse(opts.body);
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        ok: true,
+        sessionId: capturedBody.sessionId,
+        status: 'PERSISTED',
+        artifactPath: `/production_artifacts/mobile_runtime_inspector/${capturedBody.sessionId}/`,
+        filesSaved: ['summary.json', 'timeline.json']
+      })
+    };
+  };
+
   const sendResult = await engine.sendTelemetryReport('/api/internal-qa/mobile-ri/report');
-  assert.strictEqual(sendResult, true, 'Telemetry report serialization must succeed');
+  global.fetch = originalFetch;
+
+  assert.strictEqual(sendResult.success, true, 'Telemetry report submission must succeed');
+  assert.strictEqual(sendResult.status, 'PERSISTED');
+  assert.strictEqual(capturedHeaders['x-qa-session'], 'qa-sess-test-token');
+  assert.strictEqual(capturedBody.qaSessionToken, undefined, 'qaSessionToken must NOT be present in body payload');
 });
 
 

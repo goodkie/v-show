@@ -851,11 +851,13 @@ class Stage2CaptureEngine {
   }
 
   async sendTelemetryReport(endpointUrl = '/api/internal-qa/mobile-ri/report') {
-    if (!this.telemetry) return false;
+    if (!this.telemetry) return { success: false, reason: 'TELEMETRY_NOT_INITIALIZED' };
+    if (typeof fetch !== 'function') {
+      return { success: false, reason: 'FETCH_UNAVAILABLE' };
+    }
     try {
       const payload = {
         sessionId: this.telemetry.sessionId,
-        qaSessionToken: this.telemetry.qaSessionToken,
         projectId: this.telemetry.projectId,
         summary: {
           sampleCount: this.sensorSampleCount || 0,
@@ -875,7 +877,10 @@ class Stage2CaptureEngine {
           normalizedYaw: this.normalizedYaw,
           currentPitch: this.currentPitch,
           currentRoll: this.currentRoll,
-          camera: this.telemetry.camera,
+          camera: {
+            trackReady: !!(this.activeStream && this.activeStream.active),
+            streamCount: this.streamCount,
+          },
         },
         frames: this.canonicalFrames.map(f => ({
           targetIndex: f.targetIndex,
@@ -893,17 +898,29 @@ class Stage2CaptureEngine {
         headers['x-qa-session'] = this.telemetry.qaSessionToken;
       }
 
-      if (typeof fetch === 'function') {
-        const res = await fetch(endpointUrl, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload)
-        });
-        return res.ok;
+      const res = await fetch(endpointUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        return { success: false, status: res.status, reason: 'HTTP_' + res.status };
       }
-      return true;
+
+      const data = await res.json();
+      if (data && data.ok && data.status === 'PERSISTED' && data.sessionId === this.telemetry.sessionId) {
+        return {
+          success: true,
+          sessionId: data.sessionId,
+          status: data.status,
+          artifactPath: data.artifactPath,
+          filesSaved: data.filesSaved
+        };
+      }
+      return { success: false, reason: 'INVALID_SERVER_RECEIPT', data };
     } catch (e) {
-      return false;
+      return { success: false, reason: e.message };
     }
   }
 

@@ -1272,10 +1272,15 @@ ensureAuthoritativeQaProject('prj-free-b0c6f3ea');
 function verifyQaAccess(req) {
   // 1. Check QA browser session token (x-qa-session header or query param)
   const qaSessionToken = (req.headers && req.headers['x-qa-session']) || (req.query && req.query.qaSessionToken) || (req.body && req.body.qaSessionToken);
-  if (qaSessionToken && qaBrowserSessions.has(qaSessionToken)) {
-    const sess = qaBrowserSessions.get(qaSessionToken);
-    if (sess.status === 'AUTHORIZED' && new Date(sess.expiresAt).getTime() > Date.now()) {
-      return sess;
+  if (qaSessionToken) {
+    if (!qaBrowserSessions.has(qaSessionToken)) {
+      loadDurableQaSessions();
+    }
+    if (qaBrowserSessions.has(qaSessionToken)) {
+      const sess = qaBrowserSessions.get(qaSessionToken);
+      if (sess.status === 'AUTHORIZED' && new Date(sess.expiresAt).getTime() > Date.now()) {
+        return sess;
+      }
     }
   }
 
@@ -1417,7 +1422,7 @@ app.post('/api/internal-qa/mobile-ri/report', express.json({ limit: '25mb' }), a
     sanitized.isTest = true;
     sanitized.receivedAt = new Date().toISOString();
 
-    const baseDir = path.join(process.cwd(), 'production_artifacts', 'mobile_runtime_inspector', sessionId);
+    const baseDir = path.join(PERSISTENT_VOLUME_ROOT, 'mobile_runtime_inspector', sessionId);
     fs.mkdirSync(baseDir, { recursive: true });
 
     const filesSaved = [];
@@ -1513,7 +1518,11 @@ app.get('/api/internal-qa/mobile-ri/session/:sessionId', (req, res) => {
     }
 
     const sessionId = (req.params.sessionId || '').replace(/[^a-zA-Z0-9_-]/g, '');
-    const baseDir = path.join(process.cwd(), 'production_artifacts', 'mobile_runtime_inspector', sessionId);
+    let baseDir = path.join(PERSISTENT_VOLUME_ROOT, 'mobile_runtime_inspector', sessionId);
+    if (!fs.existsSync(baseDir)) {
+      const legacyDir = path.join(process.cwd(), 'production_artifacts', 'mobile_runtime_inspector', sessionId);
+      if (fs.existsSync(legacyDir)) baseDir = legacyDir;
+    }
     if (!fs.existsSync(baseDir)) {
       return res.status(404).json({ ok: false, error: 'Session not found' });
     }
