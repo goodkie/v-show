@@ -1401,26 +1401,38 @@ app.post('/api/internal-qa/auth/redeem-session', express.json(), (req, res) => {
   }
 });
 
-// ── Dev / LAN Owner Quick Activation ──
-app.post('/api/internal-qa/auth/quick-activate', express.json(), (req, res) => {
+// ── Secure Owner QA Authentication (Single Gate) ──
+// Requires configured process.env.OWNER_QA_SECRET. Fails closed if unset.
+// Issues short-lived (8h) HttpOnly session cookie without leaking token to client.
+app.post('/api/internal-qa/auth/owner-login', express.json(), (req, res) => {
   if (!ENABLE_OWNER_RI) {
     return res.status(403).json({ ok: false, error: 'OWNER_RI_DISABLED' });
   }
 
-  const host = req.hostname || (req.headers && req.headers.host) || '';
-  const isDevHost = host.includes('localhost') || host.includes('127.0.0.1') || host.includes('192.168.') || process.env.NODE_ENV !== 'production';
+  const configuredSecret = process.env.OWNER_QA_SECRET;
+  if (!configuredSecret || typeof configuredSecret !== 'string' || configuredSecret.length < 8) {
+    return res.status(503).json({ ok: false, error: 'OWNER_QA_SECRET_NOT_CONFIGURED' });
+  }
 
-  if (!isDevHost && req.body?.ownerKey !== (process.env.OWNER_QA_SECRET || 'vshow-stage2-owner-2026')) {
-    return res.status(403).json({ ok: false, error: 'UNAUTHORIZED_ACTIVATION' });
+  const providedSecret = req.body && req.body.ownerSecret;
+  if (!providedSecret || typeof providedSecret !== 'string') {
+    return res.status(401).json({ ok: false, error: 'OWNER_SECRET_REQUIRED' });
   }
 
   const crypto = require('crypto');
-  const token = 'qa-sess-owner-' + crypto.randomBytes(16).toString('hex');
+  const bufA = Buffer.from(providedSecret, 'utf8');
+  const bufB = Buffer.from(configuredSecret, 'utf8');
+  if (bufA.length !== bufB.length || !crypto.timingSafeEqual(bufA, bufB)) {
+    return res.status(403).json({ ok: false, error: 'INVALID_OWNER_SECRET' });
+  }
+
+  const token = 'qa-sess-owner-' + crypto.randomBytes(24).toString('hex');
+  const expiresAt = new Date(Date.now() + 8 * 3600 * 1000).toISOString();
   const session = {
     qaSessionToken: token,
     projectId: 'prj-free-b0c6f3ea',
     createdAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
+    expiresAt,
     status: 'AUTHORIZED',
     role: 'OWNER_QA'
   };
@@ -1428,14 +1440,53 @@ app.post('/api/internal-qa/auth/quick-activate', express.json(), (req, res) => {
   qaBrowserSessions.set(token, session);
   saveDurableQaSessions();
 
-  res.setHeader('Set-Cookie', `qa_session_token=${token}; Path=/; Max-Age=${30 * 24 * 3600}; SameSite=Lax`);
+  const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  res.setHeader('Set-Cookie', `qa_session_token=${token}; Path=/; Max-Age=28800; HttpOnly; SameSite=Lax${isSecure ? '; Secure' : ''}`);
   res.json({
     ok: true,
     authorized: true,
-    qaSessionToken: token,
     role: 'OWNER_QA',
-    expiresAt: session.expiresAt
+    expiresAt
   });
+});
+
+// Owner direct link / QR code activation route
+app.get('/qa', (req, res) => {
+  if (!ENABLE_OWNER_RI) {
+    return res.status(404).send('Not Found');
+  }
+
+  const configuredSecret = process.env.OWNER_QA_SECRET;
+  const providedSecret = req.query && req.query.secret;
+
+  if (!configuredSecret || !providedSecret) {
+    return res.status(403).send('<html><body style="font-family:sans-serif;padding:40px;background:#0f172a;color:#f8fafc;"><h2>Owner QA Authentication Required</h2><p>Please provide a valid secret parameter.</p></body></html>');
+  }
+
+  const crypto = require('crypto');
+  const bufA = Buffer.from(providedSecret, 'utf8');
+  const bufB = Buffer.from(configuredSecret, 'utf8');
+  if (bufA.length !== bufB.length || !crypto.timingSafeEqual(bufA, bufB)) {
+    return res.status(403).send('<html><body style="font-family:sans-serif;padding:40px;background:#0f172a;color:#ef4444;"><h2>Invalid Owner Secret</h2></body></html>');
+  }
+
+  const token = 'qa-sess-owner-' + crypto.randomBytes(24).toString('hex');
+  const expiresAt = new Date(Date.now() + 8 * 3600 * 1000).toISOString();
+  const session = {
+    qaSessionToken: token,
+    projectId: 'prj-free-b0c6f3ea',
+    createdAt: new Date().toISOString(),
+    expiresAt,
+    status: 'AUTHORIZED',
+    role: 'OWNER_QA'
+  };
+
+  qaBrowserSessions.set(token, session);
+  saveDurableQaSessions();
+
+  const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  res.setHeader('Set-Cookie', `qa_session_token=${token}; Path=/; Max-Age=28800; HttpOnly; SameSite=Lax${isSecure ? '; Secure' : ''}`);
+  res.redirect('/');
 });
 
 // ── Endpoint 2: Server-Authoritative Capability Verification ──
@@ -1466,6 +1517,9 @@ app.get('/api/internal-qa/capabilities', (req, res) => {
       mobileRuntimeInspector: true,
       role: auth.role || 'OWNER_QA',
       projectId: auth.projectId || 'prj-free-b0c6f3ea',
+      buildSha: '9196e0b',
+      uiVersion: '3D2-C12.9-P2R17-DEV11',
+      environment: process.env.NODE_ENV || 'development',
       expiresAt: auth.expiresAt
     });
   } catch (err) {

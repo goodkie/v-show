@@ -3,25 +3,23 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * Provides a persistent floating entry point [ 🛠️ RI ] across all screens
  * and states (How To, Camera Denied, Sensor Failure, 12 Checkpoints, Review,
- * Generation, and 3D Viewer).
+ * Generation, and 3D Viewer) for verified Owner QA sessions.
  *
- * Governed by server-side ENABLE_OWNER_RI flag and verified QA authorization.
- * Fails closed for ordinary public visitors.
+ * Governed strictly by server-side ENABLE_OWNER_RI flag and verified QA
+ * authorization via HttpOnly session cookies. Fails closed for ordinary visitors
+ * (zero DOM presence, zero public leakage).
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 (function () {
   'use strict';
 
-  // Prevent multiple initializations
+  // Prevent duplicate initialization
   if (window.MobileRI && window.MobileRI.isMounted && window.MobileRI.isMounted()) {
     return;
   }
 
-  const STORAGE_KEY = 'vshow_qa_session';
-  const UI_VERSION = '3D2-C12.9-P2R17-DEV11';
   let isDrawerOpen = false;
-  let activeQaToken = localStorage.getItem(STORAGE_KEY) || null;
   let riCapabilities = null;
   let eventLog = [];
 
@@ -32,62 +30,39 @@
       details
     };
     eventLog.unshift(entry);
-    if (eventLog.length > 20) eventLog.pop();
+    if (eventLog.length > 25) eventLog.pop();
     updateTimelineUI();
   }
 
-  // Hook into errors and state changes
+  // Record window errors
   window.addEventListener('error', function (err) {
     logEvent('UNCAUGHT_ERROR', { message: err.message, file: err.filename });
   });
 
   async function checkCapabilities() {
     try {
-      const headers = {};
-      if (activeQaToken) {
-        headers['x-qa-session'] = activeQaToken;
-      }
-      const res = await fetch('/api/internal-qa/capabilities', { headers });
+      const res = await fetch('/api/internal-qa/capabilities', {
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' }
+      });
       if (!res.ok) return { authorized: false, mobileRuntimeInspector: false };
-      const data = await res.json();
-      return data;
+      return await res.json();
     } catch (e) {
       return { authorized: false, mobileRuntimeInspector: false, error: e.message };
     }
-  }
-
-  async function quickActivateOwnerDev() {
-    try {
-      const res = await fetch('/api/internal-qa/auth/quick-activate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientTime: new Date().toISOString() })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.qaSessionToken) {
-          activeQaToken = data.qaSessionToken;
-          localStorage.setItem(STORAGE_KEY, activeQaToken);
-          logEvent('DEV_OWNER_ACTIVATED', { role: data.role });
-          return data;
-        }
-      }
-    } catch (e) {
-      logEvent('DEV_ACTIVATION_FAILED', { error: e.message });
-    }
-    return null;
   }
 
   function getTelemetrySnapshot() {
     const engine = window.stage2Engine;
     const nav = window.navigator || {};
 
+    // Camera subsystem
     let cameraState = 'NOT_INITIALIZED';
     let cameraRes = 'N/A';
     const videoElem = document.querySelector('video#guidedCameraPreview') || document.querySelector('video');
     if (videoElem && videoElem.srcObject) {
       const stream = videoElem.srcObject;
-      const tracks = stream.getVideoTracks();
+      const tracks = stream.getVideoTracks ? stream.getVideoTracks() : [];
       if (tracks.length > 0 && tracks[0].readyState === 'live') {
         const s = tracks[0].getSettings ? tracks[0].getSettings() : {};
         cameraState = 'ACTIVE (TRACK_LIVE)';
@@ -99,6 +74,7 @@
       cameraState = 'PERMISSION_DENIED';
     }
 
+    // Sensor subsystem using real Stage2CaptureEngine fields
     let sensorState = 'NOT_INITIALIZED';
     let sampleCount = 0;
     let yaw = '0.0°';
@@ -106,30 +82,38 @@
     let roll = '0.0°';
     let uprightValid = false;
 
-    if (engine && engine.telemetry) {
-      sampleCount = engine.telemetry.samples ? engine.telemetry.samples.length : 0;
-      sensorState = engine.telemetry.sensorSource || (sampleCount > 0 ? 'ACTIVE_SENSOR' : 'LISTENING');
-      if (engine.lastEuler) {
-        yaw = `${engine.lastEuler.yaw ? engine.lastEuler.yaw.toFixed(1) : 0}°`;
-        pitch = `${engine.lastEuler.pitch ? engine.lastEuler.pitch.toFixed(1) : 0}°`;
-        roll = `${engine.lastEuler.roll ? engine.lastEuler.roll.toFixed(1) : 0}°`;
+    if (engine) {
+      sampleCount = typeof engine.sensorSampleCount === 'number' ? engine.sensorSampleCount : (engine.telemetry?.samples?.length || 0);
+      sensorState = engine.sensorSource || (sampleCount > 0 ? 'ACTIVE_SENSOR' : (engine.sensorAvailable ? 'LISTENING' : 'NOT_AVAILABLE'));
+      if (typeof engine.normalizedYaw === 'number') {
+        yaw = `${engine.normalizedYaw.toFixed(1)}°`;
       }
-      uprightValid = !!engine.uprightValid;
+      if (typeof engine.currentPitch === 'number') {
+        pitch = `${engine.currentPitch.toFixed(1)}°`;
+        // Upright pitch check: within pitchLimitDeg (15°)
+        const pitchLimit = engine.config?.pitchLimitDeg || 15.0;
+        uprightValid = Math.abs(engine.currentPitch) <= pitchLimit;
+      }
+      if (typeof engine.currentRoll === 'number') {
+        roll = `${engine.currentRoll.toFixed(1)}°`;
+      }
     }
 
+    // FSM & Checkpoint subsystem
     let fsmState = 'IDLE';
     let activeCp = '0 / 12';
     let photoCount = 0;
     if (engine) {
       fsmState = engine.state || 'IDLE';
-      activeCp = `${(engine.currentCheckpointIndex || 0) + 1} / ${engine.targetCheckpoints || 12}`;
-      photoCount = engine.capturedBlobs ? engine.capturedBlobs.length : 0;
+      const targetIdx = typeof engine.currentTargetIndex === 'number' ? engine.currentTargetIndex : 0;
+      activeCp = `${targetIdx + 1} / ${engine.config?.targetCheckpoints || 12}`;
+      photoCount = Array.isArray(engine.canonicalFrames) ? engine.canonicalFrames.length : 0;
     }
 
     return {
-      uiVersion: UI_VERSION,
-      buildSha: 'b55ac66',
-      environment: window.location.hostname === 'localhost' || window.location.hostname.startsWith('192.168.') ? 'LOCAL_DEV_PREVIEW' : 'PRODUCTION',
+      uiVersion: riCapabilities?.uiVersion || '3D2-C12.9-P2R17-DEV11',
+      buildSha: riCapabilities?.buildSha || '9196e0b',
+      environment: riCapabilities?.environment || 'development',
       url: window.location.href,
       userAgent: nav.userAgent || 'UNKNOWN',
       camera: { state: cameraState, resolution: cameraRes },
@@ -175,10 +159,6 @@
         background: #22c55e;
         border-radius: 50%;
         box-shadow: 0 0 8px #22c55e;
-      }
-      #vshow-owner-ri-badge.unauth .badge-dot {
-        background: #f59e0b;
-        box-shadow: 0 0 8px #f59e0b;
       }
       #vshow-owner-ri-drawer {
         position: fixed;
@@ -346,12 +326,12 @@
       <div class="ri-content">
         <div class="ri-grid">
           <div class="ri-card">
-            <div class="ri-card-label">Build / UI SHA</div>
-            <div class="ri-card-val" id="riValBuild">b55ac66 / ${UI_VERSION}</div>
+            <div class="ri-card-label">Build SHA / Version</div>
+            <div class="ri-card-val" id="riValBuild">${riCapabilities?.buildSha || '9196e0b'} (${riCapabilities?.environment || 'dev'})</div>
           </div>
           <div class="ri-card">
             <div class="ri-card-label">QA Auth Status</div>
-            <div class="ri-card-val" id="riValAuth" style="color: #4ade80;">AUTHORIZED</div>
+            <div class="ri-card-val" id="riValAuth" style="color: #4ade80;">AUTHORIZED (${riCapabilities?.role || 'OWNER_QA'})</div>
           </div>
           <div class="ri-card">
             <div class="ri-card-label">Camera Status</div>
@@ -391,7 +371,7 @@
     document.getElementById('btnRiRefresh').onclick = updateMetricsUI;
     document.getElementById('btnRiSendReport').onclick = submitTelemetryReport;
 
-    logEvent('RI_MOUNTED', { version: UI_VERSION });
+    logEvent('RI_MOUNTED', { buildSha: riCapabilities?.buildSha, role: riCapabilities?.role });
     updateMetricsUI();
   }
 
@@ -438,8 +418,8 @@
     }
     if (elFsm) elFsm.textContent = `${snap.fsm.state} (${snap.fsm.checkpoint}) [${snap.fsm.photosCaptured} pics]`;
     if (elAuth) {
-      elAuth.textContent = activeQaToken ? 'AUTHORIZED' : 'UNAUTHORIZED';
-      elAuth.style.color = activeQaToken ? '#4ade80' : '#f87171';
+      elAuth.textContent = `AUTHORIZED (${snap.role})`;
+      elAuth.style.color = '#4ade80';
     }
   }
 
@@ -466,26 +446,26 @@
     try {
       const snap = getTelemetrySnapshot();
       const sessionId = (window.stage2Engine && window.stage2Engine.telemetry && window.stage2Engine.telemetry.sessionId)
-        || ('RI-DEV-' + Date.now().toString(36).toUpperCase());
+        || ('RI-M-' + Date.now().toString(36).toUpperCase());
 
       const payload = {
         sessionId,
         projectId: 'prj-free-b0c6f3ea',
-        uiVersion: UI_VERSION,
+        uiVersion: snap.uiVersion,
+        buildSha: snap.buildSha,
         source: 'OWNER_MOBILE_RI_PANEL',
         clientTimestamp: new Date().toISOString(),
         snapshot: snap,
         recentEvents: eventLog.slice(0, 15)
       };
 
-      const headers = { 'Content-Type': 'application/json' };
-      if (activeQaToken) {
-        headers['x-qa-session'] = activeQaToken;
-      }
-
       const res = await fetch('/api/internal-qa/mobile-ri/report', {
         method: 'POST',
-        headers,
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify(payload)
       });
 
@@ -495,7 +475,7 @@
         alert(`✅ [Mobile RI Report Persisted!]\nSession ID: ${body.sessionId}\nStatus: ${body.status || 'PERSISTED'}\nArtifacts saved securely on volume.`);
       } else {
         logEvent('REPORT_ERROR', { status: res.status });
-        alert(`❌ Report submission failed (HTTP ${res.status}). Ensure QA session is authorized.`);
+        alert(`❌ Report submission failed (HTTP ${res.status}). Server QA authorization required.`);
       }
     } catch (err) {
       logEvent('REPORT_NETWORK_ERROR', { error: err.message });
@@ -511,30 +491,27 @@
 
   // Initialization Orchestration
   async function init() {
-    // 1. Check capability
-    let cap = await checkCapabilities();
-
-    // 2. If not authorized and on local LAN / dev preview, attempt auto-activation
-    if (!cap.authorized && (window.location.hostname === 'localhost' || window.location.hostname.startsWith('192.168.'))) {
-      await quickActivateOwnerDev();
-      cap = await checkCapabilities();
-    }
-
+    const cap = await checkCapabilities();
     riCapabilities = cap;
 
-    // If server has Mobile RI enabled for this session:
-    if (cap.mobileRuntimeInspector || cap.authorized) {
+    // Strict Double Gate: Requires BOTH server-verified QA authorization AND mobileRuntimeInspector capability
+    const isAuthorizedOwner = !!(cap && cap.authorized === true && cap.mobileRuntimeInspector === true);
+
+    if (isAuthorizedOwner) {
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', renderDrawerUI);
       } else {
         renderDrawerUI();
       }
+    } else {
+      // Ordinary visitor or unauthorized session: fail closed, zero DOM footprint
+      console.debug('[Mobile RI] Inactive for current unauthenticated session.');
     }
   }
 
   // Public API
   window.MobileRI = {
-    version: '1.0.0',
+    version: '1.1.0',
     isMounted: () => !!document.getElementById('vshow-owner-ri-root'),
     openDrawer,
     closeDrawer,

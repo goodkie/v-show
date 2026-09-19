@@ -193,38 +193,76 @@ async function runMobileRiSuite() {
     assert.strictEqual(res.status, 403, 'Unauthorized GET must return 403');
   });
 
-  // [9] Quick Activation & Cookie Auth Transport
-  let quickActivatedToken = null;
-  await test('[9] Dev/LAN quick-activate endpoint provisions OWNER_QA session and Set-Cookie', async () => {
-    const res = await makeRequest('POST', '/api/internal-qa/auth/quick-activate', {
+  // [9] Security Regression: Unauthenticated LAN/dev/forged Host CANNOT bypass auth
+  await test('[9] Unauthenticated LAN/dev/forged Host cannot issue or read OWNER_QA tokens', async () => {
+    // 1. quick-activate endpoint must be removed
+    const removedRes = await makeRequest('POST', '/api/internal-qa/auth/quick-activate', {
+      'Host': '192.168.4.100:3899'
+    }, {});
+    assert.strictEqual(removedRes.status, 404, 'quick-activate must be removed');
+
+    // 2. owner-login without secret is rejected (401)
+    const emptyRes = await makeRequest('POST', '/api/internal-qa/auth/owner-login', {
       'Host': '127.0.0.1:3899'
     }, {});
-    assert.strictEqual(res.status, 200, 'quick-activate must succeed on dev host');
-    assert.strictEqual(res.json?.ok, true);
-    assert.strictEqual(res.json?.role, 'OWNER_QA');
-    assert.ok(res.json?.qaSessionToken, 'Token must be issued');
-    quickActivatedToken = res.json.qaSessionToken;
+    assert.strictEqual(emptyRes.status, 401, 'Empty secret must return 401');
 
-    // Verify cookie transport works on capabilities check
-    const capRes = await makeRequest('GET', '/api/internal-qa/capabilities', {
-      'Cookie': `qa_session_token=${quickActivatedToken}`
-    });
-    assert.strictEqual(capRes.status, 200);
-    assert.strictEqual(capRes.json?.authorized, true, 'Cookie must authorize capabilities check');
-    assert.strictEqual(capRes.json?.mobileRuntimeInspector, true);
-    assert.strictEqual(capRes.json?.role, 'OWNER_QA');
+    // 3. owner-login with wrong secret on forged LAN host is rejected (403)
+    const forgedRes = await makeRequest('POST', '/api/internal-qa/auth/owner-login', {
+      'Host': '192.168.4.100:3899'
+    }, { ownerSecret: 'forged-attacker-attempt' });
+    assert.strictEqual(forgedRes.status, 403, 'Wrong secret must return 403');
   });
 
-  // [10] Serving owner-ri.js module
-  await test('[10] Serving /owner-ri.js module returns JavaScript with MobileRI logic', async () => {
+  // [10] Secure Owner Login & HttpOnly Cookie Transport
+  let ownerCookie = null;
+  await test('[10] Configured owner secret issues HttpOnly cookie and authorizes capabilities', async () => {
+    // Perform login with valid test secret
+    const testSecret = process.env.OWNER_QA_SECRET || 'vshow-stage2-secure-owner-auth-2026';
+    // Ensure test secret is configured in process.env for this test
+    process.env.OWNER_QA_SECRET = testSecret;
+
+    const loginRes = await makeRequest('POST', '/api/internal-qa/auth/owner-login', {}, {
+      ownerSecret: testSecret
+    });
+    assert.strictEqual(loginRes.status, 200, 'Valid owner secret must succeed');
+    assert.strictEqual(loginRes.json?.authorized, true);
+    assert.strictEqual(loginRes.json?.role, 'OWNER_QA');
+    assert.strictEqual(loginRes.json?.qaSessionToken, undefined, 'qaSessionToken must NOT be leaked in JSON body');
+
+    // Verify Set-Cookie header has HttpOnly
+    const setCookie = loginRes.headers['set-cookie'];
+    assert.ok(setCookie, 'Set-Cookie must be present');
+    const cookieStr = Array.isArray(setCookie) ? setCookie[0] : setCookie;
+    assert.ok(cookieStr.includes('HttpOnly'), 'Cookie must be HttpOnly');
+    assert.ok(cookieStr.includes('SameSite=Lax'), 'Cookie must be SameSite=Lax');
+
+    const match = cookieStr.match(/qa_session_token=([^;]+)/);
+    assert.ok(match, 'qa_session_token must be set in cookie');
+    ownerCookie = `qa_session_token=${match[1]}`;
+
+    // Verify cookie transport authorizes capabilities check and returns build metadata
+    const capRes = await makeRequest('GET', '/api/internal-qa/capabilities', {
+      'Cookie': ownerCookie
+    });
+    assert.strictEqual(capRes.status, 200);
+    assert.strictEqual(capRes.json?.authorized, true);
+    assert.strictEqual(capRes.json?.mobileRuntimeInspector, true);
+    assert.strictEqual(capRes.json?.role, 'OWNER_QA');
+    assert.ok(capRes.json?.buildSha, 'buildSha must be present');
+    assert.ok(capRes.json?.uiVersion, 'uiVersion must be present');
+  });
+
+  // [11] Serving owner-ri.js module
+  await test('[11] Serving /owner-ri.js module returns JavaScript with MobileRI logic', async () => {
     const res = await makeRequest('GET', '/owner-ri.js');
     assert.strictEqual(res.status, 200);
     assert.ok(res.headers['content-type']?.includes('javascript'));
     assert.ok(res.body.includes('MobileRI'), 'Module must contain MobileRI definition');
   });
 
-  // [11] Single-Switch Retirement Verification (ENABLE_OWNER_RI=false)
-  await test('[11] When ENABLE_OWNER_RI=false, module is omitted (404) and capabilities disabled', async () => {
+  // [12] Single-Switch Retirement Verification (ENABLE_OWNER_RI=false)
+  await test('[12] When ENABLE_OWNER_RI=false, module is omitted (404) and capabilities disabled', async () => {
     const { spawn } = require('child_process');
     const retiredPort = 3896;
     const retiredEnv = { ...process.env, PORT: String(retiredPort), ENABLE_OWNER_RI: 'false' };
