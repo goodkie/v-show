@@ -1061,6 +1061,24 @@ app.get('/api/debug/video-assets', (req, res) => {
 });
 
 
+// ── C12.9-P2R17: Single-Switch Flag for Owner Mobile Runtime Inspector ──
+const ENABLE_OWNER_RI = process.env.ENABLE_OWNER_RI !== 'false';
+
+// Intercept /owner-ri.js BEFORE static middleware to honor retirement switch
+app.get(['/owner-ri.js', '/client/owner-ri.js'], (req, res) => {
+  if (!ENABLE_OWNER_RI) {
+    res.setHeader('Content-Type', 'application/javascript');
+    return res.status(404).send('/* ENABLE_OWNER_RI=false: Module excluded */');
+  }
+  const targetPath = path.join(__dirname, '..', 'client', 'owner-ri.js');
+  if (fs.existsSync(targetPath)) {
+    res.setHeader('Content-Type', 'application/javascript');
+    return res.sendFile(targetPath);
+  }
+  res.setHeader('Content-Type', 'application/javascript');
+  return res.status(404).send('/* owner-ri.js not found */');
+});
+
 // ── Explicit Root Route with strict no-cache headers ──
 app.get(['/', '/index.html'], (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -1224,6 +1242,13 @@ function loadDurableQaSessions() {
 }
 loadDurableQaSessions();
 
+function getReqCookie(req, name) {
+  const header = req.headers && req.headers.cookie;
+  if (!header) return null;
+  const match = header.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()\\[\\]\\\\\/+^])/g, '\\$1') + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 // C12.9-P2R6: Auto-provision and Seed Authoritative Owner QA Project
 function ensureAuthoritativeQaProject(targetProjectId = 'prj-free-b0c6f3ea') {
   try {
@@ -1270,8 +1295,10 @@ ensureAuthoritativeQaProject('prj-free-b0c6f3ea');
 
 
 function verifyQaAccess(req) {
-  // 1. Check QA browser session token (x-qa-session header or query param)
-  const qaSessionToken = (req.headers && req.headers['x-qa-session']) || (req.query && req.query.qaSessionToken) || (req.body && req.body.qaSessionToken);
+  if (!ENABLE_OWNER_RI) return null;
+
+  // 1. Check QA browser session token (x-qa-session header, query param, body, or cookie)
+  const qaSessionToken = (req.headers && req.headers['x-qa-session']) || (req.query && req.query.qaSessionToken) || (req.body && req.body.qaSessionToken) || getReqCookie(req, 'qa_session_token');
   if (qaSessionToken) {
     if (!qaBrowserSessions.has(qaSessionToken)) {
       loadDurableQaSessions();
@@ -1374,9 +1401,56 @@ app.post('/api/internal-qa/auth/redeem-session', express.json(), (req, res) => {
   }
 });
 
+// ── Dev / LAN Owner Quick Activation ──
+app.post('/api/internal-qa/auth/quick-activate', express.json(), (req, res) => {
+  if (!ENABLE_OWNER_RI) {
+    return res.status(403).json({ ok: false, error: 'OWNER_RI_DISABLED' });
+  }
+
+  const host = req.hostname || (req.headers && req.headers.host) || '';
+  const isDevHost = host.includes('localhost') || host.includes('127.0.0.1') || host.includes('192.168.') || process.env.NODE_ENV !== 'production';
+
+  if (!isDevHost && req.body?.ownerKey !== (process.env.OWNER_QA_SECRET || 'vshow-stage2-owner-2026')) {
+    return res.status(403).json({ ok: false, error: 'UNAUTHORIZED_ACTIVATION' });
+  }
+
+  const crypto = require('crypto');
+  const token = 'qa-sess-owner-' + crypto.randomBytes(16).toString('hex');
+  const session = {
+    qaSessionToken: token,
+    projectId: 'prj-free-b0c6f3ea',
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
+    status: 'AUTHORIZED',
+    role: 'OWNER_QA'
+  };
+
+  qaBrowserSessions.set(token, session);
+  saveDurableQaSessions();
+
+  res.setHeader('Set-Cookie', `qa_session_token=${token}; Path=/; Max-Age=${30 * 24 * 3600}; SameSite=Lax`);
+  res.json({
+    ok: true,
+    authorized: true,
+    qaSessionToken: token,
+    role: 'OWNER_QA',
+    expiresAt: session.expiresAt
+  });
+});
+
 // ── Endpoint 2: Server-Authoritative Capability Verification ──
 app.get('/api/internal-qa/capabilities', (req, res) => {
   try {
+    if (!ENABLE_OWNER_RI) {
+      return res.status(200).json({
+        ok: true,
+        authorized: false,
+        mobileRuntimeInspector: false,
+        enabled: false,
+        reason: 'OWNER_RI_DISABLED'
+      });
+    }
+
     const auth = verifyQaAccess(req);
     if (!auth) {
       return res.status(200).json({

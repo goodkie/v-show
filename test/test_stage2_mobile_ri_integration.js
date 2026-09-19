@@ -193,6 +193,83 @@ async function runMobileRiSuite() {
     assert.strictEqual(res.status, 403, 'Unauthorized GET must return 403');
   });
 
+  // [9] Quick Activation & Cookie Auth Transport
+  let quickActivatedToken = null;
+  await test('[9] Dev/LAN quick-activate endpoint provisions OWNER_QA session and Set-Cookie', async () => {
+    const res = await makeRequest('POST', '/api/internal-qa/auth/quick-activate', {
+      'Host': '127.0.0.1:3899'
+    }, {});
+    assert.strictEqual(res.status, 200, 'quick-activate must succeed on dev host');
+    assert.strictEqual(res.json?.ok, true);
+    assert.strictEqual(res.json?.role, 'OWNER_QA');
+    assert.ok(res.json?.qaSessionToken, 'Token must be issued');
+    quickActivatedToken = res.json.qaSessionToken;
+
+    // Verify cookie transport works on capabilities check
+    const capRes = await makeRequest('GET', '/api/internal-qa/capabilities', {
+      'Cookie': `qa_session_token=${quickActivatedToken}`
+    });
+    assert.strictEqual(capRes.status, 200);
+    assert.strictEqual(capRes.json?.authorized, true, 'Cookie must authorize capabilities check');
+    assert.strictEqual(capRes.json?.mobileRuntimeInspector, true);
+    assert.strictEqual(capRes.json?.role, 'OWNER_QA');
+  });
+
+  // [10] Serving owner-ri.js module
+  await test('[10] Serving /owner-ri.js module returns JavaScript with MobileRI logic', async () => {
+    const res = await makeRequest('GET', '/owner-ri.js');
+    assert.strictEqual(res.status, 200);
+    assert.ok(res.headers['content-type']?.includes('javascript'));
+    assert.ok(res.body.includes('MobileRI'), 'Module must contain MobileRI definition');
+  });
+
+  // [11] Single-Switch Retirement Verification (ENABLE_OWNER_RI=false)
+  await test('[11] When ENABLE_OWNER_RI=false, module is omitted (404) and capabilities disabled', async () => {
+    const { spawn } = require('child_process');
+    const retiredPort = 3896;
+    const retiredEnv = { ...process.env, PORT: String(retiredPort), ENABLE_OWNER_RI: 'false' };
+    const serverProc = spawn(process.execPath, ['server/index.js'], {
+      cwd: path.join(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy'),
+      env: retiredEnv,
+      stdio: 'pipe'
+    });
+
+    try {
+      // Wait for server to boot
+      await new Promise((resolve) => {
+        serverProc.stdout.on('data', (d) => {
+          if (d.toString().includes('Virtual Trade Show Commercial Beta Server')) resolve();
+        });
+        setTimeout(resolve, 2500);
+      });
+
+      // 1. Verify /owner-ri.js returns 404
+      const modRes = await new Promise((resolve, reject) => {
+        http.get(`http://127.0.0.1:${retiredPort}/owner-ri.js`, (r) => {
+          let body = '';
+          r.on('data', c => { body += c; });
+          r.on('end', () => resolve({ status: r.statusCode, body }));
+        }).on('error', reject);
+      });
+      assert.strictEqual(modRes.status, 404, 'owner-ri.js must return 404 when ENABLE_OWNER_RI=false');
+      assert.ok(modRes.body.includes('ENABLE_OWNER_RI=false'), 'Body must indicate disabled switch');
+
+      // 2. Verify capabilities returns disabled even with token
+      const capRes = await new Promise((resolve, reject) => {
+        http.get(`http://127.0.0.1:${retiredPort}/api/internal-qa/capabilities`, (r) => {
+          let body = '';
+          r.on('data', c => { body += c; });
+          r.on('end', () => resolve({ status: r.statusCode, json: JSON.parse(body) }));
+        }).on('error', reject);
+      });
+      assert.strictEqual(capRes.json.mobileRuntimeInspector, false, 'Inspector must be disabled');
+      assert.strictEqual(capRes.json.enabled, false, 'enabled flag must be false');
+      assert.strictEqual(capRes.json.reason, 'OWNER_RI_DISABLED');
+    } finally {
+      serverProc.kill('SIGTERM');
+    }
+  });
+
   console.log('\n================================================================');
   console.log(`MOBILE RI TESTS COMPLETE: ${passCount} PASSED, ${failCount} FAILED`);
   console.log('================================================================');
