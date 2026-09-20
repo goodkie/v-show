@@ -1476,7 +1476,20 @@ class JSONDatabase {
   }
 
   read() {
-    if (!this.memoryData) this.init();
+    try {
+      if (fs.existsSync(DB_FILE)) {
+        const stat = fs.statSync(DB_FILE);
+        if (!this.memoryData || !this.lastMtime || stat.mtimeMs > this.lastMtime) {
+          const raw = fs.readFileSync(DB_FILE, 'utf-8');
+          this.memoryData = JSON.parse(raw);
+          this.lastMtime = stat.mtimeMs;
+        }
+      } else if (!this.memoryData) {
+        this.init();
+      }
+    } catch (e) {
+      if (!this.memoryData) this.init();
+    }
     return this.memoryData;
   }
 
@@ -1492,6 +1505,9 @@ class JSONDatabase {
       this.memoryData = data;
       fs.writeFileSync(TEMP_DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
       fs.renameSync(TEMP_DB_FILE, DB_FILE);
+      try {
+        this.lastMtime = fs.statSync(DB_FILE).mtimeMs;
+      } catch (e) {}
       return true;
     } catch (err) {
       console.error('Error writing database:', err);
@@ -13612,7 +13628,18 @@ return event;
 
   getSpatialBoothCandidate(candidateId) {
     const data = this.read();
-    return (data.spatialCandidates || []).find(c => c.candidateId === candidateId) || null;
+    let cand = (data.spatialCandidates || []).find(c => c.candidateId === candidateId);
+    if (!cand) {
+      try {
+        if (fs.existsSync(DB_FILE)) {
+          const fresh = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+          this.memoryData = fresh;
+          this.lastMtime = fs.statSync(DB_FILE).mtimeMs;
+          cand = (fresh.spatialCandidates || []).find(c => c.candidateId === candidateId);
+        }
+      } catch (e) {}
+    }
+    return cand || null;
   }
 
   async applySpatialBoothCandidate(projectId, candidateId, token) {
