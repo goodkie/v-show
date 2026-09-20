@@ -164,6 +164,7 @@ async function runBrowserViewerTests() {
 
   let browser = null;
   let page = null;
+  let activeJobId = null;
   let activeCandidateId = null;
   let candidateAssetUrl = null;
 
@@ -243,6 +244,7 @@ async function runBrowserViewerTests() {
     assert.ok(startRes.status === 200 || startRes.status === 202);
     const jobId = startRes.json.jobId;
     assert.ok(jobId);
+    activeJobId = jobId;
 
     // Step D: Poll until terminal READY state with authoritative token
     let readyCandidateId = null;
@@ -343,7 +345,7 @@ async function runBrowserViewerTests() {
       } catch (e) {
         return -1;
       }
-    }, BASE_URL, activeCandidateId);
+    }, BASE_URL, activeJobId);
     assert.strictEqual(unauthJobStatus, 403, 'Unauthenticated job status query must return 403 Forbidden');
   });
 
