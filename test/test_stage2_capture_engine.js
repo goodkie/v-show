@@ -679,6 +679,30 @@ test('[T23] Real video frame canvas capture fallback and hash integrity', () => 
   assert.strictEqual(frame.targetYawDeg, 0);
 });
 
+test('[T24] Preflight 12-frame integrity validation (duplicate and incomplete rejection)', () => {
+  const engine = new Stage2CaptureEngine();
+  engine.startCamera(createMockStream());
+
+  // Incomplete frames: 0/12 -> invalid
+  assert.strictEqual(engine.validateReal12Frames().valid, false);
+
+  // Add 12 distinct simulated frames
+  for (let i = 0; i < 12; i++) {
+    engine.executeCapture();
+  }
+  assert.strictEqual(engine.canonicalFrames.length, 12);
+  const check = engine.validateReal12Frames();
+  assert.strictEqual(check.valid, true);
+  assert.strictEqual(check.frameCount, 12);
+  assert.strictEqual(check.uniqueHashes, 12);
+
+  // Duplicate frame injection: replace frame 1 with frame 0's hash
+  engine.canonicalFrames[1].imageHash = engine.canonicalFrames[0].imageHash;
+  const dupCheck = engine.validateReal12Frames();
+  assert.strictEqual(dupCheck.valid, false);
+  assert.ok(dupCheck.reason.includes('Duplicate imageHash'));
+});
+
 
 console.log('\n================================================================');
 console.log(`TEST EXECUTION COMPLETE: ${passCount} PASSED, ${failCount} FAILED`);
