@@ -761,9 +761,13 @@ async function runRealGenerationPipelineTests() {
   // [20] Candidate retrieval & real output viewer artifact verification
   await test('[20] Candidate retrieval & real output viewer artifact verification (/api/projects/:id/panorama/candidate/:candidateId)', async () => {
     assert.ok(createdCandidateId);
+    const testNegativeCandIds = [];
+    const privateArtifactsRoot = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'panorama_artifacts');
+    const foreignProjectId = 'prj-free-aeb87eb4';
 
-    // Negative Auth: Unauthorized candidate retrieval without token rejected (403)
-    const unauthRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${createdCandidateId}`);
+    try {
+      // Negative Auth: Unauthorized candidate retrieval without token rejected (403)
+      const unauthRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${createdCandidateId}`);
     assert.strictEqual(unauthRes.status, 403, 'Unauthorized candidate retrieval must return 403 Forbidden');
 
     // Negative Auth: Cross-tenant candidate retrieval rejected (403)
@@ -789,7 +793,6 @@ async function runRealGenerationPipelineTests() {
     assert.strictEqual(traversalAssetRes.json?.error, 'INVALID_CANDIDATE_ID');
 
     // Negative Auth: Querying candidate via foreign project endpoint rejected (403 FORBIDDEN edit access)
-    const foreignProjectId = 'prj-free-aeb87eb4';
     const foreignProjectAssetRes = await makeHttpRequest('GET', `/api/projects/${foreignProjectId}/panorama/candidate/${createdCandidateId}/asset`, {
       'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
     });
@@ -798,6 +801,7 @@ async function runRealGenerationPipelineTests() {
     // Negative Auth (Project-A-token + Project-B-candidate):
     // Register candidate belonging to Project B
     const foreignCandId = `cand-foreign-${Date.now()}`;
+    testNegativeCandIds.push(foreignCandId);
     if (db && db.saveSpatialBoothCandidate) {
       await db.saveSpatialBoothCandidate(foreignProjectId, {
         candidateId: foreignCandId,
@@ -823,6 +827,7 @@ async function runRealGenerationPipelineTests() {
 
     // Negative Security: Fake candidate metadata pointing to server file (e.g. ../../server/index.js) fails closed
     const fakeCandId = `cand-fake-traversal-${Date.now()}`;
+    testNegativeCandIds.push(fakeCandId);
     if (db && db.saveSpatialBoothCandidate) {
       await db.saveSpatialBoothCandidate(TEST_PROJECT_ID, {
         candidateId: fakeCandId,
@@ -842,7 +847,7 @@ async function runRealGenerationPipelineTests() {
 
     // Negative Security: 0-byte truncated candidate file rejected (400 CORRUPTED_ASSET)
     const zeroByteCandId = `cand-zero-byte-${Date.now()}`;
-    const privateArtifactsRoot = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'panorama_artifacts');
+    testNegativeCandIds.push(zeroByteCandId);
     const zeroByteCandDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, zeroByteCandId);
     fs.mkdirSync(zeroByteCandDir, { recursive: true });
     fs.writeFileSync(path.join(zeroByteCandDir, `${zeroByteCandId}_preview.jpg`), Buffer.alloc(0));
@@ -864,6 +869,7 @@ async function runRealGenerationPipelineTests() {
 
     // Negative Security: Non-JPEG spoofed binary payload rejected (400 INVALID_JPEG_PAYLOAD)
     const nonJpegCandId = `cand-non-jpeg-${Date.now()}`;
+    testNegativeCandIds.push(nonJpegCandId);
     const nonJpegCandDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, nonJpegCandId);
     fs.mkdirSync(nonJpegCandDir, { recursive: true });
     const nonJpegPayload = Buffer.from('<html><body>MALICIOUS_PAYLOAD</body></html>');
@@ -887,6 +893,7 @@ async function runRealGenerationPipelineTests() {
     // Negative Security: Symlink file traversal outside candidate storage root strictly blocked (403 UNAUTHORIZED_STORAGE_PATH)
     try {
       const symlinkCandId = `cand-symlink-${Date.now()}`;
+      testNegativeCandIds.push(symlinkCandId);
       const symlinkCandDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, symlinkCandId);
       fs.mkdirSync(symlinkCandDir, { recursive: true });
       fs.symlinkSync(path.resolve(__dirname, '..', 'package.json'), path.join(symlinkCandDir, `${symlinkCandId}_preview.jpg`), 'file');
@@ -915,6 +922,7 @@ async function runRealGenerationPipelineTests() {
     // Negative Security: Candidate DIRECTORY symlink strictly blocked (403 UNAUTHORIZED_STORAGE_PATH)
     try {
       const dirSymlinkCandId = `cand-dir-symlink-${Date.now()}`;
+      testNegativeCandIds.push(dirSymlinkCandId);
       const dirSymlinkPath = path.join(privateArtifactsRoot, TEST_PROJECT_ID, dirSymlinkCandId);
       fs.symlinkSync(path.resolve(__dirname, '..', 'server'), dirSymlinkPath, 'dir');
       if (db && db.saveSpatialBoothCandidate) {
@@ -941,6 +949,7 @@ async function runRealGenerationPipelineTests() {
 
     // Negative Security: Candidate record missing assetSha256 fails closed (500 MISSING_MANDATORY_ASSET_DIGEST)
     const missingDigestCandId = `cand-missing-digest-${Date.now()}`;
+    testNegativeCandIds.push(missingDigestCandId);
     const missingDigestDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, missingDigestCandId);
     fs.mkdirSync(missingDigestDir, { recursive: true });
     const validJpegSample = generateDeterministicJpeg(0, 0, 256, 256).buffer;
@@ -962,6 +971,7 @@ async function runRealGenerationPipelineTests() {
 
     // Negative Security: Candidate record with malformed assetSha256 fails closed (500 MISSING_MANDATORY_ASSET_DIGEST)
     const malformedDigestCandId = `cand-malformed-digest-${Date.now()}`;
+    testNegativeCandIds.push(malformedDigestCandId);
     const malformedDigestDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, malformedDigestCandId);
     fs.mkdirSync(malformedDigestDir, { recursive: true });
     fs.writeFileSync(path.join(malformedDigestDir, `${malformedDigestCandId}_preview.jpg`), validJpegSample);
@@ -982,6 +992,7 @@ async function runRealGenerationPipelineTests() {
 
     // Negative Security: Truncated JPEG (valid SOI but missing EOI) fails closed (400 TRUNCATED_JPEG_PAYLOAD)
     const truncatedCandId = `cand-truncated-jpeg-${Date.now()}`;
+    testNegativeCandIds.push(truncatedCandId);
     const truncatedDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, truncatedCandId);
     fs.mkdirSync(truncatedDir, { recursive: true });
     const truncatedJpeg = validJpegSample.slice(0, validJpegSample.length - 10);
@@ -1005,6 +1016,7 @@ async function runRealGenerationPipelineTests() {
 
     // Negative Security: Asset integrity mismatch (disk bytes tampered vs DB candidate.assetSha256) returns 500 ASSET_INTEGRITY_MISMATCH
     const tamperedCandId = `cand-tampered-${Date.now()}`;
+    testNegativeCandIds.push(tamperedCandId);
     const tamperedCandDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, tamperedCandId);
     fs.mkdirSync(tamperedCandDir, { recursive: true });
     fs.writeFileSync(path.join(tamperedCandDir, `${tamperedCandId}_preview.jpg`), validJpegSample);
@@ -1110,6 +1122,21 @@ async function runRealGenerationPipelineTests() {
     assert.ok(panoDecoded.width >= 1024, `Pano width (${panoDecoded.width}) must be >= 1024`);
     assert.ok(panoDecoded.height >= 256, `Pano height (${panoDecoded.height}) must be >= 256`);
     assert.ok(panoDecoded.width / panoDecoded.height >= 2.0, `Pano aspect ratio (${panoDecoded.width / panoDecoded.height}) must be >= 2.0 for 360 viewer`);
+    } finally {
+      if (db && db.mutate) {
+        await db.mutate(fresh => {
+          fresh.spatialCandidates = (fresh.spatialCandidates || []).filter(c => !testNegativeCandIds.includes(c.candidateId));
+        });
+      }
+      for (const cid of testNegativeCandIds) {
+        try {
+          const dir1 = path.join(privateArtifactsRoot, TEST_PROJECT_ID, cid);
+          if (fs.existsSync(dir1)) fs.rmSync(dir1, { recursive: true, force: true });
+          const dir2 = path.join(privateArtifactsRoot, foreignProjectId, cid);
+          if (fs.existsSync(dir2)) fs.rmSync(dir2, { recursive: true, force: true });
+        } catch (_) {}
+      }
+    }
   });
 
   // [21] Negative Test Harness: Asserts that FAILED, 404, or null candidate properly fail assertions
@@ -1430,31 +1457,55 @@ async function runRealGenerationPipelineTests() {
     fs.mkdirSync(TEST_ISOLATED_DATA_DIR, { recursive: true });
 
     try {
-      // 1. Same-Process Non-Blocking Async Mutex Test (verifies zero event-loop stall)
-      let timerTicks = 0;
-      const timer = setInterval(() => { timerTicks++; }, 20);
-
-      const p1 = db.mutate(async d => {
-        await new Promise(r => setTimeout(r, 120));
-        d.same_proc_1 = 'val1';
+      const dbModulePath = path.resolve(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/server/db.js').replace(/\\/g, '/');
+      const runProc = (script) => new Promise((resolve, reject) => {
+        const p = spawn(process.execPath, ['-e', script], {
+          stdio: 'pipe',
+          env: { ...process.env, NODE_ENV: 'test', DATA_DIR: TEST_ISOLATED_DATA_DIR }
+        });
+        let errOut = '';
+        p.stderr.on('data', d => { errOut += d.toString(); });
+        p.on('close', code => {
+          if (code === 0) resolve();
+          else reject(new Error(`Child process failed with code ${code}: ${errOut}`));
+        });
       });
-      const p2 = db.mutate(async d => {
-        await new Promise(r => setTimeout(r, 80));
-        d.same_proc_2 = 'val2';
-      });
 
-      await Promise.all([p1, p2]);
-      clearInterval(timer);
+      // 1. Same-Process Non-Blocking Async Mutex Test on Disposable Volume (zero event-loop stall)
+      const sameProcScript = `
+        const assert = require('assert');
+        const db = require('${dbModulePath}');
+        (async () => {
+          let timerTicks = 0;
+          const timer = setInterval(() => { timerTicks++; }, 20);
 
-      assert.ok(timerTicks >= 3, `Event loop must remain unblocked during async mutate! Timer ticks: ${timerTicks}`);
-      const sameProcData = db.read();
-      assert.strictEqual(sameProcData.same_proc_1, 'val1');
-      assert.strictEqual(sameProcData.same_proc_2, 'val2');
+          const p1 = db.mutate(async d => {
+            await new Promise(r => setTimeout(r, 120));
+            d.same_proc_1 = 'val1';
+          });
+          const p2 = db.mutate(async d => {
+            await new Promise(r => setTimeout(r, 80));
+            d.same_proc_2 = 'val2';
+          });
+
+          await Promise.all([p1, p2]);
+          clearInterval(timer);
+
+          assert.ok(timerTicks >= 3, 'Event loop must remain unblocked during async mutate! Timer ticks: ' + timerTicks);
+          const sameProcData = db.read();
+          assert.strictEqual(sameProcData.same_proc_1, 'val1');
+          assert.strictEqual(sameProcData.same_proc_2, 'val2');
+          process.exit(0);
+        })().catch(e => {
+          console.error('Same-proc error:', e);
+          process.exit(1);
+        });
+      `;
+      await runProc(sameProcScript);
 
       // 2. Separate Process Concurrency on Isolated Disposable Volume
       const key1 = `test_proc_concurrency_${Date.now()}_p1`;
       const key2 = `test_proc_concurrency_${Date.now()}_p2`;
-      const dbModulePath = path.resolve(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/server/db.js').replace(/\\/g, '/');
 
       const workerScript1 = `
         const db = require('${dbModulePath}');
@@ -1487,17 +1538,6 @@ async function runRealGenerationPipelineTests() {
           }
         })();
       `;
-
-      const runProc = (script) => new Promise((resolve, reject) => {
-        const p = spawn(process.execPath, ['-e', script], {
-          stdio: 'inherit',
-          env: { ...process.env, NODE_ENV: 'test', DATA_DIR: TEST_ISOLATED_DATA_DIR }
-        });
-        p.on('close', code => {
-          if (code === 0) resolve();
-          else reject(new Error(`Child process failed with code ${code}`));
-        });
-      });
 
       await Promise.all([runProc(workerScript1), runProc(workerScript2)]);
 
@@ -1665,6 +1705,7 @@ async function runRealGenerationPipelineTests() {
   // [26e] Real Worker Failure Injection & Atomic Ready Gate (Real HTTP request + retry repair)
   await test('[26e] Real Worker Failure Injection & Atomic Ready Gate (Real HTTP request + retry repair)', async () => {
     const activeSessionId = serverCaptureSessionId || captureSessionId;
+    const privateArtifactsRoot = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'panorama_artifacts');
     const faultPayload = {
       captureSessionId: activeSessionId,
       closureConfirmed: true,
@@ -1675,12 +1716,45 @@ async function runRealGenerationPipelineTests() {
       isTest: true
     };
 
-    // 1. Submit panorama generation job with injected artifact copy failure
+    // 0. Negative Security Check: Spoofed external proxy header must reject/ignore fault injection
+    const spoofedRes = await makeHttpRequest('POST', `/api/projects/${TEST_PROJECT_ID}/panorama/start`, {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`,
+      'x-internal-test-auth': 'true',
+      'X-Test-Inject-Fault': 'MID_COPY_FAIL',
+      'X-Forwarded-For': '203.0.113.195'
+    }, JSON.stringify(faultPayload));
+    assert.ok(spoofedRes.status === 200 || spoofedRes.status === 202, `Spoofed job creation accepted`);
+    const spoofedJobId = spoofedRes.json?.jobId;
+    assert.ok(spoofedJobId, 'spoofedJobId must be issued');
+
+    let spoofedJob = null;
+    const spoofedStart = Date.now();
+    while (Date.now() - spoofedStart < 45000) {
+      const sPoll = await makeHttpRequest('GET', `/api/panorama-jobs/${spoofedJobId}`, {
+        'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+      });
+      const sJob = sPoll.json?.job;
+      if (sJob?.status === 'READY') {
+        spoofedJob = sJob;
+        break;
+      }
+      if (sJob?.status === 'FAILED') {
+        assert.notStrictEqual(sJob.errorCode, 'ARTIFACT_COPY_FAILED', 'Spoofed request must NOT trigger ARTIFACT_COPY_FAILED');
+        spoofedJob = sJob;
+        break;
+      }
+      await new Promise(r => setTimeout(r, 200));
+    }
+    assert.ok(spoofedJob, 'Spoofed job must complete without fault injection execution');
+    assert.notStrictEqual(spoofedJob.errorCode, 'ARTIFACT_COPY_FAILED', 'External proxy header must prevent fault injection execution');
+
+    // 1. Submit panorama generation job with authorized injected mid-copy disk failure
     const faultRes = await makeHttpRequest('POST', `/api/projects/${TEST_PROJECT_ID}/panorama/start`, {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`,
       'x-internal-test-auth': 'true',
-      'X-Test-Inject-Fault': 'ARTIFACT_COPY_FAIL'
+      'X-Test-Inject-Fault': 'MID_COPY_FAIL'
     }, JSON.stringify(faultPayload));
 
     assert.ok(faultRes.status === 200 || faultRes.status === 202, `Job creation must return 200 or 202 Accepted, got ${faultRes.status}: ${faultRes.text}`);
@@ -1709,11 +1783,15 @@ async function runRealGenerationPipelineTests() {
     assert.strictEqual(faultJob.status, 'FAILED');
     assert.strictEqual(faultJob.errorCode, 'ARTIFACT_COPY_FAILED');
 
-    // 3. Verify candidate is NOT committed in DB
+    // 3. Verify candidate is NOT committed in DB and candidate disk directory + partial files are cleaned up
     if (db) {
       const freshData = db.read();
       const leakedCand = (freshData.spatialCandidates || []).find(c => c.candidateId === faultJob.candidateId);
       assert.strictEqual(leakedCand, undefined, 'Candidate must NOT be saved to DB when artifact copy fails');
+    }
+    if (faultJob.candidateId) {
+      const candDiskDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, faultJob.candidateId);
+      assert.strictEqual(fs.existsSync(candDiskDir), false, 'Candidate directory and partial files must be unlinked on mid-copy failure');
     }
 
     // 4. Verify retry WITHOUT fault injection succeeds and reaches READY

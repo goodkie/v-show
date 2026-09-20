@@ -1578,9 +1578,18 @@ class JSONDatabase {
     const lockFile = path.join(DATA_DIR, 'db.lock');
     try {
       const current = this._readLockFile();
-      if (current && current.ownerToken === ownerToken) {
-        fs.unlinkSync(lockFile);
-        return true;
+      if (!current || current.ownerToken !== ownerToken) {
+        return false;
+      }
+      try {
+        const raw = fs.readFileSync(lockFile, 'utf-8');
+        const parsed = JSON.parse(raw);
+        if (parsed.ownerToken === ownerToken) {
+          fs.unlinkSync(lockFile);
+          return true;
+        }
+      } catch (readErr) {
+        return !fs.existsSync(lockFile);
       }
     } catch (e) {}
     return false;
@@ -1606,7 +1615,7 @@ class JSONDatabase {
           if (existing && existing.pid && !this._isProcessAlive(existing.pid)) {
             try {
               const current = this._readLockFile();
-              if (current && current.ownerToken === existing.ownerToken) {
+              if (current && current.ownerToken === existing.ownerToken && !this._isProcessAlive(current.pid)) {
                 fs.unlinkSync(lockFile);
               }
             } catch (staleErr) {}
@@ -1640,11 +1649,16 @@ class JSONDatabase {
   }
 
   async write(data) {
+    // Deprecated whole-snapshot write: strongly prefer field-specific mutate(fresh => ...)
+    // Enforces atomic read-modify-write under exclusive lock, throwing on error
     return this.mutate(current => {
-      if (data && typeof data === 'object' && data !== current) {
+      if (!data || typeof data !== 'object') {
+        throw new Error('INVALID_DATA: db.write requires a non-null object');
+      }
+      if (data !== current) {
         Object.assign(current, data);
       }
-      return true;
+      return current;
     });
   }
 

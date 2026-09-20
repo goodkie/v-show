@@ -625,13 +625,20 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
+        const session = event.data.object;
+        const orgId = session.metadata?.organizationId;
+        const projectId = session.metadata?.projectId;
+        const requestedPlan = session.metadata?.requestedPlan || session.metadata?.targetPlan || 'pro';
+        const customerId = session.customer;
+        const subscriptionId = session.subscription;
 
-          // C11 Free Funnel Project Upgrade Handler
-          if (session.metadata && session.metadata.projectId) {
-            const pid = session.metadata.projectId;
-            const reqPlan = (session.metadata.requestedPlan || 'PRO').toUpperCase();
-            const dbData = db.read();
-            const proj = (dbData.freePreviewProjects || []).find(p => p.id === pid);
+        // C11 Free Funnel Project Upgrade Handler
+        if (session.metadata && session.metadata.projectId) {
+          const pid = session.metadata.projectId;
+          const reqPlan = (session.metadata.requestedPlan || 'PRO').toUpperCase();
+          let upgradedState = null;
+          await db.mutate(fresh => {
+            const proj = (fresh.freePreviewProjects || []).find(p => p.id === pid);
             if (proj) {
               proj.entitlementState = reqPlan === 'BUSINESS' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
               proj.plan = reqPlan;
@@ -641,17 +648,13 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
               proj.paymentCorrelationId = session.metadata.paymentCorrelationId || 'pay_corr_webhook';
               proj.activatedAt = new Date().toISOString();
               proj.publishStatus = 'APPROVED';
-              await db.write(dbData);
-              console.log(`✅ C11 Project ${pid} upgraded to ${proj.entitlementState} via Stripe Webhook`);
+              upgradedState = proj.entitlementState;
             }
+          });
+          if (upgradedState) {
+            console.log(`✅ C11 Project ${pid} upgraded to ${upgradedState} via Stripe Webhook`);
           }
-
-        const session = event.data.object;
-        const orgId = session.metadata?.organizationId;
-        const projectId = session.metadata?.projectId;
-        const requestedPlan = session.metadata?.requestedPlan || session.metadata?.targetPlan || 'pro';
-        const customerId = session.customer;
-        const subscriptionId = session.subscription;
+        }
 
         if (orgId) {
           await db.updateOrganizationSubscription(orgId, {
@@ -11264,8 +11267,24 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
 
         // Authoritative atomic private storage copy, digest verification & candidate commit
         try {
-          if (process.env.ALLOW_STAGE2_TEST_FAULT_INJECTION === 'true' && req.headers['x-test-inject-fault'] === 'ARTIFACT_COPY_FAIL') {
-            throw new Error('INJECTED_FAULT: Disk write / private artifact copy failure simulated');
+          // Strict test-only security guardrails for fault injection hook (P0-4):
+          const isTestEnv = (process.env.NODE_ENV === 'test' && process.env.ALLOW_STAGE2_TEST_FAULT_INJECTION === 'true');
+          const isLoopback = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket?.remoteAddress) ||
+                             ['127.0.0.1', '::1'].includes(req.ip);
+          const hasNoForwarding = !req.headers['x-forwarded-for'] && !req.headers['x-forwarded-host'] && !req.headers['x-real-ip'];
+          const isTestAuthorized = req.headers['x-internal-test-auth'] === 'true' && isTestAccount;
+
+          const faultHeader = req.headers['x-test-inject-fault'];
+          if (faultHeader && (!isTestEnv || !isLoopback || !hasNoForwarding || !isTestAuthorized)) {
+            console.warn(`[SECURITY] Rejected unauthorized attempt to inject fault '${faultHeader}' from remoteAddress=${req.socket?.remoteAddress}`);
+          } else if (isTestEnv && isLoopback && hasNoForwarding && isTestAuthorized) {
+            if (faultHeader === 'ARTIFACT_COPY_FAIL' || faultHeader === 'MID_COPY_FAIL') {
+              // Create partial artifact file first to simulate real mid-copy / partial disk failure
+              const candDir = path.join(PANORAMA_PRIVATE_STORAGE_ROOT, projectId, candidate.candidateId);
+              fs.mkdirSync(candDir, { recursive: true });
+              fs.writeFileSync(path.join(candDir, 'panorama_360.jpg.part'), Buffer.from('CORRUPTED_PARTIAL_BYTES'));
+              throw new Error('INJECTED_FAULT: Mid-copy disk write / private artifact copy failure simulated');
+            }
           }
 
           const candDir = path.join(PANORAMA_PRIVATE_STORAGE_ROOT, projectId, candidate.candidateId);
