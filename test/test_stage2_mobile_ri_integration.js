@@ -172,6 +172,8 @@ async function runMobileRiSuite() {
     assert.strictEqual(sendRes.success, true, 'Report must be accepted by server');
     assert.strictEqual(sendRes.status, 'PERSISTED');
     assert.strictEqual(sendRes.sessionId, testSessionId);
+    assert.ok(sendRes.filesSaved.includes('sanitized_payload.json'), 'sanitized_payload.json must be saved');
+    assert.strictEqual(sendRes.filesSaved.includes('raw_payload.json'), false, 'raw_payload.json must NOT be saved');
   });
 
   // [7] Authorized Retrieval
@@ -184,6 +186,8 @@ async function runMobileRiSuite() {
     assert.strictEqual(res.json?.summary?.sessionId, testSessionId);
     assert.strictEqual(res.json?.summary?.sampleCount, 2);
     assert.strictEqual(res.json?.summary?.sensorSource, 'deviceorientationabsolute');
+    assert.ok(res.json?.files.includes('sanitized_payload.json'), 'sanitized_payload.json must be in file list');
+    assert.strictEqual(res.json?.files.includes('raw_payload.json'), false, 'raw_payload.json must NOT be in file list');
   });
 
   // [8] Unauthorized Retrieval
@@ -216,7 +220,7 @@ async function runMobileRiSuite() {
 
   // [10] Secure Owner Login, Single-Use Pairing & HttpOnly Cookie Transport
   let ownerCookie = null;
-  await test('[10] Single-use pairing and owner-login issue HttpOnly cookies, rejecting secrets in URL', async () => {
+  await test('[10] Single-use pairing, revocation, in-app POST redemption & security headers', async () => {
     const testSecret = process.env.OWNER_QA_SECRET || 'vshow-stage2-secure-owner-auth-2026';
     process.env.OWNER_QA_SECRET = testSecret;
 
@@ -224,7 +228,26 @@ async function runMobileRiSuite() {
     const secretInUrlRes = await makeRequest('GET', `/qa?secret=${testSecret}`);
     assert.strictEqual(secretInUrlRes.status, 400, 'Secret in URL query must return 400');
 
-    // 2. Generate short-lived single-use pairing token via POST body
+    // 2. Compromised token revocation check (GET and POST)
+    const compromisedToken = 'pair-864d056f071408539cc9b244741501e3';
+    const revokedGetRes = await makeRequest('GET', `/qa?pair=${compromisedToken}`);
+    assert.strictEqual(revokedGetRes.status, 403, 'Compromised token via GET must return 403');
+    assert.ok(revokedGetRes.body.includes('Revoked'), 'Response body must indicate token revoked');
+
+    const revokedPostRes = await makeRequest('POST', '/api/internal-qa/auth/redeem-pairing', {}, {
+      pairingToken: compromisedToken
+    });
+    assert.strictEqual(revokedPostRes.status, 403, 'Compromised token via POST must return 403');
+    assert.strictEqual(revokedPostRes.json?.error, 'PAIRING_TOKEN_REVOKED');
+
+    // 3. GET /qa without parameters renders in-app modal and enforces security headers
+    const qaFormRes = await makeRequest('GET', '/qa');
+    assert.strictEqual(qaFormRes.status, 200, 'GET /qa without token returns in-app pairing form');
+    assert.ok(qaFormRes.body.includes('Secure Device Pairing'), 'Form must include pairing UI');
+    assert.strictEqual(qaFormRes.headers['referrer-policy'], 'no-referrer', 'Referrer-Policy header must be no-referrer');
+    assert.ok(qaFormRes.headers['cache-control']?.includes('no-store'), 'Cache-Control header must include no-store');
+
+    // 4. Generate short-lived single-use pairing token via POST body
     const pairGenRes = await makeRequest('POST', '/api/internal-qa/auth/pairing-token', {}, {
       ownerSecret: testSecret
     });
@@ -233,10 +256,15 @@ async function runMobileRiSuite() {
     assert.ok(pairGenRes.json?.pairingToken.startsWith('pair-'));
     const pairingToken = pairGenRes.json.pairingToken;
 
-    // 3. Redeem single-use pairing token via GET /qa?pair=...
-    const redeemRes = await makeRequest('GET', `/qa?pair=${pairingToken}`);
-    assert.strictEqual(redeemRes.status, 302, 'Redeem must redirect 302 to root');
-    const setCookie = redeemRes.headers['set-cookie'];
+    // 5. In-App Safe POST Redemption: POST /api/internal-qa/auth/redeem-pairing
+    const safeRedeemRes = await makeRequest('POST', '/api/internal-qa/auth/redeem-pairing', {}, {
+      pairingToken
+    });
+    assert.strictEqual(safeRedeemRes.status, 200, 'Safe POST redeem must succeed (200)');
+    assert.strictEqual(safeRedeemRes.json?.authorized, true);
+    assert.strictEqual(safeRedeemRes.json?.role, 'OWNER_QA');
+
+    const setCookie = safeRedeemRes.headers['set-cookie'];
     assert.ok(setCookie, 'Set-Cookie must be present on redeem');
     const cookieStr = Array.isArray(setCookie) ? setCookie[0] : setCookie;
     assert.ok(cookieStr.includes('HttpOnly'), 'Cookie must be HttpOnly');
@@ -245,11 +273,17 @@ async function runMobileRiSuite() {
     assert.ok(match, 'qa_session_token must be set');
     ownerCookie = `qa_session_token=${match[1]}`;
 
-    // 4. Single-use guarantee: Re-using the same pairing token must fail (403)
-    const reuseRes = await makeRequest('GET', `/qa?pair=${pairingToken}`);
-    assert.strictEqual(reuseRes.status, 403, 'Consumed pairing token must return 403 on reuse');
+    // 6. Single-use guarantee: Re-using the same pairing token via POST must fail (403)
+    const reusePostRes = await makeRequest('POST', '/api/internal-qa/auth/redeem-pairing', {}, {
+      pairingToken
+    });
+    assert.strictEqual(reusePostRes.status, 403, 'Consumed pairing token must return 403 on reuse');
 
-    // 5. Verify cookie transport authorizes capabilities check and returns build metadata
+    // 7. Re-using via GET also fails (403)
+    const reuseGetRes = await makeRequest('GET', `/qa?pair=${pairingToken}`);
+    assert.strictEqual(reuseGetRes.status, 403, 'Consumed pairing token must return 403 on GET reuse');
+
+    // 8. Verify cookie transport authorizes capabilities check and returns build metadata
     const capRes = await makeRequest('GET', '/api/internal-qa/capabilities', {
       'Cookie': ownerCookie
     });

@@ -1450,6 +1450,29 @@ app.post('/api/internal-qa/auth/owner-login', express.json(), (req, res) => {
   });
 });
 
+// Explicit revocation list for compromised pairing tokens
+const REVOKED_PAIRING_TOKENS = new Set([
+  'pair-864d056f071408539cc9b244741501e3'
+]);
+
+// Rate limiter for owner authentication / pairing endpoints (in-memory, sliding 1-minute window)
+const authRateLimitMap = new Map(); // ip -> { count: number, resetAt: number }
+function checkAuthRateLimit(req, res, maxRequests = 30, windowMs = 60000) {
+  const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+  const now = Date.now();
+  const entry = authRateLimitMap.get(ip);
+  if (!entry || entry.resetAt < now) {
+    authRateLimitMap.set(ip, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (entry.count >= maxRequests) {
+    res.status(429).json({ ok: false, error: 'RATE_LIMIT_EXCEEDED', message: 'Too many authentication attempts. Please wait.' });
+    return false;
+  }
+  entry.count++;
+  return true;
+}
+
 // In-memory store for short-lived, single-use pairing tokens
 const pairingTokens = new Map(); // pairToken -> { createdAt: number, expiresAt: number }
 
@@ -1458,6 +1481,7 @@ app.post('/api/internal-qa/auth/pairing-token', express.json(), (req, res) => {
   if (!ENABLE_OWNER_RI) {
     return res.status(403).json({ ok: false, error: 'OWNER_RI_DISABLED' });
   }
+  if (!checkAuthRateLimit(req, res)) return;
 
   const configuredSecret = process.env.OWNER_QA_SECRET;
   if (!configuredSecret || typeof configuredSecret !== 'string' || configuredSecret.length < 8) {
@@ -1489,11 +1513,67 @@ app.post('/api/internal-qa/auth/pairing-token', express.json(), (req, res) => {
   });
 });
 
+// ── Secure In-App Pairing Token Redemption (POST body only) ──
+app.post('/api/internal-qa/auth/redeem-pairing', express.json(), (req, res) => {
+  if (!ENABLE_OWNER_RI) {
+    return res.status(403).json({ ok: false, error: 'OWNER_RI_DISABLED' });
+  }
+  if (!checkAuthRateLimit(req, res)) return;
+
+  const pairToken = req.body && req.body.pairingToken;
+  if (!pairToken || typeof pairToken !== 'string') {
+    return res.status(400).json({ ok: false, error: 'PAIRING_TOKEN_REQUIRED' });
+  }
+
+  // Check explicit revocation
+  if (REVOKED_PAIRING_TOKENS.has(pairToken)) {
+    return res.status(403).json({ ok: false, error: 'PAIRING_TOKEN_REVOKED', message: 'This pairing token was publicly compromised and permanently revoked.' });
+  }
+
+  const record = pairingTokens.get(pairToken);
+  if (!record || record.expiresAt < Date.now()) {
+    if (record) pairingTokens.delete(pairToken);
+    return res.status(403).json({ ok: false, error: 'INVALID_OR_EXPIRED_PAIRING_TOKEN' });
+  }
+
+  // Single-use: consume immediately
+  pairingTokens.delete(pairToken);
+
+  const crypto = require('crypto');
+  const token = 'qa-sess-owner-' + crypto.randomBytes(24).toString('hex');
+  const expiresAt = new Date(Date.now() + 8 * 3600 * 1000).toISOString();
+  const session = {
+    qaSessionToken: token,
+    projectId: 'prj-free-b0c6f3ea',
+    createdAt: new Date().toISOString(),
+    expiresAt,
+    status: 'AUTHORIZED',
+    role: 'OWNER_QA'
+  };
+
+  qaBrowserSessions.set(token, session);
+  saveDurableQaSessions();
+
+  const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  res.setHeader('Set-Cookie', `qa_session_token=${token}; Path=/; Max-Age=28800; HttpOnly; SameSite=Lax${isSecure ? '; Secure' : ''}`);
+  res.json({
+    ok: true,
+    authorized: true,
+    role: 'OWNER_QA',
+    expiresAt
+  });
+});
+
 // ── Single-Use Pairing Redemption Route (Zero Secret in URL) ──
 app.get('/qa', (req, res) => {
   if (!ENABLE_OWNER_RI) {
     return res.status(404).send('Not Found');
   }
+
+  // Security Headers: prevent token retention in history, referrer, or intermediate proxies
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.setHeader('Pragma', 'no-cache');
 
   // Strict Security Contract: Never allow secret in URL query parameters!
   if (req.query && req.query.secret) {
@@ -1502,7 +1582,85 @@ app.get('/qa', (req, res) => {
 
   const pairToken = req.query && req.query.pair;
   if (!pairToken || typeof pairToken !== 'string') {
-    return res.status(403).send('<html><body style="font-family:sans-serif;padding:40px;background:#0f172a;color:#f8fafc;"><h2>Single-Use Pairing Token Required</h2><p>Provide a valid pairing token (?pair=...) to link this mobile device.</p></body></html>');
+    // Render in-app pairing form: credentials submitted via POST only
+    return res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <title>V-Show Owner Device Pairing</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 28px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    h2 { margin-top: 0; color: #38bdf8; font-size: 20px; font-weight: 600; }
+    p { color: #94a3b8; font-size: 14px; line-height: 1.5; margin-bottom: 20px; }
+    input { width: 100%; box-sizing: border-box; padding: 12px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #fff; font-size: 14px; margin-bottom: 16px; outline: none; }
+    input:focus { border-color: #38bdf8; }
+    button { width: 100%; padding: 12px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #1d4ed8; }
+    .msg { margin-top: 14px; font-size: 13px; min-height: 20px; text-align: center; }
+    .msg.error { color: #f87171; }
+    .msg.success { color: #4ade80; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Secure Device Pairing</h2>
+    <p>Enter your single-use pairing code or owner secret below. Submitted via secure POST without URL leakage.</p>
+    <form id="pairForm">
+      <input type="password" id="tokenInput" placeholder="Pairing Code (pair-...) or Secret" autocomplete="off" required />
+      <button type="submit" id="submitBtn">Authorize Device</button>
+    </form>
+    <div id="msgBox" class="msg"></div>
+  </div>
+  <script>
+    document.getElementById('pairForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const val = document.getElementById('tokenInput').value.trim();
+      const msg = document.getElementById('msgBox');
+      const btn = document.getElementById('submitBtn');
+      msg.textContent = 'Authenticating...';
+      msg.className = 'msg';
+      btn.disabled = true;
+
+      try {
+        let endpoint = '/api/internal-qa/auth/redeem-pairing';
+        let body = { pairingToken: val };
+        if (!val.startsWith('pair-')) {
+          endpoint = '/api/internal-qa/auth/owner-login';
+          body = { ownerSecret: val };
+        }
+
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.ok) {
+          msg.textContent = 'Device Authorized! Redirecting...';
+          msg.className = 'msg success';
+          setTimeout(() => { window.location.href = '/'; }, 800);
+        } else {
+          msg.textContent = data.message || data.error || 'Authentication failed';
+          msg.className = 'msg error';
+          btn.disabled = false;
+        }
+      } catch (err) {
+        msg.textContent = 'Network error: ' + err.message;
+        msg.className = 'msg error';
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>`);
+  }
+
+  // Check revocation
+  if (REVOKED_PAIRING_TOKENS.has(pairToken)) {
+    return res.status(403).send('<html><body style="font-family:sans-serif;padding:40px;background:#0f172a;color:#ef4444;"><h2>Pairing Token Revoked</h2><p>This pairing token was publicly compromised and has been permanently revoked.</p></body></html>');
   }
 
   const record = pairingTokens.get(pairToken);
@@ -1600,9 +1758,9 @@ app.post('/api/internal-qa/mobile-ri/report', express.json({ limit: '25mb' }), a
 
     const filesSaved = [];
 
-    // 0. raw_payload.json (complete incoming telemetry)
-    fs.writeFileSync(path.join(baseDir, 'raw_payload.json'), JSON.stringify(sanitized, null, 2), 'utf8');
-    filesSaved.push('raw_payload.json');
+    // 0. sanitized_payload.json (complete sanitized telemetry, NEVER raw unredacted customer data)
+    fs.writeFileSync(path.join(baseDir, 'sanitized_payload.json'), JSON.stringify(sanitized, null, 2), 'utf8');
+    filesSaved.push('sanitized_payload.json');
 
     // 1. summary.json
     const summaryData = {
