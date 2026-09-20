@@ -172,7 +172,9 @@ class PanoramicStitcher {
       canonicalFrameIds: options.canonicalFrameIds,
       panoramaStitchFrameIds: options.panoramaStitchFrameIds,
       supplementalBridgeFrameIds: options.supplementalBridgeFrameIds,
-      visualGraphConnected: options.visualGraphConnected
+      visualGraphConnected: options.visualGraphConnected,
+      isTestAccount: Boolean(options.isTestAccount),
+      isTest: Boolean(options.isTest)
     };
     fs.writeFileSync(inputJson, JSON.stringify(payload, null, 2));
 

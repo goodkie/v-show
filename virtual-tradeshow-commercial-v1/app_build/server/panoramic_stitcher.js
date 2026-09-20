@@ -172,7 +172,9 @@ class PanoramicStitcher {
       canonicalFrameIds: options.canonicalFrameIds,
       panoramaStitchFrameIds: options.panoramaStitchFrameIds,
       supplementalBridgeFrameIds: options.supplementalBridgeFrameIds,
-      visualGraphConnected: options.visualGraphConnected
+      visualGraphConnected: options.visualGraphConnected,
+      isTestAccount: Boolean(options.isTestAccount),
+      isTest: Boolean(options.isTest)
     };
     fs.writeFileSync(inputJson, JSON.stringify(payload, null, 2));
 
@@ -181,7 +183,7 @@ class PanoramicStitcher {
       const stdout = execFileSync(this.pythonExe, [this.workerScript, '--input-json', inputJson, '--output-json', outputJson], {
         encoding: 'utf-8',
         maxBuffer: 50 * 1024 * 1024,
-        timeout: 3600000
+        timeout: 600000
       });
       console.log(`[OpenCV Worker] Output: ${stdout.trim()}`);
 
@@ -221,10 +223,7 @@ class PanoramicStitcher {
     const workerSources = views.map((v, i) => ({
       path: v.localPath || v.path,
       slot: v.slot || ('SHOT_' + String(i + 1).padStart(2, '0')),
-      index: i,
-      // P2R13: Pass candidateId so Python worker SUBSET_40_EXCLUDE_CANDIDATE_IDS filter can operate
-      candidateId: v.candidateId || null,
-      estimatedYawDeg: (v.estimatedYawDeg !== undefined && v.estimatedYawDeg !== null) ? Number(v.estimatedYawDeg) : (v.angle || 0)
+      index: i
     }));
 
     const workerResult = this.runOpenCvWorker(workerSources, this.uploadsDir, candidateId, options);
@@ -263,9 +262,7 @@ class PanoramicStitcher {
       const workerSources = views.map((v, i) => ({
         path: v.localPath || v.path,
         slot: v.slot || ('SHOT_' + String(i + 1).padStart(2, '0')),
-        index: i,
-        candidateId: v.candidateId || null,
-        estimatedYawDeg: (v.estimatedYawDeg !== undefined && v.estimatedYawDeg !== null) ? Number(v.estimatedYawDeg) : (v.angle || 0)
+        index: i
       }));
       workerResult = this.runOpenCvWorker(workerSources, this.uploadsDir, candidateId, options);
     }

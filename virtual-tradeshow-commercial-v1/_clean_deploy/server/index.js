@@ -10398,10 +10398,8 @@ app.post('/api/projects/:id/spatial/start', upload.array('photos', 16), async (r
     }
     if (!project) return res.status(404).json({ ok: false, error: 'Project not found' });
 
-    // Verify Access: allow editToken, customer session, or dev bypass
-    const hasEditAccess = db.verifyEditAccess(project, token) || 
-                          (project.editToken && (token === project.editToken || req.headers['x-booth-edit-token'] === project.editToken)) ||
-                          (token && (token.includes('internal') || token.includes('test') || token === 'dev_bypass_token'));
+    // Verify Access: strict multi-tenant authorization
+    const hasEditAccess = db.verifyEditAccess(project, token);
 
     if (!hasEditAccess) {
       return res.status(403).json({ ok: false, error: 'Cross-tenant access forbidden.', message: 'Cross-tenant access forbidden.' });
@@ -10411,12 +10409,9 @@ app.post('/api/projects/:id/spatial/start', upload.array('photos', 16), async (r
     const session = sessionObj?.session || sessionObj;
     const account = sessionObj?.account;
     const customerEmail = account?.emailNormalized || account?.email || session?.email || req.headers['x-customer-email'] || req.body?.customerEmail || '';
-    const isTestAccount = (customerEmail === 'goodkie.com@gmail.com') || 
-                          (account?.role === 'INTERNAL_DEV') || 
+    const isTestAccount = (account?.role === 'INTERNAL_DEV') || 
                           (account?.tier === 'INTERNAL_DEV') || 
-                          (project.ownerId === 'goodkie.com@gmail.com') || 
-                          (token && (token.includes('internal') || token.includes('test') || token === 'dev_bypass_token')) || 
-                          Boolean(req.body?.isTest === 'true' || req.body?.isTest === true);
+                          (account?.entitlement === 'INTERNAL_FULL_ACCESS');
     
     // Entitlement Check: MULTI_VIEW_SPATIAL_BOOTH requires PRO, BUSINESS, CUSTOM, or INTERNAL_FULL_ACCESS
     const plan = (isTestAccount ? 'INTERNAL_FULL_ACCESS' : (account?.plan || account?.tier || project.plan || session?.plan || 'PRO')).toUpperCase();
@@ -10676,9 +10671,7 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
       return res.status(400).json({ ok: false, error: 'INVALID_SESSION_ID', message: 'Malformed captureSessionId' });
     }
 
-    const hasEditAccess = db.verifyEditAccess(project, token) || 
-                          (project.editToken && (token === project.editToken || req.headers['x-booth-edit-token'] === project.editToken)) ||
-                          (token && (token.includes('internal') || token.includes('test') || token === 'dev_bypass_token'));
+    const hasEditAccess = db.verifyEditAccess(project, token);
 
     if (!hasEditAccess) {
       return res.status(403).json({ ok: false, error: 'Cross-tenant access forbidden.', message: 'Cross-tenant access forbidden.' });
@@ -10688,12 +10681,13 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
     const session = sessionObj?.session || sessionObj;
     const account = sessionObj?.account;
     const customerEmail = account?.emailNormalized || account?.email || session?.email || req.headers['x-customer-email'] || req.body?.customerEmail || '';
-    const isTestAccount = (customerEmail === 'goodkie.com@gmail.com') || 
-                          (account?.role === 'INTERNAL_DEV') || 
-                          (account?.tier === 'INTERNAL_DEV') || 
-                          (project.ownerId === 'goodkie.com@gmail.com') || 
-                          (token && (token.includes('internal') || token.includes('test') || token === 'dev_bypass_token')) || 
-                          Boolean(req.body?.isTest === 'true' || req.body?.isTest === true);
+    const isTestAccount = Boolean(hasEditAccess && (
+      (account?.role === 'INTERNAL_DEV') || 
+      (account?.tier === 'INTERNAL_DEV') || 
+      (account?.entitlement === 'INTERNAL_FULL_ACCESS') ||
+      (project?.environment === 'INTERNAL_DEV') ||
+      (req.body?.isTest === true || req.body?.isTest === 'true')
+    ));
 
     // Gather photos from files OR guided continuous capture session
     const sourceList = [];
@@ -11785,14 +11779,29 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
     }
 
     const paths = getGuidedCaptureStoragePaths(captureSessionId);
-
-    // Cross-project session binding check
     const sessionMetaPath = path.join(paths.sessionRoot, 'session_metadata.json');
+
+    // Cross-project session binding and idempotent retry check
     if (fs.existsSync(sessionMetaPath)) {
       try {
         const existingMeta = JSON.parse(fs.readFileSync(sessionMetaPath, 'utf8'));
         if (existingMeta.projectId && existingMeta.projectId !== projectId) {
           return res.status(409).json({ ok: false, error: 'SESSION_PROJECT_MISMATCH', message: 'Session belongs to a different project' });
+        }
+        if (existingMeta.status === 'COMMITTED' && fs.existsSync(paths.canonicalDir)) {
+          const files = fs.readdirSync(paths.canonicalDir).filter(f => f.endsWith('.jpg'));
+          if (files.length === 12) {
+            return res.json({
+              ok: true,
+              idempotent: true,
+              receiptId: existingMeta.receiptId || ('rcpt-s2-' + existingMeta.createdAt),
+              captureSessionId,
+              projectId,
+              verifiedCanonicalCount: 12,
+              totalBytes: existingMeta.totalBytes || 0,
+              storageClass: 'VOLUME_DURABLE'
+            });
+          }
         }
       } catch (e) {}
     }
@@ -11803,7 +11812,7 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
       return res.status(400).json({ ok: false, error: 'PATH_TRAVERSAL_DETECTED' });
     }
 
-    // In-memory transaction staging: validate ALL 12 frames before writing ANY file
+    // In-memory preflight validation of ALL 12 frames
     const stagedBuffers = [];
     const seenIndices = new Set();
     const seenKeyframeIds = new Set();
@@ -11821,9 +11830,9 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
       }
       seenKeyframeIds.add(rawKeyframeId);
 
-      const kfIndex = parseInt(kf.index, 10);
-      if (isNaN(kfIndex) || kfIndex < 1 || kfIndex > 12) {
-        return res.status(400).json({ ok: false, error: 'INVALID_KEYFRAME_INDEX', message: `Keyframe index must be 1-12, got: ${kf.index}` });
+      const kfIndex = kf.index;
+      if (typeof kfIndex !== 'number' || !Number.isInteger(kfIndex) || kfIndex < 1 || kfIndex > 12) {
+        return res.status(400).json({ ok: false, error: 'INVALID_KEYFRAME_INDEX', message: `Keyframe index must be strict integer 1-12, got: ${kf.index}` });
       }
       if (seenIndices.has(kfIndex)) {
         return res.status(400).json({ ok: false, error: 'DUPLICATE_KEYFRAME_INDEX', message: `Duplicate keyframe index: ${kfIndex}` });
@@ -11836,6 +11845,15 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
 
       const base64Data = kf.dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
       const buf = Buffer.from(base64Data, 'base64');
+
+      // Byte caps
+      if (buf.length > 20 * 1024 * 1024) {
+        return res.status(400).json({ ok: false, error: 'FILE_TOO_LARGE', message: `Keyframe ${rawKeyframeId} exceeds 20MB limit` });
+      }
+      totalBytes += buf.length;
+      if (totalBytes > 100 * 1024 * 1024) {
+        return res.status(400).json({ ok: false, error: 'BATCH_TOO_LARGE', message: 'Batch exceeds 100MB limit' });
+      }
 
       // Magic SOI check
       if (buf.length < 100 || buf[0] !== 0xFF || buf[1] !== 0xD8) {
@@ -11857,7 +11875,9 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
       }
       seenHashes.set(serverHash, rawKeyframeId);
 
-      // Full JPEG decoding & dimension verification
+      // Server-authoritative full JPEG decoding & dimension verification
+      let authWidth = 256;
+      let authHeight = 256;
       if (jpeg) {
         let decoded = null;
         try {
@@ -11871,15 +11891,19 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
         if (decoded.width < 64 || decoded.height < 64 || decoded.width > 8192 || decoded.height > 8192) {
           return res.status(400).json({ ok: false, error: 'INVALID_DIMENSIONS', message: `Keyframe ${rawKeyframeId} dimensions out of allowed bounds` });
         }
+        if (decoded.width * decoded.height > 64 * 1000 * 1000) {
+          return res.status(400).json({ ok: false, error: 'RESOLUTION_EXCEEDED', message: `Keyframe ${rawKeyframeId} resolution exceeds maximum allowed allocation` });
+        }
         if (kf.width && Math.abs(kf.width - decoded.width) > 4) {
           return res.status(400).json({ ok: false, error: 'DIMENSION_MISMATCH', message: `Keyframe ${rawKeyframeId} width mismatch` });
         }
         if (kf.height && Math.abs(kf.height - decoded.height) > 4) {
           return res.status(400).json({ ok: false, error: 'DIMENSION_MISMATCH', message: `Keyframe ${rawKeyframeId} height mismatch` });
         }
+        authWidth = decoded.width;
+        authHeight = decoded.height;
       }
 
-      totalBytes += buf.length;
       stagedBuffers.push({
         rawKeyframeId,
         filename: rawKeyframeId + '.jpg',
@@ -11888,66 +11912,98 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
         index: kfIndex,
         timestamp: kf.timestamp || Date.now(),
         estimatedYawDeg: kf.estimatedYawDeg !== undefined ? kf.estimatedYawDeg : (kfIndex - 1) * 30.0,
-        width: kf.width || (jpeg ? 256 : 1920),
-        height: kf.height || (jpeg ? 256 : 1080)
+        width: authWidth,
+        height: authHeight
       });
     }
 
-    // ALL 12 frames validated in-memory! Now commit atomically to persistent volume:
-    [paths.sessionRoot, paths.candidateDir, paths.canonicalDir].forEach(d => {
-      if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
-    });
-
-    for (const staged of stagedBuffers) {
-      const targetPath = path.join(paths.canonicalDir, staged.filename);
-      // Containment assertion per file
-      const relFile = path.relative(paths.sessionRoot, targetPath);
-      if (relFile.startsWith('..') || path.isAbsolute(relFile)) {
-        throw new Error('Path traversal detected during write');
-      }
-      const fd = fs.openSync(targetPath, 'w');
-      fs.writeSync(fd, staged.buffer, 0, staged.buffer.length, 0);
-      fs.fsyncSync(fd);
-      fs.closeSync(fd);
+    // Ensure sessionRoot exists
+    if (!fs.existsSync(paths.sessionRoot)) {
+      fs.mkdirSync(paths.sessionRoot, { recursive: true });
     }
 
-    // Session metadata binding
-    const sessionMetadata = {
-      captureSessionId,
-      projectId,
-      storageClass: 'VOLUME_DURABLE',
-      keyframeCount: 12,
-      totalBytes,
-      createdAt: new Date().toISOString()
-    };
-    fs.writeFileSync(sessionMetaPath, JSON.stringify(sessionMetadata, null, 2), 'utf8');
-
-    // Canonical keyframes JSON with server-computed authoritative hashes
-    const kfMetadata = stagedBuffers.map(s => ({
-      keyframeId: s.rawKeyframeId,
-      index: s.index,
-      timestamp: s.timestamp,
-      estimatedYawDeg: s.estimatedYawDeg,
-      hash: s.serverHash,
-      bytes: s.buffer.length,
-      width: s.width,
-      height: s.height,
-      mimeType: 'image/jpeg',
-      storageClass: 'VOLUME_DURABLE',
-      relativeDurablePath: `canonical/${s.filename}`
-    }));
-    fs.writeFileSync(path.join(paths.sessionRoot, 'canonical_keyframes.json'), JSON.stringify(kfMetadata, null, 2), 'utf8');
+    // Create unique staging directory for atomic commit
+    const stagingDir = path.join(paths.sessionRoot, 'staging_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'));
+    fs.mkdirSync(stagingDir, { recursive: true });
 
     const receiptId = 'rcpt-s2-' + Date.now() + '-' + crypto.randomBytes(4).toString('hex');
-    res.json({
-      ok: true,
-      receiptId,
-      captureSessionId,
-      projectId,
-      verifiedCanonicalCount: 12,
-      totalBytes,
-      storageClass: 'VOLUME_DURABLE'
-    });
+
+    try {
+      // Test fault injection header: simulate write failure at frame N
+      const injectFailure = req.headers['x-test-inject-write-failure'];
+
+      for (let sIdx = 0; sIdx < stagedBuffers.length; sIdx++) {
+        const staged = stagedBuffers[sIdx];
+        if (injectFailure && injectFailure === `frame_${staged.index}`) {
+          throw new Error(`INJECTED_DISK_WRITE_FAILURE_AT_FRAME_${staged.index}`);
+        }
+        const stagedFilePath = path.join(stagingDir, staged.filename);
+        const fd = fs.openSync(stagedFilePath, 'w');
+        fs.writeSync(fd, staged.buffer, 0, staged.buffer.length, 0);
+        fs.fsyncSync(fd);
+        fs.closeSync(fd);
+      }
+
+      // Canonical keyframes metadata in staging directory
+      const kfMetadata = stagedBuffers.map(s => ({
+        keyframeId: s.rawKeyframeId,
+        index: s.index,
+        timestamp: s.timestamp,
+        estimatedYawDeg: s.estimatedYawDeg,
+        hash: s.serverHash,
+        bytes: s.buffer.length,
+        width: s.width,
+        height: s.height,
+        mimeType: 'image/jpeg',
+        storageClass: 'VOLUME_DURABLE',
+        relativeDurablePath: `canonical/${s.filename}`
+      }));
+      fs.writeFileSync(path.join(stagingDir, 'canonical_keyframes.json'), JSON.stringify(kfMetadata, null, 2), 'utf8');
+
+      // Atomic directory commit:
+      if (fs.existsSync(paths.canonicalDir)) {
+        fs.rmSync(paths.canonicalDir, { recursive: true, force: true });
+      }
+      fs.renameSync(stagingDir, paths.canonicalDir);
+      fs.copyFileSync(path.join(paths.canonicalDir, 'canonical_keyframes.json'), path.join(paths.sessionRoot, 'canonical_keyframes.json'));
+
+      // Session metadata binding with COMMITTED status
+      const sessionMetadata = {
+        captureSessionId,
+        projectId,
+        status: 'COMMITTED',
+        receiptId,
+        storageClass: 'VOLUME_DURABLE',
+        keyframeCount: 12,
+        totalBytes,
+        createdAt: new Date().toISOString()
+      };
+      fs.writeFileSync(sessionMetaPath, JSON.stringify(sessionMetadata, null, 2), 'utf8');
+
+      res.json({
+        ok: true,
+        receiptId,
+        captureSessionId,
+        projectId,
+        verifiedCanonicalCount: 12,
+        totalBytes,
+        storageClass: 'VOLUME_DURABLE'
+      });
+    } catch (writeErr) {
+      // Rollback: delete staging directory on any write error so ZERO canonical files are committed
+      try {
+        if (fs.existsSync(stagingDir)) {
+          fs.rmSync(stagingDir, { recursive: true, force: true });
+        }
+      } catch (cleanErr) {}
+      console.error('[GuidedCapture Keyframes Staging Error - Rolled Back]', writeErr.message);
+      return res.status(500).json({
+        ok: false,
+        error: 'STORAGE_TRANSACTION_FAILED',
+        message: 'Write failure during keyframe staging. Transaction rolled back with 0 canonical files committed.',
+        details: writeErr.message
+      });
+    }
   } catch (err) {
     console.error('[GuidedCapture Keyframes Error]', err);
     res.status(500).json({ ok: false, error: 'INTERNAL_ERROR', message: err.message });
