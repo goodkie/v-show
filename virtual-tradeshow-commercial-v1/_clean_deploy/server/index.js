@@ -1450,26 +1450,71 @@ app.post('/api/internal-qa/auth/owner-login', express.json(), (req, res) => {
   });
 });
 
-// Owner direct link / QR code activation route
-app.get('/qa', (req, res) => {
+// In-memory store for short-lived, single-use pairing tokens
+const pairingTokens = new Map(); // pairToken -> { createdAt: number, expiresAt: number }
+
+// ── Single-Use Pairing Token Generation (POST body only) ──
+app.post('/api/internal-qa/auth/pairing-token', express.json(), (req, res) => {
   if (!ENABLE_OWNER_RI) {
-    return res.status(404).send('Not Found');
+    return res.status(403).json({ ok: false, error: 'OWNER_RI_DISABLED' });
   }
 
   const configuredSecret = process.env.OWNER_QA_SECRET;
-  const providedSecret = req.query && req.query.secret;
+  if (!configuredSecret || typeof configuredSecret !== 'string' || configuredSecret.length < 8) {
+    return res.status(503).json({ ok: false, error: 'OWNER_QA_SECRET_NOT_CONFIGURED' });
+  }
 
-  if (!configuredSecret || !providedSecret) {
-    return res.status(403).send('<html><body style="font-family:sans-serif;padding:40px;background:#0f172a;color:#f8fafc;"><h2>Owner QA Authentication Required</h2><p>Please provide a valid secret parameter.</p></body></html>');
+  const providedSecret = req.body && req.body.ownerSecret;
+  if (!providedSecret || typeof providedSecret !== 'string') {
+    return res.status(401).json({ ok: false, error: 'OWNER_SECRET_REQUIRED' });
   }
 
   const crypto = require('crypto');
   const bufA = Buffer.from(providedSecret, 'utf8');
   const bufB = Buffer.from(configuredSecret, 'utf8');
   if (bufA.length !== bufB.length || !crypto.timingSafeEqual(bufA, bufB)) {
-    return res.status(403).send('<html><body style="font-family:sans-serif;padding:40px;background:#0f172a;color:#ef4444;"><h2>Invalid Owner Secret</h2></body></html>');
+    return res.status(403).json({ ok: false, error: 'INVALID_OWNER_SECRET' });
   }
 
+  // Generate short-lived (10 minutes) single-use pairing token
+  const pairToken = 'pair-' + crypto.randomBytes(16).toString('hex');
+  const expiresAt = Date.now() + 10 * 60 * 1000;
+  pairingTokens.set(pairToken, { createdAt: Date.now(), expiresAt });
+
+  res.json({
+    ok: true,
+    pairingToken: pairToken,
+    expiresInSeconds: 600,
+    pairingPath: `/qa?pair=${pairToken}`
+  });
+});
+
+// ── Single-Use Pairing Redemption Route (Zero Secret in URL) ──
+app.get('/qa', (req, res) => {
+  if (!ENABLE_OWNER_RI) {
+    return res.status(404).send('Not Found');
+  }
+
+  // Strict Security Contract: Never allow secret in URL query parameters!
+  if (req.query && req.query.secret) {
+    return res.status(400).send('<html><body style="font-family:sans-serif;padding:40px;background:#0f172a;color:#ef4444;"><h2>Security Policy Violation</h2><p>Secrets in URL query parameters are strictly forbidden. Use single-use pairing token (?pair=...) or authenticate via POST body.</p></body></html>');
+  }
+
+  const pairToken = req.query && req.query.pair;
+  if (!pairToken || typeof pairToken !== 'string') {
+    return res.status(403).send('<html><body style="font-family:sans-serif;padding:40px;background:#0f172a;color:#f8fafc;"><h2>Single-Use Pairing Token Required</h2><p>Provide a valid pairing token (?pair=...) to link this mobile device.</p></body></html>');
+  }
+
+  const record = pairingTokens.get(pairToken);
+  if (!record || record.expiresAt < Date.now()) {
+    if (record) pairingTokens.delete(pairToken);
+    return res.status(403).send('<html><body style="font-family:sans-serif;padding:40px;background:#0f172a;color:#ef4444;"><h2>Invalid or Expired Pairing Token</h2><p>This pairing token has expired or has already been used.</p></body></html>');
+  }
+
+  // Single-use guarantee: consume immediately
+  pairingTokens.delete(pairToken);
+
+  const crypto = require('crypto');
   const token = 'qa-sess-owner-' + crypto.randomBytes(24).toString('hex');
   const expiresAt = new Date(Date.now() + 8 * 3600 * 1000).toISOString();
   const session = {
@@ -1555,19 +1600,23 @@ app.post('/api/internal-qa/mobile-ri/report', express.json({ limit: '25mb' }), a
 
     const filesSaved = [];
 
+    // 0. raw_payload.json (complete incoming telemetry)
+    fs.writeFileSync(path.join(baseDir, 'raw_payload.json'), JSON.stringify(sanitized, null, 2), 'utf8');
+    filesSaved.push('raw_payload.json');
+
     // 1. summary.json
     const summaryData = {
       sessionId,
       environment: 'INTERNAL_DEV',
       isTest: true,
       receivedAt: sanitized.receivedAt,
-      ...(sanitized.summary || {})
+      ...(sanitized.summary || sanitized.snapshot || {})
     };
     fs.writeFileSync(path.join(baseDir, 'summary.json'), JSON.stringify(summaryData, null, 2), 'utf8');
     filesSaved.push('summary.json');
 
     // 2. timeline.json
-    const timelineData = sanitized.timeline || (sanitized.bufferSnapshot ? sanitized.bufferSnapshot.events : []);
+    const timelineData = sanitized.timeline || sanitized.recentEvents || (sanitized.bufferSnapshot ? sanitized.bufferSnapshot.events : []);
     fs.writeFileSync(path.join(baseDir, 'timeline.json'), JSON.stringify(timelineData, null, 2), 'utf8');
     filesSaved.push('timeline.json');
 
@@ -1582,22 +1631,22 @@ app.post('/api/internal-qa/mobile-ri/report', express.json({ limit: '25mb' }), a
     filesSaved.push('network.json');
 
     // 5. runtime_state.json
-    const runtimeState = sanitized.runtimeState || sanitized.state || {};
+    const runtimeState = sanitized.runtimeState || sanitized.snapshot || sanitized.state || {};
     fs.writeFileSync(path.join(baseDir, 'runtime_state.json'), JSON.stringify(runtimeState, null, 2), 'utf8');
     filesSaved.push('runtime_state.json');
 
     // 6. camera_state.json
-    const cameraState = runtimeState.camera || {};
+    const cameraState = runtimeState.camera || (sanitized.snapshot ? sanitized.snapshot.camera : {});
     fs.writeFileSync(path.join(baseDir, 'camera_state.json'), JSON.stringify(cameraState, null, 2), 'utf8');
     filesSaved.push('camera_state.json');
 
     // 7. sensor_state.json
-    const sensorState = runtimeState.sensor || {};
+    const sensorState = runtimeState.sensor || (sanitized.snapshot ? sanitized.snapshot.sensor : {});
     fs.writeFileSync(path.join(baseDir, 'sensor_state.json'), JSON.stringify(sensorState, null, 2), 'utf8');
     filesSaved.push('sensor_state.json');
 
     // 8. wizard_state.json
-    const wizardState = runtimeState.wizard || {};
+    const wizardState = runtimeState.wizard || (sanitized.snapshot ? sanitized.snapshot.fsm : {});
     fs.writeFileSync(path.join(baseDir, 'wizard_state.json'), JSON.stringify(wizardState, null, 2), 'utf8');
     filesSaved.push('wizard_state.json');
 
@@ -11979,4 +12028,25 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`=======================================================`);
 });
 
-module.exports = { app, server };
+// ── HTTPS Secure Context Server for Mobile Camera (W3C getUserMedia Requirement) ──
+const sslKeyPath = path.join(__dirname, '..', 'ssl', 'key.pem');
+const sslCertPath = path.join(__dirname, '..', 'ssl', 'cert.pem');
+let httpsServer = null;
+if (fs.existsSync(sslKeyPath) && fs.existsSync(sslCertPath)) {
+  try {
+    const https = require('https');
+    const httpsPort = process.env.HTTPS_PORT || 3900;
+    httpsServer = https.createServer({
+      key: fs.readFileSync(sslKeyPath),
+      cert: fs.readFileSync(sslCertPath)
+    }, app);
+    httpsServer.listen(httpsPort, '0.0.0.0', () => {
+      console.log(`[HTTPS] Mobile Secure Context Server listening on https://0.0.0.0:${httpsPort}`);
+      console.log(`[HTTPS] Mobile Access: https://192.168.4.100:${httpsPort}`);
+    });
+  } catch (err) {
+    console.warn('[HTTPS_START_WARN] Could not initialize HTTPS server:', err.message);
+  }
+}
+
+module.exports = { app, server, httpsServer };

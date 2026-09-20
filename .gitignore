@@ -3,6 +3,9 @@ node_modules/
 __pycache__/
 *.log
 npm-debug.log
+ssl/
+*.pem
+*.key
 *.ply
 *.spz
 *.splat

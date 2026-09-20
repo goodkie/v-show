@@ -23782,10 +23782,22 @@ class SetupWizardController {
         thumbStrip: document.getElementById('captureThumbStrip'),
       });
 
-      await engine.startCamera();
-      if (video && engine.activeStream) {
-        video.srcObject = engine.activeStream;
-        try { await video.play(); } catch(e) {}
+      const camOk = await engine.startCamera();
+      if (video && engine.activeStream && (typeof MediaStream !== 'undefined' && engine.activeStream instanceof MediaStream)) {
+        try {
+          video.srcObject = engine.activeStream;
+          await video.play();
+        } catch(e) {
+          console.warn('[Camera] video.play error:', e);
+        }
+      } else if (!camOk) {
+        if (!window.isSecureContext) {
+          if (pill) pill.textContent = 'HTTPS 필요 (https://192.168.4.100:3900)';
+          alert('카메라 보안 안내:\n모바일 브라우저 정책상 카메라(360 촬영)는 HTTPS 보안 접속(https://192.168.4.100:3900) 또는 chrome://flags 설정이 필요합니다.');
+        } else {
+          if (pill) pill.textContent = '카메라 권한 필요';
+          alert('카메라 권한 안내:\n카메라 접근 권한이 거부되었거나 지원되지 않습니다. 브라우저 설정에서 카메라 권한을 허용해주세요.');
+        }
       }
 
       const attached = engine.attachSensorListeners(window);

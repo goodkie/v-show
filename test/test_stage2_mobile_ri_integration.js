@@ -214,34 +214,42 @@ async function runMobileRiSuite() {
     assert.strictEqual(forgedRes.status, 403, 'Wrong secret must return 403');
   });
 
-  // [10] Secure Owner Login & HttpOnly Cookie Transport
+  // [10] Secure Owner Login, Single-Use Pairing & HttpOnly Cookie Transport
   let ownerCookie = null;
-  await test('[10] Configured owner secret issues HttpOnly cookie and authorizes capabilities', async () => {
-    // Perform login with valid test secret
+  await test('[10] Single-use pairing and owner-login issue HttpOnly cookies, rejecting secrets in URL', async () => {
     const testSecret = process.env.OWNER_QA_SECRET || 'vshow-stage2-secure-owner-auth-2026';
-    // Ensure test secret is configured in process.env for this test
     process.env.OWNER_QA_SECRET = testSecret;
 
-    const loginRes = await makeRequest('POST', '/api/internal-qa/auth/owner-login', {}, {
+    // 1. Secrets in URL query parameters are strictly forbidden (400)
+    const secretInUrlRes = await makeRequest('GET', `/qa?secret=${testSecret}`);
+    assert.strictEqual(secretInUrlRes.status, 400, 'Secret in URL query must return 400');
+
+    // 2. Generate short-lived single-use pairing token via POST body
+    const pairGenRes = await makeRequest('POST', '/api/internal-qa/auth/pairing-token', {}, {
       ownerSecret: testSecret
     });
-    assert.strictEqual(loginRes.status, 200, 'Valid owner secret must succeed');
-    assert.strictEqual(loginRes.json?.authorized, true);
-    assert.strictEqual(loginRes.json?.role, 'OWNER_QA');
-    assert.strictEqual(loginRes.json?.qaSessionToken, undefined, 'qaSessionToken must NOT be leaked in JSON body');
+    assert.strictEqual(pairGenRes.status, 200, 'Pairing token generation must succeed');
+    assert.ok(pairGenRes.json?.pairingToken, 'pairingToken must be returned');
+    assert.ok(pairGenRes.json?.pairingToken.startsWith('pair-'));
+    const pairingToken = pairGenRes.json.pairingToken;
 
-    // Verify Set-Cookie header has HttpOnly
-    const setCookie = loginRes.headers['set-cookie'];
-    assert.ok(setCookie, 'Set-Cookie must be present');
+    // 3. Redeem single-use pairing token via GET /qa?pair=...
+    const redeemRes = await makeRequest('GET', `/qa?pair=${pairingToken}`);
+    assert.strictEqual(redeemRes.status, 302, 'Redeem must redirect 302 to root');
+    const setCookie = redeemRes.headers['set-cookie'];
+    assert.ok(setCookie, 'Set-Cookie must be present on redeem');
     const cookieStr = Array.isArray(setCookie) ? setCookie[0] : setCookie;
     assert.ok(cookieStr.includes('HttpOnly'), 'Cookie must be HttpOnly');
     assert.ok(cookieStr.includes('SameSite=Lax'), 'Cookie must be SameSite=Lax');
-
     const match = cookieStr.match(/qa_session_token=([^;]+)/);
-    assert.ok(match, 'qa_session_token must be set in cookie');
+    assert.ok(match, 'qa_session_token must be set');
     ownerCookie = `qa_session_token=${match[1]}`;
 
-    // Verify cookie transport authorizes capabilities check and returns build metadata
+    // 4. Single-use guarantee: Re-using the same pairing token must fail (403)
+    const reuseRes = await makeRequest('GET', `/qa?pair=${pairingToken}`);
+    assert.strictEqual(reuseRes.status, 403, 'Consumed pairing token must return 403 on reuse');
+
+    // 5. Verify cookie transport authorizes capabilities check and returns build metadata
     const capRes = await makeRequest('GET', '/api/internal-qa/capabilities', {
       'Cookie': ownerCookie
     });
@@ -265,7 +273,7 @@ async function runMobileRiSuite() {
   await test('[12] When ENABLE_OWNER_RI=false, module is omitted (404) and capabilities disabled', async () => {
     const { spawn } = require('child_process');
     const retiredPort = 3896;
-    const retiredEnv = { ...process.env, PORT: String(retiredPort), ENABLE_OWNER_RI: 'false' };
+    const retiredEnv = { ...process.env, PORT: String(retiredPort), HTTPS_PORT: '3895', ENABLE_OWNER_RI: 'false' };
     const serverProc = spawn(process.execPath, ['server/index.js'], {
       cwd: path.join(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy'),
       env: retiredEnv,

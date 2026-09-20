@@ -126,30 +126,50 @@ class Stage2CaptureEngine {
 
     if (mockStream) {
       this.activeStream = mockStream;
-    } else if (typeof navigator !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      this.streamCount = 1;
+      this.transitionTo(STATES.CAMERA_READY);
+      return true;
+    }
+
+    const isBrowser = typeof window !== 'undefined';
+
+    if (isBrowser && navigator && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
         this.activeStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
           audio: false,
         });
       } catch (err) {
-        this.activeStream = {
-          id: 'stream-fallback-' + Date.now(),
-          active: true,
-          getTracks: () => [{ readyState: 'live', stop: () => { this.readyState = 'ended'; } }]
-        };
+        console.warn('[Stage2CaptureEngine] getUserMedia with ideal constraints failed, falling back to basic video constraint:', err);
+        try {
+          this.activeStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        } catch (err2) {
+          console.error('[Stage2CaptureEngine] getUserMedia failed completely:', err2);
+          this.cameraError = err2.name || 'PERMISSION_DENIED';
+          this.activeStream = null;
+        }
       }
-    } else {
+    } else if (!isBrowser) {
+      // In deterministic Node.js test environment, provide simulated stream mock
       this.activeStream = {
         id: 'stream-simulated-' + Date.now(),
         active: true,
         getTracks: () => [{ readyState: 'live', stop: () => { this.readyState = 'ended'; } }]
       };
+    } else {
+      console.warn('[Stage2CaptureEngine] navigator.mediaDevices.getUserMedia unavailable. Is page in Secure Context (HTTPS or localhost)?');
+      this.cameraError = 'INSECURE_CONTEXT_OR_UNSUPPORTED';
+      this.activeStream = null;
     }
 
-    this.streamCount = 1;
-    this.transitionTo(STATES.CAMERA_READY);
-    return true;
+    if (this.activeStream) {
+      this.streamCount = 1;
+      this.transitionTo(STATES.CAMERA_READY);
+      return true;
+    }
+
+    this.transitionTo(STATES.SENSOR_FALLBACK);
+    return false;
   }
 
   stopAllStreams() {
