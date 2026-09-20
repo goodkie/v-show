@@ -641,7 +641,7 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
               proj.paymentCorrelationId = session.metadata.paymentCorrelationId || 'pay_corr_webhook';
               proj.activatedAt = new Date().toISOString();
               proj.publishStatus = 'APPROVED';
-              db.write(dbData);
+              await db.write(dbData);
               console.log(`✅ C11 Project ${pid} upgraded to ${proj.entitlementState} via Stripe Webhook`);
             }
           }
@@ -7249,8 +7249,10 @@ app.post(['/api/consultation-requests', '/api/consultations'], async (req, res) 
       internalNotes: []
     };
 
-    dbData.consultationRequests.push(record);
-    db.write(dbData);
+    await db.mutate(d => {
+      d.consultationRequests = d.consultationRequests || [];
+      d.consultationRequests.push(record);
+    });
 
     return res.status(201).json({
       success: true,
@@ -7275,31 +7277,33 @@ app.get('/api/internal/consultations', (req, res) => {
   }
 });
 
-app.patch('/api/internal/consultations/:id/status', (req, res) => {
+app.patch('/api/internal/consultations/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
     const { status, note, changedBy } = req.body;
-    const dbData = db.read();
-    const item = (dbData.consultationRequests || []).find(c => c.consultationId === id);
 
-    if (!item) {
+    let updatedItem = null;
+    await db.mutate(d => {
+      const item = (d.consultationRequests || []).find(c => c.consultationId === id);
+      if (!item) return;
+      if (status) item.status = status;
+      item.updatedAt = new Date().toISOString();
+      if (note) {
+        item.internalNotes = item.internalNotes || [];
+        item.internalNotes.push({
+          note: note.trim(),
+          author: changedBy || 'Operations Lead',
+          createdAt: new Date().toISOString()
+        });
+      }
+      updatedItem = item;
+    });
+
+    if (!updatedItem) {
       return res.status(404).json({ success: false, error: 'Consultation record not found.' });
     }
 
-    if (status) item.status = status;
-    item.updatedAt = new Date().toISOString();
-
-    if (note) {
-      item.internalNotes = item.internalNotes || [];
-      item.internalNotes.push({
-        note: note.trim(),
-        author: changedBy || 'Operations Lead',
-        createdAt: new Date().toISOString()
-      });
-    }
-
-    db.write(dbData);
-    res.json({ success: true, consultation: item });
+    res.json({ success: true, consultation: updatedItem });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -7416,8 +7420,10 @@ app.post(['/api/consultation-requests', '/api/consultations'], async (req, res) 
       internalNotes: []
     };
 
-    dbData.consultationRequests.push(record);
-    db.write(dbData);
+    await db.mutate(d => {
+      d.consultationRequests = d.consultationRequests || [];
+      d.consultationRequests.push(record);
+    });
 
     return res.status(201).json({
       success: true,
@@ -7442,31 +7448,33 @@ app.get('/api/internal/consultations', (req, res) => {
   }
 });
 
-app.patch('/api/internal/consultations/:id/status', (req, res) => {
+app.patch('/api/internal/consultations/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
     const { status, note, changedBy } = req.body;
-    const dbData = db.read();
-    const item = (dbData.consultationRequests || []).find(c => c.consultationId === id);
 
-    if (!item) {
+    let updatedItem = null;
+    await db.mutate(d => {
+      const item = (d.consultationRequests || []).find(c => c.consultationId === id);
+      if (!item) return;
+      if (status) item.status = status;
+      item.updatedAt = new Date().toISOString();
+      if (note) {
+        item.internalNotes = item.internalNotes || [];
+        item.internalNotes.push({
+          note: note.trim(),
+          author: changedBy || 'Operations Lead',
+          createdAt: new Date().toISOString()
+        });
+      }
+      updatedItem = item;
+    });
+
+    if (!updatedItem) {
       return res.status(404).json({ success: false, error: 'Consultation record not found.' });
     }
 
-    if (status) item.status = status;
-    item.updatedAt = new Date().toISOString();
-
-    if (note) {
-      item.internalNotes = item.internalNotes || [];
-      item.internalNotes.push({
-        note: note.trim(),
-        author: changedBy || 'Operations Lead',
-        createdAt: new Date().toISOString()
-      });
-    }
-
-    db.write(dbData);
-    res.json({ success: true, consultation: item });
+    res.json({ success: true, consultation: updatedItem });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -11256,6 +11264,10 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
 
         // Authoritative atomic private storage copy, digest verification & candidate commit
         try {
+          if (process.env.ALLOW_STAGE2_TEST_FAULT_INJECTION === 'true' && req.headers['x-test-inject-fault'] === 'ARTIFACT_COPY_FAIL') {
+            throw new Error('INJECTED_FAULT: Disk write / private artifact copy failure simulated');
+          }
+
           const candDir = path.join(PANORAMA_PRIVATE_STORAGE_ROOT, projectId, candidate.candidateId);
           const projectDir = path.join(PANORAMA_PRIVATE_STORAGE_ROOT, projectId);
           fs.mkdirSync(candDir, { recursive: true });
@@ -11313,6 +11325,10 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
           await db.saveSpatialBoothCandidate(projectId, candidate);
         } catch (storageErr) {
           console.error(`[PANORAMA][${jobId}][FAILED] Mandatory artifact copy or digest failure:`, storageErr.message);
+          try {
+            const candDir = path.join(PANORAMA_PRIVATE_STORAGE_ROOT, projectId, candidate.candidateId);
+            if (fs.existsSync(candDir)) fs.rmSync(candDir, { recursive: true, force: true });
+          } catch (cleanErr) {}
           await db.updatePanoramaJob(jobId, {
             status: 'FAILED',
             progress: 100,

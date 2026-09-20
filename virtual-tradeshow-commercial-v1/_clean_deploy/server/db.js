@@ -468,9 +468,34 @@ const initialSeedData = () => {
 
 
 
+class AsyncMutex {
+  constructor() {
+    this._queue = [];
+    this._locked = false;
+  }
+  async acquire() {
+    if (!this._locked) {
+      this._locked = true;
+      return () => this._release();
+    }
+    return new Promise(resolve => {
+      this._queue.push(resolve);
+    });
+  }
+  _release() {
+    if (this._queue.length > 0) {
+      const next = this._queue.shift();
+      next(() => this._release());
+    } else {
+      this._locked = false;
+    }
+  }
+}
+
 class JSONDatabase {
   constructor() {
     this.memoryData = null;
+    this._asyncMutex = new AsyncMutex();
     this.init();
   }
 
@@ -1514,6 +1539,53 @@ class JSONDatabase {
     }
   }
 
+  async acquireFileLock(timeoutMs = 15000) {
+    const lockFile = path.join(DATA_DIR, 'db.lock');
+    const ownerToken = `${process.pid}:${Date.now()}:${crypto.randomBytes(8).toString('hex')}`;
+    const payload = JSON.stringify({
+      ownerToken,
+      pid: process.pid,
+      createdAt: Date.now()
+    });
+
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      try {
+        fs.writeFileSync(lockFile, payload, { flag: 'wx' });
+        return ownerToken;
+      } catch (e) {
+        if (e.code === 'EEXIST' || e.code === 'EPERM' || e.code === 'EBUSY') {
+          const existing = this._readLockFile();
+          if (existing && existing.pid && !this._isProcessAlive(existing.pid)) {
+            try {
+              const current = this._readLockFile();
+              if (current && current.ownerToken === existing.ownerToken) {
+                fs.unlinkSync(lockFile);
+              }
+            } catch (staleErr) {}
+          }
+          await new Promise(r => setTimeout(r, 10 + Math.floor(Math.random() * 20)));
+        } else {
+          throw e;
+        }
+      }
+    }
+    throw new Error(`LOCK_TIMEOUT_ACQUISITION_FAILED: Timed out waiting for database lock after ${timeoutMs}ms`);
+  }
+
+  releaseFileLock(ownerToken) {
+    if (!ownerToken) return false;
+    const lockFile = path.join(DATA_DIR, 'db.lock');
+    try {
+      const current = this._readLockFile();
+      if (current && current.ownerToken === ownerToken) {
+        fs.unlinkSync(lockFile);
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
   acquireLockSync(timeoutMs = 15000) {
     const lockFile = path.join(DATA_DIR, 'db.lock');
     const ownerToken = `${process.pid}:${Date.now()}:${crypto.randomBytes(8).toString('hex')}`;
@@ -1538,13 +1610,6 @@ class JSONDatabase {
                 fs.unlinkSync(lockFile);
               }
             } catch (staleErr) {}
-          } else if (existing && existing.createdAt && (Date.now() - existing.createdAt > 30000)) {
-            try {
-              const current = this._readLockFile();
-              if (current && current.ownerToken === existing.ownerToken) {
-                fs.unlinkSync(lockFile);
-              }
-            } catch (staleErr) {}
           }
           const delayUntil = Date.now() + 10 + Math.floor(Math.random() * 15);
           while (Date.now() < delayUntil) {}
@@ -1557,43 +1622,30 @@ class JSONDatabase {
   }
 
   releaseLock(ownerToken) {
-    if (!ownerToken) return false;
-    const lockFile = path.join(DATA_DIR, 'db.lock');
-    try {
-      const current = this._readLockFile();
-      if (current && current.ownerToken === ownerToken) {
-        fs.unlinkSync(lockFile);
-        return true;
-      }
-    } catch (e) {}
-    return false;
+    return this.releaseFileLock(ownerToken);
   }
 
   _writeUnderLock(data) {
     if (!data || typeof data !== 'object') {
       throw new Error('INVALID_DATA: Refusing to write invalid/undefined data to database');
     }
-    this.memoryData = data;
     const uniqueTemp = path.join(DATA_DIR, `db.temp.${process.pid}.${Date.now()}.${crypto.randomBytes(6).toString('hex')}.json`);
     fs.writeFileSync(uniqueTemp, JSON.stringify(data, null, 2), 'utf-8');
     fs.renameSync(uniqueTemp, DB_FILE);
     try {
       this.lastMtime = fs.statSync(DB_FILE).mtimeMs;
     } catch (e) {}
+    this.memoryData = data;
     return true;
   }
 
-  write(data) {
-    let ownerToken;
-    try {
-      ownerToken = this.acquireLockSync(10000);
-      return this._writeUnderLock(data || this.memoryData || this.read());
-    } catch (err) {
-      console.error('Error writing database:', err);
-      return false;
-    } finally {
-      if (ownerToken) this.releaseLock(ownerToken);
-    }
+  async write(data) {
+    return this.mutate(current => {
+      if (data && typeof data === 'object' && data !== current) {
+        Object.assign(current, data);
+      }
+      return true;
+    });
   }
 
   // ── Canonical Project & Product Access Layer (C11.16-P3.15-R4) ──
@@ -1652,34 +1704,22 @@ class JSONDatabase {
     });
   }
 
-  mutate(callback) {
-    const ownerToken = this.acquireLockSync();
-    let isAsync = false;
+  async mutate(callback) {
+    const releaseInProc = await this._asyncMutex.acquire();
+    let ownerToken;
     try {
+      ownerToken = await this.acquireFileLock();
       this.memoryData = null; // force fresh reload from disk under lock
       const data = this.read();
-      const result = callback(data);
-      if (result && typeof result.then === 'function') {
-        isAsync = true;
-        return result.then(resolved => {
-          const written = this._writeUnderLock(data);
-          if (!written) throw new Error('DB_WRITE_FAILED: Write returned false under lock');
-          this.releaseLock(ownerToken);
-          return resolved;
-        }).catch(err => {
-          this.releaseLock(ownerToken);
-          throw err;
-        });
-      }
+      const result = await callback(data);
       const written = this._writeUnderLock(data);
       if (!written) throw new Error('DB_WRITE_FAILED: Write returned false under lock');
       return result;
-    } catch (err) {
-      throw err;
     } finally {
-      if (!isAsync) {
-        this.releaseLock(ownerToken);
+      if (ownerToken) {
+        this.releaseFileLock(ownerToken);
       }
+      releaseInProc();
     }
   }
 

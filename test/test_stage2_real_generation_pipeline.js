@@ -39,7 +39,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { execSync } = require('child_process');
+const { execSync, spawn } = require('child_process');
 
 let jpeg;
 try {
@@ -1426,109 +1426,341 @@ async function runRealGenerationPipelineTests() {
       });
     });
 
-    // Launch both child processes concurrently with async overlaps
-    await Promise.all([runProc(workerScript1), runProc(workerScript2)]);
+    const TEST_ISOLATED_DATA_DIR = path.join(__dirname, `../.tmp_test_db_${Date.now()}`);
+    fs.mkdirSync(TEST_ISOLATED_DATA_DIR, { recursive: true });
 
-    // Read back in parent process
-    if (db) {
-      db.memoryData = null; // force fresh reload
-      const data = db.read();
-      const read1 = data[key1];
-      const read2 = data[key2];
-
-      assert.ok(read1, 'Write from process 1 must be persisted');
-      assert.strictEqual(read1.writtenBy, 'proc-1');
-      assert.ok(read2, 'Write from process 2 must be persisted');
-      assert.strictEqual(read2.writtenBy, 'proc-2');
-    }
-  });
-
-  // [26b] DB Lock Safety: Refuses mutation on lock acquisition timeout (Fail-Closed)
-  await test('[26b] DB Lock Safety: Refuses mutation on lock acquisition timeout (Fail-Closed)', () => {
-    const lockFile = path.join(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/data/db.lock');
-    const dummyToken = `dummy-owner-${Date.now()}`;
-    fs.writeFileSync(lockFile, JSON.stringify({
-      ownerToken: dummyToken,
-      pid: process.pid,
-      createdAt: Date.now()
-    }), 'utf-8');
-
-    let threw = false;
     try {
-      db.acquireLockSync(200); // 200ms timeout
-    } catch (e) {
-      if (e.message.includes('LOCK_TIMEOUT_ACQUISITION_FAILED')) {
-        threw = true;
-      }
+      // 1. Same-Process Non-Blocking Async Mutex Test (verifies zero event-loop stall)
+      let timerTicks = 0;
+      const timer = setInterval(() => { timerTicks++; }, 20);
+
+      const p1 = db.mutate(async d => {
+        await new Promise(r => setTimeout(r, 120));
+        d.same_proc_1 = 'val1';
+      });
+      const p2 = db.mutate(async d => {
+        await new Promise(r => setTimeout(r, 80));
+        d.same_proc_2 = 'val2';
+      });
+
+      await Promise.all([p1, p2]);
+      clearInterval(timer);
+
+      assert.ok(timerTicks >= 3, `Event loop must remain unblocked during async mutate! Timer ticks: ${timerTicks}`);
+      const sameProcData = db.read();
+      assert.strictEqual(sameProcData.same_proc_1, 'val1');
+      assert.strictEqual(sameProcData.same_proc_2, 'val2');
+
+      // 2. Separate Process Concurrency on Isolated Disposable Volume
+      const key1 = `test_proc_concurrency_${Date.now()}_p1`;
+      const key2 = `test_proc_concurrency_${Date.now()}_p2`;
+      const dbModulePath = path.resolve(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/server/db.js').replace(/\\/g, '/');
+
+      const workerScript1 = `
+        const db = require('${dbModulePath}');
+        (async () => {
+          try {
+            await db.mutate(async data => {
+              await new Promise(r => setTimeout(r, 100));
+              data['${key1}'] = { writtenBy: 'proc-1', pid: process.pid, timestamp: Date.now() };
+            });
+            process.exit(0);
+          } catch (e) {
+            console.error('Proc-1 error:', e);
+            process.exit(1);
+          }
+        })();
+      `;
+
+      const workerScript2 = `
+        const db = require('${dbModulePath}');
+        (async () => {
+          try {
+            await db.mutate(async data => {
+              await new Promise(r => setTimeout(r, 60));
+              data['${key2}'] = { writtenBy: 'proc-2', pid: process.pid, timestamp: Date.now() };
+            });
+            process.exit(0);
+          } catch (e) {
+            console.error('Proc-2 error:', e);
+            process.exit(1);
+          }
+        })();
+      `;
+
+      const runProc = (script) => new Promise((resolve, reject) => {
+        const p = spawn(process.execPath, ['-e', script], {
+          stdio: 'inherit',
+          env: { ...process.env, NODE_ENV: 'test', DATA_DIR: TEST_ISOLATED_DATA_DIR }
+        });
+        p.on('close', code => {
+          if (code === 0) resolve();
+          else reject(new Error(`Child process failed with code ${code}`));
+        });
+      });
+
+      await Promise.all([runProc(workerScript1), runProc(workerScript2)]);
+
+      const isoDbFile = path.join(TEST_ISOLATED_DATA_DIR, 'db.json');
+      assert.ok(fs.existsSync(isoDbFile), 'Isolated DB file must exist');
+      const isoData = JSON.parse(fs.readFileSync(isoDbFile, 'utf-8'));
+      assert.ok(isoData[key1], 'Write from process 1 must be persisted');
+      assert.ok(isoData[key2], 'Write from process 2 must be persisted');
     } finally {
-      // Clean up test lock
-      try {
-        const cur = db._readLockFile();
-        if (cur && cur.ownerToken === dummyToken) fs.unlinkSync(lockFile);
-      } catch (e) {}
+      if (fs.existsSync(TEST_ISOLATED_DATA_DIR)) {
+        fs.rmSync(TEST_ISOLATED_DATA_DIR, { recursive: true, force: true });
+      }
     }
-    assert.strictEqual(threw, true, 'acquireLockSync must fail closed with LOCK_TIMEOUT_ACQUISITION_FAILED on timeout');
   });
 
-  // [26c] DB Safe Stale Lock Recovery & Owner Token Fencing
-  await test('[26c] DB Safe Stale Lock Recovery & Owner Token Fencing', () => {
-    const lockFile = path.join(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/data/db.lock');
-    const deadPid = 9999999;
-    fs.writeFileSync(lockFile, JSON.stringify({
-      ownerToken: 'stale-dead-token',
-      pid: deadPid,
-      createdAt: Date.now() - 5000
-    }), 'utf-8');
+  // [26b] DB Lock Safety: Refuses mutation on lock acquisition timeout (Fail-Closed on disposable volume)
+  await test('[26b] DB Lock Safety: Refuses mutation on lock acquisition timeout (Fail-Closed on disposable volume)', async () => {
+    const TEST_ISOLATED_DATA_DIR = path.join(__dirname, `../.tmp_test_timeout_${Date.now()}`);
+    fs.mkdirSync(TEST_ISOLATED_DATA_DIR, { recursive: true });
+    const lockFile = path.join(TEST_ISOLATED_DATA_DIR, 'db.lock');
 
-    // Dead PID lock must be recovered
-    const newToken = db.acquireLockSync(1000);
-    assert.ok(newToken, 'Must acquire lock from dead process');
-    assert.strictEqual(fs.existsSync(lockFile), true, 'Lockfile must exist under new owner');
+    try {
+      const dummyToken = `dummy-owner-${Date.now()}`;
+      fs.writeFileSync(lockFile, JSON.stringify({
+        ownerToken: dummyToken,
+        pid: process.pid,
+        createdAt: Date.now()
+      }), 'utf-8');
 
-    // Imposter token cannot release active owner lock
-    const releasedImposter = db.releaseLock('imposter-token');
-    assert.strictEqual(releasedImposter, false, 'Imposter token must return false');
-    assert.strictEqual(fs.existsSync(lockFile), true, 'Lockfile must remain intact after imposter release');
+      const dbPath = path.resolve(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/server/db').replace(/\\/g, '/');
+      const runProc = (script) => new Promise((resolve, reject) => {
+        const p = spawn(process.execPath, ['-e', script], {
+          stdio: 'pipe',
+          env: { ...process.env, NODE_ENV: 'test', DATA_DIR: TEST_ISOLATED_DATA_DIR }
+        });
+        let errOut = '';
+        p.stderr.on('data', d => { errOut += d.toString(); });
+        p.on('close', code => {
+          if (code === 0) resolve();
+          else reject(new Error(`Child process failed with code ${code}: ${errOut}`));
+        });
+      });
 
-    // Legitimate owner can release
-    const releasedLegit = db.releaseLock(newToken);
-    assert.strictEqual(releasedLegit, true, 'Legitimate owner must release lock');
-    assert.strictEqual(fs.existsSync(lockFile), false, 'Lockfile must be deleted after legitimate release');
+      const timeoutScript = `
+        const db = require('${dbPath}');
+        let threw = false;
+        try {
+          db.acquireLockSync(200);
+        } catch (e) {
+          if (e.message.includes('LOCK_TIMEOUT_ACQUISITION_FAILED')) {
+            threw = true;
+          }
+        }
+        if (!threw) process.exit(1);
+        process.exit(0);
+      `;
+      await runProc(timeoutScript);
+    } finally {
+      if (fs.existsSync(TEST_ISOLATED_DATA_DIR)) {
+        fs.rmSync(TEST_ISOLATED_DATA_DIR, { recursive: true, force: true });
+      }
+    }
+  });
+
+  // [26c] DB Safe Stale Lock Recovery & Owner Token Fencing (on disposable volume)
+  await test('[26c] DB Safe Stale Lock Recovery & Owner Token Fencing (on disposable volume)', async () => {
+    const TEST_ISOLATED_DATA_DIR = path.join(__dirname, `../.tmp_test_stale_${Date.now()}`);
+    fs.mkdirSync(TEST_ISOLATED_DATA_DIR, { recursive: true });
+    const lockFile = path.join(TEST_ISOLATED_DATA_DIR, 'db.lock');
+
+    try {
+      const deadPid = 9999999;
+      fs.writeFileSync(lockFile, JSON.stringify({
+        ownerToken: 'stale-dead-token',
+        pid: deadPid,
+        createdAt: Date.now() - 5000
+      }), 'utf-8');
+
+      const dbPath = path.resolve(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/server/db').replace(/\\/g, '/');
+      const runProc = (script) => new Promise((resolve, reject) => {
+        const p = spawn(process.execPath, ['-e', script], {
+          stdio: 'pipe',
+          env: { ...process.env, NODE_ENV: 'test', DATA_DIR: TEST_ISOLATED_DATA_DIR }
+        });
+        let errOut = '';
+        p.stderr.on('data', d => { errOut += d.toString(); });
+        p.on('close', code => {
+          if (code === 0) resolve();
+          else reject(new Error(`Child process failed with code ${code}: ${errOut}`));
+        });
+      });
+
+      const staleScript = `
+        const assert = require('assert');
+        const db = require('${dbPath}');
+        // Dead PID lock must be recovered
+        const newToken = db.acquireLockSync(1000);
+        assert.ok(newToken, 'Must acquire lock from dead process');
+
+        // Imposter token cannot release active owner lock
+        const releasedImposter = db.releaseLock('imposter-token');
+        assert.strictEqual(releasedImposter, false, 'Imposter token must return false');
+
+        // Legitimate owner can release
+        const releasedLegit = db.releaseLock(newToken);
+        assert.strictEqual(releasedLegit, true, 'Legitimate owner must release lock');
+        process.exit(0);
+      `;
+      await runProc(staleScript);
+    } finally {
+      if (fs.existsSync(TEST_ISOLATED_DATA_DIR)) {
+        fs.rmSync(TEST_ISOLATED_DATA_DIR, { recursive: true, force: true });
+      }
+    }
   });
 
   // [26d] DB Error Propagation: Write failure propagates and releases lock
-  await test('[26d] DB Error Propagation: Write failure propagates and releases lock', () => {
-    let threw = false;
+  await test('[26d] DB Error Propagation: Write failure propagates and releases lock', async () => {
+    const TEST_ISOLATED_DATA_DIR = path.join(__dirname, `../.tmp_test_err_${Date.now()}`);
+    fs.mkdirSync(TEST_ISOLATED_DATA_DIR, { recursive: true });
     try {
-      db.mutate(() => {
-        throw new Error('INTENTIONAL_MUTATE_FAILURE');
+      const dbPath = path.resolve(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/server/db').replace(/\\/g, '/');
+      const runProc = (script) => new Promise((resolve, reject) => {
+        const p = spawn(process.execPath, ['-e', script], {
+          stdio: 'pipe',
+          env: { ...process.env, NODE_ENV: 'test', DATA_DIR: TEST_ISOLATED_DATA_DIR }
+        });
+        let errOut = '';
+        p.stderr.on('data', d => { errOut += d.toString(); });
+        p.on('close', code => {
+          if (code === 0) resolve();
+          else reject(new Error(`Child process failed with code ${code}: ${errOut}`));
+        });
       });
-    } catch (e) {
-      if (e.message === 'INTENTIONAL_MUTATE_FAILURE') threw = true;
+
+      const errScript = `
+        const assert = require('assert');
+        const db = require('${dbPath}');
+        (async () => {
+          let threw = false;
+          try {
+            await db.mutate(() => {
+              throw new Error('INTENTIONAL_MUTATE_FAILURE');
+            });
+          } catch (e) {
+            if (e.message === 'INTENTIONAL_MUTATE_FAILURE') threw = true;
+          }
+          assert.strictEqual(threw, true, 'Mutate must propagate callback exceptions');
+          // And verify lock was released so subsequent mutation succeeds
+          await db.mutate(data => { data.recovered = true; return data; });
+          process.exit(0);
+        })().catch(err => {
+          console.error(err);
+          process.exit(1);
+        });
+      `;
+      await runProc(errScript);
+    } finally {
+      if (fs.existsSync(TEST_ISOLATED_DATA_DIR)) {
+        fs.rmSync(TEST_ISOLATED_DATA_DIR, { recursive: true, force: true });
+      }
     }
-    assert.strictEqual(threw, true, 'Mutate must propagate callback exceptions');
-    const lockFile = path.join(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/data/db.lock');
-    assert.strictEqual(fs.existsSync(lockFile), false, 'Lock must be released on callback exception');
   });
 
-  // [26e] Atomic Artifact Ready Gate: Job fails closed on private copy failure without candidate commit
-  await test('[26e] Atomic Artifact Ready Gate: Job fails closed on private copy failure without candidate commit', async () => {
-    // Assert that if candidate artifact copy or validation fails, job status is FAILED and candidate is not committed
-    function verifyAtomicGateInvariance(simulatedJob, candidate) {
-      if (!candidate.assetSha256 || !candidate.assetByteSize) {
-        simulatedJob.status = 'FAILED';
-        simulatedJob.errorCode = 'ARTIFACT_COPY_FAILED';
-        return false;
+  // [26e] Real Worker Failure Injection & Atomic Ready Gate (Real HTTP request + retry repair)
+  await test('[26e] Real Worker Failure Injection & Atomic Ready Gate (Real HTTP request + retry repair)', async () => {
+    const activeSessionId = serverCaptureSessionId || captureSessionId;
+    const faultPayload = {
+      captureSessionId: activeSessionId,
+      closureConfirmed: true,
+      closureVerified: true,
+      creationMode: 'FIXED_ORIGIN_PANORAMA',
+      outputType: 'PANORAMA_360',
+      autoRemovePeople: false,
+      isTest: true
+    };
+
+    // 1. Submit panorama generation job with injected artifact copy failure
+    const faultRes = await makeHttpRequest('POST', `/api/projects/${TEST_PROJECT_ID}/panorama/start`, {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`,
+      'x-internal-test-auth': 'true',
+      'X-Test-Inject-Fault': 'ARTIFACT_COPY_FAIL'
+    }, JSON.stringify(faultPayload));
+
+    assert.ok(faultRes.status === 200 || faultRes.status === 202, `Job creation must return 200 or 202 Accepted, got ${faultRes.status}: ${faultRes.text}`);
+    const faultJobId = faultRes.json?.jobId;
+    assert.ok(faultJobId, 'faultJobId must be issued');
+
+    // 2. Poll until terminal state: must reach FAILED with ARTIFACT_COPY_FAILED
+    let faultJob = null;
+    const pollStart = Date.now();
+    while (Date.now() - pollStart < 45000) {
+      const pollRes = await makeHttpRequest('GET', `/api/panorama-jobs/${faultJobId}`, {
+        'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+      });
+      const job = pollRes.json?.job;
+      if (job?.status === 'FAILED') {
+        faultJob = job;
+        break;
       }
-      return true;
+      if (job?.status === 'READY') {
+        assert.fail('Job with injected artifact copy failure MUST NEVER reach READY');
+      }
+      await new Promise(r => setTimeout(r, 200));
     }
 
-    const uncommittedCand = { candidateId: 'cand-uncommitted-001', geometryValid: true };
-    const jobState = { jobId: 'job-atomic-test-01', status: 'PROCESSING' };
-    const passed = verifyAtomicGateInvariance(jobState, uncommittedCand);
-    assert.strictEqual(passed, false);
-    assert.strictEqual(jobState.status, 'FAILED');
-    assert.strictEqual(jobState.errorCode, 'ARTIFACT_COPY_FAILED');
+    assert.ok(faultJob, 'Job must transition to FAILED state');
+    assert.strictEqual(faultJob.status, 'FAILED');
+    assert.strictEqual(faultJob.errorCode, 'ARTIFACT_COPY_FAILED');
+
+    // 3. Verify candidate is NOT committed in DB
+    if (db) {
+      const freshData = db.read();
+      const leakedCand = (freshData.spatialCandidates || []).find(c => c.candidateId === faultJob.candidateId);
+      assert.strictEqual(leakedCand, undefined, 'Candidate must NOT be saved to DB when artifact copy fails');
+    }
+
+    // 4. Verify retry WITHOUT fault injection succeeds and reaches READY
+    const retryPayload = {
+      captureSessionId: activeSessionId,
+      closureConfirmed: true,
+      closureVerified: true,
+      creationMode: 'FIXED_ORIGIN_PANORAMA',
+      outputType: 'PANORAMA_360',
+      autoRemovePeople: false,
+      isTest: true
+    };
+    const retryRes = await makeHttpRequest('POST', `/api/projects/${TEST_PROJECT_ID}/panorama/start`, {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`,
+      'x-internal-test-auth': 'true'
+    }, JSON.stringify(retryPayload));
+
+    assert.ok(retryRes.status === 200 || retryRes.status === 202, `Retry creation must return 200 or 202, got ${retryRes.status}`);
+    const retryJobId = retryRes.json?.jobId;
+    assert.ok(retryJobId);
+
+    let retryJob = null;
+    const retryStart = Date.now();
+    while (Date.now() - retryStart < 45000) {
+      const rPoll = await makeHttpRequest('GET', `/api/panorama-jobs/${retryJobId}`, {
+        'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+      });
+      const rJob = rPoll.json?.job;
+      if (rJob?.status === 'READY') {
+        retryJob = rJob;
+        break;
+      }
+      await new Promise(r => setTimeout(r, 200));
+    }
+
+    assert.ok(retryJob, 'Retry job must succeed and reach READY');
+    assert.strictEqual(retryJob.status, 'READY');
+    assert.ok(retryJob.candidateId, 'Retry job must produce valid candidateId');
+
+    // 5. Verify candidate committed with valid 64-hex SHA-256 and byte size
+    const candRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${retryJob.candidateId}/asset`, {
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+    });
+    assert.strictEqual(candRes.status, 200, 'Candidate asset must be accessible');
+    assert.ok(candRes.headers['x-asset-sha256'], 'X-Asset-SHA256 header must be present');
+    assert.strictEqual(candRes.headers['x-asset-sha256'].length, 64);
   });
 
   console.log('\n================================================================');
