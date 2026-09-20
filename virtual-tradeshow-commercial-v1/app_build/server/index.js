@@ -1401,6 +1401,39 @@ app.post('/api/internal-qa/auth/redeem-session', express.json(), (req, res) => {
   }
 });
 
+// Explicit revocation list for compromised pairing tokens
+const REVOKED_PAIRING_TOKENS = new Set([
+  'pair-864d056f071408539cc9b244741501e3'
+]);
+
+// Strict origin/protocol security gate for Owner QA authentication
+function isSecureOrLoopback(req) {
+  if (req.secure) return true;
+  const ip = req.ip || req.connection?.remoteAddress || '';
+  if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || req.hostname === 'localhost' || req.hostname === '127.0.0.1') {
+    return true;
+  }
+  return false;
+}
+
+// Rate limiter for owner authentication / pairing endpoints (in-memory, sliding 1-minute window)
+const authRateLimitMap = new Map(); // ip -> { count: number, resetAt: number }
+function checkAuthRateLimit(req, res, maxRequests = 30, windowMs = 60000) {
+  const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+  const now = Date.now();
+  const entry = authRateLimitMap.get(ip);
+  if (!entry || entry.resetAt < now) {
+    authRateLimitMap.set(ip, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (entry.count >= maxRequests) {
+    res.status(429).json({ ok: false, error: 'RATE_LIMIT_EXCEEDED', message: 'Too many authentication attempts. Please wait.' });
+    return false;
+  }
+  entry.count++;
+  return true;
+}
+
 // ── Secure Owner QA Authentication (Single Gate) ──
 // Requires configured process.env.OWNER_QA_SECRET. Fails closed if unset.
 // Issues short-lived (8h) HttpOnly session cookie without leaking token to client.
@@ -1408,6 +1441,10 @@ app.post('/api/internal-qa/auth/owner-login', express.json(), (req, res) => {
   if (!ENABLE_OWNER_RI) {
     return res.status(403).json({ ok: false, error: 'OWNER_RI_DISABLED' });
   }
+  if (!isSecureOrLoopback(req)) {
+    return res.status(403).json({ ok: false, error: 'HTTPS_REQUIRED', message: 'Owner QA authentication requires HTTPS secure context or trusted local loopback.' });
+  }
+  if (!checkAuthRateLimit(req, res)) return;
 
   const configuredSecret = process.env.OWNER_QA_SECRET;
   if (!configuredSecret || typeof configuredSecret !== 'string' || configuredSecret.length < 8) {
@@ -1440,7 +1477,7 @@ app.post('/api/internal-qa/auth/owner-login', express.json(), (req, res) => {
   qaBrowserSessions.set(token, session);
   saveDurableQaSessions();
 
-  const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  const isSecure = req.secure;
   res.setHeader('Set-Cookie', `qa_session_token=${token}; Path=/; Max-Age=28800; HttpOnly; SameSite=Lax${isSecure ? '; Secure' : ''}`);
   res.json({
     ok: true,
@@ -1450,29 +1487,6 @@ app.post('/api/internal-qa/auth/owner-login', express.json(), (req, res) => {
   });
 });
 
-// Explicit revocation list for compromised pairing tokens
-const REVOKED_PAIRING_TOKENS = new Set([
-  'pair-864d056f071408539cc9b244741501e3'
-]);
-
-// Rate limiter for owner authentication / pairing endpoints (in-memory, sliding 1-minute window)
-const authRateLimitMap = new Map(); // ip -> { count: number, resetAt: number }
-function checkAuthRateLimit(req, res, maxRequests = 30, windowMs = 60000) {
-  const ip = req.ip || req.connection?.remoteAddress || 'unknown';
-  const now = Date.now();
-  const entry = authRateLimitMap.get(ip);
-  if (!entry || entry.resetAt < now) {
-    authRateLimitMap.set(ip, { count: 1, resetAt: now + windowMs });
-    return true;
-  }
-  if (entry.count >= maxRequests) {
-    res.status(429).json({ ok: false, error: 'RATE_LIMIT_EXCEEDED', message: 'Too many authentication attempts. Please wait.' });
-    return false;
-  }
-  entry.count++;
-  return true;
-}
-
 // In-memory store for short-lived, single-use pairing tokens
 const pairingTokens = new Map(); // pairToken -> { createdAt: number, expiresAt: number }
 
@@ -1480,6 +1494,9 @@ const pairingTokens = new Map(); // pairToken -> { createdAt: number, expiresAt:
 app.post('/api/internal-qa/auth/pairing-token', express.json(), (req, res) => {
   if (!ENABLE_OWNER_RI) {
     return res.status(403).json({ ok: false, error: 'OWNER_RI_DISABLED' });
+  }
+  if (!isSecureOrLoopback(req)) {
+    return res.status(403).json({ ok: false, error: 'HTTPS_REQUIRED', message: 'Owner QA authentication requires HTTPS secure context or trusted local loopback.' });
   }
   if (!checkAuthRateLimit(req, res)) return;
 
@@ -1517,6 +1534,9 @@ app.post('/api/internal-qa/auth/redeem-pairing', express.json(), (req, res) => {
   if (!ENABLE_OWNER_RI) {
     return res.status(403).json({ ok: false, error: 'OWNER_RI_DISABLED' });
   }
+  if (!isSecureOrLoopback(req)) {
+    return res.status(403).json({ ok: false, error: 'HTTPS_REQUIRED', message: 'Owner QA authentication requires HTTPS secure context or trusted local loopback.' });
+  }
   if (!checkAuthRateLimit(req, res)) return;
 
   const pairToken = req.body && (req.body.pairingToken || req.body.pairingCode);
@@ -1553,7 +1573,7 @@ app.post('/api/internal-qa/auth/redeem-pairing', express.json(), (req, res) => {
   qaBrowserSessions.set(token, session);
   saveDurableQaSessions();
 
-  const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  const isSecure = req.secure;
   res.setHeader('Set-Cookie', `qa_session_token=${token}; Path=/; Max-Age=28800; HttpOnly; SameSite=Lax${isSecure ? '; Secure' : ''}`);
   res.json({
     ok: true,
@@ -1567,6 +1587,9 @@ app.post('/api/internal-qa/auth/redeem-pairing', express.json(), (req, res) => {
 app.get('/qa', (req, res) => {
   if (!ENABLE_OWNER_RI) {
     return res.status(404).send('Not Found');
+  }
+  if (!isSecureOrLoopback(req)) {
+    return res.status(403).send('<html><body style="font-family:sans-serif;padding:40px;background:#0f172a;color:#ef4444;"><h2>HTTPS Required</h2><p>Owner QA access requires a trusted HTTPS connection (https://...). Unencrypted plain HTTP over LAN is strictly forbidden.</p></body></html>');
   }
 
   // Security Headers: prevent token retention in history, referrer, or intermediate proxies
