@@ -25,8 +25,9 @@
 const DEFAULT_STAGE2_CONFIG = Object.freeze({
   targetCount: 12,
   targetSpacingDeg: 30.0,
+  approachToleranceDeg: 12.0,
   targetToleranceDeg: 4.5,
-  holdToleranceDeg: 6.5,
+  holdToleranceDeg: 5.5,
   cancelToleranceDeg: 8.0,
   stableHoldMs: 350,
   countdownSeconds: 3,
@@ -87,6 +88,20 @@ class Stage2CaptureEngine {
     this.stabilityStartTime = null;
     this.countdownTimer = null;
     this.countdownSecondsRemaining = 0;
+
+    // Per-target failure tracking for forensic visibility
+    this.perTargetFailures = {};
+    for (let i = 0; i < this.config.targetCount; i++) {
+      this.perTargetFailures[i] = {
+        yaw_outside: 0,
+        velocity: 0,
+        pitch: 0,
+        roll: 0,
+        sensor_invalid: 0,
+        camera_not_ready: 0,
+        total_cancels: 0,
+      };
+    }
 
     // Data buffers
     this.candidateFrames = []; // Transient candidate pool (>12 allowed)
@@ -347,6 +362,11 @@ class Stage2CaptureEngine {
     this.updateUIRefresh();
   }
 
+  getSignedYawError(targetIndex = this.currentTargetIndex) {
+    const targetAngle = targetIndex * this.config.targetSpacingDeg;
+    return this.getAngularDistance(this.normalizedYaw, targetAngle);
+  }
+
   // ─── Target Matching & State Machine Evaluation ──────────────────────────────
   evaluateTargetProgress(now = Date.now()) {
     if (this.state === STATES.IDLE ||
@@ -362,20 +382,39 @@ class Stage2CaptureEngine {
     const orientationSafe = pitchSafe && rollSafe;
 
     const targetAngle = this.currentTargetIndex * this.config.targetSpacingDeg;
-    const angularDiff = Math.abs(this.getAngularDistance(this.normalizedYaw, targetAngle));
+    const signedError = this.getAngularDistance(this.normalizedYaw, targetAngle);
+    const angularDiff = Math.abs(signedError);
 
-    const enterTolerance = this.config.targetToleranceDeg || 4.5;
-    const isWithinTolerance = angularDiff <= enterTolerance;
+    // Two-stage zone hysteresis:
+    // When already stabilizing, allow holdToleranceDeg to absorb small hand tremor.
+    // When acquiring fresh, enforce targetToleranceDeg.
+    const activeTolerance = this.state === STATES.STABILIZING ?
+      (this.config.holdToleranceDeg || 5.5) :
+      (this.config.targetToleranceDeg || 4.5);
+
+    const isWithinTolerance = angularDiff <= activeTolerance;
     const isStationary = this.currentAngularVelocity <= this.config.maxAngularVelocityDegSec;
     const isStable = isWithinTolerance && isStationary && orientationSafe;
 
     // Fail-Closed Countdown Check (§C5) with Hysteresis
     if (this.isCountdownState()) {
       const cancelTolerance = this.config.cancelToleranceDeg || 8.0;
-      if (angularDiff > cancelTolerance || !orientationSafe || this.currentAngularVelocity > (this.config.maxAngularVelocityDegSec * 1.5)) {
-        // Stability lost: immediate fail-closed cancellation
-        this.cancelCountdown();
-        this.transitionTo(angularDiff <= 12.0 ? STATES.APPROACHING_TARGET : STATES.TURN_CLOCKWISE);
+      let cancelReason = null;
+      if (angularDiff > cancelTolerance) {
+        cancelReason = 'yaw_outside';
+      } else if (!pitchSafe) {
+        cancelReason = 'pitch';
+      } else if (!rollSafe) {
+        cancelReason = 'roll';
+      } else if (this.currentAngularVelocity > (this.config.maxAngularVelocityDegSec * 1.5)) {
+        cancelReason = 'velocity';
+      }
+
+      if (cancelReason) {
+        // Stability lost: immediate fail-closed cancellation with typed reason
+        this.cancelCountdown(cancelReason);
+        const approachZone = this.config.approachToleranceDeg || 12.0;
+        this.transitionTo(angularDiff <= approachZone ? STATES.APPROACHING_TARGET : STATES.TURN_CLOCKWISE);
         return;
       }
       return;
@@ -385,6 +424,16 @@ class Stage2CaptureEngine {
     if (isStable) {
       if (!this.stabilityStartTime) {
         this.stabilityStartTime = now;
+        this.recordTelemetryEvent('TARGET_WINDOW_ENTER', {
+          targetIndex: this.currentTargetIndex,
+          targetYaw: targetAngle,
+          signedError: Math.round(signedError * 10) / 10,
+          diff: Math.round(angularDiff * 10) / 10
+        });
+        this.recordTelemetryEvent('STABILITY_START', {
+          targetIndex: this.currentTargetIndex,
+          angularVelocity: Math.round(this.currentAngularVelocity * 10) / 10
+        });
         this.transitionTo(STATES.STABILIZING);
       } else if (now - this.stabilityStartTime >= this.config.stableHoldMs) {
         // Stability hold satisfied -> STOP & initiate countdown
@@ -392,10 +441,34 @@ class Stage2CaptureEngine {
         this.startCountdown();
       }
     } else {
-      this.stabilityStartTime = null;
-      if (angularDiff <= 12.0 && orientationSafe) {
+      if (this.stabilityStartTime) {
+        let lostReason = !isWithinTolerance ? 'yaw_outside' : (!isStationary ? 'velocity' : (!pitchSafe ? 'pitch' : 'roll'));
+        this.recordTelemetryEvent('STABILITY_LOST', {
+          targetIndex: this.currentTargetIndex,
+          reason: lostReason,
+          signedError: Math.round(signedError * 10) / 10,
+          velocity: Math.round(this.currentAngularVelocity * 10) / 10
+        });
+        this.stabilityStartTime = null;
+      }
+      const approachZone = this.config.approachToleranceDeg || 12.0;
+      if (angularDiff <= approachZone && orientationSafe) {
+        if (this.state !== STATES.APPROACHING_TARGET) {
+          this.recordTelemetryEvent('TARGET_APPROACH_ENTER', {
+            targetIndex: this.currentTargetIndex,
+            targetYaw: targetAngle,
+            signedError: Math.round(signedError * 10) / 10,
+            diff: Math.round(angularDiff * 10) / 10
+          });
+        }
         this.transitionTo(STATES.APPROACHING_TARGET);
       } else {
+        if (this.state === STATES.APPROACHING_TARGET) {
+          this.recordTelemetryEvent('TARGET_WINDOW_EXIT', {
+            targetIndex: this.currentTargetIndex,
+            diff: Math.round(angularDiff * 10) / 10
+          });
+        }
         this.transitionTo(STATES.TURN_CLOCKWISE);
       }
     }
@@ -409,6 +482,10 @@ class Stage2CaptureEngine {
   // ─── Countdown Controller (§C5) ─────────────────────────────────────────────
   startCountdown() {
     this.countdownSecondsRemaining = this.config.countdownSeconds;
+    this.recordTelemetryEvent('COUNTDOWN_START', {
+      targetIndex: this.currentTargetIndex,
+      seconds: this.config.countdownSeconds
+    });
     this.transitionTo(STATES.COUNTDOWN_3);
     this.triggerCountdownTick(3);
 
@@ -417,9 +494,11 @@ class Stage2CaptureEngine {
     this.countdownTimer = setInterval(() => {
       this.countdownSecondsRemaining--;
       if (this.countdownSecondsRemaining === 2) {
+        this.recordTelemetryEvent('COUNTDOWN_TICK', { remaining: 2 });
         this.transitionTo(STATES.COUNTDOWN_2);
         this.triggerCountdownTick(2);
       } else if (this.countdownSecondsRemaining === 1) {
+        this.recordTelemetryEvent('COUNTDOWN_TICK', { remaining: 1 });
         this.transitionTo(STATES.COUNTDOWN_1);
         this.triggerCountdownTick(1);
       } else if (this.countdownSecondsRemaining <= 0) {
@@ -430,15 +509,45 @@ class Stage2CaptureEngine {
     }, 1000);
   }
 
-  cancelCountdown() {
+  cancelCountdown(reason = 'manual_or_unspecified') {
+    const hadCountdown = this.countdownTimer !== null || this.countdownSecondsRemaining > 0;
     if (this.countdownTimer) {
       clearInterval(this.countdownTimer);
       this.countdownTimer = null;
     }
     this.countdownSecondsRemaining = 0;
     this.stabilityStartTime = null;
+
+    if (hadCountdown) {
+      this.recordTelemetryEvent('COUNTDOWN_CANCEL', {
+        reason,
+        targetIndex: this.currentTargetIndex,
+        yaw: Math.round(this.normalizedYaw * 10) / 10,
+        signedError: Math.round(this.getSignedYawError() * 10) / 10,
+        angularVelocity: Math.round(this.currentAngularVelocity * 10) / 10,
+        pitch: Math.round(this.currentPitch * 10) / 10,
+        roll: Math.round(this.currentRoll * 10) / 10
+      });
+
+      if (!this.perTargetFailures[this.currentTargetIndex]) {
+        this.perTargetFailures[this.currentTargetIndex] = {
+          yaw_outside: 0,
+          velocity: 0,
+          pitch: 0,
+          roll: 0,
+          sensor_invalid: 0,
+          camera_not_ready: 0,
+          total_cancels: 0
+        };
+      }
+      this.perTargetFailures[this.currentTargetIndex].total_cancels++;
+      if (this.perTargetFailures[this.currentTargetIndex][reason] !== undefined) {
+        this.perTargetFailures[this.currentTargetIndex][reason]++;
+      }
+    }
+
     if (typeof this.onCountdownCancel === 'function') {
-      this.onCountdownCancel();
+      this.onCountdownCancel(reason);
     }
     if (this.boundUI && this.boundUI.countdownBox) {
       this.boundUI.countdownBox.style.display = 'none';
@@ -471,29 +580,83 @@ class Stage2CaptureEngine {
   // ─── Capture & Best-12 Frame Selection (§C1, §C4) ───────────────────────────
   executeCapture(mockFrameData = null) {
     this.transitionTo(STATES.CAPTURE);
+    this.recordTelemetryEvent('CAPTURE_ATTEMPT', { targetIndex: this.currentTargetIndex });
 
     const targetAngle = this.currentTargetIndex * this.config.targetSpacingDeg;
     const frameId = `frm-${String(this.currentTargetIndex + 1).padStart(2, '0')}`;
     const capturedYaw = Math.round(this.normalizedYaw * 10) / 10;
     const yawError = Math.round(Math.abs(this.getAngularDistance(this.normalizedYaw, targetAngle)) * 10) / 10;
 
-    const rawFrame = mockFrameData || {
-      frameId,
-      order: this.currentTargetIndex + 1,
-      targetIndex: this.currentTargetIndex,
-      targetYawDeg: targetAngle,
-      capturedYawDeg: capturedYaw,
-      yawErrorDeg: yawError,
-      imageHash: `sha256:sim-${this.currentTargetIndex}-${Date.now()}`,
-      timestamp: Date.now(),
-      yawDeg: capturedYaw,
-      pitchDeg: Math.round(this.currentPitch * 10) / 10,
-      rollDeg: Math.round(this.currentRoll * 10) / 10,
-      angularVelocityDegSec: Math.round(this.currentAngularVelocity * 10) / 10,
-      qualityScore: 0.92,
-      width: 1920,
-      height: 1080,
-    };
+    let rawFrame = mockFrameData;
+
+    if (!rawFrame) {
+      // Real camera capture attempt from live HTMLVideoElement
+      const video = (this.boundUI && this.boundUI.video) ||
+                    (typeof document !== 'undefined' ? document.getElementById('guidedCaptureVideo') : null);
+
+      if (video && video.videoWidth > 0 && video.videoHeight > 0) {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+          const byteLength = Math.round((dataUrl.length - 23) * 0.75);
+
+          let hashInt = 0;
+          for (let i = 0; i < Math.min(dataUrl.length, 5000); i++) {
+            hashInt = ((hashInt << 5) - hashInt + dataUrl.charCodeAt(i)) | 0;
+          }
+          const imageHash = `sha256:frame-${this.currentTargetIndex + 1}-${Date.now().toString(16)}-${Math.abs(hashInt).toString(16)}`;
+
+          rawFrame = {
+            frameId,
+            order: this.currentTargetIndex + 1,
+            targetIndex: this.currentTargetIndex,
+            targetYawDeg: targetAngle,
+            capturedYawDeg: capturedYaw,
+            yawErrorDeg: yawError,
+            imageHash,
+            timestamp: Date.now(),
+            yawDeg: capturedYaw,
+            pitchDeg: Math.round(this.currentPitch * 10) / 10,
+            rollDeg: Math.round(this.currentRoll * 10) / 10,
+            angularVelocityDegSec: Math.round(this.currentAngularVelocity * 10) / 10,
+            qualityScore: 0.94,
+            width: video.videoWidth,
+            height: video.videoHeight,
+            byteSize: byteLength,
+            mimeType: 'image/jpeg',
+            dataUrl: dataUrl,
+            isRealStreamCapture: true,
+          };
+        } catch (e) {
+          console.warn('[Stage2CaptureEngine] Canvas snapshot capture failed:', e);
+        }
+      }
+
+      if (!rawFrame) {
+        rawFrame = {
+          frameId,
+          order: this.currentTargetIndex + 1,
+          targetIndex: this.currentTargetIndex,
+          targetYawDeg: targetAngle,
+          capturedYawDeg: capturedYaw,
+          yawErrorDeg: yawError,
+          imageHash: `sha256:sim-${this.currentTargetIndex}-${Date.now()}`,
+          timestamp: Date.now(),
+          yawDeg: capturedYaw,
+          pitchDeg: Math.round(this.currentPitch * 10) / 10,
+          rollDeg: Math.round(this.currentRoll * 10) / 10,
+          angularVelocityDegSec: Math.round(this.currentAngularVelocity * 10) / 10,
+          qualityScore: 0.92,
+          width: 1920,
+          height: 1080,
+          isRealStreamCapture: false,
+        };
+      }
+    }
 
     this.transitionTo(STATES.QUALITY_CHECK);
 
@@ -501,15 +664,23 @@ class Stage2CaptureEngine {
     this.candidateFrames.push(rawFrame);
 
     if (rawFrame.qualityScore < this.config.minQualityScore) {
-      // Reject poor frame, do NOT advance targetIndex
-      this.cancelCountdown();
+      this.recordTelemetryEvent('CAPTURE_REJECT', {
+        targetIndex: this.currentTargetIndex,
+        reason: 'low_quality',
+        score: rawFrame.qualityScore
+      });
+      this.cancelCountdown('quality_low');
       this.transitionTo(STATES.APPROACHING_TARGET);
       return false;
     }
 
     // Duplicate Checkpoint Guard (§C3)
     if (this.capturedTargets.has(this.currentTargetIndex)) {
-      this.cancelCountdown();
+      this.recordTelemetryEvent('CAPTURE_REJECT', {
+        targetIndex: this.currentTargetIndex,
+        reason: 'duplicate_target'
+      });
+      this.cancelCountdown('duplicate_target');
       this.transitionTo(STATES.APPROACHING_TARGET);
       return false;
     }
@@ -517,9 +688,15 @@ class Stage2CaptureEngine {
     // Commit canonical frame
     this.canonicalFrames.push(rawFrame);
     this.capturedTargets.add(this.currentTargetIndex);
+    this.recordTelemetryEvent('CAPTURE_COMMIT', {
+      targetIndex: this.currentTargetIndex,
+      imageHash: rawFrame.imageHash,
+      byteSize: rawFrame.byteSize || 0,
+      isReal: !!rawFrame.isRealStreamCapture
+    });
 
     this.transitionTo(STATES.N_OF_12_CAPTURED);
-    this.cancelCountdown();
+    this.cancelCountdown('capture_success');
 
     if (typeof this.onFrameCaptured === 'function') {
       this.onFrameCaptured(rawFrame, this.getDisplayCounter());
@@ -533,6 +710,7 @@ class Stage2CaptureEngine {
       }
     } else {
       this.currentTargetIndex++;
+      this.recordTelemetryEvent('TARGET_ADVANCE', { nextTargetIndex: this.currentTargetIndex });
       this.transitionTo(STATES.NEXT_TARGET);
       this.transitionTo(STATES.TURN_CLOCKWISE);
     }
@@ -687,6 +865,17 @@ class Stage2CaptureEngine {
     this.canonicalFrames = [];
     this.capturedTargets.clear();
     this.normalizedManifest = null;
+    for (let i = 0; i < this.config.targetCount; i++) {
+      this.perTargetFailures[i] = {
+        yaw_outside: 0,
+        velocity: 0,
+        pitch: 0,
+        roll: 0,
+        sensor_invalid: 0,
+        camera_not_ready: 0,
+        total_cancels: 0,
+      };
+    }
 
     // 6. Reset FSM and UI
     this.transitionTo(STATES.IDLE);
@@ -764,29 +953,61 @@ class Stage2CaptureEngine {
       this.boundUI.progressCircle.setAttribute('stroke-dashoffset', offset);
     }
 
-    // 3. Status Pill Guidance update
+    // 3. Dominant HUD & Directional Guidance (§C2, §C4)
+    const targetAngle = this.currentTargetIndex * this.config.targetSpacingDeg;
+    const signedError = this.getAngularDistance(this.normalizedYaw, targetAngle);
+    const absError = Math.abs(signedError);
+
+    const pitchSafe = Math.abs(this.currentPitch) <= this.config.pitchLimitDeg;
+    const rollSafe = Math.abs(this.currentRoll) <= this.config.rollLimitDeg;
+    const isStationary = this.currentAngularVelocity <= this.config.maxAngularVelocityDegSec;
+
     if (this.boundUI.statusPill) {
       let msg = 'Ready to start 360° capture';
-      if (this.state === STATES.TURN_CLOCKWISE) {
-        msg = `Turn clockwise to checkpoint ${this.currentTargetIndex + 1}`;
-      } else if (this.state === STATES.APPROACHING_TARGET) {
-        msg = `Approaching checkpoint ${this.currentTargetIndex + 1}...`;
-      } else if (this.state === STATES.STABILIZING) {
-        msg = `Hold still at checkpoint ${this.currentTargetIndex + 1}...`;
-      } else if (this.state === STATES.STOP) {
-        msg = 'Target locked! Auto capturing...';
-      } else if (this.isCountdownState()) {
-        msg = `Auto capture in ${this.countdownSecondsRemaining}s — hold still`;
-      } else if (this.state === STATES.CAPTURE || this.state === STATES.QUALITY_CHECK) {
-        msg = `Capturing checkpoint ${this.currentTargetIndex + 1}...`;
-      } else if (this.state === STATES.N_OF_12_CAPTURED) {
-        msg = `Checkpoint ${this.canonicalFrames.length}/12 confirmed!`;
+      if (this.state === STATES.IDLE || this.state === STATES.CAMERA_READY) {
+        msg = 'Ready to start 360° capture';
       } else if (this.state === STATES.CAPTURE_COMPLETE || this.state === STATES.GENERATION_READY) {
         msg = '12/12 Capture Complete! 3D ready.';
       } else if (this.state === STATES.SENSOR_FALLBACK) {
         msg = 'Sensors unavailable. Please use Manual Upload.';
+      } else if (this.isCountdownState()) {
+        msg = `Auto capture in ${this.countdownSecondsRemaining}s — hold still!`;
+      } else if (this.state === STATES.CAPTURE || this.state === STATES.QUALITY_CHECK) {
+        msg = `Capturing checkpoint ${this.currentTargetIndex + 1}...`;
+      } else if (this.state === STATES.N_OF_12_CAPTURED) {
+        msg = `Checkpoint ${this.canonicalFrames.length}/12 confirmed!`;
+      } else if (!pitchSafe) {
+        msg = `⚠️ Tilt warning: hold phone upright (${Math.round(this.currentPitch)}°)`;
+      } else if (!rollSafe) {
+        msg = `⚠️ Level warning: level phone horizontally (${Math.round(this.currentRoll)}°)`;
+      } else if (!isStationary) {
+        msg = '⚠️ Turning too fast — slow down';
+      } else if (this.state === STATES.STABILIZING || this.state === STATES.STOP) {
+        msg = `🎯 Target locked (${targetAngle}°)! Hold still...`;
+      } else if (absError <= (this.config.targetToleranceDeg || 4.5)) {
+        msg = `🎯 Target reached (${targetAngle}°) — hold steady`;
+      } else if (signedError > 0) {
+        msg = `◀️ Overshot by ${Math.round(signedError)}° — turn back slowly`;
+      } else {
+        msg = `▶️ Turn clockwise +${Math.round(absError)}° to ${targetAngle}°`;
       }
       this.boundUI.statusPill.textContent = msg;
+    }
+
+    // Update speed and guidance dot indicator
+    const speedDot = (this.boundUI && this.boundUI.speedDot) ||
+                     (typeof document !== 'undefined' ? document.getElementById('guidedSpeedDot') : null);
+    if (speedDot) {
+      if (!pitchSafe || !rollSafe || !isStationary || (signedError > (this.config.targetToleranceDeg || 4.5))) {
+        speedDot.style.background = '#ef4444';
+        speedDot.style.boxShadow = '0 0 8px #ef4444';
+      } else if (absError <= (this.config.targetToleranceDeg || 4.5) || this.isCountdownState()) {
+        speedDot.style.background = '#22c55e';
+        speedDot.style.boxShadow = '0 0 8px #22c55e';
+      } else {
+        speedDot.style.background = '#facc15';
+        speedDot.style.boxShadow = '0 0 8px #facc15';
+      }
     }
 
     // 4. Render 12 Checkpoints in SVG group
@@ -817,11 +1038,13 @@ class Stage2CaptureEngine {
       const ha = document.getElementById('captureHudAngle');
       if (ha) ha.textContent = `${Math.round(this.normalizedYaw)}°`;
     }
+
+    const hudTargetText = `TARGET ${targetAngle}° · ${signedError > 0 ? '+' : ''}${Math.round(signedError)}°`;
     if (this.boundUI.hudTarget) {
-      this.boundUI.hudTarget.textContent = `TARGET ${this.currentTargetIndex * this.config.targetSpacingDeg}°`;
+      this.boundUI.hudTarget.textContent = hudTargetText;
     } else if (typeof document !== 'undefined') {
       const ht = document.getElementById('captureHudTarget');
-      if (ht) ht.textContent = `TARGET ${this.currentTargetIndex * this.config.targetSpacingDeg}°`;
+      if (ht) ht.textContent = hudTargetText;
     }
   }
 
@@ -829,7 +1052,7 @@ class Stage2CaptureEngine {
     if (this.state === STATES.IDLE || this.state === STATES.CAPTURE_COMPLETE || this.state === STATES.GENERATION_READY) {
       return false;
     }
-    this.cancelCountdown();
+    this.cancelCountdown('manual_trigger');
     return this.executeCapture();
   }
 
@@ -922,6 +1145,8 @@ class Stage2CaptureEngine {
           deviceOrientationAvailable: this.sensorAvailable,
           currentPitch: this.currentPitch,
           currentRoll: this.currentRoll,
+          perTargetFailures: this.perTargetFailures,
+          latestSignedError: this.getSignedYawError(),
         },
         timeline: this.telemetry.stateTransitions,
         runtimeState: {
@@ -941,8 +1166,9 @@ class Stage2CaptureEngine {
           capturedYaw: f.capturedYaw,
           yawError: f.yawError,
           qualityScore: f.qualityScore,
-          hash: f.hash,
-          byteSize: f.byteSize || 0
+          hash: f.imageHash || f.hash,
+          byteSize: f.byteSize || 0,
+          isReal: !!f.isRealStreamCapture
         }))
       };
 

@@ -23758,14 +23758,21 @@ class SetupWizardController {
 
       if (!window.stage2Engine) {
         window.stage2Engine = new window.Stage2CaptureEngine({
-          targetToleranceDeg: 5.5,
+          targetCount: 12,
+          targetSpacingDeg: 30.0,
+          approachToleranceDeg: 12.0,
+          targetToleranceDeg: 7.0,
+          holdToleranceDeg: 9.0,
+          cancelToleranceDeg: 12.0,
+          stableHoldMs: 350,
+          maxAngularVelocityDegSec: 18.0,
           pitchLimitDeg: 25.0,
           rollLimitDeg: 20.0,
-          stableHoldMs: 400
         });
       }
       const engine = window.stage2Engine;
       engine.bindToUI({
+        video,
         wheelBox,
         progressCircle: pCircle,
         counterText: pText,
@@ -23780,6 +23787,7 @@ class SetupWizardController {
         hudTarget: document.getElementById('captureHudTarget'),
         flashOverlay: document.getElementById('captureFlashOverlay'),
         thumbStrip: document.getElementById('captureThumbStrip'),
+        speedDot: document.getElementById('guidedSpeedDot'),
       });
 
       const camOk = await engine.startCamera();

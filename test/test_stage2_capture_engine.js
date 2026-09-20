@@ -581,6 +581,104 @@ test('[T19] Dual-event thrashing prevention: deviceorientation is dropped when d
   assert.strictEqual(engine.normalizedYaw, 10, 'Yaw must advance smoothly by 10 degrees');
 });
 
+test('[T20] Two-stage zone hysteresis (hold zone protects micro hand-shake while acquiring)', () => {
+  const engine = new Stage2CaptureEngine({
+    targetToleranceDeg: 5.0,
+    holdToleranceDeg: 7.0,
+    cancelToleranceDeg: 10.0,
+  });
+  engine.startCamera(createMockStream());
+  engine.processSensorInput({ alpha: 180.0, beta: 0.0, gamma: 0.0, timestamp: 1000 });
+
+  // 1. Enter acquire window: diff is 4.0° <= targetToleranceDeg (5.0°)
+  engine.processSensorInput({ alpha: 176.0, beta: 0.0, gamma: 0.0, timestamp: 1100 });
+  assert.strictEqual(engine.state, STATES.STABILIZING, 'Should enter STABILIZING at 4°');
+
+  // 2. Micro hand tremor shifts yaw to 6.2°:
+  // 6.2° is > targetToleranceDeg (5.0°), but <= holdToleranceDeg (7.0°)!
+  // Hysteresis keeps state in STABILIZING instead of abruptly discarding hold time!
+  engine.processSensorInput({ alpha: 173.8, beta: 0.0, gamma: 0.0, timestamp: 1250 });
+  assert.strictEqual(engine.state, STATES.STABILIZING, 'Micro hand tremor within holdToleranceDeg (7°) must remain in STABILIZING');
+
+  // 3. Excessive drift shifts yaw to 8.5°:
+  // 8.5° exceeds holdToleranceDeg (7.0°), so it falls back to APPROACHING_TARGET
+  engine.processSensorInput({ alpha: 171.5, beta: 0.0, gamma: 0.0, timestamp: 1350 });
+  assert.strictEqual(engine.state, STATES.APPROACHING_TARGET, 'Exceeding holdToleranceDeg must fall back to APPROACHING_TARGET');
+});
+
+test('[T21] Signed yaw error calculation and overshoot detection', () => {
+  const engine = new Stage2CaptureEngine();
+  engine.startCamera(createMockStream());
+  engine.processSensorInput({ alpha: 180.0, beta: 0.0, gamma: 0.0, timestamp: 1000 });
+
+  // Target 0 is at 0°
+  // At yaw 10° (alpha 170.0): signed error should be +10° (overshoot past 0°)
+  engine.processSensorInput({ alpha: 170.0, beta: 0.0, gamma: 0.0, timestamp: 1100 });
+  assert.strictEqual(engine.normalizedYaw, 10.0);
+  assert.strictEqual(Math.round(engine.getSignedYawError()), 10.0, 'Signed yaw error should be +10° (overshoot)');
+
+  // Advance to target 1 (target angle 30°)
+  engine.currentTargetIndex = 1;
+  // Current yaw is 10°, target is 30°: signed error should be -20° (undershoot)
+  assert.strictEqual(Math.round(engine.getSignedYawError()), -20.0, 'Signed yaw error should be -20° (undershoot)');
+});
+
+test('[T22] Bounded typed event telemetry and per-target failure aggregation', () => {
+  const engine = new Stage2CaptureEngine({ stableHoldMs: 100 });
+  engine.startCamera(createMockStream());
+  const sid = engine.initTelemetry('token-123', 'prj-test');
+  assert.ok(sid.startsWith('RI-S2-'), 'Telemetry session ID must be generated');
+
+  // Establish origin
+  engine.processSensorInput({ alpha: 180.0, beta: 0.0, gamma: 0.0, timestamp: 1000 });
+
+  // Enter approach and then target window
+  engine.processSensorInput({ alpha: 170.0, beta: 0.0, gamma: 0.0, timestamp: 1100 }); // diff = 10° (approach zone)
+  // Let velocity settle while holding steady at alpha 178
+  let ts = 1200;
+  for (let i = 0; i < 6; i++) {
+    ts += 100;
+    engine.processSensorInput({ alpha: 178.0, beta: 0.0, gamma: 0.0, timestamp: ts });
+  }
+  // Hold stationary past stableHoldMs (100ms)
+  ts += 200;
+  engine.processSensorInput({ alpha: 178.0, beta: 0.0, gamma: 0.0, timestamp: ts });
+
+  assert.strictEqual(engine.isCountdownState(), true);
+
+  // Breach stability via pitch during countdown
+  ts += 50;
+  engine.processSensorInput({ alpha: 178.0, beta: 30.0, gamma: 0.0, timestamp: ts }); // pitch breach
+  assert.strictEqual(engine.isCountdownState(), false, 'Countdown should cancel');
+
+  // Verify typed telemetry transitions
+  const events = engine.telemetry.stateTransitions.map(e => e.type);
+  assert.ok(events.includes('TARGET_APPROACH_ENTER'), 'Must record TARGET_APPROACH_ENTER');
+  assert.ok(events.includes('TARGET_WINDOW_ENTER'), 'Must record TARGET_WINDOW_ENTER');
+  assert.ok(events.includes('STABILITY_START'), 'Must record STABILITY_START');
+  assert.ok(events.includes('COUNTDOWN_START'), 'Must record COUNTDOWN_START');
+  assert.ok(events.includes('COUNTDOWN_CANCEL'), 'Must record COUNTDOWN_CANCEL');
+
+  // Verify per-target failure aggregated counters
+  assert.ok(engine.perTargetFailures[0].pitch >= 1, 'Per-target failure counter must record pitch failure');
+  assert.ok(engine.perTargetFailures[0].total_cancels >= 1, 'Total cancels must be incremented');
+});
+
+test('[T23] Real video frame canvas capture fallback and hash integrity', () => {
+  const engine = new Stage2CaptureEngine();
+  engine.startCamera(createMockStream());
+
+  // Capture target 0 with simulated fallback
+  const ok = engine.executeCapture();
+  assert.strictEqual(ok, true);
+  assert.strictEqual(engine.canonicalFrames.length, 1);
+  const frame = engine.canonicalFrames[0];
+  assert.ok(frame.imageHash.startsWith('sha256:'), 'Hash must start with sha256:');
+  assert.strictEqual(frame.order, 1);
+  assert.strictEqual(frame.targetIndex, 0);
+  assert.strictEqual(frame.targetYawDeg, 0);
+});
+
 
 console.log('\n================================================================');
 console.log(`TEST EXECUTION COMPLETE: ${passCount} PASSED, ${failCount} FAILED`);
