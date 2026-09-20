@@ -13,6 +13,17 @@ const { runProduct3dJob, PRODUCT_3D_SINGLE_IMAGE_TOKEN_COST, PRODUCT_3D_REGEN_TO
 const mailer = require('./mailer');
 const emailService = mailer;
 
+let jpeg = null;
+try {
+  jpeg = require('./lib/jpeg-js');
+} catch (e) {
+  try {
+    jpeg = require('e:/vivpr/ai/v-show/virtual-tradeshow-commercial-v1/app_build/server/lib/jpeg-js');
+  } catch (e2) {
+    jpeg = null;
+  }
+}
+
 const app = express();
 // ── MASTER ADMIN CONTROL CENTER (C11.18) ──
 const MasterAdminService = require('./master_admin');
@@ -11750,143 +11761,196 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
   try {
     const projectId = req.params.id;
     const token = extractAuthToken(req);
-    let project = db.getProject(projectId);
-    if (!project) {
-      project = ensureAuthoritativeQaProject(projectId);
-    }
+    const project = db.getProject(projectId);
     if (!project) return res.status(404).json({ ok: false, error: 'Project not found' });
 
-    // Multi-tenant authorization check
-    const hasEditAccess = db.verifyEditAccess(project, token) || 
-                          (project.editToken && (token === project.editToken || req.headers['x-booth-edit-token'] === project.editToken)) ||
-                          (token && (token.includes('internal') || token.includes('test') || token === 'dev_bypass_token'));
-
+    // Multi-tenant authorization check (strict token binding, no substring bypasses)
+    const hasEditAccess = db.verifyEditAccess(project, token);
     if (!hasEditAccess) {
       return res.status(403).json({ ok: false, error: 'FORBIDDEN', message: 'Cross-tenant access forbidden.' });
     }
 
     const body = req.body || {};
-    const keyframes = body.keyframes || [];
-    const contactSheetDataUrl = body.contactSheetDataUrl;
-    const captureSessionId = body.captureSessionId || ('sess_' + Date.now());
+    const keyframes = body.keyframes;
+    const captureSessionId = body.captureSessionId;
 
-    // Strict sanitization: alphanumeric, dashes, underscores, max 64 chars
-    if (!/^[a-zA-Z0-9_-]{1,64}$/.test(captureSessionId)) {
-      return res.status(400).json({ ok: false, error: 'INVALID_SESSION_ID', message: 'Malformed captureSessionId' });
+    // Bounded, strict session format
+    if (!captureSessionId || typeof captureSessionId !== 'string' || !/^[a-zA-Z0-9_-]{8,64}$/.test(captureSessionId)) {
+      return res.status(400).json({ ok: false, error: 'INVALID_SESSION_ID', message: 'Malformed or missing captureSessionId' });
     }
 
-    if (!Array.isArray(keyframes) || keyframes.length === 0 || keyframes.length > 24) {
-      return res.status(400).json({ ok: false, error: 'INVALID_KEYFRAME_COUNT', message: 'Keyframes count must be between 1 and 24' });
+    // Require exactly 12 canonical frames for 12-point capture
+    if (!Array.isArray(keyframes) || keyframes.length !== 12) {
+      return res.status(400).json({ ok: false, error: 'INVALID_KEYFRAME_COUNT', message: 'Stage 2 12-point capture requires exactly 12 canonical keyframes' });
     }
 
     const paths = getGuidedCaptureStoragePaths(captureSessionId);
-    // Path containment assertion
-    const normalizedCanonDir = path.resolve(paths.canonicalDir);
-    const normalizedSessionRoot = path.resolve(paths.sessionRoot);
-    if (!normalizedCanonDir.startsWith(normalizedSessionRoot)) {
+
+    // Cross-project session binding check
+    const sessionMetaPath = path.join(paths.sessionRoot, 'session_metadata.json');
+    if (fs.existsSync(sessionMetaPath)) {
+      try {
+        const existingMeta = JSON.parse(fs.readFileSync(sessionMetaPath, 'utf8'));
+        if (existingMeta.projectId && existingMeta.projectId !== projectId) {
+          return res.status(409).json({ ok: false, error: 'SESSION_PROJECT_MISMATCH', message: 'Session belongs to a different project' });
+        }
+      } catch (e) {}
+    }
+
+    // Path containment assertion using path.relative
+    const relCanon = path.relative(paths.sessionRoot, paths.canonicalDir);
+    if (relCanon.startsWith('..') || path.isAbsolute(relCanon) || relCanon.includes(':')) {
       return res.status(400).json({ ok: false, error: 'PATH_TRAVERSAL_DETECTED' });
     }
 
-    [paths.sessionRoot, paths.candidateDir, paths.canonicalDir].forEach(d => {
-      if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
-    });
-
-    let verifiedCanonicalCount = 0;
+    // In-memory transaction staging: validate ALL 12 frames before writing ANY file
+    const stagedBuffers = [];
+    const seenIndices = new Set();
     const seenKeyframeIds = new Set();
+    const seenHashes = new Map();
+    let totalBytes = 0;
 
-    for (const kf of keyframes) {
+    for (let i = 0; i < keyframes.length; i++) {
+      const kf = keyframes[i];
       const rawKeyframeId = String(kf.keyframeId || ('KF' + kf.index));
       if (!/^[a-zA-Z0-9_-]{1,32}$/.test(rawKeyframeId)) {
-        return res.status(400).json({ ok: false, error: 'INVALID_KEYFRAME_ID', message: 'Malformed keyframeId' });
+        return res.status(400).json({ ok: false, error: 'INVALID_KEYFRAME_ID', message: `Malformed keyframeId: ${rawKeyframeId}` });
       }
       if (seenKeyframeIds.has(rawKeyframeId)) {
         return res.status(400).json({ ok: false, error: 'DUPLICATE_KEYFRAME_ID', message: `Duplicate keyframeId: ${rawKeyframeId}` });
       }
       seenKeyframeIds.add(rawKeyframeId);
 
-      const filename = rawKeyframeId + '.jpg';
-      const targetCanonPath = path.join(paths.canonicalDir, filename);
+      const kfIndex = parseInt(kf.index, 10);
+      if (isNaN(kfIndex) || kfIndex < 1 || kfIndex > 12) {
+        return res.status(400).json({ ok: false, error: 'INVALID_KEYFRAME_INDEX', message: `Keyframe index must be 1-12, got: ${kf.index}` });
+      }
+      if (seenIndices.has(kfIndex)) {
+        return res.status(400).json({ ok: false, error: 'DUPLICATE_KEYFRAME_INDEX', message: `Duplicate keyframe index: ${kfIndex}` });
+      }
+      seenIndices.add(kfIndex);
 
-      if (kf.dataUrl) {
-        const base64Data = kf.dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
-        const buf = Buffer.from(base64Data, 'base64');
+      if (!kf.dataUrl || typeof kf.dataUrl !== 'string') {
+        return res.status(400).json({ ok: false, error: 'MISSING_DATA_URL', message: `Keyframe ${rawKeyframeId} is missing dataUrl` });
+      }
 
-        // Preflight 1: Min size & JPEG magic bytes (FF D8)
-        if (buf.length < 100 || buf[0] !== 0xFF || buf[1] !== 0xD8) {
-          return res.status(400).json({ ok: false, error: 'INVALID_JPEG', message: `Keyframe ${rawKeyframeId} is not a valid JPEG` });
+      const base64Data = kf.dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
+      const buf = Buffer.from(base64Data, 'base64');
+
+      // Magic SOI check
+      if (buf.length < 100 || buf[0] !== 0xFF || buf[1] !== 0xD8) {
+        return res.status(400).json({ ok: false, error: 'INVALID_JPEG', message: `Keyframe ${rawKeyframeId} is not a valid JPEG (missing SOI)` });
+      }
+
+      // Cryptographic SHA-256 validation (MANDATORY)
+      if (!kf.hash || typeof kf.hash !== 'string' || !/^(sha256:)?[a-fA-F0-9]{64}$/.test(kf.hash)) {
+        return res.status(400).json({ ok: false, error: 'MISSING_OR_INVALID_HASH', message: `Keyframe ${rawKeyframeId} requires a well-formed SHA-256 hash` });
+      }
+      const serverHash = crypto.createHash('sha256').update(buf).digest('hex');
+      const expectedSha = kf.hash.replace(/^sha256:/i, '').toLowerCase();
+      if (expectedSha !== serverHash) {
+        return res.status(400).json({ ok: false, error: 'HASH_MISMATCH', message: `Keyframe ${rawKeyframeId} hash digest mismatch` });
+      }
+
+      if (seenHashes.has(serverHash)) {
+        return res.status(400).json({ ok: false, error: 'DUPLICATE_IMAGE_CONTENT', message: `Duplicate photo content detected` });
+      }
+      seenHashes.set(serverHash, rawKeyframeId);
+
+      // Full JPEG decoding & dimension verification
+      if (jpeg) {
+        let decoded = null;
+        try {
+          decoded = jpeg.decode(buf, { useTArray: true, maxResolutionInMP: 100 });
+        } catch (decErr) {
+          return res.status(400).json({ ok: false, error: 'INVALID_JPEG', message: `Keyframe ${rawKeyframeId} failed JPEG decoding: ${decErr.message}` });
         }
-
-        // Preflight 2: Server-computed cryptographic SHA-256 match
-        const computedSha = crypto.createHash('sha256').update(buf).digest('hex');
-        if (kf.hash) {
-          const expectedSha = kf.hash.replace(/^sha256:/i, '');
-          if (expectedSha !== computedSha) {
-            return res.status(400).json({
-              ok: false,
-              error: 'HASH_MISMATCH',
-              message: `Keyframe ${rawKeyframeId} SHA-256 digest mismatch. Expected: ${expectedSha}, computed: ${computedSha}`
-            });
-          }
+        if (!decoded || !decoded.width || !decoded.height) {
+          return res.status(400).json({ ok: false, error: 'INVALID_JPEG', message: `Keyframe ${rawKeyframeId} has invalid dimensions` });
         }
-
-        const fd = fs.openSync(targetCanonPath, 'w');
-        fs.writeSync(fd, buf, 0, buf.length, 0);
-        fs.fsyncSync(fd);
-        fs.closeSync(fd);
-      } else if (kf.candidateId) {
-        // Link or copy from candidateDir
-        const safeCandId = String(kf.candidateId);
-        if (!/^[a-zA-Z0-9_-]{1,64}$/.test(safeCandId)) {
-          return res.status(400).json({ ok: false, error: 'INVALID_CANDIDATE_ID' });
+        if (decoded.width < 64 || decoded.height < 64 || decoded.width > 8192 || decoded.height > 8192) {
+          return res.status(400).json({ ok: false, error: 'INVALID_DIMENSIONS', message: `Keyframe ${rawKeyframeId} dimensions out of allowed bounds` });
         }
-        const sourceCandPath = path.join(paths.candidateDir, safeCandId + '.jpg');
-        if (fs.existsSync(sourceCandPath) && !fs.existsSync(targetCanonPath)) {
-          try { fs.copyFileSync(sourceCandPath, targetCanonPath); } catch (e) {}
+        if (kf.width && Math.abs(kf.width - decoded.width) > 4) {
+          return res.status(400).json({ ok: false, error: 'DIMENSION_MISMATCH', message: `Keyframe ${rawKeyframeId} width mismatch` });
+        }
+        if (kf.height && Math.abs(kf.height - decoded.height) > 4) {
+          return res.status(400).json({ ok: false, error: 'DIMENSION_MISMATCH', message: `Keyframe ${rawKeyframeId} height mismatch` });
         }
       }
 
-      if (fs.existsSync(targetCanonPath) && fs.statSync(targetCanonPath).size > 0) {
-        verifiedCanonicalCount++;
+      totalBytes += buf.length;
+      stagedBuffers.push({
+        rawKeyframeId,
+        filename: rawKeyframeId + '.jpg',
+        buffer: buf,
+        serverHash,
+        index: kfIndex,
+        timestamp: kf.timestamp || Date.now(),
+        estimatedYawDeg: kf.estimatedYawDeg !== undefined ? kf.estimatedYawDeg : (kfIndex - 1) * 30.0,
+        width: kf.width || (jpeg ? 256 : 1920),
+        height: kf.height || (jpeg ? 256 : 1080)
+      });
+    }
+
+    // ALL 12 frames validated in-memory! Now commit atomically to persistent volume:
+    [paths.sessionRoot, paths.candidateDir, paths.canonicalDir].forEach(d => {
+      if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+    });
+
+    for (const staged of stagedBuffers) {
+      const targetPath = path.join(paths.canonicalDir, staged.filename);
+      // Containment assertion per file
+      const relFile = path.relative(paths.sessionRoot, targetPath);
+      if (relFile.startsWith('..') || path.isAbsolute(relFile)) {
+        throw new Error('Path traversal detected during write');
       }
+      const fd = fs.openSync(targetPath, 'w');
+      fs.writeSync(fd, staged.buffer, 0, staged.buffer.length, 0);
+      fs.fsyncSync(fd);
+      fs.closeSync(fd);
     }
 
-    if (contactSheetDataUrl) {
-      const csBase64 = contactSheetDataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
-      const csBuf = Buffer.from(csBase64, 'base64');
-      fs.writeFileSync(path.join(paths.sessionRoot, '06_CANONICAL_KEYFRAME_CONTACT_SHEET.jpg'), csBuf);
-    }
-
-    const kfMetadata = keyframes.map(kf => ({
-      keyframeId: kf.keyframeId,
-      index: kf.index,
-      timestamp: kf.timestamp,
-      estimatedYawDeg: kf.estimatedYawDeg,
-      relativeRotationDeg: kf.relativeRotationDeg,
-      sharpnessScore: kf.sharpnessScore,
-      exposureScore: kf.exposureScore,
-      overlapPrevious: kf.overlapPrevious,
-      selectionReason: kf.selectionReason,
-      hash: kf.hash,
-      width: kf.width,
-      height: kf.height,
-      mimeType: kf.mimeType,
-      bytes: kf.bytes,
+    // Session metadata binding
+    const sessionMetadata = {
+      captureSessionId,
+      projectId,
       storageClass: 'VOLUME_DURABLE',
-      relativeDurablePath: `canonical/${(kf.keyframeId || ('KF' + kf.index))}.jpg`
+      keyframeCount: 12,
+      totalBytes,
+      createdAt: new Date().toISOString()
+    };
+    fs.writeFileSync(sessionMetaPath, JSON.stringify(sessionMetadata, null, 2), 'utf8');
+
+    // Canonical keyframes JSON with server-computed authoritative hashes
+    const kfMetadata = stagedBuffers.map(s => ({
+      keyframeId: s.rawKeyframeId,
+      index: s.index,
+      timestamp: s.timestamp,
+      estimatedYawDeg: s.estimatedYawDeg,
+      hash: s.serverHash,
+      bytes: s.buffer.length,
+      width: s.width,
+      height: s.height,
+      mimeType: 'image/jpeg',
+      storageClass: 'VOLUME_DURABLE',
+      relativeDurablePath: `canonical/${s.filename}`
     }));
+    fs.writeFileSync(path.join(paths.sessionRoot, 'canonical_keyframes.json'), JSON.stringify(kfMetadata, null, 2), 'utf8');
 
-    fs.writeFileSync(path.join(paths.sessionRoot, 'canonical_keyframes.json'), JSON.stringify(kfMetadata, null, 2));
-
+    const receiptId = 'rcpt-s2-' + Date.now() + '-' + crypto.randomBytes(4).toString('hex');
     res.json({
       ok: true,
+      receiptId,
       captureSessionId,
-      keyframeCount: keyframes.length,
-      verifiedCanonicalCount,
+      projectId,
+      verifiedCanonicalCount: 12,
+      totalBytes,
       storageClass: 'VOLUME_DURABLE'
     });
   } catch (err) {
     console.error('[GuidedCapture Keyframes Error]', err);
-    res.status(500).json({ ok: false, error: err.message });
+    res.status(500).json({ ok: false, error: 'INTERNAL_ERROR', message: err.message });
   }
 });
 
