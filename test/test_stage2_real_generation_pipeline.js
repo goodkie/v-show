@@ -52,6 +52,14 @@ try {
   }
 }
 
+if (!process.env.DATA_DIR) {
+  throw new Error('FAIL_CLOSED: process.env.DATA_DIR is strictly required. Refusing to run without dedicated test sandbox volume.');
+}
+if (process.env.DATA_DIR.includes('_clean_deploy') || process.env.DATA_DIR.includes('_railway_deploy')) {
+  throw new Error(`FAIL_CLOSED: process.env.DATA_DIR cannot point to production/clean volume: ${process.env.DATA_DIR}`);
+}
+const ACTIVE_DATA_DIR = process.env.DATA_DIR;
+
 let db;
 try {
   db = require('../virtual-tradeshow-commercial-v1/_clean_deploy/server/db');
@@ -64,7 +72,6 @@ try {
 const SERVER_PORT = 3899;
 const BASE_URL = `http://127.0.0.1:${SERVER_PORT}`;
 const TEST_PROJECT_ID = 'prj-free-b0c6f3ea';
-const ACTIVE_DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data');
 
 // Sentinel revoked token for verification of immediate rejection
 const REVOKED_SENTINEL_TOKEN = 'tok-revoked-ephemeral-sentinel-never-valid';
@@ -227,6 +234,7 @@ async function runRealGenerationPipelineTests() {
         `Served buildSha (${res.json.buildSha}) must match git commit HEAD (${gitHeadSha})`
       );
     }
+    assert.strictEqual(res.json?.isTestSandbox, true, 'Served server must report isTestSandbox: true indicating running on disposable volume');
   });
 
   // [2b] Server-issued session initialization endpoint
@@ -1877,10 +1885,18 @@ async function runRealGenerationPipelineTests() {
     assert.strictEqual(candRes.headers['x-asset-sha256'].length, 64);
   });
 
-  // [26f] Stripe Webhook Security: Fail-closed signature verification & loopback test simulation
-  await test('[26f] Stripe Webhook Security: Fail-closed signature verification & loopback test simulation', async () => {
+  // [26f] Stripe Webhook Security: Fail-closed cryptographic signature verification & replay idempotency
+  await test('[26f] Stripe Webhook Security: Fail-closed cryptographic signature verification & replay idempotency', async () => {
+    const TEST_WEBHOOK_SECRET = 'whsec_stage2_test_sandbox_secret_2026';
+    function makeStripeHeader(payload, secret, customTimestamp) {
+      const ts = customTimestamp !== undefined ? customTimestamp : Math.floor(Date.now() / 1000);
+      const hmac = crypto.createHmac('sha256', secret).update(`${ts}.${payload}`).digest('hex');
+      return `t=${ts},v1=${hmac}`;
+    }
+
+    const testEventId = `evt-test-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     const fakeEvent = {
-      id: `evt-test-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
+      id: testEventId,
       type: 'checkout.session.completed',
       data: {
         object: {
@@ -1889,7 +1905,7 @@ async function runRealGenerationPipelineTests() {
           subscription: 'sub_test_123',
           metadata: {
             projectId: TEST_PROJECT_ID,
-            requestedPlan: 'PRO',
+            requestedPlan: 'PRO_COMMERCIAL',
             paymentCorrelationId: `pay_corr_test_${Date.now()}`
           }
         }
@@ -1897,54 +1913,161 @@ async function runRealGenerationPipelineTests() {
     };
     const rawPayload = JSON.stringify(fakeEvent);
 
-    // Negative 1: Missing signature without test simulation headers -> 400 WEBHOOK_SIGNATURE_REQUIRED
+    // Negative 1: Missing signature header strictly rejected (400)
     const missingSigRes = await makeHttpRequest('POST', '/api/billing/stripe-webhook', {
       'Content-Type': 'application/json'
     }, rawPayload);
     assert.strictEqual(missingSigRes.status, 400, 'Missing Stripe signature must return 400');
     assert.strictEqual(missingSigRes.json?.error, 'WEBHOOK_SIGNATURE_REQUIRED');
 
-    // Negative 2: External proxy header spoofing simulation -> 400 WEBHOOK_SIGNATURE_REQUIRED
-    const spoofedProxyRes = await makeHttpRequest('POST', '/api/billing/stripe-webhook', {
-      'Content-Type': 'application/json',
-      'x-internal-test-auth': 'true',
-      'X-Forwarded-For': '203.0.113.195'
-    }, rawPayload);
-    assert.strictEqual(spoofedProxyRes.status, 400, 'Spoofed proxy header must reject simulation');
-    assert.strictEqual(spoofedProxyRes.json?.error, 'WEBHOOK_SIGNATURE_REQUIRED');
-
-    // Negative 3: Invalid simulated signature -> 400 Webhook Error
-    const invalidSigRes = await makeHttpRequest('POST', '/api/billing/stripe-webhook', {
-      'Content-Type': 'application/json',
-      'x-internal-test-auth': 'true',
-      'X-Test-Simulate-Signature': 'invalid_signature'
-    }, rawPayload);
-    assert.strictEqual(invalidSigRes.status, 400, 'Invalid simulated signature must return 400');
-    assert.ok(invalidSigRes.text.includes('Webhook Error'));
-
-    // Positive 4: Authorized loopback test simulation -> 200 OK + entitlement upgraded
-    const validWebhookRes = await makeHttpRequest('POST', '/api/billing/stripe-webhook', {
+    // Negative 2: Client header bypass attempt without cryptographic signature fails closed (400)
+    const bypassAttemptRes = await makeHttpRequest('POST', '/api/billing/stripe-webhook', {
       'Content-Type': 'application/json',
       'x-internal-test-auth': 'true'
     }, rawPayload);
-    assert.strictEqual(validWebhookRes.status, 200, 'Authorized simulation webhook must return 200');
+    assert.strictEqual(bypassAttemptRes.status, 400, 'Client header bypass must FAIL CLOSED with 400');
+    assert.strictEqual(bypassAttemptRes.json?.error, 'WEBHOOK_SIGNATURE_REQUIRED');
 
-    // Positive 5: Idempotent replay of same event -> 200 duplicate
+    // Negative 3: Invalid / corrupted cryptographic signature rejected (400)
+    const badSigRes = await makeHttpRequest('POST', '/api/billing/stripe-webhook', {
+      'Content-Type': 'application/json',
+      'stripe-signature': `t=${Math.floor(Date.now() / 1000)},v1=0000000000000000000000000000000000000000000000000000000000000000`
+    }, rawPayload);
+    assert.strictEqual(badSigRes.status, 400, 'Invalid cryptographic signature must return 400');
+    assert.strictEqual(badSigRes.json?.error, 'WEBHOOK_SIGNATURE_VERIFICATION_FAILED');
+
+    // Negative 4: Tampered payload (valid signature for payload A, sent with payload B) rejected (400)
+    const tamperedPayload = JSON.stringify({ ...fakeEvent, type: 'account.updated' });
+    const tamperedRes = await makeHttpRequest('POST', '/api/billing/stripe-webhook', {
+      'Content-Type': 'application/json',
+      'stripe-signature': makeStripeHeader(rawPayload, TEST_WEBHOOK_SECRET)
+    }, tamperedPayload);
+    assert.strictEqual(tamperedRes.status, 400, 'Tampered payload must return 400');
+    assert.strictEqual(tamperedRes.json?.error, 'WEBHOOK_SIGNATURE_VERIFICATION_FAILED');
+
+    // Negative 5: Expired timestamp (> 300s in the past) rejected (400)
+    const expiredTs = Math.floor(Date.now() / 1000) - 600;
+    const expiredRes = await makeHttpRequest('POST', '/api/billing/stripe-webhook', {
+      'Content-Type': 'application/json',
+      'stripe-signature': makeStripeHeader(rawPayload, TEST_WEBHOOK_SECRET, expiredTs)
+    }, rawPayload);
+    assert.strictEqual(expiredRes.status, 400, 'Expired signature must return 400');
+    assert.strictEqual(expiredRes.json?.error, 'WEBHOOK_SIGNATURE_VERIFICATION_FAILED');
+
+    // Entitlement Invariant Check: Verify NO entitlement was granted on failed webhooks
+    const preDbDisk = JSON.parse(fs.readFileSync(path.join(ACTIVE_DATA_DIR, 'db.json'), 'utf-8'));
+    const preRecorded = (preDbDisk.stripeEvents || []).some(e => e.eventId === testEventId);
+    assert.strictEqual(preRecorded, false, 'Rejected webhook must NOT be recorded in persistent DB');
+
+    // Positive 6: Valid cryptographic signature accepted (200) + entitlement processed
+    const validHeader = makeStripeHeader(rawPayload, TEST_WEBHOOK_SECRET);
+    const validRes = await makeHttpRequest('POST', '/api/billing/stripe-webhook', {
+      'Content-Type': 'application/json',
+      'stripe-signature': validHeader
+    }, rawPayload);
+    assert.strictEqual(validRes.status, 200, `Valid signature must return 200, got ${validRes.status}: ${validRes.text}`);
+    assert.strictEqual(validRes.json?.received, true);
+
+    // Entitlement Invariant Check: Verify event is now recorded in persistent DB on disk
+    const postDbDisk = JSON.parse(fs.readFileSync(path.join(ACTIVE_DATA_DIR, 'db.json'), 'utf-8'));
+    const postRecorded = (postDbDisk.stripeEvents || []).some(e => e.eventId === testEventId);
+    assert.strictEqual(postRecorded, true, 'Valid cryptographically signed event must be recorded on disk');
+
+    // Positive 7: Idempotent replay of identical signed event returns duplicate: true without double-processing
     const replayRes = await makeHttpRequest('POST', '/api/billing/stripe-webhook', {
       'Content-Type': 'application/json',
-      'x-internal-test-auth': 'true'
+      'stripe-signature': validHeader
     }, rawPayload);
     assert.strictEqual(replayRes.status, 200);
-    assert.strictEqual(replayRes.json?.duplicate, true, 'Duplicate webhook event must be idempotent');
+    assert.strictEqual(replayRes.json?.duplicate, true, 'Duplicate signed event must be idempotent');
   });
 
-  // [26g] Stale Snapshot Rejection: db.write rejects outdated whole-snapshots (Fail-Closed on disposable volume)
-  await test('[26g] Stale Snapshot Rejection: db.write rejects outdated whole-snapshots (Fail-Closed on disposable volume)', async () => {
+  // [26g] Stale Snapshot Rejection: db.write rejects outdated whole-snapshots (Two real independent child processes)
+  await test('[26g] Stale Snapshot Rejection: db.write rejects outdated whole-snapshots (Two real independent child processes)', async () => {
     const TEST_ISOLATED_DATA_DIR = path.join(__dirname, `../.tmp_test_stale_snap_${Date.now()}`);
     fs.mkdirSync(TEST_ISOLATED_DATA_DIR, { recursive: true });
     try {
       const dbPath = path.resolve(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/server/db').replace(/\\/g, '/');
-      const runProc = (script) => new Promise((resolve, reject) => {
+      const handshakeFile = path.join(TEST_ISOLATED_DATA_DIR, 'proc_b_ready.flag').replace(/\\/g, '/');
+
+      // Initialize DB file in sandbox with version 1
+      fs.writeFileSync(path.join(TEST_ISOLATED_DATA_DIR, 'db.json'), JSON.stringify({ schemaVersion: 6, _version: 1, initialField: 'init' }, null, 2));
+
+      // Process A: Reads snapshot at version 1, waits for Process B to mutate, then attempts db.write(snapshotA)
+      const procAScript = `
+        const assert = require('assert');
+        const fs = require('fs');
+        const db = require('${dbPath}');
+        (async () => {
+          const snapshotA = JSON.parse(JSON.stringify(db.read()));
+          assert.strictEqual(typeof snapshotA._version, 'number', 'Snapshot must have numeric _version');
+
+          fs.writeFileSync('${handshakeFile}.a_ready', 'ready');
+
+          const start = Date.now();
+          while (!fs.existsSync('${handshakeFile}.b_done') && (Date.now() - start < 10000)) {
+            await new Promise(r => setTimeout(r, 50));
+          }
+          assert.ok(fs.existsSync('${handshakeFile}.b_done'), 'Process B must signal completion');
+
+          snapshotA.initialField = 'stale_overwrite_by_proc_a';
+          let threwStale = false;
+          try {
+            await db.write(snapshotA);
+          } catch (e) {
+            if (e.message.includes('STALE_SNAPSHOT_WRITE_REJECTED')) {
+              threwStale = true;
+            }
+          }
+          assert.strictEqual(threwStale, true, 'db.write must throw STALE_SNAPSHOT_WRITE_REJECTED on stale snapshot');
+
+          let threwMissing = false;
+          try {
+            await db.write({ initialField: 'missing_ver' });
+          } catch (e) {
+            if (e.message.includes('VERSION_REQUIRED')) {
+              threwMissing = true;
+            }
+          }
+          assert.strictEqual(threwMissing, true, 'db.write must throw VERSION_REQUIRED when _version missing');
+
+          let threwForged = false;
+          try {
+            await db.write({ initialField: 'forged_ver', _version: 99999 });
+          } catch (e) {
+            if (e.message.includes('STALE_SNAPSHOT_WRITE_REJECTED')) {
+              threwForged = true;
+            }
+          }
+          assert.strictEqual(threwForged, true, 'db.write must throw STALE_SNAPSHOT_WRITE_REJECTED for forged version');
+
+          const fresh = db.read();
+          assert.strictEqual(fresh.fieldWrittenByB, 'value_from_process_b', 'Process B updates must be preserved without lost writes');
+          process.exit(0);
+        })().catch(e => { console.error('Proc A error:', e); process.exit(1); });
+      `;
+
+      const procBScript = `
+        const assert = require('assert');
+        const fs = require('fs');
+        const db = require('${dbPath}');
+        (async () => {
+          const start = Date.now();
+          while (!fs.existsSync('${handshakeFile}.a_ready') && (Date.now() - start < 10000)) {
+            await new Promise(r => setTimeout(r, 50));
+          }
+          assert.ok(fs.existsSync('${handshakeFile}.a_ready'));
+
+          await db.mutate(fresh => {
+            fresh.fieldWrittenByB = 'value_from_process_b';
+          });
+
+          fs.writeFileSync('${handshakeFile}.b_done', 'done');
+          process.exit(0);
+        })().catch(e => { console.error('Proc B error:', e); process.exit(1); });
+      `;
+
+      const runChild = (script, name) => new Promise((resolve, reject) => {
         const p = spawn(process.execPath, ['-e', script], {
           stdio: 'pipe',
           env: { ...process.env, NODE_ENV: 'test', DATA_DIR: TEST_ISOLATED_DATA_DIR }
@@ -1953,40 +2076,14 @@ async function runRealGenerationPipelineTests() {
         p.stderr.on('data', d => { errOut += d.toString(); });
         p.on('close', code => {
           if (code === 0) resolve();
-          else reject(new Error(`Child process failed with code ${code}: ${errOut}`));
+          else reject(new Error(`${name} failed with code ${code}: ${errOut}`));
         });
       });
 
-      const staleScript = `
-        const assert = require('assert');
-        const db = require('${dbPath}');
-        (async () => {
-          // 1. Initial write
-          await db.mutate(d => { d.field = 'initial'; });
-          // 2. Process A takes snapshot
-          const snapshotA = JSON.parse(JSON.stringify(db.read()));
-          assert.ok(snapshotA._version);
-          // 3. Process B mutates DB twice
-          await db.mutate(d => { d.field = 'proc_b_1'; });
-          await db.mutate(d => { d.field = 'proc_b_2'; });
-          // 4. Process A attempts write with stale snapshot
-          snapshotA.field = 'stale_overwrite_attempt';
-          let threw = false;
-          try {
-            await db.write(snapshotA);
-          } catch (e) {
-            if (e.message.includes('STALE_SNAPSHOT_WRITE_REJECTED')) {
-              threw = true;
-            }
-          }
-          assert.strictEqual(threw, true, 'db.write must reject stale snapshot');
-          // 5. Verify Process B updates were preserved
-          const current = db.read();
-          assert.strictEqual(current.field, 'proc_b_2', 'Process B data must be preserved');
-          process.exit(0);
-        })().catch(e => { console.error(e); process.exit(1); });
-      `;
-      await runProc(staleScript);
+      await Promise.all([
+        runChild(procAScript, 'Process A'),
+        runChild(procBScript, 'Process B')
+      ]);
     } finally {
       if (fs.existsSync(TEST_ISOLATED_DATA_DIR)) {
         fs.rmSync(TEST_ISOLATED_DATA_DIR, { recursive: true, force: true });
@@ -1994,13 +2091,76 @@ async function runRealGenerationPipelineTests() {
     }
   });
 
-  // [26h] Atomic Lock Fencing: Rename-before-unlink prevents check-then-unlink race
-  await test('[26h] Atomic Lock Fencing: Rename-before-unlink prevents check-then-unlink race', async () => {
+  // [26h] Atomic Lock Fencing: Live owner never age-stolen, rename fencing & crash recovery
+  await test('[26h] Atomic Lock Fencing: Live owner never age-stolen, rename fencing & crash recovery', async () => {
     const TEST_ISOLATED_DATA_DIR = path.join(__dirname, `../.tmp_test_atomic_lock_${Date.now()}`);
     fs.mkdirSync(TEST_ISOLATED_DATA_DIR, { recursive: true });
     try {
       const dbPath = path.resolve(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/server/db').replace(/\\/g, '/');
-      const runProc = (script) => new Promise((resolve, reject) => {
+      const lockFile = path.join(TEST_ISOLATED_DATA_DIR, 'db.lock').replace(/\\/g, '/');
+      const handshake = path.join(TEST_ISOLATED_DATA_DIR, 'lock_handshake').replace(/\\/g, '/');
+
+      // 1. Test Atomic Rename Fencing on Release
+      const step1Script = `
+        const assert = require('assert');
+        const fs = require('fs');
+        const path = require('path');
+        const db = require('${dbPath}');
+        (async () => {
+          const lockFile = path.join(process.env.DATA_DIR, 'db.lock');
+          const token = await db.acquireFileLock(2000);
+          assert.ok(token);
+
+          // Imposter token cannot release it
+          const imposterRes = db.releaseFileLock('fake-imposter-token');
+          assert.strictEqual(imposterRes, false, 'Imposter token must return false');
+          assert.ok(fs.existsSync(lockFile), 'Lock file must remain intact');
+
+          // Legitimate owner releases it
+          const legitRes = db.releaseFileLock(token);
+          assert.strictEqual(legitRes, true, 'Legitimate token must release lock');
+          assert.strictEqual(fs.existsSync(lockFile), false, 'Lock file unlinked on legitimate release');
+          process.exit(0);
+        })().catch(e => { console.error(e); process.exit(1); });
+      `;
+
+      // 2. Test Live Owner is NEVER Age-Stolen by Contender (Even with long elapsed time)
+      const procHolderScript = `
+        const fs = require('fs');
+        const db = require('${dbPath}');
+        (async () => {
+          const t = await db.acquireFileLock(2000);
+          fs.writeFileSync('${handshake}.holder_locked', t);
+          await new Promise(r => setTimeout(r, 1200));
+          db.releaseFileLock(t);
+          fs.writeFileSync('${handshake}.holder_released', 'done');
+          process.exit(0);
+        })().catch(e => { console.error(e); process.exit(1); });
+      `;
+
+      const procContenderScript = `
+        const assert = require('assert');
+        const fs = require('fs');
+        const db = require('${dbPath}');
+        (async () => {
+          const start = Date.now();
+          while (!fs.existsSync('${handshake}.holder_locked') && Date.now() - start < 5000) {
+            await new Promise(r => setTimeout(r, 50));
+          }
+          let timedOut = false;
+          try {
+            await db.acquireFileLock(300);
+          } catch (e) {
+            if (e.message.includes('LOCK_TIMEOUT_ACQUISITION_FAILED')) {
+              timedOut = true;
+            }
+          }
+          assert.strictEqual(timedOut, true, 'Contender must NOT steal lock from live holder process');
+          process.exit(0);
+        })().catch(e => { console.error(e); process.exit(1); });
+      `;
+
+      const runProc = (script, name) => new Promise((resolve, reject) => {
         const p = spawn(process.execPath, ['-e', script], {
           stdio: 'pipe',
           env: { ...process.env, NODE_ENV: 'test', DATA_DIR: TEST_ISOLATED_DATA_DIR }
@@ -2009,36 +2169,41 @@ async function runRealGenerationPipelineTests() {
         p.stderr.on('data', d => { errOut += d.toString(); });
         p.on('close', code => {
           if (code === 0) resolve();
-          else reject(new Error(`Child process failed with code ${code}: ${errOut}`));
+          else reject(new Error(`${name} failed with code ${code}: ${errOut}`));
         });
       });
 
-      const lockScript = `
+      await runProc(step1Script, 'Lock Fencing Step 1');
+
+      await Promise.all([
+        runProc(procHolderScript, 'Lock Holder'),
+        runProc(procContenderScript, 'Lock Contender')
+      ]);
+
+      // 3. Test Dead Process Crash Recovery
+      const step3Script = `
         const assert = require('assert');
         const fs = require('fs');
         const path = require('path');
         const db = require('${dbPath}');
         (async () => {
-          // 1. Legitimate owner acquires lock
-          const token = await db.acquireFileLock(2000);
-          assert.ok(token);
+          const lockFile = path.join(process.env.DATA_DIR, 'db.lock');
+          const deadPayload = JSON.stringify({
+            ownerToken: 'dead-process-token',
+            pid: 999999,
+            createdAt: Date.now() - 100000
+          });
+          fs.writeFileSync(lockFile, deadPayload);
 
-          // 2. Imposter token cannot release it
-          const imposterResult = db.releaseFileLock('fake-imposter-token');
-          assert.strictEqual(imposterResult, false, 'Imposter token must return false');
-
-          // Lock file still exists and belongs to legitimate owner
-          const lockFile = path.join('${TEST_ISOLATED_DATA_DIR.replace(/\\/g, '/')}', 'db.lock');
-          assert.ok(fs.existsSync(lockFile), 'Lock file must still exist after imposter attempt');
-
-          // 3. Legitimate owner releases lock
-          const legitResult = db.releaseFileLock(token);
-          assert.strictEqual(legitResult, true, 'Legitimate owner must successfully release lock');
-          assert.strictEqual(fs.existsSync(lockFile), false, 'Lock file must be unlinked after legit release');
+          const newToken = await db.acquireFileLock(3000);
+          assert.ok(newToken, 'New process must successfully reclaim lock from dead owner');
+          const released = db.releaseFileLock(newToken);
+          assert.strictEqual(released, true);
+          assert.strictEqual(fs.existsSync(lockFile), false);
           process.exit(0);
         })().catch(e => { console.error(e); process.exit(1); });
       `;
-      await runProc(lockScript);
+      await runProc(step3Script, 'Dead Recovery Step 3');
     } finally {
       if (fs.existsSync(TEST_ISOLATED_DATA_DIR)) {
         fs.rmSync(TEST_ISOLATED_DATA_DIR, { recursive: true, force: true });

@@ -21,6 +21,15 @@ const assert = require('assert');
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
+
+if (!process.env.DATA_DIR) {
+  throw new Error('FAIL_CLOSED: process.env.DATA_DIR is strictly required. Refusing to run tests without dedicated test sandbox volume.');
+}
+if (process.env.DATA_DIR.includes('_clean_deploy') || process.env.DATA_DIR.includes('_railway_deploy')) {
+  throw new Error(`FAIL_CLOSED: process.env.DATA_DIR cannot point to production/clean volume: ${process.env.DATA_DIR}`);
+}
+const ACTIVE_DATA_DIR = process.env.DATA_DIR;
+
 const { Stage2CaptureEngine, STATES } = require('../virtual-tradeshow-commercial-v1/client/capture/stage2-capture-engine.js');
 
 const SERVER_PORT = 3899;
@@ -146,7 +155,7 @@ async function runMobileRiSuite() {
     testSessionId = 'RI-S2-TEST-' + Date.now().toString(36).toUpperCase();
 
     // Inject valid session into server's persistent volume QA sessions file
-    const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/data');
+    const DATA_DIR = ACTIVE_DATA_DIR;
     const sessionsFile = path.join(DATA_DIR, 'qa_sessions.json');
     let currentData = { captureSessions: [], qaBrowserSessions: [] };
     if (fs.existsSync(sessionsFile)) {

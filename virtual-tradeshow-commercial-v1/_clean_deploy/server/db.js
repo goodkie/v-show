@@ -1557,14 +1557,21 @@ class JSONDatabase {
         if (e.code === 'EEXIST' || e.code === 'EPERM' || e.code === 'EBUSY') {
           const existing = this._readLockFile();
           if (existing) {
+            // NEVER age-steal a confirmed live owner! Even if lock is held > 15s or 30s.
+            // Only reclaim if the owner process is confirmed dead (!this._isProcessAlive).
             const isDead = existing.pid && !this._isProcessAlive(existing.pid);
-            const isStale = existing.createdAt && (Date.now() - existing.createdAt > 15000);
-            if (isDead || isStale) {
+            if (isDead) {
               try {
-                const current = this._readLockFile();
-                if (current && current.ownerToken === existing.ownerToken) {
-                  fs.unlinkSync(lockFile);
-                }
+                const deadTombstone = path.join(DATA_DIR, `db.lock.dead.${existing.pid}.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`);
+                try {
+                  fs.renameSync(lockFile, deadTombstone);
+                  const deadLock = JSON.parse(fs.readFileSync(deadTombstone, 'utf-8'));
+                  if (deadLock && deadLock.ownerToken === existing.ownerToken) {
+                    fs.unlinkSync(deadTombstone);
+                  } else {
+                    try { fs.renameSync(deadTombstone, lockFile); } catch (_) {}
+                  }
+                } catch (_) {}
               } catch (staleErr) {}
             }
           }
@@ -1593,20 +1600,27 @@ class JSONDatabase {
       if (!current || current.ownerToken !== ownerToken) {
         return false;
       }
+      // Atomic rename fencing: rename lock to unique tombstone before unlinking
+      const tombstone = path.join(DATA_DIR, `db.lock.tombstone.${process.pid}.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`);
       try {
-        fs.unlinkSync(lockFile);
-        return true;
-      } catch (unlinkErr) {
-        if (unlinkErr.code === 'ENOENT') return true;
-        const end = Date.now() + 100;
-        while (Date.now() < end) {
-          try {
-            if (!fs.existsSync(lockFile)) return true;
-            fs.unlinkSync(lockFile);
-            return true;
-          } catch (_) {}
+        fs.renameSync(lockFile, tombstone);
+      } catch (renameErr) {
+        // Lock was already released or reacquired by another process
+        return false;
+      }
+      try {
+        const tombstoneData = JSON.parse(fs.readFileSync(tombstone, 'utf-8'));
+        if (tombstoneData && tombstoneData.ownerToken === ownerToken) {
+          fs.unlinkSync(tombstone);
+          return true;
+        } else {
+          // Token mismatch in tombstone: restore lockFile so we don't drop another process's lock
+          try { fs.renameSync(tombstone, lockFile); } catch (_) {}
+          return false;
         }
-        return !fs.existsSync(lockFile);
+      } catch (_) {
+        try { fs.unlinkSync(tombstone); } catch (_) {}
+        return true;
       }
     } catch (e) {
       return !fs.existsSync(lockFile);
@@ -1631,14 +1645,20 @@ class JSONDatabase {
         if (e.code === 'EEXIST' || e.code === 'EPERM' || e.code === 'EBUSY') {
           const existing = this._readLockFile();
           if (existing) {
+            // NEVER age-steal a confirmed live owner!
             const isDead = existing.pid && !this._isProcessAlive(existing.pid);
-            const isStale = existing.createdAt && (Date.now() - existing.createdAt > 15000);
-            if (isDead || isStale) {
+            if (isDead) {
               try {
-                const current = this._readLockFile();
-                if (current && current.ownerToken === existing.ownerToken) {
-                  fs.unlinkSync(lockFile);
-                }
+                const deadTombstone = path.join(DATA_DIR, `db.lock.dead.${existing.pid}.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`);
+                try {
+                  fs.renameSync(lockFile, deadTombstone);
+                  const deadLock = JSON.parse(fs.readFileSync(deadTombstone, 'utf-8'));
+                  if (deadLock && deadLock.ownerToken === existing.ownerToken) {
+                    fs.unlinkSync(deadTombstone);
+                  } else {
+                    try { fs.renameSync(deadTombstone, lockFile); } catch (_) {}
+                  }
+                } catch (_) {}
               } catch (staleErr) {}
             }
           }
@@ -1672,13 +1692,17 @@ class JSONDatabase {
 
   async write(data) {
     // Deprecated whole-snapshot write: strongly prefer field-specific mutate(fresh => ...)
-    // Enforces atomic read-modify-write under exclusive lock, rejecting stale snapshots
+    // Enforces atomic read-modify-write under exclusive lock, strictly rejecting stale snapshots via CAS
     return this.mutate(current => {
       if (!data || typeof data !== 'object') {
         throw new Error('INVALID_DATA: db.write requires a non-null object');
       }
-      if (data._version !== undefined && current._version !== undefined && data._version < current._version - 1) {
-        throw new Error(`STALE_SNAPSHOT_WRITE_REJECTED: snapshot version ${data._version} is older than database current version ${current._version - 1}`);
+      if (typeof data._version !== 'number') {
+        throw new Error('VERSION_REQUIRED: db.write requires an explicit numeric _version property');
+      }
+      const expectedVersion = (current._version || 1) - 1;
+      if (data._version !== expectedVersion) {
+        throw new Error(`STALE_SNAPSHOT_WRITE_REJECTED: snapshot version ${data._version} does not match database current version ${expectedVersion}`);
       }
       if (data !== current) {
         for (const key of Object.keys(data)) {

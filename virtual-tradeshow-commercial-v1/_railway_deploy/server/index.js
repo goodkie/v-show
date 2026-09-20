@@ -591,43 +591,81 @@ if (ALLOWED_ORIGIN) {
   app.use(cors());
 }
 
+function verifyStripeWebhookSignature(rawBody, sigHeader, secret) {
+  if (!sigHeader || !secret) {
+    throw new Error('STRIPE_SIGNATURE_OR_SECRET_MISSING');
+  }
+  const parts = String(sigHeader).split(',');
+  let timestamp = null;
+  const signatures = [];
+  for (const part of parts) {
+    const [key, val] = part.split('=');
+    if (key === 't') timestamp = val;
+    if (key === 'v1') signatures.push(val);
+  }
+  if (!timestamp || signatures.length === 0) {
+    throw new Error('INVALID_STRIPE_SIGNATURE_HEADER_FORMAT');
+  }
+  const nowSec = Math.floor(Date.now() / 1000);
+  const eventSec = parseInt(timestamp, 10);
+  if (isNaN(eventSec) || Math.abs(nowSec - eventSec) > 300) {
+    throw new Error('STRIPE_SIGNATURE_TIMESTAMP_EXPIRED');
+  }
+  const payloadStr = Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : String(rawBody);
+  const signedPayload = `${timestamp}.${payloadStr}`;
+  const expectedSig = crypto.createHmac('sha256', secret).update(signedPayload).digest('hex');
+  const matched = signatures.some(sig => {
+    try {
+      return crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expectedSig, 'hex'));
+    } catch (_) {
+      return false;
+    }
+  });
+  if (!matched) {
+    throw new Error('STRIPE_SIGNATURE_VERIFICATION_FAILED');
+  }
+  return JSON.parse(payloadStr);
+}
+
 // Raw body parser for Stripe webhook MUST come before express.json()
 app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
 
   const sig = req.headers['stripe-signature'];
   let event;
 
-  // Strict Fail-Closed Stripe Webhook Security:
-  const isTestEnv = process.env.NODE_ENV === 'test' && process.env.ALLOW_TEST_BILLING_SIMULATION === 'true';
-  const isLoopback = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket?.remoteAddress) ||
-                     ['127.0.0.1', '::1'].includes(req.ip);
-  const hasNoForwarding = !req.headers['x-forwarded-for'] && !req.headers['x-forwarded-host'] && !req.headers['x-real-ip'];
-  const isTestAuth = req.headers['x-internal-test-auth'] === 'true';
+  // Cryptographic Stripe Webhook Security:
+  // In production: requires STRIPE_WEBHOOK_SECRET
+  // In isolated test mode: allows sandbox-dedicated test secret, NEVER unverified raw JSON
+  const isTestEnv = process.env.NODE_ENV === 'test';
+  const webhookSecret = STRIPE_WEBHOOK_SECRET || (isTestEnv ? 'whsec_stage2_test_sandbox_secret_2026' : null);
+
+  if (!sig || !webhookSecret) {
+    console.warn(`[SECURITY][BILLING_WEBHOOK_REJECTED] Missing verified Stripe signature or secret from ${req.socket?.remoteAddress}`);
+    return res.status(400).json({
+      ok: false,
+      error: 'WEBHOOK_SIGNATURE_REQUIRED',
+      message: 'Strict cryptographic signature verification required. Valid stripe-signature header and webhook secret are mandatory.'
+    });
+  }
 
   try {
-    if (stripe && STRIPE_WEBHOOK_SECRET && sig) {
-      // Production path: verify cryptographic signature
-      event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
-    } else if (isTestEnv && isLoopback && hasNoForwarding && isTestAuth) {
-      // Isolated test simulation path: ONLY accessible via direct loopback in test environment with test token
-      if (req.headers['x-test-simulate-signature'] === 'invalid_signature') {
-        throw new Error('TEST_SIMULATED_SIGNATURE_VERIFICATION_FAILED');
+    if (stripe && stripe.webhooks && typeof stripe.webhooks.constructEvent === 'function') {
+      try {
+        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+      } catch (stripeSdkErr) {
+        event = verifyStripeWebhookSignature(req.body, sig, webhookSecret);
       }
-      const payloadStr = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : JSON.stringify(req.body);
-      event = JSON.parse(payloadStr);
     } else {
-      // Fail closed: Webhooks missing valid Stripe secret/signature are strictly rejected
-      console.warn(`[SECURITY][BILLING_WEBHOOK_REJECTED] Missing verified Stripe signature from ${req.socket?.remoteAddress}`);
-      return res.status(400).json({
-        ok: false,
-        error: 'WEBHOOK_SIGNATURE_REQUIRED',
-        message: 'Strict signature verification required. Stripe webhook secret or signature missing.'
-      });
+      event = verifyStripeWebhookSignature(req.body, sig, webhookSecret);
     }
   } catch (err) {
     console.error('⚠️ Stripe Webhook signature verification failed:', err.message);
     db.logIncident('BILLING', 'high', `Stripe signature verification failed: ${err.message}`);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    return res.status(400).json({
+      ok: false,
+      error: 'WEBHOOK_SIGNATURE_VERIFICATION_FAILED',
+      message: `Cryptographic signature verification failed: ${err.message}`
+    });
   }
 
   if (!event || !event.type) {
@@ -1240,6 +1278,11 @@ const CURRENT_BUILD_SHA = (() => {
 })();
 
 const healthHandler = (req, res) => {
+  const isTestSandbox = process.env.NODE_ENV === 'test' && 
+    Boolean(process.env.DATA_DIR) && 
+    !process.env.DATA_DIR.includes('_clean_deploy') && 
+    !process.env.DATA_DIR.includes('_railway_deploy');
+
   res.status(200).json({
     ok: true,
     service: 'virtual-tradeshow-commercial-v1',
@@ -1249,6 +1292,7 @@ const healthHandler = (req, res) => {
     stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
     uiVersion: '3D2-C12.9-P2R17-DEV11',
+    isTestSandbox,
     storageRoot: GUIDED_CAPTURE_STORAGE_ROOT,
     storageRootExists: STORAGE_ROOT_EXISTS,
     storageRootWritable: STORAGE_ROOT_WRITABLE,
@@ -1262,11 +1306,17 @@ const healthHandler = (req, res) => {
 app.get('/health', healthHandler);
 app.get('/api/health', healthHandler);
 app.get('/api/version', (req, res) => {
+  const isTestSandbox = process.env.NODE_ENV === 'test' && 
+    Boolean(process.env.DATA_DIR) && 
+    !process.env.DATA_DIR.includes('_clean_deploy') && 
+    !process.env.DATA_DIR.includes('_railway_deploy');
+
   res.status(200).json({
     ok: true,
     buildSha: CURRENT_BUILD_SHA,
     gitCommitSha: CURRENT_BUILD_SHA,
     uiVersion: '3D2-C12.9-P2R17-DEV11',
+    isTestSandbox,
     timestamp: new Date().toISOString()
   });
 });
@@ -11310,49 +11360,59 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
 
           const candDir = path.join(PANORAMA_PRIVATE_STORAGE_ROOT, projectId, candidate.candidateId);
           const projectDir = path.join(PANORAMA_PRIVATE_STORAGE_ROOT, projectId);
-          fs.mkdirSync(candDir, { recursive: true });
+          fs.mkdirSync(projectDir, { recursive: true });
 
-          // Boundary verification: ensure real candidate dir is strictly within project root
-          const realCandDir = fs.realpathSync(candDir);
-          const realProjDir = fs.realpathSync(projectDir);
-          if (realCandDir !== realProjDir && !realCandDir.startsWith(realProjDir + path.sep)) {
-            throw new Error('UNAUTHORIZED_PRIVATE_STORAGE_PATH');
-          }
-          if (fs.lstatSync(candDir).isSymbolicLink()) {
-            throw new Error('UNAUTHORIZED_PRIVATE_STORAGE_SYMLINK');
-          }
+          // Immutable staging directory for atomic publication
+          const candDirTmp = path.join(projectDir, `.tmp.${candidate.candidateId}.${process.pid}.${Date.now()}`);
+          fs.mkdirSync(candDirTmp, { recursive: true });
+
+          // Sanitize candidate-supplied filenames to prevent directory traversal
+          const safePreviewFile = candidate.previewFile ? path.basename(candidate.previewFile) : null;
+          const safeNativeFile = candidate.nativeFile ? path.basename(candidate.nativeFile) : null;
 
           const candidateFiles = [
             'panorama_360.jpg',
             `${candidate.candidateId}_preview.jpg`,
             `${candidate.candidateId}_native.jpg`,
-            candidate.previewFile,
-            candidate.nativeFile
+            safePreviewFile,
+            safeNativeFile
           ].filter(Boolean);
+
           for (const fname of candidateFiles) {
             const src = path.join(UPLOADS_DIR, fname);
-            const dst = path.join(candDir, fname);
+            const dst = path.join(candDirTmp, fname);
             if (fs.existsSync(src) && !fs.existsSync(dst)) {
               if (faultInjectionActive && (faultHeader === 'REAL_COPY_FAIL' || faultHeader === 'DISK_FULL_FAIL') && fname.includes('preview')) {
                 // Genuine injected fs failure right at the live copy boundary (ENOSPC / partial copy)
-                fs.writeFileSync(dst, Buffer.from([0xFF, 0xD8])); // Partial corrupted 2 bytes written
+                const srcBuf = fs.readFileSync(src);
+                fs.writeFileSync(dst, srcBuf.slice(0, Math.min(128, srcBuf.length)));
                 const ioErr = new Error('ENOSPC: no space left on device, write');
                 ioErr.code = 'ENOSPC';
                 throw ioErr;
               }
               fs.copyFileSync(src, dst);
+              try {
+                const fd = fs.openSync(dst, 'r+');
+                fs.fsyncSync(fd);
+                fs.closeSync(fd);
+              } catch (_) {}
             }
           }
-          if (candidate.previewFile && fs.existsSync(path.join(UPLOADS_DIR, candidate.previewFile))) {
-            const src = path.join(UPLOADS_DIR, candidate.previewFile);
-            const dstCanonical = path.join(candDir, `${candidate.candidateId}_preview.jpg`);
+          if (safePreviewFile && fs.existsSync(path.join(UPLOADS_DIR, safePreviewFile))) {
+            const src = path.join(UPLOADS_DIR, safePreviewFile);
+            const dstCanonical = path.join(candDirTmp, `${candidate.candidateId}_preview.jpg`);
             if (!fs.existsSync(dstCanonical)) {
               fs.copyFileSync(src, dstCanonical);
+              try {
+                const fd = fs.openSync(dstCanonical, 'r+');
+                fs.fsyncSync(fd);
+                fs.closeSync(fd);
+              } catch (_) {}
             }
           }
 
-          const previewPath = path.join(candDir, `${candidate.candidateId}_preview.jpg`);
-          const targetPath = fs.existsSync(previewPath) ? previewPath : path.join(candDir, 'panorama_360.jpg');
+          const previewPath = path.join(candDirTmp, `${candidate.candidateId}_preview.jpg`);
+          const targetPath = fs.existsSync(previewPath) ? previewPath : path.join(candDirTmp, 'panorama_360.jpg');
           if (!fs.existsSync(targetPath)) {
             throw new Error(`MISSING_PRIVATE_ARTIFACT: targetPath ${targetPath} does not exist`);
           }
@@ -11368,13 +11428,37 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
           candidate.assetSha256 = crypto.createHash('sha256').update(fileBuf).digest('hex');
           candidate.assetByteSize = fileBuf.length;
 
+          // Atomic publish: rename validated staging directory to canonical candidate directory
+          if (fs.existsSync(candDir)) {
+            try { fs.rmSync(candDir, { recursive: true, force: true }); } catch (_) {}
+          }
+          fs.renameSync(candDirTmp, candDir);
+
+          // Boundary verification on published directory
+          const realCandDir = fs.realpathSync(candDir);
+          const realProjDir = fs.realpathSync(projectDir);
+          if (realCandDir !== realProjDir && !realCandDir.startsWith(realProjDir + path.sep)) {
+            throw new Error('UNAUTHORIZED_PRIVATE_STORAGE_PATH');
+          }
+          if (fs.lstatSync(candDir).isSymbolicLink()) {
+            throw new Error('UNAUTHORIZED_PRIVATE_STORAGE_SYMLINK');
+          }
+
           // Commit candidate only AFTER verified private artifact and digest!
           await db.saveSpatialBoothCandidate(projectId, candidate);
         } catch (storageErr) {
           console.error(`[PANORAMA][${jobId}][FAILED] Mandatory artifact copy or digest failure:`, storageErr.message);
           try {
-            const candDir = path.join(PANORAMA_PRIVATE_STORAGE_ROOT, projectId, candidate.candidateId);
-            if (fs.existsSync(candDir)) fs.rmSync(candDir, { recursive: true, force: true });
+            // Clean up staging directory on any failure
+            const projectDir = path.join(PANORAMA_PRIVATE_STORAGE_ROOT, projectId);
+            if (fs.existsSync(projectDir)) {
+              const entries = fs.readdirSync(projectDir);
+              for (const entry of entries) {
+                if (entry.startsWith(`.tmp.${candidate.candidateId}`)) {
+                  try { fs.rmSync(path.join(projectDir, entry), { recursive: true, force: true }); } catch (_) {}
+                }
+              }
+            }
           } catch (cleanErr) {}
           await db.updatePanoramaJob(jobId, {
             status: 'FAILED',
