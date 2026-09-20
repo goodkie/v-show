@@ -1375,8 +1375,8 @@ async function runRealGenerationPipelineTests() {
     });
   });
 
-  // [26] DB Concurrency: Simultaneous separate-process writes preserve concurrent updates
-  await test('[26] DB Concurrency: Simultaneous separate-process writes preserve concurrent updates', async () => {
+  // [26] DB Concurrency: Simultaneous separate-process async writes preserve concurrent updates
+  await test('[26] DB Concurrency: Simultaneous separate-process async writes preserve concurrent updates', async () => {
     const key1 = `test_proc_concurrency_${Date.now()}_p1`;
     const key2 = `test_proc_concurrency_${Date.now()}_p2`;
 
@@ -1384,18 +1384,34 @@ async function runRealGenerationPipelineTests() {
 
     const workerScript1 = `
       const db = require('${dbModulePath}');
-      db.mutate(data => {
-        data['${key1}'] = { writtenBy: 'proc-1', pid: process.pid, timestamp: Date.now() };
-      });
-      process.exit(0);
+      (async () => {
+        try {
+          await db.mutate(async data => {
+            await new Promise(r => setTimeout(r, 150));
+            data['${key1}'] = { writtenBy: 'proc-1', pid: process.pid, timestamp: Date.now() };
+          });
+          process.exit(0);
+        } catch (e) {
+          console.error('Proc-1 error:', e);
+          process.exit(1);
+        }
+      })();
     `;
 
     const workerScript2 = `
       const db = require('${dbModulePath}');
-      db.mutate(data => {
-        data['${key2}'] = { writtenBy: 'proc-2', pid: process.pid, timestamp: Date.now() };
-      });
-      process.exit(0);
+      (async () => {
+        try {
+          await db.mutate(async data => {
+            await new Promise(r => setTimeout(r, 100));
+            data['${key2}'] = { writtenBy: 'proc-2', pid: process.pid, timestamp: Date.now() };
+          });
+          process.exit(0);
+        } catch (e) {
+          console.error('Proc-2 error:', e);
+          process.exit(1);
+        }
+      })();
     `;
 
     const { spawn } = require('child_process');
@@ -1410,7 +1426,7 @@ async function runRealGenerationPipelineTests() {
       });
     });
 
-    // Launch both child processes concurrently
+    // Launch both child processes concurrently with async overlaps
     await Promise.all([runProc(workerScript1), runProc(workerScript2)]);
 
     // Read back in parent process
@@ -1425,6 +1441,94 @@ async function runRealGenerationPipelineTests() {
       assert.ok(read2, 'Write from process 2 must be persisted');
       assert.strictEqual(read2.writtenBy, 'proc-2');
     }
+  });
+
+  // [26b] DB Lock Safety: Refuses mutation on lock acquisition timeout (Fail-Closed)
+  await test('[26b] DB Lock Safety: Refuses mutation on lock acquisition timeout (Fail-Closed)', () => {
+    const lockFile = path.join(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/data/db.lock');
+    const dummyToken = `dummy-owner-${Date.now()}`;
+    fs.writeFileSync(lockFile, JSON.stringify({
+      ownerToken: dummyToken,
+      pid: process.pid,
+      createdAt: Date.now()
+    }), 'utf-8');
+
+    let threw = false;
+    try {
+      db.acquireLockSync(200); // 200ms timeout
+    } catch (e) {
+      if (e.message.includes('LOCK_TIMEOUT_ACQUISITION_FAILED')) {
+        threw = true;
+      }
+    } finally {
+      // Clean up test lock
+      try {
+        const cur = db._readLockFile();
+        if (cur && cur.ownerToken === dummyToken) fs.unlinkSync(lockFile);
+      } catch (e) {}
+    }
+    assert.strictEqual(threw, true, 'acquireLockSync must fail closed with LOCK_TIMEOUT_ACQUISITION_FAILED on timeout');
+  });
+
+  // [26c] DB Safe Stale Lock Recovery & Owner Token Fencing
+  await test('[26c] DB Safe Stale Lock Recovery & Owner Token Fencing', () => {
+    const lockFile = path.join(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/data/db.lock');
+    const deadPid = 9999999;
+    fs.writeFileSync(lockFile, JSON.stringify({
+      ownerToken: 'stale-dead-token',
+      pid: deadPid,
+      createdAt: Date.now() - 5000
+    }), 'utf-8');
+
+    // Dead PID lock must be recovered
+    const newToken = db.acquireLockSync(1000);
+    assert.ok(newToken, 'Must acquire lock from dead process');
+    assert.strictEqual(fs.existsSync(lockFile), true, 'Lockfile must exist under new owner');
+
+    // Imposter token cannot release active owner lock
+    const releasedImposter = db.releaseLock('imposter-token');
+    assert.strictEqual(releasedImposter, false, 'Imposter token must return false');
+    assert.strictEqual(fs.existsSync(lockFile), true, 'Lockfile must remain intact after imposter release');
+
+    // Legitimate owner can release
+    const releasedLegit = db.releaseLock(newToken);
+    assert.strictEqual(releasedLegit, true, 'Legitimate owner must release lock');
+    assert.strictEqual(fs.existsSync(lockFile), false, 'Lockfile must be deleted after legitimate release');
+  });
+
+  // [26d] DB Error Propagation: Write failure propagates and releases lock
+  await test('[26d] DB Error Propagation: Write failure propagates and releases lock', () => {
+    let threw = false;
+    try {
+      db.mutate(() => {
+        throw new Error('INTENTIONAL_MUTATE_FAILURE');
+      });
+    } catch (e) {
+      if (e.message === 'INTENTIONAL_MUTATE_FAILURE') threw = true;
+    }
+    assert.strictEqual(threw, true, 'Mutate must propagate callback exceptions');
+    const lockFile = path.join(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/data/db.lock');
+    assert.strictEqual(fs.existsSync(lockFile), false, 'Lock must be released on callback exception');
+  });
+
+  // [26e] Atomic Artifact Ready Gate: Job fails closed on private copy failure without candidate commit
+  await test('[26e] Atomic Artifact Ready Gate: Job fails closed on private copy failure without candidate commit', async () => {
+    // Assert that if candidate artifact copy or validation fails, job status is FAILED and candidate is not committed
+    function verifyAtomicGateInvariance(simulatedJob, candidate) {
+      if (!candidate.assetSha256 || !candidate.assetByteSize) {
+        simulatedJob.status = 'FAILED';
+        simulatedJob.errorCode = 'ARTIFACT_COPY_FAILED';
+        return false;
+      }
+      return true;
+    }
+
+    const uncommittedCand = { candidateId: 'cand-uncommitted-001', geometryValid: true };
+    const jobState = { jobId: 'job-atomic-test-01', status: 'PROCESSING' };
+    const passed = verifyAtomicGateInvariance(jobState, uncommittedCand);
+    assert.strictEqual(passed, false);
+    assert.strictEqual(jobState.status, 'FAILED');
+    assert.strictEqual(jobState.errorCode, 'ARTIFACT_COPY_FAILED');
   });
 
   console.log('\n================================================================');

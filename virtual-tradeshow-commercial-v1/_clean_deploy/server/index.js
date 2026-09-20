@@ -11253,12 +11253,23 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
           currentStage: 'SAVING',
           stageLabel: 'Saving panorama candidate & derivatives'
         });
-        await db.saveSpatialBoothCandidate(projectId, candidate);
 
-        // Ensure authoritative isolated storage in PANORAMA_PRIVATE_STORAGE_ROOT
+        // Authoritative atomic private storage copy, digest verification & candidate commit
         try {
           const candDir = path.join(PANORAMA_PRIVATE_STORAGE_ROOT, projectId, candidate.candidateId);
+          const projectDir = path.join(PANORAMA_PRIVATE_STORAGE_ROOT, projectId);
           fs.mkdirSync(candDir, { recursive: true });
+
+          // Boundary verification: ensure real candidate dir is strictly within project root
+          const realCandDir = fs.realpathSync(candDir);
+          const realProjDir = fs.realpathSync(projectDir);
+          if (realCandDir !== realProjDir && !realCandDir.startsWith(realProjDir + path.sep)) {
+            throw new Error('UNAUTHORIZED_PRIVATE_STORAGE_PATH');
+          }
+          if (fs.lstatSync(candDir).isSymbolicLink()) {
+            throw new Error('UNAUTHORIZED_PRIVATE_STORAGE_SYMLINK');
+          }
+
           const candidateFiles = [
             'panorama_360.jpg',
             `${candidate.candidateId}_preview.jpg`,
@@ -11280,16 +11291,38 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
               fs.copyFileSync(src, dstCanonical);
             }
           }
+
           const previewPath = path.join(candDir, `${candidate.candidateId}_preview.jpg`);
           const targetPath = fs.existsSync(previewPath) ? previewPath : path.join(candDir, 'panorama_360.jpg');
-          if (fs.existsSync(targetPath)) {
-            const fileBuf = fs.readFileSync(targetPath);
-            candidate.assetSha256 = crypto.createHash('sha256').update(fileBuf).digest('hex');
-            candidate.assetByteSize = fileBuf.length;
-            await db.saveSpatialBoothCandidate(projectId, candidate);
+          if (!fs.existsSync(targetPath)) {
+            throw new Error(`MISSING_PRIVATE_ARTIFACT: targetPath ${targetPath} does not exist`);
           }
+
+          const fileBuf = fs.readFileSync(targetPath);
+          if (fileBuf.length === 0) {
+            throw new Error('EMPTY_PRIVATE_ARTIFACT: Artifact has 0 bytes');
+          }
+          if (fileBuf[0] !== 0xFF || fileBuf[1] !== 0xD8 || fileBuf[fileBuf.length - 2] !== 0xFF || fileBuf[fileBuf.length - 1] !== 0xD9) {
+            throw new Error('INVALID_OR_TRUNCATED_JPEG_ARTIFACT');
+          }
+
+          candidate.assetSha256 = crypto.createHash('sha256').update(fileBuf).digest('hex');
+          candidate.assetByteSize = fileBuf.length;
+
+          // Commit candidate only AFTER verified private artifact and digest!
+          await db.saveSpatialBoothCandidate(projectId, candidate);
         } catch (storageErr) {
-          console.warn('[PANORAMA] Private storage copy warning:', storageErr.message);
+          console.error(`[PANORAMA][${jobId}][FAILED] Mandatory artifact copy or digest failure:`, storageErr.message);
+          await db.updatePanoramaJob(jobId, {
+            status: 'FAILED',
+            progress: 100,
+            currentStage: 'ARTIFACT_COPY_FAILED',
+            stageLabel: 'Failed to write mandatory private artifact and digest',
+            errorCode: 'ARTIFACT_COPY_FAILED',
+            error: storageErr.message,
+            userMessage: 'Failed to finalize private panorama artifact. Please retry generation.'
+          });
+          return;
         }
 
         // Stage: VALIDATING (97%)

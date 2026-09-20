@@ -1493,26 +1493,106 @@ class JSONDatabase {
     return this.memoryData;
   }
 
-  write(data) {
+  _readLockFile() {
+    const lockFile = path.join(DATA_DIR, 'db.lock');
     try {
-      if (!data) {
-        data = this.memoryData || this.read();
+      if (fs.existsSync(lockFile)) {
+        const raw = fs.readFileSync(lockFile, 'utf-8');
+        return JSON.parse(raw);
       }
-      if (!data || typeof data !== 'object') {
-        console.error('[DB] Refusing to write invalid/undefined data to database');
-        return false;
-      }
-      this.memoryData = data;
-      const uniqueTemp = path.join(DATA_DIR, `db.temp.${process.pid}.${Date.now()}.${crypto.randomBytes(4).toString('hex')}.json`);
-      fs.writeFileSync(uniqueTemp, JSON.stringify(data, null, 2), 'utf-8');
-      fs.renameSync(uniqueTemp, DB_FILE);
-      try {
-        this.lastMtime = fs.statSync(DB_FILE).mtimeMs;
-      } catch (e) {}
+    } catch (e) {}
+    return null;
+  }
+
+  _isProcessAlive(pid) {
+    if (!pid || typeof pid !== 'number') return false;
+    try {
+      process.kill(pid, 0);
       return true;
+    } catch (e) {
+      return e.code === 'EPERM';
+    }
+  }
+
+  acquireLockSync(timeoutMs = 15000) {
+    const lockFile = path.join(DATA_DIR, 'db.lock');
+    const ownerToken = `${process.pid}:${Date.now()}:${crypto.randomBytes(8).toString('hex')}`;
+    const payload = JSON.stringify({
+      ownerToken,
+      pid: process.pid,
+      createdAt: Date.now()
+    });
+
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      try {
+        fs.writeFileSync(lockFile, payload, { flag: 'wx' });
+        return ownerToken;
+      } catch (e) {
+        if (e.code === 'EEXIST' || e.code === 'EPERM' || e.code === 'EBUSY') {
+          const existing = this._readLockFile();
+          if (existing && existing.pid && !this._isProcessAlive(existing.pid)) {
+            try {
+              const current = this._readLockFile();
+              if (current && current.ownerToken === existing.ownerToken) {
+                fs.unlinkSync(lockFile);
+              }
+            } catch (staleErr) {}
+          } else if (existing && existing.createdAt && (Date.now() - existing.createdAt > 30000)) {
+            try {
+              const current = this._readLockFile();
+              if (current && current.ownerToken === existing.ownerToken) {
+                fs.unlinkSync(lockFile);
+              }
+            } catch (staleErr) {}
+          }
+          const delayUntil = Date.now() + 10 + Math.floor(Math.random() * 15);
+          while (Date.now() < delayUntil) {}
+        } else {
+          throw e;
+        }
+      }
+    }
+    throw new Error(`LOCK_TIMEOUT_ACQUISITION_FAILED: Timed out waiting for database lock after ${timeoutMs}ms`);
+  }
+
+  releaseLock(ownerToken) {
+    if (!ownerToken) return false;
+    const lockFile = path.join(DATA_DIR, 'db.lock');
+    try {
+      const current = this._readLockFile();
+      if (current && current.ownerToken === ownerToken) {
+        fs.unlinkSync(lockFile);
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  _writeUnderLock(data) {
+    if (!data || typeof data !== 'object') {
+      throw new Error('INVALID_DATA: Refusing to write invalid/undefined data to database');
+    }
+    this.memoryData = data;
+    const uniqueTemp = path.join(DATA_DIR, `db.temp.${process.pid}.${Date.now()}.${crypto.randomBytes(6).toString('hex')}.json`);
+    fs.writeFileSync(uniqueTemp, JSON.stringify(data, null, 2), 'utf-8');
+    fs.renameSync(uniqueTemp, DB_FILE);
+    try {
+      this.lastMtime = fs.statSync(DB_FILE).mtimeMs;
+    } catch (e) {}
+    return true;
+  }
+
+  write(data) {
+    let ownerToken;
+    try {
+      ownerToken = this.acquireLockSync(10000);
+      return this._writeUnderLock(data || this.memoryData || this.read());
     } catch (err) {
       console.error('Error writing database:', err);
       return false;
+    } finally {
+      if (ownerToken) this.releaseLock(ownerToken);
     }
   }
 
@@ -1573,52 +1653,32 @@ class JSONDatabase {
   }
 
   mutate(callback) {
-    const lockFile = path.join(DATA_DIR, 'db.lock');
-    let acquired = false;
-    const start = Date.now();
-    const lockTimeoutMs = 10000;
-    while (!acquired && Date.now() - start < lockTimeoutMs) {
-      try {
-        fs.writeFileSync(lockFile, `${process.pid}-${Date.now()}`, { flag: 'wx' });
-        acquired = true;
-      } catch (e) {
-        if (e.code === 'EEXIST') {
-          try {
-            const stat = fs.statSync(lockFile);
-            if (Date.now() - stat.mtimeMs > 10000) {
-              fs.unlinkSync(lockFile);
-              continue;
-            }
-          } catch (staleErr) {}
-          const delayUntil = Date.now() + 15 + Math.floor(Math.random() * 20);
-          while (Date.now() < delayUntil) {}
-        } else {
-          throw e;
-        }
-      }
-    }
-
+    const ownerToken = this.acquireLockSync();
+    let isAsync = false;
     try {
       this.memoryData = null; // force fresh reload from disk under lock
       const data = this.read();
       const result = callback(data);
       if (result && typeof result.then === 'function') {
+        isAsync = true;
         return result.then(resolved => {
-          this.write(data);
-          try { if (acquired) fs.unlinkSync(lockFile); } catch (e) {}
-          acquired = false;
+          const written = this._writeUnderLock(data);
+          if (!written) throw new Error('DB_WRITE_FAILED: Write returned false under lock');
+          this.releaseLock(ownerToken);
           return resolved;
         }).catch(err => {
-          try { if (acquired) fs.unlinkSync(lockFile); } catch (e) {}
-          acquired = false;
+          this.releaseLock(ownerToken);
           throw err;
         });
       }
-      this.write(data);
+      const written = this._writeUnderLock(data);
+      if (!written) throw new Error('DB_WRITE_FAILED: Write returned false under lock');
       return result;
+    } catch (err) {
+      throw err;
     } finally {
-      if (acquired) {
-        try { fs.unlinkSync(lockFile); } catch (e) {}
+      if (!isAsync) {
+        this.releaseLock(ownerToken);
       }
     }
   }
