@@ -9272,7 +9272,9 @@ return event;
     if (!project) return false;
     this.ensureProjectToken(project);
     if (!token) return false;
-    if (token === 'internal_dev_pass' || token.startsWith('dev_bypass_token')) return true;
+    if (process.env.NODE_ENV === 'test' && process.env.STAGE2_EPHEMERAL_TEST_TOKEN && token === process.env.STAGE2_EPHEMERAL_TEST_TOKEN) {
+      return true;
+    }
     if (token === project.editToken) return true;
 
     // Check Customer Session Bearer Token
@@ -13950,13 +13952,12 @@ return event;
           candidatePanoramaVersionId: vpData.panorama?.candidatePanoramaVersionId || null,
           activePanoramaVersionId: vpData.panorama?.activePanoramaVersionId || null,
           projectionType: vpData.panorama?.projectionType || 'SPHERICAL',
-          horizontalCoverageDeg: vpData.panorama?.horizontalCoverageDeg || 360,
-          verticalCoverageDeg: vpData.panorama?.verticalCoverageDeg || 180,
-          full360Qualified: vpData.panorama?.full360Qualified !== undefined ? Boolean(vpData.panorama.full360Qualified) : true,
-          url: vpData.panorama?.url || vpData.panoramaUrl || null,
-          previewUrl: vpData.panorama?.previewUrl || vpData.panoramaUrl || null
+          horizontalCoverageDeg: vpData.panorama?.horizontalCoverageDeg || null,
+          verticalCoverageDeg: vpData.panorama?.verticalCoverageDeg || null,
+          full360Qualified: Boolean(vpData.panorama?.full360Qualified),
+          url: vpData.panorama?.url || null,
+          previewUrl: vpData.panorama?.previewUrl || null
         },
-        panoramaUrl: vpData.panoramaUrl || vpData.panorama?.url || null,
         status: vpData.status || 'DRAFT',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -13991,7 +13992,6 @@ return event;
         ...updates,
         capture: { ...existing.capture, ...(updates.capture || {}) },
         panorama: { ...existing.panorama, ...(updates.panorama || {}) },
-        panoramaUrl: updates.panoramaUrl || updates.panorama?.url || existing.panoramaUrl || existing.panorama?.url || null,
         updatedAt: new Date().toISOString()
       };
       return db.viewpoints[idx];

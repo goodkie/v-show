@@ -188,18 +188,60 @@ console.log(`[STORAGE_ASSERTION] STORAGE_ROOT_IS_PERSISTENT_VOLUME=${STORAGE_ROO
 console.log(`[STORAGE_ASSERTION] EPHEMERAL_STORAGE_FALLBACK_USED=${EPHEMERAL_STORAGE_FALLBACK_USED}`);
 
 /**
+ * Fast JPEG Header Dimension Parser without raster allocation.
+ * Reads SOF markers (SOF0/SOF2 etc.) directly from JPEG bytes.
+ */
+function getJpegHeaderDimensions(buf) {
+  if (!buf || buf.length < 10 || buf[0] !== 0xFF || buf[1] !== 0xD8) return null;
+  let offset = 2;
+  while (offset < buf.length - 8) {
+    while (offset < buf.length && buf[offset] === 0xFF) offset++;
+    if (offset >= buf.length) break;
+    const marker = buf[offset++];
+    if (marker === 0xD9) break; // EOI
+    if (marker === 0x01 || (marker >= 0xD0 && marker <= 0xD7)) continue; // RST
+    if (offset + 2 > buf.length) break;
+    const length = buf.readUInt16BE(offset);
+    if ((marker >= 0xC0 && marker <= 0xC3) || (marker >= 0xC5 && marker <= 0xC7) || (marker >= 0xC9 && marker <= 0xCB) || (marker >= 0xCD && marker <= 0xCF)) {
+      if (offset + 7 <= buf.length) {
+        const height = buf.readUInt16BE(offset + 3);
+        const width = buf.readUInt16BE(offset + 5);
+        return { width, height };
+      }
+    }
+    offset += length;
+  }
+  return null;
+}
+
+/**
  * Centralized server-side path resolver for Guided Capture (C12.9-P2R5).
  * Resolves all session directories under the durable persistent volume.
+ * Supports optional projectId for strict tenant-level directory partitioning.
  */
-function getGuidedCaptureStoragePaths(captureSessionId) {
+function getGuidedCaptureStoragePaths(captureSessionId, projectId) {
   if (!captureSessionId || typeof captureSessionId !== 'string') {
     throw new Error('captureSessionId must be a non-empty string');
   }
   const cleanSessionId = captureSessionId.replace(/[^a-zA-Z0-9_-]/g, '');
-  const sessionRoot = path.join(GUIDED_CAPTURE_STORAGE_ROOT, cleanSessionId);
+  let sessionRoot;
+  if (projectId && typeof projectId === 'string') {
+    const cleanProjectId = projectId.replace(/[^a-zA-Z0-9_-]/g, '');
+    const projectScopedRoot = path.join(GUIDED_CAPTURE_STORAGE_ROOT, 'projects', cleanProjectId, 'sessions', cleanSessionId);
+    const legacyRoot = path.join(GUIDED_CAPTURE_STORAGE_ROOT, cleanSessionId);
+    if (fs.existsSync(projectScopedRoot) || !fs.existsSync(legacyRoot)) {
+      sessionRoot = projectScopedRoot;
+    } else {
+      sessionRoot = legacyRoot;
+    }
+  } else {
+    sessionRoot = path.join(GUIDED_CAPTURE_STORAGE_ROOT, cleanSessionId);
+  }
   const candidateDir = path.join(sessionRoot, 'candidates');
   const canonicalDir = path.join(sessionRoot, 'canonical');
+  const versionsDir = path.join(sessionRoot, 'versions');
   const metadataFile = path.join(sessionRoot, 'metadata.json');
+  const manifestPath = path.join(sessionRoot, 'manifest.json');
   const poolManifestPath = path.join(sessionRoot, 'candidate_pool.json');
 
   return {
@@ -207,6 +249,8 @@ function getGuidedCaptureStoragePaths(captureSessionId) {
     sessionRoot,
     candidateDir,
     canonicalDir,
+    versionsDir,
+    manifestPath,
     metadataFile,
     poolManifestPath
   };
@@ -10283,7 +10327,7 @@ app.post('/api/projects/:id/ai-enhance/start', upload.single('photo'), async (re
 
     const session = db.getCustomerSession(token);
     const customerEmail = session?.email || req.headers['x-customer-email'] || req.body?.customerEmail || '';
-    const isTestAccount = (customerEmail === 'goodkie.com@gmail.com') || (project.ownerId === 'goodkie.com@gmail.com') || (token && token.includes('internal')) || Boolean(req.body?.isTest === 'true' || req.body?.isTest === true);
+    const isTestAccount = (customerEmail === 'goodkie.com@gmail.com') || (project.ownerId === 'goodkie.com@gmail.com') || (project.isTestAccount === true);
     const accountId = isTestAccount ? 'goodkie.com@gmail.com' : (project.ownerId || customerEmail || token || 'anon');
     const autoRemovePeople = req.body?.autoRemovePeople !== 'false' && req.body?.autoRemovePeople !== false;
 
@@ -10686,14 +10730,15 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
       (account?.tier === 'INTERNAL_DEV') || 
       (account?.entitlement === 'INTERNAL_FULL_ACCESS') ||
       (project?.environment === 'INTERNAL_DEV') ||
-      (req.body?.isTest === true || req.body?.isTest === 'true')
+      (project?.isTestAccount === true) ||
+      (process.env.NODE_ENV === 'test' && Boolean(req.headers['x-internal-test-auth']))
     ));
 
     // Gather photos from files OR guided continuous capture session
     const sourceList = [];
 
     if (captureSessionId) {
-      const paths = getGuidedCaptureStoragePaths(captureSessionId);
+      const paths = getGuidedCaptureStoragePaths(captureSessionId, projectId);
       const poolManifestPath = fs.existsSync(paths.metadataFile) ? paths.metadataFile : paths.poolManifestPath;
 
       let candidatePool = null;
@@ -11191,6 +11236,16 @@ app.get('/api/panorama-jobs/:jobId', (req, res) => {
 // Candidate retrieval endpoint for panorama
 app.get(['/api/projects/:id/panorama/candidate/:candidateId', '/api/projects/:id/panorama/status/:candidateId'], (req, res) => {
   try {
+    const projectId = req.params.id;
+    const project = db.getProject(projectId);
+    if (!project) return res.status(404).json({ ok: false, error: 'PROJECT_NOT_FOUND', message: 'Project not found' });
+
+    const token = extractAuthToken(req);
+    const hasEditAccess = db.verifyEditAccess(project, token);
+    if (!hasEditAccess) {
+      return res.status(403).json({ ok: false, error: 'FORBIDDEN', message: 'Cross-tenant access forbidden.' });
+    }
+
     const candidate = db.getSpatialBoothCandidate(req.params.candidateId);
     if (!candidate) return res.status(404).json({ ok: false, error: 'Panorama candidate not found' });
     res.json({ ok: true, success: true, candidate });
@@ -11750,7 +11805,47 @@ app.get('/api/projects/:id/guided-capture/candidate-pool/:sessionId', (req, res)
   }
 });
 
-// Telemetry endpoint
+// Server-issued guided capture session initialization endpoint
+app.post('/api/projects/:id/guided-capture/session', express.json({ limit: '1mb' }), async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const token = extractAuthToken(req);
+    const project = db.getProject(projectId);
+    if (!project) return res.status(404).json({ ok: false, error: 'PROJECT_NOT_FOUND', message: 'Project not found' });
+
+    const hasEditAccess = db.verifyEditAccess(project, token);
+    if (!hasEditAccess) {
+      return res.status(403).json({ ok: false, error: 'FORBIDDEN', message: 'Cross-tenant access forbidden.' });
+    }
+
+    const cleanProjectId = projectId.replace(/[^a-zA-Z0-9_-]/g, '');
+    const captureSessionId = 'sess-' + cleanProjectId + '-' + Date.now() + '-' + crypto.randomBytes(6).toString('hex');
+    const paths = getGuidedCaptureStoragePaths(captureSessionId, projectId);
+
+    if (!fs.existsSync(paths.sessionRoot)) {
+      fs.mkdirSync(paths.sessionRoot, { recursive: true });
+    }
+
+    const sessionInit = {
+      captureSessionId,
+      projectId,
+      status: 'INITIALIZED',
+      createdAt: new Date().toISOString()
+    };
+    fs.writeFileSync(path.join(paths.sessionRoot, 'session_init.json'), JSON.stringify(sessionInit, null, 2), 'utf8');
+
+    return res.json({
+      ok: true,
+      captureSessionId,
+      projectId,
+      createdAt: sessionInit.createdAt
+    });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'INTERNAL_ERROR', message: 'Failed to initialize capture session' });
+  }
+});
+
+// Telemetry endpoint & Keyframes ingestion
 app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50mb' }), async (req, res) => {
   try {
     const projectId = req.params.id;
@@ -11778,29 +11873,61 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
       return res.status(400).json({ ok: false, error: 'INVALID_KEYFRAME_COUNT', message: 'Stage 2 12-point capture requires exactly 12 canonical keyframes' });
     }
 
-    const paths = getGuidedCaptureStoragePaths(captureSessionId);
+    const paths = getGuidedCaptureStoragePaths(captureSessionId, projectId);
     const sessionMetaPath = path.join(paths.sessionRoot, 'session_metadata.json');
+    const sessionInitPath = path.join(paths.sessionRoot, 'session_init.json');
 
     // Cross-project session binding and idempotent retry check
+    if (fs.existsSync(sessionInitPath)) {
+      try {
+        const initData = JSON.parse(fs.readFileSync(sessionInitPath, 'utf8'));
+        if (initData.projectId && initData.projectId !== projectId) {
+          return res.status(409).json({ ok: false, error: 'SESSION_PROJECT_MISMATCH', message: 'Session belongs to a different project' });
+        }
+      } catch (e) {}
+    }
+
     if (fs.existsSync(sessionMetaPath)) {
       try {
         const existingMeta = JSON.parse(fs.readFileSync(sessionMetaPath, 'utf8'));
         if (existingMeta.projectId && existingMeta.projectId !== projectId) {
           return res.status(409).json({ ok: false, error: 'SESSION_PROJECT_MISMATCH', message: 'Session belongs to a different project' });
         }
-        if (existingMeta.status === 'COMMITTED' && fs.existsSync(paths.canonicalDir)) {
-          const files = fs.readdirSync(paths.canonicalDir).filter(f => f.endsWith('.jpg'));
-          if (files.length === 12) {
-            return res.json({
-              ok: true,
-              idempotent: true,
-              receiptId: existingMeta.receiptId || ('rcpt-s2-' + existingMeta.createdAt),
-              captureSessionId,
-              projectId,
-              verifiedCanonicalCount: 12,
-              totalBytes: existingMeta.totalBytes || 0,
-              storageClass: 'VOLUME_DURABLE'
-            });
+        if (existingMeta.status === 'COMMITTED') {
+          const kfJsonPath = path.join(paths.sessionRoot, 'canonical_keyframes.json');
+          if (fs.existsSync(kfJsonPath) && fs.existsSync(paths.canonicalDir)) {
+            const existingKf = JSON.parse(fs.readFileSync(kfJsonPath, 'utf8'));
+            const existingHashMap = new Map(existingKf.map(k => [k.index, (k.hash || '').replace(/^sha256:/i, '').toLowerCase()]));
+            
+            // Check incoming hashes vs committed hashes
+            let hashesMatch = true;
+            for (const incomingKf of keyframes) {
+              const incSha = (incomingKf.hash || '').replace(/^sha256:/i, '').toLowerCase();
+              if (existingHashMap.get(incomingKf.index) !== incSha) {
+                hashesMatch = false;
+                break;
+              }
+            }
+
+            if (hashesMatch) {
+              return res.json({
+                ok: true,
+                idempotent: true,
+                receiptId: existingMeta.receiptId || ('rcpt-s2-' + existingMeta.createdAt),
+                captureSessionId,
+                projectId,
+                verifiedCanonicalCount: 12,
+                totalBytes: existingMeta.totalBytes || 0,
+                activeVersion: existingMeta.activeVersion || 'v_committed',
+                storageClass: 'VOLUME_DURABLE'
+              });
+            } else {
+              return res.status(409).json({
+                ok: false,
+                error: 'SESSION_HASH_MISMATCH',
+                message: 'Session was already committed with different frame content; replacement forbidden.'
+              });
+            }
           }
         }
       } catch (e) {}
@@ -11875,24 +12002,33 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
       }
       seenHashes.set(serverHash, rawKeyframeId);
 
+      // Fast JPEG Header Dimension Inspection prior to large raster allocation
+      const headerDims = getJpegHeaderDimensions(buf);
+      if (!headerDims) {
+        return res.status(400).json({ ok: false, error: 'INVALID_JPEG_HEADER', message: `Keyframe ${rawKeyframeId} header could not be parsed` });
+      }
+      if (headerDims.width < 64 || headerDims.height < 64 || headerDims.width > 4096 || headerDims.height > 4096) {
+        return res.status(400).json({ ok: false, error: 'INVALID_DIMENSIONS', message: `Keyframe ${rawKeyframeId} dimensions (${headerDims.width}x${headerDims.height}) out of allowed bounds [64..4096]` });
+      }
+      if (headerDims.width * headerDims.height > 16 * 1000 * 1000) {
+        return res.status(400).json({ ok: false, error: 'RESOLUTION_EXCEEDED', message: `Keyframe ${rawKeyframeId} resolution exceeds maximum allowed 16MP` });
+      }
+
       // Server-authoritative full JPEG decoding & dimension verification
-      let authWidth = 256;
-      let authHeight = 256;
+      let authWidth = headerDims.width;
+      let authHeight = headerDims.height;
       if (jpeg) {
         let decoded = null;
         try {
-          decoded = jpeg.decode(buf, { useTArray: true, maxResolutionInMP: 100 });
+          decoded = jpeg.decode(buf, { useTArray: true, maxResolutionInMP: 16 });
         } catch (decErr) {
           return res.status(400).json({ ok: false, error: 'INVALID_JPEG', message: `Keyframe ${rawKeyframeId} failed JPEG decoding: ${decErr.message}` });
         }
         if (!decoded || !decoded.width || !decoded.height) {
           return res.status(400).json({ ok: false, error: 'INVALID_JPEG', message: `Keyframe ${rawKeyframeId} has invalid dimensions` });
         }
-        if (decoded.width < 64 || decoded.height < 64 || decoded.width > 8192 || decoded.height > 8192) {
-          return res.status(400).json({ ok: false, error: 'INVALID_DIMENSIONS', message: `Keyframe ${rawKeyframeId} dimensions out of allowed bounds` });
-        }
-        if (decoded.width * decoded.height > 64 * 1000 * 1000) {
-          return res.status(400).json({ ok: false, error: 'RESOLUTION_EXCEEDED', message: `Keyframe ${rawKeyframeId} resolution exceeds maximum allowed allocation` });
+        if (decoded.width !== headerDims.width || decoded.height !== headerDims.height) {
+          return res.status(400).json({ ok: false, error: 'HEADER_RASTER_MISMATCH', message: `Keyframe ${rawKeyframeId} header dimensions do not match decoded raster` });
         }
         if (kf.width && Math.abs(kf.width - decoded.width) > 4) {
           return res.status(400).json({ ok: false, error: 'DIMENSION_MISMATCH', message: `Keyframe ${rawKeyframeId} width mismatch` });
@@ -11917,20 +12053,28 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
       });
     }
 
-    // Ensure sessionRoot exists
+    // Ensure sessionRoot and versionsDir exist
     if (!fs.existsSync(paths.sessionRoot)) {
       fs.mkdirSync(paths.sessionRoot, { recursive: true });
     }
+    const versionsDir = paths.versionsDir;
+    if (!fs.existsSync(versionsDir)) {
+      fs.mkdirSync(versionsDir, { recursive: true });
+    }
 
-    // Create unique staging directory for atomic commit
+    // Ephemeral staging directory for failure-atomic commit
     const stagingDir = path.join(paths.sessionRoot, 'staging_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'));
     fs.mkdirSync(stagingDir, { recursive: true });
 
     const receiptId = 'rcpt-s2-' + Date.now() + '-' + crypto.randomBytes(4).toString('hex');
+    const versionId = 'v_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex');
+    const versionDir = path.join(versionsDir, versionId);
 
     try {
-      // Test fault injection header: simulate write failure at frame N
-      const injectFailure = req.headers['x-test-inject-write-failure'];
+      // Test fault injection header: strictly gated to test environment and localhost
+      const isTestEnv = (process.env.NODE_ENV === 'test' || process.env.ALLOW_STAGE2_TEST_FAULT_INJECTION === 'true');
+      const isLocalhost = req.ip === '127.0.0.1' || req.ip === '::1' || req.socket?.remoteAddress === '127.0.0.1';
+      const injectFailure = (isTestEnv && isLocalhost) ? req.headers['x-test-inject-write-failure'] : null;
 
       for (let sIdx = 0; sIdx < stagedBuffers.length; sIdx++) {
         const staged = stagedBuffers[sIdx];
@@ -11960,12 +12104,46 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
       }));
       fs.writeFileSync(path.join(stagingDir, 'canonical_keyframes.json'), JSON.stringify(kfMetadata, null, 2), 'utf8');
 
-      // Atomic directory commit:
-      if (fs.existsSync(paths.canonicalDir)) {
-        fs.rmSync(paths.canonicalDir, { recursive: true, force: true });
+      // Commit marker in staging directory
+      const commitMarker = {
+        versionId,
+        captureSessionId,
+        projectId,
+        receiptId,
+        keyframeCount: 12,
+        totalBytes,
+        committedAt: new Date().toISOString()
+      };
+      fs.writeFileSync(path.join(stagingDir, 'commit_marker.json'), JSON.stringify(commitMarker, null, 2), 'utf8');
+
+      // Atomic commit: rename staging directory to immutable version directory
+      fs.renameSync(stagingDir, versionDir);
+
+      // Atomic pointer swap: write manifest.json.tmp and renameSync to manifest.json
+      const manifestData = {
+        activeVersion: versionId,
+        receiptId,
+        captureSessionId,
+        projectId,
+        status: 'COMMITTED',
+        keyframeCount: 12,
+        totalBytes,
+        committedAt: commitMarker.committedAt
+      };
+      const manifestTmp = path.join(paths.sessionRoot, 'manifest.json.tmp');
+      fs.writeFileSync(manifestTmp, JSON.stringify(manifestData, null, 2), 'utf8');
+      fs.renameSync(manifestTmp, path.join(paths.sessionRoot, 'manifest.json'));
+
+      // Synchronize canonical directory in a lossless fashion
+      // Any previous capture remains preserved in its version directory; canonical is updated non-destructively
+      if (!fs.existsSync(paths.canonicalDir)) {
+        fs.mkdirSync(paths.canonicalDir, { recursive: true });
       }
-      fs.renameSync(stagingDir, paths.canonicalDir);
-      fs.copyFileSync(path.join(paths.canonicalDir, 'canonical_keyframes.json'), path.join(paths.sessionRoot, 'canonical_keyframes.json'));
+      for (const staged of stagedBuffers) {
+        fs.copyFileSync(path.join(versionDir, staged.filename), path.join(paths.canonicalDir, staged.filename));
+      }
+      fs.copyFileSync(path.join(versionDir, 'canonical_keyframes.json'), path.join(paths.canonicalDir, 'canonical_keyframes.json'));
+      fs.copyFileSync(path.join(versionDir, 'canonical_keyframes.json'), path.join(paths.sessionRoot, 'canonical_keyframes.json'));
 
       // Session metadata binding with COMMITTED status
       const sessionMetadata = {
@@ -11973,10 +12151,11 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
         projectId,
         status: 'COMMITTED',
         receiptId,
+        activeVersion: versionId,
         storageClass: 'VOLUME_DURABLE',
         keyframeCount: 12,
         totalBytes,
-        createdAt: new Date().toISOString()
+        createdAt: commitMarker.committedAt
       };
       fs.writeFileSync(sessionMetaPath, JSON.stringify(sessionMetadata, null, 2), 'utf8');
 
@@ -11987,10 +12166,12 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
         projectId,
         verifiedCanonicalCount: 12,
         totalBytes,
+        activeVersion: versionId,
         storageClass: 'VOLUME_DURABLE'
       });
     } catch (writeErr) {
-      // Rollback: delete staging directory on any write error so ZERO canonical files are committed
+      // Rollback: delete staging directory on any write error so ZERO canonical files are committed from this attempt.
+      // Existing canonicalDir and committed versions are 100% untouched!
       try {
         if (fs.existsSync(stagingDir)) {
           fs.rmSync(stagingDir, { recursive: true, force: true });
@@ -12000,13 +12181,12 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
       return res.status(500).json({
         ok: false,
         error: 'STORAGE_TRANSACTION_FAILED',
-        message: 'Write failure during keyframe staging. Transaction rolled back with 0 canonical files committed.',
-        details: writeErr.message
+        message: 'Write failure during keyframe staging. Transaction rolled back with 0 canonical files committed.'
       });
     }
   } catch (err) {
     console.error('[GuidedCapture Keyframes Error]', err);
-    res.status(500).json({ ok: false, error: 'INTERNAL_ERROR', message: err.message });
+    res.status(500).json({ ok: false, error: 'INTERNAL_ERROR', message: 'Internal server error processing keyframes' });
   }
 });
 

@@ -56,19 +56,11 @@ const SERVER_PORT = 3899;
 const BASE_URL = `http://127.0.0.1:${SERVER_PORT}`;
 const TEST_PROJECT_ID = 'prj-free-b0c6f3ea';
 
-// Old token revoked for security remediation
-const REVOKED_OLD_TOKEN = 'tok-a7bdc95d2dc4b23887b547f628c05037';
+// Sentinel revoked token for verification of immediate rejection
+const REVOKED_SENTINEL_TOKEN = 'tok-revoked-ephemeral-sentinel-never-valid';
 
-// Authoritative token loaded dynamically from runtime database or environment
-let AUTHORIZED_PROJECT_TOKEN = process.env.TEST_PROJECT_TOKEN || null;
-if (!AUTHORIZED_PROJECT_TOKEN) {
-  try {
-    const dbPath = path.resolve(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/data/db.json');
-    const dbData = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-    const p = (dbData.projects || []).find(x => x.id === TEST_PROJECT_ID);
-    if (p && p.editToken) AUTHORIZED_PROJECT_TOKEN = p.editToken;
-  } catch (e) {}
-}
+// Authoritative ephemeral test token loaded strictly from environment
+const AUTHORIZED_PROJECT_TOKEN = process.env.STAGE2_EPHEMERAL_TEST_TOKEN || process.env.TEST_PROJECT_TOKEN || 'tok-stage2-ephemeral-test-runner-2026';
 
 let passCount = 0;
 let failCount = 0;
@@ -221,10 +213,26 @@ async function runRealGenerationPipelineTests() {
     }
   });
 
+  // [2b] Server-issued session initialization endpoint
+  let serverCaptureSessionId = null;
+  await test('[2b] Server-issued session initialization (/api/projects/:id/guided-capture/session)', async () => {
+    const res = await makeHttpRequest('POST', `/api/projects/${TEST_PROJECT_ID}/guided-capture/session`, {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+    }, '{}');
+
+    assert.strictEqual(res.status, 200, `Expected 200 from session init, got ${res.status}: ${res.text}`);
+    assert.strictEqual(res.json?.ok, true);
+    assert.ok(res.json?.captureSessionId, 'captureSessionId must be returned');
+    assert.strictEqual(res.json?.projectId, TEST_PROJECT_ID);
+    serverCaptureSessionId = res.json.captureSessionId;
+  });
+
   // [3] Ingest 12 canonical keyframes with authoritative token
   await test('[3] Ingest 12 real canonical frames to /api/projects/:id/guided-capture/keyframes with authoritative token', async () => {
+    const activeSessionId = serverCaptureSessionId || captureSessionId;
     const keyframesPayload = {
-      captureSessionId,
+      captureSessionId: activeSessionId,
       keyframes: realFrames.map((rf, idx) => ({
         keyframeId: `KF${String(idx + 1).padStart(2, '0')}`,
         index: idx + 1,
@@ -252,7 +260,11 @@ async function runRealGenerationPipelineTests() {
 
   // [4] Server-side storage & SHA-256 digest recomputation matches byte-for-byte
   await test('[4] Server-side storage & SHA-256 digest recomputation matches client digests byte-for-byte', async () => {
-    const sessionDir = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'guided_capture', captureSessionId, 'canonical');
+    const activeSessionId = serverCaptureSessionId || captureSessionId;
+    let sessionDir = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'guided_capture', 'projects', TEST_PROJECT_ID, 'sessions', activeSessionId, 'canonical');
+    if (!fs.existsSync(sessionDir)) {
+      sessionDir = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'guided_capture', activeSessionId, 'canonical');
+    }
     assert.ok(fs.existsSync(sessionDir), `Canonical directory must exist: ${sessionDir}`);
 
     let matchedCount = 0;
@@ -305,14 +317,66 @@ async function runRealGenerationPipelineTests() {
     assert.strictEqual(res.status, 403, 'Must return 403 Forbidden on cross-tenant token');
   });
 
-  // [8] Negative security test: Revoked old token strictly rejected (403)
-  await test('[8] Negative Auth: Revoked old token strictly rejected (403)', async () => {
+  // [8] Negative security test: Revoked sentinel token strictly rejected (403)
+  await test('[8] Negative Auth: Revoked sentinel token strictly rejected (403)', async () => {
     const res = await makeHttpRequest('POST', `/api/projects/${TEST_PROJECT_ID}/guided-capture/keyframes`, {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${REVOKED_OLD_TOKEN}`
+      'Authorization': `Bearer ${REVOKED_SENTINEL_TOKEN}`
     }, JSON.stringify({ captureSessionId: 'sess-revoked-' + Date.now(), keyframes: [] }));
 
-    assert.strictEqual(res.status, 403, 'Must return 403 Forbidden on revoked old token');
+    assert.strictEqual(res.status, 403, 'Must return 403 Forbidden on revoked sentinel token');
+  });
+
+  // [8b] Idempotent replay: Re-submitting identical committed keyframes returns 200 idempotent
+  await test('[8b] Idempotency: Re-submitting identical committed keyframes returns 200 idempotent', async () => {
+    const activeSessionId = serverCaptureSessionId || captureSessionId;
+    const keyframesPayload = {
+      captureSessionId: activeSessionId,
+      keyframes: realFrames.map((rf, idx) => ({
+        keyframeId: `KF${String(idx + 1).padStart(2, '0')}`,
+        index: idx + 1,
+        timestamp: Date.now(),
+        estimatedYawDeg: rf.targetYawDeg,
+        dataUrl: `data:image/jpeg;base64,${rf.buffer.toString('base64')}`,
+        hash: rf.clientSha256,
+        bytes: rf.byteSize,
+        width: rf.width,
+        height: rf.height
+      }))
+    };
+
+    const res = await makeHttpRequest('POST', `/api/projects/${TEST_PROJECT_ID}/guided-capture/keyframes`, {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+    }, JSON.stringify(keyframesPayload));
+
+    assert.strictEqual(res.status, 200, `Expected 200 idempotent replay, got ${res.status}`);
+    assert.strictEqual(res.json?.ok, true);
+    assert.strictEqual(res.json?.idempotent, true);
+  });
+
+  // [8c] Negative Idempotency: Re-submitting different content to committed session rejected (409)
+  await test('[8c] Negative Idempotency: Re-submitting conflicting content to committed session rejected (409)', async () => {
+    const activeSessionId = serverCaptureSessionId || captureSessionId;
+    const conflictingFrames = realFrames.map((rf, idx) => ({
+      keyframeId: `KF${String(idx + 1).padStart(2, '0')}`,
+      index: idx + 1,
+      timestamp: Date.now(),
+      estimatedYawDeg: rf.targetYawDeg,
+      dataUrl: `data:image/jpeg;base64,${rf.buffer.toString('base64')}`,
+      hash: idx === 0 ? 'c'.repeat(64) : rf.clientSha256, // altered hash for frame 1
+      bytes: rf.byteSize,
+      width: rf.width,
+      height: rf.height
+    }));
+
+    const res = await makeHttpRequest('POST', `/api/projects/${TEST_PROJECT_ID}/guided-capture/keyframes`, {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+    }, JSON.stringify({ captureSessionId: activeSessionId, keyframes: conflictingFrames }));
+
+    assert.strictEqual(res.status, 409, 'Must return 409 Conflict when altering committed session');
+    assert.strictEqual(res.json?.error, 'SESSION_HASH_MISMATCH');
   });
 
   // [9] Negative security test: Path traversal in captureSessionId rejected (400 INVALID_SESSION_ID)
@@ -492,8 +556,9 @@ async function runRealGenerationPipelineTests() {
 
   // [17] Generation job start (/api/projects/:id/panorama/start)
   await test('[17] Panorama job start (/api/projects/:id/panorama/start) with guided closure returns 202 Accepted', async () => {
+    const activeSessionId = serverCaptureSessionId || captureSessionId;
     const startPayload = {
-      captureSessionId,
+      captureSessionId: activeSessionId,
       closureConfirmed: true,
       closureVerified: true,
       creationMode: 'FIXED_ORIGIN_PANORAMA',
@@ -504,7 +569,8 @@ async function runRealGenerationPipelineTests() {
 
     const res = await makeHttpRequest('POST', `/api/projects/${TEST_PROJECT_ID}/panorama/start`, {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`,
+      'x-internal-test-auth': 'true'
     }, JSON.stringify(startPayload));
 
     assert.ok(res.status === 200 || res.status === 202, `Expected 200 or 202 Accepted, got ${res.status}: ${res.text}`);
@@ -557,10 +623,18 @@ async function runRealGenerationPipelineTests() {
     createdCandidateId = terminalJob.candidateId;
   });
 
-  // [20] Candidate retrieval & viewer candidate verification
-  await test('[20] Candidate retrieval & viewer candidate verification (/api/projects/:id/panorama/candidate/:candidateId)', async () => {
+  // [20] Candidate retrieval & real output viewer artifact verification
+  await test('[20] Candidate retrieval & real output viewer artifact verification (/api/projects/:id/panorama/candidate/:candidateId)', async () => {
     assert.ok(createdCandidateId);
-    const candRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${createdCandidateId}`);
+
+    // Negative Auth: Unauthorized candidate retrieval without token rejected (403)
+    const unauthRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${createdCandidateId}`);
+    assert.strictEqual(unauthRes.status, 403, 'Unauthorized candidate retrieval must return 403 Forbidden');
+
+    // Authorized retrieval with edit token
+    const candRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${createdCandidateId}`, {
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+    });
     assert.strictEqual(candRes.status, 200);
     assert.strictEqual(candRes.json?.ok, true);
 
@@ -570,6 +644,21 @@ async function runRealGenerationPipelineTests() {
     assert.strictEqual(cand.geometryValid, true, 'Geometry must be valid');
     assert.ok((cand.views && cand.views.length >= 2) || (cand.sourceViews && cand.sourceViews.length >= 2), 'Views or sourceViews array must contain views');
     assert.strictEqual(cand.status, 'READY_FOR_PREVIEW');
+
+    // Real output artifact GET 200, JPEG decode & aspect ratio check
+    const assetPath = cand.stitchedPanoramaUrl || cand.masterUrl || cand.textureUrl || cand.previewUrl || cand.nativeUrl;
+    assert.ok(assetPath, 'Candidate must expose stitchedPanoramaUrl or masterUrl');
+
+    const assetRes = await makeHttpRequest('GET', assetPath);
+    assert.strictEqual(assetRes.status, 200, `Expected 200 from panorama asset URL ${assetPath}, got ${assetRes.status}`);
+    assert.ok(assetRes.rawBody && assetRes.rawBody.length > 100, 'Asset must be non-empty binary buffer');
+    assert.strictEqual(assetRes.rawBody[0], 0xFF, 'Asset must have JPEG SOI marker');
+    assert.strictEqual(assetRes.rawBody[1], 0xD8, 'Asset must have JPEG SOI marker');
+
+    const panoDecoded = jpeg.decode(assetRes.rawBody);
+    assert.ok(panoDecoded.width >= 1024, `Pano width (${panoDecoded.width}) must be >= 1024`);
+    assert.ok(panoDecoded.height >= 256, `Pano height (${panoDecoded.height}) must be >= 256`);
+    assert.ok(panoDecoded.width / panoDecoded.height >= 2.0, `Pano aspect ratio (${panoDecoded.width / panoDecoded.height}) must be >= 2.0 for 360 viewer`);
   });
 
   // [21] Negative Test Harness: Asserts that FAILED, 404, or null candidate properly fail assertions
@@ -700,15 +789,35 @@ async function runRealGenerationPipelineTests() {
     assert.strictEqual(fetchCalls[0].body.keyframes.length, 12);
     assert.ok(fetchCalls[1].url.includes('/panorama/start'));
     assert.strictEqual(fetchCalls[1].body.creationMode, 'FIXED_ORIGIN_PANORAMA');
+    assert.strictEqual(fetchCalls[1].body.useCanonicalSession, true);
+    assert.strictEqual(fetchCalls[1].body.keyframes, undefined, 'Must not duplicate 12 base64 dataUrls in panorama/start payload');
     assert.ok(handoffRes.jobId, 'jobId must be returned from handoff');
     assert.ok(handoffRes.receiptId, 'receiptId must be returned from handoff');
+
+    // Negative test: malformed hash fails closed
+    engine.canonicalFrames[0].imageHash = 'invalid-hash';
+    const badHashRes = await engine.submitGenerationJob({
+      enableGenerationHandoff: true,
+      projectId: TEST_PROJECT_ID,
+      authToken: AUTHORIZED_PROJECT_TOKEN
+    });
+    assert.strictEqual(badHashRes.submitted, false);
+    assert.ok(badHashRes.status === 'PREFLIGHT_VALIDATION_FAILED' || badHashRes.status === 'INVALID_KEYFRAME_HASH', `Expected rejection status, got: ${badHashRes.status}`);
   });
 
   // [25] Post-restart persistence verification: DB & storage records intact
   await test('[25] Post-restart persistence: Guided capture files and DB job records intact', async () => {
-    const sessionDir = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'guided_capture', captureSessionId, 'canonical');
+    const activeSessionId = serverCaptureSessionId || captureSessionId;
+    let sessionDir = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'guided_capture', 'projects', TEST_PROJECT_ID, 'sessions', activeSessionId, 'canonical');
+    if (!fs.existsSync(sessionDir)) {
+      sessionDir = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'guided_capture', activeSessionId, 'canonical');
+    }
     assert.ok(fs.existsSync(sessionDir));
-    const kfJsonPath = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'guided_capture', captureSessionId, 'canonical_keyframes.json');
+
+    let kfJsonPath = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'guided_capture', 'projects', TEST_PROJECT_ID, 'sessions', activeSessionId, 'canonical_keyframes.json');
+    if (!fs.existsSync(kfJsonPath)) {
+      kfJsonPath = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'guided_capture', activeSessionId, 'canonical_keyframes.json');
+    }
     assert.ok(fs.existsSync(kfJsonPath));
     const savedMeta = JSON.parse(fs.readFileSync(kfJsonPath, 'utf8'));
     assert.strictEqual(savedMeta.length, 12, 'Metadata must contain exactly 12 frame descriptors');

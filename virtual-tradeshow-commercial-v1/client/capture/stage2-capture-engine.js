@@ -1278,28 +1278,50 @@ class Stage2CaptureEngine {
   }
 
   async _asyncSubmitGenerationJob(options = {}) {
-
     // Authorized internal QA handoff
-    const projectId = options.projectId || this.options?.projectId || 'prj-free-b0c6f3ea';
+    const projectId = options.projectId || this.options?.projectId || this.telemetry?.projectId;
+    if (!projectId) {
+      return { submitted: false, status: 'MISSING_PROJECT_ID', error: 'projectId is required for generation handoff' };
+    }
     const authToken = options.authToken || this.options?.authToken;
-    const captureSessionId = this.telemetry?.sessionId || ('sess-s2-' + Date.now());
+    const captureSessionId = this.telemetry?.sessionId || ('sess-' + projectId + '-' + Date.now());
+
+    // Run preflight validation
+    if (typeof this.validateReal12Frames === 'function') {
+      const preflight = this.validateReal12Frames({ requireRealCapture: options.requireRealCapture });
+      if (!preflight.valid) {
+        return { submitted: false, status: 'PREFLIGHT_VALIDATION_FAILED', error: preflight.reason };
+      }
+    }
 
     const sourceFrames = (this.canonicalFrames && this.canonicalFrames.length) ? this.canonicalFrames : (this.normalizedManifest?.frames || this.manifest?.keyframes || []);
-    const keyframes = sourceFrames.map((kf, i) => {
+    if (!sourceFrames || sourceFrames.length !== 12) {
+      return { submitted: false, status: 'INCOMPLETE_FRAME_SET', error: `Expected exactly 12 canonical frames, got ${sourceFrames ? sourceFrames.length : 0}` };
+    }
+
+    const keyframes = [];
+    for (let i = 0; i < sourceFrames.length; i++) {
+      const kf = sourceFrames[i];
       const rawHash = (kf.imageHash || kf.hash || '').replace(/^sha256:/i, '');
-      const validHash = /^[a-fA-F0-9]{64}$/.test(rawHash) ? rawHash : '0'.repeat(64);
-      return {
+      if (!/^[a-fA-F0-9]{64}$/.test(rawHash)) {
+        return {
+          submitted: false,
+          status: 'INVALID_KEYFRAME_HASH',
+          error: `Keyframe ${i + 1} has invalid or missing cryptographic SHA-256 hash.`
+        };
+      }
+      keyframes.push({
         keyframeId: `KF${String(i + 1).padStart(2, '0')}`,
         index: i + 1,
         timestamp: kf.timestamp || Date.now(),
         estimatedYawDeg: kf.estimatedYawDeg !== undefined ? kf.estimatedYawDeg : (kf.targetYawDeg !== undefined ? kf.targetYawDeg : (i * 30)),
-        hash: validHash,
+        hash: rawHash,
         dataUrl: kf.dataUrl || null,
         width: kf.width || 256,
         height: kf.height || 256,
         mimeType: 'image/jpeg'
-      };
-    });
+      });
+    }
 
     this.generationNetworkCallCount = (this.generationNetworkCallCount || 0) + 1;
 
@@ -1308,7 +1330,7 @@ class Stage2CaptureEngine {
       if (!fetchFn) {
         return { submitted: false, status: 'FETCH_UNAVAILABLE' };
       }
-      // Step 1: POST keyframes
+      // Step 1: POST keyframes to persistent canonical storage
       const kfRes = await fetchFn(`/api/projects/${projectId}/guided-capture/keyframes`, {
         method: 'POST',
         headers: {
@@ -1329,7 +1351,7 @@ class Stage2CaptureEngine {
         };
       }
 
-      // Step 2: POST panorama start
+      // Step 2: POST panorama start using session reference (safe 1KB payload, never duplicates 15MB base64)
       const panoRes = await fetchFn(`/api/projects/${projectId}/panorama/start`, {
         method: 'POST',
         headers: {
@@ -1339,7 +1361,8 @@ class Stage2CaptureEngine {
         body: JSON.stringify({
           captureSessionId,
           creationMode: 'FIXED_ORIGIN_PANORAMA',
-          keyframes
+          useCanonicalSession: true,
+          receiptId: kfData.receiptId
         })
       });
       const panoData = await panoRes.json();

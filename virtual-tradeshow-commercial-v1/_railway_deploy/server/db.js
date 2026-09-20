@@ -9272,7 +9272,9 @@ return event;
     if (!project) return false;
     this.ensureProjectToken(project);
     if (!token) return false;
-    if (token === 'internal_dev_pass' || token.startsWith('dev_bypass_token')) return true;
+    if (process.env.NODE_ENV === 'test' && process.env.STAGE2_EPHEMERAL_TEST_TOKEN && token === process.env.STAGE2_EPHEMERAL_TEST_TOKEN) {
+      return true;
+    }
     if (token === project.editToken) return true;
 
     // Check Customer Session Bearer Token
