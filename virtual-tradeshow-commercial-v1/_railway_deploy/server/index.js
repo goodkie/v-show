@@ -11219,6 +11219,28 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
         });
         await db.saveSpatialBoothCandidate(projectId, candidate);
 
+        // Ensure authoritative isolated storage in PANORAMA_PRIVATE_STORAGE_ROOT
+        try {
+          const candDir = path.join(PANORAMA_PRIVATE_STORAGE_ROOT, projectId, candidate.candidateId);
+          fs.mkdirSync(candDir, { recursive: true });
+          const candidateFiles = [
+            'panorama_360.jpg',
+            `${candidate.candidateId}_preview.jpg`,
+            `${candidate.candidateId}_native.jpg`,
+            candidate.previewFile,
+            candidate.nativeFile
+          ].filter(Boolean);
+          for (const fname of candidateFiles) {
+            const src = path.join(UPLOADS_DIR, fname);
+            const dst = path.join(candDir, fname);
+            if (fs.existsSync(src) && !fs.existsSync(dst)) {
+              fs.copyFileSync(src, dst);
+            }
+          }
+        } catch (storageErr) {
+          console.warn('[PANORAMA] Private storage copy warning:', storageErr.message);
+        }
+
         // Stage: VALIDATING (97%)
         await db.updatePanoramaJob(jobId, {
           status: 'PROCESSING',
@@ -11461,6 +11483,12 @@ app.get('/api/projects/:id/panorama/candidate/:candidateId/asset', (req, res) =>
       `${candidateId}_native.jpg`,
       `${candidateId}.jpg`
     ];
+    if (candidate.previewFile && typeof candidate.previewFile === 'string' && !candidate.previewFile.includes('..') && !candidate.previewFile.includes('/') && !candidate.previewFile.includes('\\')) {
+      allowedFilenames.push(candidate.previewFile);
+    }
+    if (candidate.nativeFile && typeof candidate.nativeFile === 'string' && !candidate.nativeFile.includes('..') && !candidate.nativeFile.includes('/') && !candidate.nativeFile.includes('\\')) {
+      allowedFilenames.push(candidate.nativeFile);
+    }
 
     let assetPath = null;
 
