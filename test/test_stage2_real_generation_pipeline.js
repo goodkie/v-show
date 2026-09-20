@@ -851,7 +851,9 @@ async function runRealGenerationPipelineTests() {
         candidateId: zeroByteCandId,
         projectId: TEST_PROJECT_ID,
         status: 'READY_FOR_PREVIEW',
-        geometryValid: true
+        geometryValid: true,
+        assetSha256: crypto.createHash('sha256').update(Buffer.alloc(0)).digest('hex'),
+        assetByteSize: 0
       });
       const zeroAssetRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${zeroByteCandId}/asset`, {
         'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
@@ -864,13 +866,16 @@ async function runRealGenerationPipelineTests() {
     const nonJpegCandId = `cand-non-jpeg-${Date.now()}`;
     const nonJpegCandDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, nonJpegCandId);
     fs.mkdirSync(nonJpegCandDir, { recursive: true });
-    fs.writeFileSync(path.join(nonJpegCandDir, `${nonJpegCandId}_preview.jpg`), Buffer.from('<html><body>MALICIOUS_PAYLOAD</body></html>'));
+    const nonJpegPayload = Buffer.from('<html><body>MALICIOUS_PAYLOAD</body></html>');
+    fs.writeFileSync(path.join(nonJpegCandDir, `${nonJpegCandId}_preview.jpg`), nonJpegPayload);
     if (db && db.saveSpatialBoothCandidate) {
       await db.saveSpatialBoothCandidate(TEST_PROJECT_ID, {
         candidateId: nonJpegCandId,
         projectId: TEST_PROJECT_ID,
         status: 'READY_FOR_PREVIEW',
-        geometryValid: true
+        geometryValid: true,
+        assetSha256: crypto.createHash('sha256').update(nonJpegPayload).digest('hex'),
+        assetByteSize: nonJpegPayload.length
       });
       const nonJpegAssetRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${nonJpegCandId}/asset`, {
         'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
