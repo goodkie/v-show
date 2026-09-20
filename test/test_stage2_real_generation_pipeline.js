@@ -59,8 +59,11 @@ const TEST_PROJECT_ID = 'prj-free-b0c6f3ea';
 // Sentinel revoked token for verification of immediate rejection
 const REVOKED_SENTINEL_TOKEN = 'tok-revoked-ephemeral-sentinel-never-valid';
 
-// Authoritative ephemeral test token loaded strictly from environment
-const AUTHORIZED_PROJECT_TOKEN = process.env.STAGE2_EPHEMERAL_TEST_TOKEN || process.env.TEST_PROJECT_TOKEN || 'tok-stage2-ephemeral-test-runner-2026';
+// Authoritative ephemeral test token loaded strictly from environment (no static fallback)
+const AUTHORIZED_PROJECT_TOKEN = process.env.STAGE2_EPHEMERAL_TEST_TOKEN || process.env.TEST_PROJECT_TOKEN;
+if (!AUTHORIZED_PROJECT_TOKEN) {
+  throw new Error('FAIL_CLOSED: STAGE2_EPHEMERAL_TEST_TOKEN environment variable is strictly required. Static fallback token is prohibited.');
+}
 
 // Unauthorized cross-tenant token
 const CROSS_TENANT_TOKEN = 'tok-other-tenant-random-secret';

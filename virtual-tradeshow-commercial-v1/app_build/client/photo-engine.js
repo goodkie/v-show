@@ -290,8 +290,8 @@ class PhotoImmersiveEngine {
     const view = this.views[index];
 
     if (this.experienceType === 'PHOTO_IMMERSIVE') {
-      const previewUrl = view.previewUrl;
-      const highResUrl = view.highResUrl || view.previewUrl;
+      const previewUrl = view.previewUrl || view.url || view.stitchedPanoramaUrl;
+      const highResUrl = view.highResUrl || view.previewUrl || view.url || view.stitchedPanoramaUrl;
 
       if (this.textureCache[highResUrl]) {
         this.photoMaterial.map = this.textureCache[highResUrl];
