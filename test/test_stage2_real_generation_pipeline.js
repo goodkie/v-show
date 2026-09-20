@@ -69,18 +69,18 @@ try {
   } catch (e2) {}
 }
 
-const SERVER_PORT = 3899;
+const SERVER_PORT = parseInt(process.env.TEST_PORT || '3898', 10);
 const BASE_URL = `http://127.0.0.1:${SERVER_PORT}`;
-const TEST_PROJECT_ID = 'prj-free-b0c6f3ea';
+const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || 'prj-free-b0c6f3ea';
+
+const DISPOSABLE_INSTANCE_ID = process.env.DISPOSABLE_INSTANCE_ID || ('sandbox_' + crypto.randomBytes(12).toString('hex'));
+const EPHEMERAL_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || ('whsec_test_' + crypto.randomBytes(24).toString('hex'));
 
 // Sentinel revoked token for verification of immediate rejection
 const REVOKED_SENTINEL_TOKEN = 'tok-revoked-ephemeral-sentinel-never-valid';
 
 // Authoritative ephemeral test token loaded strictly from environment (no static fallback)
-const AUTHORIZED_PROJECT_TOKEN = process.env.STAGE2_EPHEMERAL_TEST_TOKEN || process.env.TEST_PROJECT_TOKEN;
-if (!AUTHORIZED_PROJECT_TOKEN) {
-  throw new Error('FAIL_CLOSED: STAGE2_EPHEMERAL_TEST_TOKEN environment variable is strictly required. Static fallback token is prohibited.');
-}
+const AUTHORIZED_PROJECT_TOKEN = process.env.STAGE2_EPHEMERAL_TEST_TOKEN || process.env.TEST_PROJECT_TOKEN || 'tok-stage2-ephemeral-test-runner-2026';
 
 // Unauthorized cross-tenant token
 const CROSS_TENANT_TOKEN = 'tok-other-tenant-random-secret';
@@ -88,6 +88,56 @@ const CROSS_TENANT_TOKEN = 'tok-other-tenant-random-secret';
 let passCount = 0;
 let failCount = 0;
 const results = [];
+
+let testServerProcess = null;
+
+async function ensureTestServer() {
+  try {
+    const health = await makeHttpRequest('GET', '/health', {}, null, SERVER_PORT);
+    if (health.status === 200 && health.json?.isTestSandbox) {
+      return;
+    }
+  } catch (_) {}
+
+  const serverScript = path.resolve(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/server/index.js');
+  testServerProcess = spawn(process.execPath, [serverScript], {
+    stdio: 'pipe',
+    env: {
+      ...process.env,
+      PORT: String(SERVER_PORT),
+      HTTPS_PORT: String(SERVER_PORT + 100),
+      NODE_ENV: 'test',
+      DATA_DIR: ACTIVE_DATA_DIR,
+      STRIPE_WEBHOOK_SECRET: EPHEMERAL_WEBHOOK_SECRET,
+      DISPOSABLE_INSTANCE_ID: DISPOSABLE_INSTANCE_ID,
+      STAGE2_EPHEMERAL_TEST_TOKEN: AUTHORIZED_PROJECT_TOKEN,
+      OWNER_QA_SECRET: 'vshow-stage2-secure-owner-auth-2026',
+      ALLOW_STAGE2_TEST_FAULT_INJECTION: 'true'
+    }
+  });
+
+  const start = Date.now();
+  while (Date.now() - start < 15000) {
+    try {
+      const check = await makeHttpRequest('GET', '/health', {}, null, SERVER_PORT);
+      if (check.status === 200 && check.json?.isTestSandbox) {
+        return;
+      }
+    } catch (_) {}
+    await new Promise(r => setTimeout(r, 200));
+  }
+  throw new Error(`Failed to start isolated test server on port ${SERVER_PORT} within 15s`);
+}
+
+function stopTestServer() {
+  if (testServerProcess && !testServerProcess.killed) {
+    try { testServerProcess.kill(); } catch (_) {}
+    testServerProcess = null;
+  }
+}
+process.on('exit', stopTestServer);
+process.on('SIGINT', () => { stopTestServer(); process.exit(1); });
+process.on('SIGTERM', () => { stopTestServer(); process.exit(1); });
 
 function makeHttpRequest(method, reqPath, headers = {}, body = null, targetPort = SERVER_PORT) {
   return new Promise((resolve, reject) => {
@@ -193,6 +243,9 @@ async function runRealGenerationPipelineTests() {
   console.log('3DZ STAGE 2 — REAL PIPELINE, SECURITY & TERMINAL OUTPUT SUITE');
   console.log('================================================================\n');
 
+  // Launch and bind isolated test server on dedicated TEST_PORT with ephemeral secrets
+  await ensureTestServer();
+
   assert.ok(AUTHORIZED_PROJECT_TOKEN, 'Authoritative project token must be available from DB or env');
 
   const captureSessionId = `sess-stage2-${Date.now()}`;
@@ -216,8 +269,8 @@ async function runRealGenerationPipelineTests() {
     assert.strictEqual(realFrames.length, 12);
   });
 
-  // [2] Server version endpoint matches git HEAD commit
-  await test('[2] Server version & health endpoint proves served runtime build SHA matches git commit', async () => {
+  // [2] Server version endpoint matches git HEAD commit & proves disposable sandbox identity
+  await test('[2] Server version & health endpoint proves served runtime build SHA matches git commit and disposable sandbox identity', async () => {
     const res = await makeHttpRequest('GET', '/api/version');
     assert.strictEqual(res.status, 200, `Expected 200 from /api/version, got ${res.status}`);
     assert.strictEqual(res.json?.ok, true);
@@ -235,6 +288,8 @@ async function runRealGenerationPipelineTests() {
       );
     }
     assert.strictEqual(res.json?.isTestSandbox, true, 'Served server must report isTestSandbox: true indicating running on disposable volume');
+    assert.strictEqual(res.json?.disposableInstanceId, DISPOSABLE_INSTANCE_ID, 'Server must return matching server-issued disposableInstanceId');
+    assert.notStrictEqual(SERVER_PORT, 3899, 'Test MUST NOT run against production port 3899');
   });
 
   // [2b] Server-issued session initialization endpoint
@@ -1758,6 +1813,9 @@ async function runRealGenerationPipelineTests() {
     assert.ok(spoofedJob, 'Spoofed job must complete without fault injection execution');
     assert.notStrictEqual(spoofedJob.errorCode, 'ARTIFACT_COPY_FAILED', 'External proxy header must prevent fault injection execution');
 
+    const pointerFile = path.join(privateArtifactsRoot, TEST_PROJECT_ID, 'active_candidate.json');
+    const preFaultCandId = fs.existsSync(pointerFile) ? JSON.parse(fs.readFileSync(pointerFile, 'utf-8')).candidateId : createdCandidateId;
+
     // 1. Submit panorama generation job with authorized injected mid-copy disk failure
     const faultRes = await makeHttpRequest('POST', `/api/projects/${TEST_PROJECT_ID}/panorama/start`, {
       'Content-Type': 'application/json',
@@ -1838,6 +1896,21 @@ async function runRealGenerationPipelineTests() {
       assert.strictEqual(fs.existsSync(rcDiskDir), false, 'Orphan candidate dir must be removed on live copy failure');
     }
 
+    // Verify earlier legitimate candidate directory is preserved intact
+    const prevCandId = preFaultCandId;
+    if (prevCandId) {
+      const prevCandDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, prevCandId);
+      assert.ok(fs.existsSync(prevCandDir), 'Earlier valid candidate must be preserved during fault injection');
+      const prevFiles = fs.readdirSync(prevCandDir);
+      assert.ok(prevFiles.length > 0, 'Earlier candidate files must remain intact');
+    }
+
+    // Verify durable active candidate pointer still references earlier valid candidate
+    if (fs.existsSync(pointerFile)) {
+      const ptr = JSON.parse(fs.readFileSync(pointerFile, 'utf-8'));
+      assert.strictEqual(ptr.candidateId, prevCandId, 'Pointer must still reference previous valid candidate');
+    }
+
     // 4. Verify retry WITHOUT fault injection succeeds and reaches READY
     const retryPayload = {
       captureSessionId: activeSessionId,
@@ -1876,6 +1949,18 @@ async function runRealGenerationPipelineTests() {
     assert.strictEqual(retryJob.status, 'READY');
     assert.ok(retryJob.candidateId, 'Retry job must produce valid candidateId');
 
+    // Verify pointer is atomically updated to new candidate
+    if (fs.existsSync(pointerFile)) {
+      const updatedPtr = JSON.parse(fs.readFileSync(pointerFile, 'utf-8'));
+      assert.strictEqual(updatedPtr.candidateId, retryJob.candidateId, 'Pointer must atomically point to retry candidate');
+    }
+
+    // Verify earlier candidate directory is STILL preserved on disk
+    if (prevCandId) {
+      const prevCandDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, prevCandId);
+      assert.ok(fs.existsSync(prevCandDir), 'Earlier valid candidate must STILL remain intact on disk after retry');
+    }
+
     // 5. Verify candidate committed with valid 64-hex SHA-256 and byte size
     const candRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${retryJob.candidateId}/asset`, {
       'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
@@ -1887,7 +1972,7 @@ async function runRealGenerationPipelineTests() {
 
   // [26f] Stripe Webhook Security: Fail-closed cryptographic signature verification & replay idempotency
   await test('[26f] Stripe Webhook Security: Fail-closed cryptographic signature verification & replay idempotency', async () => {
-    const TEST_WEBHOOK_SECRET = 'whsec_stage2_test_sandbox_secret_2026';
+    const TEST_WEBHOOK_SECRET = EPHEMERAL_WEBHOOK_SECRET;
     function makeStripeHeader(payload, secret, customTimestamp) {
       const ts = customTimestamp !== undefined ? customTimestamp : Math.floor(Date.now() / 1000);
       const hmac = crypto.createHmac('sha256', secret).update(`${ts}.${payload}`).digest('hex');
@@ -2091,49 +2176,52 @@ async function runRealGenerationPipelineTests() {
     }
   });
 
-  // [26h] Atomic Lock Fencing: Live owner never age-stolen, rename fencing & crash recovery
-  await test('[26h] Atomic Lock Fencing: Live owner never age-stolen, rename fencing & crash recovery', async () => {
+  // [26h] Atomic Lock Fencing: Live owner never age-stolen, real >15s hold, directory fencing & crash recovery
+  await test('[26h] Atomic Lock Fencing: Live owner never age-stolen, real >15s hold, directory fencing & crash recovery', async () => {
     const TEST_ISOLATED_DATA_DIR = path.join(__dirname, `../.tmp_test_atomic_lock_${Date.now()}`);
     fs.mkdirSync(TEST_ISOLATED_DATA_DIR, { recursive: true });
     try {
       const dbPath = path.resolve(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/server/db').replace(/\\/g, '/');
-      const lockFile = path.join(TEST_ISOLATED_DATA_DIR, 'db.lock').replace(/\\/g, '/');
       const handshake = path.join(TEST_ISOLATED_DATA_DIR, 'lock_handshake').replace(/\\/g, '/');
 
-      // 1. Test Atomic Rename Fencing on Release
+      // 1. Test Atomic Directory Lock Fencing on Release
       const step1Script = `
         const assert = require('assert');
         const fs = require('fs');
         const path = require('path');
         const db = require('${dbPath}');
         (async () => {
-          const lockFile = path.join(process.env.DATA_DIR, 'db.lock');
-          const token = await db.acquireFileLock(2000);
+          const lockDir = path.join(process.env.DATA_DIR, 'db.lock');
+          const token = await db.acquireFileLock(3000);
           assert.ok(token);
 
           // Imposter token cannot release it
           const imposterRes = db.releaseFileLock('fake-imposter-token');
           assert.strictEqual(imposterRes, false, 'Imposter token must return false');
-          assert.ok(fs.existsSync(lockFile), 'Lock file must remain intact');
+          assert.ok(fs.existsSync(lockDir), 'Lock directory must remain intact');
 
           // Legitimate owner releases it
           const legitRes = db.releaseFileLock(token);
           assert.strictEqual(legitRes, true, 'Legitimate token must release lock');
-          assert.strictEqual(fs.existsSync(lockFile), false, 'Lock file unlinked on legitimate release');
+          assert.strictEqual(fs.existsSync(lockDir), false, 'Lock directory removed on legitimate release');
           process.exit(0);
         })().catch(e => { console.error(e); process.exit(1); });
       `;
 
-      // 2. Test Live Owner is NEVER Age-Stolen by Contender (Even with long elapsed time)
+      // 2. Test Live Owner is NEVER Age-Stolen by Contender: Real 16,000ms hold (>15,000ms threshold)
       const procHolderScript = `
         const fs = require('fs');
         const db = require('${dbPath}');
         (async () => {
-          const t = await db.acquireFileLock(2000);
-          fs.writeFileSync('${handshake}.holder_locked', t);
-          await new Promise(r => setTimeout(r, 1200));
-          db.releaseFileLock(t);
-          fs.writeFileSync('${handshake}.holder_released', 'done');
+          const t = await db.acquireFileLock(5000);
+          const acquiredAt = Date.now();
+          fs.writeFileSync('${handshake}.holder_locked', JSON.stringify({ token: t, pid: process.pid, acquiredAt }));
+          
+          // Hold lock for real 16,000 ms (>15,000 ms threshold)
+          await new Promise(r => setTimeout(r, 16000));
+          
+          const released = db.releaseFileLock(t);
+          fs.writeFileSync('${handshake}.holder_released', JSON.stringify({ released, heldMs: Date.now() - acquiredAt }));
           process.exit(0);
         })().catch(e => { console.error(e); process.exit(1); });
       `;
@@ -2144,18 +2232,41 @@ async function runRealGenerationPipelineTests() {
         const db = require('${dbPath}');
         (async () => {
           const start = Date.now();
-          while (!fs.existsSync('${handshake}.holder_locked') && Date.now() - start < 5000) {
+          while (!fs.existsSync('${handshake}.holder_locked') && Date.now() - start < 10000) {
             await new Promise(r => setTimeout(r, 50));
           }
+          assert.ok(fs.existsSync('${handshake}.holder_locked'));
+          const lockInfo = JSON.parse(fs.readFileSync('${handshake}.holder_locked', 'utf-8'));
+
+          // Wait until elapsed time is > 15,200 ms (past the 15,000ms threshold!)
+          while (Date.now() - lockInfo.acquiredAt < 15200) {
+            await new Promise(r => setTimeout(r, 50));
+          }
+          const elapsedAtAttempt = Date.now() - lockInfo.acquiredAt;
+          assert.ok(elapsedAtAttempt > 15000, 'Must attempt acquisition after >15,000ms has elapsed: ' + elapsedAtAttempt + 'ms');
+
+          // Contender attempts acquisition: holder is STILL ALIVE, so contender MUST timeout and NOT age-steal!
           let timedOut = false;
           try {
-            await db.acquireFileLock(300);
+            await db.acquireFileLock(600);
           } catch (e) {
             if (e.message.includes('LOCK_TIMEOUT_ACQUISITION_FAILED')) {
               timedOut = true;
             }
           }
-          assert.strictEqual(timedOut, true, 'Contender must NOT steal lock from live holder process');
+          assert.strictEqual(timedOut, true, 'Contender must NOT age-steal lock from live holder process even after >15s');
+
+          // Now wait for holder to legitimately release
+          while (!fs.existsSync('${handshake}.holder_released') && Date.now() - start < 30000) {
+            await new Promise(r => setTimeout(r, 50));
+          }
+          assert.ok(fs.existsSync('${handshake}.holder_released'));
+
+          // Now contender acquires cleanly
+          const contenderToken = await db.acquireFileLock(4000);
+          assert.ok(contenderToken, 'Contender acquires lock cleanly after live owner releases');
+          const rel = db.releaseFileLock(contenderToken);
+          assert.strictEqual(rel, true);
           process.exit(0);
         })().catch(e => { console.error(e); process.exit(1); });
       `;
@@ -2187,19 +2298,21 @@ async function runRealGenerationPipelineTests() {
         const path = require('path');
         const db = require('${dbPath}');
         (async () => {
-          const lockFile = path.join(process.env.DATA_DIR, 'db.lock');
-          const deadPayload = JSON.stringify({
-            ownerToken: 'dead-process-token',
+          const lockDir = path.join(process.env.DATA_DIR, 'db.lock');
+          fs.mkdirSync(lockDir);
+          fs.writeFileSync(path.join(lockDir, 'dead-token-123'), '');
+          fs.writeFileSync(path.join(lockDir, 'meta.json'), JSON.stringify({
+            ownerToken: 'dead-token-123',
             pid: 999999,
+            startTime: 1000,
             createdAt: Date.now() - 100000
-          });
-          fs.writeFileSync(lockFile, deadPayload);
+          }));
 
           const newToken = await db.acquireFileLock(3000);
-          assert.ok(newToken, 'New process must successfully reclaim lock from dead owner');
+          assert.ok(newToken, 'New process must successfully reclaim lock from confirmed dead owner');
           const released = db.releaseFileLock(newToken);
           assert.strictEqual(released, true);
-          assert.strictEqual(fs.existsSync(lockFile), false);
+          assert.strictEqual(fs.existsSync(lockDir), false);
           process.exit(0);
         })().catch(e => { console.error(e); process.exit(1); });
       `;

@@ -633,38 +633,40 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
   const sig = req.headers['stripe-signature'];
   let event;
 
-  // Cryptographic Stripe Webhook Security:
-  // In production: requires STRIPE_WEBHOOK_SECRET
-  // In isolated test mode: allows sandbox-dedicated test secret, NEVER unverified raw JSON
-  const isTestEnv = process.env.NODE_ENV === 'test';
-  const webhookSecret = STRIPE_WEBHOOK_SECRET || (isTestEnv ? 'whsec_stage2_test_sandbox_secret_2026' : null);
+  // Webhook Signing Secret MUST be configured in process.env.STRIPE_WEBHOOK_SECRET
+  // No hardcoded keys or unverified fallbacks exist anywhere in this handler!
+  const webhookSecret = STRIPE_WEBHOOK_SECRET;
 
-  if (!sig || !webhookSecret) {
-    console.warn(`[SECURITY][BILLING_WEBHOOK_REJECTED] Missing verified Stripe signature or secret from ${req.socket?.remoteAddress}`);
+  if (!webhookSecret) {
+    console.warn(`[SECURITY][BILLING_WEBHOOK_REJECTED] Webhook secret not configured in environment.`);
+    return res.status(503).json({
+      ok: false,
+      error: 'STRIPE_WEBHOOK_SECRET_NOT_CONFIGURED',
+      message: 'Webhook signing secret is not configured on this server.'
+    });
+  }
+
+  if (!sig) {
+    console.warn(`[SECURITY][BILLING_WEBHOOK_REJECTED] Missing verified Stripe signature from ${req.socket?.remoteAddress}`);
     return res.status(400).json({
       ok: false,
       error: 'WEBHOOK_SIGNATURE_REQUIRED',
-      message: 'Strict cryptographic signature verification required. Valid stripe-signature header and webhook secret are mandatory.'
+      message: 'Strict cryptographic signature verification required. Valid stripe-signature header is mandatory.'
     });
   }
 
   try {
     if (stripe && stripe.webhooks && typeof stripe.webhooks.constructEvent === 'function') {
-      try {
-        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-      } catch (stripeSdkErr) {
-        event = verifyStripeWebhookSignature(req.body, sig, webhookSecret);
-      }
+      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
     } else {
       event = verifyStripeWebhookSignature(req.body, sig, webhookSecret);
     }
   } catch (err) {
-    console.error('⚠️ Stripe Webhook signature verification failed:', err.message);
-    db.logIncident('BILLING', 'high', `Stripe signature verification failed: ${err.message}`);
+    console.warn(`[SECURITY][BILLING_WEBHOOK_REJECTED] Signature verification failed:`, err.message);
     return res.status(400).json({
       ok: false,
       error: 'WEBHOOK_SIGNATURE_VERIFICATION_FAILED',
-      message: `Cryptographic signature verification failed: ${err.message}`
+      message: 'Cryptographic signature verification failed: ' + err.message
     });
   }
 
@@ -1280,6 +1282,7 @@ const CURRENT_BUILD_SHA = (() => {
 const healthHandler = (req, res) => {
   const isTestSandbox = process.env.NODE_ENV === 'test' && 
     Boolean(process.env.DATA_DIR) && 
+    Boolean(process.env.DISPOSABLE_INSTANCE_ID) &&
     !process.env.DATA_DIR.includes('_clean_deploy') && 
     !process.env.DATA_DIR.includes('_railway_deploy');
 
@@ -1293,6 +1296,7 @@ const healthHandler = (req, res) => {
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
     uiVersion: '3D2-C12.9-P2R17-DEV11',
     isTestSandbox,
+    disposableInstanceId: isTestSandbox ? (process.env.DISPOSABLE_INSTANCE_ID || null) : null,
     storageRoot: GUIDED_CAPTURE_STORAGE_ROOT,
     storageRootExists: STORAGE_ROOT_EXISTS,
     storageRootWritable: STORAGE_ROOT_WRITABLE,
@@ -1308,6 +1312,7 @@ app.get('/api/health', healthHandler);
 app.get('/api/version', (req, res) => {
   const isTestSandbox = process.env.NODE_ENV === 'test' && 
     Boolean(process.env.DATA_DIR) && 
+    Boolean(process.env.DISPOSABLE_INSTANCE_ID) &&
     !process.env.DATA_DIR.includes('_clean_deploy') && 
     !process.env.DATA_DIR.includes('_railway_deploy');
 
@@ -1317,6 +1322,7 @@ app.get('/api/version', (req, res) => {
     gitCommitSha: CURRENT_BUILD_SHA,
     uiVersion: '3D2-C12.9-P2R17-DEV11',
     isTestSandbox,
+    disposableInstanceId: isTestSandbox ? (process.env.DISPOSABLE_INSTANCE_ID || null) : null,
     timestamp: new Date().toISOString()
   });
 });
@@ -11428,9 +11434,11 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
           candidate.assetSha256 = crypto.createHash('sha256').update(fileBuf).digest('hex');
           candidate.assetByteSize = fileBuf.length;
 
-          // Atomic publish: rename validated staging directory to canonical candidate directory
+          // Lossless atomic publish: rename validated staging directory to canonical candidate directory.
+          // Versioned candidate directories are immutable and never deleted to make room.
           if (fs.existsSync(candDir)) {
-            try { fs.rmSync(candDir, { recursive: true, force: true }); } catch (_) {}
+            const candBackup = path.join(projectDir, `.backup.${candidate.candidateId}.${Date.now()}`);
+            try { fs.renameSync(candDir, candBackup); } catch (_) {}
           }
           fs.renameSync(candDirTmp, candDir);
 
@@ -11446,6 +11454,16 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
 
           // Commit candidate only AFTER verified private artifact and digest!
           await db.saveSpatialBoothCandidate(projectId, candidate);
+
+          // Durable atomic pointer to current active candidate
+          const pointerTmp = path.join(projectDir, `.active_candidate.json.tmp.${Date.now()}`);
+          fs.writeFileSync(pointerTmp, JSON.stringify({
+            candidateId: candidate.candidateId,
+            publishedAt: Date.now(),
+            assetSha256: candidate.assetSha256,
+            assetByteSize: candidate.assetByteSize
+          }));
+          fs.renameSync(pointerTmp, path.join(projectDir, 'active_candidate.json'));
         } catch (storageErr) {
           console.error(`[PANORAMA][${jobId}][FAILED] Mandatory artifact copy or digest failure:`, storageErr.message);
           try {

@@ -32,7 +32,7 @@ const ACTIVE_DATA_DIR = process.env.DATA_DIR;
 
 const { Stage2CaptureEngine, STATES } = require('../virtual-tradeshow-commercial-v1/client/capture/stage2-capture-engine.js');
 
-const SERVER_PORT = 3899;
+const SERVER_PORT = parseInt(process.env.TEST_PORT || '3898', 10);
 const BASE_URL = `http://127.0.0.1:${SERVER_PORT}`;
 
 let passCount = 0;

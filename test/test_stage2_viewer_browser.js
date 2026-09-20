@@ -57,7 +57,7 @@ try {
   }
 }
 
-const SERVER_PORT = process.env.PORT || 3899;
+const SERVER_PORT = process.env.TEST_PORT || process.env.PORT || 3898;
 const BASE_URL = `http://127.0.0.1:${SERVER_PORT}`;
 const TEST_PROJECT_ID = 'prj-free-b0c6f3ea';
 

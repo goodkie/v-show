@@ -1518,18 +1518,29 @@ class JSONDatabase {
     return this.memoryData;
   }
 
-  _readLockFile() {
-    const lockFile = path.join(DATA_DIR, 'db.lock');
+  _getLockDir() {
+    return path.join(DATA_DIR, 'db.lock');
+  }
+
+  _readLockMeta(lockDir = null) {
+    const targetDir = lockDir || this._getLockDir();
     try {
-      if (fs.existsSync(lockFile)) {
-        const raw = fs.readFileSync(lockFile, 'utf-8');
-        return JSON.parse(raw);
+      if (fs.existsSync(targetDir)) {
+        const stat = fs.statSync(targetDir);
+        if (stat.isDirectory()) {
+          const metaFile = path.join(targetDir, 'meta.json');
+          if (fs.existsSync(metaFile)) {
+            return JSON.parse(fs.readFileSync(metaFile, 'utf-8'));
+          }
+        } else {
+          return JSON.parse(fs.readFileSync(targetDir, 'utf-8'));
+        }
       }
     } catch (e) {}
     return null;
   }
 
-  _isProcessAlive(pid) {
+  _isProcessAlive(pid, recordedStartTime = null) {
     if (!pid || typeof pid !== 'number') return false;
     try {
       process.kill(pid, 0);
@@ -1540,39 +1551,48 @@ class JSONDatabase {
   }
 
   async acquireFileLock(timeoutMs = 15000) {
-    const lockFile = path.join(DATA_DIR, 'db.lock');
-    const ownerToken = `${process.pid}:${Date.now()}:${crypto.randomBytes(8).toString('hex')}`;
-    const payload = JSON.stringify({
+    this._ensureDataDir();
+    const lockDir = this._getLockDir();
+    const ownerToken = `${process.pid}_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
+    const startTime = Date.now() - Math.floor(process.uptime() * 1000);
+    const meta = {
       ownerToken,
       pid: process.pid,
+      startTime,
       createdAt: Date.now()
-    });
+    };
 
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
       try {
-        fs.writeFileSync(lockFile, payload, { flag: 'wx' });
+        fs.mkdirSync(lockDir);
+        fs.writeFileSync(path.join(lockDir, ownerToken), '');
+        fs.writeFileSync(path.join(lockDir, 'meta.json'), JSON.stringify(meta));
+        this._heldToken = ownerToken;
         return ownerToken;
       } catch (e) {
-        if (e.code === 'EEXIST' || e.code === 'EPERM' || e.code === 'EBUSY') {
-          const existing = this._readLockFile();
+        if (e.code === 'EEXIST') {
+          const existing = this._readLockMeta(lockDir);
           if (existing) {
-            // NEVER age-steal a confirmed live owner! Even if lock is held > 15s or 30s.
-            // Only reclaim if the owner process is confirmed dead (!this._isProcessAlive).
-            const isDead = existing.pid && !this._isProcessAlive(existing.pid);
-            if (isDead) {
+            const isAlive = this._isProcessAlive(existing.pid, existing.startTime);
+            if (!isAlive) {
+              const deadTombstone = path.join(DATA_DIR, `db.lock.dead.${existing.pid}.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`);
               try {
-                const deadTombstone = path.join(DATA_DIR, `db.lock.dead.${existing.pid}.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`);
+                fs.renameSync(lockDir, deadTombstone);
                 try {
-                  fs.renameSync(lockFile, deadTombstone);
-                  const deadLock = JSON.parse(fs.readFileSync(deadTombstone, 'utf-8'));
-                  if (deadLock && deadLock.ownerToken === existing.ownerToken) {
-                    fs.unlinkSync(deadTombstone);
+                  const stat = fs.statSync(deadTombstone);
+                  if (stat.isDirectory()) {
+                    const entries = fs.readdirSync(deadTombstone);
+                    for (const f of entries) {
+                      try { fs.unlinkSync(path.join(deadTombstone, f)); } catch (_) {}
+                    }
+                    fs.rmdirSync(deadTombstone);
                   } else {
-                    try { fs.renameSync(deadTombstone, lockFile); } catch (_) {}
+                    fs.unlinkSync(deadTombstone);
                   }
                 } catch (_) {}
-              } catch (staleErr) {}
+                continue;
+              } catch (_) {}
             }
           }
           await new Promise(r => setTimeout(r, 10 + Math.floor(Math.random() * 20)));
@@ -1593,73 +1613,87 @@ class JSONDatabase {
   releaseFileLock(ownerToken) {
     if (!ownerToken) return false;
     this._ensureDataDir();
-    const lockFile = path.join(DATA_DIR, 'db.lock');
+    const lockDir = this._getLockDir();
     try {
-      if (!fs.existsSync(lockFile)) return true;
-      const current = this._readLockFile();
-      if (!current || current.ownerToken !== ownerToken) {
-        return false;
-      }
-      // Atomic rename fencing: rename lock to unique tombstone before unlinking
-      const tombstone = path.join(DATA_DIR, `db.lock.tombstone.${process.pid}.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`);
-      try {
-        fs.renameSync(lockFile, tombstone);
-      } catch (renameErr) {
-        // Lock was already released or reacquired by another process
-        return false;
-      }
-      try {
-        const tombstoneData = JSON.parse(fs.readFileSync(tombstone, 'utf-8'));
-        if (tombstoneData && tombstoneData.ownerToken === ownerToken) {
-          fs.unlinkSync(tombstone);
-          return true;
-        } else {
-          // Token mismatch in tombstone: restore lockFile so we don't drop another process's lock
-          try { fs.renameSync(tombstone, lockFile); } catch (_) {}
+      if (!fs.existsSync(lockDir)) return true;
+      const stat = fs.statSync(lockDir);
+      if (stat.isDirectory()) {
+        const tokenFile = path.join(lockDir, ownerToken);
+        if (!fs.existsSync(tokenFile)) {
           return false;
         }
-      } catch (_) {
-        try { fs.unlinkSync(tombstone); } catch (_) {}
+        try { fs.unlinkSync(tokenFile); } catch (_) {}
+        try { fs.unlinkSync(path.join(lockDir, 'meta.json')); } catch (_) {}
+        try {
+          fs.rmdirSync(lockDir);
+        } catch (_) {}
+        if (this._heldToken === ownerToken) {
+          this._heldToken = null;
+        }
+        return true;
+      } else {
+        const existing = this._readLockMeta(lockDir);
+        if (!existing || existing.ownerToken !== ownerToken) {
+          return false;
+        }
+        try { fs.unlinkSync(lockDir); } catch (_) {}
+        if (this._heldToken === ownerToken) {
+          this._heldToken = null;
+        }
         return true;
       }
     } catch (e) {
-      return !fs.existsSync(lockFile);
+      return !fs.existsSync(lockDir);
     }
   }
 
+  releaseLock(ownerToken) {
+    return this.releaseFileLock(ownerToken);
+  }
+
   acquireLockSync(timeoutMs = 15000) {
-    const lockFile = path.join(DATA_DIR, 'db.lock');
-    const ownerToken = `${process.pid}:${Date.now()}:${crypto.randomBytes(8).toString('hex')}`;
-    const payload = JSON.stringify({
+    this._ensureDataDir();
+    const lockDir = this._getLockDir();
+    const ownerToken = `${process.pid}_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
+    const startTime = Date.now() - Math.floor(process.uptime() * 1000);
+    const meta = {
       ownerToken,
       pid: process.pid,
+      startTime,
       createdAt: Date.now()
-    });
+    };
 
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
       try {
-        fs.writeFileSync(lockFile, payload, { flag: 'wx' });
+        fs.mkdirSync(lockDir);
+        fs.writeFileSync(path.join(lockDir, ownerToken), '');
+        fs.writeFileSync(path.join(lockDir, 'meta.json'), JSON.stringify(meta));
+        this._heldToken = ownerToken;
         return ownerToken;
       } catch (e) {
-        if (e.code === 'EEXIST' || e.code === 'EPERM' || e.code === 'EBUSY') {
-          const existing = this._readLockFile();
+        if (e.code === 'EEXIST') {
+          const existing = this._readLockMeta(lockDir);
           if (existing) {
-            // NEVER age-steal a confirmed live owner!
-            const isDead = existing.pid && !this._isProcessAlive(existing.pid);
-            if (isDead) {
+            const isAlive = this._isProcessAlive(existing.pid, existing.startTime);
+            if (!isAlive) {
+              const deadTombstone = path.join(DATA_DIR, `db.lock.dead.${existing.pid}.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`);
               try {
-                const deadTombstone = path.join(DATA_DIR, `db.lock.dead.${existing.pid}.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`);
+                fs.renameSync(lockDir, deadTombstone);
                 try {
-                  fs.renameSync(lockFile, deadTombstone);
-                  const deadLock = JSON.parse(fs.readFileSync(deadTombstone, 'utf-8'));
-                  if (deadLock && deadLock.ownerToken === existing.ownerToken) {
-                    fs.unlinkSync(deadTombstone);
+                  const stat = fs.statSync(deadTombstone);
+                  if (stat.isDirectory()) {
+                    const entries = fs.readdirSync(deadTombstone);
+                    for (const f of entries) {
+                      try { fs.unlinkSync(path.join(deadTombstone, f)); } catch (_) {}
+                    }
+                    fs.rmdirSync(deadTombstone);
                   } else {
-                    try { fs.renameSync(deadTombstone, lockFile); } catch (_) {}
+                    fs.unlinkSync(deadTombstone);
                   }
                 } catch (_) {}
-              } catch (staleErr) {}
+                continue;
+              } catch (_) {}
             }
           }
           const delayUntil = Date.now() + 10 + Math.floor(Math.random() * 15);
