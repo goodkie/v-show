@@ -244,10 +244,12 @@ async function runBrowserViewerTests() {
     const jobId = startRes.json.jobId;
     assert.ok(jobId);
 
-    // Step D: Poll until terminal READY state
+    // Step D: Poll until terminal READY state with authoritative token
     let readyCandidateId = null;
     for (let poll = 0; poll < 30; poll++) {
-      const pRes = await makeHttpRequest('GET', `/api/panorama-jobs/${jobId}`);
+      const pRes = await makeHttpRequest('GET', `/api/panorama-jobs/${jobId}`, {
+        'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+      });
       if (pRes.status === 200 && pRes.json?.job?.status === 'READY') {
         readyCandidateId = pRes.json.job.candidateId;
         break;
@@ -332,6 +334,19 @@ async function runBrowserViewerTests() {
     assert.strictEqual(rawStaticStatus.dataStatus, 403, 'Direct /data static candidate access must return 403 Forbidden');
   });
 
+  // [5e] Negative Auth: Unauthenticated job status request in browser strictly rejected (403)
+  await test('[5e] Negative Auth: Unauthenticated panorama job query in browser strictly rejected (403)', async () => {
+    const unauthJobStatus = await page.evaluate(async (baseUrl, jobId) => {
+      try {
+        const r = await fetch(`${baseUrl}/api/panorama-jobs/${jobId}`);
+        return r.status;
+      } catch (e) {
+        return -1;
+      }
+    }, BASE_URL, activeCandidateId);
+    assert.strictEqual(unauthJobStatus, 403, 'Unauthenticated job status query must return 403 Forbidden');
+  });
+
   // [6] Authenticated asset fetch & texture binding to PhotoImmersiveEngine
   await test('[6] Authenticated candidate asset retrieval & PhotoImmersiveEngine texture binding', async () => {
     const loadResult = await page.evaluate(async (assetUrl, authToken, candId) => {
@@ -342,7 +357,12 @@ async function runBrowserViewerTests() {
       if (!authRes.ok) {
         return { ok: false, step: 'FETCH', status: authRes.status };
       }
+      const responseCandidateId = authRes.headers.get('x-candidate-id');
       const blob = await authRes.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      const hashBuf = await crypto.subtle.digest('SHA-256', arrayBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuf));
+      const blobSha256 = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       const objectUrl = URL.createObjectURL(blob);
 
       // 2. Build viewer manifest with authentic candidate asset
@@ -402,6 +422,8 @@ async function runBrowserViewerTests() {
       return {
         ok: true,
         textureLoaded: loaded,
+        blobSha256,
+        responseCandidateId,
         renderedCandidateId: engine.manifest?.views?.[0]?.candidateId || null,
         hasScene: !!engine.scene,
         hasCamera: !!engine.camera,
@@ -416,6 +438,8 @@ async function runBrowserViewerTests() {
 
     assert.strictEqual(loadResult.ok, true, `Loading failed at step ${loadResult.step}: ${loadResult.status}`);
     assert.strictEqual(loadResult.textureLoaded, true, 'Texture must finish loading into Three.js material map');
+    assert.ok(/^[a-f0-9]{64}$/.test(loadResult.blobSha256), 'Fetched blob SHA-256 must be valid 64-char hex');
+    assert.strictEqual(loadResult.responseCandidateId, activeCandidateId, 'Response header X-Candidate-Id must match candidateId');
     assert.strictEqual(loadResult.renderedCandidateId, activeCandidateId, 'Viewer must render the exact generated candidate ID');
     assert.strictEqual(loadResult.hasScene, true);
     assert.strictEqual(loadResult.hasCamera, true);

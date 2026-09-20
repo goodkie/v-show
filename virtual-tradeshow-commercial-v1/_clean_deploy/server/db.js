@@ -1574,6 +1574,12 @@ class JSONDatabase {
   mutate(callback) {
     const data = this.read();
     const result = callback(data);
+    if (result && typeof result.then === 'function') {
+      return result.then(resolved => {
+        this.write(data);
+        return resolved;
+      });
+    }
     this.write(data);
     return result;
   }

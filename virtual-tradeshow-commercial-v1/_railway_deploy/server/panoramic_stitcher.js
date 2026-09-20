@@ -295,8 +295,23 @@ class PanoramicStitcher {
       }
     }
 
-    const nativeUrl = '/uploads/' + workerResult.nativeFile;
-    const previewUrl = '/uploads/' + workerResult.previewFile;
+    const nativeFilePath = path.join(this.uploadsDir, workerResult.nativeFile);
+    const previewFilePath = path.join(this.uploadsDir, workerResult.previewFile);
+    let assetSha256 = null;
+    let assetByteSize = 0;
+    try {
+      const targetFile = fs.existsSync(nativeFilePath) ? nativeFilePath : previewFilePath;
+      if (fs.existsSync(targetFile)) {
+        const fileBuf = fs.readFileSync(targetFile);
+        assetSha256 = crypto.createHash('sha256').update(fileBuf).digest('hex');
+        assetByteSize = fileBuf.length;
+      }
+    } catch (e) {}
+
+    const nativeUrl = options.projectId ? 
+      `/api/projects/${options.projectId}/panorama/candidate/${candidateId}/asset` : 
+      ('/uploads/' + workerResult.nativeFile);
+    const previewUrl = nativeUrl;
 
     return {
       status: 'READY',
@@ -325,6 +340,10 @@ class PanoramicStitcher {
       stitchedPanoramaUrl: nativeUrl,
       activeBackgroundUrl: nativeUrl,
       provenanceUrl: nativeUrl,
+      assetSha256,
+      assetByteSize,
+      nativeFile: workerResult.nativeFile,
+      previewFile: workerResult.previewFile,
       angularAnchors: workerResult.anchors.map(a => a.degree),
       anchors: workerResult.anchors,
       engine: 'OPENCV',

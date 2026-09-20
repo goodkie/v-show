@@ -689,12 +689,47 @@ async function runRealGenerationPipelineTests() {
   await test('[19] Worker terminal state polling: progresses through stages to READY with candidate', async () => {
     assert.ok(createdJobId);
 
+    // Negative Auth: Unauthenticated polling rejected (403 FORBIDDEN)
+    const unauthPollRes = await makeHttpRequest('GET', `/api/panorama-jobs/${createdJobId}`);
+    assert.strictEqual(unauthPollRes.status, 403, 'Unauthenticated job polling must return 403 Forbidden');
+    assert.strictEqual(unauthPollRes.json?.error, 'FORBIDDEN');
+
+    // Negative Auth: Cross-tenant polling rejected (403 FORBIDDEN)
+    const crossPollRes = await makeHttpRequest('GET', `/api/panorama-jobs/${createdJobId}`, {
+      'Authorization': `Bearer ${CROSS_TENANT_TOKEN}`
+    });
+    assert.strictEqual(crossPollRes.status, 403, 'Cross-tenant job polling must return 403 Forbidden');
+    assert.strictEqual(crossPollRes.json?.error, 'FORBIDDEN');
+
+    // Negative Auth: Foreign project alias endpoint rejected (403 CROSS_PROJECT_FORBIDDEN)
+    const foreignProjectPollRes = await makeHttpRequest('GET', `/api/projects/prj-free-aeb87eb4/panorama-jobs/${createdJobId}`, {
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+    });
+    assert.strictEqual(foreignProjectPollRes.status, 403, 'Foreign project job polling must return 403 Forbidden');
+    assert.strictEqual(foreignProjectPollRes.json?.error, 'CROSS_PROJECT_FORBIDDEN');
+
+    // Negative Validation: Malformed jobId rejected (400 INVALID_JOB_ID)
+    const malformedPollRes = await makeHttpRequest('GET', `/api/panorama-jobs/job-!@#$%`, {
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+    });
+    assert.strictEqual(malformedPollRes.status, 400, 'Malformed jobId must return 400 Bad Request');
+    assert.strictEqual(malformedPollRes.json?.error, 'INVALID_JOB_ID');
+
+    // Negative Lookup: Non-existent jobId rejected (404 JOB_NOT_FOUND)
+    const notFoundPollRes = await makeHttpRequest('GET', `/api/panorama-jobs/job-non-existent-99999`, {
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+    });
+    assert.strictEqual(notFoundPollRes.status, 404, 'Non-existent jobId must return 404 Not Found');
+    assert.strictEqual(notFoundPollRes.json?.error, 'JOB_NOT_FOUND');
+
     let terminalJob = null;
     const maxPollSeconds = 15;
     const pollStart = Date.now();
 
     while (Date.now() - pollStart < maxPollSeconds * 1000) {
-      const pollRes = await makeHttpRequest('GET', `/api/panorama-jobs/${createdJobId}`);
+      const pollRes = await makeHttpRequest('GET', `/api/panorama-jobs/${createdJobId}`, {
+        'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+      });
       assert.strictEqual(pollRes.status, 200);
       assert.strictEqual(pollRes.json?.ok, true);
       const job = pollRes.json.job;
@@ -713,6 +748,13 @@ async function runRealGenerationPipelineTests() {
     assert.strictEqual(terminalJob.status, 'READY');
     assert.strictEqual(terminalJob.progress, 100);
     assert.ok(terminalJob.candidateId, 'Job must have candidateId populated upon completion');
+
+    // Redaction verification: Internal paths and environments must NEVER be leaked
+    assert.strictEqual(terminalJob.dataDir, undefined, 'Internal dataDir must be redacted');
+    assert.strictEqual(terminalJob.framesDir, undefined, 'Internal framesDir must be redacted');
+    assert.strictEqual(terminalJob.outputPath, undefined, 'Internal outputPath must be redacted');
+    assert.strictEqual(terminalJob.sourceFiles, undefined, 'Internal sourceFiles must be redacted');
+
     createdCandidateId = terminalJob.candidateId;
   });
 
@@ -778,6 +820,70 @@ async function runRealGenerationPipelineTests() {
       assert.strictEqual(foreignCandAssetRes.status, 403, 'Project A token requesting Project B candidate asset must return 403 Forbidden');
       assert.strictEqual(foreignCandAssetRes.json?.error, 'CROSS_PROJECT_FORBIDDEN');
     }
+
+    // Negative Security: Fake candidate metadata pointing to server file (e.g. ../../server/index.js) fails closed
+    const fakeCandId = `cand-fake-traversal-${Date.now()}`;
+    if (db && db.saveSpatialBoothCandidate) {
+      await db.saveSpatialBoothCandidate(TEST_PROJECT_ID, {
+        candidateId: fakeCandId,
+        projectId: TEST_PROJECT_ID,
+        status: 'READY_FOR_PREVIEW',
+        geometryValid: true,
+        stitchedPanoramaUrl: '../../server/index.js',
+        masterUrl: '../../server/index.js'
+      });
+      const fakeAssetRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${fakeCandId}/asset`, {
+        'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+      });
+      assert.notStrictEqual(fakeAssetRes.status, 200, 'Server must NEVER serve server/index.js via candidate URL spoofing');
+      assert.strictEqual(fakeAssetRes.status, 404, 'Must fail closed with 404 ASSET_FILE_NOT_FOUND');
+      assert.strictEqual(fakeAssetRes.json?.error, 'ASSET_FILE_NOT_FOUND');
+    }
+
+    // Negative Security: 0-byte truncated candidate file rejected (400 CORRUPTED_ASSET)
+    const zeroByteCandId = `cand-zero-byte-${Date.now()}`;
+    const privateArtifactsRoot = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'panorama_artifacts');
+    const zeroByteCandDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, zeroByteCandId);
+    fs.mkdirSync(zeroByteCandDir, { recursive: true });
+    fs.writeFileSync(path.join(zeroByteCandDir, `${zeroByteCandId}_panorama.jpg`), Buffer.alloc(0));
+    if (db && db.saveSpatialBoothCandidate) {
+      await db.saveSpatialBoothCandidate(TEST_PROJECT_ID, {
+        candidateId: zeroByteCandId,
+        projectId: TEST_PROJECT_ID,
+        status: 'READY_FOR_PREVIEW',
+        geometryValid: true
+      });
+      const zeroAssetRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${zeroByteCandId}/asset`, {
+        'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+      });
+      assert.strictEqual(zeroAssetRes.status, 400, '0-byte asset must return 400 CORRUPTED_ASSET');
+      assert.strictEqual(zeroAssetRes.json?.error, 'CORRUPTED_ASSET');
+    }
+
+    // Negative Security: Non-JPEG spoofed binary payload rejected (400 INVALID_JPEG_PAYLOAD)
+    const nonJpegCandId = `cand-non-jpeg-${Date.now()}`;
+    const nonJpegCandDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, nonJpegCandId);
+    fs.mkdirSync(nonJpegCandDir, { recursive: true });
+    fs.writeFileSync(path.join(nonJpegCandDir, `${nonJpegCandId}_panorama.jpg`), Buffer.from('<html><body>MALICIOUS_PAYLOAD</body></html>'));
+    if (db && db.saveSpatialBoothCandidate) {
+      await db.saveSpatialBoothCandidate(TEST_PROJECT_ID, {
+        candidateId: nonJpegCandId,
+        projectId: TEST_PROJECT_ID,
+        status: 'READY_FOR_PREVIEW',
+        geometryValid: true
+      });
+      const nonJpegAssetRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${nonJpegCandId}/asset`, {
+        'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+      });
+      assert.strictEqual(nonJpegAssetRes.status, 400, 'Non-JPEG payload must return 400 INVALID_JPEG_PAYLOAD');
+      assert.strictEqual(nonJpegAssetRes.json?.error, 'INVALID_JPEG_PAYLOAD');
+    }
+
+    // Negative Security: Bare application root static bypass strictly blocked (404 Not Found)
+    const staticAppRootRes = await makeHttpRequest('GET', '/server/index.js');
+    assert.strictEqual(staticAppRootRes.status, 404, 'Direct raw static access to /server/index.js must return 404');
+    const staticPkgRes = await makeHttpRequest('GET', '/package.json');
+    assert.strictEqual(staticPkgRes.status, 404, 'Direct raw static access to /package.json must return 404');
 
     // Negative Security: Raw/static URL direct bypass strictly blocked (403 DIRECT_ASSET_ACCESS_FORBIDDEN)
     const rawStaticUploadsRes = await makeHttpRequest('GET', `/uploads/${createdCandidateId}_preview.jpg`);
@@ -1094,6 +1200,35 @@ async function runRealGenerationPipelineTests() {
       subServer.on('close', () => resolve());
       subServer.kill('SIGTERM');
     });
+  });
+
+  // [26] DB Concurrency: Simultaneous async mutate() calls preserve concurrent updates
+  await test('[26] DB Concurrency: Simultaneous async mutate() calls preserve concurrent updates', async () => {
+    if (!db || !db.mutate) return;
+
+    const key1 = `test_concurrency_${Date.now()}_1`;
+    const key2 = `test_concurrency_${Date.now()}_2`;
+
+    // Trigger two asynchronous writes simultaneously
+    const p1 = db.mutate(async (data) => {
+      await new Promise(r => setTimeout(r, 50));
+      data[key1] = { writtenBy: 'worker-1', timestamp: Date.now() };
+    });
+
+    const p2 = db.mutate(async (data) => {
+      await new Promise(r => setTimeout(r, 30));
+      data[key2] = { writtenBy: 'worker-2', timestamp: Date.now() };
+    });
+
+    await Promise.all([p1, p2]);
+
+    const read1 = db.get(key1);
+    const read2 = db.get(key2);
+
+    assert.ok(read1, 'Write 1 must be persisted');
+    assert.strictEqual(read1.writtenBy, 'worker-1');
+    assert.ok(read2, 'Write 2 must be persisted');
+    assert.strictEqual(read2.writtenBy, 'worker-2');
   });
 
   console.log('\n================================================================');

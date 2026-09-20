@@ -183,7 +183,7 @@ class PanoramicStitcher {
       const stdout = execFileSync(this.pythonExe, [this.workerScript, '--input-json', inputJson, '--output-json', outputJson], {
         encoding: 'utf-8',
         maxBuffer: 50 * 1024 * 1024,
-        timeout: 3600000
+        timeout: 600000
       });
       console.log(`[OpenCV Worker] Output: ${stdout.trim()}`);
 
@@ -223,9 +223,7 @@ class PanoramicStitcher {
     const workerSources = views.map((v, i) => ({
       path: v.localPath || v.path,
       slot: v.slot || ('SHOT_' + String(i + 1).padStart(2, '0')),
-      index: i,
-      candidateId: v.candidateId || null,
-      estimatedYawDeg: (v.estimatedYawDeg !== undefined && v.estimatedYawDeg !== null) ? Number(v.estimatedYawDeg) : (v.angle || 0)
+      index: i
     }));
 
     const workerResult = this.runOpenCvWorker(workerSources, this.uploadsDir, candidateId, options);
@@ -264,9 +262,7 @@ class PanoramicStitcher {
       const workerSources = views.map((v, i) => ({
         path: v.localPath || v.path,
         slot: v.slot || ('SHOT_' + String(i + 1).padStart(2, '0')),
-        index: i,
-        candidateId: v.candidateId || null,
-        estimatedYawDeg: (v.estimatedYawDeg !== undefined && v.estimatedYawDeg !== null) ? Number(v.estimatedYawDeg) : (v.angle || 0)
+        index: i
       }));
       workerResult = this.runOpenCvWorker(workerSources, this.uploadsDir, candidateId, options);
     }
@@ -299,8 +295,23 @@ class PanoramicStitcher {
       }
     }
 
-    const nativeUrl = '/uploads/' + workerResult.nativeFile;
-    const previewUrl = '/uploads/' + workerResult.previewFile;
+    const nativeFilePath = path.join(this.uploadsDir, workerResult.nativeFile);
+    const previewFilePath = path.join(this.uploadsDir, workerResult.previewFile);
+    let assetSha256 = null;
+    let assetByteSize = 0;
+    try {
+      const targetFile = fs.existsSync(nativeFilePath) ? nativeFilePath : previewFilePath;
+      if (fs.existsSync(targetFile)) {
+        const fileBuf = fs.readFileSync(targetFile);
+        assetSha256 = crypto.createHash('sha256').update(fileBuf).digest('hex');
+        assetByteSize = fileBuf.length;
+      }
+    } catch (e) {}
+
+    const nativeUrl = options.projectId ? 
+      `/api/projects/${options.projectId}/panorama/candidate/${candidateId}/asset` : 
+      ('/uploads/' + workerResult.nativeFile);
+    const previewUrl = nativeUrl;
 
     return {
       status: 'READY',
@@ -329,6 +340,10 @@ class PanoramicStitcher {
       stitchedPanoramaUrl: nativeUrl,
       activeBackgroundUrl: nativeUrl,
       provenanceUrl: nativeUrl,
+      assetSha256,
+      assetByteSize,
+      nativeFile: workerResult.nativeFile,
+      previewFile: workerResult.previewFile,
       angularAnchors: workerResult.anchors.map(a => a.degree),
       anchors: workerResult.anchors,
       engine: 'OPENCV',
