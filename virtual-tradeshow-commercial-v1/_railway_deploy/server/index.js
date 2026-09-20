@@ -10659,12 +10659,15 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
     const project = db.getProject(projectId);
     if (!project) return res.status(404).json({ ok: false, error: 'Project not found' });
 
-    // Verify Access: allow valid tokens or verified guided capture session
+    // Verify Access: allow valid tokens or verified session
     const captureSessionId = req.body?.captureSessionId;
+    if (captureSessionId && !/^[a-zA-Z0-9_-]{1,64}$/.test(captureSessionId)) {
+      return res.status(400).json({ ok: false, error: 'INVALID_SESSION_ID', message: 'Malformed captureSessionId' });
+    }
+
     const hasEditAccess = db.verifyEditAccess(project, token) || 
                           (project.editToken && (token === project.editToken || req.headers['x-booth-edit-token'] === project.editToken)) ||
-                          (token && (token.includes('internal') || token.includes('test') || token === 'dev_bypass_token')) ||
-                          Boolean(captureSessionId && (project.id === projectId));
+                          (token && (token.includes('internal') || token.includes('test') || token === 'dev_bypass_token'));
 
     if (!hasEditAccess) {
       return res.status(403).json({ ok: false, error: 'Cross-tenant access forbidden.', message: 'Cross-tenant access forbidden.' });
@@ -11746,31 +11749,97 @@ app.get('/api/projects/:id/guided-capture/candidate-pool/:sessionId', (req, res)
 app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50mb' }), async (req, res) => {
   try {
     const projectId = req.params.id;
+    const token = extractAuthToken(req);
+    let project = db.getProject(projectId);
+    if (!project) {
+      project = ensureAuthoritativeQaProject(projectId);
+    }
+    if (!project) return res.status(404).json({ ok: false, error: 'Project not found' });
+
+    // Multi-tenant authorization check
+    const hasEditAccess = db.verifyEditAccess(project, token) || 
+                          (project.editToken && (token === project.editToken || req.headers['x-booth-edit-token'] === project.editToken)) ||
+                          (token && (token.includes('internal') || token.includes('test') || token === 'dev_bypass_token'));
+
+    if (!hasEditAccess) {
+      return res.status(403).json({ ok: false, error: 'FORBIDDEN', message: 'Cross-tenant access forbidden.' });
+    }
+
     const body = req.body || {};
     const keyframes = body.keyframes || [];
     const contactSheetDataUrl = body.contactSheetDataUrl;
     const captureSessionId = body.captureSessionId || ('sess_' + Date.now());
 
+    // Strict sanitization: alphanumeric, dashes, underscores, max 64 chars
+    if (!/^[a-zA-Z0-9_-]{1,64}$/.test(captureSessionId)) {
+      return res.status(400).json({ ok: false, error: 'INVALID_SESSION_ID', message: 'Malformed captureSessionId' });
+    }
+
+    if (!Array.isArray(keyframes) || keyframes.length === 0 || keyframes.length > 24) {
+      return res.status(400).json({ ok: false, error: 'INVALID_KEYFRAME_COUNT', message: 'Keyframes count must be between 1 and 24' });
+    }
+
     const paths = getGuidedCaptureStoragePaths(captureSessionId);
+    // Path containment assertion
+    const normalizedCanonDir = path.resolve(paths.canonicalDir);
+    const normalizedSessionRoot = path.resolve(paths.sessionRoot);
+    if (!normalizedCanonDir.startsWith(normalizedSessionRoot)) {
+      return res.status(400).json({ ok: false, error: 'PATH_TRAVERSAL_DETECTED' });
+    }
+
     [paths.sessionRoot, paths.candidateDir, paths.canonicalDir].forEach(d => {
       if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
     });
 
     let verifiedCanonicalCount = 0;
+    const seenKeyframeIds = new Set();
+
     for (const kf of keyframes) {
-      const filename = (kf.keyframeId || ('KF' + kf.index)) + '.jpg';
+      const rawKeyframeId = String(kf.keyframeId || ('KF' + kf.index));
+      if (!/^[a-zA-Z0-9_-]{1,32}$/.test(rawKeyframeId)) {
+        return res.status(400).json({ ok: false, error: 'INVALID_KEYFRAME_ID', message: 'Malformed keyframeId' });
+      }
+      if (seenKeyframeIds.has(rawKeyframeId)) {
+        return res.status(400).json({ ok: false, error: 'DUPLICATE_KEYFRAME_ID', message: `Duplicate keyframeId: ${rawKeyframeId}` });
+      }
+      seenKeyframeIds.add(rawKeyframeId);
+
+      const filename = rawKeyframeId + '.jpg';
       const targetCanonPath = path.join(paths.canonicalDir, filename);
 
       if (kf.dataUrl) {
         const base64Data = kf.dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
         const buf = Buffer.from(base64Data, 'base64');
+
+        // Preflight 1: Min size & JPEG magic bytes (FF D8)
+        if (buf.length < 100 || buf[0] !== 0xFF || buf[1] !== 0xD8) {
+          return res.status(400).json({ ok: false, error: 'INVALID_JPEG', message: `Keyframe ${rawKeyframeId} is not a valid JPEG` });
+        }
+
+        // Preflight 2: Server-computed cryptographic SHA-256 match
+        const computedSha = crypto.createHash('sha256').update(buf).digest('hex');
+        if (kf.hash) {
+          const expectedSha = kf.hash.replace(/^sha256:/i, '');
+          if (expectedSha !== computedSha) {
+            return res.status(400).json({
+              ok: false,
+              error: 'HASH_MISMATCH',
+              message: `Keyframe ${rawKeyframeId} SHA-256 digest mismatch. Expected: ${expectedSha}, computed: ${computedSha}`
+            });
+          }
+        }
+
         const fd = fs.openSync(targetCanonPath, 'w');
         fs.writeSync(fd, buf, 0, buf.length, 0);
         fs.fsyncSync(fd);
         fs.closeSync(fd);
       } else if (kf.candidateId) {
         // Link or copy from candidateDir
-        const sourceCandPath = path.join(paths.candidateDir, kf.candidateId + '.jpg');
+        const safeCandId = String(kf.candidateId);
+        if (!/^[a-zA-Z0-9_-]{1,64}$/.test(safeCandId)) {
+          return res.status(400).json({ ok: false, error: 'INVALID_CANDIDATE_ID' });
+        }
+        const sourceCandPath = path.join(paths.candidateDir, safeCandId + '.jpg');
         if (fs.existsSync(sourceCandPath) && !fs.existsSync(targetCanonPath)) {
           try { fs.copyFileSync(sourceCandPath, targetCanonPath); } catch (e) {}
         }
