@@ -128,33 +128,33 @@ test('[T02] Continuous yaw unwrap & 0°/360° boundary crossing', () => {
   assert.ok(engine.unwrappedYaw >= 350.0, `Unwrapped yaw (${engine.unwrappedYaw}) tracks cumulative continuous rotation past 350°`);
 });
 
-test('[T03] Target acquisition and loss within ±3.5° tolerance', () => {
+test('[T03] Target acquisition and loss within ±7.0° tolerance', () => {
   const engine = new Stage2CaptureEngine();
   engine.startCamera(createMockStream());
   // Origin at 180 (target 0 is 0.0°)
   engine.processSensorInput({ alpha: 180.0, beta: 0.0, gamma: 0.0, timestamp: 1000 });
 
-  // Within tolerance (2.0° <= 3.5°)
-  engine.processSensorInput({ alpha: 178.0, beta: 0.0, gamma: 0.0, timestamp: 1100 });
-  assert.strictEqual(engine.state, STATES.STABILIZING, 'Within 3.5° should enter STABILIZING');
+  // Within tolerance (3.0° <= 7.0°)
+  engine.processSensorInput({ alpha: 177.0, beta: 0.0, gamma: 0.0, timestamp: 1100 });
+  assert.strictEqual(engine.state, STATES.STABILIZING, 'Within 7.0° should enter STABILIZING');
 
-  // Move out of tolerance (6.0° > 3.5°)
-  engine.processSensorInput({ alpha: 174.0, beta: 0.0, gamma: 0.0, timestamp: 1200 });
-  assert.strictEqual(engine.state, STATES.APPROACHING_TARGET, 'Exceeding 3.5° within 10° should revert to APPROACHING_TARGET');
+  // Move out of hold tolerance (10.0° > 9.0°)
+  engine.processSensorInput({ alpha: 170.0, beta: 0.0, gamma: 0.0, timestamp: 1200 });
+  assert.strictEqual(engine.state, STATES.APPROACHING_TARGET, 'Exceeding holdToleranceDeg should revert to APPROACHING_TARGET');
   assert.strictEqual(engine.stabilityStartTime, null, 'Stability hold should be reset');
 });
 
-test('[T04] Pitch (±15°) and Roll (±10°) safety envelope', () => {
+test('[T04] Pitch (±25°) and Roll (±20°) safety envelope', () => {
   const engine = new Stage2CaptureEngine();
   engine.startCamera(createMockStream());
   engine.processSensorInput({ alpha: 180.0, beta: 0.0, gamma: 0.0, timestamp: 1000 });
 
-  // Angle is perfect (0°), but pitch exceeds limit (16° > 15°)
-  engine.processSensorInput({ alpha: 180.0, beta: 16.5, gamma: 0.0, timestamp: 1100 });
+  // Angle is perfect (0°), but pitch exceeds limit (26.5° > 25°)
+  engine.processSensorInput({ alpha: 180.0, beta: 26.5, gamma: 0.0, timestamp: 1100 });
   assert.notStrictEqual(engine.state, STATES.STABILIZING, 'Unsafe pitch must prevent stabilizing');
 
-  // Safe pitch, but roll exceeds limit (11° > 10°)
-  engine.processSensorInput({ alpha: 180.0, beta: 5.0, gamma: 11.2, timestamp: 1200 });
+  // Safe pitch, but roll exceeds limit (21.2° > 20°)
+  engine.processSensorInput({ alpha: 180.0, beta: 5.0, gamma: 21.2, timestamp: 1200 });
   assert.notStrictEqual(engine.state, STATES.STABILIZING, 'Unsafe roll must prevent stabilizing');
 
   // Both within limits
@@ -473,15 +473,15 @@ test('[T17] Explicit upright portrait pose boundary test (flat desk rejected, up
   assert.strictEqual(engine.currentPitch, -45.0);
   assert.notStrictEqual(engine.state, STATES.STABILIZING, '45° tilt must be rejected');
 
-  // 4. Phone upright within limit (beta=76°, deviation = -14° <= 15°): accepted.
-  win.emit('deviceorientation', { alpha: 180, beta: 76, gamma: 0, timeStamp: 1300 });
-  assert.strictEqual(engine.currentPitch, -14.0);
-  assert.strictEqual(engine.state, STATES.STABILIZING, '76° beta (14° deviation <= 15°) must be accepted as SAFE');
+  // 4. Phone upright within limit (beta=68°, deviation = -22° <= 25°): accepted.
+  win.emit('deviceorientation', { alpha: 180, beta: 68, gamma: 0, timeStamp: 1300 });
+  assert.strictEqual(engine.currentPitch, -22.0);
+  assert.strictEqual(engine.state, STATES.STABILIZING, '68° beta (22° deviation <= 25°) must be accepted as SAFE');
 
-  // 5. Phone upright past limit (beta=74°, deviation = -16° > 15°): rejected.
-  win.emit('deviceorientation', { alpha: 180, beta: 74, gamma: 0, timeStamp: 1400 });
-  assert.strictEqual(engine.currentPitch, -16.0);
-  assert.notStrictEqual(engine.state, STATES.STABILIZING, '74° beta (16° deviation > 15°) must be rejected as UNSAFE');
+  // 5. Phone upright past limit (beta=60°, deviation = -30° > 25°): rejected.
+  win.emit('deviceorientation', { alpha: 180, beta: 60, gamma: 0, timeStamp: 1400 });
+  assert.strictEqual(engine.currentPitch, -30.0);
+  assert.notStrictEqual(engine.state, STATES.STABILIZING, '60° beta (30° deviation > 25°) must be rejected as UNSAFE');
 });
 
 test('[T18] Lightweight Stage 2 RI telemetry recording & sample metrics', async () => {
