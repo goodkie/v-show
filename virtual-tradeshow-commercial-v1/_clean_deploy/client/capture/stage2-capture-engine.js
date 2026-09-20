@@ -1284,11 +1284,11 @@ class Stage2CaptureEngine {
       return { submitted: false, status: 'MISSING_PROJECT_ID', error: 'projectId is required for generation handoff' };
     }
     const authToken = options.authToken || this.options?.authToken;
-    const captureSessionId = this.telemetry?.sessionId || ('sess-' + projectId + '-' + Date.now());
 
-    // Run preflight validation
+    // Run preflight validation with default requireRealCapture (P0-6)
+    const requireRealCapture = options.requireRealCapture !== undefined ? options.requireRealCapture : true;
     if (typeof this.validateReal12Frames === 'function') {
-      const preflight = this.validateReal12Frames({ requireRealCapture: options.requireRealCapture });
+      const preflight = this.validateReal12Frames({ requireRealCapture });
       if (!preflight.valid) {
         return { submitted: false, status: 'PREFLIGHT_VALIDATION_FAILED', error: preflight.reason };
       }
@@ -1330,7 +1330,34 @@ class Stage2CaptureEngine {
       if (!fetchFn) {
         return { submitted: false, status: 'FETCH_UNAVAILABLE' };
       }
-      // Step 1: POST keyframes to persistent canonical storage
+
+      // Step 0: Server-issued session initialization (P0-1) - separated from RI telemetry ID
+      let captureSessionId = options.captureSessionId;
+      if (!captureSessionId) {
+        const sessRes = await fetchFn(`/api/projects/${projectId}/guided-capture/session`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken ? { 'Authorization': `Bearer ${authToken}`, 'X-Booth-Edit-Token': authToken } : {})
+          },
+          body: JSON.stringify({
+            captureMode: '12_POINT_PANORAMA',
+            frameCount: 12
+          })
+        });
+        const sessData = await sessRes.json();
+        if (!sessRes.ok || !sessData.ok || !sessData.captureSessionId) {
+          return {
+            submitted: false,
+            status: 'SESSION_INITIALIZATION_FAILED',
+            error: sessData.message || sessData.error || 'Failed to initialize server capture session'
+          };
+        }
+        captureSessionId = sessData.captureSessionId;
+      }
+      this.serverCaptureSessionId = captureSessionId;
+
+      // Step 1: POST keyframes to persistent canonical storage with server-issued session
       const kfRes = await fetchFn(`/api/projects/${projectId}/guided-capture/keyframes`, {
         method: 'POST',
         headers: {
@@ -1361,14 +1388,24 @@ class Stage2CaptureEngine {
         body: JSON.stringify({
           captureSessionId,
           creationMode: 'FIXED_ORIGIN_PANORAMA',
+          outputType: 'PANORAMA_360',
+          closureConfirmed: true,
+          closureVerified: true,
           useCanonicalSession: true,
           receiptId: kfData.receiptId
         })
       });
       const panoData = await panoRes.json();
+      if (!panoRes.ok || !panoData.ok) {
+        return {
+          submitted: false,
+          status: panoData.error || 'GENERATION_START_FAILED',
+          error: panoData.message || panoData.error || 'Failed to start panorama generation'
+        };
+      }
       return {
-        submitted: panoRes.ok && panoData.ok,
-        status: panoData.status || 'STARTED',
+        submitted: true,
+        status: panoData.status || 'QUEUED',
         jobId: panoData.jobId,
         receiptId: kfData.receiptId,
         captureSessionId

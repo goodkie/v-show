@@ -10739,6 +10739,57 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
 
     if (captureSessionId) {
       const paths = getGuidedCaptureStoragePaths(captureSessionId, projectId);
+      const sessionInitPath = path.join(paths.sessionRoot, 'session_init.json');
+      const manifestPath = path.join(paths.sessionRoot, 'manifest.json');
+
+      if (!fs.existsSync(sessionInitPath)) {
+        return res.status(400).json({
+          ok: false,
+          error: 'SESSION_NOT_INITIALIZED',
+          message: 'Capture session was not initialized via POST /api/projects/:id/guided-capture/session'
+        });
+      }
+
+      try {
+        const initData = JSON.parse(fs.readFileSync(sessionInitPath, 'utf8'));
+        if (initData.projectId && initData.projectId !== projectId) {
+          return res.status(409).json({ ok: false, error: 'SESSION_PROJECT_MISMATCH', message: 'Session belongs to a different project' });
+        }
+      } catch (e) {
+        return res.status(500).json({ ok: false, error: 'SESSION_INIT_CORRUPTED' });
+      }
+
+      if (!fs.existsSync(manifestPath)) {
+        return res.status(409).json({
+          ok: false,
+          error: 'SESSION_NOT_COMMITTED',
+          message: 'Capture session has not been committed with canonical keyframes'
+        });
+      }
+
+      let sessionManifest;
+      try {
+        sessionManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      } catch (e) {
+        return res.status(500).json({ ok: false, error: 'MANIFEST_CORRUPTED' });
+      }
+
+      if (sessionManifest.status !== 'COMMITTED') {
+        return res.status(409).json({
+          ok: false,
+          error: 'SESSION_NOT_COMMITTED',
+          message: `Capture session status is ${sessionManifest.status}, expected COMMITTED`
+        });
+      }
+
+      if (req.body?.receiptId && sessionManifest.receiptId && req.body.receiptId !== sessionManifest.receiptId) {
+        return res.status(400).json({
+          ok: false,
+          error: 'INVALID_RECEIPT_ID',
+          message: 'Supplied receiptId does not match session manifest'
+        });
+      }
+
       const poolManifestPath = fs.existsSync(paths.metadataFile) ? paths.metadataFile : paths.poolManifestPath;
 
       let candidatePool = null;
@@ -10843,9 +10894,21 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
 
       let canonicalList = req.body.keyframes || req.body.canonicalKeyframes;
       if (sourceList.length === 0 && (!canonicalList || !canonicalList.length)) {
-        const sessionKfJson = path.join(paths.sessionRoot, 'canonical_keyframes.json');
-        if (fs.existsSync(sessionKfJson)) {
-          try { canonicalList = JSON.parse(fs.readFileSync(sessionKfJson, 'utf8')); } catch (e) {}
+        if (sessionManifest && sessionManifest.activeVersion) {
+          const activeVersionDir = path.join(paths.versionsDir, sessionManifest.activeVersion);
+          const versionKfJson = path.join(activeVersionDir, 'canonical_keyframes.json');
+          if (fs.existsSync(versionKfJson)) {
+            try {
+              canonicalList = JSON.parse(fs.readFileSync(versionKfJson, 'utf8'));
+              paths.activeVersionDir = activeVersionDir;
+            } catch (e) {}
+          }
+        }
+        if (!canonicalList || !canonicalList.length) {
+          const sessionKfJson = path.join(paths.sessionRoot, 'canonical_keyframes.json');
+          if (fs.existsSync(sessionKfJson)) {
+            try { canonicalList = JSON.parse(fs.readFileSync(sessionKfJson, 'utf8')); } catch (e) {}
+          }
         }
       }
       if (sourceList.length === 0 && (!canonicalList || !canonicalList.length)) {
@@ -10877,6 +10940,7 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
         canonicalList.forEach((kf, idx) => {
           let kfPath = null;
           const kfName = kf.keyframeId || ('KF' + String(idx + 1).padStart(2, '0'));
+          const directVersionFile = paths.activeVersionDir ? path.join(paths.activeVersionDir, (kf.filename || (kfName + '.jpg'))) : null;
           const directCanonFile = path.join(paths.canonicalDir, kfName + '.jpg');
           // §3 INDEX_BASED_PHYSICAL_FRAME_FALLBACK_USED=false: candidateId MUST come from the keyframe
           // object's own field. Index-based candidatePool.candidates[idx].candidateId is forbidden
@@ -10888,7 +10952,9 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
           const legacyCanonFile = path.resolve(DATA_DIR, 'guided_capture_keyframes', captureSessionId, kfName + '.jpg');
           const legacyCandFile = candId ? path.resolve(DATA_DIR, 'guided_capture_keyframes', captureSessionId, 'candidates', candId + '.jpg') : null;
 
-          if (fs.existsSync(directCanonFile) && fs.statSync(directCanonFile).size > 0) {
+          if (directVersionFile && fs.existsSync(directVersionFile) && fs.statSync(directVersionFile).size > 0) {
+            kfPath = directVersionFile;
+          } else if (fs.existsSync(directCanonFile) && fs.statSync(directCanonFile).size > 0) {
             kfPath = directCanonFile;
           } else if (candFile && fs.existsSync(candFile) && fs.statSync(candFile).size > 0) {
             kfPath = candFile;
@@ -11249,6 +11315,84 @@ app.get(['/api/projects/:id/panorama/candidate/:candidateId', '/api/projects/:id
     const candidate = db.getSpatialBoothCandidate(req.params.candidateId);
     if (!candidate) return res.status(404).json({ ok: false, error: 'Panorama candidate not found' });
     res.json({ ok: true, success: true, candidate });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Dedicated authenticated asset retrieval endpoint for panorama candidate (P0-7)
+app.get('/api/projects/:id/panorama/candidate/:candidateId/asset', (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const project = db.getProject(projectId);
+    if (!project) return res.status(404).json({ ok: false, error: 'PROJECT_NOT_FOUND', message: 'Project not found' });
+
+    const token = extractAuthToken(req);
+    const hasEditAccess = db.verifyEditAccess(project, token);
+    if (!hasEditAccess) {
+      return res.status(403).json({ ok: false, error: 'FORBIDDEN', message: 'Cross-tenant access forbidden.' });
+    }
+
+    const candidate = db.getSpatialBoothCandidate(req.params.candidateId);
+    if (!candidate) return res.status(404).json({ ok: false, error: 'ASSET_NOT_FOUND', message: 'Panorama candidate not found' });
+
+    const candidateId = req.params.candidateId;
+    const searchDirs = [
+      UPLOADS_DIR,
+      path.join(__dirname, '..', 'uploads'),
+      path.join(DATA_DIR, 'uploads')
+    ];
+
+    let assetPath = null;
+    const possibleFiles = [];
+
+    // Prioritize actual artifact URLs declared by the candidate
+    const candUrls = [
+      candidate.stitchedPanoramaUrl,
+      candidate.masterUrl,
+      candidate.textureUrl,
+      candidate.nativeUrl,
+      candidate.previewUrl,
+      candidate.activeBackgroundUrl
+    ].filter(Boolean);
+
+    for (const u of candUrls) {
+      if (typeof u === 'string') {
+        const basename = path.basename(u);
+        if (basename) possibleFiles.push(basename);
+        if (fs.existsSync(u) && fs.statSync(u).size > 0) {
+          assetPath = u;
+          break;
+        }
+      }
+    }
+
+    if (!assetPath) {
+      possibleFiles.push(
+        `${candidateId}_native.jpg`,
+        `${candidateId}_preview.jpg`,
+        `${candidateId}.jpg`
+      );
+
+      for (const dir of searchDirs) {
+        for (const file of possibleFiles) {
+          const fullPath = path.join(dir, file);
+          if (fs.existsSync(fullPath) && fs.statSync(fullPath).size > 0) {
+            assetPath = fullPath;
+            break;
+          }
+        }
+        if (assetPath) break;
+      }
+    }
+
+    if (!assetPath) {
+      return res.status(404).json({ ok: false, error: 'ASSET_NOT_FOUND', message: 'Candidate asset file not found on disk' });
+    }
+
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    fs.createReadStream(assetPath).pipe(res);
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
@@ -11877,60 +12021,153 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
     const sessionMetaPath = path.join(paths.sessionRoot, 'session_metadata.json');
     const sessionInitPath = path.join(paths.sessionRoot, 'session_init.json');
 
-    // Cross-project session binding and idempotent retry check
-    if (fs.existsSync(sessionInitPath)) {
-      try {
-        const initData = JSON.parse(fs.readFileSync(sessionInitPath, 'utf8'));
-        if (initData.projectId && initData.projectId !== projectId) {
-          return res.status(409).json({ ok: false, error: 'SESSION_PROJECT_MISMATCH', message: 'Session belongs to a different project' });
-        }
-      } catch (e) {}
+    // Cross-project session binding and session initialization check (P0-1)
+    if (!fs.existsSync(sessionInitPath)) {
+      return res.status(400).json({
+        ok: false,
+        error: 'SESSION_NOT_INITIALIZED',
+        message: 'Capture session must be initialized via POST /api/projects/:id/guided-capture/session prior to keyframe upload'
+      });
     }
 
-    if (fs.existsSync(sessionMetaPath)) {
-      try {
-        const existingMeta = JSON.parse(fs.readFileSync(sessionMetaPath, 'utf8'));
-        if (existingMeta.projectId && existingMeta.projectId !== projectId) {
-          return res.status(409).json({ ok: false, error: 'SESSION_PROJECT_MISMATCH', message: 'Session belongs to a different project' });
-        }
-        if (existingMeta.status === 'COMMITTED') {
-          const kfJsonPath = path.join(paths.sessionRoot, 'canonical_keyframes.json');
-          if (fs.existsSync(kfJsonPath) && fs.existsSync(paths.canonicalDir)) {
-            const existingKf = JSON.parse(fs.readFileSync(kfJsonPath, 'utf8'));
-            const existingHashMap = new Map(existingKf.map(k => [k.index, (k.hash || '').replace(/^sha256:/i, '').toLowerCase()]));
-            
-            // Check incoming hashes vs committed hashes
-            let hashesMatch = true;
-            for (const incomingKf of keyframes) {
-              const incSha = (incomingKf.hash || '').replace(/^sha256:/i, '').toLowerCase();
-              if (existingHashMap.get(incomingKf.index) !== incSha) {
-                hashesMatch = false;
-                break;
-              }
-            }
+    let initData;
+    try {
+      initData = JSON.parse(fs.readFileSync(sessionInitPath, 'utf8'));
+    } catch (parseErr) {
+      return res.status(500).json({ ok: false, error: 'SESSION_INIT_CORRUPTED', message: 'Failed to parse session_init.json' });
+    }
 
-            if (hashesMatch) {
-              return res.json({
-                ok: true,
-                idempotent: true,
-                receiptId: existingMeta.receiptId || ('rcpt-s2-' + existingMeta.createdAt),
-                captureSessionId,
-                projectId,
-                verifiedCanonicalCount: 12,
-                totalBytes: existingMeta.totalBytes || 0,
-                activeVersion: existingMeta.activeVersion || 'v_committed',
-                storageClass: 'VOLUME_DURABLE'
-              });
-            } else {
-              return res.status(409).json({
-                ok: false,
-                error: 'SESSION_HASH_MISMATCH',
-                message: 'Session was already committed with different frame content; replacement forbidden.'
-              });
-            }
+    if (initData.projectId && initData.projectId !== projectId) {
+      return res.status(409).json({ ok: false, error: 'SESSION_PROJECT_MISMATCH', message: 'Session belongs to a different project' });
+    }
+
+    // Session TTL check (2 hours)
+    const sessionAgeMs = Date.now() - new Date(initData.createdAt).getTime();
+    if (sessionAgeMs > 2 * 3600 * 1000) {
+      return res.status(410).json({ ok: false, error: 'SESSION_EXPIRED', message: 'Capture session has expired (TTL: 2 hours)' });
+    }
+
+    // Cryptographic byte-level idempotency check (P0-3)
+    const manifestPath = path.join(paths.sessionRoot, 'manifest.json');
+    if (fs.existsSync(manifestPath)) {
+      let manifest;
+      try {
+        manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      } catch (mErr) {
+        return res.status(500).json({ ok: false, error: 'MANIFEST_CORRUPTED', message: 'Session manifest could not be parsed' });
+      }
+
+      if (manifest && manifest.status === 'COMMITTED') {
+        if (manifest.projectId && manifest.projectId !== projectId) {
+          return res.status(409).json({ ok: false, error: 'SESSION_PROJECT_MISMATCH', message: 'Committed session belongs to a different project' });
+        }
+
+        const activeVersion = manifest.activeVersion;
+        const versionDir = path.join(paths.versionsDir, activeVersion);
+        if (!fs.existsSync(versionDir)) {
+          return res.status(500).json({ ok: false, error: 'STORED_ASSET_CORRUPTED', message: `Active version directory ${activeVersion} is missing` });
+        }
+
+        const kfJsonPath = path.join(versionDir, 'canonical_keyframes.json');
+        if (!fs.existsSync(kfJsonPath)) {
+          return res.status(500).json({ ok: false, error: 'STORED_ASSET_CORRUPTED', message: 'canonical_keyframes.json missing in active version' });
+        }
+
+        let storedKfList;
+        try {
+          storedKfList = JSON.parse(fs.readFileSync(kfJsonPath, 'utf8'));
+        } catch (e) {
+          return res.status(500).json({ ok: false, error: 'STORED_ASSET_CORRUPTED', message: 'Failed to parse stored keyframes metadata' });
+        }
+
+        if (!Array.isArray(storedKfList) || storedKfList.length !== 12) {
+          return res.status(500).json({ ok: false, error: 'STORED_ASSET_CORRUPTED', message: 'Stored keyframes metadata must contain 12 frames' });
+        }
+
+        const storedByIndex = new Map(storedKfList.map(k => [k.index, k]));
+        const seenIndices = new Set();
+        let incomingTotalBytes = 0;
+
+        for (let i = 0; i < keyframes.length; i++) {
+          const incKf = keyframes[i];
+          const kfIndex = incKf.index;
+          if (typeof kfIndex !== 'number' || !Number.isInteger(kfIndex) || kfIndex < 1 || kfIndex > 12) {
+            return res.status(400).json({ ok: false, error: 'INVALID_KEYFRAME_INDEX', message: `Keyframe index must be integer 1-12, got: ${kfIndex}` });
+          }
+          if (seenIndices.has(kfIndex)) {
+            return res.status(400).json({ ok: false, error: 'DUPLICATE_KEYFRAME_INDEX', message: `Duplicate keyframe index: ${kfIndex}` });
+          }
+          seenIndices.add(kfIndex);
+
+          if (!incKf.dataUrl || typeof incKf.dataUrl !== 'string') {
+            return res.status(400).json({ ok: false, error: 'MISSING_DATA_URL', message: `Keyframe index ${kfIndex} missing dataUrl` });
+          }
+
+          const base64Data = incKf.dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
+          const buf = Buffer.from(base64Data, 'base64');
+          incomingTotalBytes += buf.length;
+
+          // Real SHA-256 computation of incoming bytes
+          const actualIncomingSha = crypto.createHash('sha256').update(buf).digest('hex');
+          const declaredSha = (incKf.hash || '').replace(/^sha256:/i, '').toLowerCase();
+
+          // Reject forged unchanged-hash with altered bytes (P0-3)
+          if (declaredSha !== actualIncomingSha) {
+            return res.status(400).json({
+              ok: false,
+              error: 'HASH_MISMATCH',
+              message: `Keyframe index ${kfIndex} declared hash does not match computed byte digest (forged/altered payload)`
+            });
+          }
+
+          const storedKf = storedByIndex.get(kfIndex);
+          if (!storedKf) {
+            return res.status(409).json({ ok: false, error: 'SESSION_HASH_MISMATCH', message: `No stored frame for index ${kfIndex}` });
+          }
+
+          const storedSha = (storedKf.hash || '').replace(/^sha256:/i, '').toLowerCase();
+          if (actualIncomingSha !== storedSha) {
+            return res.status(409).json({
+              ok: false,
+              error: 'SESSION_HASH_MISMATCH',
+              message: `Incoming bytes for frame ${kfIndex} do not match previously committed session frame digest`
+            });
+          }
+
+          // Verify physical asset on disk
+          const storedFileName = storedKf.keyframeId ? `${storedKf.keyframeId}.jpg` : `KF${String(kfIndex).padStart(2, '0')}.jpg`;
+          const storedFilePath = path.join(versionDir, storedFileName);
+          if (!fs.existsSync(storedFilePath)) {
+            return res.status(500).json({
+              ok: false,
+              error: 'STORED_ASSET_CORRUPTED',
+              message: `Physical file missing on disk in version directory: ${storedFileName}`
+            });
+          }
+          const storedBuf = fs.readFileSync(storedFilePath);
+          const diskSha = crypto.createHash('sha256').update(storedBuf).digest('hex');
+          if (diskSha !== storedSha) {
+            return res.status(500).json({
+              ok: false,
+              error: 'STORED_ASSET_CORRUPTED',
+              message: `Disk file for frame ${kfIndex} failed digest verification`
+            });
           }
         }
-      } catch (e) {}
+
+        // All 12 incoming frames match declared hashes AND match stored version byte-for-byte!
+        return res.json({
+          ok: true,
+          idempotent: true,
+          receiptId: manifest.receiptId || ('rcpt-s2-' + (manifest.committedAt || Date.now())),
+          captureSessionId,
+          projectId,
+          verifiedCanonicalCount: 12,
+          totalBytes: manifest.totalBytes || incomingTotalBytes,
+          activeVersion,
+          storageClass: 'VOLUME_DURABLE'
+        });
+      }
     }
 
     // Path containment assertion using path.relative
@@ -12071,10 +12308,11 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
     const versionDir = path.join(versionsDir, versionId);
 
     try {
-      // Test fault injection header: strictly gated to test environment and localhost
+      // Test fault injection header: strictly gated to test environment and localhost without proxy headers (P0-7)
       const isTestEnv = (process.env.NODE_ENV === 'test' || process.env.ALLOW_STAGE2_TEST_FAULT_INJECTION === 'true');
       const isLocalhost = req.ip === '127.0.0.1' || req.ip === '::1' || req.socket?.remoteAddress === '127.0.0.1';
-      const injectFailure = (isTestEnv && isLocalhost) ? req.headers['x-test-inject-write-failure'] : null;
+      const hasProxyForward = Boolean(req.headers['x-forwarded-for'] || req.headers['x-forwarded-host'] || req.headers['x-real-ip']);
+      const injectFailure = (isTestEnv && isLocalhost && !hasProxyForward) ? req.headers['x-test-inject-write-failure'] : null;
 
       for (let sIdx = 0; sIdx < stagedBuffers.length; sIdx++) {
         const staged = stagedBuffers[sIdx];
@@ -12119,6 +12357,14 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
       // Atomic commit: rename staging directory to immutable version directory
       fs.renameSync(stagingDir, versionDir);
 
+      // Verify readback of immutable version directory before publishing manifest pointer
+      for (const staged of stagedBuffers) {
+        const checkPath = path.join(versionDir, staged.filename);
+        if (!fs.existsSync(checkPath) || fs.statSync(checkPath).size !== staged.buffer.length) {
+          throw new Error(`COMMITTED_VERSION_READBACK_FAILED_AT_${staged.filename}`);
+        }
+      }
+
       // Atomic pointer swap: write manifest.json.tmp and renameSync to manifest.json
       const manifestData = {
         activeVersion: versionId,
@@ -12128,24 +12374,14 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
         status: 'COMMITTED',
         keyframeCount: 12,
         totalBytes,
-        committedAt: commitMarker.committedAt
+        committedAt: commitMarker.committedAt,
+        frames: kfMetadata
       };
       const manifestTmp = path.join(paths.sessionRoot, 'manifest.json.tmp');
       fs.writeFileSync(manifestTmp, JSON.stringify(manifestData, null, 2), 'utf8');
       fs.renameSync(manifestTmp, path.join(paths.sessionRoot, 'manifest.json'));
 
-      // Synchronize canonical directory in a lossless fashion
-      // Any previous capture remains preserved in its version directory; canonical is updated non-destructively
-      if (!fs.existsSync(paths.canonicalDir)) {
-        fs.mkdirSync(paths.canonicalDir, { recursive: true });
-      }
-      for (const staged of stagedBuffers) {
-        fs.copyFileSync(path.join(versionDir, staged.filename), path.join(paths.canonicalDir, staged.filename));
-      }
-      fs.copyFileSync(path.join(versionDir, 'canonical_keyframes.json'), path.join(paths.canonicalDir, 'canonical_keyframes.json'));
-      fs.copyFileSync(path.join(versionDir, 'canonical_keyframes.json'), path.join(paths.sessionRoot, 'canonical_keyframes.json'));
-
-      // Session metadata binding with COMMITTED status
+      // Session metadata binding with COMMITTED status (atomic write via tmp)
       const sessionMetadata = {
         captureSessionId,
         projectId,
@@ -12157,7 +12393,24 @@ app.post('/api/projects/:id/guided-capture/keyframes', express.json({ limit: '50
         totalBytes,
         createdAt: commitMarker.committedAt
       };
-      fs.writeFileSync(sessionMetaPath, JSON.stringify(sessionMetadata, null, 2), 'utf8');
+      const sessionMetaTmp = path.join(paths.sessionRoot, 'session_metadata.json.tmp');
+      fs.writeFileSync(sessionMetaTmp, JSON.stringify(sessionMetadata, null, 2), 'utf8');
+      fs.renameSync(sessionMetaTmp, sessionMetaPath);
+
+      // Synchronize canonical directory in a lossless fashion
+      // Downstream reads from versionDir designated by manifest.activeVersion; canonical is updated non-destructively
+      try {
+        if (!fs.existsSync(paths.canonicalDir)) {
+          fs.mkdirSync(paths.canonicalDir, { recursive: true });
+        }
+        for (const staged of stagedBuffers) {
+          fs.copyFileSync(path.join(versionDir, staged.filename), path.join(paths.canonicalDir, staged.filename));
+        }
+        fs.copyFileSync(path.join(versionDir, 'canonical_keyframes.json'), path.join(paths.canonicalDir, 'canonical_keyframes.json'));
+        fs.copyFileSync(path.join(versionDir, 'canonical_keyframes.json'), path.join(paths.sessionRoot, 'canonical_keyframes.json'));
+      } catch (canonSyncErr) {
+        console.warn('[Canonical Mirror Sync Warning]', canonSyncErr.message);
+      }
 
       res.json({
         ok: true,

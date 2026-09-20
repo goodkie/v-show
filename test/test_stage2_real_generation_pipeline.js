@@ -62,13 +62,16 @@ const REVOKED_SENTINEL_TOKEN = 'tok-revoked-ephemeral-sentinel-never-valid';
 // Authoritative ephemeral test token loaded strictly from environment
 const AUTHORIZED_PROJECT_TOKEN = process.env.STAGE2_EPHEMERAL_TEST_TOKEN || process.env.TEST_PROJECT_TOKEN || 'tok-stage2-ephemeral-test-runner-2026';
 
+// Unauthorized cross-tenant token
+const CROSS_TENANT_TOKEN = 'tok-other-tenant-random-secret';
+
 let passCount = 0;
 let failCount = 0;
 const results = [];
 
-function makeHttpRequest(method, reqPath, headers = {}, body = null) {
+function makeHttpRequest(method, reqPath, headers = {}, body = null, targetPort = SERVER_PORT) {
   return new Promise((resolve, reject) => {
-    const url = new URL(reqPath, BASE_URL);
+    const url = new URL(reqPath, `http://127.0.0.1:${targetPort}`);
     const options = {
       method,
       hostname: url.hostname,
@@ -228,6 +231,17 @@ async function runRealGenerationPipelineTests() {
     serverCaptureSessionId = res.json.captureSessionId;
   });
 
+  async function createServerSession(pId = TEST_PROJECT_ID, token = AUTHORIZED_PROJECT_TOKEN, port = SERVER_PORT) {
+    const res = await makeHttpRequest('POST', `/api/projects/${pId}/guided-capture/session`, {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }, '{}', port);
+    if (res.status !== 200 || !res.json?.captureSessionId) {
+      throw new Error(`Failed to create server session: ${res.status} ${res.text}`);
+    }
+    return res.json.captureSessionId;
+  }
+
   // [3] Ingest 12 canonical keyframes with authoritative token
   await test('[3] Ingest 12 real canonical frames to /api/projects/:id/guided-capture/keyframes with authoritative token', async () => {
     const activeSessionId = serverCaptureSessionId || captureSessionId;
@@ -363,9 +377,11 @@ async function runRealGenerationPipelineTests() {
       index: idx + 1,
       timestamp: Date.now(),
       estimatedYawDeg: rf.targetYawDeg,
-      dataUrl: `data:image/jpeg;base64,${rf.buffer.toString('base64')}`,
-      hash: idx === 0 ? 'c'.repeat(64) : rf.clientSha256, // altered hash for frame 1
-      bytes: rf.byteSize,
+      dataUrl: idx === 0
+        ? `data:image/jpeg;base64,${realFrames[1].buffer.toString('base64')}`
+        : `data:image/jpeg;base64,${rf.buffer.toString('base64')}`,
+      hash: idx === 0 ? realFrames[1].clientSha256 : rf.clientSha256, // altered content & matching digest for frame 1, conflicts with committed session
+      bytes: idx === 0 ? realFrames[1].byteSize : rf.byteSize,
       width: rf.width,
       height: rf.height
     }));
@@ -377,6 +393,33 @@ async function runRealGenerationPipelineTests() {
 
     assert.strictEqual(res.status, 409, 'Must return 409 Conflict when altering committed session');
     assert.strictEqual(res.json?.error, 'SESSION_HASH_MISMATCH');
+  });
+
+  // [8d] Negative Idempotency: Forged unchanged-hash with altered bytes rejected (400 HASH_MISMATCH) (P0-3)
+  await test('[8d] Negative Idempotency: Forged unchanged-hash with altered bytes rejected (400 HASH_MISMATCH)', async () => {
+    const activeSessionId = serverCaptureSessionId || captureSessionId;
+    const alteredFrames = realFrames.map((rf, idx) => ({
+      keyframeId: `KF${String(idx + 1).padStart(2, '0')}`,
+      index: idx + 1,
+      timestamp: Date.now(),
+      estimatedYawDeg: rf.targetYawDeg,
+      // Forged payload: bytes are corrupted but claimed hash matches original committed hash
+      dataUrl: idx === 0 
+        ? `data:image/jpeg;base64,${Buffer.from('corrupted forged byte content').toString('base64')}`
+        : `data:image/jpeg;base64,${rf.buffer.toString('base64')}`,
+      hash: rf.clientSha256,
+      bytes: rf.byteSize,
+      width: rf.width,
+      height: rf.height
+    }));
+
+    const res = await makeHttpRequest('POST', `/api/projects/${TEST_PROJECT_ID}/guided-capture/keyframes`, {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+    }, JSON.stringify({ captureSessionId: activeSessionId, keyframes: alteredFrames }));
+
+    assert.strictEqual(res.status, 400);
+    assert.strictEqual(res.json?.error, 'HASH_MISMATCH');
   });
 
   // [9] Negative security test: Path traversal in captureSessionId rejected (400 INVALID_SESSION_ID)
@@ -393,13 +436,32 @@ async function runRealGenerationPipelineTests() {
     assert.strictEqual(res.json?.error, 'INVALID_SESSION_ID');
   });
 
-  // [10] Negative batch test: Incomplete frame count (< 12) rejected (400 INVALID_KEYFRAME_COUNT)
-  await test('[10] Negative Batch: Incomplete frame count (< 12) rejected (400 INVALID_KEYFRAME_COUNT)', async () => {
+  // [9b] Negative Session: Upload without session initialization rejected (400 SESSION_NOT_INITIALIZED) (P0-1)
+  await test('[9b] Negative Session: Upload without session initialization rejected (400 SESSION_NOT_INITIALIZED)', async () => {
     const res = await makeHttpRequest('POST', `/api/projects/${TEST_PROJECT_ID}/guided-capture/keyframes`, {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
     }, JSON.stringify({
-      captureSessionId: 'sess-incomplete-' + Date.now(),
+      captureSessionId: 'sess-never-init-' + Date.now(),
+      keyframes: realFrames.map((rf, idx) => ({
+        keyframeId: `KF${String(idx + 1).padStart(2, '0')}`,
+        index: idx + 1,
+        dataUrl: `data:image/jpeg;base64,${rf.buffer.toString('base64')}`,
+        hash: rf.clientSha256
+      }))
+    }));
+    assert.strictEqual(res.status, 400);
+    assert.strictEqual(res.json?.error, 'SESSION_NOT_INITIALIZED');
+  });
+
+  // [10] Negative batch test: Incomplete frame count (< 12) rejected (400 INVALID_KEYFRAME_COUNT)
+  await test('[10] Negative Batch: Incomplete frame count (< 12) rejected (400 INVALID_KEYFRAME_COUNT)', async () => {
+    const testSession = await createServerSession();
+    const res = await makeHttpRequest('POST', `/api/projects/${TEST_PROJECT_ID}/guided-capture/keyframes`, {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+    }, JSON.stringify({
+      captureSessionId: testSession,
       keyframes: realFrames.slice(0, 11).map((rf, idx) => ({
         keyframeId: `KF${String(idx + 1).padStart(2, '0')}`,
         index: idx + 1,
@@ -414,6 +476,7 @@ async function runRealGenerationPipelineTests() {
 
   // [11] Negative batch test: Non-integer / float index rejected (400 INVALID_KEYFRAME_INDEX)
   await test('[11] Negative Batch: Non-integer / float index rejected (400 INVALID_KEYFRAME_INDEX)', async () => {
+    const testSession = await createServerSession();
     const badFrames = realFrames.map((rf, idx) => ({
       keyframeId: `KF${String(idx + 1).padStart(2, '0')}`,
       index: idx === 0 ? 1.5 : (idx + 1), // Non-integer index
@@ -425,7 +488,7 @@ async function runRealGenerationPipelineTests() {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
     }, JSON.stringify({
-      captureSessionId: 'sess-badindex-' + Date.now(),
+      captureSessionId: testSession,
       keyframes: badFrames
     }));
 
@@ -435,7 +498,7 @@ async function runRealGenerationPipelineTests() {
 
   // [12] Negative transaction test: Malformed last frame leaves ZERO files committed on disk
   await test('[12] Negative Transaction: Validation failure on last frame leaves zero files committed on disk', async () => {
-    const failSessionId = 'sess-atomic-fail-' + Date.now();
+    const testSession = await createServerSession();
     const badKeyframes = realFrames.map((rf, idx) => ({
       keyframeId: `KF${String(idx + 1).padStart(2, '0')}`,
       index: idx + 1,
@@ -447,22 +510,22 @@ async function runRealGenerationPipelineTests() {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
     }, JSON.stringify({
-      captureSessionId: failSessionId,
+      captureSessionId: testSession,
       keyframes: badKeyframes
     }));
 
     assert.strictEqual(res.status, 400);
     assert.strictEqual(res.json?.error, 'HASH_MISMATCH');
 
-    const failedCanonDir = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'guided_capture', failSessionId, 'canonical');
+    const failedCanonDir = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'guided_capture', 'projects', TEST_PROJECT_ID, 'sessions', testSession, 'canonical');
     assert.strictEqual(fs.existsSync(failedCanonDir), false, 'Canonical dir must NOT exist on pre-commit validation failure');
   });
 
   // [13] Negative transaction test: Injected staging write failure triggers rollback with zero canonical files
   await test('[13] Negative Transaction: Injected write failure during staging triggers rollback with zero canonical files', async () => {
-    const rollbackSessionId = 'sess-rollback-' + Date.now();
+    const testSession = await createServerSession();
     const framesPayload = {
-      captureSessionId: rollbackSessionId,
+      captureSessionId: testSession,
       keyframes: realFrames.map((rf, idx) => ({
         keyframeId: `KF${String(idx + 1).padStart(2, '0')}`,
         index: idx + 1,
@@ -485,12 +548,13 @@ async function runRealGenerationPipelineTests() {
     assert.strictEqual(res.status, 500, 'Must return 500 on injected write error');
     assert.strictEqual(res.json?.error, 'STORAGE_TRANSACTION_FAILED');
 
-    const rollbackCanonDir = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'guided_capture', rollbackSessionId, 'canonical');
+    const rollbackCanonDir = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'guided_capture', 'projects', TEST_PROJECT_ID, 'sessions', testSession, 'canonical');
     assert.strictEqual(fs.existsSync(rollbackCanonDir), false, 'Canonical dir must NOT exist after staging write rollback');
   });
 
   // [14] Negative integrity test: Well-formed SHA-256 digest mismatch rejected (400 HASH_MISMATCH)
   await test('[14] Negative Integrity: Well-formed SHA-256 digest mismatch rejected (400 HASH_MISMATCH)', async () => {
+    const testSession = await createServerSession();
     const mismatchSha = 'b'.repeat(64);
     const framesWithMismatch = realFrames.map((rf, idx) => ({
       keyframeId: `KF${String(idx + 1).padStart(2, '0')}`,
@@ -503,7 +567,7 @@ async function runRealGenerationPipelineTests() {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
     }, JSON.stringify({
-      captureSessionId: 'sess-mismatch-' + Date.now(),
+      captureSessionId: testSession,
       keyframes: framesWithMismatch
     }));
 
@@ -513,6 +577,7 @@ async function runRealGenerationPipelineTests() {
 
   // [15] Negative format test: Non-JPEG payload rejected (400 INVALID_JPEG)
   await test('[15] Negative Format: Non-JPEG binary payload rejected (400 INVALID_JPEG)', async () => {
+    const testSession = await createServerSession();
     const fakeBuffer = Buffer.from('This is a plain text file, not a valid JPEG image.');
     const framesWithNonJpeg = realFrames.map((rf, idx) => ({
       keyframeId: `KF${String(idx + 1).padStart(2, '0')}`,
@@ -525,7 +590,7 @@ async function runRealGenerationPipelineTests() {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
     }, JSON.stringify({
-      captureSessionId: 'sess-notjpeg-' + Date.now(),
+      captureSessionId: testSession,
       keyframes: framesWithNonJpeg
     }));
 
@@ -535,6 +600,7 @@ async function runRealGenerationPipelineTests() {
 
   // [16] Negative batch test: Duplicate keyframeId rejected (400 DUPLICATE_KEYFRAME_ID)
   await test('[16] Negative Batch: Duplicate keyframeId in batch rejected (400 DUPLICATE_KEYFRAME_ID)', async () => {
+    const testSession = await createServerSession();
     const framesWithDup = realFrames.map((rf, idx) => ({
       keyframeId: idx === 1 ? 'KF01' : `KF${String(idx + 1).padStart(2, '0')}`,
       index: idx + 1,
@@ -546,7 +612,7 @@ async function runRealGenerationPipelineTests() {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
     }, JSON.stringify({
-      captureSessionId: 'sess-dup-' + Date.now(),
+      captureSessionId: testSession,
       keyframes: framesWithDup
     }));
 
@@ -592,6 +658,21 @@ async function runRealGenerationPipelineTests() {
     assert.strictEqual(unauthRes.json?.ok, false);
   });
 
+  // [18b] Negative Session: /panorama/start with uncommitted session rejected (409 SESSION_NOT_COMMITTED) (P0-1)
+  await test('[18b] Negative Session: /panorama/start with uncommitted session rejected (409 SESSION_NOT_COMMITTED)', async () => {
+    const uncommittedSession = await createServerSession();
+    const res = await makeHttpRequest('POST', `/api/projects/${TEST_PROJECT_ID}/panorama/start`, {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+    }, JSON.stringify({
+      captureSessionId: uncommittedSession,
+      creationMode: 'FIXED_ORIGIN_PANORAMA',
+      useCanonicalSession: true
+    }));
+    assert.strictEqual(res.status, 409);
+    assert.strictEqual(res.json?.error, 'SESSION_NOT_COMMITTED');
+  });
+
   // [19] Worker terminal state polling: progresses to terminal READY state
   await test('[19] Worker terminal state polling: progresses through stages to READY with candidate', async () => {
     assert.ok(createdJobId);
@@ -630,6 +711,29 @@ async function runRealGenerationPipelineTests() {
     // Negative Auth: Unauthorized candidate retrieval without token rejected (403)
     const unauthRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${createdCandidateId}`);
     assert.strictEqual(unauthRes.status, 403, 'Unauthorized candidate retrieval must return 403 Forbidden');
+
+    // Negative Auth: Cross-tenant candidate retrieval rejected (403)
+    const crossRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${createdCandidateId}`, {
+      'Authorization': `Bearer ${CROSS_TENANT_TOKEN}`
+    });
+    assert.strictEqual(crossRes.status, 403, 'Cross-tenant candidate retrieval must return 403 Forbidden');
+
+    // Dedicated candidate asset endpoint authorization tests (P0-7)
+    const unauthAssetRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${createdCandidateId}/asset`);
+    assert.strictEqual(unauthAssetRes.status, 403, 'Unauthenticated candidate asset GET must return 403 Forbidden');
+
+    const crossTenantAssetRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${createdCandidateId}/asset`, {
+      'Authorization': `Bearer ${CROSS_TENANT_TOKEN}`
+    });
+    assert.strictEqual(crossTenantAssetRes.status, 403, 'Cross-tenant candidate asset GET must return 403 Forbidden');
+
+    const authAssetRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${createdCandidateId}/asset`, {
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+    });
+    assert.strictEqual(authAssetRes.status, 200, `Authorized candidate asset GET must return 200, got: ${authAssetRes.status}`);
+    assert.ok(authAssetRes.rawBody && authAssetRes.rawBody.length > 100);
+    assert.strictEqual(authAssetRes.rawBody[0], 0xFF);
+    assert.strictEqual(authAssetRes.rawBody[1], 0xD8);
 
     // Authorized retrieval with edit token
     const candRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${createdCandidateId}`, {
@@ -730,8 +834,8 @@ async function runRealGenerationPipelineTests() {
     assert.ok(check.reason.includes('invalid imageHash format'));
   });
 
-  // [24] Stage2CaptureEngine generation handoff
-  await test('[24] Stage2CaptureEngine authorized generation handoff integration', async () => {
+  // [24] Stage2CaptureEngine generation handoff with REAL HTTP requests
+  await test('[24] Stage2CaptureEngine authorized generation handoff integration (Real HTTP server-issued session & ingestion)', async () => {
     const { Stage2CaptureEngine } = require('../virtual-tradeshow-commercial-v1/client/capture/stage2-capture-engine.js');
     const engine = new Stage2CaptureEngine();
 
@@ -741,25 +845,37 @@ async function runRealGenerationPipelineTests() {
     assert.strictEqual(lockedRes.submitted, false);
     assert.strictEqual(engine.generationNetworkCallCount, 0);
 
-    // In authorized QA handoff state:
-    const fetchCalls = [];
-    global.fetch = async (url, opts) => {
-      fetchCalls.push({ url, method: opts.method, headers: opts.headers, body: JSON.parse(opts.body || '{}') });
-      if (url.includes('/guided-capture/keyframes')) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ ok: true, receiptId: 'rcpt-handoff-' + Date.now(), verifiedCanonicalCount: 12 })
-        };
-      }
-      if (url.includes('/panorama/start')) {
-        return {
-          ok: true,
-          status: 202,
-          json: async () => ({ ok: true, jobId: 'job-pano-handoff-' + Date.now(), status: 'STARTED' })
-        };
-      }
-      return { ok: false, status: 404, json: async () => ({ ok: false }) };
+    // Wire global.fetch to real local server HTTP requests (no stubs)
+    global.fetch = async (url, opts = {}) => {
+      const fullUrl = url.startsWith('http') ? url : `http://127.0.0.1:${SERVER_PORT}${url}`;
+      return new Promise((resolve, reject) => {
+        const u = new URL(fullUrl);
+        const req = http.request({
+          hostname: u.hostname,
+          port: u.port,
+          path: u.pathname + u.search,
+          method: opts.method || 'GET',
+          headers: opts.headers || {}
+        }, res => {
+          const chunks = [];
+          res.on('data', c => chunks.push(c));
+          res.on('end', () => {
+            const bodyStr = Buffer.concat(chunks).toString('utf8');
+            let json = {};
+            try { json = JSON.parse(bodyStr); } catch (e) {}
+            resolve({
+              ok: res.statusCode >= 200 && res.statusCode < 300,
+              status: res.statusCode,
+              headers: res.headers,
+              text: async () => bodyStr,
+              json: async () => json
+            });
+          });
+        });
+        req.on('error', reject);
+        if (opts.body) req.write(opts.body);
+        req.end();
+      });
     };
 
     realFrames.forEach(rf => {
@@ -783,16 +899,10 @@ async function runRealGenerationPipelineTests() {
       authToken: AUTHORIZED_PROJECT_TOKEN
     });
 
-    assert.strictEqual(handoffRes.submitted, true);
-    assert.strictEqual(fetchCalls.length, 2, 'Must make exactly 2 calls: keyframes ingestion then panorama start');
-    assert.ok(fetchCalls[0].url.includes('/guided-capture/keyframes'));
-    assert.strictEqual(fetchCalls[0].body.keyframes.length, 12);
-    assert.ok(fetchCalls[1].url.includes('/panorama/start'));
-    assert.strictEqual(fetchCalls[1].body.creationMode, 'FIXED_ORIGIN_PANORAMA');
-    assert.strictEqual(fetchCalls[1].body.useCanonicalSession, true);
-    assert.strictEqual(fetchCalls[1].body.keyframes, undefined, 'Must not duplicate 12 base64 dataUrls in panorama/start payload');
-    assert.ok(handoffRes.jobId, 'jobId must be returned from handoff');
-    assert.ok(handoffRes.receiptId, 'receiptId must be returned from handoff');
+    assert.strictEqual(handoffRes.submitted, true, `Handoff must succeed, got status: ${handoffRes.status} error: ${handoffRes.error}`);
+    assert.ok(handoffRes.captureSessionId, 'captureSessionId must be server-issued');
+    assert.ok(handoffRes.receiptId, 'receiptId must be returned from canonical ingestion');
+    assert.ok(handoffRes.jobId, 'jobId must be returned from panorama start');
 
     // Negative test: malformed hash fails closed
     engine.canonicalFrames[0].imageHash = 'invalid-hash';
@@ -805,27 +915,104 @@ async function runRealGenerationPipelineTests() {
     assert.ok(badHashRes.status === 'PREFLIGHT_VALIDATION_FAILED' || badHashRes.status === 'INVALID_KEYFRAME_HASH', `Expected rejection status, got: ${badHashRes.status}`);
   });
 
-  // [25] Post-restart persistence verification: DB & storage records intact
-  await test('[25] Post-restart persistence: Guided capture files and DB job records intact', async () => {
-    const activeSessionId = serverCaptureSessionId || captureSessionId;
-    let sessionDir = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'guided_capture', 'projects', TEST_PROJECT_ID, 'sessions', activeSessionId, 'canonical');
-    if (!fs.existsSync(sessionDir)) {
-      sessionDir = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'guided_capture', activeSessionId, 'canonical');
-    }
-    assert.ok(fs.existsSync(sessionDir));
+  // [25] Real process restart & persistence recovery test (P0-4)
+  await test('[25] Real process restart & persistence recovery test (graceful stop & respawn on identical volume)', async () => {
+    // 1. Record pre-restart runtime buildSha
+    const preVerRes = await makeHttpRequest('GET', '/api/version');
+    assert.strictEqual(preVerRes.status, 200);
+    const preRestartBuildSha = preVerRes.json?.buildSha;
+    assert.ok(preRestartBuildSha, 'preRestartBuildSha must be present');
 
-    let kfJsonPath = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'guided_capture', 'projects', TEST_PROJECT_ID, 'sessions', activeSessionId, 'canonical_keyframes.json');
-    if (!fs.existsSync(kfJsonPath)) {
-      kfJsonPath = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'guided_capture', activeSessionId, 'canonical_keyframes.json');
+    // 2. Spawn an isolated test server instance on port 3915
+    const RESTART_PORT = 3915;
+    const { spawn } = require('child_process');
+    const serverScript = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'server', 'index.js');
+    
+    function spawnServerInstance() {
+      return spawn('node', [serverScript], {
+        env: {
+          ...process.env,
+          PORT: String(RESTART_PORT),
+          HTTPS_PORT: '3916',
+          NODE_ENV: 'test',
+          ALLOW_STAGE2_TEST_FAULT_INJECTION: 'true',
+          STAGE2_EPHEMERAL_TEST_TOKEN: AUTHORIZED_PROJECT_TOKEN
+        },
+        stdio: ['ignore', 'pipe', 'pipe']
+      });
     }
-    assert.ok(fs.existsSync(kfJsonPath));
-    const savedMeta = JSON.parse(fs.readFileSync(kfJsonPath, 'utf8'));
-    assert.strictEqual(savedMeta.length, 12, 'Metadata must contain exactly 12 frame descriptors');
 
-    const jobCheck = await makeHttpRequest('GET', `/api/panorama-jobs/${createdJobId}`);
-    assert.strictEqual(jobCheck.status, 200);
-    assert.strictEqual(jobCheck.json?.ok, true);
-    assert.strictEqual(jobCheck.json?.job?.jobId, createdJobId);
+    async function waitForServerPort(port, maxWaitMs = 15000) {
+      const start = Date.now();
+      while (Date.now() - start < maxWaitMs) {
+        try {
+          const r = await makeHttpRequest('GET', '/api/version', {}, null, port);
+          if (r.status === 200 && r.json?.ok) return r.json;
+        } catch (e) {}
+        await new Promise(r => setTimeout(r, 200));
+      }
+      throw new Error(`Server on port ${port} did not start within ${maxWaitMs}ms`);
+    }
+
+    let subServer = spawnServerInstance();
+    const subVer = await waitForServerPort(RESTART_PORT);
+    assert.strictEqual(subVer.buildSha, preRestartBuildSha, 'Sub-server buildSha must match pre-restart buildSha');
+
+    // Ingest session & keyframes on RESTART_PORT
+    const restartSessionInitRes = await makeHttpRequest('POST', `/api/projects/${TEST_PROJECT_ID}/guided-capture/session`, {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+    }, '{}', RESTART_PORT);
+    assert.strictEqual(restartSessionInitRes.status, 200);
+    const rSessionId = restartSessionInitRes.json?.captureSessionId;
+
+    const kfPayload = {
+      captureSessionId: rSessionId,
+      keyframes: realFrames.map((rf, idx) => ({
+        keyframeId: `KF${String(idx + 1).padStart(2, '0')}`,
+        index: idx + 1,
+        timestamp: Date.now(),
+        estimatedYawDeg: rf.targetYawDeg,
+        dataUrl: `data:image/jpeg;base64,${rf.buffer.toString('base64')}`,
+        hash: rf.clientSha256,
+        bytes: rf.byteSize,
+        width: rf.width,
+        height: rf.height
+      }))
+    };
+    const kfIngest = await makeHttpRequest('POST', `/api/projects/${TEST_PROJECT_ID}/guided-capture/keyframes`, {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+    }, JSON.stringify(kfPayload), RESTART_PORT);
+    assert.strictEqual(kfIngest.status, 200);
+    const rReceiptId = kfIngest.json?.receiptId;
+    assert.ok(rReceiptId);
+
+    // 3. Gracefully stop the server process (SIGTERM)
+    await new Promise((resolve) => {
+      subServer.on('close', () => resolve());
+      subServer.kill('SIGTERM');
+    });
+
+    // 4. Respawn server process on identical port and volume
+    subServer = spawnServerInstance();
+    const postRestartVer = await waitForServerPort(RESTART_PORT);
+    assert.strictEqual(postRestartVer.buildSha, preRestartBuildSha, 'Post-restart buildSha must match pre-restart buildSha');
+
+    // 5. Verify post-restart session recovery & byte-level idempotency
+    const postRestartIdempotency = await makeHttpRequest('POST', `/api/projects/${TEST_PROJECT_ID}/guided-capture/keyframes`, {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+    }, JSON.stringify(kfPayload), RESTART_PORT);
+    assert.strictEqual(postRestartIdempotency.status, 200);
+    assert.strictEqual(postRestartIdempotency.json?.idempotent, true, 'Post-restart session must recover and accept idempotent retry');
+    assert.strictEqual(postRestartIdempotency.json?.receiptId, rReceiptId, 'Post-restart receiptId must be preserved');
+
+    // 6. Cleanly terminate child process
+    await new Promise((resolve) => {
+      subServer.on('close', () => resolve());
+      subServer.kill('SIGTERM');
+    });
   });
 
   console.log('\n================================================================');

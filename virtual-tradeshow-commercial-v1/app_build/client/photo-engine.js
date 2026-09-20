@@ -419,6 +419,9 @@ class PhotoImmersiveEngine {
   }
 }
 
+if (typeof window !== 'undefined') {
+  window.PhotoImmersiveEngine = PhotoImmersiveEngine;
+}
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { PhotoImmersiveEngine };
 }
