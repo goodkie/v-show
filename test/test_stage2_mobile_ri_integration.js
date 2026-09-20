@@ -224,16 +224,15 @@ async function runMobileRiSuite() {
     const testSecret = process.env.OWNER_QA_SECRET || 'vshow-stage2-secure-owner-auth-2026';
     process.env.OWNER_QA_SECRET = testSecret;
 
-    // 1. Secrets in URL query parameters are strictly forbidden (400)
+    // 1. Secrets and pairing tokens in URL query parameters are strictly forbidden (400)
     const secretInUrlRes = await makeRequest('GET', `/qa?secret=${testSecret}`);
     assert.strictEqual(secretInUrlRes.status, 400, 'Secret in URL query must return 400');
 
-    // 2. Compromised token revocation check (GET and POST)
-    const compromisedToken = 'pair-864d056f071408539cc9b244741501e3';
-    const revokedGetRes = await makeRequest('GET', `/qa?pair=${compromisedToken}`);
-    assert.strictEqual(revokedGetRes.status, 403, 'Compromised token via GET must return 403');
-    assert.ok(revokedGetRes.body.includes('Revoked'), 'Response body must indicate token revoked');
+    const pairInUrlRes = await makeRequest('GET', '/qa?pair=pair-test-dummy');
+    assert.strictEqual(pairInUrlRes.status, 400, 'Pair token in URL query must return 400 (Security Policy Violation)');
 
+    // 2. Compromised token revocation check (POST body)
+    const compromisedToken = 'pair-864d056f071408539cc9b244741501e3';
     const revokedPostRes = await makeRequest('POST', '/api/internal-qa/auth/redeem-pairing', {}, {
       pairingToken: compromisedToken
     });
@@ -247,18 +246,19 @@ async function runMobileRiSuite() {
     assert.strictEqual(qaFormRes.headers['referrer-policy'], 'no-referrer', 'Referrer-Policy header must be no-referrer');
     assert.ok(qaFormRes.headers['cache-control']?.includes('no-store'), 'Cache-Control header must include no-store');
 
-    // 4. Generate short-lived single-use pairing token via POST body
+    // 4. Generate short-lived single-use pairing token via POST body (zero pairingPath in response)
     const pairGenRes = await makeRequest('POST', '/api/internal-qa/auth/pairing-token', {}, {
       ownerSecret: testSecret
     });
     assert.strictEqual(pairGenRes.status, 200, 'Pairing token generation must succeed');
-    assert.ok(pairGenRes.json?.pairingToken, 'pairingToken must be returned');
-    assert.ok(pairGenRes.json?.pairingToken.startsWith('pair-'));
-    const pairingToken = pairGenRes.json.pairingToken;
+    assert.ok(pairGenRes.json?.pairingCode, 'pairingCode must be returned');
+    assert.ok(pairGenRes.json?.pairingCode.startsWith('pair-'));
+    assert.strictEqual(pairGenRes.json?.pairingPath, undefined, 'pairingPath must NOT be returned');
+    const pairingToken = pairGenRes.json.pairingCode;
 
     // 5. In-App Safe POST Redemption: POST /api/internal-qa/auth/redeem-pairing
     const safeRedeemRes = await makeRequest('POST', '/api/internal-qa/auth/redeem-pairing', {}, {
-      pairingToken
+      pairingCode: pairingToken
     });
     assert.strictEqual(safeRedeemRes.status, 200, 'Safe POST redeem must succeed (200)');
     assert.strictEqual(safeRedeemRes.json?.authorized, true);
@@ -275,13 +275,13 @@ async function runMobileRiSuite() {
 
     // 6. Single-use guarantee: Re-using the same pairing token via POST must fail (403)
     const reusePostRes = await makeRequest('POST', '/api/internal-qa/auth/redeem-pairing', {}, {
-      pairingToken
+      pairingCode: pairingToken
     });
     assert.strictEqual(reusePostRes.status, 403, 'Consumed pairing token must return 403 on reuse');
 
-    // 7. Re-using via GET also fails (403)
-    const reuseGetRes = await makeRequest('GET', `/qa?pair=${pairingToken}`);
-    assert.strictEqual(reuseGetRes.status, 403, 'Consumed pairing token must return 403 on GET reuse');
+    // 7. GET /qa?pair=... remains strictly forbidden (400)
+    const getPairForbidden = await makeRequest('GET', `/qa?pair=${pairingToken}`);
+    assert.strictEqual(getPairForbidden.status, 400, 'GET /qa?pair=... must always return 400');
 
     // 8. Verify cookie transport authorizes capabilities check and returns build metadata
     const capRes = await makeRequest('GET', '/api/internal-qa/capabilities', {

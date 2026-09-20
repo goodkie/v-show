@@ -1507,9 +1507,8 @@ app.post('/api/internal-qa/auth/pairing-token', express.json(), (req, res) => {
 
   res.json({
     ok: true,
-    pairingToken: pairToken,
-    expiresInSeconds: 600,
-    pairingPath: `/qa?pair=${pairToken}`
+    pairingCode: pairToken,
+    expiresInSeconds: 600
   });
 });
 
@@ -1520,7 +1519,7 @@ app.post('/api/internal-qa/auth/redeem-pairing', express.json(), (req, res) => {
   }
   if (!checkAuthRateLimit(req, res)) return;
 
-  const pairToken = req.body && req.body.pairingToken;
+  const pairToken = req.body && (req.body.pairingToken || req.body.pairingCode);
   if (!pairToken || typeof pairToken !== 'string') {
     return res.status(400).json({ ok: false, error: 'PAIRING_TOKEN_REQUIRED' });
   }
@@ -1564,7 +1563,7 @@ app.post('/api/internal-qa/auth/redeem-pairing', express.json(), (req, res) => {
   });
 });
 
-// ── Single-Use Pairing Redemption Route (Zero Secret in URL) ──
+// ── Secure In-App Pairing Form Route (Zero Credentials in URL) ──
 app.get('/qa', (req, res) => {
   if (!ENABLE_OWNER_RI) {
     return res.status(404).send('Not Found');
@@ -1575,15 +1574,13 @@ app.get('/qa', (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.setHeader('Pragma', 'no-cache');
 
-  // Strict Security Contract: Never allow secret in URL query parameters!
-  if (req.query && req.query.secret) {
-    return res.status(400).send('<html><body style="font-family:sans-serif;padding:40px;background:#0f172a;color:#ef4444;"><h2>Security Policy Violation</h2><p>Secrets in URL query parameters are strictly forbidden. Use single-use pairing token (?pair=...) or authenticate via POST body.</p></body></html>');
+  // Strict Security Contract: Never allow secret or pairing token in URL query parameters!
+  if (req.query && (req.query.secret || req.query.pair || req.query.token)) {
+    return res.status(400).send('<html><body style="font-family:sans-serif;padding:40px;background:#0f172a;color:#ef4444;"><h2>Security Policy Violation</h2><p>Credentials or pairing tokens in URL query parameters are strictly forbidden. Use the in-app pairing form or POST body authentication.</p></body></html>');
   }
 
-  const pairToken = req.query && req.query.pair;
-  if (!pairToken || typeof pairToken !== 'string') {
-    // Render in-app pairing form: credentials submitted via POST only
-    return res.send(`<!DOCTYPE html>
+  // Render in-app pairing form: credentials submitted via POST only
+  return res.send(`<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -1607,7 +1604,7 @@ app.get('/qa', (req, res) => {
 <body>
   <div class="card">
     <h2>Secure Device Pairing</h2>
-    <p>Enter your single-use pairing code or owner secret below. Submitted via secure POST without URL leakage.</p>
+    <p>Enter your single-use pairing code or owner secret below. Submitted strictly via POST without URL leakage.</p>
     <form id="pairForm">
       <input type="password" id="tokenInput" placeholder="Pairing Code (pair-...) or Secret" autocomplete="off" required />
       <button type="submit" id="submitBtn">Authorize Device</button>
@@ -1656,40 +1653,6 @@ app.get('/qa', (req, res) => {
   </script>
 </body>
 </html>`);
-  }
-
-  // Check revocation
-  if (REVOKED_PAIRING_TOKENS.has(pairToken)) {
-    return res.status(403).send('<html><body style="font-family:sans-serif;padding:40px;background:#0f172a;color:#ef4444;"><h2>Pairing Token Revoked</h2><p>This pairing token was publicly compromised and has been permanently revoked.</p></body></html>');
-  }
-
-  const record = pairingTokens.get(pairToken);
-  if (!record || record.expiresAt < Date.now()) {
-    if (record) pairingTokens.delete(pairToken);
-    return res.status(403).send('<html><body style="font-family:sans-serif;padding:40px;background:#0f172a;color:#ef4444;"><h2>Invalid or Expired Pairing Token</h2><p>This pairing token has expired or has already been used.</p></body></html>');
-  }
-
-  // Single-use guarantee: consume immediately
-  pairingTokens.delete(pairToken);
-
-  const crypto = require('crypto');
-  const token = 'qa-sess-owner-' + crypto.randomBytes(24).toString('hex');
-  const expiresAt = new Date(Date.now() + 8 * 3600 * 1000).toISOString();
-  const session = {
-    qaSessionToken: token,
-    projectId: 'prj-free-b0c6f3ea',
-    createdAt: new Date().toISOString(),
-    expiresAt,
-    status: 'AUTHORIZED',
-    role: 'OWNER_QA'
-  };
-
-  qaBrowserSessions.set(token, session);
-  saveDurableQaSessions();
-
-  const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
-  res.setHeader('Set-Cookie', `qa_session_token=${token}; Path=/; Max-Age=28800; HttpOnly; SameSite=Lax${isSecure ? '; Secure' : ''}`);
-  res.redirect('/');
 });
 
 // ── Endpoint 2: Server-Authoritative Capability Verification ──
