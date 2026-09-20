@@ -811,24 +811,32 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// Static File Routes
-app.use(['/uploads', '/data', '/panorama_artifacts'], (req, res, next) => {
-  const reqUrl = decodeURIComponent(req.originalUrl || req.url || '');
-  const reqPath = decodeURIComponent(req.path || '');
+// Static File Routes — Global Private Storage & Candidate Protection Interceptor
+app.use((req, res, next) => {
+  let reqUrl = '';
+  let reqPath = '';
+  try {
+    reqUrl = decodeURIComponent(req.originalUrl || req.url || '');
+    reqPath = decodeURIComponent(req.path || '');
+  } catch (e) {
+    return res.status(400).json({ ok: false, error: 'BAD_REQUEST', message: 'Malformed URL encoding' });
+  }
+
   if (
     reqUrl.includes('panorama_artifacts') ||
     reqPath.includes('panorama_artifacts') ||
     reqUrl.includes('guided_capture') ||
     reqPath.includes('guided_capture') ||
-    reqPath.includes('cand-') ||
-    reqPath.includes('candidate') ||
-    reqUrl.includes('cand-') ||
-    reqUrl.includes('candidate')
+    reqPath.startsWith('/data') ||
+    reqUrl.startsWith('/data') ||
+    reqPath.startsWith('/private_artifacts') ||
+    reqUrl.startsWith('/private_artifacts') ||
+    ((reqPath.startsWith('/uploads') || reqUrl.startsWith('/uploads')) && (reqPath.includes('cand-') || reqPath.includes('candidate') || reqUrl.includes('cand-') || reqUrl.includes('candidate')))
   ) {
     return res.status(403).json({
       ok: false,
       error: 'DIRECT_ASSET_ACCESS_FORBIDDEN',
-      message: 'Direct static access to candidate or guided capture assets is forbidden. Access must use authenticated endpoint.'
+      message: 'Direct static access to candidate or private storage assets is forbidden. Access must use authenticated endpoint.'
     });
   }
   next();
@@ -1165,23 +1173,31 @@ app.get(['/', '/index.html'], (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
 });
 
-app.use(['/data', '/uploads', '/panorama_artifacts'], (req, res, next) => {
-  const reqUrl = decodeURIComponent(req.originalUrl || req.url || '');
-  const reqPath = decodeURIComponent(req.path || '');
+app.use((req, res, next) => {
+  let reqUrl = '';
+  let reqPath = '';
+  try {
+    reqUrl = decodeURIComponent(req.originalUrl || req.url || '');
+    reqPath = decodeURIComponent(req.path || '');
+  } catch (e) {
+    return res.status(400).json({ ok: false, error: 'BAD_REQUEST', message: 'Malformed URL encoding' });
+  }
+
   if (
     reqUrl.includes('panorama_artifacts') ||
     reqPath.includes('panorama_artifacts') ||
     reqUrl.includes('guided_capture') ||
     reqPath.includes('guided_capture') ||
-    reqPath.includes('cand-') ||
-    reqPath.includes('candidate') ||
-    reqUrl.includes('cand-') ||
-    reqUrl.includes('candidate')
+    reqPath.startsWith('/data') ||
+    reqUrl.startsWith('/data') ||
+    reqPath.startsWith('/private_artifacts') ||
+    reqUrl.startsWith('/private_artifacts') ||
+    ((reqPath.startsWith('/uploads') || reqUrl.startsWith('/uploads')) && (reqPath.includes('cand-') || reqPath.includes('candidate') || reqUrl.includes('cand-') || reqUrl.includes('candidate')))
   ) {
     return res.status(403).json({
       ok: false,
       error: 'DIRECT_ASSET_ACCESS_FORBIDDEN',
-      message: 'Direct static access to candidate or guided capture assets is forbidden. Access must use authenticated endpoint.'
+      message: 'Direct static access to candidate or private storage assets is forbidden. Access must use authenticated endpoint.'
     });
   }
   next();
@@ -12989,14 +13005,36 @@ app.use((err, req, res, next) => {
 });
 
 app.get('*', (req, res) => {
+  let decodedPath = '';
+  let decodedUrl = '';
+  try {
+    decodedPath = decodeURIComponent(req.path || '');
+    decodedUrl = decodeURIComponent(req.originalUrl || req.url || '');
+  } catch (e) {
+    return res.status(400).json({ error: 'Bad Request' });
+  }
+
   if (
-    req.path.startsWith('/uploads/') ||
-    req.path.startsWith('/api/') ||
-    req.path.startsWith('/assets/') ||
-    req.path.startsWith('/data/') ||
-    req.path.startsWith('/server/') ||
-    req.path === '/package.json' ||
-    req.path === '/package-lock.json'
+    decodedPath.startsWith('/uploads/') ||
+    decodedUrl.startsWith('/uploads/') ||
+    decodedPath.startsWith('/api/') ||
+    decodedUrl.startsWith('/api/') ||
+    decodedPath.startsWith('/assets/') ||
+    decodedUrl.startsWith('/assets/') ||
+    decodedPath.startsWith('/data/') ||
+    decodedUrl.startsWith('/data/') ||
+    decodedPath.startsWith('/panorama_artifacts/') ||
+    decodedUrl.startsWith('/panorama_artifacts/') ||
+    decodedPath.startsWith('/private_artifacts/') ||
+    decodedUrl.startsWith('/private_artifacts/') ||
+    decodedPath.startsWith('/server/') ||
+    decodedUrl.startsWith('/server/') ||
+    decodedPath === '/package.json' ||
+    decodedPath === '/package-lock.json' ||
+    decodedPath.includes('panorama_artifacts') ||
+    decodedUrl.includes('panorama_artifacts') ||
+    decodedPath.includes('guided_capture') ||
+    decodedUrl.includes('guided_capture')
   ) {
     return res.status(404).json({ error: 'Not Found' });
   }
