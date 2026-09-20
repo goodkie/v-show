@@ -703,6 +703,82 @@ test('[T24] Preflight 12-frame integrity validation (duplicate and incomplete re
   assert.ok(dupCheck.reason.includes('Duplicate imageHash'));
 });
 
+test('[T25] Negative test: Simulated frames strictly FAIL owner preflight when requireRealCapture is true', () => {
+  const engine = new Stage2CaptureEngine();
+  engine.startCamera(createMockStream());
+
+  // Capture 12 simulated frames in Node environment (isRealStreamCapture = false)
+  for (let i = 0; i < 12; i++) {
+    engine.executeCapture();
+  }
+  assert.strictEqual(engine.canonicalFrames.length, 12);
+
+  // Standard non-real preflight passes
+  const nonRealCheck = engine.validateReal12Frames({ requireRealCapture: false });
+  assert.strictEqual(nonRealCheck.valid, true);
+
+  // Strict owner-review preflight MUST FAIL because isRealStreamCapture is false
+  const strictCheck = engine.validateReal12Frames({ requireRealCapture: true });
+  assert.strictEqual(strictCheck.valid, false, 'Simulated frames must fail strict owner-review preflight');
+  assert.ok(strictCheck.reason.includes('failed real-capture preflight'), `Reason should indicate preflight failure: ${strictCheck.reason}`);
+});
+
+test('[T26] Real stream frames PASS preflight when requireRealCapture is true', () => {
+  const crypto = require('crypto');
+  const engine = new Stage2CaptureEngine();
+  engine.startCamera(createMockStream());
+
+  // Inject 12 valid real-stream frames with unique hashes, non-zero dimensions, and binary JPEG bytes
+  for (let i = 0; i < 12; i++) {
+    const rawJpegBytes = Buffer.from([0xFF, 0xD8, 0xFF, 0xE0, i, 0x01, 0x02, 0x03, 0xFF, 0xD9]);
+    const hash = crypto.createHash('sha256').update(rawJpegBytes).digest('hex');
+    const realFrame = {
+      frameId: `frm-${String(i + 1).padStart(2, '0')}`,
+      order: i + 1,
+      targetIndex: i,
+      targetYawDeg: i * 30.0,
+      capturedYawDeg: i * 30.0,
+      yawErrorDeg: 0.1,
+      imageHash: `sha256:${hash}`,
+      timestamp: Date.now(),
+      yawDeg: i * 30.0,
+      pitchDeg: 0.5,
+      rollDeg: -0.2,
+      angularVelocityDegSec: 1.2,
+      qualityScore: 0.95,
+      width: 1920,
+      height: 1080,
+      byteSize: rawJpegBytes.length,
+      bytes: rawJpegBytes,
+      isRealStreamCapture: true,
+    };
+    engine.canonicalFrames.push(realFrame);
+  }
+
+  assert.strictEqual(engine.canonicalFrames.length, 12);
+  const realCheck = engine.validateReal12Frames({ requireRealCapture: true });
+  assert.strictEqual(realCheck.valid, true, 'Valid real frames must pass strict owner preflight');
+  assert.strictEqual(realCheck.frameCount, 12);
+  assert.strictEqual(realCheck.uniqueHashes, 12);
+  assert.strictEqual(realCheck.realCaptureVerified, true);
+});
+
+test('[T27] Output-type truth contract: Manifest specifies PANORAMA_360 and FIXED_ORIGIN_PANORAMA', () => {
+  const engine = new Stage2CaptureEngine();
+  engine.startCamera(createMockStream());
+
+  for (let i = 0; i < 12; i++) {
+    engine.executeCapture();
+  }
+
+  const manifest = engine.normalizeManifest();
+  assert.strictEqual(manifest.outputType, 'PANORAMA_360', 'Manifest must truthfully declare PANORAMA_360 output type');
+  assert.strictEqual(manifest.creationMode, 'FIXED_ORIGIN_PANORAMA', 'Manifest must declare FIXED_ORIGIN_PANORAMA creation mode');
+
+  const uploadManifest = Stage2CaptureEngine.normalizeManualUploads([{ width: 1000, height: 1000 }]);
+  assert.strictEqual(uploadManifest.outputType, 'PANORAMA_360', 'Upload manifest must declare PANORAMA_360');
+  assert.strictEqual(uploadManifest.creationMode, 'FIXED_ORIGIN_PANORAMA', 'Upload manifest must declare FIXED_ORIGIN_PANORAMA');
+});
 
 console.log('\n================================================================');
 console.log(`TEST EXECUTION COMPLETE: ${passCount} PASSED, ${failCount} FAILED`);

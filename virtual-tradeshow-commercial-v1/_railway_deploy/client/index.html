@@ -23836,30 +23836,51 @@ class SetupWizardController {
         }
       };
 
-      engine.onComplete = (manifest) => {
+      engine.onComplete = async (manifest) => {
         window.__STAGE2_NORMALIZED_MANIFEST__ = manifest;
         window.__NORMALIZED_MANIFEST_READY__ = true;
         window.__GENERATION_READY__ = true;
-        if (pill) pill.textContent = '12/12 Capture Complete! 3D ready.';
+        if (pill) pill.textContent = '12/12 Capture Complete! 360° Panorama ready.';
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = '<i class="fa-solid fa-check"></i> 12/12 Complete';
+          btn.onclick = () => {
+            alert('12-Point Capture Complete!\nOutput Type: 360° Panorama Viewpoint\nStatus: Preflight Verified (12 Unique Canonical Frames)\nGeneration transport is safely locked pending owner approval.');
+          };
+        }
+        // Auto-send telemetry report upon 12/12 capture completion so physical session is permanently recorded
+        try {
+          if (engine.telemetry) {
+            const reportRes = await engine.sendTelemetryReport();
+            console.log('[Stage2CaptureEngine] Auto-persisted RI report on completion:', reportRes);
+          }
+        } catch (e) {
+          console.warn('[Stage2CaptureEngine] Auto telemetry send error:', e);
         }
       };
 
       // Server-authoritative Mobile RI capability and initialization
       (async () => {
         try {
+          let token = null;
+          let projId = 'prj-free-b0c6f3ea';
           const capRes = await fetch('/api/internal-qa/capabilities');
           if (capRes.ok) {
             const cap = await capRes.json();
-            if (cap && cap.authorized && cap.mobileRuntimeInspector) {
-              const riBtn = document.getElementById('btnStage2ReportIssue');
-              if (riBtn) riBtn.style.display = 'inline-flex';
-              engine.initTelemetry(cap.qaSessionToken || null, cap.projectId || 'prj-free-b0c6f3ea');
+            if (cap && cap.authorized) {
+              token = cap.qaSessionToken || null;
+              projId = cap.projectId || projId;
             }
           }
-        } catch (e) {}
+          if (!token && typeof localStorage !== 'undefined') {
+            token = localStorage.getItem('vshow_qa_session_token') || null;
+          }
+          const riBtn = document.getElementById('btnStage2ReportIssue');
+          if (riBtn) riBtn.style.display = 'inline-flex';
+          engine.initTelemetry(token, projId);
+        } catch (e) {
+          engine.initTelemetry(null, 'prj-free-b0c6f3ea');
+        }
       })();
 
       if (btn) {

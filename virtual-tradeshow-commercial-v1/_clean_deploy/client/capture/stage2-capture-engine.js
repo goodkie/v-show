@@ -66,11 +66,12 @@ const NEON_STATES = Object.freeze({
 });
 
 // ─── Cryptographic SHA-256 Digest Helper ────────────────────────────────────
-function computeSha256Hex(input) {
+function computeSha256Bytes(input) {
   if (typeof require !== 'undefined') {
     try {
       const crypto = require('crypto');
-      return crypto.createHash('sha256').update(input).digest('hex');
+      const buf = Buffer.isBuffer(input) ? input : (typeof input === 'string' ? Buffer.from(input) : Buffer.from(input.buffer || input));
+      return crypto.createHash('sha256').update(buf).digest('hex');
     } catch (e) {}
   }
   function rightRotate(value, amount) {
@@ -79,7 +80,8 @@ function computeSha256Hex(input) {
   let i, j;
   let result = '';
   const words = [];
-  const asciiBitLength = input.length * 8;
+  const compositeLength = input.length;
+  const asciiBitLength = compositeLength * 8;
   const hash = [
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
     0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
@@ -94,9 +96,9 @@ function computeSha256Hex(input) {
     0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
   ];
-  const compositeLength = input.length;
   for (i = 0; i < compositeLength; i++) {
-    words[i >> 2] |= (input.charCodeAt(i) & 255) << (24 - (i % 4) * 8);
+    const val = typeof input === 'string' ? input.charCodeAt(i) : input[i];
+    words[i >> 2] |= (val & 255) << (24 - (i % 4) * 8);
   }
   words[compositeLength >> 2] |= 128 << (24 - (compositeLength % 4) * 8);
   words[(((compositeLength + 8) >> 6) << 4) + 15] = asciiBitLength;
@@ -135,6 +137,19 @@ function computeSha256Hex(input) {
     }
   }
   return result;
+}
+
+function computeSha256Hex(input) {
+  return computeSha256Bytes(input);
+}
+
+// Browser WebCrypto Subtle SHA-256 Digest Helper
+async function computeSha256Subtle(bytes) {
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle && typeof window.crypto.subtle.digest === 'function') {
+    const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  return computeSha256Bytes(bytes);
 }
 
 class Stage2CaptureEngine {
@@ -675,9 +690,22 @@ class Stage2CaptureEngine {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
-          const byteLength = Math.round((dataUrl.length - 23) * 0.75);
 
-          const shaHex = computeSha256Hex(dataUrl);
+          // Decode base64 to exact raw binary JPEG bytes
+          const commaIdx = dataUrl.indexOf(',');
+          const b64 = commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+          let bytes;
+          if (typeof Buffer !== 'undefined') {
+            bytes = Buffer.from(b64, 'base64');
+          } else {
+            const binStr = atob(b64);
+            bytes = new Uint8Array(binStr.length);
+            for (let i = 0; i < binStr.length; i++) {
+              bytes[i] = binStr.charCodeAt(i);
+            }
+          }
+          const byteLength = bytes.length;
+          const shaHex = computeSha256Bytes(bytes);
           const imageHash = `sha256:${shaHex}`;
 
           rawFrame = {
@@ -699,8 +727,20 @@ class Stage2CaptureEngine {
             byteSize: byteLength,
             mimeType: 'image/jpeg',
             dataUrl: dataUrl,
+            bytes: bytes,
             isRealStreamCapture: true,
           };
+
+          // Asynchronously verify WebCrypto subtle digest in browser
+          if (typeof crypto !== 'undefined' && crypto.subtle && typeof crypto.subtle.digest === 'function') {
+            rawFrame.subtleDigestPromise = crypto.subtle.digest('SHA-256', bytes).then(buf => {
+              const subtleHex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+              if (subtleHex !== shaHex) {
+                console.error('[Stage2CaptureEngine] Subtle digest mismatch:', subtleHex, shaHex);
+              }
+              return subtleHex;
+            }).catch(() => null);
+          }
         } catch (e) {
           console.warn('[Stage2CaptureEngine] Canvas snapshot capture failed:', e);
         }
@@ -718,7 +758,9 @@ class Stage2CaptureEngine {
           return false;
         }
         // Deterministic Node.js test environment fallback
-        const testHash = computeSha256Hex(`sim-${this.currentTargetIndex}-${Date.now()}`);
+        const simPayload = `sim-${this.currentTargetIndex}-${Date.now()}-${Math.random()}`;
+        const simBytes = typeof Buffer !== 'undefined' ? Buffer.from(simPayload) : new TextEncoder().encode(simPayload);
+        const testHash = computeSha256Bytes(simBytes);
         rawFrame = {
           frameId,
           order: this.currentTargetIndex + 1,
@@ -735,7 +777,8 @@ class Stage2CaptureEngine {
           qualityScore: 0.92,
           width: 1920,
           height: 1080,
-          byteSize: 154200,
+          byteSize: simBytes.length,
+          bytes: simBytes,
           isRealStreamCapture: false,
         };
       }
@@ -788,6 +831,16 @@ class Stage2CaptureEngine {
     if (this.canonicalFrames.length >= this.config.targetCount) {
       this.transitionTo(STATES.CAPTURE_COMPLETE);
       const manifest = this.normalizeManifest();
+      this.recordTelemetryEvent('CAPTURE_SEQUENCE_COMPLETE', {
+        frameCount: this.canonicalFrames.length,
+        targetsCovered: this.capturedTargets.size,
+      });
+      // Auto-dispatch telemetry report on 12/12 capture completion so physical runs are persistently saved
+      if (this.telemetry) {
+        this.sendTelemetryReport().catch(err => {
+          console.warn('[Stage2CaptureEngine] Auto-send telemetry on completion failed:', err);
+        });
+      }
       if (typeof this.onComplete === 'function') {
         this.onComplete(manifest);
       }
@@ -826,6 +879,8 @@ class Stage2CaptureEngine {
       schemaVersion: 5,
       captureId: `cap-3dz-${Date.now().toString(16)}`,
       sourceType: 'CAMERA_ROTATIONAL_SENSOR',
+      outputType: 'PANORAMA_360',
+      creationMode: 'FIXED_ORIGIN_PANORAMA',
       createdAt: new Date().toISOString(),
       frameCount: total,
       c12_7_ringConstraintPreserved: true,
@@ -870,6 +925,8 @@ class Stage2CaptureEngine {
       schemaVersion: 5,
       captureId: `cap-upload-${Date.now().toString(16)}`,
       sourceType: 'MANUAL_UPLOAD',
+      outputType: 'PANORAMA_360',
+      creationMode: 'FIXED_ORIGIN_PANORAMA',
       createdAt: new Date().toISOString(),
       frameCount: total,
       c12_7_ringConstraintPreserved: true,
@@ -922,7 +979,8 @@ class Stage2CaptureEngine {
   }
 
   // ─── Deterministic 12-Frame Preflight Integrity Validation ──────────────────
-  validateReal12Frames() {
+  validateReal12Frames(options = {}) {
+    const { requireRealCapture = false } = options;
     if (this.canonicalFrames.length !== 12) {
       return { valid: false, reason: `Expected 12 canonical frames, got ${this.canonicalFrames.length}` };
     }
@@ -930,22 +988,33 @@ class Stage2CaptureEngine {
     const targets = new Set();
     for (let i = 0; i < 12; i++) {
       const f = this.canonicalFrames[i];
-      if (!f || !f.imageHash || !f.imageHash.startsWith('sha256:') || f.imageHash.length < 20) {
-        return { valid: false, reason: `Frame ${i + 1} has invalid imageHash` };
+      if (!f || !f.imageHash || !f.imageHash.startsWith('sha256:') || f.imageHash.length !== 71) {
+        return { valid: false, reason: `Frame ${i + 1} has invalid imageHash format` };
       }
       if (hashes.has(f.imageHash)) {
         return { valid: false, reason: `Duplicate imageHash detected at frame ${i + 1}` };
       }
       hashes.add(f.imageHash);
       targets.add(f.targetIndex);
-      if (f.byteSize <= 0) {
+      if (!f.byteSize || f.byteSize <= 0) {
         return { valid: false, reason: `Frame ${i + 1} has zero byteSize` };
+      }
+      if (!f.width || f.width <= 0 || !f.height || f.height <= 0) {
+        return { valid: false, reason: `Frame ${i + 1} has invalid dimensions` };
+      }
+      if (requireRealCapture) {
+        if (f.isRealStreamCapture !== true) {
+          return { valid: false, reason: `Frame ${i + 1} failed real-capture preflight (isRealStreamCapture !== true)` };
+        }
+        if (f.imageHash.includes('sim-')) {
+          return { valid: false, reason: `Frame ${i + 1} failed real-capture preflight (synthetic hash detected)` };
+        }
       }
     }
     if (targets.size !== 12) {
       return { valid: false, reason: `Not all 12 targets [0..11] covered (got ${targets.size})` };
     }
-    return { valid: true, frameCount: 12, uniqueHashes: 12 };
+    return { valid: true, frameCount: 12, uniqueHashes: 12, realCaptureVerified: requireRealCapture };
   }
 
   // ─── Atomic RETAKE Contract (§C10) ──────────────────────────────────────────
@@ -1325,12 +1394,20 @@ class Stage2CaptureEngine {
   }
 }
 
+// ─── Truthful Output Type Contract ───────────────────────────────────────────
+const OUTPUT_TYPES = Object.freeze({
+  PANORAMA_360: 'PANORAMA_360',
+  SPATIAL_3D_MODEL: 'SPATIAL_3D_MODEL',
+});
+Stage2CaptureEngine.OUTPUT_TYPES = OUTPUT_TYPES;
+
 // ─── Module & Window Exports ─────────────────────────────────────────────────
 if (typeof window !== 'undefined') {
   window.Stage2CaptureEngine = Stage2CaptureEngine;
   window.STAGE2_STATES = STATES;
   window.STAGE2_NEON_STATES = NEON_STATES;
   window.STAGE2_CONFIG = DEFAULT_STAGE2_CONFIG;
+  window.STAGE2_OUTPUT_TYPES = OUTPUT_TYPES;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -1339,5 +1416,6 @@ if (typeof module !== 'undefined' && module.exports) {
     STATES,
     NEON_STATES,
     DEFAULT_STAGE2_CONFIG,
+    OUTPUT_TYPES,
   };
 }
