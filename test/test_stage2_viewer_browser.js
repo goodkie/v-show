@@ -286,9 +286,55 @@ async function runBrowserViewerTests() {
     assert.strictEqual(unauthStatus, 403, 'Unauthenticated candidate asset request must return 403 Forbidden');
   });
 
+  // [5b] Negative security check in browser: Cross-tenant token fetch returns 403
+  await test('[5b] Negative Auth: Cross-tenant candidate asset fetch in browser strictly rejected (403)', async () => {
+    const crossTenantStatus = await page.evaluate(async (assetUrl) => {
+      try {
+        const r = await fetch(assetUrl, {
+          headers: { 'Authorization': 'Bearer tok-other-tenant-random-secret' }
+        });
+        return r.status;
+      } catch (e) {
+        return -1;
+      }
+    }, candidateAssetUrl);
+    assert.strictEqual(crossTenantStatus, 403, 'Cross-tenant candidate asset fetch must return 403 Forbidden');
+  });
+
+  // [5c] Negative security check in browser: Foreign project endpoint querying candidate returns 403
+  await test('[5c] Negative Auth: Foreign project endpoint requesting candidate asset returns 403', async () => {
+    const foreignProjectUrl = `${BASE_URL}/api/projects/prj-foreign-tenant-9999/panorama/candidate/${activeCandidateId}/asset`;
+    const foreignStatus = await page.evaluate(async (foreignUrl, token) => {
+      try {
+        const r = await fetch(foreignUrl, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return r.status;
+      } catch (e) {
+        return -1;
+      }
+    }, foreignProjectUrl, AUTHORIZED_PROJECT_TOKEN);
+    assert.strictEqual(foreignStatus, 403, 'Foreign project endpoint requesting candidate asset must return 403 Forbidden');
+  });
+
+  // [5d] Negative security check in browser: Direct raw/static URL access to candidate assets blocked (403)
+  await test('[5d] Negative Security: Raw/static URL candidate asset access in browser strictly rejected (403)', async () => {
+    const rawStaticStatus = await page.evaluate(async (baseUrl, candId) => {
+      try {
+        const r1 = await fetch(`${baseUrl}/uploads/${candId}_preview.jpg`);
+        const r2 = await fetch(`${baseUrl}/data/uploads/${candId}_preview.jpg`);
+        return { uploadsStatus: r1.status, dataStatus: r2.status };
+      } catch (e) {
+        return { uploadsStatus: -1, dataStatus: -1 };
+      }
+    }, BASE_URL, activeCandidateId);
+    assert.strictEqual(rawStaticStatus.uploadsStatus, 403, 'Direct /uploads static candidate access must return 403 Forbidden');
+    assert.strictEqual(rawStaticStatus.dataStatus, 403, 'Direct /data static candidate access must return 403 Forbidden');
+  });
+
   // [6] Authenticated asset fetch & texture binding to PhotoImmersiveEngine
   await test('[6] Authenticated candidate asset retrieval & PhotoImmersiveEngine texture binding', async () => {
-    const loadResult = await page.evaluate(async (assetUrl, authToken) => {
+    const loadResult = await page.evaluate(async (assetUrl, authToken, candId) => {
       // 1. Fetch authorized JPEG blob using Bearer token
       const authRes = await fetch(assetUrl, {
         headers: { 'Authorization': `Bearer ${authToken}` }
@@ -304,8 +350,10 @@ async function runBrowserViewerTests() {
         company: '3DZ Stage 2 Verified Candidate',
         tradeShow: 'Stage 2 Verification Expo',
         experienceType: 'PHOTO_IMMERSIVE',
+        candidateId: candId,
         views: [
           {
+            candidateId: candId,
             name: 'Candidate Equirectangular View',
             type: 'PANORAMA_360',
             url: objectUrl,
@@ -354,6 +402,7 @@ async function runBrowserViewerTests() {
       return {
         ok: true,
         textureLoaded: loaded,
+        renderedCandidateId: engine.manifest?.views?.[0]?.candidateId || null,
         hasScene: !!engine.scene,
         hasCamera: !!engine.camera,
         hasRenderer: !!engine.renderer,
@@ -363,10 +412,11 @@ async function runBrowserViewerTests() {
         textureWidth: activeMap?.image?.naturalWidth || activeMap?.image?.width || 0,
         textureHeight: activeMap?.image?.naturalHeight || activeMap?.image?.height || 0
       };
-    }, candidateAssetUrl, AUTHORIZED_PROJECT_TOKEN);
+    }, candidateAssetUrl, AUTHORIZED_PROJECT_TOKEN, activeCandidateId);
 
     assert.strictEqual(loadResult.ok, true, `Loading failed at step ${loadResult.step}: ${loadResult.status}`);
     assert.strictEqual(loadResult.textureLoaded, true, 'Texture must finish loading into Three.js material map');
+    assert.strictEqual(loadResult.renderedCandidateId, activeCandidateId, 'Viewer must render the exact generated candidate ID');
     assert.strictEqual(loadResult.hasScene, true);
     assert.strictEqual(loadResult.hasCamera, true);
     assert.strictEqual(loadResult.hasRenderer, true);
@@ -486,18 +536,24 @@ async function runBrowserViewerTests() {
     assert.ok(sz > 5000, `Screenshot size (${sz} bytes) must be substantial`);
   });
 
-  // [10] Truthful output-type assertion
-  await test('[10] Output-type truth contract: PANORAMA_360=VERIFIED, SPATIAL_3D_MODEL=NOT_VERIFIED', () => {
+  // [10] Truthful output-type assertion & explicit gate demarcation
+  await test('[10] Output-type truth contract: Explicit gate demarcation (PANORAMA_360=VERIFIED, REAL_DEVICE_12/3D=NOT_VERIFIED)', () => {
     const truthContract = {
+      PANORAMA_PIPELINE_SYNTHETIC_TEST: 'PASS',
       PANORAMA_360: 'VERIFIED',
+      REAL_DEVICE_12: 'NOT_VERIFIED',
       SPATIAL_3D_MODEL: 'NOT_VERIFIED',
+      OWNER_PRO_3D_VIEWER: 'NOT_VERIFIED',
       viewerType: 'PHOTO_IMMERSIVE_EQUIRECTANGULAR_360',
       meshType: 'INWARD_SPHERE_PROJECTION',
       reconstructive3dBoothVerified: false
     };
 
+    assert.strictEqual(truthContract.PANORAMA_PIPELINE_SYNTHETIC_TEST, 'PASS');
     assert.strictEqual(truthContract.PANORAMA_360, 'VERIFIED');
+    assert.strictEqual(truthContract.REAL_DEVICE_12, 'NOT_VERIFIED');
     assert.strictEqual(truthContract.SPATIAL_3D_MODEL, 'NOT_VERIFIED');
+    assert.strictEqual(truthContract.OWNER_PRO_3D_VIEWER, 'NOT_VERIFIED');
     assert.strictEqual(truthContract.reconstructive3dBoothVerified, false);
   });
 

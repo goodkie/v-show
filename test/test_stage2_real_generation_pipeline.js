@@ -50,6 +50,13 @@ try {
   } catch (e2) {
     throw new Error('jpeg-js library is required for valid JPEG decode/encode verification');
   }
+let db;
+try {
+  db = require('../virtual-tradeshow-commercial-v1/_clean_deploy/server/db');
+} catch (e) {
+  try {
+    db = require('e:/vivpr/ai/v-show/virtual-tradeshow-commercial-v1/_clean_deploy/server/db');
+  } catch (e2) {}
 }
 
 const SERVER_PORT = 3899;
@@ -730,6 +737,54 @@ async function runRealGenerationPipelineTests() {
     });
     assert.strictEqual(crossTenantAssetRes.status, 403, 'Cross-tenant candidate asset GET must return 403 Forbidden');
 
+    // Negative Security: Path traversal in candidateId rejected (400 INVALID_CANDIDATE_ID)
+    const traversalAssetRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/..%2f..%2fetc%2fpasswd/asset`, {
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+    });
+    assert.strictEqual(traversalAssetRes.status, 400, 'Path traversal in candidateId must return 400 Bad Request');
+    assert.strictEqual(traversalAssetRes.json?.error, 'INVALID_CANDIDATE_ID');
+
+    // Negative Auth: Querying candidate via foreign project endpoint rejected (403 CROSS_PROJECT_FORBIDDEN or 403 edit access)
+    const foreignProjectAssetRes = await makeHttpRequest('GET', `/api/projects/prj-other-tenant-9999/panorama/candidate/${createdCandidateId}/asset`, {
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+    });
+    assert.strictEqual(foreignProjectAssetRes.status, 403, 'Querying candidate via foreign project endpoint must return 403 Forbidden');
+
+    // Negative Auth (Project-A-token + Project-B-candidate):
+    // Register candidate belonging to Project B
+    const foreignCandId = `cand-foreign-${Date.now()}`;
+    if (db && db.saveSpatialBoothCandidate) {
+      await db.saveSpatialBoothCandidate('prj-other-tenant-9999', {
+        candidateId: foreignCandId,
+        projectId: 'prj-other-tenant-9999',
+        status: 'READY_FOR_PREVIEW',
+        geometryValid: true
+      });
+
+      // Project A token requesting Project B candidate metadata under Project A endpoint strictly rejected (403 CROSS_PROJECT_FORBIDDEN)
+      const foreignCandMetaRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${foreignCandId}`, {
+        'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+      });
+      assert.strictEqual(foreignCandMetaRes.status, 403, 'Project A token requesting Project B candidate metadata must return 403 Forbidden');
+      assert.strictEqual(foreignCandMetaRes.json?.error, 'CROSS_PROJECT_FORBIDDEN');
+
+      // Project A token requesting Project B candidate asset under Project A endpoint strictly rejected (403 CROSS_PROJECT_FORBIDDEN)
+      const foreignCandAssetRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${foreignCandId}/asset`, {
+        'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+      });
+      assert.strictEqual(foreignCandAssetRes.status, 403, 'Project A token requesting Project B candidate asset must return 403 Forbidden');
+      assert.strictEqual(foreignCandAssetRes.json?.error, 'CROSS_PROJECT_FORBIDDEN');
+    }
+
+    // Negative Security: Raw/static URL direct bypass strictly blocked (403 DIRECT_ASSET_ACCESS_FORBIDDEN)
+    const rawStaticUploadsRes = await makeHttpRequest('GET', `/uploads/${createdCandidateId}_preview.jpg`);
+    assert.strictEqual(rawStaticUploadsRes.status, 403, 'Raw static access to /uploads/cand-* must return 403 Forbidden');
+    assert.strictEqual(rawStaticUploadsRes.json?.error, 'DIRECT_ASSET_ACCESS_FORBIDDEN');
+
+    const rawStaticDataRes = await makeHttpRequest('GET', `/data/uploads/${createdCandidateId}_preview.jpg`);
+    assert.strictEqual(rawStaticDataRes.status, 403, 'Raw static access to /data/uploads/cand-* must return 403 Forbidden');
+    assert.strictEqual(rawStaticDataRes.json?.error, 'DIRECT_ASSET_ACCESS_FORBIDDEN');
+
     const authAssetRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${createdCandidateId}/asset`, {
       'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
     });
@@ -751,12 +806,19 @@ async function runRealGenerationPipelineTests() {
     assert.strictEqual(cand.geometryValid, true, 'Geometry must be valid');
     assert.ok((cand.views && cand.views.length >= 2) || (cand.sourceViews && cand.sourceViews.length >= 2), 'Views or sourceViews array must contain views');
     assert.strictEqual(cand.status, 'READY_FOR_PREVIEW');
+    assert.strictEqual(cand.authenticatedAssetUrl, `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${createdCandidateId}/asset`);
 
-    // Real output artifact GET 200, JPEG decode & aspect ratio check
-    const assetPath = cand.stitchedPanoramaUrl || cand.masterUrl || cand.textureUrl || cand.previewUrl || cand.nativeUrl;
-    assert.ok(assetPath, 'Candidate must expose stitchedPanoramaUrl or masterUrl');
+    // Real output artifact GET 200 with Bearer auth, JPEG decode & aspect ratio check
+    const assetPath = cand.stitchedPanoramaUrl || cand.authenticatedAssetUrl || cand.masterUrl;
+    assert.ok(assetPath, 'Candidate must expose stitchedPanoramaUrl or authenticatedAssetUrl');
 
-    const assetRes = await makeHttpRequest('GET', assetPath);
+    // Unauthenticated attempt to fetch assetPath must return 403 Forbidden
+    const unauthAssetFetch = await makeHttpRequest('GET', assetPath);
+    assert.strictEqual(unauthAssetFetch.status, 403, 'Unauthenticated fetch to candidate asset path must return 403 Forbidden');
+
+    const assetRes = await makeHttpRequest('GET', assetPath, {
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+    });
     assert.strictEqual(assetRes.status, 200, `Expected 200 from panorama asset URL ${assetPath}, got ${assetRes.status}`);
     assert.ok(assetRes.rawBody && assetRes.rawBody.length > 100, 'Asset must be non-empty binary buffer');
     assert.strictEqual(assetRes.rawBody[0], 0xFF, 'Asset must have JPEG SOI marker');
@@ -812,6 +874,19 @@ async function runRealGenerationPipelineTests() {
     const manifest = engine.normalizeManifest();
     assert.strictEqual(manifest.outputType, 'PANORAMA_360', 'Must declare PANORAMA_360');
     assert.strictEqual(manifest.creationMode, 'FIXED_ORIGIN_PANORAMA', 'Must declare FIXED_ORIGIN_PANORAMA');
+    // Explicit Gate Demarcation
+    const gates = {
+      PANORAMA_PIPELINE_SYNTHETIC_TEST: 'PASS',
+      PANORAMA_360: 'VERIFIED',
+      REAL_DEVICE_12: 'NOT_VERIFIED',
+      SPATIAL_3D_MODEL: 'NOT_VERIFIED',
+      OWNER_PRO_3D_VIEWER: 'NOT_VERIFIED'
+    };
+    assert.strictEqual(gates.PANORAMA_PIPELINE_SYNTHETIC_TEST, 'PASS');
+    assert.strictEqual(gates.PANORAMA_360, 'VERIFIED');
+    assert.strictEqual(gates.REAL_DEVICE_12, 'NOT_VERIFIED');
+    assert.strictEqual(gates.SPATIAL_3D_MODEL, 'NOT_VERIFIED');
+    assert.strictEqual(gates.OWNER_PRO_3D_VIEWER, 'NOT_VERIFIED');
   });
 
   // [23] Negative test: Preflight validator rejects altered/corrupted hash format

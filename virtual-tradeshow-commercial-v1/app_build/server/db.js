@@ -13597,6 +13597,9 @@ return event;
   async saveSpatialBoothCandidate(projectId, candidate) {
     return this.mutate((db) => {
       db.spatialCandidates = db.spatialCandidates || [];
+      if (candidate && projectId && !candidate.projectId) {
+        candidate.projectId = projectId;
+      }
       const existingIdx = db.spatialCandidates.findIndex(c => c.candidateId === candidate.candidateId);
       if (existingIdx >= 0) {
         db.spatialCandidates[existingIdx] = candidate;

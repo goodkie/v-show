@@ -810,6 +810,17 @@ app.use((err, req, res, next) => {
 });
 
 // Static File Routes
+app.use('/uploads', (req, res, next) => {
+  const reqPath = req.path || '';
+  if (reqPath.includes('cand-') || reqPath.includes('candidate') || reqPath.includes('guided_capture')) {
+    return res.status(403).json({
+      ok: false,
+      error: 'DIRECT_ASSET_ACCESS_FORBIDDEN',
+      message: 'Direct static access to candidate assets is forbidden. Access must use authenticated endpoint.'
+    });
+  }
+  next();
+});
 app.use('/uploads', express.static(UPLOADS_DIR));
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
@@ -1140,6 +1151,18 @@ app.get(['/', '/index.html'], (req, res) => {
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
   res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
+});
+
+app.use(['/data', '/uploads'], (req, res, next) => {
+  const reqPath = req.path || '';
+  if (reqPath.includes('cand-') || reqPath.includes('candidate') || reqPath.includes('guided_capture')) {
+    return res.status(403).json({
+      ok: false,
+      error: 'DIRECT_ASSET_ACCESS_FORBIDDEN',
+      message: 'Direct static access to candidate assets is forbidden. Access must use authenticated endpoint.'
+    });
+  }
+  next();
 });
 
 app.use('/assets', express.static(path.join(__dirname, '..', 'client', 'assets')));
@@ -11312,9 +11335,34 @@ app.get(['/api/projects/:id/panorama/candidate/:candidateId', '/api/projects/:id
       return res.status(403).json({ ok: false, error: 'FORBIDDEN', message: 'Cross-tenant access forbidden.' });
     }
 
-    const candidate = db.getSpatialBoothCandidate(req.params.candidateId);
+    const rawCandidateId = req.params.candidateId;
+    if (!rawCandidateId || !/^[a-zA-Z0-9_-]{1,64}$/.test(rawCandidateId)) {
+      return res.status(400).json({ ok: false, error: 'INVALID_CANDIDATE_ID', message: 'Malformed candidateId' });
+    }
+
+    const candidate = db.getSpatialBoothCandidate(rawCandidateId);
     if (!candidate) return res.status(404).json({ ok: false, error: 'Panorama candidate not found' });
-    res.json({ ok: true, success: true, candidate });
+
+    // Strict cross-tenant candidate binding: candidate must belong to the requested project
+    if (!candidate.projectId || candidate.projectId !== projectId) {
+      return res.status(403).json({
+        ok: false,
+        error: 'CROSS_PROJECT_FORBIDDEN',
+        message: 'Forbidden: Candidate does not belong to the requested project'
+      });
+    }
+
+    const authenticatedAssetUrl = `/api/projects/${projectId}/panorama/candidate/${candidate.candidateId}/asset`;
+    const enrichedCandidate = {
+      ...candidate,
+      authenticatedAssetUrl,
+      stitchedPanoramaUrl: authenticatedAssetUrl,
+      previewUrl: authenticatedAssetUrl,
+      activeBackgroundUrl: authenticatedAssetUrl,
+      textureUrl: authenticatedAssetUrl
+    };
+
+    res.json({ ok: true, success: true, candidate: enrichedCandidate });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
@@ -11333,10 +11381,24 @@ app.get('/api/projects/:id/panorama/candidate/:candidateId/asset', (req, res) =>
       return res.status(403).json({ ok: false, error: 'FORBIDDEN', message: 'Cross-tenant access forbidden.' });
     }
 
-    const candidate = db.getSpatialBoothCandidate(req.params.candidateId);
+    const rawCandidateId = req.params.candidateId;
+    if (!rawCandidateId || !/^[a-zA-Z0-9_-]{1,64}$/.test(rawCandidateId)) {
+      return res.status(400).json({ ok: false, error: 'INVALID_CANDIDATE_ID', message: 'Malformed candidateId' });
+    }
+
+    const candidate = db.getSpatialBoothCandidate(rawCandidateId);
     if (!candidate) return res.status(404).json({ ok: false, error: 'ASSET_NOT_FOUND', message: 'Panorama candidate not found' });
 
-    const candidateId = req.params.candidateId;
+    // Strict cross-tenant candidate binding: candidate must belong to the requested project
+    if (!candidate.projectId || candidate.projectId !== projectId) {
+      return res.status(403).json({
+        ok: false,
+        error: 'CROSS_PROJECT_FORBIDDEN',
+        message: 'Forbidden: Candidate does not belong to the requested project'
+      });
+    }
+
+    const candidateId = rawCandidateId;
     const searchDirs = [
       UPLOADS_DIR,
       path.join(__dirname, '..', 'uploads'),
@@ -11388,6 +11450,22 @@ app.get('/api/projects/:id/panorama/candidate/:candidateId/asset', (req, res) =>
 
     if (!assetPath) {
       return res.status(404).json({ ok: false, error: 'ASSET_NOT_FOUND', message: 'Candidate asset file not found on disk' });
+    }
+
+    // Path containment check: ensure asset file is within authorized storage root
+    const resolvedAssetPath = path.resolve(assetPath);
+    const allowedRoots = [
+      path.resolve(UPLOADS_DIR),
+      path.resolve(DATA_DIR),
+      path.resolve(__dirname, '..')
+    ];
+    const isContained = allowedRoots.some(root => {
+      const rel = path.relative(root, resolvedAssetPath);
+      return !rel.startsWith('..') && !path.isAbsolute(rel);
+    });
+
+    if (!isContained) {
+      return res.status(403).json({ ok: false, error: 'UNAUTHORIZED_STORAGE_PATH', message: 'Access to path outside storage root forbidden' });
     }
 
     res.setHeader('Content-Type', 'image/jpeg');
