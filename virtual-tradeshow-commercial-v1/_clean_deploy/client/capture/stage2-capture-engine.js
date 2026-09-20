@@ -199,6 +199,31 @@ class Stage2CaptureEngine {
     }
 
     if (!this.sensorListenerAttached) {
+      this.preferredSource = null;
+
+      this.boundOrientationHandler = (event) => {
+        if (!event) return;
+
+        // Prevent dual-event thrashing between deviceorientation & deviceorientationabsolute:
+        // On Chrome Android, both events fire concurrently with different coordinate reference frames.
+        // When deviceorientationabsolute is available and firing, drop standard deviceorientation.
+        if (event.type === 'deviceorientationabsolute') {
+          if (this.preferredSource !== 'deviceorientationabsolute') {
+            this.preferredSource = 'deviceorientationabsolute';
+            this.relativeYawOrigin = null; // Re-sync relative yaw origin to absolute compass coordinate frame
+          }
+        } else if (event.type === 'deviceorientation') {
+          if (this.preferredSource === 'deviceorientationabsolute') {
+            return; // Drop standard event to prevent coordinate oscillation and violent needle shaking
+          }
+          if (!this.preferredSource) {
+            this.preferredSource = 'deviceorientation';
+          }
+        }
+
+        this.handleDeviceOrientation(event);
+      };
+
       if (typeof win.addEventListener === 'function') {
         win.addEventListener('deviceorientation', this.boundOrientationHandler);
         // CRITICAL FOR PHYSICAL ANDROID (Z Fold4 / Galaxy S23 / Android Chrome):
@@ -227,6 +252,7 @@ class Stage2CaptureEngine {
     }
     this.sensorListenerAttached = false;
     this.attachedTargetWindow = null;
+    this.preferredSource = null;
   }
 
   // ─── Orientation Processing & Continuous Yaw Unwrap ─────────────────────────
@@ -305,9 +331,10 @@ class Stage2CaptureEngine {
 
     // Angular velocity with smoothing
     const dt = timestamp - this.lastTimestamp;
-    if (dt > 0) {
+    if (dt > 0 && dt < 2000) {
       const instantaneousVel = Math.abs(clockwiseDelta) / (dt / 1000.0);
-      this.currentAngularVelocity = 0.3 * instantaneousVel + 0.7 * this.currentAngularVelocity;
+      const boundedVel = Math.min(instantaneousVel, 360.0);
+      this.currentAngularVelocity = 0.25 * boundedVel + 0.75 * this.currentAngularVelocity;
     }
 
     this.lastRawAlpha = alpha;
@@ -774,9 +801,13 @@ class Stage2CaptureEngine {
     // 6. Real-time Heading Needle and HUD angle
     if (this.boundUI.needle) {
       this.boundUI.needle.style.transform = `rotate(${this.normalizedYaw.toFixed(1)}deg)`;
+      try { this.boundUI.needle.setAttribute('transform', `rotate(${this.normalizedYaw.toFixed(1)} 100 100)`); } catch(e) {}
     } else if (typeof document !== 'undefined') {
       const needle = document.getElementById('captureHeadingNeedle');
-      if (needle) needle.style.transform = `rotate(${this.normalizedYaw.toFixed(1)}deg)`;
+      if (needle) {
+        needle.style.transform = `rotate(${this.normalizedYaw.toFixed(1)}deg)`;
+        try { needle.setAttribute('transform', `rotate(${this.normalizedYaw.toFixed(1)} 100 100)`); } catch(e) {}
+      }
     }
     if (this.boundUI.hudAngle) {
       this.boundUI.hudAngle.textContent = `${Math.round(this.normalizedYaw)}°`;

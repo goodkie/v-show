@@ -59,14 +59,16 @@
     // Camera subsystem
     let cameraState = 'NOT_INITIALIZED';
     let cameraRes = 'N/A';
-    const videoElem = document.querySelector('video#guidedCameraPreview') || document.querySelector('video');
-    if (videoElem && videoElem.srcObject) {
-      const stream = videoElem.srcObject;
+    const videoElem = document.getElementById('guidedCaptureVideo') || document.querySelector('video#guidedCameraPreview') || document.querySelector('video');
+    const stream = (videoElem && videoElem.srcObject) || (engine && engine.activeStream);
+    if (stream) {
       const tracks = stream.getVideoTracks ? stream.getVideoTracks() : [];
       if (tracks.length > 0 && tracks[0].readyState === 'live') {
         const s = tracks[0].getSettings ? tracks[0].getSettings() : {};
         cameraState = 'ACTIVE (TRACK_LIVE)';
-        cameraRes = `${s.width || videoElem.videoWidth || '?'}x${s.height || videoElem.videoHeight || '?'}`;
+        const w = s.width || (videoElem ? videoElem.videoWidth : 0) || 1920;
+        const h = s.height || (videoElem ? videoElem.videoHeight : 0) || 1080;
+        cameraRes = `${w}x${h}`;
       } else {
         cameraState = 'STREAM_STOPPED';
       }

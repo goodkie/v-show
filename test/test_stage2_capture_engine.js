@@ -530,6 +530,57 @@ test('[T18] Lightweight Stage 2 RI telemetry recording & sample metrics', async 
   assert.strictEqual(capturedBody.qaSessionToken, undefined, 'qaSessionToken must NOT be present in body payload');
 });
 
+test('[T19] Dual-event thrashing prevention: deviceorientation is dropped when deviceorientationabsolute is active', () => {
+  const engine = new Stage2CaptureEngine();
+  const listeners = {};
+  const mockWin = {
+    ondeviceorientationabsolute: true,
+    addEventListener(evt, fn) {
+      listeners[evt] = fn;
+    },
+    removeEventListener(evt, fn) {
+      if (listeners[evt] === fn) delete listeners[evt];
+    }
+  };
+
+  engine.attachSensorListeners(mockWin);
+  assert.ok(listeners['deviceorientationabsolute'], 'deviceorientationabsolute must be attached');
+  assert.ok(listeners['deviceorientation'], 'deviceorientation must be attached');
+
+  // 1. Absolute event arrives: alpha = 140
+  listeners['deviceorientationabsolute']({
+    type: 'deviceorientationabsolute',
+    alpha: 140,
+    beta: 90,
+    gamma: 0,
+    timeStamp: 1000
+  });
+  assert.strictEqual(engine.normalizedYaw, 0); // Origin initialized
+  assert.strictEqual(engine.sensorSource, 'deviceorientationabsolute');
+
+  // 2. Conflicting standard event arrives: alpha = 20
+  // This MUST be dropped by boundOrientationHandler to prevent needle oscillation
+  listeners['deviceorientation']({
+    type: 'deviceorientation',
+    alpha: 20,
+    beta: 90,
+    gamma: 0,
+    timeStamp: 1016
+  });
+  assert.strictEqual(engine.lastRawAlpha, 140, 'Standard deviceorientation event must be dropped');
+  assert.strictEqual(engine.normalizedYaw, 0, 'Normalized yaw must not oscillate');
+
+  // 3. Next absolute event advances 10° clockwise (alpha = 130)
+  listeners['deviceorientationabsolute']({
+    type: 'deviceorientationabsolute',
+    alpha: 130,
+    beta: 90,
+    gamma: 0,
+    timeStamp: 1032
+  });
+  assert.strictEqual(engine.normalizedYaw, 10, 'Yaw must advance smoothly by 10 degrees');
+});
+
 
 console.log('\n================================================================');
 console.log(`TEST EXECUTION COMPLETE: ${passCount} PASSED, ${failCount} FAILED`);
