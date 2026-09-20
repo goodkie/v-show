@@ -836,8 +836,8 @@ async function runRealGenerationPipelineTests() {
         'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
       });
       assert.notStrictEqual(fakeAssetRes.status, 200, 'Server must NEVER serve server/index.js via candidate URL spoofing');
-      assert.strictEqual(fakeAssetRes.status, 404, 'Must fail closed with 404 ASSET_FILE_NOT_FOUND');
-      assert.strictEqual(fakeAssetRes.json?.error, 'ASSET_FILE_NOT_FOUND');
+      assert.strictEqual(fakeAssetRes.status, 404, 'Must fail closed with 404 ASSET_NOT_FOUND');
+      assert.strictEqual(fakeAssetRes.json?.error, 'ASSET_NOT_FOUND');
     }
 
     // Negative Security: 0-byte truncated candidate file rejected (400 CORRUPTED_ASSET)
@@ -845,7 +845,7 @@ async function runRealGenerationPipelineTests() {
     const privateArtifactsRoot = path.join(__dirname, '..', 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'panorama_artifacts');
     const zeroByteCandDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, zeroByteCandId);
     fs.mkdirSync(zeroByteCandDir, { recursive: true });
-    fs.writeFileSync(path.join(zeroByteCandDir, `${zeroByteCandId}_panorama.jpg`), Buffer.alloc(0));
+    fs.writeFileSync(path.join(zeroByteCandDir, `${zeroByteCandId}_preview.jpg`), Buffer.alloc(0));
     if (db && db.saveSpatialBoothCandidate) {
       await db.saveSpatialBoothCandidate(TEST_PROJECT_ID, {
         candidateId: zeroByteCandId,
@@ -864,7 +864,7 @@ async function runRealGenerationPipelineTests() {
     const nonJpegCandId = `cand-non-jpeg-${Date.now()}`;
     const nonJpegCandDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, nonJpegCandId);
     fs.mkdirSync(nonJpegCandDir, { recursive: true });
-    fs.writeFileSync(path.join(nonJpegCandDir, `${nonJpegCandId}_panorama.jpg`), Buffer.from('<html><body>MALICIOUS_PAYLOAD</body></html>'));
+    fs.writeFileSync(path.join(nonJpegCandDir, `${nonJpegCandId}_preview.jpg`), Buffer.from('<html><body>MALICIOUS_PAYLOAD</body></html>'));
     if (db && db.saveSpatialBoothCandidate) {
       await db.saveSpatialBoothCandidate(TEST_PROJECT_ID, {
         candidateId: nonJpegCandId,
@@ -1222,8 +1222,9 @@ async function runRealGenerationPipelineTests() {
 
     await Promise.all([p1, p2]);
 
-    const read1 = db.get(key1);
-    const read2 = db.get(key2);
+    const data = db.read();
+    const read1 = data[key1];
+    const read2 = data[key2];
 
     assert.ok(read1, 'Write 1 must be persisted');
     assert.strictEqual(read1.writtenBy, 'worker-1');

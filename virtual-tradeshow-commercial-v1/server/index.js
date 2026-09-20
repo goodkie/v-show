@@ -12953,7 +12953,15 @@ app.use((err, req, res, next) => {
 });
 
 app.get('*', (req, res) => {
-  if (req.path.startsWith('/uploads/') || req.path.startsWith('/api/') || req.path.startsWith('/assets/')) {
+  if (
+    req.path.startsWith('/uploads/') ||
+    req.path.startsWith('/api/') ||
+    req.path.startsWith('/assets/') ||
+    req.path.startsWith('/data/') ||
+    req.path.startsWith('/server/') ||
+    req.path === '/package.json' ||
+    req.path === '/package-lock.json'
+  ) {
     return res.status(404).json({ error: 'Not Found' });
   }
   if (req.path.startsWith('/organizer')) {
