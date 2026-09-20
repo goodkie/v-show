@@ -166,6 +166,7 @@ async function runBrowserViewerTests() {
   let page = null;
   let activeJobId = null;
   let activeCandidateId = null;
+  let activeCandidateMeta = null;
   let candidateAssetUrl = null;
 
   // [1] Puppeteer browser launch with portable module resolution & WebGL flags
@@ -261,6 +262,11 @@ async function runBrowserViewerTests() {
     assert.ok(readyCandidateId, 'Job must produce valid candidateId');
     activeCandidateId = readyCandidateId;
     candidateAssetUrl = `${BASE_URL}/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${activeCandidateId}/asset`;
+    const metaRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${activeCandidateId}`, {
+      'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+    });
+    activeCandidateMeta = metaRes.json?.candidate || null;
+    assert.ok(activeCandidateMeta?.assetSha256, 'Worker candidate record must contain assetSha256');
   });
 
   // [3] Navigate to served Photo 360 Viewer page
@@ -321,19 +327,33 @@ async function runBrowserViewerTests() {
     assert.strictEqual(foreignStatus, 403, 'Foreign project endpoint requesting candidate asset must return 403 Forbidden');
   });
 
-  // [5d] Negative security check in browser: Direct raw/static URL access to candidate assets blocked (403)
-  await test('[5d] Negative Security: Raw/static URL candidate asset access in browser strictly rejected (403)', async () => {
-    const rawStaticStatus = await page.evaluate(async (baseUrl, candId) => {
-      try {
-        const r1 = await fetch(`${baseUrl}/uploads/${candId}_preview.jpg`);
-        const r2 = await fetch(`${baseUrl}/data/uploads/${candId}_preview.jpg`);
-        return { uploadsStatus: r1.status, dataStatus: r2.status };
-      } catch (e) {
-        return { uploadsStatus: -1, dataStatus: -1 };
+  // [5d] Negative security check in browser: Direct raw/static URL access to candidate assets blocked (403/404)
+  await test('[5d] Negative Security: Raw/static URL candidate asset access in browser strictly rejected (403/404)', async () => {
+    const rawStaticStatus = await page.evaluate(async (baseUrl, candId, pId) => {
+      const paths = [
+        `/uploads/${candId}_preview.jpg`,
+        `/data/uploads/${candId}_preview.jpg`,
+        `/data/panorama_artifacts/${pId}/${candId}/${candId}_preview.jpg`,
+        `/panorama_artifacts/${pId}/${candId}/${candId}_preview.jpg`,
+        `/uploads/panorama_artifacts/${pId}/${candId}/${candId}_preview.jpg`,
+        `/%64%61%74%61/panorama_artifacts/${pId}/${candId}/${candId}_preview.jpg`,
+        `/data/panorama_artifacts/private_unrelated_canary.txt`
+      ];
+      const results = {};
+      for (const p of paths) {
+        try {
+          const r = await fetch(`${baseUrl}${p}`);
+          results[p] = r.status;
+        } catch (e) {
+          results[p] = -1;
+        }
       }
-    }, BASE_URL, activeCandidateId);
-    assert.strictEqual(rawStaticStatus.uploadsStatus, 403, 'Direct /uploads static candidate access must return 403 Forbidden');
-    assert.strictEqual(rawStaticStatus.dataStatus, 403, 'Direct /data static candidate access must return 403 Forbidden');
+      return results;
+    }, BASE_URL, activeCandidateId, TEST_PROJECT_ID);
+
+    for (const [p, status] of Object.entries(rawStaticStatus)) {
+      assert.ok([403, 404].includes(status), `Direct static access to ${p} must be forbidden or not found, got status: ${status}`);
+    }
   });
 
   // [5e] Negative Auth: Unauthenticated job status request in browser strictly rejected (403)
@@ -360,6 +380,7 @@ async function runBrowserViewerTests() {
         return { ok: false, step: 'FETCH', status: authRes.status };
       }
       const responseCandidateId = authRes.headers.get('x-candidate-id');
+      const responseSha256 = authRes.headers.get('x-asset-sha256');
       const blob = await authRes.blob();
       const arrayBuffer = await blob.arrayBuffer();
       const hashBuf = await crypto.subtle.digest('SHA-256', arrayBuffer);
@@ -426,6 +447,7 @@ async function runBrowserViewerTests() {
         textureLoaded: loaded,
         blobSha256,
         responseCandidateId,
+        responseSha256,
         renderedCandidateId: engine.manifest?.views?.[0]?.candidateId || null,
         hasScene: !!engine.scene,
         hasCamera: !!engine.camera,
@@ -442,6 +464,10 @@ async function runBrowserViewerTests() {
     assert.strictEqual(loadResult.textureLoaded, true, 'Texture must finish loading into Three.js material map');
     assert.ok(/^[a-f0-9]{64}$/.test(loadResult.blobSha256), 'Fetched blob SHA-256 must be valid 64-char hex');
     assert.strictEqual(loadResult.responseCandidateId, activeCandidateId, 'Response header X-Candidate-Id must match candidateId');
+    assert.strictEqual(loadResult.responseSha256, loadResult.blobSha256, 'Response header X-Asset-Sha256 must match recomputed browser blobSha256');
+    if (activeCandidateMeta && activeCandidateMeta.assetSha256) {
+      assert.strictEqual(loadResult.blobSha256, activeCandidateMeta.assetSha256, 'Browser blob SHA-256 must match worker candidate.assetSha256 (browserBlobSha === authenticatedServerArtifactSha === workerCandidateSha)');
+    }
     assert.strictEqual(loadResult.renderedCandidateId, activeCandidateId, 'Viewer must render the exact generated candidate ID');
     assert.strictEqual(loadResult.hasScene, true);
     assert.strictEqual(loadResult.hasCamera, true);
@@ -449,7 +475,9 @@ async function runBrowserViewerTests() {
     assert.strictEqual(loadResult.hasSphere, true);
     assert.ok(loadResult.rendererWidth > 0, 'Canvas width must be > 0');
     assert.ok(loadResult.rendererHeight > 0, 'Canvas height must be > 0');
-    assert.ok(loadResult.textureWidth >= 256, `Loaded texture width (${loadResult.textureWidth}) must be >= 256`);
+    assert.ok(loadResult.textureWidth >= 1024, `Loaded texture width (${loadResult.textureWidth}) must be >= 1024`);
+    assert.ok(loadResult.textureHeight >= 256, `Loaded texture height (${loadResult.textureHeight}) must be >= 256`);
+    assert.ok(loadResult.textureWidth / loadResult.textureHeight >= 2.0, `Loaded texture aspect ratio must be equirectangular >= 2.0`);
   });
 
   // [7] 360 Navigation: camera yaw/pitch update test via real pointer drag

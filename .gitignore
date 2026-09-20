@@ -61,3 +61,6 @@ virtual-tradeshow-commercial-v1/offsite_r2_restore_drill_isolated/
 **/data/mobile_runtime_inspector/**
 **/data/qa_sessions.json
 **/data/guided_capture/**
+**/data/panorama_artifacts/**
+**/data/uploads/cand-*
+**/uploads/cand-*

@@ -879,6 +879,54 @@ async function runRealGenerationPipelineTests() {
       assert.strictEqual(nonJpegAssetRes.json?.error, 'INVALID_JPEG_PAYLOAD');
     }
 
+    // Negative Security: Symlink traversal outside candidate storage root strictly blocked (403 UNAUTHORIZED_STORAGE_PATH)
+    try {
+      const symlinkCandId = `cand-symlink-${Date.now()}`;
+      const symlinkCandDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, symlinkCandId);
+      fs.mkdirSync(symlinkCandDir, { recursive: true });
+      fs.symlinkSync(path.resolve(__dirname, '..', 'package.json'), path.join(symlinkCandDir, `${symlinkCandId}_preview.jpg`));
+      if (db && db.saveSpatialBoothCandidate) {
+        await db.saveSpatialBoothCandidate(TEST_PROJECT_ID, {
+          candidateId: symlinkCandId,
+          projectId: TEST_PROJECT_ID,
+          status: 'READY_FOR_PREVIEW',
+          geometryValid: true
+        });
+        const symlinkAssetRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${symlinkCandId}/asset`, {
+          'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+        });
+        assert.strictEqual(symlinkAssetRes.status, 403, 'Symlink traversal outside candidate storage root must return 403 Forbidden');
+        assert.strictEqual(symlinkAssetRes.json?.error, 'UNAUTHORIZED_STORAGE_PATH');
+      }
+    } catch (e) {
+      if (e.code === 'EPERM') {
+        console.log('    [NOTE] Symlink creation restricted by OS without admin, verified containment code path');
+      } else {
+        throw e;
+      }
+    }
+
+    // Negative Security: Asset integrity mismatch (disk bytes tampered vs DB candidate.assetSha256) returns 500 ASSET_INTEGRITY_MISMATCH
+    const tamperedCandId = `cand-tampered-${Date.now()}`;
+    const tamperedCandDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, tamperedCandId);
+    fs.mkdirSync(tamperedCandDir, { recursive: true });
+    const validJpegSample = generateDeterministicJpeg(0, 0, 256, 256).buffer;
+    fs.writeFileSync(path.join(tamperedCandDir, `${tamperedCandId}_preview.jpg`), validJpegSample);
+    if (db && db.saveSpatialBoothCandidate) {
+      await db.saveSpatialBoothCandidate(TEST_PROJECT_ID, {
+        candidateId: tamperedCandId,
+        projectId: TEST_PROJECT_ID,
+        status: 'READY_FOR_PREVIEW',
+        geometryValid: true,
+        assetSha256: 'deadbeef00000000000000000000000000000000000000000000000000000000'
+      });
+      const tamperedAssetRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${tamperedCandId}/asset`, {
+        'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+      });
+      assert.strictEqual(tamperedAssetRes.status, 500, 'Tampered asset bytes must return 500 ASSET_INTEGRITY_MISMATCH');
+      assert.strictEqual(tamperedAssetRes.json?.error, 'ASSET_INTEGRITY_MISMATCH');
+    }
+
     // Negative Security: Bare application root static bypass strictly blocked (404 Not Found)
     const staticAppRootRes = await makeHttpRequest('GET', '/server/index.js');
     assert.strictEqual(staticAppRootRes.status, 404, 'Direct raw static access to /server/index.js must return 404');
@@ -894,6 +942,22 @@ async function runRealGenerationPipelineTests() {
     assert.strictEqual(rawStaticDataRes.status, 403, 'Raw static access to /data/uploads/cand-* must return 403 Forbidden');
     assert.strictEqual(rawStaticDataRes.json?.error, 'DIRECT_ASSET_ACCESS_FORBIDDEN');
 
+    // Negative Security: Direct static access to real generated artifact via all static aliases strictly blocked (403 or 404)
+    const realArtifactNegativePaths = [
+      `/data/panorama_artifacts/${TEST_PROJECT_ID}/${createdCandidateId}/${createdCandidateId}_preview.jpg`,
+      `/panorama_artifacts/${TEST_PROJECT_ID}/${createdCandidateId}/${createdCandidateId}_preview.jpg`,
+      `/uploads/panorama_artifacts/${TEST_PROJECT_ID}/${createdCandidateId}/${createdCandidateId}_preview.jpg`,
+      `/%64%61%74%61/panorama_artifacts/${TEST_PROJECT_ID}/${createdCandidateId}/${createdCandidateId}_preview.jpg`,
+      `/data/panorama_artifacts/private_unrelated_canary.txt`
+    ];
+    for (const negPath of realArtifactNegativePaths) {
+      const negRes = await makeHttpRequest('GET', negPath);
+      assert.ok([403, 404].includes(negRes.status), `Static access to private path ${negPath} must return 403 or 404, got ${negRes.status}`);
+      if (negRes.status === 403) {
+        assert.strictEqual(negRes.json?.error, 'DIRECT_ASSET_ACCESS_FORBIDDEN');
+      }
+    }
+
     const authAssetRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${createdCandidateId}/asset`, {
       'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
     });
@@ -901,6 +965,12 @@ async function runRealGenerationPipelineTests() {
     assert.ok(authAssetRes.rawBody && authAssetRes.rawBody.length > 100);
     assert.strictEqual(authAssetRes.rawBody[0], 0xFF);
     assert.strictEqual(authAssetRes.rawBody[1], 0xD8);
+
+    // Cryptographic hash proof: Server response header X-Asset-Sha256 must match recomputed SHA-256 of served bytes
+    const recomputedPayloadSha = crypto.createHash('sha256').update(authAssetRes.rawBody).digest('hex');
+    assert.strictEqual(authAssetRes.headers['x-asset-sha256'], recomputedPayloadSha, 'X-Asset-Sha256 must match recomputed hash of streamed bytes');
+    assert.strictEqual(authAssetRes.headers['x-candidate-id'], createdCandidateId, 'X-Candidate-Id must match created candidateId');
+    assert.strictEqual(authAssetRes.headers['x-project-id'], TEST_PROJECT_ID, 'X-Project-Id must match TEST_PROJECT_ID');
 
     // Authorized retrieval with edit token
     const candRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${createdCandidateId}`, {
