@@ -50,6 +50,8 @@ try {
   } catch (e2) {
     throw new Error('jpeg-js library is required for valid JPEG decode/encode verification');
   }
+}
+
 let db;
 try {
   db = require('../virtual-tradeshow-commercial-v1/_clean_deploy/server/db');
@@ -744,8 +746,9 @@ async function runRealGenerationPipelineTests() {
     assert.strictEqual(traversalAssetRes.status, 400, 'Path traversal in candidateId must return 400 Bad Request');
     assert.strictEqual(traversalAssetRes.json?.error, 'INVALID_CANDIDATE_ID');
 
-    // Negative Auth: Querying candidate via foreign project endpoint rejected (403 CROSS_PROJECT_FORBIDDEN or 403 edit access)
-    const foreignProjectAssetRes = await makeHttpRequest('GET', `/api/projects/prj-other-tenant-9999/panorama/candidate/${createdCandidateId}/asset`, {
+    // Negative Auth: Querying candidate via foreign project endpoint rejected (403 FORBIDDEN edit access)
+    const foreignProjectId = 'prj-free-aeb87eb4';
+    const foreignProjectAssetRes = await makeHttpRequest('GET', `/api/projects/${foreignProjectId}/panorama/candidate/${createdCandidateId}/asset`, {
       'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
     });
     assert.strictEqual(foreignProjectAssetRes.status, 403, 'Querying candidate via foreign project endpoint must return 403 Forbidden');
@@ -754,9 +757,9 @@ async function runRealGenerationPipelineTests() {
     // Register candidate belonging to Project B
     const foreignCandId = `cand-foreign-${Date.now()}`;
     if (db && db.saveSpatialBoothCandidate) {
-      await db.saveSpatialBoothCandidate('prj-other-tenant-9999', {
+      await db.saveSpatialBoothCandidate(foreignProjectId, {
         candidateId: foreignCandId,
-        projectId: 'prj-other-tenant-9999',
+        projectId: foreignProjectId,
         status: 'READY_FOR_PREVIEW',
         geometryValid: true
       });

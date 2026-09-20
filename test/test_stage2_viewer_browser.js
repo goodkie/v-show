@@ -303,7 +303,7 @@ async function runBrowserViewerTests() {
 
   // [5c] Negative security check in browser: Foreign project endpoint querying candidate returns 403
   await test('[5c] Negative Auth: Foreign project endpoint requesting candidate asset returns 403', async () => {
-    const foreignProjectUrl = `${BASE_URL}/api/projects/prj-foreign-tenant-9999/panorama/candidate/${activeCandidateId}/asset`;
+    const foreignProjectUrl = `${BASE_URL}/api/projects/prj-free-aeb87eb4/panorama/candidate/${activeCandidateId}/asset`;
     const foreignStatus = await page.evaluate(async (foreignUrl, token) => {
       try {
         const r = await fetch(foreignUrl, {
