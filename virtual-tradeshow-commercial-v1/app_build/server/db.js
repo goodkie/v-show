@@ -1556,13 +1556,17 @@ class JSONDatabase {
       } catch (e) {
         if (e.code === 'EEXIST' || e.code === 'EPERM' || e.code === 'EBUSY') {
           const existing = this._readLockFile();
-          if (existing && existing.pid && !this._isProcessAlive(existing.pid)) {
-            try {
-              const current = this._readLockFile();
-              if (current && current.ownerToken === existing.ownerToken) {
-                fs.unlinkSync(lockFile);
-              }
-            } catch (staleErr) {}
+          if (existing) {
+            const isDead = existing.pid && !this._isProcessAlive(existing.pid);
+            const isStale = existing.createdAt && (Date.now() - existing.createdAt > 15000);
+            if (isDead || isStale) {
+              try {
+                const current = this._readLockFile();
+                if (current && current.ownerToken === existing.ownerToken) {
+                  fs.unlinkSync(lockFile);
+                }
+              } catch (staleErr) {}
+            }
           }
           await new Promise(r => setTimeout(r, 10 + Math.floor(Math.random() * 20)));
         } else {
@@ -1573,26 +1577,40 @@ class JSONDatabase {
     throw new Error(`LOCK_TIMEOUT_ACQUISITION_FAILED: Timed out waiting for database lock after ${timeoutMs}ms`);
   }
 
+  _ensureDataDir() {
+    if (!fs.existsSync(DATA_DIR)) {
+      try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (_) {}
+    }
+  }
+
   releaseFileLock(ownerToken) {
     if (!ownerToken) return false;
+    this._ensureDataDir();
     const lockFile = path.join(DATA_DIR, 'db.lock');
     try {
+      if (!fs.existsSync(lockFile)) return true;
       const current = this._readLockFile();
       if (!current || current.ownerToken !== ownerToken) {
         return false;
       }
       try {
-        const raw = fs.readFileSync(lockFile, 'utf-8');
-        const parsed = JSON.parse(raw);
-        if (parsed.ownerToken === ownerToken) {
-          fs.unlinkSync(lockFile);
-          return true;
+        fs.unlinkSync(lockFile);
+        return true;
+      } catch (unlinkErr) {
+        if (unlinkErr.code === 'ENOENT') return true;
+        const end = Date.now() + 100;
+        while (Date.now() < end) {
+          try {
+            if (!fs.existsSync(lockFile)) return true;
+            fs.unlinkSync(lockFile);
+            return true;
+          } catch (_) {}
         }
-      } catch (readErr) {
         return !fs.existsSync(lockFile);
       }
-    } catch (e) {}
-    return false;
+    } catch (e) {
+      return !fs.existsSync(lockFile);
+    }
   }
 
   acquireLockSync(timeoutMs = 15000) {
@@ -1612,13 +1630,17 @@ class JSONDatabase {
       } catch (e) {
         if (e.code === 'EEXIST' || e.code === 'EPERM' || e.code === 'EBUSY') {
           const existing = this._readLockFile();
-          if (existing && existing.pid && !this._isProcessAlive(existing.pid)) {
-            try {
-              const current = this._readLockFile();
-              if (current && current.ownerToken === existing.ownerToken && !this._isProcessAlive(current.pid)) {
-                fs.unlinkSync(lockFile);
-              }
-            } catch (staleErr) {}
+          if (existing) {
+            const isDead = existing.pid && !this._isProcessAlive(existing.pid);
+            const isStale = existing.createdAt && (Date.now() - existing.createdAt > 15000);
+            if (isDead || isStale) {
+              try {
+                const current = this._readLockFile();
+                if (current && current.ownerToken === existing.ownerToken) {
+                  fs.unlinkSync(lockFile);
+                }
+              } catch (staleErr) {}
+            }
           }
           const delayUntil = Date.now() + 10 + Math.floor(Math.random() * 15);
           while (Date.now() < delayUntil) {}
@@ -1650,13 +1672,19 @@ class JSONDatabase {
 
   async write(data) {
     // Deprecated whole-snapshot write: strongly prefer field-specific mutate(fresh => ...)
-    // Enforces atomic read-modify-write under exclusive lock, throwing on error
+    // Enforces atomic read-modify-write under exclusive lock, rejecting stale snapshots
     return this.mutate(current => {
       if (!data || typeof data !== 'object') {
         throw new Error('INVALID_DATA: db.write requires a non-null object');
       }
+      if (data._version !== undefined && current._version !== undefined && data._version < current._version - 1) {
+        throw new Error(`STALE_SNAPSHOT_WRITE_REJECTED: snapshot version ${data._version} is older than database current version ${current._version - 1}`);
+      }
       if (data !== current) {
-        Object.assign(current, data);
+        for (const key of Object.keys(data)) {
+          if (key === '_version') continue;
+          current[key] = data[key];
+        }
       }
       return current;
     });
@@ -1725,6 +1753,7 @@ class JSONDatabase {
       ownerToken = await this.acquireFileLock();
       this.memoryData = null; // force fresh reload from disk under lock
       const data = this.read();
+      data._version = (data._version || 1) + 1;
       const result = await callback(data);
       const written = this._writeUnderLock(data);
       if (!written) throw new Error('DB_WRITE_FAILED: Write returned false under lock');

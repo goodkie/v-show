@@ -146,7 +146,8 @@ async function runMobileRiSuite() {
     testSessionId = 'RI-S2-TEST-' + Date.now().toString(36).toUpperCase();
 
     // Inject valid session into server's persistent volume QA sessions file
-    const sessionsFile = path.join(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/data/qa_sessions.json');
+    const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/data');
+    const sessionsFile = path.join(DATA_DIR, 'qa_sessions.json');
     let currentData = { captureSessions: [], qaBrowserSessions: [] };
     if (fs.existsSync(sessionsFile)) {
       try { currentData = JSON.parse(fs.readFileSync(sessionsFile, 'utf8')); } catch (e) {}

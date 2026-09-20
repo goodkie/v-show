@@ -597,13 +597,32 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
   const sig = req.headers['stripe-signature'];
   let event;
 
+  // Strict Fail-Closed Stripe Webhook Security:
+  const isTestEnv = process.env.NODE_ENV === 'test' && process.env.ALLOW_TEST_BILLING_SIMULATION === 'true';
+  const isLoopback = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket?.remoteAddress) ||
+                     ['127.0.0.1', '::1'].includes(req.ip);
+  const hasNoForwarding = !req.headers['x-forwarded-for'] && !req.headers['x-forwarded-host'] && !req.headers['x-real-ip'];
+  const isTestAuth = req.headers['x-internal-test-auth'] === 'true';
+
   try {
     if (stripe && STRIPE_WEBHOOK_SECRET && sig) {
+      // Production path: verify cryptographic signature
       event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
-    } else {
-      // Test Mode / Simulation Fallback
+    } else if (isTestEnv && isLoopback && hasNoForwarding && isTestAuth) {
+      // Isolated test simulation path: ONLY accessible via direct loopback in test environment with test token
+      if (req.headers['x-test-simulate-signature'] === 'invalid_signature') {
+        throw new Error('TEST_SIMULATED_SIGNATURE_VERIFICATION_FAILED');
+      }
       const payloadStr = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : JSON.stringify(req.body);
       event = JSON.parse(payloadStr);
+    } else {
+      // Fail closed: Webhooks missing valid Stripe secret/signature are strictly rejected
+      console.warn(`[SECURITY][BILLING_WEBHOOK_REJECTED] Missing verified Stripe signature from ${req.socket?.remoteAddress}`);
+      return res.status(400).json({
+        ok: false,
+        error: 'WEBHOOK_SIGNATURE_REQUIRED',
+        message: 'Strict signature verification required. Stripe webhook secret or signature missing.'
+      });
     }
   } catch (err) {
     console.error('⚠️ Stripe Webhook signature verification failed:', err.message);
@@ -11275,10 +11294,12 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
           const isTestAuthorized = req.headers['x-internal-test-auth'] === 'true' && isTestAccount;
 
           const faultHeader = req.headers['x-test-inject-fault'];
+          let faultInjectionActive = false;
           if (faultHeader && (!isTestEnv || !isLoopback || !hasNoForwarding || !isTestAuthorized)) {
             console.warn(`[SECURITY] Rejected unauthorized attempt to inject fault '${faultHeader}' from remoteAddress=${req.socket?.remoteAddress}`);
           } else if (isTestEnv && isLoopback && hasNoForwarding && isTestAuthorized) {
-            if (faultHeader === 'ARTIFACT_COPY_FAIL' || faultHeader === 'MID_COPY_FAIL') {
+            faultInjectionActive = true;
+            if (faultHeader === 'MID_COPY_FAIL') {
               // Create partial artifact file first to simulate real mid-copy / partial disk failure
               const candDir = path.join(PANORAMA_PRIVATE_STORAGE_ROOT, projectId, candidate.candidateId);
               fs.mkdirSync(candDir, { recursive: true });
@@ -11312,6 +11333,13 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
             const src = path.join(UPLOADS_DIR, fname);
             const dst = path.join(candDir, fname);
             if (fs.existsSync(src) && !fs.existsSync(dst)) {
+              if (faultInjectionActive && (faultHeader === 'REAL_COPY_FAIL' || faultHeader === 'DISK_FULL_FAIL') && fname.includes('preview')) {
+                // Genuine injected fs failure right at the live copy boundary (ENOSPC / partial copy)
+                fs.writeFileSync(dst, Buffer.from([0xFF, 0xD8])); // Partial corrupted 2 bytes written
+                const ioErr = new Error('ENOSPC: no space left on device, write');
+                ioErr.code = 'ENOSPC';
+                throw ioErr;
+              }
               fs.copyFileSync(src, dst);
             }
           }
