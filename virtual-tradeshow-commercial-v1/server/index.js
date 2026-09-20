@@ -1408,11 +1408,21 @@ const REVOKED_PAIRING_TOKENS = new Set([
 
 // Strict origin/protocol security gate for Owner QA authentication
 function isSecureOrLoopback(req) {
-  if (req.secure) return true;
-  const ip = req.ip || req.connection?.remoteAddress || '';
-  if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || req.hostname === 'localhost' || req.hostname === '127.0.0.1') {
+  // Direct TLS/HTTPS connection (socket level)
+  if (req.connection && req.connection.encrypted) return true;
+  if (req.socket && req.socket.encrypted) return true;
+
+  // Local loopback interface (for local automated test suites)
+  const remoteIp = req.connection?.remoteAddress || req.socket?.remoteAddress || '';
+  if (remoteIp === '127.0.0.1' || remoteIp === '::1' || remoteIp === '::ffff:127.0.0.1') {
     return true;
   }
+
+  // Trusted proxy in production environment only
+  if (process.env.NODE_ENV === 'production' && req.secure) {
+    return true;
+  }
+
   return false;
 }
 
@@ -1719,6 +1729,14 @@ app.get('/api/internal-qa/capabilities', (req, res) => {
 // ── Endpoint 3: Gated Mobile RI Report Ingestion ──
 app.post('/api/internal-qa/mobile-ri/report', express.json({ limit: '25mb' }), async (req, res) => {
   try {
+    if (!isSecureOrLoopback(req)) {
+      return res.status(403).json({
+        ok: false,
+        error: 'HTTPS_REQUIRED',
+        message: 'Report ingestion requires HTTPS secure context or trusted local loopback.'
+      });
+    }
+
     const auth = verifyQaAccess(req);
     if (!auth) {
       return res.status(403).json({
@@ -1830,6 +1848,14 @@ app.post('/api/internal-qa/mobile-ri/report', express.json({ limit: '25mb' }), a
 // ── Endpoint 4: Gated Mobile RI Session Inspection ──
 app.get('/api/internal-qa/mobile-ri/session/:sessionId', (req, res) => {
   try {
+    if (!isSecureOrLoopback(req)) {
+      return res.status(403).json({
+        ok: false,
+        error: 'HTTPS_REQUIRED',
+        message: 'Session inspection requires HTTPS secure context or trusted local loopback.'
+      });
+    }
+
     const auth = verifyQaAccess(req);
     if (!auth) {
       return res.status(403).json({

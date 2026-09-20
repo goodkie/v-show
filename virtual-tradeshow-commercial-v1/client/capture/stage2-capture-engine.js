@@ -206,17 +206,19 @@ class Stage2CaptureEngine {
 
         // Prevent dual-event thrashing between deviceorientation & deviceorientationabsolute:
         // On Chrome Android, both events fire concurrently with different coordinate reference frames.
-        // When deviceorientationabsolute is available and firing, drop standard deviceorientation.
+        // When deviceorientationabsolute is available and firing with valid heading, drop standard deviceorientation.
         if (event.type === 'deviceorientationabsolute') {
-          if (this.preferredSource !== 'deviceorientationabsolute') {
-            this.preferredSource = 'deviceorientationabsolute';
-            this.relativeYawOrigin = null; // Re-sync relative yaw origin to absolute compass coordinate frame
+          if (event.alpha !== null && event.alpha !== undefined && !isNaN(event.alpha) && isFinite(event.alpha)) {
+            if (this.preferredSource !== 'deviceorientationabsolute') {
+              this.preferredSource = 'deviceorientationabsolute';
+              this.relativeYawOrigin = null; // Re-sync relative yaw origin to absolute compass coordinate frame
+            }
           }
         } else if (event.type === 'deviceorientation') {
           if (this.preferredSource === 'deviceorientationabsolute') {
             return; // Drop standard event to prevent coordinate oscillation and violent needle shaking
           }
-          if (!this.preferredSource) {
+          if (!this.preferredSource && event.alpha !== null && event.alpha !== undefined && !isNaN(event.alpha) && isFinite(event.alpha)) {
             this.preferredSource = 'deviceorientation';
           }
         }
