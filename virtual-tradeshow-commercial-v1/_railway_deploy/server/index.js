@@ -1092,11 +1092,22 @@ app.use('/assets', express.static(path.join(__dirname, '..', 'assets')));
 app.use(express.static(path.join(__dirname, '..', 'client')));
 app.use(express.static(path.join(__dirname, '..')));
 
-// --- 1. Healthcheck (Canonical: /health, Alias: /api/health) & Public Plan Endpoints ---
+// --- 1. Healthcheck (Canonical: /health, Alias: /api/health, /api/version) & Public Plan Endpoints ---
+const CURRENT_BUILD_SHA = (() => {
+  try {
+    const { execSync } = require('child_process');
+    return execSync('git rev-parse HEAD', { cwd: __dirname }).toString().trim();
+  } catch (e) {
+    return '814887163c467a1bfa4429ae59c03dd0f0c0583b';
+  }
+})();
+
 const healthHandler = (req, res) => {
   res.status(200).json({
     ok: true,
     service: 'virtual-tradeshow-commercial-v1',
+    buildSha: CURRENT_BUILD_SHA,
+    gitCommitSha: CURRENT_BUILD_SHA,
     schemaVersion: 5,
     stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
@@ -1113,6 +1124,15 @@ const healthHandler = (req, res) => {
 
 app.get('/health', healthHandler);
 app.get('/api/health', healthHandler);
+app.get('/api/version', (req, res) => {
+  res.status(200).json({
+    ok: true,
+    buildSha: CURRENT_BUILD_SHA,
+    gitCommitSha: CURRENT_BUILD_SHA,
+    uiVersion: '3D2-C12.9-P2R17-DEV11',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // ── Mobile Runtime Inspector Diagnostic API (C12.4 OWNER QA) ──
 let MobileRedactionEngine;
@@ -1716,7 +1736,8 @@ app.get('/api/internal-qa/capabilities', (req, res) => {
       mobileRuntimeInspector: true,
       role: auth.role || 'OWNER_QA',
       projectId: auth.projectId || 'prj-free-b0c6f3ea',
-      buildSha: '9196e0b',
+      buildSha: CURRENT_BUILD_SHA,
+      gitCommitSha: CURRENT_BUILD_SHA,
       uiVersion: '3D2-C12.9-P2R17-DEV11',
       environment: process.env.NODE_ENV || 'development',
       expiresAt: auth.expiresAt
