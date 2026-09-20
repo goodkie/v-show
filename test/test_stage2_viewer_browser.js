@@ -465,9 +465,9 @@ async function runBrowserViewerTests() {
     assert.ok(/^[a-f0-9]{64}$/.test(loadResult.blobSha256), 'Fetched blob SHA-256 must be valid 64-char hex');
     assert.strictEqual(loadResult.responseCandidateId, activeCandidateId, 'Response header X-Candidate-Id must match candidateId');
     assert.strictEqual(loadResult.responseSha256, loadResult.blobSha256, 'Response header X-Asset-Sha256 must match recomputed browser blobSha256');
-    if (activeCandidateMeta && activeCandidateMeta.assetSha256) {
-      assert.strictEqual(loadResult.blobSha256, activeCandidateMeta.assetSha256, 'Browser blob SHA-256 must match worker candidate.assetSha256 (browserBlobSha === authenticatedServerArtifactSha === workerCandidateSha)');
-    }
+    assert.ok(activeCandidateMeta, 'Candidate metadata record must exist');
+    assert.ok(/^[a-f0-9]{64}$/.test(activeCandidateMeta.assetSha256), 'Worker candidate must contain mandatory 64-hex assetSha256');
+    assert.strictEqual(loadResult.blobSha256, activeCandidateMeta.assetSha256, 'Browser blob SHA-256 must match worker candidate.assetSha256 (browserBlobSha === authenticatedServerArtifactSha === workerCandidateSha)');
     assert.strictEqual(loadResult.renderedCandidateId, activeCandidateId, 'Viewer must render the exact generated candidate ID');
     assert.strictEqual(loadResult.hasScene, true);
     assert.strictEqual(loadResult.hasCamera, true);

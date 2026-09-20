@@ -1503,8 +1503,9 @@ class JSONDatabase {
         return false;
       }
       this.memoryData = data;
-      fs.writeFileSync(TEMP_DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
-      fs.renameSync(TEMP_DB_FILE, DB_FILE);
+      const uniqueTemp = path.join(DATA_DIR, `db.temp.${process.pid}.${Date.now()}.${crypto.randomBytes(4).toString('hex')}.json`);
+      fs.writeFileSync(uniqueTemp, JSON.stringify(data, null, 2), 'utf-8');
+      fs.renameSync(uniqueTemp, DB_FILE);
       try {
         this.lastMtime = fs.statSync(DB_FILE).mtimeMs;
       } catch (e) {}
@@ -1572,16 +1573,54 @@ class JSONDatabase {
   }
 
   mutate(callback) {
-    const data = this.read();
-    const result = callback(data);
-    if (result && typeof result.then === 'function') {
-      return result.then(resolved => {
-        this.write(data);
-        return resolved;
-      });
+    const lockFile = path.join(DATA_DIR, 'db.lock');
+    let acquired = false;
+    const start = Date.now();
+    const lockTimeoutMs = 10000;
+    while (!acquired && Date.now() - start < lockTimeoutMs) {
+      try {
+        fs.writeFileSync(lockFile, `${process.pid}-${Date.now()}`, { flag: 'wx' });
+        acquired = true;
+      } catch (e) {
+        if (e.code === 'EEXIST') {
+          try {
+            const stat = fs.statSync(lockFile);
+            if (Date.now() - stat.mtimeMs > 10000) {
+              fs.unlinkSync(lockFile);
+              continue;
+            }
+          } catch (staleErr) {}
+          const delayUntil = Date.now() + 15 + Math.floor(Math.random() * 20);
+          while (Date.now() < delayUntil) {}
+        } else {
+          throw e;
+        }
+      }
     }
-    this.write(data);
-    return result;
+
+    try {
+      this.memoryData = null; // force fresh reload from disk under lock
+      const data = this.read();
+      const result = callback(data);
+      if (result && typeof result.then === 'function') {
+        return result.then(resolved => {
+          this.write(data);
+          try { if (acquired) fs.unlinkSync(lockFile); } catch (e) {}
+          acquired = false;
+          return resolved;
+        }).catch(err => {
+          try { if (acquired) fs.unlinkSync(lockFile); } catch (e) {}
+          acquired = false;
+          throw err;
+        });
+      }
+      this.write(data);
+      return result;
+    } finally {
+      if (acquired) {
+        try { fs.unlinkSync(lockFile); } catch (e) {}
+      }
+    }
   }
 
   // --- Audit Log ---

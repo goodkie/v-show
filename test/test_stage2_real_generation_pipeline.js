@@ -879,7 +879,7 @@ async function runRealGenerationPipelineTests() {
       assert.strictEqual(nonJpegAssetRes.json?.error, 'INVALID_JPEG_PAYLOAD');
     }
 
-    // Negative Security: Symlink traversal outside candidate storage root strictly blocked (403 UNAUTHORIZED_STORAGE_PATH)
+    // Negative Security: Symlink file traversal outside candidate storage root strictly blocked (403 UNAUTHORIZED_STORAGE_PATH)
     try {
       const symlinkCandId = `cand-symlink-${Date.now()}`;
       const symlinkCandDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, symlinkCandId);
@@ -890,7 +890,8 @@ async function runRealGenerationPipelineTests() {
           candidateId: symlinkCandId,
           projectId: TEST_PROJECT_ID,
           status: 'READY_FOR_PREVIEW',
-          geometryValid: true
+          geometryValid: true,
+          assetSha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
         });
         const symlinkAssetRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${symlinkCandId}/asset`, {
           'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
@@ -900,17 +901,107 @@ async function runRealGenerationPipelineTests() {
       }
     } catch (e) {
       if (e.code === 'EPERM' || e.code === 'EISDIR' || e.message.includes('privilege') || e.message.includes('operation not permitted')) {
-        console.log('    [NOTE] Symlink creation restricted by OS (' + (e.code || e.message) + '), realpath boundary containment path verified');
+        console.log('    [SKIPPED/NOT_VERIFIED] File symlink creation restricted by OS platform permissions (' + (e.code || e.message) + ')');
       } else {
         throw e;
       }
+    }
+
+    // Negative Security: Candidate DIRECTORY symlink strictly blocked (403 UNAUTHORIZED_STORAGE_PATH)
+    try {
+      const dirSymlinkCandId = `cand-dir-symlink-${Date.now()}`;
+      const dirSymlinkPath = path.join(privateArtifactsRoot, TEST_PROJECT_ID, dirSymlinkCandId);
+      fs.symlinkSync(path.resolve(__dirname, '..', 'server'), dirSymlinkPath, 'dir');
+      if (db && db.saveSpatialBoothCandidate) {
+        await db.saveSpatialBoothCandidate(TEST_PROJECT_ID, {
+          candidateId: dirSymlinkCandId,
+          projectId: TEST_PROJECT_ID,
+          status: 'READY_FOR_PREVIEW',
+          geometryValid: true,
+          assetSha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+        });
+        const dirSymlinkRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${dirSymlinkCandId}/asset`, {
+          'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+        });
+        assert.strictEqual(dirSymlinkRes.status, 403, 'Candidate directory symlink must return 403 Forbidden');
+        assert.strictEqual(dirSymlinkRes.json?.error, 'UNAUTHORIZED_STORAGE_PATH');
+      }
+    } catch (e) {
+      if (e.code === 'EPERM' || e.code === 'EISDIR' || e.message.includes('privilege') || e.message.includes('operation not permitted')) {
+        console.log('    [SKIPPED/NOT_VERIFIED] Directory symlink creation restricted by OS platform permissions (' + (e.code || e.message) + ')');
+      } else {
+        throw e;
+      }
+    }
+
+    // Negative Security: Candidate record missing assetSha256 fails closed (500 MISSING_MANDATORY_ASSET_DIGEST)
+    const missingDigestCandId = `cand-missing-digest-${Date.now()}`;
+    const missingDigestDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, missingDigestCandId);
+    fs.mkdirSync(missingDigestDir, { recursive: true });
+    const validJpegSample = generateDeterministicJpeg(0, 0, 256, 256).buffer;
+    fs.writeFileSync(path.join(missingDigestDir, `${missingDigestCandId}_preview.jpg`), validJpegSample);
+    if (db && db.saveSpatialBoothCandidate) {
+      await db.saveSpatialBoothCandidate(TEST_PROJECT_ID, {
+        candidateId: missingDigestCandId,
+        projectId: TEST_PROJECT_ID,
+        status: 'READY_FOR_PREVIEW',
+        geometryValid: true
+        // assetSha256 strictly omitted
+      });
+      const missingDigestRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${missingDigestCandId}/asset`, {
+        'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+      });
+      assert.strictEqual(missingDigestRes.status, 500, 'Candidate without mandatory assetSha256 must return 500');
+      assert.strictEqual(missingDigestRes.json?.error, 'MISSING_MANDATORY_ASSET_DIGEST');
+    }
+
+    // Negative Security: Candidate record with malformed assetSha256 fails closed (500 MISSING_MANDATORY_ASSET_DIGEST)
+    const malformedDigestCandId = `cand-malformed-digest-${Date.now()}`;
+    const malformedDigestDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, malformedDigestCandId);
+    fs.mkdirSync(malformedDigestDir, { recursive: true });
+    fs.writeFileSync(path.join(malformedDigestDir, `${malformedDigestCandId}_preview.jpg`), validJpegSample);
+    if (db && db.saveSpatialBoothCandidate) {
+      await db.saveSpatialBoothCandidate(TEST_PROJECT_ID, {
+        candidateId: malformedDigestCandId,
+        projectId: TEST_PROJECT_ID,
+        status: 'READY_FOR_PREVIEW',
+        geometryValid: true,
+        assetSha256: 'not-a-valid-64-hex-digest-at-all'
+      });
+      const malformedDigestRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${malformedDigestCandId}/asset`, {
+        'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+      });
+      assert.strictEqual(malformedDigestRes.status, 500, 'Candidate with malformed assetSha256 must return 500');
+      assert.strictEqual(malformedDigestRes.json?.error, 'MISSING_MANDATORY_ASSET_DIGEST');
+    }
+
+    // Negative Security: Truncated JPEG (valid SOI but missing EOI) fails closed (400 TRUNCATED_JPEG_PAYLOAD)
+    const truncatedCandId = `cand-truncated-jpeg-${Date.now()}`;
+    const truncatedDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, truncatedCandId);
+    fs.mkdirSync(truncatedDir, { recursive: true });
+    const truncatedJpeg = validJpegSample.slice(0, validJpegSample.length - 10);
+    const truncatedSha256 = crypto.createHash('sha256').update(truncatedJpeg).digest('hex');
+    fs.writeFileSync(path.join(truncatedDir, `${truncatedCandId}_preview.jpg`), truncatedJpeg);
+    if (db && db.saveSpatialBoothCandidate) {
+      await db.saveSpatialBoothCandidate(TEST_PROJECT_ID, {
+        candidateId: truncatedCandId,
+        projectId: TEST_PROJECT_ID,
+        status: 'READY_FOR_PREVIEW',
+        geometryValid: true,
+        assetSha256: truncatedSha256,
+        assetByteSize: truncatedJpeg.length
+      });
+      const truncRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${truncatedCandId}/asset`, {
+        'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
+      });
+      assert.strictEqual(truncRes.status, 400, 'Truncated JPEG missing EOI marker must return 400');
+      assert.strictEqual(truncRes.json?.error, 'TRUNCATED_JPEG_PAYLOAD');
     }
 
     // Negative Security: Asset integrity mismatch (disk bytes tampered vs DB candidate.assetSha256) returns 500 ASSET_INTEGRITY_MISMATCH
     const tamperedCandId = `cand-tampered-${Date.now()}`;
     const tamperedCandDir = path.join(privateArtifactsRoot, TEST_PROJECT_ID, tamperedCandId);
     fs.mkdirSync(tamperedCandDir, { recursive: true });
-    const validJpegSample = generateDeterministicJpeg(0, 0, 256, 256).buffer;
     fs.writeFileSync(path.join(tamperedCandDir, `${tamperedCandId}_preview.jpg`), validJpegSample);
     if (db && db.saveSpatialBoothCandidate) {
       await db.saveSpatialBoothCandidate(TEST_PROJECT_ID, {
@@ -945,9 +1036,12 @@ async function runRealGenerationPipelineTests() {
     // Negative Security: Direct static access to real generated artifact via all static aliases strictly blocked (403 or 404)
     const realArtifactNegativePaths = [
       `/data/panorama_artifacts/${TEST_PROJECT_ID}/${createdCandidateId}/${createdCandidateId}_preview.jpg`,
+      `/DATA/panorama_artifacts/${TEST_PROJECT_ID}/${createdCandidateId}/${createdCandidateId}_preview.jpg`,
       `/panorama_artifacts/${TEST_PROJECT_ID}/${createdCandidateId}/${createdCandidateId}_preview.jpg`,
       `/uploads/panorama_artifacts/${TEST_PROJECT_ID}/${createdCandidateId}/${createdCandidateId}_preview.jpg`,
       `/%64%61%74%61/panorama_artifacts/${TEST_PROJECT_ID}/${createdCandidateId}/${createdCandidateId}_preview.jpg`,
+      `/%44%61%74%61/panorama_artifacts/${TEST_PROJECT_ID}/${createdCandidateId}/${createdCandidateId}_preview.jpg`,
+      `/%2564%2561%2574%2561/panorama_artifacts/${TEST_PROJECT_ID}/${createdCandidateId}/${createdCandidateId}_preview.jpg`,
       `/data/panorama_artifacts/private_unrelated_canary.txt`
     ];
     for (const negPath of realArtifactNegativePaths) {
@@ -957,6 +1051,10 @@ async function runRealGenerationPipelineTests() {
         assert.strictEqual(negRes.json?.error, 'DIRECT_ASSET_ACCESS_FORBIDDEN');
       }
     }
+
+    // Positive Regression: Ordinary nonprivate static asset continues to serve cleanly
+    const ordinaryStaticRes = await makeHttpRequest('GET', '/index.html');
+    assert.strictEqual(ordinaryStaticRes.status, 200, 'Ordinary nonprivate client static asset (/index.html) must return 200');
 
     const authAssetRes = await makeHttpRequest('GET', `/api/projects/${TEST_PROJECT_ID}/panorama/candidate/${createdCandidateId}/asset`, {
       'Authorization': `Bearer ${AUTHORIZED_PROJECT_TOKEN}`
@@ -1272,34 +1370,56 @@ async function runRealGenerationPipelineTests() {
     });
   });
 
-  // [26] DB Concurrency: Simultaneous async mutate() calls preserve concurrent updates
-  await test('[26] DB Concurrency: Simultaneous async mutate() calls preserve concurrent updates', async () => {
-    if (!db || !db.mutate) return;
+  // [26] DB Concurrency: Simultaneous separate-process writes preserve concurrent updates
+  await test('[26] DB Concurrency: Simultaneous separate-process writes preserve concurrent updates', async () => {
+    const key1 = `test_proc_concurrency_${Date.now()}_p1`;
+    const key2 = `test_proc_concurrency_${Date.now()}_p2`;
 
-    const key1 = `test_concurrency_${Date.now()}_1`;
-    const key2 = `test_concurrency_${Date.now()}_2`;
+    const dbModulePath = path.resolve(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/server/db.js').replace(/\\/g, '/');
 
-    // Trigger two asynchronous writes simultaneously
-    const p1 = db.mutate(async (data) => {
-      await new Promise(r => setTimeout(r, 50));
-      data[key1] = { writtenBy: 'worker-1', timestamp: Date.now() };
+    const workerScript1 = `
+      const db = require('${dbModulePath}');
+      db.mutate(data => {
+        data['${key1}'] = { writtenBy: 'proc-1', pid: process.pid, timestamp: Date.now() };
+      });
+      process.exit(0);
+    `;
+
+    const workerScript2 = `
+      const db = require('${dbModulePath}');
+      db.mutate(data => {
+        data['${key2}'] = { writtenBy: 'proc-2', pid: process.pid, timestamp: Date.now() };
+      });
+      process.exit(0);
+    `;
+
+    const { spawn } = require('child_process');
+    const runProc = (script) => new Promise((resolve, reject) => {
+      const p = spawn(process.execPath, ['-e', script], {
+        stdio: 'inherit',
+        env: { ...process.env, NODE_ENV: 'test' }
+      });
+      p.on('close', code => {
+        if (code === 0) resolve();
+        else reject(new Error(`Child process failed with code ${code}`));
+      });
     });
 
-    const p2 = db.mutate(async (data) => {
-      await new Promise(r => setTimeout(r, 30));
-      data[key2] = { writtenBy: 'worker-2', timestamp: Date.now() };
-    });
+    // Launch both child processes concurrently
+    await Promise.all([runProc(workerScript1), runProc(workerScript2)]);
 
-    await Promise.all([p1, p2]);
+    // Read back in parent process
+    if (db) {
+      db.memoryData = null; // force fresh reload
+      const data = db.read();
+      const read1 = data[key1];
+      const read2 = data[key2];
 
-    const data = db.read();
-    const read1 = data[key1];
-    const read2 = data[key2];
-
-    assert.ok(read1, 'Write 1 must be persisted');
-    assert.strictEqual(read1.writtenBy, 'worker-1');
-    assert.ok(read2, 'Write 2 must be persisted');
-    assert.strictEqual(read2.writtenBy, 'worker-2');
+      assert.ok(read1, 'Write from process 1 must be persisted');
+      assert.strictEqual(read1.writtenBy, 'proc-1');
+      assert.ok(read2, 'Write from process 2 must be persisted');
+      assert.strictEqual(read2.writtenBy, 'proc-2');
+    }
   });
 
   console.log('\n================================================================');
