@@ -71,10 +71,14 @@ try {
 
 const SERVER_PORT = parseInt(process.env.TEST_PORT || '3898', 10);
 const BASE_URL = `http://127.0.0.1:${SERVER_PORT}`;
-const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || 'prj-free-b0c6f3ea';
+if (!process.env.TEST_PROJECT_ID) {
+  throw new Error('FAIL_CLOSED: process.env.TEST_PROJECT_ID is strictly required. Static fallback forbidden.');
+}
+const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID;
 
 const DISPOSABLE_INSTANCE_ID = process.env.DISPOSABLE_INSTANCE_ID || ('sandbox_' + crypto.randomBytes(12).toString('hex'));
 const EPHEMERAL_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || ('whsec_test_' + crypto.randomBytes(24).toString('hex'));
+const QA_HARNESS_SECRET = process.env.QA_HARNESS_SECRET || ('harn_' + crypto.randomBytes(24).toString('hex'));
 
 // Sentinel revoked token for verification of immediate rejection
 const REVOKED_SENTINEL_TOKEN = 'tok-revoked-ephemeral-sentinel-never-valid';
@@ -127,8 +131,17 @@ async function ensureTestServer() {
       DISPOSABLE_INSTANCE_ID: DISPOSABLE_INSTANCE_ID,
       STAGE2_EPHEMERAL_TEST_TOKEN: AUTHORIZED_PROJECT_TOKEN,
       OWNER_QA_SECRET: OWNER_QA_SECRET,
-      ALLOW_STAGE2_TEST_FAULT_INJECTION: 'true'
+      ALLOW_STAGE2_TEST_FAULT_INJECTION: 'true',
+      QA_HARNESS_SECRET: QA_HARNESS_SECRET,
+      TEST_PROJECT_ID: TEST_PROJECT_ID
     }
+  });
+
+  let serverOutput = '';
+  testServerProcess.stdout.on('data', d => { serverOutput += d.toString(); });
+  testServerProcess.stderr.on('data', d => { serverOutput += d.toString(); });
+  testServerProcess.on('exit', (code, sig) => {
+    serverOutput += `\n[SERVER_EXIT] Process exited with code ${code}, signal ${sig}`;
   });
 
   const start = Date.now();
@@ -141,7 +154,7 @@ async function ensureTestServer() {
     } catch (_) {}
     await new Promise(r => setTimeout(r, 200));
   }
-  throw new Error(`Failed to start isolated test server on port ${SERVER_PORT} within 15s`);
+  throw new Error(`Failed to start isolated test server on port ${SERVER_PORT} within 15s. Server output:\n${serverOutput}`);
 }
 
 function stopTestServer() {
@@ -843,8 +856,22 @@ async function runRealGenerationPipelineTests() {
     const testNegativeCandIds = [];
     const privateArtifactsRoot = path.join(ACTIVE_DATA_DIR, 'panorama_artifacts');
     // Dynamically resolve disposable foreign-tenant project ID from sandbox meta endpoint
-    // This avoids any static QA project ID dependency
-    const sandboxMetaRes = await makeHttpRequest('GET', '/api/test/qa-sandbox-meta');
+    // Gated by loopback and ephemeral X-QA-Harness-Auth header
+    // Negative Auth test: Unauthenticated request must return 403
+    const unauthMetaRes = await makeHttpRequest('GET', '/api/test/qa-sandbox-meta');
+    assert.strictEqual(unauthMetaRes.status, 403, 'qa-sandbox-meta must reject unauthenticated requests with 403');
+
+    // Negative Auth test: Invalid token must return 403
+    const badAuthMetaRes = await makeHttpRequest('GET', '/api/test/qa-sandbox-meta', {
+      'X-QA-Harness-Auth': 'bad-invalid-token'
+    });
+    assert.strictEqual(badAuthMetaRes.status, 403, 'qa-sandbox-meta must reject invalid tokens with 403');
+
+    // Authorized request with ephemeral harness secret
+    const sandboxMetaRes = await makeHttpRequest('GET', '/api/test/qa-sandbox-meta', {
+      'X-QA-Harness-Auth': QA_HARNESS_SECRET
+    });
+    assert.strictEqual(sandboxMetaRes.status, 200, 'qa-sandbox-meta with valid harness auth must return 200');
     const foreignProjectId = sandboxMetaRes.json && sandboxMetaRes.json.foreignProjectId;
     assert.ok(foreignProjectId && foreignProjectId.startsWith('prj-foreign-'), `[20] qa-sandbox-meta must return a valid disposable foreignProjectId, got: ${foreignProjectId}`);
 

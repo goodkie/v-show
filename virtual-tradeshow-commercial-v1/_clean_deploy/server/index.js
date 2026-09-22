@@ -1541,6 +1541,9 @@ function ensureAuthoritativeQaProject() {
     }
   } catch (err) {
     console.error('[QA_PROJECT_HYDRATION_ERROR]', err.message);
+    if (err.message && err.message.includes('FAIL_CLOSED')) {
+      process.exit(1);
+    }
   }
 }
 // Gate: only invoke in explicit test sandbox context
@@ -1550,9 +1553,20 @@ if (process.env.NODE_ENV === 'test' && process.env.DISPOSABLE_INSTANCE_ID) {
 
 // Test-sandbox-only introspection endpoint: exposes disposable sandbox project IDs for test harness use
 // Strictly gated: only reachable when NODE_ENV=test AND DISPOSABLE_INSTANCE_ID present
+// Hardened: loopback-only and requires valid ephemeral X-QA-Harness-Auth header
 app.get('/api/test/qa-sandbox-meta', (req, res) => {
   if (process.env.NODE_ENV !== 'test' || !process.env.DISPOSABLE_INSTANCE_ID) {
     return res.status(404).json({ error: 'Not found' });
+  }
+  const clientIp = req.ip || (req.connection && req.connection.remoteAddress) || (req.socket && req.socket.remoteAddress) || '';
+  const isLoopback = clientIp.includes('127.0.0.1') || clientIp === '::1' || clientIp.includes('::ffff:127.0.0.1');
+  if (!isLoopback) {
+    return res.status(403).json({ error: 'Forbidden: Loopback only' });
+  }
+  const expectedAuth = process.env.QA_HARNESS_SECRET;
+  const providedAuth = req.headers['x-qa-harness-auth'];
+  if (!expectedAuth || !providedAuth || providedAuth !== expectedAuth) {
+    return res.status(403).json({ error: 'Forbidden: Valid X-QA-Harness-Auth header required' });
   }
   res.json({
     instanceId: process.env.DISPOSABLE_INSTANCE_ID,
