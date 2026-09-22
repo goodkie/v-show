@@ -34,23 +34,55 @@ function mkTmp(prefix = 'cli_test_') {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }
 
+const dirSecretMap = new Map();
+
+function computeMarkerSignature(instanceId, secret) {
+  if (!secret) return '';
+  return crypto.createHmac('sha256', secret).update(instanceId).digest('hex').slice(0, 32);
+}
+
 function makeDisposableDir(opts = {}) {
   const dir        = mkTmp();
   const instanceId = opts.instanceId || ('inst-' + crypto.randomBytes(8).toString('hex'));
   const projectId  = opts.projectId  || ('prj-test-' + crypto.randomBytes(8).toString('hex'));
   const token      = opts.token      || crypto.randomBytes(32).toString('hex');
+  const secret     = opts.secret !== undefined ? opts.secret : (opts.operatorToken || opts.harnessSecret || ('sec-' + crypto.randomBytes(16).toString('hex')));
 
-  fs.writeFileSync(path.join(dir, '.disposable_qa_marker'), instanceId, 'utf8');
+  let markerContent;
+  if (opts.rawMarker !== undefined) {
+    markerContent = opts.rawMarker;
+  } else if (secret) {
+    markerContent = `${instanceId}:${computeMarkerSignature(instanceId, secret)}`;
+  } else {
+    markerContent = instanceId;
+  }
+
+  dirSecretMap.set(dir, secret);
+  fs.writeFileSync(path.join(dir, '.disposable_qa_marker'), markerContent, 'utf8');
   const db = { projects: [{ id: projectId, editToken: token, name: 'QA Test Project' }] };
   if (opts.extraProjects) db.projects.push(...opts.extraProjects);
+  if (opts.users) db.users = opts.users;
+  if (opts.organizations) db.organizations = opts.organizations;
   fs.writeFileSync(path.join(dir, 'db.json'), JSON.stringify(db, null, 2), 'utf8');
 
-  return { dir, instanceId, projectId, token, db };
+  return { dir, instanceId, projectId, token, db, secret, operatorToken: secret };
 }
 
 function runCli(env = {}, extraArgs = []) {
+  const mergedEnv = { ...process.env, ...env };
+  if (mergedEnv.DATA_DIR && dirSecretMap.has(mergedEnv.DATA_DIR) && !env.TEST_MISMATCH_INTENTIONAL) {
+    const dirSecret = dirSecretMap.get(mergedEnv.DATA_DIR);
+    if (!env.OPERATOR_TOKEN || env.OPERATOR_TOKEN.length >= 32) {
+      mergedEnv.OPERATOR_TOKEN = dirSecret;
+      mergedEnv.QA_HARNESS_SECRET = dirSecret;
+    }
+  } else {
+    if (mergedEnv.OPERATOR_TOKEN && !mergedEnv.QA_HARNESS_SECRET && env.QA_HARNESS_SECRET !== null) {
+      mergedEnv.QA_HARNESS_SECRET = mergedEnv.OPERATOR_TOKEN;
+    }
+  }
   const result = spawnSync(NODE, [SCRIPT, ...extraArgs], {
-    env: { ...process.env, ...env },
+    env: mergedEnv,
     encoding: 'utf8',
     timeout: 10000
   });
@@ -607,9 +639,12 @@ test('T16: Real interleaving with actual db.js — db.lock mutual exclusion & CA
 
 // ── T17: Adversarial #5: Customer & Owner DB Refusal Gate ─────────────────────
 test('T17: Customer & Owner DB Refusal Gate — strictly rejects non-test project records', () => {
+  const secretKey = crypto.randomBytes(16).toString('hex');
+
   // Scenario A: DB containing real customer project ID (prj-free-b0c6f3ea)
   const dirA = mkTmp();
-  fs.writeFileSync(path.join(dirA, '.disposable_qa_marker'), 'inst-refusal-a', 'utf8');
+  const sigA = computeMarkerSignature('inst-refusal-a', secretKey);
+  fs.writeFileSync(path.join(dirA, '.disposable_qa_marker'), `inst-refusal-a:${sigA}`, 'utf8');
   const dbA = {
     projects: [
       { id: 'prj-test-1234', editToken: 'tok-test' },
@@ -622,7 +657,8 @@ test('T17: Customer & Owner DB Refusal Gate — strictly rejects non-test projec
     TEST_PROJECT_ID:        'prj-test-1234',
     DATA_DIR:               dirA,
     DISPOSABLE_INSTANCE_ID: 'inst-refusal-a',
-    OPERATOR_TOKEN:         crypto.randomBytes(16).toString('hex')
+    OPERATOR_TOKEN:         secretKey,
+    QA_HARNESS_SECRET:      secretKey
   });
 
   assertEqual(rA.exitCode, 3, `Expected exit 3 for customer project DB, got ${rA.exitCode}`);
@@ -636,7 +672,8 @@ test('T17: Customer & Owner DB Refusal Gate — strictly rejects non-test projec
 
   // Scenario B: DB containing platform owner user
   const dirB = mkTmp();
-  fs.writeFileSync(path.join(dirB, '.disposable_qa_marker'), 'inst-refusal-b', 'utf8');
+  const sigB = computeMarkerSignature('inst-refusal-b', secretKey);
+  fs.writeFileSync(path.join(dirB, '.disposable_qa_marker'), `inst-refusal-b:${sigB}`, 'utf8');
   const dbB = {
     projects: [{ id: 'prj-test-valid', editToken: 'tok-test' }],
     users: [{ id: 'user-1', email: 'owner@vshow.com', role: 'platform_owner' }]
@@ -647,7 +684,8 @@ test('T17: Customer & Owner DB Refusal Gate — strictly rejects non-test projec
     TEST_PROJECT_ID:        'prj-test-valid',
     DATA_DIR:               dirB,
     DISPOSABLE_INSTANCE_ID: 'inst-refusal-b',
-    OPERATOR_TOKEN:         crypto.randomBytes(16).toString('hex')
+    OPERATOR_TOKEN:         secretKey,
+    QA_HARNESS_SECRET:      secretKey
   });
 
   assertEqual(rB.exitCode, 3, `Expected exit 3 for platform owner DB, got ${rB.exitCode}`);
@@ -655,6 +693,210 @@ test('T17: Customer & Owner DB Refusal Gate — strictly rejects non-test projec
     'stderr should report refusal due to platform owner account');
 
   fs.rmSync(dirB, { recursive: true });
+});
+
+// ── T18: Real Server In-Memory Cache Invalidation & Old Token Invalidation ────
+test('T18: Real Server In-Memory Cache Invalidation — old token rejected after CLI rotation', () => {
+  const { dir, instanceId, projectId, token: origToken, secret } = makeDisposableDir();
+  const operatorToken = secret;
+  const readyFile   = path.join(dir, '.test_t18_server_ready');
+  const rotateFile  = path.join(dir, '.test_t18_do_rotate');
+  const doneFile    = path.join(dir, '.test_t18_server_done');
+  const statusFile  = path.join(dir, '.test_t18_status.json');
+
+  // Spawn isolated worker that imports actual application db.js
+  const serverWorkerScript = [
+    "const fs = require('fs');",
+    "const path = require('path');",
+    "const [dir, pid, oldTok, readyP, rotP, doneP, statP] = process.argv.slice(1);",
+    "process.env.DATA_DIR = dir;",
+    "try {",
+    "  const db = require(path.resolve('virtual-tradeshow-commercial-v1/_clean_deploy/server/db'));",
+    "  // 1. Initial check: old token must verify as true",
+    "  const projInitial = db.getProject(pid);",
+    "  const initialOk = db.verifyEditAccess(projInitial, oldTok);",
+    "  fs.writeFileSync(readyP, initialOk ? 'OK' : 'FAIL_INITIAL', 'utf8');",
+    "  // Wait for rotation signal",
+    "  const dl = Date.now() + 8000;",
+    "  while (!fs.existsSync(rotP) && Date.now() < dl) {",
+    "    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);",
+    "  }",
+    "  // 2. Post-rotation check: old token MUST verify as false (cache invalidated via mtime)",
+    "  const projAfter = db.getProject(pid);",
+    "  const oldStillValid = db.verifyEditAccess(projAfter, oldTok);",
+    "  const newTok = projAfter.editToken;",
+    "  const newValid = db.verifyEditAccess(projAfter, newTok);",
+    "  fs.writeFileSync(statP, JSON.stringify({ initialOk, oldStillValid, newValid, newTokMatchesOrig: (newTok === oldTok) }), 'utf8');",
+    "  fs.writeFileSync(doneP, 'DONE', 'utf8');",
+    "  process.exit(0);",
+    "} catch (e) {",
+    "  fs.writeFileSync(readyP, 'ERROR: ' + e.message + '\\n' + e.stack, 'utf8');",
+    "  process.exit(1);",
+    "}"
+  ].join('\n');
+
+  const worker = spawn(NODE, [
+    '-e', serverWorkerScript,
+    dir, projectId, origToken, readyFile, rotateFile, doneFile, statusFile
+  ], { stdio: 'ignore' });
+
+  // 1. Wait for server to verify initial old token
+  const dl1 = Date.now() + 4000;
+  while (!fs.existsSync(readyFile) && Date.now() < dl1) {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+  }
+  assert(fs.existsSync(readyFile), 'Server worker should have initialized');
+  assertEqual(fs.readFileSync(readyFile, 'utf8'), 'OK', 'Old token must initially be valid in db.js');
+
+  // 2. Run CLI rotation
+  const r = runCli({
+    TEST_PROJECT_ID:        projectId,
+    DATA_DIR:               dir,
+    DISPOSABLE_INSTANCE_ID: instanceId,
+    OPERATOR_TOKEN:         operatorToken,
+    QA_HARNESS_SECRET:      operatorToken
+  });
+  assertEqual(r.exitCode, 0, `CLI rotation must succeed, got ${r.exitCode}. stderr: ${r.stderr}`);
+
+  // 3. Signal server worker to re-verify token
+  fs.writeFileSync(rotateFile, '1', 'utf8');
+
+  // 4. Wait for server worker completion
+  const dl2 = Date.now() + 4000;
+  while (!fs.existsSync(doneFile) && Date.now() < dl2) {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+  }
+  assert(fs.existsSync(doneFile), 'Server worker should have finished post-rotation checks');
+
+  const stat = JSON.parse(fs.readFileSync(statusFile, 'utf8'));
+  assertEqual(stat.initialOk, true, 'Initial verification must be true');
+  assertEqual(stat.oldStillValid, false, 'Old token MUST be rejected after CLI rotation (cache invalidation verified)');
+  assertEqual(stat.newValid, true, 'Rotated new token MUST be accepted by db.js');
+  assertEqual(stat.newTokMatchesOrig, false, 'New token must differ from original token');
+
+  try { worker.kill(); } catch (_) {}
+  fs.rmSync(dir, { recursive: true });
+});
+
+// ── T19: Cryptographic HMAC Disposable Marker & Secret Enforcement ────────────
+test('T19: Cryptographic HMAC Disposable Marker & Secret Enforcement', () => {
+  const dir = mkTmp();
+  const instId = 'inst-auth-test';
+  const projectId = 'prj-test-auth-' + crypto.randomBytes(4).toString('hex');
+  const token = 'tok-initial-1234';
+  const db = { projects: [{ id: projectId, editToken: token }] };
+  fs.writeFileSync(path.join(dir, 'db.json'), JSON.stringify(db, null, 2), 'utf8');
+
+  const secretKey = 'my-super-secret-qa-harness-key-12345';
+  const validSig  = computeMarkerSignature(instId, secretKey);
+
+  // Subcase 1: Missing QA_HARNESS_SECRET in active mode with plain operator token
+  fs.writeFileSync(path.join(dir, '.disposable_qa_marker'), `${instId}:${validSig}`, 'utf8');
+  const r1 = spawnSync(NODE, [SCRIPT], {
+    env: {
+      ...process.env,
+      TEST_PROJECT_ID:        projectId,
+      DATA_DIR:               dir,
+      DISPOSABLE_INSTANCE_ID: instId,
+      OPERATOR_TOKEN:         'some-arbitrary-operator-token-32ch',
+      QA_HARNESS_SECRET:      ''
+    },
+    encoding: 'utf8'
+  });
+  assertEqual(r1.status, 2, 'Missing QA_HARNESS_SECRET in active mode must exit 2');
+  assert(r1.stderr.includes('QA_HARNESS_SECRET'), 'stderr must mention required QA_HARNESS_SECRET');
+
+  // Subcase 2: Unsigned plain marker when secret is configured
+  fs.writeFileSync(path.join(dir, '.disposable_qa_marker'), instId, 'utf8'); // plain text, no sig
+  const r2 = runCli({
+    TEST_PROJECT_ID:        projectId,
+    DATA_DIR:               dir,
+    DISPOSABLE_INSTANCE_ID: instId,
+    OPERATOR_TOKEN:         secretKey,
+    QA_HARNESS_SECRET:      secretKey
+  });
+  assertEqual(r2.exitCode, 3, 'Unsigned marker must exit 3 (refusing unauthorized volume)');
+  assert(r2.stderr.includes('signature invalid or missing'), 'stderr must mention signature missing');
+
+  // Subcase 3: Tampered signature on marker
+  fs.writeFileSync(path.join(dir, '.disposable_qa_marker'), `${instId}:tampered_fake_signature_hex`, 'utf8');
+  const r3 = runCli({
+    TEST_PROJECT_ID:        projectId,
+    DATA_DIR:               dir,
+    DISPOSABLE_INSTANCE_ID: instId,
+    OPERATOR_TOKEN:         secretKey,
+    QA_HARNESS_SECRET:      secretKey
+  });
+  assertEqual(r3.exitCode, 3, 'Tampered marker signature must exit 3');
+  assert(r3.stderr.includes('signature invalid or missing'), 'stderr must mention signature invalid');
+
+  // Subcase 4: Valid signature on marker
+  fs.writeFileSync(path.join(dir, '.disposable_qa_marker'), `${instId}:${validSig}`, 'utf8');
+  const r4 = runCli({
+    TEST_PROJECT_ID:        projectId,
+    DATA_DIR:               dir,
+    DISPOSABLE_INSTANCE_ID: instId,
+    OPERATOR_TOKEN:         secretKey,
+    QA_HARNESS_SECRET:      secretKey
+  });
+  assertEqual(r4.exitCode, 0, `Valid signature must succeed (exit 0), got ${r4.exitCode}. stderr: ${r4.stderr}`);
+
+  fs.rmSync(dir, { recursive: true });
+});
+
+// ── T20: Refusal of Renamed Copied DB with Customer Entities / Domains ────────
+test('T20: Refusal of Renamed Copied DB — catches enterprise tiers and customer email domains', () => {
+  const secretKey = 'secret-harness-key-32chars-min-len';
+
+  // Subcase 1: Project ID renamed to prj-test-* but has tier: enterprise
+  const { dir: dir1, instanceId: id1, projectId: p1 } = makeDisposableDir({
+    extraProjects: [{ id: 'prj-test-copied-enterprise', tier: 'enterprise', editToken: 'tok-1' }],
+    secret: secretKey
+  });
+  const r1 = runCli({
+    TEST_PROJECT_ID:        p1,
+    DATA_DIR:               dir1,
+    DISPOSABLE_INSTANCE_ID: id1,
+    OPERATOR_TOKEN:         secretKey,
+    QA_HARNESS_SECRET:      secretKey
+  });
+  assertEqual(r1.exitCode, 3, `Expected exit 3 for enterprise tier project, got ${r1.exitCode}`);
+  assert(r1.stderr.includes('commercial/production tier'), 'stderr must mention commercial/production tier');
+  fs.rmSync(dir1, { recursive: true });
+
+  // Subcase 2: Project ID renamed to prj-test-* but user has real customer domain
+  const { dir: dir2, instanceId: id2, projectId: p2 } = makeDisposableDir({
+    users: [{ id: 'u-1', email: 'accountant@client-corporation.com', role: 'billing_admin' }],
+    secret: secretKey
+  });
+  const r2 = runCli({
+    TEST_PROJECT_ID:        p2,
+    DATA_DIR:               dir2,
+    DISPOSABLE_INSTANCE_ID: id2,
+    OPERATOR_TOKEN:         secretKey,
+    QA_HARNESS_SECRET:      secretKey
+  });
+  assertEqual(r2.exitCode, 3, `Expected exit 3 for customer email user, got ${r2.exitCode}`);
+  assert(r2.stderr.includes('customer user email domain') || r2.stderr.includes('privileged operational role'),
+    'stderr must mention customer domain or privileged role');
+  fs.rmSync(dir2, { recursive: true });
+
+  // Subcase 3: Project ID renamed to prj-test-* but organization is customer entity
+  const { dir: dir3, instanceId: id3, projectId: p3 } = makeDisposableDir({
+    organizations: [{ id: 'org-client-corp-xyz', name: 'XYZ Commercial Corporation' }],
+    secret: secretKey
+  });
+  const r3 = runCli({
+    TEST_PROJECT_ID:        p3,
+    DATA_DIR:               dir3,
+    DISPOSABLE_INSTANCE_ID: id3,
+    OPERATOR_TOKEN:         secretKey,
+    QA_HARNESS_SECRET:      secretKey
+  });
+  assertEqual(r3.exitCode, 3, `Expected exit 3 for non-qa organization, got ${r3.exitCode}`);
+  assert(r3.stderr.includes('customer/commercial organization entity'),
+    'stderr must mention customer/commercial organization entity');
+  fs.rmSync(dir3, { recursive: true });
 });
 
 // ─── Summary ─────────────────────────────────────────────────────────────────

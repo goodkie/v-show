@@ -62,6 +62,24 @@ const DANGEROUS_PATH_PATTERNS = [
   /[/\\]master[/\\]/i,
 ];
 
+// ─── db.js seed-entity allowlists (must be declared before runSelfTests is called) ─
+// Known db.js seed org IDs auto-injected by migrateSchema on any schemaVersion < 6 db.json
+// (i.e. any freshly created throwaway test db). These are internal-platform identities,
+// NOT real customer data.  Whitelisted so T16 / T18 real-db.js integration tests don't
+// trip the refusal gate.
+const DB_JS_SEED_ORG_IDS = new Set([
+  'org-platform-master',
+  'org-organizer-01',
+  'org-exhibitor-apex',
+  'org-exhibitor-bio',
+]);
+
+// Internal platform email domain — NOT a customer domain.
+const INTERNAL_PLATFORM_DOMAINS = new Set(['vshow.com']);
+
+// The single known seed user-id for the platform_owner role injected by db.js.
+const DB_JS_SEED_PLATFORM_OWNER_ID = 'user-platform-owner';
+
 // ─── CLI parsing ─────────────────────────────────────────────────────────────
 const args      = process.argv.slice(2);
 const DRY_RUN   = args.includes('--dry-run');
@@ -85,6 +103,11 @@ function sha256Bytes(buf) {
   return crypto.createHash('sha256').update(buf).digest('hex');
 }
 
+function computeMarkerSignature(instanceId, secret) {
+  if (!secret) return '';
+  return crypto.createHmac('sha256', secret).update(instanceId).digest('hex').slice(0, 32);
+}
+
 function redactedReceipt(projectId, hashBefore, hashAfter, status, extra) {
   return JSON.stringify({
     projectId,
@@ -99,8 +122,9 @@ function redactedReceipt(projectId, hashBefore, hashAfter, status, extra) {
 /**
  * atomicWriteJson — write JSON to filePath via temp + renameSync.
  * Temp file is fsync'd for crash durability before rename.
+ * Optionally verifies that lockDir is still held by ownerToken immediately before renameSync.
  */
-function atomicWriteJson(filePath, data) {
+function atomicWriteJson(filePath, data, lockDir = null, ownerToken = null) {
   const tmp = filePath + '.tmp.' + crypto.randomBytes(6).toString('hex');
   const content = JSON.stringify(data, null, 2);
   const fd = fs.openSync(tmp, 'w');
@@ -109,6 +133,10 @@ function atomicWriteJson(filePath, data) {
     fs.fsyncSync(fd);
   } finally {
     fs.closeSync(fd);
+  }
+  if (lockDir && ownerToken && !verifyLockHeld(lockDir, ownerToken)) {
+    try { fs.unlinkSync(tmp); } catch (_) {}
+    throw new Error('LOCK_LOST_BEFORE_RENAME: Aborting atomic write — lock no longer held by current ownerToken');
   }
   fs.renameSync(tmp, filePath);
 }
@@ -314,6 +342,91 @@ function validateDataDir(rawPath, isCliOverride) {
   return { resolved };
 }
 
+/**
+ * verifyMarker — validates presence, instanceId, and cryptographic HMAC signature.
+ */
+function verifyMarker(markerPath, expectedInstanceId, secret) {
+  if (!fs.existsSync(markerPath)) {
+    return { ok: false, err: '.disposable_qa_marker not found in DATA_DIR' };
+  }
+  const raw = fs.readFileSync(markerPath, 'utf8').trim();
+  const [markerId, markerSig] = raw.includes(':') ? raw.split(':') : [raw, null];
+  if (markerId !== expectedInstanceId) {
+    return { ok: false, err: `DISPOSABLE_INSTANCE_ID mismatch in marker (found: ${markerId}, expected: ${expectedInstanceId})` };
+  }
+  if (secret) {
+    const expectedSig = computeMarkerSignature(expectedInstanceId, secret);
+    if (markerSig !== expectedSig) {
+      return { ok: false, err: '.disposable_qa_marker cryptographic signature invalid or missing' };
+    }
+  }
+  return { ok: true };
+}
+
+/**
+ * inspectDatastoreSafety — deep inspection to strictly refuse copied customer/production DBs.
+ */
+function inspectDatastoreSafety(dbData) {
+  if (Array.isArray(dbData.projects)) {
+    for (const proj of dbData.projects) {
+      if (!proj || !proj.id) continue;
+      if (!proj.id.startsWith('prj-test-')) {
+        return `Target DB contains production/customer project (${proj.id})`;
+      }
+      if (proj.isCommercial || proj.isProduction || proj.tier === 'enterprise' || proj.tier === 'commercial') {
+        return `Target DB project (${proj.id}) has commercial/production tier`;
+      }
+      if (typeof proj.name === 'string' && /production|customer|commercial\s+client/i.test(proj.name)) {
+        return `Target DB project (${proj.id}) has production/customer name: ${proj.name}`;
+      }
+    }
+  }
+
+  if (Array.isArray(dbData.users)) {
+    for (const user of dbData.users) {
+      if (!user) continue;
+
+      // platform_owner is a privileged role.  Allow ONLY the single known seed record
+      // (user-platform-owner) injected by db.js migrateSchema.  Any other entity
+      // claiming platform_owner is hostile or copied customer data → refuse.
+      if (user.role === 'platform_owner') {
+        if (user.id !== DB_JS_SEED_PLATFORM_OWNER_ID) {
+          return `Target DB contains platform owner account (${user.email || user.id})`;
+        }
+        // Known seed record — skip further checks for this user.
+        continue;
+      }
+
+      if (user.role && ['billing_admin', 'superadmin', 'executive'].includes(user.role)) {
+        return `Target DB contains privileged operational role (${user.role})`;
+      }
+
+      if (user.email) {
+        // Extract domain and check against internal-platform allowlist.
+        const domainMatch = user.email.match(/@([\w.-]+)$/);
+        const domain = domainMatch ? domainMatch[1].toLowerCase() : null;
+        if (domain && !INTERNAL_PLATFORM_DOMAINS.has(domain) &&
+            /@(?!test\.|localhost|example\.)[\w.-]+\.(com|org|io|net)/i.test(user.email)) {
+          return `Target DB contains customer user email domain (${user.email})`;
+        }
+      }
+    }
+  }
+
+  if (Array.isArray(dbData.organizations)) {
+    for (const org of dbData.organizations) {
+      if (!org || !org.id) continue;
+      // Allow known internal seed org IDs injected by db.js migrateSchema.
+      if (DB_JS_SEED_ORG_IDS.has(org.id)) continue;
+      if (!org.id.includes('test') && !org.id.includes('qa')) {
+        return `Target DB contains customer/commercial organization entity (${org.id})`;
+      }
+    }
+  }
+
+  return null;
+}
+
 // ─── Environment validation ────────────────────────────────────────────────
 const TEST_PROJECT_ID        = process.env.TEST_PROJECT_ID;
 const DISPOSABLE_INSTANCE_ID = process.env.DISPOSABLE_INSTANCE_ID;
@@ -336,8 +449,14 @@ if (OPERATOR_TOKEN && OPERATOR_TOKEN.length < 32)
                                     errors.push('OPERATOR_TOKEN must be >= 32 characters');
 if (OPERATOR_TOKEN && (new Set(OPERATOR_TOKEN.split('')).size < 8 || OPERATOR_TOKEN === TEST_PROJECT_ID))
                                     errors.push('OPERATOR_TOKEN has insufficient entropy or matches project ID');
-if (QA_HARNESS_SECRET && OPERATOR_TOKEN !== QA_HARNESS_SECRET)
-                                    errors.push('OPERATOR_TOKEN does not match server-verified QA_HARNESS_SECRET');
+
+// External Authorization Requirement: In active (non-dry-run) mode, QA_HARNESS_SECRET is mandatory
+if (!DRY_RUN && !QA_HARNESS_SECRET) {
+  errors.push('QA_HARNESS_SECRET (or EXPECTED_OPERATOR_TOKEN) env var required in active mode (fail-closed against self-asserted tokens)');
+}
+if (QA_HARNESS_SECRET && OPERATOR_TOKEN !== QA_HARNESS_SECRET) {
+  errors.push('OPERATOR_TOKEN does not match server-verified QA_HARNESS_SECRET');
+}
 
 if (errors.length) {
   process.stderr.write('[REVOKE_QA_TOKENS] FAIL_CLOSED — validation errors:\n');
@@ -352,12 +471,9 @@ const BACKUP_PATH = path.join(DATA_DIR, '.qa_token_backup.json');
 const LOCK_DIR    = path.join(DATA_DIR, 'db.lock'); // unified with server/db.js _getLockDir()
 
 // ─── Pre-lock: verify marker and db.json exist before acquiring lock ──────────
-if (!fs.existsSync(MARKER_PATH)) {
-  process.stderr.write(
-    '[REVOKE_QA_TOKENS] ABORT: .disposable_qa_marker not found in DATA_DIR.\n' +
-    '  This directory is not a verified disposable QA datastore.\n' +
-    `  DATA_DIR: ${DATA_DIR}\n`
-  );
+const markerCheck = verifyMarker(MARKER_PATH, DISPOSABLE_INSTANCE_ID, QA_HARNESS_SECRET);
+if (!markerCheck.ok) {
+  process.stderr.write(`[REVOKE_QA_TOKENS] ABORT: ${markerCheck.err}.\n  This directory is not a verified disposable QA datastore.\n`);
   process.exit(3);
 }
 
@@ -377,14 +493,10 @@ if (!myOwnerToken) {
 let exitCode = 0;
 
 function runUnderLock(ownerToken) {
-  // ── Under lock: verify marker identity ──────────────────────────────────────
-  const markerContent = fs.readFileSync(MARKER_PATH, 'utf8').trim();
-  if (markerContent !== DISPOSABLE_INSTANCE_ID) {
-    process.stderr.write(
-      '[REVOKE_QA_TOKENS] ABORT: DISPOSABLE_INSTANCE_ID mismatch (under lock).\n' +
-      `  Marker contains: ${markerContent}\n` +
-      `  Expected:        ${DISPOSABLE_INSTANCE_ID}\n`
-    );
+  // ── Under lock: verify marker identity and signature ────────────────────────
+  const underLockMarkerCheck = verifyMarker(MARKER_PATH, DISPOSABLE_INSTANCE_ID, QA_HARNESS_SECRET);
+  if (!underLockMarkerCheck.ok) {
+    process.stderr.write(`[REVOKE_QA_TOKENS] ABORT (under lock): ${underLockMarkerCheck.err}\n`);
     return 3;
   }
 
@@ -401,28 +513,13 @@ function runUnderLock(ownerToken) {
   }
 
   // ── Under lock: Customer & Owner DB Refusal Gate (P0 Defense) ───────────────
-  // Strictly refuse to mutate any DB that contains non-test projects or owner accounts
-  if (Array.isArray(dbData.projects)) {
-    for (const proj of dbData.projects) {
-      if (proj && proj.id && !proj.id.startsWith('prj-test-')) {
-        process.stderr.write(
-          `[REVOKE_QA_TOKENS] ABORT: Target DB contains production/customer project (${proj.id}).\n` +
-          '  Revocation utility strictly refuses non-disposable datastores, even under temp directories.\n'
-        );
-        return 3;
-      }
-    }
-  }
-  if (Array.isArray(dbData.users)) {
-    for (const user of dbData.users) {
-      if (user && (user.role === 'platform_owner' || (user.email && user.email.includes('owner@')))) {
-        process.stderr.write(
-          `[REVOKE_QA_TOKENS] ABORT: Target DB contains platform owner account (${user.email || user.id}).\n` +
-          '  Revocation utility strictly refuses production/owner datastores.\n'
-        );
-        return 3;
-      }
-    }
+  const refusalReason = inspectDatastoreSafety(dbData);
+  if (refusalReason) {
+    process.stderr.write(
+      `[REVOKE_QA_TOKENS] ABORT: ${refusalReason}.\n` +
+      '  Revocation utility strictly refuses non-disposable or copied customer datastores.\n'
+    );
+    return 3;
   }
 
   const projects = dbData.projects || [];
@@ -504,10 +601,10 @@ function runUnderLock(ownerToken) {
       // updatedAt intentionally NOT mutated
     );
 
-    atomicWriteJson(DB_PATH, rolledBackDb);
+    atomicWriteJson(DB_PATH, rolledBackDb, LOCK_DIR, ownerToken);
     process.stderr.write(redactedReceipt(
-      TEST_PROJECT_ID, currentHash, sha256(restoredToken), 'ROLLBACK_OK_NULLIFIED',
-      { note: 'Token replaced with fresh random (hash-only backup: raw token not recoverable)' }
+      TEST_PROJECT_ID, currentHash, sha256(restoredToken), 'ROLLBACK_OK_ROTATED_FRESH',
+      { note: 'Token rotated to fresh random value (security design: hash-only backup deliberately cannot restore previous secret credentials)' }
     ) + '\n');
     try { fs.unlinkSync(BACKUP_PATH); } catch (_) {}
     return 0;
@@ -570,7 +667,7 @@ function runUnderLock(ownerToken) {
     dbHashAtRotation: dbHashAtLockTime, // whole-DB hash for audit
     ts:               new Date().toISOString()
   };
-  atomicWriteJson(BACKUP_PATH, backupData);
+  atomicWriteJson(BACKUP_PATH, backupData, LOCK_DIR, ownerToken);
 
   // ── Mutate ONLY editToken field — all other fields preserved exactly ──────────
   const updatedDb = JSON.parse(JSON.stringify(dbData)); // deep clone
@@ -581,7 +678,7 @@ function runUnderLock(ownerToken) {
   );
 
   // ── Atomic write via temp + fsync + renameSync ───────────────────────────────
-  atomicWriteJson(DB_PATH, updatedDb);
+  atomicWriteJson(DB_PATH, updatedDb, LOCK_DIR, ownerToken);
 
   // ── Emit redacted receipt (no raw tokens) ────────────────────────────────────
   process.stderr.write(redactedReceipt(
@@ -858,6 +955,82 @@ function runSelfTests() {
     assert.strictEqual(acquired, null, 'Must fail to acquire corrupt lock (fail-closed)');
     assert.ok(fs.existsSync(corruptLockDir), 'Corrupt lock must NOT be deleted');
     fs.rmSync(corruptLockDir, { recursive: true });
+  });
+
+  // T19: verifyMarker validates HMAC cryptographic signature
+  test('verifyMarker validates cryptographic HMAC signature', () => {
+    const markerP = path.join(tmpDir, '.test_marker');
+    const instId = 'inst-test-12345';
+    const secret = 'secret-harness-key-32chars-min-len';
+
+    // 1. Plain marker without signature when secret required -> fail
+    fs.writeFileSync(markerP, instId, 'utf8');
+    const r1 = verifyMarker(markerP, instId, secret);
+    assert.strictEqual(r1.ok, false, 'Plain marker must fail when secret is required');
+
+    // 2. Tampered signature -> fail
+    fs.writeFileSync(markerP, `${instId}:invalid_tampered_signature_hex`, 'utf8');
+    const r2 = verifyMarker(markerP, instId, secret);
+    assert.strictEqual(r2.ok, false, 'Tampered signature must fail');
+
+    // 3. Valid HMAC signature -> pass
+    const validSig = computeMarkerSignature(instId, secret);
+    fs.writeFileSync(markerP, `${instId}:${validSig}`, 'utf8');
+    const r3 = verifyMarker(markerP, instId, secret);
+    assert.strictEqual(r3.ok, true, 'Valid HMAC signature must pass');
+    fs.unlinkSync(markerP);
+  });
+
+  // T20: inspectDatastoreSafety detects customer emails, enterprise tiers, and commercial orgs
+  test('inspectDatastoreSafety detects copied DB with customer emails and entities', () => {
+    const copiedDb1 = {
+      projects: [{ id: 'prj-test-renamed', tier: 'enterprise' }],
+      users: []
+    };
+    assert.ok(inspectDatastoreSafety(copiedDb1) !== null, 'Must refuse enterprise tier project');
+
+    const copiedDb2 = {
+      projects: [{ id: 'prj-test-renamed', name: 'Valid Test' }],
+      users: [{ email: 'finance@customer-corp.com', role: 'admin' }]
+    };
+    assert.ok(inspectDatastoreSafety(copiedDb2) !== null, 'Must refuse customer domain email');
+
+    const copiedDb3 = {
+      projects: [{ id: 'prj-test-renamed' }],
+      users: [],
+      organizations: [{ id: 'org-client-corp-xyz' }]  // non-seed, non-qa org ID
+    };
+    assert.ok(inspectDatastoreSafety(copiedDb3) !== null, 'Must refuse non-qa organization');
+
+    const validTestDb = {
+      projects: [{ id: 'prj-test-123', name: 'QA Test Project' }],
+      users: [{ email: 'qa-tester@test.local', role: 'qa' }]
+    };
+    assert.strictEqual(inspectDatastoreSafety(validTestDb), null, 'Must accept clean test DB');
+  });
+
+  // T21: atomicWriteJson pre-rename barrier aborts if lock lost
+  test('atomicWriteJson aborts write and cleans temp file if lock ownership lost', () => {
+    const targetFile = path.join(tmpDir, 'target.json');
+    const lockDir = path.join(tmpDir, 'test_write.lock');
+    fs.mkdirSync(lockDir, { recursive: true });
+    const myTok = 'my-token';
+    const otherTok = 'other-token';
+    fs.writeFileSync(path.join(lockDir, 'meta.json'), JSON.stringify({ pid: process.pid, ownerToken: otherTok }), 'utf8');
+
+    let threw = false;
+    try {
+      atomicWriteJson(targetFile, { a: 1 }, lockDir, myTok);
+    } catch (e) {
+      threw = true;
+      assert.ok(e.message.includes('LOCK_LOST_BEFORE_RENAME'), 'Must throw LOCK_LOST_BEFORE_RENAME');
+    }
+    assert.strictEqual(threw, true, 'atomicWriteJson must throw when lock ownership lost');
+    assert.strictEqual(fs.existsSync(targetFile), false, 'Target file must not be created');
+    // Check no leftover tmp files
+    const entries = fs.readdirSync(tmpDir).filter(f => f.startsWith('target.json.tmp'));
+    assert.strictEqual(entries.length, 0, 'Temporary file must be cleaned up on abort');
+    releaseLock(lockDir, otherTok);
   });
 
   console.log(`\n  Self-test complete: ${pass} passed, ${fail} failed`);
